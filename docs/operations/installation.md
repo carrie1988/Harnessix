@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 8
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 9
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -215,10 +215,30 @@ macOS/Linux检查Owner、规范权限和对象身份，Darwin额外拒绝扩展A
 原生测试与三平台正式安装仍须独立验收。POSIX私有Key文件不声称密文或不可导出Keyring。
 仅全新无库状态可以生成新Key。存在原DB/WAL/SHM而无Key、未证明历史、Key格式或权限失效均拒绝启动；
 不得通过清空原状态、改权限追认旧事实、生成替代Key或手工补签解除门禁。
-Doctor成功只代表配置及能力预检，不证明原Key/Session有效。现阶段没有正式密钥备份/跨机器迁移工具。
+Doctor成功只代表配置及能力预检，不证明原Key/Session有效。完整产品备份与原来源验真见下文；
+整体状态恢复和跨机器Key迁移尚未交付。
 新Artifact正文在同一逻辑Store/Key重启后依赖Migration 0030原行Seal恢复，旧NULL行不能因此被读取；
 安装与升级应将数据库/WAL一致状态和独立Key作为同一保留单元，不能只复制数据库或重建Key。
 不把复制DB或本地Wheel消费者视为安装与恢复完成。
 [总体与详细设计](../changes/m09-4a-managed-session-key-and-root.md)、
 [Artifact原行来源认证](../changes/m09-4a-authenticated-artifact-body.md)、
 [固定macOS验证](../validation/managed-session-key-2026-09-28-v1/README.md)与[升级边界](upgrade-and-rollback.md)是当前操作依据。
+
+## 完整状态停机备份与只读验真
+
+停止使用同一状态目录的产品宿主和嵌入式Writer，在已存在的受信父目录下选择新备份目录。
+目标不得与产品状态、根外信任锚点或任何原认证Thread的Workspace重叠；命令不覆盖已有目标。
+
+```bash
+harnessix state backup --state-directory "$STATE_DIRECTORY" \
+  --backup-directory "$BACKUP_DIRECTORY" --timeout 120
+harnessix state verify --state-directory "$STATE_DIRECTORY" \
+  --backup-directory "$BACKUP_DIRECTORY" --timeout 120
+```
+
+备份保存完整受管库、原Key、事务Blob和可选Process事实。制品与原Root外私有信任锚点共同保留，
+不加入Git或普通诊断包；仅制品自带Key不足以取得原来源授权。
+当前没有`state restore`，不得逐库覆盖或用旧单库维护接口代替完整产品恢复。
+POSIX完整产品验证与Windows原生端口测试分开，源码存在和Wheel可安装不代表三平台商用支持。
+[完整设计](../changes/m09-r1-product-state-backup.md)、[固定验证资料](../validation/product-state-backup-2026-09-28-v1/README.md)
+与[恢复手册](recovery.md)分别说明操作合同、实际证据和仍开放的恢复要求。

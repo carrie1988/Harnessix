@@ -1,0 +1,52 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_publication_confirmation_loss_preserves_published_backup_and_receipt ___
+
+complete_state = (PosixPath('<private-test-path>, tzinfo=datetime.timezone.utc), fingerprint='73e2b1cf2e690b33f8c88ee119cddc72b051d2702f12c6154a2c2f4da018f433')))
+tmp_path = PosixPath('<private-test-path>')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a9f2190>
+
+    async def test_publication_confirmation_loss_preserves_published_backup_and_receipt(
+        complete_state, tmp_path, monkeypatch
+    ):
+        from harnessix.product_config import state_backup
+
+        root, _ = complete_state
+        publish = state_backup.publish_tree
+
+        def publish_then_lose_confirmation(source, target):
+            publish(source, target)
+            raise OSError("publication confirmation unavailable")
+
+        monkeypatch.setattr(state_backup, "publish_tree", publish_then_lose_confirmation)
+        with pytest.raises(KernelError):
+            await state_backup.backup_product_state(root, tmp_path / "backup")
+        assert (tmp_path / "backup").is_dir()
+>       manifest = await state_backup.verify_product_backup(root, tmp_path / "backup")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/product_config/test_product_state_backup.py:526:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/harnessix/product_config/state_backup.py:369: in verify_product_backup
+    with _backup_errors(), product_state_owner(state_root) as owner:
+         ^^^^^^^^^^^^^^^^
+<python-runtime>/cpython-3.13.8-macos-aarch64-none/lib/python3.13/contextlib.py:162: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    @contextmanager
+    def _backup_errors() -> Iterator[None]:
+        try:
+            yield
+        except KernelError:
+            raise
+        except (OSError, sqlite3.Error, ValidationError, ValueError, RuntimeError):
+>           raise KernelError(
+                "product_backup_invalid", "产品备份操作失败，未获得完整可信备份"
+            ) from None
+E           harnessix.agent.errors.KernelError: 产品备份操作失败，未获得完整可信备份
+
+src/harnessix/product_config/state_backup.py:66: KernelError
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_state_backup.py::test_publication_confirmation_loss_preserves_published_backup_and_receipt
+1 failed, 34 deselected in 0.48s

@@ -1,0 +1,144 @@
+{
+  "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+  "environments": [
+    "macOS ARM64 Python3.13.8 main checkout",
+    "macOS ARM64 Python3.12.7 clean independent editable checkout"
+  ],
+  "runs": [
+    {
+      "name": "完整备份专项",
+      "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+      "python": "3.13.8",
+      "passed": 35,
+      "skipped": 4,
+      "seconds": 9.12,
+      "log": "logs/focused-python313.txt",
+      "command": "uv run --offline pytest tests/product_config/test_product_state_backup.py tests/product_config/test_product_backup_files_windows.py -o addopts= -q",
+      "exit_code": 0
+    },
+    {
+      "name": "受影响回归",
+      "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+      "python": "3.13.8",
+      "passed": 1645,
+      "skipped": 22,
+      "seconds": 112.47,
+      "log": "logs/affected-python313.txt",
+      "command": "uv run --offline pytest tests/product_config tests/session tests/trusted_actions tests/processes tests/delivery tests/execution tests/artifacts tests/app_server -o addopts= -q",
+      "exit_code": 0
+    },
+    {
+      "name": "独立检出专项",
+      "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+      "python": "3.12.7",
+      "passed": 35,
+      "skipped": 4,
+      "seconds": 9.04,
+      "log": "logs/independent-focused-python312.txt",
+      "command": "uv run --offline pytest tests/product_config/test_product_state_backup.py tests/product_config/test_product_backup_files_windows.py -o addopts= -q",
+      "exit_code": 0
+    },
+    {
+      "name": "独立检出受影响回归",
+      "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+      "python": "3.12.7",
+      "passed": 1645,
+      "skipped": 22,
+      "seconds": 113.4,
+      "log": "logs/independent-affected-python312.txt",
+      "command": "uv run --offline pytest tests/product_config tests/session tests/trusted_actions tests/processes tests/delivery tests/execution tests/artifacts tests/app_server -o addopts= -q",
+      "exit_code": 0
+    }
+  ],
+  "test_groups_overlap": true,
+  "full_repository_regression": false,
+  "native_windows_product_acceptance": false,
+  "native_linux_host_acceptance": false,
+  "windows_port_tests_skipped_on_macos": 4,
+  "mypy_source_files": 374,
+  "mypy_passed": true,
+  "schema_and_task_pack_unchanged": true,
+  "readability_thresholds_unchanged": true,
+  "approved_new_foundation_dependency_edges": 5,
+  "actually_rendered_and_visually_checked_mermaid_diagrams": 3,
+  "renderer_used_existing_system_chrome": true,
+  "browser_download_or_user_profile_reuse": false,
+  "retained_failures": [
+    {
+      "reason": "复制后业务文件内容漂移未被拒绝",
+      "log": "logs/blob-drift-red.txt",
+      "failed": 1,
+      "fixed_commit": "7519a8e69887ad32532bd45845597fd861445193",
+      "pre_fix_working_tree_uncommitted": true
+    },
+    {
+      "reason": "SQLite最后只读连接关闭导致合法SHM消失",
+      "log": "logs/sqlite-sidecar-red.txt",
+      "failed": 1,
+      "passed": 8,
+      "fixed_commit": "7519a8e69887ad32532bd45845597fd861445193",
+      "pre_fix_working_tree_uncommitted": true
+    },
+    {
+      "reason": "原生Rename已提交但确认返回失败，清理误删可信回执",
+      "log": "logs/publication-confirmation-red.txt",
+      "failed": 1,
+      "fixed_commit": "7519a8e69887ad32532bd45845597fd861445193",
+      "pre_fix_working_tree_uncommitted": true
+    },
+    {
+      "reason": "实际制品扫描输入经过系统符号链接，未完成扫描",
+      "error_code": "scan_input_unsupported",
+      "corrective_action": "相同制品使用规范真实地址重新扫描，规则保持不变",
+      "exit_code": 2
+    },
+    {
+      "reason": "顶层CLI新增分派未同步产品界面模块资料",
+      "error_code": "doc_sync_root_required",
+      "corrective_action": "补充停机命令与在线UI边界及源码映射，重新执行变化文档门禁",
+      "exit_code": 1
+    }
+  ],
+  "raw_logs_local_only": true,
+  "published_logs_remove_private_paths_and_trailing_whitespace": true,
+  "model_requests": 0,
+  "budget_period_reset": false,
+  "commercial_release_acceptance": false,
+  "open_release_gates": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ],
+  "final_governance": {
+    "passed": 26,
+    "seconds": 1.31,
+    "exit_code": 0,
+    "log": "logs/governance-final.txt"
+  },
+  "cli_compatibility": {
+    "passed": 9,
+    "seconds": 0.31,
+    "exit_code": 0,
+    "log": "logs/cli-compatibility.txt"
+  },
+  "documentation": {
+    "changed_path_count": 56,
+    "document_count": 355,
+    "findings": [],
+    "link_count": 8945,
+    "mermaid_count": 803,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26
+  },
+  "final_secret_scan": {
+    "inputs": 2611,
+    "hits": 0,
+    "exit_code": 0,
+    "rules_changed": false,
+    "fixed_rules_self_checked": 6,
+    "log": "logs/secret-scan-final.txt"
+  }
+}

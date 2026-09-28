@@ -1,0 +1,110 @@
+{
+  "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+  "wheel": "harnessix-0.1.0-py3-none-any.whl",
+  "version": "0.1.0",
+  "sha256": "042bbe9aac8c53eda0056d800412602ab0888475346810d3e7e16ab762160111",
+  "size": 1035449,
+  "source_files": [
+    {
+      "source": "src/harnessix/cli.py",
+      "member": "harnessix/cli.py",
+      "size": 2924,
+      "sha256": "dd4d2ca80dc998f97578e997fa769eb0d428e6ecf7260e6c831e855f9aea6ca5",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/delivery/store.py",
+      "member": "harnessix/delivery/store.py",
+      "size": 15272,
+      "sha256": "2b045b6a870bf93b10ff30d4344f9e95466cc946f7d1abbc5f28801c12862e62",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/execution/store.py",
+      "member": "harnessix/execution/store.py",
+      "size": 8386,
+      "sha256": "592e4d8fd4e3cbe5e026b833aa7d6f1b484496fbaae2c47f20df750e0bee54ef",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/processes/supervision_store.py",
+      "member": "harnessix/processes/supervision_store.py",
+      "size": 10037,
+      "sha256": "5d6268f4f8ea6d6ab93d5fe6fc17b41a9064927b5c6cf7106d5173d5ce618f0f",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/action_store.py",
+      "member": "harnessix/product_config/action_store.py",
+      "size": 19794,
+      "sha256": "d9e8440f787168f4379d1aab5164e748d581bfc6b5d9cf327bccae2474463d90",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/state_backup.py",
+      "member": "harnessix/product_config/state_backup.py",
+      "size": 15967,
+      "sha256": "a214320b999a34910b16126b357b5504b6e5a12f011ad82b825f283deef00966",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/state_backup_cli.py",
+      "member": "harnessix/product_config/state_backup_cli.py",
+      "size": 2438,
+      "sha256": "062d085fc187c20bc953b629e027ece1b597043c26b83c85ad7ae025de94a13e",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/state_backup_contracts.py",
+      "member": "harnessix/product_config/state_backup_contracts.py",
+      "size": 4311,
+      "sha256": "7c87ea6b0dd71965d459040981f1a712f3d84aa56cd874402e438b706971832a",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/state_backup_files.py",
+      "member": "harnessix/product_config/state_backup_files.py",
+      "size": 15622,
+      "sha256": "d8b89ead9f5137201ea5aa8abc43e671423bec997dea10ac8491160f82bbf52f",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/state_backup_records.py",
+      "member": "harnessix/product_config/state_backup_records.py",
+      "size": 11690,
+      "sha256": "640cbdb56df08b0f5440c5c1431e76347931c0192766cb27f2ea18dfbdb8143a",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/state_backup_validation.py",
+      "member": "harnessix/product_config/state_backup_validation.py",
+      "size": 9524,
+      "sha256": "cc1a3acac1c312201f7fe8d8251d2b7991707dccf2d3a108c8d7fa1dbcfe3d2e",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/product_config/store.py",
+      "member": "harnessix/product_config/store.py",
+      "size": 20945,
+      "sha256": "51066b9fd80abbcbd9bf113ba61f018d2690e5064019ecc65e6d25bfdd5bcd4a",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/sqlite_readonly.py",
+      "member": "harnessix/sqlite_readonly.py",
+      "size": 631,
+      "sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+      "matches_fixed_source": true
+    },
+    {
+      "source": "src/harnessix/trusted_actions/store.py",
+      "member": "harnessix/trusted_actions/store.py",
+      "size": 12019,
+      "sha256": "6dd04060a5f4dc89d40481dec9249a9d7dbe05f3a08bbb900805720a2fa96b55",
+      "matches_fixed_source": true
+    }
+  ],
+  "tests_packaged": false,
+  "sdist_built": false,
+  "commercial_release": false
+}

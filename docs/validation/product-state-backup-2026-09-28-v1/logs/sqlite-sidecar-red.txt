@@ -1,0 +1,74 @@
+DIAGNOSTIC_ATTEMPT 1
+......F..                                                                [100%]
+=================================== FAILURES ===================================
+_ test_backup_failure_windows_have_unambiguous_publication[backup.after_publish] _
+
+complete_state = (PosixPath('<private-test-path>, tzinfo=datetime.timezone.utc), fingerprint='37f464002c91fe92a99dfd9cb560667b4f2853f0acb94b7c59c826f9b5f54e36')))
+tmp_path = PosixPath('<private-test-path>')
+phase = 'backup.after_publish'
+
+    @pytest.mark.parametrize(
+        "phase", ["backup.after_quiet", "backup.after_receipt", "backup.after_publish"]
+    )
+    async def test_backup_failure_windows_have_unambiguous_publication(complete_state, tmp_path, phase):
+        from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
+
+        root, _ = complete_state
+
+        def fault(current):
+            if current == phase:
+                raise KernelError("injected_backup_failure", "受控故障")
+
+        with pytest.raises(KernelError, match="受控故障"):
+>           await backup_product_state(root, tmp_path / "backup", fault=fault)
+
+tests/product_config/test_product_state_backup.py:273:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/harnessix/product_config/state_backup.py:338: in backup_product_state
+    return await run_maintenance_io(
+src/harnessix/session/maintenance_io.py:51: in run_maintenance_io
+    return await asyncio.shield(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-runtime>/cpython-3.13.8-macos-aarch64-none/lib/python3.13/asyncio/threads.py:25: in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-runtime>/cpython-3.13.8-macos-aarch64-none/lib/python3.13/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/product_config/state_backup.py:339: in <lambda>
+    lambda control: _backup(owner, destination, control, fault or (lambda _: None)),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/product_config/state_backup.py:206: in _backup
+    paths = _paths(source, control)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/product_config/state_backup.py:70: in _paths
+    for path in source.files(control, directories=state_directory_allowed):
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/product_config/state_backup_files.py:221: in files
+    with self.open_file(relative):
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+<python-runtime>/cpython-3.13.8-macos-aarch64-none/lib/python3.13/contextlib.py:148: in __exit__
+    next(self.gen)
+src/harnessix/product_config/state_backup_files.py:183: in open_file
+    if _revision(os.fstat(descriptor)) != _revision((self.path / relative).lstat()):
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<python-runtime>/cpython-3.13.8-macos-aarch64-none/lib/python3.13/pathlib/_abc.py:437: in lstat
+    return self.stat(follow_symlinks=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = PosixPath('<private-test-path>')
+
+    def stat(self, *, follow_symlinks=True):
+        """
+        Return the result of the stat() system call on this path, like
+        os.stat() does.
+        """
+>       return os.stat(self, follow_symlinks=follow_symlinks)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '<private-test-path>'
+
+<python-runtime>/cpython-3.13.8-macos-aarch64-none/lib/python3.13/pathlib/_local.py:515: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_state_backup.py::test_backup_failure_windows_have_unambiguous_publication[backup.after_publish]
+1 failed, 8 passed, 9 deselected in 2.53s

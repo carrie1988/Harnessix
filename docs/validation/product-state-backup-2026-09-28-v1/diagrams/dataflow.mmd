@@ -1,0 +1,13 @@
+flowchart TD
+    Manifest[有限Manifest原字节] --> Hash[重算Manifest SHA]
+    Local[原地址私有回执] --> Bind[实例 原Store和Key身份绑定]
+    Hash --> Bind
+    Bind --> Layout[目录成员完全一致]
+    Layout --> Digest[所有原文件长度和SHA]
+    Digest --> Schema[原Schema版本和Migration checksum]
+    Schema --> Auth[原Key与逐Event和Projection MAC]
+    Auth --> Artifact[原Artifact MAC与Session引用]
+    Artifact --> Facts[Plan Audit Blob Process等领域事实]
+    Facts --> Current[若当前Root存在 则匹配原Key]
+    Current --> Stable[验真期间文件原版本未变化]
+    Stable --> Result[只读验真成功 不替换状态]

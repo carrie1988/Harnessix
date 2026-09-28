@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 110
-code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
+version: 111
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -708,6 +708,11 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
 Action借用同一Owner，取消结算唯一目录线程后释放。完整跨Store/Artifact及原Key备份恢复、整体目录发布与三平台实际恢复仍开放；
 该前置实现不关闭R1或R4。
+
+[R1完整停机备份与原来源验真](changes/m09-r1-product-state-backup.md)已交付六库、可选Process事实、
+事务Blob及独立Key的受管捕获；原MAC和跨Store引用先验真，再持久化根外本机回执并排他发布目录。
+`state backup/verify`不构造Provider或Executor，原Root丢失后仍可验证已有可信备份。
+整体Root替换、Restore Journal、默认启动未决恢复和三平台实际恢复仍未实现或验收；R1/R4继续开放。
 固定候选执行完整必要回归，开发批次只执行受影响检查；不逐提交等待全矩阵，不以减少检查频率豁免发布失败。
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 

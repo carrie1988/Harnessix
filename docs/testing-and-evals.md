@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 40
-code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
+version: 41
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -794,3 +794,18 @@ Action恢复不能以“重启后最终成功”作为唯一通过条件，必�
 升级旧行不自动补签；原Action、Batch与历史入口相关回归及完整固定版本结果见
 [单独验证目录](validation/authenticated-artifact-2026-09-28-v1/README.md)。
 上一节证据中的Artifact未完成是其固定旧版本事实，不外推到当前源码；三平台正式安装、Key备份和其他安全门禁仍开放。
+
+## 完整产品备份与原来源验真验证
+
+[`test_product_state_backup.py`](../tests/product_config/test_product_state_backup.py)通过默认stdio产品、Agent Client和
+真实SQLite持久化生成六库、原认证Session/Event/Artifact、事务及CAS Blob；另有真实POSIX Process Lease与回执场景。
+覆盖已提交WAL、原Root丢失、源文件漂移、错Key、损坏证明、清单与回执错配、重复取消、超时、
+SQLite写入者、不可覆盖发布和发布前后故障窗口。Schema/证明拒绝必须保持当前状态不变，不能以补签使候选通过。
+
+[`test_product_backup_files_windows.py`](../tests/product_config/test_product_backup_files_windows.py)仅验证Windows原生私有文件、
+大文件、不可覆盖目录发布、Hardlink和Junction端口；macOS上的skip不能记为Windows通过。
+源码与测试冻结到同一Revision后，分别执行本机Python 3.13和独立检出的Python 3.12专项及受影响回归。
+两组结果的范围和重叠独立记录，不相加计为全仓或三平台商用验收。
+
+测试使用Scripted Provider验证产品执行与状态合同，不形成真实模型质量成绩。
+[完整设计及开放项](changes/m09-r1-product-state-backup.md)明确：整体Restore Journal、完整恢复、Windows产品验收和R1/R4仍未完成。

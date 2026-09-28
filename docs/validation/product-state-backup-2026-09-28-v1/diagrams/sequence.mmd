@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant C as 调用者
+    participant O as 根外Owner
+    participant S as 原状态
+    participant T as 自有候选
+    participant A as 本机信任锚点
+    C->>O: 停机备份申请
+    O->>S: 独立Runtime锁与全部库BEGIN IMMEDIATE
+    S-->>O: 固定受管清单和原文件版本
+    O->>S: 原认证投影检查目标不在Workspace
+    S->>T: SQLite Backup和分块复制
+    T->>T: Schema 原MAC 引用 Blob 原Receipt核验
+    S-->>O: 清单和原版本仍一致
+    T->>T: fsync Manifest和原文件
+    O->>A: 不可覆盖写入可信回执并fsync
+    O->>T: 不可覆盖Rename至正式目录
+    O-->>C: 低敏备份摘要

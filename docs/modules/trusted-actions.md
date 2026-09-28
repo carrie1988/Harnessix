@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 31
-code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
+version: 32
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -1708,3 +1708,14 @@ Secret公开处理的父Task检查按本次进入时累计取消基线捕获，�
 普通执行仍抛公开拒绝并使Turn失败，未知错误/合同或Hash失败维持原保守边界。
 [完整详设与源码映射](../changes/m09-4a-typed-binary-output-publication.md)说明接口、伪代码及状态不变性；
 [集中验证](../validation/typed-binary-publication-2026-09-28-v1/README.md)记录版本绑定与开放范围。
+
+## Action Audit的只读完整备份边界
+
+[`SQLiteActionAuditStore`](../../src/harnessix/trusted_actions/store.py)的`read_only=True`模式不注册Runtime Owner、
+不创建目录、不执行Schema初始化，也不推进Generation/Fence。原Route、Event及Operation Reader用于候选事实校验，
+不构造Router或Executor，不触发Reconcile。
+
+[`state_backup_records.py`](../../src/harnessix/product_config/state_backup_records.py)将原Session Action引用与Route双向核对，
+产品Route不得成为未引用的孤儿记录；Route中的执行计划必须与原Plan匹配。
+`UNKNOWN`等未知效果原样保留，可信备份不等于效果已确定成功，更不授权重放。
+完整领域与持久化边界见[产品备份详设](../changes/m09-r1-product-state-backup.md)。

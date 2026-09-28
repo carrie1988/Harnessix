@@ -1,0 +1,36 @@
+{
+  "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+  "manifest_contract": "harnessix.product-state-backup/v1",
+  "receipt_contract": "harnessix.product-state-backup-receipt/v1",
+  "required_databases": [
+    "action-audit.db",
+    "execution-plans.db",
+    "product-config.db",
+    "sessions.db",
+    "workspace-leases.db",
+    "workspace-transactions/transactions.db"
+  ],
+  "original_key": "session-auth/key.v1",
+  "optional_process_database": "process-owner/process-leases.db",
+  "workspace_source_packaged": false,
+  "independent_receipt_required": true,
+  "key_or_manifest_self_authorization": false,
+  "six_database_write_reservations": true,
+  "sqlite_backup_reads_committed_wal": true,
+  "lifecycle_files_packaged": false,
+  "original_session_event_projection_artifact_proofs_verified": true,
+  "proofs_reissued": false,
+  "restore_implemented": false,
+  "read_only_stores_initialize_schema": false,
+  "repeated_cancel_waits_original_worker_before_owner_release": true,
+  "publication_confirmation_loss_preserves_receipt": true,
+  "overwrite_existing_backup": false,
+  "limits": {
+    "files": 4096,
+    "total_bytes": 2147483648,
+    "file_bytes": 268435456,
+    "manifest_bytes": 1048576
+  },
+  "windows_complete_product_accepted": false,
+  "support": "原平台同机同用户、本地受信私有目录和合作宿主，不含同UID恶意代码隔离或跨机Key迁移"
+}

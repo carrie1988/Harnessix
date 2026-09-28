@@ -1,0 +1,26 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_source_blob_change_after_copy_is_not_published ______________
+
+complete_state = (PosixPath('<private-test-path>, tzinfo=datetime.timezone.utc), fingerprint='47d72d98c7d30cdf18f84b77411fefc04aeb3263fb7c88f2dd3c801cc54e7b81')))
+tmp_path = PosixPath('<private-test-path>')
+
+    async def test_source_blob_change_after_copy_is_not_published(complete_state, tmp_path):
+        from harnessix.product_config.state_backup import backup_product_state
+
+        root, prepared = complete_state
+        digest = sorted(prepared.blobs)[0]
+        relative = "workspace-transactions/blobs/" + digest
+
+        def fault(phase):
+            if phase == "backup.after_copy:" + relative:
+                (root / relative).write_bytes(b"changed-after-copy")
+
+>       with pytest.raises(KernelError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+
+tests/product_config/test_product_state_backup.py:215: Failed
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_state_backup.py::test_source_blob_change_after_copy_is_not_published
+1 failed, 17 deselected in 0.41s

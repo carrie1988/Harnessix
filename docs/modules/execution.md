@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
+version: 6
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -1222,3 +1222,14 @@ Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Pat
 专项167项包含原48项Owner矩阵及119项新增；独立旧版35个未拒绝负例已复现。
 六种入口分别在新Python进程导入，复用DTO不引入反向包依赖或新增依赖环，不放宽可读性门禁。
 custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完整发布门禁仍开放，不据此关闭0.9.4a。
+
+## 执行计划的只读备份核验
+
+[`SQLiteExecutionPlanStore`](../../src/harnessix/execution/store.py)新增显式`read_only=True`构造模式，
+复用[`readonly_database`](../../src/harnessix/sqlite_readonly.py)的`mode=ro`与`query_only`连接。
+该模式在目录准备、DDL、迁移及权限修改之前返回，不创建缺失数据库；默认运行模式保持原合同。
+
+完整备份先核验Schema，再使用原`load_plan`验证不可变Plan及指纹；Action Audit、Session引用、
+Workspace Transaction和Process Lease必须指向相应原Plan，不接受孤立记录或仅凭原始JSON判定有效。
+只读模式不是Schema预检或执行授权，不能装配Executor或在验真期间恢复副作用。
+完整调用链、错误与测试映射见[产品备份详设](../changes/m09-r1-product-state-backup.md)。

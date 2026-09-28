@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 133
-code_revision: 8340ff1cbc6375ad4064b8be6bd4c7bd708c559d
+version: 134
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -301,3 +301,6 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 - [Artifact正文持久来源认证总体与详设](changes/m09-4a-authenticated-artifact-body.md)：独立Key用途域、Migration 0030、四图、原字节字段、同事务签发、读侧授权及失败/恢复。
 - [ADR-0105](adr/0105-authenticated-artifact-body.md)与[源码研究](research/authenticated-artifact-body.md)：原Epoch与持久MAC边界、参考源码事实和独立取舍。
 - [固定版本验收](validation/authenticated-artifact-2026-09-28-v1/README.md)：新行跨重启、旧行拒绝、篡改、当前Scope及平台/发行边界。
+
+- [完整产品停机备份与原来源验真详设](changes/m09-r1-product-state-backup.md)：六库、原Key、CAS/Process、根外可信回执、闭合路径、只读Reader、取消结算及不可覆盖发布。
+- [固定备份验证资料](validation/product-state-backup-2026-09-28-v1/README.md)：真实默认产品、原文件漂移、SHM生命周期、发布确认丢失、独立检出和Wheel字节证明；完整恢复及R1/R4仍开放。

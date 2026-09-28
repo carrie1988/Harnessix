@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 25
-code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
+version: 26
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -2052,7 +2052,7 @@ Key不入Workspace、DB或公共配置；自有副本退出清零。POSIX目录�
 不因合法DB条目或时间变化误拒绝；读取后仍重验Root与私有子目录的owner、700、Darwin ACL及路径身份。
 Key和锁普通文件继续完整状态检查，原目录替换、权限或ACL变化仍拒绝。
 新Artifact正文复用托管Session Key完成跨重启来源认证，见[详设](../changes/m09-4a-authenticated-artifact-body.md)。
-旧无Seal正文不追认；完整产品同机备份、Windows原生验收、物理DB归属与整体发布仍未关闭。
+旧无Seal正文不追认；完整产品同机恢复、Windows原生验收、物理DB归属与整体发布仍未关闭。
 跨机Key迁移和通用维护CLI按[首发范围](../changes/m09-to-v1-release-scope-convergence.md)延期；危险未装配入口拒绝。
 
 ## 产品全状态Owner与完整备份前置静默窗口
@@ -2063,4 +2063,20 @@ Key和锁普通文件继续完整状态检查，原目录替换、权限或ACL�
 
 [完整详设](../changes/m09-r1-product-state-ownership.md)包含背景、七类状态盘点、三种图、字段与接口、
 源代码导航、失败/取消及原生平台边界。Root锁不替代原Session/Artifact认证、Audit Generation或静默确认。
-完整备份、原Key恢复授权、整体目录发布及崩溃恢复尚未交付，R1不关闭。
+完整恢复、整体状态目录替换及崩溃恢复尚未交付，R1不关闭。
+
+## 完整产品停机备份与原来源验真
+
+[`state_backup.py`](../../src/harnessix/product_config/state_backup.py)在根外Owner下同时持有全部数据库的保留写锁，
+捕获六个固定库、可选Process事实、原独立Key和事务Blob。SQLite使用Backup API消费已提交WAL，
+候选不携带OS锁或SQLite生命周期文件。源文件身份、版本和清单前后复核，拒绝备份期间业务文件漂移。
+
+[`state_backup_validation.py`](../../src/harnessix/product_config/state_backup_validation.py)复用原认证Reader，
+核对Schema、原Session/Event/Artifact证明及跨Store引用；不迁移、不补签、不初始化新Key。
+[`state_backup_contracts.py`](../../src/harnessix/product_config/state_backup_contracts.py)固定路径、容量、Manifest和根外回执合同。
+备份发布前先耐久写入原Root外的本机可信回执，再不可覆盖发布私有目录；仅备份自身的Manifest和Key不足以取得恢复来源授权。
+
+正式命令为`harnessix state backup`及`harnessix state verify`；原Root丢失时仍可沿原地址根外回执验真。
+取消和超时由唯一工作线程协作，线程结算后才释放Owner；不将客户端确认丢失解释为允许覆盖或重放。
+[完整详设](../changes/m09-r1-product-state-backup.md)提供类、字段、接口、三种图、源码导航和失败语义。
+当前不提供整体恢复命令；Windows端口测试不能替代Windows完整产品安装、升级和恢复验收。

@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 80
-code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
+version: 81
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -646,4 +646,12 @@ Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session�
 闭合Codec、POSIX/Darwin ACL及Windows用户DPAPI/原生Owner-DACL、唯一线程取消结算。
 默认Root先验证原Key及Session再构造Provider；旧库无Key、未证明原历史、缺Key或损坏不生成替代身份。
 Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实际测试、Key备份/维护CLI、
-新Artifact跨重启原正文来源认证见[总体与详设](changes/m09-4a-authenticated-artifact-body.md)；旧行、Key保护备份/维护CLI、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。
+新Artifact跨重启原正文来源认证见[总体与详设](changes/m09-4a-authenticated-artifact-body.md)；旧行、完整恢复、物理DB归属、全部Provider/Owner/SDK/MCP及整体0.9仍未关闭。
+
+### 完整停机备份与候选验真
+
+正式`state backup/verify`复用根外Owner和原Key证明，捕获六库、可选Process事实及Blob；
+全部库保留写锁、SQLite Backup、私有有界文件端口、原Schema/MAC/引用只读核验和独立本机回执
+见[总体及详细设计](changes/m09-r1-product-state-backup.md)。既有领域Store的只读分支不初始化或补签。
+备份不是第二个服务；共享只读SQLite端口只依赖标准库，不改变Agent Runtime和Action执行链。
+整体Root恢复发布与Restore Journal尚未交付，Windows端口不等于默认产品完整原生验收。

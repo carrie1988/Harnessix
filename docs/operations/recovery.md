@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
-code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
+version: 10
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -308,3 +308,20 @@ Artifact事实，不是数据合并；相关Action/Delivery/Process等其他数�
 双层跨进程Owner，但只处理产品内置来源，不接管MCP、Skill、Hook或自定义宿主Route；扫描规模、Operation归档、UNKNOWN告警和
 用户可见人工处置仍未完成。生产部署必须在0.9后续切片补齐操作权限、确认步骤、审计和真实故障演练后，才能把本设计转换为
 稳定运维产品能力。
+
+## 完整产品停机备份与只读验真
+
+`harnessix state backup`在全状态Owner内同时固定六库，SQLite Backup消费原已提交WAL，
+复制全部受管Blob、可选Process原事实及独立Key；原MAC/Schema/引用核验后才写根外本机回执并排他发布。
+`harnessix state verify`只读核验原制品与独立回执，原Root丢失时仍可验证；有当前Root时原Key必须匹配。
+详见[总体及详设](../changes/m09-r1-product-state-backup.md)。
+
+```bash
+harnessix state backup --state-directory "$STATE_DIRECTORY" --backup-directory "$BACKUP_DIRECTORY"
+harnessix state verify --state-directory "$STATE_DIRECTORY" --backup-directory "$BACKUP_DIRECTORY"
+```
+
+目标父目录必须受信且已存在；目标不覆盖、不与产品Root/锚点/受管Workspace重叠。
+制品与根外锚点都属于私有数据，不进入Git或公开诊断。已知WAL/SHM合法消失不等于业务数据消失。
+当前尚无整体`state restore`；不得逐库覆盖、复制锁文件或调用旧认证Store拒绝的单库维护路径作为替代。
+整体目录发布、Restore Journal、旧Root保留、崩溃结算及三平台实际恢复仍是R1/R4必需工作。

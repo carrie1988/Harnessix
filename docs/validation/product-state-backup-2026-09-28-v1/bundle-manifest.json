@@ -1,0 +1,120 @@
+{
+  "source_revision": "7519a8e69887ad32532bd45845597fd861445193",
+  "files": [
+    {
+      "path": "README.md",
+      "size": 9714,
+      "sha256": "a50a6311480ff4398256a6ef0399df0fa6f70de8d8bbe40171ff51a8cc12d19a"
+    },
+    {
+      "path": "contract-facts.json",
+      "size": 1400,
+      "sha256": "cf53e36f92d64ca26a1e73309241e478a147ccbbf76af53c5c3749da7d2f1289"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "size": 644,
+      "sha256": "1bcbbb488b1e6a5fc6405612c90cbef0536586f74266820ce6186b8e2fb4387e"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "size": 52142,
+      "sha256": "d44aa6a72b3cfe4cd6bce36fc499b4e7dbcd1782a8a1e5f1379b85d052a4707f"
+    },
+    {
+      "path": "diagrams/dataflow.mmd",
+      "size": 684,
+      "sha256": "ec4752bc021783f3cfe60fdde6c9a038c3df22b2d418c2bee65d597ee24372ef"
+    },
+    {
+      "path": "diagrams/dataflow.png",
+      "size": 59008,
+      "sha256": "a16f361eb89f92c961b668780ed8d4ba039aa9d978c059ab98c64b6e2e8a3bde"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "size": 671,
+      "sha256": "4d2c6a5d0b77b97c08713b7fe0177a7b82c5b70dbf03ea1a67b6b365f72c93f7"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "size": 71016,
+      "sha256": "cb257824d2c3afe487693d5bc6ec79d01559e65d713ce6d6b7b7face713dda51"
+    },
+    {
+      "path": "logs/affected-python313.txt",
+      "size": 1965,
+      "sha256": "757682f602a7362bdc1cab7bb27774b32a34010f9a2707bf327bbe49062f0f60"
+    },
+    {
+      "path": "logs/blob-drift-red.txt",
+      "size": 1364,
+      "sha256": "9b0008836c869cc522dc488375e116afdbd044ee05b845ecaf12f34f4383d513"
+    },
+    {
+      "path": "logs/cli-compatibility.txt",
+      "size": 98,
+      "sha256": "e5d5f1394812085dbd5763bfb60de5f0e2997a913674ff88d465f1f6436ceba9"
+    },
+    {
+      "path": "logs/documentation-final.json",
+      "size": 191,
+      "sha256": "ceed835053a9a1ff0c40956dbf148ab074ac3db3f530514b732b8dd5301e859f"
+    },
+    {
+      "path": "logs/focused-python313.txt",
+      "size": 110,
+      "sha256": "64d51564f638a2fa69a96c8a87b7808f0bbce9f418ba57f7f221d96e75c814f6"
+    },
+    {
+      "path": "logs/governance-final.txt",
+      "size": 99,
+      "sha256": "187128b0f03a821ab91cd7c9c97d2332dbd0dfff50a7658f5055e7d28db2c5a1"
+    },
+    {
+      "path": "logs/independent-affected-python312.txt",
+      "size": 1965,
+      "sha256": "f136673c1d8a097fc80485f0455d6235f033afff1bce60d3c1a33f0419c7a5f6"
+    },
+    {
+      "path": "logs/independent-focused-python312.txt",
+      "size": 110,
+      "sha256": "2c47c8addc17757cd08dcf4cc323f6d70a5becd27a2645eb64a51b78000c321f"
+    },
+    {
+      "path": "logs/publication-confirmation-red.txt",
+      "size": 2693,
+      "sha256": "7acf6a019671541762b05f231f58c6b3a0c7af1cf100a0e4511293de69dee943"
+    },
+    {
+      "path": "logs/secret-scan-final.txt",
+      "size": 101,
+      "sha256": "1f310c687a86fb9da8c2280997b7921af8d4131d9c42ea19d433b2b55ad73709"
+    },
+    {
+      "path": "logs/sqlite-sidecar-red.txt",
+      "size": 4064,
+      "sha256": "6e39e584b67987934a3e4d8a9cbd55f923f0a6e031db4042836a33bed8416159"
+    },
+    {
+      "path": "logs/static.txt",
+      "size": 92,
+      "sha256": "510d28731a0ecfcc46f5db1b552e238b7b1fa3764c14a378fdfdf1b1f7ea8252"
+    },
+    {
+      "path": "review-packet.md",
+      "size": 4029,
+      "sha256": "1827ac81f669dba3c439809c5a04b50fe35f8e83bb590e815bbe1bd95d4f7aee"
+    },
+    {
+      "path": "verification.json",
+      "size": 4978,
+      "sha256": "4ee380f589a66ebfffdb12fe6d902b1b3689715bbe72ac6375b7850b907ccbd2"
+    },
+    {
+      "path": "wheel-observation.json",
+      "size": 4143,
+      "sha256": "abf8ac58ab9089b8eff820a84e96e1ccb5239adfc443ebd6a84b4b6334725fcb"
+    }
+  ]
+}

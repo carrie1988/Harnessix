@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 11
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -1643,3 +1643,15 @@ Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Pat
 专项167项包含原48项Owner矩阵及119项新增；独立旧版35个未拒绝负例已复现。
 六种入口分别在新Python进程导入，复用DTO不引入反向包依赖或新增依赖环，不放宽可读性门禁。
 custom成功正文、Secret端到端公开权限、Owner/Store内部资源及完整发布门禁仍开放，不据此关闭0.9.4a。
+
+## Workspace Transaction与CAS Blob的完整备份
+
+[`SQLiteWorkspaceTransactionStore`](../../src/harnessix/delivery/store.py)提供显式只读构造模式，
+在受管目录初始化、权限修改和DDL之前返回。候选库先通过Schema检查，再复用原Record/History Reader；
+该模式不会创建`blobs`目录或修复缺失文件。
+
+[`state_backup_records.py`](../../src/harnessix/product_config/state_backup_records.py)验证当前事务、连续历史版本、
+Plan身份及每个before/after文件引用的长度与SHA。所有受管Blob以原CAS路径复制并重新验真，
+单独复制事务数据库不构成完整备份。备份不得落入原认证Thread所属Git Workspace，避免原Key进入项目仓库。
+备份不写Workspace、不Commit、不回滚业务文件；整个产品状态恢复仍需后续独立实现。
+详见[产品备份的接口、数据流和失败语义](../changes/m09-r1-product-state-backup.md)。

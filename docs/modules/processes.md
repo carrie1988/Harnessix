@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 5402621ab7700f55382d78fa95681dfe3485c960
+version: 19
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - core
 modules:
@@ -1631,3 +1631,15 @@ Gateway核对Output SHA及ArtifactRef SHA，但Shape验证不替代Owner字节�
 [完整增量详设](../changes/m09-4a-typed-binary-output-publication.md)提供接口/字段、四种图、伪代码和逐步源码阅读路径；
 [固定版本验收](../validation/typed-binary-publication-2026-09-28-v1/README.md)区分真实本机Owner、产品合同替身、独立旧版负例及完整回归。
 普通自定义Base64、历史Session、跨重启正文证明、其他出口与整体发布仍开放，不能从当前切片推导全部Secret安全。
+
+## Process事实的停机备份与只读校验
+
+[`SQLiteProcessLeaseStore`](../../src/harnessix/processes/supervision_store.py)新增只读构造模式，不准备目录或执行DDL。
+完整备份可携带原Process Lease库和受管Run目录；缺少相应库的输出文件不能被接纳。
+原Lease的执行计划、Owner身份、回执HMAC及stdout/stderr摘要由
+[`state_backup_records.py`](../../src/harnessix/product_config/state_backup_records.py)核验。
+
+运行中Process事实拒绝形成停机备份；终态和`UNKNOWN`按原事实保存。
+验真不构造Supervisor，不读取历史PID的当前系统归属，不杀进程，也不再次执行命令。
+原生端口存在不证明完整Windows产品可用；平台限制和实际验收分别记录。
+完整持久化、取消、故障及测试范围见[产品备份详设](../changes/m09-r1-product-state-backup.md)。

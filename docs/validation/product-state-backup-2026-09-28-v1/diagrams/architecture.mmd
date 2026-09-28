@@ -1,0 +1,13 @@
+flowchart TB
+    CLI[State CLI 或 Python调用] --> Owner[原Root外稳定Owner]
+    Owner --> Quiet[独立Runtime锁和全部库保留写锁]
+    Quiet --> Source[受管原状态 私有FD或Handle]
+    Source --> Copy[SQLite Backup和有界文件复制]
+    Copy --> Candidate[自有私有候选目录]
+    Candidate --> Reader[原MAC与领域只读Reader]
+    Reader --> Receipt[根外本机可信回执]
+    Receipt --> Publish[不可覆盖目录发布]
+    Publish --> Bundle[Manifest和完整state目录]
+    Bundle --> Verify[只读验真]
+    Receipt --> Verify
+    Verify -. 后续待实现 .-> Restore[整体恢复与Restore Journal]

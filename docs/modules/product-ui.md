@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b
+version: 17
+code_revision: 7519a8e69887ad32532bd45845597fd861445193
 owners:
   - product
 modules:
@@ -960,6 +960,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 17 | `7519a8e69887ad32532bd45845597fd861445193` | 2026-09-28 | 同步顶层停机`state backup/verify`分派及低敏输出；在线TUI/Protocol不变，整体恢复和正式发行仍开放。 |
 | 16 | `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b` | 2026-09-23 | 记录Product App 20秒退出期限经本地全量回归和[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)三次六Job成功验收；旧Revision首次Windows失败的排他根因仍未证实。 |
 | 15 | `823ceac0c7ec250bb36cd0009946949ad8f094d2`后续候选 | 2026-09-23 | 统一Product App Ctrl+Q/卸载的20秒关闭期限，覆盖Transport默认10+5秒收尾预算；记录Windows首次CI失败和独立回归边界，不将单次重跑成功等同根因证明。 |
 | 14 | 基于`2983898358e6beb0dfb182dc80b5a85341c97d77`的候选实现 | 2026-09-20 | 同步顶层`coding-eval-suite`到Evals模块的默认禁网分派；明确该入口不进入Product UI状态或协议客户端 |
@@ -976,3 +977,14 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 3 | `ca656aa26cee7f1aefbe6b0cb85b5fc7e0336ec1` | 2026-09-13 | 记录0.9.1a在Linux Python 3.12/3.13、macOS和Windows矩阵全部通过，正式关闭客户端内核子切片 |
 | 2 | `085649da9aa27192c9f67ee35ee5471fdd33ce6d` | 2026-09-13 | 将Product UI专项测试纳入Linux全量、macOS Coding Tools和Windows Trusted Execution三平台CI矩阵 |
 | 1 | `608c548feb909aa5ae572bab7db35859283d3d01` | 2026-09-13 | 建立Client State、原子Store、投影Reducer、连接代际、Prepared Command及SDK协商门禁的现行设计 |
+## 停机状态命令与在线产品界面的边界
+
+顶层[`cli.py`](../../src/harnessix/cli.py)新增`state`懒加载分派，委派
+[`state_backup_cli.py`](../../src/harnessix/product_config/state_backup_cli.py)的`backup`与`verify`命令。
+该入口是停机维护命令，不启动TUI、App Server或Provider，也不引入第二个Action服务。
+在线`code`和`agent-server`命令、Agent Protocol及TUI交互保持原合同，不新增在线备份按钮。
+
+CLI仅输出`status/backup_id/files/size_bytes`摘要。稳定Kernel错误输出固定码和消息，内部异常转换为固定失败，
+不输出原Key、会话正文、内部路径或原始异常。当前没有`state restore`，用户不得将验真成功视为恢复完成。
+安装前置、状态/Workspace边界、取消、发布确认丢失和平台限制见
+[完整设计](../changes/m09-r1-product-state-backup.md)及[实际验证](../validation/product-state-backup-2026-09-28-v1/README.md)。
