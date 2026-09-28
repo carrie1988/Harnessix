@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: c4f062abbbfc7725a3f7385d28216b6021e88d2f
+version: 6
+code_revision: a13cec8c264a10411fe8c35421192dc6f7716adb
 owners: [core]
 modules: [product_config, workspace, processes, delivery]
 related_adrs:
@@ -10,6 +10,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_state_metadata_listing_contracts.py
   - tests/product_config/test_state_database_flush_contracts.py
   - tests/product_config/test_state_windows_publication_contracts.py
   - tests/product_config/test_windows_backup_diagnostics.py
@@ -496,3 +497,48 @@ after original validation and trusted receipt/Intent:
 
 没有数据Schema、依赖、公开协议或安装参数变化。原Windows 11本地NTFS首发边界不扩大；
 其他平台、卷和跨机迁移不得按模拟测试宣传支持。原生候选通过前仍不关闭R1/R4。
+
+## 19. 枚举与原排他锁的共享合同
+
+实现`a13cec8`的[原生Job](https://github.com/carrie1988/Harnessix/actions/runs/36440581974/job/108989695092)
+为88通过、5跳过、1失败，前置写链59通过；目录发布、文件/Root Handle关闭、SQLite同步及原文件端口均通过。
+唯一失败在持有原`action-audit.db.runtime.lock`时，备份再次枚举该锁文件并申请GENERIC_READ，
+与原排他数据Handle发生自冲突。错误不是原Key损坏，不能通过跳过锁、把已知生命周期文件全视为可信
+或允许其他读写者共享锁正文规避。两个本地Python环境相关回归各3358通过、81跳过。
+
+### 19.1 接口、数据流与核心逻辑
+
+`PrivateStateTree.open_file(..., metadata_only=True)`在Windows只取得原READ_CONTROL/READ_ATTRIBUTES，
+禁止与create/writable组合；POSIX维持原只读FD。只有枚举调用此模式，正常复制、摘要、原来源读取和锁持有者
+仍采用原正文读写端口。将原native Handle转为CRT FD仅供fstat与统一回收，不取得底层正文读取权。
+
+```mermaid
+flowchart LR
+  O[原排他锁Handle 无数据共享] --> L[保持整个备份静默窗口]
+  E[逐文件枚举] --> M[原元数据端口 无正文访问 无DELETE共享]
+  M --> P[原父链 身份 Reparse 链接 Owner DACL]
+  P --> R[原生前后修订核验及FD关闭]
+  R --> S[完整文件集合]
+  S --> F[原已知生命周期分类 不复制锁正文]
+  L --> F
+```
+
+```text
+for every regular entry, including known lifecycle files:
+    open_file(entry, metadata_only=platform_is_windows)
+    require original parent and leaf private identity/permission contract
+    require native revisions agree; close original FD/Handle
+    record entry in full observed set
+only afterward original backup layout filters known ephemeral files
+```
+
+原`ephemeral_state_file`分类、路径集合前后比较、已知消失容忍和其他漂移拒绝不变。
+不是把生命周期文件排除出安全核验；原排他锁数据访问和共享设置完全不变。
+
+### 19.2 失败、测试与状态
+
+[枚举合同](../../tests/product_config/test_state_metadata_listing_contracts.py)验证Windows元数据访问、
+POSIX原只读访问、逐项包括锁文件及变更组合在对象操作前拒绝。
+原生端口新增活跃排他锁下成功列举，同时正式正文读取仍拒绝的正反断言。
+原Key和状态ACL、Hardlink/Junction、取消、原来源认证、恢复状态机及未知效果均不豁免。
+新原生候选成功前仍保留默认SDK完整链失败，R1/R4不关闭。

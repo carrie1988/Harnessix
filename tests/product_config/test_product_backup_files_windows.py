@@ -38,6 +38,19 @@ def test_running_state_directory_and_sqlite_children_have_private_inheritance(tm
         database.rollback()
 
 
+def test_private_listing_observes_metadata_without_reopening_exclusive_lock_data(tmp_path):
+    root = tmp_path / "private"
+    create_private_tree(root)
+    with PrivateStateTree(root) as tree:
+        with tree.open_file("action-audit.db.runtime.lock", create=True) as original:
+            os.write(original, b"\0")
+            os.fsync(original)
+            assert tree.files(MaintenanceIOControl()) == ("action-audit.db.runtime.lock",)
+            # 只有元数据观察可并存；正式正文读端口仍必须拒绝原排他锁。
+            with pytest.raises(KernelError):
+                read_small(tree, "action-audit.db.runtime.lock", 16)
+
+
 def test_ordinary_mkdir_acl_is_rejected_without_repair(tmp_path):
     from harnessix.product_config.server import _private_root
 

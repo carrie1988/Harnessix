@@ -100,10 +100,17 @@ class PrivateStateTree:
                 files.kernel.CloseHandle(handle)
 
     def open_file(
-        self, relative: str, *, create: bool = False, writable: bool = False
+        self,
+        relative: str,
+        *,
+        create: bool = False,
+        writable: bool = False,
+        metadata_only: bool = False,
     ) -> AbstractContextManager[int]:
         """原句柄验权及关闭后复核；创建只允许自有新文件，不覆盖原对象。"""
-        return _open_private_file(self, relative, create=create, writable=writable)
+        return _open_private_file(
+            self, relative, create=create, writable=writable, metadata_only=metadata_only
+        )
 
     def files(
         self,
@@ -294,8 +301,15 @@ def _posix_directory(
 
 @contextmanager
 def _open_private_file(
-    tree: PrivateStateTree, relative: str, *, create: bool = False, writable: bool = False
+    tree: PrivateStateTree,
+    relative: str,
+    *,
+    create: bool = False,
+    writable: bool = False,
+    metadata_only: bool = False,
 ) -> Iterator[int]:
+    if metadata_only and (create or writable):
+        raise ValueError("元数据观察不能创建或修改文件")
     parts = _parts(relative)
     tree.checkpoint()
     if create and len(parts) > 1:
@@ -326,6 +340,7 @@ def _open_private_file(
                 create=1 if create else 3,
                 writable=create or writable,
                 exclusive=create or writable,
+                metadata_only=metadata_only,
             )
             try:
                 descriptor = int(
@@ -430,7 +445,8 @@ def _tree_files(
                 pending.append(relative)
             elif stat.S_ISREG(info.st_mode):
                 try:
-                    with tree.open_file(relative):
+                    # 列举不读取正文；元数据Handle可在原排他锁存活时逐对象验权。
+                    with tree.open_file(relative, metadata_only=os.name == "nt"):
                         pass
                 except FileNotFoundError:
                     # 已识别的SQLite生命周期文件可由最后一个只读连接合法移除。

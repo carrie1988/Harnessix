@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 34
-code_revision: c4f062abbbfc7725a3f7385d28216b6021e88d2f
+version: 35
+code_revision: a13cec8c264a10411fe8c35421192dc6f7716adb
 owners:
   - core
 modules:
@@ -2123,3 +2123,5 @@ Windows叶修订不混用Python的FD ChangeTime与路径兼容创建时间，改
 备份目录、Root切换与Restore Journal发布由[state_backup_windows](../../src/harnessix/product_config/state_backup_windows.py)
 复用原同目录NT句柄Rename；flags=0，不覆盖、不重试、不绕过权限，资源归原ExitStack回收。
 完整字段、流程、失败及测试映射见同一详设第18节；原生未通过前仍是实现候选。
+文件集合枚举在Windows只申请原元数据访问，不与原排他运行锁重新争用正文读权；仍逐项检查所有生命周期文件，
+随后才由原布局分类排除锁正文复制。不能扩大原锁共享或跳过对象验权，完整合同及正反测试见详设第19节。
