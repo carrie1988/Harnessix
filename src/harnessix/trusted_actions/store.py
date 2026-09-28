@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import utc_now
+from harnessix.sqlite_readonly import readonly_database
 from harnessix.trusted_actions.contracts import (
     ActionAuditEvent,
     ActionRoutePlan,
@@ -44,12 +45,17 @@ class SQLiteActionAuditStore(
 ):
     """不可变Route Plan、当前投影和append-only审计事件。"""
 
-    def __init__(self, path: str | Path, *, require_runtime_owner: bool = False) -> None:
+    def __init__(
+        self, path: str | Path, *, require_runtime_owner: bool = False, read_only: bool = False
+    ) -> None:
         self._path = Path(path)
         self._closed = False
         self._require_runtime_owner = require_runtime_owner
         self._runtime_fence = None
-        self._prepare_parent()
+        if read_only:
+            self._db = readonly_database(self._path)
+            return
+        _prepare_parent(self._path)
         self._db = sqlite3.connect(self._path, isolation_level=None, timeout=5)
         try:
             self._db.execute("PRAGMA busy_timeout = 5000")
@@ -63,11 +69,6 @@ class SQLiteActionAuditStore(
             self._db.close()
             self._closed = True
             raise
-
-    def _prepare_parent(self) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        if os.name == "posix":
-            self._path.parent.chmod(0o700)
 
     def _initialize(self) -> None:
         self._db.execute(
@@ -290,3 +291,9 @@ class SQLiteActionAuditStore(
 
     def __exit__(self, *_: object) -> None:
         self.close()
+
+
+def _prepare_parent(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if os.name == "posix":
+        path.parent.chmod(0o700)

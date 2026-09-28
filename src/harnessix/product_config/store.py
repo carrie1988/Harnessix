@@ -35,10 +35,15 @@ def _is_link_or_junction(path: Path) -> bool:
 class SQLiteProductConfigStore:
     """保存不含Secret值的配置快照、激活事实与Fallback Hash链。"""
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, *, read_only: bool = False) -> None:
         self.path = Path(path).absolute()
         self._closed = False
-        self._prepare_path()
+        if read_only:
+            from harnessix.sqlite_readonly import readonly_database
+
+            self._db = readonly_database(self.path)
+            return
+        _prepare_path(self.path)
         self._db = sqlite3.connect(self.path, isolation_level=None, timeout=5)
         try:
             self._db.execute("PRAGMA busy_timeout = 5000")
@@ -52,41 +57,6 @@ class SQLiteProductConfigStore:
             self._db.close()
             self._closed = True
             raise
-
-    def _prepare_path(self) -> None:
-        try:
-            parent = self.path.parent
-            if parent.exists() or _is_link_or_junction(parent):
-                parent_info = parent.lstat()
-                if not stat.S_ISDIR(parent_info.st_mode) or _is_link_or_junction(parent):
-                    raise OSError
-            else:
-                parent.mkdir(parents=True, mode=0o700)
-                parent_info = parent.lstat()
-            if os.name == "posix" and (
-                parent_info.st_uid != os.getuid() or stat.S_IMODE(parent_info.st_mode) != 0o700
-            ):
-                raise OSError
-            if not self.path.exists() and not _is_link_or_junction(self.path):
-                flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-                flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-                descriptor = os.open(self.path, flags, 0o600)
-                os.close(descriptor)
-            info = self.path.lstat()
-            if (
-                not stat.S_ISREG(info.st_mode)
-                or info.st_nlink != 1
-                or (
-                    os.name == "posix"
-                    and (info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600)
-                )
-            ):
-                raise OSError
-        except OSError:
-            raise KernelError(
-                "product_config_store_permissions",
-                "产品配置存储路径权限或身份不安全",
-            ) from None
 
     def _initialize(self) -> None:
         self._db.execute(
@@ -494,3 +464,39 @@ class SQLiteProductConfigStore:
 
     def __exit__(self, *_: object) -> None:
         self.close()
+
+
+def _prepare_path(path: Path) -> None:
+    try:
+        parent = path.parent
+        if parent.exists() or _is_link_or_junction(parent):
+            parent_info = parent.lstat()
+            if not stat.S_ISDIR(parent_info.st_mode) or _is_link_or_junction(parent):
+                raise OSError
+        else:
+            parent.mkdir(parents=True, mode=0o700)
+            parent_info = parent.lstat()
+        if os.name == "posix" and (
+            parent_info.st_uid != os.getuid() or stat.S_IMODE(parent_info.st_mode) != 0o700
+        ):
+            raise OSError
+        if not path.exists() and not _is_link_or_junction(path):
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+            descriptor = os.open(path, flags, 0o600)
+            os.close(descriptor)
+        info = path.lstat()
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_nlink != 1
+            or (
+                os.name == "posix"
+                and (info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600)
+            )
+        ):
+            raise OSError
+    except OSError:
+        raise KernelError(
+            "product_config_store_permissions",
+            "产品配置存储路径权限或身份不安全",
+        ) from None

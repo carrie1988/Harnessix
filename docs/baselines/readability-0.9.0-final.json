@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 367,
-    "physical_lines": 79416,
-    "logical_lines": 70347,
-    "documented_modules": 367,
-    "classes": 864,
-    "documented_classes": 353,
-    "functions": 3201,
-    "documented_functions": 520,
+    "source_files": 374,
+    "physical_lines": 80973,
+    "logical_lines": 71726,
+    "documented_modules": 374,
+    "classes": 869,
+    "documented_classes": 356,
+    "functions": 3267,
+    "documented_functions": 540,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 145
+    "package_dependency_edges": 150
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -717,8 +717,8 @@
       "path": "src/harnessix/delivery/store.py",
       "qualname": "SQLiteWorkspaceTransactionStore",
       "kind": "class",
-      "line": 34,
-      "lines": 326,
+      "line": 35,
+      "lines": 314,
       "documented": true
     },
     {
@@ -869,8 +869,8 @@
       "path": "src/harnessix/execution/store.py",
       "qualname": "SQLiteExecutionPlanStore",
       "kind": "class",
-      "line": 25,
-      "lines": 176,
+      "line": 26,
+      "lines": 174,
       "documented": true
     },
     {
@@ -1291,8 +1291,8 @@
       "path": "src/harnessix/processes/supervision_store.py",
       "qualname": "SQLiteProcessLeaseStore",
       "kind": "class",
-      "line": 31,
-      "lines": 216,
+      "line": 32,
+      "lines": 212,
       "documented": true
     },
     {
@@ -1385,7 +1385,7 @@
       "qualname": "SQLiteProductConfigStore",
       "kind": "class",
       "line": 35,
-      "lines": 462,
+      "lines": 432,
       "documented": true
     },
     {
@@ -1620,7 +1620,7 @@
       "path": "src/harnessix/trusted_actions/store.py",
       "qualname": "SQLiteActionAuditStore",
       "kind": "class",
-      "line": 42,
+      "line": 43,
       "lines": 251,
       "documented": true
     },
@@ -1724,6 +1724,7 @@
     "delivery->agent",
     "delivery->domain",
     "delivery->execution",
+    "delivery->sqlite_readonly",
     "delivery->tools",
     "delivery->trusted_actions",
     "delivery->workspace",
@@ -1740,6 +1741,7 @@
     "evals->tools",
     "execution->agent",
     "execution->domain",
+    "execution->sqlite_readonly",
     "execution->tools",
     "execution->workspace",
     "file_lock->domain",
@@ -1768,6 +1770,7 @@
     "processes->domain",
     "processes->execution",
     "processes->secrets",
+    "processes->sqlite_readonly",
     "processes->tools",
     "processes->workspace",
     "product_config->agent",
@@ -1784,6 +1787,7 @@
     "product_config->sandbox",
     "product_config->secrets",
     "product_config->session",
+    "product_config->sqlite_readonly",
     "product_config->tools",
     "product_config->trusted_actions",
     "product_config->workspace",
@@ -1829,6 +1833,7 @@
     "trusted_actions->domain",
     "trusted_actions->execution",
     "trusted_actions->processes",
+    "trusted_actions->sqlite_readonly",
     "trusted_actions->tools",
     "trusted_actions->workspace",
     "workspace->agent",

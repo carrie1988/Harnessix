@@ -19,6 +19,7 @@ from harnessix.delivery.contracts import (
     new_transaction_record,
 )
 from harnessix.delivery.planner import PreparedWorkspaceTransaction
+from harnessix.sqlite_readonly import readonly_database
 
 _SCHEMA_VERSION = "1"
 _TRANSITIONS: dict[TransactionState, frozenset[TransactionState]] = {
@@ -34,13 +35,16 @@ _TRANSITIONS: dict[TransactionState, frozenset[TransactionState]] = {
 class SQLiteWorkspaceTransactionStore:
     """私有CAS与append-only事务账本；文件正文不进入公开Plan。"""
 
-    def __init__(self, root: str | Path) -> None:
+    def __init__(self, root: str | Path, *, read_only: bool = False) -> None:
         self._root = Path(root)
         self._closed = False
-        self._prepare_directory(self._root)
         self._blobs = self._root / "blobs"
-        self._prepare_directory(self._blobs)
         self._path = self._root / "transactions.db"
+        if read_only:
+            self._db = readonly_database(self._path)
+            return
+        _prepare_directory(self._root)
+        _prepare_directory(self._blobs)
         self._db = sqlite3.connect(self._path, isolation_level=None, timeout=5)
         try:
             self._db.execute("PRAGMA busy_timeout = 5000")
@@ -332,21 +336,6 @@ class SQLiteWorkspaceTransactionStore:
         except (ValidationError, ValueError, TypeError):
             raise KernelError("delivery_record_invalid", "Workspace事务记录无效") from None
 
-    @staticmethod
-    def _prepare_directory(path: Path) -> None:
-        try:
-            path.mkdir(mode=0o700, parents=True, exist_ok=True)
-            info = path.stat(follow_symlinks=False)
-            if not stat.S_ISDIR(info.st_mode) or path.is_symlink():
-                raise OSError
-            if os.name == "posix":
-                path.chmod(0o700)
-                info = path.stat(follow_symlinks=False)
-                if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
-                    raise OSError
-        except OSError:
-            raise KernelError("delivery_store_invalid", "Workspace事务私有目录无效") from None
-
     def close(self) -> None:
         if not self._closed:
             self._db.close()
@@ -375,3 +364,18 @@ def _fsync_directory(path: Path) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+def _prepare_directory(path: Path) -> None:
+    try:
+        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        info = path.stat(follow_symlinks=False)
+        if not stat.S_ISDIR(info.st_mode) or path.is_symlink():
+            raise OSError
+        if os.name == "posix":
+            path.chmod(0o700)
+            info = path.stat(follow_symlinks=False)
+            if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
+                raise OSError
+    except OSError:
+        raise KernelError("delivery_store_invalid", "Workspace事务私有目录无效") from None

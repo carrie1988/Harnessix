@@ -16,6 +16,7 @@ from harnessix.execution.contracts import (
     ExecutionPlan,
     ExecutionPlanV2,
 )
+from harnessix.sqlite_readonly import readonly_database
 
 _SCHEMA_VERSION = "1"
 ExecutionPlanAny = ExecutionPlan | ExecutionPlanV2
@@ -25,10 +26,13 @@ _PLAN_ADAPTER: TypeAdapter[ExecutionPlanAny] = TypeAdapter(ExecutionPlanAny)
 class SQLiteExecutionPlanStore:
     """持久化不可变ExecutionPlan和一次性审批检查点。"""
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, *, read_only: bool = False) -> None:
         self._path = Path(path)
         self._closed = False
-        self._prepare_parent()
+        if read_only:
+            self._db = readonly_database(self._path)
+            return
+        _prepare_parent(self._path)
         self._db = sqlite3.connect(self._path, isolation_level=None, timeout=5)
         try:
             self._db.execute("PRAGMA busy_timeout = 5000")
@@ -42,11 +46,6 @@ class SQLiteExecutionPlanStore:
             self._db.close()
             self._closed = True
             raise
-
-    def _prepare_parent(self) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        if os.name == "posix":
-            self._path.parent.chmod(0o700)
 
     def _initialize(self) -> None:
         self._db.execute(
@@ -198,3 +197,9 @@ class SQLiteExecutionPlanStore:
 
     def __exit__(self, *_: object) -> None:
         self.close()
+
+
+def _prepare_parent(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if os.name == "posix":
+        path.parent.chmod(0o700)

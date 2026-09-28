@@ -23,6 +23,7 @@ def _parser() -> argparse.ArgumentParser:
     subcommands.add_parser("code", help="启动全屏Coding Agent终端产品")
     subcommands.add_parser("agent-server", help="按产品配置运行stdio App Server")
     subcommands.add_parser("config", help="诊断或迁移产品配置")
+    subcommands.add_parser("state", help="停机备份并验证完整产品状态")
     subcommands.add_parser("license", help="显示社区许可证、源代码和商业许可信息")
     return parser
 
@@ -64,6 +65,11 @@ def _delegate_special_command(args: list[str]) -> bool:
         from harnessix.product_config.cli import config_main
 
         config_main(args[1:])
+        return True
+    if args[0] == "state":
+        from harnessix.product_config.state_backup_cli import state_main
+
+        state_main(args[1:])
         return True
     return False
 

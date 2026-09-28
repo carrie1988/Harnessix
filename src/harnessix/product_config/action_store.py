@@ -25,8 +25,10 @@ from harnessix.trusted_actions.recovery_contracts import ActionRecoveryScanRepor
 class SQLiteProductRuntimeConfigStore(SQLiteProductConfigStore):
     """协调模型配置与Action配置，使两个活动指针在同一事务中切换。"""
 
-    def __init__(self, path: str | Path) -> None:
-        super().__init__(path)
+    def __init__(self, path: str | Path, *, read_only: bool = False) -> None:
+        super().__init__(path, read_only=read_only)
+        if read_only:
+            return
         try:
             _initialize_action_store(self._db)
         except BaseException:

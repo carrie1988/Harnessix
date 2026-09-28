@@ -15,6 +15,7 @@ from harnessix.processes.supervision_contracts import (
     ProcessLeaseState,
     process_lease_binding,
 )
+from harnessix.sqlite_readonly import readonly_database
 
 _SCHEMA_VERSION = "2"
 _TRANSITIONS: dict[ProcessLeaseState, frozenset[ProcessLeaseState]] = {
@@ -31,9 +32,12 @@ _TRANSITIONS: dict[ProcessLeaseState, frozenset[ProcessLeaseState]] = {
 class SQLiteProcessLeaseStore:
     """以完整快照事件持久化Process Lease；不以数字PID作为恢复权限。"""
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, *, read_only: bool = False) -> None:
         self._path = Path(path)
         self._closed = False
+        if read_only:
+            self._db = readonly_database(self._path)
+            return
         self._path.parent.mkdir(parents=True, exist_ok=True)
         if os.name == "posix":
             self._path.parent.chmod(0o700)
@@ -89,7 +93,7 @@ class SQLiteProcessLeaseStore:
         )
 
     def create(self, lease: ProcessLease) -> None:
-        checked = self._validate(lease)
+        checked = _validate(lease)
         if checked.state != "prepared" or checked.sequence != 0:
             raise KernelError("process_lease_invalid", "新Process Lease必须从prepared/0开始")
         payload = checked.model_dump_json(warnings="error")
@@ -131,8 +135,8 @@ class SQLiteProcessLeaseStore:
             raise
 
     def transition(self, current: ProcessLease, updated: ProcessLease) -> None:
-        before = self._validate(current)
-        after = self._validate(updated)
+        before = _validate(current)
+        after = _validate(updated)
         if (
             process_lease_binding(before) != process_lease_binding(after)
             or after.sequence != before.sequence + 1
@@ -227,13 +231,6 @@ class SQLiteProcessLeaseStore:
         except (ValidationError, ValueError, TypeError):
             raise KernelError("process_store_corrupt", "Process Lease存储记录损坏") from None
 
-    @staticmethod
-    def _validate(lease: ProcessLease) -> ProcessLease:
-        try:
-            return ProcessLease.model_validate_json(lease.model_dump_json(warnings="error"))
-        except (ValidationError, ValueError, TypeError):
-            raise KernelError("process_lease_invalid", "Process Lease不符合持久化契约") from None
-
     def close(self) -> None:
         if not self._closed:
             self._db.close()
@@ -244,3 +241,10 @@ class SQLiteProcessLeaseStore:
 
     def __exit__(self, *_: object) -> None:
         self.close()
+
+
+def _validate(lease: ProcessLease) -> ProcessLease:
+    try:
+        return ProcessLease.model_validate_json(lease.model_dump_json(warnings="error"))
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError("process_lease_invalid", "Process Lease不符合持久化契约") from None
