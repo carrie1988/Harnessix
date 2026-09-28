@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from harnessix.agent.errors import KernelError
-from harnessix.delivery import windows_io
+from harnessix.delivery import trusted_action, windows_io
 from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
 from harnessix.delivery.trusted_action import resolve_workspace_patch
 from harnessix.delivery.trusted_action_contracts import WorkspacePatchFile, WorkspacePatchInput
@@ -18,6 +18,7 @@ from harnessix.delivery.windows_io import (
     _rename_buffer,
     _RenameInfo,
 )
+from harnessix.execution.contracts import canonical_digest
 
 
 @pytest.mark.parametrize("replace", [False, True])
@@ -79,6 +80,38 @@ def test_leaf_share_write_is_never_enabled_and_share_delete_is_only_for_replace(
     assert operations.open_existing(Path("target.py"), delete=delete, replace=replace) == 17
     assert len(calls) == 1 and calls[0][2] == (5 if replace else 1)
     assert calls[0][1] & 0x10000 == (0x10000 if delete else 0)
+
+
+def test_windows_executor_evidence_changes_with_native_rename_semantics_without_changing_posix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    common = {
+        "action": "harnessix.workspace-patch/v1",
+        "member_checkpoint": True,
+        "reconcile_writes": False,
+    }
+    monkeypatch.setattr(trusted_action, "os", SimpleNamespace(name="posix"))
+    assert trusted_action.workspace_patch_executor_evidence() == canonical_digest(
+        {**common, "implementation": "workspace-transaction-runtime/v1", "platform": "posix"}
+    )
+    old_windows = {
+        **common,
+        "implementation": "workspace-transaction-runtime/windows-ntfs-v1",
+        "platform": "windows",
+        "file_mode": "logical-0644",
+        "metadata": "ordinary-stream-default-security",
+    }
+    monkeypatch.setattr(trusted_action, "os", SimpleNamespace(name="nt"))
+    assert trusted_action.workspace_patch_executor_evidence() != canonical_digest(old_windows)
+    assert trusted_action.workspace_patch_executor_evidence() == canonical_digest(
+        {
+            **old_windows,
+            "implementation": "workspace-transaction-runtime/windows-ntfs-v2",
+            "rename_api": "nt-same-directory-65",
+            "replacement_leaf_sharing": "read-delete",
+            "temporary_cleanup": "before-rename-request",
+        }
+    )
 
 
 def test_partial_writes_are_completed_before_single_flush() -> None:

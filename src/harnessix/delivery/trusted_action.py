@@ -85,11 +85,14 @@ def workspace_patch_executor_evidence() -> str:
     if os.name == "nt":
         return canonical_digest(
             {
-                "implementation": "workspace-transaction-runtime/windows-ntfs-v1",
+                "implementation": "workspace-transaction-runtime/windows-ntfs-v2",
                 "action": WORKSPACE_PATCH_VERSION,
                 "platform": "windows",
                 "file_mode": "logical-0644",
                 "metadata": "ordinary-stream-default-security",
+                "rename_api": "nt-same-directory-65",
+                "replacement_leaf_sharing": "read-delete",
+                "temporary_cleanup": "before-rename-request",
                 "member_checkpoint": True,
                 "reconcile_writes": False,
             }

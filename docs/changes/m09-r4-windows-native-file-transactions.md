@@ -263,6 +263,7 @@ Router取消/期限后进入既有UNKNOWN和只观察恢复，Lease在Executor�
 | `owner_id/fencing_token/expires_at` | 仍使用原Workspace Lease；过期不能开始下一成员 | 原Lease DB |
 | `RenameInfo.flags/root/name_bytes` | 创建flags=0，替换flags=3；Root为NULL表示源句柄同目录改名；名称只含叶名，长度为UTF-16LE字节且不含终止字符 | 临时内存 |
 | `IO_STATUS_BLOCK` | 原生返回状态及完成状态都必须确认成功；PENDING或失败进入原事务观察结算 | 临时内存 |
+| `executor_evidence_digest` | Windows采用`windows-ntfs-v2`并绑定NT同目录Rename、替换源共享模式与提交后禁止清理；初始候选摘要不复用，POSIX证明不变 | 原执行计划与Capability证明 |
 | `security digest` | Owner/Group/DACL与继承控制比较，完整SID/SDDL不进入公开输出或持久记录 | 临时内存 |
 
 普通属性只接受Archive/Normal，拒绝Readonly、Reparse、Directory、隐藏、压缩及加密等未支持属性。
