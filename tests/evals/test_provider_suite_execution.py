@@ -63,6 +63,69 @@ async def test_provider_suite_reuses_suite_runner_with_config_fingerprint(
     assert result.reason == "completed"
 
 
+@pytest.mark.parametrize(
+    "factory,digest",
+    [
+        (lambda *_: None, None),
+        (None, "a" * 64),
+        (lambda *_: None, "A" * 64),
+        (lambda *_: None, "short"),
+        (lambda *_: None, 123),
+    ],
+)
+async def test_custom_provider_factory_requires_explicit_binding(tmp_path, factory, digest):
+    config = provider_suite_config(tmp_path)
+    with pytest.raises(KernelError) as raised:
+        await run_task_pack_provider_suite(
+            config,
+            allow_network=True,
+            provider_factory=factory,
+            provider_binding_sha256=digest,
+        )
+    assert raised.value.code == "eval_provider_suite_binding_invalid"
+
+
+async def test_guarded_factory_is_bound_to_both_scope_and_suite(tmp_path, monkeypatch):
+    from harnessix.tools.workspace import digest
+
+    config = provider_suite_config(tmp_path)
+    guard_fingerprint = "a" * 64
+
+    def factory(*_):
+        pytest.fail("本测试不得构造HTTP Client")
+
+    expected = digest(
+        {"provider_suite_config": config.fingerprint, "provider_binding": guard_fingerprint}
+    )
+
+    def scope(checked, observability, **kwargs):
+        assert checked == config and observability is None
+        assert kwargs == {"provider_factory": factory, "provider_binding_sha256": expected}
+        return object()
+
+    async def run(suite, executor, **kwargs):
+        assert kwargs["execution_binding_sha256"] == expected
+        return CodingEvalSuiteRunReport(
+            reason="completed",
+            suite_id=suite.plan.suite_id,
+            scheduled_cases=10,
+            completed_cases=10,
+            report_published=True,
+            known_cost_currency="CNY",
+            known_cost_amount="0",
+        )
+
+    monkeypatch.setattr(provider_suite_execution, "_require_scope", scope)
+    monkeypatch.setattr(provider_suite_execution, "run_coding_eval_suite", run)
+    result = await run_task_pack_provider_suite(
+        config,
+        allow_network=True,
+        provider_factory=factory,
+        provider_binding_sha256=guard_fingerprint,
+    )
+    assert result.reason == "completed"
+
+
 def test_provider_suite_source_revision_mismatch_is_stable_error(
     tmp_path: Path,
     monkeypatch,
