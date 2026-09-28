@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -113,3 +115,39 @@ async def test_real_product_restart_child_closes_and_hard_exits_without_turn(tmp
     with SQLiteProductRuntimeConfigStore(state / "product-config.db") as store:
         assert [scan.owner_generation for scan in store.action_recovery_scans()] == [1, 2]
         assert len(store.action_recovery_reports()) == 2
+
+
+@pytest.mark.skipif(os.name != "nt", reason="原生Windows验证普通mkdir与私有Root拒绝")
+async def test_windows_child_refuses_precreated_state_without_repair(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    state = tmp_path / "state"
+    state.mkdir(mode=0o700)
+    sentinel = state / "preserved.bin"
+    sentinel.write_bytes(b"original fixture\n")
+    before = (
+        await asyncio.to_thread(
+            subprocess.run, ["icacls", str(state)], capture_output=True, check=True
+        )
+    ).stdout
+    config = _config(tmp_path / "config.json")
+    gate = tmp_path / "gate-rejected"
+    client = _client(config, workspace, state, gate)
+    try:
+        with pytest.raises(AgentSDKError) as error:
+            async with asyncio.timeout(30):
+                await client.initialize()
+        assert error.value.code == "server_closed"
+    finally:
+        await client.close()
+    # 原始低敏失败码定位真实组合根，不用模拟OS或放宽ACL把夹具变成成功。
+    assert (gate / "child-failure.txt").read_bytes() == b"KernelError:product_state_invalid\n"
+    assert not (gate / "child-result.json").exists()
+    assert sentinel.read_bytes() == b"original fixture\n"
+    assert {path.name for path in state.iterdir()} == {sentinel.name}
+    after = (
+        await asyncio.to_thread(
+            subprocess.run, ["icacls", str(state)], capture_output=True, check=True
+        )
+    ).stdout
+    assert after == before

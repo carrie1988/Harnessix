@@ -326,7 +326,7 @@ async def run_product_restart(
             workspace = root / "workspace"
             workspace.mkdir(mode=0o700)
             state = root / "state"
-            state.mkdir(mode=0o700)
+            # Root只能由正式组合根持锁创建；普通mkdir在Windows不满足私有ACL合同。
             config = root / "config.json"
             _write_offline_config(config)
             db_before, wal_before = _file_watermarks(state)

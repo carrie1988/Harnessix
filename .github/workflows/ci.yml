@@ -121,6 +121,11 @@ jobs:
           tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner
           -vv -o faulthandler_timeout=60
         timeout-minutes: 3
+      - name: 验证原生产品重启与State创建边界
+        run: >-
+          uv run pytest tests/benchmarks/test_soak_restart_child.py
+          tests/benchmarks/test_soak_restart.py -vv -o faulthandler_timeout=60
+        timeout-minutes: 3
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python -c "import harnessix"

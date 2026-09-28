@@ -20,8 +20,20 @@ def _revision() -> str:
 
 
 async def test_product_restart_uses_real_product_and_publishes_unverified_small_load(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from scripts import soak_restart
+
+    original = soak_restart._new_client
+    starts = []
+
+    def observe_state(config, workspace, state, gate):
+        # 首次Root必须由持有全状态Owner的正式组合根创建，而不是Runner预建。
+        assert state.exists() is bool(starts)
+        starts.append(state)
+        return original(config, workspace, state, gate)
+
+    monkeypatch.setattr(soak_restart, "_new_client", observe_state)
     root = tmp_path / "evidence"
     run_directory, manifest = await run_product_restart(
         root,
@@ -51,6 +63,10 @@ async def test_product_restart_uses_real_product_and_publishes_unverified_small_
     ]
     assert proof.hard_exit_ack and proof.hard_exit_eof
     assert all(cycle.recovery_scan.scanned_routes == 0 for cycle in proof.cycles)
+    assert len(starts) == 5 and len(set(starts)) == 1
+    assert all(value == 0 for value in proof.db_before_bytes_by_name.values())
+    assert all(value == 0 for value in proof.wal_before_bytes_by_name.values())
+    assert all(value > 0 for value in proof.db_after_bytes_by_name.values())
 
 
 async def test_product_restart_failure_keeps_failed_attempt_without_run(

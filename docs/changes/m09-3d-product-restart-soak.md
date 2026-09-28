@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
-code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
+version: 9
+code_revision: 126131c6bab642f247c2d384142c460e73637061
 owners:
   - core
 modules:
@@ -40,8 +40,8 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 需求 | 在真实`harnessix agent-server`产品组合根上，以相同持久State验证首次启动、500 Thread增长、受控硬退出后的恢复和多次新进程重启，并形成可独立读取的低敏发布证据。 |
-| 当前差距 | [`run_many_threads`](../../scripts/soak_many_threads.py)只测Agent Runtime与App Service。Restart Runner已覆盖完整产品组合根并取得三平台各一次正式基线；Profile及三平台第二独立候选PASS已归档；`action_recovery`仍未完成。 |
-| 本设计状态 | 评审中；V5 Proof/Manifest/Reader、真实产品子进程包装器、三平台正式规模基线、冻结Profile与第二独立候选PASS已实现；对应Revision常规CI已在失败文档Job重跑后六Job成功；其余Soak场景另行验收。 |
+| 当前差距 | [`run_many_threads`](../../scripts/soak_many_threads.py)只测Agent Runtime与App Service。Restart Runner历史三平台基线及第二独立候选PASS保持冻结；后继R1私有状态合同下，`9186cb2`的Windows两个Runner回归启动失败，当前需重新验证创建边界。 |
+| 本设计状态 | V5 Proof/Manifest/Reader和历史三平台固定场景已经实现并验收；第13节补充现行私有Root装配与Runner一致性修复，原生实际结果独立记录，不从历史PASS推导新候选通过。 |
 | 测量边界 | `product_startup`：新子进程首次`client.initialize()`开始至Agent Protocol完成握手，随后以全量列表、持久恢复报告和关闭结果证明可用。 |
 | 发布边界 | 基线、单平台Profile、负载前预绑定的第二独立Run、报告及常规CI分别验收；单次运行永不自称PASS。 |
 
@@ -135,7 +135,7 @@ sequenceDiagram
 
 ### 6.3 已实现的真实Runner与可观测边界
 
-[`run_product_restart`](../../scripts/soak_restart.py)在任何负载前发布`STARTED`，创建私有Workspace、State和固定离线配置，然后每个周期重新构造SDK Transport/Client。预热周期从空State握手后创建固定数量Thread；硬退出周期先全页比对持久集合，再触发包装器私有门闩，要求ACK和SDK观察到`server_closed`；正式周期分别测量新进程握手至协议就绪的单调时延。每次子进程关闭后，Runner重开[`SQLiteProductRuntimeConfigStore`](../../src/harnessix/product_config/action_store.py)核对恢复扫描、报告和Owner代际。六个产品SQLite主文件与WAL按固定逻辑名取端点水位；不存在的正式主文件或新增未知主文件均失败。正常退出子进程与Runner分别采集带单位证明的RSS，硬退出进程没有最终RSS，不伪填零。小负载回归只发布`unverified`；正式500 Thread已在干净Revision完成三平台基线和独立候选，常规CI状态单独记录。
+[`run_product_restart`](../../scripts/soak_restart.py)在任何负载前发布`STARTED`，创建隔离Workspace和固定离线配置，仅确定State地址、不预建Root，然后每个周期重新构造SDK Transport/Client。预热周期从空State握手后创建固定数量Thread；硬退出周期先全页比对持久集合，再触发包装器私有门闩，要求ACK和SDK观察到`server_closed`；正式周期分别测量新进程握手至协议就绪的单调时延。每次子进程关闭后，Runner重开[`SQLiteProductRuntimeConfigStore`](../../src/harnessix/product_config/action_store.py)核对恢复扫描、报告和Owner代际。六个产品SQLite主文件与WAL按固定逻辑名取端点水位；不存在的正式主文件或新增未知主文件均失败。正常退出子进程与Runner分别采集带单位证明的RSS，硬退出进程没有最终RSS，不伪填零。小负载回归只发布`unverified`；正式500 Thread已在干净Revision完成三平台基线和独立候选，常规CI状态单独记录。
 
 子进程包装器调用的是生产[`run_product_stdio`](../../src/harnessix/product_config/server.py)，不是另建的测试Server；门闩与RSS结果只进入私有临时目录，不是Agent Protocol方法。Wrapper强制覆盖专用假凭据，不配置任何真实Provider端点；Runner只调用Initialize/Create/List，不发送Turn。受控退出用ACK、stdio EOF和后续恢复验证界定，但Proof只能证明低敏摘要和现场采集相符，不能替代未来`action_recovery`对真实外部效果的独立验证。
 
@@ -171,7 +171,7 @@ Run文件在所有子进程终态、状态重读、Proof校验后才发布；`CO
 ```text
 validate_load_and_revision()
 persist_attempt_start_before_work()
-create_private_config_state_workspace_with_dummy_provider()
+create_isolated_config_workspace_and_bind_absent_state_address()
 warm = start_real_product_through_sdk()
 create_exact_threads_and_capture_identity_digest(warm)
 close_and_read_persisted_scan_report(warm)
@@ -199,3 +199,94 @@ on_failure: converge_child_and_record_failed_attempt_without_partial_pass()
 ## 12. 部署、兼容、回退与风险取舍
 
 Runner是离线开发/发行验收工具，不进入默认CLI或生产进程，不部署远程Worker、HTTP服务或数据库。生产协议和Session Schema不变；新增V5证据仅由新Reader分支读取，旧原件不可改写。若三平台Runner失败，保留失败Attempt和诊断日志、停止Profile冻结，不能回退为`many_threads`的较窄`app_service_startup`数字。风险包括硬退出门闩时序、Windows文件句柄、RSS缺失以及只凭摘要无法恢复原始Thread身份；分别用ACK→EOF握手、显式关闭、失败拒绝和运行时集合比对控制。正式阈值需在真实基线和工程评审后另行冻结，本设计不预填可随意放宽的数值。
+
+
+## 13. 现行私有Root创建边界与原生重启回归
+
+### 13.1 背景、根因假设与设计目标
+
+`9186cb2`的原生Windows Job完成事务/审批、Git/Owner、默认SDK完整备份恢复及认证Session专项，
+后继Benchmark却在两个完整产品重启用例中得到`soak_restart_startup_failed`。
+[固定原始记录](../validation/windows-private-state-2026-09-28-v1/README.md)保持只读。
+其他子进程回归未预建Root；Runner在启动前使用普通`Path.mkdir(mode=0o700)`预建State。
+现行Windows正式Root采用protected用户/SYSTEM双可继承ACE，普通mkdir不能代替此合同，
+且[`_private_root`](../../src/harnessix/product_config/server.py)只拒绝既有不符ACL，不静默改权。
+因此预建Root是可检验的共享故障候选，最终归因必须由实际原生子进程负对照和修复后原场景共同证明。
+
+目标不是降低私有权限，而是让测试编排与正式用户首次启动走同一创建路径：
+Runner绑定一个尚不存在的State地址，产品在原全状态Owner内创建Root，再打开Key、Store和Protocol。
+不引入第二个ACL创建器、不修复既有目录、不改变正式协议或任何已冻结Proof/阈值。
+
+### 13.2 总体架构、流程与数据流
+
+```mermaid
+flowchart TD
+    Attempt[持久STARTED] --> Setup[创建Workspace和离线Config]
+    Setup --> Address[只绑定尚不存在的State地址]
+    Address --> Watermark[六库及WAL初始水位为0]
+    Watermark --> Child[经SDK启动正式产品子进程]
+    Child --> Owner[取得根外稳定全状态Owner]
+    Owner --> Validate{Root是否已存在}
+    Validate -->|不存在| Create[正式端口创建平台私有Root]
+    Validate -->|存在| Check[原身份和权限验真]
+    Check -->|不符| Refuse[固定失败 不改ACL或正文]
+    Check -->|符合| Runtime[打开Key Store Runtime和Protocol]
+    Create --> Runtime
+    Runtime --> Cycles[原预热 硬退出 三次测量]
+    Cycles --> Proof[独立重读六库水位和V5证明]
+    Refuse --> Failed[原失败Attempt 不发布Run]
+```
+
+首周期Root不存在不等于缺少证据：`_file_watermarks(require_complete=False)`对不存在的六个DB/WAL
+保留完整逻辑名集合并逐项计0。全部周期结束后仍调用`require_complete=True`要求六库完整存在，
+不能用缺文件计0掩盖损坏。正常重启保留同一Root、原Key、Thread集合与递增Owner代际；
+受控硬退出仍先要求ACK，再观察EOF，随后从新进程恢复。
+
+### 13.3 接口、类、字段与源码映射
+
+| 位置 | 职责与关键数据 |
+|---|---|
+| [`run_product_restart`](../../scripts/soak_restart.py) | 编排Attempt、离线配置、五次实际启动与低敏V5发布；`state`仅是地址，不是Runner创建的授权事实 |
+| [`_file_watermarks`](../../scripts/soak_restart.py) | `require_complete=False`允许首次Root缺失；终态`True`保持六库完整性拒绝；各水位单位为物理字节 |
+| [`product_state_owner`](../../src/harnessix/product_config/state_owner.py) | Root创建、Key/Store和Runtime之前取得根外稳定互斥；不由Runner代持或预建Root |
+| [`_private_root`](../../src/harnessix/product_config/server.py) | 正式POSIX/Windows创建与验权；Windows既有宽ACL固定拒绝为`product_state_invalid` |
+| [`private_state_directory`](../../src/harnessix/workspace/windows_private_directory.py) | 原锚定父链、原生Handle和用户/SYSTEM私有继承合同，不修改存量安全描述符 |
+| [`soak_restart_child.main`](../../scripts/soak_restart_child.py) | 真实组合根错误只写原私有低敏`child-failure.txt`；不输出异常正文、路径、凭据或stderr |
+| [`SoakRestartProof`](../../scripts/soak_restart_proof.py) | 原身份集合摘要、Owner代际、ACK/EOF和六库DB/WAL前后水位；Schema与规范字节不变 |
+
+核心伪代码：
+
+```text
+persist_original_started()
+create_workspace_and_dummy_config()
+state = bind_address_without_creating_root()
+assert_before_watermarks_are_zero_for_all_six_db_and_wal_names()
+for original_five_cycles:
+    start_original_product_child(state)
+    product_acquires_original_state_owner()
+    product_creates_or_validates_original_private_root()
+    verify_original_threads_ack_eof_generations_and_close()
+require_complete_six_database_watermarks()
+publish_original_v5_proof_and_commit_attempt()
+```
+
+### 13.4 失败、安全、兼容与测试策略
+
+- 首次启动失败、取消、超时仍走原关闭和Failed Attempt；不增加重试，不提高30秒回归期限。
+- 新负对照在真实Windows创建普通0700目录，放置固定Sentinel，再启动实际产品子进程。
+  必须观察`server_closed`、原低敏`KernelError:product_state_invalid`、ACL逐字未变、Sentinel未变，
+  且没有Key/Store或正常RSS结果；POSIX跳过不能替代原生执行。
+- 原五周期正例额外观察：首个`_new_client`前Root不存在，随后四次均已存在且地址相同；
+  初始六库DB/WAL逐项为0，终态六库主文件逐项大于0。正例仍执行真实产品、原Thread集合、
+  受控硬退出、三次测量和独立Run/Attempt Reader，不以模拟ACL或空Runtime替代。
+- 原线程故障注入必须到达握手后的Thread阶段并保留`soak_restart_thread_invalid`，不能把启动失败
+  接受为预期结果；原错误配置、非法负载和公开CLI脱敏回归保持。
+- 原生CI在完整Benchmark前增加上述两个文件的快速焦点，原后继Benchmark与完整Windows回归
+  不删除、不缩范围；六个历史固定Soak场景及已冻结Profile保持只读。
+
+测试映射：[真实Runner](../../tests/benchmarks/test_soak_restart.py)、
+[实际子进程及原生负对照](../../tests/benchmarks/test_soak_restart_child.py)、
+[已有原生普通mkdir拒绝](../../tests/product_config/test_product_backup_files_windows.py)、
+[原V5证明](../../tests/benchmarks/test_soak_restart_proof.py)和[CI](../../.github/workflows/ci.yml)。
+这是受影响Runner的一致性修复；完整原生结果、真实编码质量、发行安装和Beta未通过前，
+R1/R4及商用发布整体仍开放，不从本次较小场景推导生产完成。
