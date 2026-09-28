@@ -26,6 +26,7 @@ from harnessix.product_config.action_contracts import (
 )
 from harnessix.product_config.action_runtime import open_default_product_action_runtime
 from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStore
+from harnessix.product_config.agent_context import build_product_agent_context
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProfileSelection
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
@@ -250,6 +251,14 @@ async def _serve_product_stdio(
                     ) as action_owner:
                         config_store.save_action_recovery_scan(action_owner.recovery_scan)
                         config_store.save_action_recovery_report(action_owner.recovery)
+                        context = build_product_agent_context(
+                            tools.workspace_root,
+                            max_output_tokens=max(
+                                profile.max_output_tokens
+                                for profile in startup.config.config.profiles
+                                if profile.profile_id in startup.profile.profile_chain
+                            ),
+                        )
                         async with AgentRuntime(
                             sessions,
                             bundle,
@@ -257,6 +266,9 @@ async def _serve_product_stdio(
                             artifacts=artifacts,
                             public_output_protection=public_scope,
                             trusted_actions=action_owner.gateway,
+                            async_context=context.context,
+                            compaction=context.compaction,
+                            summary_provider=bundle,
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(

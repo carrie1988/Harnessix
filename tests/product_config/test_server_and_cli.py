@@ -195,6 +195,7 @@ async def test_product_server_model_catalog_reflects_verified_workspace_patch(
     _credentials(monkeypatch)
     workspace = tmp_path / "workspace"
     workspace.mkdir()
+    (workspace / "AGENTS.md").write_text("遵守公开接口与失败恢复约束。", encoding="utf-8")
     state = tmp_path / "state"
     path = write_config(tmp_path / "config.json", config)
 
@@ -240,6 +241,14 @@ async def test_product_server_model_catalog_reflects_verified_workspace_patch(
     )
 
     assert len(bundle.requests) == 1
+    assert bundle.requests[0].instructions is not None
+    instructions = json.loads(bundle.requests[0].instructions)
+    assert instructions["schema"] == "harnessix.instructions/v1"
+    assert any(item["kind"] == "runtime_instruction" for item in instructions["fragments"])
+    assert any(
+        item["source"] == "AGENTS.md" and item["content"] == "遵守公开接口与失败恢复约束。"
+        for item in instructions["fragments"]
+    )
     tool_names = {tool.name for tool in bundle.requests[0].tools}
     if os.name == "posix":
         assert "apply_patch_batch" in tool_names

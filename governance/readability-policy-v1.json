@@ -661,6 +661,7 @@
     "product_config->agent",
     "product_config->app_server",
     "product_config->artifacts",
+    "product_config->context",
     "product_config->delivery",
     "product_config->domain",
     "product_config->execution",

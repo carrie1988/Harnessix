@@ -26,7 +26,7 @@ from harnessix.context.contracts import (
     PreparedContext,
 )
 from harnessix.context.engine import ContextEngine
-from harnessix.tools import files
+from harnessix.context.read_workspace import ContextReadWorkspace
 from harnessix.tools.contracts import (
     ListFilesInput,
     ListFilesOutput,
@@ -37,9 +37,7 @@ from harnessix.tools.git import GitReadRuntime
 from harnessix.tools.git_contracts import GitStatusInput, GitStatusOutput
 from harnessix.tools.workspace import (
     ReadOperation,
-    Workspace,
     digest,
-    revision_state,
     run_read_operation,
 )
 
@@ -268,7 +266,7 @@ class ProjectInstructionSource:
                 "context_source_workspace_mismatch", "Context Source 与 Thread 工作区不匹配"
             )
         operation.checkpoint()
-        with Workspace(self._root, denied_paths=self._denied_paths) as workspace:
+        with ContextReadWorkspace(self._root, denied_paths=self._denied_paths) as workspace:
             parts = workspace.parts(self._working_directory)
             directories = tuple(
                 "." if index == 0 else "/".join(parts[:index]) for index in range(len(parts) + 1)
@@ -316,21 +314,21 @@ class ProjectInstructionSource:
             )
 
     @staticmethod
-    def _directory_revision(workspace: Workspace, path: str, operation: ReadOperation) -> str:
-        with workspace.open(path, operation, directory=True) as descriptor:
-            return digest((workspace.scope, path, revision_state(os.fstat(descriptor))))
+    def _directory_revision(
+        workspace: ContextReadWorkspace, path: str, operation: ReadOperation
+    ) -> str:
+        return workspace.directory_revision(path, operation)
 
     @staticmethod
     def _read_document(
-        workspace: Workspace, path: str, operation: ReadOperation, remaining_bytes: int
+        workspace: ContextReadWorkspace, path: str, operation: ReadOperation, remaining_bytes: int
     ) -> ContextSourceDocument:
         chunks: list[str] = []
         total = 0
         start_line = 1
         expected_revision = None
         while True:
-            page = files.read_file(
-                workspace,
+            page = workspace.read_file(
                 ReadFileInput(
                     path=path,
                     start_line=start_line,
@@ -397,21 +395,19 @@ class WorkspaceContextSource:
         self, operation: ReadOperation, requested_workspace: str
     ) -> ContextSourceObservation:
         _require_bound_root(self._root, requested_workspace)
-        with Workspace(self._root, denied_paths=self._denied_paths) as workspace:
+        with ContextReadWorkspace(self._root, denied_paths=self._denied_paths) as workspace:
             parts = workspace.parts(self._working_directory)
             working_directory = "." if not parts else "/".join(parts)
             paths = tuple(dict.fromkeys((".", working_directory)))
             first = tuple(
-                files.list_files(
-                    workspace,
+                workspace.list_files(
                     ListFilesInput(path=path, limit=self._max_entries),
                     operation,
                 )
                 for path in paths
             )
             verified = tuple(
-                files.list_files(
-                    workspace,
+                workspace.list_files(
                     ListFilesInput(
                         path=page.path,
                         limit=self._max_entries,
@@ -714,11 +710,10 @@ def _workspace_binding_sync(
     operation: ReadOperation,
 ) -> tuple[str, str]:
     _require_bound_root(root, requested_workspace)
-    with Workspace(root, denied_paths=denied_paths) as workspace:
+    with ContextReadWorkspace(root, denied_paths=denied_paths) as workspace:
         parts = workspace.parts(working_directory)
         normalized = "." if not parts else "/".join(parts)
-        with workspace.open(normalized, operation, directory=True) as descriptor:
-            revision = digest((workspace.scope, normalized, revision_state(os.fstat(descriptor))))
+        revision = workspace.directory_revision(normalized, operation)
         return workspace.scope, revision
 
 
@@ -791,7 +786,7 @@ def _visible_git_status(
     operation: ReadOperation,
 ) -> GitStatusOutput:
     visible = []
-    with Workspace(root, denied_paths=denied_paths) as workspace:
+    with ContextReadWorkspace(root, denied_paths=denied_paths) as workspace:
         for entry in status.entries:
             operation.checkpoint()
             try:

@@ -147,7 +147,7 @@ class ContextEngine:
         if fixed_tokens > available:
             raise ContextPreparationError(
                 "context_budget_exceeded",
-                "历史与工具定义超过可用 Context 输入预算，当前切片尚未启用自动压缩",
+                "历史与工具定义超过可用Context输入预算，无法准备完整模型输入",
             )
 
         required = [fragment for fragment in fragments if _METADATA[fragment.kind][2]]

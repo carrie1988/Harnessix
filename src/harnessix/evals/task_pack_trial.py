@@ -56,6 +56,7 @@ from harnessix.models.contracts import ModelProvider
 from harnessix.observability import NoOpObservability, Observability
 from harnessix.product_config.action_contracts import build_product_action_config
 from harnessix.product_config.action_runtime import open_default_product_action_runtime
+from harnessix.product_config.agent_context import build_product_agent_context
 from harnessix.product_config.workspace_patch_review import decode_workspace_patch_input
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
@@ -442,6 +443,7 @@ async def _run_agent(
                         "eval_task_pack_action_unavailable",
                         "Task Pack固定Profile或Workspace Patch能力不可用",
                     )
+                context = build_product_agent_context(tools.workspace_root)
                 async with AgentRuntime(
                     sessions,
                     provider,
@@ -450,6 +452,9 @@ async def _run_agent(
                     artifacts=artifacts,
                     observability=observer,
                     fault=fail,
+                    async_context=context.context,
+                    compaction=context.compaction,
+                    summary_provider=provider,
                 ) as runtime:
                     return await _drive_turn(
                         runtime,
