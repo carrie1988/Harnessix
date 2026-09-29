@@ -1,0 +1,24 @@
+{
+  "final_real": {
+    "errors": 0,
+    "failures": 0,
+    "original_private_sha256": "632d54c0091c9399b104c4b13dda1d3bb6c8b298493d576ac01111845e2adbe5",
+    "skipped": 0,
+    "tests": 5
+  },
+  "initial_real": {
+    "errors": 0,
+    "failures": 1,
+    "original_private_sha256": "51090ecaa62080da909221a86770cfad3abae27743d8a1720a604e47da14c8ab",
+    "skipped": 0,
+    "tests": 4
+  },
+  "related_offline": {
+    "errors": 0,
+    "failures": 0,
+    "original_private_sha256": "3c1a184ca29d5bbf18dcd11922ce03fa4b2690bef6378f7772b73f1feb27cc60",
+    "skipped": 0,
+    "tests": 151
+  },
+  "test_source_sha256": "e4dda4078a35aa837785f1da7c4425d912864f7e7201ee2859057b8b730c3336"
+}

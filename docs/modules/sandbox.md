@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 9
+version: 10
 code_revision: 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
 owners:
   - core
@@ -87,6 +87,13 @@ Sandbox模块通过“严格合同 → 能力证据 → Execution Plan绑定 →
 10. 后端二进制、Daemon、网络证明、Owner能力或计划事实变化时失败关闭；
 11. Profile可按内容Digest持久化并在损坏或未知Store版本时拒绝使用；
 12. Linux CI以真实固定摘要镜像验证关键隔离参数，而不仅检查argv文本。
+
+`none`的真实验收检查回环接口已启用、所有非回环接口均未设置`IFF_UP`，且IPv4路由、
+IPv6地址及路由不指向非回环接口；仍同时检查非Root、零有效Capability、只读边界和实际资源限额。
+Linux加载隧道驱动后可能在新命名空间中注册DOWN的默认隧道接口，`bonding_masters`也不是接口目录；
+因此不使用`ls /sys/class/net`必须等于`lo`的目录名单假设。真实桥接容器必须被同一检查以
+退出码41拒绝，且不产生任何外部网络请求。此处是验收断言修正，不改变生产`--network none`、
+Profile或审批合同，也不将显式Engine宿主验证外推为Docker Desktop默认入口通过。
 
 ### 3.2 明确非目标
 
@@ -1260,6 +1267,7 @@ handle_connect(request):
 | 防错删 | 同上 | `_container_rows` | 同上 | `test_container_cleanup_rejects_spoofed_identity` |
 | 启动失败清理 | [`process_runtime.py`](../../src/harnessix/sandbox/process_runtime.py) | `ContainerProcessRuntime.start` | 同上 | `test_container_start_failure_still_verifies_cleanup` |
 | 真实Linux隔离 | Container/Process/Secret组合 | `ContainerProcessRuntime.start` | [`test_container_sandbox.py`](../../tests/integration/test_container_sandbox.py) | `test_real_container_enforces_read_only_no_network_limits_and_secret_boundary` |
+| 网络隔离负对照 | 同一实际接口、地址和路由检查 | `_NO_EXTERNAL_NETWORK` | 同上 | `test_network_boundary_check_rejects_real_bridge_container` |
 | 真实MCP Container | [`mcp/runtime.py`](../../src/harnessix/mcp/runtime.py) | `McpContainerStdioTarget` | 同上 | `test_real_container_runs_mcp_stdio_with_frozen_sandbox_binding` |
 | 默认产品固定Profile | [`product_config/process_profile.py`](../../src/harnessix/product_config/process_profile.py)、[`process_action.py`](../../src/harnessix/product_config/process_action.py) | `probe_product_process_profile`、`ProductProcessActionExecutor` | [`test_product_process_profile.py`](../../tests/integration/test_product_process_profile.py) | 固定镜像、批准后运行、只读Workspace、输出Artifact |
 

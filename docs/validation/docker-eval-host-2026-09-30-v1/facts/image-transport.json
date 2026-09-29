@@ -1,0 +1,16 @@
+{
+  "cache_bind_scope": "macOS loopback and VM loopback only",
+  "cache_writable_api": false,
+  "cached_bytes": 74021204,
+  "credentials_used": false,
+  "first_applied_bypass_pull": "auth_token_eof",
+  "fixed_root_index_digests_verified": true,
+  "host_cache_mirror_attempt": "desktop_proxy_timeout",
+  "linux_arm64_child_manifest_and_all_blob_sha256_verified": true,
+  "original_reference_native_engine_pull": true,
+  "public_http_cache_objects": 14,
+  "retag_used": false,
+  "source": "Docker Hub anonymous HTTPS",
+  "temporary_cache_removed": true,
+  "vm_loopback_cache_attempt": "both_fixed_images_pulled"
+}

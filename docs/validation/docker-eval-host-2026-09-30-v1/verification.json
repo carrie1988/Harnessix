@@ -1,0 +1,19 @@
+{
+  "assertions": {
+    "fixed_refs_equal_pack": true,
+    "historical_failures_retained_privately": true,
+    "original_running_8_restored": true,
+    "real_bridge_negative_control": true,
+    "stopped_competitors_and_restart_policies_restored": true
+  },
+  "commercial_release_gate_closed": false,
+  "decision": "scoped_go",
+  "default_desktop_start": "no_go_created_after_25_seconds",
+  "evidence_privacy": "bounded_public_projection_private_paths_and_tokens_omitted",
+  "native_container_boundary": "pass_explicit_same_engine",
+  "production_code_changed": false,
+  "real_model_requests": 0,
+  "real_task_pack_and_recovery": "pass_recorded_provider_not_real_model",
+  "scope": "fixed-image-and-explicit-engine-eval-preflight",
+  "task_pack_or_grader_changed": false
+}

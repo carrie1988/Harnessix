@@ -1,0 +1,7 @@
+{
+  "container_states_and_policies_restored": true,
+  "daemon_file_restored": true,
+  "original_running": 8,
+  "runtime_mirrors_restored": true,
+  "temporary_vm_cache_removed": true
+}

@@ -1,0 +1,20 @@
+{
+  "change_kind": "integration_assertion_and_host_operations_only",
+  "open_gates": [
+    "R1 final same-candidate safety",
+    "R2 rights and release inputs",
+    "R3 complete real-provider 20-trial quality",
+    "R4 consumer Windows11 and final same-candidate installation",
+    "R5 independent users beta",
+    "R6 commercial publication"
+  ],
+  "production_contracts_changed": false,
+  "risks": [
+    "Default Docker Desktop API container registration still stalls",
+    "Explicit Engine endpoint is an evaluation-host binding, not a product fallback",
+    "Recorded provider results do not certify model task success"
+  ],
+  "source_base_revision": "89b3cd1356ed3e6b1fdfa6b957a876c0d30d2964",
+  "status": "scoped_go",
+  "task_pack_scoring_changed": false
+}

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -36,6 +38,19 @@ from harnessix.secrets.provider import (
 from harnessix.workspace.contracts import WorkspaceResourceRequest
 from harnessix.workspace.snapshot import capture_workspace_snapshot
 
+# Linux加载隧道驱动后，隔离命名空间也可能具有DOWN的模板接口。
+# 拒绝实际可用的非回环接口、地址或路由，不把sysfs条目数量当作隔离证明。
+_NO_EXTERNAL_NETWORK = (
+    'test "$(( $(cat /sys/class/net/lo/flags) & 1 ))" = 1; '
+    "for device in /sys/class/net/*; do "
+    'test -d "$device" || continue; '
+    '[ "${device##*/}" = lo ] && continue; '
+    'if [ "$(( $(cat "$device/flags") & 1 ))" != 0 ]; then exit 41; fi; '
+    "done; "
+    "awk 'NR > 1 && $1 != \"lo\" {exit 42}' /proc/net/route; "
+    "awk '$NF != \"lo\" {exit 43}' /proc/net/if_inet6 /proc/net/ipv6_route; "
+)
+
 
 async def test_real_container_enforces_read_only_no_network_limits_and_secret_boundary(
     tmp_path: Path,
@@ -67,8 +82,8 @@ async def test_real_container_enforces_read_only_no_network_limits_and_secret_bo
             "/bin/sh",
             "-c",
             'set -eu; test "$(id -u)" = 65532; '
-            'test "$(ls /sys/class/net)" = lo; '
-            "test \"$(awk '/CapEff/{print $2}' /proc/self/status)\" = 0000000000000000; "
+            + _NO_EXTERNAL_NETWORK
+            + "test \"$(awk '/CapEff/{print $2}' /proc/self/status)\" = 0000000000000000; "
             "cat /workspace/main.txt; touch /tmp/allowed; "
             "if touch /denied 2>/dev/null; then exit 21; fi; "
             "if echo changed >>/workspace/main.txt 2>/dev/null; then exit 22; fi; "
@@ -182,6 +197,61 @@ async def test_real_container_enforces_read_only_no_network_limits_and_secret_bo
     assert b"container-secret-canary" not in output
     assert b"[REDACTED]" in output
     assert target.read_text(encoding="utf-8") == "workspace-content\n"
+
+
+def test_network_boundary_check_rejects_real_bridge_container() -> None:
+    """真实桥接接口必须被同一检查拒绝，防止把可联网容器判成none。"""
+    image = os.environ.get("HARNESSIX_TEST_CONTAINER_IMAGE")
+    docker = shutil.which("docker")
+    if not image or not docker:
+        pytest.skip("未配置固定摘要的真实Container网络负对照")
+    name = f"harnessix-network-control-{uuid4().hex}"
+    try:
+        completed = subprocess.run(
+            (
+                docker,
+                "run",
+                "--rm",
+                "--name",
+                name,
+                "--pull",
+                "never",
+                "--network",
+                "bridge",
+                "--read-only",
+                "--cap-drop",
+                "ALL",
+                "--security-opt",
+                "no-new-privileges",
+                "--user",
+                "65532:65532",
+                "--cpus",
+                "0.5",
+                "--memory",
+                "67108864",
+                "--pids-limit",
+                "16",
+                "--entrypoint",
+                "/bin/sh",
+                image,
+                "-c",
+                "set -eu; " + _NO_EXTERNAL_NETWORK,
+            ),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+        assert completed.returncode == 41, completed.stderr
+    finally:
+        subprocess.run(
+            (docker, "rm", "--force", name),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+            check=False,
+        )
 
 
 async def test_real_container_runs_mcp_stdio_with_frozen_sandbox_binding(

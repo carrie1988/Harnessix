@@ -1,0 +1,51 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 8026,
+      "sha256": "15e15ec31d3cb9fdba462efb71f12ab5e47047f45f043e5fc80a48e0bc0906c0"
+    },
+    {
+      "path": "facts/engine-binding.json",
+      "bytes": 337,
+      "sha256": "470b4a268b6692a080fcf906f93b5ba50935d5e95f148791b0b589562e8976b7"
+    },
+    {
+      "path": "facts/image-transport.json",
+      "bytes": 612,
+      "sha256": "a82893c4f7752de4a3b53ffd4fb45a41fb3b244f626d14e2738fc8c849b718ff"
+    },
+    {
+      "path": "facts/images.json",
+      "bytes": 711,
+      "sha256": "afb7e33ba75e7c2ce3a8ad7a921866fbbe1a387d9d5615a0d9a2315471d3ffc2"
+    },
+    {
+      "path": "facts/mount-controls.json",
+      "bytes": 942,
+      "sha256": "534c9f4107e5887551332e079b6af4faee85ada20c5bc10c0a38d4ed12901414"
+    },
+    {
+      "path": "facts/restoration.json",
+      "bytes": 184,
+      "sha256": "ba2899ff4d720fbb420a0aacb9651eec3aff06f1fa335d87b657a5dfb9572b53"
+    },
+    {
+      "path": "facts/test-results.json",
+      "bytes": 677,
+      "sha256": "02d1ffe5e54975d70777558ec0fd8059e2a6095f7d18fc9447b21987dd444d99"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 763,
+      "sha256": "0d043aca20f264a8a82dca4d6ec312285a68553b06ab732206467d79fbeaa799"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 772,
+      "sha256": "389e797db04423050faf11e06ea47727768af1b077aa9169420770b1276170bc"
+    }
+  ]
+}

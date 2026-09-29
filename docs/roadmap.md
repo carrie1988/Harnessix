@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 124
+version: 125
 code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
 owners:
   - core
@@ -962,3 +962,11 @@ R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-
 原Key、六库恢复、稳定恢复身份及旧包读写验证通过。首轮Windows cp1252失败与本机Apple Git负对照失败均保留。
 该固定版本对切片关闭；后续必要主线为真实20 Trial质量、消费者Windows11核心编码、独立Beta及最终同候选发布门禁，
 不将内部RC、原生CI平台名称或安装成功外推为正式商用支持。
+
+### R3：固定镜像与显式Engine评测宿主前置
+
+[宿主前置验证](validation/docker-eval-host-2026-09-30-v1/README.md)已恢复原Python/Node RepoDigest、
+原8个容器及Daemon配置。默认Desktop容器注册仍Created；同一Engine显式入口完成原Workspace挂载。
+无网络验收改为实际接口状态、地址和路由检查，并以真实Bridge负对照拒绝联网环境；
+5项真实集成与151项关联离线回归通过，原失效断言FAIL保留。生产代码、Pack及评分器未改变，模型请求0。
+该GO只允许后续预注册完整20 Trial验证，不关闭默认Desktop路径、原0/20、消费者Windows11、Beta或商用门禁。
