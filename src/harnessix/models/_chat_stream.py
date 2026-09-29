@@ -13,6 +13,7 @@ from harnessix.agent.models import Usage
 from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._billing import merge_billing
 from harnessix.models._bounded_http import InvalidWireData
+from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason
 from harnessix.models._json import strict_json
 from harnessix.models.contracts import (
     ModelRequest,
@@ -32,6 +33,35 @@ class CallParts:
     name: str | None = None
     arguments: str = ""
     type: str | None = None
+
+
+def _complete_calls(calls: dict[int, CallParts], names: dict[str, str]) -> list[ToolCallCompleted]:
+    """先校验完整调用组再返回事件；任一失败都不向外释放部分工具。"""
+    if sorted(calls) != list(range(len(calls))):
+        raise ChatProtocolError(ChatProtocolReason.TOOL_INDEX_GAP)
+    events: list[ToolCallCompleted] = []
+    ids: set[str] = set()
+    for index in sorted(calls):
+        call = calls[index]
+        if not call.call_id:
+            raise ChatProtocolError(ChatProtocolReason.TOOL_ID_MISSING)
+        if call.call_id in ids:
+            raise ChatProtocolError(ChatProtocolReason.TOOL_ID_DUPLICATE)
+        if call.name is None or call.name not in names:
+            raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_UNKNOWN)
+        if call.type != "function":
+            raise ChatProtocolError(ChatProtocolReason.TOOL_TYPE_INVALID)
+        ids.add(call.call_id)
+        try:
+            arguments = strict_json(call.arguments)
+        except ValueError:
+            raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_INVALID) from None
+        if not isinstance(arguments, dict):
+            raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT)
+        events.append(
+            ToolCallCompleted(call_id=call.call_id, tool=names[call.name], arguments=arguments)
+        )
+    return events
 
 
 def validate_frame(name: bytes, data: bytes) -> None:
@@ -173,7 +203,7 @@ class ChatStream:
 
     def finish(self, *, seen_done: bool) -> list[ProviderEvent]:
         if not seen_done or self._finish is None or self._usage is None:
-            raise InvalidWireData("流缺少结束原因、Usage 或传输终结符")
+            raise ChatProtocolError(ChatProtocolReason.COMPLETION_INCOMPLETE)
         events: list[ProviderEvent] = []
         if self._text_started:
             events.append(TextCompleted(content_id="text", text=self._text))
@@ -184,35 +214,13 @@ class ChatStream:
             "content_filter": ResponseCompleted(finish_reason="content_filter", usage=self._usage),
         }
         if self._finish not in reasons:
-            raise InvalidWireData("不支持的结束原因")
+            raise ChatProtocolError(ChatProtocolReason.FINISH_REASON_UNSUPPORTED)
         if self._finish in {"stop", "tool_calls"}:
             if bool(self._calls) != (self._finish == "tool_calls"):
-                raise InvalidWireData("结束原因与工具调用不一致")
+                raise ChatProtocolError(ChatProtocolReason.FINISH_TOOL_MISMATCH)
             if not self._calls and not self._text:
-                raise InvalidWireData("模型响应没有语义内容")
-            if sorted(self._calls) != list(range(len(self._calls))):
-                raise InvalidWireData("工具 index 不连续")
-            ids: set[str] = set()
-            for index in sorted(self._calls):
-                call = self._calls[index]
-                if (
-                    not call.call_id
-                    or call.call_id in ids
-                    or call.name not in self._names
-                    or call.type != "function"
-                ):
-                    raise InvalidWireData("工具身份或名称无效")
-                ids.add(call.call_id)
-                arguments = strict_json(call.arguments)
-                if not isinstance(arguments, dict):
-                    raise InvalidWireData("工具参数必须为 JSON object")
-                events.append(
-                    ToolCallCompleted(
-                        call_id=call.call_id,
-                        tool=self._names[call.name],
-                        arguments=arguments,
-                    )
-                )
+                raise ChatProtocolError(ChatProtocolReason.SEMANTIC_OUTPUT_MISSING)
+            events.extend(_complete_calls(self._calls, self._names))
         events.append(reasons[self._finish])
         return events
 

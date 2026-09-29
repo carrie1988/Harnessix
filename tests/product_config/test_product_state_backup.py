@@ -23,6 +23,7 @@ from harnessix.product_config.state_owner import product_state_owner, state_owne
 from harnessix.sdk.agent_client import AgentClient, InProcessAgentTransport
 from tests.agent.helpers import answer
 from tests.artifacts.helpers import step
+from tests.helpers import wait_for_turn_status
 from tests.product_config.conftest import write_config
 
 pytestmark = pytest.mark.skipif(
@@ -53,10 +54,8 @@ async def complete_state(tmp_path, config, monkeypatch):
         try:
             thread = await client.create_thread(str(workspace), request_id="backup-thread")
             await client.start_turn(thread.thread_id, "搜索并保存产物", request_id="backup-turn")
-            async with asyncio.timeout(5):
-                while server.service._tasks:
-                    await asyncio.gather(*tuple(server.service._tasks.values()))
-            assert (await client.get_thread(thread.thread_id)).latest_turn.status == "completed"
+            # 只观察正式完成投影；夹具不取得或取消App Server拥有的后台Task。
+            await wait_for_turn_status(client, thread.thread_id, "completed")
         finally:
             await client.close()
 

@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 392,
-    "physical_lines": 83671,
-    "logical_lines": 74032,
-    "documented_modules": 392,
-    "classes": 884,
-    "documented_classes": 367,
-    "functions": 3385,
-    "documented_functions": 619,
+    "source_files": 393,
+    "physical_lines": 83740,
+    "logical_lines": 74085,
+    "documented_modules": 393,
+    "classes": 886,
+    "documented_classes": 368,
+    "functions": 3390,
+    "documented_functions": 622,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -994,8 +994,8 @@
       "path": "src/harnessix/models/_chat_stream.py",
       "qualname": "ChatStream",
       "kind": "class",
-      "line": 51,
-      "lines": 167,
+      "line": 81,
+      "lines": 145,
       "documented": false
     },
     {
@@ -1004,7 +1004,7 @@
       "path": "src/harnessix/models/_chat_stream.py",
       "qualname": "ChatStream.feed",
       "kind": "function",
-      "line": 71,
+      "line": 101,
       "lines": 88,
       "documented": false,
       "decision_complexity": 42
@@ -1080,7 +1080,7 @@
       "path": "src/harnessix/models/openai_chat.py",
       "qualname": "OpenAIChatProvider",
       "kind": "class",
-      "line": 59,
+      "line": 69,
       "lines": 149,
       "documented": true
     },
@@ -1090,10 +1090,10 @@
       "path": "src/harnessix/models/openai_chat.py",
       "qualname": "OpenAIChatProvider.stream",
       "kind": "function",
-      "line": 116,
+      "line": 126,
       "lines": 92,
       "documented": false,
-      "decision_complexity": 24
+      "decision_complexity": 23
     },
     {
       "id": "harnessix.observability.opentelemetry:OpenTelemetryObservability",

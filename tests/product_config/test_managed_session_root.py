@@ -20,6 +20,7 @@ from harnessix.product_config.session_key_store import load_session_key
 from harnessix.sdk.agent_client import AgentClient, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import answer
+from tests.helpers import wait_for_turn_status
 from tests.product_config.conftest import write_config
 
 
@@ -152,10 +153,7 @@ async def test_default_root_reopens_original_events_then_commits_new_protected_t
                 assert [e.model_dump_json() for e in before] == original_events
                 assert (await service.store.get_thread(threads[0])).sequence == len(original_events)
             await client.start_turn(threads[0], "实现安全读取", request_id=str(len(identities)))
-            async with asyncio.timeout(5):
-                while service._tasks:
-                    await asyncio.gather(*tuple(service._tasks.values()))
-            assert (await client.get_thread(threads[0])).latest_turn.status == "completed"
+            await wait_for_turn_status(client, threads[0], "completed")
             events = await service.store.events(threads[0])
             if not original_events:
                 original_events.extend(e.model_dump_json() for e in events)

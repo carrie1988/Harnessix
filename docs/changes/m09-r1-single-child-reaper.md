@@ -1,10 +1,10 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 0cdad2bd544dd1cd9c722ec8399243def9405777
+version: 3
+code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
 owners: [core]
-modules: [processes, tools]
+modules: [processes, tools, product_config, sdk]
 related_adrs:
   - docs/adr/0038-host-process-lifecycle.md
   - docs/adr/0067-process-ownership-and-terminal-lifecycle.md
@@ -12,6 +12,9 @@ related_adrs:
 related_tests:
   - tests/processes/test_runtime.py
   - tests/processes/test_child_ready.py
+  - tests/product_config/test_state_fixture_readiness.py
+  - tests/product_config/test_product_state_backup.py
+  - tests/product_config/test_managed_session_root.py
   - tests/tools/test_windows_git.py
 supersedes: []
 ---
@@ -181,3 +184,47 @@ PID正文关闭前没有标记；正文已关闭但标记尚未创建时仍未�
 旧Rename的成功或系统拒绝是有限诊断事实，不能作为产品通过依据；新PID/标记的完整事实必须成功。
 仅输出固定阶段、`status/error_type/errno/winerror`和布尔结果，不输出异常正文、路径、argv、环境或凭据。
 探针没有长寿命后代，不替代原四模式Job树回收用例。所有生产代码、时间上限与退出断言保持不变。
+
+## 9. 原生结果与产品测试观测边界
+
+固定`850c7ba`的[原生CI](https://github.com/carrie1988/Harnessix/actions/runs/36634123881)
+工具/Git/取消焦点138通过、5跳过，包含18项严格输入反馈测试。
+低敏探针在同样固定Workspace下取得旧Rename的`PermissionError/errno=13/winerror=32`，
+而完整PID关闭后的独立就绪标记真实成功。该探针明确当前旧Rename的分享冲突，不回推旧候选未保存的stderr正文。
+
+同Job完整备份/恢复为109通过、1项SETUP错误，后续核心步骤未执行，因此不是完整Windows GO。
+共享[`complete_state`](../../tests/product_config/test_product_state_backup.py)在执行恢复测试之前，
+以五秒`asyncio.timeout`直接`gather` App Server私有`_tasks`；期限到达后把观察者取消传入后台Turn，
+原生日志停在Model History的实际SQLite commit等待。
+五秒是测试夹具自设观察期限，不是产品正式120秒Turn预算、存储SLA或恢复验收指标。
+此证据不证明原生存储超过五秒的具体原因，也不将Windows失败归为已证实的数据库死锁。
+
+```mermaid
+sequenceDiagram
+    participant F as 产品状态夹具
+    participant SDK as 公开Agent SDK
+    participant A as App Server后台Turn
+    participant S as 认证Session
+    F->>SDK: start_turn
+    SDK->>A: 原受监督任务
+    A->>S: 原Model History提交及工具结果
+    loop 已有有界状态等待
+        F->>SDK: get_thread
+        SDK-->>F: 权威持久投影
+    end
+    S-->>SDK: 原completed终态
+    SDK-->>F: completed
+    F->>SDK: close原宿主资源
+```
+
+后继两个同构产品夹具复用已有[`wait_for_turn_status`](../../tests/helpers.py)，
+只观察公开持久投影，不读取或直接await私有任务表；观察失败不再通过gather取消业务任务。
+已有30秒观察上限与失败/取消终态立即拒绝保持；只接受completed，不用close代替同步，
+finally仍按原宿主close合同排空或终止任务。没有增加新等待平台、改产品预算或削减恢复断言。
+
+[`test_state_fixture_readiness.py`](../../tests/product_config/test_state_fixture_readiness.py)
+直接运行同一真实产品夹具，在Model History实际事务的commit await与Provider stream两处分别用屏障暂停。
+保持超过原五秒窗口：旧夹具两项均RED，取消确实传播；后继必须不取消后台Task，释放后真实完成认证状态与Artifact。
+这些控制实验验证观察者取消耦合和修正边界，不声称复现原生磁盘延迟的全部原因。
+新测试纳入原生完整备份步骤，原109通过/1错误记录保留；新同候选Windows结果独立等待。
+验证及原件摘要见[统一交付](../validation/chat-terminal-diagnostics-2026-09-30-v1/README.md)。

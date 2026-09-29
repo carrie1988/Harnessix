@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 139
-code_revision: 007839e7648b6fc1b94a5acede8dd0285092249b
+version: 140
+code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
 owners:
   - core
 modules:
@@ -334,3 +334,20 @@ DOC-1.1已建立本导航、总体架构和源码阅读主链；DOC-1.2已完成
 Artifact字段缺少证据出发，说明静态字段来源、失败与恢复、双Provider历史和严格能力边界。
 不自动修正、不隐藏重试、不回显模型参数，也不将离线修正链路代替真实任务质量。
 诊断、实际测试与开放风险见[统一交付包](validation/tool-argument-feedback-2026-09-30-v1/README.md)。
+
+### Chat终态诊断与Windows产品状态夹具
+
+[Chat终态详设](changes/m09-r3-chat-terminal-diagnostics.md)只在原Attempt失败消息记录封闭校验原因，
+不保存模型正文、不放宽协议、不改预算或自动重试；原无正文请求的具体根因仍未知。
+正式SDK与实际Session关联1376通过、1跳过，不能替代真实20 Trial质量验收。
+
+固定`850c7ba`的Windows输入反馈/Git/四取消模式焦点138通过、5跳过；
+完整备份/恢复109通过、1项SETUP错误，Job失败。原生就绪探针旧Rename取得Win32分享冲突32，
+新闭文件/独立标记通过，不回推旧未保存stderr。
+[测试观测边界修正](changes/m09-r1-single-child-reaper.md#9-原生结果与产品测试观测边界)
+去除五秒观察者对后台Turn的取消耦合，复用公开SDK状态；全部恢复断言与产品超时不变。
+专项原件、Review Packet与开放门禁见[统一验证包](validation/chat-terminal-diagnostics-2026-09-30-v1/README.md)。
+真实费用核对、完整Suite、消费者Windows11、独立Beta、权利及同候选正式发布继续开放。
+
+专项最后受测源码全量5886通过、108跳过；完整治理297项独立通过，范围重叠不累加。
+三份Model文件与实际内部RC Wheel字节一致；新候选原生结果尚未取得，不继承旧Job通过。

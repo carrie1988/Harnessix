@@ -1,0 +1,13 @@
+{
+  "decision": "scoped_local_diagnostics_and_fixture_observer_go_only",
+  "strict_protocol_and_group_atomic_release_unchanged": true,
+  "attempt_reason_is_closed_enum": true,
+  "turn_message_remains_generic": true,
+  "existing_budget_and_schema_unchanged": true,
+  "usage_and_replay_verified": true,
+  "actual_original_request_protocol_reason": "unknown",
+  "native_new_candidate": "pending",
+  "same_candidate_commercial_release": "open",
+  "model_requests": 0,
+  "commercial_release_gate_closed": false
+}

@@ -130,6 +130,7 @@ jobs:
       - name: 验证原生完整业务状态备份与恢复
         run: >-
           uv run pytest tests/product_config/test_product_state_backup.py
+          tests/product_config/test_state_fixture_readiness.py
           tests/product_config/test_product_state_restore.py
           tests/product_config/test_windows_metadata_contracts.py
           -vv -o faulthandler_timeout=60

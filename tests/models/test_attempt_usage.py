@@ -106,7 +106,20 @@ async def test_failure_preserves_last_valid_observation(adapter, tmp_path: Path,
     turn, _, tools = await execute(adapter, tmp_path, parts, fail=failing)
     attempt = turn.model_attempts[0]
     assert turn.status == attempt.status == "failed"
-    assert attempt.error == turn.error
+    diagnostic = (
+        {
+            "bad_arguments": "tool_arguments_invalid",
+            "truncated": "completion_incomplete",
+        }.get(point)
+        if adapter.kind == "openai"
+        else None
+    )
+    if diagnostic is None:
+        assert attempt.error == turn.error
+    else:
+        # Turn沿用稳定通用失败；已确认终态原因只位于原Attempt诊断字段。
+        assert attempt.error.message == f"Provider 返回结构化失败；chat_protocol/v1:{diagnostic}"
+        assert attempt.error.model_copy(update={"message": turn.error.message}) == turn.error
     assert tools.calls == []
     expected = "complete"
     if point == "before_response" or (adapter.kind == "openai" and point == "after_start"):

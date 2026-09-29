@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import AsyncGenerator
 from types import TracebackType
 from typing import Self, cast
+from uuid import UUID
 
 import httpx
 from openai import APIConnectionError, APIError, APIStatusError, AsyncOpenAI, AsyncStream
@@ -14,8 +15,9 @@ from openai.types.chat.completion_create_params import CompletionCreateParamsStr
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.ids import new_id
-from harnessix.agent.usage import ModelAttemptStarted, ModelUsageObserved
+from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._bounded_http import BoundedStream, BoundedTransport, InvalidWireData
+from harnessix.models._chat_errors import diagnostic_failure
 from harnessix.models._chat_mapping import build_request
 from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_frame
 from harnessix.models._history import InvalidModelRequest
@@ -54,6 +56,14 @@ def _failure(error: Exception) -> ResponseFailed:
     if isinstance(error, APIError):
         return ResponseFailed(code="provider_internal", retryable=True)
     return ResponseFailed(code="invalid_provider_output")
+
+
+def _failed_response(
+    attempt_id: UUID, error: Exception
+) -> tuple[ResponseFailed, ModelAttemptFinished]:
+    """复用原错误分类及终态构造，只附加内部受控协议诊断。"""
+    failure = _failure(error)
+    return failure, diagnostic_failure(error, finish_attempt(attempt_id, failure))
 
 
 class OpenAIChatProvider:
@@ -179,7 +189,7 @@ class OpenAIChatProvider:
             except TurnCancelled:
                 raise
             except Exception as error:
-                failure = _failure(error)
+                failure, terminal = _failed_response(attempt_id, error)
             finally:
                 if stream is not None:
                     try:
@@ -188,7 +198,7 @@ class OpenAIChatProvider:
                     except Exception:
                         # 清理故障不能泄露原始异常或覆盖取消；SDK/HTTPX 本身仍负责关闭连接池。
                         pass
-            yield finish_attempt(attempt_id, failure or ResponseFailed(code="unknown"))
+            yield terminal
             if (
                 failure is None
                 or exposed

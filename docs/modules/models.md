@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 6
+code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
 owners:
   - core
 modules:
@@ -23,6 +23,7 @@ related_adrs:
 related_tests:
   - tests/contracts/provider.py
   - tests/models/test_openai_chat.py
+  - tests/models/test_chat_terminal_diagnostics.py
   - tests/models/test_anthropic.py
   - tests/models/test_chat_mapping.py
   - tests/models/test_anthropic_mapping.py
@@ -49,7 +50,7 @@ supersedes: []
 | 当前事件合同 | Provider Event v3；文本、Tool Call、结构化终态、尝试、累计用量和响应计费元数据 |
 | 计价合同 | Price Snapshot v1；Cost Report v1/v2/v3；显式绑定后的可重算事后估算 |
 | 本文状态 | 当前实现；`models`包现行实现的事实源 |
-| 代码版本 | `00e2b816078f52c10849a65efddb36e84a538eef` |
+| 代码版本 | 设计基线`850c7ba90bab5b1821015f3182c6ba6ac253e8aa`；增量源码身份见专项验证包 |
 | 默认产品装配 | `product_config`按Profile与Secret构造Provider Bundle；安全Fallback位于产品配置层而非单Adapter |
 | 核心保证 | 请求意图先持久化再发HTTP；严格流状态机；语义暴露后不自动重试；未知用量和价格不伪装为零 |
 
@@ -201,6 +202,12 @@ Provider失败Code固定为：`invalid_request`、`authentication`、`rate_limit
 `content_policy`、`provider_internal`、`transport`、`invalid_provider_output`、`context_overflow`、
 `cancelled`和`unknown`。Adapter只基于SDK异常类型、状态码和受控错误类型字段映射，不持久化错误Body或
 从任意服务端文案推断业务语义。
+
+Chat终态校验新增内部封闭原因，源码为[`_chat_errors.py`](../../src/harnessix/models/_chat_errors.py)。
+原`ResponseFailed`与Turn通用消息保持不变，只有确认类型的`ModelAttemptFinished.error.message`附
+`chat_protocol/v1:<reason>`；code/category/retryable、Usage、自动重试和Schema不变。
+严格工具调用组全部通过后才释放；未知异常、早期feed失败、Anthropic和旧持久事件保持通用诊断。
+不保存响应正文、身份或参数值；详见[总体与详细设计](../changes/m09-r3-chat-terminal-diagnostics.md)。
 
 ## 8. 历史与请求映射
 
@@ -689,7 +696,7 @@ estimate_cost(attempt, price, verified_context):
 | Price Snapshot由宿主提供且未签名 | 来源URL和摘要不能证明费率真实性 | 0.9.6价格来源与账单核对流程 |
 | 无实时价格目录、税/折扣/汇率 | Cost Report只能做显式快照估算 | 商业计费系统独立边界 |
 | SDK Client持有不可变Key字符串 | 关闭前无法可靠清零内存副本 | 0.9.4Secret生命周期审计 |
-| 无Raw Wire诊断 | 有利于隐私，但线上协议故障定位信息有限 | 需脱敏、有界、显式授权的诊断设计 |
+| 无Raw Wire诊断 | Chat确认的终态条件有低敏原因；未知/早期失败仍为通用消息 | 不采集正文，旧请求原因不得补推 |
 | 默认Provider配置不支持热重载 | 活动Turn使用旧Bundle直到重启 | 当前有意保持可复现；后续需独立迁移语义 |
 
 Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agent Runtime模块设计](agent.md)，Context
@@ -700,6 +707,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 6 | 设计基线`850c7ba` | 2026-09-30 | 内部封闭Chat终态原因、原Attempt持久诊断及严格工具组原子释放 |
 | 4 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录Scripted Provider协作取消实现及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |
 | 3 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 明确Scripted Provider延时遵循协作取消合同，为App Server关闭和Product UI Cancel提供确定性测试端口 |
 | 2 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` | 2026-09-12 | 链接DOC-1.4 Product Config现行设计 |

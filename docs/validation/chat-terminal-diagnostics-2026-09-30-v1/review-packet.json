@@ -1,0 +1,24 @@
+{
+  "scope": "chat_terminal_safe_attempt_diagnostics_and_product_fixture_public_readiness",
+  "source_bindings": "facts.json",
+  "designs": [
+    "docs/changes/m09-r3-chat-terminal-diagnostics.md",
+    "docs/changes/m09-r1-single-child-reaper.md#9"
+  ],
+  "original_failed_results_retained": true,
+  "counts_not_additive": true,
+  "old_request_reason_not_inferred": true,
+  "change_excludes_schema_prompt_alias_grader_pack_budget_and_auto_retry": true,
+  "fixture_delay_experiment_does_not_prove_original_native_latency_cause": true,
+  "open_items": [
+    "original_unknown_cost_reconciliation",
+    "complete_real_20_trials",
+    "new_same_candidate_native_matrix",
+    "default_desktop_workspace",
+    "consumer_windows11",
+    "independent_beta",
+    "archive_rights_12",
+    "final_commercial_candidate"
+  ],
+  "privacy": "closed_reason_projection_without_values_paths_credentials_or_model_bodies"
+}
