@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 126
-code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
+version: 127
+code_revision: 0813c581982fddf17503d47a308419035d193ecf
 owners:
   - core
 modules:
@@ -979,3 +979,24 @@ R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-
 额外字段拒绝和原批准指纹；286项关联离线及6项真实容器/录制Provider集成通过。
 新候选须重新冻结完整20 Trial，不能跨Revision恢复旧运行。既有CI三个独立失败类别继续开放，
 不以参数回归替代真实质量、消费者平台、独立Beta或最终发布验收。
+
+### R3：真实Suite部分结果与费用待核对
+
+固定`0813c58`的新完整20 Trial预注册实际完成4 Case/8 Trial，其中7份invalid、1份failed，无严格通过；
+第五Case的第二次模型请求返回`provider_invalid_provider_output`，原预算保护取消Suite并保留未知预留。
+[中断证据](validation/provider-suite-interruption-2026-09-30-v1/README.md)记录完整Usage与缺少成功终态的区别，
+原70元周期已知估算1.522724元、未知保守占用20.77824元；不自动退款、重试或新建预算周期。
+没有完整Suite报告，不登记新的0/20完整成绩；原历史FAIL保留。真实请求待费用核对，离线研发继续。
+
+### R1：直接子进程唯一回收
+
+[唯一回收详设](changes/m09-r1-single-child-reaper.md)定位POSIX后备Transport.kill的Popen.poll与
+asyncio Watcher竞争，原生macOS受控延迟实际Watcher复现退出255；后继只发OS信号，不伪造退出码。
+五项新焦点通过，进程/Sandbox/Process输入关联271通过、12跳过。Windows取消测试Bootstrap采用
+完整PID的同目录原子发布，原Lease、停止与EOF断言不变；原生验证及最终同候选门禁仍需实际结果。
+
+同轮077真实容器复验暴露新Workspace创建模式与原恢复合同不一致、录制Oracle模式与Git语义不一致。
+[权限详设](changes/m09-r3-eval-workspace-mode.md)仅固定新私有目录FD及离线录制适配器，
+旧漂移继续拒绝，正式Patch允许值、真实Provider、Pack及Grader均不变。
+[专项交付](validation/single-child-reaper-2026-09-30-v1/README.md)保留每轮FAIL、最终关联回归与实际容器结果；
+新同候选原生门禁独立验证，不外推真实质量或商用发布。

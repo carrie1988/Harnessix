@@ -312,9 +312,9 @@ class HostProcessRuntime:
             if self._group_exists(pid):
                 killed = self._signal(pid, signal.SIGKILL)
                 termination = "kill" if killed and termination != "failed" else "failed"
-        if not capture.exited.done():
+        if not capture.exited.done() and termination == "failed":
             try:
-                transport.kill()
+                os.killpg(pid, signal.SIGKILL)  # 失败后备只发原组信号，不经Popen.poll或裸PID控制。
             except ProcessLookupError:
                 pass
             except OSError:

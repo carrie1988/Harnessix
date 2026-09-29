@@ -1,0 +1,194 @@
+{
+  "schema": "harnessix.scoped-validation/v1",
+  "design_base_revision": "0813c581982fddf17503d47a308419035d193ecf",
+  "host": "macos-arm64-python312",
+  "tested_source_sha256": {
+    "src/harnessix/processes/runtime.py": "77754638209366592d346310082afbd2f73bf3d6625f2338f7fff60f979f11f4",
+    "src/harnessix/evals/task_pack_materializer.py": "01bee1ace0fe59f3d410ac56f33246a829b1e3064cd5230eedde016d5136679a",
+    "scripts/recorded_task_pack.py": "ed064c7586715b3577c6d897359ebb02475ff7aa1923398a844cd476eea43828",
+    "tests/processes/test_runtime.py": "b34a11e3ff408700732841c63382eab58fabba416c74066a5e55012af6729929",
+    "tests/evals/test_task_pack.py": "06d35b69949b14d04c3b94cbb799b6c0ab75aa79b47869d7b4b2779d85cfde20",
+    "tests/evals/test_engineering_task_pack.py": "bb91d3f85118b7fb6b742ad7c1e64ac7ab2f60762cc5b200c9ee30d17a48a4c2",
+    "tests/tools/test_windows_git.py": "f87a5e6b27ab8ab775a3ff0afe8dfe85e7424914cb681bdb2c079b0928dc1f66"
+  },
+  "regression": [
+    {
+      "source": "final-process-regression.xml",
+      "sha256": "77b085610ae1e0a942d13579866e5429145ed64915528ffc57e46ff2f4b88a2d",
+      "bytes": 55755,
+      "tests": 283,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 12,
+      "passed": 271,
+      "seconds": "12.763"
+    },
+    {
+      "source": "final-evals-with-recorded-mode.xml",
+      "sha256": "91ce656185063c36b52a81d764c668f1561a173ec74f1cda778524f9c3bf3ca1",
+      "bytes": 568355,
+      "tests": 290,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 290,
+      "seconds": "106.396"
+    },
+    {
+      "source": "final-container-regression.xml",
+      "sha256": "6f96614fb8de4c598899a64e1b9c43e4fd27e8239c66fd5a0b0a2026c0b030f8",
+      "bytes": 1193,
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 6,
+      "seconds": "22.351"
+    },
+    {
+      "source": "final-governance.xml",
+      "bytes": 4057,
+      "sha256": "7be022b2ff27c0e797b1b2273eb2fb76fc0e5fc9c4b1048a7178d4b693e1ada0",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 26
+    }
+  ],
+  "focused_new_process_tests": 5,
+  "focused_umask_tests": 4,
+  "actual_container_umask": "077",
+  "fixed_images": [
+    "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+    "node@sha256:1b2479dd35a99687d6638f5976fd235e26c5b37e8122f786fcd5fe231d63de5b"
+  ],
+  "docker_endpoint_kind": "explicit_same_engine_raw_socket",
+  "model_requests_for_this_fix": 0,
+  "retained_failures": [
+    {
+      "source": "red-tests.log",
+      "sha256": "e8c578f886cc7b4f475d4311b91363d33d2e6179014e435129ada4c4bed52424",
+      "bytes": 10255
+    },
+    {
+      "source": "first-green-fixture-fail.xml",
+      "sha256": "e9e0bc68b0021fbae68a9d86bb546d6cab65758380c8da8f832fa913d0f3889a",
+      "bytes": 27837
+    },
+    {
+      "source": "redundant-group-fail.xml",
+      "sha256": "4379e05c0e71c3ecf7ea4364682ca52b5f86441cefb062b9c274e01c02eb85db",
+      "bytes": 59775
+    },
+    {
+      "source": "workspace-mode-red.log",
+      "sha256": "a085ad3092191aaa19568d07dc224eeba674b4bcb8f466ccd712a98f389ea5b2",
+      "bytes": 2547
+    },
+    {
+      "source": "umask-failed-container.xml",
+      "sha256": "42945cc0f9f391976c78fc41d631f157c72513593c6cf096604fad23d891310d",
+      "bytes": 19095
+    },
+    {
+      "source": "recorded-mode-red.log",
+      "sha256": "041d4f3ff2d040d953289fad0ef1461ce472089189805bcacb0e173667494af6",
+      "bytes": 1665
+    },
+    {
+      "source": "recorded-mode-failed-container.xml",
+      "sha256": "f1f2aadf5cfe0687b53efbc020391cda48ae0892feea86ca09c2e1fe9d6263f8",
+      "bytes": 17556
+    },
+    {
+      "source": "ci-0813c58-windows.log",
+      "sha256": "0a24ae3d7ed3ff755d0cdf582a0877784d5fe096b835f27ad1f534534bd97ee0",
+      "bytes": 56969
+    }
+  ],
+  "non_final_full_runs": [
+    {
+      "source": "intermediate-full-regression.xml",
+      "sha256": "3a60394d44bce8e32e2ba8b63767221343a422ea58974795a4c8033b68a6c67c",
+      "bytes": 8889311,
+      "tests": 4996,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 87,
+      "passed": 4909,
+      "seconds": "431.904",
+      "scope": "rejected_direct_pid_candidate"
+    },
+    {
+      "source": "intermediate-live-edit-full.xml",
+      "sha256": "425f184444017ce9c0e56b87df42012da59d31fa0869bfb6846a7d9fc2b24057",
+      "bytes": 9061029,
+      "tests": 5932,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 107,
+      "passed": 5823,
+      "seconds": "526.223",
+      "scope": "tree_changed_during_collection_not_final_candidate"
+    }
+  ],
+  "final_uniform_full_regression": "pending",
+  "windows_native_regression": "pending",
+  "static_checks": {
+    "mypy_source_files": 392,
+    "ruff_checked_tree": true,
+    "ruff_format_checked_files": 1327,
+    "schema_contract_check": "pass",
+    "readability_policy_unchanged": true,
+    "documentation_count": 393,
+    "link_count": 10000,
+    "mermaid_counted": 859,
+    "changed_document_mermaids_actually_rendered": 45,
+    "documentation_changed_paths": 24,
+    "proofs": [
+      {
+        "source": "final-mypy.log",
+        "bytes": 45,
+        "sha256": "11225d11c7e82153478757e18e79fa97b0ee848e565ecaa15d9b60903cb0a553"
+      },
+      {
+        "source": "final-documentation-rendered.log",
+        "bytes": 104,
+        "sha256": "385a2f56e6d83758ae9cf463ca2b7a2f0418789ba05a734b74a9b5a88f530292"
+      },
+      {
+        "source": "final-wheel-build.log",
+        "bytes": 177,
+        "sha256": "ee570f540b808d5c7e8c7a4f4bc7177de6516a6fd46c163ffb66092df6ea49f1"
+      },
+      {
+        "source": "final-wheel-secret-scan.log",
+        "bytes": 101,
+        "sha256": "6195139e87eb206794e5c75d5a74ac58580c395db994fa52e4d93ac604adeaf6"
+      }
+    ]
+  },
+  "retained_host_render_prerequisite_failure": {
+    "cause": "default_puppeteer_chrome_not_installed",
+    "resolution": "explicit_existing_chrome_executable_no_product_change",
+    "proofs": [
+      {
+        "source": "final-documentation.log",
+        "bytes": 3748,
+        "sha256": "1201bb4854d803f414abbb51f984da103ad799cf871bb52c71fe71d41bf16cab"
+      },
+      {
+        "source": "renderer-probe.log",
+        "bytes": 1249,
+        "sha256": "01063c2ae7fd641d5a157ff1e7677923974e88957e3552431119dd625279e39b"
+      }
+    ]
+  },
+  "internal_wheel": {
+    "filename": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "bytes": 1077194,
+    "sha256": "3dccd1dafff696e0dc6e26ef03f0093cb5bbac76378003fa28165e6b3ffce504",
+    "stable_release": false
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "scope": "interrupted_preregistered_provider_suite",
+  "completed_trials": 8,
+  "partial_outcomes": {
+    "invalid": 7,
+    "failed": 1,
+    "passed": 0
+  },
+  "incomplete_case": "langchain-batch-none-test",
+  "budget_reconciliation": "requires_authoritative_usage_or_charge_evidence_and_original_ledger_rules",
+  "no_retry_or_cross_revision_resume": true,
+  "open_items": [
+    "provider_output_failure_root_cause",
+    "tool_argument_and_feedback_use",
+    "baseline_and_final_check_behavior",
+    "unresolved_request_cost",
+    "full_20_trial_quality",
+    "consumer_windows11",
+    "independent_beta",
+    "same_candidate_final_gates"
+  ],
+  "privacy": "bounded_fields_no_credentials_model_bodies_or_private_paths"
+}

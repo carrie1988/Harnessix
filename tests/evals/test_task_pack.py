@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import shutil
 import subprocess
 import tarfile
@@ -257,6 +258,34 @@ def test_archive_policy_rejects_traversal_links_and_special_members() -> None:
     with tarfile.open(fileobj=duplicate, mode="r:") as archive:
         with pytest.raises(ValueError):
             _safe_archive_members(archive, repository)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="Task Pack物化运行需要POSIX宿主")
+@pytest.mark.parametrize("mask", (0o022, 0o077))
+def test_new_workspace_mode_survives_umask_and_existing_wrong_mode_is_not_repaired(
+    tmp_path: Path, mask: int
+) -> None:
+    previous = os.umask(mask)
+    try:
+        loaded = builtin_coding_eval_task_pack()
+        runs = _runs_root(tmp_path)
+        run_id = uuid4()
+        first = materialize_task_pack_case(loaded, runs, _git(), "python-mathbox-addition", run_id)
+        assert first.run_root.stat().st_mode & 0o777 == 0o700
+        assert first.workspace.stat().st_mode & 0o777 == 0o755
+        assert (
+            load_materialized_task_pack_case(
+                loaded, runs, _git(), first.case.case_id, run_id
+            ).manifest
+            == first.manifest
+        )
+        first.workspace.chmod(0o700)
+        with pytest.raises(KernelError) as failure:
+            load_materialized_task_pack_case(loaded, runs, _git(), first.case.case_id, run_id)
+        assert failure.value.code == "eval_task_pack_materialization_incomplete"
+        assert first.workspace.stat().st_mode & 0o777 == 0o700
+    finally:
+        os.umask(previous)
 
 
 def test_materializes_exact_single_commit_reopens_dirty_workspace(tmp_path: Path) -> None:

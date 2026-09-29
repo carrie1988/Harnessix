@@ -18,6 +18,7 @@ from harnessix.evals.task_pack_materializer import (
     _verify_review_oracle,
     materialize_task_pack_case,
 )
+from scripts.recorded_task_pack import prepare_recorded_solution
 
 _PROJECT_ROOT = Path(__file__).parents[2]
 _PACK_VERSION = 2
@@ -40,6 +41,24 @@ def _materialize(tmp_path: Path, case_id: str):
         case_id,
         uuid4(),
     )
+
+
+@pytest.mark.skipif(os.name != "posix", reason="Recorded物化需要POSIX宿主")
+@pytest.mark.parametrize("mask", (0o022, 0o077))
+def test_recorded_golden_mode_uses_git_semantics_not_host_umask(tmp_path, mask):
+    previous = os.umask(mask)
+    try:
+        pack = builtin_coding_eval_task_pack("harnessix-engineering", _PACK_VERSION)
+        solution = prepare_recorded_solution(
+            pack,
+            pack.manifest.case("agents-normalize-tool-name"),
+            git_executable=_git(),
+            oracle_root=tmp_path / "oracle",
+            solutions_root=_SOLUTIONS,
+        )
+        assert solution.mode == 0o644
+    finally:
+        os.umask(previous)
 
 
 def _host_check(workspace: Path, profile_id: str) -> subprocess.CompletedProcess[bytes]:

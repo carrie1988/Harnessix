@@ -267,7 +267,9 @@ async def test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease(
             "-c",
             "import pathlib,subprocess,sys,time; "
             "child=subprocess.Popen([sys.executable,'-I','-c','import time; time.sleep(30)']); "
-            "pathlib.Path(sys.argv[1]).write_text(str(child.pid)); time.sleep(30)",
+            # 启动期取消可发生在truncate与write之间；标记只在完整写入后原子发布。
+            "marker=pathlib.Path(sys.argv[1]); temporary=marker.with_suffix('.tmp'); "
+            "temporary.write_text(str(child.pid)); temporary.replace(marker); time.sleep(30)",
             str(marker),
         ),
     )

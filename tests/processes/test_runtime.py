@@ -4,12 +4,17 @@ import json
 import os
 import signal
 import sys
+import threading
+import time
+import warnings
+from types import SimpleNamespace
 
 import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.processes.contracts import ProcessLimits, ProcessRequest, ProcessResult
+from harnessix.processes.runtime import HostProcessRuntime
 from tests.processes.helpers import cleanup, ready, request, runtime, stopped
 
 
@@ -182,6 +187,98 @@ async def test_timeout_escalates_and_reaps(tmp_path, ignore):
     assert result.termination == ("kill" if ignore else "term")
     assert result.elapsed_seconds < 3
     await stopped(result.pid)
+
+
+@pytest.mark.parametrize(
+    "group_available, signal_error",
+    ((True, None), (True, ProcessLookupError), (True, PermissionError), (False, None)),
+)
+async def test_direct_child_fallback_preserves_single_asyncio_reaper(
+    tmp_path, monkeypatch, group_available, signal_error
+):
+    """终止后备只发送信号，不能通过Transport/Popen抢先waitpid。"""
+    loop = asyncio.get_running_loop()
+    exited, closed = loop.create_future(), loop.create_future()
+    closed.set_result(None)
+    signals = []
+    transport_closed = []
+
+    def forbidden_kill():
+        raise AssertionError("Transport.kill可能调用Popen.poll并抢先回收")
+
+    def signal_only(pid, number):
+        signals.append((pid, number))
+        exited.set_result(None)
+        if signal_error is not None:
+            raise signal_error
+
+    def close():
+        transport_closed.append(True)
+
+    transport = SimpleNamespace(get_pid=lambda: 123456789, kill=forbidden_kill, close=close)
+    capture = SimpleNamespace(exited=exited, closed=closed)
+    monkeypatch.setattr(
+        HostProcessRuntime, "_group_exists", staticmethod(lambda _: group_available)
+    )
+    monkeypatch.setattr(HostProcessRuntime, "_signal", staticmethod(lambda *_: False))
+    monkeypatch.setattr(os, "killpg", signal_only)
+    if not group_available:
+        loop.call_soon(exited.set_result, None)
+    async with runtime(tmp_path) as host:
+        termination = await host._settle(transport, capture)
+    assert signals == ([(123456789, signal.SIGKILL)] if group_available else [])
+    assert termination == ("failed" if group_available else "none")
+    assert transport_closed == [True]
+    assert exited.done() and closed.done()
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="原生macOS使用ThreadedChildWatcher")
+async def test_timeout_does_not_steal_delayed_native_child_watcher(tmp_path, monkeypatch):
+    """冻结真实Watcher调度，复现SIGKILL后Popen.poll窃取退出状态的窗口。"""
+    import asyncio.unix_events as unix_events
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        watcher = asyncio.get_child_watcher()
+    assert isinstance(watcher, unix_events.ThreadedChildWatcher)
+    released = threading.Event()
+    original_wait = watcher._do_waitpid
+    original_signal = HostProcessRuntime._signal
+
+    def delayed_wait(*args):
+        assert released.wait(5), "测试Watcher闸门未及时释放"
+        return original_wait(*args)
+
+    def settled_signal(pid, number):
+        result = original_signal(pid, number)
+        if number == signal.SIGKILL:
+            # 扩大OS已终止而Watcher尚未回收的窗口；不伪造进程或退出码。
+            time.sleep(0.05)
+        return result
+
+    monkeypatch.setattr(watcher, "_do_waitpid", delayed_wait)
+    monkeypatch.setattr(HostProcessRuntime, "_signal", staticmethod(settled_signal))
+    async with runtime(tmp_path, limits=ProcessLimits(terminate_grace_seconds=0.05)) as host:
+        task = asyncio.create_task(
+            host.run(
+                request(
+                    "import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                    "time.sleep(10)",
+                    timeout=0.4,
+                ),
+                CancelToken(),
+            )
+        )
+        try:
+            await asyncio.sleep(0.8)
+        finally:
+            released.set()
+        result = await asyncio.wait_for(task, 5)
+    assert result.returncode == -signal.SIGKILL
+    assert result.stop_reason == "timeout" and result.termination == "kill"
+    await stopped(result.pid)
+    with pytest.raises(ChildProcessError):
+        await asyncio.to_thread(os.waitpid, result.pid, os.WNOHANG)
 
 
 @pytest.mark.parametrize("how", ["token", "task", "repeated_task", "close", "timeout"])

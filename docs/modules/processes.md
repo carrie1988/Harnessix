@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 27
-code_revision: 9186cb2a6c9135adf44be82759e0be21baada0d6
+version: 28
+code_revision: 0813c581982fddf17503d47a308419035d193ecf
 owners:
   - core
 modules:
@@ -350,6 +350,8 @@ sequenceDiagram
 - 调用方Task取消会先停止和排空，再重新抛出`CancelledError`；
 - `aclose`拒绝新调用，停止活动组且重复关闭幂等；
 - `_settle`等待直接子进程回收，不把协程取消传播到不可中断内核清理；
+- 组终止成功后只等asyncio回收；失败后备只发原进程组信号，不通过Transport/Popen抢先`waitpid`或新增裸PID控制。
+  [完整竞争复现、时序与测试映射](../changes/m09-r1-single-child-reaper.md)保留真实255失败与原失败关闭语义；
 - 组终止失败会返回`cleanup_failed/failed`并熔断该Runtime实例。
 
 ### 9.4 兼容链限制

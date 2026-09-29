@@ -1,0 +1,29 @@
+{
+  "scope": "single_child_reaper_and_umask_eval_recovery",
+  "source_bindings": "facts.json",
+  "designs": [
+    "docs/changes/m09-r1-single-child-reaper.md",
+    "docs/changes/m09-r3-eval-workspace-mode.md"
+  ],
+  "passed_counts_not_additive": true,
+  "findings": [
+    "popen_poll_races_asyncio_waitpid",
+    "windows_test_marker_visible_before_pid_written",
+    "new_workspace_mkdir_mode_filtered_by_umask",
+    "recorded_oracle_host_mode_not_git_mode"
+  ],
+  "implementation": "signal_only_failed_group_fallback_and_private_creation_exact_mode_and_recorded_git_mode",
+  "retained_intermediate_full_runs_not_final_evidence": true,
+  "open_items": [
+    "same_candidate_native_matrix",
+    "windows_marker_actual_native_result",
+    "archive_rights_12",
+    "default_desktop_start",
+    "provider_unknown_cost_reconciliation",
+    "complete_real_20_trials",
+    "consumer_windows11",
+    "independent_beta",
+    "final_commercial_candidate"
+  ],
+  "privacy": "bounded_facts_no_credentials_model_bodies_or_private_paths"
+}

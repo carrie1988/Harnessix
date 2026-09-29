@@ -1,0 +1,295 @@
+{
+  "source_revision": "0813c581982fddf17503d47a308419035d193ecf",
+  "suite_id": "d85c26ca-d21a-4ac4-9a01-f780eb01b038",
+  "config_fingerprint": "2487b4de9182b7795f98b10692eae6c653b590e73f5423b187ddf23420fbbb50",
+  "config_sha256": "e9dc244db464c3ecfa7f218d4a310b845f300c06e81211f91696dfd7e2e5014d",
+  "pre_registration_sha256": "a9163dad56ca64f34eefcb5c7ce7aceac0375640781f57802821c220ff5bd63c",
+  "run_log_sha256": "cb8bb7fe1f80c6d1576b116c19f2e19b80d187f8ee49ade0734863d5ed7aa595",
+  "pack_sha256": "6ab16bf0a305c5d5a590be02f028184a9510e941146f3b8d27a3ef99ee7b7c46",
+  "scheduled_cases": 10,
+  "scheduled_trials": 20,
+  "state": "stopped",
+  "stop_reason": "cancelled",
+  "completed_case_ids": [
+    "agents-dump-compatible-refactor",
+    "agents-normalize-tool-name",
+    "agents-payload-bytes-test",
+    "agents-secret-redaction-review"
+  ],
+  "completed_trial_reports": [
+    {
+      "run_id": "94c80d1d-3d76-579d-869f-2c921e76684c",
+      "task_id": "engineering-agents-dump-compatible-refactor",
+      "outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "failed_check_codes": [
+        "final_check_set_matched",
+        "behavior_checks_passed",
+        "allowed_changes",
+        "change_count",
+        "test_feedback_order",
+        "git_feedback_order",
+        "final_answer_consistent"
+      ],
+      "baseline_observations": [
+        {
+          "check_id": "agents-dump-compatible-refactor-check",
+          "phase": "baseline",
+          "passed": false,
+          "returncode": 1,
+          "output_sha256": "44ab12075cf5302aa5c2033a7f4fca09abf4ae330489769ca126d2299f9b0f5b",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "final_observations": [],
+      "report_sha256": "15a6a47f6f92e6fad1510bfacea34c680bb941112b9c7c40ac2f02afd9570cca"
+    },
+    {
+      "run_id": "c2cdac2c-b129-5a9a-860f-9a92615bbb2d",
+      "task_id": "engineering-agents-dump-compatible-refactor",
+      "outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "failed_check_codes": [
+        "final_check_set_matched",
+        "behavior_checks_passed",
+        "allowed_changes",
+        "change_count",
+        "test_feedback_order",
+        "git_feedback_order",
+        "final_answer_consistent"
+      ],
+      "baseline_observations": [
+        {
+          "check_id": "agents-dump-compatible-refactor-check",
+          "phase": "baseline",
+          "passed": false,
+          "returncode": 1,
+          "output_sha256": "44ab12075cf5302aa5c2033a7f4fca09abf4ae330489769ca126d2299f9b0f5b",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "final_observations": [],
+      "report_sha256": "dd3a83ffa930763b67e06515125265105569885ae82a38d38c0bc06024fd30b2"
+    },
+    {
+      "run_id": "68d71947-c061-5b2f-86a9-15caca12416f",
+      "task_id": "engineering-agents-normalize-tool-name",
+      "outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure"
+      ],
+      "failed_check_codes": [
+        "baseline_checks_failed",
+        "final_check_set_matched",
+        "behavior_checks_passed",
+        "test_feedback_order",
+        "git_feedback_order"
+      ],
+      "baseline_observations": [
+        {
+          "check_id": "agents-normalize-tool-name-check",
+          "phase": "baseline",
+          "passed": true,
+          "returncode": 0,
+          "output_sha256": "89787ec8e01036545ffb6afcfdda272fee8168c710e8477ef82bdcdde0ef0c9e",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "final_observations": [],
+      "report_sha256": "a8d7c2ecf6b5ed28ad334248ca069122b05e801b57153c5ae2253de4b9a47a6f"
+    },
+    {
+      "run_id": "795bbea9-7820-5983-bb4e-ba4dda5815aa",
+      "task_id": "engineering-agents-normalize-tool-name",
+      "outcome": "failed",
+      "failure_categories": [
+        "budget",
+        "runtime"
+      ],
+      "failed_check_codes": [
+        "turn_completed",
+        "budget_respected"
+      ],
+      "baseline_observations": [
+        {
+          "check_id": "agents-normalize-tool-name-check",
+          "phase": "baseline",
+          "passed": false,
+          "returncode": 1,
+          "output_sha256": "8758aa78ae403802abc6f79040c2a63f7abfebcc8a0b6b62540e41cfc536ae0f",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "final_observations": [
+        {
+          "check_id": "agents-normalize-tool-name-check",
+          "phase": "final",
+          "passed": true,
+          "returncode": 0,
+          "output_sha256": "89787ec8e01036545ffb6afcfdda272fee8168c710e8477ef82bdcdde0ef0c9e",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "report_sha256": "2580805ce75594ef28d45e1bd946f37a459ef1f6233737848a96dede0a15235a"
+    },
+    {
+      "run_id": "f4cfd103-2e0c-5f0e-abcb-45f24a9b6414",
+      "task_id": "engineering-agents-payload-bytes-test",
+      "outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "failed_check_codes": [
+        "baseline_checks_failed",
+        "final_check_set_matched",
+        "behavior_checks_passed",
+        "allowed_changes",
+        "change_count",
+        "test_feedback_order",
+        "git_feedback_order",
+        "final_answer_consistent"
+      ],
+      "baseline_observations": [],
+      "final_observations": [],
+      "report_sha256": "f993f936a1f64c700a3d9bb379ec91fe7df2493d3c6f8991673cb35e4461169d"
+    },
+    {
+      "run_id": "fd7317f4-6581-59f1-bf75-2c4bcde9da78",
+      "task_id": "engineering-agents-payload-bytes-test",
+      "outcome": "invalid",
+      "failure_categories": [
+        "budget",
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "runtime"
+      ],
+      "failed_check_codes": [
+        "baseline_checks_failed",
+        "final_check_set_matched",
+        "turn_completed",
+        "behavior_checks_passed",
+        "test_feedback_order",
+        "git_feedback_order",
+        "final_answer_consistent",
+        "budget_respected"
+      ],
+      "baseline_observations": [
+        {
+          "check_id": "agents-payload-bytes-test-check",
+          "phase": "baseline",
+          "passed": true,
+          "returncode": 0,
+          "output_sha256": "6afccad189b5033f4ee6a39f3d05f7cb52e2897f8ddf19913692ba8f78b96e58",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "final_observations": [],
+      "report_sha256": "1bfa64d5b58e08befe96533ee3972ea2e8bf30f304f7369514c154e826477424"
+    },
+    {
+      "run_id": "7042cdd6-56d6-5ee6-8eba-cbe928350943",
+      "task_id": "engineering-agents-secret-redaction-review",
+      "outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure"
+      ],
+      "failed_check_codes": [
+        "baseline_checks_failed",
+        "final_check_set_matched",
+        "behavior_checks_passed",
+        "test_feedback_order"
+      ],
+      "baseline_observations": [
+        {
+          "check_id": "agents-secret-redaction-review-check",
+          "phase": "baseline",
+          "passed": true,
+          "returncode": 0,
+          "output_sha256": "0c63b28abf9f30cc16fc614b2e68a42dae083cffead2cc9fa97366af23f51d5a",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "final_observations": [],
+      "report_sha256": "c00e368a414d3f51bbba0e07a4c6b14b9a02ae161af3c2e098212d3c32027018"
+    },
+    {
+      "run_id": "8d66bd2c-3588-5dbf-8596-626f66768893",
+      "task_id": "engineering-agents-secret-redaction-review",
+      "outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure"
+      ],
+      "failed_check_codes": [
+        "baseline_checks_failed",
+        "final_check_set_matched",
+        "behavior_checks_passed",
+        "test_feedback_order",
+        "git_feedback_order"
+      ],
+      "baseline_observations": [
+        {
+          "check_id": "agents-secret-redaction-review-check",
+          "phase": "baseline",
+          "passed": true,
+          "returncode": 0,
+          "output_sha256": "0c63b28abf9f30cc16fc614b2e68a42dae083cffead2cc9fa97366af23f51d5a",
+          "elapsed_seconds": 0.0
+        }
+      ],
+      "final_observations": [],
+      "report_sha256": "0f40416e1c58c62501f2cd708327b806c4f188bb3f2f997838dc545c4742939c"
+    }
+  ],
+  "full_suite_report_published": false,
+  "last_attempt": {
+    "provider_response_id": "chatcmpl-0e37b5c5-b544-980b-92fb-bb32f0ecb318",
+    "actual_model": "qwen3-coder-plus-2025-09-23",
+    "status": "failed",
+    "error_code": "provider_invalid_provider_output",
+    "usage": {
+      "completeness": "complete",
+      "input_tokens": 4834,
+      "output_tokens": 103,
+      "uncached_input_tokens": null,
+      "cache_read_input_tokens": null,
+      "cache_creation_input_tokens": null,
+      "reasoning_output_tokens": null
+    },
+    "started_at": "2026-09-29T19:31:36.807983+00:00",
+    "finished_at": "2026-09-29T19:31:39.120810+00:00",
+    "session_file_sha256": "65af52c5d67655bcae9bf1681fa9cf426bc9684aee540ab321f42911292318c8"
+  },
+  "budget": {
+    "allocation": "70.00",
+    "known_cost": "1.522724",
+    "reserved_cost": "20.77824"
+  },
+  "completed_period_requests": 61,
+  "unknown_period_requests": 1,
+  "budget_owner_preflight_after_stop": "verification_budget_unresolved",
+  "original_ledger_bytes_unchanged_by_check": true,
+  "guard_offline_regression": {
+    "tests": 56,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junit_sha256": "424dcac1face008e460b450157c1119a9f58c52a679074752b78dbc11a35026b"
+  }
+}

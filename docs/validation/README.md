@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 40
-code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
+version: 41
+code_revision: 0813c581982fddf17503d47a308419035d193ecf
 owners:
   - core
 modules:
@@ -146,3 +146,11 @@ flowchart LR
 ## 固定Profile默认参数兼容
 
 [验证交付](profile-approval-default-2026-09-30-v1/README.md)保留真实Suite两请求后的合法默认参数误拒绝、原预算结算与未完成状态，记录正式解码器修正及286项离线/6项真实容器回归；真实质量、既有CI风险和商用门禁继续开放。
+
+## 工程Suite中断与费用待核对
+
+[中断验证](provider-suite-interruption-2026-09-30-v1/README.md)对应固定`0813c58`的新20 Trial预注册，实际完成4 Case/8 Trial，无严格通过；后续模型输出失败触发原预算未知保护。公开有限事实、原文件摘要与Review Packet，不把部分结果作为完整Suite成绩，不自动退款或继续模型请求。
+
+## 唯一子进程回收与077评测恢复
+
+[专项验证](single-child-reaper-2026-09-30-v1/README.md)包含原生Watcher竞争复现、失败后备仅发组信号、Windows测试就绪标记原子发布，以及077下新Workspace精确模式和录制Oracle的Git权限语义。原FAIL与最终关联结果分别保存；不是完整消费者平台、模型质量或商用发布验收。

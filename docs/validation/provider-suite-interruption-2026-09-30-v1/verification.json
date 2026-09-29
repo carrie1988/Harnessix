@@ -1,0 +1,11 @@
+{
+  "decision": "no_go_incomplete_quality_and_unresolved_cost",
+  "suite_completed": false,
+  "quality_threshold_achieved": false,
+  "historical_0_of_20_retained": true,
+  "partial_evidence_not_full_suite_score": true,
+  "new_requests_blocked_by_original_ledger": true,
+  "unknown_reservation_retained": true,
+  "commercial_release_gate_closed": false,
+  "private_originals_retained": true
+}

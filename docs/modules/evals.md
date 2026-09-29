@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 26
-code_revision: 629b07280db58814c77efabef6ec495720c714b7
+version: 27
+code_revision: 0813c581982fddf17503d47a308419035d193ecf
 owners:
   - core
 modules:
@@ -2218,6 +2218,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 27 | `0813c581982fddf17503d47a308419035d193ecf`的修正候选 | 2026-09-30 | 新私有Workspace通过目录FD落实0755；录制Oracle采用Git可执行位语义，兼容umask077，既有漂移与正式Patch权限拒绝不变 |
 | 25 | `90de93f565ea88679e54242ee6f1771e9be721b7` | 2026-09-28 | 增加有限验证宿主持久请求预留、官方Adapter Guard与Case/Suite双层绑定；未知不退款，原0/20和R3门禁保留 |
 | 22 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定实际导入隔离实现Revision、16/214/107有重叠专项和阶段证据；前序CI失败保留，最新候选真实Windows终态未外推 |
 | 21 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 分离平台无关合同与九个POSIX执行导出，保留原对象、类型和公共dir；修复候选等待真实Windows治理验收，0.9.6执行门禁保留 |
@@ -2241,3 +2242,8 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 | 3 | `89485f321b1a0f73a2e552818298c24b30e3cb3e` | 2026-09-19 | 记录f2c历史Eval Trusted Action迁移由CI 35446341997完成七任务全矩阵验收并关闭 |
 | 2 | `c67f48dfffb683d61c3a91d813c0add25596202f` | 2026-09-19 | f2c候选：历史Eval从Action Service/Worker/Effect Journal迁入产品同源Trusted Action Catalog/Gateway/Router和POSIX Supervisor；补充批准、响应丢失、结果投影、旧Run升级拒绝及持久化布局 |
 | 1 | `45cc209133784fdbff853001230171f95516be20` | 2026-09-12 | 建立Evals现行模块设计，覆盖历史任务、物化、隐藏检查、正式Agent运行、固定评分、Campaign、成本、Compaction语义评测、专用单文件交付及生产缺口 |
+
+## 新建Workspace的精确权限
+
+[完整创建与恢复详设](../changes/m09-r3-eval-workspace-mode.md)说明私有新Run Root内通过无链接目录FD落实原0755合同，兼容宿主umask077；已有目录漂移仍由原严格恢复检查拒绝，不自动改权、不修改用户Workspace。
+离线录制适配器按Git可执行位输出0644/0755，不将`git apply`受umask影响的宿主完整模式传入正式Patch；真实Provider、Patch允许值、Pack及Grader均不变。

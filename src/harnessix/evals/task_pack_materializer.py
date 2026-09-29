@@ -307,6 +307,16 @@ def _read_manifest(path: Path) -> CodingEvalTaskPackMaterialization:
         ) from None
 
 
+def _create_workspace_directory(path: Path) -> None:
+    """只为新私有Run Root创建精确权限的Workspace，不修补已有目录。"""
+    os.mkdir(path, 0o755)
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        os.fchmod(descriptor, 0o755)
+    finally:
+        os.close(descriptor)
+
+
 def _secured_directory(path: Path, expected_mode: int) -> None:
     try:
         info = path.lstat()
@@ -453,7 +463,7 @@ def materialize_task_pack_case(
         created = True
         workspace = run_root / "workspace"
         # 父目录0700维持宿主私有边界；Workspace需允许固定非root容器读取只读挂载。
-        os.mkdir(workspace, 0o755)
+        _create_workspace_directory(workspace)
         _extract_archive(archive, workspace, repository)
         _verify_review_oracle(workspace, case)
         _create_baseline_commit(git, workspace, repository)

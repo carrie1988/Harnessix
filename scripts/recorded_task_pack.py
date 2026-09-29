@@ -87,7 +87,8 @@ def prepare_recorded_solution(
         case=case,
         before=before,
         content=target.read_text(encoding="utf-8"),
-        mode=target.stat().st_mode & 0o777,
+        # Git只保存可执行位；git apply受宿主umask影响的0600不是正式Patch权限合同。
+        mode=0o755 if target.stat().st_mode & 0o111 else 0o644,
     )
 
 

@@ -1,0 +1,18 @@
+{
+  "decision": "scoped_go_for_functional_fix_only",
+  "single_waitpid_owner_preserved": true,
+  "primary_group_failure_remains_failed": true,
+  "successful_group_not_signalled_again": true,
+  "actual_sigkill_returncode_verified": true,
+  "new_workspace_exact_mode_survives_umask": true,
+  "existing_wrong_mode_rejected_without_repair": true,
+  "recorded_mode_uses_git_executable_bit": true,
+  "formal_patch_mode_contract_unchanged": true,
+  "fixed_pack_images_grader_unchanged": true,
+  "private_failures_retained": true,
+  "windows_native_regression": "pending",
+  "final_same_candidate_matrix": "pending",
+  "default_desktop_start": "unverified",
+  "real_model_quality": "open",
+  "commercial_release_gate_closed": false
+}
