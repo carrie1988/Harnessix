@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 44
-code_revision: 9b0d1230e702aa72b0ea946e1d49eb19a28d2784
+version: 45
+code_revision: 0ba1b8cdb4750bd7e3002ba471e21f12375df425
 owners:
   - core
 modules:
@@ -580,7 +580,8 @@ R3先复核原0/20失败归因和Task Pack适用性，再预注册完整运行�
 三平台新基线及Profile已冻结；[第一轮候选](validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/README.md)
 Linux/Windows通过，Mac资源档位不匹配而unverified。候选在负载前严格核对实际硬件/Python，
 不能按标准Runner标签假定资源或跨档位接受更快成绩；原数学阈值及环境比较保持。
-固定场景须取得独立Run的三份完整PASS报告才能关闭。
+[后继同候选独立Run](validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/README.md)
+已取得三份完整PASS，固定认证重启场景关闭；不推导其他发布门禁通过。
 本无Turn场景不计真实编码Trial，原0/20、消费者平台和用户Beta仍分别验收。
 详设、字段、伪代码及失败语义见[认证重启详设](changes/m09-r1-authenticated-restart-baseline.md)。
 

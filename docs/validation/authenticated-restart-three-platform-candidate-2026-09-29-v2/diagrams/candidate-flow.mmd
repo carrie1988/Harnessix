@@ -1,0 +1,9 @@
+flowchart TB
+    Frozen[原认证基线及封印Profile] --> Read[严格读取与原规则校验]
+    Read --> Environment[实际硬件和Python匹配]
+    Environment --> Started[STARTED v2预绑定Profile]
+    Started --> Product[500 Thread及五周期完整产品]
+    Product --> Evidence[新V5 Run Proof和FINAL]
+    Evidence --> Verify[完整证据与阈值独立复验]
+    Verify --> Report[三平台原封印PASS]
+    Environment --> Reject[错环境固定拒绝且无Attempt]

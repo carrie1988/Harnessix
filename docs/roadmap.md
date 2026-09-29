@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 120
-code_revision: 9b0d1230e702aa72b0ea946e1d49eb19a28d2784
+version: 121
+code_revision: 0ba1b8cdb4750bd7e3002ba471e21f12375df425
 owners:
   - core
 modules:
@@ -933,7 +933,8 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 不新增存储编码或弱化认证。[三平台新基线与Profile](validation/authenticated-restart-three-platform-2026-09-29-v1/README.md)已冻结，
 [第一轮独立候选](validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/README.md)Linux/Windows PASS，
 macOS因c3-m7与c5-m14资源不匹配保持unverified；执行前准入及版本化Runner已补，
-后继受控复验尚待完成，不登记三平台容量PASS。
+[后继同候选受控复验](validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/README.md)
+三平台原报告均PASS，固定认证重启场景关闭。旧FAIL和首轮unverified保留，R1整体及商用门禁仍开放。
 [统一交付](validation/product-restart-release-boundary-2026-09-29-v1/README.md)分别记录原生、制品、安装和性能边界，
 不把这些增量推导为三平台完整安装、真实质量、Beta或1.0完成；R1～R6仍开放。
 

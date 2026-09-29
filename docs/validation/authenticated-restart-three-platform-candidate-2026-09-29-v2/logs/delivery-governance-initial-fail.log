@@ -1,0 +1,21 @@
+.................F...................................................... [ 26%]
+........................................................................ [ 52%]
+........................................................................ [ 78%]
+............................................................             [100%]
+=================================== FAILURES ===================================
+____________ test_current_repository_satisfies_documentation_policy ____________
+
+    def test_current_repository_satisfies_documentation_policy() -> None:
+        module = _documentation_module()
+        report = module.check_repository(ROOT, _policy(module))
+    
+>       assert report.findings == ()
+E       AssertionError: assert (Finding(code...on', line=84)) == ()
+E         
+E         Left contains 2 more items, first extra item: Finding(code='link_target_missing', path='docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/README.md', message='链接目标不存在：manifest.json', line=84)
+E         Use -v to get more diff
+
+tests/governance/test_documentation_policy.py:76: AssertionError
+- generated xml file: /private/tmp/harnessix-authenticated-restart-20260929/final-governance.xml -
+=========================== short test summary info ============================
+FAILED tests/governance/test_documentation_policy.py::test_current_repository_satisfies_documentation_policy

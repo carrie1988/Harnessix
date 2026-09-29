@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
-version: 2
-code_revision: 9b0d1230e702aa72b0ea946e1d49eb19a28d2784
+status: historical
+version: 3
+code_revision: 0ba1b8cdb4750bd7e3002ba471e21f12375df425
 owners:
   - core
 modules:
@@ -27,7 +27,7 @@ supersedes: []
 本设计为已启用持久来源认证的默认产品建立独立、明确标识的新重启基线。
 采集和阈值复验继续使用现有Runner、V5 Manifest、V1 Profile及封印机制；不修改产品数据格式、
 认证算法或工程余量，不引入压缩编码、证明去重或新的基准平台。
-采集完成后冻结三平台Profile，再运行第二次独立候选；尚未取得正式结果时不得登记PASS。
+三平台基线和Profile已冻结，后继同候选三平台完整报告已PASS；结果及未验证边界见第12.2节。
 本专项不关闭R1整体、真实编码质量、消费者Windows 11、版本升级或独立用户Beta。
 
 ## 2. 需求背景与源码依据
@@ -93,6 +93,7 @@ sequenceDiagram
     J-->>F: Run、Proof、COMMITTED与FINAL
     F->>F: 独立重读及按原公式生成阈值
     F-->>C: 已冻结Profile与基线
+    C->>C: 实际硬件和Python匹配原Profile
     C->>C: STARTED v2预绑定Profile ID与SHA
     C->>S: 新Run ID重复相同负载
     C->>C: 逐指标复验并封印报告
@@ -214,3 +215,11 @@ Session Key由产品创建并留在临时私有状态，不写入Git、日志、
 固定OS标签不能保证资源档位，仍必须按实际读数匹配原Profile，不能按标签伪造CPU/内存。
 资源漂移和Python越界各有无负载拒绝回归。原余量、Profile、Run格式及生产认证没有变化。
 后继只进行一次受控新Run；不能以反复调度或放宽环境匹配条件制造PASS。
+
+### 12.2 同候选三平台结果与关闭边界
+
+[后继受控复验](../validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/README.md)
+固定源码`0ba1b8c`取得三个成功Job与三份原封印PASS，实际档位与原Profile匹配。
+原报告独立重算一致，原500 Thread、五周期、余量、认证及生产源码不变。
+本固定认证重启场景关闭；首轮资源不匹配与旧容量FAIL保留。
+该成功不证明外部资源分配原因或永久稳定性，不关闭R1整体、真实质量、消费者平台、Beta或1.0。

@@ -1,0 +1,1034 @@
+产品重启复验 macos	Set up job	﻿2026-09-29T01:37:27.9193420Z Current runner version: '2.337.0'
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9278200Z ##[group]Runner Image Provisioner
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9278850Z Hosted Compute Agent
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9279230Z Version: 20260828.587
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9279660Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9280140Z Build Date: 2026-08-28T16:44:25Z
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9280610Z Worker ID: {c67340bd-7788-4317-808a-2ffcf1b46682}
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9281060Z Azure Region: westus
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9281460Z ##[endgroup]
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9282490Z ##[group]Operating System
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9282910Z macOS
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9283260Z 26.6.2
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9283590Z 25G83
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9283940Z ##[endgroup]
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9284280Z ##[group]Runner Image
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9284680Z Image: macos-26-arm64
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9285070Z Version: 20260907.0351.1
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9285810Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20260907.0351/images/macos/macos-26-arm64-Readme.md
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9287000Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20260907.0351
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9287680Z ##[endgroup]
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9288450Z ##[group]GITHUB_TOKEN Permissions
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9289770Z Contents: read
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9290150Z Metadata: read
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9290530Z ##[endgroup]
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9292220Z Secret source: Actions
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9292840Z Cache mode: write
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9293310Z Prepare workflow directory
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9873150Z Prepare all required actions
+产品重启复验 macos	Set up job	2026-09-29T01:37:27.9915910Z Getting action download info
+产品重启复验 macos	Set up job	2026-09-29T01:37:28.1878770Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+产品重启复验 macos	Set up job	2026-09-29T01:37:28.4398900Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+产品重启复验 macos	Set up job	2026-09-29T01:37:29.2548210Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+产品重启复验 macos	Set up job	2026-09-29T01:37:29.4310850Z Complete job name: 产品重启复验 macos
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-29T01:37:29.4690130Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4690860Z with:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4691140Z   fetch-depth: 0
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4691460Z   repository: carrie1988/Harnessix
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4694230Z   token: ***
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4694510Z   ssh-strict: true
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4694960Z   ssh-user: git
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4695270Z   persist-credentials: true
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4695620Z   clean: true
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4695930Z   sparse-checkout-cone-mode: true
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4696320Z   fetch-tags: false
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4696630Z   show-progress: true
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4696950Z   lfs: false
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4697240Z   submodules: false
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4697560Z   set-safe-directory: true
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.4698020Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.7936710Z Syncing repository: carrie1988/Harnessix
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.7938390Z ##[group]Getting Git version info
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.7939010Z Working directory is '/Users/runner/work/Harnessix/Harnessix'
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.7939980Z [command]/opt/homebrew/bin/git version
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8408680Z git version 2.55.0
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8421370Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8428010Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/4c88aa01-b2da-4577-b724-a1c89e319241/.gitconfig'
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8435940Z Temporarily overriding HOME='/Users/runner/work/_temp/4c88aa01-b2da-4577-b724-a1c89e319241' before making global git config changes
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8437180Z Adding repository directory to the temporary git global config as a safe directory
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8439300Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Harnessix/Harnessix
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8532150Z Deleting the contents of '/Users/runner/work/Harnessix/Harnessix'
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8534810Z ##[group]Initializing the repository
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8538680Z [command]/opt/homebrew/bin/git init /Users/runner/work/Harnessix/Harnessix
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8718510Z hint: Using 'master' as the name for the initial branch. This default branch name
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8721950Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8724140Z hint: to use in all of your new repositories, which will suppress this warning,
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8726330Z hint: call:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8726820Z hint:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8727370Z hint: 	git config --global init.defaultBranch <name>
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8727980Z hint:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8728530Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8729400Z hint: 'development'. The just-created branch can be renamed via this command:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8730050Z hint:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8730460Z hint: 	git branch -m <name>
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8730870Z hint:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8731420Z hint: Disable this message with "git config set advice.defaultBranchName false"
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8732310Z Initialized empty Git repository in /Users/runner/work/Harnessix/Harnessix/.git/
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8733860Z [command]/opt/homebrew/bin/git remote add origin https://github.com/carrie1988/Harnessix
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8794660Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8795410Z ##[group]Disabling automatic garbage collection
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8797100Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8871630Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8872540Z ##[group]Setting up auth
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8873520Z Removing SSH command configuration
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8874320Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8935180Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.9894320Z Removing HTTP extra header
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.9898530Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.9960740Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.0647230Z Removing includeIf entries pointing to credentials config files
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.0650720Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.0714880Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.1819870Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.1895550Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path /Users/runner/work/_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.1960950Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.2025100Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.2025900Z ##[group]Fetching the repository
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.2030490Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.9908440Z From https://github.com/carrie1988/Harnessix
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.9909590Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.9910610Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.9911860Z  * [new branch]      main                    -> origin/main
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.9914070Z [command]/opt/homebrew/bin/git branch --list --remote origin/main
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.9983290Z   origin/main
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.9988650Z [command]/opt/homebrew/bin/git rev-parse refs/remotes/origin/main
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0039780Z 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0042290Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0043290Z ##[group]Determining the checkout info
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0044450Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0045480Z [command]/opt/homebrew/bin/git sparse-checkout disable
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0114670Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0164580Z ##[group]Checking out the ref
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.0167280Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.4321370Z Switched to a new branch 'main'
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.4323520Z branch 'main' set up to track 'origin/main'.
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.4343860Z ##[endgroup]
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.4434000Z [command]/opt/homebrew/bin/git log -1 --format=%H
+产品重启复验 macos	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:32.4508320Z 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-29T01:37:32.4837510Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4838460Z with:
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4839000Z   python-version: 3.12
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4839630Z   activate-environment: false
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4840280Z   no-project: false
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4841000Z   working-directory: /Users/runner/work/Harnessix/Harnessix
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4846550Z   github-token: ***
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4847130Z   enable-cache: auto
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4848430Z   cache-dependency-glob: **/*requirements*.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*requirements*.in
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.in
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/pyproject.toml
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/uv.lock
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*.py.lock
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4849890Z   restore-cache: true
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4850500Z   save-cache: true
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4851080Z   prune-cache: false
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4851660Z   cache-python: false
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4852270Z   ignore-nothing-to-cache: false
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4852940Z   ignore-empty-workdir: false
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4853610Z   download-from-astral-mirror: true
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4854330Z   add-problem-matchers: true
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4854950Z   quiet: false
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4855630Z   resolution-strategy: highest
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.4856260Z ##[endgroup]
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.6390430Z Trying to find version for uv in: /Users/runner/work/Harnessix/Harnessix/uv.toml
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.6391890Z Could not find file: /Users/runner/work/Harnessix/Harnessix/uv.toml
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.6393260Z Trying to find version for uv in: /Users/runner/work/Harnessix/Harnessix/pyproject.toml
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.6394770Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.6397250Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.6969410Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.20/uv-aarch64-apple-darwin.tar.gz" ...
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.8246580Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/cf048e3e-d4da-4638-ab08-6a9f4e37c13f -f /Users/runner/work/_temp/b093d77c-9628-4413-b36f-82fbbddab2d9
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0150020Z Added /Users/runner/.local/bin to the path
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0153530Z Added /Users/runner/hostedtoolcache/uv/0.12.20/aarch64 to the path
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0158680Z Set UV_PYTHON_INSTALL_DIR to /Users/runner/work/_temp/uv-python-dir
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0159220Z Added /Users/runner/work/_temp/uv-python-dir to the path
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0160290Z Set UV_PYTHON to 3.12
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0181590Z Set UV_CACHE_DIR to /Users/runner/work/_temp/setup-uv-cache
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0184270Z Successfully installed uv version 0.12.20
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0186010Z Searching files using cache dependency glob: /Users/runner/work/Harnessix/Harnessix/**/*requirements*.txt,/Users/runner/work/Harnessix/Harnessix/**/*requirements*.in,/Users/runner/work/Harnessix/Harnessix/**/*constraints*.txt,/Users/runner/work/Harnessix/Harnessix/**/*constraints*.in,/Users/runner/work/Harnessix/Harnessix/**/pyproject.toml,/Users/runner/work/Harnessix/Harnessix/**/uv.lock,/Users/runner/work/Harnessix/Harnessix/**/*.py.lock
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1457630Z /Users/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1478640Z /Users/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1492930Z /Users/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1577890Z /Users/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/linux/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1602020Z /Users/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/macos/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1664070Z /Users/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/windows/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1745100Z /Users/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1758970Z /Users/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-312/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1771660Z /Users/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-313/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1783590Z /Users/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1797750Z /Users/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.1890860Z /Users/runner/work/Harnessix/Harnessix/docs/validation/product-restart-release-boundary-2026-09-29-v1/installation/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.3350380Z /Users/runner/work/Harnessix/Harnessix/docs/validation/windows-private-state-2026-09-28-v1/installation/requirements.txt
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.3526770Z /Users/runner/work/Harnessix/Harnessix/pyproject.toml
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.4162840Z /Users/runner/work/Harnessix/Harnessix/uv.lock
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.4264660Z Found 15 files to hash.
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.4367080Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-aarch64-apple-darwin-macos-16-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.5041800Z Cache hit for: setup-uv-2-aarch64-apple-darwin-macos-16-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.9702020Z Received 36025477 of 36025477 (100.0%), 83.4 MBs/sec
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.9802420Z Cache Size: ~34 MB (36025477 B)
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.9864690Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/9ddf9add-458a-40bf-b474-d9758a4bc112/cache.tzst -P -C /Users/runner/work/Harnessix/Harnessix --delay-directory-restore --use-compress-program unzstd
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:35.2331760Z Cache restored successfully
+产品重启复验 macos	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:35.2349930Z cache restored from GitHub Actions cache with key: setup-uv-2-aarch64-apple-darwin-macos-16-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	﻿2026-09-29T01:37:35.3534830Z ##[group]Run uv sync --locked --all-extras --dev
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.3535250Z ^[[36;1muv sync --locked --all-extras --dev^[[0m
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.3583140Z shell: /bin/bash -e {0}
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.3583350Z env:
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.3583580Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.3583870Z   UV_PYTHON: 3.12
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.3584090Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.3585960Z ##[endgroup]
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.4904240Z Using CPython 3.12.10 interpreter at: /usr/local/bin/python3.12
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.4904760Z Creating virtual environment at: .venv
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.5143400Z Resolved 74 packages in 18ms
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:35.5255860Z    Building harnessix @ file:///Users/runner/work/Harnessix/Harnessix
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.1204210Z       Built harnessix @ file:///Users/runner/work/Harnessix/Harnessix
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.1234560Z Prepared 1 package in 602ms
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2246840Z Installed 71 packages in 101ms
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2251550Z  + aiosqlite==0.22.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2252150Z  + annotated-types==0.8.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2252500Z  + anthropic==1.3.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2252910Z  + anyio==4.14.2
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2253240Z  + attrs==26.1.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2253570Z  + certifi==2026.7.22
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2253930Z  + cffi==2.1.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2254310Z  + charset-normalizer==3.5.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2254680Z  + click==8.5.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2255060Z  + cryptography==50.0.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2255410Z  + distro==1.9.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2255730Z  + docstring-parser==0.18.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2256270Z  + googleapis-common-protos==1.75.2
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2349100Z  + h11==0.16.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2356910Z  + harnessix==0.1.0 (from file:///Users/runner/work/Harnessix/Harnessix)
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2358770Z  + httpcore==1.0.9
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2359430Z  + httpcore2==2.12.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2386950Z  + httpx==0.28.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2387360Z  + httpx2==2.12.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2387690Z  + idna==3.19
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2388070Z  + iniconfig==2.3.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2388410Z  + jiter==0.16.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2388760Z  + jsonschema==4.26.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2389390Z  + jsonschema-specifications==2025.9.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2406030Z  + librt==0.15.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2406720Z  + linkify-it-py==2.2.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2407060Z  + markdown-it-py==4.2.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2407380Z  + mcp==2.2.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2407640Z  + mcp-types==2.2.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2408500Z  + mdit-py-plugins==0.6.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2408790Z  + mdurl==0.1.2
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2411700Z  + mypy==1.20.2
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2412070Z  + mypy-extensions==1.1.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2412410Z  + openai==2.54.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2412810Z  + opentelemetry-api==1.44.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2413300Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2413730Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2414100Z  + opentelemetry-proto==1.44.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2414530Z  + opentelemetry-sdk==1.44.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2414890Z  + opentelemetry-semantic-conventions==0.65b0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2415240Z  + packaging==26.3
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2415530Z  + pathspec==1.1.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2415820Z  + platformdirs==4.11.8
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2416100Z  + pluggy==1.6.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2416370Z  + protobuf==7.36.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2416670Z  + pycparser==3.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2416930Z  + pydantic==2.13.5
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2417230Z  + pydantic-core==2.46.5
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2417520Z  + pygments==2.21.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2417780Z  + pyjwt==2.13.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2418050Z  + pytest==8.4.2
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2418330Z  + pytest-asyncio==1.4.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2418640Z  + python-multipart==0.0.32
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2418940Z  + pyyaml==6.0.3
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2419230Z  + referencing==0.37.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2419550Z  + requests==2.34.2
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2419830Z  + rich==15.0.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2420090Z  + rpds-py==2026.6.3
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2420360Z  + ruff==0.16.5
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2421460Z  + sniffio==1.3.1
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2421750Z  + sse-starlette==3.4.11
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2422050Z  + starlette==1.6.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2422330Z  + textual==8.2.8
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2422650Z  + tqdm==4.70.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2422980Z  + truststore==0.10.4
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2423260Z  + types-jsonschema==4.26.0.20260518
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2423600Z  + types-pyyaml==6.0.12.20260906
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2424160Z  + typing-extensions==4.16.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2424460Z  + typing-inspection==0.4.4
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2424750Z  + urllib3==2.7.0
+产品重启复验 macos	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:36.2425030Z  + uvicorn==0.52.4
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	﻿2026-09-29T01:37:36.2475030Z ##[group]Run uv run python -m scripts.run_restart_soak_candidate --evidence-root "$SOAK_EVIDENCE_ROOT" --report-root "$SOAK_REPORT_ROOT" --baseline-set "$SOAK_BASELINE_SET"
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2475970Z ^[[36;1muv run python -m scripts.run_restart_soak_candidate --evidence-root "$SOAK_EVIDENCE_ROOT" --report-root "$SOAK_REPORT_ROOT" --baseline-set "$SOAK_BASELINE_SET"^[[0m
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2508100Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2508340Z env:
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2508560Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2508820Z   UV_PYTHON: 3.12
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2509040Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2509410Z   SOAK_EVIDENCE_ROOT: /Users/runner/work/_temp/harnessix-restart-candidate-evidence
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2509850Z   SOAK_REPORT_ROOT: /Users/runner/work/_temp/harnessix-restart-candidate-reports
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2510180Z   SOAK_BASELINE_SET: authenticated-v1
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:36.2510420Z ##[endgroup]
+产品重启复验 macos	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:38:00.6720280Z {"baseline_run_id":"b9e1499aaaa043f3bfa9a628e85f876b","baseline_set":"authenticated-v1","candidate_run_id":"3a03a3d94a4f4840bae479e9bb270407","code_revision":"0ba1b8cdb4750bd7e3002ba471e21f12375df425","platform":"macos","profile_id":"5f97d2d890c34ccab5fbbb8b5406d303","reason":"within_limits","scenario_id":"restart","status":"PASS"}
+产品重启复验 macos	保留候选Run、失败Attempt与报告	﻿2026-09-29T01:38:00.7529240Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7529680Z with:
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7530130Z   name: harnessix-restart-candidate-macos-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7530830Z   path: /Users/runner/work/_temp/harnessix-restart-candidate-evidence
+产品重启复验 macos	保留候选Run、失败Attempt与报告	/Users/runner/work/_temp/harnessix-restart-candidate-reports
+产品重启复验 macos	保留候选Run、失败Attempt与报告	
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7531540Z   if-no-files-found: ignore
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7531730Z   retention-days: 14
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7531900Z   compression-level: 6
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7532180Z   overwrite: false
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7532460Z   include-hidden-files: false
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7532710Z env:
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7533020Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7533360Z   UV_PYTHON: 3.12
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7533670Z   UV_CACHE_DIR: /Users/runner/work/_temp/setup-uv-cache
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.7534010Z ##[endgroup]
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.9271900Z (node:34231) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.9272900Z (Use `node --trace-deprecation ...` to show where the warning was created)
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.9322910Z Multiple search paths detected. Calculating the least common ancestor of all paths
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.9324070Z The least common ancestor is /Users/runner/work/_temp. This will be the root directory of the artifact
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.9324720Z With the provided path, there will be 8 files uploaded
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.9326810Z Artifact name is valid!
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:00.9327680Z Root directory input is valid!
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.1752010Z (node:34231) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.1823140Z Beginning upload of artifact content to blob storage
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.1918410Z Uploaded bytes 5720
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.2062640Z Finished uploading artifact content to blob storage!
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.2083100Z SHA256 digest of uploaded artifact zip is 2c9928c91b2bb402ac8c1cd73713eedf20414d469abb41ef8f802af90065df09
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.2090950Z Finalizing artifact upload
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.4073290Z Artifact harnessix-restart-candidate-macos-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1.zip successfully finalized. Artifact ID 11008018218
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.4084190Z Artifact harnessix-restart-candidate-macos-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1 has been successfully uploaded! Final size is 5720 bytes. Artifact ID is 11008018218
+产品重启复验 macos	保留候选Run、失败Attempt与报告	2026-09-29T01:38:01.4092680Z Artifact download URL: https://github.com/carrie1988/Harnessix/actions/runs/36508768270/artifacts/11008018218
+产品重启复验 macos	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-29T01:38:01.4202180Z Post job cleanup.
+产品重启复验 macos	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:38:01.5203840Z UV_CACHE_DIR is already set to /Users/runner/work/_temp/setup-uv-cache
+产品重启复验 macos	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:38:01.5205950Z UV_PYTHON_INSTALL_DIR is already set to /Users/runner/work/_temp/uv-python-dir
+产品重启复验 macos	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:38:01.5207210Z Cache hit occurred on key setup-uv-2-aarch64-apple-darwin-macos-16-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b, not saving cache.
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-29T01:38:01.6327510Z Post job cleanup.
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7209810Z [command]/opt/homebrew/bin/git version
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7287160Z git version 2.55.0
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7304160Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/6b334f6d-ecc8-4248-a97f-06c121605fc0/.gitconfig'
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7310610Z Temporarily overriding HOME='/Users/runner/work/_temp/6b334f6d-ecc8-4248-a97f-06c121605fc0' before making global git config changes
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7311370Z Adding repository directory to the temporary git global config as a safe directory
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7314260Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Harnessix/Harnessix
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7374790Z Removing SSH command configuration
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7379760Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.7442270Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.8199000Z Removing HTTP extra header
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.8199700Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.8259110Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9211240Z Removing includeIf entries pointing to credentials config files
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9312610Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9412670Z includeif.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9513970Z includeif.gitdir:/github/workspace/.git.path
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9698590Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9700700Z /Users/runner/work/_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9702160Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/Harnessix/Harnessix/.git.path /Users/runner/work/_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9703640Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9704300Z /github/runner_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9706110Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:01.9707780Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+产品重启复验 macos	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:02.0360700Z Removing credentials config '/Users/runner/work/_temp/git-credentials-e6dcece0-8964-46b0-9eab-b63f9b374f78.config'
+产品重启复验 macos	Complete job	﻿2026-09-29T01:38:02.0554260Z Cleaning up orphan processes
+产品重启复验 macos	Complete job	2026-09-29T01:38:02.6601510Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+产品重启复验 windows	Set up job	﻿2026-09-29T01:37:27.7041010Z Current runner version: '2.337.0'
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7091048Z ##[group]Runner Image Provisioner
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7091999Z Hosted Compute Agent
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7093123Z Version: 20260828.587
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7093924Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7094675Z Build Date: 2026-08-28T16:44:25Z
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7095359Z Worker ID: {460e8ff0-a23e-42d1-90d9-41a385a6283a}
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7096055Z Azure Region: westus2
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7096638Z ##[endgroup]
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7098148Z ##[group]Operating System
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7098802Z Microsoft Windows Server 2025
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7099428Z 10.0.26100
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7099927Z Datacenter
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7100423Z ##[endgroup]
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7100971Z ##[group]Runner Image
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7101566Z Image: windows-2025-vs2026
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7102160Z Version: 20260922.246.2
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7103355Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260922.246/images/windows/Windows2025-VS2026-Readme.md
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7105396Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260922.246
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7106428Z ##[endgroup]
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7107520Z ##[group]GITHUB_TOKEN Permissions
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7109528Z Contents: read
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7110158Z Metadata: read
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7110698Z ##[endgroup]
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7113201Z Secret source: Actions
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7114188Z Cache mode: write
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7114888Z Prepare workflow directory
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7466491Z Prepare all required actions
+产品重启复验 windows	Set up job	2026-09-29T01:37:27.7539084Z Getting action download info
+产品重启复验 windows	Set up job	2026-09-29T01:37:28.1334460Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+产品重启复验 windows	Set up job	2026-09-29T01:37:28.2898494Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+产品重启复验 windows	Set up job	2026-09-29T01:37:28.6443616Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+产品重启复验 windows	Set up job	2026-09-29T01:37:29.2400783Z Complete job name: 产品重启复验 windows
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-29T01:37:29.5922873Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5925831Z with:
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5926344Z   fetch-depth: 0
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5927205Z   repository: carrie1988/Harnessix
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5932833Z   token: ***
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5933497Z   ssh-strict: true
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5933948Z   ssh-user: git
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5934418Z   persist-credentials: true
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5934911Z   clean: true
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5935593Z   sparse-checkout-cone-mode: true
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5936584Z   fetch-tags: false
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5937399Z   show-progress: true
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5937993Z   lfs: false
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5938765Z   submodules: false
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5939560Z   set-safe-directory: true
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.5940461Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8490124Z Syncing repository: carrie1988/Harnessix
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8529582Z ##[group]Getting Git version info
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.8531312Z Working directory is 'D:\a\Harnessix\Harnessix'
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.0044491Z [command]"C:\Program Files\Git\bin\git.exe" version
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.4413835Z git version 2.55.0.windows.5
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.4478331Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.4507137Z Temporarily overriding HOME='D:\a\_temp\bd51b131-db6e-4af9-bf88-56def39806dd' before making global git config changes
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.4508708Z Adding repository directory to the temporary git global config as a safe directory
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.4523266Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.5538662Z Deleting the contents of 'D:\a\Harnessix\Harnessix'
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.5545815Z ##[group]Initializing the repository
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.5555983Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\Harnessix\Harnessix
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.7880454Z Initialized empty Git repository in D:/a/Harnessix/Harnessix/.git/
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.7952883Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/carrie1988/Harnessix
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.9162632Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.9164452Z ##[group]Disabling automatic garbage collection
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.9174380Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.9815369Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.9818245Z ##[group]Setting up auth
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.9820672Z Removing SSH command configuration
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:30.9833223Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:31.0610771Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:33.9239004Z Removing HTTP extra header
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:33.9252684Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:34.1334666Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:35.3272217Z Removing includeIf entries pointing to credentials config files
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:35.3282509Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:35.4269041Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:36.7395211Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:36.8943841Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:37.0278742Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:37.2064672Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:37.2086088Z ##[group]Fetching the repository
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:37.2087553Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:39.8692495Z From https://github.com/carrie1988/Harnessix
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:39.8693690Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:39.8699522Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:39.8700924Z  * [new branch]      main                    -> origin/main
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:39.8808093Z [command]"C:\Program Files\Git\bin\git.exe" branch --list --remote origin/main
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.0266876Z   origin/main
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.0383668Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/remotes/origin/main
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.3710377Z 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.3787296Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.3787893Z ##[group]Determining the checkout info
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.3788592Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.3802004Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.6178544Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.9781802Z ##[group]Checking out the ref
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:40.9796704Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.1936037Z Updating files:  92% (3070/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2030570Z Updating files:  93% (3098/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2116730Z Updating files:  94% (3132/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2227488Z Updating files:  95% (3165/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2341167Z Updating files:  96% (3198/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2431543Z Updating files:  97% (3232/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2532323Z Updating files:  98% (3265/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2634237Z Updating files:  99% (3298/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2634755Z Updating files: 100% (3331/3331)
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.2635171Z Updating files: 100% (3331/3331), done.
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.3152359Z Switched to a new branch 'main'
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.3220316Z branch 'main' set up to track 'origin/main'.
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.3322765Z ##[endgroup]
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.6100094Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+产品重启复验 windows	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:42.8011666Z 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-29T01:37:42.8867791Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8868365Z with:
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8868554Z   python-version: 3.12
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8868775Z   activate-environment: false
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8868996Z   no-project: false
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8869214Z   working-directory: D:\a\Harnessix\Harnessix
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8872171Z   github-token: ***
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8872392Z   enable-cache: auto
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8872944Z   cache-dependency-glob: **/*requirements*.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*requirements*.in
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.in
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/pyproject.toml
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/uv.lock
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*.py.lock
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8873576Z   restore-cache: true
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8873766Z   save-cache: true
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8873946Z   prune-cache: false
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8874131Z   cache-python: false
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8874339Z   ignore-nothing-to-cache: false
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8874601Z   ignore-empty-workdir: false
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8874841Z   download-from-astral-mirror: true
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8875130Z   add-problem-matchers: true
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8875339Z   quiet: false
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8875524Z   resolution-strategy: highest
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:42.8875740Z ##[endgroup]
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:43.2023727Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\uv.toml
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:43.2024760Z Could not find file: D:\a\Harnessix\Harnessix\uv.toml
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:43.2025500Z Trying to find version for uv in: D:\a\Harnessix\Harnessix\pyproject.toml
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:43.2034848Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:43.2041831Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:43.2989492Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.20/uv-x86_64-pc-windows-msvc.zip" ...
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.1188369Z [command]C:\Windows\system32\tar.exe x -C D:\a\_temp\142bf512-60a5-4a51-ba7f-978b35294063 -f D:\a\_temp\afe29e6d-5863-4821-9527-60e43b3fcf4e
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3044467Z Set UV_TOOL_BIN_DIR to D:\a\_temp\uv-tool-bin-dir
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3048024Z Added D:\a\_temp\uv-tool-bin-dir to the path
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3059353Z Added C:\hostedtoolcache\windows\uv\0.12.20\x86_64 to the path
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3062305Z Set UV_TOOL_DIR to D:\a\_temp\uv-tool-dir
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3066008Z Set UV_PYTHON_INSTALL_DIR to D:\a\_temp\uv-python-dir
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3070489Z Added D:\a\_temp\uv-python-dir to the path
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3073671Z Set UV_PYTHON to 3.12
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3100376Z Set UV_CACHE_DIR to D:\a\_temp\setup-uv-cache
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3100958Z Successfully installed uv version 0.12.20
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.3103854Z Searching files using cache dependency glob: D:\a\Harnessix\Harnessix\**\*requirements*.txt,D:\a\Harnessix\Harnessix\**\*requirements*.in,D:\a\Harnessix\Harnessix\**\*constraints*.txt,D:\a\Harnessix\Harnessix\**\*constraints*.in,D:\a\Harnessix\Harnessix\**\pyproject.toml,D:\a\Harnessix\Harnessix\**\uv.lock,D:\a\Harnessix\Harnessix\**\*.py.lock
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.4917624Z D:\a\Harnessix\Harnessix\docs\validation\canonical-wheel-three-platform-2026-09-29-v1\raw\linux\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.4960283Z D:\a\Harnessix\Harnessix\docs\validation\canonical-wheel-three-platform-2026-09-29-v1\raw\macos\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.4987910Z D:\a\Harnessix\Harnessix\docs\validation\canonical-wheel-three-platform-2026-09-29-v1\raw\windows\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5108848Z D:\a\Harnessix\Harnessix\docs\validation\container-resource-admission-2026-09-29-v1\raw\linux\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5133802Z D:\a\Harnessix\Harnessix\docs\validation\container-resource-admission-2026-09-29-v1\raw\macos\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5173267Z D:\a\Harnessix\Harnessix\docs\validation\container-resource-admission-2026-09-29-v1\raw\windows\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5372738Z D:\a\Harnessix\Harnessix\docs\validation\installed-product-three-platform-2026-09-29-v1\raw\linux\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5406143Z D:\a\Harnessix\Harnessix\docs\validation\installed-product-three-platform-2026-09-29-v1\raw\local-312\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5437052Z D:\a\Harnessix\Harnessix\docs\validation\installed-product-three-platform-2026-09-29-v1\raw\local-313\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5468145Z D:\a\Harnessix\Harnessix\docs\validation\installed-product-three-platform-2026-09-29-v1\raw\macos\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5497578Z D:\a\Harnessix\Harnessix\docs\validation\installed-product-three-platform-2026-09-29-v1\raw\windows\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:44.5786197Z D:\a\Harnessix\Harnessix\docs\validation\product-restart-release-boundary-2026-09-29-v1\installation\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:45.1128798Z D:\a\Harnessix\Harnessix\docs\validation\windows-private-state-2026-09-28-v1\installation\requirements.txt
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:45.1717558Z D:\a\Harnessix\Harnessix\pyproject.toml
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:45.3943932Z D:\a\Harnessix\Harnessix\uv.lock
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:45.3957206Z Found 15 files to hash.
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:45.3967052Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:45.7828466Z Cache hit for: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:47.0988117Z Received 33554432 of 39732153 (84.5%), 31.9 MBs/sec
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:47.1743760Z Received 39732153 of 39732153 (100.0%), 35.1 MBs/sec
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:47.1745806Z Cache Size: ~38 MB (39732153 B)
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:47.1771984Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/d2018213-0b4a-4434-ae8b-fc0a236821c4/cache.tzst -P -C D:/a/Harnessix/Harnessix --force-local --use-compress-program "zstd -d"
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:50.0304783Z Cache restored successfully
+产品重启复验 windows	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:50.0339319Z cache restored from GitHub Actions cache with key: setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	﻿2026-09-29T01:37:50.1733016Z ##[group]Run uv sync --locked --all-extras --dev
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.1733523Z ^[[36;1muv sync --locked --all-extras --dev^[[0m
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2164737Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2165201Z env:
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2165448Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2165799Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2166183Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2166521Z   UV_PYTHON: 3.12
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2166761Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.2167065Z ##[endgroup]
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.6427150Z Using CPython 3.12.10 interpreter at: C:\hostedtoolcache\windows\Python\3.12.10\x64\python3.exe
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.6428320Z Creating virtual environment at: .venv
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.7218345Z Resolved 74 packages in 2ms
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:50.7365752Z    Building harnessix @ file:///D:/a/Harnessix/Harnessix
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:52.8157974Z       Built harnessix @ file:///D:/a/Harnessix/Harnessix
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:52.8202853Z Prepared 1 package in 2.08s
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4387798Z Installed 73 packages in 618ms
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4391446Z  + aiosqlite==0.22.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4393229Z  + annotated-types==0.8.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4395033Z  + anthropic==1.3.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4396735Z  + anyio==4.14.2
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4397794Z  + attrs==26.1.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4399444Z  + certifi==2026.7.22
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4400717Z  + cffi==2.1.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4401915Z  + charset-normalizer==3.5.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4403595Z  + click==8.5.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4404883Z  + colorama==0.4.6
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4406325Z  + cryptography==50.0.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4407399Z  + distro==1.9.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4409016Z  + docstring-parser==0.18.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4410264Z  + googleapis-common-protos==1.75.2
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4411839Z  + h11==0.16.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4413667Z  + harnessix==0.1.0 (from file:///D:/a/Harnessix/Harnessix)
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4414481Z  + httpcore==1.0.9
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4416536Z  + httpcore2==2.12.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4417723Z  + httpx==0.28.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4419519Z  + httpx2==2.12.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4419872Z  + idna==3.19
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4422780Z  + iniconfig==2.3.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4423313Z  + jiter==0.16.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4426014Z  + jsonschema==4.26.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4426456Z  + jsonschema-specifications==2025.9.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4428238Z  + librt==0.15.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4429305Z  + linkify-it-py==2.2.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4430961Z  + markdown-it-py==4.2.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4432164Z  + mcp==2.2.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4433763Z  + mcp-types==2.2.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4434957Z  + mdit-py-plugins==0.6.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4436674Z  + mdurl==0.1.2
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4438005Z  + mypy==1.20.2
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4439587Z  + mypy-extensions==1.1.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4440809Z  + openai==2.54.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4442513Z  + opentelemetry-api==1.44.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4443361Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4445039Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4446373Z  + opentelemetry-proto==1.44.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4447521Z  + opentelemetry-sdk==1.44.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4449271Z  + opentelemetry-semantic-conventions==0.65b0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4449703Z  + packaging==26.3
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4451598Z  + pathspec==1.1.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4452680Z  + platformdirs==4.11.8
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4454370Z  + pluggy==1.6.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4455797Z  + protobuf==7.36.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4456831Z  + pycparser==3.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4458455Z  + pydantic==2.13.5
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4459695Z  + pydantic-core==2.46.5
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4460847Z  + pygments==2.21.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4462669Z  + pyjwt==2.13.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4463039Z  + pytest==8.4.2
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4464669Z  + pytest-asyncio==1.4.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4466109Z  + python-multipart==0.0.32
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4468848Z  + pywin32==312
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4469196Z  + pyyaml==6.0.3
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4470826Z  + referencing==0.37.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4472037Z  + requests==2.34.2
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4473659Z  + rich==15.0.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4474805Z  + rpds-py==2026.6.3
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4476695Z  + ruff==0.16.5
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4477892Z  + sniffio==1.3.1
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4479054Z  + sse-starlette==3.4.11
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4480640Z  + starlette==1.6.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4481866Z  + textual==8.2.8
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4483094Z  + tqdm==4.70.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4484434Z  + truststore==0.10.4
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4485834Z  + types-jsonschema==4.26.0.20260518
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4487233Z  + types-pyyaml==6.0.12.20260906
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4488800Z  + typing-extensions==4.16.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4490148Z  + typing-inspection==0.4.4
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4491266Z  + urllib3==2.7.0
+产品重启复验 windows	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:53.4492673Z  + uvicorn==0.52.4
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	﻿2026-09-29T01:37:53.6415839Z ##[group]Run uv run python -m scripts.run_restart_soak_candidate --evidence-root "$SOAK_EVIDENCE_ROOT" --report-root "$SOAK_REPORT_ROOT" --baseline-set "$SOAK_BASELINE_SET"
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6417143Z ^[[36;1muv run python -m scripts.run_restart_soak_candidate --evidence-root "$SOAK_EVIDENCE_ROOT" --report-root "$SOAK_REPORT_ROOT" --baseline-set "$SOAK_BASELINE_SET"^[[0m
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6474816Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6475233Z env:
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6475441Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6475738Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6476061Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6476412Z   UV_PYTHON: 3.12
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6476658Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6477094Z   SOAK_EVIDENCE_ROOT: D:\a\_temp/harnessix-restart-candidate-evidence
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6477651Z   SOAK_REPORT_ROOT: D:\a\_temp/harnessix-restart-candidate-reports
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6478212Z   SOAK_BASELINE_SET: authenticated-v1
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:53.6478706Z ##[endgroup]
+产品重启复验 windows	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:39:54.4721817Z {"baseline_run_id":"d25d42e78e0e471c82567ed6848f6c2d","baseline_set":"authenticated-v1","candidate_run_id":"323c6e37e54645faafcb0d59c81facbc","code_revision":"0ba1b8cdb4750bd7e3002ba471e21f12375df425","platform":"windows","profile_id":"fc0a66b952fa4f29a493dcee7be057ca","reason":"within_limits","scenario_id":"restart","status":"PASS"}
+产品重启复验 windows	保留候选Run、失败Attempt与报告	﻿2026-09-29T01:39:54.5648823Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5649312Z with:
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5649759Z   name: harnessix-restart-candidate-windows-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5650548Z   path: D:\a\_temp/harnessix-restart-candidate-evidence
+产品重启复验 windows	保留候选Run、失败Attempt与报告	D:\a\_temp/harnessix-restart-candidate-reports
+产品重启复验 windows	保留候选Run、失败Attempt与报告	
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5651065Z   if-no-files-found: ignore
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5651287Z   retention-days: 14
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5651489Z   compression-level: 6
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5651693Z   overwrite: false
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5651888Z   include-hidden-files: false
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5652102Z env:
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5652298Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5652602Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5652890Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5653168Z   UV_PYTHON: 3.12
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5653364Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.5653648Z ##[endgroup]
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.7564165Z (node:8248) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.7565854Z (Use `node --trace-deprecation ...` to show where the warning was created)
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.7700240Z Multiple search paths detected. Calculating the least common ancestor of all paths
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.7704760Z The least common ancestor is D:\a\_temp. This will be the root directory of the artifact
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.7705684Z With the provided path, there will be 8 files uploaded
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.7710447Z Artifact name is valid!
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:54.7712816Z Root directory input is valid!
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.1979014Z Beginning upload of artifact content to blob storage
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.2372436Z (node:8248) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.5383898Z Uploaded bytes 5715
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.6239230Z Finished uploading artifact content to blob storage!
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.6240596Z SHA256 digest of uploaded artifact zip is 05f77051463f091b2477cd99408a41373b61b0be5979dbc48afa24e465309786
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.6244230Z Finalizing artifact upload
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.8909761Z Artifact harnessix-restart-candidate-windows-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1.zip successfully finalized. Artifact ID 11008206937
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.8912392Z Artifact harnessix-restart-candidate-windows-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1 has been successfully uploaded! Final size is 5715 bytes. Artifact ID is 11008206937
+产品重启复验 windows	保留候选Run、失败Attempt与报告	2026-09-29T01:39:55.8921610Z Artifact download URL: https://github.com/carrie1988/Harnessix/actions/runs/36508768270/artifacts/11008206937
+产品重启复验 windows	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-29T01:39:55.9267609Z Post job cleanup.
+产品重启复验 windows	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:39:56.0643516Z UV_CACHE_DIR is already set to D:\a\_temp\setup-uv-cache
+产品重启复验 windows	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:39:56.0650618Z UV_PYTHON_INSTALL_DIR is already set to D:\a\_temp\uv-python-dir
+产品重启复验 windows	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:39:56.0653378Z Cache hit occurred on key setup-uv-2-x86_64-pc-windows-msvc-windows-2025-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b, not saving cache.
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-29T01:39:56.2016390Z Post job cleanup.
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.3985000Z [command]"C:\Program Files\Git\bin\git.exe" version
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.4253916Z git version 2.55.0.windows.5
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.4317150Z Temporarily overriding HOME='D:\a\_temp\524867c2-2a16-43c9-b834-70940b9615e3' before making global git config changes
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.4318454Z Adding repository directory to the temporary git global config as a safe directory
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.4327068Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Harnessix\Harnessix
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.4611743Z Removing SSH command configuration
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.4622447Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:56.4935746Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.0796123Z Removing HTTP extra header
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.0806744Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.1116918Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.6269240Z Removing includeIf entries pointing to credentials config files
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.6281795Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.6534202Z includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.6534867Z includeif.gitdir:/github/workspace/.git.path
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.6577708Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.6824353Z D:\a\_temp\git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.6870469Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/Harnessix/Harnessix/.git.path D:\a\_temp\git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.7161410Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git.path
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.7411052Z /github/runner_temp/git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.7452536Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:57.7754125Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+产品重启复验 windows	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:39:58.3110269Z Removing credentials config 'D:\a\_temp\git-credentials-12a415e6-6986-4c9f-8c2e-4057a357af16.config'
+产品重启复验 windows	Complete job	﻿2026-09-29T01:39:58.3304309Z Cleaning up orphan processes
+产品重启复验 windows	Complete job	2026-09-29T01:39:58.3967667Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+产品重启复验 linux	Set up job	﻿2026-09-29T01:37:25.9297748Z Current runner version: '2.337.0'
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9324818Z ##[group]Runner Image Provisioner
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9325913Z Hosted Compute Agent
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9326587Z Version: 20260828.587
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9327237Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9327947Z Build Date: 2026-08-28T16:44:25Z
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9328725Z Worker ID: {9d9ae557-0039-4094-b361-91c7f5002987}
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9329446Z Azure Region: westus
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9330064Z ##[endgroup]
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9331943Z ##[group]Operating System
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9332589Z Ubuntu
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9333235Z 24.04.5
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9333753Z LTS
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9334562Z ##[endgroup]
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9335144Z ##[group]Runner Image
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9335741Z Image: ubuntu-24.04
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9336374Z Version: 20260920.314.1
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9337446Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260920.314/images/ubuntu/Ubuntu2404-Readme.md
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9339286Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260920.314
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9340330Z ##[endgroup]
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9341492Z ##[group]GITHUB_TOKEN Permissions
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9343643Z Contents: read
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9344586Z Metadata: read
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9345166Z ##[endgroup]
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9347841Z Secret source: Actions
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9348857Z Cache mode: write
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9349664Z Prepare workflow directory
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9698458Z Prepare all required actions
+产品重启复验 linux	Set up job	2026-09-29T01:37:25.9749070Z Getting action download info
+产品重启复验 linux	Set up job	2026-09-29T01:37:26.3523335Z Download action repository 'actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3' (SHA:1af3b93b6815bc44a9784bd300feb67ff0d1eeb3)
+产品重启复验 linux	Set up job	2026-09-29T01:37:26.5049192Z Download action repository 'astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9' (SHA:c771a70e6277c0a99b617c7a806ffedaca235ff9)
+产品重启复验 linux	Set up job	2026-09-29T01:37:26.9829202Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+产品重启复验 linux	Set up job	2026-09-29T01:37:27.2090290Z Complete job name: 产品重启复验 linux
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-29T01:37:27.2919338Z ##[group]Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2920476Z with:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2920915Z   fetch-depth: 0
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2921405Z   repository: carrie1988/Harnessix
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2925483Z   token: ***
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2925927Z   ssh-strict: true
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2926369Z   ssh-user: git
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2926819Z   persist-credentials: true
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2927303Z   clean: true
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2927755Z   sparse-checkout-cone-mode: true
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2928277Z   fetch-tags: false
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2928714Z   show-progress: true
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2929168Z   lfs: false
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2929594Z   submodules: false
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2930038Z   set-safe-directory: true
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.2930784Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.3969947Z Syncing repository: carrie1988/Harnessix
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.3972918Z ##[group]Getting Git version info
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.3974318Z Working directory is '/home/runner/work/Harnessix/Harnessix'
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.3976082Z [command]/usr/bin/git version
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4058812Z git version 2.55.0
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4085874Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4103705Z Temporarily overriding HOME='/home/runner/work/_temp/c959735b-13a8-4f61-ade2-b393d02aeca8' before making global git config changes
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4106851Z Adding repository directory to the temporary git global config as a safe directory
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4110706Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4166517Z Deleting the contents of '/home/runner/work/Harnessix/Harnessix'
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4170024Z ##[group]Initializing the repository
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4176291Z [command]/usr/bin/git init /home/runner/work/Harnessix/Harnessix
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4285922Z hint: Using 'master' as the name for the initial branch. This default branch name
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4289488Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4292330Z hint: to use in all of your new repositories, which will suppress this warning,
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4295659Z hint: call:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4297129Z hint:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4298611Z hint: 	git config --global init.defaultBranch <name>
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4300365Z hint:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4302930Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4305593Z hint: 'development'. The just-created branch can be renamed via this command:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4307417Z hint:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4308642Z hint: 	git branch -m <name>
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4309742Z hint:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4311301Z hint: Disable this message with "git config set advice.defaultBranchName false"
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4313387Z Initialized empty Git repository in /home/runner/work/Harnessix/Harnessix/.git/
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4316733Z [command]/usr/bin/git remote add origin https://github.com/carrie1988/Harnessix
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4360957Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4362347Z ##[group]Disabling automatic garbage collection
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4372179Z [command]/usr/bin/git config --local gc.auto 0
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4411693Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4412864Z ##[group]Setting up auth
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4414351Z Removing SSH command configuration
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4419991Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4458727Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4847318Z Removing HTTP extra header
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4854064Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.4908271Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5152130Z Removing includeIf entries pointing to credentials config files
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5153477Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5193053Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5430342Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5474557Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5511274Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5547164Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5548041Z ##[group]Fetching the repository
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:27.5557180Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9396500Z From https://github.com/carrie1988/Harnessix
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9398217Z  * [new branch]      feat/m1-observability   -> origin/feat/m1-observability
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9400329Z  * [new branch]      feat/m1-worker-postgres -> origin/feat/m1-worker-postgres
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9401879Z  * [new branch]      main                    -> origin/main
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9408435Z [command]/usr/bin/git branch --list --remote origin/main
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9441099Z   origin/main
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9450465Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9477903Z 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9483404Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9485496Z ##[group]Determining the checkout info
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9487132Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9489622Z [command]/usr/bin/git sparse-checkout disable
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9566659Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9599554Z ##[group]Checking out the ref
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:28.9602938Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.2904805Z Switched to a new branch 'main'
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.2908897Z branch 'main' set up to track 'origin/main'.
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.2940079Z ##[endgroup]
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.2995507Z [command]/usr/bin/git log -1 --format=%H
+产品重启复验 linux	Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:37:29.3029624Z 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-29T01:37:29.3585173Z ##[group]Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3586965Z with:
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3587844Z   python-version: 3.12
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3588887Z   activate-environment: false
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3589997Z   no-project: false
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3591255Z   working-directory: /home/runner/work/Harnessix/Harnessix
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3601736Z   github-token: ***
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3602730Z   enable-cache: auto
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3605264Z   cache-dependency-glob: **/*requirements*.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*requirements*.in
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*constraints*.in
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/pyproject.toml
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/uv.lock
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	**/*.py.lock
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3607945Z   restore-cache: true
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3608928Z   save-cache: true
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3609873Z   prune-cache: false
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3610838Z   cache-python: false
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3611900Z   ignore-nothing-to-cache: false
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3613088Z   ignore-empty-workdir: false
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3614371Z   download-from-astral-mirror: true
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3615627Z   add-problem-matchers: true
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3616685Z   quiet: false
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3617634Z   resolution-strategy: highest
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.3618714Z ##[endgroup]
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.5710508Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/uv.toml
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.5715122Z Could not find file: /home/runner/work/Harnessix/Harnessix/uv.toml
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.5719145Z Trying to find version for uv in: /home/runner/work/Harnessix/Harnessix/pyproject.toml
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.5723680Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.5730461Z Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.6255086Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.12.20/uv-x86_64-unknown-linux-gnu.tar.gz" ...
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:29.7805195Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/dacb253d-7117-411b-af7f-ec5307e08d1e -f /home/runner/work/_temp/e87adc1e-aaac-4c31-8064-0beb7c2b2ca4
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1891276Z Added /home/runner/.local/bin to the path
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1897440Z Added /opt/hostedtoolcache/uv/0.12.20/x86_64 to the path
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1899023Z Set UV_PYTHON_INSTALL_DIR to /home/runner/work/_temp/uv-python-dir
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1899952Z Added /home/runner/work/_temp/uv-python-dir to the path
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1901115Z Set UV_PYTHON to 3.12
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1927114Z Set UV_CACHE_DIR to /home/runner/work/_temp/setup-uv-cache
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1927803Z Successfully installed uv version 0.12.20
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.1930135Z Searching files using cache dependency glob: /home/runner/work/Harnessix/Harnessix/**/*requirements*.txt,/home/runner/work/Harnessix/Harnessix/**/*requirements*.in,/home/runner/work/Harnessix/Harnessix/**/*constraints*.txt,/home/runner/work/Harnessix/Harnessix/**/*constraints*.in,/home/runner/work/Harnessix/Harnessix/**/pyproject.toml,/home/runner/work/Harnessix/Harnessix/**/uv.lock,/home/runner/work/Harnessix/Harnessix/**/*.py.lock
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3051270Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3086444Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3103645Z /home/runner/work/Harnessix/Harnessix/docs/validation/canonical-wheel-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3182029Z /home/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/linux/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3203583Z /home/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/macos/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3228059Z /home/runner/work/Harnessix/Harnessix/docs/validation/container-resource-admission-2026-09-29-v1/raw/windows/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3309603Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/linux/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3326618Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-312/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3344136Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/local-313/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3359925Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/macos/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3374835Z /home/runner/work/Harnessix/Harnessix/docs/validation/installed-product-three-platform-2026-09-29-v1/raw/windows/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.3522218Z /home/runner/work/Harnessix/Harnessix/docs/validation/product-restart-release-boundary-2026-09-29-v1/installation/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.6003606Z /home/runner/work/Harnessix/Harnessix/docs/validation/windows-private-state-2026-09-28-v1/installation/requirements.txt
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.6382820Z /home/runner/work/Harnessix/Harnessix/pyproject.toml
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.7677932Z /home/runner/work/Harnessix/Harnessix/uv.lock
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.7690238Z Found 15 files to hash.
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:30.7769726Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:31.0129221Z Cache hit for: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.2825871Z Received 0 of 39621478 (0.0%), 0.0 MBs/sec
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.5989218Z Received 39621478 of 39621478 (100.0%), 28.7 MBs/sec
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.5989921Z Cache Size: ~38 MB (39621478 B)
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:32.6099712Z [command]/usr/bin/tar -xf /home/runner/work/_temp/f0fb8aeb-5ffe-4208-9381-933bbd705550/cache.tzst -P -C /home/runner/work/Harnessix/Harnessix --use-compress-program unzstd
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0798123Z Cache restored successfully
+产品重启复验 linux	Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:37:33.0820600Z cache restored from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	﻿2026-09-29T01:37:33.1983192Z ##[group]Run uv sync --locked --all-extras --dev
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.1983645Z ^[[36;1muv sync --locked --all-extras --dev^[[0m
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2269765Z shell: /usr/bin/bash -e {0}
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2270182Z env:
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2270558Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2271021Z   UV_PYTHON: 3.12
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2271356Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2271793Z ##[endgroup]
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2467646Z Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2468432Z Creating virtual environment at: .venv
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2497821Z Resolved 74 packages in 1ms
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.2539143Z    Building harnessix @ file:///home/runner/work/Harnessix/Harnessix
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.6784773Z       Built harnessix @ file:///home/runner/work/Harnessix/Harnessix
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.6800074Z Prepared 1 package in 426ms
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7533661Z Installed 71 packages in 73ms
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7534853Z  + aiosqlite==0.22.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7535275Z  + annotated-types==0.8.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7535688Z  + anthropic==1.3.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7536042Z  + anyio==4.14.2
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7536385Z  + attrs==26.1.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7536929Z  + certifi==2026.7.22
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7537317Z  + cffi==2.1.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7537684Z  + charset-normalizer==3.5.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7538097Z  + click==8.5.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7538451Z  + cryptography==50.0.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7538999Z  + distro==1.9.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7539654Z  + docstring-parser==0.18.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7540186Z  + googleapis-common-protos==1.75.2
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7540635Z  + h11==0.16.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7541398Z  + harnessix==0.1.0 (from file:///home/runner/work/Harnessix/Harnessix)
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7542070Z  + httpcore==1.0.9
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7542430Z  + httpcore2==2.12.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7542799Z  + httpx==0.28.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7543139Z  + httpx2==2.12.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7543472Z  + idna==3.19
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7543817Z  + iniconfig==2.3.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7544409Z  + jiter==0.16.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7544761Z  + jsonschema==4.26.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7545170Z  + jsonschema-specifications==2025.9.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7545632Z  + librt==0.15.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7545985Z  + linkify-it-py==2.2.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7546378Z  + markdown-it-py==4.2.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7546754Z  + mcp==2.2.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7547087Z  + mcp-types==2.2.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7547464Z  + mdit-py-plugins==0.6.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7547856Z  + mdurl==0.1.2
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7548188Z  + mypy==1.20.2
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7548538Z  + mypy-extensions==1.1.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7548926Z  + openai==2.54.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7549290Z  + opentelemetry-api==1.44.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7549822Z  + opentelemetry-exporter-otlp-proto-common==1.44.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7550477Z  + opentelemetry-exporter-otlp-proto-http==1.44.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7551030Z  + opentelemetry-proto==1.44.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7551475Z  + opentelemetry-sdk==1.44.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7551967Z  + opentelemetry-semantic-conventions==0.65b0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7552484Z  + packaging==26.3
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7552833Z  + pathspec==1.1.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7553191Z  + platformdirs==4.11.8
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7553561Z  + pluggy==1.6.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7554087Z  + protobuf==7.36.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7554449Z  + pycparser==3.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7554795Z  + pydantic==2.13.5
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7555158Z  + pydantic-core==2.46.5
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7555541Z  + pygments==2.21.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7555888Z  + pyjwt==2.13.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7556230Z  + pytest==8.4.2
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7556581Z  + pytest-asyncio==1.4.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7556986Z  + python-multipart==0.0.32
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7557403Z  + pyyaml==6.0.3
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7557752Z  + referencing==0.37.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7558110Z  + requests==2.34.2
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7558448Z  + rich==15.0.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7558790Z  + rpds-py==2026.6.3
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7559141Z  + ruff==0.16.5
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7559812Z  + sniffio==1.3.1
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7560197Z  + sse-starlette==3.4.11
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7560577Z  + starlette==1.6.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7560964Z  + textual==8.2.8
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7561407Z  + tqdm==4.70.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7561744Z  + truststore==0.10.4
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7562137Z  + types-jsonschema==4.26.0.20260518
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7562590Z  + types-pyyaml==6.0.12.20260906
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7563024Z  + typing-extensions==4.16.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7563461Z  + typing-inspection==0.4.4
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7564179Z  + urllib3==2.7.0
+产品重启复验 linux	Run uv sync --locked --all-extras --dev	2026-09-29T01:37:33.7564558Z  + uvicorn==0.52.4
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	﻿2026-09-29T01:37:33.7715617Z ##[group]Run uv run python -m scripts.run_restart_soak_candidate --evidence-root "$SOAK_EVIDENCE_ROOT" --report-root "$SOAK_REPORT_ROOT" --baseline-set "$SOAK_BASELINE_SET"
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7717061Z ^[[36;1muv run python -m scripts.run_restart_soak_candidate --evidence-root "$SOAK_EVIDENCE_ROOT" --report-root "$SOAK_REPORT_ROOT" --baseline-set "$SOAK_BASELINE_SET"^[[0m
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7783162Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7783536Z env:
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7783962Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7784327Z   UV_PYTHON: 3.12
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7784612Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7785088Z   SOAK_EVIDENCE_ROOT: /home/runner/work/_temp/harnessix-restart-candidate-evidence
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7785647Z   SOAK_REPORT_ROOT: /home/runner/work/_temp/harnessix-restart-candidate-reports
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7786084Z   SOAK_BASELINE_SET: authenticated-v1
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:37:33.7786411Z ##[endgroup]
+产品重启复验 linux	使用已冻结Profile运行第二独立产品重启Run与复验	2026-09-29T01:38:04.7233116Z {"baseline_run_id":"0a0ab12fc7464f4bbab0ae7a0291b84b","baseline_set":"authenticated-v1","candidate_run_id":"5a994d6e15ee4e6fb9327b571a1de772","code_revision":"0ba1b8cdb4750bd7e3002ba471e21f12375df425","platform":"linux","profile_id":"f15456418e6145fba98d52f3edd2cda0","reason":"within_limits","scenario_id":"restart","status":"PASS"}
+产品重启复验 linux	保留候选Run、失败Attempt与报告	﻿2026-09-29T01:38:04.8133110Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8133576Z with:
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8134388Z   name: harnessix-restart-candidate-linux-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8135283Z   path: /home/runner/work/_temp/harnessix-restart-candidate-evidence
+产品重启复验 linux	保留候选Run、失败Attempt与报告	/home/runner/work/_temp/harnessix-restart-candidate-reports
+产品重启复验 linux	保留候选Run、失败Attempt与报告	
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8135921Z   if-no-files-found: ignore
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8136166Z   retention-days: 14
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8136394Z   compression-level: 6
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8136618Z   overwrite: false
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8136840Z   include-hidden-files: false
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8137081Z env:
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8137370Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8137709Z   UV_PYTHON: 3.12
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8137964Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.8138274Z ##[endgroup]
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.9866723Z (node:7435) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.9867686Z (Use `node --trace-deprecation ...` to show where the warning was created)
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.9995556Z Multiple search paths detected. Calculating the least common ancestor of all paths
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.9997364Z The least common ancestor is /home/runner/work/_temp. This will be the root directory of the artifact
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.9998328Z With the provided path, there will be 8 files uploaded
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.9999202Z Artifact name is valid!
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:04.9999623Z Root directory input is valid!
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:05.4095859Z Beginning upload of artifact content to blob storage
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:05.4469291Z (node:7435) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:05.7393370Z Uploaded bytes 5725
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:05.8202316Z Finished uploading artifact content to blob storage!
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:05.8204489Z SHA256 digest of uploaded artifact zip is e8d287f16db9981773d9a0c9ce29c69a7c0897392056f859be5abe3566dc4bfc
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:05.8205947Z Finalizing artifact upload
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:06.0673748Z Artifact harnessix-restart-candidate-linux-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1.zip successfully finalized. Artifact ID 11008271713
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:06.0676091Z Artifact harnessix-restart-candidate-linux-0ba1b8cdb4750bd7e3002ba471e21f12375df425-36508768270-1 has been successfully uploaded! Final size is 5725 bytes. Artifact ID is 11008271713
+产品重启复验 linux	保留候选Run、失败Attempt与报告	2026-09-29T01:38:06.0681865Z Artifact download URL: https://github.com/carrie1988/Harnessix/actions/runs/36508768270/artifacts/11008271713
+产品重启复验 linux	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	﻿2026-09-29T01:38:06.0900892Z Post job cleanup.
+产品重启复验 linux	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:38:06.2042951Z UV_CACHE_DIR is already set to /home/runner/work/_temp/setup-uv-cache
+产品重启复验 linux	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:38:06.2050089Z UV_PYTHON_INSTALL_DIR is already set to /home/runner/work/_temp/uv-python-dir
+产品重启复验 linux	Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9	2026-09-29T01:38:06.2053156Z Cache hit occurred on key setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.12-cd1d29826b1f19595a1ee3c37610c6ddbcd52255662acd11d24e71f2f627509b, not saving cache.
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	﻿2026-09-29T01:38:06.3204399Z Post job cleanup.
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4132304Z [command]/usr/bin/git version
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4180407Z git version 2.55.0
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4223330Z Temporarily overriding HOME='/home/runner/work/_temp/597da7a4-c6a8-4d2c-b136-97ddb1d9b777' before making global git config changes
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4225160Z Adding repository directory to the temporary git global config as a safe directory
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4237000Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Harnessix/Harnessix
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4288439Z Removing SSH command configuration
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4298821Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4358225Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4715421Z Removing HTTP extra header
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4722448Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.4787559Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5049196Z Removing includeIf entries pointing to credentials config files
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5059860Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5092865Z includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5093768Z includeif.gitdir:/github/workspace/.git.path
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5103741Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5134275Z /home/runner/work/_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5149263Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Harnessix/Harnessix/.git.path /home/runner/work/_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5200948Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5240593Z /github/runner_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5251631Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5295603Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+产品重启复验 linux	Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3	2026-09-29T01:38:06.5533482Z Removing credentials config '/home/runner/work/_temp/git-credentials-32a465b5-aff9-4b26-8f65-2842b2c0079b.config'
+产品重启复验 linux	Complete job	﻿2026-09-29T01:38:06.5686818Z Cleaning up orphan processes
+产品重启复验 linux	Complete job	2026-09-29T01:38:06.5981891Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
