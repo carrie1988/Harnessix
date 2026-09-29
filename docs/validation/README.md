@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 34
-code_revision: 7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46
+version: 35
+code_revision: 9b0d1230e702aa72b0ea946e1d49eb19a28d2784
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-29 | [认证重启第一轮候选与Mac资源不匹配](authenticated-restart-three-platform-candidate-2026-09-29-v1/README.md) | `9b0d1230e702aa72b0ea946e1d49eb19a28d2784` | 原认证Profile、三平台500 Thread、零模型请求 | Linux/Windows PASS；Mac同镜像但c3-m7→c5-m14，unverified；原报告独立复算一致 | 三平台NO_GO；原Profile和全部旧FAIL保留，不以更强硬件接受PASS |
 | 2026-09-29 | [默认认证产品三平台重启基线与Profile冻结](authenticated-restart-three-platform-2026-09-29-v1/README.md) | `7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46` | 三平台500 Thread、五周期、原余量、零模型请求 | 三平台基线及封印Profile有效；双Python Benchmark各241通过/1原生跳过 | 尚非候选PASS；旧容量FAIL、R1整体及商用门禁保持 |
 | 2026-09-29 | [操作Schema整改后默认产品真实模型合同](product-provider-operation-schema-2026-09-29-v1/README.md) | 验收`c8033e08a260cfde793bf9809f6979a833fc92d5`、产品`6a686fd` | 原驱动SHA、北京精确快照、70元原周期、1024输出Token/单次尝试；一次两个场景 | 离线两场景与越界负对照通过；真实审批修改及取消通过，5请求、22626/634 Token、估算0.100648元；原认证Store/Usage独立复核通过 | 有限产品合同GO；原0/20、完整20 Trial、Beta、Windows11及商用门禁仍开放 |
 | 2026-09-29 | [Workspace Patch操作Schema与旧批准边界](workspace-patch-operation-schema-2026-09-29-v1/README.md) | `6a686fdd00162babd0dbaa8b0785186dd15c3cbc` | 双Python受影响回归；原Schema和正式Adapter；模型请求0 | 336字段组合及17焦点通过；双Python各2890通过/70跳过；原校验与旧批准拒绝保持 | 离线专项GO；旧真实FAIL、0/20及商用门禁保持，新的线上认证另行验证 |

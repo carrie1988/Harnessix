@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 0363dc3b1fc7bdcba9d5aeb0f4798dbfccc0e71d
+version: 2
+code_revision: 9b0d1230e702aa72b0ea946e1d49eb19a28d2784
 owners:
   - core
 modules:
@@ -159,7 +159,7 @@ re-read Run, Attempt and sealed report; preserve every result
 COMMITTED、FINAL及SEALED的规范字节和文件集保持既有合同；同ID不可覆盖。
 三平台并行采集但各自使用独立证据根，不跨平台共用Profile。
 V5 Run和V1 Profile格式不变；认证与历史基线分目录、分Profile ID，禁止自动回退到历史Profile。
-候选入口需要显式区分基线集合；历史读取保留，正式认证复验不得通过时间排序选择Profile。
+候选入口显式区分基线集合；历史读取保留，正式认证复验不得通过时间排序选择Profile。
 候选Python入口、CLI和工作流默认选择认证集合；只有显式历史诊断才使用旧未认证Profile。
 
 ## 9. 失败、取消、超时、错误分类与可观测性
@@ -202,3 +202,15 @@ Session Key由产品创建并留在临时私有状态，不写入Git、日志、
 交付目录须包含完整中文报告、结构化事实、Run/Attempt/Profile/Report、Manifest、Review Packet及验证日志。
 报告明确执行Revision、负载身份、原余量、原FAIL、当前结果及未验证边界。
 只有三平台独立报告PASS且相关合同回归通过，才能关闭本固定认证重启场景；其他R1～R6要求保持原状态。
+
+### 12.1 第一轮候选环境不匹配与执行前准入
+
+[第一轮候选原件](../validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/README.md)
+保留Linux/Windows PASS及macOS unverified。Mac基线为c3-m7，候选为c5-m14，
+二者OS镜像及版本相同，不能把资源变化解释成已经证明的镜像迁移或指标退化。
+候选入口在源码Revision读取、STARTED和实际负载前验证实际资源档位及Python范围，
+不匹配时返回`soak_environment_mismatch`且不创建Attempt；原Reader的完整事后校验继续保留。
+当前macOS采集/候选工作流改用版本化标准标签`macos-26`，不请求付费Larger Runner；
+固定OS标签不能保证资源档位，仍必须按实际读数匹配原Profile，不能按标签伪造CPU/内存。
+资源漂移和Python越界各有无负载拒绝回归。原余量、Profile、Run格式及生产认证没有变化。
+后继只进行一次受控新Run；不能以反复调度或放宽环境匹配条件制造PASS。

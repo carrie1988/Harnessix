@@ -1,0 +1,53 @@
+{
+  "source_revision": "9b0d1230e702aa72b0ea946e1d49eb19a28d2784",
+  "workflow_run_id": 36507049020,
+  "results": [
+    {
+      "platform": "linux",
+      "status": "PASS",
+      "reason": "within_limits",
+      "baseline_hardware_class": "c4-m16",
+      "candidate_hardware_class": "c4-m16",
+      "baseline_run_id": "0a0ab12fc7464f4bbab0ae7a0291b84b",
+      "candidate_run_id": "562db1ee933a493f827247295b6ae980",
+      "profile_id": "f15456418e6145fba98d52f3edd2cda0",
+      "db_growth_bytes": 2015232,
+      "db_upper_bytes": 3022848,
+      "independent_report_recalculation": true,
+      "profile_prebound_before_load": true
+    },
+    {
+      "platform": "macos",
+      "status": "unverified",
+      "reason": "environment_mismatch",
+      "baseline_hardware_class": "c3-m7",
+      "candidate_hardware_class": "c5-m14",
+      "baseline_run_id": "b9e1499aaaa043f3bfa9a628e85f876b",
+      "candidate_run_id": "b50b31c36e3e40fc9a9d5f3cea61e1bd",
+      "profile_id": "5f97d2d890c34ccab5fbbb8b5406d303",
+      "db_growth_bytes": 2113536,
+      "db_upper_bytes": 3182592,
+      "independent_report_recalculation": true,
+      "profile_prebound_before_load": true
+    },
+    {
+      "platform": "windows",
+      "status": "PASS",
+      "reason": "within_limits",
+      "baseline_hardware_class": "c4-m16",
+      "candidate_hardware_class": "c4-m16",
+      "baseline_run_id": "d25d42e78e0e471c82567ed6848f6c2d",
+      "candidate_run_id": "e8e56c2ce30747e9b887756b34fb9c9e",
+      "profile_id": "fc0a66b952fa4f29a493dcee7be057ca",
+      "db_growth_bytes": 2121728,
+      "db_upper_bytes": 3182592,
+      "independent_report_recalculation": true,
+      "profile_prebound_before_load": true
+    }
+  ],
+  "three_platform_gate_passed": false,
+  "paid_model_requests": 0,
+  "quality_trials_counted": 0,
+  "original_profiles_changed": false,
+  "commercial_release_accepted": false
+}

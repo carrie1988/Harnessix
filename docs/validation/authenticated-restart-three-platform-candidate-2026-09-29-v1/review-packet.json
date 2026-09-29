@@ -1,0 +1,24 @@
+{
+  "spec_version": "harnessix.validation-review-packet/v1",
+  "source_revision": "9b0d1230e702aa72b0ea946e1d49eb19a28d2784",
+  "decision": "NO_GO_environment_mismatch",
+  "original_failures_preserved": true,
+  "profile_limits_changed": false,
+  "required_checks": {
+    "linux": "PASS",
+    "windows": "PASS",
+    "macos": "unverified_environment_mismatch",
+    "independent_reports": "PASS"
+  },
+  "paid_model_requests": 0,
+  "quality_trials_counted": 0,
+  "commercial_release": false,
+  "still_open": [
+    "macos_matching_environment",
+    "R1_complete_safety",
+    "R3_real_quality",
+    "R4_consumer_and_upgrade",
+    "R5_beta",
+    "R6_release"
+  ]
+}

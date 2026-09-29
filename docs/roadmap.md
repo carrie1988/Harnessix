@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 119
-code_revision: 7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46
+version: 120
+code_revision: 9b0d1230e702aa72b0ea946e1d49eb19a28d2784
 owners:
   - core
 modules:
@@ -931,7 +931,9 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 增长主要来自新增认证证明表和索引；采用[独立认证负载基线](changes/m09-r1-authenticated-restart-baseline.md)，
 保持原500 Thread、五周期及余量规则，先冻结Profile再做第二独立复验。旧FAIL保留，
 不新增存储编码或弱化认证。[三平台新基线与Profile](validation/authenticated-restart-three-platform-2026-09-29-v1/README.md)已冻结，
-第二独立候选尚未执行，不登记容量PASS。
+[第一轮独立候选](validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/README.md)Linux/Windows PASS，
+macOS因c3-m7与c5-m14资源不匹配保持unverified；执行前准入及版本化Runner已补，
+后继受控复验尚待完成，不登记三平台容量PASS。
 [统一交付](validation/product-restart-release-boundary-2026-09-29-v1/README.md)分别记录原生、制品、安装和性能边界，
 不把这些增量推导为三平台完整安装、真实质量、Beta或1.0完成；R1～R6仍开放。
 

@@ -18,7 +18,7 @@ jobs:
           - platform: linux
             runner: ubuntu-latest
           - platform: macos
-            runner: macos-latest
+            runner: macos-26
           - platform: windows
             runner: windows-latest
     steps:

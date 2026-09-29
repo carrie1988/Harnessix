@@ -172,7 +172,11 @@ async def test_candidate_prebinds_profile_and_uses_fixed_formal_load(
 
     report = SimpleNamespace(status="PASS", reason="within_limits")
     monkeypatch.setattr(
-        run_restart_soak_candidate, "read_environment", lambda: SimpleNamespace(platform=platform)
+        run_restart_soak_candidate,
+        "read_environment",
+        lambda: SimpleNamespace(
+            platform=platform, hardware_class=profile.hardware_class, python_version="3.12.10"
+        ),
     )
     monkeypatch.setattr(run_restart_soak_candidate, "_revision", lambda: revision)
     monkeypatch.setattr(run_restart_soak_candidate, "run_product_restart", run)
@@ -424,4 +428,30 @@ async def test_candidate_rejects_invalid_mathematical_limit_before_workload(
             tmp_path / "evidence", tmp_path / "reports", baseline_set="legacy-unprotected-v1"
         )
     assert rejected.value.code == "soak_profile_baseline_invalid"
+    assert not (tmp_path / "evidence").exists()
+
+
+@pytest.mark.parametrize("drift", ["hardware", "python"])
+async def test_candidate_rejects_environment_drift_before_revision_or_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, drift: str
+) -> None:
+    archive = run_restart_soak_candidate._archive_for_set("authenticated-v1")  # noqa: SLF001
+    directory = run_restart_soak_candidate._only_profile("linux", archive=archive)  # noqa: SLF001
+    profile, _ = read_profile(directory)
+    environment = SimpleNamespace(
+        platform="linux", hardware_class=profile.hardware_class, python_version="3.12.10"
+    )
+    if drift == "hardware":
+        environment.hardware_class = "c5-m14"
+    else:
+        environment.python_version = "3.13.8"
+    monkeypatch.setattr(run_restart_soak_candidate, "read_environment", lambda: environment)
+
+    def must_not_read_revision():
+        raise AssertionError("错环境不应开始正式Attempt或负载")
+
+    monkeypatch.setattr(run_restart_soak_candidate, "_revision", must_not_read_revision)
+    with pytest.raises(KernelError) as rejected:
+        await run_restart_soak_candidate.run_candidate(tmp_path / "evidence", tmp_path / "reports")
+    assert rejected.value.code == "soak_environment_mismatch"
     assert not (tmp_path / "evidence").exists()

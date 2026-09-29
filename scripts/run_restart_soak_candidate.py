@@ -97,7 +97,8 @@ async def run_candidate(
     """先核对只读基线，再执行固定规模候选并重读不可覆盖报告。"""
 
     archive = _archive_for_set(baseline_set)
-    platform = read_environment().platform
+    environment = read_environment()
+    platform = environment.platform
     profile_directory = _only_profile(platform, archive=archive)
     profile, profile_sha = read_profile(profile_directory)
     baseline_directory = archive / "raw" / platform / profile.baseline_run_id
@@ -122,6 +123,13 @@ async def run_candidate(
         raise KernelError("soak_profile_baseline_invalid", "产品重启冻结基线不完整")
     if baseline_set == "authenticated-v1":
         _check_authenticated_policy(profile, baseline)
+    if environment.hardware_class != profile.hardware_class or not tuple(
+        map(int, profile.python_min.split("."))
+    ) <= tuple(map(int, environment.python_version.split("."))) <= tuple(
+        map(int, profile.python_max.split("."))
+    ):
+        # 浮动托管机即使更快也不能借用其他资源档位的Profile。
+        raise KernelError("soak_environment_mismatch", "产品重启执行环境不匹配冻结Profile")
 
     revision = _revision()
     reference = SoakProfileReference(profile_id=profile.profile_id, sha256=profile_sha)

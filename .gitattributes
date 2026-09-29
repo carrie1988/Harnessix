@@ -107,3 +107,8 @@ docs/changes/m09-r1-authenticated-restart-baseline-plan.json -text
 docs/validation/authenticated-restart-three-platform-2026-09-29-v1/** -text
 docs/validation/authenticated-restart-three-platform-2026-09-29-v1/logs/*.log -diff -merge
 docs/validation/authenticated-restart-three-platform-2026-09-29-v1/logs/*.xml -diff -merge
+
+# 认证第一轮候选原报告和资源不匹配事实保持原字节。
+docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/** -text
+docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/logs/*.xml -diff -merge

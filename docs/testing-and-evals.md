@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 43
-code_revision: 7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46
+version: 44
+code_revision: 9b0d1230e702aa72b0ea946e1d49eb19a28d2784
 owners:
   - core
 modules:
@@ -577,7 +577,10 @@ R3先复核原0/20失败归因和Task Pack适用性，再预注册完整运行�
 启动10000bp和RSS/DB/WAL/Artifact增长5000bp，候选值不参与阈值生成。
 候选Python入口、CLI和工作流默认`authenticated-v1`；历史诊断须显式选择`legacy-unprotected-v1`。
 基线缺失、来源不符、规则漂移或数学阈值无效必须在负载前拒绝，不能自动回退。
-三平台新基线及Profile已冻结；固定场景须取得第二独立Run的三份完整PASS报告才能关闭。
+三平台新基线及Profile已冻结；[第一轮候选](validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/README.md)
+Linux/Windows通过，Mac资源档位不匹配而unverified。候选在负载前严格核对实际硬件/Python，
+不能按标准Runner标签假定资源或跨档位接受更快成绩；原数学阈值及环境比较保持。
+固定场景须取得独立Run的三份完整PASS报告才能关闭。
 本无Turn场景不计真实编码Trial，原0/20、消费者平台和用户Beta仍分别验收。
 详设、字段、伪代码及失败语义见[认证重启详设](changes/m09-r1-authenticated-restart-baseline.md)。
 

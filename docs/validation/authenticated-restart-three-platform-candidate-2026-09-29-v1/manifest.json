@@ -1,0 +1,274 @@
+{
+  "spec_version": "harnessix.validation-manifest/v1",
+  "source_revision": "9b0d1230e702aa72b0ea946e1d49eb19a28d2784",
+  "self_excluded": "manifest.json",
+  "source_inputs": [
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/manifest.json",
+      "bytes": 13513,
+      "sha256": "613a2eea7208b921b294267638866546e558ec57463a022ac0551ca76760fa8e"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/profiles/linux/f15456418e6145fba98d52f3edd2cda0/SEALED.json",
+      "bytes": 144,
+      "sha256": "ea9c7d74b30525f2f3c271beaf248eb1d7e0dfb4e9322a15d48727d0e2fdc43a"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/profiles/linux/f15456418e6145fba98d52f3edd2cda0/profile.json",
+      "bytes": 1569,
+      "sha256": "1e306650c06a786680e96f36ab8b40a3a11ab801bfa4e1ead3a45d17f8aa816c"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/profiles/macos/5f97d2d890c34ccab5fbbb8b5406d303/SEALED.json",
+      "bytes": 144,
+      "sha256": "7153bad10cae1d5118a833d79257be19c9b7db4d3440b635b20c2640b75dd0fe"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/profiles/macos/5f97d2d890c34ccab5fbbb8b5406d303/profile.json",
+      "bytes": 1568,
+      "sha256": "fdfb82adaed262eb1c4c543b52a3177f8cfb44b03a9f24bb06d75de7321898e9"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/profiles/windows/fc0a66b952fa4f29a493dcee7be057ca/SEALED.json",
+      "bytes": 144,
+      "sha256": "288dd07face85dddcc72ca7440b9b65aaf76dd5375e4eb54e37f4fca12b565dd"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/profiles/windows/fc0a66b952fa4f29a493dcee7be057ca/profile.json",
+      "bytes": 1574,
+      "sha256": "7db3aa4cba64a17548d447cf6b1e8fd8ed7bf8ece169c85fb5884d33c719f0b9"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/linux/0a0ab12fc7464f4bbab0ae7a0291b84b/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "9c73da0aa103791ac99fa4925fd5c8c80e3aa9a92a5aad780258df486bc41fa8"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/linux/0a0ab12fc7464f4bbab0ae7a0291b84b/manifest.json",
+      "bytes": 1711,
+      "sha256": "bd03f5928c35cb3fee20d8672f3ae1b7091c80c8953122f14234a187ddaa38e6"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/linux/0a0ab12fc7464f4bbab0ae7a0291b84b/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "d8762cbfe8437af8ba1560dd7b4c02c29a88a7802a3ef0dc4c7929ed85bf77fe"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/linux/0a0ab12fc7464f4bbab0ae7a0291b84b/samples.jsonl",
+      "bytes": 1241,
+      "sha256": "490527bc67e2062f0e92e771042dc9afe5b03e5459844365113895ce63de5209"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/linux/attempts/0a0ab12fc7464f4bbab0ae7a0291b84b/FINAL.json",
+      "bytes": 267,
+      "sha256": "8cfe8da85e07a296ac177f79f33a1a8258678848c68d92ba04973ded824fb0f2"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/linux/attempts/0a0ab12fc7464f4bbab0ae7a0291b84b/STARTED.json",
+      "bytes": 221,
+      "sha256": "74046ce6acd562181cf71e0f1300d7fb1968a710e1e3aac83fee9fb0903dcb2c"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/macos/attempts/b9e1499aaaa043f3bfa9a628e85f876b/FINAL.json",
+      "bytes": 267,
+      "sha256": "890a50426995ea847bdc4177bc514b5f7fea41f70068efb9e7824a495945e87e"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/macos/attempts/b9e1499aaaa043f3bfa9a628e85f876b/STARTED.json",
+      "bytes": 221,
+      "sha256": "652a106601abfc9ff06f3003781e356b437859cffc11cfbc866e2f85adb95f14"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/macos/b9e1499aaaa043f3bfa9a628e85f876b/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "892c0d7b1bccae05326bc825a64b2033f1cd305571625f8a20f49b167f8c9a94"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/macos/b9e1499aaaa043f3bfa9a628e85f876b/manifest.json",
+      "bytes": 1704,
+      "sha256": "49013ac0ebd8450b7c1f3a3fe8cf2284bf6212d28363b1ae30f2093a5ecf89c5"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/macos/b9e1499aaaa043f3bfa9a628e85f876b/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "e73a787391be091287d9cb5a6ba8f2a6d1a3947c92ce0e1b3580070e7547f29c"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/macos/b9e1499aaaa043f3bfa9a628e85f876b/samples.jsonl",
+      "bytes": 1238,
+      "sha256": "c10cfa729d56696645a08d78ed85e12bd16c9498a96ad08ecb19387cfabd5c0c"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/windows/attempts/d25d42e78e0e471c82567ed6848f6c2d/FINAL.json",
+      "bytes": 267,
+      "sha256": "29dd2698e018f055cd41a23ac858dac189a46db3020fa0222562a08261c1db41"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/windows/attempts/d25d42e78e0e471c82567ed6848f6c2d/STARTED.json",
+      "bytes": 221,
+      "sha256": "7cc377b5d6871df073f25c5898183e2b8ae0903a6de4d2170103035dac047e29"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/windows/d25d42e78e0e471c82567ed6848f6c2d/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "d83da43c6f96e549ca78a311f044c6e5dc229a3da675fe54c35a86a12ec2d66c"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/windows/d25d42e78e0e471c82567ed6848f6c2d/manifest.json",
+      "bytes": 1719,
+      "sha256": "ae74a05704df3bc41070e6a6770e5b614e452eb725f7c9fe9e9a71f335d7f4e4"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/windows/d25d42e78e0e471c82567ed6848f6c2d/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "c3f0eb7cc910728cc5654520ff70a486676b36b1125718c7f83b6c4b31dc232c"
+    },
+    {
+      "path": "docs/validation/authenticated-restart-three-platform-2026-09-29-v1/raw/windows/d25d42e78e0e471c82567ed6848f6c2d/samples.jsonl",
+      "bytes": 1249,
+      "sha256": "85d4bfed7e287aec8b3d1ab02b9fb1697ab136d6840fda4918e528000c742cd1"
+    }
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4392,
+      "sha256": "05ed4f70b24f0fd63b1e8e357bd9112ad58b852b425457b6a821c096686430d6"
+    },
+    {
+      "path": "facts/candidate-workflow.json",
+      "bytes": 6118,
+      "sha256": "fc3a0253203adab6fa76d4cca24e58b4508914d2587f6848f79a8fd34b3bdf1a"
+    },
+    {
+      "path": "logs/candidate-macos-job.log",
+      "bytes": 54280,
+      "sha256": "6a5151c30f5f9d69a3cd28af826fbf06b4ec4f444226b967405db9e9b9b81e60"
+    },
+    {
+      "path": "logs/environment-guard-tests.log",
+      "bytes": 458,
+      "sha256": "3ae1154b50411ba1488cbc488f4acbe7ad543c9c387054040be314c11ef54f51"
+    },
+    {
+      "path": "logs/environment-guard-tests.xml",
+      "bytes": 41574,
+      "sha256": "b43a106c2947b2865d0205cc0b9f2f119e584c972e12c9d626779b2299b165d1"
+    },
+    {
+      "path": "raw/linux/harnessix-restart-candidate-evidence/562db1ee933a493f827247295b6ae980/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "1d0f4afe2b35ad2a6388a7531ad36db62e602603644272e86309de0c509e3f70"
+    },
+    {
+      "path": "raw/linux/harnessix-restart-candidate-evidence/562db1ee933a493f827247295b6ae980/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "e5eac00b85015a7c5ed9f53ee64fe361251bea0187ec059024d4b050a629ff3b"
+    },
+    {
+      "path": "raw/linux/harnessix-restart-candidate-evidence/562db1ee933a493f827247295b6ae980/samples.jsonl",
+      "bytes": 1240,
+      "sha256": "287e8e0338849e799a3fd32749a355c447e8ab2542b28540eca090de303d262f"
+    },
+    {
+      "path": "raw/linux/harnessix-restart-candidate-evidence/attempts/562db1ee933a493f827247295b6ae980/FINAL.json",
+      "bytes": 267,
+      "sha256": "a103d00b763766b783f2c1a7b59db78a337a4d85c2c5c086af89c0f63a6306c9"
+    },
+    {
+      "path": "raw/linux/harnessix-restart-candidate-evidence/attempts/562db1ee933a493f827247295b6ae980/STARTED.json",
+      "bytes": 371,
+      "sha256": "c683670d6518ae2547c44988d1d0bbdc2b6d7d800f1e022b78f0020dad8102d7"
+    },
+    {
+      "path": "raw/linux/harnessix-restart-candidate-reports/c9622a0b07514dd5959feaba1951ce48/SEALED.json",
+      "bytes": 143,
+      "sha256": "a0ce12a43a3e976ed5eb1d8451a7814fd2b319ce83d16e00fd7588a128ec0d58"
+    },
+    {
+      "path": "raw/linux/harnessix-restart-candidate-reports/c9622a0b07514dd5959feaba1951ce48/report.json",
+      "bytes": 626,
+      "sha256": "48b01c6d8c32d2834c64e56c1dd03bbfa08a0edb9e92e50538314bfe8274001e"
+    },
+    {
+      "path": "raw/macos/harnessix-restart-candidate-evidence/attempts/b50b31c36e3e40fc9a9d5f3cea61e1bd/FINAL.json",
+      "bytes": 267,
+      "sha256": "3e66f4defd865f85f299d86211ea6e695e2f8e3ca9204533fba89d6602f24b68"
+    },
+    {
+      "path": "raw/macos/harnessix-restart-candidate-evidence/attempts/b50b31c36e3e40fc9a9d5f3cea61e1bd/STARTED.json",
+      "bytes": 371,
+      "sha256": "4795aba9694ce256c9d688b524f05c984b38e9923b36c2c4069a1c527101ccc8"
+    },
+    {
+      "path": "raw/macos/harnessix-restart-candidate-evidence/b50b31c36e3e40fc9a9d5f3cea61e1bd/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "120ffa4946b057ae04e6c38f44b87206fadc166ed4fe77aa1d19489955b630f3"
+    },
+    {
+      "path": "raw/macos/harnessix-restart-candidate-evidence/b50b31c36e3e40fc9a9d5f3cea61e1bd/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "8ae6fa2aa42d56c426a120da805c99808c1212f7e5b97494506859d7394a6509"
+    },
+    {
+      "path": "raw/macos/harnessix-restart-candidate-evidence/b50b31c36e3e40fc9a9d5f3cea61e1bd/samples.jsonl",
+      "bytes": 1238,
+      "sha256": "805bd437e9ba6e789e4373fdd384f94ed88c6cb076a5bb9a3f64b602f3ae2375"
+    },
+    {
+      "path": "raw/macos/harnessix-restart-candidate-reports/7f10b69bbe2d4617a0b37dcfe3485585/SEALED.json",
+      "bytes": 143,
+      "sha256": "9319997d950e858353f0e9bff72438da31e0531f623df906baeaeeae8b0d562c"
+    },
+    {
+      "path": "raw/macos/harnessix-restart-candidate-reports/7f10b69bbe2d4617a0b37dcfe3485585/report.json",
+      "bytes": 639,
+      "sha256": "918aa197be72f55b7dc85ce1dd67396fce27c3b29b547da602b38ce7b3f33707"
+    },
+    {
+      "path": "raw/windows/harnessix-restart-candidate-evidence/attempts/e8e56c2ce30747e9b887756b34fb9c9e/FINAL.json",
+      "bytes": 267,
+      "sha256": "4ddbfe34b2371fcc12bf3b34270388fc521def36b629a956bb581adf669bc51f"
+    },
+    {
+      "path": "raw/windows/harnessix-restart-candidate-evidence/attempts/e8e56c2ce30747e9b887756b34fb9c9e/STARTED.json",
+      "bytes": 371,
+      "sha256": "f1db8c183b22c18e61149da4846581c1ec6a1f9ac20f0dd6635cd272423f1c8f"
+    },
+    {
+      "path": "raw/windows/harnessix-restart-candidate-evidence/e8e56c2ce30747e9b887756b34fb9c9e/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "acc824e45fca41250f81660a8b46867646ed300103f42f2d8abf1206ee1e957e"
+    },
+    {
+      "path": "raw/windows/harnessix-restart-candidate-evidence/e8e56c2ce30747e9b887756b34fb9c9e/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "fdc2ebd721e77717893165538188e9b9ceb1123588580f97bcbd1b31e8964c30"
+    },
+    {
+      "path": "raw/windows/harnessix-restart-candidate-evidence/e8e56c2ce30747e9b887756b34fb9c9e/samples.jsonl",
+      "bytes": 1249,
+      "sha256": "7c064ea676872bc51e8bbee399eb6c4ae1adab78fd4ea9f83f8edb9393a9a855"
+    },
+    {
+      "path": "raw/windows/harnessix-restart-candidate-reports/6676e368d7da47d8b29720f856fdc10d/SEALED.json",
+      "bytes": 143,
+      "sha256": "2319c1e475a7a17c326758cd1f3a132d15989363b23cebaf7d9613fd5fbbb089"
+    },
+    {
+      "path": "raw/windows/harnessix-restart-candidate-reports/6676e368d7da47d8b29720f856fdc10d/report.json",
+      "bytes": 626,
+      "sha256": "92237db8b5c736995c43ae8d4dbebe77d1069a31f5579cd67779a57b6bb1fb6a"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 658,
+      "sha256": "cac5df4f294455616b41084dfddc961e17b8f5126623e26f890332a7b595dd56"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1874,
+      "sha256": "ce16858bd22808c73b7fb1b8c6ab5c4f18304f0a7f2beeb2acfe1996df15bce7"
+    }
+  ]
+}
