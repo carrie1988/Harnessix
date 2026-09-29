@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 127
-code_revision: 0813c581982fddf17503d47a308419035d193ecf
+version: 128
+code_revision: 0cdad2bd544dd1cd9c722ec8399243def9405777
 owners:
   - core
 modules:
@@ -1000,3 +1000,9 @@ asyncio Watcher竞争，原生macOS受控延迟实际Watcher复现退出255；�
 旧漂移继续拒绝，正式Patch允许值、真实Provider、Pack及Grader均不变。
 [专项交付](validation/single-child-reaper-2026-09-30-v1/README.md)保留每轮FAIL、最终关联回归与实际容器结果；
 新同候选原生门禁独立验证，不外推真实质量或商用发布。
+
+固定`0cdad2b`的Windows原生焦点116通过、5跳过、3失败：启动期取消已通过，
+另三模式在新测试Bootstrap中提前退出1，具体系统错误尚未从stderr摘要确定。
+后继[测试就绪合同](changes/m09-r1-single-child-reaper.md#8-windows测试bootstrap的两阶段就绪合同)
+采用PID正文关闭后单独创建空就绪标记，并增加低敏原生发布探针。
+生产Job/Share/DACL和原Lease、停止原因、EOF及子进程停止要求不变；新的原生结果需独立取得。

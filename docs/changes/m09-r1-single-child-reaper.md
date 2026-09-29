@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 0813c581982fddf17503d47a308419035d193ecf
+version: 2
+code_revision: 0cdad2bd544dd1cd9c722ec8399243def9405777
 owners: [core]
 modules: [processes, tools]
 related_adrs:
@@ -11,11 +11,12 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/processes/test_runtime.py
+  - tests/processes/test_child_ready.py
   - tests/tools/test_windows_git.py
 supersedes: []
 ---
 
-# POSIX直接子进程唯一回收与Windows测试标记原子发布
+# POSIX直接子进程唯一回收与Windows独立就绪发布
 
 ## 1. 需求背景、设计目标与约束
 
@@ -34,7 +35,10 @@ supersedes: []
 
 另一个固定`0813c58`的Windows CI在启动期取消测试中已完成Lease终态断言，却读取到空PID标记。
 测试Bootstrap直接`write_text`，取消可发生在文件创建/截断后、正文写入前。目标是修复测试就绪事实的
-发布原子性，而不是改变Windows Job Object、进程终止或可信Receipt。
+发布完整性，而不是改变Windows Job Object、进程终止或可信Receipt。
+固定`0cdad2b`改为临时文件Rename后，启动期取消通过，但timeout/token/task三项真实用例的Bootstrap
+提前退出1；原生焦点116通过、5跳过、3失败。585字节stderr摘要不能证明具体系统错误，
+因此后继原生探针只记录类别、errno与Win32数值码，不预先将其断言为共享冲突。
 
 非目标：新增Child Watcher、改全局事件循环、推断退出码、改变Owner协议、取消预算或生产Windows执行策略。
 
@@ -54,7 +58,8 @@ flowchart LR
 [runtime.py](../../src/harnessix/processes/runtime.py)拥有原会话内PID、进程组信号和清理责任。
 [CaptureProtocol](../../src/harnessix/processes/capture.py)只记录原Transport通知与有界输出。
 `asyncio`拥有直接子进程的唯一`waitpid`及实际退出状态；产品不得另调`poll/wait/waitpid`。
-Windows变更仅位于[原生Git取消测试Bootstrap](../../tests/tools/test_windows_git.py)。
+Windows变更仅位于[原生Git取消测试Bootstrap](../../tests/tools/test_windows_git.py)及
+[测试专用程序](../../tests/processes/child_ready.py)，没有修改生产Windows终止或文件系统端口。
 
 选择失败后备复用原`os.killpg`只发信号；原组终止成功后只等待Watcher，不再重复信号。
 不访问`transport._proc`或其他CPython私有句柄，不增加依赖或平台全局配置。
@@ -70,8 +75,8 @@ Windows变更仅位于[原生Git取消测试Bootstrap](../../tests/tools/test_wi
 | `capture.exited` | 唯一Child Watcher通知到达后完成；不是发送信号成功的证明 |
 | `capture.closed` | 双流关闭完成；保持原有限排空期限和截断事实 |
 | `ProcessResult.returncode` | 原Transport真实退出码；255不能伪造为0或负信号 |
-| Windows测试`started` | 完整子进程PID正文经同目录Replace后才可见；不是生产Lease或授权依据 |
-| 临时测试标记 | 只在测试Workspace；取消前未发布时可以残留，不能当作完整PID |
+| Windows测试`started.pid` | 写完整PID并关闭文件；单独存在不表示就绪，不是生产Lease或授权依据 |
+| Windows测试`started` | 正文文件关闭后才创建的空标记；存在后必须读取完整PID，不能重试或忽略空正文 |
 
 没有数据库、Schema或Fingerprint格式变化。唯一变化是后备终止调用的操作路径：
 `Transport.kill → Popen.poll`改为失败后备只发原组信号，原组终止成功后直接等待Watcher。
@@ -109,9 +114,9 @@ sequenceDiagram
 
 Windows测试Bootstrap：
     创建真实子进程
-    同目录临时文件写完整PID
-    Replace发布started
-    原测试只在started存在时读完整PID并验证子进程停止
+    写完整PID至started.pid并关闭文件
+    创建独立空标记started，不执行路径Rename
+    原测试只在started存在时读started.pid并验证子进程停止
 ```
 
 后备信号权限失败仍返回`cleanup_failed/failed`并熔断实例，不变成成功；外部抢先回收仍可报告255，
@@ -134,6 +139,8 @@ Windows测试Bootstrap：
 | 实际Watcher延迟及真实SIGKILL | `test_timeout_does_not_steal_delayed_native_child_watcher`；真实退出必须-9，且后续waitpid明确无子进程 |
 | 超时、Token/Task重复取消、关闭、进程组及输出 | 原`tests/processes`和`tests/sandbox`完整关联回归 |
 | Windows启动期取消与子进程停止 | 原`test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease`全部四参数；原原生CI验证 |
+| 正文完成前中断与独立就绪发布 | `test_child_pid_closes_before_separate_ready_marker`正常、空值、部分正文、完整正文后中断四参数；只有正常闭文件后发布就绪 |
+| 实际绑定Workspace的发布前置 | `test_windows_git_readiness_publication_with_pinned_workspace`；旧路径Rename只诊断，新正文/标记必须真实通过 |
 | 正式Process Action输入 | 原`tests/product_config/test_process_action.py`；Schema和审批边界不变 |
 
 新五项焦点与关联回归须按后继实际结果记录，不是三平台完整回归或Windows消费者验收。
@@ -144,3 +151,33 @@ Windows测试Bootstrap：
 随原Wheel发布，无新参数、状态迁移或进程服务。旧包仍可读原持久状态；回退恢复旧代码也恢复该竞争风险，
 不能称为缺陷关闭。只再生成当前派生可读性报告；冻结策略、初始基线、类长度、Schema及公共API保持。
 实际部署仍使用原安装、停机备份和版本回退流程。该专项不替代真实质量、消费者Windows11、独立Beta或最终同候选发布门禁。
+
+## 8. Windows测试Bootstrap的两阶段就绪合同
+
+```mermaid
+sequenceDiagram
+    participant B as 测试Bootstrap
+    participant P as PID正文文件
+    participant M as 独立就绪标记
+    participant T as 原取消回归
+    B->>B: 创建原真实子进程
+    B->>P: 完整写入PID并关闭
+    alt 正文创建或写入期间中断
+        Note over P,M: 正文可能为空或部分，但没有就绪标记
+    else 正文已关闭
+        B->>M: touch空标记，拒绝覆盖既有标记
+        T->>M: 观察存在
+        T->>T: 原取消或超时及Lease终态检查
+        T->>P: 读取完整PID，要求实际子进程停止
+    end
+```
+
+就绪事实是发布顺序，不要求两个文件的事务性替换或跨崩溃持久提交。PID正文与标记均只属于新建测试Workspace。
+PID正文关闭前没有标记；正文已关闭但标记尚未创建时仍未就绪。启动期取消可以留下正文，但不得据此读取PID。
+发布标记后正文不再修改；消费者不轮询猜测部分数字，不跳过已就绪后的空值或退出检查。
+这不是生产Receipt、State备份或通用文件发布算法，也没有改变Workspace的原生Share/DACL合同。
+
+原生探针对固定Workspace与EXE持有与正式Git一致的句柄，再由独立解释器尝试旧路径Rename和新两阶段发布。
+旧Rename的成功或系统拒绝是有限诊断事实，不能作为产品通过依据；新PID/标记的完整事实必须成功。
+仅输出固定阶段、`status/error_type/errno/winerror`和布尔结果，不输出异常正文、路径、argv、环境或凭据。
+探针没有长寿命后代，不替代原四模式Job树回收用例。所有生产代码、时间上限与退出断言保持不变。

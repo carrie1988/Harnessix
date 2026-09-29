@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import shutil
 import sqlite3
@@ -26,7 +27,11 @@ from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.processes.supervisor import WindowsProcessSupervisor
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.runtime import CodingToolRuntime
-from harnessix.workspace.git_windows_binding import validate_windows_git_executable
+from harnessix.workspace.git_windows_binding import (
+    pin_windows_git,
+    validate_windows_git_executable,
+)
+from tests.processes.child_ready import CHILD_READY_PROGRAM
 from tests.processes.test_windows_supervisor import _wait_stopped
 from tests.tools.test_files import execute
 
@@ -265,11 +270,7 @@ async def test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease(
         arguments=(
             "-I",
             "-c",
-            "import pathlib,subprocess,sys,time; "
-            "child=subprocess.Popen([sys.executable,'-I','-c','import time; time.sleep(30)']); "
-            # 启动期取消可发生在truncate与write之间；标记只在完整写入后原子发布。
-            "marker=pathlib.Path(sys.argv[1]); temporary=marker.with_suffix('.tmp'); "
-            "temporary.write_text(str(child.pid)); temporary.replace(marker); time.sleep(30)",
+            CHILD_READY_PROGRAM,
             str(marker),
         ),
     )
@@ -323,4 +324,55 @@ async def test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease(
     assert leases[0].pid is not None
     await _wait_stopped(leases[0].pid)
     if marker.exists():
-        await _wait_stopped(int(marker.read_text()))
+        # 就绪标记创建前PID正文已经关闭；只读取已发布的完整PID，不重试或忽略空值。
+        await _wait_stopped(int(marker.with_name(marker.name + ".pid").read_text()))
+
+
+def test_windows_git_readiness_publication_with_pinned_workspace(tmp_path, capsys):
+    """原生核对路径Rename与正文后就绪发布；诊断只公开类别和数值码。"""
+    root = tmp_path / "workspace"
+    root.mkdir()
+    code = """
+import json,pathlib,sys
+root=pathlib.Path(sys.argv[1])
+temporary=root/'legacy.tmp'
+phase='write'
+try:
+    temporary.write_text('123456',encoding='ascii')
+    phase='replace'
+    temporary.replace(root/'legacy')
+    legacy={'status':'passed','phase':phase,'error_type':None,'errno':None,'winerror':None}
+except OSError as error:
+    legacy={'status':'failed','phase':phase,'error_type':type(error).__name__,
+            'errno':error.errno,'winerror':getattr(error,'winerror',None)}
+phase='pid_write'
+try:
+    pid_file=root/'started.pid'
+    pid_file.write_text('123456',encoding='ascii')
+    marker=root/'started'
+    phase='ready_create'
+    marker.touch(exist_ok=False)
+    complete=marker.read_bytes()==b'' and pid_file.read_bytes()==b'123456'
+    error_facts=None
+except OSError as error:
+    complete=False
+    error_facts={'phase':phase,'error_type':type(error).__name__,
+                 'errno':error.errno,'winerror':getattr(error,'winerror',None)}
+print(json.dumps({'legacy_replace':legacy,'closed_pid_then_ready':complete,
+                  'ready_error':error_facts}))
+"""
+    with pin_windows_git(root, Path(sys.executable)):
+        result = subprocess.run(
+            (sys.executable, "-I", "-c", code, str(root)),
+            env=_environment(Path(sys.executable)),
+            capture_output=True,
+            timeout=10,
+        )
+    assert result.returncode == 0
+    facts = json.loads(result.stdout)
+    # 原Rename结果仅用于定位，不将平台是否拒绝路径式发布当作产品成功标准。
+    with capsys.disabled():
+        print("windows_marker_publication=" + json.dumps(facts, sort_keys=True))
+    assert facts["closed_pid_then_ready"] is True
+    assert facts["ready_error"] is None
+    assert facts["legacy_replace"]["status"] in {"passed", "failed"}
