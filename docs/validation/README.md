@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 41
-code_revision: 0813c581982fddf17503d47a308419035d193ecf
+version: 42
+code_revision: 007839e7648b6fc1b94a5acede8dd0285092249b
 owners:
   - core
 modules:
@@ -153,4 +153,10 @@ flowchart LR
 
 ## 唯一子进程回收与077评测恢复
 
-[专项验证](single-child-reaper-2026-09-30-v1/README.md)包含原生Watcher竞争复现、失败后备仅发组信号、Windows测试就绪标记原子发布，以及077下新Workspace精确模式和录制Oracle的Git权限语义。原FAIL与最终关联结果分别保存；不是完整消费者平台、模型质量或商用发布验收。
+[专项验证](single-child-reaper-2026-09-30-v1/README.md)包含原生Watcher竞争复现、失败后备仅发组信号、当轮Windows测试就绪标记方案，以及077下新Workspace精确模式和录制Oracle的Git权限语义。原FAIL与最终关联结果分别保存；当前Windows就绪合同为PID正文关闭后独立空标记，见后继[详细设计](../changes/m09-r1-single-child-reaper.md)。不是完整消费者平台、模型质量或商用发布验收。
+
+## 严格工具参数反馈与原生就绪
+
+[完整专项交付](tool-argument-feedback-2026-09-30-v1/README.md)包含9份原Session只读回放白名单投影、
+静态字段反馈、双Provider离线SDK修正/真实Artifact读取/重开回放、原固定源码RED与关联回归。
+上一候选的原生CI与本轮后继源码分别绑定；功能测试与许可证Job失败区分，不以部分通过宣称商用完成。

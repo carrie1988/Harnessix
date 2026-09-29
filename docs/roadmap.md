@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 128
-code_revision: 0cdad2bd544dd1cd9c722ec8399243def9405777
+version: 129
+code_revision: 007839e7648b6fc1b94a5acede8dd0285092249b
 owners:
   - core
 modules:
@@ -51,6 +51,7 @@ related_tests:
   - tests/integration/test_task_pack_execution.py
   - tests/app_server/test_server_sdk.py
   - tests/agent/test_store_maintenance.py
+  - tests/tools/test_argument_feedback.py
 supersedes: []
 ---
 
@@ -993,7 +994,7 @@ R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-
 [唯一回收详设](changes/m09-r1-single-child-reaper.md)定位POSIX后备Transport.kill的Popen.poll与
 asyncio Watcher竞争，原生macOS受控延迟实际Watcher复现退出255；后继只发OS信号，不伪造退出码。
 五项新焦点通过，进程/Sandbox/Process输入关联271通过、12跳过。Windows取消测试Bootstrap采用
-完整PID的同目录原子发布，原Lease、停止与EOF断言不变；原生验证及最终同候选门禁仍需实际结果。
+完整PID关闭后独立发布就绪标记，原Lease、停止与EOF断言不变；原生验证及最终同候选门禁仍需实际结果。
 
 同轮077真实容器复验暴露新Workspace创建模式与原恢复合同不一致、录制Oracle模式与Git语义不一致。
 [权限详设](changes/m09-r3-eval-workspace-mode.md)仅固定新私有目录FD及离线录制适配器，
@@ -1006,3 +1007,17 @@ asyncio Watcher竞争，原生macOS受控延迟实际Watcher复现退出255；�
 后继[测试就绪合同](changes/m09-r1-single-child-reaper.md#8-windows测试bootstrap的两阶段就绪合同)
 采用PID正文关闭后单独创建空就绪标记，并增加低敏原生发布探针。
 生产Job/Share/DACL和原Lease、停止原因、EOF及子进程停止要求不变；新的原生结果需独立取得。
+
+### R3：严格输入的安全字段反馈
+
+9份原Session只读回放确认4次`read_artifact`调用都缺少`artifact_id`；产品编码指令v2实际进入
+47次宿主Context准备，Profile已返回Artifact引用，Provider历史包含原失败结果，不归因为未装配指令
+或未发布引用。[安全字段反馈详设](changes/m09-r3-safe-tool-argument-feedback.md)在严格拒绝之后，
+仅用正式注册模型字段提示必填、缺少及允许字段，不回显模型参数/底层错误，不自动修正或重试。
+沿用原分页反馈、批准指纹、Schema、预算、Task Pack及评分器。原真实中断、部分FAIL及未知费用仍保留；
+离线SDK修正和回放不能替代后继完整真实20 Trial及商用质量门禁。
+
+专项最终关联1887通过、20平台跳过；18项新回归包含6条双Provider正式SDK修正、实际Artifact读取与
+Session重开回放链。原Suite/未知费用保持不变，0次真实模型请求。
+完整原件绑定、独立原生状态、治理门禁与Review Packet见
+[统一交付包](validation/tool-argument-feedback-2026-09-30-v1/README.md)。

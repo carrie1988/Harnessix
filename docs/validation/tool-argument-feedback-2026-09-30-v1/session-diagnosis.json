@@ -1,0 +1,787 @@
+{
+  "schema": "harnessix.partial-suite-diagnosis/v1",
+  "source_revision": "0813c581982fddf17503d47a308419035d193ecf",
+  "suite_id": "d85c26ca-d21a-4ac4-9a01-f780eb01b038",
+  "session_count": 9,
+  "sessions": [
+    {
+      "run_id": "94c80d1d-3d76-579d-869f-2c921e76684c",
+      "case_slot": "case-000",
+      "session_sha256": "c9c316af7e87a4592b4f892b708cab01bba62b87e7cdf8a48f86ff0c75bd1d57",
+      "event_count": 91,
+      "terminal": "completed",
+      "turn_error": null,
+      "model_steps": 6,
+      "max_steps": 16,
+      "actual_total_tokens": 34627,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 652,
+          "estimated_input_units": 14023,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 3124,
+          "estimated_input_units": 16495,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 3,
+          "estimated_history_units": 5206,
+          "estimated_input_units": 18577,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 4,
+          "estimated_history_units": 6016,
+          "estimated_input_units": 19387,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 5,
+          "estimated_history_units": 6958,
+          "estimated_input_units": 20329,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 6,
+          "estimated_history_units": 7768,
+          "estimated_input_units": 21139,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 1,
+          "result_item_position": 2,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 3,
+          "result_item_position": 5,
+          "tool": "run_profile.agents-dump-compatible-refactor-check",
+          "outcome": "failed",
+          "error_code": "other",
+          "profile_returncode": 1
+        },
+        {
+          "call_item_position": 6,
+          "result_item_position": 7,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "missing_required_fields": [
+            "artifact_id"
+          ],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 8,
+          "result_item_position": 9,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 10,
+          "result_item_position": 11,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "missing_required_fields": [
+            "artifact_id"
+          ],
+          "extra_argument_count": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "c2cdac2c-b129-5a9a-860f-9a92615bbb2d",
+      "case_slot": "case-000",
+      "session_sha256": "8467ffdf2a522d3bccf18304d3bf0f3f521bdc3c97d89d1380b7cb82721d0395",
+      "event_count": 91,
+      "terminal": "completed",
+      "turn_error": null,
+      "model_steps": 6,
+      "max_steps": 16,
+      "actual_total_tokens": 34637,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 652,
+          "estimated_input_units": 14023,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 3124,
+          "estimated_input_units": 16495,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 3,
+          "estimated_history_units": 5206,
+          "estimated_input_units": 18577,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 4,
+          "estimated_history_units": 6016,
+          "estimated_input_units": 19387,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 5,
+          "estimated_history_units": 6958,
+          "estimated_input_units": 20329,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 6,
+          "estimated_history_units": 7787,
+          "estimated_input_units": 21158,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 1,
+          "result_item_position": 2,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 3,
+          "result_item_position": 5,
+          "tool": "run_profile.agents-dump-compatible-refactor-check",
+          "outcome": "failed",
+          "error_code": "other",
+          "profile_returncode": 1
+        },
+        {
+          "call_item_position": 6,
+          "result_item_position": 7,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "missing_required_fields": [
+            "artifact_id"
+          ],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 8,
+          "result_item_position": 9,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 10,
+          "result_item_position": 11,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "missing_required_fields": [
+            "artifact_id"
+          ],
+          "extra_argument_count": 1
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "68d71947-c061-5b2f-86a9-15caca12416f",
+      "case_slot": "case-001",
+      "session_sha256": "b97a59526d7e6049060373c28ade083e20497c1b22f77203c064d28462114eee",
+      "event_count": 69,
+      "terminal": "completed",
+      "turn_error": null,
+      "model_steps": 4,
+      "max_steps": 16,
+      "actual_total_tokens": 24092,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 614,
+          "estimated_input_units": 13964,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 3536,
+          "estimated_input_units": 16886,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 3,
+          "estimated_history_units": 6491,
+          "estimated_input_units": 19841,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 4,
+          "estimated_history_units": 8425,
+          "estimated_input_units": 21775,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 2,
+          "result_item_position": 3,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 4,
+          "result_item_position": 6,
+          "tool": "unlisted_tool",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "call_item_position": 7,
+          "result_item_position": 9,
+          "tool": "run_profile.agents-normalize-tool-name-check",
+          "outcome": "succeeded",
+          "error_code": null,
+          "profile_returncode": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "795bbea9-7820-5983-bb4e-ba4dda5815aa",
+      "case_slot": "case-001",
+      "session_sha256": "8db45df1036563dd7b0b32954e727a015a68172dd2d95073e265e9c90499f48e",
+      "event_count": 128,
+      "terminal": "failed",
+      "turn_error": "budget_exceeded",
+      "model_steps": 8,
+      "max_steps": 16,
+      "actual_total_tokens": 57752,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 614,
+          "estimated_input_units": 13964,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 3086,
+          "estimated_input_units": 16436,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 3,
+          "estimated_history_units": 5153,
+          "estimated_input_units": 18503,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 4,
+          "estimated_history_units": 7878,
+          "estimated_input_units": 21228,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 5,
+          "estimated_history_units": 10833,
+          "estimated_input_units": 24183,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 6,
+          "estimated_history_units": 12767,
+          "estimated_input_units": 26117,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 7,
+          "estimated_history_units": 13837,
+          "estimated_input_units": 27187,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 8,
+          "estimated_history_units": 15230,
+          "estimated_input_units": 28580,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 1,
+          "result_item_position": 2,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 3,
+          "result_item_position": 5,
+          "tool": "run_profile.agents-normalize-tool-name-check",
+          "outcome": "failed",
+          "error_code": "other",
+          "profile_returncode": 1
+        },
+        {
+          "call_item_position": 6,
+          "result_item_position": 7,
+          "tool": "read_artifact",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 8,
+          "result_item_position": 10,
+          "tool": "unlisted_tool",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "call_item_position": 11,
+          "result_item_position": 13,
+          "tool": "run_profile.agents-normalize-tool-name-check",
+          "outcome": "succeeded",
+          "error_code": null,
+          "profile_returncode": 0
+        },
+        {
+          "call_item_position": 14,
+          "result_item_position": 15,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 16,
+          "result_item_position": 17,
+          "tool": "git_diff",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "f4cfd103-2e0c-5f0e-abcb-45f24a9b6414",
+      "case_slot": "case-002",
+      "session_sha256": "d5e2008a518974933ed6da85abe48aaa915f91e69a194b856398ef22bf163450",
+      "event_count": 33,
+      "terminal": "completed",
+      "turn_error": null,
+      "model_steps": 2,
+      "max_steps": 16,
+      "actual_total_tokens": 9664,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 671,
+          "estimated_input_units": 14020,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 1796,
+          "estimated_input_units": 15145,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 2,
+          "result_item_position": 3,
+          "tool": "read_file",
+          "outcome": "failed",
+          "error_code": "tool_not_found",
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "fd7317f4-6581-59f1-bf75-2c4bcde9da78",
+      "case_slot": "case-002",
+      "session_sha256": "41961ad874ba338d4a1485782ce2558ec83612c63fd416eadf847de6f8cad04e",
+      "event_count": 142,
+      "terminal": "failed",
+      "turn_error": "budget_exceeded",
+      "model_steps": 9,
+      "max_steps": 16,
+      "actual_total_tokens": 57859,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 671,
+          "estimated_input_units": 14020,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 2080,
+          "estimated_input_units": 15429,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 3,
+          "estimated_history_units": 2974,
+          "estimated_input_units": 16323,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 4,
+          "estimated_history_units": 5446,
+          "estimated_input_units": 18795,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 5,
+          "estimated_history_units": 6351,
+          "estimated_input_units": 19700,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 6,
+          "estimated_history_units": 7824,
+          "estimated_input_units": 21173,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 7,
+          "estimated_history_units": 11145,
+          "estimated_input_units": 24494,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 8,
+          "estimated_history_units": 13076,
+          "estimated_input_units": 26425,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 9,
+          "estimated_history_units": 14155,
+          "estimated_input_units": 27504,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 2,
+          "result_item_position": 3,
+          "tool": "read_file",
+          "outcome": "failed",
+          "error_code": "other",
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 4,
+          "result_item_position": 5,
+          "tool": "list_files",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 6,
+          "result_item_position": 7,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 8,
+          "result_item_position": 9,
+          "tool": "list_files",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 10,
+          "result_item_position": 11,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 12,
+          "result_item_position": 14,
+          "tool": "unlisted_tool",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "call_item_position": 15,
+          "result_item_position": 17,
+          "tool": "run_profile.agents-payload-bytes-test-check",
+          "outcome": "succeeded",
+          "error_code": null,
+          "profile_returncode": 0
+        },
+        {
+          "call_item_position": 18,
+          "result_item_position": 19,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 20,
+          "result_item_position": 21,
+          "tool": "git_diff",
+          "outcome": "failed",
+          "error_code": "other",
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "7042cdd6-56d6-5ee6-8eba-cbe928350943",
+      "case_slot": "case-003",
+      "session_sha256": "82ed566e7bc1ab7d2c9b4ca681ccbce8e0307435c98e9d045fafb08d2b975993",
+      "event_count": 97,
+      "terminal": "completed",
+      "turn_error": null,
+      "model_steps": 6,
+      "max_steps": 16,
+      "actual_total_tokens": 38550,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 723,
+          "estimated_input_units": 14074,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 3506,
+          "estimated_input_units": 16857,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 3,
+          "estimated_history_units": 6600,
+          "estimated_input_units": 19951,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 4,
+          "estimated_history_units": 8546,
+          "estimated_input_units": 21897,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 5,
+          "estimated_history_units": 9616,
+          "estimated_input_units": 22967,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 6,
+          "estimated_history_units": 11172,
+          "estimated_input_units": 24523,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 2,
+          "result_item_position": 3,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 4,
+          "result_item_position": 6,
+          "tool": "unlisted_tool",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "call_item_position": 7,
+          "result_item_position": 9,
+          "tool": "run_profile.agents-secret-redaction-review-check",
+          "outcome": "succeeded",
+          "error_code": null,
+          "profile_returncode": 0
+        },
+        {
+          "call_item_position": 10,
+          "result_item_position": 11,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 12,
+          "result_item_position": 13,
+          "tool": "git_diff",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "8d66bd2c-3588-5dbf-8596-626f66768893",
+      "case_slot": "case-003",
+      "session_sha256": "c40f9ac32e77b3557d8ed6fc1227d470ec4e5a018dd7460e921be5404981ff7e",
+      "event_count": 69,
+      "terminal": "completed",
+      "turn_error": null,
+      "model_steps": 4,
+      "max_steps": 16,
+      "actual_total_tokens": 24248,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 723,
+          "estimated_input_units": 14074,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 3611,
+          "estimated_input_units": 16962,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 3,
+          "estimated_history_units": 6707,
+          "estimated_input_units": 20058,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 4,
+          "estimated_history_units": 8653,
+          "estimated_input_units": 22004,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 2,
+          "result_item_position": 3,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null,
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        },
+        {
+          "call_item_position": 4,
+          "result_item_position": 6,
+          "tool": "unlisted_tool",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "call_item_position": 7,
+          "result_item_position": 9,
+          "tool": "run_profile.agents-secret-redaction-review-check",
+          "outcome": "succeeded",
+          "error_code": null,
+          "profile_returncode": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    },
+    {
+      "run_id": "1c6c5eaa-a9ff-540c-a9f7-0cc08ffc6e6d",
+      "case_slot": "case-004",
+      "session_sha256": "65af52c5d67655bcae9bf1681fa9cf426bc9684aee540ab321f42911292318c8",
+      "event_count": 34,
+      "terminal": "cancelled",
+      "turn_error": "cancelled",
+      "model_steps": 2,
+      "max_steps": 16,
+      "actual_total_tokens": 9796,
+      "max_tokens": 50000,
+      "context_inspections": [
+        {
+          "model_step": 1,
+          "estimated_history_units": 685,
+          "estimated_input_units": 14036,
+          "runtime_v2_included": true
+        },
+        {
+          "model_step": 2,
+          "estimated_history_units": 1800,
+          "estimated_input_units": 15151,
+          "runtime_v2_included": true
+        }
+      ],
+      "tool_results": [
+        {
+          "call_item_position": 2,
+          "result_item_position": 3,
+          "tool": "read_file",
+          "outcome": "failed",
+          "error_code": "tool_not_found",
+          "missing_required_fields": [],
+          "extra_argument_count": 0
+        }
+      ],
+      "raw_body_or_argument_values_exported": false
+    }
+  ],
+  "original_session_bytes_unchanged": true,
+  "model_requests": 0,
+  "complete_quality_score": false
+}

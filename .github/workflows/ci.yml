@@ -109,6 +109,7 @@ jobs:
       - name: 验证原生Git读取与取消回收
         run: >-
           uv run pytest tests/tools/test_windows_git.py
+          tests/tools/test_argument_feedback.py
           tests/tools/test_git_platform_contracts.py
           tests/processes/test_windows_owner_lifecycle.py
           tests/processes/test_output_binary_contracts.py

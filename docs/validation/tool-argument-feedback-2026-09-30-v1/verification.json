@@ -1,0 +1,17 @@
+{
+  "decision": "scoped_go_for_safe_field_feedback_only",
+  "strict_inputs_and_approval_fingerprints_unchanged": true,
+  "field_source_is_registered_model_not_validation_error": true,
+  "values_and_unknown_field_names_not_echoed": true,
+  "io_not_started_on_invalid_input": true,
+  "both_sdk_corrected_calls_and_actual_artifact_read_verified": true,
+  "reopen_and_pure_replay_verified": true,
+  "automatic_retry_or_argument_repair": false,
+  "actual_provider_quality_improvement": "unverified",
+  "windows_prior_job": "in_progress:None",
+  "new_feedback_windows_candidate": "pending",
+  "same_candidate_commercial_release": "open",
+  "model_requests": 0,
+  "original_failure_reports_retained": true,
+  "commercial_release_gate_closed": false
+}

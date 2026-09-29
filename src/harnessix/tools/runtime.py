@@ -19,7 +19,7 @@ from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import ToolCallContent, ToolResultContent
 from harnessix.artifacts.contracts import ArtifactPage, ArtifactToolResult, ReadArtifactInput
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
-from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
+from harnessix.domain.models import ContractModel, EffectClass, RiskLevel, ToolDescriptor
 from harnessix.tools import files, git, search
 from harnessix.tools.contracts import (
     MAX_DIRECTORY_ENTRIES,
@@ -138,7 +138,23 @@ _GIT_BINDINGS = (
 )
 
 
+def _invalid_arguments(
+    input_model: type[ContractModel], arguments: dict[str, JsonValue]
+) -> tuple[str, str]:
+    """只公开注册模型字段与缺失事实，不回显参数或第三方校验错误。"""
+    allowed = sorted(input_model.model_fields)
+    required = [name for name in allowed if input_model.model_fields[name].is_required()]
+    missing = [name for name in required if name not in arguments]
+    message = (
+        f"工具参数不符合契约；必填字段：{', '.join(required) or '无'}；"
+        f"缺少必填字段：{', '.join(missing) or '无'}；允许字段：{', '.join(allowed)}。"
+        "请按已公布的input_schema修正类型、范围及必填字段，禁止额外字段。"
+    )
+    return "tool_invalid_arguments", message
+
+
 def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) -> tuple[str, str]:
+    invalid = _invalid_arguments(binding.input_model, arguments)
     if binding.input_model is ReadFileInput:
         position = arguments.get("start_line", 1)
         first_position = 1
@@ -146,17 +162,17 @@ def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) ->
         position = arguments.get("offset", 0)
         first_position = 0
     else:
-        return "tool_invalid_arguments", "工具参数不符合契约"
+        return invalid
     if (
         type(position) is not int
         or position <= first_position
         or arguments.get("expected_revision") is not None
     ):
-        return "tool_invalid_arguments", "工具参数不符合契约"
+        return invalid
     try:
         binding.input_model.model_validate({**arguments, "expected_revision": "0" * 64})
     except ValidationError:
-        return "tool_invalid_arguments", "工具参数不符合契约"
+        return invalid
     return (
         "tool_expected_revision_required",
         f"{binding.name}后续页必须携带上一成功结果的revision作为expected_revision",
@@ -393,7 +409,7 @@ class CodingToolRuntime:
                 args = ReadArtifactInput.model_validate_json(json.dumps(call.arguments))
                 page = await cancel.run(self._read_artifact(scope, args))
             except ValidationError:
-                return self._failure(call, "tool_invalid_arguments", "工具参数不符合契约")
+                return self._failure(call, *_invalid_arguments(ReadArtifactInput, call.arguments))
             except KernelError as error:
                 return self._failure(call, error.code, "Artifact 读取未完成")
             return ToolResultContent(

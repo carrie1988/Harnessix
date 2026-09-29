@@ -1,0 +1,373 @@
+{
+  "schema": "harnessix.scoped-validation/v1",
+  "design_base_revision": "007839e7648b6fc1b94a5acede8dd0285092249b",
+  "host": "macos-arm64-python312",
+  "tested_source_sha256": {
+    "src/harnessix/tools/runtime.py": "0d3dba5c0d029ae65d0915bd049531e3291a8f14af84bc8253d218eddfc88bc8",
+    "tests/tools/test_argument_feedback.py": "d001af2e0c07ba7d9dcf136a9371e02effef0bd7c3d9f0481e21e7f740769799",
+    ".github/workflows/ci.yml": "031f7e4362edf2f1a7f9ce4450934d238d937debd1fd2b569902f4660fedaf54"
+  },
+  "regression": [
+    {
+      "source": "tool-feedback-corrected-red.xml",
+      "sha256": "a55a97958f61aabd84098dae3469241268148291b787156486640b97842b27be",
+      "bytes": 71880,
+      "tests": 18,
+      "failures": 18,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": "2.161"
+    },
+    {
+      "source": "tool-feedback-final-pinned-git.xml",
+      "sha256": "58ae4aadac5d4259f6115c4ba294423e819f7403817e793f93fdb9f649e6f9aa",
+      "bytes": 2466189,
+      "tests": 1907,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 20,
+      "passed": 1887,
+      "seconds": "131.325"
+    }
+  ],
+  "focused_new_feedback_tests_in_final_association": 18,
+  "mock_sdk_flow_count": 6,
+  "prior_readiness_scope": {
+    "source_revision": "007839e7648b6fc1b94a5acede8dd0285092249b",
+    "regression": [
+      {
+        "source": "readiness-contract-green.xml",
+        "sha256": "6ee0831cf93eba0be78335c7d28b243cb5850df42c6bd3cf39c3d6b6f9cc3bc6",
+        "bytes": 5586,
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 13,
+        "passed": 4,
+        "seconds": "0.246"
+      },
+      {
+        "source": "associated-regression.xml",
+        "sha256": "15e3e00d7439ae12df9dd94d434d83d318543ad46585bc093cca4c7d73d0e815",
+        "bytes": 64168,
+        "tests": 318,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 25,
+        "passed": 293,
+        "seconds": "13.306"
+      }
+    ],
+    "prior_native_failure": {
+      "source_revision": "0cdad2bd544dd1cd9c722ec8399243def9405777",
+      "passed": 116,
+      "skipped": 5,
+      "failed": 3
+    }
+  },
+  "prior_ci": {
+    "source_revision": "007839e7648b6fc1b94a5acede8dd0285092249b",
+    "run_id": 36627916447,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36627916447",
+    "windows": {
+      "job_id": 109609539324,
+      "observed_status": "in_progress",
+      "observed_conclusion": null,
+      "native_tools_step": "success",
+      "core_step": null,
+      "probe_numeric_reason_verified": false,
+      "new_product_feedback_included": false
+    },
+    "jobs": [
+      {
+        "name": "python312",
+        "job_id": 109609539314,
+        "summary_groups_not_additive": [
+          {
+            "passed": 5825,
+            "skipped": 116,
+            "seconds": "821.99"
+          }
+        ],
+        "log": {
+          "source": "ci-007839e-python-3.12.log",
+          "sha256": "ff34ce44a8b2b9205207e7a6928f4c640af6515fc499a6b438cd2d98a813b9e9",
+          "bytes": 48670
+        },
+        "job_conclusion": "failure",
+        "failed_step": "license_scan",
+        "archive_violations": 12
+      },
+      {
+        "name": "python313",
+        "job_id": 109609539274,
+        "summary_groups_not_additive": [
+          {
+            "passed": 5825,
+            "skipped": 116,
+            "seconds": "947.22"
+          }
+        ],
+        "log": {
+          "source": "ci-007839e-python-3.13.log",
+          "sha256": "c4153f821ec0486f9e994cb74d2d219a6c844961b7acb3be3350ffe287ca8af0",
+          "bytes": 49005
+        },
+        "job_conclusion": "failure",
+        "failed_step": "license_scan",
+        "archive_violations": 12
+      },
+      {
+        "name": "macos",
+        "job_id": 109609539175,
+        "summary_groups_not_additive": [
+          {
+            "passed": 103,
+            "skipped": 0,
+            "seconds": "7.25"
+          },
+          {
+            "passed": 88,
+            "skipped": 0,
+            "seconds": "4.90"
+          },
+          {
+            "passed": 243,
+            "skipped": 1,
+            "seconds": "129.05"
+          },
+          {
+            "passed": 3861,
+            "skipped": 88,
+            "seconds": "772.10"
+          }
+        ],
+        "log": {
+          "source": "ci-007839e-coding-tools-macos.log",
+          "sha256": "3ee60de0d1bf1ec74e1bc454702ef989d63faa070e458f7f644fe157b48ff286",
+          "bytes": 47631
+        },
+        "job_conclusion": "success"
+      },
+      {
+        "name": "containers",
+        "job_id": 109609538958,
+        "summary_groups_not_additive": [
+          {
+            "passed": 19,
+            "skipped": 0,
+            "seconds": "54.51"
+          }
+        ],
+        "log": {
+          "source": "ci-007839e-container-sandbox.log",
+          "sha256": "18a35fd57a8b6a9d7665758658fdc8279763a997874492436627271e5c2f038b",
+          "bytes": 37488
+        },
+        "job_conclusion": "success"
+      }
+    ]
+  },
+  "private_failure_artifacts_retained": [
+    {
+      "source": "tool-feedback-red.log",
+      "sha256": "07ac254ba510c3e5fbc4184eef99204230551fe40df4c5ed9d3b7537ca7b337d",
+      "bytes": 62493
+    },
+    {
+      "source": "tool-feedback-first-green.log",
+      "sha256": "b7cd37fdbc7670dc2450e868c27c00a94cc1462a89d38ac6be0f41789cefb795",
+      "bytes": 19352
+    },
+    {
+      "source": "tool-feedback-corrected-red.log",
+      "sha256": "ca62768760eb82f668dacedc4284e327094a99f1a6fabeafb3527cdc6b6f1ab2",
+      "bytes": 62892
+    },
+    {
+      "source": "ci-0cdad2b-windows.log",
+      "sha256": "f7318fedd5fb942690331231aa550d1124b56a869393d89146cff966e117e2f1",
+      "bytes": 69354
+    },
+    {
+      "source": "tool-feedback-governance.log",
+      "sha256": "6b9ebc1bd8d61cf4421ba9afc4370e7d624543a14b0a392fe5fffa00a717d088",
+      "bytes": 3208
+    }
+  ],
+  "session_diagnosis": {
+    "source": "session-diagnosis.json",
+    "private_original_projection": {
+      "source": "provider-session-diagnosis.json",
+      "sha256": "8add2d25b9191203e6682de4ba73005da35b0aa0ac91cf31780b3123f3f569b1",
+      "bytes": 23145
+    },
+    "sessions": 9,
+    "runtime_contexts": 47,
+    "missing_artifact_id_failures": 4,
+    "model_requests": 0,
+    "complete_quality_score": false
+  },
+  "static_checks": {
+    "mypy": {
+      "source": "tool-feedback-mypy.log",
+      "sha256": "11225d11c7e82153478757e18e79fa97b0ee848e565ecaa15d9b60903cb0a553",
+      "bytes": 45
+    },
+    "ruff": {
+      "source": "tool-feedback-ruff.log",
+      "sha256": "19a52dbc6a868766b226b5d393fab8891fe6b65c5b57dc256b031e6e2de937b2",
+      "bytes": 48
+    },
+    "schema": {
+      "source": "tool-feedback-schema.log",
+      "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "bytes": 28
+    },
+    "readability": {
+      "source": "tool-feedback-readability.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "documentation": {
+      "source": "tool-feedback-docs-rendered-final.json",
+      "sha256": "29399dfc616d4fd5b3dd5eb2c7f73f8543e3451ed46e3431cce17eb4e77d9779",
+      "bytes": 192,
+      "document_count": 395,
+      "link_count": 10027,
+      "mermaid_count": 863,
+      "findings": []
+    },
+    "secret": {
+      "source": "tool-feedback-secret-final.log",
+      "sha256": "3d59bacddfae6d12dd5712b866d55c492d2efa7f9d63465f5b7fd5cd91b7b803",
+      "bytes": 101
+    }
+  },
+  "field_bound_probe": {
+    "schema": "harnessix.registered-field-feedback-probe/v1",
+    "rows": [
+      {
+        "input_model": "ListFilesInput",
+        "required": [],
+        "allowed": [
+          "expected_revision",
+          "limit",
+          "offset",
+          "path"
+        ],
+        "maximum_missing_message_characters": 108
+      },
+      {
+        "input_model": "ReadFileInput",
+        "required": [
+          "path"
+        ],
+        "allowed": [
+          "expected_revision",
+          "max_lines",
+          "path",
+          "start_line"
+        ],
+        "maximum_missing_message_characters": 122
+      },
+      {
+        "input_model": "GlobInput",
+        "required": [],
+        "allowed": [
+          "include_ignored",
+          "max_results",
+          "path",
+          "pattern"
+        ],
+        "maximum_missing_message_characters": 113
+      },
+      {
+        "input_model": "GrepInput",
+        "required": [
+          "query"
+        ],
+        "allowed": [
+          "include",
+          "include_ignored",
+          "max_results",
+          "path",
+          "query"
+        ],
+        "maximum_missing_message_characters": 128
+      },
+      {
+        "input_model": "GitStatusInput",
+        "required": [],
+        "allowed": [
+          "limit"
+        ],
+        "maximum_missing_message_characters": 75
+      },
+      {
+        "input_model": "GitDiffInput",
+        "required": [],
+        "allowed": [
+          "context_lines",
+          "target"
+        ],
+        "maximum_missing_message_characters": 91
+      },
+      {
+        "input_model": "ReadArtifactInput",
+        "required": [
+          "artifact_id"
+        ],
+        "allowed": [
+          "artifact_id",
+          "limit",
+          "offset"
+        ],
+        "maximum_missing_message_characters": 116
+      }
+    ],
+    "all_under_existing_failure_message_limit": true
+  },
+  "actual_changed_diagrams_rendered": 13,
+  "git_fixture_probe": {
+    "schema": "harnessix.git-config-fixture-probe/v1",
+    "no_global_config_modified": true,
+    "rows": [
+      {
+        "label": "apple_git",
+        "version": "git version 2.24.3 (Apple Git-128)",
+        "returncode": 1,
+        "fixture_global_autocrlf_true_observed": false
+      },
+      {
+        "label": "pinned_git",
+        "version": "git version 2.53.0",
+        "returncode": 0,
+        "fixture_global_autocrlf_true_observed": true
+      }
+    ]
+  },
+  "wheel": {
+    "source": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "sha256": "3eaf20a89b2e88884eb78a4df833749a5905623f90026b438cf92240a9e1e06c",
+    "bytes": 1077516
+  },
+  "budget": {
+    "model_requests": 0,
+    "original_70_cny_period_changed": false,
+    "unknown_reservation_reconciled": false
+  },
+  "public_packet_excludes_raw_logs_values_provider_bodies_and_private_paths": true,
+  "governance": {
+    "source": "tool-feedback-governance-pinned-git.xml",
+    "sha256": "48fd3a774edd0b1dffd48ea1d5f88902beb0d50c9ab9237fb8310f761dd01498",
+    "bytes": 46315,
+    "tests": 297,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 297,
+    "seconds": "28.628"
+  }
+}

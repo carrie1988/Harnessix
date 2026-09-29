@@ -1,0 +1,22 @@
+{
+  "scope": "safe_tool_input_feedback_and_read_only_partial_suite_diagnosis",
+  "source_bindings": "facts.json",
+  "design": "docs/changes/m09-r3-safe-tool-argument-feedback.md",
+  "facts_and_implementation_distinguished": true,
+  "counts_not_additive": true,
+  "corrected_red_uses_original_git_runtime_in_isolated_interpreter": true,
+  "fixture_contract_failures_and_intermediate_governance_failure_retained": true,
+  "change_excludes_schema_prompt_alias_grader_pack_budget_and_auto_retry": true,
+  "prior_ci_does_not_verify_new_feedback_source": true,
+  "open_items": [
+    "original_unknown_cost_reconciliation",
+    "complete_real_20_trials",
+    "new_same_candidate_native_matrix",
+    "default_desktop_start",
+    "consumer_windows11",
+    "independent_beta",
+    "archive_rights_12",
+    "final_commercial_candidate"
+  ],
+  "privacy": "closed_field_projection_without_values_paths_credentials_or_model_bodies"
+}
