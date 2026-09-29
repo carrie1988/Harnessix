@@ -18,8 +18,9 @@ from harnessix.evals.report import read_eval_campaign_execution_state, read_eval
 from harnessix.evals.suite_contracts import CodingEvalSuiteCasePlan
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
+from harnessix.models.contracts import ToolCallCompleted
 from harnessix.models.pricing import BillingContext, FlatInputPrice, PriceSnapshot
-from scripts.recorded_task_pack import RecordedProviderFactory
+from scripts.recorded_task_pack import RecordedProviderFactory, RecordedSolutionProvider
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SOLUTIONS = _ROOT / "benchmarks/taskpacks/harnessix-engineering-v1/solutions"
@@ -135,8 +136,11 @@ async def test_task_pack_case_commits_completed_campaign_progress(
 
 
 @pytest.mark.skipif(os.name != "posix", reason="Task Pack Container Adapter要求POSIX宿主")
+@pytest.mark.parametrize("omit_optional_selectors", (False, True))
 async def test_task_pack_case_runs_two_trials_through_formal_agent_campaign_and_reopens(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    omit_optional_selectors: bool,
 ) -> None:
     docker = _executable("docker")
     git = _executable("git")
@@ -150,6 +154,18 @@ async def test_task_pack_case_runs_two_trials_through_formal_agent_campaign_and_
     )
     if os.environ.get(image_environment) != source_profile.image:
         pytest.skip("未配置Task Pack固定镜像")
+    if omit_optional_selectors:
+        original = RecordedSolutionProvider._step_event
+
+        def omit_selectors(provider, response_id, step):
+            event, finish = original(provider, response_id, step)
+            if isinstance(event, ToolCallCompleted) and event.tool.startswith("run_profile."):
+                event = event.model_copy(
+                    update={"arguments": {"profile": event.arguments["profile"]}}
+                )
+            return event, finish
+
+        monkeypatch.setattr(RecordedSolutionProvider, "_step_event", omit_selectors)
     expected, campaign = _fixed_plan(case, _revision(git))
     provider_factory = RecordedProviderFactory(
         loaded,

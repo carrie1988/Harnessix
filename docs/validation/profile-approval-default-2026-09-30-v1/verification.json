@@ -1,0 +1,11 @@
+{
+  "decision": "scoped_go_for_new_preregistered_suite",
+  "legitimate_default_accepted": true,
+  "wrong_profile_selectors_types_extra_fields_rejected": true,
+  "original_fingerprints_unchanged": true,
+  "fixed_pack_images_grader_unchanged": true,
+  "real_model_quality_gate": "open",
+  "commercial_release_gate_closed": false,
+  "private_failed_attempt_retained": true,
+  "cross_revision_resume_allowed": false
+}

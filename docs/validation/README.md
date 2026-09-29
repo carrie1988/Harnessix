@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 39
+version: 40
 code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
 owners:
   - core
@@ -142,3 +142,7 @@ flowchart LR
 - [认证SQLite Session](authenticated-sqlite-session-2026-09-28-v1/README.md)：真实同事务显式库合同，默认产品与Key Backend验收独立开放。
 
 - [默认产品持久Session密钥](managed-session-key-2026-09-28-v1/README.md)：强制认证Root、实际macOS保护与真实CLI/SDK重开；Windows和发行验收独立开放。
+
+## 固定Profile默认参数兼容
+
+[验证交付](profile-approval-default-2026-09-30-v1/README.md)保留真实Suite两请求后的合法默认参数误拒绝、原预算结算与未完成状态，记录正式解码器修正及286项离线/6项真实容器回归；真实质量、既有CI风险和商用门禁继续开放。

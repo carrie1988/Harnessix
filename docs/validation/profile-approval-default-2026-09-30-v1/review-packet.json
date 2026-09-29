@@ -1,0 +1,19 @@
+{
+  "scope": "formal-profile-approval-canonical-input",
+  "finding": "adapter_rejected_optional_selector_default",
+  "implementation": "reuse_existing_product_decoder",
+  "unit_and_actual_container_regression": "pass",
+  "model_quality": "not_yet_verified",
+  "ci": "failure_retained",
+  "open_items": [
+    "preregistered_full_20_trials",
+    "default_desktop_start",
+    "macos_unknown_child_exit_255",
+    "windows_fixture_timeout",
+    "archive_rights_12",
+    "consumer_windows11",
+    "independent_beta",
+    "same_candidate_final_release"
+  ],
+  "privacy": "bounded_facts_no_credentials_model_bodies_or_private_paths"
+}

@@ -9,8 +9,8 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import ToolCallContent
-from harnessix.domain.models import utc_now
+from harnessix.agent.models import ToolCallContent, TrustedActionApprovalRequestContent
+from harnessix.domain.models import EffectClass, utc_now
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan
 from harnessix.evals.contracts import CodingEvalEnvironment, CodingEvalRunState
 from harnessix.evals.report import (
@@ -22,12 +22,89 @@ from harnessix.evals.suite_contracts import CodingEvalSuiteCasePlan
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_contracts import CodingEvalTaskPackCase
 from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
-from harnessix.evals.task_pack_trial import _profile_observations, _require_completed_trial
+from harnessix.evals.task_pack_trial import (
+    _profile_observations,
+    _require_allowed_approval,
+    _require_completed_trial,
+)
 from harnessix.models.pricing import BillingContext, FlatInputPrice, PriceSnapshot
 from tests.evals.test_campaign import evidence
 from tests.evals.test_grader import completed_turn, task
+from tests.evals.test_grader import item as completed_item
 
 _MODEL = "harnessix-recorded-v1"
+
+
+def _profile_approval(arguments, *, presentation="process"):
+    """构造已有正式Profile的审批投影，只用于纯参数边界校验。"""
+    case = builtin_coding_eval_task_pack("harnessix-engineering", 2).manifest.case(
+        "agents-dump-compatible-refactor"
+    )
+    call = ToolCallContent(
+        call_id=uuid4(),
+        provider_call_id="profile-approval-test",
+        tool=f"run_profile.{case.profile_id}",
+        tool_version="1",
+        effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
+        arguments=arguments,
+        requires_approval=True,
+    )
+    turn = completed_turn().model_copy(update={"items": (completed_item(call),)})
+    approval = TrustedActionApprovalRequestContent(
+        approval_id=uuid4(),
+        call_id=call.call_id,
+        presentation=presentation,
+        plan_id=uuid4(),
+        plan_fingerprint="1" * 64,
+        execution_fingerprint="2" * 64,
+        request_fingerprint="3" * 64,
+        policy_id="test.policy",
+        policy_version="1",
+    )
+    return turn, approval, case
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    (
+        {"profile": "agents-dump-compatible-refactor-check"},
+        {"profile": "agents-dump-compatible-refactor-check", "selectors": []},
+    ),
+)
+def test_profile_approval_accepts_formal_empty_selector_defaults(arguments) -> None:
+    turn, approval, case = _profile_approval(arguments)
+    assert _require_allowed_approval(turn, approval, case) == "profile"
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    (
+        {},
+        {"profile": "other-profile"},
+        {"profile": "agents-dump-compatible-refactor-check", "selectors": ["tests/test_a.py"]},
+        {"profile": "agents-dump-compatible-refactor-check", "selectors": None},
+        {"profile": "agents-dump-compatible-refactor-check", "selectors": ""},
+        {"profile": "agents-dump-compatible-refactor-check", "program": "/bin/sh"},
+        {"profile": "agents-dump-compatible-refactor-check", "environment": {}},
+    ),
+)
+def test_profile_approval_rejects_non_fixed_or_invalid_formal_inputs(arguments) -> None:
+    turn, approval, case = _profile_approval(arguments)
+    with pytest.raises(KernelError) as failure:
+        _require_allowed_approval(turn, approval, case)
+    assert failure.value.code == "eval_approval_denied"
+
+
+@pytest.mark.parametrize("presentation", ("tool",))
+def test_profile_approval_rejects_wrong_presentation_even_with_default_selectors(
+    presentation,
+) -> None:
+    turn, approval, case = _profile_approval(
+        {"profile": "agents-dump-compatible-refactor-check"}, presentation=presentation
+    )
+    with pytest.raises(KernelError) as failure:
+        _require_allowed_approval(turn, approval, case)
+    assert failure.value.code == "eval_approval_denied"
 
 
 def _case_and_campaign():

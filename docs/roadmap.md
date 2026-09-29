@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 125
+version: 126
 code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
 owners:
   - core
@@ -970,3 +970,12 @@ R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-
 无网络验收改为实际接口状态、地址和路由检查，并以真实Bridge负对照拒绝联网环境；
 5项真实集成与151项关联离线回归通过，原失效断言FAIL保留。生产代码、Pack及评分器未改变，模型请求0。
 该GO只允许后续预注册完整20 Trial验证，不关闭默认Desktop路径、原0/20、消费者Windows11、Beta或商用门禁。
+
+### R3：正式Profile默认参数兼容
+
+固定`629b072`的首次真实Suite在两次模型请求后因评测器误拒绝合法省略Selector停止，
+未形成完整Trial/Suite成绩；[失败及修正验证](validation/profile-approval-default-2026-09-30-v1/README.md)
+保留原Session和预算事实，不将未完成尝试记为0/20。后继复用产品正式解码器，保持同Profile、零Selector、
+额外字段拒绝和原批准指纹；286项关联离线及6项真实容器/录制Provider集成通过。
+新候选须重新冻结完整20 Trial，不能跨Revision恢复旧运行。既有CI三个独立失败类别继续开放，
+不以参数回归替代真实质量、消费者平台、独立Beta或最终发布验收。

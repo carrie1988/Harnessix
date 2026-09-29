@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 25
-code_revision: 90de93f565ea88679e54242ee6f1771e9be721b7
+version: 26
+code_revision: 629b07280db58814c77efabef6ec495720c714b7
 owners:
   - core
 modules:
@@ -981,10 +981,14 @@ sequenceDiagram
 `open_default_product_action_runtime`。产品组合根只包含当前Pack Profile和正式Workspace Patch；`_NoSecrets`拒绝所有
 Secret解析。Adapter不会直接执行Container，也不另建Eval Agent、Approval Store或Action Executor。
 
-自动审批先从Session中的唯一Tool Call恢复正式合同：`run_profile.<profile_id>`必须携带同一Profile和空Selector；
+自动审批先从Session中的唯一Tool Call恢复正式合同：`run_profile.<profile_id>`必须经产品`decode_run_profile`
+解码为同一Profile和空Selector。公开Schema允许省略Selector，默认值与显式`[]`等价；
+不比较原始JSON与一份必须包含默认字段的字典，也不重写原Call或批准Fingerprint；
 `apply_patch_batch`通过`decode_workspace_patch_input`复用产品Patch合同，并限制文件数、允许路径和非删除操作。任何其他
 工具、参数或展示类型以`eval_approval_denied`失败关闭。自动审批Actor固定，因此Transcript只增加自动审批计数，不增加
 人工干预计数。
+
+输入边界、误拒绝根因、数据流与恢复测试见[Profile审批正式解码设计](../changes/m09-r3-profile-approval-canonical-input.md)。
 
 Grader从产品Process终端事实`state=exited`、`stop_reason=exited`和整数`returncode`生成Baseline/Final Observation；
 Profile完整输出仍位于受限Artifact。Review Oracle Finding ID必须作为最终回答`summary`的独立词元出现，避免子串误判且

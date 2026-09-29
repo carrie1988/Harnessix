@@ -1,0 +1,47 @@
+{
+  "source_revision": "629b07280db58814c77efabef6ec495720c714b7",
+  "original_failed_suite_id": "0c5a931e-8b54-4d5e-ac20-9b1ce47f5d03",
+  "suite_report_completed": false,
+  "completed_trials": 0,
+  "settled_model_requests": 2,
+  "estimated_increment_cny": "0.042192",
+  "estimated_known_period_cost_cny": "0.292216",
+  "reserved_cny": "0",
+  "original_run_log_sha256": "54f2966a1fea8df0492921f629fa80cf300b4d8298968ad807712c9ef229f277",
+  "original_pre_registration_sha256": "9ef09a6167f1316f785c8500b1e00e884fe2854bd2099c04fb073168c6b0729d",
+  "pure_reproduction": {
+    "original_eval_rejection": "eval_approval_denied",
+    "product_contract_accepts": true,
+    "decoded_selectors": [],
+    "arguments_omit_optional_selectors": true,
+    "model_requests": 0
+  },
+  "regression": [
+    {
+      "source": "approval-complete-offline.xml",
+      "sha256": "d2b5143481420e4cd3f1e904ad884d8be983b1b2c651614ab53713d9040732a7",
+      "tests": 286,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "103.654"
+    },
+    {
+      "source": "approval-real-regression.xml",
+      "sha256": "b47528acc0fbe54c2805013cac4669edece23444d776e26764e5147d1c2ba5af",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "22.610"
+    }
+  ],
+  "tested_source_sha256": {
+    "src/harnessix/evals/task_pack_trial.py": "cb045d1a8e3fe13ee8953166dba4bbe7b3bfc0b178df892dd0338d73fb41f4df",
+    "src/harnessix/product_config/process_action.py": "0ed44eb960847816e16b8f4d4f23ac7fde01415cec3c4bf75d80d1abfa1d041d",
+    "tests/evals/test_task_pack_execution.py": "da294ede80ef074ccca8d830c118bce59bc9aa6f99995830548eac078b87e216",
+    "tests/integration/test_task_pack_execution.py": "da2f3a548723d5f618b428c29f1d449244aeaeb96f9bcbd869e1ca60a8ed620f"
+  },
+  "ci_run_id": 36615952548,
+  "ci_conclusion": "failure"
+}

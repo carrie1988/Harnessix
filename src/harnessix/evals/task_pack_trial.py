@@ -57,6 +57,7 @@ from harnessix.observability import NoOpObservability, Observability
 from harnessix.product_config.action_contracts import build_product_action_config
 from harnessix.product_config.action_runtime import open_default_product_action_runtime
 from harnessix.product_config.agent_context import build_product_agent_context
+from harnessix.product_config.process_action import decode_run_profile
 from harnessix.product_config.workspace_patch_review import decode_workspace_patch_input
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
@@ -146,11 +147,16 @@ def _require_allowed_approval(
     call = _approval_call(turn, approval)
     profile_tool = f"run_profile.{case.profile_id}"
     if call.tool == profile_tool:
-        if approval.presentation != "process" or call.arguments != {
-            "profile": case.profile_id,
-            "selectors": [],
-        }:
+        if approval.presentation != "process":
             raise KernelError("eval_approval_denied", "Task Pack只批准固定无参数检查Profile")
+        try:
+            # 产品Schema允许省略selectors；用同一正式解码器落实空默认值和零选择器策略。
+            # 不按原始JSON字段名单判断语义，也不允许额外程序、环境或其他Profile。
+            decode_run_profile(case.profile_id, "none", call.arguments)
+        except ValueError:
+            raise KernelError(
+                "eval_approval_denied", "Task Pack只批准固定无参数检查Profile"
+            ) from None
         return "profile"
     if call.tool != "apply_patch_batch" or approval.presentation != "patch_batch":
         raise KernelError("eval_approval_denied", "Task Pack只批准固定Profile和受限Workspace Patch")
