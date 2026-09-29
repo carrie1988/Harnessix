@@ -117,3 +117,7 @@ docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v1/log
 docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/** -text
 docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/logs/*.log -diff -merge
 docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/logs/*.xml -diff -merge
+
+# 固定安全追踪交付按原字节保存，避免平台换行改写原证据。
+docs/validation/v1-safety-coverage-2026-09-29-v1/** -text
+docs/validation/v1-safety-coverage-2026-09-29-v1/logs/** -diff -merge

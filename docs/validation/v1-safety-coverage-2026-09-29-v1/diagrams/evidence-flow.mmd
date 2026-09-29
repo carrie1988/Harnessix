@@ -1,0 +1,10 @@
+flowchart TB
+    Threat[威胁模型编号及控制] --> Mapping[版本化映射JSON]
+    Source[当前源码和既有测试符号] --> Mapping
+    Mapping --> Selectors[精确去重选择器]
+    Selectors --> JUnit[原JUnit和日志]
+    JUnit --> Groups[逐风险组展开结果]
+    Groups --> Packet[报告与Review Packet]
+    Packet --> Gate[保持原发布门槛]
+    Snapshot[Git原字节及SHA256] --> Manifest[交付Manifest]
+    Packet --> Manifest

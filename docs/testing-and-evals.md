@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 45
-code_revision: 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+version: 46
+code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
 owners:
   - core
 modules:
@@ -838,3 +838,11 @@ Plan/指针/回执篡改、陌生目录、粘性回退、四阶段中断、实�
 固定源码分别执行本机Python3.13和干净独立Python3.12专项与八目录受影响回归，
 治理、旧CLI合同、类型/Schema、实际Wheel及Secret检查分开记录，测试组重叠不累加。
 [总体及详细设计](changes/m09-r1-product-state-restore.md)明确Windows、真实模型质量、Beta及整体发布尚未关闭。
+
+## 首发安全控制追踪的当前证据
+
+[R1控制追踪详设](changes/m09-r1-existing-safety-coverage.md)和[版本化映射](governance/v1-safety-coverage.json)
+覆盖威胁模型第6节18组编号，保留54个既有函数选择器与可达性/证明边界。
+[本地双Python原结果](validation/v1-safety-coverage-2026-09-29-v1/README.md)分别展开148项，
+各146通过、2原生Windows跳过。不能求和，不能把17组本地锚点通过或TM-02A部分结果登记为完整安全验收。
+最终同候选三平台、实际后端与其他发布门禁保持原标准；不新增重复安全平台。

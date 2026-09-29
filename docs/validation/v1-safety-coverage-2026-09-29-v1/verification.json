@@ -1,0 +1,1307 @@
+{
+  "spec_version": "harnessix.safety-coverage-verification/v1",
+  "source_revision": "ae590042f52de7e08eafb51a1fa080b935afc6df",
+  "mapping_sha256": "12453be4461db85ef4221dec2cbf302e1638ac84b1ee57b30d2ce5f9a4eb275e",
+  "test_function_count": 54,
+  "risk_group_count": 18,
+  "actual_source_and_test_symbols_verified": true,
+  "production_code_changed": false,
+  "runs": [
+    {
+      "python_version": "3.12.7",
+      "platform": "macos",
+      "selected_function_count": 54,
+      "expanded_case_count": 148,
+      "passed": 146,
+      "skipped": 2,
+      "failed": 0,
+      "errors": 0,
+      "risks": [
+        {
+          "risk_id": "TM-01",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/context/test_engine.py::test_priority_rendering_is_deterministic_and_structurally_escaped",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/context/test_sources.py::test_source_trust_and_runtime_entry_are_fail_closed",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-02",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/tools/test_runtime.py::test_bounded_reads_run_in_parallel_and_descriptor_declares_capability",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/workspace/test_paths.py::test_logical_paths_reject_platform_prefix_and_traversal",
+              "role": "negative",
+              "expanded_case_count": 24,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/context/test_sources.py::test_unsafe_instruction_file_fails_closed",
+              "role": "negative",
+              "expanded_case_count": 2,
+              "statuses": [
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-02A",
+          "status": "PARTIAL_native_windows_unverified",
+          "anchors": [
+            {
+              "nodeid": "tests/workspace/test_paths.py::test_windows_supports_long_logical_paths_without_legacy_260_limit",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/workspace/test_paths.py::test_windows_rejects_reserved_ads_and_collapsed_names",
+              "role": "negative",
+              "expanded_case_count": 12,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/tools/test_windows_native_runtime.py::test_windows_runtime_rejects_junction_and_relative_git",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "SKIP_native_windows"
+              ]
+            },
+            {
+              "nodeid": "tests/tools/test_windows_native_runtime.py::test_windows_runtime_rejects_ads_reserved_names_and_hardlinks",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "SKIP_native_windows"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-03",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_materializes_exact_supervised_process",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_accepts_only_exact_public_intent_arguments",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_rejects_owner_or_plan_drift",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-04",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_network.py::test_resolution_is_pinned_sorted_and_expires",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_network.py::test_none_policy_denies_gateway_authorization",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_network_isolation.py::test_internal_network_attestation_fails_closed",
+              "role": "negative",
+              "expanded_case_count": 4,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-05",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/product_config/test_provider_credentials.py::test_openai_adapter_uses_explicit_secret_without_environment_lookup",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_publication.py::test_native_keys_values_and_finite_encodings_are_rejected",
+              "role": "negative",
+              "expanded_case_count": 7,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_publication.py::test_capture_wrong_material_and_callback_error_never_expose_original_text",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-05A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/secrets/test_provider.py::test_versioned_secret_scope_injects_only_declared_target_and_closes",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_provider.py::test_streaming_redactor_covers_every_chunk_boundary_and_common_encodings",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_provider.py::test_redactor_fails_closed_for_too_short_secret_and_after_finish",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-06",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/execution/test_plans.py::test_plan_binds_every_execution_fact_without_secret_plaintext",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/execution/test_plans.py::test_plan_rejects_argument_environment_workspace_policy_and_capability_drift",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_write_requires_exact_approval_and_workspace_freshness",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-07",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/mcp/test_runtime_actions.py::test_connection_captures_modern_catalog_and_executes_read_tool",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/mcp/test_runtime_actions.py::test_malicious_description_and_annotations_cannot_lower_write_policy",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/hooks/test_runtime.py::test_non_bundled_hook_requires_exact_unexpired_definition_grant",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/skills/test_runtime.py::test_content_change_after_catalog_is_rejected_and_audited",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-08",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/models/test_openai_chat.py::test_sse_utf8_fragmentation_and_newlines",
+              "role": "positive",
+              "expanded_case_count": 3,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/models/test_openai_chat.py::test_invalid_arguments_never_release_calls",
+              "role": "negative",
+              "expanded_case_count": 7,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/models/test_openai_chat.py::test_wire_budgets",
+              "role": "negative",
+              "expanded_case_count": 4,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-08A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/product_config/test_runtime.py::test_zero_exposure_failure_falls_back_with_global_attempts_and_audit",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_runtime.py::test_never_falls_back_after_response_or_tool_exposure",
+              "role": "negative",
+              "expanded_case_count": 3,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_contracts_and_codec.py::test_rejects_malformed_or_ambiguous_json",
+              "role": "negative",
+              "expanded_case_count": 6,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-09",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/app_server/test_server_sdk.py::test_agent_sdk_drives_turn_replay_and_duplicate_command",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/protocol/test_codec.py::test_decode_enforces_frame_and_depth_limits",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/app_server/test_server_sdk.py::test_stdio_closes_slow_client_without_session_damage",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-09A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/governance/test_legacy_action_archive.py::test_inspect_and_archive_preserve_snapshot_without_payloads",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/governance/test_product_runtime_convergence.py::test_legacy_action_runtime_has_no_production_callers_or_source_tree",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-10",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/session/test_publication_seal.py::test_real_scope_signed_event_survives_new_authority_and_new_scope",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/session/test_publication_seal.py::test_wrong_persistent_key_or_key_identity_cannot_authenticate",
+              "role": "negative",
+              "expanded_case_count": 2,
+              "statuses": [
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_product_state_restore.py::test_invalid_restore_never_changes_current_state",
+              "role": "negative",
+              "expanded_case_count": 3,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_product_state_owner.py::test_second_process_cannot_acquire_root_even_after_root_rename",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-11",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_running_recovery_enters_unknown_then_reconciles_once",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_real_host_exit_recovers_to_unknown_without_replaying_effect",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_reconcile_attempts_are_bounded_without_reexecute",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-12",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_host_sandbox_probe_only_advertises_backend_after_preflight",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_rejects_unparseable_security_evidence",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_timeout_fails_closed_without_retry",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-12A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_uses_daemon_and_security_capability_evidence",
+              "role": "positive",
+              "expanded_case_count": 2,
+              "statuses": [
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support",
+              "role": "negative",
+              "expanded_case_count": 22,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_resource_admission.py::test_current_resource_failure_prevents_owner_start",
+              "role": "negative",
+              "expanded_case_count": 4,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-13",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/governance/test_sbom.py::test_sbom_graph_and_archive_identity_matches_all_locked_inputs",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/governance/test_sbom.py::test_unreviewed_or_inconsistent_inputs_fail_closed",
+              "role": "negative",
+              "expanded_case_count": 5,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "python_version": "3.13.8",
+      "platform": "macos",
+      "selected_function_count": 54,
+      "expanded_case_count": 148,
+      "passed": 146,
+      "skipped": 2,
+      "failed": 0,
+      "errors": 0,
+      "risks": [
+        {
+          "risk_id": "TM-01",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/context/test_engine.py::test_priority_rendering_is_deterministic_and_structurally_escaped",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/context/test_sources.py::test_source_trust_and_runtime_entry_are_fail_closed",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-02",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/tools/test_runtime.py::test_bounded_reads_run_in_parallel_and_descriptor_declares_capability",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/workspace/test_paths.py::test_logical_paths_reject_platform_prefix_and_traversal",
+              "role": "negative",
+              "expanded_case_count": 24,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/context/test_sources.py::test_unsafe_instruction_file_fails_closed",
+              "role": "negative",
+              "expanded_case_count": 2,
+              "statuses": [
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-02A",
+          "status": "PARTIAL_native_windows_unverified",
+          "anchors": [
+            {
+              "nodeid": "tests/workspace/test_paths.py::test_windows_supports_long_logical_paths_without_legacy_260_limit",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/workspace/test_paths.py::test_windows_rejects_reserved_ads_and_collapsed_names",
+              "role": "negative",
+              "expanded_case_count": 12,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/tools/test_windows_native_runtime.py::test_windows_runtime_rejects_junction_and_relative_git",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "SKIP_native_windows"
+              ]
+            },
+            {
+              "nodeid": "tests/tools/test_windows_native_runtime.py::test_windows_runtime_rejects_ads_reserved_names_and_hardlinks",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "SKIP_native_windows"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-03",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_materializes_exact_supervised_process",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_accepts_only_exact_public_intent_arguments",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_rejects_owner_or_plan_drift",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-04",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_network.py::test_resolution_is_pinned_sorted_and_expires",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_network.py::test_none_policy_denies_gateway_authorization",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_network_isolation.py::test_internal_network_attestation_fails_closed",
+              "role": "negative",
+              "expanded_case_count": 4,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-05",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/product_config/test_provider_credentials.py::test_openai_adapter_uses_explicit_secret_without_environment_lookup",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_publication.py::test_native_keys_values_and_finite_encodings_are_rejected",
+              "role": "negative",
+              "expanded_case_count": 7,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_publication.py::test_capture_wrong_material_and_callback_error_never_expose_original_text",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-05A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/secrets/test_provider.py::test_versioned_secret_scope_injects_only_declared_target_and_closes",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_provider.py::test_streaming_redactor_covers_every_chunk_boundary_and_common_encodings",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/secrets/test_provider.py::test_redactor_fails_closed_for_too_short_secret_and_after_finish",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-06",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/execution/test_plans.py::test_plan_binds_every_execution_fact_without_secret_plaintext",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/execution/test_plans.py::test_plan_rejects_argument_environment_workspace_policy_and_capability_drift",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_write_requires_exact_approval_and_workspace_freshness",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-07",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/mcp/test_runtime_actions.py::test_connection_captures_modern_catalog_and_executes_read_tool",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/mcp/test_runtime_actions.py::test_malicious_description_and_annotations_cannot_lower_write_policy",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/hooks/test_runtime.py::test_non_bundled_hook_requires_exact_unexpired_definition_grant",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/skills/test_runtime.py::test_content_change_after_catalog_is_rejected_and_audited",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-08",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/models/test_openai_chat.py::test_sse_utf8_fragmentation_and_newlines",
+              "role": "positive",
+              "expanded_case_count": 3,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/models/test_openai_chat.py::test_invalid_arguments_never_release_calls",
+              "role": "negative",
+              "expanded_case_count": 7,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/models/test_openai_chat.py::test_wire_budgets",
+              "role": "negative",
+              "expanded_case_count": 4,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-08A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/product_config/test_runtime.py::test_zero_exposure_failure_falls_back_with_global_attempts_and_audit",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_runtime.py::test_never_falls_back_after_response_or_tool_exposure",
+              "role": "negative",
+              "expanded_case_count": 3,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_contracts_and_codec.py::test_rejects_malformed_or_ambiguous_json",
+              "role": "negative",
+              "expanded_case_count": 6,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-09",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/app_server/test_server_sdk.py::test_agent_sdk_drives_turn_replay_and_duplicate_command",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/protocol/test_codec.py::test_decode_enforces_frame_and_depth_limits",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/app_server/test_server_sdk.py::test_stdio_closes_slow_client_without_session_damage",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-09A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/governance/test_legacy_action_archive.py::test_inspect_and_archive_preserve_snapshot_without_payloads",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/governance/test_product_runtime_convergence.py::test_legacy_action_runtime_has_no_production_callers_or_source_tree",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-10",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/session/test_publication_seal.py::test_real_scope_signed_event_survives_new_authority_and_new_scope",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/session/test_publication_seal.py::test_wrong_persistent_key_or_key_identity_cannot_authenticate",
+              "role": "negative",
+              "expanded_case_count": 2,
+              "statuses": [
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_product_state_restore.py::test_invalid_restore_never_changes_current_state",
+              "role": "negative",
+              "expanded_case_count": 3,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/product_config/test_product_state_owner.py::test_second_process_cannot_acquire_root_even_after_root_rename",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-11",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_running_recovery_enters_unknown_then_reconciles_once",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_real_host_exit_recovers_to_unknown_without_replaying_effect",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/trusted_actions/test_router.py::test_reconcile_attempts_are_bounded_without_reexecute",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-12",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_host_sandbox_probe_only_advertises_backend_after_preflight",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_rejects_unparseable_security_evidence",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_timeout_fails_closed_without_retry",
+              "role": "negative",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-12A",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_uses_daemon_and_security_capability_evidence",
+              "role": "positive",
+              "expanded_case_count": 2,
+              "statuses": [
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support",
+              "role": "negative",
+              "expanded_case_count": 22,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/sandbox/test_resource_admission.py::test_current_resource_failure_prevents_owner_start",
+              "role": "negative",
+              "expanded_case_count": 4,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        },
+        {
+          "risk_id": "TM-13",
+          "status": "LOCAL_PASS_selected_anchors",
+          "anchors": [
+            {
+              "nodeid": "tests/governance/test_sbom.py::test_sbom_graph_and_archive_identity_matches_all_locked_inputs",
+              "role": "positive",
+              "expanded_case_count": 1,
+              "statuses": [
+                "PASS"
+              ]
+            },
+            {
+              "nodeid": "tests/governance/test_sbom.py::test_unreviewed_or_inconsistent_inputs_fail_closed",
+              "role": "negative",
+              "expanded_case_count": 5,
+              "statuses": [
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS",
+                "PASS"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "paid_model_requests": 0,
+  "quality_trials_counted": 0,
+  "R1_complete": false,
+  "commercial_release": false
+}

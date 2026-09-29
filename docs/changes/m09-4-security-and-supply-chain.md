@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 29
-code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
+version: 30
+code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
 owners:
   - core
 modules:
@@ -34,13 +34,15 @@ supersedes: []
 **d远端MCP/OAuth延期1.1+**。本文远端领域/流程保留为后续候选设计，不再是0.9关闭或1.0发布前置条件。
 延期能力必须不装配或正式拒绝；已复现的首发可达高风险缺口仍阻断发布。
 完整逐项处置见[收敛计划](m09-to-v1-release-scope-convergence.md)。
+R1已有[首发控制追踪详设](m09-r1-existing-safety-coverage.md)及[18组既有测试映射](../governance/v1-safety-coverage.json)，
+不要求改名或新建重复攻击包。现有控制锚点不等于每组所有攻击均覆盖；原生、真实后端及R1整体仍独立验收。
 
 ## 1. 文档摘要
 
 | 项目 | 内容 |
 |---|---|
-| 当前能力 | 威胁模型v2（TM-01～TM-13）、Trusted Action统一路由与审批、公开错误经KernelError稳定码传播、Gateway公开错误、效果摘要及字段授权已分步约束（Secret值和历史正文未验收）、MCP本地stdio/in_process、Secret引用-解析-脱敏、AGPL+商业双许可治理文件、0.9.3六场景Soak证据链。 |
-| 本文设计状态 | `reviewing`；a/b已有实现候选；0601ede六作业CI成功，Windows编码与POSIX合同导入污染修复通过。Secret v2在747fe9b CI五作业成功/Windows夹具失败，修复候选待验证；许可v2绑定777件，pywin32 12件受限正文冲突仍阻断，安装输入及c/d尚未验收。 |
+| 当前能力 | 第6节18组威胁控制、Trusted Action路由与审批、阶段有限公开错误/返回封套、版本化Secret公开保护、原Key认证Session/Artifact及Owner停机恢复；默认Patch与条件Process、显式宿主本地扩展组件、锁定供应链和固定认证重启三平台PASS。各能力保持独立验证边界。 |
+| 本文设计状态 | `reviewing`；当前控制追踪和双Python锚点已交付，不新建重复攻击平台。原历史CI与失败记录保留；R1完整安全、R2实际发行输入及pywin32 12件许可处置仍开放，d远端能力延期1.1+。本地及单场景结果不关闭发布门禁。 |
 | 影响模块 | Trusted Actions、MCP、Secrets、Sandbox、Product Config、构建/发布工程与文档治理。 |
 | 关键ADR | [ADR-0066](../adr/0066-sandbox-network-and-secret-boundaries.md)、[ADR-0069](../adr/0069-unified-coding-action-risk-route.md)、[ADR-0073](../adr/0073-mcp-catalog-binding-and-sandbox.md)、[ADR-0064](../adr/0064-agpl-and-commercial-dual-licensing.md)。 |
 
@@ -56,7 +58,7 @@ supersedes: []
 
 1. **0.9.4a 公开错误清洗统一化**：Policy/Executor/Reconcile异常在全部公开边界（模型ToolResult、Session失败、Action Audit结果、Agent Protocol错误、遥测标签）只产生稳定公开码；注入含路径/argv/Secret式样/内部异常正文的故障，逐边界断言不泄漏。
 2. **0.9.4b 依赖、许可证与SBOM**：版本化依赖清单与许可证审计、CycloneDX SBOM、仓库与产物Secret扫描、安装脚本与扩展来源审查、AGPL/商业双许可权利链复核，全部产物进入CI门禁。
-3. **0.9.4c 攻击测试套件**：按TM-01～TM-13建立编号化攻击回归，覆盖威胁模型第6节每组威胁的当前控制；失败关闭语义可复现。
+3. **0.9.4c 既有安全控制追踪与必要补例**：将威胁模型第6节18组风险映射到原源码及既有正反例，区分实际可达入口；只在原模块补真正缺失且已复现的首发可达控制，不建设重复攻击平台。
 4. **1.1+候选：原0.9.4d远端MCP Streamable HTTP/OAuth**：独立目标身份（固定origin/证书摘要/不允许隐式宿主凭据）、OAuth凭据生命周期（获取、存储引用、刷新、撤销、失败关闭）、受管出口（复用Sandbox Egress合同），离线契约与故障注入测试，默认产品不装配。
 
 ### 3.2 非目标
@@ -188,7 +190,7 @@ sequenceDiagram
 
 1. 0.9.4a：泄漏回归覆盖五类公开面 × 四类敏感式样；既有Trusted Action/网关测试全部通过。
 2. 0.9.4b：许可证白名单复核通过、SBOM可重生成且逐字节稳定、Secret扫描零命中且包含正例自检。
-3. 0.9.4c：TM-01～TM-13每组至少一个编号攻击回归在CI三平台通过。
+3. 0.9.4c：当前TM风险与既有正反例追踪完整；各平台执行相关可达控制及必要补例，不以组件Mock、原生跳过或旧候选CI替代最终同候选证据。
 4. 1.0：证明远端配置未支持且正式入口拒绝；1.1+启用远端MCP前再完成目标身份、OAuth、Egress、Schema漂移及UNKNOWN故障验收。
 5. 每个子切片完成须同步现行模块设计与威胁模型链接，`make check`全链通过。
 

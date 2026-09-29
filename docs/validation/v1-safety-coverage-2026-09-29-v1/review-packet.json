@@ -1,0 +1,28 @@
+{
+  "spec_version": "harnessix.validation-review-packet/v1",
+  "source_revision": "ae590042f52de7e08eafb51a1fa080b935afc6df",
+  "decision": "GO_existing_coverage_inventory_only",
+  "required_checks": {
+    "exact_TM_set": "PASS_18_groups",
+    "source_and_test_symbols": "PASS_54_functions",
+    "python312": "146 passed, 2 native Windows skipped",
+    "python313": "146 passed, 2 native Windows skipped",
+    "documentation": "PASS_zero_findings_actual_render",
+    "governance": "276 passed, 0 skipped"
+  },
+  "production_code_changed": false,
+  "new_security_platform_added": false,
+  "paid_model_requests": 0,
+  "quality_trials_counted": 0,
+  "R1_complete": false,
+  "commercial_release": false,
+  "still_open": [
+    "R1_complete_reachable_controls",
+    "same_final_candidate_native_validation",
+    "R3_real_quality",
+    "R4_Windows11_consumer_and_upgrade",
+    "R5_independent_beta",
+    "R2_release_inputs",
+    "R6_release"
+  ]
+}

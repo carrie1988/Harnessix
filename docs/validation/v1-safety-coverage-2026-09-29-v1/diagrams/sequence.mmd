@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Review as 源码评审
+    participant Map as 映射资料
+    participant Tests as 原pytest用例
+    participant Evidence as 本轮证据
+    participant Release as 发布评审
+    Review->>Review: 核对实际入口和源码断言
+    Review->>Map: 固定TM集合及原选择器
+    Map->>Tests: 同一源码执行明确选择器
+    Tests-->>Evidence: 原日志和JUnit含失败/跳过
+    Evidence->>Evidence: 按风险组核对全部参数结果
+    Evidence-->>Release: 证明范围与开放边界
+    Release->>Release: R1/R6未完整满足则不关闭发布

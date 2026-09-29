@@ -1,0 +1,7 @@
+........................................................................ [ 48%]
+.................................ss..................................... [ 97%]
+....                                                                     [100%]
+- generated xml file: /private/tmp/harnessix-v1-safety-map-20260929/python313.xml -
+=========================== short test summary info ============================
+SKIPPED [1] tests/tools/test_windows_native_runtime.py:176: Windows原生Handle运行时语义
+SKIPPED [1] tests/tools/test_windows_native_runtime.py:145: Windows原生Handle运行时语义

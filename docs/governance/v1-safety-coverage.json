@@ -1,0 +1,518 @@
+{
+  "spec_version": "harnessix.safety-coverage/v1",
+  "source_revision": "ae590042f52de7e08eafb51a1fa080b935afc6df",
+  "scope": "existing_control_anchors_not_commercial_acceptance",
+  "default_entry": "CLI or Python SDK -> stdio -> AgentRuntime -> scoped reads / TrustedActionGateway",
+  "production_code_changed": false,
+  "R1_complete": false,
+  "commercial_release": false,
+  "risks": [
+    {
+      "risk_id": "TM-01",
+      "control": "项目内容不能提升信任或授予执行权限",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/context/engine.py",
+        "src/harnessix/context/sources.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/context/test_engine.py::test_priority_rendering_is_deterministic_and_structurally_escaped",
+          "source_line": 28
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/context/test_sources.py::test_source_trust_and_runtime_entry_are_fail_closed",
+          "source_line": 348
+        }
+      ],
+      "boundary": "证明优先级及宿主信任检查，不证明模型在语义上免疫所有Prompt Injection。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-02",
+      "control": "Workspace路径规范与实际读边界",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/workspace/paths.py",
+        "src/harnessix/tools/read_backend.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/tools/test_runtime.py::test_bounded_reads_run_in_parallel_and_descriptor_declares_capability",
+          "source_line": 155
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/workspace/test_paths.py::test_logical_paths_reject_platform_prefix_and_traversal",
+          "source_line": 27
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/context/test_sources.py::test_unsafe_instruction_file_fails_closed",
+          "source_line": 172
+        }
+      ],
+      "boundary": "路径合同和实际受管读均有锚点；不是任意宿主Python文件I/O的安全保证。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-02A",
+      "control": "Windows名称及Junction必须按原生语义拒绝",
+      "reachability": "native_windows",
+      "source_paths": [
+        "src/harnessix/workspace/paths.py",
+        "src/harnessix/tools/windows_read.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/workspace/test_paths.py::test_windows_supports_long_logical_paths_without_legacy_260_limit",
+          "source_line": 56
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/workspace/test_paths.py::test_windows_rejects_reserved_ads_and_collapsed_names",
+          "source_line": 50
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/tools/test_windows_native_runtime.py::test_windows_runtime_rejects_junction_and_relative_git",
+          "source_line": 145
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/tools/test_windows_native_runtime.py::test_windows_runtime_rejects_ads_reserved_names_and_hardlinks",
+          "source_line": 176
+        }
+      ],
+      "boundary": "逻辑名称合同可在Mac执行；两个原生用例在非Windows跳过，不能替代Windows 11消费者验收。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-03",
+      "control": "固定Process计划不能替换argv、环境或Owner",
+      "reachability": "conditional_process",
+      "source_paths": [
+        "src/harnessix/sandbox/process_runtime.py",
+        "src/harnessix/sandbox/container.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_materializes_exact_supervised_process",
+          "source_line": 177
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_accepts_only_exact_public_intent_arguments",
+          "source_line": 252
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_process_runtime.py::test_container_execution_rejects_owner_or_plan_drift",
+          "source_line": 207
+        }
+      ],
+      "boundary": "使用受控Container夹具验证装配与Owner合同；不证明真实引擎或任意Shell语义安全。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-04",
+      "control": "网络策略身份与授权匹配",
+      "reachability": "conditional_process",
+      "source_paths": [
+        "src/harnessix/sandbox/network.py",
+        "src/harnessix/sandbox/network_isolation.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/sandbox/test_network.py::test_resolution_is_pinned_sorted_and_expires",
+          "source_line": 39
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_network.py::test_none_policy_denies_gateway_authorization",
+          "source_line": 87
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_network_isolation.py::test_internal_network_attestation_fails_closed",
+          "source_line": 72
+        }
+      ],
+      "boundary": "证明网关/拓扑合同，不将Host应用层规则或Mock结果宣称为DNS、IPv6和代理旁路均被内核阻断。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-05",
+      "control": "Provider与公开输出不继承环境凭据或泄漏注册材料",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/product_config/server.py",
+        "src/harnessix/secrets/publication.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/product_config/test_provider_credentials.py::test_openai_adapter_uses_explicit_secret_without_environment_lookup",
+          "source_line": 33
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/secrets/test_publication.py::test_native_keys_values_and_finite_encodings_are_rejected",
+          "source_line": 30
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/secrets/test_publication.py::test_capture_wrong_material_and_callback_error_never_expose_original_text",
+          "source_line": 67
+        }
+      ],
+      "boundary": "只保证已登记材料和有限编码的公开保护，不等于完整DLP或静态数据库加密。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-05A",
+      "control": "版本化注入及跨分块派生值保护",
+      "reachability": "conditional_process",
+      "source_paths": [
+        "src/harnessix/secrets/provider.py",
+        "src/harnessix/secrets/publication.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/secrets/test_provider.py::test_versioned_secret_scope_injects_only_declared_target_and_closes",
+          "source_line": 20
+        },
+        {
+          "role": "positive",
+          "nodeid": "tests/secrets/test_provider.py::test_streaming_redactor_covers_every_chunk_boundary_and_common_encodings",
+          "source_line": 64
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/secrets/test_provider.py::test_redactor_fails_closed_for_too_short_secret_and_after_finish",
+          "source_line": 90
+        }
+      ],
+      "boundary": "有限编码/短材料失败关闭有测试；任意加密、压缩及已许可进程主动外传不由字符串Guard证明。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-06",
+      "control": "审批及实际Effect与计划指纹绑定",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/execution/planner.py",
+        "src/harnessix/trusted_actions/router.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/execution/test_plans.py::test_plan_binds_every_execution_fact_without_secret_plaintext",
+          "source_line": 80
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/execution/test_plans.py::test_plan_rejects_argument_environment_workspace_policy_and_capability_drift",
+          "source_line": 120
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/trusted_actions/test_router.py::test_write_requires_exact_approval_and_workspace_freshness",
+          "source_line": 450
+        }
+      ],
+      "boundary": "负例证明未批准和Workspace漂移时Executor调用为零；任意Shell效果仍不是可穷尽摘要。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-07",
+      "control": "扩展不根据自报注解提升权限",
+      "reachability": "explicit_host_extension",
+      "source_paths": [
+        "src/harnessix/mcp/runtime.py",
+        "src/harnessix/hooks/runtime.py",
+        "src/harnessix/skills/runtime.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/mcp/test_runtime_actions.py::test_connection_captures_modern_catalog_and_executes_read_tool",
+          "source_line": 207
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/mcp/test_runtime_actions.py::test_malicious_description_and_annotations_cannot_lower_write_policy",
+          "source_line": 280
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/hooks/test_runtime.py::test_non_bundled_hook_requires_exact_unexpired_definition_grant",
+          "source_line": 277
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/skills/test_runtime.py::test_content_change_after_catalog_is_rejected_and_audited",
+          "source_line": 173
+        }
+      ],
+      "boundary": "当前stdio/SDK产品配置不自动装配这些端口；组件锚点不关闭Hook来源交叉校验、运行期授权及Owner恢复剩余风险。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-08",
+      "control": "流式Provider仅发布完整且合法的ToolCall",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/models/_chat_stream.py",
+        "src/harnessix/models/openai_chat.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/models/test_openai_chat.py::test_sse_utf8_fragmentation_and_newlines",
+          "source_line": 163
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/models/test_openai_chat.py::test_invalid_arguments_never_release_calls",
+          "source_line": 59
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/models/test_openai_chat.py::test_wire_budgets",
+          "source_line": 179
+        }
+      ],
+      "boundary": "原Adapter和受控HTTP传输合同；不登记供应商生产服务或真实编码质量通过。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-08A",
+      "control": "Fallback只能发生于无输出暴露且有审计的失败",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/product_config/runtime.py",
+        "src/harnessix/product_config/codec.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/product_config/test_runtime.py::test_zero_exposure_failure_falls_back_with_global_attempts_and_audit",
+          "source_line": 162
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/product_config/test_runtime.py::test_never_falls_back_after_response_or_tool_exposure",
+          "source_line": 190
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/product_config/test_contracts_and_codec.py::test_rejects_malformed_or_ambiguous_json",
+          "source_line": 44
+        }
+      ],
+      "boundary": "窗口拒绝不证明供应商零费用；环境声明版本不证明云端密钥版本。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-09",
+      "control": "协议身份、消息预算及慢消费者边界",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/app_server/server.py",
+        "src/harnessix/protocol/codec.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/app_server/test_server_sdk.py::test_agent_sdk_drives_turn_replay_and_duplicate_command",
+          "source_line": 324
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/protocol/test_codec.py::test_decode_enforces_frame_and_depth_limits",
+          "source_line": 39
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/app_server/test_server_sdk.py::test_stdio_closes_slow_client_without_session_damage",
+          "source_line": 773
+        }
+      ],
+      "boundary": "stdio继承父进程信任；未登记公网HTTP或WebSocket认证能力。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-09A",
+      "control": "旧服务与历史Action状态不得成为执行入口",
+      "reachability": "retired_entry",
+      "source_paths": [
+        "src/harnessix/cli.py",
+        "scripts/archive_legacy_action_state.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/governance/test_legacy_action_archive.py::test_inspect_and_archive_preserve_snapshot_without_payloads",
+          "source_line": 56
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/governance/test_product_runtime_convergence.py::test_legacy_action_runtime_has_no_production_callers_or_source_tree",
+          "source_line": 134
+        }
+      ],
+      "boundary": "证明当前入口和只读归档；不能阻止部署者主动重新构建历史Git版本。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-10",
+      "control": "原Key认证、状态Owner和坏备份拒绝",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/session/publication_seal.py",
+        "src/harnessix/product_config/state_restore_flow.py",
+        "src/harnessix/product_config/state_owner.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/session/test_publication_seal.py::test_real_scope_signed_event_survives_new_authority_and_new_scope",
+          "source_line": 53
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/session/test_publication_seal.py::test_wrong_persistent_key_or_key_identity_cannot_authenticate",
+          "source_line": 93
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/product_config/test_product_state_restore.py::test_invalid_restore_never_changes_current_state",
+          "source_line": 74
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/product_config/test_product_state_owner.py::test_second_process_cannot_acquire_root_even_after_root_rename",
+          "source_line": 127
+        }
+      ],
+      "boundary": "同机同用户认证与恢复，不防御取得原Key的同UID主体；固定重启PASS不是所有恢复与长期容量SLO。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-11",
+      "control": "UNKNOWN只对账且不重复执行外部写",
+      "reachability": "default_product",
+      "source_paths": [
+        "src/harnessix/trusted_actions/router.py",
+        "src/harnessix/trusted_actions/operation_router.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/trusted_actions/test_router.py::test_running_recovery_enters_unknown_then_reconciles_once",
+          "source_line": 535
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/trusted_actions/test_router.py::test_real_host_exit_recovers_to_unknown_without_replaying_effect",
+          "source_line": 574
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/trusted_actions/test_router.py::test_reconcile_attempts_are_bounded_without_reexecute",
+          "source_line": 948
+        }
+      ],
+      "boundary": "只观察恢复合同可复现；没有幂等/查询的外部系统仍需人工核对。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-12",
+      "control": "不可用后端不自动降级",
+      "reachability": "conditional_process",
+      "source_paths": [
+        "src/harnessix/sandbox/capabilities.py",
+        "src/harnessix/product_config/process_profile.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/sandbox/test_capabilities.py::test_host_sandbox_probe_only_advertises_backend_after_preflight",
+          "source_line": 14
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_rejects_unparseable_security_evidence",
+          "source_line": 62
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_timeout_fails_closed_without_retry",
+          "source_line": 72
+        }
+      ],
+      "boundary": "Host是显式弱等级，不冒充强隔离；真实引擎组合仍独立按R1/R4/R6验收。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-12A",
+      "control": "资源声明不足时在Owner启动前拒绝",
+      "reachability": "conditional_process",
+      "source_paths": [
+        "src/harnessix/sandbox/capabilities.py",
+        "src/harnessix/sandbox/container.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_uses_daemon_and_security_capability_evidence",
+          "source_line": 35
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_capabilities.py::test_container_probe_refuses_missing_resource_support",
+          "source_line": 123
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/sandbox/test_resource_admission.py::test_current_resource_failure_prevents_owner_start",
+          "source_line": 27
+        }
+      ],
+      "boundary": "组件证明缺失内存/CPU/PIDs合同失败关闭；此前真实Linux专项单独保留，不由Mock继承其真实资源结果。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    },
+    {
+      "risk_id": "TM-13",
+      "control": "发行输入与扫描完整性",
+      "reachability": "release_supply_chain",
+      "source_paths": [
+        "scripts/sbom_generate.py",
+        "scripts/secret_scan.py",
+        "scripts/license_scan.py"
+      ],
+      "existing_tests": [
+        {
+          "role": "positive",
+          "nodeid": "tests/governance/test_sbom.py::test_sbom_graph_and_archive_identity_matches_all_locked_inputs",
+          "source_line": 37
+        },
+        {
+          "role": "negative",
+          "nodeid": "tests/governance/test_sbom.py::test_unreviewed_or_inconsistent_inputs_fail_closed",
+          "source_line": 79
+        }
+      ],
+      "boundary": "发行签名/自动更新后置；pywin32许可输入的真实拒绝仍由R2处置，测试绿色不改写实际扫描失败。",
+      "status": "mapped_pending_same_candidate_release_validation"
+    }
+  ]
+}

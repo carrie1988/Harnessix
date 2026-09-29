@@ -1,0 +1,13 @@
+flowchart LR
+    Client[CLI或Python SDK] --> Stdio[正式stdio入口]
+    Stdio --> Runtime[Agent Runtime]
+    Runtime --> Read[Scoped Read Tools]
+    Runtime --> Gateway[Trusted Action Gateway]
+    Gateway --> Router[统一Router与审批]
+    Router --> Patch[默认Workspace Patch]
+    Router --> Process[配置启用且能力通过的Container Process]
+    Runtime --> Provider[冻结Provider配置]
+    Runtime --> State[原Key认证Session和Artifact]
+    Host[可信宿主显式编程] -.-> Ports[本地MCP Skill Hook<br/>组件端口]
+    Ports -.-> Router
+    Retired[退役HTTP Worker与远端MCP] -.-> Deny[当前产品不装配或正式拒绝]

@@ -1,0 +1,21 @@
+.................F...................................................... [ 26%]
+........................................................................ [ 52%]
+........................................................................ [ 78%]
+............................................................             [100%]
+=================================== FAILURES ===================================
+____________ test_current_repository_satisfies_documentation_policy ____________
+
+    def test_current_repository_satisfies_documentation_policy() -> None:
+        module = _documentation_module()
+        report = module.check_repository(ROOT, _policy(module))
+    
+>       assert report.findings == ()
+E       AssertionError: assert (Finding(code...', line=None)) == ()
+E         
+E         Left contains 5 more items, first extra item: Finding(code='section_required_missing', path='docs/changes/m09-r1-existing-safety-coverage.md', message='缺少语义章节（任一）：总体架构', line=None)
+E         Use -v to get more diff
+
+tests/governance/test_documentation_policy.py:76: AssertionError
+- generated xml file: /private/tmp/harnessix-v1-safety-map-20260929/governance.xml -
+=========================== short test summary info ============================
+FAILED tests/governance/test_documentation_policy.py::test_current_repository_satisfies_documentation_policy

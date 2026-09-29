@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 121
-code_revision: 0ba1b8cdb4750bd7e3002ba471e21f12375df425
+version: 122
+code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
 owners:
   - core
 modules:
@@ -486,6 +486,9 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 - [ ] **0.9.4a（R1）**：首发装配的模型、Tool/Action、Session/Artifact、Protocol/SDK及诊断入口；当前Key/Store来源认证和同机备份恢复。未知旧历史不补签，危险维护入口须正式拒绝。
 - [ ] **0.9.4b（R2）**：处理12件Archive许可复核，补商业权利及实际发行输入；复用现有扫描、库存和SBOM，不放宽现有拒绝策略。
 - [ ] **0.9.4c（R1）**：建立首发可达TM风险到既有测试的映射，只补真正缺失的正反例，不另建重复测试平台。
+  [控制追踪详设](changes/m09-r1-existing-safety-coverage.md)已建立18组、54个原函数锚点；
+  [固定源码本地复验](validation/v1-safety-coverage-2026-09-29-v1/README.md)双Python各146通过/2原生Windows跳过。
+  映射及本地组件结果不关闭0.9.4c、R1或同候选原生安全门禁。
 - **0.9.4d：延期1.1+**。远端MCP Streamable HTTP/OAuth不再阻断1.0；本地stdio MCP保留，未支持远端配置必须在正式入口拒绝。
 
 当前实现依据：[托管Session Key](changes/m09-4a-managed-session-key-and-root.md)、

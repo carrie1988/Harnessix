@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 14
-code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
+version: 15
+code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
 owners:
   - core
 modules:
@@ -166,6 +166,11 @@ Agent Runtime                │
 - Action Approval 与外部系统响应。
 
 ## 6. 威胁与控制
+
+首发可达性及原用例锚点见[R1完整追踪详设](changes/m09-r1-existing-safety-coverage.md)与
+[18组机器映射](governance/v1-safety-coverage.json)。默认stdio/SDK装配Patch与条件Process；
+本地MCP、Skill、Hook为显式宿主组件端口，不由默认配置自动装配。控制条目及剩余风险不能因存在测试锚点
+宣称全覆盖；本地结果、原生结果、实际引擎和最终发布证据分别验收。
 
 ### TM-01：Prompt Injection 越权
 
@@ -392,7 +397,7 @@ Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访�
 - 原Root外稳定Owner在Store/Provider之前获取；完整停机备份验证Schema、原MAC、Blob和跨Store引用，恢复不重放未知效果；
 - Windows仅元数据打开的原生2/3错误保留缺失类型，并由原SQLite生命周期谓词再次判定；错误5、32/33或普通Key读取失败不忽略。
 
-**剩余风险**：认证不防御已取得原Key的同用户恶意进程或被攻陷操作系统，不是非对称签名、硬件证明或跨机迁移保证。旧来源未知的数据不会因持有新Key变成可信；真实用户恢复、认证存储空间上限及整体R1仍须单独验收。当前证据见[原生业务状态专项](validation/windows-business-state-recovery-2026-09-29-v1/README.md)。
+**剩余风险**：认证不防御已取得原Key的同用户恶意进程或被攻陷操作系统，不是非对称签名、硬件证明或跨机迁移保证。旧来源未知的数据不会因持有新Key变成可信；固定500 Thread认证重启已[三平台PASS](validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/README.md)，原负载和余量不变。真实用户恢复、长期容量及整体R1仍须单独验收。当前业务证据见[原生业务状态专项](validation/windows-business-state-recovery-2026-09-29-v1/README.md)。
 
 ### TM-11：重复或未知外部副作用
 
@@ -473,7 +478,7 @@ Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访�
 
 ## 8. 发布门禁
 
-0.8产品运行时版本发布前必须：
+1.0首发安全验收必须按正式可达入口验证以下控制；历史阶段状态不替代同候选发布证据：
 
 - 路径、symlink、进程树、禁网和 Secret Canary 测试全部通过；
 - 所有内置 Tool 声明 Effect、Permission、Sandbox 和 Secret；
