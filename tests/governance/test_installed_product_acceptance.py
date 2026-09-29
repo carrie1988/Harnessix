@@ -113,8 +113,9 @@ def test_installed_acceptance_workflow_uploads_no_private_state() -> None:
     }
     assert job["strategy"]["fail-fast"] is False
     uploads = [step for step in job["steps"] if "upload-artifact@" in step.get("uses", "")]
-    assert len(uploads) == 1
-    paths = uploads[0]["with"]["path"].splitlines()
+    assert {step["id"] for step in uploads} == {"installed-evidence", "upgrade-evidence"}
+    installed = next(step for step in uploads if step["id"] == "installed-evidence")
+    paths = installed["with"]["path"].splitlines()
     assert len(paths) == 7
     assert all(line.endswith((".json", ".txt", ".log")) for line in paths)
     assert not any("/case" in line or "*" in line for line in paths)

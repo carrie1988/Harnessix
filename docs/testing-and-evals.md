@@ -1,7 +1,7 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 46
+version: 47
 code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
 owners:
   - core
@@ -846,3 +846,12 @@ Plan/指针/回执篡改、陌生目录、粘性回退、四阶段中断、实�
 [本地双Python原结果](validation/v1-safety-coverage-2026-09-29-v1/README.md)分别展开148项，
 各146通过、2原生Windows跳过。不能求和，不能把17组本地锚点通过或TM-02A部分结果登记为完整安全验收。
 最终同候选三平台、实际后端与其他发布门禁保持原标准；不新增重复安全平台。
+
+## 不同版本升级与回退的固定验收范围
+
+[R4升级详设](changes/m09-r4-different-version-upgrade.md)区分同Wheel重装与真实不同版本。
+新[验收控制器](../scripts/installed_product_upgrade_acceptance.py)仅接受原归档`0.1.0`和内部`1.0.0rc1`，
+拒绝错误摘要、重复元数据、同版本、脚本Revision漂移及不完整Thread集合；阶段超时不自动重试。
+每阶段实际安装隔离解释器验证正式SDK/CLI、原六库/Key备份恢复、稳定恢复ID和回退后读写。
+两份Wheel按精确哈希离线安装，源码外实际运行和三平台结果独立记载；没有模型Turn，
+不能据此宣布真实编码质量、消费者Windows11、Beta或商用支持通过。

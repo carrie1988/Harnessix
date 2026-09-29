@@ -197,7 +197,11 @@ async def session(case: InstalledCase, create: str | None = None) -> tuple[UUID 
     client = AgentClient(transport)
     try:
         async with asyncio.timeout(30):
-            await client.initialize()
+            initialized = await client.initialize()
+            require(
+                initialized.server_info.version == version("harnessix"),
+                "installed_server_version_mismatch",
+            )
             created = (
                 None
                 if create is None
@@ -211,14 +215,17 @@ async def session(case: InstalledCase, create: str | None = None) -> tuple[UUID 
         require(transport.snapshot().state == "closed", "installed_transport_not_closed")
 
 
-async def verify_restore(case: InstalledCase) -> tuple[dict, set[UUID]]:
-    """实际活跃互斥、原Key整体恢复和稳定ID；不用直接Store调用替代产品入口。"""
-
+async def create_with_backup_refusal(case: InstalledCase) -> UUID:
+    """通过正式产品创建首个Thread，并证明活跃Owner拒绝停机备份。"""
     transport = SubprocessAgentTransport(case.server_command)
     client = AgentClient(transport)
     try:
         async with asyncio.timeout(30):
-            await client.initialize()
+            initialized = await client.initialize()
+            require(
+                initialized.server_info.version == version("harnessix"),
+                "installed_server_version_mismatch",
+            )
             first = await client.create_thread(str(case.workspace), request_id="before-backup")
         busy = await asyncio.to_thread(
             cli, ("state", "backup", *case.state_arguments), expected_exit=2
@@ -230,8 +237,11 @@ async def verify_restore(case: InstalledCase) -> tuple[dict, set[UUID]]:
     finally:
         await client.close()
         require(transport.snapshot().state == "closed", "installed_transport_not_closed")
-    key = case.state / "session-auth/key.v1"
-    original_key = hashlib.sha256(key.read_bytes()).digest()
+    return first.thread_id
+
+
+async def create_verified_backup(case: InstalledCase) -> dict:
+    """停机后备份并验真原六库及Key，不用直接Store调用补造备份。"""
     created = await asyncio.to_thread(cli, ("state", "backup", *case.state_arguments))
     verified = await asyncio.to_thread(cli, ("state", "verify", *case.state_arguments))
     require(
@@ -241,8 +251,17 @@ async def verify_restore(case: InstalledCase) -> tuple[dict, set[UUID]]:
         and verified["backup_id"] == created["backup_id"],
         "installed_backup_invalid",
     )
+    return created
+
+
+async def verify_restore(case: InstalledCase) -> tuple[dict, set[UUID]]:
+    """实际活跃互斥、原Key整体恢复和稳定ID；不用直接Store调用替代产品入口。"""
+    first = await create_with_backup_refusal(case)
+    key = case.state / "session-auth/key.v1"
+    original_key = hashlib.sha256(key.read_bytes()).digest()
+    created = await create_verified_backup(case)
     second, observed = await session(case, "after-backup")
-    require(observed == {first.thread_id, second}, "installed_thread_state_invalid")
+    require(observed == {first, second}, "installed_thread_state_invalid")
     restore = (
         "state",
         "restore",
@@ -258,7 +277,7 @@ async def verify_restore(case: InstalledCase) -> tuple[dict, set[UUID]]:
         "installed_restore_invalid",
     )
     third, observed = await session(case, "after-restore")
-    require(observed == {first.thread_id, third}, "installed_restored_threads_invalid")
+    require(observed == {first, third}, "installed_restored_threads_invalid")
     repeated = ProductStateRestoreResult.model_validate(await asyncio.to_thread(cli, restore))
     _, final = await session(case)
     require(

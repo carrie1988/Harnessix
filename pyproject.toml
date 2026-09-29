@@ -1,6 +1,6 @@
 [project]
 name = "harnessix"
-version = "0.1.0"
+version = "1.0.0rc1"
 description = "面向生产级 Coding Agent 的本地优先运行时与安全执行基础设施"
 readme = "README.md"
 requires-python = ">=3.12"

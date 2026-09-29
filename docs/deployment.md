@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 25
+version: 26
 code_revision: 1df5aceb995fe96419ca2ea04b046a3be022f965
 owners:
   - core
@@ -336,7 +336,7 @@ resume normal product traffic
 - 0.9.1f固定Container Process、直接Trusted Git Push和历史Eval迁移均已由七任务CI关闭；f3物理删除、历史Session只读兼容及旧库归档由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；
 - 0.9.3a本地传输已由CI 35494960166关闭；0.9.3b持久容量、Plan-first保留和备份恢复已由CI 35498012926关闭；0.9.3c双层Action Owner、Operation Deadline、只对账恢复和跨Store扫描已完成本地全仓门禁，修复版CI 35691402329六实例验收关闭；0.9.3d六场景三平台正式负载与第二独立PASS已完成；
 - 0.9.4尚未完成完整供应链、安全攻击和远端MCP边界；
-- 0.9.5尚未形成签名发行物、升级/卸载和Beta证据；
+- 0.9.5已形成[规范Wheel三平台卸载与同包重装专项](validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)；不同版本升级另由[停机升级详设](changes/m09-r4-different-version-upgrade.md)验证，签名发行物、消费者OS核心编码和独立Beta仍开放；
 - 1.0不提供网络Agent Server、远程Worker池、多租户身份、计费或服务SLO。
 
 ## 默认产品Session密钥准入边界
@@ -346,3 +346,10 @@ Darwin额外检查扩展ACL。Windows采用当前用户DPAPI与受保护DACL，�
 `code doctor`的配置/能力预检通过不证明已有Session或Key可恢复，正式启动仍执行原库认证。
 [完整设计](changes/m09-4a-managed-session-key-and-root.md)和[固定证据](validation/managed-session-key-2026-09-28-v1/README.md)
 记录缺Key、旧历史、损坏、取消、原候选恢复及三平台发布边界。
+
+## 内部预发行版本与手动升级边界
+
+当前包版本`1.0.0rc1`不是正式商用Release，不改变已验证OS/后端范围。
+固定升级验收使用实际归档`0.1.0`Wheel，升级前停机并通过原完整备份/验真CLI保存六库和原Key。
+回退前由候选恢复升级前整组备份，再安装原旧包；不能直接让旧包读取任意新版本数据库。
+不提供自动更新、任意历史版本迁移或跨机密钥复制；实际备份和恢复命令见[完整备份设计](changes/m09-r1-product-state-backup.md)及[完整恢复设计](changes/m09-r1-product-state-restore.md)。

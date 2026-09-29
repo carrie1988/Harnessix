@@ -61,7 +61,7 @@ jobs:
     name: 安装与恢复 ${{ matrix.platform }}
     needs: canonical-wheel
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +88,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
       - name: 安装证据边界正反例
-        run: uv run pytest tests/governance/test_installed_product_acceptance.py
+        run: uv run pytest tests/governance/test_installed_product_acceptance.py tests/governance/test_installed_product_upgrade_acceptance.py
       - name: 新建独立环境并导出原锁依赖
         shell: bash
         env:
@@ -138,7 +138,49 @@ jobs:
             --environment-root "$ACCEPTANCE_ROOT" --source-root "$GITHUB_WORKSPACE" \
             --source-revision "$GITHUB_SHA" --wheel "$WHEEL" --uv "$UV_EXECUTABLE" \
             > "$ACCEPTANCE_ROOT/acceptance.log" 2> "$ACCEPTANCE_ROOT/acceptance.stderr.log"
+      - name: 原发行物与候选的不同版本升级及备份回退
+        id: version-transition
+        shell: bash
+        env:
+          ACCEPTANCE_ROOT: ${{ runner.temp }}/harnessix-installed-product
+          UPGRADE_ROOT: ${{ runner.temp }}/harnessix-product-upgrade
+          CANONICAL_WHEEL_SHA256: ${{ needs.canonical-wheel.outputs.wheel-sha256 }}
+        run: |
+          uv run python -c 'import os; from pathlib import Path; Path(os.environ["UPGRADE_ROOT"]).mkdir(mode=0o700)'
+          uv venv --python 3.12 "$UPGRADE_ROOT/venv"
+          INSTALLED_PYTHON=$(uv run python -c 'import os; from pathlib import Path; print((Path(os.environ["UPGRADE_ROOT"]) / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")).as_posix())')
+          WHEEL=$(uv run python -c 'import os; from pathlib import Path; print(next((Path(os.environ["ACCEPTANCE_ROOT"]) / "wheel").glob("*.whl")).as_posix())')
+          UV_EXECUTABLE=$(uv run python -c 'import shutil; from pathlib import Path; executable=shutil.which("uv"); assert executable; print(Path(executable).as_posix())')
+          uv pip install --python "$INSTALLED_PYTHON" --require-hashes --no-deps -r "$ACCEPTANCE_ROOT/requirements.txt" > "$UPGRADE_ROOT/dependencies.log" 2>&1
+          uv pip install --python "$INSTALLED_PYTHON" --require-hashes --no-deps --offline -r "$ACCEPTANCE_ROOT/wheel-requirement.txt" > "$UPGRADE_ROOT/candidate-install.log" 2>&1
+          cd "$UPGRADE_ROOT"
+          "$INSTALLED_PYTHON" -I "$GITHUB_WORKSPACE/scripts/installed_product_upgrade_acceptance.py" \
+            --environment-root "$UPGRADE_ROOT" --source-root "$GITHUB_WORKSPACE" \
+            --source-revision "$GITHUB_SHA" --wheel "$WHEEL" --uv "$UV_EXECUTABLE" \
+            --wheel-sha256 "$CANONICAL_WHEEL_SHA256" \
+            --baseline-wheel "$GITHUB_WORKSPACE/docs/validation/windows-private-state-2026-09-28-v1/artifacts/harnessix-0.1.0-py3-none-any.whl" \
+            --baseline-source-revision a4f7f33449bb897d84fe3a8e8262307943233fb4 \
+            --baseline-sha256 5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30 \
+            > "$UPGRADE_ROOT/acceptance.log" 2> "$UPGRADE_ROOT/acceptance.stderr.log"
+      - name: 仅保留低敏不同版本验收输入与结果
+        id: upgrade-evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: harnessix-upgrade-${{ matrix.platform }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/harnessix-product-upgrade/result.json
+            ${{ runner.temp }}/harnessix-product-upgrade/baseline-wheel.txt
+            ${{ runner.temp }}/harnessix-product-upgrade/candidate-wheel.txt
+            ${{ runner.temp }}/harnessix-product-upgrade/rollback-wheel.txt
+            ${{ runner.temp }}/harnessix-product-upgrade/dependencies.log
+            ${{ runner.temp }}/harnessix-product-upgrade/candidate-install.log
+            ${{ runner.temp }}/harnessix-product-upgrade/acceptance.log
+            ${{ runner.temp }}/harnessix-product-upgrade/acceptance.stderr.log
+          if-no-files-found: ignore
+          retention-days: 14
       - name: 仅保留低敏安装输入与结果
+        id: installed-evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

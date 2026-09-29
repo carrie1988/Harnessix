@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: current
-version: 3
-code_revision: a4f7f33449bb897d84fe3a8e8262307943233fb4
+status: reviewing
+version: 4
+code_revision: pending
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -44,7 +44,8 @@ R4要求三平台安装与生命周期证据；本切片复用正式入口，补
 5. 三平台分别产出实际结果；失败和缺失不能折算成功，不把CI宿主当作消费者OS支持声明。
 6. 唯一构建Job先扫描实际Wheel并发布其摘要；三个安装Job消费同一Run同一Artifact，安装前核对原摘要。
 
-非目标：真实编码任务、版本升级、独立Beta及1.0商用关闭。这些继续由R3、R4后续和R5验收。
+非目标：真实编码任务、版本升级、独立Beta及1.0商用关闭。
+不同版本升级由[独立专项](m09-r4-different-version-upgrade.md)验证，其余继续由R3、R4后续和R5验收。
 同一Wheel卸载重装不称为版本升级；没有模型Turn不称为模型可用性或工具能力认证。
 不新增安装器、更新器、备份平台、远程服务、公共Schema或数据库Migration。
 
@@ -145,6 +146,8 @@ publish_low_sensitivity_result_only_after_all_checks()
 | `InstalledCase` | 独立夹具地址；`state`只是产品地址，`server_command`统一使用安装解释器，不依赖POSIX/Windows的CLI脚本路径 |
 | `prepare_case` | 新建目录、Git Workspace、Sentinel和正式配置；已有case固定拒绝，不删除后重试 |
 | `session` | 实际stdio握手、创建及读取Thread；30秒操作期限；finally关闭并核对Transport终态 |
+| `create_with_backup_refusal` | 原SDK创建首个Thread并验证活跃Owner拒绝备份；版本握手及Transport关闭检查由两种验收复用 |
+| `create_verified_backup` | 正式CLI完成备份与验真，核对原7文件及备份身份；不另行实现备份逻辑 |
 | `verify_restore` | 复用原备份、验真及整体恢复CLI；活跃拒绝、原Key与稳定终态都必须成立 |
 | `state_snapshot` | 仅对新建自有case的已关闭文件做内存摘要；遇到Symlink/Junction拒绝；摘要不公开 |
 | `uninstall_reinstall` | 指定venv卸载、全新解释器导入拒绝、原文件不变及同一Wheel精确离线重装 |

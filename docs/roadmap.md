@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 122
+version: 123
 code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
 owners:
   - core
@@ -947,3 +947,12 @@ R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-
 固定`e08d248`已取得[三平台原生生命周期成功原件](validation/installed-product-three-platform-2026-09-29-v1/README.md)，
 分别完成源码外安装、原CLI/SDK完整恢复、卸载不丢状态及重装会话读取。Windows制品摘要与另两平台不同，
 规范单一发行Wheel、消费者目标OS、版本升级和真实编码仍开放；R4及整体1.0不勾选完成。
+
+### R4：固定不同版本停机升级与备份回退
+
+[不同版本详设](changes/m09-r4-different-version-upgrade.md)采用原归档`0.1.0`与内部`1.0.0rc1`候选，
+保留唯一规范Wheel构建和三平台源码外运行。每阶段重开隔离解释器，通过原SDK/CLI创建、读取、
+备份、恢复和回退，不新增更新平台或迁移算法。包切换不得修改私有状态字节，原Key保持，
+升级后Thread必须被旧备份恢复移出当前Root，稳定恢复身份不得回退恢复后新状态。
+当前版本标识只用于预发行验收，不创建正式Tag或Release；实际生命周期及原生矩阵结果分别记录，
+未取得结果不标记通过。消费者OS核心编码、真实质量、独立Beta及最终同候选R1～R6继续开放。
