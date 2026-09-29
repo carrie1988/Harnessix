@@ -115,15 +115,19 @@ async def test_candidate_rejects_baseline_digest_mismatch_before_workload(
 
     monkeypatch.setattr(run_restart_soak_candidate, "run_product_restart", must_not_run)
     with pytest.raises(KernelError) as rejected:
-        await run_restart_soak_candidate.run_candidate(tmp_path / "evidence", tmp_path / "reports")
+        await run_restart_soak_candidate.run_candidate(
+            tmp_path / "evidence", tmp_path / "reports", baseline_set="legacy-unprotected-v1"
+        )
     assert rejected.value.code == "soak_profile_baseline_invalid"
 
 
+@pytest.mark.parametrize("baseline_set", ["legacy-unprotected-v1", "authenticated-v1"])
 async def test_candidate_prebinds_profile_and_uses_fixed_formal_load(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, baseline_set: str
 ) -> None:
     platform = "linux"
-    profile_dir = run_restart_soak_candidate._only_profile(platform)  # noqa: SLF001
+    archive = run_restart_soak_candidate._archive_for_set(baseline_set)  # noqa: SLF001
+    profile_dir = run_restart_soak_candidate._only_profile(platform, archive=archive)  # noqa: SLF001
     profile, profile_sha = read_profile(profile_dir)
     revision = "a" * 40
     candidate_id = "b" * 32
@@ -181,7 +185,9 @@ async def test_candidate_prebinds_profile_and_uses_fixed_formal_load(
     )
     monkeypatch.setattr(run_restart_soak_candidate, "read_report", lambda path: report)
 
-    result = await run_restart_soak_candidate.run_candidate(evidence_root, report_root)
+    result = await run_restart_soak_candidate.run_candidate(
+        evidence_root, report_root, baseline_set=baseline_set
+    )
 
     assert recorded == {
         "code_revision": revision,
@@ -193,6 +199,7 @@ async def test_candidate_prebinds_profile_and_uses_fixed_formal_load(
     }
     assert result["status"] == "PASS"
     assert result["baseline_run_id"] == profile.baseline_run_id
+    assert result["baseline_set"] == baseline_set
 
 
 @pytest.mark.parametrize("status,exit_code", [("PASS", 0), ("FAIL", 2), ("unverified", 2)])
@@ -203,7 +210,7 @@ def test_candidate_cli_reports_nonpass_as_failure_without_paths(
     status: str,
     exit_code: int,
 ) -> None:
-    async def result(_evidence: Path, _reports: Path):
+    async def result(_evidence: Path, _reports: Path, *, baseline_set: str = "authenticated-v1"):
         return {
             "status": status,
             "reason": "within_limits" if status == "PASS" else "limit_exceeded",
@@ -224,7 +231,7 @@ def test_candidate_cli_reports_nonpass_as_failure_without_paths(
 def test_candidate_cli_never_logs_private_exception(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    async def fail(_evidence: Path, _reports: Path):
+    async def fail(_evidence: Path, _reports: Path, *, baseline_set: str = "authenticated-v1"):
         raise KernelError("soak_run_invalid", f"private={tmp_path}/secret")
 
     monkeypatch.setattr(run_restart_soak_candidate, "run_candidate", fail)
@@ -237,3 +244,184 @@ def test_candidate_cli_never_logs_private_exception(
     captured = capsys.readouterr()
     assert captured.out == "" and captured.err == "产品重启复验失败：soak_run_invalid\n"
     assert str(tmp_path) not in captured.err
+
+
+async def test_unknown_baseline_set_is_rejected_before_environment_or_workload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def must_not_read_environment():
+        raise AssertionError("无效集合不得开始环境或负载读取")
+
+    monkeypatch.setattr(run_restart_soak_candidate, "read_environment", must_not_read_environment)
+    with pytest.raises(KernelError) as rejected:
+        await run_restart_soak_candidate.run_candidate(
+            tmp_path / "evidence", tmp_path / "reports", baseline_set="unknown"
+        )
+    assert rejected.value.code == "soak_profile_invalid"
+
+
+async def test_missing_authenticated_baseline_never_falls_back_to_legacy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(run_restart_soak_candidate, "_AUTHENTICATED_ARCHIVE", tmp_path / "absent")
+    monkeypatch.setattr(
+        run_restart_soak_candidate, "read_environment", lambda: SimpleNamespace(platform="linux")
+    )
+    with pytest.raises(KernelError) as rejected:
+        await run_restart_soak_candidate.run_candidate(
+            tmp_path / "evidence", tmp_path / "reports", baseline_set="authenticated-v1"
+        )
+    assert rejected.value.code == "soak_profile_invalid"
+    assert not (tmp_path / "evidence").exists()
+
+
+def test_candidate_cli_passes_explicit_authenticated_baseline_selection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    async def selected(_evidence: Path, _reports: Path, *, baseline_set: str):
+        assert baseline_set == "authenticated-v1"
+        return {"baseline_set": baseline_set, "status": "PASS", "reason": "within_limits"}
+
+    monkeypatch.setattr(run_restart_soak_candidate, "run_candidate", selected)
+    assert (
+        run_restart_soak_candidate.main(
+            [
+                "--evidence-root",
+                str(tmp_path / "private"),
+                "--report-root",
+                str(tmp_path / "reports"),
+                "--baseline-set",
+                "authenticated-v1",
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr()
+    assert json.loads(output.out)["baseline_set"] == "authenticated-v1"
+    assert str(tmp_path) not in output.out and output.err == ""
+
+
+async def test_authenticated_selection_rejects_actual_legacy_run_before_workload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        run_restart_soak_candidate,
+        "_AUTHENTICATED_ARCHIVE",
+        run_restart_soak_candidate._ARCHIVE,  # noqa: SLF001
+    )
+    monkeypatch.setattr(
+        run_restart_soak_candidate, "read_environment", lambda: SimpleNamespace(platform="linux")
+    )
+
+    async def must_not_run(*_args: object, **_kwargs: object):
+        raise AssertionError("历史未认证Run不能成为认证候选基线")
+
+    monkeypatch.setattr(run_restart_soak_candidate, "run_product_restart", must_not_run)
+    with pytest.raises(KernelError) as rejected:
+        await run_restart_soak_candidate.run_candidate(
+            tmp_path / "evidence", tmp_path / "reports", baseline_set="authenticated-v1"
+        )
+    assert rejected.value.code == "soak_profile_baseline_invalid"
+    assert not (tmp_path / "evidence").exists()
+
+
+@pytest.mark.parametrize(
+    "change", ["source", "load", "samples", "faults", "python", "startup_margin", "db_margin"]
+)
+def test_authenticated_policy_rejects_source_and_original_rule_drift(change: str) -> None:
+    """这里只验证策略拒绝，内存复制不作为真实认证运行证据。"""
+
+    profile_dir = run_restart_soak_candidate._only_profile("linux")  # noqa: SLF001
+    profile, _ = read_profile(profile_dir)
+    baseline, _ = read_published_run(
+        run_restart_soak_candidate._ARCHIVE  # noqa: SLF001
+        / "raw"
+        / "linux"
+        / profile.baseline_run_id
+    )
+    baseline = baseline.model_copy(
+        update={"code_revision": run_restart_soak_candidate._AUTHENTICATED_BASELINE_REVISION}  # noqa: SLF001
+    )
+    if change == "source":
+        baseline = baseline.model_copy(update={"code_revision": "0" * 40})
+    elif change == "load":
+        profile = profile.model_copy(
+            update={"load": profile.load.model_copy(update={"thread_count": 499})}
+        )
+    elif change == "samples":
+        profile = profile.model_copy(
+            update={"sample_counts": {"product_startup": 4, "rss_peak": 1}}
+        )
+    elif change == "faults":
+        profile = profile.model_copy(
+            update={
+                "expected_fault_counts": profile.expected_fault_counts.model_copy(update={"eof": 2})
+            }
+        )
+    elif change == "python":
+        profile = profile.model_copy(update={"python_max": "3.13.99"})
+    elif change == "startup_margin":
+        limits = dict(profile.metric_limits)
+        limits["product_startup"] = limits["product_startup"].model_copy(
+            update={"margin_basis_points": 9999}
+        )
+        profile = profile.model_copy(update={"metric_limits": limits})
+    else:
+        limits = dict(profile.growth_limits)
+        limits["db"] = limits["db"].model_copy(update={"margin_basis_points": 5001})
+        profile = profile.model_copy(update={"growth_limits": limits})
+    with pytest.raises(KernelError) as rejected:
+        run_restart_soak_candidate._check_authenticated_policy(profile, baseline)  # noqa: SLF001
+    assert rejected.value.code == "soak_profile_baseline_invalid"
+
+
+@pytest.mark.parametrize("platform", ["linux", "macos", "windows"])
+def test_frozen_authenticated_profile_binds_source_load_and_original_policy(
+    platform: str, tmp_path: Path
+) -> None:
+    root = Path(__file__).resolve().parents[2]
+    archive = run_restart_soak_candidate._archive_for_set("authenticated-v1")  # noqa: SLF001
+    directory = run_restart_soak_candidate._only_profile(platform, archive=archive)  # noqa: SLF001
+    profile, digest = read_profile(directory)
+    baseline_path = archive / "raw" / platform / profile.baseline_run_id
+    baseline, _ = read_published_run(baseline_path)
+    run_restart_soak_candidate._check_authenticated_policy(profile, baseline)  # noqa: SLF001
+    copied, copied_digest = publish_profile(tmp_path / platform, profile, baseline_path)
+    assert read_profile(copied) == (profile, digest) and copied_digest == digest
+    legacy, _ = read_profile(run_restart_soak_candidate._only_profile(platform))  # noqa: SLF001
+    assert profile.profile_id != legacy.profile_id
+    assert baseline.status == "baseline" and baseline.provider.request_count == 0
+    assert profile.load.thread_count == 500 and profile.load.warmup_count == 1
+    for path in (directory / "profile.json", baseline_path / "manifest.json"):
+        relative = path.relative_to(root).as_posix()
+        attribute = subprocess.check_output(
+            ("git", "check-attr", "text", "--", relative), cwd=root, text=True
+        ).strip()
+        assert attribute == f"{relative}: text: unset"
+
+
+async def test_candidate_rejects_invalid_mathematical_limit_before_workload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    directory = run_restart_soak_candidate._only_profile("linux")  # noqa: SLF001
+    original, digest = read_profile(directory)
+    limits = dict(original.metric_limits)
+    limits["product_startup"] = limits["product_startup"].model_copy(
+        update={"p95_upper": limits["product_startup"].p95_upper + 1}
+    )
+    invalid = original.model_copy(update={"metric_limits": limits})
+    monkeypatch.setattr(run_restart_soak_candidate, "read_profile", lambda _: (invalid, digest))
+    monkeypatch.setattr(
+        run_restart_soak_candidate, "read_environment", lambda: SimpleNamespace(platform="linux")
+    )
+
+    async def must_not_run(*_args: object, **_kwargs: object):
+        raise AssertionError("无效数学阈值必须在负载前拒绝")
+
+    monkeypatch.setattr(run_restart_soak_candidate, "run_product_restart", must_not_run)
+    with pytest.raises(KernelError) as rejected:
+        await run_restart_soak_candidate.run_candidate(
+            tmp_path / "evidence", tmp_path / "reports", baseline_set="legacy-unprotected-v1"
+        )
+    assert rejected.value.code == "soak_profile_baseline_invalid"
+    assert not (tmp_path / "evidence").exists()

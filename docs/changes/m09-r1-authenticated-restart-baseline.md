@@ -121,6 +121,7 @@ flowchart TB
 | 接口或字段 | 正式语义 |
 |---|---|
 | `run_release(evidence_root)` | 现行完整产品500 Thread正式采集，返回平台、Revision、Run ID及Manifest SHA。 |
+| `run_candidate(..., baseline_set)` | 默认`authenticated-v1`；历史诊断须显式选择`legacy-unprotected-v1`。认证集合缺失或来源不符时拒绝，不回退。 |
 | `SoakManifestV5.code_revision` | 实际干净Checkout身份，不用计划中的参考提交冒充执行提交。 |
 | `load` | `thread_count=500`、`warmup_count=1`、`turn_count=0`、`artifact_count=0`、`pending_limit=null`、`fault_matrix_version=product-restart-v1`。 |
 | `sample_counts` | `product_startup=3`、`rss_peak=1`；硬退出不是正常启动时延样本。 |
@@ -159,6 +160,7 @@ COMMITTED、FINAL及SEALED的规范字节和文件集保持既有合同；同ID�
 三平台并行采集但各自使用独立证据根，不跨平台共用Profile。
 V5 Run和V1 Profile格式不变；认证与历史基线分目录、分Profile ID，禁止自动回退到历史Profile。
 候选入口需要显式区分基线集合；历史读取保留，正式认证复验不得通过时间排序选择Profile。
+候选Python入口、CLI和工作流默认选择认证集合；只有显式历史诊断才使用旧未认证Profile。
 
 ## 9. 失败、取消、超时、错误分类与可观测性
 

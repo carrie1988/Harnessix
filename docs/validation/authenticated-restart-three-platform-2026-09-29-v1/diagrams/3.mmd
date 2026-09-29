@@ -1,0 +1,8 @@
+flowchart TB
+    Private[临时Workspace与状态及独立Key] --> Raw[低敏Run Proof Samples Attempt]
+    Source[固定Revision与产品源码身份] --> Raw
+    Raw --> Reader[既有严格Reader重算]
+    Policy[原Profile余量与环境规则] --> Profile[新规范Profile字节]
+    Reader --> Profile
+    Profile --> Seal[SEALED绑定SHA256]
+    Seal --> Report[候选原件与复验报告]

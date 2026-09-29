@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 42
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 43
+code_revision: 7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46
 owners:
   - core
 modules:
@@ -568,6 +568,18 @@ make check
 已关闭Soak按代码、负载和配置影响复核，只重跑受影响场景；既有失败和原始证据不改写。
 R3先复核原0/20失败归因和Task Pack适用性，再预注册完整运行与阈值；规划目标为现有20 Trial严格任务及必需检查均至少12/20，三仓均有成功。
 重大变更文档及源码/测试映射保留；固定候选集中交付Release Packet，不重复生成每个小修复的全套证明包。
+
+## 16.2 认证存储重启基线与历史分离
+
+默认产品启用持久来源认证后，重启负载使用[独立认证基线](validation/authenticated-restart-three-platform-2026-09-29-v1/README.md)。
+旧未认证基线和原容量FAIL保持只读；新的基线不能从已失败候选重命名生成。
+[固定计划](changes/m09-r1-authenticated-restart-baseline-plan.json)在采集前登记500 Thread、五周期、
+启动10000bp和RSS/DB/WAL/Artifact增长5000bp，候选值不参与阈值生成。
+候选Python入口、CLI和工作流默认`authenticated-v1`；历史诊断须显式选择`legacy-unprotected-v1`。
+基线缺失、来源不符、规则漂移或数学阈值无效必须在负载前拒绝，不能自动回退。
+三平台新基线及Profile已冻结；固定场景须取得第二独立Run的三份完整PASS报告才能关闭。
+本无Turn场景不计真实编码Trial，原0/20、消费者平台和用户Beta仍分别验收。
+详设、字段、伪代码及失败语义见[认证重启详设](changes/m09-r1-authenticated-restart-baseline.md)。
 
 ## 17. 发布判定
 

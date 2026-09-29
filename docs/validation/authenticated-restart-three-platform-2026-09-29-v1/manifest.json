@@ -1,0 +1,364 @@
+{
+  "spec_version": "harnessix.validation-manifest/v1",
+  "source_revision": "7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46",
+  "self_excluded": "manifest.json",
+  "source_inputs": [
+    {
+      "path": "docs/changes/m09-r1-authenticated-restart-baseline-plan.json",
+      "bytes": 4052,
+      "sha256": "7ee884c39078cc9ed71f6dda78bbbe4777179351b76d58aeb277e68bb7ee9c0a"
+    },
+    {
+      "path": "docs/validation/product-restart-release-boundary-2026-09-29-v1/soak/reports/linux/4c8541a490114d8caf4be73e87f93829/SEALED.json",
+      "bytes": 143,
+      "sha256": "8f9235dc3cc1275456e0859516c23bd46f37bb851ec2c946d6c94eb5141434a7"
+    },
+    {
+      "path": "docs/validation/product-restart-release-boundary-2026-09-29-v1/soak/reports/linux/4c8541a490114d8caf4be73e87f93829/report.json",
+      "bytes": 638,
+      "sha256": "b000925b302885435015fbd98175e3755b5c71fac20ff5644e7963838940c603"
+    },
+    {
+      "path": "docs/validation/product-restart-release-boundary-2026-09-29-v1/soak/reports/macos/ff903250cc9e496aaf78ec1994fc5299/SEALED.json",
+      "bytes": 143,
+      "sha256": "479cc03d634ad7b818e8e4caa39abd1c42a627e3090830e8e75290486141ae37"
+    },
+    {
+      "path": "docs/validation/product-restart-release-boundary-2026-09-29-v1/soak/reports/macos/ff903250cc9e496aaf78ec1994fc5299/report.json",
+      "bytes": 638,
+      "sha256": "4dd304be1c54ce64309de40cfe42609331c8d739213cc4638162d8064c3ee260"
+    },
+    {
+      "path": "docs/validation/product-restart-release-boundary-2026-09-29-v1/soak/reports/windows/7ad39dc306894f17b9198f3fe6e0ca33/SEALED.json",
+      "bytes": 143,
+      "sha256": "02f7f988f0037bcdfb2c99379494bb876152e6cae6d413449ee2ef2fc5ed356b"
+    },
+    {
+      "path": "docs/validation/product-restart-release-boundary-2026-09-29-v1/soak/reports/windows/7ad39dc306894f17b9198f3fe6e0ca33/report.json",
+      "bytes": 638,
+      "sha256": "358f8d89f1d52fadbc1a319dae11e0f6460bfc22df840a7e5ee9de12c3f22313"
+    },
+    {
+      "path": "docs/validation/soak-restart-three-platform-2026-09-23-v1/profiles/linux/33e970328c664aac8dcbd63f329b33e1/SEALED.json",
+      "bytes": 144,
+      "sha256": "3c58078165106cfd0b5445e7b4a7214edcdd8e2985471b218d9a8e1ea122decc"
+    },
+    {
+      "path": "docs/validation/soak-restart-three-platform-2026-09-23-v1/profiles/linux/33e970328c664aac8dcbd63f329b33e1/profile.json",
+      "bytes": 1569,
+      "sha256": "02af474d46740a41aad7c7195fd0e9f92913effc940363d987885ab648f9920a"
+    },
+    {
+      "path": "docs/validation/soak-restart-three-platform-2026-09-23-v1/profiles/macos/f002516ffd0f4c309f1e0f6cadcde49e/SEALED.json",
+      "bytes": 144,
+      "sha256": "55ff08fe8b11348505d0285dce691db1ee723afc61e6d3a50c2c1d27c24c524e"
+    },
+    {
+      "path": "docs/validation/soak-restart-three-platform-2026-09-23-v1/profiles/macos/f002516ffd0f4c309f1e0f6cadcde49e/profile.json",
+      "bytes": 1570,
+      "sha256": "6fa09ca8e87520a9992b4ad5ec8ab054b9fb00d83b5594a98ff0b1e011a86f02"
+    },
+    {
+      "path": "docs/validation/soak-restart-three-platform-2026-09-23-v1/profiles/windows/87d7b6a0e45c4bdebb02eedef21c2f83/SEALED.json",
+      "bytes": 144,
+      "sha256": "98c8b6c357c669e677d57b1e17d6470940e3abb4164af4b76e2f95d956b901be"
+    },
+    {
+      "path": "docs/validation/soak-restart-three-platform-2026-09-23-v1/profiles/windows/87d7b6a0e45c4bdebb02eedef21c2f83/profile.json",
+      "bytes": 1574,
+      "sha256": "4b26a7f91fc231bc14d534f26eac49ba35faa59fb637b6996913698ba59a46e3"
+    },
+    {
+      "path": "scripts/run_restart_soak_release.py",
+      "bytes": 3152,
+      "sha256": "f57ccbf7b8dd720806ca3ac484b3da225d75ba82148f81abd1fe757a726e07c0"
+    },
+    {
+      "path": "scripts/soak_restart.py",
+      "bytes": 16503,
+      "sha256": "ef39f910e282861b108a5c07260e271d0794a4c843711b78ddde2e0004b566ad"
+    },
+    {
+      "path": "scripts/soak_restart_child.py",
+      "bytes": 2965,
+      "sha256": "b2a567bbe8aa4ccef2a5718cb6764337b1778495005080a29c6d5edf34b08fd6"
+    },
+    {
+      "path": "scripts/soak_threshold.py",
+      "bytes": 18621,
+      "sha256": "cb288835119a9a42a31262801b5401c19e02354e796436bfd694dbd409db10ff"
+    },
+    {
+      "path": "src/harnessix/product_config/server.py",
+      "bytes": 17953,
+      "sha256": "b19e49d52d9022490859ff9a284656fb5a78b132d6358101ec435a5cca1015b3"
+    },
+    {
+      "path": "src/harnessix/product_config/session_key.py",
+      "bytes": 1971,
+      "sha256": "e9a6e21fd37cf55f9490d808ff90fd5ecf67ef19116c03f2abf2b9dd69ee60b5"
+    },
+    {
+      "path": "src/harnessix/session/migrations/0029_authenticated_session_history.sql",
+      "bytes": 694,
+      "sha256": "4aab60066b1bde339ac5964f51b21a5bfa56469f57d2fff99dadf665b193fe2e"
+    },
+    {
+      "path": "src/harnessix/session/sqlite_publication.py",
+      "bytes": 9946,
+      "sha256": "6dc9acb8e22ed3943e29b1a8444ceebd8ffb1ecf13df58bcf7e7f2cafaf96e04"
+    }
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7484,
+      "sha256": "7a347e2e5c7e0b843983af93695f3320ee8fa6daf40ac70c988a0a6583149813"
+    },
+    {
+      "path": "diagnostics/freeze_profiles.py",
+      "bytes": 5647,
+      "sha256": "75b96e4d1bc05d745d43ee062f095ca0012eeae534f073221cbb93819d16b032"
+    },
+    {
+      "path": "diagnostics/verify_baseline.py",
+      "bytes": 4187,
+      "sha256": "32fd40ef06cf6913fbab54c17550b2fd8c4a40a042607fe452f979728c3f89ce"
+    },
+    {
+      "path": "diagrams/1.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "diagrams/1.mmd",
+      "bytes": 474,
+      "sha256": "b05d9e6599bb3c682ec5959682eaefbb1bdc789cea91e1528ed327f480bf9f04"
+    },
+    {
+      "path": "diagrams/1.png",
+      "bytes": 23560,
+      "sha256": "71fd87b0e39e6924788f70a9613c4a60038e90a7746cb4ec7fe72bed5e4173f1"
+    },
+    {
+      "path": "diagrams/2.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "diagrams/2.mmd",
+      "bytes": 638,
+      "sha256": "add91edf924ca50220bb0cd2b2b63973db925cbd3967bb849610d868fdda81df"
+    },
+    {
+      "path": "diagrams/2.png",
+      "bytes": 70539,
+      "sha256": "6ec51a86928ba96005857db6bec79c7dfa31244d3620c622b8f78c12ca8b6970"
+    },
+    {
+      "path": "diagrams/3.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "diagrams/3.mmd",
+      "bytes": 398,
+      "sha256": "616bc71eb072151232273689b4c80f8cdc2417a607f06af54b844a0defc31015"
+    },
+    {
+      "path": "diagrams/3.png",
+      "bytes": 35906,
+      "sha256": "94aef224cb3dd104271689ac37aceaef534fe0582f7decf5ef8dfcce76da8531"
+    },
+    {
+      "path": "facts/baseline-workflow.json",
+      "bytes": 6076,
+      "sha256": "5effe090b10ea185c09d25280752979a1534cacb761dda9250df456113264379"
+    },
+    {
+      "path": "facts/profile-freeze.json",
+      "bytes": 1812,
+      "sha256": "ef49070aea820a9424b7ab8efa3ac48ae11a843fcb53a7211d7b336a695c877b"
+    },
+    {
+      "path": "logs/baseline-documentation.json",
+      "bytes": 191,
+      "sha256": "98a9afac655bd6c65b9b8f5e8024c7e24fc9405e0c032959e816b777a71efe7c"
+    },
+    {
+      "path": "logs/baseline-workflow.log",
+      "bytes": 156499,
+      "sha256": "bae409151861cc6f71106e3162b3f6c2c9b46ba74ca47322bafceb3239bf9c89"
+    },
+    {
+      "path": "logs/benchmark-python312.log",
+      "bytes": 454,
+      "sha256": "84256aea03903b24343784777a7d5fa015ad71551ff32aedafbcb199011cbd1e"
+    },
+    {
+      "path": "logs/benchmark-python312.xml",
+      "bytes": 41234,
+      "sha256": "d93cd0cabf426952f46b269ef45d032ff7b2df0bf88e0fcceaed995c65d069e7"
+    },
+    {
+      "path": "logs/benchmark-python313.log",
+      "bytes": 454,
+      "sha256": "21cd21a9d83b0b433503b7c0665e4b62a9b87821e146312809423846e5669fce"
+    },
+    {
+      "path": "logs/benchmark-python313.xml",
+      "bytes": 41234,
+      "sha256": "ec07ba36f7ee05fecc84fde07111bf28a12d9487dac45c19872097276e809808"
+    },
+    {
+      "path": "logs/design-documentation-initial-fail.json",
+      "bytes": 923,
+      "sha256": "f83fb8d4980fe42f2dea5a8e8f5cfa4ea1798a5e9a75d63d26b1fbff3443f55d"
+    },
+    {
+      "path": "logs/design-documentation.json",
+      "bytes": 190,
+      "sha256": "04a128592b03a43d15c2b83a0bc070267b35bfd14bd593dddd29b707a7316cf9"
+    },
+    {
+      "path": "logs/governance.log",
+      "bytes": 434,
+      "sha256": "59a02426d18289bb3a59aafedbd69a1ce7f84c57f14fbdee5d3dafc6be985ecc"
+    },
+    {
+      "path": "logs/governance.xml",
+      "bytes": 42564,
+      "sha256": "3e5a4b643a725be9d79853d6a612c2f389d5f5615dc07ff62d32a9fdac9d0b8c"
+    },
+    {
+      "path": "logs/profile-freeze.log",
+      "bytes": 1812,
+      "sha256": "ef49070aea820a9424b7ab8efa3ac48ae11a843fcb53a7211d7b336a695c877b"
+    },
+    {
+      "path": "logs/restart-contract-tests.log",
+      "bytes": 215,
+      "sha256": "a37e226835e29e7e461a729bb00cffc30e78db2cc1538043be2e30c00433d46b"
+    },
+    {
+      "path": "logs/restart-contract-tests.xml",
+      "bytes": 8770,
+      "sha256": "cf400602a96a0a9182715d71cb30b7af36d6e402c0442e4cfc04cd5e9f8280d9"
+    },
+    {
+      "path": "profiles/linux/f15456418e6145fba98d52f3edd2cda0/SEALED.json",
+      "bytes": 144,
+      "sha256": "ea9c7d74b30525f2f3c271beaf248eb1d7e0dfb4e9322a15d48727d0e2fdc43a"
+    },
+    {
+      "path": "profiles/linux/f15456418e6145fba98d52f3edd2cda0/profile.json",
+      "bytes": 1569,
+      "sha256": "1e306650c06a786680e96f36ab8b40a3a11ab801bfa4e1ead3a45d17f8aa816c"
+    },
+    {
+      "path": "profiles/macos/5f97d2d890c34ccab5fbbb8b5406d303/SEALED.json",
+      "bytes": 144,
+      "sha256": "7153bad10cae1d5118a833d79257be19c9b7db4d3440b635b20c2640b75dd0fe"
+    },
+    {
+      "path": "profiles/macos/5f97d2d890c34ccab5fbbb8b5406d303/profile.json",
+      "bytes": 1568,
+      "sha256": "fdfb82adaed262eb1c4c543b52a3177f8cfb44b03a9f24bb06d75de7321898e9"
+    },
+    {
+      "path": "profiles/windows/fc0a66b952fa4f29a493dcee7be057ca/SEALED.json",
+      "bytes": 144,
+      "sha256": "288dd07face85dddcc72ca7440b9b65aaf76dd5375e4eb54e37f4fca12b565dd"
+    },
+    {
+      "path": "profiles/windows/fc0a66b952fa4f29a493dcee7be057ca/profile.json",
+      "bytes": 1574,
+      "sha256": "7db3aa4cba64a17548d447cf6b1e8fd8ed7bf8ece169c85fb5884d33c719f0b9"
+    },
+    {
+      "path": "raw/linux/0a0ab12fc7464f4bbab0ae7a0291b84b/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "9c73da0aa103791ac99fa4925fd5c8c80e3aa9a92a5aad780258df486bc41fa8"
+    },
+    {
+      "path": "raw/linux/0a0ab12fc7464f4bbab0ae7a0291b84b/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "d8762cbfe8437af8ba1560dd7b4c02c29a88a7802a3ef0dc4c7929ed85bf77fe"
+    },
+    {
+      "path": "raw/linux/0a0ab12fc7464f4bbab0ae7a0291b84b/samples.jsonl",
+      "bytes": 1241,
+      "sha256": "490527bc67e2062f0e92e771042dc9afe5b03e5459844365113895ce63de5209"
+    },
+    {
+      "path": "raw/linux/attempts/0a0ab12fc7464f4bbab0ae7a0291b84b/FINAL.json",
+      "bytes": 267,
+      "sha256": "8cfe8da85e07a296ac177f79f33a1a8258678848c68d92ba04973ded824fb0f2"
+    },
+    {
+      "path": "raw/linux/attempts/0a0ab12fc7464f4bbab0ae7a0291b84b/STARTED.json",
+      "bytes": 221,
+      "sha256": "74046ce6acd562181cf71e0f1300d7fb1968a710e1e3aac83fee9fb0903dcb2c"
+    },
+    {
+      "path": "raw/macos/attempts/b9e1499aaaa043f3bfa9a628e85f876b/FINAL.json",
+      "bytes": 267,
+      "sha256": "890a50426995ea847bdc4177bc514b5f7fea41f70068efb9e7824a495945e87e"
+    },
+    {
+      "path": "raw/macos/attempts/b9e1499aaaa043f3bfa9a628e85f876b/STARTED.json",
+      "bytes": 221,
+      "sha256": "652a106601abfc9ff06f3003781e356b437859cffc11cfbc866e2f85adb95f14"
+    },
+    {
+      "path": "raw/macos/b9e1499aaaa043f3bfa9a628e85f876b/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "892c0d7b1bccae05326bc825a64b2033f1cd305571625f8a20f49b167f8c9a94"
+    },
+    {
+      "path": "raw/macos/b9e1499aaaa043f3bfa9a628e85f876b/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "e73a787391be091287d9cb5a6ba8f2a6d1a3947c92ce0e1b3580070e7547f29c"
+    },
+    {
+      "path": "raw/macos/b9e1499aaaa043f3bfa9a628e85f876b/samples.jsonl",
+      "bytes": 1238,
+      "sha256": "c10cfa729d56696645a08d78ed85e12bd16c9498a96ad08ecb19387cfabd5c0c"
+    },
+    {
+      "path": "raw/windows/attempts/d25d42e78e0e471c82567ed6848f6c2d/FINAL.json",
+      "bytes": 267,
+      "sha256": "29dd2698e018f055cd41a23ac858dac189a46db3020fa0222562a08261c1db41"
+    },
+    {
+      "path": "raw/windows/attempts/d25d42e78e0e471c82567ed6848f6c2d/STARTED.json",
+      "bytes": 221,
+      "sha256": "7cc377b5d6871df073f25c5898183e2b8ae0903a6de4d2170103035dac047e29"
+    },
+    {
+      "path": "raw/windows/d25d42e78e0e471c82567ed6848f6c2d/COMMITTED.json",
+      "bytes": 129,
+      "sha256": "d83da43c6f96e549ca78a311f044c6e5dc229a3da675fe54c35a86a12ec2d66c"
+    },
+    {
+      "path": "raw/windows/d25d42e78e0e471c82567ed6848f6c2d/restart-proof.json",
+      "bytes": 7304,
+      "sha256": "c3f0eb7cc910728cc5654520ff70a486676b36b1125718c7f83b6c4b31dc232c"
+    },
+    {
+      "path": "raw/windows/d25d42e78e0e471c82567ed6848f6c2d/samples.jsonl",
+      "bytes": 1249,
+      "sha256": "85d4bfed7e287aec8b3d1ab02b9fb1697ab136d6840fda4918e528000c742cd1"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1004,
+      "sha256": "0e4d5445e4452e9fa69e4a8505d15d247b869eab694dad1f0aa8d1cef348cd87"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 944,
+      "sha256": "515dc3dd1f8d421c238f6fe789b735ec8da470ea7160c40ed8ee4bd85ec1d55d"
+    }
+  ]
+}

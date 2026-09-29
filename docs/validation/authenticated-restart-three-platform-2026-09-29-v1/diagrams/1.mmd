@@ -1,0 +1,9 @@
+flowchart LR
+    Plan[采集前固定负载与余量] --> Collect[原三平台正式采集工作流]
+    Collect --> Product[SDK与默认认证产品]
+    Product --> Baseline[新V5 Run与完整Attempt]
+    Baseline --> Freeze[原复验器封印新Profile]
+    Freeze --> Candidate[第二次独立候选]
+    Candidate --> Verify[原完整证据复验器]
+    Verify --> Report[封印PASS或FAIL报告]
+    Legacy[旧未认证基线与当前FAIL] -. 只读保留 .-> Report

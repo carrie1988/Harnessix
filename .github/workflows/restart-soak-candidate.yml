@@ -2,6 +2,15 @@ name: 完整产品重启冻结阈值复验
 
 on:
   workflow_dispatch:
+    inputs:
+      baseline_set:
+        description: 明确选择认证负载或历史未认证负载基线
+        type: choice
+        required: true
+        default: authenticated-v1
+        options:
+          - authenticated-v1
+          - legacy-unprotected-v1
 
 permissions:
   contents: read
@@ -34,10 +43,12 @@ jobs:
           uv run python -m scripts.run_restart_soak_candidate
           --evidence-root "$SOAK_EVIDENCE_ROOT"
           --report-root "$SOAK_REPORT_ROOT"
+          --baseline-set "$SOAK_BASELINE_SET"
         shell: bash
         env:
           SOAK_EVIDENCE_ROOT: ${{ runner.temp }}/harnessix-restart-candidate-evidence
           SOAK_REPORT_ROOT: ${{ runner.temp }}/harnessix-restart-candidate-reports
+          SOAK_BASELINE_SET: ${{ inputs.baseline_set }}
       - name: 保留候选Run、失败Attempt与报告
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "scope": "baseline_and_profile_only",
+  "checks": [
+    {
+      "platform": "linux",
+      "complete_run_and_attempt": true,
+      "raw_quantiles_recomputed": true,
+      "original_margins_recomputed": true,
+      "five_cycles_and_full_thread_set": true,
+      "profile_frozen_after_baseline": true
+    },
+    {
+      "platform": "macos",
+      "complete_run_and_attempt": true,
+      "raw_quantiles_recomputed": true,
+      "original_margins_recomputed": true,
+      "five_cycles_and_full_thread_set": true,
+      "profile_frozen_after_baseline": true
+    },
+    {
+      "platform": "windows",
+      "complete_run_and_attempt": true,
+      "raw_quantiles_recomputed": true,
+      "original_margins_recomputed": true,
+      "five_cycles_and_full_thread_set": true,
+      "profile_frozen_after_baseline": true
+    }
+  ],
+  "candidate_executed": false,
+  "commercial_release_accepted": false,
+  "paid_model_requests": 0
+}

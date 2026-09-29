@@ -1,0 +1,35 @@
+{
+  "spec_version": "harnessix.validation-review-packet/v1",
+  "source_revision": "7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46",
+  "decision": "baseline_frozen_candidate_not_yet_verified",
+  "design": "docs/changes/m09-r1-authenticated-restart-baseline.md",
+  "original_failures_preserved": true,
+  "required_checks": {
+    "three_platform_baseline": "PASS",
+    "profile_freeze_and_integer_recalculation": "PASS",
+    "benchmark_python312": {
+      "passed": 241,
+      "skipped": 1
+    },
+    "benchmark_python313": {
+      "passed": 241,
+      "skipped": 1
+    },
+    "governance": {
+      "passed": 276
+    },
+    "documentation": "PASS_zero_findings"
+  },
+  "quality_trials_counted": 0,
+  "paid_model_requests": 0,
+  "commercial_release": false,
+  "still_open": [
+    "second_independent_three_platform_candidate",
+    "R1_complete_safety",
+    "R3_real_20_trial_quality",
+    "R4_consumer_platform_and_version_upgrade",
+    "R5_independent_beta",
+    "R2_release_inputs",
+    "R6_final_release"
+  ]
+}

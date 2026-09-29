@@ -101,3 +101,9 @@ docs/validation/workspace-patch-operation-schema-2026-09-29-v1/logs/*.xml -diff 
 docs/validation/product-provider-operation-schema-2026-09-29-v1/** -text
 docs/validation/product-provider-operation-schema-2026-09-29-v1/logs/*.log -diff -merge
 docs/validation/product-provider-operation-schema-2026-09-29-v1/logs/*.xml -diff -merge
+
+# 认证负载预注册计划、基线与封印Profile跨平台保持规范原字节。
+docs/changes/m09-r1-authenticated-restart-baseline-plan.json -text
+docs/validation/authenticated-restart-three-platform-2026-09-29-v1/** -text
+docs/validation/authenticated-restart-three-platform-2026-09-29-v1/logs/*.log -diff -merge
+docs/validation/authenticated-restart-three-platform-2026-09-29-v1/logs/*.xml -diff -merge

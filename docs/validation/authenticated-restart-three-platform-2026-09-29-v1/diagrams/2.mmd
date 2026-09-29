@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant P as 固定计划
+    participant J as 单平台采集Job
+    participant S as 默认产品进程
+    participant F as Profile封印器
+    participant C as 独立候选Job
+    P->>J: 固定500 Thread及原余量规则
+    J->>S: 预热创建与完整集合核对
+    J->>S: ACK后硬退出并确认EOF
+    J->>S: 三次新进程启动与恢复
+    J-->>F: Run、Proof、COMMITTED与FINAL
+    F->>F: 独立重读及按原公式生成阈值
+    F-->>C: 已冻结Profile与基线
+    C->>C: STARTED v2预绑定Profile ID与SHA
+    C->>S: 新Run ID重复相同负载
+    C->>C: 逐指标复验并封印报告

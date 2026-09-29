@@ -17,18 +17,40 @@ from scripts.soak_environment import read_environment
 from scripts.soak_evidence import read_published_run
 from scripts.soak_manifest import SoakManifestV5, SoakProfileReference
 from scripts.soak_restart import run_product_restart
-from scripts.soak_threshold import read_profile, read_report, verify_and_publish
+from scripts.soak_threshold import (
+    SoakThresholdProfile,
+    read_profile,
+    read_report,
+    verify_and_publish,
+    verify_profile_baseline,
+)
 
 _ARCHIVE = (
     Path(__file__).resolve().parents[1]
     / "docs/validation/soak-restart-three-platform-2026-09-23-v1"
 )
+_AUTHENTICATED_ARCHIVE = (
+    Path(__file__).resolve().parents[1]
+    / "docs/validation/authenticated-restart-three-platform-2026-09-29-v1"
+)
+_AUTHENTICATED_BASELINE_REVISION = "7cbe358ff0f22ea2bc0813478bb1c13a2b1e7c46"
+_BASELINE_SETS = ("legacy-unprotected-v1", "authenticated-v1")
 
 
-def _only_profile(platform: str) -> Path:
+def _archive_for_set(baseline_set: str) -> Path:
+    """认证负载只能选择专属原件；缺失时不得回退历史基线。"""
+
+    if baseline_set == "legacy-unprotected-v1":
+        return _ARCHIVE
+    if baseline_set == "authenticated-v1":
+        return _AUTHENTICATED_ARCHIVE
+    raise KernelError("soak_profile_invalid", "产品重启基线集合无效")
+
+
+def _only_profile(platform: str, *, archive: Path | None = None) -> Path:
     """本平台必须恰有一个已冻结Profile，不根据文件时间选择。"""
 
-    root = _ARCHIVE / "profiles" / platform
+    root = (archive if archive is not None else _ARCHIVE) / "profiles" / platform
     try:
         entries = tuple(root.iterdir())
     except OSError:
@@ -43,14 +65,44 @@ def _only_profile(platform: str) -> Path:
     return entries[0]
 
 
-async def run_candidate(evidence_root: Path, report_root: Path) -> dict[str, str]:
+def _check_authenticated_policy(profile: SoakThresholdProfile, baseline: SoakManifestV5) -> None:
+    """认证基线绑定实际采集源码，并逐项保持历史负载和余量规则。"""
+
+    original, _ = read_profile(_only_profile(profile.platform))
+    if (
+        baseline.code_revision != _AUTHENTICATED_BASELINE_REVISION
+        or profile.load != original.load
+        or profile.sample_counts != original.sample_counts
+        or profile.expected_fault_counts != original.expected_fault_counts
+        or profile.provider_script_version != original.provider_script_version
+        or (profile.python_min, profile.python_max) != (original.python_min, original.python_max)
+        or any(
+            limit.margin_basis_points != original.metric_limits[name].margin_basis_points
+            for name, limit in profile.metric_limits.items()
+        )
+        or any(
+            limit.margin_basis_points != original.growth_limits[name].margin_basis_points
+            for name, limit in profile.growth_limits.items()
+        )
+    ):
+        raise KernelError("soak_profile_baseline_invalid", "认证重启基线来源或原工程规则不匹配")
+
+
+async def run_candidate(
+    evidence_root: Path,
+    report_root: Path,
+    *,
+    baseline_set: str = "authenticated-v1",
+) -> dict[str, str]:
     """先核对只读基线，再执行固定规模候选并重读不可覆盖报告。"""
 
+    archive = _archive_for_set(baseline_set)
     platform = read_environment().platform
-    profile_directory = _only_profile(platform)
+    profile_directory = _only_profile(platform, archive=archive)
     profile, profile_sha = read_profile(profile_directory)
-    baseline_directory = _ARCHIVE / "raw" / platform / profile.baseline_run_id
-    baseline, baseline_sha = read_published_run(baseline_directory)
+    baseline_directory = archive / "raw" / platform / profile.baseline_run_id
+    # 负载前也核对数学阈值与完整Attempt，不能只在候选完成后发现基线无效。
+    baseline, baseline_sha = verify_profile_baseline(profile, baseline_directory)
     _, baseline_final = read_attempt(baseline_directory.parent / "attempts" / baseline.run_id)
     if (
         not isinstance(baseline, SoakManifestV5)
@@ -68,6 +120,8 @@ async def run_candidate(evidence_root: Path, report_root: Path) -> dict[str, str
         or baseline.fault_counts.eof != 1
     ):
         raise KernelError("soak_profile_baseline_invalid", "产品重启冻结基线不完整")
+    if baseline_set == "authenticated-v1":
+        _check_authenticated_policy(profile, baseline)
 
     revision = _revision()
     reference = SoakProfileReference(profile_id=profile.profile_id, sha256=profile_sha)
@@ -100,6 +154,7 @@ async def run_candidate(evidence_root: Path, report_root: Path) -> dict[str, str
     if read_report(report_directory) != report:
         raise KernelError("soak_report_invalid", "产品重启复验报告重读不一致")
     return {
+        "baseline_set": baseline_set,
         "scenario_id": "restart",
         "platform": platform,
         "code_revision": revision,
@@ -115,9 +170,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="以冻结阈值运行完整产品重启独立复验")
     parser.add_argument("--evidence-root", required=True, type=Path)
     parser.add_argument("--report-root", required=True, type=Path)
+    parser.add_argument("--baseline-set", choices=_BASELINE_SETS, default="authenticated-v1")
     arguments = parser.parse_args(argv)
     try:
-        result = asyncio.run(run_candidate(arguments.evidence_root, arguments.report_root))
+        result = asyncio.run(
+            run_candidate(
+                arguments.evidence_root,
+                arguments.report_root,
+                baseline_set=arguments.baseline_set,
+            )
+        )
     except KernelError as error:
         print(f"产品重启复验失败：{error.code}", file=sys.stderr)
         return 1
