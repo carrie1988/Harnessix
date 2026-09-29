@@ -1,0 +1,572 @@
+{
+  "spec_version": "harnessix.delivery-manifest/v1",
+  "source_revision": "ec356aa1555d6ad712819f3e02e210493f7d3135",
+  "self_excluded": "manifest.json",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 10379,
+      "sha256": "c16806d84c69181f54e968fbd0855309c4ea74ac6ba631483a137004e7635e3c"
+    },
+    {
+      "path": "artifacts/harnessix-1.0.0rc1-py3-none-any.whl",
+      "bytes": 1076841,
+      "sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0"
+    },
+    {
+      "path": "diagrams/architecture-render.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 695,
+      "sha256": "b2c9ea868cee553ee2ad29a96f281b46e4c0bbc5f2736bb8fa331e39b05325a3"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 99189,
+      "sha256": "dee42edaa061ebffd781a7b940369177fdb6f0218979144555b7ae4827c52e39"
+    },
+    {
+      "path": "diagrams/failure-render.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "diagrams/failure.mmd",
+      "bytes": 460,
+      "sha256": "f866589e177665f6f9fad3199c8151ac6cbb1a131d47079b46c5881a96999043"
+    },
+    {
+      "path": "diagrams/failure.png",
+      "bytes": 105109,
+      "sha256": "f2e06efdd34b7036c076bae312d3a3b403bfe991fb0c434ad78acdf82c55f2db"
+    },
+    {
+      "path": "diagrams/sequence-render.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "bytes": 834,
+      "sha256": "96d9c3e65917cca993ec2051e33ab17b9bfb93f21a526547673eeb6c5d29c785"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "bytes": 203011,
+      "sha256": "8f8f36d6f980c4b5b45ac307444dccb92f9667fbf091fa4cf3a6590f0f25591c"
+    },
+    {
+      "path": "facts/native-final-artifacts.json",
+      "bytes": 5264,
+      "sha256": "932f2947071cb3911f0599dbb1317de843af5a1bd363643eb5c4dc6f570202a2"
+    },
+    {
+      "path": "facts/native-final-run.json",
+      "bytes": 11359,
+      "sha256": "c49a824fc8441786798f700b7a044cc10e835597c3b440385b637dc893ec615f"
+    },
+    {
+      "path": "facts/native-initial-completion.json",
+      "bytes": 11208,
+      "sha256": "d73a887202d3d83e4f1ffc4f45b17cdfa271e83bf0785b5525b1798e0df2360e"
+    },
+    {
+      "path": "logs/build-final.log",
+      "bytes": 128,
+      "sha256": "1a46a1f3c1ad2316f50387e885d4c09af7a85697842e177572ac5b4b26738012"
+    },
+    {
+      "path": "logs/docs-delivery.log",
+      "bytes": 102,
+      "sha256": "93387ff67af82ae172c0faf5c18bd1508165b27dfeed1ed984b30ed492d070cf"
+    },
+    {
+      "path": "logs/docs-locale-fix.log",
+      "bytes": 102,
+      "sha256": "998659ab1e44bb9a1dbe416ea35dbce7bf56ec7309e0251ef52fbf0902b076bf"
+    },
+    {
+      "path": "logs/final-regression-bundled-git-py312.log",
+      "bytes": 607,
+      "sha256": "c650fa8e3499f245413eed95285656dcc8ff6242b1cee0fbdb3dd27d519d2a95"
+    },
+    {
+      "path": "logs/final-regression-bundled-git-py312.xml",
+      "bytes": 65851,
+      "sha256": "8dbf7267c0388cf60c39a4876ed45780fbe9c6f17bd869cd6e371bf74e415d4b"
+    },
+    {
+      "path": "logs/final-regression-py312.log",
+      "bytes": 3263,
+      "sha256": "487994290215c8ecd8b1aac5bde9dde9e1255a5b782f66a4ae7ffb1b91547219"
+    },
+    {
+      "path": "logs/final-regression-py312.xml",
+      "bytes": 68310,
+      "sha256": "7d79d1b017827ae421bd27591f4ca77ad41a22c02181274f63f6eee231d9edd9"
+    },
+    {
+      "path": "logs/final-regression-py313.log",
+      "bytes": 595,
+      "sha256": "c69bb67c02d1e0cfca129792e3b48dbde2eb3d2652970320c00e6c88d2cdb0cf"
+    },
+    {
+      "path": "logs/final-regression-py313.xml",
+      "bytes": 65851,
+      "sha256": "e640f216d4fce3d9ccb726f085760bc8131672f988199eb15cf23fba8b71fe5a"
+    },
+    {
+      "path": "logs/locale-fix-py312.log",
+      "bytes": 187,
+      "sha256": "14b3cca0ba2e5f38f0b786ef6b7626fa36866eb9e9c5c0c2e703a3e4e5956773"
+    },
+    {
+      "path": "logs/locale-fix-py312.xml",
+      "bytes": 6456,
+      "sha256": "0a5252f1f020e00de7fd8173c87c7abfaf78a5605ec85dac3da9a4046a0068ca"
+    },
+    {
+      "path": "logs/locale-fix-py313.log",
+      "bytes": 187,
+      "sha256": "75d950dc44305b055a6fc82aa5a9b7d078c0ea8c294c4d1bec443e99497cc83e"
+    },
+    {
+      "path": "logs/locale-fix-py313.xml",
+      "bytes": 6456,
+      "sha256": "aad34501b69bac817b57082ae3f72c6fb96bd689469acf6bb40035c5f0d0b774"
+    },
+    {
+      "path": "logs/native-initial-failed.log",
+      "bytes": 5890,
+      "sha256": "e022a89eb027cb9c5e1ebf53894b1e3f825386f96f98f906f32e5f83a0278c31"
+    },
+    {
+      "path": "logs/readability.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "logs/secret-scan-delivery.log",
+      "bytes": 101,
+      "sha256": "1a345b9f8b9fd49a51a7f8b51e6ce3de5b2b5baa57d3ba17bac610e440c28fc2"
+    },
+    {
+      "path": "logs/secret-scan-final-wheel.log",
+      "bytes": 101,
+      "sha256": "b96193ec1c2b3eea505bbae7421e3d2d19f874e6bce883e5b0cea55356bec6bd"
+    },
+    {
+      "path": "logs/specs.log",
+      "bytes": 28,
+      "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+    },
+    {
+      "path": "logs/version-license-rebind.json",
+      "bytes": 314,
+      "sha256": "e7fe79218359b623d0741009e45b253641a2ffbff2bf3c872eba33022e6aa1cb"
+    },
+    {
+      "path": "logs/windows-locale-red.log",
+      "bytes": 2747,
+      "sha256": "445ef837ce5b9afd9d5b58bd362742b322f584d64375f9ac4e992dd48d934548"
+    },
+    {
+      "path": "logs/windows-locale-red.xml",
+      "bytes": 2929,
+      "sha256": "47186077c76827636eb6c47692e626cb16c72c404088185da29d6dd502d49628"
+    },
+    {
+      "path": "raw/final/linux/installed/acceptance.log",
+      "bytes": 153,
+      "sha256": "71c40598a66066babf9caba9319cb0638b20bb08fb02754c6c568e572b0d5cc5"
+    },
+    {
+      "path": "raw/final/linux/installed/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/final/linux/installed/dependencies.log",
+      "bytes": 1486,
+      "sha256": "fcb2e2e782d605abfe7e65172a1d3a167b4b74dc097ebf872147b72e1d0ef5ec"
+    },
+    {
+      "path": "raw/final/linux/installed/requirements.txt",
+      "bytes": 56753,
+      "sha256": "99690b451f6e4b74e69f4590a1d82d347b91880b02e39e241c28ff59748795b9"
+    },
+    {
+      "path": "raw/final/linux/installed/result.json",
+      "bytes": 1144,
+      "sha256": "8580fad9e37bd90d06b9b206c6a6421e64ceed72ab51ef6d1b0f107b65b73db7"
+    },
+    {
+      "path": "raw/final/linux/installed/wheel-install.log",
+      "bytes": 305,
+      "sha256": "545eb55c70f2a59b54fe06813f4e8067ec2b91466c65bf70af3604f23ba95dec"
+    },
+    {
+      "path": "raw/final/linux/installed/wheel-requirement.txt",
+      "bytes": 180,
+      "sha256": "bf814c7bb700ea9ebd18ccf1b05ddbb575afc3d1a73bc58654cc36f20279d4ad"
+    },
+    {
+      "path": "raw/final/linux/upgrade/acceptance.log",
+      "bytes": 1917,
+      "sha256": "1706a7cf6ab1b350365d7cab388d764fd36314abc9e84c9908f6d9314d7c0100"
+    },
+    {
+      "path": "raw/final/linux/upgrade/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/final/linux/upgrade/baseline-wheel.txt",
+      "bytes": 219,
+      "sha256": "10c4a9b6b512a8730ee62bd4c9447fd396f495a5038d9d9bdfd403559b100a5e"
+    },
+    {
+      "path": "raw/final/linux/upgrade/candidate-install.log",
+      "bytes": 276,
+      "sha256": "0489ce53b8d423d880f59823bd3c017acb29ece0d8b518ce316caa163e7ba5f9"
+    },
+    {
+      "path": "raw/final/linux/upgrade/candidate-wheel.txt",
+      "bytes": 180,
+      "sha256": "bf814c7bb700ea9ebd18ccf1b05ddbb575afc3d1a73bc58654cc36f20279d4ad"
+    },
+    {
+      "path": "raw/final/linux/upgrade/dependencies.log",
+      "bytes": 1481,
+      "sha256": "28783fc90d45f20de7c3fabf79703bf06bcbad6c367fca885c787406ee9c0016"
+    },
+    {
+      "path": "raw/final/linux/upgrade/result.json",
+      "bytes": 2139,
+      "sha256": "fef3b736a1631400e9e25a49c27cdd19ea02f95ae342dc2a45131bf963b5a2ef"
+    },
+    {
+      "path": "raw/final/linux/upgrade/rollback-wheel.txt",
+      "bytes": 219,
+      "sha256": "10c4a9b6b512a8730ee62bd4c9447fd396f495a5038d9d9bdfd403559b100a5e"
+    },
+    {
+      "path": "raw/final/macos/installed/acceptance.log",
+      "bytes": 153,
+      "sha256": "71c40598a66066babf9caba9319cb0638b20bb08fb02754c6c568e572b0d5cc5"
+    },
+    {
+      "path": "raw/final/macos/installed/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/final/macos/installed/dependencies.log",
+      "bytes": 1485,
+      "sha256": "42ef1a51f7b9003a9e9e049409377c7972441eff85f2276e67a68954431498d5"
+    },
+    {
+      "path": "raw/final/macos/installed/requirements.txt",
+      "bytes": 56754,
+      "sha256": "10fcd55a7ef6a68749ac668a40b683af6639328a79d1da4275d175a09f5fa4b8"
+    },
+    {
+      "path": "raw/final/macos/installed/result.json",
+      "bytes": 1145,
+      "sha256": "fea8183f40a1d9aafcae91155d7b38aaaebc2847bfd02f109d898ab2654e80dc"
+    },
+    {
+      "path": "raw/final/macos/installed/wheel-install.log",
+      "bytes": 307,
+      "sha256": "c6127c66e720af11d5af12fb89d6d1cf6d5475f0c11c88ad3c6948c96a148394"
+    },
+    {
+      "path": "raw/final/macos/installed/wheel-requirement.txt",
+      "bytes": 181,
+      "sha256": "e4b493cca751ff4db89b081e3093c15e069440ff256f6a03da15d6ebef30e101"
+    },
+    {
+      "path": "raw/final/macos/upgrade/acceptance.log",
+      "bytes": 1918,
+      "sha256": "94724a6895fcd30a2a3b1ee32ad99867466c3a480ecc5dfaf28d25c3a35f6636"
+    },
+    {
+      "path": "raw/final/macos/upgrade/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/final/macos/upgrade/baseline-wheel.txt",
+      "bytes": 220,
+      "sha256": "ea0c83334b406feddd92c990ed3fa2657ae9fa2c94aef8ea53a63b590f9202bb"
+    },
+    {
+      "path": "raw/final/macos/upgrade/candidate-install.log",
+      "bytes": 279,
+      "sha256": "9e4cf6375bdb74e1cd1228d29c94288b0b6a4db2db5210878f7373a31c70c2ae"
+    },
+    {
+      "path": "raw/final/macos/upgrade/candidate-wheel.txt",
+      "bytes": 181,
+      "sha256": "e4b493cca751ff4db89b081e3093c15e069440ff256f6a03da15d6ebef30e101"
+    },
+    {
+      "path": "raw/final/macos/upgrade/dependencies.log",
+      "bytes": 1483,
+      "sha256": "8eb9eee972eb159107a8961cb9744bf192551719d9f428628cfdc945e7b950d7"
+    },
+    {
+      "path": "raw/final/macos/upgrade/result.json",
+      "bytes": 2140,
+      "sha256": "c4d21595d284dd00c6b83d7e65df9044e64930c8d4c1bbaad22ef85458136029"
+    },
+    {
+      "path": "raw/final/macos/upgrade/rollback-wheel.txt",
+      "bytes": 220,
+      "sha256": "ea0c83334b406feddd92c990ed3fa2657ae9fa2c94aef8ea53a63b590f9202bb"
+    },
+    {
+      "path": "raw/final/windows/installed/acceptance.log",
+      "bytes": 156,
+      "sha256": "bbb82896817fa1501dd836f55ed82985f77cd668d3860e03fca09f535dde00e9"
+    },
+    {
+      "path": "raw/final/windows/installed/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/final/windows/installed/dependencies.log",
+      "bytes": 1509,
+      "sha256": "e05f42fcc9e1b93c403c94b768a33416ae1ff2348875d8525d939f0e6d620869"
+    },
+    {
+      "path": "raw/final/windows/installed/requirements.txt",
+      "bytes": 56740,
+      "sha256": "848912dd9e83a4e26bb0df5a98fcdecee214d04127fb3db6b0837ae23ff68658"
+    },
+    {
+      "path": "raw/final/windows/installed/result.json",
+      "bytes": 1181,
+      "sha256": "b79fa06cea98939a06ac2d47345cdab1851c5ef34b02d9b54e66554a1d816ca2"
+    },
+    {
+      "path": "raw/final/windows/installed/wheel-install.log",
+      "bytes": 281,
+      "sha256": "1beea96babc2dc69fe30df6d75751f578893c6bd5333b6fc123d6cdcd600f9be"
+    },
+    {
+      "path": "raw/final/windows/installed/wheel-requirement.txt",
+      "bytes": 169,
+      "sha256": "e07ff166d217743e73e859cd07e2bb70b2ba5c04bc1ef53afa00ffff427b5f27"
+    },
+    {
+      "path": "raw/final/windows/upgrade/acceptance.log",
+      "bytes": 1920,
+      "sha256": "7435415e58af334a4376596ef668dc61187b8413b15e7cb28f007193a4469202"
+    },
+    {
+      "path": "raw/final/windows/upgrade/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/final/windows/upgrade/baseline-wheel.txt",
+      "bytes": 208,
+      "sha256": "2bc776a577a99f6e3e080a6928a9fbd2531011d437704020aab56c8a049f4d12"
+    },
+    {
+      "path": "raw/final/windows/upgrade/candidate-install.log",
+      "bytes": 252,
+      "sha256": "85f1b188ba233b309aa9a2198d3cf7c8be2847a05f960700354b53158d0645fd"
+    },
+    {
+      "path": "raw/final/windows/upgrade/candidate-wheel.txt",
+      "bytes": 169,
+      "sha256": "e07ff166d217743e73e859cd07e2bb70b2ba5c04bc1ef53afa00ffff427b5f27"
+    },
+    {
+      "path": "raw/final/windows/upgrade/dependencies.log",
+      "bytes": 1506,
+      "sha256": "b1355e801be8ab445758a6172efe10fbc0f28a40bec74c11c2ae3a527d97a93b"
+    },
+    {
+      "path": "raw/final/windows/upgrade/result.json",
+      "bytes": 2203,
+      "sha256": "b18135ab1ca38e1261f6720816efd8b20110739dfc393880b66314d0530019f2"
+    },
+    {
+      "path": "raw/final/windows/upgrade/rollback-wheel.txt",
+      "bytes": 208,
+      "sha256": "2bc776a577a99f6e3e080a6928a9fbd2531011d437704020aab56c8a049f4d12"
+    },
+    {
+      "path": "raw/initial/linux/installed/acceptance.log",
+      "bytes": 153,
+      "sha256": "71c40598a66066babf9caba9319cb0638b20bb08fb02754c6c568e572b0d5cc5"
+    },
+    {
+      "path": "raw/initial/linux/installed/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/initial/linux/installed/dependencies.log",
+      "bytes": 1485,
+      "sha256": "860085e1bf8ea65f4a2efce8d77dc938a2a789dbcc7fab941008d8d01e0b446e"
+    },
+    {
+      "path": "raw/initial/linux/installed/requirements.txt",
+      "bytes": 56753,
+      "sha256": "99690b451f6e4b74e69f4590a1d82d347b91880b02e39e241c28ff59748795b9"
+    },
+    {
+      "path": "raw/initial/linux/installed/result.json",
+      "bytes": 1144,
+      "sha256": "ee4349f6ecf4e4d04206e12b0935189bcf1e2957544a4e94262892534ddae1d7"
+    },
+    {
+      "path": "raw/initial/linux/installed/wheel-install.log",
+      "bytes": 304,
+      "sha256": "862739e52ab5157de1122d8dd66ac7e85386ed731cfd06a8cd02226a747be6ba"
+    },
+    {
+      "path": "raw/initial/linux/installed/wheel-requirement.txt",
+      "bytes": 180,
+      "sha256": "bf814c7bb700ea9ebd18ccf1b05ddbb575afc3d1a73bc58654cc36f20279d4ad"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/acceptance.log",
+      "bytes": 1917,
+      "sha256": "1172cce0cba126fa4f8ce2c9c716a2c78d2733dbdad42a7374b95604865273c7"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/baseline-wheel.txt",
+      "bytes": 219,
+      "sha256": "10c4a9b6b512a8730ee62bd4c9447fd396f495a5038d9d9bdfd403559b100a5e"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/candidate-install.log",
+      "bytes": 275,
+      "sha256": "a7938331c84354d81a477402a842ad10fbfa94445f24051261d47a2ff2f67f7c"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/candidate-wheel.txt",
+      "bytes": 180,
+      "sha256": "bf814c7bb700ea9ebd18ccf1b05ddbb575afc3d1a73bc58654cc36f20279d4ad"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/dependencies.log",
+      "bytes": 1481,
+      "sha256": "71693baa842aad5bd2abacad001a40de253890e2ffe4834022406ee6907d4734"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/result.json",
+      "bytes": 2139,
+      "sha256": "768cd90bfe4d0e8c3a99817f7608328245d74714d5122afd593f40bfe3d99050"
+    },
+    {
+      "path": "raw/initial/linux/upgrade/rollback-wheel.txt",
+      "bytes": 219,
+      "sha256": "10c4a9b6b512a8730ee62bd4c9447fd396f495a5038d9d9bdfd403559b100a5e"
+    },
+    {
+      "path": "raw/initial/macos/installed/acceptance.log",
+      "bytes": 153,
+      "sha256": "71c40598a66066babf9caba9319cb0638b20bb08fb02754c6c568e572b0d5cc5"
+    },
+    {
+      "path": "raw/initial/macos/installed/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/initial/macos/installed/dependencies.log",
+      "bytes": 1487,
+      "sha256": "0b42bdd7060e37e50e6d51abe170b97572ef5efb72cc32e737ed2f5b2451dbcf"
+    },
+    {
+      "path": "raw/initial/macos/installed/requirements.txt",
+      "bytes": 56754,
+      "sha256": "10fcd55a7ef6a68749ac668a40b683af6639328a79d1da4275d175a09f5fa4b8"
+    },
+    {
+      "path": "raw/initial/macos/installed/result.json",
+      "bytes": 1145,
+      "sha256": "42741dc247558462d7f1b94ce69a9f004bfd699ee07ed002a08c47f1fb7c47c4"
+    },
+    {
+      "path": "raw/initial/macos/installed/wheel-install.log",
+      "bytes": 310,
+      "sha256": "3ef62d359a9d3ed59b551074bbdfabce1838d1cb4edfed7013aab5197c51bca5"
+    },
+    {
+      "path": "raw/initial/macos/installed/wheel-requirement.txt",
+      "bytes": 181,
+      "sha256": "e4b493cca751ff4db89b081e3093c15e069440ff256f6a03da15d6ebef30e101"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/acceptance.log",
+      "bytes": 1918,
+      "sha256": "5239c6a62b4a801587d93a604eec0c65d1773f7cec476f3e9263c7530e2e55c7"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/acceptance.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/baseline-wheel.txt",
+      "bytes": 220,
+      "sha256": "ea0c83334b406feddd92c990ed3fa2657ae9fa2c94aef8ea53a63b590f9202bb"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/candidate-install.log",
+      "bytes": 279,
+      "sha256": "c4d2efd1757e058f5830ac4bd0cb27b27e6ca5e36cd050c6684880f6ce2d006e"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/candidate-wheel.txt",
+      "bytes": 181,
+      "sha256": "e4b493cca751ff4db89b081e3093c15e069440ff256f6a03da15d6ebef30e101"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/dependencies.log",
+      "bytes": 1484,
+      "sha256": "fca8ee8727af2863a0570e7491e83a9e9d3429e6773de2a114eb7926b1074e0a"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/result.json",
+      "bytes": 2140,
+      "sha256": "727f50c0c9d170e29ad7d926cf7692ef4614265c2d540d747fac9efc9f23d700"
+    },
+    {
+      "path": "raw/initial/macos/upgrade/rollback-wheel.txt",
+      "bytes": 220,
+      "sha256": "ea0c83334b406feddd92c990ed3fa2657ae9fa2c94aef8ea53a63b590f9202bb"
+    },
+    {
+      "path": "raw/local/macos-arm64-result.json",
+      "bytes": 2139,
+      "sha256": "e9b5e8aea4c62161dea975dc839ecde8b5df846be0976476b51d74e9de23d3a7"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1355,
+      "sha256": "4282ba2d3c47103aee778a23141bf9cafd3dee6173d97b285399d58dffc4ee78"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 3803,
+      "sha256": "ae536015e9cd9a167c0ba3942c31521f3f504c981f4945e626bf4a7f6a972ba1"
+    }
+  ]
+}

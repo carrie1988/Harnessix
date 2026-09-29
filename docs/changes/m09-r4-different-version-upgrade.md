@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 1cda7adae334adfec5e716770d0da8f19f4f87d2
+version: 2
+code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -208,7 +208,11 @@ on_any_failure: preserve_case_and_stop_without_automatic_retry()
 
 固定`1cda7ad`本机Python3.12/3.13受影响回归各422通过，macOS ARM64源码外实际不同版本生命周期通过，
 两份Wheel分别校验原摘要，模型请求为0。原生Run `36517330074`的Windows测试读档暴露默认cp1252编码错误，
-不能登记Windows升级成功；后继明确UTF-8读档并增加非UTF-8 locale复现，完整原生结果另行归档。
+不能登记该首轮Windows升级成功；后继明确UTF-8读档并增加非UTF-8 locale复现。
+固定`ec356aa`的[Run 36517872201](https://github.com/carrie1988/Harnessix/actions/runs/36517872201)
+已由唯一Wheel构建及三个原生消费者完成安装、不同版本升级、完整状态恢复及旧包回退，四Job均为成功终态。
+[正式交付目录](../validation/different-version-upgrade-2026-09-29-v1/README.md)保留成功原件、首轮失败、
+JUnit、原字节Manifest、Review Packet及三份图示；本范围通过不关闭R4整体或其他商用门禁。
 
 ## 11. 源码与测试映射及阅读顺序
 

@@ -1,0 +1,8 @@
+flowchart TD
+    Input[输入检查] --> Valid{摘要 版本 隔离环境全部有效}
+    Valid -->|否| Stop[固定错误码停止 不安装不删状态]
+    Valid -->|是| Phase[有界安装或正式产品阶段]
+    Phase --> Done{实际子进程成功且断言成立}
+    Done -->|否| Retain[保留原case及原日志 禁止自动重试]
+    Done -->|是| Next[下一阶段]
+    Retain --> Manual[核对已安装版本及原恢复Journal后显式处置]

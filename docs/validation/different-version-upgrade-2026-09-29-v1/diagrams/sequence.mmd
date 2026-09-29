@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant C as 隔离控制器
+    participant I as 指定venv安装器
+    participant P as 新阶段进程及stdio产品
+    participant S as 原状态和备份
+    C->>C: 核对旧/新Wheel摘要及不同版本
+    C->>I: 离线安装原0.1.0
+    C->>P: 旧包初始化 创建A 停机备份验真
+    P->>S: 写入原认证状态及7文件完整备份
+    P-->>C: 私有Thread/Backup身份 阶段完成
+    C->>I: 离线安装1.0.0rc1
+    C->>C: 安装前后私有状态原字节一致
+    C->>P: 新包读取A 创建B 关闭Transport
+    C->>P: 原CLI显式恢复 原restore ID重复
+    P->>S: 保留前Root 恢复A 创建C 重复不回退C
+    C->>I: 停机安装原0.1.0
+    C->>P: 旧包读取A/C 创建D
+    P-->>C: 阶段版本及集合验证通过
+    C-->>C: 输出低敏结果 不声明商用完成

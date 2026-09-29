@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 123
-code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
+version: 124
+code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
 owners:
   - core
 modules:
@@ -956,3 +956,9 @@ R4后继[源码外安装与生命周期验收](changes/m09-r4-installed-product-
 升级后Thread必须被旧备份恢复移出当前Root，稳定恢复身份不得回退恢复后新状态。
 当前版本标识只用于预发行验收，不创建正式Tag或Release；实际生命周期及原生矩阵结果分别记录，
 未取得结果不标记通过。消费者OS核心编码、真实质量、独立Beta及最终同候选R1～R6继续开放。
+
+固定`ec356aa`已取得[三平台不同版本升级、恢复与回退原件](validation/different-version-upgrade-2026-09-29-v1/README.md)：
+唯一规范Wheel及Linux/macOS/Windows消费者四Job均成功，原`0.1.0`与`1.0.0rc1`实际离线切换，
+原Key、六库恢复、稳定恢复身份及旧包读写验证通过。首轮Windows cp1252失败与本机Apple Git负对照失败均保留。
+该固定版本对切片关闭；后续必要主线为真实20 Trial质量、消费者Windows11核心编码、独立Beta及最终同候选发布门禁，
+不将内部RC、原生CI平台名称或安装成功外推为正式商用支持。

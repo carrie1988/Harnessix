@@ -1,0 +1,62 @@
+{
+  "spec_version": "harnessix.installed-product-upgrade-acceptance/v1",
+  "source_revision": "ec356aa1555d6ad712819f3e02e210493f7d3135",
+  "baseline_source_revision": "a4f7f33449bb897d84fe3a8e8262307943233fb4",
+  "baseline_version": "0.1.0",
+  "candidate_version": "1.0.0rc1",
+  "baseline_wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+  "candidate_wheel_sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0",
+  "platform": "Windows",
+  "machine": "AMD64",
+  "python": "3.12.10",
+  "candidate_source_members_verified": 433,
+  "phases": [
+    {
+      "phase": "baseline",
+      "version": "0.1.0",
+      "wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+      "installed_members": 432
+    },
+    {
+      "phase": "upgraded",
+      "version": "1.0.0rc1",
+      "wheel_sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0",
+      "installed_members": 433
+    },
+    {
+      "phase": "restore",
+      "version": "1.0.0rc1",
+      "wheel_sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0",
+      "installed_members": 433
+    },
+    {
+      "phase": "rollback",
+      "version": "0.1.0",
+      "wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+      "installed_members": 432
+    }
+  ],
+  "different_versions_verified": true,
+  "fresh_isolated_phase_processes": true,
+  "active_owner_backup_refused": true,
+  "full_backup_file_count": 7,
+  "upgrade_reads_original_thread": true,
+  "upgrade_creates_new_thread": true,
+  "upgrade_install_preserves_state_bytes": true,
+  "post_upgrade_thread_removed_by_restore": true,
+  "same_restore_id_does_not_rewind_new_state": true,
+  "original_key_retained": true,
+  "prior_root_retained": true,
+  "rollback_install_preserves_state_bytes": true,
+  "rollback_reads_restored_threads": true,
+  "rollback_creates_new_thread": true,
+  "workspace_unchanged": true,
+  "provider_turn_requests": 0,
+  "commercial_release": false,
+  "not_proven": [
+    "real_coding_task",
+    "consumer_os_support",
+    "beta",
+    "stable_version_release"
+  ]
+}

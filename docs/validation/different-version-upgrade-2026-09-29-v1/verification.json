@@ -1,0 +1,97 @@
+{
+  "spec_version": "harnessix.different-version-upgrade-verification/v1",
+  "source_revision": "ec356aa1555d6ad712819f3e02e210493f7d3135",
+  "acceptance_run_id": 36517872201,
+  "initial_failed_run_id": 36517330074,
+  "candidate_wheel_sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0",
+  "baseline_wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+  "baseline_source_revision": "a4f7f33449bb897d84fe3a8e8262307943233fb4",
+  "all_four_native_jobs_successful": true,
+  "platform_checks": [
+    {
+      "platform": "linux",
+      "machine": "x86_64",
+      "python": "3.12.3",
+      "result": "raw/final/linux/upgrade/result.json",
+      "required_assertions_verified": true,
+      "candidate_wheel_sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0",
+      "baseline_wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30"
+    },
+    {
+      "platform": "macos",
+      "machine": "arm64",
+      "python": "3.12.10",
+      "result": "raw/final/macos/upgrade/result.json",
+      "required_assertions_verified": true,
+      "candidate_wheel_sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0",
+      "baseline_wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30"
+    },
+    {
+      "platform": "windows",
+      "machine": "AMD64",
+      "python": "3.12.10",
+      "result": "raw/final/windows/upgrade/result.json",
+      "required_assertions_verified": true,
+      "candidate_wheel_sha256": "60aa5d017712c49016b07dad661fec1168273944672a52c9ae88d2bcec31e6b0",
+      "baseline_wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30"
+    }
+  ],
+  "source_inputs": [
+    {
+      "path": "pyproject.toml",
+      "bytes": 2149,
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+    },
+    {
+      "path": "uv.lock",
+      "bytes": 264077,
+      "sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd"
+    },
+    {
+      "path": "scripts/installed_product_acceptance.py",
+      "bytes": 16427,
+      "sha256": "adcf9647b1225fe6e02eaf23aebd8ec981db85c7f7acd16adf28917e47a8b9ec"
+    },
+    {
+      "path": "scripts/installed_product_upgrade_acceptance.py",
+      "bytes": 15937,
+      "sha256": "b7a655e61d6a50a4e9df9e4eb994e0a70b483adc52f42a198ce6d3670d0f6cb1"
+    },
+    {
+      "path": "tests/governance/test_installed_product_acceptance.py",
+      "bytes": 11986,
+      "sha256": "96aae4db390643a276fbae9be101f18a63eb613b63cf43fabd40f611e5d03c4b"
+    },
+    {
+      "path": "tests/governance/test_installed_product_upgrade_acceptance.py",
+      "bytes": 9029,
+      "sha256": "7e13da67d98c60ac07f6bbe0938706ba58246542467d8bd356d0b170499b1f0d"
+    },
+    {
+      "path": ".github/workflows/installed-product-acceptance.yml",
+      "bytes": 10794,
+      "sha256": "62cb005c833e88920134253fe675504afd14c73edfacb243b90e5635d2f3bcee"
+    }
+  ],
+  "local_regression_source_revision": "1cda7adae334adfec5e716770d0da8f19f4f87d2",
+  "local_regression_python312_passed": 422,
+  "local_regression_python313_passed": 422,
+  "locale_fix_python312_passed": 36,
+  "locale_fix_python313_passed": 36,
+  "local_results_overlap_not_added": true,
+  "archive_identities_unchanged": 777,
+  "license_violations_still_open": 12,
+  "old_frozen_evidence_modified": false,
+  "provider_turn_requests": 0,
+  "commercial_release": false,
+  "not_proven": [
+    "real_coding_task",
+    "consumer_windows11",
+    "independent_beta",
+    "same_final_stable_candidate_all_release_gates"
+  ],
+  "delivery_secret_scan_complete": true,
+  "delivery_secret_scan_input_count": 3514,
+  "delivery_secret_scan_scope": "managed Git index plus actual canonical Wheel",
+  "delivery_documentation_check_passed": true
+}

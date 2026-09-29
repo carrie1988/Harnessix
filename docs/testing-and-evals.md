@@ -1,8 +1,8 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 47
-code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
+version: 48
+code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
 owners:
   - core
 modules:
@@ -855,3 +855,9 @@ Plan/指针/回执篡改、陌生目录、粘性回退、四阶段中断、实�
 每阶段实际安装隔离解释器验证正式SDK/CLI、原六库/Key备份恢复、稳定恢复ID和回退后读写。
 两份Wheel按精确哈希离线安装，源码外实际运行和三平台结果独立记载；没有模型Turn，
 不能据此宣布真实编码质量、消费者Windows11、Beta或商用支持通过。
+
+[固定不同版本正式证据](validation/different-version-upgrade-2026-09-29-v1/README.md)
+记录`ec356aa`实际Run的唯一规范Wheel、三平台源码外生命周期和四阶段升级/恢复/回退。
+本机受影响回归Python3.12/3.13各422通过，locale修复焦点各36通过；两组范围重叠，不累加为全仓成绩。
+Windows首轮默认cp1252读档失败、Apple Git负对照失败、修复及原生复验分别保留，
+三平台成功不替代消费者OS、真实模型任务或独立Beta验收。

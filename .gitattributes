@@ -121,3 +121,9 @@ docs/validation/authenticated-restart-three-platform-candidate-2026-09-29-v2/log
 # 固定安全追踪交付按原字节保存，避免平台换行改写原证据。
 docs/validation/v1-safety-coverage-2026-09-29-v1/** -text
 docs/validation/v1-safety-coverage-2026-09-29-v1/logs/** -diff -merge
+
+# 不同版本升级原件保持CI字节，Windows行终止符不转换。
+docs/validation/different-version-upgrade-2026-09-29-v1/** -text
+docs/validation/different-version-upgrade-2026-09-29-v1/logs/** -diff -merge
+docs/validation/different-version-upgrade-2026-09-29-v1/raw/**/*.log -diff -merge
+docs/validation/different-version-upgrade-2026-09-29-v1/raw/final/windows/**/* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -1,0 +1,13 @@
+flowchart LR
+    Old[原归档0.1.0 Wheel及固定摘要] --> Gate[发行物与不同版本检查]
+    New[同Run唯一1.0.0rc1候选Wheel] --> Gate
+    Gate --> Controller[源码外专用venv中的验收控制器]
+    Controller --> Fresh[每阶段新python -I进程]
+    Fresh --> Helpers[复用原安装检查与正式SDK CLI]
+    Helpers --> Server[当前已安装stdio App Server]
+    Server --> State[(认证状态与原Key)]
+    Helpers --> Backup[(升级前完整备份)]
+    Backup --> Restore[原产品恢复算法及稳定restore ID]
+    Restore --> State
+    Fresh --> Public[仅低敏阶段与最终结果]
+    State -. 不上传正文 Key或Key摘要 .-> Private[私有case目录]

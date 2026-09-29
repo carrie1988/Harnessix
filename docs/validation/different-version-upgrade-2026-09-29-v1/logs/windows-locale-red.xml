@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.422" timestamp="2026-09-29T11:33:11.484528+08:00" hostname="MacBook-Pro.local"><testcase classname="tests.governance.test_installed_product_upgrade_acceptance" name="test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished[cp1252]" time="0.001"><failure message="UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 8: character maps to &lt;undefined&gt;">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x109d8f080&gt;
+default_encoding = 'cp1252'
+
+    @pytest.mark.parametrize("default_encoding", ["cp1252", "utf-8"])
+    def test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished(
+        monkeypatch: pytest.MonkeyPatch, default_encoding: str
+    ) -&gt; None:
+        original_read = Path.read_text
+    
+        def locale_read(path, encoding=None, **kwargs):
+            return original_read(path, encoding=encoding or default_encoding, **kwargs)
+    
+        # 模拟非UTF-8默认locale，不靠全局环境覆盖Windows读档缺陷。
+        monkeypatch.setattr(Path, "read_text", locale_read)
+        root = Path(__file__).parents[2]
+        workflow = yaml.safe_load(
+&gt;           (root / ".github/workflows/installed-product-acceptance.yml").read_text()
+        )
+
+tests/governance/test_installed_product_upgrade_acceptance.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/governance/test_installed_product_upgrade_acceptance.py:104: in locale_read
+    return original_read(path, encoding=encoding or default_encoding, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/anaconda3/lib/python3.12/pathlib.py:1028: in read_text
+    return f.read()
+           ^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;encodings.cp1252.IncrementalDecoder object at 0x105a7a540&gt;
+input = b'name: \xe6\xba\x90\xe7\xa0\x81\xe5\xa4\x96\xe5\xae\x89\xe8\xa3\x85\xe4\xb8\x8e\xe5\xae\x8c\xe6\x95\xb4\xe7\x8a\xb6\x...harnessix-installed-product/acceptance.stderr.log\n          if-no-files-found: ignore\n          retention-days: 14\n'
+final = True
+
+    def decode(self, input, final=False):
+&gt;       return codecs.charmap_decode(input,self.errors,decoding_table)[0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 8: character maps to &lt;undefined&gt;
+
+/opt/anaconda3/lib/python3.12/encodings/cp1252.py:23: UnicodeDecodeError</failure></testcase><testcase classname="tests.governance.test_installed_product_upgrade_acceptance" name="test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished[utf-8]" time="0.005" /></testsuite></testsuites>

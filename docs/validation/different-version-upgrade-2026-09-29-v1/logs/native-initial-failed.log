@@ -1,0 +1,41 @@
+安装与恢复 windows	安装证据边界正反例	﻿2026-09-29T03:29:58.2663791Z ##[group]Run uv run pytest tests/governance/test_installed_product_acceptance.py tests/governance/test_installed_product_upgrade_acceptance.py
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2664869Z ^[[36;1muv run pytest tests/governance/test_installed_product_acceptance.py tests/governance/test_installed_product_upgrade_acceptance.py^[[0m
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2737958Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2738315Z env:
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2738518Z   UV_TOOL_BIN_DIR: D:\a\_temp\uv-tool-bin-dir
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2738800Z   UV_TOOL_DIR: D:\a\_temp\uv-tool-dir
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2739075Z   UV_PYTHON_INSTALL_DIR: D:\a\_temp\uv-python-dir
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2739355Z   UV_PYTHON: 3.12
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2739565Z   UV_CACHE_DIR: D:\a\_temp\setup-uv-cache
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:29:58.2739811Z ##[endgroup]
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2879249Z .............................F.....                                      [100%]
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2880030Z ================================== FAILURES ===================================
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2880935Z _ test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished _
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2881457Z 
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2881899Z     def test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished() -> None:
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2882689Z         root = Path(__file__).parents[2]
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2883170Z         workflow = yaml.safe_load(
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2883865Z >           (root / ".github/workflows/installed-product-acceptance.yml").read_text()
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2884601Z         )
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2884802Z 
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2885153Z tests\governance\test_installed_product_upgrade_acceptance.py:100: 
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2885929Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2886721Z C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\pathlib.py:1028: in read_text
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2887189Z     return f.read()
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2887401Z            ^^^^^^^^
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2887685Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2887953Z 
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2888199Z self = <encodings.cp1252.IncrementalDecoder object at 0x0000021C7EE3C140>
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2889423Z input = b'name: \xe6\xba\x90\xe7\xa0\x81\xe5\xa4\x96\xe5\xae\x89\xe8\xa3\x85\xe4\xb8\x8e\xe5\xae\x8c\xe6\x95\xb4\xe7\x8a\xb6\x...harnessix-installed-product/acceptance.stderr.log\n          if-no-files-found: ignore\n          retention-days: 14\n'
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2890849Z final = True
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2890980Z 
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2891087Z     def decode(self, input, final=False):
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2891461Z >       return codecs.charmap_decode(input,self.errors,decoding_table)[0]
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2891833Z                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2892323Z E       UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 8: character maps to <undefined>
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2893159Z 
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2893431Z C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\encodings\cp1252.py:23: UnicodeDecodeError
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2893926Z =========================== short test summary info ===========================
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2895099Z FAILED tests/governance/test_installed_product_upgrade_acceptance.py::test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished - UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 8: character maps to <undefined>
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.2896281Z 1 failed, 34 passed in 2.71s
+安装与恢复 windows	安装证据边界正反例	2026-09-29T03:30:03.5275538Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,40 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "ec356aa1555d6ad712819f3e02e210493f7d3135",
+  "slice_decision": "GO-fixed-different-version-three-platform-upgrade-restore-rollback",
+  "overall_decision": "NO_GO_FOR_COMMERCIAL_RELEASE",
+  "preserved_failures": [
+    "native-Windows-cp1252-read-error",
+    "Apple-Git-CRLF-control-failed",
+    "non-UTF8-locale-red"
+  ],
+  "requirements": {
+    "different_version_pair": "actual-archived-0.1.0-to-current-1.0.0rc1",
+    "key_and_state_restore": "three-native-platforms-passed",
+    "same_canonical_candidate": "one-run-one-builder-one-Wheel-sha",
+    "consumer_windows11": "not-proven",
+    "real_coding_quality": "not-completed",
+    "independent_beta": "not-completed",
+    "licenses": "12-violations-still-open"
+  },
+  "risks": [
+    {
+      "id": "R3",
+      "description": "真实20 Trial质量成绩未更新，旧严格0/20保留。"
+    },
+    {
+      "id": "R4",
+      "description": "Windows Server原生结果不代表消费者Windows11或完整原生编码。"
+    },
+    {
+      "id": "R5",
+      "description": "独立开发者Beta与至少15任务尚未完成。"
+    },
+    {
+      "id": "R6",
+      "description": "内部RC专项不替代同一最终候选的正式封板。"
+    }
+  ],
+  "provider_turn_requests": 0,
+  "private_keys_or_databases_exported": false
+}
