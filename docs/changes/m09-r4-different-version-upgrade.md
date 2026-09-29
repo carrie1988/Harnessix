@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: 1cda7adae334adfec5e716770d0da8f19f4f87d2
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -205,6 +205,10 @@ on_any_failure: preserve_case_and_stop_without_automatic_retry()
 三平台工作流保留旧安装生命周期，增加同候选不同版本验收，私有case不上传；两份实际Wheel均按哈希安装。
 真实执行须核对原Key、A/B/C/D精确集合、活跃互斥、原Root保留、稳定restore ID和安装前后字节不变。
 各平台原件、JUnit、Manifest和Review Packet归档，不用测试名称或脚本存在推导场景通过。
+
+固定`1cda7ad`本机Python3.12/3.13受影响回归各422通过，macOS ARM64源码外实际不同版本生命周期通过，
+两份Wheel分别校验原摘要，模型请求为0。原生Run `36517330074`的Windows测试读档暴露默认cp1252编码错误，
+不能登记Windows升级成功；后继明确UTF-8读档并增加非UTF-8 locale复现，完整原生结果另行归档。
 
 ## 11. 源码与测试映射及阅读顺序
 

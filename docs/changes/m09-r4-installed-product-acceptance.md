@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
+status: current
 version: 4
-code_revision: pending
+code_revision: 1cda7adae334adfec5e716770d0da8f19f4f87d2
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:

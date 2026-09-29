@@ -94,10 +94,20 @@ def test_rollback_requires_exact_original_threads_not_just_nonempty_state(
     require_phase_threads({"A"}, {"A"})
 
 
-def test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished() -> None:
+@pytest.mark.parametrize("default_encoding", ["cp1252", "utf-8"])
+def test_upgrade_workflow_reuses_one_candidate_and_keeps_private_state_unpublished(
+    monkeypatch: pytest.MonkeyPatch, default_encoding: str
+) -> None:
+    original_read = Path.read_text
+
+    def locale_read(path, encoding=None, **kwargs):
+        return original_read(path, encoding=encoding or default_encoding, **kwargs)
+
+    # 模拟非UTF-8默认locale，不靠全局环境覆盖Windows读档缺陷。
+    monkeypatch.setattr(Path, "read_text", locale_read)
     root = Path(__file__).parents[2]
     workflow = yaml.safe_load(
-        (root / ".github/workflows/installed-product-acceptance.yml").read_text()
+        (root / ".github/workflows/installed-product-acceptance.yml").read_text(encoding="utf-8")
     )
     consumer = workflow["jobs"]["installed-product"]
     steps = consumer["steps"]
