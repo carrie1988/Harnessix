@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 140
-code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
+version: 141
+code_revision: 65d7323b12db782bbf62f109545058256037584e
 owners:
   - core
 modules:
@@ -351,3 +351,8 @@ Artifact字段缺少证据出发，说明静态字段来源、失败与恢复、
 
 专项最后受测源码全量5886通过、108跳过；完整治理297项独立通过，范围重叠不累加。
 三份Model文件与实际内部RC Wheel字节一致；新候选原生结果尚未取得，不继承旧Job通过。
+
+固定`65d7323`的原生两项观察者实验及原未决恢复均通过，但112项组合步骤在79项通过后被CI进程期限截断。
+[完整集合分组](changes/m09-r1-single-child-reaper.md#10-原生验收进程分组与完整性)只调整37/75编排，
+所有112项、恢复断言、原步骤保护和产品期限保留；完整原生门禁尚未通过。
+[安装手册](operations/installation.md)现行操作使用内部1.0.0rc1及哈希锁定源码外环境，原历史版本事实不改写。

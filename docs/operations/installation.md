@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 16
-code_revision: bf03290e22748d0356b49839d5e264142282c492
+version: 17
+code_revision: 65d7323b12db782bbf62f109545058256037584e
 owners:
   - core
 modules:
@@ -35,7 +35,7 @@ supersedes: []
 
 ## 1. 适用范围
 
-本文描述当前源码安装、开发环境、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
+本文描述当前内部`1.0.0rc1`候选、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
 后继Windows本地NTFS审批写入端口及专项已实现，见[验证报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
 这不是消费者目标OS、脱离源码安装、升级及独立Beta完成的证明。
@@ -94,18 +94,18 @@ uv sync --locked --all-extras --dev
 ```
 
 `--locked`确保解析结果与[`uv.lock`](../../uv.lock)一致；`--all-extras`安装OpenAI、Anthropic、
-OpenTelemetry、旧兼容Action依赖和Textual可选依赖；`--dev`安装测试和静态检查工具。仅运行某一入口时可以安装更小依赖集，
+OpenTelemetry和Textual可选依赖；`--dev`安装测试和静态检查工具。仅运行某一入口时可以安装更小依赖集，
 但对应环境必须单独验收，不能借用全量开发环境结论。
 
-仅验证终端入口时，在构建好的Wheel或源码包上显式安装`tui`以及目标Provider Extra：
+仅验证源码终端入口时，显式选择`tui`以及目标Provider Extra；Wheel安装按第5节固定输入：
 
 ```bash
-python -m pip install 'harnessix[tui,openai]'
-harnessix code /srv/project --config /srv/harnessix-private/config.json
+uv sync --locked --extra tui --extra openai
+uv run harnessix code /srv/project --config /srv/harnessix-private/config.json
 ```
 
 基础Wheel不会隐式安装Textual。缺少Extra时`harnessix code`输出稳定`tui_dependency_missing` JSON并退出2，不会
-运行时联网下载。上述命令只说明入口和依赖关系；当前没有PyPI发布证据，应使用本地Wheel或锁定源码安装。
+运行时联网下载。上述命令是源码工作流，不从尚未发布的PyPI项目安装；独立候选安装必须使用第5节的实际Wheel及原锁哈希。
 
 ### 4.3 安装后验收
 
@@ -123,28 +123,56 @@ make check
 验收必须确认命令解析、许可证文本、导入位置、生成规格无漂移和全量门禁均成功。`harnessix --help`成功只证明
 CLI可导入，不证明Provider、数据库、Workspace或Sandbox可用。
 
-## 5. 本地Wheel
+## 5. 本地Wheel与锁定安装输入
 
-构建系统由Hatchling声明，Wheel只包含`src/harnessix`包：
-
-```bash
-uv build --wheel
-```
-
-本地Wheel用于独立环境升级/兼容测试时，应在全新虚拟环境安装并记录文件摘要：
+当前内部候选文件名为`harnessix-1.0.0rc1-py3-none-any.whl`，不是正式商用Release。
+以已评审固定Revision为起点；以下独立验收目录必须尚不存在。`python`指前置条件中的Python 3.12解释器。
+命令复用[规范Wheel工作流](../../.github/workflows/installed-product-acceptance.yml)的锁定依赖、
+精确Wheel哈希及`--no-deps`，不依赖pip重新解析浮动版本。源码外环境不借用开发venv。
 
 ```bash
-python -m venv ./wheel-verify
-./wheel-verify/bin/python -m pip install ./dist/harnessix-0.1.0-py3-none-any.whl
-./wheel-verify/bin/harnessix --help
+python -c "from pathlib import Path; Path('../harnessix-wheel-verify').mkdir(mode=0o700)"
+uv export --locked --no-dev --all-extras --no-emit-project --format requirements.txt --output-file ../harnessix-wheel-verify/requirements.txt
+uv build --offline --wheel --out-dir ../harnessix-wheel-verify/wheel
+python -c "from pathlib import Path; import hashlib; r=Path('../harnessix-wheel-verify'); w=list((r/'wheel').glob('*.whl')); assert len(w)==1; p=w[0].resolve(); (r/'wheel-requirement.txt').write_text(p.as_uri()+' --hash=sha256:'+hashlib.sha256(p.read_bytes()).hexdigest()+'\n', encoding='utf-8')"
+uv venv --python 3.12 ../harnessix-wheel-verify/venv
 ```
 
-Windows将第二、三行替换为虚拟环境的`Scripts`路径。基础Wheel不自动安装模型Provider、Observability、
-旧兼容Action或TUI Extras；验收某项能力时必须显式安装相应Extra，并确认依赖解析没有越过项目上限。
+macOS/Linux：
+
+```bash
+cd ../harnessix-wheel-verify
+uv pip install --python ./venv/bin/python --require-hashes --no-deps -r requirements.txt
+uv pip install --python ./venv/bin/python --require-hashes --no-deps --offline -r wheel-requirement.txt
+./venv/bin/python -I -m harnessix --help
+./venv/bin/python -I -m harnessix code --help
+./venv/bin/python -I -m harnessix license
+./venv/bin/python -I -c "import harnessix; from importlib.metadata import version; print(version('harnessix')); print(harnessix.__file__)"
+```
+
+Windows PowerShell在相同公共构建步骤后执行：
+
+```powershell
+Set-Location ../harnessix-wheel-verify
+uv pip install --python ./venv/Scripts/python.exe --require-hashes --no-deps -r requirements.txt
+uv pip install --python ./venv/Scripts/python.exe --require-hashes --no-deps --offline -r wheel-requirement.txt
+./venv/Scripts/python.exe -I -m harnessix --help
+./venv/Scripts/python.exe -I -m harnessix code --help
+./venv/Scripts/python.exe -I -m harnessix license
+./venv/Scripts/python.exe -I -c "import harnessix; from importlib.metadata import version; print(version('harnessix')); print(harnessix.__file__)"
+```
+
+最后必须得到`1.0.0rc1`及独立venv中的导入地址。Help、版本、License与SDK依赖安装不代表模型调用、
+真实编码或消费者Windows11验收通过。配置与离线Doctor按[产品运行手册](../m08-product-runtime-and-extensions.md)执行；发模型请求另需满足费用及认证门禁。
+
+此处自算哈希证明安装字节与本地受控构建件一致，不是签名或官方来源证明。下载候选时应先核对可信发布
+记录给出的独立SHA256及Revision；规范CI消费者校验构建Job摘要后才生成相同安装输入。
+基础Wheel不隐式启用Provider、Observability或TUI；本例显式安装原锁全部Extras用于候选验收，
+正式精简环境必须固定其自身安装输入并独立验证。
 
 ### 5.1 Wheel边界
 
-- 当前包版本为`0.1.0`，尚未与路线图0.9完成度建立正式发布映射；
+- 当前包版本为`1.0.0rc1`，只用于预发行验收，不等于路线图1.0商用已完成；
 - 没有Release签名、来源证明、SBOM或可复现构建声明；
 - 没有PyPI发布证据；
 - Wheel不携带外部`git`、搜索工具、容器后端或Provider凭据；
@@ -157,7 +185,7 @@ Windows将第二、三行替换为虚拟环境的`Scripts`路径。基础Wheel�
 
 ### 5.2 源码制品与验证制品边界
 
-首发正式通道仍只有Wheel；CI同时构建的源码制品属于开发/扫描输入，不新增正式渠道承诺。
+首发正式通道仍只有Wheel；源码制品仅供显式开发/边界回归，不是当前CI正式构建通道。
 Hatch源码制品继续包含源码、正式文档及验证README/Manifest等可读资料，排除
 `docs/validation/**/artifacts`内已经构建的验证制品，并保留原Task Pack解答目录排除规则。
 实际验证Wheel仍以原字节保留在Git及对应交付Manifest中，不删除、不重签、不改摘要。
@@ -199,6 +227,10 @@ gzip→tar→验证Wheel→包内Task Pack tar层级，现行Secret扫描正确�
 [规范Wheel三平台实际结果](../validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
 绑定`a4f7f33`：唯一构建件在三个原生Job完成上述生命周期，三份安装摘要一致。
 当前验证包仍为`0.1.0`；未发布1.0，也未完成版本升级、消费者Windows11或真实编码验收。
+
+[不同版本升级、恢复与回退原件](../validation/different-version-upgrade-2026-09-29-v1/README.md)
+已固定原`0.1.0`与`1.0.0rc1`、唯一规范Wheel及三平台实际消费者Job；原Key与六库匹配恢复通过。
+这是固定`ec356aa`的安装生命周期切片，不包含后继源码的完整商用验收，Windows11与真实编码/Beta仍开放。
 
 ## 6. 开发命令镜像
 

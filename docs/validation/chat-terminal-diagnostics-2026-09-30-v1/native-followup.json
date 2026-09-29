@@ -1,0 +1,279 @@
+{
+  "schema": "harnessix.native-followup/v1",
+  "native_failure": {
+    "run": 36638990646,
+    "windows_job": 109646501537,
+    "source_revision": "65d7323b12db782bbf62f109545058256037584e",
+    "job_conclusion": "failure",
+    "total_step_selected": 112,
+    "completed_passes_by_file": {
+      "tests/product_config/test_product_state_backup.py": 35,
+      "tests/product_config/test_state_fixture_readiness.py": 2,
+      "tests/product_config/test_product_state_restore.py": 42
+    },
+    "last_completed": [
+      "test_product_state_restore.py::test_invalid_recover_mode_does_not_create_state_or_owner[mode1] PASSED [ 69%]",
+      "test_product_state_restore.py::test_invalid_recover_mode_does_not_create_state_or_owner[None] PASSED [ 70%]"
+    ],
+    "original_pending_recovery_case_passed": true,
+    "step_terminated_by": "five_minute_ci_step_deadline",
+    "original_log_sha256": "e8dc3291e3c78babe58441f33e85f4503ce84131b6e9204b062d22865df5e208"
+  },
+  "collection": {
+    "original_count": 112,
+    "group_counts": [
+      37,
+      75
+    ],
+    "grouped_count": 112,
+    "exact_node_identity_equal": true,
+    "duplicate_nodes": 0,
+    "node_set_sha256": "2be24f7799da6c6ff5b19ee4d32625278048bbf67e65f2cc2981af47be11c411",
+    "test_file_sha256": {
+      "tests/product_config/test_windows_metadata_contracts.py": "88402fc20727df732feee55d1693b214388037ac0d374e4f8a582f54f942716a",
+      "tests/product_config/test_state_fixture_readiness.py": "f37482766f6d467122a7d7730ad565c487dad01ade69945e4c78b7e3317c1f3c",
+      "tests/product_config/test_product_state_backup.py": "2287f6e90010f48f59a1273110d2ef7557079a0f7637e6860969f917685e5eed",
+      "tests/product_config/test_product_state_restore.py": "e35fa96c488633b4a07fbfe0dfd90c4c467e1faa68a32e184e867cf97bf0d6f6"
+    }
+  },
+  "local_regression": [
+    {
+      "source": "windows-group-red.xml",
+      "sha256": "b626251a4b1d8838a2821696221aae4b271761a1ccc7761276ed876f4453e15d",
+      "bytes": 1544,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0
+    },
+    {
+      "source": "windows-group-green.xml",
+      "sha256": "7318e8636970969f215f1856c6945dddaebdf30cd4ac6f16ec8ead4353c97508",
+      "bytes": 2873,
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 16
+    },
+    {
+      "source": "installation-doc-red.xml",
+      "sha256": "39b0215875546a544c36cc158fec8a6fdcb44829d1e1c0525e40c3c01ca35d9e",
+      "bytes": 1978,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0
+    },
+    {
+      "source": "install-and-groups-green.xml",
+      "sha256": "20ba1e1b9682677ddb3e2342c1fed175e708cff6e18de418cd21eb2dfe8d53d3",
+      "bytes": 3043,
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 17
+    },
+    {
+      "source": "governance.xml",
+      "sha256": "d8aaa71bb244f33197f322ba5f8c6596dcde2ec6c330048f9f1e5104b29ff470",
+      "bytes": 46653,
+      "tests": 299,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 299,
+      "duration_seconds": 26.736
+    }
+  ],
+  "workflow_sha256": "6d9d044d9c70ecd24bb30d5cf86333c9ea985a0032d74539a4816399d23a9fe6",
+  "production_source_changed": false,
+  "product_budgets_and_assertions_changed": false,
+  "old_full_regression_not_relabelled_for_new_workflow": true,
+  "new_native_workflow": "pending",
+  "documented_posix_commands": {
+    "status": "pass",
+    "execution": "extracted_common_and_posix_code_blocks_in_fresh_source_external_environment",
+    "model_requests": 0,
+    "interpreter": "CPython 3.12.7",
+    "installed_version": "1.0.0rc1",
+    "isolated_flag_verified": true,
+    "package_import_inside_new_venv": true,
+    "package_import_outside_source": true,
+    "command_logs": [
+      {
+        "source": "doc-posix-1.log",
+        "sha256": "7121a36a7f69d858c0cec6df6f2592fd46ac91b9ccf602876c85d5268cf0609b",
+        "bytes": 57055
+      },
+      {
+        "source": "doc-posix-2.log",
+        "sha256": "d49ca21700f5a1a074a1ef71ffcdecaf8d182f16c1a171042fe71c0960903a1a",
+        "bytes": 4039
+      }
+    ],
+    "installed_package": {
+      "package_members_verified": 434,
+      "wheel": {
+        "file": "harnessix-1.0.0rc1-py3-none-any.whl",
+        "sha256": "adcbfc1fa727f68a8a47ff0a4b338ee54b2b81ef094fde19acdb3ea3a6702a3f",
+        "bytes": 1079206
+      },
+      "requirements_sha256": "4e19fbe9f12548120bb1f53e53b28f9d74c45db668b194ce6d683db2c674c086",
+      "wheel_requirement_sha256": "2de090bbaacb6b67cc291f9f57316e1348d2b0cbe4023c803dae7e62da669f21",
+      "source_package_files_changed": false,
+      "original_budget_ledger_unchanged": true
+    },
+    "private_environment_evidence": {
+      "source": "doc-installed-environment.json",
+      "sha256": "7e66be2c2315160fa9fdfc02ac21aff55d90eb95685b747816ef81e260e1072d",
+      "bytes": 286
+    },
+    "powershell_and_windows11_not_claimed": true,
+    "commercial_release_not_claimed": true
+  },
+  "documented_powershell_commands": "not_verified_in_native_shell",
+  "commercial_release_gate_closed": false,
+  "model_requests": 0,
+  "changed_contract_bindings": {
+    ".github/workflows/ci.yml": "6d9d044d9c70ecd24bb30d5cf86333c9ea985a0032d74539a4816399d23a9fe6",
+    "tests/governance/test_installed_product_acceptance.py": "a62fd7b30121aed0346ff37eaca2f6a69f98d7587c6eeb8f5b2a88da54f78a15",
+    "docs/operations/installation.md": "9547156f953caceb71edd1dec8c960fe14d72d27be0f3a983feaf8a66da8c91d"
+  },
+  "review": {
+    "decision": "scoped_local_ci_partition_and_documented_posix_installation_go_only",
+    "original_failed_results_retained": true,
+    "overlapping_test_counts_not_added": true,
+    "native_112_cases_still_require_complete_new_candidate_result": true,
+    "production_source_and_test_assertions_not_changed": true,
+    "open_items": [
+      "complete_new_native_matrix",
+      "default_desktop_workspace",
+      "unknown_cost_reconciliation",
+      "complete_real_20_trials",
+      "consumer_windows11",
+      "independent_beta",
+      "archive_rights_12",
+      "final_commercial_candidate"
+    ]
+  },
+  "same_original_candidate_matrix": {
+    "revision": "65d7323b12db782bbf62f109545058256037584e",
+    "run": 36638990646,
+    "jobs": [
+      {
+        "job": 109646501166,
+        "name": "container-sandbox",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "job": 109646501342,
+        "name": "python (3.12)",
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      {
+        "job": 109646501401,
+        "name": "coding-tools-macos",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "job": 109646501481,
+        "name": "python (3.13)",
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      {
+        "job": 109646501537,
+        "name": "windows-trusted-execution",
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      {
+        "job": 109646501548,
+        "name": "documentation",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "python_full_regressions": [
+      {
+        "python": "3.12",
+        "job": 109646501342,
+        "tests": 5994,
+        "passed": 5878,
+        "skipped": 116,
+        "failures": 0,
+        "errors": 0,
+        "duration_seconds": 838.89,
+        "subsequent_license_gate": "12_archive_violations",
+        "original_log": {
+          "source": "ci-65-109646501342.log",
+          "sha256": "4b355bb7585d064a6dcfcf204196a6a0b8e47d8df9b1747b291474ce7edc30ab",
+          "bytes": 48849
+        }
+      },
+      {
+        "python": "3.13",
+        "job": 109646501481,
+        "tests": 5994,
+        "passed": 5878,
+        "skipped": 116,
+        "failures": 0,
+        "errors": 0,
+        "duration_seconds": 793.92,
+        "subsequent_license_gate": "12_archive_violations",
+        "original_log": {
+          "source": "ci-65-109646501481.log",
+          "sha256": "549026436b4953ed511e81d22a0f46aab71f91004e737201ebaf2c4e25a2f6db",
+          "bytes": 49112
+        }
+      }
+    ],
+    "original_jobs_are_not_new_workflow_acceptance": true,
+    "counts_not_additive": true,
+    "entire_ci_not_passed": true
+  },
+  "static_verification": {
+    "documentation": {
+      "changed_path_count": 9,
+      "document_count": 397,
+      "findings": [],
+      "link_count": 10065,
+      "mermaid_count": 867,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "secret_scan": {
+      "inputs": 3565,
+      "findings": 0,
+      "includes_exact_documented_wheel": true,
+      "original_log": {
+        "source": "final-secret.log",
+        "sha256": "be39844cf658bbc73b8cf4e2cfb29cc944e151525db1c905952da841330a4ae5",
+        "bytes": 101
+      }
+    },
+    "ruff_check": "pass",
+    "ruff_format": "pass",
+    "generated_specs": "pass",
+    "existing_readability_policy": "pass",
+    "policy_and_baseline_changed": false,
+    "mermaid_render": {
+      "command": "scripts/documentation_check.py --changed-from HEAD --render-mermaid --format json",
+      "status": "pass",
+      "changed_document_diagrams": {
+        "docs/changes/m09-r1-single-child-reaper.md": 4,
+        "docs/operations/installation.md": 1
+      },
+      "actual_rendered_count": 5,
+      "repository_867_only_structurally_counted": true,
+      "original_log_sha256": "f04cbad88a0291fc598cc0c73251034fb700ab4754b7a58b7dd193f7dcf96eec"
+    }
+  }
+}

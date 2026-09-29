@@ -127,10 +127,15 @@ jobs:
           uv run pytest tests/benchmarks/test_soak_restart_child.py
           tests/benchmarks/test_soak_restart.py -vv -o faulthandler_timeout=60
         timeout-minutes: 3
-      - name: 验证原生完整业务状态备份与恢复
+      - name: 验证原生完整业务状态备份与观察者边界
         run: >-
           uv run pytest tests/product_config/test_product_state_backup.py
           tests/product_config/test_state_fixture_readiness.py
+          -vv -o faulthandler_timeout=60
+        timeout-minutes: 5
+      - name: 验证原生完整业务状态恢复与元数据边界
+        run: >-
+          uv run pytest
           tests/product_config/test_product_state_restore.py
           tests/product_config/test_windows_metadata_contracts.py
           -vv -o faulthandler_timeout=60

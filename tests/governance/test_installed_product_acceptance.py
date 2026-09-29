@@ -274,3 +274,55 @@ def test_frozen_diagnostic_is_data_but_active_source_formatting_and_secret_scan_
     assert diagnostic in _tracked_files(project)
     assert installed_fixture in _tracked_files(project)
     assert {finding["rule"] for finding in scan_paths([diagnostic])} == {"bearer_literal"}
+
+
+def test_windows_state_focus_preserves_all_files_and_original_step_deadlines() -> None:
+    import yaml
+
+    path = Path(__file__).parents[2] / ".github/workflows/ci.yml"
+    steps = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["windows-trusted-execution"][
+        "steps"
+    ]
+    groups = {
+        "验证原生完整业务状态备份与观察者边界": [
+            "tests/product_config/test_product_state_backup.py",
+            "tests/product_config/test_state_fixture_readiness.py",
+        ],
+        "验证原生完整业务状态恢复与元数据边界": [
+            "tests/product_config/test_product_state_restore.py",
+            "tests/product_config/test_windows_metadata_contracts.py",
+        ],
+    }
+    selected = [step for step in steps if step.get("name") in groups]
+    assert len(selected) == 2
+    for step in selected:
+        # 原文件各执行一次；诊断、断言与期限不因编排分组而被删除。
+        assert step["timeout-minutes"] == 5
+        assert step["run"].split() == [
+            "uv",
+            "run",
+            "pytest",
+            *groups[step["name"]],
+            "-vv",
+            "-o",
+            "faulthandler_timeout=60",
+        ]
+    assert {step["name"] for step in selected} == set(groups)
+
+
+def test_current_installation_examples_match_package_version_and_locked_inputs() -> None:
+    import tomllib
+
+    root = Path(__file__).parents[2]
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    current = (
+        (root / "docs/operations/installation.md")
+        .read_text(encoding="utf-8")
+        .split("### 5.3", 1)[0]
+    )
+    assert f"当前包版本为`{project['version']}`" in current
+    assert f"harnessix-{project['version']}-py3-none-any.whl" in current
+    assert "旧兼容Action" not in current
+    assert "--require-hashes --no-deps" in current
+    assert "--no-emit-project" in current
+    assert "pip install 'harnessix[tui,openai]'" not in current

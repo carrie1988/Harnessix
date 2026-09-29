@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
+version: 4
+code_revision: 65d7323b12db782bbf62f109545058256037584e
 owners: [core]
 modules: [processes, tools, product_config, sdk]
 related_adrs:
@@ -228,3 +228,20 @@ finally仍按原宿主close合同排空或终止任务。没有增加新等待�
 这些控制实验验证观察者取消耦合和修正边界，不声称复现原生磁盘延迟的全部原因。
 新测试纳入原生完整备份步骤，原109通过/1错误记录保留；新同候选Windows结果独立等待。
 验证及原件摘要见[统一交付](../validation/chat-terminal-diagnostics-2026-09-30-v1/README.md)。
+
+## 10. 原生验收进程分组与完整性
+
+固定`65d7323`的[CI 36638990646](https://github.com/carrie1988/Harnessix/actions/runs/36638990646)
+在旧五分钟组合步骤完成35项备份、2项观察者屏障、42项恢复，共79项通过，原未决恢复Manifest用例也通过。
+此后在继续执行时被CI步骤总期限中断；26项元数据及剩余7项恢复没有完整结果，不能记为跳过或通过。
+KeyboardInterrupt后的pytest清理异常不作为产品恢复算法根因；原完整Job仍失败。
+
+后继仅拆分[同一工作流](../../.github/workflows/ci.yml)：备份/观察者37项，恢复/元数据75项。
+两步分别保持原五分钟进程保护、60秒faulthandler诊断，全部原112个参数展开Node ID各出现一次。
+单步CI进程期限是编排保护，不是产品120秒Turn预算、恢复Operation期限或商用SLA；产品与用例源码不变。
+这不是取消故障测试、拉长业务期限、跳过慢例或将旧79项前缀登记为完整验收。
+
+[工作流回归](../../tests/governance/test_installed_product_acceptance.py)
+`test_windows_state_focus_preserves_all_files_and_original_step_deadlines`冻结两组文件、参数与原步骤期限。
+实际pytest收集比较原组合与两组完整Node ID集合，要求112项全等、零重复；不凭文件名计数替代参数展开。
+原生跟踪与收集原件摘要见[附录](../validation/chat-terminal-diagnostics-2026-09-30-v1/native-followup.json)。
