@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 117
-code_revision: c8033e08a260cfde793bf9809f6979a833fc92d5
+version: 118
+code_revision: 0363dc3b1fc7bdcba9d5aeb0f4798dbfccc0e71d
 owners:
   - core
 modules:
@@ -928,7 +928,9 @@ SQLite连接关闭后再以原可写私有FD同步。Journal文件、Root切换�
 固定`1bc3794`已完成实际构建和2798输入完整Secret扫描、macOS源码外安装与六库/原Key完整恢复。
 实际[三平台500 Thread复验](https://github.com/carrie1988/Harnessix/actions/runs/36453376381)
 五周期与Thread恢复均完成，但三份原Profile报告唯一`db_growth`越限，均保持FAIL。
-增长主要来自新增认证证明表和索引，版本化认证基线或存储优化尚待正式处置；不得弱化认证或改旧失败。
+增长主要来自新增认证证明表和索引；采用[独立认证负载基线](changes/m09-r1-authenticated-restart-baseline.md)，
+保持原500 Thread、五周期及余量规则，先冻结Profile再做第二独立复验。旧FAIL保留，
+不新增存储编码或弱化认证；新基线及候选尚未完成，不登记容量PASS。
 [统一交付](validation/product-restart-release-boundary-2026-09-29-v1/README.md)分别记录原生、制品、安装和性能边界，
 不把这些增量推导为三平台完整安装、真实质量、Beta或1.0完成；R1～R6仍开放。
 

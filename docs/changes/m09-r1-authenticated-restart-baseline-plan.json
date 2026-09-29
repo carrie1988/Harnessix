@@ -1,0 +1,112 @@
+{
+  "spec_version": "harnessix.authenticated-restart-plan/v1",
+  "registered_at": "2026-09-29T00:52:22.170239+00:00",
+  "baseline_set": "authenticated-v1",
+  "reference_source_revision": "0363dc3b1fc7bdcba9d5aeb0f4798dbfccc0e71d",
+  "product_tree_oid": "1cdfab2a33a9a13d4f8a29e8fb26ba4d17c66654",
+  "source_inputs_sha256": {
+    "scripts/soak_restart.py": "ef39f910e282861b108a5c07260e271d0794a4c843711b78ddde2e0004b566ad",
+    "scripts/soak_restart_child.py": "b2a567bbe8aa4ccef2a5718cb6764337b1778495005080a29c6d5edf34b08fd6",
+    "scripts/run_restart_soak_release.py": "f57ccbf7b8dd720806ca3ac484b3da225d75ba82148f81abd1fe757a726e07c0",
+    "scripts/soak_threshold.py": "cb288835119a9a42a31262801b5401c19e02354e796436bfd694dbd409db10ff",
+    "src/harnessix/product_config/server.py": "b19e49d52d9022490859ff9a284656fb5a78b132d6358101ec435a5cca1015b3",
+    "src/harnessix/product_config/session_key.py": "e9a6e21fd37cf55f9490d808ff90fd5ecf67ef19116c03f2abf2b9dd69ee60b5",
+    "src/harnessix/session/sqlite_publication.py": "6dc9acb8e22ed3943e29b1a8444ceebd8ffb1ecf13df58bcf7e7f2cafaf96e04",
+    "src/harnessix/session/migrations/0029_authenticated_session_history.sql": "4aab60066b1bde339ac5964f51b21a5bfa56469f57d2fff99dadf665b193fe2e"
+  },
+  "original_archive": "docs/validation/soak-restart-three-platform-2026-09-23-v1",
+  "preserved_failure_archive": "docs/validation/product-restart-release-boundary-2026-09-29-v1",
+  "load": {
+    "turn_count": 0,
+    "thread_count": 500,
+    "artifact_count": 0,
+    "pending_limit": null,
+    "warmup_count": 1,
+    "fault_matrix_version": "product-restart-v1"
+  },
+  "sample_counts": {
+    "product_startup": 3,
+    "rss_peak": 1
+  },
+  "expected_fault_counts": {
+    "cancelled": 0,
+    "timed_out": 0,
+    "eof": 1,
+    "unknown_effect": 0,
+    "duplicate_effect": 0,
+    "orphan": 0
+  },
+  "provider_script_version": "harnessix.product-no-turn/v1",
+  "platform_policies": {
+    "linux": {
+      "original_profile_id": "33e970328c664aac8dcbd63f329b33e1",
+      "original_profile_sha256": "02af474d46740a41aad7c7195fd0e9f92913effc940363d987885ab648f9920a",
+      "python_min": "3.12.0",
+      "python_max": "3.12.99",
+      "metric_margin_basis_points": {
+        "product_startup": 10000,
+        "rss_peak": 5000
+      },
+      "growth_margin_basis_points": {
+        "db": 5000,
+        "wal": 5000,
+        "artifact": 5000
+      },
+      "required_platform_validation": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    "macos": {
+      "original_profile_id": "f002516ffd0f4c309f1e0f6cadcde49e",
+      "original_profile_sha256": "6fa09ca8e87520a9992b4ad5ec8ab054b9fb00d83b5594a98ff0b1e011a86f02",
+      "python_min": "3.12.0",
+      "python_max": "3.12.99",
+      "metric_margin_basis_points": {
+        "product_startup": 10000,
+        "rss_peak": 5000
+      },
+      "growth_margin_basis_points": {
+        "db": 5000,
+        "wal": 5000,
+        "artifact": 5000
+      },
+      "required_platform_validation": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    "windows": {
+      "original_profile_id": "87d7b6a0e45c4bdebb02eedef21c2f83",
+      "original_profile_sha256": "4b26a7f91fc231bc14d534f26eac49ba35faa59fb637b6996913698ba59a46e3",
+      "python_min": "3.12.0",
+      "python_max": "3.12.99",
+      "metric_margin_basis_points": {
+        "product_startup": 10000,
+        "rss_peak": 5000
+      },
+      "growth_margin_basis_points": {
+        "db": 5000,
+        "wal": 5000,
+        "artifact": 5000
+      },
+      "required_platform_validation": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    }
+  },
+  "baseline_workflow": "restart-soak.yml",
+  "candidate_workflow": "restart-soak-candidate.yml",
+  "derive_thresholds_from": "new_committed_baseline_only",
+  "rounding_rule": "ceil(value * (10000 + original_margin_basis_points) / 10000)",
+  "measured_restarts": 3,
+  "timeout_seconds": 120,
+  "old_failures_preserved": true,
+  "new_storage_codec": false,
+  "paid_model_requests": 0,
+  "engineering_trials_counted": 0
+}
