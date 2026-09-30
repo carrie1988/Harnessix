@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
+version: 10
+code_revision: 75c4b7ddfe91824bcb667023c003e4aad18992e4
 owners:
   - core
 modules:
@@ -28,6 +28,9 @@ related_tests:
   - tests/tools/test_search.py
   - tests/tools/test_search_boundaries.py
   - tests/tools/test_git.py
+  - tests/tools/test_git_platform_contracts.py
+  - tests/tools/test_git_delivery_reader.py
+  - tests/product_config/test_git_baseline.py
   - tests/tools/test_runtime.py
   - tests/tools/test_argument_feedback.py
   - tests/tools/test_schema_argument_feedback.py
@@ -488,7 +491,8 @@ sequenceDiagram
 
 Git工具只有宿主传入受信`git_executable`时才注册。Runtime不从`PATH`为模型发现程序，也不接受仓库
 路径、revision、pathspec、子命令或配置参数。每次调用先执行固定`rev-parse --show-toplevel`，输出
-必须逐字等于规范Workspace根；父仓库中的子目录不会被提升为授权仓库。
+在POSIX上必须逐字等于规范Workspace根；Windows要求绝对路径并按`ntpath`规范化后精确相等，
+仅容纳Git输出的正斜杠、大小写与单个行结束符。父仓库中的子目录不会被提升为授权仓库。
 
 进程环境固定关闭全局/系统配置、可选锁、Pager、终端提示并限制`PATH`与locale；全局参数关闭颜色、
 fsmonitor和Hook路径。Diff另外关闭external diff和textconv，并以`--`终止选项。底层仍是宿主Git
@@ -978,6 +982,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 10 | `75c4b7ddfe91824bcb667023c003e4aad18992e4` | 同步Python3.13的Git平台输入测试夹具、仓库边界负例及模拟验证范围；生产代码和公共合同不变 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 明确默认Patch属于Trusted Action而非CodingToolRuntime，并记录POSIX广告与Windows省略边界 |
 | 3 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 同步0.9.1e1默认Artifact接线、协议分页证据及不扩大写权限边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |
 | 2 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 增加Windows原生四工具分层实现、平台后端选择、取消/预算/Revision和真实Runner攻击/Server/SDK测试；CI 34735529084通过 |
@@ -1009,3 +1014,22 @@ Windows复用原Process Owner，独立SDK需显式传入外部私有`git_state_d
 [`真实Git测试`](../../tests/product_config/test_git_baseline.py)验证完整摘要及Index保护。
 完整设计及边界见[`基准详设`](../changes/m09-r4-product-git-baseline.md)，Windows模拟不构成原生验证。
 带输出保护源的Windows用途拒绝原始摘要证明，不能用脱敏后的观察或关闭保护替代原始对象统计。
+
+### Git平台输入模拟与Python3.13兼容验证
+
+Python3.13在Windows路径语义下将只有一个前导斜杠或反斜杠的路径判定为非绝对路径，
+来源为[Python官方`os.path.isabs`版本说明](https://docs.python.org/3.13/library/os.path.html#os.path.isabs)。
+旧离线夹具把POSIX临时路径直接作为模拟Windows根，因而触发既有仓库根拒绝规则；
+该失败不证明原生Windows运行时存在缺陷。
+
+[`离线契约测试`](../../tests/tools/test_git_delivery_reader.py)在模拟NT分支使用带盘符的
+`PureWindowsPath("C:/workspace/工程")`，并以Git正斜杠与CRLF构造根观察；POSIX分支仍使用真实临时目录。
+夹具只替换进程创建端口、平台标识和根输入，不替换`repository_root_matches`或跳过根校验。
+无盘符、不同盘符、子目录、盘符相对路径、父目录和多余行六种非法观察分别覆盖普通读取与交付读取，
+共12个负例，均要求`path_denied`且不继续配置或状态查询。
+
+验证范围为macOS上的Python3.12/3.13离线平台合同，以及临时仓库中的真实Git读取和产品交付基准回归。
+这些证据不构成原生Windows进程、NTFS、SDK或消费者环境验收，也不关闭R4或商业发布门禁。
+本项仅修正测试夹具，不变更生产代码、预算、Schema或锁文件；
+原失败、后继结果、精确受测字节和审阅范围见
+[Git平台输入验证记录](../validation/git-query-platform-input-2026-09-30-v1/README.md)。

@@ -1,0 +1,445 @@
+{
+  "schema": "harnessix.platform-test-input-validation/v1",
+  "source_base_revision": "5d8216b07415b608e416add233f5cca76e5a09ff",
+  "final_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "revision_semantics": "tested_uncommitted_worktree_bytes_equal_actual_source_commit",
+  "host": {
+    "system": "Darwin",
+    "release": "27.0.0",
+    "machine": "arm64"
+  },
+  "git_version": "git version 2.53.0",
+  "git_binary": {
+    "bytes": 434,
+    "sha256": "26a755d0ab5dddc2689ae3e8a8c3520041d0075a860156d5d8c13cc4fdecb85d"
+  },
+  "test_umask": "022",
+  "private_directory_mode": "0700",
+  "private_artifact_mode": "0600",
+  "private_evidence_locator": "Harnessix/verification/git-query-platform-input-20260930-v1",
+  "run_directory": "closeout-platform-input-20260930T123710Z",
+  "official_change_source": "https://docs.python.org/3.13/library/os.path.html#os.path.isabs",
+  "tested_source_sha256": {
+    "tests/tools/test_git.py": "bbfb8051f5f1ad1cd1b9aa32fb3cf969ffe407e4d0c65fa80a5df245c60c093c",
+    "tests/tools/test_git_platform_contracts.py": "6369e0c913fb628cf55f60647c7364e9247e1da592389d63f6c48b946123dab3",
+    "tests/tools/test_git_delivery_reader.py": "2b952296ac81159d895bbb17bb538a4ccfcb0f0c6c6480db89d862647927570d",
+    "tests/product_config/test_git_baseline.py": "403fb7f5a01e8624ef14861a5d7c7c28a3342050f48d4a493c35f92cc5183479",
+    "src/harnessix/tools/git.py": "45d697d0aefa23eb91112f0dbe40ee94d077081d8bbd26a394ac281d1847d120",
+    "src/harnessix/processes/git_read_windows.py": "10ca6adb5251b34c5fae5020d68f65cc0644765c6a9ef70019b0a1f4e17ca866",
+    "src/harnessix/product_config/git_baseline.py": "06149a7c09b7bd7f0a8e6d07468648d684c15a90405acc42ece3cea3e355d677",
+    "src/harnessix/product_config/git_baseline_contracts.py": "59b21be756006c3240b32cf3d96b93b24adf6c5c2fa27eb33dddd44d7d6104d2",
+    "uv.lock": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+    "tests/product_config/test_product_patch_rollback.py": "825eebc8b56e5d5ffbb6fcf92fe38d9fb24483bdcea83be21e5135dcaedab0a0"
+  },
+  "input_snapshot": {
+    "algorithm": "sha256",
+    "encoding": "sorted-path-space-sha256-newline-utf8",
+    "file_count": 933,
+    "tree_sha256": "29e1c935d140536383653beef4e5fa01e4a8dfa0d169ab1a71baf35e87812647"
+  },
+  "input_snapshot_artifact": {
+    "path": "closeout-platform-input-20260930T123710Z/run.json",
+    "bytes": 176993,
+    "sha256": "e85ae7c1a9daea510e82f7e9ff70f8812b21b9e6e03db4e96c47e9ed627b1079"
+  },
+  "snapshot_file_count_is_not_test_coverage": true,
+  "unchanged_inputs": {
+    "src": true,
+    "spec": true,
+    "governance": true,
+    "scripts": true,
+    "benchmarks": true,
+    "uv.lock": true,
+    "pyproject.toml": true
+  },
+  "production_diff_from_base": [],
+  "original_source_sha256": {
+    "src/harnessix/tools/git.py": "45d697d0aefa23eb91112f0dbe40ee94d077081d8bbd26a394ac281d1847d120",
+    "src/harnessix/processes/git_read_windows.py": "10ca6adb5251b34c5fae5020d68f65cc0644765c6a9ef70019b0a1f4e17ca866",
+    "tests/tools/test_git_delivery_reader.py": "ec483fb2af2c52c7afd91ccf7268a60f1ed14ee12a5247638aa423a3808dc39c"
+  },
+  "original_source_artifact": {
+    "path": "source-before.json",
+    "bytes": 333,
+    "sha256": "38bc99ca7631bd56ed5726076d0f563e5bcea5685453d4c5c86feb882a262599"
+  },
+  "original_failed_nodeids": [
+    "tests/tools/test_git_delivery_reader.py::test_generated_queries_keep_all_fixed_guards_offline[status-False-nt]",
+    "tests/tools/test_git_delivery_reader.py::test_generated_queries_keep_all_fixed_guards_offline[status-True-nt]",
+    "tests/tools/test_git_delivery_reader.py::test_generated_queries_keep_all_fixed_guards_offline[worktree-False-nt]",
+    "tests/tools/test_git_delivery_reader.py::test_generated_queries_keep_all_fixed_guards_offline[worktree-True-nt]",
+    "tests/tools/test_git_delivery_reader.py::test_generated_queries_keep_all_fixed_guards_offline[staged-False-nt]",
+    "tests/tools/test_git_delivery_reader.py::test_generated_queries_keep_all_fixed_guards_offline[staged-True-nt]"
+  ],
+  "prior_evidence": {
+    "original-python313": {
+      "counts": {
+        "tests": 12,
+        "failures": 6,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 6
+      },
+      "collected_by_module": {
+        "tests.tools.test_git_delivery_reader": 12
+      },
+      "log": {
+        "path": "original-python313.log",
+        "bytes": 20977,
+        "sha256": "ba5423b3b5aa9ab571ee1320663fee97684c31da53cba45bc3643e3e4d9f405d"
+      },
+      "junit": {
+        "path": "original-python313.xml",
+        "bytes": 22158,
+        "sha256": "84f89f24fe489f366b86c574e77d2b56abcada10567d84eb946f3f8da42cd995"
+      }
+    },
+    "fixed-python312": {
+      "counts": {
+        "tests": 71,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 71
+      },
+      "collected_by_module": {
+        "tests.tools.test_git_delivery_reader": 53,
+        "tests.tools.test_git_platform_contracts": 18
+      },
+      "log": {
+        "path": "fixed-python312.log",
+        "bytes": 250,
+        "sha256": "459199929865cf6d731db4afa880e908ad1e047f61b5248cba33cf33f71e4b27"
+      },
+      "junit": {
+        "path": "fixed-python312.xml",
+        "bytes": 12023,
+        "sha256": "8cc802fb412928399bb72451d119772020d343931dafd0b55bad7f67e41b8581"
+      }
+    },
+    "fixed-python313": {
+      "counts": {
+        "tests": 71,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 71
+      },
+      "collected_by_module": {
+        "tests.tools.test_git_delivery_reader": 53,
+        "tests.tools.test_git_platform_contracts": 18
+      },
+      "log": {
+        "path": "fixed-python313.log",
+        "bytes": 250,
+        "sha256": "cdc6762d313a087f91b97767339c65c269b6700d960b45a463dc37ff5a4e599c"
+      },
+      "junit": {
+        "path": "fixed-python313.xml",
+        "bytes": 12023,
+        "sha256": "03f14c883ad9325f4ee1358619393f1f0ed9a72dfe34a93e8989cc5c31a88745"
+      }
+    }
+  },
+  "prior_fixed_source_binding": "not_independently_recorded_do_not_reuse_as_final_candidate_binding",
+  "regression": {
+    "python312": {
+      "python_version": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+      "python_binary": {
+        "bytes": 6917232,
+        "sha256": "4a58a6e7d4480b77a9f6fdac21b8bda1dc38a3f85136f854b1e64bf98b917064"
+      },
+      "source_package_in_requested_worktree": true,
+      "exit_code": 0,
+      "wall_seconds": 29.13,
+      "counts": {
+        "tests": 128,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 128
+      },
+      "collected_by_module": {
+        "tests.tools.test_git": 7,
+        "tests.tools.test_git_platform_contracts": 18,
+        "tests.tools.test_git_delivery_reader": 53,
+        "tests.product_config.test_git_baseline": 50
+      },
+      "source_binding_sha256": "29e1c935d140536383653beef4e5fa01e4a8dfa0d169ab1a71baf35e87812647",
+      "source_unchanged_during_run": true,
+      "log": {
+        "path": "closeout-platform-input-20260930T123710Z/regression-python312.log",
+        "bytes": 646,
+        "sha256": "1522b5f9e64e1c58c5342ec69b4cc809c6abfab9d13fbd9a05eb4ffed5b41017"
+      },
+      "junit": {
+        "path": "closeout-platform-input-20260930T123710Z/regression-python312.xml",
+        "bytes": 20428,
+        "sha256": "2d38c5176b6d7da887c30581f0cd4f72055f387b447ad415d752aa73d94c28a7"
+      },
+      "original_failed_nodeids_now_passed": 6,
+      "new_negative_nodeids_passed": 12
+    },
+    "python313": {
+      "python_version": "3.13.8 (main, Oct  7 2025, 16:19:32) [Clang 20.1.4 ]",
+      "python_binary": {
+        "bytes": 49968,
+        "sha256": "8c8eb4a6ec292f97e28a34d9f35b1bf9e6422fc5e52bc3b7d8db73d4466e092f"
+      },
+      "source_package_in_requested_worktree": true,
+      "exit_code": 0,
+      "wall_seconds": 28.631,
+      "counts": {
+        "tests": 128,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 128
+      },
+      "collected_by_module": {
+        "tests.tools.test_git": 7,
+        "tests.tools.test_git_platform_contracts": 18,
+        "tests.tools.test_git_delivery_reader": 53,
+        "tests.product_config.test_git_baseline": 50
+      },
+      "source_binding_sha256": "29e1c935d140536383653beef4e5fa01e4a8dfa0d169ab1a71baf35e87812647",
+      "source_unchanged_during_run": true,
+      "log": {
+        "path": "closeout-platform-input-20260930T123710Z/regression-python313.log",
+        "bytes": 615,
+        "sha256": "7148b042ec208f4a2664a8f671360f2248da156ee00f8a16c08643c5bb39a154"
+      },
+      "junit": {
+        "path": "closeout-platform-input-20260930T123710Z/regression-python313.xml",
+        "bytes": 20428,
+        "sha256": "7258b5fe90fed96088950408b478d7dbc5ebb1d8367708b55ca694eeaee3f22d"
+      },
+      "original_failed_nodeids_now_passed": 6,
+      "new_negative_nodeids_passed": 12
+    }
+  },
+  "selected_tests": [
+    "tests/tools/test_git.py",
+    "tests/tools/test_git_platform_contracts.py",
+    "tests/tools/test_git_delivery_reader.py",
+    "tests/product_config/test_git_baseline.py"
+  ],
+  "test_environment": {
+    "isolated_home": true,
+    "isolated_temp": true,
+    "credential_environment_not_inherited": true,
+    "global_git_config_disabled": true,
+    "bytecode_disabled": true,
+    "pytest_cache_disabled": true,
+    "plugin_autoload_disabled": true,
+    "asyncio_plugin_explicit": true
+  },
+  "gates": {
+    "ruff-format": {
+      "status": "pass",
+      "exit_code": 0,
+      "log": "closeout-platform-input-20260930T123710Z/ruff-format.log",
+      "files": [
+        "tests/tools/test_git_delivery_reader.py",
+        "tests/product_config/test_product_patch_rollback.py"
+      ],
+      "bytes": 26,
+      "sha256": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938"
+    },
+    "ruff-check": {
+      "status": "pass",
+      "exit_code": 0,
+      "log": "closeout-platform-input-20260930T123710Z/ruff-check.log",
+      "files": [
+        "tests/tools/test_git_delivery_reader.py",
+        "tests/product_config/test_product_patch_rollback.py"
+      ],
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "schema": {
+      "status": "pass",
+      "exit_code": 0,
+      "log": "closeout-20260930T122645Z/schema.log",
+      "bytes": 28,
+      "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+    },
+    "secret-self-check": {
+      "status": "pass",
+      "exit_code": 0,
+      "log": "closeout-20260930T122645Z/secret-self-check.log",
+      "bytes": 56,
+      "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+    },
+    "documentation": {
+      "status": "pass",
+      "report": "closeout-platform-input-20260930T123710Z/documentation-final.json",
+      "changed_path_discovery": "explicit_eight_path_allowlist_without_untracked_enumeration",
+      "mermaid_rendered": false,
+      "changed_path_count": 8,
+      "document_count": 420,
+      "link_count": 10447,
+      "findings": [],
+      "bytes": 207,
+      "sha256": "e51cf8beadfb4aa07018e51a2e2a42636b3a368676182a5938e4a53f5e4a4f21"
+    },
+    "secret-scan": {
+      "status": "pass",
+      "report": "closeout-platform-input-20260930T123710Z/secret-scan-final.json",
+      "scope": "eight_delivery_files_only",
+      "repository_wide_claimed": false,
+      "wheel_scan_claimed": false,
+      "inputs": 8,
+      "complete": true,
+      "findings": 0,
+      "scanner_self_check_reused": true
+    }
+  },
+  "old_evidence_bytes_preserved": true,
+  "real_model_requests": 0,
+  "budget_ledger_read_or_modified": false,
+  "native_windows_validation_claimed": false,
+  "commercial_release_claimed": false,
+  "gate_source_sha256": {
+    "scripts/documentation_check.py": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb",
+    "scripts/generate_specs.py": "ae39dbf5eef69aa823440ccd547d0bf2cbcb60a59204201e86669c5c294fbbeb",
+    "scripts/secret_scan.py": "826b35da6b942045e5fda1a9b9e38864b79b9a24942100060dbd900a0d6965a1",
+    "scripts/secret_scan_contracts.py": "03ca5a23bf471aac55d689bb13375c789ee60ff482ce9941baad7d4f0b56069d",
+    "scripts/secret_scan_archives.py": "d4bcc2f7cf4741a25d4a819c9bce7f0979f6c6e2fbdc565ab5e994155e650675"
+  },
+  "source_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "commit_scope": "two_test_files_only",
+  "tested_bytes_match_source_commit": true,
+  "test_input_compatibility_fixes": [
+    "git_simulated_nt_drive_qualified_root",
+    "rollback_bounded_parameter_ids"
+  ],
+  "production_src_scripts_spec_lock_equal_base": true,
+  "earlier_git_regression": {
+    "run_directory": "closeout-20260930T122645Z",
+    "counts_per_version": {
+      "python312": 128,
+      "python313": 128
+    },
+    "source_binding_sha256": "73eacf49f24f4036cdafec11567f81c29e3ee240b021a100be5e312204515032",
+    "retained": true,
+    "superseded_binding_reason": "rollback_helper_ids_changed"
+  },
+  "original_windows_job": {
+    "job_id": 109857490289,
+    "conclusion": "failure",
+    "first_error_stage": "pytest_setup_current_test_environment_assignment",
+    "not_first_production_transaction_error": true,
+    "environment_variable": "PYTEST_CURRENT_TEST",
+    "limit_characters": 32767,
+    "nodeid_lengths": [
+      600129,
+      2400127
+    ],
+    "setup_teardown_cascade_observed": true,
+    "log": {
+      "private_locator": "Harnessix/verification/provider-engineering-20260930-v5/previous-windows-job.log",
+      "bytes": 12275494,
+      "sha256": "1f3fb8b624c87a6027bbc769a9dbc6b89f5200da05a0cb64bb2f7a87b0cb2d86"
+    },
+    "log_error_signatures": {
+      "pytest_current_test": true,
+      "runner_update_current_test_var": true,
+      "environment_limit_32767": true
+    },
+    "replacement_native_ci_success_claimed": false
+  },
+  "rollback_collection": {
+    "original": {
+      "data": {
+        "all_items": 22,
+        "selected_items": 2,
+        "selected_nodeid_lengths": [
+          600129,
+          2400127
+        ],
+        "windows_environment_limit_characters": 32767,
+        "source_sha256": "1fb6e3a251e8a84201a5626c816414b6f167c259d94c56363cdb792ba7f47770",
+        "test_execution": false
+      },
+      "private_locator": "Harnessix/verification/provider-engineering-20260930-v5/rollback-original-collection.json",
+      "bytes": 268,
+      "sha256": "a2c38566359ed0ead174550ecb54566aab2dedf84171660a1d6041e97b5a7ff4"
+    },
+    "fixed": {
+      "data": {
+        "all_items": 22,
+        "selected_items": 2,
+        "selected_nodeid_lengths": [
+          137,
+          133
+        ],
+        "selected_parameter_ids": [
+          "large-text",
+          "binary"
+        ],
+        "source_sha256": "825eebc8b56e5d5ffbb6fcf92fe38d9fb24483bdcea83be21e5135dcaedab0a0",
+        "payload_sizes_unchanged": [
+          600001,
+          600000
+        ],
+        "test_execution": false
+      },
+      "private_locator": "Harnessix/verification/provider-engineering-20260930-v5/rollback-fixed-collection.json",
+      "bytes": 337,
+      "sha256": "408187fc61b1ea017d61dd8aa436b715dd26301d9725c8830ca804e5299d9335"
+    },
+    "only_ids_ast_change": true,
+    "test_body_assertions_and_payloads_unchanged": true,
+    "collection_is_execution": false
+  },
+  "rollback_independent_regression": {
+    "python312": {
+      "counts": {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 22
+      },
+      "rerun_by_git_validation": false,
+      "source_sha256": "825eebc8b56e5d5ffbb6fcf92fe38d9fb24483bdcea83be21e5135dcaedab0a0",
+      "short_parameter_ids_confirmed_in_junit": true,
+      "log": {
+        "private_locator": "Harnessix/verification/provider-engineering-20260930-v5/rollback-fixed-python312.log",
+        "bytes": 236,
+        "sha256": "03f03632f48b1a3f7bb37dce74b69d3c4c25793ecd17ee688b54adc2b217bb40"
+      },
+      "junit": {
+        "private_locator": "Harnessix/verification/provider-engineering-20260930-v5/rollback-fixed-python312.xml",
+        "bytes": 3766,
+        "sha256": "9430039149ffa77a2cebe5cf54deaa040712ba98cabc525a6e9f63708718ad0b"
+      }
+    },
+    "python313": {
+      "counts": {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 22
+      },
+      "rerun_by_git_validation": false,
+      "source_sha256": "825eebc8b56e5d5ffbb6fcf92fe38d9fb24483bdcea83be21e5135dcaedab0a0",
+      "short_parameter_ids_confirmed_in_junit": true,
+      "log": {
+        "private_locator": "Harnessix/verification/provider-engineering-20260930-v5/rollback-fixed-python313.log",
+        "bytes": 236,
+        "sha256": "10109b76c98f593c2b0d3b787bd167fe3775afde512e9c0d4495fb5f5ae08194"
+      },
+      "junit": {
+        "private_locator": "Harnessix/verification/provider-engineering-20260930-v5/rollback-fixed-python313.xml",
+        "bytes": 3766,
+        "sha256": "17600f30b6be94353e9007e13bd0fb8a5e5b0278be9e76d96ecf08c0ce23b6aa"
+      }
+    }
+  },
+  "project_git_commit_created_by_validation": false,
+  "project_git_push_by_validation": false
+}

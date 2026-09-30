@@ -1,0 +1,27 @@
+{
+  "scope": "two_platform_test_input_compatibility_fixes",
+  "source_base_revision": "5d8216b07415b608e416add233f5cca76e5a09ff",
+  "final_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "local_scoped_go": true,
+  "regression_passed": true,
+  "gate_results_complete": true,
+  "source_binding_unchanged_in_both_runs": true,
+  "original_failed_queries_now_passed": 6,
+  "new_boundary_negative_cases_per_version": 12,
+  "old_failure_preserved": true,
+  "production_code_changed": false,
+  "budgets_or_schema_or_lock_changed": false,
+  "native_windows_claimed_pass": false,
+  "R4_complete": false,
+  "commercial_release_gate_closed": false,
+  "open_checks": [
+    "documentation_review_and_commit",
+    "independent_new_native_windows_ci_and_acceptance"
+  ],
+  "source_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "tested_bytes_match_source_commit": true,
+  "original_windows_job_conclusion": "failure",
+  "rollback_independent_regression_passed_per_version": 22,
+  "rollback_tests_rerun": false,
+  "new_native_ci_success_claimed": false
+}

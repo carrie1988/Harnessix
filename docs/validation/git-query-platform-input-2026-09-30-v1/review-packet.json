@@ -1,0 +1,70 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "scope": "two_platform_test_input_compatibility_fixes",
+  "source_base_revision": "5d8216b07415b608e416add233f5cca76e5a09ff",
+  "final_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "allowed_repository_changes": [
+    "tests/tools/test_git_delivery_reader.py",
+    "tests/product_config/test_product_patch_rollback.py",
+    "docs/modules/tools.md",
+    "docs/validation/git-query-platform-input-2026-09-30-v1/"
+  ],
+  "required_reviews": [
+    "drive_qualified_nt_input_without_root_check_mock",
+    "twelve_wrong_root_cases_stop_before_configuration",
+    "unchanged_default_and_delivery_command_environment_limits",
+    "same_source_binding_in_python312_and_python313",
+    "production_budget_schema_and_lock_unchanged",
+    "final_manifest_bytes_and_candidate_diff",
+    "rollback_ids_only_payload_and_assertions_unchanged",
+    "original_windows_job_failure_and_short_nodeid_collection",
+    "actual_test_source_commit_matches_tested_bytes",
+    "separate_original_python313_fail_and_windows_job_fail_artifacts"
+  ],
+  "unchanged_inputs": {
+    "src": true,
+    "spec": true,
+    "governance": true,
+    "scripts": true,
+    "benchmarks": true,
+    "uv.lock": true,
+    "pyproject.toml": true
+  },
+  "evidence_files": [
+    "README.md",
+    "facts.json",
+    "verification.json",
+    "manifest.json"
+  ],
+  "decisions": {
+    "local_scoped": "go",
+    "native_windows": "not_claimed",
+    "commercial_release": "not_claimed",
+    "new_native_windows_ci": "not_claimed"
+  },
+  "remaining_checks": [
+    "documentation_review_and_commit",
+    "independent_new_native_windows_ci_and_acceptance"
+  ],
+  "excluded_work": [
+    "full_ci_matrix",
+    "full_repository_regression",
+    "new_adr_or_architecture_diagram",
+    "wheel_build_and_scan",
+    "model_or_provider_call",
+    "credential_or_budget_ledger_read",
+    "main_worktree_user_untracked_tests_security",
+    "git_validation_creating_project_commit_or_push",
+    "native_ci_requeue"
+  ],
+  "source_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "tested_bytes_match_source_commit": true,
+  "source_commit_files": [
+    "tests/product_config/test_product_patch_rollback.py",
+    "tests/tools/test_git_delivery_reader.py"
+  ],
+  "documentation_write_scope": [
+    "docs/modules/tools.md",
+    "docs/validation/git-query-platform-input-2026-09-30-v1/"
+  ]
+}

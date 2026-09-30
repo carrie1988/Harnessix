@@ -1,0 +1,48 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "source_base_revision": "5d8216b07415b608e416add233f5cca76e5a09ff",
+  "source_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "final_commit_revision": "75c4b7ddfe91824bcb667023c003e4aad18992e4",
+  "tested_bytes_match_source_commit": true,
+  "self_hash_excluded": true,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7057,
+      "sha256": "c9e6c735d2d2eb4dbdbaa17694174b7d83cc40e9b6f5765493d13cfb71dd55dd"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 17154,
+      "sha256": "749efaf5600095dd0c7b55fa07e08707b95b84edd09cb0b8e8e8296f95bfb2b9"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1071,
+      "sha256": "469333221eab8235171290edb37b66892ca016762873637253062c2daa47e50c"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 2395,
+      "sha256": "6588f7d53e870a34fb9cbec1145b892b2394f958bca0a1cf1914f8b04972e709"
+    }
+  ],
+  "repository_files": [
+    {
+      "path": "tests/tools/test_git_delivery_reader.py",
+      "bytes": 27065,
+      "sha256": "2b952296ac81159d895bbb17bb538a4ccfcb0f0c6c6480db89d862647927570d"
+    },
+    {
+      "path": "tests/product_config/test_product_patch_rollback.py",
+      "bytes": 17436,
+      "sha256": "825eebc8b56e5d5ffbb6fcf92fe38d9fb24483bdcea83be21e5135dcaedab0a0"
+    },
+    {
+      "path": "docs/modules/tools.md",
+      "bytes": 66241,
+      "sha256": "c4222f6592cd1c9917a64d1874ea3667430444df1f9db69ffe33d367f56c245b"
+    }
+  ]
+}
