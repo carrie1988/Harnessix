@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 43
+version: 44
 code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners:
   - core
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_baseline.py
   - tests/product_config/test_profile_argument_feedback.py
   - tests/product_config/test_profile_argument_feedback_sdk.py
   - tests/product_config/test_git_delivery_source.py
@@ -2227,3 +2228,26 @@ Plan、Approval、Store与错误公开合同均不增加字段。
 
 [`统一验证材料`](../validation/git-delivery-source-2026-09-30-v1/README.md)包含真实产品Patch、默认认证SDK重开、
 原Git HEAD/Index不变、负对照、安装包字节与回归结果；离线ScriptedProvider不计为真实模型质量。
+
+## 43. 原认证来源与Git HEAD基准绑定
+
+[`git_baseline.py`](../../src/harnessix/product_config/git_baseline.py)先调用上述唯一来源Reader，
+再核对宿主Git端口与原Thread的原生Workspace根身份。没有来源归属或根身份一致性时，不发出Git查询。
+独立交付读取用途固定禁止对象替换、自动抓取及Git协议；不新增模型命令、配置开关或Catalog工具。
+
+流程为：固定Commit及其Tree → 完整Index/Status观察 → 各选中路径的stage、flags与HEAD普通blob
+→ 完整流SHA/长度/模式匹配首before → 再次Git观察与最终Workspace Snapshot核验。
+不把所有当前文件或用户Index作为交付集合，无关暂存/未暂存内容只观察摘要、不读正文进入凭证。
+[`git_baseline_contracts.py`](../../src/harnessix/product_config/git_baseline_contracts.py)定义严格冻结对象及规范Digest；
+SHA-1/256对象ID不代替Workspace内容SHA-256，凭证也不代替认证、新Diff或新批准。
+
+单命令仍为5秒、全流程60秒；超时、取消、完整流失败、配置拒绝或状态漂移不签发对象，不自动修复Index。
+前缀仍至多1MiB；交付专用停流护栏9MiB，仅用于完整观察原合法8MiB对象，不放宽镜像容量。
+Windows沿原Job Owner事实，不把本地模拟或平台skip视为原生验收。
+原Owner只认证脱敏后摘要；带输出保护源的Windows交付用途明确拒绝签发，不能停用脱敏绕过。
+后继必须先建立原始对象统计与脱敏发布分离的正式认证观察。
+该对象不新增业务持久化、迁移或备份路径；后续Git写入必须先完成正式备份闭合布局。
+
+总体图、数据流、时序、字段、伪代码、失败及部署边界见
+[`正式详设`](../changes/m09-r4-product-git-baseline.md)，真实Git与原产品Patch专项见
+[`test_git_baseline.py`](../../tests/product_config/test_git_baseline.py)。**本模块仍未接入产品Commit/Checkpoint，R4保持开放。**

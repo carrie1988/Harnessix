@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 29
+version: 30
 code_revision: 6d77b2ce453e5ebd0166c17dab7f20e238920a0e
 owners:
   - core
@@ -1704,3 +1704,22 @@ NUL及无效UTF-8均不经CRT转换。脱敏、输出额度、部分写入和原
 路径观察失败时只有同一Handle链接数已为零才归入周转，不扩大通用Windows Workspace规则。
 原生打开/元数据Barrier和固定旧绑定负对照必须实际成立，才能验收该候选；
 原SDK Git链偶发失败尚不能归因于这一窗口，后继原焦点成功不替代候选专项结果。
+
+## Git交付用途与原进程流合同
+
+[`HostProcessRuntime`](../../src/harnessix/processes/runtime.py)只扩充宿主环境键名白名单：
+`GIT_NO_REPLACE_OBJECTS`、`GIT_NO_LAZY_FETCH`、`GIT_ALLOW_PROTOCOL`。
+白名单本身不进入原绑定摘要；普通Git的有效环境和限额未改变，因此默认宿主绑定载荷保持。
+模型不能通过此白名单指定环境，交付用途的环境与命令由原宿主装配固定。
+
+[`WindowsGitReadProcess`](../../src/harnessix/processes/git_read_windows.py)只在交付用途启用
+`purpose=git-delivery-baseline/v1`绑定、禁用lazy fetch及9MiB ProcessSpec输出护栏；
+原默认绑定、8MiB输出阈值、Owner、Lease、原始字节及脱敏发布合同不变。
+POSIX与Windows完整读取仍要求正常退出、完整stdout/stderr EOF；1MiB前缀截断不等于完整流截断。
+产品使用原`observed_bytes/observed_sha256`核对8MiB以内原对象，不扩大捕获前缀或可接受镜像容量。
+原Windows Owner的观察是脱敏后字节；交付用途存在输出保护源时，在任何Plan/Owner创建前明确拒绝，
+不能停用落盘保护或将脱敏摘要当作原始blob证明。正式原始统计与安全发布分离合同仍是后继必要工作。
+
+原Windows Execution/Owner输出属于正式既有Process持久布局；本切片不创建Git业务账本或第二套进程模型。
+详见[`基准详细设计`](../changes/m09-r4-product-git-baseline.md)及
+[`离线端口契约`](../../tests/tools/test_git_delivery_reader.py)；模拟不替代同候选原生Job/NTFS验收。

@@ -61,7 +61,7 @@ WINDOWS_GIT_ARGUMENTS = (
 )
 
 
-def _environment(executable: Path) -> dict[str, str]:
+def _environment(executable: Path, *, for_delivery: bool = False) -> dict[str, str]:
     system_root = os.environ.get("SystemRoot", r"C:\Windows")
     return {
         "SystemRoot": system_root,
@@ -77,6 +77,7 @@ def _environment(executable: Path) -> dict[str, str]:
         "GIT_TERMINAL_PROMPT": "0",
         "GIT_NO_REPLACE_OBJECTS": "1",
         "GIT_ALLOW_PROTOCOL": "",
+        **({"GIT_NO_LAZY_FETCH": "1"} if for_delivery else {}),
     }
 
 
@@ -100,6 +101,7 @@ class _GitReadConfiguration:
     capability: ProcessCapabilityProbe
     fingerprint: str
     output_redaction: OutputRedactionSource | None
+    for_delivery: bool = False
 
 
 class WindowsGitReadProcess:
@@ -111,6 +113,8 @@ class WindowsGitReadProcess:
         executable: Path,
         state_directory: Path | None,
         output_redaction: OutputRedactionSource | None = None,
+        *,
+        for_delivery: bool = False,
     ) -> None:
         with pin_windows_git(root, executable) as binding:
             self.binding_fingerprint = binding.fingerprint
@@ -127,6 +131,7 @@ class WindowsGitReadProcess:
                 "capability": capability.digest,
                 "executable": os.path.normcase(str(executable)),
                 "state": os.path.normcase(str(state_directory)),
+                **({"purpose": "git-delivery-baseline/v1"} if for_delivery else {}),
             }
         )
         self._configuration = _GitReadConfiguration(
@@ -136,6 +141,7 @@ class WindowsGitReadProcess:
             capability,
             self.binding_fingerprint,
             output_redaction,
+            for_delivery,
         )
         self._closed = False
 
@@ -156,6 +162,11 @@ class WindowsGitReadProcess:
         cancel.checkpoint()
         if self._closed or request.program != "git":
             raise KernelError("process_program_denied", "Git只读端口不可执行该请求")
+        if self._configuration.for_delivery and self._configuration.output_redaction is not None:
+            # 原Owner只认证脱敏后流摘要，不能冒充原始Git blob；不得关闭原落盘保护。
+            raise KernelError(
+                "git_baseline_raw_observation_required", "Git基准需要原始字节观察证明"
+            )
         if request.timeout_seconds > 5.0:
             raise KernelError("process_budget_exceeded", "Git读取期限超过宿主上限")
         operation = CancelToken()
@@ -186,6 +197,7 @@ async def _execute_git(
                 "capability": config.capability.digest,
                 "executable": os.path.normcase(str(config.executable)),
                 "state": os.path.normcase(str(config.state)),
+                **({"purpose": "git-delivery-baseline/v1"} if config.for_delivery else {}),
             }
         )
         if current != config.fingerprint:
@@ -193,12 +205,12 @@ async def _execute_git(
         async with WindowsProcessSupervisor(
             config.state / "process-owner", output_redaction=config.output_redaction
         ) as supervisor:
-            environment = _environment(config.executable)
+            environment = _environment(config.executable, for_delivery=config.for_delivery)
             spec = build_process_spec(
                 invocation="argv",
                 argv=(str(config.executable), *request.arguments),
                 timeout_seconds=request.timeout_seconds,
-                output_bytes=8 * MAX_CAPTURE_BYTES,
+                output_bytes=(9 if config.for_delivery else 8) * MAX_CAPTURE_BYTES,
             )
             plan = _git_read_plan(config, spec, environment)
             # 与正式备份共用原Plan/Process目录；不能留下只有Lease摘要的孤立事实。

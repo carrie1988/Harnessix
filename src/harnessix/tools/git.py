@@ -57,6 +57,26 @@ _GLOBAL_ARGUMENTS: Final = (
 )
 
 
+def _git_arguments(*, for_delivery: bool) -> tuple[str, ...]:
+    """按原生平台冻结参数；交付基准目的不改变原默认读取合同。"""
+    arguments: tuple[str, ...] = _GLOBAL_ARGUMENTS
+    if os.name == "nt":
+        from harnessix.processes.git_read_windows import WINDOWS_GIT_ARGUMENTS
+
+        arguments = WINDOWS_GIT_ARGUMENTS
+    if for_delivery:
+        arguments += (
+            "--no-replace-objects",
+            "-c",
+            "core.fsmonitor=",
+            "-c",
+            "core.attributesFile=" + os.devnull,
+            "-c",
+            "submodule.recurse=false",
+        )
+    return arguments
+
+
 class GitReadRuntime:
     """对一个明确仓库根和一个受信Git可执行文件提供两项只读能力。"""
 
@@ -67,6 +87,7 @@ class GitReadRuntime:
         *,
         state_directory: Path | None = None,
         output_redaction: OutputRedactionSource | None = None,
+        for_delivery: bool = False,
     ) -> None:
         self._root = root.absolute() if os.name == "nt" else root.resolve(strict=True)
         if any(ord(character) < 32 or ord(character) == 127 for character in str(self._root)):
@@ -74,17 +95,20 @@ class GitReadRuntime:
         self._executable = executable
         self._state_directory = state_directory
         self._output_redaction = output_redaction
-        self._global_arguments: tuple[str, ...] = _GLOBAL_ARGUMENTS
-        if os.name == "nt":
-            from harnessix.processes.git_read_windows import WINDOWS_GIT_ARGUMENTS
-
-            self._global_arguments = WINDOWS_GIT_ARGUMENTS
+        self._for_delivery = for_delivery
+        self._global_arguments = _git_arguments(for_delivery=for_delivery)
         sample = self._runtime()
         self._binding_fingerprint = sample.binding_fingerprint
 
     def contract(self) -> dict[str, object]:
         return {
-            "implementation": "git-read/windows-job-v1" if os.name == "nt" else "git-read/v1",
+            "implementation": (
+                "git-baseline-read/v1"
+                if self._for_delivery
+                else "git-read/windows-job-v1"
+                if os.name == "nt"
+                else "git-read/v1"
+            ),
             "binding": self._binding_fingerprint,
             "timeout_seconds": _TIMEOUT_SECONDS,
             "max_capture_bytes": MAX_CAPTURE_BYTES,
@@ -102,7 +126,11 @@ class GitReadRuntime:
 
     def _runtime(self) -> HostProcessRuntime | WindowsGitReadProcess:
         return _build_git_process(
-            self._root, self._executable, self._state_directory, self._output_redaction
+            self._root,
+            self._executable,
+            self._state_directory,
+            self._output_redaction,
+            for_delivery=self._for_delivery,
         )
 
     async def execute(
@@ -206,9 +234,16 @@ async def _reject_git_helpers(runtime: GitReadRuntime, cancel: CancelToken) -> N
     )
     if result.stdout.truncated:
         raise ReadToolError("limit_exceeded")
-    for key in result.stdout.data().split(b"\0"):
-        if re.match(rb"^(?:include(?:if)?\.|filter\..*\.(?:clean|smudge|process)$)", key.lower()):
-            raise ReadToolError("path_denied")
+    if any(_git_helper_key(key) for key in result.stdout.data().split(b"\0")):
+        raise ReadToolError("path_denied")
+
+
+def _git_helper_key(key: bytes) -> bool:
+    """配置只读取键名；首检与交付双观察共用同一帮助器拒绝规则。"""
+    return (
+        re.match(rb"^(?:include(?:if)?\.|filter\..*\.(?:clean|smudge|process)$)", key.lower())
+        is not None
+    )
 
 
 def _build_git_process(
@@ -216,23 +251,38 @@ def _build_git_process(
     executable: Path,
     state_directory: Path | None,
     output_redaction: OutputRedactionSource | None,
+    *,
+    for_delivery: bool = False,
 ) -> HostProcessRuntime | WindowsGitReadProcess:
     if os.name == "nt":
         from harnessix.processes.git_read_windows import WindowsGitReadProcess
 
-        return WindowsGitReadProcess(root, executable, state_directory, output_redaction)
+        return WindowsGitReadProcess(
+            root, executable, state_directory, output_redaction, for_delivery=for_delivery
+        )
     # 延迟导入避免processes.runtime复用tools.runtime._drain时形成初始化环。
     from harnessix.processes.runtime import HostProcessRuntime
 
     return HostProcessRuntime(
         root,
         {"git": executable},
-        environment=_ENVIRONMENT,
+        environment={
+            **_ENVIRONMENT,
+            **(
+                {
+                    "GIT_NO_REPLACE_OBJECTS": "1",
+                    "GIT_NO_LAZY_FETCH": "1",
+                    "GIT_ALLOW_PROTOCOL": "",
+                }
+                if for_delivery
+                else {}
+            ),
+        },
         limits=ProcessLimits(
             max_timeout_seconds=_TIMEOUT_SECONDS,
             stdout_bytes=MAX_CAPTURE_BYTES,
             stderr_bytes=_STDERR_BYTES,
-            stop_output_bytes=8 * MAX_CAPTURE_BYTES,
+            stop_output_bytes=(9 if for_delivery else 8) * MAX_CAPTURE_BYTES,
         ),
     )
 

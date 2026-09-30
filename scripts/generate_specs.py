@@ -212,6 +212,7 @@ from harnessix.product_config.contracts import (
     ProfileSelection,
     ProviderFallbackDecision,
 )
+from harnessix.product_config.git_baseline_contracts import ProductGitDeliveryBaseline
 from harnessix.product_config.product_contracts import (
     ConfigurationDraft,
     ConfigurationWriteReceipt,
@@ -317,6 +318,10 @@ def generate_specs(output: Path) -> None:
     write_json(
         output / "product-git-delivery-source-v1.schema.json",
         ProductGitDeliverySource.model_json_schema(),
+    )
+    write_json(
+        output / "product-git-baseline-v1.schema.json",
+        ProductGitDeliveryBaseline.model_json_schema(),
     )
     write_json(output / "product-config-v1.schema.json", ProductConfigV1.model_json_schema())
     write_json(output / "product-config-v2.schema.json", ProductConfigV2.model_json_schema())

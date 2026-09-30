@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 403,
-    "physical_lines": 85021,
-    "logical_lines": 75224,
-    "documented_modules": 403,
-    "classes": 895,
-    "documented_classes": 377,
-    "functions": 3427,
-    "documented_functions": 651,
+    "source_files": 405,
+    "physical_lines": 85403,
+    "logical_lines": 75559,
+    "documented_modules": 405,
+    "classes": 899,
+    "documented_classes": 381,
+    "functions": 3441,
+    "documented_functions": 657,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1259,7 +1259,7 @@
       "path": "src/harnessix/processes/runtime.py",
       "qualname": "HostProcessRuntime",
       "kind": "class",
-      "line": 71,
+      "line": 75,
       "lines": 261,
       "documented": false
     },
@@ -1269,7 +1269,7 @@
       "path": "src/harnessix/processes/runtime.py",
       "qualname": "HostProcessRuntime.__init__",
       "kind": "function",
-      "line": 72,
+      "line": 76,
       "lines": 65,
       "documented": false,
       "decision_complexity": 21
@@ -1559,8 +1559,8 @@
       "path": "src/harnessix/tools/git.py",
       "qualname": "GitReadRuntime",
       "kind": "class",
-      "line": 60,
-      "lines": 102,
+      "line": 80,
+      "lines": 110,
       "documented": true
     },
     {
@@ -1569,7 +1569,7 @@
       "path": "src/harnessix/tools/git.py",
       "qualname": "_status",
       "kind": "function",
-      "line": 259,
+      "line": 309,
       "lines": 79,
       "documented": false,
       "decision_complexity": 25

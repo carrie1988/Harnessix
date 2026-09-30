@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 8
+version: 9
 code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners:
   - core
@@ -992,3 +992,20 @@ Windows复用原Process Owner，独立SDK需显式传入外部私有`git_state_d
 完整架构、流程、时序、字段、失败与源码—测试映射见
 [Windows Git详设](../changes/m09-r4-windows-native-git-read.md)。
 该实现候选不等于原生平台验收或R4完成。
+
+## Git交付基准的固定读取用途
+
+[`GitReadRuntime`](../../src/harnessix/tools/git.py)增加宿主内部`for_delivery=True`用途，
+由[`_git_arguments`](../../src/harnessix/tools/git.py)集中生成原生平台参数。
+默认false保留普通Status/Diff的参数、环境、绑定和8MiB停流阈值；不增加模型可控argv、pathspec或配置。
+新用途固定关闭replace object、lazy fetch及Git协议，并以新的宿主绑定区分。
+新用途以空值关闭fsmonitor，避免旧Git将false作为外部helper；普通用途原参数不变。
+前缀限额1MiB、单命令5秒不变，完整流护栏9MiB使原8MiB合法blob可达到EOF；镜像接受上限仍8MiB。
+
+[`产品基准Reader`](../../src/harnessix/product_config/git_baseline.py)只使用原认证来源路径和固定Tree/OID，
+原始blob使用`cat-file blob`而非filter/textconv。选中Index及flags与HEAD不符时拒绝，
+无关Index不加入修改集合；基准对象不是执行凭证，也不放宽原干净来源Git宿主合同。
+[`离线契约测试`](../../tests/tools/test_git_delivery_reader.py)独立重建默认绑定载荷和专用用途限额；
+[`真实Git测试`](../../tests/product_config/test_git_baseline.py)验证完整摘要及Index保护。
+完整设计及边界见[`基准详设`](../changes/m09-r4-product-git-baseline.md)，Windows模拟不构成原生验证。
+带输出保护源的Windows用途拒绝原始摘要证明，不能用脱敏后的观察或关闭保护替代原始对象统计。

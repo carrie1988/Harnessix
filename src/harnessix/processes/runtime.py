@@ -40,6 +40,10 @@ _ENV_NAMES = frozenset(
         "GIT_OPTIONAL_LOCKS",
         "GIT_PAGER",
         "GIT_TERMINAL_PROMPT",
+        # Git交付基准由宿主固定关闭替换、延迟获取和网络协议；不接受模型环境。
+        "GIT_NO_REPLACE_OBJECTS",
+        "GIT_NO_LAZY_FETCH",
+        "GIT_ALLOW_PROTOCOL",
     }
 )
 _DEFAULT_ENV = {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"}
