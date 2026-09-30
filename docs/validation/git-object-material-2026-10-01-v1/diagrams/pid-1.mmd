@@ -1,0 +1,12 @@
+flowchart TB
+  Candidate[基础解释器候选] --> Probe[独立真实身份探测]
+  Probe -->|启动PID等于worker PID 路径相同| Fixture[共享make_process固定命令]
+  Probe -->|身份不同或超时| Reject[夹具失败 不回退]
+  Fixture --> Plan[原Plan Spec和批准]
+  Plan --> Supervisor[原Supervisor]
+  Supervisor --> Owner[原控制Owner]
+  Owner --> Root[同一命令root与Python worker]
+  Root --> Child[标记子进程]
+  Child --> Grandchild[标记孙进程]
+  Owner --> Receipt[签名root PID和双流事实]
+  Receipt --> Lease[原Lease终态]

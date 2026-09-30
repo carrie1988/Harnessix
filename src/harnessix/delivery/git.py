@@ -73,6 +73,7 @@ def git_delivery_implementation_digest() -> str:
                     root / "git_checkpoint.py",
                     root / "git_command.py",
                     root / "git_identity.py",
+                    root / "git_object_material.py",
                     root / "git_contracts.py",
                     root / "git_store.py",
                     root / "git_store_schema.py",

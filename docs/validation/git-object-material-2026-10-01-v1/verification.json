@@ -1,0 +1,106 @@
+{
+  "schema": "harnessix.validation-verification/v1",
+  "status": "scoped_pass_not_commercial_go",
+  "final_candidate": {
+    "associated-reviewed": {
+      "scope": "Delivery + Process + product Git source/baseline/IO/material selectors",
+      "tests": 970,
+      "passed": 929,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 41,
+      "duration_seconds": 123.395,
+      "junit_sha256": "d23f1f26312972af7809e9b1d658805b08b9fc985f5424446abb1424057c7630",
+      "log_sha256": "5c1bd3724cb1b491954e4633df782da393ba9824a3f7beb0aa9aa9bee9d176e8"
+    },
+    "product-reviewed": {
+      "scope": "all Product Config; overlaps associated",
+      "tests": 851,
+      "passed": 822,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 29,
+      "duration_seconds": 132.644,
+      "junit_sha256": "c2ce815ed0510f6ab379adce045b5ec81e6c9f8313df4af27808755d75a26bbe",
+      "log_sha256": "1343ade208f92c9e8128b522bb78c2bf3ed15192f6aaf752cd6d41e46baefa42"
+    },
+    "installed-reviewed312": {
+      "scope": "outside-source final Wheel on macOS Python3.12.7; 209 material + 62 IO + 8 POSIX",
+      "tests": 279,
+      "passed": 279,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 37.717,
+      "junit_sha256": "239659497733712ed6331d56c7284b7ddc163e1dac56faebfbd7101f0b655066",
+      "log_sha256": "6dc4f1b5d7fe07a4ad965b6c831415ba57631dfb80cc6198dcc4f8b7ac696b4b"
+    },
+    "installed-reviewed313": {
+      "scope": "outside-source final Wheel on macOS Python3.13.8; same selectors",
+      "tests": 279,
+      "passed": 279,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 36.017,
+      "junit_sha256": "a0ad6292ee8f0bf60d2fec2d055c2c5debe48d78bce896cb17bc36c1f82f9f04",
+      "log_sha256": "5b3a76d971b032be5032abf0f3236075df5bb8b24d763b6a97cd5cd1552fadca"
+    },
+    "governance-reviewed-final": {
+      "scope": "all governance, final production source and complete new packet",
+      "tests": 302,
+      "passed": 302,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 27.763,
+      "junit_sha256": "c85bbc124782c0c3202df8ba2c4097799d3584a62443defa2380d4963e5b3008",
+      "log_sha256": "3d564ea25365187dc5562dc9eaabd8d02d20a347d44176f685d89971e4315773"
+    }
+  },
+  "review_repair": {
+    "scope": "real Owner identical-body/stderr rejection, single rotated source snapshot, empty tuple",
+    "tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 1.062,
+    "junit_sha256": "aa57854c9766c9417688ab04c969313d49947b4376560c83d7c2c5850f7efe4a",
+    "log_sha256": "3cf843fbb385157d8c594ce6b702c95346af11f3cbf40a636acd1746598bfbbe"
+  },
+  "preserved_original_failures": {
+    "identical-redaction-original": {
+      "scope": "real Owner original defect: valid raw/Lease/MAC, material wrongly returned",
+      "tests": 2,
+      "passed": 0,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 0.587,
+      "junit_sha256": "ae4dd26c499bb67bdc4e38ec5baf8b37a49692765de3d13d47a178280230a232",
+      "log_sha256": "0fb092c705436bc7bf8a6f1d1096afa996250736c163ea3c44f6c556e709604e"
+    },
+    "initial-documentation": {
+      "sha256": "13e2bfe056c7fb7f0e68cf2d90f1e434daaa1b374a209c5c33abb8acabb4d94f",
+      "reason": "new test reference missing before independent test file creation"
+    },
+    "original-windows-ci": {
+      "revision": "4e66135ba245ad5143673edfe3f73d6163b5b3f2",
+      "job_id": 110054323389,
+      "conclusion": "failure",
+      "raw_git_passed": 375,
+      "raw_git_failed": 2,
+      "raw_git_skipped": 6,
+      "failure": "lease root PID versus Python worker PID equality; process-stop assertions passed",
+      "url": "https://github.com/carrie1988/Harnessix/actions/runs/36764263388/job/110054323389",
+      "snapshot_sha256": "161c197e57f528717332d9c3e7f2f8a4e28b755f127fe7081608af5541a9ad19"
+    }
+  },
+  "governance": "passed_final_candidate",
+  "collection_overlap": "do_not_sum",
+  "native_candidate": "not_yet_observed",
+  "windows11_acceptance": false,
+  "r3_accepted": false,
+  "commercial_accepted": false
+}

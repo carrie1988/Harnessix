@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant F as 共享测试夹具
+  participant P as 独立真实探针
+  participant O as 原Supervisor及Owner
+  participant W as 受控root与worker
+  F->>P: 固定基础解释器及标准库程序
+  P-->>F: 启动PID worker PID 解释器路径
+  F->>F: PID相等 路径解析相同 否则拒绝
+  F->>O: 原Plan Spec和精确批准
+  O->>W: 原shell false启动及进程树约束
+  W-->>F: 父 子 孙PID就绪标记
+  F->>O: Token或Task取消
+  O->>W: 原平台整树停止
+  O-->>F: 原Lease及签名V2回执
+  F->>F: root PID与自报父PID相等 所有标记已停止
+  F->>F: 原MAC 退出原因 双流EOF 长度和SHA一致

@@ -1,0 +1,83 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "overall": "read_scope_local_pass_not_product_release",
+  "requirements": [
+    {
+      "id": "FIXED-OID",
+      "status": "pass",
+      "evidence": "209 material tests in final source and installed selectors; exact blob/tree/commit and SHA1/SHA256"
+    },
+    {
+      "id": "8MIB-READ",
+      "status": "pass_posix",
+      "evidence": "actual SHA1/SHA256 8MiB Git reads; +1 byte rejected"
+    },
+    {
+      "id": "ORIGINAL-APPROVAL",
+      "status": "pass_posix",
+      "evidence": "purpose/input/spec/cwd/type/timing negative controls; no automatic approval"
+    },
+    {
+      "id": "RAW-INTEGRITY",
+      "status": "pass_posix",
+      "evidence": "original V2 Lease/MAC, raw EOF/length/SHA and independent object OID"
+    },
+    {
+      "id": "PROTECTION-HIT",
+      "status": "pass_after_real_red_green",
+      "evidence": "two actual original failures, four repaired snapshot/body/stderr cases"
+    },
+    {
+      "id": "STANDARD-LIMITS",
+      "status": "pass",
+      "evidence": "original stdin/stdout/stderr 1MiB preserved"
+    },
+    {
+      "id": "ROOT-PID-FIXTURE",
+      "status": "pass_local_pending_native",
+      "evidence": "real base interpreter PID/path probe, actual forwarder negative, strong PID/MAC/EOF unchanged"
+    },
+    {
+      "id": "INSTALL-BYTES",
+      "status": "pass_posix",
+      "evidence": "455 package members and 414 modules match exact Wheel, outside-source 312/313"
+    },
+    {
+      "id": "FINAL-GOVERNANCE",
+      "status": "pass",
+      "evidence": "302 governance cases; documentation, source policy and Secret checks separately bound"
+    },
+    {
+      "id": "WINDOWS-NATIVE",
+      "status": "open_candidate",
+      "evidence": "old native failure retained; new code has not yet been observed on native Windows"
+    },
+    {
+      "id": "8MIB-WRITE-CAS",
+      "status": "open",
+      "evidence": "trusted input/material channel and durable CAS/object inventory remain mandatory"
+    },
+    {
+      "id": "FULL-GIT-BUSINESS",
+      "status": "open",
+      "evidence": "authenticated prefix, product Commit/Checkpoint and full backup/restore closure remain mandatory"
+    },
+    {
+      "id": "R3",
+      "status": "open",
+      "evidence": "no new paid request or complete real Trial in this increment"
+    },
+    {
+      "id": "COMMERCIAL-1.0",
+      "status": "open",
+      "evidence": "consumer Windows11, real quality, independent Beta and final same-candidate release gates remain required"
+    }
+  ],
+  "known_limits": [
+    "guarded host is not a kernel sandbox",
+    "matched full raw material cannot be published or claimed as durable business closure",
+    "current snapshot check is not a persisted authenticated hit field",
+    "whole repository Git ancestor backup boundary requires separate decision",
+    "final native results cannot be inferred from macOS skips or prior commits"
+  ]
+}

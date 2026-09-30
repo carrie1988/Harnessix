@@ -1,0 +1,12 @@
+flowchart TB
+  Source[原保护来源] -->|首次取值| Snapshot[本次内存快照]
+  Snapshot -->|同一tuple 原封套校验| Start[原Supervisor启动]
+  Start --> Owner[原Owner]
+  Owner -->|原始流统计| Receipt[MAC原始双流回执]
+  Owner -->|保护后有界持久化| Artifact[私有输出材料]
+  Receipt --> Integrity[EOF 长度 SHA验真]
+  Artifact --> Integrity
+  Snapshot -->|原secret_patterns| Match[双流命中检查]
+  Integrity --> Match
+  Match -->|未命中| Decode[唯一batch与Git OID解码]
+  Match -->|命中 包括等字节替换| Reject[固定拒绝 不返回对象]

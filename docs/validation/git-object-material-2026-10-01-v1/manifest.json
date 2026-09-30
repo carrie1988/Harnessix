@@ -1,0 +1,95 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 9264,
+      "sha256": "7deb00ea2d7e3dddc77068f214039077dac621051be4b74256d68182d88809b2"
+    },
+    {
+      "path": "diagrams/diagram-1.mmd",
+      "bytes": 526,
+      "sha256": "b033c78fe0829a5cc59dd2c8eebd788cc2140cd6f621be85e40d749139a27f79"
+    },
+    {
+      "path": "diagrams/diagram-1.png",
+      "bytes": 107951,
+      "sha256": "b843db469b84ba3ff291099d511a908443d31e12d945431066c7ab97c640eb71"
+    },
+    {
+      "path": "diagrams/diagram-2.mmd",
+      "bytes": 457,
+      "sha256": "a66f3e4af72c2c1263662f3403733a27665a7e2c60881e724eae8269f9279ccd"
+    },
+    {
+      "path": "diagrams/diagram-2.png",
+      "bytes": 88035,
+      "sha256": "38798516bb78813cc7b7ed51e540e4339e8b5a18cb528fdc21ec5202bebaee52"
+    },
+    {
+      "path": "diagrams/diagram-3.mmd",
+      "bytes": 640,
+      "sha256": "abc0d1d1708674817aee2887a9a7af6de701feab4803acb292ece40eb49e079f"
+    },
+    {
+      "path": "diagrams/diagram-3.png",
+      "bytes": 154207,
+      "sha256": "77ef5f3b5cf8cf51a7b8f35a44be19131a557011a9273be77b49d8c47a38fcce"
+    },
+    {
+      "path": "diagrams/diagram-4.mmd",
+      "bytes": 604,
+      "sha256": "3125f63ccfb6d90e4e193a39cdfbc998082b02a14dfe0a2465b795d478263c76"
+    },
+    {
+      "path": "diagrams/diagram-4.png",
+      "bytes": 104448,
+      "sha256": "34d31e10feb8684896eb8394f39bf060cb0fd318f51efa5055dbe6d34f411f40"
+    },
+    {
+      "path": "diagrams/pid-1.mmd",
+      "bytes": 572,
+      "sha256": "14a5aa478cd4be13296fa18acb17f8dd9a496e8d4290d6ef5bb54587d382a3ea"
+    },
+    {
+      "path": "diagrams/pid-1.png",
+      "bytes": 105591,
+      "sha256": "0349c184aac571d7321893c3865e53cebf1892180c62df2742f350a3949a46a7"
+    },
+    {
+      "path": "diagrams/pid-2.mmd",
+      "bytes": 556,
+      "sha256": "a36eb6f38356a1ded7e38bacdb9d92b824b70654b6e7b9b8bcdab1e62b9f348c"
+    },
+    {
+      "path": "diagrams/pid-2.png",
+      "bytes": 111346,
+      "sha256": "d3488589df041b9584992e4b09946a7d8182eab363a2cfe9008bede27e8ac0e6"
+    },
+    {
+      "path": "diagrams/pid-3.mmd",
+      "bytes": 655,
+      "sha256": "4c8b5bdadf1072cfc87d0e7cb522975e89c981852ae47e063d7acb5b9180fdc4"
+    },
+    {
+      "path": "diagrams/pid-3.png",
+      "bytes": 163648,
+      "sha256": "981a61d768e37848f88e922f61197fea37210c0a801d4aa10cad21332c198f6e"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 75936,
+      "sha256": "8add069edb3e8f4e5dce7b59ed676571dbfffb7a0daf39445fe01d6f632d0131"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 2898,
+      "sha256": "9ad885159672daf3f6b744e8b2529df919fd6d0d0531a2d7c89b74fab26b5465"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 4130,
+      "sha256": "72cc017c4220c967e5f5713ff4ee68d1f90d4cd9efdffaab31c1ae7b5e13c618"
+    }
+  ]
+}

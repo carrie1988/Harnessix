@@ -1,0 +1,10 @@
+flowchart TD
+    In[单一完整OID请求] --> Cmd[固定batch命令]
+    Cmd --> Header[有界头 实际OID 类型 十进制长度]
+    Header --> Count{正文不超过原8MiB}
+    Count -->|否| Reject[固定拒绝 不登记材料]
+    Count -->|是| Body[精确正文与唯一末尾LF]
+    Body --> Hash[Git对象头加正文计算OID]
+    Hash --> Match{与批准OID相同}
+    Match -->|否| Reject
+    Match -->|是| Done[正文SHA256与长度事实]

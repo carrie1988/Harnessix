@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 46
-code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
+version: 47
+code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_object_material.py
   - tests/product_config/test_git_delivery_process.py
   - tests/product_config/test_git_baseline.py
   - tests/product_config/test_profile_argument_feedback.py
@@ -2271,3 +2272,17 @@ Windows pipe Owner已增加单一MAC覆盖的v2原始双流统计；正式基准
 时序、数据流、伪代码、持久化、安全、部署和测试。当前原stdin合同仍为1MiB，较大业务材料明确拒绝；
 8MiB对象通道和完整Git产品桥仍是后继必做项，不降低业务容量或把内部端口当默认产品能力。
 此模块未改默认Catalog、六库备份布局、Provider预算、评测器或R3成绩。
+
+## 45. 受控Git对象材料读取用途
+
+[完整对象读取详设](../changes/m09-r4-git-object-material-read.md)沿
+[`git_delivery_process.py`](../../src/harnessix/product_config/git_delivery_process.py)新增`prepare_object_read`。
+受信宿主仅提供明确类型、完整OID和格式；固定`cat-file --batch`和一个OID加LF，小输入仍沿原控制预算。
+`PreparedGitProcess.material`额外绑定原Plan及批准；普通prepare不能升级到更大捕获额度。
+材料stdout限额为原8MiB正文加有界框架，stderr仍1MiB；ProcessSpec全局64MiB与输入1MiB不变。
+
+运行仍先核验根cwd、同一总期限、原批准、物理绑定和Owner能力；原进程回收/未知优先级保持。
+只有正常退出、原MAC V2、双流EOF/完整长度/SHA一致后，纯解码才核对固定类型/格式及Git OID并返回内部材料。
+每次执行与原Owner共用一次性保护快照；正文改写或模式命中均拒绝，包括等字节占位符命中。
+不改原封套/MAC格式，没有新增模型Tool、业务写入、CAS登记或备份白名单。
+消费者Windows11、R3、8MiB输入、完整对象/业务恢复闭包须继续独立验收。

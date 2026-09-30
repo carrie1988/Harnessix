@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant H as 受信宿主
+    participant P as 原受控Git端口
+    participant S as 原Supervisor和Owner
+    participant D as 纯对象解码
+    H->>P: prepare_object_read 固定请求 同一预算
+    P-->>H: 待批准材料 原ProcessSpec
+    H->>P: run 原Plan 原批准 CancelToken
+    P->>P: 根cwd 实现 能力 用途与总期限重验
+    P->>S: 原启动与完整OID输入
+    S-->>P: 原终态Lease MAC V2 与有界保护流
+    P->>P: 已知退出 raw EOF 长度 摘要重验
+    P->>D: 请求与完整batch正文
+    D-->>P: 完整对象或固定拒绝
+    P-->>H: 命令事实及内部对象材料

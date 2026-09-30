@@ -1,0 +1,12 @@
+flowchart TD
+    H[受信产品调用方] --> R[固定类型 OID 格式请求]
+    R --> P[prepare_object_read]
+    P --> B[固定cat-file与小输入 原ProcessSpec]
+    B --> A[原Plan 原独立批准]
+    A --> V[用途 参数 容量 环境 来源重验]
+    V --> S[原Supervisor Owner Lease]
+    S --> M[原MAC raw与保护双流]
+    M --> C[完整EOF 长度 SHA一致]
+    C --> O[唯一batch框架与Git OID语义校验]
+    O --> I[内部不可变完整材料]
+    I -. 后继未接线 .-> CAS[原CAS与对象目录]

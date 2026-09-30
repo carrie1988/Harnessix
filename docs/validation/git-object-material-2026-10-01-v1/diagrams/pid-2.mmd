@@ -1,0 +1,11 @@
+flowchart TB
+  Prepare[共享夹具选择默认Python候选] --> Launch[固定标准库探针 启动并采集身份]
+  Launch --> Check{退出零 PID及路径一致}
+  Check -->|否| Fail[明确失败 不弱化断言]
+  Check -->|是| Bind[固定命令与正式批准]
+  Bind --> Ready[原Owner启动 等待完整三PID就绪]
+  Ready --> Cancel[Token或Task取消]
+  Cancel --> Settle[原唯一句柄结算]
+  Settle --> Stopped[所有标记进程已退出]
+  Stopped --> Verify[Lease root PID MAC EOF 长度 SHA检查]
+  Verify --> Cleanup[测试清理]

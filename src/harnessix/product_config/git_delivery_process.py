@@ -16,6 +16,11 @@ from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.git import _GitRunner, git_delivery_implementation_digest
 from harnessix.delivery.git_command import GitCommand
+from harnessix.delivery.git_object_material import (
+    GitObjectMaterial,
+    GitObjectRead,
+    decode_git_object_batch,
+)
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionPlanV2,
@@ -36,10 +41,31 @@ from harnessix.processes.supervisor_capabilities import (
     probe_posix_process_capability,
     probe_windows_process_capability,
 )
+from harnessix.secrets.redaction import secret_patterns
 from harnessix.tools.runtime import _drain
 
 _STREAM_BYTES = 1024 * 1024
 _INPUT_CHUNK_BYTES = 64 * 1024
+
+
+class _GitOutputProtection:
+    """同一次执行共用原Owner保护快照，拒绝等字节替换的命中。"""
+
+    def __init__(self, source: OutputRedactionSource) -> None:
+        self._source = source
+        self._values: tuple[bytes, ...] | None = None
+
+    def output_redaction_values(self) -> tuple[bytes, ...]:
+        # 原Supervisor在创建Lease前校验封套；不重复读取可轮换的来源。
+        if self._values is None:
+            self._values = self._source.output_redaction_values()
+        return self._values
+
+    def require_unmatched(self, stdout: bytes, stderr: bytes) -> None:
+        if self._values is None:
+            raise KernelError("process_output_protection_unavailable", "Git缺少本次执行的保护快照")
+        if any(pattern in stdout or pattern in stderr for pattern in secret_patterns(self._values)):
+            raise KernelError("git_process_output_changed", "Git输出包含受保护材料")
 
 
 class GitOperationBudget:
@@ -70,15 +96,19 @@ class PreparedGitProcess:
     spec: ProcessSpec = field(repr=False)
     capability: ProcessCapabilityProbe = field(repr=False)
     budget: GitOperationBudget = field(repr=False)
+    material: GitObjectRead | None = None
 
     def approval_arguments(self) -> dict[str, JsonValue]:
         """原 Execution Plan 必须绑定完整命令摘要和 stdin 摘要，不持久化正文。"""
-        return {
+        arguments: dict[str, JsonValue] = {
             "version": "git-delivery-process/v1",
             "implementation_digest": _implementation_digest(),
             "command_digest": self.command.digest,
             "process": self.spec.model_dump(mode="json", warnings="error"),
         }
+        if self.material is not None:
+            arguments["material"] = self.material.binding()
+        return arguments
 
 
 def _implementation_digest() -> str:
@@ -104,6 +134,7 @@ class GitProcessCompletion:
     receipt: ProcessOwnerReceiptV2 = field(repr=False)
     stdout: bytes = field(repr=False)
     stderr: bytes = field(repr=False)
+    material: GitObjectMaterial | None = field(default=None, repr=False)
 
 
 def _capability() -> ProcessCapabilityProbe:
@@ -169,6 +200,30 @@ class GitDeliveryProcess:
         """消费原正式批准；取消包括启动期，并在返回前结算唯一 Owner。"""
         return await _run_process(self, prepared, plan, cancel, budget, checkpoint)
 
+    def prepare_object_read(
+        self,
+        cwd: Path,
+        request: GitObjectRead,
+        *,
+        budget: GitOperationBudget,
+        timeout: float = 20.0,
+    ) -> PreparedGitProcess:
+        """固定OID用途取得完整材料；控制输入及普通命令额度不变。"""
+        _validate_material(request)
+        return _prepare_process(
+            self._runner,
+            self._state,
+            self._closed,
+            cwd,
+            ("cat-file", "--batch"),
+            budget,
+            (request.object_id + "\n").encode("ascii"),
+            None,
+            (0,),
+            timeout,
+            request,
+        )
+
     async def aclose(self) -> None:
         """关闭阻止新调用，活动调用排空后才释放 Owner/SQLite 连接。"""
         self._closed = True
@@ -189,6 +244,7 @@ def _prepare_process(
     index_file: Path | None,
     accepted: tuple[int, ...],
     timeout: float,
+    material: GitObjectRead | None = None,
 ) -> PreparedGitProcess:
     """单一规划职责：校验宿主材料并派生原 ProcessSpec，不写业务状态。"""
     if closed:
@@ -223,9 +279,9 @@ def _prepare_process(
         stdin="pipe" if input_data is not None else "closed",
         input_bytes=max(1, len(input_data)) if input_data is not None else 0,
         timeout_seconds=min(float(timeout), budget.remaining()),
-        output_bytes=2 * _STREAM_BYTES,
+        output_bytes=_stdout_limit(material) + _STREAM_BYTES,
     )
-    return PreparedGitProcess(command, spec, _capability(), budget)
+    return PreparedGitProcess(command, spec, _capability(), budget, material)
 
 
 async def _run_process(
@@ -312,8 +368,11 @@ async def _execute_process(
     command = prepared.command
     cancel.checkpoint()
     supervisor_type = WindowsProcessSupervisor if os.name == "nt" else PosixProcessSupervisor
+    protection = (
+        _GitOutputProtection(self._output_redaction) if self._output_redaction is not None else None
+    )
     async with supervisor_type(
-        self._state / "process-owner", output_redaction=self._output_redaction
+        self._state / "process-owner", output_redaction=protection
     ) as supervisor:
         # 在启动前固定 Plan；重启时原 Lease 可定位完整意图，不生成孤立进程事实。
         with SQLiteExecutionPlanStore(self._state / "execution-plans.db") as plans:
@@ -354,6 +413,7 @@ async def _execute_process(
             receipt.raw_stdout.observed_bytes,
             receipt.raw_stdout.sha256,
             receipt.raw_stdout.eof,
+            limit=_stdout_limit(prepared.material),
         )
         _require_raw_bytes(
             stderr,
@@ -361,13 +421,21 @@ async def _execute_process(
             receipt.raw_stderr.sha256,
             receipt.raw_stderr.eof,
         )
+        if protection is not None:
+            protection.require_unmatched(stdout, stderr)
         self._runner.verify_command(command)
-        return GitProcessCompletion(lease, receipt, stdout, stderr)
+        material = (
+            decode_git_object_batch(prepared.material, stdout)
+            if prepared.material is not None
+            else None
+        )
+        return GitProcessCompletion(lease, receipt, stdout, stderr, material)
 
 
 def _require_prepared(prepared: PreparedGitProcess) -> None:
     command, spec = prepared.command, prepared.spec
     try:
+        _require_material_command(prepared)
         ProcessSpec.model_validate_json(spec.model_dump_json(warnings="error"))
         if (
             spec.invocation != "argv"
@@ -378,7 +446,7 @@ def _require_prepared(prepared: PreparedGitProcess) -> None:
             or spec.input_bytes
             != (max(1, len(command.input_data)) if command.input_data is not None else 0)
             or spec.timeout_seconds > command.timeout_seconds
-            or spec.output_bytes != 2 * _STREAM_BYTES
+            or spec.output_bytes != _stdout_limit(prepared.material) + _STREAM_BYTES
         ):
             raise ValueError
     except (ValidationError, ValueError, TypeError):
@@ -396,8 +464,41 @@ def _require_exit(lease: ProcessLease, accepted: tuple[int, ...]) -> None:
         raise KernelError("git_command_failed", "Git固定命令失败或未取得正常退出")
 
 
-def _require_raw_bytes(body: bytes, observed: int, digest: str, eof: bool) -> None:
-    if observed > _STREAM_BYTES:
+def _require_raw_bytes(
+    body: bytes, observed: int, digest: str, eof: bool, *, limit: int = _STREAM_BYTES
+) -> None:
+    if observed > limit:
         raise KernelError("git_command_failed", "Git固定命令输出超过原上限")
     if not eof or observed != len(body) or hashlib.sha256(body).hexdigest() != digest:
         raise KernelError("git_process_output_changed", "Git输出缺失、截断或已受保护变换")
+
+
+def _validate_material(request: GitObjectRead) -> None:
+    """重新验证冻结实例，避免类型伪造借用途取得更大捕获额度。"""
+    if type(request) is not GitObjectRead:
+        raise KernelError("git_material_request_invalid", "Git对象读取请求无效")
+    request.__post_init__()
+
+
+def _stdout_limit(material: GitObjectRead | None) -> int:
+    if material is None:
+        return _STREAM_BYTES
+    _validate_material(material)
+    return material.stdout_limit
+
+
+def _require_material_command(prepared: PreparedGitProcess) -> None:
+    """大结果用途仅绑定唯一对象命令；普通命令不能升级为任意捕获。"""
+    if prepared.material is None:
+        return
+    _validate_material(prepared.material)
+    command = prepared.command
+    if (
+        command.arguments != ("cat-file", "--batch")
+        or command.input_data != (prepared.material.object_id + "\n").encode("ascii")
+        or command.accepted != (0,)
+        or command.index_file is not None
+        or command.allowed_protocols != ("file",)
+        or dict(command.environment).get("GIT_NO_LAZY_FETCH") != "1"
+    ):
+        raise ValueError

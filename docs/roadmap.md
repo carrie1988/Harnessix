@@ -1231,3 +1231,14 @@ Checkpoint/Commit独立批准、持久原生桥接、全事件证明、有界对
 认证关联/全前缀、完整Diff独立批准及Backup v2闭包继续保留为必做项。
 原控制输入1MiB拒绝不能解释为缩减业务容量。R3完整20 Trial、消费者Windows11、
 独立Beta及同候选最终发布验收仍开放，不因内部端口和离线测试通过而关闭。
+
+### R4：完整固定Git对象读取与原8MiB容量
+
+[固定对象材料详设](changes/m09-r4-git-object-material-read.md)新增原受控IO的正式读取用途，
+支持唯一完整OID、blob/tree/commit、SHA1/SHA256及原8MiB正文，原MAC/raw/EOF之后再核对对象OID。
+用途和实际结果额度绑定原Plan，普通命令1MiB与控制输入1MiB保持；禁止lazy fetch，不自动补对象。
+保护改写和等字节占位符命中均拒绝，Owner与完整返回检查共用同一执行快照；
+不拿公开脱敏结果或捕获前缀冒充完整材料。
+
+该读取增量不实现8MiB输入、CAS耐久业务登记、对象目录、默认Git写Tool或Backup v2，
+不关闭R3、消费者原生、完整Git产品交付与商用门禁；原完整业务目标不缩减。

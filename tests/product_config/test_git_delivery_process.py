@@ -5,9 +5,11 @@ from __future__ import annotations
 import asyncio
 import ctypes
 import hashlib
+import json
 import os
 import shutil
 import signal
+import subprocess
 import sys
 import time
 from collections.abc import AsyncIterator, Callable
@@ -70,6 +72,36 @@ pytestmark = pytest.mark.skipif(os.name not in {"posix", "nt"}, reason="需要�
 _MIB = 1024 * 1024
 _MARKER_PROGRAM = "from pathlib import Path; import sys; Path(sys.argv[1]).write_bytes(b'started')"
 _PID_FILES = ("parent.pid", "child.pid", "grandchild.pid")
+_INTERPRETER_IDENTITY_PROGRAM = (
+    "import json,os,sys; print(json.dumps({'pid':os.getpid(),'executable':sys.executable}))"
+)
+
+
+def _assert_interpreter_identity(executable: Path, root_pid: int, stdout: str) -> None:
+    identity = json.loads(stdout)
+    assert identity["pid"] == root_pid, "解释器 worker PID 与启动 PID 不一致"
+    assert Path(identity["executable"]).resolve(strict=True) == executable, "解释器路径绑定不一致"
+
+
+def _verified_base_interpreter() -> Path:
+    # Windows venv redirector 会再启动 worker，不能把它的 PID 等同于 worker 自报 PID。
+    executable = Path(sys._base_executable).resolve(strict=True)
+    with subprocess.Popen(
+        (str(executable), "-I", "-c", _INTERPRETER_IDENTITY_PROGRAM),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    ) as process:
+        try:
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            raise AssertionError("基础解释器身份探测超时") from None
+        assert process.returncode == 0, stderr
+        _assert_interpreter_identity(executable, process.pid, stdout)
+    return executable
 
 
 @dataclass
@@ -95,7 +127,7 @@ async def make_process(tmp_path: Path) -> AsyncIterator[Callable[..., _ProcessCa
         workspace.mkdir(parents=True)
         if executable is None:
             if python_code is not None:
-                executable = Path(sys.executable)
+                executable = _verified_base_interpreter()
             else:
                 git = shutil.which("git")
                 if git is None:
@@ -436,6 +468,48 @@ async def _live_tree(
             await asyncio.to_thread(_emergency_stop, pid)
 
 
+def test_python_fixture_binds_verified_base_interpreter(make_process) -> None:
+    case = make_process(python_code=_MARKER_PROGRAM)
+    prepared = case.port.prepare(case.workspace, ("started",), budget=GitOperationBudget(45))
+    assert Path(prepared.command.argv[0]) == Path(sys._base_executable).resolve(strict=True)
+    assert prepared.spec.argv == prepared.command.argv
+    _assert_not_started(case)
+
+
+@pytest.mark.parametrize("identity_fault", ["forwarder", "different-executable"])
+def test_python_fixture_probe_rejects_nonmatching_process_identity(
+    tmp_path: Path, identity_fault
+) -> None:
+    executable = Path(sys._base_executable).resolve(strict=True)
+    arguments = (str(executable), "-I", "-c", _INTERPRETER_IDENTITY_PROGRAM)
+    if identity_fault == "forwarder":
+        # 真实转发进程另启解释器；stdout 来自 worker，Popen.pid 仍属于 launcher。
+        forwarder = (
+            "import subprocess,sys; "
+            "raise SystemExit(subprocess.call([sys.executable,*sys.argv[1:]]))"
+        )
+        arguments = (str(executable), "-I", "-c", forwarder, *arguments[1:])
+    with subprocess.Popen(
+        arguments,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    ) as process:
+        stdout, stderr = process.communicate(timeout=5)
+        assert process.returncode == 0 and not stderr
+        if identity_fault == "forwarder":
+            assert json.loads(stdout)["pid"] != process.pid
+            expected_executable, reason = executable, "worker PID 与启动 PID 不一致"
+        else:
+            assert json.loads(stdout)["pid"] == process.pid
+            expected_executable = tmp_path / "different-python"
+            expected_executable.write_bytes(b"not-the-selected-interpreter")
+            reason = "解释器路径绑定不一致"
+        with pytest.raises(AssertionError, match=reason):
+            _assert_interpreter_identity(expected_executable, process.pid, stdout)
+
+
 async def test_real_git_version_matches_synchronous_runner_and_v2_raw_receipt(make_process) -> None:
     case = make_process()
     baseline = case.runner.run(case.workspace, ("--version",))
@@ -755,7 +829,26 @@ async def test_running_cancellation_reclaims_parent_child_and_grandchild(
         lease = _lease(case, prepared)
         assert lease.state == "exited" and lease.stop_reason == "cancelled"
         assert lease.pid == pids[0]
-        assert _owner_receipt(case, prepared).stop_reason == "cancelled"
+        assert lease.process_id == prepared.spec.process_id
+        assert lease.process_spec_digest == prepared.spec.digest
+        assert lease.capability_digest == prepared.capability.digest
+        receipt = _receipt(case, prepared)
+        assert receipt.state == "exited" and receipt.stop_reason == "cancelled"
+        assert receipt.pid == lease.pid and receipt.returncode == lease.returncode
+        assert (
+            verify_owner_receipt(
+                receipt,
+                owner_token=lease.owner_token,
+                process_id=lease.process_id,
+                owner_identity=lease.owner_identity,
+            )
+            == receipt
+        )
+        for stream in ("stdout", "stderr"):
+            raw, observed = getattr(receipt, f"raw_{stream}"), getattr(lease, stream)
+            assert raw.eof and observed.eof and not observed.truncated
+            assert raw.observed_bytes == observed.observed_bytes == observed.persisted_bytes
+            assert raw.sha256 == observed.sha256 == observed.persisted_sha256
 
 
 async def test_command_timeout_reclaims_the_real_process_tree(make_process) -> None:

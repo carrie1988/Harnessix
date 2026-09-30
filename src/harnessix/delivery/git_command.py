@@ -76,6 +76,7 @@ def fixed_git_environment(
         "GIT_OPTIONAL_LOCKS": "0",
         "GIT_LITERAL_PATHSPECS": "1",
         "GIT_NO_REPLACE_OBJECTS": "1",
+        "GIT_NO_LAZY_FETCH": "1",
         "GIT_ALLOW_PROTOCOL": ":".join(allowed_protocols),
         "TMPDIR": str(temporary),
         "TEMP": str(temporary),

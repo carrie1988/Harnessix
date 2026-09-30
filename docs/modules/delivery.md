@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 24
-code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
+version: 25
+code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_git_object_material.py
   - tests/product_config/test_git_delivery_process.py
   - tests/delivery/test_git_store_readonly.py
   - tests/product_config/test_product_patch_rollback.py
@@ -1842,3 +1843,16 @@ Owner Receipt和私有备份目录发布共享同一个类；原事务效果状�
 [`完整IO详设`](../changes/m09-r4-git-supervised-command-io.md)给出契约、源码映射、三图和失败恢复边界。
 旧同步门面仍没有取消/进程树回收能力；默认Commit/Checkpoint产品接线、8MiB对象材料、
 全前缀认证与业务备份闭包仍未完成，不能从内部命令退出零推出业务交付成功。
+
+## 36. 固定对象完整材料读取
+
+[总体与详设](../changes/m09-r4-git-object-material-read.md)与
+[`git_object_material.py`](../../src/harnessix/delivery/git_object_material.py)定义纯固定OID请求与完整对象材料。
+`GitObjectRead`绑定blob/tree/commit、明确SHA1/SHA256格式和原8MiB单文件容量；不接Ref、路径或任意参数。
+`decode_git_object_batch`验证唯一batch头、精确长度、尾LF及完整Git对象哈希，不能以正文SHA替代Git OID。
+材料正文不进入repr；未登记CAS、对象目录或业务关联的材料不是备份闭包。
+
+固定Runner额外设`GIT_NO_LAZY_FETCH=1`，禁自动补取缺失对象；与原禁replace、配置/Hook约束共用唯一环境。
+标准同步命令输出1MiB不变。产品受控端新增材料读取用途，原stdin1MiB不变；8MiB受信写入、
+对象目录、完整认证及业务备份恢复仍开放。保护后正文与raw不同或同一冻结保护模式命中即拒绝，
+包括等字节占位符替换，不关闭脱敏或将前缀冒充对象。

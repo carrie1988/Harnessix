@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 47
-code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
+version: 48
+code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
 owners:
   - core
 modules:
@@ -208,3 +208,10 @@ flowchart LR
 POSIX pipe V2原始双流认证、原同步门面回归与源码外制品输入。保留原V1阻断及
 测试夹具失败，区分原始观察、脱敏持久正文、批准和命令层完成事实。
 不发布完整Git产品能力或R3成绩，不降低8MiB对象材料、全业务备份和商用门禁。
+
+## 固定Git对象完整材料读取
+
+[统一交付包](git-object-material-2026-10-01-v1/README.md)记录唯一batch/OID用途、原8MiB真实对象读取、
+原批准及Owner认证、标准1MiB不变、等字节保护命中原失败及一次性快照修复。
+实际Wheel、源码外双Python与完整验证输入逐字节绑定；原生Windows取消夹具保留强PID/MAC/EOF合同。
+该读取增量不关闭8MiB输入、对象CAS及认证账本、全业务备份、R3/R4或商用1.0。
