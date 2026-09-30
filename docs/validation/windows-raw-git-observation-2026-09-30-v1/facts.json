@@ -27,5 +27,6 @@
   "bailian_credential_reads": 0,
   "budget_ledger_modified": false,
   "old_failures_preserved": true,
-  "final_native_ci_result": "not_yet_available"
+  "final_native_ci_result": "not_yet_available",
+  "source_commit_revision": "02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675"
 }

@@ -60,5 +60,6 @@
   "native_skips_not_pass": true,
   "R3_complete": false,
   "R4_complete": false,
-  "commercial_release_complete": false
+  "commercial_release_complete": false,
+  "source_commit_revision": "02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675"
 }

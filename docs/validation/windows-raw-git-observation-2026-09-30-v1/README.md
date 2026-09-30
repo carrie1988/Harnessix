@@ -2,7 +2,7 @@
 doc_type: validation-evidence
 status: current
 version: 1
-code_revision: dde77231beafcfb1a9eb46a670fe0f3ccafc9705
+code_revision: 02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675
 owners: [core]
 modules: [processes, tools, product_config]
 related_adrs:
@@ -25,6 +25,7 @@ supersedes: []
 
 ## 1. 结论与适用范围
 
+受测源码提交为`02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675`，运行时输入与该提交逐字节一致。
 本验证覆盖原始计量、Owner v2认证、Supervisor终态重验、正式Git基准消费及双版本完整状态备份。
 完整[总体与详细设计](../../changes/m09-r4-authenticated-raw-git-observation.md)定义类、接口、字段、
 架构图、流程图、时序、数据流、核心伪代码、失败语义及兼容升级边界。

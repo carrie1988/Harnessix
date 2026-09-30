@@ -430,5 +430,6 @@
     "tests/product_config/test_product_patch_rollback.py": "8c2af78ba875f613c1aea50b387697cbaaf4562bfb865926bfb15103730f901a",
     ".github/workflows/ci.yml": "df73a75ed541dd47786d46062d3e97b8d2b9ff14f23ff50eb5e47e2f86204f09",
     "scripts/generate_specs.py": "c3731e2c67e2338be256515a9b5d7fe7f64f3d8db4e20abc2c358f43be331051"
-  }
+  },
+  "source_commit_revision": "02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675"
 }

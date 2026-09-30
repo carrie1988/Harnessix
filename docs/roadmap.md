@@ -528,7 +528,8 @@ PIDs机制的引擎，并在每次启动及MCP连接前复核；不关闭R1整�
 固定`753d6a8`的[专项验收](validation/container-resource-admission-2026-09-29-v1/README.md)保留
 修复前23失败、本地完整5724通过、真实Linux资源值核对及同一新Wheel三平台生命周期结果。
 Scripted 20/20不是新真实质量；消费者OS、版本升级、独立Beta与R1～R6整体仍开放。
-R3原70元周期预算账本已定位并由原Owner预检，未重置周期；当前真实运行仍受固定镜像/可执行环境阻塞。
+R3原70元周期账本复用，不重置周期或释放旧未决预留。固定镜像及显式同Engine评测链已通过前置检查；
+新完整20 Trial的实际授权范围尚未登记，真实复验未启动。默认Desktop路径与消费者平台仍独立开放。
 预算可用不代表编码质量已验收；不以替换镜像、放宽资源机制或脚本成绩绕过真实20 Trial门禁。
 
 R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
