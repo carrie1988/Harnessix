@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant C as 原停机维护入口
+    participant O as 根外 Owner 与 Runtime 锁
+    participant L as 全部 DB 保留写锁
+    participant B as 自有私有备份候选
+    participant V as 原认证及拟新增 Git 快照 Reader
+    participant A as 原本机可信锚点
+    C->>O: 取得 Owner 验证无未决 Restore
+    O->>L: 固定顺序锁定六 DB 可选 Process 与 GitDB
+    L-->>O: 全锁成功后的共同静默窗口
+    C->>B: 独立 ro 连接 SQLite Backup 原 CAS 有界复制
+    C->>V: 同窗口业务枚举 全前缀 跨库及对象验证
+    V-->>B: 只读业务快照及成员摘要
+    C->>C: 原路径清单 版本 Owner 与锁身份复核
+    C->>L: 关闭连接后释放全部保留锁
+    B->>V: 候选再次完整验真
+    B->>A: Manifest 原字节回执耐久发布
+    B->>B: 原不可覆盖目录发布
+    Note over C,V: 不查询外部 commonDir 不复制工作树或用户 Ref

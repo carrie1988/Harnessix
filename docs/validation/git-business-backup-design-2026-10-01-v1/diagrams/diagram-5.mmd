@@ -1,0 +1,16 @@
+flowchart TD
+    Calls[原 MAC Call Result 与批准事件] --> Link[产品 Git 持久关联]
+    Routes[原 Plan Audit Approval] --> Link
+    Sources[有序 Patch 引用及完整 Mutation] --> Link
+    Link --> Prefix[Git 全事件前缀及认证尾锚]
+    GitRaw[固定 OID 的原始对象正文] --> Check[类型 长度 完整 EOF Git OID 与 SHA256]
+    Check --> Blob[原 CAS 按 SHA256 存储]
+    Blob --> Inventory[对象及直接引用清单]
+    Prefix --> View[只读业务快照]
+    Inventory --> View
+    Parent[显式外部历史 parent 边界] --> View
+    View --> Manifest[版本化 Backup Manifest 与原根外回执]
+    Manifest --> Restored[新状态根 历史关联与材料]
+    Restored --> Disabled[执行禁用与待重绑状态]
+    Fresh[新根身份 新基准 新 Lease 新批准] --> Rebound[新的重绑记录]
+    Disabled --> Rebound

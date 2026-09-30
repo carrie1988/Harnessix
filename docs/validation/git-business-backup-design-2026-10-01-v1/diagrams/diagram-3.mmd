@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant P as 产品入口
+    participant S as 原认证会话及来源 Reader
+    participant R as 原 Router 与 Review
+    participant G as Git 产品适配与受控领域执行
+    participant D as GitDB 与原 CAS
+    participant E as 外部仓库 commonDir
+    P->>S: 显式选择有序来源集合
+    S-->>P: 完整来源与 Git 基准
+    P->>R: 完整 Diff 固定基准 目标树 资源及效果
+    R-->>P: 新 Checkpoint 批准或拒绝
+    P->>G: 原 Route 身份与有效批准
+    G->>S: 执行前重新认证与重验
+    G->>D: CAS 材料 fsync 关联及锚创建意图
+    G->>E: 固定 OID 新 detached 锚 A
+    E-->>G: 注册与 backlink 观察
+    G->>D: 实际 A 身份与派生事务关联
+    G->>G: 原干净来源 Runtime 创建 D 保护后物化
+    G->>D: 原 Checkpoint 全对象材料与阶段证明
+    D-->>P: 闭包完成后发布产品 Checkpoint 结果
+    P->>R: 完整 Diff Commit Spec 新批准
+    R-->>G: 新 Commit 批准
+    G->>D: 原 Commit prepared 与产品关联意图
+    G->>E: 确定性对象写入 新 Ref 旧值全零 CAS
+    G->>E: 只读复核完整对象及精确 Ref
+    G->>D: 认证终态与结果闭包
+    D-->>P: 发布本地 Commit 结果
+    Note over G,E: 任一返回丢失只观察对账 不自动重放

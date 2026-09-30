@@ -1,0 +1,37 @@
+{
+  "diagram_render": "pass",
+  "visual_review": "pass_all_five",
+  "documentation_repaired": "pass",
+  "documentation_governance": {
+    "status": "pass",
+    "tests": 302,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junit_sha256": "432c219417279f0a05398f72663048b07ea95f1d06ffa84d17283dd345e4cc09",
+    "duration_seconds": 27.933
+  },
+  "architecture_finalized": false,
+  "product_git_implementation_verified": false,
+  "commercial_release_verified": false,
+  "original_documentation_failure_sha256": "8bb2f6d6d1263466826b58b659681151295e3b6ebe04d556c6d066c2807e046b",
+  "repaired_documentation_report_sha256": "08933750c14230c327e5f6662241b401e0765d9990b64fd77ce6befe11ab1c30",
+  "initial_package_link_failure_sha256": "ef2531f63f95de79f80757c606f0cd520afb4afd88abdac38a90a0d8a4bbf56b",
+  "final_documentation_package_sha256": "e2310bc214dafac64e33fc514951dd1def3aee26f30ef45313ce2dac0f96a070",
+  "standard_changed_docs_render": {
+    "status": "pass",
+    "changed_paths": 27,
+    "all_repository_documents_checked": 428,
+    "all_repository_mermaid_static_count": 910,
+    "actually_rendered_changed_document_diagrams": 6,
+    "report_sha256": "d667eecebf5264381792c8774d862303a23fde00c0d41fdf887c8aad05ed9223",
+    "initial_render_failed_report_sha256": "d9e181a323c894ba316992d9de69b9617e93b0ee7cd8b0d313ca14659f811842",
+    "initial_render_cause": "默认Puppeteer缺少指定Chrome缓存；复用本机已验证Chrome执行路径，未安装新浏览器",
+    "default_browser_failure_probe_sha256": "b065ab2302efc16645a09514a7f2ea3589e35a048a744e7d92eaa4142554f3bc"
+  },
+  "secret_scan": {
+    "status": "pass",
+    "inputs": 3805,
+    "log_sha256": "13d11777aa8c21f21509119d71b4d46ffebbc3cdab9f88db74812145c9f9bdf7"
+  }
+}

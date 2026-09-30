@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: b53c2ac7dfdf47ddcaad758f3971f9368c9ed62a
 owners: [core]
 modules: [delivery]
@@ -28,7 +28,7 @@ supersedes: []
 [完整总体与详细设计](../../changes/m09-r4-git-store-readonly.md)
 覆盖需求背景、架构、流程、时序、数据流、接口、字段、伪代码、安全、失败、部署及验收。
 
-**本机合同通过；新候选Windows仍需实际运行。该增量不接通产品Commit/Checkpoint，商用门禁不关闭。**
+**本机合同与后继Windows原生专项通过；该增量不接通产品Commit/Checkpoint，商用门禁不关闭。**
 此Reader不等于全事件前缀认证、来源MAC、Git对象归档或完整Git备份；当前产品六库白名单保持。
 原始多Patch连续来源、Commit/Checkpoint及完整恢复目标不削减。
 
@@ -72,6 +72,9 @@ Strict Mypy覆盖410个源码文件，机器Schema一致性通过。原可读性
 架构图明确区分初始化调用与结构定义依赖，数据流图采用纵向布局保持可读性。
 原Secret规则对含新Wheel的3782个输入完整扫描，零命中；这些结果不证明真实编码质量。
 原生WindowsSelector接入既有五分钟专项，新增选择器，不删除既有负载、不抬高CI期限。
+固定`9658402`的[CI 36744220549](https://github.com/carrie1988/Harnessix/actions/runs/36744220549)
+实际完成认证raw/Git基准/只读专项步骤并成功，工作流与测试输入与本机候选426项绑定一致。
+该观察时完整Windows Job仍运行，逐用例数量须由原Job日志取得；不将步骤成功当作完整平台验收。
 Windows11消费者环境、三平台完整Git编码、Beta和商用1.0不从本机通过推出。
 
 ## 5. 设计图与实际渲染

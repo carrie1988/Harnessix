@@ -1,0 +1,22 @@
+flowchart TB
+    UI[现有产品审批入口] --> Gateway[原 Action Gateway 与 Router]
+    Session[原认证 Thread Call Result] --> Planner[拟新增产品 Git 规划适配]
+    Patch[原 Patch Route Transaction CAS] --> Planner
+    Read[原 source projection 与 Git baseline Reader] --> Planner
+    Planner --> Review[完整 Diff 与交付意图 Artifact]
+    Review --> UI
+    Gateway --> Adapter[拟新增受批准的 Git 执行适配]
+    Adapter --> Runtime[复用原领域保护与固定命令构造]
+    Runtime --> IO[拟监督IO 取消期限与进程树回收]
+    IO --> Anchor[干净来源锚 A]
+    Anchor --> Staging[受管交付工作树 D]
+    IO --> External[外部 commonDir 对象与新 Ref CAS]
+    Adapter --> GitDB[原 GitStore 扩展关联与认证前缀]
+    Adapter --> CAS[原 Workspace CAS 有类型对象材料]
+    Auth[原认证层的拟新增 Git 证明端口] --> GitDB
+    Owner[原 ProductStateOwner 与停机维护窗口] --> Snapshot[拟新增只读 Git 业务快照]
+    GitDB --> Snapshot
+    CAS --> Snapshot
+    Session --> Snapshot
+    Snapshot --> Backup[原 Backup 与 Restore 合同版本化扩展]
+    Backup --> Rebind[新根禁用执行 明确重验与重绑]

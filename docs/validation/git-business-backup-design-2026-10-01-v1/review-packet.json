@@ -1,0 +1,72 @@
+{
+  "requirements": [
+    {
+      "id": "CURRENT-SOURCE-BOUNDARY",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "CONTINUOUS-MULTI-PATCH",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "NATIVE-BRIDGE",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "COMPLETE-REVIEW-APPROVAL",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "SUPERVISED-GIT-IO",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "BUSINESS-PERSISTENCE",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "ALL-PREFIX-PROOF",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "OBJECT-MATERIAL-CLOSURE",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "QUIET-CROSS-STORE-WINDOW",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "RESTORE-NEW-ROOT-BINDING",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "FAILURE-CANCEL-TIMEOUT",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "DEPLOYMENT-COMPATIBILITY",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "REAL-ACCEPTANCE-MATRIX",
+      "status": "reviewed_design_only"
+    },
+    {
+      "id": "HISTORY-BOUNDARY",
+      "status": "decision_pending"
+    },
+    {
+      "id": "MATERIAL-CAPACITY",
+      "status": "proposed_contract_not_implemented"
+    },
+    {
+      "id": "PRODUCT-GIT-WRITES",
+      "status": "not_implemented"
+    },
+    {
+      "id": "COMMERCIAL-1.0",
+      "status": "open"
+    }
+  ]
+}

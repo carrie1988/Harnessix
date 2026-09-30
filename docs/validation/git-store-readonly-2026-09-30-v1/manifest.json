@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 5832,
-      "sha256": "e1af1c188d87b9381acd9e83c6f605b04615ddbbb050bff5b20360360360d2e2"
+      "bytes": 6176,
+      "sha256": "01780bf25d8bea39dc8c163509c4b5f9ea551b4dcc63c06129fb95f3c9c05a73"
     },
     {
       "path": "diagrams/diagram-1.mmd",
@@ -48,13 +48,13 @@
     },
     {
       "path": "facts.json",
-      "bytes": 919,
-      "sha256": "9375358005ce41b89cd51e7994b8b0e4da6dbbcaa0aec06a9433a0ce2b0809c8"
+      "bytes": 1569,
+      "sha256": "3864aee0e0a81873304b8ef97af1f3204f0d4e0966a6c58cc2ddf4d95236cae5"
     },
     {
       "path": "review-packet.json",
-      "bytes": 1354,
-      "sha256": "ff8f9a0281817e73aa3af5615575eb47191e52879e8d6a19cdf82d12857ccaf1"
+      "bytes": 1418,
+      "sha256": "6c4cd7890117ba737a9ae909d1164faf44771a516d20d6a3ed53fbabb41a92c2"
     },
     {
       "path": "source-bindings.json",
@@ -63,13 +63,13 @@
     },
     {
       "path": "test-results.json",
-      "bytes": 6175,
-      "sha256": "12e65245c34a2a8110c23f7a0c43c9a4fd607fd8600d67cfe98650f69b42f1bf"
+      "bytes": 7290,
+      "sha256": "c0e9a5fe4c9a32cb25504e3c29b6f7863db1688c2621b7895ec74961fe5bb336"
     },
     {
       "path": "verification.json",
-      "bytes": 552,
-      "sha256": "9c2657c338e8e8cfd3137b6823df201fb91ec5851dd6459871588665fd93a2f1"
+      "bytes": 741,
+      "sha256": "578178a99cd676ca97e3f62f07ebb99884e3cc2038763aee04035a1d4cf93f6f"
     }
   ]
 }

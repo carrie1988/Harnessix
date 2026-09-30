@@ -16,5 +16,20 @@
   "source_outside_install_verified": true,
   "wheel_package_members": 451,
   "wheel_source_module_count": 410,
-  "tested_candidate_source_commit": "b53c2ac7dfdf47ddcaad758f3971f9368c9ed62a"
+  "tested_candidate_source_commit": "b53c2ac7dfdf47ddcaad758f3971f9368c9ed62a",
+  "native_windows_step_proof": {
+    "candidate_revision": "96584026bdf34c49c519834331b84043a6c03895",
+    "run_id": 36744220549,
+    "windows_job_id": 109986159922,
+    "step": 7,
+    "step_name": "验证原生认证raw回执与Git基准",
+    "step_conclusion": "success",
+    "whole_job_at_observation": "in_progress",
+    "whole_job_conclusion": "",
+    "whole_run_at_observation": "in_progress",
+    "raw_snapshot_sha256": "4a6b835bba50a88a387033884eac9745a645efd33aa7f217d4c4aaa7c9a7c751",
+    "same_426_input_bindings_as_tested_source_commit": true,
+    "exact_test_counts_pending_job_log": true,
+    "windows11_consumer_verified": false
+  }
 }

@@ -1,0 +1,44 @@
+{
+  "private_evidence_locator": "Harnessix/verification/git-business-backup-design-20261001-v1",
+  "source_revision": "96584026bdf34c49c519834331b84043a6c03895",
+  "design_file": "docs/changes/m09-r4-git-delivery-business-backup-closure.md",
+  "design_sha256": "479df9718d84a130c12ef8267fbc0a7a0a97026e858c16ab3e6d64bb457cafdd",
+  "implementation_status": "planned_draft",
+  "diagram_count": 5,
+  "diagram_bindings": [
+    {
+      "index": 1,
+      "mmd_sha256": "99937fd9b0885f6e0d28291c7ed3263f2f5f323454f1a5f614f51b7cc16aa207",
+      "png_sha256": "4664c840f222cc67de64a7355af6eeb4aab153a2c44935cf0b14a6d044519dfe",
+      "png_bytes": 218299
+    },
+    {
+      "index": 2,
+      "mmd_sha256": "d2789e55018052e8bcf52f3c82bbb4faab638c6cb1456e83a4fa198fb0810e78",
+      "png_sha256": "b02a1435ac0b39615e604bbf8b01a6f7a4fef94f983743de8cdeac6cbff33ce7",
+      "png_bytes": 254740
+    },
+    {
+      "index": 3,
+      "mmd_sha256": "331c9326db0d48af03adaa879afecf0fdaa381457ff56adcbffe6d9d8db3e4cc",
+      "png_sha256": "42d1a379c8fbc277927f90ac2554bd4e9e888c0c3626c5142801fc2733cbc880",
+      "png_bytes": 322503
+    },
+    {
+      "index": 4,
+      "mmd_sha256": "d14ff39caef437a28f291889ba7c03c7ed72fb3dbdf1be4634c4fefc81d5fcc4",
+      "png_sha256": "1959521aa982baf5b29ae1f1c3d9b5e4bc39483d6a064f617e427d681b429f58",
+      "png_bytes": 229866
+    },
+    {
+      "index": 5,
+      "mmd_sha256": "323cdb08d23937b60703ef99873f76c1529a3fff47c850db4b2ef90f05691d54",
+      "png_sha256": "b8babf889f3ed38ea6016a0e3e3dd88e805576fedb597adc5cc156383f097917",
+      "png_bytes": 175274
+    }
+  ],
+  "new_model_requests": 0,
+  "credential_reads": 0,
+  "production_code_changed": false,
+  "budget_ledger_changed": false
+}

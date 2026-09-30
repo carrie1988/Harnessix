@@ -1,0 +1,75 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3776,
+      "sha256": "cd284b0670ee096bcb28b8aa571df5d14d93ac2c186173f6ab77be0cd19d583f"
+    },
+    {
+      "path": "diagrams/diagram-1.mmd",
+      "bytes": 1210,
+      "sha256": "99937fd9b0885f6e0d28291c7ed3263f2f5f323454f1a5f614f51b7cc16aa207"
+    },
+    {
+      "path": "diagrams/diagram-1.png",
+      "bytes": 218299,
+      "sha256": "4664c840f222cc67de64a7355af6eeb4aab153a2c44935cf0b14a6d044519dfe"
+    },
+    {
+      "path": "diagrams/diagram-2.mmd",
+      "bytes": 1060,
+      "sha256": "d2789e55018052e8bcf52f3c82bbb4faab638c6cb1456e83a4fa198fb0810e78"
+    },
+    {
+      "path": "diagrams/diagram-2.png",
+      "bytes": 254740,
+      "sha256": "b02a1435ac0b39615e604bbf8b01a6f7a4fef94f983743de8cdeac6cbff33ce7"
+    },
+    {
+      "path": "diagrams/diagram-3.mmd",
+      "bytes": 1295,
+      "sha256": "331c9326db0d48af03adaa879afecf0fdaa381457ff56adcbffe6d9d8db3e4cc"
+    },
+    {
+      "path": "diagrams/diagram-3.png",
+      "bytes": 322503,
+      "sha256": "42d1a379c8fbc277927f90ac2554bd4e9e888c0c3626c5142801fc2733cbc880"
+    },
+    {
+      "path": "diagrams/diagram-4.mmd",
+      "bytes": 942,
+      "sha256": "d14ff39caef437a28f291889ba7c03c7ed72fb3dbdf1be4634c4fefc81d5fcc4"
+    },
+    {
+      "path": "diagrams/diagram-4.png",
+      "bytes": 229866,
+      "sha256": "1959521aa982baf5b29ae1f1c3d9b5e4bc39483d6a064f617e427d681b429f58"
+    },
+    {
+      "path": "diagrams/diagram-5.mmd",
+      "bytes": 869,
+      "sha256": "323cdb08d23937b60703ef99873f76c1529a3fff47c850db4b2ef90f05691d54"
+    },
+    {
+      "path": "diagrams/diagram-5.png",
+      "bytes": 175274,
+      "sha256": "b8babf889f3ed38ea6016a0e3e3dd88e805576fedb597adc5cc156383f097917"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 1711,
+      "sha256": "588461a8c3bd21d0c2735f1973e9ae2b6cb86d9884bc92e3056f50e0269ea245"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1510,
+      "sha256": "40f927966efbebda4120e1ab0ab35f7259fb746fb65457dd4059bf334c3819f5"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1746,
+      "sha256": "dbb28450093ed02ff8b50b22eecaaf9d1ea214d528564c1fe8c0842a5006dcf5"
+    }
+  ],
+  "schema": "harnessix.validation-manifest/v1"
+}

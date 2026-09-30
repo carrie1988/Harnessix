@@ -37,7 +37,21 @@
     }
   ],
   "overlapping_results_not_additive": true,
-  "new_windows_case_run": "pending",
+  "new_windows_case_run": {
+    "candidate_revision": "96584026bdf34c49c519834331b84043a6c03895",
+    "run_id": 36744220549,
+    "windows_job_id": 109986159922,
+    "step": 7,
+    "step_name": "验证原生认证raw回执与Git基准",
+    "step_conclusion": "success",
+    "whole_job_at_observation": "in_progress",
+    "whole_job_conclusion": "",
+    "whole_run_at_observation": "in_progress",
+    "raw_snapshot_sha256": "4a6b835bba50a88a387033884eac9745a645efd33aa7f217d4c4aaa7c9a7c751",
+    "same_426_input_bindings_as_tested_source_commit": true,
+    "exact_test_counts_pending_job_log": true,
+    "windows11_consumer_verified": false
+  },
   "source_outside_wheel_run": {
     "junit": "wheel-tests.xml",
     "junit_sha256": "f5e7a2a9bfc19b8f55453b50ea7e1d14f0ea6f2ba095e8de0f734f3a5c776e18",
@@ -190,5 +204,18 @@
     "final_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "production_inputs_changed": false,
     "policy_changed": false
+  },
+  "intermediate_native_run": {
+    "candidate_revision": "a2892494bb299e2f9e14ca3390c2c51d05869b2f",
+    "run_id": 36743937677,
+    "windows_job_id": 109985190468,
+    "conclusion": "failure",
+    "first_step_conclusion": "timeout",
+    "passed_before_interrupt": 125,
+    "skipped_before_interrupt": 2,
+    "step_timeout_minutes": 3,
+    "job_log_sha256": "763b9838497c36a692154cde809ea1b0a5b55cf872460109cd6a77243ece8007",
+    "new_raw_readonly_step_executed": false,
+    "timeout_not_relaxed": true
   }
 }

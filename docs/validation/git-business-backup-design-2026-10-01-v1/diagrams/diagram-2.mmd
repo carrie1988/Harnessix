@@ -1,0 +1,20 @@
+flowchart TD
+    P[持续多个成功 Patch] --> S[原认证归属及完整 source projection]
+    S --> B[固定 HEAD Tree Index 根与 commonDir 基准]
+    B --> M[有界完整树材料及目标树预计算]
+    M --> R[完整 Diff Checkpoint 资源与效果审阅]
+    R --> A{独立 Checkpoint 批准}
+    A -->|拒绝或过期| N[无 Git 外部写效果]
+    A -->|批准| V[重新认证与重验 U Lease 及批准]
+    V --> C[耐久关联意图 创建干净锚 A]
+    C --> T[新派生事务 T 原 Runtime 创建 D]
+    T --> CP[原保护下完整目标物化及 Checkpoint]
+    CP --> CL[材料耐久 全引用验证 产品结果]
+    CL --> CR[完整 Diff 与作者消息目标 Ref 审阅]
+    CR --> CA{独立 Commit 批准}
+    CA -->|批准| COM[确定性 Commit 对象与新 Ref CAS]
+    CA -->|拒绝| KEEP[保留可读取 Checkpoint 不提交]
+    COM --> END[闭包结果与只读对账]
+    END --> BK[停机业务快照与完整备份]
+    BK --> RS[整体根恢复 历史可读 执行禁用]
+    RS --> RB[新身份重验 重绑 新批准]

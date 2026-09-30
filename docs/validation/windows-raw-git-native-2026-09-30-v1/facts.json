@@ -55,5 +55,20 @@
   "private_evidence_locator": "Harnessix/verification/windows-raw-receipt-20260930-v1/ci-36736381341",
   "whole_ci_status": "completed",
   "whole_ci_conclusion": "failure",
-  "terminal_run_sha256": "fe9d3cafcf933566f4be9794c69c3edce14be79f659bf633ddde57e05ec1a275"
+  "terminal_run_sha256": "fe9d3cafcf933566f4be9794c69c3edce14be79f659bf633ddde57e05ec1a275",
+  "successor_raw_step_proof": {
+    "candidate_revision": "96584026bdf34c49c519834331b84043a6c03895",
+    "run_id": 36744220549,
+    "windows_job_id": 109986159922,
+    "step": 7,
+    "step_name": "验证原生认证raw回执与Git基准",
+    "step_conclusion": "success",
+    "whole_job_at_observation": "in_progress",
+    "whole_job_conclusion": "",
+    "whole_run_at_observation": "in_progress",
+    "raw_snapshot_sha256": "4a6b835bba50a88a387033884eac9745a645efd33aa7f217d4c4aaa7c9a7c751",
+    "same_426_input_bindings_as_tested_source_commit": true,
+    "exact_test_counts_pending_job_log": true,
+    "windows11_consumer_verified": false
+  }
 }

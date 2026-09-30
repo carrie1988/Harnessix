@@ -3,7 +3,7 @@
   "default_writer_regression_local_verified": true,
   "mypy_410_source_files": "pass",
   "machine_schema_check": "pass",
-  "native_windows_current_candidate_verified": false,
+  "native_windows_current_candidate_verified": true,
   "git_object_backup_closure_verified": false,
   "product_commit_checkpoint_wired": false,
   "r3_quality_changed": false,
@@ -11,5 +11,7 @@
   "source_outside_actual_wheel_verified": true,
   "governance_302_tests": "pass",
   "documentation_policy": "pass",
-  "readonly_not_cross_store_atomic_snapshot": true
+  "readonly_not_cross_store_atomic_snapshot": true,
+  "native_windows_verified_scope": "原生认证raw回执、Git基准及GitStore只读专项步骤；不代表整个Windows Job或消费者OS",
+  "whole_native_windows_job_verified": false
 }

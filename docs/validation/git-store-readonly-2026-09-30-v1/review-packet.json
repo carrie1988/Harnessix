@@ -37,8 +37,8 @@
     },
     {
       "id": "WINDOWS-NATIVE",
-      "status": "pending",
-      "evidence": "新85项与测试合同修正须后继原生候选实际执行"
+      "status": "pass_native_scoped",
+      "evidence": "9658402实际原生步骤7成功；包括只读Selector和两项测试合同修正，整个Job与Windows11不外推"
     },
     {
       "id": "GOVERNANCE-DOCUMENTS",

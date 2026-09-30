@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: ece88ade3e00532e3c4fa93d4abfb694401f13e4
 owners: [core]
 modules: [processes, tools, product_config]
@@ -70,4 +70,8 @@ Windows Server Runner结果不替代Windows11消费者安装升级或独立Beta�
 不以其中本机通过覆盖本次原生失败。
 
 生产raw实现没有因本次测试修正改写；没有模型请求、凭据读取或预算账本变更，R3成绩保持。
-后继原生全组、消费者Windows11、正式Commit/Checkpoint接线、完整Git备份、独立Beta和R1～R6仍开放。
+后继固定`9658402`的[实际CI](https://github.com/carrie1988/Harnessix/actions/runs/36744220549)
+认证raw/Git专项步骤已成功，包含短ID、原8MiB停止线与共同8MiB+1负控，以及新Git Store只读Selector。
+原`ece88ad`失败不覆盖或改写；后继输入绑定及观察范围见
+[只读切片资料](../git-store-readonly-2026-09-30-v1/README.md)。观察时完整Job仍运行，精确用例数量待原日志。
+完整原生Job、消费者Windows11、正式Commit/Checkpoint接线、完整Git备份、独立Beta和R1～R6仍开放。
