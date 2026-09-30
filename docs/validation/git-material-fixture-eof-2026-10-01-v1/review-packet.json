@@ -1,0 +1,32 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "scope": "response_fixture_eof",
+  "accepted_design": [
+    "bounded exact OID and EOF before injected output",
+    "original 209 cases and production contracts preserved",
+    "large stderr generated in child rather than argv",
+    "two actual Owner wrong-OID negatives",
+    "no production changes or new wheel",
+    "two real Owner terminal-barrier controls reject without mutation"
+  ],
+  "original_native_failure_retained": true,
+  "local_verification": "pass_final_213_case_candidate",
+  "new_native_verification": "pending_new_candidate",
+  "open_release_requirements": [
+    "8MiB trusted Git write channel",
+    "durable Git object inventory and authenticated business log",
+    "product Commit and Checkpoint and complete backup closure",
+    "R3 full real-provider 20 Trial",
+    "consumer Windows11 and independent Beta"
+  ],
+  "commercial_go": false,
+  "independent_review": {
+    "initial_fixture_sha256": "d59a3568bba45c6b2300fe3f158552eb7fbc3ff544c2dde4e6d9c1eb561593d4",
+    "initial_fixture_status": "static_no_blocker",
+    "final_guard_review": "static_no_blocker",
+    "final_test_sha256": "e8946f006e4d3972e0259b39e32ad8abbf46cdbe124c6be218c5f9183cf5a9d1"
+  },
+  "original_209_nodeids_retained": true,
+  "production_sources_unchanged": 414,
+  "governance": "pass_302"
+}

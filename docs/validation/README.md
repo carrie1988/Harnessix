@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 48
-code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
+version: 49
+code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
 modules:
@@ -215,3 +215,10 @@ POSIX pipe V2原始双流认证、原同步门面回归与源码外制品输入�
 原批准及Owner认证、标准1MiB不变、等字节保护命中原失败及一次性快照修复。
 实际Wheel、源码外双Python与完整验证输入逐字节绑定；原生Windows取消夹具保留强PID/MAC/EOF合同。
 该读取增量不关闭8MiB输入、对象CAS及认证账本、全业务备份、R3/R4或商用1.0。
+
+## Git响应注入夹具输入完成与原生失败
+
+[专项交付](git-material-fixture-eof-2026-10-01-v1/README.md)记录固定Windows作业原62项IO通过、
+材料208通过/1失败以及强PID实际通过范围，保留完整原日志摘要和未执行的输出断言。
+后继仅使固定响应程序先消费唯一OID至EOF，保留209原案例并增加错误OID负对照；
+本地与新原生结果独立登记，不发布新R3成绩或完整Windows/商用通过结论。

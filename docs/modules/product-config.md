@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 47
-code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
+version: 48
+code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
 modules:
@@ -2286,3 +2286,8 @@ Windows pipe Owner已增加单一MAC覆盖的v2原始双流统计；正式基准
 每次执行与原Owner共用一次性保护快照；正文改写或模式命中均拒绝，包括等字节占位符命中。
 不改原封套/MAC格式，没有新增模型Tool、业务写入、CAS登记或备份白名单。
 消费者Windows11、R3、8MiB输入、完整对象/业务恢复闭包须继续独立验收。
+
+固定Windows候选的原受控IO62项已原生通过；材料209项中208通过、1项输出保护测试先因控制输入竞争失败。
+响应注入夹具现按[输入完成合同](../changes/m09-r4-git-object-material-read.md#91-原生响应注入夹具的输入完成合同)
+消费唯一OID及EOF后输出，生产控制通道和保护断言不变。旧失败保持，新候选原生结果单独验证；
+不把夹具同步整改当作生产Git写入或Windows消费者验收。

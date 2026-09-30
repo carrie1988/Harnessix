@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
+version: 2
+code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners: [core]
 modules: [delivery, product_config, processes]
 related_adrs:
@@ -249,3 +249,63 @@ missing、多对象、尾随/截断与正文SHA。真实Git专项核对blob/tree
 
 剩余风险是受信输入材料、保护命中正文的闭包策略、完整对象目录和CAS耐久业务登记，以及产品桥/备份/新根恢复。
 本切片不关闭完整Git/R3/R4/商用门禁；8MiB总体目标不缩减。
+
+### 9.1 原生响应注入夹具的输入完成合同
+
+固定`c64ebb5`的原生Windows作业中，原Git进程62项全部通过，新增材料209项中208通过、1失败。
+失败用例`test_material_stderr_matched_redaction_also_rejects_valid_stdout`预期输出保护拒绝，
+实际先触发`process_not_owned`。原日志和回执断言的未执行边界独立保留，不能称保护验收通过或输出泄漏。
+
+该固定Python测试程序未读取stdin，直接写双流后退出。正式执行先发送唯一OID及LF，再发送关闭命令；
+[`ProcessHandle._send_locked`](../../src/harnessix/processes/supervisor.py)拒绝已经终结或失去控制句柄的发送。
+源码支持快速退出与控制输入完成竞争；原失败日志不足以区分两个guard分支，不能排他确定具体时刻。
+
+整改仅改变[`_material_response_program`](../../tests/product_config/test_git_object_material.py)测试辅助函数，
+不改变生产执行、安全拒绝、Owner协议、输出保护或Git命令：
+
+| 输入或字段 | 含义与限制 |
+|---|---|
+| `request` | 原冻结读取请求；夹具预期完整小写OID及LF，与正式prepare使用同一请求 |
+| `stdout` / `stderr` | 固定异常或保护响应；仅测试程序注入，不作为真实Git业务成功证据 |
+| `expected_input` | SHA1为41字节，SHA256为65字节；不含对象正文 |
+| `read(N+1)` | 至多42/66字节；正确N字节输入须等到EOF才完成短读，额外一个字节即拒绝 |
+| 退出码`97` | 输入不匹配时无正文输出终结；正式执行仍按原接受码集合拒绝 |
+
+核心流程如下：
+
+```text
+由原请求生成唯一 expected_input
+从真实 stdin 有界读取 N+1 字节
+若结果不严格等于 expected_input：退出97，不输出任何材料
+否则已观察正确输入至 EOF，再写固定 stdout/stderr 并退出
+原端口继续验证正常终态、MAC、EOF、长度、SHA、保护命中和对象语义
+```
+
+```mermaid
+sequenceDiagram
+  participant Port as 原Git端口
+  participant Owner as 原Process Owner
+  participant Fixture as 固定响应注入夹具
+  Port->>Owner: 发送唯一OID及LF
+  Owner->>Fixture: 受限stdin字节
+  Fixture->>Fixture: read(N+1)等待输入完成
+  Port->>Owner: 原close_stdin命令
+  Owner->>Fixture: stdin EOF
+  Fixture->>Fixture: 严格核对N字节请求
+  Fixture-->>Owner: 固定双流响应及退出
+  Owner-->>Port: 原MAC终态和双流统计
+  Port->>Port: 完整性及保护拒绝断言
+```
+
+EOF是夹具消费输入的同步事实，不是新增控制协议确认消息。超时、取消和未知效果仍由原Owner结算，
+不得通过sleep、重试、删除断言或把非预期错误视作成功消除失败。
+五类异常batch、等字节stderr保护、普通stderr保护和stderr容量两边界复用同一个输入合同；
+大stderr仍在子程序按固定大小生成，不将1MiB正文展开到argv而突破原命令长度上限。
+保留全部209个原案例，新增SHA1/SHA256错误OID真实Owner负例验证退出97、无双流正文、原MAC及EOF。
+另以原Plan/批准和真实Supervisor启动故意先退出的固定程序，先`await handle.wait()`建立终态屏障，
+再分别发送stdin与close_stdin。两个回归验证原`process_not_owned`拒绝、原PID已结束、
+MAC及完整双流事实有效，拒绝后Lease/回执保持不变；不修改状态、控制句柄或生产代码。
+这只证明新场景的终态分支，不把它当作旧Windows失败的精确调度复现。最终材料专项为213项。
+
+后继本地回归不能替代新候选的原生Windows结果；完整消费者Windows11、8MiB写入与Git业务闭包仍开放。
+实际范围、原失败和后继候选输入摘要见[专项交付](../validation/git-material-fixture-eof-2026-10-01-v1/README.md)。

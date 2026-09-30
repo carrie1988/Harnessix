@@ -1,0 +1,54 @@
+{
+  "schema": "harnessix.validation-facts/v1",
+  "scope": "test_response_fixture_input_completion_not_production_git_write",
+  "baseline_revision": "c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e",
+  "candidate_binding": "exact_changed_test_bytes_and_unchanged_production_inputs",
+  "changed_test_bindings": [
+    {
+      "path": "tests/product_config/test_git_object_material.py",
+      "bytes": 47830,
+      "sha256": "e8946f006e4d3972e0259b39e32ad8abbf46cdbe124c6be218c5f9183cf5a9d1"
+    }
+  ],
+  "validation_input_count": 940,
+  "validation_input_digest": "0d37755ce823635c3951f06a7b58b7faff47ec1addf38a6cd5516badd3302d0f",
+  "production_source_files": 414,
+  "production_source_unchanged": true,
+  "reused_wheel_sha256": "f3eb5c197a52fbb0eec00b3c2c1dbfd0e0f961d6258294981925618310d755d4",
+  "installed_package_members_each": 455,
+  "new_production_wheel_built": false,
+  "original_material_cases_retained": 209,
+  "new_wrong_oid_cases": 2,
+  "native_original": {
+    "run_id": 36773826616,
+    "job_id": 110086621972,
+    "job_conclusion": "failure",
+    "original_git_process_cases": {
+      "passed": 62,
+      "failed": 0
+    },
+    "material_cases": {
+      "passed": 208,
+      "failed": 1
+    },
+    "failed_step": {
+      "passed": 588,
+      "failed": 1,
+      "skipped": 6
+    },
+    "failed_selector": "tests/product_config/test_git_object_material.py::test_material_stderr_matched_redaction_also_rejects_valid_stdout",
+    "expected_error": "git_process_output_changed",
+    "actual_error": "process_not_owned",
+    "raw_log_sha256": "20582a3020b32f2533e30c87f3fdec7794036461751a8972155a4cde9950cbb5",
+    "skipped_subsequent_steps": 11,
+    "guard_branch_exclusive_proof": false
+  },
+  "new_native_status": "not_yet_observed",
+  "model_requests": 0,
+  "provider_ledger_modified": false,
+  "git_business_write_implemented": false,
+  "commercial_acceptance": false,
+  "new_terminal_guard_cases": 2,
+  "final_material_cases": 213,
+  "original_native_files_hash_verified": 24
+}

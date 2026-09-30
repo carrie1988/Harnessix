@@ -1,0 +1,129 @@
+{
+  "schema": "harnessix.validation-verification/v1",
+  "status": "local_scoped_pass_new_native_pending",
+  "final_tests": {
+    "focus": {
+      "tests": 275,
+      "passed": 275,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 35.184,
+      "junit_sha256": "1ff6d038fccc3bdcde27a0be5f1c794edbc2a8b7ad06efe5368a5b68c1591179",
+      "log_sha256": "c2146de69c93c80976cf9def584c4aad9811051db415cac9d01ac94989349d43"
+    },
+    "associated": {
+      "tests": 974,
+      "passed": 933,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 41,
+      "duration_seconds": 120.877,
+      "junit_sha256": "5ad801a787c83f575d7e8457925d268bfa60ebc66fab3b337582895efa0b4946",
+      "log_sha256": "b53525fcfe20ce1493cb37d7d1c9ab7b162b76eb4bbb472beffd6d2d0b793ad1"
+    },
+    "installed312": {
+      "tests": 275,
+      "passed": 275,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 35.41,
+      "junit_sha256": "817119d9919fc0474005eb9ea1ce9aa7f05a12f670b9968bdd83ce6df9fc8eb1",
+      "log_sha256": "ad4d9f0882300a7598074ea8de788009fa656e78ef8d46d84197d52b5b4e1c94"
+    },
+    "installed313": {
+      "tests": 275,
+      "passed": 275,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 33.977,
+      "junit_sha256": "c58bb162e505c9651dd08837ba267dc8fb4bb6a46a4001f702a45931cabba56f",
+      "log_sha256": "c9f64ed8b56cfa24bb518480fba6b08dbf87d43576bf4800bf94659b04e29939"
+    },
+    "terminal-guard": {
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 0.42,
+      "junit_sha256": "154b6ba45a45663754a406f4a0ae7bcba14c10eec4e36ac546b4d9c161a03683",
+      "log_sha256": "5b29d5aafec32ee35f875a9097e0d9cba9eebf590bfe62f6d729a3669813d0fe"
+    }
+  },
+  "overlapping_collections_do_not_sum": true,
+  "original_native_failure_retained": true,
+  "development_failure_not_production_evidence": {
+    "tests": 273,
+    "failed": 2,
+    "passed": 271,
+    "reason": "temporary large stderr expanded into argv; restored bounded child-side generation",
+    "junit_sha256": "02571613be7c5c05fdb2f493f2f129b7433fd910ca8e5ad6fa646a6730c4f3fd",
+    "log_sha256": "e5843e0d37943c572ac6115d8a573624266f2c46361b0007d291810c1d9d90f4"
+  },
+  "governance": {
+    "tests": 302,
+    "passed": 302,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 27.814,
+    "junit_sha256": "47a941a3fe2fa9d35d54103156ec11480f3d4a5c340f9c07e55d438de42302b0",
+    "log_sha256": "e25e95a97b06c6834e2d6248b5f079820f206000684214fe954bf07fe656bc03"
+  },
+  "diagram_rendered_and_visually_checked": 1,
+  "new_native_status": "not_yet_observed",
+  "commercial_go": false,
+  "intermediate_211_candidate": {
+    "material_sha256": "d59a3568bba45c6b2300fe3f158552eb7fbc3ff544c2dde4e6d9c1eb561593d4",
+    "focus_passed": 273,
+    "associated_passed": 931,
+    "associated_skipped": 41,
+    "installed312_passed": 273,
+    "installed313_passed": 273,
+    "not_final_four_new_case_candidate": true
+  },
+  "original_209_native_nodeids_retained": true,
+  "new_material_nodeids": [
+    "tests/product_config/test_git_object_material.py::test_material_response_fixture_rejects_different_oid_before_output[sha1]",
+    "tests/product_config/test_git_object_material.py::test_material_response_fixture_rejects_different_oid_before_output[sha256]",
+    "tests/product_config/test_git_object_material.py::test_terminal_material_response_rejects_late_control[close_stdin]",
+    "tests/product_config/test_git_object_material.py::test_terminal_material_response_rejects_late_control[stdin]"
+  ],
+  "development_collection_error_retained": {
+    "reason": "incorrect import location corrected from actual superclass module",
+    "runtime_tests_executed": 0,
+    "junit_sha256": "7ea286a657d53dc3702eab750f875fa5feb0bd891d675885b0ffa1951368b453",
+    "log_sha256": "238d60b82308d23f2e068342ec3db5d894ed9cd005a78b1ff21dcdf22d114bab"
+  },
+  "secret_scan": {
+    "inputs": 3868,
+    "findings": 0,
+    "after_all_new_public_files_staged": true,
+    "reused_actual_final_wheel": true
+  },
+  "documentation": {
+    "document_count": 434,
+    "link_count": 10723,
+    "mermaid_count": 921,
+    "source_package_count": 26,
+    "findings": 0
+  },
+  "static_checks": {
+    "ruff": "pass_all_source_tests_scripts",
+    "mypy": "pass_414_unchanged_source_files",
+    "readability": "pass_original_policy_unchanged",
+    "specs": "pass",
+    "format": "pass_changed_test",
+    "new_diagram": "rendered_and_visually_checked"
+  },
+  "validation_inputs_before_after_equal": 940,
+  "independent_review": {
+    "reviewed_test_sha256": "e8946f006e4d3972e0259b39e32ad8abbf46cdbe124c6be218c5f9183cf5a9d1",
+    "fixture_review": "static_no_blocker",
+    "terminal_guard_review": "static_no_blocker",
+    "not_runtime_or_native_result": true
+  }
+}

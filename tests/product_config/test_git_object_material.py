@@ -21,8 +21,10 @@ from harnessix.delivery.git_object_material import (
     decode_git_object_batch,
 )
 from harnessix.domain.models import ApprovalOutcome, PolicyDecisionKind
+from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.processes.owner_receipt import verify_owner_receipt
 from harnessix.processes.supervision_contracts import MAX_PROCESS_INPUT_BYTES
+from harnessix.processes.supervisor import PosixProcessSupervisor, WindowsProcessSupervisor
 from harnessix.product_config.git_delivery_process import GitDeliveryProcess, GitOperationBudget
 from tests.product_config import test_git_delivery_process as process_tests
 
@@ -59,6 +61,18 @@ def _request(body: bytes, object_format: str = "sha1", kind: str = "blob") -> Gi
 
 def _frame(request: GitObjectRead, body: bytes) -> bytes:
     return f"{request.object_id} {request.object_type} {len(body)}\n".encode("ascii") + body + b"\n"
+
+
+def _material_response_program(request: GitObjectRead, stdout: bytes, stderr: bytes = b"") -> str:
+    """先有界核验唯一 OID 与 EOF，再注入响应；不与原控制通道关闭竞争。"""
+    expected_input = request.object_id.encode("ascii") + b"\n"
+    return (
+        "import sys\n"
+        f"if sys.stdin.buffer.read({len(expected_input) + 1}) != {expected_input!r}:\n"
+        "    raise SystemExit(97)\n"
+        f"sys.stdout.buffer.write({stdout!r})\n"
+        f"sys.stderr.buffer.write({stderr!r})\n"
+    )
 
 
 def _assert_material(material, request: GitObjectRead, body: bytes) -> None:
@@ -480,7 +494,7 @@ async def test_authenticated_raw_frame_still_requires_single_valid_git_object(
     body = _CANARY + b"\0\xff\n"
     request = _request(body)
     framed = _malformed_frame(request, body, attack)
-    case = make_process(python_code=f"import sys; sys.stdout.buffer.write({framed!r})")
+    case = make_process(python_code=_material_response_program(request, framed))
     prepared = case.port.prepare_object_read(case.workspace, request, budget=GitOperationBudget(45))
     with pytest.raises(KernelError) as failure:
         await _run(case, prepared)
@@ -499,6 +513,74 @@ async def test_authenticated_raw_frame_still_requires_single_valid_git_object(
         )
         == receipt
     )
+
+
+@pytest.mark.parametrize("object_format", ["sha1", "sha256"])
+async def test_material_response_fixture_rejects_different_oid_before_output(
+    make_process, object_format
+) -> None:
+    body = b"fixture body\0\xff"
+    expected = _request(body, object_format)
+    other = _request(b"different material", object_format)
+    case = make_process(python_code=_material_response_program(expected, _frame(expected, body)))
+    prepared = case.port.prepare_object_read(case.workspace, other, budget=GitOperationBudget(45))
+    with pytest.raises(KernelError) as failure:
+        await _run(case, prepared)
+    assert failure.value.code == "git_command_failed"
+    lease, receipt = _lease(case, prepared), _receipt(case, prepared)
+    assert lease.state == "exited" and lease.stop_reason == "exited" and lease.returncode == 97
+    for stream in ("stdout", "stderr"):
+        raw, observed = getattr(receipt, f"raw_{stream}"), getattr(lease, stream)
+        assert raw.eof and raw.observed_bytes == 0
+        assert raw.sha256 == hashlib.sha256(b"").hexdigest()
+        assert observed.eof and not observed.truncated and observed.persisted_bytes == 0
+    _assert_public_failure(failure.value)
+
+
+@pytest.mark.parametrize("operation", ["stdin", "close_stdin"])
+async def test_terminal_material_response_rejects_late_control(make_process, operation) -> None:
+    body = b"terminal material\0\xff"
+    request = _request(body)
+    framed = _frame(request, body)
+    # 仅该负例故意先退出，以真实终态屏障验证原控制拒绝，不复现历史调度顺序。
+    case = make_process(python_code=f"import sys; sys.stdout.buffer.write({framed!r})")
+    prepared = case.port.prepare_object_read(case.workspace, request, budget=GitOperationBudget(45))
+    plan = _plan(case, prepared)
+    supervisor_type = WindowsProcessSupervisor if os.name == "nt" else PosixProcessSupervisor
+    async with asyncio.timeout(prepared.budget.remaining()):
+        async with supervisor_type(case.state / "process-owner") as supervisor:
+            with SQLiteExecutionPlanStore(case.state / "execution-plans.db") as plans:
+                plans.save_plan(plan)
+            case.runner.verify_command(prepared.command)
+            handle = await supervisor.start(
+                plan,
+                prepared.spec,
+                prepared.capability,
+                workspace=prepared.command.cwd,
+                environment=dict(prepared.command.environment),
+                checkpoint=_checkpoint(plan),
+                intent_arguments=prepared.approval_arguments(),
+            )
+            lease = await handle.wait()
+            assert lease.state == "exited" and lease.stop_reason == "exited"
+            assert lease.returncode == 0 and lease.pid is not None
+            assert not process_tests._process_running(lease.pid)
+            receipt = _receipt(case, prepared)
+            assert receipt.pid == lease.pid and receipt.process_id == lease.process_id
+            assert lease.process_spec_digest == prepared.spec.digest
+            for stream, expected in (("stdout", framed), ("stderr", b"")):
+                raw = getattr(receipt, f"raw_{stream}")
+                assert raw.eof and raw.observed_bytes == len(expected)
+                assert raw.sha256 == hashlib.sha256(expected).hexdigest()
+                assert await handle.output(stream) == expected
+            with pytest.raises(KernelError) as failure:
+                if operation == "stdin":
+                    await handle.send_stdin(prepared.command.input_data)
+                else:
+                    await handle.close_stdin()
+            assert failure.value.code == "process_not_owned"
+            assert handle.lease == _lease(case, prepared) == lease
+            assert _receipt(case, prepared) == receipt
 
 
 @pytest.mark.parametrize("field", ["mac", "sha256", "eof", "observed_bytes"])
@@ -736,9 +818,10 @@ async def test_real_owner_byte_identical_redaction_match_rejects_material(
         # 固定测试程序仅注入 stderr；执行、脱敏和回执均由原真实 Owner 完成。
         body, stderr = b"ordinary-object\0\xff", _CANARY + b"\0" + protected + b"\0\xff\n"
         request = _request(body)
-        code = f"import sys; sys.stdout.buffer.write({_frame(request, body)!r})"
-        code += f"; sys.stderr.buffer.write({stderr!r})"
-        case = make_process(python_code=code, output_redaction=source)
+        case = make_process(
+            python_code=_material_response_program(request, _frame(request, body), stderr),
+            output_redaction=source,
+        )
     prepared = case.port.prepare_object_read(case.workspace, request, budget=GitOperationBudget(45))
     completion, rejection = None, None
     try:
@@ -864,9 +947,7 @@ async def test_material_stderr_matched_redaction_also_rejects_valid_stdout(make_
     request = _request(body)
     framed = _frame(request, body)
     case = make_process(
-        python_code=(
-            f"import sys; sys.stdout.buffer.write({framed!r}); sys.stderr.buffer.write({_CANARY!r})"
-        ),
+        python_code=_material_response_program(request, framed, _CANARY),
         output_redaction=process_tests._Redaction(_CANARY),
     )
     prepared = case.port.prepare_object_read(case.workspace, request, budget=GitOperationBudget(45))
@@ -884,8 +965,8 @@ async def test_material_read_keeps_original_stderr_limit(make_process, size) -> 
     body = b"small material\0"
     request = _request(body)
     frame = _frame(request, body)
-    code = f"import sys; sys.stdout.buffer.write({frame!r})"
-    code += f"; sys.stderr.buffer.write(b'e'*{size})"
+    code = _material_response_program(request, frame)
+    code += f"sys.stderr.buffer.write(b'e'*{size})\n"
     case = make_process(python_code=code)
     prepared = case.port.prepare_object_read(case.workspace, request, budget=GitOperationBudget(45))
     if size == _MIB:

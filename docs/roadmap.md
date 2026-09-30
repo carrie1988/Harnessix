@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 142
-code_revision: a0b5df0a3c380b8b058b8e45c99a731a9022e7f0
+version: 143
+code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
 modules:
@@ -1242,3 +1242,13 @@ Checkpoint/Commit独立批准、持久原生桥接、全事件证明、有界对
 
 该读取增量不实现8MiB输入、CAS耐久业务登记、对象目录、默认Git写Tool或Backup v2，
 不关闭R3、消费者原生、完整Git产品交付与商用门禁；原完整业务目标不缩减。
+
+### R4：固定响应夹具输入完成与原生失败保留
+
+固定`c64ebb5`的Windows Server原生作业中，原Git受控IO62项全部通过，材料专项208通过、1失败。
+原强PID取消与两类身份负例通过；唯一输出保护测试先触发控制通道拒绝，不等于秘密输出已经泄漏。
+[响应注入夹具合同](changes/m09-r4-git-object-material-read.md#91-原生响应注入夹具的输入完成合同)
+统一有界消费唯一OID及EOF后再输出，保留209个原案例和强断言，补SHA1/SHA256错误OID负例。
+另补两个真实Owner终态屏障负例，确定性验证退出后stdin/close_stdin继续拒绝，不冒充历史调度重放。
+[专项交付](validation/git-material-fixture-eof-2026-10-01-v1/README.md)区分旧原生失败、本地后继验证和新原生待验；
+不重跑覆盖旧日志，不放宽Owner安全或评分合同。8MiB写入、完整Git业务备份、R3、消费者Windows11及Beta仍开放。

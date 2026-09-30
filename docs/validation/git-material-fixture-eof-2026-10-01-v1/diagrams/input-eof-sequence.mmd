@@ -1,0 +1,13 @@
+sequenceDiagram
+  participant Port as 原Git端口
+  participant Owner as 原Process Owner
+  participant Fixture as 固定响应注入夹具
+  Port->>Owner: 发送唯一OID及LF
+  Owner->>Fixture: 受限stdin字节
+  Fixture->>Fixture: read(N+1)等待输入完成
+  Port->>Owner: 原close_stdin命令
+  Owner->>Fixture: stdin EOF
+  Fixture->>Fixture: 严格核对N字节请求
+  Fixture-->>Owner: 固定双流响应及退出
+  Owner-->>Port: 原MAC终态和双流统计
+  Port->>Port: 完整性及保护拒绝断言
