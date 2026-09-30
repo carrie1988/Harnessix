@@ -11,7 +11,7 @@ import subprocess
 import sys
 from contextlib import nullcontext
 from dataclasses import replace
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock, call
 
@@ -400,16 +400,13 @@ def _result(body: bytes) -> ProcessResult:
     )
 
 
-@pytest.mark.parametrize("platform", ["posix", "nt"])
-@pytest.mark.parametrize("for_delivery", [False, True])
-@pytest.mark.parametrize("operation", ["status", "worktree", "staged"])
-async def test_generated_queries_keep_all_fixed_guards_offline(
+def _offline_query_runtime(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     platform: str,
     for_delivery: bool,
-    operation: str,
-) -> None:
+) -> tuple[git_reader.GitReadRuntime, bytes]:
+    """只模拟命令生成端口；NT输入必须是带盘符的真实Windows路径形状。"""
     monkeypatch.setattr(
         git_reader,
         "os",
@@ -420,10 +417,30 @@ async def test_generated_queries_keep_all_fixed_guards_offline(
         "_build_git_process",
         lambda *_args, **_kwargs: SimpleNamespace(binding_fingerprint="3" * 64),
     )
-    reader = git_reader.GitReadRuntime(tmp_path, tmp_path / "unused-git", for_delivery=for_delivery)
-    run = AsyncMock(
-        side_effect=[_result((str(tmp_path) + "\n").encode()), _result(b""), _result(b"")]
-    )
+    if platform == "nt":
+        expected = PureWindowsPath("C:/workspace/工程")
+        root = Mock(spec=Path)
+        root.absolute.return_value = expected
+        root_line = (expected.as_posix() + "\r\n").encode()
+    else:
+        root = tmp_path
+        root_line = (str(tmp_path) + "\n").encode()
+    reader = git_reader.GitReadRuntime(root, tmp_path / "unused-git", for_delivery=for_delivery)
+    return reader, root_line
+
+
+@pytest.mark.parametrize("platform", ["posix", "nt"])
+@pytest.mark.parametrize("for_delivery", [False, True])
+@pytest.mark.parametrize("operation", ["status", "worktree", "staged"])
+async def test_generated_queries_keep_all_fixed_guards_offline(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    platform: str,
+    for_delivery: bool,
+    operation: str,
+) -> None:
+    reader, root_line = _offline_query_runtime(tmp_path, monkeypatch, platform, for_delivery)
+    run = AsyncMock(side_effect=[_result(root_line), _result(b""), _result(b"")])
     monkeypatch.setattr(reader, "_run", run)
     cancel = CancelToken()
     args = _arguments(platform, for_delivery)
@@ -454,6 +471,40 @@ async def test_generated_queries_keep_all_fixed_guards_offline(
         call((*args, "config", "--no-includes", "--null", "--name-only", "--list"), cancel),
         call((*args, *command), cancel),
     ]
+
+
+@pytest.mark.parametrize("for_delivery", [False, True])
+@pytest.mark.parametrize(
+    "observed",
+    [
+        "/workspace/工程\n".encode(),
+        "D:/workspace/工程\n".encode(),
+        "C:/workspace/工程/child\n".encode(),
+        "C:workspace/工程\n".encode(),
+        b"C:/workspace\n",
+        "C:/workspace/工程\n\r\n".encode(),
+    ],
+    ids=["drive-less", "other-drive", "child", "drive-relative", "parent", "extra-line"],
+)
+async def test_simulated_windows_queries_still_deny_wrong_root_before_configuration(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    for_delivery: bool,
+    observed: bytes,
+) -> None:
+    """正确模拟路径不能豁免仓库根校验；拒绝后不运行配置或状态查询。"""
+    reader, _ = _offline_query_runtime(tmp_path, monkeypatch, "nt", for_delivery)
+    run = AsyncMock(return_value=_result(observed))
+    monkeypatch.setattr(reader, "_run", run)
+    cancel = CancelToken()
+    with pytest.raises(git_reader.ReadToolError) as error:
+        await reader.execute(GitStatusInput(), cancel)
+    assert error.value.code == "path_denied"
+    run.assert_awaited_once_with(
+        (*_arguments("nt", for_delivery), "rev-parse", "--show-toplevel"),
+        cancel,
+        repository_check=True,
+    )
 
 
 @pytest.mark.parametrize(

@@ -331,7 +331,11 @@ def test_rollback_input_rejects_caller_supplied_authority(field):
     assert invalid.value.code == "workspace_rollback_arguments_invalid"
 
 
-@pytest.mark.parametrize("before", [b"x" * 600_000 + b"\n", b"\x00\xff" * 300_000])
+@pytest.mark.parametrize(
+    "before",
+    [b"x" * 600_000 + b"\n", b"\x00\xff" * 300_000],
+    ids=["large-text", "binary"],
+)
 async def test_rollback_restores_original_large_or_binary_bytes_without_model_body(
     tmp_path, before
 ):
