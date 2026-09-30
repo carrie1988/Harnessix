@@ -1,0 +1,21 @@
+{
+  "verdict": "NO_GO_INCOMPLETE_REAL_QUALITY",
+  "current_blockers": [
+    "required_profile_missing_and_unactionable_trusted_input_feedback",
+    "interrupted_turn_has_no_trial_report",
+    "new_fixed_candidate_requires_explicit_budget_scope_binding"
+  ],
+  "followups": [
+    "offline_contract_feedback_correction",
+    "freeze_new_candidate_and_full_suite_scope",
+    "retain_original_partial_runs_and_reservations"
+  ],
+  "remaining_release_gates": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ]
+}

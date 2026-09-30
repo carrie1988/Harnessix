@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 139
+version: 140
 code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
 owners:
   - core
@@ -742,6 +742,10 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 [后继单次有界复验](changes/m09-r3-bounded-reverification-budget.md)新增原周期内唯一Suite授权，
 冻结完整旧请求前缀并保留原unknown全部预留；新费用按40元单轮和70元原总预算双上限保护，
 默认未决即停及新增未决立即停止/重启拒绝保持。该离线机制不代表新完整真实质量成绩。
+[实际有界复验](validation/bounded-provider-suite-interruption-2026-09-30-v1/README.md)在`940432f`首个Trial中断：
+9次请求全部已知结算，新增估算0.219136元、无新增费用未知；原20.77824元预留保持。
+模型8次固定Profile调用遗漏必填profile，没有审批、Profile结果或Trial报告；没有新的完整20 Trial成绩。
+同Revision完整本机离线6033通过、111跳过，但不替代R3。下一整改复用安全字段反馈，保持严格Decoder和原评分门槛。
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
 Action借用同一Owner，取消结算唯一目录线程后释放。该前置由后继完整备份/恢复及整体Root发布承接；
 复杂Store/Artifact业务恢复与正式安全收口仍需完整验收，不关闭R1或R4。

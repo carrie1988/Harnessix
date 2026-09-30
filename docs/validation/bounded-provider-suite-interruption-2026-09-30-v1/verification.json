@@ -1,0 +1,10 @@
+{
+  "strict_plan_fixed_before_first_request": true,
+  "original_budget_prefix_unchanged": true,
+  "all_nine_attempts_reliably_settled": true,
+  "no_new_unknown_or_refund": true,
+  "new_full_twenty_trial_complete": false,
+  "original_thresholds_or_inputs_relaxed": false,
+  "same_revision_full_offline_passed": true,
+  "real_coding_quality_passed": false
+}
