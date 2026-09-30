@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 43
-code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
+code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners:
   - core
 modules:
@@ -63,7 +63,7 @@ supersedes: []
 | 持久化 | `product-config.db`保存无明文Product/Action Snapshot、双活动指针原子CAS、两条配置事件Hash链、Fallback事件链、Action恢复扫描及启动恢复报告 |
 | 默认产品平台 | 配置、Configure和Doctor跨平台；macOS/Linux使用POSIX安全端口；Windows使用原生Handle读取及本地NTFS Patch候选，其他卷省略Patch；固定Process Profile只有在本机Engine、镜像、Owner、Sandbox与Secret全部验证后才跨平台广告 |
 | 公共导出 | 包根导出数据合同；Codec、Store、Runtime、Migration和Server需从具体模块导入 |
-| 代码版本 | `8340ff1cbc6375ad4064b8be6bd4c7bd708c559d` |
+| 代码版本 | 固定Profile契约反馈`9723b58688890672ec17ffd8d37d78507ed81ece`；其他已验收基线见各专项材料 |
 | 当前完成度 | 0.9.1d、0.9.1e1～e5和f2c均已关闭；0.9.3c产品Action双层Owner、跨Store扫描、期限与只对账恢复已由CI 35691402329六实例验收关闭 |
 
 本文是[`contracts.py`](../../src/harnessix/product_config/contracts.py)、

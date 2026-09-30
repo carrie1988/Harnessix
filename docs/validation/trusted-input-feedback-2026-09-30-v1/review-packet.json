@@ -1,0 +1,22 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "9723b58688890672ec17ffd8d37d78507ed81ece",
+  "decision": "offline_slice_only_real_R3_and_commercial_open",
+  "checks": [
+    "strict_decoder_selector_executor_ast_unchanged",
+    "known_sensitive_field_rejection_priority_unchanged",
+    "callback_exception_body_never_published",
+    "explicit_schema_frozen_copy_used",
+    "ordinary_feedback_and_paging_contract_preserved",
+    "stale_descriptor_fingerprint_rejected_before_decoder",
+    "actual_sdk_approval_cancel_execute_once_replay",
+    "original_paid_failure_and_full_budget_retained"
+  ],
+  "not_accepted": [
+    "real_model_correction_rate",
+    "full_real_20_trial_quality",
+    "Windows_11_consumer_validation",
+    "independent_beta",
+    "R1_to_R6_commercial_release"
+  ]
+}

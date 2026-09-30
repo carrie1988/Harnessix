@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 1
-code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
+code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners: [core]
 modules: [tools, trusted_actions, product_config]
 related_adrs:

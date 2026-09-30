@@ -1,0 +1,10 @@
+flowchart TD
+    P[宿主固定Profile] --> D[同源描述与输入Schema]
+    D --> C[Catalog及Fingerprint]
+    C --> M[模型工具调用]
+    M --> V[原严格Decoder]
+    V -->|有效| R[原Resolver Policy Route Approval Executor]
+    V -->|参数拒绝| F[共享纯函数反馈]
+    D --> F
+    F --> S[原ToolResult Session持久化]
+    S --> H[下一模型历史或协议回放]

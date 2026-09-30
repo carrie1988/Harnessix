@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 8
-code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
+code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners:
   - core
 modules:
@@ -54,7 +54,7 @@ supersedes: []
 | 权限来源 | 宿主构造的Workspace能力、版本化`ToolDescriptor`和Kernel注入的`ToolExecutionScope` |
 | 并发模型 | 单Runtime有界并行读取，默认4，合法范围1～16；持久结果仍由Agent按Provider调用顺序提交 |
 | 平台状态 | macOS/Linux使用POSIX FD；Windows使用原生Handle文件端口；显式Git进入原生读取候选 |
-| 代码版本 | `812ae7cfa1978acd53a278637b19f936ebac4a14` |
+| 代码版本 | 安全字段反馈`9723b58688890672ec17ffd8d37d78507ed81ece`；读取快照基线`812ae7cfa1978acd53a278637b19f936ebac4a14` |
 
 Coding Tool Runtime不是Shell、写文件接口或OS Sandbox。它只实现宿主预先授予的窄只读能力；Patch、
 Process、测试执行和事务性交付由各自的可信执行模块负责，不能通过本模块的`READ_ONLY`声明旁路。

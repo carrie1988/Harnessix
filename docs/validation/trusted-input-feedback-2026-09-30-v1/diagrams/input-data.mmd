@@ -1,0 +1,7 @@
+flowchart LR
+    Schema[注册Schema顶层字段] --> Meta[有界字段元数据检查]
+    Args[不可信参数对象] --> Presence[仅检查必填键是否存在]
+    Meta --> Message[固定模板反馈]
+    Presence --> Message
+    Message --> Output[原错误码与错误消息]
+    Raw[参数值 额外键 回调异常正文] -.禁止进入.-> Output

@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 35
-code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
+code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners:
   - core
 modules:
@@ -55,7 +55,7 @@ supersedes: []
 | 下游依赖 | `execution`、`workspace`、`domain`基础枚举、Pydantic合同、两个SQLite Store，以及宿主注册的Resolver/Executor |
 | 持久化 | `SQLiteExecutionPlanStore`保存Execution Plan/Approval；`SQLiteActionAuditStore` v2保存Route Plan、当前投影、append-only Hash链、Owner Generation和Execute/Reconcile Operation |
 | 平台 | 合同与Store平台中立；Workspace/Sandbox能力由Execution Plan绑定；SQLite文件权限仅在POSIX显式收紧 |
-| 代码版本 | 已验收基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`；f2b已由CI 35442924441关闭 |
+| 代码版本 | 安全字段反馈`9723b58688890672ec17ffd8d37d78507ed81ece`；原路由基线`e2d8c24b8a09518dc05a4ce113887800cbe4c9fa`，历史CI仅对应各原Revision |
 | 当前完成度 | 核心路由、默认产品组合及扩展适配已实现；独立Action HTTP/Worker已删除；0.9.3c双层Owner、Operation期限、只对账恢复和跨Store扫描已由CI 35691402329六实例验收关闭 |
 
 本文是`trusted_actions`包当前实现的事实源。旧Action Request、Journal与Worker属于0.9.1f3已删除的历史实现，以

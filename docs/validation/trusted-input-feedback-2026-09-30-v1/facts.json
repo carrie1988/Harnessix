@@ -1,0 +1,181 @@
+{
+  "spec_version": "harnessix.trusted-input-feedback-facts/v1",
+  "source_revision": "9723b58688890672ec17ffd8d37d78507ed81ece",
+  "preserved_ast_symbols": [
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "symbol": "RunProfileInput",
+      "ast_sha256": "aa0ed68107337371e7190e619e463ecd08e81b978e8655de624e8870ee99ea1c",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "symbol": "decode_run_profile",
+      "ast_sha256": "f6f5bf764f2547283e8692129fa47bf88fd899c111d3df6f6fa1af8d418063df",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "symbol": "product_process_binding",
+      "ast_sha256": "0cd229392f24fc1fcc5140c7333ca6ed53e3975b4a0badb6451dc9468fb4967f",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "symbol": "resolve_run_profile",
+      "ast_sha256": "e40530e90fd373a204fbb236b68377dd9869486f859cd09a9272acab196cc1a4",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "symbol": "ProductProcessActionExecutor",
+      "ast_sha256": "75e1b0321cc2a6761b64bba20f115ee48378ba63362a8cdf36fbe11509cf1941",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "symbol": "ProductProcessOutputProvider",
+      "ast_sha256": "89e1764e8139f360d6536f7f4dfc741e385e51482cb027dff8adfb05b3eb0762",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "symbol": "build_product_process_definition",
+      "ast_sha256": "0119a105a7004935a387b2fbe1bb61fcb7bde7480d894a736413d8db23daa7ca",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/trusted_actions/planning.py",
+      "symbol": "plan_action",
+      "ast_sha256": "e4c94bc8ea59ede0c791b3f9e5ff271f3f50f7da5f3288c6df45549c9eefe76a",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/trusted_actions/planning.py",
+      "symbol": "decode_action_arguments",
+      "ast_sha256": "fb120a12a04120b6912947c53b5df292ea35cb45e559d0f4499a28ad3d647255",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/trusted_actions/planning.py",
+      "symbol": "_find_sensitive_path",
+      "ast_sha256": "6e23a0659032c1e2e62ce3493c67b8054d194febd309dbc122c769ff58894093",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/tools/runtime.py",
+      "symbol": "_argument_failure",
+      "ast_sha256": "0aecd21713e5f60f65b391549c965319880bc86ffe850120650fcd34a1886419",
+      "unchanged": true
+    }
+  ],
+  "preserved_files": [
+    {
+      "path": "scripts/provider_verification_budget.py",
+      "sha256": "5fe17d69151d66386eb8cbc1527adeacae9e5752d61c871821d2da654c3842de",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/provider_verification_guard.py",
+      "sha256": "88729a6466b2fb8f48f6e08d109c3c27f9f4a62fa50bb6d4cbdb86626946d268",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/provider_reverification_plan.py",
+      "sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+      "unchanged": true
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+      "unchanged": true
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+      "unchanged": true
+    },
+    {
+      "path": "governance/readability-policy-v1.json",
+      "sha256": "c1f4b75cd34d25d9cef0b6cc84c3633525195d48af70c4d65742e46786c385e6",
+      "unchanged": true
+    }
+  ],
+  "source_files": 403,
+  "source_proof_sha256": "06512f1d22254e342238379a0d3735d0e2497ef4e271150697b49baee8cc9992",
+  "changed_production_source": [
+    {
+      "path": "src/harnessix/product_config/process_action.py",
+      "bytes": 22170,
+      "sha256": "325bfe95bb27a7b6819d12c70bf0ed735c4a26303fe08a3767ba9d2ad8d50d94"
+    },
+    {
+      "path": "src/harnessix/tools/argument_feedback.py",
+      "bytes": 2431,
+      "sha256": "2ced63b1c8a71edc82431c90654762ef4538d795fa97e1728f84fd0874c747b8"
+    },
+    {
+      "path": "src/harnessix/tools/runtime.py",
+      "bytes": 21200,
+      "sha256": "9d324c2016eb1f64b9f47d6e3887942bf9e46736d3245334bbe04ef693f0ffc6"
+    },
+    {
+      "path": "src/harnessix/trusted_actions/planning.py",
+      "bytes": 10772,
+      "sha256": "04116a355f73b5a12df68386cbcf4896f536af617957b9ccbbfbd9669d747b34"
+    }
+  ],
+  "original_real_suite_interruption_retained": true,
+  "new_full_real_quality_published": false,
+  "automatic_argument_repair": false,
+  "approval_or_decoder_relaxed": false,
+  "schema_field_limit": 64,
+  "schema_field_name_limit": 64,
+  "message_character_limit": 2000,
+  "source_schema_and_taskpack_checks_passed": true,
+  "wheel_package_members": 444,
+  "wheel_sha256": "e8dc92e32ee3ae0b6efe48dbde5e55906a85605a04a05cb8a654235d8be9aa9f",
+  "sdk_scenario": {
+    "invalid_calls": 8,
+    "invalid_process_runs": 0,
+    "corrected_call_requires_independent_approval": true,
+    "approved_process_runs": 1,
+    "cancelled_process_runs": 0,
+    "sqlite_reopen_and_pure_replay_equal": true
+  },
+  "budget": {
+    "allocation_cny": "70.00",
+    "retained_unknown_cny": "20.77824",
+    "reverification_cap_cny": "40",
+    "already_used_reverification_estimate_cny": "0.219136",
+    "same_cap_remaining_cny": "39.780864",
+    "current_slice_paid_requests": 0,
+    "new_suite_rebinding_required": true,
+    "actual_supplier_bill_verified": false,
+    "original_ledger_byte_equal": true,
+    "before_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "after_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "total_known_estimate_cny": "1.74186"
+  },
+  "installed_proof_sha256": "773a2b8801a7b9801c348d9add3698b95dd46458cf461a72923cde9cbeeae97b",
+  "host": {
+    "python": "3.12.7",
+    "platform": "Darwin",
+    "machine": "arm64",
+    "git": "git version 2.53.0"
+  },
+  "full_offline": {
+    "collected": 6196,
+    "passed": 6085,
+    "skipped": 111,
+    "failures": 0,
+    "errors": 0,
+    "seconds": "574.751",
+    "source_revision": "9723b58688890672ec17ffd8d37d78507ed81ece"
+  }
+}

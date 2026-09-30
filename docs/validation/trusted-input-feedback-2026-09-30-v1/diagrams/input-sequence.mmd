@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant M as Provider
+    participant K as Agent Runtime
+    participant T as Trusted Router
+    participant F as 纯字段反馈
+    participant S as 原Session Store
+    M->>K: 新call_id 缺少profile
+    K->>T: 固定Fingerprint及原参数
+    T->>T: 原契约身份 Secret字段检查 严格解码
+    T->>F: 注册Schema 原参数键
+    F-->>T: 必填profile 缺少profile 允许字段
+    T-->>K: tool_invalid_arguments
+    K->>S: 原失败ToolResult事件
+    K->>M: 原历史带安全失败结果
+    M->>K: 新call_id 显式profile
+    K->>T: 原严格验证与规划
+    T-->>K: 原独立审批请求
+    Note over K,T: 只有精确新批准后才执行 不自动执行旧失败call

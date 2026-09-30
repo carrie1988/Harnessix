@@ -2,7 +2,7 @@
 doc_type: roadmap
 status: current
 version: 141
-code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
+code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners:
   - core
 modules:
@@ -748,6 +748,8 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 同Revision完整本机离线6033通过、111跳过，但不替代R3。
 [固定Profile与Trusted输入反馈整改](changes/m09-r3-trusted-input-feedback.md)共享有界字段辅助，
 明确显式必填Profile和实际Selector策略；保持原严格Decoder、独立批准、Token及评分门槛。
+[统一专项材料](validation/trusted-input-feedback-2026-09-30-v1/README.md)保留原源码负对照、离线SDK、
+实际Wheel及治理原失败；同候选完整离线6085通过/111跳过，测试成功不代替真实模型质量。
 原真实失败保持，不重放旧未知效果；新完整Suite仍需原同一40元范围重新绑定，
 已用0.219136元和旧20.77824元全额预留继续计入原70元，不视为新额度或实际账单。
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，

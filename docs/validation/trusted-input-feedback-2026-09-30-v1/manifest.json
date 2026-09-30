@@ -1,0 +1,55 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7980,
+      "sha256": "b15c99ecb09cd6d11f9b04360f6a07bac57bff0705292d312d71bc4b6ce338f2"
+    },
+    {
+      "path": "diagrams/input-data.mmd",
+      "bytes": 356,
+      "sha256": "d62402a8642e2aa3a66cc14082782e5a1d6abc372f33dd0fb321e51a5cad0eef"
+    },
+    {
+      "path": "diagrams/input-data.png",
+      "bytes": 19715,
+      "sha256": "60cdbc6f141cb5d6d5c062f8517853c439e06aa6b6fc03d72b6bdc267013b674"
+    },
+    {
+      "path": "diagrams/input-flow.mmd",
+      "bytes": 388,
+      "sha256": "79de60ca03dc6f3cfad9ab0156ae42aed21d43efadadb9cf73d5d2c9cf2fc450"
+    },
+    {
+      "path": "diagrams/input-flow.png",
+      "bytes": 40047,
+      "sha256": "364e753b37552bf98119f048e567ff231a2f2406c5e237ad847d3e3b55c92a48"
+    },
+    {
+      "path": "diagrams/input-sequence.mmd",
+      "bytes": 720,
+      "sha256": "8edf25b1c8e290078ff5b10efbc3756a81e27d070970ca1a727583866ddcc24b"
+    },
+    {
+      "path": "diagrams/input-sequence.png",
+      "bytes": 41503,
+      "sha256": "a679f7f80535eb21b37c909f48c663323f6ed03ee7b3dff3d9cc27b7ec568dd7"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 6482,
+      "sha256": "c1fd3002d78d1d7b5e0829736a88a1e7021513800f1e6c8bb8b9ea3608d0802c"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 809,
+      "sha256": "2aed8fa04b5057bf90b40a7a8ece697158f08678ff8926b096ff491cd8e32dae"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 7853,
+      "sha256": "e8a8ad5697de5c8a4721cd0bcc1b8312719423ace0b94d16113a6acd6cef70f7"
+    }
+  ]
+}

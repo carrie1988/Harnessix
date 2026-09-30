@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 42
-code_revision: 007839e7648b6fc1b94a5acede8dd0285092249b
+version: 43
+code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-30 | [固定Profile与Trusted安全输入反馈](trusted-input-feedback-2026-09-30-v1/README.md) | `9723b58688890672ec17ffd8d37d78507ed81ece` | 原70元及旧预留不变；零真实请求；独立Wheel | 原源码5失败保留；焦点104、治理302、源码外70通过；完整离线6085通过/111跳过 | 仅参数反馈候选，不关闭真实质量或商用门禁 |
 | 2026-09-30 | [固定镜像与显式Engine评测宿主前置](docker-eval-host-2026-09-30-v1/README.md) | 生产基线`89b3cd1`、测试源SHA绑定 | 原Python/Node RepoDigest；同Engine显式入口；零模型请求 | 原宿主状态恢复；真实集成5通过、关联离线151通过，旧断言FAIL保留；默认Desktop注册仍Created | 仅评测宿主前置GO；不关闭默认Desktop、真实20 Trial、消费者Windows11、Beta或商用门禁 |
 | 2026-09-29 | [固定不同版本三平台停机升级、完整恢复与回退](different-version-upgrade-2026-09-29-v1/README.md) | `ec356aa1555d6ad712819f3e02e210493f7d3135` | 唯一规范Wheel；原归档0.1.0→内部1.0.0rc1→原旧包；源码外三平台；零模型请求 | 唯一构建及三消费者终态成功；原Key/六库、稳定恢复身份和回退读写通过；首轮cp1252和Apple Git失败保留 | 固定版本对专项GO；消费者Windows11、真实编码、独立Beta及R1～R6整体商用门禁仍开放 |
 | 2026-09-29 | [R1既有安全控制追踪与双Python专项](v1-safety-coverage-2026-09-29-v1/README.md) | `ae590042f52de7e08eafb51a1fa080b935afc6df` | 18组风险、54个原函数选择器；本地macOS双Python、零模型请求 | 各146通过/2原生Windows跳过；逐组及参数结果保留 | 仅控制追踪与本地锚点GO；原生、实际后端、R1整体及商用门禁保持 |
