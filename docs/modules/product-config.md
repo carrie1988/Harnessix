@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 45
-code_revision: 02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675
+version: 46
+code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_delivery_process.py
   - tests/product_config/test_git_baseline.py
   - tests/product_config/test_profile_argument_feedback.py
   - tests/product_config/test_profile_argument_feedback_sdk.py
@@ -2254,3 +2255,19 @@ Windows pipe Owner已增加单一MAC覆盖的v2原始双流统计；正式基准
 总体图、数据流、时序、字段、伪代码、失败及部署边界见
 [`正式详设`](../changes/m09-r4-product-git-baseline.md)，真实Git与原产品Patch专项见
 [`test_git_baseline.py`](../../tests/product_config/test_git_baseline.py)。**本模块仍未接入产品Commit/Checkpoint，R4保持开放。**
+
+
+## 44. Git交付受控命令IO
+
+[`git_delivery_process.py`](../../src/harnessix/product_config/git_delivery_process.py)提供显式内部
+`GitDeliveryProcess`端口。`prepare`由原Runner固定材料派生新ProcessSpec；`run`消费原ExecutionPlan
+及批准，不生成ALLOW，不发布任意Git模型工具。命令、环境、stdin摘要、实现和原Owner能力全部绑定。
+
+一个`GitOperationBudget`共享整个操作的单调期限，旧材料不能换新对象刷新时间。启动、输入与等待期
+取消均先通知并排空原任务；原POSIX Session/Windows Job负责进程树回收，未知效果优先于普通取消/超时。
+原Plan与Lease按原目录持久化；正常结果必须原V2回执与完整原始双流等长同摘要，否则拒绝。
+
+[`总体与详细设计`](../changes/m09-r4-git-supervised-command-io.md)说明类/接口、字段、流程、
+时序、数据流、伪代码、持久化、安全、部署和测试。当前原stdin合同仍为1MiB，较大业务材料明确拒绝；
+8MiB对象通道和完整Git产品桥仍是后继必做项，不降低业务容量或把内部端口当默认产品能力。
+此模块未改默认Catalog、六库备份布局、Provider预算、评测器或R3成绩。

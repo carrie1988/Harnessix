@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 46
-code_revision: 96584026bdf34c49c519834331b84043a6c03895
+version: 47
+code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
 owners:
   - core
 modules:
@@ -200,3 +200,11 @@ flowchart LR
 [统一专项交付](git-store-readonly-2026-09-30-v1/README.md)记录原v1格式、真实Git领域记录、
 真实WAL读取、五写入口首步拒绝及结构损坏关闭。新接口不创建产品Git目录、不扩展现有备份白名单，
 全事件前缀认证、对象材料和正式Commit/Checkpoint接线仍未完成；不替代R3/R4商用门禁。
+
+
+## Git受控命令IO与POSIX原始回执
+
+[统一交付报告](git-supervised-io-2026-10-01-v1/README.md)记录正式内部命令端口、
+POSIX pipe V2原始双流认证、原同步门面回归与源码外制品输入。保留原V1阻断及
+测试夹具失败，区分原始观察、脱敏持久正文、批准和命令层完成事实。
+不发布完整Git产品能力或R3成绩，不降低8MiB对象材料、全业务备份和商用门禁。

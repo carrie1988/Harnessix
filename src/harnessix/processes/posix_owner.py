@@ -21,7 +21,12 @@ from typing import Literal, cast
 
 from pydantic import ValidationError
 
-from harnessix.processes.owner_output import capture_process_streams
+from harnessix.processes.owner_output import (
+    capture_process_streams,
+    launch_failed_output_receipt,
+    output_limit_exceeded,
+    output_position,
+)
 from harnessix.processes.owner_protocol import (
     MAX_OWNER_CONTROL_FRAME_BYTES,
     ProcessOwnerCommand,
@@ -126,7 +131,7 @@ class _Owner:
         self.streams_open: set[Literal["stdout", "stderr"]] = set()
         self.receipt_sequence = 0
         self.last_progress = 0.0
-        self.last_published_output = (0, 0, 0, 0)
+        self.last_published_output = (0, 0, 0, 0, 0, 0)
         self.io_failed = False
 
     def run(self) -> int:
@@ -364,7 +369,7 @@ class _Owner:
         if data:
             stream = self.stdout if name == "stdout" else self.stderr
             stream.feed(data, self._remaining_output())
-            if self.stdout.observed + self.stderr.observed > self.request.output_bytes:
+            if output_limit_exceeded(self.request, self.stdout, self.stderr):
                 self._request_stop("output_limit")
             return
         self._close_stream(descriptor, name, eof=True)
@@ -382,6 +387,8 @@ class _Owner:
             self.stdin_fd = None
         stream = self.stdout if name == "stdout" else self.stderr
         stream.finish(self._remaining_output(), eof=eof)
+        if output_limit_exceeded(self.request, self.stdout, self.stderr):
+            self._request_stop("output_limit")
         self.streams_open.discard(name)
 
     def _finish_streams(self, *, eof: bool) -> None:
@@ -393,6 +400,8 @@ class _Owner:
             self.stdout.finish(self._remaining_output(), eof=eof)
         if not self.stderr.eof and "stderr" not in self.streams_open:
             self.stderr.finish(self._remaining_output(), eof=eof)
+        if output_limit_exceeded(self.request, self.stdout, self.stderr):
+            self._request_stop("output_limit")
 
     def _stream_descriptor(self, name: Literal["stdout", "stderr"]) -> int | None:
         if self.master_fd is not None:
@@ -405,13 +414,8 @@ class _Owner:
     def _remaining_output(self) -> int:
         return max(0, self.request.output_bytes - self.stdout.persisted - self.stderr.persisted)
 
-    def _output_position(self) -> tuple[int, int, int, int]:
-        return (
-            self.stdout.observed,
-            self.stdout.persisted,
-            self.stderr.observed,
-            self.stderr.persisted,
-        )
+    def _output_position(self) -> tuple[int, int, int, int, int, int]:
+        return output_position(self.stdout, self.stderr)
 
     def _request_stop(self, reason: ProcessStopReason) -> None:
         if self.stop_reason is not None:
@@ -459,6 +463,8 @@ class _Owner:
             stop_reason=stop_reason,
             stdout=self.stdout.observation(),
             stderr=self.stderr.observation(),
+            raw_stdout=self.stdout.raw_observation() if self.request.terminal == "pipe" else None,
+            raw_stderr=self.stderr.raw_observation() if self.request.terminal == "pipe" else None,
         )
         write_owner_receipt(self.receipt_path, receipt)
         self.last_progress = time.monotonic()
@@ -468,17 +474,7 @@ class _Owner:
         self._finish_streams(eof=True)
         self.stdout.sync()
         self.stderr.sync()
-        receipt = sign_owner_receipt(
-            process_id=self.request.process_id,
-            owner_identity=self.request.owner_identity,
-            state="failed",
-            sequence=1,
-            owner_token=self.request.owner_token,
-            finished_at=datetime.now(UTC),
-            stop_reason="launch_failed",
-            stdout=self.stdout.observation(),
-            stderr=self.stderr.observation(),
-        )
+        receipt = launch_failed_output_receipt(self.request, self.stdout, self.stderr)
         write_owner_receipt(self.receipt_path, receipt)
         self._close_all()
 
@@ -499,6 +495,8 @@ class _Owner:
             stop_reason="cleanup_failed",
             stdout=self.stdout.observation(),
             stderr=self.stderr.observation(),
+            raw_stdout=self.stdout.raw_observation() if self.request.terminal == "pipe" else None,
+            raw_stderr=self.stderr.raw_observation() if self.request.terminal == "pipe" else None,
         )
         write_owner_receipt(self.receipt_path, receipt)
 

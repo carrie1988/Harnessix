@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 96584026bdf34c49c519834331b84043a6c03895
 owners: [core]
 modules: [delivery, product_config]
@@ -65,3 +65,10 @@ supersedes: []
 
 本阶段无生产代码修改、数据库迁移、真实模型请求或凭据读取；原预算与历史R3成绩不变。
 不能从文档治理或图形通过推出Git接线、真实编码质量、Windows11消费者验收、独立Beta或商用发布。
+
+## 7. 受控IO实施状态增补
+
+完整业务草案第15节增补了[内部受控IO实现与验证](../git-supervised-io-2026-10-01-v1/README.md)。
+原五幅计划图和完整Git业务合同保持不变，仍不表示默认产品写能力或Backup v2已完成。
+本包原治理、渲染及Secret统计属于初始设计版本，不追溯为新增IO代码的验证。
+Facts分别保留原设计SHA和当前增补正文SHA；新IO验证与新代码候选绑定由独立完整交付包承担。

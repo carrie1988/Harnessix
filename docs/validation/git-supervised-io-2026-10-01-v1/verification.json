@@ -1,0 +1,189 @@
+{
+  "schema": "harnessix.validation-verification/v1",
+  "status": "scoped_pass_not_commercial_go",
+  "final_candidate": {
+    "associated-reviewed-final": {
+      "scope": "Delivery + Process + three product Git selectors; includes all 67 new cases",
+      "tests": 758,
+      "passed": 717,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 41,
+      "duration_seconds": 102.58,
+      "junit_sha256": "7de5291ea312e6dfe8570e32f55934f9e58c6412e4584e6cb96d29b82c203a2a",
+      "log_sha256": "5bc1d078b8070d7e3c2c241091bd810cb5aade5faf9588bbec7e4915b8ac4a0a"
+    },
+    "product-reviewed-final": {
+      "scope": "all Product Config; overlaps associated collection",
+      "tests": 639,
+      "passed": 610,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 29,
+      "duration_seconds": 112.147,
+      "junit_sha256": "161ffa18f274b242076803ed65df825ee68b261a4f830dddfb410f4a9dd433cd",
+      "log_sha256": "e7d2ccc24956bc465f2e01647eb85a51af898162a91db7d1137493af09351977"
+    },
+    "governance-reviewed-final": {
+      "scope": "complete governance with fixed Git toolchain",
+      "tests": 302,
+      "passed": 302,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 30.623,
+      "junit_sha256": "9aeceed0a5d851bd1ba22094ed0e39f163f9aac1bf238e1527e936e18afa0dbc",
+      "log_sha256": "49eb2918ab2d0c47e72caa832999ca1ffff6ff97a52fe216a646db50533e3bca"
+    },
+    "reviewed-wheel312-final": {
+      "scope": "outside-source installed Wheel on macOS Python 3.12.7; 59+8 cases",
+      "tests": 67,
+      "passed": 67,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 21.475,
+      "junit_sha256": "96251f6093c336ee2aa2e64f38073848d159ea58c66792ba61e5989ca4150d7b",
+      "log_sha256": "88d87777b125511a1ac5ed6de42829c95f01571c3b7a6cf1a7a7ddcf49c2a092"
+    },
+    "reviewed-python313-final": {
+      "scope": "outside-source installed Wheel on macOS Python 3.13.8; 59+8 cases",
+      "tests": 67,
+      "passed": 67,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 21.051,
+      "junit_sha256": "eadf1dbb29f83826c136ceec84892b88910693eabf23ef9dbbe27570e02e1537",
+      "log_sha256": "92f7642e832d56c51ac90a16f0d02b1296537155f92b956ba70c3e31999482c7"
+    },
+    "review-defects-repaired": {
+      "scope": "three new preflight deadline/cwd regression cases",
+      "tests": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 0.046,
+      "junit_sha256": "fb817fc219d41b868d51dbbac7052b1ec4fb5752ca546ec61057c23f91f9e360",
+      "log_sha256": "70f03c2cc1f445d888ffd42ae820e306ff3e17120b04cc14efeb48ab092a673f"
+    }
+  },
+  "preserved_original_failures": {
+    "focused-python313": {
+      "scope": "independent old Wheel reproduces POSIX V1 raw rejection",
+      "tests": 56,
+      "passed": 43,
+      "failed": 13,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 18.579,
+      "junit_sha256": "d3ee6a507f3c2056b93f6492e48399565c43f7c68970a0f41e388498748dc01e",
+      "log_sha256": "1053ffd2698a1c8c0426dfdf36dd6c7640035bc52f5f132ec8ab45f01f5fab6a"
+    },
+    "review-defects-negative": {
+      "scope": "real deadline orphan and approved nested cwd before P1 repair",
+      "tests": 3,
+      "passed": 0,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 0.547,
+      "junit_sha256": "3150e79f88b8cb1fa13ebbd1845e646feffcf72cd27cbc206234c08a51c7da59",
+      "log_sha256": "c42d94a6abb7c58b55d9103b043d32fe280d17a3d8ea85fd454ea814abd944e6"
+    },
+    "posix-raw-source-initial": {
+      "scope": "initial test misuse of exited-only receipt port",
+      "tests": 8,
+      "passed": 5,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 2.825,
+      "junit_sha256": "2cb7d9ac557d6742b22990633f1015a233adfc3a76be5eea109096c1ff580b29",
+      "log_sha256": "15b94775ee7bef25637ce549bf9b67aa6486e60796f1c0968c71b7d86ca50c9c"
+    },
+    "posix-raw-source-repaired": {
+      "scope": "test fixed receipt read; macOS expired-target EPERM remains conservative unknown",
+      "tests": 8,
+      "passed": 7,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 2.821,
+      "junit_sha256": "418637fa922d90e96c7582cd33dc43b8e9315adaf0368119b85531db0cfb9a17",
+      "log_sha256": "1e4ffe68116b362f3d845b49a81113d3f97482fd4766b4c478884caa3f6eed39"
+    },
+    "governance-integrated-final": {
+      "scope": "incomplete document at collection and wrong local Git toolchain",
+      "tests": 302,
+      "passed": 300,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 28.219,
+      "junit_sha256": "2c764edc38c8095a3a7a6e616bf6c26fceb52815fea9f1b51c1731fddd486c82",
+      "log_sha256": "164cce382012e50562b7d1213098841905c5e40003ec01461d17abef9baafb24"
+    }
+  },
+  "checks": {
+    "ruff-reviewed-final": {
+      "status": "pass",
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format-reviewed-final": {
+      "status": "pass",
+      "log_sha256": "2ce9758b9f8abd876ec3e76c589e099e8b05377b1e7ea2331e81ee80f07bdff8"
+    },
+    "mypy-reviewed-final": {
+      "status": "pass",
+      "log_sha256": "a9e205db84ad7b79b2035815a9f6b60ad1779e150a800c6e0301c4764121b07a"
+    },
+    "readability-reviewed-final": {
+      "status": "pass",
+      "log_sha256": "5754aa9ebc3dabebf7eb123b0f6c87b166b2cc8a854254de054314b08ff6fb3f"
+    },
+    "schema-reviewed-final": {
+      "status": "pass",
+      "log_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+    }
+  },
+  "diagram_visual_review": "three_current_graphs_pass",
+  "wheel_source_and_two_installed_package_members": "454_byte_identical",
+  "raw_unknown_priority_fault_injection_cases": 15,
+  "collections_overlap": true,
+  "r3_quality_passed": false,
+  "product_git_business_closed": false,
+  "commercial_release_verified": false,
+  "ci_policy": "targeted_local_and_installed_proofs_before_commit; full CI not awaited",
+  "standard_changed_document_render": {
+    "changed_path_count": 31,
+    "document_count": 430,
+    "link_count": 10660,
+    "mermaid_count": 913,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26,
+    "status": "pass",
+    "actual_changed_document_mermaid_count": 67,
+    "report_sha256": "3d505a147ce28eca478ac68c2866709340a95699e4e06eb252eb538065860f08",
+    "scope": "static whole repository; actual rendering only selected changed Markdown documents"
+  },
+  "reviewed_p1_findings": {
+    "count": 2,
+    "status": "closed_by_read_only_reviewer_after_3_red_green_regressions",
+    "reviewer_did_not_claim_installed_test_results": true
+  },
+  "secret_scan": {
+    "status": "pass",
+    "inputs": 3838,
+    "all_inputs_covered": true,
+    "fixed_rule_findings": 0,
+    "full_log_sha256": "222fa17c9ac0614a7613bc7b66d89a93d10fac51dde573ee1fc5265c25e6ccdc",
+    "self_check_log_sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c",
+    "scope": "explicit staged repository files and actual final Wheel; verification metadata hashes added after scan"
+  },
+  "final_package_static_documentation": {
+    "status": "pass",
+    "report_sha256": "58ff5cfd4fbdc1f14518f1c8a1bc58189fdf4d2fda6e71e5e9a6ed5bbe060c9a"
+  }
+}

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import UTC, datetime
 
-from harnessix.processes.owner_output import CapturedProcessOutput
-from harnessix.processes.owner_protocol import ProcessOwnerStart
-from harnessix.processes.owner_receipt import OwnerReceipt, sign_owner_receipt
+from harnessix.processes.owner_output import (
+    launch_failed_output_receipt as launch_failed_output_receipt,
+)
+from harnessix.processes.owner_output import (
+    output_position as output_position,
+)
 
 
 def configure_binary_output_reader(terminal: str, name: str, descriptor: int) -> None:
@@ -17,36 +19,3 @@ def configure_binary_output_reader(terminal: str, name: str, descriptor: int) ->
         import msvcrt
 
         msvcrt.setmode(descriptor, os.O_BINARY)
-
-
-def output_position(
-    stdout: CapturedProcessOutput, stderr: CapturedProcessOutput
-) -> tuple[int, int, int, int, int, int]:
-    """原始输入的新增进度不能因脱敏尾窗尚未发布而消失。"""
-    return (
-        stdout.raw_observed,
-        stdout.observed,
-        stdout.persisted,
-        stderr.raw_observed,
-        stderr.observed,
-        stderr.persisted,
-    )
-
-
-def launch_failed_output_receipt(
-    request: ProcessOwnerStart, stdout: CapturedProcessOutput, stderr: CapturedProcessOutput
-) -> OwnerReceipt:
-    """只签调用方已结束的输出事实；无运行PID，pipe为v2，ConPTY保持v1。"""
-    return sign_owner_receipt(
-        process_id=request.process_id,
-        owner_identity=request.owner_identity,
-        state="failed",
-        sequence=1,
-        owner_token=request.owner_token,
-        finished_at=datetime.now(UTC),
-        stop_reason="launch_failed",
-        stdout=stdout.observation(),
-        stderr=stderr.observation(),
-        raw_stdout=stdout.raw_observation() if request.terminal == "pipe" else None,
-        raw_stderr=stderr.raw_observation() if request.terminal == "pipe" else None,
-    )

@@ -1215,3 +1215,19 @@ Checkpoint/Commit独立批准、持久原生桥接、全事件证明、有界对
 终态重验、私有Git消费和完整备份；[专项验证](validation/windows-raw-git-observation-2026-09-30-v1/README.md)
 分别记录本机合同、源码外Wheel及原生测试范围。原生Windows、消费者安装及完整产品交付仍须独立验收，
 不得通过关闭脱敏或把本地skip计作验收绕过。
+
+
+### R4：受控Git命令IO与POSIX原始回执
+
+[受控IO详设](changes/m09-r4-git-supervised-command-io.md)提供内部正式端口，
+共享原固定命令、环境和物理身份，消费原ExecutionPlan及批准，绑定完整stdin摘要，
+整个操作使用同一单调期限；取消后原Owner结算，未知效果不能被普通取消/超时覆盖。
+
+初始真实Git验证发现POSIX仍发布V1，不能满足原始流验真；后继保留严格V2要求，
+补齐pipe生命周期原始双流认证，PTY及历史V1语义保持。原Owner捕获和回执构造共用，
+不另造进程模型，不放宽治理/额度，不重签历史、不按旧Process ID重放。
+
+此增量仍不是默认产品Commit/Checkpoint接线。8MiB完整业务材料、双受管工作树、
+认证关联/全前缀、完整Diff独立批准及Backup v2闭包继续保留为必做项。
+原控制输入1MiB拒绝不能解释为缩减业务容量。R3完整20 Trial、消费者Windows11、
+独立Beta及同候选最终发布验收仍开放，不因内部端口和离线测试通过而关闭。

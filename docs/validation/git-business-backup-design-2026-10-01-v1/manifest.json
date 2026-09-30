@@ -1,9 +1,10 @@
 {
+  "schema": "harnessix.validation-manifest/v1",
   "files": [
     {
       "path": "README.md",
-      "bytes": 3776,
-      "sha256": "cd284b0670ee096bcb28b8aa571df5d14d93ac2c186173f6ab77be0cd19d583f"
+      "bytes": 4272,
+      "sha256": "e2d6754649636e724392984d211d62b719a63d693ff99cb963185ef3dbaa5e9d"
     },
     {
       "path": "diagrams/diagram-1.mmd",
@@ -57,8 +58,8 @@
     },
     {
       "path": "facts.json",
-      "bytes": 1711,
-      "sha256": "588461a8c3bd21d0c2735f1973e9ae2b6cb86d9884bc92e3056f50e0269ea245"
+      "bytes": 2261,
+      "sha256": "c3a6123c097eae319349885418ff1312c9ecf2a4965e381a322ed0ab5bef5560"
     },
     {
       "path": "review-packet.json",
@@ -70,6 +71,5 @@
       "bytes": 1746,
       "sha256": "dbb28450093ed02ff8b50b22eecaaf9d1ea214d528564c1fe8c0842a5006dcf5"
     }
-  ],
-  "schema": "harnessix.validation-manifest/v1"
+  ]
 }

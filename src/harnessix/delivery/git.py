@@ -15,6 +15,7 @@ from uuid import UUID, uuid4
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.contracts import WorkspaceMutation
 from harnessix.delivery.git_checkpoint import build_git_checkpoint, verify_checkpoint_worktree
+from harnessix.delivery.git_command import GitCommand, GitExecutionBinding
 from harnessix.delivery.git_contracts import (
     GitCheckpoint,
     GitCommitRecord,
@@ -31,6 +32,12 @@ from harnessix.delivery.git_contracts import (
     managed_git_worktree_plan_fingerprint,
     transition_commit_record,
     transition_worktree_record,
+)
+from harnessix.delivery.git_identity import (
+    _executable_identity,
+    _identity,
+    _path_sha256,
+    _path_text,
 )
 from harnessix.delivery.git_store import SQLiteGitDeliveryStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
@@ -55,53 +62,6 @@ def _native_platform() -> PlatformKind:
     raise KernelError("git_platform_unsupported", "当前平台不支持Git交付")
 
 
-def _path_text(path: Path) -> str:
-    value = str(path)
-    return os.path.normcase(value) if os.name == "nt" else value
-
-
-def _path_sha256(path: Path) -> str:
-    return hashlib.sha256(_path_text(path).encode("utf-8")).hexdigest()
-
-
-def _identity(path: Path, *, directory: bool) -> str:
-    try:
-        info = path.lstat()
-        valid_type = stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode)
-        if not valid_type or stat.S_ISLNK(info.st_mode):
-            raise OSError
-        return canonical_digest(
-            {
-                "path": _path_text(path.resolve(strict=True)),
-                "device": info.st_dev,
-                "inode": info.st_ino,
-                "mode_type": stat.S_IFMT(info.st_mode),
-            }
-        )
-    except OSError:
-        raise KernelError("git_binding_changed", "Git绑定对象身份无效") from None
-
-
-def _executable_identity(path: Path) -> str:
-    try:
-        info = path.stat()
-        if not stat.S_ISREG(info.st_mode) or not os.access(path, os.X_OK):
-            raise OSError
-        return canonical_digest(
-            {
-                "path": _path_text(path.resolve(strict=True)),
-                "device": info.st_dev,
-                "inode": info.st_ino,
-                "size": info.st_size,
-                "mtime_ns": info.st_mtime_ns,
-                "ctime_ns": info.st_ctime_ns,
-                "mode": info.st_mode,
-            }
-        )
-    except OSError:
-        raise KernelError("git_executable_invalid", "Git可执行文件身份无效") from None
-
-
 def git_delivery_implementation_digest() -> str:
     root = Path(__file__).parent
     try:
@@ -111,8 +71,11 @@ def git_delivery_implementation_digest() -> str:
                 for path in (
                     root / "git.py",
                     root / "git_checkpoint.py",
+                    root / "git_command.py",
+                    root / "git_identity.py",
                     root / "git_contracts.py",
                     root / "git_store.py",
+                    root / "git_store_schema.py",
                 )
             }
         )
@@ -158,6 +121,9 @@ class _GitRunner:
             "-c",
             "core.safecrlf=false",
         )
+        self._binding = GitExecutionBinding(
+            self.path, self.identity, self._home, self._temp, self._global
+        )
 
     def run(
         self,
@@ -170,51 +136,20 @@ class _GitRunner:
         timeout: float = 20.0,
         allowed_protocols: tuple[str, ...] = ("file",),
     ) -> subprocess.CompletedProcess[bytes]:
-        if _executable_identity(self.path) != self.identity:
-            raise KernelError("git_executable_changed", "Git可执行文件身份已经变化")
-        if (
-            not allowed_protocols
-            or len(set(allowed_protocols)) != len(allowed_protocols)
-            or allowed_protocols != tuple(sorted(allowed_protocols))
-            or any(value not in {"file", "https", "ssh"} for value in allowed_protocols)
-        ):
-            raise KernelError("git_protocol_invalid", "Git协议白名单无效")
-        environment = {
-            "PATH": os.pathsep.join((str(self.path.parent), os.defpath)),
-            "HOME": str(self._home),
-            "LANG": "C",
-            "LC_ALL": "C",
-            "GIT_CONFIG_GLOBAL": os.devnull,
-            "GIT_CONFIG_NOSYSTEM": "1",
-            "GIT_TERMINAL_PROMPT": "0",
-            "GIT_ASKPASS": "",
-            "GIT_PAGER": "cat",
-            "GIT_OPTIONAL_LOCKS": "0",
-            "GIT_LITERAL_PATHSPECS": "1",
-            "GIT_NO_REPLACE_OBJECTS": "1",
-            "GIT_ALLOW_PROTOCOL": ":".join(allowed_protocols),
-            "TMPDIR": str(self._temp),
-            "TEMP": str(self._temp),
-            "TMP": str(self._temp),
-        }
-        if os.name == "nt":
-            system_root = os.environ.get("SystemRoot", r"C:\Windows")
-            environment.update(
-                {
-                    "SystemRoot": system_root,
-                    "WINDIR": system_root,
-                    "COMSPEC": str(Path(system_root) / "System32/cmd.exe"),
-                }
-            )
-        if index_file is not None:
-            if not index_file.is_absolute() or index_file.parent != self._temp:
-                raise KernelError("git_index_invalid", "Git临时索引不属于私有目录")
-            environment["GIT_INDEX_FILE"] = str(index_file)
+        command = self.prepare_command(
+            cwd,
+            arguments,
+            input_data=input_data,
+            index_file=index_file,
+            accepted=accepted,
+            timeout=timeout,
+            allowed_protocols=allowed_protocols,
+        )
         try:
             completed = subprocess.run(
-                (str(self.path), *self._global, *arguments),
-                cwd=cwd,
-                env=environment,
+                command.argv,
+                cwd=command.cwd,
+                env=dict(command.environment),
                 input=input_data,
                 capture_output=True,
                 check=False,
@@ -229,6 +164,32 @@ class _GitRunner:
         ):
             raise KernelError("git_command_failed", "Git固定命令失败或输出超过上限")
         return completed
+
+    def prepare_command(
+        self,
+        cwd: Path,
+        arguments: tuple[str, ...],
+        *,
+        input_data: bytes | None = None,
+        index_file: Path | None = None,
+        accepted: tuple[int, ...] = (0,),
+        timeout: float = 20.0,
+        allowed_protocols: tuple[str, ...] = ("file",),
+    ) -> GitCommand:
+        """两条执行路径共用固定命令与环境；这里只规划，不启动进程。"""
+        return self._binding.prepare(
+            cwd,
+            arguments,
+            input_data=input_data,
+            index_file=index_file,
+            accepted=accepted,
+            timeout=timeout,
+            allowed_protocols=allowed_protocols,
+        )
+
+    def verify_command(self, command: GitCommand) -> None:
+        """启动前按原宿主绑定重验完整材料，不创建进程。"""
+        self._binding.verify(command)
 
     def oid(
         self,

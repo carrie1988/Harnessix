@@ -1,0 +1,72 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "overall": "internal_io_scope_go_only",
+  "requirements": [
+    {
+      "id": "FIXED-MATERIAL",
+      "status": "pass",
+      "evidence": "shared domain command and physical identity; actual source hashes"
+    },
+    {
+      "id": "ORIGINAL-APPROVAL",
+      "status": "pass",
+      "evidence": "59 new IO cases; includes missing/rejected/DENY/different stdin and actual cwd"
+    },
+    {
+      "id": "NO-PREFLIGHT-ORPHAN",
+      "status": "pass_after_red_green",
+      "evidence": "3 negative then 3 repaired regression cases; deadline before task creation"
+    },
+    {
+      "id": "CANCEL-TREE",
+      "status": "pass_posix",
+      "evidence": "original Session Owner and real parent/child/grandchild; actual source/installed focus"
+    },
+    {
+      "id": "RAW-MAC",
+      "status": "pass_posix",
+      "evidence": "pipe v2 running/exited/failed/unknown; raw field tamper negative controls"
+    },
+    {
+      "id": "PTY-HISTORY",
+      "status": "pass_scoped",
+      "evidence": "original PTY v1, no history rewrite or resign"
+    },
+    {
+      "id": "FULL-DEFAULT-GIT",
+      "status": "open",
+      "evidence": "not wired into default product catalog"
+    },
+    {
+      "id": "8MIB-MATERIAL",
+      "status": "open",
+      "evidence": "1MiB control input/result is not full business object capacity"
+    },
+    {
+      "id": "BUSINESS-BACKUP-RESTORE",
+      "status": "open",
+      "evidence": "full object/MAC/prefix/Backup v2/new root rebinding not implemented"
+    },
+    {
+      "id": "WINDOWS-NATIVE",
+      "status": "open_this_candidate",
+      "evidence": "CI selector added, Mac is not Windows acceptance"
+    },
+    {
+      "id": "R3-CODING-QUALITY",
+      "status": "open",
+      "evidence": "no new paid request or complete Trial in this scope"
+    },
+    {
+      "id": "COMMERCIAL-1.0",
+      "status": "open",
+      "evidence": "scoped tests do not close final same-candidate release gates"
+    }
+  ],
+  "known_limits": [
+    "guarded host is not kernel sandbox",
+    "old synchronous facade remains synchronous",
+    "older readers cannot consume new v2 owner receipt state",
+    "whole repository history backup boundary remains a separate architecture decision"
+  ]
+}

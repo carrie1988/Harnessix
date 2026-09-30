@@ -1,0 +1,55 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7794,
+      "sha256": "e3f57004124a5840c8282d42c759f33b76d35ff7d3ce547a59fd6a2f6871796c"
+    },
+    {
+      "path": "diagrams/diagram-1.mmd",
+      "bytes": 704,
+      "sha256": "bd9c9d4a31efaeaccae960093eea125b153fa3ad29f2e865ab84519f2bdb0e3b"
+    },
+    {
+      "path": "diagrams/diagram-1.png",
+      "bytes": 158295,
+      "sha256": "d29630e0de50e1881b811e1f278316930ea506c380d52260af7b5bf30e6b35e8"
+    },
+    {
+      "path": "diagrams/diagram-2.mmd",
+      "bytes": 1023,
+      "sha256": "ceaaf1f41f807745770815de1512ed704c5e2e3310c9908ea8c5f9dfcd25b92e"
+    },
+    {
+      "path": "diagrams/diagram-2.png",
+      "bytes": 242282,
+      "sha256": "cd9ef7728ffa1078c94581ec0abe35cbffa030b2800715af645045c3d490efad"
+    },
+    {
+      "path": "diagrams/diagram-3.mmd",
+      "bytes": 491,
+      "sha256": "fd6dbfdfca305951f5885a0edd87834a00108fae94665780a9a650c7ba226322"
+    },
+    {
+      "path": "diagrams/diagram-3.png",
+      "bytes": 108480,
+      "sha256": "e5f1c31683775ef4fd53d2baf5161e79587cdf28470e6f7314c51738670a3adf"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 75371,
+      "sha256": "635e0a1924ca8a3c3cea6b26bfa969a15b56d2c154ede028355e30f7006ce581"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 2240,
+      "sha256": "6f938b633e35c97e6dfc57151f6a42c578d25994949f1fd17c950b39484ed217"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 7314,
+      "sha256": "fa71cc38e41fe403f98d19750c72e4e391eef28110eb185240135db56f233171"
+    }
+  ]
+}

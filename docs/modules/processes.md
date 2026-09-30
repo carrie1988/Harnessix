@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 31
-code_revision: 02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675
+version: 32
+code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
 owners:
   - core
 modules:
@@ -23,6 +23,8 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/processes/test_posix_raw_receipt.py
+  - tests/product_config/test_git_delivery_process.py
   - tests/processes/test_raw_output_receipt.py
   - tests/processes/test_raw_receipt_supervision.py
   - tests/product_config/test_product_state_backup.py
@@ -1753,3 +1755,20 @@ Windows的`ProcessOutputObservation`仍描述脱敏后字节，不得用于原�
 总体及详细设计、字段、伪代码、失败矩阵和原生验收条件见
 [原始Git观察设计](../changes/m09-r4-authenticated-raw-git-observation.md)。
 本机合同、真实POSIX Owner和备份恢复通过，不构成Windows CRT、Job、NTFS或消费者环境验收。
+
+
+### POSIX pipe原始认证与Git受控执行增量
+
+[`posix_owner.py`](../../src/harnessix/processes/posix_owner.py)对pipe的运行、正常退出、
+启动失败及未知结算发布原Receipt v2，沿已有CapturedProcessOutput取得raw统计；PTY保持v1，
+不推断合并终端输出为独立pipe事实。历史v1仍按原字节/MAC验证，不重签或迁移旧回执。
+
+原始双流与保护后双流分别按原ProcessSpec额度限流，EOF尾窗同样检查，不扩大任何配额。
+唯一的进度位置和启动失败回执构造现在位于
+[`owner_output.py`](../../src/harnessix/processes/owner_output.py)，Windows旧观察模块保留兼容导出。
+各平台正常/未知生命周期仍由原Owner发布，PID控制、Session/Job回收及Store CAS语义不变。
+
+[`Git受控IO详设`](../changes/m09-r4-git-supervised-command-io.md)说明新产品内部端口如何
+消费原批准并在取消/超时后结算Owner；stdio正文和原始输出不进入Plan或公开日志。
+正常命令结果要求MAC、原Lease终态、EOF、长度、SHA与完整持久正文一致；内部命令成功
+不等于业务Commit或完整8MiB对象支持。默认产品Git写入、完整业务备份和商用R4仍开放。

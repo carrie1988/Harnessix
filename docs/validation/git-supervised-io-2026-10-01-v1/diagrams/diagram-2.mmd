@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant C as 受信调用方
+    participant P as GitDeliveryProcess
+    participant E as 原 Plan/批准
+    participant S as 原 Supervisor
+    participant O as 原 Owner
+    C->>P: prepare 固定材料 同一总期限
+    P-->>C: Command Spec Capability
+    C->>E: 完整摘要绑定及原正式批准
+    C->>P: run 原 Plan Checkpoint CancelToken
+    P->>P: 重验来源 程序 规范Spec 环境 能力 期限
+    P->>E: 保存已批准原 Plan 同状态布局
+    P->>S: start 唯一 Process ID
+    S->>O: 原控制管道与绝对命令期限
+    P->>O: 有界 stdin 分片后 EOF
+    P->>S: wait 原取消令牌
+    alt 取消或总期限耗尽
+        P->>S: 发停止并排空原任务
+        S->>O: 原进程树结算与终态回执
+        O-->>P: 已知停止 或未知效果
+    else 正常退出
+        O-->>S: 原 MAC V2 回执
+        P->>S: 原句柄终态验真及双流读取
+        P->>P: 原始流 EOF 长度 摘要 上限重验
+        P-->>C: 命令层完成事实
+    end

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 23
-code_revision: b53c2ac7dfdf47ddcaad758f3971f9368c9ed62a
+version: 24
+code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_git_delivery_process.py
   - tests/delivery/test_git_store_readonly.py
   - tests/product_config/test_product_patch_rollback.py
   - tests/product_config/test_product_rollback_sdk.py
@@ -1827,3 +1828,17 @@ Owner Receipt和私有备份目录发布共享同一个类；原事务效果状�
 复用原默认产品和验收驱动，一次通过审批精确修改及等待审批取消两个场景。原认证Session读取证明
 模型显式提供mode420、原读取SHA及正确完整正文；宿主未补参数，原Router和文件执行边界未改。
 五次官方请求Usage完整、原周期结算无未决。该证据不计完整工程20 Trial，也不追认旧批准、旧FAIL或商用支持。
+
+
+## Git固定命令与受控IO边界
+
+[`git_command.py`](../../src/harnessix/delivery/git_command.py)提取原白名单环境与固定绑定，
+[`git_identity.py`](../../src/harnessix/delivery/git_identity.py)保留原目录/程序观察字段。原
+`_GitRunner.run`继续同步执行，但与新产品端共用不可变`GitCommand`，不再重复拼装环境。
+`prepare_command/verify_command`只生成和重验材料，不授予执行权；摘要区分关闭与开启空stdin。
+
+新增受控端口位于产品层，不新增Delivery到Process的依赖。领域实现摘要覆盖上述材料与Git Store结构文件；
+旧计划保持历史事实，不因提取自动迁移批准。新的
+[`完整IO详设`](../changes/m09-r4-git-supervised-command-io.md)给出契约、源码映射、三图和失败恢复边界。
+旧同步门面仍没有取消/进程树回收能力；默认Commit/Checkpoint产品接线、8MiB对象材料、
+全前缀认证与业务备份闭包仍未完成，不能从内部命令退出零推出业务交付成功。
