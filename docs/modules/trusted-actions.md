@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 34
-code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
+version: 35
+code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
 owners:
   - core
 modules:
@@ -19,6 +19,8 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/trusted_actions/test_argument_feedback.py
+  - tests/product_config/test_profile_argument_feedback_sdk.py
   - tests/product_config/test_product_patch_rollback.py
   - tests/product_config/test_product_rollback_sdk.py
   - tests/product_config/test_product_state_restore.py
@@ -362,6 +364,15 @@ flowchart TB
 调用方无法通过额外字段提交`effect_class`或`risk_level`，strict/forbid合同会拒绝。Router在Schema解码
 前递归检查参数Key；`api_key`、`authorization`、`password`、`secret`、`token`等精确名称及后缀，
 包括camelCase和kebab-case规范化形式，会触发`raw_secret_rejected`。
+
+严格解码的`ValidationError`、`ValueError`及`TypeError`返回原`tool_invalid_arguments`，
+消息通过[`共享字段反馈`](../../src/harnessix/tools/argument_feedback.py)投影已注册Schema的
+必填、缺少及允许字段；显式Decoder使用原冻结Schema，而非更宽的通用输入模型。
+反馈不含参数值、额外键、回调正文或完整Schema；引用、组合、条件及超限元数据使用通用安全消息。
+注册后的外部Schema对象变化不影响原复制合同，错型但存在的字段不误报缺失；
+其他回调异常仍使用原`sanitize_plan_exception`。拒绝发生在Resolver、Policy及两个Store写入之前。
+[固定Profile与安全反馈详设](../changes/m09-r3-trusted-input-feedback.md)说明共同辅助、
+调用链、数据上限、持久化、原错误边界及正式SDK验证；没有自动补值或执行重试。
 
 当前限制必须明确：
 

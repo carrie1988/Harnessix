@@ -94,16 +94,31 @@ class RunProfileInput(ContractModel):
         return values
 
 
-def run_profile_schema(profile_id: str) -> dict[str, JsonValue]:
+def run_profile_schema(
+    profile_id: str,
+    selector_policy: Literal["none", "bounded_test_selector"] = "bounded_test_selector",
+) -> dict[str, JsonValue]:
+    """广告固定必填Profile及实际选择器策略；不自动补全模型参数。"""
     return {
         "type": "object",
         "properties": {
-            "profile": {"type": "string", "const": profile_id},
+            "profile": {
+                "type": "string",
+                "const": profile_id,
+                "description": (
+                    f'必填字段，必须显式传入固定值"{profile_id}"；工具名不能替代该字段。'
+                ),
+            },
             "selectors": {
                 "type": "array",
                 "items": {"type": "string", "minLength": 1, "maxLength": 512},
-                "maxItems": 32,
+                "maxItems": 0 if selector_policy == "none" else 32,
                 "default": [],
+                "description": (
+                    "可省略或传入空数组；此Profile不接受测试选择器。"
+                    if selector_policy == "none"
+                    else "可省略或传入空数组以执行固定检查；非空时仅接受有界相对测试选择器。"
+                ),
             },
         },
         "required": ["profile"],
@@ -133,9 +148,16 @@ def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor
         version=f"{PRODUCT_PROCESS_VERSION}:{profile.profile_sha256[:24]}",
         description=(
             f"在固定无网络只读容器中运行“{profile.description}”（Profile {profile.profile_id} "
-            f"{profile.version}）；只能提供受限测试选择器，程序、镜像、资源、环境和Secret由宿主冻结。"
+            f'{profile.version}）；必须显式提供必填参数"profile": "{profile.profile_id}"，'
+            "工具名不能替代该字段；selectors可省略或为空数组。"
+            + (
+                "此Profile不接受非空选择器。"
+                if profile.selector_policy == "none"
+                else "非空选择器仅允许受限相对测试目标。"
+            )
+            + "程序、镜像、资源、环境和Secret由宿主冻结。"
         ),
-        input_schema=run_profile_schema(profile.profile_id),
+        input_schema=run_profile_schema(profile.profile_id, profile.selector_policy),
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         risk_level=RiskLevel.HIGH,
         requires_idempotency=True,

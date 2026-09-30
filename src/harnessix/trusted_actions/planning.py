@@ -19,6 +19,7 @@ from harnessix.execution.contracts import (
 )
 from harnessix.execution.planner import build_execution_plan_v2
 from harnessix.execution.store import SQLiteExecutionPlanStore
+from harnessix.tools.argument_feedback import invalid_argument_message
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     ActionRouteSnapshot,
@@ -160,7 +161,15 @@ def _normalize_invocation(
             raise ValueError
         normalized = cast(dict[str, JsonValue], dumped)
     except (ValidationError, ValueError, TypeError):
-        raise KernelError("tool_invalid_arguments", "Action参数不符合Trusted Tool契约") from None
+        schema = (
+            definition.input_schema
+            if definition.input_schema is not None
+            else definition.input_model.model_json_schema()
+        )
+        raise KernelError(
+            "tool_invalid_arguments",
+            invalid_argument_message(schema, invocation.arguments, trusted_action=True),
+        ) from None
     except Exception as error:
         # 显式Decoder同样是回调边界，不能凭KernelError类型公开内部正文。
         raise sanitize_plan_exception(error, stage="decode") from None

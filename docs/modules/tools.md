@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 007839e7648b6fc1b94a5acede8dd0285092249b
+version: 8
+code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
 owners:
   - core
 modules:
@@ -30,6 +30,7 @@ related_tests:
   - tests/tools/test_git.py
   - tests/tools/test_runtime.py
   - tests/tools/test_argument_feedback.py
+  - tests/tools/test_schema_argument_feedback.py
   - tests/tools/test_scoped_runtime.py
   - tests/tools/test_kernel.py
   - tests/tools/test_recovery.py
@@ -584,12 +585,16 @@ sequenceDiagram
 
 路径、编码、类型、分页变化、输入、资源或I/O失败返回`ToolResultContent(outcome="failed")`。公开消息
 采用固定失败代码和安全消息，不包含OS错误正文、绝对路径、查询值或栈。
-`tool_invalid_arguments`从正式输入模型的`model_fields`生成必填、缺少及允许字段列表；只检查已注册
+`tool_invalid_arguments`通过共享纯函数
+[`invalid_argument_message`](../../src/harnessix/tools/argument_feedback.py)从正式输入模型Schema生成必填、缺少及允许字段列表；只检查已注册
 必填键是否存在，不回显未知键、任何值、第三方ValidationError或其错误位置。`null`和错型仍拒绝，
 但不误称为缺少。专用`tool_expected_revision_required`保持优先级和原消息。
 失败结果与成功结果一样持久化，模型可据稳定code发起新的调用，Runtime不会自动补值或重试。
 完整字段合同、失败语义、数据流及双Provider实际链路验证见
-[安全字段反馈详设](../changes/m09-r3-safe-tool-argument-feedback.md)。既有工具Schema、版本、批准Fingerprint
+[安全字段反馈详设](../changes/m09-r3-safe-tool-argument-feedback.md)及
+[Trusted输入反馈详设](../changes/m09-r3-trusted-input-feedback.md)。共享函数只投影直接object合同，
+引用、组合、条件及不完整元数据使用通用反馈；字段64项/单项64字符，消息2000字符硬上限，
+不截断为误导性的部分字段列表。既有只读工具Schema、版本、批准Fingerprint
 和Session迁移不变，旧失败消息不会被重写。
 
 ### 15.3 Runtime缺陷和集成错误

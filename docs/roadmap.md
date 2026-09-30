@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 140
-code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
+version: 141
+code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
 owners:
   - core
 modules:
@@ -745,7 +745,11 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 [实际有界复验](validation/bounded-provider-suite-interruption-2026-09-30-v1/README.md)在`940432f`首个Trial中断：
 9次请求全部已知结算，新增估算0.219136元、无新增费用未知；原20.77824元预留保持。
 模型8次固定Profile调用遗漏必填profile，没有审批、Profile结果或Trial报告；没有新的完整20 Trial成绩。
-同Revision完整本机离线6033通过、111跳过，但不替代R3。下一整改复用安全字段反馈，保持严格Decoder和原评分门槛。
+同Revision完整本机离线6033通过、111跳过，但不替代R3。
+[固定Profile与Trusted输入反馈整改](changes/m09-r3-trusted-input-feedback.md)共享有界字段辅助，
+明确显式必填Profile和实际Selector策略；保持原严格Decoder、独立批准、Token及评分门槛。
+原真实失败保持，不重放旧未知效果；新完整Suite仍需原同一40元范围重新绑定，
+已用0.219136元和旧20.77824元全额预留继续计入原70元，不视为新额度或实际账单。
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
 Action借用同一Owner，取消结算唯一目录线程后释放。该前置由后继完整备份/恢复及整体Root发布承接；
 复杂Store/Artifact业务恢复与正式安全收口仍需完整验收，不关闭R1或R4。
@@ -1121,7 +1125,8 @@ Checkpoint职责提取到唯一模块，原可读性阈值不放宽，实现摘�
 明确写入产品/Eval同源v3指令，并保持原指令字节上限；不新增编排器、测试注入或完成豁免。
 
 严格输入反馈、Provider协议与费用保护可独立并行回归，同一源码文件的变更串行合并。
-真实Provider仍只允许原持久预算唯一Owner，未决费用核对前不发新请求；不重置周期或释放未知预留。
+真实Provider仍只允许原持久预算唯一Owner；未决默认拒绝，新Suite仅可使用
+[明确单次范围](changes/m09-r3-bounded-reverification-budget.md)，不重置周期或释放未知预留。
 [统一验证包](validation/r3-coding-workflow-2026-09-30-v1/README.md)记录焦点22通过、关联2052通过/52跳过、
 治理302通过和源码外实际Wheel23通过，集合重叠不相加。9份原Session及原账本读取前后字节一致；
 新Wheel440包成员与源码/安装字节一致。0次真实请求，离线装配不是模型遵循率或质量验收。

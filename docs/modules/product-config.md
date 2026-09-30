@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 42
-code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
+version: 43
+code_revision: 152e7a86c0e12255d3efa66ce5b05cde082abb15
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_profile_argument_feedback.py
+  - tests/product_config/test_profile_argument_feedback_sdk.py
   - tests/product_config/test_git_delivery_source.py
   - tests/product_config/test_git_delivery_source_sdk.py
   - tests/product_config/test_coding_workflow_instructions.py
@@ -1791,6 +1793,14 @@ Gateway的规划上下文按Tool选择：Patch使用固定Workspace的`host_guar
 Process公共输入限制为固定`profile`和有界`selectors`。宿主在
 [`process_profile.py`](../../src/harnessix/product_config/process_profile.py)中重新证明Container Engine文件身份、平台Owner能力、镜像
 Repo Digest、无网络只读Sandbox、资源上限及Secret版本；失败返回稳定省略原因，不降级到Host Shell。
+
+广告描述明确要求显式提供`"profile": "固定ID"`，工具名不能替代该必填参数。
+`selectors`可省略或为空数组；策略`none`广告`maxItems=0`，`bounded_test_selector`保持32。
+原严格Decoder、Selector安全验证、镜像与程序绑定不变；缺少参数不自动补全。
+描述及Schema进入原Fingerprint，旧Binding不得复用新目录或新批准。
+无效输入沿Trusted规划前安全反馈持久化；修正调用仍需要精确独立审批。
+共同合同、源码链及SDK拒绝/修正/批准/取消/重开验证见
+[完整详设](../changes/m09-r3-trusted-input-feedback.md)。这不是实际模型遵循率验收。
 
 [`process_action.py`](../../src/harnessix/product_config/process_action.py)从公共参数确定性派生`ContainerExecutionSpec`，复核Action Route
 中的Tool Binding、资源、Workspace、Environment、Sandbox、Capability和Secret Binding，再经`ContainerProcessRuntime`执行。

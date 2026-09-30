@@ -21,6 +21,7 @@ from harnessix.artifacts.contracts import ArtifactPage, ArtifactToolResult, Read
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.domain.models import ContractModel, EffectClass, RiskLevel, ToolDescriptor
 from harnessix.tools import files, git, search
+from harnessix.tools.argument_feedback import invalid_argument_message
 from harnessix.tools.contracts import (
     MAX_DIRECTORY_ENTRIES,
     MAX_LINE_BYTES,
@@ -142,15 +143,9 @@ def _invalid_arguments(
     input_model: type[ContractModel], arguments: dict[str, JsonValue]
 ) -> tuple[str, str]:
     """只公开注册模型字段与缺失事实，不回显参数或第三方校验错误。"""
-    allowed = sorted(input_model.model_fields)
-    required = [name for name in allowed if input_model.model_fields[name].is_required()]
-    missing = [name for name in required if name not in arguments]
-    message = (
-        f"工具参数不符合契约；必填字段：{', '.join(required) or '无'}；"
-        f"缺少必填字段：{', '.join(missing) or '无'}；允许字段：{', '.join(allowed)}。"
-        "请按已公布的input_schema修正类型、范围及必填字段，禁止额外字段。"
+    return "tool_invalid_arguments", invalid_argument_message(
+        input_model.model_json_schema(), arguments
     )
-    return "tool_invalid_arguments", message
 
 
 def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) -> tuple[str, str]:
