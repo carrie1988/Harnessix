@@ -326,3 +326,24 @@ def test_current_installation_examples_match_package_version_and_locked_inputs()
     assert "--require-hashes --no-deps" in current
     assert "--no-emit-project" in current
     assert "pip install 'harnessix[tui,openai]'" not in current
+
+
+def test_rollback_root_binding_joins_native_focus_without_removing_existing_checks() -> None:
+    import yaml
+
+    path = Path(__file__).parents[2] / ".github/workflows/ci.yml"
+    steps = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["windows-trusted-execution"][
+        "steps"
+    ]
+    step = next(item for item in steps if item.get("name") == "验证原生NTFS文件事务与审批编码写链")
+    assert step["timeout-minutes"] == 3
+    assert step["run"].split() == [
+        "uv",
+        "run",
+        "pytest",
+        "tests/delivery/test_windows_filesystem.py",
+        "tests/delivery/test_windows_io_contracts.py",
+        "tests/delivery/test_rollback_binding.py",
+        "tests/delivery/test_trusted_action_patch.py",
+        "tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch",
+    ]

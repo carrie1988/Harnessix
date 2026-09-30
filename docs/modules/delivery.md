@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: c8033e08a260cfde793bf9809f6979a833fc92d5
+version: 20
+code_revision: a80ea984bf4a37484781e7f6834e0e104e1d56ae
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_tests:
   - tests/delivery/test_store.py
   - tests/delivery/test_diff.py
   - tests/delivery/test_filesystem.py
+  - tests/delivery/test_rollback_binding.py
   - tests/delivery/test_git.py
   - tests/delivery/test_git_push.py
   - tests/product_config/test_preflight.py
@@ -112,7 +113,7 @@ Delivery把交付拆成四个可独立证明的层次：
 - 不清理受管Worktree、不可达Git对象、临时失败目录或未引用Blob；
 - 不自动获取远端旧OID、管理SSH Agent、Known Hosts、Token、Keychain或企业代理；
 - 不把Commit批准推导为Push批准；
-- 不在默认产品中自动开放任何Delivery能力。
+- 默认产品只开放受管Workspace Patch；不自动开放Git Commit、Checkpoint、Rollback或Push。
 
 ### 3.3 关键术语
 
@@ -141,7 +142,7 @@ Delivery把交付拆成四个可独立证明的层次：
 | 完整Diff | 已实现 | `build_workspace_diff` | 文本、二进制、模式和重命名测试 |
 | POSIX普通目录发布 | 已实现/显式装配 | `WorkspaceTransactionRuntime.publish` | 创建、修改、删除、崩溃和Lease测试 |
 | Windows本地NTFS普通文件发布 | 原生端口实现候选 | 同一`WorkspaceTransactionRuntime`选择`windows_filesystem` | 原生创建/替换/删除、硬退出、权限和Root身份验证；不以macOS跳过证明支持 |
-| Rollback新事务 | 已实现 | `build_rollback` | 正常恢复测试；并发第三内容语义未覆盖 |
+| Rollback新事务 | 组件实现，产品未接线 | `build_rollback` | 同一根身份、重定位/置换与规划竞态回归；第三内容的产品选择仍开放 |
 | Git Repository Binding | 已实现 | `bind_repository` | 干净状态与危险配置测试 |
 | Managed Worktree | 已实现 | `plan_worktree/create_worktree/reconcile_worktree` | 注册崩溃恢复测试 |
 | Git Checkpoint | 已实现 | `create_checkpoint` | Tree、Blob和来源不变测试 |
@@ -594,30 +595,105 @@ flowchart TD
 
 ## 16. Rollback语义
 
-`build_rollback`只接受`published`原Transaction。它从私有Blob取回每个原before正文，以当前Workspace为
-新来源重新调用Planner，生成新Request ID、新Transaction ID、新Snapshot和新Fingerprint。原Record保持
-published且不可变。
+### 16.1 需求背景与设计目标
+
+`build_rollback`是宿主组件API，尚未进入默认stdio/SDK工具目录。旧实现仅要求原Transaction为`published`，
+随后把任意传入目录捕获为新来源；另一个目录、重定位的原目录或原路径下的新目录均能生成回滚计划。
+这使原事务正文可能与不属于它的Workspace关联，违背Workspace身份、原批准作用域和保留用户数据的边界。
+
+修正复用原Snapshot、Planner及Store，不新增数据库或授权机制。只有**原Workspace身份**成立才可读取原Blob；
+Planner完成后仍须绑定相同身份，之后生成独立Request ID、Transaction ID、Snapshot和Fingerprint。
+原Record保持published且不可变，执行依旧需要新批准和当前Lease，不因回滚意图继承原批准。
+
+### 16.2 总体结构、接口与重点字段
+
+入口是[`WorkspaceTransactionRuntime.build_rollback`](../../src/harnessix/delivery/filesystem.py)，
+输入为原`transaction_id`、宿主`root`、新`request_id`及可选新ID/时间，输出原
+`WorkspaceTransactionRecord`，不是已执行或已批准的恢复结果。
+
+| 事实/字段 | 来源 | 作用与边界 |
+|---|---|---|
+| `original.state` | 原Store读取 | 必须published；未知或中断效果不能先生成逆操作 |
+| `original.plan.source.platform` | 原不可变计划 | 选择原生POSIX/Windows观察端口，不从当前调用猜测平台 |
+| `source.workspace_id` | [Snapshot](../../src/harnessix/workspace/snapshot.py) | 绑定平台、规范根路径摘要及原生根对象身份；目录内容变化不改变此ID |
+| `source.revision` | 完整当前资源快照 | 回滚须生成新Revision，不以发布前资源快照检查已合法发布的after |
+| `before` Blob | 原私有事务Store | 只在根身份通过后读取；不导出正文到日志或验证报告 |
+| `prepared.plan.source.workspace_id` | 原Planner的独立捕获 | 再核对前后根身份，规划期间替换目录不得入库 |
+| 新Plan Fingerprint | 原规范Planner | 原批准不能授权新回滚；执行前仍复核Snapshot及Lease |
+
+```text
+原已发布Record → 原根身份 → 当前原生根身份核对
+    → 原before Blob → 原Planner完整当前来源 → 第二次根身份核对
+    → 新prepared Record/新Fingerprint → 新Approval + Lease → 原发布状态机
+```
+
+这里的两次观察不是OS级跨调用原子锁。第二次捕获之后仍可能发生外部变更；
+新Plan的执行前Snapshot、逐成员CAS和Lease继续承担发布阶段校验。
+不声称防止同UID攻击者的一切目录替换，也不把目录身份校验扩成任意文件DLP。
+
+### 16.3 时序、核心伪代码与持久化
 
 ```mermaid
 sequenceDiagram
-    participant H as Host
+    participant H as 可信宿主
     participant R as Runtime
     participant S as Store
     participant P as Planner
-    participant W as Current Workspace
-    H->>R: build rollback for published transaction
-    R->>S: load original before blobs
-    R->>P: desired equals original before
-    P->>W: capture current state as new before
-    P-->>R: new rollback plan and fingerprint
-    R->>S: save new prepared transaction
-    S-->>H: independent rollback record
+    participant W as 当前Workspace
+    H->>R: 规划原已发布事务的Rollback
+    R->>S: 读取原published Record
+    R->>W: 捕获原生根身份
+    R->>R: 核对原workspace_id
+    alt 原根身份不匹配
+        R-->>H: delivery_source_changed，不读取原Blob
+    else 原根身份一致
+        R->>S: 读取原before Blob
+        R->>P: 目标设为原before
+        P->>W: 捕获当前完整新来源
+        P-->>R: 返回新Plan与Fingerprint
+        R->>R: 核对Planner仍属于原根
+        alt Planner来源根已变化
+            R-->>H: delivery_source_changed，不保存新事务
+        else 根身份仍一致
+            R->>S: 保存独立prepared事务
+            S-->>H: 返回新Rollback Record
+        end
+    end
 ```
+
+```text
+load original; require published
+capture current root with original native platform
+require current.workspace_id == original.source.workspace_id
+read original before blobs; derive inverse desired files
+prepared = original Planner(current root, desired, new request/id/time)
+require prepared.source.workspace_id == current.workspace_id
+save new prepared transaction; leave original record unchanged
+```
+
+身份不匹配统一返回既有`delivery_source_changed`及固定消息，不附加路径或正文。
+在两个比较通过前不会调用`Store.save`，不生成新批准依据，不写新回滚Blob或用户文件。
+Planner仍可能在内存中捕获正文；来源身份竞态拒绝后这些内容不写入新事务。
+原Schema、序列/CAS、来源Blob、原Record和发布状态机不变，无数据库迁移。
+
+### 16.4 测试、恢复与产品接线边界
+
+[跨平台回归](../../tests/delivery/test_rollback_binding.py)通过原实际Planner、Store、Lease及发布端口验证：
+异目录、原目录重定位、原路径对象置换、Blob读取前拒绝，以及第一轮检查后/Planner捕获前的目录置换。
+正例证明原根可回滚，且目录内无关用户修改保持；使用根ID而非发布前完整Revision，避免拒绝合法回滚。
+拒绝必须同时证明无新request Record、原Record不变、相关文件原字节保持。
+
+六项原用例加入原Windows NTFS焦点步骤，原三分钟保护及原测试均保留；
+非Windows执行结果不代替原生结果，当前CI状态按对应候选实际证据判断。
+专项原件、源码绑定及Go/No-Go见[验证报告](../validation/rollback-workspace-binding-2026-09-30-v1/README.md)。
 
 当前实现不会要求Workspace仍等于原Transaction的after。若用户已经写入第三内容，Rollback规划会把该
 第三内容捕获为新before，并生成“第三内容→原before”的新变更，等待新批准；它不会在`build_rollback`
 阶段自动冲突。这与[ADR 0068](../adr/0068-transactional-workspace-and-git-delivery.md)中“第三内容使Rollback
 冲突”的文字并不完全一致，需明确产品选择：拒绝第三内容，或保留当前“展示新Diff后重新批准”语义。
+根身份修正**没有改变这一文件冲突选择**，不能据此宣布Rollback已成为首发产品能力。
+Commit、Checkpoint和Rollback仍须接通正式产品控制/审批、持久来源和恢复；
+底层Git API或本专项绿灯不能替代R4的三平台完整产品闭环。
 
 ## 17. Diff生成
 

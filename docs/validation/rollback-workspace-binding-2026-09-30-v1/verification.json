@@ -1,0 +1,16 @@
+{
+  "scope": "published_transaction_original_workspace_identity_only",
+  "decision": "local_scoped_go",
+  "assertions": {
+    "six_focus_pass": true,
+    "association_217_pass_24_platform_skips": true,
+    "original_red_5_fail_1_pass_kept": true,
+    "class_hotspot_limit_not_relaxed": true,
+    "public_signature_unchanged": true,
+    "native_windows_acceptance_claimed": false,
+    "same_file_third_content_policy_changed": false,
+    "product_delivery_completion_claimed": false
+  },
+  "real_model_requests": 0,
+  "commercial_release_gate_closed": false
+}

@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant H as 可信宿主
+    participant R as Runtime
+    participant S as Store
+    participant P as Planner
+    participant W as 当前Workspace
+    H->>R: 规划原已发布事务的Rollback
+    R->>S: 读取原published Record
+    R->>W: 捕获原生根身份
+    R->>R: 核对原workspace_id
+    alt 原根身份不匹配
+        R-->>H: delivery_source_changed，不读取原Blob
+    else 原根身份一致
+        R->>S: 读取原before Blob
+        R->>P: 目标设为原before
+        P->>W: 捕获当前完整新来源
+        P-->>R: 返回新Plan与Fingerprint
+        R->>R: 核对Planner仍属于原根
+        alt Planner来源根已变化
+            R-->>H: delivery_source_changed，不保存新事务
+        else 根身份仍一致
+            R->>S: 保存独立prepared事务
+            S-->>H: 返回新Rollback Record
+        end
+    end

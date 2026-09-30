@@ -1,0 +1,36 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7123,
+      "sha256": "d193e8273d05fa7a38bd72e7127623ab5b9defbed123f963f6f51c8558e6f245"
+    },
+    {
+      "path": "diagrams/rollback-sequence.mmd",
+      "bytes": 889,
+      "sha256": "6a3d76915a596ff1b9a3159f472a363ab49cd8d9638f379ab1b36799a03ee2a9"
+    },
+    {
+      "path": "diagrams/rollback-sequence.png",
+      "bytes": 50641,
+      "sha256": "a82d3bda490924576a438370c5c35ae032673717af6f2cb8ba15086b8c18af06"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 5300,
+      "sha256": "2e3732347de447b2a2832fde08c7eee7f3c1d524438a2e6dc9480397685b0661"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 942,
+      "sha256": "a525445187a179654847ed31a2415ebddbbbeaca6f065835371b27b4efb57141"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 559,
+      "sha256": "7c308eb11410bb31adbbe68670b33b1d396a9510039624559999e822aa0681ab"
+    }
+  ]
+}

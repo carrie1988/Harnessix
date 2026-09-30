@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 393,
-    "physical_lines": 83740,
-    "logical_lines": 74085,
+    "physical_lines": 83767,
+    "logical_lines": 74106,
     "documented_modules": 393,
     "classes": 886,
     "documented_classes": 368,
-    "functions": 3390,
-    "documented_functions": 622,
+    "functions": 3391,
+    "documented_functions": 624,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -635,7 +635,7 @@
       "qualname": "WorkspaceTransactionRuntime",
       "kind": "class",
       "line": 47,
-      "lines": 142,
+      "lines": 125,
       "documented": true
     },
     {

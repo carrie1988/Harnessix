@@ -24,7 +24,7 @@ from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.tools.workspace import Workspace, identity, revision_state
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 from harnessix.workspace.leases import WorkspaceLeaseStore
-from harnessix.workspace.snapshot import verify_workspace_snapshot
+from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
 
 _DIRECTORY_FLAGS = (
     os.O_RDONLY
@@ -136,33 +136,16 @@ class WorkspaceTransactionRuntime:
         rollback_id: UUID | None = None,
         now: datetime | None = None,
     ) -> WorkspaceTransactionRecord:
-        from harnessix.delivery.planner import (
-            DesiredWorkspaceFile,
-            prepare_workspace_transaction,
-        )
+        """在原Workspace中规划独立回滚；拒绝根重定位或规划期间的目录置换。"""
 
-        original = self._store.load(transaction_id)
-        if original.state != "published":
-            raise KernelError("delivery_rollback_invalid", "只有已发布事务可以创建Rollback")
-        desired: dict[str, DesiredWorkspaceFile] = {}
-        for mutation in original.plan.mutations:
-            if mutation.before.presence == "absent":
-                desired[mutation.path] = DesiredWorkspaceFile(None)
-            else:
-                if mutation.before.sha256 is None or mutation.before.mode is None:
-                    raise KernelError("delivery_record_invalid", "Rollback来源版本不完整")
-                desired[mutation.path] = DesiredWorkspaceFile(
-                    self._store.blob(mutation.before.sha256), mutation.before.mode
-                )
-        prepared = prepare_workspace_transaction(
+        return _build_rollback(
+            self,
+            transaction_id,
             root,
-            desired,
             request_id=request_id,
-            transaction_id=rollback_id or uuid4(),
-            now=now or datetime.now(UTC),
-            platform=original.plan.source.platform,
+            rollback_id=rollback_id,
+            now=now,
         )
-        return self._store.save(prepared)
 
     def _advance(
         self,
@@ -186,6 +169,50 @@ class WorkspaceTransactionRuntime:
         if lease.workspace_id != record.plan.source.workspace_id:
             raise KernelError("workspace_lease_lost", "Workspace事务租约不属于当前来源")
         self._leases.assert_current(lease)
+
+
+def _build_rollback(
+    runtime: WorkspaceTransactionRuntime,
+    transaction_id: UUID,
+    root: str | Path,
+    *,
+    request_id: str,
+    rollback_id: UUID | None,
+    now: datetime | None,
+) -> WorkspaceTransactionRecord:
+    """绑定原根后构造逆向目标，并在独立Planner捕获之后才保存新事务。"""
+
+    from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
+
+    original = runtime._store.load(transaction_id)
+    if original.state != "published":
+        raise KernelError("delivery_rollback_invalid", "只有已发布事务可以创建Rollback")
+    # 只比较根身份，不拿发布前的资源Revision校验发布后的合法文件内容。
+    current_root = capture_workspace_snapshot(root, platform=original.plan.source.platform)
+    if current_root.workspace_id != original.plan.source.workspace_id:
+        raise KernelError("delivery_source_changed", "Rollback来源Workspace身份已变化")
+    desired: dict[str, DesiredWorkspaceFile] = {}
+    for mutation in original.plan.mutations:
+        if mutation.before.presence == "absent":
+            desired[mutation.path] = DesiredWorkspaceFile(None)
+        else:
+            if mutation.before.sha256 is None or mutation.before.mode is None:
+                raise KernelError("delivery_record_invalid", "Rollback来源版本不完整")
+            desired[mutation.path] = DesiredWorkspaceFile(
+                runtime._store.blob(mutation.before.sha256), mutation.before.mode
+            )
+    prepared = prepare_workspace_transaction(
+        root,
+        desired,
+        request_id=request_id,
+        transaction_id=rollback_id or uuid4(),
+        now=now or datetime.now(UTC),
+        platform=original.plan.source.platform,
+    )
+    # Planner独立捕获完整来源；根在两次捕获之间被替换时不能保存新批准计划。
+    if prepared.plan.source.workspace_id != current_root.workspace_id:
+        raise KernelError("delivery_source_changed", "Rollback来源Workspace身份已变化")
+    return runtime._store.save(prepared)
 
 
 @contextmanager

@@ -1,0 +1,25 @@
+{
+  "decision": "scoped_local_workspace_identity_fix_go_only",
+  "change": "rollback_root_binding_and_private_planning_function_extraction",
+  "invariants": [
+    "original_published_record_unchanged",
+    "different_relocated_or_replaced_root_refused",
+    "source_root_rechecked_before_save",
+    "no_original_blob_read_for_initial_wrong_root",
+    "new_rollback_requires_new_approval",
+    "unrelated_user_files_preserved",
+    "public_signature_schema_and_forward_publication_unchanged"
+  ],
+  "original_failures_preserved": true,
+  "new_native_result_not_inherited": true,
+  "open_items": [
+    "same_file_third_content_product_rule",
+    "official_product_local_commit_checkpoint_rollback_wiring",
+    "complete_native_consumer_windows11",
+    "unknown_model_cost_reconciliation",
+    "complete_real_20_trial_quality",
+    "independent_beta",
+    "rights_and_same_candidate_publication"
+  ],
+  "commercial_release_gate_closed": false
+}

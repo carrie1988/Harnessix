@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 132
-code_revision: df8dc8f124a1d8f1a6fafac480785e06ab8cfa97
+version: 133
+code_revision: a80ea984bf4a37484781e7f6834e0e104e1d56ae
 owners:
   - core
 modules:
@@ -1057,3 +1057,15 @@ Session重开回放链。原Suite/未知费用保持不变，0次真实模型请
 回退后的显式同Engine正式录制链6项通过，不替代模型质量。
 后继只读观察时Desktop已不运行、两Socket缺失，当前宿主可执行性未经验证；不将历史恢复当作当前健康。
 原70元费用未决保护、真实20 Trial、Windows11、独立Beta及最终R1～R6继续开放；不重置账本或自动绕过。
+
+### R1/R4：Rollback原Workspace身份与产品交付接线缺口
+
+[Rollback详设](modules/delivery.md#16-rollback语义)修复原组件API把其他目录、重定位原根或新根对象
+捕获为回滚来源的缺陷。读取原Blob前及Planner捕获后均绑定原Workspace ID，拒绝前不保存新事务；
+原批准、Schema、Lease、发布状态机及原事务事实不变。文件第三内容的产品选择仍须明确，不混同根身份。
+
+正式产品当前目录只接通受管Patch和条件Process，Git Commit、Checkpoint及Rollback仍是宿主组件，
+没有默认stdio/SDK闭环。[专项证据](validation/rollback-workspace-binding-2026-09-30-v1/README.md)
+不关闭R1/R4，也不把0.7组件实现完成推导为首发产品接线完成。
+后续沿原R4工作包补产品交付控制、来源绑定、审批及恢复；本地Commit/Checkpoint/Rollback不延期或删减，
+公网Push仍延期，真实质量、消费者平台、独立Beta及最终R1～R6保持开放。
