@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.contracts import WorkspaceMutation
+from harnessix.delivery.git_checkpoint import build_git_checkpoint, verify_checkpoint_worktree
 from harnessix.delivery.git_contracts import (
     GitCheckpoint,
     GitCommitRecord,
@@ -24,7 +25,6 @@ from harnessix.delivery.git_contracts import (
     ManagedGitWorktreeBinding,
     ManagedGitWorktreePlan,
     ManagedGitWorktreeRecord,
-    git_checkpoint_digest,
     git_commit_spec_fingerprint,
     git_repository_binding_digest,
     managed_git_worktree_binding_digest,
@@ -110,6 +110,7 @@ def git_delivery_implementation_digest() -> str:
                 path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                 for path in (
                     root / "git.py",
+                    root / "git_checkpoint.py",
                     root / "git_contracts.py",
                     root / "git_store.py",
                 )
@@ -486,6 +487,9 @@ class GitDeliveryRuntime:
             self._verify_tree_delta(
                 repository, worktree.plan.repository.head_tree_oid, tree, transaction.plan.mutations
             )
+            self._assert_lease(worktree.plan.repository, lease)
+            verify_checkpoint_worktree(self._git, worktree, transaction.plan.mutations, tree)
+            self._assert_lease(worktree.plan.repository, lease)
             self._git.run(
                 Path(worktree.plan.path),
                 ("read-tree", "--reset", "-u", tree),
@@ -500,30 +504,8 @@ class GitDeliveryRuntime:
                 index.unlink()
             except OSError:
                 pass
-        identifier = checkpoint_id or uuid4()
-        mutations_digest = canonical_digest(
-            [item.model_dump(mode="json", warnings="error") for item in transaction.plan.mutations]
-        )
-        candidate = GitCheckpoint.model_construct(
-            _fields_set=None,
-            checkpoint_id=identifier,
-            worktree_id=worktree_id,
-            worktree_plan_fingerprint=worktree.plan.fingerprint,
-            worktree_binding_digest=worktree.binding.digest,
-            transaction_id=transaction.transaction_id,
-            transaction_plan_fingerprint=transaction.plan.fingerprint,
-            repository_binding_digest=worktree.plan.repository.digest,
-            base_commit_oid=worktree.plan.repository.head_oid,
-            base_tree_oid=worktree.plan.repository.head_tree_oid,
-            tree_oid=tree,
-            mutations_digest=mutations_digest,
-            created_at=now or datetime.now(UTC),
-            digest="0" * 64,
-        )
-        checkpoint = GitCheckpoint(
-            **candidate.model_dump(exclude={"digest"}),
-            digest=git_checkpoint_digest(candidate),
-        )
+        checkpoint = build_git_checkpoint(worktree, transaction, tree, checkpoint_id, now)
+        self._assert_lease(worktree.plan.repository, lease)
         return self._store.save_checkpoint(checkpoint)
 
     def plan_commit(

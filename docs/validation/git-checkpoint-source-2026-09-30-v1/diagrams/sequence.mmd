@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant G as Git交付Facade
+    participant L as 原Lease Store
+    participant W as 受管Worktree
+    participant P as 原生Planner与Snapshot
+    participant S as Git Store
+    G->>G: 原私有Index构造并证明目标Tree
+    G->>L: 复核原Lease
+    G->>W: 观察已跟踪变化及完整Index Tree
+    G->>P: 成员有界读取与before或after比较
+    G->>P: 读取后复核Snapshot
+    alt 合法
+        G->>L: 物化前复核原Lease
+        G->>W: 原单次read-tree物化
+        G->>W: 原目标Tree及文件核验
+        G->>L: 保存前复核原Lease
+        G->>S: 原不可变Checkpoint
+    else 第三内容或Lease丢失
+        G-->>G: 原错误 目标文件及Index不重置
+    end

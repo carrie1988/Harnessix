@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 134
-code_revision: 6d77b2ce453e5ebd0166c17dab7f20e238920a0e
+version: 135
+code_revision: 4e80ec16ec2c6e99beeda7e1f310a76ce4068fe7
 owners:
   - core
 modules:
@@ -1079,3 +1079,13 @@ Session重开回放链。原Suite/未知费用保持不变，0次真实模型请
 新增原生Barrier和固定原绑定负对照须取得新候选结果；离线通过不关闭R1/R4，不预先判定原CI唯一根因。
 [验证材料](validation/windows-receipt-snapshot-2026-09-30-v1/README.md)保留原失败、模拟/原生差别及受测字节。
 产品交付接线、真实编码质量、费用核对、Windows11、独立Beta及最终R1～R6继续开放。
+
+### R1/R4：Git Checkpoint物化前数据保护
+
+[完整设计](changes/m09-r4-git-checkpoint-source-guard.md)在真实Git和SQLite中复现六项原失败：
+Checkpoint覆盖受管Worktree的第三内容及计划外跟踪修改，且Lease丢失后继续物化。
+后继候选保护原Manifest、完整Index及原生成员镜像，关键写入/保存前复核原Lease；
+保留无关未跟踪文件和保存失败后的已知镜像重建，公共签名、Schema、Source HEAD/Index不变。
+Checkpoint职责提取到唯一模块，原可读性阈值不放宽，实现摘要绑定新模块字节。
+[专项验证](validation/git-checkpoint-source-2026-09-30-v1/README.md)保留原失败和有限结果，
+新Windows焦点需固定新候选；组件通过不等于正式Commit/Checkpoint/Rollback接线，R1～R6仍开放。

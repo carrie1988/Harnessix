@@ -1,0 +1,46 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4929,
+      "sha256": "aaacc40ce22d03a6234cadb6c47d4a17ab2beb4d0e6fd36838d4c22b70d0de6a"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 696,
+      "sha256": "8c794d3c8dfb7c5705b6e61cb07a0042658cce83541e16736791932da50e8629"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 52517,
+      "sha256": "a7cff849116d5cb5a7f522ba6eafff6c4348bdb80802981f5540ad95309303cc"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "bytes": 734,
+      "sha256": "1f0e05ff8d51f4e64b897034ddaabe53e285ce382e42baff386235d06ba7593d"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "bytes": 48887,
+      "sha256": "43b1d67dbf612bdb56723820a21d7851c15e488424c23ad74d584ac6c6c5acae"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 3951,
+      "sha256": "e893f6817f1cc396349736835c14f45b57f2a654e3a23a55a4272c741a1e366e"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 904,
+      "sha256": "166d0eff9d69e3011d894406ea3a85705ca19e21e971f1426d3d786b09c8d094"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 408,
+      "sha256": "c5ae66cd5cdaef83b826ec5e15e213f7fc477df0f3480f2d5a435ba500ed8d47"
+    }
+  ]
+}

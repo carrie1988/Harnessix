@@ -1,0 +1,12 @@
+{
+  "scope": "scoped_component_guard_only",
+  "original_six_red_kept": true,
+  "new_nine_in_association": true,
+  "third_content_and_index_changes_rejected": true,
+  "unrelated_untracked_file_kept": true,
+  "save_loss_reconstruction_verified": true,
+  "public_signature_unchanged": true,
+  "os_atomic_multi_file_claimed": false,
+  "native_windows_claimed": false,
+  "commercial_release_gate_closed": false
+}

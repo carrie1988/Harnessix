@@ -1,0 +1,28 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "scope": "git_checkpoint_pre_materialization_known_images_and_lease",
+  "unchanged_inputs": {
+    "src/harnessix/delivery/contracts.py": true,
+    "src/harnessix/delivery/git_contracts.py": true,
+    "src/harnessix/delivery/git_store.py": true,
+    "src/harnessix/delivery/planner.py": true,
+    "src/harnessix/workspace/snapshot.py": true,
+    "governance/readability-policy-v1.json": true,
+    "uv.lock": true,
+    "pyproject.toml": true
+  },
+  "required_reviews": [
+    "known_before_after_only",
+    "third_content_index_and_source_preserved",
+    "checkpoint_save_loss_reconstruction",
+    "new_module_in_implementation_digest",
+    "native_windows_same_candidate",
+    "formal_product_delivery_wiring"
+  ],
+  "decisions": {
+    "local_scoped": "go",
+    "native": "pending",
+    "product_delivery": "not_wired",
+    "commercial_release": "no_go"
+  }
+}

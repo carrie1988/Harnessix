@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: a80ea984bf4a37484781e7f6834e0e104e1d56ae
+version: 21
+code_revision: 4e80ec16ec2c6e99beeda7e1f310a76ce4068fe7
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_checkpoint_guard.py
   - tests/delivery/test_windows_io_contracts.py
   - tests/delivery/test_planner.py
   - tests/delivery/test_store.py
@@ -747,7 +748,7 @@ Attributes和AutoCRLF，并设置私有HOME、TMP与空Hook目录。
 | 完整性 | 全合同Digest |
 
 `bind_repository`要求传入绝对精确Top-level Root，拒绝脏状态和Object Alternates。当前
-`git_delivery_implementation_digest`只Hash `git.py/git_contracts.py/git_store.py`，不覆盖Planner、
+`git_delivery_implementation_digest`只Hash `git.py/git_checkpoint.py/git_contracts.py/git_store.py`，不覆盖Planner、
 Workspace Store、Push实现或依赖库版本；相关变化仍可能需要显式合同版本升级。
 
 ### 18.3 危险仓库配置拒绝
@@ -869,9 +870,10 @@ Checkpoint构建：
 6. `update-index --cacheinfo`只加入计划路径；
 7. `write-tree`生成目标Tree；
 8. `diff-tree`证明Base到目标Tree只包含Mutation路径；
-9. 在Managed Worktree执行`read-tree --reset -u <tree>`物化；
-10. 核对Worktree Index Tree及每个目标文件正文/模式；
-11. 保存不可变Checkpoint并删除临时Index。
+9. 复核原Lease，要求已跟踪变化只涉及Manifest、Index为完整Base/目标Tree，原生成员为before/after并复核Snapshot；
+10. 物化前再次复核Lease，在Managed Worktree执行`read-tree --reset -u <tree>`；
+11. 核对Worktree Index Tree及每个目标文件正文/模式；
+12. 保存前复核Lease，保存不可变Checkpoint并删除临时Index。
 
 ```mermaid
 sequenceDiagram
@@ -890,8 +892,12 @@ sequenceDiagram
     end
     G->>I: write target tree
     G->>R: verify exact tree delta
+    G->>L: recheck lease before guard
+    G->>W: require known member images and index tree
+    G->>L: recheck lease before materialization
     G->>W: reset index and files to target tree
     G->>W: verify materialized mutations
+    G->>L: recheck lease before persistence
     G->>J: save immutable checkpoint
 ```
 
@@ -899,8 +905,11 @@ sequenceDiagram
 Mutation摘要、时间和自身Digest。Checkpoint没有状态机：Git Blob/Tree或Worktree物化后、Checkpoint落盘前
 崩溃时，重新调用会重建确定内容。临时Index删除为best effort。
 
-当前Lease只在入口检查一次；多文件Hash、Index和Worktree物化期间Lease可能到期。操作还会向来源Common
-Object Database写入不可达Blob/Tree。生产化需要按耗时阶段续租/复核，并明确对象垃圾回收策略。
+当前Lease在入口、保护前、物化前和保存前复核，不自动续租。
+[来源保护详设](../changes/m09-r4-git-checkpoint-source-guard.md)与
+[`git_checkpoint.py`](../../src/harnessix/delivery/git_checkpoint.py)明确第三内容、计划外跟踪修改和未知Index拒绝，
+无关未跟踪文件保留，已知before/after镜像支持保存失败后的确定性重建。
+合作式Lease和离散Snapshot不提供OS原子锁；命令期间到期、观察后的外部编辑及不可达对象GC仍有边界。
 
 ## 22. 确定性Git Commit
 

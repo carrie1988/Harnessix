@@ -1,0 +1,14 @@
+flowchart TB
+    Facade[GitDeliveryRuntime 原公共Facade] --> Tree[原私有Index构造目标Tree]
+    Tree --> Lease[原Lease复核]
+    Lease --> Guard[Checkpoint物化前保护]
+    Guard --> Index[原Index只能为完整Base或目标Tree]
+    Guard --> Image[原生有界观察 成员只能为before或after]
+    Guard --> Scope[已跟踪变化只能属于Manifest]
+    Index --> Snapshot[原Snapshot读取后复核]
+    Image --> Snapshot
+    Scope --> Snapshot
+    Snapshot --> Fence[物化前再复核Lease]
+    Fence --> Materialize[原固定read-tree物化]
+    Materialize --> Verify[原目标核验与不可变字段构造]
+    Verify --> Save[保存前复核Lease及原Store保存]

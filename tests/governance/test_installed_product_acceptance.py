@@ -360,3 +360,14 @@ def test_windows_git_focus_keeps_turnover_negative_control_and_original_deadline
     assert "tests/processes/test_windows_receipt_contracts.py" in step["run"]
     assert "test_windows_product_sdk_git_diff_uses_private_redacted_owner" in step["run"]
     assert "faulthandler_timeout=60" in step["run"]
+
+
+def test_windows_git_focus_includes_checkpoint_source_guard_without_relaxing_timeout() -> None:
+    import yaml
+
+    path = Path(__file__).parents[2] / ".github/workflows/ci.yml"
+    job = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["windows-trusted-execution"]
+    step = next(item for item in job["steps"] if item.get("name") == "验证原生Git读取与取消回收")
+    assert "tests/delivery/test_git_checkpoint_guard.py" in step["run"]
+    assert "tests/processes/test_receipt_snapshot_transition.py" in step["run"]
+    assert step["timeout-minutes"] == 3
