@@ -87,6 +87,10 @@ class BailianVerificationBounds:
         }
         if ledger.reverification_plan is not None:
             binding["bounded_reverification"] = ledger.reverification_plan.model_dump(mode="json")
+        if ledger.reverification_binding is not None:
+            binding["reverification_binding"] = ledger.reverification_binding.model_dump(
+                mode="json"
+            )
         return digest(binding)
 
 

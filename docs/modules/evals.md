@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 28
-code_revision: ef582dacb5609fee90e6b3905998dea8db269c53
+version: 29
+code_revision: pending
 owners:
   - core
 modules:
@@ -1130,6 +1130,21 @@ Started-before-IO语义的官方Adapter。唯一Attempt、单调完整Usage、�
 [专项总体与详细设计](../changes/m09-r3-verification-request-budget.md)。
 离线线协议和预算回归不替代新的20 Trial真实质量成绩，历史0/20及R3仍开放。
 
+#### 23.7.1 同一额度的单次Suite切换
+
+[`VerificationReverificationBinding`](../../scripts/provider_reverification_binding.py)只允许原有界复验
+显式切换一次Suite，冻结原授权和切换前全部请求。`charged_cost + remaining_cost`必须等于原40元，
+旧unknown继续全额占用原70元周期；新增unknown/reserved不能通过切换获豁免。
+[`rebind_reverification`](../../scripts/provider_verification_budget.py)沿用同一独占Owner及发布器，
+登记后保留原授权Suite作为历史来源，但原Suite不再可运行；新请求自动记录原复验、切换及目标Suite三重身份。
+默认、旧Suite、其他Suite及新未知重启均拒绝。相同切换可幂等确认，不同计划或第二次切换拒绝。
+
+未切换账本仍为V1；仅显式登记发布V2。V2必须有完整绑定，旧Reader会拒绝整个账本，
+禁止删除绑定或降级schema恢复旧范围。Guard完整指纹包含新绑定，不能跨Suite拼接报告。
+管理入口新增互斥`--rebind-plan`，不读取凭据或开启网络。完整字段、流程/时序/数据图、
+故障、部署与取舍见[单次切换详设](../changes/m09-r3-same-cap-suite-rebinding.md)。
+实际账本登记和真实20 Trial是独立验收，离线实现不表示已放行付费复验。
+
 ## 24. Campaign执行配置与默认禁网
 
 `CodingEvalCampaignRunConfig`额外绑定Source/Work Root、Git/Python绝对路径、`OpenAIChatConfig`和费用
@@ -2232,6 +2247,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 29 | `pending` | 2026-09-30 | 同一40元剩余额度显式切换一次Suite，原授权及全部已用/预留保持，V2旧Reader失败关闭，三重请求身份和恢复指纹绑定；实际预算登记及真实质量仍独立验收 |
 | 28 | `ef582dacb5609fee90e6b3905998dea8db269c53` | 2026-09-30 | 分离固定Profile观测职责，确认无效果参数拒绝不计检查，逐项验证真实终态，指定缺证路径持久停止Campaign/Suite，重开不重放；真实质量门禁保持 |
 | 27 | `0813c581982fddf17503d47a308419035d193ecf`的修正候选 | 2026-09-30 | 新私有Workspace通过目录FD落实0755；录制Oracle采用Git可执行位语义，兼容umask077，既有漂移与正式Patch权限拒绝不变 |
 | 25 | `90de93f565ea88679e54242ee6f1771e9be721b7` | 2026-09-28 | 增加有限验证宿主持久请求预留、官方Adapter Guard与Case/Suite双层绑定；未知不退款，原0/20和R3门禁保留 |

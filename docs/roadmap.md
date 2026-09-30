@@ -757,6 +757,10 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 仅确认无效果且正式Decoder仍拒绝的输入错误不计检查；其余每项结果要求可信已知退出，
 中间未知不能被后续成功覆盖。指定缺证路径持久停止Campaign与Suite，重开不重放、不推进完成前缀。
 原Grader、Task Pack、Token、费用与评分门槛不变；原中断Suite不补写报告，完整20 Trial复验仍未通过。
+
+[同一额度单次Suite切换](changes/m09-r3-same-cap-suite-rebinding.md)只为新候选提供显式管理合同：
+原70元周期、原40元授权、旧预留和全部已用费用保持，不生成第二轮额度；仅显式登记升V2并撤销旧Suite运行资格。
+实际账本登记、完整真实20 Trial及商用R3仍需独立证据，不能从离线切换实现推导已开跑或验收通过。
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
 Action借用同一Owner，取消结算唯一目录线程后释放。该前置由后继完整备份/恢复及整体Root发布承接；
 复杂Store/Artifact业务恢复与正式安全收口仍需完整验收，不关闭R1或R4。

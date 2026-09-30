@@ -151,6 +151,9 @@ R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/
 R3新增[Profile观测分类与证据缺失停止详设](changes/m09-r3-profile-observation-and-evidence-stop.md)，
 区分未执行参数拒绝、实际检查失败和未知效果；原中断记录保留，未取得修复后的完整真实质量成绩。
 
+[同一剩余额度的单次Suite切换](changes/m09-r3-same-cap-suite-rebinding.md)保留原授权及完整请求前缀，
+只承接已用后的余额，旧Reader及旧Suite拒绝；实现和实际授权登记、真实质量成绩分别验收。
+
 Git产品接线当前只完成原成功Patch来源和[只读HEAD基准](changes/m09-r4-product-git-baseline.md)，
 阅读[统一验证报告](validation/git-baseline-2026-09-30-v1/README.md)可区分真实Git、离线Windows与待实现写入。
 原组件库Commit/Checkpoint不能视为默认产品已经接线。

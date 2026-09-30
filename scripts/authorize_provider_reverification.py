@@ -8,6 +8,7 @@ from pathlib import Path
 
 from harnessix.agent.errors import KernelError
 from harnessix.evals.cli_config import read_private_eval_config
+from scripts.provider_reverification_binding import VerificationReverificationBinding
 from scripts.provider_reverification_plan import VerificationReverificationPlan
 from scripts.provider_verification_budget import VerificationBudgetLedger
 from scripts.run_engineering_provider_suite_budgeted import _SafeParser
@@ -15,18 +16,30 @@ from scripts.run_engineering_provider_suite_budgeted import _SafeParser
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = _SafeParser(description=__doc__, allow_abbrev=False)
-    parser.add_argument("--plan", required=True)
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add_argument("--plan")
+    action.add_argument("--rebind-plan")
     parser.add_argument("--budget-ledger", type=Path, required=True)
     arguments = parser.parse_args(argv)
     reason = "verification_reverification_invalid"
     try:
-        plan = read_private_eval_config(
-            arguments.plan, VerificationReverificationPlan, max_bytes=64 * 1024
-        )
-        VerificationBudgetLedger.authorize_reverification(arguments.budget_ledger, plan)
-        print(
-            json.dumps({"reason": "authorized", "reverification_id": str(plan.reverification_id)})
-        )
+        if arguments.rebind_plan is not None:
+            binding = read_private_eval_config(
+                arguments.rebind_plan, VerificationReverificationBinding, max_bytes=64 * 1024
+            )
+            VerificationBudgetLedger.rebind_reverification(arguments.budget_ledger, binding)
+            result = {
+                "reason": "rebound",
+                "reverification_id": str(binding.reverification_id),
+                "binding_id": str(binding.binding_id),
+            }
+        else:
+            plan = read_private_eval_config(
+                arguments.plan, VerificationReverificationPlan, max_bytes=64 * 1024
+            )
+            VerificationBudgetLedger.authorize_reverification(arguments.budget_ledger, plan)
+            result = {"reason": "authorized", "reverification_id": str(plan.reverification_id)}
+        print(json.dumps(result))
         return
     except KernelError as error:
         if error.code in {
