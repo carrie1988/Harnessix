@@ -1,0 +1,113 @@
+{
+  "schema": "harnessix.ci-followup/v1",
+  "source_revision": "df8dc8f124a1d8f1a6fafac480785e06ab8cfa97",
+  "run": 36642191617,
+  "run_url": "https://github.com/carrie1988/Harnessix/actions/runs/36642191617",
+  "jobs": [
+    {
+      "job": 109656787934,
+      "name": "windows-trusted-execution",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "job": 109656788079,
+      "name": "container-sandbox",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "job": 109656788091,
+      "name": "documentation",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "job": 109656788172,
+      "name": "python (3.13)",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "job": 109656788188,
+      "name": "coding-tools-macos",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "job": 109656788194,
+      "name": "python (3.12)",
+      "status": "completed",
+      "conclusion": "failure"
+    }
+  ],
+  "python_full_regression": [
+    {
+      "job": 109656788172,
+      "python": "3.13",
+      "total": 5996,
+      "passed": 5880,
+      "skipped": 116,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 772.81,
+      "subsequent_license_archive_violations": 12,
+      "job_conclusion": "failure",
+      "original_log": {
+        "source": "ci-df8-109656788172.log",
+        "bytes": 49112,
+        "sha256": "ac67d17d1ebfe35f8c339ca272b1af105764c2b6aaef03d65dd2d4e75d8eb702"
+      }
+    },
+    {
+      "job": 109656788194,
+      "python": "3.12",
+      "total": 5996,
+      "passed": 5880,
+      "skipped": 116,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 837.39,
+      "subsequent_license_archive_violations": 12,
+      "job_conclusion": "failure",
+      "original_log": {
+        "source": "ci-df8-109656788194.log",
+        "bytes": 48850,
+        "sha256": "81cdbf360d86c03bbbba4049a0e1965deeb324939b815e8ed93849c2b3da30ac"
+      }
+    }
+  ],
+  "windows": {
+    "job": 109656787934,
+    "observed_status": "in_progress",
+    "observed_conclusion": null,
+    "backup_restore_steps": [
+      {
+        "number": 8,
+        "name": "验证原生完整业务状态备份与观察者边界",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-29T22:55:29Z",
+        "completed_at": "2026-09-29T22:57:09Z"
+      },
+      {
+        "number": 9,
+        "name": "验证原生完整业务状态恢复与元数据边界",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-29T22:57:09Z",
+        "completed_at": "2026-09-29T23:01:31Z"
+      }
+    ],
+    "individual_112_pass_count_not_verified": true,
+    "full_job_not_passed": true,
+    "original_live_handle_not_restarted": true
+  },
+  "production_source_changed": false,
+  "test_assertions_or_deadlines_changed": false,
+  "original_failed_results_retained": true,
+  "overlapping_test_counts_not_added": true,
+  "entire_ci_not_passed": true,
+  "real_model_requests": 0,
+  "commercial_release_gate_closed": false
+}

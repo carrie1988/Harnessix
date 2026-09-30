@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 89b3cd1356ed3e6b1fdfa6b957a876c0d30d2964
 owners: [core]
 modules: [sandbox, evals, deployment]
@@ -114,6 +114,59 @@ Task Pack成绩，也不能仅凭接口名字认定网络可用。
 
 [测试投影](facts/test-results.json)保存原JUnit摘要和精确计数，不公开其中的私有路径。
 容器参数、实际退出、清理状态和原故障按独立事实记录；没有靠健康检查或合并不同运行得出成功。
-下一必要步骤仍是干净Revision上预注册完整3仓10 Case/20 Trial并由原持久预算宿主执行真实Provider，
+后继真实运行在`0813c58`中断，原未知费用预留仍待核对，见[原中断事实](../provider-suite-interruption-2026-09-30-v1/README.md)。
+恢复真实请求前须按原预算合同处置未决事实；不得新建预算周期或用Usage字段自动追认成功终态。
+费用核对完成后，仍须在干净Revision上预注册完整3仓10 Case/20 Trial并由原持久预算宿主执行真实Provider，
 严格任务及必需测试均至少12/20、各仓有严格成功且无未授权修改/损坏/重复高风险效果；原0/20保持。
 消费者Windows11、独立Beta及最终同候选发布门禁继续开放。
+
+## 6. 默认Desktop启动链的后继对照与宿主回退
+
+本节绑定`df8dc8f124a1d8f1a6fafac480785e06ab8cfa97`及
+[独立后继事实](facts/default-api-followup.json)，不重写前五节的镜像传输、5项集成和151项回归身份。
+探针只挂载自有非敏感Marker，保持原镜像、只读根、无网络、资源及权限限制；没有挂载或读取用户业务文件。
+
+### 6.1 已排除的单一归因与组件证据
+
+| 对照 | 默认入口实际观察 | 可支持的结论 |
+|---|---|---|
+| 无挂载、`start --attach` | 12.078秒时CLI仍活动、容器Created | 故障不只发生于Workspace挂载路径 |
+| 临时目录或受管目录挂载 | 约12秒时仍Created | 更换已共享目录未使启动完成 |
+| 无挂载或有挂载、`start`不带attach | 约12秒时仍Created | attach不是唯一触发条件 |
+| 相同Workspace、显式同Engine | 0.512秒退出0并读回Marker | Engine直接路径可执行，不等于默认Desktop修复 |
+| 暂时改为gRPC FUSE后重启 | 无挂载、有挂载均仍Created | 文件共享后端切换没有产生改善，不能保留为修复 |
+
+默认API对应的本地Backend堆栈包含8条匹配调用链：
+
+```text
+proxyStart.RequestRewrite → grpcfuseClient.Add → volumeShareClient.Add
+    → ClientConn.Invoke → ClientConn.getTransport → pickerWrapper.pick
+```
+
+这将定位范围收敛到启动请求重写中的卷注册/gRPC传输等待。原捕获文件恰为1 MiB，可能截断；
+不能声称全量线程覆盖，也不能把全部8条线程逐一归属于自有探针。
+现有Unix Socket可以连接，不等于gRPC服务健康。尚未证明排他的底层根因，不猜测模型、代理或资源不足导致此等待。
+12秒是受控观察窗口，不是Engine失败终态；清理只针对身份与自有标签一致的探针，全部清理返回0。
+
+### 6.2 回退、原状态与证据时效
+
+后端实验只改VirtioFS→gRPC FUSE，失败后回退VirtioFS，共两次受控重启。
+每次重启前保存28个原容器，暂时关闭其中9个原停止容器的非`no`自动重启策略，防止新增端口竞争。
+回退后28个原ID、全部重启策略及运行/停止集合均与保存值一致：8运行、20停止。
+未删除原容器、原数据或修改业务配置，未升级Desktop、改代理/绕过规则或调整共享目录与资源。
+这些9个策略属于本次完整快照，不改写前一镜像专项只涉及5个竞争容器的历史记录。
+
+后续独立只读观察发现Desktop进程及默认/显式Socket均不存在，Daemon不可连接；原因没有确证。
+本观察没有再次启动、重启或修改设置，因此**不能继续宣称当前8容器运行或宿主仍可评测**。
+再次使用前须核对当时运行集合并重新验真固定宿主；历史恢复成功和历史集成PASS不具有永久有效性。
+
+### 6.3 正式链复验与Go/No-Go
+
+回退后原容器状态完成核对时，正式Container及Task Pack集成取得**6通过、0跳过/失败/错误**，
+JUnit耗时16.590秒。范围包含实际只读/网络/资源与Secret边界、Bridge负对照、MCP stdio、
+录制Agent任务及两种Selector参数形式的持久恢复；Provider为录制实现，真实模型请求0。
+不与历史5项或151项相加，不计入真实20 Trial成绩。
+
+有限显式Engine录制链GO，默认Desktop启动仍NO_GO；后续宿主停机使当前可执行性未经验证。
+不新增产品端点自动降级、不调整Grader、不放宽隔离、不以持续重启替代根因证据。
+真实费用核对、完整Suite、消费者平台、独立Beta及R1～R6商用门禁均保持开放。

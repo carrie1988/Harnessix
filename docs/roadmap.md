@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 131
-code_revision: 65d7323b12db782bbf62f109545058256037584e
+version: 132
+code_revision: df8dc8f124a1d8f1a6fafac480785e06ab8cfa97
 owners:
   - core
 modules:
@@ -1043,3 +1043,17 @@ Session重开回放链。原Suite/未知费用保持不变，0次真实模型请
 [完整集合分组](changes/m09-r1-single-child-reaper.md#10-原生验收进程分组与完整性)只调整37/75编排，
 所有112项、恢复断言、原步骤保护和产品期限保留；完整原生门禁尚未通过。
 [安装手册](operations/installation.md)现行操作使用内部1.0.0rc1及哈希锁定源码外环境，原历史版本事实不改写。
+
+### 固定候选安全锚点、原生分组及宿主对照
+
+固定`df8dc8f`的[原控制锚点复验](validation/v1-safety-coverage-2026-09-29-v1/README.md#7-固定后继候选的原控制锚点复验)
+按54个原选择器展开148项，146通过、2原生Windows跳过；不关闭R1完整安全。
+[同候选CI事实](validation/chat-terminal-diagnostics-2026-09-30-v1/ci-df8-followup.json)记录37/75原生步骤成功，
+完整Windows Job仍活动；双Python各5880通过/116跳过，之后12件许可失败，整体CI不是PASS。
+
+[默认Desktop后继对照](validation/docker-eval-host-2026-09-30-v1/README.md#6-默认desktop启动链的后继对照与宿主回退)
+确认无挂载及无attach仍Created，卷注册/gRPC等待有组件证据，但排他根因未证实。
+共享后端切换无改善，已回退并核对28个原容器、全部策略及8运行/20停止集合；
+回退后的显式同Engine正式录制链6项通过，不替代模型质量。
+后继只读观察时Desktop已不运行、两Socket缺失，当前宿主可执行性未经验证；不将历史恢复当作当前健康。
+原70元费用未决保护、真实20 Trial、Windows11、独立Beta及最终R1～R6继续开放；不重置账本或自动绕过。

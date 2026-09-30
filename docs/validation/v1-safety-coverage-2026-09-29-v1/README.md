@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: historical
-version: 1
+version: 2
 code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
 owners:
   - core
@@ -93,3 +93,16 @@ Manifest只排除顶层自身，完整覆盖归档并绑定当前设计、映射
 固定认证重启已单独三平台PASS；完整安全、真实20 Trial编码质量、消费者Windows 11和不同版本升级、
 独立用户Beta、必要发行输入及最终同候选封板仍开放。
 本专项不提前关闭0.9.4c、R1或1.0。
+
+## 7. 固定后继候选的原控制锚点复验
+
+`df8dc8f124a1d8f1a6fafac480785e06ab8cfa97`按原映射的54个精确函数选择器重新执行，
+macOS ARM64/CPython3.12.7展开148项：**146通过、2原生Windows跳过、0失败/错误**，耗时3.971秒。
+[后继事实与源码摘要](current-candidate-followup.json)绑定原映射、当前相关源码/测试字节、
+原JUnit和日志，不修改上述历史双Python报告或原映射Revision。
+
+本结果只证明当前候选的既有控制锚点，18组均有锚点不等于18组攻击面全部验收。
+实际Windows、真实Container、线上Provider、消费者安装及独立用户证据仍须分别验证；
+不能将本地跳过、Mock或历史候选结果转为当前发布PASS。不同运行与焦点/全量重叠数量不相加。
+没有生产代码、权限、Schema或测试断言变化，没有模型请求；R1完整安全及1.0保持开放。
+完整治理另取299项通过、0跳过/失败/错误，耗时26.051秒；与锚点及各候选完整回归不累加。

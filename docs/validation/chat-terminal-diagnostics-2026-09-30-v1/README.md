@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: historical
-version: 2
+version: 3
 code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
 owners: [core]
 modules: [models, agent, product_config, processes]
@@ -117,3 +117,16 @@ Help、版本和License完成，不调用Provider；PowerShell新命令未在本
 Windows组合步骤仍截断；既不将两个Python结果累加，也不将整体CI或后继编排标记通过。
 资料静态检查397份、10065个链接零问题；安全扫描含实际Wheel，共3565个输入零命中，
 生成规格、Ruff及原可读性策略保持通过。
+
+## 7. 分组后候选CI的独立状态
+
+[固定`df8dc8f`的原生与Python事实](ci-df8-followup.json)绑定CI Run 36642191617。
+原37项备份/观察者及75项恢复/元数据两个步骤均为`success`，表明新编排步骤已完成；
+完整Windows Job在记录时仍`in_progress`，不是整体通过。尚未取得终态原日志中的逐用例计数，
+不拼接原候选的79通过或109通过来声称新112项逐用例PASS，也不因观察耗时而重启同一活动Job。
+
+同一候选的Python3.12/3.13完整功能回归各5996项：**5880通过、116跳过、0失败/错误**，
+分别耗时837.39/772.81秒；之后均因12个Archive的许可证门禁失败。
+macOS、Container及文档Job成功，但完整CI并非绿色，许可策略未修改。
+这些结果不与5994项历史报告、治理专项或本地焦点相加，不替代消费者Windows11、
+未知费用核对、完整真实20 Trial、独立Beta及最终同候选R1～R6验收。

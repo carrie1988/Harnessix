@@ -5,8 +5,13 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 5071,
-      "sha256": "3737c0fb9226ccd275d1215c57d398ad48d136236ad2ae6b212e43c7ce1b22b7"
+      "bytes": 6115,
+      "sha256": "e74556ca6baba9376767e3c1179d2508d8b2bef65e68748d0fb63b9b31ae1e4b"
+    },
+    {
+      "path": "current-candidate-followup.json",
+      "bytes": 14159,
+      "sha256": "29ab488be40f3c4579364c735ce0e5785f09bc04c219794204e69d3a4a220802"
     },
     {
       "path": "diagrams/architecture.mmd",

@@ -4,8 +4,13 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 8026,
-      "sha256": "15e15ec31d3cb9fdba462efb71f12ab5e47047f45f043e5fc80a48e0bc0906c0"
+      "bytes": 11968,
+      "sha256": "b24bee41529c7fbf653f8246a5400bfa4ad5cd7ebfac2c3788210d3e1ba009b2"
+    },
+    {
+      "path": "facts/default-api-followup.json",
+      "bytes": 6062,
+      "sha256": "979d824e2dfdf27c8917ebb0e83bdc8f3ae3ede93713d1a58fc7db5465a390ed"
     },
     {
       "path": "facts/engine-binding.json",
