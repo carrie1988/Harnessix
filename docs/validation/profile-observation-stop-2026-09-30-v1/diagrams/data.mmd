@@ -1,0 +1,12 @@
+flowchart TB
+    Input[模型提出的非可信参数] --> Decoder[原严格Decoder 不补字段]
+    Decoder --> Rejection[原Session参数拒绝 无效果]
+    Execute[原审批与Process链] --> Exit[已知退出的Process投影]
+    Execute --> Unknown[未知或缺失执行终态]
+    Rejection --> Classify[正式Session观测分类]
+    Exit --> Classify
+    Unknown --> Classify
+    Classify -->|已知实际检查| Grade[原Grader 原严格门槛]
+    Classify -->|执行证据缺失| Stop[Campaign与Suite停止]
+    Usage[原Model Attempt及Usage] --> Budget[原私有费用账本]
+    Budget -.费用已知不证明效果已知.-> Stop

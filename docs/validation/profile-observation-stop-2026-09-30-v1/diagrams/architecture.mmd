@@ -1,0 +1,9 @@
+flowchart LR
+    Session[持久Session与原Tool Result] --> Observe[固定Profile观测收集器]
+    Observe -->|安全无效果参数拒绝| Empty[不生成检查观测 原调用保留]
+    Observe -->|全部实际结果已知退出| Grader[原Grader与标准Trial报告]
+    Observe -->|任一实际结果缺可信终态| Error[eval_baseline_invalid]
+    Error --> Case[Case Adapter持久停止]
+    Case --> Campaign[Campaign stopped evidence_missing]
+    Case --> Suite[原Suite停止发布器]
+    Suite --> State[Suite stopped evidence_missing]

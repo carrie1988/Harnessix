@@ -16,6 +16,7 @@
         "dependency_missing",
         "fee_limit_reached",
         "cost_unknown",
+        "evidence_missing",
         "runtime_failed",
         "internal_error",
         "cancelled"

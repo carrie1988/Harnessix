@@ -11,7 +11,10 @@ from harnessix.agent.errors import KernelError
 from harnessix.domain.models import utc_now
 from harnessix.evals.campaign import CompletedCodingEvalTrial, build_coding_eval_campaign_report
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan
-from harnessix.evals.campaign_execution_contracts import CodingEvalCampaignExecutionState
+from harnessix.evals.campaign_execution_contracts import (
+    CampaignStopReason,
+    CodingEvalCampaignExecutionState,
+)
 from harnessix.evals.execution_fs import (
     ensure_private_directory,
     exclusive_execution_lock,
@@ -290,16 +293,18 @@ def _recover_campaign_report(
     return _case_result(context, completed)
 
 
-def _stop_for_unknown_cost(
+def _stop_case(
     context: _CaseExecution,
     state: CodingEvalCampaignExecutionState,
+    reason: CampaignStopReason,
 ) -> CodingEvalSuiteCaseRunResult:
-    if state.status != "stopped":
+    """持久化有限停止原因，不把执行证据缺失改写为费用未知。"""
+    if state.status != "stopped" or state.stop_reason != reason:
         state = state.model_copy(
-            update={"status": "stopped", "stop_reason": "cost_unknown", "updated_at": utc_now()}
+            update={"status": "stopped", "stop_reason": reason, "updated_at": utc_now()}
         )
         write_eval_campaign_execution_state(context.state_path, state)
-    return CodingEvalSuiteCaseRunResult(case_id=context.case.case_id, reason="cost_unknown")
+    return CodingEvalSuiteCaseRunResult(case_id=context.case.case_id, reason=reason)
 
 
 async def _execute_remaining(
@@ -313,19 +318,25 @@ async def _execute_remaining(
         cancel.checkpoint()
         state = state.model_copy(update={"status": "running", "updated_at": utc_now()})
         write_eval_campaign_execution_state(context.state_path, state)
-        await run_task_pack_coding_eval(
-            context.loaded,
-            context.root / _RUNS_DIRECTORY,
-            context.git_executable,
-            context.container_engine,
-            context.case.case_id,
-            run_id,
-            context.provider_factory,
-            context.campaign.environment,
-            cancel,
-            observability=context.observability,
-            fault=context.fault,
-        )
+        try:
+            await run_task_pack_coding_eval(
+                context.loaded,
+                context.root / _RUNS_DIRECTORY,
+                context.git_executable,
+                context.container_engine,
+                context.case.case_id,
+                run_id,
+                context.provider_factory,
+                context.campaign.environment,
+                cancel,
+                observability=context.observability,
+                fault=context.fault,
+            )
+        except KernelError as error:
+            # 只收敛明确的Profile证据缺失；取消、存储故障和崩溃注入仍按原边界传播。
+            if error.code != "eval_baseline_invalid":
+                raise
+            return state, _stop_case(context, state, "evidence_missing")
         trial = await _completed_trial(context.root, context.case, context.campaign, run_id)
         units, complete = _known_cost(trial, context.campaign.price.currency)
         completed.append(trial)
@@ -340,7 +351,7 @@ async def _execute_remaining(
         write_eval_campaign_execution_state(context.state_path, state)
         context.fault("task_pack_case.after_trial")
         if not complete:
-            return state, _stop_for_unknown_cost(context, state)
+            return state, _stop_case(context, state, "cost_unknown")
     return state, None
 
 
@@ -373,8 +384,11 @@ async def _run_locked_case(
     recovered = _recover_campaign_report(context, state, completed)
     if recovered is not None:
         return recovered
-    if state.status == "stopped" or not costs_complete:
-        return _stop_for_unknown_cost(context, state)
+    if state.status == "stopped":
+        assert state.stop_reason is not None
+        return CodingEvalSuiteCaseRunResult(case_id=context.case.case_id, reason=state.stop_reason)
+    if not costs_complete:
+        return _stop_case(context, state, "cost_unknown")
     state, stopped = await _execute_remaining(context, state, completed, known_units, cancel)
     return stopped or _publish_campaign(context, state, completed)
 

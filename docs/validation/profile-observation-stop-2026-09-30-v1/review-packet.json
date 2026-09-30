@@ -1,0 +1,30 @@
+{
+  "scope": "固定Profile观测分类及证据缺失停止",
+  "status": "候选专项完成，完整回归及发行物验证待执行",
+  "source_code_revision": "pending",
+  "findings": [
+    {
+      "severity": "resolved",
+      "topic": "参数拒绝与执行结果混淆",
+      "resolution": "仅严格无效果且Decoder拒绝的调用不计观测"
+    },
+    {
+      "severity": "resolved",
+      "topic": "中间未知被首尾选择掩盖",
+      "resolution": "逐项校验所有剩余结果，未知或缺终态立即拒绝"
+    },
+    {
+      "severity": "resolved",
+      "topic": "停止原因与恢复",
+      "resolution": "指定缺证持久Campaign/Suite停止，重开保留原因且不重放"
+    },
+    {
+      "severity": "open",
+      "topic": "真实编码质量",
+      "resolution": "未取得修复后的完整20 Trial成绩，不关闭R3"
+    }
+  ],
+  "other_kernel_errors_propagate": true,
+  "score_threshold_unchanged": true,
+  "paid_requests": 0
+}

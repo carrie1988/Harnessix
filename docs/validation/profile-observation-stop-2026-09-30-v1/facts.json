@@ -1,0 +1,46 @@
+{
+  "source_code_revision": "pending",
+  "comparison_revision": "7d200b3aaf81c84536391365092ea01a497ad6cd",
+  "validation_scope": "focused-complete-full-regression-pending",
+  "original_reproduction": {
+    "source_revision": "7d200b3aaf81c84536391365092ea01a497ad6cd",
+    "original_suite_id": "aa8e0523-0adf-493d-8876-7c0c2ddbc45f",
+    "turn_status": "interrupted",
+    "profile_observation_reproduction": {
+      "error_code": "eval_baseline_invalid"
+    },
+    "original_session_sha256_before": "a085ae6258a0220e52b3ebcb5cdad7a4fbfd007f77ea0d40a69a056a21af76cf",
+    "original_session_sha256_after": "a085ae6258a0220e52b3ebcb5cdad7a4fbfd007f77ea0d40a69a056a21af76cf",
+    "original_session_unchanged": true,
+    "model_requests": 0,
+    "original_reports_modified": false
+  },
+  "projection_control": {
+    "full_original_turn": {
+      "error_code": "eval_baseline_invalid",
+      "unknown_not_ignored": true
+    },
+    "in_memory_known_rejection_control": {
+      "baseline_count": 0,
+      "final_count": 0,
+      "is_real_trial_report": false
+    },
+    "original_reports_modified": false,
+    "paid_requests": 0
+  },
+  "budget": {
+    "original_ledger_exists": true,
+    "before_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "expected_frozen_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "exact_frozen_match": true,
+    "model_requests_this_slice": 0,
+    "known_estimate_cny": "1.74186",
+    "unknown_reserved_cny": "20.77824",
+    "same_cap_remaining_cny": "39.780864",
+    "new_suite_rebinding_required": true,
+    "actual_supplier_bill_verified": false
+  },
+  "paid_requests": 0,
+  "complete_real_suite_available": false,
+  "release_gates_closed": false
+}

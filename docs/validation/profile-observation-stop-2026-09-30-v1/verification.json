@@ -1,0 +1,41 @@
+{
+  "source_code_revision": "pending",
+  "checks": [
+    {
+      "name": "original-regression",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "45.701",
+      "junit_sha256": "b7844cafa0fddaa0ccdfa74e7d40ae9411bd99772a9abfdba0b2ae69df6845ea",
+      "log_sha256": "5d1c78ee21e182ea1903e26575b8736621fff62be26d97eef15cfae98f0009a8",
+      "scope": "offline"
+    },
+    {
+      "name": "focus-final",
+      "tests": 107,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "1.129",
+      "junit_sha256": "a1d1f70422637593b71ebc67a7642a5a1509cf5be7c64e41448d9d59be336a20",
+      "log_sha256": "7e352c1543c6f0fef3bd76122c6fc5e26fe96a1de53455ee065d4f09c532e2a2",
+      "scope": "offline"
+    },
+    {
+      "name": "real-container",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "15.301",
+      "junit_sha256": "ed25e1d166540498dae0ec8a6ed5fe25d2a3e667615face6ecde20c9e4724a08",
+      "log_sha256": "50661b9c6bec27809ac560545351bb0ac453e3cc92c23482afe41681deaa5413",
+      "scope": "real-containers-recorded-provider-not-quality"
+    }
+  ],
+  "full_regression_completed": false,
+  "test_sets_overlap": true,
+  "diagrams_rendered_and_observed": 3
+}

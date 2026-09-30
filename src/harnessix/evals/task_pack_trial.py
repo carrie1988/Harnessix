@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Never
+from typing import Never
 from uuid import UUID, uuid5
 
 from harnessix.agent.approvals import remaining_seconds
@@ -17,7 +17,6 @@ from harnessix.agent.models import (
     ItemStatus,
     Thread,
     ToolCallContent,
-    ToolResultContent,
     TrustedActionApprovalRequestContent,
     Turn,
     TurnStatus,
@@ -30,7 +29,6 @@ from harnessix.evals.contracts import (
     CodingEvalEnvironment,
     CodingEvalReport,
     CodingEvalRunState,
-    EvalTestObservation,
 )
 from harnessix.evals.execution_fs import (
     path_present,
@@ -52,6 +50,7 @@ from harnessix.evals.task_pack_materializer import (
     MaterializedCodingEvalTaskPackCase,
     materialize_task_pack_case,
 )
+from harnessix.evals.task_pack_observations import profile_observations as _profile_observations
 from harnessix.models.contracts import ModelProvider
 from harnessix.observability import NoOpObservability, Observability
 from harnessix.product_config.action_contracts import build_product_action_config
@@ -61,7 +60,6 @@ from harnessix.product_config.process_action import decode_run_profile
 from harnessix.product_config.workspace_patch_review import decode_workspace_patch_input
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
-from harnessix.tools.workspace import digest
 
 TaskPackProviderFactory = Callable[
     [CodingEvalTaskPackCase, UUID], AbstractAsyncContextManager[ModelProvider]
@@ -248,72 +246,6 @@ async def _drive_turn(
             continue
         raise KernelError("eval_run_projection_invalid", "Task Pack Turn停留在不可恢复状态")
     return thread_id, turn
-
-
-def _profile_observation(
-    result: ToolResultContent,
-    profile_id: str,
-    phase: Literal["baseline", "final"],
-) -> EvalTestObservation | None:
-    output = result.output
-    if not isinstance(output, dict) or output.get("profile") != profile_id:
-        return None
-    state = output.get("state")
-    stop_reason = output.get("stop_reason")
-    returncode = output.get("returncode")
-    if state != "exited" or stop_reason != "exited" or type(returncode) is not int:
-        return None
-    evidence = {
-        "profile": profile_id,
-        "state": state,
-        "stop_reason": stop_reason,
-        "returncode": returncode,
-        "stdout": output.get("stdout"),
-        "stderr": output.get("stderr"),
-        "complete": output.get("complete"),
-    }
-    return EvalTestObservation(
-        check_id=profile_id,
-        phase=phase,
-        passed=returncode == 0,
-        returncode=returncode,
-        output_sha256=digest(evidence),
-        elapsed_seconds=0,
-    )
-
-
-def _profile_observations(
-    turn: Turn,
-    case: CodingEvalTaskPackCase,
-) -> tuple[tuple[EvalTestObservation, ...], tuple[EvalTestObservation, ...]]:
-    calls = {
-        item.content.call_id: item.content
-        for item in turn.items
-        if item.status is ItemStatus.COMPLETED and isinstance(item.content, ToolCallContent)
-    }
-    results: list[ToolResultContent] = []
-    profile_tool = f"run_profile.{case.profile_id}"
-    for item in turn.items:
-        content = item.content
-        if item.status is not ItemStatus.COMPLETED or not isinstance(content, ToolResultContent):
-            continue
-        call = calls.get(content.call_id)
-        if call is not None and call.tool == profile_tool:
-            results.append(content)
-    # 模型未调用或只调用一次Profile属于可评分行为事实，不能由Adapter补造测试证据。
-    # 已存在调用却缺少可信Process终态仍是执行链故障，继续失败关闭。
-    if not results:
-        return (), ()
-    baseline = _profile_observation(results[0], case.profile_id, "baseline")
-    if baseline is None:
-        raise KernelError("eval_baseline_invalid", "Task Pack固定Profile基线缺少可信终态")
-    final = (
-        _profile_observation(results[-1], case.profile_id, "final") if len(results) > 1 else None
-    )
-    return (
-        () if baseline is None else (baseline,),
-        () if final is None else (final,),
-    )
 
 
 def _require_completed_trial(

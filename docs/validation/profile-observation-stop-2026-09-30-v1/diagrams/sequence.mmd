@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant S as Suite Runner
+    participant C as Case Adapter
+    participant T as 原Trial编排
+    participant O as 观测收集器
+    participant F as 原私有文件发布器
+    S->>F: Suite running与当前Case
+    S->>C: 固定Case Campaign及CancelToken
+    C->>F: Campaign running
+    C->>T: 原Trial执行或Session终态恢复
+    T->>O: 完整Turn与固定Case
+    O-->>T: eval_baseline_invalid
+    T-->>C: 指定证据错误
+    C->>F: Campaign stopped evidence_missing
+    C-->>S: Case结果 evidence_missing 无报告
+    S->>F: Suite stopped evidence_missing
+    S-->>S: 返回有限停止报告 不发布质量聚合

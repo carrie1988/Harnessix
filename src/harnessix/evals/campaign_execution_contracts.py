@@ -14,7 +14,7 @@ from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.pricing import Amount, Currency, amount_units, content_digest
 
 CampaignExecutionStatus = Literal["ready", "running", "stopped", "completed"]
-CampaignStopReason = Literal["fee_limit_reached", "cost_unknown"]
+CampaignStopReason = Literal["fee_limit_reached", "cost_unknown", "evidence_missing"]
 CampaignRunReason = Literal[
     "completed",
     "network_not_enabled",
@@ -22,6 +22,7 @@ CampaignRunReason = Literal[
     "dependency_missing",
     "fee_limit_reached",
     "cost_unknown",
+    "evidence_missing",
     "runtime_failed",
     "internal_error",
     "cancelled",

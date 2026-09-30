@@ -1,0 +1,55 @@
+{
+  "algorithm": "sha256",
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 4679,
+      "sha256": "130257dcad2642c83a5b68bd3a3fb1b7a3524f9a266c3152859580dc9dbbaf0a"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 553,
+      "sha256": "57c589cb9e4f6a5293d124937970afbda9232f48e6df9c6525c819fd80105f20"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 41714,
+      "sha256": "a3d1ad0eb952c2782beb29dadedba16481de98672b3a21e9f1c8adf25d01412f"
+    },
+    {
+      "path": "diagrams/data.mmd",
+      "bytes": 648,
+      "sha256": "641b85898257607aec3ef12488282e020ecfb1b0cbfd8cf5e9e6d40d2ecd83a8"
+    },
+    {
+      "path": "diagrams/data.png",
+      "bytes": 50859,
+      "sha256": "9eadc4fa22f074c0a7a246f95e8a3e959296a3d91f86a55c69634f4288126c38"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "bytes": 658,
+      "sha256": "e4bcb50d68c16a5f7f0f40a63d98ff58799bb6350c13a4adcff9746550300f0d"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "bytes": 72261,
+      "sha256": "a0071589f99d96665f621881d43aadd849e07f80ba3de331d8e465c32b79c030"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 1740,
+      "sha256": "34ce3179251c4f51712c89c5efdc76fe58c73cebd11f484604c09d550e35bd6f"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 982,
+      "sha256": "bc667792e41727ed5a05dbf9eb14b1de4f973bdf18b2f2112efa470b35dca6f5"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1265,
+      "sha256": "e44f02ed0f5d64c3536df3c5da0fe9c70baeacfced6ccf68f2758e89deb60ac9"
+    }
+  ]
+}

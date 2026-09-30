@@ -752,6 +752,11 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 实际Wheel及治理原失败；同候选完整离线6085通过/111跳过，测试成功不代替真实模型质量。
 原真实失败保持，不重放旧未知效果；新完整Suite仍需原同一40元范围重新绑定，
 已用0.219136元和旧20.77824元全额预留继续计入原70元，不视为新额度或实际账单。
+[Profile观测分类与证据缺失停止整改](changes/m09-r3-profile-observation-and-evidence-stop.md)
+从原Session只读副本求证：INTERRUPTED已是可返回终态，具体抛错来自参数拒绝被收集为实际Profile结果。
+仅确认无效果且正式Decoder仍拒绝的输入错误不计检查；其余每项结果要求可信已知退出，
+中间未知不能被后续成功覆盖。指定缺证路径持久停止Campaign与Suite，重开不重放、不推进完成前缀。
+原Grader、Task Pack、Token、费用与评分门槛不变；原中断Suite不补写报告，完整20 Trial复验仍未通过。
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
 Action借用同一Owner，取消结算唯一目录线程后释放。该前置由后继完整备份/恢复及整体Root发布承接；
 复杂Store/Artifact业务恢复与正式安全收口仍需完整验收，不关闭R1或R4。

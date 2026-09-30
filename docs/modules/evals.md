@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 27
-code_revision: 0813c581982fddf17503d47a308419035d193ecf
+version: 28
+code_revision: 7d200b3aaf81c84536391365092ea01a497ad6cd
 owners:
   - core
 modules:
@@ -41,6 +41,8 @@ related_tests:
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_task_pack_execution.py
+  - tests/evals/test_task_pack_profile_outcomes.py
+  - tests/evals/test_task_pack_evidence_stop.py
   - tests/integration/test_task_pack_execution.py
   - tests/evals/test_task_pack_suite.py
   - tests/evals/test_offline_suite_runner.py
@@ -83,6 +85,7 @@ supersedes: []
 [`task_pack.py`](../../src/harnessix/evals/task_pack.py)、
 [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py)、
 [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py)、
+[`task_pack_observations.py`](../../src/harnessix/evals/task_pack_observations.py)、
 [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py)、
 [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py)、
 [`provider_suite_contracts.py`](../../src/harnessix/evals/provider_suite_contracts.py)、
@@ -311,6 +314,7 @@ flowchart LR
 | [`task_pack.py`](../../src/harnessix/evals/task_pack.py) | 内置Catalog、no-follow资源核验和Product Profile投影 | 19 |
 | [`task_pack_materializer.py`](../../src/harnessix/evals/task_pack_materializer.py) | 安全Tar解包、固定Git重建、清单发布和脏Workspace重开 | 20 |
 | [`task_pack_trial.py`](../../src/harnessix/evals/task_pack_trial.py) | Agent/Product Action装配、自动审批、Profile观察、Grader与Run恢复 | 21 |
+| [`task_pack_observations.py`](../../src/harnessix/evals/task_pack_observations.py) | 安全无效果参数拒绝分类、实际Profile逐项终态验证及首尾观测 | 21a |
 | [`task_pack_execution.py`](../../src/harnessix/evals/task_pack_execution.py) | Suite Case端口、Campaign计划/前缀/成本/报告恢复 | 22 |
 | [`task_pack_suite.py`](../../src/harnessix/evals/task_pack_suite.py) | 从已核验Pack确定性组合10 Case/20 Trial Provider中立Suite配置 | 23 |
 | [`provider_suite_contracts.py`](../../src/harnessix/evals/provider_suite_contracts.py) | 真实Provider私有运行、低敏CLI结果和公开证据合同 | 24 |
@@ -2214,10 +2218,21 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 在新进程禁止加载六个执行模块，检查合同导入、名称发现、Generator help及只读check。
 合同/CLI负例在三平台都运行；原POSIX执行对象身份回归的适用范围不能冒充Windows执行支持。
 
-## 55. 变更记录
+## 55. Profile观测分类与证据缺失停止
+
+[总体及详细设计](../changes/m09-r3-profile-observation-and-evidence-stop.md)包含需求背景、
+总体架构、流程/时序/数据图、字段、业务伪代码、失败恢复、兼容和验证责任。
+`profile_observations`只排除正式Decoder仍拒绝、无同call审批且无任何Action效果的参数错误；
+实际非零退出保留为失败检查，任一中间未知或缺退出证据均拒绝，不能取末次成功覆盖。
+仅该特定错误映射到Campaign和Suite的`stopped/evidence_missing`，完成前缀和成本事实不补造。
+重开返回原原因而不重放Trial；取消、其他异常和原未知费用边界不变。
+该切片不补写旧Suite报告、不改变Grader，也不代表R3真实质量验收通过。
+
+## 56. 变更记录
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 28 | 当前观测整改候选 | 2026-09-30 | 分离固定Profile观测职责，确认无效果参数拒绝不计检查，逐项验证真实终态，指定缺证路径持久停止Campaign/Suite，重开不重放；真实质量门禁保持 |
 | 27 | `0813c581982fddf17503d47a308419035d193ecf`的修正候选 | 2026-09-30 | 新私有Workspace通过目录FD落实0755；录制Oracle采用Git可执行位语义，兼容umask077，既有漂移与正式Patch权限拒绝不变 |
 | 25 | `90de93f565ea88679e54242ee6f1771e9be721b7` | 2026-09-28 | 增加有限验证宿主持久请求预留、官方Adapter Guard与Case/Suite双层绑定；未知不退款，原0/20和R3门禁保留 |
 | 22 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定实际导入隔离实现Revision、16/214/107有重叠专项和阶段证据；前序CI失败保留，最新候选真实Windows终态未外推 |
