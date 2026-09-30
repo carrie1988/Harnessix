@@ -73,6 +73,17 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
             return await original_git_run(self, request, cancel)
         except KernelError as error:
             print("WINDOWS_GIT_FAILURE_CODE=" + error.code)
+            # 仅固定分类及整数IO码；不公开错误正文、回执、MAC或宿主路径。
+            import re
+
+            for note in getattr(error, "__notes__", ()):
+                if re.fullmatch(
+                    r"receipt_io=\d+:\d+:attempt=\d+|"
+                    r"receipt_snapshot_changed:attempt=\d+|"
+                    r"receipt_stage=content_or_file_binding",
+                    note,
+                ):
+                    print("WINDOWS_GIT_FAILURE_NOTE=" + note)
             raise
 
     monkeypatch.setattr(WindowsGitReadProcess, "run", observe_git_failure)

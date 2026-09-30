@@ -1,0 +1,10 @@
+{
+  "scope": "original_total_read_budget_and_strict_new_snapshot_only",
+  "local_scoped_go": true,
+  "native_candidate_claimed_pass": false,
+  "old_failure_preserved": true,
+  "unlinked_body_accepted": false,
+  "same_file_rollback_policy_changed": false,
+  "default_product_delivery_wired": false,
+  "commercial_release_gate_closed": false
+}

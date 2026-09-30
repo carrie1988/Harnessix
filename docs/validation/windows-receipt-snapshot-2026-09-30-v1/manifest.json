@@ -1,0 +1,56 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 6198,
+      "sha256": "5984446e308a34ff20a31b593583bc7f0efe622da13910fe0064a452405255f5"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 443,
+      "sha256": "263549d79a0b401b1777fad54da9604eb202c0d4d0b36507a552cff57056a3c3"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 37710,
+      "sha256": "ea41d87c16668f5932fffa53b7ef5ba5a239de402875d88ac3cc8d13fc62bef7"
+    },
+    {
+      "path": "diagrams/data-flow.mmd",
+      "bytes": 673,
+      "sha256": "5381935c9cde2c7bafad7b809b5a67d54db94f28a579e54c401338d48d51e8bc"
+    },
+    {
+      "path": "diagrams/data-flow.png",
+      "bytes": 50814,
+      "sha256": "8ae24c0ded3b1e024f4ec880c21977bcadf2ea70a343041673e2d287b532d733"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "bytes": 596,
+      "sha256": "72cef98c98d924956b52fc2c103da8c65ffcf6f204bae9772f2cef03b81debf3"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "bytes": 57464,
+      "sha256": "329185cffac21e5a50d93c89fd9314748fc5534dd0d56e4389a033a758bfa917"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 5306,
+      "sha256": "c585b64b41f9faaa8d5c97982f19c65b10fee7be11fa86001978d1a8cb997907"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 950,
+      "sha256": "f441d472a97b8c7e61a2f75f17138de651d1c217f9e44e59497e19bdcca91aca"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 342,
+      "sha256": "554296353ed10066711af0e7b3dd621bb64fa0865674fe819f8517b6cf9628c2"
+    }
+  ]
+}

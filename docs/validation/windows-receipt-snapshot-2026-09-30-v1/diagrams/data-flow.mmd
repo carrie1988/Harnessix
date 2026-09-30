@@ -1,0 +1,16 @@
+flowchart TD
+    Open[同一Receipt路径 原固定父链] --> Attributes[普通文件类型]
+    Attributes --> Links{链接计数}
+    Links -->|零| Release[释放全部句柄]
+    Release --> Budget{原七次预算尚有余额}
+    Budget -->|有| Open
+    Budget -->|无| Fail[原invalid错误 固定诊断]
+    Links -->|一| Path[最终路径核验]
+    Links -->|多| Reject[拒绝 不重取]
+    Path -->|合法| Body[同一FD有界完整读取]
+    Path -->|异常| Again{同一Handle是否已无链接}
+    Again -->|是| Release
+    Again -->|否| Reject
+    Body --> MAC[原合同 身份 MAC]
+    MAC -->|合法| Lease[原Lease CAS]
+    MAC -->|非法| Reject

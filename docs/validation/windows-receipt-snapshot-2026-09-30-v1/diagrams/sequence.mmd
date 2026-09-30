@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant R as Reader
+    participant K as NTFS
+    participant O as Owner
+    R->>K: 打开旧Receipt Handle
+    O->>K: Flush后单次替换名称
+    K-->>R: 旧Handle无链接 新名称指向新对象
+    R->>K: 元数据或最终路径核验
+    K-->>R: 原Handle链接数为零
+    R->>R: 关闭原Handle和父链
+    R->>K: 原七次预算内重新打开同一名称
+    K-->>R: 新对象Handle
+    R->>R: 单链接 根边界 正文及原HMAC
+    alt 合法
+        R-->>R: 原序号与Lease CAS
+    else 拒绝
+        R-->>R: 立即原错误 不再次重取
+    end

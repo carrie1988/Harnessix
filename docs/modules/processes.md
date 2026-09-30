@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 28
-code_revision: 0813c581982fddf17503d47a308419035d193ecf
+version: 29
+code_revision: 6d77b2ce453e5ebd0166c17dab7f20e238920a0e
 owners:
   - core
 modules:
@@ -23,6 +23,7 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/processes/test_receipt_snapshot_transition.py
   - tests/processes/test_output_binary_contracts.py
   - tests/processes/test_windows_receipt_contracts.py
   - tests/processes/test_output_protection.py
@@ -1694,3 +1695,12 @@ NUL及无效UTF-8均不经CRT转换。脱敏、输出额度、部分写入和原
 固定实现`9186cb2`原生Git/Owner/完整备份焦点119通过、5跳过，原事务/审批60通过，Session认证88通过。
 后继产品重启基准仍有2个启动失败，整体Windows Job失败；
 [完整原件与评审结论](../validation/windows-private-state-2026-09-28-v1/README.md)保留失败，不关闭首发门禁。
+
+## Windows Receipt未绑定快照的名称周转
+
+[完整设计](../changes/m09-r1-windows-receipt-snapshot.md)区分损坏与旧Handle无名称：
+后者不接受正文或更新Lease，只释放原资源、在原七次总预算内重新打开同一受管名称。
+普通文件、单链接、固定父链、最终路径、MAC及序号不放宽；MAC、非法来源与正文错误不重试。
+路径观察失败时只有同一Handle链接数已为零才归入周转，不扩大通用Windows Workspace规则。
+原生打开/元数据Barrier和固定旧绑定负对照必须实际成立，才能验收该候选；
+原SDK Git链偶发失败尚不能归因于这一窗口，后继原焦点成功不替代候选专项结果。

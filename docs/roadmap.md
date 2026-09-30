@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 133
-code_revision: a80ea984bf4a37484781e7f6834e0e104e1d56ae
+version: 134
+code_revision: 6d77b2ce453e5ebd0166c17dab7f20e238920a0e
 owners:
   - core
 modules:
@@ -1069,3 +1069,13 @@ Session重开回放链。原Suite/未知费用保持不变，0次真实模型请
 不关闭R1/R4，也不把0.7组件实现完成推导为首发产品接线完成。
 后续沿原R4工作包补产品交付控制、来源绑定、审批及恢复；本地Commit/Checkpoint/Rollback不延期或删减，
 公网Push仍延期，真实质量、消费者平台、独立Beta及最终R1～R6保持开放。
+
+### R1/R4：Windows Receipt名称周转候选
+
+固定`a80ea984`的正式SDK Git链因`process_owner_receipt_invalid`失败，原焦点137通过、5跳过、1失败；
+后继`6d77b2c`的原NTFS与Git焦点步骤成功，完整Job另行核验，不把一次成功当作排除竞争。
+[完整设计](changes/m09-r1-windows-receipt-snapshot.md)不接受无名称旧Handle，
+仅在原七次总读预算内重新绑定当前Receipt；原MAC、单链接、安全边界、取消及写端无重试保持。
+新增原生Barrier和固定原绑定负对照须取得新候选结果；离线通过不关闭R1/R4，不预先判定原CI唯一根因。
+[验证材料](validation/windows-receipt-snapshot-2026-09-30-v1/README.md)保留原失败、模拟/原生差别及受测字节。
+产品交付接线、真实编码质量、费用核对、Windows11、独立Beta及最终R1～R6继续开放。

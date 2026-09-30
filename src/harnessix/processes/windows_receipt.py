@@ -42,10 +42,7 @@ def open_owner_receipt(path: Path) -> Iterator[int]:
         if handle is None:
             raise FileNotFoundError("Process owner回执不存在")
         try:
-            info = root._information(handle)
-            if info.attributes & (0x400 | 0x10) or info.links != 1:
-                raise ValueError("Process owner回执不是普通单链接文件")
-            root._assert_under_root(root._final_path(handle))
+            _verify_receipt_handle(root, handle)
             descriptor = int(
                 msvcrt.__dict__["open_osfhandle"](handle, os.O_RDONLY | getattr(os, "O_BINARY", 0))
             )
@@ -57,6 +54,27 @@ def open_owner_receipt(path: Path) -> Iterator[int]:
             yield descriptor
         finally:
             os.close(descriptor)
+
+
+def _verify_receipt_handle(root: WindowsWorkspaceRoot, handle: int) -> None:
+    """不接受无名称的旧对象；只允许读取端在原预算内重新绑定当前名称。"""
+    info = root._information(handle)
+    if info.attributes & (0x400 | 0x10):
+        raise ValueError("Process owner回执不是普通文件")
+    if info.links == 0:
+        raise KernelError("process_owner_receipt_changed", "Process owner回执名称已周转")
+    if info.links != 1:
+        raise ValueError("Process owner回执不是单链接文件")
+    try:
+        root._assert_under_root(root._final_path(handle))
+    except (OSError, KernelError):
+        # 名称切换可能发生于首次元数据之后；仍不接受失去名称的对象。
+        # 只有同一Handle已无链接才重取快照，越界或其他IO故障保持原拒绝。
+        if root._information(handle).links == 0:
+            raise KernelError(
+                "process_owner_receipt_changed", "Process owner回执名称已周转"
+            ) from None
+        raise
 
 
 def publish_owner_receipt(path: Path, body: bytes) -> None:

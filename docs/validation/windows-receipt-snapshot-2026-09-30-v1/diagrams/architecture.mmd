@@ -1,0 +1,9 @@
+flowchart TB
+    Git[固定Git读取] --> Supervisor[原Supervisor与Lease]
+    Supervisor --> Reader[有界Receipt Reader]
+    Reader --> Port[Windows固定父链与只读Handle]
+    Port --> Binding[普通文件 单链接 根边界]
+    Binding --> MAC[原正文合同与HMAC]
+    MAC --> CAS[原序号与Lease CAS]
+    Owner[原Owner 单次原子名称发布] -. 名称周转 .-> Port
+    Binding -. 零链接旧快照 不接受 .-> Reader

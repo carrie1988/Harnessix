@@ -347,3 +347,16 @@ def test_rollback_root_binding_joins_native_focus_without_removing_existing_chec
         "tests/delivery/test_trusted_action_patch.py",
         "tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch",
     ]
+
+
+def test_windows_git_focus_keeps_turnover_negative_control_and_original_deadline() -> None:
+    import yaml
+
+    path = Path(__file__).parents[2] / ".github/workflows/ci.yml"
+    job = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["windows-trusted-execution"]
+    step = next(item for item in job["steps"] if item.get("name") == "验证原生Git读取与取消回收")
+    assert step["timeout-minutes"] == 3
+    assert "tests/processes/test_receipt_snapshot_transition.py" in step["run"]
+    assert "tests/processes/test_windows_receipt_contracts.py" in step["run"]
+    assert "test_windows_product_sdk_git_diff_uses_private_redacted_owner" in step["run"]
+    assert "faulthandler_timeout=60" in step["run"]

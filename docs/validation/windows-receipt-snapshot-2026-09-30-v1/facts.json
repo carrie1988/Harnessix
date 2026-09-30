@@ -1,0 +1,160 @@
+{
+  "schema": "harnessix.receipt-snapshot-validation/v1",
+  "source_base_revision": "6d77b2ce453e5ebd0166c17dab7f20e238920a0e",
+  "host": "macos_arm64_cpython3127",
+  "tested_source_sha256": {
+    "src/harnessix/processes/owner_receipt.py": "802e8ff6e39e889ae215e3bd00ce579330338d9b8cc4301ceb9ad503c4621e07",
+    "src/harnessix/processes/windows_receipt.py": "f90587a5e64cc19442f469f44174237d359fd3dc007b7a0b51b5d077b8e680c0",
+    "tests/processes/test_receipt_snapshot_transition.py": "babebb0eb01c2a7159b6c0cbcdc382ad693e463987a6d34fffd2f3e809d4547d",
+    "tests/product_config/test_server_and_cli.py": "34c8a99f20fd03f656934a4c781263b2428e988f49800650d09d08e8216ad8bc",
+    ".github/workflows/ci.yml": "2d402dcf11d52c7d627fc0ebe72247e1a9cb90aa036c3430f7ae39c4a719cc9c",
+    "tests/governance/test_installed_product_acceptance.py": "7791f22ed288ce9a3d98896c863bb0c877be92b18167b8d4898e54c1b79d1fc8"
+  },
+  "unchanged_inputs": {
+    "src/harnessix/processes/supervision_contracts.py": true,
+    "src/harnessix/processes/supervisor.py": true,
+    "src/harnessix/processes/windows_owner.py": true,
+    "src/harnessix/workspace/windows.py": true,
+    "src/harnessix/workspace/windows_file_io.py": true,
+    "governance/readability-policy-v1.json": true,
+    "uv.lock": true,
+    "pyproject.toml": true
+  },
+  "regression": {
+    "red.xml": {
+      "source": "red.xml",
+      "bytes": 20409,
+      "sha256": "0d9df60e9279dbbe736454ba00c775d1bbca8a53d90482d4fdcbd674e0c11008",
+      "tests": 10,
+      "errors": 0,
+      "failures": 8,
+      "skipped": 2,
+      "passed": 0,
+      "seconds": 0.129
+    },
+    "green.xml": {
+      "source": "green.xml",
+      "bytes": 7551,
+      "sha256": "cfaafe201038ffa8a9cca5e8563c05911589e7ced130d0112fef3f470ca6be0b",
+      "tests": 38,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 5,
+      "passed": 33,
+      "seconds": 0.134
+    },
+    "final-focus.xml": {
+      "source": "final-focus.xml",
+      "bytes": 9048,
+      "sha256": "224ffa3835a7c6dd4b5638d42bd598ec31f46f4c3d113be350ebf50284364665",
+      "tests": 46,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 5,
+      "passed": 41,
+      "seconds": 0.15
+    },
+    "association.xml": {
+      "source": "association.xml",
+      "bytes": 54222,
+      "sha256": "dd41ae50579c59fdb793a9e67cddfc9db40cc84b1183c44d9bea760a4fb932f7",
+      "tests": 273,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 29,
+      "passed": 244,
+      "seconds": 14.514
+    }
+  },
+  "original_a80_windows_focus": {
+    "passed": 137,
+    "skipped": 5,
+    "failed": 1,
+    "failure_code": "process_owner_receipt_invalid",
+    "exclusive_root_cause": "unproven"
+  },
+  "original_6d77_windows_focus_steps": {
+    "ntfs": "success",
+    "git": "success",
+    "whole_job": "not_claimed"
+  },
+  "native_new_candidate": {
+    "negative_control": "pending",
+    "barriers": "pending",
+    "product_sdk_and_backup_restore": "pending",
+    "consumer_windows11": "pending"
+  },
+  "read_total_attempts": 7,
+  "read_delay_total_seconds": 0.912,
+  "unlinked_snapshot_accepted": false,
+  "writer_retry_added": false,
+  "process_reexecution_added": false,
+  "budgets_or_policy_relaxed": false,
+  "real_model_requests": 0,
+  "budget_ledger_reset_or_settled": false,
+  "docker_or_remote_host_modified": false,
+  "R1_complete": false,
+  "R4_complete": false,
+  "commercial_release": false,
+  "governance": {
+    "governance.xml": {
+      "source": "governance.xml",
+      "bytes": 50460,
+      "sha256": "1439aecf97acb7c88dcda8a936f790c7d6ce035cae383679fa0cbb905273e9d4",
+      "tests": 301,
+      "errors": 0,
+      "failures": 2,
+      "skipped": 0,
+      "passed": 299,
+      "seconds": 25.659
+    },
+    "governance-final.xml": {
+      "source": "governance-final.xml",
+      "bytes": 46999,
+      "sha256": "32d3079ae05954233fc42bca5a424c96f30c9c08131639df52cbdcd3698396cd",
+      "tests": 301,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "passed": 301,
+      "seconds": 26.312
+    }
+  },
+  "initial_validation_repairs": [
+    "renderer_local_chrome_path_resolved_without_install",
+    "missing_render_output_links_fixed_after_render",
+    "apple_git224_checkout_override_unsupported_rerun_with_existing_git253_no_assertion_change"
+  ],
+  "static_verification": {
+    "ruff_check": "pass",
+    "mypy_changed_production_files": "pass",
+    "original_readability_policy": "pass",
+    "generated_specs": "pass",
+    "new_diagrams_actually_rendered": 3,
+    "repository_mermaid_only_structurally_counted": true,
+    "documentation": {
+      "changed_path_count": 21,
+      "document_count": 400,
+      "findings": [],
+      "link_count": 10120,
+      "mermaid_count": 870,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    }
+  },
+  "actual_wheel": {
+    "name": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "bytes": 1079912,
+    "sha256": "5b1fbfddaac2a85a7bc0482fdac8d9c10bb47b7eef9f5e76287d4290bbf3889e",
+    "offline_build": "pass",
+    "both_changed_production_members_match_source": true,
+    "installed_runtime_acceptance_claimed": false
+  },
+  "artifact_secret_scan": {
+    "inputs": 3589,
+    "complete": true,
+    "findings": 0,
+    "wheel_included": true,
+    "log_sha256": "465bad188ba7e0936be13b8b08a0b63326ffca52955f8cd34a3b0582a38fb44f"
+  }
+}

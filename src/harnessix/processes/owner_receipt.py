@@ -172,7 +172,9 @@ def _read_owner_receipt_once(path: Path) -> ProcessOwnerReceipt:
                 chunks.append(chunk)
                 remaining -= len(chunk)
             body = b"".join(chunks)
-    except KernelError:
+    except KernelError as error:
+        if error.code == "process_owner_receipt_changed":
+            raise
         raise ValueError("Process owner回执文件绑定无效") from None
     if len(body) != info.st_size:
         raise ValueError
@@ -203,6 +205,14 @@ def read_owner_receipt(
             break
         except FileNotFoundError:
             raise KernelError("process_owner_receipt_missing", "Process owner回执不存在") from None
+        except KernelError as error:
+            if error.code != "process_owner_receipt_changed":
+                raise
+            if index < len(_WINDOWS_RECEIPT_READ_DELAYS) - 1:
+                continue
+            failure = KernelError("process_owner_receipt_invalid", "Process owner回执损坏")
+            failure.add_note(f"receipt_snapshot_changed:attempt={index + 1}")
+            raise failure from None
         except OSError as error:
             final_attempt = index == len(_WINDOWS_RECEIPT_READ_DELAYS) - 1
             if _is_windows_sharing_error(error) and not final_attempt:
@@ -215,7 +225,9 @@ def read_owner_receipt(
             )
             raise failure from None
         except (ValidationError, ValueError, TypeError):
-            raise KernelError("process_owner_receipt_invalid", "Process owner回执损坏") from None
+            failure = KernelError("process_owner_receipt_invalid", "Process owner回执损坏")
+            failure.add_note("receipt_stage=content_or_file_binding")
+            raise failure from None
     assert receipt is not None
     return verify_owner_receipt(
         receipt,
