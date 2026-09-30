@@ -11,19 +11,28 @@ import subprocess
 import sys
 from contextlib import nullcontext
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path, PureWindowsPath
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock, call
+from uuid import uuid4
 
 import pytest
 
-from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.processes import git_read_windows as windows_reader
 from harnessix.processes.capture import CaptureProtocol
 from harnessix.processes.contracts import ProcessRequest, ProcessResult, ProcessStream
-from harnessix.processes.supervision_contracts import ProcessOutputObservation
+from harnessix.processes.git_observation import GitBaselineReadResult
+from harnessix.processes.owner_receipt import (
+    RawProcessOutputObservation,
+    sign_owner_receipt,
+    write_owner_receipt,
+)
+from harnessix.processes.supervision_contracts import ProcessLease, ProcessOutputObservation
 from harnessix.processes.supervision_planner import build_process_capability
+from harnessix.processes.supervisor import SupervisedProcess
 from harnessix.tools import git as git_reader
 from harnessix.tools.git_contracts import GitDiffInput, GitStatusInput
 from harnessix.workspace import snapshot as workspace_snapshot
@@ -110,6 +119,10 @@ def _digest(payload: object) -> str:
             payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
         ).encode()
     ).hexdigest()
+
+
+def _baseline_binding(process_fingerprint: str) -> str:
+    return _digest({"process_binding": process_fingerprint, "observation": "git-raw/v2"})
 
 
 @pytest.fixture
@@ -235,7 +248,7 @@ def _windows_fingerprint(fixture: SimpleNamespace, for_delivery: bool) -> str:
         "state": os.path.normcase(str(fixture.state)),
     }
     if for_delivery:
-        payload["purpose"] = "git-delivery-baseline/v1"
+        payload["purpose"] = "git-delivery-baseline/raw-v2"
     return _digest(payload)
 
 
@@ -265,13 +278,15 @@ def test_posix_profile_keeps_exact_binding_environment_arguments_and_limits(
     assert reader.contract() == {
         **_PUBLIC_CONTRACT,
         "implementation": "git-baseline-read/v1" if for_delivery else "git-read/v1",
-        "binding": fingerprint,
+        "binding": _baseline_binding(fingerprint) if for_delivery else fingerprint,
     }
     ordinary = git_reader.GitReadRuntime(tmp_path, executable)
     assert ordinary.contract()["binding"] == _posix_fingerprint(tmp_path, executable, False)
     assert ordinary._global_arguments == _POSIX_ARGUMENTS
     assert git_reader._ENVIRONMENT == _POSIX_ENVIRONMENT
     assert fingerprint != _posix_fingerprint(tmp_path, executable, not for_delivery)
+    if for_delivery:
+        assert reader.contract()["binding"] != fingerprint
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX捕获协议；不启动真实Git")
@@ -342,6 +357,17 @@ def test_windows_fingerprint_and_environment_are_purpose_bound_offline(
     )
     assert driver.binding_fingerprint != _windows_fingerprint(fixture, not for_delivery)
     assert windows_reader.WINDOWS_GIT_ARGUMENTS == _WINDOWS_ARGUMENTS
+    if for_delivery:
+        legacy = _digest(
+            {
+                "native_binding": fixture.native.fingerprint,
+                "capability": fixture.capability.digest,
+                "executable": os.path.normcase(str(fixture.executable)),
+                "state": os.path.normcase(str(fixture.state)),
+                "purpose": "git-delivery-baseline/v1",
+            }
+        )
+        assert driver.binding_fingerprint != legacy
 
 
 @pytest.mark.parametrize("for_delivery", [False, True])
@@ -369,8 +395,14 @@ def test_windows_runtime_forwards_profile_and_private_state_offline(
     assert reader.contract() == {
         **_PUBLIC_CONTRACT,
         "implementation": "git-baseline-read/v1" if for_delivery else "git-read/windows-job-v1",
-        "binding": _windows_fingerprint(fixture, for_delivery),
+        "binding": (
+            _baseline_binding(_windows_fingerprint(fixture, True))
+            if for_delivery
+            else _windows_fingerprint(fixture, False)
+        ),
     }
+    if for_delivery:
+        assert reader.contract()["binding"] != process.binding_fingerprint
     ordinary = git_reader.GitReadRuntime(
         fixture.root, fixture.executable, state_directory=fixture.state
     )
@@ -398,6 +430,96 @@ def _result(body: bytes) -> ProcessResult:
         stderr=stream(b""),
         elapsed_seconds=0.0,
     )
+
+
+def _baseline_result(body: bytes) -> GitBaselineReadResult:
+    return GitBaselineReadResult.from_posix_capture(_result(body))
+
+
+def _signed_handle(fixture, bodies, raw_bodies, *, version=2, sequence=2, raw_eof=None):
+    """只写合成安全前缀；保留真实Supervisor回执读取、验MAC和Lease/序号核验。"""
+    directory = fixture.state / str(uuid4())
+    directory.mkdir(mode=0o700, parents=True)
+    now = datetime.now(UTC)
+
+    def safe(body):
+        digest = hashlib.sha256(body).hexdigest()
+        return ProcessOutputObservation(
+            observed_bytes=len(body),
+            persisted_bytes=len(body),
+            sha256=digest,
+            persisted_sha256=digest,
+            truncated=False,
+            eof=True,
+        )
+
+    facts = dict(
+        process_id=uuid4(),
+        owner_identity="e" * 64,
+        owner_token="d" * 64,
+        state="exited",
+        sequence=sequence,
+        pid=12345,
+        started_at=now - timedelta(seconds=1),
+        finished_at=now,
+        returncode=0,
+        stop_reason="exited",
+        stdout=safe(bodies["stdout"]),
+        stderr=safe(bodies["stderr"]),
+    )
+    if version == 2:
+        facts.update(
+            {
+                "raw_" + name: RawProcessOutputObservation(
+                    observed_bytes=len(body),
+                    sha256=hashlib.sha256(body).hexdigest(),
+                    eof=name != raw_eof,
+                )
+                for name, body in raw_bodies.items()
+            }
+        )
+    receipt = sign_owner_receipt(**facts)
+    lease = ProcessLease(
+        process_id=receipt.process_id,
+        plan_id=uuid4(),
+        plan_fingerprint="a" * 64,
+        process_spec_digest="b" * 64,
+        capability_digest="c" * 64,
+        launch_binding_digest="f" * 64,
+        lifecycle="foreground",
+        state="exited",
+        sequence=7,
+        owner_token="d" * 64,
+        owner_identity=receipt.owner_identity,
+        pid=receipt.pid,
+        deadline=now + timedelta(seconds=5),
+        started_at=receipt.started_at,
+        finished_at=receipt.finished_at,
+        returncode=receipt.returncode,
+        stop_reason=receipt.stop_reason,
+        stdout=receipt.stdout,
+        stderr=receipt.stderr,
+    )
+    write_owner_receipt(directory / "receipt.json", receipt)
+    for name, body in bodies.items():
+        path = directory / (name + ".bin")
+        path.write_bytes(body)
+        path.chmod(0o600)
+    handle = SupervisedProcess(Mock(), lease, directory, receipt.owner_identity)
+    handle._last_receipt_sequence = sequence
+    return handle, receipt, directory
+
+
+def _install_owner(monkeypatch, handles):
+    supervisor = AsyncMock()
+    supervisor.__aenter__.return_value = supervisor
+    supervisor.start.side_effect = handles
+    factory = Mock(return_value=supervisor)
+    monkeypatch.setattr(windows_reader, "WindowsProcessSupervisor", factory)
+    plans = MagicMock()
+    plans.__enter__.return_value = plans
+    monkeypatch.setattr(windows_reader, "SQLiteExecutionPlanStore", Mock(return_value=plans))
+    return factory, supervisor, plans
 
 
 def _offline_query_runtime(
@@ -441,7 +563,11 @@ async def test_generated_queries_keep_all_fixed_guards_offline(
 ) -> None:
     reader, root_line = _offline_query_runtime(tmp_path, monkeypatch, platform, for_delivery)
     run = AsyncMock(side_effect=[_result(root_line), _result(b""), _result(b"")])
+    baseline = AsyncMock(side_effect=[_baseline_result(root_line), _baseline_result(b"")])
+    if for_delivery:
+        run = AsyncMock(return_value=_result(b""))
     monkeypatch.setattr(reader, "_run", run)
+    monkeypatch.setattr(reader, "_run_baseline", baseline)
     cancel = CancelToken()
     args = _arguments(platform, for_delivery)
     if operation == "status":
@@ -466,11 +592,16 @@ async def test_generated_queries_keep_all_fixed_guards_offline(
             "--",
         )
     await reader.execute(request, cancel)
-    assert run.await_args_list == [
+    checks = [
         call((*args, "rev-parse", "--show-toplevel"), cancel, repository_check=True),
         call((*args, "config", "--no-includes", "--null", "--name-only", "--list"), cancel),
-        call((*args, *command), cancel),
     ]
+    if for_delivery:
+        assert baseline.await_args_list == checks
+        run.assert_awaited_once_with((*args, *command), cancel)
+    else:
+        assert run.await_args_list == [*checks, call((*args, *command), cancel)]
+        baseline.assert_not_awaited()
 
 
 @pytest.mark.parametrize("for_delivery", [False, True])
@@ -494,8 +625,10 @@ async def test_simulated_windows_queries_still_deny_wrong_root_before_configurat
 ) -> None:
     """正确模拟路径不能豁免仓库根校验；拒绝后不运行配置或状态查询。"""
     reader, _ = _offline_query_runtime(tmp_path, monkeypatch, "nt", for_delivery)
-    run = AsyncMock(return_value=_result(observed))
-    monkeypatch.setattr(reader, "_run", run)
+    run = AsyncMock(
+        return_value=(_baseline_result(observed) if for_delivery else _result(observed))
+    )
+    monkeypatch.setattr(reader, "_run_baseline" if for_delivery else "_run", run)
     cancel = CancelToken()
     with pytest.raises(git_reader.ReadToolError) as error:
         await reader.execute(GitStatusInput(), cancel)
@@ -507,10 +640,41 @@ async def test_simulated_windows_queries_still_deny_wrong_root_before_configurat
     )
 
 
+@pytest.mark.parametrize("platform", ["posix", "nt"])
+@pytest.mark.parametrize("metadata", ["root", "config"])
+@pytest.mark.parametrize("changed_length", [False, True])
+async def test_baseline_prechecks_never_parse_redacted_metadata_offline(
+    tmp_path, monkeypatch, platform, metadata, changed_length
+):
+    reader, root_line = _offline_query_runtime(tmp_path, monkeypatch, platform, True)
+    safe_body = root_line if metadata == "root" else b"core.safe\0"
+    original = b"x" * (len(safe_body) + int(changed_length))
+    changed = GitBaselineReadResult(
+        _result(safe_body),
+        RawProcessOutputObservation(
+            observed_bytes=len(original), sha256=hashlib.sha256(original).hexdigest(), eof=True
+        ),
+        RawProcessOutputObservation(
+            observed_bytes=0, sha256=hashlib.sha256(b"").hexdigest(), eof=True
+        ),
+    )
+    baseline = AsyncMock(
+        side_effect=([changed] if metadata == "root" else [_baseline_result(root_line), changed])
+    )
+    ordinary = AsyncMock(side_effect=AssertionError("前检失败不得运行Tool查询"))
+    monkeypatch.setattr(reader, "_run_baseline", baseline)
+    monkeypatch.setattr(reader, "_run", ordinary)
+    with pytest.raises(KernelError) as denied:
+        await reader.execute(GitStatusInput(), CancelToken())
+    assert denied.value.code == "git_baseline_metadata_changed"
+    assert baseline.await_count == (1 if metadata == "root" else 2)
+    ordinary.assert_not_awaited()
+
+
 @pytest.mark.parametrize(
     ("for_delivery", "with_redaction"),
-    [(False, False), (False, True), (True, False)],
-    ids=["default-raw", "default-redacted", "delivery-raw"],
+    [(False, False), (False, True), (True, False), (True, True)],
+    ids=["default-raw", "default-redacted", "delivery-raw", "delivery-redacted"],
 )
 async def test_windows_execution_keeps_capture_limits_and_profile_spec_offline(
     simulated_windows: SimpleNamespace,
@@ -601,20 +765,42 @@ async def test_windows_execution_keeps_capture_limits_and_profile_spec_offline(
         assert stream.eof is True and stream.truncated is True
 
 
-@pytest.mark.parametrize("entrypoint", ["process", "runtime"])
+async def test_windows_baseline_requires_delivery_profile_before_owner_offline(
+    simulated_windows, monkeypatch
+):
+    fixture = simulated_windows
+    driver = windows_reader.WindowsGitReadProcess(
+        fixture.root, fixture.executable, fixture.state, fixture.redaction
+    )
+    execute = AsyncMock(side_effect=AssertionError("普通端口不得签发基准结果"))
+    monkeypatch.setattr(windows_reader, "_execute_git", execute)
+    with pytest.raises(KernelError) as denied:
+        await driver.run_baseline(ProcessRequest(program="git", timeout_seconds=5.0), CancelToken())
+    assert denied.value.code == "git_baseline_reader_required"
+    execute.assert_not_awaited()
+
+
 @pytest.mark.parametrize("source_truthy", [True, False], ids=["truthy-source", "falsy-source"])
-async def test_windows_delivery_with_redaction_rejects_before_any_owner_or_plan_offline(
-    simulated_windows: SimpleNamespace,
-    monkeypatch: pytest.MonkeyPatch,
-    entrypoint: str,
-    source_truthy: bool,
-) -> None:
+@pytest.mark.parametrize("entrypoint", ["process", "runtime"])
+async def test_windows_raw_baseline_uses_authenticated_v2_not_redacted_digest_offline(
+    simulated_windows, monkeypatch, source_truthy, entrypoint
+):
     fixture = simulated_windows
     source = MagicMock()
     source.__bool__.return_value = source_truthy
+    bodies = {"stdout": b"[REDACTED]", "stderr": b"safe diagnostic"}
+    original = {"stdout": b"synthetic-raw-blob", "stderr": b"original-diagnostic"}
+    handle, receipt, _ = _signed_handle(fixture, bodies, original)
+    authenticate = AsyncMock(wraps=handle._terminal_owner_receipt)
+    monkeypatch.setattr(handle, "_terminal_owner_receipt", authenticate)
+    factory, supervisor, plans = _install_owner(monkeypatch, [handle])
+    arguments = (*_arguments("nt", True), "cat-file", "blob", "a" * 40)
     if entrypoint == "process":
-        process = windows_reader.WindowsGitReadProcess(
+        driver = windows_reader.WindowsGitReadProcess(
             fixture.root, fixture.executable, fixture.state, source, for_delivery=True
+        )
+        observed = await driver.run_baseline(
+            ProcessRequest(program="git", arguments=arguments, timeout_seconds=5.0), CancelToken()
         )
     else:
         monkeypatch.setattr(git_reader, "os", SimpleNamespace(name="nt", devnull="NUL"))
@@ -625,36 +811,186 @@ async def test_windows_delivery_with_redaction_rejects_before_any_owner_or_plan_
             output_redaction=source,
             for_delivery=True,
         )
-        process = reader._runtime()
-    forbidden_ports = {}
-    for name in (
-        "_execute_git",
-        "WindowsProcessSupervisor",
-        "build_process_spec",
-        "_git_read_plan",
-        "SQLiteExecutionPlanStore",
-    ):
-        port = Mock(side_effect=AssertionError("需要原始观察证明时不得创建Owner、Spec或Plan"))
-        monkeypatch.setattr(windows_reader, name, port)
-        forbidden_ports[name] = port
-    async with process:
-        with pytest.raises(KernelError) as denied:
-            await process.run(
-                ProcessRequest(
-                    program="git",
-                    arguments=(*_arguments("nt", True), "status"),
-                    timeout_seconds=5.0,
-                ),
-                CancelToken(),
-            )
+        observed = await reader._run_baseline(arguments, CancelToken())
+    authenticate.assert_awaited_once_with()
+    factory.assert_called_once_with(fixture.state / "process-owner", output_redaction=source)
+    plan, spec, _ = supervisor.start.await_args.args
+    assert spec.argv == (str(fixture.executable), *arguments)
+    assert spec.timeout_seconds == 5.0 and spec.output_bytes == 9 * _MIB
+    assert spec.terminal == "pipe" and spec.stdin == "closed"
+    assert supervisor.start.await_args.kwargs["environment"] == _windows_environment(
+        fixture.executable, True
+    )
+    plans.save_plan.assert_called_once_with(plan)
+    assert isinstance(observed, GitBaselineReadResult)
+    assert observed.result.stdout.data() == bodies["stdout"]
+    assert observed.result.stdout.observed_sha256 == hashlib.sha256(bodies["stdout"]).hexdigest()
+    assert observed.raw_stdout == receipt.raw_stdout
+    assert observed.raw_stderr == receipt.raw_stderr
+    assert observed.raw_stdout.sha256 != observed.result.stdout.observed_sha256
+    assert observed.raw_stdout.observed_bytes != observed.result.stdout.observed_bytes
+    fixture.native.verify.assert_called_once_with()
+
+
+@pytest.mark.parametrize("with_redaction", [False, True])
+async def test_windows_old_v1_cannot_prove_raw_even_without_redaction_offline(
+    simulated_windows, monkeypatch, with_redaction
+):
+    fixture = simulated_windows
+    bodies = {"stdout": b"unchanged", "stderr": b""}
+    handle, _, _ = _signed_handle(fixture, bodies, bodies, version=1)
+    _install_owner(monkeypatch, [handle])
+    driver = windows_reader.WindowsGitReadProcess(
+        fixture.root,
+        fixture.executable,
+        fixture.state,
+        fixture.redaction if with_redaction else None,
+        for_delivery=True,
+    )
+    with pytest.raises(KernelError) as denied:
+        await driver.run_baseline(ProcessRequest(program="git", timeout_seconds=5.0), CancelToken())
     assert denied.value.code == "git_baseline_raw_observation_required"
-    assert process._configuration.for_delivery is True
-    assert process._configuration.output_redaction is source
-    assert process.binding_fingerprint == _windows_fingerprint(fixture, True)
-    for port in forbidden_ports.values():
-        port.assert_not_called()
-    source.assert_not_called()
-    fixture.native.verify.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "failure", ["raw-mac", "receipt-sequence", "raw-stdout-eof", "raw-stderr-eof"]
+)
+async def test_windows_baseline_reverifies_raw_and_terminal_sequence_offline(
+    simulated_windows, monkeypatch, failure
+):
+    fixture = simulated_windows
+    bodies = {"stdout": b"safe", "stderr": b""}
+    handle, receipt, directory = _signed_handle(
+        fixture,
+        bodies,
+        bodies,
+        raw_eof=(
+            failure.removeprefix("raw-").removesuffix("-eof") if failure.endswith("-eof") else None
+        ),
+    )
+    if failure == "raw-mac":
+        changed = receipt.model_copy(
+            update={"raw_stdout": receipt.raw_stdout.model_copy(update={"sha256": "0" * 64})}
+        )
+        write_owner_receipt(directory / "receipt.json", changed)
+    elif failure == "receipt-sequence":
+        handle._last_receipt_sequence = 1
+    _install_owner(monkeypatch, [handle])
+    driver = windows_reader.WindowsGitReadProcess(
+        fixture.root, fixture.executable, fixture.state, fixture.redaction, for_delivery=True
+    )
+    error_type = git_reader.ReadToolError if failure.endswith("-eof") else KernelError
+    with pytest.raises(error_type) as denied:
+        await driver.run_baseline(ProcessRequest(program="git", timeout_seconds=5.0), CancelToken())
+    assert denied.value.code == (
+        "io_failed" if failure.endswith("-eof") else "process_owner_receipt_invalid"
+    )
+
+
+@pytest.mark.parametrize(
+    "failure", ["cancelled", "timeout", "output_limit", "unknown", "rc", "stdout", "stderr"]
+)
+async def test_windows_baseline_never_authenticates_failed_or_incomplete_exit_offline(
+    simulated_windows, monkeypatch, failure
+):
+    fixture = simulated_windows
+    bodies = {"stdout": b"safe", "stderr": b""}
+    actual, _, _ = _signed_handle(fixture, bodies, bodies)
+    changes = {}
+    if failure == "unknown":
+        changes.update(state="unknown", stop_reason="unknown")
+    elif failure == "rc":
+        changes["returncode"] = 1
+    elif failure in {"stdout", "stderr"}:
+        changes[failure] = getattr(actual.lease, failure).model_copy(update={"eof": False})
+    else:
+        changes["stop_reason"] = failure
+    handle = SimpleNamespace(
+        wait=AsyncMock(return_value=actual.lease.model_copy(update=changes)),
+        output=AsyncMock(side_effect=lambda name: bodies[name]),
+        _terminal_owner_receipt=AsyncMock(side_effect=AssertionError("失败退出不得取raw证明")),
+    )
+    _install_owner(monkeypatch, [handle])
+    driver = windows_reader.WindowsGitReadProcess(
+        fixture.root, fixture.executable, fixture.state, fixture.redaction, for_delivery=True
+    )
+    error_type = TurnCancelled if failure == "cancelled" else git_reader.ReadToolError
+    with pytest.raises(error_type) as denied:
+        await driver.run_baseline(ProcessRequest(program="git", timeout_seconds=5.0), CancelToken())
+    if failure != "cancelled":
+        assert denied.value.code == (
+            "timeout" if failure == "timeout" else "not_found" if failure == "rc" else "io_failed"
+        )
+    handle._terminal_owner_receipt.assert_not_awaited()
+
+
+async def test_concurrent_windows_reads_keep_each_authenticated_observation_offline(
+    simulated_windows, monkeypatch
+):
+    fixture = simulated_windows
+    first_safe = {"stdout": b"safe-one", "stderr": b""}
+    second_safe = {"stdout": b"safe-two", "stderr": b""}
+    first_raw = {"stdout": b"synthetic-original-one", "stderr": b""}
+    second_raw = {"stdout": b"synthetic-original-two-is-longer", "stderr": b""}
+    first, _, _ = _signed_handle(fixture, first_safe, first_raw)
+    second, _, _ = _signed_handle(fixture, second_safe, second_raw)
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def delayed_wait(_cancel):
+        entered.set()
+        await release.wait()
+        return first.lease
+
+    monkeypatch.setattr(first, "wait", delayed_wait)
+    _install_owner(monkeypatch, [first, second])
+    driver = windows_reader.WindowsGitReadProcess(
+        fixture.root, fixture.executable, fixture.state, fixture.redaction, for_delivery=True
+    )
+    request = ProcessRequest(program="git", timeout_seconds=5.0)
+    pending = asyncio.create_task(driver.run_baseline(request, CancelToken()))
+    await asyncio.wait_for(entered.wait(), 2)
+    observed_second = await driver.run_baseline(request, CancelToken())
+    release.set()
+    observed_first = await pending
+    for observed, safe, original in (
+        (observed_first, first_safe, first_raw),
+        (observed_second, second_safe, second_raw),
+    ):
+        assert observed.result.stdout.data() == safe["stdout"]
+        assert observed.raw_stdout.sha256 == hashlib.sha256(original["stdout"]).hexdigest()
+
+
+@pytest.mark.parametrize("failure", ["token", "task"])
+@pytest.mark.parametrize("baseline", [False, True])
+async def test_windows_shared_drive_cancels_and_drains_before_returning_offline(
+    simulated_windows, monkeypatch, failure, baseline
+):
+    fixture = simulated_windows
+    entered, drained = asyncio.Event(), asyncio.Event()
+
+    async def blocked(_config, _request, operation, *, baseline):
+        entered.set()
+        await operation._event.wait()
+        drained.set()
+        raise TurnCancelled
+
+    monkeypatch.setattr(windows_reader, "_execute_git", blocked)
+    driver = windows_reader.WindowsGitReadProcess(
+        fixture.root, fixture.executable, fixture.state, fixture.redaction, for_delivery=True
+    )
+    cancel = CancelToken()
+    entrypoint = driver.run_baseline if baseline else driver.run
+    pending = asyncio.create_task(
+        entrypoint(ProcessRequest(program="git", timeout_seconds=5.0), cancel)
+    )
+    await asyncio.wait_for(entered.wait(), 2)
+    if failure == "token":
+        cancel.cancel()
+    else:
+        pending.cancel()
+    with pytest.raises(TurnCancelled if failure == "token" else asyncio.CancelledError):
+        await pending
+    assert drained.is_set() and pending.done()
 
 
 @pytest.mark.parametrize("for_delivery", [False, True])
@@ -677,7 +1013,9 @@ async def test_windows_revalidates_purpose_and_native_binding_before_owner_offli
     supervisor_factory = Mock(side_effect=AssertionError("绑定漂移不得进入Owner"))
     monkeypatch.setattr(windows_reader, "WindowsProcessSupervisor", supervisor_factory)
     with pytest.raises(KernelError) as changed:
-        await windows_reader._execute_git(config, ProcessRequest(program="git"), CancelToken())
+        await windows_reader._execute_git(
+            config, ProcessRequest(program="git", timeout_seconds=5.0), CancelToken()
+        )
     assert changed.value.code == "process_binding_changed"
     supervisor_factory.assert_not_called()
 

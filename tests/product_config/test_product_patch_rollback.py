@@ -34,9 +34,10 @@ async def product(tmp_path, *, enabled=True):
     root = tmp_path / "workspace"
     root.mkdir(exist_ok=True)
     (root / "src").mkdir(exist_ok=True)
-    (root / "src/modified.py").write_text("old\n", encoding="utf-8")
+    # 预期摘要绑定LF字节；不能让Windows文本写入隐式转换为CRLF。
+    (root / "src/modified.py").write_bytes(b"old\n")
     (root / "tests").mkdir(exist_ok=True)
-    (root / "tests/deleted.txt").write_text("remove\n", encoding="utf-8")
+    (root / "tests/deleted.txt").write_bytes(b"remove\n")
     environment = build_fixed_product_action_environment(root)
     plans = SQLiteExecutionPlanStore(tmp_path / "state/plans.db")
     audit = SQLiteActionAuditStore(tmp_path / "state/audit.db")
@@ -138,9 +139,37 @@ async def publish(runtime, provider, root):
     provider.steps = (_action_step(_proposal()), answer("修改完成"))
     thread = await runtime.create_thread(str(root))
     waiting = await runtime.run_turn(thread.thread_id, "修改三个文件", request_id="patch")
+    assert waiting.status is TurnStatus.WAITING_APPROVAL, [
+        (item.content.outcome, item.content.error.code if item.content.error else None)
+        for item in waiting.items
+        if isinstance(item.content, ToolResultContent)
+    ]
     completed = await approve(runtime, thread.thread_id, waiting)
     assert result(completed).outcome == "succeeded"
     return thread.thread_id, _approval(waiting).plan_id
+
+
+async def test_product_patch_fixture_uses_declared_lf_preimage_bytes(tmp_path):
+    async with product(tmp_path) as (root, runtime, provider, *_):
+        assert (root / "src/modified.py").read_bytes() == b"old\n"
+        assert (root / "tests/deleted.txt").read_bytes() == b"remove\n"
+        await publish(runtime, provider, root)
+
+
+async def test_crlf_preimage_does_not_receive_lf_patch_approval(tmp_path):
+    async with product(tmp_path) as (root, runtime, provider, *_):
+        (root / "src/modified.py").write_bytes(b"old\r\n")
+        (root / "tests/deleted.txt").write_bytes(b"remove\r\n")
+        provider.steps = (_action_step(_proposal()), answer("未应用修改"))
+        thread = await runtime.create_thread(str(root))
+        denied = await runtime.run_turn(thread.thread_id, "修改三个文件", request_id="crlf")
+        assert denied.status is TurnStatus.INTERRUPTED
+        output = result(denied)
+        assert output.outcome == "unknown"
+        assert output.error is not None and output.error.code == "uncertain_effect"
+        assert (root / "src/modified.py").read_bytes() == b"old\r\n"
+        assert (root / "tests/deleted.txt").read_bytes() == b"remove\r\n"
+        assert not (root / "src/新增.py").exists()
 
 
 async def test_rollback_three_operations_has_new_diff_approval_and_original_unchanged(tmp_path):

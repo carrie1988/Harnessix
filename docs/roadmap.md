@@ -1166,5 +1166,8 @@ Checkpoint职责提取到唯一模块，原可读性阈值不放宽，实现摘�
 
 [固定候选验证报告](validation/git-baseline-2026-09-30-v1/README.md)记录完整6176通过/111跳过、
 源码外实际Wheel132通过、446个包成员字节一致及四份受控变异5失败。
-带保护源的Windows原Owner只认证脱敏后流，原始对象证明明确拒绝；原始统计与安全发布分离合同及原生验收
-是后继必要工作，不得通过关闭脱敏或把本地skip计作验收绕过。
+该固定基准中带保护源的Windows原Owner只有脱敏后流证明，旧拒绝证据保留。
+后继[原始观察认证与安全发布分离](changes/m09-r4-authenticated-raw-git-observation.md)已接线捕获、v2单一MAC、
+终态重验、私有Git消费和完整备份；[专项验证](validation/windows-raw-git-observation-2026-09-30-v1/README.md)
+分别记录本机合同、源码外Wheel及原生测试范围。原生Windows、消费者安装及完整产品交付仍须独立验收，
+不得通过关闭脱敏或把本地skip计作验收绕过。

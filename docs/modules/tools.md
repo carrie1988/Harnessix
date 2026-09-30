@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 10
+version: 11
 code_revision: 75c4b7ddfe91824bcb667023c003e4aad18992e4
 owners:
   - core
@@ -31,6 +31,8 @@ related_tests:
   - tests/tools/test_git_platform_contracts.py
   - tests/tools/test_git_delivery_reader.py
   - tests/product_config/test_git_baseline.py
+  - tests/processes/test_git_raw_observation.py
+  - tests/processes/test_raw_receipt_supervision.py
   - tests/tools/test_runtime.py
   - tests/tools/test_argument_feedback.py
   - tests/tools/test_schema_argument_feedback.py
@@ -1033,3 +1035,23 @@ Python3.13在Windows路径语义下将只有一个前导斜杠或反斜杠的路
 本项仅修正测试夹具，不变更生产代码、预算、Schema或锁文件；
 原失败、后继结果、精确受测字节和审阅范围见
 [Git平台输入验证记录](../validation/git-query-platform-input-2026-09-30-v1/README.md)。
+
+## Windows Git 基准的原始认证与安全正文
+
+普通模型工具继续返回安全 `ProcessResult`。正式交付基准经
+[`GitReadRuntime._run_baseline`](../../src/harnessix/tools/git.py) 使用私有
+[`GitBaselineReadResult`](../../src/harnessix/processes/git_observation.py)，不向模型公开 raw 元数据。
+Windows pipe 的 raw 数量、SHA 和 EOF 来自同次原 Owner v2 回执；
+[`终态句柄`](../../src/harnessix/processes/supervisor.py) 重验原 MAC、身份与 Lease 事实，
+旧 v1 回执不能用脱敏统计补齐。POSIX 使用原直接 capture 的完整原始统计。
+
+[`正式基准消费者`](../../src/harnessix/product_config/git_baseline.py) 对 blob 使用完整 raw 长度及 SHA，
+全量 Index/Status 使用 raw 摘要作前后漂移观察；需要解析的根、配置键、对象和选中条目必须是
+完整且与 raw 等长同摘要的安全正文。被脱敏改写的可解析元数据失败关闭，不尝试还原秘密。
+原固定 Git 参数、环境、Workspace/可执行文件守卫、取消排空和限额不放宽；
+交付 Reader 指纹区分新 `git-raw/v2` 用途，原公开 Schema 和 Agent Protocol 不变。
+
+完整合同、类与字段、数据流、时序、失败恢复及验证边界见
+[详细设计](../changes/m09-r4-authenticated-raw-git-observation.md)。
+本机模拟通过只证明相应合同；Windows 原生 CRT/Job/Git、完整备份恢复和消费者安装须分别取得证据。
+EOF、安全文件完整性或 macOS 通过均不能单独证明 Windows 原始 Git 基准成功。

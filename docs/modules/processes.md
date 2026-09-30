@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 30
-code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
+version: 31
+code_revision: dde77231beafcfb1a9eb46a670fe0f3ccafc9705
 owners:
   - core
 modules:
@@ -23,6 +23,9 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/processes/test_raw_output_receipt.py
+  - tests/processes/test_raw_receipt_supervision.py
+  - tests/product_config/test_product_state_backup.py
   - tests/processes/test_receipt_snapshot_transition.py
   - tests/processes/test_output_binary_contracts.py
   - tests/processes/test_windows_receipt_contracts.py
@@ -1717,9 +1720,36 @@ NUL及无效UTF-8均不经CRT转换。脱敏、输出额度、部分写入和原
 原默认绑定、8MiB输出阈值、Owner、Lease、原始字节及脱敏发布合同不变。
 POSIX与Windows完整读取仍要求正常退出、完整stdout/stderr EOF；1MiB前缀截断不等于完整流截断。
 产品使用原`observed_bytes/observed_sha256`核对8MiB以内原对象，不扩大捕获前缀或可接受镜像容量。
-原Windows Owner的观察是脱敏后字节；交付用途存在输出保护源时，在任何Plan/Owner创建前明确拒绝，
-不能停用落盘保护或将脱敏摘要当作原始blob证明。正式原始统计与安全发布分离合同仍是后继必要工作。
+Windows的`ProcessOutputObservation`仍描述脱敏后字节，不得用于原始Git blob证明。
+后继私有Receipt v2独立认证原始统计，旧v1、缺失认证及被保护改写的元数据必须拒绝，不能停用落盘保护。
 
 原Windows Execution/Owner输出属于正式既有Process持久布局；本切片不创建Git业务账本或第二套进程模型。
 详见[`基准详细设计`](../changes/m09-r4-product-git-baseline.md)及
 [`离线端口契约`](../../tests/tools/test_git_delivery_reader.py)；模拟不替代同候选原生Job/NTFS验收。
+
+### Windows pipe原始统计与安全发布分离
+
+[`CapturedProcessOutput`](../../src/harnessix/processes/owner_output.py)在脱敏前累计原始字节数和SHA256，
+随后沿原流程更新脱敏观察与有界持久前缀。新增统计只有`observed_bytes/sha256/eof`，
+不缓存额外原始正文、不创建raw输出文件，也不替换原`ProcessStream`或`ProcessLease`字段。
+短保护值被替换为更长占位符时，两组计数可以大小相反，不能互相推导。
+
+[`Receipt v2`](../../src/harnessix/processes/owner_receipt.py)要求`raw_stdout/raw_stderr`同时存在，
+同一MAC覆盖版本、原生命周期事实及两组新观察。v1仍按原模型、规范化字节和MAC验证；
+新Reader显式识别v1/v2，旧Reader拒绝v2，不降级、不补零、不重签历史。
+正式机器合同分别为[原v1](../../spec/process-owner-receipt-v1.schema.json)与
+[新v2](../../spec/process-owner-receipt-v2.schema.json)，原v1 Schema不修改。
+
+[`Windows Owner`](../../src/harnessix/processes/windows_owner.py)仅对真实pipe签发v2，
+读取前明确设置CRT二进制模式；ConPTY继续v1。原输出限额数值保持，pipe原始双流与
+脱敏双流分别检查同一限额，EOF保护尾窗发布也不能绕过。取消、超时等既有停止原因不被限额覆盖。
+原始统计推进会触发既有有界进度发布，即使脱敏器尚未吐出正文也不遗漏已观察进度。
+
+[`Supervisor`](../../src/harnessix/processes/supervisor.py)的私有终态读取端口重新核验MAC，
+并与原退出Lease的身份、时间、退出原因、发布观察及已接受序号交叉核对；终态缓存不能代替原件认证。
+[`完整备份Reader`](../../src/harnessix/product_config/state_backup_records.py)共用双版本解析，
+恢复保留原Receipt字节、只校验现有文件、不按PID控制或重放进程。含v2的新状态不能广告可供旧Reader降级恢复。
+
+总体及详细设计、字段、伪代码、失败矩阵和原生验收条件见
+[原始Git观察设计](../changes/m09-r4-authenticated-raw-git-observation.md)。
+本机合同、真实POSIX Owner和备份恢复通过，不构成Windows CRT、Job、NTFS或消费者环境验收。

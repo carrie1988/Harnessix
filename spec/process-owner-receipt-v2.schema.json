@@ -1,0 +1,221 @@
+{
+  "$defs": {
+    "ProcessOutputObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "observed_bytes": {
+          "minimum": 0,
+          "title": "Observed Bytes",
+          "type": "integer"
+        },
+        "persisted_bytes": {
+          "maximum": 67108864,
+          "minimum": 0,
+          "title": "Persisted Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "persisted_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Persisted Sha256",
+          "type": "string"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "eof": {
+          "title": "Eof",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "observed_bytes",
+        "persisted_bytes",
+        "sha256",
+        "persisted_sha256",
+        "truncated",
+        "eof"
+      ],
+      "title": "ProcessOutputObservation",
+      "type": "object"
+    },
+    "RawProcessOutputObservation": {
+      "additionalProperties": false,
+      "description": "私有原始流观察，仅认证数量、摘要和结束事实，不保留正文。",
+      "properties": {
+        "observed_bytes": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Observed Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "eof": {
+          "title": "Eof",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "observed_bytes",
+        "sha256",
+        "eof"
+      ],
+      "title": "RawProcessOutputObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.process-owner-receipt/v2",
+      "default": "harnessix.process-owner-receipt/v2",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "process_id": {
+      "format": "uuid",
+      "title": "Process Id",
+      "type": "string"
+    },
+    "owner_identity": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Owner Identity",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "running",
+        "exited",
+        "failed",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "pid": {
+      "anyOf": [
+        {
+          "maximum": 4294967295,
+          "minimum": 2,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pid"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "returncode": {
+      "anyOf": [
+        {
+          "maximum": 4294967295,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Returncode"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "exited",
+            "timeout",
+            "cancelled",
+            "closed",
+            "output_limit",
+            "input_limit",
+            "io_error",
+            "host_lost",
+            "launch_failed",
+            "cleanup_failed",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "stdout": {
+      "$ref": "#/$defs/ProcessOutputObservation"
+    },
+    "stderr": {
+      "$ref": "#/$defs/ProcessOutputObservation"
+    },
+    "mac": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Mac",
+      "type": "string"
+    },
+    "raw_stdout": {
+      "$ref": "#/$defs/RawProcessOutputObservation"
+    },
+    "raw_stderr": {
+      "$ref": "#/$defs/RawProcessOutputObservation"
+    }
+  },
+  "required": [
+    "process_id",
+    "owner_identity",
+    "state",
+    "sequence",
+    "stdout",
+    "stderr",
+    "mac",
+    "raw_stdout",
+    "raw_stderr"
+  ],
+  "title": "ProcessOwnerReceiptV2",
+  "type": "object"
+}

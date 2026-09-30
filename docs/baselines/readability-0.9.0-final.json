@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 406,
-    "physical_lines": 85475,
-    "logical_lines": 75627,
-    "documented_modules": 406,
-    "classes": 899,
-    "documented_classes": 381,
-    "functions": 3442,
-    "documented_functions": 660,
+    "source_files": 409,
+    "physical_lines": 85917,
+    "logical_lines": 75999,
+    "documented_modules": 409,
+    "classes": 903,
+    "documented_classes": 383,
+    "functions": 3469,
+    "documented_functions": 673,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -232,7 +232,7 @@
     },
     {
       "path": "src/harnessix/processes/supervisor.py",
-      "lines": 756
+      "lines": 722
     },
     {
       "path": "src/harnessix/protocol/contracts.py",
@@ -1222,17 +1222,6 @@
       "decision_complexity": 23
     },
     {
-      "id": "harnessix.processes.owner_receipt:ProcessOwnerReceipt.receipt_shape",
-      "module": "harnessix.processes.owner_receipt",
-      "path": "src/harnessix/processes/owner_receipt.py",
-      "qualname": "ProcessOwnerReceipt.receipt_shape",
-      "kind": "function",
-      "line": 49,
-      "lines": 26,
-      "documented": false,
-      "decision_complexity": 23
-    },
-    {
       "id": "harnessix.processes.posix_owner:_Owner",
       "module": "harnessix.processes.posix_owner",
       "path": "src/harnessix/processes/posix_owner.py",
@@ -1301,7 +1290,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor",
       "kind": "class",
-      "line": 364,
+      "line": 330,
       "lines": 299,
       "documented": false
     },
@@ -1311,7 +1300,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor._start_bound",
       "kind": "function",
-      "line": 451,
+      "line": 417,
       "lines": 123,
       "documented": false,
       "decision_complexity": 23
@@ -1322,8 +1311,8 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "SupervisedProcess",
       "kind": "class",
-      "line": 79,
-      "lines": 253,
+      "line": 83,
+      "lines": 215,
       "documented": false
     },
     {
@@ -1343,7 +1332,7 @@
       "path": "src/harnessix/processes/windows_owner.py",
       "qualname": "_Owner",
       "kind": "class",
-      "line": 73,
+      "line": 78,
       "lines": 363,
       "documented": false
     },
@@ -1554,22 +1543,12 @@
       "decision_complexity": 26
     },
     {
-      "id": "harnessix.tools.git:GitReadRuntime",
-      "module": "harnessix.tools.git",
-      "path": "src/harnessix/tools/git.py",
-      "qualname": "GitReadRuntime",
-      "kind": "class",
-      "line": 80,
-      "lines": 110,
-      "documented": true
-    },
-    {
       "id": "harnessix.tools.git:_status",
       "module": "harnessix.tools.git",
       "path": "src/harnessix/tools/git.py",
       "qualname": "_status",
       "kind": "function",
-      "line": 309,
+      "line": 370,
       "lines": 79,
       "documented": false,
       "decision_complexity": 25

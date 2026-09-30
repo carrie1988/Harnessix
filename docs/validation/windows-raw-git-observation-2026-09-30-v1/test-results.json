@@ -1,0 +1,107 @@
+{
+  "schema": "harnessix.windows-raw-git-test-results/v1",
+  "counts_not_additive": true,
+  "host": "macOS",
+  "native_windows_verified": false,
+  "records": [
+    {
+      "label": "before_structural_312",
+      "python": "3.12.7",
+      "junit_file": "integration-python312.xml",
+      "junit_sha256": "39f2bee93e5004061823b46651a00a11a5bd9c5a05c9dd66dce16c0206a42c78",
+      "tests": 955,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 34,
+      "passed": 921
+    },
+    {
+      "label": "before_structural_313",
+      "python": "3.13.8",
+      "junit_file": "integration-python313.xml",
+      "junit_sha256": "55883b3b6f804ee0866681bf94328ff7cce60772dc145353405aaf6467921ddd",
+      "tests": 955,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 34,
+      "passed": 921
+    },
+    {
+      "label": "structural_failure",
+      "python": "3.12.7",
+      "junit_file": "structural-final-focus.xml",
+      "junit_sha256": "aac8652c65b6d48add9ed2515169d27e79933c24985265e17cc81e044658797a",
+      "tests": 336,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 330
+    },
+    {
+      "label": "structural_focus_312",
+      "python": "3.12.7",
+      "junit_file": "structural-final-focus-repaired.xml",
+      "junit_sha256": "ece7194ea7241d474c7f7afeb9ead1e2414a08af2619c9f82cad2d4e3fed89bc",
+      "tests": 336,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 336
+    },
+    {
+      "label": "structural_focus_313",
+      "python": "3.13.8",
+      "junit_file": "structural-python313-focus.xml",
+      "junit_sha256": "41608c8a3aff07e0237a13c600a6b0bf0cff9c8d2bf6c2bc9ffeabdbeeb3e8ae",
+      "tests": 336,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 336
+    },
+    {
+      "label": "installed_wheel",
+      "python": "3.12.7",
+      "junit_file": "wheel-tests.xml",
+      "junit_sha256": "a2ba55a49052432e7e23d0c82424b751df429ca1c95fa399b779561f7a565b85",
+      "tests": 313,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 313
+    },
+    {
+      "label": "final_bound_integration_312",
+      "python": "3.12.7",
+      "junit_file": "final-integration-python312.xml",
+      "junit_sha256": "5f12f35fa51a9c4dbc664274b302573cf4147269e804972250b3b16d7a0ded64",
+      "tests": 998,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 53,
+      "passed": 945
+    },
+    {
+      "label": "governance_unfixed_environment",
+      "python": "3.12.7",
+      "junit_file": "final-governance.xml",
+      "junit_sha256": "fdb31c31a61c145007baaaa03a9225a472be6394c1ed78ea50fd66b28cfe3faa",
+      "tests": 302,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 301
+    },
+    {
+      "label": "governance_git253",
+      "python": "3.12.7",
+      "junit_file": "final-governance-git253.xml",
+      "junit_sha256": "c4bfd9b972986116acda3f4a2d881641fa093c952fd5772cdd834dee4ed2f9d3",
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 302
+    }
+  ]
+}

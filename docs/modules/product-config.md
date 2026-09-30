@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 44
+version: 45
 code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
 owners:
   - core
@@ -2244,8 +2244,11 @@ SHA-1/256对象ID不代替Workspace内容SHA-256，凭证也不代替认证、�
 单命令仍为5秒、全流程60秒；超时、取消、完整流失败、配置拒绝或状态漂移不签发对象，不自动修复Index。
 前缀仍至多1MiB；交付专用停流护栏9MiB，仅用于完整观察原合法8MiB对象，不放宽镜像容量。
 Windows沿原Job Owner事实，不把本地模拟或平台skip视为原生验收。
-原Owner只认证脱敏后摘要；带输出保护源的Windows交付用途明确拒绝签发，不能停用脱敏绕过。
-后继必须先建立原始对象统计与脱敏发布分离的正式认证观察。
+Windows pipe Owner已增加单一MAC覆盖的v2原始双流统计；正式基准通过同次句柄重验原认证事实。
+带保护源仍保持脱敏落盘，blob/全量Index/Status消费原始摘要，需要解析的正文须与原始长度及SHA一致。
+旧v1回执、缺少双EOF或非正常终态继续拒绝，ConPTY仍为v1，不授予pipe原始证明。
+完整合同与源码映射见[原始观察认证与安全发布分离](../changes/m09-r4-authenticated-raw-git-observation.md)。
+接线不代替原生Windows、完整产品交付或商用验收。
 该对象不新增业务持久化、迁移或备份路径；后续Git写入必须先完成正式备份闭合布局。
 
 总体图、数据流、时序、字段、伪代码、失败及部署边界见

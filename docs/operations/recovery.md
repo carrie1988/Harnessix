@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 11
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 12
+code_revision: dde77231beafcfb1a9eb46a670fe0f3ccafc9705
 owners:
   - core
 modules:
@@ -173,6 +173,13 @@ Process Supervisor以Owner、Lease、平台进程树和签名回执判断结果�
 - 历史`WAITING_ACTION`只读兼容；当前固定Process通过Trusted Action Route恢复，不由旧Process Saga再次启动命令。
 
 当前默认`agent-server`只装配外部Action Config中通过强Container能力证明的固定Process Profile；任意Host Process与旧兼容Saga仍不进入产品目录。
+
+Windows pipe的Receipt v2额外认证原始双流统计；ConPTY和既有v1回执继续按原版本处理。
+当前Reader可以核验v1/v2，但不能从脱敏输出重新生成原始证明，也不重签历史回执。
+完整备份和同机恢复保留两种Receipt的原字节，不控制其中PID或重放命令。
+只有v1 Reader的旧版本会拒绝含v2的状态：需要回退软件版本时使用升级前、已验真的兼容备份，
+不能删除raw字段、改版本标签或重新签名来伪造兼容性。详见
+[原始统计与安全发布的版本边界](../changes/m09-r4-authenticated-raw-git-observation.md#6-错误分类恢复兼容与安全)。
 
 ## 8. Workspace Transaction与Git恢复
 

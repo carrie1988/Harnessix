@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
 import json
 import os
 import shutil
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
@@ -16,6 +18,7 @@ import pytest
 from pydantic import ValidationError
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.processes.contracts import ProcessStream
 from harnessix.product_config import git_baseline as baseline_module
 from harnessix.product_config.git_baseline import collect_product_git_baseline
 from harnessix.product_config.git_baseline_contracts import (
@@ -194,7 +197,7 @@ async def test_invalid_ownership_never_queries_git(tmp_path, monkeypatch, target
         async def forbidden(*_args, **_kwargs):
             pytest.fail("来源归属拒绝之前不得查询Git")
 
-        monkeypatch.setattr(port, "_run", forbidden)
+        monkeypatch.setattr(port, "_run_baseline", forbidden)
         with raises_code("git_delivery_source_not_owned"):
             await collect(runtime, owner, target, router, transactions, port)
 
@@ -217,7 +220,7 @@ async def test_wrong_purpose_or_same_contents_in_other_repository_are_rejected_b
         async def forbidden(*_args, **_kwargs):
             pytest.fail("根或用途不匹配不能查询Git")
 
-        monkeypatch.setattr(port, "_run", forbidden)
+        monkeypatch.setattr(port, "_run_baseline", forbidden)
         with raises_code(
             "git_baseline_reader_required"
             if wrong_port == "default"
@@ -294,7 +297,7 @@ async def test_cancel_and_query_failure_never_returns_a_baseline(tmp_path, monke
         repository(root)
         owner, target = await publish(runtime, provider, root)
         port, cancel = reader(root, tmp_path / "git-state"), CancelToken()
-        original = port._run
+        original = port._run_baseline
 
         async def interrupted(*args, **kwargs):
             if fault == "cancel-during":
@@ -309,7 +312,7 @@ async def test_cancel_and_query_failure_never_returns_a_baseline(tmp_path, monke
         if fault == "cancel-before":
             cancel.cancel()
         else:
-            monkeypatch.setattr(port, "_run", interrupted)
+            monkeypatch.setattr(port, "_run_baseline", interrupted)
         if fault.startswith("cancel"):
             with pytest.raises(TurnCancelled):
                 await collect(runtime, owner, target, router, transactions, port, cancel=cancel)
@@ -356,6 +359,141 @@ async def test_large_original_blob_uses_complete_observed_digest_not_prefix(tmp_
                     CancelToken(),
                 )
             assert caught.value.code == "io_failed"
+
+
+def _published_stdout(observed, body):
+    """模拟Owner已发布安全正文变化，原始统计仍由独立raw事实提供。"""
+    stream = ProcessStream(
+        data_base64=base64.b64encode(body).decode(),
+        captured_bytes=len(body),
+        observed_bytes=len(body),
+        observed_sha256=hashlib.sha256(body).hexdigest(),
+        truncated=False,
+        eof=True,
+    )
+    return replace(observed, result=observed.result.model_copy(update={"stdout": stream}))
+
+
+async def test_consumer_uses_raw_blob_index_and_status_not_redacted_observation(
+    tmp_path, monkeypatch
+):
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        repository(root)
+        owner, target = await publish(runtime, provider, root)
+        port = reader(root, tmp_path / "git-state")
+        original = port._run_baseline
+        raw_observations = {}
+
+        async def redacted(arguments, *args, **kwargs):
+            observed = await original(arguments, *args, **kwargs)
+            command_arguments = arguments[len(port._global_arguments) :]
+            if (
+                command_arguments[0] == "cat-file"
+                or command_arguments[:3] == ("ls-files", "--stage", "--debug")
+                or command_arguments[0] == "status"
+            ):
+                raw_observations[
+                    command_arguments
+                    if command_arguments[0] == "cat-file"
+                    else command_arguments[0]
+                ] = observed.raw_stdout
+                return _published_stdout(observed, b"[REDACTED]")
+            return observed
+
+        monkeypatch.setattr(port, "_run_baseline", redacted)
+        actual = await collect(runtime, owner, target, router, transactions, port)
+        assert actual.index_observation_sha256 == raw_observations["ls-files"].sha256
+        assert actual.index_observation_bytes == raw_observations["ls-files"].observed_bytes
+        assert actual.status_sha256 == raw_observations["status"].sha256
+        for member, mutation in zip(actual.members, actual.source.mutations, strict=True):
+            if member.oid is not None:
+                observation = raw_observations[("cat-file", "blob", member.oid)]
+                assert mutation.before.sha256 == observation.sha256
+                assert mutation.before.size == observation.observed_bytes
+        assert actual.status_sha256 != hashlib.sha256(b"[REDACTED]").hexdigest()
+
+
+@pytest.mark.parametrize("stream_kind", ["index", "blob"])
+async def test_raw_size_limit_cannot_be_hidden_by_short_redacted_prefix(
+    tmp_path, monkeypatch, stream_kind
+):
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        repository(root)
+        owner, target = await publish(runtime, provider, root)
+        port = reader(root, tmp_path / "git-state")
+        original = port._run_baseline
+
+        async def oversized(arguments, *args, **kwargs):
+            observed = await original(arguments, *args, **kwargs)
+            tail = arguments[len(port._global_arguments) :]
+            if (stream_kind == "index" and tail == ("ls-files", "--stage", "--debug", "-z")) or (
+                stream_kind == "blob" and tail[:2] == ("cat-file", "blob")
+            ):
+                observed = _published_stdout(observed, b"[REDACTED]")
+                return replace(
+                    observed,
+                    raw_stdout=observed.raw_stdout.model_copy(
+                        update={
+                            "observed_bytes": 8 * 1024 * 1024 + 1,
+                        }
+                    ),
+                )
+            return observed
+
+        monkeypatch.setattr(port, "_run_baseline", oversized)
+        with raises_code("git_baseline_limit"):
+            await collect(runtime, owner, target, router, transactions, port)
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        "root",
+        "config-precheck",
+        "config-observation",
+        "head",
+        "tree",
+        "ref",
+        "ls-tree",
+        "ls-files-stage",
+        "ls-files-flags",
+        "ls-files-debug",
+    ],
+)
+async def test_each_parsed_metadata_query_rejects_changed_published_body(
+    tmp_path, monkeypatch, metadata
+):
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        repository(root)
+        owner, target = await publish(runtime, provider, root)
+        port = reader(root, tmp_path / "git-state")
+        original, config_calls = port._run_baseline, 0
+
+        async def changed(arguments, *args, **kwargs):
+            nonlocal config_calls
+            observed = await original(arguments, *args, **kwargs)
+            tail = arguments[len(port._global_arguments) :]
+            if tail[0] == "config":
+                config_calls += 1
+            selected = {
+                "root": tail == ("rev-parse", "--show-toplevel"),
+                "config-precheck": tail[0] == "config" and config_calls == 1,
+                "config-observation": tail[0] == "config" and config_calls == 2,
+                "head": tail == ("rev-parse", "--verify", "HEAD^{commit}"),
+                "tree": tail[:2] == ("rev-parse", "--verify") and tail[-1].endswith("^{tree}"),
+                "ref": tail == ("rev-parse", "--symbolic-full-name", "HEAD"),
+                "ls-tree": tail[0] == "ls-tree",
+                "ls-files-stage": tail[:3] == ("ls-files", "--stage", "-z"),
+                "ls-files-flags": tail[:3] == ("ls-files", "-v", "-z"),
+                "ls-files-debug": tail[:3] == ("ls-files", "--debug", "-z"),
+            }[metadata]
+            if selected:
+                return _published_stdout(observed, b"x" * len(observed.result.stdout.data()))
+            return observed
+
+        monkeypatch.setattr(port, "_run_baseline", changed)
+        with raises_code("git_baseline_metadata_changed"):
+            await collect(runtime, owner, target, router, transactions, port)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows原Workspace Patch不接受执行位")
@@ -459,7 +597,7 @@ async def test_whole_deadline_or_parent_cancellation_drains_the_pending_query(
             finally:
                 drained.set()
 
-        monkeypatch.setattr(port, "_run", blocked)
+        monkeypatch.setattr(port, "_run_baseline", blocked)
         monkeypatch.setattr(
             baseline_module, "_BASELINE_TIMEOUT_SECONDS", 0.1 if fault == "whole-timeout" else 60
         )
@@ -490,7 +628,7 @@ async def test_incomplete_or_wrong_object_evidence_is_not_accepted(tmp_path, mon
             if fault == "missing-blob" and arguments[:2] == ("cat-file", "blob"):
                 raise ReadToolError("io_failed")
             result = await original(query, *arguments)
-            stream = result.stdout
+            stream = result.result.stdout
             if fault == "invalid-oid" and arguments == ("rev-parse", "--verify", "HEAD^{commit}"):
                 body = b"untrusted object identifier\n"
                 import base64
@@ -505,9 +643,19 @@ async def test_incomplete_or_wrong_object_evidence_is_not_accepted(tmp_path, mon
                 )
             if fault == "truncated-metadata" and arguments[0] == "ls-tree":
                 stream = stream.model_copy(update={"truncated": True})
+            raw = result.raw_stdout
             if fault == "wrong-digest" and arguments[:2] == ("cat-file", "blob"):
-                stream = stream.model_copy(update={"observed_sha256": "0" * 64})
-            return result.model_copy(update={"stdout": stream})
+                raw = raw.model_copy(update={"sha256": "0" * 64})
+            if fault == "invalid-oid" and arguments == ("rev-parse", "--verify", "HEAD^{commit}"):
+                raw = raw.model_copy(
+                    update={
+                        "observed_bytes": stream.observed_bytes,
+                        "sha256": stream.observed_sha256,
+                    }
+                )
+            return replace(
+                result, result=result.result.model_copy(update={"stdout": stream}), raw_stdout=raw
+            )
 
         monkeypatch.setattr(baseline_module._Queries, "result", corrupt)
         code = {

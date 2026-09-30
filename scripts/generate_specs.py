@@ -180,7 +180,7 @@ from harnessix.processes.owner_protocol import (
     ProcessOwnerStart,
     ProcessOwnerStartV2,
 )
-from harnessix.processes.owner_receipt import ProcessOwnerReceipt
+from harnessix.processes.owner_receipt import ProcessOwnerReceipt, ProcessOwnerReceiptV2
 from harnessix.processes.public_output import (
     PublicEvalOutputSummary,
     PublicProcessOutputSummary,
@@ -560,6 +560,9 @@ def generate_specs(output: Path) -> None:
         write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
     write_json(
         output / "process-owner-start-v2.schema.json", ProcessOwnerStartV2.model_json_schema()
+    )
+    write_json(
+        output / "process-owner-receipt-v2.schema.json", ProcessOwnerReceiptV2.model_json_schema()
     )
     write_json(
         output / "model-history-inspection-v2.schema.json",

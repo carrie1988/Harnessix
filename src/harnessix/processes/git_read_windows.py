@@ -30,7 +30,9 @@ from harnessix.processes.contracts import (
     ProcessResult,
     ProcessStream,
 )
+from harnessix.processes.git_observation import GitBaselineReadResult, validate_git_result
 from harnessix.processes.owner_protocol import OutputRedactionSource
+from harnessix.processes.owner_receipt import ProcessOwnerReceiptV2
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
     ProcessLease,
@@ -131,7 +133,7 @@ class WindowsGitReadProcess:
                 "capability": capability.digest,
                 "executable": os.path.normcase(str(executable)),
                 "state": os.path.normcase(str(state_directory)),
-                **({"purpose": "git-delivery-baseline/v1"} if for_delivery else {}),
+                **({"purpose": "git-delivery-baseline/raw-v2"} if for_delivery else {}),
             }
         )
         self._configuration = _GitReadConfiguration(
@@ -159,18 +161,31 @@ class WindowsGitReadProcess:
         self._closed = True
 
     async def run(self, request: ProcessRequest, cancel: CancelToken) -> ProcessResult:
+        result = await self._drive(request, cancel, baseline=False)
+        assert isinstance(result, ProcessResult)
+        return result
+
+    async def run_baseline(
+        self, request: ProcessRequest, cancel: CancelToken
+    ) -> GitBaselineReadResult:
+        if not self._configuration.for_delivery:
+            raise KernelError("git_baseline_reader_required", "Git基准需要固定交付读取端口")
+        result = await self._drive(request, cancel, baseline=True)
+        assert isinstance(result, GitBaselineReadResult)
+        return result
+
+    async def _drive(
+        self, request: ProcessRequest, cancel: CancelToken, *, baseline: bool
+    ) -> ProcessResult | GitBaselineReadResult:
         cancel.checkpoint()
         if self._closed or request.program != "git":
             raise KernelError("process_program_denied", "Git只读端口不可执行该请求")
-        if self._configuration.for_delivery and self._configuration.output_redaction is not None:
-            # 原Owner只认证脱敏后流摘要，不能冒充原始Git blob；不得关闭原落盘保护。
-            raise KernelError(
-                "git_baseline_raw_observation_required", "Git基准需要原始字节观察证明"
-            )
         if request.timeout_seconds > 5.0:
             raise KernelError("process_budget_exceeded", "Git读取期限超过宿主上限")
         operation = CancelToken()
-        task = asyncio.create_task(_execute_git(self._configuration, request, operation))
+        task = asyncio.create_task(
+            _execute_git(self._configuration, request, operation, baseline=baseline)
+        )
         try:
             return await cancel.run(asyncio.shield(task))
         except (TurnCancelled, asyncio.CancelledError):
@@ -184,8 +199,12 @@ class WindowsGitReadProcess:
 
 
 async def _execute_git(
-    config: _GitReadConfiguration, request: ProcessRequest, cancel: CancelToken
-) -> ProcessResult:
+    config: _GitReadConfiguration,
+    request: ProcessRequest,
+    cancel: CancelToken,
+    *,
+    baseline: bool = False,
+) -> ProcessResult | GitBaselineReadResult:
     began = time.monotonic()
     with (
         pin_windows_git_state(config.state),
@@ -197,7 +216,7 @@ async def _execute_git(
                 "capability": config.capability.digest,
                 "executable": os.path.normcase(str(config.executable)),
                 "state": os.path.normcase(str(config.state)),
-                **({"purpose": "git-delivery-baseline/v1"} if config.for_delivery else {}),
+                **({"purpose": "git-delivery-baseline/raw-v2"} if config.for_delivery else {}),
             }
         )
         if current != config.fingerprint:
@@ -234,9 +253,8 @@ async def _execute_git(
                 raise ReadToolError("not_found")
             stdout = await handle.output("stdout")
             stderr = await handle.output("stderr")
-            binding.verify()
             assert lease.pid is not None
-            return ProcessResult(
+            result = ProcessResult(
                 pid=lease.pid,
                 returncode=0,
                 stop_reason="exited",
@@ -245,6 +263,19 @@ async def _execute_git(
                 stderr=_stream(stderr, lease.stderr, 16 * 1024),
                 elapsed_seconds=time.monotonic() - began,
             )
+            validate_git_result(result)
+            if not baseline:
+                binding.verify()
+                return result
+            # 由原句柄重验MAC、完整Lease事实和接受序号，不从脱敏统计或终态缓存补raw。
+            receipt = await handle._terminal_owner_receipt()  # noqa: SLF001
+            if not isinstance(receipt, ProcessOwnerReceiptV2):
+                raise KernelError(
+                    "git_baseline_raw_observation_required", "Git基准需要原始字节观察证明"
+                )
+            observed = GitBaselineReadResult(result, receipt.raw_stdout, receipt.raw_stderr)
+            binding.verify()
+            return observed
 
 
 def _git_read_plan(

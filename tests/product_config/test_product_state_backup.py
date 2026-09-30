@@ -425,6 +425,111 @@ async def test_optional_actual_process_receipt_and_output_are_backed_up(complete
     } <= paths
 
 
+@pytest.mark.parametrize("tamper_raw", [False, True], ids=["mixed-versions", "raw-mac-tamper"])
+async def test_raw_receipt_backup_and_restore_keep_signed_bytes(
+    complete_state, tmp_path, monkeypatch, tamper_raw
+):
+    import json
+    import subprocess
+    import sys
+    from uuid import uuid4
+
+    from harnessix.execution.store import SQLiteExecutionPlanStore
+    from harnessix.processes.owner_receipt import (
+        RawProcessOutputObservation,
+        parse_owner_receipt,
+        sign_owner_receipt,
+        write_owner_receipt,
+    )
+    from harnessix.processes.supervision_planner import build_process_spec
+    from harnessix.processes.supervisor import PosixProcessSupervisor, WindowsProcessSupervisor
+    from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
+    from harnessix.product_config.state_restore import restore_product_state
+
+    if os.name == "nt":
+        from tests.processes.test_windows_supervisor import _plan
+    else:
+        from tests.processes.test_supervisor import _plan
+
+    root, _ = complete_state
+    supervisor_type = WindowsProcessSupervisor if os.name == "nt" else PosixProcessSupervisor
+    originals = {}
+    async with supervisor_type(root / "process-owner") as supervisor:
+        for version in (1, 2):
+            spec = build_process_spec(
+                invocation="argv",
+                argv=(sys.executable, "-I", "-c", "print('safe fixture')"),
+                output_bytes=4096,
+            )
+            plan = _plan(tmp_path / "workspace", spec, supervisor)
+            with SQLiteExecutionPlanStore(root / "execution-plans.db") as plans:
+                plans.save_plan(plan)
+            handle = await supervisor.start(
+                plan, spec, supervisor.capability, workspace=tmp_path / "workspace", environment={}
+            )
+            lease = await handle.wait()
+            assert lease.state == "exited" and lease.stop_reason == "exited"
+            run = root / "process-owner" / "runs" / str(spec.process_id)
+            receipt = parse_owner_receipt((run / "receipt.json").read_bytes())
+            arguments = {
+                name: getattr(receipt, name)
+                for name in (
+                    "process_id",
+                    "owner_identity",
+                    "state",
+                    "sequence",
+                    "pid",
+                    "started_at",
+                    "finished_at",
+                    "returncode",
+                    "stop_reason",
+                    "stdout",
+                    "stderr",
+                )
+            }
+            if version == 2:
+                for stream in ("stdout", "stderr"):
+                    body = (run / (stream + ".bin")).read_bytes()
+                    arguments["raw_" + stream] = RawProcessOutputObservation(
+                        observed_bytes=len(body),
+                        sha256=hashlib.sha256(body).hexdigest(),
+                        eof=True,
+                    )
+            # 独立夹具的已知无保护值输出；不模拟生产补签或追认任何历史。
+            fixture = sign_owner_receipt(owner_token=lease.owner_token, **arguments)
+            write_owner_receipt(run / "receipt.json", fixture)
+            relative = f"process-owner/runs/{spec.process_id}/receipt.json"
+            originals[relative] = (run / "receipt.json").read_bytes()
+
+    def deny_launch(*_args, **_kwargs):
+        pytest.fail("完整备份恢复不得重放Process")
+
+    monkeypatch.setattr(subprocess, "Popen", deny_launch)
+    if tamper_raw:
+        relative = next(reversed(originals))
+        path = root / relative
+        payload = json.loads(path.read_bytes())
+        payload["raw_stdout"]["sha256"] = "0" * 64
+        changed = (json.dumps(payload) + "\n").encode()
+        path.write_bytes(changed)
+        with pytest.raises(KernelError):
+            await backup_product_state(root, tmp_path / "backup")
+        assert path.read_bytes() == changed
+        assert not (tmp_path / "backup").exists()
+        return
+
+    manifest = await backup_product_state(root, tmp_path / "backup")
+    assert await verify_product_backup(root, tmp_path / "backup") == manifest
+    await restore_product_state(
+        root,
+        tmp_path / "backup",
+        restore_id=uuid4(),
+        confirm_backup_id=manifest.backup_id,
+    )
+    for relative, body in originals.items():
+        assert (root / relative).read_bytes() == body
+
+
 @pytest.mark.parametrize("budget", [0.0, -1.0, float("inf"), float("nan"), 301.0])
 async def test_invalid_budget_is_rejected_before_any_state_creation(tmp_path, budget):
     from harnessix.product_config.state_backup import backup_product_state

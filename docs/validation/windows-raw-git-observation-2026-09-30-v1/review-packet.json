@@ -1,0 +1,64 @@
+{
+  "schema": "harnessix.windows-raw-git-review-packet/v1",
+  "requirements": [
+    {
+      "requirement": "原始完整计量、无额外raw正文",
+      "evidence": "tests/processes/test_raw_output_receipt.py",
+      "status": "local_contract_pass"
+    },
+    {
+      "requirement": "v1黄金字节/MAC、v2字段篡改和降级拒绝",
+      "evidence": "tests/processes/test_raw_output_receipt.py",
+      "status": "local_contract_pass"
+    },
+    {
+      "requirement": "原Lease/MAC/终态序号重验",
+      "evidence": "tests/processes/test_raw_receipt_supervision.py",
+      "status": "local_contract_pass"
+    },
+    {
+      "requirement": "完整元数据正文与原始长度/SHA匹配",
+      "evidence": "tests/product_config/test_git_baseline.py",
+      "status": "local_contract_pass"
+    },
+    {
+      "requirement": "真实宿主Git大blob/来源/索引不写入",
+      "evidence": "tests/product_config/test_git_baseline.py",
+      "status": "macOS_pass"
+    },
+    {
+      "requirement": "双版本完整backup/verify/restore不重放",
+      "evidence": "tests/product_config/test_product_state_backup.py",
+      "status": "macOS_pass"
+    },
+    {
+      "requirement": "源码外安装与源码逐字节一致",
+      "evidence": "wheel-tests.xml",
+      "status": "installed_wheel_pass"
+    },
+    {
+      "requirement": "CRT/Job及真实WindowsGit",
+      "evidence": "tests/processes/test_windows_raw_receipt.py",
+      "status": "native_windows_pending"
+    },
+    {
+      "requirement": "Windows11消费者安装升级",
+      "evidence": "windows11-consumer-acceptance",
+      "status": "pending"
+    },
+    {
+      "requirement": "完整Commit/Checkpoint/Diff/新批准与写入恢复",
+      "evidence": "R4-product-delivery",
+      "status": "pending"
+    },
+    {
+      "requirement": "完整真实模型编码20Trial",
+      "evidence": "R3",
+      "status": "pending"
+    }
+  ],
+  "native_skips_not_pass": true,
+  "R3_complete": false,
+  "R4_complete": false,
+  "commercial_release_complete": false
+}

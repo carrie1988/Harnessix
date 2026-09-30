@@ -33,6 +33,11 @@ from harnessix.processes.windows_job import (
     CREATE_SUSPENDED,
     WindowsJobObject,
 )
+from harnessix.processes.windows_owner_observation import (
+    configure_binary_output_reader,
+    launch_failed_output_receipt,
+    output_position,
+)
 
 _READ_CHUNK_BYTES = 64 * 1024
 _PROGRESS_INTERVAL_SECONDS = 0.25
@@ -93,7 +98,7 @@ class _Owner:
         self.stop_reason: ProcessStopReason | None = None
         self.receipt_sequence = 0
         self.last_progress = 0.0
-        self.last_published_output = (0, 0, 0, 0)
+        self.last_published_output = (0, 0, 0, 0, 0, 0)
         self.stdin_accepted = 0
         self.stdin_closed = request.stdin == "closed"
         self.streams_open = {"stdout", "stderr"}
@@ -177,6 +182,7 @@ class _Owner:
         self._publish("running")
 
     def _start_reader(self, name: str, descriptor: int, initial: bytearray) -> None:
+        configure_binary_output_reader(self.request.terminal, name, descriptor)
         reader = threading.Thread(
             target=self._reader,
             args=(name, descriptor, initial),
@@ -270,12 +276,12 @@ class _Owner:
             assert data is not None
             stream = self.stdout if name == "stdout" else self.stderr
             stream.feed(data, self._remaining_output())
-            if self.stdout.observed + self.stderr.observed > self.request.output_bytes:
-                self._request_stop("output_limit")
+            self._check_output_limit()
         elif name in {"stdout_eof", "stderr_eof"}:
             stream_name = cast(Literal["stdout", "stderr"], name.removesuffix("_eof"))
             stream = self.stdout if stream_name == "stdout" else self.stderr
             stream.finish(self._remaining_output(), eof=True)
+            self._check_output_limit()
             self.streams_open.discard(stream_name)
         else:
             self.io_failed = True
@@ -345,13 +351,18 @@ class _Owner:
     def _remaining_output(self) -> int:
         return max(0, self.request.output_bytes - self.stdout.persisted - self.stderr.persisted)
 
-    def _output_position(self) -> tuple[int, int, int, int]:
-        return (
-            self.stdout.observed,
-            self.stdout.persisted,
-            self.stderr.observed,
-            self.stderr.persisted,
+    def _check_output_limit(self) -> None:
+        raw_exceeded = self.request.terminal == "pipe" and (
+            self.stdout.raw_observed + self.stderr.raw_observed > self.request.output_bytes
         )
+        published_exceeded = self.stdout.observed + self.stderr.observed > self.request.output_bytes
+        if (raw_exceeded or published_exceeded) and self.stop_reason in {None, "exited"}:
+            # EOF刷出的保护占位符也受原预算约束；正常退出不能覆盖限额事实。
+            self.stop_reason = "output_limit"
+            self._terminate_job()
+
+    def _output_position(self) -> tuple[int, int, int, int, int, int]:
+        return output_position(self.stdout, self.stderr)
 
     def _finish_streams(self, *, eof: bool) -> None:
         if "stdout" in self.streams_open:
@@ -385,6 +396,8 @@ class _Owner:
             stop_reason=stop_reason,
             stdout=self.stdout.observation(),
             stderr=self.stderr.observation(),
+            raw_stdout=self.stdout.raw_observation() if self.request.terminal == "pipe" else None,
+            raw_stderr=self.stderr.raw_observation() if self.request.terminal == "pipe" else None,
         )
         write_owner_receipt(self.receipt_path, receipt)
         self.last_progress = time.monotonic()
@@ -392,17 +405,7 @@ class _Owner:
 
     def _publish_failed(self) -> None:
         self._finish_streams(eof=True)
-        receipt = sign_owner_receipt(
-            process_id=self.request.process_id,
-            owner_identity=self.request.owner_identity,
-            state="failed",
-            sequence=1,
-            owner_token=self.request.owner_token,
-            finished_at=datetime.now(UTC),
-            stop_reason="launch_failed",
-            stdout=self.stdout.observation(),
-            stderr=self.stderr.observation(),
-        )
+        receipt = launch_failed_output_receipt(self.request, self.stdout, self.stderr)
         write_owner_receipt(self.receipt_path, receipt)
 
     def _publish_unknown(self) -> None:
@@ -420,6 +423,8 @@ class _Owner:
             stop_reason="cleanup_failed",
             stdout=self.stdout.observation(),
             stderr=self.stderr.observation(),
+            raw_stdout=self.stdout.raw_observation() if self.request.terminal == "pipe" else None,
+            raw_stderr=self.stderr.raw_observation() if self.request.terminal == "pipe" else None,
         )
         write_owner_receipt(self.receipt_path, receipt)
 

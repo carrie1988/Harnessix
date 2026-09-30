@@ -11,10 +11,10 @@ import time
 from contextlib import ExitStack
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal, Self, overload
 from uuid import UUID
 
-from pydantic import Field, ValidationError, model_validator
+from pydantic import ConfigDict, Field, ValidationError, model_validator
 
 from harnessix.agent.errors import KernelError
 from harnessix.processes.supervision_contracts import (
@@ -25,13 +25,28 @@ from harnessix.processes.supervision_contracts import (
 from harnessix.tools.contracts import Revision
 
 MAX_OWNER_RECEIPT_BYTES = 64 * 1024
+MAX_RAW_PROCESS_OUTPUT_BYTES = 2**63 - 1
 _WINDOWS_RECEIPT_READ_DELAYS = (0.0, 0.002, 0.01, 0.05, 0.1, 0.25, 0.5)
 
 
-class ProcessOwnerReceipt(SupervisionContract):
-    spec_version: Literal["harnessix.process-owner-receipt/v1"] = (
-        "harnessix.process-owner-receipt/v1"
-    )
+class RawProcessOutputObservation(SupervisionContract):
+    """私有原始流观察，仅认证数量、摘要和结束事实，不保留正文。"""
+
+    model_config = ConfigDict(revalidate_instances="always")
+    observed_bytes: int = Field(ge=0, le=MAX_RAW_PROCESS_OUTPUT_BYTES)
+    sha256: Revision = Field(min_length=64, max_length=64)
+    eof: bool
+
+    @model_validator(mode="after")
+    def consistent_empty_output(self) -> Self:
+        if self.observed_bytes == 0 and self.sha256 != hashlib.sha256(b"").hexdigest():
+            raise ValueError("空Process原始输出摘要不一致")
+        return self
+
+
+class _ProcessOwnerReceiptFacts(SupervisionContract):
+    # 版本占位保持原v1字段顺序；具体子类各自约束Literal，不相互覆写。
+    spec_version: str
     process_id: UUID
     owner_identity: Revision
     state: Literal["running", "exited", "failed", "unknown"]
@@ -57,6 +72,10 @@ class ProcessOwnerReceipt(SupervisionContract):
             if self.returncode is not None:
                 raise ValueError("运行中Process owner不能包含returncode")
             return self
+        return self._terminal_shape(started)
+
+    def _terminal_shape(self, started: bool) -> Self:
+        """终态检查与运行态分离；保持原v1字段、失败规则和序列化字节。"""
         if self.finished_at is None or self.finished_at.tzinfo is None or self.stop_reason is None:
             raise ValueError("Process owner终态事实不完整")
         if self.state == "exited":
@@ -74,7 +93,40 @@ class ProcessOwnerReceipt(SupervisionContract):
         return self
 
 
-def _canonical_payload(receipt: ProcessOwnerReceipt) -> bytes:
+class ProcessOwnerReceipt(_ProcessOwnerReceiptFacts):
+    spec_version: Literal["harnessix.process-owner-receipt/v1"] = (
+        "harnessix.process-owner-receipt/v1"
+    )
+
+
+class ProcessOwnerReceiptV2(_ProcessOwnerReceiptFacts):
+    spec_version: Literal["harnessix.process-owner-receipt/v2"] = (
+        "harnessix.process-owner-receipt/v2"
+    )
+    raw_stdout: RawProcessOutputObservation
+    raw_stderr: RawProcessOutputObservation
+
+
+OwnerReceipt = ProcessOwnerReceipt | ProcessOwnerReceiptV2
+
+
+def parse_owner_receipt(body: bytes | str) -> OwnerReceipt:
+    """显式按版本解析私有回执；仅校验合同，不代替身份与MAC验证。"""
+    encoded = body.encode("utf-8") if isinstance(body, str) else body
+    if not encoded or len(encoded) > MAX_OWNER_RECEIPT_BYTES:
+        raise ValueError("Process owner回执字节数无效")
+    payload = json.loads(encoded)
+    if not isinstance(payload, dict):
+        raise ValueError("Process owner回执必须是JSON对象")
+    version = payload.get("spec_version")
+    if version == "harnessix.process-owner-receipt/v1":
+        return ProcessOwnerReceipt.model_validate_json(encoded)
+    if version == "harnessix.process-owner-receipt/v2":
+        return ProcessOwnerReceiptV2.model_validate_json(encoded)
+    raise ValueError("Process owner回执版本无效")
+
+
+def _canonical_payload(receipt: OwnerReceipt) -> bytes:
     payload = receipt.model_dump(mode="json", exclude={"mac"}, warnings="error")
     return json.dumps(
         payload,
@@ -85,7 +137,7 @@ def _canonical_payload(receipt: ProcessOwnerReceipt) -> bytes:
     ).encode("utf-8")
 
 
-def owner_receipt_mac(receipt: ProcessOwnerReceipt, owner_token: Revision) -> str:
+def owner_receipt_mac(receipt: OwnerReceipt, owner_token: Revision) -> str:
     try:
         key = bytes.fromhex(owner_token)
     except ValueError:
@@ -93,6 +145,66 @@ def owner_receipt_mac(receipt: ProcessOwnerReceipt, owner_token: Revision) -> st
     if len(key) != 32:
         raise KernelError("process_owner_token_invalid", "Process owner token无效")
     return hmac.new(key, _canonical_payload(receipt), hashlib.sha256).hexdigest()
+
+
+@overload
+def sign_owner_receipt(
+    *,
+    process_id: UUID,
+    owner_identity: Revision,
+    state: Literal["running", "exited", "failed", "unknown"],
+    sequence: int,
+    owner_token: Revision,
+    stdout: ProcessOutputObservation,
+    stderr: ProcessOutputObservation,
+    pid: int | None = None,
+    started_at: datetime | None = None,
+    finished_at: datetime | None = None,
+    returncode: int | None = None,
+    stop_reason: ProcessStopReason | None = None,
+    raw_stdout: None = None,
+    raw_stderr: None = None,
+) -> ProcessOwnerReceipt: ...
+
+
+@overload
+def sign_owner_receipt(
+    *,
+    process_id: UUID,
+    owner_identity: Revision,
+    state: Literal["running", "exited", "failed", "unknown"],
+    sequence: int,
+    owner_token: Revision,
+    stdout: ProcessOutputObservation,
+    stderr: ProcessOutputObservation,
+    pid: int | None = None,
+    started_at: datetime | None = None,
+    finished_at: datetime | None = None,
+    returncode: int | None = None,
+    stop_reason: ProcessStopReason | None = None,
+    raw_stdout: RawProcessOutputObservation,
+    raw_stderr: RawProcessOutputObservation,
+) -> ProcessOwnerReceiptV2: ...
+
+
+@overload
+def sign_owner_receipt(
+    *,
+    process_id: UUID,
+    owner_identity: Revision,
+    state: Literal["running", "exited", "failed", "unknown"],
+    sequence: int,
+    owner_token: Revision,
+    stdout: ProcessOutputObservation,
+    stderr: ProcessOutputObservation,
+    pid: int | None = None,
+    started_at: datetime | None = None,
+    finished_at: datetime | None = None,
+    returncode: int | None = None,
+    stop_reason: ProcessStopReason | None = None,
+    raw_stdout: RawProcessOutputObservation | None,
+    raw_stderr: RawProcessOutputObservation | None,
+) -> OwnerReceipt: ...
 
 
 def sign_owner_receipt(
@@ -109,8 +221,12 @@ def sign_owner_receipt(
     finished_at: datetime | None = None,
     returncode: int | None = None,
     stop_reason: ProcessStopReason | None = None,
-) -> ProcessOwnerReceipt:
-    unsigned = ProcessOwnerReceipt(
+    raw_stdout: RawProcessOutputObservation | None = None,
+    raw_stderr: RawProcessOutputObservation | None = None,
+) -> OwnerReceipt:
+    if (raw_stdout is None) != (raw_stderr is None):
+        raise KernelError("process_owner_receipt_invalid", "Process owner原始双流观察不完整")
+    facts = dict(
         process_id=process_id,
         owner_identity=owner_identity,
         state=state,
@@ -124,18 +240,25 @@ def sign_owner_receipt(
         stderr=stderr,
         mac="0" * 64,
     )
+    unsigned: OwnerReceipt
+    if raw_stdout is not None and raw_stderr is not None:
+        unsigned = ProcessOwnerReceiptV2.model_validate(
+            {**facts, "raw_stdout": raw_stdout, "raw_stderr": raw_stderr}
+        )
+    else:
+        unsigned = ProcessOwnerReceipt.model_validate(facts)
     return unsigned.model_copy(update={"mac": owner_receipt_mac(unsigned, owner_token)})
 
 
 def verify_owner_receipt(
-    receipt: ProcessOwnerReceipt,
+    receipt: OwnerReceipt,
     *,
     owner_token: Revision,
     process_id: UUID,
     owner_identity: Revision | None = None,
-) -> ProcessOwnerReceipt:
+) -> OwnerReceipt:
     try:
-        checked = ProcessOwnerReceipt.model_validate_json(receipt.model_dump_json(warnings="error"))
+        checked = parse_owner_receipt(receipt.model_dump_json(warnings="error"))
     except (ValidationError, ValueError, TypeError):
         raise KernelError("process_owner_receipt_invalid", "Process owner回执无效") from None
     if (
@@ -147,7 +270,7 @@ def verify_owner_receipt(
     return checked
 
 
-def _read_owner_receipt_once(path: Path) -> ProcessOwnerReceipt:
+def _read_owner_receipt_once(path: Path) -> OwnerReceipt:
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
@@ -178,7 +301,7 @@ def _read_owner_receipt_once(path: Path) -> ProcessOwnerReceipt:
         raise ValueError("Process owner回执文件绑定无效") from None
     if len(body) != info.st_size:
         raise ValueError
-    return ProcessOwnerReceipt.model_validate_json(body)
+    return parse_owner_receipt(body)
 
 
 def _is_windows_sharing_error(error: OSError) -> bool:
@@ -195,8 +318,8 @@ def read_owner_receipt(
     owner_token: Revision,
     process_id: UUID,
     owner_identity: Revision | None = None,
-) -> ProcessOwnerReceipt:
-    receipt: ProcessOwnerReceipt | None = None
+) -> OwnerReceipt:
+    receipt: OwnerReceipt | None = None
     for index, delay in enumerate(_WINDOWS_RECEIPT_READ_DELAYS):
         if delay:
             time.sleep(delay)
@@ -237,11 +360,15 @@ def read_owner_receipt(
     )
 
 
-def write_owner_receipt(path: Path, receipt: ProcessOwnerReceipt) -> None:
+def write_owner_receipt(path: Path, receipt: OwnerReceipt) -> None:
     """原子发布当前回执；调用方必须先持久化回执引用的输出前缀。"""
-    body = receipt.model_dump_json(warnings="error").encode("utf-8")
-    if len(body) > MAX_OWNER_RECEIPT_BYTES:
-        raise KernelError("process_owner_receipt_invalid", "Process owner回执超过字节上限")
+    try:
+        body = receipt.model_dump_json(warnings="error").encode("utf-8")
+        if len(body) > MAX_OWNER_RECEIPT_BYTES:
+            raise KernelError("process_owner_receipt_invalid", "Process owner回执超过字节上限")
+        body = parse_owner_receipt(body).model_dump_json(warnings="error").encode("utf-8")
+    except (ValidationError, ValueError, TypeError):
+        raise KernelError("process_owner_receipt_invalid", "Process owner回执无效") from None
     if os.name == "nt":
         from harnessix.processes.windows_receipt import publish_owner_receipt
 

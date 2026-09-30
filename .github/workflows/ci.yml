@@ -114,6 +114,13 @@ jobs:
       - name: 验证原生Git读取与取消回收
         run: >-
           uv run pytest tests/tools/test_windows_git.py
+          --deselect=tests/tools/test_windows_git.py::test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw
+          --deselect=tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction
+          --deselect=tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout-raw-baseline]"
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token-raw-baseline]"
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task-raw-baseline]"
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch-raw-baseline]"
           tests/tools/test_argument_feedback.py
           tests/tools/test_git_platform_contracts.py
           tests/processes/test_windows_owner_lifecycle.py
@@ -129,6 +136,24 @@ jobs:
           tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner
           -vv -o faulthandler_timeout=60
         timeout-minutes: 3
+      - name: 验证原生认证raw回执与Git基准
+        run: >-
+          uv run pytest tests/processes/test_windows_raw_receipt.py
+          tests/tools/test_windows_git.py::test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw
+          tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction
+          tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline
+          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout-raw-baseline]"
+          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token-raw-baseline]"
+          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task-raw-baseline]"
+          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch-raw-baseline]"
+          tests/processes/test_raw_output_receipt.py
+          tests/processes/test_raw_receipt_supervision.py
+          tests/processes/test_git_raw_observation.py
+          tests/tools/test_git_delivery_reader.py
+          tests/product_config/test_git_baseline.py::test_large_original_blob_uses_complete_observed_digest_not_prefix
+          tests/product_config/test_git_baseline.py::test_consumer_uses_raw_blob_index_and_status_not_redacted_observation
+          -vv -o faulthandler_timeout=60
+        timeout-minutes: 5
       - name: 验证原生产品重启与State创建边界
         run: >-
           uv run pytest tests/benchmarks/test_soak_restart_child.py

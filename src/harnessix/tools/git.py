@@ -9,13 +9,18 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal
 
-from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.processes.contracts import (
     MAX_CAPTURE_BYTES,
     ProcessLimits,
     ProcessRequest,
     ProcessResult,
+)
+from harnessix.processes.git_observation import (
+    GitBaselineReadResult,
+    git_reader_binding,
+    validate_git_result,
 )
 from harnessix.tools.contracts import MAX_RESULT_BYTES, ReadContract, ReadToolError
 from harnessix.tools.git_contracts import (
@@ -98,7 +103,8 @@ class GitReadRuntime:
         self._for_delivery = for_delivery
         self._global_arguments = _git_arguments(for_delivery=for_delivery)
         sample = self._runtime()
-        self._binding_fingerprint = sample.binding_fingerprint
+        self._process_fingerprint = sample.binding_fingerprint
+        self._binding_fingerprint = git_reader_binding(self._process_fingerprint, for_delivery)
 
     def contract(self) -> dict[str, object]:
         return {
@@ -136,46 +142,10 @@ class GitReadRuntime:
     async def execute(
         self, args: GitStatusInput | GitDiffInput, cancel: CancelToken
     ) -> ReadContract:
-        await self._require_repository_root(cancel)
-        await _reject_git_helpers(self, cancel)
-        if isinstance(args, GitStatusInput):
-            result = await self._run(
-                (
-                    *self._global_arguments,
-                    "status",
-                    "--porcelain=v2",
-                    "--branch",
-                    "--untracked-files=all",
-                    "--ignore-submodules=all",
-                    "-z",
-                ),
-                cancel,
-            )
-            return _status(result, args.limit)
-        diff_args = [
-            *self._global_arguments,
-            "diff",
-            "--no-ext-diff",
-            "--no-textconv",
-            "--ignore-submodules=all",
-            f"--unified={args.context_lines}",
-        ]
-        if args.target == "staged":
-            diff_args.append("--cached")
-        diff_args.append("--")
-        result = await self._run(tuple(diff_args), cancel)
-        return _diff(result, args.target)
+        return await _execute_git_read(self, args, cancel)
 
     async def _require_repository_root(self, cancel: CancelToken) -> None:
-        result = await self._run(
-            (*self._global_arguments, "rev-parse", "--show-toplevel"), cancel, repository_check=True
-        )
-        try:
-            root = result.stdout.data().decode("utf-8", errors="strict")
-        except UnicodeError:
-            raise ReadToolError("invalid_utf8") from None
-        if not repository_root_matches(root, str(self._root), windows=os.name == "nt"):
-            raise ReadToolError("path_denied")
+        await _require_git_repository_root(self, cancel)
 
     async def _run(
         self,
@@ -184,9 +154,91 @@ class GitReadRuntime:
         *,
         repository_check: bool = False,
     ) -> ProcessResult:
-        return await _run_git_process(
-            self._runtime(), self._binding_fingerprint, arguments, cancel, repository_check
+        result = await _run_git_process(
+            self._runtime(), self._process_fingerprint, arguments, cancel, repository_check
         )
+        assert isinstance(result, ProcessResult)
+        return result
+
+    async def _run_baseline(
+        self,
+        arguments: tuple[str, ...],
+        cancel: CancelToken,
+        *,
+        repository_check: bool = False,
+    ) -> GitBaselineReadResult:
+        if not self._for_delivery:
+            raise KernelError("git_baseline_reader_required", "Git基准需要固定交付读取端口")
+        return await _run_git_baseline(
+            self._runtime(), self._process_fingerprint, arguments, cancel, repository_check
+        )
+
+
+async def _execute_git_read(
+    runtime: GitReadRuntime, args: GitStatusInput | GitDiffInput, cancel: CancelToken
+) -> ReadContract:
+    """普通工具沿原根/配置守卫执行固定只读查询，仍仅返回安全结果。"""
+    await runtime._require_repository_root(cancel)
+    await _reject_git_helpers(runtime, cancel)
+    if isinstance(args, GitStatusInput):
+        result = await runtime._run(
+            (
+                *runtime._global_arguments,
+                "status",
+                "--porcelain=v2",
+                "--branch",
+                "--untracked-files=all",
+                "--ignore-submodules=all",
+                "-z",
+            ),
+            cancel,
+        )
+        return _status(result, args.limit)
+    diff_args = [
+        *runtime._global_arguments,
+        "diff",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--ignore-submodules=all",
+        f"--unified={args.context_lines}",
+    ]
+    if args.target == "staged":
+        diff_args.append("--cached")
+    diff_args.append("--")
+    result = await runtime._run(tuple(diff_args), cancel)
+    return _diff(result, args.target)
+
+
+async def _require_git_repository_root(runtime: GitReadRuntime, cancel: CancelToken) -> None:
+    arguments = (*runtime._global_arguments, "rev-parse", "--show-toplevel")
+    if runtime._for_delivery:
+        observed = await runtime._run_baseline(arguments, cancel, repository_check=True)
+        body = observed.full_stdout()
+    else:
+        result = await runtime._run(arguments, cancel, repository_check=True)
+        if result.stdout.truncated:
+            raise ReadToolError("limit_exceeded")
+        body = result.stdout.data()
+    try:
+        root = body.decode("utf-8", errors="strict")
+    except UnicodeError:
+        raise ReadToolError("invalid_utf8") from None
+    if not repository_root_matches(root, str(runtime._root), windows=os.name == "nt"):
+        raise ReadToolError("path_denied")
+
+
+async def _run_git_baseline(
+    process: HostProcessRuntime | WindowsGitReadProcess,
+    fingerprint: str,
+    arguments: tuple[str, ...],
+    cancel: CancelToken,
+    repository_check: bool,
+) -> GitBaselineReadResult:
+    result = await _run_git_process(
+        process, fingerprint, arguments, cancel, repository_check, baseline=True
+    )
+    assert isinstance(result, GitBaselineReadResult)
+    return result
 
 
 async def _run_git_process(
@@ -195,46 +247,55 @@ async def _run_git_process(
     arguments: tuple[str, ...],
     cancel: CancelToken,
     repository_check: bool,
-) -> ProcessResult:
+    *,
+    baseline: bool = False,
+) -> ProcessResult | GitBaselineReadResult:
+    from harnessix.processes.git_read_windows import WindowsGitReadProcess
+
     async with process as runtime:
         if runtime.binding_fingerprint != fingerprint:
             raise KernelError("process_binding_changed", "Git只读宿主绑定已变化")
         try:
-            result = await runtime.run(
-                ProcessRequest(
-                    program="git", arguments=arguments, timeout_seconds=_TIMEOUT_SECONDS
-                ),
-                cancel,
+            request = ProcessRequest(
+                program="git", arguments=arguments, timeout_seconds=_TIMEOUT_SECONDS
             )
+            result: ProcessResult | GitBaselineReadResult
+            if baseline and isinstance(runtime, WindowsGitReadProcess):
+                result = await runtime.run_baseline(request, cancel)
+            else:
+                captured = await runtime.run(request, cancel)
+                validate_git_result(captured, repository_check=repository_check)
+                result = (
+                    GitBaselineReadResult.from_posix_capture(captured) if baseline else captured
+                )
         except ReadToolError as error:
             if error.code == "not_found" and not repository_check:
                 raise ReadToolError("io_failed") from None
             raise
-    if result.stop_reason == "cancelled":
-        raise TurnCancelled
-    if result.stop_reason == "timeout":
-        raise ReadToolError("timeout")
-    if (
-        result.stop_reason != "exited"
-        or result.returncode != 0
-        or not result.stdout.eof
-        or not result.stderr.eof
-    ):
-        if repository_check:
-            raise ReadToolError("not_found")
-        raise ReadToolError("io_failed")
+    safe_result = result.result if isinstance(result, GitBaselineReadResult) else result
+    validate_git_result(safe_result, repository_check=repository_check)
     return result
 
 
 async def _reject_git_helpers(runtime: GitReadRuntime, cancel: CancelToken) -> None:
     # 只读取配置键名，避免把HTTP Header等配置值持久写入Process输出。
-    result = await runtime._run(  # noqa: SLF001 - 固定查询是同一Git端口的前置条件
-        (*runtime._global_arguments, "config", "--no-includes", "--null", "--name-only", "--list"),
-        cancel,
+    arguments = (
+        *runtime._global_arguments,
+        "config",
+        "--no-includes",
+        "--null",
+        "--name-only",
+        "--list",
     )
-    if result.stdout.truncated:
-        raise ReadToolError("limit_exceeded")
-    if any(_git_helper_key(key) for key in result.stdout.data().split(b"\0")):
+    if runtime._for_delivery:  # noqa: SLF001 - 固定查询是同一Git端口的前置条件
+        observed = await runtime._run_baseline(arguments, cancel)  # noqa: SLF001
+        body = observed.full_stdout()
+    else:
+        result = await runtime._run(arguments, cancel)  # noqa: SLF001
+        if result.stdout.truncated:
+            raise ReadToolError("limit_exceeded")
+        body = result.stdout.data()
+    if any(_git_helper_key(key) for key in body.split(b"\0")):
         raise ReadToolError("path_denied")
 
 

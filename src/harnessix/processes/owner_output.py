@@ -6,13 +6,18 @@ import hashlib
 import os
 from pathlib import Path
 
+from harnessix.agent.errors import KernelError
 from harnessix.processes.owner_protocol import ProcessOwnerStart
+from harnessix.processes.owner_receipt import (
+    MAX_RAW_PROCESS_OUTPUT_BYTES,
+    RawProcessOutputObservation,
+)
 from harnessix.processes.supervision_contracts import ProcessOutputObservation
 from harnessix.secrets.redaction import StreamingSecretRedactor
 
 
 class CapturedProcessOutput:
-    """先脱敏再计量和落盘的单流有界输出。"""
+    """原始流仅计量；脱敏流独立计量并按额度落盘。"""
 
     def __init__(self, path: Path, secrets: tuple[bytes, ...]) -> None:
         # CRT文本转换会让物理字节与Receipt摘要分叉；不能依赖宿主默认模式。
@@ -21,12 +26,18 @@ class CapturedProcessOutput:
             flags |= os.O_NOFOLLOW
         self._redactor = StreamingSecretRedactor(secrets)
         self._fd = os.open(path, flags, 0o600)
+        self._raw_digest = hashlib.sha256()
+        self._raw_observed = 0
         self._digest = hashlib.sha256()
         self._persisted_digest = hashlib.sha256()
         self._observed = 0
         self._persisted = 0
         self._closed = False
         self.eof = False
+
+    @property
+    def raw_observed(self) -> int:
+        return self._raw_observed
 
     @property
     def observed(self) -> int:
@@ -37,6 +48,16 @@ class CapturedProcessOutput:
         return self._persisted
 
     def feed(self, data: bytes, allowance: int) -> int:
+        # 与脱敏器输入合同一致，拒绝输入不得污染原始统计。
+        if self._closed:
+            raise KernelError("secret_redaction_closed", "Secret脱敏器已经关闭")
+        if type(data) is not bytes:
+            raise KernelError("secret_redaction_failed", "Secret脱敏输入必须是bytes")
+        observed = self._raw_observed + len(data)
+        if observed > MAX_RAW_PROCESS_OUTPUT_BYTES:
+            raise KernelError("process_output_limit_exceeded", "Process原始输出观察超过字节上限")
+        self._raw_observed = observed
+        self._raw_digest.update(data)
         return self._publish(self._redactor.feed(data), allowance)
 
     def finish(self, allowance: int, *, eof: bool) -> int:
@@ -76,6 +97,13 @@ class CapturedProcessOutput:
             sha256=self._digest.hexdigest(),
             persisted_sha256=self._persisted_digest.hexdigest(),
             truncated=self._persisted < self._observed,
+            eof=self.eof,
+        )
+
+    def raw_observation(self) -> RawProcessOutputObservation:
+        return RawProcessOutputObservation(
+            observed_bytes=self._raw_observed,
+            sha256=self._raw_digest.hexdigest(),
             eof=self.eof,
         )
 

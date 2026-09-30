@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import shutil
 import sqlite3
 import subprocess
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
@@ -14,25 +16,41 @@ import pytest
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.execution.store import SQLiteExecutionPlanStore
-from harnessix.processes.contracts import ProcessRequest
+from harnessix.processes.contracts import MAX_CAPTURE_BYTES, ProcessRequest
 from harnessix.processes.git_read_windows import (
     WindowsGitReadProcess,
     _environment,
     _git_read_plan,
     reconcile_windows_git_reads,
 )
-from harnessix.processes.owner_receipt import read_owner_receipt
+from harnessix.processes.owner_receipt import (
+    ProcessOwnerReceipt,
+    ProcessOwnerReceiptV2,
+    read_owner_receipt,
+    sign_owner_receipt,
+    write_owner_receipt,
+)
 from harnessix.processes.supervision_contracts import ProcessLease
 from harnessix.processes.supervision_planner import build_process_spec
-from harnessix.processes.supervisor import WindowsProcessSupervisor
+from harnessix.processes.supervisor import SupervisedProcess, WindowsProcessSupervisor
+from harnessix.product_config.contracts import SecretReference
+from harnessix.product_config.git_baseline import _Queries
+from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
+from harnessix.secrets.publication import SecretPublicationScope
 from harnessix.tools.contracts import ReadToolError
+from harnessix.tools.git import GitReadRuntime, _reject_git_helpers
+from harnessix.tools.git_contracts import GitStatusInput
 from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.workspace.git_windows_binding import (
     pin_windows_git,
     validate_windows_git_executable,
 )
+from tests.agent.test_publication import CANARY, protected
 from tests.processes.child_ready import CHILD_READY_PROGRAM
 from tests.processes.test_windows_supervisor import _wait_stopped
+from tests.product_config.test_git_baseline import collect, repository
+from tests.product_config.test_git_delivery_source import edit
+from tests.product_config.test_product_patch_rollback import product
 from tests.tools.test_files import execute
 
 pytestmark = pytest.mark.skipif(os.name != "nt", reason="真实Windows Git/Job Object契约")
@@ -255,11 +273,13 @@ async def test_windows_git_recovery_reconciles_original_receipt_without_relaunch
         assert len(list((state / "process-owner/runs").iterdir())) == 1
 
 
+@pytest.mark.parametrize("baseline", [False, True], ids=["ordinary", "raw-baseline"])
 @pytest.mark.parametrize("mode", ["timeout", "token", "task", "during_launch"])
 async def test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     mode: str,
+    baseline: bool,
 ) -> None:
     root, state = tmp_path / "workspace", tmp_path / "state"
     root.mkdir()
@@ -293,8 +313,11 @@ async def test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease(
 
         monkeypatch.setattr(WindowsProcessSupervisor, "start", observe_start)
     token = CancelToken()
-    async with WindowsGitReadProcess(root, Path(sys.executable), state) as driver:
-        task = asyncio.create_task(driver.run(request, token))
+    async with WindowsGitReadProcess(
+        root, Path(sys.executable), state, for_delivery=baseline
+    ) as driver:
+        entrypoint = driver.run_baseline if baseline else driver.run
+        task = asyncio.create_task(entrypoint(request, token))
         if mode == "during_launch":
             await asyncio.wait_for(entered.wait(), timeout=5)
             task.cancel()
@@ -314,15 +337,29 @@ async def test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease(
             if mode == "token"
             else asyncio.CancelledError
         )
-        with pytest.raises(expected):
+        with pytest.raises(expected) as denied:
             await asyncio.wait_for(task, timeout=12)
+        if mode == "timeout":
+            assert denied.value.code == "timeout"
     leases = _leases(state)
     assert len(leases) == 1
     assert leases[0].state == "exited"
     assert leases[0].stop_reason in {"timeout", "cancelled"}
+    assert leases[0].stop_reason == ("timeout" if mode == "timeout" else "cancelled")
     assert leases[0].stdout.eof and leases[0].stderr.eof
     assert leases[0].pid is not None
     await _wait_stopped(leases[0].pid)
+    receipt = read_owner_receipt(
+        state / "process-owner/runs" / str(leases[0].process_id) / "receipt.json",
+        process_id=leases[0].process_id,
+        owner_identity=leases[0].owner_identity,
+        owner_token=leases[0].owner_token,
+    )
+    assert isinstance(receipt, ProcessOwnerReceiptV2)
+    assert receipt.stop_reason == leases[0].stop_reason
+    assert receipt.raw_stdout.eof and receipt.raw_stderr.eof
+    if baseline and mode != "during_launch":
+        assert marker.exists(), "基准拒绝必须覆盖已实际启动的目标和子进程"
     if marker.exists():
         # 就绪标记创建前PID正文已经关闭；只读取已发布的完整PID，不重试或忽略空值。
         await _wait_stopped(int(marker.with_name(marker.name + ".pid").read_text()))
@@ -376,3 +413,221 @@ print(json.dumps({'legacy_replace':legacy,'closed_pid_then_ready':complete,
     assert facts["closed_pid_then_ready"] is True
     assert facts["ready_error"] is None
     assert facts["legacy_replace"]["status"] in {"passed", "failed"}
+
+
+async def test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw(tmp_path):
+    """真实Git和认证Patch生成基准；全量Index/Status不解析其脱敏正文。"""
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        size = MAX_CAPTURE_BYTES + 4096
+        prefix = b"\0LF\nCRLF\r\nCTRL-Z\x1a\xff" + CANARY.encode()
+        tail = CANARY.encode() + b"\x80END"
+        body = prefix + b"x" * (size - len(prefix) - len(tail)) + tail
+        (root / "src/modified.py").write_bytes(body)
+        unrelated = root / "src/model-value/+version-9"
+        unrelated.parent.mkdir()
+        unrelated.write_bytes(b"clean\n")
+        repository(root)
+        unrelated.write_bytes(b"unrelated dirty\n")
+        original_index = (root / ".git/index").read_bytes()
+        original_head = _command(root, "rev-parse", "HEAD")
+        thread = await runtime.create_thread(str(root))
+        target = await edit(
+            runtime,
+            provider,
+            thread.thread_id,
+            before=body,
+            after=b"new\n",
+            request="native-protected-large-blob",
+        )
+        state = tmp_path / "git-state"
+        with protected() as scope:
+            reader = GitReadRuntime(
+                root, _git(), state_directory=state, output_redaction=scope, for_delivery=True
+            )
+            baseline = await collect(
+                runtime, thread.thread_id, target, router, transactions, reader
+            )
+            cancel = CancelToken()
+            blob = await reader._run_baseline(
+                (*reader._global_arguments, "cat-file", "blob", baseline.members[0].oid), cancel
+            )
+            index = await reader._run_baseline(
+                (*reader._global_arguments, "ls-files", "--stage", "--debug", "-z"), cancel
+            )
+            status = await reader._run_baseline(
+                (
+                    *reader._global_arguments,
+                    "status",
+                    "--porcelain=v2",
+                    "--untracked-files=all",
+                    "--ignore-submodules=all",
+                    "-z",
+                ),
+                cancel,
+            )
+        expected_safe = body.replace(CANARY.encode(), b"[REDACTED]")
+        assert baseline.source.mutations[0].before.size == blob.raw_stdout.observed_bytes == size
+        assert (
+            baseline.source.mutations[0].before.sha256
+            == blob.raw_stdout.sha256
+            == hashlib.sha256(body).hexdigest()
+        )
+        assert blob.result.stdout.data() == expected_safe[:MAX_CAPTURE_BYTES]
+        assert (
+            blob.result.stdout.captured_bytes == MAX_CAPTURE_BYTES and blob.result.stdout.truncated
+        )
+        assert blob.result.stdout.observed_bytes == len(expected_safe)
+        assert blob.result.stdout.observed_sha256 == hashlib.sha256(expected_safe).hexdigest()
+        assert blob.result.stdout.observed_sha256 != blob.raw_stdout.sha256
+        assert CANARY not in baseline.model_dump_json()
+        assert baseline.index_observation_sha256 == index.raw_stdout.sha256
+        assert baseline.index_observation_bytes == index.raw_stdout.observed_bytes
+        assert baseline.status_sha256 == status.raw_stdout.sha256
+        for observation in (index, status):
+            assert b"[REDACTED]" in observation.result.stdout.data()
+            assert observation.raw_stdout.sha256 != observation.result.stdout.observed_sha256
+            assert observation.result.stdout.eof and observation.result.stderr.eof
+            assert observation.raw_stdout.eof and observation.raw_stderr.eof
+        assert (root / ".git/index").read_bytes() == original_index
+        assert _command(root, "rev-parse", "HEAD") == original_head
+        assert unrelated.read_bytes() == b"unrelated dirty\n"
+        leases = _leases(state)
+        assert leases and all(lease.state == "exited" and lease.returncode == 0 for lease in leases)
+        assert all(lease.stop_reason == "exited" for lease in leases)
+        assert all(lease.stdout.eof and lease.stderr.eof for lease in leases)
+        for lease in leases:
+            assert lease.pid is not None
+            await _wait_stopped(lease.pid)
+        for path in (state / "process-owner/runs").glob("*/*.bin"):
+            assert CANARY.encode() not in path.read_bytes()
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        "root",
+        "config",
+        "head",
+        "tree",
+        "ref",
+        "selected-tree",
+        "selected-stage",
+        "selected-flags",
+        "selected-debug",
+    ],
+)
+async def test_windows_git_parsed_metadata_rejects_authenticated_redaction(tmp_path, metadata):
+    """原根和配置守卫照常执行；只对真实解析入口验证raw与安全正文一致性。"""
+    root, state = tmp_path / "repo", tmp_path / "state"
+    _repository(root)
+    _command(root, "config", "fixture.synthetickey", "benign")
+    head = _command(root, "rev-parse", "--verify", "HEAD^{commit}").strip().decode("ascii")
+    tree = _command(root, "rev-parse", "--verify", head + "^{tree}").strip().decode("ascii")
+    ref = _command(root, "rev-parse", "--symbolic-full-name", "HEAD").strip().decode("ascii")
+    value = {
+        "root": root.name,
+        "config": "fixture.synthetickey",
+        "head": head,
+        "tree": tree,
+        "ref": ref,
+    }.get(metadata, "main.py")
+    provider = EnvironmentSecretProvider(
+        (EnvironmentSecretSource("fixture", "1", "SYNTHETIC_OUTPUT_VALUE"),),
+        environment={"SYNTHETIC_OUTPUT_VALUE": value},
+    )
+    original_index = (root / ".git/index").read_bytes()
+    queries = {
+        "head": ("rev-parse", "--verify", "HEAD^{commit}"),
+        "tree": ("rev-parse", "--verify", head + "^{tree}"),
+        "ref": ("rev-parse", "--symbolic-full-name", "HEAD"),
+        "selected-tree": ("ls-tree", "-z", "--full-tree", tree, "--", "main.py"),
+        "selected-stage": ("ls-files", "--stage", "-z", "--", "main.py"),
+        "selected-flags": ("ls-files", "-v", "-z", "--", "main.py"),
+        "selected-debug": ("ls-files", "--debug", "-z", "--", "main.py"),
+    }
+    with SecretPublicationScope((SecretReference(name="fixture", version="1"),), provider) as scope:
+        reader = GitReadRuntime(
+            root, _git(), state_directory=state, output_redaction=scope, for_delivery=True
+        )
+        cancel = CancelToken()
+        with pytest.raises(KernelError) as denied:
+            await reader._require_repository_root(cancel)
+            await _reject_git_helpers(reader, cancel)
+            await _Queries(reader, cancel).full(*queries[metadata])
+        assert denied.value.code == "git_baseline_metadata_changed"
+    leases = _leases(state)
+    assert len(leases) == (1 if metadata == "root" else 2 if metadata == "config" else 3)
+    assert all(lease.state == "exited" and lease.returncode == 0 for lease in leases)
+    assert all(lease.stdout.eof and lease.stderr.eof for lease in leases)
+    lease = leases[-1]
+    directory = state / "process-owner/runs" / str(lease.process_id)
+    receipt = read_owner_receipt(
+        directory / "receipt.json",
+        process_id=lease.process_id,
+        owner_identity=lease.owner_identity,
+        owner_token=lease.owner_token,
+    )
+    assert isinstance(receipt, ProcessOwnerReceiptV2)
+    assert receipt.raw_stdout.eof and receipt.raw_stderr.eof
+    assert receipt.raw_stdout.sha256 != receipt.stdout.sha256
+    safe = (directory / "stdout.bin").read_bytes()
+    assert b"[REDACTED]" in safe and value.encode() not in safe
+    assert (root / ".git/index").read_bytes() == original_index
+    for item in leases:
+        assert item.pid is not None
+        await _wait_stopped(item.pid)
+
+
+@pytest.mark.parametrize("with_protection", [False, True])
+async def test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline(
+    tmp_path, monkeypatch, with_protection
+):
+    """真实Owner完成后组装已知安全的历史v1夹具；不模拟旧Owner的原生执行。"""
+    root, state = tmp_path / "repo", tmp_path / "state"
+    _repository(root)
+    original = SupervisedProcess._terminal_owner_receipt
+    historical = []
+
+    async def original_v1(handle):
+        authenticated = await original(handle)
+        assert isinstance(authenticated, ProcessOwnerReceiptV2)
+        fields = (
+            "process_id",
+            "owner_identity",
+            "state",
+            "sequence",
+            "pid",
+            "started_at",
+            "finished_at",
+            "returncode",
+            "stop_reason",
+            "stdout",
+            "stderr",
+        )
+        legacy = sign_owner_receipt(
+            owner_token=handle.lease.owner_token,
+            **{name: getattr(authenticated, name) for name in fields},
+        )
+        assert isinstance(legacy, ProcessOwnerReceipt)
+        write_owner_receipt(handle._run_directory / "receipt.json", legacy)
+        verified = await original(handle)
+        assert verified == legacy
+        historical.append(verified)
+        return verified
+
+    monkeypatch.setattr(SupervisedProcess, "_terminal_owner_receipt", original_v1)
+    with protected() if with_protection else nullcontext() as scope:
+        reader = GitReadRuntime(
+            root, _git(), state_directory=state, output_redaction=scope, for_delivery=True
+        )
+        with pytest.raises(KernelError) as denied:
+            await reader.execute(GitStatusInput(), CancelToken())
+        assert denied.value.code == "git_baseline_raw_observation_required"
+    assert len(historical) == 1
+    assert "raw_stdout" not in historical[0].model_dump()
+    assert "raw_stderr" not in historical[0].model_dump()
+    leases = _leases(state)
+    assert len(leases) == 1 and leases[0].state == "exited" and leases[0].returncode == 0
+    assert leases[0].stdout.eof and leases[0].stderr.eof
+    assert leases[0].pid is not None
+    await _wait_stopped(leases[0].pid)

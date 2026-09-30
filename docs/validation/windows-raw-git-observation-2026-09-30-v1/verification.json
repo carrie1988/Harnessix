@@ -1,0 +1,25 @@
+{
+  "schema": "harnessix.windows-raw-git-verification/v1",
+  "local_scoped_contract_pass": true,
+  "installed_wheel_verified": true,
+  "v1_schema_unchanged": true,
+  "readability_policy_unchanged": true,
+  "native_windows_verified": false,
+  "commercial_release_gate_closed": false,
+  "R4_complete": false,
+  "R3_complete": false,
+  "remaining": [
+    "final_native_windows_ci",
+    "windows11_consumer",
+    "product_git_delivery",
+    "R3_complete_suite",
+    "beta_and_R1_R6_final_gates"
+  ],
+  "final_source_and_test_bytes_unchanged": true,
+  "final_bound_integration": {
+    "passed": 945,
+    "skipped": 53,
+    "failed": 0,
+    "errors": 0
+  }
+}

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
 owners: [core]
 modules: [product_config, tools, processes, delivery]
@@ -81,9 +81,11 @@ flowchart LR
 关闭可选锁、外部attributes、用户级配置、fsmonitor、Hook和交互；只允许本模块生成的查询。
 普通Coding Git读取不启用新用途，其原默认绑定与输出停止线保持不变。
 交付用途以空值关闭fsmonitor，避免旧Git把`false`解释成外部帮助器。
-原Windows Owner认证的是脱敏后的输出摘要；当端口装配了输出保护源时，本用途在创建Plan/Owner之前
-拒绝`git_baseline_raw_observation_required`，不得关闭原落盘保护以获得所谓原始摘要。
-未装配保护源的显式端口仍沿原生Owner读取，但不能据此声称默认产品已获得Windows原始对象证明。
+Windows pipe Owner经[原始认证与安全发布分离](m09-r4-authenticated-raw-git-observation.md)提供v2双流统计。
+交付用途在正常终态后重验同次原回执MAC、身份及Lease事实，不再以保护源是否存在决定原始证明。
+旧v1回执仍报`git_baseline_raw_observation_required`，不得从脱敏统计补齐或关闭保护源绕过。
+可解析正文必须完整且与原始数量/摘要一致，只有摘要用途的blob/Index/Status不恢复原始正文。
+上述实现必须经原生Windows验证，不能据本机合同测试声称消费者验收通过。
 
 ## 3. 接口设计、类及数据结构
 
@@ -203,7 +205,8 @@ Windows复用[`git_read_windows.py`](../../src/harnessix/processes/git_read_wind
 当前版本匹配按原始字节及已有Workspace权限合同，不隐式执行CRLF、working-tree-encoding或filter转换，
 也不把Git OID冒充文件SHA。Windows不能以模拟结果关闭原生验收；执行位、大小写及换行转换
 需在完整三平台产品交付方案中明确，不以本切片绕过既有来源约束。
-带输出保护源的Windows端口须先建立原始统计与脱敏发布分离、受认证的版本化观察，之后才能用于产品交付。
+带保护源的Windows端口已接线受认证的双版本观察；原生验证、Git业务状态闭合、Diff及新批准/写入恢复
+仍分别为后继验收条件，不能由原始读取合同通过推断产品交付完成。
 配置双观察只拒绝观察到的漂移，不构成对恶意同UID进程持续篡改配置的OS隔离；后继副作用阶段仍需明确宿主信任边界。
 返回凭证无认证能力，认证宿主必须重新读取原Thread并重新验证，后续新审批不能省略。
 真实模型质量、费用未决、默认Docker Desktop、独立Beta及R1～R6仍开放。

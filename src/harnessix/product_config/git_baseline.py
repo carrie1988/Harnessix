@@ -15,7 +15,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread
 from harnessix.delivery.contracts import MAX_TRANSACTION_FILE_BYTES, WorkspaceMutation
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
-from harnessix.processes.contracts import ProcessResult
+from harnessix.processes.git_observation import GitBaselineReadResult
 from harnessix.product_config.git_baseline_contracts import (
     GitBaselineMember,
     ProductGitDeliveryBaseline,
@@ -45,17 +45,15 @@ class _Queries:
     def __init__(self, reader: GitReadRuntime, cancel: CancelToken) -> None:
         self.reader, self.cancel = reader, cancel
 
-    async def result(self, *arguments: str) -> ProcessResult:
+    async def result(self, *arguments: str) -> GitBaselineReadResult:
         self.cancel.checkpoint()
-        return await self.reader._run(  # noqa: SLF001 - 固定内部查询不暴露给模型
+        return await self.reader._run_baseline(  # noqa: SLF001 - 固定内部查询不暴露给模型
             (*self.reader._global_arguments, *arguments), self.cancel
         )
 
     async def full(self, *arguments: str) -> bytes:
         result = await self.result(*arguments)
-        if result.stdout.truncated:
-            raise _reject("git_baseline_limit")
-        return result.stdout.data()
+        return _full_stdout(result)
 
     async def oid(self, *arguments: str) -> str:
         output = await self.full(*arguments)
@@ -77,13 +75,20 @@ class _Observation:
     config_sha256: str
 
 
+def _full_stdout(result: GitBaselineReadResult) -> bytes:
+    try:
+        return result.full_stdout()
+    except ReadToolError as error:
+        if error.code == "limit_exceeded":
+            raise _reject("git_baseline_limit") from None
+        raise
+
+
 async def _observe(query: _Queries) -> _Observation:
     config = await query.result("config", "--no-includes", "--null", "--name-only", "--list")
-    if config.stdout.truncated:
-        raise _reject("git_baseline_limit")
     if any(
         _git_helper_key(key) or _UNSAFE_CONFIG.fullmatch(key.lower())
-        for key in config.stdout.data().split(b"\0")
+        for key in _full_stdout(config).split(b"\0")
     ):
         raise _reject("git_baseline_config_unsupported")
     head = await query.oid("rev-parse", "--verify", "HEAD^{commit}")
@@ -94,21 +99,21 @@ async def _observe(query: _Queries) -> _Observation:
         raise _reject("git_baseline_output_invalid")
     ref = ref_bytes[:-1].decode("utf-8")
     index = await query.result("ls-files", "--stage", "--debug", "-z")
-    if index.stdout.observed_bytes > MAX_TRANSACTION_FILE_BYTES:
+    if index.raw_stdout.observed_bytes > MAX_TRANSACTION_FILE_BYTES:
         raise _reject("git_baseline_limit")
     status = await query.result(
         "status", "--porcelain=v2", "--untracked-files=all", "--ignore-submodules=all", "-z"
     )
-    if status.stdout.truncated:
+    if status.result.stdout.truncated:
         raise _reject("git_baseline_limit")
     return _Observation(
         head,
         tree,
         ref,
-        index.stdout.observed_sha256,
-        index.stdout.observed_bytes,
-        status.stdout.observed_sha256,
-        config.stdout.observed_sha256,
+        index.raw_stdout.sha256,
+        index.raw_stdout.observed_bytes,
+        status.raw_stdout.sha256,
+        config.raw_stdout.sha256,
     )
 
 
@@ -168,9 +173,11 @@ async def _member(query: _Queries, tree: str, mutation: WorkspaceMutation) -> Gi
         raise _reject("git_baseline_index_conflict")
     if member.oid is not None:
         result = await query.result("cat-file", "blob", member.oid)
+        if result.raw_stdout.observed_bytes > MAX_TRANSACTION_FILE_BYTES:
+            raise _reject("git_baseline_limit")
         if (
-            result.stdout.observed_bytes != mutation.before.size
-            or result.stdout.observed_sha256 != mutation.before.sha256
+            result.raw_stdout.observed_bytes != mutation.before.size
+            or result.raw_stdout.sha256 != mutation.before.sha256
         ):
             raise _reject("git_baseline_before_mismatch")
     return member

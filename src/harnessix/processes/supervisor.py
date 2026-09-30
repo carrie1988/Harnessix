@@ -32,7 +32,11 @@ from harnessix.processes.owner_protocol import (
     ProcessOwnerStart,
     protected_owner_start,
 )
-from harnessix.processes.owner_receipt import ProcessOwnerReceipt, read_owner_receipt
+from harnessix.processes.owner_receipt import OwnerReceipt, read_owner_receipt
+from harnessix.processes.receipt_projection import (
+    lease_changes_from_receipt,
+    read_terminal_owner_receipt,
+)
 from harnessix.processes.state_directory import _create_run_directory, _safe_state_root
 from harnessix.processes.supervision_contracts import (
     ProcessCapabilityProbe,
@@ -209,6 +213,13 @@ class SupervisedProcess:
             raise KernelError("process_output_corrupt", "Process输出Artifact与Lease不一致")
         return result
 
+    async def _terminal_owner_receipt(self) -> OwnerReceipt:
+        """持有原句柄锁，重验终态的原回执而非相信退出缓存。"""
+        async with self._lock:
+            return await read_terminal_owner_receipt(
+                self._lease, self._run_directory, accepted_sequence=self._last_receipt_sequence
+            )
+
     async def aclose(self) -> None:
         if self._closed:
             return
@@ -241,54 +252,9 @@ class SupervisedProcess:
                 raise OSError("short control write")
             view = view[written:]
 
-    def _apply_receipt(self, receipt: ProcessOwnerReceipt) -> ProcessLease:
+    def _apply_receipt(self, receipt: OwnerReceipt) -> ProcessLease:
         current = self._lease
-        if receipt.state == "running":
-            state = "stopping" if current.state == "stopping" else "running"
-            changes: dict[str, object] = {
-                "state": state,
-                "sequence": current.sequence + 1,
-                "owner_identity": receipt.owner_identity,
-                "pid": receipt.pid,
-                "started_at": receipt.started_at,
-                "stdout": receipt.stdout,
-                "stderr": receipt.stderr,
-            }
-        elif receipt.state == "failed":
-            changes = {
-                "state": "failed",
-                "sequence": current.sequence + 1,
-                "finished_at": receipt.finished_at,
-                "stop_reason": "launch_failed",
-                "stdout": receipt.stdout,
-                "stderr": receipt.stderr,
-            }
-        elif receipt.state == "unknown":
-            changes = {
-                "state": "unknown",
-                "sequence": current.sequence + 1,
-                "owner_identity": receipt.owner_identity if receipt.pid is not None else None,
-                "pid": receipt.pid,
-                "started_at": receipt.started_at,
-                "finished_at": receipt.finished_at,
-                "stop_reason": receipt.stop_reason,
-                "stdout": receipt.stdout,
-                "stderr": receipt.stderr,
-            }
-        else:
-            changes = {
-                "state": "exited",
-                "sequence": current.sequence + 1,
-                "owner_identity": receipt.owner_identity,
-                "pid": receipt.pid,
-                "started_at": receipt.started_at,
-                "finished_at": receipt.finished_at,
-                "returncode": receipt.returncode,
-                "stop_reason": receipt.stop_reason,
-                "stdout": receipt.stdout,
-                "stderr": receipt.stderr,
-            }
-        updated = _validated_lease(current, **changes)
+        updated = _validated_lease(current, **lease_changes_from_receipt(current, receipt))
         self._store.transition(current, updated)
         self._lease = updated
         if updated.state in _TERMINAL_STATES:

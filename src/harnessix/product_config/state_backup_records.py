@@ -15,7 +15,7 @@ from harnessix.domain.models import utc_now
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.processes.owner_receipt import (
     MAX_OWNER_RECEIPT_BYTES,
-    ProcessOwnerReceipt,
+    parse_owner_receipt,
     verify_owner_receipt,
 )
 from harnessix.processes.supervision_contracts import ProcessLease
@@ -235,9 +235,7 @@ def _process_files(
         if linked_lease is None:
             raise _invalid()
         if path.endswith("receipt.json"):
-            receipt = ProcessOwnerReceipt.model_validate_json(
-                read_small(tree, path, MAX_OWNER_RECEIPT_BYTES)
-            )
+            receipt = parse_owner_receipt(read_small(tree, path, MAX_OWNER_RECEIPT_BYTES))
             verify_owner_receipt(
                 receipt,
                 owner_token=linked_lease.owner_token,
