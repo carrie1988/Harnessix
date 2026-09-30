@@ -3,8 +3,8 @@
   "members": [
     {
       "path": "README.md",
-      "bytes": 4679,
-      "sha256": "130257dcad2642c83a5b68bd3a3fb1b7a3524f9a266c3152859580dc9dbbaf0a"
+      "bytes": 7811,
+      "sha256": "d748b3c5780ecd4c532c46af29fdd462b773a2c4340927fb3d7f373c5258aec3"
     },
     {
       "path": "diagrams/architecture.mmd",
@@ -38,18 +38,18 @@
     },
     {
       "path": "facts.json",
-      "bytes": 1740,
-      "sha256": "34ce3179251c4f51712c89c5efdc76fe58c73cebd11f484604c09d550e35bd6f"
+      "bytes": 6600,
+      "sha256": "133fefbccbaeea072f96ad042de8363541583ef20e277ad57ba6e513cb162de2"
     },
     {
       "path": "review-packet.json",
-      "bytes": 982,
-      "sha256": "bc667792e41727ed5a05dbf9eb14b1de4f973bdf18b2f2112efa470b35dca6f5"
+      "bytes": 1650,
+      "sha256": "2056c7096e84294f4e8c9e57aabf761bb2d9eb16a5b8e4a62c745060e0352796"
     },
     {
       "path": "verification.json",
-      "bytes": 1265,
-      "sha256": "e44f02ed0f5d64c3536df3c5da0fe9c70baeacfced6ccf68f2758e89deb60ac9"
+      "bytes": 5162,
+      "sha256": "ae0d3d31820aba4de6cf02fcb8d8b7ce3c1d14938e99018dffae2e972f2f3e45"
     }
   ]
 }

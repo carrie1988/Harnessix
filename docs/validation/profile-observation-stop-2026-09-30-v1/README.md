@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: ef582dacb5609fee90e6b3905998dea8db269c53
 owners: [core]
 modules: [evals]
 related_adrs:
@@ -21,7 +21,7 @@ supersedes: []
 
 ## 1. 范围与完成边界
 
-本交付验证安全前置参数拒绝不充当检查、所有实际Profile结果逐项验证、
+固定源码候选`ef582dacb5609fee90e6b3905998dea8db269c53`。本交付验证安全前置参数拒绝不充当检查、所有实际Profile结果逐项验证、
 指定证据缺失持久停止Campaign/Suite，以及停止后重开不重放。
 完整架构、源码链接、数据与字段、伪代码、流程/时序/数据图、异常和兼容见
 [总体及详细设计](../../changes/m09-r3-profile-observation-and-evidence-stop.md)。
@@ -50,7 +50,33 @@ supersedes: []
 各测试集可能重叠，不累计其计数。容器专项使用原RepoDigest、显式同Engine宿主和Recorded Provider，
 不作为默认Docker Desktop路径、Windows/Linux消费者或真实模型验收。
 
-## 4. 预算与原失败保护
+## 4. 实际验证与发行物
+
+| 验证 | 结果 | 范围 |
+|---|---|---|
+| 原邻近回归 | 58通过 | 原Case、Suite、Campaign及Provider宿主合同 |
+| 新增最终专项 | 107通过 | 分类负例、停止、恢复、前缀和发布窗口；初次104项结果单独保留 |
+| 原源码负对照 | 50失败、57通过、0错误 | 实际导入独立导出的7d200b3源码，非人工删除分支的变异体 |
+| 初次实际容器/录制链 | 4通过、2未选 | 同Engine、固定原镜像、Workspace挂载和正式Agent/Case持久链；不是真实模型质量 |
+| 固定候选容器复验原失败 | 4失败、2未选 | Engine未运行，保留原失败；不是新的编码质量成绩 |
+| 启动原Engine后同候选复验 | 4通过、2未选 | 只启动既有Docker应用，无配置或数据修改；仍是显式Engine及录制Provider范围 |
+| 源码外实际安装 | 124通过 | 锁定全部产品Extras、实际Wheel和独立site-packages，非editable源码 |
+| 完整本机源码回归 | 6283通过、111跳过、0失败/错误 | 6394项，568.540秒，固定ef582源码，无真实Provider开关 |
+| 最终治理专项 | 302通过 | 原文档、结构、合同及安全治理回归；与其他测试集合重叠 |
+
+实际Wheel SHA-256：`41a30308b3d5f1baf45bbefe654c713ebdab0b386ba698ba7ae574a57901a939`。
+447个包成员逐字节与源码快照及独立安装一致；完整验证后源码字节仍与快照一致。
+Ruff及1390文件格式、406源文件Mypy、原结构治理和Schema一致性通过；
+仓库与Wheel在内3740输入Secret扫描零发现。测试集合重叠，不相加。
+首次测试工具安装使用未缓存版本而失败，后继查询实际版本并使用pytest-asyncio1.4.0；
+初次文档检查缺规范语义标题及模块状态，后继补齐而未放宽策略。原日志摘要保留。
+
+后继容器复验时默认及显式Engine端点均无法连接，四项测试失败。启动既有Docker应用后，
+核验两端Engine身份相同、显式入口脚本字节不变，同一固定源码和镜像的四项复验通过。
+未修改代理、共享或Daemon配置，未删除数据；默认Desktop的Workspace启动路径仍未认证。
+原失败与恢复后结果分别登记，不以历史健康或后继通过覆盖前一次失败。
+
+## 5. 预算与原失败保护
 
 实际私有原账本可读取，当前SHA与原冻结记录一致；71条请求中70条已知、一条旧unknown。
 已知估算1.74186元，旧unknown预留20.77824元；原70元周期不变。
@@ -58,7 +84,16 @@ supersedes: []
 账本仍绑定原中断Suite，新完整Suite必须明确处置原授权范围；本切片不改授权或请求记录。
 估算不是实际账单，预留不是已扣费，工具效果未知不是新增模型费用未知。
 
-## 5. 证据与复现
+## 6. 新完整Suite前置范围
+
+在干净ef582候选上构造新完整3仓10 Case/20 Trial私有配置，费用停止线为同40元额度剩余39.780864元。
+源码绑定、固定Task Pack、两原镜像及固定北京计价范围前置已通过；
+[官方快照资料](https://help.aliyun.com/zh/model-studio/qwen3-coder-plus)的北京32k内输入/输出价格仍与原Guard一致。
+原预算Owner对新Suite身份明确拒绝，且在凭据读取和请求之前返回`verification_budget_unresolved`，
+账本字节不变。该记录是准备验证，不是登记授权或开始真实运行。
+候选、配置、Suite身份都必须在实际执行时再次核验；不得因后继文档提交或源码变化而静默改配置身份。
+
+## 7. 证据与复现
 
 最终候选的[事实](facts.json)、[Verification](verification.json)、[Review Packet](review-packet.json)
 及[Manifest](manifest.json)绑定源码、原件摘要、实际执行结果和发行物；公开目录不复制私有日志或数据库。
@@ -78,7 +113,7 @@ python -m scripts.documentation_check
 三个图分别已实际渲染并观察：[总体架构](diagrams/architecture.png)、
 [时序](diagrams/sequence.png)、[数据流](diagrams/data.png)。
 
-## 6. 发布缺口
+## 8. 发布缺口
 
 新完整真实20 Trial、每仓严格成功、零越界、三平台消费者核心产品链和独立Beta仍开放。
 本切片只收敛R3评测故障，版本仍是内部`1.0.0rc1`，不宣称正式商用发布。

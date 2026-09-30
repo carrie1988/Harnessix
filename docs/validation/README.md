@@ -162,3 +162,11 @@ flowchart LR
 [完整专项交付](tool-argument-feedback-2026-09-30-v1/README.md)包含9份原Session只读回放白名单投影、
 静态字段反馈、双Provider离线SDK修正/真实Artifact读取/重开回放、原固定源码RED与关联回归。
 上一候选的原生CI与本轮后继源码分别绑定；功能测试与许可证Job失败区分，不以部分通过宣称商用完成。
+
+## 固定Profile观测分类与缺证停止
+
+[统一验证交付](profile-observation-stop-2026-09-30-v1/README.md)从原Session只读副本复现
+参数拒绝误计为检查的故障，记录107项新增专项、原源码50项失败负对照、
+完整6283通过/111跳过、实际Wheel124项安装回归及4项固定容器/录制链验证。
+指定证据缺失持久停止Campaign与Suite，重开不重放；原账本、未知效果和质量门槛不变。
+新完整Suite只有前置准备，未取得新的真实20 Trial成绩，不关闭R3或其他商用门禁。

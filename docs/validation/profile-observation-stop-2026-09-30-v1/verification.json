@@ -1,5 +1,5 @@
 {
-  "source_code_revision": "pending",
+  "source_code_revision": "ef582dacb5609fee90e6b3905998dea8db269c53",
   "checks": [
     {
       "name": "original-regression",
@@ -10,6 +10,19 @@
       "seconds": "45.701",
       "junit_sha256": "b7844cafa0fddaa0ccdfa74e7d40ae9411bd99772a9abfdba0b2ae69df6845ea",
       "log_sha256": "5d1c78ee21e182ea1903e26575b8736621fff62be26d97eef15cfae98f0009a8",
+      "expected_negative": false,
+      "scope": "offline"
+    },
+    {
+      "name": "focus",
+      "tests": 104,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "1.075",
+      "junit_sha256": "8eb97d5dced5ff7547261cf722621f8493c4f58b74a4c6bda3df1daafdf0256b",
+      "log_sha256": "f1404c271c5d3df8ec01b19a8c6c44fd4edd614b9f8dde29903f9d7d45effc0c",
+      "expected_negative": false,
       "scope": "offline"
     },
     {
@@ -21,6 +34,7 @@
       "seconds": "1.129",
       "junit_sha256": "a1d1f70422637593b71ebc67a7642a5a1509cf5be7c64e41448d9d59be336a20",
       "log_sha256": "7e352c1543c6f0fef3bd76122c6fc5e26fe96a1de53455ee065d4f09c532e2a2",
+      "expected_negative": false,
       "scope": "offline"
     },
     {
@@ -32,10 +46,108 @@
       "seconds": "15.301",
       "junit_sha256": "ed25e1d166540498dae0ec8a6ed5fe25d2a3e667615face6ecde20c9e4724a08",
       "log_sha256": "50661b9c6bec27809ac560545351bb0ac453e3cc92c23482afe41681deaa5413",
+      "expected_negative": false,
+      "scope": "real-containers-recorded-provider-not-quality"
+    },
+    {
+      "name": "installed",
+      "tests": 124,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "1.680",
+      "junit_sha256": "645be8fd1a0d07d39162e8d775c1bb319ff350e4c1eabbfd078a03f60ce59d57",
+      "log_sha256": "592a521b0cf32833dcc7f48ee11645a3f86bc2188fe7ca777a80b143b905ccb1",
+      "expected_negative": false,
+      "scope": "offline"
+    },
+    {
+      "name": "full",
+      "tests": 6394,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 111,
+      "seconds": "568.396",
+      "junit_sha256": "19add1b6f65f8e054e84ba7194bf1805e0c3addb935a928f25675866a314b92b",
+      "log_sha256": "4b097a5bfc9ea800f44173d4a5ad694a5ca2d9bea08f4b712c60f2001bac3a18",
+      "expected_negative": false,
+      "scope": "offline"
+    },
+    {
+      "name": "negative",
+      "tests": 107,
+      "failures": 50,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "1.485",
+      "junit_sha256": "07f717fcedfffcb2b5ed75790057085168f984921b172593ee5b50c4d812b788",
+      "log_sha256": "7dd444ae4fc3cb8b2f9b5ccfc8ee303c3dc77080ed80cae163f56c5d4d4121cf",
+      "expected_negative": true,
+      "scope": "offline"
+    },
+    {
+      "name": "governance-final",
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "27.258",
+      "junit_sha256": "9e027f366cdd48eb808d1d5b749f61c2353e24dac8ed54255c0d253776924a1b",
+      "log_sha256": "9c0096a446ab2f3761ff9f0a3349b80e4a532f26c7e52ff7e64b56fd599555ce",
+      "expected_negative": false,
+      "scope": "offline-governance"
+    },
+    {
+      "name": "real-container-frozen",
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "3.913",
+      "junit_sha256": "d68d9dce586f8860c7482f1ec26c60a3baab4397a05dfa371560a987b6a5f5d2",
+      "log_sha256": "93fbd3da0765fd8777a9338106794d5a7b561090a13e9f11d1250c85446cb4c7",
+      "expected_negative": false,
+      "scope": "engine-unavailable-not-quality",
+      "failure_classification": "environment-unavailable",
+      "followup": "real-container-restored"
+    },
+    {
+      "name": "real-container-restored",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "14.007",
+      "junit_sha256": "0e9fc1932b4d17be51c4c3a46eef41e5e6f3187608cd5f9a389eedb15bd4b273",
+      "log_sha256": "d814a64f9e83ff52bc4c1b07ee65b50891ac59c0feee27f81e60f3531d070396",
+      "expected_negative": false,
       "scope": "real-containers-recorded-provider-not-quality"
     }
   ],
-  "full_regression_completed": false,
+  "full_regression_completed": true,
   "test_sets_overlap": true,
-  "diagrams_rendered_and_observed": 3
+  "diagrams_rendered_and_observed": 3,
+  "tools": {
+    "mypy_source_files": 406,
+    "ruff_passed": true,
+    "format_passed_files": 1390,
+    "secret_scan_inputs": 3740,
+    "secret_findings": 0
+  },
+  "retained_setup_failures": [
+    {
+      "stage": "offline-test-tools-install",
+      "reason": "requested-pytest-asyncio-1.3.0-not-cached",
+      "followup": "queried-actual-version-and-installed-1.4.0",
+      "original_log_sha256": "b77ad04d676364dce01870af567e24cf2b85d86d571e173a171b1edf7c8b2f45"
+    },
+    {
+      "stage": "documentation-precommit",
+      "reason": "required-semantic-section-titles-and-module-status",
+      "followup": "formal-sections-and-current-module-corrected-without-policy-change",
+      "original_report_sha256": "1a609824fcc2448d6444d12c642961d9d3bedf6656f42510d77065cd316e1659"
+    }
+  ],
+  "runtime_failure_preserved": true,
+  "source_unchanged_during_engine_restoration": true
 }

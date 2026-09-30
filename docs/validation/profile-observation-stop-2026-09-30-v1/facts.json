@@ -1,7 +1,7 @@
 {
-  "source_code_revision": "pending",
+  "source_code_revision": "ef582dacb5609fee90e6b3905998dea8db269c53",
   "comparison_revision": "7d200b3aaf81c84536391365092ea01a497ad6cd",
-  "validation_scope": "focused-complete-full-regression-pending",
+  "validation_scope": "profile-classification-and-durable-evidence-stop",
   "original_reproduction": {
     "source_revision": "7d200b3aaf81c84536391365092ea01a497ad6cd",
     "original_suite_id": "aa8e0523-0adf-493d-8876-7c0c2ddbc45f",
@@ -38,9 +38,102 @@
     "unknown_reserved_cny": "20.77824",
     "same_cap_remaining_cny": "39.780864",
     "new_suite_rebinding_required": true,
-    "actual_supplier_bill_verified": false
+    "actual_supplier_bill_verified": false,
+    "after_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "byte_equal": true
   },
   "paid_requests": 0,
   "complete_real_suite_available": false,
-  "release_gates_closed": false
+  "release_gates_closed": false,
+  "negative_control": {
+    "original_source_revision": "7d200b3aaf81c84536391365092ea01a497ad6cd",
+    "original_import_verified": true,
+    "tests": 107,
+    "failures": 50,
+    "errors": 0,
+    "skipped": 0,
+    "expected_negative_control": true,
+    "is_original_released_source_not_mutant": true,
+    "test_files_sha256": {
+      "test_task_pack_profile_outcomes.py": "29054378c1649807637a5a4143c66327fc8ff055d5cca035d0620b8fa1b90845",
+      "test_task_pack_evidence_stop.py": "0e37fea5991ca17e4212fb578ffb615df1e360c569d2b42e1de1e8d7fe57b689"
+    },
+    "junit_sha256": "07f717fcedfffcb2b5ed75790057085168f984921b172593ee5b50c4d812b788"
+  },
+  "installation": {
+    "source_revision": "ef582dacb5609fee90e6b3905998dea8db269c53",
+    "wheel_sha256": "41a30308b3d5f1baf45bbefe654c713ebdab0b386ba698ba7ae574a57901a939",
+    "package_members": 447,
+    "source_wheel_installed_equal": true,
+    "installed_from_site_packages": true
+  },
+  "new_suite_preflight": {
+    "source_revision": "ef582dacb5609fee90e6b3905998dea8db269c53",
+    "suite_id": "9341253a-aa26-4a62-91f2-ebc2f7bc8632",
+    "config_fingerprint": "9f1df003d7601f81906e837f5ed85b006b7578dd010b62553b29a0fb0f8d5c10",
+    "config_sha256": "b337fea80e4bb333b8d21e170420932629afd18e806b39f4a2fa7ce61d4936d7",
+    "cases": 10,
+    "trials": 20,
+    "source_scope_and_images_passed": true,
+    "fixed_bounds_passed": true,
+    "pricing_source": "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus",
+    "snapshot_model": "qwen3-coder-plus-2025-09-23",
+    "beijing_input_per_million_cny": "4",
+    "beijing_output_per_million_cny": "16",
+    "official_price_checked_date": "2026-09-30",
+    "fee_stop_cny": "39.780864",
+    "existing_grant_new_scope_rejected": "verification_budget_unresolved",
+    "ledger_before_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "ledger_after_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "credential_reads": 0,
+    "model_requests": 0,
+    "ready_for_real_execution": false,
+    "awaiting": "explicit-same-cap-suite-rebinding",
+    "source_revision_is_frozen_candidate": true
+  },
+  "unchanged_files": {
+    "scripts/provider_verification_budget.py": "5fe17d69151d66386eb8cbc1527adeacae9e5752d61c871821d2da654c3842de",
+    "scripts/provider_reverification_plan.py": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+    "scripts/provider_verification_guard.py": "88729a6466b2fb8f48f6e08d109c3c27f9f4a62fa50bb6d4cbdb86626946d268",
+    "scripts/run_engineering_provider_suite_budgeted.py": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+    "src/harnessix/evals/grader.py": "eecc9859439554b6b648a053541bfdf2879d3a157258d9033e40d855d4815eb4",
+    "src/harnessix/evals/task_pack_contracts.py": "cb3c49c131f605e0727f94d85c0eda35ce3f9cf03d6aeffe6988a2f7a86ea9a5",
+    "src/harnessix/agent/runtime.py": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+    "src/harnessix/product_config/process_action.py": "325bfe95bb27a7b6819d12c70bf0ed735c4a26303fe08a3767ba9d2ad8d50d94",
+    "governance/readability-policy-v1.json": "c1f4b75cd34d25d9cef0b6cc84c3633525195d48af70c4d65742e46786c385e6",
+    "uv.lock": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd"
+  },
+  "all_447_source_members_unchanged_through_verification": true,
+  "original_940_to_7d_observation_symbols": {
+    "_drive_turn": {
+      "byte_semantics_ast_equal": true,
+      "ast_sha256": "3a34c4dea1f2d0d63fb0822e49ec0ccf8b1f7277368827800841056c7e3972a9"
+    },
+    "_profile_observation": {
+      "byte_semantics_ast_equal": true,
+      "ast_sha256": "9d40963a19bf8115b9938deef692fb2e1b34b80c25ff69acbabfc469be5e2960"
+    },
+    "_profile_observations": {
+      "byte_semantics_ast_equal": true,
+      "ast_sha256": "33e2b8cc507fa78a6a0223548b621651001f96c34aac7dabe4a11de245f9d79b"
+    }
+  },
+  "engine_restoration": {
+    "default_and_explicit_engine_identity_equal": true,
+    "engine_id": "8fa7e882-cc89-4ddc-81c0-56dff6f93104",
+    "started_existing_docker_app": true,
+    "configuration_changes": false,
+    "data_deleted": false,
+    "container_state_before_launch": "daemon-unavailable-no-running-observation",
+    "wrapper_sha256": "7ea966df56d6e65135131c438b5a557d7bcc1981f000d730084c78c19060d117",
+    "default_workspace_mount_certified": false,
+    "paid_requests": 0,
+    "evidence_sha256": "f77cde2ce0300073372e34a46f2b9d77824cf63e6ccc9d58f1c7e3f5fdecb045",
+    "frozen_candidate_first_passed": 0,
+    "frozen_candidate_first_failed": 4,
+    "same_candidate_restored_passed": 4,
+    "same_candidate_restored_failed": 0,
+    "recorded_provider_only": true,
+    "real_quality_result": false
+  }
 }

@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 28
-code_revision: 7d200b3aaf81c84536391365092ea01a497ad6cd
+code_revision: ef582dacb5609fee90e6b3905998dea8db269c53
 owners:
   - core
 modules:
@@ -2232,7 +2232,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 28 | 当前观测整改候选 | 2026-09-30 | 分离固定Profile观测职责，确认无效果参数拒绝不计检查，逐项验证真实终态，指定缺证路径持久停止Campaign/Suite，重开不重放；真实质量门禁保持 |
+| 28 | `ef582dacb5609fee90e6b3905998dea8db269c53` | 2026-09-30 | 分离固定Profile观测职责，确认无效果参数拒绝不计检查，逐项验证真实终态，指定缺证路径持久停止Campaign/Suite，重开不重放；真实质量门禁保持 |
 | 27 | `0813c581982fddf17503d47a308419035d193ecf`的修正候选 | 2026-09-30 | 新私有Workspace通过目录FD落实0755；录制Oracle采用Git可执行位语义，兼容umask077，既有漂移与正式Patch权限拒绝不变 |
 | 25 | `90de93f565ea88679e54242ee6f1771e9be721b7` | 2026-09-28 | 增加有限验证宿主持久请求预留、官方Adapter Guard与Case/Suite双层绑定；未知不退款，原0/20和R3门禁保留 |
 | 22 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定实际导入隔离实现Revision、16/214/107有重叠专项和阶段证据；前序CI失败保留，最新候选真实Windows终态未外推 |

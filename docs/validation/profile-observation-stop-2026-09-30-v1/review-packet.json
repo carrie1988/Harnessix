@@ -1,7 +1,7 @@
 {
   "scope": "固定Profile观测分类及证据缺失停止",
-  "status": "候选专项完成，完整回归及发行物验证待执行",
-  "source_code_revision": "pending",
+  "status": "专项及完整本机源码回归、实际发行物安装验证通过；真实编码质量与商用门禁未通过",
+  "source_code_revision": "ef582dacb5609fee90e6b3905998dea8db269c53",
   "findings": [
     {
       "severity": "resolved",
@@ -22,9 +22,24 @@
       "severity": "open",
       "topic": "真实编码质量",
       "resolution": "未取得修复后的完整20 Trial成绩，不关闭R3"
+    },
+    {
+      "severity": "resolved-in-explicit-host-scope",
+      "topic": "固定候选容器复验时Engine未运行",
+      "resolution": "保留4项原失败，仅启动既有Docker应用；同源码及镜像复验4项通过，默认Workspace路径仍未认证"
     }
   ],
   "other_kernel_errors_propagate": true,
   "score_threshold_unchanged": true,
-  "paid_requests": 0
+  "paid_requests": 0,
+  "full_regression": {
+    "passed": 6283,
+    "skipped": 111,
+    "failures": 0,
+    "errors": 0
+  },
+  "installation_verified": true,
+  "new_suite_scope": "原同一40元剩余额度重新绑定尚未执行，原账本不变",
+  "governance_tests_passed": 302,
+  "default_workspace_mount_certified": false
 }
