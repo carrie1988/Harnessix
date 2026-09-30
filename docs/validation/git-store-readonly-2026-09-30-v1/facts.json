@@ -15,5 +15,6 @@
   "wheel_sha256": "3f1bb592133f0a458bd625ae0f283094801456adf6825a364e14fa89e8f88408",
   "source_outside_install_verified": true,
   "wheel_package_members": 451,
-  "wheel_source_module_count": 410
+  "wheel_source_module_count": 410,
+  "tested_candidate_source_commit": "b53c2ac7dfdf47ddcaad758f3971f9368c9ed62a"
 }

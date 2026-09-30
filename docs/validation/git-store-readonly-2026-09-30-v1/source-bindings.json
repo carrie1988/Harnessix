@@ -430,5 +430,6 @@
     "scripts/generate_specs.py": "c3731e2c67e2338be256515a9b5d7fe7f64f3d8db4e20abc2c358f43be331051"
   },
   "before_after_bytes_identical": true,
-  "candidate_source_commit": "pending_registration"
+  "candidate_source_commit": "b53c2ac7dfdf47ddcaad758f3971f9368c9ed62a",
+  "all_frozen_inputs_verified_in_source_commit": true
 }
