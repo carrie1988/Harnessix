@@ -1,0 +1,59 @@
+{
+  "source_code_revision": "a0b5df0a3c380b8b058b8e45c99a731a9022e7f0",
+  "comparison_revision": "32e974f9f958c0ea7b04ecc60a91919119fab8bf",
+  "scope": "one-explicit-rebinding-of-the-same-remaining-verification-cap",
+  "changed_code_sha256": {
+    "scripts/provider_reverification_binding.py": "32fd5b33ad8e06b8e7e0aee6de9d67a3346aa39840dc237ca1a8906280fae3ac",
+    "scripts/provider_verification_budget.py": "0dfdf61f696594a8c55ecba40c79eb3187d863f72afe50e31789b38264123b90",
+    "scripts/provider_verification_guard.py": "a543fcc545657b33d81f13dd2ab4411191593582c3b51f91493d8373cffa4bec",
+    "scripts/authorize_provider_reverification.py": "20751eb2714b67547e0429631b30c3d07b7647383c552b6a46b83d139e091b76",
+    "tests/evals/test_provider_reverification_rebinding.py": "6537687f92b0a7341db8c52770398e93b6eaaadfc4139288ae32603a9f893730"
+  },
+  "live_ledger_preflight": {
+    "scope": "in-memory-contract-only-no-registration",
+    "schema": "harnessix.provider-verification-budget/v1",
+    "request_count": 71,
+    "known_estimate_cny": "1.74186",
+    "unknown_reserved_cny": "20.77824",
+    "same_cap_charged_cny": "0.219136",
+    "same_cap_remaining_cny": "39.780864",
+    "original_grant_unchanged": true,
+    "before_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "after_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "binding_contract_valid_for_current_prefix": true,
+    "live_registration_performed": false,
+    "credential_reads": 0,
+    "model_requests": 0,
+    "ready_for_real_execution": false
+  },
+  "old_reader": {
+    "revision": "32e974f9f958c0ea7b04ecc60a91919119fab8bf",
+    "file": "scripts/provider_verification_budget.py",
+    "sha256": "5fe17d69151d66386eb8cbc1527adeacae9e5752d61c871821d2da654c3842de",
+    "executed_unmodified_source": true,
+    "original_v1_scope_accepted": true,
+    "all_three_v2_scopes_rejected": true
+  },
+  "product_payload": {
+    "source_code_changes": false,
+    "public_specs_changed": false,
+    "uv_lock_changed": false,
+    "reused_original_wheel_revision": "ef582dacb5609fee90e6b3905998dea8db269c53",
+    "reused_original_wheel_sha256": "41a30308b3d5f1baf45bbefe654c713ebdab0b386ba698ba7ae574a57901a939",
+    "package_members": 447,
+    "source_wheel_installed_byte_equal": true,
+    "verification_scripts_in_wheel": false,
+    "verification_host_loaded_from_current_source": true,
+    "product_loaded_from_independent_site_packages": true,
+    "is_new_wheel_build": false
+  },
+  "real_process_exit_windows": [
+    "before_replace",
+    "after_replace",
+    "after_directory_sync"
+  ],
+  "paid_requests": 0,
+  "actual_ledger_rebound": false,
+  "complete_real_suite_available": false,
+  "release_gates_closed": false
+}

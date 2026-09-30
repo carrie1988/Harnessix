@@ -1,0 +1,8 @@
+flowchart TD
+    Original[V1 原70周期 唯一40授权 旧全部请求] --> Freeze[规范摘要和精确金额校验]
+    Plan[私有切换计划] --> Freeze
+    Freeze --> V2[V2 原事实不变 加唯一切换]
+    V2 --> Prefix[切换前前缀永不重结算]
+    V2 --> Suffix[新请求 原grant 加binding及suite标签]
+    Suffix --> Cost[原40累计及70周期统计]
+    Cost --> Check[完整Usage结算或未知全额占用]

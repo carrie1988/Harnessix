@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 44
-code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
+version: 45
+code_revision: a0b5df0a3c380b8b058b8e45c99a731a9022e7f0
 owners:
   - core
 modules:
@@ -170,3 +170,10 @@ flowchart LR
 完整6283通过/111跳过、实际Wheel124项安装回归及4项固定容器/录制链验证。
 指定证据缺失持久停止Campaign与Suite，重开不重放；原账本、未知效果和质量门槛不变。
 新完整Suite只有前置准备，未取得新的真实20 Trial成绩，不关闭R3或其他商用门禁。
+
+## 同一剩余额度的单次Suite切换
+
+[统一验证报告](reverification-suite-binding-2026-09-30-v1/README.md)记录固定脚本146项专项、
+全Eval566项及源码外产品依赖241项回归，含未经删改旧Reader拒绝和三个实际管理进程退出窗口。
+原umask077失败及同选择器022通过均保留；原实际账本未改、新增付费请求为0。
+该实现不生成第二轮40元额度，不代替实际授权登记或新的完整真实质量成绩。

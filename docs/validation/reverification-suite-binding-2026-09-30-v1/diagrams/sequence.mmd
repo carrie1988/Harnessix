@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant M as 可信管理宿主
+    participant L as 原账本Owner
+    participant H as 新Suite宿主
+    participant P as 原Provider Guard
+    M->>L: 切换计划 原文件SHA 原授权及全部请求SHA
+    L->>L: 私有权限 独占 未决与剩余额度校验
+    L->>L: 保留原授权和请求 发布V2与唯一切换
+    L-->>M: 切换完成 关闭Owner 无模型IO
+    H->>H: 固定源码范围及镜像校验
+    H->>L: 原复验ID 新Suite ID
+    L->>L: 核验不可变前缀及新后缀标签
+    L-->>H: 仅新范围可用
+    H->>H: Owner可用后读取凭据
+    P->>L: 同一40元及70元内可靠预留
+    alt 完整已知费用
+        P->>L: 仅结算新请求
+    else 新费用未知
+        P->>L: 全额保留并取消Suite
+        H->>L: 后续及重启拒绝
+    end

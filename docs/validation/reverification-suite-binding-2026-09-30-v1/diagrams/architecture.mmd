@@ -1,0 +1,9 @@
+flowchart TD
+    Manager[可信预算管理宿主] --> Binding[严格单次切换计划]
+    Binding --> Owner[原账本独占Owner]
+    Owner --> Verify[原授权 全部旧请求 已用及剩余额度]
+    Verify --> Publish[原子发布V2 原授权及请求不变]
+    Publish --> Old[旧Reader拒绝 旧Suite拒绝]
+    Publish --> New[新Suite范围验证]
+    New --> Guard[原Guard 发送前70与40双上限预留]
+    Guard --> Result[已知费用结算或新未知停止]

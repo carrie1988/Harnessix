@@ -1,0 +1,41 @@
+{
+  "source_code_revision": "a0b5df0a3c380b8b058b8e45c99a731a9022e7f0",
+  "status": "verification-host-contract-complete-live-registration-and-R3-quality-open",
+  "findings": [
+    {
+      "severity": "resolved",
+      "topic": "切换候选造成旧Suite身份不匹配",
+      "resolution": "唯一显式切换保留原授权、完整请求前缀、已用费用和旧预留"
+    },
+    {
+      "severity": "resolved",
+      "topic": "旧Reader忽略撤销的兼容风险",
+      "resolution": "仅显式登记升V2，实际原Reader三种范围均拒绝"
+    },
+    {
+      "severity": "resolved",
+      "topic": "管理进程退出与确认丢失",
+      "resolution": "三个实际退出窗口重开同计划；可能已发布V2不覆盖或降级"
+    },
+    {
+      "severity": "resolved-environment-control",
+      "topic": "umask077造成普通交付夹具600权限",
+      "resolution": "保留原失败，原选择器022通过；生产及测试断言不变"
+    },
+    {
+      "severity": "open",
+      "topic": "实际原账本切换登记",
+      "resolution": "未执行，保留原件；根据明确预算规则及新完整Suite执行"
+    },
+    {
+      "severity": "open",
+      "topic": "真实编码质量及商用发布",
+      "resolution": "无新完整20 Trial，不关闭R3或R1～R6"
+    }
+  ],
+  "authority_string_is_not_an_authentication_proof": true,
+  "external_rollback_resistant_ledger_anchor_implemented": false,
+  "product_wheel_rebuilt_this_slice": false,
+  "score_threshold_unchanged": true,
+  "paid_requests": 0
+}
