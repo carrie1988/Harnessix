@@ -1,0 +1,114 @@
+{
+  "runs": [
+    {
+      "label": "本机Python3.12",
+      "python": "3.12.7",
+      "junit": "focus-python312.xml",
+      "junit_sha256": "faaa0b9d349f1772970389c6af01488bfee65d1561809874a0eb5aad726a231e",
+      "summary": {
+        "tests": 69,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "duration_seconds": 12.913,
+      "selectors": [
+        "tests/product_config/test_git_delivery_source.py",
+        "tests/product_config/test_git_delivery_source_sdk.py",
+        "tests/product_config/test_product_patch_rollback.py",
+        "tests/product_config/test_product_rollback_sdk.py",
+        "tests/delivery/test_rollback_binding.py"
+      ],
+      "native_windows": false
+    },
+    {
+      "label": "本机Python3.13",
+      "python": "3.13.8",
+      "junit": "focus-python313.xml",
+      "junit_sha256": "20dabca2503babbdc3cefe0a1db303a1666260b7b741ec626a89d00104245f84",
+      "summary": {
+        "tests": 69,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "duration_seconds": 13.239,
+      "selectors": [
+        "tests/product_config/test_git_delivery_source.py",
+        "tests/product_config/test_git_delivery_source_sdk.py",
+        "tests/product_config/test_product_patch_rollback.py",
+        "tests/product_config/test_product_rollback_sdk.py",
+        "tests/delivery/test_rollback_binding.py"
+      ],
+      "native_windows": false
+    },
+    {
+      "label": "实际源码外Wheel",
+      "python": "3.12.7",
+      "junit": "installed-focus.xml",
+      "junit_sha256": "ea84a8b6f655f2f2d0cd7a817dbd3c9e1bd778ed92dbd142987d9b18ac4020a0",
+      "summary": {
+        "tests": 69,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "duration_seconds": 13.151,
+      "selectors": [
+        "tests/product_config/test_git_delivery_source.py",
+        "tests/product_config/test_git_delivery_source_sdk.py",
+        "tests/product_config/test_product_patch_rollback.py",
+        "tests/product_config/test_product_rollback_sdk.py",
+        "tests/delivery/test_rollback_binding.py"
+      ],
+      "native_windows": false
+    }
+  ],
+  "overlapping_runs_not_additive": true,
+  "original_native_windows": {
+    "run_id": 36731845536,
+    "job_id": 109943239762,
+    "commit": "b6810c92f996aeb6283c9ab284a4cc91f9e58e14",
+    "passed": 126,
+    "failed": 1,
+    "skipped": 2,
+    "failure_selector": "tests/product_config/test_git_delivery_source.py::test_third_content_and_root_replacement_are_preserved[root]",
+    "winerror": 32,
+    "failure_before_source_reader": true,
+    "raw_receipt_step": "skipped"
+  },
+  "governance": {
+    "tests": 302,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junit_sha256": "22621355f08a84131588b89c12f538f71f0d968b9ec7fcb89be2dec980728288",
+    "git": "2.53",
+    "umask": "022"
+  },
+  "documentation": {
+    "changed_path_count": 11,
+    "document_count": 423,
+    "findings": [],
+    "link_count": 10515,
+    "mermaid_count": 901,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26
+  },
+  "rendered_diagram": {
+    "source_sha256": "405d90158a6f97a555f24d7e7dec194f5d684d6bbc6e00b637276f50b04b45c1",
+    "png_sha256": "911d551857b3b4d9c7042d4433e79f638bd9398c3294c4ad5ece66e8a6ae79c4",
+    "visual_review": "readable"
+  },
+  "static_checks": {
+    "ruff": "pass",
+    "format": "pass",
+    "readability": "pass_unchanged_policy",
+    "secret_scan": {
+      "status": "pass",
+      "inputs": 3775,
+      "hits": 0,
+      "log_sha256": "3d330351ce8bb4ba3c2e07ecbd8c1f00cd41cc01b787e69c7e43ff5c0bc7e1b0"
+    }
+  }
+}

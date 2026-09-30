@@ -184,3 +184,9 @@ flowchart LR
 [统一交付包](windows-raw-git-observation-2026-09-30-v1/README.md)记录v2回执、原终态MAC/Lease重验、
 正式Git基准和双版本完整备份。公开代码绑定、原失败谱系、分层测试、源码外安装、
 结构收敛和原生Windows测试范围；不把macOS跳过、新候选CI或rc版本号作为商用通过。
+
+## 产品Git来源根目录生命周期
+
+[专项交付](git-source-root-lifecycle-2026-09-30-v1/README.md)保留固定候选Windows原生126通过、
+1失败和2跳过，区分活动根的系统句柄保护与退出后新根的来源身份拒绝。
+双Python和实际安装Wheel各69项通过，Windows后继断言仍待原生执行，不关闭真实质量或商用门禁。

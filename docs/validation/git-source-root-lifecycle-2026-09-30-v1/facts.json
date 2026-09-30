@@ -1,0 +1,23 @@
+{
+  "scope": "产品Git交付来源的原生根目录生命周期验证",
+  "private_evidence_locator": "Harnessix/verification/git-source-root-lifecycle-20260930-v1",
+  "production_revision": "b6810c92f996aeb6283c9ab284a4cc91f9e58e14",
+  "original_native_run": {
+    "id": 36731845536,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36731845536",
+    "run_json_sha256": "6409966d24baad79d19df183e2c58a83b6cfbf87364e99e27534ea8662782b67",
+    "windows_log_sha256": "ad71818113f152849e56e3e0995f7f378e478503f9f55a0f31aabb2b409844ca",
+    "whole_run_conclusion": "failure",
+    "linux_license_jobs": "failure",
+    "macos_job": "success",
+    "documentation_job": "success",
+    "container_job": "success"
+  },
+  "production_code_changed": false,
+  "schema_or_dependency_changed": false,
+  "new_model_requests": 0,
+  "credential_reads": 0,
+  "budget_ledger_changed": false,
+  "budget_ledger_sha256": "d48ae4bc2f61f3e065ceadcc2648e2fb2ada32072150c362e88d",
+  "native_windows_after_fix": "pending"
+}

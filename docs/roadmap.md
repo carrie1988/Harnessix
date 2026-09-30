@@ -1165,6 +1165,17 @@ Checkpoint职责提取到唯一模块，原可读性阈值不放宽，实现摘�
 新增宿主内部读取用途保持原默认绑定与限额，不放宽原干净Git来源、镜像或Review容量。
 完整Diff、新批准、Git业务持久化/正式备份闭合与写入恢复尚未接线；该前置能力不关闭R4或商用门禁。
 
+### R4：Git来源根目录原生生命周期验证
+
+固定`b6810c9`的[CI 36731845536](https://github.com/carrie1988/Harnessix/actions/runs/36731845536)
+首组Windows实际126通过、1失败、2跳过；共享LF审批/回滚夹具修正已执行，唯一失败发生在
+活动产品持有根句柄时测试直接重命名根，系统以`WinError 32`拒绝。后续raw/Git原生步骤跳过。
+[生命周期详设](changes/m09-r4-product-git-delivery-source.md#9-windows原生根目录生命周期验证)
+保留活动根保护，补退出后相同最终字节的新根在正文读取前拒绝、原文件与账本不变。
+[专项材料](validation/git-source-root-lifecycle-2026-09-30-v1/README.md)记录双Python及实际安装Wheel
+各69通过、无跳过，集合重叠不相加；新原生结果仍须独立取得。
+生产共享标志、根身份、批准和预算不改，R3/R4、消费者Windows11、完整Git交付及商用门禁仍开放。
+
 [固定候选验证报告](validation/git-baseline-2026-09-30-v1/README.md)记录完整6176通过/111跳过、
 源码外实际Wheel132通过、446个包成员字节一致及四份受控变异5失败。
 该固定基准中带保护源的Windows原Owner只有脱敏后流证明，旧拒绝证据保留。

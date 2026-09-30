@@ -1,0 +1,35 @@
+{
+  "requirements": [
+    {
+      "id": "ROOT-ACTIVE-WINDOWS",
+      "requirement": "真实活动根rename以WinError32拒绝，原来源和字节账本保持",
+      "status": "pending_native_execution",
+      "evidence": "原日志证明rename拒绝；新增完整断言尚待原生执行"
+    },
+    {
+      "id": "ROOT-ACTIVE-POSIX",
+      "requirement": "原活动根替换后来源拒绝",
+      "status": "pass_local",
+      "evidence": "三组交叠69项回归"
+    },
+    {
+      "id": "ROOT-CLOSED",
+      "requirement": "真实退出后同字节新根在正文读取前拒绝，原账本不变",
+      "status": "pass_local_pending_windows",
+      "evidence": "三组交叠69项回归"
+    },
+    {
+      "id": "PRODUCTION-INVARIANTS",
+      "requirement": "不放宽共享标志、根身份、审批、限额；生产模块和发行物字节一致",
+      "status": "pass",
+      "evidence": "source-bindings.json"
+    },
+    {
+      "id": "R3-R4-RELEASE",
+      "requirement": "真实编码、消费者OS及全部商用门禁",
+      "status": "open",
+      "evidence": "本专项不承担整体验收"
+    }
+  ],
+  "not_a_commercial_release": true
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
+version: 2
+code_revision: b6810c92f996aeb6283c9ab284a4cc91f9e58e14
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace]
 related_adrs:
@@ -218,3 +218,71 @@ MAC认证由原Session Reader负责，归属由原Call/Result及账本证明；�
 专项结果、原失败、实际源文件Hash、Wheel身份、安装测试、Review Packet和材料清单统一记录在
 [`专项交付目录`](../validation/git-delivery-source-2026-09-30-v1/README.md)。
 所有本地通过只关闭该来源前置切片，不推导Git入口接线、R3真实质量或1.0商用发布。
+
+## 9. Windows原生根目录生命周期验证
+
+### 9.1 实际失败与需求边界
+
+固定`b6810c9`的[原生CI](https://github.com/carrie1988/Harnessix/actions/runs/36731845536)
+在首组取得126通过、2跳过、1失败。失败发生在`[root]`场景的`Path.rename`，
+错误为`WinError 32`；来源Reader尚未执行，不能将此异常归因为Reader误收或漏拒绝新根。
+原生raw回执/Git基准等后继步骤全部跳过，不能从本机通过推导它们已获原生证据。
+
+[`WindowsWorkspaceRoot`](../../src/harnessix/workspace/windows.py)的`_open`仅允许
+`FILE_SHARE_READ`；[`CodingToolRuntime`](../../src/harnessix/tools/runtime.py)
+在产品生命周期内持有该根端口。活动期间禁止根目录重命名属于既有安全合同，
+不添加`FILE_SHARE_DELETE`，不绕过端口，不手工关闭产品内部句柄。
+POSIX允许活动根路径被替换，因此仍按原路径调用Reader并验证根身份拒绝。
+
+### 9.2 两阶段流程与断言
+
+```mermaid
+flowchart TD
+    A[真实产品发布Patch并保存原Session与账本] --> B{Windows活动产品}
+    B -->|是| C[真实rename必须以WinError 32拒绝]
+    C --> D[原来源仍有效 根身份与文件账本不变]
+    B -->|否| E[活动根替换后Reader必须拒绝]
+    D --> F[正常退出产品并释放根端口]
+    E --> F
+    F --> G[退出后另一个独立用例真实替换根 复制相同最终字节]
+    G --> H[重开原计划审计事务库 使用原Thread]
+    H --> I[根身份不符 正文读取前拒绝]
+    I --> J[新旧文件 原Route与Transaction保持不变]
+```
+
+图中活动根负控与退出后负控是独立测试，不将已被改动的POSIX活动测试状态带入退出后用例。
+`test_third_content_and_root_replacement_are_preserved[root]`在Windows新增真实重命名拒绝、
+原根身份、原文件和事务零写入断言；POSIX原有主动替换及来源拒绝保留。
+`test_replaced_root_after_product_close_rejects_original_source_before_file_reads`在全部平台执行：
+只退出真实产品后再替换根，创建相同两份最终文件字节，不修改原Thread的Workspace路径或原Snapshot。
+重开原三个SQLite账本，禁止文件正文读取，以`git_delivery_source_changed`和原账本零变化为判定。
+
+```text
+publish_real_approved_patch()
+retain_original_thread_transaction_and_route()
+if native_windows_and_product_active:
+    require real_rename raises sharing_violation_32
+    require unchanged root, files, transaction and no new database writes
+    require source still binds original root identity
+close_product_normally()
+rename_old_root_and_create_different_root_with_equal_final_bytes()
+reopen_original_plan_audit_transaction_stores()
+forbid any file body read
+require source(original_thread) rejects git_delivery_source_changed
+require both roots' bytes and original Route/Transaction remain unchanged
+```
+
+### 9.3 持久化、恢复、部署与验收
+
+仅调整测试合同，不修改任何生产模块、公开Schema、依赖、数据库结构、Root共享模式、审批或预算。
+退出后的测试读取原持久Thread投影和原账本，未生成新的Route、Transaction、批准或补签事实；
+仍不能将构造的任意Thread称为已认证生产身份。
+重命名失败以系统错误码和实际文件/根/账本为证，不匹配本地化错误消息。
+取消、期限、换行拒绝及原文件事务回归保持；本修正不改变这些生产语义。
+
+后继用例继续进入既有原生首组，不降低超时、不删除选择器或增加Windows跳过。
+本机双Python和源码外安装用于检验退出后来源拒绝，Windows活动句柄保护仍须后继原生CI证明。
+原Windows Server CI不能替代消费者Windows11；完整真实20 Trial、正式Commit/Checkpoint、
+独立Beta及R1～R6商用门禁仍开放。
+专项事实、原失败摘要、源码/测试绑定、Review Packet和材料清单见
+[`根目录生命周期验证材料`](../validation/git-source-root-lifecycle-2026-09-30-v1/README.md)。

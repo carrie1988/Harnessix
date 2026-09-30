@@ -186,6 +186,21 @@ async def test_third_content_and_root_replacement_are_preserved(tmp_path, change
             else "src/modified.py"
         )
         if change == "root":
+            if os.name == "nt":
+                # 正式只读端口持有根句柄；活动期间替换应由NTFS拒绝，不能放宽共享标志。
+                before = leaf.read_bytes(), leaf.stat().st_mode
+                original = transactions.load(target)
+                changes = transactions._db.total_changes
+                with pytest.raises(OSError) as caught:
+                    root.rename(tmp_path / "original-workspace")
+                assert caught.value.winerror == 32
+                assert not (tmp_path / "original-workspace").exists()
+                actual = await source(runtime, owner, (target,), router, transactions)
+                assert actual.workspace.root_identity == original.plan.source.root_identity
+                assert (leaf.read_bytes(), leaf.stat().st_mode) == before
+                assert transactions.load(target) == original
+                assert transactions._db.total_changes == changes
+                return
             root.rename(tmp_path / "original-workspace")
             (root / "src").mkdir(parents=True)
             (root / "tests").mkdir()
@@ -198,6 +213,55 @@ async def test_third_content_and_root_replacement_are_preserved(tmp_path, change
         with raises_code("git_delivery_source_changed"):
             await source(runtime, owner, (target,), router, transactions)
         assert (leaf.read_bytes(), leaf.stat().st_mode) == before
+
+
+async def test_replaced_root_after_product_close_rejects_original_source_before_file_reads(
+    tmp_path, monkeypatch
+):
+    from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+    from harnessix.execution.store import SQLiteExecutionPlanStore
+    from harnessix.trusted_actions.router import TrustedActionRouter
+    from harnessix.trusted_actions.store import SQLiteActionAuditStore
+
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        owner, target = await publish(runtime, provider, root)
+        thread = (await runtime.store.get_thread(owner)).model_copy(deep=True)
+        original = transactions.load(target)
+        original_route = router.status(target)
+        images = {path: (root / path).read_bytes() for path in ("src/modified.py", "src/新增.py")}
+
+    # 退出后真实释放全部根句柄，再复制相同最终字节；仅目录身份变化仍必须拒绝。
+    previous = root.rename(tmp_path / "original-workspace")
+    (root / "src").mkdir(parents=True)
+    (root / "tests").mkdir()
+    for path, body in images.items():
+        (root / path).write_bytes(body)
+
+    def forbidden_read(*_args):
+        pytest.fail("替换根必须在读取任何文件正文之前拒绝")
+
+    monkeypatch.setattr(
+        "harnessix.product_config.git_delivery_source._read_existing", forbidden_read
+    )
+    with (
+        SQLiteExecutionPlanStore(tmp_path / "state/plans.db") as plans,
+        SQLiteActionAuditStore(tmp_path / "state/audit.db") as audit,
+        SQLiteWorkspaceTransactionStore(tmp_path / "state/delivery") as reopened,
+    ):
+        router = TrustedActionRouter(plans=plans, audit=audit, workspace_root=lambda _: root)
+        changes = reopened._db.total_changes
+        routes = audit.routes()
+        with raises_code("git_delivery_source_changed"):
+            collect_git_delivery_source(
+                thread, (target,), router, reopened, checkpoint=CancelToken().checkpoint
+            )
+        assert reopened.load(target) == original
+        assert router.status(target) == original_route
+        assert audit.routes() == routes
+        assert reopened._db.total_changes == changes
+    for path, body in images.items():
+        assert (root / path).read_bytes() == body
+        assert (previous / path).read_bytes() == body
 
 
 async def test_missing_intermediate_patch_is_not_silently_adopted(tmp_path):
