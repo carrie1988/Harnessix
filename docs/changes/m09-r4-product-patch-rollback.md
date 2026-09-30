@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
+version: 2
+code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
 owners: [core]
 modules: [delivery, product_config, trusted_actions]
 related_adrs:
@@ -10,6 +10,8 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/product_config/test_product_patch_rollback.py
+  - tests/product_config/test_git_delivery_source.py
+  - tests/product_config/test_git_delivery_source_sdk.py
   - tests/product_config/test_product_rollback_sdk.py
   - tests/governance/test_installed_product_acceptance.py
 supersedes: []
@@ -226,7 +228,8 @@ Windows只在原本机NTFS Patch端口验证时广告；macOS跳过不能证明W
 | 源码/测试 | 阅读重点 |
 |---|---|
 | [`rollback_action.py`](../../src/harnessix/delivery/rollback_action.py) | 输入、Descriptor/Binding、纯资源解析、查询优先逆向Planner及版本冲突 |
-| [`workspace_rollback.py`](../../src/harnessix/product_config/workspace_rollback.py) | 认证Thread归属、原成功效果、稳定调用ID与Review |
+| [`workspace_rollback.py`](../../src/harnessix/product_config/workspace_rollback.py) | 回滚归属入口、原错误映射与Review |
+| [`workspace_patch_source.py`](../../src/harnessix/product_config/workspace_patch_source.py) | 共用认证Thread成功Patch、原Route和published事务Reader |
 | [`action_composition.py`](../../src/harnessix/product_config/action_composition.py) / [`action_diagnostics.py`](../../src/harnessix/product_config/action_diagnostics.py) | 同能力门、不同Binding、唯一产品组合及无状态Doctor |
 | [`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) | 唯一完整Diff Artifact发布、稳定ID和Session序列 |
 | [`transaction_action_executor.py`](../../src/harnessix/delivery/transaction_action_executor.py) | 原租约、逐成员发布、finally释放、只观察对账 |
@@ -241,3 +244,16 @@ Windows只在原本机NTFS Patch端口验证时广告；macOS跳过不能证明W
 该切片不关闭R1～R6，不替代真实20 Trial、消费者Windows11、独立Beta或Git Commit/Checkpoint产品接线。
 原宿主`build_rollback`允许第三内容进入新Diff的行为仍存在，但不被默认模型Tool广告；
 产品Tool明确冲突拒绝，不把两种语义混同。三平台功能结果必须按同候选实际取得。
+
+
+## 共用来源Reader的当前实现
+
+回滚归属入口委托`load_owned_workspace_patch`核对本Thread原Call、配对成功Result、
+稳定Invocation ID、原成功Route指纹/参数及published Transaction。
+`workspace_patch_source_not_owned`映射为原`workspace_rollback_not_owned`；
+非published来源映射为原`workspace_rollback_source_invalid`。其他原正式Reader错误保持原链路处理。
+
+该Reader同时支撑[产品Git来源前置切片](m09-r4-product-git-delivery-source.md)，
+不将Git来源Digest转为回滚批准，不改变逆向Diff、精确after前置条件、执行器、六库备份或恢复规则。
+原专项历史材料仍固定原候选；当前回归与安装包身份见
+[后继专项交付](../validation/git-delivery-source-2026-09-30-v1/README.md)。

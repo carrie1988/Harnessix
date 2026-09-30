@@ -1,0 +1,13 @@
+flowchart TB
+    Session[原认证Session Reader] --> Thread[已认证Thread 原Calls与Results]
+    Selection[显式选择事务UUID集合] --> Owner[同Thread成功归属Reader]
+    Thread --> Owner
+    Owner --> Route[原成功Route及精确参数资源]
+    Route --> Store[原published Transaction]
+    Store --> Chain[按成功结果顺序合并before与after]
+    Chain --> Observe[原生有界最终版本观察]
+    Workspace[当前用户Workspace] --> Observe
+    Observe --> Snapshot[读取后复核原Snapshot]
+    Snapshot --> Source[不可变ProductGitDeliverySource]
+    Owner --> Rollback[已有Rollback归属入口]
+    Source -.后续必须另行实现.-> Review[Git基准绑定 完整Diff 新批准 Lease]

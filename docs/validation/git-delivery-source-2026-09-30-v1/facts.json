@@ -1,0 +1,265 @@
+{
+  "schema": "harnessix.scoped-validation/v1",
+  "design_base_revision": "e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5",
+  "host": "macos-arm64-python312",
+  "git_version": "2.53.0",
+  "scope": "product_git_delivery_source_read_only",
+  "real_provider_requests": 0,
+  "tested_source_sha256": {
+    "src/harnessix/product_config/workspace_patch_source.py": "de2de3e0f4141a11f6a4955ebf64ac16b044a10fbb57d5f075cd18ed83a1eb0d",
+    "src/harnessix/product_config/workspace_patch_source_contracts.py": "f0321bd64d9ee99955761404c45fc1b4bafda6598019a7e505cc4c0e109d547b",
+    "src/harnessix/product_config/git_delivery_source.py": "351ecf1e6ee1e378cdf139bb58484a307e9ab6735d73af669b5b1383525247fa",
+    "src/harnessix/product_config/workspace_rollback.py": "6d274a60f8446eab2514c7efcc3c39e9f8d1c4305d3e1ebd3a1077f4cc9de8c6",
+    "tests/product_config/test_git_delivery_source.py": "b6e200b4fae29be28c7ab0f0e18e9c2fc76cf8e6f842f9e60df65c752862e75e",
+    "tests/product_config/test_git_delivery_source_sdk.py": "6e31701cfe450fef9a65beb6bceaa75ac8dc2c6928b7b8ee75ca2d5d76536e69",
+    "tests/product_config/test_product_patch_rollback.py": "1fb6e3a251e8a84201a5626c816414b6f167c259d94c56363cdb792ba7f47770",
+    "tests/product_config/test_product_rollback_sdk.py": "b1e1363a4ab02ea25f5e30669d7c89ce36d3dc5c7bba2f6bb23a27227de03268",
+    "tests/product_config/test_schemas.py": "27a107022caf96b6aa5dc41c7ab0c07b0a0dec34d640b7f135cee9bb668527ea",
+    "spec/product-git-delivery-source-v1.schema.json": "1af7fcab2ab4cdb85d0a108fc9342f2d64067650a0c998be6a9e6ccf994a4d10",
+    "scripts/generate_specs.py": "76715b5ea603fd0cc28fcafbf75a2a37388791dd3145ed909c1efe5272168278",
+    ".github/workflows/ci.yml": "a629500c5e0c592cbea71d5ff9f08d2f0f0b0f0b02439a0dca2e714a4b78b86c",
+    "tests/governance/test_installed_product_acceptance.py": "124662da9ac3b27b4c28aa445e835b131dd33593fe24e8bb2e7ffe30bcb1afab"
+  },
+  "unchanged_source_sha256": {
+    "src/harnessix/delivery/git.py": "4415fb66b7736a37150e726da39ec1fedd35139cc4db0afa8d13a9cf1654eeba",
+    "src/harnessix/delivery/git_checkpoint.py": "27da76850433aa225946606088f811c0dcef2ee430679cfe2d7e12c253c6116d",
+    "src/harnessix/delivery/git_store.py": "fdb4b0b98c4d933a9e4058b2834f571f508d1f09abc6fcd5e14e417f0a0d403d",
+    "src/harnessix/delivery/git_contracts.py": "e11e6bb63758cdbbca2cd7c77b8108df12a082b60cda46a29ddbd9113bf83a8e",
+    "src/harnessix/product_config/agent_context.py": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+    "src/harnessix/product_config/action_contracts.py": "0bd15c81776100014080ef87f4334e1b7038cc9878ff89d4308502178b223aaa",
+    "src/harnessix/product_config/state_backup_contracts.py": "7c87ea6b0dd71965d459040981f1a712f3d84aa56cd874402e438b706971832a",
+    "scripts/provider_verification_budget.py": "d1c34e1cc7b90094e88c753c4698de893778bdefec8f343ab797372d2a1df715",
+    "scripts/provider_verification_guard.py": "914585de4e1347b37955f9c2e126bb5d7f73f577a2590c0d23b683be439901bd",
+    "governance/readability-policy-v1.json": "c1f4b75cd34d25d9cef0b6cc84c3633525195d48af70c4d65742e46786c385e6",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+    "uv.lock": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd"
+  },
+  "regression": [
+    {
+      "tests": 1,
+      "failures": 0,
+      "errors": 1,
+      "skipped": 0,
+      "source": "red.xml",
+      "sha256": "dfb4f89d4ea1acee99a61c6884dcdd4a10c4ca3c53fea3331943129f4a923c11",
+      "bytes": 1076,
+      "seconds": 0.076,
+      "passed": 0
+    },
+    {
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source": "baseline.xml",
+      "sha256": "9473ddc31aec5d93c409ed334d92c352d13dafdda167697ecc186707d1fac100",
+      "bytes": 3007418,
+      "seconds": 26.872,
+      "passed": 46
+    },
+    {
+      "tests": 50,
+      "failures": 20,
+      "errors": 0,
+      "skipped": 0,
+      "source": "focus-1.xml",
+      "sha256": "c9d73815acf3d880dddd129fa36610503528fd4ea5735465240cc340923091a6",
+      "bytes": 3105298,
+      "seconds": 11.449,
+      "passed": 30
+    },
+    {
+      "tests": 50,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "source": "focus-2.xml",
+      "sha256": "9e2a6d713c0080659c846162fb5bf287450b91fc869cca4f1881a357c504694d",
+      "bytes": 3024346,
+      "seconds": 12.101,
+      "passed": 45
+    },
+    {
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source": "focus-3.xml",
+      "sha256": "7a31711046147a645e49ae8f2a826c6ef97b306045667ba3045ce203991e8239",
+      "bytes": 3008957,
+      "seconds": 13.042,
+      "passed": 56
+    },
+    {
+      "tests": 78,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "source": "focus-4.xml",
+      "sha256": "d6bc5f05a1668e2cf09bc29d457de593869d8859fc3f2c10068f3915dc75634e",
+      "bytes": 3015004,
+      "seconds": 13.321,
+      "passed": 77
+    },
+    {
+      "tests": 62,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source": "focus-final.xml",
+      "sha256": "d78363201e68d77db3af54e633c9c281c6eb7669ea8e750af376bf5412fd3daf",
+      "bytes": 3009874,
+      "seconds": 13.733,
+      "passed": 62
+    },
+    {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source": "associated.xml",
+      "sha256": "7601a1d0edeafcb219e58c696c881a351fc53ee26026a1acd56512da3e4b8344",
+      "bytes": 243,
+      "seconds": 0.001,
+      "passed": 0
+    },
+    {
+      "tests": 2145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 56,
+      "source": "associated-final.xml",
+      "sha256": "ae4796915f804af27caea17cfd37f813a3d0159a5d95a9fbb2436bad9b302cfa",
+      "bytes": 8419761,
+      "seconds": 155.047,
+      "passed": 2089
+    },
+    {
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source": "protocol.xml",
+      "sha256": "71f0fe15ac45e12187fce607535cbd9bc97a8251b9e0226e96a8bc37891b386b",
+      "bytes": 4730,
+      "seconds": 0.38,
+      "passed": 32
+    },
+    {
+      "tests": 302,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "source": "governance.xml",
+      "sha256": "ee48d59e5f02673e96e3d15c422952ffcd438927b6730b194b89165e77050a2b",
+      "bytes": 49534,
+      "seconds": 28.603,
+      "passed": 300
+    },
+    {
+      "tests": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source": "installed.xml",
+      "sha256": "a75310783e170c180ccf6acf9c8fac77be59858ba35b2d2bf020f5a835401497",
+      "bytes": 3009597,
+      "seconds": 15.46,
+      "passed": 60
+    },
+    {
+      "tests": 302,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "source": "governance-final.xml",
+      "sha256": "edc87942460c4cd64007777d952a97a2f5a89e4a47401c41cbc5b762fe4c41c0",
+      "bytes": 48179,
+      "seconds": 32.402,
+      "passed": 301
+    },
+    {
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "source": "governance-complete.xml",
+      "sha256": "0b4b382cf2a1683d196e392b77d5c253ba9a69fc46e3508a2de47d15ffb782f8",
+      "bytes": 47175,
+      "seconds": 32.283,
+      "passed": 302
+    }
+  ],
+  "wheel": {
+    "version": "1.0.0rc1",
+    "members": 443,
+    "wheel_sha256": "788f62ba4aeea08cd3c7f39bddc3ccff5d6348010a6066445bec909aa4f46d04",
+    "source_and_installed_bytes_equal": true,
+    "isolated_site_packages": true
+  },
+  "install_input_sha256": "144fc1506166e721b3c9bfaa45474406cd8db8c80420258e65cbd29c10324276",
+  "original_budget_ledger_sha256": "68f37dcdc1912a3aa36ea8c51b149d5384267eec2d642828d6dfbcf7a728a4aa",
+  "source_schema_sha256": "1af7fcab2ab4cdb85d0a108fc9342f2d64067650a0c998be6a9e6ccf994a4d10",
+  "commercial_release": "no_go",
+  "git_product_tool_registered": false,
+  "R4_closed": false,
+  "documentation": {
+    "changed_path_count": 26,
+    "document_count": 408,
+    "findings": [],
+    "link_count": 10262,
+    "mermaid_count": 879,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26
+  },
+  "gate_evidence": {
+    "documentation-initial.json": {
+      "sha256": "80be2f71c22f6f2955b1cbbd52f6e389bdec68b10e3bbef75d4adcc404fdbc5e",
+      "bytes": 1270
+    },
+    "documentation-final.json": {
+      "sha256": "0eeadbd724221c85ab2c78b9df5d308d6a91401930adfe82d4251cd581dc8db8",
+      "bytes": 192
+    },
+    "quality-final.log": {
+      "sha256": "deb7cc75680d64681f51ba6670d98d5eddf78b1a4c820a6b902b89e280f3ec57",
+      "bytes": 92
+    },
+    "secret-scan.log": {
+      "sha256": "6edac81b396e06bbbb1ab1861fc8c8d02c4686847b2b8f53c32a69dfc62f0bb0",
+      "bytes": 101
+    },
+    "build.log": {
+      "sha256": "ba6f4ccbf39c263668f61430497b48b6e8f441fbb4548c0ac404991c80bf98d2",
+      "bytes": 180
+    },
+    "install.log": {
+      "sha256": "7d8a0e7a1ad0b77303ba483040308cdeaef0dd323caa24849aa68690da59a9b9",
+      "bytes": 1851
+    },
+    "render-flow.log": {
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d",
+      "bytes": 32
+    },
+    "render-sequence.log": {
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d",
+      "bytes": 32
+    }
+  },
+  "quality": {
+    "ruff_check": true,
+    "ruff_format_checked_files": 904,
+    "mypy_checked_source_files": 402,
+    "readability_policy_unchanged": true,
+    "readability_observed_report_current": true,
+    "existing_schemas_unchanged": true,
+    "staged_diff_check": true
+  },
+  "secret_scan": {
+    "version": "harnessix.secret-scan/v2",
+    "complete_inputs": 3671,
+    "findings": 0,
+    "included_actual_wheel_and_staged_files": true
+  },
+  "isolated_install_child_worker_import": true
+}

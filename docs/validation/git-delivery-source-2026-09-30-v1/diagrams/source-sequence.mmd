@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant H as 可信产品宿主
+    participant S as 认证Session
+    participant O as 唯一归属Reader
+    participant R as 原Router与Transaction
+    participant W as 原生Workspace观察
+    H->>S: 读取本Thread 原认证历史
+    S-->>H: 已认证Thread
+    H->>O: 显式选中的事务集合与checkpoint
+    O->>O: 全集合原成功Call与Result预检
+    loop 持久成功结果顺序
+        O->>R: 成功Route 精确原参数 published事务
+        R-->>O: 原计划及版本镜像元数据
+        O->>O: previous.after必须等于next.before
+    end
+    O->>W: 当前根身份及最终路径观察
+    W-->>O: 有界字节摘要 存在性 长度 模式
+    O->>W: 读取后复核Snapshot
+    O-->>H: 不可变来源或明确拒绝
+    Note over H,W: 不新增Route 不写文件 Index Ref或业务库

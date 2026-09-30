@@ -46,6 +46,9 @@ R1已增加[认证容量与旧式维护安全边界](docs/changes/m09-r1-store-m
 R3补齐[默认产品与正式评测的共享Context、编码指令及自动压缩装配](docs/changes/m09-r3-product-context-composition.md)，不改写历史0/20结果。
 另补[可信文件快照与受管修改前置摘要](docs/changes/m09-r3-trusted-file-snapshot.md)，保留旧分页合同和审批边界。
 完整产品状态/Key备份、真实编码质量、权利及正式发行门禁仍未关闭。
+R4新增[已发布Patch的Git交付来源绑定](docs/changes/m09-r4-product-git-delivery-source.md)：
+同会话成功归属、连续修改链和完整最终版本核验；不修改用户Index/HEAD，不放宽原Git保护。
+当前仍是产品Git交付前置切片，Commit/Checkpoint入口及商用R1～R6未完成。
 
 ## 项目边界
 

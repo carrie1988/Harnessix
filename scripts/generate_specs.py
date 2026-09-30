@@ -217,6 +217,7 @@ from harnessix.product_config.product_contracts import (
     ConfigurationWriteReceipt,
     ProductPreflightReport,
 )
+from harnessix.product_config.workspace_patch_source_contracts import ProductGitDeliverySource
 from harnessix.protocol.contracts import (
     AgentCommandParams,
     AgentQueryParams,
@@ -313,6 +314,10 @@ def generate_specs(output: Path) -> None:
     write_json(output / "provider-event-v3.schema.json", TypeAdapter(ProviderEvent).json_schema())
     write_json(output / "openai-chat-config-v1.schema.json", OpenAIChatConfig.model_json_schema())
     write_json(output / "anthropic-config-v1.schema.json", AnthropicConfig.model_json_schema())
+    write_json(
+        output / "product-git-delivery-source-v1.schema.json",
+        ProductGitDeliverySource.model_json_schema(),
+    )
     write_json(output / "product-config-v1.schema.json", ProductConfigV1.model_json_schema())
     write_json(output / "product-config-v2.schema.json", ProductConfigV2.model_json_schema())
     write_json(

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 41
-code_revision: 277f38439b3ed21ed46908ebbf0625155cd58937
+version: 42
+code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_delivery_source.py
+  - tests/product_config/test_git_delivery_source_sdk.py
   - tests/product_config/test_coding_workflow_instructions.py
   - tests/product_config/test_product_patch_rollback.py
   - tests/product_config/test_product_rollback_sdk.py
@@ -2194,3 +2196,24 @@ Plan、Approval、Store与错误公开合同均不增加字段。
 产品备份沿用六库与Key布局；不从离线结果推导真实模型质量、消费者Windows11或最终新Wheel原生验收。
 部署、错误码、恢复边界和源码映射见[总体详细设计](../changes/m09-r4-product-patch-rollback.md)
 及[统一验证材料](../validation/product-patch-rollback-2026-09-30-v1/README.md)。
+
+
+## 42. 产品Git交付来源与共用Patch归属Reader
+
+[`完整总体与详细设计`](../changes/m09-r4-product-git-delivery-source.md)把实际产品Patch成功后的
+修改归属、连续版本链和当前最终版本冻结为[`正式来源合同`](../../src/harnessix/product_config/workspace_patch_source_contracts.py)。
+[`workspace_patch_source.py`](../../src/harnessix/product_config/workspace_patch_source.py)是唯一同Thread成功Patch归属Reader，
+既有[`Rollback入口`](../../src/harnessix/product_config/workspace_rollback.py)复用该Reader，原公开错误、新Diff、新批准与执行恢复保持。
+
+[`git_delivery_source.py`](../../src/harnessix/product_config/git_delivery_source.py)先完成整个显式选择集合的会话预检，
+再沿原Route和Transaction验证published来源；按成功Result持久顺序合并同路径before/after，遗漏中间修改拒绝。
+当前Workspace根在读成员前核验，成员完整存在性、SHA、长度与模式必须等于最终after，读取后再复核Snapshot。
+净零路径也核验；无关用户文件正文不读取，Model给出的事务顺序不影响合并顺序。
+
+该来源不含正文和绝对根路径，规范Digest只证明完整性，不是MAC或新Approval。
+宿主必须从原认证Session Reader取得Thread，重新验证来源而非缓存后转交；取消与期限由必需checkpoint回调传播。
+无新DB、目录、配置字段、依赖、Catalog广告或SDK执行方法。原Git宿主仍拒绝脏来源，
+**Commit/Checkpoint产品接线与R4仍开放**，后续Git基准绑定、完整状态备份、Diff/批准、Lease与Ref CAS不得跳过。
+
+[`统一验证材料`](../validation/git-delivery-source-2026-09-30-v1/README.md)包含真实产品Patch、默认认证SDK重开、
+原Git HEAD/Index不变、负对照、安装包字节与回归结果；离线ScriptedProvider不计为真实模型质量。

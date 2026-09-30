@@ -1,0 +1,29 @@
+{
+  "decision": "scoped_read_only_source_go_commercial_no_go",
+  "scope": "产品Git交付来源前置与既有回滚共用归属Reader",
+  "design": "docs/changes/m09-r4-product-git-delivery-source.md",
+  "retained_failures": [
+    "未实现模块的RED收集失败",
+    "测试错误地匹配中文异常消息以及直接修改冻结模型",
+    "Apple Git旧版本的CRLF负对照失败",
+    "不存在tests/sdk的关联命令未执行",
+    "材料未完整和可读性报告未同步的原治理失败",
+    "原完整R3 0/20及部分Suite失败",
+    "原未知费用预留"
+  ],
+  "open_gates": [
+    "Git基准绑定与完整状态备份布局",
+    "Commit/Checkpoint独立Diff审批执行恢复与正式产品入口",
+    "完整3仓20 Trial质量",
+    "原未决Provider费用核对",
+    "当前候选原生矩阵及消费者Windows11",
+    "独立Beta及同候选R1至R6"
+  ],
+  "not_claimed": [
+    "来源SHA替代MAC或Approval",
+    "原Git组件自动接纳脏工作区",
+    "Commit/Checkpoint产品完成",
+    "本地绿灯等于原生Windows或商业验收",
+    "1.0正式发布"
+  ]
+}

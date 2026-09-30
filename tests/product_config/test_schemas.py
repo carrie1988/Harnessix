@@ -28,11 +28,13 @@ from harnessix.product_config.product_contracts import (
     ConfigurationWriteReceipt,
     ProductPreflightReport,
 )
+from harnessix.product_config.workspace_patch_source_contracts import ProductGitDeliverySource
 
 
 def test_committed_product_config_schemas_match_runtime_contracts() -> None:
     root = Path(__file__).parents[2] / "spec"
     expected = {
+        "product-git-delivery-source-v1.schema.json": ProductGitDeliverySource.model_json_schema(),
         "product-config-v1.schema.json": ProductConfigV1.model_json_schema(),
         "product-config-v2.schema.json": ProductConfigV2.model_json_schema(),
         "product-action-config-v1.schema.json": ProductActionConfigV1.model_json_schema(),

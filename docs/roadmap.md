@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 137
-code_revision: 277f38439b3ed21ed46908ebbf0625155cd58937
+version: 138
+code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
 owners:
   - core
 modules:
@@ -1119,3 +1119,16 @@ Checkpoint职责提取到唯一模块，原可读性阈值不放宽，实现摘�
 治理302通过和源码外实际Wheel23通过，集合重叠不相加。9份原Session及原账本读取前后字节一致；
 新Wheel440包成员与源码/安装字节一致。0次真实请求，离线装配不是模型遵循率或质量验收。
 完整3仓20 Trial、至少12严格成功、每仓成功、零越界、消费者平台、独立Beta及商用R1～R6均继续开放。
+
+
+### R4：已发布Patch的Git交付来源前置切片
+
+原Git组件以干净来源及修改前Snapshot规划受管Worktree，与默认产品先发布Patch的生命周期不同。
+[`正式详设`](changes/m09-r4-product-git-delivery-source.md)明确不可通过放宽脏仓库校验接线；
+先实现本认证Thread成功Patch的全集合归属预检、原Route/Transaction证明、连续修改合并和完整当前版本核验。
+回滚共用唯一归属Reader，原错误和新批准/恢复保持；来源不读无关正文，不改变文件、Index、HEAD或业务库。
+
+[`来源专项材料`](validation/git-delivery-source-2026-09-30-v1/README.md)记录实际原生文件/SQLite、
+正式SDK认证重开、源码外安装与原失败负对照。原Git来源要求、备份六库布局、依赖、预算和R3历史结果不变。
+本切片没有广告新的Commit/Checkpoint Tool，不关闭R4；后续依次完成Git基准和备份闭合布局、
+完整Diff/独立批准与执行恢复、同候选三平台消费者验收，不删减这些必要项。

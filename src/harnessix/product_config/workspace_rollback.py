@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 from harnessix.agent.approvals import trusted_action_invocation_id
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import ItemStatus, Thread, ToolCallContent, ToolResultContent, Turn
+from harnessix.agent.models import Thread, ToolCallContent, Turn
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.rollback_action import (
@@ -16,9 +13,8 @@ from harnessix.delivery.rollback_action import (
     decode_workspace_rollback_input,
 )
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
-from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL, WorkspacePatchTransactionPlanner
-from harnessix.delivery.trusted_action_contracts import WorkspacePatchInput
 from harnessix.product_config.workspace_patch_review import publish_workspace_review
+from harnessix.product_config.workspace_patch_source import load_owned_workspace_patch
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot
 from harnessix.trusted_actions.router import TrustedActionRouter
 
@@ -32,39 +28,18 @@ def authorize_workspace_rollback(
     """原认证Thread必须包含配对成功效果，先验归属再访问原计划与Blob。"""
 
     target = decode_workspace_rollback_input(call.arguments).transaction_id
-    for turn in thread.turns:
-        for item in turn.items:
-            original = item.content
-            if (
-                not isinstance(original, ToolCallContent)
-                or item.status is not ItemStatus.COMPLETED
-                or original.tool != WORKSPACE_PATCH_TOOL
-                or trusted_action_invocation_id(thread.thread_id, turn.turn_id, original) != target
-            ):
-                continue
-            route = router.status(target)
-            success = any(
-                isinstance(result.content, ToolResultContent)
-                and result.status is ItemStatus.COMPLETED
-                and result.content.call_id == original.call_id
-                and result.content.outcome == "succeeded"
-                and result.content.trusted_action is not None
-                and result.content.trusted_action.plan_id == target
-                and result.content.trusted_action.plan_fingerprint == route.plan.fingerprint
-                and result.content.trusted_action.state == "succeeded"
-                for result in turn.items
-            )
-            if not success or route.state != "succeeded":
-                break
-            # 沿原Patch校验完整Route/Transaction，不能仅接受模型输出中的UUID。
-            proposal = WorkspacePatchInput.model_validate_json(json.dumps(original.arguments))
-            if route.plan.invocation.arguments != proposal.model_dump(mode="json"):
-                break
-            WorkspacePatchTransactionPlanner(transactions, lambda _: Path(thread.workspace)).load(
-                route.plan, proposal
-            )
-            return
-    raise KernelError("workspace_rollback_not_owned", "该Patch不属于本会话的成功修改")
+    try:
+        load_owned_workspace_patch(thread, target, router, transactions)
+    except KernelError as error:
+        if error.code == "workspace_patch_source_not_owned":
+            raise KernelError(
+                "workspace_rollback_not_owned", "该Patch不属于本会话的成功修改"
+            ) from None
+        if error.code == "workspace_patch_source_not_published":
+            raise KernelError(
+                "workspace_rollback_source_invalid", "Patch回滚来源未完成发布"
+            ) from None
+        raise
 
 
 class WorkspaceRollbackReviewProvider:
