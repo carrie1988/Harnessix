@@ -19,5 +19,15 @@
   "credential_reads": 0,
   "budget_ledger_changed": false,
   "budget_ledger_sha256": "d48ae4bc2f61f3e065ceadcc2648e2fb2ada32072150c362e88d",
-  "native_windows_after_fix": "pending"
+  "native_windows_after_fix": {
+    "candidate_revision": "ece88ade3e00532e3c4fa93d4abfb694401f13e4",
+    "run_id": 36736381341,
+    "job_id": 109959066891,
+    "scope": "仅首组的根目录生命周期合同",
+    "first_group_passed": 128,
+    "first_group_skipped": 2,
+    "first_group_status": "success",
+    "whole_windows_job_status": "failure",
+    "whole_raw_group_status": "failure"
+  }
 }

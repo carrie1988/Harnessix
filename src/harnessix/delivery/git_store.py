@@ -20,8 +20,9 @@ from harnessix.delivery.git_contracts import (
     new_commit_record,
     new_worktree_record,
 )
+from harnessix.delivery.git_store_schema import initialize_git_store, verify_git_store_schema
+from harnessix.sqlite_readonly import readonly_database
 
-_SCHEMA_VERSION = "1"
 _WORKTREE_TRANSITIONS = {
     "prepared": frozenset({"creating", "diverged", "unknown"}),
     "creating": frozenset({"ready", "diverged", "unknown"}),
@@ -42,11 +43,20 @@ _COMMIT_TRANSITIONS = {
 class SQLiteGitDeliveryStore:
     """Git worktree、checkpoint和commit的私有持久账本。"""
 
-    def __init__(self, root: str | Path) -> None:
+    def __init__(self, root: str | Path, *, read_only: bool = False) -> None:
         self._root = Path(root)
         self._closed = False
-        self._prepare_directory(self._root)
+        self._read_only = read_only
         self._path = self._root / "git-delivery.db"
+        if read_only:
+            self._db = readonly_database(self._path)
+            try:
+                verify_git_store_schema(self._db)
+            except BaseException:
+                self.close()
+                raise
+            return
+        self._prepare_directory(self._root)
         self._db = sqlite3.connect(self._path, isolation_level=None, timeout=5)
         try:
             self._db.execute("PRAGMA busy_timeout = 5000")
@@ -66,66 +76,15 @@ class SQLiteGitDeliveryStore:
         return self._root
 
     def _initialize(self) -> None:
-        self._db.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS git_delivery_metadata (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
-            ) STRICT;
-            CREATE TABLE IF NOT EXISTS git_worktrees (
-                worktree_id TEXT PRIMARY KEY,
-                transaction_id TEXT NOT NULL UNIQUE,
-                plan_fingerprint TEXT NOT NULL,
-                state TEXT NOT NULL,
-                sequence INTEGER NOT NULL,
-                payload TEXT NOT NULL
-            ) STRICT;
-            CREATE TABLE IF NOT EXISTS git_worktree_events (
-                worktree_id TEXT NOT NULL,
-                sequence INTEGER NOT NULL,
-                state TEXT NOT NULL,
-                payload TEXT NOT NULL,
-                PRIMARY KEY(worktree_id, sequence),
-                FOREIGN KEY(worktree_id) REFERENCES git_worktrees(worktree_id)
-            ) STRICT;
-            CREATE TABLE IF NOT EXISTS git_checkpoints (
-                checkpoint_id TEXT PRIMARY KEY,
-                worktree_id TEXT NOT NULL UNIQUE,
-                transaction_id TEXT NOT NULL UNIQUE,
-                digest TEXT NOT NULL,
-                payload TEXT NOT NULL
-            ) STRICT;
-            CREATE TABLE IF NOT EXISTS git_commits (
-                commit_id TEXT PRIMARY KEY,
-                checkpoint_id TEXT NOT NULL UNIQUE,
-                branch_ref TEXT NOT NULL UNIQUE,
-                spec_fingerprint TEXT NOT NULL,
-                state TEXT NOT NULL,
-                sequence INTEGER NOT NULL,
-                payload TEXT NOT NULL
-            ) STRICT;
-            CREATE TABLE IF NOT EXISTS git_commit_events (
-                commit_id TEXT NOT NULL,
-                sequence INTEGER NOT NULL,
-                state TEXT NOT NULL,
-                payload TEXT NOT NULL,
-                PRIMARY KEY(commit_id, sequence),
-                FOREIGN KEY(commit_id) REFERENCES git_commits(commit_id)
-            ) STRICT;
-            """
-        )
-        row = self._db.execute(
-            "SELECT value FROM git_delivery_metadata WHERE key='schema_version'"
-        ).fetchone()
-        if row is None:
-            self._db.execute(
-                "INSERT INTO git_delivery_metadata VALUES ('schema_version', ?)",
-                (_SCHEMA_VERSION,),
-            )
-        elif row != (_SCHEMA_VERSION,):
-            raise KernelError("git_delivery_store_version", "Git交付存储版本不受支持")
+        initialize_git_store(self._db)
+
+    def _require_writable(self) -> None:
+        """只读路径先拒绝所有写入口，包括幂等返回和输入校验之前。"""
+        if self._read_only:
+            raise KernelError("git_delivery_store_read_only", "Git交付只读账本不接受写入")
 
     def save_worktree(self, plan: ManagedGitWorktreePlan) -> ManagedGitWorktreeRecord:
+        self._require_writable()
         record = new_worktree_record(plan)
         try:
             existing = self.load_worktree(plan.worktree_id)
@@ -168,6 +127,7 @@ class SQLiteGitDeliveryStore:
     def transition_worktree(
         self, current: ManagedGitWorktreeRecord, updated: ManagedGitWorktreeRecord
     ) -> None:
+        self._require_writable()
         before = self._validate_worktree(current)
         after = self._validate_worktree(updated)
         if (
@@ -222,6 +182,7 @@ class SQLiteGitDeliveryStore:
             raise KernelError("git_delivery_store_corrupt", "Git Worktree账本损坏") from None
 
     def save_checkpoint(self, checkpoint: GitCheckpoint) -> GitCheckpoint:
+        self._require_writable()
         payload = checkpoint.model_dump_json(warnings="error")
         try:
             self._db.execute(
@@ -273,6 +234,7 @@ class SQLiteGitDeliveryStore:
         return None if row is None else self.load_checkpoint(UUID(str(row[0])))
 
     def save_commit(self, spec: GitCommitSpec) -> GitCommitRecord:
+        self._require_writable()
         record = new_commit_record(spec)
         try:
             existing = self.load_commit(spec.commit_id)
@@ -314,6 +276,7 @@ class SQLiteGitDeliveryStore:
         return record
 
     def transition_commit(self, current: GitCommitRecord, updated: GitCommitRecord) -> None:
+        self._require_writable()
         before = self._validate_commit(current)
         after = self._validate_commit(updated)
         if (

@@ -3,8 +3,9 @@
     {
       "id": "ROOT-ACTIVE-WINDOWS",
       "requirement": "真实活动根rename以WinError32拒绝，原来源和字节账本保持",
-      "status": "pending_native_execution",
-      "evidence": "原日志证明rename拒绝；新增完整断言尚待原生执行"
+      "status": "pass_native_fixed_candidate",
+      "evidence": "CI 36736381341首组成功，facts.json明确限定范围",
+      "previous_status": "pending_native_execution"
     },
     {
       "id": "ROOT-ACTIVE-POSIX",
@@ -15,8 +16,9 @@
     {
       "id": "ROOT-CLOSED",
       "requirement": "真实退出后同字节新根在正文读取前拒绝，原账本不变",
-      "status": "pass_local_pending_windows",
-      "evidence": "三组交叠69项回归"
+      "status": "pass_native_fixed_candidate",
+      "evidence": "CI 36736381341首组成功，facts.json明确限定范围",
+      "previous_status": "pass_local_pending_windows"
     },
     {
       "id": "PRODUCTION-INVARIANTS",

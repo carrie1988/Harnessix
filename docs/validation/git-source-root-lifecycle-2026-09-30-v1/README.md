@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: b6810c92f996aeb6283c9ab284a4cc91f9e58e14
 owners: [core]
 modules: [product_config, workspace, tools]
@@ -26,7 +26,7 @@ supersedes: []
 [完整设计](../../changes/m09-r4-product-git-delivery-source.md#9-windows原生根目录生命周期验证)
 说明需求背景、源码依据、架构与流程、接口、伪代码、失败、持久化、安全、部署及测试边界。
 
-**本机验证通过；修正后的Windows原生断言待执行。R3、R4及商用1.0不关闭。**
+**根目录生命周期已在后继固定候选Windows原生首组通过；全Job仍失败，R3、R4及商用1.0不关闭。**
 
 ## 2. 原生失败与根因
 
@@ -61,7 +61,7 @@ Windows根场景执行真实rename并要求错误码32，同时要求目标目�
 | macOS Python3.13.8 | 69通过、0跳过 | 同一选择器，独立Python运行 |
 | 实际源码外Wheel Python3.12.7 | 69通过、0跳过 | 禁用源码pythonpath，从site-packages导入实际产品 |
 | 原Windows Server CI | 126通过、1失败、2跳过 | 修正前实际原生事实；后续步骤跳过 |
-| 修正后Windows Server CI | 待验证 | 活动根保护与退出后根拒绝均须实际通过 |
+| 修正后Windows Server CI `ece88ad` | 首组128通过、2跳过 | 根生命周期通过；raw组后续失败，全Job不通过 |
 
 上述69项运行互相重叠，不能累加为207个独立场景。
 源码外运行复用已冻结的真实Wheel，SHA为
@@ -87,4 +87,5 @@ Windows根场景执行真实rename并要求错误码32，同时要求目标目�
 没有模型请求、凭据读取或实际费用账本登记，R3真实成绩保持。
 既有取消、超时、换行拒绝及文件事务语义仍由原回归保护。
 Windows Server结果不能替代Windows11消费者OS、完整编码、升级恢复或独立Beta。
-修正后原生结果取得前不称Windows已验收；完整Commit/Checkpoint产品接线和R1～R6仍开放。
+后继原生首组结果见[独立实际材料](../windows-raw-git-native-2026-09-30-v1/README.md)。
+根生命周期通过不代表全Job或消费者Windows已验收；完整Commit/Checkpoint产品接线和R1～R6仍开放。

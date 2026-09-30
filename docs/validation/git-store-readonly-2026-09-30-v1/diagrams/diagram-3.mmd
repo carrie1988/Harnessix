@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant H as 受信宿主
+    participant S as Git Store
+    participant R as 既有只读SQLite端口
+    participant D as 原Git数据库及WAL
+    participant V as 原v1结构验证
+    H->>S: read_only=True
+    S->>R: 打开原git-delivery.db
+    R->>D: mode=ro query_only=ON
+    D-->>R: 原连接 含已提交WAL
+    S->>V: 查询版本和有界显式DDL
+    V->>D: SELECT与结构观察
+    alt 缺失或变形
+        V-->>S: 固定拒绝
+        S->>D: close
+        S-->>H: 错误 不初始化
+    else 合法原v1
+        S-->>H: 已打开只读Store
+        H->>S: load_checkpoint 原UUID
+        S->>D: 逐ID原领域读取
+        D-->>S: 原字段及payload
+        S-->>H: 校验后的GitCheckpoint
+        H->>S: save_checkpoint 原记录
+        S-->>H: git_delivery_store_read_only
+        H->>S: close
+        S->>D: close
+    end

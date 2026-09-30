@@ -1,0 +1,29 @@
+{
+  "requirements": [
+    {
+      "id": "RAW-19",
+      "status": "pass_native_fixed_candidate",
+      "evidence": "facts.json:new_native_cases_passed"
+    },
+    {
+      "id": "ROOT-LIFECYCLE",
+      "status": "pass_native_fixed_candidate",
+      "evidence": "root_phase:first_native_group"
+    },
+    {
+      "id": "RAW-WHOLE-GROUP",
+      "status": "failed_original_pending_repair_run",
+      "evidence": "raw_phase"
+    },
+    {
+      "id": "PRODUCTION-OUTPUT-CAP",
+      "status": "unchanged",
+      "evidence": "原Capture >= 与Windows Owner >保留；新增共同超出8MiB负控"
+    },
+    {
+      "id": "R3-R4-RELEASE",
+      "status": "open",
+      "evidence": "仅固定候选原生专项，非消费者OS或商用发布"
+    }
+  ]
+}

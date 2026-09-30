@@ -1,0 +1,49 @@
+{
+  "requirements": [
+    {
+      "id": "READONLY-V1",
+      "status": "pass_local",
+      "evidence": "独立原DDL和真实Git记录正控"
+    },
+    {
+      "id": "ALL-WRITES",
+      "status": "pass_local",
+      "evidence": "五入口幂等/非法参数首步拒绝，mode=ro独立拒绝"
+    },
+    {
+      "id": "WAL-REAL",
+      "status": "pass_local",
+      "evidence": "原Writer提交尚只在WAL，Reader可见，主文件副本负控"
+    },
+    {
+      "id": "STRUCTURE-CLOSE",
+      "status": "pass_local",
+      "evidence": "40结构负控和连接关闭，最多七条显式DDL"
+    },
+    {
+      "id": "PROVENANCE-OBJECTS",
+      "status": "open",
+      "evidence": "非全事件认证/对象归档，不扩备份布局"
+    },
+    {
+      "id": "COMMERCIAL",
+      "status": "open",
+      "evidence": "R1至R6整体门禁"
+    },
+    {
+      "id": "INSTALLED-WHEEL",
+      "status": "pass_local",
+      "evidence": "源码外离线安装新Wheel，451包成员/410生产模块字节绑定，242项通过"
+    },
+    {
+      "id": "WINDOWS-NATIVE",
+      "status": "pending",
+      "evidence": "新85项与测试合同修正须后继原生候选实际执行"
+    },
+    {
+      "id": "GOVERNANCE-DOCUMENTS",
+      "status": "pass_local",
+      "evidence": "初始标题缺失FAIL保留，后继302项通过，策略不变"
+    }
+  ]
+}

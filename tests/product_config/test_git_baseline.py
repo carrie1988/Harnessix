@@ -353,9 +353,27 @@ async def test_large_original_blob_uses_complete_observed_digest_not_prefix(tmp_
         assert result.stdout.observed_sha256 != hashlib.sha256(result.stdout.data()).hexdigest()
         if size == 8 * 1024 * 1024:
             normal = reader(root, tmp_path / "normal-state", for_delivery=False)
+            arguments = (*normal._global_arguments, "cat-file", "blob", actual.members[0].oid)
+            if os.name == "nt":
+                # 原Owner以超过预算为停止线；POSIX Capture在达到停止线时终止，两者不改写。
+                accepted = await normal._run(arguments, CancelToken())
+                assert accepted.stdout.eof and accepted.stdout.truncated
+                assert accepted.stdout.observed_bytes == size
+                assert accepted.stdout.observed_sha256 == hashlib.sha256(body).hexdigest()
+            else:
+                with pytest.raises(ReadToolError) as caught:
+                    await normal._run(arguments, CancelToken())
+                assert caught.value.code == "io_failed"
+
+            # 跨平台超出原8MiB预算的共同负控，不以边界比较差异取消容量验证。
+            overflow_oid = (
+                command(root, "hash-object", "-w", "--stdin", input_body=body + b"x")
+                .decode()
+                .strip()
+            )
             with pytest.raises(ReadToolError) as caught:
                 await normal._run(
-                    (*normal._global_arguments, "cat-file", "blob", actual.members[0].oid),
+                    (*normal._global_arguments, "cat-file", "blob", overflow_oid),
                     CancelToken(),
                 )
             assert caught.value.code == "io_failed"

@@ -1,0 +1,15 @@
+{
+  "readonly_contract_local_verified": true,
+  "default_writer_regression_local_verified": true,
+  "mypy_410_source_files": "pass",
+  "machine_schema_check": "pass",
+  "native_windows_current_candidate_verified": false,
+  "git_object_backup_closure_verified": false,
+  "product_commit_checkpoint_wired": false,
+  "r3_quality_changed": false,
+  "commercial_release_verified": false,
+  "source_outside_actual_wheel_verified": true,
+  "governance_302_tests": "pass",
+  "documentation_policy": "pass",
+  "readonly_not_cross_store_atomic_snapshot": true
+}

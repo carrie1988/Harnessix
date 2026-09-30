@@ -189,4 +189,13 @@ flowchart LR
 
 [专项交付](git-source-root-lifecycle-2026-09-30-v1/README.md)保留固定候选Windows原生126通过、
 1失败和2跳过，区分活动根的系统句柄保护与退出后新根的来源身份拒绝。
-双Python和实际安装Wheel各69项通过，Windows后继断言仍待原生执行，不关闭真实质量或商用门禁。
+双Python和实际安装Wheel各69项通过；后继Windows结果单独绑定，不关闭真实质量或商用门禁。
+
+[后继实际Windows原生证据](windows-raw-git-native-2026-09-30-v1/README.md)确认根生命周期首组通过，
+新增19项raw/Git原生通过；第三组整体仍失败并保留原日志，不能称全Job或R4通过。
+
+## Git交付账本只读访问
+
+[统一专项交付](git-store-readonly-2026-09-30-v1/README.md)记录原v1格式、真实Git领域记录、
+真实WAL读取、五写入口首步拒绝及结构损坏关闭。新接口不创建产品Git目录、不扩展现有备份白名单，
+全事件前缀认证、对象材料和正式Commit/Checkpoint接线仍未完成；不替代R3/R4商用门禁。

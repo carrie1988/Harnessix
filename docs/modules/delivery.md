@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 22
-code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
+version: 23
+code_revision: ece88ade3e00532e3c4fa93d4abfb694401f13e4
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_store_readonly.py
   - tests/product_config/test_product_patch_rollback.py
   - tests/product_config/test_product_rollback_sdk.py
   - tests/delivery/test_git_checkpoint_guard.py
@@ -55,6 +56,14 @@ supersedes: []
 [`git_push.py`](../../src/harnessix/delivery/git_push.py)的当前实现。Workspace路径、Snapshot与Lease以
 [Workspace模块设计](workspace.md)为事实源；统一审批和外部效果恢复以
 [Trusted Actions模块设计](trusted-actions.md)为当前审批、路由与外部效果恢复事实源；[Action Plane子系统设计](../subsystems/action-plane.md)只保存已删除体系的冻结历史，不是当前实现或迁移兼容内核。
+
+Git账本新增显式`read_only=True`，复用既有SQLite只读端口，读取原v1模型、拒绝全部写入口，
+不创建目录、不初始化或迁移。原DDL职责唯一提取到
+[`git_store_schema.py`](../../src/harnessix/delivery/git_store_schema.py)，只读核验版本及原六表结构。
+完整接口、字段、流程、数据流、失败、WAL边界和验证见
+[`Git账本只读总体与详细设计`](../changes/m09-r4-git-store-readonly.md)。
+该模式不等于来源认证或全事件前缀核验，默认产品仍没有Commit/Checkpoint工具，
+Git对象材料和完整备份恢复闭合尚未接线，不将领域接口当作产品交付完成。
 
 ## 2. 需求背景
 

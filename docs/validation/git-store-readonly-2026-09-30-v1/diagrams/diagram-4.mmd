@@ -1,0 +1,8 @@
+flowchart TD
+    Main[原DB主文件] --> SQLite[真实SQLite只读连接]
+    WAL[原已提交WAL] --> SQLite
+    SQLite --> Header[原schema_version与六表DDL]
+    Header --> Model[逐ID原payload与冗余列]
+    Events[原事件尾部及数量] --> Model
+    Model --> Facts[原领域记录及SHA]
+    Facts -.未提供.-> Auth[全前缀认证 Session关联 对象闭包]

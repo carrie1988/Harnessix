@@ -1,0 +1,19 @@
+{
+  "private_evidence_locator": "Harnessix/verification/git-store-readonly-20260930-v1",
+  "scope": "领域Git账本只读访问及原结构验证",
+  "default_product_git_tool_advertised": false,
+  "product_git_state_directory_created": false,
+  "current_six_store_backup_whitelist_extended": false,
+  "new_database_schema_version": false,
+  "old_writer_serialization_and_cas_preserved": true,
+  "all_event_prefix_authenticated": false,
+  "new_model_requests": 0,
+  "credential_reads": 0,
+  "budget_ledger_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+  "budget_ledger_changed": false,
+  "source_files": 410,
+  "wheel_sha256": "3f1bb592133f0a458bd625ae0f283094801456adf6825a364e14fa89e8f88408",
+  "source_outside_install_verified": true,
+  "wheel_package_members": 451,
+  "wheel_source_module_count": 410
+}

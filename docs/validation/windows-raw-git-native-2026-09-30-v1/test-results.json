@@ -1,0 +1,18 @@
+{
+  "native_run": "36736381341",
+  "new_19_cases": "pass",
+  "whole_raw_phase": "fail",
+  "later_test_contract_repair": {
+    "tests": 157,
+    "passed": 157,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0,
+    "junit_sha256": "5e591450b4cf311c2b09b2a04cf58587f743ecbc573a361762f80c1e8bd69690",
+    "environment": "macOS Python3.12.7",
+    "not_windows_native": true
+  },
+  "max_raw_receipt_nodeid_characters": 154,
+  "new_native_repair_run": "pending",
+  "overlapping_results_not_additive": true
+}

@@ -1,0 +1,14 @@
+flowchart TD
+    H[显式Git宿主或后继受控验证器] --> C[SQLiteGitDeliveryStore构造]
+    C -->|默认Writer| W[原私有目录及WAL FULL初始化]
+    C -->|read_only true| R[既有readonly_database]
+    W --> D[唯一原v1 DDL与版本定义]
+    R --> V[只读结构与版本核验]
+    D -.核验的结构定义.-> V
+    V --> L[原Worktree Checkpoint Commit Reader]
+    W --> L
+    R --> G[五写入口首步拒绝]
+    G --> E[git_delivery_store_read_only]
+    L --> M[原严格模型 冗余列和事件尾部检查]
+    M --> O[原领域记录或固定拒绝]
+    O -.未完成接线.-> B[完整产品Git备份及跨Store验真]

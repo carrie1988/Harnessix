@@ -1,0 +1,75 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 5832,
+      "sha256": "76968148e283bea96fc13d068c2c091043a015c8ab760e8930a9634ceea382e2"
+    },
+    {
+      "path": "diagrams/diagram-1.mmd",
+      "bytes": 647,
+      "sha256": "0d3a3c02ee4ef01211eca0afb8deaed7bd7d99a2ecdfed48d85c0f64aaacaac6"
+    },
+    {
+      "path": "diagrams/diagram-1.png",
+      "bytes": 69999,
+      "sha256": "7b2ae538aee8e3c4521ce7fdfc59bf298fdc3b81706be7ccf607d130a634ae12"
+    },
+    {
+      "path": "diagrams/diagram-2.mmd",
+      "bytes": 605,
+      "sha256": "dce1f6f79e75c6a901058721f36892cad5a4b85c907ca8c0a98ea59c27b4232c"
+    },
+    {
+      "path": "diagrams/diagram-2.png",
+      "bytes": 70991,
+      "sha256": "1551a81faa54a795b813c8045f75dec0eae15f1de5047acf1f51b75a23ebd545"
+    },
+    {
+      "path": "diagrams/diagram-3.mmd",
+      "bytes": 874,
+      "sha256": "e89cca1653d87e802c8640aa97d735e471186544dc41838f9cdfa04536ad1e0c"
+    },
+    {
+      "path": "diagrams/diagram-3.png",
+      "bytes": 54746,
+      "sha256": "0f29c9a97540acf4b6943149669f590f54a94aa0e5c145e56753aeee5a61e957"
+    },
+    {
+      "path": "diagrams/diagram-4.mmd",
+      "bytes": 378,
+      "sha256": "50023a67ca84c4dad2d218c21b301d8ad034871787148727ce326a4ca6c7dd22"
+    },
+    {
+      "path": "diagrams/diagram-4.png",
+      "bytes": 34253,
+      "sha256": "bff100d6a1304259bb031b81f1c40ef890026289f6eb4bba0f0a7c1a4659c3c9"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 839,
+      "sha256": "98e1836f7b542b42a9627105fff479e9ae7082cbe7b95a96a191706380abded2"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1354,
+      "sha256": "ff8f9a0281817e73aa3af5615575eb47191e52879e8d6a19cdf82d12857ccaf1"
+    },
+    {
+      "path": "source-bindings.json",
+      "bytes": 49128,
+      "sha256": "1316c11d6de89bc4e17a481a97a93d41e0052ee212b3207fc5a3fdd8d9335975"
+    },
+    {
+      "path": "test-results.json",
+      "bytes": 5635,
+      "sha256": "0f3a7e5ad55626ddc84e52452f6258edefac0b4c2c4b291b30ab776014486593"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 552,
+      "sha256": "9c2657c338e8e8cfd3137b6823df201fb91ec5851dd6459871588665fd93a2f1"
+    }
+  ]
+}

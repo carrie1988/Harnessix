@@ -504,7 +504,9 @@ def test_version_only_tamper_with_retained_raw_is_rejected():
 
 
 @pytest.mark.parametrize(
-    "body", [b"", b"{}", b"[]", b"null", b"{", b"\xff", b" " * (MAX_OWNER_RECEIPT_BYTES + 1)]
+    "body",
+    [b"", b"{}", b"[]", b"null", b"{", b"\xff", b" " * (MAX_OWNER_RECEIPT_BYTES + 1)],
+    ids=["empty", "missing-fields", "array", "null", "malformed", "non-utf8", "oversized"],
 )
 def test_parser_rejects_invalid_or_oversized_body(body):
     with pytest.raises(ValueError):

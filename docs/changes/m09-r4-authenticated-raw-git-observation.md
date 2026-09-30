@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675
 owners: [core]
 modules: [processes, tools, product_config]
@@ -543,7 +543,7 @@ ConPTY 保持 v1；旧 v1 观察不得以无脱敏为由包装成 v2。
 
 ## 9. 分层验证记录与范围限制
 
-当前验证宿主为 macOS，工作目录为专属 worktree，导入路径明确覆盖为 `src`。
+初始验证宿主为 macOS，工作目录为专属 worktree，导入路径明确覆盖为 `src`。
 新增基础专项执行记录为**94 passed**，后继显式双Python验证单独绑定实际解释器，
 不从运行环境名称推断Python版本。
 离线锁定的专属环境执行第 7 节列出的六个测试文件：**171 passed, 7 skipped**；
@@ -562,3 +562,24 @@ ConPTY 保持 v1；旧 v1 观察不得以无脱敏为由包装成 v2。
 完整事实、输入绑定、失败原件、Review Packet及复验边界见
 [统一验证交付](../validation/windows-raw-git-observation-2026-09-30-v1/README.md)。
 本记录不包含真实模型质量、消费者Windows11或商用发布验收。
+
+## 10. 固定候选的原生结果与测试边界
+
+后继固定`ece88ad`的[原生材料](../validation/windows-raw-git-native-2026-09-30-v1/README.md)
+已实际执行新增19个Windows raw/Git用例且全部通过，包含CRT特殊字节、跨块保护、raw预算、
+受保护blob、九类解析入口、历史v1拒绝以及期限/取消真实回收。
+这些通过包含在第三组232项通过中，不与第三组统计重复相加。
+首组根生命周期128通过/2跳过，原Git组166通过/5跳过；第三组整体仍1失败、2错误、5跳过，
+后继原生重启/备份/恢复步骤跳过，不宣称全Job、R4或消费者平台通过。
+
+两项测试合同整改不修改生产raw捕获、回执MAC、容量或解析器：
+
+1. 非法回执负载保持原空值/非法JSON/非UTF8/64KiB+1，七个用例只指定短语义ID。
+   原自动ID把全部64KiB空格写入`PYTEST_CURRENT_TEST`，在Windows setup/teardown超限，
+   不属于Parser通过；后继最长Node ID154字符，仍保留原字节超限断言。
+2. 原POSIX普通Capture达到8MiB停止，Windows普通Owner超过8MiB停止。
+   精确边界分别按原比较条件验证，新增8MiB+1真实Git对象作为共同超限负控。
+   正式交付仍为原9MiB停止预算、原8MiB单镜像和1MiB前缀，不统一或放宽任何生产上限。
+
+修正后的macOS相关157项通过不替代后继Windows全组；原失败日志及精确Selector保留。
+后续只读Git账本接口与本原生候选分开绑定，不将未运行的新源文件纳入该19项实测结论。

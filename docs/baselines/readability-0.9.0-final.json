@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 409,
-    "physical_lines": 85917,
-    "logical_lines": 75999,
-    "documented_modules": 409,
+    "source_files": 410,
+    "physical_lines": 85978,
+    "logical_lines": 76051,
+    "documented_modules": 410,
     "classes": 903,
     "documented_classes": 383,
-    "functions": 3469,
-    "documented_functions": 673,
+    "functions": 3472,
+    "documented_functions": 676,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -696,8 +696,8 @@
       "path": "src/harnessix/delivery/git_store.py",
       "qualname": "SQLiteGitDeliveryStore",
       "kind": "class",
-      "line": 42,
-      "lines": 434,
+      "line": 43,
+      "lines": 396,
       "documented": true
     },
     {

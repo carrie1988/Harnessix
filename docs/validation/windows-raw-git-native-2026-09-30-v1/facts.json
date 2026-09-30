@@ -1,0 +1,59 @@
+{
+  "candidate_revision": "ece88ade3e00532e3c4fa93d4abfb694401f13e4",
+  "run_id": 36736381341,
+  "windows_job_id": 109959066891,
+  "windows_job_conclusion": "failure",
+  "run_at_windows_terminal_sha256": "124cc234ee7e1c23366ed3a4b756a515694aea9eaa131a6061bf100aeae64029",
+  "job_log_sha256": "2ed6737c3b8fd93977390bc1845907084dd93e3ab59d568d4eccfc6a18ae9187",
+  "root_phase": {
+    "passed": 128,
+    "skipped": 2,
+    "status": "success",
+    "duration_seconds": 148.84
+  },
+  "legacy_git_phase": {
+    "passed": 166,
+    "skipped": 5,
+    "deselected": 16,
+    "status": "success",
+    "duration_seconds": 70.21
+  },
+  "raw_phase": {
+    "passed": 232,
+    "failed": 1,
+    "errors": 2,
+    "skipped": 5,
+    "status": "failure",
+    "duration_seconds": 82.62
+  },
+  "new_native_cases_passed": [
+    "tests/processes/test_windows_raw_receipt.py::test_windows_pipe_receipt_preserves_lf_crlf_ctrl_z_and_non_utf8",
+    "tests/processes/test_windows_raw_receipt.py::test_windows_secret_across_authenticated_pipe_chunks_keeps_complete_raw",
+    "tests/processes/test_windows_raw_receipt.py::test_windows_raw_output_budget_stops_secret_compression_bypass",
+    "tests/tools/test_windows_git.py::test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[root]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[config]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[head]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[tree]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[ref]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[selected-tree]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[selected-stage]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[selected-flags]",
+    "tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction[selected-debug]",
+    "tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline[False]",
+    "tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline[True]",
+    "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout-raw-baseline]",
+    "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token-raw-baseline]",
+    "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task-raw-baseline]",
+    "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch-raw-baseline]"
+  ],
+  "new_native_cases_count": 19,
+  "following_native_phases": "skipped",
+  "new_model_requests": 0,
+  "credential_reads": 0,
+  "budget_ledger_changed": false,
+  "private_evidence_locator": "Harnessix/verification/windows-raw-receipt-20260930-v1/ci-36736381341",
+  "whole_ci_status": "completed",
+  "whole_ci_conclusion": "failure",
+  "terminal_run_sha256": "fe9d3cafcf933566f4be9794c69c3edce14be79f659bf633ddde57e05ec1a275"
+}

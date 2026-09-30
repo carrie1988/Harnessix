@@ -1,8 +1,10 @@
 {
   "production_code_unchanged": true,
   "local_functional_runs_passed": true,
-  "native_windows_candidate_verified": false,
+  "native_windows_candidate_verified": true,
   "native_following_raw_step_verified": false,
   "commercial_release_verified": false,
-  "r3_quality_unchanged": true
+  "r3_quality_unchanged": true,
+  "native_verified_scope": "仅根目录生命周期首组",
+  "whole_windows_job_verified": false
 }

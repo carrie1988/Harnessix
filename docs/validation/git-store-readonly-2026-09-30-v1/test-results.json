@@ -1,0 +1,184 @@
+{
+  "new_readonly_focus": {
+    "tests": 85,
+    "passed": 85,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junit_sha256": "f92528c2183bcc4860dcf3ae9dbb0a016d33a2f8f811531ba11e4757d29203a9",
+    "real_git_and_original_v1_control": true
+  },
+  "final_runs": [
+    {
+      "environment": "macOS Python3.12.7",
+      "junit": "final-python312.xml",
+      "junit_sha256": "ab6bdc0ff3b0e8e88139c065f98cb770c32f8cd356f500f6ade51215c02c48fb",
+      "summary": {
+        "tests": 537,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "duration_seconds": 101.032,
+      "native_windows": false
+    },
+    {
+      "environment": "macOS Python3.13.8",
+      "junit": "final-python313.xml",
+      "junit_sha256": "4407b09dd8beebdf9071453d36d778a467ed943da05c6773a557738a6be7c145",
+      "summary": {
+        "tests": 537,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "duration_seconds": 101.532,
+      "native_windows": false
+    }
+  ],
+  "overlapping_results_not_additive": true,
+  "new_windows_case_run": "pending",
+  "source_outside_wheel_run": {
+    "junit": "wheel-tests.xml",
+    "junit_sha256": "f5e7a2a9bfc19b8f55453b50ea7e1d14f0ea6f2ba095e8de0f734f3a5c776e18",
+    "summary": {
+      "tests": 242,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 242
+    },
+    "duration_seconds": 31.406,
+    "wheel_sha256": "3f1bb592133f0a458bd625ae0f283094801456adf6825a364e14fa89e8f88408",
+    "package_members": 451,
+    "production_module_count": 410,
+    "python": "3.12.7",
+    "source_import": false,
+    "offline_installed": true,
+    "all_package_members_source_wheel_install_identical": true
+  },
+  "governance_runs": [
+    {
+      "junit": "governance.xml",
+      "junit_sha256": "88d2cac9d912b429c29401c22556d30e508a67d4ba907659ec3a8bee02e5a467",
+      "summary": {
+        "tests": 302,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 301
+      },
+      "duration_seconds": 26.294,
+      "stage": "initial",
+      "sole_failure": "新详细设计缺少必需接口设计标题；原FAIL保留"
+    },
+    {
+      "junit": "governance-final.xml",
+      "junit_sha256": "1fa01333806373c447003160a919962f12b0006f8c2775046c9c4437a077b201",
+      "summary": {
+        "tests": 302,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 302
+      },
+      "duration_seconds": 26.656,
+      "stage": "after_heading_fix",
+      "policy_unchanged": true
+    }
+  ],
+  "documentation_runs": [
+    {
+      "report": "documentation-render.json",
+      "report_sha256": "0ec59ab5a2ed09cdc2c6560bb5142a4fbf465028d080e71a92435fb1ae7b206e",
+      "document_count": 426,
+      "link_count": 10560,
+      "mermaid_count": 905,
+      "findings": [
+        {
+          "code": "section_required_missing",
+          "line": null,
+          "message": "缺少语义章节（任一）：接口设计",
+          "path": "docs/changes/m09-r4-git-store-readonly.md"
+        }
+      ],
+      "render_mermaid": true
+    },
+    {
+      "report": "documentation-final.json",
+      "report_sha256": "6c5478a5837d554016bcf637cb112a0bb7f62874fcd16a3391a18fc0389cdf8a",
+      "document_count": 426,
+      "link_count": 10560,
+      "mermaid_count": 905,
+      "findings": [],
+      "render_mermaid": false
+    },
+    {
+      "report": "documentation-package-final.json",
+      "report_sha256": "2a7c252cd01c440b5046085f27c066daec4726ae4c7e0c6dd44a3a1a542cee81",
+      "document_count": 426,
+      "link_count": 10565,
+      "mermaid_count": 905,
+      "findings": [],
+      "render_mermaid": false
+    }
+  ],
+  "static_checks": {
+    "mypy.log": {
+      "status": "pass",
+      "log_sha256": "5fba94e94f64349160b90cd63e851bc65cd6c3935e9b764041ddc683be8c0d9f"
+    },
+    "specs.log": {
+      "status": "pass",
+      "log_sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+    },
+    "readability-final.log": {
+      "status": "pass",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ruff.log": {
+      "status": "pass",
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format.log": {
+      "status": "pass",
+      "log_sha256": "f114d83b30c5c657ee43a847a45bafccaea255d82673feb87c26d252c61e29c1"
+    },
+    "secret-scan.log": {
+      "status": "pass",
+      "log_sha256": "c7eab8c6f47be4c5bfce231103575ce7065c6668c8292c8bd4a011e8fd1210ae"
+    }
+  },
+  "secret_scan_inputs": 3782,
+  "diagrams": {
+    "count": 4,
+    "actual_rendered": true,
+    "all_visually_reviewed": true,
+    "bindings": [
+      {
+        "index": 1,
+        "source_sha256": "0d3a3c02ee4ef01211eca0afb8deaed7bd7d99a2ecdfed48d85c0f64aaacaac6",
+        "png_sha256": "7b2ae538aee8e3c4521ce7fdfc59bf298fdc3b81706be7ccf607d130a634ae12",
+        "bytes": 69999
+      },
+      {
+        "index": 2,
+        "source_sha256": "dce1f6f79e75c6a901058721f36892cad5a4b85c907ca8c0a98ea59c27b4232c",
+        "png_sha256": "1551a81faa54a795b813c8045f75dec0eae15f1de5047acf1f51b75a23ebd545",
+        "bytes": 70991
+      },
+      {
+        "index": 3,
+        "source_sha256": "e89cca1653d87e802c8640aa97d735e471186544dc41838f9cdfa04536ad1e0c",
+        "png_sha256": "0f29c9a97540acf4b6943149669f590f54a94aa0e5c145e56753aeee5a61e957",
+        "bytes": 54746
+      },
+      {
+        "index": 4,
+        "source_sha256": "50023a67ca84c4dad2d218c21b301d8ad034871787148727ce326a4ca6c7dd22",
+        "png_sha256": "bff100d6a1304259bb031b81f1c40ef890026289f6eb4bba0f0a7c1a4659c3c9",
+        "bytes": 34253
+      }
+    ]
+  }
+}
