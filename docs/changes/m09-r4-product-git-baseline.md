@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: draft
+status: current
 version: 1
-code_revision: pending
+code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
 owners: [core]
 modules: [product_config, tools, processes, delivery]
 related_adrs:

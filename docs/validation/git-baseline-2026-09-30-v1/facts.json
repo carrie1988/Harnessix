@@ -1,0 +1,165 @@
+{
+  "spec_version": "harnessix.git-baseline-facts/v1",
+  "source_revision": "018a4afabf270bbd94deb4cbb728794615d85225",
+  "comparison_revision": "c4b1177d359b2ff4c81cf0c7ae85bdc9ea0e1539",
+  "platform": "macOS_native_posix",
+  "new_tests": 91,
+  "fixed_full": {
+    "name": "full",
+    "kind": "fixed-candidate",
+    "tests": 6287,
+    "passed": 6176,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 111,
+    "seconds": "592.473",
+    "xml_sha256": "182a29ccd2c6d4afbb917a7f6f153d94cdce9c1ea9130e52b5b486f39f28a8f2",
+    "log_sha256": "e6c40f512c596cc5d253fde0a7a6e4d0529624417efcfb52a2c7b406d392d91f"
+  },
+  "fixed_installed": {
+    "name": "installed",
+    "kind": "fixed-candidate",
+    "tests": 132,
+    "passed": 132,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": "36.222",
+    "xml_sha256": "a0732a568f5261914686b2aa744f50882187c977af719325a5d54800354e2a1b",
+    "log_sha256": "955a517bb478710284a8c37567ad6d465bccad04223e98328484b559ed0e5750"
+  },
+  "installed_package": {
+    "source_revision": "018a4afabf270bbd94deb4cbb728794615d85225",
+    "wheel_sha256": "5ec7109538852ad770a26977845325ef1cf0386e0ba838b994106904e1773b9d",
+    "package_members": 446,
+    "wheel_members_equal_owned_source": true,
+    "installed_members_equal_wheel": true,
+    "imported_package_outside_owned_source": true
+  },
+  "source_files": {
+    "scripts/generate_specs.py": "ae39dbf5eef69aa823440ccd547d0bf2cbcb60a59204201e86669c5c294fbbeb",
+    "spec/product-git-baseline-v1.schema.json": "8de833c8f2a653eab51ad0fcfdb7499a37d24a1c8988fab4873e5273e49b8c54",
+    "src/harnessix/processes/git_read_windows.py": "10ca6adb5251b34c5fae5020d68f65cc0644765c6a9ef70019b0a1f4e17ca866",
+    "src/harnessix/processes/runtime.py": "6b95b941c1057032fa8eb6e3f7416772bc3181845426b897a6822da4c5b07ba3",
+    "src/harnessix/product_config/git_baseline.py": "06149a7c09b7bd7f0a8e6d07468648d684c15a90405acc42ece3cea3e355d677",
+    "src/harnessix/product_config/git_baseline_contracts.py": "59b21be756006c3240b32cf3d96b93b24adf6c5c2fa27eb33dddd44d7d6104d2",
+    "src/harnessix/tools/git.py": "45d697d0aefa23eb91112f0dbe40ee94d077081d8bbd26a394ac281d1847d120",
+    "tests/product_config/test_git_baseline.py": "403fb7f5a01e8624ef14861a5d7c7c28a3342050f48d4a493c35f92cc5183479",
+    "tests/tools/test_git_delivery_reader.py": "ec483fb2af2c52c7afd91ccf7268a60f1ed14ee12a5247638aa423a3808dc39c"
+  },
+  "unchanged_contracts": [
+    {
+      "path": "src/harnessix/delivery/git.py",
+      "sha256": "4415fb66b7736a37150e726da39ec1fedd35139cc4db0afa8d13a9cf1654eeba",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "src/harnessix/delivery/git_checkpoint.py",
+      "sha256": "27da76850433aa225946606088f811c0dcef2ee430679cfe2d7e12c253c6116d",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "src/harnessix/delivery/git_store.py",
+      "sha256": "fdb4b0b98c4d933a9e4058b2834f571f508d1f09abc6fcd5e14e417f0a0d403d",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "src/harnessix/delivery/git_contracts.py",
+      "sha256": "e11e6bb63758cdbbca2cd7c77b8108df12a082b60cda46a29ddbd9113bf83a8e",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup_contracts.py",
+      "sha256": "7c87ea6b0dd71965d459040981f1a712f3d84aa56cd874402e438b706971832a",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "src/harnessix/product_config/git_delivery_source.py",
+      "sha256": "351ecf1e6ee1e378cdf139bb58484a307e9ab6735d73af669b5b1383525247fa",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "src/harnessix/product_config/workspace_patch_source.py",
+      "sha256": "de2de3e0f4141a11f6a4955ebf64ac16b044a10fbb57d5f075cd18ed83a1eb0d",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "src/harnessix/product_config/workspace_patch_source_contracts.py",
+      "sha256": "f0321bd64d9ee99955761404c45fc1b4bafda6598019a7e505cc4c0e109d547b",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "scripts/provider_verification_budget.py",
+      "sha256": "5fe17d69151d66386eb8cbc1527adeacae9e5752d61c871821d2da654c3842de",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "scripts/provider_verification_guard.py",
+      "sha256": "88729a6466b2fb8f48f6e08d109c3c27f9f4a62fa50bb6d4cbdb86626946d268",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "scripts/provider_reverification_plan.py",
+      "sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": "governance/readability-policy-v1.json",
+      "sha256": "c1f4b75cd34d25d9cef0b6cc84c3633525195d48af70c4d65742e46786c385e6",
+      "byte_equal_comparison_revision": true
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "a629500c5e0c592cbea71d5ff9f08d2f0f0b0f0b02439a0dca2e714a4b78b86c",
+      "byte_equal_comparison_revision": true
+    }
+  ],
+  "real_model_calls": 0,
+  "model_quality_acceptance": false,
+  "business_git_store_created": false,
+  "product_commit_checkpoint_registered": false,
+  "windows_evidence": "offline_contract_only_native_pending",
+  "windows_raw_observation_guard": "protected_owner_observation_rejected_without_disabling_redaction",
+  "diagram_renders": 3,
+  "R4_closed": false,
+  "commercial_release": false,
+  "final_governance": {
+    "name": "governance-closed",
+    "kind": "fixed-candidate-final-docs",
+    "tests": 302,
+    "passed": 302,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": "27.418",
+    "xml_sha256": "d2ee0f9bb5b4348428c745461ba80439877fb1c70297279234e1cc17f309429a",
+    "log_sha256": "8b9919654443385a9adff780e68d3e9e6d0a30a8ac49cf874715d266edbad05b"
+  },
+  "documentation": {
+    "changed_path_count": 28,
+    "document_count": 415,
+    "findings": [],
+    "link_count": 10380,
+    "mermaid_count": 888,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26
+  },
+  "mermaid_visual_check": {
+    "rendered": 3,
+    "inspected_images": [
+      1,
+      3
+    ],
+    "text_and_connectors_readable": true
+  }
+}

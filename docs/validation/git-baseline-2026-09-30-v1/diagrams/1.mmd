@@ -1,0 +1,11 @@
+flowchart TD
+    T[原认证Thread与事务选择] --> S[原成功Patch来源 全集归属预检]
+    S --> G[用途固定的Git只读端口]
+    G --> R[HEAD Tree Ref 完整Index Status]
+    G --> B[每条首before对应的原始HEAD blob]
+    B --> H[完整EOF 长度 SHA256与模式核验]
+    R --> I[选中Index必须等于HEAD]
+    H --> V[再次核对Git观察与Workspace Snapshot]
+    I --> V
+    V --> P[冻结ProductGitDeliveryBaseline]
+    P -.后续独立实现.-> A[交付计划 完整Diff 新批准 持久化与执行恢复]

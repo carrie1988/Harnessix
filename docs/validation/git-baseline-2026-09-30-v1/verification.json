@@ -1,0 +1,255 @@
+{
+  "spec_version": "harnessix.git-baseline-verification/v1",
+  "source_revision": "018a4afabf270bbd94deb4cbb728794615d85225",
+  "comparison_revision": "c4b1177d359b2ff4c81cf0c7ae85bdc9ea0e1539",
+  "runs": [
+    {
+      "name": "associated",
+      "kind": "pre-freeze-intermediate",
+      "tests": 1380,
+      "passed": 1290,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 90,
+      "seconds": "146.472",
+      "xml_sha256": "dbe8bf5c0dd3957329a05e878ac9e2a782c7690d462360ed53791aa48d51c40d",
+      "log_sha256": "b1cb74d6d008a69a1d751fd8dfda5ac164a7bf83f20638225e0efaffb55f1123"
+    },
+    {
+      "name": "focus-v2",
+      "kind": "pre-freeze-intermediate",
+      "tests": 75,
+      "passed": 74,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "20.239",
+      "xml_sha256": "c8285627decff031400b3cd276c552aca19e8a52cab97da5eb379e76cbb51694",
+      "log_sha256": "ed0247d1425cad3347c20e948ba0b22f7dde564098f9f8491ca801009f5f7a76"
+    },
+    {
+      "name": "focus-v3",
+      "kind": "pre-freeze-intermediate",
+      "tests": 75,
+      "passed": 75,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "18.258",
+      "xml_sha256": "6dc99da518cb839e833360986dfee4c0ffa0659356123ba44b252729c943e587",
+      "log_sha256": "b106985f4f898a25125d7b167a321547e253d8b063677cbd54f5d8ebcc2d6f9c"
+    },
+    {
+      "name": "focus-v4",
+      "kind": "pre-freeze-intermediate",
+      "tests": 81,
+      "passed": 81,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "20.161",
+      "xml_sha256": "bd7e6473392d63e67301abc137dd54b742854149c7dfdd4307621829438cad16",
+      "log_sha256": "b4627e13b4b0f445d8d9556c9ea8b37a722525a0d96809e7002d501b794906ef"
+    },
+    {
+      "name": "focus-v5",
+      "kind": "pre-freeze-intermediate",
+      "tests": 50,
+      "passed": 50,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "25.025",
+      "xml_sha256": "dd6a3127bd00e4248648dc6fc438cf6b8f79572f7f6193eb8602c5e2b390fdbc",
+      "log_sha256": "363d9918629fd597c88d9ae724c8dd802924dc8f1e4dd374a2336a5d4a37a3a9"
+    },
+    {
+      "name": "focus",
+      "kind": "pre-freeze-intermediate",
+      "tests": 35,
+      "passed": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "16.857",
+      "xml_sha256": "f64574582856bc4bbcf3f02be4733689de405fdd4718c63bd209e072bc5a4335",
+      "log_sha256": "b6786ee32947fddac57cb6a1e9588bbf9f07e65d39d42533ee9156f9607e0e56"
+    },
+    {
+      "name": "full",
+      "kind": "fixed-candidate",
+      "tests": 6287,
+      "passed": 6176,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 111,
+      "seconds": "592.473",
+      "xml_sha256": "182a29ccd2c6d4afbb917a7f6f153d94cdce9c1ea9130e52b5b486f39f28a8f2",
+      "log_sha256": "e6c40f512c596cc5d253fde0a7a6e4d0529624417efcfb52a2c7b406d392d91f"
+    },
+    {
+      "name": "governance",
+      "kind": "pre-freeze-intermediate",
+      "tests": 302,
+      "passed": 301,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "29.899",
+      "xml_sha256": "2da235566a1da04e49d17f7e6f7972fd6d240ad3b576c842337c6352c32ae3c4",
+      "log_sha256": "83f8d1f2c7109774c43193fb6f59e9e4b449b130097b373e54933af9dcdbf791"
+    },
+    {
+      "name": "installed",
+      "kind": "fixed-candidate",
+      "tests": 132,
+      "passed": 132,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "36.222",
+      "xml_sha256": "a0732a568f5261914686b2aa744f50882187c977af719325a5d54800354e2a1b",
+      "log_sha256": "955a517bb478710284a8c37567ad6d465bccad04223e98328484b559ed0e5750"
+    },
+    {
+      "name": "negative-final-checkpoint",
+      "kind": "controlled-negative",
+      "tests": 2,
+      "passed": 0,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "1.626",
+      "xml_sha256": "f647887a8e9db174b49a241448d77f342ac57ce0ec81f23a0cc673e322d5d1ef",
+      "log_sha256": "16ad4ce4823b0fd730fd33ff5f93164e0bf6266e1abbed49d58ecd6983707c9a"
+    },
+    {
+      "name": "negative-helper-observation",
+      "kind": "controlled-negative",
+      "tests": 1,
+      "passed": 0,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "0.938",
+      "xml_sha256": "f0218faff7f2135a87f245105a0b18b04a6b6be399b74af8e83c48918623c10c",
+      "log_sha256": "19050f714351387627f80690303ee35b8a24045c1b80bd8620d11069e68debfd"
+    },
+    {
+      "name": "negative-index-debug",
+      "kind": "controlled-negative",
+      "tests": 1,
+      "passed": 0,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "0.777",
+      "xml_sha256": "e59a7322b188e2b6a8f5c3ddc2dd4a1de2b56ce2cfcdac87dae1ee1abadabb24",
+      "log_sha256": "ee263cebccfb582a8b849bc300539a1bebf332c85ea27778397fad6267396d00"
+    },
+    {
+      "name": "negative-ref-strip",
+      "kind": "controlled-negative",
+      "tests": 1,
+      "passed": 0,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "0.867",
+      "xml_sha256": "060ac2c50b3c6a3a3e212dae7a28b64563ef7f524351788ae4ea4bd16a8ad2a1",
+      "log_sha256": "fc42fdf0b3fc60235ac175cdfc79ebacbc0cb5e7410187c441a28bc185f146db"
+    },
+    {
+      "name": "governance-closed",
+      "kind": "fixed-candidate-final-docs",
+      "tests": 302,
+      "passed": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "27.418",
+      "xml_sha256": "d2ee0f9bb5b4348428c745461ba80439877fb1c70297279234e1cc17f309429a",
+      "log_sha256": "8b9919654443385a9adff780e68d3e9e6d0a30a8ac49cf874715d266edbad05b"
+    },
+    {
+      "name": "governance-final",
+      "kind": "candidate-doc-assembly-failure",
+      "tests": 302,
+      "passed": 301,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": "29.100",
+      "xml_sha256": "f09f9c8efb47277797cd8c755d10c09c8701c62bfaae83fb192c0fddb1641d18",
+      "log_sha256": "b54c22380fb719d3ce376296a33968c3012831159d5aac4cb06e6e735b14ca01"
+    }
+  ],
+  "initial_failures_without_xml": [
+    "initial_mypy_missing_annotation_and_literal_narrowing",
+    "large_text_review_capacity_not_relaxed",
+    "dict_used_as_constructed_nested_model",
+    "index_fixture_missing_system_path",
+    "stale_readability_final_statistics",
+    "legacy_git_fixture_object_format_option_rejected",
+    "documentation_packet_missing_frontmatter_or_manifest_before_closed_verification"
+  ],
+  "negative_controls": [
+    {
+      "name": "ref-strip",
+      "kind": "controlled_mutant_not_historical_repository",
+      "exit_code": 1,
+      "source_sha256": "cb708e0b42fb12e27bf1b6622efcb3f62e412ec2d3f120d47e478eef32224e67",
+      "imported_package_within_export": true,
+      "selected_tests": [
+        "test_non_ascii_whitespace_in_real_branch_name_is_not_stripped"
+      ]
+    },
+    {
+      "name": "final-checkpoint",
+      "kind": "controlled_mutant_not_historical_repository",
+      "exit_code": 1,
+      "source_sha256": "17b4d8efb4c94e222051f51774c9ed6e0c75362cb5621165675ff5b55988f492",
+      "imported_package_within_export": true,
+      "selected_tests": [
+        "test_final_synchronous_snapshot_cannot_cross_cancellation_or_deadline"
+      ]
+    },
+    {
+      "name": "helper-observation",
+      "kind": "controlled_mutant_not_historical_repository",
+      "exit_code": 1,
+      "source_sha256": "2348e727c6d701387aea3922cedfa1ef109998737f6627d568b6f6e140757aa1",
+      "imported_package_within_export": true,
+      "selected_tests": [
+        "test_helper_configuration_added_after_initial_check_is_rejected"
+      ]
+    },
+    {
+      "name": "index-debug",
+      "kind": "controlled_mutant_not_historical_repository",
+      "exit_code": 1,
+      "source_sha256": "6ee327bd2f70c4cba9215300ad52daea5156a37b71bb362b8f0e505666846f18",
+      "imported_package_within_export": true,
+      "selected_tests": [
+        "test_real_intent_to_add_matching_empty_head_blob_is_rejected"
+      ]
+    }
+  ],
+  "old_git_control": {
+    "git_version": "git version 2.24.3 (Apple Git-128)",
+    "runs": [
+      {
+        "fsmonitor_value": "false",
+        "returncode": 0,
+        "false_helper_trace": true,
+        "trace_sha256": "9f204acefe51b475385aebbab3a5116618a2dec1570d5c21e4e8bec433480930"
+      },
+      {
+        "fsmonitor_value": "",
+        "returncode": 0,
+        "false_helper_trace": false,
+        "trace_sha256": "0fbcfbbe18ec9142179c759098e651e94c75fe96711428acc4d3380bcf4bb020"
+      }
+    ]
+  }
+}

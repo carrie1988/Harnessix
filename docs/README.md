@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 141
-code_revision: 65d7323b12db782bbf62f109545058256037584e
+version: 142
+code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
 owners:
   - core
 modules:
@@ -147,6 +147,10 @@ R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/
 26个生产源码包、6个根级生产模块、当前相关资料和测试入口见[文档—源码—测试追踪矩阵](governance/documentation-traceability.md)。
 
 ### 2.3 参与重大变更
+
+Git产品接线当前只完成原成功Patch来源和[只读HEAD基准](changes/m09-r4-product-git-baseline.md)，
+阅读[统一验证报告](validation/git-baseline-2026-09-30-v1/README.md)可区分真实Git、离线Windows与待实现写入。
+原组件库Commit/Checkpoint不能视为默认产品已经接线。
 
 1. 阅读[文档工程规范](governance/documentation-standard.md)；
 2. 使用[重大变更设计模板](governance/templates/change-design-template.md)形成评审材料；

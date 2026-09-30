@@ -1,0 +1,28 @@
+{
+  "spec_version": "harnessix.review-packet/v1",
+  "source_revision": "018a4afabf270bbd94deb4cbb728794615d85225",
+  "decision": "read_only_prerequisite_candidate_only_R4_open",
+  "checks": [
+    "source_ownership_before_git_query",
+    "native_root_matches_thread",
+    "tree_from_fixed_commit",
+    "selected_index_and_debug_flags_match",
+    "full_raw_blob_digest_not_capture_prefix",
+    "unrelated_user_index_and_head_preserved",
+    "two_observations_and_final_checkpoint",
+    "windows_transformed_observation_fail_closed",
+    "default_binding_and_limits_preserved",
+    "full_fixed_candidate_regression",
+    "actual_installed_wheel_outside_source",
+    "controlled_mutants_not_claimed_as_history"
+  ],
+  "not_accepted": [
+    "product_Commit_Checkpoint",
+    "authenticated_raw_windows_observation",
+    "complete_git_state_backup_restore",
+    "Windows_native_and_consumer_acceptance",
+    "real_20_trial_R3_quality",
+    "independent_beta",
+    "R1_to_R6_commercial_release"
+  ]
+}

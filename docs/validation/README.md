@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 43
-code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
+version: 44
+code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-09-30 | [原认证Patch与只读Git基准](git-baseline-2026-09-30-v1/README.md) | `018a4afabf270bbd94deb4cbb728794615d85225` | macOS原生Git/文件/SQLite；零真实请求；独立Wheel | 完整6176通过/111跳过；源码外132通过；受控变异5失败；用户Index/HEAD保护及8MiB完整观察通过 | 只读前置候选；带保护源的Windows原始观察明确拒绝，Commit/Checkpoint、备份闭合及R4仍开放 |
 | 2026-09-30 | [固定Profile与Trusted安全输入反馈](trusted-input-feedback-2026-09-30-v1/README.md) | `9723b58688890672ec17ffd8d37d78507ed81ece` | 原70元及旧预留不变；零真实请求；独立Wheel | 原源码5失败保留；焦点104、治理302、源码外70通过；完整离线6085通过/111跳过 | 仅参数反馈候选，不关闭真实质量或商用门禁 |
 | 2026-09-30 | [固定镜像与显式Engine评测宿主前置](docker-eval-host-2026-09-30-v1/README.md) | 生产基线`89b3cd1`、测试源SHA绑定 | 原Python/Node RepoDigest；同Engine显式入口；零模型请求 | 原宿主状态恢复；真实集成5通过、关联离线151通过，旧断言FAIL保留；默认Desktop注册仍Created | 仅评测宿主前置GO；不关闭默认Desktop、真实20 Trial、消费者Windows11、Beta或商用门禁 |
 | 2026-09-29 | [固定不同版本三平台停机升级、完整恢复与回退](different-version-upgrade-2026-09-29-v1/README.md) | `ec356aa1555d6ad712819f3e02e210493f7d3135` | 唯一规范Wheel；原归档0.1.0→内部1.0.0rc1→原旧包；源码外三平台；零模型请求 | 唯一构建及三消费者终态成功；原Key/六库、稳定恢复身份和回退读写通过；首轮cp1252和Apple Git失败保留 | 固定版本对专项GO；消费者Windows11、真实编码、独立Beta及R1～R6整体商用门禁仍开放 |

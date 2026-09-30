@@ -1,0 +1,11 @@
+flowchart LR
+    O[原认证Call Result Route Transaction] --> Source[不可变来源及原before元数据]
+    Blob[固定OID的原始blob流] --> SHA[原端口完整流SHA与字节数]
+    Prefix[至多1MiB前缀] -.不作为完整版本.-> SHA
+    Source --> Compare[版本精确匹配]
+    SHA --> Compare
+    Index[完整逻辑Index含flags与stat] --> IndexHash[完整流摘要]
+    Status[无关用户修改状态] --> StatusHash[摘要 不加入Mutation]
+    Compare --> Receipt[无正文基准凭证]
+    IndexHash --> Receipt
+    StatusHash --> Receipt

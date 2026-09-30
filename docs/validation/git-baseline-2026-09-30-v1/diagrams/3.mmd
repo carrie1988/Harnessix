@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant H as 认证产品宿主
+    participant S as 原来源Reader
+    participant G as 原生Git只读端口
+    participant C as 版本核验
+    H->>S: Thread 事务集合 checkpoint
+    S-->>H: 原成功来源 或明确拒绝
+    H->>G: 原Thread根身份 精确仓库根 固定Commit及其Tree Index Status
+    loop 选中净Mutation
+        H->>G: 固定Tree的精确路径与选中Index
+        G-->>C: 模式 完整OID stage flags
+        H->>G: cat-file blob 固定OID
+        G-->>C: 完整观察SHA 字节数 EOF 退出事实
+        C->>C: 与原首before精确匹配
+    end
+    H->>G: 再次读取全部Git观察
+    H->>S: 原当前Workspace Snapshot复核
+    C-->>H: 冻结基准 或漂移拒绝
+    Note over H,G: 不写用户Index HEAD Ref或Git业务库

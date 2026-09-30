@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 30
-code_revision: 6d77b2ce453e5ebd0166c17dab7f20e238920a0e
+code_revision: 018a4afabf270bbd94deb4cbb728794615d85225
 owners:
   - core
 modules:
