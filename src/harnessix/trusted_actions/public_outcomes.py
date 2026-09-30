@@ -209,7 +209,10 @@ def failure_family(plan: ActionRoutePlan) -> FailureFamily:
     binding = plan.binding
     if binding.source == "builtin" and binding.source_id == "harnessix.product":
         identity = (binding.tool, binding.executor_id)
-        if identity == ("apply_patch_batch", "product.workspace-patch"):
+        if identity in {
+            ("apply_patch_batch", "product.workspace-patch"),
+            ("rollback_workspace_patch", "product.workspace-patch-rollback"),
+        }:
             return "patch"
         if identity == ("git.push", "delivery.git-push"):
             return "git"

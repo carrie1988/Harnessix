@@ -8,7 +8,15 @@ from pathlib import Path
 from typing import Literal
 
 from harnessix.agent.errors import KernelError
+from harnessix.agent.models import Thread, ToolCallContent
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.delivery.rollback_action import (
+    WORKSPACE_ROLLBACK_TOOL,
+    WorkspaceRollbackTransactionPlanner,
+    build_workspace_rollback_definition,
+    workspace_rollback_binding,
+    workspace_rollback_descriptor,
+)
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.trusted_action import (
     WORKSPACE_PATCH_TOOL,
@@ -45,9 +53,16 @@ from harnessix.product_config.process_profile import (
     process_tool_name,
 )
 from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
+from harnessix.product_config.workspace_rollback import (
+    WorkspaceRollbackReviewProvider,
+    authorize_workspace_rollback,
+)
 from harnessix.secrets.provider import SecretProvider
 from harnessix.secrets.publication import SecretPublicationScope
-from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
+from harnessix.trusted_actions.agent_gateway import (
+    RouterBackedAgentActionGateway,
+    TrustedActionReviewProvider,
+)
 from harnessix.trusted_actions.router import ActionPlanningContext, TrustedActionRouter
 from harnessix.workspace.contracts import PlatformKind
 from harnessix.workspace.leases import WorkspaceLeaseStore
@@ -273,6 +288,55 @@ def _planning_context(
     )
 
 
+def _product_call_context(
+    environment: FixedProductActionEnvironment,
+    process_owners: dict[str, VerifiedProductProcessProfile],
+    thread: Thread,
+    call: ToolCallContent,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+) -> ActionPlanningContext:
+    """只在正式产品入口验证回滚原会话归属，先于资源解析与私有Blob读取。"""
+    base = _planning_context(environment, process_owners, thread.workspace, call.tool)
+    if call.tool == WORKSPACE_ROLLBACK_TOOL:
+        authorize_workspace_rollback(thread, call, router, transactions)
+    return base
+
+
+def _rollback_component(
+    patch: ProductActionCapabilityEvidence,
+    environment: FixedProductActionEnvironment,
+    transactions: SQLiteWorkspaceTransactionStore,
+    leases: WorkspaceLeaseStore,
+) -> tuple[ProductActionCapabilityEvidence, ProductActionCatalogEntry | None]:
+    """原Patch门控制回滚广告、证据与可执行注册，不新增配置权限。"""
+
+    rollback_binding = workspace_rollback_binding()
+    rollback_evidence = build_product_action_capability(
+        capability_id=WORKSPACE_ROLLBACK_TOOL,
+        kind="workspace_patch",
+        status=patch.status,
+        reason_code=patch.reason_code,
+        platform=environment.platform,
+        binding_digest=rollback_binding.binding_digest if patch.status == "verified" else None,
+        executor_evidence_digest=workspace_patch_executor_evidence()
+        if patch.status == "verified"
+        else None,
+    )
+    rollback_entry = (
+        None
+        if patch.status != "verified"
+        else ProductActionCatalogEntry(
+            description=workspace_rollback_descriptor().description,
+            definition=build_workspace_rollback_definition(
+                transactions, leases, environment.workspace_root
+            ),
+            evidence=rollback_evidence,
+        )
+    )
+    return rollback_evidence, rollback_entry
+
+
 def _compose_product_actions(
     config: ProductActionConfigV1,
     environment: FixedProductActionEnvironment,
@@ -294,6 +358,9 @@ def _compose_product_actions(
         transactions,
         leases,
     )
+    rollback_evidence, rollback_entry = _rollback_component(
+        patch_evidence, environment, transactions, leases
+    )
     process_evidence, process_entries, process_owners, outputs = _process_components(
         config,
         process_probes,
@@ -304,11 +371,17 @@ def _compose_product_actions(
         artifact_workspace_scope=artifact_workspace_scope,
     )
     evidence = tuple(
-        sorted((patch_evidence, *process_evidence), key=lambda item: item.capability_id)
+        sorted(
+            (patch_evidence, rollback_evidence, *process_evidence),
+            key=lambda item: item.capability_id,
+        )
     )
     entries = tuple(
         sorted(
-            (*(item for item in (patch_entry,) if item is not None), *process_entries),
+            (
+                *(item for item in (patch_entry, rollback_entry) if item is not None),
+                *process_entries,
+            ),
             key=lambda item: item.evidence.capability_id,
         )
     )
@@ -321,7 +394,7 @@ def _compose_product_actions(
     presentations: dict[str, Literal["patch_batch", "process"]] = {
         tool: "process" for tool in process_owners
     }
-    reviews = {}
+    reviews: dict[str, TrustedActionReviewProvider] = {}
     if patch_entry is not None:
         presentations[WORKSPACE_PATCH_TOOL] = "patch_batch"
         reviews[WORKSPACE_PATCH_TOOL] = WorkspacePatchReviewProvider(
@@ -329,14 +402,17 @@ def _compose_product_actions(
             artifacts,
             workspace_scope=artifact_workspace_scope,
         )
+        presentations[WORKSPACE_ROLLBACK_TOOL] = "patch_batch"
+        reviews[WORKSPACE_ROLLBACK_TOOL] = WorkspaceRollbackReviewProvider(
+            WorkspaceRollbackTransactionPlanner(transactions, environment.workspace_root),
+            artifacts,
+            workspace_scope=artifact_workspace_scope,
+        )
     gateway = RouterBackedAgentActionGateway(
         router,
         catalog.definitions(),
-        lambda thread, _turn, call: _planning_context(
-            environment,
-            process_owners,
-            thread.workspace,
-            call.tool,
+        lambda thread, _turn, call: _product_call_context(
+            environment, process_owners, thread, call, router, transactions
         ),
         presentations=presentations,
         reviews=reviews,

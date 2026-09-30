@@ -1,0 +1,15 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_product_advertises_rollback_with_same_patch_capability_gate _______
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-23/test_product_advertises_rollba0')
+
+    async def test_product_advertises_rollback_with_same_patch_capability_gate(tmp_path):
+        async with product(tmp_path) as (_, _, _, router, _, composition, _):
+>           assert "rollback_workspace_patch" in {item.name for item in composition.catalog.definitions()}
+E           AssertionError: assert 'rollback_workspace_patch' in {'apply_patch_batch'}
+
+tests/product_config/test_product_patch_rollback.py:58: AssertionError
+- generated xml file: /Users/zhangjinhui/Library/Application Support/Harnessix/verification/product-patch-rollback-20260930-v1/red.xml -
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_patch_rollback.py::test_product_advertises_rollback_with_same_patch_capability_gate

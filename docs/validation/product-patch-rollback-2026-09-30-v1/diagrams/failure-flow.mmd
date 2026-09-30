@@ -1,0 +1,10 @@
+flowchart TD
+    Request[回滚请求] --> Owner{原成功调用属于本Thread}
+    Owner -- 否 --> Deny[拒绝且不读取原Blob]
+    Owner -- 是 --> Current{当前完整版本等于原after}
+    Current -- 否 --> Conflict[冲突拒绝并保留用户内容]
+    Current -- 是 --> Approval[新Diff和新批准]
+    Approval -- 拒绝或取消 --> NoWrite[不写Workspace]
+    Approval -- 批准 --> Publish[原逐成员执行]
+    Publish -- 崩溃或超时 --> Observe[UNKNOWN只观察]
+    Observe --> Result[成功 未应用 部分或分叉]

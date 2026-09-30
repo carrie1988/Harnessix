@@ -1,0 +1,24 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "scope": "formal_product_patch_rollback",
+  "required_reviews": [
+    "thread_turn_call_source_and_completed_effect",
+    "before_after_version_identity_not_model_body",
+    "fresh_approval_no_original_authority_reuse",
+    "known_preparation_refusal_no_fake_effect",
+    "pending_only_cancel_no_approved_shortcut",
+    "query_first_planner_and_observe_only_recovery",
+    "actual_installed_wheel_code_bytes",
+    "native_windows_same_candidate",
+    "git_commit_checkpoint_product_wiring"
+  ],
+  "decisions": {
+    "local_product": "go",
+    "installed_wheel_product": "go",
+    "native_windows": "pending",
+    "git_commit_checkpoint_product": "not_wired",
+    "real_provider_quality": "not_passed",
+    "consumer_platforms_and_beta": "pending",
+    "commercial_release": "no_go"
+  }
+}

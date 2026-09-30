@@ -1,0 +1,21 @@
+{
+  "scope": "formal_product_patch_rollback_local_and_installed_wheel",
+  "original_missing_tool_and_followup_failures_kept": true,
+  "same_thread_before_blob_read": true,
+  "fresh_approval_and_complete_diff": true,
+  "third_content_mode_and_presence_preserved": true,
+  "large_and_binary_original_bytes_restored": true,
+  "repeat_rollback_known_conflict_without_orphan": true,
+  "original_patch_wait_cancel_no_effect": true,
+  "original_transaction_and_events_unchanged": true,
+  "default_sdk_wait_reopen_backup_restore": true,
+  "hard_exit_partial_observe_only": true,
+  "hard_exit_all_after_cursor_reconcile_only": true,
+  "approved_ready_cancel_claimed_zero_effect": false,
+  "test_fixture_sources_required_for_wheel_test": true,
+  "real_model_quality_claimed": false,
+  "windows_native_claimed": false,
+  "consumer_windows11_claimed": false,
+  "os_atomic_multi_file_claimed": false,
+  "commercial_release_gate_closed": false
+}

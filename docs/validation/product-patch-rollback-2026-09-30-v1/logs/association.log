@@ -1,0 +1,230 @@
+........................................................................ [  5%]
+...............F.....sssssssssssssssssssssss............................ [ 11%]
+........................................................................ [ 17%]
+.....s...................ssssssssssssss................................. [ 23%]
+...............................................sssssss.................. [ 29%]
+..............................................................s......... [ 35%]
+..................................................ssssss................ [ 41%]
+........................................................................ [ 47%]
+........................................................................ [ 53%]
+......................................FFFF.............................. [ 59%]
+........................................................................ [ 64%]
+........................................................................ [ 70%]
+........................................................................ [ 76%]
+........................................................................ [ 82%]
+........................................................................ [ 88%]
+........................................................................ [ 94%]
+...................................................................      [100%]
+=================================== FAILURES ===================================
+__ test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain __
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-31/test_agent_patch_review_approv0')
+
+    async def test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain(
+        tmp_path: Path,
+    ) -> None:
+        root = tmp_path / "workspace"
+        (root / "src").mkdir(parents=True)
+        (root / "tests").mkdir()
+        (root / "src/modified.py").write_bytes(b"old\n")
+        (root / "tests/deleted.txt").write_bytes(b"remove\n")
+        proposal = _proposal()
+        sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+        confirmation_lost = False
+    
+        def lose_first_review_confirmation(point: str) -> None:
+            nonlocal confirmation_lost
+            if point == "action_review.after_commit" and not confirmation_lost:
+                confirmation_lost = True
+                raise OSError("模拟Action Review提交确认丢失")
+    
+        artifacts = SQLiteArtifactStore(sessions, fault=lose_first_review_confirmation)
+        environment = build_fixed_product_action_environment(root)
+        plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
+        audit = SQLiteActionAuditStore(tmp_path / "audit.db")
+        transactions = SQLiteWorkspaceTransactionStore(tmp_path / "delivery")
+        leases = WorkspaceLeaseStore(tmp_path / "leases.db")
+        router = TrustedActionRouter(
+            plans=plans,
+            audit=audit,
+            workspace_root=environment.workspace_root,
+        )
+        provider = ScriptedProvider([_action_step(proposal), answer("修改完成")])
+    
+        async with CodingToolRuntime(root, artifacts=artifacts) as tools:
+            composition = build_workspace_patch_composition(
+                build_product_action_config(),
+                environment,
+                router,
+                transactions,
+                leases,
+                artifacts,
+                artifact_workspace_scope=tools.workspace_scope,
+            )
+            assert composition.gateway is not None
+>           assert [item.name for item in composition.catalog.definitions()] == [WORKSPACE_PATCH_TOOL]
+E           AssertionError: assert ['apply_patch...kspace_patch'] == ['apply_patch_batch']
+E             
+E             Left contains one more item: 'rollback_workspace_patch'
+E             Use -v to get more diff
+
+tests/delivery/test_trusted_action_patch.py:348: AssertionError
+__ test_contract_change_can_only_observe_original_confirmed_effect[True-True] __
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-31/test_contract_change_can_only_0')
+read_only = True, terminal = True
+
+    @pytest.mark.parametrize("read_only", [True, False])
+    @pytest.mark.parametrize("terminal", [True, False])
+    async def test_contract_change_can_only_observe_original_confirmed_effect(
+        tmp_path, read_only, terminal
+    ):
+        root = tmp_path / "workspace"
+        root.mkdir()
+        (root / "file.txt").write_text("unchanged")
+        old = descriptor()
+        if read_only:
+            old = old.model_copy(
+                update={
+                    "effect_class": EffectClass.READ_ONLY,
+                    "risk_level": RiskLevel.LOW,
+                    "requires_idempotency": False,
+                    "requires_approval": False,
+                    "supports_reconciliation": False,
+                }
+            )
+        first = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output={"summary": "done"}))
+        gateway, actions, plans, audit = build_gateway(root, first, tool=old)
+        thread, turn, call = agent_state(root)
+        call = call.model_copy(
+            update={
+                "tool_fingerprint": tool_fingerprint(old),
+                "effect_class": old.effect_class,
+                "requires_approval": old.requires_approval,
+            }
+        )
+>       from harnessix.trusted_actions.agent_gateway_support import _build_invocation
+E       ImportError: cannot import name '_build_invocation' from 'harnessix.trusted_actions.agent_gateway_support' (/Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix/src/harnessix/trusted_actions/agent_gateway_support.py)
+
+tests/trusted_actions/test_custom_success_schema.py:146: ImportError
+_ test_contract_change_can_only_observe_original_confirmed_effect[True-False] __
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-31/test_contract_change_can_only_1')
+read_only = False, terminal = True
+
+    @pytest.mark.parametrize("read_only", [True, False])
+    @pytest.mark.parametrize("terminal", [True, False])
+    async def test_contract_change_can_only_observe_original_confirmed_effect(
+        tmp_path, read_only, terminal
+    ):
+        root = tmp_path / "workspace"
+        root.mkdir()
+        (root / "file.txt").write_text("unchanged")
+        old = descriptor()
+        if read_only:
+            old = old.model_copy(
+                update={
+                    "effect_class": EffectClass.READ_ONLY,
+                    "risk_level": RiskLevel.LOW,
+                    "requires_idempotency": False,
+                    "requires_approval": False,
+                    "supports_reconciliation": False,
+                }
+            )
+        first = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output={"summary": "done"}))
+        gateway, actions, plans, audit = build_gateway(root, first, tool=old)
+        thread, turn, call = agent_state(root)
+        call = call.model_copy(
+            update={
+                "tool_fingerprint": tool_fingerprint(old),
+                "effect_class": old.effect_class,
+                "requires_approval": old.requires_approval,
+            }
+        )
+>       from harnessix.trusted_actions.agent_gateway_support import _build_invocation
+E       ImportError: cannot import name '_build_invocation' from 'harnessix.trusted_actions.agent_gateway_support' (/Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix/src/harnessix/trusted_actions/agent_gateway_support.py)
+
+tests/trusted_actions/test_custom_success_schema.py:146: ImportError
+_ test_contract_change_can_only_observe_original_confirmed_effect[False-True] __
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-31/test_contract_change_can_only_2')
+read_only = True, terminal = False
+
+    @pytest.mark.parametrize("read_only", [True, False])
+    @pytest.mark.parametrize("terminal", [True, False])
+    async def test_contract_change_can_only_observe_original_confirmed_effect(
+        tmp_path, read_only, terminal
+    ):
+        root = tmp_path / "workspace"
+        root.mkdir()
+        (root / "file.txt").write_text("unchanged")
+        old = descriptor()
+        if read_only:
+            old = old.model_copy(
+                update={
+                    "effect_class": EffectClass.READ_ONLY,
+                    "risk_level": RiskLevel.LOW,
+                    "requires_idempotency": False,
+                    "requires_approval": False,
+                    "supports_reconciliation": False,
+                }
+            )
+        first = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output={"summary": "done"}))
+        gateway, actions, plans, audit = build_gateway(root, first, tool=old)
+        thread, turn, call = agent_state(root)
+        call = call.model_copy(
+            update={
+                "tool_fingerprint": tool_fingerprint(old),
+                "effect_class": old.effect_class,
+                "requires_approval": old.requires_approval,
+            }
+        )
+>       from harnessix.trusted_actions.agent_gateway_support import _build_invocation
+E       ImportError: cannot import name '_build_invocation' from 'harnessix.trusted_actions.agent_gateway_support' (/Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix/src/harnessix/trusted_actions/agent_gateway_support.py)
+
+tests/trusted_actions/test_custom_success_schema.py:146: ImportError
+_ test_contract_change_can_only_observe_original_confirmed_effect[False-False] _
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-31/test_contract_change_can_only_3')
+read_only = False, terminal = False
+
+    @pytest.mark.parametrize("read_only", [True, False])
+    @pytest.mark.parametrize("terminal", [True, False])
+    async def test_contract_change_can_only_observe_original_confirmed_effect(
+        tmp_path, read_only, terminal
+    ):
+        root = tmp_path / "workspace"
+        root.mkdir()
+        (root / "file.txt").write_text("unchanged")
+        old = descriptor()
+        if read_only:
+            old = old.model_copy(
+                update={
+                    "effect_class": EffectClass.READ_ONLY,
+                    "risk_level": RiskLevel.LOW,
+                    "requires_idempotency": False,
+                    "requires_approval": False,
+                    "supports_reconciliation": False,
+                }
+            )
+        first = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output={"summary": "done"}))
+        gateway, actions, plans, audit = build_gateway(root, first, tool=old)
+        thread, turn, call = agent_state(root)
+        call = call.model_copy(
+            update={
+                "tool_fingerprint": tool_fingerprint(old),
+                "effect_class": old.effect_class,
+                "requires_approval": old.requires_approval,
+            }
+        )
+>       from harnessix.trusted_actions.agent_gateway_support import _build_invocation
+E       ImportError: cannot import name '_build_invocation' from 'harnessix.trusted_actions.agent_gateway_support' (/Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix/src/harnessix/trusted_actions/agent_gateway_support.py)
+
+tests/trusted_actions/test_custom_success_schema.py:146: ImportError
+- generated xml file: /Users/zhangjinhui/Library/Application Support/Harnessix/verification/product-patch-rollback-20260930-v1/association.xml -
+=========================== short test summary info ============================
+FAILED tests/delivery/test_trusted_action_patch.py::test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_chain
+FAILED tests/trusted_actions/test_custom_success_schema.py::test_contract_change_can_only_observe_original_confirmed_effect[True-True]
+FAILED tests/trusted_actions/test_custom_success_schema.py::test_contract_change_can_only_observe_original_confirmed_effect[True-False]
+FAILED tests/trusted_actions/test_custom_success_schema.py::test_contract_change_can_only_observe_original_confirmed_effect[False-True]
+FAILED tests/trusted_actions/test_custom_success_schema.py::test_contract_change_can_only_observe_original_confirmed_effect[False-False]

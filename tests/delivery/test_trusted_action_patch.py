@@ -345,7 +345,10 @@ async def test_agent_patch_review_approval_delivery_and_artifact_are_one_bound_c
             artifact_workspace_scope=tools.workspace_scope,
         )
         assert composition.gateway is not None
-        assert [item.name for item in composition.catalog.definitions()] == [WORKSPACE_PATCH_TOOL]
+        assert [item.name for item in composition.catalog.definitions()] == [
+            WORKSPACE_PATCH_TOOL,
+            "rollback_workspace_patch",
+        ]
         async with AgentRuntime(
             sessions,
             provider,

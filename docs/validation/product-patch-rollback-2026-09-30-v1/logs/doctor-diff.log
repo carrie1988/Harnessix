@@ -1,0 +1,53 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-8.4.2, pluggy-1.6.0 -- /Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/product_config/test_product_patch_rollback.py::test_doctor_and_runtime_capture_identical_rollback_capabilities FAILED [100%]
+
+=================================== FAILURES ===================================
+_______ test_doctor_and_runtime_capture_identical_rollback_capabilities ________
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-40/test_doctor_and_runtime_captur0')
+
+    async def test_doctor_and_runtime_capture_identical_rollback_capabilities(tmp_path):
+        from harnessix.product_config.action_diagnostics import diagnose_product_actions
+        from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
+    
+        async with product(tmp_path) as (root, _, _, _, _, composition, _):
+            secrets = EnvironmentSecretProvider(
+                [EnvironmentSecretSource("offline", "v1", "HARNESSIX_OFFLINE")],
+                environment={},
+            )
+            diagnosed = diagnose_product_actions(
+                build_product_action_config(),
+                platform=composition.report.capabilities[0].platform,
+                secrets=secrets,
+                workspace=root,
+            )
+>           assert diagnosed == composition.report
+E           AssertionError: assert ProductAction...4ef849ea31fb') == ProductAction...1e78c51436e0')
+E             
+E             Full diff:
+E             - ProductActionCapabilityReport(spec_version='harnessix.product-action-capability-report/v1', config_sha256='dd596d190941b4545b115bc824bb8fc33aeeac539a8a29d3666fd09327d6e876', capabilities=(ProductActionCapabilityEvidence(spec_version='harnessix.product-action-capability/v1', capability_id='apply_patch_batch', kind='workspace_patch', status='verified', reason_code='verified', platform='posix', binding_digest='7aaa8a9cf1010767f80f8aae3f2ce6621c184b130eedc2e9ca1b18c556315bc7', executor_evidence_digest='fb98843af4080adecf8141401c26870781ab127c38282390235b3d9dac26...
+E             
+E             ...Full output truncated (4 lines hidden), use '-vv' to show
+
+EnvironmentSecretProvider = <class 'harnessix.secrets.provider.EnvironmentSecretProvider'>
+EnvironmentSecretSource = <class 'harnessix.secrets.provider.EnvironmentSecretSource'>
+_          = <harnessix.artifacts.sqlite.SQLiteArtifactStore object at 0x107d0f080>
+composition = ProductActionComposition(report=ProductActionCapabilityReport(spec_version='harnessix.product-action-capability-report...t 0x107a92a20>, gateway=<harnessix.trusted_actions.agent_gateway.RouterBackedAgentActionGateway object at 0x107ccf3e0>)
+diagnose_product_actions = <function diagnose_product_actions at 0x1055323e0>
+diagnosed  = ProductActionCapabilityReport(spec_version='harnessix.product-action-capability-report/v1', config_sha256='dd596d19094...74209, tzinfo=datetime.timezone.utc), report_sha256='5c668219a6c61dae5593c64bd96048a87802047c0d80d70adf514ef849ea31fb')
+root       = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-40/test_doctor_and_runtime_captur0/workspace')
+secrets    = <harnessix.secrets.provider.EnvironmentSecretProvider object at 0x107ccc170>
+tmp_path   = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-40/test_doctor_and_runtime_captur0')
+
+tests/product_config/test_product_patch_rollback.py:102: AssertionError
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_patch_rollback.py::test_doctor_and_runtime_capture_identical_rollback_capabilities
+============================== 1 failed in 0.21s ===============================

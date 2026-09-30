@@ -13,7 +13,9 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread, ToolCallContent, Turn
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.delivery.contracts import WorkspaceTransactionRecord
 from harnessix.delivery.diff import build_workspace_diff
+from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.trusted_action import WorkspacePatchTransactionPlanner
 from harnessix.delivery.trusted_action_contracts import (
     WorkspacePatchInput,
@@ -67,28 +69,52 @@ class WorkspacePatchReviewProvider:
             raise KernelError("trusted_action_review_invalid", "Action Review与Route不匹配")
         proposal = decode_workspace_patch_input(route.plan.invocation.arguments)
         record = self._planner.prepare(route.plan, proposal)
-        cancel.checkpoint()
-        diff = build_workspace_diff(record.plan, self._planner.transactions)
-        try:
-            document = build_workspace_action_review(record.plan, diff.entries, diff.text)
-            body = document.to_jsonl()
-        except (UnicodeError, ValueError):
-            raise KernelError(
-                "action_review_limit", "Workspace Patch完整Diff超过审批上限"
-            ) from None
-        ref = await cancel.run(
-            self._artifacts.publish_action_review(
-                thread.thread_id,
-                turn.turn_id,
-                call,
-                body,
-                artifact_id=uuid5(
-                    _ACTION_REVIEW_NAMESPACE,
-                    f"{route.plan.execution.plan_id}:action_review:v1",
-                ),
-                workspace_scope=self._workspace_scope,
-                expected_sequence=thread.sequence,
-            )
+        return await publish_workspace_review(
+            route,
+            thread,
+            turn,
+            call,
+            cancel,
+            record,
+            self._planner.transactions,
+            self._artifacts,
+            self._workspace_scope,
         )
-        cancel.checkpoint()
-        return TrustedActionReview(diff_artifact=ref)
+
+
+async def publish_workspace_review(
+    route: ActionRouteSnapshot,
+    thread: Thread,
+    turn: Turn,
+    call: ToolCallContent,
+    cancel: CancelToken,
+    record: WorkspaceTransactionRecord,
+    transactions: SQLiteWorkspaceTransactionStore,
+    artifacts: SQLiteArtifactStore,
+    workspace_scope: str,
+) -> TrustedActionReview:
+    """Patch与回滚共享完整Diff发布，不复制分页、取消或稳定Artifact身份语义。"""
+
+    cancel.checkpoint()
+    diff = build_workspace_diff(record.plan, transactions)
+    try:
+        document = build_workspace_action_review(record.plan, diff.entries, diff.text)
+        body = document.to_jsonl()
+    except (UnicodeError, ValueError):
+        raise KernelError("action_review_limit", "Workspace Patch完整Diff超过审批上限") from None
+    ref = await cancel.run(
+        artifacts.publish_action_review(
+            thread.thread_id,
+            turn.turn_id,
+            call,
+            body,
+            artifact_id=uuid5(
+                _ACTION_REVIEW_NAMESPACE,
+                f"{route.plan.execution.plan_id}:action_review:v1",
+            ),
+            workspace_scope=workspace_scope,
+            expected_sequence=thread.sequence,
+        )
+    )
+    cancel.checkpoint()
+    return TrustedActionReview(diff_artifact=ref)

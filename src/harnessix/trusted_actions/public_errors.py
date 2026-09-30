@@ -47,6 +47,8 @@ _RESOLVER_ERRORS = {
     "action_resource_invalid": "Action规范资源无效",
     "workspace_path_denied": "Workspace路径不允许访问",
     "workspace_platform_unsupported": "Workspace平台不受支持",
+    "workspace_rollback_arguments_invalid": "Patch回滚参数不符合契约",
+    "workspace_rollback_source_invalid": "Patch回滚来源不符合条件",
     "workspace_patch_arguments_invalid": "Workspace Patch参数类型不一致",
     "workspace_patch_cwd_unsupported": "Workspace Patch只支持根级cwd",
     "delivery_path_denied": "Workspace Patch路径不允许写入",
@@ -82,9 +84,14 @@ PUBLIC_OUTPUT_REJECTIONS = frozenset(
     )
 )
 _GATEWAY_ERRORS: dict[PublicGatewayStage, dict[str, str]] = {
-    "context": {},
+    "context": {
+        "workspace_rollback_not_owned": "该Patch不属于本会话的成功修改",
+        "workspace_rollback_arguments_invalid": "Patch回滚参数不符合契约",
+    },
     "review": {
         **_ARTIFACT_PUBLICATION_ERRORS,
+        "workspace_rollback_conflict": "Patch回滚目标存在后续改动",
+        "workspace_rollback_source_invalid": "Patch回滚来源不符合条件",
         "trusted_action_review_invalid": "Action审批预览不符合契约",
         "action_review_limit": "Action审批预览超过上限",
     },

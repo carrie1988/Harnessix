@@ -5,6 +5,11 @@
 **社区许可证：** [AGPL-3.0-only](LICENSE) ｜ **闭源商业使用：** [商业许可说明](COMMERCIAL_LICENSE.md)
 
 **发行状态：** 当前包版本为`1.0.0rc1`，仅用于内部预发行验收，不是1.0正式商用发布。
+
+**当前产品交付增量：** `rollback_workspace_patch`可对本会话成功Patch生成完整逆向Diff并重新审批，
+后续文件修改冲突拒绝，恢复只对账不续写。见[总体与详细设计](docs/changes/m09-r4-product-patch-rollback.md)及
+[验证报告](docs/validation/product-patch-rollback-2026-09-30-v1/README.md)。本地Git Commit/Checkpoint正式产品接线、
+真实编码质量、消费者环境和最终发行验收仍开放。
 不同版本升级与备份回退范围见[详细设计](docs/changes/m09-r4-different-version-upgrade.md)；R1～R6仍按实际证据验收。
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。

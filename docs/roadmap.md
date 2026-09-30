@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 135
-code_revision: 4e80ec16ec2c6e99beeda7e1f310a76ce4068fe7
+version: 136
+code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
 owners:
   - core
 modules:
@@ -27,6 +27,8 @@ related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
+  - tests/product_config/test_product_patch_rollback.py
+  - tests/product_config/test_product_rollback_sdk.py
   - tests/product_config/test_product_state_restore.py
   - tests/governance
   - tests/product_ui
@@ -1064,8 +1066,8 @@ Session重开回放链。原Suite/未知费用保持不变，0次真实模型请
 捕获为回滚来源的缺陷。读取原Blob前及Planner捕获后均绑定原Workspace ID，拒绝前不保存新事务；
 原批准、Schema、Lease、发布状态机及原事务事实不变。文件第三内容的产品选择仍须明确，不混同根身份。
 
-正式产品当前目录只接通受管Patch和条件Process，Git Commit、Checkpoint及Rollback仍是宿主组件，
-没有默认stdio/SDK闭环。[专项证据](validation/rollback-workspace-binding-2026-09-30-v1/README.md)
+该根身份专项时，产品目录只接通受管Patch和条件Process，Git Commit、Checkpoint及Rollback仍是宿主组件。
+后继正式Patch回滚接线见下节；Commit/Checkpoint尚无默认stdio/SDK闭环。[专项证据](validation/rollback-workspace-binding-2026-09-30-v1/README.md)
 不关闭R1/R4，也不把0.7组件实现完成推导为首发产品接线完成。
 后续沿原R4工作包补产品交付控制、来源绑定、审批及恢复；本地Commit/Checkpoint/Rollback不延期或删减，
 公网Push仍延期，真实质量、消费者平台、独立Beta及最终R1～R6保持开放。
@@ -1089,3 +1091,16 @@ Checkpoint覆盖受管Worktree的第三内容及计划外跟踪修改，且Lease
 Checkpoint职责提取到唯一模块，原可读性阈值不放宽，实现摘要绑定新模块字节。
 [专项验证](validation/git-checkpoint-source-2026-09-30-v1/README.md)保留原失败和有限结果，
 新Windows焦点需固定新候选；组件通过不等于正式Commit/Checkpoint/Rollback接线，R1～R6仍开放。
+
+### R1/R4：正式产品Patch回滚候选
+
+[完整总体与详细设计](changes/m09-r4-product-patch-rollback.md)接入`rollback_workspace_patch`，
+以本认证Thread成功原Patch事务为来源，精确匹配原after，新逆向Diff、新批准及独立Action/Transaction。
+第三内容、模式/存在性漂移和重复新回滚请求明确拒绝，未知UUID或其他Thread不读取原Blob。
+复用原Patch文件执行器、Lease、Artifact与六库备份布局，不新增服务或恢复写入捷径。
+
+[验证材料](validation/product-patch-rollback-2026-09-30-v1/README.md)记录本地真实产品/SDK、
+等待后重开、完整备份恢复及两处进程硬退出；ScriptedProvider只代替网络模型，不计作真实模型质量。
+新候选Windows焦点保留原NTFS和三分钟保护并增加回滚产品/SDK选择器；原生结果须绑定新提交实际取得。
+本地Commit/Checkpoint产品接线、完整真实编码质量、费用核对、Windows11消费者验证、
+独立Beta及R1～R6仍开放，内部`1.0.0rc1`不等于正式商用发布。

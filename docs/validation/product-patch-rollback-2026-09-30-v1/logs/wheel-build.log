@@ -1,0 +1,20 @@
+Building wheel...
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+ModuleNotFoundError: No module named 'hatchling'
+  × Failed to build
+  │ `/Users/zhangjinhui/.codex/worktrees/v1-acceptance/Harnessix`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `hatchling.build.build_wheel` failed (exit status: 1)
+
+      hint: This error likely indicates that `harnessix@1.0.0rc1` depends
+      on `hatchling`, but doesn't declare it as a build dependency. If
+      `harnessix` is a first-party package, consider adding `hatchling`
+      to its `build-system.requires`. Otherwise, either add it to your
+      `pyproject.toml` under:
+
+      [tool.uv.extra-build-dependencies]
+      harnessix = ["hatchling"]
+
+      or `uv pip install hatchling` into the environment and re-run with
+      `--no-build-isolation`.

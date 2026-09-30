@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 33
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 34
+code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
 owners:
   - core
 modules:
@@ -19,6 +19,8 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_patch_rollback.py
+  - tests/product_config/test_product_rollback_sdk.py
   - tests/product_config/test_product_state_restore.py
   - tests/trusted_actions/test_publication_recovery.py
   - tests/trusted_actions/test_router.py
@@ -1727,3 +1729,26 @@ Secret公开处理的父Task检查按本次进入时累计取消基线捕获，�
 独立及借用[`Action Owner`](../../src/harnessix/product_config/action_owner.py)在正式装配前拒绝未决恢复，
 Root缺失不再被当作空Store初始化机会。后续正常启动仍沿既有保守对账合同，
 状态快照可信不表示外部效果已确定，见[完整恢复设计](../changes/m09-r1-product-state-restore.md)。
+
+## 正式回滚的已知拒绝与未批准取消
+
+[`agent_gateway_invocation.py`](../../src/harnessix/trusted_actions/agent_gateway_invocation.py)
+集中原Thread/Turn/Call确定性Invocation和幂等Key算法；原`_build_invocation`内部门面及算法输入保持。
+[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)
+仅对正式builtin/product/rollback上下文的已知归属/参数错误返回failed；Review明确版本冲突时
+先以`system.validation`拒绝未批准Route，留下denied事实，再返回无虚构TrustedActionEffect的普通失败结果。
+公开消息由[`public_errors.py`](../../src/harnessix/trusted_actions/public_errors.py)按阶段固定码表重建。
+这不是任意自定义准备异常或执行异常的确定未执行捷径。
+
+恢复时仅当Turn=CANCELLING且Route=pending_approval，才能以`system.cancel`拒绝未批准Route并
+返回普通cancelled结果；Runtime沿原结束流程关闭未决Session审批项，不冒充已完成审批投影。
+ready、running、reconciling或已知部分效果仍沿原保守UNKNOWN路径；不能把已批准取消判为零效果。
+独立产品Patch和回滚测试均证明等待取消后没有文件变化，原计划不被重放。
+
+公开成功仅将精确`rollback_workspace_patch/product.workspace-patch-rollback`正式来源归入Patch五字段合同。
+[`builtin_success.py`](../../src/harnessix/trusted_actions/builtin_success.py)检查新事务ID等于冻结新Plan ID，
+文件数等于该Plan规范Workspace写资源数；模型输入原事务ID不能冒充新成功ID。
+恢复仍只观察Transaction成员，部分效果为manual_intervention；Agent继续失败`uncertain_effect`，
+不请求模型、不自动执行余下成员。已全部after但Cursor缺失只补对账事实。
+完整数据流、时序、失败矩阵及正式SDK原件见[详细设计](../changes/m09-r4-product-patch-rollback.md)
+和[验证报告](../validation/product-patch-rollback-2026-09-30-v1/README.md)。

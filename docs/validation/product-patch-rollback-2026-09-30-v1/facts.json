@@ -1,0 +1,243 @@
+{
+  "schema": "harnessix.product-patch-rollback-verification/v1",
+  "parent_revision": "974d40dfcf29e5601c3c7a65fc5922a869e443c7",
+  "version": "1.0.0rc1",
+  "platform": "macos",
+  "python": "3.12.7",
+  "actual_source_files": [
+    {
+      "path": "src/harnessix/delivery/trusted_action.py",
+      "bytes": 14956,
+      "sha256": "07e2e2517b40a11ba3097d42076143fb7e5ae0032a2b28bf1dd9f0775f11ca00"
+    },
+    {
+      "path": "src/harnessix/delivery/rollback_action.py",
+      "bytes": 11722,
+      "sha256": "2d7120009f4c68b7764b54eedc9f517f9cb2d31dad433d5b0d024c4ecafb4e96"
+    },
+    {
+      "path": "src/harnessix/delivery/transaction_action_executor.py",
+      "bytes": 4842,
+      "sha256": "589888c5a36da2ed32cb3016a6aad929f0063a75c0676443f00071b8cb307dc0"
+    },
+    {
+      "path": "src/harnessix/product_config/action_composition.py",
+      "bytes": 17428,
+      "sha256": "1ae984d49eb9c6ee21e98a180765bfc9655d0455a61af5b7ad2510f0f7502178"
+    },
+    {
+      "path": "src/harnessix/product_config/action_diagnostics.py",
+      "bytes": 5034,
+      "sha256": "334e9c5c533382fd940dcedd4421ad709580061c44f4732db0aaa76a01511ce1"
+    },
+    {
+      "path": "src/harnessix/product_config/workspace_patch_review.py",
+      "bytes": 4306,
+      "sha256": "a23f88504f4403f2ab75f19a634d2b4053bf7d7efa168d3149b9489264a38af1"
+    },
+    {
+      "path": "src/harnessix/product_config/workspace_rollback.py",
+      "bytes": 4681,
+      "sha256": "a22e5d83958e90845c7335509b8835b28d9881de78709df1dbbea1f22213db20"
+    },
+    {
+      "path": "src/harnessix/trusted_actions/agent_gateway_support.py",
+      "bytes": 21728,
+      "sha256": "ea45ab0682bffb7fa2e6875ec110918c89aa61270c44f929d17abf6dc8d56aa4"
+    },
+    {
+      "path": "src/harnessix/trusted_actions/agent_gateway_invocation.py",
+      "bytes": 1463,
+      "sha256": "66f4b94d32993af5771fef465f4c255b07badfd4918abf2f4133ae710a168a76"
+    },
+    {
+      "path": "src/harnessix/trusted_actions/preparation_rejection.py",
+      "bytes": 2654,
+      "sha256": "b5a354f65ba825fd5bf3e168ae9a5a655462ecabeab81acbfe359b587dc7c95a"
+    },
+    {
+      "path": "src/harnessix/trusted_actions/builtin_success.py",
+      "bytes": 3099,
+      "sha256": "87a6dc9204ef3e8ce9a95b64558ebb11ce25b0b2fc2ddd72e8ac1816593142b7"
+    },
+    {
+      "path": "src/harnessix/trusted_actions/public_errors.py",
+      "bytes": 8897,
+      "sha256": "d5be577af13722b767b3565dc93b6d3f9b7865282bc67c1d8056a77b034af3a7"
+    },
+    {
+      "path": "src/harnessix/trusted_actions/public_outcomes.py",
+      "bytes": 16609,
+      "sha256": "58ac0f40b4e6367b34a49d8618b16f99b9adff033fe7921947b05453d4d35372"
+    },
+    {
+      "path": "tests/product_config/test_product_patch_rollback.py",
+      "bytes": 17391,
+      "sha256": "1fb6e3a251e8a84201a5626c816414b6f167c259d94c56363cdb792ba7f47770"
+    },
+    {
+      "path": "tests/product_config/test_product_rollback_sdk.py",
+      "bytes": 10578,
+      "sha256": "b1e1363a4ab02ea25f5e30669d7c89ce36d3dc5c7bba2f6bb23a27227de03268"
+    },
+    {
+      "path": "tests/product_config/rollback_exit_worker.py",
+      "bytes": 3962,
+      "sha256": "4273e2d922903339c6ec201a104b43e31918a7e41ed741dece81a18ef2c0feb7"
+    },
+    {
+      "path": "tests/delivery/test_trusted_action_patch.py",
+      "bytes": 25527,
+      "sha256": "34239969dfe78ddace72d9e33a922d07bd00d0485dcb9b38fd29671254661d62"
+    },
+    {
+      "path": "tests/governance/test_installed_product_acceptance.py",
+      "bytes": 16307,
+      "sha256": "31103c101e741cd6d85ab86c89c94f4abe2d272a9dcea1a7862c97b857717ded"
+    },
+    {
+      "path": "spec/workspace-patch-rollback-input-v1.schema.json",
+      "bytes": 372,
+      "sha256": "af1ed2bbf79c068f214a18a9aed5525611cd0e7e40e4f2dd6d9ef280daddbb89"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 10974,
+      "sha256": "01001dbf2affc8aa733dabb17288cf2014b773ea0a598c317183cbcac0a78330"
+    },
+    {
+      "path": "scripts/generate_specs.py",
+      "bytes": 25389,
+      "sha256": "742e12cdaa73bc1685e81804aa5b99812c22e4efff2fe3312d10e260cb03e7fa"
+    }
+  ],
+  "unchanged_inputs": {
+    "src/harnessix/delivery/contracts.py": true,
+    "src/harnessix/delivery/trusted_action_contracts.py": true,
+    "src/harnessix/delivery/planner.py": true,
+    "src/harnessix/delivery/filesystem.py": true,
+    "src/harnessix/delivery/store.py": true,
+    "src/harnessix/product_config/action_contracts.py": true,
+    "src/harnessix/product_config/state_backup.py": true,
+    "src/harnessix/product_config/state_restore.py": true,
+    "src/harnessix/workspace/snapshot.py": true,
+    "governance/readability-policy-v1.json": true,
+    "uv.lock": true,
+    "pyproject.toml": true
+  },
+  "runs": {
+    "initial_missing_advertisement": {
+      "tests": 1,
+      "passed": 0,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.073,
+      "timestamp": "2026-09-30T10:14:16.759826+08:00"
+    },
+    "original_association_diagnostics": {
+      "tests": 1219,
+      "passed": 1162,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 52,
+      "seconds": 92.966,
+      "timestamp": "2026-09-30T10:31:08.044100+08:00"
+    },
+    "followup_red": {
+      "tests": 6,
+      "passed": 4,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.795,
+      "timestamp": "2026-09-30T10:51:46.059323+08:00"
+    },
+    "source_product": {
+      "tests": 25,
+      "passed": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 7.676,
+      "timestamp": "2026-09-30T11:04:19.081870+08:00"
+    },
+    "installed_wheel_product": {
+      "tests": 25,
+      "passed": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 7.968,
+      "timestamp": "2026-09-30T11:11:36.879349+08:00"
+    },
+    "earlier_association": {
+      "tests": 1766,
+      "passed": 1714,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 52,
+      "seconds": 167.169,
+      "timestamp": "2026-09-30T10:49:12.816249+08:00"
+    },
+    "core-regression": {
+      "tests": 5756,
+      "passed": 5645,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 111,
+      "seconds": 574.199,
+      "timestamp": "2026-09-30T11:10:33.833021+08:00"
+    },
+    "governance-regression": {
+      "tests": 302,
+      "passed": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 32.264,
+      "timestamp": "2026-09-30T11:15:19.580340+08:00"
+    }
+  },
+  "candidate_wheel": {
+    "filename": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "bytes": 1091863,
+    "sha256": "de58414d1d2aaea0bc8cf7005782b333ba2c475c7353685856c7cc79a5ab98f1",
+    "version": "1.0.0rc1",
+    "source_members_matched": 440
+  },
+  "installed_identity": {
+    "version": "1.0.0rc1",
+    "load_from_installed_wheel": true,
+    "matched_package_members": 440,
+    "wheel_sha256": "de58414d1d2aaea0bc8cf7005782b333ba2c475c7353685856c7cc79a5ab98f1",
+    "locked_install_input_sha256": "ca634efebe037d5588266e864007e3b3d2c1b92c9abe6adf2636982a46bff02d",
+    "test_fixtures_loaded_from_worktree": true,
+    "commercial_release": false
+  },
+  "governance_regression": "passed",
+  "checks": {
+    "ruff": "passed",
+    "mypy_source_files": 399,
+    "mypy": "passed",
+    "readability_original_policy": "passed",
+    "original_specs_unchanged": true,
+    "new_input_schema": "workspace-patch-rollback-input-v1.schema.json",
+    "mermaid_png_rendered_and_reviewed": 3,
+    "source_wheel_secret_scan": {
+      "inputs": 3601,
+      "findings": 0
+    },
+    "documentation_render": {
+      "findings": 0,
+      "changed_mermaid_blocks_rendered": 62,
+      "registered_documents": 404
+    }
+  },
+  "provider_network_requests": 0,
+  "docker_operations": 0,
+  "budget_period_reset": false,
+  "native_windows_same_candidate": "pending",
+  "commercial_release": false,
+  "core_regression": "passed"
+}

@@ -345,6 +345,8 @@ def test_rollback_root_binding_joins_native_focus_without_removing_existing_chec
         "tests/delivery/test_windows_io_contracts.py",
         "tests/delivery/test_rollback_binding.py",
         "tests/delivery/test_trusted_action_patch.py",
+        "tests/product_config/test_product_patch_rollback.py",
+        "tests/product_config/test_product_rollback_sdk.py",
         "tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch",
     ]
 

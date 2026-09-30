@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.073" timestamp="2026-09-30T10:14:16.759826+08:00" hostname="MacBook-Pro.local"><testcase classname="tests.product_config.test_product_patch_rollback" name="test_product_advertises_rollback_with_same_patch_capability_gate" time="0.033"><failure message="AssertionError: assert 'rollback_workspace_patch' in {'apply_patch_batch'}">tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-23/test_product_advertises_rollba0')
+
+    async def test_product_advertises_rollback_with_same_patch_capability_gate(tmp_path):
+        async with product(tmp_path) as (_, _, _, router, _, composition, _):
+&gt;           assert "rollback_workspace_patch" in {item.name for item in composition.catalog.definitions()}
+E           AssertionError: assert 'rollback_workspace_patch' in {'apply_patch_batch'}
+
+tests/product_config/test_product_patch_rollback.py:58: AssertionError</failure></testcase></testsuite></testsuites>

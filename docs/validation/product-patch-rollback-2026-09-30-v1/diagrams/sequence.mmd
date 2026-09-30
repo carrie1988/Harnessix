@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant A as Agent
+    participant G as Product Gateway
+    participant R as Router
+    participant P as Rollback Planner
+    participant U as User
+    participant E as Transaction Executor
+    A->>G: rollback_workspace_patch(transaction_id)
+    G->>G: 验证本Thread原调用和成功效果
+    G->>R: 规划新Action
+    R->>P: 原after到before的规范资源
+    G->>P: 保存新事务并校验完整版本
+    P-->>U: 完整逆向Diff Artifact
+    U->>R: 新批准或拒绝
+    R->>E: 新Action批准检查点和当前Snapshot复核
+    E->>E: 新Action租约与逐成员发布
+    E-->>A: 五字段低敏结果

@@ -1,0 +1,16 @@
+{
+  "additionalProperties": false,
+  "description": "仅指定本会话成功Patch事务；根、文件目标和批准由宿主决定。",
+  "properties": {
+    "transaction_id": {
+      "format": "uuid",
+      "title": "Transaction Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id"
+  ],
+  "title": "WorkspaceRollbackInput",
+  "type": "object"
+}

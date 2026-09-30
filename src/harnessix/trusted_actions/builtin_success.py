@@ -29,11 +29,13 @@ def validate_builtin_success(
     if family == "patch":
         patch = PublicWorkspacePatchOutput.model_validate_json(encoded)
         files = arguments.get("files")
-        if (
-            patch.transaction_id != plan.execution.plan_id
-            or type(files) is not list
-            or patch.files != len(files)
-        ):
+        count = len(files) if type(files) is list else None
+        if plan.binding.tool == "rollback_workspace_patch":
+            count = sum(
+                resource.kind == "workspace" and resource.access == "write"
+                for resource in plan.resources
+            )
+        if patch.transaction_id != plan.execution.plan_id or patch.files != count:
             raise ValueError("公开Patch摘要不属于当前计划")
     elif family == "git":
         receipt = GitPushReceipt.model_validate_json(encoded)

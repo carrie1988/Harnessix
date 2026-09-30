@@ -1,0 +1,47 @@
+FF....                                                                   [100%]
+=================================== FAILURES ===================================
+_______ test_second_rollback_is_known_conflict_without_pending_approval ________
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-37/test_second_rollback_is_known_0')
+
+    async def test_second_rollback_is_known_conflict_without_pending_approval(tmp_path):
+        async with product(tmp_path) as (root, runtime, provider, router, _, _, _):
+            thread_id, original_id = await publish(runtime, provider, root)
+            provider.steps = (rollback_step(original_id), answer("回滚完成"))
+            waiting = await runtime.run_turn(thread_id, "撤销", request_id="rollback-once")
+            await approve(runtime, thread_id, waiting)
+            provider.steps = (rollback_step(original_id), answer("原修改已经撤销"))
+            completed = await runtime.run_turn(thread_id, "再次撤销", request_id="rollback-twice")
+            output = result(completed)
+>           assert output.outcome == "failed"
+E           AssertionError: assert 'unknown' == 'failed'
+E             
+E             - failed
+E             + unknown
+
+tests/product_config/test_product_patch_rollback.py:267: AssertionError
+_____ test_cancel_unapproved_original_patch_has_no_effect_and_closes_route _____
+
+tmp_path = PosixPath('/private/var/folders/r_/7171r5v97276cj5ncgmjb_yw0000gq/T/pytest-of-zhangjinhui/pytest-37/test_cancel_unapproved_origina0')
+
+    async def test_cancel_unapproved_original_patch_has_no_effect_and_closes_route(tmp_path):
+        async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+            provider.steps = (_action_step(_proposal()),)
+            thread = await runtime.create_thread(str(root))
+            waiting = await runtime.run_turn(thread.thread_id, "修改", request_id="cancel-patch")
+            request = _approval(waiting)
+            stopped = await runtime.cancel(thread.thread_id, waiting.turn_id)
+            assert stopped.status is TurnStatus.CANCELLED
+            output = result(stopped)
+            assert output.outcome == "cancelled" and output.trusted_action is None
+>           assert router.status(request.plan_id).state == "rejected"
+E           AssertionError: assert 'denied' == 'rejected'
+E             
+E             - rejected
+E             + denied
+
+tests/product_config/test_product_patch_rollback.py:294: AssertionError
+- generated xml file: /Users/zhangjinhui/Library/Application Support/Harnessix/verification/product-patch-rollback-20260930-v1/followup-red.xml -
+=========================== short test summary info ============================
+FAILED tests/product_config/test_product_patch_rollback.py::test_second_rollback_is_known_conflict_without_pending_approval
+FAILED tests/product_config/test_product_patch_rollback.py::test_cancel_unapproved_original_patch_has_no_effect_and_closes_route

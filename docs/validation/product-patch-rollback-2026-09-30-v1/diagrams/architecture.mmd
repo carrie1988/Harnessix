@@ -1,0 +1,10 @@
+flowchart LR
+    Model[模型回滚意图] --> Owner[认证Session原调用与成功效果归属]
+    Owner --> Router[Trusted Action原规划与新批准]
+    Ledger[原Patch账本和私有镜像] --> Planner[逆向计划和精确版本校验]
+    Router --> Planner
+    Planner --> Review[完整Diff Artifact]
+    Review --> UI[CLI TUI SDK原审批入口]
+    UI --> Executor[共享事务执行器]
+    Executor --> Files[原Workspace逐成员发布]
+    Executor --> Journal[新事务和Action终态]

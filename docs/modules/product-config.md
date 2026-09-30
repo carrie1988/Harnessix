@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 39
-code_revision: dc3692abb08ebe9e2e9bf4d971af9eee395cf590
+version: 40
+code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_product_patch_rollback.py
+  - tests/product_config/test_product_rollback_sdk.py
   - tests/product_config/test_product_state_restore.py
   - tests/product_config/test_publication_scope.py
   - tests/product_config/test_action_contracts.py
@@ -1745,8 +1747,8 @@ Workspace Patch能力和每个固定Process Profile的探测结果转换为同�
 `ProductActionCatalog`和同一个`RouterBackedAgentActionGateway`。兼容函数`build_workspace_patch_composition`仅保留给e3专项测试，
 不再是默认产品组合根。
 
-Patch在POSIX安全文件能力成立时生成`apply_patch_batch`；Windows及缺少`O_DIRECTORY/O_NOFOLLOW/O_CLOEXEC`的平台生成
-`omitted/platform_not_supported`。Process按Profile逐项探测，任一Engine、镜像、Owner、Sandbox、资源或Secret证据失败只省略
+Patch在本机安全文件能力成立时生成`apply_patch_batch`及`rollback_workspace_patch`；POSIX需安全文件端口，
+Windows需原生本地NTFS准入。不满足本机端口时两者均生成`omitted/platform_not_supported`。Process按Profile逐项探测，任一Engine、镜像、Owner、Sandbox、资源或Secret证据失败只省略
 该Profile，不影响已经验证的Patch或其他Profile。Report和Catalog都按Capability ID稳定排序，并在Router批量注册前断言Verified
 集合与Entry集合精确相等。
 
@@ -1772,7 +1774,7 @@ state-root/
 ```
 
 Gateway的规划上下文按Tool选择：Patch使用固定Workspace的`host_guarded`能力；Process使用Verified Owner的
-`container_strong` Sandbox、Engine Capability、固定环境及Secret版本。Review Provider也按Tool绑定，只有Patch生成Diff；Process
+`container_strong` Sandbox、Engine Capability、固定环境及Secret版本。Review Provider也按Tool绑定，Patch与回滚生成Diff；Process
 使用`presentation=process`且不得携带Diff。这个分派关闭了“多Tool Gateway仍把Process交给Patch Review”的组合错误。
 
 ## 50. 固定Container Process默认链（0.9.1e4已验收）
@@ -2166,3 +2168,22 @@ Profile通过启动探测后，每次执行仍由Builder实时复核资源能力
 Plan、Approval、Store与错误公开合同均不增加字段。
 [完整详设](../changes/m09-r1-container-resource-admission.md)说明固定字段、接口、流程、失败和测试；
 该增量不构成真实编码质量或R1整体发布验收。
+
+## 正式Patch回滚与同源能力目录
+
+同一`workspace_patch_enabled`控制原Patch与`rollback_workspace_patch`，不新增配置版本、数据库或第二套权限。
+[`_rollback_component`](../../src/harnessix/product_config/action_composition.py)复用Patch能力及执行器证明，
+捕获独立Rollback Binding；Report、Catalog和Router始终按同一verified集合构造。
+[`diagnose_product_actions`](../../src/harnessix/product_config/action_diagnostics.py)使用相同Descriptor/Binding及平台门，
+不创建事务、Lease、Process或Session状态；专项在固定同一探测时间时比较Doctor和真实运行组合报告的全部字段，包含有效期与摘要。
+
+回滚上下文在Router规划前调用[`authorize_workspace_rollback`](../../src/harnessix/product_config/workspace_rollback.py)。
+使用本认证Thread原成功调用和效果，不把共享Workspace、模型UUID或Fork继承历史当作授权。
+同Thread来源通过后，专用Review Provider复用[`publish_workspace_review`](../../src/harnessix/product_config/workspace_patch_review.py)
+发布完整逆向Diff，使用原Artifact作用域、稳定ID及Session序列校验；CLI/TUI/SDK不新增审批协议。
+
+默认`run_product_stdio`专项以真实产品Root、Session Key、SDK及文件执行器验证等待后重开、
+新批准、三文件回滚、完整备份恢复与两个硬退出窗口，只有Provider由ScriptedProvider替代。
+产品备份沿用六库与Key布局；不从离线结果推导真实模型质量、消费者Windows11或最终新Wheel原生验收。
+部署、错误码、恢复边界和源码映射见[总体详细设计](../changes/m09-r4-product-patch-rollback.md)
+及[统一验证材料](../validation/product-patch-rollback-2026-09-30-v1/README.md)。

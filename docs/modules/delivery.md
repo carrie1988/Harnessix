@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 21
-code_revision: 4e80ec16ec2c6e99beeda7e1f310a76ce4068fe7
+version: 22
+code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_product_patch_rollback.py
+  - tests/product_config/test_product_rollback_sdk.py
   - tests/delivery/test_git_checkpoint_guard.py
   - tests/delivery/test_windows_io_contracts.py
   - tests/delivery/test_planner.py
@@ -114,7 +116,7 @@ Delivery把交付拆成四个可独立证明的层次：
 - 不清理受管Worktree、不可达Git对象、临时失败目录或未引用Blob；
 - 不自动获取远端旧OID、管理SSH Agent、Known Hosts、Token、Keychain或企业代理；
 - 不把Commit批准推导为Push批准；
-- 默认产品只开放受管Workspace Patch；不自动开放Git Commit、Checkpoint、Rollback或Push。
+- 默认产品开放受管Workspace Patch及同Thread已成功Patch的独立审批回滚；不自动开放Git Commit、Checkpoint或Push。
 
 ### 3.3 关键术语
 
@@ -143,7 +145,7 @@ Delivery把交付拆成四个可独立证明的层次：
 | 完整Diff | 已实现 | `build_workspace_diff` | 文本、二进制、模式和重命名测试 |
 | POSIX普通目录发布 | 已实现/显式装配 | `WorkspaceTransactionRuntime.publish` | 创建、修改、删除、崩溃和Lease测试 |
 | Windows本地NTFS普通文件发布 | 原生端口实现候选 | 同一`WorkspaceTransactionRuntime`选择`windows_filesystem` | 原生创建/替换/删除、硬退出、权限和Root身份验证；不以macOS跳过证明支持 |
-| Rollback新事务 | 组件实现，产品未接线 | `build_rollback` | 同一根身份、重定位/置换与规划竞态回归；第三内容的产品选择仍开放 |
+| Rollback新事务 | 默认产品实现候选；宿主API独立保留 | `rollback_workspace_patch` / `build_rollback` | 产品要求同Thread来源、新批准及原after精确匹配；宿主API第三内容语义不同；原生结果单独验收 |
 | Git Repository Binding | 已实现 | `bind_repository` | 干净状态与危险配置测试 |
 | Managed Worktree | 已实现 | `plan_worktree/create_worktree/reconcile_worktree` | 注册崩溃恢复测试 |
 | Git Checkpoint | 已实现 | `create_checkpoint` | Tree、Blob和来源不变测试 |
@@ -688,13 +690,38 @@ Planner仍可能在内存中捕获正文；来源身份竞态拒绝后这些内�
 非Windows执行结果不代替原生结果，当前CI状态按对应候选实际证据判断。
 专项原件、源码绑定及Go/No-Go见[验证报告](../validation/rollback-workspace-binding-2026-09-30-v1/README.md)。
 
-当前实现不会要求Workspace仍等于原Transaction的after。若用户已经写入第三内容，Rollback规划会把该
+宿主`build_rollback`实现不会要求Workspace仍等于原Transaction的after。若用户已经写入第三内容，Rollback规划会把该
 第三内容捕获为新before，并生成“第三内容→原before”的新变更，等待新批准；它不会在`build_rollback`
 阶段自动冲突。这与[ADR 0068](../adr/0068-transactional-workspace-and-git-delivery.md)中“第三内容使Rollback
-冲突”的文字并不完全一致，需明确产品选择：拒绝第三内容，或保留当前“展示新Diff后重新批准”语义。
-根身份修正**没有改变这一文件冲突选择**，不能据此宣布Rollback已成为首发产品能力。
-Commit、Checkpoint和Rollback仍须接通正式产品控制/审批、持久来源和恢复；
+冲突”的文字并不完全一致。根身份修正没有改变该宿主组件语义。默认模型Tool另行采用第三内容冲突拒绝，
+见16.5；不能把直接组件调用当作产品授权。
+Commit、Checkpoint仍须接通正式产品控制/审批、持久来源和恢复；
 底层Git API或本专项绿灯不能替代R4的三平台完整产品闭环。
+
+### 16.5 正式产品回滚总体与详细接线
+
+[`rollback_workspace_patch`](../../src/harnessix/delivery/rollback_action.py)采用独立Tool Binding，
+只接受本认证Thread成功`apply_patch_batch`返回的原事务UUID；不接受正文、根或原批准。
+[`authorize_workspace_rollback`](../../src/harnessix/product_config/workspace_rollback.py)先核对原调用的
+Thread/Turn/Call确定性ID、配对成功效果、Router成功终态以及原Patch计划/事务，之后才允许逆向规划。
+跨Thread、Fork继承调用和未知UUID拒绝，不读取原Blob，不创建新Route。
+
+纯Resolver从原File Version构造原after到before的资源，不限制原Blob编码；Review从原私有Blob
+构造目标，复用原Planner并精确匹配每个版本，完整Diff由原Session Artifact发布器生成。
+新的Action/Transaction ID及Fingerprint要求新批准；第三内容、存在性或模式漂移均拒绝。
+原修改已撤销也属于前置版本冲突；尚未批准的冲突Route持久变为denied，不进入Executor或假报UNKNOWN。
+
+[`WorkspaceTransactionActionExecutor`](../../src/harnessix/delivery/transaction_action_executor.py)
+抽取原Patch单租约、逐成员发布和只观察恢复逻辑。原Patch构造签名保持；回滚只提供自己的计划加载器。
+等待未批准取消仅在pending_approval下证明零执行，使用无虚构效果的普通cancelled结果；
+已批准或开始执行仍沿原保守UNKNOWN恢复，不以取消意图证明文件未改。
+部分硬退出保持人工处置；全after但Cursor未完成时只更新对账事实，不重写文件。
+
+完整接口、字段、时序、伪代码、失败与兼容见[专项详细设计](../changes/m09-r4-product-patch-rollback.md)，
+[产品与默认SDK测试](../../tests/product_config/test_product_patch_rollback.py)、
+[硬退出及完整备份恢复](../../tests/product_config/test_product_rollback_sdk.py)使用正式Key、Store和文件端口。
+[验证包](../validation/product-patch-rollback-2026-09-30-v1/README.md)区分本地结果与新候选原生待验。
+无新DB或迁移，原事务与Blob仍由原六库完整产品备份覆盖；不关闭R1/R4或Git交付缺口。
 
 ## 17. Diff生成
 
@@ -1575,14 +1602,14 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 | 优先级 | 缺口 | 当前影响 | 建议归属 |
 |---|---|---|---|
 | P0 | POSIX最终提交不是原子旧对象CAS | 可覆盖检查后出现的外部内容 | 0.9默认写链安全门禁 |
-| P0 | Delivery未装配默认Agent/CLI/TUI | 用户无法从产品完成正式写入交付 | 0.9.1～0.9.3 |
+| P0 | Git Commit/Checkpoint未装配默认Agent/CLI/TUI | Patch与审批回滚已接线，但尚不能完成正式Git交付闭环 | R4产品交付接线 |
 | P0 | 本地Publish/Commit只比较Fingerprint参数 | 库本身不证明批准来源 | 统一Trusted Action接线 |
 | P0 | Worktree创建未重验完整Snapshot | 部分批准事实漂移可能未失效 | Git执行前复核修复 |
 | P0 | Push缺少公网Secret/Known Hosts边界 | 不能安全发布私有仓库 | 0.9.5 |
 | P0 | Push取消/超时无完整进程Owner，Route可停在running | 用户取消后效果仍可能继续；重开只能保守转unknown再对账 | Process/Sandbox统一Owner与取消恢复协调 |
 | P1 | Checkpoint Lease只检查一次 | 长操作可能越过Fencing期限 | 阶段续租与复核 |
 | P1 | Worktree Reconcile可写但不要求Lease | 恢复入口权限边界不清 | Observe/Repair拆分 |
-| P1 | Rollback第三内容语义与ADR不一致 | 用户预期和实现可能冲突 | 设计决策+回归测试 |
+| P1 | 宿主Rollback第三内容与产品Tool语义不同 | 产品冲突拒绝，宿主可重新规划；直接宿主调用不是产品入口 | 保持分层说明与回归 |
 | P1 | Store事件无Hash链且只验证当前事件 | 历史审计防篡改不足 | Ledger完整性升级 |
 | P1 | 无Worktree/Blob/Git对象GC | 长期运行磁盘增长 | 0.9.5运维生命周期 |
 | P1 | 无跨Store恢复协调器 | 运维需逐账本人工判断 | Recovery Coordinator |
@@ -1626,7 +1653,7 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 
 ### 43.2 产品生产完成条件
 
-- [ ] 默认Agent能以版本化Tool Contract生成Transaction并展示完整可验证Diff；
+- [ ] 默认Agent的Patch及回滚可由版本化Tool Contract生成Transaction并展示完整可验证Diff，且同候选原生验收完成；Patch原能力保持，本回滚候选原生验收仍开放；
 - [ ] Approval Store而非调用方字符串证明本地Publish/Worktree/Commit授权；
 - [ ] POSIX提交竞态被关闭或默认产品只在受管Worktree中交付；
 - [ ] Windows、macOS、Linux真实仓库与长任务恢复均通过；
@@ -1657,7 +1684,7 @@ OID长度识别SHA-1/SHA-256。Git二进制身份和版本进入Binding，但没
 16. 阅读Remote URL规范化和Git Push Intent合同；
 17. 从`git_push_descriptor/git_push_binding/build_git_push_definition`进入Trusted Router，验证合同、资源和恢复身份同源；
 18. 阅读`GitPushActionExecutor._execute/_reconcile`，确认调用后异常不会触发第二次Push；
-19. 最后检查默认Bootstrap/Product Config，确认Delivery当前没有产品装配入口；
+19. 最后检查默认Bootstrap/Product Config，区分已接线Patch/审批回滚与未接线Git Commit/Checkpoint；
 20. 按第38节运行测试，并用第41节审查尚未满足的生产门槛。
 
 ## 45. 维护规则

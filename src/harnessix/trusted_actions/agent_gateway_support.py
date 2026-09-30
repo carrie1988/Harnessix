@@ -31,6 +31,7 @@ from harnessix.domain.models import (
     utc_now,
 )
 from harnessix.execution.contracts import canonical_digest
+from harnessix.trusted_actions.agent_gateway_invocation import build_agent_action_invocation
 from harnessix.trusted_actions.agent_gateway_output import (
     SecretOutputProtection,
     TrustedActionOutputProvider,
@@ -44,6 +45,10 @@ from harnessix.trusted_actions.contracts import (
     TrustedToolBinding,
 )
 from harnessix.trusted_actions.legacy_projection import project_legacy_terminal
+from harnessix.trusted_actions.preparation_rejection import (
+    cancel_pending_approval,
+    rollback_preparation_rejection,
+)
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.router import ActionPlanningContext, TrustedActionRouter
 
@@ -152,7 +157,11 @@ async def prepare_action(
     except TurnCancelled:
         raise
     except Exception as error:
-        raise sanitize_gateway_exception(error, stage="context") from None
+        rejection = sanitize_gateway_exception(error, stage="context")
+        result = rollback_preparation_rejection(state.router, binding, call, rejection)
+        if result is not None:
+            return result
+        raise rejection from None
     route = state.router.plan(invocation, context)
     _validate_route(route, thread, turn, call, binding)
     if route.state == "pending_approval":
@@ -164,7 +173,13 @@ async def prepare_action(
             except TurnCancelled:
                 raise
             except Exception as error:
-                raise sanitize_gateway_exception(error, stage="review") from None
+                rejection = sanitize_gateway_exception(error, stage="review")
+                result = rollback_preparation_rejection(
+                    state.router, binding, call, rejection, route
+                )
+                if result is not None:
+                    return result
+                raise rejection from None
         return build_approval(
             thread, turn, call, route, review, presentation=state.presentations[call.tool]
         )
@@ -320,6 +335,9 @@ async def recover_action(
     if approval is not None:
         _validate_approval(state, thread, turn, call, approval)
         route = _restore_session_decision(state, route, approval)
+    cancelled = cancel_pending_approval(state.router, route, turn, call)
+    if cancelled is not None:
+        return cancelled
     if route.state in {"pending_approval", "ready"}:
         return None
     if route.state in {"running", "reconciling"}:
@@ -409,27 +427,13 @@ def _build_invocation(
     call: ToolCallContent,
     binding: TrustedToolBinding,
 ) -> CodingActionInvocation:
-    plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
-    idempotency_key = None
-    if state.definitions[call.tool].requires_idempotency:
-        idempotency_key = canonical_digest(
-            {
-                "spec_version": "harnessix.agent-trusted-action-idempotency/v1",
-                "thread_id": str(thread.thread_id),
-                "turn_id": str(turn.turn_id),
-                "call_id": str(call.call_id),
-                "tool_fingerprint": call.tool_fingerprint,
-            }
-        )
-    return CodingActionInvocation(
-        invocation_id=plan_id,
-        source=binding.source,
-        source_id=binding.source_id,
-        tool=binding.tool,
-        tool_version=binding.tool_version,
-        tool_fingerprint=binding.tool_fingerprint,
-        arguments=call.arguments,
-        idempotency_key=idempotency_key,
+    """保留原内部调用门面，稳定身份算法只由独立构造器实现。"""
+    return build_agent_action_invocation(
+        thread,
+        turn,
+        call,
+        binding,
+        requires_idempotency=state.definitions[call.tool].requires_idempotency,
     )
 
 

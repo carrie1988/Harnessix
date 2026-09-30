@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.rollback_action import WORKSPACE_ROLLBACK_TOOL, workspace_rollback_binding
 from harnessix.delivery.trusted_action import (
     WORKSPACE_PATCH_TOOL,
     workspace_patch_binding,
@@ -41,7 +42,19 @@ def diagnose_product_actions(
 ) -> ProductActionCapabilityReport:
     """生成Doctor可公开的同源能力报告；Process探测只读且不创建Lease Store。"""
 
-    evidence: list[ProductActionCapabilityEvidence] = [_diagnose_patch(config, platform, workspace)]
+    patch = _diagnose_patch(config, platform, workspace)
+    rollback = build_product_action_capability(
+        capability_id=WORKSPACE_ROLLBACK_TOOL,
+        kind="workspace_patch",
+        status=patch.status,
+        reason_code=patch.reason_code,
+        platform=platform,
+        binding_digest=workspace_rollback_binding().binding_digest
+        if patch.status == "verified"
+        else None,
+        executor_evidence_digest=patch.executor_evidence_digest,
+    )
+    evidence: list[ProductActionCapabilityEvidence] = [patch, rollback]
     owner_capability = None
     if config.process_profiles:
         try:

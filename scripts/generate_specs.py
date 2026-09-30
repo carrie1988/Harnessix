@@ -63,6 +63,7 @@ from harnessix.delivery.git_contracts import (
     ManagedGitWorktreePlan,
     ManagedGitWorktreeRecord,
 )
+from harnessix.delivery.rollback_action import WorkspaceRollbackInput
 from harnessix.delivery.trusted_action_contracts import (
     PublicWorkspacePatchOutput,
     WorkspaceActionReviewRecord,
@@ -354,6 +355,10 @@ def generate_specs(output: Path) -> None:
     write_json(
         output / "process-output-record-v1.schema.json",
         TypeAdapter(ProcessOutputRecord).json_schema(),
+    )
+    write_json(
+        output / "workspace-patch-rollback-input-v1.schema.json",
+        WorkspaceRollbackInput.model_json_schema(),
     )
     write_json(
         output / "workspace-patch-input-v1.schema.json",
