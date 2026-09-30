@@ -1,0 +1,197 @@
+---
+doc_type: change-design
+status: current
+version: 1
+code_revision: 38cc5a04face1517c137a0a96af03d41e6dfc19e
+owners: [core]
+modules: [evals, models]
+related_adrs:
+  - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
+related_tests:
+  - tests/evals/test_provider_reverification.py
+  - tests/evals/test_provider_verification_budget.py
+  - tests/evals/test_provider_verification_host.py
+supersedes: []
+---
+
+# R3 原未决全额保留的单次有界复验预算设计
+
+## 1. 需求背景、源码研究与设计目标
+
+[原真实Suite中断](../validation/provider-suite-interruption-2026-09-30-v1/README.md)后，原70元周期
+存在一项未知费用，保守预留20.77824元。Usage字段完整不等于Adapter成功终态，也不等于供应商账单；
+原未知记录不能改为completed，不能释放差额，不能建立新周期绕开占用。
+
+默认[请求预算保护](m09-r3-verification-request-budget.md)在任何未决请求存在时拒绝Owner进入。
+单次有界复验允许预算所有者明确指定一个新Suite继续，但必须保持默认规则，以及新增未知立即停止的约束。
+这是可信验证宿主的费用规则扩展，不是产品授权平台、Agent工具、生产API或账户级硬限额。
+
+设计目标：原周期及整个旧请求前缀不可变；仅承接明确登记的一项旧unknown；新Suite已知估算与全部新预留
+累计不超过40元；原周期已知估算与全部预留合计不超过70元。新reserved或unknown拒绝后续请求与重启。
+原20 Trial、3仓库、12/20严格成功及每仓成功、零越界要求不改变。
+
+## 2. 总体架构、流程图与数据流程
+
+```mermaid
+flowchart TD
+    Owner[可信预算管理宿主] --> Plan[严格单次复验计划]
+    Plan --> Register[独占原账本 核对原字节摘要]
+    Register --> Persist[原子持久化唯一授权 不修改旧请求]
+    Persist --> Scope[验证宿主 核对复验ID与Suite ID]
+    Scope --> Hold[全周期70元 单轮40元 请求发送前预留]
+    Hold --> Guard[原Provider Guard与官方Adapter]
+    Guard -->|完整成功用量| Settle[仅结算新请求估算费用]
+    Guard -->|新费用未决| Stop[全额保留 取消Suite 重启拒绝]
+    Settle --> Hold
+```
+
+管理入口无Provider工厂、凭据读取或网络请求。其计划是可信宿主输入：`authority`字段是审计声明，
+不是数字签名；源码摘要、UUID和私有文件权限也不替代预算所有者的明确授权。不得向模型或不可信用户暴露登记入口。
+正式验证宿主只读取已登记计划，必须显式传入复验ID；不存在“忽略所有未知”的开关。
+
+```mermaid
+flowchart TB
+    Ledger[原私有账本字节] --> FileHash[登记时原文件SHA]
+    Ledger --> Prefix[完整旧请求数组]
+    Prefix --> PrefixHash[数量与规范SHA]
+    Prefix --> Unknown[唯一旧unknown ID 金额 整条记录SHA]
+    FileHash --> Grant[原周期内唯一bounded_reverification]
+    PrefixHash --> Grant
+    Unknown --> Grant
+    Grant --> Tagged[带复验ID的新请求]
+    Tagged --> Sum[新已知估算加新全额预留]
+    Sum --> Cap[单轮40元与原总70元检查]
+```
+
+登记时核对原文件摘要；后续原文件必然因合法新请求而变化，因此每次读取改为核对完整旧请求前缀。
+前缀摘要覆盖原时间、状态、金额及元数据，不只比较未知条目的金额。新请求必须全部带唯一复验ID。
+整个前缀被固定，不能删除、重排、追加未经标记的历史，不能把原unknown改为reserved或已知费用。
+
+## 3. 接口设计、类及数据结构
+
+| 接口或字段 | 语义与约束 |
+|---|---|
+| `VerificationReverificationPlan` | 冻结、严格、extra-forbid，私有JSON版本`harnessix.provider-reverification-plan/v1` |
+| `reverification_id` / `suite_id` / `period_id` | 唯一授权、新完整Suite及原预算周期的UUID；三者不能互换 |
+| `authority` | 固定`budget-owner-explicit`，表示可信管理宿主已获得授权，不是可公开兑换的凭证 |
+| `allocation` / `maximum_cost` | 固定字符串70/40；18位定点整数比较，不用浮点，不加额、不打折 |
+| `ledger_before_sha256` | 登记前原文件完整字节SHA，阻止对漂移账本登记；不是永久文件SHA |
+| `prior_request_count` / `prior_requests_sha256` | 原请求数组的精确长度与规范SHA，永久约束整个历史前缀 |
+| `carried_requests` | 恰好一项旧unknown，含request_id、原reserved_cost字符串及原完整记录SHA |
+| `VerificationBudgetLedger.authorize_reverification(path, plan)` | 独占原账本；只能首次登记或完全相同计划幂等确认；无模型IO |
+| `VerificationBudgetLedger(..., reverification_id, suite_id)` | 默认参数为空，仍拒绝未决；匹配持久计划时仅允许明确旧unknown |
+| `reserve(maximum_units, metadata)` | 沿用原发送前可靠预留；自动追加复验ID，调用方不能通过metadata伪造该字段 |
+| `settle(request_id, cost_units, sent)` | 原语义不变；仅reserved可结算，发送后不完整费用保持unknown全额占用 |
+
+调用链：
+`run_budgeted_suite → VerificationBudgetLedger.__enter__ → require_available → _credential`
+`→ 原Suite/Case Runner → GuardedVerificationProvider.stream → reserve → 官方Adapter → settle`。
+凭据读取晚于范围及未决检查；新未知取消原Suite令牌，禁止成功终态发布。
+完整授权加入原Guard恢复指纹；没有授权时旧指纹字段与字节语义不变，不改变旧默认Suite恢复身份。
+
+## 4. 时序图与核心业务伪代码
+
+```mermaid
+sequenceDiagram
+    participant M as 可信预算管理宿主
+    participant L as 原账本Owner
+    participant H as 固定Suite宿主
+    participant P as 原Provider Guard
+    M->>L: 原计划 原文件SHA与整个旧请求摘要
+    L->>L: 私有权限 独占 金额一致 70元余量
+    L->>L: 文件fsync replace 目录fsync 登记唯一授权
+    L-->>M: 完成并关闭 不读取凭据
+    H->>L: 原周期 复验ID Suite ID
+    L->>L: 旧前缀不变 无新增未决
+    L-->>H: Owner可用
+    H->>H: 读取短生命周期凭据
+    P->>L: 请求最坏档预留 检查70与40上限
+    L-->>P: 可靠持久化完成
+    P->>P: 原Adapter发出唯一尝试
+    alt 成功终态与完整用量一致
+        P->>L: 新请求已知估算结算
+    else 新费用未决
+        P->>L: 保留新预留 取消整个Suite
+        H->>L: 后续或重启被拒绝
+    end
+```
+
+```text
+登记:
+  取得原账本独占Owner，但仅允许管理操作
+  若已有计划: 完全相同 → 幂等返回；不同 → 拒绝
+  原文件SHA、前缀数量/摘要、唯一unknown原记录/金额全部一致
+  原已知估算 + 原全部预留 + 40 <= 原70
+  原子持久化bounded_reverification，关闭Owner
+发送前:
+  无显式复验身份 → 原默认未决即停
+  显式身份必须与持久计划的复验ID及Suite ID都相同
+  重新核对旧前缀；任何新reserved/unknown → 停止
+  新已知估算 + 新全额预留 + 下一请求最坏档 <= 40
+  原已知估算 + 原全部预留 + 下一请求最坏档 <= 70
+  添加带复验ID的reserved记录，可靠持久化后才允许原Adapter发送
+完成:
+  原完整成功及一致Usage → 只结算该新请求
+  可能已发送且费用未知 → 原Guard取消Suite并保留全额预留
+```
+
+## 5. 持久化、事务、失败恢复、取消与超时
+
+沿用原0600账本、0700目录、no-follow/ACL/硬链接检查、稳定根/锁身份、独占文件锁、1 MiB有界读取。
+不新增数据库、锁目录、货币实现或原子发布器。唯一授权是原active周期中的可选严格字段；旧账本不自动升级。
+登记前必须容纳完整40元上限；之后按已知估算和实际尚未释放的保守预留累计，不累计已经释放的历史最大预留。
+
+| 失败 | 行为和恢复边界 |
+|---|---|
+| 旧摘要、记录、金额、周期或原字节不匹配 | 不登记、不修复原件、不读取凭据 |
+| 第二项授权或替换Suite | 拒绝替换；不是自动续期额度 |
+| 任意新reserved，包括硬退出遗留 | 同进程及重启拒绝，不推断是否未发送 |
+| 任意新unknown | 原Guard立即取消Suite，全部新旧预留保持，不重复尝试 |
+| 单轮或总预算不足 | 下一请求发送次数为0，原文件不因该拒绝变化 |
+| 文件/目录fsync失败 | 不发布成功；可能已replace的授权/预留保持，默认入口依然拒绝旧unknown |
+| Suite取消、父任务取消或Adapter超时 | 原迭代器回收和原结算finally执行；不能借取消退款 |
+
+取消/期限由原CancelToken、Adapter IO期限、Suite/Trial预算和有界同步文件操作承担，不增加后台重试或独立计时器。
+复验可以在原配置、原授权和原恢复身份下继续已知费用中断，但新的未决费用始终阻止继续；不能跨Revision拼接成绩。
+
+## 6. 安全、可观测性、部署、兼容及取舍
+
+[登记脚本](../../scripts/authorize_provider_reverification.py)只读取私有计划和原账本；
+[运行脚本](../../scripts/run_engineering_provider_suite_budgeted.py)新增可选`--reverification-id`，默认禁网不变。
+管理与运行两入口都不接收API Key值，例示路径和UUID为非生产占位值：
+
+```bash
+uv run python -m scripts.authorize_provider_reverification \
+  --plan /private/verification/reverification-plan.json \
+  --budget-ledger /private/verification/budget.json
+uv run python -m scripts.run_engineering_provider_suite_budgeted \
+  --config /private/verification/new-full-suite.json \
+  --budget-ledger /private/verification/budget.json \
+  --period-id 00000000-0000-0000-0000-000000000001 \
+  --reverification-id 00000000-0000-0000-0000-000000000002 \
+  --allow-network
+```
+
+登记后不应回退运行旧版预算脚本：旧版不了解新增范围上限。原默认产品、Wheel、Protocol、数据库及依赖不改变。
+固定验证宿主限定POSIX，不外推为Windows产品认证。没有同时构造第二个Agent或绕过原Grader。
+错误码沿用`verification_budget_unresolved/exhausted/unavailable/persist_failed/busy`，登记不一致使用
+`verification_reverification_invalid`。公开结果只有有限错误码或复验ID，不输出异常正文、账本正文、凭据或模型输入输出。
+
+预留20.77824元是保守占用，不是实际扣费；已知估算也不等于账单。应同时报告已知估算、原未知预留、新未知预留和新费用完整性。
+费用估算继续采用[官方北京价格](https://help.aliyun.com/zh/model-studio/qwen3-coder-plus)，不改变Token、上下文或输出上限。
+取舍是限定一个已明确授权的旧unknown和一个Suite，不建立通用授权平台、批量费用豁免或后台对账功能。
+
+## 7. 测试验证、源码映射与剩余风险
+
+| 源码 | 验证责任 |
+|---|---|
+| [计划合同与前缀核验](../../scripts/provider_reverification_plan.py) | 严格字段、完整旧前缀、唯一旧unknown及新40元累计 |
+| [原预算Owner](../../scripts/provider_verification_budget.py) | 单次登记、独占与原字节、双上限、默认拒绝、原子持久化 |
+| [原Provider Guard](../../scripts/provider_verification_guard.py) | 完整授权恢复绑定；原尝试、Usage、取消及结算语义不改变 |
+| [有界复验回归](../../tests/evals/test_provider_reverification.py) | 来源/金额篡改、跨Suite、重复授权、40元精确边界、新未知、取消、硬退出、同步故障 |
+| [宿主及实际Adapter回归](../../tests/evals/test_provider_verification_host.py) | 新范围接线、错误Suite在凭据前拒绝、原MockTransport和默认入口保持 |
+
+[独立验证资料](../validation/bounded-reverification-2026-09-30-v1/README.md)绑定实际测试与源码摘要。
+离线通过不证明真实20 Trial质量、供应商收费、消费者Windows11或独立Beta；R1～R6仍开放。
+只允许在新干净Revision上创建完整预注册Suite，复验结果不替代或改写旧中断和历史完整0/20。

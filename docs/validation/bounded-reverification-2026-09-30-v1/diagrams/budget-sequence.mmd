@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant M as 可信预算管理宿主
+    participant L as 原账本Owner
+    participant H as 固定Suite宿主
+    participant P as 原Provider Guard
+    M->>L: 原计划 原文件SHA与整个旧请求摘要
+    L->>L: 私有权限 独占 金额一致 70元余量
+    L->>L: 文件fsync replace 目录fsync 登记唯一授权
+    L-->>M: 完成并关闭 不读取凭据
+    H->>L: 原周期 复验ID Suite ID
+    L->>L: 旧前缀不变 无新增未决
+    L-->>H: Owner可用
+    H->>H: 读取短生命周期凭据
+    P->>L: 请求最坏档预留 检查70与40上限
+    L-->>P: 可靠持久化完成
+    P->>P: 原Adapter发出唯一尝试
+    alt 成功终态与完整用量一致
+        P->>L: 新请求已知估算结算
+    else 新费用未决
+        P->>L: 保留新预留 取消整个Suite
+        H->>L: 后续或重启被拒绝
+    end

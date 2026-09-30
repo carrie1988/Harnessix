@@ -70,23 +70,24 @@ class BailianVerificationBounds:
         return (usage.input_tokens * input_rate + usage.output_tokens * output_rate) * 10**12
 
     def fingerprint(self, ledger: VerificationBudgetLedger) -> str:
-        return digest(
-            {
-                "spec_version": "harnessix.bailian-verification-request-guard/v1",
-                "model": MODEL,
-                "region": "cn-beijing",
-                "mode": "non-thinking",
-                "price_source": PRICE_SOURCE,
-                "valid_from": self.valid_from.isoformat(),
-                "valid_until": self.valid_until.isoformat(),
-                "max_output_tokens": self.max_output_tokens,
-                "max_attempts": 1,
-                "maximum_units": self.maximum_units,
-                "period_id": ledger.period_id,
-                "ledger_locator_sha256": digest(str(ledger.path)),
-                "allocation_units": ledger.allocation,
-            }
-        )
+        binding: dict[str, object] = {
+            "spec_version": "harnessix.bailian-verification-request-guard/v1",
+            "model": MODEL,
+            "region": "cn-beijing",
+            "mode": "non-thinking",
+            "price_source": PRICE_SOURCE,
+            "valid_from": self.valid_from.isoformat(),
+            "valid_until": self.valid_until.isoformat(),
+            "max_output_tokens": self.max_output_tokens,
+            "max_attempts": 1,
+            "maximum_units": self.maximum_units,
+            "period_id": ledger.period_id,
+            "ledger_locator_sha256": digest(str(ledger.path)),
+            "allocation_units": ledger.allocation,
+        }
+        if ledger.reverification_plan is not None:
+            binding["bounded_reverification"] = ledger.reverification_plan.model_dump(mode="json")
+        return digest(binding)
 
 
 @dataclass(slots=True)

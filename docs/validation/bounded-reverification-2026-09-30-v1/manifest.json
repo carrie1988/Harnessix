@@ -1,0 +1,56 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3404,
+      "sha256": "046af1282d0042737d8a4b76802c24125a8d37491a118fa87607bca713c00412"
+    },
+    {
+      "path": "diagrams/budget-data.mmd",
+      "bytes": 502,
+      "sha256": "1d098552b6c4e1d88a254986ade4646f3e50be4ec95e4620a4067a3509fdd36a"
+    },
+    {
+      "path": "diagrams/budget-data.png",
+      "bytes": 40662,
+      "sha256": "a92abf757ded8113d83916424e9127ec331ffdad50d77fb63a29b3b28e1d9c72"
+    },
+    {
+      "path": "diagrams/budget-flow.mmd",
+      "bytes": 571,
+      "sha256": "b6a520eeddc1d952581c2ae0fbd113ead6c7683d7ac1a8c4cf84d81c92510680"
+    },
+    {
+      "path": "diagrams/budget-flow.png",
+      "bytes": 52238,
+      "sha256": "d75e2ebc1c3e3512e2921b020ee8342084df176630e6d572d28af4b55790e317"
+    },
+    {
+      "path": "diagrams/budget-sequence.mmd",
+      "bytes": 875,
+      "sha256": "76d5df2d707588d2298cd16eaf6c810bc87e163174ec4eacea94183bd24ca946"
+    },
+    {
+      "path": "diagrams/budget-sequence.png",
+      "bytes": 67235,
+      "sha256": "825e26b22236f8c88dd99f1a0f967bd0b47c6d38105502d13dc599ba4e0ad2e3"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 6779,
+      "sha256": "1daf2a4e5702f1dd472d373e49793d64b4cb4e1eff8e33e07f8e19c4c64ecca7"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 592,
+      "sha256": "0de7552236481d040c2d3877edb9400293b2d8bb2a45eb640da73dfd656152ac"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 674,
+      "sha256": "54d0c2e2a4dc0762955f60b274d22422cafbc6843dab7801bf2adf2cf8fe5738"
+    }
+  ],
+  "manifest_excluded_from_own_members": true
+}

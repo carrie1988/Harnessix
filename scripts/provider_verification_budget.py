@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
 from typing import Any, Self
 from uuid import UUID, uuid4
@@ -14,6 +15,10 @@ from harnessix.file_lock import acquire_exclusive_file_lock
 from harnessix.models._json import strict_json
 from harnessix.models.pricing import amount_units, format_amount
 from harnessix.product_config import session_key_posix as private_fs
+from scripts.provider_reverification_plan import (
+    VerificationReverificationPlan,
+    validate_reverification_plan,
+)
 
 _MAX_LEDGER_BYTES = 1024 * 1024
 _SCHEMA = "harnessix.provider-verification-budget/v1"
@@ -34,7 +39,14 @@ def _amount(value: object) -> int:
 class VerificationBudgetLedger:
     """独占原账本的同步Owner；每次请求先持久预留，未知金额不退款。"""
 
-    def __init__(self, path: Path, period_id: UUID) -> None:
+    def __init__(
+        self,
+        path: Path,
+        period_id: UUID,
+        *,
+        reverification_id: UUID | None = None,
+        suite_id: UUID | None = None,
+    ) -> None:
         self.path = path.absolute()
         self.period_id = str(period_id)
         self.root: int | None = None
@@ -43,6 +55,9 @@ class VerificationBudgetLedger:
         self._root_identity: tuple[int, ...] = ()
         self.data: dict[str, Any] = {}
         self.allocation = 0
+        self.reverification_id = reverification_id
+        self.suite_id = suite_id
+        self._registration_only = False
 
     def __enter__(self) -> Self:
         if self.root is not None:
@@ -69,7 +84,8 @@ class VerificationBudgetLedger:
             self._body = self._read()
             self.data = self._validate(strict_json(self._body))
             self.allocation = _amount(self.period["allocation"])
-            self.require_available()
+            if not self._registration_only:
+                self.require_available()
             return self
         except BlockingIOError:
             self.close()
@@ -99,6 +115,46 @@ class VerificationBudgetLedger:
     @property
     def period(self) -> dict[str, Any]:
         return next(p for p in self.data["periods"] if p["period_id"] == self.period_id)
+
+    @property
+    def reverification_plan(self) -> VerificationReverificationPlan | None:
+        """读取原周期唯一授权；未登记账本保持默认未决即停语义。"""
+        raw = self.period.get("bounded_reverification")
+        if raw is None:
+            return None
+        return VerificationReverificationPlan.model_validate_json(json.dumps(raw), strict=True)
+
+    @classmethod
+    def authorize_reverification(cls, path: Path, plan: VerificationReverificationPlan) -> None:
+        """仅可信预算管理宿主调用；独占登记后退出，不读取凭据或发出模型请求。"""
+        owner = cls(path, plan.period_id)
+        owner._registration_only = True
+        with owner:
+            existing = owner.reverification_plan
+            if existing is not None:
+                if existing != plan:
+                    raise KernelError("verification_reverification_invalid", "不能替换已有复验授权")
+                return
+            if (
+                sha256(owner._body).hexdigest() != plan.ledger_before_sha256
+                or len(owner.period["requests"]) != plan.prior_request_count
+            ):
+                raise KernelError("verification_reverification_invalid", "授权不属于当前预算原件")
+            try:
+                validate_reverification_plan(owner.period, plan)
+            except ValueError:
+                raise KernelError(
+                    "verification_reverification_invalid", "旧预留与授权不一致"
+                ) from None
+            if (
+                _amount(owner.period["known_cost"])
+                + _amount(owner.period["reserved_cost"])
+                + _amount(plan.maximum_cost)
+                > owner.allocation
+            ):
+                raise KernelError("verification_budget_exhausted", "原总预算不足以容纳复验上限")
+            owner.period["bounded_reverification"] = plan.model_dump(mode="json")
+            owner._save()
 
     def _validate(self, value: object) -> dict[str, Any]:
         if not isinstance(value, dict) or (
@@ -141,6 +197,14 @@ class VerificationBudgetLedger:
         if known != _amount(period["known_cost"]) or reserved != _amount(period["reserved_cost"]):
             raise ValueError
         if known + reserved > _amount(period["allocation"]):
+            raise ValueError
+        raw_plan = period.get("bounded_reverification")
+        if raw_plan is not None:
+            plan = VerificationReverificationPlan.model_validate_json(
+                json.dumps(raw_plan), strict=True
+            )
+            validate_reverification_plan(period, plan)
+        elif any("reverification_id" in request for request in requests):
             raise ValueError
         return value
 
@@ -189,6 +253,16 @@ class VerificationBudgetLedger:
         temporary = f".budget-{uuid4().hex}.tmp"
         try:
             self._validate(self.data)
+            original = self._validate(strict_json(self._body))
+            original_period = next(
+                p for p in original["periods"] if p["period_id"] == self.period_id
+            )
+            original_plan = original_period.get("bounded_reverification")
+            if (
+                original_plan is not None
+                and self.period.get("bounded_reverification") != original_plan
+            ):
+                raise ValueError
             if self._read() != self._body or _amount(self.period["allocation"]) != self.allocation:
                 raise ValueError
             body = (json.dumps(self.data, ensure_ascii=False, indent=2) + "\n").encode()
@@ -222,8 +296,23 @@ class VerificationBudgetLedger:
                 pass
 
     def require_available(self) -> None:
-        if self.root is None or any(
-            request["status"] in {"reserved", "unknown"} for request in self.period["requests"]
+        if self.root is None or self._registration_only:
+            raise KernelError("verification_budget_unresolved", "验证预算存在未决请求")
+        plan = self.reverification_plan
+        allowed: set[str] = set()
+        if self.reverification_id is not None or self.suite_id is not None:
+            if (
+                plan is None
+                or self.reverification_id != plan.reverification_id
+                or self.suite_id != plan.suite_id
+            ):
+                raise KernelError("verification_budget_unresolved", "复验身份与持久授权不一致")
+            validate_reverification_plan(self.period, plan)
+            allowed = {str(r.request_id) for r in plan.carried_requests}
+        if any(
+            request["status"] == "reserved"
+            or (request["status"] == "unknown" and request["request_id"] not in allowed)
+            for request in self.period["requests"]
         ):
             raise KernelError("verification_budget_unresolved", "验证预算存在未决请求")
 
@@ -247,6 +336,11 @@ class VerificationBudgetLedger:
         ):
             raise KernelError("verification_budget_metadata_invalid", "验证预算元数据不受支持")
         period = self.period
+        plan = self.reverification_plan
+        if plan is not None and (
+            validate_reverification_plan(period, plan) + maximum_units > _amount(plan.maximum_cost)
+        ):
+            raise KernelError("verification_budget_exhausted", "下一请求超出单轮复验上限")
         if maximum_units <= 0 or (
             _amount(period["known_cost"]) + _amount(period["reserved_cost"]) + maximum_units
             > self.allocation
@@ -256,6 +350,7 @@ class VerificationBudgetLedger:
         period["requests"].append(
             {
                 **metadata,
+                **({"reverification_id": str(plan.reverification_id)} if plan is not None else {}),
                 "request_id": str(request_id),
                 "started_at": datetime.now(UTC).isoformat(),
                 "status": "reserved",

@@ -22,6 +22,7 @@ from harnessix.models.openai_chat import OpenAIChatProvider
 from scripts import run_engineering_provider_suite_budgeted as host
 from tests.contracts.provider import model_request
 from tests.evals.provider_suite_helpers import provider_suite_config
+from tests.evals.test_provider_reverification import held_ledger, plan_for
 from tests.evals.test_provider_verification_budget import PERIOD, bounds, ledger_file, period
 from tests.models.wire import WireStream, chunk, frame, response
 
@@ -164,9 +165,15 @@ async def test_unresolved_budget_rejection_precedes_credentials(tmp_path, monkey
     assert failed.value.code == "verification_budget_unresolved" and path.read_bytes() == before
 
 
-async def test_host_factory_runs_native_adapter_and_binds_original_runner(tmp_path, monkeypatch):
-    path = ledger_file(tmp_path)
+@pytest.mark.parametrize("bounded", [False, True])
+async def test_host_factory_runs_native_adapter_and_binds_original_runner(
+    tmp_path, monkeypatch, bounded
+):
+    path = held_ledger(tmp_path) if bounded else ledger_file(tmp_path)
     config = live_config(tmp_path)
+    plan = plan_for(path, suite_id=config.suite.plan.suite_id) if bounded else None
+    if plan is not None:
+        host.VerificationBudgetLedger.authorize_reverification(path, plan)
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
     monkeypatch.setattr(host, "_require_scope", lambda *_: None)
     monkeypatch.setattr(host, "_require_images", lambda *_: None)
@@ -212,10 +219,35 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(tmp_pa
 
     monkeypatch.setattr(host, "run_task_pack_provider_suite", runner)
     result = await host.run_budgeted_suite(
-        config, budget_path=path, period_id=PERIOD, allow_network=True, resume=True
+        config,
+        budget_path=path,
+        period_id=PERIOD,
+        allow_network=True,
+        resume=True,
+        reverification_id=plan.reverification_id if plan is not None else None,
     )
     assert result.reason == "completed" and wire.closed
     assert period(path)["known_cost"] == "0.00014" and period(path)["allocation"] == "70"
+    assert period(path)["reserved_cost"] == ("20.77824" if bounded else "0")
+
+
+async def test_registered_other_suite_rejects_before_credential_access(tmp_path, monkeypatch):
+    path = held_ledger(tmp_path)
+    plan = plan_for(path)
+    host.VerificationBudgetLedger.authorize_reverification(path, plan)
+    before = path.read_bytes()
+    monkeypatch.setattr(host, "_require_scope", lambda *_: None)
+    monkeypatch.setattr(host, "_require_images", lambda *_: None)
+    monkeypatch.setattr(host, "_credential", forbidden)
+    with pytest.raises(KernelError) as failed:
+        await host.run_budgeted_suite(
+            live_config(tmp_path),
+            budget_path=path,
+            period_id=PERIOD,
+            allow_network=True,
+            reverification_id=plan.reverification_id,
+        )
+    assert failed.value.code == "verification_budget_unresolved" and path.read_bytes() == before
 
 
 def test_keychain_failure_does_not_fall_back_and_launchctl_precedes_parent_env(

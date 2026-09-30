@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 90de93f565ea88679e54242ee6f1771e9be721b7
 owners: [core]
 modules: [evals, models]
@@ -205,6 +205,8 @@ uv run python -m scripts.run_engineering_provider_suite_budgeted \
 macOS钥匙串可增加`--keychain-service com.example.bailian --keychain-account agent-eval`。
 恢复须复用原配置、周期、Guard和源码身份并显式`--resume`；有未决金额或过期价格时停止，
 通过外部受控费用核对处理，不自动清零、重发或重新定价旧运行。
+后继[单次有界复验规则](m09-r3-bounded-reverification-budget.md)允许预算所有者明确授权唯一新Suite，
+原unknown全额保留、完整旧请求前缀冻结；默认规则不变，新未决仍立即停止。
 
 ## 10. 核心业务伪代码
 
@@ -267,3 +269,10 @@ Python3.13.8及独立干净Python3.12.7受影响回归各2668项通过、13项�
 当前实现与有限宿主设计一致；实际宿主因原固定镜像缺失先于账本/凭据拒绝，新增Provider请求和费用为零。
 该结论关闭本切片的请求保护实现与离线/宿主预检边界，不是R3真实质量达标或1.0发布声明；
 历史0/20、三平台发行、完整恢复、权利、Beta及全部未决发布门禁保留。
+
+## 14. 后继单次有界复验范围
+
+[有界复验详设](m09-r3-bounded-reverification-budget.md)扩展可信验证宿主，不重写本设计第1～13节的原实现和验证身份。
+显式登记一次70元原周期、40元新Suite授权后，匹配的复验ID/Suite ID仅承接原唯一unknown；
+原文件和完整旧请求摘要冻结，新请求逐项标记、持久预留、双上限核验。新增unknown或reserved始终阻止重启。
+未登记或未显式指定匹配范围时，原任何未决即停语义保持。

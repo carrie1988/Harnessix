@@ -1,0 +1,23 @@
+{
+  "scope": "verification_host_single_bounded_reverification",
+  "verdict": "GO_OFFLINE_MECHANISM_ONLY",
+  "blocking_failures_remaining": [],
+  "original_failures_retained": true,
+  "quality_certification_verdict": "NO_GO_NOT_EXECUTED",
+  "authority_boundary": "trusted_budget_owner_not_cryptographic_permission",
+  "excluded": [
+    "product_tool_or_public_protocol",
+    "bill_reconciliation",
+    "refund_or_new_period",
+    "default_docker_desktop_acceptance",
+    "commercial_release"
+  ],
+  "remaining_release_gates": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ]
+}

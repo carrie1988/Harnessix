@@ -160,6 +160,7 @@ async def run_budgeted_suite(
     resume: bool = False,
     keychain_service: str | None = None,
     keychain_account: str | None = None,
+    reverification_id: UUID | None = None,
 ) -> CodingEvalSuiteRunReport:
     if allow_network is not True:
         raise KernelError("eval_provider_suite_network_disabled", "真实Provider Suite默认禁止网络")
@@ -170,7 +171,12 @@ async def run_budgeted_suite(
     _require_scope(checked, None)
     _require_images(checked)
     cancellation = CancelToken()
-    with VerificationBudgetLedger(budget_path, period_id) as ledger:
+    with VerificationBudgetLedger(
+        budget_path,
+        period_id,
+        reverification_id=reverification_id,
+        suite_id=checked.suite.plan.suite_id if reverification_id is not None else None,
+    ) as ledger:
         key = _credential(checked, keychain_service, keychain_account)
 
         @asynccontextmanager
@@ -202,6 +208,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--config", required=True)
     parser.add_argument("--budget-ledger", type=Path, required=True)
     parser.add_argument("--period-id", type=UUID, required=True)
+    parser.add_argument("--reverification-id", type=UUID)
     parser.add_argument("--allow-network", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--keychain-service")
@@ -227,6 +234,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 resume=arguments.resume,
                 keychain_service=arguments.keychain_service,
                 keychain_account=arguments.keychain_account,
+                reverification_id=arguments.reverification_id,
             )
         )
         result = report.model_dump(mode="json")

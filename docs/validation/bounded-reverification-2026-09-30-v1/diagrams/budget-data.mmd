@@ -1,0 +1,11 @@
+flowchart TB
+    Ledger[原私有账本字节] --> FileHash[登记时原文件SHA]
+    Ledger --> Prefix[完整旧请求数组]
+    Prefix --> PrefixHash[数量与规范SHA]
+    Prefix --> Unknown[唯一旧unknown ID 金额 整条记录SHA]
+    FileHash --> Grant[原周期内唯一bounded_reverification]
+    PrefixHash --> Grant
+    Unknown --> Grant
+    Grant --> Tagged[带复验ID的新请求]
+    Tagged --> Sum[新已知估算加新全额预留]
+    Sum --> Cap[单轮40元与原总70元检查]

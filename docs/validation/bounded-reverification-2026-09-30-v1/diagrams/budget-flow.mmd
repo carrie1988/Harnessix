@@ -1,0 +1,10 @@
+flowchart TD
+    Owner[可信预算管理宿主] --> Plan[严格单次复验计划]
+    Plan --> Register[独占原账本 核对原字节摘要]
+    Register --> Persist[原子持久化唯一授权 不修改旧请求]
+    Persist --> Scope[验证宿主 核对复验ID与Suite ID]
+    Scope --> Hold[全周期70元 单轮40元 请求发送前预留]
+    Hold --> Guard[原Provider Guard与官方Adapter]
+    Guard -->|完整成功用量| Settle[仅结算新请求估算费用]
+    Guard -->|新费用未决| Stop[全额保留 取消Suite 重启拒绝]
+    Settle --> Hold

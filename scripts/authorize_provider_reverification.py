@@ -1,0 +1,46 @@
+"""可信预算管理入口：登记既有明确授权，不联网、不读取凭据、不释放旧预留。"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Sequence
+from pathlib import Path
+
+from harnessix.agent.errors import KernelError
+from harnessix.evals.cli_config import read_private_eval_config
+from scripts.provider_reverification_plan import VerificationReverificationPlan
+from scripts.provider_verification_budget import VerificationBudgetLedger
+from scripts.run_engineering_provider_suite_budgeted import _SafeParser
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    parser = _SafeParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument("--plan", required=True)
+    parser.add_argument("--budget-ledger", type=Path, required=True)
+    arguments = parser.parse_args(argv)
+    reason = "verification_reverification_invalid"
+    try:
+        plan = read_private_eval_config(
+            arguments.plan, VerificationReverificationPlan, max_bytes=64 * 1024
+        )
+        VerificationBudgetLedger.authorize_reverification(arguments.budget_ledger, plan)
+        print(
+            json.dumps({"reason": "authorized", "reverification_id": str(plan.reverification_id)})
+        )
+        return
+    except KernelError as error:
+        if error.code in {
+            "verification_budget_busy",
+            "verification_budget_unavailable",
+            "verification_budget_exhausted",
+            "verification_budget_persist_failed",
+        }:
+            reason = error.code
+    except Exception:
+        pass
+    print(json.dumps({"reason": reason}))
+    raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

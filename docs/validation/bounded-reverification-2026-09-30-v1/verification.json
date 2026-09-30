@@ -1,0 +1,16 @@
+{
+  "original_prefix_frozen": true,
+  "original_unknown_not_settled_or_refunded": true,
+  "default_unknown_still_stops": true,
+  "explicit_scope_is_single_suite": true,
+  "new_unknown_and_reserved_stop_in_process_and_restart": true,
+  "new_fees_known_plus_held_lte_40": true,
+  "global_known_plus_held_lte_70": true,
+  "hard_exit_cancel_and_fsync_negative_controls": true,
+  "native_adapter_mock_transport_guarded": true,
+  "source_guard_semantics_ast_unchanged": true,
+  "diagrams_rendered_and_visually_checked": 3,
+  "budget_ledger_before_real_authorization_unchanged": true,
+  "new_twenty_trial_quality_proven": false,
+  "same_candidate_all_platforms_certified": false
+}

@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 138
+version: 139
 code_revision: e4f659f62ba5e2db7c4279b029c1ad8f96b6e9b5
 owners:
   - core
@@ -739,6 +739,9 @@ R3已补[产品与评测的共享Context、编码指令及持久压缩装配](ch
 [R3验证请求预算](changes/m09-r3-verification-request-budget.md)复用正式Suite、Case和官方Adapter，
 原周期账本先预留后发送，未知费用停止整个Suite；默认执行路径兼容，恢复身份包含有限Guard范围。
 该机制仅保护受控验证请求，不恢复延期的通用计价平台、不降低原20 Trial门槛或关闭R3。
+[后继单次有界复验](changes/m09-r3-bounded-reverification-budget.md)新增原周期内唯一Suite授权，
+冻结完整旧请求前缀并保留原unknown全部预留；新费用按40元单轮和70元原总预算双上限保护，
+默认未决即停及新增未决立即停止/重启拒绝保持。该离线机制不代表新完整真实质量成绩。
 [R1全状态Owner](changes/m09-r1-product-state-ownership.md)将根外稳定互斥前移到Root准备和全部Store/Provider之前，
 Action借用同一Owner，取消结算唯一目录线程后释放。该前置由后继完整备份/恢复及整体Root发布承接；
 复杂Store/Artifact业务恢复与正式安全收口仍需完整验收，不关闭R1或R4。

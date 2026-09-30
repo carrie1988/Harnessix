@@ -1,0 +1,223 @@
+{
+  "spec_version": "harnessix.bounded-reverification-validation/v1",
+  "design_base_revision": "38cc5a04face1517c137a0a96af03d41e6dfc19e",
+  "checks": [
+    {
+      "name": "baseline",
+      "tests": 56,
+      "passed": 56,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": "1.113",
+      "raw_sha256": "936d3d9514104bba7a4328b88ba0af2e08ef591f50c693bb15241f3ffec414d5"
+    },
+    {
+      "name": "focus-1",
+      "tests": 85,
+      "passed": 85,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": "1.161",
+      "raw_sha256": "8117649ac6c07863329246cba5e8ed8041e6b3ad7a347ff68b617dcd6c075691"
+    },
+    {
+      "name": "focus-final",
+      "tests": 93,
+      "passed": 93,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": "1.637",
+      "raw_sha256": "c8032499cec1a15c7af66cf119bbe43c9942d8221eceff992b4012f3aaa475bb"
+    },
+    {
+      "name": "focus-complete",
+      "tests": 95,
+      "passed": 95,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": "1.487",
+      "raw_sha256": "789d42b58140404f81ff508910e8e3d6282b114f536fcbfdb13a9cc1a662b18f"
+    },
+    {
+      "name": "associated-1",
+      "tests": 1423,
+      "passed": 1403,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 19,
+      "elapsed_seconds": "171.481",
+      "raw_sha256": "16f7c2c9b31b19af781ee2526174b3e2c0542b3125841f0d122860b11f2d36c5"
+    },
+    {
+      "name": "associated-final",
+      "tests": 1425,
+      "passed": 1406,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 19,
+      "elapsed_seconds": "169.448",
+      "raw_sha256": "4bdf0cd7bf78a6c1d4f6f8ace8e96ac70a2414968f3701c34319f4bddb4d64c3"
+    },
+    {
+      "name": "container-preflight",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": "16.246",
+      "raw_sha256": "10e11ad4adca87968a7d0ee0f48878a7dfc3abd1f4779aed13870226b238c187"
+    }
+  ],
+  "source_hashes": [
+    {
+      "path": "scripts/authorize_provider_reverification.py",
+      "sha256": "601be4958aa11198903571aa591097886689866e9f56be6e8bef544d0c6b2085"
+    },
+    {
+      "path": "scripts/provider_reverification_plan.py",
+      "sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb"
+    },
+    {
+      "path": "scripts/provider_verification_budget.py",
+      "sha256": "5fe17d69151d66386eb8cbc1527adeacae9e5752d61c871821d2da654c3842de"
+    },
+    {
+      "path": "scripts/provider_verification_guard.py",
+      "sha256": "88729a6466b2fb8f48f6e08d109c3c27f9f4a62fa50bb6d4cbdb86626946d268"
+    },
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710"
+    },
+    {
+      "path": "tests/evals/test_provider_reverification.py",
+      "sha256": "b9884526f2bb460a5043b6ba57d2af060592addc7c698f310b6ccd11f2b64d00"
+    },
+    {
+      "path": "tests/evals/test_provider_verification_host.py",
+      "sha256": "bd996fb437bb64a0d59056b425c31db670c88afb6506056e16b677159077ce3e"
+    },
+    {
+      "path": "tests/evals/test_provider_verification_budget.py",
+      "sha256": "980a6af07677a279a17e4461bab43de5c750f07ff4258399f9b6c533934673f0"
+    }
+  ],
+  "original_budget_ledger_sha256": "68f37dcdc1912a3aa36ea8c51b149d5384267eec2d642828d6dfbcf7a728a4aa",
+  "original_requests_unchanged": true,
+  "original_completed_requests": 61,
+  "original_unknown_requests": 1,
+  "original_known_estimate_cny": "1.522724",
+  "original_unknown_reservation_cny": "20.77824",
+  "allocation_cny": "70",
+  "authorized_single_round_ceiling_cny": "40",
+  "guard_invariants": [
+    {
+      "path": "scripts/provider_verification_guard.py",
+      "symbol": "checkpoint",
+      "baseline_ast_unchanged": true
+    },
+    {
+      "path": "scripts/provider_verification_guard.py",
+      "symbol": "maximum_units",
+      "baseline_ast_unchanged": true
+    },
+    {
+      "path": "scripts/provider_verification_guard.py",
+      "symbol": "cost_units",
+      "baseline_ast_unchanged": true
+    },
+    {
+      "path": "scripts/provider_verification_guard.py",
+      "symbol": "stream",
+      "baseline_ast_unchanged": true
+    },
+    {
+      "path": "scripts/provider_verification_budget.py",
+      "symbol": "settle",
+      "baseline_ast_unchanged": true
+    },
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "symbol": "_bounds",
+      "baseline_ast_unchanged": true
+    },
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "symbol": "_require_images",
+      "baseline_ast_unchanged": true
+    },
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "symbol": "_credential",
+      "baseline_ast_unchanged": true
+    }
+  ],
+  "raw_logs_private": true,
+  "new_real_provider_requests": 0,
+  "default_docker_desktop_certified": false,
+  "explicit_same_engine_recorded_provider_preflight_tests": 6,
+  "preflight_recorded_task_pack_version": 1,
+  "full_repository_regression": false,
+  "overlapping_groups_not_additive": true,
+  "commercial_release_gates_closed": [],
+  "price_basis": {
+    "url": "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus",
+    "verified_on": "2026-09-30",
+    "model": "qwen3-coder-plus-2025-09-23",
+    "region": "cn-beijing",
+    "rates_per_million_input_output": [
+      [
+        "32000",
+        "4",
+        "16"
+      ],
+      [
+        "128000",
+        "6",
+        "24"
+      ],
+      [
+        "256000",
+        "10",
+        "40"
+      ],
+      [
+        "1000000",
+        "20",
+        "200"
+      ]
+    ]
+  },
+  "original_failure": {
+    "associated_run": "associated-1",
+    "failed_test": "tests/evals/test_delivery.py::test_real_passed_eval_builds_package_and_detects_late_workspace_drift",
+    "root_cause": "verification_shell_umask_077_creates_0600_fixture_not_0644",
+    "production_permission_check_weakened": false,
+    "control_proof_sha256": "0a3c42e593859697d8ad56822236a11ea869f208ca75e8b1527a00147f3635f4"
+  },
+  "host_type_failure_retained": {
+    "file": "host-types.log",
+    "sha256": "568d58f6aac46a8ced8f4a67620ed29d672364d3cb434b86ee3c90cdfdc85977",
+    "final_passed": true
+  },
+  "final_gates": {
+    "documentation": {
+      "changed_path_count": 21,
+      "document_count": 410,
+      "findings": [],
+      "link_count": 10284,
+      "mermaid_count": 882,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "quality_log_sha256": "60088a3751f41b25e3d252482bb7dfdc70c55752d40896dcdf63a9468ef127a9",
+    "secret_scan_complete_inputs": 3686,
+    "secret_findings": 0,
+    "secret_log_sha256": "76408abb3fc8378154f9b9cb2d6764371f6a2b77561915542660d4c2509886a9"
+  }
+}
