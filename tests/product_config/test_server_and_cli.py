@@ -37,6 +37,7 @@ from harnessix.product_config.action_contracts import (
     build_product_process_profile,
 )
 from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStore
+from harnessix.product_config.agent_context import CODING_INSTRUCTIONS, CODING_INSTRUCTIONS_VERSION
 from harnessix.product_config.cli import config_main
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProductConfigV2
@@ -417,7 +418,11 @@ async def test_product_server_model_catalog_reflects_verified_workspace_patch(
     assert bundle.requests[0].instructions is not None
     instructions = json.loads(bundle.requests[0].instructions)
     assert instructions["schema"] == "harnessix.instructions/v1"
-    assert any(item["kind"] == "runtime_instruction" for item in instructions["fragments"])
+    runtime_fragment = next(
+        item for item in instructions["fragments"] if item["kind"] == "runtime_instruction"
+    )
+    assert runtime_fragment["source"] == CODING_INSTRUCTIONS_VERSION
+    assert runtime_fragment["content"] == CODING_INSTRUCTIONS
     assert any(
         item["source"] == "AGENTS.md" and item["content"] == "遵守公开接口与失败恢复约束。"
         for item in instructions["fragments"]

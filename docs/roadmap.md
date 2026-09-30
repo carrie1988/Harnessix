@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 136
-code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
+version: 137
+code_revision: 277f38439b3ed21ed46908ebbf0625155cd58937
 owners:
   - core
 modules:
@@ -27,6 +27,7 @@ related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
+  - tests/product_config/test_coding_workflow_instructions.py
   - tests/product_config/test_product_patch_rollback.py
   - tests/product_config/test_product_rollback_sdk.py
   - tests/product_config/test_product_state_restore.py
@@ -1104,3 +1105,17 @@ Checkpoint职责提取到唯一模块，原可读性阈值不放宽，实现摘�
 新候选Windows焦点保留原NTFS和三分钟保护并增加回滚产品/SDK选择器；原生结果须绑定新提交实际取得。
 本地Commit/Checkpoint产品接线、完整真实编码质量、费用核对、Windows11消费者验证、
 独立Beta及R1～R6仍开放，内部`1.0.0rc1`不等于正式商用发布。
+
+### R3：编码流程与有效失败观察
+
+后继只读原Session投影按正式Reducer最终Item去重，确认4个Trial先Patch后检查且没有修改前基线；
+一个有效失败基线、成功修改和通过最终检查的Trial在汇总前累计Token超限。
+[共享编码流程详设](changes/m09-r3-coding-workflow-instructions.md)将这些要求和Profile输出引用取值
+明确写入产品/Eval同源v3指令，并保持原指令字节上限；不新增编排器、测试注入或完成豁免。
+
+严格输入反馈、Provider协议与费用保护可独立并行回归，同一源码文件的变更串行合并。
+真实Provider仍只允许原持久预算唯一Owner，未决费用核对前不发新请求；不重置周期或释放未知预留。
+[统一验证包](validation/r3-coding-workflow-2026-09-30-v1/README.md)记录焦点22通过、关联2052通过/52跳过、
+治理302通过和源码外实际Wheel23通过，集合重叠不相加。9份原Session及原账本读取前后字节一致；
+新Wheel440包成员与源码/安装字节一致。0次真实请求，离线装配不是模型遵循率或质量验收。
+完整3仓20 Trial、至少12严格成功、每仓成功、零越界、消费者平台、独立Beta及商用R1～R6均继续开放。

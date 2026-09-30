@@ -12,6 +12,10 @@
 真实编码质量、消费者环境和最终发行验收仍开放。
 不同版本升级与备份回退范围见[详细设计](docs/changes/m09-r4-different-version-upgrade.md)；R1～R6仍按实际证据验收。
 
+**R3质量整改：** 产品与评测共享编码指令v3明确修改前基线、最终检查和日志引用取值，保持原预算与评分门槛。
+[离线验证及原阶段诊断](docs/validation/r3-coding-workflow-2026-09-30-v1/README.md)不替代完整真实20 Trial；
+未决费用核对前停止模型请求，真实质量及商用门禁仍开放。
+
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
 > 当前状态：已完成0.1～0.9.3路线图范围和DOC-1.0～DOC-1.6文档治理；ADR和源码研究资料进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档。0.9.2已交付多仓库Suite与Transcript合同、不可变Task Pack、可恢复Suite Runner、3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型记录318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格结果为任务成功0/20、测试通过0/20，已按原始失败[冻结低敏证据](docs/validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b持久容量与保留已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收；0.9.3c已增加Action双层Owner、持久Operation期限、只对账恢复和跨Store扫描，修复版Revision `33fcf02`本地`make check`为3597 passed、32 skipped，并由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)完成六实例验收。0.9.4已推进有限公开失败合同、有界成功Owner投影及执行器原始返回预算；许可证12件和其他安全/发布边界仍阻断。0.9.3d已完成三平台正式负载与第二独立PASS验收；0.9.4已实现默认产品独立持久Session Key与强制历史认证。新Artifact正文已按独立Key跨重启认证；密钥恢复、Windows原生产品、真实质量及当前范围的发布门禁仍开放，项目尚未达到1.0正式商用状态。

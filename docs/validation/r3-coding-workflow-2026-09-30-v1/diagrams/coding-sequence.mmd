@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant M as Model
+    participant R as 原Runtime与Session
+    participant P as 固定Profile
+    participant A as Artifact Reader
+    participant W as 受管Patch
+    R-->>M: v3工程流程及当前工具合同
+    M->>P: 修改前独立检查
+    P-->>R: 确定终态及输出引用
+    R-->>M: 非零退出仍是有效失败观察
+    M->>A: artifact_id取自artifact.artifact_id
+    A-->>M: 原有界低信任输出
+    M->>W: 根据源码和日志提交精确变更
+    W-->>R: 原批准及执行事实
+    M->>P: 最后修改后的最终检查
+    P-->>R: 原实际结果
+    M->>R: 有依据的交付或具体阻塞

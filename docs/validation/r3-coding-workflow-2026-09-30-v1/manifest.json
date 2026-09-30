@@ -1,0 +1,50 @@
+{
+  "schema": "harnessix.delivery-manifest/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 8262,
+      "sha256": "fae987e09807c51d860c4ab877a3bca0d609ce1ebbc32bcef5532b3e1041d659"
+    },
+    {
+      "path": "diagrams/coding-sequence.mmd",
+      "bytes": 649,
+      "sha256": "3214468c689785480e872d977fe9c7feb61cea9a13dec659c81debc63cd03e88"
+    },
+    {
+      "path": "diagrams/coding-sequence.png",
+      "bytes": 65649,
+      "sha256": "68dea18f388a73b71e04afd010310c8df6e39f032940b2169dfd4d93e43261d9"
+    },
+    {
+      "path": "diagrams/context-flow.mmd",
+      "bytes": 496,
+      "sha256": "6e04d58ba80e11d5a8079a9148cde29f2a2dd28888e8f04766f0c94f758ee20b"
+    },
+    {
+      "path": "diagrams/context-flow.png",
+      "bytes": 40422,
+      "sha256": "ee5caecaec33862682d22978e08e6d03f2e3b202606486f2d703a6ec3595cc9a"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 10284,
+      "sha256": "d6aca0b59e0e976f25bbb5a16b043728e1aaed8dda2d4498af5d8aa983cb3b8c"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 798,
+      "sha256": "82f74141d215e1e53893c4a648a293acc4bd4f0391c1f93fa75e6cc2a81863f3"
+    },
+    {
+      "path": "session-diagnosis.json",
+      "bytes": 12967,
+      "sha256": "40ac4a6a16c33ad1a0b2c1e344c954ac6e72b907ca48efc9f1adc5968168b09a"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 851,
+      "sha256": "22933ef42104d3b5e68fc02f33b9e1c932893e91ecebf360ab08c5b538ae804c"
+    }
+  ]
+}

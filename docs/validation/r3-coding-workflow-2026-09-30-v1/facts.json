@@ -1,0 +1,321 @@
+{
+  "schema": "harnessix.scoped-validation/v1",
+  "design_base_revision": "277f38439b3ed21ed46908ebbf0625155cd58937",
+  "host": "macos-arm64-python312",
+  "instruction_version": "harnessix.coding-instructions/v3",
+  "instruction_utf8_bytes": 2743,
+  "original_instruction_utf8_bytes": 2751,
+  "instruction_sha256": "22b9687ef138a63fa01bc69846db074f123961fc54f026e0c96f4af244a59e53",
+  "tested_source_sha256": {
+    "src/harnessix/product_config/agent_context.py": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+    "tests/product_config/test_coding_workflow_instructions.py": "97cc2436b02d2cd21b7e7dee538ff7d65ae18530690b3823b78af07bd90eb559",
+    "tests/product_config/test_agent_context.py": "94a8e0662b98e4fac8cd26e782cde9fb300a8e2f7400f3550114b2ee08b1b9b7",
+    "tests/product_config/test_server_and_cli.py": "45c7c96ebcc7f623aa308a15ea09945ece9f1dcdabea3de16d3473e6bb35621a",
+    "scripts/provider_verification_budget.py": "d1c34e1cc7b90094e88c753c4698de893778bdefec8f343ab797372d2a1df715",
+    "scripts/provider_verification_guard.py": "914585de4e1347b37955f9c2e126bb5d7f73f577a2590c0d23b683be439901bd",
+    "uv.lock": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+  },
+  "regression": [
+    {
+      "source": "red.xml",
+      "sha256": "8ee75eb85520f670079e9636997c376ad265420cbf33d9a10009a3cb9ade61f5",
+      "bytes": 29553,
+      "tests": 12,
+      "failures": 12,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 0.315,
+      "started_at": "2026-09-30T11:45:46.048005+08:00"
+    },
+    {
+      "source": "red-exact.xml",
+      "sha256": "2abf1b8180a558d867baeeca4d96952180f5733bcd41011b67e53190d78ec940",
+      "bytes": 36546,
+      "tests": 12,
+      "failures": 12,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 0.334,
+      "started_at": "2026-09-30T11:49:21.609092+08:00"
+    },
+    {
+      "source": "independent-baseline.xml",
+      "sha256": "dc80eef0f6b73e9b44d01024401da2083fb87b1893ae7ae7b0bfcbc726e0338d",
+      "bytes": 24523,
+      "tests": 174,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 174,
+      "seconds": 7.749,
+      "started_at": "2026-09-30T11:39:42.572008+08:00"
+    },
+    {
+      "source": "focus.xml",
+      "sha256": "22fbe5836c20dae5752d813d8b4af0ed05df891fbd1affd638ccc24956c4005a",
+      "bytes": 7287,
+      "tests": 22,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 21,
+      "seconds": 1.127,
+      "started_at": "2026-09-30T11:52:28.982426+08:00"
+    },
+    {
+      "source": "focus-accepted.xml",
+      "sha256": "c892f56063ccfb3a37d7394ea9e5152fb20663d337328e7a148b5f5defc2ef5f",
+      "bytes": 7287,
+      "tests": 22,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 21,
+      "seconds": 1.075,
+      "started_at": "2026-09-30T11:53:56.060721+08:00"
+    },
+    {
+      "source": "focus-final.xml",
+      "sha256": "a4adeda5d47fcebe924cdf00d00371525a45d4be6aea7d495bf5daa5f571f9b5",
+      "bytes": 4160,
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 22,
+      "seconds": 1.112,
+      "started_at": "2026-09-30T11:56:07.542152+08:00"
+    },
+    {
+      "source": "associated.xml",
+      "sha256": "29403de267c96d45acaadf3cf6eb02e16c2eecfcaedc5ca5deef6b86c4ace4c9",
+      "bytes": 6045678,
+      "tests": 2104,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 52,
+      "passed": 2052,
+      "seconds": 246.07,
+      "started_at": "2026-09-30T11:56:07.545998+08:00"
+    },
+    {
+      "source": "governance.xml",
+      "sha256": "802f91c817207e9aa1330dd3847e5280d190f5f7f5337e1c5ecb29318a16a727",
+      "bytes": 47175,
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 302,
+      "seconds": 30.196,
+      "started_at": "2026-09-30T11:59:55.917377+08:00"
+    },
+    {
+      "source": "installed.xml",
+      "sha256": "b29ec0b7fcb33729f088552640ed47b6abac209a2dd11b4f369a150e28703787",
+      "bytes": 4313,
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 23,
+      "seconds": 1.351,
+      "started_at": "2026-09-30T12:04:20.268202+08:00"
+    },
+    {
+      "source": "governance-final.xml",
+      "sha256": "a38bbcf391ffac87af6b0e223edb0636603e2c57a9c772326becc2d0822952be",
+      "bytes": 47175,
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 302,
+      "seconds": 28.145,
+      "started_at": "2026-09-30T12:11:44.775630+08:00"
+    }
+  ],
+  "private_original_logs": [
+    {
+      "source": "red.log",
+      "sha256": "c205d574dbbf837b301a3748632bee2a1a36027aae6e8655a5bd555265ddef07",
+      "bytes": 26603
+    },
+    {
+      "source": "red-exact.log",
+      "sha256": "e578af9b57e0ffb85295f80f837d77d9b728921b023989774399862c897ba337",
+      "bytes": 30173
+    },
+    {
+      "source": "independent-baseline.log",
+      "sha256": "0801d1e95557d99b93778601a26956f3b3db673abdd72f0c6a3ed1fcb3af2da0",
+      "bytes": 390
+    },
+    {
+      "source": "focus.log",
+      "sha256": "1b186d32fc723138063383718873cd9f8cf24be9a4fbee38f71e4763c9a69d65",
+      "bytes": 2382
+    },
+    {
+      "source": "focus-accepted.log",
+      "sha256": "67fa647f4bf0634e71e4a341f92ade7a61d1775f03185573abd397329ecc081e",
+      "bytes": 2391
+    },
+    {
+      "source": "focus-final.log",
+      "sha256": "4f8fe6f25c26d2336370ec2e5e53d502322d2e93848bd2c68bd47d411eca1f63",
+      "bytes": 221
+    },
+    {
+      "source": "associated.log",
+      "sha256": "7ab558ce8b687d7f31390894813ba95860458f527899304b24ba015a40f866df",
+      "bytes": 2540
+    },
+    {
+      "source": "governance.log",
+      "sha256": "c82db96437a26904a71c36f44ef0a984e16647ea369e2814ed220bb696b7c60d",
+      "bytes": 540
+    },
+    {
+      "source": "install.log",
+      "sha256": "0ebf8a93a52330d645a0caae33a55ccf43443adbc6a41be2c6704bab9a81caf7",
+      "bytes": 1104
+    },
+    {
+      "source": "install-accepted.log",
+      "sha256": "c5f192bca7e5b354c8b3a82d6443bf32c217d4163d111f1bcd3bddb5d82ee3a7",
+      "bytes": 1848
+    },
+    {
+      "source": "installed.log",
+      "sha256": "a7095b2956b8d14bd4dd1d9622b60b4876548a5ed84bf174754aa51f4d08b737",
+      "bytes": 578
+    },
+    {
+      "source": "build.log",
+      "sha256": "5825518c3fd0e09a7fdf1b7bffa4cbcbdbb2fe45bf6064bdd6cc69a238841c84",
+      "bytes": 179
+    },
+    {
+      "source": "ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    {
+      "source": "format.log",
+      "sha256": "e6b4fe3b6eb873c7d8a9536430f5c8d2947fe66dce4fe24ba024d5050bd69486",
+      "bytes": 28
+    },
+    {
+      "source": "mypy.log",
+      "sha256": "731a3b68a4d1815100d83a713a11ca9bd8c08418e760fed1ec0673147daa122e",
+      "bytes": 45
+    },
+    {
+      "source": "readability.log",
+      "sha256": "582fa111352d8f30f1a4c654366452a34d525c27bdeaa328e35d46eb0f86c23e",
+      "bytes": 406
+    },
+    {
+      "source": "specs.log",
+      "sha256": "74b82ada3fd5ae23bd333f3cd8ad5687d80c41e1239c956ec0155034b3031d72",
+      "bytes": 210
+    },
+    {
+      "source": "diagrams.log",
+      "sha256": "e5001473e51b4e25415780e69c02a1129f4c753dd25f18d445f2c2fb47ca5d82",
+      "bytes": 64
+    },
+    {
+      "source": "governance-final.log",
+      "sha256": "1f55d92ac3b39d5068bf87aecb813728b6f4ea1d71db7d386748019d2d830cd4",
+      "bytes": 546
+    },
+    {
+      "source": "documentation-final.json",
+      "sha256": "a41ae6c0cd4adeb41f724ed21135736c1d444e0d72ea92a08e2febbfdaba0795",
+      "bytes": 192
+    },
+    {
+      "source": "secret.log",
+      "sha256": "cdf859cb9cbecec2b8e6ae74409c94179bac0cadae4604e2bb717e67fd9f8a47",
+      "bytes": 101
+    }
+  ],
+  "projection_script_sha256": "c6a3b80f6a085dbfb6e73abac31b711d409a23ba9af32094a1e43411e2438dff",
+  "immutable_inputs_unchanged": {
+    "spec": true,
+    "benchmarks/taskpacks": true,
+    "src/harnessix/evals": true,
+    "src/harnessix/models": true,
+    "src/harnessix/artifacts": true,
+    "src/harnessix/processes": true,
+    "scripts/provider_verification_budget.py": true,
+    "scripts/provider_verification_guard.py": true,
+    "governance/readability-policy-v1.json": true,
+    "pyproject.toml": true,
+    "uv.lock": true
+  },
+  "installed_identity": {
+    "version": "1.0.0rc1",
+    "load_from_installed_wheel": true,
+    "package_members_equal_source_and_install": 440,
+    "wheel_sha256": "ccd7fdd59b1e8f4dcb0fa5780d42b4249f90a064237da798247f1f648c3f92da",
+    "locked_install_input_sha256": "1aa8d12148a7c7be6d0d0f540e4b7292484ad22022f6ae6fca6678b8b78bd52a",
+    "test_fixtures_loaded_from_worktree": true,
+    "real_provider": false
+  },
+  "current_budget_preflight": {
+    "allocation": "70.00",
+    "known_cost_estimate": "1.522724",
+    "unknown_or_reserved_hold": "20.77824",
+    "request_counts": {
+      "completed": 61,
+      "unknown": 1
+    },
+    "preflight_error": "verification_budget_unresolved",
+    "original_ledger_sha256": "68f37dcdc1912a3aa36ea8c51b149d5384267eec2d642828d6dfbcf7a728a4aa",
+    "original_ledger_bytes_unchanged": true,
+    "credential_lookup": false,
+    "model_requests": 0
+  },
+  "documentation": {
+    "new_mermaid_blocks_rendered": 2,
+    "new_diagrams_visually_inspected": true,
+    "existing_module_mermaid_blocks_unchanged": 22,
+    "static_gate": {
+      "changed_path_count": 18,
+      "document_count": 406,
+      "findings": [],
+      "link_count": 10222,
+      "mermaid_count": 877,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    }
+  },
+  "static_checks": {
+    "ruff": "passed",
+    "format": "passed",
+    "mypy_source_files": 399,
+    "readability_original_policy": "passed",
+    "schema": "unchanged"
+  },
+  "parallel_execution": {
+    "independent_regression_sets": true,
+    "same_file_changes_serialized": true,
+    "real_provider_owners_started": 0
+  },
+  "real_model_requests": 0,
+  "complete_real_quality_score": null,
+  "windows_native_verified": false,
+  "commercial_release": false,
+  "secret_scan": {
+    "result": "passed",
+    "input_count": 3655,
+    "findings": 0,
+    "scope": "all_staged_source_and_actual_wheel"
+  }
+}

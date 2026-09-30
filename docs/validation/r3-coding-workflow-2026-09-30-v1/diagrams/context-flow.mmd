@@ -1,0 +1,11 @@
+flowchart LR
+    Product[正式stdio产品] --> Factory[共享Context Factory]
+    Eval[正式Task Pack Trial] --> Factory
+    Instructions[编码流程指令v3] --> Factory
+    Sources[原项目 工作区 环境Source] --> Factory
+    Factory --> Runtime[原Agent Runtime]
+    Runtime --> Inspection[(原Session Context指纹)]
+    Runtime --> Adapter[原Chat或Anthropic映射]
+    Adapter --> Model[模型选择新的动作]
+    Model --> Tools[原严格工具与审批]
+    Tools --> Runtime

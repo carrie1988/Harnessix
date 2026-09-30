@@ -1,0 +1,29 @@
+{
+  "decision": "scoped_offline_go_commercial_no_go",
+  "scope": "共享编码流程指令与离线装配",
+  "design": "docs/changes/m09-r3-coding-workflow-instructions.md",
+  "retained_failures": [
+    "原真实完整0/20",
+    "原部分7 invalid及1 failed",
+    "原取消无报告",
+    "原12项RED",
+    "指令大小护栏中间FAIL",
+    "全Dev离线安装缓存缺失",
+    "原未知费用预留"
+  ],
+  "open_gates": [
+    "原Provider费用核对",
+    "新的完整3仓20 Trial且原质量阈值不变",
+    "累计Token使用与质量",
+    "当前候选原生矩阵",
+    "消费者Windows11",
+    "独立Beta",
+    "完整R1至R6"
+  ],
+  "not_claimed": [
+    "模型必然遵循指令",
+    "完整Suite通过",
+    "供应商实际收包及收费",
+    "商用1.0发布"
+  ]
+}

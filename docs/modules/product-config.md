@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 40
-code_revision: 974d40dfcf29e5601c3c7a65fc5922a869e443c7
+version: 41
+code_revision: 277f38439b3ed21ed46908ebbf0625155cd58937
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_coding_workflow_instructions.py
   - tests/product_config/test_product_patch_rollback.py
   - tests/product_config/test_product_rollback_sdk.py
   - tests/product_config/test_product_state_restore.py
@@ -95,10 +96,16 @@ Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，
 费用与Secret公开保护沿用已有合同。没有新增配置v3或SQLite迁移，全部公共Schema保持不变。
 完整设计、失败语义和测试见[R3产品Context统一装配](../changes/m09-r3-product-context-composition.md)。
 
-编码指令当前为`harnessix.coding-instructions/v2`：替换/删除前置条件只允许使用默认
+编码指令当前为`harnessix.coding-instructions/v3`：替换/删除前置条件只允许使用默认
 `read_file`在`digest_status=complete`时返回的`content_sha256`；分页revision和可见片段摘要不得替代。
 此规则不授予写权限，审批、事务及写前复核保持原合同；新公开快照合同见
 [可信文件快照及受管修改详设](../changes/m09-r3-trusted-file-snapshot.md)。
+
+[共享编码流程详设](../changes/m09-r3-coding-workflow-instructions.md)明确首次受管Patch前的独立基线、
+最后修改后的最终检查、正常非零退出与Artifact引用读取的衔接，以及路径/严格参数错误后的新调用。
+单次修改后检查不能补为两阶段事实，Prompt不强制状态转换；产品与正式评测共用一份固定正文，
+UTF-8不超过原v2的2751字节，Context/Compaction、Tool Schema、批准与Task Pack门槛不变。
+实际请求映射和Session重开回归不是模型遵循率、完整20 Trial成绩或R3验收通过。
 
 ## 2. 需求背景
 

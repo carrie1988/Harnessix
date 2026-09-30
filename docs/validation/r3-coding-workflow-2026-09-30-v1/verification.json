@@ -1,0 +1,18 @@
+{
+  "scope": "shared_coding_workflow_instructions_offline",
+  "original_red_retained": true,
+  "nine_original_sessions_read_only_and_unchanged": true,
+  "final_item_deduplication": true,
+  "four_patch_trials_without_baseline_observed": true,
+  "valid_baseline_patch_and_passing_final_then_budget_failure_observed": true,
+  "formal_chat_and_anthropic_mapping_equal_actual_request": true,
+  "session_reopen_fingerprint_preserved": true,
+  "default_stdio_product_same_instructions": true,
+  "instruction_content_not_larger_than_original": true,
+  "context_compaction_schema_approval_task_pack_grader_unchanged": true,
+  "unknown_budget_hold_not_released": true,
+  "new_wheel_matches_source_and_installed_bytes": true,
+  "tests_prove_model_obedience": false,
+  "complete_twenty_trial_quality_validated": false,
+  "commercial_release_gate_closed": false
+}

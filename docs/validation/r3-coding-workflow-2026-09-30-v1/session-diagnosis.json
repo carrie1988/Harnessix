@@ -1,0 +1,444 @@
+{
+  "schema": "harnessix.coding-workflow-diagnosis/v1",
+  "source_revision": "0813c581982fddf17503d47a308419035d193ecf",
+  "suite_id": "d85c26ca-d21a-4ac4-9a01-f780eb01b038",
+  "session_count": 9,
+  "sessions": [
+    {
+      "run_id": "94c80d1d-3d76-579d-869f-2c921e76684c",
+      "case_slot": "case-000",
+      "session_sha256": "c9c316af7e87a4592b4f892b708cab01bba62b87e7cdf8a48f86ff0c75bd1d57",
+      "original_session_bytes_unchanged": true,
+      "event_count": 91,
+      "turn_status": "completed",
+      "turn_error": null,
+      "reported_outcome": "invalid",
+      "actual_total_tokens": 34627,
+      "max_tokens": 50000,
+      "successful_patch_count": 0,
+      "profile_before_first_patch": null,
+      "profile_after_last_patch": null,
+      "tool_results": [
+        {
+          "item_position": 2,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 5,
+          "tool": "run_profile",
+          "outcome": "failed",
+          "error_code": "process_nonzero_exit",
+          "returncode": 1,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        },
+        {
+          "item_position": 7,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "artifact_id_argument_present": false
+        },
+        {
+          "item_position": 9,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 11,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "artifact_id_argument_present": false
+        }
+      ]
+    },
+    {
+      "run_id": "c2cdac2c-b129-5a9a-860f-9a92615bbb2d",
+      "case_slot": "case-000",
+      "session_sha256": "8467ffdf2a522d3bccf18304d3bf0f3f521bdc3c97d89d1380b7cb82721d0395",
+      "original_session_bytes_unchanged": true,
+      "event_count": 91,
+      "turn_status": "completed",
+      "turn_error": null,
+      "reported_outcome": "invalid",
+      "actual_total_tokens": 34637,
+      "max_tokens": 50000,
+      "successful_patch_count": 0,
+      "profile_before_first_patch": null,
+      "profile_after_last_patch": null,
+      "tool_results": [
+        {
+          "item_position": 2,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 5,
+          "tool": "run_profile",
+          "outcome": "failed",
+          "error_code": "process_nonzero_exit",
+          "returncode": 1,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        },
+        {
+          "item_position": 7,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "artifact_id_argument_present": false
+        },
+        {
+          "item_position": 9,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 11,
+          "tool": "read_artifact",
+          "outcome": "failed",
+          "error_code": "tool_invalid_arguments",
+          "artifact_id_argument_present": false
+        }
+      ]
+    },
+    {
+      "run_id": "68d71947-c061-5b2f-86a9-15caca12416f",
+      "case_slot": "case-001",
+      "session_sha256": "b97a59526d7e6049060373c28ade083e20497c1b22f77203c064d28462114eee",
+      "original_session_bytes_unchanged": true,
+      "event_count": 69,
+      "turn_status": "completed",
+      "turn_error": null,
+      "reported_outcome": "invalid",
+      "actual_total_tokens": 24092,
+      "max_tokens": 50000,
+      "successful_patch_count": 1,
+      "profile_before_first_patch": false,
+      "profile_after_last_patch": true,
+      "tool_results": [
+        {
+          "item_position": 3,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 6,
+          "tool": "apply_patch_batch",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 9,
+          "tool": "run_profile",
+          "outcome": "succeeded",
+          "error_code": null,
+          "returncode": 0,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        }
+      ]
+    },
+    {
+      "run_id": "795bbea9-7820-5983-bb4e-ba4dda5815aa",
+      "case_slot": "case-001",
+      "session_sha256": "8db45df1036563dd7b0b32954e727a015a68172dd2d95073e265e9c90499f48e",
+      "original_session_bytes_unchanged": true,
+      "event_count": 128,
+      "turn_status": "failed",
+      "turn_error": "budget_exceeded",
+      "reported_outcome": "failed",
+      "actual_total_tokens": 57752,
+      "max_tokens": 50000,
+      "successful_patch_count": 1,
+      "profile_before_first_patch": true,
+      "profile_after_last_patch": true,
+      "tool_results": [
+        {
+          "item_position": 2,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 5,
+          "tool": "run_profile",
+          "outcome": "failed",
+          "error_code": "process_nonzero_exit",
+          "returncode": 1,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        },
+        {
+          "item_position": 7,
+          "tool": "read_artifact",
+          "outcome": "succeeded",
+          "error_code": null,
+          "artifact_id_argument_present": true
+        },
+        {
+          "item_position": 10,
+          "tool": "apply_patch_batch",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 13,
+          "tool": "run_profile",
+          "outcome": "succeeded",
+          "error_code": null,
+          "returncode": 0,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        },
+        {
+          "item_position": 15,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 17,
+          "tool": "git_diff",
+          "outcome": "succeeded",
+          "error_code": null
+        }
+      ]
+    },
+    {
+      "run_id": "f4cfd103-2e0c-5f0e-abcb-45f24a9b6414",
+      "case_slot": "case-002",
+      "session_sha256": "d5e2008a518974933ed6da85abe48aaa915f91e69a194b856398ef22bf163450",
+      "original_session_bytes_unchanged": true,
+      "event_count": 33,
+      "turn_status": "completed",
+      "turn_error": null,
+      "reported_outcome": "invalid",
+      "actual_total_tokens": 9664,
+      "max_tokens": 50000,
+      "successful_patch_count": 0,
+      "profile_before_first_patch": null,
+      "profile_after_last_patch": null,
+      "tool_results": [
+        {
+          "item_position": 3,
+          "tool": "read_file",
+          "outcome": "failed",
+          "error_code": "tool_not_found"
+        }
+      ]
+    },
+    {
+      "run_id": "fd7317f4-6581-59f1-bf75-2c4bcde9da78",
+      "case_slot": "case-002",
+      "session_sha256": "41961ad874ba338d4a1485782ce2558ec83612c63fd416eadf847de6f8cad04e",
+      "original_session_bytes_unchanged": true,
+      "event_count": 142,
+      "turn_status": "failed",
+      "turn_error": "budget_exceeded",
+      "reported_outcome": "invalid",
+      "actual_total_tokens": 57859,
+      "max_tokens": 50000,
+      "successful_patch_count": 1,
+      "profile_before_first_patch": false,
+      "profile_after_last_patch": true,
+      "tool_results": [
+        {
+          "item_position": 3,
+          "tool": "read_file",
+          "outcome": "failed",
+          "error_code": "tool_wrong_file_type"
+        },
+        {
+          "item_position": 5,
+          "tool": "list_files",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 7,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 9,
+          "tool": "list_files",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 11,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 14,
+          "tool": "apply_patch_batch",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 17,
+          "tool": "run_profile",
+          "outcome": "succeeded",
+          "error_code": null,
+          "returncode": 0,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        },
+        {
+          "item_position": 19,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 21,
+          "tool": "git_diff",
+          "outcome": "failed",
+          "error_code": "budget_exceeded"
+        }
+      ]
+    },
+    {
+      "run_id": "7042cdd6-56d6-5ee6-8eba-cbe928350943",
+      "case_slot": "case-003",
+      "session_sha256": "82ed566e7bc1ab7d2c9b4ca681ccbce8e0307435c98e9d045fafb08d2b975993",
+      "original_session_bytes_unchanged": true,
+      "event_count": 97,
+      "turn_status": "completed",
+      "turn_error": null,
+      "reported_outcome": "invalid",
+      "actual_total_tokens": 38550,
+      "max_tokens": 50000,
+      "successful_patch_count": 1,
+      "profile_before_first_patch": false,
+      "profile_after_last_patch": true,
+      "tool_results": [
+        {
+          "item_position": 3,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 6,
+          "tool": "apply_patch_batch",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 9,
+          "tool": "run_profile",
+          "outcome": "succeeded",
+          "error_code": null,
+          "returncode": 0,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        },
+        {
+          "item_position": 11,
+          "tool": "git_status",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 13,
+          "tool": "git_diff",
+          "outcome": "succeeded",
+          "error_code": null
+        }
+      ]
+    },
+    {
+      "run_id": "8d66bd2c-3588-5dbf-8596-626f66768893",
+      "case_slot": "case-003",
+      "session_sha256": "c40f9ac32e77b3557d8ed6fc1227d470ec4e5a018dd7460e921be5404981ff7e",
+      "original_session_bytes_unchanged": true,
+      "event_count": 69,
+      "turn_status": "completed",
+      "turn_error": null,
+      "reported_outcome": "invalid",
+      "actual_total_tokens": 24248,
+      "max_tokens": 50000,
+      "successful_patch_count": 1,
+      "profile_before_first_patch": false,
+      "profile_after_last_patch": true,
+      "tool_results": [
+        {
+          "item_position": 3,
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 6,
+          "tool": "apply_patch_batch",
+          "outcome": "succeeded",
+          "error_code": null
+        },
+        {
+          "item_position": 9,
+          "tool": "run_profile",
+          "outcome": "succeeded",
+          "error_code": null,
+          "returncode": 0,
+          "state": "exited",
+          "stop_reason": "exited",
+          "complete": true,
+          "artifact_id_present": true
+        }
+      ]
+    },
+    {
+      "run_id": "1c6c5eaa-a9ff-540c-a9f7-0cc08ffc6e6d",
+      "case_slot": "case-004",
+      "session_sha256": "65af52c5d67655bcae9bf1681fa9cf426bc9684aee540ab321f42911292318c8",
+      "original_session_bytes_unchanged": true,
+      "event_count": 34,
+      "turn_status": "cancelled",
+      "turn_error": "cancelled",
+      "reported_outcome": null,
+      "actual_total_tokens": 9796,
+      "max_tokens": 50000,
+      "successful_patch_count": 0,
+      "profile_before_first_patch": null,
+      "profile_after_last_patch": null,
+      "tool_results": [
+        {
+          "item_position": 3,
+          "tool": "read_file",
+          "outcome": "failed",
+          "error_code": "tool_not_found"
+        }
+      ]
+    }
+  ],
+  "deduplication": "formal_reducer_final_items",
+  "raw_body_or_argument_values_exported": false,
+  "model_requests": 0,
+  "complete_quality_score": null
+}
