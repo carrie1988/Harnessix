@@ -180,5 +180,15 @@
         "bytes": 34253
       }
     ]
+  },
+  "source_binding_readability": {
+    "initial": "fail",
+    "initial_log_sha256": "b7a9897565a2e65abeeaa3ce376db0193054c708dabaf7a6db85f0d2e847967e",
+    "cause": "观察报告新增source_revision与默认重算报告不一致；只有可选元数据差异",
+    "repair": "恢复默认报告结构，源码版本绑定留在独立source-bindings中",
+    "final": "pass",
+    "final_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "production_inputs_changed": false,
+    "policy_changed": false
   }
 }

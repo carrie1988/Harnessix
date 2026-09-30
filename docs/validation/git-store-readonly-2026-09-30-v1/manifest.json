@@ -63,8 +63,8 @@
     },
     {
       "path": "test-results.json",
-      "bytes": 5635,
-      "sha256": "0f3a7e5ad55626ddc84e52452f6258edefac0b4c2c4b291b30ab776014486593"
+      "bytes": 6175,
+      "sha256": "12e65245c34a2a8110c23f7a0c43c9a4fd607fd8600d67cfe98650f69b42f1bf"
     },
     {
       "path": "verification.json",
