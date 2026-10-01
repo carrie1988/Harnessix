@@ -1,0 +1,78 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "scope": "public_low_sensitivity_git_tree_closure",
+  "code_inputs_identity_sha256": "acc80cd4850883f291d733d2196f3ffcf698eb6a4d6608e97bc0d9a93b76c948",
+  "manifest_self_excluded": true,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7092,
+      "sha256": "39ac0c8676ee87ad4bcc278d4b7fac4894587e7c3301a53c6c8442b2f6170638"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 1593,
+      "sha256": "dcd9a7697f2e5c92a1d5eeaa7b7872f525a8a0d4fc1ec074597706f8d6be2319"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 121802,
+      "sha256": "3468aaf9c0d07dd05009915e8ebb64fdc545729b1e10dc6af805355697eada74"
+    },
+    {
+      "path": "diagrams/dataflow.mmd",
+      "bytes": 1711,
+      "sha256": "2428907e2d2a316630d085e67060ea79d1a855740d79c115565f5b549363a011"
+    },
+    {
+      "path": "diagrams/dataflow.png",
+      "bytes": 133301,
+      "sha256": "147f76a95c67f0eb8d1513160a3e866c11dad253c60c12d1ccf04730170e1906"
+    },
+    {
+      "path": "diagrams/failure.mmd",
+      "bytes": 1529,
+      "sha256": "e4f088a5b638bc68241154e49d2bf5761972190c5c2e5cd72d99907ebfbe8686"
+    },
+    {
+      "path": "diagrams/failure.png",
+      "bytes": 144278,
+      "sha256": "fb2ec13fdd793e5bfd14b35c8588fe14f63fe79e33003ce34fee71093537301a"
+    },
+    {
+      "path": "diagrams/flow.mmd",
+      "bytes": 1832,
+      "sha256": "016d89230e769d1b4f3a3363aae74390dab1612f17bd0e67dd14e36893ad9a15"
+    },
+    {
+      "path": "diagrams/flow.png",
+      "bytes": 203976,
+      "sha256": "ed822a095bea0c08ba3752e2b614969c6ae5987b2323eba497296952fab76084"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "bytes": 1792,
+      "sha256": "8849139456da3ecda59e68d4f6694893a427dd5b8d44064b3ec555c2141b9e86"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "bytes": 155885,
+      "sha256": "14e33058f8322fe2c91ea69575a0acf703cdd041e49bc0aa8133a2256c99b8a6"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 332733,
+      "sha256": "640b52d8d220c71a7d20e4e7e138394cb2cb0c7c79638a5addb8508e5446b321"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 6937,
+      "sha256": "330cff910aab623d4d6871062c6eba49bb49936737188b75e8bdc537844d7350"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 10277,
+      "sha256": "044b73f586c971e3d5acdddcc17c50e113988406dbcebbce4f1564222c66151d"
+    }
+  ]
+}

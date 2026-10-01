@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 27
-code_revision: 310874c19c1af502bec22b4fe86966d230d52fb9
+version: 28
+code_revision: 37a1f01bee0dc4747af8680b4918e4c85cae266c
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_object_references.py
+  - tests/delivery/test_git_tree_closure.py
   - tests/delivery/test_git_material_cas.py
   - tests/delivery/test_cas_write_authority.py
   - tests/product_config/test_git_material_cas_integration.py
@@ -1857,8 +1859,9 @@ Owner Receipt和私有备份目录发布共享同一个类；原事务效果状�
 新增受控端口位于产品层，不新增Delivery到Process的依赖。领域实现摘要覆盖上述材料与Git Store结构文件；
 旧计划保持历史事实，不因提取自动迁移批准。新的
 [`完整IO详设`](../changes/m09-r4-git-supervised-command-io.md)给出契约、源码映射、三图和失败恢复边界。
-旧同步门面仍没有取消/进程树回收能力；默认Commit/Checkpoint产品接线、8MiB对象材料、
-全前缀认证与业务备份闭包仍未完成，不能从内部命令退出零推出业务交付成功。
+旧同步门面仍没有取消/进程树回收能力；受控端的完整8MiB对象读写及原 CAS 持久化已提供内部合同。
+默认Commit/Checkpoint产品接线、全前缀认证与业务备份闭包仍未完成，
+不能从内部命令退出零推出业务交付成功。
 
 ## 36. 固定对象完整材料读取
 
@@ -1866,11 +1869,12 @@ Owner Receipt和私有备份目录发布共享同一个类；原事务效果状�
 [`git_object_material.py`](../../src/harnessix/delivery/git_object_material.py)定义纯固定OID请求与完整对象材料。
 `GitObjectRead`绑定blob/tree/commit、明确SHA1/SHA256格式和原8MiB单文件容量；不接Ref、路径或任意参数。
 `decode_git_object_batch`验证唯一batch头、精确长度、尾LF及完整Git对象哈希，不能以正文SHA替代Git OID。
-材料正文不进入repr；未登记CAS、对象目录或业务关联的材料不是备份闭包。
+材料正文不进入repr；原 CAS 类型适配已实现，未登记认证对象目录或业务关联的材料不是业务备份闭包。
 
 固定Runner额外设`GIT_NO_LAZY_FETCH=1`，禁自动补取缺失对象；与原禁replace、配置/Hook约束共用唯一环境。
-标准同步命令输出1MiB不变。产品受控端新增材料读取用途，原stdin1MiB不变；8MiB受信写入、
-对象目录、完整认证及业务备份恢复仍开放。保护后正文与raw不同或同一冻结保护模式命中即拒绝，
+标准同步命令输出1MiB不变。产品受控端新增材料读取用途，原stdin1MiB不变；
+完整8MiB受信写入已有后继内部合同，认证对象目录、完整认证及业务备份恢复仍开放。
+保护后正文与raw不同或同一冻结保护模式命中即拒绝，
 包括等字节占位符替换，不关闭脱敏或将前缀冒充对象。
 
 
@@ -1888,5 +1892,29 @@ canonical小manifest与生产者证明分别限64KiB/4096字节，不提高普�
 必须新批准完整对象回读，不能把该证明当作业务Commit完成。
 Windows实际数据访问拒共享保护及快照关闭语义见[完整设计](../changes/m09-r4-git-object-material-input.md)。
 
-本内部能力没有新增默认写Tool或数据库。CAS来源、认证业务登记、双工作树、阶段崩溃恢复、
+本内部能力没有新增默认写Tool或数据库。CAS业务来源关联、认证业务登记、双工作树、阶段崩溃恢复、
 完整Git备份闭包与新原生验收仍须完成，原R1/R4范围不缩减。
+
+## 完整对象直接引用与普通文件树只读验真
+
+[`GitMaterialCAS`](../../src/harnessix/delivery/git_material_cas.py)提供原 CAS 上的完整类型引用及回读。
+[`git_object_references.py`](../../src/harnessix/delivery/git_object_references.py)在重验原始完整材料后，
+解析原始二进制 tree 与 commit 的直接引用：目录以尾斜线比较排序，重复 basename、截断、
+零 OID、非规范模式及歧义必需头均拒绝；原扩展头与消息继续保存在原材料，不重新编码。
+tree 解析可表达 symlink／gitlink，但它们不是可物化的普通文件。
+
+[`verify_git_tree_closure`](../../src/harnessix/delivery/git_tree_closure.py)只从原 CAS 读取完整树及
+全部普通文件，包括没有修改的文件、空文件、二进制及可执行模式。
+OID 去重只减少重复正文读取；同一子树在不同路径仍完整展开，并分别占用条目预算。
+路径复用原 Workspace 规范化及平台比较键，不新增路径解释或绕过 Windows 保留名／ADS 限制。
+任一缺失、类型冲突、坏正文、链接类型、路径冲突、超限或取消都不返回部分树。
+
+对象数、唯一正文总量、展开条目和树深度由受信调用者显式给出，没有产品默认容量。
+协作 checkpoint 由调用者提供取消／期限检查；同步单对象 CAS IO 仍受原8MiB容量约束，
+不声称即时中断文件读取。输出只是本次完整内容观察，不是业务 MAC、跨库共同快照或批准。
+commit parent 按原顺序记录，不自动归类为外部历史或自动读取祖先。
+
+完整接口、字段、流程、时序、伪代码及失败矩阵见
+[总体与详细设计](../changes/m09-r4-git-tree-closure.md)。
+GitDB 认证目录、对象角色、完整 Diff、新批准、双工作树、Backup v2及新根重绑仍须完成；
+本增量不开放默认 Commit／Checkpoint，不改变完整产品交付和商用门禁范围。

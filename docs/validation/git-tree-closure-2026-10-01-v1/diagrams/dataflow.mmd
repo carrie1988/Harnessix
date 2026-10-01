@@ -1,0 +1,26 @@
+%%{init: {"theme":"neutral","htmlLabels":false,"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":18,"themeVariables":{"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":"18px"},"flowchart":{"htmlLabels":false,"curve":"linear","padding":20,"nodeSpacing":35,"rankSpacing":40}}}%%
+flowchart TB
+    ROOT[root tree 引用]
+    CAT[candidate catalog<br/>包含未可达候选 · 同一对象格式]
+    MAP[OID → 严格引用索引<br/>候选 OID 加 root 不超过 max_objects]
+    BODY[原 CAS 完整正文<br/>每对象不超过 8MiB]
+    CHECK[完整长度 / 正文 SHA256<br/>真实类型头 + 长度 + NUL + body → Git OID]
+    PARSE[tree 直接边<br/>mode · 原始 basename · child OID]
+    U[唯一可达 OID 集合<br/>含 root / 全部 tree / 普通 blob]
+    CACHE[tree OID → 完整条目缓存]
+    EXP[每个路径前缀独立展开<br/>同一子树复用也累加 entries]
+    PATH[严格 UTF-8 与原路径规范<br/>POSIX 原键 / Windows casefold 键]
+    METRIC[body_bytes：唯一可达 OID 正文之和<br/>expanded_entries：所有路径展开条目之和<br/>tree_depth：最大目录深度，root = 0]
+    OUT[objects 按 OID 排序<br/>files 按 UTF-8 路径字节排序<br/>每个文件保留 mode 与材料引用]
+    CMT[commit 原完整 body]
+    DIRECT[直接 tree 与有序 parents<br/>扩展头续行 / 消息仍留在原 body]
+    NO[parents 不触发历史读取<br/>内容引用不授予 MAC / Owner 权限]
+    ROOT --> MAP
+    CAT --> MAP
+    MAP --> BODY --> CHECK --> U
+    CHECK --> PARSE --> CACHE --> EXP --> PATH --> OUT
+    U --> METRIC
+    EXP --> METRIC
+    METRIC --> OUT
+    CMT --> DIRECT -.宿主选择 tree 根.-> ROOT
+    DIRECT -.边界.-> NO

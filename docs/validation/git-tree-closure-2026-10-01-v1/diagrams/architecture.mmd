@@ -1,0 +1,35 @@
+%%{init: {"theme":"neutral","htmlLabels":false,"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":18,"themeVariables":{"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":"18px"},"flowchart":{"htmlLabels":false,"curve":"linear","padding":20,"nodeSpacing":35,"rankSpacing":40}}}%%
+flowchart TB
+    H[受信宿主<br/>来源与用途授权不在本能力内]
+    I[完整 GitObjectMaterial<br/>类型头 OID 与每对象 8MiB 上限]
+    subgraph P[纯直接引用解析]
+        T[parse_git_tree<br/>五种规范 mode · 二进制 OID]
+        C[parse_git_commit<br/>唯一 tree · 有序 parents]
+    end
+    R[已存在 CAS 的严格类型引用<br/>root tree + candidate catalog]
+    L[宿主显式四项限额<br/>协作式 checkpoint · platform]
+    V[verify_git_tree_closure<br/>只读迭代 DFS · 唯一对象与路径分别计数]
+    subgraph O[复用原模块]
+        CAS[GitMaterialCAS.read<br/>完整正文 · 长度 · SHA · Git OID]
+        S[原 Store.blob / CAS IO<br/>已有私有普通文件]
+        PATH[原 Workspace 路径规则<br/>规范化与平台比较键]
+    end
+    OUT[GitTreeClosure<br/>全部目录和普通文件闭合后才返回]
+    NO[不提供 GitDBInventory / MAC<br/>backup / product write / 历史授权]
+    H --> I
+    I --> T
+    I --> C
+    H --> R
+    H --> L
+    C -.宿主独立选择并供应 tree 材料.-> R
+    R --> V
+    L --> V
+    V --> CAS
+    CAS --> S
+    V --> T
+    V --> PATH
+    V --> OUT
+    OUT --> H
+    OUT -.不等价.-> NO
+    classDef boundary fill:#fff1ed,stroke:#b94a34,color:#59291f
+    class NO boundary

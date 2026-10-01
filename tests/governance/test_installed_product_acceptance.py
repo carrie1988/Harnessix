@@ -337,6 +337,8 @@ def test_rollback_root_binding_joins_native_focus_without_removing_existing_chec
     ]
     step = next(item for item in steps if item.get("name") == "验证原生NTFS文件事务与审批编码写链")
     assert step["timeout-minutes"] == 3
+    # 诊断独立于原精确选择器合同，不允许借观测参数增加重试或放宽期限。
+    assert step["env"] == {"PYTEST_ADDOPTS": "-vv -o faulthandler_timeout=60 --durations=10"}
     assert step["run"].split() == [
         "uv",
         "run",

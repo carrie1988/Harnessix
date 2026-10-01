@@ -1,0 +1,36 @@
+%%{init: {"theme":"neutral","htmlLabels":false,"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":18,"themeVariables":{"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":"18px"},"flowchart":{"htmlLabels":false,"curve":"linear","padding":20,"nodeSpacing":35,"rankSpacing":40}}}%%
+flowchart TB
+    A[输入 root tree · catalog · platform<br/>四项显式限额 · checkpoint]
+    B[重验实际引用与限额<br/>catalog OID 数量加 root 受 max_objects 限制]
+    C[初始化迭代 DFS<br/>root 深度 0 · 唯一对象缓存 · 路径集合]
+    D{pending 非空?}
+    E[checkpoint · 弹出目录任务<br/>校验深度及当前祖先循环]
+    F{OID 已观察?}
+    G[检查唯一对象和字节预算<br/>原 CAS 完整读取与类型 / SHA / OID 核验]
+    H[tree 全量解析并缓存条目<br/>规范 mode · 排序 · 全局 basename 去重]
+    I[按本次路径累加全部条目<br/>更新最大 tree_depth]
+    Q{本目录仍有条目?}
+    J[逐条 checkpoint<br/>UTF-8 路径 · 原平台键 · 冲突拒绝]
+    K{mode 分支}
+    M[40000<br/>压入子 tree 路径任务]
+    N[100644 / 100755<br/>验真 blob · 记录路径及模式]
+    X[120000 / 160000<br/>拒绝普通文件树闭包]
+    R[最终 checkpoint<br/>确定性排序并返回完整观察结果]
+    FAIL[失败或取消：不返回部分闭包<br/>不补对象 · 不写工作树 · 不清理 CAS]
+    A --> B --> C --> D
+    D -->|是| E --> F
+    F -->|否| G --> H --> I
+    F -->|是| I
+    I --> Q
+    Q -->|是| J --> K
+    K --> M --> Q
+    K --> N --> Q
+    Q -->|否| D
+    K --> X --> FAIL
+    D -->|否| R
+    B -.无效或超限.-> FAIL
+    E -.循环 / 超深 / 取消.-> FAIL
+    G -.缺对象 / 损坏 / 超限.-> FAIL
+    H -.解析拒绝.-> FAIL
+    I -.展开超限.-> FAIL
+    J -.路径冲突 / 取消.-> FAIL

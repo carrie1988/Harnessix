@@ -1,0 +1,42 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"PingFang SC, Microsoft YaHei, sans-serif","fontSize":"18px"},"sequence":{"mirrorActors":false,"actorMargin":35,"messageMargin":25}}}%%
+sequenceDiagram
+    participant H as 受信宿主
+    participant V as 闭包验真
+    participant K as checkpoint
+    participant C as 原类型 CAS
+    participant S as 原 Store / 文件
+    participant P as tree 解析 / 路径
+    H->>V: root tree, catalog, platform, 显式 limits
+    V->>V: 重验合同与 candidate catalog 上限
+    loop 每个目录路径任务，含复用子树
+        V->>K: 检查取消 / deadline
+        K-->>V: 继续或原异常
+        V->>V: 深度 / 祖先循环 / 展开预算
+        alt 首次可达 OID
+            V->>C: read(严格类型引用)
+            C->>S: blob(固定正文 SHA256)
+            S-->>C: 完整 bytes
+            C->>C: 长度 / SHA / 类型头 Git OID
+            C-->>V: 完整材料
+            V->>K: IO 后 checkpoint
+            opt 对象为 tree
+                V->>P: parse_git_tree(材料, 剩余 entries)
+                P-->>V: 完整规范条目
+            end
+            V->>V: 记入唯一 OID / 正文字节
+        else 已观察 OID
+            V->>V: 复用材料引用 / tree 解析缓存
+        end
+        loop 本路径下每个 tree 条目
+            V->>K: 条目 checkpoint
+            V->>P: UTF-8 路径及原平台比较键
+            P-->>V: 规范路径或固定拒绝
+            V->>V: 目录压栈 / 普通 blob 验真并记录 / links 拒绝
+        end
+    end
+    V->>K: 返回前 checkpoint
+    alt 所有路径与对象完整
+        V-->>H: GitTreeClosure，非业务认证证明
+    else 任一失败或取消
+        V-->>H: 固定错误或原取消异常，无部分闭包
+    end

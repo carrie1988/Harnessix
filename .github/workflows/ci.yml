@@ -100,6 +100,8 @@ jobs:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
       - name: 验证原生NTFS文件事务与审批编码写链
+        env:
+          PYTEST_ADDOPTS: "-vv -o faulthandler_timeout=60 --durations=10"
         run: >-
           uv run pytest tests/delivery/test_windows_filesystem.py
           tests/delivery/test_windows_io_contracts.py
@@ -159,6 +161,8 @@ jobs:
           tests/product_config/test_git_material_owner_exit.py
           tests/delivery/test_git_material_cas.py
           tests/delivery/test_cas_write_authority.py
+          tests/delivery/test_git_object_references.py
+          tests/delivery/test_git_tree_closure.py
           tests/product_config/test_git_material_cas_integration.py
           tests/product_config/test_git_baseline.py::test_large_original_blob_uses_complete_observed_digest_not_prefix
           tests/product_config/test_git_baseline.py::test_consumer_uses_raw_blob_index_and_status_not_redacted_observation

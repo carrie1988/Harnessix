@@ -1,0 +1,208 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "status": "scoped_local_go_native_and_full_product_open",
+  "scope": "完整只读文件树材料验真，不是完整Git产品",
+  "input_catalog_sha256": "acc80cd4850883f291d733d2196f3ffcf698eb6a4d6608e97bc0d9a93b76c948",
+  "requirements": [
+    {
+      "id": "RAW-REFERENCES",
+      "status": "pass_local_not_native",
+      "acceptance": "原始二进制tree顺序、模式、重复名称与commit头真实引用；实际Git两格式差分。"
+    },
+    {
+      "id": "FULL-TREE",
+      "status": "pass_local_not_native",
+      "acceptance": "全部可达子树及普通文件，含未修改、空、二进制与可执行文件。"
+    },
+    {
+      "id": "REPEAT-SUBTREE",
+      "status": "pass_local_not_native",
+      "acceptance": "正文OID去重不取消逐路径展开或容量记账。"
+    },
+    {
+      "id": "FAIL-CLOSED",
+      "status": "pass_local_not_native",
+      "acceptance": "缺失、类型错、损坏、链接、路径冲突与超限无部分成功。"
+    },
+    {
+      "id": "READONLY-CANCEL",
+      "status": "pass_local_not_native",
+      "acceptance": "原CAS只读验真；原checkpoint异常传播，不写工作树/DB/Ref。"
+    },
+    {
+      "id": "SOURCE-WHEEL-INSTALL",
+      "status": "pass_local_not_native",
+      "acceptance": "1241输入冻结、单Wheel与464包成员双源码外安装逐字节一致。"
+    }
+  ],
+  "independent_review": {
+    "status": "no_P0_P1_P2_findings_with_validation_limits",
+    "source_hashes": [
+      {
+        "path": "src/harnessix/delivery/git_object_references.py",
+        "sha256": "54440de73fa7c76b59f0675f50e6bbbfd121835a9bce015060479ba3390d8132",
+        "bytes": 6697,
+        "lines": 189
+      },
+      {
+        "path": "src/harnessix/delivery/git_tree_closure.py",
+        "sha256": "ccdc5a9a09d2aab6aad9c11fb8aca3b253511c122bdbca985bb391932bfe7984",
+        "bytes": 8488,
+        "lines": 211
+      }
+    ],
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "function_tests_executed": 0,
+    "source_end_matches_start": true,
+    "artifact": {
+      "path": "review/REPORT.md",
+      "bytes": 18418,
+      "sha256": "5de705c871c2c6acb608871b7063f7a6b66581a65ccaa5924c5bfe0578979592"
+    }
+  },
+  "actual_function_tests_by_separate_worker": {
+    "status": "pass",
+    "tests": 474,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 474,
+    "duration_seconds": 1.256,
+    "junit": {
+      "path": "references-worker/focused-both-v3.xml",
+      "bytes": 76920,
+      "sha256": "3b93ecdf9a106a8feba4ceb5dc69f169b8c333abd9c52e1aae8ef6da16f894ff"
+    },
+    "log": {
+      "path": "references-worker/focused-both-v3.log",
+      "bytes": 1993,
+      "sha256": "88181735040aedbdfd3f319b9e94a3305e74015f9ce063b319b59503850f5323"
+    }
+  },
+  "same_candidate_checks": {
+    "static": {
+      "status": "pass",
+      "log": {
+        "path": "source/static-v4.log",
+        "bytes": 121,
+        "sha256": "ce8559d17b3a2327f0276b2efb4bb939314810e4d4684eae77f7ae91b1fb956d"
+      },
+      "mypy_modules": 423,
+      "formatted_files": 1449,
+      "policy_changed": false
+    },
+    "governance": {
+      "status": "pass",
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 302,
+      "duration_seconds": 25.0,
+      "junit": {
+        "path": "source/governance-v2.xml",
+        "bytes": 47175,
+        "sha256": "24dd547953112a6dddfd544e319e6f28f4fc920ad145d843af11beb4d574def8"
+      },
+      "log": {
+        "path": "source/governance-v2.log",
+        "bytes": 1075,
+        "sha256": "727c6c7a2c5475c462a51e76163a353957bba940d159115b70ce365f872cf64d"
+      }
+    },
+    "secret_self_check": {
+      "status": "pass",
+      "log": {
+        "path": "source/secret-self.log",
+        "bytes": 56,
+        "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+      }
+    },
+    "secret_repository_and_actual_wheel": {
+      "status": "pass",
+      "log": {
+        "path": "source/secret-final-v2.log",
+        "bytes": 101,
+        "sha256": "7938f31d23d810dff7c8395ef4eebf0591ad300469265879dab404fbf1585762"
+      }
+    },
+    "documentation": {
+      "status": "pass",
+      "report": {
+        "path": "source/docs-final-v2.json",
+        "bytes": 191,
+        "sha256": "9df9f4403dfb87f4a513af21e7ed2a90ffd6e71e3633183c2fee9d005997ef10"
+      },
+      "summary": {
+        "document_count": 440,
+        "link_count": 10844,
+        "mermaid_count": 929,
+        "policy_version": "harnessix.documentation-policy/v1",
+        "finding_count": 0
+      }
+    }
+  },
+  "diagrams": {
+    "rendered_png_count": 5,
+    "visually_inspected_count": 5,
+    "proves": "图示语法与可读性，不是运行或产品验收。"
+  },
+  "original_failures_preserved": true,
+  "threshold_or_policy_waivers": false,
+  "native_ci": {
+    "revision": "37a1f01bee0dc4747af8680b4918e4c85cae266c",
+    "run_id": 36800438931,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36800438931",
+    "conclusion": "failure",
+    "documentation": "success",
+    "container": "success",
+    "coding_tools_macos": "success",
+    "python_312_313": "原12件Archive许可证扫描失败",
+    "windows": {
+      "first_ntfs_step": {
+        "collected": 130,
+        "passed": 119,
+        "skipped": 2,
+        "junit_duration_seconds": 177.22,
+        "termination": "原3分钟步骤期限KeyboardInterrupt",
+        "unique_blocking_case_proven": false
+      },
+      "later_git_steps": "skipped"
+    },
+    "current_diagnostic_change": {
+      "verbose": true,
+      "faulthandler_seconds": 60,
+      "durations": 10,
+      "original_timeout_minutes": 3,
+      "original_selectors_preserved": true,
+      "original_run_exactly_preserved": true,
+      "options_location": "step.env.PYTEST_ADDOPTS",
+      "is_root_cause_fix": false
+    },
+    "new_candidate_native": "not_run"
+  },
+  "remaining_business_requirements": [
+    "完整目标树与Diff",
+    "认证目录及业务角色",
+    "GitDB v2全事件前缀MAC",
+    "独立Checkpoint及Commit批准",
+    "原Runtime新派生事务与双工作树",
+    "默认Checkpoint/Commit产品接线",
+    "Backup v2及新根重新授权",
+    "完整R3/Windows11/Beta/同候选发布门禁"
+  ],
+  "limits": [
+    "不证明commit身份或签名、完整Git fsck或parent历史闭合。",
+    "不证明候选引用的业务角色、认证目录、批准、目标树来源或GitDB全前缀。",
+    "不启用默认Commit/Checkpoint，不扩展备份白名单，不实现Backup v2。",
+    "显式内部四项预算不是冻结的产品默认容量。",
+    "当前实际平台为macOS；跳过、双Python与只读审查不代替Windows消费者验收。",
+    "R3完整真实质量、独立Beta及同候选R1～R6仍开放。"
+  ],
+  "new_model_requests": 0,
+  "decision": "仅本地材料验真GO，完整Git产品及商用1.0仍No-Go。"
+}

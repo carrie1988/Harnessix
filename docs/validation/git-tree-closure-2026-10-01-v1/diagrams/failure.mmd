@@ -1,0 +1,30 @@
+%%{init: {"theme":"neutral","htmlLabels":false,"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":18,"themeVariables":{"fontFamily":"Arial, PingFang SC, sans-serif","fontSize":"18px"},"flowchart":{"htmlLabels":false,"curve":"linear","padding":20,"nodeSpacing":35,"rankSpacing":40}}}%%
+flowchart TB
+    A[验真入口]
+    I{实际类型 / 引用 / 限额<br/>catalog 格式与唯一性合法?}
+    R{所需 tree / blob 存在<br/>类型和完整 CAS 内容正确?}
+    P{tree 结构 / 排序 / 名称<br/>条目预算正确?}
+    T{每个路径允许<br/>无冲突 / links / 循环 / 超深?}
+    K{各阶段与返回前<br/>checkpoint 允许继续?}
+    OK[最终 checkpoint 后返回完整 GitTreeClosure]
+    E1[invalid / limit_invalid / limit]
+    E2[missing / type_mismatch<br/>或原 CAS 固定读失败]
+    E3[object_references_invalid<br/>或 object_references_limit]
+    E4[path_denied / unsupported<br/>cycle / limit]
+    E5[原取消 / deadline 异常传播<br/>不转换为正常结果]
+    STOP[丢弃本次内存观察状态<br/>不返回部分 files 或闭包证明]
+    KEEP[保留原 CAS / 原业务状态<br/>不 persist · 不补 missing · 不 unlink]
+    A --> I
+    I -->|是| R
+    I -->|否| E1 --> STOP
+    R -->|是| P
+    R -->|否| E2 --> STOP
+    P -->|是| T
+    P -->|否| E3 --> STOP
+    T -->|是| K
+    T -->|否| E4 --> STOP
+    K -->|是| OK
+    K -->|否| E5 --> STOP
+    STOP --> KEEP
+    classDef reject fill:#fff1ed,stroke:#b94a34,color:#59291f
+    class E1,E2,E3,E4,E5,STOP reject

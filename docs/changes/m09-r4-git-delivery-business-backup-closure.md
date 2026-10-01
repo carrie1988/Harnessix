@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 2
+version: 3
 code_revision: 96584026bdf34c49c519834331b84043a6c03895
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
@@ -29,7 +29,7 @@ supersedes: []
 
 ## 1. 需求背景、状态与交付定义
 
-**实施状态：业务闭包待实现，内部 IO 与单对象材料前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入及原 CAS 单对象类型适配。产品 Git Action、持久关联、认证前缀、业务快照、对象材料闭包及恢复重绑均未由本文交付；现有测试链接仅指向复用边界，不表示这些方案已经通过验收。
+**实施状态：业务闭包待实现，内部 IO、完整对象材料与只读文件树验真前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入、原 CAS 类型适配及完整普通文件树验真。产品 Git Action、持久关联、认证前缀、业务快照、认证对象目录闭包及恢复重绑均未由本文交付；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
 
 当前默认产品能完成 Patch 和显式 Rollback，能从认证会话提取持续多 Patch 的完整来源投影，并观察 Git 基准；尚未装配 `GitDeliveryRuntime`／`SQLiteGitDeliveryStore` 形成默认产品 Commit／Checkpoint 闭环。直接把用户已修改的工作区交给要求干净来源的宿主 Runtime，会产生真实的生命周期和身份冲突。
 
@@ -316,7 +316,8 @@ flowchart TD
 | 拟新增 | `ProductGitDeliveryPlanner.prepare_checkpoint`／`prepare_commit` | 消费原认证会话及固定 Reader，生成有限产品计划和完整 Review；不创建 worktree、不写对象或 Ref |
 | 拟新增 | `ProductGitDeliveryExecutor.execute`／`reconcile` | 实现原 `TrustedActionExecutor` 的薄适配；前者消费新批准，后者只观察。锚创建及来源解析增量留在原 Git Runtime，不复制 Git Runner |
 | 拟新增 | `SQLiteGitDeliveryStore.read_business_snapshot` | 仅在只读连接和指定捕获窗口／候选快照中枚举并核验业务事实；不借用 Writer 修复缺失记录 |
-| 现有内部 | `GitDeliveryProcess.prepare_object_read/prepare_object_write`、`GitObjectMaterial`、`GitMaterialCAS` | 原批准／Owner 下完整8MiB单对象读取／输入及原 CAS 类型引用；对象图、业务认证目录及产品接线仍待实现 |
+| 现有内部 | `GitDeliveryProcess.prepare_object_read/prepare_object_write`、`GitObjectMaterial`、`GitMaterialCAS` | 原批准／Owner 下完整8MiB单对象读取／输入及原 CAS 类型引用；业务认证目录及产品接线仍待实现 |
+| 现有内部 | `parse_git_tree`、`parse_git_commit`、`verify_git_tree_closure` | 原始直接引用和全部普通文件树只读内容验真；不授予业务角色、历史范围或批准 |
 | 拟新增 | Git 认证签发／核验端口 | 在原认证模块复用原 Key 托管，域分离且只接收受信新事实。备份实例只有核验端口，没有签发端口 |
 | 拟新增 | 原 `validate_state_records` 的 Git 验证职责 | 联合 Session、Route、派生事务、GitDB、对象材料和生命周期状态；不是独立备份服务 |
 
@@ -352,7 +353,9 @@ flowchart TD
 [完整读取](m09-r4-git-object-material-read.md)与[完整输入](m09-r4-git-object-material-input.md)
 复用原批准、Owner、原始流、完整 EOF 和实现绑定；
 [原 CAS 单对象类型适配](m09-r4-git-material-cas.md)提供完整正文耐久及回读。
-这些接口不登记业务对象图、产品归属、MAC 关联或总量容量，不证明目录闭包。
+这些接口不登记业务对象图、产品归属、MAC 关联或总量容量，不证明认证目录闭包。
+后继[直接引用及完整普通文件树验真](m09-r4-git-tree-closure.md)已经提供原 CAS 上的只读内容验证；
+它没有对象角色、历史范围或产品默认配额，不能代替本设计的 GitDB 认证目录及跨 Store 关联。
 后继规划仍只做有界观察，写效果仍需新批准；未知效果不重放，未取得完整材料的对象不得登记为已备份。
 
 ### 6.3 持久产品关联
@@ -863,7 +866,7 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 该包不属于第12章的产品实现验收材料，不证明拟新增接口已经存在或业务流程已经运行。
 
 
-## 15. 内部 IO 与单对象材料实现状态
+## 15. 内部 IO、完整对象与只读文件树实现状态
 
 [受控命令 IO](m09-r4-git-supervised-command-io.md)已复用原 ExecutionPlan、批准、Owner／Lease
 及共享操作期限。POSIX pipe 使用 V2 原始双流认证，PTY 保持 V1。
@@ -875,6 +878,11 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 它不创建 GitDB 目录、关联、对象图、历史范围、总量配额或业务 MAC。
 内部引用不赋予执行权；原生平台、完整产品与正式备份门禁仍需各自证据。
 
+[直接引用与完整普通文件树验真](m09-r4-git-tree-closure.md)已解析原 tree 的模式／basename／子 OID
+及 commit 的唯一 tree／有序 parent，并从原 CAS 核对全部普通文件树闭包。
+该内部验真显式消费宿主预算与取消／期限 checkpoint，缺失 tree／blob 不作为历史边界。
+它不冻结第14章产品容量或历史承诺，不签发业务来源 MAC，也不登记交付成功。
+
 完整领域算法的异步接线、双工作树、正式 Checkpoint／Commit、全认证前缀、
-GitDB／Backup v2 和新根重绑仍未完成。单对象材料能力不能代替第13章步骤2的完整只读业务验真，
+GitDB／Backup v2 和新根重绑仍未完成。只读内容验真不能代替第13章步骤2的完整只读业务验真，
 也不能提前开放默认 Git 写 Tool；业务8MiB及全部树材料范围不得缩减。

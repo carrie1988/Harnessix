@@ -138,7 +138,7 @@ def test_existing_blob_confirmation_failure_is_not_reported_success(
         assert target.read_bytes() == body
 
 
-@pytest.mark.parametrize("body", [b"", b"x" * (8 * 1024 * 1024)])
+@pytest.mark.parametrize("body", [b"", b"x" * (8 * 1024 * 1024)], ids=["empty", "8MiB"])
 def test_public_blob_accepts_exact_existing_capacity_and_reopens(tmp_path, body) -> None:
     root = tmp_path / "state"
     digest = hashlib.sha256(body).hexdigest()

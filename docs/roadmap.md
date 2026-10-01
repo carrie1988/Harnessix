@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 144
+version: 145
 code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
@@ -1280,3 +1280,19 @@ Checkpoint/Commit独立批准、持久原生桥接、全事件证明、有界对
 原消费者单次严格校验、真实硬退出和阈值不变。固定310874c原生失败保留，后继结果另行绑定。
 该候选不实现对象图、业务目录／MAC、GitDB／Backup v2或默认Commit／Checkpoint，
 不替代完整R3、Windows消费者、Beta和商用R1～R6验收。
+
+### R4：原 CAS 完整普通文件树与直接引用验真
+
+[总体与详细设计](changes/m09-r4-git-tree-closure.md)增加原始 tree／commit 直接引用解析，
+并从原 CAS 完整回读根、全部子树和全部普通文件；未修改成员、空文件、二进制和可执行模式均不省略。
+对象去重不跳过重复子树的逐路径展开，四项容量必须由可信调用方显式提供；不冻结产品默认容量。
+路径复用原 Workspace 合同；缺失、损坏、冲突、链接／gitlink、超限和取消均整体拒绝。
+
+[统一验证包](validation/git-tree-closure-2026-10-01-v1/README.md)绑定1241件完整输入，
+新增474项通过，两个无交集关联组共1748通过／58跳过；同一Wheel源码外两个Python各970通过／2跳过。
+这些是固定候选的只读材料验真，不证明业务角色授权、目标树来源、批准、数据库MAC或正式备份闭合。
+固定37a1f01 Windows首组在原3分钟期限退出；当前仅增加逐项、栈及耗时诊断，保留全部选择器与期限，
+不能把macOS焦点通过或诊断增强称为Windows根因修复。
+
+后继主线为完整目标树／Diff、认证对象目录及GitDB全前缀、独立批准、默认Checkpoint／Commit和Backup v2；
+R3完整真实20 Trial、消费者Windows11、独立Beta及最终同候选R1～R6继续开放。
