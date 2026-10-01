@@ -1,0 +1,312 @@
+{
+  "schema": "harnessix.validation-verification/v1",
+  "status": "final_local_pass_native_pending",
+  "input_sha256": "7dacd4ba2d587b0c050b81487cf11cd9c88d20a4d2a376cddee5f643b33730dd",
+  "runs": {
+    "new_focus_initial_frozen_c3": {
+      "status": "pass",
+      "tests": 157,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 157,
+      "duration_seconds": 6.621,
+      "junit": {
+        "path": "worker/focus-v2.xml",
+        "bytes": 25711,
+        "sha256": "866c9d3afec7567c808d3ca68ddb0c319c7f0d72ae0b9e19227df92ecccaa7b7"
+      },
+      "log": {
+        "path": "worker/focus-v2.log",
+        "bytes": 406,
+        "sha256": "83e0b596d329e83a28dd8e6660ee7270d19d490231cfb30339e3529c5711d064"
+      }
+    },
+    "old_related_initial_inputs": {
+      "status": "pass",
+      "tests": 796,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 796,
+      "duration_seconds": 16.051,
+      "junit": {
+        "path": "worker/related-v1.xml",
+        "bytes": 130150,
+        "sha256": "70a9e8f8ffcdeafefe086cff94deae03b00c8b8757a8f9ed0768d78e6542f947"
+      },
+      "log": {
+        "path": "worker/related-v1.log",
+        "bytes": 1129,
+        "sha256": "ceca948dcec8593c6a75671fe6df6ad8d87a8cfd54d0f6a8fd15838f8e8ea967"
+      }
+    },
+    "source_associated_final": {
+      "status": "pass",
+      "tests": 1868,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 58,
+      "passed": 1810,
+      "duration_seconds": 211.97,
+      "junit": {
+        "path": "source/associated-final-v2.xml",
+        "bytes": 321685,
+        "sha256": "8f7df0cce4b96010bf6a64682a2204ff760d6d548e02e2074f3002634a3f1f08"
+      },
+      "log": {
+        "path": "source/associated-final-v2.log",
+        "bytes": 2282,
+        "sha256": "9aa9d6dd7814db8c891a91aa26c66f233a43da91205220c7a9455b3e5958b155"
+      }
+    },
+    "source_baseline_final": {
+      "status": "pass",
+      "tests": 99,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 99,
+      "duration_seconds": 38.15,
+      "junit": {
+        "path": "source/source-baseline.xml",
+        "bytes": 15394,
+        "sha256": "89c7dffe6c615e273520e3da71d4e0efe68ad4bbdc52af83b34f9f3d5d0c84f1"
+      },
+      "log": {
+        "path": "source/source-baseline.log",
+        "bytes": 333,
+        "sha256": "a067128b0913a048bedd7017535c04c1e052a4db1ecd08243b43909232773f64"
+      }
+    },
+    "installed_312": {
+      "status": "pass",
+      "tests": 1133,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "passed": 1131,
+      "duration_seconds": 111.477,
+      "junit": {
+        "path": "package/logs/outside-312-v1.xml",
+        "bytes": 186738,
+        "sha256": "73d678a12843ed1316a0e1273922eda52c494d660179ea901ce11e213f89caf0"
+      },
+      "log": {
+        "path": "package/logs/outside-312-v1.log",
+        "bytes": 2930,
+        "sha256": "ca27c94be7ddfa4c76426f76a68ebd164be9877e185fefe15e5587780e550e3d"
+      }
+    },
+    "installed_313": {
+      "status": "pass",
+      "tests": 1133,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "passed": 1131,
+      "duration_seconds": 92.181,
+      "junit": {
+        "path": "package/logs/outside-313-v1.xml",
+        "bytes": 186737,
+        "sha256": "df97189b6b9c6d2287ded0f7cbac7b6083a7948098e7a514c983bc7bc3761729"
+      },
+      "log": {
+        "path": "package/logs/outside-313-v1.log",
+        "bytes": 2928,
+        "sha256": "6c872fd31b03a0d3c33563ba1a3b9d555a667df0bd453648400f1f4e1ca32dc3"
+      }
+    }
+  },
+  "source_union": {
+    "total": 1967,
+    "passed": 1909,
+    "skipped": 58,
+    "intersection": 0,
+    "proof": {
+      "path": "source/source-group-disjointness.json",
+      "bytes": 294123,
+      "sha256": "4010d38f6837feec60d4e123a59f42031d7e0adbfa18f00ffdf3e80259c4c3db"
+    }
+  },
+  "other_sets_additive": false,
+  "checks": {
+    "static": {
+      "status": "pass",
+      "log": {
+        "path": "source/static.log",
+        "bytes": 121,
+        "sha256": "239e981ae388a517931cee8156ec605f0bcdb4a78c706d714772cf0fdd612bc8"
+      }
+    },
+    "secret_self_check": {
+      "status": "pass",
+      "log": {
+        "path": "source/secret-self.log",
+        "bytes": 56,
+        "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+      }
+    },
+    "secret_repository_and_actual_wheel": {
+      "status": "pass",
+      "log": {
+        "path": "source/secret-final.log",
+        "bytes": 101,
+        "sha256": "f4ace75450085011330a56a744806c2523d8e6b677637f95837ad92b3b2155ab"
+      }
+    },
+    "governance": {
+      "status": "pass",
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 302,
+      "duration_seconds": 28.435,
+      "junit": {
+        "path": "source/governance-final.xml",
+        "bytes": 47175,
+        "sha256": "7e135f0a02d65109997908f697efc2a153a47992a622e77e664eff73138a4846"
+      },
+      "log": {
+        "path": "source/governance-final.log",
+        "bytes": 575,
+        "sha256": "6b3a9bf5c6580a51a478b83ecf175fbd54550c18f172f15be5691ada69f6a1da"
+      }
+    },
+    "documentation": {
+      "status": "pass",
+      "report": {
+        "path": "source/docs-final.json",
+        "bytes": 191,
+        "sha256": "06472221491f08caf7925da7d16db1980e48416519b9d64aaa7a1acafa280394"
+      },
+      "documents": 442,
+      "links": 10874,
+      "mermaid": 933,
+      "findings": 0
+    }
+  },
+  "retained_failures": {
+    "mutation_fixture_sorting": {
+      "status": "fail",
+      "tests": 147,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 145,
+      "duration_seconds": 3.75,
+      "junit": {
+        "path": "worker/focus-v1.xml",
+        "bytes": 31900,
+        "sha256": "9fd102f1b59eb575de44d4e693c50aec83ed1f9677a8c26bcdac8326c86488ef"
+      },
+      "log": {
+        "path": "worker/focus-v1.log",
+        "bytes": 8880,
+        "sha256": "a2b298569a7e31f1cd091ddcc10cbf4fc62cf6ae6ff67425eaded833a68fe32f"
+      },
+      "disposition": "仅修正差分夹具排序，原生产守卫保持。"
+    },
+    "actual_scalar_subtype_defect": {
+      "status": "fail",
+      "tests": 5,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1,
+      "duration_seconds": 0.169,
+      "junit": {
+        "path": "worker/strict-red-v1.xml",
+        "bytes": 12023,
+        "sha256": "9c10d7b22536fdd8661f68de94d02a3bde72a35f33e22b2c26dd35c4366edcc4"
+      },
+      "log": {
+        "path": "worker/strict-red-v1.log",
+        "bytes": 11741,
+        "sha256": "fd775ce21722289dc9d0e78e3b8ed3332c93a4fefc81a290ff675bac63906204"
+      },
+      "disposition": "严格重建前核对实际str/int类型，避免Pydantic接受合法外观子类；原四项真实FAIL保留。"
+    },
+    "governance_semantic_headings": {
+      "status": "fail",
+      "tests": 302,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 301,
+      "duration_seconds": 30.951,
+      "junit": {
+        "path": "source/governance.xml",
+        "bytes": 48181,
+        "sha256": "f2d312524cd5b35f16a43ddb04b1c22c1e375329c802c761abd156c155cabf48"
+      },
+      "log": {
+        "path": "source/governance.log",
+        "bytes": 1569,
+        "sha256": "85fc0aff8eed0fe79820f5ecbc4ef2e02fcb0d8c93b5db5bbf38b91e552bdad8"
+      },
+      "disposition": "补数据流程及取舍语义标题，原政策和全部302案例保持。"
+    },
+    "git_version_ci": {
+      "run_id": 36806972653,
+      "revision": "59e129e059ebbe1aff725bbef2e6555767cbcce5",
+      "run": {
+        "path": "ci/run-36806972653.json",
+        "bytes": 28319,
+        "sha256": "5549b0ae65c11e7d2b35104dae741516d6ff38efedddfd844b50d948b7728723"
+      },
+      "original_failed_log": {
+        "path": "ci/run-36806972653-failed.log",
+        "bytes": 243792,
+        "sha256": "28f753aca3338dcc20a0aa3562e8af16e6c2ba56057ab043978af9eccad1ecaf"
+      },
+      "disposition": "三个矩阵各四项setup版本精确断言错误；仅修夹具PATH选择/实际版本记录，全部真实两格式差分继续执行。"
+    },
+    "initial_junit_property_warning": {
+      "proof": {
+        "path": "source/references-version-v1.xml",
+        "bytes": 51550,
+        "sha256": "02d48e28a8cd13981ee277aba90b1f47d3f0291dd2dd20c916946d0b22c1a63e"
+      },
+      "disposition": "314通过/4警告；改用兼容xunit2的testsuite属性，最终关联组无该警告。"
+    },
+    "package_prebuild_freeze_delta": {
+      "proof": {
+        "path": "package/logs/initial-freeze-check-failure.json",
+        "bytes": 888,
+        "sha256": "5ea5191ee66de3c43c40699d92df0a985ef7dac3d1307dd933973695a995c344"
+      },
+      "disposition": "真实Git差分测试文件在构建前修正，旧冻结比较拒绝；最终目录重新绑定，构建前复读成功后只构建一次，未重试已开始的测试。"
+    },
+    "worker_scope_count_text": {
+      "proof": {
+        "path": "worker/verification-correction.json",
+        "bytes": 18160,
+        "sha256": "cc7b308bb28116b8d58b61e63c1ca05cc2dcc66d1f925e4b0dbc33967cb8a98c"
+      },
+      "actual_input_count": 21,
+      "disposition": "保留原23件文字错误，实际JSON目录21件；不把局部目录当成全仓。"
+    }
+  },
+  "original_ci": {
+    "run_id": 36806972653,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36806972653",
+    "head": "59e129e059ebbe1aff725bbef2e6555767cbcce5",
+    "status": "completed",
+    "conclusion": "failure",
+    "documentation": "success",
+    "container": "success",
+    "macOS_python312_python313": "原精确Git版本断言导致各四项setup错误",
+    "windows_ntfs": {
+      "passed": 125,
+      "skipped": 2,
+      "original_timeout_minutes": 3,
+      "step": "timeout",
+      "single_case_deadlock_proven": false,
+      "later_git_steps": "skipped"
+    },
+    "new_c3_candidate_native": "not_run"
+  },
+  "commercial_release": "not_accepted"
+}

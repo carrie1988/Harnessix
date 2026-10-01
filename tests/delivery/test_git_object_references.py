@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from dataclasses import FrozenInstanceError
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -29,9 +30,6 @@ _MODES = (
     ("100755", "blob"),
     ("120000", "blob"),
     ("160000", "commit"),
-)
-_FIXED_GIT = Path(
-    "/Users/zhangjinhui/.cache/codex-runtimes/codex-primary-runtime/dependencies/native/git/bin/git"
 )
 _NAME = b"synthetic-private-basename"
 _AUTHOR = b"author Reference Fixture <test@harnessix.invalid> 1700000000 +0000"
@@ -479,9 +477,9 @@ def test_checkpoint_cancellation_and_other_errors_propagate_same_exception(kind,
 
 
 @pytest.fixture
-def native_repo(tmp_path):
-    git = _FIXED_GIT if _FIXED_GIT.is_file() else Path(shutil.which("git") or "")
-    assert git.is_file(), "差分夹具需要Git2.53.0，不回退AppleGit"
+def native_repo(tmp_path, record_testsuite_property):
+    git = Path(shutil.which("git") or "")
+    assert git.is_file(), "差分夹具需要当前PATH中的Git，不跳过实际对象格式验证"
     root = tmp_path / "synthetic-native-repo"
     root.mkdir(mode=0o700)
     home = tmp_path / "synthetic-home"
@@ -514,8 +512,38 @@ def native_repo(tmp_path):
         )
         return result.stdout
 
-    assert command("--version").strip() == b"git version 2.53.0"
+    # 研究源码版本不等于运行版本；能力由后续真实SHA-1/SHA-256对象差分求证。
+    version = command("--version").strip()
+    assert version.startswith(b"git version ")
+    record_testsuite_property("git_version", version.decode("ascii"))
     return command
+
+
+@pytest.mark.parametrize("version", (b"2.53.0", b"2.55.0", b"2.53.0.windows.1"))
+def test_native_fixture_uses_path_git_and_records_actual_version(tmp_path, monkeypatch, version):
+    git = tmp_path / "git"
+    git.touch()
+    monkeypatch.setattr(shutil, "which", lambda name: str(git) if name == "git" else None)
+    calls = []
+    properties = []
+
+    def run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return SimpleNamespace(stdout=b"git version " + version + b"\n")
+
+    monkeypatch.setattr(subprocess, "run", run)
+    native_repo.__wrapped__(tmp_path, lambda key, value: properties.append((key, value)))
+    assert calls[0][0] == (str(git), "--version")
+    assert calls[0][1]["check"] is True
+    assert calls[0][1]["timeout"] == 20
+    assert calls[0][1]["env"]["GIT_CONFIG_GLOBAL"] == os.devnull
+    assert properties == [("git_version", "git version " + version.decode())]
+
+
+def test_native_fixture_missing_git_fails_instead_of_skipping(tmp_path, monkeypatch):
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    with pytest.raises(AssertionError, match="当前PATH"):
+        native_repo.__wrapped__(tmp_path, lambda key, value: None)
 
 
 @pytest.mark.parametrize("object_format", _FORMATS)

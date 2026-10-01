@@ -1918,3 +1918,17 @@ commit parent 按原顺序记录，不自动归类为外部历史或自动读取
 [总体与详细设计](../changes/m09-r4-git-tree-closure.md)。
 GitDB 认证目录、对象角色、完整 Diff、新批准、双工作树、Backup v2及新根重绑仍须完成；
 本增量不开放默认 Commit／Checkpoint，不改变完整产品交付和商用门禁范围。
+
+## 完整目标文件树纯规划
+
+[`prepare_git_tree_projection`](../../src/harnessix/delivery/git_tree_projection.py)先从原CAS完整验真base，
+再次按路径展开目录集合，核对每项首before，再回读全部必要末after，计算完整目标。
+对象工厂[`GitObjectMaterial.from_body`](../../src/harnessix/delivery/git_object_material.py)只计算完整正文/OID。
+重复子树不共享可变目录，未修改成员与无关空tree保留；只有删除触及的空目录可以递归移除。
+目标路径仍用原POSIX/Windows合同，净Mutation镜像32MiB、单对象8MiB及四项显式限额不变。
+
+输出包含完整root材料、去重新增tree、全部目标文件及容量统计，不是持久化回执或批准。
+失败/取消无部分返回，无CAS/SQL/Git/工作树/Ref写效果；材料并集与目标路径展开分别计数。
+接口、字段、实际源码调用顺序、流程/时序/数据流程及负对照详见
+[总体与详细设计](../changes/m09-r4-git-tree-projection.md)与[统一验证包](../validation/git-tree-projection-2026-10-01-v1/README.md)。
+完整Diff、新批准、认证目录/角色、GitDB全前缀、原Runtime及Backup v2仍需接通；默认Commit/Checkpoint未开放。

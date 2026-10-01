@@ -1,0 +1,29 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"PingFang SC, Microsoft YaHei, sans-serif"}}}%%
+sequenceDiagram
+  participant H as 可信宿主
+  participant P as 目标树规划
+  participant C as 完整base验真
+  participant S as 原CAS
+  participant O as 对象纯工厂
+  H->>P: 固定root/catalog/净Mutation/after/显式限额
+  P->>P: 重建输入并核对原镜像边界
+  P->>C: 完整普通文件树验真
+  C->>S: 全部可达tree/blob完整读取
+  S-->>C: 已验真原始材料
+  C-->>P: 全文件/对象/逐路径指标
+  loop 全部base目录，逐路径展开
+    P->>S: 完整tree回读并解析目录
+    S-->>P: 原始tree材料
+  end
+  P->>P: 全部首before比较
+  loop 每种必要末after正文
+    P->>S: 完整读取并核对blob/SHA/长度
+    S-->>P: 原CAS完整材料
+  end
+  P->>P: 路径独立变更与完整目标检查
+  loop 自底向上目标目录
+    P->>O: 规范完整tree body
+    O-->>P: 完整材料与OID
+  end
+  P->>P: 并集预算/冲突/最终checkpoint
+  P-->>H: 完整内容结果，非批准/非持久化回执

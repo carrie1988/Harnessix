@@ -1,0 +1,12 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"PingFang SC, Microsoft YaHei, sans-serif"}}}%%
+flowchart TB
+  Host[可信产品规划器<br/>归属/基准/限额/取消] --> Projection[完整目标树纯规划]
+  Projection --> Closure[已有完整base树验真]
+  Closure --> CAS[原Workspace CAS只读]
+  Projection --> After[末after完整回读]
+  After --> CAS
+  Projection --> Paths[原Workspace路径合同]
+  Projection --> Factory[原Git对象材料纯工厂]
+  Factory --> Result[完整目标tree正文/OID<br/>全部文件/新目录对象/容量]
+  Result -. 仍需独立实现 .-> Review[完整Diff与新批准]
+  Review -. 非本切片 .-> Execute[原Runtime/持久化/Checkpoint]

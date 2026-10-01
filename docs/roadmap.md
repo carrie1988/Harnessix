@@ -1296,3 +1296,17 @@ Checkpoint/Commit独立批准、持久原生桥接、全事件证明、有界对
 
 后继主线为完整目标树／Diff、认证对象目录及GitDB全前缀、独立批准、默认Checkpoint／Commit和Backup v2；
 R3完整真实20 Trial、消费者Windows11、独立Beta及最终同候选R1～R6继续开放。
+
+### R4：完整目标树纯规划与真实Git差分夹具
+
+[总体与详细设计](changes/m09-r4-git-tree-projection.md)在原CAS完整base、严格首before和必要末after之上，
+按路径独立应用净Mutation，保留未修改成员与无关空tree，规范编码全部目标tree正文/OID。
+原8MiB对象、32MiB镜像、四项显式宿主限额及两平台路径合同不变；不增加Git写入或产品默认容量。
+
+[统一验证包](validation/git-tree-projection-2026-10-01-v1/README.md)绑定最终1244件输入，新增157通过，
+两个不重复最终源码组1909通过/58跳过；同一Wheel源码外两个Python各1131通过/2跳过。
+原59e129e CI三个矩阵因研究版本被误作运行版本的精确断言失败；后继夹具使用PATH并记录实际Git，
+全部原SHA-1/SHA-256真实差分继续执行，缺失能力仍失败。Windows独立三分钟超时保留，不凭本机结果清除。
+
+后继接通完整Diff及新批准、认证目录/角色与GitDB全前缀、双工作树/新派生事务、默认Checkpoint/Commit、
+Backup v2及新根重授权；完整R3、Windows11消费者、独立Beta及同候选R1～R6仍开放。

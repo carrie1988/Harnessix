@@ -22,6 +22,16 @@ def _invalid(code: str = "git_material_invalid") -> KernelError:
     return KernelError(code, "Git完整对象材料不符合固定读取契约")
 
 
+def _body_oid(request: GitObjectRead, body: bytes) -> str:
+    """工厂和构造器共用原始对象头与完整正文算法，不经过 Git 命令。"""
+    if type(body) is not bytes or len(body) > request.max_body_bytes:
+        raise _invalid("git_material_limit")
+    digest = hashlib.new(request.object_format)
+    digest.update(f"{request.object_type} {len(body)}\0".encode("ascii"))
+    digest.update(body)
+    return digest.hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class GitObjectRead:
     """明确固定类型、OID和格式；容量不是宿主可调的任意Process预算。"""
@@ -77,13 +87,22 @@ class GitObjectMaterial:
 
     def __post_init__(self) -> None:
         request = GitObjectRead(self.object_type, self.object_id, self.object_format)
-        if type(self.body) is not bytes or len(self.body) > request.max_body_bytes:
-            raise _invalid("git_material_limit")
-        digest = hashlib.new(request.object_format)
-        digest.update(f"{request.object_type} {len(self.body)}\0".encode("ascii"))
-        digest.update(self.body)
-        if digest.hexdigest() != request.object_id:
+        if _body_oid(request, self.body) != request.object_id:
             raise _invalid("git_material_oid_mismatch")
+
+    @classmethod
+    def from_body(
+        cls, object_type: GitObjectType, object_format: GitObjectFormat, body: bytes
+    ) -> GitObjectMaterial:
+        """纯计算完整对象，严格限定原三类型、两格式和容量，并经构造器重新验真。"""
+        if cls is not GitObjectMaterial:
+            raise _invalid()
+        if type(object_format) is not str:
+            raise _invalid("git_material_request_invalid")
+        request = GitObjectRead(
+            object_type, "0" * (40 if object_format == "sha1" else 64), object_format
+        )
+        return cls(object_type, _body_oid(request, body), object_format, body)
 
     @property
     def body_sha256(self) -> str:

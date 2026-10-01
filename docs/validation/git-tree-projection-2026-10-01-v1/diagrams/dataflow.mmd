@@ -1,0 +1,16 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"PingFang SC, Microsoft YaHei, sans-serif"}}}%%
+flowchart TB
+  Base[完整base原始tree/blob] --> Verify[原CAS内容验证]
+  Before[首before SHA/长度/模式] --> Match[精确基准比较]
+  Verify --> Match
+  After[末after CAS完整blob] --> Apply[净Mutation与路径独立视图]
+  Match --> Apply
+  Apply --> Full[全部目标文件与目录]
+  Full --> Canonical[规范二进制tree编码]
+  Canonical --> OID[完整root正文/OID/新tree]
+  Verify --> Budget[唯一对象并集预算]
+  After --> Budget
+  OID --> Budget
+  Full --> Expanded[逐路径条目与深度]
+  Budget --> Result[完整内容结果]
+  Expanded --> Result

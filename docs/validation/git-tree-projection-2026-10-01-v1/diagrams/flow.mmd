@@ -1,0 +1,15 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"PingFang SC, Microsoft YaHei, sans-serif"}}}%%
+flowchart TD
+  subgraph Pure[全程严格纯规划]
+  I[严格输入快照/净变化容量] --> B[原CAS完整base验真]
+  B --> D[原CAS按路径重建独立目录视图]
+  D --> V[全部首before与base精确比较]
+  V --> A[末after原CAS完整回读]
+  A --> Remove[先删除全部选中成员]
+  Remove --> Put[再添加/修改/应用模式]
+  Put --> Paths[目标全路径/条目/深度检查]
+  Paths --> Encode[自底向上规范tree编码]
+  Encode --> Union[材料并集计数/冲突/完整容量]
+  end
+  Union --> R[完整不可变内容结果]
+  Pure -->|任一步失败或取消| F[固定失败或原取消<br/>无部分返回/无写效果]

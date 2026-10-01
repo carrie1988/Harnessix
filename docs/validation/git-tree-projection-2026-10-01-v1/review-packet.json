@@ -1,0 +1,149 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "status": "scoped_local_go",
+  "scope": "纯完整目标树，不是完整Git产品或商用发布",
+  "input_sha256": "7dacd4ba2d587b0c050b81487cf11cd9c88d20a4d2a376cddee5f643b33730dd",
+  "requirements": [
+    {
+      "id": "FULL-TARGET",
+      "status": "pass_local",
+      "description": "全部base及末after原CAS验真，完整目标正文/OID，未修改成员和无关空树保留。"
+    },
+    {
+      "id": "BEFORE",
+      "status": "pass_local",
+      "description": "首before存在性/SHA/长度/模式与base完全匹配，目录占用拒绝。"
+    },
+    {
+      "id": "NAMESPACE",
+      "status": "pass_local",
+      "description": "逐路径独立目录、两平台比较键、文件目录冲突及原路径合同。"
+    },
+    {
+      "id": "BUDGET",
+      "status": "pass_local",
+      "description": "原8MiB/32MiB和四项显式限额；base/after/new-tree唯一正文并集和目标展开分开计数。"
+    },
+    {
+      "id": "FAIL-CLOSED",
+      "status": "pass_local",
+      "description": "链接、坏材料、缺失、超限、取消和时限无部分结果/无写效果。"
+    },
+    {
+      "id": "SOURCE-WHEEL",
+      "status": "pass_local",
+      "description": "完整1244目录、单一Wheel和全部包成员源码/双安装一致；没有源码回退。"
+    }
+  ],
+  "review": {
+    "source_status": "no_p0_p1_p2_found_in_frozen_static_scope",
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "function_tests": 0,
+    "actual_local_input_count": 21
+  },
+  "checks": {
+    "static": {
+      "status": "pass",
+      "log": {
+        "path": "source/static.log",
+        "bytes": 121,
+        "sha256": "239e981ae388a517931cee8156ec605f0bcdb4a78c706d714772cf0fdd612bc8"
+      }
+    },
+    "secret_self_check": {
+      "status": "pass",
+      "log": {
+        "path": "source/secret-self.log",
+        "bytes": 56,
+        "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+      }
+    },
+    "secret_repository_and_actual_wheel": {
+      "status": "pass",
+      "log": {
+        "path": "source/secret-final.log",
+        "bytes": 101,
+        "sha256": "f4ace75450085011330a56a744806c2523d8e6b677637f95837ad92b3b2155ab"
+      }
+    },
+    "governance": {
+      "status": "pass",
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 302,
+      "duration_seconds": 28.435,
+      "junit": {
+        "path": "source/governance-final.xml",
+        "bytes": 47175,
+        "sha256": "7e135f0a02d65109997908f697efc2a153a47992a622e77e664eff73138a4846"
+      },
+      "log": {
+        "path": "source/governance-final.log",
+        "bytes": 575,
+        "sha256": "6b3a9bf5c6580a51a478b83ecf175fbd54550c18f172f15be5691ada69f6a1da"
+      }
+    },
+    "documentation": {
+      "status": "pass",
+      "report": {
+        "path": "source/docs-final.json",
+        "bytes": 191,
+        "sha256": "06472221491f08caf7925da7d16db1980e48416519b9d64aaa7a1acafa280394"
+      },
+      "documents": 442,
+      "links": 10874,
+      "mermaid": 933,
+      "findings": 0
+    }
+  },
+  "diagrams_rendered_visually_checked": 4,
+  "original_failures_retained": true,
+  "threshold_or_test_waivers": false,
+  "original_ci": {
+    "run_id": 36806972653,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36806972653",
+    "head": "59e129e059ebbe1aff725bbef2e6555767cbcce5",
+    "status": "completed",
+    "conclusion": "failure",
+    "documentation": "success",
+    "container": "success",
+    "macOS_python312_python313": "原精确Git版本断言导致各四项setup错误",
+    "windows_ntfs": {
+      "passed": 125,
+      "skipped": 2,
+      "original_timeout_minutes": 3,
+      "step": "timeout",
+      "single_case_deadlock_proven": false,
+      "later_git_steps": "skipped"
+    },
+    "new_c3_candidate_native": "not_run"
+  },
+  "remaining": [
+    "完整Diff及新批准",
+    "认证对象目录/角色及GitDB全前缀",
+    "双工作树与新派生事务",
+    "默认Checkpoint/Commit",
+    "Backup v2及新根重授权",
+    "完整R3/Windows消费者/Beta/同候选发布"
+  ],
+  "limits": [
+    "纯算法无CAS/SQL/Git/Workspace写入；不能解释为业务角色、MAC、持久化或批准。",
+    "四项限额由可信宿主显式提供，未冻结产品默认容量。",
+    "同步单对象IO/hash仍受原8MiB约束；不是操作系统即时取消。",
+    "未开放默认Commit/Checkpoint，没有Backup v2或GitDB全前缀认证。",
+    "本机两个Python和Windows跳过不是Windows消费者验收。",
+    "完整真实20 Trial、Windows11、独立Beta及同候选R1～R6继续开放。"
+  ],
+  "decision": "只允许后继受信业务接线；不批准默认Git写入或商用发布。",
+  "version_fixture_review": {
+    "path": "review/version-fixture-addendum.json",
+    "bytes": 4567,
+    "sha256": "ec66b82881c82e264d48e63792fbc60e173876205e6b1e2a9897806558796cfa"
+  }
+}
