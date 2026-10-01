@@ -1395,3 +1395,8 @@ stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以
 原短路检查顺序保持；新增模块完整进入实现身份，每次源码绑定由六份增至七份，不新增业务材料读取。
 [统一验证包](validation/git-worker-failure-observation-2026-10-01-v1/README.md)分别登记失败合同、本机、
 同Wheel源码外及原生范围。诊断实现不等于Windows根因修复、默认Git交付、R3或商用门禁完成。
+
+固定4c855c4的[单次新原生Run36853423485](https://github.com/carrie1988/Harnessix/actions/runs/36853423485)
+取得两个原FAIL及两条完整v3观察：首失败均在git_validate，Git原wait返回128、worker返回二，
+原非零短路保留complete／expected未观察。原成功proof缺失、UNKNOWN不变，不推断具体Git内部原因。
+完整Git产品接线、R3、Windows消费者、Beta及同候选R1～R6继续开放。

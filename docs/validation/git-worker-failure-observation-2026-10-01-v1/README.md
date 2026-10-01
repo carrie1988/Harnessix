@@ -100,3 +100,29 @@ Python3.12源码与同一实际Wheel源码外Python3.12／3.13分别登记，不
 不重跑旧Run，不增加权限、放宽断言或扩大期限。实际结果取得后单独登记；缺结果不记PASS。
 若仍FAIL，保留原UNKNOWN，依据已经观察的有限阶段继续源码求证；不能据False／None猜测原因。
 完整产品Commit／Checkpoint、GitDB全前缀和独立尾锚、业务对象目录、Backup v2、新根新批准及恢复仍需完成。
+
+
+## 7. 新一次原生Windows实际结果
+
+[固定4c855c4 Run36853423485](https://github.com/carrie1988/Harnessix/actions/runs/36853423485)
+已终结FAIL；Job110340170528、attempt一，固定named ref只dispatch一次，新fixture，原两项均失败，零通过／跳过。
+两份v3观察各13接点、10实际源码模块，完整且未截断；setup／teardown通过，call失败。
+
+两份清理前首失败均为git_validate／git_material_git_failed；原Git Popen已返回，原wait返回128，
+最终handler类别相同，worker退出二。原reader前两项未拒绝；输出长度／预期OID检查被原非零退出短路，
+因此complete／expected为None，不推断stdin或输出损坏。观察确认错误已经进入实际Git非零退出路径，
+不是将worker退出二误作Git退出码，也不是已定位具体Git内部错误。
+
+原MAC回执、两流完整raw和保护后验通过；worker stdout空，stderr各607字节，成功proof缺失、readback未执行，
+原UNKNOWN及pytest失败保持。正文同为184字节、原摘要／预期OID相同，而stderr摘要不同；不能从长度或SHA猜测正文。
+本包没有原stderr正文。原两轮v1／v2实际FAIL均保留。
+
+实际Git为2.55.0.windows.5。十个实际模块含测试侧车，按原Git blob明确LF→CRLF变换逐件核对；
+不是完整1258目录原生验真。首次核对程序把tests模块误归src路径，修正后只重读原记录和Git blob，
+没有重新读取stderr、再次执行业务或重跑Run。实际模块身份、固定阶段和完整raw层级见Facts。
+
+下一步对照固定Git实现的stdin读取、格式校验及对象写入分支，继续以原只读快照及Owner合同定位。
+[Git hash-object固定版本源码](https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/builtin/hash-object.c)
+和[对象输入实现](https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/object-file.c)
+表明Git返回128仍覆盖不同失败入口，不能据本诊断选择权限、mmap或格式修复。
+Windows根因、消费者Windows11、完整Git产品链、R3和Beta及商用门禁继续开放。

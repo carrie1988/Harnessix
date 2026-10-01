@@ -41,11 +41,48 @@
       "sha256": "233e8df35494965428837bdb2f64d817f5540d24e910debe21f4cac5582f4d8c"
     }
   },
-  "native": "not_dispatched",
+  "native": {
+    "status": "completed",
+    "run_id": 36853423485,
+    "job_id": 110340170528,
+    "attempt": 1,
+    "business_result": {
+      "passed": 0,
+      "failed": 2,
+      "skipped": 0
+    },
+    "diagnostic_records": 2,
+    "complete_records": 2,
+    "observed_first_stage": "git_validate",
+    "observed_git_returncode": 128,
+    "observer_schema_valid": true,
+    "native_fix_accepted": false
+  },
   "windows_root_cause": "open",
   "r3_real_quality": "open",
   "default_git_delivery": "open",
   "beta": "open",
   "commercial_1_0": "not_ready",
-  "go_no_go": "GO for finite observer publication; native observation pending, Windows fix and commercial acceptance NO-GO"
+  "go_no_go": "GO for finite observer evidence; Windows Commit, default Git product delivery, R3 and commercial acceptance NO-GO",
+  "native_documentation_publication": {
+    "documents": 452,
+    "links": 11023,
+    "mermaid": 953,
+    "changed_paths": 5,
+    "findings": 0,
+    "code_inputs_unchanged": 1258,
+    "evidence": {
+      "bytes": 63,
+      "sha256": "067cadb3dd7c3f60d886b733e06de636e5e1cce73d328f95ce5a244c95e6c10f"
+    },
+    "secret_scan": {
+      "inputs": 4035,
+      "hits": 0,
+      "actual_wheel_unchanged": true,
+      "evidence": {
+        "bytes": 101,
+        "sha256": "233e8df35494965428837bdb2f64d817f5540d24e910debe21f4cac5582f4d8c"
+      }
+    }
+  }
 }
