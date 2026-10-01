@@ -429,7 +429,7 @@ def test_safe_record_publishes_single_low_sensitivity_line():
     assert probe_module._publish(probe, stream)
     assert stream.getvalue().count("\n") == 1
     record = json.loads(stream.getvalue().removeprefix(probe_module.PREFIX))
-    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v3"
+    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v4"
 
 
 def test_install_restores_all_thirteen_original_seams_and_import_alias(monkeypatch):
@@ -567,7 +567,7 @@ def test_stderr_signals_do_not_decode_normalize_or_guess_partial_text(body):
 def test_stderr_signals_are_pure_bounded_fields_even_with_large_sensitive_fake_text():
     body = b"error: unable to create temporary file: " + CANARY.encode() * 12000 + b"\xff\n"
     signals = probe_module._stderr_signals(body)
-    assert signals["git_temp_create_prefix"] and len(json.dumps(signals)) < 200
+    assert signals["git_temp_create_prefix"] and len(json.dumps(signals)) < 400
     assert all(type(value) is bool for value in signals.values())
     tree = ast.parse(inspect.getsource(probe_module._stderr_signals))
     attributes = {

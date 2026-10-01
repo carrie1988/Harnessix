@@ -1,0 +1,29 @@
+{
+  "schema": "harnessix.git-stderr-branches-review/v1",
+  "review_type": "maintainer source and strict boundary review",
+  "reviewed_paths": [
+    "tests/governance/test_git_minimum_commit_probe.py",
+    "tests/product_config/git_minimum_commit_probe.py",
+    "tests/governance/test_git_stderr_branches.py",
+    "src/harnessix/product_config/git_delivery_process.py",
+    "src/harnessix/delivery/git_material_failure.py",
+    ".github/workflows/windows-git-minimum-commit-probe.yml"
+  ],
+  "findings": [],
+  "independent_peer_review": "not_run",
+  "proven_boundaries": [
+    "unchanged original _post_once and 13 seams",
+    "original receipt plus full raw plus protection before pure projection",
+    "469 production package files unchanged",
+    "old four booleans retained and schema explicitly versioned",
+    "no actual stderr body or free suffix exported",
+    "all original business and run limits unchanged"
+  ],
+  "not_proven": [
+    "actual Git root cause",
+    "Windows consumer acceptance",
+    "full product Git delivery",
+    "R3 coding quality",
+    "commercial release"
+  ]
+}

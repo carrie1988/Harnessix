@@ -1,0 +1,21 @@
+{
+  "schema": "harnessix.git-stderr-branches-verification/v1",
+  "same_candidate_code_sha256": "d6d09f37bdf57c120637eaa79b9cf413e5e5c3f5c274c4afc2540c86685c25c0",
+  "focus_passed": 190,
+  "original_local_business_cases_passed": 2,
+  "production_changed": false,
+  "static_three_files": "passed",
+  "governance_same_published_candidate": "passed",
+  "documentation": "passed",
+  "secret_scan": "passed",
+  "native": "pending",
+  "windows_root_cause": "open",
+  "r3_real_quality": "open",
+  "commercial_1_0": "not_ready",
+  "governance_tests": 492,
+  "governance_failures": 0,
+  "documentation_documents": 453,
+  "documentation_findings": 0,
+  "secret_scan_inputs": 4050,
+  "secret_findings": 0
+}

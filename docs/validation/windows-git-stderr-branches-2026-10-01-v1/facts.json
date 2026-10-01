@@ -1,0 +1,426 @@
+{
+  "schema": "harnessix.git-stderr-branches-facts/v1",
+  "baseline_revision": "34ce6c015208062646a31356bd231952080bc10d",
+  "scope": "explicit test-only diagnostic v4; no production or default product change",
+  "code_inventory": {
+    "inputs": 1259,
+    "identity_sha256": "d6d09f37bdf57c120637eaa79b9cf413e5e5c3f5c274c4afc2540c86685c25c0",
+    "base_and_complete_delta_checked": true,
+    "production_package_members_byte_unchanged": 469,
+    "parallel_unpublished_inventory_work_excluded": true
+  },
+  "templates": [
+    {
+      "name": "READ_ERROR",
+      "literal": "error: read error while indexing <unknown>: ",
+      "match": "complete_line_prefix_nonempty_opaque_suffix",
+      "source": "object-file.c",
+      "lines": [
+        1081,
+        1084
+      ],
+      "stdin_value": "path=NULL then path ? path : <unknown>",
+      "inference": "only read_in_full negative-result branch signal; no errno/causal attribution"
+    },
+    {
+      "name": "SHORT_READ",
+      "literal": "error: short read while indexing <unknown>",
+      "match": "complete_line_exact",
+      "source": "object-file.c",
+      "lines": [
+        1085,
+        1087
+      ],
+      "stdin_value": "path=NULL then path ? path : <unknown>",
+      "inference": "only read quantity differs from Git fstat size; not proof of material corruption"
+    },
+    {
+      "name": "HASH_FD",
+      "literal": "fatal: Unable to add (null) to database",
+      "match": "complete_line_exact",
+      "source": "builtin/hash-object.c",
+      "lines": [
+        28,
+        33
+      ],
+      "stdin_source_lines": [
+        81,
+        81,
+        137,
+        138
+      ],
+      "stdin_value": "vpath=NULL; no worker --path flag",
+      "null_render_scope": "conservative fixed (null) rendering only, not verified native CRT renderer",
+      "inference": "only aggregate fstat/index_fd failure wrapper signal, not unique cause"
+    },
+    {
+      "name": "LOOSE_WRITE",
+      "literal": "fatal: unable to write loose object file: ",
+      "match": "complete_line_prefix_nonempty_opaque_suffix",
+      "source": "object-file.c",
+      "lines": [
+        714,
+        719
+      ],
+      "stdin_value": "not used in this fixed template",
+      "inference": "only write_in_full error point signal; does not prove permission or no partial effect"
+    },
+    {
+      "name": "LOOSE_CLOSE",
+      "literal": "fatal: error when closing loose object file: ",
+      "match": "complete_line_prefix_nonempty_opaque_suffix",
+      "source": "object-file.c",
+      "lines": [
+        592,
+        595
+      ],
+      "stdin_value": "not used in this fixed template",
+      "inference": "only loose close error point signal; does not prove missing object"
+    }
+  ],
+  "upstream_sources": [
+    {
+      "kind": "official_public_source_bytes",
+      "path": "builtin/hash-object.c",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/builtin/hash-object.c",
+      "bytes": 4314,
+      "sha256": "d5b371cce3ad59dc2aedda43f462ada6a0a9a50153f18b08711e58edd341bcf6",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "object-file.c",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/object-file.c",
+      "bytes": 46716,
+      "sha256": "d79dbe915c778016f896ddf61dcc3ff48b75d5356856a97c06f36017afc406cc",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "fsck.c",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/fsck.c",
+      "bytes": 40504,
+      "sha256": "c871ede138dd7f7942627c1750cf1ed3f53857c644bf073a6a4bc291b7bc51d9",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "hex.c",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/hex.c",
+      "bytes": 3260,
+      "sha256": "e77230fc7add372f69ea7cb8f5312ce40d75d2fdaaf93db93b562aa3c8a18fab",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "compat/mingw.c",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/compat/mingw.c",
+      "bytes": 122131,
+      "sha256": "c2c0d553e083f57fecdd1d35e00528e80ff44f0d29bc3463b2ed0614030666ed",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "compat/mingw.h",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/compat/mingw.h",
+      "bytes": 10480,
+      "sha256": "523fd543923995ff59e9941e0a203e6b67b43cdbef7390998c7faed6fda5d80d",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "wrapper.c",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/wrapper.c",
+      "bytes": 19196,
+      "sha256": "788c07b315a6e98bfcaf78291b83b17e52579f17b604a94db5c149c017a83b04",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "compat/win32.h",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/compat/win32.h",
+      "bytes": 715,
+      "sha256": "4c7cbb3329fd1b536ba2d90d853a24473246e7ad166964739a729a3dce4ec1e4",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "git-compat-util.h",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/git-compat-util.h",
+      "bytes": 34581,
+      "sha256": "549f14bb46f5961cb8798035c3c53d0e077ca955c9acfdf4e8374002c6f09c6b",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "compat/posix.h",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/compat/posix.h",
+      "bytes": 13014,
+      "sha256": "b8ea93f3050b5daf4c2a0fb8cafdff89abbb2ad35e7465b103a72bd21549c19d",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    },
+    {
+      "kind": "official_public_source_bytes",
+      "path": "compat/mingw-posix.h",
+      "url": "https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/compat/mingw-posix.h",
+      "bytes": 11467,
+      "sha256": "b975e8ce1bcce68f7ed75f665ec35ea199d014a324980111f77a942c6f4ed475",
+      "hash_scope": "实际GET返回原字节；只读内存，未声称对原生Git二进制构建验真或事后重新GET"
+    }
+  ],
+  "retained_red": {
+    "result": {
+      "tests": 95,
+      "failures": 78,
+      "errors": 0,
+      "skipped": 0
+    },
+    "junit": {
+      "bytes": 124448,
+      "sha256": "b046f0803917a6fb291f5b3a09efedec2751a4366e547d3073881c1208d31930"
+    },
+    "log": {
+      "bytes": 95858,
+      "sha256": "73dbe9f7ca796c8845d4654aff642cb8040566753c3b88372a0ab6e6b3b290e6"
+    }
+  },
+  "focus_green": {
+    "result": {
+      "tests": 190,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "junit": {
+      "bytes": 32738,
+      "sha256": "f50be90d9b35fcf6811f10ef91d10655096000fb6cb908d4b611b203eb1d3517"
+    },
+    "log": {
+      "bytes": 419,
+      "sha256": "7023e76b761bfc915bbddc8406983ae767c003b33d14cca911e10c944703a2a5"
+    }
+  },
+  "local_original_two": {
+    "result": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "complete_v4_records": 2,
+    "installed_hooks_per_record": 13,
+    "source_modules_per_record": [
+      10,
+      10
+    ],
+    "all_candidate_inputs_unchanged": true,
+    "junit": {
+      "bytes": 636,
+      "sha256": "d1b764acd78b056aa9339da3fa99e570ed68e985201202ba05479655c760b632"
+    },
+    "log": {
+      "bytes": 16141,
+      "sha256": "bca9ed44d6aec0a53c7d9ff728b6bc1e51140a116c6d1130e3d0a275ecb85cbe"
+    }
+  },
+  "retained_owned_tree_governance_failure": {
+    "result": {
+      "tests": 492,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    "reason": "unpublished parallel inventory source changed readability report; draft design lacked required persistence heading",
+    "not_reclassified": true,
+    "junit_observed_identity": {
+      "bytes": 82749,
+      "sha256": "fbba1c1c5d08b28b4308a45c9ac34d1f54993358827b97eaef000bdb4f0ed42b"
+    },
+    "initial_junit_original_retained": false,
+    "retained_log": {
+      "bytes": 3136,
+      "sha256": "2db67ba74497280f5abc0d3a05d61486418b67987137af1645293f00eee9012a"
+    },
+    "artifact_limit": "initial JUnit identity was observed before a later mixed-tree check replaced that pathname; original first failure log remains intact"
+  },
+  "rendered_and_viewed_diagrams": [
+    {
+      "name": "architecture",
+      "mermaid": {
+        "bytes": 769,
+        "sha256": "8f0803a5226d65eda93ea96e3ed005315ec8e446a11dea0b1a0794077070d24e"
+      },
+      "png": {
+        "bytes": 76823,
+        "sha256": "775f29895d79cdbb3ce30f5594b30ca60bb9d3e18a9fc667ba0751fa84a788ad"
+      },
+      "visual_qa": true
+    },
+    {
+      "name": "flow",
+      "mermaid": {
+        "bytes": 847,
+        "sha256": "ce03e84ef3a5600ebe4143febd1bb21aaefa33844375d4f7e806b585319e42d3"
+      },
+      "png": {
+        "bytes": 82238,
+        "sha256": "14e688e9b4f350aa1ddd2be067e6b937f7e919a4b2060e7d9da11d3b43960f05"
+      },
+      "visual_qa": true
+    },
+    {
+      "name": "sequence",
+      "mermaid": {
+        "bytes": 714,
+        "sha256": "a1890fba0fc24c2197e015ccd3dcde6b871eb310f0abbcd86f68715a1d6d692a"
+      },
+      "png": {
+        "bytes": 60733,
+        "sha256": "fd44a06374189d4ec4ddfe3254a119e39118d343d38b2b3b39c597e9ac8a8231"
+      },
+      "visual_qa": true
+    },
+    {
+      "name": "dataflow",
+      "mermaid": {
+        "bytes": 657,
+        "sha256": "d193e6249e009e0336c0bd6391d0d81df4a24787b06f562cf54afca02bd3ba1f"
+      },
+      "png": {
+        "bytes": 32261,
+        "sha256": "0ac5a4896e837c10549a29dcc5165eb267e98d22f59d8bde2aebe5478da45d61"
+      },
+      "visual_qa": true
+    }
+  ],
+  "new_native_run": {
+    "status": "not_dispatched"
+  },
+  "original_native_runs_preserved": true,
+  "model_requests": 0,
+  "credential_reads": 0,
+  "docker_operations": 0,
+  "business_assertions_budgets_and_owner_policy_unchanged": true,
+  "commercial_gates_closed": false,
+  "retained_second_owned_tree_check": {
+    "result": {
+      "mode": "governance",
+      "code_inventory_sha256": "d6d09f37bdf57c120637eaa79b9cf413e5e5c3f5c274c4afc2540c86685c25c0",
+      "all_1259_inputs_unchanged": true,
+      "code_inputs": 1259,
+      "source_package_used": true,
+      "selectors": [
+        "tests/governance/test_cli_console.py",
+        "tests/governance/test_contract_import_boundary.py",
+        "tests/governance/test_distribution_artifact_boundary.py",
+        "tests/governance/test_documentation_policy.py",
+        "tests/governance/test_generated_specs.py",
+        "tests/governance/test_git_minimum_commit_probe.py",
+        "tests/governance/test_installed_product_acceptance.py",
+        "tests/governance/test_installed_product_upgrade_acceptance.py",
+        "tests/governance/test_legacy_action_archive.py",
+        "tests/governance/test_license_archive_evidence.py",
+        "tests/governance/test_product_runtime_convergence.py",
+        "tests/governance/test_readability_policy.py",
+        "tests/governance/test_repository_policy.py",
+        "tests/governance/test_sbom.py",
+        "tests/governance/test_secret_scan.py",
+        "tests/governance/test_security_governance_evidence.py",
+        "tests/governance/test_supply_chain.py",
+        "tests/governance/test_git_stderr_branches.py"
+      ],
+      "tests": 492,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 1,
+      "excluded_parallel_inventory_modules_imported": []
+    },
+    "junit": {
+      "bytes": 81685,
+      "sha256": "ccb3b80d0f4298016c76f64bebbeae5dcac186244216fd48a36154516144c1ba"
+    },
+    "log": {
+      "bytes": 2315,
+      "sha256": "5c71440213299ccd1b00ad8d6e434386d9d188965257ef11b1d199b12643afab"
+    },
+    "scope": "mixed worktree, unpublished W0; not accepted as publication evidence"
+  },
+  "published_snapshot_governance": {
+    "result": {
+      "mode": "governance",
+      "code_inventory_sha256": "d6d09f37bdf57c120637eaa79b9cf413e5e5c3f5c274c4afc2540c86685c25c0",
+      "all_1259_inputs_unchanged": true,
+      "code_inputs": 1259,
+      "source_package_used": true,
+      "selectors": [
+        "tests/governance/test_cli_console.py",
+        "tests/governance/test_contract_import_boundary.py",
+        "tests/governance/test_distribution_artifact_boundary.py",
+        "tests/governance/test_documentation_policy.py",
+        "tests/governance/test_generated_specs.py",
+        "tests/governance/test_git_minimum_commit_probe.py",
+        "tests/governance/test_installed_product_acceptance.py",
+        "tests/governance/test_installed_product_upgrade_acceptance.py",
+        "tests/governance/test_legacy_action_archive.py",
+        "tests/governance/test_license_archive_evidence.py",
+        "tests/governance/test_product_runtime_convergence.py",
+        "tests/governance/test_readability_policy.py",
+        "tests/governance/test_repository_policy.py",
+        "tests/governance/test_sbom.py",
+        "tests/governance/test_secret_scan.py",
+        "tests/governance/test_security_governance_evidence.py",
+        "tests/governance/test_supply_chain.py",
+        "tests/governance/test_git_stderr_branches.py"
+      ],
+      "tests": 492,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "excluded_parallel_inventory_modules_imported": []
+    },
+    "junit": {
+      "bytes": 79658,
+      "sha256": "f77066db6306063cfc8cfe4d4fa850425ca4ec51abab3d82939184e36f187b12"
+    },
+    "log": {
+      "bytes": 758,
+      "sha256": "c7eecf9d39d4b17668c6e12fd3c8a41bd5790870607ab36b11ca55d4eec0a486"
+    },
+    "scope": "all 18 governance files, exact publication snapshot excluding unpublished W0 and NTFS prototype"
+  },
+  "publication_documentation": {
+    "changed_path_count": 19,
+    "document_count": 453,
+    "findings": [],
+    "link_count": 11043,
+    "mermaid_count": 953,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26,
+    "report": {
+      "bytes": 192,
+      "sha256": "3bb72181d6b7547bd90b33aff13121c3e907245ba51857941e1cc3a6cf708d85"
+    }
+  },
+  "publication_secret_scan": {
+    "inputs": 4050,
+    "findings": 0,
+    "unchanged_existing_wheel_included": true,
+    "log": {
+      "bytes": 101,
+      "sha256": "2d1db86cdef90ec63e334c29d5e292207b18a499f1005029e1c2b575f6b8877d"
+    }
+  },
+  "publication_static": {
+    "ruff": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format": {
+      "bytes": 26,
+      "sha256": "eee76f865de5a9f2456950f710ae5d5f9b5bd0ea02aa54f614c5eed6642a0bfd"
+    },
+    "result": "passed"
+  }
+}

@@ -1400,3 +1400,13 @@ stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以
 取得两个原FAIL及两条完整v3观察：首失败均在git_validate，Git原wait返回128、worker返回二，
 原非零短路保留complete／expected未观察。原成功proof缺失、UNKNOWN不变，不推断具体Git内部原因。
 完整Git产品接线、R3、Windows消费者、Beta及同候选R1～R6继续开放。
+
+### R1/R4：Git128固定错误分支低敏观察
+
+[固定分支详设](changes/m09-r4-windows-minimum-commit-probe.md#12-git128固定分支低敏观察设计)
+将测试侧车明确升为v4，保留原四字段并增加读取、短读、hash_fd、loose写入和关闭的固定bool。
+只有原MAC、双完整raw／EOF及protection通过后才投影，不输出stderr正文或动态后缀。
+新增95项先取得78FAIL／17PASS；原95项与新增合并190PASS，两个原本机业务场景通过。
+[统一验证包](validation/windows-git-stderr-branches-2026-10-01-v1/README.md)区分未发布并行目录、
+同发布候选验证和新原生观察；原469生产文件、两项业务断言、20／45秒及五分钟上限不变。
+新Windows结果尚未取得前不判定根因或修复；原Git128 FAIL、完整Git交付、R3、消费者环境及Beta保持开放。

@@ -29,6 +29,8 @@ PREFIX = "HX_MINIMUM_COMMIT_PROBE "
 MAX_EVENTS = 64
 MAX_CHAIN = 8
 MAX_RECORD_BYTES = 64 * 1024
+# 与原 stderr raw 守卫的 1MiB 同界；只限诊断匹配，不改变原输出合同。
+MAX_STDERR_SIGNAL_BYTES = 1024 * 1024
 _ACTIVE: ContextVar[Operation | None] = ContextVar("minimum_commit_probe", default=None)
 _PROBES: pytest.StashKey[Probe] = pytest.StashKey()
 _CODES = frozenset(
@@ -52,12 +54,24 @@ _STDERR_LITERALS = {
         False,
     ),
     "git_malformed_object_literal": (b"fatal: refusing to create malformed object", True),
+    # Git v2.55.0.windows.5 object-file.c:1083/1086，stdin 的 path 为 NULL，
+    # 读错误标签使用 <unknown>；errno 尾部不解码、不提取或保存。
+    "READ_ERROR": (b"error: read error while indexing <unknown>: ", False),
+    "SHORT_READ": (b"error: short read while indexing <unknown>", True),
+    # builtin/hash-object.c:28-33/81/137-138：--stdin 且无 --path 时 vpath=NULL。
+    # 仅识别 NULL 的固定 (null) 表示；其他 CRT 表示未匹配，不等于未进入分支。
+    "HASH_FD": (b"fatal: Unable to add (null) to database", True),
+    # object-file.c:719/594 的 die_errno 固定前缀；阳性只是错误点信号。
+    "LOOSE_WRITE": (b"fatal: unable to write loose object file: ", False),
+    "LOOSE_CLOSE": (b"fatal: error when closing loose object file: ", False),
 }
 
 
 def _stderr_signals(stderr: bytes) -> dict[str, bool]:
     """只识别完整行的求证字节信号；不解码正文，也不推断 errno、根因或效果。"""
     signals = {name: False for name in _STDERR_LITERALS}
+    if len(stderr) > MAX_STDERR_SIGNAL_BYTES:
+        return signals
     start = 0
     while (end := stderr.find(b"\n", start)) >= 0:
         for name, (literal, exact) in _STDERR_LITERALS.items():
@@ -240,7 +254,7 @@ class Probe:
 
     def render(self) -> str:
         record = {
-            "schema": "harnessix.minimum-commit-probe/v3",
+            "schema": "harnessix.minimum-commit-probe/v4",
             "selector": self.selector,
             "platform": sys.platform,
             "source_sha256": self.source_sha256,

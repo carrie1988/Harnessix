@@ -1,0 +1,71 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "self_excluded": true,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 6002,
+      "sha256": "5ba55f8b1bb0e510bf971c75941c30ddbb4d33212a8ab15ce6beaec50b57ed57"
+    },
+    {
+      "path": "code-inputs-delta.json",
+      "bytes": 1103,
+      "sha256": "ba373bf84b68601837f4e15578898c6320507a8cacf0c7ac8726623aaab12883"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 769,
+      "sha256": "8f0803a5226d65eda93ea96e3ed005315ec8e446a11dea0b1a0794077070d24e"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 76823,
+      "sha256": "775f29895d79cdbb3ce30f5594b30ca60bb9d3e18a9fc667ba0751fa84a788ad"
+    },
+    {
+      "path": "diagrams/dataflow.mmd",
+      "bytes": 657,
+      "sha256": "d193e6249e009e0336c0bd6391d0d81df4a24787b06f562cf54afca02bd3ba1f"
+    },
+    {
+      "path": "diagrams/dataflow.png",
+      "bytes": 32261,
+      "sha256": "0ac5a4896e837c10549a29dcc5165eb267e98d22f59d8bde2aebe5478da45d61"
+    },
+    {
+      "path": "diagrams/flow.mmd",
+      "bytes": 847,
+      "sha256": "ce03e84ef3a5600ebe4143febd1bb21aaefa33844375d4f7e806b585319e42d3"
+    },
+    {
+      "path": "diagrams/flow.png",
+      "bytes": 82238,
+      "sha256": "14e688e9b4f350aa1ddd2be067e6b937f7e919a4b2060e7d9da11d3b43960f05"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "bytes": 714,
+      "sha256": "a1890fba0fc24c2197e015ccd3dcde6b871eb310f0abbcd86f68715a1d6d692a"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "bytes": 60733,
+      "sha256": "fd44a06374189d4ec4ddfe3254a119e39118d343d38b2b3b39c597e9ac8a8231"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 15809,
+      "sha256": "bfab5707d636ee55b0985777b4139215494bd6e2334393aef46e5f9fae59fd0e"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1093,
+      "sha256": "acfd31894d22161fd0bfaab9e79d8c32e8370e9037a9a5964d8505806a39e35a"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 695,
+      "sha256": "6626373be9e5f224c666b415ffcf058cf4b767ba283a81c8f725262678d1280d"
+    }
+  ]
+}

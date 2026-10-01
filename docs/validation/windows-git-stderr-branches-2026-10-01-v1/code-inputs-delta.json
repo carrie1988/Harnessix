@@ -1,0 +1,31 @@
+{
+  "schema": "harnessix.code-input-delta/v1",
+  "base_inventory_path": "docs/validation/git-worker-failure-observation-2026-10-01-v1/code-inputs.json",
+  "base_inventory": {
+    "bytes": 219893,
+    "sha256": "bfb80ae035c7ac8db15f13346ab011e93a4187f9e242c19ca7203db91cdc0935"
+  },
+  "base_input_count": 1258,
+  "replaced_paths": [
+    {
+      "path": "tests/governance/test_git_minimum_commit_probe.py",
+      "bytes": 28155,
+      "sha256": "b0aefe3cbf1bc6b2e3b8cc4b1d168d4c54ff5cad5b8ad84ca395a62db851fe6d"
+    },
+    {
+      "path": "tests/product_config/git_minimum_commit_probe.py",
+      "bytes": 22606,
+      "sha256": "d1ffc7eb833a43ac93ae4a015c5c7ae1ef596d2a2477817fc58f80ade1920d30"
+    }
+  ],
+  "added_paths": [
+    {
+      "path": "tests/governance/test_git_stderr_branches.py",
+      "bytes": 13098,
+      "sha256": "5f0f7c58086273e3b107a1dd28568f9a98dc886d290519fdd7b67d6f18030c3b"
+    }
+  ],
+  "result_input_count": 1259,
+  "canonical_complete_inventory_sha256": "d6d09f37bdf57c120637eaa79b9cf413e5e5c3f5c274c4afc2540c86685c25c0",
+  "all_base_other_members_actual_bytes_checked": true
+}

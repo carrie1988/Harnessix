@@ -1,0 +1,14 @@
+flowchart TB
+  Manual[手动Windows工作流 attempt一] --> Cases[原两个固定pytest选择器]
+  Cases --> Helper[原测试run辅助函数]
+  Probe[显式诊断插件] -. 透明包装 .-> Helper
+  Helper --> Port[原Git执行端口与Supervisor]
+  Port --> Owner[原受信Owner与Git子进程]
+  Port --> Receipt[原MAC终态回执及原始字节守卫]
+  Probe --> Memory[有界内存阶段和白名单投影]
+  Receipt -. 原执行中已取得 .-> Memory
+  Memory --> After[原fixture清理后有限只读补取]
+  After --> Guard[原MAC raw与protection全部通过]
+  Guard --> Signals[完整stderr内存字节 固定分支bool与Worker有限帧]
+  Signals --> Log[teardown后低敏JSON 版本化观察]
+  Cases --> Outcome[原pytest退出码 不转换UNKNOWN]
