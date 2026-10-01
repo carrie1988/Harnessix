@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 1
+version: 2
 code_revision: 96584026bdf34c49c519834331b84043a6c03895
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
@@ -29,7 +29,7 @@ supersedes: []
 
 ## 1. 需求背景、状态与交付定义
 
-**实施状态：待实现规划。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口。产品 Git Action、持久关联、认证前缀、业务快照、对象材料闭包及恢复重绑均未由本文交付；现有测试链接仅指向复用边界，不表示这些方案已经通过验收。
+**实施状态：业务闭包待实现，内部 IO 与单对象材料前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入及原 CAS 单对象类型适配。产品 Git Action、持久关联、认证前缀、业务快照、对象材料闭包及恢复重绑均未由本文交付；现有测试链接仅指向复用边界，不表示这些方案已经通过验收。
 
 当前默认产品能完成 Patch 和显式 Rollback，能从认证会话提取持续多 Patch 的完整来源投影，并观察 Git 基准；尚未装配 `GitDeliveryRuntime`／`SQLiteGitDeliveryStore` 形成默认产品 Commit／Checkpoint 闭环。直接把用户已修改的工作区交给要求干净来源的宿主 Runtime，会产生真实的生命周期和身份冲突。
 
@@ -316,7 +316,7 @@ flowchart TD
 | 拟新增 | `ProductGitDeliveryPlanner.prepare_checkpoint`／`prepare_commit` | 消费原认证会话及固定 Reader，生成有限产品计划和完整 Review；不创建 worktree、不写对象或 Ref |
 | 拟新增 | `ProductGitDeliveryExecutor.execute`／`reconcile` | 实现原 `TrustedActionExecutor` 的薄适配；前者消费新批准，后者只观察。锚创建及来源解析增量留在原 Git Runtime，不复制 Git Runner |
 | 拟新增 | `SQLiteGitDeliveryStore.read_business_snapshot` | 仅在只读连接和指定捕获窗口／候选快照中枚举并核验业务事实；不借用 Writer 修复缺失记录 |
-| 拟新增 | 原 Git 固定端口的有界对象材料消费职责 | 固定 `cat-file` 原始对象用途，将完整正文消费至私有候选／原 CAS；与原始流证明核对，不把基准 Reader 的捕获前缀冒充正文 |
+| 现有内部 | `GitDeliveryProcess.prepare_object_read/prepare_object_write`、`GitObjectMaterial`、`GitMaterialCAS` | 原批准／Owner 下完整8MiB单对象读取／输入及原 CAS 类型引用；对象图、业务认证目录及产品接线仍待实现 |
 | 拟新增 | Git 认证签发／核验端口 | 在原认证模块复用原 Key 托管，域分离且只接收受信新事实。备份实例只有核验端口，没有签发端口 |
 | 拟新增 | 原 `validate_state_records` 的 Git 验证职责 | 联合 Session、Route、派生事务、GitDB、对象材料和生命周期状态；不是独立备份服务 |
 
@@ -348,7 +348,12 @@ flowchart TD
 
 目标树预计算需从固定 base Tree 读取全部必要 tree 正文和已选 after CAS，在内存中以原始 Git 对象编码计算 OID。不得在未批准时用 `write-tree` 或 `hash-object -w` 作为“只读规划”。拟提取原对象构造的纯计算逻辑复用；实际发布后的 OID 必须逐项等于计划结果。
 
-完整对象材料采集不是当前只读基准 Reader 的现成功能。现有基准可用完整流 SHA／长度证明 blob 版本，但有界捕获前缀不能恢复全部正文，受保护公开输出也不能作为原始材料。拟在原固定 Git 端口内新增受信私有的有界正文消费职责：仅读取已严格校验的固定 OID，不执行 filters／textconv，不新增任意命令能力；原始流长度、SHA、EOF、退出及 Windows 原回执证明与消费的正文逐项一致。规划阶段仅有界观察和预算计算，执行阶段在新批准下耐久写入原 CAS；内核 IO／进程必须在取消后结算。未取得完整正文的对象不能登记为已备份材料。
+完整对象材料采集已由内部固定 Git 端口提供，而非基准 Reader 的输出前缀。
+[完整读取](m09-r4-git-object-material-read.md)与[完整输入](m09-r4-git-object-material-input.md)
+复用原批准、Owner、原始流、完整 EOF 和实现绑定；
+[原 CAS 单对象类型适配](m09-r4-git-material-cas.md)提供完整正文耐久及回读。
+这些接口不登记业务对象图、产品归属、MAC 关联或总量容量，不证明目录闭包。
+后继规划仍只做有界观察，写效果仍需新批准；未知效果不重放，未取得完整材料的对象不得登记为已备份。
 
 ### 6.3 持久产品关联
 
@@ -370,7 +375,10 @@ flowchart TD
 
 ### 6.4 对象材料目录
 
-拟新增 `GitObjectMaterial` 与 `GitObjectInventory`，存放在 GitDB。正文复用 `workspace-transactions/blobs/<sha256>`，不是 `.git/objects` 格式副本。
+原 `GitObjectMaterial` 已是不可变完整正文合同，新增 `GitObjectMaterialReference` 已提供七字段 CAS 类型绑定；
+不得重复定义同名材料。拟新增的是 GitDB 认证业务目录 `GitObjectInventory` 及其对象登记记录，
+消费既有类型引用并补充角色、直接引用、历史边界、目录摘要及认证前缀。
+正文复用 `workspace-transactions/blobs/<sha256>`，不是 `.git/objects` 格式副本。
 
 | 字段 | 规则 |
 |---|---|
@@ -855,13 +863,18 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 该包不属于第12章的产品实现验收材料，不证明拟新增接口已经存在或业务流程已经运行。
 
 
-## 15. 受控命令IO实现状态
+## 15. 内部 IO 与单对象材料实现状态
 
-[`Git命令IO总体与详细设计`](m09-r4-git-supervised-command-io.md)对应已有内部
-`GitDeliveryProcess`、不可变命令材料和共享操作期限。它消费原ExecutionPlan与批准，
-复用原Owner/Lease；POSIX pipe现以V2认证原始双流，PTY仍V1。
-这只完成受控子命令基础，不表示本设计中的产品执行器、双工作树、对象材料或备份闭包已实现。
+[受控命令 IO](m09-r4-git-supervised-command-io.md)已复用原 ExecutionPlan、批准、Owner／Lease
+及共享操作期限。POSIX pipe 使用 V2 原始双流认证，PTY 保持 V1。
+[完整对象读取](m09-r4-git-object-material-read.md)与[完整对象输入](m09-r4-git-object-material-input.md)
+支持 blob／tree／commit、sha1／sha256 和原完整 8MiB，普通控制输入仍为1MiB。
+输入使用小 manifest 和完整只读文件快照，不把正文管道前缀当作完整对象。
 
-原领域同步门面仍保留，不能从线程包装推导取消能力；完整领域算法的异步接线尚未完成。
-原Process控制输入1MiB保持，大于上限明确拒绝。第6.4章完整8MiB对象正文通道与全部
-业务准入范围仍是硬前置，不按现有管道容量缩减，也不得先开放默认Git写Tool。
+[原 CAS 类型适配](m09-r4-git-material-cas.md)已增加单对象引用、完整写入／回读及只读写准入。
+它不创建 GitDB 目录、关联、对象图、历史范围、总量配额或业务 MAC。
+内部引用不赋予执行权；原生平台、完整产品与正式备份门禁仍需各自证据。
+
+完整领域算法的异步接线、双工作树、正式 Checkpoint／Commit、全认证前缀、
+GitDB／Backup v2 和新根重绑仍未完成。单对象材料能力不能代替第13章步骤2的完整只读业务验真，
+也不能提前开放默认 Git 写 Tool；业务8MiB及全部树材料范围不得缩减。

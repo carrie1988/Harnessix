@@ -1,0 +1,12 @@
+flowchart LR
+    Bytes[完整原始正文] --> SHA[正文 SHA256]
+    Bytes --> Header[类型 长度 NUL 与正文]
+    Header --> OID[Git 格式对应 OID]
+    SHA --> Address[原 CAS 唯一地址]
+    Bytes --> Address
+    Address --> Read[完整私有正文回读]
+    SHA --> Ref[七字段类型引用]
+    OID --> Ref
+    Ref --> Check[重建类型头 OID 长度与 SHA]
+    Read --> Check
+    Check --> Material[原 GitObjectMaterial]

@@ -17,7 +17,7 @@ from harnessix.product_config.git_material_process import stage_material
 from tests.product_config import test_git_delivery_process as process_tests
 from tests.product_config import test_git_material_input as input_tests
 
-make_process = process_tests.make_process
+make_process = input_tests.make_process
 
 
 def _program(marker: Path) -> str:

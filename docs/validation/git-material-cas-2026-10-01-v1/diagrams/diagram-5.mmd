@@ -1,0 +1,8 @@
+flowchart LR
+    Private[同目录排他私有临时文件] --> Write[完整短写循环]
+    Write --> Flush[文件 fsync 并关闭]
+    Flush --> Link[原子硬链接 最终名不存在]
+    Link --> Final[完整最终 ACK 可见]
+    Final --> Reader[原消费者单次严格读取]
+    Link --> Directory[POSIX 原目录 fsync]
+    Directory --> Cleanup[仅清理自身临时名]

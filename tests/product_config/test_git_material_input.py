@@ -7,6 +7,7 @@ import base64
 import hashlib
 import json
 import threading
+from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
 
@@ -23,7 +24,7 @@ from harnessix.delivery.git_material_input_contracts import (
 )
 from harnessix.delivery.git_object_material import GitObjectMaterial, GitObjectRead
 from harnessix.delivery.git_store import SQLiteGitDeliveryStore
-from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.delivery.store import SQLiteWorkspaceTransactionStore, _prepare_directory
 from harnessix.domain.models import PolicyDecisionKind
 from harnessix.processes.supervision_contracts import MAX_PROCESS_INPUT_BYTES
 from harnessix.product_config import git_material_process as material_process
@@ -31,10 +32,49 @@ from harnessix.product_config.git_delivery_process import GitOperationBudget
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from tests.product_config import test_git_delivery_process as process_tests
 
-make_process = process_tests.make_process
-
 _LIMIT = 8 * 1024 * 1024
 _CANARY = b"git-material-input-secret-canary"
+
+
+@pytest.fixture
+async def make_process(tmp_path: Path):
+    # 复用原工厂的进程装配与清理，只前置材料输入要求的正式私有目录创建。
+    async with asynccontextmanager(process_tests.make_process.__wrapped__)(tmp_path) as original:
+        case_count = 0
+
+        def create(**options):
+            nonlocal case_count
+            # 路径沿用原工厂；必须早于普通 mkdir，不能修复既有宽权限 Windows 对象。
+            runner_root = tmp_path / f"case-{case_count}" / "runner-private"
+            for name in ("git-home", "empty-hooks", "tmp"):
+                _prepare_directory(runner_root / name)
+            case = original(**options)
+            case_count += 1
+            return case
+
+        yield create
+
+
+def test_material_fixture_creates_private_directories_before_original_runner(
+    make_process, monkeypatch
+):
+    original_runner = process_tests._GitRunner
+    checked_roots = []
+
+    def checked_runner(executable, state_root):
+        for name in ("git-home", "empty-hooks", "tmp"):
+            directory = state_root / name
+            assert directory.is_dir(), "原 Runner 初始化前必须按正式合同创建私有目录"
+            # 真实验权仍走正式合同；Windows 不修复既有 ACL，也不替换原生实现。
+            _prepare_directory(directory)
+        checked_roots.append(state_root)
+        return original_runner(executable, state_root)
+
+    monkeypatch.setattr(process_tests, "_GitRunner", checked_runner)
+    cases = (make_process(), make_process())
+    assert checked_roots == [case.workspace.parent / "runner-private" for case in cases]
+    for case in cases:
+        process_tests._assert_not_started(case)
 
 
 class _Protection:

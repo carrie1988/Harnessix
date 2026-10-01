@@ -20,7 +20,7 @@ from harnessix.product_config.git_delivery_process import GitOperationBudget
 from tests.product_config import test_git_delivery_process as process_tests
 from tests.product_config import test_git_material_input as input_tests
 
-make_process = process_tests.make_process
+make_process = input_tests.make_process
 
 
 async def _settle_actual_owner(case, prepared, captured) -> None:

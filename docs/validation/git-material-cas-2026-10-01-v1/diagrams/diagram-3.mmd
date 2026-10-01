@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant H as 受信宿主
+    participant A as GitMaterialCAS
+    participant S as 原 Store
+    participant F as 私有 CAS 文件
+    H->>A: persist(实际 GitObjectMaterial)
+    A->>A: 严格重建与类型头 OID 校验
+    A->>S: put_blob(正文 SHA, 完整 bytes)
+    S->>S: 写权限先于输入与文件副作用
+    S->>F: 完整临时写入 或核验已有正文
+    S->>F: 文件 fsync 原目录同步 完整回读
+    S-->>A: 写入确认
+    A->>S: blob(固定摘要)
+    S-->>A: 完整 bytes
+    A->>A: 核对长度 SHA Git OID
+    A-->>H: 不可变类型引用
+    H->>A: read(严格引用)
+    A->>S: blob(原固定摘要)
+    S-->>A: 完整 bytes
+    A-->>H: 原 GitObjectMaterial

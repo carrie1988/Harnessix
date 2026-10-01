@@ -1266,3 +1266,17 @@ Checkpoint/Commit独立批准、持久原生桥接、全事件证明、有界对
 登记实际源码、安装字节、结果、旧失败和三幅渲染图。新原生证据仍须独立取得。
 本增量不是默认Git写Tool、Commit/Checkpoint、CAS/认证业务账本、阶段崩溃恢复或Backup v2，
 不缩减原完整Git交付，不关闭R3、消费者Windows11、独立Beta或商用R1～R6。
+
+
+### R4：完整对象原 CAS 类型持久化候选
+
+[总体与详细设计](changes/m09-r4-git-material-cas.md)复用原 Workspace CAS，
+增加七字段不可变对象引用和完整类型／格式／OID／SHA／长度核验。
+原每对象8MiB保持，不建立第二个Blob平台；对象材料写入和完整回读先于返回引用。
+原只读 Workspace Store 曾在 SQL 拒绝前落入新正文，现全部写入口先拒绝只读／closed。
+
+真实 CAS → 原批准 Owner 完整输入 → 独立新批准 Git 回读 → 只读 CAS 重开已建立专项。
+重启 Soak 的 ACK 最终名在写满前可见缺陷采用同目录不可覆盖原子发布修复，
+原消费者单次严格校验、真实硬退出和阈值不变。固定310874c原生失败保留，后继结果另行绑定。
+该候选不实现对象图、业务目录／MAC、GitDB／Backup v2或默认Commit／Checkpoint，
+不替代完整R3、Windows消费者、Beta和商用R1～R6验收。

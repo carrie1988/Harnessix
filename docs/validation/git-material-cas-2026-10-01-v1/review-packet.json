@@ -1,0 +1,83 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "status": "scope_accepted_local_native_and_business_open",
+  "scope": "internal_single_object_cas_not_full_git_product",
+  "input_catalog_sha256": "977cd8f0bd6e66481498f09ed7a8aa1db922ecb47d0be44f723e6feb4d512d84",
+  "requirements": [
+    {
+      "id": "CONTENT-REFERENCE",
+      "status": "pass_final_local_not_native",
+      "acceptance": "Strict seven fields actual type format length SHA and Git OID"
+    },
+    {
+      "id": "COMPLETE-CAPACITY",
+      "status": "pass_final_local_not_native",
+      "acceptance": "Original 8MiB whole material three types two formats"
+    },
+    {
+      "id": "READONLY-EFFECT-GUARD",
+      "status": "pass_final_local_not_native",
+      "acceptance": "All four writes reject readonly and closed before effects"
+    },
+    {
+      "id": "TEMPORARY-OWNERSHIP",
+      "status": "pass_final_local_not_native",
+      "acceptance": "O_EXCL failure never deletes foreign same nonce file"
+    },
+    {
+      "id": "DURABLE-READBACK",
+      "status": "pass_final_local_not_native",
+      "acceptance": "Existing inode preserved fsync and full readback before reference"
+    },
+    {
+      "id": "ORIGINAL-OWNER-CHAIN",
+      "status": "pass_final_local_not_native",
+      "acceptance": "Actual CAS original approved write independently approved readback and reopen"
+    },
+    {
+      "id": "ATOMIC-SOAK-ACK",
+      "status": "pass_final_local_not_native",
+      "acceptance": "No final partial target no clobber original strict consumer"
+    },
+    {
+      "id": "WINDOWS-FIXTURE",
+      "status": "formal_creation_order_fixed_native_pending",
+      "acceptance": "Formal private creation before original Runner no security weakening"
+    },
+    {
+      "id": "ORIGINAL-READABILITY",
+      "status": "pass_final_local_not_native",
+      "acceptance": "326 Store hotspot and 600 100 20 policy unchanged"
+    },
+    {
+      "id": "SOURCE-WHEEL-INSTALL",
+      "status": "pass_final_local_not_native",
+      "acceptance": "Same Wheel exact all source and installed bytes outside source"
+    },
+    {
+      "id": "FULL-GOVERNANCE",
+      "status": "pass_final_local_not_native",
+      "acceptance": "Affected regressions metadata diagrams links specs Secret scan"
+    }
+  ],
+  "not_closed": [
+    "WINDOWS-NATIVE",
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "COMMERCIAL-1.0"
+  ],
+  "default_git_write_capability_added": false,
+  "independent_review": "targeted_static_and_original_evidence_inspection_closed_P2_not_OS_acceptance",
+  "closed_production_findings": [
+    {
+      "id": "CAS-REVIEW-P2-01",
+      "original_actual_failures": 2,
+      "final_regression_cases": 2,
+      "scope": "O_EXCL_failure_before_temp_ownership"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 26
-code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
+version: 27
+code_revision: 310874c19c1af502bec22b4fe86966d230d52fb9
 owners:
   - core
 modules:
@@ -14,6 +14,9 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_material_cas.py
+  - tests/delivery/test_cas_write_authority.py
+  - tests/product_config/test_git_material_cas_integration.py
   - tests/product_config/test_git_object_material.py
   - tests/product_config/test_git_delivery_process.py
   - tests/delivery/test_git_store_readonly.py
@@ -66,6 +69,19 @@ Git账本新增显式`read_only=True`，复用既有SQLite只读端口，读取�
 [`Git账本只读总体与详细设计`](../changes/m09-r4-git-store-readonly.md)。
 该模式不等于来源认证或全事件前缀核验，默认产品仍没有Commit/Checkpoint工具，
 Git对象材料和完整备份恢复闭合尚未接线，不将领域接口当作产品交付完成。
+
+Git 完整对象材料新增原 CAS 薄适配：
+[`git_material_cas.py`](../../src/harnessix/delivery/git_material_cas.py) 的
+`GitObjectMaterialReference` 固定类型、格式、OID、正文 SHA／长度及原 CAS 地址；
+`GitMaterialCAS.persist/read` 在原容量内完整写入／回读，不建立业务目录或授权。
+原 [`store.py`](../../src/harnessix/delivery/store.py) 的 `put_blob` 重新确认耐久，
+全部写入口先拒绝只读／closed，修复 SQL 拒绝前已落正文的真实缺陷。
+[`workspace_cas_io.py`](../../src/harnessix/delivery/workspace_cas_io.py)唯一承载原完整回读及耐久确认，
+保留 Store 门面、原长度护栏和600／100／20策略。
+CAS 排他创建失败不得清理陌生同名临时文件；新增两入口负对照验证 inode／正文保持。
+完整接口、三图、字段、伪代码、错误、取消与 Windows 耐久边界见
+[材料 CAS 总体与详细设计](../changes/m09-r4-git-material-cas.md)。
+材料正文接口已存在；对象图、认证关联、GitDB／Backup v2、默认 Commit／Checkpoint 仍未接通。
 
 ## 2. 需求背景
 

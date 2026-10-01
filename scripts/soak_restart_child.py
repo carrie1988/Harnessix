@@ -7,21 +7,25 @@ import os
 import re
 import sys
 from pathlib import Path
+from uuid import uuid4
 
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.server import run_product_stdio
+from scripts.soak_evidence import _sync_directory
 from scripts.soak_restart_proof import SoakRestartChildResult
 from scripts.soak_rss import read_peak_rss
 
 
 def _write_private(path: Path, body: bytes) -> None:
-    """私有夹具文件只写一次并刷盘；不输出状态路径或异常正文。"""
+    """完整私有正文关闭后原子发布；最终名已存在时绝不覆盖。"""
 
+    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    # 创建失败时尚未拥有临时文件，不能删除发生碰撞的其他文件。
     descriptor = os.open(
-        path,
+        temporary,
         os.O_WRONLY
         | os.O_CREAT
         | os.O_EXCL
@@ -30,11 +34,21 @@ def _write_private(path: Path, body: bytes) -> None:
         0o600,
     )
     try:
-        if os.write(descriptor, body) != len(body):
-            raise OSError("夹具文件写入不完整")
-        os.fsync(descriptor)
+        try:
+            remaining = memoryview(body)
+            while remaining:
+                written = os.write(descriptor, remaining)
+                if written <= 0:
+                    raise OSError("夹具文件写入不完整")
+                remaining = remaining[written:]
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        # 同目录硬链接发布不覆盖现有目标，消费者只会看到完整关闭的正文。
+        os.link(temporary, path)
+        _sync_directory(path.parent)
     finally:
-        os.close(descriptor)
+        temporary.unlink(missing_ok=True)
 
 
 async def _crash_gate(gate: Path) -> None:

@@ -19,6 +19,7 @@ from harnessix.delivery.contracts import (
     new_transaction_record,
 )
 from harnessix.delivery.planner import PreparedWorkspaceTransaction
+from harnessix.delivery.workspace_cas_io import confirm_blob_durable, read_blob_body
 from harnessix.sqlite_readonly import readonly_database
 
 _SCHEMA_VERSION = "1"
@@ -38,6 +39,7 @@ class SQLiteWorkspaceTransactionStore:
     def __init__(self, root: str | Path, *, read_only: bool = False) -> None:
         self._root = Path(root)
         self._closed = False
+        self._read_only = read_only
         self._blobs = self._root / "blobs"
         self._path = self._root / "transactions.db"
         if read_only:
@@ -98,6 +100,7 @@ class SQLiteWorkspaceTransactionStore:
         )
 
     def save(self, prepared: PreparedWorkspaceTransaction) -> WorkspaceTransactionRecord:
+        self._require_writable()
         for digest, body in sorted(prepared.blobs.items()):
             self._put_blob(digest, body)
         record = new_transaction_record(prepared.plan)
@@ -146,6 +149,7 @@ class SQLiteWorkspaceTransactionStore:
     def transition(
         self, current: WorkspaceTransactionRecord, updated: WorkspaceTransactionRecord
     ) -> None:
+        self._require_writable()
         before = self._validate(current)
         after = self._validate(updated)
         if (
@@ -216,43 +220,25 @@ class SQLiteWorkspaceTransactionStore:
     def blob(self, digest: str) -> bytes:
         if not _valid_digest(digest):
             raise KernelError("delivery_blob_invalid", "Workspace事务Blob摘要无效")
-        path = self._blobs / digest
-        flags = (
-            os.O_RDONLY
-            | getattr(os, "O_BINARY", 0)
-            | getattr(os, "O_CLOEXEC", 0)
-            | getattr(os, "O_NOFOLLOW", 0)
+        return read_blob_body(self._blobs / digest, digest)
+
+    def _require_writable(self) -> None:
+        """只读权限在文件副作用与输入解析之前检查，不只依赖 SQLite 拒绝。"""
+        if self._read_only:
+            raise KernelError("delivery_store_read_only", "Workspace事务只读账本不接受写入")
+        if self._closed:
+            raise KernelError("delivery_store_closed", "Workspace事务账本已关闭")
+
+    def put_blob(self, digest: str, body: bytes) -> None:
+        """受信宿主持久化完整正文；复用原 CAS，已有正文也重新刷盘，不登记业务成功。"""
+        self._require_writable()
+        self._put_blob(digest, body)
+        confirm_blob_durable(
+            self._blobs / digest, body, lambda: self.blob(digest), _fsync_directory
         )
-        descriptor: int | None = None
-        try:
-            descriptor = os.open(path, flags)
-            info = os.fstat(descriptor)
-            if (
-                not stat.S_ISREG(info.st_mode)
-                or not 0 <= info.st_size <= MAX_TRANSACTION_FILE_BYTES
-            ):
-                raise OSError
-            if os.name == "posix" and (
-                info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600
-            ):
-                raise OSError
-            body = bytearray()
-            while len(body) <= MAX_TRANSACTION_FILE_BYTES:
-                chunk = os.read(descriptor, min(65_536, MAX_TRANSACTION_FILE_BYTES + 1 - len(body)))
-                if not chunk:
-                    break
-                body.extend(chunk)
-            result = bytes(body)
-            if len(result) != info.st_size or hashlib.sha256(result).hexdigest() != digest:
-                raise OSError
-            return result
-        except OSError:
-            raise KernelError("delivery_blob_corrupt", "Workspace事务Blob损坏或缺失") from None
-        finally:
-            if descriptor is not None:
-                os.close(descriptor)
 
     def _put_blob(self, digest: str, body: bytes) -> None:
+        self._require_writable()
         if (
             not _valid_digest(digest)
             or type(body) is not bytes
@@ -274,8 +260,10 @@ class SQLiteWorkspaceTransactionStore:
             | getattr(os, "O_CLOEXEC", 0)
         )
         descriptor: int | None = None
+        temporary_owned = False
         try:
             descriptor = os.open(temporary, flags, 0o600)
+            temporary_owned = True
             offset = 0
             while offset < len(body):
                 written = os.write(descriptor, body[offset : offset + 65_536])
@@ -294,10 +282,12 @@ class SQLiteWorkspaceTransactionStore:
         finally:
             if descriptor is not None:
                 os.close(descriptor)
-            try:
-                temporary.unlink()
-            except OSError:
-                pass
+            # O_EXCL 成功才拥有清理权；创建失败时不能删除同名陌生文件。
+            if temporary_owned:
+                try:
+                    temporary.unlink()
+                except OSError:
+                    pass
 
     def _decode(self, row: tuple[object, ...]) -> WorkspaceTransactionRecord:
         try:

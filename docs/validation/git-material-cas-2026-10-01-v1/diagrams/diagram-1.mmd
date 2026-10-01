@@ -1,0 +1,10 @@
+flowchart TB
+    Host[受信宿主完整材料] --> Material[原 GitObjectMaterial 严格重建]
+    Material --> Adapter[GitMaterialCAS]
+    Adapter --> Store[原 Workspace Transaction Store]
+    Store --> Blob[原私有 SHA256 CAS]
+    Blob --> Read[完整长度 SHA 与 Git OID 回读]
+    Read --> Reference[七字段不可变类型引用]
+    Reference --> Future[后继认证业务目录 尚未实现]
+    Reference --> Approved[独立原批准与 Owner 执行]
+    Approved --> Git[固定 Git 对象命令]

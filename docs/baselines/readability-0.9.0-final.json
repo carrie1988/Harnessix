@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 419,
-    "physical_lines": 88782,
-    "logical_lines": 78519,
-    "documented_modules": 419,
-    "classes": 926,
-    "documented_classes": 401,
-    "functions": 3593,
-    "documented_functions": 731,
+    "source_files": 421,
+    "physical_lines": 89006,
+    "logical_lines": 78706,
+    "documented_modules": 421,
+    "classes": 928,
+    "documented_classes": 403,
+    "functions": 3605,
+    "documented_functions": 739,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -717,8 +717,8 @@
       "path": "src/harnessix/delivery/store.py",
       "qualname": "SQLiteWorkspaceTransactionStore",
       "kind": "class",
-      "line": 35,
-      "lines": 314,
+      "line": 36,
+      "lines": 303,
       "documented": true
     },
     {

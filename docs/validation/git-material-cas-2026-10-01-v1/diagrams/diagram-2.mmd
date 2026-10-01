@@ -1,0 +1,13 @@
+flowchart TD
+    Input[实际完整材料] --> Validate[严格类型与 OID 重建]
+    Validate --> Authority{Store 可写且未关闭}
+    Authority -->|否| Reject[拒绝 无文件副作用]
+    Authority -->|是| Put[原 CAS 校验 去重或完整临时写入]
+    Put --> Sync[再次文件 fsync 与原目录同步]
+    Sync --> Read[原 CAS 完整回读]
+    Read --> Verify[正文长度 SHA 类型头 OID]
+    Verify --> Return[返回类型引用 不登记业务成功]
+    Put -->|失败| Failure[固定失败 可能保留完整孤儿]
+    Sync -->|失败| Failure
+    Read -->|失败| Failure
+    Verify -->|不符| Failure
