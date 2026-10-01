@@ -1,0 +1,19 @@
+sequenceDiagram
+  participant T as 原测试fixture
+  participant P as 显式Probe
+  participant G as 原Git端口
+  participant O as 原Owner
+  T->>P: 安装透明接点和Context
+  T->>G: 原run调用及原参数
+  G->>O: 原执行 原stdin及原wait
+  O-->>G: 原终态回执或原异常
+  G-->>P: 同调用内阶段白名单投影
+  G-->>T: 原返回或原异常
+  T->>G: 原fixture清理
+  P->>P: 撤销包装
+  opt 必要write与同句柄缓存exited
+    P->>O: 原只读回执及每流一次raw
+    O-->>P: 已验真元数据或unavailable
+  end
+  P-->>T: teardown后有界低敏JSON
+  Note over T,P: 原pytest outcome与退出码不改

@@ -1,0 +1,48 @@
+name: 最低SHA256commit单次原生诊断
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  minimum-commit-probe:
+    runs-on: windows-latest
+    steps:
+      - name: 拒绝当前Run重跑
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_RUN_ATTEMPT -ne '1') {
+            Write-Host 'minimum_commit_probe_attempt_refused'
+            exit 2
+          }
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 原两个案例及低敏只读侧车
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-commit-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          try {
+            $exists = Test-Path -LiteralPath $base -ErrorAction Stop
+          } catch {
+            Write-Host 'minimum_commit_probe_fixture_unavailable'
+            exit 2
+          }
+          if ($exists) {
+            Write-Host 'minimum_commit_probe_fixture_preexists'
+            exit 2
+          }
+          uv run pytest -p tests.product_config.git_minimum_commit_probe `
+            -q -s --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_input.py::test_real_complete_input_and_independently_approved_readback[empty-or-valid-minimum-commit-sha256]' `
+            'tests/product_config/test_git_material_cas_integration.py::test_complete_cas_material_original_owner_and_independent_readback[legal-minimum-commit-sha256]'
+          exit $LASTEXITCODE

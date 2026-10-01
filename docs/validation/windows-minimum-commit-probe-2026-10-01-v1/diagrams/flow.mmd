@@ -1,0 +1,15 @@
+flowchart TD
+  Start[显式加载与精确两节点] --> Install[安装13透明接点]
+  Install --> Run[原run设置Operation Context]
+  Run --> Call[原参数调用原函数一次]
+  Call --> Project[有界内存白名单投影]
+  Project --> Original[原结果或原异常原样返回]
+  Original --> Cleanup[原fixture清理并撤销包装]
+  Cleanup --> Need{write未自然完成且已结束}
+  Need -->|否| Publish[teardown后低敏JSON]
+  Need -->|是| Gate{同handle缓存exited且原保护存在}
+  Gate -->|否| Missing[明确unavailable]
+  Gate -->|是| Once[至多一次原回执 raw及proof读取]
+  Once --> Publish
+  Missing --> Publish
+  Publish --> Exit[保留原pytest退出码]

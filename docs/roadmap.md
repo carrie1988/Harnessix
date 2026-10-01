@@ -1356,3 +1356,14 @@ Windows材料组2失败／1289通过／6跳过，303.12秒达到原五分钟期�
 来源认证端口没有新增默认工具、数据库、Git写入或备份迁移，不证明对象业务角色、完整前缀及独立尾锚。
 后继完整Review Artifact与新批准、双受管工作树、派生事务、默认Checkpoint/Commit、Backup v2和新根重授权继续实施；
 R3真实20 Trial、Windows11消费者、独立Beta及同候选R1～R6商用门禁继续开放。
+
+### R1/R4：最低SHA256 Commit单次原生诊断
+
+[详细设计](changes/m09-r4-windows-minimum-commit-probe.md)新增显式pytest插件和manual-only Windows载体，
+精确限定原两个失败节点，保留原20秒命令／45秒操作／五分钟步骤、完整材料和pytest退出码。
+13接点只调用原函数一次，原返回／异常不改；同调用有界内存投影后，在原清理完成后至多一次同句柄只读补取。
+缓存Lease、原MAC终态回执、完整raw、严格proof和整体运行分层记录，缺能力／skipped／UNKNOWN不记通过。
+[统一验证包](validation/windows-minimum-commit-probe-2026-10-01-v1/README.md)冻结1255件代码输入，
+本机59治理负对照及原两个实际用例通过；单次Windows Run与底层因果必须另取实际记录，不能从本机通过推导。
+不修改生产、原测试、默认插件或正式CI，不增加付费模型、预算、Docker或自动重跑；
+已发布认证端口与完整Git产品后继按原计划继续，R1～R6商用门禁保持开放。

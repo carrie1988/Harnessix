@@ -1,0 +1,103 @@
+{
+  "schema": "harnessix.validation-review-packet/v1",
+  "status": "complete_no_actionable_findings_static_only",
+  "p0_count": 0,
+  "p1_count": 0,
+  "p2_count": 0,
+  "inputs_before_after_equal": true,
+  "reference_artifacts_before_after_equal": true,
+  "original_artifacts_preserved": true,
+  "bindings": [
+    {
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "bytes": 24239,
+      "sha256": "6d797f1b45b496a2b39a932a07cc7591374a740437a97b7c99499efe9c45ab4b"
+    },
+    {
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "bytes": 14301,
+      "sha256": "4a57c465ffc27126fee770d85e92eaedc1a5bb7d3b422d5ee93409389ebf10b0"
+    },
+    {
+      "path": "src/harnessix/processes/supervisor.py",
+      "bytes": 28048,
+      "sha256": "51d0347fda238165c6a30d85507f481d61da983df1af058c2a9ebaf2aa09e28d"
+    },
+    {
+      "path": "src/harnessix/processes/receipt_projection.py",
+      "bytes": 3224,
+      "sha256": "5a0ae22ffa231d404b873ce62685bca2fbca1a0a5ec2f47a620fbe909973ad40"
+    },
+    {
+      "path": "src/harnessix/processes/owner_receipt.py",
+      "bytes": 15901,
+      "sha256": "d60bc1bcbf23b8c7ab83339925d5da9fc256ec8f4d00c14430e3560af8b73610"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_input_contracts.py",
+      "bytes": 16104,
+      "sha256": "3694cfe699265f7fd776227347d6a231c9bb2e32e8312963a815bba59f1f07c5"
+    },
+    {
+      "path": "src/harnessix/agent/errors.py",
+      "bytes": 3652,
+      "sha256": "65c0d9f5a3cc7d9adc05e836a73ea38c372f25606f98cc9bf9467a6553e4c67f"
+    },
+    {
+      "path": "tests/product_config/test_git_delivery_process.py",
+      "bytes": 47912,
+      "sha256": "93c0fce8115671daccfb3b443865fe66ea46847327f40c34369cd0d94db4483f"
+    },
+    {
+      "path": "tests/product_config/test_git_material_input.py",
+      "bytes": 19240,
+      "sha256": "f8ffb6eb10e16e96a7f8a2c31054befb48aec26684589f57aa123b5724fdf098"
+    },
+    {
+      "path": "tests/product_config/test_git_material_cas_integration.py",
+      "bytes": 2790,
+      "sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 2149,
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 14466,
+      "sha256": "b5c250a5bdb76954892c3f84a0eb3ed98a6e5143cd6e02fb406f8b3fc05f2e2e"
+    },
+    {
+      "path": ".github/workflows/installed-product-acceptance.yml",
+      "bytes": 10794,
+      "sha256": "62cb005c833e88920134253fe675504afd14c73edfacb243b90e5635d2f3bcee"
+    },
+    {
+      "path": ".github/workflows/windows-git-minimum-commit-probe.yml",
+      "bytes": 1821,
+      "sha256": "8006ea42566eac14c7e6946e7c243df7cf2f101d61abb86a96bbb7c2588ab616"
+    },
+    {
+      "path": "tests/product_config/git_minimum_commit_probe.py",
+      "bytes": 19633,
+      "sha256": "35dc074041def8643c4ec657e0a5f20005b7ed964238515ceae83f4c7c4d8084"
+    },
+    {
+      "path": "tests/governance/test_git_minimum_commit_probe.py",
+      "bytes": 18473,
+      "sha256": "4760fdccaa59c54c2d29592c19d52bbd1126fd967941dab9162b3560a0eb4b9b"
+    }
+  ],
+  "report": {
+    "bytes": 19661,
+    "sha256": "79c92bb515e4f180b12791c1390070ef01d1366b5c7a6403febe846d4c9e6973"
+  },
+  "summary": {
+    "bytes": 41374,
+    "sha256": "0962648e0fa8fd4462391d65a29298ecdf66d7b4db80cd1d23da40e255aa1b4d"
+  },
+  "review_runtime_tests_or_dispatches": 0,
+  "native_gate_complete": false,
+  "remaining": "single_native_Run_and_failure_cause_then_actual_production_fix_and_release_acceptance"
+}

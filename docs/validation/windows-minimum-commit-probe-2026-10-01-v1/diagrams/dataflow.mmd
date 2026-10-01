@@ -1,0 +1,12 @@
+flowchart LR
+  Original[原方法返回及原异常] --> Select[严格类型及固定值白名单]
+  Cached[原缓存Lease] --> Select
+  Receipt[原API认证V2回执] --> Select
+  Raw[原完整字节守卫结果] --> Select
+  Proof[原严格proof解码] --> Select
+  Select --> Memory[有限事件与Operation记录]
+  Memory --> JSON[至多64KiB JSON]
+  JSON --> Log[固定前缀Actions日志]
+  Missing[失败或缺能力] --> Flag[incomplete或unavailable]
+  Flag --> JSON
+  Original --> Outcome[原测试结果 不重写]
