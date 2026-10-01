@@ -1,0 +1,10 @@
+flowchart TB
+    Declared[普通完整Inventory声明] --> Frozen[原快照 与完整内容SHA]
+    Frozen --> Ref[七字段材料引用]
+    Ref --> Body[(原私有CAS完整body)]
+    Body --> Typed[真实type长度头OID 正文SHA和长度]
+    Typed --> Edges[完整实际tree或commit直接引用]
+    Edges --> Catalog[新实际节点catalog 无正文]
+    Catalog --> Closure[两根完整闭包与八项原metrics]
+    Closure --> Plain[末次普通Inventory 无MAC和批准]
+    Plain -. 另行权威加载 .-> Future[(后继GitDB全前缀与Backup v2)]

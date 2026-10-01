@@ -1,0 +1,28 @@
+{
+  "schema": "harnessix.code-inventory-delta/v1",
+  "baseline_revision": "871dc3c12deb5fbea227af3dd628b39fea545622",
+  "baseline_complete_code_inputs": 1263,
+  "baseline_inventory_sha256": "d0893d9e14a310cd6a75bc506715c01ee529bfa0ce0e6863c8126d58b68499c2",
+  "additions": [
+    {
+      "path": "src/harnessix/delivery/git_inventory_materials.py",
+      "bytes": 5996,
+      "sha256": "7231d19260dc7c046d52c346ed8fd55302ad483efae46416ad24a7cc66072cfc"
+    },
+    {
+      "path": "tests/delivery/test_git_inventory_materials.py",
+      "bytes": 23861,
+      "sha256": "914a7d69b044e5e8679367dc56da8e704847c0a9befcfdd863b1ae31bf0ad430"
+    },
+    {
+      "path": "tests/delivery/test_git_inventory_materials_capacity.py",
+      "bytes": 2933,
+      "sha256": "b4dbc0b40ba9dca6e0fedb5fc85d4fe3485ca9169d0b0d0300bfb2fbe9e7179b"
+    }
+  ],
+  "complete_code_inputs": 1266,
+  "complete_inventory_sha256": "0d64465963c96a15e49b8b14132329430d558affd73137f3b9841476dcf20c38",
+  "retained_existing_production_members": 471,
+  "excluded_ntfs_prototype": true,
+  "primary_user_untracked_accessed": false
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "harnessix.git-inventory-materials-verification/v1",
+  "code_inputs": 1266,
+  "complete_code_inventory_sha256": "0d64465963c96a15e49b8b14132329430d558affd73137f3b9841476dcf20c38",
+  "same_single_wheel_sha256": "5810f911ec234627e04bf7d22c648deef02711e3fcb6de1196bb7ee88735dddb",
+  "package_members": 472,
+  "python_modules": 431,
+  "source_related": {
+    "passed": 2009,
+    "skipped": 23,
+    "failures": 0
+  },
+  "installed312": {
+    "passed": 2009,
+    "skipped": 23,
+    "failures": 0
+  },
+  "installed313": {
+    "passed": 2009,
+    "skipped": 23,
+    "failures": 0
+  },
+  "governance": {
+    "passed": 492,
+    "failures": 0
+  },
+  "independent_review": {
+    "status": "passed",
+    "original_passed": 289,
+    "independent_passed": 77,
+    "P0": 0,
+    "P1": 0,
+    "P2": 0
+  },
+  "documentation": "passed",
+  "secret_scan": "passed",
+  "actual_full_8mib_tree_tests_passed": 4,
+  "native_windows": "not_verified",
+  "full_w1": "not_complete",
+  "r3": "open",
+  "commercial_1_0": "not_ready",
+  "static_checks": "passed"
+}

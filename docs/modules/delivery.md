@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 29
-code_revision: 9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c
+version: 30
+code_revision: 871dc3c12deb5fbea227af3dd628b39fea545622
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_inventory_materials.py
+  - tests/delivery/test_git_inventory_materials_capacity.py
   - tests/delivery/test_git_inventory_contracts.py
   - tests/delivery/test_git_inventory_wire.py
   - tests/delivery/test_git_object_references.py
@@ -1785,6 +1787,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 30 | `871dc3c12deb5fbea227af3dd628b39fea545622` | 2026-10-01 | 同步完整对象目录实际CAS回读、七字段／直接边、两树／并集核验及原8MiB tree补验；来源、授权及默认交付另行接线 |
 | 29 | `9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c` | 2026-10-01 | 同步七个完整对象目录模型、八个纯接口、规范字节、失败／取消与后继CAS及业务授权边界；固定新增源码身份见专项验证包 |
 | 18 | `6a686fdd00162babd0dbaa8b0785186dd15c3cbc` | 2026-09-29 | 发布Workspace Patch操作必填Schema与描述；焦点及受影响双Python通过，原校验/序列化/旧批准拒绝保持；线上认证另行验证 |
 | 7 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b直接Trusted Git Push由CI 35442924441完成七任务全矩阵验收并关闭 |
@@ -2046,7 +2049,34 @@ wire使用排序键、紧凑JSON、完整UTF-8及`name_hex`无损名称；完整
 架构图、流程图、时序图、数据流图、伪代码、错误与实际输入身份见
 [总体与详细设计](../changes/m09-r4-git-object-inventory-contract.md)和
 [正式验证包](../validation/git-object-inventory-contract-2026-10-01-v1/README.md)。
-实际CAS全图验真、受信来源装载、GitDB完整认证前缀、独立新批准、默认Commit／Checkpoint、
+实际CAS全图验真的默认产品装配、受信来源装载、GitDB完整认证前缀、独立新批准、默认Commit／Checkpoint、
 Backup v2及新根重授权仍依照
 [完整产品设计](../changes/m09-r4-git-delivery-business-backup-closure.md)继续实施。
 本增量无数据库迁移、服务或依赖变更，不关闭Windows失败、R3真实质量或商用R1～R6。
+
+## Git完整对象目录实际材料验真
+
+[`verify_git_inventory_materials`](../../src/harnessix/delivery/git_inventory_materials.py)
+先沿原严格snapshot重建完整声明，逐个原CAS成员完整回读，从实际body重建Git类型头OID及七字段引用。
+原tree／commit解析结果必须与声明名称、mode、child、tree及有序重复parent逐项相等，
+不能用规范目录SHA替代真实正文。随后原两根闭包完整观察base与target，核对每个引用、正文量、
+逐路径展开与深度，两树加业务commit根精确等于完整catalog，末次snapshot再次核对角色、指标与原完整SHA。
+
+四个私有职责依次为`_read_object`、`_actual_closure`、`_complete_union`及入口编排；
+输入是原`GitMaterialCAS`、不可信普通Inventory与同一checkpoint，结果是新普通Inventory，
+没有body／nonce／MAC／批准，也不创建原Store。宿主负责正确Store装配和生命周期，
+精确包装器类型不是Store归属证明或Python同进程攻击者隔离。
+
+原CAS、解析、closure及W0固定错误直接传播；实际内容不符产生固定`git_inventory_materials_mismatch`，
+坏端口产生`git_inventory_materials_invalid`。同一个checkpoint贯穿前后IO及原接口，
+异常保留原对象，无新预算／重试／延长期限；系统IO不可抢占，跨对象观察不原子。
+函数无Git／Ref／CAS／SQL写入，外部历史父不fetch；材料准备发生在调用前，不算验真函数写效果。
+
+[`test_git_inventory_materials.py`](../../tests/delivery/test_git_inventory_materials.py)使用原真实SQLite CAS
+验证完整正反例、两类型同body、引用伪造、预算、取消身份与零写；
+[`test_git_inventory_materials_capacity.py`](../../tests/delivery/test_git_inventory_materials_capacity.py)
+补真实完整8MiB tree及全部叶路径，逻辑Windows参数不是原生Windows。
+总体方案、四图完整说明、接口／字段／伪代码／异常／部署与测试见
+[详细设计](../changes/m09-r4-git-object-inventory-materials.md)。
+本内容组件不验证产品来源、Owner、Key、完整账本或新批准，不代表耐久／效果／完整W1。
+实际受信装载、默认Commit／Checkpoint、Backup v2与Windows原生收口仍依原完整产品计划实施。

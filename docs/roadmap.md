@@ -1429,3 +1429,14 @@ stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以
 
 最终职责整改静态独立审查完成，未发现指定增量P0／P1／P2，实际测试执行零；原261通过单独归属。
 现行Delivery模块设计已同步七模型、八接口和纯声明／实际CAS／权威边界，原文档拒绝记录保留。
+
+### R4：完整对象目录实际CAS内容验真
+
+[总体与详细设计](changes/m09-r4-git-object-inventory-materials.md)复用原CAS全成员完整回读、
+真实Git类型头OID／七字段、原直接tree／commit边、两根完整闭包及全目录并集。
+同一checkpoint、原8MiB单体及显式limits保持，无Git／Ref／CAS／SQL写入，不签发授权。
+新增主组91项与既有785项共876通过，另4项真实8MiB tree、全部30841叶路径及两路径合同补验通过。
+新固定1266代码输入下，源码与同Wheel源码外Python3.12／3.13各2009通过／23跳过；
+431模块类型检查、全Ruff／1488格式及修正报告可选元数据后的492治理通过，原失败保留。
+内容验真不证明Store／Owner／Key归属、完整认证前缀或新批准；受信装载、默认Commit／Checkpoint、
+Backup v2、Windows原生失败及R3／Beta／商用门禁仍按原完整产品目标继续。

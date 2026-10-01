@@ -55,7 +55,10 @@ R4新增[已发布Patch的Git交付来源绑定](docs/changes/m09-r4-product-git
 
 [Git对象目录契约](docs/changes/m09-r4-git-object-inventory-contract.md)提供七个不可变模型、
 完整规范字节、声明图闭合及内容摘要；不是实际CAS验真、认证账本尾锚或执行授权。
-完整Git产品交付仍需实际材料、权威归属、全前缀、新批准及Backup v2接线。
+完整Git产品交付仍需将实际材料验真与权威归属、全前缀、新批准及Backup v2正式接线。
+
+[完整目录实际材料验真](docs/changes/m09-r4-git-object-inventory-materials.md)复用原CAS逐件回读、
+实际直接边及两根完整树观察；内部内容接口不等于受信来源、批准或默认Commit/Checkpoint。
 
 [Git材料Worker有限首失败观察](docs/changes/m09-r4-git-worker-failure-observation.md)区分清理前首失败与最终捕获，
 不改变成功proof、父端UNKNOWN或原执行权限；本机回归不能替代Windows修复及商用验收。

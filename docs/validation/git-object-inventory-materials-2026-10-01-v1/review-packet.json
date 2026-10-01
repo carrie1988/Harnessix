@@ -1,0 +1,144 @@
+{
+  "schema": "harnessix.git-inventory-materials-review/v1",
+  "review_type": "维护者源级语义整合及另行独立内容验真审查",
+  "reviewed_source_paths": [
+    "src/harnessix/delivery/git_inventory_materials.py",
+    "tests/delivery/test_git_inventory_materials.py",
+    "tests/delivery/test_git_inventory_materials_capacity.py"
+  ],
+  "findings": [],
+  "full_catalog_read_and_actual_direct_refs": true,
+  "whole_base_target_and_commit_union": true,
+  "same_original_checkpoint_and_limits": true,
+  "store_ownership_not_claimed": true,
+  "returned_inventory_not_capability": true,
+  "cross_object_atomic_snapshot_not_claimed": true,
+  "independent_review": {
+    "status": "passed_within_content_verification_scope",
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "actual_original_tests_passed": 289,
+    "actual_independent_tests_passed": 77,
+    "actual_final_unique_cases": 366,
+    "test_coverage_not_additive_to_parent": true,
+    "selected_six_inputs": {
+      "src/harnessix/delivery/git_inventory_contracts.py": {
+        "before": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199",
+        "after": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199",
+        "unchanged": true
+      },
+      "src/harnessix/delivery/git_inventory_wire.py": {
+        "before": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352",
+        "after": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352",
+        "unchanged": true
+      },
+      "src/harnessix/delivery/git_inventory_materials.py": {
+        "before": "7231d19260dc7c046d52c346ed8fd55302ad483efae46416ad24a7cc66072cfc",
+        "after": "7231d19260dc7c046d52c346ed8fd55302ad483efae46416ad24a7cc66072cfc",
+        "unchanged": true
+      },
+      "tests/delivery/test_git_inventory_contracts.py": {
+        "before": "d2a8564d097701a2f1cb9341b2e59dc242f337d49a92b1fc822a39f08295d7de",
+        "after": "d2a8564d097701a2f1cb9341b2e59dc242f337d49a92b1fc822a39f08295d7de",
+        "unchanged": true
+      },
+      "tests/delivery/test_git_inventory_wire.py": {
+        "before": "6b5ab7ec3e7e39c82e3945b289298a426e40dab3ab07645709abc22b92e99731",
+        "after": "6b5ab7ec3e7e39c82e3945b289298a426e40dab3ab07645709abc22b92e99731",
+        "unchanged": true
+      },
+      "tests/delivery/test_git_inventory_materials.py": {
+        "before": "914a7d69b044e5e8679367dc56da8e704847c0a9befcfdd863b1ae31bf0ad430",
+        "after": "914a7d69b044e5e8679367dc56da8e704847c0a9befcfdd863b1ae31bf0ad430",
+        "unchanged": true
+      }
+    },
+    "all_12_fixed_inputs_unchanged": true,
+    "report": {
+      "bytes": 12877,
+      "sha256": "b3476e6753f199528d44c1b38a5e7cee88beffd35b003caa4f8f1605d6210e34"
+    },
+    "summary": {
+      "bytes": 11980,
+      "sha256": "b06fedd389370f41e92c2621bbe81cb0e5439bf6f4e2a7ddd83b78573fff64f0"
+    },
+    "original_replay": {
+      "result": {
+        "tests": 289,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 289
+      },
+      "junit": {
+        "bytes": 33527,
+        "sha256": "bf03b62588028fe63d06c08e01885918109984e1b2e38b846df8aebf56d73627"
+      },
+      "log": {
+        "bytes": 592,
+        "sha256": "b8e81c928b52d5163c99c30cd1108f2bf10315c12fef2156431f4e601cab82a9"
+      }
+    },
+    "independent_final": {
+      "result": {
+        "tests": 77,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 77
+      },
+      "junit": {
+        "bytes": 10754,
+        "sha256": "7b852ca8a5f97da2723a5499a74180934bb9b0cfb78eb50a92b08db83a8b4ec9"
+      },
+      "log": {
+        "bytes": 347,
+        "sha256": "38968ac574ba0cb2f90d01812c85da4f108fba7a867a5b7863a320f55f39107a"
+      }
+    },
+    "retained_review_harness_failures": [
+      {
+        "name": "original",
+        "result": {
+          "tests": 289,
+          "failures": 0,
+          "errors": 91,
+          "skipped": 0,
+          "passed": 198
+        },
+        "junit": {
+          "bytes": 131619,
+          "sha256": "066b374f405191806605854a8cde28bcdceeb8a457eee15d7ba1affaf8d36024"
+        },
+        "log": {
+          "bytes": 84261,
+          "sha256": "823a0834d763cccad217ff8a2d7ac957b7fc61d5ba8431e49c09d7f41e834691"
+        }
+      },
+      {
+        "name": "peer",
+        "result": {
+          "tests": 71,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "passed": 70
+        },
+        "junit": {
+          "bytes": 11930,
+          "sha256": "bbd4aa3bc776adec8ad207b82fcebe282ebd383b71e6736814cfe270200acf9d"
+        },
+        "log": {
+          "bytes": 2642,
+          "sha256": "19d6a83aeec6565759bc8534618485790c6bfa5fdc0f09d4cf6c90e8f5e668ad"
+        }
+      }
+    ],
+    "review_harness_corrections": "首轮私有basetemp父目录缺失及负对照role实际未变；只修私有验证环境／测试，不改仓库",
+    "capacity_test_not_independently_reviewed": true,
+    "store_authority_ledger_durability_native_acceptance_not_claimed": true
+  }
+}

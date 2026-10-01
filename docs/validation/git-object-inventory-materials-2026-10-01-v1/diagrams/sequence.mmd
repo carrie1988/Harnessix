@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant H as 内部调用方
+    participant V as 材料验真端口
+    participant S as 原严格目录快照
+    participant C as 原CAS完整读取
+    participant P as 原解析与树闭包
+    H->>V: CAS 完整声明 原checkpoint
+    V->>S: 深层重建及声明图验证
+    S-->>V: 新declared或固定错误
+    loop 全部目录成员
+        V->>C: 原reference完整回读
+        C-->>V: 完整material或原读错误
+        V->>P: 实际body解析直接边
+        P-->>V: 完整引用或原解析错误
+    end
+    V->>P: base与target原完整闭包
+    P->>C: 再次完整观察必要成员
+    P-->>V: 实际闭包与统计
+    V->>S: 实际并集及末次全图快照
+    V-->>H: 新普通Inventory或原异常

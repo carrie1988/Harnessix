@@ -1,0 +1,10 @@
+flowchart TB
+    Caller[内部调用方的CAS与不可信目录] --> Freeze[原严格目录快照]
+    Freeze --> Member[全成员完整回读与实际类型OID]
+    CAS[(原Workspace CAS)] --> Member
+    Member --> Parse[原tree和commit完整直接引用解析]
+    Parse --> Roots[原base与target完整树闭包]
+    CAS --> Roots
+    Roots --> Union[完整并集及统计复核]
+    Union --> Result[末次严格快照 返回普通元数据]
+    Result -. 后继正式接线 .-> Authority[受信来源与认证账本 完整Review和新批准]

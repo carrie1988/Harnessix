@@ -1,0 +1,10 @@
+flowchart TB
+    Begin[原checkpoint与声明严格快照] --> Port[精确CAS包装器类型]
+    Port --> Read[逐对象checkpoint 完整CAS回读]
+    Read --> Identity[实际类型头OID与七字段引用相等]
+    Identity --> Direct[原实际解析完整直接边 与声明相等]
+    Direct --> Next{还有目录成员}
+    Next -->|有| Read
+    Next -->|无| Trees[两根原完整树闭包与统计]
+    Trees --> Complete[实际并集精确等完整catalog]
+    Complete --> End[末次原严格快照与checkpoint]
