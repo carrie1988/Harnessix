@@ -6438,7 +6438,7 @@
   "paid_model_requests": 0,
   "credential_reads": 0,
   "docker_operations": 0,
-  "native_workflow_dispatched": false,
+  "native_workflow_dispatched": true,
   "windows_cause_proven": false,
   "commercial_gates_closed": false,
   "original_windows_failure": {
@@ -6517,5 +6517,636 @@
     "log_sha256": "40ed324f96bb195a9fe7c0686cfcee1d2e5d9fd578f9ea3bbad8563f4fca14f2",
     "log_bytes": 15289,
     "proof_sha256": "0aee1e03fc929ced3f813aaf3af508c85e3ff4044ceae628e4155c4610acf20c"
+  },
+  "prior_publication": {
+    "revision": "d0ca482ca6adc7a1373eb3cb0fe2a11b25380fd7",
+    "facts": {
+      "bytes": 252227,
+      "sha256": "ba5e2ff00348b1eba9d8cc35a78f8d7f93e5bd6ea974be77e4191fd2c841f946"
+    },
+    "native_workflow_dispatched": false,
+    "scope": "initial_local_validation_preserved_in_git_not_rewritten_as_native_pass"
+  },
+  "native_run": {
+    "run_id": 36836260240,
+    "job_id": 110284287913,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36836260240",
+    "revision": "d0ca482ca6adc7a1373eb3cb0fe2a11b25380fd7",
+    "attempt": 1,
+    "business_passed": 0,
+    "business_failed": 2,
+    "business_skipped": 0,
+    "diagnostic_records": 2,
+    "both_diagnostics_complete": true,
+    "run_conclusion": "failure",
+    "original_phase": "exit_gate_git_command_failed_then_strong_effect_unknown",
+    "records": [
+      {
+        "schema": "harnessix.minimum-commit-probe/v1",
+        "selector": "A",
+        "platform": "win32",
+        "source_sha256": {
+          "harnessix.product_config.git_delivery_process": "7d9ba56339ccaa3feb6a5c0445fb25e5c7b2b5b3d232c30ed786dbaf0d3e90c5",
+          "harnessix.product_config.git_material_process": "bc426d01ebf6e8b0ba6a1c60ef772604a7f95b9c3604cc0a510b137d28b21cb9",
+          "harnessix.processes.supervisor": "e17c9d37dca8a69263e9b418ec712bd784557dc065fa2f2c8fa3812b0b669d4b",
+          "tests.product_config.test_git_delivery_process": "47d0e7dea83414de35b44a1a40f477902757db126f5d2927c1d6ce885dca113a",
+          "tests.product_config.test_git_material_input": "7af6e96c8e341d20c2f67d1576e47d782f0ace5bfd205fb0f993f294fcc8204c",
+          "tests.product_config.test_git_material_cas_integration": "7af3b773df7813403de9291ba6c1aefea1ca2d80481b06fa23229991ab690b23",
+          "tests.product_config.git_minimum_commit_probe": "ca3d3319882dcb34f45f77023611d0b633ba42341e21f18615dcbdc7439a0570"
+        },
+        "outcomes": {
+          "setup": "passed",
+          "call": "failed",
+          "teardown": "passed"
+        },
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false,
+        "events": [
+          {
+            "operation": 0,
+            "phase": "operation",
+            "outcome": "enter",
+            "elapsed_ns": 500000000
+          },
+          {
+            "operation": 0,
+            "phase": "start",
+            "outcome": "enter",
+            "elapsed_ns": 547000000
+          },
+          {
+            "operation": 0,
+            "phase": "start",
+            "outcome": "return",
+            "elapsed_ns": 891000000
+          },
+          {
+            "operation": 0,
+            "phase": "stage",
+            "outcome": "enter",
+            "elapsed_ns": 891000000
+          },
+          {
+            "operation": 0,
+            "phase": "stage",
+            "outcome": "return",
+            "elapsed_ns": 907000000
+          },
+          {
+            "operation": 0,
+            "phase": "send",
+            "outcome": "enter",
+            "elapsed_ns": 907000000
+          },
+          {
+            "operation": 0,
+            "phase": "send",
+            "outcome": "return",
+            "elapsed_ns": 907000000
+          },
+          {
+            "operation": 0,
+            "phase": "close",
+            "outcome": "enter",
+            "elapsed_ns": 907000000
+          },
+          {
+            "operation": 0,
+            "phase": "close",
+            "outcome": "return",
+            "elapsed_ns": 907000000
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "enter",
+            "elapsed_ns": 907000000
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "return",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "complete",
+            "outcome": "enter",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "exit_gate",
+            "outcome": "enter",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "exit_gate",
+            "outcome": "error",
+            "elapsed_ns": 1188000000,
+            "error_chain": [
+              {
+                "type": "KernelError",
+                "code": "git_command_failed",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": false
+              }
+            ]
+          },
+          {
+            "operation": 0,
+            "phase": "complete",
+            "outcome": "error",
+            "elapsed_ns": 1188000000,
+            "error_chain": [
+              {
+                "type": "KernelError",
+                "code": "git_command_failed",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": false
+              }
+            ]
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "enter",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "return",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "outer_exit",
+            "outcome": "enter",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "outer_exit",
+            "outcome": "return",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "cleanup",
+            "outcome": "enter",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "cleanup",
+            "outcome": "return",
+            "elapsed_ns": 1188000000
+          },
+          {
+            "operation": 0,
+            "phase": "operation",
+            "outcome": "error",
+            "elapsed_ns": 1188000000,
+            "error_chain": [
+              {
+                "type": "KernelError",
+                "code": "git_material_effect_unknown",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": true
+              },
+              {
+                "type": "KernelError",
+                "code": "git_material_effect_unknown",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": true
+              },
+              {
+                "type": "KernelError",
+                "code": "git_command_failed",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": false
+              }
+            ]
+          }
+        ],
+        "installed_hooks": 13,
+        "operations": [
+          {
+            "kind": "write",
+            "post_status": "raw_verified_only",
+            "original_operation_returned": false,
+            "input": {
+              "object_format": "sha256",
+              "object_type": "commit",
+              "body_bytes": 184,
+              "body_sha256": "c67e1ffebd4d1e35175ac5bcf18204519aa1d1ddb39cf4f9820738dbad988f83",
+              "expected_oid": "91bd7f83eff4af0890282b4c4de217e73d86a892cde4728cbaa54ddbc2f36215",
+              "target_fanout": "91"
+            },
+            "lease": {
+              "state": "exited",
+              "stop_reason": "exited",
+              "returncode": 2,
+              "pid": 6624,
+              "sequence": 3,
+              "provenance": "cached_lease_snapshot"
+            },
+            "post_receipt": {
+              "state": "exited",
+              "stop_reason": "exited",
+              "returncode": 2,
+              "pid": 6624,
+              "provenance": "terminal_receipt_authenticated",
+              "owner_receipt_sequence": 3,
+              "raw_stdout": {
+                "observed_bytes": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "eof": true
+              },
+              "raw_stderr": {
+                "observed_bytes": 289,
+                "sha256": "a2a195eb797c9e0672a2c0ce5af9ed1cbbff0a9de5c2a8126b74dd58699eaa51",
+                "eof": true
+              }
+            },
+            "post_raw": {
+              "stdout": {
+                "bytes": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "eof": true,
+                "full_raw_verified": true
+              },
+              "stderr": {
+                "bytes": 289,
+                "sha256": "a2a195eb797c9e0672a2c0ce5af9ed1cbbff0a9de5c2a8126b74dd58699eaa51",
+                "eof": true,
+                "full_raw_verified": true
+              }
+            },
+            "post_proof": {
+              "status": "absent"
+            }
+          }
+        ]
+      },
+      {
+        "schema": "harnessix.minimum-commit-probe/v1",
+        "selector": "B",
+        "platform": "win32",
+        "source_sha256": {
+          "harnessix.product_config.git_delivery_process": "7d9ba56339ccaa3feb6a5c0445fb25e5c7b2b5b3d232c30ed786dbaf0d3e90c5",
+          "harnessix.product_config.git_material_process": "bc426d01ebf6e8b0ba6a1c60ef772604a7f95b9c3604cc0a510b137d28b21cb9",
+          "harnessix.processes.supervisor": "e17c9d37dca8a69263e9b418ec712bd784557dc065fa2f2c8fa3812b0b669d4b",
+          "tests.product_config.test_git_delivery_process": "47d0e7dea83414de35b44a1a40f477902757db126f5d2927c1d6ce885dca113a",
+          "tests.product_config.test_git_material_input": "7af6e96c8e341d20c2f67d1576e47d782f0ace5bfd205fb0f993f294fcc8204c",
+          "tests.product_config.test_git_material_cas_integration": "7af3b773df7813403de9291ba6c1aefea1ca2d80481b06fa23229991ab690b23",
+          "tests.product_config.git_minimum_commit_probe": "ca3d3319882dcb34f45f77023611d0b633ba42341e21f18615dcbdc7439a0570"
+        },
+        "outcomes": {
+          "setup": "passed",
+          "call": "failed",
+          "teardown": "passed"
+        },
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false,
+        "events": [
+          {
+            "operation": 0,
+            "phase": "operation",
+            "outcome": "enter",
+            "elapsed_ns": 438000000
+          },
+          {
+            "operation": 0,
+            "phase": "start",
+            "outcome": "enter",
+            "elapsed_ns": 485000000
+          },
+          {
+            "operation": 0,
+            "phase": "start",
+            "outcome": "return",
+            "elapsed_ns": 844000000
+          },
+          {
+            "operation": 0,
+            "phase": "stage",
+            "outcome": "enter",
+            "elapsed_ns": 844000000
+          },
+          {
+            "operation": 0,
+            "phase": "stage",
+            "outcome": "return",
+            "elapsed_ns": 860000000
+          },
+          {
+            "operation": 0,
+            "phase": "send",
+            "outcome": "enter",
+            "elapsed_ns": 860000000
+          },
+          {
+            "operation": 0,
+            "phase": "send",
+            "outcome": "return",
+            "elapsed_ns": 860000000
+          },
+          {
+            "operation": 0,
+            "phase": "close",
+            "outcome": "enter",
+            "elapsed_ns": 860000000
+          },
+          {
+            "operation": 0,
+            "phase": "close",
+            "outcome": "return",
+            "elapsed_ns": 860000000
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "enter",
+            "elapsed_ns": 860000000
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "return",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "complete",
+            "outcome": "enter",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "exit_gate",
+            "outcome": "enter",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "exit_gate",
+            "outcome": "error",
+            "elapsed_ns": 1125000000,
+            "error_chain": [
+              {
+                "type": "KernelError",
+                "code": "git_command_failed",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": false
+              }
+            ]
+          },
+          {
+            "operation": 0,
+            "phase": "complete",
+            "outcome": "error",
+            "elapsed_ns": 1125000000,
+            "error_chain": [
+              {
+                "type": "KernelError",
+                "code": "git_command_failed",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": false
+              }
+            ]
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "enter",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "wait",
+            "outcome": "return",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "outer_exit",
+            "outcome": "enter",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "outer_exit",
+            "outcome": "return",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "cleanup",
+            "outcome": "enter",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "cleanup",
+            "outcome": "return",
+            "elapsed_ns": 1125000000
+          },
+          {
+            "operation": 0,
+            "phase": "operation",
+            "outcome": "error",
+            "elapsed_ns": 1125000000,
+            "error_chain": [
+              {
+                "type": "KernelError",
+                "code": "git_material_effect_unknown",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": true
+              },
+              {
+                "type": "KernelError",
+                "code": "git_material_effect_unknown",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": true
+              },
+              {
+                "type": "KernelError",
+                "code": "git_command_failed",
+                "code_unrecognized": false,
+                "errno": null,
+                "winerror": null,
+                "suppress_context": false
+              }
+            ]
+          }
+        ],
+        "installed_hooks": 13,
+        "operations": [
+          {
+            "kind": "write",
+            "post_status": "raw_verified_only",
+            "original_operation_returned": false,
+            "input": {
+              "object_format": "sha256",
+              "object_type": "commit",
+              "body_bytes": 184,
+              "body_sha256": "c67e1ffebd4d1e35175ac5bcf18204519aa1d1ddb39cf4f9820738dbad988f83",
+              "expected_oid": "91bd7f83eff4af0890282b4c4de217e73d86a892cde4728cbaa54ddbc2f36215",
+              "target_fanout": "91"
+            },
+            "lease": {
+              "state": "exited",
+              "stop_reason": "exited",
+              "returncode": 2,
+              "pid": 7756,
+              "sequence": 3,
+              "provenance": "cached_lease_snapshot"
+            },
+            "post_receipt": {
+              "state": "exited",
+              "stop_reason": "exited",
+              "returncode": 2,
+              "pid": 7756,
+              "provenance": "terminal_receipt_authenticated",
+              "owner_receipt_sequence": 3,
+              "raw_stdout": {
+                "observed_bytes": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "eof": true
+              },
+              "raw_stderr": {
+                "observed_bytes": 289,
+                "sha256": "498a46e53cedd119cd6411054869cba594401c0de5feedfe33d2a02321711901",
+                "eof": true
+              }
+            },
+            "post_raw": {
+              "stdout": {
+                "bytes": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "eof": true,
+                "full_raw_verified": true
+              },
+              "stderr": {
+                "bytes": 289,
+                "sha256": "498a46e53cedd119cd6411054869cba594401c0de5feedfe33d2a02321711901",
+                "eof": true,
+                "full_raw_verified": true
+              }
+            },
+            "post_proof": {
+              "status": "absent"
+            }
+          }
+        ]
+      }
+    ],
+    "source_checkout_proof": {
+      "all_7_modules_match_expected_explicit_CRLF_checkout_bytes": true,
+      "native_on_disk_bytes_not_misreported_as_canonical_LF": true,
+      "modules": [
+        {
+          "module": "harnessix.product_config.git_delivery_process",
+          "path": "src/harnessix/product_config/git_delivery_process.py",
+          "canonical_git_blob_bytes": 24239,
+          "canonical_git_blob_sha256": "6d797f1b45b496a2b39a932a07cc7591374a740437a97b7c99499efe9c45ab4b",
+          "actual_windows_crlf_bytes": 24837,
+          "actual_windows_sha256": "7d9ba56339ccaa3feb6a5c0445fb25e5c7b2b5b3d232c30ed786dbaf0d3e90c5"
+        },
+        {
+          "module": "harnessix.product_config.git_material_process",
+          "path": "src/harnessix/product_config/git_material_process.py",
+          "canonical_git_blob_bytes": 14301,
+          "canonical_git_blob_sha256": "4a57c465ffc27126fee770d85e92eaedc1a5bb7d3b422d5ee93409389ebf10b0",
+          "actual_windows_crlf_bytes": 14666,
+          "actual_windows_sha256": "bc426d01ebf6e8b0ba6a1c60ef772604a7f95b9c3604cc0a510b137d28b21cb9"
+        },
+        {
+          "module": "harnessix.processes.supervisor",
+          "path": "src/harnessix/processes/supervisor.py",
+          "canonical_git_blob_bytes": 28048,
+          "canonical_git_blob_sha256": "51d0347fda238165c6a30d85507f481d61da983df1af058c2a9ebaf2aa09e28d",
+          "actual_windows_crlf_bytes": 28770,
+          "actual_windows_sha256": "e17c9d37dca8a69263e9b418ec712bd784557dc065fa2f2c8fa3812b0b669d4b"
+        },
+        {
+          "module": "tests.product_config.test_git_delivery_process",
+          "path": "tests/product_config/test_git_delivery_process.py",
+          "canonical_git_blob_bytes": 47912,
+          "canonical_git_blob_sha256": "93c0fce8115671daccfb3b443865fe66ea46847327f40c34369cd0d94db4483f",
+          "actual_windows_crlf_bytes": 49069,
+          "actual_windows_sha256": "47d0e7dea83414de35b44a1a40f477902757db126f5d2927c1d6ce885dca113a"
+        },
+        {
+          "module": "tests.product_config.test_git_material_input",
+          "path": "tests/product_config/test_git_material_input.py",
+          "canonical_git_blob_bytes": 19240,
+          "canonical_git_blob_sha256": "f8ffb6eb10e16e96a7f8a2c31054befb48aec26684589f57aa123b5724fdf098",
+          "actual_windows_crlf_bytes": 19710,
+          "actual_windows_sha256": "7af6e96c8e341d20c2f67d1576e47d782f0ace5bfd205fb0f993f294fcc8204c"
+        },
+        {
+          "module": "tests.product_config.test_git_material_cas_integration",
+          "path": "tests/product_config/test_git_material_cas_integration.py",
+          "canonical_git_blob_bytes": 2790,
+          "canonical_git_blob_sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff",
+          "actual_windows_crlf_bytes": 2843,
+          "actual_windows_sha256": "7af3b773df7813403de9291ba6c1aefea1ca2d80481b06fa23229991ab690b23"
+        },
+        {
+          "module": "tests.product_config.git_minimum_commit_probe",
+          "path": "tests/product_config/git_minimum_commit_probe.py",
+          "canonical_git_blob_bytes": 19633,
+          "canonical_git_blob_sha256": "35dc074041def8643c4ec657e0a5f20005b7ed964238515ceae83f4c7c4d8084",
+          "actual_windows_crlf_bytes": 20154,
+          "actual_windows_sha256": "ca3d3319882dcb34f45f77023611d0b633ba42341e21f18615dcbdc7439a0570"
+        }
+      ]
+    },
+    "original_log": {
+      "bytes": 69063,
+      "sha256": "4e88ecc5f018226b87f0b4ed869d50f458e9cd0ea560500706188d3c3a6df13b"
+    },
+    "records_file": {
+      "bytes": 14457,
+      "sha256": "91285097cdedc8d782fc652523d566ed8f3d0dcee890e8c5bcb31230d4b80b12"
+    },
+    "run_metadata": {
+      "bytes": 2122,
+      "sha256": "1a90a7b97d0c3ef109b70aa78e3943c5e879dffd2ed4dc4b8fe4836c2914f9af"
+    },
+    "dispatch": {
+      "commands_issued": 2,
+      "pre_execution_rejections": 1,
+      "rejection": "HTTP422_no_ref_for_raw_commit_SHA",
+      "accepted_native_runs": 1,
+      "named_ref": "codex/windows-minimum-commit-d0ca482",
+      "named_ref_sha": "d0ca482ca6adc7a1373eb3cb0fe2a11b25380fd7",
+      "automatic_run_retries": 0
+    },
+    "worker_or_git_internal_error_cause_proven": false,
+    "stderr_body_recorded_or_published": false,
+    "original_business_unknown_preserved": true
   }
 }

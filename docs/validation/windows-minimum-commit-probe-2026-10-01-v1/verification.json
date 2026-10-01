@@ -59,7 +59,105 @@
     "passed": true,
     "sha256": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938"
   },
-  "native_result": null,
+  "native_result": {
+    "run_id": 36836260240,
+    "job_id": 110284287913,
+    "revision": "d0ca482ca6adc7a1373eb3cb0fe2a11b25380fd7",
+    "attempt": 1,
+    "business_passed": 0,
+    "business_failed": 2,
+    "business_skipped": 0,
+    "diagnostic_records": 2,
+    "both_diagnostics_complete": true,
+    "run_conclusion": "failure",
+    "original_phase": "exit_gate_git_command_failed_then_strong_effect_unknown",
+    "source_checkout_proof": {
+      "all_7_modules_match_expected_explicit_CRLF_checkout_bytes": true,
+      "native_on_disk_bytes_not_misreported_as_canonical_LF": true,
+      "modules": [
+        {
+          "module": "harnessix.product_config.git_delivery_process",
+          "path": "src/harnessix/product_config/git_delivery_process.py",
+          "canonical_git_blob_bytes": 24239,
+          "canonical_git_blob_sha256": "6d797f1b45b496a2b39a932a07cc7591374a740437a97b7c99499efe9c45ab4b",
+          "actual_windows_crlf_bytes": 24837,
+          "actual_windows_sha256": "7d9ba56339ccaa3feb6a5c0445fb25e5c7b2b5b3d232c30ed786dbaf0d3e90c5"
+        },
+        {
+          "module": "harnessix.product_config.git_material_process",
+          "path": "src/harnessix/product_config/git_material_process.py",
+          "canonical_git_blob_bytes": 14301,
+          "canonical_git_blob_sha256": "4a57c465ffc27126fee770d85e92eaedc1a5bb7d3b422d5ee93409389ebf10b0",
+          "actual_windows_crlf_bytes": 14666,
+          "actual_windows_sha256": "bc426d01ebf6e8b0ba6a1c60ef772604a7f95b9c3604cc0a510b137d28b21cb9"
+        },
+        {
+          "module": "harnessix.processes.supervisor",
+          "path": "src/harnessix/processes/supervisor.py",
+          "canonical_git_blob_bytes": 28048,
+          "canonical_git_blob_sha256": "51d0347fda238165c6a30d85507f481d61da983df1af058c2a9ebaf2aa09e28d",
+          "actual_windows_crlf_bytes": 28770,
+          "actual_windows_sha256": "e17c9d37dca8a69263e9b418ec712bd784557dc065fa2f2c8fa3812b0b669d4b"
+        },
+        {
+          "module": "tests.product_config.test_git_delivery_process",
+          "path": "tests/product_config/test_git_delivery_process.py",
+          "canonical_git_blob_bytes": 47912,
+          "canonical_git_blob_sha256": "93c0fce8115671daccfb3b443865fe66ea46847327f40c34369cd0d94db4483f",
+          "actual_windows_crlf_bytes": 49069,
+          "actual_windows_sha256": "47d0e7dea83414de35b44a1a40f477902757db126f5d2927c1d6ce885dca113a"
+        },
+        {
+          "module": "tests.product_config.test_git_material_input",
+          "path": "tests/product_config/test_git_material_input.py",
+          "canonical_git_blob_bytes": 19240,
+          "canonical_git_blob_sha256": "f8ffb6eb10e16e96a7f8a2c31054befb48aec26684589f57aa123b5724fdf098",
+          "actual_windows_crlf_bytes": 19710,
+          "actual_windows_sha256": "7af6e96c8e341d20c2f67d1576e47d782f0ace5bfd205fb0f993f294fcc8204c"
+        },
+        {
+          "module": "tests.product_config.test_git_material_cas_integration",
+          "path": "tests/product_config/test_git_material_cas_integration.py",
+          "canonical_git_blob_bytes": 2790,
+          "canonical_git_blob_sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff",
+          "actual_windows_crlf_bytes": 2843,
+          "actual_windows_sha256": "7af3b773df7813403de9291ba6c1aefea1ca2d80481b06fa23229991ab690b23"
+        },
+        {
+          "module": "tests.product_config.git_minimum_commit_probe",
+          "path": "tests/product_config/git_minimum_commit_probe.py",
+          "canonical_git_blob_bytes": 19633,
+          "canonical_git_blob_sha256": "35dc074041def8643c4ec657e0a5f20005b7ed964238515ceae83f4c7c4d8084",
+          "actual_windows_crlf_bytes": 20154,
+          "actual_windows_sha256": "ca3d3319882dcb34f45f77023611d0b633ba42341e21f18615dcbdc7439a0570"
+        }
+      ]
+    },
+    "original_log": {
+      "bytes": 69063,
+      "sha256": "4e88ecc5f018226b87f0b4ed869d50f458e9cd0ea560500706188d3c3a6df13b"
+    },
+    "records_file": {
+      "bytes": 14457,
+      "sha256": "91285097cdedc8d782fc652523d566ed8f3d0dcee890e8c5bcb31230d4b80b12"
+    },
+    "run_metadata": {
+      "bytes": 2122,
+      "sha256": "1a90a7b97d0c3ef109b70aa78e3943c5e879dffd2ed4dc4b8fe4836c2914f9af"
+    },
+    "dispatch": {
+      "commands_issued": 2,
+      "pre_execution_rejections": 1,
+      "rejection": "HTTP422_no_ref_for_raw_commit_SHA",
+      "accepted_native_runs": 1,
+      "named_ref": "codex/windows-minimum-commit-d0ca482",
+      "named_ref_sha": "d0ca482ca6adc7a1373eb3cb0fe2a11b25380fd7",
+      "automatic_run_retries": 0
+    },
+    "worker_or_git_internal_error_cause_proven": false,
+    "stderr_body_recorded_or_published": false,
+    "original_business_unknown_preserved": true
+  },
   "governance": {
     "passed": 361,
     "failed": 0,
@@ -222,5 +320,27 @@
       "sha256": "b3c390fe004305e4b691a8e5558674106accc292e11e16136a27982438277f11"
     },
     "excluded_user_and_old_unpublished_observer": true
-  }
+  },
+  "native_scope": "only_two_original_cases_not_complete_windows_or_consumer_acceptance",
+  "native_update_documentation": {
+    "report": {
+      "policy_version": "harnessix.documentation-policy/v1",
+      "document_count": 450,
+      "link_count": 10984,
+      "mermaid_count": 949,
+      "source_package_count": 26,
+      "changed_path_count": 19,
+      "findings": []
+    },
+    "json": {
+      "bytes": 208,
+      "sha256": "710c3843966f45f0964d0e9605d4fab813c4c1937ed4bacb997c5383bf38fea2"
+    },
+    "log": {
+      "bytes": 64,
+      "sha256": "5f21b8c61084dc42c645e207793666097c157c393de2fe4c4f5c1c5fbdbea3e1"
+    },
+    "scope": "same_frozen_code_and_no_unpublished_sidecar_documentation"
+  },
+  "native_update_business_tests_reexecuted": 0
 }

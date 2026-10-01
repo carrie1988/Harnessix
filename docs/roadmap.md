@@ -1367,3 +1367,9 @@ R3真实20 Trial、Windows11消费者、独立Beta及同候选R1～R6商用门�
 本机59治理负对照及原两个实际用例通过；单次Windows Run与底层因果必须另取实际记录，不能从本机通过推导。
 不修改生产、原测试、默认插件或正式CI，不增加付费模型、预算、Docker或自动重跑；
 已发布认证端口与完整Git产品后继按原计划继续，R1～R6商用门禁保持开放。
+
+固定d0ca482的[单次Windows Run36836260240](https://github.com/carrie1988/Harnessix/actions/runs/36836260240)
+取得两个原FAIL／零通过／零跳过及两条完整诊断：原输入送达、进程退出二，约1.188秒／1.125秒在exit gate拒绝，
+非等待超时；同PID的原MAC终态回执和完整stdout／stderr守卫通过，stdout为空、proof缺失、readback未执行。
+stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以长度／摘要猜内部根因或宣称Git效果已知。
+原强UNKNOWN和Windows发布缺口保留，后继定位worker／Git内部错误再做最小修复，不放宽原期限或安全合同。

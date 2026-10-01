@@ -5,8 +5,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 4400,
-      "sha256": "21dd5f045070b5ec9788829b5338088b9d49db42158733acbdaf49bb987f1772"
+      "bytes": 6125,
+      "sha256": "65d01a3cbb6bfcfbccf3a336b40f0502166bd9b17a2982dda671bb1635235307"
     },
     {
       "path": "diagrams/architecture.mmd",
@@ -50,8 +50,8 @@
     },
     {
       "path": "facts.json",
-      "bytes": 252227,
-      "sha256": "ba5e2ff00348b1eba9d8cc35a78f8d7f93e5bd6ea974be77e4191fd2c841f946"
+      "bytes": 273938,
+      "sha256": "e291e122de37538f969c83e4f677e42066926d2d586ec04cb833bb286851be25"
     },
     {
       "path": "review-packet.json",
@@ -60,8 +60,8 @@
     },
     {
       "path": "verification.json",
-      "bytes": 7287,
-      "sha256": "1e2146c624f7628ab83bba2ad19f1a05dc97d13aeed75e2ac3cb51604be41b18"
+      "bytes": 12747,
+      "sha256": "8a592f4fb88d59df9cad92ea3ef16fc04b6385f25fee80c432e155b8e6330baa"
     }
   ]
 }

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 70c0a578d665ba7cb9cd11ae4eee80eb4db296c3
 owners: [core]
 modules: [product_config, processes]
@@ -210,3 +210,12 @@ context循环／截断、禁止字段、输出故障、全部接点恢复、默�
 不会因诊断成功发布新的产品能力，也不会通过延长五分钟、宽松共享、移除MAC／PID／EOF或跳过用例修复失败。
 业务缺陷修复必须由新的定位证据、真实红例、最小生产变更及完整受影响回归另行交付。
 消费者Windows11、完整Git产品接线、R3质量、独立Beta及同候选商用门禁继续开放。
+
+## 10. 原生执行状态增补
+
+固定d0ca482的单次Run36836260240取得两个真实FAIL和两条完整诊断记录，
+原受管材料执行进程返回二，在exit gate拒绝；原V2回执／完整raw后置验真通过，成功proof为空。
+实际阶段并非等待超时，不能推出Git已写入或未写入，worker／Git内部错误原因仍需后继有限观察。
+实际Windows源文件七模块的CRLF字节逐件求证，不混同canonical LF或整个目录完整验证。
+执行前SHA ref的HTTP422拒绝与固定named ref的一次实际Run分别保留，未重复原效果。
+本设计的诊断消费契约不变，具体低敏原件、源码及结果见统一验证包第5节。

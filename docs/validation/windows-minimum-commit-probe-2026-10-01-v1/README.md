@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 70c0a578d665ba7cb9cd11ae4eee80eb4db296c3
 owners: [core]
 modules: [product_config, processes]
@@ -46,7 +46,7 @@ wrapper负对照中的桩只验证调用次数、异常／返回原对象、关�
 
 [固定554618c CI 36824593278](https://github.com/carrie1988/Harnessix/actions/runs/36824593278)材料组
 2失败／1289通过／6跳过，并达到原五分钟期限。两个最低SHA256 Commit失败保留；
-本机通过不能解决Windows根因，单次手动Windows诊断尚须实际Run和两条记录验收。
+本机通过不能解决Windows根因；后继单次原生事实如下，原失败不改写。
 
 ## 3. 实际图示
 
@@ -69,3 +69,22 @@ wrapper负对照中的桩只验证调用次数、异常／返回原对象、关�
 
 实际native Run需单独更新验证记录，不把该诊断完成当作Windows修复、消费者Windows11验收、完整Git交付或商用完成。
 R3真实20 Trial、独立Beta和同候选R1～R6继续开放；本专项不读模型凭据、不调用模型、不修改预算或Docker。
+
+## 5. 实际单次Windows Run与定位范围
+
+[固定d0ca482 Run 36836260240](https://github.com/carrie1988/Harnessix/actions/runs/36836260240)已终结FAIL，
+Job 110284287913、attempt一；两个原用例均失败，零通过／跳过，没有重复执行或新的断言。
+A／B两条诊断均完整，13接点，原setup／teardown通过，call失败，记录未截断。
+start、stage、send、close、wait均原样返回；约1.188秒／1.125秒在exit gate以git_command_failed拒绝，
+原材料执行进程退出码均二，不是命令等待超时。outer exit与staged cleanup已返回，原强UNKNOWN仍原样抛出。
+
+原退出后只读补取取得同PID的V2 MAC终态回执；stdout零字节、stderr289字节，两个流完整长度／SHA／EOF
+均经原守卫验证。stdout为空，成功proof不存在，readback没有执行。进程已启动／退出不证明Git已写入或未写入；
+这只是将失败定位到原退出验真阶段，worker／Git内部具体错误、权限／sharing或其他根因仍开放。
+原stderr正文没有输出、上传或写入本验证包，不能从长度和SHA猜测错误内容。
+
+七个实际Windows模块SHA与canonical Git源文件显式LF→CRLF字节转换完全一致；
+实际磁盘SHA分别记录，不把CRLF源码冒称与原LF制品相同字节，也不声称整个1255目录已经逐件原生观察。
+首次直接SHA作为workflow ref被HTTP422明确拒绝，未产生Run；确认零Run后注册固定codex分支再发一次有效请求。
+因此HTTP命令两次、执行前拒绝一次、实际原生Run恰一，未重跑旧Run或重放未知fixture。
+旧本机验证和初始未dispatch事实保留于d0ca482；新增实际FAIL与低敏记录分别登记。
