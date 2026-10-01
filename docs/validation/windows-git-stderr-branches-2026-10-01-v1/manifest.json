@@ -4,8 +4,8 @@
   "members": [
     {
       "path": "README.md",
-      "bytes": 6002,
-      "sha256": "5ba55f8b1bb0e510bf971c75941c30ddbb4d33212a8ab15ce6beaec50b57ed57"
+      "bytes": 6909,
+      "sha256": "19f190969ef05e814122c98e6cf3e03a9ff5f172e2dc9ea2464943a94a84c9f9"
     },
     {
       "path": "code-inputs-delta.json",
@@ -54,18 +54,18 @@
     },
     {
       "path": "facts.json",
-      "bytes": 15809,
-      "sha256": "bfab5707d636ee55b0985777b4139215494bd6e2334393aef46e5f9fae59fd0e"
+      "bytes": 25540,
+      "sha256": "a5bb360d3ae04322e7aff8c26f42077007d28e96a732a4c4f39b778f80790af5"
     },
     {
       "path": "review-packet.json",
-      "bytes": 1093,
-      "sha256": "acfd31894d22161fd0bfaab9e79d8c32e8370e9037a9a5964d8505806a39e35a"
+      "bytes": 1465,
+      "sha256": "d30e4f21097f0023ae6e9cdd0bafda90fdc808b1473a06e0f19983518dedeedc"
     },
     {
       "path": "verification.json",
-      "bytes": 695,
-      "sha256": "6626373be9e5f224c666b415ffcf058cf4b767ba283a81c8f725262678d1280d"
+      "bytes": 880,
+      "sha256": "aa103e6e779eab7c7e5abb278bbb7845b07c3ed4e6ecf96bca86b6488a219766"
     }
   ]
 }

@@ -8,8 +8,8 @@
   "governance_same_published_candidate": "passed",
   "documentation": "passed",
   "secret_scan": "passed",
-  "native": "pending",
-  "windows_root_cause": "open",
+  "native": "failed",
+  "windows_root_cause": "unknown",
   "r3_real_quality": "open",
   "commercial_1_0": "not_ready",
   "governance_tests": 492,
@@ -17,5 +17,11 @@
   "documentation_documents": 453,
   "documentation_findings": 0,
   "secret_scan_inputs": 4050,
-  "secret_findings": 0
+  "secret_findings": 0,
+  "native_run_id": 36862927636,
+  "native_job_id": 110371313842,
+  "native_attempt": 1,
+  "native_cases_failed": 2,
+  "native_diagnostics_complete": 2,
+  "windows_fix": "not_proven"
 }

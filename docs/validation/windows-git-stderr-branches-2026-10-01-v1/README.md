@@ -88,7 +88,15 @@ receipt／两流raw／保护拒绝、真实字节守卫顺序、投影异常和�
 
 v4仍只通过显式pytest插件加载。新固定named ref、attempt一、新fixture、原两个节点和原五分钟保护，
 独立取得Windows结果；不重跑旧Run，不调整断言或期限。不上传raw或原业务JUnit。
-新一次原生结果尚未取得前，状态保持待验证；若FAIL，原UNKNOWN继续保持。
+固定054deb67的[新Run36862927636](https://github.com/carrie1988/Harnessix/actions/runs/36862927636)
+及Job110371313842已实际终结为FAIL，attempt一；原两个场景0PASS／2FAIL，原UNKNOWN保持。
+两条v4记录均完整、未截断，各13接点及10模块，原MAC、双完整raw／EOF和保护通过。
+首失败仍为git_validate、Git128／Worker二；成功proof缺失。原Worker失败字面量命中，其余八信号均False。
+这不排除未覆盖、不同渲染或组合报文的分支；唯一根因仍未知，不能据False宣布未发生。
+原184字节正文／预期OID不变，stdout零字节、stderr各607字节；没有读取或导出stderr正文。
+10模块的实际CRLF字节与固定Git blob逐件对应，但不宣称整个原生checkout1259成员已逐件读取。
+独立只读审查完成，三文件前后SHA及十个关键接点AST一致，未发现指定静态增量P0／P1／P2；
+审查者未执行函数或业务测试，不将其计为额外Windows结果。
 
 即使分支信号命中，也须继续验证具体根因及最小修复，不能自动改变sharing、访问权或Commit正文。
 Windows消费者、完整Git产品交付、R3真实质量、独立Beta和商用R1～R6均保持开放。

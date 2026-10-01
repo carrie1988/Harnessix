@@ -294,7 +294,247 @@
     }
   ],
   "new_native_run": {
-    "status": "not_dispatched"
+    "run": {
+      "id": 36862927636,
+      "run_attempt": 1,
+      "head_sha": "054deb6779c3faa8d7ebf920016f9b80b4f33e05",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-01T12:36:50Z",
+      "updated_at": "2026-10-01T12:37:24Z",
+      "html_url": "https://github.com/carrie1988/Harnessix/actions/runs/36862927636"
+    },
+    "job_id": 110371313842,
+    "code_inputs_verified_before_dispatch": 1259,
+    "observed_source_modules": 10,
+    "native_complete_checkout_claim": false,
+    "source_modules": [
+      {
+        "module": "harnessix.delivery.git_material_failure",
+        "path": "src/harnessix/delivery/git_material_failure.py",
+        "git_blob_sha256": "61b70a881e35b2541eafabdd363d77536c8b78fe8f08466bf1b9eed570243fb1",
+        "native_actual_sha256": "88db2cd42207ae37b51488ccfa0ab3c3cd457a434ce63e06030406dbfb5ae7fc",
+        "native_actual_bytes": 10413,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "harnessix.delivery.git_material_input_contracts",
+        "path": "src/harnessix/delivery/git_material_input_contracts.py",
+        "git_blob_sha256": "7ba203f11e53a3b83d1030323573bcd6f6242b8f3653556039360ecb06f47ec8",
+        "native_actual_sha256": "c92888b68db726cf70d84694c4f32e2b5c3604f2381378a337367f4e083c18aa",
+        "native_actual_bytes": 16685,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "harnessix.delivery.git_material_worker",
+        "path": "src/harnessix/delivery/git_material_worker.py",
+        "git_blob_sha256": "44f250e6f66ea0872134233362078ae4e1581db100118e34972b190290d1c6f2",
+        "native_actual_sha256": "de1eafdccb4ee584722987117f6662a0d792220153ae62ace03453e0edd63021",
+        "native_actual_bytes": 12986,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "harnessix.product_config.git_delivery_process",
+        "path": "src/harnessix/product_config/git_delivery_process.py",
+        "git_blob_sha256": "6d797f1b45b496a2b39a932a07cc7591374a740437a97b7c99499efe9c45ab4b",
+        "native_actual_sha256": "7d9ba56339ccaa3feb6a5c0445fb25e5c7b2b5b3d232c30ed786dbaf0d3e90c5",
+        "native_actual_bytes": 24837,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "harnessix.product_config.git_material_process",
+        "path": "src/harnessix/product_config/git_material_process.py",
+        "git_blob_sha256": "4a57c465ffc27126fee770d85e92eaedc1a5bb7d3b422d5ee93409389ebf10b0",
+        "native_actual_sha256": "bc426d01ebf6e8b0ba6a1c60ef772604a7f95b9c3604cc0a510b137d28b21cb9",
+        "native_actual_bytes": 14666,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "harnessix.processes.supervisor",
+        "path": "src/harnessix/processes/supervisor.py",
+        "git_blob_sha256": "51d0347fda238165c6a30d85507f481d61da983df1af058c2a9ebaf2aa09e28d",
+        "native_actual_sha256": "e17c9d37dca8a69263e9b418ec712bd784557dc065fa2f2c8fa3812b0b669d4b",
+        "native_actual_bytes": 28770,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "tests.product_config.test_git_delivery_process",
+        "path": "tests/product_config/test_git_delivery_process.py",
+        "git_blob_sha256": "93c0fce8115671daccfb3b443865fe66ea46847327f40c34369cd0d94db4483f",
+        "native_actual_sha256": "47d0e7dea83414de35b44a1a40f477902757db126f5d2927c1d6ce885dca113a",
+        "native_actual_bytes": 49069,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "tests.product_config.test_git_material_input",
+        "path": "tests/product_config/test_git_material_input.py",
+        "git_blob_sha256": "f8ffb6eb10e16e96a7f8a2c31054befb48aec26684589f57aa123b5724fdf098",
+        "native_actual_sha256": "7af6e96c8e341d20c2f67d1576e47d782f0ace5bfd205fb0f993f294fcc8204c",
+        "native_actual_bytes": 19710,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "tests.product_config.test_git_material_cas_integration",
+        "path": "tests/product_config/test_git_material_cas_integration.py",
+        "git_blob_sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff",
+        "native_actual_sha256": "7af3b773df7813403de9291ba6c1aefea1ca2d80481b06fa23229991ab690b23",
+        "native_actual_bytes": 2843,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      },
+      {
+        "module": "tests.product_config.git_minimum_commit_probe",
+        "path": "tests/product_config/git_minimum_commit_probe.py",
+        "git_blob_sha256": "d1ffc7eb833a43ac93ae4a015c5c7ae1ef596d2a2477817fc58f80ade1920d30",
+        "native_actual_sha256": "c43f8f17509f0c6164a4c0962a310e057600e292367318e238f291510edc7829",
+        "native_actual_bytes": 23182,
+        "byte_comparison": "exact LF blob to CRLF checkout"
+      }
+    ],
+    "cases": [
+      {
+        "selector": "A",
+        "outcomes": {
+          "setup": "passed",
+          "call": "failed",
+          "teardown": "passed"
+        },
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false,
+        "installed_hooks": 13,
+        "source_modules": 10,
+        "input": {
+          "object_format": "sha256",
+          "object_type": "commit",
+          "body_bytes": 184,
+          "body_sha256": "c67e1ffebd4d1e35175ac5bcf18204519aa1d1ddb39cf4f9820738dbad988f83",
+          "expected_oid": "91bd7f83eff4af0890282b4c4de217e73d86a892cde4728cbaa54ddbc2f36215",
+          "target_fanout": "91"
+        },
+        "post_status": "raw_verified_only",
+        "worker_returncode": 2,
+        "raw": {
+          "stdout": {
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "eof": true,
+            "full_raw_verified": true
+          },
+          "stderr": {
+            "bytes": 607,
+            "sha256": "e3073c16fa34d42794902cd4010fe4acaa90d375a303523a3c3a151d466fc599",
+            "eof": true,
+            "full_raw_verified": true
+          }
+        },
+        "signals": {
+          "worker_failure_literal": true,
+          "git_temp_create_prefix": false,
+          "git_object_db_permission_prefix": false,
+          "git_malformed_object_literal": false,
+          "READ_ERROR": false,
+          "SHORT_READ": false,
+          "HASH_FD": false,
+          "LOOSE_WRITE": false,
+          "LOOSE_CLOSE": false
+        },
+        "worker_failure": {
+          "error_code": "git_material_git_failed",
+          "git_popen_returned": true,
+          "git_returncode": 128,
+          "git_stdout_complete": null,
+          "git_stdout_expected": null,
+          "handler_error_code": "git_material_git_failed",
+          "origin": "pre_cleanup",
+          "schema": "harnessix.git-material-worker-failure/v1",
+          "stage": "git_validate"
+        },
+        "proof": {
+          "status": "absent"
+        }
+      },
+      {
+        "selector": "B",
+        "outcomes": {
+          "setup": "passed",
+          "call": "failed",
+          "teardown": "passed"
+        },
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false,
+        "installed_hooks": 13,
+        "source_modules": 10,
+        "input": {
+          "object_format": "sha256",
+          "object_type": "commit",
+          "body_bytes": 184,
+          "body_sha256": "c67e1ffebd4d1e35175ac5bcf18204519aa1d1ddb39cf4f9820738dbad988f83",
+          "expected_oid": "91bd7f83eff4af0890282b4c4de217e73d86a892cde4728cbaa54ddbc2f36215",
+          "target_fanout": "91"
+        },
+        "post_status": "raw_verified_only",
+        "worker_returncode": 2,
+        "raw": {
+          "stdout": {
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "eof": true,
+            "full_raw_verified": true
+          },
+          "stderr": {
+            "bytes": 607,
+            "sha256": "779157340b660cde8ee782307b8296fb3f8a9904a816be73f1fc353d668234d6",
+            "eof": true,
+            "full_raw_verified": true
+          }
+        },
+        "signals": {
+          "worker_failure_literal": true,
+          "git_temp_create_prefix": false,
+          "git_object_db_permission_prefix": false,
+          "git_malformed_object_literal": false,
+          "READ_ERROR": false,
+          "SHORT_READ": false,
+          "HASH_FD": false,
+          "LOOSE_WRITE": false,
+          "LOOSE_CLOSE": false
+        },
+        "worker_failure": {
+          "error_code": "git_material_git_failed",
+          "git_popen_returned": true,
+          "git_returncode": 128,
+          "git_stdout_complete": null,
+          "git_stdout_expected": null,
+          "handler_error_code": "git_material_git_failed",
+          "origin": "pre_cleanup",
+          "schema": "harnessix.git-material-worker-failure/v1",
+          "stage": "git_validate"
+        },
+        "proof": {
+          "status": "absent"
+        }
+      }
+    ],
+    "actual_stderr_body_read": false,
+    "actual_stderr_body_exported": false,
+    "unique_root_cause": "unknown",
+    "git_version_observed": "2.55.0.windows.5",
+    "test_result": {
+      "passed": 0,
+      "failed": 2,
+      "skipped": 0
+    },
+    "job_started_at": "2026-10-01T12:36:54Z",
+    "job_completed_at": "2026-10-01T12:37:23Z",
+    "raw_job_log": {
+      "bytes": 71031,
+      "sha256": "df84ebb789e2df84ee733f1c17de66c1a185da63d9b3fe92b462d6e1db87741c"
+    },
+    "finite_records": {
+      "bytes": 16905,
+      "sha256": "27035df6315a8c5be54bb8cd8d5b1242a091128c96f09a56f08719583ff3f702"
+    },
+    "no_old_run_rerun": true,
+    "dispatch_calls": 1
   },
   "original_native_runs_preserved": true,
   "model_requests": 0,

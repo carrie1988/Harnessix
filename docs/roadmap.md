@@ -1409,4 +1409,9 @@ stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以
 新增95项先取得78FAIL／17PASS；原95项与新增合并190PASS，两个原本机业务场景通过。
 [统一验证包](validation/windows-git-stderr-branches-2026-10-01-v1/README.md)区分未发布并行目录、
 同发布候选验证和新原生观察；原469生产文件、两项业务断言、20／45秒及五分钟上限不变。
-新Windows结果尚未取得前不判定根因或修复；原Git128 FAIL、完整Git交付、R3、消费者环境及Beta保持开放。
+固定054deb67的[新Run36862927636](https://github.com/carrie1988/Harnessix/actions/runs/36862927636)
+已实际终结为FAIL：原两例0PASS／2FAIL，两条v4观察均完整、未截断，各13接点及10模块。
+首失败仍为git_validate／Git128／Worker二，Worker字面量命中而其余八信号False，不据此排除未覆盖分支。
+十模块实际CRLF字节已与固定Git blob逐件对应；不宣称整个原生checkout已核查或唯一根因已定位。
+独立静态增量审查未发现指定范围P0／P1／P2，审查者没有执行函数或业务测试。
+原FAIL、完整Git交付、R3、消费者环境及Beta保持开放。

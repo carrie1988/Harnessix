@@ -10,7 +10,7 @@
     ".github/workflows/windows-git-minimum-commit-probe.yml"
   ],
   "findings": [],
-  "independent_peer_review": "not_run",
+  "independent_peer_review": "completed, static source review only",
   "proven_boundaries": [
     "unchanged original _post_once and 13 seams",
     "original receipt plus full raw plus protection before pure projection",
@@ -25,5 +25,16 @@
     "full product Git delivery",
     "R3 coding quality",
     "commercial release"
-  ]
+  ],
+  "independent_findings": [],
+  "peer_summary": {
+    "bytes": 16288,
+    "sha256": "7125a49c642f2de038333e11558063a8dfb00d9cf5d4ae72a13ddcf87e76f3e6"
+  },
+  "peer_report": {
+    "bytes": 8112,
+    "sha256": "e12e886f726c48d34577ce7d3f7177c26bad43fadd5cdd207700839986b5d87b"
+  },
+  "reviewer_function_tests": 0,
+  "reviewer_business_runs": 0
 }
