@@ -87,7 +87,7 @@
     }
   ],
   "raw_stderr_not_published": true,
-  "native_status": "not_run",
+  "native_status": "completed_failure_root_cause_open",
   "production_wheel": {
     "same_actual_wheel_sha256": "d31060d3133f830ab3ac110b41992e2d632f122f7d626f9038d9ad45525e414d",
     "actual_wheel_bytes": 1169521,
@@ -127,5 +127,19 @@
       "sha256": "f853665ec922fd9063b97620d4dbfdab4524b3973fab7edb0dd4d52467f33b13"
     },
     "old_observer_and_user_untracked_excluded": true
+  },
+  "native_v2": {
+    "run_id": 36841600538,
+    "revision": "96aa63c0fa090862b3de8d8f6c02b374ee760d11",
+    "attempt": 1,
+    "business_passed": 0,
+    "business_failed": 2,
+    "business_skipped": 0,
+    "diagnostic_records": 2,
+    "all_complete": true,
+    "worker_literal_both_match": true,
+    "three_git_literals_both_no_match": true,
+    "root_cause_determined": false,
+    "all_7_expected_explicit_crlf_source_bytes_verified": true
   }
 }

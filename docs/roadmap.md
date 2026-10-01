@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 146
+version: 147
 code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
@@ -1382,3 +1382,8 @@ stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以
 [统一验证包](validation/windows-minimum-commit-probe-2026-10-01-v1/README.md#6-v2完整stderr内存字节的有限信号)
 固定1255件新代码输入，原59项加28项治理负对照共87通过，完整治理389通过，原两个真实本机用例2通过。
 原两份Windows FAIL保留；新v2必须取新的固定原生结果，不以本机或诊断通过关闭Windows／R3／完整Git交付。
+
+固定96aa63c的[单次v2 Run36841600538](https://github.com/carrie1988/Harnessix/actions/runs/36841600538)
+终结为两个原FAIL、零通过／跳过；两条完整观察均命中worker固定失败行，三个Git文字消息未匹配。
+约1.609秒／1.187秒在原exit gate拒绝；MAC／raw／保护后验通过、成功proof为空。
+有限False不能排除原因；原v1 FAIL不变，根因仍需原worker内部结构性证据，不修改权限、断言或期限。

@@ -6358,6 +6358,249 @@
   "budget_changes": 0,
   "docker_operations": 0,
   "old_native_run_preserved": 36836260240,
-  "fresh_v2_native_status": "not_run",
-  "commercial_gates_closed": false
+  "fresh_v2_native_status": "completed_failure_root_cause_open",
+  "commercial_gates_closed": false,
+  "native_v2": {
+    "run_id": 36841600538,
+    "job_id": 110301766874,
+    "revision": "96aa63c0fa090862b3de8d8f6c02b374ee760d11",
+    "named_ref": "codex/windows-minimum-stderr-96aa63c",
+    "attempt": 1,
+    "actual_dispatch_commands": 1,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/36841600538",
+    "conclusion": "failure",
+    "business_passed": 0,
+    "business_failed": 2,
+    "business_skipped": 0,
+    "records": [
+      {
+        "selector": "A",
+        "schema": "harnessix.minimum-commit-probe/v2",
+        "installed_hooks": 13,
+        "outcomes": {
+          "setup": "passed",
+          "call": "failed",
+          "teardown": "passed"
+        },
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false,
+        "exit_gate_elapsed_seconds": 1.609,
+        "operation": {
+          "kind": "write",
+          "post_status": "raw_verified_only",
+          "original_operation_returned": false,
+          "input": {
+            "object_format": "sha256",
+            "object_type": "commit",
+            "body_bytes": 184,
+            "body_sha256": "c67e1ffebd4d1e35175ac5bcf18204519aa1d1ddb39cf4f9820738dbad988f83",
+            "expected_oid": "91bd7f83eff4af0890282b4c4de217e73d86a892cde4728cbaa54ddbc2f36215",
+            "target_fanout": "91"
+          },
+          "lease": {
+            "state": "exited",
+            "stop_reason": "exited",
+            "returncode": 2,
+            "pid": 10148,
+            "sequence": 4,
+            "provenance": "cached_lease_snapshot"
+          },
+          "post_receipt": {
+            "state": "exited",
+            "stop_reason": "exited",
+            "returncode": 2,
+            "pid": 10148,
+            "provenance": "terminal_receipt_authenticated",
+            "owner_receipt_sequence": 3,
+            "raw_stdout": {
+              "observed_bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eof": true
+            },
+            "raw_stderr": {
+              "observed_bytes": 289,
+              "sha256": "737f3814513cdc9e4ea66ee1af52a26466845626ff240e03c37de00ca10fbc8f",
+              "eof": true
+            }
+          },
+          "post_raw": {
+            "stdout": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eof": true,
+              "full_raw_verified": true
+            },
+            "stderr": {
+              "bytes": 289,
+              "sha256": "737f3814513cdc9e4ea66ee1af52a26466845626ff240e03c37de00ca10fbc8f",
+              "eof": true,
+              "full_raw_verified": true
+            }
+          },
+          "post_stderr_signals": {
+            "worker_failure_literal": true,
+            "git_temp_create_prefix": false,
+            "git_object_db_permission_prefix": false,
+            "git_malformed_object_literal": false
+          },
+          "post_proof": {
+            "status": "absent"
+          }
+        }
+      },
+      {
+        "selector": "B",
+        "schema": "harnessix.minimum-commit-probe/v2",
+        "installed_hooks": 13,
+        "outcomes": {
+          "setup": "passed",
+          "call": "failed",
+          "teardown": "passed"
+        },
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false,
+        "exit_gate_elapsed_seconds": 1.187,
+        "operation": {
+          "kind": "write",
+          "post_status": "raw_verified_only",
+          "original_operation_returned": false,
+          "input": {
+            "object_format": "sha256",
+            "object_type": "commit",
+            "body_bytes": 184,
+            "body_sha256": "c67e1ffebd4d1e35175ac5bcf18204519aa1d1ddb39cf4f9820738dbad988f83",
+            "expected_oid": "91bd7f83eff4af0890282b4c4de217e73d86a892cde4728cbaa54ddbc2f36215",
+            "target_fanout": "91"
+          },
+          "lease": {
+            "state": "exited",
+            "stop_reason": "exited",
+            "returncode": 2,
+            "pid": 5676,
+            "sequence": 3,
+            "provenance": "cached_lease_snapshot"
+          },
+          "post_receipt": {
+            "state": "exited",
+            "stop_reason": "exited",
+            "returncode": 2,
+            "pid": 5676,
+            "provenance": "terminal_receipt_authenticated",
+            "owner_receipt_sequence": 3,
+            "raw_stdout": {
+              "observed_bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eof": true
+            },
+            "raw_stderr": {
+              "observed_bytes": 289,
+              "sha256": "bdc770c2a0521d77cd1d92b5e37a4c98d439e773491d665c92c809fff943627c",
+              "eof": true
+            }
+          },
+          "post_raw": {
+            "stdout": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eof": true,
+              "full_raw_verified": true
+            },
+            "stderr": {
+              "bytes": 289,
+              "sha256": "bdc770c2a0521d77cd1d92b5e37a4c98d439e773491d665c92c809fff943627c",
+              "eof": true,
+              "full_raw_verified": true
+            }
+          },
+          "post_stderr_signals": {
+            "worker_failure_literal": true,
+            "git_temp_create_prefix": false,
+            "git_object_db_permission_prefix": false,
+            "git_malformed_object_literal": false
+          },
+          "post_proof": {
+            "status": "absent"
+          }
+        }
+      }
+    ],
+    "native_sources": {
+      "head": "96aa63c0fa090862b3de8d8f6c02b374ee760d11",
+      "all_7_modules_match_expected_crlf": true,
+      "canonical_not_equal_native_bytes": true,
+      "modules": [
+        {
+          "module": "harnessix.product_config.git_delivery_process",
+          "path": "src/harnessix/product_config/git_delivery_process.py",
+          "canonical_bytes": 24239,
+          "canonical_sha256": "6d797f1b45b496a2b39a932a07cc7591374a740437a97b7c99499efe9c45ab4b",
+          "native_crlf_bytes": 24837,
+          "native_crlf_sha256": "7d9ba56339ccaa3feb6a5c0445fb25e5c7b2b5b3d232c30ed786dbaf0d3e90c5"
+        },
+        {
+          "module": "harnessix.product_config.git_material_process",
+          "path": "src/harnessix/product_config/git_material_process.py",
+          "canonical_bytes": 14301,
+          "canonical_sha256": "4a57c465ffc27126fee770d85e92eaedc1a5bb7d3b422d5ee93409389ebf10b0",
+          "native_crlf_bytes": 14666,
+          "native_crlf_sha256": "bc426d01ebf6e8b0ba6a1c60ef772604a7f95b9c3604cc0a510b137d28b21cb9"
+        },
+        {
+          "module": "harnessix.processes.supervisor",
+          "path": "src/harnessix/processes/supervisor.py",
+          "canonical_bytes": 28048,
+          "canonical_sha256": "51d0347fda238165c6a30d85507f481d61da983df1af058c2a9ebaf2aa09e28d",
+          "native_crlf_bytes": 28770,
+          "native_crlf_sha256": "e17c9d37dca8a69263e9b418ec712bd784557dc065fa2f2c8fa3812b0b669d4b"
+        },
+        {
+          "module": "tests.product_config.test_git_delivery_process",
+          "path": "tests/product_config/test_git_delivery_process.py",
+          "canonical_bytes": 47912,
+          "canonical_sha256": "93c0fce8115671daccfb3b443865fe66ea46847327f40c34369cd0d94db4483f",
+          "native_crlf_bytes": 49069,
+          "native_crlf_sha256": "47d0e7dea83414de35b44a1a40f477902757db126f5d2927c1d6ce885dca113a"
+        },
+        {
+          "module": "tests.product_config.test_git_material_input",
+          "path": "tests/product_config/test_git_material_input.py",
+          "canonical_bytes": 19240,
+          "canonical_sha256": "f8ffb6eb10e16e96a7f8a2c31054befb48aec26684589f57aa123b5724fdf098",
+          "native_crlf_bytes": 19710,
+          "native_crlf_sha256": "7af6e96c8e341d20c2f67d1576e47d782f0ace5bfd205fb0f993f294fcc8204c"
+        },
+        {
+          "module": "tests.product_config.test_git_material_cas_integration",
+          "path": "tests/product_config/test_git_material_cas_integration.py",
+          "canonical_bytes": 2790,
+          "canonical_sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff",
+          "native_crlf_bytes": 2843,
+          "native_crlf_sha256": "7af3b773df7813403de9291ba6c1aefea1ca2d80481b06fa23229991ab690b23"
+        },
+        {
+          "module": "tests.product_config.git_minimum_commit_probe",
+          "path": "tests/product_config/git_minimum_commit_probe.py",
+          "canonical_bytes": 20966,
+          "canonical_sha256": "7e74acee05af6dbc99ef296fd7f13882e780a11580d5c0c08007a5d53bca2662",
+          "native_crlf_bytes": 21513,
+          "native_crlf_sha256": "d50b990abd332362c239bd1048f878c0542a4f93334e14080f7135b6587f5b63"
+        }
+      ]
+    },
+    "private_raw_job_log": {
+      "bytes": 69172,
+      "sha256": "4ade96b8ef7c5dc54e27a1c304892902226fcb994e1ac5df4648dee4c2cfde41"
+    },
+    "private_records": {
+      "bytes": 14925,
+      "sha256": "732dc386eaf8e14c063451cb3aa3dcfc356d60800bb05811a543a6947025c9ae"
+    },
+    "private_run_metadata": {
+      "bytes": 2174,
+      "sha256": "075fbf8d643fb442f7431d5a26d51c7594262dd4f4703d946690dfcc7d1730fc"
+    },
+    "old_v1_failure_unchanged": true,
+    "raw_stderr_body_published": false,
+    "no_signal_match_is_not_root_cause_exclusion": true
+  }
 }

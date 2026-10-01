@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 4d7cada99b76dfb04b87ebdf2976376cd6a47897
+version: 4
+code_revision: 96aa63c0fa090862b3de8d8f6c02b374ee760d11
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -282,3 +282,15 @@ True只表示已认证字节命中，禁止作为权限、批准、自动恢复�
 receipt／stdout raw／stderr EOF／protection拒绝，以及投影异常。次数负对照保留原receipt一次、
 每流一次、raw守卫两次、保护一次，信号只能在全部通过之后计算一次。
 完整验证身份与原件见统一验证包第6节；本机通过不证明新的Windows结果。
+
+### 11.4 单次v2原生结果与剩余能见边界
+
+固定96aa63c、named ref的Run36841600538仅dispatch一次，attempt一；两个原用例均FAIL，
+零通过／跳过，两个v2观察完整。A／B约1.609秒／1.187秒在原exit gate拒绝，原worker返回二，
+原强UNKNOWN保持；原MAC、完整raw与protection后验通过，stderr各289字节且成功proof为空。
+两条记录均仅命中`worker_failure_literal`，三个Git消息均未匹配；这不证明没有Git错误，
+也不能由有限False排除权限、对象格式或其他原因。没有输出或保存stderr正文。
+
+七模块原生CRLF身份再次逐件核对；原v1失败与日志不改写，两个Run不是同fixture重放。
+现有观察只证实进入原worker有限异常收口，不区分`run_worker`内部namespace、snapshot或Git阶段。
+后继须在原调用链研究有限结构性失败观测，不能根据本次字面量结果放宽共享、审批、材料或期限。

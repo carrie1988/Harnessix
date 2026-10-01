@@ -5,8 +5,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 8678,
-      "sha256": "fd6960675b821e3cc81053365459e304d40faf43e207c3802545db3a1308803b"
+      "bytes": 10216,
+      "sha256": "03fd42ab49cfe0505e0ba25b82b61c81a6250cc4f7923f05a5107f3fb944aece"
     },
     {
       "path": "diagrams/architecture.mmd",
@@ -60,8 +60,8 @@
     },
     {
       "path": "stderr-signals-facts.json",
-      "bytes": 247700,
-      "sha256": "6eb6f7cf0a1d8c28763f5997658cd379eb95025caafb6a7123bd4b1471572329"
+      "bytes": 257121,
+      "sha256": "6d2e2d448bfe6e1c7c4b70a9972ac0fb4be4e21aef7b520935629b92dafb6b6d"
     },
     {
       "path": "stderr-signals-review.json",
@@ -70,8 +70,8 @@
     },
     {
       "path": "stderr-signals-verification.json",
-      "bytes": 3993,
-      "sha256": "c534d786a14f75450c7ded5cfc271f98ded533e448b03041e1751e038f8777d8"
+      "bytes": 4464,
+      "sha256": "b5e7560c74fcf6785732b95542363c5d70d560086acd7615f3321a7b5c80d792"
     },
     {
       "path": "verification.json",

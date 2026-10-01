@@ -38,7 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
-| 2026-10-01 | [Windows最低SHA256 Commit单次诊断](windows-minimum-commit-probe-2026-10-01-v1/README.md) | v1基线70c0a57；v2基线4d7cada；各1255件代码SHA冻结 | 显式插件／manual-only；v2仅原MAC/raw/保护后有限bytes信号；原20秒／45秒／五分钟；零模型请求 | v2本机87焦点、389完整治理及原两个实际用例通过；v1固定Run36836260240两个FAIL、两诊断完整，exit gate拒绝、proof缺失；新v2原生待取证 | 诊断不是生产修复；不转换UNKNOWN，不放宽Owner／MAC／PID／EOF；文字命中不是根因，Windows及商用门禁开放 |
+| 2026-10-01 | [Windows最低SHA256 Commit单次诊断](windows-minimum-commit-probe-2026-10-01-v1/README.md) | v1基线70c0a57；v2基线4d7cada；各1255件代码SHA冻结 | 显式插件／manual-only；v2仅原MAC/raw/保护后有限bytes信号；原20秒／45秒／五分钟；零模型请求 | v2本机87焦点、389完整治理及原两个实际用例通过；v1 Run36836260240、v2 Run36841600538各两个FAIL、观察完整，exit gate拒绝、proof缺失；v2仅worker行命中 | 诊断不是生产修复；不转换UNKNOWN，不放宽Owner／MAC／PID／EOF；文字未匹配不排除原因，Windows及商用门禁开放 |
 | 2026-10-01 | [Git业务记录有限来源认证](git-record-publication-2026-10-01-v1/README.md) | 基线554618c；1252件代码输入SHA冻结 | 原Session Key/Scope，单一Wheel源码外双Python；零模型请求 | 最终焦点193通过；源码及源码外两个Python各2002通过／33跳过，原红例及独立审查P1闭环保留，四图实际渲染 | 内部来源认证；非完整Git账本、默认交付或Backup v2；最新Windows仍2失败，R1～R6开放 |
 | 2026-10-01 | [Git直接引用与完整普通文件树只读验真](git-tree-closure-2026-10-01-v1/README.md) | 基线37a1f01；1241件完整输入SHA绑定 | 原CAS、实际Git差分、单一Wheel源码外双Python；零模型请求 | 新增474通过；无交叠关联1806项、1748通过／58跳过；源码外各970通过／2跳过，五图实际渲染及独立审查 | 内部内容闭包；认证目录、默认Git写接线、Backup v2及R1～R6继续开放；Windows原超时不掩盖 |
 | 2026-10-01 | [Git完整对象输入与原Owner保护](git-material-input-2026-10-01-v1/README.md) | 基线`1502bd1`；1232件实际输入SHA冻结 | macOS真实Owner/Git；同一Wheel源码外Python3.12/3.13；零模型请求 | 关联1014通过/43跳过，安装焦点各356通过/2跳过；原控制失联3失败保留，外层退出与实体清理五项回归通过；三图实际渲染 | 内部输入能力；Windows原生、默认Commit/Checkpoint、耐久业务备份闭包及R1～R6继续开放 |

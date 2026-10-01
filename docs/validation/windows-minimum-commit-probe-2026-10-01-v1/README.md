@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 3
-code_revision: 4d7cada99b76dfb04b87ebdf2976376cd6a47897
+version: 4
+code_revision: 96aa63c0fa090862b3de8d8f6c02b374ee760d11
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -116,3 +116,21 @@ sharing、消息来源、Commit合法性、效果已知或业务成功。无LF�
 完整受管仓库、18项显式暂存及原实际Wheel共4017输入Secret扫描零命中；不以暂存前缺少新增材料的扫描冒充最终覆盖。
 公开路径预检曾误命中原治理测试的禁止输出字面量，修正预检范围而保留原测试。
 运行组重叠不相加，全部首发门禁保持开放；新v2原生结果须单独取得后登记。
+
+## 7. 单次v2实际Windows结果
+
+[固定96aa63c Run36841600538](https://github.com/carrie1988/Harnessix/actions/runs/36841600538)
+已终结FAIL，Job110301766874、attempt一，精确named ref只dispatch一次；原两个case均失败，零通过／跳过。
+A／B记录为v2、各13接点，setup／teardown通过、call失败，观察完整且未截断。
+原start／stage／send／close／wait返回；约1.609秒／1.187秒在exit gate拒绝，原worker返回二。
+原MAC回执、完整raw与保护后验通过，stdout空、stderr各289字节，成功proof缺失，readback未执行。
+
+两份`post_stderr_signals`均为worker固定失败行True，三个Git消息False。
+有限False不能排除任何Git错误或原因，True也只是固定行命中；不推断errno、sharing、Commit格式或写入效果。
+成功proof、最终pytest结果与原UNKNOWN均不被信号覆盖。原stderr正文未记录／输出／上传。
+该结果只增强对原worker异常收口的观察，内部具体阶段仍需结构性证据；不假定已定位根因。
+
+七个实际模块再次与固定提交显式CRLF字节逐件一致。新v2源码身份、原件摘要、各阶段、缓存／MAC／raw／
+proof层级与四个bool完整登记在v2 Facts；原v1的Run36836260240及实际FAIL保持不变。
+没有重跑旧Run或复用未知效果fixture；本专项生产变更、模型请求、凭据、预算及Docker操作仍为零。
+Windows根因、消费者Windows11、完整Git产品接线、R3、Beta及整体商用门禁继续开放。
