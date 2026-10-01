@@ -16,6 +16,11 @@ import threading
 from pathlib import Path
 from typing import BinaryIO
 
+from harnessix.delivery.git_material_failure import (
+    GitMaterialFailureObservation,
+    encode_failure_observation,
+    observe_failure_before_cleanup,
+)
 from harnessix.delivery.git_material_input_contracts import (
     MAX_MANIFEST_BYTES,
     MAX_MATERIAL_BYTES,
@@ -129,22 +134,29 @@ def _child_preexec(parent: int) -> None:
         os._exit(126)
 
 
-def _git(request: GitMaterialInput, snapshot: BinaryIO) -> str:
+def _git(
+    request: GitMaterialInput, snapshot: BinaryIO, observation: GitMaterialFailureObservation
+) -> str:
+    observation.stage = "git_launch"
     _remaining(request.expiry_monotonic_ns)
     parent_pid = os.getpid()
     preexec = (lambda: _child_preexec(parent_pid)) if sys.platform.startswith("linux") else None
     # 不设置setsid/new-session/breakaway；Git留在原Supervisor的进程树内。
-    with subprocess.Popen(
-        request.git_argv,
-        cwd=request.repo_path,
-        env=dict(request.git_environment),
-        stdin=snapshot,
-        stdout=subprocess.PIPE,
-        stderr=sys.stderr.buffer,
-        shell=False,
-        close_fds=True,
-        preexec_fn=preexec,
-    ) as process:
+    with (
+        subprocess.Popen(
+            request.git_argv,
+            cwd=request.repo_path,
+            env=dict(request.git_environment),
+            stdin=snapshot,
+            stdout=subprocess.PIPE,
+            stderr=sys.stderr.buffer,
+            shell=False,
+            close_fds=True,
+            preexec_fn=preexec,
+        ) as process,
+        observe_failure_before_cleanup(observation, "git_cleanup"),
+    ):
+        observation.git_popen_returned = True
         assert process.stdout is not None
         stdout = process.stdout
         output: list[bytes] = []
@@ -163,14 +175,32 @@ def _git(request: GitMaterialInput, snapshot: BinaryIO) -> str:
         thread = threading.Thread(target=reader, daemon=True)
         thread.start()
         try:
-            code = process.wait(timeout=_remaining(request.expiry_monotonic_ns))
-            thread.join(timeout=_remaining(request.expiry_monotonic_ns))
-            if thread.is_alive() or failed.is_set() or code != 0 or len(output) != 1:
-                _fail("git_material_git_failed")
-            expected = (request.expected_oid + "\n").encode("ascii")
-            if output[0] != expected:
-                _fail("git_material_git_failed")
-            return request.expected_oid
+            with observe_failure_before_cleanup(observation, "git_cleanup"):
+                observation.stage = "git_wait"
+                code = process.wait(timeout=_remaining(request.expiry_monotonic_ns))
+                observation.git_returncode = code
+                observation.stage = "git_join"
+                thread.join(timeout=_remaining(request.expiry_monotonic_ns))
+                observation.stage = "git_validate"
+                # 保持原短路顺序；非零退出不补查原未求值的输出长度。
+                if thread.is_alive():
+                    observation.git_stdout_complete = False
+                    _fail("git_material_git_failed")
+                if failed.is_set():
+                    observation.git_stdout_complete = False
+                    _fail("git_material_git_failed")
+                if code != 0:
+                    _fail("git_material_git_failed")
+                complete = len(output) == 1
+                observation.git_stdout_complete = complete
+                if not complete:
+                    _fail("git_material_git_failed")
+                expected = (request.expected_oid + "\n").encode("ascii")
+                matched = output[0] == expected
+                observation.git_stdout_expected = matched
+                if not matched:
+                    _fail("git_material_git_failed")
+                return request.expected_oid
         finally:
             if process.poll() is None:
                 process.kill()
@@ -178,9 +208,20 @@ def _git(request: GitMaterialInput, snapshot: BinaryIO) -> str:
 
 
 def run_worker(
-    payload: bytes, *, expected_manifest_sha256: str, expected_nonce: str, expiry_monotonic_ns: int
+    payload: bytes,
+    *,
+    expected_manifest_sha256: str,
+    expected_nonce: str,
+    expiry_monotonic_ns: int,
+    observation: GitMaterialFailureObservation | None = None,
 ) -> GitMaterialProof:
     """仅供固定worker入口使用；不是替代产品Supervisor的执行成功接口。"""
+    observation = (
+        observation
+        if type(observation) is GitMaterialFailureObservation
+        else GitMaterialFailureObservation()
+    )
+    observation.stage = "launch_binding"
     _remaining(expiry_monotonic_ns)
     request = decode_manifest(payload)
     if (
@@ -193,12 +234,16 @@ def run_worker(
     windows = _Windows() if os.name == "nt" else None
     if os.name not in {"posix", "nt"}:
         _fail("git_material_platform_unsupported")
-    with _Resources() as resources:
+    with _Resources() as resources, observe_failure_before_cleanup(observation, "resources_close"):
+        observation.stage = "command"
         _command(request, resources, windows)
+        observation.stage = "namespace"
         _namespace(request, resources, windows)
+        observation.stage = "snapshot"
         snapshot = _snapshot(request, resources, windows)
         _remaining(expiry_monotonic_ns)
-        oid = _git(request, snapshot)
+        oid = _git(request, snapshot, observation)
+        observation.stage = "snapshot_recheck"
         # Git已退出后再次观察完整snapshot；POSIX匿名句柄只有本次worker及Git读端。
         snapshot.seek(0)
         # 匿名snapshot允许nlink=0，所以直接有界复读，不借原stage路径。
@@ -208,9 +253,12 @@ def run_worker(
             or hashlib.sha256(body).hexdigest() != request.body_sha256
         ):
             _fail("git_material_body_changed")
+        observation.stage = "command_recheck"
         _command(request, resources, windows)
+        observation.stage = "namespace_recheck"
         _namespace(request, resources, windows)
         _remaining(expiry_monotonic_ns)
+        observation.stage = "proof"
         return GitMaterialProof(
             nonce=request.nonce,
             source_digest=request.source_digest,
@@ -233,12 +281,15 @@ def run_worker(
 
 def main(argv: list[str] | None = None) -> int:
     """只接受固定启动绑定；失败输出固定码，不输出参数、body或第三方异常。"""
+    observation = GitMaterialFailureObservation()
     try:
+        observation.stage = "stream_mode"
         if os.name == "nt":
             import msvcrt
 
             for stream in (sys.stdin, sys.stdout, sys.stderr):
                 msvcrt.__dict__["setmode"](stream.fileno(), getattr(os, "O_BINARY", 0))
+        observation.stage = "arguments"
         arguments = sys.argv[1:] if argv is None else argv
         if (
             type(arguments) is not list
@@ -260,19 +311,33 @@ def main(argv: list[str] | None = None) -> int:
             _fail()
         _remaining(expiry)
         # EOF是小握手的一部分；原Owner监控同操作上界，宿主不close时不启动Git。
+        observation.stage = "input"
         payload = sys.stdin.buffer.read(MAX_MANIFEST_BYTES + 1)
         proof = run_worker(
             payload,
             expected_manifest_sha256=digest,
             expected_nonce=nonce,
             expiry_monotonic_ns=expiry,
+            observation=observation,
         )
+        observation.stage = "proof_output"
         sys.stdout.buffer.write(encode_proof(proof))
         sys.stdout.buffer.flush()
         return 0
-    except (GitMaterialInputError, OSError, ValueError, TypeError, subprocess.SubprocessError):
+    except (
+        GitMaterialInputError,
+        OSError,
+        ValueError,
+        TypeError,
+        subprocess.SubprocessError,
+    ) as error:
         try:
-            sys.stderr.buffer.write(b"git_material_worker_failed\n")
+            frame = encode_failure_observation(observation, error)
+        except Exception:
+            # 纯诊断失败退回原marker；业务不重试，原捕获和sink语义不变。
+            frame = b""
+        try:
+            sys.stderr.buffer.write(b"git_material_worker_failed\n" + frame)
             sys.stderr.buffer.flush()
         except OSError:
             pass

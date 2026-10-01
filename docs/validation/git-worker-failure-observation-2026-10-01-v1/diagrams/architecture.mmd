@@ -1,0 +1,13 @@
+flowchart TB
+  Host[原受控产品端口] --> Owner[原Supervisor与Owner]
+  Owner --> Worker[原材料Worker 单次调用]
+  Worker --> Native[原namespace与RO快照]
+  Worker --> Git[原固定Git Popen]
+  State[操作内有限观察对象] -. 内存阶段与原结果 .-> Worker
+  Worker -->|成功| Proof[原完整proof 不加诊断]
+  Worker -->|原有限异常| Frame[原失败行 加固定字段帧]
+  Frame --> Receipt[原MAC raw长度SHA与EOF]
+  Receipt --> Guard[原完整raw与protection守卫]
+  Guard --> Probe[显式测试侧车的有限投影]
+  Probe --> Log[低敏JSON 不发布原stderr]
+  Host --> Unknown[原UNKNOWN与无自动重放]

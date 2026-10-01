@@ -345,7 +345,7 @@ def decode_proof(payload: bytes, request: GitMaterialInput) -> GitMaterialProof:
 
 
 def implementation_digest() -> str:
-    """绑定全部四个模块及两个包入口；宿主另绑定 runtime/import root，不伪造Owner能力。"""
+    """绑定全部五个模块及两个包入口；宿主另绑定 runtime/import root，不伪造Owner能力。"""
     try:
         directory = Path(__file__).parent
         package = directory.parent
@@ -359,6 +359,10 @@ def implementation_digest() -> str:
                     directory / "git_material_input_contracts.py",
                 ),
                 ("harnessix/delivery/git_material_worker.py", directory / "git_material_worker.py"),
+                (
+                    "harnessix/delivery/git_material_failure.py",
+                    directory / "git_material_failure.py",
+                ),
                 ("harnessix/delivery/git_material_native.py", directory / "git_material_native.py"),
                 (
                     "harnessix/delivery/git_material_native_windows.py",

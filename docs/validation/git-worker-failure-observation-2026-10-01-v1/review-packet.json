@@ -1,0 +1,36 @@
+{
+  "schema": "harnessix.git-worker-failure-observation-review/v1",
+  "code_inventory_sha256": "62ebb09fdf93932a419ff310606ca8a9d20706eaa7753972ce0e84ec05489c0a",
+  "status": "completed_independent_static_review",
+  "finding_counts": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0
+  },
+  "findings": [],
+  "candidate_input_count": 1258,
+  "all_candidate_code_input_bytes_equal_before_after": true,
+  "static_source_review_scope": "7 primary candidate files, 13 supporting boundary files; not all1258 semantic review",
+  "independent_runtime_tests": 0,
+  "original_design_findings_not_inherited_as_acceptance": true,
+  "diagnostics_are_authority": false,
+  "native_acceptance": false,
+  "sdd_updated_bytes_reviewed": false,
+  "independent_summary": {
+    "bytes": 488019,
+    "sha256": "60d2d0f365a052bf080ee607de3e946ca17d29611c07429ac69aa65386e1828c"
+  },
+  "independent_report": {
+    "bytes": 14901,
+    "sha256": "9bee55ca2a0e0acf6387dc224de35f143b1f2613a0ae2a6abddc84d55c1db58b"
+  },
+  "original_safety_invariants": [
+    "original success proof",
+    "original UNKNOWN",
+    "original cleanup and exception priority",
+    "original predicate short circuit",
+    "no business IO increase",
+    "new module fully source bound"
+  ],
+  "commercial_acceptance": false
+}

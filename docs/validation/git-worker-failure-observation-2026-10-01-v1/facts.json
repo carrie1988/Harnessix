@@ -1,0 +1,282 @@
+{
+  "schema": "harnessix.git-worker-failure-observation-facts/v1",
+  "baseline_revision": "4b2dda12ec880855c2c3cb0c4424b67bd1a7f851",
+  "code_inventory": {
+    "count": 1258,
+    "sha256": "62ebb09fdf93932a419ff310606ca8a9d20706eaa7753972ce0e84ec05489c0a",
+    "algorithm": "sha256 of compact sorted-key UTF-8 JSON array, path ordered, path/bytes/sha256; ensure_ascii default true",
+    "inventory_file": "code-inputs.json"
+  },
+  "wheel": {
+    "wheel": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "wheel_sha256": "4a3eccadfccb7375f577530a8a958d9e9409334911527cfcfbca9bc61d3d70ce",
+    "wheel_bytes": 1173722,
+    "zip_members": 474,
+    "package_members": 469,
+    "python_modules": 428,
+    "record_complete": true,
+    "single_build": true,
+    "source_equals_all_package_members": true
+  },
+  "core_contract": {
+    "frame_schema": "harnessix.git-material-worker-failure/v1",
+    "frame_max_bytes": 2048,
+    "fields": [
+      "schema",
+      "stage",
+      "error_code",
+      "origin",
+      "handler_error_code",
+      "git_popen_returned",
+      "git_returncode",
+      "git_stdout_complete",
+      "git_stdout_expected"
+    ],
+    "source_identity_files_before": 6,
+    "source_identity_files_after": 7,
+    "source_identity_call_count_unchanged": true,
+    "new_business_reads": 0,
+    "unchanged_original_check_order": [
+      "thread.is_alive",
+      "failed.is_set",
+      "code!=0",
+      "len(output)!=1"
+    ],
+    "original_wait_returncode_range": [
+      -2147483648,
+      4294967295
+    ],
+    "diagnostic_only": true,
+    "raw_exception_cached": false
+  },
+  "focus": {
+    "tests": 433,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 433
+  },
+  "retained_failures": {
+    "cleanup-contract-red.xml": {
+      "result": {
+        "tests": 9,
+        "failures": 6,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 3
+      },
+      "artifact": {
+        "bytes": 11122,
+        "sha256": "43b5c39b91c46735516590958048249f24e7f2a2e88aaf830e3fe83aa7d5a2af"
+      }
+    },
+    "cleanup-focus-green.xml": {
+      "result": {
+        "tests": 418,
+        "failures": 292,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 126
+      },
+      "artifact": {
+        "bytes": 366767,
+        "sha256": "4e184579fa410b46773d80004609182f8ca3ffbe6bb791e827472b8ef475c51c"
+      }
+    }
+  },
+  "related_regressions": [
+    {
+      "environment": "source-owned-worktree-312",
+      "result": {
+        "tests": 3954,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 74,
+        "passed": 3880
+      },
+      "python": "3.12.7",
+      "selectors": 149,
+      "actual_package_members": 469,
+      "actual_imported_modules": 369,
+      "all_package_and_test_bytes_equal_before_after": true,
+      "source_fallback": false,
+      "junit": {
+        "bytes": 1902069,
+        "sha256": "dbb062b69eaf9753d9250845b779cc1a536e71b827af42b596f1969e4fb86a91"
+      },
+      "identity_proof": {
+        "bytes": 85687,
+        "sha256": "b203436c2027ffc4abbd00da963b48f9d7cdbe1f11382c47ae041a93eec77673"
+      }
+    },
+    {
+      "environment": "installed-312",
+      "result": {
+        "tests": 3954,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 74,
+        "passed": 3880
+      },
+      "python": "3.12.7",
+      "selectors": 149,
+      "actual_package_members": 469,
+      "actual_imported_modules": 369,
+      "all_package_and_test_bytes_equal_before_after": true,
+      "source_fallback": false,
+      "junit": {
+        "bytes": 1907767,
+        "sha256": "5db84b9b159df76f2bc6fff1032f42b44e8e4bb2d1c535627b864b4d621b58b6"
+      },
+      "identity_proof": {
+        "bytes": 85685,
+        "sha256": "dfe61a40d78128b50ad08c19cf7724b5b960fc71e6192a604d9113b27b30b24b"
+      }
+    },
+    {
+      "environment": "installed-313",
+      "result": {
+        "tests": 3954,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 74,
+        "passed": 3880
+      },
+      "python": "3.13.8",
+      "selectors": 149,
+      "actual_package_members": 469,
+      "actual_imported_modules": 369,
+      "all_package_and_test_bytes_equal_before_after": true,
+      "source_fallback": false,
+      "junit": {
+        "bytes": 1907767,
+        "sha256": "10dd928e4cb1815448c4b96936ac3e6b5eb38cedf5d0196cf8ba7f56bc8dad02"
+      },
+      "identity_proof": {
+        "bytes": 85654,
+        "sha256": "594c1646275dce4e75b0f590b0aa19b384d1fd654fdc43cbdb64b3da36dcd6b5"
+      }
+    }
+  ],
+  "original_local_cases": {
+    "passed": 2,
+    "records": 2,
+    "probe_schema": "harnessix.minimum-commit-probe/v3",
+    "hooks_per_record": 13,
+    "bound_modules_per_record": 10,
+    "proof": {
+      "bytes": 26690,
+      "sha256": "f6febcaf385e0e63778272c5e9fac7517a263467698b8d378798cc80e7054274"
+    },
+    "natural_success_extra_post_reads": 0
+  },
+  "diagrams": {
+    "rendered": 4,
+    "visually_inspected": 4,
+    "source_matches_sdd": true
+  },
+  "original_failures_preserved": [
+    "36836260240",
+    "36841600538"
+  ],
+  "new_native_run": null,
+  "model_requests": 0,
+  "credential_reads": 0,
+  "docker_operations": 0,
+  "commercial_release_gates_closed_by_this_slice": [],
+  "untracked_observer_and_primary_user_inputs_excluded": true,
+  "governance": {
+    "result": {
+      "tests": 397,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 397
+    },
+    "junit": {
+      "bytes": 63927,
+      "sha256": "efb258c6b11b51da1dfd8663fcf5cc6e771cbc65fd3c7293fd47f21db08e0a8b"
+    },
+    "proof": {
+      "bytes": 65062,
+      "sha256": "aa0df4053861e0b4b268efde1594afa6ca1fb66b79eb8802083c7dd5005b9590"
+    },
+    "original_policy_unchanged": true
+  },
+  "original_scope_preserved": {
+    "unchanged_worker_functions": [
+      "fixed_git_argv",
+      "_command",
+      "_child_preexec"
+    ],
+    "original_two_business_test_files_unchanged": true,
+    "tests/product_config/test_git_material_input.py": {
+      "bytes": 19240,
+      "sha256": "f8ffb6eb10e16e96a7f8a2c31054befb48aec26684589f57aa123b5724fdf098"
+    },
+    "tests/product_config/test_git_material_cas_integration.py": {
+      "bytes": 2790,
+      "sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff"
+    },
+    ".github/workflows/windows-git-minimum-commit-probe.yml": {
+      "bytes": 1821,
+      "sha256": "8006ea42566eac14c7e6946e7c243df7cf2f101d61abb86a96bbb7c2588ab616"
+    },
+    "uv.lock": {
+      "bytes": 264077,
+      "sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd"
+    },
+    "pyproject.toml": {
+      "bytes": 2149,
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+    }
+  },
+  "retained_governance_carrier_failures": {
+    "governance-final.xml": {
+      "result": {
+        "tests": 397,
+        "failures": 20,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 377
+      },
+      "artifact": {
+        "bytes": 833308,
+        "sha256": "7a949892fbe5382d86018ff94ebcb11cb541c860364ac422fd3069adb83e1d13"
+      }
+    },
+    "governance-title-red.xml": {
+      "result": {
+        "tests": 397,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 396
+      },
+      "artifact": {
+        "bytes": 64879,
+        "sha256": "b540ee74d472cd303e8b31aa5a69b2fb9438a6a005cc70d94485e1b1daac795a"
+      }
+    }
+  },
+  "independent_implementation_review": {
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "summary": {
+      "bytes": 488019,
+      "sha256": "60d2d0f365a052bf080ee607de3e946ca17d29611c07429ac69aa65386e1828c"
+    },
+    "report": {
+      "bytes": 14901,
+      "sha256": "9bee55ca2a0e0acf6387dc224de35f143b1f2613a0ae2a6abddc84d55c1db58b"
+    },
+    "code_input_count": 1258,
+    "byte_identity_before_after_equal": true,
+    "semantic_source_review_scope": "7 primary and 13 supporting files",
+    "test_or_ci_execution": 0,
+    "not_native_acceptance": true
+  }
+}

@@ -429,7 +429,7 @@ def test_safe_record_publishes_single_low_sensitivity_line():
     assert probe_module._publish(probe, stream)
     assert stream.getvalue().count("\n") == 1
     record = json.loads(stream.getvalue().removeprefix(probe_module.PREFIX))
-    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v2"
+    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v3"
 
 
 def test_install_restores_all_thirteen_original_seams_and_import_alias(monkeypatch):
@@ -579,12 +579,13 @@ def test_stderr_signals_are_pure_bounded_fields_even_with_large_sensitive_fake_t
     assert not any(isinstance(node, (ast.Await, ast.AsyncWith)) for node in ast.walk(tree))
 
 
-def _signal_post_operation(monkeypatch, boundary):
+def _signal_post_operation(monkeypatch, boundary, stderr=None):
     # 测试桩仅核原调用次数和真实 raw 守卫，不冒充真实 Owner/MAC 原生验收。
     from harnessix.product_config import git_delivery_process as port
 
     calls = []
-    stderr = b"error: unable to create temporary file: " + CANARY.encode() + b"\xff\n"
+    if stderr is None:
+        stderr = b"error: unable to create temporary file: " + CANARY.encode() + b"\xff\n"
     observations = {
         stream: SimpleNamespace(
             observed_bytes=len(body), sha256=hashlib.sha256(body).hexdigest(), eof=True
@@ -685,4 +686,69 @@ async def test_stderr_projection_requires_all_original_guards_and_never_changes_
         assert calls == ["receipt", "stdout", "stderr", "raw", "raw", "protection", "signals"]
         assert operation.data["post_stderr_signals"]["git_temp_create_prefix"]
         assert operation.data["post_status"] == "raw_verified_only"
+    assert CANARY not in probe.render()
+
+
+@pytest.mark.parametrize("kind", ["valid", "invalid", "multiple"])
+async def test_post_settlement_projects_only_strict_failure_frame_once(monkeypatch, kind):
+    from harnessix.delivery.git_material_failure import (
+        FAILURE_PREFIX,
+        GitMaterialFailureObservation,
+        encode_failure_observation,
+        freeze_failure_observation,
+    )
+    from harnessix.delivery.git_material_input_contracts import GitMaterialInputError
+
+    observation = GitMaterialFailureObservation(stage="namespace")
+    freeze_failure_observation(observation, GitMaterialInputError("git_material_namespace_invalid"))
+    frame = encode_failure_observation(observation, ValueError(CANARY))
+    if kind == "invalid":
+        frame = FAILURE_PREFIX + CANARY.encode() + b"\n"
+    elif kind == "multiple":
+        frame += frame
+    probe, operation, calls = _signal_post_operation(
+        monkeypatch, "none", b"git_material_worker_failed\n" + frame
+    )
+    await probe.post_settlement()
+    await probe.post_settlement()
+    assert calls.count("receipt") == calls.count("stdout") == calls.count("stderr") == 1
+    assert operation.data["post_status"] == "raw_verified_only"
+    assert operation.data["original_operation_returned"] is False
+    assert operation.data["post_proof"]["status"] == "absent"
+    assert operation.data["post_worker_failure_status"] == (
+        "valid" if kind == "valid" else "invalid"
+    )
+    if kind == "valid":
+        record = operation.data["post_worker_failure"]
+        assert record["stage"] == "namespace" and record["origin"] == "pre_cleanup"
+        assert record["error_code"] == "git_material_namespace_invalid"
+        assert record["handler_error_code"] == "value_error"
+    else:
+        assert probe.incomplete and "post_worker_failure" not in operation.data
+    assert CANARY not in probe.render()
+
+
+@pytest.mark.parametrize("boundary", ["none", "receipt", "stdout_raw", "stderr_raw", "protection"])
+async def test_worker_failure_decoder_is_after_all_original_raw_and_protection(
+    monkeypatch, boundary
+):
+    from harnessix.delivery import git_material_failure
+
+    probe, operation, calls = _signal_post_operation(monkeypatch, boundary)
+    decoded = []
+    original = git_material_failure.decode_failure_observation
+
+    def decode(body):
+        decoded.append(True)
+        return original(body)
+
+    monkeypatch.setattr(git_material_failure, "decode_failure_observation", decode)
+    await probe.post_settlement()
+    await probe.post_settlement()
+    assert len(decoded) == (boundary == "none")
+    assert calls.count("receipt") == 1 and operation.data["original_operation_returned"] is False
+    assert ("post_worker_failure_status" in operation.data) is (boundary == "none")
+    if boundary == "none":
+        assert operation.data["post_worker_failure_status"] == "not_observed"
+        assert "post_worker_failure" not in operation.data
     assert CANARY not in probe.render()

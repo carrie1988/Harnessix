@@ -1961,3 +1961,15 @@ Git投影真实两格式差分同时复用已有PATH Git夹具，记录实际版
 [统一验证包](../validation/git-tree-diff-2026-10-01-v1/README.md)提供源码映射、接口与字段、
 四图、业务伪代码、原八项失败及修复对照、原版golden和实际候选证据。
 本实现没有CAS/SQL/Git/Ref写效果；新批准、认证目录、默认Checkpoint/Commit及Backup v2仍需接通。
+
+## 材料Worker有限失败观察与原清理语义
+
+[`git_material_failure.py`](../../src/harnessix/delivery/git_material_failure.py)提供内部有限帧，
+不持久化业务状态，也不授权Git效果或恢复。原Worker失败行、退出二、父端UNKNOWN和成功proof保持。
+清理前首次有限观察与最终handler类别分开；原finally、Popen及ExitStack仍按原顺序结算。
+Git谓词严格按is_alive、failed、退出码、输出长度短路，不补做未求值检查。
+
+新模块完整纳入实现摘要，每次源码身份读取由六份增至七份；不增加材料／Git输出／Owner业务读取。
+本机和源码外验证不等于Windows根因关闭。完整接口、字段、四图、伪代码及异常安全边界见
+[详细设计](../changes/m09-r4-git-worker-failure-observation.md)和
+[验证资料](../validation/git-worker-failure-observation-2026-10-01-v1/README.md)。

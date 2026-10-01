@@ -1,0 +1,12 @@
+flowchart LR
+  Phase[固定阶段赋值] --> State[有限内存状态]
+  Wait[原wait的actual int] --> State
+  Output[原reader与原精确比较bool] --> State
+  Error[清理前首异常及最终捕获] --> Table[分别精确类型和有限code白名单]
+  State --> Rebuild[严格固定标量重建]
+  Table --> Rebuild
+  Rebuild --> Frame[至多2048字节固定帧]
+  Frame --> Protected[原MAC 完整raw与保护]
+  Protected --> Projection[侧车有限字段投影]
+  Projection --> Public[无正文 路径 nonce argv的JSON]
+  Error --> Unknown[原效果未知 不重放]

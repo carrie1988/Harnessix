@@ -1,0 +1,71 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "self_excluded": true,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 6690,
+      "sha256": "c12bc7d18e84c69038fa43d0bb6567832d07ceddabe2c11c62a3501c7e787d76"
+    },
+    {
+      "path": "code-inputs.json",
+      "bytes": 219893,
+      "sha256": "bfb80ae035c7ac8db15f13346ab011e93a4187f9e242c19ca7203db91cdc0935"
+    },
+    {
+      "path": "diagrams/architecture.mmd",
+      "bytes": 657,
+      "sha256": "8d3285e3a5ee11aadd74e3c22eaa50f7c16c563fd4b0987079ce24c3744f6639"
+    },
+    {
+      "path": "diagrams/architecture.png",
+      "bytes": 62652,
+      "sha256": "3c69300089e315edf1a8de43d504387aaaf2360e0f7315d6d5b2641930011882"
+    },
+    {
+      "path": "diagrams/dataflow.mmd",
+      "bytes": 579,
+      "sha256": "218c61aba13cdea64cc63bb4f501f6a92fb75428ea364135b058329ba83fce21"
+    },
+    {
+      "path": "diagrams/dataflow.png",
+      "bytes": 40023,
+      "sha256": "c058a2c1ec34a3aa59e5b1e42ac627fe1a5c95619d3f27ee94ad1f274439b7d3"
+    },
+    {
+      "path": "diagrams/flow.mmd",
+      "bytes": 1029,
+      "sha256": "d67c37470af8a530d9a7841479b8ffec820832aa04ee9caf74f548a366b9e87e"
+    },
+    {
+      "path": "diagrams/flow.png",
+      "bytes": 100970,
+      "sha256": "3a8d0754590a7a4b38f661f34b85a4a532e12bf8380d9b76d5ab4d9e10642446"
+    },
+    {
+      "path": "diagrams/sequence.mmd",
+      "bytes": 867,
+      "sha256": "37b6e7d07c4bb1d3857a15d1cd0e3e31ba762d0a72ab55a7c03623a24be012fa"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "bytes": 99442,
+      "sha256": "38fbc6caa0dac3abcd15459988640529d4aafa90c53b1c1533f5449e415d19e3"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 7901,
+      "sha256": "b96d2be116365194e1f994b9a9afd7b28c5ca7cd743e38489b56ef977ef0ed62"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1264,
+      "sha256": "3376e4c074ddb0088da04393b015b572617a1d4a30c0815093fe5091f7ffedc5"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1514,
+      "sha256": "c85f69f1d00445c88ac200873d3a5c817d0950831159f8a5643331163c057812"
+    }
+  ]
+}

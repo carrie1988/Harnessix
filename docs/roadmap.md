@@ -1387,3 +1387,11 @@ stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以
 终结为两个原FAIL、零通过／跳过；两条完整观察均命中worker固定失败行，三个Git文字消息未匹配。
 约1.609秒／1.187秒在原exit gate拒绝；MAC／raw／保护后验通过、成功proof为空。
 有限False不能排除原因；原v1 FAIL不变，根因仍需原worker内部结构性证据，不修改权限、断言或期限。
+
+### R1/R4：Git材料Worker有限首失败与原清理观察
+
+[总体与详细设计](changes/m09-r4-git-worker-failure-observation.md)实现固定内部阶段、原wait结果和已求值谓词投影。
+清理前首失败冻结与最终捕获类别分开，原Popen／ExitStack／finally资源次数、异常优先级及UNKNOWN不变。
+原短路检查顺序保持；新增模块完整进入实现身份，每次源码绑定由六份增至七份，不新增业务材料读取。
+[统一验证包](validation/git-worker-failure-observation-2026-10-01-v1/README.md)分别登记失败合同、本机、
+同Wheel源码外及原生范围。诊断实现不等于Windows根因修复、默认Git交付、R3或商用门禁完成。

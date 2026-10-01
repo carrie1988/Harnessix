@@ -53,6 +53,9 @@ R4新增[已发布Patch的Git交付来源绑定](docs/changes/m09-r4-product-git
 [有限Git记录认证](docs/changes/m09-r4-git-record-publication.md)在原Session Key上提供域分离的新事实签发与只验真端口；
 来源认证不替代对象业务目录、完整GitDB前缀、新批准、默认Commit/Checkpoint或Backup v2。
 
+[Git材料Worker有限首失败观察](docs/changes/m09-r4-git-worker-failure-observation.md)区分清理前首失败与最终捕获，
+不改变成功proof、父端UNKNOWN或原执行权限；本机回归不能替代Windows修复及商用验收。
+
 ## 项目边界
 
 Harnessix Code 自研 Coding Agent 的关键运行语义：

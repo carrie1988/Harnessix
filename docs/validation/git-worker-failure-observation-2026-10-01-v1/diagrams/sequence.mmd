@@ -1,0 +1,23 @@
+sequenceDiagram
+  participant P as 原产品端口
+  participant W as 原Worker
+  participant G as 原Git
+  participant O as 原Owner
+  participant D as 显式诊断
+  P->>W: 原冻结握手与原剩余期限
+  W->>W: 标记固定stage 原namespace与RO快照
+  W->>G: 原固定Popen stdin与wait
+  G-->>W: 原returncode与原有界stdout
+  W->>W: 复制已求值的有限标量 保留原短路顺序
+  alt 原路径成功
+    W-->>O: 原完整proof
+  else 原有限异常
+    W->>W: 原清理前冻结首失败 原资源清理
+    W->>W: 最终捕获类别单独投影 不覆盖原异常
+    W-->>O: 原失败行及固定字段帧 退出二
+  end
+  O-->>P: 原回执或原失败 原UNKNOWN不改
+  D->>O: 原清理后必要只读后验 每流一次
+  O-->>D: 已认证完整raw
+  D->>D: 两raw守卫与保护后才投影
+  D-->>D: 低敏记录 不是授权或成功

@@ -1,0 +1,51 @@
+{
+  "schema": "harnessix.git-worker-failure-observation-verification/v1",
+  "same_code_inventory_sha256": "62ebb09fdf93932a419ff310606ca8a9d20706eaa7753972ce0e84ec05489c0a",
+  "source_and_installed_regressions": "passed",
+  "scope": "149 selected test files, not whole repository or native coverage",
+  "static": {
+    "ruff": true,
+    "format_files": 1475,
+    "mypy_files": 428,
+    "readability_policy_unchanged": true,
+    "readability_final_report_current": true,
+    "evidence": {
+      "bytes": 93,
+      "sha256": "16414f653864b14a26dc7bab0c3673adcd9d8653575ed050c451bdeaab90b896"
+    }
+  },
+  "governance": {
+    "tests": 397,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 397
+  },
+  "documentation": {
+    "documents": 452,
+    "links": 11019,
+    "mermaid": 953,
+    "changed_paths": 26,
+    "findings": 0,
+    "evidence": {
+      "bytes": 64,
+      "sha256": "d0373a02571b54eb1fab8d318e8c272e2ac14f8a4ab2bc9ed3bc6e65173b3133"
+    }
+  },
+  "secret_scan": {
+    "phase": "final_explicit_stage_and_actual_wheel",
+    "inputs": 4035,
+    "hits": 0,
+    "evidence": {
+      "bytes": 101,
+      "sha256": "233e8df35494965428837bdb2f64d817f5540d24e910debe21f4cac5582f4d8c"
+    }
+  },
+  "native": "not_dispatched",
+  "windows_root_cause": "open",
+  "r3_real_quality": "open",
+  "default_git_delivery": "open",
+  "beta": "open",
+  "commercial_1_0": "not_ready",
+  "go_no_go": "GO for finite observer publication; native observation pending, Windows fix and commercial acceptance NO-GO"
+}

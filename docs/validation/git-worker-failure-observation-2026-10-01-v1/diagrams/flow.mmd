@@ -1,0 +1,20 @@
+flowchart TD
+  Start[原main 固定启动绑定] --> Observation[创建有限内存观察]
+  Observation --> Entry[原入口参数握手与启动绑定]
+  Entry --> Run[原资源作用域 namespace及RO快照]
+  Run --> Git[原Popen wait reader及精确OID检查]
+  Git --> Recheck[原完整快照与namespace复验]
+  Recheck --> Release[原资源正常退出]
+  Release --> Return[原proof与原stdout]
+  Entry -->|原捕获异常 无清理前冻结| Handler
+  Run -->|原资源内异常| Select[精确类型及固定code查表]
+  Git -->|原捕获异常| Select
+  Recheck -->|原捕获异常| Select
+  Select --> Freeze[原清理前首次冻结有限字段]
+  Freeze --> Cleanup[原finally Popen及ExitStack清理]
+  Cleanup --> Handler[原最终捕获类别 单独投影]
+  Handler --> Encode[只编码固定标量 有界帧]
+  Encode --> Fail[一次原stderr写及flush 返回二]
+  Fail --> Raw[原Owner MAC及完整raw保护]
+  Raw --> Decoder[显式侧车有限解码]
+  Decoder --> Keep[保留原UNKNOWN与pytest结果]

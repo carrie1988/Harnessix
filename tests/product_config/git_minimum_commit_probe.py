@@ -240,7 +240,7 @@ class Probe:
 
     def render(self) -> str:
         record = {
-            "schema": "harnessix.minimum-commit-probe/v2",
+            "schema": "harnessix.minimum-commit-probe/v3",
             "selector": self.selector,
             "platform": sys.platform,
             "source_sha256": self.source_sha256,
@@ -400,6 +400,7 @@ def _operation_wrapper(original: Any, probe: Probe) -> Any:
 
 
 async def _post_once(operation: Operation) -> None:
+    from harnessix.delivery.git_material_failure import decode_failure_observation
     from harnessix.product_config import git_delivery_process as port
 
     data = operation.data
@@ -439,6 +440,12 @@ async def _post_once(operation: Operation) -> None:
             for name, raw in (("stdout", receipt.raw_stdout), ("stderr", receipt.raw_stderr))
         }
         data["post_stderr_signals"] = _stderr_signals(stderr)
+        failure_status, failure = decode_failure_observation(stderr)
+        data["post_worker_failure_status"] = failure_status
+        if failure_status == "valid":
+            data["post_worker_failure"] = failure
+        elif failure_status == "invalid":
+            operation.probe.incomplete = True
         data["post_status"] = "raw_verified_only"
         if stdout:
             proof = port.decode_proof(stdout, operation.prepared.write.request)
@@ -454,6 +461,11 @@ async def _post_once(operation: Operation) -> None:
 
 
 def _install(monkeypatch: Any, probe: Probe) -> None:
+    from harnessix.delivery import (
+        git_material_failure,
+        git_material_input_contracts,
+        git_material_worker,
+    )
     from harnessix.processes import supervisor
     from harnessix.product_config import git_delivery_process as port
     from harnessix.product_config import git_material_process as material
@@ -486,6 +498,9 @@ def _install(monkeypatch: Any, probe: Probe) -> None:
     monkeypatch.setattr(original_tests, "_run", _operation_wrapper(original_tests._run, probe))
     probe.installed_hooks += 1
     for module in (
+        git_material_failure,
+        git_material_input_contracts,
+        git_material_worker,
         port,
         material,
         supervisor,
