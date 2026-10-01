@@ -1,0 +1,14 @@
+flowchart TB
+  W[原Workspace事务与Store] --> F[旧Workspace身份门面]
+  H[可信Git宿主<br/>净变化及显式限额] --> G[Git树与Diff协调]
+  G --> S[原净Mutation严格快照]
+  S --> P[完整目标树规划]
+  P --> C[原CAS完整base及after验真]
+  G --> B[原CAS必要blob二次回读]
+  F --> R[唯一内容编码器]
+  B --> R
+  P --> O[完整目标树内容事实]
+  R --> D[完整Diff内容事实]
+  O --> Result[同源只读结果]
+  D --> Result
+  Result -. 后继能力未装配 .-> A[认证目录与独立批准]

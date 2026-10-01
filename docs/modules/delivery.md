@@ -1944,3 +1944,20 @@ GitDB 认证目录、对象角色、完整 Diff、新批准、双工作树、Bac
 保留修复前负对照及原Windows25项失败；本机通过不代表原生收口。
 Git投影真实两格式差分同时复用已有PATH Git夹具，记录实际版本而不要求研究版本精确相等；
 完整hash-object/mktree/cat-file对比、命令失败和期限保持。
+
+## 完整Git树与Diff同源内容规划
+
+[`prepare_git_tree_diff`](../../src/harnessix/delivery/git_tree_diff.py)先使用原严格验证器
+`snapshot_git_tree_mutations`深层重建净变化，完整目标树和Diff同时消费这一快照。
+原完整Projection检查全部base、after、路径、模式和四项限额；展示正文再次从原CAS完整回读。
+外部Mutation及内层版本别名不能在两阶段之间改变计划内容，坏正文也不能借缓存通过。
+
+[`build_diff_content`](../../src/harnessix/delivery/diff_content.py)是唯一生产编码器，
+逐片记账完整UTF-8输出；取消/超时原异常传播，超限整体拒绝，不返回截断内容。
+旧`build_workspace_diff`保留原事务身份、Document及历史表示；新Git格式明确缺尾LF标记。
+结果隐藏正文repr且不携带批准、MAC、Artifact或Workspace事务身份。
+
+[总体与详细设计](../changes/m09-r4-git-tree-diff.md)与
+[统一验证包](../validation/git-tree-diff-2026-10-01-v1/README.md)提供源码映射、接口与字段、
+四图、业务伪代码、原八项失败及修复对照、原版golden和实际候选证据。
+本实现没有CAS/SQL/Git/Ref写效果；新批准、认证目录、默认Checkpoint/Commit及Backup v2仍需接通。

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 4
+version: 5
 code_revision: 96584026bdf34c49c519834331b84043a6c03895
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
@@ -883,6 +883,11 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 及 commit 的唯一 tree／有序 parent，并从原 CAS 核对全部普通文件树闭包。
 该内部验真显式消费宿主预算与取消／期限 checkpoint，缺失 tree／blob 不作为历史边界。
 它不冻结第14章产品容量或历史承诺，不签发业务来源 MAC，也不登记交付成功。
+
+[完整目标树纯规划](m09-r4-git-tree-projection.md)和[完整树与Diff同源规划](m09-r4-git-tree-diff.md)
+已复用原完整base／after、严格深层净Mutation和唯一Diff内容算法。原CAS二次回读、完整展示容量及
+取消／别名负对照不增加业务认证或写入；原Workspace事务身份与历史表示不变。
+完整Diff内容已可纯规划，Artifact发布、独立批准及第13章步骤2的业务证明仍需另行接线。
 
 完整领域算法的异步接线、双工作树、正式 Checkpoint／Commit、全认证前缀、
 GitDB／Backup v2 和新根重绑仍未完成。只读内容验真不能代替第13章步骤2的完整只读业务验真，

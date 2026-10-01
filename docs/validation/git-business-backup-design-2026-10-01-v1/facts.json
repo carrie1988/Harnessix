@@ -2,7 +2,7 @@
   "private_evidence_locator": "Harnessix/verification/git-business-backup-design-20261001-v1",
   "source_revision": "96584026bdf34c49c519834331b84043a6c03895",
   "design_file": "docs/changes/m09-r4-git-delivery-business-backup-closure.md",
-  "design_sha256": "45e760be0d4b6cee030e1dcc4564c54d0e4d60eb40186c0f8b603eeab11de584",
+  "design_sha256": "fcafc3a7ac64efb7a3e9d1bffada0a9f2502178a90f3b4abf415770bb49429ce",
   "implementation_status": "planned_draft",
   "diagram_count": 5,
   "diagram_bindings": [
@@ -44,10 +44,22 @@
   "original_design_sha256": "479df9718d84a130c12ef8267fbc0a7a0a97026e858c16ab3e6d64bb457cafdd",
   "original_design_source_revision": "96584026bdf34c49c519834331b84043a6c03895",
   "document_update": {
-    "baseline_revision": "2ae1862d3fca46a2baed77bd55451e81028eaf5f",
-    "scope": "append_internal_supervised_io_status_only",
+    "baseline_revision": "d3175f71d77cfb0f5f2c2a613e6da3c74ae68204",
+    "scope": "append_complete_target_tree_and_shared_diff_readonly_status",
     "business_design_status": "planned_draft",
     "original_verification_applies_to": "original_design_before_status_append",
-    "current_status_evidence": "docs/validation/git-supervised-io-2026-10-01-v1/README.md"
-  }
+    "current_status_evidence": "docs/validation/git-tree-diff-2026-10-01-v1/README.md",
+    "diagram_sources_unchanged": true,
+    "this_update_proves_product_write_or_backup_v2": false
+  },
+  "status_update_history": [
+    {
+      "baseline_revision": "2ae1862d3fca46a2baed77bd55451e81028eaf5f",
+      "scope": "append_internal_supervised_io_status_only",
+      "business_design_status": "planned_draft",
+      "original_verification_applies_to": "original_design_before_status_append",
+      "current_status_evidence": "docs/validation/git-supervised-io-2026-10-01-v1/README.md"
+    }
+  ],
+  "previous_design_sha256": "45e760be0d4b6cee030e1dcc4564c54d0e4d60eb40186c0f8b603eeab11de584"
 }

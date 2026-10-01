@@ -1,0 +1,545 @@
+{
+  "schema": "harnessix.workspace-diff-content-golden/v1",
+  "source_commit": "d3175f71d77cfb0f5f2c2a613e6da3c74ae68204",
+  "source_path": "src/harnessix/delivery/diff.py",
+  "source_sha256": "9adb8d13aa1a8cf34d190e6e287d6957e3c5dc010296e3f2f72621028c29fe0e",
+  "scenario": "text-binary-empty-mode-rename-ambiguous-unicode-crlf-missing-lf",
+  "blobs": {
+    "042af1d7710a8053ab225384c7e17b8554c7e936d3200f66d867bc399ac7cbe6": "73616d650d0a6f6c64",
+    "0b86b33aed9ffd1b365630cff97d287167a3a6cb21ef330b9d7bc9742a004943": "e696b0e8a18ce4b8ade69687",
+    "126d261281921c0df5c37608e53e5a624cf410508191d1f4697a5e1d6a2f87d0": "73616d650d0a6e65770d0a",
+    "2a63d654f6b280e09baa09a7c3f02d9e637a1c4ebed5deb243b30c2e67088842": "73616d650d0a6f6c640d0a",
+    "2efe2f3f4993a85f88d0155ad920ff40ee9b7e920bb8827a1bba8d7205c2ecae": "e588a0e999a4f09f99820a",
+    "30714325cfb2b97d72623148bf332e8c0d7475c567facd453223606e503dc454": "e58d95e8a18c",
+    "310b0e326109dcd7489012c56c2f9ae3fb4e5606f3ad2c270058d322510a3683": "616c7068610aceb3f09f99820a",
+    "3f84cce967052e85c3cf2d671c2433dc4899226bb99a67d6bfe4aeb9e938b7cc": "6475706c69636174650a",
+    "437cb43a30226e639b33d84533cfc3ddd970a40055b9c8c0bf7e3795cf184eb6": "ff01",
+    "44e62a660aec1b26788b1e2acbc41d69d8f3543f90ed5c87a3b0718cf0827871": "00ff02",
+    "6d6a506ee58494a1e54cd9e7139572e2b6b98ebf09ded3a2bb511ee16f3e60b2": "e697a7e8a18cf09f9982",
+    "921facba76404cd6dbf6ba14eb7786671b0a0fd84bb57c943a08e9b173cb02e5": "e696b0e58685e5aeb9f09f99820a",
+    "c6d7ca65e5530a32f908514736e2378630c767ee76a52d52399e94c8dd417e73": "6563686f206d6f64650a",
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855": "",
+    "e49c81e2d2f84e259d40e2fb8192f3bcd198b355184845d76d8f58807d0d78ee": "616c7068610a626574610a",
+    "f52c362def144b9a27526ecab00ae3d25933bc519bb7ac7904f0c0c2baa5e707": "65786163742072656e616d650a",
+    "fff528cbb91bd32d7e870d9179a3a61b1a1c5460752769e5f2e9812af5781d99": "73616d650d0a6e6577"
+  },
+  "mutations": [
+    {
+      "path": "a-ambiguous-old.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "3f84cce967052e85c3cf2d671c2433dc4899226bb99a67d6bfe4aeb9e938b7cc",
+        "size": 10,
+        "mode": 420
+      },
+      "after": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      }
+    },
+    {
+      "path": "a-copy-one.txt",
+      "before": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "3f84cce967052e85c3cf2d671c2433dc4899226bb99a67d6bfe4aeb9e938b7cc",
+        "size": 10,
+        "mode": 420
+      }
+    },
+    {
+      "path": "a-copy-two.txt",
+      "before": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "3f84cce967052e85c3cf2d671c2433dc4899226bb99a67d6bfe4aeb9e938b7cc",
+        "size": 10,
+        "mode": 420
+      }
+    },
+    {
+      "path": "b-binary.dat",
+      "before": {
+        "presence": "file",
+        "sha256": "437cb43a30226e639b33d84533cfc3ddd970a40055b9c8c0bf7e3795cf184eb6",
+        "size": 2,
+        "mode": 420
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "44e62a660aec1b26788b1e2acbc41d69d8f3543f90ed5c87a3b0718cf0827871",
+        "size": 3,
+        "mode": 420
+      }
+    },
+    {
+      "path": "c-delete.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "2efe2f3f4993a85f88d0155ad920ff40ee9b7e920bb8827a1bba8d7205c2ecae",
+        "size": 11,
+        "mode": 420
+      },
+      "after": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      }
+    },
+    {
+      "path": "d-empty-old.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0,
+        "mode": 420
+      },
+      "after": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      }
+    },
+    {
+      "path": "e-empty-add.txt",
+      "before": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0,
+        "mode": 493
+      }
+    },
+    {
+      "path": "h-mode.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "c6d7ca65e5530a32f908514736e2378630c767ee76a52d52399e94c8dd417e73",
+        "size": 10,
+        "mode": 420
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "c6d7ca65e5530a32f908514736e2378630c767ee76a52d52399e94c8dd417e73",
+        "size": 10,
+        "mode": 493
+      }
+    },
+    {
+      "path": "i-no-lf.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "6d6a506ee58494a1e54cd9e7139572e2b6b98ebf09ded3a2bb511ee16f3e60b2",
+        "size": 10,
+        "mode": 420
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "0b86b33aed9ffd1b365630cff97d287167a3a6cb21ef330b9d7bc9742a004943",
+        "size": 12,
+        "mode": 420
+      }
+    },
+    {
+      "path": "j-rename-new.txt",
+      "before": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "f52c362def144b9a27526ecab00ae3d25933bc519bb7ac7904f0c0c2baa5e707",
+        "size": 13,
+        "mode": 420
+      }
+    },
+    {
+      "path": "j-rename-old.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "f52c362def144b9a27526ecab00ae3d25933bc519bb7ac7904f0c0c2baa5e707",
+        "size": 13,
+        "mode": 420
+      },
+      "after": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      }
+    },
+    {
+      "path": "k-text.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "e49c81e2d2f84e259d40e2fb8192f3bcd198b355184845d76d8f58807d0d78ee",
+        "size": 11,
+        "mode": 420
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "310b0e326109dcd7489012c56c2f9ae3fb4e5606f3ad2c270058d322510a3683",
+        "size": 13,
+        "mode": 420
+      }
+    },
+    {
+      "path": "l-crlf.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "2a63d654f6b280e09baa09a7c3f02d9e637a1c4ebed5deb243b30c2e67088842",
+        "size": 11,
+        "mode": 420
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "126d261281921c0df5c37608e53e5a624cf410508191d1f4697a5e1d6a2f87d0",
+        "size": 11,
+        "mode": 420
+      }
+    },
+    {
+      "path": "m-crlf-no-lf.txt",
+      "before": {
+        "presence": "file",
+        "sha256": "042af1d7710a8053ab225384c7e17b8554c7e936d3200f66d867bc399ac7cbe6",
+        "size": 9,
+        "mode": 420
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "fff528cbb91bd32d7e870d9179a3a61b1a1c5460752769e5f2e9812af5781d99",
+        "size": 9,
+        "mode": 420
+      }
+    },
+    {
+      "path": "m-中文🙂.txt",
+      "before": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "921facba76404cd6dbf6ba14eb7786671b0a0fd84bb57c943a08e9b173cb02e5",
+        "size": 14,
+        "mode": 420
+      }
+    },
+    {
+      "path": "n-no-lf-add.txt",
+      "before": {
+        "presence": "absent",
+        "sha256": null,
+        "size": 0,
+        "mode": null
+      },
+      "after": {
+        "presence": "file",
+        "sha256": "30714325cfb2b97d72623148bf332e8c0d7475c567facd453223606e503dc454",
+        "size": 6,
+        "mode": 420
+      }
+    }
+  ],
+  "expected": {
+    "entries": [
+      {
+        "kind": "deleted",
+        "path": "a-ambiguous-old.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "3f84cce967052e85c3cf2d671c2433dc4899226bb99a67d6bfe4aeb9e938b7cc",
+          "size": 10,
+          "mode": 420
+        },
+        "after": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "binary": false
+      },
+      {
+        "kind": "added",
+        "path": "a-copy-one.txt",
+        "original_path": null,
+        "before": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "3f84cce967052e85c3cf2d671c2433dc4899226bb99a67d6bfe4aeb9e938b7cc",
+          "size": 10,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "added",
+        "path": "a-copy-two.txt",
+        "original_path": null,
+        "before": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "3f84cce967052e85c3cf2d671c2433dc4899226bb99a67d6bfe4aeb9e938b7cc",
+          "size": 10,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "modified",
+        "path": "b-binary.dat",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "437cb43a30226e639b33d84533cfc3ddd970a40055b9c8c0bf7e3795cf184eb6",
+          "size": 2,
+          "mode": 420
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "44e62a660aec1b26788b1e2acbc41d69d8f3543f90ed5c87a3b0718cf0827871",
+          "size": 3,
+          "mode": 420
+        },
+        "binary": true
+      },
+      {
+        "kind": "deleted",
+        "path": "c-delete.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "2efe2f3f4993a85f88d0155ad920ff40ee9b7e920bb8827a1bba8d7205c2ecae",
+          "size": 11,
+          "mode": 420
+        },
+        "after": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "binary": false
+      },
+      {
+        "kind": "deleted",
+        "path": "d-empty-old.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0,
+          "mode": 420
+        },
+        "after": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "binary": false
+      },
+      {
+        "kind": "added",
+        "path": "e-empty-add.txt",
+        "original_path": null,
+        "before": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0,
+          "mode": 493
+        },
+        "binary": false
+      },
+      {
+        "kind": "modified",
+        "path": "h-mode.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "c6d7ca65e5530a32f908514736e2378630c767ee76a52d52399e94c8dd417e73",
+          "size": 10,
+          "mode": 420
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "c6d7ca65e5530a32f908514736e2378630c767ee76a52d52399e94c8dd417e73",
+          "size": 10,
+          "mode": 493
+        },
+        "binary": false
+      },
+      {
+        "kind": "modified",
+        "path": "i-no-lf.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "6d6a506ee58494a1e54cd9e7139572e2b6b98ebf09ded3a2bb511ee16f3e60b2",
+          "size": 10,
+          "mode": 420
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "0b86b33aed9ffd1b365630cff97d287167a3a6cb21ef330b9d7bc9742a004943",
+          "size": 12,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "renamed",
+        "path": "j-rename-new.txt",
+        "original_path": "j-rename-old.txt",
+        "before": {
+          "presence": "file",
+          "sha256": "f52c362def144b9a27526ecab00ae3d25933bc519bb7ac7904f0c0c2baa5e707",
+          "size": 13,
+          "mode": 420
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "f52c362def144b9a27526ecab00ae3d25933bc519bb7ac7904f0c0c2baa5e707",
+          "size": 13,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "modified",
+        "path": "k-text.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "e49c81e2d2f84e259d40e2fb8192f3bcd198b355184845d76d8f58807d0d78ee",
+          "size": 11,
+          "mode": 420
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "310b0e326109dcd7489012c56c2f9ae3fb4e5606f3ad2c270058d322510a3683",
+          "size": 13,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "modified",
+        "path": "l-crlf.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "2a63d654f6b280e09baa09a7c3f02d9e637a1c4ebed5deb243b30c2e67088842",
+          "size": 11,
+          "mode": 420
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "126d261281921c0df5c37608e53e5a624cf410508191d1f4697a5e1d6a2f87d0",
+          "size": 11,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "modified",
+        "path": "m-crlf-no-lf.txt",
+        "original_path": null,
+        "before": {
+          "presence": "file",
+          "sha256": "042af1d7710a8053ab225384c7e17b8554c7e936d3200f66d867bc399ac7cbe6",
+          "size": 9,
+          "mode": 420
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "fff528cbb91bd32d7e870d9179a3a61b1a1c5460752769e5f2e9812af5781d99",
+          "size": 9,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "added",
+        "path": "m-中文🙂.txt",
+        "original_path": null,
+        "before": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "921facba76404cd6dbf6ba14eb7786671b0a0fd84bb57c943a08e9b173cb02e5",
+          "size": 14,
+          "mode": 420
+        },
+        "binary": false
+      },
+      {
+        "kind": "added",
+        "path": "n-no-lf-add.txt",
+        "original_path": null,
+        "before": {
+          "presence": "absent",
+          "sha256": null,
+          "size": 0,
+          "mode": null
+        },
+        "after": {
+          "presence": "file",
+          "sha256": "30714325cfb2b97d72623148bf332e8c0d7475c567facd453223606e503dc454",
+          "size": 6,
+          "mode": 420
+        },
+        "binary": false
+      }
+    ],
+    "text": "diff --harnessix a/j-rename-old.txt b/j-rename-new.txt\nsimilarity index 100%\nrename from j-rename-old.txt\nrename to j-rename-new.txt\ndiff --harnessix a/a-ambiguous-old.txt b/a-ambiguous-old.txt\ndeleted file mode 644\n--- a/a-ambiguous-old.txt\n+++ /dev/null\n@@ -1 +0,0 @@\n-duplicate\ndiff --harnessix a/a-copy-one.txt b/a-copy-one.txt\nnew file mode 644\n--- /dev/null\n+++ b/a-copy-one.txt\n@@ -0,0 +1 @@\n+duplicate\ndiff --harnessix a/a-copy-two.txt b/a-copy-two.txt\nnew file mode 644\n--- /dev/null\n+++ b/a-copy-two.txt\n@@ -0,0 +1 @@\n+duplicate\ndiff --harnessix a/b-binary.dat b/b-binary.dat\nBinary files differ: before=437cb43a30226e639b33d84533cfc3ddd970a40055b9c8c0bf7e3795cf184eb6 after=44e62a660aec1b26788b1e2acbc41d69d8f3543f90ed5c87a3b0718cf0827871\ndiff --harnessix a/c-delete.txt b/c-delete.txt\ndeleted file mode 644\n--- a/c-delete.txt\n+++ /dev/null\n@@ -1 +0,0 @@\n-删除🙂\ndiff --harnessix a/d-empty-old.txt b/d-empty-old.txt\ndeleted file mode 644\ndiff --harnessix a/e-empty-add.txt b/e-empty-add.txt\nnew file mode 755\ndiff --harnessix a/h-mode.txt b/h-mode.txt\nold mode 644\nnew mode 755\ndiff --harnessix a/i-no-lf.txt b/i-no-lf.txt\n--- a/i-no-lf.txt\n+++ b/i-no-lf.txt\n@@ -1 +1 @@\n-旧行🙂+新行中文diff --harnessix a/k-text.txt b/k-text.txt\n--- a/k-text.txt\n+++ b/k-text.txt\n@@ -1,2 +1,2 @@\n alpha\n-beta\n+γ🙂\ndiff --harnessix a/l-crlf.txt b/l-crlf.txt\n--- a/l-crlf.txt\n+++ b/l-crlf.txt\n@@ -1,2 +1,2 @@\n same\r\n-old\r\n+new\r\ndiff --harnessix a/m-crlf-no-lf.txt b/m-crlf-no-lf.txt\n--- a/m-crlf-no-lf.txt\n+++ b/m-crlf-no-lf.txt\n@@ -1,2 +1,2 @@\n same\r\n-old+newdiff --harnessix a/m-中文🙂.txt b/m-中文🙂.txt\nnew file mode 644\n--- /dev/null\n+++ b/m-中文🙂.txt\n@@ -0,0 +1 @@\n+新内容🙂\ndiff --harnessix a/n-no-lf-add.txt b/n-no-lf-add.txt\nnew file mode 644\n--- /dev/null\n+++ b/n-no-lf-add.txt\n@@ -0,0 +1 @@\n+单行",
+    "utf8_bytes": 1835,
+    "sha256": "f45b0390b5ea6552eab6b58c84f162558b064cb572f6ed5ab449d5b68a3a3b5c"
+  }
+}

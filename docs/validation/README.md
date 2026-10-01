@@ -253,3 +253,11 @@ Windows原生、完整真实20 Trial、独立Beta及商用门禁继续开放。
 三矩阵真实Git版本断言失败、Windows材料组25失败及原五分钟期限。
 私有目录终点按用途取得READ_CONTROL并保留旧缓存守卫，原两格式Git差分复用已有隔离夹具；
 本机回归和独立静态评审不能代替后继原生CI、消费者环境或完整商用验收。
+
+## 完整Git目标树与Diff同源规划专项
+
+[统一验证包](git-tree-diff-2026-10-01-v1/README.md)记录唯一内容编码器、原Workspace表示兼容、
+同净Mutation深层快照、原CAS二次验真、UTF-8容量及取消异常；八项开发失败和修复后209项焦点分别保留。
+最终候选源码、实际单一Wheel、源码外双Python、完整输入目录、独立Review Packet及四幅图各自绑定。
+旧d3175f7 Windows剩余两个失败及原期限退出独立记录，不因本机纯规划通过清除。
+不将此内容结果当作批准、默认Checkpoint/Commit、Backup v2、R3或商用发布完成。

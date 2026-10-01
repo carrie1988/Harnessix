@@ -17,6 +17,7 @@ from harnessix.workspace.paths import normalize_workspace_path, path_comparison_
 MAX_TRANSACTION_FILES = 256
 MAX_TRANSACTION_FILE_BYTES = 8 * 1024 * 1024
 MAX_TRANSACTION_IMAGE_BYTES = 32 * 1024 * 1024
+MAX_WORKSPACE_DIFF_BYTES = 64 * 1024 * 1024
 PROTECTED_COMPONENTS = frozenset(
     {".agents", ".codex", ".git", ".gitattributes", ".gitmodules", ".harnessix", ".lfsconfig"}
 )
@@ -256,7 +257,7 @@ class WorkspaceDiffDocument(DeliveryContract):
     plan_fingerprint: Revision
     entries: tuple[WorkspaceDiffEntry, ...] = Field(min_length=1, max_length=MAX_TRANSACTION_FILES)
     text: str = Field(repr=False)
-    utf8_bytes: int = Field(ge=1, le=64 * 1024 * 1024)
+    utf8_bytes: int = Field(ge=1, le=MAX_WORKSPACE_DIFF_BYTES)
     sha256: Revision
 
     @model_validator(mode="after")

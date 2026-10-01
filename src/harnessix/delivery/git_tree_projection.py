@@ -83,9 +83,14 @@ def _mutation(value: WorkspaceMutation) -> WorkspaceMutation:
         raise _invalid() from None
 
 
-def _mutations(
+def snapshot_git_tree_mutations(
     values: tuple[WorkspaceMutation, ...], platform: PlatformKind, checkpoint: Callable[[], None]
 ) -> tuple[WorkspaceMutation, ...]:
+    """严格深层重建净变化，供完整目标树和Diff共用；不授予来源或执行权限。"""
+    if not callable(checkpoint):
+        raise _invalid()
+    if type(platform) is not str or platform not in {"posix", "windows"}:
+        raise _invalid("git_tree_projection_path_denied")
     if type(values) is not tuple or not 1 <= len(values) <= MAX_TRANSACTION_FILES:
         raise _invalid()
     result = []
@@ -386,7 +391,7 @@ def prepare_git_tree_projection(
         )
     except (AttributeError, KernelError):
         raise _invalid() from None
-    mutations = _mutations(mutations, platform, checkpoint)
+    mutations = snapshot_git_tree_mutations(mutations, platform, checkpoint)
     base = verify_git_tree_closure(
         cas, root, catalog, platform=platform, limits=limits, checkpoint=checkpoint
     )

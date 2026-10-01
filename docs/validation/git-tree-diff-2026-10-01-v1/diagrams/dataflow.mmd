@@ -1,0 +1,11 @@
+flowchart LR
+  M[原净变化<br/>深层严格快照] --> P[原完整目标规划]
+  B[完整base及after<br/>原CAS只读] --> P
+  P --> T[完整目标tree<br/>正文与OID]
+  P --> Ref[全部正文引用索引]
+  Ref --> Read[CAS二次完整验真]
+  M --> D[唯一Diff编码]
+  Read --> D
+  D --> Text[完整UTF-8展示<br/>条目/长度/SHA]
+  T --> Result[同源只读结果]
+  Text --> Result

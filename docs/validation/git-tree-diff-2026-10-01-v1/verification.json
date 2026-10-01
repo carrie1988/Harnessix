@@ -1,0 +1,275 @@
+{
+  "schema": "harnessix.git-tree-diff-verification/v1",
+  "development_results": {
+    "initial_two_files_red": {
+      "tests": 209,
+      "passed": 201,
+      "failed_or_errors": 8,
+      "skipped": 0,
+      "duration_seconds": 1.307,
+      "junit": {
+        "bytes": 52933,
+        "sha256": "12f9f929b4f7b706e4386af6e9d6947b62ae127db3183583f6d82bbf174e18e2"
+      },
+      "log": {
+        "bytes": 17436,
+        "sha256": "d3ea7b1ccc4dde450b33db11c0c8ad5f466bcbc1683c2e0f3806b1ea22382725"
+      }
+    },
+    "first_fixed_before_independent_review": {
+      "tests": 209,
+      "passed": 209,
+      "failed_or_errors": 0,
+      "skipped": 0,
+      "duration_seconds": 1.211,
+      "junit": {
+        "bytes": 34427,
+        "sha256": "1c4daefc7f05c52b51ae4d9cde6711507ce7ae5493051bcbe31fd1fc4e83d23d"
+      },
+      "log": {
+        "bytes": 376,
+        "sha256": "39657b56bc066a6f6608a47d3bb5db876e76e891bab53bdec7da723f49006fe4"
+      }
+    },
+    "final_focus_215": {
+      "tests": 215,
+      "passed": 215,
+      "failed_or_errors": 0,
+      "skipped": 0,
+      "duration_seconds": 1.357,
+      "junit": {
+        "bytes": 35408,
+        "sha256": "4631a16d0d861dc7aa78948072ba98eed285fad3ed122367ff0803028899d2ce"
+      },
+      "log": {
+        "bytes": 376,
+        "sha256": "68221ffaac518dbdf4cb7190c85c177ac6b8e3d8595adc945728b1aea0c2a740"
+      }
+    },
+    "initial_readability_complexity_failure": {
+      "bytes": 93,
+      "sha256": "39c98e256672e83a5bae2c2a57cc1e706be46e653c4cb98c5adb0836bc5cbfe7"
+    },
+    "initial_readability_metadata_failure": {
+      "bytes": 83,
+      "sha256": "b7a9897565a2e65abeeaa3ce376db0193054c708dabaf7a6db85f0d2e847967e"
+    },
+    "initial_installed_harness_preflight": {
+      "initial_failure": "incorrect expectation of src in pytest pythonpath",
+      "initial_tests_started": false,
+      "actual_pythonpath": [
+        "."
+      ],
+      "configuration_copy_is_exact": true,
+      "config_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+      "wheel_rebuilt": false
+    }
+  },
+  "independent_review_separators_red": {
+    "tests": 6,
+    "passed": 0,
+    "failed_or_errors": 6,
+    "skipped": 0,
+    "duration_seconds": 0.156,
+    "junit": {
+      "bytes": 17373,
+      "sha256": "2b2acae440fff922ae41bf7fc260fafdee681a73e7e600efaa0b43491ac9ce79"
+    },
+    "log": {
+      "bytes": 13585,
+      "sha256": "1d7af9837bda8f6bb2738a494eb81d4fb0d312c65ad79eb89cdf83ed3c5b0ac1"
+    }
+  },
+  "final_candidate_checks": {
+    "source": {
+      "tests": 1449,
+      "passed": 1422,
+      "failed_or_errors": 0,
+      "skipped": 27,
+      "duration_seconds": 165.661,
+      "junit": {
+        "bytes": 241741,
+        "sha256": "34969385ba8e7f3198a70f87a09038dc37657223ad3498d90dfeeb261bf531e6"
+      },
+      "log": {
+        "bytes": 1900,
+        "sha256": "a8340ae21072f22f5c71761351c5ca55b9233a91986478b247bf5fdf465f8b76"
+      }
+    },
+    "governance": {
+      "tests": 302,
+      "passed": 302,
+      "failed_or_errors": 0,
+      "skipped": 0,
+      "duration_seconds": 32.42,
+      "junit": {
+        "bytes": 47175,
+        "sha256": "235fb3c4710a2ce4eeb18c38cf7d695543cb894d331bd98271543ff93bb50309"
+      },
+      "log": {
+        "bytes": 561,
+        "sha256": "d984f9952fb4c998a25102f14c785ec63dde4990c399079094a3e9b963957e93"
+      }
+    },
+    "installed": {
+      "312": {
+        "tests": 832,
+        "passed": 828,
+        "failed_or_errors": 0,
+        "skipped": 4,
+        "duration_seconds": 108.833,
+        "junit": {
+          "bytes": 135996,
+          "sha256": "c3d04554a47ce7fc32d30091f13191808cac66a64df310c1478f7a8251092c6d"
+        },
+        "log": {
+          "bytes": 1174,
+          "sha256": "5f3528d052478d03c893b7e93e967f87770148456dd4b4d4104e22ff3fd7e526"
+        }
+      },
+      "313": {
+        "tests": 832,
+        "passed": 828,
+        "failed_or_errors": 0,
+        "skipped": 4,
+        "duration_seconds": 89.386,
+        "junit": {
+          "bytes": 135995,
+          "sha256": "4cc64e59930355851de49859525ad3ad4043cbdde521577938036c3ec037f839"
+        },
+        "log": {
+          "bytes": 1174,
+          "sha256": "4f9f6de89223d6f52f0c9c88aa32d9f88bc8aee6d496d1023e2fbbad68134c4d"
+        }
+      }
+    },
+    "ruff": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format": {
+      "bytes": 29,
+      "sha256": "81ec190341d597f42f8566ad560ee56852e04c7d5c2fc4a21286a7a524ccdf6e"
+    },
+    "mypy": {
+      "bytes": 45,
+      "sha256": "0eb3934a452ad76b508bf4fb703496c628e79a1e66413d5840b06cbd5d3ba98b"
+    },
+    "readability": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "schema": {
+      "bytes": 28,
+      "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+    },
+    "taskpack": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "documentation": {
+      "changed_path_count": 31,
+      "document_count": 446,
+      "findings": [],
+      "link_count": 10933,
+      "mermaid_count": 941,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "secret_self_check": {
+      "bytes": 56,
+      "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+    },
+    "repository_and_actual_wheel_secret_scan": {
+      "bytes": 101,
+      "sha256": "e2fed86ce17aca41b04448e876444098c5ed56d19e38d2574198f13ccef35273"
+    }
+  },
+  "baseline_ci": {
+    "revision": "d3175f71d77cfb0f5f2c2a613e6da3c74ae68204",
+    "run": 36817377392,
+    "conclusion": "failure",
+    "jobs": {
+      "documentation": "success",
+      "container-sandbox": "success",
+      "coding-tools-macos": "success",
+      "python3.12": {
+        "conclusion": "failure",
+        "stage": "license_scan",
+        "archives": 12
+      },
+      "python3.13": {
+        "conclusion": "failure",
+        "stage": "license_scan",
+        "archives": 12
+      },
+      "windows": {
+        "ntfs": "success",
+        "git_read": "success",
+        "raw": {
+          "collected": 1306,
+          "completed": 1300,
+          "passed": 1292,
+          "failed": 2,
+          "skipped": 6,
+          "without_verified_terminal": 6,
+          "duration_seconds": 301.85,
+          "deadline_minutes": 5
+        },
+        "old_25_failure_comparison": {
+          "now_passed": 23,
+          "still_failed": 2
+        },
+        "new_actual_directory_tests_passed": 2,
+        "causal_status": "OPEN",
+        "failed_phase": "may-delivered write before independent read"
+      }
+    }
+  },
+  "baseline_ci_log": {
+    "bytes": 329029,
+    "sha256": "417c45d54d9d4c8bb668683c31b5d07b35f6332765098cafbdcb26693a406d0e"
+  },
+  "independent_windows_diagnosis": {
+    "summary": {
+      "bytes": 16535,
+      "sha256": "c65935170d4873c2cacaf0cbfc63959555b3ad8647840b0af4d5be50b8a7e4a7"
+    },
+    "causal_status": "OPEN",
+    "new_platform_experiments": 0
+  },
+  "same_selector_overlap_not_added_to_coverage": true,
+  "after_public_seal": {
+    "governance": {
+      "tests": 302,
+      "passed": 302,
+      "failed_or_errors": 0,
+      "junit": {
+        "bytes": 47175,
+        "sha256": "b770668c2e2a7c4fa48d302c62a6b4c3c0ab6a9f41cbffedb0b8b3717670d8c0"
+      },
+      "log": {
+        "bytes": 564,
+        "sha256": "66f07c98f0513d12a02d270784c34174f8c28705c44b56bf0da743af8389ce9d"
+      }
+    },
+    "documentation": {
+      "changed_path_count": 31,
+      "document_count": 446,
+      "findings": [],
+      "link_count": 10933,
+      "mermaid_count": 941,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "secret_actual_final_wheel": {
+      "bytes": 101,
+      "sha256": "e2fed86ce17aca41b04448e876444098c5ed56d19e38d2574198f13ccef35273"
+    },
+    "readability": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "code_inputs_unchanged": true
+  }
+}

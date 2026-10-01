@@ -155,7 +155,7 @@ SHA256、Git OID及CAS摘要分别证明不同内容绑定；均不单独证明�
 
 | 源码符号 | 核心职责／数据 | 对应流程 |
 | --- | --- | --- |
-| `_version`／`_mutation`／`_mutations` | 实际标量类型、精确字段和原镜像容量；重建不可变净Mutation | 第1步 |
+| `_version`／`_mutation`／`snapshot_git_tree_mutations`（原`_mutations`） | 实际标量类型、精确字段和原镜像容量；深层重建不可变净Mutation，后继与Diff共用 | 第1步 |
 | `_directories` | 复读完整base的原tree，以路径集合保留显式空目录；不共享可变子树节点 | 第2步目录展开 |
 | `_before` | 由base文件的SHA／长度／模式构造期望版本，完整比较所有首before | 第3步 |
 | `_after` | 精确必要正文键`(SHA256, bytes)`；重新核对每个引用并完整回读 | 第4步 |
@@ -405,3 +405,11 @@ JUnit属性警告和Worker目录文字错误均保留，根因与修正分别登
 
 研究基线59e129e不包含新增实现；具体实现归属由最终输入摘要及包含本设计的提交确定。
 本切片不证明业务授权、持久化完成或完整Git产品交付，不发布新的R3成绩。
+
+## 16. 后继共享快照入口
+
+[完整树与Diff同源规划](m09-r4-git-tree-diff.md)将原`_mutations`严格验证器命名为
+`snapshot_git_tree_mutations`，完整投影继续使用同一原验证逻辑；增加入口callable/platform显式拒绝。
+GitDiff先深层重建独立快照，投影与内容编码两阶段均消费这一净变化，避免外部before/after别名漂移。
+原目标编码、原四限额及镜像容量没有放宽。初始59e129e的测试与制品证据仍仅属于原候选；
+后继实际源码、八项失败与修复对照由[新统一验证包](../validation/git-tree-diff-2026-10-01-v1/README.md)绑定。

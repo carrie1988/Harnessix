@@ -1,0 +1,95 @@
+{
+  "schema": "harnessix.git-tree-diff-review-packet/v1",
+  "candidate_code_inputs_sha256": "418ecd5205f4211803e930b4c5edc62772df19f9e0defa33e9ea44eb3ae358e6",
+  "independent_review": {
+    "kind": "static_only",
+    "initial_p0": 0,
+    "initial_p1": 0,
+    "initial_p2": 2,
+    "initial_report": {
+      "bytes": 15362,
+      "sha256": "553538a128157dc4b6595c45ba3fceb24dc3378b84fe08f6b606e9cc0c1f9e5e"
+    },
+    "initial_summary": {
+      "bytes": 23172,
+      "sha256": "b32b29213f389401c80627a990a13ba893279dc4c3f24632fa16a6ea73a7152c"
+    },
+    "addendum_report": {
+      "bytes": 9000,
+      "sha256": "719d63c68610e50f13d6e2c87275df70941c8318a971353e67d7726a8714ae40"
+    },
+    "addendum_summary": {
+      "bytes": 21133,
+      "sha256": "477a929bf10d90322b23fd8987f827abdfeb46e9df6a869cf7bcef66ac6f00d6"
+    },
+    "original_findings_retained": true,
+    "fixes": [
+      {
+        "id": "GD-REVIEW-01",
+        "resolution": "LF-only line boundaries for Git markers; legacy splitlines unchanged; actual regression red preserved"
+      },
+      {
+        "id": "GD-REVIEW-02",
+        "resolution": "snapshot before Projection/CAS; per-item pre-copy checkpoint retained; no atomic callback claim"
+      }
+    ],
+    "not_a_native_or_business_acceptance": true,
+    "final_unresolved_p0": 0,
+    "final_unresolved_p1": 0,
+    "final_unresolved_p2": 0,
+    "resolution_scope": "exact current source static review plus separately recorded regression; not production or native acceptance"
+  },
+  "source_mapping": [
+    {
+      "path": "src/harnessix/delivery/contracts.py",
+      "sha256": "7d28e931dc37f6eb1e6d939ca2f85886207b8c40e6fcb3889fdd1bafd02d9847",
+      "bytes": 10171
+    },
+    {
+      "path": "src/harnessix/delivery/diff.py",
+      "sha256": "0b3a53debcb3ede3b45f40ac9ed3ea36db3f7bf91dbc5ccdb59b64571e07c816",
+      "bytes": 1156
+    },
+    {
+      "path": "src/harnessix/delivery/diff_content.py",
+      "sha256": "21933aa3cf3438afb434f0c3df95783400c5a53b4bc86ebe105d0209cb67b9c5",
+      "bytes": 7652
+    },
+    {
+      "path": "src/harnessix/delivery/git_tree_diff.py",
+      "sha256": "77907fd7e2ebefbdffc14e33b880a42b9009ff0078fa635b447ab91ad6430937",
+      "bytes": 3584
+    },
+    {
+      "path": "src/harnessix/delivery/git_tree_projection.py",
+      "sha256": "c62f282d4bb6d56a7e94bfba31ae6c169dff4a4af9e83755a2034ccb3eb766d7",
+      "bytes": 15829
+    },
+    {
+      "path": "tests/delivery/test_diff_content.py",
+      "sha256": "9910f33bcda1874f6a3f7a5274478c7b6b89fc5a1e1db305185646418278bec8",
+      "bytes": 15089
+    },
+    {
+      "path": "tests/delivery/test_git_tree_diff.py",
+      "sha256": "fd1b173a5f2c05194ce0a473e02a1b249f217387177801bbac949f2364dae0f8",
+      "bytes": 21066
+    }
+  ],
+  "sdd": {
+    "path": "docs/changes/m09-r4-git-tree-diff.md",
+    "bytes": 20488,
+    "sha256": "c1804a7e39dd9740faf315b5a903b1a9d2f91868e549a15897e7d4fe44c2f5ff"
+  },
+  "unclosed": [
+    "default Git Checkpoint/Commit composition",
+    "object-role/catalog authentication and GitDB complete-prefix MAC",
+    "Artifact and independent approvals",
+    "A/D worktrees and derived transaction bridge",
+    "Backup v2 and new-root reauthorization",
+    "full R3 20 trials",
+    "consumer Windows11",
+    "independent Beta",
+    "same-candidate R1-R6 release"
+  ]
+}

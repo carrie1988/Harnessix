@@ -1,0 +1,22 @@
+sequenceDiagram
+  participant H as 可信宿主
+  participant G as GitDiff协调
+  participant P as 原目标树规划
+  participant C as 原CAS
+  participant R as 唯一内容编码
+  H->>G: 固定来源/净变化/树限额/Diff预算/取消
+  G->>G: 严格深层快照，断开外部别名
+  G->>P: 同一净Mutation快照
+  P->>C: 完整base及必要after读取
+  C-->>P: 全部原材料验真
+  P-->>G: 完整目标树及文件引用
+  G->>G: 全base/target正文索引与冲突检查
+  G->>R: 同一净Mutation/受限Reader/显式预算
+  loop 每个必要前后正文
+    R->>C: 原typed reference完整二次读取
+    C-->>R: 再验类型/OID/SHA/长度
+  end
+  R->>R: 完整区块记账及checkpoint
+  R-->>G: 完整文本/条目/字节/SHA
+  G->>G: 最后checkpoint
+  G-->>H: 完整只读内容事实，非批准

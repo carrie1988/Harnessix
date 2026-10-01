@@ -1,0 +1,12 @@
+flowchart TD
+  I[显式Diff预算及输入] --> S[原净Mutation深层严格快照]
+  S --> P[完整base及目标树规划]
+  P --> Ref[完整base及target正文引用索引]
+  Ref --> R[原CAS必要正文再次验真]
+  R --> E[唯一Diff编码<br/>每片UTF-8预算及checkpoint]
+  E --> Hash[完整文本长度与SHA256]
+  Hash --> O[一次完整只读结果]
+  S --> F[失败或取消<br/>无部分返回及写效果]
+  P --> F
+  R --> F
+  E --> F
