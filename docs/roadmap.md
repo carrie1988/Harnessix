@@ -1415,3 +1415,17 @@ stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以
 十模块实际CRLF字节已与固定Git blob逐件对应；不宣称整个原生checkout已核查或唯一根因已定位。
 独立静态增量审查未发现指定范围P0／P1／P2，审查者没有执行函数或业务测试。
 原FAIL、完整Git交付、R3、消费者环境及Beta保持开放。
+
+### R4：完整Git对象目录与规范字节契约
+
+[正式详设](changes/m09-r4-git-object-inventory-contract.md)增加七个不可变持久模型、八个纯内存接口，
+核对全部声明对象、根／角色闭包、双树逐路径计数、历史parent边界、完整规范JSON及不同用途的内容摘要。
+原64MiB记录、8MiB单体与显式图限制保持；原三处复杂度及delivery到session依赖拒绝按职责整改，政策未放宽。
+[统一验证包](validation/git-object-inventory-contract-2026-10-01-v1/README.md)绑定完整1263代码输入与单一Wheel，
+源码及Python3.12／3.13源码外各1914通过／23跳过，492治理及全430模块类型检查通过。
+源码外缺失Schema夹具的两轮原FAIL均保留；补全原259件静态规范后同Wheel通过，没有源码回退或修改断言。
+声明内容合同不是实际CAS验真、权威归属或认证尾锚；全前缀、完整Review／新批准、Backup v2、新根恢复及
+默认Commit／Checkpoint仍按完整Git产品主线实施，不关闭R3、消费者Windows、Beta或商用R1～R6。
+
+最终职责整改静态独立审查完成，未发现指定增量P0／P1／P2，实际测试执行零；原261通过单独归属。
+现行Delivery模块设计已同步七模型、八接口和纯声明／实际CAS／权威边界，原文档拒绝记录保留。

@@ -1,0 +1,11 @@
+flowchart TD
+    In[Python模型或完整持久bytes] --> Type{输入实际类型正确}
+    Type -->|否| Reject[固定拒绝 无写入]
+    Type -->|是| Shape[逐字段和深层成员重建]
+    Shape --> Equal[检查可证明的跨字段等式]
+    Equal --> Digest[规范完整scope与record摘要]
+    Digest --> Canon{持久原字节完全规范}
+    Canon -->|否| Reject
+    Canon -->|是| Out[返回新不可变内容快照]
+    Shape -. checkpoint异常 .-> Cancel[原异常传播 无partial结果]
+    Digest -. checkpoint异常 .-> Cancel

@@ -1,0 +1,645 @@
+{
+  "schema": "harnessix.git-inventory-contract-facts/v1",
+  "baseline_revision": "9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c",
+  "scope": "严格声明元数据、规范字节与普通内容摘要；无实际CAS、认证前缀或执行授权",
+  "code_inventory": {
+    "complete_code_inputs": 1263,
+    "sha256": "d0893d9e14a310cd6a75bc506715c01ee529bfa0ce0e6863c8126d58b68499c2",
+    "existing_production_members_unchanged": 469,
+    "production_additions": 2,
+    "new_files": [
+      {
+        "path": "src/harnessix/delivery/git_inventory_contracts.py",
+        "bytes": 21175,
+        "sha256": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199"
+      },
+      {
+        "path": "src/harnessix/delivery/git_inventory_wire.py",
+        "bytes": 12095,
+        "sha256": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352"
+      },
+      {
+        "path": "tests/delivery/test_git_inventory_contracts.py",
+        "bytes": 22780,
+        "sha256": "d2a8564d097701a2f1cb9341b2e59dc242f337d49a92b1fc822a39f08295d7de"
+      },
+      {
+        "path": "tests/delivery/test_git_inventory_wire.py",
+        "bytes": 10246,
+        "sha256": "6b5ab7ec3e7e39c82e3945b289298a426e40dab3ab07645709abc22b92e99731"
+      }
+    ],
+    "excluded_unpublished_material_verifier": true,
+    "excluded_ntfs_prototype": true,
+    "primary_user_untracked_accessed": false
+  },
+  "models_field_counts": {
+    "GitInventoryBinding": 16,
+    "GitInventoryRoots": 4,
+    "GitInventoryObject": 4,
+    "GitBaseHistoryBoundary": 4,
+    "GitInventoryMetrics": 8,
+    "GitObjectInventory": 15,
+    "GitInventoryPrefixProjection": 8
+  },
+  "public_function_count": 8,
+  "wire_record_limit_bytes": 67108864,
+  "original_single_material_limit_bytes": 8388608,
+  "new_host_budget_created": false,
+  "retained_initial_missing_module_red": {
+    "result": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 2,
+      "skipped": 0,
+      "passed": 0
+    },
+    "junit": {
+      "bytes": 1855,
+      "sha256": "56822f25011cc5a34997902e91a76cebbbd73e79b59f7440a79246ee903320e6"
+    },
+    "log": {
+      "bytes": 1997,
+      "sha256": "18c602968b9c88990ab5b55f1fef23dc1d60c78df70507f7ea1ef71ad9d579d9"
+    }
+  },
+  "retained_development_failures": [
+    {
+      "artifact": "green-development-1.xml",
+      "result": {
+        "tests": 146,
+        "failures": 3,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 143
+      },
+      "junit": {
+        "bytes": 35870,
+        "sha256": "ff7286a77b605a2b720b061dbced55a0a939cfe22ac184ec40110b6e83ae3df5"
+      }
+    },
+    {
+      "artifact": "limit-type-red.xml",
+      "result": {
+        "tests": 4,
+        "failures": 3,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 1
+      },
+      "junit": {
+        "bytes": 5036,
+        "sha256": "4ddcff9f86e49b609120150b7a9a1f9be50252623de6a072e79f89f3ee34faf7"
+      }
+    },
+    {
+      "artifact": "json-number-red.xml",
+      "result": {
+        "tests": 4,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 3
+      },
+      "junit": {
+        "bytes": 3248,
+        "sha256": "8bbe182060cb1003a12d9075e7859bf6ccfd9964df22481fb42639489c35657e"
+      }
+    }
+  ],
+  "initial_focus": {
+    "result": {
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 198
+    },
+    "junit": {
+      "bytes": 30570,
+      "sha256": "17bce343ddafeb9743678ceec43616c35e58f896eb1c2e6b0994ae10334f9d82"
+    }
+  },
+  "initial_independent_review": {
+    "scope": "original four-file byte identity, not final refactored identity",
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "result": {
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 63
+    },
+    "report": {
+      "bytes": 12436,
+      "sha256": "63a721c5f8ca52a24cd1b8d9aa6f7c2ac65783d14d15bcd1b18d1ab8eaabf326"
+    },
+    "summary": {
+      "bytes": 7480,
+      "sha256": "97609a0352da67d5a38c240992cb645f17f392acd468569ac3bcba9f38373ea8"
+    }
+  },
+  "structural_remediation": {
+    "original_policy_failures": 4,
+    "original_policy_log": {
+      "bytes": 336,
+      "sha256": "4f5b70ec93b3914a26165499e5a3db2155a6c883db00f55d4c4cc8439a521adc"
+    },
+    "final_source_identity": {
+      "src/harnessix/delivery/git_inventory_contracts.py": {
+        "bytes": 21175,
+        "sha256": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199"
+      },
+      "src/harnessix/delivery/git_inventory_wire.py": {
+        "bytes": 12095,
+        "sha256": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352"
+      }
+    },
+    "result": {
+      "tests": 261,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 261
+    },
+    "expanded_ast_preservation": {
+      "local_helper_expansion_ast_identical": true,
+      "catalog_helper_expansion_ast_identical": true,
+      "wire_scalar_helper_expansion_ast_identical": true,
+      "all_other_function_asts_identical_except_fixed_constant_name": true,
+      "all_original_class_defs_and_type_aliases_and_whitelist_identical": true,
+      "constant_equals_original_64mib": true,
+      "new_checkpoint_calls": 0,
+      "checkpoint_order_and_error_branches_preserved_in_expanded_ast": true,
+      "policy_errors": []
+    },
+    "policy_modified": false,
+    "readability_errors": 0,
+    "report": {
+      "bytes": 8485,
+      "sha256": "b83c50e223a7f3f436120e228486a9bdd76800b69096671dbb5e2d2e75221c48"
+    },
+    "summary": {
+      "bytes": 13809,
+      "sha256": "7fe59b98b6fdf818a3a65c97d169f910e4ed51f2f380e84a511dfd18cb60a96c"
+    }
+  },
+  "same_candidate_related_checks": [
+    {
+      "tag": "source",
+      "result": {
+        "tests": 1937,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 23,
+        "passed": 1914
+      },
+      "junit": {
+        "bytes": 329845,
+        "sha256": "b1f457285bb915a0abb389e32f90fb83dd56ce2ad1745d2506aadc968a5aa927"
+      },
+      "log": {
+        "bytes": 2376,
+        "sha256": "cd06b26cdccc5ec33cf0153fb577e341268a9ffaf8bc4ede59605c9468a5b365"
+      },
+      "input_and_import_proof": {
+        "bytes": 54651,
+        "sha256": "525fe6f8adbae4556070be0afd4beacd33c5c001ac2bdba3f19154163e2e25f4"
+      },
+      "package_members": 471,
+      "actual_import_modules": 246,
+      "source_fallback": false,
+      "all_package_bytes_equal_before_after": true,
+      "python": "3.12.7",
+      "static_spec_assets": 0
+    },
+    {
+      "tag": "installed312-static-contracts",
+      "result": {
+        "tests": 1937,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 23,
+        "passed": 1914
+      },
+      "junit": {
+        "bytes": 329776,
+        "sha256": "d0c459be7f05e8517a17b8880f5eb0ff940565fa67607715c43892948f6d2828"
+      },
+      "log": {
+        "bytes": 2422,
+        "sha256": "2b964469606b2b248d2e33042a2e0bcf18f07ea371e077fa1085aaa29a031fc2"
+      },
+      "input_and_import_proof": {
+        "bytes": 100046,
+        "sha256": "2592ab3b38acb368d679239d08753eaba33fc502eaa196c3123f1c419c249843"
+      },
+      "package_members": 471,
+      "actual_import_modules": 246,
+      "source_fallback": false,
+      "all_package_bytes_equal_before_after": true,
+      "python": "3.12.7",
+      "static_spec_assets": 259
+    },
+    {
+      "tag": "installed313-static-contracts",
+      "result": {
+        "tests": 1937,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 23,
+        "passed": 1914
+      },
+      "junit": {
+        "bytes": 329776,
+        "sha256": "fd51e30ddfa4a6f68146110ec6dc1c4545fc74a3607d83ac0a4ac0ea3d1fc031"
+      },
+      "log": {
+        "bytes": 2422,
+        "sha256": "93562641dd48f23f8175cc7b5e1da067ed65e85d3e4577f6f6e0aff2f6512390"
+      },
+      "input_and_import_proof": {
+        "bytes": 100015,
+        "sha256": "457890af3904abc48b30ddb5737fc63d2cb967682fe991cc842205dae7ff209d"
+      },
+      "package_members": 471,
+      "actual_import_modules": 246,
+      "source_fallback": false,
+      "all_package_bytes_equal_before_after": true,
+      "python": "3.13.8",
+      "static_spec_assets": 259
+    }
+  ],
+  "same_candidate_governance": {
+    "tag": "governance-final",
+    "result": {
+      "tests": 492,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 492
+    },
+    "junit": {
+      "bytes": 79658,
+      "sha256": "dd776c22ff9f97020d68234223d85033ee36c8725545ce9051e4a1f1b8dc0442"
+    },
+    "log": {
+      "bytes": 796,
+      "sha256": "ef1cbb374217454eeb2cd3cb10ff0c6346c1df27a71ea2d1c452063406c6edf5"
+    },
+    "input_and_import_proof": {
+      "bytes": 68244,
+      "sha256": "28b7daf54ef9d3a373a73fafef46dcd80ca4a8beb0f895a7420aaacb2e5664d3"
+    },
+    "package_members": 471,
+    "actual_import_modules": 319,
+    "source_fallback": false,
+    "all_package_bytes_equal_before_after": true,
+    "python": "3.12.7",
+    "static_spec_assets": 0
+  },
+  "retained_source_out_failures": [
+    {
+      "tag": "installed312",
+      "result": {
+        "tests": 1937,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 23,
+        "passed": 1913
+      },
+      "junit": {
+        "bytes": 331946,
+        "sha256": "07f32bc78ddba968f1a12366820fa4fe44ae3845ee054c9f98a6033481e0bcc4"
+      },
+      "log": {
+        "bytes": 4628,
+        "sha256": "a3ba2fd7a33d0bb07eaf3287f2704c1005ee8aa79b2a3ec2ce03bcbf709a5046"
+      },
+      "input_and_import_proof": {
+        "bytes": 54660,
+        "sha256": "acbd58f8aafb131fd3a50741719876a52ba943d0bed0cc9a7eb8608cd9a1d88e"
+      },
+      "package_members": 471,
+      "actual_import_modules": 246,
+      "source_fallback": false,
+      "all_package_bytes_equal_before_after": true,
+      "python": "3.12.7",
+      "static_spec_assets": 0
+    },
+    {
+      "tag": "installed313",
+      "result": {
+        "tests": 1937,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 23,
+        "passed": 1913
+      },
+      "junit": {
+        "bytes": 332365,
+        "sha256": "a65033c59c5af4d237c0322ae0302b94b72075b68f84c08ca515cc6923f01939"
+      },
+      "log": {
+        "bytes": 5047,
+        "sha256": "06a1590abee563d804fb119bdf82741cba56f6d87255d6afcd7c10b54bb77f58"
+      },
+      "input_and_import_proof": {
+        "bytes": 54629,
+        "sha256": "dab89639524df0d1ea179ef5b07685a23587be9e20028d61e18242e148628849"
+      },
+      "package_members": 471,
+      "actual_import_modules": 246,
+      "source_fallback": false,
+      "all_package_bytes_equal_before_after": true,
+      "python": "3.13.8",
+      "static_spec_assets": 0
+    },
+    {
+      "tag": "installed312-complete-fixtures",
+      "result": {
+        "tests": 1937,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 23,
+        "passed": 1913
+      },
+      "junit": {
+        "bytes": 332110,
+        "sha256": "e3b20746c95e275b8b9fa8f1da8e1bf9c7dec13598d058b9123d553403bd25cc"
+      },
+      "log": {
+        "bytes": 4819,
+        "sha256": "6a0a17f99ec12d3a54424c0d7fc843737bf2dffa4894f0ee54fa9430bfaa34ba"
+      },
+      "input_and_import_proof": {
+        "bytes": 55084,
+        "sha256": "3934468556b581629f9c2bed6bb664267c8fad03841969e251699083bb215b4d"
+      },
+      "package_members": 471,
+      "actual_import_modules": 246,
+      "source_fallback": false,
+      "all_package_bytes_equal_before_after": true,
+      "python": "3.12.7",
+      "static_spec_assets": 2
+    },
+    {
+      "tag": "installed313-complete-fixtures",
+      "result": {
+        "tests": 1937,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 23,
+        "passed": 1913
+      },
+      "junit": {
+        "bytes": 332529,
+        "sha256": "e9edd132d53d3040b26fdcd11fd83bebe8278a2ae6d0596d17b49a59ddea9334"
+      },
+      "log": {
+        "bytes": 5238,
+        "sha256": "1da843a5c3eadb8b014d6a86379332e7aca310b9733e7b7d689ac67dd20c16bd"
+      },
+      "input_and_import_proof": {
+        "bytes": 55053,
+        "sha256": "1e981cad80f5ea73022adac98f575edfef80d13f0fd80a0688e81dfa55571ffa"
+      },
+      "package_members": 471,
+      "actual_import_modules": 246,
+      "source_fallback": false,
+      "all_package_bytes_equal_before_after": true,
+      "python": "3.13.8",
+      "static_spec_assets": 2
+    }
+  ],
+  "source_out_failure_cause": "verification fixtures incomplete: original test needs input and action-review JSON schemas; complete unchanged spec directory provided before final replay; tests, product bytes and wheel unchanged",
+  "static_schema_fixture_assets": {
+    "count": 259,
+    "inventory": {
+      "bytes": 45415,
+      "sha256": "ff13a5138f8436ee3f6c291bcf83f60c257a433d2b364d878c894f54e4b9f1bc"
+    },
+    "no_src_directory": true,
+    "source_fallback": false
+  },
+  "single_wheel": {
+    "wheel": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "wheel_sha256": "1a80f2835f126f4c5f900ded9908fd9fbe95926cfad735d31636dd5aad6015a0",
+    "wheel_bytes": 1184019,
+    "zip_members": 476,
+    "package_members": 471,
+    "python_modules": 430,
+    "record_complete": true,
+    "source_equals_all_package_members": true,
+    "single_build": true
+  },
+  "static_checks": {
+    "mypy_source_files": 430,
+    "mypy_result": "passed",
+    "mypy_log": {
+      "bytes": 45,
+      "sha256": "28d901f26e2a8bd80b55ad736816c7fbec81c2c945b20cfbdbf907390b114e36"
+    },
+    "ruff_result": "passed",
+    "ruff_log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format_result": "passed",
+    "format_files": 1484,
+    "format_log": {
+      "bytes": 29,
+      "sha256": "fea36b59a91482c1f2e05af78a027fad8fbb73dd6d62a90531db955a6abc297e"
+    },
+    "readability": {
+      "bytes": 406,
+      "sha256": "ceaf4df9181a7006d77734193cdd07a4392f5776bb20fbaa89f8a87a04d9872e"
+    },
+    "new_package_dependency_edges": 0,
+    "public_exports_changed": false
+  },
+  "actual_rendered_and_viewed_diagrams": [
+    {
+      "name": "architecture",
+      "actual_visual_review": true,
+      "source_matches_current_sdd": true,
+      "mmd": {
+        "bytes": 514,
+        "sha256": "4ff44e027a99212e5b0d7145d8f06255e6dad1c8da52443aeb38d22689f67469"
+      },
+      "png": {
+        "bytes": 47946,
+        "sha256": "cc05101fd72fe71f1d2e6f31786aa9f133fccb55c29de67adb3dd33debcac8b4"
+      }
+    },
+    {
+      "name": "flow",
+      "actual_visual_review": true,
+      "source_matches_current_sdd": true,
+      "mmd": {
+        "bytes": 552,
+        "sha256": "d9ef8acc3b9c9b30968f585150860061605ce1163f3796a12ad85098d0a34c45"
+      },
+      "png": {
+        "bytes": 55554,
+        "sha256": "e432c78ca1f8520c706ef992b5962555e795447a4f40c23988fe5f28569036e4"
+      }
+    },
+    {
+      "name": "sequence",
+      "actual_visual_review": true,
+      "source_matches_current_sdd": true,
+      "mmd": {
+        "bytes": 762,
+        "sha256": "1c6cfe35e03ce726c7d4f63732dcfce77d867ea5f25b6cef5c54ae3e4afd5c7b"
+      },
+      "png": {
+        "bytes": 60761,
+        "sha256": "b2caf7154deab2bf29e39541f8dc034e6915c495eac0d776d8830468eac8be88"
+      }
+    },
+    {
+      "name": "dataflow",
+      "actual_visual_review": true,
+      "source_matches_current_sdd": true,
+      "mmd": {
+        "bytes": 651,
+        "sha256": "8ed60dffcbc2fa9cbe7a730b8991be307606aae2ee957a0707e8cd46c384fb0c"
+      },
+      "png": {
+        "bytes": 58953,
+        "sha256": "7ef705ba273a95eaaf118a006cb5304da6e6cfb03c51be2292cb13aa28d169e5"
+      }
+    }
+  ],
+  "final_peer_review": {
+    "status": "passed",
+    "review_type": "fixed_structural_delta_static_review",
+    "scope": "最终四文件职责拆分增量；不覆盖实际CAS、业务授权、原生或商用验收",
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "actual_tests_run": 0,
+    "earlier_261_only_referenced": true,
+    "all_four_frozen_files_unchanged": true,
+    "expanded_ast_and_checkpoint_order_preserved": true,
+    "original_policy_unchanged": true,
+    "report": {
+      "bytes": 13213,
+      "sha256": "02143298d311e2cc4c61954d43730ca7096f662d2f7da015fcfe0d9a6022c633"
+    },
+    "summary": {
+      "bytes": 24631,
+      "sha256": "8d79990df6f90b78b658acb8e93feadadff6f3ce42352c381af28c02dc7ad0fb"
+    },
+    "source_identity": [
+      {
+        "path": "src/harnessix/delivery/git_inventory_contracts.py",
+        "bytes_after": 21175,
+        "sha256_after": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199"
+      },
+      {
+        "path": "src/harnessix/delivery/git_inventory_wire.py",
+        "bytes_after": 12095,
+        "sha256_after": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352"
+      },
+      {
+        "path": "tests/delivery/test_git_inventory_contracts.py",
+        "bytes_after": 22780,
+        "sha256_after": "d2a8564d097701a2f1cb9341b2e59dc242f337d49a92b1fc822a39f08295d7de"
+      },
+      {
+        "path": "tests/delivery/test_git_inventory_wire.py",
+        "bytes_after": 10246,
+        "sha256_after": "6b5ab7ec3e7e39c82e3945b289298a426e40dab3ab07645709abc22b92e99731"
+      }
+    ]
+  },
+  "documentation": {
+    "status": "passed",
+    "report": {
+      "bytes": 192,
+      "sha256": "4fbcb50100117895079db85ca1eb0acb9db4e0a891571d3c04e3edc97154a478"
+    },
+    "checked_paths": 24,
+    "documents": 455,
+    "links": 11081,
+    "mermaid_blocks": 957,
+    "findings": [],
+    "retained_first_failure": {
+      "report": {
+        "bytes": 349,
+        "sha256": "8faa9d5e1b8070c66153ea3e5661b86f28f3c6d781be8d85509fa9d642679839"
+      },
+      "findings": [
+        {
+          "code": "doc_sync_module_required",
+          "line": null,
+          "message": "源码包delivery变化时必须同步现行模块设计",
+          "path": "docs/modules/delivery.md"
+        }
+      ]
+    },
+    "remediation": "同步现行Delivery模块设计及七模型／八接口／失败取消／后继边界；未放宽文档政策"
+  },
+  "secret_scan": {
+    "status": "passed",
+    "scan_version": "harnessix.secret-scan/v2",
+    "complete_inputs": 4069,
+    "fixed_rule_hits": 0,
+    "includes_actual_single_wheel": true,
+    "log": {
+      "bytes": 101,
+      "sha256": "5b460dfc2b7f01ff30821b1ba2e854a4675f61817d4f5981a29628a1359eb9ec"
+    }
+  },
+  "model_requests": 0,
+  "model_credential_reads": 0,
+  "commercial_gates_closed": [],
+  "not_verified": [
+    "actual CAS bodies and complete graph observations",
+    "owned caller and original approved source authority",
+    "GitDB complete authenticated prefix and independent tail anchor",
+    "default product Commit and Checkpoint",
+    "Backup v2 and new-root reauthorization",
+    "full valid 64MiB inventory capacity",
+    "Windows consumer coding",
+    "real R3 20 Trial",
+    "independent Beta",
+    "commercial 1.0"
+  ],
+  "retained_before_module_sync_governance": {
+    "tag": "governance",
+    "result": {
+      "tests": 492,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 492
+    },
+    "junit": {
+      "bytes": 79658,
+      "sha256": "25f21527033dab6c5a494a7883461e5d072b3389b0f37b8e07ee67953847af1c"
+    },
+    "log": {
+      "bytes": 784,
+      "sha256": "2597d07ff219c00d030c00b71fd3df06a08b2dbfb624ae9cc2cb9139ab9c3360"
+    },
+    "input_and_import_proof": {
+      "bytes": 68238,
+      "sha256": "f55296d8da35cd3197c420239f05d4ae2faa7ca3617b4021b43095afacc3cf06"
+    },
+    "package_members": 471,
+    "actual_import_modules": 319,
+    "source_fallback": false,
+    "all_package_bytes_equal_before_after": true,
+    "python": "3.12.7",
+    "static_spec_assets": 0
+  }
+}

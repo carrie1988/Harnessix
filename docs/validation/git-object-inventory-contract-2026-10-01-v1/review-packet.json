@@ -1,0 +1,77 @@
+{
+  "schema": "harnessix.git-inventory-contract-review/v1",
+  "review_type": "维护者整合及独立职责拆分增量静态审查",
+  "reviewed_paths": [
+    "src/harnessix/delivery/git_inventory_contracts.py",
+    "src/harnessix/delivery/git_inventory_wire.py",
+    "tests/delivery/test_git_inventory_contracts.py",
+    "tests/delivery/test_git_inventory_wire.py"
+  ],
+  "findings": [],
+  "reviewed_current_two_source_sha256": {
+    "src/harnessix/delivery/git_inventory_contracts.py": {
+      "bytes": 21175,
+      "sha256": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199"
+    },
+    "src/harnessix/delivery/git_inventory_wire.py": {
+      "bytes": 12095,
+      "sha256": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352"
+    }
+  },
+  "unchanged_classes_aliases_and_whitelist": true,
+  "same_expanded_control_flow_and_checkpoint_order": true,
+  "same_64mib_format_bytes": true,
+  "unchanged_469_existing_production_members": true,
+  "source_out_schema_fixture_failures_preserved": true,
+  "initial_independent_review": {
+    "scope": "pre-remediation byte identity only",
+    "findings": [],
+    "independent_actual_tests": 63
+  },
+  "final_independent_review": {
+    "status": "passed",
+    "review_type": "fixed_structural_delta_static_review",
+    "scope": "最终四文件职责拆分增量；不覆盖实际CAS、业务授权、原生或商用验收",
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "actual_tests_run": 0,
+    "earlier_261_only_referenced": true,
+    "all_four_frozen_files_unchanged": true,
+    "expanded_ast_and_checkpoint_order_preserved": true,
+    "original_policy_unchanged": true,
+    "report": {
+      "bytes": 13213,
+      "sha256": "02143298d311e2cc4c61954d43730ca7096f662d2f7da015fcfe0d9a6022c633"
+    },
+    "summary": {
+      "bytes": 24631,
+      "sha256": "8d79990df6f90b78b658acb8e93feadadff6f3ce42352c381af28c02dc7ad0fb"
+    },
+    "source_identity": [
+      {
+        "path": "src/harnessix/delivery/git_inventory_contracts.py",
+        "bytes_after": 21175,
+        "sha256_after": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199"
+      },
+      {
+        "path": "src/harnessix/delivery/git_inventory_wire.py",
+        "bytes_after": 12095,
+        "sha256_after": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352"
+      },
+      {
+        "path": "tests/delivery/test_git_inventory_contracts.py",
+        "bytes_after": 22780,
+        "sha256_after": "d2a8564d097701a2f1cb9341b2e59dc242f337d49a92b1fc822a39f08295d7de"
+      },
+      {
+        "path": "tests/delivery/test_git_inventory_wire.py",
+        "bytes_after": 10246,
+        "sha256_after": "6b5ab7ec3e7e39c82e3945b289298a426e40dab3ab07645709abc22b92e99731"
+      }
+    ]
+  },
+  "not_authority_or_product_acceptance": true
+}

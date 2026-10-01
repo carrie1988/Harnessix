@@ -1,0 +1,40 @@
+{
+  "schema": "harnessix.git-inventory-code-inputs-delta/v1",
+  "baseline_revision": "9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c",
+  "original_complete_code_inputs": {
+    "path": "docs/validation/git-worker-failure-observation-2026-10-01-v1/code-inputs.json",
+    "bytes": 219893,
+    "sha256": "bfb80ae035c7ac8db15f13346ab011e93a4187f9e242c19ca7203db91cdc0935"
+  },
+  "published_v4_delta": {
+    "path": "docs/validation/windows-git-stderr-branches-2026-10-01-v1/code-inputs-delta.json",
+    "bytes": 1103,
+    "sha256": "ba373bf84b68601837f4e15578898c6320507a8cacf0c7ac8726623aaab12883"
+  },
+  "additions": [
+    {
+      "path": "src/harnessix/delivery/git_inventory_contracts.py",
+      "bytes": 21175,
+      "sha256": "985c0d457f5ee389b10be06ea9ffeb90ca53fb7351ddff3ef045f41fe110a199"
+    },
+    {
+      "path": "src/harnessix/delivery/git_inventory_wire.py",
+      "bytes": 12095,
+      "sha256": "93b7a571eca720d0a7a77c1e087277aa6b8e754d6d754e8e5f281f5ddc55f352"
+    },
+    {
+      "path": "tests/delivery/test_git_inventory_contracts.py",
+      "bytes": 22780,
+      "sha256": "d2a8564d097701a2f1cb9341b2e59dc242f337d49a92b1fc822a39f08295d7de"
+    },
+    {
+      "path": "tests/delivery/test_git_inventory_wire.py",
+      "bytes": 10246,
+      "sha256": "6b5ab7ec3e7e39c82e3945b289298a426e40dab3ab07645709abc22b92e99731"
+    }
+  ],
+  "complete_code_input_count": 1263,
+  "complete_code_inventory_sha256": "d0893d9e14a310cd6a75bc506715c01ee529bfa0ce0e6863c8126d58b68499c2",
+  "existing_production_members_unchanged": 469,
+  "new_production_members": 2
+}

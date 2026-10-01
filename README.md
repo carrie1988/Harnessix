@@ -53,6 +53,10 @@ R4新增[已发布Patch的Git交付来源绑定](docs/changes/m09-r4-product-git
 [有限Git记录认证](docs/changes/m09-r4-git-record-publication.md)在原Session Key上提供域分离的新事实签发与只验真端口；
 来源认证不替代对象业务目录、完整GitDB前缀、新批准、默认Commit/Checkpoint或Backup v2。
 
+[Git对象目录契约](docs/changes/m09-r4-git-object-inventory-contract.md)提供七个不可变模型、
+完整规范字节、声明图闭合及内容摘要；不是实际CAS验真、认证账本尾锚或执行授权。
+完整Git产品交付仍需实际材料、权威归属、全前缀、新批准及Backup v2接线。
+
 [Git材料Worker有限首失败观察](docs/changes/m09-r4-git-worker-failure-observation.md)区分清理前首失败与最终捕获，
 不改变成功proof、父端UNKNOWN或原执行权限；本机回归不能替代Windows修复及商用验收。
 

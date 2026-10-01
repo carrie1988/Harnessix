@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 28
-code_revision: 37a1f01bee0dc4747af8680b4918e4c85cae266c
+version: 29
+code_revision: 9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_inventory_contracts.py
+  - tests/delivery/test_git_inventory_wire.py
   - tests/delivery/test_git_object_references.py
   - tests/delivery/test_git_tree_closure.py
   - tests/delivery/test_git_material_cas.py
@@ -1783,6 +1785,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 29 | `9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c` | 2026-10-01 | 同步七个完整对象目录模型、八个纯接口、规范字节、失败／取消与后继CAS及业务授权边界；固定新增源码身份见专项验证包 |
 | 18 | `6a686fdd00162babd0dbaa8b0785186dd15c3cbc` | 2026-09-29 | 发布Workspace Patch操作必填Schema与描述；焦点及受影响双Python通过，原校验/序列化/旧批准拒绝保持；线上认证另行验证 |
 | 7 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b直接Trusted Git Push由CI 35442924441完成七任务全矩阵验收并关闭 |
 | 6 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b直接Trusted Git Push、硬崩溃只对账与旧Action依赖删除候选；等待全矩阵CI |
@@ -1973,3 +1976,77 @@ Git谓词严格按is_alive、failed、退出码、输出长度短路，不补做
 本机和源码外验证不等于Windows根因关闭。完整接口、字段、四图、伪代码及异常安全边界见
 [详细设计](../changes/m09-r4-git-worker-failure-observation.md)和
 [验证资料](../validation/git-worker-failure-observation-2026-10-01-v1/README.md)。
+
+## Git完整对象目录契约与规范字节
+
+### 需求与当前实现边界
+
+对象正文与普通文件树验真分别解决材料存在和内容可解析的问题，尚不能表达一个完整交付所需的
+base、target、delivery角色、来源声明、直接引用、历史边界及全部对象并集。
+新增 [`git_inventory_contracts.py`](../../src/harnessix/delivery/git_inventory_contracts.py) 和
+[`git_inventory_wire.py`](../../src/harnessix/delivery/git_inventory_wire.py) 把这些声明冻结为严格合同与唯一规范字节，
+使后继材料验真、业务签发、审查和备份能够比较同一内容身份。
+
+当前八个接口均为内部纯函数：不读CAS，不执行Git，不访问SQL、Key、Owner或Approval，
+不注册默认Commit／Checkpoint工具。`materials_ready`只是合法声明，不能证明正文已耐久；
+摘要、不可变模型及PrefixProjection均不是执行能力或完整认证账本。
+实际来源授权、全事件前缀及独立尾锚仍属于后继接线，不能由模型中的UUID／SHA占位替代。
+
+### 模型、字段与源码入口
+
+| 模型 | 重点字段与用途 | 不证明的事实 |
+|---|---|---|
+| `GitInventoryBinding`（16字段） | 九个UUID与七个SHA绑定Store、交付、会话、Turn、Call、Route、Epoch和来源／配方／对象范围声明 | 声明与真实受信调用者相符、Key可签发或Approval有效 |
+| `GitInventoryRoots`（4字段） | `base_commit`、`base_tree`、`target_tree`、可空`delivery_commit`规定所需根 | 根已存在于CAS／Git或已产生交付效果 |
+| `GitInventoryObject`（4字段） | 七字段`material`引用、规范`roles`、完整`tree_entries`和`commit_references`组成声明目录 | 对应正文与声明引用一致 |
+| `GitBaseHistoryBoundary`（4字段） | 原base父边的有序完整列表与唯一OID集合，划定外部历史边界 | 历史父正文已抓取或已验真 |
+| `GitInventoryMetrics`（8字段） | 唯一对象／字节、直接边、父边、base／target逐路径展开及深度，与声明图重新计算结果相等 | 实际IO次数、运行时SLO或产品默认容量 |
+| `GitObjectInventory`（15字段） | 版本、身份、Binding、用途、阶段、序号／前驱、平台、根、目录、历史、显式limits和metrics | 持久关联、角色授权及批准 |
+| `GitInventoryPrefixProjection`（8字段） | 交付／发布Epoch、两类最高序号与摘要声明，供后继前缀核验对照 | 独立认证尾锚或防截断证明 |
+
+完整字段名、严格类型、约束与来源见
+[总体与详细设计第4节](../changes/m09-r4-git-object-inventory-contract.md)。
+推荐先阅读原材料引用与tree／commit解析，再阅读上述七模型、两个snapshot函数和wire编码器：
+
+| 接口 | 源码模块 | 实际职责 |
+|---|---|---|
+| `snapshot_git_object_inventory` | [`git_inventory_contracts.py`](../../src/harnessix/delivery/git_inventory_contracts.py) | 严格白名单、标量、类型及嵌套快照；复核完整声明图、角色、前驱与指标 |
+| `snapshot_git_inventory_prefix_projection` | 同上 | 严格重建普通前缀投影，不赋予认证属性 |
+| `git_inventory_scope_digest` | [`git_inventory_wire.py`](../../src/harnessix/delivery/git_inventory_wire.py) | 对象范围规范字节摘要 |
+| `git_object_inventory_digest` | 同上 | 完整记录规范字节摘要 |
+| `encode_git_object_inventory`／`decode_git_object_inventory` | 同上 | 完整目录与唯一UTF-8规范JSON双向转换，拒绝非规范字节 |
+| `encode_git_inventory_prefix_projection`／`decode_git_inventory_prefix_projection` | 同上 | 普通前缀投影双向转换，拒绝扩展键及非规范表示 |
+
+### 流程、失败与取消
+
+```text
+不可信声明
+  → exact类型／字段白名单检查与深层重建
+  → 材料引用、模式／路径、树排序、父边顺序验证
+  → 根和角色完整并集、环／深度、逐路径展开与显式限额验证
+  → 八项指标和阶段／前驱一致性检查
+  → 唯一规范字节、scope或完整record摘要
+```
+
+`effect_closed`的前驱由对应`materials_ready`声明重建摘要核对，不读取持久账本。
+wire使用排序键、紧凑JSON、完整UTF-8及`name_hex`无损名称；完整记录上限为64MiB，
+原单对象8MiB和调用者显式图limits／max_parents保持，不新增产品默认预算。
+非法类型、扩展键、重复／遗漏目录、引用冲突、环、路径冲突、指标不符和超限整体拒绝，
+不返回部分目录或截断正文。解析器自身数字／递归错误转换为固定KernelError；
+调用者检查点抛出的同类异常保留原对象，不吞取消／超时。
+检查点为协作式，标准库JSON解码不可抢占，不能据此承诺硬实时取消。
+
+### 验证与后继产品接线
+
+[`test_git_inventory_contracts.py`](../../tests/delivery/test_git_inventory_contracts.py) 与
+[`test_git_inventory_wire.py`](../../tests/delivery/test_git_inventory_wire.py)覆盖完整声明图、
+两种对象格式、平台路径、阶段／指标、严格标量、规范回转及回调异常负例。
+同一候选源码和同Wheel源码外Python3.12／3.13各1914通过、23跳过；不是三平台原生或全仓覆盖。
+原复杂度／依赖拒绝及源码外缺失Schema的验证失败保留，不能由后继通过改写原结果。
+架构图、流程图、时序图、数据流图、伪代码、错误与实际输入身份见
+[总体与详细设计](../changes/m09-r4-git-object-inventory-contract.md)和
+[正式验证包](../validation/git-object-inventory-contract-2026-10-01-v1/README.md)。
+实际CAS全图验真、受信来源装载、GitDB完整认证前缀、独立新批准、默认Commit／Checkpoint、
+Backup v2及新根重授权仍依照
+[完整产品设计](../changes/m09-r4-git-delivery-business-backup-closure.md)继续实施。
+本增量无数据库迁移、服务或依赖变更，不关闭Windows失败、R3真实质量或商用R1～R6。

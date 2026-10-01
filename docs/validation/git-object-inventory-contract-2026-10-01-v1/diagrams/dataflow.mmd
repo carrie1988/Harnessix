@@ -1,0 +1,13 @@
+flowchart TB
+    Ref[原七字段CAS引用] --> Obj[对象节点和全部直接引用]
+    Roots[固定根与base历史边界] --> Scope[完整scope规范投影]
+    Obj --> Scope
+    Metrics[原显式限制与统计] --> Scope
+    Scope --> ScopeSha[object_scope_digest 内容摘要]
+    Bind[完整业务身份与阶段] --> Record[完整目录规范投影]
+    Scope --> Record
+    ScopeSha --> Record
+    Record --> RecordSha[inventory_sha256 排除自身]
+    RecordSha --> Body[含自身摘要的完整规范JSON]
+    Body --> BodySha[record_body_sha256 原正文摘要]
+    Body -. 后继原认证层 .-> Seal[MAC Seal与全账本独立尾锚]

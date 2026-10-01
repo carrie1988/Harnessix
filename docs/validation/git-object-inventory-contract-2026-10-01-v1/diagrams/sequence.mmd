@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant H as 原宿主
+    participant S as 严格快照
+    participant W as 规范wire
+    participant C as 原checkpoint
+    H->>S: 完整模型及同一checkpoint
+    S->>C: 字段和每个成员边界检查
+    alt 字段非法或成员不一致
+        S-->>H: 固定KernelError 无结果无写入
+    else 内容结构可接受
+        S-->>H: 新不可变快照 非授权
+        H->>W: 编码／解码完整目录
+        W->>C: 规范投影及编码块检查
+        alt 取消或原绝对期限耗尽
+            C-->>H: 原异常对象传播
+        else 字节和摘要完整
+            W-->>H: 完整规范bytes／内容模型
+        end
+    end
+    Note over H,W: 无CAS／DB／Git／MAC副作用，不登记效果完成

@@ -1,0 +1,9 @@
+flowchart TB
+    Existing[原CAS引用与直接引用模型] --> Shape[领域模型和严格快照]
+    Limits[原显式GitTreeClosureLimits] --> Shape
+    Shape --> Wire[完整规范字节与内容摘要]
+    Wire --> Candidate[非权威内容候选]
+    Candidate -. 后继必要 .-> Graph[全CAS与完整图重验]
+    Graph -. 后继必要 .-> Host[原认证宿主归属与新批准]
+    Host -. 后继必要 .-> Ledger[全前缀和独立尾锚]
+    Ledger -. 后继必要 .-> Backup[Backup v2及新根恢复]

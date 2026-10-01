@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 6
+version: 7
 code_revision: 96584026bdf34c49c519834331b84043a6c03895
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
@@ -561,7 +561,15 @@ U、commonDir、A 的 Lease 都复用现有 `WorkspaceLeaseStore`，以域分离
 4. 每个产品阶段的完整对象目录、边界及效果结论。
 5. 最新前缀尾锚与对应领域投影，禁止只对最后一条普通 SHA 验真。
 
-Git 证明使用原 Key 托管层的**拟新增域分离端口**，例如固定用途域 `harnessix.git-delivery-publication/v1`，规范正文中包含逻辑 Store／Key、实体、计划指纹、序号、前序摘要及正文 SHA。原 Session 认证类目前没有该 Git 方法；实现必须新增受限方法及真实反篡改用例，不假装 `read_only=True` 已提供认证。
+Git记录认证已经复用原Key托管层的有限域分离端口：
+[`store_publication.py`](../../src/harnessix/session/store_publication.py)的
+`GitPublicationAuthority.issue`与`GitPublicationVerifier.verify`使用固定
+`harnessix.git-delivery-publication/v1`域；
+[`GitDeliveryRecordClaims`](../../src/harnessix/session/git_publication_contracts.py)
+绑定原调用、实体、认证epoch、序号和前序prefix，原Seal同时绑定Store／Key及完整正文长度／SHA。
+实际端口与反篡改验证见[Git记录认证详设](m09-r4-git-record-publication.md)。
+这些方法不解析对象图、不证明跨库拥有者，也没有完整GitDB独立尾锚；
+后继仍须实现全目录锚的独立用途、严格模型和原子账本接线，不能以现有issue或read_only替代。
 
 签发与领域事件写入在同一 GitDB 事务中提交；MAC 由宿主验证的新事实构造，不允许对任意已有未认证行批量补签。备份采用原核验 Authority 角色，禁止签发。前缀尾锚只证明所捕获历史，不能证明整个状态目录从未被回滚；合法旧备份回退仍由原 Restore 明确决策控制。
 
