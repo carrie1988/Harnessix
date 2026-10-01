@@ -1,0 +1,14 @@
+flowchart TD
+    M[模型与外部输入 不构成来源授权] --> P[原发布Patch/CAS来源 待产品桥接核验]
+    P --> B[受信完整bytes及source digest]
+    S[Owner校验的冻结保护集合] --> C[宿主完整保护谓词]
+    B --> C
+    C --> F[私有stage完整bytes]
+    A[原Plan绑定用途及manifest摘要] --> W[安装包内受信worker]
+    F --> W
+    W --> R[完整RO snapshot]
+    R --> G[固定对象写入]
+    G --> Q[worker过程证明]
+    Q --> V[Owner raw MAC后宿主核对]
+    V --> I[独立批准的对象读取与OID校验]
+    I --> D[待接线的业务账本及备份闭包]

@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 143
+version: 144
 code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
@@ -1252,3 +1252,17 @@ Checkpoint/Commit独立批准、持久原生桥接、全事件证明、有界对
 另补两个真实Owner终态屏障负例，确定性验证退出后stdin/close_stdin继续拒绝，不冒充历史调度重放。
 [专项交付](validation/git-material-fixture-eof-2026-10-01-v1/README.md)区分旧原生失败、本地后继验证和新原生待验；
 不重跑覆盖旧日志，不放宽Owner安全或评分合同。8MiB写入、完整Git业务备份、R3、消费者Windows11及Beta仍开放。
+
+
+### R4：完整对象输入与原 Owner 保护候选
+
+[完整输入总体与详设](changes/m09-r4-git-object-material-input.md)保持三类对象、两种对象格式及8MiB正文，
+固定基础解释器子程序沿原小stdin握手，Git前取得完整只读普通文件；不把正文管道前缀当作对象。
+完整保护复用原Owner已冻结集合，来源与用途经原Plan批准，过程证明与独立新批准回读分开。
+原普通1MiB额度、Owner协议和认证回执不变。快照正文写入前建立取消/死亡生命周期，宿主线程必须排空。
+固定1232件源码/测试/脚本/配置输入，关联回归1014通过/43跳过；同一Wheel源码外Python3.12/3.13
+分别356通过/2跳过。真实原Owner控制失联复现3失败保留，整个Supervisor退出与实体清理强错误已修复，
+五项真实故障回归及独立复核通过；[低敏验证包](validation/git-material-input-2026-10-01-v1/README.md)
+登记实际源码、安装字节、结果、旧失败和三幅渲染图。新原生证据仍须独立取得。
+本增量不是默认Git写Tool、Commit/Checkpoint、CAS/认证业务账本、阶段崩溃恢复或Backup v2，
+不缩减原完整Git交付，不关闭R3、消费者Windows11、独立Beta或商用R1～R6。

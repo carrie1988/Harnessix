@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 25
+version: 26
 code_revision: 4e66135ba245ad5143673edfe3f73d6163b5b3f2
 owners:
   - core
@@ -1856,3 +1856,21 @@ Owner Receipt和私有备份目录发布共享同一个类；原事务效果状�
 标准同步命令输出1MiB不变。产品受控端新增材料读取用途，原stdin1MiB不变；8MiB受信写入、
 对象目录、完整认证及业务备份恢复仍开放。保护后正文与raw不同或同一冻结保护模式命中即拒绝，
 包括等字节占位符替换，不关闭脱敏或将前缀冒充对象。
+
+
+## 固定完整对象输入契约
+
+[`GitMaterialInput`](../../src/harnessix/delivery/git_material_input_contracts.py)绑定三种对象、
+SHA1/SHA256、完整8MiB正文、原来源/目标/配置、nonce及同一绝对预算。
+canonical小manifest与生产者证明分别限64KiB/4096字节，不提高普通命令1MiB限额。
+[`native`](../../src/harnessix/delivery/git_material_native.py)在Git启动前取得完整RO普通文件；
+[`worker`](../../src/harnessix/delivery/git_material_worker.py)仅执行固定 `hash-object --no-filters`，
+不得通过管道前缀、`--literally`、自动fetch或Ref写入改变用途。
+
+宿主先用原Owner冻结的同一保护集合检查完整正文，再创建stage。
+`GitMaterialProof`认证的是受信生产者输出，不是Owner直接观察内层Git输入；
+必须新批准完整对象回读，不能把该证明当作业务Commit完成。
+Windows实际数据访问拒共享保护及快照关闭语义见[完整设计](../changes/m09-r4-git-object-material-input.md)。
+
+本内部能力没有新增默认写Tool或数据库。CAS来源、认证业务登记、双工作树、阶段崩溃恢复、
+完整Git备份闭包与新原生验收仍须完成，原R1/R4范围不缩减。

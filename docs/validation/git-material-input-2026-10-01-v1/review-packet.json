@@ -1,0 +1,205 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "status": "frozen_local_validation_native_pending",
+  "overall": "internal_input_local_pass_not_product_release",
+  "baseline_revision": "1502bd19f5f738515ee7f27e6bcfa3ce1e19daf0",
+  "candidate_binding_status": "exact_input_catalog",
+  "requirements": [
+    {
+      "id": "C0-INPUT-CAPACITY",
+      "status": "pass_local_same_candidate",
+      "acceptance": "三类型×两格式的合法最小/完整8MiB与超限；真实Git校验tree/commit。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "ORIGINAL-APPROVAL",
+      "status": "pass_local_same_candidate",
+      "acceptance": "原Plan同时绑定材料、用途、目标、实现、固定命令/环境和解释器；缺批准及漂移不得执行。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "PROTECTION-CLOSURE",
+      "status": "pass_local_same_candidate",
+      "acceptance": "Owner严格校验并一次冻结同一保护来源；宿主完整检查后才落stage，错误来源与有效空集合区分。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "STRICT-MANIFEST-EOF",
+      "status": "pass_local_same_candidate",
+      "acceptance": "小stdin唯一canonical JSON、无额外字段、64KiB与真实EOF；禁用材料供给管道。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "COMPLETE-RO-SNAPSHOT",
+      "status": "pass_local_same_candidate",
+      "acceptance": "Git前完整写满/fsync/关闭写端/复读；快照为RO regular。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "SNAPSHOT-DEATH-LIFECYCLE",
+      "status": "pass_local_same_candidate",
+      "acceptance": "首次真实写入屏障后取消/强杀/超时；快照测试不执行Git。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "C0-PROOF-RESPONSIBILITY",
+      "status": "pass_local_same_candidate",
+      "acceptance": "原认证输出认证受信生产者陈述；完整SHA继承保护谓词，不称Owner直接观察Git输入。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "STRONG-OUTER-EXIT-PRECEDENCE",
+      "status": "pass_local_same_candidate",
+      "acceptance": "外层关闭及清理不得把可能送达后的材料unknown覆盖为普通取消/超时；真实结算与资源释放保持。",
+      "evidence": "original_real_owner_three_failures; final_same_candidate_five_cases_and_independent_static_closure"
+    },
+    {
+      "id": "PRIVATE-OWNED-CLEANUP",
+      "status": "pass_local_same_candidate",
+      "acceptance": "仅清理同一实体的自有stage，不glob删除陌生文件；排空线程后结算。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "CONFIG-LEXER",
+      "status": "pass_local_same_candidate",
+      "acceptance": "引号外注释、合法转义、精确顶层对象格式；非法引号/尾缀、禁止配置仍拒绝。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "WINDOWS-DATA-SHARE-GUARD",
+      "status": "static_repaired_pending_native",
+      "acceptance": "保护句柄真正请求数据读取，metadata-only为原生负对照；持有时拒写/改名/删除，释放后允许。",
+      "evidence": "本候选Windows原生共享与目录权限/内部Git兼容性待验证"
+    },
+    {
+      "id": "TARGET-PROGRAM-ENVIRONMENT",
+      "status": "pass_local_same_candidate",
+      "acceptance": "固定common/objects及控制闭包、程序和环境；无别名/alternates/外部过滤/懒取对象。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "ORIGINAL-BUDGET-PROCESS-TREE",
+      "status": "pass_local_same_candidate",
+      "acceptance": "同一绝对预算及原进程组/Job；不创建新的脱管进程树或自动重试。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "STANDARD-LIMITS",
+      "status": "pass_local_same_candidate",
+      "acceptance": "普通输入和普通双流1MiB不变；对象材料8MiB与控制握手64KiB分离。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "INDEPENDENT-READBACK",
+      "status": "pass_local_same_candidate",
+      "acceptance": "生产者证明不代替对象后置条件；重新批准完整读取并验真对象。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "FINAL-SOURCE-WHEEL-INSTALL",
+      "status": "pass_local_same_candidate",
+      "acceptance": "最终完整输入目录清单、Wheel和源码外安装逐字节匹配；旧制品不套用新源码。",
+      "evidence": "1232_exact_inputs;460_package_members;419_python_modules;outside312_and313"
+    },
+    {
+      "id": "FINAL-GOVERNANCE",
+      "status": "pass_same_candidate",
+      "acceptance": "同候选规范、类型、资料、低敏及原600/100/20门禁；不修改政策。",
+      "evidence": "302_governance;436_documents_zero_findings;ruff_mypy_specs_secret_original_600_100_20_policy"
+    },
+    {
+      "id": "HISTORICAL-FAILURE-PRESERVATION",
+      "status": "pass_local_same_candidate",
+      "acceptance": "保留开发、环境及旧Windows原生失败，不改写为通过/跳过，不累加重叠集合。",
+      "evidence": "same_candidate_1057_associated_and_actual_wheel_outside_source_358_each"
+    },
+    {
+      "id": "R1",
+      "status": "open",
+      "acceptance": "新候选Windows原生及消费者环境验收未完成，本切片不关闭平台发布门禁。",
+      "evidence": "Windows未验证；旧Windows失败保留"
+    },
+    {
+      "id": "R4",
+      "status": "open",
+      "acceptance": "完整来源桥接、业务批准、耐久材料/认证记录、阶段恢复与产品Git交付仍必需。",
+      "evidence": "总体业务闭包设计；当前仅内部受控IO切片"
+    },
+    {
+      "id": "DEFAULT-GIT-TOOL",
+      "status": "not_added",
+      "acceptance": "不新增默认模型写入口或自动授权Ref/Commit/Push。",
+      "evidence": "内部宿主入口范围"
+    },
+    {
+      "id": "BACKUP-V2",
+      "status": "open_outside_slice",
+      "acceptance": "未实现完整业务备份与恢复，不以对象可读写代替备份闭包。",
+      "evidence": "总体业务闭包设计"
+    },
+    {
+      "id": "COMMERCIAL-1.0",
+      "status": "open",
+      "acceptance": "同候选发布门禁、真实质量和独立验收不能由局部绿色测试替代。",
+      "evidence": "不作最终GO或商业接受"
+    }
+  ],
+  "known_limits": [
+    "受信生产者与安装实现属于信任基础，不构成操作系统不可变封印。",
+    "原Owner不直接观察内部Git材料输入；过程证明不是对象或业务提交凭证。",
+    "只有成功证明合同；没有失败即未启动Git的证明合同，可能送达后保守unknown。",
+    "原Owner实际期限可更紧，不能与共享预算字段宣称数值等同。",
+    "POSIX创建空名称至去名之间仍有短窗口，宿主硬崩溃stage恢复尚未业务闭合。",
+    "Windows本候选Root权限、共享冲突、完整输入、原进程树和内部Git兼容性未原生验证。",
+    "跳过、旧修订、静态检查、安装成功及重叠通过数量均不能替代最终同候选验收。"
+  ],
+  "review_disposition": {
+    "final_approval": "internal_local_scope_only_native_and_product_open",
+    "r1_closed": false,
+    "r4_closed": false,
+    "default_git_tool_enabled": false,
+    "full_product_delivery_accepted": false,
+    "backup_v2_accepted": false,
+    "commercial_go": false
+  },
+  "closed_production_findings": [
+    {
+      "finding_id": "C0-HOST-P2-01",
+      "status": "closed_in_scope",
+      "classification": "independent_static_production_finding",
+      "title": "外层Supervisor退出及清理异常不得覆盖可能送达后的材料不确定效果。",
+      "reproduction_status": "actual_real_owner_three_original_failures",
+      "scope_limit": "未证明自动重放、对象损坏或Windows现场失败。",
+      "findings_report": {
+        "artifact": "findings.json",
+        "bytes": 2106,
+        "sha256": "ebbf110f6382864b1d7ba7ed5ffcfa6cffce444d9a4cad01dcb197e0725cc58b"
+      },
+      "closure_matrix": {
+        "artifact": "closure-matrix.json",
+        "bytes": 1867,
+        "sha256": "d38141848aa339262f83877246f3a2f45dffbe4bb1255c66570bfc668fd76e57"
+      },
+      "closing_evidence": {
+        "same_candidate_test_file": "tests/product_config/test_git_material_owner_exit.py",
+        "cases": 5,
+        "original_failure": {
+          "tests": 3,
+          "passed": 0,
+          "failed": 3,
+          "errors": 0,
+          "skipped": 0,
+          "duration_seconds": 3.103,
+          "junit_sha256": "afb0d4424c1421607102bfc295f4e9e1457933e161f33f761c7176f10417aa00",
+          "log_sha256": "e69132b38ebd3230b6c6b1cc866993b210fa764b197e695b0d7c188afe11bda6"
+        },
+        "independent_report_sha256": "e1ea7f94ee4aa27da86a614b64eaa1bc814e49709970feda79d60238c77b4d0b"
+      }
+    }
+  ],
+  "remaining_acceptance": [
+    "same_candidate_native_windows_input_and_share_guards",
+    "full_product_git_business_backup_closure",
+    "consumer_platforms_real_quality_independent_beta_and_release"
+  ]
+}

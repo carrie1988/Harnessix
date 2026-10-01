@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 49
+version: 50
 code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-10-01 | [Git完整对象输入与原Owner保护](git-material-input-2026-10-01-v1/README.md) | 基线`1502bd1`；1232件实际输入SHA冻结 | macOS真实Owner/Git；同一Wheel源码外Python3.12/3.13；零模型请求 | 关联1014通过/43跳过，安装焦点各356通过/2跳过；原控制失联3失败保留，外层退出与实体清理五项回归通过；三图实际渲染 | 内部输入能力；Windows原生、默认Commit/Checkpoint、耐久业务备份闭包及R1～R6继续开放 |
 | 2026-10-01 | [Git产品业务闭包与恢复设计评审](git-business-backup-design-2026-10-01-v1/README.md) | `96584026bdf34c49c519834331b84043a6c03895` | 既有源码研究，零真实请求；五幅实际渲染图 | 设计草案、完整接口/字段/流程/失败与恢复矩阵；原文档问题保留，同策略治理302通过 | 设计评审而非产品实现；历史备份范围及材料容量待冻结，不关闭Git写接线或商用门禁 |
 | 2026-09-30 | [原认证Patch与只读Git基准](git-baseline-2026-09-30-v1/README.md) | `018a4afabf270bbd94deb4cbb728794615d85225` | macOS原生Git/文件/SQLite；零真实请求；独立Wheel | 完整6176通过/111跳过；源码外132通过；受控变异5失败；用户Index/HEAD保护及8MiB完整观察通过 | 只读前置候选；带保护源的Windows原始观察明确拒绝，Commit/Checkpoint、备份闭合及R4仍开放 |
 | 2026-09-30 | [固定Profile与Trusted安全输入反馈](trusted-input-feedback-2026-09-30-v1/README.md) | `9723b58688890672ec17ffd8d37d78507ed81ece` | 原70元及旧预留不变；零真实请求；独立Wheel | 原源码5失败保留；焦点104、治理302、源码外70通过；完整离线6085通过/111跳过 | 仅参数反馈候选，不关闭真实质量或商用门禁 |

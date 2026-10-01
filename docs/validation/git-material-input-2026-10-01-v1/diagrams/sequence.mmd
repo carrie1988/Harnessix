@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant H as 受信宿主
+    participant O as 原Supervisor/Owner
+    participant W as 固定根子程序
+    participant G as 固定Git子进程
+    H->>H: 准备用途和原Plan批准
+    H->>O: start 原Plan/Spec/Capability
+    O->>O: 校验并冻结保护集合
+    O->>W: 在原进程树启动，stdin等待握手
+    O-->>H: 返回实际根句柄
+    H->>H: 同一集合检查完整body并私有落盘
+    H->>W: 原stdin发送小manifest并关闭
+    W->>W: 完整EOF/目标/配置/长度/SHA/OID核验
+    W->>W: 创建完整RO regular并关闭全部写端
+    W->>G: 固定argv/env，stdin为完整RO句柄
+    G-->>W: 唯一完整OID行、正常退出
+    W->>W: 复读RO及目标绑定
+    W-->>O: 小型生产者证明与完整双流终态
+    O-->>H: 原V2 MAC/raw/EOF/Lease
+    H->>H: 核验双流、保护、字段及根PID，清理自有stage
+    H->>O: 独立新Plan批准完整对象回读

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 48
+version: 49
 code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
@@ -2291,3 +2291,21 @@ Windows pipe Owner已增加单一MAC覆盖的v2原始双流统计；正式基准
 响应注入夹具现按[输入完成合同](../changes/m09-r4-git-object-material-read.md#91-原生响应注入夹具的输入完成合同)
 消费唯一OID及EOF后输出，生产控制通道和保护断言不变。旧失败保持，新候选原生结果单独验证；
 不把夹具同步整改当作生产Git写入或Windows消费者验收。
+
+
+## 固定完整对象输入的产品装配
+
+[`GitMaterialPreparation`](../../src/harnessix/product_config/git_material_process.py)向原受控端口
+增加内部 `prepare_object_write`，不取得执行批准、不注册默认模型 Tool。
+`GitDeliveryProcess.run`仍核对原Plan、批准、环境和物理绑定；原Owner启动并冻结保护集合后，
+宿主才检查完整正文、创建私有stage并发送小manifest。线程取消必须排空，不能留下后台正文写入者。
+
+`input_sent`用途标志在原控制发送前设置，覆盖整个Supervisor退出。
+可能送达后的控制写失联、关闭异常、证明失败或清理失败统一保持 `git_material_effect_unknown`，
+不能被调用取消或超时降级。stage只按自有物理身份删除；拒绝清理陌生实体。
+原实际Lease与Owner回执不被业务错误码改写，原关闭失败不解释为回收成功。
+
+原1MiB普通输入、批准与Owner协议不变。对象过程证明与新批准完整回读分开；
+来源桥接、默认Commit/Checkpoint、CAS耐久业务登记和完整备份恢复仍未接线。
+接口、字段、三图及失败/恢复详见[完整对象输入设计](../changes/m09-r4-git-object-material-input.md)，
+不从内部能力推导R1/R4或商用门禁完成。

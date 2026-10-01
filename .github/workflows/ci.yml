@@ -153,6 +153,10 @@ jobs:
           tests/delivery/test_git_store_readonly.py
           tests/product_config/test_git_delivery_process.py
           tests/product_config/test_git_object_material.py
+          tests/product_config/test_git_material_input.py
+          tests/product_config/test_git_material_snapshot_lifecycle.py
+          tests/product_config/test_git_material_native.py
+          tests/product_config/test_git_material_owner_exit.py
           tests/product_config/test_git_baseline.py::test_large_original_blob_uses_complete_observed_digest_not_prefix
           tests/product_config/test_git_baseline.py::test_consumer_uses_raw_blob_index_and_status_not_redacted_observation
           -vv -o faulthandler_timeout=60

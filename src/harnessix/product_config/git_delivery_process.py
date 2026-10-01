@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import math
 import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 from pydantic import JsonValue, ValidationError
 
@@ -16,6 +18,7 @@ from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.git import _GitRunner, git_delivery_implementation_digest
 from harnessix.delivery.git_command import GitCommand
+from harnessix.delivery.git_material_input_contracts import GitMaterialProof, decode_proof
 from harnessix.delivery.git_object_material import (
     GitObjectMaterial,
     GitObjectRead,
@@ -36,16 +39,24 @@ from harnessix.processes.supervision_contracts import (
     ProcessSpec,
 )
 from harnessix.processes.supervision_planner import build_host_process_binding, build_process_spec
-from harnessix.processes.supervisor import PosixProcessSupervisor, WindowsProcessSupervisor
+from harnessix.processes.supervisor import (
+    PosixProcessSupervisor,
+    SupervisedProcess,
+    WindowsProcessSupervisor,
+)
 from harnessix.processes.supervisor_capabilities import (
     probe_posix_process_capability,
     probe_windows_process_capability,
 )
+from harnessix.product_config.git_material_process import GitMaterialPreparation
 from harnessix.secrets.redaction import secret_patterns
 from harnessix.tools.runtime import _drain
 
 _STREAM_BYTES = 1024 * 1024
 _INPUT_CHUNK_BYTES = 64 * 1024
+
+if TYPE_CHECKING:
+    from harnessix.product_config.git_material_process import GitMaterialExecution
 
 
 class _GitOutputProtection:
@@ -67,6 +78,18 @@ class _GitOutputProtection:
         if any(pattern in stdout or pattern in stderr for pattern in secret_patterns(self._values)):
             raise KernelError("git_process_output_changed", "Git输出包含受保护材料")
 
+    def require_input_unmatched(
+        self, body: bytes, cancel: CancelToken, budget: GitOperationBudget
+    ) -> None:
+        """原 Owner 已冻结的同一保护集合须在完整正文落盘及交给 Git 前生效。"""
+        if self._values is None:
+            raise KernelError("process_output_protection_unavailable", "Git缺少本次执行的保护快照")
+        for pattern in secret_patterns(self._values):
+            cancel.checkpoint()
+            budget.remaining()
+            if pattern in body:
+                raise KernelError("git_material_input_protected", "Git输入包含受保护材料")
+
 
 class GitOperationBudget:
     """整个交付操作共享单调期限；每条命令不得重新获得完整预算。"""
@@ -87,6 +110,11 @@ class GitOperationBudget:
             raise KernelError("git_process_timeout", "Git操作总期限已耗尽")
         return remaining
 
+    @property
+    def expires_at_monotonic_ns(self) -> int:
+        """同一操作的绝对期限；不能把 worker 的启动或子命令当作新预算。"""
+        return int(self._deadline * 1_000_000_000)
+
 
 @dataclass(frozen=True, slots=True)
 class PreparedGitProcess:
@@ -97,6 +125,7 @@ class PreparedGitProcess:
     capability: ProcessCapabilityProbe = field(repr=False)
     budget: GitOperationBudget = field(repr=False)
     material: GitObjectRead | None = None
+    write: GitMaterialExecution | None = field(default=None, repr=False)
 
     def approval_arguments(self) -> dict[str, JsonValue]:
         """原 Execution Plan 必须绑定完整命令摘要和 stdin 摘要，不持久化正文。"""
@@ -108,6 +137,10 @@ class PreparedGitProcess:
         }
         if self.material is not None:
             arguments["material"] = self.material.binding()
+        if self.write is not None:
+            arguments["material_input"] = cast(
+                JsonValue, json.loads(json.dumps(self.write.binding(), allow_nan=False))
+            )
         return arguments
 
 
@@ -119,6 +152,9 @@ def _implementation_digest() -> str:
         return canonical_digest(
             {
                 "adapter": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                "material_adapter": hashlib.sha256(
+                    Path(__file__).with_name("git_material_process.py").read_bytes()
+                ).hexdigest(),
                 "delivery": git_delivery_implementation_digest(),
             }
         )
@@ -135,6 +171,7 @@ class GitProcessCompletion:
     stdout: bytes = field(repr=False)
     stderr: bytes = field(repr=False)
     material: GitObjectMaterial | None = field(default=None, repr=False)
+    input_proof: GitMaterialProof | None = field(default=None, repr=False)
 
 
 def _capability() -> ProcessCapabilityProbe:
@@ -145,7 +182,7 @@ def _capability() -> ProcessCapabilityProbe:
     raise KernelError("git_platform_unsupported", "当前平台不支持受控Git交付")
 
 
-class GitDeliveryProcess:
+class GitDeliveryProcess(GitMaterialPreparation):
     """受信产品内部端口；不构造 ALLOW 计划，不发布模型任意 Git 工具。"""
 
     def __init__(
@@ -302,6 +339,8 @@ async def _run_process(
     if prepared.budget is not budget:
         raise KernelError("git_process_budget_mismatch", "Git命令不能更换原操作期限")
     _require_prepared(prepared)
+    if prepared.write is not None and self._output_redaction is None:
+        raise KernelError("process_output_protection_unavailable", "Git写入缺少原保护来源")
     self._runner.verify_command(prepared.command)
     if prepared.capability != _capability():
         raise KernelError("process_capability_mismatch", "Git进程Owner能力已变化")
@@ -349,13 +388,20 @@ def _raise_uncertain_settlement(task: asyncio.Task[GitProcessCompletion]) -> Non
     if task.done() and not task.cancelled():
         error = task.exception()
         if isinstance(error, KernelError) and error.code in {
+            "git_material_effect_unknown",
+            "git_material_stage_changed",
             "git_process_unknown",
             "process_owner_receipt_invalid",
             "process_output_corrupt",
             "process_control_lost",
             "process_owner_token_invalid",
         }:
-            raise KernelError("git_process_unknown", "Git停止效果无法验真；禁止自动重放") from None
+            code = (
+                error.code
+                if error.code in {"git_material_effect_unknown", "git_material_stage_changed"}
+                else "git_process_unknown"
+            )
+            raise KernelError(code, "Git停止效果无法验真；禁止自动重放") from None
 
 
 async def _execute_process(
@@ -371,72 +417,120 @@ async def _execute_process(
     protection = (
         _GitOutputProtection(self._output_redaction) if self._output_redaction is not None else None
     )
-    async with supervisor_type(
-        self._state / "process-owner", output_redaction=protection
-    ) as supervisor:
-        # 在启动前固定 Plan；重启时原 Lease 可定位完整意图，不生成孤立进程事实。
-        with SQLiteExecutionPlanStore(self._state / "execution-plans.db") as plans:
-            plans.save_plan(plan)
-        self._runner.verify_command(command)
-        handle = await supervisor.start(
-            plan,
-            prepared.spec,
-            prepared.capability,
-            workspace=command.cwd,
-            environment=dict(command.environment),
-            checkpoint=checkpoint,
-            intent_arguments=prepared.approval_arguments(),
-        )
-        try:
-            if command.input_data is not None and not cancel.cancelled:
-                for offset in range(0, len(command.input_data), _INPUT_CHUNK_BYTES):
-                    if cancel.cancelled:
-                        break
-                    await handle.send_stdin(
-                        command.input_data[offset : offset + _INPUT_CHUNK_BYTES]
+    staged = None
+    input_sent = False
+    try:
+        async with supervisor_type(
+            self._state / "process-owner", output_redaction=protection
+        ) as supervisor:
+            # 在启动前固定 Plan；重启时原 Lease 可定位完整意图，不生成孤立进程事实。
+            with SQLiteExecutionPlanStore(self._state / "execution-plans.db") as plans:
+                plans.save_plan(plan)
+            self._runner.verify_command(command)
+            handle = await supervisor.start(
+                plan,
+                prepared.spec,
+                prepared.capability,
+                workspace=command.cwd,
+                environment=dict(command.environment),
+                checkpoint=checkpoint,
+                intent_arguments=prepared.approval_arguments(),
+            )
+            try:
+                data = command.input_data
+                if prepared.write is not None:
+                    from harnessix.product_config.git_material_process import prepare_material_stdin
+
+                    assert protection is not None
+                    staged = await prepare_material_stdin(
+                        prepared.write, protection, cancel, prepared.budget
                     )
-                if not cancel.cancelled:
-                    await handle.close_stdin()
-            lease = await handle.wait(cancel)
-        except BaseException:
-            # 即使 stdin 控制失联或调用异常，也先结算原句柄；不重发输入或命令。
-            await handle.stop("cancelled")
-            await handle.wait()
-            raise
-        _require_exit(lease, command.accepted)
-        receipt = await handle._terminal_owner_receipt()  # noqa: SLF001 - 原句柄验真端口
-        if not isinstance(receipt, ProcessOwnerReceiptV2):
-            raise KernelError("git_process_raw_required", "Git命令缺少原始流认证回执")
-        stdout, stderr = await handle.output("stdout"), await handle.output("stderr")
-        _require_raw_bytes(
-            stdout,
-            receipt.raw_stdout.observed_bytes,
-            receipt.raw_stdout.sha256,
-            receipt.raw_stdout.eof,
-            limit=_stdout_limit(prepared.material),
-        )
-        _require_raw_bytes(
-            stderr,
-            receipt.raw_stderr.observed_bytes,
-            receipt.raw_stderr.sha256,
-            receipt.raw_stderr.eof,
-        )
-        if protection is not None:
-            protection.require_unmatched(stdout, stderr)
-        self._runner.verify_command(command)
-        material = (
-            decode_git_object_batch(prepared.material, stdout)
-            if prepared.material is not None
-            else None
-        )
-        return GitProcessCompletion(lease, receipt, stdout, stderr, material)
+                    data = prepared.write.control_input
+                if data is not None and not cancel.cancelled:
+                    for offset in range(0, len(data), _INPUT_CHUNK_BYTES):
+                        if cancel.cancelled:
+                            break
+                        input_sent = True
+                        await handle.send_stdin(data[offset : offset + _INPUT_CHUNK_BYTES])
+                    if not cancel.cancelled:
+                        await handle.close_stdin()
+                lease = await handle.wait(cancel)
+                return await _complete_process(self, prepared, handle, lease, protection)
+            except BaseException:
+                from harnessix.product_config.git_material_process import settle_input_failure
+
+                await settle_input_failure(
+                    handle, uncertain=prepared.write is not None and input_sent
+                )
+                raise
+    except BaseException:
+        # 整个 Supervisor 退出也在用途边界内；关闭失联不能降级已可能送达的效果。
+        if prepared.write is not None and input_sent:
+            raise KernelError(
+                "git_material_effect_unknown", "Git材料写入未取得完整验真；禁止自动重放"
+            ) from None
+        raise
+    finally:
+        if staged is not None:
+            try:
+                staged.remove()
+            except (OSError, KernelError):
+                raise KernelError(
+                    "git_material_effect_unknown" if input_sent else "git_material_stage_changed",
+                    "Git私有材料清理未完成；禁止自动重放",
+                ) from None
+
+
+async def _complete_process(
+    self: GitDeliveryProcess,
+    prepared: PreparedGitProcess,
+    handle: SupervisedProcess,
+    lease: ProcessLease,
+    protection: _GitOutputProtection | None,
+) -> GitProcessCompletion:
+    """原认证流核对先于解码；写入证明只认证 worker，不替代独立对象回读。"""
+    command = prepared.command
+    _require_exit(lease, command.accepted)
+    receipt = await handle._terminal_owner_receipt()  # noqa: SLF001 - 原句柄验真端口
+    if not isinstance(receipt, ProcessOwnerReceiptV2):
+        raise KernelError("git_process_raw_required", "Git命令缺少原始流认证回执")
+    stdout, stderr = await handle.output("stdout"), await handle.output("stderr")
+    _require_raw_bytes(
+        stdout,
+        receipt.raw_stdout.observed_bytes,
+        receipt.raw_stdout.sha256,
+        receipt.raw_stdout.eof,
+        limit=_stdout_limit(prepared.material),
+    )
+    _require_raw_bytes(
+        stderr,
+        receipt.raw_stderr.observed_bytes,
+        receipt.raw_stderr.sha256,
+        receipt.raw_stderr.eof,
+    )
+    if protection is not None:
+        protection.require_unmatched(stdout, stderr)
+    self._runner.verify_command(command)
+    material = decode_git_object_batch(prepared.material, stdout) if prepared.material else None
+    proof = None
+    if prepared.write is not None:
+        prepared.write.verify()
+        proof = decode_proof(stdout, prepared.write.request)
+        if proof.producer_pid != lease.pid:
+            raise KernelError("git_material_proof_invalid", "Git材料生产者身份不一致")
+    return GitProcessCompletion(lease, receipt, stdout, stderr, material, proof)
 
 
 def _require_prepared(prepared: PreparedGitProcess) -> None:
     command, spec = prepared.command, prepared.spec
     try:
-        _require_material_command(prepared)
         ProcessSpec.model_validate_json(spec.model_dump_json(warnings="error"))
+        if prepared.write is not None:
+            from harnessix.product_config.git_material_process import require_write
+
+            require_write(prepared)
+            return
+        _require_material_command(prepared)
         if (
             spec.invocation != "argv"
             or spec.argv != command.argv

@@ -1,0 +1,17 @@
+flowchart TB
+    H[受信交付宿主] --> P[GitMaterialPreparation]
+    P --> A[原 ExecutionPlan 与批准]
+    A --> O[原 Supervisor 与 Owner]
+    O --> W[固定 stdlib 根子程序]
+    O --> S[冻结本次保护集合]
+    S --> G[宿主全正文保护检查]
+    G --> F[私有完整 staging 文件]
+    F --> W
+    H -->|不超过64KiB的原stdin握手| W
+    W --> R[完整 RO regular 快照]
+    R --> C[固定 Git hash-object 子进程]
+    C --> D[绑定 common 的对象库]
+    W --> Q[小型生产者证明]
+    Q --> V[原 MAC/raw/EOF 核对后解码]
+    V --> I[新批准的完整对象回读]
+    I --> B[待接线的认证业务登记]

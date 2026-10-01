@@ -1,0 +1,59 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "scope": "public_low_sensitivity_internal_git_material_input",
+  "code_inputs_identity_sha256": "52392aa3f5482ed69bae9e119bd1c3e5be8c34eb84b843b649861344e6d6bbdb",
+  "files": [
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/README.md",
+      "bytes": 13646,
+      "sha256": "01877998f8f66495b8a829c0eaf7d1b548235815c41349cacb3a8e9a44b3ad1e"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/diagrams/architecture.mmd",
+      "bytes": 657,
+      "sha256": "eb1c49918d913657fe37991ed69358bead89b7177c461ea9b14b3568f5a502f0"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/diagrams/architecture.png",
+      "bytes": 63512,
+      "sha256": "df733351a4c656a61c2cd40ea191078405b6917c9e6a812bf7e77310f7af16cf"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/diagrams/data-flow.mmd",
+      "bytes": 616,
+      "sha256": "2278c862596bbc784abd7bcbde1b796a69255011c5ac6c072f6bbbf9b9ab1e99"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/diagrams/data-flow.png",
+      "bytes": 71958,
+      "sha256": "02e78d10f7dab725e63b51f7baffc5502be927cc0adcb6de71dae5be0c9650d3"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/diagrams/sequence.mmd",
+      "bytes": 933,
+      "sha256": "4fb2adc2ccf76fc6c9a28be8f731f75282775bcf5542d1ad7fda3abcd1e19f10"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/diagrams/sequence.png",
+      "bytes": 102469,
+      "sha256": "e13abf67a4c7c6476c7f9f646fa7bc7da9761b34efb5061f85de183ba6c7ff07"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/facts.json",
+      "bytes": 250235,
+      "sha256": "fe31fd210c1691b8d74c4d71cf62f1c147f2cd2747ed4d3c1bfc57bc4fc9ff8b"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/review-packet.json",
+      "bytes": 9837,
+      "sha256": "1dec3a420dce410072ab21c23b4465f267679ab676340cd2b245ec79d10010a4"
+    },
+    {
+      "path": "docs/validation/git-material-input-2026-10-01-v1/verification.json",
+      "bytes": 29896,
+      "sha256": "ca9f88447b06aaa481bf8a6a182d7d3d103cc986499bedd0b7d5afbbb886516c"
+    }
+  ],
+  "self_reference_excluded": true,
+  "whole_product_release_claimed": false
+}

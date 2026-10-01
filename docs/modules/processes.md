@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 32
+version: 33
 code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
 owners:
   - core
@@ -1772,3 +1772,19 @@ Windows的`ProcessOutputObservation`仍描述脱敏后字节，不得用于原�
 消费原批准并在取消/超时后结算Owner；stdio正文和原始输出不进入Plan或公开日志。
 正常命令结果要求MAC、原Lease终态、EOF、长度、SHA与完整持久正文一致；内部命令成功
 不等于业务Commit或完整8MiB对象支持。默认产品Git写入、完整业务备份和商用R4仍开放。
+
+
+## 完整对象输入对原进程契约的消费
+
+[完整对象输入设计](../changes/m09-r4-git-object-material-input.md)不修改本模块的Owner协议、
+通用1MiB输入、MAC、Lease或关闭状态机。原Supervisor启动安装包内固定基础Python根程序，
+根PID必须与认证Lease一致；内层Git留在原POSIX进程组或Windows Job，不新建独立进程树。
+
+根stdin只消费不超过64KiB的manifest和EOF；完整8MiB正文由受信子程序核验后取得RO普通文件。
+原Owner认证根程序双流，不能宣称直接观察了Git stdin。
+正文保护使用原Owner启动前校验并冻结的同一集合，物化结果仍须完整独立对象回读。
+
+Git宿主的可能送达标志覆盖 `Supervisor.__aexit__` 与私有清理，原关闭失联不能覆盖业务未知效果。
+此归类不吞掉原关闭故障或伪造Lease终态；实际原回执与恢复核对仍为进程事实权威。
+真实故障与快照死亡屏障保留PID、MAC、raw EOF/长度/SHA及实际回收验证，
+单机跳过Windows测试不等于原生验收通过。默认Git写入、完整业务恢复及商用门禁继续开放。

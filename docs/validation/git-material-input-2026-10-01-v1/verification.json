@@ -1,0 +1,725 @@
+{
+  "schema": "harnessix.validation-verification/v1",
+  "status": "same_candidate_local_verified_native_pending",
+  "final_candidate_binding_status": "exact_input_catalog",
+  "final_candidate": {
+    "status": "code_bytes_and_actual_wheel_verified",
+    "input_catalog_sha256": "52392aa3f5482ed69bae9e119bd1c3e5be8c34eb84b843b649861344e6d6bbdb",
+    "wheel_sha256": "c645b0b3ba8d6d28485f385d7fe967b1f309c2ad1267468133a08f098fbd91a4",
+    "runs": {
+      "review-fixed-associated": {
+        "tests": 1057,
+        "passed": 1014,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 43,
+        "duration_seconds": 165.963,
+        "junit_sha256": "3406992212923f2f9cf0fcd5b5b15155df37a4dab76ac4495ca234711015f8ad",
+        "log_sha256": "6af9fecfa8f33f4b62a181bcee726c351a83131285a79083a170578f260276dd"
+      },
+      "review-fixed-outside312": {
+        "tests": 358,
+        "passed": 356,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 2,
+        "duration_seconds": 85.541,
+        "junit_sha256": "2a124ed45f00e0a0af2199e1555e984c8012ed5b14a26a6dcae5cedd2d9a35d0",
+        "log_sha256": "40e465838a0b84e7826ac21dfe55cbd932a81225090e9353c2a7b68c80283e53"
+      },
+      "review-fixed-outside313": {
+        "tests": 358,
+        "passed": 356,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 2,
+        "duration_seconds": 74.477,
+        "junit_sha256": "b76110ce34f21b5f77b74987820274786dd9b4f84f182579921ab6e738d2f028",
+        "log_sha256": "78eda2ac0be0acc42e73bb8aee42248e51ee202737b380f3b6981b9ff4726743"
+      },
+      "review-fixed-governance": {
+        "tests": 302,
+        "passed": 302,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "duration_seconds": 28.193,
+        "junit_sha256": "d38fe8780509d0ffa0261be29b1586e43abf597fd438a0ac68c4957b5ba9f1f2",
+        "log_sha256": "0191fd4134aeb494270f9c6374447c01b0309950b66cabd16e1d35fb5ef272d1"
+      }
+    },
+    "focus_extracted_from_associated": {
+      "tests": 358,
+      "passed": 356,
+      "skipped": 2,
+      "failed": 0,
+      "not_additive": true,
+      "files": [
+        "test_git_delivery_process.py",
+        "test_git_object_material.py",
+        "test_git_material_input.py",
+        "test_git_material_native.py",
+        "test_git_material_snapshot_lifecycle.py",
+        "test_git_material_owner_exit.py"
+      ]
+    }
+  },
+  "pre_candidate_baselines": {
+    "associated_prior": {
+      "scope": "macOS Delivery、Process及产品Git关联选择器",
+      "classification": "pre_candidate_baseline",
+      "result_status": "observed_prior_pass",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 1052,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 43,
+      "passed": 1009,
+      "duration_seconds": 167.478,
+      "junit": {
+        "artifact": "final-associated.xml",
+        "bytes": 185043,
+        "sha256": "cbf0b42c626934deee2f4d9974b6dd68d524da4a00081afb3ee8e17a974e6fc7"
+      },
+      "log": {
+        "artifact": "final-associated.log",
+        "bytes": 1346,
+        "sha256": "f0c61591ed2420b53bc46ceebc8090d72087cc9d10468adbb56fdb89ce977428"
+      },
+      "recorded_module_case_counts": {
+        "tests/delivery/test_diff.py": 1,
+        "tests/delivery/test_filesystem.py": 9,
+        "tests/delivery/test_git.py": 12,
+        "tests/delivery/test_git_checkpoint_guard.py": 9,
+        "tests/delivery/test_git_push.py": 26,
+        "tests/delivery/test_git_store_readonly.py": 85,
+        "tests/delivery/test_patch_input_schema.py": 8,
+        "tests/delivery/test_planner.py": 10,
+        "tests/delivery/test_rollback_binding.py": 6,
+        "tests/delivery/test_store.py": 3,
+        "tests/delivery/test_trusted_action_patch.py": 9,
+        "tests/delivery/test_windows_filesystem.py": 23,
+        "tests/delivery/test_windows_io_contracts.py": 27,
+        "tests/processes/test_child_ready.py": 4,
+        "tests/processes/test_contracts.py": 61,
+        "tests/processes/test_crash_boundary.py": 1,
+        "tests/processes/test_git_raw_observation.py": 19,
+        "tests/processes/test_lifecycle.py": 11,
+        "tests/processes/test_output_binary_contracts.py": 13,
+        "tests/processes/test_output_protection.py": 24,
+        "tests/processes/test_posix_raw_receipt.py": 8,
+        "tests/processes/test_raw_output_receipt.py": 94,
+        "tests/processes/test_raw_receipt_supervision.py": 23,
+        "tests/processes/test_receipt_snapshot_transition.py": 19,
+        "tests/processes/test_runtime.py": 32,
+        "tests/processes/test_supervision_contracts.py": 12,
+        "tests/processes/test_supervision_store.py": 5,
+        "tests/processes/test_supervisor.py": 9,
+        "tests/processes/test_trusted_output.py": 4,
+        "tests/processes/test_windows_input.py": 2,
+        "tests/processes/test_windows_owner_lifecycle.py": 5,
+        "tests/processes/test_windows_raw_receipt.py": 3,
+        "tests/processes/test_windows_receipt_contracts.py": 16,
+        "tests/processes/test_windows_supervisor.py": 8,
+        "tests/product_config/test_git_baseline.py": 63,
+        "tests/product_config/test_git_delivery_process.py": 62,
+        "tests/product_config/test_git_delivery_source.py": 35,
+        "tests/product_config/test_git_material_input.py": 47,
+        "tests/product_config/test_git_material_native.py": 28,
+        "tests/product_config/test_git_material_snapshot_lifecycle.py": 3,
+        "tests/product_config/test_git_object_material.py": 213
+      }
+    },
+    "outside_source_python312_prior": {
+      "scope": "macOS源码外Python3.12安装；五个对象输入/读取焦点文件",
+      "classification": "pre_candidate_baseline",
+      "result_status": "observed_prior_pass",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 353,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 2,
+      "passed": 351,
+      "duration_seconds": 85.591,
+      "junit": {
+        "artifact": "outside312.xml",
+        "bytes": 60378,
+        "sha256": "b77198be4f1eab158761afb535b303c5a144a1a56adb3e6ef11cd0d30052ae01"
+      },
+      "log": {
+        "artifact": "outside312.log",
+        "bytes": 442,
+        "sha256": "e53a5cb47c659cba25b0756beae72b95530ad283fd44356a29db67a7e33dd9f3"
+      },
+      "recorded_module_case_counts": {
+        "tests/product_config/test_git_delivery_process.py": 62,
+        "tests/product_config/test_git_material_input.py": 47,
+        "tests/product_config/test_git_material_native.py": 28,
+        "tests/product_config/test_git_material_snapshot_lifecycle.py": 3,
+        "tests/product_config/test_git_object_material.py": 213
+      }
+    },
+    "governance_prior": {
+      "scope": "前候选全治理；不覆盖当前验证包最终门禁",
+      "classification": "pre_candidate_baseline",
+      "result_status": "observed_prior_pass",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 302,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 302,
+      "duration_seconds": 30.408,
+      "junit": {
+        "artifact": "final-governance.xml",
+        "bytes": 47175,
+        "sha256": "defdbb47d7093431b223a105d91055f69659efb8877a3068ced9c47a15e69ede"
+      },
+      "log": {
+        "artifact": "final-governance.log",
+        "bytes": 546,
+        "sha256": "cc1a883127936addfe8a7c7dcdc601209020afa3715c98766cd2eaca30d6e20e"
+      },
+      "recorded_module_case_counts": {
+        "tests/governance/test_cli_console.py": 12,
+        "tests/governance/test_contract_import_boundary.py": 4,
+        "tests/governance/test_distribution_artifact_boundary.py": 1,
+        "tests/governance/test_documentation_policy.py": 23,
+        "tests/governance/test_generated_specs.py": 3,
+        "tests/governance/test_installed_product_acceptance.py": 20,
+        "tests/governance/test_installed_product_upgrade_acceptance.py": 21,
+        "tests/governance/test_legacy_action_archive.py": 3,
+        "tests/governance/test_license_archive_evidence.py": 54,
+        "tests/governance/test_product_runtime_convergence.py": 8,
+        "tests/governance/test_readability_policy.py": 3,
+        "tests/governance/test_repository_policy.py": 3,
+        "tests/governance/test_sbom.py": 12,
+        "tests/governance/test_secret_scan.py": 91,
+        "tests/governance/test_security_governance_evidence.py": 34,
+        "tests/governance/test_supply_chain.py": 10
+      }
+    },
+    "focus_348_prior": {
+      "scope": "较早348项焦点；输入用例集合不同于353项安装集合",
+      "classification": "pre_candidate_baseline",
+      "result_status": "observed_prior_pass",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 348,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 2,
+      "passed": 346,
+      "duration_seconds": 75.842,
+      "junit": {
+        "artifact": "final-focus.xml",
+        "bytes": 59493,
+        "sha256": "2fd577ad3e3adb570980cb6ef2eb31e48ecd975457be1d997559c9d800ec801a"
+      },
+      "log": {
+        "artifact": "final-focus.log",
+        "bytes": 541,
+        "sha256": "bf4136d450dddd8b9133d2d74fbe7ac686772bdc6a02c8875b7dfa5775c57766"
+      },
+      "recorded_module_case_counts": {
+        "tests/product_config/test_git_delivery_process.py": 62,
+        "tests/product_config/test_git_material_input.py": 42,
+        "tests/product_config/test_git_material_native.py": 28,
+        "tests/product_config/test_git_material_snapshot_lifecycle.py": 3,
+        "tests/product_config/test_git_object_material.py": 213
+      }
+    },
+    "focus_320_earlier": {
+      "scope": "更早320项焦点；不等同于后继选择器",
+      "classification": "pre_candidate_baseline",
+      "result_status": "observed_prior_pass",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 320,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 320,
+      "duration_seconds": 74.925,
+      "junit": {
+        "artifact": "focus.xml",
+        "bytes": 54167,
+        "sha256": "6f4ce92a51f6ae7b78a91585e3a9b0a0f2d8f0b346eae7d5ecf2e2735cbf3211"
+      },
+      "log": {
+        "artifact": "focus.log",
+        "bytes": 535,
+        "sha256": "41f3554c902248fec13502941a761288ec962949aff6249f142a49550bbce5f2"
+      },
+      "recorded_module_case_counts": {
+        "tests/product_config/test_git_delivery_process.py": 62,
+        "tests/product_config/test_git_material_input.py": 42,
+        "tests/product_config/test_git_material_snapshot_lifecycle.py": 3,
+        "tests/product_config/test_git_object_material.py": 213
+      }
+    }
+  },
+  "preserved_original_failures": {
+    "native_configuration_before_repair": {
+      "scope": "配置词法修复前导入旧模块；Windows两项跳过",
+      "classification": "implementation_development_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 28,
+      "failed": 19,
+      "errors": 0,
+      "skipped": 2,
+      "passed": 7,
+      "duration_seconds": 0.726,
+      "junit": {
+        "artifact": "development/native.xml",
+        "bytes": 35699,
+        "sha256": "756bafee30f3204ad0482c9b8891272dea9e2315efe2ea8fee8069f44b4f352f"
+      },
+      "log": {
+        "artifact": "development/native.log",
+        "bytes": 31846,
+        "sha256": "27eed93c5c12ded8e1454ff80b6d58090661ed66f40e43ac83b71c4d4fea9f2e"
+      },
+      "recorded_module_case_counts": {
+        "tests/product_config/test_git_material_native.py": 28
+      },
+      "failure_breakdown": {
+        "legitimate_comment_rejections": 16,
+        "invalid_quote_acceptances": 2,
+        "actual_quoted_configuration_write_failure": 1,
+        "windows_native_skips": 2
+      }
+    },
+    "associated_nonstandard_umask": {
+      "scope": "非约定umask077环境下关联集合",
+      "classification": "environment_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 1052,
+      "failed": 139,
+      "errors": 87,
+      "skipped": 43,
+      "passed": 783,
+      "duration_seconds": 115.71,
+      "junit": {
+        "artifact": "development/associated-umask077.xml",
+        "bytes": 840799,
+        "sha256": "224a3f0c6b8c9a04c904e167afb0c6ce399d6028c59adf3c2fd2e2d2087f8308"
+      },
+      "log": {
+        "artifact": "development/associated-umask077.log",
+        "bytes": 625283,
+        "sha256": "a6451d904b9e5e6c64717dfe6e6ea7d782dff005edc536f558dbea1e33cb3ee6"
+      },
+      "recorded_module_case_counts": {
+        "tests/delivery/test_diff.py": 1,
+        "tests/delivery/test_filesystem.py": 9,
+        "tests/delivery/test_git.py": 12,
+        "tests/delivery/test_git_checkpoint_guard.py": 9,
+        "tests/delivery/test_git_push.py": 26,
+        "tests/delivery/test_git_store_readonly.py": 85,
+        "tests/delivery/test_patch_input_schema.py": 8,
+        "tests/delivery/test_planner.py": 10,
+        "tests/delivery/test_rollback_binding.py": 6,
+        "tests/delivery/test_store.py": 3,
+        "tests/delivery/test_trusted_action_patch.py": 9,
+        "tests/delivery/test_windows_filesystem.py": 23,
+        "tests/delivery/test_windows_io_contracts.py": 27,
+        "tests/processes/test_child_ready.py": 4,
+        "tests/processes/test_contracts.py": 61,
+        "tests/processes/test_crash_boundary.py": 1,
+        "tests/processes/test_git_raw_observation.py": 19,
+        "tests/processes/test_lifecycle.py": 11,
+        "tests/processes/test_output_binary_contracts.py": 13,
+        "tests/processes/test_output_protection.py": 24,
+        "tests/processes/test_posix_raw_receipt.py": 8,
+        "tests/processes/test_raw_output_receipt.py": 94,
+        "tests/processes/test_raw_receipt_supervision.py": 23,
+        "tests/processes/test_receipt_snapshot_transition.py": 19,
+        "tests/processes/test_runtime.py": 32,
+        "tests/processes/test_supervision_contracts.py": 12,
+        "tests/processes/test_supervision_store.py": 5,
+        "tests/processes/test_supervisor.py": 9,
+        "tests/processes/test_trusted_output.py": 4,
+        "tests/processes/test_windows_input.py": 2,
+        "tests/processes/test_windows_owner_lifecycle.py": 5,
+        "tests/processes/test_windows_raw_receipt.py": 3,
+        "tests/processes/test_windows_receipt_contracts.py": 16,
+        "tests/processes/test_windows_supervisor.py": 8,
+        "tests/product_config/test_git_baseline.py": 63,
+        "tests/product_config/test_git_delivery_process.py": 62,
+        "tests/product_config/test_git_delivery_source.py": 35,
+        "tests/product_config/test_git_material_input.py": 47,
+        "tests/product_config/test_git_material_native.py": 28,
+        "tests/product_config/test_git_material_snapshot_lifecycle.py": 3,
+        "tests/product_config/test_git_object_material.py": 213
+      },
+      "attribution_limit": "保留逐项原件；不把全部失败统一归因于同一生产缺陷。"
+    },
+    "governance_unpinned_git": {
+      "scope": "未固定Git环境下治理集合",
+      "classification": "environment_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 302,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 301,
+      "duration_seconds": 29.289,
+      "junit": {
+        "artifact": "development/governance-apple-git.xml",
+        "bytes": 49635,
+        "sha256": "ccd834f651a32195518ea264551e729b77ae2567157aef676c22840f6c1457b5"
+      },
+      "log": {
+        "artifact": "development/governance-apple-git.log",
+        "bytes": 3205,
+        "sha256": "b7f072b2ea49e6eaa547103c1826b7a57a48a5c8f528747fc1884aabf9fb8ce3"
+      },
+      "recorded_module_case_counts": {
+        "tests/governance/test_cli_console.py": 12,
+        "tests/governance/test_contract_import_boundary.py": 4,
+        "tests/governance/test_distribution_artifact_boundary.py": 1,
+        "tests/governance/test_documentation_policy.py": 23,
+        "tests/governance/test_generated_specs.py": 3,
+        "tests/governance/test_installed_product_acceptance.py": 20,
+        "tests/governance/test_installed_product_upgrade_acceptance.py": 21,
+        "tests/governance/test_legacy_action_archive.py": 3,
+        "tests/governance/test_license_archive_evidence.py": 54,
+        "tests/governance/test_product_runtime_convergence.py": 8,
+        "tests/governance/test_readability_policy.py": 3,
+        "tests/governance/test_repository_policy.py": 3,
+        "tests/governance/test_sbom.py": 12,
+        "tests/governance/test_secret_scan.py": 91,
+        "tests/governance/test_security_governance_evidence.py": 34,
+        "tests/governance/test_supply_chain.py": 10
+      },
+      "failed_requirement": "canonical checkout newline override under required Git environment"
+    },
+    "governance_stale_readability_snapshot": {
+      "scope": "可读性治理快照尚未同步的开发集合",
+      "classification": "governance_development_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "tests": 302,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 301,
+      "duration_seconds": 30.194,
+      "junit": {
+        "artifact": "governance.xml",
+        "bytes": 48530,
+        "sha256": "2be51e669d46a780a631ff1f29bbe25fa034403f3c20d51ed046a50a2a279afe"
+      },
+      "log": {
+        "artifact": "governance.log",
+        "bytes": 1767,
+        "sha256": "32ae91ed149fbdf9574e9f00de1335bdd6b684ef6f51b3f2d64ed3e401a0bdf0"
+      },
+      "recorded_module_case_counts": {
+        "tests/governance/test_cli_console.py": 12,
+        "tests/governance/test_contract_import_boundary.py": 4,
+        "tests/governance/test_distribution_artifact_boundary.py": 1,
+        "tests/governance/test_documentation_policy.py": 23,
+        "tests/governance/test_generated_specs.py": 3,
+        "tests/governance/test_installed_product_acceptance.py": 20,
+        "tests/governance/test_installed_product_upgrade_acceptance.py": 21,
+        "tests/governance/test_legacy_action_archive.py": 3,
+        "tests/governance/test_license_archive_evidence.py": 54,
+        "tests/governance/test_product_runtime_convergence.py": 8,
+        "tests/governance/test_readability_policy.py": 3,
+        "tests/governance/test_repository_policy.py": 3,
+        "tests/governance/test_sbom.py": 12,
+        "tests/governance/test_secret_scan.py": 91,
+        "tests/governance/test_security_governance_evidence.py": 34,
+        "tests/governance/test_supply_chain.py": 10
+      },
+      "policy_relaxed": false
+    },
+    "first_real_input_fixture_interface": {
+      "classification": "test_fixture_development_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "reason": "测试断言辅助调用遗漏stderr参数；业务后置断言未完成。",
+      "log": {
+        "artifact": "development/first-real-input.log",
+        "bytes": 781,
+        "sha256": "054dc54b694e3d05d3c65e2052ad7b1de1c24749c0f5b484b2666c6151fb909e"
+      },
+      "junit": null,
+      "test_counts": null,
+      "count_policy": "未生成JUnit，不从进度标记推导完整通过数量。"
+    },
+    "snapshot_death_fixture_interface": {
+      "classification": "test_fixture_development_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "pending_refresh",
+      "applies_to_final_candidate": false,
+      "reason": "回执校验辅助调用形状错误；不能据此声称生命周期已验证。",
+      "log": {
+        "artifact": "development/snapshot-death.log",
+        "bytes": 724,
+        "sha256": "d28656e91678c4eda4deac38691e8c414582239add27bf0d83bf4b05d105012d"
+      },
+      "junit": null,
+      "test_counts": null,
+      "count_policy": "未生成JUnit，不从进度标记推导完整通过数量。"
+    },
+    "documentation_development": {
+      "classification": "documentation_development_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "pending_refresh",
+      "findings": 3,
+      "report": {
+        "artifact": "development/documentation.json",
+        "bytes": 709,
+        "sha256": "1d69e75965d06ee2a8181c6f2764b5a3deaf6cf843d34a482851d645e13a862a"
+      },
+      "applies_to_final_candidate": false
+    },
+    "historical_windows_native": {
+      "classification": "historical_native_fixture_contract_failure",
+      "result_status": "preserved_failure",
+      "candidate_binding_status": "not_same_candidate",
+      "revision": "4e66135ba245ad5143673edfe3f73d6163b5b3f2",
+      "conclusion": "failure",
+      "raw_git_passed": 375,
+      "raw_git_failed": 2,
+      "raw_git_skipped": 6,
+      "scope": "旧Windows Server原生作业；不是本C0候选或消费者Windows11通过证据。",
+      "failure": "根命令与解释器进程身份合同断言失败；停止断言已通过，不推导已确认进程泄漏。",
+      "source_packet": "docs/validation/git-object-material-2026-10-01-v1/verification.json",
+      "url": "https://github.com/carrie1988/Harnessix/actions/runs/36764263388/job/110054323389",
+      "snapshot_sha256": "161c197e57f528717332d9c3e7f2f8a4e28b755f127fe7081608af5541a9ad19",
+      "queried_in_this_package": false,
+      "superseded_by_local_skips": false
+    },
+    "outer_exit_original_real_owner": {
+      "classification": "actual_production_defect_red_green",
+      "tests": 3,
+      "passed": 0,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 3.103,
+      "junit_sha256": "afb0d4424c1421607102bfc295f4e9e1457933e161f33f761c7176f10417aa00",
+      "log_sha256": "e69132b38ebd3230b6c6b1cc866993b210fa764b197e695b0d7c188afe11bda6",
+      "before_fix_port_sha256": "c23eb11ae2943c6e40db06a8d4464552c40478aaf97fbc8abbec55dc26d36dd8",
+      "fixed_port_sha256": "6d797f1b45b496a2b39a932a07cc7591374a740437a97b7c99499efe9c45ab4b",
+      "final_regression": "same_candidate_associated_and_outside_312_313"
+    },
+    "windows_c64_material_fixture": {
+      "revision": "c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e",
+      "classification": "original_native_fixture_input_order_failure",
+      "io_passed": 62,
+      "material_passed": 208,
+      "material_failed": 1,
+      "source_packet": "docs/validation/git-material-fixture-eof-2026-10-01-v1/README.md",
+      "superseded_by_local_skips": false
+    }
+  },
+  "independent_review": [
+    {
+      "finding_id": "C0-HOST-P2-01",
+      "status": "pending_fix_and_same_candidate_regression",
+      "classification": "independent_static_production_finding",
+      "title": "外层Supervisor退出及清理异常不得覆盖可能送达后的材料不确定效果。",
+      "reproduction_status": "static_control_flow_only_not_executed_by_reviewer",
+      "scope_limit": "未证明自动重放、对象损坏或Windows现场失败。",
+      "findings_report": {
+        "artifact": "findings.json",
+        "bytes": 2106,
+        "sha256": "ebbf110f6382864b1d7ba7ed5ffcfa6cffce444d9a4cad01dcb197e0725cc58b"
+      },
+      "closure_matrix": {
+        "artifact": "closure-matrix.json",
+        "bytes": 1867,
+        "sha256": "d38141848aa339262f83877246f3a2f45dffbe4bb1255c66570bfc668fd76e57"
+      },
+      "closing_evidence": null
+    },
+    {
+      "artifact": "REPORT.md",
+      "sha256": "e1ea7f94ee4aa27da86a614b64eaa1bc814e49709970feda79d60238c77b4d0b",
+      "classification": "targeted_static_closure_no_new_test_execution",
+      "finding_id": "C0-HOST-P2-01",
+      "status": "closed_in_scope"
+    }
+  ],
+  "development_followup_logs": [
+    {
+      "scope": "后继真实输入选择器；进度标记不代替JUnit数量与最终源码关联。",
+      "artifact": {
+        "artifact": "development/second-real-input.log",
+        "bytes": 80,
+        "sha256": "c66ef7936b32d2201bf6eb901cf69cbc8e71996669c38afe1f70ad40098e04a3"
+      },
+      "binding_status": "pending_refresh"
+    },
+    {
+      "scope": "后继真实输入选择器；进度标记不代替JUnit数量与最终源码关联。",
+      "artifact": {
+        "artifact": "development/third-real-input.log",
+        "bytes": 80,
+        "sha256": "45e00f2cc162072e381af0198bc09a54daa73544fa9cd47b4ed25760a061c4aa"
+      },
+      "binding_status": "pending_refresh"
+    },
+    {
+      "scope": "后继真实输入选择器；进度标记不代替JUnit数量与最终源码关联。",
+      "artifact": {
+        "artifact": "development/snapshot-death-fixed.log",
+        "bytes": 80,
+        "sha256": "cf426ab35f3b06fccef8290fde5325d90af130a79da1d1752031518df77c4236"
+      },
+      "binding_status": "pending_refresh"
+    },
+    {
+      "path": "development/outer-exit-before.log",
+      "bytes": 21755,
+      "sha256": "416c7d93f66b3a71ca6ba6684d7be0ecde75b13993e0c0404fa56b3cff997b33",
+      "classification": "test_fixture_start_frame_interface_and_barrier_failure_not_production_reproduction"
+    },
+    {
+      "path": "development/outer-exit-before-second.log",
+      "bytes": 17151,
+      "sha256": "b5f252d36c4694134b2411802ebc2707e9c77c821aabc1edfb2f81392aa186da",
+      "classification": "test_fixture_start_frame_interface_and_barrier_failure_not_production_reproduction"
+    }
+  ],
+  "prior_documentation_check": {
+    "status": "observed_prior_pass_pending_refresh",
+    "report": {
+      "artifact": "documentation.json",
+      "bytes": 192,
+      "sha256": "d90318ec78a192a842177baeac0ced4eaebe2ff1f7ad13fb0b2d1c4c8a3a6aeb"
+    },
+    "documents": 435,
+    "links": 10744,
+    "mermaid_static_blocks": 924,
+    "findings": 0,
+    "applies_to_current_four_file_package": false
+  },
+  "prior_static_logs": [
+    {
+      "artifact": "ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "binding_status": "pending_refresh"
+    },
+    {
+      "artifact": "mypy.log",
+      "bytes": 45,
+      "sha256": "ad1298f55978f8b27dfc0a6a9f6e1d5d09af91ddac572c4873d422397babd256",
+      "binding_status": "pending_refresh"
+    },
+    {
+      "artifact": "readability.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "binding_status": "pending_refresh"
+    }
+  ],
+  "final_static_and_package_checks": {
+    "ruff": "pass",
+    "mypy": "pass",
+    "readability_policy": "pass",
+    "generated_specs": "pass",
+    "low_sensitivity_and_repository_scan": "pass",
+    "diagram_review": "pass",
+    "documentation_governance": "pass"
+  },
+  "test_evidence_separation": {
+    "actual_git_write_and_independently_approved_readback": "actual_business_io_positive_control_not_full_product_delivery",
+    "snapshot_lifecycle": "actual_owner_and_native_snapshot_no_git_execution",
+    "injected_faults": "negative_control_not_actual_git_success",
+    "windows_sharing_negative_control": "requires_native_execution_metadata_only_vs_actual_guard",
+    "static_api_evidence": "not_native_execution_evidence"
+  },
+  "collection_overlap": "do_not_sum",
+  "skip_policy": "platform_skip_is_not_native_pass",
+  "preservation_policy": "归档旧原件，追加新候选记录；不覆盖原失败、制品摘要或前候选输入关联。",
+  "native_candidate": {
+    "windows": "not_verified",
+    "consumer_windows11": "not_verified",
+    "linux": "not_claimed"
+  },
+  "governance": "302_passed_same_current_package",
+  "r1_closed": false,
+  "r4_closed": false,
+  "commercial_accepted": false,
+  "static_artifacts": [
+    {
+      "artifact": "review-fixed-readability.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "artifact": "review-fixed-ruff.log",
+      "sha256": "5257801ae3d803827776c631c6b09473dcc3c05f395d4ae2aa6a0cb929fbf432"
+    },
+    {
+      "artifact": "review-fixed-mypy.log",
+      "sha256": "ad1298f55978f8b27dfc0a6a9f6e1d5d09af91ddac572c4873d422397babd256"
+    },
+    {
+      "artifact": "review-fixed-specs.log",
+      "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+    },
+    {
+      "artifact": "review-fixed-secret.log",
+      "sha256": "71ddf731c608ca5fc114ffb15d05923fe59edb50a497a9fdf82f1c673785a602"
+    },
+    {
+      "artifact": "review-fixed-diagrams.log",
+      "sha256": "0b7995b0b548f63716ec200b5aea1938ec6c142cde400697d78663a2dca54aff"
+    },
+    {
+      "artifact": "review-fixed-documentation.json",
+      "sha256": "bb6e32709481e0ce3af70fcd7a74a90fb74878beb53d205f07e7f3d58e20ebfb"
+    }
+  ],
+  "documentation_summary": {
+    "changed_path_count": 0,
+    "document_count": 436,
+    "findings": [],
+    "link_count": 10770,
+    "mermaid_count": 924,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26
+  },
+  "precommit_input_and_publication_checks": {
+    "documentation": {
+      "changed_path_count": 29,
+      "document_count": 436,
+      "findings": [],
+      "link_count": 10770,
+      "mermaid_count": 924,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "secret_input_count": 3889,
+    "secret_findings": 0,
+    "artifacts": [
+      {
+        "artifact": "precommit-documentation.json",
+        "sha256": "0ac4a142c913e5a434a01249cda78a6da8ad08aca69c056ca507472e6c49d5e8"
+      },
+      {
+        "artifact": "precommit-secret.log",
+        "sha256": "25c1691a2f5550c8fa72e2091a032c755b799618e37e355f0ec71379e0c7d952"
+      }
+    ],
+    "staged_code_inputs_match_tested_catalog": true
+  }
+}
