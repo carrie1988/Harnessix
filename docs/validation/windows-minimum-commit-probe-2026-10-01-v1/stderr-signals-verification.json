@@ -1,0 +1,131 @@
+{
+  "schema": "harnessix.validation-verification/v1",
+  "code_inventory_sha256": "144730bd4c03ca3fa2fc8aa717f84e9460c937b48ad6bbfa505e6443165b0ce5",
+  "code_input_count": 1255,
+  "local_actual_business": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "schema": "harnessix.minimum-commit-probe/v2",
+    "platform": "darwin",
+    "python": "3.12.7",
+    "git": "2.53.0",
+    "both_records_complete": true,
+    "original_13_hooks": true,
+    "no_extra_post_reads": true,
+    "actual_current_source_imports": 186,
+    "proof": {
+      "bytes": 38523,
+      "sha256": "0aee1e03fc929ced3f813aaf3af508c85e3ff4044ceae628e4155c4610acf20c"
+    },
+    "log": {
+      "bytes": 15269,
+      "sha256": "0a087c174db99dcb67ae000f741d63311e3d0cbefbf2ea7d9bae67f98724d49d"
+    }
+  },
+  "full_governance": {
+    "passed": 389,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 24.475,
+    "log": {
+      "bytes": 651,
+      "sha256": "375850a308641e41dfa1a7a4ff8d040203098d3906d2d1042000e58ffe9d5b8a"
+    },
+    "junit": {
+      "bytes": 62594,
+      "sha256": "d79bda50f66a68750f76e3f807ec70231c683c3aa5b71671552831616aeb4110"
+    },
+    "code_unchanged_before_after": true
+  },
+  "worker_focus": {
+    "passed": 87,
+    "failed": 0,
+    "skipped": 0,
+    "original_retained": 59,
+    "new_cases": 28,
+    "source_sha256": [
+      "7e74acee05af6dbc99ef296fd7f13882e780a11580d5c0c08007a5d53bca2662",
+      "7778127d13df29879aa944aef409f39a1cc3886b56f3ce3f0f5a4cd9789bc43c"
+    ]
+  },
+  "static": {
+    "ruff_format_and_check_passed": true,
+    "log": {
+      "bytes": 45,
+      "sha256": "afa20b27dacc9bf0aba3c1d265964c21e04ab42f6e39e2dd4769718ceded003a"
+    }
+  },
+  "carrier_failures_preserved": [
+    {
+      "code": "frozen_runner_not_ready",
+      "status": "pre_test_execution_carrier_error",
+      "log": {
+        "bytes": 313,
+        "sha256": "171f8c9fea3b12a99d9653b7352dfe202b250ec0068c365cc3f4e4664e25728c"
+      },
+      "successor": "governance-frozen.log",
+      "no_product_change": true
+    },
+    {
+      "code": "record_checker_wrong_field_hooks",
+      "status": "read_only_postcheck_error",
+      "record": {
+        "bytes": 340,
+        "sha256": "bcc5888d19f1ed70957e778871109a0a3a94854ce8d1f3b15b1d161c68254531"
+      },
+      "correct_field": "installed_hooks",
+      "business_tests_reexecuted": 0
+    },
+    {
+      "code": "existing_forbidden_output_literal_matched_parent_path_guard",
+      "record_sha256": "03082a500b3cedede9316a59836abe483eb314cd9db5a4b6652c059979203c93",
+      "first_scan_not_final_coverage": true,
+      "corrected_public_artifact_only_path_check": true,
+      "tests_and_product_unchanged": true
+    }
+  ],
+  "raw_stderr_not_published": true,
+  "native_status": "not_run",
+  "production_wheel": {
+    "same_actual_wheel_sha256": "d31060d3133f830ab3ac110b41992e2d632f122f7d626f9038d9ad45525e414d",
+    "actual_wheel_bytes": 1169521,
+    "package_members": 468,
+    "all_current_product_bytes_equal_original_final_wheel": true,
+    "new_wheel_builds": 0,
+    "diagnostic_is_not_product_feature": true
+  },
+  "documentation_preflight": {
+    "policy_version": "harnessix.documentation-policy/v1",
+    "document_count": 450,
+    "link_count": 10994,
+    "mermaid_count": 949,
+    "source_package_count": 26,
+    "changed_path_count": 18,
+    "findings": []
+  },
+  "independent_static_review": {
+    "p0": 0,
+    "p1": 0,
+    "p2": 0,
+    "inputs_before_after_equal": true,
+    "report_sha256": "1d2f9704a8f13bf9b896c8c49ef61b5eb184c9e13cd0b443e57d5cb19477f06f"
+  },
+  "diagrams": {
+    "count": 4,
+    "all_rendered": true,
+    "all_visually_inspected": true,
+    "all_mmd_equal_sdd_blocks": true
+  },
+  "secret_scan": {
+    "scope": "whole_owned_tracked_plus_18_staged_paths_and_unchanged_actual_wheel",
+    "input_count": 4017,
+    "passed": true,
+    "log": {
+      "bytes": 101,
+      "sha256": "f853665ec922fd9063b97620d4dbfdab4524b3973fab7edb0dd4d52467f33b13"
+    },
+    "old_observer_and_user_untracked_excluded": true
+  }
+}

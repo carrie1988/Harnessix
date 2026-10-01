@@ -10,6 +10,9 @@ flowchart TD
   Need -->|是| Gate{同handle缓存exited且原保护存在}
   Gate -->|否| Missing[明确unavailable]
   Gate -->|是| Once[至多一次原回执 raw及proof读取]
-  Once --> Publish
+  Once --> Verified{原MAC raw与保护全部通过}
+  Verified -->|是| Signals[纯bytes有限完整行信号]
+  Signals --> Publish
+  Verified -->|否| Missing
   Missing --> Publish
   Publish --> Exit[保留原pytest退出码]

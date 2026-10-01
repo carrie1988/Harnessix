@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 145
+version: 146
 code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
@@ -1373,3 +1373,12 @@ R3真实20 Trial、Windows11消费者、独立Beta及同候选R1～R6商用门�
 非等待超时；同PID的原MAC终态回执和完整stdout／stderr守卫通过，stdout为空、proof缺失、readback未执行。
 stderr正文不出站；实际Windows七模块CRLF字节单独核对，不能以长度／摘要猜内部根因或宣称Git效果已知。
 原强UNKNOWN和Windows发布缺口保留，后继定位worker／Git内部错误再做最小修复，不放宽原期限或安全合同。
+
+### R1/R4：最低Commit原认证stderr有限字节信号
+
+[v2诊断设计](changes/m09-r4-windows-minimum-commit-probe.md#11-v2有限stderr信号与兼容设计)
+仅在既有后验的MAC／完整raw／protection全部通过后，从内存stderr投影四个求证固定bool。
+不增加IO、Git效果、等待、重试或正文持久化；v1历史不改，缺字段与全False分开解释，命中不是根因或业务成功。
+[统一验证包](validation/windows-minimum-commit-probe-2026-10-01-v1/README.md#6-v2完整stderr内存字节的有限信号)
+固定1255件新代码输入，原59项加28项治理负对照共87通过，完整治理389通过，原两个真实本机用例2通过。
+原两份Windows FAIL保留；新v2必须取新的固定原生结果，不以本机或诊断通过关闭Windows／R3／完整Git交付。

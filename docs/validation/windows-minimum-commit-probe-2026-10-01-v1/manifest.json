@@ -5,48 +5,48 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 6125,
-      "sha256": "65d01a3cbb6bfcfbccf3a336b40f0502166bd9b17a2982dda671bb1635235307"
+      "bytes": 8678,
+      "sha256": "fd6960675b821e3cc81053365459e304d40faf43e207c3802545db3a1308803b"
     },
     {
       "path": "diagrams/architecture.mmd",
-      "bytes": 615,
-      "sha256": "33444cf462131cc68bc341e4e09f53e7e9d1b14bd8316fcbf1f2a7f0b4097e38"
+      "bytes": 738,
+      "sha256": "6ebfc21aac425273abfd1ab58e8ad3f0cc5724ba050524d69974f298445a5383"
     },
     {
       "path": "diagrams/architecture.png",
-      "bytes": 63932,
-      "sha256": "d5a52779c754e9f2fcff34f2ce8e6010c50a7ed03763b8404c66eb3a465957cc"
+      "bytes": 72268,
+      "sha256": "4611668d5b39d437ab7a342e9089e5b7a9e060f42da2e88940d1cdb8456fac13"
     },
     {
       "path": "diagrams/dataflow.mmd",
-      "bytes": 526,
-      "sha256": "e292bfc7c4714b7c9549cb2af2f4e823e236a27c5fd26a97b144a47581e1865b"
+      "bytes": 657,
+      "sha256": "b8471895183d3c2da819d5033557f0a18b9727fd8ed1510d240ed2ca16c608b9"
     },
     {
       "path": "diagrams/dataflow.png",
-      "bytes": 48567,
-      "sha256": "06583c27e7d1d88aaccb2908fba4a8f85466b6fee8f94d159158b3d8d8003783"
+      "bytes": 18436,
+      "sha256": "dd81095671a247867fb476a9cc064a958daada70729f5856e4427630c7209464"
     },
     {
       "path": "diagrams/flow.mmd",
-      "bytes": 698,
-      "sha256": "c7c06778c5ee9917a8c7324b3f8488d4b36f446f381bd029f5ab3f5af0d88848"
+      "bytes": 841,
+      "sha256": "120b27daeef0c17f43b0298935084d50a5a49574c6fdb81103c78c52e84eb615"
     },
     {
       "path": "diagrams/flow.png",
-      "bytes": 71106,
-      "sha256": "6d65d6b76f5050a8e821fbb8be79300e168d637db2dec872d00eb15df33f4e60"
+      "bytes": 82392,
+      "sha256": "96eead53f90e8f7ca288e40a1a518060ad79652464df5a22e0c445b92da23518"
     },
     {
       "path": "diagrams/sequence.mmd",
-      "bytes": 644,
-      "sha256": "8830e056490b64d6e5e1262ce24707d7295e71276a726dc0b85abf877eec1edc"
+      "bytes": 702,
+      "sha256": "a65cbcba62deb44f6c7f9117f31233d9cd0c3fdbd7dca046aeb59a9cb16ce363"
     },
     {
       "path": "diagrams/sequence.png",
-      "bytes": 53971,
-      "sha256": "b1f8022cc6c227ead9dc20ee5ac32b0288ee8455f1306432d8ddeacd73b4f110"
+      "bytes": 59963,
+      "sha256": "22e103e4bd5b31940d1e1d3c8aeef0760ffaaf4e4ad2227a4552308d658ed871"
     },
     {
       "path": "facts.json",
@@ -59,9 +59,25 @@
       "sha256": "6b45710802ce47f5fb7c9f81cc4bf95c2e06b5bbe5f23cb4d053094f596e2dbe"
     },
     {
+      "path": "stderr-signals-facts.json",
+      "bytes": 247700,
+      "sha256": "6eb6f7cf0a1d8c28763f5997658cd379eb95025caafb6a7123bd4b1471572329"
+    },
+    {
+      "path": "stderr-signals-review.json",
+      "bytes": 3591,
+      "sha256": "9b5272b7abc40904b996a1e25958b1d376da41ee7a2dddc87507a85d6ecdeafe"
+    },
+    {
+      "path": "stderr-signals-verification.json",
+      "bytes": 3993,
+      "sha256": "c534d786a14f75450c7ded5cfc271f98ded533e448b03041e1751e038f8777d8"
+    },
+    {
       "path": "verification.json",
       "bytes": 12747,
       "sha256": "8a592f4fb88d59df9cad92ea3ef16fc04b6385f25fee80c432e155b8e6330baa"
     }
-  ]
+  ],
+  "stderr_signals_code_inputs_sha256": "144730bd4c03ca3fa2fc8aa717f84e9460c937b48ad6bbfa505e6443165b0ce5"
 }

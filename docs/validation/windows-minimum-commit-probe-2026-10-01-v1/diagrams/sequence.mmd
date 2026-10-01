@@ -14,6 +14,7 @@ sequenceDiagram
   opt 必要write与同句柄缓存exited
     P->>O: 原只读回执及每流一次raw
     O-->>P: 已验真元数据或unavailable
+    P->>P: 全部原守卫通过才投影四个固定bool
   end
   P-->>T: teardown后有界低敏JSON
   Note over T,P: 原pytest outcome与退出码不改

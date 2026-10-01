@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import hashlib
 import inspect
 import io
 import json
@@ -428,7 +429,7 @@ def test_safe_record_publishes_single_low_sensitivity_line():
     assert probe_module._publish(probe, stream)
     assert stream.getvalue().count("\n") == 1
     record = json.loads(stream.getvalue().removeprefix(probe_module.PREFIX))
-    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v1"
+    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v2"
 
 
 def test_install_restores_all_thirteen_original_seams_and_import_alias(monkeypatch):
@@ -518,3 +519,170 @@ def test_manual_carrier_pins_only_two_cases_and_preserves_limits_failure_and_iso
         "/Users/",
     ):
         assert forbidden not in workflow
+
+
+@pytest.mark.parametrize(
+    ("name", "line"),
+    [
+        ("worker_failure_literal", b"git_material_worker_failed"),
+        ("git_temp_create_prefix", b"error: unable to create temporary file: denied"),
+        (
+            "git_object_db_permission_prefix",
+            b"error: insufficient permission for adding an object to repository database fake",
+        ),
+        ("git_malformed_object_literal", b"fatal: refusing to create malformed object"),
+    ],
+)
+@pytest.mark.parametrize("ending", [b"\n", b"\r\n"])
+def test_stderr_signals_match_only_fixed_fields_on_complete_lines(name, line, ending):
+    body = b"\xff\n" + line + ending + CANARY.encode()
+    signals = probe_module._stderr_signals(body)
+    assert signals == {field: field == name for field in probe_module._STDERR_LITERALS}
+    assert all(type(value) is bool for value in signals.values())
+    assert CANARY not in json.dumps(signals, ensure_ascii=False)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"",
+        b"\xff\xfe\n",
+        b"git_material_worker_fail\n",
+        b"git_material_worker_failed",
+        b"git_material_worker_failed\r",
+        b"git_material_worker_failed fake\n",
+        b"xgit_material_worker_failed\n",
+        b"error: unable to create temporary fil\n",
+        b"error: unable to create temporary file: \n",
+        b"error: unable to create temporary file: denied",
+        b"error: insufficient permission for adding an object to repository database \r\n",
+        b"fatal: refusing to create malformed object fake\n",
+        b"FATAL: refusing to create malformed object\n",
+    ],
+)
+def test_stderr_signals_do_not_decode_normalize_or_guess_partial_text(body):
+    assert not any(probe_module._stderr_signals(body).values())
+
+
+def test_stderr_signals_are_pure_bounded_fields_even_with_large_sensitive_fake_text():
+    body = b"error: unable to create temporary file: " + CANARY.encode() * 12000 + b"\xff\n"
+    signals = probe_module._stderr_signals(body)
+    assert signals["git_temp_create_prefix"] and len(json.dumps(signals)) < 200
+    assert all(type(value) is bool for value in signals.values())
+    tree = ast.parse(inspect.getsource(probe_module._stderr_signals))
+    attributes = {
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+    }
+    assert attributes == {"find", "startswith", "items"}
+    assert not any(isinstance(node, (ast.Await, ast.AsyncWith)) for node in ast.walk(tree))
+
+
+def _signal_post_operation(monkeypatch, boundary):
+    # 测试桩仅核原调用次数和真实 raw 守卫，不冒充真实 Owner/MAC 原生验收。
+    from harnessix.product_config import git_delivery_process as port
+
+    calls = []
+    stderr = b"error: unable to create temporary file: " + CANARY.encode() + b"\xff\n"
+    observations = {
+        stream: SimpleNamespace(
+            observed_bytes=len(body), sha256=hashlib.sha256(body).hexdigest(), eof=True
+        )
+        for stream, body in (("stdout", b""), ("stderr", stderr))
+    }
+    if boundary == "stdout_raw":
+        observations["stdout"].sha256 = "0" * 64
+    if boundary == "stderr_raw":
+        observations["stderr"].eof = False
+    receipt = SimpleNamespace(**{f"raw_{name}": raw for name, raw in observations.items()})
+
+    async def read_receipt():
+        calls.append("receipt")
+        if boundary == "receipt":
+            raise KernelError("process_owner_receipt_invalid", CANARY)
+        return receipt
+
+    async def output(stream):
+        calls.append(stream)
+        return b"" if stream == "stdout" else stderr
+
+    def protect(*args):
+        calls.append("protection")
+        if boundary == "protection":
+            raise KernelError("git_process_output_changed", CANARY)
+
+    original_signals, original_raw = probe_module._stderr_signals, port._require_raw_bytes
+
+    def raw(*args, **kwargs):
+        calls.append("raw")
+        return original_raw(*args, **kwargs)
+
+    def signals(body):
+        calls.append("signals")
+        if boundary == "projection":
+            raise OSError(CANARY)
+        return original_signals(body)
+
+    monkeypatch.setattr(probe_module, "_receipt", lambda value: {})
+    monkeypatch.setattr(probe_module, "_stderr_signals", signals)
+    monkeypatch.setattr(port, "_require_raw_bytes", raw)
+    handle = SimpleNamespace(
+        lease=SimpleNamespace(
+            state="exited", stop_reason="exited", returncode=2, pid=33, sequence=3
+        ),
+        _terminal_owner_receipt=read_receipt,
+        output=output,
+    )
+    probe = probe_module.Probe("A")
+    operation = probe_module.Operation(
+        probe,
+        prepared=SimpleNamespace(material=None),
+        handle=handle,
+        protection=SimpleNamespace(require_unmatched=protect),
+        finished=True,
+        data={"kind": "write", "original_operation_returned": False},
+    )
+    probe.operations.append(operation)
+    return probe, operation, calls
+
+
+@pytest.mark.parametrize(
+    "boundary", ["none", "receipt", "stdout_raw", "stderr_raw", "protection", "projection"]
+)
+async def test_stderr_projection_requires_all_original_guards_and_never_changes_unknown(
+    monkeypatch, boundary
+):
+    probe, operation, calls = _signal_post_operation(monkeypatch, boundary)
+    lease = operation.handle.lease
+    error = KernelError("git_material_effect_unknown", CANARY)
+
+    async def original():
+        raise error
+
+    token = probe_module._ACTIVE.set(operation)
+    try:
+        with pytest.raises(KernelError) as raised:
+            await probe_module._async_wrapper(original, "operation")()
+        assert raised.value is error
+    finally:
+        probe_module._ACTIVE.reset(token)
+    await probe.post_settlement()
+    await probe.post_settlement()
+    assert calls.count("receipt") == 1
+    assert calls.count("stdout") == calls.count("stderr") == (boundary != "receipt")
+    assert calls.count("signals") == (boundary in {"none", "projection"})
+    assert calls.count("raw") == {"receipt": 0, "stdout_raw": 1}.get(boundary, 2)
+    assert operation.handle.lease is lease and lease.returncode == 2
+    assert operation.data["original_operation_returned"] is False
+    assert (
+        "post_stderr_signals" in operation.data
+        if boundary == "none"
+        else "post_stderr_signals" not in operation.data
+    )
+    assert probe.incomplete is (boundary != "none")
+    if boundary == "none":
+        assert calls == ["receipt", "stdout", "stderr", "raw", "raw", "protection", "signals"]
+        assert operation.data["post_stderr_signals"]["git_temp_create_prefix"]
+        assert operation.data["post_status"] == "raw_verified_only"
+    assert CANARY not in probe.render()

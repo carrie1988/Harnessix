@@ -42,6 +42,31 @@ _CODES = frozenset(
     "process_owner_token_invalid process_output_corrupt process_output_protection_unavailable "
     "process_input_invalid".split()
 )
+# 字面量依据 worker 固定失败行及 Git v2.53.0、Windows v2.55.0.windows.5 的
+# object-file.c / usage.c；英文固定信号不代表 errno、真实根因或效果已知。
+_STDERR_LITERALS = {
+    "worker_failure_literal": (b"git_material_worker_failed", True),
+    "git_temp_create_prefix": (b"error: unable to create temporary file: ", False),
+    "git_object_db_permission_prefix": (
+        b"error: insufficient permission for adding an object to repository database ",
+        False,
+    ),
+    "git_malformed_object_literal": (b"fatal: refusing to create malformed object", True),
+}
+
+
+def _stderr_signals(stderr: bytes) -> dict[str, bool]:
+    """只识别完整行的求证字节信号；不解码正文，也不推断 errno、根因或效果。"""
+    signals = {name: False for name in _STDERR_LITERALS}
+    start = 0
+    while (end := stderr.find(b"\n", start)) >= 0:
+        for name, (literal, exact) in _STDERR_LITERALS.items():
+            stop = start + len(literal)
+            if stderr.startswith(literal, start, end):
+                complete = end == stop or (end == stop + 1 and stderr.startswith(b"\r", stop))
+                signals[name] |= complete if exact else end > stop and not complete
+        start = end + 1
+    return signals
 
 
 def _integer(value: object) -> int | None:
@@ -215,7 +240,7 @@ class Probe:
 
     def render(self) -> str:
         record = {
-            "schema": "harnessix.minimum-commit-probe/v1",
+            "schema": "harnessix.minimum-commit-probe/v2",
             "selector": self.selector,
             "platform": sys.platform,
             "source_sha256": self.source_sha256,
@@ -413,6 +438,7 @@ async def _post_once(operation: Operation) -> None:
             }
             for name, raw in (("stdout", receipt.raw_stdout), ("stderr", receipt.raw_stderr))
         }
+        data["post_stderr_signals"] = _stderr_signals(stderr)
         data["post_status"] = "raw_verified_only"
         if stdout:
             proof = port.decode_proof(stdout, operation.prepared.write.request)

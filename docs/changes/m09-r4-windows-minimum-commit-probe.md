@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 70c0a578d665ba7cb9cd11ae4eee80eb4db296c3
+version: 3
+code_revision: 4d7cada99b76dfb04b87ebdf2976376cd6a47897
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -42,7 +42,9 @@ flowchart TB
   Probe --> Memory[有界内存阶段和白名单投影]
   Receipt -. 原执行中已取得 .-> Memory
   Memory --> After[原fixture清理后有限只读补取]
-  After --> Log[teardown后低敏JSON]
+  After --> Guard[原MAC raw与protection全部通过]
+  Guard --> Signals[完整stderr内存字节 四个固定bool]
+  Signals --> Log[teardown后低敏JSON v2]
   Cases --> Outcome[原pytest退出码 不转换UNKNOWN]
 ```
 
@@ -62,6 +64,7 @@ flowchart TB
 | 原终态数据 | [owner_receipt.py](../../src/harnessix/processes/owner_receipt.py)：`ProcessOwnerReceiptV2` | receipt只在原API验真后投影，不输出MAC／nonce／token |
 | 运行载体 | [windows-git-minimum-commit-probe.yml](../../.github/workflows/windows-git-minimum-commit-probe.yml) | pinned actions、contents:read、Python3.12、锁定依赖、原五分钟、不上传raw／JUnit |
 | 负对照 | [test_git_minimum_commit_probe.py](../../tests/governance/test_git_minimum_commit_probe.py) | 次数、返回／异常原对象、取消、采集失败、输出隐私、上限、选择器及工作流限制 |
+| 有限stderr信号 | [git_minimum_commit_probe.py](../../tests/product_config/git_minimum_commit_probe.py)：`_STDERR_LITERALS`、`_stderr_signals` | 仅处理既有完整bytes，四个固定bool，不读取、解码或保存动态后缀 |
 
 13接点由一个显式fixture安装和恢复：外层_run、start、准备stdin、send、close、wait、complete、exit gate、
 receipt、raw guard、proof、outer exit、staged remove。不另建Owner／Store，不改变业务I/O／等待／预算调用次数。
@@ -90,6 +93,7 @@ receipt、raw guard、proof、outer exit、staged remove。不另建Owner／Stor
 | `original_completion_authenticated` | 原complete函数返回 | 不代表外层_run返回 |
 | `original_operation_returned` | 原_run正常返回 | 独立readback仍由原用例断言 |
 | `post_status` | not_needed／unavailable／raw_verified_only | 非success，不自动把缺proof变成完成 |
+| `post_stderr_signals` | v2中全部原后验检查通过后才存在的四个固定bool | 缺席不能默认False；命中不是errno、根因、消息来源或已知效果 |
 | `outcomes`／`diagnostic_incomplete` | 原setup／call／teardown结果及观察完整性 | skipped／缺call不当作通过，pytest退出码不改 |
 
 MAX_EVENTS=64、MAX_CHAIN=8、MAX_RECORD_BYTES=64KiB。以上限制只约束诊断，不截断材料、
@@ -110,7 +114,10 @@ flowchart TD
   Need -->|是| Gate{同handle缓存exited且原保护存在}
   Gate -->|否| Missing[明确unavailable]
   Gate -->|是| Once[至多一次原回执 raw及proof读取]
-  Once --> Publish
+  Once --> Verified{原MAC raw与保护全部通过}
+  Verified -->|是| Signals[纯bytes有限完整行信号]
+  Signals --> Publish
+  Verified -->|否| Missing
   Missing --> Publish
   Publish --> Exit[保留原pytest退出码]
 ```
@@ -133,6 +140,7 @@ post_settlement:
         if no original handle/protection or cached state != exited: unavailable
         else once original receipt; once each original raw stream
              original complete-byte guard and original protection
+             project four fixed booleans from existing complete stderr bytes
              nonempty stdout uses original strict proof decoder
         keep original outcomes and UNKNOWN, never repeat execution or cleanup
     release retained prepared/handle/protection
@@ -157,6 +165,7 @@ sequenceDiagram
   opt 必要write与同句柄缓存exited
     P->>O: 原只读回执及每流一次raw
     O-->>P: 已验真元数据或unavailable
+    P->>P: 全部原守卫通过才投影四个固定bool
   end
   P-->>T: teardown后有界低敏JSON
   Note over T,P: 原pytest outcome与退出码不改
@@ -168,6 +177,9 @@ flowchart LR
   Cached[原缓存Lease] --> Select
   Receipt[原API认证V2回执] --> Select
   Raw[原完整字节守卫结果] --> Select
+  Raw --> Guard[原MAC与protection同样通过]
+  Guard --> Signals[既有stderr完整行字节有限匹配]
+  Signals --> Select
   Proof[原严格proof解码] --> Select
   Select --> Memory[有限事件与Operation记录]
   Memory --> JSON[至多64KiB JSON]
@@ -218,4 +230,55 @@ context循环／截断、禁止字段、输出故障、全部接点恢复、默�
 实际阶段并非等待超时，不能推出Git已写入或未写入，worker／Git内部错误原因仍需后继有限观察。
 实际Windows源文件七模块的CRLF字节逐件求证，不混同canonical LF或整个目录完整验证。
 执行前SHA ref的HTTP422拒绝与固定named ref的一次实际Run分别保留，未重复原效果。
-本设计的诊断消费契约不变，具体低敏原件、源码及结果见统一验证包第5节。
+原v1记录及其消费语义保留，具体低敏原件、源码及结果见统一验证包第5节。
+
+## 11. v2有限stderr信号与兼容设计
+
+### 11.1 背景、来源与取舍
+
+v1只证明原worker退出二及完整stderr验真，不能解释内部错误。本增量不增加读取或执行，
+仅在`_post_once`已经取得的完整stderr内存bytes上进行纯计算。接入点在原V2/MAC回执、
+两次完整raw长度／SHA／EOF守卫与原`protection.require_unmatched`全部通过之后。
+不能在MAC或raw拒绝之前使用未认证正文，也不能为取得信号重复Git效果。
+
+worker固定失败行由[git_material_worker.py](../../src/harnessix/delivery/git_material_worker.py)：`main`求证。
+Git消息由[Git v2.53.0 object-file.c](https://raw.githubusercontent.com/git/git/v2.53.0/object-file.c)、
+[Git for Windows v2.55.0.windows.5 object-file.c](https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/object-file.c)
+及对应[usage.c](https://raw.githubusercontent.com/git-for-windows/git/v2.55.0.windows.5/usage.c)的错误格式求证。
+固定英文消息可能受版本、locale或其他输出影响，因此不匹配不能排除任何根因，命中也不是可信错误来源证明。
+
+### 11.2 字段与算法
+
+| bool字段 | 固定字节消息 | 完整行匹配方式 |
+| --- | --- | --- |
+| `worker_failure_literal` | `git_material_worker_failed` | 整行精确相等 |
+| `git_temp_create_prefix` | `error: unable to create temporary file: ` | 行首前缀，必须有非空动态后缀 |
+| `git_object_db_permission_prefix` | `error: insufficient permission for adding an object to repository database ` | 行首前缀，必须有非空动态后缀 |
+| `git_malformed_object_literal` | `fatal: refusing to create malformed object` | 整行精确相等；不是Commit专用类别 |
+
+```text
+stderr_signals(already_verified_complete_bytes):
+    create exactly four false booleans
+    scan each LF-terminated complete line using bytes offsets
+    exact literal: accept only literal plus LF or explicit CRLF
+    prefix literal: require line start and a nonempty suffix
+    ignore unfinished last line; never decode, normalize or extract suffix
+    return fixed booleans, never raw text, match count or dynamic fields
+```
+
+算法使用固定空间和单次行扫描；计算成本非零，输入仍受原raw容量约束，不增加裁剪或新上限。
+普通投影异常继续标记原观察不完整；原异常对象、Lease、returncode、UNKNOWN与pytest退出码不改变。
+不新增线程、await、IO、刷新、重试、等待、清理、数据库或业务Schema。
+
+### 11.3 版本与失败语义
+
+record schema升级为`harnessix.minimum-commit-probe/v2`，原v1日志不补字段或改写。
+v1缺少信号表示未支持；v2缺少字段表示前置检查或投影未完成／不可用。
+字段存在且全部False只表示未匹配四个有限完整行字面量，不能解释为没有错误。
+True只表示已认证字节命中，禁止作为权限、批准、自动恢复或效果已知的依据。
+原PREFIX、13接点、64事件、8层context、64KiB日志与两个固定节点保持。
+
+新增治理用例覆盖LF／CRLF、部分前缀、无LF末行、大小写、无效UTF-8、敏感假正文、
+receipt／stdout raw／stderr EOF／protection拒绝，以及投影异常。次数负对照保留原receipt一次、
+每流一次、raw守卫两次、保护一次，信号只能在全部通过之后计算一次。
+完整验证身份与原件见统一验证包第6节；本机通过不证明新的Windows结果。

@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
-code_revision: 70c0a578d665ba7cb9cd11ae4eee80eb4db296c3
+version: 3
+code_revision: 4d7cada99b76dfb04b87ebdf2976376cd6a47897
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -88,3 +88,31 @@ start、stage、send、close、wait均原样返回；约1.188秒／1.125秒在ex
 首次直接SHA作为workflow ref被HTTP422明确拒绝，未产生Run；确认零Run后注册固定codex分支再发一次有效请求。
 因此HTTP命令两次、执行前拒绝一次、实际原生Run恰一，未重跑旧Run或重放未知fixture。
 旧本机验证和初始未dispatch事实保留于d0ca482；新增实际FAIL与低敏记录分别登记。
+
+## 6. v2完整stderr内存字节的有限信号
+
+v2只在既有后验的原V2/MAC回执、两个完整raw守卫和同一protection全部通过后，
+对已有stderr内存bytes投影四个固定bool；不新增读取、执行、重试、正文记录或业务Schema。
+[v2 Facts](stderr-signals-facts.json)、[v2 Verification](stderr-signals-verification.json)及
+[v2 Review Packet](stderr-signals-review.json)独立绑定新1255件代码输入，原v1事实与Windows失败记录不变。
+新目录规范摘要为`144730bd4c03ca3fa2fc8aa717f84e9460c937b48ad6bbfa505e6443165b0ce5`；
+生产468包成员与既有最终Wheel完全相同，不为测试诊断重建产品制品。
+
+新增28项完整行／守卫／敏感正文负对照与原59项共同通过，焦点87通过；
+固定新源码完整治理389通过、零失败／错误／跳过，原两个实际本机用例2通过。
+两个真实记录为v2、各13接点、write／read和原MAC／raw／proof／readback均完成；
+自然完成未触发post补取，因此本机业务成功不提供失败stderr信号或Windows证据。
+
+v1无字段表示未支持；v2缺少`post_stderr_signals`表示原后验前提未满足或投影不可用。
+存在且全False仅表示未匹配四个有限完整行消息，不能排除错误；True也不能解释为errno、
+sharing、消息来源、Commit合法性、效果已知或业务成功。无LF末行、无效UTF-8和动态后缀不被解码或公开。
+已验证固定英文消息仍可能因locale、版本或其他输出而不匹配。
+
+验证载体首次在冻结脚本就绪前启动，取得执行前文件缺失错误；后继先核冻结完成，再执行完整治理。
+原日志保留，不修改生产或断言。原两个用例的后验检查首次误用了不存在的`hooks`字段，
+随后按实际`installed_hooks`仅重读原记录完成核对，未因此重新执行业务用例。
+独立静态审查21项输入前后无漂移，未发现具体可达P0／P1／P2；不以87项背景测试代替独立观察。
+四幅图已按v2设计实际渲染并逐幅视觉检查；原策略文档检查450份文档、10994条链接、949幅Mermaid、18变化路径零问题。
+完整受管仓库、18项显式暂存及原实际Wheel共4017输入Secret扫描零命中；不以暂存前缺少新增材料的扫描冒充最终覆盖。
+公开路径预检曾误命中原治理测试的禁止输出字面量，修正预检范围而保留原测试。
+运行组重叠不相加，全部首发门禁保持开放；新v2原生结果须单独取得后登记。

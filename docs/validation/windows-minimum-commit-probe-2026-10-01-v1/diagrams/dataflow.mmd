@@ -3,6 +3,9 @@ flowchart LR
   Cached[原缓存Lease] --> Select
   Receipt[原API认证V2回执] --> Select
   Raw[原完整字节守卫结果] --> Select
+  Raw --> Guard[原MAC与protection同样通过]
+  Guard --> Signals[既有stderr完整行字节有限匹配]
+  Signals --> Select
   Proof[原严格proof解码] --> Select
   Select --> Memory[有限事件与Operation记录]
   Memory --> JSON[至多64KiB JSON]
