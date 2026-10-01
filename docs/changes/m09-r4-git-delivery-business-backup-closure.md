@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 5
+version: 6
 code_revision: 96584026bdf34c49c519834331b84043a6c03895
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
@@ -319,7 +319,7 @@ flowchart TD
 | 现有内部 | `GitDeliveryProcess.prepare_object_read/prepare_object_write`、`GitObjectMaterial`、`GitMaterialCAS` | 原批准／Owner 下完整8MiB单对象读取／输入及原 CAS 类型引用；业务认证目录及产品接线仍待实现 |
 | 现有内部 | `parse_git_tree`、`parse_git_commit`、`verify_git_tree_closure` | 原始直接引用和全部普通文件树只读内容验真；不授予业务角色、历史范围或批准 |
 | 现有内部 | [`prepare_git_tree_projection`](../../src/harnessix/delivery/git_tree_projection.py)、[`GitObjectMaterial.from_body`](../../src/harnessix/delivery/git_object_material.py) | 完整base/after回读、首before比较、路径独立目标变更和完整tree正文/OID；不是持久化、业务批准或默认产品接线 |
-| 拟新增 | Git 认证签发／核验端口 | 在原认证模块复用原 Key 托管，域分离且只接收受信新事实。备份实例只有核验端口，没有签发端口 |
+| 现有内部 | [`GitPublicationAuthority`／`GitPublicationVerifier`](../../src/harnessix/session/store_publication.py) | 原Key及Git专属域的有限记录签发/验真已实现；只读消费者取得无公共issue的Verifier，备份Scope拒绝签发。对象业务目录、GitDB全前缀及备份消费接线仍待实现，见[详设](m09-r4-git-record-publication.md) |
 | 拟新增 | 原 `validate_state_records` 的 Git 验证职责 | 联合 Session、Route、派生事务、GitDB、对象材料和生命周期状态；不是独立备份服务 |
 
 `ProductGitDeliveryPlanner`、`ProductGitDeliveryExecutor` 及上述新增方法均不存在于当前源码。实现时按单一职责放入现有产品／交付模块，避免继续扩大已有热点类；固定命令、对象构造、Diff、原生文件观察不得复制第二套实现。

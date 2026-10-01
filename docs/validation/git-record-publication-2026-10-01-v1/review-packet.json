@@ -1,0 +1,53 @@
+{
+  "schema": "harnessix.validation-review-packet/v1",
+  "review_status": "P1_resolved_static_and_true_RED_GREEN_regression",
+  "current_bindings": [
+    {
+      "path": "src/harnessix/session/store_publication.py",
+      "bytes": 13282,
+      "sha256": "620a67fc885946a12497698aca149247e3e735d7423f1af5a73313887e74ed66"
+    },
+    {
+      "path": "src/harnessix/session/git_publication_contracts.py",
+      "bytes": 3279,
+      "sha256": "2281750683d21467ba9dc0b7d9e347f839a9ff5c1dfb168f2a28e7baab3da8c4"
+    },
+    {
+      "path": "tests/session/test_git_publication.py",
+      "bytes": 23675,
+      "sha256": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581"
+    }
+  ],
+  "original_review": {
+    "bytes": 21080,
+    "sha256": "8e81e5084c594caa1e9a70a6a69ef10f19990d0541e200da939c22621960d2e4"
+  },
+  "addendum": {
+    "bytes": 10037,
+    "sha256": "3705b2054e32d9266b79f5c3ef15e9a2c50a0934e4f2b641183be0109cfafb31"
+  },
+  "remaining_open_p0_p1_p2": [
+    0,
+    0,
+    0
+  ],
+  "functional_tests": {
+    "tests": 193,
+    "passed": 193,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.523,
+    "nonpass_nodes": [],
+    "junit": {
+      "bytes": 30452,
+      "sha256": "aad566d15ac5e4bc3b49d73fa56ec1ae8cd2e2e63a07f766e8618e1788f1d429"
+    },
+    "log": {
+      "bytes": 389,
+      "sha256": "6469f620b9d560b367d594f0a6ba8f6726383aa13aa12e70d0c4bf2891ca83ab"
+    }
+  },
+  "final_wheel_sha256": "d31060d3133f830ab3ac110b41992e2d632f122f7d626f9038d9ad45525e414d",
+  "business_and_release_scope_complete": false
+}

@@ -1,0 +1,13 @@
+flowchart TB
+  H[可信新事实写端] --> A[GitPublicationAuthority]
+  B[原SessionPublicationBinding] --> A
+  B --> V[GitPublicationVerifier]
+  K[原独立Session Key生命周期] --> B
+  A --> S[原冻结Scope与低敏Seal保护]
+  A --> M[原HMAC实现与Git专属域]
+  M --> C[新记录Seal候选]
+  R[只读历史消费者] --> V
+  C --> V
+  V --> F[来源认证成功或固定拒绝]
+  C -. 后继未接线 .-> DB[Git业务目录与认证账本]
+  F -. 不授予执行权 .-> P[独立批准与当前物理绑定]

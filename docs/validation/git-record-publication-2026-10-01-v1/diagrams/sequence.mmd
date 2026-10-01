@@ -1,0 +1,18 @@
+sequenceDiagram
+  participant W as 可信新事实写端
+  participant A as GitPublicationAuthority
+  participant B as 原Binding与Scope
+  participant R as GitPublicationVerifier
+  W->>A: issue 固定声明和完整原字节
+  A->>B: 原身份及冻结Scope检查
+  A->>A: 分块完整哈希并检查取消
+  A->>B: 原Key与固定Git域签名
+  A->>B: 原保护检查低敏Seal
+  A->>B: 复核Scope和开放状态
+  A-->>W: 新候选Seal 不提交事务
+  W->>R: 原Seal 受信期望声明 完整原正文
+  R->>B: 开放身份及原MAC验真
+  R->>R: 精确声明 长度与完整哈希
+  R->>B: 最终开放状态检查
+  R-->>W: None 来源认证成功
+  Note over R,W: 不签发历史 不产生批准 不写Git

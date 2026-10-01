@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 52
+version: 53
 code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
 owners:
   - core
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-10-01 | [Git业务记录有限来源认证](git-record-publication-2026-10-01-v1/README.md) | 基线554618c；1252件代码输入SHA冻结 | 原Session Key/Scope，单一Wheel源码外双Python；零模型请求 | 最终焦点193通过；源码及源码外两个Python各2002通过／33跳过，原红例及独立审查P1闭环保留，四图实际渲染 | 内部来源认证；非完整Git账本、默认交付或Backup v2；最新Windows仍2失败，R1～R6开放 |
 | 2026-10-01 | [Git直接引用与完整普通文件树只读验真](git-tree-closure-2026-10-01-v1/README.md) | 基线37a1f01；1241件完整输入SHA绑定 | 原CAS、实际Git差分、单一Wheel源码外双Python；零模型请求 | 新增474通过；无交叠关联1806项、1748通过／58跳过；源码外各970通过／2跳过，五图实际渲染及独立审查 | 内部内容闭包；认证目录、默认Git写接线、Backup v2及R1～R6继续开放；Windows原超时不掩盖 |
 | 2026-10-01 | [Git完整对象输入与原Owner保护](git-material-input-2026-10-01-v1/README.md) | 基线`1502bd1`；1232件实际输入SHA冻结 | macOS真实Owner/Git；同一Wheel源码外Python3.12/3.13；零模型请求 | 关联1014通过/43跳过，安装焦点各356通过/2跳过；原控制失联3失败保留，外层退出与实体清理五项回归通过；三图实际渲染 | 内部输入能力；Windows原生、默认Commit/Checkpoint、耐久业务备份闭包及R1～R6继续开放 |
 | 2026-10-01 | [Git产品业务闭包与恢复设计评审](git-business-backup-design-2026-10-01-v1/README.md) | `96584026bdf34c49c519834331b84043a6c03895` | 既有源码研究，零真实请求；五幅实际渲染图 | 设计草案、完整接口/字段/流程/失败与恢复矩阵；原文档问题保留，同策略治理302通过 | 设计评审而非产品实现；历史备份范围及材料容量待冻结，不关闭Git写接线或商用门禁 |

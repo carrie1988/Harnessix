@@ -1,0 +1,18 @@
+flowchart TD
+  E[有限声明与原正文] --> I[原Binding开放且声明严格冻结]
+  I --> Mode{签发或验真}
+  Mode -->|新签发| S[核对原冻结Scope]
+  S --> H[完整原字节哈希与取消检查]
+  H --> Sign[原HMAC签发Git专属Seal]
+  Sign --> Guard[保护低敏Seal并复核原Scope]
+  Guard --> Last[最终取消检查及Binding开放复核]
+  Last --> C[返回候选 不持久化]
+  Mode -->|只验真| M[验证Seal类型 身份与MAC]
+  M --> Expected[核对全部期望声明及正文长度]
+  Expected --> Body[完整正文哈希与调用方检查点]
+  Body --> Open[再次核对Binding开放]
+  Open --> OK[返回None 不执行副作用]
+  I -->|非法| Reject[固定拒绝 无部分结果]
+  Guard -->|失败| Reject
+  M -->|失败| Reject
+  Body -->|不匹配| Reject

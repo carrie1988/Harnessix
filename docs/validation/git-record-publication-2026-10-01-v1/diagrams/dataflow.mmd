@@ -1,0 +1,14 @@
+flowchart LR
+  Claims[受信业务声明] --> Freeze[严格声明快照]
+  Bytes[完整私有原bytes] --> SHA[分块SHA256与原长度]
+  Freeze --> Record[固定Git Seal声明]
+  SHA --> Record
+  Identity[原Store Key及Scope摘要] --> Record
+  Record --> MAC[原HMAC 固定Git域]
+  MAC --> Seal[低敏Seal原bytes]
+  Seal --> Verify[只读原MAC与完整正文验真]
+  Bytes --> Verify
+  Claims --> Verify
+  Verify --> Fact[单记录来源事实]
+  Fact -. 后继校验 .-> Closure[对象角色 直接引用 全前缀及跨库归属]
+  Fact -. 不继承 .-> Rights[当前批准与恢复重绑]

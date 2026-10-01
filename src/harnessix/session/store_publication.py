@@ -1,10 +1,11 @@
-"""Session逻辑身份、认证事件/投影和Artifact正文；来源认证不授予公开许可。"""
+"""Session身份、事件/投影、Artifact及有限Git记录认证；来源认证不授予公开或执行权。"""
 
 from __future__ import annotations
 
 import hashlib
 import hmac
 import json
+from collections.abc import Callable
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -13,7 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
-from harnessix.agent.publication import PublicOutputProtection
+from harnessix.agent.publication import PublicOutputProtection, protect_json
+from harnessix.session.git_publication_contracts import (
+    GitDeliveryRecordClaims,
+    snapshot_git_delivery_claims,
+)
 from harnessix.session.publication_seal import (
     Digest,
     EventPublicationAuthority,
@@ -27,6 +32,7 @@ MAX_HISTORY_BYTES = 64 * 1024 * 1024
 MAX_HISTORY_EVENTS = 100_000
 _DOMAIN = b"harnessix.session-store-publication/v1\x00"
 _ARTIFACT_DOMAIN = b"harnessix.artifact-publication/v1\x00"
+_GIT_DOMAIN = b"harnessix.git-delivery-publication/v1\x00"
 
 
 def unproven() -> KernelError:
@@ -102,6 +108,16 @@ class ArtifactPublicationSeal(_Identity):
     size_bytes: Annotated[int, Field(ge=0, le=1024 * 1024)]
     expires_at: Annotated[str, Field(min_length=1, max_length=64)]
     created_at: Annotated[str, Field(min_length=1, max_length=64)]
+
+
+class GitDeliveryPublicationSeal(_Identity):
+    """域分离的完整私有记录认证；不证明对象闭包、审批或当前执行权。"""
+
+    purpose: Literal["git_delivery_record"] = "git_delivery_record"
+    claims: GitDeliveryRecordClaims
+    scope_sha256: Digest
+    body_sha256: Digest
+    body_bytes: Annotated[int, Field(ge=1, le=MAX_HISTORY_BYTES)]
 
 
 def _claims(value: _Identity, domain: bytes = _DOMAIN) -> bytes:
@@ -190,6 +206,99 @@ class ArtifactPublicationAuthority:
             raise unproven()
 
 
+def _git_body_digest(body: object, checkpoint: Callable[[], None]) -> str:
+    """完整原字节哈希；64KiB检查点保留取消/期限异常，不截断或解码私有正文。"""
+    if type(body) is not bytes or not 1 <= len(body) <= MAX_HISTORY_BYTES:
+        raise unproven()
+    if not callable(checkpoint):
+        raise unproven()
+    checkpoint()
+    digest = hashlib.sha256()
+    view = memoryview(body)
+    for offset in range(0, len(body), 64 * 1024):
+        checkpoint()
+        digest.update(view[offset : offset + 64 * 1024])
+    checkpoint()
+    return digest.hexdigest()
+
+
+class GitPublicationVerifier:
+    """只验真有限Git记录，共享原Binding生命周期；公共端口不提供签发或Key。"""
+
+    def __init__(self, binding: SessionPublicationBinding) -> None:
+        self._binding = binding
+
+    def identity(self) -> tuple[UUID, UUID]:
+        """原逻辑Store/Key身份；不证明物理根或恢复后外部Git绑定。"""
+        self._binding._ensure_open()
+        return self._binding._store_id, self._binding._key_id
+
+    def verify(
+        self,
+        seal: object,
+        claims: GitDeliveryRecordClaims,
+        body: object,
+        *,
+        checkpoint: Callable[[], None],
+    ) -> None:
+        """先验原MAC和期望身份，再验完整正文；不解析、重签或修复历史记录。"""
+        store_id, key_id = self.identity()
+        expected = snapshot_git_delivery_claims(claims)
+        actual = _verified(
+            GitDeliveryPublicationSeal,
+            seal,
+            self._binding._key,
+            store_id,
+            key_id,
+            _GIT_DOMAIN,
+        )
+        if actual.claims != expected or type(body) is not bytes or len(body) != actual.body_bytes:
+            raise unproven()
+        if not hmac.compare_digest(actual.body_sha256, _git_body_digest(body, checkpoint)):
+            raise unproven()
+        # 回调可以触发关闭；关闭之后不能将本次观察发布为有效结果。
+        self._binding._ensure_open()
+
+
+class GitPublicationAuthority(GitPublicationVerifier):
+    """仅受信新事实写端使用；复用原独立Key、原Scope与原HMAC实现。"""
+
+    async def issue(
+        self,
+        claims: GitDeliveryRecordClaims,
+        body: object,
+        protection: PublicOutputProtection,
+        *,
+        cancel: CancelToken,
+    ) -> bytes:
+        """完整冻结后签发候选，保护低敏Seal而非私有正文；不提交任何存储事务。"""
+        store_id, key_id = self.identity()
+        frozen = snapshot_git_delivery_claims(claims)
+        scope = self._binding.artifact.scope_digest(protection)
+        digest = _git_body_digest(body, cancel.checkpoint)
+        # 原字节类型和长度已由唯一哈希入口校验；不接受正文替代或类型转换。
+        assert isinstance(body, bytes)
+        candidate = GitDeliveryPublicationSeal(
+            store_id=store_id,
+            key_id=key_id,
+            tag=EMPTY_PREFIX,
+            claims=frozen,
+            scope_sha256=scope,
+            body_sha256=digest,
+            body_bytes=len(body),
+        )
+        encoded = _signed(candidate, self._binding._key, _GIT_DOMAIN)
+        await protect_json(
+            protection,
+            GitDeliveryPublicationSeal.model_validate_json(encoded).model_dump(mode="json"),
+            cancel,
+        )
+        self._binding.artifact.scope_digest(protection)
+        cancel.checkpoint()
+        self._binding._ensure_open()
+        return encoded
+
+
 class SessionPublicationBinding:
     """宿主拥有稳定逻辑身份和独立密钥；Store拥有同事务事实，不持有模型凭据。"""
 
@@ -203,6 +312,8 @@ class SessionPublicationBinding:
         self._key = bytearray(key)
         self._closed = False
         self.artifact = ArtifactPublicationAuthority(self)
+        self.git = GitPublicationAuthority(self)
+        self.git_verifier = GitPublicationVerifier(self)
 
     def _ensure_open(self) -> None:
         if self._closed:

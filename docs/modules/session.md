@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: 7568eee82f78cb936717068f121ff32a4058b3be
+version: 13
+code_revision: 554618ccc47bcf537c034672631db7a11cef655e
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ supersedes: []
 |---|---|
 | 当前能力 | Agent Event Log、Thread快照、批次原子追加、Sequence CAS、幂等Event、Fork、重放、投影修复、单Runtime Owner、SQLite迁移/WAL，以及认证共库容量；旧式库保留有限Plan-first和候选恢复 |
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
-| 代码版本 | `7568eee82f78cb936717068f121ff32a4058b3be`；R1维护变更源码及回归定位见[详设](../changes/m09-r1-store-maintenance-safety.md) |
+| 代码版本 | 当前研究基线`554618ccc47bcf537c034672631db7a11cef655e`；R1维护及Git记录认证增量分别见对应详设与验证包 |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
 | 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～30连续且校验和不可变；认证状态不可降级为无Key旧式维护 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
@@ -656,6 +656,7 @@ restore(backup):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | Git记录认证增量 | 2026-10-01 | 原Binding增加有限Git签发/只验真端口，复用原Key与HMAC；不改变数据库或开放Git产品写入 |
 | 12 | R1维护变更 | 2026-09-28 | 认证容量先验原Seal；认证Store拒绝旧式维护；候选预检、有界IO、取消结算和恢复故障回归 |
 | 9 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 增加Migration 27归档表达式索引、Thread有界分页和全库单事务恢复扫描；保留非活跃损坏启动失败语义 |
 | 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26、三类共库容量、不可变Plan、保守禁删、批次崩溃恢复及Plan绑定备份/Restore |
@@ -694,3 +695,12 @@ Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实�
 独立`events`读取与`get/list/recovery`一样使用显式读事务；原Checkpoint、Event和Seal固定于
 同一SQLite版本。另一连接的完整新CAS只在后续新读中可见，防止合法并发审批被误报为历史篡改。
 确定性双连接与游标测试位于[产品托管回归](../../tests/product_config/test_managed_session_root.py)。
+
+## 有限Git业务记录来源认证
+
+[总体与详细设计](../changes/m09-r4-git-record-publication.md)在原`SessionPublicationBinding`增加
+`git`新事实签发端口和`git_verifier`只验真端口，复用独立Session Key及原HMAC并固定Git用途域。
+声明绑定原调用/Route、交付/记录/epoch、有限kind、序号及前缀；完整原正文长度和SHA进入MAC。
+签发必须原冻结Scope和原低敏Seal保护，备份验证Scope不能签发。只验真不补签、不修复、不授予执行权。
+完整GitDB前缀、对象业务角色/直接引用、默认Commit/Checkpoint及Backup v2尚未接线。
+该增量不改变Session迁移、Event/Projection/Artifact格式、Key文件或现行备份布局。

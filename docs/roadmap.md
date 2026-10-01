@@ -1338,3 +1338,21 @@ Git2.55.0与夹具2.53.0精确断言失败；Windows首NTFS组128通过/2跳过�
 该旧候选原生结果不计为新Diff候选通过，也不关闭Windows消费者验收。
 后继新批准、对象业务认证、双工作树及派生事务、默认Checkpoint/Commit、Backup v2和新根重授权仍开放；
 完整R3、独立Beta及同候选R1～R6继续按原商业退出条件验收。
+
+### R4：Git业务记录有限来源认证
+
+[总体与详细设计](changes/m09-r4-git-record-publication.md)在原Session认证模块增加有限Git记录签发与只验真端口，
+复用原独立Key、原冻结Scope、原HMAC和域分离。实际字段集合、UUID/int/str及完整原bytes严格验证，
+声明不经先序列化规范化；最终Scope与取消回调之后再次核对Binding开放，关闭候选不得返回。
+[统一验证包](validation/git-record-publication-2026-10-01-v1/README.md)保留额外copy字段、标量子类和最后检查点关闭红例，
+独立审查P1已闭环；最终焦点193通过。相同105测试文件的源码及同一最终Wheel源码外Python3.12/3.13
+各2002通过／33跳过，使用当前锁定71发行版本；不相加为全仓或原生Windows覆盖。
+旧迁移生产者夹具仅取精确原归档的深度一对象，安装组补齐原静态Schema/示例，不以当前源码兜底或跳过失败。
+
+固定554618c的[CI 36824593278](https://github.com/carrie1988/Harnessix/actions/runs/36824593278)已终结：
+Windows材料组2失败／1289通过／6跳过，303.12秒达到原五分钟期限；两个最低SHA256 Commit场景仍未关闭。
+该原生事实不是本新认证候选通过，缺少终态不得计为成功；不调高超时、放宽Owner或重试消除原失败。
+
+来源认证端口没有新增默认工具、数据库、Git写入或备份迁移，不证明对象业务角色、完整前缀及独立尾锚。
+后继完整Review Artifact与新批准、双受管工作树、派生事务、默认Checkpoint/Commit、Backup v2和新根重授权继续实施；
+R3真实20 Trial、Windows11消费者、独立Beta及同候选R1～R6商用门禁继续开放。

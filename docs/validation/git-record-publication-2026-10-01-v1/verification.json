@@ -1,0 +1,550 @@
+{
+  "schema": "harnessix.validation-verification/v1",
+  "scope": "105_explicit_affected_test_files_not_whole_repository_or_native_Windows",
+  "final_results": {
+    "candidate-source": {
+      "tests": 2035,
+      "passed": 2002,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 33,
+      "seconds": 301.149,
+      "nonpass_nodes": [],
+      "junit": {
+        "bytes": 1569813,
+        "sha256": "76ceebd426e8e7d9a77c6595f1f88dcdf4619e0a9ab91d80da0c6b475b500247"
+      },
+      "log": {
+        "bytes": 2542,
+        "sha256": "94a4eae4d79278444e70ed77d220c51dcb6941477a1d0c4b55ab191b84d5933b"
+      }
+    },
+    "installed-312": {
+      "tests": 2035,
+      "passed": 2002,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 33,
+      "seconds": 305.441,
+      "nonpass_nodes": [],
+      "junit": {
+        "bytes": 1569714,
+        "sha256": "f94ab029d20f151e1c6aa7f1cddccb9f3cbfc32b3ff0b128b7515ecfb7239251"
+      },
+      "log": {
+        "bytes": 2536,
+        "sha256": "a7b3e8d82251f135118d8efd2c93f54674305920fd01f224d17d28e8a31e159c"
+      }
+    },
+    "installed-313": {
+      "tests": 2035,
+      "passed": 2002,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 33,
+      "seconds": 286.174,
+      "nonpass_nodes": [],
+      "junit": {
+        "bytes": 1569714,
+        "sha256": "7198c550e1d4fddfff839e3dfdd19d71848d3530bb7b7f9037968a9399e05c5e"
+      },
+      "log": {
+        "bytes": 2536,
+        "sha256": "1df81ac31ec3b6874d25673b2ec5771943d30564e5cb8f70938c07cb8b70ea8c"
+      }
+    }
+  },
+  "original_failures": {
+    "worker_v1": {
+      "tests": 141,
+      "passed": 139,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.623,
+      "nonpass_nodes": [
+        "tests.session.test_git_publication::test_bypassed_or_forged_claim_models_are_revalidated_at_each_boundary[issue-copy-extra]",
+        "tests.session.test_git_publication::test_bypassed_or_forged_claim_models_are_revalidated_at_each_boundary[verify-copy-extra]"
+      ],
+      "junit": {
+        "bytes": 27601,
+        "sha256": "1966e55f38a5efe171d745776eb19584977477157e08247cb4b89c2b92ddf80a"
+      },
+      "log": {
+        "bytes": 5067,
+        "sha256": "b77e45b28024633c88ec344a1a178c83f1379a54e85b11ec1ab64d03ae119c89"
+      }
+    },
+    "closed_binding_red": {
+      "tests": 1,
+      "passed": 0,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.297,
+      "nonpass_nodes": [
+        "tests.session.test_git_publication::test_final_issue_checkpoint_cannot_return_seal_after_binding_close"
+      ],
+      "junit": {
+        "bytes": 2043,
+        "sha256": "cb73f126cbbe07c154152a8511cf5ec870b1e663a4b10d0b37a588ced3af5043"
+      },
+      "log": {
+        "bytes": 2091,
+        "sha256": "8a317b405bdfe2e39576865f990bbb60f8da1932b28d49b874ee8b98c2f66794"
+      }
+    },
+    "pre_review_source_missing_history": {
+      "tests": 2033,
+      "passed": 1998,
+      "failed": 0,
+      "errors": 2,
+      "skipped": 33,
+      "seconds": 283.295,
+      "nonpass_nodes": [
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[before_commit]",
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[after_commit]"
+      ],
+      "junit": {
+        "bytes": 1580424,
+        "sha256": "6443456ce7994c16b512570d0388e4da77b475d08bb37c6c676d2cc8ce559e96"
+      },
+      "log": {
+        "bytes": 13874,
+        "sha256": "c2ec4bbecd9e7c81f4c80aa17e630d3ffdb7750455841e99435d4fe0812d9780"
+      }
+    },
+    "pre_review_installed_312_missing_static_and_history": {
+      "tests": 2033,
+      "passed": 1986,
+      "failed": 12,
+      "errors": 2,
+      "skipped": 33,
+      "seconds": 297.535,
+      "nonpass_nodes": [
+        "tests.agent.test_schemas::test_generated_schemas_match_code",
+        "tests.agent.test_schemas::test_historical_schemas_are_frozen",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[artifact-ref-ArtifactRef-d1945eb40800c40093e763266c8e5a36855b6c00295fdbd8a1731bb8903a506f]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[artifact-policy-ArtifactPolicy-66feb581a6c734af8d39da49213185aa5066c0c531a9770d863bdb52d36662b5]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[read-artifact-input-ReadArtifactInput-153964e26bab2951839fb7318312d3a20566f182efbf1993946d3a6a393ae211]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[read-artifact-output-ArtifactPage-0ac493b51701b3d69a91a472cc466ac2c7e9074e984223a695c2b8fb90869345]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[archived-glob-output-ArchivedGlobOutput-acda1498a694ed7d7981beca4c552824ea3826c378f735e86361c1ac3f893c15]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[archived-grep-output-ArchivedGrepOutput-14f4451b3bb6dba4416932c64f9fc5440cda2938918881b432d6ed735ee875b6]",
+        "tests.artifacts.test_legacy_process_output_reader::test_historical_process_output_schema_remains_frozen[process-output-record-schema0]",
+        "tests.artifacts.test_legacy_process_output_reader::test_historical_process_output_schema_remains_frozen[process-output-document-schema1]",
+        "tests.product_config.test_schemas::test_committed_product_config_schemas_match_runtime_contracts",
+        "tests.product_config.test_schemas::test_committed_v2_example_is_a_valid_strict_product_config",
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[before_commit]",
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[after_commit]"
+      ],
+      "junit": {
+        "bytes": 1624867,
+        "sha256": "4afc0ee48bbc7d9194cfeb048cc485450e77c25cbbaca3bbbb26856530e8468b"
+      },
+      "log": {
+        "bytes": 58398,
+        "sha256": "ca9e7eb901693b90c863118b13ad019522ab97ae58745ee8e9f4ae38ad4db8fa"
+      }
+    },
+    "pre_review_installed_313_missing_static_and_history": {
+      "tests": 2033,
+      "passed": 1986,
+      "failed": 12,
+      "errors": 2,
+      "skipped": 33,
+      "seconds": 278.108,
+      "nonpass_nodes": [
+        "tests.agent.test_schemas::test_generated_schemas_match_code",
+        "tests.agent.test_schemas::test_historical_schemas_are_frozen",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[artifact-ref-ArtifactRef-d1945eb40800c40093e763266c8e5a36855b6c00295fdbd8a1731bb8903a506f]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[artifact-policy-ArtifactPolicy-66feb581a6c734af8d39da49213185aa5066c0c531a9770d863bdb52d36662b5]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[read-artifact-input-ReadArtifactInput-153964e26bab2951839fb7318312d3a20566f182efbf1993946d3a6a393ae211]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[read-artifact-output-ArtifactPage-0ac493b51701b3d69a91a472cc466ac2c7e9074e984223a695c2b8fb90869345]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[archived-glob-output-ArchivedGlobOutput-acda1498a694ed7d7981beca4c552824ea3826c378f735e86361c1ac3f893c15]",
+        "tests.artifacts.test_contracts::test_frozen_artifact_schema[archived-grep-output-ArchivedGrepOutput-14f4451b3bb6dba4416932c64f9fc5440cda2938918881b432d6ed735ee875b6]",
+        "tests.artifacts.test_legacy_process_output_reader::test_historical_process_output_schema_remains_frozen[process-output-record-schema0]",
+        "tests.artifacts.test_legacy_process_output_reader::test_historical_process_output_schema_remains_frozen[process-output-document-schema1]",
+        "tests.product_config.test_schemas::test_committed_product_config_schemas_match_runtime_contracts",
+        "tests.product_config.test_schemas::test_committed_v2_example_is_a_valid_strict_product_config",
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[before_commit]",
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[after_commit]"
+      ],
+      "junit": {
+        "bytes": 1629427,
+        "sha256": "97812630240179719a2550a32acbdfea3de09368fafb955b2127cfc740165b08"
+      },
+      "log": {
+        "bytes": 62958,
+        "sha256": "2b3cc371198edf38916ecb6318df8189c3eaf4d0e25d257efc3ef976a14c2dff"
+      }
+    },
+    "final_source_missing_history": {
+      "tests": 2035,
+      "passed": 2000,
+      "failed": 0,
+      "errors": 2,
+      "skipped": 33,
+      "seconds": 270.999,
+      "nonpass_nodes": [
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[before_commit]",
+        "tests.artifacts.test_publication_upgrade::test_real_old_artifact_migration28_is_atomic_and_not_authorized[after_commit]"
+      ],
+      "junit": {
+        "bytes": 1581327,
+        "sha256": "4c05c828555ed0cdb8759e1dfc04669ff1ac255f3d04d022928b25f3cb1a4b60"
+      },
+      "log": {
+        "bytes": 13954,
+        "sha256": "b9c03fad7933c8242e456aca0ee259f9ed3976d3ec0f4eace13fd3120f059418"
+      }
+    },
+    "documentation_missing_local_metadata_history": {
+      "report": {
+        "bytes": 75988,
+        "sha256": "353e3c9c75d0f4a7bcb65aed3a9adcab04e9dc9952be0e1433361845628c24cc"
+      },
+      "findings": 450,
+      "metadata_revision_unresolvable": 448,
+      "section_required_missing": 1,
+      "link_target_missing": 1,
+      "resolved_by": "read_only_original_local_git_objects_and_actual_interface_heading_and_manifest_not_policy_relaxation"
+    },
+    "secret_scan_empty_snapshot": {
+      "log": {
+        "bytes": 98,
+        "sha256": "fb2daeef67d1552d1de946269a61c4dfb303ebce612e0b3ec902e52e5f1b665c"
+      },
+      "input_count": 2,
+      "scope": "artifact_only_not_repository_coverage",
+      "retained_not_final_repository_verification": true
+    }
+  },
+  "checks": {
+    "ruff": {
+      "status": "pass",
+      "log": {
+        "bytes": 19,
+        "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+      }
+    },
+    "format": {
+      "status": "pass",
+      "log": {
+        "bytes": 29,
+        "sha256": "b6c54fbe7c92beaff249cb812409679a583d3245f1bc86114a55270ffc33483a"
+      }
+    },
+    "mypy": {
+      "status": "pass",
+      "log": {
+        "bytes": 45,
+        "sha256": "a10a772ad8d24da5af013ee7392c89ec53bac8695c7657a693cbec99ab252d0a"
+      }
+    },
+    "readability": {
+      "status": "pass",
+      "log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "schemas": {
+      "status": "pass",
+      "log": {
+        "bytes": 28,
+        "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+      }
+    },
+    "taskpacks": {
+      "status": "pass",
+      "log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "secret-self-check": {
+      "status": "pass",
+      "log": {
+        "bytes": 56,
+        "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+      }
+    },
+    "secret-scan": {
+      "status": "pass",
+      "root": "author_owned_worktree_tracked_and_explicitly_staged_authentication_inputs",
+      "artifact_scope": "same_final_wheel",
+      "input_count": 3997,
+      "log": {
+        "bytes": 101,
+        "sha256": "b3ed8f3bda46fe05e26d183ca9e48cf119feaf01353a436a863946a6dd451a43"
+      },
+      "excluded_untracked_user_and_parallel_task_files": true
+    },
+    "governance": {
+      "status": "pass",
+      "tests": 302,
+      "passed": 302,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit": {
+        "bytes": 47175,
+        "sha256": "0edc62aed68bd6f9b8cf0ef837bd517089db115d59e24f609365328959bc53fd"
+      },
+      "log": {
+        "bytes": 563,
+        "sha256": "17baf87e215222f5e2ee375309401d8985d9a18be45743d27ad7c8f81652f4c9"
+      },
+      "proof": {
+        "bytes": 61847,
+        "sha256": "a9e9a1e73c1e84db27d548d4038942445fa5030a28460e5b2539020f33cf3b0d"
+      }
+    },
+    "documentation": {
+      "status": "pass",
+      "result": {
+        "policy_version": "harnessix.documentation-policy/v1",
+        "document_count": 448,
+        "link_count": 10960,
+        "mermaid_count": 945,
+        "source_package_count": 26,
+        "changed_path_count": 26,
+        "findings": []
+      },
+      "report": {
+        "bytes": 208,
+        "sha256": "5c80e06de8c271e6b08aa12a116a1077e4edc92dbb70fde21027eabec610af9c"
+      },
+      "log": {
+        "bytes": 64,
+        "sha256": "d79510ccef010ee0a4b18f13156b68d281a4a5d3bb4ae2d6f5adf44ebd4c3bd7"
+      },
+      "metadata_revision_lookup": "read_only_original_local_git_objects",
+      "changed_path_source": "26_explicit_authentication_owned_paths_no_unpublished_sidecars"
+    },
+    "diagrams": {
+      "status": "pass",
+      "count": 4,
+      "source_blocks_equal_mmd": true,
+      "rendered_and_visually_inspected": true,
+      "flow_includes_final_binding_after_scope_and_cancel": true
+    }
+  },
+  "test_selection": {
+    "source": [
+      "tests/agent/test_approval_crash_recovery.py",
+      "tests/agent/test_approvals.py",
+      "tests/agent/test_attempt_crash_recovery.py",
+      "tests/agent/test_authenticated_store.py",
+      "tests/agent/test_batch_session_upgrade.py",
+      "tests/agent/test_context_runtime.py",
+      "tests/agent/test_crash_recovery.py",
+      "tests/agent/test_execution_scope.py",
+      "tests/agent/test_input_publication_runtime.py",
+      "tests/agent/test_interactions.py",
+      "tests/agent/test_legacy_process_compatibility.py",
+      "tests/agent/test_model_attempts.py",
+      "tests/agent/test_model_publication_runtime.py",
+      "tests/agent/test_process_session_upgrade.py",
+      "tests/agent/test_publication.py",
+      "tests/agent/test_publication_runtime.py",
+      "tests/agent/test_runtime.py",
+      "tests/agent/test_schemas.py",
+      "tests/agent/test_semantic_crash_recovery.py",
+      "tests/agent/test_semantic_items.py",
+      "tests/agent/test_session_contract.py",
+      "tests/agent/test_session_upgrade.py",
+      "tests/agent/test_storage_failures.py",
+      "tests/agent/test_store.py",
+      "tests/agent/test_store_maintenance.py",
+      "tests/agent/test_store_maintenance_boundary.py",
+      "tests/agent/test_telemetry.py",
+      "tests/agent/test_text_publication.py",
+      "tests/agent/test_tool_scheduling.py",
+      "tests/agent/test_trusted_action_runtime.py",
+      "tests/agent/test_usage_observations.py",
+      "tests/agent/test_wal_initialization.py",
+      "tests/artifacts/test_authenticated_body.py",
+      "tests/artifacts/test_batch_diff.py",
+      "tests/artifacts/test_batch_diff_crash.py",
+      "tests/artifacts/test_batch_diff_upgrade.py",
+      "tests/artifacts/test_batch_verify.py",
+      "tests/artifacts/test_binary_publication.py",
+      "tests/artifacts/test_contracts.py",
+      "tests/artifacts/test_legacy_process_output_reader.py",
+      "tests/artifacts/test_model_history.py",
+      "tests/artifacts/test_process_output_upgrade.py",
+      "tests/artifacts/test_publication_persistence.py",
+      "tests/artifacts/test_publication_upgrade.py",
+      "tests/artifacts/test_recovery.py",
+      "tests/artifacts/test_runtime.py",
+      "tests/artifacts/test_sdk.py",
+      "tests/artifacts/test_store.py",
+      "tests/product_config/test_action_catalog.py",
+      "tests/product_config/test_action_config_runtime.py",
+      "tests/product_config/test_action_contracts.py",
+      "tests/product_config/test_action_recovery.py",
+      "tests/product_config/test_action_runtime.py",
+      "tests/product_config/test_agent_context.py",
+      "tests/product_config/test_coding_workflow_instructions.py",
+      "tests/product_config/test_contracts_and_codec.py",
+      "tests/product_config/test_git_baseline.py",
+      "tests/product_config/test_git_delivery_process.py",
+      "tests/product_config/test_git_delivery_source.py",
+      "tests/product_config/test_git_delivery_source_sdk.py",
+      "tests/product_config/test_git_material_cas_integration.py",
+      "tests/product_config/test_git_material_directory_access.py",
+      "tests/product_config/test_git_material_input.py",
+      "tests/product_config/test_git_material_native.py",
+      "tests/product_config/test_git_material_owner_exit.py",
+      "tests/product_config/test_git_material_snapshot_lifecycle.py",
+      "tests/product_config/test_git_object_material.py",
+      "tests/product_config/test_managed_session_root.py",
+      "tests/product_config/test_migration_and_store.py",
+      "tests/product_config/test_preflight.py",
+      "tests/product_config/test_process_action.py",
+      "tests/product_config/test_product_backup_files_windows.py",
+      "tests/product_config/test_product_contracts.py",
+      "tests/product_config/test_product_patch_rollback.py",
+      "tests/product_config/test_product_rollback_sdk.py",
+      "tests/product_config/test_product_state_backup.py",
+      "tests/product_config/test_product_state_owner.py",
+      "tests/product_config/test_product_state_owner_windows.py",
+      "tests/product_config/test_product_state_restore.py",
+      "tests/product_config/test_profile_argument_feedback.py",
+      "tests/product_config/test_profile_argument_feedback_sdk.py",
+      "tests/product_config/test_protocol_publication_cli.py",
+      "tests/product_config/test_provider_credentials.py",
+      "tests/product_config/test_publication_scope.py",
+      "tests/product_config/test_query_publication_root.py",
+      "tests/product_config/test_runtime.py",
+      "tests/product_config/test_schemas.py",
+      "tests/product_config/test_secret_scope_composition.py",
+      "tests/product_config/test_server_and_cli.py",
+      "tests/product_config/test_session_key.py",
+      "tests/product_config/test_session_key_dpapi.py",
+      "tests/product_config/test_session_key_windows.py",
+      "tests/product_config/test_state_database_flush_contracts.py",
+      "tests/product_config/test_state_fixture_readiness.py",
+      "tests/product_config/test_state_metadata_listing_contracts.py",
+      "tests/product_config/test_state_windows_file_contracts.py",
+      "tests/product_config/test_state_windows_parent_contracts.py",
+      "tests/product_config/test_state_windows_publication_contracts.py",
+      "tests/product_config/test_windows_backup_diagnostics.py",
+      "tests/product_config/test_windows_metadata_contracts.py",
+      "tests/product_config/test_wizard.py",
+      "tests/secrets/test_provider.py",
+      "tests/secrets/test_publication.py",
+      "tests/session/test_git_publication.py",
+      "tests/session/test_publication_seal.py"
+    ],
+    "installed": [
+      "tests/agent/test_approval_crash_recovery.py",
+      "tests/agent/test_approvals.py",
+      "tests/agent/test_attempt_crash_recovery.py",
+      "tests/agent/test_authenticated_store.py",
+      "tests/agent/test_batch_session_upgrade.py",
+      "tests/agent/test_context_runtime.py",
+      "tests/agent/test_crash_recovery.py",
+      "tests/agent/test_execution_scope.py",
+      "tests/agent/test_input_publication_runtime.py",
+      "tests/agent/test_interactions.py",
+      "tests/agent/test_legacy_process_compatibility.py",
+      "tests/agent/test_model_attempts.py",
+      "tests/agent/test_model_publication_runtime.py",
+      "tests/agent/test_process_session_upgrade.py",
+      "tests/agent/test_publication.py",
+      "tests/agent/test_publication_runtime.py",
+      "tests/agent/test_runtime.py",
+      "tests/agent/test_schemas.py",
+      "tests/agent/test_semantic_crash_recovery.py",
+      "tests/agent/test_semantic_items.py",
+      "tests/agent/test_session_contract.py",
+      "tests/agent/test_session_upgrade.py",
+      "tests/agent/test_storage_failures.py",
+      "tests/agent/test_store.py",
+      "tests/agent/test_store_maintenance.py",
+      "tests/agent/test_store_maintenance_boundary.py",
+      "tests/agent/test_telemetry.py",
+      "tests/agent/test_text_publication.py",
+      "tests/agent/test_tool_scheduling.py",
+      "tests/agent/test_trusted_action_runtime.py",
+      "tests/agent/test_usage_observations.py",
+      "tests/agent/test_wal_initialization.py",
+      "tests/artifacts/test_authenticated_body.py",
+      "tests/artifacts/test_batch_diff.py",
+      "tests/artifacts/test_batch_diff_crash.py",
+      "tests/artifacts/test_batch_diff_upgrade.py",
+      "tests/artifacts/test_batch_verify.py",
+      "tests/artifacts/test_binary_publication.py",
+      "tests/artifacts/test_contracts.py",
+      "tests/artifacts/test_legacy_process_output_reader.py",
+      "tests/artifacts/test_model_history.py",
+      "tests/artifacts/test_process_output_upgrade.py",
+      "tests/artifacts/test_publication_persistence.py",
+      "tests/artifacts/test_publication_upgrade.py",
+      "tests/artifacts/test_recovery.py",
+      "tests/artifacts/test_runtime.py",
+      "tests/artifacts/test_sdk.py",
+      "tests/artifacts/test_store.py",
+      "tests/product_config/test_action_catalog.py",
+      "tests/product_config/test_action_config_runtime.py",
+      "tests/product_config/test_action_contracts.py",
+      "tests/product_config/test_action_recovery.py",
+      "tests/product_config/test_action_runtime.py",
+      "tests/product_config/test_agent_context.py",
+      "tests/product_config/test_coding_workflow_instructions.py",
+      "tests/product_config/test_contracts_and_codec.py",
+      "tests/product_config/test_git_baseline.py",
+      "tests/product_config/test_git_delivery_process.py",
+      "tests/product_config/test_git_delivery_source.py",
+      "tests/product_config/test_git_delivery_source_sdk.py",
+      "tests/product_config/test_git_material_cas_integration.py",
+      "tests/product_config/test_git_material_directory_access.py",
+      "tests/product_config/test_git_material_input.py",
+      "tests/product_config/test_git_material_native.py",
+      "tests/product_config/test_git_material_owner_exit.py",
+      "tests/product_config/test_git_material_snapshot_lifecycle.py",
+      "tests/product_config/test_git_object_material.py",
+      "tests/product_config/test_managed_session_root.py",
+      "tests/product_config/test_migration_and_store.py",
+      "tests/product_config/test_preflight.py",
+      "tests/product_config/test_process_action.py",
+      "tests/product_config/test_product_backup_files_windows.py",
+      "tests/product_config/test_product_contracts.py",
+      "tests/product_config/test_product_patch_rollback.py",
+      "tests/product_config/test_product_rollback_sdk.py",
+      "tests/product_config/test_product_state_backup.py",
+      "tests/product_config/test_product_state_owner.py",
+      "tests/product_config/test_product_state_owner_windows.py",
+      "tests/product_config/test_product_state_restore.py",
+      "tests/product_config/test_profile_argument_feedback.py",
+      "tests/product_config/test_profile_argument_feedback_sdk.py",
+      "tests/product_config/test_protocol_publication_cli.py",
+      "tests/product_config/test_provider_credentials.py",
+      "tests/product_config/test_publication_scope.py",
+      "tests/product_config/test_query_publication_root.py",
+      "tests/product_config/test_runtime.py",
+      "tests/product_config/test_schemas.py",
+      "tests/product_config/test_secret_scope_composition.py",
+      "tests/product_config/test_server_and_cli.py",
+      "tests/product_config/test_session_key.py",
+      "tests/product_config/test_session_key_dpapi.py",
+      "tests/product_config/test_session_key_windows.py",
+      "tests/product_config/test_state_database_flush_contracts.py",
+      "tests/product_config/test_state_fixture_readiness.py",
+      "tests/product_config/test_state_metadata_listing_contracts.py",
+      "tests/product_config/test_state_windows_file_contracts.py",
+      "tests/product_config/test_state_windows_parent_contracts.py",
+      "tests/product_config/test_state_windows_publication_contracts.py",
+      "tests/product_config/test_windows_backup_diagnostics.py",
+      "tests/product_config/test_windows_metadata_contracts.py",
+      "tests/product_config/test_wizard.py",
+      "tests/secrets/test_provider.py",
+      "tests/secrets/test_publication.py",
+      "tests/session/test_git_publication.py",
+      "tests/session/test_publication_seal.py"
+    ]
+  },
+  "verification_boundary": "source and installed package provenance is verified; historical migration producer is the explicitly frozen depth-one legacy fixture, not current package fallback"
+}
