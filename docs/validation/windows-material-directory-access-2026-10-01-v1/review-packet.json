@@ -1,0 +1,63 @@
+{
+  "schema": "harnessix.windows-material-directory-access-review/v1",
+  "scope": "目录链修复及新增测试的独立静态审查",
+  "finding_counts": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0
+  },
+  "source_inputs": [
+    {
+      "path": "src/harnessix/delivery/git_material_native_windows.py",
+      "bytes": 14679,
+      "sha256": "a575db969b45d74b9b71e6120781b39755b0d444ba3d88ffa68ca521a95df56e"
+    },
+    {
+      "path": "tests/product_config/test_git_material_directory_access.py",
+      "bytes": 3919,
+      "sha256": "6c07e6f313d285f7571bd52ef3a1e90ab9b74b3ff68da429ef35482eba8a5acf"
+    }
+  ],
+  "review_report": {
+    "bytes": 10682,
+    "sha256": "31fb3fb6cb8bc61f6a1e78e6974ff800aae9e6d2a994e1632d9db324c004d13c"
+  },
+  "review_summary": {
+    "bytes": 5715,
+    "sha256": "5949f67adc06d1c7a5b8c8f3bb8297a5e9301da3b7f298b53a85adf2bd92c9da"
+  },
+  "function_tests": 0,
+  "native_api_calls": 0,
+  "fixture_addendum": {
+    "finding_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "source_inputs": [
+      {
+        "path": "tests/delivery/test_git_tree_projection.py",
+        "bytes": 21907,
+        "sha256": "b8e00de8d5a75f1e5398de5e76d98953d6fa4887941c6207beb99e93163cc973"
+      },
+      {
+        "path": "tests/delivery/test_git_object_references.py",
+        "bytes": 24258,
+        "sha256": "b896c1c393c8242a8616ef7d60ebadb16c452ca274a294060ed3d00c5b130488"
+      }
+    ],
+    "core_differential_ast_identical_after_only_helper_call_remap": true,
+    "removed_original_tests": 0,
+    "retained_format_cases": 2,
+    "function_tests": 0,
+    "report": {
+      "bytes": 8500,
+      "sha256": "5c336e6415a7d7a0c5f770765dab4af3ac57f39dbde8fd28f36d6dcaa91053a9"
+    },
+    "summary": {
+      "bytes": 5847,
+      "sha256": "b99e52c36feae5d77ad6f63f790ece5b015a55381ec0cdb6f16c508f11507851"
+    }
+  },
+  "new_native_acceptance": false
+}

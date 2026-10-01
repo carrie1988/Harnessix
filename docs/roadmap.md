@@ -1310,3 +1310,16 @@ R3完整真实20 Trial、消费者Windows11、独立Beta及最终同候选R1～R
 
 后继接通完整Diff及新批准、认证目录/角色与GitDB全前缀、双工作树/新派生事务、默认Checkpoint/Commit、
 Backup v2及新根重授权；完整R3、Windows11消费者、独立Beta及同候选R1～R6仍开放。
+
+### R1/R4：Windows材料目录查询权限与真实Git夹具
+
+固定6daff31的CI 36812510928已终结：文档/Container成功，三个macOS/Python矩阵各两项
+Git2.55.0与夹具2.53.0精确断言失败；Windows首NTFS组128通过/2跳过、Git读取组成功，
+材料组25失败/1260通过/6跳过并达到原五分钟期限。旧FAIL不改写。
+
+[总体与详细设计](changes/m09-r4-windows-material-directory-access.md)修复private终点目录句柄
+缺少READ_CONTROL的确定缺陷，保留缓存旧守卫、原ACL、真实读取共享、Owner、MAC及UNKNOWN。
+原两格式目标树真实差分复用既有隔离Git夹具，不删除用例或放宽对象能力检查。
+[统一验证包](validation/windows-material-directory-access-2026-10-01-v1/README.md)分别绑定
+冻结前红测试、关联回归、独立静态审查与后继候选验证；新原生结果仍需实际取得。
+不把该单一权限缺陷认定为全部25项根因；R3完整质量、完整Git交付、Windows11消费者及独立Beta继续开放。

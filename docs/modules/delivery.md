@@ -1932,3 +1932,15 @@ GitDB 认证目录、对象角色、完整 Diff、新批准、双工作树、Bac
 接口、字段、实际源码调用顺序、流程/时序/数据流程及负对照详见
 [总体与详细设计](../changes/m09-r4-git-tree-projection.md)与[统一验证包](../validation/git-tree-projection-2026-10-01-v1/README.md)。
 完整Diff、新批准、认证目录/角色、GitDB全前缀、原Runtime及Backup v2仍需接通；默认Commit/Checkpoint未开放。
+
+## Windows材料目录的私有查询权限
+
+[`git_material_native_windows._chain`](../../src/harnessix/delivery/git_material_native_windows.py)
+仅在private终点按用途请求READ_CONTROL；普通祖先继续使用原最小只读权限。
+旧缓存句柄保持原路径守卫，不关闭后重开；缓存命中时另开私有读句柄重验OWNER/DACL，
+全部句柄由原作用域结算。权限查询失败不回退到普通句柄，不放宽身份、共享、Owner或UNKNOWN。
+[总体与详细设计](../changes/m09-r4-windows-material-directory-access.md)和
+[统一验证包](../validation/windows-material-directory-access-2026-10-01-v1/README.md)
+保留修复前负对照及原Windows25项失败；本机通过不代表原生收口。
+Git投影真实两格式差分同时复用已有PATH Git夹具，记录实际版本而不要求研究版本精确相等；
+完整hash-object/mktree/cat-file对比、命令失败和期限保持。

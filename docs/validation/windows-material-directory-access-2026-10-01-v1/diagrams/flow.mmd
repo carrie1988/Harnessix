@@ -1,0 +1,12 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"Arial"},"flowchart":{"htmlLabels":false,"padding":25}}}%%
+flowchart TD
+  Step[原逐组件遍历] --> Target{当前是private终点?}
+  Target -->|否| Ordinary[沿用/首次普通只读守卫]
+  Target -->|是| Cached{存在缓存守卫?}
+  Cached -->|否| First[首次开private=True<br/>入原cache]
+  Cached -->|是| New[保留旧cache守卫<br/>另开private=True]
+  First --> Verify[原ACL/身份验证]
+  New --> Verify
+  Ordinary --> Next[继续遍历<br/>最终本地NTFS检查]
+  Verify --> Next
+  Verify -->|失败| Reject[原稳定失败<br/>不退回普通句柄]

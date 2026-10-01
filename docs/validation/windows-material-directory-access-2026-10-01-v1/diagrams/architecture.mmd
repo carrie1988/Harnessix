@@ -1,0 +1,11 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"Arial"},"flowchart":{"htmlLabels":false,"padding":25}}}%%
+flowchart TD
+  Caller[原材料worker/快照读取] --> Directory[原_directory适配]
+  Directory --> Chain[Windows目录链<br/>原cache]
+  Chain --> Guard[普通祖先/原只读守卫]
+  Chain --> Private[私有终点新读句柄<br/>READ_CONTROL]
+  Private --> Verify[原GetSecurityInfo/原SID与DACL合同]
+  Verify --> NTFS[原本地NTFS<br/>身份核对]
+  NTFS --> Result[返回本次完整验证句柄]
+  Guard --> Scope[原Resources关闭]
+  Private --> Scope

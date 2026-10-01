@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 3
+version: 4
 code_revision: 96584026bdf34c49c519834331b84043a6c03895
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
@@ -29,7 +29,7 @@ supersedes: []
 
 ## 1. 需求背景、状态与交付定义
 
-**实施状态：业务闭包待实现，内部 IO、完整对象材料与只读文件树验真前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入、原 CAS 类型适配及完整普通文件树验真。产品 Git Action、持久关联、认证前缀、业务快照、认证对象目录闭包及恢复重绑均未由本文交付；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
+**实施状态：业务闭包待实现，内部 IO、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。产品 Git Action、持久关联、认证前缀、业务快照、认证对象目录闭包及恢复重绑均未由本文交付；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
 
 当前默认产品能完成 Patch 和显式 Rollback，能从认证会话提取持续多 Patch 的完整来源投影，并观察 Git 基准；尚未装配 `GitDeliveryRuntime`／`SQLiteGitDeliveryStore` 形成默认产品 Commit／Checkpoint 闭环。直接把用户已修改的工作区交给要求干净来源的宿主 Runtime，会产生真实的生命周期和身份冲突。
 
@@ -318,6 +318,7 @@ flowchart TD
 | 拟新增 | `SQLiteGitDeliveryStore.read_business_snapshot` | 仅在只读连接和指定捕获窗口／候选快照中枚举并核验业务事实；不借用 Writer 修复缺失记录 |
 | 现有内部 | `GitDeliveryProcess.prepare_object_read/prepare_object_write`、`GitObjectMaterial`、`GitMaterialCAS` | 原批准／Owner 下完整8MiB单对象读取／输入及原 CAS 类型引用；业务认证目录及产品接线仍待实现 |
 | 现有内部 | `parse_git_tree`、`parse_git_commit`、`verify_git_tree_closure` | 原始直接引用和全部普通文件树只读内容验真；不授予业务角色、历史范围或批准 |
+| 现有内部 | [`prepare_git_tree_projection`](../../src/harnessix/delivery/git_tree_projection.py)、[`GitObjectMaterial.from_body`](../../src/harnessix/delivery/git_object_material.py) | 完整base/after回读、首before比较、路径独立目标变更和完整tree正文/OID；不是持久化、业务批准或默认产品接线 |
 | 拟新增 | Git 认证签发／核验端口 | 在原认证模块复用原 Key 托管，域分离且只接收受信新事实。备份实例只有核验端口，没有签发端口 |
 | 拟新增 | 原 `validate_state_records` 的 Git 验证职责 | 联合 Session、Route、派生事务、GitDB、对象材料和生命周期状态；不是独立备份服务 |
 

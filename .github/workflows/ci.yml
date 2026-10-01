@@ -158,6 +158,7 @@ jobs:
           tests/product_config/test_git_material_input.py
           tests/product_config/test_git_material_snapshot_lifecycle.py
           tests/product_config/test_git_material_native.py
+          tests/product_config/test_git_material_directory_access.py
           tests/product_config/test_git_material_owner_exit.py
           tests/delivery/test_git_material_cas.py
           tests/delivery/test_cas_write_authority.py

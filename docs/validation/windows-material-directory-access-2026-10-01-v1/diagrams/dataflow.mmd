@@ -1,0 +1,9 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"Arial"},"flowchart":{"htmlLabels":false,"padding":25}}}%%
+flowchart TD
+  Flag[调用private布尔用途] --> Final[只对最终目录判定]
+  Cache[Path到既有守卫int] --> Hold[旧守卫继续持有]
+  Final --> Access[原权限掩码<br/>0x81<br/>0x20081]
+  Access --> ACL[原owner / DACL<br/>内容只读检查]
+  ACL --> Handle[本次验证句柄int]
+  Hold --> Close[原Resources结算]
+  Handle --> Close

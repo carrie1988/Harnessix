@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
-import shutil
-import subprocess
 from dataclasses import FrozenInstanceError, replace
 
 import pytest
@@ -22,6 +19,7 @@ from harnessix.delivery.git_object_material import GitObjectMaterial
 from harnessix.delivery.git_object_references import parse_git_tree
 from harnessix.delivery.git_tree_projection import GitTreeProjection, prepare_git_tree_projection
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from tests.delivery.test_git_object_references import native_repo as native_repo
 from tests.delivery.test_git_tree_closure import _checkpoint, _limits, _persist, _snapshot, _tree
 
 _FORMATS = ("sha1", "sha256")
@@ -504,43 +502,12 @@ def test_encoding_body_limit_preflight_before_factory_builds_oversized_tree(
     assert error.code == "git_tree_projection_limit" and calls == []
 
 
-def _git(repo, *args, body=None):
-    git = shutil.which("git")
-    assert git is not None
-    env = {
-        "PATH": os.environ["PATH"],
-        "HOME": str(repo.parent),
-        "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CONFIG_GLOBAL": os.devnull,
-        "GIT_NO_LAZY_FETCH": "1",
-    }
-    result = subprocess.run(
-        [git, "--git-dir=" + str(repo / ".git"), *args],
-        input=body,
-        capture_output=True,
-        check=True,
-        env=env,
-    )
-    return result.stdout
-
-
 @pytest.mark.parametrize("fmt", _FORMATS)
-def test_actual_git_253_mktree_differential_complete_root_and_canonical_order(
-    actual_cas, tmp_path, fmt
+def test_actual_git_mktree_differential_complete_root_and_canonical_order(
+    actual_cas, native_repo, fmt
 ):
-    git = shutil.which("git")
-    assert subprocess.check_output([git, "--version"]).strip() == b"git version 2.53.0"
-    repo = tmp_path / "fixture-repo"
-    subprocess.run(
-        [git, "init", "--quiet", "--object-format=" + fmt, str(repo)],
-        check=True,
-        env={
-            "PATH": os.environ["PATH"],
-            "HOME": str(tmp_path),
-            "GIT_CONFIG_NOSYSTEM": "1",
-            "GIT_CONFIG_GLOBAL": os.devnull,
-        },
-    )
+    # 与原解析差分复用同一隔离夹具；记录实际版本，仍以真实对象能力验真。
+    native_repo("init", "--bare", "--quiet", "--object-format=" + fmt)
     old = _persist(actual_cas, fmt, body=b"old")
     new = _persist(actual_cas, fmt, body=b"\0\xff\n")
     empty = _tree(actual_cas, fmt)
@@ -555,11 +522,11 @@ def test_actual_git_253_mktree_differential_complete_root_and_canonical_order(
     result = _project(actual_cas, root, (child, old, empty), mutations, (new,))
     for ref in (old, new):
         body = actual_cas.read(ref).body
-        written = _git(repo, "hash-object", "--no-filters", "-w", "--stdin", body=body)
+        written = native_repo("hash-object", "--no-filters", "-w", "--stdin", body=body)
         assert written.strip().decode() == ref.object_id
-    empty_oid = _git(repo, "mktree", "-z", body=b"").strip()
-    child_oid = _git(
-        repo, "mktree", "-z", body=b"100755 blob " + new.object_id.encode() + b"\tf\0"
+    empty_oid = native_repo("mktree", "-z", body=b"").strip()
+    child_oid = native_repo(
+        "mktree", "-z", body=b"100755 blob " + new.object_id.encode() + b"\tf\0"
     ).strip()
     records = b"".join(
         mode + b" " + kind + b" " + oid + b"\t" + name + b"\0"
@@ -570,10 +537,10 @@ def test_actual_git_253_mktree_differential_complete_root_and_canonical_order(
             (b"100644", b"blob", new.object_id.encode(), "文.bin".encode()),
         )
     )
-    oid = _git(repo, "mktree", "-z", body=records).strip().decode()
-    assert result.root.object_id == oid and _git(repo, "cat-file", "tree", oid) == result.root.body
+    oid = native_repo("mktree", "-z", body=records).strip().decode()
+    assert result.root.object_id == oid and native_repo("cat-file", "tree", oid) == result.root.body
     for material in result.new_trees:
-        assert _git(repo, "cat-file", "tree", material.object_id) == material.body
+        assert native_repo("cat-file", "tree", material.object_id) == material.body
 
 
 @pytest.mark.parametrize("case", ["path", "presence", "size", "mode", "construct"])

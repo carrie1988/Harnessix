@@ -1,0 +1,331 @@
+{
+  "schema": "harnessix.windows-material-directory-access-verification/v1",
+  "pre_freeze_results": {
+    "directory-access-red": {
+      "tests": 6,
+      "passed": 1,
+      "failed_or_errors": 3,
+      "skipped": 2,
+      "junit": {
+        "bytes": 6598,
+        "sha256": "2127342433215d66633f94d75f12f6002a50c67e69175c2e84ff2f31e0b7a05e"
+      },
+      "log": {
+        "bytes": 5422,
+        "sha256": "2928d9c2622b5ff8a453942e158d3cf08c2433c00a2bade464e5a56c2cfaa46c"
+      }
+    },
+    "directory-access-associated": {
+      "tests": 102,
+      "passed": 98,
+      "failed_or_errors": 0,
+      "skipped": 4,
+      "junit": {
+        "bytes": 18601,
+        "sha256": "57597b54863db2295aafdcf30cca42bdec67c4fa15031c99a052a8933f02e0d5"
+      },
+      "log": {
+        "bytes": 360,
+        "sha256": "7dd9bff375075b507512b6c4219eadbf0639b59e77d93e0b03992f75dfc25bd2"
+      }
+    },
+    "projection-fixture-focused": {
+      "tests": 430,
+      "passed": 430,
+      "failed_or_errors": 0,
+      "skipped": 0,
+      "junit": {
+        "bytes": 70197,
+        "sha256": "d25b93a626a768cf1038a9efd6c7b1a7a0b80aa70d8cfc2cd33931afeb0c38ac"
+      },
+      "log": {
+        "bytes": 638,
+        "sha256": "4544bf63d7eb12e97ffb71bcca3f5067798d9a934d083df40991ddfa6b5da244"
+      }
+    }
+  },
+  "baseline_ci": {
+    "run": 36812510928,
+    "revision": "6daff318718c05f79752a5e6a873fe3cc9b80fb4",
+    "status": "completed",
+    "conclusion": "failure",
+    "jobs": {
+      "documentation": "success",
+      "container-sandbox": "success",
+      "coding-tools-macos": {
+        "failed": 2,
+        "passed": 5835,
+        "skipped": 112,
+        "cause": "差分夹具精确Git版本断言"
+      },
+      "python3.12": {
+        "failed": 2,
+        "passed": 7861,
+        "skipped": 140,
+        "cause": "同一版本断言"
+      },
+      "python3.13": {
+        "failed": 2,
+        "passed": 7861,
+        "skipped": 140,
+        "cause": "同一版本断言"
+      },
+      "windows": {
+        "first_ntfs_passed": 128,
+        "first_ntfs_skipped": 2,
+        "git_read": "success",
+        "raw_failed": 25,
+        "raw_passed": 1260,
+        "raw_skipped": 6,
+        "raw_duration_seconds": 302.16,
+        "raw_deadline_minutes": 5
+      }
+    }
+  },
+  "final_candidate_checks": {
+    "source": {
+      "tests": 1092,
+      "passed": 1065,
+      "failed_or_errors": 0,
+      "skipped": 27,
+      "duration_seconds": 123.102,
+      "junit": {
+        "bytes": 185828,
+        "sha256": "7f1fec41b6034f2cd06a3d4e3a1435938c0a8528d7f54eca086b507e34659c04"
+      },
+      "log": {
+        "bytes": 1428,
+        "sha256": "f4a9e3f4de2c6704b4bb5af5c7c2410cf0294889417ffa464de924fd72fdcb2e"
+      },
+      "git_versions": [
+        "git version 2.53.0",
+        "git version 2.53.0",
+        "git version 2.53.0",
+        "git version 2.53.0",
+        "git version 2.53.0",
+        "git version 2.53.0"
+      ]
+    },
+    "source_import_audit": {
+      "modules": 269,
+      "source_fallback": false,
+      "proof": {
+        "bytes": 55274,
+        "sha256": "982a93cf8f82fd446d778822801fd5fb62ad3e46c42051e95f150a74eee75cc1"
+      }
+    },
+    "governance": {
+      "tests": 302,
+      "passed": 302,
+      "failed_or_errors": 0,
+      "skipped": 0,
+      "duration_seconds": 30.427,
+      "junit": {
+        "bytes": 47175,
+        "sha256": "fe66c8c12f95756ecd2992c699c7311779aafccd5b91a7d11ef7b04d8e94315d"
+      },
+      "log": {
+        "bytes": 552,
+        "sha256": "692546cedfd1b6ad8045646591332c9f2e81bf4e57abfd2363c09fb1ed2802ba"
+      },
+      "git_versions": []
+    },
+    "static": [
+      {
+        "check": "format",
+        "exit_code": 0
+      },
+      {
+        "check": "ruff",
+        "exit_code": 0
+      },
+      {
+        "check": "mypy",
+        "exit_code": 0
+      },
+      {
+        "check": "readability",
+        "exit_code": 0
+      },
+      {
+        "check": "schemas",
+        "exit_code": 0
+      },
+      {
+        "check": "taskpacks",
+        "exit_code": 0
+      },
+      {
+        "check": "documentation",
+        "exit_code": 0
+      },
+      {
+        "check": "governance",
+        "exit_code": 0
+      }
+    ],
+    "documentation": {
+      "documents": 444,
+      "links": 10897,
+      "mermaid_blocks": 937,
+      "findings": 0,
+      "log": {
+        "bytes": 103,
+        "sha256": "603a4edaa8b5c8cbedc9a45a3b9e0e76d26386b7a334b6c38a57e8924505d43e"
+      }
+    },
+    "secret": {
+      "self_check_rules": 6,
+      "inputs": 3962,
+      "hits": 0,
+      "self_check": {
+        "bytes": 56,
+        "sha256": "4ef7b785340ef2c8a09f6552739c99eccc29fdeadc64ba9006a0ef71c80f424c"
+      },
+      "scan": {
+        "bytes": 101,
+        "sha256": "ca9654bf1185e5c592746982a261fcc06dcce330bdf25706d93ff06127f59524"
+      }
+    }
+  },
+  "installed_wheel": {
+    "312": {
+      "result": {
+        "tests": 532,
+        "passed": 528,
+        "failed_or_errors": 0,
+        "skipped": 4,
+        "duration_seconds": 86.823,
+        "junit": {
+          "bytes": 88747,
+          "sha256": "ab119152b673ebf0f3a6da3ad1d77b36ee2ef9448bd19563ea9f314929d5d558"
+        },
+        "log": {
+          "bytes": 818,
+          "sha256": "34263a0aae1fea86223d0e46b32f5f7d1f6629158e60c9fa510ffdf365b26cdc"
+        },
+        "git_versions": [
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0"
+        ]
+      },
+      "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+      "actual_imported_modules": 187,
+      "all_package_members_equal_before_after": 465,
+      "source_fallback": false,
+      "all_distribution_versions_match_candidate_lock": true,
+      "proof": {
+        "bytes": 41158,
+        "sha256": "4b4c91578f9a6d2729088f60d77ff57f081441f6e6b403f0dd97d90ca3f4de07"
+      }
+    },
+    "313": {
+      "result": {
+        "tests": 532,
+        "passed": 528,
+        "failed_or_errors": 0,
+        "skipped": 4,
+        "duration_seconds": 68.916,
+        "junit": {
+          "bytes": 88747,
+          "sha256": "fab73d42e0b286009e265dcaa8c97f512729e1e897b909a195fc495289829342"
+        },
+        "log": {
+          "bytes": 818,
+          "sha256": "37be40e1ee1938fdd4598f71e17d3aefef92de6a4e75cc549004f152632ab9d6"
+        },
+        "git_versions": [
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0",
+          "git version 2.53.0"
+        ]
+      },
+      "python": "3.13.8 (main, Oct  7 2025, 16:19:32) [Clang 20.1.4 ]",
+      "actual_imported_modules": 187,
+      "all_package_members_equal_before_after": 465,
+      "source_fallback": false,
+      "all_distribution_versions_match_candidate_lock": true,
+      "proof": {
+        "bytes": 41127,
+        "sha256": "8abfc4ffbfcebc13a8d8e14a18c862854fafab530b97c8d7206477dee4162a33"
+      }
+    }
+  },
+  "new_native_ci": "pending",
+  "all_25_attributed_to_read_control": false,
+  "counts_have_overlap_do_not_sum": true,
+  "preserved_preparation_failures": {
+    "previous_environment_list_rejected_before_install": {
+      "status": "rejected_before_install",
+      "old_dependencies_source": "前序验证环境列表",
+      "first_mismatch": "anyio==4.15.1",
+      "candidate_lock_versions": [
+        "4.14.2"
+      ],
+      "installed_tests_started": false,
+      "resolution": "从当前候选uv.lock重新导出精确依赖；不修改锁文件或前序证据"
+    },
+    "offline_locked_dependencies_cache_miss": {
+      "312": {
+        "bytes": 1120,
+        "sha256": "5c7025438fe64ad65b0ba3a2729d7e92f11240fe637fafe9a8425f4819be0512"
+      },
+      "313": {
+        "bytes": 1304,
+        "sha256": "797c022872dce3ba0967f9bdd4f3fe1331b9977a2f096802172f01fd077fdc84"
+      }
+    },
+    "resolution": "沿当前uv.lock导出带hash依赖；仅补PyPI缺失缓存，不放宽版本或hash；没有重建Wheel或改写旧环境证据"
+  },
+  "original_ci_logs": {
+    "whole_failed_jobs": {
+      "bytes": 829774,
+      "sha256": "a03cefcec76e06ea06eda33c7019544096232fb53fb62b8e817a9f9ec9ea4812"
+    },
+    "windows_complete_original": {
+      "bytes": 548544,
+      "sha256": "16cc19b72baf0b34b2d74153203a970fed0b328244ba0375d67f18ef3b8a40b8"
+    }
+  },
+  "final_public_reverification": {
+    "documentation": {
+      "documents": 444,
+      "links": 10897,
+      "mermaid_blocks": 937,
+      "findings": 0,
+      "log": {
+        "bytes": 103,
+        "sha256": "603a4edaa8b5c8cbedc9a45a3b9e0e76d26386b7a334b6c38a57e8924505d43e"
+      }
+    },
+    "secret": {
+      "inputs": 3962,
+      "hits": 0,
+      "log": {
+        "bytes": 101,
+        "sha256": "ca9654bf1185e5c592746982a261fcc06dcce330bdf25706d93ff06127f59524"
+      }
+    },
+    "governance": {
+      "tests": 302,
+      "passed": 302,
+      "failed_or_errors": 0,
+      "skipped": 0,
+      "junit": {
+        "bytes": 47175,
+        "sha256": "b737ef8c419adc6da01878c431a59bfb7eb867fd38b21732f92ed437a92d7750"
+      },
+      "log": {
+        "bytes": 555,
+        "sha256": "0e4a39f2e182b33dc6e5c86f6172adf994dd5d28123bdf7c8f535051ba28f80f"
+      }
+    }
+  }
+}

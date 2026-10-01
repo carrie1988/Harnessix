@@ -284,11 +284,14 @@ def _chain(
         if part != path.anchor:
             current /= part
         handle = cache.get(current)
+        private_target = private and current == path
         if handle is None:
-            handle = api.open(current, resources, directory=True)
+            handle = api.open(current, resources, directory=True, private=private_target)
             cache[current] = handle
-        if private and current == path:
-            api.private(handle, directory=True)
+        elif private_target:
+            # 旧链守卫可能只有LIST_DIRECTORY/READ_ATTRIBUTES，不能用于读取DACL。
+            # 保留原守卫，另开含READ_CONTROL的私有读句柄；不升级写/删除权限或忽略ACL。
+            handle = api.open(current, resources, directory=True, private=True)
     filesystem = ctypes.create_unicode_buffer(32)
     if (
         api.kernel.GetDriveTypeW(path.anchor) != 3

@@ -1,0 +1,20 @@
+%%{init: {"theme":"neutral","themeVariables":{"fontFamily":"Arial"},"flowchart":{"htmlLabels":false,"padding":25}}}%%
+sequenceDiagram
+  participant C as 原材料调用
+  participant H as 原目录链
+  participant W as Windows原开句柄
+  participant S as 原ACL校验
+  participant R as 原Resources
+  C->>H: private目录/原cache
+  H->>H: 保留所有已有目录守卫
+  H->>W: private=True，仅终点增加READ_CONTROL
+  W->>W: 原CreateFileW/share-read
+  W->>R: 成功开句柄即登记关闭回调
+  W->>W: 原File ID/路径/类型核对
+  W->>S: 原OWNER/DACL严格检查
+  S-->>W: 完整通过或原稳定失败
+  W-->>H: 本次private读句柄
+  H->>H: 原本地固定NTFS核对
+  H-->>C: 完整句柄结果
+  C->>R: 作用域结算
+  R->>R: 关闭旧守卫与新private句柄
