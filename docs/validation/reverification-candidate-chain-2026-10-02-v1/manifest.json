@@ -1,0 +1,31 @@
+{
+  "algorithm": "sha256",
+  "design_sha256": "8b174557be4dd6da6618f24ea6182fcd235184ce85923f53e518fae50967a83d",
+  "files": {
+    "README.md": "873d2cc4633ac36d62812eafa875dfb9d546dd92f711cd2cc0e090a84a8e83c6",
+    "architecture.mmd": "0394d421c35d22a9bca7aea39eb042f79ce86a4d83ec4ff43014d1924cf0eb73",
+    "architecture.png": "8313273d8d34f39abb1caffd2c7d393e0c2e03893b474bb8facfa357a1271570",
+    "binding-flow.mmd": "05b38daf827e2fc39741fd7377c59ed1feec51b0bca387205180fe34c048fe13",
+    "binding-flow.png": "45a844686dc1f35c317db9568e1126886d22961930e213b742edee6536606b0d",
+    "cost-data-flow.mmd": "b589547dd40df1b4a6d724f5770330385b8aff7c430655fd6fe883993449ba89",
+    "cost-data-flow.png": "2674a22939bd68405a2e3253543f9c484d70d7a8a0a870c3f4a2a5910f56097e",
+    "facts.json": "f1928b2acb7f987682ade434ba3674f24e94adbdd98534b39f1cf3da33f8cfdc",
+    "registration-sequence.mmd": "5e26045a5c245ca78b56725148ede5cfef7e262c4b9fd649112602b6ae1fdc58",
+    "registration-sequence.png": "83e0ab3d654da0bc4b8185edb9211cf47767a987e7db68c5d83b507ab338ccac",
+    "review-packet.json": "b5fb3eb7dff4f8f8689feae823b51c24cf6172b4b681b98f9bed78ae488a4226",
+    "verification.json": "33220aad00f0f5f7632eb674a0c07a4b70af62c9fe02fd17f0631bf2e9f560ce"
+  },
+  "schema": "harnessix.validation-manifest/v1",
+  "scope_inputs": {
+    "scripts/authorize_provider_reverification.py": "5d2e62f02492649925ae2027b849f6d3bb739c9d81071c16cbd14bbf05f74a41",
+    "scripts/provider_reverification_chain.py": "9d3ded96b358fc1afe8590d29f56975a0cede751bfe2366aa1c5ae1e9a117af1",
+    "scripts/provider_verification_budget.py": "caccec831c21b0ddc468833e71be94f31a24b4d2c7b2bd647ba8150963d91967",
+    "scripts/provider_verification_guard.py": "23d7895c8c08d9db120044ee25af5a2b39385f9c5ad880bd3c4bf8464fc27562",
+    "tests/evals/test_provider_reverification.py": "b9884526f2bb460a5043b6ba57d2af060592addc7c698f310b6ccd11f2b64d00",
+    "tests/evals/test_provider_reverification_chain.py": "000362483778931ee686a7015fbcce641f4d982bb3c60c6eb370462b6aa9eb4f",
+    "tests/evals/test_provider_reverification_rebinding.py": "6537687f92b0a7341db8c52770398e93b6eaaadfc4139288ae32603a9f893730",
+    "tests/evals/test_provider_verification_budget.py": "980a6af07677a279a17e4461bab43de5c750f07ff4258399f9b6c533934673f0",
+    "tests/evals/test_provider_verification_host.py": "bd996fb437bb64a0d59056b425c31db670c88afb6506056e16b677159077ce3e"
+  },
+  "source_whole_repository": false
+}

@@ -1,0 +1,21 @@
+{
+  "actual_live_ledger_written": false,
+  "commercial_quality_closed": false,
+  "paid_calls": 0,
+  "pending": [
+    "后继候选实际登记和完整真实20 Trial",
+    "真实质量与商用门禁"
+  ],
+  "schema": "harnessix.review-packet/v1",
+  "scope": "candidate_management_chain_only",
+  "verified": [
+    "原授权和首次绑定不可变",
+    "全请求分段覆盖与前驱摘要",
+    "同70/40累计费用上限及旧预留",
+    "末尾候选权限及旧候选撤销",
+    "新增未决拒绝与默认拒绝",
+    "实际Owner持久化及fsync失败幂等",
+    "离线CLI与请求保护指纹",
+    "独立补测77项与原43项共120通过，限定范围无P0/P1/P2"
+  ]
+}

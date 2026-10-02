@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant M as 管理CLI
+    participant L as 原预算Owner
+    participant V as 候选链校验器
+    participant F as 私有文件
+    participant H as 后继请求宿主
+    M->>L: append_reverification_binding(plan)
+    L->>F: 锁定与完整读取
+    L->>V: 原计划 原绑定 全请求 追加节点
+    V-->>L: 完整链与同一累计上限一致
+    L->>F: 原有受控替换与fsync
+    L-->>M: candidate_appended及有限ID
+    H->>L: 原reverification_id与末尾suite_id
+    L-->>H: 原旧未决仍预留 新未决仍拒绝
+    H->>L: 原单次请求预留和结算

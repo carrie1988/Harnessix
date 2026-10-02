@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 29
-code_revision: a0b5df0a3c380b8b058b8e45c99a731a9022e7f0
+version: 30
+code_revision: 4a9264bfeb84f04fb4976894bf350091dd8870b0
 owners:
   - core
 modules:
@@ -2247,6 +2247,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 30 | 基于`4a9264bfeb84f04fb4976894bf350091dd8870b0`的实现 | 2026-10-02 | 同一原Grant的候选链只追加、旧Suite撤销、完整请求及累计费用保留；显式管理入口与原请求宿主指纹联动，实际登记和真实质量仍独立验收 |
 | 29 | `a0b5df0a3c380b8b058b8e45c99a731a9022e7f0` | 2026-09-30 | 同一40元剩余额度显式切换一次Suite，原授权及全部已用/预留保持，V2旧Reader失败关闭，三重请求身份和恢复指纹绑定；实际预算登记及真实质量仍独立验收 |
 | 28 | `ef582dacb5609fee90e6b3905998dea8db269c53` | 2026-09-30 | 分离固定Profile观测职责，确认无效果参数拒绝不计检查，逐项验证真实终态，指定缺证路径持久停止Campaign/Suite，重开不重放；真实质量门禁保持 |
 | 27 | `0813c581982fddf17503d47a308419035d193ecf`的修正候选 | 2026-09-30 | 新私有Workspace通过目录FD落实0755；录制Oracle采用Git可执行位语义，兼容umask077，既有漂移与正式Patch权限拒绝不变 |
@@ -2278,3 +2279,16 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 [完整创建与恢复详设](../changes/m09-r3-eval-workspace-mode.md)说明私有新Run Root内通过无链接目录FD落实原0755合同，兼容宿主umask077；已有目录漂移仍由原严格恢复检查拒绝，不自动改权、不修改用户Workspace。
 离线录制适配器按Git可执行位输出0644/0755，不将`git apply`受umask影响的宿主完整模式传入正式Patch；真实Provider、Patch允许值、Pack及Grader均不变。
+
+## 同一复验额度的候选链管理
+
+原单次切换记录保持不可变；后继候选由
+[`VerificationCandidateBinding`](../../scripts/provider_reverification_chain.py)和
+[`VerificationBudgetLedger.append_reverification_binding`](../../scripts/provider_verification_budget.py)
+显式追加。新账本v3核对完整链及每段请求前缀，只授权末尾Suite；幂等确认历史节点不会恢复其请求资格。
+原70元周期、40元复验累计上限和旧未决全额预留保持，新增未决仍立即阻断请求。
+管理CLI不读取凭据、不访问模型、不自动换绑；旧读器拒绝新Schema，不允许删除链伪装回退。
+完整字段、失败语义、持久化、部署及测试见
+[总体与详细设计](../changes/m09-r3-reverification-candidate-chain.md)和
+[验证资料](../validation/reverification-candidate-chain-2026-10-02-v1/README.md)。
+离线管理合同通过不代表实际账本已登记，也不代表R3真实编码质量通过。

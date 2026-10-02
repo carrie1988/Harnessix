@@ -19,6 +19,14 @@ from scripts.provider_reverification_binding import (
     VerificationReverificationBinding,
     validate_reverification_binding,
 )
+from scripts.provider_reverification_chain import (
+    CHAIN_SCHEMA,
+    MAX_CANDIDATE_BINDINGS,
+    VerificationCandidateBinding,
+    candidate_bindings,
+    snapshot_candidate_binding,
+    validate_candidate_chain,
+)
 from scripts.provider_reverification_plan import (
     VerificationReverificationPlan,
     validate_reverification_plan,
@@ -63,6 +71,7 @@ class VerificationBudgetLedger:
         self.reverification_id = reverification_id
         self.suite_id = suite_id
         self._registration_only = False
+        self._candidate_registration = False
 
     def __enter__(self) -> Self:
         if self.root is not None:
@@ -136,6 +145,60 @@ class VerificationBudgetLedger:
         if raw is None:
             return None
         return VerificationReverificationBinding.model_validate_json(json.dumps(raw), strict=True)
+
+    @property
+    def active_reverification_binding(
+        self,
+    ) -> VerificationReverificationBinding | VerificationCandidateBinding | None:
+        """新链只授权末尾候选；旧单次绑定仍为不可变历史，不恢复其请求权限。"""
+        bindings = candidate_bindings(self.period)
+        return bindings[-1] if bindings else self.reverification_binding
+
+    @classmethod
+    def append_reverification_binding(
+        cls, path: Path, binding: VerificationCandidateBinding
+    ) -> None:
+        """显式追加同一原额度内的候选；不联网、不激活旧Suite、不新增预算。"""
+        try:
+            checked = snapshot_candidate_binding(binding)
+        except Exception:
+            raise KernelError("verification_reverification_invalid", "追加候选记录无效") from None
+        owner = cls(path, checked.period_id)
+        owner._registration_only = owner._candidate_registration = True
+        with owner:
+            existing = candidate_bindings(owner.period)
+            for item in existing:
+                if item.binding_id == checked.binding_id:
+                    if item != checked:
+                        raise KernelError("verification_reverification_invalid", "候选身份已存在")
+                    assert owner.root is not None
+                    try:
+                        os.fsync(owner.root)
+                    except OSError:
+                        raise KernelError(
+                            "verification_budget_persist_failed", "候选追加未能可靠确认"
+                        ) from None
+                    return
+            plan, original = owner.reverification_plan, owner.reverification_binding
+            if (
+                plan is None
+                or original is None
+                or len(existing) >= MAX_CANDIDATE_BINDINGS
+                or checked.ledger_before_sha256 != sha256(owner._body).hexdigest()
+                or checked.prior_request_count != len(owner.period["requests"])
+            ):
+                raise KernelError("verification_reverification_invalid", "候选不属于当前原账本")
+            try:
+                validate_candidate_chain(owner.period, plan, original, (*existing, checked))
+            except ValueError:
+                raise KernelError(
+                    "verification_reverification_invalid", "候选前驱或原累计费用不一致"
+                ) from None
+            owner.period["reverification_binding_chain"] = [
+                item.model_dump(mode="json") for item in (*existing, checked)
+            ]
+            owner.data["schema"] = CHAIN_SCHEMA
+            owner._save()
 
     @classmethod
     def authorize_reverification(cls, path: Path, plan: VerificationReverificationPlan) -> None:
@@ -212,7 +275,7 @@ class VerificationBudgetLedger:
     def _validate(self, value: object) -> dict[str, Any]:
         if (
             not isinstance(value, dict)
-            or value.get("schema") not in {_SCHEMA, _REBOUND_SCHEMA}
+            or value.get("schema") not in {_SCHEMA, _REBOUND_SCHEMA, CHAIN_SCHEMA}
             or (value.get("provider"), value.get("currency")) != ("aliyun-bailian", "CNY")
         ):
             raise ValueError
@@ -260,16 +323,23 @@ class VerificationBudgetLedger:
         elif any("reverification_id" in request for request in requests):
             raise ValueError
         raw_binding = period.get("reverification_binding")
-        if value["schema"] == _REBOUND_SCHEMA:
+        if value["schema"] in {_REBOUND_SCHEMA, CHAIN_SCHEMA}:
             if raw_binding is None or raw_plan is None:
                 raise ValueError
             binding = VerificationReverificationBinding.model_validate_json(
                 json.dumps(raw_binding), strict=True
             )
-            validate_reverification_binding(period, plan, binding)
+            if value["schema"] == CHAIN_SCHEMA:
+                validate_candidate_chain(period, plan, binding, candidate_bindings(period))
+            else:
+                if "reverification_binding_chain" in period:
+                    raise ValueError
+                validate_reverification_binding(period, plan, binding)
         elif raw_binding is not None or any(
             "reverification_binding_id" in request for request in requests
         ):
+            raise ValueError
+        if value["schema"] == _SCHEMA and "reverification_binding_chain" in period:
             raise ValueError
         return value
 
@@ -331,7 +401,30 @@ class VerificationBudgetLedger:
             original_binding = original_period.get("reverification_binding")
             current_binding = self.period.get("reverification_binding")
             if original_binding is not None:
-                if current_binding != original_binding or self.data["schema"] != original["schema"]:
+                if current_binding != original_binding:
+                    raise ValueError
+                old_chain = original_period.get("reverification_binding_chain", [])
+                new_chain = self.period.get("reverification_binding_chain", [])
+                if new_chain != old_chain:
+                    if (
+                        not self._candidate_registration
+                        or self.data["schema"] != CHAIN_SCHEMA
+                        or new_chain[:-1] != old_chain
+                        or len(new_chain) != len(old_chain) + 1
+                        or new_chain[-1]["ledger_before_sha256"] != sha256(self._body).hexdigest()
+                        or {
+                            k: v
+                            for k, v in self.period.items()
+                            if k != "reverification_binding_chain"
+                        }
+                        != {
+                            k: v
+                            for k, v in original_period.items()
+                            if k != "reverification_binding_chain"
+                        }
+                    ):
+                        raise ValueError
+                elif self.data["schema"] != original["schema"]:
                     raise ValueError
             elif current_binding is not None and (
                 current_binding["ledger_before_sha256"] != sha256(self._body).hexdigest()
@@ -374,7 +467,7 @@ class VerificationBudgetLedger:
         if self.root is None or self._registration_only:
             raise KernelError("verification_budget_unresolved", "验证预算存在未决请求")
         plan = self.reverification_plan
-        binding = self.reverification_binding
+        binding = self.active_reverification_binding
         allowed: set[str] = set()
         if self.reverification_id is not None or self.suite_id is not None:
             if (
@@ -413,7 +506,7 @@ class VerificationBudgetLedger:
             raise KernelError("verification_budget_metadata_invalid", "验证预算元数据不受支持")
         period = self.period
         plan = self.reverification_plan
-        binding = self.reverification_binding
+        binding = self.active_reverification_binding
         if plan is not None and (
             validate_reverification_plan(period, plan) + maximum_units > _amount(plan.maximum_cost)
         ):

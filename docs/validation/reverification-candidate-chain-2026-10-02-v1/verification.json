@@ -1,0 +1,64 @@
+{
+  "actual_ledger_changed": false,
+  "actual_results": {
+    "errors": 0,
+    "failures": 0,
+    "passed": 284,
+    "skipped": 0,
+    "tests": 284
+  },
+  "diagrams_rendered": true,
+  "diagrams_visually_checked": true,
+  "early_green_tests": 22,
+  "early_related_tests": 281,
+  "independent_review": {
+    "actual_tests": {
+      "classification": "XML names matched disjoint actual source test definitions",
+      "errors": 0,
+      "existing_candidate_chain": 43,
+      "failures": 0,
+      "independent_private": 77,
+      "passed": 120,
+      "skipped": 0,
+      "total": 120
+    },
+    "findings": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "new_paid_calls": 0,
+    "repository_edits": false,
+    "source_scope9_before_after_unchanged": true,
+    "summary_sha256": "c72cfbc8724c127906214e6f44ab5b77352886d15c953ca0a20f5559d0206bd4"
+  },
+  "initial_mypy_environment_rejected": true,
+  "input_drift": [],
+  "latest_base_integration": {
+    "base_revision": "4a9264bfeb84f04fb4976894bf350091dd8870b0",
+    "errors": 0,
+    "failures": 0,
+    "ledger_writes": 0,
+    "model_calls": 0,
+    "scope_source_and_test_inputs": 9,
+    "skipped": 0,
+    "source_drift": [],
+    "tests": 284,
+    "xml_sha256": "38ce1d4e840353362b7b96316d654748f0ec14a9a27f16e867b6a9ce026888cd"
+  },
+  "mypy_explicit_package_bases": true,
+  "mypy_result_sha256": "71144743c83babea384888a735db0c4daba3d4d7b7942b6839984bd5c21b52bb",
+  "mypy_source_files": 4,
+  "new_paid_requests": 0,
+  "original_development_red": {
+    "failures": 22,
+    "proof_limit": "原加载API缺失；不宣称完整固定源码红态",
+    "source_was_not_fully_frozen": true,
+    "tests": 22
+  },
+  "real_quality_closed": false,
+  "result_sha256": "8e0652195dac5a30b380483901d50afe4c789e0a58c9ec2d3f3521365e3d253d",
+  "ruff_and_format_files": 5,
+  "schema": "harnessix.reverification-candidate-chain-verification/v1",
+  "status": "bounded_contract_verified_actual_registration_and_quality_open"
+}

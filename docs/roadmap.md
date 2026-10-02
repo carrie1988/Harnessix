@@ -1473,3 +1473,14 @@ Backup v2、Windows原生失败及R3／Beta／商用门禁仍按原完整产品�
 详见[总体与详细设计](changes/m09-r4-git-material-trace2.md)及
 [正式验证资料](validation/git-material-trace2-2026-10-02-v1/README.md)。
 完整Git产品接线、Backup v2、R3、消费者Windows和商用门禁仍按既定目标继续。
+
+### R3：同一原复验额度的不可变候选链
+
+后继候选通过显式管理计划追加到原账本v3，保留首次切换及全部旧请求；
+前驱摘要、连续序号、完整请求前缀和全部Grant累计费用共同验真，只有末尾Suite可发送请求。
+原70元周期、40元复验累计上限及20.77824元旧未决全额预留不变；
+任何新增未决继续阻断请求及重开，不新增Grant、不覆盖旧Suite、不自动换绑。
+当前实现与原请求宿主联动，关联合同284通过，独立复核120通过；
+见[总体与详细设计](changes/m09-r3-reverification-candidate-chain.md)及
+[验证资料](validation/reverification-candidate-chain-2026-10-02-v1/README.md)。
+实际候选登记、固定新20 Trial质量验证及R1～R6商用门禁仍开放。
