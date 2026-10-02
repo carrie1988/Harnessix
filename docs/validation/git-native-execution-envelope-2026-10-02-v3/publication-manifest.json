@@ -1,0 +1,147 @@
+{
+  "schema": "harnessix.native-execution-publication-manifest/v1",
+  "state": "FROZEN",
+  "baseline_revision": "ed8005f00755b9d37a658f9d0c7163f6250586f1",
+  "candidate_revision": null,
+  "owned_files": [
+    "docs/changes/m09-r4-git-native-execution-envelope-v3.md",
+    "docs/roadmap.md",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/COMMANDS.json",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/PUBLICATION.md",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/README.md",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/SOURCE.json",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/facts.json",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/frame-observation.mmd",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/frame-observation.png",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/manifest.json",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/design-v1.txt",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/observe.py",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/projection.py",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/run_cases.py",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/publication-manifest.json",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/publication-verification.json",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/review-packet.json",
+    "docs/validation/git-native-execution-envelope-2026-10-02-v3/verification.json",
+    "scripts/windows_git_native_branch_observation/observe.py",
+    "scripts/windows_git_native_branch_observation/projection.py",
+    "scripts/windows_git_native_branch_observation/run_cases.py",
+    "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+    "tests/governance/test_windows_git_native_execution_v3.py"
+  ],
+  "owned_count": 23,
+  "self_excluded": "docs/validation/git-native-execution-envelope-2026-10-02-v3/publication-manifest.json",
+  "members": [
+    {
+      "path": "docs/changes/m09-r4-git-native-execution-envelope-v3.md",
+      "bytes": 15383,
+      "sha256": "a25d1cd9c382482053280975cb4aa8ab3f0d7862074c3a28d8e8f4b24864e03c"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "bytes": 155925,
+      "sha256": "6fd4d0dfc4b4496a03f83dfb92c3b30ceb99d9556f6871908293c301b528a0b6"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/COMMANDS.json",
+      "bytes": 3019,
+      "sha256": "856be4de51ff2915dcebf9e4de67857473348a97118da0bc7b7dad8d14873ee2"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/PUBLICATION.md",
+      "bytes": 3565,
+      "sha256": "cee54c8ad4d22a07b2b42e08b1e6261192e50701bfcbe5186b48da6faf66c72e"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/README.md",
+      "bytes": 3733,
+      "sha256": "7ae87b9b6442f367d8bf758fb99dd307c5ccbfaf3acc7cc73b55c50bb10af495"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/SOURCE.json",
+      "bytes": 20753,
+      "sha256": "b0f5d7f28da86c6189838424959b9df6bf864f9961e5c61d17297f6d0cdb1d5a"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/facts.json",
+      "bytes": 3395,
+      "sha256": "0a08a9a6a1b435d551b807332f12a15a5a4c104d0af208c398227d2d7d12ea60"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/frame-observation.mmd",
+      "bytes": 937,
+      "sha256": "b44fd510968f95d7e9d1450f469396376814bc576e5d015a5efd0e9e8febed61"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/frame-observation.png",
+      "bytes": 64776,
+      "sha256": "5218c5f1e271d70c32e8352ad43cc1a6fe503c1da85cb4d4fe2b8df662277c19"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/manifest.json",
+      "bytes": 16870,
+      "sha256": "6c51bda8f677d9100f88b24dff151a3848eaf1af509285ee7ba2060a6544c07b"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/design-v1.txt",
+      "bytes": 13884,
+      "sha256": "04972d9879fbbe280f183c7f6c286437d8d25de48437097a0799be135453b4fa"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/observe.py",
+      "bytes": 8353,
+      "sha256": "9e1451cace8ec82d1444b71a2702b96d9bef1c87676bf35b44f591e6d59dfab4"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/projection.py",
+      "bytes": 7431,
+      "sha256": "07252c6f6fb307af4e0a701aa79e833f74b803b287d0b1420b64e4d993252963"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/run_cases.py",
+      "bytes": 2552,
+      "sha256": "5b0d5944539d9cd9fccd6bc0a346587ae9df7570add276d8af14a70e46e1e249"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/publication-verification.json",
+      "bytes": 2452,
+      "sha256": "5d13da226d9d0a750b207fdf39a0d027799de06bb2bd11c3647d8ab4915483b0"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/review-packet.json",
+      "bytes": 1773,
+      "sha256": "16f4583b1c2df3a0a49c8dcde9742800bb3f9e134e29b31c5a1d5743e31e157f"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/verification.json",
+      "bytes": 8360,
+      "sha256": "38d1c8b4ee6aa99a7986f1de4a4954d076f7090f5e3b1f6be4dab15f896eed70"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/observe.py",
+      "bytes": 9934,
+      "sha256": "06b7595589b766045bbddbc6ffc7f256da0cc2a2eb47f177ba1e6af17410467f"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/projection.py",
+      "bytes": 8165,
+      "sha256": "6af3c760b7c9777c7f0741d213a6d0283deb93823f8ca9faddee71e4d91fc840"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/run_cases.py",
+      "bytes": 2980,
+      "sha256": "d2de632ab0264db95e621fbf3d4b077f71e367e1b824d58c9317ea14126cd088"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+      "bytes": 16920,
+      "sha256": "179b84afdbc339ba6779be2c721839d77e4fa802abd4bb437b7749ba88638134"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_execution_v3.py",
+      "bytes": 15280,
+      "sha256": "3a4b241d84d78eca29a27cb1e587755d02cc2b9141f830abcbc6896940b44304"
+    }
+  ],
+  "members_count": 22,
+  "implementation_manifest_sha256": "6c51bda8f677d9100f88b24dff151a3848eaf1af509285ee7ba2060a6544c07b"
+}

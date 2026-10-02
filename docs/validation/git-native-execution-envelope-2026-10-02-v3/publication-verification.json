@@ -1,0 +1,74 @@
+{
+  "schema": "harnessix.native-execution-publication-verification/v1",
+  "baseline_revision": "ed8005f00755b9d37a658f9d0c7163f6250586f1",
+  "candidate_revision": null,
+  "implementation_manifest_sha256": "6c51bda8f677d9100f88b24dff151a3848eaf1af509285ee7ba2060a6544c07b",
+  "implementation_members_verified": 55,
+  "implementation_live_drift": [
+    "docs/changes/m09-r4-git-native-execution-envelope-v3.md"
+  ],
+  "implementation_original_snapshot_redirects": {
+    "docs/changes/m09-r4-git-native-execution-envelope-v3.md": "docs/validation/git-native-execution-envelope-2026-10-02-v3/originals/design-v1.txt"
+  },
+  "publication_inputs": 23,
+  "formal_regression": {
+    "tests": 227,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml_sha256": "59551e96880e720fec6a0f2e80969be5ded6d5e11a0d27c3339da483b26366a3"
+  },
+  "independent_implementation_review": {
+    "tests": 81,
+    "source_inputs": 9,
+    "source_drift": [],
+    "findings": {
+      "P0": [],
+      "P1": [],
+      "P2": []
+    },
+    "summary_sha256": "672c8777c4bd978ac02393f4b9df25cc092269c2bc1558f26286334691d3fd44",
+    "xml_sha256": "bcb37564a3ab085a167ed6df6b7362ecaa85f5b4f1b2f164e13cc0a1c49f3fae",
+    "sdd_explanatory_delta_reviewed": true,
+    "full_product_review": false
+  },
+  "differential": {
+    "vectors": 23,
+    "old_field_or_exception_differences": [],
+    "summary_sha256": "ad7c49ba777c868508f92446dd3134774c99e34929bc9d8193c6922a8ff92d41"
+  },
+  "source_checks": {
+    "fixed_inputs": 16,
+    "passed": true
+  },
+  "original_controls": {
+    "unchanged_case_valid": true,
+    "unchanged_integer": true,
+    "unchanged_project_case": true,
+    "unchanged_raw_status": true,
+    "unchanged_execute_authorized": true,
+    "unchanged_run_debugger": true,
+    "original_branch_semantics_ast_unchanged_without_counts": true,
+    "original_run_control_ast_unchanged_except_version_and_default_observation": true,
+    "unchanged_original_cases_valid_ast": true,
+    "unchanged_original_complete_ast": true,
+    "unchanged_original_result_fields_ast": true,
+    "live_source9_still_same": true,
+    "fixed_16_source_inputs_verified": true
+  },
+  "documentation": {
+    "state": "PASS",
+    "documents": 500,
+    "changed_paths": 23,
+    "findings": []
+  },
+  "secret": {
+    "state": "PASS",
+    "files": 23,
+    "findings": []
+  },
+  "windows_native_execution": false,
+  "sdk_acceptance": false,
+  "historical_root": "UNKNOWN",
+  "R1_R4_complete": false
+}

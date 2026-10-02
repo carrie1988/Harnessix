@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 154
-code_revision: 23f12bbeb65df8b3fc0b1a94c66d9d8b45910abf
+version: 155
+code_revision: ed8005f00755b9d37a658f9d0c7163f6250586f1
 owners:
   - core
 modules:
@@ -1604,3 +1604,22 @@ Artifact、API ZIP摘要和结果摘要。CDB/Python存在标志均为null，不
 单一退出码不能确定Debugger故障、两个SDK的实际失败阶段或原Git128根因；根因继续UNKNOWN。
 后继先对已有观察器及帧投影作有限源码和离线复现，不以更多相同运行替代根因求证。
 完整Git产品/Backup v2、消费者Windows、R3、独立Beta和同候选R1～R6仍开放。
+
+### R1/R4：有限执行观察与原认证门分离
+
+观察器恢复原Probe单次完整发布前的pytest无换行噪声边界；未完完整标记或尾部partial-prefix
+继续粘性拒绝，不从任意文本抽取工具调用。显式v3结果新增独立未认证观察，
+只发布原九字段A/B形状及三个0～64语法计数；未知日志为null，64仅表示饱和下界。
+原cases、完整branch_gate、SDK验收、退出状态、固定合同和执行期限不放宽。
+接口、字段、流程、失败与回退见[完整详设](changes/m09-r4-git-native-execution-envelope-v3.md)，
+当前限定证据见[验证包](validation/git-native-execution-envelope-2026-10-02-v3/README.md)。
+
+正式回归227通过（原153及新增74），原本机真实pytest发布链恢复两行但保留失败退出；
+该fixture声明不代表Windows或原十三hook的实际执行。独立固定23组投影输入的旧结果与
+异常类型保持，未认证形状不能使原false转true，也不因新字段拒绝反向改变原有效门。
+固定九源的独立实现复核81项通过；后继详细设计解释性增量及正式文档、Secret检查见
+[发布复核记录](validation/git-native-execution-envelope-2026-10-02-v3/PUBLICATION.md)，
+原55成员实现封存记录保持，不将其待检查状态冒充发布检查通过。
+上述证据不补写历史Run36983172137，不确定原Git128根因；后继原生验证须使用新的固定候选。
+完整Git默认Commit／Checkpoint、Backup v2、R3真实质量、消费者Windows、独立Beta及
+同候选R1～R6商用退出条件继续开放。

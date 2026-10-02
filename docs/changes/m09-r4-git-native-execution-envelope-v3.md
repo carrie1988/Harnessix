@@ -1,0 +1,177 @@
+---
+doc_type: change-design
+status: current
+version: 2
+code_revision: ed8005f00755b9d37a658f9d0c7163f6250586f1
+owners: [core]
+modules: [delivery, product_config, processes, governance]
+related_adrs:
+  - docs/adr/0068-transactional-workspace-and-git-delivery.md
+  - docs/adr/0077-versioned-documentation-contract-and-gates.md
+related_tests:
+  - tests/governance/test_windows_git_native_branch_observation.py
+  - tests/governance/test_windows_git_native_branch_preflight_v2.py
+  - tests/governance/test_windows_git_native_selected_layout.py
+  - tests/governance/test_windows_git_native_execution_v3.py
+supersedes: []
+---
+
+# Windows Git 有限执行观察封装 v3 详细设计
+
+## 1. 文档摘要
+
+本变更为既有定点观察器增加明确的v3结果封装，解决合法有限案例和marker语法信息被认证门统一隐藏的可观测性缺口。只修改run_cases、projection、observe三个观察器源及必要测试；不是产品诊断平台、权限或SDK适配。
+
+顶层schema为`harnessix.git-native-branch-observation/v3`。新增`unverified_execution_observation`与原cases、branch_witness、branch_gate分列，assurance始终`UNAUTHENTICATED_DIAGNOSTIC_ONLY`。原认证cases及完整branch门的算法意义、退出值、SDK验收false与Root UNKNOWN保持；旧v2资料与FAIL不回写。发布基线ed8005f，当前候选以[验证包](../validation/git-native-execution-envelope-2026-10-02-v3/README.md)精确SHA绑定，不将基线当未发布候选提交。
+
+## 2. 需求背景
+
+[Run36983172137实际结果](../validation/git-native-execution-incomplete-2026-10-02-v1/README.md)记录实际selected完整PE/PDB、16源输入通过，CDB/Python存在且启动；执行/pytest退出1，cases和branch invocations为空，根因UNKNOWN。空数组不能反推没有帧、没有ARM或唯一Git故障。
+
+项目外真实pytest8.4.2/Python3.12.7复现：原teardown hook、Probe.render和_publish发布两个合法完整有限fixture帧，其前置无换行F被原CaseSink合并，最终0行且invalid=false。最终候选恢复两行，pytest仍退出1；混合未完完整标记或尾部partial-prefix置sticky invalid并保留pending。此证据是本机观察器缺陷闭环，不是Windows现场SDK根因证明，fixture声明win32/13不代表实际安装hook。
+
+恢复的两行raw_validation=UNAVAILABLE，原observation_result仍按原认证门隐藏它们。即使合成完整branch witness为true，原完整branch_gate仍false。v3将这种未认证形状与有限语法计数分列展示，不通过放宽认证解决信息隐藏。
+
+## 3. 设计目标
+
+- CaseSink仅采用已封存f2b8d最终帧边界候选，不采用会抹掉混合未完协议的旧候选。正式源与该候选AST完全相等，既有100列格式只折叠一处generator换行，当前字节SHA单列。
+- 新案例观察只允许原CASE_FIELDS九字段、准确实际类型、原枚举和A/B两行顺序，不透传任意report或v5正文。
+- ARM/BRANCH整行语法匹配及坏marker前缀三个计数各为exactint0..64；64统一是饱和下界，不能当精确总数或受信硬件命中。
+- 缺失、超过原日志限额或未成功取得日志，marker_counts=null、marker_state=NOT_AVAILABLE；只有测量成功可输出0。
+- JSON/CASE路径与marker循环各只有一条；不额外读取raw，不增加宽松substring解析器。
+- 新观察完全不参与原cases_valid/complete、源/材料/工具预检、进程控制或业务权限。
+
+### 3.1 选型、约束与取舍
+
+选择“保留原门并分列未认证观察”，不将UNAVAILABLE改成verified、不把两条形状或两次regex匹配当完整见证。原CASE_FIELDS枚举校验复用case_valid；新增exactstr检查仅用于新观察，不能改变旧gate对其原输入的计算。新增顶层report准确键集检查也只用于新观察，额外顶层字段不得反向降级旧true。
+
+marker计数在原循环三个既有匹配分支中饱和递增，原armed/groups/valid、机器上下文、顺序、重复及两组约束保持。原branch_records返回API不变，以同一内部scan复用数据，避免另一宽松parser。
+
+## 4. 总体架构
+
+![既有架构](../validation/git-native-branch-preflight-2026-10-02-v2/architecture.png)
+
+contract/preflight/diagnostics及生产SDK均不改。run_cases负责有限帧边界；projection的唯一内部marker scan同时返回原witness及语法计数，case观察复用原九字段路径；observe在原一次文件读取及解析后分列新观察。没有新服务、数据库、公共命令或下载入口。
+
+![当前帧与诊断流程](../validation/git-native-execution-envelope-2026-10-02-v3/frame-observation.png)
+
+## 5. 流程时序数据流
+
+![既有预检流程](../validation/git-native-branch-preflight-2026-10-02-v2/preflight-flow.png)
+![既有时序](../validation/git-native-branch-preflight-2026-10-02-v2/execution-sequence.png)
+![既有发布数据流](../validation/git-native-branch-preflight-2026-10-02-v2/publication-dataflow.png)
+
+原metadata、显式固定revision、平台、16源、selected、工具、symbols、固定PE/PDB、脚本、工具SHA以及执行前后recheck顺序保持。执行结束后，原受限读取cases.json一次（8192B上限）并unique_object解析一次，原日志一次读取（16MiB上限）进入唯一marker循环。原complete与cases输出独立计算，新shape观察只读取这些已解析对象。
+
+CaseSink以原_publish单次从完整PREFIX开始的write为边界；普通F噪声可清，pending内已有完整标记或尾部proper-prefix则保留并置sticky invalid。此包含/尾片段检测只拒绝，不能从任意substring抽帧；同一write内嵌的F+PREFIX仍不恢复。普通合法分段仍按原完整行路径处理。
+
+原四幅图MMD/PNG字节复用并核验SHA，不称本轮重新渲染；新增帧图实际render/view。图源/像素/尺寸记录在verification。原仅两个公开结果文件及其SHA发布保持，没有额外原日志artifact或业务持久化。发布不承诺跨文件原子性，半发布不算完整证据。
+
+## 6. 接口设计
+
+| 接口 | 责任与保持边界 |
+|---|---|
+| `CaseSink.write(text)` | 原65536字符write/pending上限及project_case UTF-8字节门保持；边界同步只清噪声，未完协议sticky invalid |
+| `_scan_branch_records(log)` | 唯一内部循环返回原witness和三个饱和语法计数，不输出PID/TID或行内容 |
+| `branch_records(log)` | 原公开返回结构与原valid语义不变，复用内部scan的witness |
+| `case_observation_valid(row)` | 新观察exactstr及原case_valid九字段合同，不取代旧case_valid |
+| `unverified_observation()` | 固定新对象默认NOT_AVAILABLE/null，不冒充测得0 |
+| `observation_result(output, execution)` | 原读取/解析、旧门与输出保持，添加独立有限诊断对象 |
+| `observe.run(...)` | schema显式v3；SDKfalse、UNKNOWN、原状态/退出/取消控制不改 |
+
+伪代码：
+
+```text
+同一完整PREFIX write到来且pending非空:
+    pending含完整标记或尾部proper-prefix -> sticky invalid且保留pending
+    否则只清普通噪声
+按原完整行及project_case严格验真
+原marker循环的ARM.fullmatch/BRANCH.fullmatch/坏前缀分支各计min(64,n+1)
+原witness和原cases_valid/complete保持
+新诊断: 完整读取日志才发布计数；否则null
+同一已解析report准确形状及严格A/B九字段 -> 新未认证cases
+任何新诊断成功或拒绝都不回流原complete
+```
+
+## 7. 数据结构
+
+新增对象固定字段：
+
+| 字段 | 值与语义 |
+|---|---|
+| assurance | 固定UNAUTHENTICATED_DIAGNOSTIC_ONLY，永不授予认证/权限 |
+| case_shape_state | NOT_AVAILABLE、EMPTY、FINITE_AB、REJECTED四枚举 |
+| cases | 新观察0或2行，严格A/B；与顶层认证cases分列 |
+| source_case_report_invalid | exactbool或null；保留原invalid信号，不改false |
+| marker_state | NOT_AVAILABLE或MEASURED，不携带异常文本 |
+| marker_counts | null或三个exactint0..64；64为至少64的饱和下界 |
+
+新cases每行固定九字段：case、call、raw_validation、proof为exactstr及原有限枚举；worker_return、git_return为None或原integer范围exactint（bool拒绝）；original_operation_returned、diagnostic_incomplete、diagnostic_truncated为exactbool。额外字段、第三行、重复/倒序A/B、错误类型均不进入新cases；不str/int/repr修复。
+
+case取A/B，call取passed/failed；raw_validation取UNAVAILABLE或OBSERVED_V5_VERIFIED_NOT_INDEPENDENT_MAC；proof取ABSENT、UNAVAILABLE或OBSERVED_V5_VALID_NOT_PRODUCT_ACCEPTANCE。两个返回码范围为`-(2**31) <= value < 2**32`，不把bool或子类归一化为int。
+
+新shape报告准确键集为pytest_exit/cases/invalid，pytest_exit为exactint0..5、invalid为exactbool。此检查只影响新观察，原gate条件不加入它。EMPTY表示确实读到准确空report，不等于没有执行；invalid=true或truncated字段仍可作为有限诊断出现，但原门继续拒绝。
+
+marker_counts字段arm_fullmatch_count、branch_fullmatch_count、bad_marker_prefix_count。前两者只表示整行regex语法匹配；错误context、重复ARM或RVA仍由原witness拒绝，不能据计数宣称硬件见证。坏marker仅原固定前缀但不能整行匹配的行，不把错误语义混入该数。没有新动态SHA、path、PID、地址或error文本。
+
+### 7.1 数据流程与结果持久化
+
+`run_cases.main`在原两项selector结束后，将pytest退出码、CaseSink有限行和invalid标志写入私有
+`cases.json`。原协议正文和普通pytest输出不进入此文件；病例不足、坏帧、超限及未完标记均不能
+通过写文件获得认证。该文件只是观察输入，不是Session、批准或效果账本。
+
+`observation_result`在原8192字节及16MiB界内分别读取病例文件和调试日志一次，复用唯一JSON解析
+及marker循环。原认证门计算后，有限形状和语法计数进入单独的未认证对象，不反写输入或业务状态。
+缺失、解析异常与不完整观察按原失败路径处理；无法完整投影时保留默认不可用值，不补猜局部成功。
+
+`observe.run`将最终固定schema结果编码为ASCII并以`write_bytes`写入公开`result.json`，再对这些原始
+字节计算SHA256并以ASCII文本写入`result-sha256.json`。两文件不是跨文件原子事务：中途失败可能
+只有一个文件，接收方须同时取得两件原件，并对结果原始字节核对回执。不能先规范化换行再验摘要；
+Windows文本回执可使用CRLF，而结果的`write_bytes`保留明确LF。
+
+正式workflow只保存这两个有限文件。私有日志、路径、进程标识、任意异常正文和原始v5正文不进入
+公开Artifact。半发布、摘要不符或新观察字段存在都不能升级SDK验收、恢复权限或完整branch门。
+
+## 8. 异常安全
+
+### 8.1 失败与不可用语义
+
+缺失/过大日志为NOT_AVAILABLE/null，解码或JSON异常保持原捕获/首失败/非0路径；若整个投影未成功返回，不补填先前局部计数。新默认对象表示未取得完整诊断，不把未知变0。错误类型与额外字段不透传，原异常args不格式化。
+
+### 8.2 取消、超时与资源关闭
+
+原20秒命令、45秒操作、300秒step、240秒watchdog、16MiB日志界和8192B cases界保持。原CDB启动、kill/wait与取消清理保持，不在观察超时后重启第二进程。固定两返回值RVA硬件断点、13hook、两selector、16输入与PE/PDB全部不改；没有Windows/CI/网络/模型/凭据操作。
+
+### 8.3 安全、风险与边界
+
+新有限形状及语法计数不是MAC、Owner、实际硬件执行证明或SDK验收。顶部cases和branch_gate继续按原完整认证条件；根因始终UNKNOWN，原FAIL保持。显示两个合法UNAVAILABLE行只是诊断可见性，不会变为成功。没有跨文件原子或硬实时新承诺，没有新恢复/重放能力。
+
+## 9. 可观测性
+
+消费者必须先识别schema v3，再将新对象标为未认证有限观察；不得将其cases与原认证cases合并。0只有在成功测量时有意义；null表示不可用。64只表达下界，不表达完整计数、64个进程或64次可信分支。
+
+原执行状态、pytest/debugger退出、认证cases、branch_witness、branch_gate、SDKfalse及UNKNOWN独立保持。既有真实Run原件不会填入事后猜测的ARM或案例数，也不读取旧raw日志来构造新字段。
+
+## 10. 测试验证
+
+验收限定为原153＋新增正式合同、最终真实本机pytest噪声再验；不重复全仓或旧原生Run。新增负例覆盖混合未完标记、partial-prefix、分段/坏帧/超限/额外帧；严格case类型/字段/AB与额外report；缺失/过大/错误解码日志；ARM-only、错误context/坏marker、64饱和以及一次读取。
+
+强制差分：剥离新对象后原observation_result值与冻结v2相等；认证门true不能被新观察REJECTED降级，原false不能因新形状或计数升级。完整合成branch witness＋两行UNAVAILABLE必须保留原NO-GO；新版schema必要预期仅替换原测试一处v2字面量，其他旧断言不改。
+
+实际计数、RED/GREEN、Ruff/格式/文档/Secret、source freeze、图摘要和manifest以[验证包](../validation/git-native-execution-envelope-2026-10-02-v3/README.md)记录。历史预研43单独保存，不计入本次正式验收。
+
+当前正式227 PASS＝原153＋新增74，保留新增envelope缺API的1 FAIL RED；最终真实pytest再验发布2合法fixture帧，两个均前置pending F，sink恢复2行且invalid=false，pytest仍退出1。预研43只作已封存历史引用，不计入227。Ruff/format精确12文件通过；本轮未执行Windows/CDB/SDK或实际workflow。旧原生FAIL与UNKNOWN保持。
+
+另有独立23向量固定语料复验：剥离新对象后，旧结果与异常类型均零差异；包括unhashable TypeError、重复JSON ValueError、无效UTF-8 UnicodeDecodeError。该结果只覆盖本机合成投影，不替代Windows执行或完整产品验收，来源与九源身份见验证包。
+
+## 11. 源码映射
+
+唯一实现写集：[run_cases.py](../../scripts/windows_git_native_branch_observation/run_cases.py)、[projection.py](../../scripts/windows_git_native_branch_observation/projection.py)、[observe.py](../../scripts/windows_git_native_branch_observation/observe.py)。新测试为[test_windows_git_native_execution_v3.py](../../tests/governance/test_windows_git_native_execution_v3.py)；原v2正式测试只作schema必要更新。
+
+contract、preflight、diagnostics、原plugin、workflow及全部生产源不改。接口实际行号、变化前后SHA、旧gate函数AST差分和固定16输入证明见SOURCE，不将结构/测试通过当全系统安全结论。
+
+## 12. 部署与回退
+
+部署必须采用包含本次三源、必要测试、SDD及新验证包的精确固定发布revision。schema v2消费者不能静默解读新字段；旧v2原件继续历史解释。回退恢复新包保存的三源原字节，不覆写旧FAIL或产品状态，不涉及数据/账本迁移。
+
+观察器发布不自动触发原生运行；固定完整候选后显式执行一次原workflow，仍遵守原全部预检和预算。缺少实际Windows/CDB/SDK证据时保持未验证，不由本地GREEN关闭W1、Git128或商用验收。

@@ -43,32 +43,17 @@ def case_valid(row: object) -> bool:
     )
 
 
-def case_observation_valid(row: object) -> bool:
-    return (
-        type(row) is dict
-        and all(type(row.get(key)) is str for key in ("case", "call", "raw_validation", "proof"))
-        and case_valid(row)
-    )
-
-
-def _scan_branch_records(log: str) -> tuple[dict, dict]:
+def branch_records(log: str) -> dict:
     armed, groups = set(), {}
     valid = True
-    counts = {
-        "arm_fullmatch_count": 0,
-        "branch_fullmatch_count": 0,
-        "bad_marker_prefix_count": 0,
-    }
     for line in log.splitlines():
         if match := ARM.fullmatch(line):
-            counts["arm_fullmatch_count"] = min(64, counts["arm_fullmatch_count"] + 1)
             pid = int(match[1])
             valid = valid and pid not in armed and pid < 2**32 and len(armed) < 64
             if len(armed) >= 64:
                 continue
             armed.add(pid)
         elif match := BRANCH.fullmatch(line):
-            counts["branch_fullmatch_count"] = min(64, counts["branch_fullmatch_count"] + 1)
             pid, tid, phase, rva, fd, path, flags, ret = match.groups()
             pid, tid, value = int(pid), int(tid), int(ret)
             valid = valid and (
@@ -89,7 +74,6 @@ def _scan_branch_records(log: str) -> tuple[dict, dict]:
             else:
                 events.append((phase, value))
         elif line.startswith(("FHX_NATIVE_BRANCH", "FHX_NATIVE_ARM")):
-            counts["bad_marker_prefix_count"] = min(64, counts["bad_marker_prefix_count"] + 1)
             valid = False
     rows = []
     for events in groups.values():
@@ -104,11 +88,7 @@ def _scan_branch_records(log: str) -> tuple[dict, dict]:
         fstat = events[0][1] if events[0][0] == "FSTAT" else None
         rows.append({"branch": branch, "fstat_return": fstat, "index_return": index})
     valid = valid and len(rows) == 2 and len({pid for pid, _ in groups}) == 2
-    return {"two_material_invocations_witnessed": valid, "invocations": rows}, counts
-
-
-def branch_records(log: str) -> dict:
-    return _scan_branch_records(log)[0]
+    return {"two_material_invocations_witnessed": valid, "invocations": rows}
 
 
 def integer(value: object) -> int | None:

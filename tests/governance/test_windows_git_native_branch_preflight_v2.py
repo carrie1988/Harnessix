@@ -192,7 +192,7 @@ def test_actual_prepare_stages_keep_refusal_nonzero_and_no_secret(
     report = tmp_path / "report"
     assert observe.run(repository, output, report, False, "") == 2
     result = json.loads((report / "result.json").read_bytes())
-    assert result["schema"] == "harnessix.git-native-branch-observation/v2"
+    assert result["schema"] == "harnessix.git-native-branch-observation/v3"
     assert result["status"] == "PREFLIGHT_REFUSED"
     assert result["execution_performed"] is False and not result["branch_gate_passed"]
     assert not result["original_sdk_acceptance"] and result["historical_root"] == "UNKNOWN"

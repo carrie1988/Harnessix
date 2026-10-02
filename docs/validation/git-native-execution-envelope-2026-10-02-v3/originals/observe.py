@@ -20,12 +20,7 @@ from scripts.windows_git_native_branch_observation.contract import (
 )
 from scripts.windows_git_native_branch_observation.diagnostics import PreflightDiagnostic
 from scripts.windows_git_native_branch_observation.preflight import prepare, recheck
-from scripts.windows_git_native_branch_observation.projection import (
-    CASE_FIELDS,
-    _scan_branch_records,
-    case_observation_valid,
-    case_valid,
-)
+from scripts.windows_git_native_branch_observation.projection import branch_records, case_valid
 
 LOG_LIMIT = 16 * 1024 * 1024
 
@@ -75,28 +70,13 @@ def run_debugger(repository: Path, output: Path, state: dict) -> dict:
     return {"debugger_exit": debugger_exit, "timed_out": timed_out, "log_limit_stopped": limited}
 
 
-def unverified_observation() -> dict:
-    return {
-        "assurance": "UNAUTHENTICATED_DIAGNOSTIC_ONLY",
-        "case_shape_state": "NOT_AVAILABLE",
-        "cases": [],
-        "source_case_report_invalid": None,
-        "marker_state": "NOT_AVAILABLE",
-        "marker_counts": None,
-    }
-
-
 def observation_result(output: Path, execution: dict) -> dict:
     branch_file = output / "cdb-private.log"
     case_file = output / "cases.json"
     witness = {"two_material_invocations_witnessed": False, "invocations": []}
     cases, pytest_exit, cases_valid = [], None, False
-    observation = unverified_observation()
     if branch_file.is_file() and branch_file.stat().st_size <= LOG_LIMIT:
-        witness, counts = _scan_branch_records(
-            branch_file.read_text(encoding="utf-8", errors="strict")
-        )
-        observation.update(marker_state="MEASURED", marker_counts=counts)
+        witness = branch_records(branch_file.read_text(encoding="utf-8", errors="strict"))
     if case_file.is_file() and case_file.stat().st_size <= 8192:
         report = json.loads(case_file.read_bytes(), object_pairs_hook=unique_object)
         if type(report) is not dict:
@@ -116,28 +96,6 @@ def observation_result(output: Path, execution: dict) -> dict:
                 for row in cases
             )
         )
-        observation["case_shape_state"] = "REJECTED"
-        observation["source_case_report_invalid"] = (
-            report.get("invalid") if type(report.get("invalid")) is bool else None
-        )
-        if (
-            set(report) == {"pytest_exit", "cases", "invalid"}
-            and type(cases) is list
-            and type(pytest_exit) is int
-            and 0 <= pytest_exit <= 5
-            and type(report["invalid"]) is bool
-        ):
-            if not cases:
-                observation["case_shape_state"] = "EMPTY"
-            elif (
-                len(cases) == 2
-                and all(case_observation_valid(row) for row in cases)
-                and [row["case"] for row in cases] == ["A", "B"]
-            ):
-                observation["case_shape_state"] = "FINITE_AB"
-                observation["cases"] = [
-                    {key: row[key] for key in sorted(CASE_FIELDS)} for row in cases
-                ]
     complete = (
         witness["two_material_invocations_witnessed"]
         and cases_valid
@@ -153,7 +111,6 @@ def observation_result(output: Path, execution: dict) -> dict:
         "pytest_exit": pytest_exit if type(pytest_exit) is int and 0 <= pytest_exit <= 5 else None,
         "cases": cases if cases_valid else [],
         "case_mapping": "SEQUENTIAL_A_B_NOT_OWNER_PID_ATTESTATION",
-        "unverified_execution_observation": observation,
     }
 
 
@@ -164,7 +121,7 @@ def run(repository: Path, output: Path, report: Path, execute: bool, revision: s
         raise ValueError("new_nonrepository_report_required")
     report.mkdir(parents=True)
     result = {
-        "schema": "harnessix.git-native-branch-observation/v3",
+        "schema": "harnessix.git-native-branch-observation/v2",
         "status": "OFFLINE_METADATA_REFUSED",
         "execution_performed": False,
         "branch_gate_passed": False,
@@ -172,7 +129,6 @@ def run(repository: Path, output: Path, report: Path, execute: bool, revision: s
         "historical_run_result": "FAIL_RETAINED",
         "historical_root": "UNKNOWN",
         "metadata_sha256": CONTRACT_SHA256,
-        "unverified_execution_observation": unverified_observation(),
     }
     exit_code = 2
     state = {}

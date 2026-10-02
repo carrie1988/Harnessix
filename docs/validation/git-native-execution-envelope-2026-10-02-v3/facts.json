@@ -1,0 +1,115 @@
+{
+  "schema": "harnessix.native-execution-envelope-facts/v3",
+  "baseline_revision": "ed8005f00755b9d37a658f9d0c7163f6250586f1",
+  "historical_native_result": {
+    "run_id": 36983172137,
+    "attempt": 1,
+    "code_revision": "23f12bbeb65df8b3fc0b1a94c66d9d8b45910abf",
+    "path": "docs/validation/git-native-execution-incomplete-2026-10-02-v1/result.json",
+    "sha256": "1441a4b82f846171a40b0afac4e6bbf2ee22652b7f689fcc7a8ce53a868f0442",
+    "projection": {
+      "schema": "harnessix.git-native-branch-observation/v2",
+      "status": "EXECUTION_INCOMPLETE",
+      "execution_performed": true,
+      "branch_gate_passed": false,
+      "original_sdk_acceptance": false,
+      "historical_run_result": "FAIL_RETAINED",
+      "historical_root": "UNKNOWN",
+      "source_input_count": 16,
+      "pairs_matched": true,
+      "debugger_exit": 1,
+      "pytest_exit": 1,
+      "cases": [],
+      "branch_witness": {
+        "two_material_invocations_witnessed": false,
+        "invocations": []
+      }
+    },
+    "retrospective_counts": null,
+    "native_cause": "UNKNOWN"
+  },
+  "current_local_real_pytest": {
+    "python": "3.12.7",
+    "pytest": "8.4.2",
+    "pytest_exit": 1,
+    "valid_published_frames": 2,
+    "frames_preceded_by_pending_F": 2,
+    "sink_cases": 2,
+    "sink_invalid": false,
+    "case_rows": [
+      {
+        "case": "A",
+        "call": "failed",
+        "worker_return": 2,
+        "git_return": 128,
+        "raw_validation": "UNAVAILABLE",
+        "proof": "ABSENT",
+        "original_operation_returned": false,
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false
+      },
+      {
+        "case": "B",
+        "call": "failed",
+        "worker_return": 2,
+        "git_return": 128,
+        "raw_validation": "UNAVAILABLE",
+        "proof": "ABSENT",
+        "original_operation_returned": false,
+        "diagnostic_incomplete": false,
+        "diagnostic_truncated": false
+      }
+    ],
+    "sdk_execution": false,
+    "hooks_installed": false,
+    "fixture_protocol_declaration_not_platform_evidence": true,
+    "original_plugin_functions_reused": [
+      "pytest_runtest_makereport",
+      "Probe.render",
+      "_publish"
+    ],
+    "snapshot_imports_checked": true
+  },
+  "new_observation_contract": {
+    "schema": "harnessix.git-native-branch-observation/v3",
+    "assurance": "UNAUTHENTICATED_DIAGNOSTIC_ONLY",
+    "case_fields": [
+      "call",
+      "case",
+      "diagnostic_incomplete",
+      "diagnostic_truncated",
+      "git_return",
+      "original_operation_returned",
+      "proof",
+      "raw_validation",
+      "worker_return"
+    ],
+    "case_shape_states": [
+      "NOT_AVAILABLE",
+      "EMPTY",
+      "FINITE_AB",
+      "REJECTED"
+    ],
+    "marker_states": [
+      "NOT_AVAILABLE",
+      "MEASURED"
+    ],
+    "counter_fields": [
+      "arm_fullmatch_count",
+      "branch_fullmatch_count",
+      "bad_marker_prefix_count"
+    ],
+    "counter_exact_integer_min": 0,
+    "counter_max": 64,
+    "counter_64_semantics": "SATURATED_LOWER_BOUND_AT_LEAST_64",
+    "unmeasured_counters": null,
+    "participates_in_original_gate": false
+  },
+  "no_go": {
+    "synthetic_complete_branch_witness_with_unavailable_cases": "ORIGINAL_GATE_FALSE_AUTHENTICATED_CASES_EMPTY",
+    "sdk_acceptance": false,
+    "root_cause": "UNKNOWN",
+    "native_execution_of_candidate_verified": false,
+    "business_acceptance": false
+  }
+}

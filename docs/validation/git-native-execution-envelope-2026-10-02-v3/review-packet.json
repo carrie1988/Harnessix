@@ -1,0 +1,48 @@
+{
+  "schema": "harnessix.native-execution-envelope-review/v3",
+  "state": "READY_FOR_INDEPENDENT_REVIEW",
+  "baseline_revision": "ed8005f00755b9d37a658f9d0c7163f6250586f1",
+  "candidate_revision": null,
+  "scope": "三观察器源、必要测试、完整详设与有限证据包",
+  "formal_tests": 227,
+  "new_tests": 74,
+  "historical_peer_tests_included": false,
+  "parent_differential_vectors": 23,
+  "parent_differential_old_output_or_exception_differences": 0,
+  "finding_status": "NO_KNOWN_LOCAL_CONTRACT_FINDING_WITHIN_TESTED_SCOPE",
+  "release_claims": {
+    "windows_verified": false,
+    "sdk_accepted": false,
+    "git128_root_known": false,
+    "business_accepted": false
+  },
+  "preserved": [
+    "original cases and complete gate",
+    "16 inputs and fixed PE/PDB",
+    "13 hooks and two selectors",
+    "20/45/300/240 budgets",
+    "original exceptions and refusing behavior",
+    "SDK false and UNKNOWN"
+  ],
+  "review_entrypoints": [
+    "SOURCE.json",
+    "verification.json",
+    "manifest.json",
+    "../../changes/m09-r4-git-native-execution-envelope-v3.md",
+    "../../../scripts/windows_git_native_branch_observation/run_cases.py",
+    "../../../scripts/windows_git_native_branch_observation/projection.py",
+    "../../../scripts/windows_git_native_branch_observation/observe.py"
+  ],
+  "native_run_preconditions": [
+    "精确候选发布revision绑定",
+    "原read_contract及16source_checks通过",
+    "原selected固定PE/PDB/工具/脚本完整通过",
+    "原显式revision/platform/attempt与执行前后recheck通过",
+    "原一次workflow及预算保持"
+  ],
+  "no_auto_run": true,
+  "counter64_is_lower_bound": true,
+  "unmeasured_is_null": true,
+  "diagnostic_cases_have_no_authority": true,
+  "original_failure_retained": true
+}

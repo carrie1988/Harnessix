@@ -1,0 +1,257 @@
+{
+  "schema": "harnessix.native-execution-envelope-verification/v3",
+  "state": "FINAL_LOCAL_VERIFICATION",
+  "formal": {
+    "tests": 227,
+    "passed": 227,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "selectors": {
+      "test_windows_git_native_branch_observation": 50,
+      "test_windows_git_native_branch_preflight_v2": 82,
+      "test_windows_git_native_execution_v3": 74,
+      "test_windows_git_native_selected_layout": 21
+    },
+    "xml_sha256": "efdbeacb3464fc125b1c2c397bf2e104ce74bb55d9f11604a5005382be906701",
+    "original": 153,
+    "new": 74,
+    "red_missing_envelope": {
+      "tests": 1,
+      "passed": 0,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "selectors": {
+        "test_windows_git_native_execution_v3": 1
+      },
+      "xml_sha256": "1b6f5049af7ad36168e31b0905f4cdacfcdc3841359016aa0cede968fe90511c"
+    },
+    "prior_current_stage_run": {
+      "tests": 225,
+      "passed": 225,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "selectors": {
+        "test_windows_git_native_branch_observation": 50,
+        "test_windows_git_native_branch_preflight_v2": 82,
+        "test_windows_git_native_execution_v3": 72,
+        "test_windows_git_native_selected_layout": 21
+      },
+      "xml_sha256": "fc8f87162b70006c95f799266be363a9e8491ae5c08cfe56e9e0a7b5650ec258"
+    },
+    "historical_peer43_counted_here": false
+  },
+  "real_pytest": {
+    "reproducer_exit": 0,
+    "pytest_exit": 1,
+    "frames": 2,
+    "pending_F_frames": 2,
+    "cases": 2,
+    "invalid": false,
+    "facts_sha256": "7432904e03fa111ed1f5e6139083d03cac47a556fde8dafa6d1db8715dcae343",
+    "fixture_sha256": "91a858feda6ce209e2e21ff60ecdabc8e22aa73d066f7205b4bd05743d31c501",
+    "program_sha256": "b6e90164d4c19fa9195eed94e474cd4a42b5c5f3865513e482713eed64d5ec94",
+    "snapshot_source_sha256": "85ee910a3a7ed2718097797f6adc007bdcea6224a3423be9d379a8e9266595e8",
+    "snapshot_actual_import_checked": true,
+    "sdk_execution": false
+  },
+  "historical_evidence": [
+    {
+      "role": "PREVIOUS_PEER_REAL_PYTEST_RED",
+      "file_name": "red-facts.json",
+      "sha256": "c5e598cd8791cab76c4f1e59c8439bebbca3c7afed358e3d313e226fd636c37f",
+      "pytest_exit": 1,
+      "published_frames": 2,
+      "sink_cases": 0,
+      "not_native_cause_proof": true
+    },
+    {
+      "role": "PREVIOUS_MIXED_PENDING_RED",
+      "file_name": "mixed-red.xml",
+      "tests": 6,
+      "passed": 0,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "selectors": {
+        "": 6
+      },
+      "xml_sha256": "f3147a9d910d61ae880ad7e752c71e0e3de9afd988d1d55a790cb3839fad72b0"
+    },
+    {
+      "role": "PREVIOUS_PEER_FINAL_GREEN_NOT_CURRENT_FORMAL",
+      "file_name": "contract-green.xml",
+      "tests": 43,
+      "passed": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "selectors": {
+        "": 30,
+        "test_git_minimum_commit_probe": 6,
+        "test_windows_git_native_branch_observation": 7
+      },
+      "xml_sha256": "0720b9862e245c7548648b1ac42701fd873f27249056bda119131ac38a265572"
+    }
+  ],
+  "parent_independent_differential": {
+    "vectors": 23,
+    "differences": 0,
+    "source9_exact_equal": true,
+    "source_inputs_sha256": "e70abb8ccfa826345a69a78c40c94d9e3d3474d71b69267c02516a6bbafbdc7b",
+    "summary_sha256": "ad7c49ba777c868508f92446dd3134774c99e34929bc9d8193c6922a8ff92d41",
+    "scope": "本机合成投影，旧结果与异常类型；非Windows执行"
+  },
+  "ruff": {
+    "files": 12,
+    "exit": 0,
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "format": {
+    "files": 12,
+    "exit": 0,
+    "sha256": "cfe5c6461b42a90595a492aed11f2c8e6eb98b7c4caf2cc9f47e3333185e3f33"
+  },
+  "source_checks": {
+    "actual_count": 16,
+    "passed": true
+  },
+  "semantic_preservation_ast": {
+    "case_valid_ast_equal": true,
+    "project_case_ast_equal": true,
+    "raw_status_ast_equal": true,
+    "cases_valid_expression_ast_equal": true,
+    "complete_expression_ast_equal": true,
+    "execute_authorized_ast_equal": true,
+    "run_debugger_ast_equal": true,
+    "case_sink_class_ast_equal_final_peer": true,
+    "run_cases_main_ast_equal_original": true,
+    "old_test_only_one_schema_literal_changed": true,
+    "branch_scan_without_count_assignments_ast_equal_original": true
+  },
+  "diagrams": [
+    {
+      "kind": "FROZEN_REUSE_NOT_CURRENT_RENDER_OR_VIEW",
+      "members": [
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/architecture.mmd",
+          "bytes": 580,
+          "sha256": "8612e5843fce02c5989cc275ca2bcb53959a898ea8256746a679191608ccce6a"
+        },
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/architecture.png",
+          "bytes": 61718,
+          "sha256": "bf7486e84bee3d0e0db2d5ec536ab173ba67199fa7a0eeb866051067269fdf4f"
+        }
+      ],
+      "width": 586,
+      "height": 886,
+      "frozen_manifest_member_equal": true
+    },
+    {
+      "kind": "FROZEN_REUSE_NOT_CURRENT_RENDER_OR_VIEW",
+      "members": [
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/preflight-flow.mmd",
+          "bytes": 664,
+          "sha256": "fc0dfa6785ce14fc9155a7914a0440c4d831c7109fa9e82d29d127f2aa8acf74"
+        },
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/preflight-flow.png",
+          "bytes": 70185,
+          "sha256": "109538c1da1d1b89542a10f41e68fa6971a78d1d757a3436c758010ce15315cc"
+        }
+      ],
+      "width": 571,
+      "height": 1376,
+      "frozen_manifest_member_equal": true
+    },
+    {
+      "kind": "FROZEN_REUSE_NOT_CURRENT_RENDER_OR_VIEW",
+      "members": [
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/execution-sequence.mmd",
+          "bytes": 915,
+          "sha256": "d7481ed7c291119c2ba18060ccaedc16977ad3be746a3b1df75d4cf28be160f7"
+        },
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/execution-sequence.png",
+          "bytes": 96683,
+          "sha256": "7b3ef2fcd7f525ab9722ad506af0dadd141e06ea60c697499f0acf92615cec14"
+        }
+      ],
+      "width": 1075,
+      "height": 1109,
+      "frozen_manifest_member_equal": true
+    },
+    {
+      "kind": "FROZEN_REUSE_NOT_CURRENT_RENDER_OR_VIEW",
+      "members": [
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/publication-dataflow.mmd",
+          "bytes": 630,
+          "sha256": "fde612386e8170837a4679cc2cd6332fab30fc0bf1a6a9afbdcbca99efdaab9e"
+        },
+        {
+          "path": "docs/validation/git-native-branch-preflight-2026-10-02-v2/publication-dataflow.png",
+          "bytes": 68312,
+          "sha256": "cc120d03e83774acdd181138d616abf852783aa46cc8ce0d94d7aabaa1861c1b"
+        }
+      ],
+      "width": 541,
+      "height": 1309,
+      "frozen_manifest_member_equal": true
+    },
+    {
+      "kind": "CURRENT_ACTUAL_RENDER_AND_VIEW",
+      "members": [
+        {
+          "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/frame-observation.mmd",
+          "bytes": 937,
+          "sha256": "b44fd510968f95d7e9d1450f469396376814bc576e5d015a5efd0e9e8febed61"
+        },
+        {
+          "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/frame-observation.png",
+          "bytes": 64776,
+          "sha256": "5218c5f1e271d70c32e8352ad43cc1a6fe503c1da85cb4d4fe2b8df662277c19"
+        }
+      ],
+      "width": 784,
+      "height": 915,
+      "renderer": "installed mermaid-cli 11.6.0 + existing Chrome",
+      "render_exit": 0,
+      "view_image_called": true,
+      "visual_verdict": "PASS_LABELS_AND_ARROWS_COMPLETE_NO_CLIPPING",
+      "visual_evidence": "实际像素查看；非仅渲染意图"
+    }
+  ],
+  "documentation": {
+    "status": "PENDING_FINAL_SCOPED_GATE"
+  },
+  "secret": {
+    "status": "PENDING_FINAL_EXACT_SCAN"
+  },
+  "not_performed": [
+    "Windows native execution",
+    "CDB",
+    "SDK selectors execution",
+    "workflow dispatch",
+    "network",
+    "model",
+    "credentials",
+    "ledger",
+    "Docker",
+    "CI",
+    "stage",
+    "commit",
+    "push"
+  ],
+  "remaining_acceptance": {
+    "native_candidate_execution": "UNVERIFIED",
+    "sdk_acceptance": false,
+    "root_cause": "UNKNOWN",
+    "full_system": "UNVERIFIED"
+  }
+}

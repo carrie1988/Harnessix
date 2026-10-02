@@ -1,0 +1,19 @@
+flowchart TB
+    F[pytest无换行F噪声] --> W[原Probe一次完整PREFIX write]
+    W --> P{pending含完整标记<br/>或尾部partial-prefix}
+    P -->|是| I[sticky invalid并保留pending]
+    P -->|否| N[仅清普通噪声]
+    I --> C[原完整行与project_case验证<br/>上限及坏帧拒绝保持]
+    N --> C
+    C --> J[原cases.json只读一次<br/>unique JSON与8192B界]
+    J --> A[原认证cases完整门]
+    J --> D[严格九字段A/B形状观察<br/>UNAUTHENTICATED ONLY]
+    L[原日志只读一次<br/>16MiB界，缺失或拒绝不可用] --> S[唯一原marker循环]
+    S --> B[原context顺序与分支见证]
+    S --> T[三个整行语法计数0到64<br/>64仅饱和下界，不可用为null]
+    A --> G[原完整branch_gate不变]
+    B --> G
+    D --> E[新增独立v3观察对象<br/>不进入原gate或权限]
+    T --> E
+    G --> R[原失败与退出保持<br/>SDK false，Root UNKNOWN]
+    E --> R

@@ -31,14 +31,6 @@ class CaseSink(io.TextIOBase):
             self.pending = ""
             self.invalid = True
             return len(text)
-        if text.startswith(PROBE_PREFIX) and self.pending:
-            if PROBE_PREFIX in self.pending or any(
-                self.pending.endswith(PROBE_PREFIX[:size]) for size in range(1, len(PROBE_PREFIX))
-            ):
-                self.invalid = True
-            else:
-                # 原探针单次write构成边界；只清非协议噪声，未完协议冻结invalid并保留。
-                self.pending = ""
         self.pending += text
         while "\n" in self.pending:
             line, self.pending = self.pending.split("\n", 1)
