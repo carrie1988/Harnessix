@@ -1,0 +1,23 @@
+{
+  "schema": "harnessix.git-native-branch-observation/v2",
+  "status": "PREFLIGHT_REFUSED",
+  "execution_performed": false,
+  "branch_gate_passed": false,
+  "original_sdk_acceptance": false,
+  "historical_run_result": "FAIL_RETAINED",
+  "historical_root": "UNKNOWN",
+  "metadata_sha256": "3fdfc2ac2f69e63517d6bdfd747d6242a7c4f734553c289908b48c3c0fffb39f",
+  "budgets": {
+    "command_seconds": 20,
+    "operation_seconds": 45,
+    "workflow_step_seconds": 300,
+    "outer_watchdog_seconds": 240
+  },
+  "authorized_revision": "82efa8e56e8699dba30b05da6cefbe0ad4beb2f3",
+  "preflight_diagnostic": {
+    "first_failed_stage": "selected_git",
+    "reason_code": "selected_git_layout_unrecognized",
+    "cdb_file_present": null,
+    "interpreter_file_present": null
+  }
+}

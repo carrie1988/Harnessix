@@ -1,0 +1,11 @@
+{
+  "artifact_id": 11213129987,
+  "artifact_zip_sha256": "9a088d60ab09508aa41a7217318783aff99468e38751dc3bc02ca7e4713da772",
+  "artifact_zip_size": 802,
+  "api_digest_match": true,
+  "exact_two_files": true,
+  "explicit_secret_findings": 0,
+  "revision": "82efa8e56e8699dba30b05da6cefbe0ad4beb2f3",
+  "run_id": 36977642845,
+  "run_attempt": 1
+}

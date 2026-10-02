@@ -1,0 +1,19 @@
+{
+  "schema": "harnessix.native-layout-refusal-result/v1",
+  "status": "ACTUAL_PREFLIGHT_REFUSED_SDK_NOT_EXECUTED",
+  "revision": "82efa8e56e8699dba30b05da6cefbe0ad4beb2f3",
+  "run_id": 36977642845,
+  "run_attempt": 1,
+  "first_failed_stage": "selected_git",
+  "reason_code": "selected_git_layout_unrecognized",
+  "sdk_executed": false,
+  "cdb_presence": null,
+  "interpreter_presence": null,
+  "artifact_zip_sha256": "9a088d60ab09508aa41a7217318783aff99468e38751dc3bc02ca7e4713da772",
+  "result_sha256": "32da0d73915b45c8b0eba60cb9caa772d9b8cde4759a7941d243d5e956ce9703",
+  "historical_git128_root_cause": "UNKNOWN",
+  "previous_fail_retained": true,
+  "new_model_requests": 0,
+  "fee_ledger_changed": false,
+  "commercial_release": false
+}

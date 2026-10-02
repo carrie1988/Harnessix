@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 151
-code_revision: 09a386c5269d476f6d9053c6b1b4c5ad83764372
+version: 152
+code_revision: 82efa8e56e8699dba30b05da6cefbe0ad4beb2f3
 owners:
   - core
 modules:
@@ -1568,3 +1568,13 @@ R3真实质量、消费者Windows、独立Beta及R1～R6商用门禁继续开放
 原`730f084`冻结资料保持原件，不能把当前三项输入变化声称为旧清单零漂移。
 后继Windows观察仍须固定新的发布提交且仅运行一次；以上离线结果不关闭Windows
 核心编码、完整Git产品/Backup v2、真实R3、独立Beta或同候选R1～R6商用门禁。
+
+### R1/R4：固定发布输入后的真实 Git 布局拒绝
+
+固定 `82efa8e` 的 Windows Run36977642845/attempt1 已结束，checkout、锁定依赖及
+结果上传通过；观察器在 `selected_git` 以 `selected_git_layout_unrecognized` 拒绝。
+[真实结果资料](validation/git-native-layout-refusal-2026-10-02-v1/README.md)保留精确两文件
+Artifact、API ZIP摘要和结果摘要。CDB/Python存在标志均为null，不推断工具缺失。
+没有执行Debugger或两项SDK用例，也没有重跑旧Run；原Git128根因仍UNKNOWN。
+下一步求证实际launcher布局及固定PE身份后作最小适配，不以拒绝诊断或常见路径推断代替原生成功。
+完整Git产品、消费者Windows、R3质量、Beta和同候选R1～R6仍开放。

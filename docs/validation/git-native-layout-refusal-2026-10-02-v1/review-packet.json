@@ -1,0 +1,22 @@
+{
+  "schema": "harnessix.native-layout-refusal-review/v1",
+  "status": "LIMITED_RESULT_IDENTITY_VERIFIED",
+  "checks": [
+    "固定提交与单次attempt",
+    "终态Run与Job",
+    "API artifact ZIP长度及SHA",
+    "精确两个成员及结果SHA",
+    "当前已发布metadata身份和预算",
+    "结果完整Secret扫描"
+  ],
+  "interpretation": "只确认现场路径布局不被观察器接受；不推断具体which结果或Git128根因",
+  "next_action": "求证实际launcher角色和固定官方PE身份后再设计最小整改",
+  "not_claimed": [
+    "Windows SDK成功",
+    "CDB缺失",
+    "Python缺失",
+    "真实编码质量",
+    "完整Git交付",
+    "商用R1-R6"
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schema": "harnessix.public-evidence-manifest/v1",
+  "state": "CONTENT_FROZEN",
+  "revision": "82efa8e56e8699dba30b05da6cefbe0ad4beb2f3",
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 4454,
+      "sha256": "591992ea856630734556194f48e7f7ca5a9526beb670905cb1e8b2a249f00824"
+    },
+    {
+      "path": "SUMMARY.json",
+      "bytes": 742,
+      "sha256": "88c6a273a5f238e62a783e9ae0bc87a02e09a29e7967a2b8e2146ad6d21a361d"
+    },
+    {
+      "path": "artifact.zip",
+      "bytes": 802,
+      "sha256": "9a088d60ab09508aa41a7217318783aff99468e38751dc3bc02ca7e4713da772"
+    },
+    {
+      "path": "artifacts.json",
+      "bytes": 426,
+      "sha256": "f16e75aaa3e683840d7048662104899fb4aa21f5710f05540a4d65bab8b48caa"
+    },
+    {
+      "path": "download-verification.json",
+      "bytes": 345,
+      "sha256": "4bd9fb03a0ef3d67cd2ac0496d79810995a742f230f13a95211a3ffeffbb9b07"
+    },
+    {
+      "path": "jobs.json",
+      "bytes": 1190,
+      "sha256": "c4d66ee664d20a73dcec641d8ef7f4aa1aebe49f0e4bb02f054227d19e3bcc0d"
+    },
+    {
+      "path": "result-sha256.json",
+      "bytes": 87,
+      "sha256": "733ec0d1fe7f076fcfd396ba595877ab4c47745cbc5fe4f97a65660223e24bd2"
+    },
+    {
+      "path": "result.json",
+      "bytes": 768,
+      "sha256": "32da0d73915b45c8b0eba60cb9caa772d9b8cde4759a7941d243d5e956ce9703"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 700,
+      "sha256": "d3279b1a4c4a2d3bc9750057ea69781b84ae8c83fa5e0d42ccd3ed34433e14e1"
+    },
+    {
+      "path": "run.json",
+      "bytes": 263,
+      "sha256": "9343cfc1fc4e2323bc4c8d5e901affb5b3b4c2f654d133fbf44a24c2b898bc66"
+    }
+  ],
+  "self_excluded": true,
+  "private_mode_claim": false,
+  "source_inputs": [
+    {
+      "path": ".gitattributes",
+      "sha256": "4c9e70ba0bfab2944067208eb3260d3e672beb6cd4bc1913efc66b8a97abd52d",
+      "scope": "仅新增精确两个原始JSON的换行身份规则"
+    }
+  ]
+}
