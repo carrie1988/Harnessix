@@ -1,0 +1,72 @@
+{
+  "schema": "harnessix.native-selected-layout-commands/v1",
+  "root": "FIXED_CANDIDATE_WORKTREE",
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "TMPDIR": "/tmp",
+    "PYTHONPATH": "src:.",
+    "PATH_policy": "既有固定fallback，不改变Git选择PATH用于绕过布局"
+  },
+  "python": "EXISTING_LOCKED_MACOS_PYTHON_3_12_7",
+  "commands": [
+    {
+      "purpose": "正式三个选择器153项",
+      "argv": [
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/governance/test_windows_git_native_branch_observation.py",
+        "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+        "tests/governance/test_windows_git_native_selected_layout.py"
+      ]
+    },
+    {
+      "purpose": "Ruff精确11文件",
+      "argv": [
+        "-B",
+        "-m",
+        "ruff",
+        "check",
+        "--no-cache",
+        "scripts/windows_git_native_branch_observation/__init__.py",
+        "scripts/windows_git_native_branch_observation/contract.py",
+        "scripts/windows_git_native_branch_observation/diagnostics.py",
+        "scripts/windows_git_native_branch_observation/identity.py",
+        "scripts/windows_git_native_branch_observation/observe.py",
+        "scripts/windows_git_native_branch_observation/preflight.py",
+        "scripts/windows_git_native_branch_observation/projection.py",
+        "scripts/windows_git_native_branch_observation/run_cases.py",
+        "tests/governance/test_windows_git_native_branch_observation.py",
+        "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+        "tests/governance/test_windows_git_native_selected_layout.py"
+      ]
+    },
+    {
+      "purpose": "format精确11文件只读",
+      "argv": [
+        "-B",
+        "-m",
+        "ruff",
+        "format",
+        "--check",
+        "--no-cache",
+        "scripts/windows_git_native_branch_observation/__init__.py",
+        "scripts/windows_git_native_branch_observation/contract.py",
+        "scripts/windows_git_native_branch_observation/diagnostics.py",
+        "scripts/windows_git_native_branch_observation/identity.py",
+        "scripts/windows_git_native_branch_observation/observe.py",
+        "scripts/windows_git_native_branch_observation/preflight.py",
+        "scripts/windows_git_native_branch_observation/projection.py",
+        "scripts/windows_git_native_branch_observation/run_cases.py",
+        "tests/governance/test_windows_git_native_branch_observation.py",
+        "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+        "tests/governance/test_windows_git_native_selected_layout.py"
+      ]
+    }
+  ],
+  "actual_official_private_validation": "唯一九脚本项目外新快照，缓存官方四材料，原七case正文保持加六个漂移例；不把private fixture命令当现场安装或which证据",
+  "paid_or_native_execution_command_included": false
+}

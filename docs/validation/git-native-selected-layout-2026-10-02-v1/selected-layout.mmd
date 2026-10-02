@@ -1,0 +1,12 @@
+flowchart TB
+    Q[实际 which Git<br/>strict resolve] --> L{候选路径形状}
+    L -->|原 cmd 或 mingw64/bin| O[保留原 wrapper/core 映射]
+    L -->|root/bin/git.exe 且同根核心存在| B[wrapper 等于实际 selected<br/>不偷换 cmd 或更改 PATH]
+    L -->|其他| F[拒绝非零<br/>未知仍为 UNKNOWN]
+    O --> P[原两对完整 PE/PDB 校验<br/>尺寸 SHA GUID age image RVA 机器码]
+    B --> P
+    P -->|不符| F
+    P -->|符合| S[生成原硬件断点脚本<br/>仅 prepared 不等于执行]
+    S --> R[原执行前后 recheck<br/>selected roles 材料 源 工具]
+    R -->|漂移| F
+    R -->|原固定 revision 显式运行| E[原受限 CDB 和两个 SDK selector<br/>分支门与 pytest 返回分列]

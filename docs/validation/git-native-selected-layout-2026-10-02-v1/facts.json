@@ -1,0 +1,99 @@
+{
+  "schema": "harnessix.native-selected-layout-facts/v1",
+  "historical_run": {
+    "id": 36977642845,
+    "attempt": 1,
+    "head": "82efa8e56e8699dba30b05da6cefbe0ad4beb2f3",
+    "status": "PREFLIGHT_REFUSED",
+    "first_failed_stage": "selected_git",
+    "reason_code": "selected_git_layout_unrecognized",
+    "execution_performed": false,
+    "branch_gate_passed": false,
+    "original_sdk_acceptance": false,
+    "cdb_file_present": null,
+    "interpreter_file_present": null,
+    "historical_root": "UNKNOWN",
+    "artifact_id": 11213129987,
+    "zip_bytes": 802,
+    "zip_sha256": "9a088d60ab09508aa41a7217318783aff99468e38751dc3bc02ca7e4713da772",
+    "result_sha256": "32da0d73915b45c8b0eba60cb9caa772d9b8cde4759a7941d243d5e956ce9703"
+  },
+  "checkout_evidence": {
+    "role": "bin/git.exe",
+    "version": "2.55.0.windows.5",
+    "log_lines": [
+      57,
+      58
+    ],
+    "commands_using_role": 41,
+    "proves_python_which": false
+  },
+  "fixed_runner_source": {
+    "upstream_revision": "1c7b9f1e082099ad9e2cfa02f257a2e352e753ee",
+    "upstream_path": "images/windows/scripts/build/Install-Git.ps1",
+    "git_blob": "29c63d596a37db054705c6a167eb9a1830b15416",
+    "sha256": "8b7320968c3f3f984e89ae9eab5fd097c0b8fb31aad401bdf1ccf91e7ad06603",
+    "bytes": 2205,
+    "path_option_line": 34,
+    "path_option": "CmdTools",
+    "bin_machine_path_line": 51,
+    "bin_machine_path_added": true,
+    "proves_launcher_image_identity": false,
+    "proves_runtime_python_which": false
+  },
+  "cached_official_assets": {
+    "symbols": {
+      "asset": "pdbs-for-git-64-bit-2.55.0.5-1.zip",
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/pdbs-for-git-64-bit-2.55.0.5-1.zip",
+      "bytes": 17051902,
+      "sha256": "2772406eb625feaf608dee59ed37150a3ed3c1071d0001770326e3f9111e86ea"
+    },
+    "reference_binary": {
+      "asset": "MinGit-2.55.0.5-64-bit.zip",
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/MinGit-2.55.0.5-64-bit.zip",
+      "bytes": 38989688,
+      "sha256": "56d7b226b7693196cfc71fef26568f536c4a021ab6c37ff2db4287bed908e96e"
+    }
+  },
+  "cached_archive_git_members": [
+    "cmd/git.exe",
+    "mingw64/bin/git.exe"
+  ],
+  "cached_bin_member_present": false,
+  "actual_bin_cmd_same_bytes": null,
+  "actual_python_selected_role": "UNKNOWN",
+  "native_debugger_executed_this_phase": false,
+  "old_git128_root": "UNKNOWN",
+  "candidate_policy": {
+    "bin_role": "WRAPPER_CANDIDATE_ONLY",
+    "wrapper_reference": "ACTUAL_SELECTED",
+    "core_relative": "mingw64/bin/git.exe",
+    "requires_full_fixed_pairs": true,
+    "path_changed": false,
+    "version_support_expanded": false,
+    "sdk_resolver_changed": false,
+    "unknown_is_unknown": true
+  },
+  "fixed_pairs": [
+    {
+      "role": "wrapper",
+      "pe_bytes": 43352,
+      "pe_sha256": "78211c7ed73988da93a6d8a33d47ec6187f464d7ea2a9a00c182bbd7a1ecf30f",
+      "pdb_bytes": 68608,
+      "pdb_sha256": "d4851726c7563545539782876c290576044a93a87e008f1665af1e2b7714f0b8",
+      "guid": "BCA70EF0-BD8D-409C-A58B-43E7ED929DAD",
+      "age": 1,
+      "size_of_image": 327680
+    },
+    {
+      "role": "core",
+      "pe_bytes": 4378456,
+      "pe_sha256": "d1b62b94aa15e5c3bbcdd6440d5f716f78daa2736a951b0f1fad11d38c5f16da",
+      "pdb_bytes": 7457792,
+      "pdb_sha256": "ea77731d385f63dbd939750355f993d06fff3c7cd6732db9a904c69b9af7b846",
+      "guid": "39D2A98E-19C9-4B52-8975-0846EEB28D9C",
+      "age": 1,
+      "size_of_image": 4837376
+    }
+  ]
+}

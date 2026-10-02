@@ -1,0 +1,46 @@
+{
+  "schema": "harnessix.native-selected-layout-review/v1",
+  "verdict": "OFFLINE_CONTRACT_PASS_NATIVE_UNVERIFIED",
+  "existing_source_write_scope": [
+    "scripts/windows_git_native_branch_observation/preflight.py"
+  ],
+  "new_test": "tests/governance/test_windows_git_native_selected_layout.py",
+  "new_document": "docs/changes/m09-r4-git-native-selected-layout.md",
+  "new_package": "docs/validation/git-native-selected-layout-2026-10-02-v1",
+  "formal_passed": 153,
+  "actual_official_private_passed": 13,
+  "independent_reference_only": {
+    "parent_old": "6PASS_1FAIL_RETAINED",
+    "parent_new": "7PASS"
+  },
+  "fixed_contract_changed": false,
+  "five_control_functions_unchanged": true,
+  "historical_fail_retained": true,
+  "unknown_root_retained": true,
+  "current_source_checks_exact": true,
+  "merge_conditions": [
+    "核对本包全部成员SHA及唯一函数差异",
+    "完成独立有限复核",
+    "发布包含候选字节的固定完整revision"
+  ],
+  "native_observation_conditions": [
+    "使用原单次手动workflow和唯一固定新revision",
+    "现场selected本人完整fixed PE/PDB必须通过",
+    "原两SDK selector、13hooks和全部期限保持",
+    "未知或材料/工具/source拒绝继续非0",
+    "不得续跑或重启旧Run，不在观察超时后启动第二进程"
+  ],
+  "no_secret_policy": [
+    "不发布原PATH、用户名、环境、日志正文或对象正文",
+    "不格式化任意异常或动态args",
+    "公开只保留有限结构、ID、布尔、尺寸及SHA"
+  ],
+  "remaining_unverified": [
+    "实际Pythonwhich角色",
+    "实际bin PE/PDB身份",
+    "现场工具与断点",
+    "两SDK业务结果",
+    "旧Git128唯一根因"
+  ],
+  "product_acceptance": false
+}

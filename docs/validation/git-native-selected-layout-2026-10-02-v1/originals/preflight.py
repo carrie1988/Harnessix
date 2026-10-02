@@ -63,19 +63,9 @@ def selected_paths() -> tuple[Path, dict[str, Path]]:
         root = selected.parent.parent
     elif selected.parent.name.lower() == "bin" and selected.parent.parent.name.lower() == "mingw64":
         root = selected.parent.parent.parent
-    elif (
-        selected.parent.name.lower() == "bin"
-        and (selected.parent.parent / "mingw64/bin/git.exe").is_file()
-    ):
-        root = selected.parent.parent
-        if selected.name.lower() != "git.exe":
-            raise ValueError("selected_git_not_verified_role")
     else:
         raise ValueError("selected_git_layout_unrecognized")
     paths = {"wrapper": root / "cmd/git.exe", "core": root / "mingw64/bin/git.exe"}
-    if selected.parent.parent == root and selected.parent.name.lower() == "bin":
-        # bin仅声明候选角色；后续完整PE/PDB校验必须针对实际selected，不能偷换cmd。
-        paths["wrapper"] = selected
     if selected not in {path.resolve(strict=True) for path in paths.values()}:
         raise ValueError("selected_git_not_verified_role")
     return selected, paths

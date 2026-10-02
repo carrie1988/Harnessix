@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 152
-code_revision: 82efa8e56e8699dba30b05da6cefbe0ad4beb2f3
+version: 153
+code_revision: 110185d9d2d24bb138f7ca0941dac5b32873f918
 owners:
   - core
 modules:
@@ -1578,3 +1578,17 @@ Artifact、API ZIP摘要和结果摘要。CDB/Python存在标志均为null，不
 没有执行Debugger或两项SDK用例，也没有重跑旧Run；原Git128根因仍UNKNOWN。
 下一步求证实际launcher布局及固定PE身份后作最小适配，不以拒绝诊断或常见路径推断代替原生成功。
 完整Git产品、消费者Windows、R3质量、Beta和同候选R1～R6仍开放。
+
+### R1/R4：实际选中 Git launcher 的固定身份布局适配
+
+定点观察器在保留原cmd/core路径的基础上，将同根核心存在的bin/git.exe识别为候选wrapper；
+后续完整PE/PDB验真和执行前后重检查始终使用实际selected，不静默替换cmd、不改PATH。
+原固定合同、十六件发行输入、两项SDK选择器、十三hook和全部期限保持。
+正式回归153通过（原132及新21）；固定官方PE/PDB的项目外验证13通过，
+独立复核七例保留基线6通过/1失败，并在修复候选7通过。上述离线证据不替代现场原生验收。
+完整接口、角色流程、失败边界及源码映射见
+[布局适配详设](changes/m09-r4-git-native-selected-layout.md)和
+[冻结验证资料](validation/git-native-selected-layout-2026-10-02-v1/README.md)。
+下一步以包含修复字节的唯一固定提交执行一次原Windows观察workflow；
+原Run36977642845及其布局拒绝仍保留，实际Python选中映像和原Git128根因未验证。
+本适配不证明两项SDK成功，不关闭完整Git交付、消费者Windows、R3、Beta或商用R1～R6。

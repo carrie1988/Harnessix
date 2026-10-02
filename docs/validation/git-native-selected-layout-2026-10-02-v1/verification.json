@@ -1,0 +1,153 @@
+{
+  "schema": "harnessix.native-selected-layout-verification/v1",
+  "state": "FROZEN",
+  "formal_current": {
+    "tests": 153,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "raw_xml_sha256": "c3256576d67301b949ede6e87c772a77bfa8dcd529dd06d9e9e4230ad725f9f8",
+    "original_tests": 132,
+    "new_tests": 21,
+    "material_kind": "SYNTHETIC_UNIT_PLUS_ORIGINAL_CONTRACTS"
+  },
+  "actual_official_current": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "raw_xml_sha256": "f2667a696c5912dbbfaf34d0cd08a7c588bedf746ecc572e399ca348f31bd297",
+    "original_case_bodies": 7,
+    "additional_cases": 6,
+    "identity_mocked": false,
+    "debugger_scripts_mocked": false,
+    "recheck_mocked": false,
+    "isolated": [
+      "host_platform",
+      "source_checks",
+      "existing_tools",
+      "symbols_download"
+    ],
+    "process_count": 0,
+    "sdk_execution_count": 0,
+    "scope": "OFFLINE_REAL_FIXED_PE_FIXTURE_NOT_RUNTIME_WHICH"
+  },
+  "red_local": {
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "raw_xml_sha256": "ff905f93783d0d81918936833f9ee8553d4c4838b4d1293cba2ded7130f93179",
+    "preflight_sha256": "c08aa0ee6b274a4712daa8f670023797ef07f7966a5330f6722e5aa3a714217a",
+    "reason_code": "selected_git_layout_unrecognized"
+  },
+  "independent_parent_baseline_reference": {
+    "tests": 7,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "raw_xml_sha256": "228d32f1050bc1295e84d02ab692d585b31a489aa9154c49e5638af8c9a83894",
+    "execution_attribution": "REFERENCE_NOT_CURRENT_EXECUTION"
+  },
+  "independent_parent_candidate_reference": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "raw_xml_sha256": "78f5269d0fd21da28a6fa0f4f8d46ea1e29b98c97ea55db1647115b5613ae1b1",
+    "execution_attribution": "REFERENCE_NOT_CURRENT_EXECUTION"
+  },
+  "analysis_history_not_added_to_current": [
+    {
+      "tests": 132,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "raw_xml_sha256": "de9745617301770c90255527b904dd8795ef3415c086d4f67ed68f607c38d205"
+    },
+    {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "raw_xml_sha256": "37dee49f0b161504b2d9a7107bb4f7342d049bf9c04fab893c3c0389624f3fa5"
+    }
+  ],
+  "fixture_history_not_product_red": [
+    {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "raw_xml_sha256": "dce4a785f7c83fbe47a4e8ba9cdc1e8ae269ea6770e44515052e5b77d9e347e8",
+      "cause": "TEST_OUTPUT_PATH_HAS_SPACES"
+    },
+    {
+      "tests": 153,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "raw_xml_sha256": "707deac95b43baa02100d4759f010541e90d883bf7c2f7217dbde074b31342c4",
+      "cause": "TEST_CONTRACT_MISSING_BUDGETS"
+    }
+  ],
+  "ruff": {
+    "passed": true,
+    "files": 11,
+    "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "format": {
+    "passed": true,
+    "files": 11,
+    "log_sha256": "75b7030be9d7de96bf4e76e79b1f03f14af8899d169fd8d79564d59167d1ab80"
+  },
+  "new_diagram": {
+    "path": "selected-layout.png",
+    "dimensions": [
+      662,
+      1104
+    ],
+    "rendered": true,
+    "view_image_performed": true,
+    "visual_verdict": "PASS",
+    "visual_details": [
+      "文字完整",
+      "无裁切",
+      "角色分支与固定材料拒绝边界清楚"
+    ],
+    "renderer": "mmdc 11.6.0 with existing Chrome",
+    "mmd_sha256": "26862c69cc4929ef0afe92bab56e9de1dbb25cf8c02ce69014a7471d148cf925",
+    "png_sha256": "eeae99bf4b2dbb3830ec3809c156dcd57c734a524041fb15a18de6fe4b83475e"
+  },
+  "inherited_four_figures": {
+    "reused": true,
+    "current_render_performed": false,
+    "current_view_performed": false,
+    "historical_view_evidence": "git-native-branch-preflight-2026-10-02-v2"
+  },
+  "native_validated": false,
+  "sdk_acceptance": false,
+  "all_repo_tested": false,
+  "three_platform_claim": false,
+  "product_W1_claim": false,
+  "type_suite_run": false,
+  "private_logs_published": false,
+  "document_gate": {
+    "documents": 2,
+    "findings": 0,
+    "metadata_links_sections_mermaid": true,
+    "baseline_is_real_commit": true
+  },
+  "secret_gate": {
+    "complete": true,
+    "findings": 0,
+    "files": 13
+  },
+  "source_before_after": {
+    "current_candidate_equal": true,
+    "new_test_equal": true,
+    "only_initial_existing_delta": "scripts/windows_git_native_branch_observation/preflight.py",
+    "index_unchanged": true
+  },
+  "no_current_source_or_test_write_after_green": true
+}
