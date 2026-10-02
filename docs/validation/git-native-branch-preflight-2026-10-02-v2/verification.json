@@ -1,0 +1,153 @@
+{
+  "schema": "harnessix.native-preflight-v2-verification/v2",
+  "status": "FROZEN_OFFLINE_GREEN_NATIVE_UNVERIFIED",
+  "source_set_sha256": "45369485a8e7f252594961b7f24ece51580507221fe4f927ef5a6e7539f95c41",
+  "actual_tests": {
+    "original_regressions": 50,
+    "new_regressions": 82,
+    "total": 132,
+    "passed": 132,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "original_red": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "v1-stage-red.xml",
+    "sha256": "b6e7be2b1fa43bd1c15ccbb1347874ad1b2607a5fd034ebc0a42b3f13c9fdf0f",
+    "cases": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ruff": {
+    "exit": 0,
+    "python_files": 10
+  },
+  "format": {
+    "exit": 0,
+    "python_files": 10
+  },
+  "mypy": {
+    "exit": 0,
+    "source_files": 1,
+    "strict": true,
+    "file": "scripts/windows_git_native_branch_observation/diagnostics.py"
+  },
+  "diagrams": [
+    {
+      "name": "architecture",
+      "exit": 0,
+      "mmd_sha256": "8612e5843fce02c5989cc275ca2bcb53959a898ea8256746a679191608ccce6a",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 586,
+      "height": 886,
+      "png_sha256": "bf7486e84bee3d0e0db2d5ec536ab173ba67199fa7a0eeb866051067269fdf4f",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text"
+    },
+    {
+      "name": "preflight-flow",
+      "exit": 0,
+      "mmd_sha256": "fc0dfa6785ce14fc9155a7914a0440c4d831c7109fa9e82d29d127f2aa8acf74",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 571,
+      "height": 1376,
+      "png_sha256": "109538c1da1d1b89542a10f41e68fa6971a78d1d757a3436c758010ce15315cc",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text"
+    },
+    {
+      "name": "execution-sequence",
+      "exit": 0,
+      "mmd_sha256": "d7481ed7c291119c2ba18060ccaedc16977ad3be746a3b1df75d4cf28be160f7",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 1075,
+      "height": 1109,
+      "png_sha256": "7b3ef2fcd7f525ab9722ad506af0dadd141e06ea60c697499f0acf92615cec14",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text"
+    },
+    {
+      "name": "publication-dataflow",
+      "exit": 0,
+      "mmd_sha256": "fde612386e8170837a4679cc2cd6332fab30fc0bf1a6a9afbdcbca99efdaab9e",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 541,
+      "height": 1309,
+      "png_sha256": "cc120d03e83774acdd181138d616abf852783aa46cc8ce0d94d7aabaa1861c1b",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text"
+    }
+  ],
+  "diagram_inline_and_frozen_source_equal": true,
+  "documentation": {
+    "scope": [
+      "docs/changes/m09-r4-git-native-branch-preflight-v2.md",
+      "docs/validation/git-native-branch-preflight-2026-10-02-v2/README.md"
+    ],
+    "executed": true,
+    "findings": 0,
+    "checks": [
+      "实际既有read_document/metadata/links/sections/Mermaid合同",
+      "提交身份用真实系统Git只读核验，固定PATH不改变"
+    ],
+    "full_repository_docgate": false
+  },
+  "no_secret": {
+    "executed": true,
+    "scope": "21 exact owned files including final manifest",
+    "files": 21,
+    "hits": 0,
+    "scan_complete": true,
+    "full_repository_scan": false
+  },
+  "source_frozen_unchanged": true,
+  "native_performed": false,
+  "branch_gate_proven": false,
+  "sdk_acceptance": false,
+  "limitations": [
+    "仅有限离线合同，不证明Windows/CDB现场身份或断点执行",
+    "mypy仅strict新诊断模块，未运行全库类型或360治理",
+    "原报告目录建立或发布失败不保证产出完整artifact",
+    "UNKNOWN保持，不能推断唯一原生根因"
+  ],
+  "generated_result_pairs": {
+    "count": 26,
+    "diagnostic_closed_types_and_policy": true,
+    "actual_result_sha_equal": true,
+    "native_evidence": false
+  },
+  "runtime_imports": {
+    "checked": true,
+    "owned": true,
+    "members": [
+      "scripts/windows_git_native_branch_observation/diagnostics.py",
+      "scripts/windows_git_native_branch_observation/observe.py",
+      "scripts/windows_git_native_branch_observation/preflight.py"
+    ]
+  },
+  "source_checks": {
+    "old_inputs": 45,
+    "intentional_script_changes": 2,
+    "unchanged_inputs": 43,
+    "owned_source_frozen": 4,
+    "control_functions_ast_equal": 6,
+    "product_src_changes": 0
+  },
+  "manifest": {
+    "members": 63,
+    "owned_files_including_self": 21,
+    "immutable_old_inputs": 43,
+    "self_excluded": true,
+    "including_png": true
+  },
+  "native_blocker": "UNKNOWN",
+  "scoped_receipt": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "package-check-green.json",
+    "sha256": "ad6a42b889191efa235127f2d977faa8d8f8444a4be82433b148d90b49a52e23",
+    "scope": "文档定点门禁、策略、图源、实际26有限结果对和候选成员；最终封包后另存只读核验收据"
+  }
+}

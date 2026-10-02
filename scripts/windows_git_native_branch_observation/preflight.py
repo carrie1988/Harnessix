@@ -8,6 +8,7 @@ import struct
 from pathlib import Path
 
 from scripts.windows_git_native_branch_observation.contract import download_symbols, source_checks
+from scripts.windows_git_native_branch_observation.diagnostics import PreflightDiagnostic
 from scripts.windows_git_native_branch_observation.identity import check_pair, sha256
 
 
@@ -70,12 +71,22 @@ def selected_paths() -> tuple[Path, dict[str, Path]]:
     return selected, paths
 
 
-def existing_tools(repository: Path) -> tuple[Path, Path]:
+def existing_tools(
+    repository: Path, diagnostic: PreflightDiagnostic | None = None
+) -> tuple[Path, Path]:
     cdb = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / (
         "Windows Kits/10/Debuggers/x64/cdb.exe"
     )
     python = repository / ".venv/Scripts/python.exe"
-    if not cdb.is_file() or not python.is_file():
+    cdb_present = cdb.is_file()
+    if diagnostic is not None:
+        diagnostic.presence("cdb_file_present", cdb_present)
+    if not cdb_present:
+        raise ValueError("existing_tools_missing_no_install_performed")
+    python_present = python.is_file()
+    if diagnostic is not None:
+        diagnostic.presence("interpreter_file_present", python_present)
+    if not python_present:
         raise ValueError("existing_tools_missing_no_install_performed")
     # CDB自身必须是现场已有的x64 PE；不下载或安装替代调试器。
     body = cdb.read_bytes()
@@ -87,19 +98,30 @@ def existing_tools(repository: Path) -> tuple[Path, Path]:
     return cdb, python
 
 
-def recheck(repository: Path, state: dict, contract: dict) -> None:
+def recheck(
+    repository: Path, state: dict, contract: dict, diagnostic: PreflightDiagnostic | None = None
+) -> None:
+    diagnostic = diagnostic if diagnostic is not None else PreflightDiagnostic()
+    diagnostic.enter("source_identity")
     source_checks(repository, contract)
+    diagnostic.enter("selected_git")
     selected, paths = selected_paths()
     if selected != state["selected"] or paths != state["git_paths"]:
         raise ValueError("selected_git_changed")
+    diagnostic.enter("pe_pdb_identity")
     for row in contract["pairs"]:
         check_pair(paths[row["role"]], state["pdb_paths"][row["role"]], row)
+    diagnostic.enter("tool_identity")
     for tool in ("cdb", "python"):
         if sha256(state[tool].read_bytes()) != state[tool + "_sha256"]:
             raise ValueError("existing_tool_changed")
 
 
-def prepare(repository: Path, output: Path, contract: dict) -> dict:
+def prepare(
+    repository: Path, output: Path, contract: dict, diagnostic: PreflightDiagnostic | None = None
+) -> dict:
+    diagnostic = diagnostic if diagnostic is not None else PreflightDiagnostic()
+    diagnostic.enter("platform_paths")
     if os.name != "nt" or struct.calcsize("P") != 8:
         raise ValueError("windows_x64_required")
     repository = repository.resolve(strict=True)
@@ -108,15 +130,22 @@ def prepare(repository: Path, output: Path, contract: dict) -> dict:
         raise ValueError("private_nonrepository_simple_output_path_required")
     if output.exists():
         raise ValueError("private_output_preexists")
+    diagnostic.enter("source_identity")
     sources = source_checks(repository, contract)
+    diagnostic.enter("selected_git")
     selected, paths = selected_paths()
-    cdb, python = existing_tools(repository)
+    diagnostic.enter("existing_tools")
+    cdb, python = existing_tools(repository, diagnostic)
+    diagnostic.enter("symbols")
     output.mkdir(parents=True)
     pdb_paths = download_symbols(output, contract)
+    diagnostic.enter("pe_pdb_identity")
     for row in contract["pairs"]:
         check_pair(paths[row["role"]], pdb_paths[row["role"]], row)
+    diagnostic.enter("scripts")
     debugger_scripts(output, next(row for row in contract["pairs"] if row["role"] == "core"))
     entry = Path(__file__).with_name("run_cases.py")
+    diagnostic.enter("tool_identity")
     return {
         "source_checks": sources,
         "selected": selected,

@@ -1,0 +1,11 @@
+flowchart TB
+    E[已进入的固定阶段<br/>原异常与已观察presence] --> T{精确ValueError<br/>单个真实str且同阶段literal}
+    T -->|是| L[输出白名单自身reason常量]
+    T -->|否| U[输出UNKNOWN<br/>不导出异常args或文本]
+    L --> C[首次失败冻结<br/>四字段封闭TypedDict]
+    U --> C
+    C --> F[拒绝继续非0<br/>branch及SDK门不得变绿]
+    F --> J[result.json<br/>原字段加有限诊断]
+    J --> H[result-sha256.json<br/>实际结果字节SHA]
+    H --> A[原上传入口精确两个文件]
+    A --> N[无路径、环境、凭据或正文<br/>未知根因仍UNKNOWN]

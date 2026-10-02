@@ -1,0 +1,103 @@
+{
+  "schema": "harnessix.native-authenticated-input-facts/v1",
+  "state": "OFFLINE_INPUT_BOUND_NATIVE_UNVERIFIED",
+  "baseline": "09a386c5269d476f6d9053c6b1b4c5ad83764372",
+  "actual_red": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "red.xml",
+    "sha256": "e361062a7aea95118ca8858a3ba9e2b7806e92620457934ff7bdd1316dad16e8",
+    "tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "red_reason_code": "current_source_drift",
+  "red_is_actual_offline_read_contract_source_checks": true,
+  "red_is_not_native_run": true,
+  "formal_tests": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "formal132.xml",
+    "sha256": "21f9673417273f96bf4d25ecff22cef15ff3a6abc88fdd8de696c40f6fccdd1a",
+    "tests": 132,
+    "passed": 132,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "formal_split": {
+    "original": 50,
+    "v2": 82
+  },
+  "private_tests": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "private.xml",
+    "sha256": "a07a81b0701e3963e6e01627b0e4d5a67097a3acde9afa3b7d44ce5981fb9b6b",
+    "tests": 33,
+    "passed": 33,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical_v2_peer_results": [
+    {
+      "kind": "formal",
+      "archive": "native-preflight-v2-peer-20261002-v1",
+      "member": "formal-final132.xml",
+      "sha256": "1d004c127642fd1bb09badf293714686af73f8cd8b3f4131fb86539059c7c44e",
+      "tests": 132,
+      "passed": 132,
+      "baseline": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+      "not_executed_this_task": true
+    },
+    {
+      "kind": "private",
+      "archive": "native-preflight-v2-peer-20261002-v1",
+      "member": "private.xml",
+      "sha256": "ae21a8f069430b372c3b0763b6cbf05dc525553cf0b6d7cfb9bcc368c3b08e10",
+      "tests": 9,
+      "passed": 9,
+      "baseline": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+      "not_executed_this_task": true
+    }
+  ],
+  "historical_132_plus9_baseline": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "historical_results_not_counted_as_new_input_runs": true,
+  "original_21_and_index_unchanged": true,
+  "old63_initial_drift_count": 1,
+  "old63_initial_drift_path": "pyproject.toml",
+  "old63_final_expected_drift_count": 3,
+  "deep_changed_leaf_count": 5,
+  "all_other_contract_fields_deep_equal": true,
+  "constant_only_change": true,
+  "strict_source_checks_16": "PASS_ACTUAL_CURRENT_BYTES",
+  "second_process_readback": "PASS",
+  "second_process_is_external_agent_review": false,
+  "external_agent_review_performed_this_task": false,
+  "safety": {
+    "sdk_install": false,
+    "git_replacement": false,
+    "network": false,
+    "model": false,
+    "credentials": false,
+    "ledger": false,
+    "windows_cdb": false,
+    "docker": false,
+    "ci_dispatch": false,
+    "stage_commit_push": false
+  },
+  "native_blocker": "UNKNOWN",
+  "execution_performed": false,
+  "branch_gate_proven": false,
+  "sdk_acceptance": false,
+  "old_failures": "FAIL_RETAINED",
+  "publication_checks": {
+    "docs": 2,
+    "doc_findings": 0,
+    "secret_files": 12,
+    "secret_hits": 0,
+    "personal_path_hits": 0,
+    "inherited_graph_sources_and_pixels_unchanged": 4,
+    "original_index_sha_unchanged": true
+  }
+}

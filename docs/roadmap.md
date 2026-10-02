@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 150
-code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
+version: 151
+code_revision: 09a386c5269d476f6d9053c6b1b4c5ad83764372
 owners:
   - core
 modules:
@@ -1549,3 +1549,22 @@ R3真实质量、消费者Windows、独立Beta及R1～R6商用门禁继续开放
 现有字段不足以区分具体准备原因，历史根因仍UNKNOWN，不能从耗时或工具缺少输出臆定原因。
 后继须在同合同内增加有限准备阶段/原因码并取得新的固定原生结果；原FAIL不重跑覆盖。
 该诊断不关闭Windows核心编码、完整Git交付、R3、独立Beta或商用门禁。
+
+### R1/R4：固定原生观察的前置诊断与认证发行输入接合
+
+固定观察的前置拒绝补充十二阶段、三十八个有限原因及工具文件存在标志，
+未知错误保持`UNKNOWN`，原拒绝状态和非零退出不变。原`730f084`原生运行仍保留
+`PREFLIGHT_REFUSED`，没有实际执行分支观察，不能作为SDK成功或根因关闭证据。
+诊断源码的限定独立复核为132项正式测试和9项独立负例通过；见
+[前置拒绝诊断详设](changes/m09-r4-git-native-branch-preflight-v2.md)。
+
+已发布认证候选`09a386c`的三个精确历史脚本Ruff例外改变了`pyproject.toml`字节，
+旧固定合同因此正确拒绝。发行输入接合仅更新基准提交、该输入四个长度/摘要字段及
+合同SHA常量；依赖、其余全部合同字段、两项SDK选择器、十三hook与原期限保持不变。
+当前两源取得132项正式测试、12项独立负例通过，并实际核验全部十六个固定输入；
+不对其他字节漂移或混合换行提供语义容错。设计与证据见
+[发布输入接合详设](changes/m09-r4-git-native-authenticated-input-binding.md)及
+[限定验证资料](validation/git-native-authenticated-input-2026-10-02-v1/README.md)。
+原`730f084`冻结资料保持原件，不能把当前三项输入变化声称为旧清单零漂移。
+后继Windows观察仍须固定新的发布提交且仅运行一次；以上离线结果不关闭Windows
+核心编码、完整Git产品/Backup v2、真实R3、独立Beta或同候选R1～R6商用门禁。

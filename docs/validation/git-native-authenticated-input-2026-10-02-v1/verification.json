@@ -1,0 +1,144 @@
+{
+  "schema": "harnessix.native-authenticated-input-verification/v1",
+  "state": "FROZEN_OFFLINE_INPUT_BOUND_NATIVE_UNVERIFIED",
+  "formal_tests": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "formal132.xml",
+    "sha256": "21f9673417273f96bf4d25ecff22cef15ff3a6abc88fdd8de696c40f6fccdd1a",
+    "tests": 132,
+    "passed": 132,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "private_tests": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "private.xml",
+    "sha256": "a07a81b0701e3963e6e01627b0e4d5a67097a3acde9afa3b7d44ce5981fb9b6b",
+    "tests": 33,
+    "passed": 33,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "red_retained": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "red.xml",
+    "sha256": "e361062a7aea95118ca8858a3ba9e2b7806e92620457934ff7bdd1316dad16e8",
+    "tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "strict_actual_sixteen_inputs": true,
+  "runtime_import_owned": true,
+  "independent_readback": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "independent-readback.json",
+    "sha256": "70089cd2a97e9f72b43e008f0136fb5d8e5ec5221f49bb2ed98a67518c76defc",
+    "status": "PASS",
+    "method": "第二进程从原字节独立复算，非另一Agent评审"
+  },
+  "ruff": {
+    "exit": 0,
+    "python_files": 10
+  },
+  "format": {
+    "exit": 0,
+    "python_files": 10
+  },
+  "mypy": {
+    "source_files": 1,
+    "scope": "diagnostics.py only",
+    "status": "PASS",
+    "exit": 0
+  },
+  "reused_diagrams": [
+    {
+      "name": "architecture",
+      "exit": 0,
+      "mmd_sha256": "8612e5843fce02c5989cc275ca2bcb53959a898ea8256746a679191608ccce6a",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 586,
+      "height": 886,
+      "png_sha256": "bf7486e84bee3d0e0db2d5ec536ab173ba67199fa7a0eeb866051067269fdf4f",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text",
+      "render_and_view_this_task": false,
+      "evidence_role": "REUSED_FROZEN_V2_ACTUAL_RENDER_AND_VIEW"
+    },
+    {
+      "name": "preflight-flow",
+      "exit": 0,
+      "mmd_sha256": "fc0dfa6785ce14fc9155a7914a0440c4d831c7109fa9e82d29d127f2aa8acf74",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 571,
+      "height": 1376,
+      "png_sha256": "109538c1da1d1b89542a10f41e68fa6971a78d1d757a3436c758010ce15315cc",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text",
+      "render_and_view_this_task": false,
+      "evidence_role": "REUSED_FROZEN_V2_ACTUAL_RENDER_AND_VIEW"
+    },
+    {
+      "name": "execution-sequence",
+      "exit": 0,
+      "mmd_sha256": "d7481ed7c291119c2ba18060ccaedc16977ad3be746a3b1df75d4cf28be160f7",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 1075,
+      "height": 1109,
+      "png_sha256": "7b3ef2fcd7f525ab9722ad506af0dadd141e06ea60c697499f0acf92615cec14",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text",
+      "render_and_view_this_task": false,
+      "evidence_role": "REUSED_FROZEN_V2_ACTUAL_RENDER_AND_VIEW"
+    },
+    {
+      "name": "publication-dataflow",
+      "exit": 0,
+      "mmd_sha256": "fde612386e8170837a4679cc2cd6332fab30fc0bf1a6a9afbdcbca99efdaab9e",
+      "render_engine": "installed mmdc and installed Chrome",
+      "visual_review": "PASS",
+      "width": 541,
+      "height": 1309,
+      "png_sha256": "cc120d03e83774acdd181138d616abf852783aa46cc8ce0d94d7aabaa1861c1b",
+      "visual_evidence": "actual view_image: complete readable labels and arrows, no clipped text",
+      "render_and_view_this_task": false,
+      "evidence_role": "REUSED_FROZEN_V2_ACTUAL_RENDER_AND_VIEW"
+    }
+  ],
+  "documentation": {
+    "files": 2,
+    "status": "PASS",
+    "findings": 0,
+    "checks": [
+      "实际既有read/metadata/links/sections/Mermaid API",
+      "发布提交身份由真实系统Git只读验证"
+    ],
+    "whole_repository_gate": false
+  },
+  "no_secret": {
+    "scope": "exact 12 owned files including manifest",
+    "status": "PASS",
+    "files": 12,
+    "hits": 0,
+    "complete": true,
+    "whole_repository_scan": false
+  },
+  "native": false,
+  "external_agent_review": false,
+  "old21_and_index_unchanged": true,
+  "old63_drift_expected_3": true,
+  "publication_manifest": {
+    "members": 73,
+    "self_excluded": true,
+    "includes_inherited_png": true
+  },
+  "scoped_receipt": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "package-check-initial.json",
+    "sha256": "d6af86c5707a8d16a7241246ff29ebf5486e00248ddb535b9deb9ff6b5dfc623",
+    "final_seal_readback": "separate private receipt"
+  }
+}

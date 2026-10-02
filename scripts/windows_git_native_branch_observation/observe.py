@@ -18,6 +18,7 @@ from scripts.windows_git_native_branch_observation.contract import (
     read_contract,
     unique_object,
 )
+from scripts.windows_git_native_branch_observation.diagnostics import PreflightDiagnostic
 from scripts.windows_git_native_branch_observation.preflight import prepare, recheck
 from scripts.windows_git_native_branch_observation.projection import branch_records, case_valid
 
@@ -120,7 +121,7 @@ def run(repository: Path, output: Path, report: Path, execute: bool, revision: s
         raise ValueError("new_nonrepository_report_required")
     report.mkdir(parents=True)
     result = {
-        "schema": "harnessix.git-native-branch-observation/v1",
+        "schema": "harnessix.git-native-branch-observation/v2",
         "status": "OFFLINE_METADATA_REFUSED",
         "execution_performed": False,
         "branch_gate_passed": False,
@@ -131,12 +132,14 @@ def run(repository: Path, output: Path, report: Path, execute: bool, revision: s
     }
     exit_code = 2
     state = {}
+    diagnostic = PreflightDiagnostic()
     try:
         contract = read_contract()
         result.update(budgets=contract["budgets"], status="PREFLIGHT_REFUSED")
         if execute:
+            diagnostic.enter("execution_revision")
             result["authorized_revision"] = execute_authorized(revision)
-        state = prepare(repository, output, contract)
+        state = prepare(repository, output, contract, diagnostic)
         result.update(
             source_input_count=len(state["source_checks"]),
             pairs_matched=True,
@@ -147,10 +150,12 @@ def run(repository: Path, output: Path, report: Path, execute: bool, revision: s
         if not execute:
             exit_code = 0
         else:
-            recheck(repository, state, contract)
+            recheck(repository, state, contract, diagnostic)
             result.update(status="EXECUTION_INCOMPLETE")
+            diagnostic.enter("debugger_execution")
             execution = run_debugger(repository, output, state)
-            recheck(repository, state, contract)
+            recheck(repository, state, contract, diagnostic)
+            diagnostic.enter("result_projection")
             result.update(observation_result(output, execution))
             result["branch_gate_passed"] = (
                 result["branch_gate_passed"] and state.get("debugger_started") is True
@@ -172,10 +177,14 @@ def run(repository: Path, output: Path, report: Path, execute: bool, revision: s
         struct.error,
         zipfile.BadZipFile,
         subprocess.SubprocessError,
-    ):
+    ) as error:
+        diagnostic.capture_failure(error)
+        if result["status"] == "PREPARED_NOT_EXECUTED":
+            result["status"] = "PREFLIGHT_REFUSED"
         result["branch_gate_passed"] = False
         exit_code = 2
     result["execution_performed"] = state.get("debugger_started") is True
+    result["preflight_diagnostic"] = diagnostic.snapshot()
     body = (json.dumps(result, ensure_ascii=True, indent=2) + "\n").encode("ascii")
     (report / "result.json").write_bytes(body)
     (report / "result-sha256.json").write_text(

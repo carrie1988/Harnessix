@@ -1,0 +1,68 @@
+{
+  "schema": "harnessix.native-authenticated-input-review-packet/v1",
+  "state": "FROZEN_OFFLINE_INPUT_BOUND_NATIVE_UNVERIFIED",
+  "baseline": "09a386c5269d476f6d9053c6b1b4c5ad83764372",
+  "source_set_sha256": "a4e6df37d682ccce5721db7a4e3d8f79fe707a1323cff46be59c6a9020e80d9f",
+  "contract_sha256": "3fdfc2ac2f69e63517d6bdfd747d6242a7c4f734553c289908b48c3c0fffb39f",
+  "contract_py_sha256": "6180abd735ee7bdeac177218344630f6a7859269404f87612a4b3d70dca394ea",
+  "change_scope": [
+    "scripts/windows_git_native_branch_observation/contract.json",
+    "scripts/windows_git_native_branch_observation/contract.py",
+    "docs/changes/m09-r4-git-native-authenticated-input-binding.md",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/"
+  ],
+  "readonly_original_21": true,
+  "readonly_pyproject": true,
+  "unchanged_policy": [
+    "官方Git/SDK/PE/PDB",
+    "两个固定selector与13hooks",
+    "20/45/300/240秒与精确两个artifact",
+    "Owner/Job/RO/DOD/MAC/raw/EOF/protection",
+    "拒绝非0与UNKNOWN"
+  ],
+  "remaining_review_focus": [
+    "五个JSON叶字段且其他深比较相等",
+    "仅常量改变，read_contract/source_checks完整严格不变",
+    "真实16输入双表示与字节/长度拒绝",
+    "原21文件/index及旧FAIL不回写",
+    "历史132+9不得当当前复验或原生证据"
+  ],
+  "second_process_byte_contract_review_passed": true,
+  "external_agent_review_this_task": false,
+  "native_conditions": [
+    "后继发布完整固定revision必须绑定当前冻结成员，而非把09基线当最终发布提交",
+    "新输入合法不消除现场selected_git/tool/symbols/PE/PDB/scripts等门槛",
+    "保持原单次手动范围，不重跑旧Run、不安装SDK或替换Git",
+    "实际有限结果出现UNKNOWN仍未知，预检拒绝继续非0"
+  ],
+  "native_blocker": "UNKNOWN",
+  "native_dispatch_performed": false,
+  "new_owned_files": [
+    "docs/changes/m09-r4-git-native-authenticated-input-binding.md",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/COMMANDS.json",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/README.md",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/SOURCE.json",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/facts.json",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/manifest.json",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/originals/contract.json",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/originals/contract.py",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/review-packet.json",
+    "docs/validation/git-native-authenticated-input-2026-10-02-v1/verification.json",
+    "scripts/windows_git_native_branch_observation/contract.json",
+    "scripts/windows_git_native_branch_observation/contract.py"
+  ],
+  "new_owned_count": 12,
+  "new_manifest_members_excluding_self": 73,
+  "current_test_results": {
+    "formal": 132,
+    "private": 33,
+    "original_history_not_added": true
+  },
+  "gate_results": {
+    "docs": 2,
+    "no_secret_files": 12,
+    "hits": 0,
+    "ruff": 10,
+    "mypy_strict": 1
+  }
+}

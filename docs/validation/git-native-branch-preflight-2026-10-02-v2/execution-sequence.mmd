@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant O as 原观察入口
+    participant P as 预检及重验
+    participant D as 阶段记录器
+    participant R as 有限结果发布
+    O->>D: 初始化，presence均为null
+    O->>P: 原metadata及prepare合同
+    P->>D: 进入固定阶段
+    P->>D: 仅已执行的is_file布尔观察
+    alt 任一原合同拒绝
+        P-->>O: 原异常，不格式化
+        O->>D: 首次捕获，精确literal或UNKNOWN
+        O->>R: branch=false，退出2及有限诊断
+    else 原预检完成
+        P-->>O: 原state与工具身份
+        alt 默认仅准备
+            O->>R: PREPARED_NOT_EXECUTED，非原生成功
+        else 显式固定revision执行
+            O->>P: 原执行前后重验
+            O->>O: 原CDB及两个SDK selector
+            O->>R: 分列分支门与原pytest返回
+        end
+    end
+    Note over R: SDK验收始终false，不覆写历史FAIL

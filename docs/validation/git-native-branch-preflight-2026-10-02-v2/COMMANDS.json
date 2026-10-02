@@ -1,0 +1,62 @@
+{
+  "schema": "harnessix.native-preflight-v2-commands/v2",
+  "environment": {
+    "platform": "darwin",
+    "python": "3.12.7",
+    "PATH": "fixed offline runtime fallback",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "<repository>/src"
+  },
+  "commands": [
+    {
+      "command": "<Python3.12.7> -B -m pytest -p no:cacheprovider tests/governance/test_windows_git_native_branch_observation.py tests/governance/test_windows_git_native_branch_preflight_v2.py --basetemp=<private-archive>/fixtures-final --junitxml=<private-archive>/focused-final.xml",
+      "exit": 0,
+      "cases": 132,
+      "passed": 132
+    },
+    {
+      "command": "<Python3.12.7> -B -m ruff check --no-cache scripts/windows_git_native_branch_observation tests/governance/test_windows_git_native_branch_observation.py tests/governance/test_windows_git_native_branch_preflight_v2.py",
+      "exit": 0,
+      "python_files": 10
+    },
+    {
+      "command": "<Python3.12.7> -B -m ruff format --no-cache --check scripts/windows_git_native_branch_observation tests/governance/test_windows_git_native_branch_observation.py tests/governance/test_windows_git_native_branch_preflight_v2.py",
+      "exit": 0,
+      "python_files": 10
+    },
+    {
+      "command": "<Python3.12.7> -B -m mypy --strict --cache-dir=<private-archive>/mypy-cache scripts/windows_git_native_branch_observation/diagnostics.py",
+      "exit": 0,
+      "source_files": 1
+    },
+    {
+      "command": "mmdc -q -i <diagram>.mmd -o <diagram>.png -p <existing-puppeteer-config> -c <existing-mermaid-config> -w 1400",
+      "diagram_count": 4,
+      "result_file": "verification.json"
+    },
+    {
+      "command": "documentation_check existing read/metadata/links/sections/Mermaid API on exactly two new Markdown; revision identity independently via /usr/bin/git cat-file --batch-check=%(objecttype)",
+      "result_file": "verification.json"
+    },
+    {
+      "command": "secret_scan.scan_paths(exact v2 owned files), default limits",
+      "result_file": "verification.json"
+    }
+  ],
+  "red_preserved": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "v1-stage-red.xml",
+    "sha256": "b6e7be2b1fa43bd1c15ccbb1347874ad1b2607a5fd034ebc0a42b3f13c9fdf0f",
+    "cases": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "no_native_or_full_repository_run": true,
+  "verification_helper": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "verify_frozen_package.py",
+    "scope": "精确21件写集、45原输入、26实际有限结果对；不得替代Windows执行"
+  }
+}

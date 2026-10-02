@@ -1,0 +1,120 @@
+{
+  "schema": "harnessix.native-preflight-v2-facts/v2",
+  "status": "OFFLINE_CONTRACT_GREEN_NATIVE_UNVERIFIED",
+  "code_baseline": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "original50_source_unchanged": true,
+  "current_tests": {
+    "original_regressions": 50,
+    "new_regressions": 82,
+    "total": 132,
+    "passed": 132,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "red": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "v1-stage-red.xml",
+    "sha256": "b6e7be2b1fa43bd1c15ccbb1347874ad1b2607a5fd034ebc0a42b3f13c9fdf0f",
+    "cases": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "red_semantics": "原v1真实离线拒绝缺少preflight_diagnostic字段；不代表Windows唯一根因",
+  "initial_green": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "focused-initial.xml",
+    "sha256": "0dd8f1e0776e5954f68f07732c1aa61b98c46c006836382741868cd429d7627f",
+    "cases": 129,
+    "passed": 129,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "final_green": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "focused-final.xml",
+    "sha256": "b1bc03d2833fbcf3520d0d8e1e7d7808bf54fb460c058b39acf94b7ae240a634",
+    "cases": 132,
+    "passed": 132,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "reason_literal_count": 38,
+  "stage_count": 12,
+  "presence_fields_count": 2,
+  "unknown_code": "UNKNOWN",
+  "report_schema": "harnessix.git-native-branch-observation/v2",
+  "output_types": "DiagnosticResult closed TypedDict; exact bool or null presence",
+  "runtime_test_platform": "macOS Python3.12.7",
+  "ruff": {
+    "exit": 0,
+    "python_files": 10
+  },
+  "format": {
+    "exit": 0,
+    "python_files": 10
+  },
+  "mypy": {
+    "exit": 0,
+    "source_files": 1,
+    "strict": true,
+    "file": "scripts/windows_git_native_branch_observation/diagnostics.py"
+  },
+  "immutable_old_inputs": {
+    "total": 45,
+    "intentional_script_changes": 2,
+    "unchanged": 43,
+    "product_src_changes": 0,
+    "original_workflow_changed": false,
+    "control_function_ast_equal": 6
+  },
+  "native_run": false,
+  "actual_native_blocker": "UNKNOWN",
+  "branch_gate_currently_proven": false,
+  "original_sdk_acceptance": false,
+  "historical_failure": "FAIL_RETAINED",
+  "not_performed": [
+    "network",
+    "official symbols download",
+    "Windows",
+    "CDB",
+    "original SDK selectors",
+    "models",
+    "Docker",
+    "credentials",
+    "budget owner writes",
+    "stage",
+    "commit",
+    "push",
+    "dispatch"
+  ],
+  "auxiliary_verification_failure": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "verification-helper-initial.json",
+    "sha256": "6256eec96d67d71279944936079ddae798a8532748731b8a936137bab9e7bdde",
+    "product_failure": false,
+    "retained": true
+  },
+  "publication_checks": {
+    "state": "SCOPED_GREEN",
+    "documentation_files": 2,
+    "documentation_findings": 0,
+    "secret_scan_files": 21,
+    "secret_hits": 0,
+    "public_personal_paths_or_old_run_hits": 0,
+    "generated_finite_result_pairs": 26,
+    "rendered_and_viewed_diagrams": 4,
+    "native": false
+  },
+  "documentation_initial_failure": {
+    "archive": "windows-git-native-preflight-v2-20261002-v1",
+    "member": "package-check-initial.log",
+    "sha256": "c7d1d18f870640d5411c8473fb8f02bf097e94f0ec415fd4fc71675aa65a9fee",
+    "retained": true,
+    "resolution": "补齐三个规范语义小节；固定PATH包装器缺少bash，使用真实系统Git独立只读核验提交身份；未修改产品源码或旧版本"
+  }
+}

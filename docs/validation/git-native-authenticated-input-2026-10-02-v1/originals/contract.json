@@ -1,6 +1,6 @@
 {
   "schema": "harnessix.git-native-branch-contract/v1",
-  "base_revision": "09a386c5269d476f6d9053c6b1b4c5ad83764372",
+  "base_revision": "dfba34e707ed845f3e9d844461e124015c22dca7",
   "official_release": "v2.55.0.windows.5",
   "release_api": "https://api.github.com/repos/git-for-windows/git/releases/tags/v2.55.0.windows.5",
   "assets": {
@@ -153,10 +153,10 @@
     },
     {
       "path": "pyproject.toml",
-      "bytes": 2520,
-      "sha256": "ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad",
-      "crlf_bytes": 2614,
-      "crlf_sha256": "57314239cdf6a9e016f4cfcb9a912b01d2006274840b1c58cbab43687293f972"
+      "bytes": 2149,
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+      "crlf_bytes": 2239,
+      "crlf_sha256": "8d54e36f7351161f88ef2b824b9de99597e98600949a802eef15176aa0ac2643"
     },
     {
       "path": "tests/product_config/test_git_delivery_process.py",

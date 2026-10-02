@@ -1,0 +1,10 @@
+flowchart TB
+    W[原单次手动workflow<br/>原期限与两个selector不变] --> O[observe.run v2]
+    O --> P[原prepare与recheck<br/>固定源身份与PE/PDB门槛]
+    P --> C[封闭阶段记录器<br/>仅首次失败与两个presence观察]
+    O --> E[原CDB硬件断点执行<br/>控制函数不变]
+    C --> R[有限诊断字段<br/>stage与固定reason或UNKNOWN]
+    E --> G[原分支门与pytest退出值分列]
+    R --> A[精确两个结果artifact<br/>不上传私有日志或正文]
+    G --> A
+    A --> N[SDK验收始终false<br/>历史FAIL及UNKNOWN保持]

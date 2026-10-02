@@ -1,0 +1,57 @@
+{
+  "schema": "harnessix.native-authenticated-input-commands/v1",
+  "environment": {
+    "python": "macOS CPython3.12.7",
+    "PATH": "fixed offline runtime fallback",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "TMPDIR": "/tmp for bounded private fixture host",
+    "GIT_OPTIONAL_LOCKS": "0"
+  },
+  "actual_commands": [
+    {
+      "command": "<Python3.12.7> -B -m pytest -p no:cacheprovider tests/governance/test_windows_git_native_branch_observation.py tests/governance/test_windows_git_native_branch_preflight_v2.py --basetemp=<private>/formal-fixtures --junitxml=<private>/formal132.xml",
+      "passed": 132
+    },
+    {
+      "command": "<Python3.12.7> -B -m pytest -p no:cacheprovider <private>/test_authenticated_input.py --basetemp=<private>/private-fixtures --junitxml=<private>/private.xml",
+      "passed": 33
+    },
+    {
+      "command": "<Python3.12.7> -B <private>/independent_readback.py",
+      "status": "PASS"
+    },
+    {
+      "command": "<Python3.12.7> -B -m ruff check --no-cache scripts/windows_git_native_branch_observation tests/governance/test_windows_git_native_branch_observation.py tests/governance/test_windows_git_native_branch_preflight_v2.py",
+      "python_files": 10,
+      "exit": 0
+    },
+    {
+      "command": "<Python3.12.7> -B -m ruff format --no-cache --check scripts/windows_git_native_branch_observation tests/governance/test_windows_git_native_branch_observation.py tests/governance/test_windows_git_native_branch_preflight_v2.py",
+      "python_files": 10,
+      "exit": 0
+    },
+    {
+      "command": "<Python3.12.7> -B -m mypy --strict --cache-dir=<private>/mypy-cache scripts/windows_git_native_branch_observation/diagnostics.py",
+      "result": "verification.json",
+      "exit": 0,
+      "source_files": 1
+    },
+    {
+      "command": "<Python3.12.7> -B <private>/check_package.py",
+      "scope": "actual documentation API and secret scan, exact new files only",
+      "result": "verification.json"
+    }
+  ],
+  "red_archive": {
+    "archive": "git-native-authenticated-input-20261002-v1",
+    "member": "red.xml",
+    "sha256": "e361062a7aea95118ca8858a3ba9e2b7806e92620457934ff7bdd1316dad16e8",
+    "tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "no_native_dispatch_or_replay": true,
+  "observation_timeout_policy": "仅观察既有进程句柄；超时不重启验证进程或原生Run"
+}

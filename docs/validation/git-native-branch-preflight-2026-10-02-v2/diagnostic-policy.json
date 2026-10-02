@@ -1,0 +1,383 @@
+{
+  "schema": "harnessix.native-preflight-diagnostic-policy/v2",
+  "stage_order": [
+    "metadata",
+    "execution_revision",
+    "platform_paths",
+    "source_identity",
+    "selected_git",
+    "existing_tools",
+    "symbols",
+    "pe_pdb_identity",
+    "scripts",
+    "tool_identity",
+    "debugger_execution",
+    "result_projection"
+  ],
+  "reasons_by_stage": {
+    "metadata": [
+      "duplicate_json_key",
+      "offline_metadata_sha_mismatch"
+    ],
+    "execution_revision": [
+      "explicit_fixed_revision_execution_required"
+    ],
+    "platform_paths": [
+      "private_nonrepository_simple_output_path_required",
+      "private_output_preexists",
+      "windows_x64_required"
+    ],
+    "source_identity": [
+      "current_source_drift"
+    ],
+    "selected_git": [
+      "selected_git_changed",
+      "selected_git_layout_unrecognized",
+      "selected_git_missing",
+      "selected_git_not_verified_role"
+    ],
+    "existing_tools": [
+      "existing_cdb_pe_invalid",
+      "existing_cdb_x64_required",
+      "existing_tools_missing_no_install_performed"
+    ],
+    "symbols": [
+      "official_download_digest_mismatch",
+      "official_download_limit",
+      "official_redirect_refused",
+      "official_symbol_member_mismatch"
+    ],
+    "pe_pdb_identity": [
+      "official_branch_machine_bytes_mismatch",
+      "official_branch_symbol_rva_mismatch",
+      "official_pair_guid_age_mismatch",
+      "official_pair_image_size_mismatch",
+      "official_pair_sha_mismatch",
+      "official_pair_size_mismatch",
+      "pdb_branch_symbol_duplicate",
+      "pdb_dbi_missing",
+      "pdb_info_missing",
+      "pdb_msf_bounds_invalid",
+      "pdb_msf_signature_invalid",
+      "pdb_stream_block_invalid",
+      "pdb_symbol_bounds_invalid",
+      "pdb_symbols_missing",
+      "pe_dos_signature_invalid",
+      "pe_nt_signature_invalid",
+      "pe_rva_unmapped",
+      "pe_x64_required"
+    ],
+    "scripts": [],
+    "tool_identity": [
+      "existing_tool_changed"
+    ],
+    "debugger_execution": [],
+    "result_projection": [
+      "case_report_invalid",
+      "duplicate_json_key"
+    ]
+  },
+  "unknown_reason": "UNKNOWN",
+  "success_failure_fields": {
+    "first_failed_stage": null,
+    "reason_code": null
+  },
+  "fields": {
+    "first_failed_stage": "closed Stage | null",
+    "reason_code": "closed literal reason | UNKNOWN | null",
+    "cdb_file_present": "actual bool | null",
+    "interpreter_file_present": "actual bool | null"
+  },
+  "classification": "exact ValueError + one exact str + same-stage literal equality; returned literal is policy-owned",
+  "not_exported": [
+    "exception text",
+    "args",
+    "errno",
+    "path",
+    "environment",
+    "credentials",
+    "object body",
+    "old Run identifiers"
+  ],
+  "presence_semantics": "仅原短路is_file实际执行的观察；null表示未执行，不表示不存在；true不证明PE/工具身份。",
+  "diagnostic_json_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "first_failed_stage",
+      "reason_code",
+      "cdb_file_present",
+      "interpreter_file_present"
+    ],
+    "properties": {
+      "first_failed_stage": {
+        "enum": [
+          null,
+          "metadata",
+          "execution_revision",
+          "platform_paths",
+          "source_identity",
+          "selected_git",
+          "existing_tools",
+          "symbols",
+          "pe_pdb_identity",
+          "scripts",
+          "tool_identity",
+          "debugger_execution",
+          "result_projection"
+        ]
+      },
+      "reason_code": {
+        "enum": [
+          null,
+          "UNKNOWN",
+          "case_report_invalid",
+          "current_source_drift",
+          "duplicate_json_key",
+          "existing_cdb_pe_invalid",
+          "existing_cdb_x64_required",
+          "existing_tool_changed",
+          "existing_tools_missing_no_install_performed",
+          "explicit_fixed_revision_execution_required",
+          "official_branch_machine_bytes_mismatch",
+          "official_branch_symbol_rva_mismatch",
+          "official_download_digest_mismatch",
+          "official_download_limit",
+          "official_pair_guid_age_mismatch",
+          "official_pair_image_size_mismatch",
+          "official_pair_sha_mismatch",
+          "official_pair_size_mismatch",
+          "official_redirect_refused",
+          "official_symbol_member_mismatch",
+          "offline_metadata_sha_mismatch",
+          "pdb_branch_symbol_duplicate",
+          "pdb_dbi_missing",
+          "pdb_info_missing",
+          "pdb_msf_bounds_invalid",
+          "pdb_msf_signature_invalid",
+          "pdb_stream_block_invalid",
+          "pdb_symbol_bounds_invalid",
+          "pdb_symbols_missing",
+          "pe_dos_signature_invalid",
+          "pe_nt_signature_invalid",
+          "pe_rva_unmapped",
+          "pe_x64_required",
+          "private_nonrepository_simple_output_path_required",
+          "private_output_preexists",
+          "selected_git_changed",
+          "selected_git_layout_unrecognized",
+          "selected_git_missing",
+          "selected_git_not_verified_role",
+          "windows_x64_required"
+        ]
+      },
+      "cdb_file_present": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "interpreter_file_present": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "oneOf": [
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": null
+          },
+          "reason_code": {
+            "const": null
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "metadata"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "duplicate_json_key",
+              "offline_metadata_sha_mismatch"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "execution_revision"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "explicit_fixed_revision_execution_required"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "platform_paths"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "private_nonrepository_simple_output_path_required",
+              "private_output_preexists",
+              "windows_x64_required"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "source_identity"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "current_source_drift"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "selected_git"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "selected_git_changed",
+              "selected_git_layout_unrecognized",
+              "selected_git_missing",
+              "selected_git_not_verified_role"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "existing_tools"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "existing_cdb_pe_invalid",
+              "existing_cdb_x64_required",
+              "existing_tools_missing_no_install_performed"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "symbols"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "official_download_digest_mismatch",
+              "official_download_limit",
+              "official_redirect_refused",
+              "official_symbol_member_mismatch"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "pe_pdb_identity"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "official_branch_machine_bytes_mismatch",
+              "official_branch_symbol_rva_mismatch",
+              "official_pair_guid_age_mismatch",
+              "official_pair_image_size_mismatch",
+              "official_pair_sha_mismatch",
+              "official_pair_size_mismatch",
+              "pdb_branch_symbol_duplicate",
+              "pdb_dbi_missing",
+              "pdb_info_missing",
+              "pdb_msf_bounds_invalid",
+              "pdb_msf_signature_invalid",
+              "pdb_stream_block_invalid",
+              "pdb_symbol_bounds_invalid",
+              "pdb_symbols_missing",
+              "pe_dos_signature_invalid",
+              "pe_nt_signature_invalid",
+              "pe_rva_unmapped",
+              "pe_x64_required"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "scripts"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "tool_identity"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "existing_tool_changed"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "debugger_execution"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN"
+            ]
+          }
+        }
+      },
+      {
+        "properties": {
+          "first_failed_stage": {
+            "const": "result_projection"
+          },
+          "reason_code": {
+            "enum": [
+              "UNKNOWN",
+              "case_report_invalid",
+              "duplicate_json_key"
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

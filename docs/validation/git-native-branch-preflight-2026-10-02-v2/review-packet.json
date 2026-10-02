@@ -1,0 +1,45 @@
+{
+  "schema": "harnessix.native-preflight-v2-review-packet/v2",
+  "status": "FROZEN_OFFLINE_GREEN_NATIVE_UNVERIFIED",
+  "code_baseline": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "source_set_sha256": "45369485a8e7f252594961b7f24ece51580507221fe4f927ef5a6e7539f95c41",
+  "review_focus": [
+    "首次失败不覆盖",
+    "固定literal按阶段归属，UNKNOWN不推断根因",
+    "两个presence为真实bool/null且原短路保持",
+    "原拒绝退出2、不把准备成功当原生成功",
+    "原控制函数AST、16源SHA及全部原安全门不变",
+    "公开不含args/异常文本/路径/环境/正文/凭据/旧Run ID",
+    "两份精确artifact和真实pytest退出保持"
+  ],
+  "changes": [
+    "scripts/windows_git_native_branch_observation/observe.py",
+    "scripts/windows_git_native_branch_observation/preflight.py",
+    "scripts/windows_git_native_branch_observation/diagnostics.py",
+    "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+    "docs/changes/m09-r4-git-native-branch-preflight-v2.md",
+    "docs/validation/git-native-branch-preflight-2026-10-02-v2/"
+  ],
+  "original_failures_preserved": true,
+  "native_conditions": [
+    "只在新发布固定revision上一次原手动入口，不重跑旧Run",
+    "实际Git/PE/PDB/源码/工具身份不符即拒绝，不安装SDK或替换Git",
+    "收取v2有限诊断对象后再依据真实stage/reason/presence定位；UNKNOWN不可补猜原因",
+    "保持20/45/240/300秒、原Owner/Job/RO-DOD/MAC/raw/protection、两个selector及原失败非0"
+  ],
+  "actual_native_blocker": "UNKNOWN",
+  "not_authority_or_product_acceptance": true,
+  "no_stage_commit_push_dispatch": true,
+  "checks": {
+    "formal_tests": 132,
+    "original_regressions": 50,
+    "new_regressions": 82,
+    "strict_type_files": 1,
+    "ruff_python_files": 10,
+    "documentation_files": 2,
+    "no_secret_files": 21,
+    "diagrams_rendered_and_viewed": 4
+  },
+  "owned_file_count": 21,
+  "manifest_members_excluding_self": 63
+}

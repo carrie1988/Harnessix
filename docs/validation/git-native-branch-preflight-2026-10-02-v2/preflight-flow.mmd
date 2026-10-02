@@ -1,0 +1,12 @@
+flowchart TB
+    M[metadata固定SHA] --> V[显式执行时核对revision]
+    V --> P[platform_paths<br/>平台与新私有目录合同]
+    P --> S[source_identity<br/>原16件输入SHA]
+    S --> G[selected_git<br/>原Git布局与角色]
+    G --> T[existing_tools<br/>原短路is_file与x64头]
+    T --> D[symbols<br/>目录及固定官方ZIP成员]
+    D --> I[pe_pdb_identity<br/>完整SHA与GUID及RVA机器码]
+    I --> B[scripts<br/>原硬件断点脚本]
+    B --> H[tool_identity<br/>工具完整SHA]
+    H --> R[仅准备或原显式执行流程]
+    T -. 任一阶段拒绝 .-> F[首次失败阶段与白名单reason<br/>未知为UNKNOWN，退出2]
