@@ -46,7 +46,7 @@ def test_v4_retains_four_fields_and_adds_exactly_five_boolean_templates():
     assert {name: probe_module._STDERR_LITERALS[name] for name in BRANCHES} == BRANCHES
     assert probe_module.MAX_STDERR_SIGNAL_BYTES == BOUND
     record = json.loads(probe_module.Probe("A").render().removeprefix(probe_module.PREFIX))
-    assert record["schema"] == "harnessix.minimum-commit-probe/v4"
+    assert record["schema"] == "harnessix.minimum-commit-probe/v5"
 
 
 @pytest.mark.parametrize("name", BRANCHES)

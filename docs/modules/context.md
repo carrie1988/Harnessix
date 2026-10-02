@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 5
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 6
+code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
 owners:
   - core
 modules:
@@ -60,10 +60,13 @@ Provider生命周期，仍经过取消、deadline、凭据出站保护及完整�
 
 完整接口、流程图、时序图、字段、恢复语义和测试追踪见[R3共享装配详细设计](../changes/m09-r3-product-context-composition.md)。
 
-当前Coding指令版本为`harnessix.coding-instructions/v2`，明确完整修改摘要只能取自默认
+当前Coding指令版本为`harnessix.coding-instructions/v4`，明确完整修改摘要只能取自默认
 read_file快照的`content_sha256`，而不是分页revision或可见片段。新快照仅影响模型工具输出；
 Context Source继续使用旧库级read_file分页，保持Source预算及跨平台观察合同。
 相关读写边界见[可信文件快照详设](../changes/m09-r3-trusted-file-snapshot.md)。
+v4保留独立基线、最终检查和日志引用规则，明确最终JSON只约束交付正文，不能替代实际原生工具调用。
+正文2749字节，不超过原2751上限；Source、窗口、Compaction、批准和预算未改变。
+指令不是业务完成强制门禁，详见[实际执行与原生工具详设](../changes/m09-r3-native-tool-invocation.md)。
 装配完成不代表真实编码质量、全部子目录指令自动加载或Windows原生完整编码流程已验收。
 
 ## 2. 需求背景

@@ -12,6 +12,12 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from harnessix.delivery.git_material_trace2_profile import (
+    GitMaterialTrace2Mode,
+    validate_material_trace2,
+    validate_material_trace2_environment,
+)
+
 MAX_MATERIAL_BYTES = 8 * 1024 * 1024
 MAX_MANIFEST_BYTES = 64 * 1024
 MAX_CONTROL_FILE_BYTES = 1024 * 1024
@@ -124,8 +130,12 @@ class GitMaterialInput:
     implementation_digest: str
     purpose_digest: str
     object_type: Literal["blob", "tree", "commit"] = "blob"
-    version: Literal["harnessix.git-material-input/v1"] = "harnessix.git-material-input/v1"
+    version: Literal["harnessix.git-material-input/v1", "harnessix.git-material-input/v2"] = (
+        "harnessix.git-material-input/v1"
+    )
     purpose: Literal["git-object-write"] = "git-object-write"
+    trace2_mode: GitMaterialTrace2Mode = "off"
+    trace2_profile_sha256: str = ""
 
     @classmethod
     def create(cls, **values: Any) -> GitMaterialInput:
@@ -137,11 +147,15 @@ class GitMaterialInput:
                 ("object_type", "blob"),
                 ("version", "harnessix.git-material-input/v1"),
                 ("purpose", "git-object-write"),
+                ("trace2_mode", "off"),
+                ("trace2_profile_sha256", ""),
             ):
                 value.setdefault(name, default)
             controls = value["control_files"]
             _require(type(controls) is tuple)
             encoded = dict(value)
+            if value["version"] == "harnessix.git-material-input/v1":
+                del encoded["trace2_mode"], encoded["trace2_profile_sha256"]
             encoded["control_files"] = [
                 {item.name: getattr(control, item.name) for item in fields(control)}
                 for control in controls
@@ -157,6 +171,8 @@ class GitMaterialInput:
     def binding(self) -> dict[str, object]:
         """完整用途字段；产品调用方必须把该字段集纳入原正式 Plan。"""
         result = {item.name: getattr(self, item.name) for item in fields(self)}
+        if self.version == "harnessix.git-material-input/v1":
+            del result["trace2_mode"], result["trace2_profile_sha256"]
         result["control_files"] = [
             {item.name: getattr(control, item.name) for item in fields(control)}
             for control in self.control_files
@@ -184,7 +200,13 @@ def _validate_input(request: GitMaterialInput) -> None:
     _integer(request.expiry_monotonic_ns, 1, 2**63 - 1)
     _require(type(request.object_format) is str and request.object_format in {"sha1", "sha256"})
     _require(type(request.object_type) is str and request.object_type in {"blob", "tree", "commit"})
-    _require(type(request.version) is str and request.version == "harnessix.git-material-input/v1")
+    validate_material_trace2(request.trace2_mode, request.trace2_profile_sha256)
+    expected_version = (
+        "harnessix.git-material-input/v1"
+        if request.trace2_mode == "off"
+        else "harnessix.git-material-input/v2"
+    )
+    _require(type(request.version) is str and request.version == expected_version)
     _require(type(request.purpose) is str and request.purpose == "git-object-write")
     length = 40 if request.object_format == "sha1" else 64
     _require(
@@ -216,6 +238,9 @@ def _validate_sequences(request: GitMaterialInput) -> None:
         _require(all(type(item) is str and "\0" not in item for item in pair))
         _require(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,127}", pair[0]) is not None)
     _require(request.git_environment == tuple(sorted(dict(request.git_environment).items())))
+    validate_material_trace2_environment(
+        request.trace2_mode, request.trace2_profile_sha256, dict(request.git_environment)
+    )
     _require(purpose_digest(request) == request.purpose_digest)
 
 
@@ -234,9 +259,20 @@ def encode_manifest(request: GitMaterialInput) -> bytes:
     return body
 
 
+def _input_wire_keys(value: dict[str, object]) -> None:
+    """两份完整精确字段集；v1不能借新增内存默认字段接受wire扩展。"""
+    keys = {item.name for item in fields(GitMaterialInput)}
+    version = value.get("version")
+    if type(version) is str and version == "harnessix.git-material-input/v1":
+        keys -= {"trace2_mode", "trace2_profile_sha256"}
+    else:
+        _require(type(version) is str and version == "harnessix.git-material-input/v2")
+    _require(set(value) == keys)
+
+
 def decode_manifest(payload: bytes) -> GitMaterialInput:
     value = _decode(payload, MAX_MANIFEST_BYTES)
-    _keys(value, GitMaterialInput)
+    _input_wire_keys(value)
     try:
         controls = value["control_files"]
         _require(type(controls) is list)
@@ -345,7 +381,7 @@ def decode_proof(payload: bytes, request: GitMaterialInput) -> GitMaterialProof:
 
 
 def implementation_digest() -> str:
-    """绑定全部五个模块及两个包入口；宿主另绑定 runtime/import root，不伪造Owner能力。"""
+    """绑定全部六个模块及两个包入口；宿主另绑定 runtime/import root，不伪造Owner能力。"""
     try:
         directory = Path(__file__).parent
         package = directory.parent
@@ -359,6 +395,10 @@ def implementation_digest() -> str:
                     directory / "git_material_input_contracts.py",
                 ),
                 ("harnessix/delivery/git_material_worker.py", directory / "git_material_worker.py"),
+                (
+                    "harnessix/delivery/git_material_trace2_profile.py",
+                    directory / "git_material_trace2_profile.py",
+                ),
                 (
                     "harnessix/delivery/git_material_failure.py",
                     directory / "git_material_failure.py",

@@ -1,0 +1,124 @@
+{
+  "schema": "harnessix.validation.r3-real-suite-review-packet/v1",
+  "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "suite_id": "d058040a-2fa1-46d9-a328-9b7962f372f5",
+  "binding_id": "a45f0b4f-7dd5-41b9-9e89-82d76f1c77f1",
+  "title": "R3真实Suite有限事实评审包",
+  "quality_verdict": "NO_GO",
+  "document_consistency_verdict": "PASS_OFFLINE_DOCUMENT_AND_RENDERED_VISUAL_VALIDATION",
+  "summary": {
+    "strict_success": "0/20",
+    "required_tests_pass": "1/20",
+    "classification": "eval_infrastructure16 / budget3 / provider1",
+    "complete_cost_estimate_cny": "1.807932",
+    "historical_reserved_cny": "20.77824",
+    "round_remaining_cny": "37.972932"
+  },
+  "review_items": [
+    {
+      "id": "frozen-scope",
+      "status": "PASS",
+      "evidence": "facts.json：候选Revision、Suite/Binding身份、10 Case与20固定Run ID"
+    },
+    {
+      "id": "formal-chain",
+      "status": "PASS",
+      "evidence": "facts.json：Suite/Case/Campaign/Eval哈希；verification.json：原读器与实际导入范围校核"
+    },
+    {
+      "id": "quality-exit",
+      "status": "FAIL",
+      "evidence": "facts.json：严格0<12、测试1<12、三仓库严格成功均为0"
+    },
+    {
+      "id": "history-retained",
+      "status": "PASS",
+      "evidence": "原公开0/20报告SHA前后相同；新旧Run集合不相交"
+    },
+    {
+      "id": "same-cap-cost",
+      "status": "PASS",
+      "evidence": "65新请求全部completed；原70/40、整段历史前缀及旧预留保持"
+    },
+    {
+      "id": "observed-git-boundary",
+      "status": "PASS_LIMITED",
+      "evidence": "13空变更判据失败不是13越界写入；正式越界计数0"
+    },
+    {
+      "id": "data-corruption",
+      "status": "NOT_ESTABLISHED",
+      "evidence": "本许可字段未建立完整指标，不判定为0"
+    },
+    {
+      "id": "semantic-high-risk-repetition",
+      "status": "NOT_ESTABLISHED",
+      "evidence": "重复ID/retry为0不等于语义级effect计数0"
+    },
+    {
+      "id": "completed-diagnosis",
+      "status": "PASS_FACT_PROJECTION",
+      "evidence": "20实际Run一致；11单步零工具、10无检查声明通过、3文本标记、3补丁前无基线"
+    },
+    {
+      "id": "offline-capture-boundary",
+      "status": "LIMITED_STRUCTURE_ONLY",
+      "evidence": "同源装配/10工具/v3规则存在；离线parallel=true不同于正式false，不证明实际HTTP或质量"
+    },
+    {
+      "id": "readonly-sidecars",
+      "status": "RECORDED_EXCEPTION",
+      "evidence": "审计原只读helper产生空WAL/SHM；主内容未变，未清理，后续不可变只读"
+    },
+    {
+      "id": "diagram-render",
+      "status": "PASS_RENDERED_AND_VIEWED",
+      "evidence": "四份最终.mmd及PNG已实际渲染并原尺寸逐图查看；尺寸、同源SHA和视觉判定见verification.json"
+    },
+    {
+      "id": "document-metadata-and-sections",
+      "status": "PASS",
+      "evidence": "原文档读器、元数据校验（禁用Git）、章节校验；README与SDD均为current并保留完整7bb基准"
+    }
+  ],
+  "successor_alias_or_v4_improvement_not_claimed": true,
+  "source_scope": "仅已发生7bb运行与已完成有限诊断",
+  "delivery_files": [
+    "docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+    "docs/validation/r3-real-suite-2026-10-02-v1/facts.json",
+    "docs/validation/r3-real-suite-2026-10-02-v1/verification.json",
+    "docs/validation/r3-real-suite-2026-10-02-v1/manifest.json",
+    "docs/validation/r3-real-suite-2026-10-02-v1/review-packet.json",
+    "docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+    "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+    "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+    "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+    "docs/changes/m09-r3-real-suite-result.md",
+    "docs/validation/r3-real-suite-2026-10-02-v1/architecture.png",
+    "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.png",
+    "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.png",
+    "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.png"
+  ],
+  "next_steps": [
+    "保留本轮及原历史原件，使用独立后继候选身份。",
+    "先验证正式能力参数一致的离线工具映射与闭环合同；不以模拟质量代替实测。",
+    "后继管理契约需支持不可变历史、原额度累计和显式管理绑定；当前单次切换合同不支持第二次切换，先完成管理能力与输入前置校验。",
+    "后继实测仍按原阈值、预算与停止线，不自动恢复、重放、选择或重试本Suite。"
+  ],
+  "diagram_visual_acceptance": "PASS_RENDERED_AND_VIEWED",
+  "post_finalization_manifest_digest_checks": 13,
+  "frontmatter_and_required_sections_verdict": "PASS_ORIGINAL_DOCUMENT_CONTRACT_GIT_DISABLED",
+  "README_frontmatter": "validation-evidence/current/version1/7bb-full",
+  "SDD_frontmatter": "change-design/current/version1/7bb-full",
+  "diagrams_frozen_for_subsequent_render": false,
+  "grant_and_binding_are_distinct_ledger_contracts": true,
+  "current_flat_contract_supports_second_rebinding": false,
+  "successor_management_contract_implemented_in_frozen_candidate": false,
+  "management_contract_gap_is_not_budget_exhaustion": true,
+  "successor_registration_or_model_requests_performed_by_document_task": false,
+  "diagram_sources_and_pngs_frozen_after_render_and_view": true,
+  "pre_render_document_assertion_count": 472,
+  "offline_check_count": 370,
+  "relative_links_checked": 95,
+  "final_PNG_count": 4
+}

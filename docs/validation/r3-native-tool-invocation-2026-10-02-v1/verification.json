@@ -1,0 +1,170 @@
+{
+  "alias_tests": {
+    "fail": 0,
+    "new": 115,
+    "original": 516,
+    "skip": 0,
+    "total": 631
+  },
+  "diagrams": {
+    "count": 4,
+    "initial_two_wide_layouts_refined_to_vertical": true,
+    "rendered": true,
+    "visually_checked": true
+  },
+  "full_source_mypy": {
+    "explicit_source_target": true,
+    "initial_installed_package_target_failed": true,
+    "passed": true,
+    "source_modules": 432
+  },
+  "independent_review": {
+    "findings": {
+      "P0": [],
+      "P1": [],
+      "P2": []
+    },
+    "host_completion_guard_added": false,
+    "primary_input_count": 4,
+    "real_model_behavior_verified": false,
+    "results": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 660,
+      "seconds": 18.056,
+      "skipped": 0,
+      "tests": 660
+    },
+    "source_drift": [],
+    "status": "bounded_review_completed_no_reproduced_findings",
+    "summary_sha256": "9a6d0e2db1faa2b77933a97fb486c0d9bb0346ff4b3c1967eaf014dfc8abe6dd",
+    "support_input_count": 36,
+    "xml_sha256": "623848e3d5d82abf9df6fe8fecad5e87c46e594944c1196de841699093b7a911"
+  },
+  "new_paid_model_calls": 0,
+  "real_quality_open": true,
+  "related_installed_candidate_verification": {
+    "code_input_count": 1382,
+    "initial_failure_reason": "私有启动器PYTHONPATH遮蔽任务unittest namespace；仅修验证环境",
+    "initial_failures_retained": true,
+    "input_drift": [],
+    "limits": [
+      "本机macOS安装及明确单元/离线集成范围",
+      "不代表全仓回归",
+      "不证明真实提供方、原生Windows、原生故障根因、商业完成或质量门禁关闭"
+    ],
+    "locked_dependencies_unchanged": true,
+    "package_members": 473,
+    "real_model_calls": 0,
+    "results": [
+      {
+        "all_imports_under_installed_package": true,
+        "collected_count": 4876,
+        "pytest_exit_code": 0,
+        "python": "3.12.7",
+        "runtime_source_fallback": false,
+        "selector_file_count": 176,
+        "tag": "312",
+        "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f",
+        "xml": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 4819,
+          "skipped": 57,
+          "tests": 4876
+        }
+      },
+      {
+        "all_imports_under_installed_package": true,
+        "collected_count": 4876,
+        "pytest_exit_code": 0,
+        "python": "3.13.8",
+        "runtime_source_fallback": false,
+        "selector_file_count": 176,
+        "tag": "313",
+        "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f",
+        "xml": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 4819,
+          "skipped": 57,
+          "tests": 4876
+        }
+      }
+    ],
+    "runtime_source_fallback": false,
+    "scope": [
+      "models",
+      "agent",
+      "context",
+      "product_config",
+      "evals",
+      "delivery"
+    ],
+    "single_build": true,
+    "source_modules": 432,
+    "status": "PASS",
+    "summary_sha256": "0772e507e65e036c250858c40f52b6278f4f2359be1ec88180cd77fac7342da1",
+    "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f"
+  },
+  "related_regression": {
+    "Windows_native": false,
+    "correction": "只修正验证宿主导入路径；原产品、任务、断言不改",
+    "initial_failure_cause": "验证宿主仓库根PYTHONPATH遮蔽任务unittest包",
+    "initial_results_retained": {
+      "errors": 0,
+      "failures": 2,
+      "passed": 5127,
+      "skipped": 57,
+      "tests": 5186
+    },
+    "input_changed": [],
+    "pytest_exit": 0,
+    "results": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 5129,
+      "skipped": 57,
+      "tests": 5186
+    },
+    "source_modules": 432,
+    "test_files": 179,
+    "whole_repository_coverage": false,
+    "xml_sha256": "dc84fa579457c5f94e5c82cebf04c5f45ea2713a37fd934a95cecb1fa7f345d0"
+  },
+  "retained_failures": {
+    "alias_red": {
+      "failed": 100,
+      "passed": 15
+    },
+    "workflow_red": {
+      "failed": 14,
+      "passed": 1
+    },
+    "workflow_size_controls": {
+      "accepted_bytes": 2749,
+      "initial_bytes": 2941,
+      "limit_unchanged": 2751,
+      "second_bytes": 2755
+    }
+  },
+  "schema": "harnessix.r3-native-invocation-verification/v1",
+  "static": {
+    "format": {
+      "exit": 0,
+      "files": 986
+    },
+    "result_sha256": "8ddc27c654e2c21cdf573b9f1b47ca79319e30c8cea357904689543fa47a9d57",
+    "ruff": {
+      "exit": 0,
+      "files": 986
+    }
+  },
+  "status": "offline_candidate_verified_real_quality_open",
+  "workflow_tests": {
+    "failures": 0,
+    "passed": 25,
+    "skipped": 0,
+    "total": 25
+  }
+}

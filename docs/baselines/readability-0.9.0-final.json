@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 431,
-    "physical_lines": 91605,
-    "logical_lines": 80972,
-    "documented_modules": 431,
-    "classes": 953,
-    "documented_classes": 428,
-    "functions": 3706,
-    "documented_functions": 809,
+    "source_files": 432,
+    "physical_lines": 92171,
+    "logical_lines": 81491,
+    "documented_modules": 432,
+    "classes": 956,
+    "documented_classes": 431,
+    "functions": 3717,
+    "documented_functions": 821,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -212,7 +212,7 @@
     },
     {
       "path": "src/harnessix/delivery/git.py",
-      "lines": 985
+      "lines": 986
     },
     {
       "path": "src/harnessix/delivery/git_push.py",
@@ -644,7 +644,7 @@
       "path": "src/harnessix/delivery/git.py",
       "qualname": "GitDeliveryRuntime",
       "kind": "class",
-      "line": 209,
+      "line": 210,
       "lines": 748,
       "documented": true
     },
@@ -654,7 +654,7 @@
       "path": "src/harnessix/delivery/git.py",
       "qualname": "_GitRunner",
       "kind": "class",
-      "line": 87,
+      "line": 88,
       "lines": 120,
       "documented": false
     },
@@ -1015,7 +1015,7 @@
       "path": "src/harnessix/models/_history.py",
       "qualname": "messages_for",
       "kind": "function",
-      "line": 26,
+      "line": 32,
       "lines": 71,
       "documented": true,
       "decision_complexity": 21

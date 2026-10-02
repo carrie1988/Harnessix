@@ -1,0 +1,21 @@
+flowchart TB
+    H[受信宿主显式材料诊断配置] --> P[GitMaterialPreparation.prepare_object_write]
+    C[生产静态profile目录<br/>30种事件及6种FMT_ID] --> P
+    P --> B[GitCommand v2摘要及GitMaterialInput v2]
+    B --> A[原ExecutionPlanV2与新checkpoint精确批准]
+    A --> G[GitDeliveryProcess.run原前置守卫]
+    G --> S[原Supervisor及Owner]
+    S --> W[原git_material_worker]
+    W --> X[原22项argv及单次Git进程<br/>GIT_TRACE2_EVENT=2复用fd2]
+    X --> R[原Owner认证回执及双完整raw]
+    R --> O[原业务结果<br/>proof与独立批准readback不变]
+    subgraph D[显式pytest侧车：非权威观察边界]
+      R -. 原验真之后 .-> F[既有失败_post_once]
+      O -. 原成功Completion .-> Q[成功_success接点<br/>原input_proof非None及同一stderr]
+      F --> J[纯内存git_trace2_projection]
+      Q --> J
+      C --> J
+      J --> E[固定枚举、阶段见证及FMT_ID]
+      E --> V[原v5有限记录与诊断完整性门闩]
+    end
+    V --> Z[仅显式会话门闩收紧原0<br/>原业务失败不变]

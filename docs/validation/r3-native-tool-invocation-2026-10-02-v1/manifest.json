@@ -1,0 +1,39 @@
+{
+  "algorithm": "sha256",
+  "design_sha256": "1e579551d1e328fc181565a4e17bed919d209b6182bbd5e61378ae4a5837c53a",
+  "files": {
+    "README.md": "1e9a582da53045b1b67ff8d7045361362b4a45a5d09a343b2ee02dcda9060ca7",
+    "diagrams/architecture.mmd": "795de76d97e8536093c3984cb5befee1e8a6b8ebe1456431a905239ea7e9799e",
+    "diagrams/architecture.png": "a7887e1546d6ae341e85c18ab2c9e8976697182d4b7f8eaf01d3153291cb1a89",
+    "diagrams/evidence-data-flow.mmd": "623b68b8782c35b1c704e7dddf4a608ee3c67762dad07d064c3b8a5c7ff021a0",
+    "diagrams/evidence-data-flow.png": "eb4b97b3538d1b70d93e5d2afafe94754aebea5db52369c333db9be95d7ab9a5",
+    "diagrams/invocation-flow.mmd": "3d3a9b907e6f71c8f51bd3283109b4513042401aaee2df3812babbc453dd8e1e",
+    "diagrams/invocation-flow.png": "d7874baaca16dfd91cf4b2c61322b8d31c09af20964dae9aa0c1691ee38acf23",
+    "diagrams/invocation-sequence.mmd": "ae5396419d7b8c73856949dd0ff0fadee3880518743e00d43bb8dc5550d29573",
+    "diagrams/invocation-sequence.png": "6093eff70f401ed53eacb330c40c183710a7bdf0eb70b0344c08b7832fa4bc11",
+    "facts.json": "19481f177f7c3e9927e6d6082d7ed9f9e5d4d4291332f520049dd7c515866a37",
+    "review-packet.json": "6d9462876cfffbaaac3ff6c5ec148e19268d6db605bad0dfbb4bb69e8219213e",
+    "verification.json": "c338289d6dc565efb433cfcad51ca604d9bbbae459db448ffbc4ee4bae21c41d"
+  },
+  "original_private_evidence_sha256": {
+    "alias_summary": "c6189f9844a19928bbb6723fcc8fc2fb957f9999dd6ff2d74cdb3c7391910b7e",
+    "cohesive_final_xml": "dc84fa579457c5f94e5c82cebf04c5f45ea2713a37fd934a95cecb1fa7f345d0",
+    "independent_review_summary": "9a6d0e2db1faa2b77933a97fb486c0d9bb0346ff4b3c1967eaf014dfc8abe6dd",
+    "readonly_real_session_diagnosis": "b62ad13105f3fc72eada716ccf5bcf8ff4116579e8f845d7919583a70eac4d8a",
+    "workflow_confirmed_xml": "8d4101d8e4ea406eb60840fce4aad8af3f6cf3ad830269fd0e3dffadf4e0c10f"
+  },
+  "schema": "harnessix.validation-manifest/v1",
+  "source_inputs": {
+    "src/harnessix/agent/runtime.py": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+    "src/harnessix/models/_anthropic_mapping.py": "642af270d5ee9691925f67a0c88bd7456459462b5d3ce6565308cd809fe2a520",
+    "src/harnessix/models/_anthropic_stream.py": "de9141c4e090c712a82adcb76d2bc82af668a4245964d8cd44c4f21b93fd66ae",
+    "src/harnessix/models/_chat_mapping.py": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+    "src/harnessix/models/_chat_stream.py": "9639eefd7cfa40654f163538241902f6d2c2e85c99b6365c90dfa700d67dc3a5",
+    "src/harnessix/models/_history.py": "226314c74500e10cfc867d726534553fef03f3e1a683a2266b21a7f504605a28",
+    "src/harnessix/product_config/agent_context.py": "fe75df6f33f3dbe62355817ba4f545ab2ca2edfe510e75a1270838b6df195a5a",
+    "tests/models/test_tool_alias_identity.py": "a68dcd33abc292534ece2b3e039097b2cc6067a9371ff82a5506f64656245980",
+    "tests/product_config/test_agent_context.py": "94a8e0662b98e4fac8cd26e782cde9fb300a8e2f7400f3550114b2ee08b1b9b7",
+    "tests/product_config/test_coding_workflow_instructions.py": "fd39af32cf38dce3711a28f881abd3d71b9e991a866b058311926ef3d6626136"
+  },
+  "whole_repository_bound": false
+}

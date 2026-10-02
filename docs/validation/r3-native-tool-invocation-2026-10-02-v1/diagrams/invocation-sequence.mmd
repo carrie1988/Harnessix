@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Runtime as 原Agent Runtime
+    participant Context as 共享Context Factory
+    participant Adapter as 正式Adapter
+    participant Model as 模型Provider
+    participant Gate as 原Tool及审批
+    participant Session as 原Session
+    Runtime->>Context: 原Context输入及取消令牌
+    Context-->>Runtime: v4可信片段及Inspection
+    Runtime->>Session: 原ContextPrepared指纹
+    Runtime->>Adapter: 原名历史及Descriptor
+    Adapter->>Model: 同源可读别名及严格请求
+    alt 完整原生Tool事件
+        Model-->>Adapter: 原Tool调用及完整终态
+        Adapter-->>Runtime: 精确映射后的内部工具名
+        Runtime->>Session: 原Tool Call身份
+        Runtime->>Gate: 原Schema Policy Approval
+        Gate-->>Runtime: 实际结果及不确定状态
+        Runtime->>Session: 原Tool Result
+    else 仅普通文本
+        Model-->>Adapter: Assistant正文及完整终态
+        Adapter-->>Runtime: 原文本事件
+        Runtime->>Session: 不产生工具执行证据
+    end

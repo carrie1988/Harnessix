@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant H as 宿主及原批准
+    participant P as 原GitDeliveryProcess
+    participant O as 原Supervisor与Owner
+    participant W as 原worker及Git
+    participant D as 原13接点侧车
+    participant J as 纯内存投影器
+    H->>P: 准备材料、新Plan及exact checkpoint
+    P->>P: 诊断REQUIRE_APPROVAL与完整绑定先验
+    P->>P: 创建原task并持久化原Plan
+    P->>O: 原start、正文stage、小握手及close
+    O->>W: 原单次worker与22项Git argv
+    W-->>O: 原stdout及共享fd2 stderr
+    O-->>P: 原wait及终态
+    alt 原业务成功
+        P->>O: 原认证receipt及完整双raw
+        P->>P: 原长度、摘要、EOF、protection、proof及PID守卫
+        P-->>D: GitProcessCompletion，字段input_proof
+        D->>D: _success读取原input_proof，None由_safe标不完整
+        D->>J: 同一原stderr内存及原proof回码，无新增IO
+        J-->>D: 有限投影；版本不匹配则MISMATCH及incomplete
+        Note over D,J: 本机真实接口311PASS不等于Windows profile命中<br/>最终受审字节P1独立闭合，成功无post补读
+    else 原业务失败或效果未知
+        P-->>H: 原异常及UNKNOWN不被侧车覆盖
+        P->>P: 原停止、关闭及私有stage清理
+        D->>D: teardown恢复hooks，既有post_settlement一次
+        D->>O: 原_post_once认证receipt及各流一次读取
+        D->>D: 双raw长度、摘要、EOF及protection全部通过
+        D->>J: 已验真stderr、原argv及静态profileSHA
+        J-->>D: 仅有限枚举、阶段见证及FMT_ID
+        D-->>H: 原v5有限侧车记录，保留业务失败
+    end
+    D->>D: sessionfinish仅可将原0且诊断不完整改为非0

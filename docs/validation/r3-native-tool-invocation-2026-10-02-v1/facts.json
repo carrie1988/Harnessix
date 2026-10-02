@@ -1,0 +1,58 @@
+{
+  "schema": "harnessix.r3-native-invocation-facts/v1",
+  "baseline_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "status": "local_implementation_verified_real_quality_open",
+  "source_inputs": {
+    "src/harnessix/models/_history.py": "226314c74500e10cfc867d726534553fef03f3e1a683a2266b21a7f504605a28",
+    "src/harnessix/models/_chat_mapping.py": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+    "src/harnessix/models/_anthropic_mapping.py": "642af270d5ee9691925f67a0c88bd7456459462b5d3ce6565308cd809fe2a520",
+    "src/harnessix/models/_chat_stream.py": "9639eefd7cfa40654f163538241902f6d2c2e85c99b6365c90dfa700d67dc3a5",
+    "src/harnessix/models/_anthropic_stream.py": "de9141c4e090c712a82adcb76d2bc82af668a4245964d8cd44c4f21b93fd66ae",
+    "src/harnessix/product_config/agent_context.py": "fe75df6f33f3dbe62355817ba4f545ab2ca2edfe510e75a1270838b6df195a5a",
+    "src/harnessix/agent/runtime.py": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+    "tests/models/test_tool_alias_identity.py": "a68dcd33abc292534ece2b3e039097b2cc6067a9371ff82a5506f64656245980",
+    "tests/product_config/test_coding_workflow_instructions.py": "fd39af32cf38dce3711a28f881abd3d71b9e991a866b058311926ef3d6626136",
+    "tests/product_config/test_agent_context.py": "94a8e0662b98e4fac8cd26e782cde9fb300a8e2f7400f3550114b2ee08b1b9b7"
+  },
+  "source_scope": "ten_explicit_files_not_whole_repository",
+  "alias": {
+    "prefix": "hx_",
+    "semantic_characters": "ASCII A-Z a-z 0-9 _ -",
+    "semantic_max_characters": 27,
+    "digest_original_utf8": true,
+    "digest_hex_characters": 32,
+    "maximum_bytes": 63,
+    "unicode_normalization": false,
+    "legacy_alias_fallback": false,
+    "persistent_tool_name_changed": false,
+    "collision_rejection_unchanged": true
+  },
+  "instructions": {
+    "version": "harnessix.coding-instructions/v4",
+    "bytes": 2749,
+    "original_max_bytes": 2751,
+    "sha256": "bee4c2e1098483d947408e9e64b8cc20423d245cdaa3f6807384a34cf640e788",
+    "forced_completion_gate_implemented": false,
+    "budget_changes": false,
+    "automatic_requests_added": false
+  },
+  "real_trial_diagnosis": {
+    "trials": 20,
+    "one_step_no_tools": 11,
+    "claims_pass_without_actual_check": 10,
+    "textual_tool_markup_trial": 3,
+    "patched_without_baseline": 3,
+    "session_changed": 0
+  },
+  "original_real_quality": {
+    "strict_success": 0,
+    "test_pass": 1,
+    "trials": 20,
+    "new_real_suite_executed": false
+  },
+  "evidence_limits": [
+    "正式已发HTTP正文未持久化，离线捕获仅证明同源装配与映射。",
+    "工具名称可辨识性与新规则尚未经新完整真实Suite验证。",
+    "工程闭环规则是指令，不是业务完成强制门禁。"
+  ]
+}

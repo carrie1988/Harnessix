@@ -1,0 +1,44 @@
+---
+config:
+  sequence:
+    useMaxWidth: false
+    wrap: false
+    width: 110
+    actorMargin: 24
+    diagramMarginX: 24
+    diagramMarginY: 16
+    messageMargin: 30
+    noteMargin: 12
+---
+sequenceDiagram
+  participant S as SuiteRunner
+  participant C as Case执行器
+  participant A as Agent<br/>Context v3
+  participant G as 预算Guard
+  participant P as 固定Provider
+  participant T as 工具<br/>固定Profile
+  participant E as Eval与报告
+  participant R as 只读审计
+  S->>C: 冻结Case<br/>Campaign与Run ID
+  C->>A: 真实Workspace与工具<br/>受信Action与指令
+  loop 实际模型步骤（全Suite合计65次）
+    A->>G: 单次模型请求
+    G->>G: 范围、价格、额度检查<br/>保存请求预留
+    G->>P: 发送实际请求
+    P-->>G: 完整usage<br/>或规范失败
+    G->>G: 结算已知费用<br/>或保留未知预留
+    G-->>A: 计费后结果
+    opt 实际产生正式工具调用
+      A->>T: 正式工具调用
+      T-->>A: 有限终态与观察
+    end
+  end
+  Note over A,T: 11个Trial仅1步骤0工具<br/>并非每个Trial都完成基线/最终检查
+  A-->>C: Turn终态
+  C->>E: 抽取Profile顺序、Git证据并评分
+  E-->>S: Eval / Campaign / Case报告
+  S->>E: 发布Suite报告
+  R->>E: 只读正式合同与哈希<br/>固定Run ID
+  R->>G: 只读历史前缀、65新请求与费用
+  R->>R: 阈值复算<br/>脱敏投影
+  Note left of R: 严格0/20<br/>测试1/20<br/>质量NO-GO

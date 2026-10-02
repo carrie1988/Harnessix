@@ -113,8 +113,11 @@ class _ProcessCase:
 
 
 @pytest.fixture
-async def make_process(tmp_path: Path) -> AsyncIterator[Callable[..., _ProcessCase]]:
+async def make_process(
+    tmp_path: Path, request: pytest.FixtureRequest
+) -> AsyncIterator[Callable[..., _ProcessCase]]:
     cases: list[_ProcessCase] = []
+    mode = request.config.getoption("--git-material-trace2", default="off")
 
     def create(
         *,
@@ -143,7 +146,9 @@ async def make_process(tmp_path: Path) -> AsyncIterator[Callable[..., _ProcessCa
             workspace,
             state,
             runner,
-            GitDeliveryProcess(runner, state, output_redaction=output_redaction),
+            GitDeliveryProcess(
+                runner, state, output_redaction=output_redaction, material_trace2_mode=mode
+            ),
         )
         cases.append(case)
         return case

@@ -16,9 +16,10 @@ from pydantic import JsonValue, ValidationError
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
-from harnessix.delivery.git import _GitRunner, git_delivery_implementation_digest
+from harnessix.delivery.git import _GitRunner
 from harnessix.delivery.git_command import GitCommand
 from harnessix.delivery.git_material_input_contracts import GitMaterialProof, decode_proof
+from harnessix.delivery.git_material_trace2_profile import GitMaterialTrace2Mode
 from harnessix.delivery.git_object_material import (
     GitObjectMaterial,
     GitObjectRead,
@@ -27,7 +28,6 @@ from harnessix.delivery.git_object_material import (
 from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionPlanV2,
-    execution_is_approved,
 )
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.processes.owner_protocol import OutputRedactionSource
@@ -48,7 +48,12 @@ from harnessix.processes.supervisor_capabilities import (
     probe_posix_process_capability,
     probe_windows_process_capability,
 )
-from harnessix.product_config.git_material_process import GitMaterialPreparation
+from harnessix.product_config.git_material_process import (
+    GitMaterialPreparation,
+    checked_material_trace2_mode,
+    git_process_implementation_digest,
+    material_trace2_is_approved,
+)
 from harnessix.secrets.redaction import secret_patterns
 from harnessix.tools.runtime import _drain
 
@@ -145,21 +150,8 @@ class PreparedGitProcess:
 
 
 def _implementation_digest() -> str:
-    """新批准覆盖适配代码及原领域实现；原 Process 能力另行绑定 Owner。"""
-    from harnessix.execution.contracts import canonical_digest
-
-    try:
-        return canonical_digest(
-            {
-                "adapter": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                "material_adapter": hashlib.sha256(
-                    Path(__file__).with_name("git_material_process.py").read_bytes()
-                ).hexdigest(),
-                "delivery": git_delivery_implementation_digest(),
-            }
-        )
-    except OSError:
-        raise KernelError("git_capability_unavailable", "Git受控执行实现不可证明") from None
+    """新批准覆盖适配代码及原领域实现；原Process能力另行绑定Owner。"""
+    return git_process_implementation_digest(Path(__file__))
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,9 +183,11 @@ class GitDeliveryProcess(GitMaterialPreparation):
         state_root: Path,
         *,
         output_redaction: OutputRedactionSource | None = None,
+        material_trace2_mode: GitMaterialTrace2Mode = "off",
     ) -> None:
         if not state_root.is_absolute():
             raise KernelError("git_process_state_invalid", "Git进程状态根必须是绝对路径")
+        self._material_trace2_mode = checked_material_trace2_mode(material_trace2_mode)
         self._runner = runner
         self._state = state_root
         self._output_redaction = output_redaction
@@ -351,7 +345,7 @@ async def _run_process(
         or plan.secrets
     ):
         raise KernelError("git_process_plan_mismatch", "Git命令与原执行计划不一致")
-    if not execution_is_approved(plan, checkpoint):
+    if not material_trace2_is_approved(prepared, plan, checkpoint, self._material_trace2_mode):
         raise KernelError("approval_required", "Git执行计划尚未取得有效批准")
     # 与 Supervisor 使用同一绑定校验；不匹配环境在创建私有 Plan/Lease 前拒绝。
     build_host_process_binding(

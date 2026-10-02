@@ -1,0 +1,1529 @@
+{
+  "schema": "harnessix.git-material-trace2-design-facts/v1",
+  "captured_utc": "2026-10-02T00:16:55.066037+00:00",
+  "head": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "status": "现行设计资料已封存；实现仍为离线候选；P1最终受审字节独立闭合；四图实际渲染及视觉复核通过",
+  "source_scope": {
+    "count": 19,
+    "identity_sha256": "7da875ba1e84f97d9647b5d0bd3be2cbb826088692e5640c4ec92fe4647a1d07",
+    "algorithm": "sha256(JSON排序键、紧凑分隔符、ASCII编码及末尾LF的source_inputs完整数组)",
+    "full_repository": false,
+    "scope_note": "19件限域源码、测试与工作流输入；不涵盖全部依赖、安装包或原生checkout"
+  },
+  "source_inputs": [
+    {
+      "path": "src/harnessix/delivery/git_material_trace2_profile.py",
+      "sha256": "f0cac9ca79e9d38d54d8b38ecfed5ccd25f0abb2b3347536fe18c5ef1bf63259",
+      "bytes": 11762,
+      "lines": 338
+    },
+    {
+      "path": "src/harnessix/delivery/git_command.py",
+      "sha256": "77518b538954ab9a940748f9a2afd1893bd0df493381a39536c7f2331725d6b1",
+      "bytes": 8741,
+      "lines": 222
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_input_contracts.py",
+      "sha256": "4080c84dc577ac24116e6efd97f3db38d54ec7262bc9b71d78f4282d80a75b71",
+      "bytes": 17975,
+      "lines": 459
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_worker.py",
+      "sha256": "f56b25e5d230abf56702bc12ccf27f8344c67c34bbb8b0777128caea764bf37d",
+      "bytes": 12946,
+      "lines": 354
+    },
+    {
+      "path": "src/harnessix/delivery/git.py",
+      "sha256": "8848a6aaaefe6b2987fb41fab0fa8b52ecf8d7533fba090e450881bae2e8de74",
+      "bytes": 42334,
+      "lines": 986
+    },
+    {
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "sha256": "15b394e6eb3ded3f6e67638a9d6e3ec414e01e9692ac779b238e74fa4946d403",
+      "bytes": 24038,
+      "lines": 592
+    },
+    {
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "sha256": "6c203b86d4729fc3ced38f42850e3c8744826c867d0bfeb316c22c7f09c86f4a",
+      "bytes": 18674,
+      "lines": 475
+    },
+    {
+      "path": "tests/product_config/git_minimum_commit_probe.py",
+      "sha256": "bceaff4fdb87524189e48f28fcf3d038e50e6b428240b150c99565bcd196cf19",
+      "bytes": 22432,
+      "lines": 590
+    },
+    {
+      "path": "tests/product_config/git_trace2_projection.py",
+      "sha256": "a86a106e35f731f46c81acc9e872e038d391130461cd674a7395a9c05d58d43f",
+      "bytes": 12723,
+      "lines": 347
+    },
+    {
+      "path": "tests/product_config/git_stderr_signals.py",
+      "sha256": "b05e233ff9b6d73ccfe01702de22d8bb82d65283b545c4ab75f0df0be3df56cf",
+      "bytes": 2279,
+      "lines": 40
+    },
+    {
+      "path": "tests/delivery/test_git_material_trace2_contracts.py",
+      "sha256": "3eebccb0ebd8f60714cfe1abb92ea4d2a6b85b948c2991099d76071d70ef802b",
+      "bytes": 13816,
+      "lines": 355
+    },
+    {
+      "path": "tests/product_config/test_git_material_trace2_binding.py",
+      "sha256": "1c02451e1bb39fb50a4e9ba371ad72f1e27a667934eba53e7128724f3df5660e",
+      "bytes": 10303,
+      "lines": 233
+    },
+    {
+      "path": "tests/product_config/test_git_delivery_process.py",
+      "sha256": "6fd8a096e54bd8c9d3e3aa3c167d1533984ad08d5c8f99880d8b2babf71a69ba",
+      "bytes": 48083,
+      "lines": 1162
+    },
+    {
+      "path": "tests/product_config/test_git_material_input.py",
+      "sha256": "2a48f4a9ee130711fe0c7726f1c329400652767b50aeb5b897b4ebd4e0c72b02",
+      "bytes": 19295,
+      "lines": 472
+    },
+    {
+      "path": "tests/governance/test_git_trace2_projection.py",
+      "sha256": "0baf5570fb088b6cce030bbb4550cd8766395bdc15f61b97764294c47344d41c",
+      "bytes": 16784,
+      "lines": 463
+    },
+    {
+      "path": "tests/governance/test_git_minimum_commit_probe.py",
+      "sha256": "5ae721facc2edc4eb3d7249ab7c6239134f134bc6fe425fe6976007ad33c0550",
+      "bytes": 28155,
+      "lines": 754
+    },
+    {
+      "path": "tests/governance/test_git_stderr_branches.py",
+      "sha256": "afdd401a32ffaae6d15ff68ee70a2a9f5eced3554649b88b08ab16dacc63a2f2",
+      "bytes": 13098,
+      "lines": 315
+    },
+    {
+      "path": ".github/workflows/windows-git-minimum-commit-probe.yml",
+      "sha256": "2dd79bdd79b5bf2a2408079d131c36ba959b68b7b37b8e9f009b070aa3c6b8a5",
+      "bytes": 1873,
+      "lines": 49
+    },
+    {
+      "path": "tests/product_config/test_git_trace2_success_observation.py",
+      "sha256": "15d262fa11b9c23d32aea640cd6c6485c01e20031982ca5072c3c4464243534a",
+      "bytes": 2566,
+      "lines": 59
+    }
+  ],
+  "profile": {
+    "id": "harnessix.git-material-trace2-profile/v1",
+    "sha256": "7120ca7cc6d73275bd29980b3b7f66be5ff0608d02ec1b241b86505677ea6e48",
+    "canonical_bytes": 13224,
+    "evt": "4",
+    "exe": "2.55.0.windows.5",
+    "event_count": 30,
+    "error_format_count": 6,
+    "event_count_discrepancy": "当前静态表和归档interface均为30项，不是31项；不得凭空添加schema",
+    "event_schemas": {
+      "too_many_files": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 117,
+          "line_end": 128
+        }
+      },
+      "version": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "evt": "string",
+          "exe": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 130,
+          "line_end": 146
+        }
+      },
+      "start": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_abs": "number",
+          "argv": "string_array"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 148,
+          "line_end": 165
+        }
+      },
+      "exit": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_abs": "number",
+          "code": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 167,
+          "line_end": 182
+        }
+      },
+      "signal": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_abs": "number",
+          "signo": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 184,
+          "line_end": 198
+        }
+      },
+      "atexit": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_abs": "number",
+          "code": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 200,
+          "line_end": 214
+        }
+      },
+      "error": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "msg": "string",
+          "fmt": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 233,
+          "line_end": 254
+        }
+      },
+      "cmd_path": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "path": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 256,
+          "line_end": 268
+        }
+      },
+      "cmd_ancestry": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "ancestry": "string_array"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 270,
+          "line_end": 288
+        }
+      },
+      "cmd_name": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "name": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "hierarchy": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 290,
+          "line_end": 305
+        }
+      },
+      "cmd_mode": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "name": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 307,
+          "line_end": 319
+        }
+      },
+      "alias": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "alias": "string",
+          "argv": "string_array"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 321,
+          "line_end": 337
+        }
+      },
+      "child_start": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "child_id": "integer",
+          "child_class": "string",
+          "use_shell": "boolean",
+          "argv": "string_array"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "hook_name": "string",
+          "cd": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 339,
+          "line_end": 369
+        }
+      },
+      "child_exit": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "child_id": "integer",
+          "pid": "integer",
+          "code": "integer",
+          "t_rel": "number"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 371,
+          "line_end": 391
+        }
+      },
+      "child_ready": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "child_id": "integer",
+          "pid": "integer",
+          "ready": "string",
+          "t_rel": "number"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 393,
+          "line_end": 413
+        }
+      },
+      "thread_start": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 415,
+          "line_end": 427
+        }
+      },
+      "thread_exit": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_rel": "number"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 429,
+          "line_end": 444
+        }
+      },
+      "exec": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "exec_id": "integer",
+          "argv": "string_array"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "exe": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 446,
+          "line_end": 465
+        }
+      },
+      "exec_result": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "exec_id": "integer",
+          "code": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 467,
+          "line_end": 482
+        }
+      },
+      "def_param": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "scope": "string",
+          "param": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "value": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 484,
+          "line_end": 502
+        }
+      },
+      "def_repo": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "repo": "integer",
+          "worktree": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 504,
+          "line_end": 517
+        }
+      },
+      "region_enter": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "nesting": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "repo": "integer",
+          "category": "string",
+          "label": "string",
+          "msg": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 519,
+          "line_end": 544
+        }
+      },
+      "region_leave": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_rel": "number",
+          "nesting": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "repo": "integer",
+          "category": "string",
+          "label": "string",
+          "msg": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 546,
+          "line_end": 571
+        }
+      },
+      "data": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_abs": "number",
+          "t_rel": "number",
+          "nesting": "integer",
+          "category": "string",
+          "key": "string",
+          "value": "string"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "repo": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 573,
+          "line_end": 598
+        }
+      },
+      "data_json": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_abs": "number",
+          "t_rel": "number",
+          "nesting": "integer",
+          "category": "string",
+          "key": "string",
+          "value": "json"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "repo": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 600,
+          "line_end": 626
+        }
+      },
+      "printf": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "t_abs": "number"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer",
+          "msg": "string"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 628,
+          "line_end": 644
+        }
+      },
+      "timer": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "category": "string",
+          "name": "string",
+          "intervals": "integer",
+          "t_total": "number",
+          "t_min": "number",
+          "t_max": "number"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 646,
+          "line_end": 668
+        }
+      },
+      "th_timer": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "category": "string",
+          "name": "string",
+          "intervals": "integer",
+          "t_total": "number",
+          "t_min": "number",
+          "t_max": "number"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 646,
+          "line_end": 668
+        }
+      },
+      "counter": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "category": "string",
+          "name": "string",
+          "count": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 670,
+          "line_end": 686
+        }
+      },
+      "th_counter": {
+        "required": {
+          "event": "string",
+          "sid": "string",
+          "thread": "string",
+          "time": "string",
+          "category": "string",
+          "name": "string",
+          "count": "integer"
+        },
+        "optional": {
+          "file": "string",
+          "line": "integer"
+        },
+        "source": {
+          "tag": "v2.55.0.windows.5",
+          "path": "trace2/tr2_tgt_event.c",
+          "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+          "line_start": 670,
+          "line_end": 686
+        }
+      }
+    },
+    "format_sources": [
+      {
+        "fmt_id": "SETUP_EXPLICIT_NOT_REPOSITORY",
+        "sources": [
+          {
+            "tag": "v2.55.0.windows.5",
+            "path": "setup.c",
+            "sha256": "3151e42f4893a9034a41103a1c23491181d8d79b80c75dea4d88ce24f626d611",
+            "line_start": 1171,
+            "line_end": 1171
+          }
+        ],
+        "meaning": "已求证的非穷举调用点，非唯一caller或根因"
+      },
+      {
+        "fmt_id": "SETUP_GITDIR_ENV_BOUND",
+        "sources": [
+          {
+            "tag": "v2.55.0.windows.5",
+            "path": "setup.c",
+            "sha256": "3151e42f4893a9034a41103a1c23491181d8d79b80c75dea4d88ce24f626d611",
+            "line_start": 1157,
+            "line_end": 1157
+          }
+        ],
+        "meaning": "已求证的非穷举调用点，非唯一caller或根因"
+      },
+      {
+        "fmt_id": "HASH_OBJECT_ADD_AGGREGATE",
+        "sources": [
+          {
+            "tag": "v2.55.0.windows.5",
+            "path": "builtin/hash-object.c",
+            "sha256": "d5b371cce3ad59dc2aedda43f462ada6a0a9a50153f18b08711e58edd341bcf6",
+            "line_start": 31,
+            "line_end": 33
+          }
+        ],
+        "meaning": "已求证的非穷举调用点，非唯一caller或根因"
+      },
+      {
+        "fmt_id": "HASH_OBJECT_HASH_AGGREGATE",
+        "sources": [
+          {
+            "tag": "v2.55.0.windows.5",
+            "path": "builtin/hash-object.c",
+            "sha256": "d5b371cce3ad59dc2aedda43f462ada6a0a9a50153f18b08711e58edd341bcf6",
+            "line_start": 31,
+            "line_end": 33
+          }
+        ],
+        "meaning": "已求证的非穷举调用点，非唯一caller或根因"
+      },
+      {
+        "fmt_id": "OBJECT_FORMAT_MALFORMED",
+        "sources": [
+          {
+            "tag": "v2.55.0.windows.5",
+            "path": "object-file.c",
+            "sha256": "d79dbe915c778016f896ddf61dcc3ff48b75d5356856a97c06f36017afc406cc",
+            "line_start": 1014,
+            "line_end": 1014
+          }
+        ],
+        "meaning": "已求证的非穷举调用点，非唯一caller或根因"
+      },
+      {
+        "fmt_id": "GENERIC_DYNAMIC_FORMAT",
+        "sources": [
+          {
+            "tag": "v2.55.0.windows.5",
+            "path": "setup.c",
+            "sha256": "3151e42f4893a9034a41103a1c23491181d8d79b80c75dea4d88ce24f626d611",
+            "line_start": 781,
+            "line_end": 781
+          }
+        ],
+        "meaning": "已求证的非穷举调用点，非唯一caller或根因"
+      }
+    ]
+  },
+  "official_source_proofs": [
+    {
+      "tag": "v2.55.0.windows.5",
+      "path": "builtin/hash-object.c",
+      "sha256": "d5b371cce3ad59dc2aedda43f462ada6a0a9a50153f18b08711e58edd341bcf6",
+      "bytes": 4314,
+      "scope": "已归档源码格式身份，不是运行二进制构建证明"
+    },
+    {
+      "tag": "v2.55.0.windows.5",
+      "path": "object-file.c",
+      "sha256": "d79dbe915c778016f896ddf61dcc3ff48b75d5356856a97c06f36017afc406cc",
+      "bytes": 46716,
+      "scope": "已归档源码格式身份，不是运行二进制构建证明"
+    },
+    {
+      "tag": "v2.55.0.windows.5",
+      "path": "setup.c",
+      "sha256": "3151e42f4893a9034a41103a1c23491181d8d79b80c75dea4d88ce24f626d611",
+      "bytes": 82914,
+      "scope": "已归档源码格式身份，不是运行二进制构建证明"
+    },
+    {
+      "tag": "v2.55.0.windows.5",
+      "path": "trace2/tr2_tgt_event.c",
+      "sha256": "d176fd3f7264f691c295091fa2ea3d045f383bbb0bc34d2774180636ca313de1",
+      "bytes": 21149,
+      "scope": "已归档源码格式身份，不是运行二进制构建证明"
+    }
+  ],
+  "archive_inputs": [
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "member": "REPORT.md",
+      "sha256": "9e74bf8ede9d317d07ade2cc4f08714c925e00c3568b24f05f1ea1f6e2c26f54",
+      "bytes": 15535,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "member": "SUMMARY.json",
+      "sha256": "73f2c4bb76713b592e0cc936dee81da03a64b8681a0f5a69003bc001a612b67d",
+      "bytes": 28373,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "member": "interface-final.json",
+      "sha256": "e8562925f44be03c3acaba607f80909536680fa29d6e8fc7891e3a67c9b1c518",
+      "bytes": 20209,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "member": "final-focused.xml",
+      "sha256": "d1d66939927c03db1ad8731e0261289e7ec193783f35a925224ef843013eb5de",
+      "bytes": 32464,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "member": "final-two-explicit.xml",
+      "sha256": "70735cdcf8993311c95e00bf6ea41c7e31e9a8e3893fdaeea0a1a3a2901bd9a3",
+      "bytes": 636,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "member": "off-environment-ast-proof.json",
+      "sha256": "2a17456fb05fd285056701bbaeaf2d1226a75290b1eb93027030a2381cb414ad",
+      "bytes": 196,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "member": "ast-scope-proof.json",
+      "sha256": "c332de7a1165fd5878683b87bb1855084c7b53e7c7a8c4b4208b3eb1c2a06aa1",
+      "bytes": 2879,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "green.xml",
+      "sha256": "0ec92955ab285eeee0cfc1955a74068b7b295a4ab2622db561748ee2919d923e",
+      "bytes": 53826,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "green.log",
+      "sha256": "c250b576d7feefd78316f1ab8d32b5c0cb6a8a7f5a3a25a2f270a27aa1ecbd49",
+      "bytes": 546,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "stderr-extraction.json",
+      "sha256": "ce61208f1a574d920a22d1d3e043003ece041d176e96c98cf276dca2bc293c3b",
+      "bytes": 296,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "red.xml",
+      "sha256": "ebbb414805cdf510b9fd5692d627612364cf22c43817294849bf54fdad9b4c2d",
+      "bytes": 1165,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "initial.xml",
+      "sha256": "dda6ecb661f91c5ebd89f19f26a218603744047268198cab5087c966818d9002",
+      "bytes": 1244155,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "second.xml",
+      "sha256": "78fe7a0187f04a590eb5e50a4d363cb9695532bcd0b93a54173163e7bd8048c2",
+      "bytes": 49196,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-review-20261002-v1",
+      "member": "SUMMARY.json",
+      "sha256": "52f21a18abb943ee70d1b739f3bd7d51e6d929ed6a179f6e57343094711b9755",
+      "bytes": 4825,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-review-20261002-v1",
+      "member": "REPORT.md",
+      "sha256": "5b8f9e153899ddea870427dab91e15a3d514948fbdc88db5fc3e09330e3ab9ec",
+      "bytes": 12286,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-review-20261002-v1",
+      "member": "xml/success-red.xml",
+      "sha256": "3172aa5bad45b5cc0958f1b4031f280ae70462f5856f91552b161267d5596a38",
+      "bytes": 4644,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "real-completion-red.xml",
+      "sha256": "9a936bc16760cc682d2804a26c50ac95da4a49fe480775f0dabac9806badea72",
+      "bytes": 8185,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "real-completion-red.log",
+      "sha256": "7539312b0137876b190c9f1a56879c14a3d79a3f58e8910fda7129923b7d3835",
+      "bytes": 8169,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "real-completion-green.xml",
+      "sha256": "2e83fda890c96976adbef626018820c600c3e5b5aca06f5c26b7cc7dd6f16265",
+      "bytes": 57220,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "real-completion-green.log",
+      "sha256": "19e5c432787c72abbde90f647f61992b272e161a4e9ff959302135c21f5605d1",
+      "bytes": 3651,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "real-completion-confirmed.xml",
+      "sha256": "b2f5618f5cc8b949b7f427130e264fc221de7efe3be7be85a0fa999ddec5c5e5",
+      "bytes": 53992,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "member": "real-completion-confirmed.log",
+      "sha256": "41c106e044b9d02e5ef6e9e1efcad23890bd733e36a420f156337ff839b1f2dc",
+      "bytes": 566,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "member": "SUMMARY.json",
+      "sha256": "0c1462072ca4a4a518dde9c5eac2681ab20909fb615da5186ea71fba6aac2c5e",
+      "bytes": 9560,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "member": "REPORT.md",
+      "sha256": "c0f710c57cf962dc7899df33b025bc5fb101e38a940ea07d789cf7b051b4d799",
+      "bytes": 9504,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "member": "inputSHA.json",
+      "sha256": "d24284a70e061192fade17e49cfd06a7b0b46b6e2d16572839591bfc715e6e35",
+      "bytes": 26090,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "member": "manifest.json",
+      "sha256": "7d0c3ad9322af837271136e801798f97b91606eff66bac433098d3a9e6b78e15",
+      "bytes": 3554,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "member": "xml/final-focused.xml",
+      "sha256": "316d6f7488057a89d620932cc46430e025c57c1cd72f1aca6dce89b5ed3e0e81",
+      "bytes": 224063,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "member": "logs/final-focused.log",
+      "sha256": "503666ae3c625ce759c99ba98fd06e368c17b2b40fba8e658b828d0fb2ea6b40",
+      "bytes": 831,
+      "copied": false
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "member": "xml/real-completion-recheck.xml",
+      "sha256": "4129b92b1dab97c790b1ab2d1a974d3ca42c556f0b2bd7b4af97eddfc34c609a",
+      "bytes": 3812,
+      "copied": false
+    },
+    {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "focused-v2.xml",
+      "sha256": "dc84fa579457c5f94e5c82cebf04c5f45ea2713a37fd934a95cecb1fa7f345d0",
+      "bytes": 2392098,
+      "copied": false
+    },
+    {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "focused-v2-result.json",
+      "sha256": "3848b6918014c7bdfb63f8510ce8e5f77f70495506e1efffeb801ec0a0d92812",
+      "bytes": 92,
+      "copied": false
+    },
+    {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "focused-v2-inputs-before.json",
+      "sha256": "766e010988722f815080e7dd6d5e014ae985955f629767331cc14cc968da5b7c",
+      "bytes": 69589,
+      "copied": false
+    },
+    {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "focused.xml",
+      "sha256": "f57ba27a2a33eab1b5f66b07d55abe90ea0080ce5709f287000132fefac9ab67",
+      "bytes": 2402316,
+      "copied": false
+    },
+    {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "focused-result.json",
+      "sha256": "cdd0801d9e5200f2f74dd76dab34e7ec10325a4d6dce48d5cead337abf11a22d",
+      "bytes": 92,
+      "copied": false
+    },
+    {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "host-import-scope-control.xml",
+      "sha256": "aee398eda9b16ec7fbf6abe9d7ee8a166218ba4d770afece1b83d229a9947618",
+      "bytes": 589,
+      "copied": false
+    },
+    {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "trace2-dataflow-initial.png",
+      "sha256": "03aea9dc9615685f9fa3c8ce8e895ae9000e6e715137213c349e7adbf1d275a2",
+      "bytes": 10745,
+      "copied": false
+    }
+  ],
+  "binding_current_source_match": [
+    {
+      "path": "src/harnessix/delivery/git_material_trace2_profile.py",
+      "matches": true
+    },
+    {
+      "path": "tests/delivery/test_git_material_trace2_contracts.py",
+      "matches": true
+    },
+    {
+      "path": "tests/product_config/test_git_material_trace2_binding.py",
+      "matches": true
+    },
+    {
+      "path": "src/harnessix/delivery/git_command.py",
+      "matches": true
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_input_contracts.py",
+      "matches": true
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_worker.py",
+      "matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "matches": true
+    },
+    {
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "matches": true
+    },
+    {
+      "path": "tests/product_config/test_git_delivery_process.py",
+      "matches": true
+    },
+    {
+      "path": "tests/product_config/test_git_material_input.py",
+      "matches": true
+    },
+    {
+      "path": "src/harnessix/delivery/git.py",
+      "matches": true
+    }
+  ],
+  "archived_local_results": {
+    "binding_focused": {
+      "passed": 196,
+      "new": 74,
+      "existing": 122,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "binding_explicit_original_two": {
+      "passed": 2,
+      "additional_unique_cases": 0,
+      "full_v5_probe_carrier": false
+    },
+    "binding_mypy": {
+      "source_files": 7,
+      "full_repository": false
+    },
+    "binding_ruff_and_format": {
+      "files": 11,
+      "full_repository": false
+    },
+    "projection_focused": {
+      "passed": 310,
+      "existing": 190,
+      "new": 120,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "status": "历史310PASS；不是当前真实成功接口覆盖证明"
+    },
+    "count_note": "独立档案批次各自登记，不与重执行或复核批次累加为唯一测试数；并非本次设计任务重新运行测试",
+    "real_completion_red": {
+      "tests": 2,
+      "passed": 0,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "retained": true
+    },
+    "real_completion_intermediate": {
+      "tests": 311,
+      "passed": 310,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "retained": true,
+      "cause": "新测试错误要求本机Git2.53符合Windows2.55固定profile；生产MISMATCH与incomplete语义正确，未放宽"
+    },
+    "real_completion_confirmed": {
+      "tests": 311,
+      "passed": 311,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "existing_projection_batch": 310,
+      "new_real_success_interface_cases": 1,
+      "native_windows": false,
+      "profile_match_proven": false,
+      "checks": [
+        "真实Supervisor/Owner/port.run",
+        "原完整认证receipt/proof/PID",
+        "同一stderr内存引用及input_proof原回码",
+        "成功无新增post读取",
+        "reason非RAW_UNAVAILABLE",
+        "incomplete等于completeness非KNOWN"
+      ],
+      "scope": "当前本机成功接口及纯投影回归；不是完整v5两selector原生载体验收"
+    },
+    "peer_closure": {
+      "passed": 569,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "native_windows": false,
+      "unique_cases_not_added_to_other_batches": true,
+      "original_intermediate_recheck_retained": {
+        "passed": 1,
+        "failed": 1
+      }
+    }
+  },
+  "historical_windows_failure": {
+    "run_id": 36862927636,
+    "head_sha": "054deb6779c3faa8d7ebf920016f9b80b4f33e05",
+    "attempt": 1,
+    "conclusion": "failure",
+    "passed": 0,
+    "failed": 2,
+    "git_returncode": 128,
+    "worker_returncode": 2,
+    "proof": "absent",
+    "readback": "未到达",
+    "root_cause": "未知",
+    "verification_scope": "读取既有仓内事实，无网络查询、无新运行"
+  },
+  "peer_review": {
+    "closeout": "P1_resolved_at_final_reviewed_bytes",
+    "archived_observation": "completed_with_one_reproduced_open_P1",
+    "archived_open_p1_count": 1,
+    "finding_id": "T2-PEER-01",
+    "finding_status": "原P1与全部RED保留；当前最终受审字节独立闭合",
+    "business_failure_overridden": false,
+    "source_contract_field": "input_proof",
+    "current_probe_access": "result.input_proof",
+    "original_test_mock_field": "旧SimpleNamespace误加proof，当前治理unit改为实际GitProcessCompletion形状",
+    "archive_is_not_native_windows": true,
+    "scope_note": "P1闭合仅适用于最终受审输入；不是Windows或全仓验收",
+    "current_none_proof": "拒绝，由原_safe标记incomplete；无新增IO",
+    "closure_archive": "windows-git-trace2-peer-closure-20261002-v1",
+    "closure_status": "P1_resolved_at_final_reviewed_bytes",
+    "local_fix_verified": true,
+    "closure_input_count": 20,
+    "closure_input_identity_sha256": "a965313ab1cf1ce8b973e04e6419c4eafe3ef1834117848e2393fa8181cd0d6c",
+    "own_input_count": 19,
+    "scope_count_difference": "本包19件代码/测试/工作流；独立复核20件另含pyproject.toml，无重复路径",
+    "current_source_sha_matches_closure": true,
+    "final_run": {
+      "tests": 569,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 569,
+      "seconds": 66.687,
+      "sha256": "316d6f7488057a89d620932cc46430e025c57c1cd72f1aca6dce89b5ed3e0e81"
+    },
+    "current_findings": {
+      "P0": [],
+      "P1": [],
+      "P2": []
+    },
+    "original_review_unchanged": true,
+    "historical_artifact_count": 26,
+    "historical_drift": [],
+    "native_windows_executed": false,
+    "full_v5_two_selector_carrier_executed": false
+  },
+  "diagram_verification": {
+    "mmd_files": 4,
+    "png_files": 4,
+    "rendered": true,
+    "visually_reviewed": true,
+    "status": "统一验证Chrome实际渲染及逐图视觉复核通过",
+    "per_diagram": [
+      {
+        "mmd": "architecture.mmd",
+        "mmd_sha256": "f69cd65de6eb93ef97a126bb9f5f03a2b4922c8a4da12b7fbdb317a5a225c2af",
+        "png": "architecture.png",
+        "png_sha256": "ff89e3ed8eb8f959ae57481827760ad27aca80824d6ae340f79d77b8a71e3516",
+        "png_bytes": 81164,
+        "width": 784,
+        "height": 1369,
+        "rendered": true,
+        "visual_reviewed": true,
+        "visual_result": "PASS",
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断"
+      },
+      {
+        "mmd": "approval-process.mmd",
+        "mmd_sha256": "1e993b5c3d8692ba841c4d27466a8ab16ba4aeaee93fe2c61f16beab2fabcef5",
+        "png": "approval-process.png",
+        "png_sha256": "6c9e8b50b46f92f587131e8a978aff8934da4750af89bd694398c0a4cf73308a",
+        "png_bytes": 137957,
+        "width": 703,
+        "height": 2494,
+        "rendered": true,
+        "visual_reviewed": true,
+        "visual_result": "PASS",
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断"
+      },
+      {
+        "mmd": "success-failure-sequence.mmd",
+        "mmd_sha256": "b1e05d901943d7d101d52d8e9aecdbe872b293ebceacc7f21d15c5b72a824f60",
+        "png": "success-failure-sequence.png",
+        "png_sha256": "e03754f8a6b25e9bdf8a2d733e81dd4b15845ccef02cc6b7a1ca969b57a065a1",
+        "png_bytes": 62382,
+        "width": 784,
+        "height": 763,
+        "rendered": true,
+        "visual_reviewed": true,
+        "visual_result": "PASS",
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断"
+      },
+      {
+        "mmd": "raw-projection-dataflow.mmd",
+        "mmd_sha256": "fd15ae0a706b4dc41afa58112cad111b92e4abe197ecf8b70c62bd7161faaa06",
+        "png": "raw-projection-dataflow.png",
+        "png_sha256": "f7d37455dbfbbddb07ee37f483e6009e24d0c7ef04827bafd7f0f25dd547af11",
+        "png_bytes": 128652,
+        "width": 726,
+        "height": 1980,
+        "rendered": true,
+        "visual_reviewed": true,
+        "visual_result": "PASS",
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断"
+      }
+    ],
+    "retained_visual_failure": {
+      "initial_wide_dataflow": {
+        "archive": "r3-trace2-candidate-20261002-v1",
+        "member": "trace2-dataflow-initial.png",
+        "sha256": "03aea9dc9615685f9fa3c8ce8e895ae9000e6e715137213c349e7adbf1d275a2",
+        "bytes": 10745,
+        "width": 784,
+        "height": 58,
+        "direction": "LR",
+        "visual_result": "FAIL",
+        "reason": "过横长，文字不可读",
+        "original_preserved": true
+      },
+      "layout_change": "仅flowchart LR改TB；节点、边及语义未变",
+      "final_tb_visual_result": "PASS",
+      "final_tb_visual_conclusion": "文字可读，无截断",
+      "provenance": "统一验证已实际使用Chrome重新渲染并逐图查看"
+    }
+  },
+  "not_executed": [
+    "网络访问",
+    "模型请求",
+    "Docker操作",
+    "钥匙串读取",
+    "CI查询或触发",
+    "新Windows原生Run",
+    "pytest测试套件重执行",
+    "mypy或ruff重执行",
+    "Git stage或commit",
+    "源代码或测试修改"
+  ],
+  "acceptance_open": [
+    "Windows原生诊断兼容与Git128根因",
+    "目标Windows固定profile下完整v5两selector载体验证",
+    "R3真实质量",
+    "fullCommit完整业务交付",
+    "商用R1-R6"
+  ],
+  "prior_design_observation": {
+    "source_scope_count": 18,
+    "identity_sha256": "b54aea1819dd26003caf410f01e36836946e46a2a1c58d27e59b1a5d209de538",
+    "source_sha_for_changed_interfaces": {
+      "tests/product_config/git_minimum_commit_probe.py": "9256098e7cf8065e0882a05b2399a0461cc216e498379f23839cd230f2c332d4",
+      "tests/governance/test_git_trace2_projection.py": "520f49951cc92aad1d9f443857e0f410b83e31f02f151ebce6e10762b375d49c"
+    },
+    "finding": "旧成功接点误读proof；当前已改input_proof，修复后独立复核待完成"
+  },
+  "probe_size": {
+    "lines": 590,
+    "existing_limit": 600,
+    "policy_changed": false
+  },
+  "supporting_config_inputs": [
+    {
+      "path": "pyproject.toml",
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+      "bytes": 2149,
+      "lines": 90,
+      "role": "原共享测试/静态配置；单独列为支持输入，不重复计入19件代码/测试/工作流"
+    }
+  ],
+  "document_revision": {
+    "metadata_status": "current",
+    "implementation_status": "离线候选",
+    "canonical_semantic_sections": "14组规范语义章节及实质正文按原门禁复核通过",
+    "reseal_status": "最终全图封存",
+    "source_input_count": 19,
+    "supporting_config_count": 1
+  },
+  "related_validation": {
+    "associated_integration_group": {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "member": "focused-v2.xml",
+      "status": "关联整合组终结通过",
+      "pytest_exit": 0,
+      "test_files": 179,
+      "source_modules": 432,
+      "tests": 5186,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 57,
+      "passed": 5129,
+      "sha256": "dc84fa579457c5f94e5c82cebf04c5f45ea2713a37fd934a95cecb1fa7f345d0",
+      "bytes": 2392098,
+      "input_snapshot_member": "focused-v2-inputs-before.json",
+      "input_snapshot_sha256": "766e010988722f815080e7dd6d5e014ae985955f629767331cc14cc968da5b7c",
+      "source_and_test_input_count": 611,
+      "archived_input_drift": [],
+      "current_readonly_input_drift": [],
+      "unique_trace2_coverage": false,
+      "full_repository_coverage": false,
+      "windows_native": false,
+      "commercial_go": false,
+      "reexecuted_by_design_delivery": false,
+      "scope": "179文件关联整合组，不是Trace2独有覆盖、全仓、原生或商业GO；不与311/569子范围累加",
+      "retained_initial_failure": {
+        "member": "focused.xml",
+        "pytest_exit": 1,
+        "tests": 5186,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 57,
+        "passed": 5127,
+        "sha256": "f57ba27a2a33eab1b5f66b07d55abe90ea0080ce5709f287000132fefac9ab67",
+        "bytes": 2402316,
+        "input_drift": [],
+        "cause": "验证命令PYTHONPATH导致仓库根导入范围串扰两项unittest；仅修正执行环境，不改源码或断言",
+        "original_preserved": true
+      },
+      "import_scope_controls": {
+        "member": "host-import-scope-control.xml",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 2,
+        "sha256": "aee398eda9b16ec7fbf6abe9d7ee8a166218ba4d770afece1b83d229a9947618",
+        "bytes": 589,
+        "original_preserved": true
+      }
+    }
+  }
+}

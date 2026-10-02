@@ -1,0 +1,14 @@
+flowchart TB
+    Definition[原工具定义] --> Wire[当前线协议别名]
+    Identity[(持久原工具身份)] --> Wire
+    Wire --> Stream[原严格流目录匹配]
+    Stream --> Calls[(原调用及结果)]
+    Instructions[共享v4正文] --> System[实际系统字段]
+    System --> Fingerprint[(原Context指纹)]
+    Calls --> Evidence[实际Profile及Git证据]
+    Evidence --> Grader[原严格Grader]
+    Text[模型最终声明] --> Consistency[只检查一致性]
+    Consistency --> Grader
+    Grader --> Report[正式质量报告]
+    Offline[离线映射及持久回归] --> Verification[候选实现验证]
+    Verification -. 不替代 .-> Report

@@ -1,0 +1,48 @@
+---
+config:
+  flowchart:
+    useMaxWidth: false
+    wrappingWidth: 170
+    nodeSpacing: 28
+    rankSpacing: 36
+---
+flowchart TB
+  subgraph F["冻结输入（7bbce10）"]
+    PACK["正式TaskPack：3仓库、10 Case"]
+    CFG["严格Suite计划：20固定Run ID"]
+    PRE["预登记：质量阈值与原历史"]
+    BIND["同额度单层Binding身份"]
+  end
+  subgraph B["预算守卫"]
+    LED["历史账本：70元总额、40元轮次"]
+    GUARD["请求前预留 / 完整usage结算"]
+  end
+  subgraph X["产品执行"]
+    SUITE["SuiteRunner / TaskPackCaseExecutor"]
+    AGENT["AgentRuntime + Context v3"]
+    TOOLS["真实工具与受信Action / 固定Profile"]
+    MODEL["固定真实Provider"]
+  end
+  subgraph E["正式证据与有界投影"]
+    EVAL["Eval报告与Run状态"]
+    CAMP["Campaign / Case报告"]
+    REPORT["Suite报告：严格0/20、测试1/20"]
+    AUDIT["只读哈希、分类、费用校核"]
+    PUBLIC["脱敏事实与质量NO-GO"]
+  end
+  PACK --> SUITE
+  CFG --> SUITE
+  PRE --> AUDIT
+  BIND --> GUARD
+  LED --> GUARD
+  GUARD --> MODEL
+  SUITE --> AGENT
+  AGENT --> GUARD
+  AGENT --> TOOLS
+  AGENT --> EVAL
+  TOOLS --> EVAL
+  EVAL --> CAMP
+  CAMP --> REPORT
+  REPORT --> AUDIT
+  LED --> AUDIT
+  AUDIT --> PUBLIC

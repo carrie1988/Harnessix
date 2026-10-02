@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 49
-code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
+version: 50
+code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_material_trace2_binding.py
+  - tests/product_config/test_git_trace2_success_observation.py
   - tests/product_config/test_git_object_material.py
   - tests/product_config/test_git_delivery_process.py
   - tests/product_config/test_git_baseline.py
@@ -103,10 +105,15 @@ Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，
 费用与Secret公开保护沿用已有合同。没有新增配置v3或SQLite迁移，全部公共Schema保持不变。
 完整设计、失败语义和测试见[R3产品Context统一装配](../changes/m09-r3-product-context-composition.md)。
 
-编码指令当前为`harnessix.coding-instructions/v3`：替换/删除前置条件只允许使用默认
+编码指令当前为`harnessix.coding-instructions/v4`：替换/删除前置条件只允许使用默认
 `read_file`在`digest_status=complete`时返回的`content_sha256`；分页revision和可见片段摘要不得替代。
 此规则不授予写权限，审批、事务及写前复核保持原合同；新公开快照合同见
 [可信文件快照及受管修改详设](../changes/m09-r3-trusted-file-snapshot.md)。
+
+v4明确最终格式只约束交付正文，不能直接输出完成JSON或把文本工具语法当作真实执行。
+同源Factory用于产品和Task Pack；原持久指纹、Source及Compaction不变。
+工具目录和历史采用共享可读别名，不迁移原内部工具身份、不解析正文触发执行；
+详见[原生工具身份映射与实际执行](../changes/m09-r3-native-tool-invocation.md)。
 
 [共享编码流程详设](../changes/m09-r3-coding-workflow-instructions.md)明确首次受管Patch前的独立基线、
 最后修改后的最终检查、正常非零退出与Artifact引用读取的衔接，以及路径/严格参数错误后的新调用。
@@ -2309,3 +2316,18 @@ Windows pipe Owner已增加单一MAC覆盖的v2原始双流统计；正式基准
 来源桥接、默认Commit/Checkpoint、CAS耐久业务登记和完整备份恢复仍未接线。
 接口、字段、三图及失败/恢复详见[完整对象输入设计](../changes/m09-r4-git-object-material-input.md)，
 不从内部能力推导R1/R4或商用门禁完成。
+
+## Git材料显式诊断装配
+
+[`GitDeliveryProcess`](../../src/harnessix/product_config/git_delivery_process.py)的内部构造参数
+`material_trace2_mode`默认`off`；它不是新增公共配置字段或模型参数。
+[`GitMaterialPreparation`](../../src/harnessix/product_config/git_material_process.py)只为
+完整对象写入派生固定模式／profile、原环境及原ProcessSpec。
+显式诊断必须消费同一原ExecutionPlan的`REQUIRE_APPROVAL`检查点；普通`ALLOW`、旧批准、
+模式或环境漂移均拒绝，不能将只读材料用途升级为写入或把观察信号当作授权。
+
+原prepare不签发批准，原run仍通过Owner、完整输入证明、输出保护和原未知效果规则。
+成功的验证侧观察消费真实Completion的`input_proof`，缺失证明不得假报诊断完整。
+诊断无新后台任务、数据库、服务、默认模型Tool或恢复重放；未改六库备份布局、
+Provider请求预算或固定R3评分。接口、装配时序、七字段投影、安全与测试范围见
+[Git材料Trace2总体与详细设计](../changes/m09-r4-git-material-trace2.md)。

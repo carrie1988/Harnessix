@@ -37,9 +37,11 @@ _CANARY = b"git-material-input-secret-canary"
 
 
 @pytest.fixture
-async def make_process(tmp_path: Path):
+async def make_process(tmp_path: Path, request: pytest.FixtureRequest):
     # 复用原工厂的进程装配与清理，只前置材料输入要求的正式私有目录创建。
-    async with asynccontextmanager(process_tests.make_process.__wrapped__)(tmp_path) as original:
+    async with asynccontextmanager(process_tests.make_process.__wrapped__)(
+        tmp_path, request
+    ) as original:
         case_count = 0
 
         def create(**options):

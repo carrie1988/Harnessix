@@ -429,7 +429,7 @@ def test_safe_record_publishes_single_low_sensitivity_line():
     assert probe_module._publish(probe, stream)
     assert stream.getvalue().count("\n") == 1
     record = json.loads(stream.getvalue().removeprefix(probe_module.PREFIX))
-    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v4"
+    assert record["selector"] == "B" and record["schema"] == "harnessix.minimum-commit-probe/v5"
 
 
 def test_install_restores_all_thirteen_original_seams_and_import_alias(monkeypatch):

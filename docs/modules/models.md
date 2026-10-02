@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
+version: 7
+code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
 owners:
   - core
 modules:
@@ -27,6 +27,7 @@ related_tests:
   - tests/models/test_anthropic.py
   - tests/models/test_chat_mapping.py
   - tests/models/test_anthropic_mapping.py
+  - tests/models/test_tool_alias_identity.py
   - tests/models/test_attempt_usage.py
   - tests/models/test_attempt_crash_recovery.py
   - tests/models/test_billing_metadata.py
@@ -230,8 +231,14 @@ flowchart TD
 2. Tool Call ID在历史中唯一，Result必须唯一配对，连续Result组不能被其他消息打断；
 3. Assistant文本与同轮Tool Call聚合为一条中立Assistant消息；
 4. Tool Result正文只包含`outcome/output/error/diff_artifact`的规范JSON；
-5. 工具名按`hx_ + SHA-256(name)前60位`形成稳定别名，避免供应商名称字符约束和名称泄漏冲突；
+5. 工具名按`hx_ + ASCII语义片段前27字符 + _ + SHA-256(原名UTF-8)前32位`形成稳定可读别名；
 6. Tool Schema顶层必须为Object；别名不能冲突；请求JSON UTF-8字节不得超过配置上限。
+
+语义片段只保留ASCII字母、数字、下划线和连字符，其他字符替换为下划线；摘要不做Unicode规范化。
+持久`ToolCallContent.tool`仍是原内部名称，历史和当前目录使用同一纯函数投影，不重写旧事件。
+响应只能匹配当前反向目录，不回退旧别名、大小写或正文工具标记；碰撞仍在发送前整体拒绝。
+别名不是隐私屏障或授权凭据，Descriptor描述本来就包含原工具名。
+完整流程、字段、伪代码及失败边界见[原生工具身份与执行详设](../changes/m09-r3-native-tool-invocation.md)。
 
 ### 8.2 OpenAI-compatible映射
 

@@ -17,6 +17,21 @@ from typing import Any
 
 import pytest
 
+from tests.product_config.git_stderr_signals import (
+    _STDERR_LITERALS as _STDERR_LITERALS,
+)
+from tests.product_config.git_stderr_signals import (
+    MAX_STDERR_SIGNAL_BYTES as MAX_STDERR_SIGNAL_BYTES,
+)
+from tests.product_config.git_stderr_signals import (
+    _stderr_signals as _stderr_signals,
+)
+from tests.product_config.git_trace2_projection import (
+    diagnostic_probes_complete,
+    initialize_operation_trace2,
+    project_operation_trace2,
+)
+
 SELECTORS = {
     "tests/product_config/test_git_material_input.py::"
     "test_real_complete_input_and_independently_approved_readback"
@@ -29,10 +44,9 @@ PREFIX = "HX_MINIMUM_COMMIT_PROBE "
 MAX_EVENTS = 64
 MAX_CHAIN = 8
 MAX_RECORD_BYTES = 64 * 1024
-# 与原 stderr raw 守卫的 1MiB 同界；只限诊断匹配，不改变原输出合同。
-MAX_STDERR_SIGNAL_BYTES = 1024 * 1024
 _ACTIVE: ContextVar[Operation | None] = ContextVar("minimum_commit_probe", default=None)
 _PROBES: pytest.StashKey[Probe] = pytest.StashKey()
+_SESSION_PROBES: pytest.StashKey[list[Probe]] = pytest.StashKey()
 _CODES = frozenset(
     "git_material_effect_unknown git_material_stage_changed git_material_proof_invalid "
     "git_material_input_invalid git_material_input_protected git_process_unknown "
@@ -44,43 +58,6 @@ _CODES = frozenset(
     "process_owner_token_invalid process_output_corrupt process_output_protection_unavailable "
     "process_input_invalid".split()
 )
-# 字面量依据 worker 固定失败行及 Git v2.53.0、Windows v2.55.0.windows.5 的
-# object-file.c / usage.c；英文固定信号不代表 errno、真实根因或效果已知。
-_STDERR_LITERALS = {
-    "worker_failure_literal": (b"git_material_worker_failed", True),
-    "git_temp_create_prefix": (b"error: unable to create temporary file: ", False),
-    "git_object_db_permission_prefix": (
-        b"error: insufficient permission for adding an object to repository database ",
-        False,
-    ),
-    "git_malformed_object_literal": (b"fatal: refusing to create malformed object", True),
-    # Git v2.55.0.windows.5 object-file.c:1083/1086，stdin 的 path 为 NULL，
-    # 读错误标签使用 <unknown>；errno 尾部不解码、不提取或保存。
-    "READ_ERROR": (b"error: read error while indexing <unknown>: ", False),
-    "SHORT_READ": (b"error: short read while indexing <unknown>", True),
-    # builtin/hash-object.c:28-33/81/137-138：--stdin 且无 --path 时 vpath=NULL。
-    # 仅识别 NULL 的固定 (null) 表示；其他 CRT 表示未匹配，不等于未进入分支。
-    "HASH_FD": (b"fatal: Unable to add (null) to database", True),
-    # object-file.c:719/594 的 die_errno 固定前缀；阳性只是错误点信号。
-    "LOOSE_WRITE": (b"fatal: unable to write loose object file: ", False),
-    "LOOSE_CLOSE": (b"fatal: error when closing loose object file: ", False),
-}
-
-
-def _stderr_signals(stderr: bytes) -> dict[str, bool]:
-    """只识别完整行的求证字节信号；不解码正文，也不推断 errno、根因或效果。"""
-    signals = {name: False for name in _STDERR_LITERALS}
-    if len(stderr) > MAX_STDERR_SIGNAL_BYTES:
-        return signals
-    start = 0
-    while (end := stderr.find(b"\n", start)) >= 0:
-        for name, (literal, exact) in _STDERR_LITERALS.items():
-            stop = start + len(literal)
-            if stderr.startswith(literal, start, end):
-                complete = end == stop or (end == stop + 1 and stderr.startswith(b"\r", stop))
-                signals[name] |= complete if exact else end > stop and not complete
-        start = end + 1
-    return signals
 
 
 def _integer(value: object) -> int | None:
@@ -211,8 +188,10 @@ class Operation:
 class Probe:
     """有界内存侧车；原执行结束前不写日志或读取额外回执。"""
 
-    def __init__(self, selector: str) -> None:
+    def __init__(self, selector: str, trace2_mode: str = "off") -> None:
         self.selector = selector
+        self.trace2_mode = trace2_mode
+        self.published = False
         self.origin = time.monotonic_ns()
         self.lock = threading.RLock()
         self.events: list[dict[str, Any]] = []
@@ -254,7 +233,7 @@ class Probe:
 
     def render(self) -> str:
         record = {
-            "schema": "harnessix.minimum-commit-probe/v4",
+            "schema": "harnessix.minimum-commit-probe/v5",
             "selector": self.selector,
             "platform": sys.platform,
             "source_sha256": self.source_sha256,
@@ -321,6 +300,11 @@ def _success(operation: Operation, phase: str, args: tuple[Any, ...], result: An
     elif phase == "complete":
         data["original_completion_authenticated"] = True
         data["lease"] = _lease(result.lease)
+        if data.get("kind") == "write" and operation.probe.trace2_mode != "off":
+            proof = result.input_proof
+            if proof is None:
+                raise ValueError("成功材料写入缺少原输入证明")
+            project_operation_trace2(operation, result.stderr, proof.git_returncode)
     elif phase == "operation":
         data["original_operation_returned"] = True
 
@@ -382,6 +366,7 @@ def _initialize(operation: Operation) -> None:
         original_operation_returned=False,
     )
     if write is not None:
+        initialize_operation_trace2(operation)
         request = write.request
         oid = _digest(request.expected_oid)
         operation.data["input"] = {
@@ -460,6 +445,9 @@ async def _post_once(operation: Operation) -> None:
             data["post_worker_failure"] = failure
         elif failure_status == "invalid":
             operation.probe.incomplete = True
+        project_operation_trace2(
+            operation, stderr, failure["git_returncode"] if failure is not None else None
+        )
         data["post_status"] = "raw_verified_only"
         if stdout:
             proof = port.decode_proof(stdout, operation.prepared.write.request)
@@ -476,8 +464,10 @@ async def _post_once(operation: Operation) -> None:
 
 def _install(monkeypatch: Any, probe: Probe) -> None:
     from harnessix.delivery import (
+        git_command,
         git_material_failure,
         git_material_input_contracts,
+        git_material_trace2_profile,
         git_material_worker,
     )
     from harnessix.processes import supervisor
@@ -512,8 +502,10 @@ def _install(monkeypatch: Any, probe: Probe) -> None:
     monkeypatch.setattr(original_tests, "_run", _operation_wrapper(original_tests._run, probe))
     probe.installed_hooks += 1
     for module in (
+        git_command,
         git_material_failure,
         git_material_input_contracts,
+        git_material_trace2_profile,
         git_material_worker,
         port,
         material,
@@ -521,11 +513,22 @@ def _install(monkeypatch: Any, probe: Probe) -> None:
         original_tests,
         input_tests,
         cas_tests,
+        sys.modules["tests.product_config.git_stderr_signals"],
+        sys.modules["tests.product_config.git_trace2_projection"],
         sys.modules[__name__],
     ):
         probe.source_sha256[module.__name__] = hashlib.sha256(
             Path(module.__file__).read_bytes()
         ).hexdigest()
+
+
+def pytest_addoption(parser: Any) -> None:
+    parser.addoption(
+        "--git-material-trace2",
+        choices=("off", "stderr-event-v1"),
+        default="off",
+        help="显式批准的材料 Git Trace2 诊断模式；默认关闭",
+    )
 
 
 def pytest_collection_modifyitems(items: list[Any]) -> None:
@@ -535,8 +538,9 @@ def pytest_collection_modifyitems(items: list[Any]) -> None:
 
 @pytest.fixture(autouse=True)
 async def _minimum_commit_probe(request: Any, monkeypatch: Any):
-    probe = Probe(SELECTORS[request.node.nodeid])
+    probe = Probe(SELECTORS[request.node.nodeid], request.config.getoption("--git-material-trace2"))
     request.node.stash[_PROBES] = probe
+    request.session.stash.setdefault(_SESSION_PROBES, []).append(probe)
     with monkeypatch.context() as context:
         _safe(probe, _install, context, probe)
         yield
@@ -559,6 +563,7 @@ def _publish(probe: Probe, stream: Any) -> bool:
     except Exception:
         probe.incomplete = True
         return False
+    probe.published = True
     return True
 
 
@@ -574,3 +579,12 @@ def pytest_runtest_makereport(item: Any):
         if probe.outcomes.get("call") not in {"passed", "failed"} or report.outcome != "passed":
             probe.incomplete = True
         _publish(probe, sys.stdout)
+
+
+def pytest_sessionfinish(session: Any, exitstatus: int) -> None:
+    if session.config.getoption("--git-material-trace2", default="off") != "off":
+        if (
+            not diagnostic_probes_complete(session.stash.get(_SESSION_PROBES, []))
+            and exitstatus == 0
+        ):
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED

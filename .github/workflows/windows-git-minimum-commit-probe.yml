@@ -43,6 +43,7 @@ jobs:
           uv run pytest -p tests.product_config.git_minimum_commit_probe `
             -q -s --tb=no -rN --show-capture=no --disable-warnings --no-header `
             --basetemp $base `
+            --git-material-trace2=stderr-event-v1 `
             'tests/product_config/test_git_material_input.py::test_real_complete_input_and_independently_approved_readback[empty-or-valid-minimum-commit-sha256]' `
             'tests/product_config/test_git_material_cas_integration.py::test_complete_cas_material_original_owner_and_independent_readback[legal-minimum-commit-sha256]'
           exit $LASTEXITCODE

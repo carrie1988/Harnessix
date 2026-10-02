@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 30
-code_revision: 871dc3c12deb5fbea227af3dd628b39fea545622
+version: 31
+code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
 owners:
   - core
 modules:
@@ -14,6 +14,10 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_material_trace2_contracts.py
+  - tests/product_config/test_git_material_trace2_binding.py
+  - tests/product_config/test_git_trace2_success_observation.py
+  - tests/governance/test_git_trace2_projection.py
   - tests/delivery/test_git_inventory_materials.py
   - tests/delivery/test_git_inventory_materials_capacity.py
   - tests/delivery/test_git_inventory_contracts.py
@@ -2080,3 +2084,34 @@ Backup v2及新根重授权仍依照
 [详细设计](../changes/m09-r4-git-object-inventory-materials.md)。
 本内容组件不验证产品来源、Owner、Key、完整账本或新批准，不代表耐久／效果／完整W1。
 实际受信装载、默认Commit／Checkpoint、Backup v2与Windows原生收口仍依原完整产品计划实施。
+
+## Git材料显式Trace2诊断与非权威观察边界
+
+[`GitCommand`](../../src/harnessix/delivery/git_command.py)及
+[`GitMaterialInput`](../../src/harnessix/delivery/git_material_input_contracts.py)
+增加内部`trace2_mode`和`trace2_profile_sha256`绑定。默认`off`保留原命令摘要v1、封闭环境和材料wire键；
+显式`stderr-event-v1`仅允许正式`material_write`用途，使用新版本声明及命令摘要，
+把固定profile摘要和唯一`GIT_TRACE2_EVENT="2"`纳入环境、实现、原ExecutionPlan及独立批准。
+新实现字节自然改变实现摘要，不宣称旧批准可跨实现复用。
+
+[`git_material_trace2_profile.py`](../../src/harnessix/delivery/git_material_trace2_profile.py)
+提供固定Git版本的30种封闭事件schema和6种静态错误格式，不是Git二进制认证或原生故障根因证明。
+原Worker仍消费完整材料、小manifest及原Owner控制通道；没有新增文件日志、文件描述符、
+任意Shell、额外Git命令、重试或超时预算。默认产品没有启用该诊断模式。
+
+低敏解释器位于验证侧
+[`git_trace2_projection.py`](../../tests/product_config/git_trace2_projection.py)，
+不是生产日志服务。原Owner终态MAC、PID、双流EOF、完整长度/SHA及protection先于解释器；
+成功路径只复用实际`GitProcessCompletion.stderr`和`input_proof.git_returncode`，
+不追加原始输出读取。缺少`input_proof`明确拒绝并标记诊断不完整，不能用普通成功结果绕过。
+失败路径仅复用原已授权的单次post观察，原UNKNOWN优先级不变。
+
+解释器先限定1MiB原始数据、64KiB帧、64个事件、严格UTF-8、重复键拒绝和16层深度，
+再核对固定事件、同一进程会话及完整22项argv。仅输出七个有限字段，
+不导出原SID、argv、路径、时间、正文或动态摘要；未知、超限、不匹配及返回不一致保持UNKNOWN，
+不修补、不猜测、不执行。原原生载体仍保留13个hook、20秒命令／45秒操作／5分钟step限额。
+
+实际接口P1负例、修复及独立复验，以及完整类／接口／字段／伪代码、四图和失败说明见
+[总体与详细设计](../changes/m09-r4-git-material-trace2.md)及
+[验证资料](../validation/git-material-trace2-2026-10-02-v1/README.md)。
+本机有限验证不关闭Windows原生失败、默认Git交付、R3真实质量或商用发布门禁。

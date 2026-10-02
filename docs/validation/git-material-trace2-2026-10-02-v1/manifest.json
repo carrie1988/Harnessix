@@ -1,0 +1,453 @@
+{
+  "acceptance_open": [
+    "Windows原生诊断兼容与Git128根因",
+    "目标Windows固定profile下完整v5两selector载体验证",
+    "R3真实质量",
+    "fullCommit完整业务交付",
+    "商用R1-R6"
+  ],
+  "allowed_write_scope": [
+    "docs/changes/m09-r4-git-material-trace2.md",
+    "docs/validation/git-material-trace2-2026-10-02-v1/"
+  ],
+  "archive_originals_copied": false,
+  "artifacts": [
+    {
+      "bytes": 48503,
+      "lines": 610,
+      "path": "docs/changes/m09-r4-git-material-trace2.md",
+      "sha256": "6cc2ac7d4ee965eea594a3bfab45e92b12d4e22d68bdf0726906fa4eaa086f0c"
+    },
+    {
+      "bytes": 7387,
+      "lines": 111,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/README.md",
+      "sha256": "dda97ac6be1e436241319a19a9ddd8cf248b72b59c594fba25a22add7c9f332a"
+    },
+    {
+      "bytes": 1174,
+      "lines": 21,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/approval-process.mmd",
+      "sha256": "1e993b5c3d8692ba841c4d27466a8ab16ba4aeaee93fe2c61f16beab2fabcef5"
+    },
+    {
+      "bytes": 137957,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/approval-process.png",
+      "sha256": "6c9e8b50b46f92f587131e8a978aff8934da4750af89bd694398c0a4cf73308a"
+    },
+    {
+      "bytes": 1084,
+      "lines": 21,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/architecture.mmd",
+      "sha256": "f69cd65de6eb93ef97a126bb9f5f03a2b4922c8a4da12b7fbdb317a5a225c2af"
+    },
+    {
+      "bytes": 81164,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/architecture.png",
+      "sha256": "ff89e3ed8eb8f959ae57481827760ad27aca80824d6ae340f79d77b8a71e3516"
+    },
+    {
+      "bytes": 48283,
+      "lines": 1529,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/facts.json",
+      "sha256": "eb910f5a431b61df316c2519bc46419dc939b38bd4ecf29b2a7e0302aabcfbc5"
+    },
+    {
+      "bytes": 1105,
+      "lines": 19,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/raw-projection-dataflow.mmd",
+      "sha256": "fd15ae0a706b4dc41afa58112cad111b92e4abe197ecf8b70c62bd7161faaa06"
+    },
+    {
+      "bytes": 128652,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/raw-projection-dataflow.png",
+      "sha256": "f7d37455dbfbbddb07ee37f483e6009e24d0c7ef04827bafd7f0f25dd547af11"
+    },
+    {
+      "bytes": 7820,
+      "lines": 98,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/review-packet.md",
+      "sha256": "69157329358f88f3629950a92fe6990cb4a2502e3106a7d63149a759555562ea"
+    },
+    {
+      "bytes": 1721,
+      "lines": 33,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/success-failure-sequence.mmd",
+      "sha256": "b1e05d901943d7d101d52d8e9aecdbe872b293ebceacc7f21d15c5b72a824f60"
+    },
+    {
+      "bytes": 62382,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/success-failure-sequence.png",
+      "sha256": "e03754f8a6b25e9bdf8a2d733e81dd4b15845ccef02cc6b7a1ca969b57a065a1"
+    },
+    {
+      "bytes": 34773,
+      "lines": 1176,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/verification.json",
+      "sha256": "7d33ee47b518bbc195a3d837729f8a72e080fc5a04b8ee2145f26a04209e16b6"
+    }
+  ],
+  "delivery_files_including_manifest": 14,
+  "diagram_render_handoff": [
+    {
+      "height": 1369,
+      "mmd": "architecture.mmd",
+      "mmd_sha256": "f69cd65de6eb93ef97a126bb9f5f03a2b4922c8a4da12b7fbdb317a5a225c2af",
+      "png": "architecture.png",
+      "png_bytes": 81164,
+      "png_sha256": "ff89e3ed8eb8f959ae57481827760ad27aca80824d6ae340f79d77b8a71e3516",
+      "rendered": true,
+      "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+      "visual_result": "PASS",
+      "visual_reviewed": true,
+      "width": 784
+    },
+    {
+      "height": 2494,
+      "mmd": "approval-process.mmd",
+      "mmd_sha256": "1e993b5c3d8692ba841c4d27466a8ab16ba4aeaee93fe2c61f16beab2fabcef5",
+      "png": "approval-process.png",
+      "png_bytes": 137957,
+      "png_sha256": "6c9e8b50b46f92f587131e8a978aff8934da4750af89bd694398c0a4cf73308a",
+      "rendered": true,
+      "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+      "visual_result": "PASS",
+      "visual_reviewed": true,
+      "width": 703
+    },
+    {
+      "height": 763,
+      "mmd": "success-failure-sequence.mmd",
+      "mmd_sha256": "b1e05d901943d7d101d52d8e9aecdbe872b293ebceacc7f21d15c5b72a824f60",
+      "png": "success-failure-sequence.png",
+      "png_bytes": 62382,
+      "png_sha256": "e03754f8a6b25e9bdf8a2d733e81dd4b15845ccef02cc6b7a1ca969b57a065a1",
+      "rendered": true,
+      "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+      "visual_result": "PASS",
+      "visual_reviewed": true,
+      "width": 784
+    },
+    {
+      "height": 1980,
+      "mmd": "raw-projection-dataflow.mmd",
+      "mmd_sha256": "fd15ae0a706b4dc41afa58112cad111b92e4abe197ecf8b70c62bd7161faaa06",
+      "png": "raw-projection-dataflow.png",
+      "png_bytes": 128652,
+      "png_sha256": "f7d37455dbfbbddb07ee37f483e6009e24d0c7ef04827bafd7f0f25dd547af11",
+      "rendered": true,
+      "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+      "visual_result": "PASS",
+      "visual_reviewed": true,
+      "width": 726
+    }
+  ],
+  "files": {
+    "README.md": "dda97ac6be1e436241319a19a9ddd8cf248b72b59c594fba25a22add7c9f332a",
+    "approval-process.mmd": "1e993b5c3d8692ba841c4d27466a8ab16ba4aeaee93fe2c61f16beab2fabcef5",
+    "approval-process.png": "6c9e8b50b46f92f587131e8a978aff8934da4750af89bd694398c0a4cf73308a",
+    "architecture.mmd": "f69cd65de6eb93ef97a126bb9f5f03a2b4922c8a4da12b7fbdb317a5a225c2af",
+    "architecture.png": "ff89e3ed8eb8f959ae57481827760ad27aca80824d6ae340f79d77b8a71e3516",
+    "facts.json": "eb910f5a431b61df316c2519bc46419dc939b38bd4ecf29b2a7e0302aabcfbc5",
+    "raw-projection-dataflow.mmd": "fd15ae0a706b4dc41afa58112cad111b92e4abe197ecf8b70c62bd7161faaa06",
+    "raw-projection-dataflow.png": "f7d37455dbfbbddb07ee37f483e6009e24d0c7ef04827bafd7f0f25dd547af11",
+    "review-packet.md": "69157329358f88f3629950a92fe6990cb4a2502e3106a7d63149a759555562ea",
+    "success-failure-sequence.mmd": "b1e05d901943d7d101d52d8e9aecdbe872b293ebceacc7f21d15c5b72a824f60",
+    "success-failure-sequence.png": "e03754f8a6b25e9bdf8a2d733e81dd4b15845ccef02cc6b7a1ca969b57a065a1",
+    "verification.json": "7d33ee47b518bbc195a3d837729f8a72e080fc5a04b8ee2145f26a04209e16b6"
+  },
+  "frozen_utc": "2026-10-02T00:16:55.066037+00:00",
+  "hashed_artifact_count": 13,
+  "head": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "input_scope": {
+    "code_test_workflow_count": 19,
+    "full_repository": false,
+    "note": "19件代码/测试/工作流与1件pyproject支持配置分别枚举，无重复；不是full candidate或全仓",
+    "shared_config_count": 1,
+    "source_identity_sha256": "7da875ba1e84f97d9647b5d0bd3be2cbb826088692e5640c4ec92fe4647a1d07",
+    "total_enumerated_input_count": 20
+  },
+  "peer_closure": {
+    "final_review_identity_sha256": "a965313ab1cf1ce8b973e04e6419c4eafe3ef1834117848e2393fa8181cd0d6c",
+    "full_repository": false,
+    "local_scope_passed": 569,
+    "own_19_inputs_match_review": true,
+    "review_input_count": 20,
+    "status": "P1_resolved_at_final_reviewed_bytes",
+    "windows_native": false
+  },
+  "previous_text_seal": {
+    "final_dataflow_direction": "TB",
+    "initial_dataflow_mmd_sha256": "f6d40900ce602865b16ba8eb810de02cbb08f9eb500179fe622c755c98133f2d",
+    "layout_only_change": true,
+    "status": "早期文字freeze不是最终全图manifest"
+  },
+  "profile_id": "harnessix.git-material-trace2-profile/v1",
+  "profile_sha256": "7120ca7cc6d73275bd29980b3b7f66be5ff0608d02ec1b241b86505677ea6e48",
+  "related_validation": {
+    "associated_integration_group": {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "archived_input_drift": [],
+      "bytes": 2392098,
+      "commercial_go": false,
+      "current_readonly_input_drift": [],
+      "errors": 0,
+      "failures": 0,
+      "full_repository_coverage": false,
+      "import_scope_controls": {
+        "bytes": 589,
+        "errors": 0,
+        "failures": 0,
+        "member": "host-import-scope-control.xml",
+        "original_preserved": true,
+        "passed": 2,
+        "sha256": "aee398eda9b16ec7fbf6abe9d7ee8a166218ba4d770afece1b83d229a9947618",
+        "skipped": 0,
+        "tests": 2
+      },
+      "input_snapshot_member": "focused-v2-inputs-before.json",
+      "input_snapshot_sha256": "766e010988722f815080e7dd6d5e014ae985955f629767331cc14cc968da5b7c",
+      "member": "focused-v2.xml",
+      "passed": 5129,
+      "pytest_exit": 0,
+      "reexecuted_by_design_delivery": false,
+      "retained_initial_failure": {
+        "bytes": 2402316,
+        "cause": "验证命令PYTHONPATH导致仓库根导入范围串扰两项unittest；仅修正执行环境，不改源码或断言",
+        "errors": 0,
+        "failures": 2,
+        "input_drift": [],
+        "member": "focused.xml",
+        "original_preserved": true,
+        "passed": 5127,
+        "pytest_exit": 1,
+        "sha256": "f57ba27a2a33eab1b5f66b07d55abe90ea0080ce5709f287000132fefac9ab67",
+        "skipped": 57,
+        "tests": 5186
+      },
+      "scope": "179文件关联整合组，不是Trace2独有覆盖、全仓、原生或商业GO；不与311/569子范围累加",
+      "sha256": "dc84fa579457c5f94e5c82cebf04c5f45ea2713a37fd934a95cecb1fa7f345d0",
+      "skipped": 57,
+      "source_and_test_input_count": 611,
+      "source_modules": 432,
+      "status": "关联整合组终结通过",
+      "test_files": 179,
+      "tests": 5186,
+      "unique_trace2_coverage": false,
+      "windows_native": false
+    },
+    "installed_candidate": {
+      "code_input_count": 1382,
+      "initial_failure_reason": "私有启动器PYTHONPATH遮蔽任务unittest namespace；仅修验证环境",
+      "initial_failures_retained": true,
+      "input_drift": [],
+      "limits": [
+        "本机macOS安装及明确单元/离线集成范围",
+        "不代表全仓回归",
+        "不证明真实提供方、原生Windows、原生故障根因、商业完成或质量门禁关闭"
+      ],
+      "locked_dependencies_unchanged": true,
+      "package_members": 473,
+      "real_model_calls": 0,
+      "results": [
+        {
+          "all_imports_under_installed_package": true,
+          "collected_count": 4876,
+          "pytest_exit_code": 0,
+          "python": "3.12.7",
+          "runtime_source_fallback": false,
+          "selector_file_count": 176,
+          "tag": "312",
+          "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f",
+          "xml": {
+            "errors": 0,
+            "failures": 0,
+            "passed": 4819,
+            "skipped": 57,
+            "tests": 4876
+          }
+        },
+        {
+          "all_imports_under_installed_package": true,
+          "collected_count": 4876,
+          "pytest_exit_code": 0,
+          "python": "3.13.8",
+          "runtime_source_fallback": false,
+          "selector_file_count": 176,
+          "tag": "313",
+          "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f",
+          "xml": {
+            "errors": 0,
+            "failures": 0,
+            "passed": 4819,
+            "skipped": 57,
+            "tests": 4876
+          }
+        }
+      ],
+      "runtime_source_fallback": false,
+      "scope": [
+        "models",
+        "agent",
+        "context",
+        "product_config",
+        "evals",
+        "delivery"
+      ],
+      "single_build": true,
+      "source_modules": 432,
+      "status": "PASS",
+      "summary_sha256": "0772e507e65e036c250858c40f52b6278f4f2359be1ec88180cd77fac7342da1",
+      "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f"
+    }
+  },
+  "retained_visual_failure": {
+    "final_tb_visual_conclusion": "文字可读，无截断",
+    "final_tb_visual_result": "PASS",
+    "initial_wide_dataflow": {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "bytes": 10745,
+      "direction": "LR",
+      "height": 58,
+      "member": "trace2-dataflow-initial.png",
+      "original_preserved": true,
+      "reason": "过横长，文字不可读",
+      "sha256": "03aea9dc9615685f9fa3c8ce8e895ae9000e6e715137213c349e7adbf1d275a2",
+      "visual_result": "FAIL",
+      "width": 784
+    },
+    "layout_change": "仅flowchart LR改TB；节点、边及语义未变",
+    "provenance": "统一验证已实际使用Chrome重新渲染并逐图查看"
+  },
+  "schema": "harnessix.git-material-trace2-design-manifest/v1",
+  "self_excluded": "manifest自身不纳入递归SHA；SDD、facts、verification、README、review-packet、4mmd及4PNG全部纳入",
+  "source_inputs": [
+    {
+      "bytes": 11762,
+      "lines": 338,
+      "path": "src/harnessix/delivery/git_material_trace2_profile.py",
+      "sha256": "f0cac9ca79e9d38d54d8b38ecfed5ccd25f0abb2b3347536fe18c5ef1bf63259"
+    },
+    {
+      "bytes": 8741,
+      "lines": 222,
+      "path": "src/harnessix/delivery/git_command.py",
+      "sha256": "77518b538954ab9a940748f9a2afd1893bd0df493381a39536c7f2331725d6b1"
+    },
+    {
+      "bytes": 17975,
+      "lines": 459,
+      "path": "src/harnessix/delivery/git_material_input_contracts.py",
+      "sha256": "4080c84dc577ac24116e6efd97f3db38d54ec7262bc9b71d78f4282d80a75b71"
+    },
+    {
+      "bytes": 12946,
+      "lines": 354,
+      "path": "src/harnessix/delivery/git_material_worker.py",
+      "sha256": "f56b25e5d230abf56702bc12ccf27f8344c67c34bbb8b0777128caea764bf37d"
+    },
+    {
+      "bytes": 42334,
+      "lines": 986,
+      "path": "src/harnessix/delivery/git.py",
+      "sha256": "8848a6aaaefe6b2987fb41fab0fa8b52ecf8d7533fba090e450881bae2e8de74"
+    },
+    {
+      "bytes": 24038,
+      "lines": 592,
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "sha256": "15b394e6eb3ded3f6e67638a9d6e3ec414e01e9692ac779b238e74fa4946d403"
+    },
+    {
+      "bytes": 18674,
+      "lines": 475,
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "sha256": "6c203b86d4729fc3ced38f42850e3c8744826c867d0bfeb316c22c7f09c86f4a"
+    },
+    {
+      "bytes": 22432,
+      "lines": 590,
+      "path": "tests/product_config/git_minimum_commit_probe.py",
+      "sha256": "bceaff4fdb87524189e48f28fcf3d038e50e6b428240b150c99565bcd196cf19"
+    },
+    {
+      "bytes": 12723,
+      "lines": 347,
+      "path": "tests/product_config/git_trace2_projection.py",
+      "sha256": "a86a106e35f731f46c81acc9e872e038d391130461cd674a7395a9c05d58d43f"
+    },
+    {
+      "bytes": 2279,
+      "lines": 40,
+      "path": "tests/product_config/git_stderr_signals.py",
+      "sha256": "b05e233ff9b6d73ccfe01702de22d8bb82d65283b545c4ab75f0df0be3df56cf"
+    },
+    {
+      "bytes": 13816,
+      "lines": 355,
+      "path": "tests/delivery/test_git_material_trace2_contracts.py",
+      "sha256": "3eebccb0ebd8f60714cfe1abb92ea4d2a6b85b948c2991099d76071d70ef802b"
+    },
+    {
+      "bytes": 10303,
+      "lines": 233,
+      "path": "tests/product_config/test_git_material_trace2_binding.py",
+      "sha256": "1c02451e1bb39fb50a4e9ba371ad72f1e27a667934eba53e7128724f3df5660e"
+    },
+    {
+      "bytes": 48083,
+      "lines": 1162,
+      "path": "tests/product_config/test_git_delivery_process.py",
+      "sha256": "6fd8a096e54bd8c9d3e3aa3c167d1533984ad08d5c8f99880d8b2babf71a69ba"
+    },
+    {
+      "bytes": 19295,
+      "lines": 472,
+      "path": "tests/product_config/test_git_material_input.py",
+      "sha256": "2a48f4a9ee130711fe0c7726f1c329400652767b50aeb5b897b4ebd4e0c72b02"
+    },
+    {
+      "bytes": 16784,
+      "lines": 463,
+      "path": "tests/governance/test_git_trace2_projection.py",
+      "sha256": "0baf5570fb088b6cce030bbb4550cd8766395bdc15f61b97764294c47344d41c"
+    },
+    {
+      "bytes": 28155,
+      "lines": 754,
+      "path": "tests/governance/test_git_minimum_commit_probe.py",
+      "sha256": "5ae721facc2edc4eb3d7249ab7c6239134f134bc6fe425fe6976007ad33c0550"
+    },
+    {
+      "bytes": 13098,
+      "lines": 315,
+      "path": "tests/governance/test_git_stderr_branches.py",
+      "sha256": "afdd401a32ffaae6d15ff68ee70a2a9f5eced3554649b88b08ab16dacc63a2f2"
+    },
+    {
+      "bytes": 1873,
+      "lines": 49,
+      "path": ".github/workflows/windows-git-minimum-commit-probe.yml",
+      "sha256": "2dd79bdd79b5bf2a2408079d131c36ba959b68b7b37b8e9f009b070aa3c6b8a5"
+    },
+    {
+      "bytes": 2566,
+      "lines": 59,
+      "path": "tests/product_config/test_git_trace2_success_observation.py",
+      "sha256": "15d262fa11b9c23d32aea640cd6c6485c01e20031982ca5072c3c4464243534a"
+    }
+  ],
+  "source_inventory_algorithm": "sha256(JSON排序键、紧凑分隔符、ASCII编码及末尾LF的source_inputs完整数组)",
+  "source_tests_modified_by_design_delivery": false,
+  "stage_commit": false,
+  "status": "离线实现、本机安装与四图已验真；原生及商用门槛未关闭",
+  "supporting_config_inputs": [
+    {
+      "bytes": 2149,
+      "lines": 90,
+      "path": "pyproject.toml",
+      "role": "原共享测试/静态配置；单独列为支持输入，不重复计入19件代码/测试/工作流",
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+    }
+  ]
+}

@@ -1,0 +1,1176 @@
+{
+  "acceptance_open": [
+    "Windows原生诊断兼容与Git128根因",
+    "目标Windows固定profile下完整v5两selector载体验证",
+    "R3真实质量",
+    "fullCommit完整业务交付",
+    "商用R1-R6"
+  ],
+  "archived_junit_recount": [
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "errors": 0,
+      "failures": 0,
+      "member": "final-focused.xml",
+      "passed": 196,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 196
+    },
+    {
+      "archive": "windows-git-trace2-binding-20261001-v1",
+      "errors": 0,
+      "failures": 0,
+      "member": "final-two-explicit.xml",
+      "passed": 2,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 2
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "errors": 0,
+      "failures": 0,
+      "member": "green.xml",
+      "passed": 310,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 310
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "errors": 0,
+      "failures": 2,
+      "member": "real-completion-red.xml",
+      "passed": 0,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 2
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "errors": 0,
+      "failures": 1,
+      "member": "real-completion-green.xml",
+      "passed": 310,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 311
+    },
+    {
+      "archive": "windows-git-trace2-projection-20261001-v1",
+      "errors": 0,
+      "failures": 0,
+      "member": "real-completion-confirmed.xml",
+      "passed": 311,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 311
+    },
+    {
+      "archive": "windows-git-trace2-peer-review-20261002-v1",
+      "errors": 0,
+      "failures": 1,
+      "member": "xml/success-red.xml",
+      "passed": 0,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 1
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "errors": 0,
+      "failures": 0,
+      "member": "xml/final-focused.xml",
+      "passed": 569,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 569
+    },
+    {
+      "archive": "windows-git-trace2-peer-closure-20261002-v1",
+      "errors": 0,
+      "failures": 1,
+      "member": "xml/real-completion-recheck.xml",
+      "passed": 1,
+      "reexecuted": false,
+      "skipped": 0,
+      "tests": 2
+    }
+  ],
+  "canonical_document_recheck": {
+    "checker_modified": false,
+    "checker_path": "scripts/documentation_check.py",
+    "checker_sha256": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb",
+    "code_inputs": 19,
+    "config_sha_unchanged": true,
+    "diagram_status": "4图实际Chrome渲染及逐图视觉复核通过",
+    "document_count": 3,
+    "document_sha": [
+      {
+        "bytes": 48207,
+        "lines": 607,
+        "path": "docs/changes/m09-r4-git-material-trace2.md",
+        "sha256": "ca62d093a68c2b54558de01ea778980c75c06b6784fa9cb075214863b45b2555"
+      },
+      {
+        "bytes": 7387,
+        "lines": 111,
+        "path": "docs/validation/git-material-trace2-2026-10-02-v1/README.md",
+        "sha256": "dda97ac6be1e436241319a19a9ddd8cf248b72b59c594fba25a22add7c9f332a"
+      },
+      {
+        "bytes": 7820,
+        "lines": 98,
+        "path": "docs/validation/git-material-trace2-2026-10-02-v1/review-packet.md",
+        "sha256": "69157329358f88f3629950a92fe6990cb4a2502e3106a7d63149a759555562ea"
+      }
+    ],
+    "findings": [],
+    "formal_wording_findings": [],
+    "fourth_mmd_direction_only_lr_to_tb": true,
+    "git_revision_verified": true,
+    "initial_archived_gate": {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "main_design_findings": 7,
+      "member": "documentation-initial.json",
+      "note": "原7项主设计错误及包内README/评审元数据问题均按现行规则复核；其他文档发现不在本修订范围",
+      "own_findings": 15,
+      "sha256": "edda51d5ce663114599f39d32a2cf29686f2ab8fae809f4d1358a93bd9831f69",
+      "total_findings": 21
+    },
+    "link_count": 47,
+    "manifest_status": "最终全图封存",
+    "mermaid_count": 4,
+    "mmd_design_blocks_exact": true,
+    "policy_modified": false,
+    "policy_path": "governance/documentation-policy-v1.json",
+    "policy_sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a",
+    "required_change_design_semantic_groups": 14,
+    "schema": "harnessix.git-material-trace2-canonical-document-recheck/v1",
+    "scope": "仅主设计、包README及评审材料3件正式Markdown；不是全仓门禁",
+    "source_sha_unchanged": true,
+    "supporting_config_inputs": 1,
+    "three_original_mmd_bytes_unchanged": true,
+    "utc": "2026-10-02T00:16:55.066037+00:00"
+  },
+  "check_count": 137,
+  "checks": [
+    {
+      "id": "source:src/harnessix/delivery/git_material_trace2_profile.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:src/harnessix/delivery/git_command.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:src/harnessix/delivery/git_material_input_contracts.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:src/harnessix/delivery/git_material_worker.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:src/harnessix/delivery/git.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:src/harnessix/product_config/git_delivery_process.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:src/harnessix/product_config/git_material_process.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/product_config/git_minimum_commit_probe.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/product_config/git_trace2_projection.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/product_config/git_stderr_signals.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/delivery/test_git_material_trace2_contracts.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/product_config/test_git_material_trace2_binding.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/product_config/test_git_delivery_process.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/product_config/test_git_material_input.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/governance/test_git_trace2_projection.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/governance/test_git_minimum_commit_probe.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/governance/test_git_stderr_branches.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:.github/workflows/windows-git-minimum-commit-probe.yml",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source:tests/product_config/test_git_trace2_success_observation.py",
+      "passed": true,
+      "scope": "限域实际字节，不是全仓"
+    },
+    {
+      "id": "source-unique",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "catalog-count",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "profile-sha",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "probe-size",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "archive:windows-git-trace2-binding-20261001-v1/REPORT.md",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-binding-20261001-v1/SUMMARY.json",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-binding-20261001-v1/interface-final.json",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-binding-20261001-v1/final-focused.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-binding-20261001-v1/final-two-explicit.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-binding-20261001-v1/off-environment-ast-proof.json",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-binding-20261001-v1/ast-scope-proof.json",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/green.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/green.log",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/stderr-extraction.json",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/red.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/initial.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/second.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-peer-review-20261002-v1/SUMMARY.json",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-peer-review-20261002-v1/REPORT.md",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-peer-review-20261002-v1/xml/success-red.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/real-completion-red.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/real-completion-red.log",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/real-completion-green.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/real-completion-green.log",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/real-completion-confirmed.xml",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "archive:windows-git-trace2-projection-20261001-v1/real-completion-confirmed.log",
+      "passed": true,
+      "scope": "原件身份，未复制"
+    },
+    {
+      "id": "official:builtin/hash-object.c",
+      "passed": true,
+      "scope": "源码格式身份，不是binary attestation"
+    },
+    {
+      "id": "official:object-file.c",
+      "passed": true,
+      "scope": "源码格式身份，不是binary attestation"
+    },
+    {
+      "id": "official:setup.c",
+      "passed": true,
+      "scope": "源码格式身份，不是binary attestation"
+    },
+    {
+      "id": "official:trace2/tr2_tgt_event.c",
+      "passed": true,
+      "scope": "源码格式身份，不是binary attestation"
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:117",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:130",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:148",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:167",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:184",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:200",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:233",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:256",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:270",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:290",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:307",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:321",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:339",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:371",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:393",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:415",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:429",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:446",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:467",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:484",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:504",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:519",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:546",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:573",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:600",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:628",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:646",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:646",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:670",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:trace2/tr2_tgt_event.c:670",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:setup.c:1171",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:setup.c:1157",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:builtin/hash-object.c:31",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:builtin/hash-object.c:31",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:object-file.c:1014",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "source-range:setup.c:781",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-minimal-finish",
+      "passed": true,
+      "scope": "纯内存合成帧；不认证Owner或Windows效果"
+    },
+    {
+      "id": "memory-finish-no-returncode",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-finish-duplicate-same-code",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-finish-128",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-finish-return-mismatch",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-missing-code",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-profile-mismatch",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-unknown-schema",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-unexpected-execution",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-bool-not-integer",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-unclassified-format",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-incomplete-last-frame",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-unclassified-line",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-duplicate-key",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-strict-utf8",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-nonfinite",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-integer-token-bound",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-raw-limit",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-frame-limit",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-event-limit",
+      "passed": true,
+      "scope": "纯内存；未知拒绝，不读取原stderr"
+    },
+    {
+      "id": "memory-profile-sha-mismatch",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-six-fixed-formats",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-json-depth-bound",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-actual-completion-field",
+      "passed": true,
+      "scope": "实际dataclass形状，合成数据不认证Owner"
+    },
+    {
+      "id": "memory-actual-completion-same-reference",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "memory-none-proof-rejected",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "ast-success-no-io",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "ast-original-13-hooks",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "workflow-current-carrier",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "junit-confirmed-311",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "junit-real-red-retained",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "junit-second-failure-retained",
+      "passed": true,
+      "scope": ""
+    },
+    {
+      "id": "closure-archive:SUMMARY.json",
+      "passed": true,
+      "scope": "只读原件SHA，未复制；不重新执行测试"
+    },
+    {
+      "id": "closure-archive:REPORT.md",
+      "passed": true,
+      "scope": "只读原件SHA，未复制；不重新执行测试"
+    },
+    {
+      "id": "closure-archive:inputSHA.json",
+      "passed": true,
+      "scope": "只读原件SHA，未复制；不重新执行测试"
+    },
+    {
+      "id": "closure-archive:manifest.json",
+      "passed": true,
+      "scope": "只读原件SHA，未复制；不重新执行测试"
+    },
+    {
+      "id": "closure-archive:xml/final-focused.xml",
+      "passed": true,
+      "scope": "只读原件SHA，未复制；不重新执行测试"
+    },
+    {
+      "id": "closure-archive:logs/final-focused.log",
+      "passed": true,
+      "scope": "只读原件SHA，未复制；不重新执行测试"
+    },
+    {
+      "id": "closure-archive:xml/real-completion-recheck.xml",
+      "passed": true,
+      "scope": "只读原件SHA，未复制；不重新执行测试"
+    },
+    {
+      "id": "closure-status",
+      "passed": true,
+      "scope": "闭合只适用于最终受审字节"
+    },
+    {
+      "id": "closure-scope-19-code-plus-one-config",
+      "passed": true,
+      "scope": "闭合只适用于最终受审字节"
+    },
+    {
+      "id": "closure-same-19-source-sha",
+      "passed": true,
+      "scope": "闭合只适用于最终受审字节"
+    },
+    {
+      "id": "closure-no-final-drift",
+      "passed": true,
+      "scope": "闭合只适用于最终受审字节"
+    },
+    {
+      "id": "closure-original-fail-retained",
+      "passed": true,
+      "scope": "闭合只适用于最终受审字节"
+    },
+    {
+      "id": "closure-junit-569",
+      "passed": true,
+      "scope": "原件重计数，不重执行"
+    },
+    {
+      "id": "document-qa",
+      "passed": true,
+      "scope": "3件Markdown相对链接、源码行范围、19件SHA表、4图块一致及限域敏感内容扫描"
+    },
+    {
+      "id": "canonical-document-recheck",
+      "passed": true,
+      "scope": "原文档门禁对3件正式Markdown验证元数据、14语义章节、链接、源码提交与Mermaid结构；不计为全仓门禁"
+    },
+    {
+      "id": "final-source19-config1",
+      "passed": true,
+      "scope": "19件代码/测试/工作流＋1件pyproject支持配置逐件SHA不漂移"
+    },
+    {
+      "id": "related-integration-179-file-result",
+      "passed": true,
+      "scope": "只读关联整合JUnit与退出证据；5129PASS/57SKIP/0FAIL，不重执行、不计Trace2独有覆盖"
+    },
+    {
+      "id": "related-inputs-611-zero-drift",
+      "passed": true,
+      "scope": "关联432源码＋179测试输入只读零漂移，不提升本包19件限域为全仓"
+    },
+    {
+      "id": "final-four-diagrams",
+      "passed": true,
+      "scope": "统一验证已实际渲染/逐图查看，最终4mmd/4PNG身份核对；初次宽图FAIL保留"
+    },
+    {
+      "id": "final-document-policy",
+      "passed": true,
+      "scope": "原门禁函数复核3件文档、14组语义章节及47链接零发现"
+    }
+  ],
+  "count_boundary": "本次内存检查不是pytest；JUnit重计数不是重执行；不同批次不累加为唯一案例数；核查条目含共享源码范围引用，不等于唯一测试用例。",
+  "current_document_sha": [
+    {
+      "bytes": 48207,
+      "lines": 607,
+      "path": "docs/changes/m09-r4-git-material-trace2.md",
+      "sha256": "ca62d093a68c2b54558de01ea778980c75c06b6784fa9cb075214863b45b2555"
+    },
+    {
+      "bytes": 7387,
+      "lines": 111,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/README.md",
+      "sha256": "dda97ac6be1e436241319a19a9ddd8cf248b72b59c594fba25a22add7c9f332a"
+    },
+    {
+      "bytes": 7820,
+      "lines": 98,
+      "path": "docs/validation/git-material-trace2-2026-10-02-v1/review-packet.md",
+      "sha256": "69157329358f88f3629950a92fe6990cb4a2502e3106a7d63149a759555562ea"
+    }
+  ],
+  "current_seal_status": "最终全图封存",
+  "diagram_verification": {
+    "per_diagram": [
+      {
+        "height": 1369,
+        "mmd": "architecture.mmd",
+        "mmd_sha256": "f69cd65de6eb93ef97a126bb9f5f03a2b4922c8a4da12b7fbdb317a5a225c2af",
+        "png": "architecture.png",
+        "png_bytes": 81164,
+        "png_sha256": "ff89e3ed8eb8f959ae57481827760ad27aca80824d6ae340f79d77b8a71e3516",
+        "rendered": true,
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+        "visual_result": "PASS",
+        "visual_reviewed": true,
+        "width": 784
+      },
+      {
+        "height": 2494,
+        "mmd": "approval-process.mmd",
+        "mmd_sha256": "1e993b5c3d8692ba841c4d27466a8ab16ba4aeaee93fe2c61f16beab2fabcef5",
+        "png": "approval-process.png",
+        "png_bytes": 137957,
+        "png_sha256": "6c9e8b50b46f92f587131e8a978aff8934da4750af89bd694398c0a4cf73308a",
+        "rendered": true,
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+        "visual_result": "PASS",
+        "visual_reviewed": true,
+        "width": 703
+      },
+      {
+        "height": 763,
+        "mmd": "success-failure-sequence.mmd",
+        "mmd_sha256": "b1e05d901943d7d101d52d8e9aecdbe872b293ebceacc7f21d15c5b72a824f60",
+        "png": "success-failure-sequence.png",
+        "png_bytes": 62382,
+        "png_sha256": "e03754f8a6b25e9bdf8a2d733e81dd4b15845ccef02cc6b7a1ca969b57a065a1",
+        "rendered": true,
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+        "visual_result": "PASS",
+        "visual_reviewed": true,
+        "width": 784
+      },
+      {
+        "height": 1980,
+        "mmd": "raw-projection-dataflow.mmd",
+        "mmd_sha256": "fd15ae0a706b4dc41afa58112cad111b92e4abe197ecf8b70c62bd7161faaa06",
+        "png": "raw-projection-dataflow.png",
+        "png_bytes": 128652,
+        "png_sha256": "f7d37455dbfbbddb07ee37f483e6009e24d0c7ef04827bafd7f0f25dd547af11",
+        "rendered": true,
+        "review_provenance": "统一验证实际Chrome渲染并逐图查看；最终TB数据流文字可读、无截断",
+        "visual_result": "PASS",
+        "visual_reviewed": true,
+        "width": 726
+      }
+    ],
+    "retained_visual_failure": {
+      "final_tb_visual_conclusion": "文字可读，无截断",
+      "final_tb_visual_result": "PASS",
+      "initial_wide_dataflow": {
+        "archive": "r3-trace2-candidate-20261002-v1",
+        "bytes": 10745,
+        "direction": "LR",
+        "height": 58,
+        "member": "trace2-dataflow-initial.png",
+        "original_preserved": true,
+        "reason": "过横长，文字不可读",
+        "sha256": "03aea9dc9615685f9fa3c8ce8e895ae9000e6e715137213c349e7adbf1d275a2",
+        "visual_result": "FAIL",
+        "width": 784
+      },
+      "layout_change": "仅flowchart LR改TB；节点、边及语义未变",
+      "provenance": "统一验证已实际使用Chrome重新渲染并逐图查看"
+    },
+    "status": "4件mmd与4件PNG最终渲染及视觉复核通过",
+    "syntax_rendered": true,
+    "text_blocks_exact": true,
+    "visual_reviewed": true
+  },
+  "document_qa": {
+    "broken_links": [],
+    "diagram_text_structure": [
+      {
+        "file": "architecture.mmd",
+        "rendered": false,
+        "text_structure_checked": true,
+        "visual_reviewed": false
+      },
+      {
+        "file": "approval-process.mmd",
+        "rendered": false,
+        "text_structure_checked": true,
+        "visual_reviewed": false
+      },
+      {
+        "file": "raw-projection-dataflow.mmd",
+        "rendered": false,
+        "text_structure_checked": true,
+        "visual_reviewed": false
+      },
+      {
+        "file": "success-failure-sequence.mmd",
+        "rendered": false,
+        "text_structure_checked": true,
+        "visual_reviewed": false
+      }
+    ],
+    "local_links_checked": 47,
+    "markdown_files": 3,
+    "mermaid_blocks": 4,
+    "mmd_block_bytes_equal": true,
+    "private_path_or_process_word_findings": [],
+    "rendered": true,
+    "scope": "本包主设计及13件目录产物，共14件交付；不是全仓文档门禁",
+    "source_line_links_checked": 20,
+    "source_table_entries": 19,
+    "source_table_sha_matches": true,
+    "visually_reviewed": true
+  },
+  "executed_utc": "2026-10-02T00:16:55.066037+00:00",
+  "execution": {
+    "ci_calls": 0,
+    "commands": [
+      {
+        "command": "git rev-parse HEAD; git status --short",
+        "scope": "只读HEAD及共享编辑状态"
+      },
+      {
+        "command": "rg、sed、wc及Python AST",
+        "scope": "限域源码、真实字段、调用点与行数读取"
+      },
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -",
+        "scope": "19件输入及归档SHA、4件官方来源、JUnit重计数、合成内存投影/真实dataclass形状接点核对"
+      }
+    ],
+    "credential_reads": 0,
+    "docker_calls": 0,
+    "environment": {
+      "PYTHONDONTWRITEBYTECODE": "1"
+    },
+    "interpreter": ".venv/bin/python",
+    "junit_recount_only": true,
+    "mode": "内联标准库脚本、模块只读导入及纯内存调用",
+    "model_calls": 0,
+    "native_windows_runs": 0,
+    "network_calls": 0,
+    "new_pytest_cases_executed": 0,
+    "real_owner_business_cases_executed": 0,
+    "stage_or_commit": false,
+    "writes": "仅指定主设计与交付目录"
+  },
+  "failed": 0,
+  "passed": 137,
+  "peer_closure": "P1_resolved_at_final_reviewed_bytes",
+  "peer_scope": {
+    "extra_input": "pyproject.toml",
+    "final_review_identity_sha256": "a965313ab1cf1ce8b973e04e6419c4eafe3ef1834117848e2393fa8181cd0d6c",
+    "full_repository": false,
+    "independent_review_input_count": 20,
+    "own_code_test_workflow_count": 19
+  },
+  "related_installed_candidate_verification": {
+    "code_input_count": 1382,
+    "initial_failure_reason": "私有启动器PYTHONPATH遮蔽任务unittest namespace；仅修验证环境",
+    "initial_failures_retained": true,
+    "input_drift": [],
+    "limits": [
+      "本机macOS安装及明确单元/离线集成范围",
+      "不代表全仓回归",
+      "不证明真实提供方、原生Windows、原生故障根因、商业完成或质量门禁关闭"
+    ],
+    "locked_dependencies_unchanged": true,
+    "package_members": 473,
+    "real_model_calls": 0,
+    "results": [
+      {
+        "all_imports_under_installed_package": true,
+        "collected_count": 4876,
+        "pytest_exit_code": 0,
+        "python": "3.12.7",
+        "runtime_source_fallback": false,
+        "selector_file_count": 176,
+        "tag": "312",
+        "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f",
+        "xml": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 4819,
+          "skipped": 57,
+          "tests": 4876
+        }
+      },
+      {
+        "all_imports_under_installed_package": true,
+        "collected_count": 4876,
+        "pytest_exit_code": 0,
+        "python": "3.13.8",
+        "runtime_source_fallback": false,
+        "selector_file_count": 176,
+        "tag": "313",
+        "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f",
+        "xml": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 4819,
+          "skipped": 57,
+          "tests": 4876
+        }
+      }
+    ],
+    "runtime_source_fallback": false,
+    "scope": [
+      "models",
+      "agent",
+      "context",
+      "product_config",
+      "evals",
+      "delivery"
+    ],
+    "single_build": true,
+    "source_modules": 432,
+    "status": "PASS",
+    "summary_sha256": "0772e507e65e036c250858c40f52b6278f4f2359be1ec88180cd77fac7342da1",
+    "wheel_sha256": "ffa5087033a0ae7dceb4b77152f8d872564c118850e60eb41559567876ec3d1f"
+  },
+  "related_validation": {
+    "associated_integration_group": {
+      "archive": "r3-trace2-candidate-20261002-v1",
+      "archived_input_drift": [],
+      "bytes": 2392098,
+      "commercial_go": false,
+      "current_readonly_input_drift": [],
+      "errors": 0,
+      "failures": 0,
+      "full_repository_coverage": false,
+      "import_scope_controls": {
+        "bytes": 589,
+        "errors": 0,
+        "failures": 0,
+        "member": "host-import-scope-control.xml",
+        "original_preserved": true,
+        "passed": 2,
+        "sha256": "aee398eda9b16ec7fbf6abe9d7ee8a166218ba4d770afece1b83d229a9947618",
+        "skipped": 0,
+        "tests": 2
+      },
+      "input_snapshot_member": "focused-v2-inputs-before.json",
+      "input_snapshot_sha256": "766e010988722f815080e7dd6d5e014ae985955f629767331cc14cc968da5b7c",
+      "member": "focused-v2.xml",
+      "passed": 5129,
+      "pytest_exit": 0,
+      "reexecuted_by_design_delivery": false,
+      "retained_initial_failure": {
+        "bytes": 2402316,
+        "cause": "验证命令PYTHONPATH导致仓库根导入范围串扰两项unittest；仅修正执行环境，不改源码或断言",
+        "errors": 0,
+        "failures": 2,
+        "input_drift": [],
+        "member": "focused.xml",
+        "original_preserved": true,
+        "passed": 5127,
+        "pytest_exit": 1,
+        "sha256": "f57ba27a2a33eab1b5f66b07d55abe90ea0080ce5709f287000132fefac9ab67",
+        "skipped": 57,
+        "tests": 5186
+      },
+      "scope": "179文件关联整合组，不是Trace2独有覆盖、全仓、原生或商业GO；不与311/569子范围累加",
+      "sha256": "dc84fa579457c5f94e5c82cebf04c5f45ea2713a37fd934a95cecb1fa7f345d0",
+      "skipped": 57,
+      "source_and_test_input_count": 611,
+      "source_modules": 432,
+      "status": "关联整合组终结通过",
+      "test_files": 179,
+      "tests": 5186,
+      "unique_trace2_coverage": false,
+      "windows_native": false
+    }
+  },
+  "schema": "harnessix.git-material-trace2-design-verification/v1",
+  "source_identity_sha256": "7da875ba1e84f97d9647b5d0bd3be2cbb826088692e5640c4ec92fe4647a1d07",
+  "status": "本包正式文档与最终图件验证通过；P1独立闭合；关联整合组终结；Windows与商业验收仍开放",
+  "verification_attempts": [
+    {
+      "attempt": 1,
+      "cause": "核查脚本event辅助参数与事件name字段重名；不是产品测试结果",
+      "completed_record_written": false,
+      "error_type": "TypeError",
+      "status": "中止"
+    },
+    {
+      "attempt": 2,
+      "failed_checks": 0,
+      "status": "完成"
+    },
+    {
+      "attempt": 1,
+      "cause": "早期核查把第四图方向布局更新误作冻结字节不一致；改按实际TB及仅方向变化复核，不改图件",
+      "error_type": "AssertionError",
+      "phase": "规范文档复核",
+      "product_or_test_result": false,
+      "status": "未写入报告"
+    },
+    {
+      "attempt": 2,
+      "document_findings": 0,
+      "phase": "规范文档复核",
+      "status": "完成"
+    }
+  ]
+}

@@ -9,11 +9,12 @@ import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, cast
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.git import _GitRunner, git_delivery_implementation_digest
+from harnessix.delivery.git_command import GitCommand
 from harnessix.delivery.git_contracts import GitRepositoryBinding
 from harnessix.delivery.git_identity import _executable_identity, _identity, _path_sha256
 from harnessix.delivery.git_material_input_contracts import (
@@ -22,9 +23,21 @@ from harnessix.delivery.git_material_input_contracts import (
     encode_manifest,
     implementation_digest,
 )
+from harnessix.delivery.git_material_trace2_profile import (
+    TRACE2_PROFILE_SHA256,
+    GitMaterialTrace2Mode,
+    validate_material_trace2,
+)
 from harnessix.delivery.git_material_worker import capture_control_files
 from harnessix.delivery.git_object_material import GitObjectMaterial
 from harnessix.delivery.store import _prepare_directory
+from harnessix.domain.models import PolicyDecisionKind
+from harnessix.execution.contracts import (
+    ExecutionApprovalCheckpoint,
+    ExecutionPlanV2,
+    canonical_digest,
+    execution_is_approved,
+)
 from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.tools.runtime import _drain
 
@@ -43,6 +56,7 @@ class _GitMaterialHost(Protocol):
     _runner: _GitRunner
     _state: Path
     _closed: bool
+    _material_trace2_mode: GitMaterialTrace2Mode
 
 
 class GitMaterialPreparation:
@@ -51,6 +65,7 @@ class GitMaterialPreparation:
     _runner: _GitRunner
     _state: Path
     _closed: bool
+    _material_trace2_mode: GitMaterialTrace2Mode
 
     def prepare_object_write(
         self,
@@ -145,6 +160,105 @@ class GitMaterialExecution:
             raise KernelError("git_material_binding_changed", "Git输入材料绑定已经变化")
 
 
+def checked_material_trace2_mode(mode: object) -> GitMaterialTrace2Mode:
+    """Host显式配置的唯一入口；拒绝任意值，不读取ambient环境。"""
+    if type(mode) is not str:
+        raise KernelError("git_material_trace2_invalid", "Git诊断模式无效")
+    profile = TRACE2_PROFILE_SHA256 if mode == "stderr-event-v1" else ""
+    try:
+        validate_material_trace2(mode, profile)
+    except ValueError:
+        raise KernelError("git_material_trace2_invalid", "Git诊断模式无效") from None
+    return cast(GitMaterialTrace2Mode, mode)
+
+
+def _material_command(
+    owner: _GitMaterialHost,
+    cwd: Path,
+    common: Path,
+    material: GitObjectMaterial,
+    timeout: float,
+) -> GitCommand:
+    """只在专用材料准备路径声明Trace2；同步Runner和一般命令保持off。"""
+    mode = checked_material_trace2_mode(owner._material_trace2_mode)
+    arguments = (
+        f"--git-dir={common}",
+        "hash-object",
+        "--no-filters",
+        "-t",
+        material.object_type,
+        "-w",
+        "--stdin",
+    )
+    if mode == "off":
+        return owner._runner.prepare_command(
+            cwd, arguments, input_data=material.body, timeout=timeout
+        )
+    return owner._runner._binding.prepare(
+        cwd,
+        arguments,
+        input_data=material.body,
+        timeout=timeout,
+        trace2_mode=mode,
+        trace2_profile_sha256=TRACE2_PROFILE_SHA256,
+    )
+
+
+def material_trace2_is_approved(
+    prepared: PreparedGitProcess,
+    plan: ExecutionPlanV2,
+    checkpoint: ExecutionApprovalCheckpoint | None,
+    host_mode: object,
+) -> bool:
+    """诊断必须明确新批准；普通off用途仍复用原策略，不授予新的Owner权限。"""
+    mode = checked_material_trace2_mode(host_mode)
+    command_mode = prepared.command.trace2_mode
+    if prepared.write is None:
+        if command_mode != "off":
+            raise KernelError("git_material_trace2_invalid", "一般Git用途必须关闭诊断")
+    elif command_mode != mode:
+        raise KernelError("git_material_trace2_invalid", "Git写用途与Host显式模式不一致")
+    if command_mode != "off":
+        return _diagnostic_approval(plan, checkpoint)
+    return execution_is_approved(plan, checkpoint)
+
+
+def _diagnostic_approval(
+    plan: ExecutionPlanV2,
+    checkpoint: ExecutionApprovalCheckpoint | None,
+) -> bool:
+    """用原完整构造器重验诊断Plan和批准；不把model_construct当作有效审批。"""
+    if type(plan) is not ExecutionPlanV2 or type(checkpoint) is not ExecutionApprovalCheckpoint:
+        return False
+    try:
+        checked_plan = ExecutionPlanV2.model_validate_json(plan.model_dump_json(warnings="error"))
+        checked_checkpoint = ExecutionApprovalCheckpoint.model_validate_json(
+            checkpoint.model_dump_json(warnings="error")
+        )
+    except (ValueError, TypeError, AttributeError):
+        return False
+    return (
+        checked_plan.policy.decision is PolicyDecisionKind.REQUIRE_APPROVAL
+        and execution_is_approved(checked_plan, checked_checkpoint)
+    )
+
+
+def git_process_implementation_digest(adapter: Path) -> str:
+    """原三项适配身份的单一计算职责；字段及真实源码读取范围不变。"""
+    try:
+        return canonical_digest(
+            {
+                "adapter": hashlib.sha256(adapter.read_bytes()).hexdigest(),
+                "material_adapter": hashlib.sha256(
+                    adapter.with_name("git_material_process.py").read_bytes()
+                ).hexdigest(),
+                "delivery": git_delivery_implementation_digest(),
+            }
+        )
+    except OSError:
+        raise KernelError("git_capability_unavailable", "Git受控执行实现不可证明") from None
+
+
 def prepare_object_write(
     owner: _GitMaterialHost,
     cwd: Path,
@@ -182,20 +296,7 @@ def prepare_object_write(
             or repository.implementation_digest != git_delivery_implementation_digest()
         ):
             raise ValueError
-        command = owner._runner.prepare_command(
-            cwd,
-            (
-                f"--git-dir={common}",
-                "hash-object",
-                "--no-filters",
-                "-t",
-                material.object_type,
-                "-w",
-                "--stdin",
-            ),
-            input_data=material.body,
-            timeout=timeout,
-        )
+        command = _material_command(owner, cwd, common, material, timeout)
         stage_root = owner._runner._temp
         nonce = os.urandom(32).hex()
         request = GitMaterialInput.create(
@@ -222,6 +323,13 @@ def prepare_object_write(
             git_executable_identity=command.executable_identity,
             expiry_monotonic_ns=budget.expires_at_monotonic_ns,
             implementation_digest=implementation_digest(),
+            version=(
+                "harnessix.git-material-input/v1"
+                if command.trace2_mode == "off"
+                else "harnessix.git-material-input/v2"
+            ),
+            trace2_mode=command.trace2_mode,
+            trace2_profile_sha256=command.trace2_profile_sha256,
         )
         control = encode_manifest(request)
         argv = _worker_argv(request)
@@ -356,6 +464,8 @@ def require_write(prepared: PreparedGitProcess) -> None:
         or spec.output_bytes != 2 * 1024 * 1024
         or request.git_argv != command.argv
         or request.git_environment != command.environment
+        or (request.trace2_mode, request.trace2_profile_sha256)
+        != (command.trace2_mode, command.trace2_profile_sha256)
         or request.expiry_monotonic_ns != prepared.budget.expires_at_monotonic_ns
         or command.input_data != write.material.body
         or command.accepted != (0,)

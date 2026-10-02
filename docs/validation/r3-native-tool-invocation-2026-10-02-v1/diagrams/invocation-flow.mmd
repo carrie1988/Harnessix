@@ -1,0 +1,13 @@
+flowchart TD
+    Original[原内部工具名] --> Stem[非法ASCII替换及27字符片段]
+    Original --> Digest[精确原UTF8摘要前32位]
+    Stem --> Alias[63字符以内可辨识别名]
+    Digest --> Alias
+    Alias --> Unique{当前目录唯一且Schema合法}
+    Unique -->|否| Reject[原映射整体拒绝]
+    Unique -->|是| Request[同算法投影目录及历史]
+    Request --> Response{原严格响应终态}
+    Response -->|未知名或坏流| Reject
+    Response -->|原生Tool事件| Lookup[精确反向目录]
+    Lookup --> Gate[原执行与批准边界]
+    Response -->|普通文本| Text[不解析为工具或效果证据]

@@ -1,0 +1,17 @@
+flowchart TB
+    Host[正式产品及Task Pack] --> Context[共享v4 Context Factory]
+    Host --> Definitions[原Tool Descriptor目录]
+    Context --> Request[Provider中立请求]
+    Definitions --> Request
+    Session[(原Session Tool身份)] --> History[原配对历史]
+    History --> Request
+    Request --> Alias[统一可读别名及反向目录]
+    Alias --> Chat[Chat Adapter]
+    Alias --> Anthropic[Anthropic Adapter]
+    Chat --> Stream[原严格Provider流]
+    Anthropic --> Stream
+    Stream --> Native[原生Tool事件]
+    Native --> Runtime[原Agent Runtime]
+    Runtime --> Approval[原Schema Policy Approval]
+    Approval --> Effect[实际受控执行]
+    Effect --> Session

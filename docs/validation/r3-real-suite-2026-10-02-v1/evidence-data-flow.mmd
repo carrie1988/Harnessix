@@ -1,0 +1,34 @@
+---
+config:
+  flowchart:
+    useMaxWidth: false
+    wrappingWidth: 140
+    nodeSpacing: 24
+    rankSpacing: 36
+---
+flowchart TB
+  PLAN["冻结计划 / 预登记 / 派生指纹"]
+  TASK["正式Task与仓库基线"]
+  DB["实际Session有限计数与错误码"]
+  EV["20 Eval报告 / Run状态 / 检查观察"]
+  CA["10 Campaign计划与报告 / 10 Case报告"]
+  SU["Suite计划与终态报告"]
+  LE["历史账本与65新增请求"]
+  DI["20 Session只读深层诊断有限事实"]
+  OFF["离线首请求结构：同源、10工具、v3规则"]
+  HASH["报告链、身份、阈值、SHA一致性"]
+  COST["完整usage估算与历史预留一致性"]
+  FACT["公开facts.json（仅字段白名单）"]
+  VER["verification.json / manifest / review-packet"]
+  PLAN --> HASH
+  TASK --> HASH
+  DB --> HASH
+  EV --> CA --> SU --> HASH
+  LE --> COST
+  SU --> COST
+  HASH --> FACT
+  COST --> FACT
+  DI --> FACT
+  OFF -. "仅结构证明；非真实HTTP正文或质量证据" .-> FACT
+  FACT --> VER
+  BLOCK["不公开：API配置、凭据、Session正文、模型正文、工具参数、Artifact正文"]

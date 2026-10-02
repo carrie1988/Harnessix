@@ -1,0 +1,19 @@
+flowchart TB
+    R[原Git fd2及worker有限失败帧] --> O[原Owner终态MAC回执]
+    O --> B[完整stdout与stderr<br/>长度、SHA及EOF双流验真]
+    B --> P[原protection验真<br/>任何拒绝均不到达投影]
+    P --> S[已验真内存stderr<br/>成功Completion仅复用原内存]
+    S --> L[总raw 1MiB、每帧64KiB<br/>LF完整帧及最多64个JSON候选事件]
+    L --> J[严格UTF-8、重复key拒绝、深度16<br/>整数范围与有限number]
+    J --> C[静态profileSHA、evt及exe精确匹配<br/>30种封闭schema及file-line配对]
+    C --> A[同一非空SID及完整22项argv内存绑定]
+    A --> F[有限阶段见证、6种FMT_ID及返回一致性]
+    F --> E[七字段有限投影<br/>无SID、argv、时间、正文或动态hash]
+    L -->|损坏或超限| U[UNKNOWN及首个固定reason<br/>不得修补、重读或猜测]
+    J -->|拒绝| U
+    C -->|未知或不匹配| U
+    A -->|不匹配| U
+    F -->|缺事件或不一致| U
+    U --> E
+    E --> V[原v5侧车发布及诊断完整性门闩]
+    V --> N[不等于Git128根因、效果证明或商用验收]

@@ -1,0 +1,3006 @@
+{
+  "schema": "harnessix.validation.r3-real-suite-public-verification/v1",
+  "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "suite_id": "d058040a-2fa1-46d9-a328-9b7962f372f5",
+  "quality_verdict": "NO_GO",
+  "document_verification_status": "PASS_OFFLINE_DOCUMENT_AND_RENDERED_VISUAL_VALIDATION",
+  "actual_paid_suite": {
+    "unique_fresh_suite": true,
+    "completed_cases": 10,
+    "completed_trials": 20,
+    "model_requests": 65,
+    "all_new_requests_completed": true,
+    "new_unknown_requests": 0,
+    "cost_estimate_cny": "1.807932",
+    "recorded_not_executed_by_document_task": true
+  },
+  "referenced_independent_score_fee_audit": {
+    "status": "COMPLETE",
+    "validation_counts": {
+      "formal_and_ledger_core_checks": 250,
+      "core_import_scope_checks": 251,
+      "finite_sql_metadata_checks": 496,
+      "projection_import_scope_checks": 209,
+      "source_sha256_before_after_comparisons": 875,
+      "formal_input_before_after_comparisons": 90,
+      "per_step_ledger_guard_cost_comparisons": 65,
+      "all_checks_passed": true,
+      "original_product_tests_executed": 0
+    },
+    "source_before_utc": "2026-10-01T23:04:04.556750+00:00",
+    "source_after_utc": "2026-10-01T23:22:33.401375+00:00",
+    "source_sha256_before_after_unchanged": true,
+    "formal_sha256_before_after_unchanged": true,
+    "registered_binding_validated_readonly": true,
+    "full_historical_request_prefix_unchanged": true,
+    "core_imports_from_fixed_candidate": true,
+    "finite_sql_projection_imports_from_fixed_candidate": true,
+    "raw_transcript_hash_recomputed": false,
+    "audit_assertion_counts_are_not_product_test_counts": true
+  },
+  "supplemental_sqlite_readonly_side_effect": {
+    "occurred_during_completed_independent_audit": true,
+    "occurred_after_suite_terminal": true,
+    "initial_original_readonly_helper_created_sidecars": true,
+    "created_wal_bytes": 0,
+    "created_shm_bytes": 32768,
+    "main_database_mode_ro": true,
+    "main_database_contents_unchanged": true,
+    "stopped_on_presence_check": true,
+    "sidecars_not_cleaned_or_deleted": true,
+    "original_source_ledger_config_price_binding_and_formal_reports_not_written": true,
+    "subsequent_cold_database_immutable_query_only_with_no_nonempty_wal": true,
+    "not_interpreted_as_suite_root_cause": true,
+    "source_reference": "src/harnessix/sqlite_readonly.py:9-18",
+    "filesystem_absolute_no_side_effect_claim": false
+  },
+  "current_document_task": {
+    "allowed_paths": [
+      "docs/validation/r3-real-suite-2026-10-02-v1/",
+      "docs/changes/m09-r3-real-suite-result.md"
+    ],
+    "files_planned": 14,
+    "product_tests_executed": 0,
+    "suites_executed": 0,
+    "model_requests_executed": 0,
+    "ledger_owner_entries": 0,
+    "ledger_writes": 0,
+    "registrations": 0,
+    "network_calls": 0,
+    "credential_reads": 0,
+    "docker_or_ci_or_git_processes": 0,
+    "source_or_original_test_edits": 0,
+    "diagrams_rendered": 4,
+    "diagrams_visual_review_completed": true,
+    "json_validation_kind": "公开投影白名单与跨字段一致性校核；不是原Suite执行配置Schema替代",
+    "mermaid_validation_kind": "既有mmdc/Chrome实际解析与渲染，最终PNG原尺寸逐图视觉验收；图源逻辑与结果事实保持",
+    "files_written": 14,
+    "mermaid_parser_executed": true
+  },
+  "document_source_snapshot": {
+    "before_utc": "2026-10-01T23:36:04.809626+00:00",
+    "after_utc": "2026-10-01T23:54:35.054958+00:00",
+    "files_count": 29,
+    "files": {
+      "src/harnessix/evals/report.py": {
+        "before_sha256": "06049b81d3d64b23111e03a4cad7deef499b3c3addcf71139513b4799bd608b6",
+        "after_sha256": "06049b81d3d64b23111e03a4cad7deef499b3c3addcf71139513b4799bd608b6",
+        "bytes": 13062,
+        "unchanged": true
+      },
+      "src/harnessix/evals/contracts.py": {
+        "before_sha256": "52d138fb92501c50dc9bc2f4a3088a07cf7e3a44b660ffceab9c0a9ee6f13820",
+        "after_sha256": "52d138fb92501c50dc9bc2f4a3088a07cf7e3a44b660ffceab9c0a9ee6f13820",
+        "bytes": 19316,
+        "unchanged": true
+      },
+      "src/harnessix/evals/suite_contracts.py": {
+        "before_sha256": "6d5ce30bf24a6689bb6266f8dd6bd346e292dc4b1aa22dded6951eb7521f057f",
+        "after_sha256": "6d5ce30bf24a6689bb6266f8dd6bd346e292dc4b1aa22dded6951eb7521f057f",
+        "bytes": 16951,
+        "unchanged": true
+      },
+      "src/harnessix/evals/campaign_contracts.py": {
+        "before_sha256": "27ef7ffd010bd333df0ccd76a967d18ee2e84146ad65bac1029af63122680974",
+        "after_sha256": "27ef7ffd010bd333df0ccd76a967d18ee2e84146ad65bac1029af63122680974",
+        "bytes": 11198,
+        "unchanged": true
+      },
+      "src/harnessix/evals/suite.py": {
+        "before_sha256": "b9bc0535b30c6a9f6fabf25d0e80fb983f1dfb835c8969e648df0a489c2fed04",
+        "after_sha256": "b9bc0535b30c6a9f6fabf25d0e80fb983f1dfb835c8969e648df0a489c2fed04",
+        "bytes": 8690,
+        "unchanged": true
+      },
+      "src/harnessix/evals/grader.py": {
+        "before_sha256": "eecc9859439554b6b648a053541bfdf2879d3a157258d9033e40d855d4815eb4",
+        "after_sha256": "eecc9859439554b6b648a053541bfdf2879d3a157258d9033e40d855d4815eb4",
+        "bytes": 16609,
+        "unchanged": true
+      },
+      "src/harnessix/evals/suite_execution.py": {
+        "before_sha256": "81bacd90a953e96420856ef00a9352c270a7cdeb6fa57f091a13263e738381f0",
+        "after_sha256": "81bacd90a953e96420856ef00a9352c270a7cdeb6fa57f091a13263e738381f0",
+        "bytes": 19826,
+        "unchanged": true
+      },
+      "src/harnessix/evals/task_pack_execution.py": {
+        "before_sha256": "0e1b6be1abdc46830fdf3f0bfc55de5a010c1bc802d0b8d4a62f0c8baf16a203",
+        "after_sha256": "0e1b6be1abdc46830fdf3f0bfc55de5a010c1bc802d0b8d4a62f0c8baf16a203",
+        "bytes": 17170,
+        "unchanged": true
+      },
+      "src/harnessix/evals/task_pack_trial.py": {
+        "before_sha256": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890",
+        "after_sha256": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890",
+        "bytes": 19380,
+        "unchanged": true
+      },
+      "src/harnessix/evals/task_pack_observations.py": {
+        "before_sha256": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+        "after_sha256": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+        "bytes": 4209,
+        "unchanged": true
+      },
+      "src/harnessix/evals/task_pack.py": {
+        "before_sha256": "2f9ac31dbe994d4e3eedda3233d440262d5430de6512d52063e28724eabb42b1",
+        "after_sha256": "2f9ac31dbe994d4e3eedda3233d440262d5430de6512d52063e28724eabb42b1",
+        "bytes": 8897,
+        "unchanged": true
+      },
+      "src/harnessix/evals/task_pack_suite.py": {
+        "before_sha256": "dfb7dcf011c5cad2c7f637fd41b11e086c8904c127b20784bb73a8de63347147",
+        "after_sha256": "dfb7dcf011c5cad2c7f637fd41b11e086c8904c127b20784bb73a8de63347147",
+        "bytes": 5687,
+        "unchanged": true
+      },
+      "src/harnessix/evals/provider_suite_contracts.py": {
+        "before_sha256": "374ec4024bbd3069cbf73174a153e70166b280d934bcc8ee2153f13c93a9ea27",
+        "after_sha256": "374ec4024bbd3069cbf73174a153e70166b280d934bcc8ee2153f13c93a9ea27",
+        "bytes": 8398,
+        "unchanged": true
+      },
+      "src/harnessix/evals/provider_suite_execution.py": {
+        "before_sha256": "a741d205cd414bf66eb82addd4b7f1d548882b3bcbe6628b696bb132bcdd6098",
+        "after_sha256": "a741d205cd414bf66eb82addd4b7f1d548882b3bcbe6628b696bb132bcdd6098",
+        "bytes": 6662,
+        "unchanged": true
+      },
+      "src/harnessix/models/_history.py": {
+        "before_sha256": "3f3c99f980dee9174eed48486a96b2c74a3ef86ae858e8eaba4b89db6c6f8ac1",
+        "after_sha256": "3f3c99f980dee9174eed48486a96b2c74a3ef86ae858e8eaba4b89db6c6f8ac1",
+        "bytes": 3756,
+        "unchanged": true
+      },
+      "src/harnessix/models/_chat_mapping.py": {
+        "before_sha256": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+        "after_sha256": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+        "bytes": 2331,
+        "unchanged": true
+      },
+      "src/harnessix/product_config/agent_context.py": {
+        "before_sha256": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+        "after_sha256": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+        "bytes": 5388,
+        "unchanged": true
+      },
+      "src/harnessix/agent/models.py": {
+        "before_sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48",
+        "after_sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48",
+        "bytes": 31384,
+        "unchanged": true
+      },
+      "src/harnessix/agent/runtime.py": {
+        "before_sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+        "after_sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+        "bytes": 123106,
+        "unchanged": true
+      },
+      "src/harnessix/session/sqlite.py": {
+        "before_sha256": "8644fdf9c14a19e5158768a28aa6356cd89aa56f47081d1f637cd6ebbba25da0",
+        "after_sha256": "8644fdf9c14a19e5158768a28aa6356cd89aa56f47081d1f637cd6ebbba25da0",
+        "bytes": 25179,
+        "unchanged": true
+      },
+      "src/harnessix/sqlite_readonly.py": {
+        "before_sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+        "after_sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+        "bytes": 631,
+        "unchanged": true
+      },
+      "src/harnessix/evals/taskpacks/engineering-v2/manifest.json": {
+        "before_sha256": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2",
+        "after_sha256": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2",
+        "bytes": 31523,
+        "unchanged": true
+      },
+      "scripts/provider_reverification_plan.py": {
+        "before_sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+        "after_sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+        "bytes": 3165,
+        "unchanged": true
+      },
+      "scripts/provider_reverification_binding.py": {
+        "before_sha256": "32fd5b33ad8e06b8e7e0aee6de9d67a3346aa39840dc237ca1a8906280fae3ac",
+        "after_sha256": "32fd5b33ad8e06b8e7e0aee6de9d67a3346aa39840dc237ca1a8906280fae3ac",
+        "bytes": 3057,
+        "unchanged": true
+      },
+      "scripts/provider_verification_guard.py": {
+        "before_sha256": "a543fcc545657b33d81f13dd2ab4411191593582c3b51f91493d8373cffa4bec",
+        "after_sha256": "a543fcc545657b33d81f13dd2ab4411191593582c3b51f91493d8373cffa4bec",
+        "bytes": 9075,
+        "unchanged": true
+      },
+      "scripts/provider_verification_budget.py": {
+        "before_sha256": "0dfdf61f696594a8c55ecba40c79eb3187d863f72afe50e31789b38264123b90",
+        "after_sha256": "0dfdf61f696594a8c55ecba40c79eb3187d863f72afe50e31789b38264123b90",
+        "bytes": 21028,
+        "unchanged": true
+      },
+      "scripts/run_engineering_provider_suite_budgeted.py": {
+        "before_sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+        "after_sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+        "bytes": 10585,
+        "unchanged": true
+      },
+      "pyproject.toml": {
+        "before_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+        "after_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+        "bytes": 2149,
+        "unchanged": true
+      },
+      "uv.lock": {
+        "before_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+        "after_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+        "bytes": 264077,
+        "unchanged": true
+      }
+    },
+    "all_match_published_frozen_source": true,
+    "all_before_after_unchanged": true,
+    "reads_stopped": true
+  },
+  "limitations": [
+    "本包是脱敏有限事实投影，不是原始API配置、完整Session、工具参数或Artifact正文的公开副本。",
+    "16个invalid是Eval基础设施语义，不能改写成16个任务失败；库中的0个task主分类也不代表任务通过。",
+    "13个forbidden_edit相关判据失败来自空变更；正式Git边界越界计数为0，不等于全局安全保证。",
+    "data_corruption与语义级重复高风险effect的完整计数未由允许字段建立，不按零值判定。",
+    "主数据库内容不变与无任何文件系统副作用不是同一命题；补充只读连接产生SQLite辅助文件的例外见verification.json。",
+    "后继别名或v4闭环改善未纳入本候选结论；当前单次切换合同不支持第二次切换，后继管理契约尚未实现。本包不执行后继登记或模型请求；管理能力缺口不等于70/40额度不足。",
+    "本包完成四张Mermaid图的实际渲染和逐图视觉验收；未运行模型、Docker、CI、Git、Suite或注册管理步骤。图形展示不是新增质量证据。"
+  ],
+  "referenced_actual_session_diagnosis": {
+    "actual_sessions": 20,
+    "source_inputs": {
+      "src/harnessix/models/_history.py": "3f3c99f980dee9174eed48486a96b2c74a3ef86ae858e8eaba4b89db6c6f8ac1",
+      "src/harnessix/models/_chat_mapping.py": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+      "src/harnessix/agent/runtime.py": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+      "src/harnessix/product_config/agent_context.py": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+      "src/harnessix/evals/task_pack_trial.py": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890",
+      "src/harnessix/evals/task_pack_observations.py": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+      "src/harnessix/evals/taskpacks/engineering-v2/manifest.json": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2"
+    },
+    "source_unchanged": true,
+    "main_database_unchanged_count": 20,
+    "run_ids_match_fixed_suite": true,
+    "diagnosis_source_inputs_match_independent_875_file_snapshot": true,
+    "offline_capture_paid_execution": false,
+    "offline_capture_model_network": false,
+    "offline_capture_profile_execution": false,
+    "offline_capture_is_actual_sent_http_body": false,
+    "offline_capture_parallel_tool_calls": true,
+    "formal_suite_parallel_tool_calls": false,
+    "capture_mapping_config_not_identical_to_paid_suite": true,
+    "source_not_body_evidence": true
+  },
+  "pre_render_document_checks": {
+    "status": "PASS",
+    "checks": [
+      {
+        "id": "facts-exact-top-level-whitelist",
+        "status": "PASS"
+      },
+      {
+        "id": "schema-version:facts",
+        "status": "PASS"
+      },
+      {
+        "id": "fixed-revision:facts",
+        "status": "PASS"
+      },
+      {
+        "id": "suite-identity:facts",
+        "status": "PASS"
+      },
+      {
+        "id": "schema-version:verification",
+        "status": "PASS"
+      },
+      {
+        "id": "fixed-revision:verification",
+        "status": "PASS"
+      },
+      {
+        "id": "suite-identity:verification",
+        "status": "PASS"
+      },
+      {
+        "id": "schema-version:review-packet",
+        "status": "PASS"
+      },
+      {
+        "id": "fixed-revision:review-packet",
+        "status": "PASS"
+      },
+      {
+        "id": "suite-identity:review-packet",
+        "status": "PASS"
+      },
+      {
+        "id": "schema-version:manifest",
+        "status": "PASS"
+      },
+      {
+        "id": "fixed-revision:manifest",
+        "status": "PASS"
+      },
+      {
+        "id": "suite-identity:manifest",
+        "status": "PASS"
+      },
+      {
+        "id": "quality-not-go",
+        "status": "PASS"
+      },
+      {
+        "id": "full-3repos-10cases-20trials",
+        "status": "PASS"
+      },
+      {
+        "id": "fixed-request-and-scope-controls",
+        "status": "PASS"
+      },
+      {
+        "id": "exact20-run-set",
+        "status": "PASS"
+      },
+      {
+        "id": "all-10-case-partition",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-classification-16-3-1",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-outcome-16-4-0",
+        "status": "PASS"
+      },
+      {
+        "id": "0-strict-1-tests",
+        "status": "PASS"
+      },
+      {
+        "id": "one-test-success-is-budget-failed",
+        "status": "PASS"
+      },
+      {
+        "id": "rates-complete-fixed-denominator",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:agents-dump-compatible-refactor",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:agents-dump-compatible-refactor",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:agents-dump-compatible-refactor",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-dump-compatible-refactor:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-dump-compatible-refactor:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-dump-compatible-refactor:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:agents-normalize-tool-name",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:agents-normalize-tool-name",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:agents-normalize-tool-name",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-normalize-tool-name:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-normalize-tool-name:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-normalize-tool-name:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:agents-payload-bytes-test",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:agents-payload-bytes-test",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:agents-payload-bytes-test",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-payload-bytes-test:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-payload-bytes-test:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-payload-bytes-test:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:agents-secret-redaction-review",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:agents-secret-redaction-review",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:agents-secret-redaction-review",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-secret-redaction-review:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-secret-redaction-review:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:agents-secret-redaction-review:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:langchain-batch-none-test",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:langchain-batch-none-test",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:langchain-batch-none-test",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-batch-none-test:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-batch-none-test:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-batch-none-test:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:langchain-storage-replacement",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:langchain-storage-replacement",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:langchain-storage-replacement",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-storage-replacement:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-storage-replacement:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-storage-replacement:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:langchain-stringify-dict-keys",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:langchain-stringify-dict-keys",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:langchain-stringify-dict-keys",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-stringify-dict-keys:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-stringify-dict-keys:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:langchain-stringify-dict-keys:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:opencode-path-normalization",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:opencode-path-normalization",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:opencode-path-normalization",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-path-normalization:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-path-normalization:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-path-normalization:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:opencode-retry-delay-refactor",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:opencode-retry-delay-refactor",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:opencode-retry-delay-refactor",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-retry-delay-refactor:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-retry-delay-refactor:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-retry-delay-refactor:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-scope:opencode-terminal-url-review",
+        "status": "PASS"
+      },
+      {
+        "id": "case-amount:opencode-terminal-url-review",
+        "status": "PASS"
+      },
+      {
+        "id": "case-score:opencode-terminal-url-review",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-terminal-url-review:plan_fingerprint",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-terminal-url-review:campaign_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "case-hash:opencode-terminal-url-review:case_report_sha256",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:1066d2cb-29ce-5819-ad2f-100cbf8e8186",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:1066d2cb-29ce-5819-ad2f-100cbf8e8186",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:1066d2cb-29ce-5819-ad2f-100cbf8e8186",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:1066d2cb-29ce-5819-ad2f-100cbf8e8186",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:1066d2cb-29ce-5819-ad2f-100cbf8e8186",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:e45a0296-64a5-5229-972f-306227967cf2",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:e45a0296-64a5-5229-972f-306227967cf2",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:e45a0296-64a5-5229-972f-306227967cf2",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:e45a0296-64a5-5229-972f-306227967cf2",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:e45a0296-64a5-5229-972f-306227967cf2",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:98ae1fe6-883c-5512-84a8-217f717165d3",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:98ae1fe6-883c-5512-84a8-217f717165d3",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:98ae1fe6-883c-5512-84a8-217f717165d3",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:98ae1fe6-883c-5512-84a8-217f717165d3",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:98ae1fe6-883c-5512-84a8-217f717165d3",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:817379c8-bfe3-5b04-a9a1-caefcf0561f2",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:817379c8-bfe3-5b04-a9a1-caefcf0561f2",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:817379c8-bfe3-5b04-a9a1-caefcf0561f2",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:817379c8-bfe3-5b04-a9a1-caefcf0561f2",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:817379c8-bfe3-5b04-a9a1-caefcf0561f2",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:1afd758b-35b0-55e4-9032-6d00c62fded1",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:1afd758b-35b0-55e4-9032-6d00c62fded1",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:1afd758b-35b0-55e4-9032-6d00c62fded1",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:1afd758b-35b0-55e4-9032-6d00c62fded1",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:1afd758b-35b0-55e4-9032-6d00c62fded1",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:3a7e795c-7107-534f-9837-1f05eded3672",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:3a7e795c-7107-534f-9837-1f05eded3672",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:3a7e795c-7107-534f-9837-1f05eded3672",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:3a7e795c-7107-534f-9837-1f05eded3672",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:3a7e795c-7107-534f-9837-1f05eded3672",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:83ca987f-794e-5575-893e-6eee76eb5e96",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:83ca987f-794e-5575-893e-6eee76eb5e96",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:83ca987f-794e-5575-893e-6eee76eb5e96",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:83ca987f-794e-5575-893e-6eee76eb5e96",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:83ca987f-794e-5575-893e-6eee76eb5e96",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:8adf8c24-9afe-52fc-820e-1d61ea070a88",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:8adf8c24-9afe-52fc-820e-1d61ea070a88",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:8adf8c24-9afe-52fc-820e-1d61ea070a88",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:8adf8c24-9afe-52fc-820e-1d61ea070a88",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:8adf8c24-9afe-52fc-820e-1d61ea070a88",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:46c16176-dab7-5493-bfe3-1a98792e7408",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:46c16176-dab7-5493-bfe3-1a98792e7408",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:46c16176-dab7-5493-bfe3-1a98792e7408",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:46c16176-dab7-5493-bfe3-1a98792e7408",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:46c16176-dab7-5493-bfe3-1a98792e7408",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:88c9842c-af30-5779-aa2e-90f487ec4802",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:88c9842c-af30-5779-aa2e-90f487ec4802",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:88c9842c-af30-5779-aa2e-90f487ec4802",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:88c9842c-af30-5779-aa2e-90f487ec4802",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:88c9842c-af30-5779-aa2e-90f487ec4802",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:b0267666-54d3-5019-bc57-a8226c9061fb",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:b0267666-54d3-5019-bc57-a8226c9061fb",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:b0267666-54d3-5019-bc57-a8226c9061fb",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:b0267666-54d3-5019-bc57-a8226c9061fb",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:b0267666-54d3-5019-bc57-a8226c9061fb",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:0905c7c8-a1f9-5f1c-a894-cd859317d72f",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:0905c7c8-a1f9-5f1c-a894-cd859317d72f",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:0905c7c8-a1f9-5f1c-a894-cd859317d72f",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:0905c7c8-a1f9-5f1c-a894-cd859317d72f",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:0905c7c8-a1f9-5f1c-a894-cd859317d72f",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:b26102e0-2abd-5030-96de-ceb6564b7950",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:b26102e0-2abd-5030-96de-ceb6564b7950",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:b26102e0-2abd-5030-96de-ceb6564b7950",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:b26102e0-2abd-5030-96de-ceb6564b7950",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:b26102e0-2abd-5030-96de-ceb6564b7950",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:663d8887-9489-53ab-a308-1af9af6baafc",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:663d8887-9489-53ab-a308-1af9af6baafc",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:663d8887-9489-53ab-a308-1af9af6baafc",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:663d8887-9489-53ab-a308-1af9af6baafc",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:663d8887-9489-53ab-a308-1af9af6baafc",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:90534dc7-57f9-5fb6-821b-62a559c26021",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:90534dc7-57f9-5fb6-821b-62a559c26021",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:90534dc7-57f9-5fb6-821b-62a559c26021",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:90534dc7-57f9-5fb6-821b-62a559c26021",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:90534dc7-57f9-5fb6-821b-62a559c26021",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-finite-schema:cc184dd7-d0c7-5d21-a40f-450fbad3e3da",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-task-and-case:cc184dd7-d0c7-5d21-a40f-450fbad3e3da",
+        "status": "PASS"
+      },
+      {
+        "id": "trial-eval-hash:cc184dd7-d0c7-5d21-a40f-450fbad3e3da",
+        "status": "PASS"
+      },
+      {
+        "id": "invalid-is-infrastructure:cc184dd7-d0c7-5d21-a40f-450fbad3e3da",
+        "status": "PASS"
+      },
+      {
+        "id": "observed-boundary:cc184dd7-d0c7-5d21-a40f-450fbad3e3da",
+        "status": "PASS"
+      },
+      {
+        "id": "empty13-not-outside13",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:task_repository_matched",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:baseline_checks_failed",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:final_check_set_matched",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:turn_completed",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:behavior_checks_passed",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:regression_checks_passed",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:head_unchanged",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:allowed_changes",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:change_count",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:clean_index",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:test_feedback_order",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:git_feedback_order",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:final_answer_consistent",
+        "status": "PASS"
+      },
+      {
+        "id": "criterion-total:budget_respected",
+        "status": "PASS"
+      },
+      {
+        "id": "phase-coverage-not-diagnostic-count",
+        "status": "PASS"
+      },
+      {
+        "id": "original-quality-thresholds",
+        "status": "PASS"
+      },
+      {
+        "id": "unestablished-risk-not-zero",
+        "status": "PASS"
+      },
+      {
+        "id": "unchanged-70-40-caps",
+        "status": "PASS"
+      },
+      {
+        "id": "whole-prefix-and-original-plan",
+        "status": "PASS"
+      },
+      {
+        "id": "65-complete-no-new-unknown",
+        "status": "PASS"
+      },
+      {
+        "id": "sum-trials-cases-fee",
+        "status": "PASS"
+      },
+      {
+        "id": "round-charged-equation",
+        "status": "PASS"
+      },
+      {
+        "id": "round-remaining-equation",
+        "status": "PASS"
+      },
+      {
+        "id": "period-known-equation",
+        "status": "PASS"
+      },
+      {
+        "id": "period-hold-and-headroom-equation",
+        "status": "PASS"
+      },
+      {
+        "id": "ledger-audit-hash-stability",
+        "status": "PASS"
+      },
+      {
+        "id": "diagnosis-exact-20-11-10-3-3",
+        "status": "PASS"
+      },
+      {
+        "id": "diagnosis-one-step-no-tools",
+        "status": "PASS"
+      },
+      {
+        "id": "diagnosis-pass-claims",
+        "status": "PASS"
+      },
+      {
+        "id": "diagnosis-text-markup-trials",
+        "status": "PASS"
+      },
+      {
+        "id": "diagnosis-patch-before-baseline",
+        "status": "PASS"
+      },
+      {
+        "id": "diagnosis-65-steps",
+        "status": "PASS"
+      },
+      {
+        "id": "transcript-usage-counts",
+        "status": "PASS"
+      },
+      {
+        "id": "offline-shape-not-http-or-quality",
+        "status": "PASS"
+      },
+      {
+        "id": "offline-rules-present",
+        "status": "PASS"
+      },
+      {
+        "id": "offline-no-paid-profile-network",
+        "status": "PASS"
+      },
+      {
+        "id": "offline-provider-config-difference-explicit",
+        "status": "PASS"
+      },
+      {
+        "id": "price-four-bands",
+        "status": "PASS"
+      },
+      {
+        "id": "price-maximum-reserve",
+        "status": "PASS"
+      },
+      {
+        "id": "freshness-local-not-official-expiry",
+        "status": "PASS"
+      },
+      {
+        "id": "original-historical-result-preserved",
+        "status": "PASS"
+      },
+      {
+        "id": "readonly-sidecars-disclosed",
+        "status": "PASS"
+      },
+      {
+        "id": "no-original-test-executions",
+        "status": "PASS"
+      },
+      {
+        "id": "exact10-allowlist",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:README.md",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:README.md",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:README.md",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:1",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:1",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:2",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:2",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:3",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:3",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:4",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:4",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:5",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:5",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:6",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:6",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:7",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:7",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:8",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:8",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:9",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:9",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:10",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:10",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:11",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:11",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:README.md:12",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:README.md:12",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:facts.json",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:facts.json",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:facts.json",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:verification.json",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:verification.json",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:verification.json",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:manifest.json",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:manifest.json",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:manifest.json",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:review-packet.json",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:review-packet.json",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:review-packet.json",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:architecture.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:architecture.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:architecture.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-declaration:architecture.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-bounded-source:architecture.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-balanced-quotes:architecture.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-block-balance:architecture.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:execution-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:execution-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:execution-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-declaration:execution-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-bounded-source:execution-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-balanced-quotes:execution-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-block-balance:execution-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:execution-sequence.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:execution-sequence.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:execution-sequence.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-declaration:execution-sequence.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-bounded-source:execution-sequence.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-balanced-quotes:execution-sequence.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-block-balance:execution-sequence.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:evidence-data-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:evidence-data-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:evidence-data-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-declaration:evidence-data-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-bounded-source:evidence-data-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-balanced-quotes:evidence-data-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "mermaid-block-balance:evidence-data-flow.mmd",
+        "status": "PASS"
+      },
+      {
+        "id": "allowed-file:m09-r3-real-suite-result.md",
+        "status": "PASS"
+      },
+      {
+        "id": "privacy-fields-and-paths:m09-r3-real-suite-result.md",
+        "status": "PASS"
+      },
+      {
+        "id": "formal-no-conversation-wording:m09-r3-real-suite-result.md",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:1",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:1",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:2",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:2",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:3",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:3",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:4",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:4",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:5",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:5",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:6",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:6",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:7",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:7",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:8",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:8",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:9",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:9",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:10",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:10",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:11",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:11",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:11",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:12",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:12",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:13",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:13",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:13",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:14",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:14",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:14",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:15",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:15",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:15",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:16",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:16",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:16",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:17",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:17",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:17",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:18",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:18",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:18",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:19",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:19",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:19",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:20",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:20",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:20",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:21",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:21",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:22",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:22",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:23",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:23",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:23",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:24",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:24",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:25",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:25",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:25",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:26",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:26",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:26",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:27",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:27",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:27",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:28",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:28",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:28",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:29",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:29",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:29",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:30",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:30",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:30",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:31",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:31",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:31",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:32",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:32",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:32",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:33",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:33",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:33",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:34",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:34",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:34",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:35",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:35",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:35",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:36",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:36",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:36",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:37",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:37",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:37",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:38",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:38",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:38",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:39",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:39",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:39",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:40",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:40",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:40",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:41",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:41",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:41",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:42",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:42",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:42",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:43",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:43",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:43",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:44",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:44",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:44",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:45",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:45",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:45",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:46",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:46",
+        "status": "PASS"
+      },
+      {
+        "id": "line-anchor:m09-r3-real-suite-result.md:46",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:47",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:47",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:48",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:48",
+        "status": "PASS"
+      },
+      {
+        "id": "relative-link-only:m09-r3-real-suite-result.md:49",
+        "status": "PASS"
+      },
+      {
+        "id": "link-exists:m09-r3-real-suite-result.md:49",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/report.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/contracts.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/suite_contracts.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/campaign_contracts.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/suite.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/grader.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/suite_execution.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/task_pack_execution.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/task_pack_trial.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/task_pack_observations.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/task_pack.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/task_pack_suite.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/provider_suite_contracts.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/provider_suite_execution.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/models/_history.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/models/_chat_mapping.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/product_config/agent_context.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/agent/models.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/agent/runtime.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/session/sqlite.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/sqlite_readonly.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:src/harnessix/evals/taskpacks/engineering-v2/manifest.json",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:scripts/provider_reverification_plan.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:scripts/provider_reverification_binding.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:scripts/provider_verification_guard.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:scripts/provider_verification_budget.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:scripts/run_engineering_provider_suite_budgeted.py",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:pyproject.toml",
+        "status": "PASS"
+      },
+      {
+        "id": "doc-source-before-after:uv.lock",
+        "status": "PASS"
+      },
+      {
+        "id": "source-identity-diagnosis-inputs",
+        "status": "PASS"
+      },
+      {
+        "id": "private-projection-hashes-stable",
+        "status": "PASS"
+      },
+      {
+        "id": "old-published-failure-sha",
+        "status": "PASS"
+      },
+      {
+        "id": "historical-published-vs-interrupted-suite-distinct",
+        "status": "PASS"
+      },
+      {
+        "id": "full-projection-whitelist-and-values-roundtrip",
+        "status": "PASS"
+      },
+      {
+        "id": "original-document-reader-two-markdown",
+        "status": "PASS"
+      },
+      {
+        "id": "original-document-metadata-git-disabled",
+        "status": "PASS"
+      },
+      {
+        "id": "original-change-design-semantic-sections",
+        "status": "PASS"
+      },
+      {
+        "id": "exact12-required-section-titles",
+        "status": "PASS"
+      },
+      {
+        "id": "README-validation-evidence-current-full9-fields",
+        "status": "PASS"
+      },
+      {
+        "id": "SDD-change-design-current-full9-fields",
+        "status": "PASS"
+      },
+      {
+        "id": "all-updated-markdown-relative-links",
+        "status": "PASS"
+      },
+      {
+        "id": "four-mermaid-source-hashes-frozen",
+        "status": "PASS"
+      },
+      {
+        "id": "quality-and-unestablished-risk-preserved",
+        "status": "PASS"
+      },
+      {
+        "id": "documentation-policy-inputs-before-after-unchanged",
+        "status": "PASS"
+      }
+    ],
+    "check_count": 472,
+    "failures": [],
+    "counts_are_assertions_not_product_tests": true,
+    "json_files": 4,
+    "mermaid_sources": 4,
+    "markdown_files": 2,
+    "post_finalization_manifest_digest_checks": 9,
+    "post_finalization_json_reparse_checks": 4,
+    "post_finalization_checks_excluded_from_assertion_count": true,
+    "historical_stage": "渲染前已完成的文档校核；不代表最终图源及PNG验收"
+  },
+  "pre_render_documentation_policy_followup": {
+    "status": "PASS",
+    "markdown_files_checked": 2,
+    "actual_original_checker_functions": [
+      "load_policy",
+      "_read_document",
+      "validate_metadata(verify_git_revisions=False)",
+      "validate_sections"
+    ],
+    "metadata_required_fields": 9,
+    "metadata_findings": 0,
+    "semantic_section_findings": 0,
+    "exact_required_h2_sections": [
+      "文档摘要",
+      "需求背景",
+      "设计目标",
+      "总体架构",
+      "流程时序数据流",
+      "接口设计",
+      "数据结构",
+      "异常安全",
+      "可观测性",
+      "测试验证",
+      "源码映射",
+      "部署与回退"
+    ],
+    "updated_relative_links_checked": 87,
+    "no_new_unverified_source_line_anchors": true,
+    "git_revision_process_check": false,
+    "subprocess_execution_blocked": true,
+    "whole_repository_document_gate_executed": false,
+    "standards_input_sha256_before_after": {
+      "scripts/documentation_check.py": {
+        "before_sha256": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb",
+        "after_sha256": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb",
+        "unchanged": true
+      },
+      "governance/documentation-policy-v1.json": {
+        "before_sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a",
+        "after_sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a",
+        "unchanged": true
+      }
+    },
+    "R3_source_or_runtime_research_restarted": false,
+    "frozen_mermaid_sources": [
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+        "bytes": 1175,
+        "sha256": "3c50e72b6b5897fea661eb1060e88e702b0a3c7022cfb1cd4d5845805048e070"
+      },
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+        "bytes": 977,
+        "sha256": "34be9ea7ee737bfaab963939a7c18671c5a014eb3d704727cff32466ead17a08"
+      },
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+        "bytes": 1105,
+        "sha256": "4342aba6f8966a5b9c69c50486a08a745b2d5d12f546cded2259fb33bd97d358"
+      },
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+        "bytes": 1241,
+        "sha256": "a88dcde1d9b91167908847f5399e4cdff9be988700bb758c6b917fd032eab759"
+      }
+    ],
+    "png_rendered": false,
+    "visual_review_completed": false,
+    "completed_at_utc": "2026-10-02T00:03:47.628450+00:00",
+    "historical_stage": "初始图源冻结与元数据校核；最终冻结见actual_diagram_render_and_visual_validation"
+  },
+  "actual_diagram_render_and_visual_validation": {
+    "status": "PASS_RENDERED_AND_VIEWED",
+    "verified_at_utc": "2026-10-02T00:34:21.494930+00:00",
+    "mmdc_version": "11.6.0",
+    "node_version": "v22.17.0",
+    "installed_mmdc_entrypoint_used": true,
+    "fixed_PATH_preserved": true,
+    "absolute_node_entry_used_for_shim_compatibility": true,
+    "browser": "installed Google Chrome",
+    "dependencies_installed": false,
+    "config_input_sha256": {
+      "puppeteer-config.json": "22e27e7701db95421bda851542ebd5014dd87fa8edb19c6340bc22aa72b87056",
+      "mermaid-config.json": "f1473ea8290c0ffa36bd4402cdb5f2b0f4bae3460481829fb1acfd5b76cf14a6"
+    },
+    "existing_config_inputs_unchanged": true,
+    "render_invocations": 9,
+    "successful_render_invocations": 9,
+    "view_image_calls_including_iterations": 13,
+    "final_pngs_viewed": 4,
+    "initial_and_intermediate_pngs_preserved_privately": true,
+    "private_backup_location_not_published": true,
+    "layout_changes_only": true,
+    "result_or_scoring_changes": false,
+    "diagrams": [
+      {
+        "name": "architecture",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+        "source_bytes": 1245,
+        "source_sha256": "2c2639feaab64537f91f71ceb2a8923730198a3227f65e6d0a70ee60e5075758",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.png",
+        "png_bytes": 194034,
+        "png_sha256": "bd4281230eccc1260f5153bc72f1a9ee09cf3fc96a6ccfbc186db717768e7614",
+        "width_px": 2496,
+        "height_px": 2158,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "分组标题、冻结输入、预算与产品执行边界及报告链完整；文字未裁切，箭头可辨。",
+        "final_render_viewport_px": [
+          1800,
+          1400
+        ],
+        "scale": 2,
+        "background": "white"
+      },
+      {
+        "name": "execution-flow",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+        "source_bytes": 1105,
+        "source_sha256": "4342aba6f8966a5b9c69c50486a08a745b2d5d12f546cded2259fb33bd97d358",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.png",
+        "png_bytes": 255784,
+        "png_sha256": "649fcb951bded5eb84bb190c95e0323d6878fccb47a84f6c0086db8117436a0a",
+        "width_px": 1656,
+        "height_px": 4080,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "条件分支、停止线和NO-GO终态完整，文字未裁切；纵向长图需滚动查看。",
+        "final_render_viewport_px": [
+          1600,
+          1200
+        ],
+        "scale": 2,
+        "background": "white"
+      },
+      {
+        "name": "execution-sequence",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+        "source_bytes": 1446,
+        "source_sha256": "5749d914a98b046d0eff8b5020b10074976c9b251854ac452d56c3fa7ed932e8",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.png",
+        "png_bytes": 302529,
+        "png_sha256": "4b4b502e92f9f26c568c6b1007dac239c2fdaec859c69ff36e8968195dca7bb4",
+        "width_px": 2658,
+        "height_px": 3274,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "八个参与者、请求预留与结算、条件工具调用和最终NO-GO注释完整；右侧留白及手动换行无裁切。",
+        "final_render_viewport_px": [
+          1800,
+          1400
+        ],
+        "scale": 2,
+        "background": "white"
+      },
+      {
+        "name": "evidence-data-flow",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+        "source_bytes": 1095,
+        "source_sha256": "645e51b4f64969656219ac49d8ff37c6ea30ee8eed02ee5159ff92b93c933fa8",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.png",
+        "png_bytes": 204942,
+        "png_sha256": "1ff9b652bd55cdc473f3798ee32e3f49332bec458dd8ef70e259300331e91665",
+        "width_px": 2448,
+        "height_px": 1704,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "正式链、费用与有限诊断分层清晰；离线捕获虚线限制与公开字段白名单完整，文字未裁切。",
+        "final_render_viewport_px": [
+          1800,
+          1400
+        ],
+        "scale": 2,
+        "background": "white"
+      }
+    ],
+    "config_inputs_sha256_after": {
+      "puppeteer-config.json": "22e27e7701db95421bda851542ebd5014dd87fa8edb19c6340bc22aa72b87056",
+      "mermaid-config.json": "f1473ea8290c0ffa36bd4402cdb5f2b0f4bae3460481829fb1acfd5b76cf14a6"
+    },
+    "source_SHA_before_after_unchanged": true
+  },
+  "diagram_source_snapshot": {
+    "before_utc": "2026-10-02T00:15:16.215053+00:00",
+    "files_count": 29,
+    "files": {
+      "src/harnessix/evals/report.py": {
+        "before_sha256": "06049b81d3d64b23111e03a4cad7deef499b3c3addcf71139513b4799bd608b6",
+        "after_sha256": "06049b81d3d64b23111e03a4cad7deef499b3c3addcf71139513b4799bd608b6",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/contracts.py": {
+        "before_sha256": "52d138fb92501c50dc9bc2f4a3088a07cf7e3a44b660ffceab9c0a9ee6f13820",
+        "after_sha256": "52d138fb92501c50dc9bc2f4a3088a07cf7e3a44b660ffceab9c0a9ee6f13820",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/suite_contracts.py": {
+        "before_sha256": "6d5ce30bf24a6689bb6266f8dd6bd346e292dc4b1aa22dded6951eb7521f057f",
+        "after_sha256": "6d5ce30bf24a6689bb6266f8dd6bd346e292dc4b1aa22dded6951eb7521f057f",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/campaign_contracts.py": {
+        "before_sha256": "27ef7ffd010bd333df0ccd76a967d18ee2e84146ad65bac1029af63122680974",
+        "after_sha256": "27ef7ffd010bd333df0ccd76a967d18ee2e84146ad65bac1029af63122680974",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/suite.py": {
+        "before_sha256": "b9bc0535b30c6a9f6fabf25d0e80fb983f1dfb835c8969e648df0a489c2fed04",
+        "after_sha256": "b9bc0535b30c6a9f6fabf25d0e80fb983f1dfb835c8969e648df0a489c2fed04",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/grader.py": {
+        "before_sha256": "eecc9859439554b6b648a053541bfdf2879d3a157258d9033e40d855d4815eb4",
+        "after_sha256": "eecc9859439554b6b648a053541bfdf2879d3a157258d9033e40d855d4815eb4",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/suite_execution.py": {
+        "before_sha256": "81bacd90a953e96420856ef00a9352c270a7cdeb6fa57f091a13263e738381f0",
+        "after_sha256": "81bacd90a953e96420856ef00a9352c270a7cdeb6fa57f091a13263e738381f0",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/task_pack_execution.py": {
+        "before_sha256": "0e1b6be1abdc46830fdf3f0bfc55de5a010c1bc802d0b8d4a62f0c8baf16a203",
+        "after_sha256": "0e1b6be1abdc46830fdf3f0bfc55de5a010c1bc802d0b8d4a62f0c8baf16a203",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/task_pack_trial.py": {
+        "before_sha256": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890",
+        "after_sha256": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/task_pack_observations.py": {
+        "before_sha256": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+        "after_sha256": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/task_pack.py": {
+        "before_sha256": "2f9ac31dbe994d4e3eedda3233d440262d5430de6512d52063e28724eabb42b1",
+        "after_sha256": "2f9ac31dbe994d4e3eedda3233d440262d5430de6512d52063e28724eabb42b1",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/task_pack_suite.py": {
+        "before_sha256": "dfb7dcf011c5cad2c7f637fd41b11e086c8904c127b20784bb73a8de63347147",
+        "after_sha256": "dfb7dcf011c5cad2c7f637fd41b11e086c8904c127b20784bb73a8de63347147",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/provider_suite_contracts.py": {
+        "before_sha256": "374ec4024bbd3069cbf73174a153e70166b280d934bcc8ee2153f13c93a9ea27",
+        "after_sha256": "374ec4024bbd3069cbf73174a153e70166b280d934bcc8ee2153f13c93a9ea27",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/provider_suite_execution.py": {
+        "before_sha256": "a741d205cd414bf66eb82addd4b7f1d548882b3bcbe6628b696bb132bcdd6098",
+        "after_sha256": "a741d205cd414bf66eb82addd4b7f1d548882b3bcbe6628b696bb132bcdd6098",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/models/_history.py": {
+        "before_sha256": "3f3c99f980dee9174eed48486a96b2c74a3ef86ae858e8eaba4b89db6c6f8ac1",
+        "after_sha256": "3f3c99f980dee9174eed48486a96b2c74a3ef86ae858e8eaba4b89db6c6f8ac1",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/models/_chat_mapping.py": {
+        "before_sha256": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+        "after_sha256": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/product_config/agent_context.py": {
+        "before_sha256": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+        "after_sha256": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/agent/models.py": {
+        "before_sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48",
+        "after_sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/agent/runtime.py": {
+        "before_sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+        "after_sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/session/sqlite.py": {
+        "before_sha256": "8644fdf9c14a19e5158768a28aa6356cd89aa56f47081d1f637cd6ebbba25da0",
+        "after_sha256": "8644fdf9c14a19e5158768a28aa6356cd89aa56f47081d1f637cd6ebbba25da0",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/sqlite_readonly.py": {
+        "before_sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+        "after_sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+        "before_after_unchanged": true
+      },
+      "src/harnessix/evals/taskpacks/engineering-v2/manifest.json": {
+        "before_sha256": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2",
+        "after_sha256": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2",
+        "before_after_unchanged": true
+      },
+      "scripts/provider_reverification_plan.py": {
+        "before_sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+        "after_sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+        "before_after_unchanged": true
+      },
+      "scripts/provider_reverification_binding.py": {
+        "before_sha256": "32fd5b33ad8e06b8e7e0aee6de9d67a3346aa39840dc237ca1a8906280fae3ac",
+        "after_sha256": "32fd5b33ad8e06b8e7e0aee6de9d67a3346aa39840dc237ca1a8906280fae3ac",
+        "before_after_unchanged": true
+      },
+      "scripts/provider_verification_guard.py": {
+        "before_sha256": "a543fcc545657b33d81f13dd2ab4411191593582c3b51f91493d8373cffa4bec",
+        "after_sha256": "a543fcc545657b33d81f13dd2ab4411191593582c3b51f91493d8373cffa4bec",
+        "before_after_unchanged": true
+      },
+      "scripts/provider_verification_budget.py": {
+        "before_sha256": "0dfdf61f696594a8c55ecba40c79eb3187d863f72afe50e31789b38264123b90",
+        "after_sha256": "0dfdf61f696594a8c55ecba40c79eb3187d863f72afe50e31789b38264123b90",
+        "before_after_unchanged": true
+      },
+      "scripts/run_engineering_provider_suite_budgeted.py": {
+        "before_sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+        "after_sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+        "before_after_unchanged": true
+      },
+      "pyproject.toml": {
+        "before_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+        "after_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+        "before_after_unchanged": true
+      },
+      "uv.lock": {
+        "before_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+        "after_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+        "before_after_unchanged": true
+      }
+    },
+    "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+    "source_scope": "已发布R3固定候选的29个有界输入；不读取或修改并行产品变更",
+    "after_utc": "2026-10-02T00:34:21.494930+00:00",
+    "all_before_after_unchanged": true,
+    "all_match_published_frozen_source": true,
+    "reads_stopped": true
+  },
+  "offline_checks": {
+    "status": "PASS",
+    "check_count": 370,
+    "checks": [
+      "fixed-source-before:src/harnessix/evals/report.py",
+      "fixed-source-before:src/harnessix/evals/contracts.py",
+      "fixed-source-before:src/harnessix/evals/suite_contracts.py",
+      "fixed-source-before:src/harnessix/evals/campaign_contracts.py",
+      "fixed-source-before:src/harnessix/evals/suite.py",
+      "fixed-source-before:src/harnessix/evals/grader.py",
+      "fixed-source-before:src/harnessix/evals/suite_execution.py",
+      "fixed-source-before:src/harnessix/evals/task_pack_execution.py",
+      "fixed-source-before:src/harnessix/evals/task_pack_trial.py",
+      "fixed-source-before:src/harnessix/evals/task_pack_observations.py",
+      "fixed-source-before:src/harnessix/evals/task_pack.py",
+      "fixed-source-before:src/harnessix/evals/task_pack_suite.py",
+      "fixed-source-before:src/harnessix/evals/provider_suite_contracts.py",
+      "fixed-source-before:src/harnessix/evals/provider_suite_execution.py",
+      "fixed-source-before:src/harnessix/models/_history.py",
+      "fixed-source-before:src/harnessix/models/_chat_mapping.py",
+      "fixed-source-before:src/harnessix/product_config/agent_context.py",
+      "fixed-source-before:src/harnessix/agent/models.py",
+      "fixed-source-before:src/harnessix/agent/runtime.py",
+      "fixed-source-before:src/harnessix/session/sqlite.py",
+      "fixed-source-before:src/harnessix/sqlite_readonly.py",
+      "fixed-source-before:src/harnessix/evals/taskpacks/engineering-v2/manifest.json",
+      "fixed-source-before:scripts/provider_reverification_plan.py",
+      "fixed-source-before:scripts/provider_reverification_binding.py",
+      "fixed-source-before:scripts/provider_verification_guard.py",
+      "fixed-source-before:scripts/provider_verification_budget.py",
+      "fixed-source-before:scripts/run_engineering_provider_suite_budgeted.py",
+      "fixed-source-before:pyproject.toml",
+      "fixed-source-before:uv.lock",
+      "render-config-before:puppeteer-config.json",
+      "render-config-before:mermaid-config.json",
+      "owned-package-exact14files",
+      "ordinary-public-file:docs/changes/m09-r3-real-suite-result.md",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/architecture.png",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.png",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.png",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.png",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/facts.json",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/manifest.json",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/review-packet.json",
+      "ordinary-public-file:docs/validation/r3-real-suite-2026-10-02-v1/verification.json",
+      "strict-json:facts.json",
+      "strict-json:verification.json",
+      "strict-json:review-packet.json",
+      "strict-json:manifest.json",
+      "unchanged-facts-subtree:schema",
+      "unchanged-facts-subtree:title",
+      "unchanged-facts-subtree:document_date",
+      "unchanged-facts-subtree:code_revision",
+      "unchanged-facts-subtree:suite_id",
+      "unchanged-facts-subtree:binding_id",
+      "unchanged-facts-subtree:period_id",
+      "unchanged-facts-subtree:reverification_id",
+      "unchanged-facts-subtree:completed_at_utc",
+      "unchanged-facts-subtree:quality_verdict",
+      "unchanged-facts-subtree:scope",
+      "unchanged-facts-subtree:frozen_fingerprints",
+      "unchanged-facts-subtree:score",
+      "unchanged-facts-subtree:classification_counts",
+      "unchanged-facts-subtree:eval_outcome_counts",
+      "unchanged-facts-subtree:repository_results",
+      "unchanged-facts-subtree:criterion_counts",
+      "unchanged-facts-subtree:observation_coverage",
+      "unchanged-facts-subtree:boundary_counts",
+      "unchanged-facts-subtree:action_identity_counts",
+      "unchanged-facts-subtree:thresholds",
+      "unchanged-facts-subtree:cost",
+      "unchanged-facts-subtree:price",
+      "unchanged-facts-subtree:fixed_images",
+      "unchanged-facts-subtree:transcript_counts",
+      "unchanged-facts-subtree:finite_errors",
+      "unchanged-facts-subtree:cases",
+      "unchanged-facts-subtree:trials",
+      "unchanged-facts-subtree:diagnosis",
+      "unchanged-facts-subtree:historical_comparison",
+      "unchanged-facts-subtree:evidence_hashes",
+      "unchanged-facts-subtree:provenance",
+      "facts-added-only-diagram-and-limitations",
+      "frozen-code-revision:facts.json",
+      "quality-NOGO:facts.json",
+      "frozen-code-revision:verification.json",
+      "quality-NOGO:verification.json",
+      "frozen-code-revision:review-packet.json",
+      "quality-NOGO:review-packet.json",
+      "strict-score0of20",
+      "tests-score1of20",
+      "original-exit-thresholds",
+      "unestablished-safety-not-zero",
+      "no-invalid-to-task-failure-inference",
+      "empty-change-not-13-boundary-writes",
+      "preserved-amount:total_cap_cny",
+      "preserved-amount:round_maximum_cny",
+      "preserved-amount:new_estimated_cost_cny",
+      "preserved-amount:round_remaining_cny",
+      "preserved-amount:period_reserved_cny",
+      "cost-round-equation",
+      "remaining-round-equation",
+      "period-equation",
+      "period-headroom-equation",
+      "request-states-65complete",
+      "old-hold-not-actualbill",
+      "fresh20run-identities",
+      "case10run-partition",
+      "per-trial-cost-sum",
+      "per-case-cost-sum",
+      "technical-rebinding-limit-recorded",
+      "no-new-operations",
+      "review-delivery-exact14",
+      "retained-incomplete-safety-review",
+      "diagram-records-same-facts-and-verification",
+      "actual-final-4-rendered-viewed",
+      "final-source-sha:architecture",
+      "final-png-sha:architecture",
+      "actual-png-dimensions:architecture",
+      "actual-image-bytes:architecture",
+      "png-chunk-CRC:architecture",
+      "actual-visual-PASS:architecture",
+      "flow-edge-topology-unchanged:architecture",
+      "flow-node-identities-unchanged:architecture",
+      "initial-render-backup-preserved:architecture",
+      "final-source-sha:execution-flow",
+      "final-png-sha:execution-flow",
+      "actual-png-dimensions:execution-flow",
+      "actual-image-bytes:execution-flow",
+      "png-chunk-CRC:execution-flow",
+      "actual-visual-PASS:execution-flow",
+      "flow-edge-topology-unchanged:execution-flow",
+      "flow-node-identities-unchanged:execution-flow",
+      "initial-render-backup-preserved:execution-flow",
+      "final-source-sha:execution-sequence",
+      "final-png-sha:execution-sequence",
+      "actual-png-dimensions:execution-sequence",
+      "actual-image-bytes:execution-sequence",
+      "png-chunk-CRC:execution-sequence",
+      "actual-visual-PASS:execution-sequence",
+      "sequence-message-topology-unchanged",
+      "sequence-actor-identities-unchanged",
+      "sequence-loop-opt-structure-unchanged",
+      "initial-render-backup-preserved:execution-sequence",
+      "final-source-sha:evidence-data-flow",
+      "final-png-sha:evidence-data-flow",
+      "actual-png-dimensions:evidence-data-flow",
+      "actual-image-bytes:evidence-data-flow",
+      "png-chunk-CRC:evidence-data-flow",
+      "actual-visual-PASS:evidence-data-flow",
+      "flow-edge-topology-unchanged:evidence-data-flow",
+      "flow-node-identities-unchanged:evidence-data-flow",
+      "initial-render-backup-preserved:evidence-data-flow",
+      "private-backup-root-mode700",
+      "14initial-intermediate-private-backups",
+      "original-doc-contract-sha:scripts/documentation_check.py",
+      "original-doc-contract-sha:governance/documentation-policy-v1.json",
+      "metadata-required9",
+      "original-document-reader:docs/changes/m09-r3-real-suite-result.md",
+      "metadata-current-version1-7bb:docs/changes/m09-r3-real-suite-result.md",
+      "original-document-reader:docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "metadata-current-version1-7bb:docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "original-metadata-validator-zero-findings",
+      "original-sections-validator-zero-findings",
+      "exact12SDDh2",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:38",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:38",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:38",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:38",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:38",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:95",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:95",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:97",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:97",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:109",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:109",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:119",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:125",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:125",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:125",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:143",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:146",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:146",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:171",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:173",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:179",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:179",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:180",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:180",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:181",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:181",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:182",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:182",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:183",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:183",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:191",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:191",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:201",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:201",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:201",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:201",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:207",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:209",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:224",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:226",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:232",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:232",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:236",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:238",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:260",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:260",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:264",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:264",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:265",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:265",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:265",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:265",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:295",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:295",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:296",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:296",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:297",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:297",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:298",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:298",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:299",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:299",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:300",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:300",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:301",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:301",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:302",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:302",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:303",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:303",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:304",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:304",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:342",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:342",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:350",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:350",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:391",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:391",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:395",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:395",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:395",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:395",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:438",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:459",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:459",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:459",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:459",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:460",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:460",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:460",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:461",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:461",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:461",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:461",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:461",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:462",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:462",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:462",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:463",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:463",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:464",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:464",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:464",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:464",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:464",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:464",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:465",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:465",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:465",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:465",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:465",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:466",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:466",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:466",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:467",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:467",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:468",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:468",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:468",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:468",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:468",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:468",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:469",
+      "source-anchor-range:docs/changes/m09-r3-real-suite-result.md:469",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:470",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:470",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:496",
+      "relative-link:docs/changes/m09-r3-real-suite-result.md:496",
+      "four-final-PNG-links:docs/changes/m09-r3-real-suite-result.md",
+      "four-Mermaid-source-links:docs/changes/m09-r3-real-suite-result.md",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:36",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:44",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:45",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:46",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:47",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:48",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:49",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:50",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:51",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:52",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:58",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:59",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:60",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:61",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:79",
+      "relative-link:docs/validation/r3-real-suite-2026-10-02-v1/README.md:81",
+      "four-final-PNG-links:docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "four-Mermaid-source-links:docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "no-private-absolute-location:docs/changes/m09-r3-real-suite-result.md",
+      "no-conversation-rule-evaluation:docs/changes/m09-r3-real-suite-result.md",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/facts.json",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/facts.json",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/manifest.json",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/manifest.json",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/review-packet.json",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/review-packet.json",
+      "no-private-absolute-location:docs/validation/r3-real-suite-2026-10-02-v1/verification.json",
+      "no-conversation-rule-evaluation:docs/validation/r3-real-suite-2026-10-02-v1/verification.json",
+      "technical-history-cap-binding-requirement:m09-r3-real-suite-result.md",
+      "no-stale-unrendered-prose:m09-r3-real-suite-result.md",
+      "technical-history-cap-binding-requirement:README.md",
+      "no-stale-unrendered-prose:README.md",
+      "fixed-source-after:src/harnessix/evals/report.py",
+      "fixed-source-after:src/harnessix/evals/contracts.py",
+      "fixed-source-after:src/harnessix/evals/suite_contracts.py",
+      "fixed-source-after:src/harnessix/evals/campaign_contracts.py",
+      "fixed-source-after:src/harnessix/evals/suite.py",
+      "fixed-source-after:src/harnessix/evals/grader.py",
+      "fixed-source-after:src/harnessix/evals/suite_execution.py",
+      "fixed-source-after:src/harnessix/evals/task_pack_execution.py",
+      "fixed-source-after:src/harnessix/evals/task_pack_trial.py",
+      "fixed-source-after:src/harnessix/evals/task_pack_observations.py",
+      "fixed-source-after:src/harnessix/evals/task_pack.py",
+      "fixed-source-after:src/harnessix/evals/task_pack_suite.py",
+      "fixed-source-after:src/harnessix/evals/provider_suite_contracts.py",
+      "fixed-source-after:src/harnessix/evals/provider_suite_execution.py",
+      "fixed-source-after:src/harnessix/models/_history.py",
+      "fixed-source-after:src/harnessix/models/_chat_mapping.py",
+      "fixed-source-after:src/harnessix/product_config/agent_context.py",
+      "fixed-source-after:src/harnessix/agent/models.py",
+      "fixed-source-after:src/harnessix/agent/runtime.py",
+      "fixed-source-after:src/harnessix/session/sqlite.py",
+      "fixed-source-after:src/harnessix/sqlite_readonly.py",
+      "fixed-source-after:src/harnessix/evals/taskpacks/engineering-v2/manifest.json",
+      "fixed-source-after:scripts/provider_reverification_plan.py",
+      "fixed-source-after:scripts/provider_reverification_binding.py",
+      "fixed-source-after:scripts/provider_verification_guard.py",
+      "fixed-source-after:scripts/provider_verification_budget.py",
+      "fixed-source-after:scripts/run_engineering_provider_suite_budgeted.py",
+      "fixed-source-after:pyproject.toml",
+      "fixed-source-after:uv.lock",
+      "render-config-after:puppeteer-config.json",
+      "render-config-after:mermaid-config.json",
+      "document-contract-after:scripts/documentation_check.py",
+      "document-contract-after:governance/documentation-policy-v1.json"
+    ],
+    "failures": [],
+    "counts_are_document_assertions_not_product_tests": true,
+    "json_files": 4,
+    "png_files": 4,
+    "mermaid_sources": 4,
+    "markdown_files": 2,
+    "relative_links_checked": 95,
+    "source_line_anchors_checked": 49,
+    "updated_at_utc": "2026-10-02T00:34:21.494930+00:00",
+    "post_finalization_manifest_digest_checks": 13,
+    "post_finalization_json_reparse_checks": 4,
+    "post_finalization_checks_excluded_from_assertion_count": true
+  },
+  "documentation_policy_followup": {
+    "status": "PASS",
+    "markdown_files_checked": 2,
+    "actual_original_checker_functions": [
+      "load_policy",
+      "_read_document",
+      "validate_metadata(verify_git_revisions=False)",
+      "validate_sections"
+    ],
+    "metadata_required_fields": 9,
+    "metadata_findings": 0,
+    "semantic_section_findings": 0,
+    "exact_required_h2_sections": [
+      "文档摘要",
+      "需求背景",
+      "设计目标",
+      "总体架构",
+      "流程时序数据流",
+      "接口设计",
+      "数据结构",
+      "异常安全",
+      "可观测性",
+      "测试验证",
+      "源码映射",
+      "部署与回退"
+    ],
+    "updated_relative_links_checked": 95,
+    "source_line_anchors_checked": 49,
+    "no_new_unverified_source_line_anchors": true,
+    "git_revision_process_check": false,
+    "subprocess_execution_blocked": true,
+    "whole_repository_document_gate_executed": false,
+    "standards_input_sha256_before_after": {
+      "scripts/documentation_check.py": {
+        "before_sha256": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb",
+        "after_sha256": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb",
+        "unchanged": true
+      },
+      "governance/documentation-policy-v1.json": {
+        "before_sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a",
+        "after_sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a",
+        "unchanged": true
+      }
+    },
+    "R3_source_or_runtime_research_restarted": false,
+    "frozen_mermaid_sources": [
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+        "bytes": 1245,
+        "sha256": "2c2639feaab64537f91f71ceb2a8923730198a3227f65e6d0a70ee60e5075758"
+      },
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+        "bytes": 1105,
+        "sha256": "4342aba6f8966a5b9c69c50486a08a745b2d5d12f546cded2259fb33bd97d358"
+      },
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+        "bytes": 1446,
+        "sha256": "5749d914a98b046d0eff8b5020b10074976c9b251854ac452d56c3fa7ed932e8"
+      },
+      {
+        "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+        "bytes": 1095,
+        "sha256": "645e51b4f64969656219ac49d8ff37c6ea30ee8eed02ee5159ff92b93c933fa8"
+      }
+    ],
+    "png_rendered": true,
+    "visual_review_completed": true,
+    "completed_at_utc": "2026-10-02T00:34:21.494930+00:00"
+  }
+}

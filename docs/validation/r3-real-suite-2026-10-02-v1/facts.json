@@ -1,0 +1,1790 @@
+{
+  "schema": "harnessix.validation.r3-real-suite-public-facts/v1",
+  "title": "R3真实Suite结果与有界诊断",
+  "document_date": "2026-10-02",
+  "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "suite_id": "d058040a-2fa1-46d9-a328-9b7962f372f5",
+  "binding_id": "a45f0b4f-7dd5-41b9-9e89-82d76f1c77f1",
+  "period_id": "d973352f-0392-4d81-a324-8cb58f229a39",
+  "reverification_id": "b06cc178-d287-4ed7-b330-ffe25daff045",
+  "completed_at_utc": "2026-10-01T15:40:59.794758+00:00",
+  "quality_verdict": "NO_GO",
+  "scope": {
+    "task_pack": "engineering-v2",
+    "repositories": 3,
+    "cases": 10,
+    "trials": 20,
+    "trials_per_case": 2,
+    "model": "qwen3-coder-plus-2025-09-23",
+    "request_attempts": 1,
+    "request_output_cap": 4096,
+    "selection": false,
+    "automatic_retry": false,
+    "thresholds_changed": false,
+    "budget_caps_changed": false,
+    "original_history_preserved": true,
+    "serial_tool_calls": true
+  },
+  "frozen_fingerprints": {
+    "provider_config_fingerprint": "cccd10a319e46b878ae0f401ac53fea6ac6b2e2cc23ea07d4123a65cf8614e1f",
+    "suite_config_fingerprint": "8bc0fedd590a00607c2269fc24897bff25de5d41cefed0a44738912916776282",
+    "suite_plan_fingerprint": "da1213583b88ed798069885659a222556e88aae8d65217b45da802fa78d415a9",
+    "derivation": "existing_product_constructors_and_fingerprint_properties",
+    "registered_execution_binding_verified": true
+  },
+  "score": {
+    "scheduled_cases": 10,
+    "repositories": 3,
+    "scheduled_trials": 20,
+    "passed_trials": 0,
+    "tests_applicable_trials": 20,
+    "tests_passed_trials": 1,
+    "human_intervention_trials": 0,
+    "task_success_rate": {
+      "numerator": 0,
+      "denominator": 20,
+      "basis_points": 0
+    },
+    "test_pass_rate": {
+      "numerator": 1,
+      "denominator": 20,
+      "basis_points": 500
+    },
+    "human_intervention_rate": {
+      "numerator": 0,
+      "denominator": 20,
+      "basis_points": 0
+    },
+    "model_attempts": 65,
+    "input_tokens": 417123,
+    "output_tokens": 8715,
+    "elapsed_min_seconds": 1.11501,
+    "elapsed_p50_seconds": 1.712709,
+    "elapsed_p95_seconds": 15.812858,
+    "elapsed_max_seconds": 17.986069,
+    "cost_completeness": "complete",
+    "known_cost_currency": "CNY",
+    "known_cost_amount": "1.807932",
+    "incomplete_cost_run_ids": []
+  },
+  "classification_counts": {
+    "eval_infrastructure": 16,
+    "budget": 3,
+    "provider": 1,
+    "passed": 0,
+    "runtime": 0,
+    "task": 0
+  },
+  "eval_outcome_counts": {
+    "invalid": 16,
+    "failed": 4,
+    "passed": 0
+  },
+  "repository_results": {
+    "agents-utils-benchmark": {
+      "scheduled_trials": 8,
+      "strict_passed": 0,
+      "tests_passed": 1,
+      "classification": {
+        "eval_infrastructure": 7,
+        "budget": 1
+      }
+    },
+    "langchain-utils-benchmark": {
+      "scheduled_trials": 6,
+      "strict_passed": 0,
+      "tests_passed": 0,
+      "classification": {
+        "eval_infrastructure": 6
+      }
+    },
+    "opencode-utils-benchmark": {
+      "scheduled_trials": 6,
+      "strict_passed": 0,
+      "tests_passed": 0,
+      "classification": {
+        "budget": 2,
+        "eval_infrastructure": 3,
+        "provider": 1
+      }
+    }
+  },
+  "criterion_counts": {
+    "task_repository_matched": {
+      "passed": 20
+    },
+    "baseline_checks_failed": {
+      "failed": 16,
+      "passed": 4
+    },
+    "final_check_set_matched": {
+      "failed": 16,
+      "passed": 4
+    },
+    "turn_completed": {
+      "passed": 16,
+      "failed": 4
+    },
+    "behavior_checks_passed": {
+      "failed": 19,
+      "passed": 1
+    },
+    "regression_checks_passed": {
+      "passed": 20
+    },
+    "head_unchanged": {
+      "passed": 20
+    },
+    "allowed_changes": {
+      "failed": 13,
+      "passed": 7
+    },
+    "change_count": {
+      "failed": 13,
+      "passed": 7
+    },
+    "clean_index": {
+      "passed": 20
+    },
+    "test_feedback_order": {
+      "failed": 19,
+      "passed": 1
+    },
+    "git_feedback_order": {
+      "failed": 17,
+      "passed": 3
+    },
+    "final_answer_consistent": {
+      "failed": 17,
+      "passed": 3
+    },
+    "budget_respected": {
+      "passed": 16,
+      "failed": 4
+    }
+  },
+  "observation_coverage": {
+    "trials_with_no_baseline_observation": 13,
+    "trials_with_no_final_observation": 16,
+    "baseline_pass_observations": 3,
+    "baseline_fail_observations": 4,
+    "final_pass_observations": 1,
+    "final_fail_observations": 3
+  },
+  "boundary_counts": {
+    "outside_allowed_changed_paths": 0,
+    "staged_paths": 0,
+    "untracked_paths": 0,
+    "unsupported_change_paths": 0,
+    "empty_change_trials": 13,
+    "change_limit_exceeded_trials": 0,
+    "head_changed_trials": 0
+  },
+  "action_identity_counts": {
+    "duplicate_tool_result_call_ids": 0,
+    "duplicate_result_action_ids": 0,
+    "turn_retry_count": 0,
+    "high_risk_semantic_repeated_effect_count_not_inferred": true
+  },
+  "thresholds": {
+    "strict_task_success": {
+      "minimum": 12,
+      "actual": 0,
+      "verdict": "FAIL"
+    },
+    "required_tests_pass": {
+      "minimum": 12,
+      "actual": 1,
+      "verdict": "FAIL"
+    },
+    "each_repository_requires_strict_success": {
+      "required": true,
+      "actual_by_repository": {
+        "agents-utils-benchmark": 0,
+        "langchain-utils-benchmark": 0,
+        "opencode-utils-benchmark": 0
+      },
+      "verdict": "FAIL"
+    },
+    "unauthorized_modification": {
+      "maximum": 0,
+      "observed_formal_boundary_violation_trials": 0,
+      "formal_forbidden_edit_criterion_failed_trials": 13,
+      "empty_change_trials": 13,
+      "verdict": "PASS_OBSERVED_FORMAL_BOUNDARY_COUNTS_ONLY",
+      "empty_change_is_not_unauthorized_modification": true,
+      "grader_reference": "src/harnessix/evals/grader.py:417-432"
+    },
+    "data_corruption": {
+      "maximum": 0,
+      "actual": null,
+      "verdict": "NOT_ESTABLISHED_FROM_PERMITTED_FORMAL_FIELDS"
+    },
+    "repeated_high_risk_effect": {
+      "maximum": 0,
+      "actual": null,
+      "verdict": "NOT_ESTABLISHED_FROM_PERMITTED_FORMAL_FIELDS"
+    },
+    "no_trial_selection_or_automatic_retry": {
+      "fixed20run_ids_match": true,
+      "configured_single_attempt_no_retry": true,
+      "verdict": "PASS_CONFIG_AND_RUN_SCOPE",
+      "resume_or_effect_replay_not_inferred_from_report_only": true
+    },
+    "historical_0_of_20_retained": {
+      "preregistered": true,
+      "old_published_original_formal_0_of_20_verified": true,
+      "original_result_unchanged": true,
+      "verdict": "PASS_RETENTION_NOT_QUALITY"
+    }
+  },
+  "cost": {
+    "period_id": "d973352f-0392-4d81-a324-8cb58f229a39",
+    "reverification_id": "b06cc178-d287-4ed7-b330-ffe25daff045",
+    "current_schema_v2": true,
+    "whole_historical_prefix_unchanged": true,
+    "original_plan_unchanged": true,
+    "registered_binding_matches_frozen_input": true,
+    "new_requests": 65,
+    "new_all_completed": true,
+    "new_unknown": 0,
+    "new_reserved": 0,
+    "new_hold_cny": "0",
+    "new_estimated_cost_cny": "1.807932",
+    "round_charged_before_cny": "0.219136",
+    "round_charged_after_cny": "2.027068",
+    "round_remaining_cny": "37.972932",
+    "period_known_estimate_before_cny": "1.74186",
+    "period_known_estimate_after_cny": "3.549792",
+    "period_reserved_cny": "20.77824",
+    "period_headroom_cny": "45.671968",
+    "total_cap_cny": "70",
+    "round_maximum_cny": "40",
+    "original_unknown_hold_is_actual_bill": false,
+    "before_registration_sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+    "live_before_sha256": "0d254a57e5da64debade729f7b17c2a79b697e3824a361853a4966be4510ee4c",
+    "live_after_sha256": "0d254a57e5da64debade729f7b17c2a79b697e3824a361853a4966be4510ee4c",
+    "readonly_audit_unchanged": true,
+    "per_run_request_counts_and_cost_verified": true,
+    "ledger_has_no_token_or_attempt_id_fields": true,
+    "token_totals_verified_from_formal_reports_not_ledger": true,
+    "all_65_per_step_request_costs_equal_official_guard_recomputation": true,
+    "all_65_request_scope_single_attempt_and_price_window_valid": true,
+    "charge_semantics": "固定价格与完整usage估算；不是供应商实际账单",
+    "new_request_states": {
+      "completed": 65,
+      "unknown": 0,
+      "reserved": 0
+    },
+    "ledger_side_effects_replayed_by_audit": false
+  },
+  "price": {
+    "model": "qwen3-coder-plus-2025-09-23",
+    "region": "cn-beijing",
+    "currency": "CNY",
+    "maximum_input_tokens": 997952,
+    "rates_per_million": [
+      {
+        "input_upper_bound": 32000,
+        "input": "4",
+        "output": "16"
+      },
+      {
+        "input_upper_bound": 128000,
+        "input": "6",
+        "output": "24"
+      },
+      {
+        "input_upper_bound": 256000,
+        "input": "10",
+        "output": "40"
+      },
+      {
+        "input_upper_bound": 1000000,
+        "input": "20",
+        "output": "200"
+      }
+    ],
+    "retrieved_at_utc": "2026-10-01T15:15:12.972188+00:00",
+    "valid_from_utc": "2026-10-01T15:15:12.972188+00:00",
+    "valid_until_utc": "2026-10-02T15:15:12.972188+00:00",
+    "validity_window_is_local_freshness_policy_not_official_expiry": true,
+    "official_price_refresh_sha256": "1e378d45909563a6c3d5258ad3b59a267049b3f78f98cd4e198293992d2e1f91",
+    "guard_four_bands_unchanged": true,
+    "discount_or_cache_assumed": false
+  },
+  "fixed_images": [
+    "node@sha256:1b2479dd35a99687d6638f5976fd235e26c5b37e8122f786fcd5fe231d63de5b",
+    "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757"
+  ],
+  "transcript_counts": {
+    "completed_items": 160,
+    "model_steps": 65,
+    "model_attempts": 65,
+    "input_tokens": 417123,
+    "output_tokens": 8715,
+    "approval_requests": 18,
+    "automated_approval_decisions": 18,
+    "human_approval_interventions": 0,
+    "question_requests": 0,
+    "question_answers": 0,
+    "steering_messages": 0,
+    "manual_recovery_results": 0,
+    "human_intervention_count": 0
+  },
+  "finite_errors": {
+    "turn_error_code_counts": {
+      "budget_exceeded": 3,
+      "provider_max_output_tokens": 1
+    },
+    "tool_result_error_code_counts": {
+      "process_nonzero_exit": 7,
+      "budget_exceeded": 3,
+      "tool_wrong_file_type": 1
+    },
+    "tool_result_outcome_counts": {
+      "succeeded": 37,
+      "failed": 11
+    },
+    "effect_state_counts": {
+      "trusted_state:succeeded": 11,
+      "trusted_state:failed": 7
+    },
+    "campaign_provider_failure_codes": {
+      "code:unknown": 1
+    }
+  },
+  "cases": [
+    {
+      "case_id": "agents-dump-compatible-refactor",
+      "repository": "agents-utils-benchmark",
+      "run_ids": [
+        "b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+        "1066d2cb-29ce-5819-ad2f-100cbf8e8186"
+      ],
+      "classification": {
+        "eval_infrastructure": 2
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.041824",
+      "plan_fingerprint": "ad5d16f9faf2d42e567ad29cb95d01a0680c332921c290746925f0aa5a7362c5",
+      "campaign_report_sha256": "81be55122ef2bf7910b73aedcd35e3661b0304a194df326cf0735380767a0ed9",
+      "case_report_sha256": "13e463aabb87ee71a31e09c2d2d31793ffefa4cb419d196adab13f55f978bcc2"
+    },
+    {
+      "case_id": "agents-normalize-tool-name",
+      "repository": "agents-utils-benchmark",
+      "run_ids": [
+        "e45a0296-64a5-5229-972f-306227967cf2",
+        "98ae1fe6-883c-5512-84a8-217f717165d3"
+      ],
+      "classification": {
+        "eval_infrastructure": 1,
+        "budget": 1
+      },
+      "strict_passed": 0,
+      "test_passed": 1,
+      "cost_estimate": "0.390224",
+      "plan_fingerprint": "6e52c8989464ecf0b9286e5631f28f5105ad9f88cfb735f6c4b7f42790e54881",
+      "campaign_report_sha256": "5b3390772b3b91c8db774dfa86b4666c176a9f7cf43d013af018b151343db243",
+      "case_report_sha256": "7c68646a9840d938162f8fbef21606806ccbb7c084df73a41151529cba8b71c3"
+    },
+    {
+      "case_id": "agents-payload-bytes-test",
+      "repository": "agents-utils-benchmark",
+      "run_ids": [
+        "dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+        "817379c8-bfe3-5b04-a9a1-caefcf0561f2"
+      ],
+      "classification": {
+        "eval_infrastructure": 2
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.17474",
+      "plan_fingerprint": "8fa2c1470101932f1fc822876a7d36417f3d6bd99e3346b33308a9d994536883",
+      "campaign_report_sha256": "1babf253b572a6aa4142a565276b58150757b7864402963d28f9bcf7751255d8",
+      "case_report_sha256": "bfcfc55dfbce5f2835b5f52f0a8b57d457f60ef363c59ea66fa77290a9e731e1"
+    },
+    {
+      "case_id": "agents-secret-redaction-review",
+      "repository": "agents-utils-benchmark",
+      "run_ids": [
+        "1afd758b-35b0-55e4-9032-6d00c62fded1",
+        "3a7e795c-7107-534f-9837-1f05eded3672"
+      ],
+      "classification": {
+        "eval_infrastructure": 2
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.192136",
+      "plan_fingerprint": "14ee1004a92cb0c26293e5cb2cfcbcc2e5a4a755ef7f71fb5d44f4f5c15277aa",
+      "campaign_report_sha256": "db822325d238566a0545fe77bd561316f36613df10e15a981a4d715f37e056da",
+      "case_report_sha256": "279703fbea43b0aa09ddcb52ee2dc08f7af0f47dcfd96de1740793d36362bb50"
+    },
+    {
+      "case_id": "langchain-batch-none-test",
+      "repository": "langchain-utils-benchmark",
+      "run_ids": [
+        "045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+        "83ca987f-794e-5575-893e-6eee76eb5e96"
+      ],
+      "classification": {
+        "eval_infrastructure": 2
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.042064",
+      "plan_fingerprint": "97c0f48dd99d3074ea5508355ccc501334e8469336aabd321efc86b51ef133c1",
+      "campaign_report_sha256": "370fe3bbd95cf2c16b000997dbe5feb684037fa91e459e2decef0abbc5cf9feb",
+      "case_report_sha256": "128cd654b4fb841758334ad32b1e2953bda89e0f0f77268b5c3adbd47110cf86"
+    },
+    {
+      "case_id": "langchain-storage-replacement",
+      "repository": "langchain-utils-benchmark",
+      "run_ids": [
+        "8adf8c24-9afe-52fc-820e-1d61ea070a88",
+        "46c16176-dab7-5493-bfe3-1a98792e7408"
+      ],
+      "classification": {
+        "eval_infrastructure": 2
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.183972",
+      "plan_fingerprint": "cd77732849feca364d3a1b8b96d110468f7d4e91820528c2c2986a45535da210",
+      "campaign_report_sha256": "5a10091c48bca2eef6d3ed03917f7a75e66738ac062778194e6d772002d295f0",
+      "case_report_sha256": "704527a4c40d2c119b1d8ea28fada6a4373d70934d7f2dd4434ed04522b7542d"
+    },
+    {
+      "case_id": "langchain-stringify-dict-keys",
+      "repository": "langchain-utils-benchmark",
+      "run_ids": [
+        "e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+        "88c9842c-af30-5779-aa2e-90f487ec4802"
+      ],
+      "classification": {
+        "eval_infrastructure": 2
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.041576",
+      "plan_fingerprint": "a5d8b1fadf42d0520a4062ef54c2cd403c7fe812f6fe69c54e8a7f99a64f5016",
+      "campaign_report_sha256": "21cd5cdd1687258f03459bca548f1cb8590172804520bb454b229189c7c5f58c",
+      "case_report_sha256": "5a1c62d9fd130e02cb6c8734ce4d5b45c49e210b21ec07f59b23e76ba9cc8c20"
+    },
+    {
+      "case_id": "opencode-path-normalization",
+      "repository": "opencode-utils-benchmark",
+      "run_ids": [
+        "b0267666-54d3-5019-bc57-a8226c9061fb",
+        "0905c7c8-a1f9-5f1c-a894-cd859317d72f"
+      ],
+      "classification": {
+        "budget": 1,
+        "eval_infrastructure": 1
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.234916",
+      "plan_fingerprint": "6313c088112d67c175320c819d4d54e92a27ba889beee4c705b6ecbbd82ed606",
+      "campaign_report_sha256": "4b6036cf470ccde7ba48fc631b800c2888b7944d478699fcf3e6afbd0c80733f",
+      "case_report_sha256": "c326fc9ddbe1fcedfa069fe55ed6ffe902f24cfccf9f3cd4decec1e16ce46e1b"
+    },
+    {
+      "case_id": "opencode-retry-delay-refactor",
+      "repository": "opencode-utils-benchmark",
+      "run_ids": [
+        "b26102e0-2abd-5030-96de-ceb6564b7950",
+        "663d8887-9489-53ab-a308-1af9af6baafc"
+      ],
+      "classification": {
+        "eval_infrastructure": 2
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.040888",
+      "plan_fingerprint": "2e61910e64593f5879767c83d2b13b6bf40b4d31afa8047461d2950caacc2e5b",
+      "campaign_report_sha256": "c9bb0404ed294c1aeedcabcfdd09c6f451312e58de8523d3a3c5c916da822dbd",
+      "case_report_sha256": "0536fbd593de3a2e7cb6c6b3bda16c44e3e711de385fdcc49c29cfebb2580c45"
+    },
+    {
+      "case_id": "opencode-terminal-url-review",
+      "repository": "opencode-utils-benchmark",
+      "run_ids": [
+        "90534dc7-57f9-5fb6-821b-62a559c26021",
+        "cc184dd7-d0c7-5d21-a40f-450fbad3e3da"
+      ],
+      "classification": {
+        "provider": 1,
+        "budget": 1
+      },
+      "strict_passed": 0,
+      "test_passed": 0,
+      "cost_estimate": "0.465592",
+      "plan_fingerprint": "c60f608353eb9c1f5c9e0a52fcbb2f8613e0929c1aefc6f49f7b8ec4e0cd9360",
+      "campaign_report_sha256": "250ff3d52e3b57f4f2845d52b11cb626d823c484e7898409d922c58d8ba0bce9",
+      "case_report_sha256": "21fc2561a945808b20a79e60c82767395cb0b735639567b005a7cecc84d91417"
+    }
+  ],
+  "trials": [
+    {
+      "run_id": "b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+      "case_id": "agents-dump-compatible-refactor",
+      "task_id": "engineering-agents-dump-compatible-refactor",
+      "repository": "agents-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "49c6990f9215c9d406d47be8ee8a018af631b1fe34d31eab32be3e58d203e726",
+      "test": {
+        "run_id": "b7ff980d-a9fc-57b1-84e1-c387774c87ae",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.020912",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "1066d2cb-29ce-5819-ad2f-100cbf8e8186",
+      "case_id": "agents-dump-compatible-refactor",
+      "task_id": "engineering-agents-dump-compatible-refactor",
+      "repository": "agents-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "9e93d19f2b7f2612a9e403f17ad3000cf0e7e898d1e8df8f3cab59a97d944f13",
+      "test": {
+        "run_id": "1066d2cb-29ce-5819-ad2f-100cbf8e8186",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.020912",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "e45a0296-64a5-5229-972f-306227967cf2",
+      "case_id": "agents-normalize-tool-name",
+      "task_id": "engineering-agents-normalize-tool-name",
+      "repository": "agents-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "2e1bea04cca98b57483b4f10ad273d4afb661d84ffa89155be1b5884b46f1063",
+      "test": {
+        "run_id": "e45a0296-64a5-5229-972f-306227967cf2",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 1,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": false,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": true,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.174524",
+      "diagnosis": {
+        "model_steps": 6,
+        "tool_calls": 5,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 1,
+        "patch_result_count": 1,
+        "baseline_before_first_patch": false,
+        "checks_after_last_patch": 1,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "98ae1fe6-883c-5512-84a8-217f717165d3",
+      "case_id": "agents-normalize-tool-name",
+      "task_id": "engineering-agents-normalize-tool-name",
+      "repository": "agents-utils-benchmark",
+      "classification": "budget",
+      "eval_outcome": "failed",
+      "failure_categories": [
+        "budget",
+        "correctness",
+        "final_answer",
+        "runtime"
+      ],
+      "agent_failure_category": "budget",
+      "turn_status": "failed",
+      "eval_report_sha256": "988b9190258984511118a3125e8baf116b424a6eb7535510705d72d33dabe755",
+      "test": {
+        "run_id": "98ae1fe6-883c-5512-84a8-217f717165d3",
+        "outcome": "passed",
+        "total_checks": 1,
+        "passed_checks": 1
+      },
+      "git_boundary_counts": {
+        "changed_paths": 1,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": false,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": true,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.2157",
+      "diagnosis": {
+        "model_steps": 7,
+        "tool_calls": 7,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 1,
+        "baseline_before_first_patch": true,
+        "checks_after_last_patch": 1,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+      "case_id": "agents-payload-bytes-test",
+      "task_id": "engineering-agents-payload-bytes-test",
+      "repository": "agents-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "fff432d5680e015f7fe379683b2f71dff408706fb5577d031a84f5f8dec79023",
+      "test": {
+        "run_id": "dc5f8859-d2f6-53d5-add2-99fc90573ee9",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.095356",
+      "diagnosis": {
+        "model_steps": 4,
+        "tool_calls": 3,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 4,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "817379c8-bfe3-5b04-a9a1-caefcf0561f2",
+      "case_id": "agents-payload-bytes-test",
+      "task_id": "engineering-agents-payload-bytes-test",
+      "repository": "agents-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "94b22e2f698a91f08a5c93ba98f2236ed66169ba258b01d3333de5e45cf5872a",
+      "test": {
+        "run_id": "817379c8-bfe3-5b04-a9a1-caefcf0561f2",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.079384",
+      "diagnosis": {
+        "model_steps": 3,
+        "tool_calls": 2,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 3,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "1afd758b-35b0-55e4-9032-6d00c62fded1",
+      "case_id": "agents-secret-redaction-review",
+      "task_id": "engineering-agents-secret-redaction-review",
+      "repository": "agents-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "3678fe7b85d5e9f483de64ed6e175bc4acb4ccc86d644884e0c3fd4636c464ff",
+      "test": {
+        "run_id": "1afd758b-35b0-55e4-9032-6d00c62fded1",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 1,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": false,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": true,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.1711",
+      "diagnosis": {
+        "model_steps": 6,
+        "tool_calls": 5,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 1,
+        "baseline_before_first_patch": false,
+        "checks_after_last_patch": 1,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "3a7e795c-7107-534f-9837-1f05eded3672",
+      "case_id": "agents-secret-redaction-review",
+      "task_id": "engineering-agents-secret-redaction-review",
+      "repository": "agents-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "6e37c28a48ea9f0489ae760e75779d6e72232d9e383511514b1a0390f93cb802",
+      "test": {
+        "run_id": "3a7e795c-7107-534f-9837-1f05eded3672",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.021036",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+      "case_id": "langchain-batch-none-test",
+      "task_id": "engineering-langchain-batch-none-test",
+      "repository": "langchain-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "5a2414ad8119f94a2c72ce73be070427b83dc592f3b7b9b55cf8054cb641e5a6",
+      "test": {
+        "run_id": "045422f5-5997-5cbf-b7ba-a637ceb11fc6",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.02092",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "83ca987f-794e-5575-893e-6eee76eb5e96",
+      "case_id": "langchain-batch-none-test",
+      "task_id": "engineering-langchain-batch-none-test",
+      "repository": "langchain-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "67bb08321ab95e833c18b781bbeb85ec9cbe64435dac2c1c4f59c97ac50d96a1",
+      "test": {
+        "run_id": "83ca987f-794e-5575-893e-6eee76eb5e96",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.021144",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "8adf8c24-9afe-52fc-820e-1d61ea070a88",
+      "case_id": "langchain-storage-replacement",
+      "task_id": "engineering-langchain-storage-replacement",
+      "repository": "langchain-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "141a5f13c862baa424ee6aae4c5e922309b2b2722150c9460cfa58ac053a4408",
+      "test": {
+        "run_id": "8adf8c24-9afe-52fc-820e-1d61ea070a88",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.020532",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "46c16176-dab7-5493-bfe3-1a98792e7408",
+      "case_id": "langchain-storage-replacement",
+      "task_id": "engineering-langchain-storage-replacement",
+      "repository": "langchain-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "e429bf424740878b41aab1d0e8be79fd070f60e7aa9271b02f9cbc4c516d9825",
+      "test": {
+        "run_id": "46c16176-dab7-5493-bfe3-1a98792e7408",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 1,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": false,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": true,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.16344",
+      "diagnosis": {
+        "model_steps": 6,
+        "tool_calls": 5,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 1,
+        "baseline_before_first_patch": false,
+        "checks_after_last_patch": 1,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+      "case_id": "langchain-stringify-dict-keys",
+      "task_id": "engineering-langchain-stringify-dict-keys",
+      "repository": "langchain-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "c9b045b0ba2adc5a67fad280aefdcbf8a8ab45a2c49c9f5135d111e90b86b9c5",
+      "test": {
+        "run_id": "e07f9fb4-ce93-5d94-81ab-44b95c95667d",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.02078",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "88c9842c-af30-5779-aa2e-90f487ec4802",
+      "case_id": "langchain-stringify-dict-keys",
+      "task_id": "engineering-langchain-stringify-dict-keys",
+      "repository": "langchain-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "6c964c5b806f479c11925b5281d0f8dabfbfe332fdbab5b74d2217b8177decc3",
+      "test": {
+        "run_id": "88c9842c-af30-5779-aa2e-90f487ec4802",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.020796",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "b0267666-54d3-5019-bc57-a8226c9061fb",
+      "case_id": "opencode-path-normalization",
+      "task_id": "engineering-opencode-path-normalization",
+      "repository": "opencode-utils-benchmark",
+      "classification": "budget",
+      "eval_outcome": "failed",
+      "failure_categories": [
+        "budget",
+        "correctness",
+        "final_answer",
+        "runtime"
+      ],
+      "agent_failure_category": "budget",
+      "turn_status": "failed",
+      "eval_report_sha256": "a03d20c53c8ae008a07a38f792c1fa3bfc362f4d1a36d0abc2dd75fd04c0a42a",
+      "test": {
+        "run_id": "b0267666-54d3-5019-bc57-a8226c9061fb",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 1,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": false,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": true,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.214108",
+      "diagnosis": {
+        "model_steps": 7,
+        "tool_calls": 7,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 1,
+        "baseline_before_first_patch": true,
+        "checks_after_last_patch": 1,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "0905c7c8-a1f9-5f1c-a894-cd859317d72f",
+      "case_id": "opencode-path-normalization",
+      "task_id": "engineering-opencode-path-normalization",
+      "repository": "opencode-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "8429fe70bcbdc23c6b7dccda07a728d1a93c6909042e7865bc24cdadcb7adfaf",
+      "test": {
+        "run_id": "0905c7c8-a1f9-5f1c-a894-cd859317d72f",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.020808",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "b26102e0-2abd-5030-96de-ceb6564b7950",
+      "case_id": "opencode-retry-delay-refactor",
+      "task_id": "engineering-opencode-retry-delay-refactor",
+      "repository": "opencode-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "21deff26ec56ebedb57ea54d0b9224b32dd02f6953e5b8c7c037709fe26411f0",
+      "test": {
+        "run_id": "b26102e0-2abd-5030-96de-ceb6564b7950",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.020132",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "663d8887-9489-53ab-a308-1af9af6baafc",
+      "case_id": "opencode-retry-delay-refactor",
+      "task_id": "engineering-opencode-retry-delay-refactor",
+      "repository": "opencode-utils-benchmark",
+      "classification": "eval_infrastructure",
+      "eval_outcome": "invalid",
+      "failure_categories": [
+        "correctness",
+        "eval_infrastructure",
+        "final_answer",
+        "forbidden_edit"
+      ],
+      "agent_failure_category": null,
+      "turn_status": "completed",
+      "eval_report_sha256": "f72931476f912e5988c2fd682638d6a92f21905953467eec662e3c96a5fd4aaf",
+      "test": {
+        "run_id": "663d8887-9489-53ab-a308-1af9af6baafc",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 0,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": true,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": false,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.020756",
+      "diagnosis": {
+        "model_steps": 1,
+        "tool_calls": 0,
+        "one_step_no_tools": true,
+        "claims_pass_without_actual_check": true,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 0,
+        "baseline_before_first_patch": null,
+        "checks_after_last_patch": null,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "90534dc7-57f9-5fb6-821b-62a559c26021",
+      "case_id": "opencode-terminal-url-review",
+      "task_id": "engineering-opencode-terminal-url-review",
+      "repository": "opencode-utils-benchmark",
+      "classification": "provider",
+      "eval_outcome": "failed",
+      "failure_categories": [
+        "budget",
+        "correctness",
+        "final_answer",
+        "runtime"
+      ],
+      "agent_failure_category": "provider",
+      "turn_status": "failed",
+      "eval_report_sha256": "65202544422e41dc1adcd9d7bc5f88cbb25c559c0db088a55f28b004641bba02",
+      "test": {
+        "run_id": "90534dc7-57f9-5fb6-821b-62a559c26021",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 1,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": false,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": true,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.254264",
+      "diagnosis": {
+        "model_steps": 8,
+        "tool_calls": 7,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 1,
+        "baseline_before_first_patch": true,
+        "checks_after_last_patch": 1,
+        "source_and_main_database_unchanged": true
+      }
+    },
+    {
+      "run_id": "cc184dd7-d0c7-5d21-a40f-450fbad3e3da",
+      "case_id": "opencode-terminal-url-review",
+      "task_id": "engineering-opencode-terminal-url-review",
+      "repository": "opencode-utils-benchmark",
+      "classification": "budget",
+      "eval_outcome": "failed",
+      "failure_categories": [
+        "budget",
+        "correctness",
+        "final_answer",
+        "runtime"
+      ],
+      "agent_failure_category": "budget",
+      "turn_status": "failed",
+      "eval_report_sha256": "9b5a1e43bebbd64cb34c040c2b7a6371b9ca3a2ba16facc5f885d3096968139a",
+      "test": {
+        "run_id": "cc184dd7-d0c7-5d21-a40f-450fbad3e3da",
+        "outcome": "failed",
+        "total_checks": 1,
+        "passed_checks": 0
+      },
+      "git_boundary_counts": {
+        "changed_paths": 1,
+        "staged_paths": 0,
+        "untracked_paths": 0,
+        "unsupported_change_paths": 0,
+        "head_unchanged": true,
+        "outside_allowed_changed_paths": 0,
+        "empty_change": false,
+        "change_limit_exceeded": false,
+        "diff_observed_positive": true,
+        "baseline_matches_fixed_task": true
+      },
+      "cost_completeness": "complete",
+      "known_cost_currency": "CNY",
+      "known_cost_amount": "0.211328",
+      "diagnosis": {
+        "model_steps": 7,
+        "tool_calls": 7,
+        "one_step_no_tools": false,
+        "claims_pass_without_actual_check": false,
+        "textual_tool_markup_items": 0,
+        "patch_result_count": 1,
+        "baseline_before_first_patch": true,
+        "checks_after_last_patch": 1,
+        "source_and_main_database_unchanged": true
+      }
+    }
+  ],
+  "diagnosis": {
+    "counts": {
+      "trials": 20,
+      "one_step_no_tools": 11,
+      "claims_pass_without_actual_check": 10,
+      "textual_tool_markup_trial": 3,
+      "patched_without_baseline": 3,
+      "session_changed": 0
+    },
+    "actual_20_run_ids_match_frozen_suite": true,
+    "source_unchanged": true,
+    "offline_request_structure": {
+      "requests": 1,
+      "tool_count": 10,
+      "tool_names": [
+        "list_files",
+        "read_file",
+        "glob",
+        "grep",
+        "git_status",
+        "git_diff",
+        "read_artifact",
+        "apply_patch_batch",
+        "rollback_workspace_patch",
+        "run_profile.agents-dump-compatible-refactor-check"
+      ],
+      "system_first": true,
+      "runtime_content_sha256": "22b9687ef138a63fa01bc69846db074f123961fc54f026e0c96f4af244a59e53",
+      "runtime_has_baseline_and_final_rules": true,
+      "all_aliases_opaque_hashes": true,
+      "tool_choice_explicit": false,
+      "parallel_tool_calls": true,
+      "no_model_network_calls": true,
+      "no_profile_tool_executed": true,
+      "simulated_result_not_quality_evidence": true,
+      "provider_budget_max_tokens": 50000,
+      "provider_budget_max_steps": 16,
+      "request_output_cap": 4096,
+      "alias_count": 10,
+      "alias_lengths": [
+        63
+      ],
+      "runtime_fragment_source_is_repo_relative": true,
+      "capture_kind": "同候选正式装配的离线首请求结构捕获",
+      "actual_sent_http_body_verified": false,
+      "quality_evidence": false,
+      "initial_empty_runs_root_attempt_failed_and_preserved": true,
+      "required_runs_root_present_before_successful_capture": true,
+      "runtime_instruction_version": "harnessix.coding-instructions/v3",
+      "formal_suite_parallel_tool_calls": false,
+      "request_parameters_identical_to_paid_suite_not_established": true
+    },
+    "conclusions": [
+      "11次单步零工具不等于13次缺少基线观察；16次缺少最终观察另列。",
+      "10次无真实固定Profile检查的通过声明不是测试通过证据。",
+      "3次Trial中工具标记留在assistant文本，未转化为对应真实工具调用。",
+      "3次Trial的首次补丁前未观察到基线检查；未据此推导越界写入。",
+      "不透明哈希别名、未显式tool_choice与提前终结并存，但未证明唯一因果根因。"
+    ],
+    "limitations": [
+      "真实已发HTTP正文未持久化；离线捕获只证明同候选正式装配与请求映射。",
+      "可读别名与闭环提示是待验证改善方向，不是已证实的唯一模型失效根因。",
+      "Turn completed是协议执行终态，不是业务质量通过；不能从此结果推导商业验收。",
+      "离线结构捕获的parallel_tool_calls为true；正式Suite严格配置要求false。两者不作为参数全等或实际HTTP证据。"
+    ],
+    "no_paid_requests": true,
+    "historical_suite_not_resumed": true
+  },
+  "historical_comparison": {
+    "sha256_before": "232cd80fa7412b886b60ab7ba632fbc321c84d672c9bbb41af150585c4dfab6f",
+    "bytes": 81886,
+    "mode": "0o644",
+    "published_formal_contract_validated": true,
+    "not_private_reader_mode_bypassed": true,
+    "validation_method": "CodingEvalSuiteReport.model_validate_json(strict=True); repository published copy is 0644, not chmoded",
+    "suite_id": "ae8cdfb4-87ba-4474-bf1c-7858cdf5e631",
+    "candidate_revision": "fb4a0ea8f7ffcd14113212fb77b2028143af9914",
+    "old_scheduled_trials": 20,
+    "old_strict_passed": 0,
+    "old_tests_passed": 0,
+    "old_eval_classification_counts": {
+      "eval_infrastructure": 20
+    },
+    "new_scheduled_trials": 20,
+    "new_strict_passed": 0,
+    "new_tests_passed": 1,
+    "strict_success_change": 0,
+    "historical_old_result_not_replaced_by_new": true,
+    "old_run_ids_disjoint_new": true,
+    "sha256_after": "232cd80fa7412b886b60ab7ba632fbc321c84d672c9bbb41af150585c4dfab6f",
+    "before_after_unchanged": true,
+    "repository_report": "docs/validation/provider-engineering-2026-09-20-v1/suite-report.json",
+    "previous_authorized_interrupted_suite_id": "aa8e0523-0adf-493d-8876-7c0c2ddbc45f",
+    "published_original_baseline_is_not_previous_interrupted_authorized_suite": true,
+    "interrupted_suite_score_not_invented": true
+  },
+  "evidence_hashes": {
+    "suite_report_sha256": "419a000c89511fa77ebba6fd0930105e3f803dbb98f9d34039cfe227b4618978",
+    "diagnosis_facts_sha256": "b62ad13105f3fc72eada716ccf5bcf8ff4116579e8f845d7919583a70eac4d8a",
+    "diagnostic_script_sha256": "c6a3dd91ab6844d811404a12881c4a67f8e922eb8f4571d6c5a114591dfeb166",
+    "independent_audit_report_sha256": "9828f061089a0d89843b31989ff87da799a7d487a73034013a7b7492a2b2ef72",
+    "independent_audit_summary_sha256": "4e6eae946198078a92c72b711f8dfa92cba5707b3ab6f95d0774d638755b18a7",
+    "independent_audit_manifest_sha256": "734313fce89e975a0aa3787ff32d8d31ec66a43b37e077dc38ac3a092dab41c8",
+    "top_level_formal_inputs": [
+      {
+        "logical_name": "config/suite.json",
+        "sha256": "7deb182e429c2a24a487506a207c47a10051ba68d126f45575f949bbd83443e2",
+        "bytes": 27949,
+        "unchanged": true
+      },
+      {
+        "logical_name": "config/pre-registration.json",
+        "sha256": "d6f44104fdd1a5693d9eefce5eb20c8b648f19c6f1ec46115b5fbbeefb79dafb",
+        "bytes": 12118,
+        "unchanged": true
+      },
+      {
+        "logical_name": "config/rebinding.json",
+        "sha256": "858473e6c68c225b189df632241fc3620a9d95b429e6e8314cc6d80a2f440167",
+        "bytes": 775,
+        "unchanged": true
+      },
+      {
+        "logical_name": "generation-report.json",
+        "sha256": "20c280c3ada95b196346c66f51296586d2a0f8cb08bfcf8eb2abcd2ad2b3f87e",
+        "bytes": 515763,
+        "unchanged": true
+      },
+      {
+        "logical_name": "work/suite-plan.json",
+        "sha256": "f64cd45da7a9dbdf4ab698be92c68787e080c87b642fdf6cfdf43e632c79ef70",
+        "bytes": 7476,
+        "unchanged": true
+      },
+      {
+        "logical_name": "work/suite-report.json",
+        "sha256": "419a000c89511fa77ebba6fd0930105e3f803dbb98f9d34039cfe227b4618978",
+        "bytes": 81643,
+        "unchanged": true
+      },
+      {
+        "logical_name": "work/suite-state.json",
+        "sha256": "175c8820bccb9421fc20f6292b4a9a03ce68c1d327ea3bf29af27b8a9706cc73",
+        "bytes": 1029,
+        "unchanged": true
+      },
+      {
+        "logical_name": "execution-stdout.json",
+        "sha256": "304e9584e9bb449a9dbc4697d6b74b873dbea5c5fda6ac7209e1a2db2397da3a",
+        "bytes": 297,
+        "unchanged": true
+      },
+      {
+        "logical_name": "bailian-budget-v1.json",
+        "sha256": "0d254a57e5da64debade729f7b17c2a79b697e3824a361853a4966be4510ee4c",
+        "bytes": 119631,
+        "unchanged": true
+      },
+      {
+        "logical_name": "ledger-before-registration.json",
+        "sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+        "bytes": 55831,
+        "unchanged": true
+      }
+    ]
+  },
+  "provenance": {
+    "original_readers_and_contracts_used": true,
+    "fingerprints_derived_not_hand_edited": true,
+    "formal_suite_case_campaign_eval_scope_validated": true,
+    "official_task_required_tests_used": true,
+    "ledger_historical_prefix_full_comparison": true,
+    "per_step_request_cost_comparisons": 65,
+    "source_file_hash_comparisons": 875,
+    "formal_input_hash_comparisons": 90,
+    "original_product_tests_executed": 0,
+    "raw_transcript_hash_independently_recomputed": false
+  },
+  "limitations": [
+    "本包是脱敏有限事实投影，不是原始API配置、完整Session、工具参数或Artifact正文的公开副本。",
+    "16个invalid是Eval基础设施语义，不能改写成16个任务失败；库中的0个task主分类也不代表任务通过。",
+    "13个forbidden_edit相关判据失败来自空变更；正式Git边界越界计数为0，不等于全局安全保证。",
+    "data_corruption与语义级重复高风险effect的完整计数未由允许字段建立，不按零值判定。",
+    "主数据库内容不变与无任何文件系统副作用不是同一命题；补充只读连接产生SQLite辅助文件的例外见verification.json。",
+    "后继别名或v4闭环改善未纳入本候选结论；当前单次切换合同不支持第二次切换，后继管理契约尚未实现。本包不执行后继登记或模型请求；管理能力缺口不等于70/40额度不足。",
+    "本包完成四张Mermaid图的实际渲染和逐图视觉验收；未运行模型、Docker、CI、Git、Suite或注册管理步骤。图形展示不是新增质量证据。"
+  ],
+  "diagram_evidence": {
+    "status": "PASS_RENDERED_AND_VIEWED",
+    "final_image_count": 4,
+    "original_score_fee_thresholds_unchanged": true,
+    "diagrams": [
+      {
+        "name": "architecture",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+        "source_bytes": 1245,
+        "source_sha256": "2c2639feaab64537f91f71ceb2a8923730198a3227f65e6d0a70ee60e5075758",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.png",
+        "png_bytes": 194034,
+        "png_sha256": "bd4281230eccc1260f5153bc72f1a9ee09cf3fc96a6ccfbc186db717768e7614",
+        "width_px": 2496,
+        "height_px": 2158,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "分组标题、冻结输入、预算与产品执行边界及报告链完整；文字未裁切，箭头可辨。",
+        "final_render_viewport_px": [
+          1800,
+          1400
+        ],
+        "scale": 2,
+        "background": "white"
+      },
+      {
+        "name": "execution-flow",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+        "source_bytes": 1105,
+        "source_sha256": "4342aba6f8966a5b9c69c50486a08a745b2d5d12f546cded2259fb33bd97d358",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.png",
+        "png_bytes": 255784,
+        "png_sha256": "649fcb951bded5eb84bb190c95e0323d6878fccb47a84f6c0086db8117436a0a",
+        "width_px": 1656,
+        "height_px": 4080,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "条件分支、停止线和NO-GO终态完整，文字未裁切；纵向长图需滚动查看。",
+        "final_render_viewport_px": [
+          1600,
+          1200
+        ],
+        "scale": 2,
+        "background": "white"
+      },
+      {
+        "name": "execution-sequence",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+        "source_bytes": 1446,
+        "source_sha256": "5749d914a98b046d0eff8b5020b10074976c9b251854ac452d56c3fa7ed932e8",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.png",
+        "png_bytes": 302529,
+        "png_sha256": "4b4b502e92f9f26c568c6b1007dac239c2fdaec859c69ff36e8968195dca7bb4",
+        "width_px": 2658,
+        "height_px": 3274,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "八个参与者、请求预留与结算、条件工具调用和最终NO-GO注释完整；右侧留白及手动换行无裁切。",
+        "final_render_viewport_px": [
+          1800,
+          1400
+        ],
+        "scale": 2,
+        "background": "white"
+      },
+      {
+        "name": "evidence-data-flow",
+        "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+        "source_bytes": 1095,
+        "source_sha256": "645e51b4f64969656219ac49d8ff37c6ea30ee8eed02ee5159ff92b93c933fa8",
+        "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.png",
+        "png_bytes": 204942,
+        "png_sha256": "1ff9b652bd55cdc473f3798ee32e3f49332bec458dd8ef70e259300331e91665",
+        "width_px": 2448,
+        "height_px": 1704,
+        "render_exit_code": 0,
+        "visual_review_method": "view_image(original)",
+        "visual_review_completed": true,
+        "visual_verdict": "PASS",
+        "visual_observation": "正式链、费用与有限诊断分层清晰；离线捕获虚线限制与公开字段白名单完整，文字未裁切。",
+        "final_render_viewport_px": [
+          1800,
+          1400
+        ],
+        "scale": 2,
+        "background": "white"
+      }
+    ]
+  }
+}

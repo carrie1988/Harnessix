@@ -1,0 +1,22 @@
+flowchart TD
+  START["冻结候选与原阈值、20固定Run ID"]
+  CHECK["源码 / 计划 / 正式TaskPack / 绑定检查"]
+  LOOP["按计划执行10 Case、每Case两Trial"]
+  REQUEST["请求前：旧未知预留保留、范围价格有效、70/40预留可容纳"]
+  TURN["真实模型请求、完整usage结算与Agent工具事实"]
+  UNKNOWN{"新增unknown、未决预留或不完整费用？"}
+  STOP["停止后续费用执行；保留事实，不自动重试"]
+  OBS["抽取实际Profile首尾观察及Git边界"]
+  CLASS["按现行合同分级：invalid / failed / passed"]
+  CASE["发布Eval、Campaign、Case报告"]
+  MORE{"还有计划内Case？"}
+  PUB["发布完整Suite报告"]
+  SCORE["独立复算：严格0/20、测试1/20"]
+  GATE["原阈值未满足：质量NO-GO"]
+  START --> CHECK --> LOOP --> REQUEST --> TURN --> UNKNOWN
+  UNKNOWN -- 是 --> STOP
+  UNKNOWN -- 否 --> OBS --> CLASS --> CASE --> MORE
+  MORE -- 是 --> LOOP
+  MORE -- 否 --> PUB --> SCORE --> GATE
+  NOTE["事实：本轮65请求均completed，无新增unknown；执行终结不代表质量通过"]
+  PUB -.-> NOTE

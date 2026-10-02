@@ -1,0 +1,26 @@
+{
+  "commercial_r3_closed": false,
+  "pending": [
+    "新完整真实20 Trial质量",
+    "原生消费者平台与商业门禁"
+  ],
+  "schema": "harnessix.review-packet/v1",
+  "scope": "readable_wire_alias_and_shared_coding_instruction_only",
+  "unchanged": [
+    "内部工具名、描述与Schema",
+    "原Session事件与批准",
+    "严格响应和碰撞拒绝",
+    "固定Task Pack、Grader及Trial预算",
+    "原未知费用预留"
+  ],
+  "verified": [
+    "两Adapter和历史同源映射",
+    "原名持久化不变",
+    "旧及未知响应名拒绝",
+    "实际共享v4指令、两Adapter及Session指纹",
+    "指令2749字节<=2751",
+    "独立实现复审660通过及限定负对照",
+    "关联179文件组5129通过／57跳过、输入零漂移",
+    "同一Wheel源码外双Python明确范围安装验证"
+  ]
+}

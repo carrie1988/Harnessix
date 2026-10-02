@@ -1,0 +1,21 @@
+flowchart TD
+    I[Host显式mode及材料正文] --> M{mode严格有效}
+    M -->|off| V1[原环境及v1命令摘要、v1封闭wire]
+    M -->|stderr-event-v1| V2[唯一profileSHA、material_write、22项argv<br/>仅增加GIT_TRACE2_EVENT=2]
+    M -->|其他| E[拒绝且不创建执行任务]
+    V1 --> P[准备不可变command、request、spec及预算]
+    V2 --> P
+    P --> L[生成完整原Plan及绑定参数]
+    L --> A{诊断为REQUIRE_APPROVAL<br/>新checkpoint重建并精确匹配}
+    A -->|不满足| E
+    A -->|满足或off原策略| K[原Host绑定与能力、环境、材料守卫]
+    K -->|拒绝| E
+    K --> T[唯一原执行task及原绝对期限]
+    T --> DB[原SQLiteExecutionPlanStore.save_plan]
+    DB --> S[原Supervisor.start与原Owner]
+    S --> ST[原保护检查及私有正文stage]
+    ST --> SEND[原小manifest握手发送及stdin关闭]
+    SEND --> W[worker重验v1或v2封闭wire、身份、环境、snapshot]
+    W --> X[一次原Git Popen<br/>stdin为原snapshot、stderr为原fd2]
+    X --> FIN[原wait、raw、proof、关闭及清理路径]
+    FIN --> OUT[保留业务结果与UNKNOWN语义<br/>无重试、无自动重放]

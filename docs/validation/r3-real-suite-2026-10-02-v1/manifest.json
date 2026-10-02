@@ -1,0 +1,351 @@
+{
+  "schema": "harnessix.validation.r3-real-suite-public-manifest/v1",
+  "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "suite_id": "d058040a-2fa1-46d9-a328-9b7962f372f5",
+  "scope": "脱敏公开结果与文档，不包含私有原件",
+  "manifest_self_hash_not_recursive": true,
+  "bundle_files_including_manifest": 14,
+  "sha256_convention": "文件原始字节（含PNG）的SHA-256；不对manifest自身递归求哈希",
+  "evidence_hashes": {
+    "suite_report_sha256": "419a000c89511fa77ebba6fd0930105e3f803dbb98f9d34039cfe227b4618978",
+    "diagnosis_facts_sha256": "b62ad13105f3fc72eada716ccf5bcf8ff4116579e8f845d7919583a70eac4d8a",
+    "diagnostic_script_sha256": "c6a3dd91ab6844d811404a12881c4a67f8e922eb8f4571d6c5a114591dfeb166",
+    "independent_audit_report_sha256": "9828f061089a0d89843b31989ff87da799a7d487a73034013a7b7492a2b2ef72",
+    "independent_audit_summary_sha256": "4e6eae946198078a92c72b711f8dfa92cba5707b3ab6f95d0774d638755b18a7",
+    "independent_audit_manifest_sha256": "734313fce89e975a0aa3787ff32d8d31ec66a43b37e077dc38ac3a092dab41c8",
+    "top_level_formal_inputs": [
+      {
+        "logical_name": "config/suite.json",
+        "sha256": "7deb182e429c2a24a487506a207c47a10051ba68d126f45575f949bbd83443e2",
+        "bytes": 27949,
+        "unchanged": true
+      },
+      {
+        "logical_name": "config/pre-registration.json",
+        "sha256": "d6f44104fdd1a5693d9eefce5eb20c8b648f19c6f1ec46115b5fbbeefb79dafb",
+        "bytes": 12118,
+        "unchanged": true
+      },
+      {
+        "logical_name": "config/rebinding.json",
+        "sha256": "858473e6c68c225b189df632241fc3620a9d95b429e6e8314cc6d80a2f440167",
+        "bytes": 775,
+        "unchanged": true
+      },
+      {
+        "logical_name": "generation-report.json",
+        "sha256": "20c280c3ada95b196346c66f51296586d2a0f8cb08bfcf8eb2abcd2ad2b3f87e",
+        "bytes": 515763,
+        "unchanged": true
+      },
+      {
+        "logical_name": "work/suite-plan.json",
+        "sha256": "f64cd45da7a9dbdf4ab698be92c68787e080c87b642fdf6cfdf43e632c79ef70",
+        "bytes": 7476,
+        "unchanged": true
+      },
+      {
+        "logical_name": "work/suite-report.json",
+        "sha256": "419a000c89511fa77ebba6fd0930105e3f803dbb98f9d34039cfe227b4618978",
+        "bytes": 81643,
+        "unchanged": true
+      },
+      {
+        "logical_name": "work/suite-state.json",
+        "sha256": "175c8820bccb9421fc20f6292b4a9a03ce68c1d327ea3bf29af27b8a9706cc73",
+        "bytes": 1029,
+        "unchanged": true
+      },
+      {
+        "logical_name": "execution-stdout.json",
+        "sha256": "304e9584e9bb449a9dbc4697d6b74b873dbea5c5fda6ac7209e1a2db2397da3a",
+        "bytes": 297,
+        "unchanged": true
+      },
+      {
+        "logical_name": "bailian-budget-v1.json",
+        "sha256": "0d254a57e5da64debade729f7b17c2a79b697e3824a361853a4966be4510ee4c",
+        "bytes": 119631,
+        "unchanged": true
+      },
+      {
+        "logical_name": "ledger-before-registration.json",
+        "sha256": "d48ae4bc2f61f3e065ceadcc2648e460066c6328e2fb2ada32072150c362e88d",
+        "bytes": 55831,
+        "unchanged": true
+      }
+    ]
+  },
+  "published_original_failure": {
+    "repository_path": "docs/validation/provider-engineering-2026-09-20-v1/suite-report.json",
+    "sha256": "232cd80fa7412b886b60ab7ba632fbc321c84d672c9bbb41af150585c4dfab6f",
+    "retained_unchanged": true
+  },
+  "files": [
+    {
+      "repository_path": "docs/changes/m09-r3-real-suite-result.md",
+      "bytes": 43488,
+      "sha256": "cf4fc8321bc2802f919e2dd752e7f69af79b7456bdc74a723a99c034445dbab7"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/README.md",
+      "bytes": 6529,
+      "sha256": "76f915b1d56232b2e1cec9c8f5e9d1f034d2071c7e47de98db52d41776600bc0"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+      "bytes": 1245,
+      "sha256": "2c2639feaab64537f91f71ceb2a8923730198a3227f65e6d0a70ee60e5075758"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.png",
+      "bytes": 194034,
+      "sha256": "bd4281230eccc1260f5153bc72f1a9ee09cf3fc96a6ccfbc186db717768e7614"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+      "bytes": 1095,
+      "sha256": "645e51b4f64969656219ac49d8ff37c6ea30ee8eed02ee5159ff92b93c933fa8"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.png",
+      "bytes": 204942,
+      "sha256": "1ff9b652bd55cdc473f3798ee32e3f49332bec458dd8ef70e259300331e91665"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+      "bytes": 1105,
+      "sha256": "4342aba6f8966a5b9c69c50486a08a745b2d5d12f546cded2259fb33bd97d358"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.png",
+      "bytes": 255784,
+      "sha256": "649fcb951bded5eb84bb190c95e0323d6878fccb47a84f6c0086db8117436a0a"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+      "bytes": 1446,
+      "sha256": "5749d914a98b046d0eff8b5020b10074976c9b251854ac452d56c3fa7ed932e8"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.png",
+      "bytes": 302529,
+      "sha256": "4b4b502e92f9f26c568c6b1007dac239c2fdaec859c69ff36e8968195dca7bb4"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/facts.json",
+      "bytes": 63139,
+      "sha256": "b341a6b878ca0ccb9319d810baf0c601843e451640af015d1bf06883609952a1"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/review-packet.json",
+      "bytes": 5620,
+      "sha256": "a14bbe0fb103f47212c05edad24820b745521d0abcd6f133c4a1ad3d6fc71867"
+    },
+    {
+      "repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/verification.json",
+      "bytes": 108035,
+      "sha256": "18dffa92b74077094b0dda87414c0b639b748ce62e1ecebd37b21e4d8bd873d6"
+    }
+  ],
+  "status": "COMPLETE_DOCUMENT_RENDERED_AND_VISUALLY_REVIEWED_PACKAGE",
+  "quality_verdict": "NO_GO",
+  "source_before_after_unchanged": true,
+  "source_code_revision_is_run_revision_not_current_worktree_head": true,
+  "document_assertion_count": 370,
+  "post_finalization_manifest_digest_checks": 13,
+  "diagram_sources_frozen": true,
+  "png_render_and_visual_acceptance": "PASS_RENDERED_AND_VIEWED",
+  "pre_render_snapshot": false,
+  "pre_render_document_assertion_count": 472,
+  "completed_at_utc": "2026-10-02T00:34:21.494930+00:00",
+  "source_inputs": {
+    "src/harnessix/evals/report.py": {
+      "before_sha256": "06049b81d3d64b23111e03a4cad7deef499b3c3addcf71139513b4799bd608b6",
+      "after_sha256": "06049b81d3d64b23111e03a4cad7deef499b3c3addcf71139513b4799bd608b6",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/contracts.py": {
+      "before_sha256": "52d138fb92501c50dc9bc2f4a3088a07cf7e3a44b660ffceab9c0a9ee6f13820",
+      "after_sha256": "52d138fb92501c50dc9bc2f4a3088a07cf7e3a44b660ffceab9c0a9ee6f13820",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/suite_contracts.py": {
+      "before_sha256": "6d5ce30bf24a6689bb6266f8dd6bd346e292dc4b1aa22dded6951eb7521f057f",
+      "after_sha256": "6d5ce30bf24a6689bb6266f8dd6bd346e292dc4b1aa22dded6951eb7521f057f",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/campaign_contracts.py": {
+      "before_sha256": "27ef7ffd010bd333df0ccd76a967d18ee2e84146ad65bac1029af63122680974",
+      "after_sha256": "27ef7ffd010bd333df0ccd76a967d18ee2e84146ad65bac1029af63122680974",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/suite.py": {
+      "before_sha256": "b9bc0535b30c6a9f6fabf25d0e80fb983f1dfb835c8969e648df0a489c2fed04",
+      "after_sha256": "b9bc0535b30c6a9f6fabf25d0e80fb983f1dfb835c8969e648df0a489c2fed04",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/grader.py": {
+      "before_sha256": "eecc9859439554b6b648a053541bfdf2879d3a157258d9033e40d855d4815eb4",
+      "after_sha256": "eecc9859439554b6b648a053541bfdf2879d3a157258d9033e40d855d4815eb4",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/suite_execution.py": {
+      "before_sha256": "81bacd90a953e96420856ef00a9352c270a7cdeb6fa57f091a13263e738381f0",
+      "after_sha256": "81bacd90a953e96420856ef00a9352c270a7cdeb6fa57f091a13263e738381f0",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/task_pack_execution.py": {
+      "before_sha256": "0e1b6be1abdc46830fdf3f0bfc55de5a010c1bc802d0b8d4a62f0c8baf16a203",
+      "after_sha256": "0e1b6be1abdc46830fdf3f0bfc55de5a010c1bc802d0b8d4a62f0c8baf16a203",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/task_pack_trial.py": {
+      "before_sha256": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890",
+      "after_sha256": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/task_pack_observations.py": {
+      "before_sha256": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+      "after_sha256": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/task_pack.py": {
+      "before_sha256": "2f9ac31dbe994d4e3eedda3233d440262d5430de6512d52063e28724eabb42b1",
+      "after_sha256": "2f9ac31dbe994d4e3eedda3233d440262d5430de6512d52063e28724eabb42b1",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/task_pack_suite.py": {
+      "before_sha256": "dfb7dcf011c5cad2c7f637fd41b11e086c8904c127b20784bb73a8de63347147",
+      "after_sha256": "dfb7dcf011c5cad2c7f637fd41b11e086c8904c127b20784bb73a8de63347147",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/provider_suite_contracts.py": {
+      "before_sha256": "374ec4024bbd3069cbf73174a153e70166b280d934bcc8ee2153f13c93a9ea27",
+      "after_sha256": "374ec4024bbd3069cbf73174a153e70166b280d934bcc8ee2153f13c93a9ea27",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/provider_suite_execution.py": {
+      "before_sha256": "a741d205cd414bf66eb82addd4b7f1d548882b3bcbe6628b696bb132bcdd6098",
+      "after_sha256": "a741d205cd414bf66eb82addd4b7f1d548882b3bcbe6628b696bb132bcdd6098",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/models/_history.py": {
+      "before_sha256": "3f3c99f980dee9174eed48486a96b2c74a3ef86ae858e8eaba4b89db6c6f8ac1",
+      "after_sha256": "3f3c99f980dee9174eed48486a96b2c74a3ef86ae858e8eaba4b89db6c6f8ac1",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/models/_chat_mapping.py": {
+      "before_sha256": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+      "after_sha256": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/product_config/agent_context.py": {
+      "before_sha256": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+      "after_sha256": "908777b050184488ebcf812634d4c163605875e8401db1e29117717c2ad798ea",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/agent/models.py": {
+      "before_sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48",
+      "after_sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/agent/runtime.py": {
+      "before_sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+      "after_sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/session/sqlite.py": {
+      "before_sha256": "8644fdf9c14a19e5158768a28aa6356cd89aa56f47081d1f637cd6ebbba25da0",
+      "after_sha256": "8644fdf9c14a19e5158768a28aa6356cd89aa56f47081d1f637cd6ebbba25da0",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/sqlite_readonly.py": {
+      "before_sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+      "after_sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+      "before_after_unchanged": true
+    },
+    "src/harnessix/evals/taskpacks/engineering-v2/manifest.json": {
+      "before_sha256": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2",
+      "after_sha256": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2",
+      "before_after_unchanged": true
+    },
+    "scripts/provider_reverification_plan.py": {
+      "before_sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+      "after_sha256": "bae3be6018c014a9557e93d845e0798b3a1e360380b2ea9dcce7f4404ac5cacb",
+      "before_after_unchanged": true
+    },
+    "scripts/provider_reverification_binding.py": {
+      "before_sha256": "32fd5b33ad8e06b8e7e0aee6de9d67a3346aa39840dc237ca1a8906280fae3ac",
+      "after_sha256": "32fd5b33ad8e06b8e7e0aee6de9d67a3346aa39840dc237ca1a8906280fae3ac",
+      "before_after_unchanged": true
+    },
+    "scripts/provider_verification_guard.py": {
+      "before_sha256": "a543fcc545657b33d81f13dd2ab4411191593582c3b51f91493d8373cffa4bec",
+      "after_sha256": "a543fcc545657b33d81f13dd2ab4411191593582c3b51f91493d8373cffa4bec",
+      "before_after_unchanged": true
+    },
+    "scripts/provider_verification_budget.py": {
+      "before_sha256": "0dfdf61f696594a8c55ecba40c79eb3187d863f72afe50e31789b38264123b90",
+      "after_sha256": "0dfdf61f696594a8c55ecba40c79eb3187d863f72afe50e31789b38264123b90",
+      "before_after_unchanged": true
+    },
+    "scripts/run_engineering_provider_suite_budgeted.py": {
+      "before_sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+      "after_sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710",
+      "before_after_unchanged": true
+    },
+    "pyproject.toml": {
+      "before_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+      "after_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+      "before_after_unchanged": true
+    },
+    "uv.lock": {
+      "before_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+      "after_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+      "before_after_unchanged": true
+    }
+  },
+  "render_configuration_input_sha256": {
+    "puppeteer-config.json": "22e27e7701db95421bda851542ebd5014dd87fa8edb19c6340bc22aa72b87056",
+    "mermaid-config.json": "f1473ea8290c0ffa36bd4402cdb5f2b0f4bae3460481829fb1acfd5b76cf14a6"
+  },
+  "diagrams": [
+    {
+      "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.mmd",
+      "source_sha256": "2c2639feaab64537f91f71ceb2a8923730198a3227f65e6d0a70ee60e5075758",
+      "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/architecture.png",
+      "png_sha256": "bd4281230eccc1260f5153bc72f1a9ee09cf3fc96a6ccfbc186db717768e7614",
+      "width_px": 2496,
+      "height_px": 2158,
+      "visual_verdict": "PASS"
+    },
+    {
+      "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.mmd",
+      "source_sha256": "4342aba6f8966a5b9c69c50486a08a745b2d5d12f546cded2259fb33bd97d358",
+      "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-flow.png",
+      "png_sha256": "649fcb951bded5eb84bb190c95e0323d6878fccb47a84f6c0086db8117436a0a",
+      "width_px": 1656,
+      "height_px": 4080,
+      "visual_verdict": "PASS"
+    },
+    {
+      "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.mmd",
+      "source_sha256": "5749d914a98b046d0eff8b5020b10074976c9b251854ac452d56c3fa7ed932e8",
+      "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/execution-sequence.png",
+      "png_sha256": "4b4b502e92f9f26c568c6b1007dac239c2fdaec859c69ff36e8968195dca7bb4",
+      "width_px": 2658,
+      "height_px": 3274,
+      "visual_verdict": "PASS"
+    },
+    {
+      "source_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.mmd",
+      "source_sha256": "645e51b4f64969656219ac49d8ff37c6ea30ee8eed02ee5159ff92b93c933fa8",
+      "png_repository_path": "docs/validation/r3-real-suite-2026-10-02-v1/evidence-data-flow.png",
+      "png_sha256": "1ff9b652bd55cdc473f3798ee32e3f49332bec458dd8ef70e259300331e91665",
+      "width_px": 2448,
+      "height_px": 1704,
+      "visual_verdict": "PASS"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any
 from uuid import UUID
 
@@ -16,7 +17,12 @@ class InvalidModelRequest(ValueError):
 
 
 def tool_alias(name: str) -> str:
-    return "hx_" + hashlib.sha256(name.encode()).hexdigest()[:60]
+    """生成可读线协议别名，不作为持久身份或执行权限。
+
+    摘要基于精确原名的UTF-8字节，不做规范化。
+    """
+    stem = re.sub(r"[^A-Za-z0-9_-]", "_", name) or "tool"
+    return f"hx_{stem[:27]}_{hashlib.sha256(name.encode()).hexdigest()[:32]}"
 
 
 def encode_json(value: object) -> str:

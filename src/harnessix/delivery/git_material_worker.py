@@ -46,6 +46,7 @@ from harnessix.delivery.git_material_native import (
     capture_control_files as capture_control_files,
 )
 from harnessix.delivery.git_material_native_windows import _Windows
+from harnessix.delivery.git_material_trace2_profile import validate_material_trace2_environment
 
 
 def fixed_git_argv(
@@ -115,6 +116,11 @@ def _command(request: GitMaterialInput, resources: _Resources, windows: _Windows
         expected.update(
             SystemRoot=system, WINDIR=system, COMSPEC=str(Path(system) / "System32/cmd.exe")
         )
+    validate_material_trace2_environment(
+        request.trace2_mode, request.trace2_profile_sha256, environment
+    )
+    if request.trace2_mode == "stderr-event-v1":
+        expected["GIT_TRACE2_EVENT"] = "2"
     if environment != expected:
         _fail()
     for path in (Path(expected["HOME"]), Path(expected["TMPDIR"])):
