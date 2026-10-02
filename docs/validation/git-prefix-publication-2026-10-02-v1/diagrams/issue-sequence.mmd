@@ -1,0 +1,23 @@
+sequenceDiagram
+  participant W as 内部受信调用方
+  participant A as git_prefix Authority
+  participant B as 原 Binding / Key
+  participant S as 原 Scope / protect_json
+  W->>A: 实际校验 claims + 私有完整 bytes + cancel
+  A->>B: identity 与 open
+  A->>A: 精确实例见证 / 新深快照
+  A->>S: 原对象身份 / 冻结 context
+  A->>A: 原 64KiB checkpoint 全文 SHA256
+  A->>B: 再次 open / 原 Key 新域签名
+  A->>S: await 仅低敏 Seal 保护
+  Note over A,S: 私有 body 不 parse 不出口
+  A->>S: 再次原 Scope 身份 / context
+  A->>A: 最终 cancel.checkpoint
+  A->>S: 再查实际原 Scope 身份 / context
+  A->>B: 最终 Binding-open
+  alt 全部通过
+    A-->>W: 原 bytes Seal 候选
+    Note over W,A: 不写 DB 不执行 Git 不证明耐久提交
+  else 取消 / 期限 / Scope 变化 / Key 关闭
+    A-->>W: 原严格异常 无候选
+  end

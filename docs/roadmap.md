@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 147
-code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
+version: 148
+code_revision: f887aae8bf54789fa2424f7cbc62bd335a1ccd47
 owners:
   - core
 modules:
@@ -1489,3 +1489,18 @@ Backup v2、Windows原生失败及R3／Beta／商用门禁仍按原完整产品�
 见[实际登记与中断报告](validation/candidate-chain-provider-interruption-2026-10-02-v1/README.md)。
 没有完成Case或Suite质量报告，不按新0/20评分，不自动重试或释放未决；
 完整20 Trial质量及R1～R6商用门禁仍开放。
+
+### R1/R4：Git完整前缀的独立尾锚及最终Scope复核
+
+原Session Binding增加Git尾锚独立用途和HMAC域，仍复用原Key、关闭生命周期、
+原64KiB检查点与完整64MiB正文限额；身份／MAC与新用途规范编码先于正文观察。
+独立审查发现最终取消检查点关闭Scope后仍返回候选的P1，
+正式负例由1失败到1通过，修复后关联合计530通过；原P1及RED不删除。
+后继独立复核在相同四SHA下确认原负例10通过、关联530通过及共同关闭优先级2通过。
+同一新Wheel的macOS源码外Python 3.12.7/3.13.8各4971通过、57跳过；
+初轮管理脚本验证库存缺失造成的两组收集失败保留，仅补齐宿主tracked scripts，不改产品源或断言。
+设计、字段、签发／历史验真、持久化边界与失败语义见
+[总体与详细设计](changes/m09-r4-git-prefix-publication.md)及
+[验证资料](validation/git-prefix-publication-2026-10-02-v1/README.md)。
+当前不持久化完整catalog、不迁移GitDB、不新增默认Tool或执行授权；
+同事务Writer／Reader、完整Git产品交付、Backup v2及R1～R6仍须继续验收。

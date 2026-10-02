@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "green-peer-replay-v2.log",
+    "sha256": "d0f0f67b9401b403638cf93364f5b634b289d68522878ad0a98e66d02d1c469c"
+  },
+  "result_lines": [
+    "明确-c pyproject.toml后原peer文件10 passed；开发侧复跑，不是新的独立签字"
+  ],
+  "started_utc": "2026-10-02T01:47:31.832395+00:00",
+  "elapsed_seconds": 0.573,
+  "exit_code": 0
+}

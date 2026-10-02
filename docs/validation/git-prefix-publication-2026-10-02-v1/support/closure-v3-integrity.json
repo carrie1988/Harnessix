@@ -1,0 +1,87 @@
+{
+  "finding": "GP-PREFIX-PEER-01",
+  "priority": "P1",
+  "status": "FIXED_LOCAL_VALIDATION_AWAITING_INDEPENDENT_RECHECK",
+  "source4_sha256_before": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "0e2e6fa950fe46eea6e38179c977994f433bd844865e8079c5c42ce93db324b3",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "a2b744c6636b4476b6bd8b2aba51788984bbfa6e8a319d2197de9f2552534029"
+  },
+  "source4_sha256_after": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "8fe909946fdb8dd6e18231338944af433b2616dc06248416e16e4da9e56ada9e",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "3fe41bb1e802d5307b83923ef4d2728d740340ab76588611987cfa138e4395e9"
+  },
+  "production_delta": "one original scope_digest call after final checkpoint; last binding-open retained",
+  "changed_production_paths": [
+    "src/harnessix/session/git_prefix_publication.py"
+  ],
+  "changed_test_paths": [
+    "tests/session/test_git_prefix_publication.py"
+  ],
+  "new_test_cases": 6,
+  "old_test_ast_unchanged": true,
+  "original_six_test_files_sha256_unchanged": true,
+  "previous_524_parameter_slots_preserved": true,
+  "claims_and_original_codec_sha256_unchanged": true,
+  "peer_original_red_unchanged": true,
+  "old_archive_seals_unchanged": true,
+  "counts": {
+    "red-final-scope-close": {
+      "tests": 1,
+      "passed": 0,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "green-final-scope-close": {
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "green-prefix-suite": {
+      "tests": 152,
+      "passed": 152,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "green-peer-replay": {
+      "tests": 10,
+      "passed": 4,
+      "failed": 6,
+      "errors": 0,
+      "skipped": 0
+    },
+    "green-peer-replay-v2": {
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "green-related-suite": {
+      "tests": 530,
+      "passed": 530,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "current_original_related_cases": 378,
+  "current_prefix_cases": 152,
+  "changed_diagrams": [
+    "diagrams/issue-sequence.mmd",
+    "diagrams/issue-sequence.png",
+    "diagrams/issue-sequence.svg"
+  ],
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "CLOSURE_CHECK.json",
+    "sha256": "f2ef642e7d3dd37f7d5b9736d02bc7733076561832af4f96c331e6ee7d517c41"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "red-new-prefix-tests.log",
+    "sha256": "c3cb7375f92397f3f940fdd5a62121701bb68e1279f1e632072a74898a5a9719"
+  },
+  "result_lines": [
+    "1 collection error: new module not present",
+    "exit_code=2"
+  ],
+  "started_utc": "2026-10-02T00:37:18.045623+00:00",
+  "elapsed_seconds": 0.667,
+  "exit_code": 2
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "final-integrity-v2.log",
+    "sha256": "5ed4ed48dd6ec216abddf6559dd28acac1b9430f815cdab47d430450840aae90"
+  },
+  "result_lines": [
+    "PASS: original sources preserved, 378 original parameter slots + 146 new cases"
+  ],
+  "started_utc": "2026-10-02T01:00:12.108647+00:00",
+  "elapsed_seconds": 0.202,
+  "exit_code": 0
+}

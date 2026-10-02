@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "green-related-suite.log",
+    "sha256": "2cfca623c26ca1346ebb6fcb858e93200cf05f1dc3c34386f857a9003086da73"
+  },
+  "result_lines": [
+    "530 passed = 原378 + 尾锚152；不是与peer复跑数量相加"
+  ],
+  "started_utc": "2026-10-02T01:42:21.504374+00:00",
+  "elapsed_seconds": 31.147,
+  "exit_code": 0
+}

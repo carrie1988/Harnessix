@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "mypy-prefix-test-v2.log",
+    "sha256": "988e8f4f64045d6d3a9e46178131a201ffcce90cb135430ecfeb8270fcc82c4d"
+  },
+  "result_lines": [
+    "1 static error: non-exported asyncio reference"
+  ],
+  "started_utc": "2026-10-02T00:44:09.800581+00:00",
+  "elapsed_seconds": 0.313,
+  "exit_code": 1
+}

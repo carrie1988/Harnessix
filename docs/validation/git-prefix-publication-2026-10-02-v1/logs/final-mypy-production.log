@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "final-mypy-production.log",
+    "sha256": "d2c908318d092ae5b7f5141f8fc4421a771a35a635114a414c7585193c11ac64"
+  },
+  "result_lines": [
+    "Success: no issues found in 3 source files"
+  ],
+  "started_utc": "2026-10-02T00:52:32.630365+00:00",
+  "elapsed_seconds": 0.192,
+  "exit_code": 0
+}

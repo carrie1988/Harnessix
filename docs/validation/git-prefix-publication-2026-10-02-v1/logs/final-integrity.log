@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "final-integrity.log",
+    "sha256": "b79629f508d89a43a00c1c92d2025be5cae9387d6a927bfcc988937553e706d5"
+  },
+  "result_lines": [
+    "AssertionError: original Artifact uuid4 parameter display-id differs"
+  ],
+  "started_utc": "2026-10-02T00:58:16.617241+00:00",
+  "elapsed_seconds": 0.057,
+  "exit_code": 1
+}

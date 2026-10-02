@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "title": "Git独立尾锚认证端口验证",
+  "date": "2026-10-02",
+  "generated_utc": "2026-10-02T01:56:40.380105+00:00",
+  "status": "FIXED_LOCAL_VALIDATION_AWAITING_INDEPENDENT_RECHECK",
+  "base_head": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "source_sha256": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "8fe909946fdb8dd6e18231338944af433b2616dc06248416e16e4da9e56ada9e",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "3fe41bb1e802d5307b83923ef4d2728d740340ab76588611987cfa138e4395e9"
+  },
+  "sdd_sha256": "d08a4762af52b40dba0699ce116ac48eca436609e2c6d6afa1e7e2edfe453782",
+  "original_test_files_sha256": {
+    "tests/agent/test_authenticated_store.py": "07b0e72e66c18ed3fcf41ce48395493532230ad61e5c8bb080e16d5dd8693cb1",
+    "tests/artifacts/test_authenticated_body.py": "a0f32cd8ff86686df4c8b1ddca356d369373566d0a8297b02a91f141f6fcd6fb",
+    "tests/product_config/test_product_state_backup.py": "79b779a9b98dca730bf4011febfd83eeebd5cff6708afbf6803dc569cd375e6a",
+    "tests/product_config/test_product_state_restore.py": "e35fa96c488633b4a07fbfe0dfd90c4c467e1faa68a32e184e867cf97bf0d6f6",
+    "tests/session/test_git_publication.py": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581",
+    "tests/session/test_publication_seal.py": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956"
+  },
+  "tests": {
+    "baseline_original_passed": 378,
+    "initial_red": {
+      "errors": 1,
+      "exit_code": 2,
+      "kind": "missing_module_collection_error_not_behavior_assertion"
+    },
+    "first_new_green_passed": 141,
+    "first_related_green_passed": 519,
+    "second_new_green_passed": 144,
+    "final": {
+      "passed": 530,
+      "original_passed": 378,
+      "new_passed": 152,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "final_scope": [
+      "tests/session",
+      "tests/agent/test_authenticated_store.py",
+      "tests/artifacts/test_authenticated_body.py",
+      "tests/product_config/test_product_state_backup.py",
+      "tests/product_config/test_product_state_restore.py"
+    ],
+    "junit": "junit/closure-v3-green-related-suite.xml",
+    "log": "logs/closure-v3-green-related-suite.log",
+    "formal_behavior_red": {
+      "tests": 1,
+      "passed": 0,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "formal_behavior_green": {
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "peer_developer_replay": {
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "new_case_delta": 6
+  },
+  "static": {
+    "ruff_check": "PASS_4_FILES",
+    "ruff_format_check": "PASS_4_FILES",
+    "mypy_production": "PASS_3_FILES_ORIGINAL_STRICT",
+    "mypy_with_test": "PASS_4_FILES_FOLLOW_IMPORTS_SILENT"
+  },
+  "preservation": {
+    "original_codec_functions_source_exact": true,
+    "original_ast_except_only_additions_equal": true,
+    "original_test_files_exact_head": true,
+    "original_378_parameter_slots_equal": true,
+    "uuid4_id_exception": "only two original parameter slots: Artifact publication_epoch and prefix claims store_genesis_epoch UUID text display-id; original assertions unchanged",
+    "other_shared_changes_owned_by_this_delivery": false,
+    "original_146_test_ast_equal": true,
+    "previous_524_parameter_slots_equal": true,
+    "old_peer_red_and_private_seals_unchanged": true
+  },
+  "diagrams": {
+    "source_count": 4,
+    "png_rendered": 4,
+    "svg_rendered": 4,
+    "visually_inspected": [
+      "architecture",
+      "issue-sequence",
+      "verify-flow",
+      "recovery-boundary"
+    ],
+    "renderer": "local Mermaid CLI and local Chrome; no external content",
+    "closure_v3_changed_files": [
+      "diagrams/issue-sequence.mmd",
+      "diagrams/issue-sequence.png",
+      "diagrams/issue-sequence.svg"
+    ]
+  },
+  "limits": {
+    "body_bytes": {
+      "min": 1,
+      "max": 67108864
+    },
+    "checkpoint_bytes": 65536,
+    "seal_bytes": {
+      "min": 1,
+      "max": 4096
+    },
+    "revision": {
+      "min": 0,
+      "max": 9223372036854775807
+    }
+  },
+  "domain_hex": "6861726e65737369782e6769742d73746f72652d7072656669782d616e63686f722f763100",
+  "purpose": "git_store_prefix_anchor",
+  "default_product_consumers_wired": false,
+  "full_prefix_proven": false,
+  "current_root_ownership_proven": false,
+  "execution_authority_granted": false,
+  "w1_complete": false,
+  "commit_created": false,
+  "push_performed": false,
+  "omitted_from_package": [
+    "pytest fixture trees",
+    "mypy caches",
+    "private original design contents",
+    "raw Key bytes",
+    "unrelated shared changes"
+  ],
+  "private_fixture_permissions_recursively_modified": false,
+  "documentation_version": 3,
+  "source_root": ".",
+  "input_sha256": {
+    "src/harnessix/session/store_publication.py": "620a67fc885946a12497698aca149247e3e735d7423f1af5a73313887e74ed66",
+    "src/harnessix/session/git_publication_contracts.py": "2281750683d21467ba9dc0b7d9e347f839a9ff5c1dfb168f2a28e7baab3da8c4",
+    "src/harnessix/session/publication_seal.py": "0e11b4d93037d6a7ebe7d9e51f05c0e44ab750da10aa4340f24d63a003c2ba36",
+    "tests/session/test_git_publication.py": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581",
+    "tests/session/test_publication_seal.py": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956",
+    "docs/changes/m09-r4-git-delivery-business-backup-closure.md": "5e932c6fbb3146cb89cfa4d433a23407d105cf9094ecdfd262c2ba6bf4912fb9",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+  },
+  "archive_inputs": [
+    {
+      "archive_id": "git-inventory-owned-loader-design-20261001-v1",
+      "member": "design.md",
+      "sha256": "227661f85be870c6a76f4e22989d07332311ba856e8942906acc215c7297dbd6"
+    }
+  ],
+  "runtime": {
+    "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+    "interpreter_sha256": "4a58a6e7d4480b77a9f6fdac21b8bda1dc38a3f85136f854b1e64bf98b917064",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "pydantic": "2.13.5",
+    "pytest": "8.4.2",
+    "mypy": "1.20.2",
+    "git_version": "git version 2.53.0",
+    "git_sha256": "26a755d0ab5dddc2689ae3e8a8c3520041d0075a860156d5d8c13cc4fdecb85d",
+    "ruff": "0.16.5",
+    "mermaid_cli": "11.6.0",
+    "interpreter_component": "Python runtime",
+    "git_component": "bundled Git",
+    "harnessix_source": "src/harnessix/__init__.py"
+  },
+  "raw_verification_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "SUMMARY.json",
+    "sha256": "31bb7254e416a36592051cd2f360dfe2b53417b472f2aef3991bbe17e0253c09"
+  },
+  "prior_public_manifest": {
+    "archive_id": "git-prefix-publication-20261002-doc-repair-v2",
+    "member": "after/validation-package/MANIFEST.json",
+    "sha256": "ac52a67e074bd3457d69cf3616fff6ad5a4f8ea3d2948678684a859836f4a05f"
+  },
+  "documentation_only_repair": false,
+  "source4_unchanged": false,
+  "diagrams_unchanged": {
+    "diagrams/architecture.mmd": "2042ddacc2acd8d219254024c8163f2b39ad27f0b686cec8c35e6974be1535b9",
+    "diagrams/architecture.png": "633fc6d9bc563727f37bdaf168bb460282a756833b8ec9d132ffcfd442adc048",
+    "diagrams/architecture.svg": "6d5ef19c5fe4cdbf4b9a7e23b3758db0d84ccc9fcb42e4851c4f5e566f7cbdff",
+    "diagrams/recovery-boundary.mmd": "84ebca959eaedcb9ba58a780c6bbb91da2d41eab2ab36b82549478cae3aff110",
+    "diagrams/recovery-boundary.png": "c4a2bb22ace58a37eccfa6359d42dc1469ac865d81dfead2dc83dfc5386e794c",
+    "diagrams/recovery-boundary.svg": "f13e3405be00beeacc0f85aec14509c13d33eb5f611297c0165bf76d909427da",
+    "diagrams/verify-flow.mmd": "a36747681a8296d3c08f7823fcd90625e93244bae57e95e47f0ce518c7439322",
+    "diagrams/verify-flow.png": "d4a4dd1e84835411148384282eadebe0e092894474d7fb8124f27a5451931286",
+    "diagrams/verify-flow.svg": "14151f37e3b76fa7ca1965e40322db00c29b612899aa7decb7c8125d02870906"
+  },
+  "new_test_execution": true,
+  "publication_policy": "project_relative_sources_and_finite_archive_member_sha256_references",
+  "documentation_gate": {
+    "status": "OWN_SCOPE_ZERO_FINDINGS_FULL_GATE_HAS_OUTSIDE_FINDINGS",
+    "findings": 4,
+    "scope_findings": 0,
+    "outside_scope_findings": 4,
+    "document_count": 468,
+    "link_count": 11254,
+    "report": "DOCGATE.json",
+    "raw_evidence": {
+      "archive_id": "git-prefix-publication-closure-20261002-v3",
+      "member": "docgate-final-v3.json",
+      "sha256": "78c31f6698539480920c424d6ef2d2d94cc91f9357e27abe64b35cfd74e2847f"
+    },
+    "public_personal_paths": 0,
+    "raw_credentials_exported": false,
+    "old_private_seal_rewritten": false
+  },
+  "historical_v1_tests": {
+    "baseline_original_passed": 378,
+    "initial_red": {
+      "errors": 1,
+      "exit_code": 2,
+      "kind": "missing_module_collection_error_not_behavior_assertion"
+    },
+    "first_new_green_passed": 141,
+    "first_related_green_passed": 519,
+    "second_new_green_passed": 144,
+    "final": {
+      "passed": 524,
+      "original_passed": 378,
+      "new_passed": 146,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "final_scope": [
+      "tests/session",
+      "tests/agent/test_authenticated_store.py",
+      "tests/artifacts/test_authenticated_body.py",
+      "tests/product_config/test_product_state_backup.py",
+      "tests/product_config/test_product_state_restore.py"
+    ],
+    "junit": "junit/final-session-related.xml",
+    "log": "logs/final-session-related.log"
+  },
+  "historical_v2_documentation": {
+    "documentation_only_repair": true,
+    "source4_unchanged": true,
+    "diagrams_unchanged": {
+      "diagrams/architecture.mmd": "2042ddacc2acd8d219254024c8163f2b39ad27f0b686cec8c35e6974be1535b9",
+      "diagrams/architecture.png": "633fc6d9bc563727f37bdaf168bb460282a756833b8ec9d132ffcfd442adc048",
+      "diagrams/architecture.svg": "6d5ef19c5fe4cdbf4b9a7e23b3758db0d84ccc9fcb42e4851c4f5e566f7cbdff",
+      "diagrams/issue-sequence.mmd": "01b84b02514efa104cc3ac065b8ef36977b33e07ceb6b5001bf0ad6170c2d3c6",
+      "diagrams/issue-sequence.png": "6f2f6200b353443d6353535472d14e24a11cefb2fb955e3598a8b82b692f3da4",
+      "diagrams/issue-sequence.svg": "1b6ef4652dbde7730998b177133f283673fbf798b574a74d02a3391650e2e96b",
+      "diagrams/recovery-boundary.mmd": "84ebca959eaedcb9ba58a780c6bbb91da2d41eab2ab36b82549478cae3aff110",
+      "diagrams/recovery-boundary.png": "c4a2bb22ace58a37eccfa6359d42dc1469ac865d81dfead2dc83dfc5386e794c",
+      "diagrams/recovery-boundary.svg": "f13e3405be00beeacc0f85aec14509c13d33eb5f611297c0165bf76d909427da",
+      "diagrams/verify-flow.mmd": "a36747681a8296d3c08f7823fcd90625e93244bae57e95e47f0ce518c7439322",
+      "diagrams/verify-flow.png": "d4a4dd1e84835411148384282eadebe0e092894474d7fb8124f27a5451931286",
+      "diagrams/verify-flow.svg": "14151f37e3b76fa7ca1965e40322db00c29b612899aa7decb7c8125d02870906"
+    },
+    "new_test_execution": false,
+    "documentation_gate": {
+      "findings": 0,
+      "scope_findings": 0,
+      "document_count": 465,
+      "link_count": 11206,
+      "mermaid_count": 965,
+      "report": "DOCGATE.json"
+    }
+  },
+  "source4_sha256_before": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "0e2e6fa950fe46eea6e38179c977994f433bd844865e8079c5c42ce93db324b3",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "a2b744c6636b4476b6bd8b2aba51788984bbfa6e8a319d2197de9f2552534029"
+  },
+  "p1_closure": "P1_CLOSURE.json",
+  "independent_recheck_signed_off": false,
+  "closure_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "CLOSURE_CHECK.json",
+    "sha256": "f2ef642e7d3dd37f7d5b9736d02bc7733076561832af4f96c331e6ee7d517c41"
+  }
+}

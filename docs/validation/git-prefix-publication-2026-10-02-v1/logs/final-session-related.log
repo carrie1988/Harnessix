@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "final-session-related.log",
+    "sha256": "e68f249181910cbeb52ef2c807477a6d057b76a679623ff512fa15d01a116a6a"
+  },
+  "result_lines": [
+    "524 passed: 378 original + 146 new"
+  ],
+  "started_utc": "2026-10-02T00:52:33.188878+00:00",
+  "elapsed_seconds": 33.537,
+  "exit_code": 0
+}

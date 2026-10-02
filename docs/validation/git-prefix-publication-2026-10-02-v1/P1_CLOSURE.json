@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "finding_id": "GP-PREFIX-PEER-01",
+  "priority": "P1",
+  "status": "FIXED_LOCAL_VALIDATION_AWAITING_INDEPENDENT_RECHECK",
+  "independent_recheck_signed_off": false,
+  "original_finding_summary": "最终checkpoint正常返回但关闭真实Scope，Binding仍open，旧端口仍交付Seal",
+  "original_review": {
+    "counts": {
+      "passed": 9,
+      "failed": 1
+    },
+    "source4_sha256": {
+      "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+      "src/harnessix/session/git_prefix_publication.py": "0e2e6fa950fe46eea6e38179c977994f433bd844865e8079c5c42ce93db324b3",
+      "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+      "tests/session/test_git_prefix_publication.py": "a2b744c6636b4476b6bd8b2aba51788984bbfa6e8a319d2197de9f2552534029"
+    },
+    "evidence": [
+      {
+        "archive_id": "git-prefix-publication-peer-20261002-v1",
+        "member": "REPORT.md",
+        "sha256": "80432118b8be099a6008f050e67308937fb2955dec863d9b042d1c1717b176aa"
+      },
+      {
+        "archive_id": "git-prefix-publication-peer-20261002-v1",
+        "member": "SUMMARY.json",
+        "sha256": "52ba2e6963a37f88fa5746636226170e5f3c94c386ff9040a6a5e100709e076f"
+      },
+      {
+        "archive_id": "git-prefix-publication-peer-20261002-v1",
+        "member": "test_peer_prefix_negatives.py",
+        "sha256": "8167705480dbabfb55921e37ab67ca27a36dcbdc7be5ec96fef017a2b6b4b973"
+      },
+      {
+        "archive_id": "git-prefix-publication-peer-20261002-v1",
+        "member": "peer-negative.log",
+        "sha256": "4108e969d518ee33db33e1ff2087a5f7da48e65eb63b01d266933e5ed13c5854"
+      },
+      {
+        "archive_id": "git-prefix-publication-peer-20261002-v1",
+        "member": "peer-negative.xml",
+        "sha256": "c1d692f31a63047cfc8efa6b131c985b113da1807142b761ad07d6914913e4a8"
+      },
+      {
+        "archive_id": "git-prefix-publication-peer-20261002-v1",
+        "member": "late-scope-close-observation.json",
+        "sha256": "4946933247dc7e74f56e29e05ccfd4b9e593d8735d29e982f38c7f71258f258b"
+      }
+    ]
+  },
+  "fix": {
+    "production_path": "src/harnessix/session/git_prefix_publication.py",
+    "delta": "one original scope_digest call after final checkpoint; last binding-open retained",
+    "sequence": [
+      "protected Seal",
+      "original actual Scope check",
+      "final cancellation checkpoint",
+      "original actual Scope recheck",
+      "Binding open check",
+      "return candidate"
+    ],
+    "not_atomic_against_malicious_inprocess_callbacks": true
+  },
+  "formal_behavior_red": {
+    "tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "same_test_green": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "current_related": {
+    "tests": 530,
+    "passed": 530,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "peer_original_file_developer_replay": {
+    "tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_case_count": 6,
+  "closure_check": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "CLOSURE_CHECK.json",
+    "sha256": "f2ef642e7d3dd37f7d5b9736d02bc7733076561832af4f96c331e6ee7d517c41"
+  },
+  "source4_sha256_after": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "8fe909946fdb8dd6e18231338944af433b2616dc06248416e16e4da9e56ada9e",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "3fe41bb1e802d5307b83923ef4d2728d740340ab76588611987cfa138e4395e9"
+  },
+  "original_red_and_archives_preserved": true,
+  "default_product_wired": false,
+  "w1_complete": false
+}

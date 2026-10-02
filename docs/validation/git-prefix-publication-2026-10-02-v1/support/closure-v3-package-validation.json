@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "source4_sha256": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "8fe909946fdb8dd6e18231338944af433b2616dc06248416e16e4da9e56ada9e",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "3fe41bb1e802d5307b83923ef4d2728d740340ab76588611987cfa138e4395e9"
+  },
+  "sdd_sha256": "d08a4762af52b40dba0699ce116ac48eca436609e2c6d6afa1e7e2edfe453782",
+  "public_markdown_count": 6,
+  "local_links_checked": 113,
+  "archive_references_checked": 309,
+  "junit_projections_checked": 13,
+  "public_personal_paths": 0,
+  "raw_credentials_exported": false,
+  "old_seals_unchanged": true,
+  "old_peer_red_unchanged": true,
+  "source4_matches_current_results": true,
+  "own_docgate_findings": 0,
+  "full_docgate_findings": 4,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "PACKAGE_VALIDATION.json",
+    "sha256": "a1411c0d43eead9e7266ece1e9d329d861698e000761d2f6bb5816e9719434e3"
+  }
+}

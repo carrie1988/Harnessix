@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "record-docgate-v3.log",
+    "sha256": "44098ee0e65b19feeda4a27de7aeec89cfcc2773ee1626c3ce9589090ef462c7"
+  },
+  "result_lines": [
+    "如实记录首次DocGate的本范围零finding和范围外失败"
+  ],
+  "started_utc": "2026-10-02T01:58:23.217885+00:00",
+  "elapsed_seconds": 0.02,
+  "exit_code": 0
+}

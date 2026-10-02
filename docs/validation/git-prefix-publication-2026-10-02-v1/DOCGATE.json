@@ -1,0 +1,134 @@
+{
+  "changed_path_count": 0,
+  "document_count": 468,
+  "findings": [
+    {
+      "code": "section_required_missing",
+      "line": null,
+      "message": "缺少语义章节（任一）：失败 / 恢复 / 取消 / 超时",
+      "path": "docs/changes/m09-r4-git-store-v2-schema.md"
+    },
+    {
+      "code": "section_required_missing",
+      "line": null,
+      "message": "缺少语义章节（任一）：持久化 / 事务 / 数据流程",
+      "path": "docs/changes/m09-r4-git-store-v2-schema.md"
+    },
+    {
+      "code": "section_required_missing",
+      "line": null,
+      "message": "缺少语义章节（任一）：风险 / 取舍",
+      "path": "docs/changes/m09-r4-git-store-v2-schema.md"
+    },
+    {
+      "code": "metadata_frontmatter_missing",
+      "line": 1,
+      "message": "文档必须以YAML头开始",
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/pytest-cache/README.md"
+    }
+  ],
+  "link_count": 11254,
+  "mermaid_count": 965,
+  "policy_version": "harnessix.documentation-policy/v1",
+  "source_package_count": 26,
+  "documentation_version": 3,
+  "status": "OWN_SCOPE_ZERO_FINDINGS_FULL_GATE_HAS_OUTSIDE_FINDINGS",
+  "execution": {
+    "entry_point": "scripts/documentation_check.py",
+    "arguments": [
+      "--root",
+      ".",
+      "--format",
+      "json"
+    ],
+    "exit_code": 1,
+    "mode": "full_static_repository_check",
+    "render_mermaid": false,
+    "changed_from": null,
+    "own_scope": [
+      "docs/changes/m09-r4-git-prefix-publication.md",
+      "docs/validation/git-prefix-publication-2026-10-02-v1/"
+    ],
+    "own_findings": [],
+    "outside_scope_findings": [
+      {
+        "code": "section_required_missing",
+        "line": null,
+        "message": "缺少语义章节（任一）：失败 / 恢复 / 取消 / 超时",
+        "path": "docs/changes/m09-r4-git-store-v2-schema.md"
+      },
+      {
+        "code": "section_required_missing",
+        "line": null,
+        "message": "缺少语义章节（任一）：持久化 / 事务 / 数据流程",
+        "path": "docs/changes/m09-r4-git-store-v2-schema.md"
+      },
+      {
+        "code": "section_required_missing",
+        "line": null,
+        "message": "缺少语义章节（任一）：风险 / 取舍",
+        "path": "docs/changes/m09-r4-git-store-v2-schema.md"
+      },
+      {
+        "code": "metadata_frontmatter_missing",
+        "line": 1,
+        "message": "文档必须以YAML头开始",
+        "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/pytest-cache/README.md"
+      }
+    ],
+    "raw_evidence": {
+      "archive_id": "git-prefix-publication-closure-20261002-v3",
+      "member": "docgate-final-v3.json",
+      "sha256": "78c31f6698539480920c424d6ef2d2d94cc91f9357e27abe64b35cfd74e2847f"
+    }
+  },
+  "initial_v3_execution": {
+    "changed_path_count": 0,
+    "document_count": 466,
+    "findings": [
+      {
+        "code": "metadata_frontmatter_missing",
+        "line": 1,
+        "message": "文档必须以YAML头开始",
+        "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/pytest-cache/README.md"
+      }
+    ],
+    "link_count": 11241,
+    "mermaid_count": 965,
+    "policy_version": "harnessix.documentation-policy/v1",
+    "source_package_count": 26,
+    "documentation_version": 3,
+    "status": "OWN_SCOPE_ZERO_FINDINGS_FULL_GATE_HAS_OUTSIDE_FINDINGS",
+    "execution": {
+      "entry_point": "scripts/documentation_check.py",
+      "arguments": [
+        "--root",
+        ".",
+        "--format",
+        "json"
+      ],
+      "exit_code": 1,
+      "mode": "full_static_repository_check",
+      "render_mermaid": false,
+      "changed_from": null,
+      "own_scope": [
+        "docs/changes/m09-r4-git-prefix-publication.md",
+        "docs/validation/git-prefix-publication-2026-10-02-v1/"
+      ],
+      "own_findings": [],
+      "outside_scope_findings": [
+        {
+          "code": "metadata_frontmatter_missing",
+          "line": 1,
+          "message": "文档必须以YAML头开始",
+          "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/pytest-cache/README.md"
+        }
+      ],
+      "raw_evidence": {
+        "archive_id": "git-prefix-publication-closure-20261002-v3",
+        "member": "docgate-full-v3.json",
+        "sha256": "ef26133f80bbda23b7cb2587f8e58b3b4294e44900d77555778aaac54f4a97f7"
+      }
+    }
+  }
+}

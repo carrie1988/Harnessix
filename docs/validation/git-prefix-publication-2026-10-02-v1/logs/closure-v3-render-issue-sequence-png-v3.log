@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "render-issue-sequence-png-v3.log",
+    "sha256": "3431bb650fd3962b4c1003972e2a87a9d0d4631ee8fa3d3960f6f58cc6e3f587"
+  },
+  "result_lines": [
+    "新签发时序PNG实际本地渲染PASS，已视觉核验中文/顺序/无裁切"
+  ],
+  "started_utc": "2026-10-02T01:44:14.250624+00:00",
+  "elapsed_seconds": 1.87,
+  "exit_code": 0
+}

@@ -1,0 +1,10 @@
+--- before/src/harnessix/session/git_prefix_publication.py
++++ after/src/harnessix/session/git_prefix_publication.py
+@@ -91,5 +91,7 @@
+         )
+         self._binding.artifact.scope_digest(protection)
+         cancel.checkpoint()
++        # 最终取消回调仍可能撤销原Scope，交付前必须再检查实际对象。
++        self._binding.artifact.scope_digest(protection)
+         self._binding._ensure_open()
+         return encoded

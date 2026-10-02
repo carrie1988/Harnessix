@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "mypy-prefix-test.log",
+    "sha256": "035b7cd5ea1aa7b3e9f24dd8a1253c56236136f6d47005943bad49b8ebc11214"
+  },
+  "result_lines": [
+    "3 static errors in the new test file"
+  ],
+  "started_utc": "2026-10-02T00:40:37.022202+00:00",
+  "elapsed_seconds": 2.377,
+  "exit_code": 1
+}

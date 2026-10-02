@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 554618ccc47bcf537c034672631db7a11cef655e
+version: 14
+code_revision: f887aae8bf54789fa2424f7cbc62bd335a1ccd47
 owners:
   - core
 modules:
@@ -704,3 +704,16 @@ Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实�
 签发必须原冻结Scope和原低敏Seal保护，备份验证Scope不能签发。只验真不补签、不修复、不授予执行权。
 完整GitDB前缀、对象业务角色/直接引用、默认Commit/Checkpoint及Backup v2尚未接线。
 该增量不改变Session迁移、Event/Projection/Artifact格式、Key文件或现行备份布局。
+
+## Git完整前缀的独立尾锚端口
+
+[总体与详细设计](../changes/m09-r4-git-prefix-publication.md)在同一托管Binding增加
+`git_prefix`与`git_prefix_verifier`。新用途`git_store_prefix_anchor`及独立HMAC域
+绑定v2、genesis epoch、revision和完整私有正文长度／SHA；原五类Git记录、旧MAC及Key格式保持。
+严格声明快照、新Seal唯一编码和身份／MAC检查先于正文观察；历史Verifier没有签发入口。
+签发在原保护及最终取消检查之后重新核对实际Scope，随后保留Binding-open检查，
+避免最终检查点撤销Scope后仍返回候选。原负例与修复证据见
+[验证资料](../validation/git-prefix-publication-2026-10-02-v1/README.md)。
+该端口只产生候选证明，不建立GitDB事务、完整catalog、业务拥有者或执行权限。
+完整Writer／Reader、默认Commit／Checkpoint及Backup v2仍须按原产品交付主线接线，
+不能以独立尾锚端口通过替代完整Git或商用验收。

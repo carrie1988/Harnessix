@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "closure-preservation-check-v3.log",
+    "sha256": "eb0481b1822565f2cf0587ab054cb835468167d74a9dbb0f2f9c8ff49e9b3730"
+  },
+  "result_lines": [
+    "PASS：原524参数槽位保留，原146测试AST不变、原六测试和旧封印不变，生产仅新增原Scope复核"
+  ],
+  "started_utc": "2026-10-02T01:52:13.092061+00:00",
+  "elapsed_seconds": 0.059,
+  "exit_code": 0
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "preflight-shared-state.log",
+    "sha256": "a5ae6297028a1c070df58d6d4d8ecea31c98d90284608700e1d09a50bb694465"
+  },
+  "result_lines": [
+    "clean-tree precondition and first runner startup failed; shared changes preserved"
+  ]
+}

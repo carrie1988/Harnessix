@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "green-prefix-suite.log",
+    "sha256": "c51b0d517d12c43b9e003c50baaea38595d663a9c8ca3f485e535dc2730cdf15"
+  },
+  "result_lines": [
+    "152 passed：原146保留，新增6个关闭/取消顺序参数用例"
+  ],
+  "started_utc": "2026-10-02T01:42:20.001214+00:00",
+  "elapsed_seconds": 0.819,
+  "exit_code": 0
+}

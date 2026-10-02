@@ -1,0 +1,23 @@
+flowchart TB
+  I["只验真输入<br/>原 Seal / 实际校验期望 claims / 私有 body"]
+  B["原 Binding-open<br/>期望 claims 严格新快照"]
+  S["原 bytes Seal 1..4096B<br/>Store / Key / 新域 MAC"]
+  C["新用途唯一编码<br/>重复键 / 非canonical 拒绝<br/>实际 claims 等于期望"]
+  L["认证后才观察 body<br/>精确 bytes 与完整长度匹配"]
+  H["原全字节 SHA256<br/>每64KiB checkpoint / 不截断"]
+  F["最终 Binding-open"]
+  R["返回 None<br/>仅来源认证 不是执行权"]
+  E["固定拒绝或原 checkpoint 异常<br/>无修复 无补签"]
+  N["无当前 Scope 读取<br/>无公共 issue"]
+  I --> B --> S
+  S -->|身份与MAC有效| C
+  S -->|失败 不看body| E
+  C -->|唯一且匹配| L
+  C -->|失败| E
+  L -->|类型与长度匹配| H
+  L -->|失败| E
+  H -->|完整摘要匹配| F
+  H -->|错摘要或取消期限| E
+  F -->|open| R
+  F -->|closed| E
+  N -. 历史验证边界 .-> S

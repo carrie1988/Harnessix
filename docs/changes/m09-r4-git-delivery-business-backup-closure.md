@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 7
-code_revision: 96584026bdf34c49c519834331b84043a6c03895
+version: 8
+code_revision: f887aae8bf54789fa2424f7cbc62bd335a1ccd47
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -96,7 +96,7 @@ supersedes: []
 | [`sqlite_readonly.py`](../../src/harnessix/sqlite_readonly.py) 的 `readonly_database` | `mode=ro`、`query_only`，真实已提交 WAL 可见；不初始化或迁移 | 所有新增 Reader 继续使用该端口；不使用 `immutable=1` 掩盖 WAL |
 | [`store.py`](../../src/harnessix/delivery/store.py) 的 `SQLiteWorkspaceTransactionStore.blob`、`_put_blob`；[`contracts.py`](../../src/harnessix/delivery/contracts.py) | before／after CAS、原 SHA／长度约束、事务模型和镜像限额 | 复用同一 CAS 的耐久写入与只读核验，将 Git 对象材料作为有类型的引用；不另建 Blob 平台 |
 | [`diff.py`](../../src/harnessix/delivery/diff.py) 的 `build_workspace_diff`；[`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) 的 `publish_workspace_review` | 完整 Diff、结构化条目、稳定 Review Artifact、原发布和分页 | 提取唯一纯 Diff 构造逻辑供来源投影复用；Git Review 复用 Artifact 发布机制，但不冒用 Patch Review 的批准语义 |
-| [`publication_seal.py`](../../src/harnessix/session/publication_seal.py) 的 `EventPublicationAuthority`、[`store_publication.py`](../../src/harnessix/session/store_publication.py) 的 `SessionPublicationBinding` | 原 Key 生命周期、Session 事件／投影／Artifact 认证；没有 Git 专用签发方法 | 原认证层拟增加域分离的有限 Git 证明端口，不向 GitStore 暴露 Key，不把 Session Seal 直接当 Git Seal |
+| [`publication_seal.py`](../../src/harnessix/session/publication_seal.py) 的 `EventPublicationAuthority`、[`store_publication.py`](../../src/harnessix/session/store_publication.py) 的 `SessionPublicationBinding` | 原Key生命周期、Session/Artifact认证；五kind Git记录认证及独立尾锚端口已实现，见[记录详设](m09-r4-git-record-publication.md)与[尾锚详设](m09-r4-git-prefix-publication.md) | 仍须接通完整catalog、同事务Writer/Loader及备份消费；不向GitStore暴露Key，不把Session Seal或单记录Seal当完整Git尾锚 |
 | [`state_backup_contracts.py`](../../src/harnessix/product_config/state_backup_contracts.py) 的 `DATABASES`、`state_file_kind`、`ProductStateBackupManifest` | 六 DB、原 Key、事务 CAS、可选 Process 闭合 v1；未知路径拒绝 | 版本化 Git 业务剖面、固定 GitDB、材料及快照校验；不是加目录白名单 |
 | [`state_backup.py`](../../src/harnessix/product_config/state_backup.py) 的 `_quiet_databases`、`_copy_database`、`backup_product_state`、`verify_state_snapshot` | 根外 Owner、独立 Runtime 锁、全部 DB 保留写锁、独立连接 SQLite Backup、原回执、不可覆盖发布 | GitDB 同时参加锁集合；同一静默窗口产生关联一致快照；外部 Git 不参与复制 |
 | [`state_backup_validation.py`](../../src/harnessix/product_config/state_backup_validation.py) 的 `validate_product_state`、[`state_backup_records.py`](../../src/harnessix/product_config/state_backup_records.py) 的 `validate_state_records` | 原 Schema、Session 全认证、领域引用和原 CAS 校验 | 增加 Git 全前缀、产品关联、材料闭包、生命周期分类；纯只读核验 |
@@ -380,8 +380,11 @@ flowchart TD
 ### 6.4 对象材料目录
 
 原 `GitObjectMaterial` 已是不可变完整正文合同，新增 `GitObjectMaterialReference` 已提供七字段 CAS 类型绑定；
-不得重复定义同名材料。拟新增的是 GitDB 认证业务目录 `GitObjectInventory` 及其对象登记记录，
-消费既有类型引用并补充角色、直接引用、历史边界、目录摘要及认证前缀。
+不得重复定义同名材料。现有[`GitObjectInventory`](../../src/harnessix/delivery/git_inventory_contracts.py)、
+[`规范编码`](../../src/harnessix/delivery/git_inventory_wire.py)及
+[`实际CAS验真`](../../src/harnessix/delivery/git_inventory_materials.py)已覆盖声明目录、直接引用、历史边界和完整正文验证。
+待实现的是该目录的受信产品归属、GitDB认证登记、完整事件前缀及独立尾锚消费，
+不能把纯合同或材料合法性当作批准、持久化或业务闭包。
 正文复用 `workspace-transactions/blobs/<sha256>`，不是 `.git/objects` 格式副本。
 
 | 字段 | 规则 |
@@ -568,8 +571,12 @@ Git记录认证已经复用原Key托管层的有限域分离端口：
 [`GitDeliveryRecordClaims`](../../src/harnessix/session/git_publication_contracts.py)
 绑定原调用、实体、认证epoch、序号和前序prefix，原Seal同时绑定Store／Key及完整正文长度／SHA。
 实际端口与反篡改验证见[Git记录认证详设](m09-r4-git-record-publication.md)。
-这些方法不解析对象图、不证明跨库拥有者，也没有完整GitDB独立尾锚；
-后继仍须实现全目录锚的独立用途、严格模型和原子账本接线，不能以现有issue或read_only替代。
+这些单记录方法不解析对象图、不证明跨库拥有者，也不构成完整GitDB尾锚。
+独立尾锚用途、严格claims及同Key独立HMAC域已由
+[`GitStorePrefixAuthority`/`GitStorePrefixVerifier`](../../src/harnessix/session/git_prefix_publication.py)
+实现，见[详设](m09-r4-git-prefix-publication.md)；它只签发或验真完整私有bytes候选，不解释catalog或写DB。
+后继仍须实现完整canonical catalog及全集覆盖、同事务原子账本、genesis/legacy核验和Backup v2消费，
+不能以现有issue、revision范围或read_only替代这些业务要求。
 
 签发与领域事件写入在同一 GitDB 事务中提交；MAC 由宿主验证的新事实构造，不允许对任意已有未认证行批量补签。备份采用原核验 Authority 角色，禁止签发。前缀尾锚只证明所捕获历史，不能证明整个状态目录从未被回滚；合法旧备份回退仍由原 Restore 明确决策控制。
 
@@ -577,7 +584,8 @@ Git记录认证已经复用原Key托管层的有限域分离端口：
 
 对每个 Worktree／Commit，从序号 0 到当前序号完整读取，不只检查 `count == sequence + 1`：
 
-- 严格解析每条原模型；核对原实体 ID、内嵌 Plan／Spec、不可变指纹及所有冗余列。
+- 独立尾锚先验原Store/Key、MAC、完整正文长度/SHA，再解析完整canonical catalog；每条事件也先验证有限Seal/MAC及完整原payload，不能先从未认证正文生成权威期望claims。
+- 认证之后严格解析每条原模型；核对原实体ID、内嵌Plan/Spec、不可变指纹及所有冗余列。
 - 序号唯一连续、首条必须为原 prepared；后续状态转换必须满足原 GitStore 转移集合，未知枚举拒绝。
 - 逐条核对域、逻辑 Store／Key、MAC、正文 SHA、前序前缀、完整原 payload；尾锚绑定最高序号及最终投影。
 - 当前记录必须逐字段等于最后事件，时间和终态字段必须符合原模型；不能把中间事件换成另一份合法 payload。

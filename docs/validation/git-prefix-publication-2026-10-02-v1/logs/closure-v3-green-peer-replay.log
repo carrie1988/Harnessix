@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "green-peer-replay.log",
+    "sha256": "08bf8a8e1998c14c2a026f9a0dcf5e003a65c0a3c1922022da10ce507fb3a38f"
+  },
+  "result_lines": [
+    "4 passed / 6 failed：外部test入口未指定项目配置，6个async用例未执行；不是6个生产行为失败"
+  ],
+  "started_utc": "2026-10-02T01:42:20.841939+00:00",
+  "elapsed_seconds": 0.639,
+  "exit_code": 1
+}

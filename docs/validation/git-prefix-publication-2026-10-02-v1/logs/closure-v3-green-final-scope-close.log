@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "green-final-scope-close.log",
+    "sha256": "2e1b4afcc176ff5451700b03fcab32fdcc2f983387f1b97ccfbfb7ddae92d71e"
+  },
+  "result_lines": [
+    "同一正式负例GREEN：1 passed"
+  ],
+  "started_utc": "2026-10-02T01:42:19.420360+00:00",
+  "elapsed_seconds": 0.559,
+  "exit_code": 0
+}

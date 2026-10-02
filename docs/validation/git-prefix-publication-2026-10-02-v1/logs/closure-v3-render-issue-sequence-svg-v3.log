@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "render-issue-sequence-svg-v3.log",
+    "sha256": "997ab835dfca61cb285affa181dbf338e6fde12f3824a7509274702a768b7041"
+  },
+  "result_lines": [
+    "新签发时序SVG实际本地渲染PASS，源与PNG同版本"
+  ],
+  "started_utc": "2026-10-02T01:44:16.145258+00:00",
+  "elapsed_seconds": 1.193,
+  "exit_code": 0
+}

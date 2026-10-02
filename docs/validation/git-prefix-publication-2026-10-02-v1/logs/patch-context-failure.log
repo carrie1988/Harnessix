@@ -1,0 +1,12 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "patch-context-failure.log",
+    "sha256": "e6ad9071ee8f46cb1a21bbc5cc761bf583f149ef414d585736e4ca1aa4058557"
+  },
+  "result_lines": [
+    "patch context did not match; no file changed"
+  ]
+}

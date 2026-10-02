@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "publish-closure-docs.log",
+    "sha256": "e52a2444e3ce399fa5e3d3cee125f5458f58d203ac543e4215313db894850b37"
+  },
+  "result_lines": [
+    "源码、P1原反证与当前验证结果同步到本端口文档，未改源"
+  ],
+  "started_utc": "2026-10-02T01:56:40.342536+00:00",
+  "elapsed_seconds": 0.043,
+  "exit_code": 0
+}

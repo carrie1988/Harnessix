@@ -1,0 +1,50 @@
+diff --git a/src/harnessix/session/store_publication.py b/src/harnessix/session/store_publication.py
+index 1d9ca82..242a5b7 100644
+--- a/src/harnessix/session/store_publication.py
++++ b/src/harnessix/session/store_publication.py
+@@ -15,6 +15,7 @@ from harnessix.agent.cancellation import CancelToken
+ from harnessix.agent.errors import KernelError
+ from harnessix.agent.models import AgentEvent, Thread
+ from harnessix.agent.publication import PublicOutputProtection, protect_json
++from harnessix.session.git_prefix_contracts import GitStorePrefixAnchorClaims
+ from harnessix.session.git_publication_contracts import (
+     GitDeliveryRecordClaims,
+     snapshot_git_delivery_claims,
+@@ -120,6 +121,16 @@ class GitDeliveryPublicationSeal(_Identity):
+     body_bytes: Annotated[int, Field(ge=1, le=MAX_HISTORY_BYTES)]
+ 
+ 
++class GitStorePrefixAnchorSeal(_Identity):
++    """独立尾锚用途绑定完整私有catalog字节；不证明全前缀或当前Root执行权。"""
++
++    purpose: Literal["git_store_prefix_anchor"] = "git_store_prefix_anchor"
++    claims: GitStorePrefixAnchorClaims
++    scope_sha256: Digest
++    body_sha256: Digest
++    body_bytes: Annotated[int, Field(ge=1, le=MAX_HISTORY_BYTES)]
++
++
+ def _claims(value: _Identity, domain: bytes = _DOMAIN) -> bytes:
+     return (
+         domain
+@@ -305,6 +316,11 @@ class SessionPublicationBinding:
+     def __init__(
+         self, store_id: UUID, key_id: UUID, key: bytes | bytearray, protection: PublicationScope
+     ) -> None:
++        from harnessix.session.git_prefix_publication import (
++            GitStorePrefixAuthority,
++            GitStorePrefixVerifier,
++        )
++
+         if type(store_id) is not UUID:
+             raise unproven()
+         self._events = EventPublicationAuthority(key_id, key, protection)
+@@ -314,6 +330,8 @@ class SessionPublicationBinding:
+         self.artifact = ArtifactPublicationAuthority(self)
+         self.git = GitPublicationAuthority(self)
+         self.git_verifier = GitPublicationVerifier(self)
++        self.git_prefix = GitStorePrefixAuthority(self)
++        self.git_prefix_verifier = GitStorePrefixVerifier(self)
+ 
+     def _ensure_open(self) -> None:
+         if self._closed:

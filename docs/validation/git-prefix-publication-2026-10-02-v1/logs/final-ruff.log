@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "final-ruff.log",
+    "sha256": "0b601e7c6627931871fa2db119080d52d9082002d7814ad17e389491223009cc"
+  },
+  "result_lines": [
+    "All checks passed: 4 files"
+  ],
+  "started_utc": "2026-10-02T00:52:32.496162+00:00",
+  "elapsed_seconds": 0.058,
+  "exit_code": 0
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "render-recovery-boundary-svg.log",
+    "sha256": "0a2c62c78b1575150e57c109c2d85f74cffcdc3a51b193b12b9afefc1138631d"
+  },
+  "result_lines": [
+    "Original verification output retained in the referenced archive member"
+  ],
+  "started_utc": "2026-10-02T00:57:13.438750+00:00",
+  "elapsed_seconds": 1.175,
+  "exit_code": 0
+}

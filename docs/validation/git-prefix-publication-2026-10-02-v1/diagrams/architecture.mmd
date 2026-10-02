@@ -1,0 +1,24 @@
+flowchart TB
+  B["原 SessionPublicationBinding<br/>同一 Store / Key / close 生命周期"]
+  C["新 GitStorePrefixAnchorClaims<br/>仅 v2 / genesis UUID / revision"]
+  A["新 git_prefix Authority<br/>有限候选签发"]
+  V["新 git_prefix_verifier<br/>只验真 无 issue"]
+  O["原 Scope 身份与冻结 context<br/>原低敏 Seal protect_json"]
+  H["原完整 bytes SHA256<br/>64KiB 检查点 / 64MiB 上限"]
+  M["原 _signed / _verified<br/>新独立域与有限 purpose"]
+  X["私有 catalog 原 bytes<br/>不 parse 不公开"]
+  W["后续 Owned Writer / Loader<br/>完整 catalog 与同事务 CAS 未实现"]
+  P["默认 Git 产品 / Backup v2 / Root 重绑<br/>尚未消费装配 不是 W1"]
+  B --> A
+  B --> V
+  C --> A
+  C --> V
+  A --> O
+  A --> H
+  V --> H
+  A --> M
+  V --> M
+  X --> H
+  W -. 有限能力借用 .-> A
+  W -. 只验真能力 .-> V
+  P -. 待集成 .-> W

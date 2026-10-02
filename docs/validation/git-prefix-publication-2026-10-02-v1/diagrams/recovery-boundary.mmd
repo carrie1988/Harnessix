@@ -1,0 +1,16 @@
+flowchart TB
+  O["历史 tail 原 bytes / claims / MAC"]
+  K["同一逻辑 Store / 原 Key<br/>新 Scope 或 VerificationOnlyScope"]
+  V["当前已实现<br/>独立 Verifier 历史验真"]
+  H["仅原完整字节匹配<br/>不读取当前公开 Scope"]
+  X["不能推导<br/>当前 Root 归属 / Lease / 批准 / 执行权"]
+  F["后续待实现<br/>完整 catalog / 全前缀 / genesis / DB revision CAS"]
+  R["后续待实现<br/>Backup v2 整根恢复 / 新 Root 身份<br/>新 epoch / 重验 / 新批准 / 显式重绑"]
+  W["完整 W1 产品验收仍未完成"]
+  O --> V
+  K --> V
+  V --> H --> X
+  F -. 前置端口已具备 .-> V
+  R -. 不补签旧历史 .-> H
+  F --> W
+  R --> W

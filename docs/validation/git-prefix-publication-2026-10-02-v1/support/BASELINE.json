@@ -1,0 +1,25 @@
+{
+  "head": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+  "input_sha256": {
+    "src/harnessix/session/store_publication.py": "620a67fc885946a12497698aca149247e3e735d7423f1af5a73313887e74ed66",
+    "src/harnessix/session/git_publication_contracts.py": "2281750683d21467ba9dc0b7d9e347f839a9ff5c1dfb168f2a28e7baab3da8c4",
+    "src/harnessix/session/publication_seal.py": "0e11b4d93037d6a7ebe7d9e51f05c0e44ab750da10aa4340f24d63a003c2ba36",
+    "tests/session/test_git_publication.py": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581",
+    "tests/session/test_publication_seal.py": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956",
+    "docs/changes/m09-r4-git-delivery-business-backup-closure.md": "5e932c6fbb3146cb89cfa4d433a23407d105cf9094ecdfd262c2ba6bf4912fb9",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+  },
+  "archive_inputs": [
+    {
+      "archive_id": "git-inventory-owned-loader-design-20261001-v1",
+      "member": "design.md",
+      "sha256": "227661f85be870c6a76f4e22989d07332311ba856e8942906acc215c7297dbd6"
+    }
+  ],
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "BASELINE.json",
+    "sha256": "9f16fbb71b877cb937593f4f945c6dc14b5f75cc51e1322f7155ec547750511c"
+  }
+}

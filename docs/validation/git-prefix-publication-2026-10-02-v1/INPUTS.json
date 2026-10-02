@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "documentation_version": 3,
+  "head": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "input_sha256": {
+    "src/harnessix/session/store_publication.py": "620a67fc885946a12497698aca149247e3e735d7423f1af5a73313887e74ed66",
+    "src/harnessix/session/git_publication_contracts.py": "2281750683d21467ba9dc0b7d9e347f839a9ff5c1dfb168f2a28e7baab3da8c4",
+    "src/harnessix/session/publication_seal.py": "0e11b4d93037d6a7ebe7d9e51f05c0e44ab750da10aa4340f24d63a003c2ba36",
+    "tests/session/test_git_publication.py": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581",
+    "tests/session/test_publication_seal.py": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956",
+    "docs/changes/m09-r4-git-delivery-business-backup-closure.md": "5e932c6fbb3146cb89cfa4d433a23407d105cf9094ecdfd262c2ba6bf4912fb9",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+  },
+  "archive_inputs": [
+    {
+      "archive_id": "git-inventory-owned-loader-design-20261001-v1",
+      "member": "design.md",
+      "sha256": "227661f85be870c6a76f4e22989d07332311ba856e8942906acc215c7297dbd6"
+    }
+  ],
+  "original_test_files_sha256": {
+    "tests/agent/test_authenticated_store.py": "07b0e72e66c18ed3fcf41ce48395493532230ad61e5c8bb080e16d5dd8693cb1",
+    "tests/artifacts/test_authenticated_body.py": "a0f32cd8ff86686df4c8b1ddca356d369373566d0a8297b02a91f141f6fcd6fb",
+    "tests/product_config/test_product_state_backup.py": "79b779a9b98dca730bf4011febfd83eeebd5cff6708afbf6803dc569cd375e6a",
+    "tests/product_config/test_product_state_restore.py": "e35fa96c488633b4a07fbfe0dfd90c4c467e1faa68a32e184e867cf97bf0d6f6",
+    "tests/session/test_git_publication.py": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581",
+    "tests/session/test_publication_seal.py": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956"
+  },
+  "runtime": {
+    "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+    "interpreter_sha256": "4a58a6e7d4480b77a9f6fdac21b8bda1dc38a3f85136f854b1e64bf98b917064",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "pydantic": "2.13.5",
+    "pytest": "8.4.2",
+    "mypy": "1.20.2",
+    "git_version": "git version 2.53.0",
+    "git_sha256": "26a755d0ab5dddc2689ae3e8a8c3520041d0075a860156d5d8c13cc4fdecb85d",
+    "ruff": "0.16.5",
+    "mermaid_cli": "11.6.0",
+    "interpreter_component": "Python runtime",
+    "git_component": "bundled Git",
+    "harnessix_source": "src/harnessix/__init__.py"
+  },
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "sealed-validation-package/INPUTS.json",
+    "sha256": "bb517b33cd10f16d0dd56654e3b2e638b66f689f7c31c93e06c1a342c5fb93c3"
+  },
+  "documentation_inputs": {
+    "scripts/documentation_check.py": "06bba92b80831997dba73e675831b1242f31278755db7f672cc1b916e4d76dbb",
+    "governance/documentation-policy-v1.json": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a",
+    "docs/governance/documentation-standard.md": "25f02c213c4b416db0f25a5c4e2f9d336f44ddfaadcf43de7258a0598da8cd44"
+  },
+  "source4_sha256_before": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "0e2e6fa950fe46eea6e38179c977994f433bd844865e8079c5c42ce93db324b3",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "a2b744c6636b4476b6bd8b2aba51788984bbfa6e8a319d2197de9f2552534029"
+  },
+  "source4_sha256_after": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "8fe909946fdb8dd6e18231338944af433b2616dc06248416e16e4da9e56ada9e",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "3fe41bb1e802d5307b83923ef4d2728d740340ab76588611987cfa138e4395e9"
+  },
+  "closure_baseline": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "BASELINE.json",
+    "sha256": "33cb6914b53c26377d9ea411a5a1cf4d9c8e92d19a254c6eff6399b7d6238f42"
+  },
+  "peer_inputs": [
+    {
+      "archive_id": "git-prefix-publication-peer-20261002-v1",
+      "member": "REPORT.md",
+      "sha256": "80432118b8be099a6008f050e67308937fb2955dec863d9b042d1c1717b176aa"
+    },
+    {
+      "archive_id": "git-prefix-publication-peer-20261002-v1",
+      "member": "SUMMARY.json",
+      "sha256": "52ba2e6963a37f88fa5746636226170e5f3c94c386ff9040a6a5e100709e076f"
+    },
+    {
+      "archive_id": "git-prefix-publication-peer-20261002-v1",
+      "member": "test_peer_prefix_negatives.py",
+      "sha256": "8167705480dbabfb55921e37ab67ca27a36dcbdc7be5ec96fef017a2b6b4b973"
+    },
+    {
+      "archive_id": "git-prefix-publication-peer-20261002-v1",
+      "member": "peer-negative.log",
+      "sha256": "4108e969d518ee33db33e1ff2087a5f7da48e65eb63b01d266933e5ed13c5854"
+    },
+    {
+      "archive_id": "git-prefix-publication-peer-20261002-v1",
+      "member": "peer-negative.xml",
+      "sha256": "c1d692f31a63047cfc8efa6b131c985b113da1807142b761ad07d6914913e4a8"
+    },
+    {
+      "archive_id": "git-prefix-publication-peer-20261002-v1",
+      "member": "late-scope-close-observation.json",
+      "sha256": "4946933247dc7e74f56e29e05ccfd4b9e593d8735d29e982f38c7f71258f258b"
+    }
+  ],
+  "prior_public_manifest": {
+    "archive_id": "git-prefix-publication-20261002-doc-repair-v2",
+    "member": "after/validation-package/MANIFEST.json",
+    "sha256": "ac52a67e074bd3457d69cf3616fff6ad5a4f8ea3d2948678684a859836f4a05f"
+  },
+  "original_private_seals": {
+    "git-prefix-publication-20261002-v1": {
+      "manifest_sha256": "2c049b75a5b3b6694d86a72420f3685f61f3123700c2cfa987b800a16a9c251d",
+      "sealed_files": 175
+    },
+    "git-prefix-publication-20261002-doc-repair-v2": {
+      "manifest_sha256": "17060a9bf4875e2b1bc32f8e7d65891973cbebb2f6c25098d195d29a4455f4a7",
+      "sealed_files": 174
+    }
+  }
+}

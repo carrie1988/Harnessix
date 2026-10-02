@@ -1,0 +1,114 @@
+--- before/tests/session/test_git_prefix_publication.py
++++ after/tests/session/test_git_prefix_publication.py
+@@ -619,6 +619,111 @@
+     assert error.value is failure
+ 
+ 
++async def test_final_checkpoint_closing_real_scope_must_not_return_seal(
++    binding: Binding, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    """最终检查点关闭真实Scope且Binding仍开放时，不得交付经保护的候选。"""
++    owner, guard = binding
++    original = guard.publication_context
++    reads = 0
++
++    def observing_context() -> dict[str, object]:
++        nonlocal reads
++        reads += 1
++        return original()
++
++    class ClosingToken(CancelToken):
++        def checkpoint(self) -> None:
++            super().checkpoint()
++            if reads >= 2:
++                guard.close()
++
++    monkeypatch.setattr(guard, "publication_context", observing_context)
++    with pytest.raises(KernelError) as error:
++        await issue(binding, claims(), cancel=ClosingToken())
++    assert error.value.code == "publication_scope_unavailable"
++    assert error.value.__cause__ is None
++    assert not owner._closed
++
++
++@pytest.mark.parametrize("exception", [TurnCancelled, TimeoutError, asyncio.CancelledError])
++async def test_final_checkpoint_scope_close_does_not_mask_original_exception(
++    binding: Binding, monkeypatch: pytest.MonkeyPatch, exception: type[BaseException]
++) -> None:
++    """最终回调已抛取消/期限异常时原对象优先传播，不改写为Scope关闭错误。"""
++    _, guard = binding
++    original, failure = guard.publication_context, exception()
++    reads = 0
++
++    def observing_context() -> dict[str, object]:
++        nonlocal reads
++        reads += 1
++        return original()
++
++    class RejectingToken(CancelToken):
++        def checkpoint(self) -> None:
++            super().checkpoint()
++            if reads >= 2:
++                guard.close()
++                raise failure
++
++    monkeypatch.setattr(guard, "publication_context", observing_context)
++    with pytest.raises(exception) as error:
++        await issue(binding, claims(), cancel=RejectingToken())
++    assert error.value is failure
++    assert reads == 2
++
++
++async def test_final_scope_recheck_keeps_last_binding_open_check(
++    binding: Binding, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    """最终实际Scope读取回调关闭Key后，仍由末尾Binding检查阻止交付。"""
++    owner, guard = binding
++    original = guard.publication_context
++    reads = 0
++
++    def closing_context() -> dict[str, object]:
++        nonlocal reads
++        reads += 1
++        result = original()
++        if reads == 3:
++            owner.close()
++        return result
++
++    monkeypatch.setattr(guard, "publication_context", closing_context)
++    with pytest.raises(KernelError) as error:
++        await issue(binding, claims())
++    assert error.value.code == "publication_key_unavailable"
++    assert reads == 3 and owner._closed
++
++
++async def test_final_checkpoint_is_followed_by_actual_scope_recheck(
++    binding: Binding, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    """成功路径从真实Scope读取三次；最后取消检查之后仍有实际读取。"""
++    owner, guard = binding
++    original = guard.publication_context
++    observations: list[str] = []
++
++    def observing_context() -> dict[str, object]:
++        result = original()
++        observations.append("scope")
++        return result
++
++    class ObservingToken(CancelToken):
++        def checkpoint(self) -> None:
++            super().checkpoint()
++            if observations.count("scope") == 2:
++                observations.append("final-checkpoint")
++
++    monkeypatch.setattr(guard, "publication_context", observing_context)
++    value = claims()
++    seal = await issue(binding, value, cancel=ObservingToken())
++    assert observations == ["scope", "scope", "final-checkpoint", "scope"]
++    assert not owner._closed
++    verify(owner, seal, value)
++
++
+ @pytest.mark.parametrize("close", [False, True])
+ async def test_async_protection_freezes_claims_but_cannot_return_after_binding_close(
+     binding: Binding, close: bool, monkeypatch: pytest.MonkeyPatch

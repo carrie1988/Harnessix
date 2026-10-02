@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "red-final-scope-close.log",
+    "sha256": "3bda5b9c988f69a204e311cb98350112557ceb2e0f70770ee595ccb681184b59"
+  },
+  "result_lines": [
+    "正式行为RED：真实Scope关闭后旧issue返回Seal，DID NOT RAISE KernelError；1 failed"
+  ],
+  "started_utc": "2026-10-02T01:40:28.134708+00:00",
+  "elapsed_seconds": 0.603,
+  "exit_code": 1
+}

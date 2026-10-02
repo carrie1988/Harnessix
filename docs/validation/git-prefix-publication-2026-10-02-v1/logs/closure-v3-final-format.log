@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "final-format.log",
+    "sha256": "2f648e8801d9eee1e3834487f120ebdd720549bfd98e788c62b85134e361775c"
+  },
+  "result_lines": [
+    "Ruff format --check四文件PASS"
+  ],
+  "started_utc": "2026-10-02T01:42:52.726496+00:00",
+  "elapsed_seconds": 0.024,
+  "exit_code": 0
+}

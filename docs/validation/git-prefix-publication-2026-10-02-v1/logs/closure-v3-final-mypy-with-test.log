@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "final-mypy-with-test.log",
+    "sha256": "e334db901defb94d9d2fbe09f939297eab7a3578b7698364e86c710df6e1ed85"
+  },
+  "result_lines": [
+    "mypy四文件--follow-imports=silent PASS；非全仓类型检查"
+  ],
+  "started_utc": "2026-10-02T01:42:54.576648+00:00",
+  "elapsed_seconds": 2.219,
+  "exit_code": 0
+}

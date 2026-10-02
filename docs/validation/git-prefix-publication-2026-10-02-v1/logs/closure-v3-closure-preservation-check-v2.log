@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "closure-preservation-check-v2.log",
+    "sha256": "a2173d4026d855c41aac98780429b358e0245591e8368bb1d46c31b93b9ce9b1"
+  },
+  "result_lines": [
+    "证据身份校验失败：原claims随机UUID显示ID未按确定参数槽位比较；无测试/断言修改"
+  ],
+  "started_utc": "2026-10-02T01:47:41.334758+00:00",
+  "elapsed_seconds": 0.053,
+  "exit_code": 1
+}

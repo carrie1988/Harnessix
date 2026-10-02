@@ -1,0 +1,80 @@
+{
+  "head": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "input_sha256_preserved": true,
+  "old_codec_body_source_exact": true,
+  "original_ast_after_removing_only_additions": "equal",
+  "original_testcase_identity_multiset": "equal",
+  "identity_comparison_exception": "only two original parameter slots: Artifact publication_epoch and prefix claims store_genesis_epoch UUID text display-id; original assertions unchanged",
+  "original_test_files_sha256": {
+    "tests/agent/test_authenticated_store.py": "07b0e72e66c18ed3fcf41ce48395493532230ad61e5c8bb080e16d5dd8693cb1",
+    "tests/artifacts/test_authenticated_body.py": "a0f32cd8ff86686df4c8b1ddca356d369373566d0a8297b02a91f141f6fcd6fb",
+    "tests/product_config/test_product_state_backup.py": "79b779a9b98dca730bf4011febfd83eeebd5cff6708afbf6803dc569cd375e6a",
+    "tests/product_config/test_product_state_restore.py": "e35fa96c488633b4a07fbfe0dfd90c4c467e1faa68a32e184e867cf97bf0d6f6",
+    "tests/session/test_git_publication.py": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581",
+    "tests/session/test_publication_seal.py": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956"
+  },
+  "baseline_original_passed": 378,
+  "final_original_passed": 378,
+  "final_new_passed": 152,
+  "final_total_passed": 530,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "source_sha256": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "8fe909946fdb8dd6e18231338944af433b2616dc06248416e16e4da9e56ada9e",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "3fe41bb1e802d5307b83923ef4d2728d740340ab76588611987cfa138e4395e9"
+  },
+  "input_sha256": {
+    "src/harnessix/session/store_publication.py": "620a67fc885946a12497698aca149247e3e735d7423f1af5a73313887e74ed66",
+    "src/harnessix/session/git_publication_contracts.py": "2281750683d21467ba9dc0b7d9e347f839a9ff5c1dfb168f2a28e7baab3da8c4",
+    "src/harnessix/session/publication_seal.py": "0e11b4d93037d6a7ebe7d9e51f05c0e44ab750da10aa4340f24d63a003c2ba36",
+    "tests/session/test_git_publication.py": "74999bf1717adf9683a8a8ec6cfebc7aa26d6bc96e318713d7b441b87d403581",
+    "tests/session/test_publication_seal.py": "8ec95cc36c797a5814aa54c28ab87d5745414a98f832938de40b6183ef3af956",
+    "docs/changes/m09-r4-git-delivery-business-backup-closure.md": "5e932c6fbb3146cb89cfa4d433a23407d105cf9094ecdfd262c2ba6bf4912fb9",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+  },
+  "shared_worktree_contains_other_changes": true,
+  "other_changes_not_modified": true,
+  "archive_inputs": [
+    {
+      "archive_id": "git-inventory-owned-loader-design-20261001-v1",
+      "member": "design.md",
+      "sha256": "227661f85be870c6a76f4e22989d07332311ba856e8942906acc215c7297dbd6"
+    }
+  ],
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "INTEGRITY.json",
+    "sha256": "306078b8428cc4552b16711cdaa4c506c5493b346758a4832dd83622103d890c"
+  },
+  "historical_v1_results": {
+    "final_original_passed": 378,
+    "final_new_passed": 146,
+    "final_total_passed": 524,
+    "source_sha256": {
+      "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+      "src/harnessix/session/git_prefix_publication.py": "0e2e6fa950fe46eea6e38179c977994f433bd844865e8079c5c42ce93db324b3",
+      "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+      "tests/session/test_git_prefix_publication.py": "a2b744c6636b4476b6bd8b2aba51788984bbfa6e8a319d2197de9f2552534029"
+    },
+    "identity_comparison_exception": "only original Artifact publication_epoch uuid4 display-id normalized to parameter slot"
+  },
+  "documentation_version": 3,
+  "source4_sha256_before": {
+    "src/harnessix/session/git_prefix_contracts.py": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+    "src/harnessix/session/git_prefix_publication.py": "0e2e6fa950fe46eea6e38179c977994f433bd844865e8079c5c42ce93db324b3",
+    "src/harnessix/session/store_publication.py": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+    "tests/session/test_git_prefix_publication.py": "a2b744c6636b4476b6bd8b2aba51788984bbfa6e8a319d2197de9f2552534029"
+  },
+  "closure_check": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "CLOSURE_CHECK.json",
+    "sha256": "f2ef642e7d3dd37f7d5b9736d02bc7733076561832af4f96c331e6ee7d517c41"
+  },
+  "original_146_test_ast_unchanged": true,
+  "previous_524_parameter_slots_preserved": true,
+  "claims_and_codec_source_unchanged": true,
+  "old_peer_and_private_seals_unchanged": true
+}

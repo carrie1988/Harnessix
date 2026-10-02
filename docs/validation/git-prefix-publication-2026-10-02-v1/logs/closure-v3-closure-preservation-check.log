@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "closure-preservation-check.log",
+    "sha256": "3f060e18593392f7f7e610c5795d20c5d6488e35bb219d4d8482df6bd0395eec"
+  },
+  "result_lines": [
+    "证据校验初轮失败：前一步配置错误的peer结果未达10PASS；原记录保留"
+  ],
+  "started_utc": "2026-10-02T01:46:15.732946+00:00",
+  "elapsed_seconds": 0.086,
+  "exit_code": 1
+}

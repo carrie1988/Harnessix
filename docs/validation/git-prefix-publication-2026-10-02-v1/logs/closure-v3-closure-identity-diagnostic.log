@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "closure-identity-diagnostic.log",
+    "sha256": "c57f240cdd83d903a6068c92b117f71585685c0cf9c26badac1f8aeae864588a"
+  },
+  "result_lines": [
+    "差异定位：两个已存在的uuid4显示ID槽位和6个实际新增用例，原断言未修改"
+  ],
+  "started_utc": "2026-10-02T01:48:38.512602+00:00",
+  "elapsed_seconds": 0.02,
+  "exit_code": 0
+}

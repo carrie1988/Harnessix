@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "docgate-final-v3.log",
+    "sha256": "5f1851cfdd1d603d2234f068f112e1a8ca9cfd8a286645bc051f2a973febf19d"
+  },
+  "result_lines": [
+    "最终全仓静态DocGate：本范围0finding，范围外4finding；不表述为全仓PASS"
+  ],
+  "started_utc": "2026-10-02T01:59:53.115655+00:00",
+  "elapsed_seconds": 1.839,
+  "exit_code": 1
+}

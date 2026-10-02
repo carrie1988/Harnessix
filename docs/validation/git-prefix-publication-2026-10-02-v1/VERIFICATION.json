@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "test_summary": {
+    "passed": 530,
+    "original_passed": 378,
+    "new_passed": 152,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "static": {
+    "ruff_check": "PASS_4_FILES",
+    "ruff_format_check": "PASS_4_FILES",
+    "mypy_production": "PASS_3_FILES_ORIGINAL_STRICT",
+    "mypy_with_test": "PASS_4_FILES_FOLLOW_IMPORTS_SILENT"
+  },
+  "integrity_log": "logs/closure-v3-closure-preservation-check-v3.log",
+  "diagram_review": "DIAGRAM_REVIEW.md",
+  "scope": "finite_mac_port_only",
+  "w1_complete": false,
+  "failed_command_records_preserved": [
+    "red-new-prefix-tests",
+    "mypy-prefix-test",
+    "mypy-prefix-test-v2",
+    "final-integrity",
+    "closure-v3-red-final-scope-close",
+    "closure-v3-green-peer-replay",
+    "closure-v3-closure-preservation-check",
+    "closure-v3-closure-preservation-check-v2",
+    "closure-v3-docgate-full-v3",
+    "closure-v3-docgate-final-v3"
+  ],
+  "auxiliary_failures_preserved": [
+    "preflight-shared-state.log",
+    "patch-context-failure.log",
+    "integrity-followup-unavailable-diff.log"
+  ],
+  "documentation_version": 3,
+  "publication_projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "sealed-validation-package/VERIFICATION.json",
+    "sha256": "03f0d7bd67f1de683a73f0e59da5e923c7cba212a09183e4fbe97abc568e9b9b"
+  },
+  "new_test_execution": true,
+  "source4_unchanged": false,
+  "prior_package_validation": {
+    "status": "PASS",
+    "log": "logs/package-check.log",
+    "checks": [
+      "local Markdown links",
+      "JSON and JUnit XML",
+      "PNG/SVG dimensions and XML",
+      "source hashes",
+      "all failed command logs present",
+      "package manifest"
+    ]
+  },
+  "documentation_validation": {
+    "status": "OWN_SCOPE_ZERO_FINDINGS_FULL_GATE_HAS_OUTSIDE_FINDINGS",
+    "findings": 4,
+    "scope_findings": 0,
+    "outside_scope_findings": 4,
+    "document_count": 468,
+    "link_count": 11254,
+    "report": "DOCGATE.json",
+    "raw_evidence": {
+      "archive_id": "git-prefix-publication-closure-20261002-v3",
+      "member": "docgate-final-v3.json",
+      "sha256": "78c31f6698539480920c424d6ef2d2d94cc91f9357e27abe64b35cfd74e2847f"
+    },
+    "public_personal_paths": 0,
+    "raw_credentials_exported": false,
+    "old_private_seal_rewritten": false
+  },
+  "historical_v2_verification": {
+    "test_summary": {
+      "passed": 524,
+      "original_passed": 378,
+      "new_passed": 146,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "new_test_execution": false,
+    "source4_unchanged": true,
+    "documentation_validation": {
+      "full_docgate": "PASS_ZERO_FINDINGS",
+      "report": "DOCGATE.json",
+      "public_personal_paths": 0,
+      "raw_credentials_exported": false,
+      "source4_unchanged": true,
+      "diagrams_unchanged": true,
+      "old_private_seal_rewritten": false
+    }
+  },
+  "p1_closure": "P1_CLOSURE.json",
+  "independent_recheck_signed_off": false,
+  "package_validation": {
+    "status": "PASS",
+    "log": "logs/closure-v3-package-check-v3.log"
+  }
+}

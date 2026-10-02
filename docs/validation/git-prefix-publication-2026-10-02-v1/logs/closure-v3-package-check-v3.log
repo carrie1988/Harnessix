@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-closure-20261002-v3",
+    "member": "package-check-v3.log",
+    "sha256": "98449b303316ddde68a413e3eea38e6dc601846ca12b914a5232a185e22a463c"
+  },
+  "result_lines": [
+    "本包元数据、本地链接、有限archive/member/SHA、XML投影、原封印/四源保持校验PASS"
+  ],
+  "started_utc": "2026-10-02T01:59:43.444332+00:00",
+  "elapsed_seconds": 0.095,
+  "exit_code": 0
+}

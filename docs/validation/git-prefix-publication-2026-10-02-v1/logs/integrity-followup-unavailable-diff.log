@@ -1,0 +1,12 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "integrity-followup-unavailable-diff.log",
+    "sha256": "906c7ebbc12f83a3e7deaa2f28e1c72597fecfd1d2e82d076fea5510f417f3ce"
+  },
+  "result_lines": [
+    "diff file absent after failed precondition; cat exit_code=1"
+  ]
+}

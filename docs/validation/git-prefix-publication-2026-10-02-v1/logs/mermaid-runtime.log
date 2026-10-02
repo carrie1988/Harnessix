@@ -1,0 +1,15 @@
+{
+  "schema_version": "harnessix.public-verification-result/v1",
+  "projection": true,
+  "raw_evidence": {
+    "archive_id": "git-prefix-publication-20261002-v1",
+    "member": "mermaid-runtime.log",
+    "sha256": "a58363e7caa2f2e5c0ca3490ee8d45652944e74d61ba75aa87f9282591f6b0fe"
+  },
+  "result_lines": [
+    "Original verification output retained in the referenced archive member"
+  ],
+  "started_utc": "2026-10-02T00:45:09.901389+00:00",
+  "elapsed_seconds": 0.188,
+  "exit_code": 0
+}
