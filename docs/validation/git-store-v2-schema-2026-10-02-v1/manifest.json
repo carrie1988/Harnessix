@@ -1,0 +1,487 @@
+{
+  "schema_version": "harnessix.git-store-v2.manifest/v1",
+  "sealed": true,
+  "scope": "新增GitDB v2结构合同及其公开验证资料",
+  "baseline_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "source_sha256": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe",
+  "test_sha256": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c",
+  "ddl_checksum": "85f25eab50c7e3ed2a6575e2b177faf38a312915e527b19b5cac4aa6990f7cbf",
+  "final_formal_tests": 460,
+  "formal_main_tests": 363,
+  "historical_diagnostic_is_not_formal_ci_regression": true,
+  "self_excluded": "docs/validation/git-store-v2-schema-2026-10-02-v1/manifest.json",
+  "file_count_excluding_self": 94,
+  "ordinary_hashes_not_authentication": true,
+  "files": [
+    {
+      "path": "docs/changes/m09-r4-git-store-v2-schema.md",
+      "bytes": 27389,
+      "sha256": "f01ce4a676913fb2135f7c9903b1397e3dc0eb52f58999d3ea6b4dc978610d58"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/README.md",
+      "bytes": 9402,
+      "sha256": "7c43b9e88143d3c996e6c577f992d51a3171deb202dd36e0b5231220bda98dfa"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/SUMMARY.json",
+      "bytes": 1432,
+      "sha256": "e51cd26185d984b09ed8f490e7e1af4df595e69139572c8e3edb79a265a37968"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/architecture.mmd",
+      "bytes": 617,
+      "sha256": "22597b0282d5ee01976740822f2692c81e7d51d1beb3bb1da8dc5354f7fd45f1"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/architecture.png",
+      "bytes": 127440,
+      "sha256": "1caee70d958e30d1e2752a17190c5337a215288df22646da253fd133e5844f1a"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/archive-projections.json",
+      "bytes": 7397,
+      "sha256": "6723d750da64a0f260371c07bed1f55dd5842507ac9b7a3c13a95821ec3c14ca"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ci-encoding.log",
+      "bytes": 204,
+      "sha256": "243b17594a1720d3a940f7380ba450cba493604d73b5d27aaf92ab58a5396b85"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ci-encoding.xml",
+      "bytes": 883,
+      "sha256": "abc696c57c72b696ac3afd8aac4ffbc3443d30f7c42231618e867cde1d42fefb"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ci-final.log",
+      "bytes": 668,
+      "sha256": "02bf4236edb77674ac5674d72b081cf6bcaccb846ee4ccaf5206adce98b9e3c3"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ci-final.xml",
+      "bytes": 88629,
+      "sha256": "d10b0f93d897873f1fd627cb784ca7d52e1698ec59d3613605da6181e850c7df"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/current-collection.log",
+      "bytes": 49,
+      "sha256": "daefca74af8035b60a361d45ac9828fd2a99c3e68075d968df3bb98eb9ad8b3e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/current-encoding.log",
+      "bytes": 209,
+      "sha256": "f4b1b506cfef5d4121299ce804faa21589e86e065010493673d199983cc11f15"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/current-encoding.xml",
+      "bytes": 883,
+      "sha256": "0451cd7b91ed8a7fa774ffed539178aa02400cff17abcd827abc20894eec012f"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/current.log",
+      "bytes": 667,
+      "sha256": "a554cfdb31e1b32f07ea9876bb710e4cb261eae4fca703cdc0b26879408453ed"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/current.xml",
+      "bytes": 88629,
+      "sha256": "3ab2f86865b714263491ae7e089789b7bbc610779790816ed4f5826e064cc4c2"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/data-flow.mmd",
+      "bytes": 714,
+      "sha256": "ac3317093d645b6cbd752cb514a6fd28e142c99a199c8cb24f2581f82a284120"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/data-flow.png",
+      "bytes": 162576,
+      "sha256": "89a761663ee96790b5b3fab4fd4f9087e7a74d967090930aee35559c4fef2a50"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py",
+      "bytes": 1587,
+      "sha256": "b3844608647f57b67a38607d8a63232d709fb8d7ffb8d226872d2e7e3102c279"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/document-check.json",
+      "bytes": 750,
+      "sha256": "c29fc86af6f1de64021546333c22b56c6d8d3b859cc1f3424fd7a39373d9ff95"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/encoding-final.log",
+      "bytes": 191,
+      "sha256": "48b59a3dbe91bb261225a0b0c1f7cab6491e670e9c38021034d398888eb3c306"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/encoding-final.xml",
+      "bytes": 1043,
+      "sha256": "474d41c464bebd10bf1f036e66e73fc3d090a0c5aa3ba0b5d6c578327ae179ea"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/encoding-red.log",
+      "bytes": 2797,
+      "sha256": "3369f13d87b91ec06ac3073d78eb06b8a339555a3446218578f2cb95e8af49c5"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/encoding-red.xml",
+      "bytes": 2857,
+      "sha256": "a170213da8d4b07aad8857fa832e6203549543128486ecfeaa844cddf2532493"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/facts.json",
+      "bytes": 2845,
+      "sha256": "26bf14a2bf7822bb00cd1d18ae8a96f283f984140500b365e0664d153ccfe6d9"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-all-02.log",
+      "bytes": 672,
+      "sha256": "a7321aca7ebbbe3916a4e3f1ae812451edfa7b801248394168e6145ba46daf72"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-all-02.xml",
+      "bytes": 88789,
+      "sha256": "ee1fd1511b3433dd55cd31a6c24661ee9f75c478863a8f4d6b47d6e0acb8fc48"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-all.log",
+      "bytes": 2427,
+      "sha256": "4274467770d3654a651d86e200f464cc3db4ae9578e904a61173e7fb610fa5cb"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-all.xml",
+      "bytes": 90417,
+      "sha256": "c4e5a80438adb6b56d83b7b91bdbb14fc843e29ecb00ae487208f2019fac56bc"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-new.log",
+      "bytes": 508,
+      "sha256": "f26a79d003837ea17fbd96653150a28a2e0b9c758a36e29d0810bb494b421399"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-new.xml",
+      "bytes": 71216,
+      "sha256": "d6ea3b30cb70ad82cf17061493fcf76a9abbe4e1faab68493c533553d93ddd6f"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-related.log",
+      "bytes": 673,
+      "sha256": "f281c1cb622048600bb1cad4378fb0a72201587f65588c25fefa9fab97619039"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/final-related.xml",
+      "bytes": 87999,
+      "sha256": "6f5a42e3305d66ba17464549f4ea60d2d7d6d950211187706cbcf3de582aa12c"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/flow.mmd",
+      "bytes": 858,
+      "sha256": "e2132c9f25156ac93d4922515419ea98c101d5778010f648e566b0dd134cd755"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/flow.png",
+      "bytes": 219489,
+      "sha256": "b6651e945434fe90ce215b9ccc61639c7f5f575e2f94cc09617c5b61c2457f46"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/green-final.log",
+      "bytes": 590,
+      "sha256": "1bea5157713a4bc015468a3de94cdd33273f37a84fea2274aaeec3bb22b90ebc"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/green-final.xml",
+      "bytes": 71373,
+      "sha256": "2c028a9000cd67ad779565aefd669ca475e0a90d66f8c1da315ec25d83ab9382"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/green.log",
+      "bytes": 504,
+      "sha256": "6724be1b1ea5791502b40121d713b63f121d8347c40073f01d9840fbd5c60fb8"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/green.xml",
+      "bytes": 71250,
+      "sha256": "81295f5b6325bc68b493919984d68e4b5561720d9478d1afb8f7dc3a9ee71c38"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/implementation-01.log",
+      "bytes": 4590,
+      "sha256": "cdb53b0571bab5eb245d37a74127553d240fa1bcea39213b82f7918227d93446"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/implementation-01.xml",
+      "bytes": 73004,
+      "sha256": "67377c8b00c6c3574f0a1242d0821c6d201f9f5d79c7b52825610a27f7ba71c7"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/inputs-after-red.json",
+      "bytes": 815,
+      "sha256": "efa72e41ef588ae860acfd51008547b1d0178b870a13faffeaf7312a9fe130cb"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/inputs-after.json",
+      "bytes": 1393,
+      "sha256": "d0747d7061f6d5a4200251aaa29cff1c477d1ce8e468f0c6684e821dd457b78a"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/inputs-before.json",
+      "bytes": 1273,
+      "sha256": "ef9213faacaa8ceb18ded85bd4133a2f3c2f4141840330832f94f07b5f4244da"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/metadata-order-red.json",
+      "bytes": 452,
+      "sha256": "85e499e569fb199fc81deafcf392f63cae233be15bbcd98873e8e5c0feb77f3d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/metadata-order-red.log",
+      "bytes": 3114,
+      "sha256": "6005e9b047857a79317d53d9e8cc90caf33f40adfc0fa7dcce26fc33e71502da"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/metadata-order-red.xml",
+      "bytes": 3165,
+      "sha256": "d3440ade399be89351283063ded937c7f4a71bb85f38dc136062208ef95ac123"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/mypy-current.log",
+      "bytes": 42,
+      "sha256": "5d4b6d285b77932e3d08212c3b4974d0a803f98ec60408ac6ccf6a063fa6c19e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/mypy-final-02.log",
+      "bytes": 42,
+      "sha256": "5d4b6d285b77932e3d08212c3b4974d0a803f98ec60408ac6ccf6a063fa6c19e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/mypy-final.log",
+      "bytes": 42,
+      "sha256": "5d4b6d285b77932e3d08212c3b4974d0a803f98ec60408ac6ccf6a063fa6c19e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/mypy.log",
+      "bytes": 42,
+      "sha256": "5d4b6d285b77932e3d08212c3b4974d0a803f98ec60408ac6ccf6a063fa6c19e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/new-frozen-02.log",
+      "bytes": 592,
+      "sha256": "3ff4248c8cd1004d8af17c0229fedd073d9041491bcd4568a909604398faa227"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/new-frozen-02.xml",
+      "bytes": 71373,
+      "sha256": "d511d94c2c3f23360025d3b17f0685b3e1df6408666db6db92e73e09e3e0ff44"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/new-frozen.log",
+      "bytes": 589,
+      "sha256": "84937733c492b68945b401c6fa73681730c5935d9c8d6af62f4cd8adab28e2a4"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/new-frozen.xml",
+      "bytes": 71373,
+      "sha256": "780c53af744e95fb16f0f4151874cadb8672b8e8cd8a06b72b929fbbf362e2d6"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/red.log",
+      "bytes": 1062,
+      "sha256": "5bcbff7d795bedfff4ccd901cfe187c2e0fafab86cc7698a1dc919069c6de67c"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/red.xml",
+      "bytes": 985,
+      "sha256": "02c58ffa7b5c27dfeed0a118d07b3b005f57ce5e22bda69dbe27a124959d1a68"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/related.log",
+      "bytes": 667,
+      "sha256": "79c2b85a4cb83435593cca45610db337c2977c5c655457529d397a7dffc04e2b"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/related.xml",
+      "bytes": 88156,
+      "sha256": "306f80ba3d07baec1a5ee887d14acbcbde1466c3b5f7610d4cefa2838225bb30"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-architecture-02.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-architecture.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/architecture.mmd",
+      "bytes": 610,
+      "sha256": "86106a46e8963bd94cfdee4e8199bab94087da5f6fd101ac274543ceeb1afd33"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/architecture.png",
+      "bytes": 130064,
+      "sha256": "a0c92a2bddb01e1287cfa9db2865a8522854086b6ccedc01e2d8d6485ff69a9b"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/data-flow.mmd",
+      "bytes": 705,
+      "sha256": "f45823107da49f4aff8aa7a6c63d86918a679ffb5ac640f8a0baffe95cc020a7"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/data-flow.png",
+      "bytes": 168380,
+      "sha256": "c275e42e509f9d29cd0aa4f2b8e1a85ff048f1b22ee699838456be8da89adfce"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/flow.mmd",
+      "bytes": 852,
+      "sha256": "9fb7cc332a8a6bde3b26c55f1176eb8cedc57e103ae28932f6e59146473b826e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/flow.png",
+      "bytes": 222361,
+      "sha256": "94ec3b5fa81043ca563768787eaef41fd7b6cd2eaf8e8794c70514be6a1ae438"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/sequence.mmd",
+      "bytes": 959,
+      "sha256": "dcbd077082dd68ec863d84a1cf957cdf58a0e4ecccb78ca45b9b9b98be13e4d3"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-attempts/01/sequence.png",
+      "bytes": 203229,
+      "sha256": "8d6e828f9914795fe3c2b8694b99790aecdf9c5cee632926adf94ed116e6f17e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-data-flow-02.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-data-flow.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-flow-02.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-flow.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-sequence-02.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/render-sequence.log",
+      "bytes": 32,
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/review-packet.json",
+      "bytes": 4188,
+      "sha256": "4917490587775900e31d172fe78bd787a5fd75425cc3843bdcf4a38ae9ec1079"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ruff-ci-regression.log",
+      "bytes": 45,
+      "sha256": "afa20b27dacc9bf0aba3c1d265964c21e04ab42f6e39e2dd4769718ceded003a"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ruff-current.log",
+      "bytes": 45,
+      "sha256": "f3248628f03b3d0a928e68546110a114be245447916bd8f99798f084731918b4"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ruff-diagnostic-final.log",
+      "bytes": 44,
+      "sha256": "ce04ce92b16073000b77c97a42c00b98b96305692d9d5ed4dcfa5a9ca9ea62d6"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ruff-diagnostic.log",
+      "bytes": 63,
+      "sha256": "209cfaf5df79a12ef59769981a726f15dbfeba14adf43e5a2888facce675f622"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ruff-final-02.log",
+      "bytes": 45,
+      "sha256": "afa20b27dacc9bf0aba3c1d265964c21e04ab42f6e39e2dd4769718ceded003a"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ruff-final.log",
+      "bytes": 45,
+      "sha256": "afa20b27dacc9bf0aba3c1d265964c21e04ab42f6e39e2dd4769718ceded003a"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/runtime.json",
+      "bytes": 564,
+      "sha256": "90bab89aa21a19eb599e7839b0527b372309101d27a8ab0473e21a374c5bd05c"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/schema-v2.ddl.sql",
+      "bytes": 6705,
+      "sha256": "85f25eab50c7e3ed2a6575e2b177faf38a312915e527b19b5cac4aa6990f7cbf"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/sequence.mmd",
+      "bytes": 959,
+      "sha256": "dcbd077082dd68ec863d84a1cf957cdf58a0e4ecccb78ca45b9b9b98be13e4d3"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/sequence.png",
+      "bytes": 203229,
+      "sha256": "8d6e828f9914795fe3c2b8694b99790aecdf9c5cee632926adf94ed116e6f17e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/source-freeze-before-ci-regression.json",
+      "bytes": 911,
+      "sha256": "af1cf9e126fc28d271e976267b3b4ad74310055155a8c6d21f14b4d20deaa14e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/source-freeze-before-order-fix.json",
+      "bytes": 343,
+      "sha256": "5306c31feb38217ee84525c0d4b21cdfbaa5be4ff6bc9228feb1114b1903d31e"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/source-freeze.json",
+      "bytes": 1050,
+      "sha256": "e508b0143583dd3ab6f89cfe2972567698ffd0ac3590c8eccc7925a18f914a88"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/test-runs.json",
+      "bytes": 4279,
+      "sha256": "6f3626ed5a241770cda2953f357ec9b5748c4057d45c221719fce7e599d1f854"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/verification.json",
+      "bytes": 7277,
+      "sha256": "a5d6c00a12e8918f811ce697f845e60ed383a6f923dc22f478a2cb07d21aec43"
+    },
+    {
+      "path": "docs/validation/git-store-v2-schema-2026-10-02-v1/visual-verification.json",
+      "bytes": 3314,
+      "sha256": "cf21603e3f720af5acf93116f3b733f595a2ae42b398984a21c8f07d24e0bb27"
+    },
+    {
+      "path": "src/harnessix/delivery/git_store_schema_v2.py",
+      "bytes": 8708,
+      "sha256": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe"
+    },
+    {
+      "path": "tests/delivery/test_git_store_schema_v2.py",
+      "bytes": 23462,
+      "sha256": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c"
+    }
+  ]
+}

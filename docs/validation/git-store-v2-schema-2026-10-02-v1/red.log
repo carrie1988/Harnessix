@@ -1,0 +1,17 @@
+
+==================================== ERRORS ====================================
+_________ ERROR collecting tests/delivery/test_git_store_schema_v2.py __________
+ImportError while importing test module 'tests/delivery/test_git_store_schema_v2.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/delivery/test_git_store_schema_v2.py:11: in <module>
+    from harnessix.delivery.git_store_schema_v2 import verify_git_store_v2_schema
+E   ModuleNotFoundError: No module named 'harnessix.delivery.git_store_schema_v2'
+- generated xml file: docs/validation/git-store-v2-schema-2026-10-02-v1/red.xml -
+=========================== short test summary info ============================
+ERROR tests/delivery/test_git_store_schema_v2.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.12s

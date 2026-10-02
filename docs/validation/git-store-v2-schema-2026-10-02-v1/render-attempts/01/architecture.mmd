@@ -1,0 +1,15 @@
+flowchart TB
+    O["原默认 Store / Runtime\nv1 六表 · 保持不变"]
+    F["后继事务调用方\n本阶段未装配产品 Writer"]
+    S["新增 v2 结构模块\n唯一 DDL / checksum"]
+    H["内部创建 helper\n已有事务 · 逐条建七表"]
+    V["只读 verifier\n先结构 · 后版本 · 精确十三表"]
+    D[("同一 GitDB\n原六表 + 新七表")]
+    N["不提供 Owner / MAC / 业务闭包\n旧默认仍拒绝版本 2"]
+    O -->|"仍走原 v1"| N
+    F -.->|"尚未接线"| S
+    S --> H
+    S --> V
+    H -->|"不改版本 · 不提交"| D
+    V -->|"仅观察声明"| D
+    D --> N

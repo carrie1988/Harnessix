@@ -1,0 +1,19 @@
+{
+  "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "source_inputs_sha256": {
+    "src/harnessix/delivery/git_store_schema.py": "72cf872d4b8c929b95ad03b7e116b7e576580ed0a4f67d4670330fdb8b8d56f6",
+    "src/harnessix/delivery/git_store.py": "fca038298b8528bc6cf858775ad63e493e16da02223fa7c88eb9052a72a3d0ec",
+    "src/harnessix/delivery/git.py": "13f65dac2fe24d49e3401d1177c58e94457a1600c0ba1291850d2eaadb754f06",
+    "tests/delivery/test_git_store_readonly.py": "b64c4c545f004ad745ddd39e73bfef7526df60017a6367f29a0b34c6f279e56e",
+    "docs/changes/m09-r4-git-delivery-business-backup-closure.md": "5e932c6fbb3146cb89cfa4d433a23407d105cf9094ecdfd262c2ba6bf4912fb9",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+    "uv.lock": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd"
+  },
+  "selected_inputs_unchanged": true,
+  "owned_file_sha256": {
+    "src/harnessix/delivery/git_store_schema_v2.py": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe",
+    "tests/delivery/test_git_store_schema_v2.py": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c",
+    "docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py": "b3844608647f57b67a38607d8a63232d709fb8d7ffb8d226872d2e7e3102c279"
+  },
+  "scope": "仅所列输入与新增文件；不是全仓漂移审计"
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 148
-code_revision: f887aae8bf54789fa2424f7cbc62bd335a1ccd47
+version: 149
+code_revision: dfba34e707ed845f3e9d844461e124015c22dca7
 owners:
   - core
 modules:
@@ -1504,3 +1504,16 @@ Backup v2、Windows原生失败及R3／Beta／商用门禁仍按原完整产品�
 [验证资料](validation/git-prefix-publication-2026-10-02-v1/README.md)。
 当前不持久化完整catalog、不迁移GitDB、不新增默认Tool或执行授权；
 同事务Writer／Reader、完整Git产品交付、Backup v2及R1～R6仍须继续验收。
+
+### R4：GitDB v2精确结构与正式编码回归
+
+原GitDB v1默认入口不变，后继新增唯一13表结构、组合引用及STRICT约束；
+helper复用调用者原事务、逐条DDL，不自行提交/回滚，不修改Schema版本或业务历史。
+结构和UTF-8编码核验先于metadata读取，原metadata VIEW提前执行和UTF-16字节边界失败保留；
+4项编码回归已进入默认tests选择器。
+正式新增363项与原Git/readonly97项共460通过，集成候选435个生产源码文件类型检查通过；
+独立复核正式460与私有9项通过，原v1及25个输入零漂移，限定范围无新增P0/P1/P2。
+设计见[GitDB v2结构详设](changes/m09-r4-git-store-v2-schema.md)，
+当前证据见[集成验证](validation/git-store-v2-integration-2026-10-02-v1/README.md)。
+默认产品Writer/Loader、legacy全集迁移、Git交付、Backup v2及新Root重新批准未由结构合同完成；
+R3真实质量、消费者Windows、独立Beta及R1～R6商用门禁继续开放。

@@ -1,0 +1,21 @@
+{
+  "schema_version": "harnessix.git-store-v2.integration-manifest/v1",
+  "files": [
+    {
+      "path": "INTEGRATION.json",
+      "bytes": 5330,
+      "sha256": "8715bdd56abccaf177a578a6594de93c7aeb01d6315174ad2003aba3d340e5c2"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4380,
+      "sha256": "3ae10ee6769427988c0f216e54edf672f999dc1f2fd3c6b6602eee40bf97fb40"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1409,
+      "sha256": "1ee124ecc5c109d7568a7cb2835f90f65757b548ab19f51b14189745f656430d"
+    }
+  ],
+  "self_excluded": true
+}

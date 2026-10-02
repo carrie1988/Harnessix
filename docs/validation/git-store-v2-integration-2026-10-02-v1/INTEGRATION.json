@@ -1,0 +1,162 @@
+{
+  "schema_version": "harnessix.git-store-v2.integration/v1",
+  "integration_base_revision": "dfba34e707ed845f3e9d844461e124015c22dca7",
+  "frozen_source_sha256": {
+    "src/harnessix/delivery/git_store_schema_v2.py": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe",
+    "tests/delivery/test_git_store_schema_v2.py": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c"
+  },
+  "original_validation_bundle_unchanged": true,
+  "parent_related": {
+    "tests": 460,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 460,
+    "new_formal_cases": 363,
+    "old_related_cases": 97
+  },
+  "parent_mypy": {
+    "actual_production_files": 435,
+    "passed": true
+  },
+  "independent_review": {
+    "status": "APPROVED_FOR_FROZEN_SCHEMA_SLICE_ONLY",
+    "formal_repository_passed": 460,
+    "private_negatives_passed": 9,
+    "source_inputs": 25,
+    "source_zero_drift": true,
+    "original_359_semantics_preserved": true,
+    "parent_byte_equal": true,
+    "new_findings": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    }
+  },
+  "installed_wheel": {
+    "status": "PASS",
+    "wheel_sha256": "f094744fe3699fd417c4dcd78ce3b12543a80c5ba8e5b72d6a5b850b022c2810",
+    "build_count": 1,
+    "source_python_files": 435,
+    "package_members_parent_independently_equal": 476,
+    "target": "macOS ARM64，两个独立源码外Python环境，原3个正式选择器；非全仓或三平台",
+    "source_fallback": false,
+    "locked_dependencies_each": 70,
+    "environments": [
+      {
+        "python": "3.12.7",
+        "passed": 460,
+        "new_main": 363,
+        "existing": 97,
+        "xml": "installed-312.xml",
+        "xml_sha256": "509c507fd5516e1af75205cf2716589732be0956b132619f058200ed8b55c7cb",
+        "tests": 460,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "python": "3.13.8",
+        "passed": 460,
+        "new_main": 363,
+        "existing": 97,
+        "xml": "installed-313.xml",
+        "xml_sha256": "b8d6368c308d62b33f0a988d8b59b0c0a829181c2c1aa33ffba0f825c5954376",
+        "tests": 460,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "scope": {
+    "only_schema_contract": true,
+    "default_store_still_v1": true,
+    "business_migration": false,
+    "authenticated_writer_loader": false,
+    "default_git_product_delivery": false,
+    "backup_v2": false,
+    "windows_native_acceptance": false,
+    "commercial_release": false
+  },
+  "originals": [
+    {
+      "archive_id": "git-store-schema-v2-integration-20261002-v1",
+      "member": "final-related.xml",
+      "bytes": 88629,
+      "sha256": "8c2aa59da6521386301d2cfcb444a32b3d04310abb62d8df75a6568ae123d141"
+    },
+    {
+      "archive_id": "git-store-schema-v2-integration-20261002-v1",
+      "member": "final-related.log",
+      "bytes": 716,
+      "sha256": "5ea2774391e2259b0352050734089001edd5b82de47ff064b3eb66da8f98b39f"
+    },
+    {
+      "archive_id": "git-store-schema-v2-integration-20261002-v1",
+      "member": "mypy.log",
+      "bytes": 74,
+      "sha256": "17f8b4f33c45eacb8c9ada66e03fe9a7a69188124fc23d550fbea293766ecd70"
+    },
+    {
+      "archive_id": "git-store-schema-v2-integration-20261002-v1",
+      "member": "owned-copy.json",
+      "bytes": 7242,
+      "sha256": "4dc13a3a9739a175ec54a6b571ef90c992c9c5623a31dbd3a031c731d2e04ff2"
+    },
+    {
+      "archive_id": "git-store-schema-v2-peer-20261002-v1",
+      "member": "final-review-v2/SUMMARY.json",
+      "bytes": 11551,
+      "sha256": "c6725d0bc526c7740255bb914ae557a66616813495d39b18db9a19d9e799bed9"
+    },
+    {
+      "archive_id": "git-store-schema-v2-peer-20261002-v1",
+      "member": "final-review-v2/REPORT.md",
+      "bytes": 9190,
+      "sha256": "4fc1657352f6d814b6cfc09fd180bd3d6ed337b042cad330cacb9d973fa2f81d"
+    },
+    {
+      "archive_id": "git-store-schema-v2-peer-20261002-v1",
+      "member": "final-review-v2/repository-focused.xml",
+      "bytes": 88629,
+      "sha256": "d79683a9bcfb78e84e5e1c3db9ddceb781504e744ce6284ea2d9d4d6a2312861"
+    },
+    {
+      "archive_id": "git-store-schema-v2-peer-20261002-v1",
+      "member": "final-review-v2/independent-private.xml",
+      "bytes": 1239,
+      "sha256": "220d9af6c735a17d74c9cefed2d5557c6dc0b790b9e52954baba79f64cde8686"
+    },
+    {
+      "archive_id": "git-store-v2-wheel-20261002-v1",
+      "member": "SUMMARY.json",
+      "bytes": 1503,
+      "sha256": "dae0a4a22dc508077aa17e2fdbf13b63f51237de6d04f768008b699ad712851b"
+    },
+    {
+      "archive_id": "git-store-v2-wheel-20261002-v1",
+      "member": "REPORT.md",
+      "bytes": 9431,
+      "sha256": "5b961e57a810109afa2fccd4340cacc484b36dbd5f38a206922093e78db7ed6b"
+    },
+    {
+      "archive_id": "git-store-v2-wheel-20261002-v1",
+      "member": "installed-312.xml",
+      "bytes": 88629,
+      "sha256": "509c507fd5516e1af75205cf2716589732be0956b132619f058200ed8b55c7cb"
+    },
+    {
+      "archive_id": "git-store-v2-wheel-20261002-v1",
+      "member": "installed-313.xml",
+      "bytes": 88629,
+      "sha256": "b8d6368c308d62b33f0a988d8b59b0c0a829181c2c1aa33ffba0f825c5954376"
+    },
+    {
+      "archive_id": "git-store-v2-wheel-20261002-v1",
+      "member": "MANIFEST.json",
+      "bytes": 358392,
+      "sha256": "6a2b8c307160c235743e5a985621150e8d418abceb2c02a3201d8da7d362fbcb"
+    }
+  ]
+}

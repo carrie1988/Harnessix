@@ -1,0 +1,201 @@
+{
+  "schema_version": "harnessix.git-store-v2.verification/v1",
+  "status": "通过（仅结构合同）",
+  "baseline_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "commands": [
+    {
+      "id": "current-formal-combination",
+      "command": "\"$PYTHON\" -B -m pytest -p no:cacheprovider --basetemp \"$OUT/tmp-current\" --junitxml \"$OUT/current.xml\" tests/delivery/test_git_store_schema_v2.py tests/delivery/test_git_store_readonly.py tests/delivery/test_git.py",
+      "exit_code": 0,
+      "passed": 460,
+      "stage": "当前冻结版本",
+      "log": "current.log",
+      "xml": "current.xml"
+    },
+    {
+      "id": "current-utf16-formal-subset",
+      "command": "\"$PYTHON\" -B -m pytest -p no:cacheprovider --basetemp \"$OUT/tmp-current-encoding\" --junitxml \"$OUT/current-encoding.xml\" tests/delivery/test_git_store_schema_v2.py -k utf16_rejected_without_changes",
+      "exit_code": 0,
+      "passed": 4,
+      "stage": "当前冻结版本",
+      "log": "current-encoding.log",
+      "xml": "current-encoding.xml",
+      "not_added_to_distinct_total": true
+    },
+    {
+      "id": "current-collection",
+      "command": "\"$PYTHON\" -B -m pytest -p no:cacheprovider --collect-only -q tests/delivery/test_git_store_schema_v2.py",
+      "exit_code": 0,
+      "collected": 363,
+      "stage": "当前冻结版本",
+      "log": "current-collection.log",
+      "whole_ci_executed": false
+    },
+    {
+      "id": "current-ruff",
+      "command": "\"$RUFF\" format --check src/harnessix/delivery/git_store_schema_v2.py tests/delivery/test_git_store_schema_v2.py && \"$RUFF\" check src/harnessix/delivery/git_store_schema_v2.py tests/delivery/test_git_store_schema_v2.py",
+      "exit_code": 0,
+      "stage": "当前冻结版本",
+      "log": "ruff-current.log"
+    },
+    {
+      "id": "current-mypy",
+      "command": "\"$PYTHON\" -B -m mypy --cache-dir \"$OUT/mypy-cache\" src/harnessix/delivery/git_store_schema_v2.py",
+      "exit_code": 0,
+      "source_files": 1,
+      "stage": "当前冻结版本",
+      "log": "mypy-current.log"
+    },
+    {
+      "id": "final-combination",
+      "command": "\"$PYTHON\" -B -m pytest -p no:cacheprovider --basetemp \"$OUT/tmp-final-all-02\" --junitxml \"$OUT/final-all-02.xml\" tests/delivery/test_git.py tests/delivery/test_git_store_readonly.py tests/delivery/test_git_store_schema_v2.py docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py",
+      "exit_code": 0,
+      "passed": 460,
+      "log": "final-all-02.log",
+      "xml": "final-all-02.xml",
+      "stage": "历史运行"
+    },
+    {
+      "id": "frozen-encoding-test",
+      "command": "\"$PYTHON\" -B -m pytest -p no:cacheprovider --basetemp \"$OUT/tmp-encoding-final\" --junitxml \"$OUT/encoding-final.xml\" docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py",
+      "exit_code": 0,
+      "passed": 4,
+      "log": "encoding-final.log",
+      "xml": "encoding-final.xml",
+      "not_added_to_distinct_total": true,
+      "stage": "历史运行"
+    },
+    {
+      "id": "ruff-core",
+      "command": "\"$RUFF\" check src/harnessix/delivery/git_store_schema_v2.py tests/delivery/test_git_store_schema_v2.py && \"$RUFF\" format --check src/harnessix/delivery/git_store_schema_v2.py tests/delivery/test_git_store_schema_v2.py",
+      "exit_code": 0,
+      "log": "ruff-final-02.log",
+      "stage": "历史运行"
+    },
+    {
+      "id": "ruff-diagnostic",
+      "command": "\"$RUFF\" check docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py && \"$RUFF\" format --check docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py",
+      "exit_code": 0,
+      "log": "ruff-diagnostic-final.log",
+      "stage": "历史运行"
+    },
+    {
+      "id": "mypy",
+      "command": "\"$PYTHON\" -B -m mypy --cache-dir \"$OUT/mypy-cache\" src/harnessix/delivery/git_store_schema_v2.py",
+      "exit_code": 0,
+      "source_files": 1,
+      "log": "mypy-final-02.log",
+      "stage": "当前生产源码相同SHA的既有运行"
+    }
+  ],
+  "environment": {
+    "python": "3.12.7",
+    "sqlite": "3.45.3",
+    "PYTHONPATH": "${REPO_ROOT}/src:${REPO_ROOT}",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON": "已存在的独立CPython3.12.7虚拟环境；非裸python3",
+    "PATH": "固定离线runtime fallback；图渲染单独使用现有工具路径"
+  },
+  "new_test_counts": {
+    "main": 363,
+    "formal_utf16_subset": 4,
+    "docs_diagnostic_in_current_selection": 0
+  },
+  "existing_test_counts": {
+    "readonly": 85,
+    "git": 12
+  },
+  "distinct_total": 460,
+  "red_evidence": {
+    "missing_api": {
+      "xml": "red.xml",
+      "collection_errors": 1,
+      "functional_cases_executed": 0,
+      "pytest_exit_code": 2
+    },
+    "metadata_view": {
+      "xml": "metadata-order-red.xml",
+      "failed": 2,
+      "function_calls_each_before": 1,
+      "function_calls_each_after": 0,
+      "source_sha256_before": "15d5bae6132ba67bcef4a29568319b833028578fe2da74930805af950d2145bb"
+    },
+    "encoding": {
+      "xml": "encoding-red.xml",
+      "failed": 2,
+      "source_sha256_before": "b61bbdb317f04e1b70328adf27cb6f4f365b1a4aa83a922fb2dc708e1de3ace4",
+      "test_source_presealed": false,
+      "current_green_cases": 4
+    },
+    "first_implementation": {
+      "xml": "implementation-01.xml",
+      "passed": 344,
+      "failed": 2
+    },
+    "readonly_trace_regression": {
+      "xml": "final-all.xml",
+      "passed": 459,
+      "failed": 1,
+      "fix": "仅允许SELECT及精确只读PRAGMA main.encoding"
+    }
+  },
+  "source_freeze": "source-freeze.json",
+  "selected_inputs_before": "inputs-before.json",
+  "selected_inputs_after": "inputs-after.json",
+  "selected_input_drift_count": 0,
+  "actual_import_verification": "runtime.json",
+  "actual_visual_verification": "visual-verification.json",
+  "path_redaction": "archive-projections.json",
+  "historical_results_unchanged": true,
+  "scratch_directories_removed": [
+    "mypy-cache",
+    "pytest-cache",
+    "renderer-tmp",
+    "tmp-ci-final",
+    "tmp-current",
+    "tmp-final-all",
+    "tmp-final-all-02",
+    "tmp-final-related",
+    "tmp-green",
+    "tmp-green-02",
+    "tmp-green-final",
+    "tmp-new-frozen",
+    "tmp-new-frozen-02",
+    "tmp-order-fixed",
+    "tmp-related"
+  ],
+  "not_run": [
+    "全仓回归",
+    "CI",
+    "Docker",
+    "网络/模型/凭据",
+    "真实业务库/账本迁移",
+    "原生Windows/Linux",
+    "安装wheel路径"
+  ],
+  "business_acceptance": false,
+  "w1_complete": false,
+  "commercial_release_ready": false,
+  "complete_authenticated_loader": false,
+  "complete_atomic_writer": false,
+  "default_testpaths": [
+    "tests"
+  ],
+  "utf16_regressions_are_formal_tests": true,
+  "formal_current_test_sha256": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c",
+  "historical_tests_before_formal_encoding": {
+    "main": 359,
+    "old_formal_plus_original": 456,
+    "old_combination_with_docs_diagnostic": 460,
+    "old_trace_failure_combination": {
+      "passed": 459,
+      "failed": 1
+    },
+    "multiple_earlier_test_versions": true
+  },
+  "scoped_documentation_check": {
+    "result": "通过",
+    "artifact": "document-check.json",
+    "whole_repository_gate": false
+  }
+}

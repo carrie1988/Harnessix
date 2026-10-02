@@ -1,0 +1,98 @@
+{
+  "schema_version": "harnessix.git-store-v2.facts/v1",
+  "scope": "GitDB v2精确结构合同",
+  "baseline_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "new_source_sha256": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe",
+  "new_test_sha256": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c",
+  "ddl_checksum": "85f25eab50c7e3ed2a6575e2b177faf38a312915e527b19b5cac4aa6990f7cbf",
+  "tables": {
+    "original": 6,
+    "added": 7,
+    "total": 13,
+    "implicit_autoindexes": 23,
+    "explicit_indexes": 0,
+    "views": 0,
+    "triggers": 0
+  },
+  "link_phases": [
+    "prepared",
+    "approved",
+    "materials_ready",
+    "anchor_intent",
+    "anchor_ready",
+    "native_patch_intent",
+    "native_patch_prepared",
+    "native_bridge_closed",
+    "delivery_worktree_intent",
+    "delivery_worktree_ready",
+    "checkpoint_intent",
+    "checkpoint_closed",
+    "commit_intent",
+    "commit_closed",
+    "result_closed",
+    "unknown",
+    "diverged",
+    "failed"
+  ],
+  "integer_maximum": 9223372036854775807,
+  "payload_bytes_maximum": 67108864,
+  "payload_encoding": "UTF-8",
+  "seal_bytes_minimum": 1,
+  "seal_bytes_maximum": 4096,
+  "helper": {
+    "caller_transaction_required": true,
+    "own_begin_commit_rollback": false,
+    "executescript": false,
+    "schema_version_write": false,
+    "checksum_metadata_write": false,
+    "partial_schema_repair": false,
+    "accepts_full_13_tables_with_version1_migration_state": true
+  },
+  "verifier": {
+    "schema_before_metadata": true,
+    "temp_objects_rejected": true,
+    "exact_v1_or_v2_before_metadata": true,
+    "final_version_required": "2",
+    "final_tables_required": 13,
+    "utf16_rejected_without_conversion": true,
+    "business_rows_read": false,
+    "tables_created": false,
+    "schema_sha_is_authentication": false
+  },
+  "metadata_view_regression": {
+    "original_failed_cases": 2,
+    "original_function_calls_each": 1,
+    "final_function_calls_each": 0,
+    "paths": [
+      "helper",
+      "verifier"
+    ],
+    "original_log": "metadata-order-red.log",
+    "original_xml": "metadata-order-red.xml"
+  },
+  "actual_test_counts": {
+    "new_main": 363,
+    "utf16_included_in_main": 4,
+    "existing_git_store_readonly": 85,
+    "existing_git": 12,
+    "distinct_final_total": 460,
+    "final_failures": 0,
+    "final_errors": 0,
+    "historical_docs_diagnostic_not_in_current_selection": true,
+    "repeated_runs_added_to_total": false
+  },
+  "not_implemented_or_proved": [
+    "业务模型与阶段FSM",
+    "正式原子产品Writer",
+    "认证全前缀Loader",
+    "Owner/Key装配",
+    "legacy业务全集迁移",
+    "跨库桥与对象图验真",
+    "W1业务验收",
+    "商用1.0或全系统安全"
+  ],
+  "default_testpaths": [
+    "tests"
+  ],
+  "utf16_formal_regression_in_default_selection": true
+}

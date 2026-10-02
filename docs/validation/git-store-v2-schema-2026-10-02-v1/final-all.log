@@ -1,0 +1,46 @@
+........................................................................ [ 15%]
+........................................................................ [ 31%]
+........................................................................ [ 46%]
+........................................................................ [ 62%]
+........................................................................ [ 78%]
+........................................................................ [ 93%]
+...................F........                                             [100%]
+=================================== FAILURES ===================================
+___________________ test_readonly_file_and_no_business_reads ___________________
+
+tmp_path = PosixPath('docs/validation/git-store-v2-schema-2026-10-02-v1/tmp-final-all/test_readonly_file_and_no_busi0')
+
+    def test_readonly_file_and_no_business_reads(
+        tmp_path: Path,
+    ) -> None:
+        root = tmp_path / "readonly"
+        root.mkdir(mode=0o700)
+        path = root / "git-delivery.db"
+        with closing(sqlite3.connect(path, isolation_level=None)) as db:
+            _v1(db)
+            _promote(db)
+        path.chmod(0o600)
+        before = (path.read_bytes(), sorted(root.iterdir()))
+        with closing(readonly_database(path)) as db:
+            trace: list[str] = []
+            db.set_trace_callback(trace.append)
+    
+            def authorize(
+                action: int, first: str | None, second: str | None, name: str | None, source: str | None
+            ) -> int:
+                if action == sqlite3.SQLITE_READ and first in (*_OLD[1:], *_NEW):
+                    return sqlite3.SQLITE_DENY
+                return sqlite3.SQLITE_OK
+    
+            db.set_authorizer(authorize)
+            assert verify_git_store_v2_schema(db) is None
+            assert not db.in_transaction
+>           assert all(s.startswith("SELECT") for s in trace)
+E           assert False
+E            +  where False = all(<generator object test_readonly_file_and_no_business_reads.<locals>.<genexpr> at 0x106404930>)
+
+tests/delivery/test_git_store_schema_v2.py:561: AssertionError
+- generated xml file: docs/validation/git-store-v2-schema-2026-10-02-v1/final-all.xml -
+=========================== short test summary info ============================
+FAILED tests/delivery/test_git_store_schema_v2.py::test_readonly_file_and_no_business_reads
+1 failed, 459 passed in 14.62s

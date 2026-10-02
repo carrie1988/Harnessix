@@ -1,0 +1,96 @@
+{
+  "schema_version": "harnessix.git-store-v2.review-packet/v1",
+  "verdict": "结构合同通过，供后继显式装配；不关闭业务验收",
+  "change_scope": [
+    "src/harnessix/delivery/git_store_schema_v2.py",
+    "tests/delivery/test_git_store_schema_v2.py",
+    "docs/changes/m09-r4-git-store-v2-schema.md",
+    "docs/validation/git-store-v2-schema-2026-10-02-v1/"
+  ],
+  "baseline_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "frozen_source_and_tests": {
+    "src/harnessix/delivery/git_store_schema_v2.py": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe",
+    "tests/delivery/test_git_store_schema_v2.py": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c",
+    "docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py": "b3844608647f57b67a38607d8a63232d709fb8d7ffb8d226872d2e7e3102c279"
+  },
+  "source_line_map": {
+    "phase_union": "src/harnessix/delivery/git_store_schema_v2.py:11-30",
+    "new_table_fields_and_constraints": "src/harnessix/delivery/git_store_schema_v2.py:52-136",
+    "ddl_checksum_and_autoindexes": "src/harnessix/delivery/git_store_schema_v2.py:146-177",
+    "structure_first_encoding_then_metadata": "src/harnessix/delivery/git_store_schema_v2.py:184-211",
+    "caller_transaction_helper": "src/harnessix/delivery/git_store_schema_v2.py:214-230",
+    "readonly_verifier": "src/harnessix/delivery/git_store_schema_v2.py:233-239"
+  },
+  "actual_results": {
+    "distinct_tests_passed": 460,
+    "new_main": 363,
+    "new_encoding": 0,
+    "existing": 97,
+    "ruff": true,
+    "mypy_one_source": true,
+    "actual_images_rendered_and_viewed": 4,
+    "formal_utf16_subset": 4,
+    "docs_diagnostic_only_historical": true
+  },
+  "resolved_findings": [
+    {
+      "id": "metadata_observation_order",
+      "priority": "P1",
+      "original_repro": "真实v1：rename metadata、同名VIEW返回调用函数结果；helper/verifier最终corrupt前函数调用1次",
+      "red": "metadata-order-red.xml",
+      "original_input_identity": "metadata-order-red.json",
+      "fix": "先拒绝temp并受限观察main.sqlite_schema，actual恰为原v1或完整v2后才读metadata；当前两路径函数0次",
+      "green": "current.xml"
+    },
+    {
+      "id": "sqlite_encoding_payload_bytes",
+      "priority": "P1",
+      "original_repro": "真实UTF-16le/be库，汉*(64MiB//3+1)的UTF-8超64MiB而CAST长度未超，helper接受",
+      "red": "encoding-red.xml",
+      "presealed_test_source": false,
+      "fix": "结构核验后只读PRAGMA main.encoding仅接受UTF-8；不转换原库，不改DDL/checksum",
+      "green": "current-encoding.xml"
+    }
+  ],
+  "remaining_technical_preconditions": [
+    "正式安全Owner与连接归属",
+    "业务领域模型和合法FSM/起点/序号对应",
+    "调用者明确foreign_keys=ON等安全连接配置",
+    "完整legacy业务验证，不以结构核验补签",
+    "完整认证全前缀Loader、尾锚与catalog",
+    "同连接原子业务/认证Writer与版本发布",
+    "跨库Bridge/T/domain及多态Publication实体验真",
+    "对象材料/业务备份闭包及真实W1验收",
+    "完整产品验收仍需目标平台真实证据；当前仅离线结构测试"
+  ],
+  "forbidden_shortcuts": [
+    "将helper返回视为业务迁移完成",
+    "只更新schema_version为2伪装已认证业务",
+    "忽略额外view/trigger/index或部分表",
+    "对原未知业务行批量补签",
+    "删除七表或改版本行伪装兼容回退"
+  ],
+  "original_default_v1_unchanged": true,
+  "complete_business_migration": false,
+  "complete_authenticated_loader": false,
+  "complete_atomic_writer": false,
+  "w1_complete": false,
+  "release_acceptance": false,
+  "independent_review_result_included": false,
+  "evidence": [
+    "README.md",
+    "facts.json",
+    "verification.json",
+    "source-freeze.json",
+    "inputs-before.json",
+    "inputs-after.json",
+    "runtime.json",
+    "test-runs.json",
+    "archive-projections.json",
+    "visual-verification.json",
+    "document-check.json",
+    "manifest.json",
+    "source-freeze-before-ci-regression.json"
+  ],
+  "public_personal_absolute_paths": false
+}

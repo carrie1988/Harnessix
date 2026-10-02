@@ -1,0 +1,10 @@
+{
+  "production_bug": "结构拒绝前错误读取metadata VIEW，实际执行用户函数",
+  "actual_cases_failed": 2,
+  "expected_function_calls": 0,
+  "actual_function_calls_each": 1,
+  "input_sha256": {
+    "src/harnessix/delivery/git_store_schema_v2.py": "15d5bae6132ba67bcef4a29568319b833028578fe2da74930805af950d2145bb",
+    "tests/delivery/test_git_store_schema_v2.py": "bd850cb542f36444de1e10d4aaefe9ff3b8b3555de5346edad82f713557e5a4d"
+  }
+}

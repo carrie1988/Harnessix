@@ -1,0 +1,130 @@
+{
+  "schema_version": "harnessix.git-store-v2.archive-projections/v1",
+  "raw_environment_paths_published": false,
+  "historical_failure_semantics_preserved": true,
+  "original_bytes_hashes_retained": true,
+  "public_files_are_path_redacted_projections": true,
+  "artifacts": [
+    {
+      "artifact": "encoding-final.log",
+      "original_bytes_sha256": "cd0842252d25cc2349b5eab5a44b2c3ab326edb4b59166942c3f36cd6cf24fd8",
+      "public_projection_sha256": "48b59a3dbe91bb261225a0b0c1f7cab6491e670e9c38021034d398888eb3c306",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "encoding-red.log",
+      "original_bytes_sha256": "cc67912a0e1bfce9a71af9e41ce9ff3892d5907d4703efe33d4e02612cea05ad",
+      "public_projection_sha256": "3369f13d87b91ec06ac3073d78eb06b8a339555a3446218578f2cb95e8af49c5",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "final-all-02.log",
+      "original_bytes_sha256": "f20bdcd9e5a1c74bf177817b097c2fd4c9ca5fc1323307440ffd95203257c7a3",
+      "public_projection_sha256": "a7321aca7ebbbe3916a4e3f1ae812451edfa7b801248394168e6145ba46daf72",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "final-all.log",
+      "original_bytes_sha256": "f4d717eb11bfb5d525040f1f0d745e016b39b71038bd55586d648ddbcb6f4c4e",
+      "public_projection_sha256": "4274467770d3654a651d86e200f464cc3db4ae9578e904a61173e7fb610fa5cb",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "final-all.xml",
+      "original_bytes_sha256": "834e0af80c86aa5d0d5ccf56edfb7968cff1fe0de3b34d409712ec046602a347",
+      "public_projection_sha256": "c4e5a80438adb6b56d83b7b91bdbb14fc843e29ecb00ae487208f2019fac56bc",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "final-new.log",
+      "original_bytes_sha256": "0fa832d55799972bd72e5173a12c378cfffed1c5d93bc72b3e875b0dc95a117c",
+      "public_projection_sha256": "f26a79d003837ea17fbd96653150a28a2e0b9c758a36e29d0810bb494b421399",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "final-related.log",
+      "original_bytes_sha256": "77cbaa98331fd2fc09c3ad6718b52352aca60ea5ea9b2ee15dd5501d69b496d9",
+      "public_projection_sha256": "f281c1cb622048600bb1cad4378fb0a72201587f65588c25fefa9fab97619039",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "green-final.log",
+      "original_bytes_sha256": "170ad0553055e3748852c39185d124ac034a5a8015cb9eb061f3be227373bae0",
+      "public_projection_sha256": "1bea5157713a4bc015468a3de94cdd33273f37a84fea2274aaeec3bb22b90ebc",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "green.log",
+      "original_bytes_sha256": "5fb0cac174cc6d874e7cc6c046f86bce6ed7b1ca065938dac1160cc14413fde6",
+      "public_projection_sha256": "6724be1b1ea5791502b40121d713b63f121d8347c40073f01d9840fbd5c60fb8",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "implementation-01.log",
+      "original_bytes_sha256": "ee76887fb049a3071b97721e5a0aafe63e77f8f3d63f96d1bb189f5838e7f2fe",
+      "public_projection_sha256": "cdb53b0571bab5eb245d37a74127553d240fa1bcea39213b82f7918227d93446",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "metadata-order-red.log",
+      "original_bytes_sha256": "3535e15b584730878eaf604214a032596b8fd532e9dbc223105e42605a4c4931",
+      "public_projection_sha256": "6005e9b047857a79317d53d9e8cc90caf33f40adfc0fa7dcce26fc33e71502da",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "new-frozen-02.log",
+      "original_bytes_sha256": "ba13edd66826e55873f5e3f44d0bbdb0b032337e71249d8ff24bb861b097fc42",
+      "public_projection_sha256": "3ff4248c8cd1004d8af17c0229fedd073d9041491bcd4568a909604398faa227",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "new-frozen.log",
+      "original_bytes_sha256": "c7f5052fece70ea4edec17ca0950b23123f89c9b6b62c8ab6517bdd32038cbf3",
+      "public_projection_sha256": "84937733c492b68945b401c6fa73681730c5935d9c8d6af62f4cd8adab28e2a4",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "red.log",
+      "original_bytes_sha256": "2b333b2711bf3c7ec9fdd6341e2bb2640a0728d64f986d4f547fa6a932513e5c",
+      "public_projection_sha256": "5bcbff7d795bedfff4ccd901cfe187c2e0fafab86cc7698a1dc919069c6de67c",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "red.xml",
+      "original_bytes_sha256": "88e12b916abfae5d17f9a48e8f63536450ba0504a41a892bdc0d4fa962147c4c",
+      "public_projection_sha256": "02c58ffa7b5c27dfeed0a118d07b3b005f57ce5e22bda69dbe27a124959d1a68",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "related.log",
+      "original_bytes_sha256": "6036981afe2ae08b8a28fd1ac4a7f9617ced22cf830c80230d0846ecb437982b",
+      "public_projection_sha256": "79c2b85a4cb83435593cca45610db337c2977c5c655457529d397a7dffc04e2b",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "ci-encoding.log",
+      "original_bytes_sha256": "ea05b923194c00f7d830d14cfd449bbf72a85d2cfb6a926201b53a13337b60cb",
+      "public_projection_sha256": "243b17594a1720d3a940f7380ba450cba493604d73b5d27aaf92ab58a5396b85",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "ci-final.log",
+      "original_bytes_sha256": "966c847aaea4262c26a43b2bf8be225309bc6ba0e4c692be2bc83059be0daf9b",
+      "public_projection_sha256": "02bf4236edb77674ac5674d72b081cf6bcaccb846ee4ccaf5206adce98b9e3c3",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "current-encoding.log",
+      "original_bytes_sha256": "f02eaa32e6f8a94fc0d56c5d268aaaeb74310c7a97c6ea0d39131f66b75857ab",
+      "public_projection_sha256": "f4b1b506cfef5d4121299ce804faa21589e86e065010493673d199983cc11f15",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    },
+    {
+      "artifact": "current.log",
+      "original_bytes_sha256": "9aa463ed518de4f17f8ff46552b2380030d8b1ca15ee332afbd12b3a95414f08",
+      "public_projection_sha256": "a554cfdb31e1b32f07ea9876bb710e4cb261eae4fca703cdc0b26879408453ed",
+      "transformation": "仅仓库绝对环境前缀改为相对路径；结果与失败语义保持"
+    }
+  ],
+  "raw_byte_archives_are_not_claimed_as_publicly_identical": true
+}

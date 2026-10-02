@@ -1,0 +1,68 @@
+.....................................................F.................. [ 20%]
+........................................................................ [ 41%]
+........................................................................ [ 62%]
+.......................................................................F [ 83%]
+..........................................................               [100%]
+=================================== FAILURES ===================================
+________ test_every_new_column_is_required[git_prefix_anchor-singleton] ________
+
+database = <sqlite3.Connection object at 0x10748e2f0>
+table = 'git_prefix_anchor', column = 'singleton'
+
+    @pytest.mark.parametrize(("table", "column"), [(t, c) for t, row in _ROWS.items() for c in row])
+    def test_every_new_column_is_required(database: sqlite3.Connection, table: str, column: str) -> None:
+        _parents(database, table)
+>       with pytest.raises(sqlite3.IntegrityError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'sqlite3.IntegrityError'>
+
+tests/delivery/test_git_store_schema_v2.py:206: Failed
+_ test_real_foreign_keys_reject_missing_or_mixed_redundant_identity[git_record_publications-changes9] _
+
+database = <sqlite3.Connection object at 0x10748da80>
+table = 'git_record_publications'
+changes = {'route_id': '13a97483-485d-42f9-988e-36de80f798fe'}
+
+    @pytest.mark.parametrize(("table", "changes"), [(_EVENT, {"route_id": _UIDS[19]}), (_BRIDGE, {"route_id": _UIDS[19]}), (_INVENTORY, {"delivery_id": _UIDS[19]}), (_INVENTORY, {"route_id": _UIDS[19]}), (_INVENTORY_EVENT, {"inventory_id": _UIDS[19]}), *[(_PUBLICATION, {c: _UIDS[19]}) for c in ("delivery_id", "thread_id", "turn_id", "call_id", "route_id")]])
+    def test_real_foreign_keys_reject_missing_or_mixed_redundant_identity(database: sqlite3.Connection, table: str, changes: dict[str, Any]) -> None:
+        _parents(database, table)
+        with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+>           _insert(database, table, **changes)
+
+tests/delivery/test_git_store_schema_v2.py:260: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+db = <sqlite3.Connection object at 0x10748da80>
+table = 'git_record_publications'
+changes = {'route_id': '13a97483-485d-42f9-988e-36de80f798fe'}
+row = {'body_bytes': 2, 'body_sha256': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'call_id': '38739d1b-1fc9-48e1-95c1-22416330635a', 'delivery_id': '23da2817-de1d-41b0-8f61-2e06343470ed', ...}
+
+    def _insert(db: sqlite3.Connection, table: str, **changes: Any) -> None:
+        row = {**_ROWS[table], **changes}
+>       db.execute(f"INSERT INTO {table} ({','.join(row)}) VALUES ({','.join('?' for _ in row)})",
+                   tuple(row.values()))
+E       sqlite3.IntegrityError: CHECK constraint failed: record_kind!='product_link' OR record_id=route_id
+
+tests/delivery/test_git_store_schema_v2.py:78: IntegrityError
+
+During handling of the above exception, another exception occurred:
+
+database = <sqlite3.Connection object at 0x10748da80>
+table = 'git_record_publications'
+changes = {'route_id': '13a97483-485d-42f9-988e-36de80f798fe'}
+
+    @pytest.mark.parametrize(("table", "changes"), [(_EVENT, {"route_id": _UIDS[19]}), (_BRIDGE, {"route_id": _UIDS[19]}), (_INVENTORY, {"delivery_id": _UIDS[19]}), (_INVENTORY, {"route_id": _UIDS[19]}), (_INVENTORY_EVENT, {"inventory_id": _UIDS[19]}), *[(_PUBLICATION, {c: _UIDS[19]}) for c in ("delivery_id", "thread_id", "turn_id", "call_id", "route_id")]])
+    def test_real_foreign_keys_reject_missing_or_mixed_redundant_identity(database: sqlite3.Connection, table: str, changes: dict[str, Any]) -> None:
+        _parents(database, table)
+>       with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'FOREIGN KEY'
+E        Input: "CHECK constraint failed: record_kind!='product_link' OR record_id=route_id"
+
+tests/delivery/test_git_store_schema_v2.py:259: AssertionError
+- generated xml file: docs/validation/git-store-v2-schema-2026-10-02-v1/green.xml -
+=========================== short test summary info ============================
+FAILED tests/delivery/test_git_store_schema_v2.py::test_every_new_column_is_required[git_prefix_anchor-singleton]
+FAILED tests/delivery/test_git_store_schema_v2.py::test_real_foreign_keys_reject_missing_or_mixed_redundant_identity[git_record_publications-changes9]
+2 failed, 344 passed in 1.02s

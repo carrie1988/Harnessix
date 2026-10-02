@@ -1,0 +1,7 @@
+{
+  "files_sha256": {
+    "src/harnessix/delivery/git_store_schema_v2.py": "15d5bae6132ba67bcef4a29568319b833028578fe2da74930805af950d2145bb",
+    "tests/delivery/test_git_store_schema_v2.py": "35d19799b4d3bd013189b5777881f791a491608b7f4e218aeffab3a63a678f31"
+  },
+  "phase": "361项新增GREEN冻结；后继原回归和文档独立完成"
+}

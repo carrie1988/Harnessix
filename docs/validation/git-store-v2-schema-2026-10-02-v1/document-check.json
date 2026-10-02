@@ -1,0 +1,20 @@
+{
+  "schema_version": "harnessix.git-store-v2.document-check/v1",
+  "scope": [
+    "docs/changes/m09-r4-git-store-v2-schema.md",
+    "docs/validation/git-store-v2-schema-2026-10-02-v1/README.md"
+  ],
+  "completed": true,
+  "official_reader_and_validators_used": true,
+  "metadata_sections_links_mermaid_findings": [],
+  "yaml_status_current": true,
+  "change_design_required_sections": 12,
+  "validation_evidence_required_metadata_present": true,
+  "inline_mmd_byte_content_matching": 4,
+  "public_personal_environment_absolute_path_count": 0,
+  "all_public_json_valid": true,
+  "source_test_hashes_unchanged": true,
+  "git_revision_resolution_check": false,
+  "repository_wide_documentation_gate": false,
+  "source_module_or_roadmap_edits": false
+}

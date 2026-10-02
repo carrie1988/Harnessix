@@ -1,0 +1,13 @@
+flowchart TB
+    A["原六表 DDL；旧模块原字节保持"] --> C["固定顺序十三条 DDL；单行空白规范化 + 分号/LF"]
+    B["新增七表固定声明；STRICT / PK / UNIQUE / FK / CHECK"] --> C
+    C --> H["ASCII SHA-256；仅结构 checksum 常量"]
+    C --> E["期望结构目录；13 表 + 23 内部 autoindex"]
+    M["main.sqlite_schema；temp 对象目录"] --> Q["受限结构观察；不执行元数据 VIEW"]
+    E --> Q
+    Q -->|"精确匹配才继续"| U["数据库 UTF-8
+保证 CAST 是 UTF-8 字节"]
+    U --> R["真实 metadata 表；schema_version = 2"]
+    R --> V["只读结构核验通过"]
+    H -.-> N["不证明认证 / 业务覆盖；不写 metadata / catalog"]
+    V --> N

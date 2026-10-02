@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.182" timestamp="2026-10-02T10:37:04.858237+08:00" hostname="MacBook-Pro.local"><testcase classname="tests.delivery.test_git_store_schema_v2" name="test_metadata_view_is_rejected_before_any_observation[verify_git_store_v2_schema]" time="0.001"><failure message="assert [1] == []&#10;  &#10;  Left contains one more item: 1&#10;  Use -v to get more diff">operation = &lt;function verify_git_store_v2_schema at 0x1068534c0&gt;
+
+    @pytest.mark.parametrize("operation", [verify_git_store_v2_schema, _create_git_store_v2_tables])
+    def test_metadata_view_is_rejected_before_any_observation(operation: Any) -&gt; None:
+        with closing(sqlite3.connect(":memory:", isolation_level=None)) as db:
+            _v1(db)
+            calls: list[int] = []
+            db.create_function("parent_touch_metadata", 0, lambda: calls.append(1) or "2")
+            db.execute("ALTER TABLE git_delivery_metadata RENAME TO hidden_metadata")
+            db.execute(
+                "CREATE VIEW git_delivery_metadata AS SELECT 'schema_version' AS key, "
+                "parent_touch_metadata() AS value"
+            )
+            db.execute("BEGIN")
+            with pytest.raises(KernelError) as caught:
+                operation(db)
+            assert caught.value.code == "git_delivery_store_corrupt"
+&gt;           assert calls == []
+E           assert [1] == []
+E             
+E             Left contains one more item: 1
+E             Use -v to get more diff
+
+tests/delivery/test_git_store_schema_v2.py:599: AssertionError</failure></testcase><testcase classname="tests.delivery.test_git_store_schema_v2" name="test_metadata_view_is_rejected_before_any_observation[_create_git_store_v2_tables]" time="0.001"><failure message="assert [1] == []&#10;  &#10;  Left contains one more item: 1&#10;  Use -v to get more diff">operation = &lt;function _create_git_store_v2_tables at 0x106853420&gt;
+
+    @pytest.mark.parametrize("operation", [verify_git_store_v2_schema, _create_git_store_v2_tables])
+    def test_metadata_view_is_rejected_before_any_observation(operation: Any) -&gt; None:
+        with closing(sqlite3.connect(":memory:", isolation_level=None)) as db:
+            _v1(db)
+            calls: list[int] = []
+            db.create_function("parent_touch_metadata", 0, lambda: calls.append(1) or "2")
+            db.execute("ALTER TABLE git_delivery_metadata RENAME TO hidden_metadata")
+            db.execute(
+                "CREATE VIEW git_delivery_metadata AS SELECT 'schema_version' AS key, "
+                "parent_touch_metadata() AS value"
+            )
+            db.execute("BEGIN")
+            with pytest.raises(KernelError) as caught:
+                operation(db)
+            assert caught.value.code == "git_delivery_store_corrupt"
+&gt;           assert calls == []
+E           assert [1] == []
+E             
+E             Left contains one more item: 1
+E             Use -v to get more diff
+
+tests/delivery/test_git_store_schema_v2.py:599: AssertionError</failure></testcase></testsuite></testsuites>

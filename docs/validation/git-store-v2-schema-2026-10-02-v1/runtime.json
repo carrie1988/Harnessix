@@ -1,0 +1,14 @@
+{
+  "python_version": "3.12.7",
+  "sqlite_version": "3.45.3",
+  "imports": {
+    "harnessix.delivery.git_store_schema_v2": "src/harnessix/delivery/git_store_schema_v2.py",
+    "harnessix.delivery.git_store_schema": "src/harnessix/delivery/git_store_schema.py",
+    "harnessix.delivery.git_store": "src/harnessix/delivery/git_store.py"
+  },
+  "imports_from_owned_source": true,
+  "source_tree_baseline_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "installed_wheel_verified": false,
+  "native_windows_verified": false,
+  "native_linux_verified": false
+}

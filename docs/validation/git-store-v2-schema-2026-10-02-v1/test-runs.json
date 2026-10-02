@@ -1,0 +1,159 @@
+{
+  "schema_version": "harnessix.git-store-v2.test-runs/v1",
+  "runs": [
+    {
+      "xml": "ci-encoding.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "abc696c57c72b696ac3afd8aac4ffbc3443d30f7c42231618e867cde1d42fefb"
+    },
+    {
+      "xml": "ci-final.xml",
+      "tests": 460,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d10b0f93d897873f1fd627cb784ca7d52e1698ec59d3613605da6181e850c7df"
+    },
+    {
+      "xml": "current-encoding.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0451cd7b91ed8a7fa774ffed539178aa02400cff17abcd827abc20894eec012f",
+      "formal_test_sha256": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c"
+    },
+    {
+      "xml": "current.xml",
+      "tests": 460,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "3ab2f86865b714263491ae7e089789b7bbc610779790816ed4f5826e064cc4c2",
+      "formal_test_sha256": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c"
+    },
+    {
+      "xml": "encoding-final.xml",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "474d41c464bebd10bf1f036e66e73fc3d090a0c5aa3ba0b5d6c578327ae179ea"
+    },
+    {
+      "xml": "encoding-red.xml",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a170213da8d4b07aad8857fa832e6203549543128486ecfeaa844cddf2532493"
+    },
+    {
+      "xml": "final-all-02.xml",
+      "tests": 460,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ee1fd1511b3433dd55cd31a6c24661ee9f75c478863a8f4d6b47d6e0acb8fc48"
+    },
+    {
+      "xml": "final-all.xml",
+      "tests": 460,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c4e5a80438adb6b56d83b7b91bdbb14fc843e29ecb00ae487208f2019fac56bc"
+    },
+    {
+      "xml": "final-new.xml",
+      "tests": 359,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d6ea3b30cb70ad82cf17061493fcf76a9abbe4e1faab68493c533553d93ddd6f"
+    },
+    {
+      "xml": "final-related.xml",
+      "tests": 456,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6f5a42e3305d66ba17464549f4ea60d2d7d6d950211187706cbcf3de582aa12c"
+    },
+    {
+      "xml": "green-final.xml",
+      "tests": 361,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2c028a9000cd67ad779565aefd669ca475e0a90d66f8c1da315ec25d83ab9382"
+    },
+    {
+      "xml": "green.xml",
+      "tests": 360,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "81295f5b6325bc68b493919984d68e4b5561720d9478d1afb8f7dc3a9ee71c38"
+    },
+    {
+      "xml": "implementation-01.xml",
+      "tests": 346,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "67377c8b00c6c3574f0a1242d0821c6d201f9f5d79c7b52825610a27f7ba71c7"
+    },
+    {
+      "xml": "metadata-order-red.xml",
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d3440ade399be89351283063ded937c7f4a71bb85f38dc136062208ef95ac123"
+    },
+    {
+      "xml": "new-frozen-02.xml",
+      "tests": 361,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d511d94c2c3f23360025d3b17f0685b3e1df6408666db6db92e73e09e3e0ff44"
+    },
+    {
+      "xml": "new-frozen.xml",
+      "tests": 361,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "780c53af744e95fb16f0f4151874cadb8672b8e8cd8a06b72b929fbbf362e2d6"
+    },
+    {
+      "xml": "red.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 1,
+      "skipped": 0,
+      "sha256": "02c58ffa7b5c27dfeed0a118d07b3b005f57ce5e22bda69dbe27a124959d1a68"
+    },
+    {
+      "xml": "related.xml",
+      "tests": 458,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "306f80ba3d07baec1a5ee887d14acbcbde1466c3b5f7610d4cefa2838225bb30"
+    }
+  ],
+  "authoritative_final_combination": "current.xml",
+  "final_formal_encoding_subset": "current-encoding.xml",
+  "formal_main_collected": 363,
+  "default_testpaths": [
+    "tests"
+  ],
+  "historical_docs_diagnostic": "encoding-final.xml",
+  "intermediate_runs_not_additive": true
+}

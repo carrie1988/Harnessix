@@ -1,0 +1,42 @@
+{
+  "schema_version": "harnessix.git-store-v2.integration-review/v1",
+  "scope": "GitDB v2精确结构合同，不是完整Git产品交付",
+  "requirements": {
+    "new_13_table_schema": true,
+    "existing_transaction_only_no_commit": true,
+    "structure_before_metadata": true,
+    "utf8_actual_bytes": true,
+    "utf16_four_formal_regressions": true,
+    "v1_default_and_payload_unchanged": true
+  },
+  "verification": {
+    "source_related_passed": 460,
+    "full_production_mypy_files": 435,
+    "independent_repository_passed": 460,
+    "independent_private_negatives_passed": 9,
+    "unique_new_wheel_dual_python_passed_each": 460,
+    "parent_package_members_all_equal": 476,
+    "documentation_findings": 0,
+    "readability_passed": true,
+    "secret_scan_inputs": 4375,
+    "secret_matches": 0
+  },
+  "retained_failures": [
+    "原缺API collection",
+    "metadata VIEW提前求值",
+    "UTF-16字节边界",
+    "独立观察器autoindex trace假阳性",
+    "七个原pytest日志/XML空白diff-check"
+  ],
+  "raw_proof_whitespace": {
+    "exact_evidence_files": 7,
+    "all_other_staged_files_diff_check_passed": true,
+    "global_policy_modified": false
+  },
+  "remaining_business_work": [
+    "认证Writer/Loader及全部legacy迁移",
+    "完整Git交付与Backup v2",
+    "Windows消费者/R3真实质量/真实Beta/同候选发布门禁"
+  ],
+  "commercial_release_complete": false
+}

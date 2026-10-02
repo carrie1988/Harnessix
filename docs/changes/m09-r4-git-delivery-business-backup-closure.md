@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 8
-code_revision: f887aae8bf54789fa2424f7cbc62bd335a1ccd47
+version: 9
+code_revision: dfba34e707ed845f3e9d844461e124015c22dca7
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -29,7 +29,7 @@ supersedes: []
 
 ## 1. 需求背景、状态与交付定义
 
-**实施状态：业务闭包待实现，内部 IO、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。产品 Git Action、持久关联、认证前缀、业务快照、认证对象目录闭包及恢复重绑均未由本文交付；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
+**实施状态：业务闭包待实现，内部 IO、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。原五类Git记录和独立尾锚认证端口已实现，GitDB v2精确结构合同亦已落地；产品 Git Action、持久关联、完整认证前缀持久化、业务快照、认证对象目录闭包及恢复重绑均未完成；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
 
 当前默认产品能完成 Patch 和显式 Rollback，能从认证会话提取持续多 Patch 的完整来源投影，并观察 Git 基准；尚未装配 `GitDeliveryRuntime`／`SQLiteGitDeliveryStore` 形成默认产品 Commit／Checkpoint 闭环。直接把用户已修改的工作区交给要求干净来源的宿主 Runtime，会产生真实的生命周期和身份冲突。
 
@@ -908,3 +908,12 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 完整领域算法的异步接线、双工作树、正式 Checkpoint／Commit、全认证前缀、
 GitDB／Backup v2 和新根重绑仍未完成。只读内容验真不能代替第13章步骤2的完整只读业务验真，
 也不能提前开放默认 Git 写 Tool；业务8MiB及全部树材料范围不得缩减。
+
+### GitDB v2精确结构实施边界
+
+[结构详设](m09-r4-git-store-v2-schema.md)及
+[集成验证](../validation/git-store-v2-integration-2026-10-02-v1/README.md)落实13表唯一DDL、
+组合引用、STRICT与UTF-8字节合同；helper只在调用者已有事务执行，不修改metadata或自行提交。
+正式460项及独立私有9项通过，原v1入口和旧历史保持不变。
+当前完整catalog、同事务Writer/Loader、Genesis/legacy全集、业务备份和新Root授权仍属本设计待实现范围。
+不能以结构核验成功推导业务来源MAC、原Approval、Owner或执行权，也不能开放默认Commit/Checkpoint。

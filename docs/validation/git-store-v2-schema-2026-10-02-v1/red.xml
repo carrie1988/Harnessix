@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.120" timestamp="2026-10-02T09:55:37.990847+08:00" hostname="MacBook-Pro.local"><testcase classname="" name="tests.delivery.test_git_store_schema_v2" time="0.000"><error message="collection failure">ImportError while importing test module 'tests/delivery/test_git_store_schema_v2.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/delivery/test_git_store_schema_v2.py:11: in &lt;module&gt;
+    from harnessix.delivery.git_store_schema_v2 import verify_git_store_v2_schema
+E   ModuleNotFoundError: No module named 'harnessix.delivery.git_store_schema_v2'</error></testcase></testsuite></testsuites>

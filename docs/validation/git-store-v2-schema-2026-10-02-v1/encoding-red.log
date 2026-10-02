@@ -1,0 +1,45 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+______ test_non_utf8_structure_cannot_weaken_payload_byte_bound[UTF-16le] ______
+
+encoding = 'UTF-16le'
+
+    @pytest.mark.parametrize("encoding", ["UTF-16le", "UTF-16be"])
+    def test_non_utf8_structure_cannot_weaken_payload_byte_bound(encoding: str) -> None:
+        with closing(sqlite3.connect(":memory:", isolation_level=None)) as db:
+            db.execute(f"PRAGMA encoding='{encoding}'")
+            db.executescript(_ORIGINAL_V1_DDL)
+            db.execute("INSERT INTO git_delivery_metadata VALUES ('schema_version','1')")
+            text = "汉" * (64 * 1024 * 1024 // 3 + 1)
+            assert len(text.encode('utf-8')) > 64 * 1024 * 1024
+            assert db.execute("SELECT length(CAST(? AS BLOB))", (text,)).fetchone()[0] < 64 * 1024 * 1024
+            db.execute("BEGIN")
+>           with pytest.raises(KernelError) as caught:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+
+docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py:22: Failed
+______ test_non_utf8_structure_cannot_weaken_payload_byte_bound[UTF-16be] ______
+
+encoding = 'UTF-16be'
+
+    @pytest.mark.parametrize("encoding", ["UTF-16le", "UTF-16be"])
+    def test_non_utf8_structure_cannot_weaken_payload_byte_bound(encoding: str) -> None:
+        with closing(sqlite3.connect(":memory:", isolation_level=None)) as db:
+            db.execute(f"PRAGMA encoding='{encoding}'")
+            db.executescript(_ORIGINAL_V1_DDL)
+            db.execute("INSERT INTO git_delivery_metadata VALUES ('schema_version','1')")
+            text = "汉" * (64 * 1024 * 1024 // 3 + 1)
+            assert len(text.encode('utf-8')) > 64 * 1024 * 1024
+            assert db.execute("SELECT length(CAST(? AS BLOB))", (text,)).fetchone()[0] < 64 * 1024 * 1024
+            db.execute("BEGIN")
+>           with pytest.raises(KernelError) as caught:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'harnessix.agent.errors.KernelError'>
+
+docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py:22: Failed
+- generated xml file: docs/validation/git-store-v2-schema-2026-10-02-v1/encoding-red.xml -
+=========================== short test summary info ============================
+FAILED docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py::test_non_utf8_structure_cannot_weaken_payload_byte_bound[UTF-16le]
+FAILED docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py::test_non_utf8_structure_cannot_weaken_payload_byte_bound[UTF-16be]
+2 failed in 0.37s

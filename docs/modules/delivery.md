@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 31
-code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
+version: 32
+code_revision: dfba34e707ed845f3e9d844461e124015c22dca7
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_store_schema_v2.py
   - tests/delivery/test_git_material_trace2_contracts.py
   - tests/product_config/test_git_material_trace2_binding.py
   - tests/product_config/test_git_trace2_success_observation.py
@@ -79,6 +80,15 @@ Git账本新增显式`read_only=True`，复用既有SQLite只读端口，读取�
 [`Git账本只读总体与详细设计`](../changes/m09-r4-git-store-readonly.md)。
 该模式不等于来源认证或全事件前缀核验，默认产品仍没有Commit/Checkpoint工具，
 Git对象材料和完整备份恢复闭合尚未接线，不将领域接口当作产品交付完成。
+
+GitDB v2的[精确结构合同](../changes/m09-r4-git-store-v2-schema.md)已实现于
+[`git_store_schema_v2.py`](../../src/harnessix/delivery/git_store_schema_v2.py)：
+原六表加七表、唯一13表DDL、23个PK/UNIQUE内部索引，拒绝VIEW/TRIGGER/额外索引与非UTF-8库。
+只读核验先结构后版本；创建helper仅在调用者已有同连接事务逐条DDL，不修改metadata或自行提交。
+正式363项新测试含UTF-16四项回归，连同原Git/readonly97项共460通过。
+[原验证包](../validation/git-store-v2-schema-2026-10-02-v1/README.md)保持冻结，
+[集成复核](../validation/git-store-v2-integration-2026-10-02-v1/README.md)记录后继实际候选证据。
+默认Store仍使用v1并拒绝v2；结构合同不是自动迁移、认证Writer/Loader、完整Git交付或备份恢复。
 
 Git 完整对象材料新增原 CAS 薄适配：
 [`git_material_cas.py`](../../src/harnessix/delivery/git_material_cas.py) 的

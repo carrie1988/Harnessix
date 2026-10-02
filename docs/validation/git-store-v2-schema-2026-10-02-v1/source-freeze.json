@@ -1,0 +1,19 @@
+{
+  "schema_version": "harnessix.git-store-v2.source-freeze/v1",
+  "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "owned_file_sha256": {
+    "src/harnessix/delivery/git_store_schema_v2.py": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe",
+    "tests/delivery/test_git_store_schema_v2.py": "56726dcb990e41bf8d2e62070e95ca6cbce41cd78b37c8877a23839d35575c5c",
+    "docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py": "b3844608647f57b67a38607d8a63232d709fb8d7ffb8d226872d2e7e3102c279"
+  },
+  "line_counts": {
+    "src/harnessix/delivery/git_store_schema_v2.py": 239,
+    "tests/delivery/test_git_store_schema_v2.py": 600,
+    "docs/validation/git-store-v2-schema-2026-10-02-v1/diagnostics/test_utf8_encoding.py": 36
+  },
+  "ddl_checksum": "85f25eab50c7e3ed2a6575e2b177faf38a312915e527b19b5cac4aa6990f7cbf",
+  "metadata_checksum_written": false,
+  "formal_main_cases": 363,
+  "utf16_regression_in_default_testpaths": true,
+  "historical_diagnostic_is_not_current_ci_regression": true
+}

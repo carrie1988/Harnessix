@@ -1,0 +1,96 @@
+{
+  "schema_version": "harnessix.git-store-v2.visual-verification/v1",
+  "renderer": "现有Mermaid CLI与已安装Chrome；未安装依赖",
+  "render_options": {
+    "background": "white",
+    "scale": 2,
+    "viewport_width": 1100,
+    "htmlLabels": false,
+    "fontFamily": "PingFang SC"
+  },
+  "images": [
+    {
+      "name": "architecture",
+      "input": "architecture.mmd",
+      "input_sha256": "22597b0282d5ee01976740822f2692c81e7d51d1beb3bb1da8dc5354f7fd45f1",
+      "image": "architecture.png",
+      "image_sha256": "1caee70d958e30d1e2752a17190c5337a215288df22646da253fd133e5844f1a",
+      "width": 1438,
+      "height": 1482,
+      "render_exit_code": 0,
+      "render_log": "render-architecture-02.log",
+      "actual_view_image_completed": true,
+      "visual_verdict": "通过",
+      "criteria": {
+        "text_not_clipped": true,
+        "arrows_and_branch_labels_visible": true,
+        "chinese_legible": true,
+        "no_literal_newline_marker": true
+      },
+      "first_attempt": "render-attempts/01/architecture.png"
+    },
+    {
+      "name": "flow",
+      "input": "flow.mmd",
+      "input_sha256": "e2132c9f25156ac93d4922515419ea98c101d5778010f648e566b0dd134cd755",
+      "image": "flow.png",
+      "image_sha256": "b6651e945434fe90ce215b9ccc61639c7f5f575e2f94cc09617c5b61c2457f46",
+      "width": 2078,
+      "height": 4352,
+      "render_exit_code": 0,
+      "render_log": "render-flow-02.log",
+      "actual_view_image_completed": true,
+      "visual_verdict": "通过",
+      "criteria": {
+        "text_not_clipped": true,
+        "arrows_and_branch_labels_visible": true,
+        "chinese_legible": true,
+        "no_literal_newline_marker": true
+      },
+      "first_attempt": "render-attempts/01/flow.png"
+    },
+    {
+      "name": "sequence",
+      "input": "sequence.mmd",
+      "input_sha256": "dcbd077082dd68ec863d84a1cf957cdf58a0e4ecccb78ca45b9b9b98be13e4d3",
+      "image": "sequence.png",
+      "image_sha256": "8d6e828f9914795fe3c2b8694b99790aecdf9c5cee632926adf94ed116e6f17e",
+      "width": 1576,
+      "height": 2368,
+      "render_exit_code": 0,
+      "render_log": "render-sequence-02.log",
+      "actual_view_image_completed": true,
+      "visual_verdict": "通过",
+      "criteria": {
+        "text_not_clipped": true,
+        "arrows_and_branch_labels_visible": true,
+        "chinese_legible": true,
+        "no_literal_newline_marker": true
+      },
+      "first_attempt": "render-attempts/01/sequence.png"
+    },
+    {
+      "name": "data-flow",
+      "input": "data-flow.mmd",
+      "input_sha256": "ac3317093d645b6cbd752cb514a6fd28e142c99a199c8cb24f2581f82a284120",
+      "image": "data-flow.png",
+      "image_sha256": "89a761663ee96790b5b3fab4fd4f9087e7a74d967090930aee35559c4fef2a50",
+      "width": 1612,
+      "height": 2080,
+      "render_exit_code": 0,
+      "render_log": "render-data-flow-02.log",
+      "actual_view_image_completed": true,
+      "visual_verdict": "通过",
+      "criteria": {
+        "text_not_clipped": true,
+        "arrows_and_branch_labels_visible": true,
+        "chinese_legible": true,
+        "no_literal_newline_marker": true
+      },
+      "first_attempt": "render-attempts/01/data-flow.png"
+    }
+  ],
+  "actual_images_viewed": 4,
+  "first_attempt_flow_labels_revised": true,
+  "first_attempts_retained": true
+}

@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant C as 事务调用方
+    participant S as v2结构模块
+    participant D as 同连接SQLite
+    C->>D: BEGIN（调用方）
+    C->>S: 内部创建helper
+    S->>D: 读取temp / main结构目录
+    D-->>S: 完整结构声明
+    alt 结构变形或存在额外对象
+        S-->>C: corrupt；不读取metadata
+    else 精确v1或v2结构
+        S->>D: 验证数据库UTF-8编码
+        Note over S,D: 非UTF-8拒绝，不转换历史
+        S->>D: 读取真实metadata版本
+        alt 版本1且精确六表
+            loop 七条固定DDL
+                S->>D: execute单条CREATE TABLE
+            end
+            S->>D: 复核十三表结构
+        else 完整十三表、版本1或2
+            Note over S,D: 幂等，不再建表
+        end
+        S-->>C: 返回；事务仍属于调用方
+    end
+    Note over C,D: 失败由调用方ROLLBACK
+    Note over C,D: 业务迁移与COMMIT不由本模块执行

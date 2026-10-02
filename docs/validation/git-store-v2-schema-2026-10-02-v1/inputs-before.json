@@ -1,0 +1,20 @@
+{
+  "code_revision": "7bbce1033925eaf758e295b3c76fc65dee446f30",
+  "source_inputs_sha256": {
+    "src/harnessix/delivery/git_store_schema.py": "72cf872d4b8c929b95ad03b7e116b7e576580ed0a4f67d4670330fdb8b8d56f6",
+    "src/harnessix/delivery/git_store.py": "fca038298b8528bc6cf858775ad63e493e16da02223fa7c88eb9052a72a3d0ec",
+    "src/harnessix/delivery/git.py": "13f65dac2fe24d49e3401d1177c58e94457a1600c0ba1291850d2eaadb754f06",
+    "tests/delivery/test_git_store_readonly.py": "b64c4c545f004ad745ddd39e73bfef7526df60017a6367f29a0b34c6f279e56e",
+    "docs/changes/m09-r4-git-delivery-business-backup-closure.md": "5e932c6fbb3146cb89cfa4d433a23407d105cf9094ecdfd262c2ba6bf4912fb9",
+    "pyproject.toml": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+    "uv.lock": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd"
+  },
+  "restricted_field_spec_sha256": "227661f85be870c6a76f4e22989d07332311ba856e8942906acc215c7297dbd6",
+  "implementation_present": false,
+  "schema_field_decisions_pending": [
+    "product_link_phase_enum",
+    "composite_foreign_keys_targets",
+    "explicit_indexes_and_checksum_metadata_location"
+  ],
+  "scope": "v2结构合同；旧默认v1不修改；不证明认证、Owner、legacy全集、W1或商业验收"
+}
