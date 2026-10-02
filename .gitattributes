@@ -131,3 +131,7 @@ docs/validation/different-version-upgrade-2026-09-29-v1/raw/final/windows/**/* w
 # 固定Windows观察的原始JSON保持GitHub字节；CRLF不是证据内容改写。
 docs/validation/git-native-layout-refusal-2026-10-02-v1/result.json -text
 docs/validation/git-native-layout-refusal-2026-10-02-v1/result-sha256.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# 固定原生执行结果保留原始JSON和摘要回执字节。
+docs/validation/git-native-execution-incomplete-2026-10-02-v1/result.json -text
+docs/validation/git-native-execution-incomplete-2026-10-02-v1/result-sha256.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

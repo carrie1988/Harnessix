@@ -1,0 +1,13 @@
+{
+  "artifact_id": 11215628266,
+  "artifact_zip_size": 1041,
+  "artifact_zip_sha256": "33181f03deac6641f7e3bbc75ac3b207f0ec0e950337c0c9cd85467e11d4d247",
+  "api_digest_match": true,
+  "exact_two_files": true,
+  "result_sha256": "1441a4b82f846171a40b0afac4e6bbf2ee22652b7f689fcc7a8ce53a868f0442",
+  "receipt_matches_exact_result": true,
+  "revision": "23f12bbeb65df8b3fc0b1a94c66d9d8b45910abf",
+  "run_id": 36983172137,
+  "run_attempt": 1,
+  "json_exact_bytes_preserved": true
+}

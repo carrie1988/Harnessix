@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 153
-code_revision: 110185d9d2d24bb138f7ca0941dac5b32873f918
+version: 154
+code_revision: 23f12bbeb65df8b3fc0b1a94c66d9d8b45910abf
 owners:
   - core
 modules:
@@ -1592,3 +1592,15 @@ Artifact、API ZIP摘要和结果摘要。CDB/Python存在标志均为null，不
 下一步以包含修复字节的唯一固定提交执行一次原Windows观察workflow；
 原Run36977642845及其布局拒绝仍保留，实际Python选中映像和原Git128根因未验证。
 本适配不证明两项SDK成功，不关闭完整Git交付、消费者Windows、R3、Beta或商用R1～R6。
+
+### R1/R4：固定布局候选已进入原生执行但见证不完整
+
+固定23f12bb的Run36983172137/attempt1已终态FAIL；十六件源码输入、实际选中映像的
+原两对完整PE/PDB身份通过，现场CDB/Python存在，且已实际启动调试执行。
+有限结果为EXECUTION_INCOMPLETE，debugger_exit与pytest_exit均为1，无超时或日志超限；
+两次材料分支见证不完整，案例投影为空，原SDK验收仍为false。
+[实际执行资料](validation/git-native-execution-incomplete-2026-10-02-v1/README.md)
+保留精确两文件Artifact、API摘要、Run/Job及原始结果；旧两个FAIL均不覆盖或重跑。
+单一退出码不能确定Debugger故障、两个SDK的实际失败阶段或原Git128根因；根因继续UNKNOWN。
+后继先对已有观察器及帧投影作有限源码和离线复现，不以更多相同运行替代根因求证。
+完整Git产品/Backup v2、消费者Windows、R3、独立Beta和同候选R1～R6仍开放。

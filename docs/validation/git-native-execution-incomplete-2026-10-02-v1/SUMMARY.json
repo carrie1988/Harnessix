@@ -1,0 +1,23 @@
+{
+  "schema": "harnessix.native-execution-incomplete-result/v1",
+  "status": "ACTUAL_PREPARED_EXECUTION_INCOMPLETE_NOT_PRODUCT_ACCEPTANCE",
+  "revision": "23f12bbeb65df8b3fc0b1a94c66d9d8b45910abf",
+  "run_id": 36983172137,
+  "job_id": 110762128306,
+  "run_attempt": 1,
+  "source_input_count": 16,
+  "actual_selected_pairs_matched": true,
+  "execution_performed": true,
+  "cdb_presence": true,
+  "interpreter_presence": true,
+  "debugger_exit": 1,
+  "pytest_exit": 1,
+  "branch_witness_complete": false,
+  "valid_case_count": 0,
+  "actual_two_sdk_case_completion_proven": false,
+  "historical_git128_root_cause": "UNKNOWN",
+  "old_failures_retained": true,
+  "new_model_requests": 0,
+  "fee_ledger_changed": false,
+  "commercial_release": false
+}

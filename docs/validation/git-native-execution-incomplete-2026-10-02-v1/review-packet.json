@@ -1,0 +1,22 @@
+{
+  "schema": "harnessix.native-execution-review-packet/v1",
+  "decision": "NO_GO_INCOMPLETE_NATIVE_WITNESS",
+  "completed": [
+    "固定提交唯一原workflow",
+    "16件源输入与实际选中映像原两对完整材料验真",
+    "现场CDB和Python实际启动",
+    "Run/Job终态与精确Artifact下载校验"
+  ],
+  "not_proven": [
+    "原两个SDK案例完整执行和具体失败阶段",
+    "两次材料原生分支见证",
+    "原Git128唯一根因",
+    "Windows11消费者核心编码",
+    "完整Git产品及Backup v2",
+    "R3质量和R1至R6商业验收"
+  ],
+  "next_action": "先进行已有帧收集及投影的有限源码/离线因果复现；不重跑旧Run、不更换Git/PATH或扩大日志输出",
+  "model_requests": 0,
+  "changes_to_original_contract": false,
+  "changes_to_old_validation_packages": false
+}
