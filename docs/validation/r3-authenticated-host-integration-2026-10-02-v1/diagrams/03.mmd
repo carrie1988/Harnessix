@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant E as Trial 完成恢复
+    participant O as 原 Run Owner
+    participant K as 原 Key Reader
+    participant D as Session 正式 Reader
+    participant P as Provider Factory
+    E->>O: 持有根外锁，固定原 Root
+    O->>K: existing-only 读取
+    alt 原 Key 缺失
+        K-->>O: publication_key_unavailable
+    else 原 Key 可用但 MAC 缺失
+        O->>D: enroll=False 身份检查与同读完整事件 MAC
+        D-->>O: publication_history_unproven
+    end
+    O-->>E: 传播有限错误，清零材料并释放句柄
+    Note over E,P: Provider 调用次数为 0；不补签、不 create、不 fallback

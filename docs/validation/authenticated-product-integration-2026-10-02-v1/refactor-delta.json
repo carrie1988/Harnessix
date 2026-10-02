@@ -1,0 +1,27 @@
+{
+  "reason": "readability oversized file 609 > 600",
+  "moved_responsibility": "unique Thread identity and complete authenticated read to original TaskPackPublicationOwner",
+  "changed_inputs": [
+    {
+      "path": "src/harnessix/evals/task_pack_publication.py",
+      "before_sha256": "81f6df4ffbee6b9b9a30c2f73307428309b041eb88e191568b1f57e4fdee6bbb",
+      "sha256": "207584805720d71a5a610f6250f1330916ced31e9b7e2ab71fcf2101c173a297"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_trial.py",
+      "before_sha256": "7851ed245fd82fec0b06cbce0e0b437abc8fa1300015a660686c6e217c69988f",
+      "sha256": "6307e44c4db17412fe81ff6a429befd8add527977dd4f3c1b98341f246824aba"
+    },
+    {
+      "path": "tests/evals/test_task_pack_publication.py",
+      "before_sha256": "4abc8217fcbc7ee0cda956f0914a0a6ff0e548528e9fe8c57792846623bc761f",
+      "sha256": "867df133393f950d85a07aa1881428610a4bd5124ff73e661c4a6e00f62b56b7"
+    }
+  ],
+  "trial_lines_before": 609,
+  "trial_lines_after": 589,
+  "publication_lines_after": 264,
+  "new_positive_and_negative_cases": 3,
+  "thresholds_changed": false,
+  "old_semantic_assertions_removed": false
+}

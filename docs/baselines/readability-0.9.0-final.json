@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 435,
-    "physical_lines": 92607,
-    "logical_lines": 81830,
-    "documented_modules": 435,
-    "classes": 960,
-    "documented_classes": 435,
-    "functions": 3734,
-    "documented_functions": 832,
+    "source_files": 437,
+    "physical_lines": 93190,
+    "logical_lines": 82345,
+    "documented_modules": 437,
+    "classes": 966,
+    "documented_classes": 441,
+    "functions": 3758,
+    "documented_functions": 846,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 150
+    "package_dependency_edges": 151
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -1496,8 +1496,8 @@
       "path": "src/harnessix/session/sqlite.py",
       "qualname": "SQLiteSessionStore",
       "kind": "class",
-      "line": 178,
-      "lines": 399,
+      "line": 188,
+      "lines": 412,
       "documented": true
     },
     {
@@ -1706,6 +1706,7 @@
     "evals->patches",
     "evals->processes",
     "evals->product_config",
+    "evals->secrets",
     "evals->session",
     "evals->tools",
     "execution->agent",

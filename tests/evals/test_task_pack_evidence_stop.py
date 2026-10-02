@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import sqlite3
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -38,10 +40,10 @@ from harnessix.evals.report import (
 from harnessix.evals.run_state import write_eval_run_state
 from harnessix.evals.suite_execution import run_coding_eval_suite
 from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
+from harnessix.evals.task_pack_publication import open_task_pack_publication
 from harnessix.evals.task_pack_suite import build_task_pack_suite_config
 from harnessix.evals.task_pack_trial import TaskPackCodingEvalResult
 from harnessix.models.pricing import amount_units, format_amount
-from harnessix.session.sqlite import SQLiteSessionStore
 from tests.evals.test_campaign import campaign_environment, evidence
 from tests.evals.test_task_pack_execution import _case_and_campaign
 from tests.models.pricing_helpers import NOW, context, price
@@ -75,114 +77,120 @@ def _executor(loaded, *, fault=None):
     )
 
 
-async def _write_fixture_trial(loaded, runs_root, case_id, run_id, environment, *, complete=True):
+async def _write_fixture_trial(
+    loaded, runs_root, case_id, run_id, environment, *, complete=True, publication_scope=None
+):
     """仅在TempFS追加正式Session事件与失败评分证据，不运行模型或伪造通过结果。"""
     case = loaded.manifest.case(case_id)
     fixture = evidence(run_id, outcome="task" if complete else "provider", usage_complete=complete)
     attempt = fixture.turn.model_attempts[0]
     run_root = runs_root / str(run_id)
     run_root.mkdir(mode=0o700)
-    sessions = SQLiteSessionStore(run_root / "session.sqlite")
-    await sessions.initialize()
-    thread_id, turn_id, user_id = uuid4(), uuid4(), uuid4()
-    user = TextContent(kind="user_message", text=case.task.prompt)
-    payloads = [
-        TurnStarted(
-            request_id=f"coding-eval:{run_id}",
-            request_fingerprint="a" * 64,
-            budget=case.task.budget,
-        ),
-        ItemStarted(item_id=user_id, content=user),
-        ItemFinished(item_id=user_id, status=ItemStatus.COMPLETED, content=user),
-        TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
-        TurnStateChanged(status=TurnStatus.CALLING_MODEL),
-        ModelAttemptStarted(
-            attempt_id=attempt.attempt_id,
-            step=1,
-            index=1,
-            provider=attempt.provider,
-            requested_model=attempt.requested_model,
-        ),
-        ModelUsageObserved(
-            attempt_id=attempt.attempt_id,
-            usage=attempt.usage,
-            actual_model=attempt.actual_model,
-            response_id=attempt.response_id,
-        ),
-        ModelAttemptFinished(
-            attempt_id=attempt.attempt_id, outcome=attempt.status, error=attempt.error
-        ),
-    ]
-    if complete:
-        payloads.extend(
-            (
-                UsageRecorded(
-                    step=1,
-                    usage=Usage(
-                        input_tokens=attempt.usage.input_tokens,
-                        output_tokens=attempt.usage.output_tokens,
+    async with open_task_pack_publication(run_root, publication_scope) as owner:
+        sessions = owner.sessions
+        thread_id, turn_id, user_id = uuid4(), uuid4(), uuid4()
+        user = TextContent(kind="user_message", text=case.task.prompt)
+        payloads = [
+            TurnStarted(
+                request_id=f"coding-eval:{run_id}",
+                request_fingerprint="a" * 64,
+                budget=case.task.budget,
+            ),
+            ItemStarted(item_id=user_id, content=user),
+            ItemFinished(item_id=user_id, status=ItemStatus.COMPLETED, content=user),
+            TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
+            TurnStateChanged(status=TurnStatus.CALLING_MODEL),
+            ModelAttemptStarted(
+                attempt_id=attempt.attempt_id,
+                step=1,
+                index=1,
+                provider=attempt.provider,
+                requested_model=attempt.requested_model,
+            ),
+            ModelUsageObserved(
+                attempt_id=attempt.attempt_id,
+                usage=attempt.usage,
+                actual_model=attempt.actual_model,
+                response_id=attempt.response_id,
+            ),
+            ModelAttemptFinished(
+                attempt_id=attempt.attempt_id, outcome=attempt.status, error=attempt.error
+            ),
+        ]
+        if complete:
+            payloads.extend(
+                (
+                    UsageRecorded(
+                        step=1,
+                        usage=Usage(
+                            input_tokens=attempt.usage.input_tokens,
+                            output_tokens=attempt.usage.output_tokens,
+                        ),
                     ),
-                ),
-                TurnStateChanged(status=TurnStatus.FINALIZING),
-                TurnStateChanged(status=TurnStatus.COMPLETED),
+                    TurnStateChanged(status=TurnStatus.FINALIZING),
+                    TurnStateChanged(status=TurnStatus.COMPLETED),
+                )
             )
-        )
-    else:
-        error_id = uuid4()
-        error = ErrorContent(failure=fixture.turn.error)
-        payloads.extend(
-            (
-                ItemStarted(item_id=error_id, content=error),
-                ItemFinished(item_id=error_id, status=ItemStatus.COMPLETED, content=error),
-                TurnStateChanged(status=TurnStatus.FAILED, error=fixture.turn.error),
+        else:
+            error_id = uuid4()
+            error = ErrorContent(failure=fixture.turn.error)
+            payloads.extend(
+                (
+                    ItemStarted(item_id=error_id, content=error),
+                    ItemFinished(item_id=error_id, status=ItemStatus.COMPLETED, content=error),
+                    TurnStateChanged(status=TurnStatus.FAILED, error=fixture.turn.error),
+                )
             )
+        drafts = [
+            EventDraft(
+                payload=ThreadCreated(workspace=str(run_root / "workspace")), occurred_at=NOW
+            ),
+            *(
+                EventDraft(turn_id=turn_id, payload=payload, occurred_at=NOW)
+                for payload in payloads[:-1]
+            ),
+            EventDraft(
+                turn_id=turn_id, payload=payloads[-1], occurred_at=NOW + timedelta(seconds=1)
+            ),
+        ]
+        thread = await sessions.append(thread_id, drafts, expected_sequence=0)
+        turn = thread.turns[0]
+        report = grade_coding_eval(
+            case.task,
+            turn,
+            run_id=run_id,
+            environment=environment,
+            started_at=turn.created_at,
+            completed_at=turn.completed_at,
+            baseline_observations=(),
+            final_observations=(),
+            git=fixture.report.git.model_copy(
+                update={
+                    "baseline_revision": case.task.repository.source_revision,
+                    "baseline_tree_sha256": case.task.repository.baseline_tree_sha256,
+                    "head_revision": case.task.repository.source_revision,
+                    "changed_paths": (),
+                }
+            ),
         )
-    drafts = [
-        EventDraft(payload=ThreadCreated(workspace=str(run_root / "workspace")), occurred_at=NOW),
-        *(
-            EventDraft(turn_id=turn_id, payload=payload, occurred_at=NOW)
-            for payload in payloads[:-1]
-        ),
-        EventDraft(turn_id=turn_id, payload=payloads[-1], occurred_at=NOW + timedelta(seconds=1)),
-    ]
-    thread = await sessions.append(thread_id, drafts, expected_sequence=0)
-    turn = thread.turns[0]
-    report = grade_coding_eval(
-        case.task,
-        turn,
-        run_id=run_id,
-        environment=environment,
-        started_at=turn.created_at,
-        completed_at=turn.completed_at,
-        baseline_observations=(),
-        final_observations=(),
-        git=fixture.report.git.model_copy(
+        assert report.outcome != "passed"
+        state = fixture.state.model_copy(
             update={
+                "task_id": case.task.task_id,
+                "task_version": case.task.task_version,
+                "task_fingerprint": case.task.fingerprint,
                 "baseline_revision": case.task.repository.source_revision,
                 "baseline_tree_sha256": case.task.repository.baseline_tree_sha256,
-                "head_revision": case.task.repository.source_revision,
-                "changed_paths": (),
+                "thread_id": thread_id,
+                "turn_id": turn_id,
+                "baseline_observations": (),
+                "environment": environment,
+                "report_sha256": eval_report_sha256(report),
             }
-        ),
-    )
-    assert report.outcome != "passed"
-    state = fixture.state.model_copy(
-        update={
-            "task_id": case.task.task_id,
-            "task_version": case.task.task_version,
-            "task_fingerprint": case.task.fingerprint,
-            "baseline_revision": case.task.repository.source_revision,
-            "baseline_tree_sha256": case.task.repository.baseline_tree_sha256,
-            "thread_id": thread_id,
-            "turn_id": turn_id,
-            "baseline_observations": (),
-            "environment": environment,
-            "report_sha256": eval_report_sha256(report),
-        }
-    )
-    write_eval_report(run_root / "report.json", report)
-    write_eval_run_state(run_root / "run-state.json", state)
-    return TaskPackCodingEvalResult(state, report, turn, run_root / "workspace")
+        )
+        write_eval_report(run_root / "report.json", report)
+        write_eval_run_state(run_root / "run-state.json", state)
+        return TaskPackCodingEvalResult(state, report, turn, run_root / "workspace")
 
 
 def _trial_port(monkeypatch, *, completed_before_failure=0, error=None, complete_cost=True):
@@ -197,7 +205,13 @@ def _trial_port(monkeypatch, *, completed_before_failure=0, error=None, complete
         if len(calls) > completed_before_failure:
             raise failure
         return await _write_fixture_trial(
-            loaded, runs_root, case_id, run_id, environment, complete=complete_cost
+            loaded,
+            runs_root,
+            case_id,
+            run_id,
+            environment,
+            complete=complete_cost,
+            publication_scope=kwargs.get("publication_scope"),
         )
 
     monkeypatch.setattr(case_execution, "run_task_pack_coding_eval", scripted_trial)
@@ -242,11 +256,60 @@ async def test_case_evidence_stop_is_durable_without_trial_replay(
         (expected.case_id, run_id) for run_id in campaign.run_ids[: completed_trials + 1]
     ]
     snapshot = _json_snapshot(root)
+    # 仅将新合成夹具结算为静止主库，字节比较不承诺活跃 WAL/SHM 不变化。
+    for database in (root / "runs").glob("*/session.sqlite"):
+        connection = sqlite3.connect(database)
+        try:
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            assert connection.execute("PRAGMA journal_mode=DELETE").fetchone() == ("delete",)
+        finally:
+            connection.close()
+    prefix_sha = {
+        path: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in (root / "runs").rglob("*")
+        if path.is_file()
+    }
+    writes, providers, controls = [], [], []
+    original_write = case_execution.write_eval_campaign_execution_state
+    from harnessix.evals.task_pack_publication import TaskPackHistoryReadControl
+
+    original_begin = TaskPackHistoryReadControl.begin
+
+    def begin(cancel):
+        control = original_begin(cancel)
+        controls.append(control)
+        return control
+
+    def write(*args):
+        writes.append(args)
+        return original_write(*args)
+
+    def no_provider(*args):
+        providers.append(args)
+        pytest.fail("持久停止恢复不得创建 Provider")
+
+    monkeypatch.setattr(TaskPackHistoryReadControl, "begin", begin)
+    monkeypatch.setattr(case_execution, "write_eval_campaign_execution_state", write)
+    executor = TaskPackCaseExecutor(
+        loaded, Path("/missing/git"), Path("/missing/docker"), no_provider
+    )
     for cancelled in (False, True):
         token = CancelToken()
         if cancelled:
             token.cancel()
-        assert await _executor(loaded)(expected, campaign, root, token) == result
+        if cancelled and completed_trials:
+            # 非空完成前缀须沿原取消完整验真；不能绕过取消返回缓存停止结论。
+            with pytest.raises(TurnCancelled):
+                await executor(expected, campaign, root, token)
+        else:
+            assert await executor(expected, campaign, root, token) == result
+        assert controls[-1].cancel is token
+        assert providers == [] and writes == [] and len(calls) == completed_trials + 1
+        assert {
+            path: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in (root / "runs").rglob("*")
+            if path.is_file()
+        } == prefix_sha
         assert read_eval_campaign_execution_state(root / "campaign-state.json") == state
         assert _json_snapshot(root) == snapshot
     assert len(calls) == completed_trials + 1

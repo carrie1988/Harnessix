@@ -15,11 +15,13 @@ from uuid import UUID
 import aiosqlite
 from pydantic import ValidationError
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.lifecycle import validate_fork_snapshot
 from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
 from harnessix.agent.reducer import replay
 from harnessix.file_lock import acquire_exclusive_file_lock
+from harnessix.session import sqlite_history
 from harnessix.session.errors import storage_errors
 from harnessix.session.sqlite_append import append_in_transaction
 from harnessix.session.sqlite_publication import (
@@ -49,11 +51,17 @@ async def _settle_connection_task(task: asyncio.Task[object]) -> bool:
 
 
 @asynccontextmanager
-async def _session_connection(path: Path) -> AsyncIterator[aiosqlite.Connection]:
+async def _session_connection(
+    path: Path, *, read_only: bool = False
+) -> AsyncIterator[aiosqlite.Connection]:
     """连接建立和释放均完成后才退出，以便Windows可以立即清理状态目录。"""
 
     with storage_errors():
-        database = aiosqlite.connect(path)
+        database = (
+            aiosqlite.connect(path.as_uri() + "?mode=ro", uri=True)
+            if read_only
+            else aiosqlite.connect(path)
+        )
         opening = asyncio.create_task(database.__aenter__())
         try:
             await asyncio.shield(opening)
@@ -69,6 +77,8 @@ async def _session_connection(path: Path) -> AsyncIterator[aiosqlite.Connection]
             await database.execute("PRAGMA foreign_keys = ON")
             await database.execute("PRAGMA busy_timeout = 5000")
             await database.execute("PRAGMA synchronous = FULL")
+            if read_only:
+                await database.execute("PRAGMA query_only = ON")
             try:
                 yield database
             except BaseException:
@@ -192,9 +202,9 @@ class SQLiteSessionStore:
 
     @asynccontextmanager
     async def _connection(
-        self, *, authenticate: bool = True
+        self, *, authenticate: bool = True, read_only: bool = False
     ) -> AsyncIterator[aiosqlite.Connection]:
-        async with _session_connection(self.path) as database:
+        async with _session_connection(self.path, read_only=read_only) as database:
             if authenticate:
                 await verify_store(database, self._publication)
             yield database
@@ -336,6 +346,19 @@ class SQLiteSessionStore:
             if thread is None:
                 raise KernelError("thread_not_found", "Thread 不存在")
             return thread
+
+    async def authenticated_thread_history(
+        self,
+        thread_id: UUID,
+        *,
+        cancel: CancelToken,
+        deadline: float,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> sqlite_history.AuthenticatedThreadHistory:
+        """同读版本取得认证投影及完整事件；历史元数据不授Root或执行权。"""
+        return await sqlite_history.read_authenticated_thread_history(
+            self, thread_id, cancel=cancel, deadline=deadline, checkpoint=checkpoint
+        )
 
     async def thread_ids(self) -> list[UUID]:
         async with self._connection() as database:

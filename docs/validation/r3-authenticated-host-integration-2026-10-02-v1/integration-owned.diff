@@ -1,0 +1,1182 @@
+--- a/src/harnessix/evals/task_pack_publication.py
++++ b/src/harnessix/evals/task_pack_publication.py
+@@ -8,8 +8,11 @@
+ from contextlib import ExitStack, asynccontextmanager
+ from dataclasses import dataclass, field
+ from pathlib import Path
++from time import monotonic
+ from typing import Never
+-
++from uuid import UUID
++
++from harnessix.agent.cancellation import CancelToken
+ from harnessix.agent.errors import KernelError
+ from harnessix.artifacts.sqlite import SQLiteArtifactStore
+ from harnessix.evals.execution_fs import path_present
+@@ -25,10 +28,12 @@
+ from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
+ from harnessix.secrets.publication import SecretPublicationScope
+ from harnessix.session.sqlite import SQLiteSessionStore
++from harnessix.session.sqlite_history import AuthenticatedThreadHistory
+ from harnessix.session.store_publication import SessionPublicationBinding
+ 
+ PROVIDER_SECRET = SecretReference(name="eval.provider", version="1")
+ SESSION_FILE = "session.sqlite"
++HISTORY_READ_TIMEOUT_SECONDS = 120.0
+ _EXISTING_STATE = (
+     SESSION_FILE,
+     SESSION_FILE + "-wal",
+@@ -117,6 +122,24 @@
+ 
+ 
+ @dataclass(frozen=True, slots=True)
++class TaskPackHistoryReadControl:
++    """一次只读认证阶段的原取消和绝对期限，不延长任何 Turn 执行预算。"""
++
++    cancel: CancelToken
++    deadline: float
++
++    @classmethod
++    def begin(cls, cancel: CancelToken) -> TaskPackHistoryReadControl:
++        return cls(cancel, monotonic() + HISTORY_READ_TIMEOUT_SECONDS)
++
++    def checkpoint(self, owner: TaskPackPublicationOwner) -> None:
++        self.cancel.checkpoint()
++        if monotonic() >= self.deadline:
++            raise KernelError("publication_history_timeout", "Session历史认证超时")
++        owner.require_ready(owner.run_root)
++
++
++@dataclass(frozen=True, slots=True)
+ class TaskPackPublicationOwner:
+     """仅借用于 Run 上下文，三条执行／恢复路径共用原 Store、Binding 与 Scope。"""
+ 
+@@ -135,6 +158,31 @@
+         self.root_owner.require_ready(run_root)
+         self.private_tree.checkpoint()
+ 
++    async def authenticated_thread_ids(self, control: TaskPackHistoryReadControl) -> list[UUID]:
++        """身份发现也沿原取消与阶段剩余时间结算，不能在扫描期间刷新 TTL。"""
++        control.checkpoint(self)
++        try:
++            async with asyncio.timeout(max(0.0, control.deadline - monotonic())):
++                thread_ids = await control.cancel.run(self.sessions.thread_ids())
++        except TimeoutError:
++            raise KernelError("publication_history_timeout", "Session历史认证超时") from None
++        control.checkpoint(self)
++        return thread_ids
++
++    async def authenticated_thread_history(
++        self, thread_id: UUID, control: TaskPackHistoryReadControl
++    ) -> AuthenticatedThreadHistory:
++        """原 Owner 贯穿同读验真；只消费正式 carrier，不另拼投影与事件。"""
++        control.checkpoint(self)
++        history = await self.sessions.authenticated_thread_history(
++            thread_id,
++            cancel=control.cancel,
++            deadline=control.deadline,
++            checkpoint=lambda: self.require_ready(self.run_root),
++        )
++        control.checkpoint(self)
++        return history
++
+ 
+ def _retain_session_file(files: ExitStack, tree: PrivateStateTree) -> None:
+     """仅转换取得原叶句柄的系统错误，不把下游业务 OSError 误报为认证失败。"""
+@@ -151,6 +199,7 @@
+     *,
+     existing_only: bool = False,
+     root_owner: ProductStateOwner | None = None,
++    history_read: TaskPackHistoryReadControl | None = None,
+ ) -> AsyncIterator[TaskPackPublicationOwner]:
+     """恢复只读原 Key；缺材料、旧 MAC 缺失或验证失败均不得退回初始化。"""
+     with ExitStack() as resources:
+@@ -178,20 +227,24 @@
+                     # 固定原叶 FD／Handle，拒绝链接及文件替换；退出时再次验证原对象。
+                     _retain_session_file(files, private_tree)
+                 sessions = SQLiteSessionStore(run_root / SESSION_FILE, publication=binding)
+-                if present:
+-                    # 恢复先走 enroll=False 的正式 Reader；空旧库也不能补签 Header。
+-                    await sessions.thread_ids()
+-                elif any(path_present(run_root / name) for name in _EXISTING_STATE[1:5]):
+-                    raise KernelError("eval_publication_session_missing", "评测原 Session 不完整")
+-                private_tree.checkpoint()
+-                await sessions.initialize()
+-                if not present:
+-                    _retain_session_file(files, private_tree)
+-                private_tree.checkpoint()
+                 artifacts = SQLiteArtifactStore(sessions, public_output_protection=scope)
+                 owner = TaskPackPublicationOwner(
+                     run_root, root_owner, binding, scope, sessions, artifacts, private_tree
+                 )
++                if present:
++                    # 恢复先走 enroll=False 的正式 Reader；空旧库也不能补签 Header。
++                    if history_read is None:
++                        await sessions.thread_ids()
++                    else:
++                        await owner.authenticated_thread_ids(history_read)
++                elif any(path_present(run_root / name) for name in _EXISTING_STATE[1:5]):
++                    raise KernelError("eval_publication_session_missing", "评测原 Session 不完整")
++                private_tree.checkpoint()
++                if not present:
++                    # 已有库只读认证，不为完成恢复执行迁移、写 Header 或切换 WAL。
++                    await sessions.initialize()
++                    _retain_session_file(files, private_tree)
++                private_tree.checkpoint()
+                 owner.require_ready(run_root)
+                 yield owner
+                 owner.require_ready(run_root)
+--- a/src/harnessix/evals/task_pack_trial.py
++++ b/src/harnessix/evals/task_pack_trial.py
+@@ -51,6 +51,7 @@
+ )
+ from harnessix.evals.task_pack_observations import profile_observations as _profile_observations
+ from harnessix.evals.task_pack_publication import (
++    TaskPackHistoryReadControl,
+     TaskPackPublicationOwner,
+     open_task_pack_publication,
+ )
+@@ -183,20 +184,21 @@
+ 
+ async def _drive_turn(
+     runtime: AgentRuntime,
+-    sessions: SQLiteSessionStore,
++    owner: TaskPackPublicationOwner,
+     case: CodingEvalTaskPackCase,
+     workspace: Path,
+     run_id: UUID,
+     cancel: CancelToken,
+     fault: Fault,
+ ) -> tuple[UUID, Turn]:
+-    thread_id = _single_thread(sessions, await sessions.thread_ids())
+-    if thread_id is None:
++    # Runtime 入口可能已恢复开放 Turn；这是新的只读阶段，不沿用入口前的旧投影。
++    thread = await _authenticated_session_thread(owner, TaskPackHistoryReadControl.begin(cancel))
++    if thread is None:
+         thread = await runtime.create_thread(str(workspace))
+         thread_id = thread.thread_id
+         fault("task_pack_runner.after_thread")
+     else:
+-        thread = await sessions.get_thread(thread_id)
++        thread_id = thread.thread_id
+         if thread.workspace != str(workspace):
+             raise KernelError("eval_run_projection_invalid", "Task Pack Thread与Workspace不一致")
+     request_id = f"coding-eval:{run_id}"
+@@ -318,46 +320,60 @@
+     *,
+     publication_scope: SecretPublicationScope | None = None,
+     owner: TaskPackPublicationOwner | None = None,
++    history_read: TaskPackHistoryReadControl | None = None,
+ ) -> TaskPackCodingEvalResult:
++    control = history_read or TaskPackHistoryReadControl.begin(CancelToken())
+     if owner is None:
+         async with open_task_pack_publication(
+-            run_root, publication_scope, existing_only=True
++            run_root, publication_scope, existing_only=True, history_read=control
+         ) as opened:
+             return await _load_completed_run(
+-                run_root, case, environment, expected_run_id, owner=opened
++                run_root, case, environment, expected_run_id, owner=opened, history_read=control
+             )
+     owner.require_ready(run_root)
++    control.checkpoint(owner)
+     state = read_eval_run_state(run_root / _RUN_STATE_FILE)
+     report = read_eval_report(run_root / _RUN_REPORT_FILE)
+     if state.thread_id is None or state.turn_id is None:
+         raise KernelError("eval_run_mismatch", "Task Pack完成状态缺少Thread或Turn")
+-    turn = get_turn(await owner.sessions.get_thread(state.thread_id), state.turn_id)
+-    owner.require_ready(run_root)
++    history = await owner.authenticated_thread_history(state.thread_id, control)
++    turn = get_turn(history.thread, state.turn_id)
+     _require_completed_trial(state, report, turn, case, environment, expected_run_id)
+     return TaskPackCodingEvalResult(state, report, turn, run_root / "workspace")
++
++
++async def _authenticated_session_thread(
++    owner: TaskPackPublicationOwner,
++    control: TaskPackHistoryReadControl,
++) -> Thread | None:
++    """空库仅发现身份；非空库必须完整验真后才能交给恢复逻辑。"""
++    control.checkpoint(owner)
++    thread_id = _single_thread(owner.sessions, await owner.authenticated_thread_ids(control))
++    control.checkpoint(owner)
++    if thread_id is None:
++        return None
++    return (await owner.authenticated_thread_history(thread_id, control)).thread
+ 
+ 
+ async def _completed_session_turn(
+     owner: TaskPackPublicationOwner,
+     workspace: Path,
+     run_id: UUID,
++    *,
++    history_read: TaskPackHistoryReadControl | None = None,
+ ) -> tuple[UUID, Turn] | None:
+     """从持久Session识别已完成Turn，避免报告窗口恢复时重新打开Provider。"""
+ 
+-    sessions = owner.sessions
+-    owner.require_ready(owner.run_root)
+-    thread_id = _single_thread(sessions, await sessions.thread_ids())
+-    owner.require_ready(owner.run_root)
+-    if thread_id is None:
++    control = history_read or TaskPackHistoryReadControl.begin(CancelToken())
++    thread = await _authenticated_session_thread(owner, control)
++    if thread is None:
+         return None
+-    thread = await sessions.get_thread(thread_id)
+-    owner.require_ready(owner.run_root)
+     if thread.workspace != str(workspace):
+         raise KernelError("eval_run_projection_invalid", "Task Pack Thread与Workspace不一致")
+     turn = _request_turn(thread, f"coding-eval:{run_id}")
+     if turn is None or turn.status not in TERMINAL_TURNS:
+         return None
+-    return thread_id, turn
++    return thread.thread_id, turn
+ 
+ 
+ def _review_findings(case: CodingEvalTaskPackCase) -> tuple[str, ...]:
+@@ -375,12 +391,17 @@
+     observer: Observability,
+     fail: Fault,
+     owner: TaskPackPublicationOwner,
++    *,
++    history_read: TaskPackHistoryReadControl | None = None,
+ ) -> tuple[UUID, Turn]:
+     case = materialized.case
+     owner.require_ready(materialized.run_root)
++    control = history_read or TaskPackHistoryReadControl.begin(token)
++    # 先认证全部原历史，后创建 Provider、Action 和会主动恢复 Turn 的 Runtime。
++    await _authenticated_session_thread(owner, control)
+     sessions, artifacts = owner.sessions, owner.artifacts
+     profile = build_task_pack_product_profile(loaded, case.profile_id, container_engine)
+-    owner.require_ready(materialized.run_root)
++    control.checkpoint(owner)
+     async with provider_factory(case, materialized.manifest.run_id) as provider:
+         async with CodingToolRuntime(
+             materialized.workspace,
+@@ -420,7 +441,7 @@
+                 ) as runtime:
+                     return await _drive_turn(
+                         runtime,
+-                        sessions,
++                        owner,
+                         case,
+                         materialized.workspace,
+                         materialized.manifest.run_id,
+@@ -548,14 +569,19 @@
+         run_root = materialized.run_root
+         state_path = run_root / _RUN_STATE_FILE
+         report_path = run_root / _RUN_REPORT_FILE
++        history_read = TaskPackHistoryReadControl.begin(token)
+         async with open_task_pack_publication(
+-            run_root, publication_scope, root_owner=root_owner
++            run_root, publication_scope, root_owner=root_owner, history_read=history_read
+         ) as owner:
+             if path_present(state_path):
+                 if not path_present(report_path):
+                     raise KernelError("eval_report_mismatch", "Task Pack完成状态缺少报告")
+-                return await _load_completed_run(run_root, case, environment, run_id, owner=owner)
+-            recovered = await _completed_session_turn(owner, materialized.workspace, run_id)
++                return await _load_completed_run(
++                    run_root, case, environment, run_id, owner=owner, history_read=history_read
++                )
++            recovered = await _completed_session_turn(
++                owner, materialized.workspace, run_id, history_read=history_read
++            )
+             if recovered is None:
+                 thread_id, turn = await _run_agent(
+                     loaded,
+@@ -567,6 +593,7 @@
+                     observability or NoOpObservability(),
+                     fail,
+                     owner,
++                    history_read=history_read,
+                 )
+             else:
+                 thread_id, turn = recovered
+--- a/src/harnessix/evals/task_pack_execution.py
++++ b/src/harnessix/evals/task_pack_execution.py
+@@ -34,6 +34,7 @@
+ from harnessix.evals.suite_execution_contracts import CodingEvalSuiteCaseRunResult
+ from harnessix.evals.task_pack import LoadedCodingEvalTaskPack
+ from harnessix.evals.task_pack_contracts import CodingEvalTaskPackCase
++from harnessix.evals.task_pack_publication import TaskPackHistoryReadControl
+ from harnessix.evals.task_pack_trial import (
+     Fault,
+     TaskPackProviderFactory,
+@@ -114,6 +115,8 @@
+     campaign: CodingEvalCampaignPlan,
+     run_id: UUID,
+     publication_scope: SecretPublicationScope | None = None,
++    *,
++    history_read: TaskPackHistoryReadControl | None = None,
+ ) -> CompletedCodingEvalTrial:
+     run = await _load_completed_run(
+         case_root / _RUNS_DIRECTORY / str(run_id),
+@@ -121,6 +124,7 @@
+         campaign.environment,
+         run_id,
+         publication_scope=publication_scope,
++        history_read=history_read,
+     )
+     try:
+         bindings = tuple(
+@@ -208,7 +212,9 @@
+ async def _load_prefix(
+     context: _CaseExecution,
+     state: CodingEvalCampaignExecutionState,
++    cancel: CancelToken,
+ ) -> tuple[CodingEvalCampaignExecutionState, list[CompletedCodingEvalTrial], int, bool]:
++    history_read = TaskPackHistoryReadControl.begin(cancel)
+     completed: list[CompletedCodingEvalTrial] = []
+     known_units = 0
+     all_costs_complete = True
+@@ -226,7 +232,8 @@
+                 "eval_campaign_evidence_order_invalid", "Task Pack Trial证据不是连续前缀"
+             )
+         trial = await _completed_trial(
+-            context.root, context.case, context.campaign, run_id, context.publication_scope
++            context.root, context.case, context.campaign, run_id, context.publication_scope,
++            history_read=history_read,
+         )
+         units, complete = _known_cost(trial, context.campaign.price.currency)
+         completed.append(trial)
+@@ -345,7 +352,8 @@
+                 raise
+             return state, _stop_case(context, state, "evidence_missing")
+         trial = await _completed_trial(
+-            context.root, context.case, context.campaign, run_id, context.publication_scope
++            context.root, context.case, context.campaign, run_id, context.publication_scope,
++            history_read=TaskPackHistoryReadControl.begin(cancel),
+         )
+         units, complete = _known_cost(trial, context.campaign.price.currency)
+         completed.append(trial)
+@@ -389,7 +397,7 @@
+ ) -> CodingEvalSuiteCaseRunResult:
+     _require_plan(context)
+     state = _load_state(context)
+-    state, completed, known_units, costs_complete = await _load_prefix(context, state)
++    state, completed, known_units, costs_complete = await _load_prefix(context, state, cancel)
+     recovered = _recover_campaign_report(context, state, completed)
+     if recovered is not None:
+         return recovered
+--- a/src/harnessix/evals/provider_suite_execution.py
++++ b/src/harnessix/evals/provider_suite_execution.py
+@@ -61,6 +61,8 @@
+         assert self.publication_scope is not None
+         material = self.publication_scope.resolve(PROVIDER_SECRET.name)
+         try:
++            if material.version != PROVIDER_SECRET.version:
++                raise KernelError("publication_scope_unavailable", "真实评测凭据引用版本不匹配")
+             return OpenAIChatProvider(self.config, api_key=bytes(material.value).decode("utf-8"))
+         finally:
+             material.clear()
+--- a/tests/evals/test_task_pack_publication.py
++++ b/tests/evals/test_task_pack_publication.py
+@@ -17,7 +17,7 @@
+ 
+ import pytest
+ 
+-from harnessix.agent.cancellation import CancelToken
++from harnessix.agent.cancellation import CancelToken, TurnCancelled
+ from harnessix.agent.errors import KernelError
+ from harnessix.agent.models import (
+     Budget,
+@@ -42,6 +42,7 @@
+ from harnessix.evals.task_pack_execution import _completed_trial
+ from harnessix.evals.task_pack_publication import (
+     PROVIDER_SECRET,
++    TaskPackHistoryReadControl,
+     open_task_pack_publication,
+     provider_publication_scope,
+ )
+@@ -350,8 +351,8 @@
+             assert kwargs["public_output_protection"] is scope
+             yield object()
+ 
+-        async def drive(runtime, sessions, *args):
+-            assert sessions is owner.sessions
++        async def drive(runtime, borrowed_owner, *args):
++            assert borrowed_owner is owner
+             return "fixture-no-model-drive"
+ 
+         monkeypatch.setattr(task_pack_trial, "CodingToolRuntime", tools)
+@@ -814,10 +815,10 @@
+     original = task_pack_execution._completed_trial
+     reads = []
+ 
+-    async def completed(case_root, case, campaign, run_id, publication_scope):
++    async def completed(case_root, case, campaign, run_id, publication_scope, **kwargs):
+         assert publication_scope is scope
+         reads.append(run_id)
+-        return await original(case_root, case, campaign, run_id, publication_scope)
++        return await original(case_root, case, campaign, run_id, publication_scope, **kwargs)
+ 
+     monkeypatch.setattr(task_pack_execution, "run_task_pack_coding_eval", trial)
+     monkeypatch.setattr(task_pack_execution, "_completed_trial", completed)
+@@ -882,10 +883,6 @@
+     assert denied.value.code == "product_state_owner_invalid"
+ 
+ 
+-@pytest.mark.xfail(
+-    strict=True,
+-    reason="dfba 的投影 Reader 尚未同读验证原事件正文 MAC；Session 接缝集成后必须移除此标记",
+-)
+ async def test_completed_recovery_requires_original_event_body_mac(tmp_path, scope):
+     loaded, expected, campaign, runs, run_id, _ = await fixture_trial(tmp_path, scope)
+     root = runs / str(run_id)
+@@ -893,7 +890,7 @@
+         db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=1")
+     db.close()
+     # 原投影及Seal均保持；不能仅依赖缓存投影而接受已篡改的原事件正文。
+-    with pytest.raises(KernelError):
++    with pytest.raises(KernelError) as denied:
+         await task_pack_trial._load_completed_run(
+             root,
+             loaded.manifest.case(expected.case_id),
+@@ -901,3 +898,413 @@
+             run_id,
+             publication_scope=scope,
+         )
++    assert denied.value.code == "publication_history_unproven"
++@pytest.mark.parametrize("window", ["completed", "terminal", "active"])
++@pytest.mark.parametrize("sequence", [1, 3])
++async def test_original_event_mac_precedes_provider_and_runtime(
++    tmp_path, scope, monkeypatch, window, sequence
++):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    if window != "completed":
++        (root / "run-state.json").unlink()
++        (root / "report.json").unlink()
++    if window == "active":
++        # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
++        runs = tmp_path / "active-runs"
++        runs.mkdir(mode=0o700)
++        root = runs / str(run_id)
++        root.mkdir(mode=0o700)
++        tid, turn_id = uuid4(), uuid4()
++        async with open_task_pack_publication(root, scope) as owner:
++            await owner.sessions.append(
++                tid,
++                [
++                    EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
++                    EventDraft(
++                        turn_id=turn_id,
++                        payload=TurnStarted(
++                            request_id=f"coding-eval:{run_id}",
++                            request_fingerprint="a" * 64,
++                            budget=loaded.manifest.case(expected.case_id).task.budget,
++                        ),
++                    ),
++                    EventDraft(
++                        turn_id=turn_id,
++                        payload=ItemStarted(
++                            item_id=uuid4(),
++                            content=TextContent(kind="user_message", text="fixture-active-history"),
++                        ),
++                    ),
++                ],
++                expected_sequence=0,
++            )
++    with sqlite3.connect(root / "session.sqlite") as db:
++        db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=?", (sequence,))
++    db.close()
++    settle_fixture_database(root)
++    before = fixture_file_snapshot(root)
++    calls = []
++
++    def forbidden(*args, **kwargs):
++        calls.append("execution")
++        pytest.fail("原事件验真失败不得进入 Provider、Action 或 AgentRuntime")
++
++    monkeypatch.setattr(
++        task_pack_trial,
++        "materialize_task_pack_case",
++        lambda *args: SimpleNamespace(
++            case=loaded.manifest.case(expected.case_id),
++            run_root=root,
++            workspace=root / "workspace",
++            manifest=SimpleNamespace(run_id=run_id),
++        ),
++    )
++    monkeypatch.setattr(task_pack_trial, "AgentRuntime", forbidden)
++    monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", forbidden)
++    with pytest.raises(KernelError) as denied:
++        await task_pack_trial.run_task_pack_coding_eval(
++            loaded,
++            runs,
++            Path("/missing/git"),
++            Path("/missing/docker"),
++            expected.case_id,
++            run_id,
++            forbidden,
++            campaign.environment,
++            publication_scope=scope,
++        )
++    assert denied.value.code == "publication_history_unproven"
++    assert calls == [] and fixture_file_snapshot(root) == before
++    assert trial.report.outcome != "passed"
++
++
++async def test_shared_history_phase_uses_original_controls_and_owner(tmp_path, scope, monkeypatch):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    token = CancelToken()
++    calls, callbacks = [], []
++    original = SQLiteSessionStore.authenticated_thread_history
++    control = TaskPackHistoryReadControl.begin(token)
++    async with open_task_pack_publication(runs / str(run_id), scope, existing_only=True) as owner:
++
++        async def read(store, thread_id, *, cancel, deadline, checkpoint):
++            assert store is owner.sessions and cancel is token
++            assert deadline == control.deadline
++
++            def check():
++                callbacks.append(owner)
++                checkpoint()
++
++            result = await original(
++                store, thread_id, cancel=cancel, deadline=deadline, checkpoint=check
++            )
++            calls.append((thread_id, deadline, len(result.events)))
++            return result
++
++        monkeypatch.setattr(SQLiteSessionStore, "authenticated_thread_history", read)
++        monkeypatch.setattr(
++            owner.sessions, "get_thread", lambda *args: pytest.fail("不能拼缓存投影")
++        )
++        result = await task_pack_trial._load_completed_run(
++            owner.run_root,
++            loaded.manifest.case(expected.case_id),
++            campaign.environment,
++            run_id,
++            owner=owner,
++            history_read=control,
++        )
++        terminal = await task_pack_trial._completed_session_turn(
++            owner,
++            trial.workspace,
++            run_id,
++            history_read=control,
++        )
++        assert result.turn == trial.turn and terminal == (trial.state.thread_id, trial.turn)
++    assert len(calls) == 2 and all(count > 3 for _, _, count in calls)
++    assert len(callbacks) > 6
++
++
++async def test_terminal_history_read_is_independent_of_expired_turn_budget(tmp_path, scope):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    assert task_pack_trial.remaining_seconds(trial.turn) < 0
++    settle_fixture_database(runs / str(run_id))
++    before = fixture_file_snapshot(runs / str(run_id))
++    result = await task_pack_trial._load_completed_run(
++        runs / str(run_id),
++        loaded.manifest.case(expected.case_id),
++        campaign.environment,
++        run_id,
++        publication_scope=scope,
++        history_read=TaskPackHistoryReadControl.begin(CancelToken()),
++    )
++    assert result.turn == trial.turn
++    assert result.turn.budget == loaded.manifest.case(expected.case_id).task.budget
++    assert fixture_file_snapshot(runs / str(run_id)) == before
++
++
++@pytest.mark.parametrize(
++    "failure", ["cancel", "deadline", "binding_close", "owner_close", "owner_os"]
++)
++async def test_original_controls_interrupt_real_history_before_provider(
++    tmp_path, scope, monkeypatch, failure
++):
++    loaded, expected, campaign, runs, run_id, _ = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    token, calls, checkpoints = CancelToken(), [], []
++    original = SQLiteSessionStore.authenticated_thread_history
++    os_error = OSError("fixture-owner-unavailable")
++    root_context = product_state_owner(root)
++    root_owner = root_context.__enter__()
++    try:
++        with pytest.raises((TurnCancelled, KernelError, OSError)) as denied:
++            async with open_task_pack_publication(
++                root, scope, existing_only=True, root_owner=root_owner
++            ) as owner:
++                control = TaskPackHistoryReadControl.begin(token)
++
++                async def read(store, tid, *, cancel, deadline, checkpoint):
++                    assert cancel is token and deadline == control.deadline
++
++                    def mutate():
++                        checkpoint()
++                        checkpoints.append(tid)
++                        if len(checkpoints) == 3:
++                            if failure == "cancel":
++                                token.cancel()
++                            elif failure == "deadline":
++                                monkeypatch.setattr(
++                                    "harnessix.session.sqlite_history.monotonic",
++                                    lambda: deadline + 1,
++                                )
++                            elif failure == "binding_close":
++                                owner.binding.close()
++                            elif failure == "owner_close":
++                                root_context.__exit__(None, None, None)
++                            else:
++                                raise os_error
++
++                    return await original(
++                        store, tid, cancel=cancel, deadline=deadline, checkpoint=mutate
++                    )
++
++                monkeypatch.setattr(SQLiteSessionStore, "authenticated_thread_history", read)
++
++                def forbidden(*args):
++                    calls.append("provider")
++                    pytest.fail("认证读取中断不得调用 Provider")
++
++                await task_pack_trial._run_agent(
++                    loaded,
++                    SimpleNamespace(
++                        case=loaded.manifest.case(expected.case_id),
++                        run_root=root,
++                        workspace=root / "workspace",
++                        manifest=SimpleNamespace(run_id=run_id),
++                    ),
++                    Path("/missing/git"),
++                    Path("/missing/docker"),
++                    forbidden,
++                    token,
++                    object(),
++                    lambda _: None,
++                    owner,
++                    history_read=control,
++                )
++        if failure == "cancel":
++            assert isinstance(denied.value, TurnCancelled)
++        elif failure == "owner_os":
++            assert denied.value is os_error
++        else:
++            assert (
++                denied.value.code
++                == {
++                    "deadline": "publication_history_timeout",
++                    "binding_close": "publication_key_unavailable",
++                    "owner_close": "product_state_owner_invalid",
++                }[failure]
++            )
++        assert len(checkpoints) == 3 and calls == []
++    finally:
++        root_context.__exit__(None, None, None)
++
++
++async def test_case_prefix_shares_one_deadline_and_original_cancel(tmp_path, scope, monkeypatch):
++    from harnessix.evals import task_pack_execution
++
++    loaded, expected, campaign = _case_and_campaign()
++    root = tmp_path / "case"
++    runs = root / "runs"
++    root.mkdir(mode=0o700)
++    runs.mkdir(mode=0o700)
++    for rid in campaign.run_ids:
++        await _write_fixture_trial(
++            loaded, runs, expected.case_id, rid, campaign.environment, publication_scope=scope
++        )
++    token, controls, histories = CancelToken(), [], []
++    original_trial = task_pack_execution._completed_trial
++    original_read = SQLiteSessionStore.authenticated_thread_history
++
++    async def completed(*args, **kwargs):
++        controls.append(kwargs["history_read"])
++        assert kwargs["history_read"].cancel is token
++        assert args[4] is scope
++        return await original_trial(*args, **kwargs)
++
++    async def read(store, tid, **kwargs):
++        assert kwargs["cancel"] is token and kwargs["deadline"] == controls[0].deadline
++        result = await original_read(store, tid, **kwargs)
++        histories.append(result)
++        return result
++
++    monkeypatch.setattr(task_pack_execution, "_completed_trial", completed)
++    monkeypatch.setattr(SQLiteSessionStore, "authenticated_thread_history", read)
++    context = task_pack_execution._CaseExecution(
++        loaded,
++        Path("/missing/git"),
++        Path("/missing/docker"),
++        lambda *args: pytest.fail("完成前缀不调用 Provider"),
++        None,
++        None,
++        lambda _: None,
++        expected,
++        campaign,
++        root,
++        loaded.manifest.case(expected.case_id),
++        scope,
++    )
++    state = task_pack_execution._load_state(context).model_copy(update={"status": "running"})
++    state, completed, _, _ = await task_pack_execution._load_prefix(context, state, token)
++    assert state.completed_run_ids == campaign.run_ids and len(completed) == len(campaign.run_ids)
++    assert len(controls) == len(campaign.run_ids) == len(histories) > 1
++    assert all(control is controls[0] for control in controls)
++    assert all(len(history.events) > 3 for history in histories)
++
++
++async def test_phase_deadline_is_captured_once_and_never_refreshed(tmp_path, scope, monkeypatch):
++    root = run_root(tmp_path)
++    async with open_task_pack_publication(root, scope) as owner:
++        clock = [10.0]
++        monkeypatch.setattr(task_pack_publication, "monotonic", lambda: clock[0])
++        token = CancelToken()
++        control = TaskPackHistoryReadControl.begin(token)
++        assert control.deadline == 130.0 and control.cancel is token
++        clock[0] = 129.0
++        assert await task_pack_trial._authenticated_session_thread(owner, control) is None
++        clock[0] = 130.0
++        with pytest.raises(KernelError) as denied:
++            await task_pack_trial._authenticated_session_thread(owner, control)
++        assert denied.value.code == "publication_history_timeout" and control.deadline == 130.0
++        new_operation = TaskPackHistoryReadControl.begin(token)
++        assert new_operation.deadline == 250.0
++        assert await task_pack_trial._authenticated_session_thread(owner, new_operation) is None
++
++        started, settled = asyncio.Event(), []
++
++        async def held_discovery():
++            started.set()
++            try:
++                await asyncio.Event().wait()
++            finally:
++                settled.append(True)
++
++        monkeypatch.setattr(owner.sessions, "thread_ids", held_discovery)
++        pending = asyncio.create_task(owner.authenticated_thread_ids(new_operation))
++        await started.wait()
++        token.cancel()
++        with pytest.raises(TurnCancelled):
++            await pending
++        assert settled == [True]
++
++        timed_read = TaskPackHistoryReadControl(CancelToken(), clock[0] + 0.01)
++        with pytest.raises(KernelError) as denied:
++            await owner.authenticated_thread_ids(timed_read)
++        assert denied.value.code == "publication_history_timeout" and len(settled) == 2
++
++        started.clear()
++        parent_read = TaskPackHistoryReadControl.begin(CancelToken())
++        pending = asyncio.create_task(owner.authenticated_thread_ids(parent_read))
++        await started.wait()
++        pending.cancel()
++        with pytest.raises(asyncio.CancelledError):
++            await pending
++        assert len(settled) == 3
++
++
++async def test_default_factory_rejects_unsupported_application_secret_version(
++    tmp_path, monkeypatch
++):
++    from harnessix.product_config.contracts import SecretReference
++    from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
++    from harnessix.secrets.publication import SecretPublicationScope
++
++    config = provider_suite_config(tmp_path)
++    monkeypatch.setattr(
++        provider_suite_execution,
++        "OpenAIChatProvider",
++        lambda *args, **kwargs: pytest.fail("版本不匹配不得构造 Provider"),
++    )
++    with SecretPublicationScope(
++        (SecretReference(name="eval.provider", version="2"),),
++        EnvironmentSecretProvider(
++            (EnvironmentSecretSource("eval.provider", "2", "FIXTURE_KEY"),),
++            environment={"FIXTURE_KEY": "fixture-second-version"},
++        ),
++    ) as unsupported:
++        with pytest.raises(KernelError) as denied:
++            TaskPackOpenAIChatProviderFactory(config.provider_config, unsupported)(None, uuid4())
++    assert denied.value.code == "publication_scope_unavailable"
++
++
++def settle_fixture_database(root):
++    """仅整理新建合成夹具的日志模式，以静止主库核对只读恢复前后 SHA。"""
++    db = sqlite3.connect(root / "session.sqlite")
++    try:
++        db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
++        assert db.execute("PRAGMA journal_mode=DELETE").fetchone() == ("delete",)
++    finally:
++        db.close()
++
++
++@pytest.mark.parametrize("corrupt", [False, True])
++async def test_drive_turn_consumes_fresh_complete_history_without_cached_projection(
++    tmp_path, scope, monkeypatch, corrupt
++):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    token, reads = CancelToken(), []
++    original = SQLiteSessionStore.authenticated_thread_history
++    async with open_task_pack_publication(root, scope, existing_only=True) as owner:
++        # 入口前快照已取得；Runtime 恢复之后的驱动必须重新取得完整同读历史。
++        await owner.authenticated_thread_history(
++            trial.state.thread_id, TaskPackHistoryReadControl.begin(token)
++        )
++        if corrupt:
++            with sqlite3.connect(root / "session.sqlite") as db:
++                db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=3")
++            db.close()
++
++        async def read(store, tid, **kwargs):
++            assert store is owner.sessions and kwargs["cancel"] is token
++            reads.append(kwargs["deadline"])
++            return await original(store, tid, **kwargs)
++
++        monkeypatch.setattr(SQLiteSessionStore, "authenticated_thread_history", read)
++        monkeypatch.setattr(
++            owner.sessions, "get_thread", lambda *args: pytest.fail("驱动不得使用另一个缓存投影")
++        )
++        operation = task_pack_trial._drive_turn(
++            object(),
++            owner,
++            loaded.manifest.case(expected.case_id),
++            trial.workspace,
++            run_id,
++            token,
++            lambda _: pytest.fail("终态只读不得恢复执行"),
++        )
++        if corrupt:
++            with pytest.raises(KernelError) as denied:
++                await operation
++            assert denied.value.code == "publication_history_unproven"
++        else:
++            assert await operation == (trial.state.thread_id, trial.turn)
++        assert len(reads) == 1
+--- a/tests/evals/test_task_pack_evidence_stop.py
++++ b/tests/evals/test_task_pack_evidence_stop.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++import hashlib
++import sqlite3
+ from datetime import timedelta
+ from pathlib import Path
+ from uuid import uuid4
+@@ -254,15 +256,63 @@
+         (expected.case_id, run_id) for run_id in campaign.run_ids[: completed_trials + 1]
+     ]
+     snapshot = _json_snapshot(root)
++    # 仅将新合成夹具结算为静止主库，字节比较不承诺活跃 WAL/SHM 不变化。
++    for database in (root / "runs").glob("*/session.sqlite"):
++        connection = sqlite3.connect(database)
++        try:
++            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
++            assert connection.execute("PRAGMA journal_mode=DELETE").fetchone() == ("delete",)
++        finally:
++            connection.close()
++    prefix_sha = {
++        path: hashlib.sha256(path.read_bytes()).hexdigest()
++        for path in (root / "runs").rglob("*")
++        if path.is_file()
++    }
++    writes, providers, controls = [], [], []
++    original_write = case_execution.write_eval_campaign_execution_state
++    from harnessix.evals.task_pack_publication import TaskPackHistoryReadControl
++
++    original_begin = TaskPackHistoryReadControl.begin
++
++    def begin(cancel):
++        control = original_begin(cancel)
++        controls.append(control)
++        return control
++
++    def write(*args):
++        writes.append(args)
++        return original_write(*args)
++
++    def no_provider(*args):
++        providers.append(args)
++        pytest.fail("持久停止恢复不得创建 Provider")
++
++    monkeypatch.setattr(TaskPackHistoryReadControl, "begin", begin)
++    monkeypatch.setattr(case_execution, "write_eval_campaign_execution_state", write)
++    executor = TaskPackCaseExecutor(
++        loaded, Path("/missing/git"), Path("/missing/docker"), no_provider
++    )
+     for cancelled in (False, True):
+         token = CancelToken()
+         if cancelled:
+             token.cancel()
+-        assert await _executor(loaded)(expected, campaign, root, token) == result
++        if cancelled and completed_trials:
++            # 非空完成前缀须沿原取消完整验真；不能绕过取消返回缓存停止结论。
++            with pytest.raises(TurnCancelled):
++                await executor(expected, campaign, root, token)
++        else:
++            assert await executor(expected, campaign, root, token) == result
++        assert controls[-1].cancel is token
++        assert providers == [] and writes == [] and len(calls) == completed_trials + 1
++        assert {
++            path: hashlib.sha256(path.read_bytes()).hexdigest()
++            for path in (root / "runs").rglob("*")
++            if path.is_file()
++        } == prefix_sha
+         assert read_eval_campaign_execution_state(root / "campaign-state.json") == state
+         assert _json_snapshot(root) == snapshot
+     assert len(calls) == completed_trials + 1
+-
+ 
+ @pytest.mark.parametrize("completed_cases", (0, 1))
+ @pytest.mark.parametrize("completed_trials", (0, 1))
+--- a/docs/changes/m09-r3-eval-publication-wiring.md
++++ b/docs/changes/m09-r3-eval-publication-wiring.md
+@@ -1,7 +1,7 @@
+ ---
+ doc_type: change-design
+ status: draft
+-version: 1
++version: 2
+ code_revision: pending
+ owners:
+   - evals
+@@ -16,6 +16,7 @@
+   - docs/adr/0095-versioned-secret-publication-scope.md
+   - docs/adr/0103-authenticated-sqlite-session-commit.md
+   - docs/adr/0104-managed-session-key-and-default-root.md
++  - docs/adr/0107-authenticated-eval-host-and-history-read.md
+ related_tests:
+   - tests/evals/test_task_pack_publication.py
+   - tests/evals/test_task_pack_execution.py
+@@ -29,7 +30,7 @@
+ 
+ ## 1. 状态与范围
+ 
+-设计基线：`dfba34e707ed845f3e9d844461e124015c22dca7`。本切片只整改 Task Pack Trial、Case 恢复与真实 Provider Suite 的认证装配。接线实现位于独立工作树，尚未合入正式发布分支；实现及验证状态见第 13 节。
++设计基线：`dfba34e707ed845f3e9d844461e124015c22dca7`。本切片只整改 Task Pack Trial、Case 恢复与真实 Provider Suite 的认证装配。原装配切片基于该版本封存；完整历史消费在 `80c1dad13c98aaabb2db1630c62134a241df44aa` 集成输入实现，并在只新增不相交路径的 `730f0846641700c4c697d7cc6ba03cbf1a8364bc` 基线上冻结源码字节。当前源码尚未提交，精确身份由新验证包的源 SHA 确定；实现及验证状态见第 13 节。
+ 
+ 不修改 Session 同读事务、Schema、Key 后端、费用 Guard、额度、登记规则、评分器、Pack、固定 Profile、模型配置或历史证据。离线验证不产生新的 R3 编码成绩，也不解除任何历史费用未决状态。
+ 
+@@ -49,6 +50,7 @@
+ 4. 完成记录重读、终态 Session 恢复以及已完成 Trial 前缀恢复均保留，且不重新创建 Provider。
+ 5. Run 退出、失败、超时或取消后释放 Owner，清零 Binding 与自有 Key 材料；受托线程必须结算，不丢弃迟到材料。
+ 6. 使用真实临时 SQLite、合成 fixture Scope、合成 Key 和内置固定 Case 做离线回归；不得读取旧 Run、真实凭据或实际账本。
++7. 非空原历史在 Provider Factory 和 AgentRuntime 恢复前完整同读验真；原取消、当前 Owner 与一次捕获的 120 秒认证读取期限贯穿该阶段，不延长 Turn 执行预算。
+ 
+ ## 4. 存量端口、风险与取舍
+ 
+@@ -89,14 +91,15 @@
+     N --> B
+     B --> Q[认证 SQLiteSessionStore]
+     S --> A[同 Scope ArtifactStore / Agent / Git / Process]
+-    Q --> T{Trial 路径}
++    Q --> H[同读完整历史：原取消 / 绝对期限 / 当前 Owner]
++    H --> T{Trial 路径}
+     T --> D[完成记录重读]
+     T --> F[终态 Session 恢复并评分]
+     T --> P[认证通过后才创建 Provider]
+     Q --> A
+ ```
+ 
+-Run Owner 建立 Binding 后，已有库先通过正式 `thread_ids()` Reader 的 `enroll=False` 认证检查，再调用 `sessions.initialize()`；新库直接初始化认证 Header。空 legacy 库也不能被补签 Header。路径读取仍走 Session 与 Artifact 原正式端口，MAC 必须在正文反序列化或返回前验证；本模块不重复实现验 MAC、迁移或 Reader。认证失败传播稳定错误，不转换为成功或费用完整。
++Run Owner 建立 Binding 后，已有库只通过正式 `thread_ids()` Reader 的 `enroll=False` 认证检查，不调用初始化／迁移或 WAL 切换；新库才调用 `sessions.initialize()` 初始化认证 Header。非空 Thread 随后通过 `authenticated_thread_history` 全部验真。空 legacy 库也不能被补签 Header。路径读取仍走 Session 与 Artifact 原正式端口，MAC 必须在正文反序列化或返回前验证；本模块不重复实现验 MAC、迁移或 Reader。认证失败传播稳定错误，不转换为成功或费用完整。
+ 
+ ## 6. 核心流程与时序
+ 
+@@ -112,19 +115,21 @@
+     H->>E: Factory + 同源 Scope + 原执行指纹
+     E->>E: 固定物化前取得产品根外 Owner，既有 Root 固定原 FD
+     E->>E: 固定物化，复核原 Root 身份
++    E->>E: 阶段入口捕获一次 120 秒绝对期限，保留原 CancelToken
+     E->>O: 借用原根外 Owner 打开认证生命周期
+     O->>O: 检查恢复意图，固定原 Root inode
+     O->>K: 新 Run 初始化；恢复 original_key
+     K-->>O: 可清零材料
+-    O->>D: 同一 Binding 初始化并认证
+-    E->>D: 查询完成事实/终态事实
++    O->>D: 新库初始化；已有库仅发现并认证身份
++    E->>D: authenticated_thread_history：原取消 / 同一期限 / 当前 Owner
+     alt 存在完成或终态事实
+-        D-->>E: 经认证事实
++        D-->>E: 同读完整事件与 Thread carrier
+         E->>E: 原评分及报告一致性核对，不创建 Provider
+     else 需要继续执行
+         E->>P: 认证成功后进入 Factory
+         P->>H: 默认 Factory 从原 Scope 解析材料副本
+-        E->>D: 追加事件/Artifact 原字节及 MAC
++        E->>D: Runtime 恢复后新只读阶段取得最新完整 carrier
++        E->>D: 原 Turn 预算执行；追加事件/Artifact 原字节及 MAC
+     end
+     E->>O: 成功/异常/取消退出
+     O->>O: Binding、材料清零，Owner 释放
+@@ -147,14 +152,14 @@
+     alt 原 Key 缺失
+         K-->>O: publication_key_unavailable
+     else 原 Key 可用但 MAC 缺失
+-        O->>D: enroll=False 认证检查
++        O->>D: enroll=False 身份检查与同读完整事件 MAC
+         D-->>O: publication_history_unproven
+     end
+     O-->>E: 传播有限错误，清零材料并释放句柄
+     Note over E,P: Provider 调用次数为 0；不补签、不 create、不 fallback
+ ```
+ 
+-上述两类失败发生在读取 Run 报告正文与 Provider 进入之前。Root Owner 锁锚可创建于 Run 根外；这不是旧正文认证，不生成旧库 Header，不修改旧记录，也不授予恢复执行权。SQLite 合法侧文件生命周期边界见第 14 节。
++缺 Key 和 Header／索引证明缺失在 Run 报告读取前拒绝；原事件正文篡改由完整历史端口拒绝，可能发生在读取未认证报告 JSON 之后，但一定先于可信报告结论、成本重算和 Provider 进入。Root Owner 锁锚可创建于 Run 根外；这不是旧正文认证，不生成旧库 Header，不修改旧记录，也不授予恢复执行权。SQLite 合法侧文件生命周期边界见第 14 节。
+ 
+ ## 7. 接口设计、类设计与领域契约
+ 
+@@ -163,11 +168,15 @@
+ | 接口／数据 | 职责与关键字段 |
+ |---|---|
+ | `TaskPackPublicationOwner` | 借用对象，包含 `run_root`、`root_owner`、`private_tree`、`binding`、`scope`、`sessions`、`artifacts`；不序列化、不持久化 Scope 或 Key |
+-| `open_task_pack_publication(run_root, publication_scope, existing_only=False, root_owner=None)` | 单 Run 生命周期；Trial 可显式借用已取得的产品 Owner；恢复显式 `existing_only=True`，不得初始化缺失的库／Key |
++| `open_task_pack_publication(run_root, publication_scope, existing_only=False, root_owner=None, history_read=None)` | 单 Run 生命周期；Trial 可显式借用已取得的产品 Owner；恢复显式 `existing_only=True`，不得初始化缺失的库／Key |
+ | `provider_publication_scope(api_key_env, api_key)` | 捕获凭据 Owner 已解析材料，返回非空标准 Scope；不读 Keychain、不枚举环境、不改变预算 |
+ | `TaskPackCaseExecutor.publication_scope` | Suite／低层离线调用的显式保护依赖；向执行与恢复前缀共同转发 |
+ | `run_task_pack_provider_suite(..., publication_scope=...)` | 自定义 Factory 必须提供非空 Scope；默认 Factory 的 Scope 由指定环境凭据冻结 |
+ | Trial 内部 `owner` 参数 | 三路径只能使用 Owner 提供的同一 Store／Binding／Scope，不能自行重建裸 Store |
++| `TaskPackHistoryReadControl` | 仅含原 `cancel` 与绝对 `deadline`；`begin` 一次捕获默认 120 秒，`checkpoint` 按取消、期限、当前 Owner 顺序检查，不持有 Key、不授执行权 |
++| `TaskPackPublicationOwner.authenticated_thread_ids(control)` | 正式身份发现用原 Token 托管并按同一绝对 deadline 的剩余时间取消结算；读取前后复核 Owner，不刷新 TTL |
++| `TaskPackPublicationOwner.authenticated_thread_history(thread_id, control)` | 向正式 Session 同读端口传递原取消、同一期限与当前 Owner 回调；返回前后检查控制，直接交付原 carrier |
++| 内部 `history_read` 参数 | 完成、终态和执行前门禁共用；Case 前缀多个 Run 共用一次读取阶段；独立低层调用才自行建立新的只读阶段 |
+ 
+ 低层录制／无凭据 Fixture 允许显式空材料 Scope，但仍签发认证记录。它只用于不带真实凭据的低层评测，真实 Suite 不接受空材料。既有调用没有 Scope 时由低层 Owner 管理短生命周期空 Scope，绝不沿用到真实 Suite 默认路径。
+ 
+@@ -182,8 +191,10 @@
+     B --> M[事件/投影/Artifact 的认证证明]
+     E[正式原始事件与 Artifact] --> M
+     M --> DB[session.sqlite]
+-    DB --> R[原 Reader：先 MAC，再正文；同读接缝待集成]
+-    R --> G[不变的 Grader / 费用重算]
++    DB --> R[同一只读事务：先 MAC，再正文与完整重放]
++    H[原取消 / 一次绝对期限 / 当前 Owner] --> R
++    R --> T[完整 Thread + 全事件 carrier]
++    T --> G[不变的 Grader / 费用重算]
+ ```
+ 
+ - `store_id`、`key_id` 来自原受管 Key 文件，不从 Run UUID 或 Provider 凭据派生。
+@@ -207,7 +218,7 @@
+   sessions = SQLiteSessionStore(root/session.sqlite, publication=binding)
+   固定 Session 原叶 FD/Handle
+   if 原库存在: await sessions.thread_ids()  # enroll=False，不补签空 legacy
+-  await sessions.initialize()
++  else: await sessions.initialize()  # 只初始化新库
+   artifacts = SQLiteArtifactStore(sessions, public_output_protection=scope)
+   yield 同一 Run Owner
+   finally 清零材料、Binding，释放锁；自有空 Scope 关闭
+@@ -215,10 +226,15 @@
+ run_trial(..., scope):
+   with 产品根外 Run Owner:
+     已有 Root 固定原 inode；固定 Case 物化；复核 Root（Pack/Profile/Archive 不变）
++    history_read = begin(原 CancelToken)  # 唯一绝对 monotonic + 120 秒
+     with open_run(root, scope, root_owner=原 Owner):
+-      if 完成报告状态存在: 用同一 Owner 认证读取并核对
+-      elif Session 已终态: 用同一 Owner 认证恢复，原评分并发布
+-      else: 认证成功后创建 Provider，Agent/Tool/Action 共用 Owner 和 Scope
++      if 完成报告状态存在: 完整 carrier -> 原 Turn -> 报告一致性核对
++      elif 完整 carrier 的 Session 已终态: 原评分并发布，不创建 Provider
++      else:
++        沿同一 history_read 对非空原历史完整验真
++        认证成功后创建 Provider，Agent/Tool/Action 共用 Owner 和 Scope
++        Runtime 入口恢复开放 Turn后，新只读阶段取得最新完整 carrier
++        原 remaining_seconds(turn) 控制执行，不使用只读阶段期限续期
+ ```
+ 
+ ## 10. 异常、取消与恢复边界
+@@ -261,26 +277,28 @@
+ 
+ 验证包应包含实际命令与解释器／源码来源、测试结果、边界声明、修改文件精确 SHA256、基线输入 SHA、Manifest 与独立校验；只读代码检查不标为运行通过，Fixture 不标为真实 R3 通过。
+ 
+-## 13. 实现与验证记录
+-
+-独立工作树接线已实现。实际离线结果为 **114 passed，1 xfailed**；Ruff 与四个源文件的 Mypy 检查通过。解释器固定为产品集成工作树的绝对 Python，`PYTHONPATH` 只包含本工作树 `src`，测试加载时仓库根不在 `sys.path`。
+-
+-保留的严格预期失败为 `test_completed_recovery_requires_original_event_body_mac`：基线 `dfba34e` 的投影 Reader 验证投影／索引关联，但尚未在同一读取缝验证原事件正文 MAC。仅篡改新合成夹具的原事件正文、保持投影和 Seal 时，完成恢复仍接受缓存投影。该缺口由 Session 读取契约切片整改，本切片没有修改 Session 源码，也不增加第二套 Reader。集成同事务验真后必须移除 `xfail(strict=True)` 并真实通过；不能把预期失败计入认证验收或 R3 新成绩。
+-
+-验证包：[m09-r3-eval-publication-wiring-20261002-v1](../validation/m09-r3-eval-publication-wiring-20261002-v1/REPORT.md)，包含命令、逐轮失败记录、来源 SHA、边界断言和审查清单。源码尚未提交，frontmatter 保持 `draft/pending`；集成时必须以最终提交更新 `code_revision`，不能用基线提交冒充变更后的代码版本。
++## 13. 历史实现与当前集成验证状态
++
++原 `dfba34e` 独立装配候选结果为 **114 passed，1 strict xfailed**；记录保存在[原冻结包](../validation/m09-r3-eval-publication-wiring-20261002-v1/REPORT.md)，其 48 个成员、原 SDD SHA 和 Manifest 不改写。`80c1dad` 输入的接线前复跑仍为 114 passed／1 xfailed。
++
++当前完整历史消费已实现：五个原 Eval selector 连同必要新边界测试实测 **133 passed，0 xfailed，0 skipped**。原 `test_completed_recovery_requires_original_event_body_mac` 已移除 strict xfail 并断言 `publication_history_unproven`，不能以取消或超时伪装 MAC 拒绝。Ruff 八个指定输入通过；四个 Eval 源文件 Mypy 通过。
++
++新证据位于[完整历史集成包](../validation/r3-authenticated-host-integration-2026-10-02-v1/REPORT.md)，包含原输入 SHA、最终源 SHA、准确 selectors、逐轮失败闭环、四图、校验记录及 Review Packet。测试使用固定集成解释器；`PYTHONPATH` 仅集成树 `src`，仓库根不在 `sys.path`。研究基线为 80，实际集成基线为 730；源码身份以冻结 SHA 为准。当前未提交，frontmatter 保持 `draft/pending`，不以基线提交冒充变更后的版本。
++
++以上是离线认证接线验收，不是新 R3 编码质量成绩，也不验证 Windows 原生或真实 Provider。未执行模型、容器、网络、费用入口、CI、安装或发布。
+ 
+ 
+ ## 14. 持久化、事务、并发与幂等
+ 
+-认证证明与事件、投影和 Artifact 原行仍由原 SQLite 事务原子提交；本模块不签发报告 MAC，也不改变报告／状态 JSON 合同。完成报告依赖经认证的 Session 事实重新核对，原事件 Reader 的完整同读验真仍是发布前集成条件。
++认证证明与事件、投影和 Artifact 原行仍由原 SQLite 事务原子提交；本模块不签发报告 MAC，也不改变报告／状态 JSON 合同。完成报告依赖经认证的 Session 事实重新核对，原事件完整同读验真通过正式 carrier 消费，不再以缓存投影独立构造恢复结论。
+ 
+ 根外 Run Owner 从固定物化到认证宿主、执行与报告全过程持有；Case／Suite 原锁和指纹继续工作。恢复只加载原 Key，Run UUID 不是 Key 派生材料。已完成 Run／终态 Turn／Case 前缀保持查询优先，不重新执行模型或副作用。
+ 
+-恢复拒绝测试对新合成的静止旧夹具做全部文件 SHA 前后比较，包括 Session、Key、报告和状态。夹具构造连接必须关闭：Python `sqlite3.Connection` 上下文只提交事务，并不会关闭连接。活跃 SQLite WAL／SHM 可发生合法生命周期变化，静止夹具 SHA 不变的证明不能推广为活跃 WAL／SHM 字节不可变承诺。没有访问、校正或补签实际历史 Run。
++恢复拒绝测试对新合成的静止旧夹具做全部文件 SHA 前后比较，包括 Session、Key、报告和状态。新的静止主库 SHA 回归只在自有合成夹具构造阶段显式结算 WAL 并设置 DELETE 日志模式，之后捕获所有文件摘要；已有库的 Owner 恢复不再初始化。此设置不改变产品持久化格式／MAC，也不用于任何实际历史 Run。夹具构造连接必须关闭：Python `sqlite3.Connection` 上下文只提交事务，并不会关闭连接。活跃 SQLite WAL／SHM 可发生合法生命周期变化，静止夹具 SHA 不变的证明不能推广为活跃 WAL／SHM 字节不可变承诺。没有访问、校正或补签实际历史 Run。
+ 
+ ## 15. 安全、隐私与可观测性
+ 
+-新增稳定宿主错误：`eval_publication_session_missing`、`eval_publication_session_invalid`、`eval_publication_secret_denied`；复用 `publication_key_unavailable`、`publication_key_timeout`、`publication_history_unproven` 和产品 Owner 错误。只转换获得原 Session 叶句柄时的系统错误，不将下游 Provider／运行时 `OSError` 误报为认证失败。
++新增稳定宿主错误：`eval_publication_session_missing`、`eval_publication_session_invalid`、`eval_publication_secret_denied`；复用 `publication_key_unavailable`、`publication_key_timeout`、`publication_history_unproven` 、`publication_history_timeout` 和产品 Owner 错误。只转换获得原 Session 叶句柄时的系统错误，不将下游 Provider／运行时 `OSError` 误报为认证失败。
+ 
+ 沿用原 `Observability` 注入和原 Agent／Action 事件，不增加高基数凭据、Key、路径正文日志。Scope 名称／版本是有限公开声明；MAC 来源认证不授予 Root 执行权，也不代替当前输出保护。报告中不保存 Scope 材料、Key 字节或未认证事件正文。
+ 
+@@ -295,7 +313,7 @@
+ | 完成前缀 | [task_pack_execution.py](../../src/harnessix/evals/task_pack_execution.py)：`TaskPackCaseExecutor`、`_completed_trial` | 精确 Scope 转发；原成本未知／取消／证据缺失测试不变 | 原费用重算与评分器保持 |
+ | 真实默认 Scope | [provider_suite_execution.py](../../src/harnessix/evals/provider_suite_execution.py)：`TaskPackOpenAIChatProviderFactory`、`run_task_pack_provider_suite` | 冻结环境后漂移、默认非空、自定义 Scope 缺失拒绝、原指纹及 CLI 回归 | 不改变 Provider 模型参数或执行指纹 |
+ | 预算宿主转发 | [run_engineering_provider_suite_budgeted.py](../../scripts/run_engineering_provider_suite_budgeted.py)：`run_budgeted_suite` | AST 核对 Scope 原值、Guard Owner 与归一化基线等价；未执行实际预算入口 | 仅去掉 Scope 包装不改变额度／Guard／登记；实际运行前必须保留保护能力 |
+-| Session 依赖 | 原 Session 正式 Reader，不修改源文件 | 严格预期失败的原事件正文 MAC 回归；集成后必须转为真正通过 | 未集成前不得开展真实复验或标记认证验收完成 |
++| Session 依赖 | `SQLiteSessionStore.authenticated_thread_history`，不修改 Session 源文件 | 原正文 MAC 回归真实 PASS；同取消／deadline／Owner、期限、关闭及完整新快照 | 普通历史 carrier 不授执行权；实际 Provider 验收仍需独立许可 |
+ 
+ 前述范围不增加 ADR 平台、Schema 迁移或新安全模块体系；既有长期 ADR 继续适用。改动只在指定的 Eval 宿主、同源预算转发、受影响测试和本详细设计／验证包。
+ 
+@@ -310,4 +328,51 @@
+ 
+ 发布单元为上述 Eval 接线及同源宿主转发。新增认证 Run 不能再由旧裸 Reader 读取；回退程序必须保留新 Key 与原库并停止真实请求，不能删除 Key、重新初始化旧 Run 或把认证历史当 legacy。
+ 
+-尚未验证：Windows 原生行为、真实 Provider 编码质量、真实费用入口运行、完整 Session 同读验真集成。禁止以本包离线通过解锁真实模型请求、宣布 R3 通过或解除未决费用。合入时应在精确源码 SHA 上重新检查 Session 接缝用例，更新文档版本与状态，然后按既有真实复验许可单独执行验收。
++尚未验证：Windows 原生行为、真实 Provider 编码质量和真实费用入口运行。完整 Session 同读验真消费已由本包离线回归覆盖，精确源码的独立集成复核与安装由发布流程另外验收。禁止以本包离线通过解锁真实模型请求、宣布 R3 通过或解除未决费用。合入时应在精确源码 SHA 上重新检查 Session 接缝用例，更新文档版本与状态，然后按既有真实复验许可单独执行验收。
++
++## 18. 完整历史端口的集成设计与期限约束
++
++### 18.1 已提供的正式领域契约
++
++[sqlite.py](../../src/harnessix/session/sqlite.py) 的 `authenticated_thread_history(thread_id, *, cancel, deadline, checkpoint=None)` 返回 [sqlite_history.py](../../src/harnessix/session/sqlite_history.py) 的 `AuthenticatedThreadHistory`，字段为 `thread: Thread` 和 `events: tuple[AgentEvent, ...]`。端口在同一只读事务验证 Header、投影、完整原事件正文 MAC、连续前缀及语义重放一致性；退出原连接并复查控制信号后才返回。返回对象不授予 Run 执行权，也不包含 Key 或签发能力。
++
++最小消费调用为 `await owner.sessions.authenticated_thread_history(thread_id, cancel=原CancelToken, deadline=原绝对monotonic期限, checkpoint=lambda: owner.require_ready(owner.run_root))`。`get_turn` 和审批／恢复判断只能消费该返回对象的 `thread`；不能把另一个 `get_thread`、末事件或独立 `events` 结果拼为完整认证事实。
++
++### 18.2 实际接线与调用次序
++
++1. `_load_completed_run` 用 `owner.authenticated_thread_history` 取得完整 carrier 的 Turn，再按原 `_require_completed_trial` 核对报告；认证错误不转换为费用未知。
++2. `_authenticated_session_thread` 先沿控制检查、发现唯一 Thread、再次检查，然后对非空历史完整验真。`_completed_session_turn` 仅消费返回 Thread，验真后才判断终态或执行分支。
++3. `_run_agent` 在 Provider Factory、Action Runtime 和 `AgentRuntime.__aenter__` 之前对非空原历史完整验真。原 Runtime 入口会主动恢复开放 Turn；之后 `_drive_turn` 在新的只读操作入口取得最新完整 carrier，不沿用入口前旧投影，也不调用另一个 `get_thread` 拼齐事实。
++4. `_completed_trial` 转发控制；`_load_prefix` 在前缀入口捕获一次控制，多个 Run 的完成重读共用原 Case CancelToken 和一个 deadline。实际 Trial 执行后的完成重读是新的只读阶段，在调用边界捕获，不受已经结束的入口认证阶段限制。
++5. 单次 Run 三分支共用同一 Owner／Binding／Scope。前缀独立重开原 Run Owner，Binding 对象可以重新建立，但原受管 Key 身份和显式 Scope 不变，不声称跨重开对象相同。
++
++### 18.3 认证读取阶段与持久执行期限
++
++当前 Eval 没有既有 Run 级 monotonic 预算。新增的 `TaskPackHistoryReadControl` 是有限的内部只读控制，不是新的 Run 执行预算。默认 `HISTORY_READ_TIMEOUT_SECONDS = 120.0`；`begin(cancel)` 在阶段入口一次计算 `deadline = monotonic() + 120.0`。同一阶段的发现、多个完整 carrier 读取、Session 回调和交付前检查传递同一个 float，不按行或底层调用刷新 TTL。
++
++| 阶段入口 | 控制来源与共享范围 |
++|---|---|
++| `run_task_pack_coding_eval` | 固定物化之后、打开认证宿主之前捕获；完成读取、终态识别、执行前门禁共用原 Token 和 deadline |
++| `_load_prefix` | Case 前缀入口一次捕获；全部原 Run 的重读共用同一期限与原 Case Token，各自回调当前 Run Owner |
++| `_drive_turn` | Runtime 入口完成后新的历史只读操作；一次捕获后沿所有初始读取传递，取得最新同读快照 |
++| 执行后 `_completed_trial` 调用边界 | Trial 真正结束后开启新的只读重验，继续使用原 Case Token |
++| 独立低层完成／终态 helper | 仅无上层控制的独立操作创建自身 Token 和一次有界控制；正式 Case／Trial 路径显式转发原控制，不走此兜底 |
++
++身份发现通过 Owner 的专用方法托管 `cancel.run(sessions.thread_ids())`；其 timeout 由同一绝对 deadline 的剩余时间计算，不创建新的 120 秒 TTL。已有库首次发现同样传入此控制；库／Key 初始化、已有 Key 的原 5 秒加载合同保持分立。
++
++Session 原完整事件 Reader 内部 10 秒上限保持，不修改任何 Session 文件。120 秒限制整个认证阶段；单 Reader 10 秒仍可能先触发拒绝。底层线程与 SQLite 取消结算沿产品端口，不声称操作系统故障下可立即强杀。
++
++持久执行时间继续由 `remaining_seconds(turn)` 计算 `turn.created_at + turn.budget.timeout_seconds`。预算早已过期的终态 Turn 可以重新进行只读验真，不获得执行续期。普通 carrier 本身不授权恢复动作；Case Budget、工具 Operation 预算、模型参数和费用合同均不变。
++
++新增兼容／取消语义变化（不是纯夹具修正）：旧 durable-stop 路径允许已取消的非空前缀返回缓存停止结论；完整认证必须沿原取消执行，因此该组合现在传播 `TurnCancelled`。未取消的原停止／费用优先级不变，空前缀路径的原 stop 返回不变。回归显式断言原 Token 身份、0 Provider、0 Trial 重放、0 Campaign 状态写入、原静止已完成前缀全部文件 SHA 不变；首轮暴露该差异的 `pytest-v1.txt` FAIL 永久保留。
++
++取消优先级：原 Token 已取消时，非空前缀认证传播 `TurnCancelled`，不能绕过认证返回缓存 stopped／completed 结论；没有历史读取的空前缀仍沿原停止结论。认证成功后完整报告优先、已停止原因优先于成本未知、前缀顺序／缺失／费用核对规则保持；只将原 `eval_baseline_invalid` 收敛为 `evidence_missing`。Session 检查点按取消、绝对期限、当前 Owner／Binding 失效顺序拒绝，Owner 原系统错误保持原类型，不吞取消或伪装为成本未知。
++
++### 18.4 凭据版本与历史能力边界
++
++默认 Suite 和预算宿主都通过 `provider_publication_scope` 构造 `eval.provider`／`1` 的冻结材料映射；Scope 构造验证所声明的 name/version 与实际材料元数据相同。`1` 是逻辑引用版本，不等于实际云端 API Key 轮换版本。自定义 Factory 依赖显式凭据 Owner 的同源约束，单纯非空 Scope 检查不证明任意闭包内的真实材料。
++
++原事件 Seal 只保存经 MAC 保护的 `scope_sha256`，并不保存可由摘要反推出的完整 name/version 映射；新 carrier 也不增加原 Provider 凭据映射字段。默认 Factory 解析材料后核对其应用引用版本等于 `eval.provider/1`，不支持的版本沿 `publication_scope_unavailable` 拒绝并清零材料，不创建 Provider。该核对只针对当前明确映射，不从历史 opaque 摘要恢复任何映射。不能拿当前 Scope 声明充当历史原材料证明，不能补签旧记录或把 MAC 认证等同于 Root／执行授权。完整历史中的已认证领域 Secret Binding 如参与恢复执行，仍按产品原版本匹配端口核对，不降级为当前版本。
++
++
++完整 Session 事务、控制信号与取消结算详见[单事务认证 Thread 历史详设](m09-r4-authenticated-thread-history.md)；模块依赖与生命周期决策见 [ADR0107](../adr/0107-authenticated-eval-host-and-history-read.md)。

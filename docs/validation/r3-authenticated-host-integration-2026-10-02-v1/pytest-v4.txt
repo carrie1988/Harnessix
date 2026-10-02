@@ -1,0 +1,148 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/src", "repo_root_on_sys_path": false}
+................................................F..F.................... [ 54%]
+...........................................................              [100%]
+=================================== FAILURES ===================================
+_______ test_original_event_mac_precedes_provider_and_runtime[1-active] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v4/test_original_event_mac_preced2')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bd52570>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be33500>
+window = 'active', sequence = 1
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+                await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=ItemStarted(
+                            item_id=uuid4(), content=TextContent(kind="user_message", text="fixture-active-history"),
+                        )),
+                    ],
+                    expected_sequence=0,
+                )
+        with sqlite3.connect(root / "session.sqlite") as db:
+            db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=?", (sequence,))
+        db.close()
+        settle_fixture_database(root)
+        before = fixture_file_snapshot(root)
+        calls = []
+    
+        def forbidden(*args, **kwargs):
+            calls.append("execution")
+            pytest.fail("原事件验真失败不得进入 Provider、Action 或 AgentRuntime")
+    
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id), run_root=root,
+            workspace=root / "workspace", manifest=SimpleNamespace(run_id=run_id),
+        ))
+        monkeypatch.setattr(task_pack_trial, "AgentRuntime", forbidden)
+        monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", forbidden)
+        with pytest.raises(KernelError) as denied:
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded, runs, Path("/missing/git"), Path("/missing/docker"),
+                expected.case_id, run_id, forbidden, campaign.environment,
+                publication_scope=scope,
+            )
+>       assert denied.value.code == "publication_history_unproven"
+E       AssertionError: assert 'product_state_owner_invalid' == 'publication_history_unproven'
+E         
+E         - publication_history_unproven
+E         + product_state_owner_invalid
+
+tests/evals/test_task_pack_publication.py:960: AssertionError
+_______ test_original_event_mac_precedes_provider_and_runtime[3-active] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v4/test_original_event_mac_preced5')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bd95e80>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bd979b0>
+window = 'active', sequence = 3
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+                await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=ItemStarted(
+                            item_id=uuid4(), content=TextContent(kind="user_message", text="fixture-active-history"),
+                        )),
+                    ],
+                    expected_sequence=0,
+                )
+        with sqlite3.connect(root / "session.sqlite") as db:
+            db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=?", (sequence,))
+        db.close()
+        settle_fixture_database(root)
+        before = fixture_file_snapshot(root)
+        calls = []
+    
+        def forbidden(*args, **kwargs):
+            calls.append("execution")
+            pytest.fail("原事件验真失败不得进入 Provider、Action 或 AgentRuntime")
+    
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id), run_root=root,
+            workspace=root / "workspace", manifest=SimpleNamespace(run_id=run_id),
+        ))
+        monkeypatch.setattr(task_pack_trial, "AgentRuntime", forbidden)
+        monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", forbidden)
+        with pytest.raises(KernelError) as denied:
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded, runs, Path("/missing/git"), Path("/missing/docker"),
+                expected.case_id, run_id, forbidden, campaign.environment,
+                publication_scope=scope,
+            )
+>       assert denied.value.code == "publication_history_unproven"
+E       AssertionError: assert 'product_state_owner_invalid' == 'publication_history_unproven'
+E         
+E         - publication_history_unproven
+E         + product_state_owner_invalid
+
+tests/evals/test_task_pack_publication.py:960: AssertionError
+=========================== short test summary info ============================
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[1-active]
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[3-active]
+2 failed, 129 passed in 3.29s

@@ -1,0 +1,16 @@
+{
+  "baseline": "frozen dfba owned bytes copied to integration tree",
+  "paths": [
+    "scripts/run_engineering_provider_suite_budgeted.py",
+    "src/harnessix/evals/task_pack_publication.py",
+    "src/harnessix/evals/task_pack_trial.py",
+    "src/harnessix/evals/task_pack_execution.py",
+    "src/harnessix/evals/provider_suite_execution.py",
+    "tests/evals/test_task_pack_publication.py",
+    "tests/evals/test_task_pack_evidence_stop.py",
+    "tests/evals/test_provider_suite_execution.py",
+    "docs/changes/m09-r3-eval-publication-wiring.md"
+  ],
+  "only_owned_paths": true,
+  "patch_sha256": "b660384dd28144dd5a9edcfdf34866f9fe94a7025cf683e52b011556a76e82f2"
+}

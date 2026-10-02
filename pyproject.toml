@@ -75,6 +75,10 @@ target-version = "py312"
 extend-exclude = [
     "docs/validation/**/diagnostics/*.py",
     "docs/validation/**/installation/*.py",
+    # 原始验证宿主脚本按固定manifest封存；活动实现与测试不适用此例外。
+    "docs/validation/m09-r3-eval-publication-wiring-20261002-v1/run_offline_tests.py",
+    "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/run_offline_tests.py",
+    "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/validate_documents.py",
 ]
 
 [tool.ruff.lint]

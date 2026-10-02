@@ -625,6 +625,7 @@
     "evals->patches",
     "evals->processes",
     "evals->product_config",
+    "evals->secrets",
     "evals->session",
     "evals->tools",
     "execution->agent",

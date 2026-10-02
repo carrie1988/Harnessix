@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 20
+code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/session/test_authenticated_history.py
   - tests/artifacts/test_binary_publication.py
   - tests/agent/test_runtime.py
   - tests/agent/test_store.py
@@ -44,7 +45,7 @@ supersedes: []
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
 | 代码版本 | 当前实现Revision `aa3372c0eb0c3b4ab674b19d26754a80dd035b46`；0.9.1f3单Runtime边界由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch、经证明的固定Container Process、外部Action Config、启动恢复和App Server |
-| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到28 |
+| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到30 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
 本文把“已实现”和“默认已装配”分开描述。当前Process能力经统一Trusted Action组合进入Agent，
@@ -845,3 +846,10 @@ Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session�
 先验证原行MAC和Session权威引用，再复验当前Workspace、TTL、全文及当前Secret。
 同Key重启不以新Epoch拒绝已签新行；旧无Seal行、错Key或篡改导致历史准备失败且不调用Provider。
 这不授权旧Session历史、全部Provider材料或其他公开出口。
+
+## 认证历史内部读取的错误分类
+
+[`failure_category`](../../src/harnessix/agent/errors.py)将新增内部历史选择器错误
+`invalid_history_request`归入原INPUT分类；没有新增协议命令、模型Tool或错误重试策略。
+[Session同事务历史读取](../changes/m09-r4-authenticated-thread-history.md)保留原Owner异常对象、
+驱动存储失败及父Task取消的原结算边界。普通认证历史不是当前执行授权，不能凭返回对象恢复外部效果。

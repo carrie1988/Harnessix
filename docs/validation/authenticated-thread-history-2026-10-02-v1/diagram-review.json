@@ -1,0 +1,41 @@
+{
+  "schema_version": "harnessix.thread-history.diagram-review/v1",
+  "diagrams": [
+    {
+      "path": "diagrams/architecture.png",
+      "width": 3568,
+      "height": 718,
+      "sha256": "5df7265384558bc037c74598dfb729ab49efb483a8d977b144f44128e0e1fc7e",
+      "actual_rendered": true,
+      "actual_viewed": true,
+      "visual_verdict": "PASS: 节点文字和边界完整，无裁切；纵向流程可逐段浏览"
+    },
+    {
+      "path": "diagrams/dataflow.png",
+      "width": 3004,
+      "height": 556,
+      "sha256": "703b2a6e2175be05a1c2f2f5615422b94639ee957e27e7f77794edbdd73d188d",
+      "actual_rendered": true,
+      "actual_viewed": true,
+      "visual_verdict": "PASS: 节点文字和边界完整，无裁切；纵向流程可逐段浏览"
+    },
+    {
+      "path": "diagrams/flow.png",
+      "width": 1564,
+      "height": 2556,
+      "sha256": "836919b71fcf7177c11684a69bac34cd1ed72527b050f0b0df0452e18576b93f",
+      "actual_rendered": true,
+      "actual_viewed": true,
+      "visual_verdict": "PASS: 节点文字和边界完整，无裁切；纵向流程可逐段浏览"
+    },
+    {
+      "path": "diagrams/sequence.png",
+      "width": 2154,
+      "height": 1266,
+      "sha256": "7cc7a87c32d57975433728a00213a599419eb1c9f2f5f7d142a21b58c1cd2f32",
+      "actual_rendered": true,
+      "actual_viewed": true,
+      "visual_verdict": "PASS: 节点文字和边界完整，无裁切；纵向流程可逐段浏览"
+    }
+  ]
+}

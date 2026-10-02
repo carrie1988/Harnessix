@@ -1,0 +1,300 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src", "repo_root_on_sys_path": false}
+F..........F.......FFFF................................................. [ 80%]
+.................                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_new_run_owns_same_binding_scope_and_stable_original_key _________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_new_run_owns_same_binding0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x106465d60>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106465d00>
+
+    async def test_new_run_owns_same_binding_scope_and_stable_original_key(
+        tmp_path, scope, monkeypatch
+    ):
+        root, tid = run_root(tmp_path), uuid4()
+        async with open_task_pack_publication(root, scope) as owner:
+            assert owner.scope is scope
+            assert owner.sessions._publication is owner.binding
+            assert owner.artifacts.session is owner.sessions
+            assert owner.artifacts._publication.binding is owner.binding
+            assert owner.artifacts._publication.protection is scope
+            owner.root_owner.require_ready(root)
+            header = owner.binding.header()
+            key_copy = owner.binding._key
+            await owner.sessions.append(
+                tid,
+>               [EventDraft(payload=ThreadCreated(workspace="fixture-workspace"))],
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                expected_sequence=0,
+            )
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for ThreadCreated
+E           workspace
+E             Value error, Workspace 必须使用绝对路径 [type=value_error, input_value='fixture-workspace', input_type=str]
+E               For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:95: ValidationError
+_____ test_legacy_missing_mac_is_not_enrolled_even_with_fixture_key[True] ______
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_legacy_missing_mac_is_not1')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bbbf740>
+nonempty = True
+
+    @pytest.mark.parametrize("nonempty", [False, True])
+    async def test_legacy_missing_mac_is_not_enrolled_even_with_fixture_key(tmp_path, scope, nonempty):
+        root, tid = run_root(tmp_path), uuid4()
+        async with open_task_pack_publication(root, scope):
+            pass
+        path = root / "session.sqlite"
+        path.unlink()
+        legacy = SQLiteSessionStore(path)
+        await legacy.initialize()
+        if nonempty:
+            await legacy.append(
+>               tid, [EventDraft(payload=ThreadCreated(workspace="fixture"))], expected_sequence=0
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            )
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for ThreadCreated
+E           workspace
+E             Value error, Workspace 必须使用绝对路径 [type=value_error, input_value='fixture', input_type=str]
+E               For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:181: ValidationError
+_______ test_agent_tool_action_wiring_borrows_identical_scope_and_owner ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_agent_tool_action_wiring_0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bbe6b70>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bbb5460>
+
+    async def test_agent_tool_action_wiring_borrows_identical_scope_and_owner(
+        tmp_path, scope, monkeypatch
+    ):
+        loaded, expected, campaign = _case_and_campaign()
+        root = run_root(tmp_path)
+        materialized = SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id),
+            run_root=root,
+            workspace=root / "workspace",
+            manifest=SimpleNamespace(run_id=uuid4()),
+        )
+        async with open_task_pack_publication(root, scope) as owner:
+            calls = []
+    
+            @asynccontextmanager
+            async def provider_factory(*args):
+                assert await owner.sessions.thread_ids() == []
+                calls.append("provider")
+                yield object()
+    
+            @asynccontextmanager
+            async def tools(workspace, **kwargs):
+                assert kwargs["artifacts"] is owner.artifacts
+                assert kwargs["git_output_redaction"] is scope
+                assert kwargs["git_state_directory"] == root
+                yield SimpleNamespace(workspace_scope="a" * 64, workspace_root=object())
+    
+            @asynccontextmanager
+            async def actions(*args, **kwargs):
+                assert kwargs["root_owner"] is owner.root_owner
+                assert kwargs["output_redaction"] is scope
+                yield SimpleNamespace(gateway=object())
+    
+            @asynccontextmanager
+            async def agent(sessions, provider, **kwargs):
+                assert sessions is owner.sessions
+                assert kwargs["artifacts"] is owner.artifacts
+                assert kwargs["public_output_protection"] is scope
+                yield object()
+    
+            async def drive(runtime, sessions, *args):
+                assert sessions is owner.sessions
+                return "fixture-no-model-drive"
+    
+            monkeypatch.setattr(task_pack_trial, "CodingToolRuntime", tools)
+            monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", actions)
+            monkeypatch.setattr(task_pack_trial, "AgentRuntime", agent)
+            monkeypatch.setattr(
+                task_pack_trial,
+                "build_product_agent_context",
+                lambda *args: SimpleNamespace(context=None, compaction=None),
+            )
+            monkeypatch.setattr(task_pack_trial, "_drive_turn", drive)
+>           result = await task_pack_trial._run_agent(
+                loaded,
+                materialized,
+                Path("/missing/git"),
+                Path("/missing/docker"),
+                provider_factory,
+                CancelToken(),
+                object(),
+                lambda _: None,
+                owner,
+            )
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:353: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/evals/task_pack_trial.py:377: in _run_agent
+    profile = build_task_pack_product_profile(loaded, case.profile_id, container_engine)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+loaded = LoadedCodingEvalTaskPack(manifest=CodingEvalTaskPack(spec_version='harnessix.coding-eval-task-pack/v1', pack_id='harne...PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/evals/taskpacks/engineering-v1'))
+profile_id = 'agents-normalize-tool-name-check'
+container_engine = PosixPath('/missing/docker')
+
+    def build_task_pack_product_profile(
+        loaded: LoadedCodingEvalTaskPack,
+        profile_id: str,
+        container_engine: Path,
+    ) -> ProductProcessProfile:
+        """把已校验Pack Profile绑定到当前宿主Engine，保持镜像、命令和资源不可改写。"""
+    
+        verified = _verified_builtin_task_pack(loaded)
+        try:
+            profile = verified.manifest.profile(profile_id)
+            engine = container_engine.resolve(strict=True)
+            engine_info = engine.stat()
+        except KeyError:
+            raise KernelError(
+                "eval_task_pack_profile_not_found", "Task Pack检查Profile不存在"
+            ) from None
+        except (OSError, RuntimeError, ValidationError, ValueError):
+>           raise KernelError(
+                "eval_task_pack_profile_invalid", "Task Pack检查Profile或Engine无效"
+            ) from None
+E           harnessix.agent.errors.KernelError: Task Pack检查Profile或Engine无效
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/evals/task_pack.py:209: KernelError
+_______ test_artifact_persists_original_mac_and_rejects_tampering[None] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_artifact_persists_origina0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bbbcce0>
+change = None
+
+    @pytest.mark.parametrize("change", [None, "seal", "body"])
+    async def test_artifact_persists_original_mac_and_rejects_tampering(tmp_path, scope, change):
+        from uuid import UUID
+    
+        root = run_root(tmp_path)
+        async with open_task_pack_publication(root, scope) as owner:
+>           tid, ref = await _publish_fixture_artifact(owner)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:414: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+owner = TaskPackPublicationOwner(run_root=PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_artifact_persists_origina0/run'))
+
+    async def _publish_fixture_artifact(owner):
+        tid, turn_id, item_id = uuid4(), uuid4(), uuid4()
+        call = ToolCallContent(
+            call_id=uuid4(),
+            provider_call_id="fixture",
+            tool="grep",
+            tool_version="1",
+            arguments={"query": "safe"},
+            effect_class=EffectClass.READ_ONLY,
+        )
+        payloads = [
+            TurnStarted(request_id="fixture", request_fingerprint="a" * 64, budget=Budget()),
+            TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
+            TurnStateChanged(status=TurnStatus.CALLING_MODEL),
+            ItemStarted(item_id=item_id, content=call),
+            ItemFinished(item_id=item_id, content=call, status=ItemStatus.COMPLETED),
+>           TurnStateChanged(status=TurnStatus.RUNNING_TOOLS),
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+E       AttributeError: type object 'TurnStatus' has no attribute 'RUNNING_TOOLS'
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:383: AttributeError
+_______ test_artifact_persists_original_mac_and_rejects_tampering[seal] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_artifact_persists_origina1')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bf37b90>
+change = 'seal'
+
+    @pytest.mark.parametrize("change", [None, "seal", "body"])
+    async def test_artifact_persists_original_mac_and_rejects_tampering(tmp_path, scope, change):
+        from uuid import UUID
+    
+        root = run_root(tmp_path)
+        async with open_task_pack_publication(root, scope) as owner:
+>           tid, ref = await _publish_fixture_artifact(owner)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:414: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+owner = TaskPackPublicationOwner(run_root=PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_artifact_persists_origina1/run'))
+
+    async def _publish_fixture_artifact(owner):
+        tid, turn_id, item_id = uuid4(), uuid4(), uuid4()
+        call = ToolCallContent(
+            call_id=uuid4(),
+            provider_call_id="fixture",
+            tool="grep",
+            tool_version="1",
+            arguments={"query": "safe"},
+            effect_class=EffectClass.READ_ONLY,
+        )
+        payloads = [
+            TurnStarted(request_id="fixture", request_fingerprint="a" * 64, budget=Budget()),
+            TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
+            TurnStateChanged(status=TurnStatus.CALLING_MODEL),
+            ItemStarted(item_id=item_id, content=call),
+            ItemFinished(item_id=item_id, content=call, status=ItemStatus.COMPLETED),
+>           TurnStateChanged(status=TurnStatus.RUNNING_TOOLS),
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+E       AttributeError: type object 'TurnStatus' has no attribute 'RUNNING_TOOLS'
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:383: AttributeError
+_______ test_artifact_persists_original_mac_and_rejects_tampering[body] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_artifact_persists_origina2')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bbbd040>
+change = 'body'
+
+    @pytest.mark.parametrize("change", [None, "seal", "body"])
+    async def test_artifact_persists_original_mac_and_rejects_tampering(tmp_path, scope, change):
+        from uuid import UUID
+    
+        root = run_root(tmp_path)
+        async with open_task_pack_publication(root, scope) as owner:
+>           tid, ref = await _publish_fixture_artifact(owner)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:414: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+owner = TaskPackPublicationOwner(run_root=PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v1/test_artifact_persists_origina2/run'))
+
+    async def _publish_fixture_artifact(owner):
+        tid, turn_id, item_id = uuid4(), uuid4(), uuid4()
+        call = ToolCallContent(
+            call_id=uuid4(),
+            provider_call_id="fixture",
+            tool="grep",
+            tool_version="1",
+            arguments={"query": "safe"},
+            effect_class=EffectClass.READ_ONLY,
+        )
+        payloads = [
+            TurnStarted(request_id="fixture", request_fingerprint="a" * 64, budget=Budget()),
+            TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
+            TurnStateChanged(status=TurnStatus.CALLING_MODEL),
+            ItemStarted(item_id=item_id, content=call),
+            ItemFinished(item_id=item_id, content=call, status=ItemStatus.COMPLETED),
+>           TurnStateChanged(status=TurnStatus.RUNNING_TOOLS),
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+E       AttributeError: type object 'TurnStatus' has no attribute 'RUNNING_TOOLS'
+
+/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py:383: AttributeError
+=========================== short test summary info ============================
+FAILED ../../Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py::test_new_run_owns_same_binding_scope_and_stable_original_key
+FAILED ../../Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py::test_legacy_missing_mac_is_not_enrolled_even_with_fixture_key[True]
+FAILED ../../Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py::test_agent_tool_action_wiring_borrows_identical_scope_and_owner
+FAILED ../../Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py::test_artifact_persists_original_mac_and_rejects_tampering[None]
+FAILED ../../Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py::test_artifact_persists_original_mac_and_rejects_tampering[seal]
+FAILED ../../Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/tests/evals/test_task_pack_publication.py::test_artifact_persists_original_mac_and_rejects_tampering[body]
+6 failed, 83 passed in 2.44s

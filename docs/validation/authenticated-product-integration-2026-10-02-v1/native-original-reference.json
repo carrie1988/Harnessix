@@ -1,0 +1,12 @@
+{
+  "run_id": 36969196042,
+  "attempt": 1,
+  "revision": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "archive_id": "git-native-branch-integration-20261002-v1",
+  "member": "native-run-36969196042/result.json",
+  "sha256": "d22f8e4f5a6ff936d852ee7d89910262707759f666e55dd9614d968c632282d6",
+  "bytes": 571,
+  "status": "PREFLIGHT_REFUSED",
+  "actual_git_execution": false,
+  "historical_root": "UNKNOWN"
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "harnessix.r3-auth-wiring-seal-attempt/v1",
+  "status": "FAIL",
+  "reason": "unbounded sk- regex matched trailing characters of task- in source path metadata",
+  "false_positive_source_paths": [
+    "spec/coding-eval-task-pack-materialization-v1.schema.json"
+  ],
+  "source_or_test_changes": false,
+  "correction": "use token boundaries for candidate credential patterns; do not suppress genuine token candidates",
+  "manifest_not_created_on_failed_attempt": true,
+  "independent_verifier_followup": "failed: no manifest available; no PASS claimed"
+}

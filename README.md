@@ -6,6 +6,12 @@
 
 **发行状态：** 当前包版本为`1.0.0rc1`，仅用于内部预发行验收，不是1.0正式商用发布。
 
+**认证恢复增量：** Session提供同一只读事务内完整Thread/事件认证；Task Pack三条执行与恢复路径
+复用原产品Owner、Key和保护Scope，完整历史在Provider及恢复动作之前验真。
+原取消和固定只读期限贯穿，不补签旧Run，不改变真实质量评分或费用规则。
+见[详细设计](docs/changes/m09-r3-eval-publication-wiring.md)和
+[同候选集成验证](docs/validation/authenticated-product-integration-2026-10-02-v1/README.md)。
+
 **当前产品交付增量：** `rollback_workspace_patch`可对本会话成功Patch生成完整逆向Diff并重新审批，
 后续文件修改冲突拒绝，恢复只对账不续写。见[总体与详细设计](docs/changes/m09-r4-product-patch-rollback.md)及
 [验证报告](docs/validation/product-patch-rollback-2026-09-30-v1/README.md)。本地Git Commit/Checkpoint正式产品接线、
@@ -83,7 +89,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code复用模型供应商SDK、OpenTelemetry、SQLite、Git、系统搜索工具和成熟Sandbox，不重新实现已有标准与底层系统能力。LangGraph等框架只作为源码研究与外部集成参考；1.0公共集成面是Agent Protocol，不内置Action级LangGraph Adapter。
 
-1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；0.8已提供Agent Protocol、MCP/Skill/Hook和Provider/Profile产品配置边界，完整TUI和Windows发行物仍未完成，Windows产品整体未达到当前支持门禁。
+1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；0.8已提供Agent Protocol、MCP/Skill/Hook和Provider/Profile产品配置边界，完整TUI已按0.9.1验收；三平台安装与不同版本升级专项已有固定原件，完整Windows核心编码、消费者支持及正式发行门禁仍未完成。
 
 ## 当前已完成：0.7可信执行与工程交付
 

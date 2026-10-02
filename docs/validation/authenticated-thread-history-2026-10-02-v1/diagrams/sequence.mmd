@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant H as 原宿主
+    participant R as 单事务Reader
+    participant D as Session SQLite
+    participant W as 合法并发Writer
+    H->>R: Thread选择器/原cancel/绝对期限
+    R->>D: mode=ro, BEGIN
+    R->>D: 原认证投影, 建立读版本N
+    W->>D: 合法追加并提交N+1
+    R->>D: 全事件/Seal/Checkpoint, 仍读N
+    R->>R: 原MAC前缀及replay相等
+    R->>D: 关闭连接, 结算读事务
+    R->>H: N版本的普通Thread/Events

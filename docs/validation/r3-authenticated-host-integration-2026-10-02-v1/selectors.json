@@ -1,0 +1,13 @@
+{
+  "schema": "harnessix.offline-selectors/v1",
+  "selectors": [
+    "tests/evals/test_task_pack_publication.py",
+    "tests/evals/test_task_pack_execution.py",
+    "tests/evals/test_task_pack_evidence_stop.py",
+    "tests/evals/test_provider_suite_execution.py",
+    "tests/evals/test_provider_suite_cli.py"
+  ],
+  "expected_passed": 133,
+  "expected_xfail": 0,
+  "expected_skipped": 0
+}

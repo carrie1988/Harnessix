@@ -1,0 +1,45 @@
+{
+  "inputs": [
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "before_format_sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11",
+      "sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_publication.py",
+      "before_format_sha256": "207584805720d71a5a610f6250f1330916ced31e9b7e2ab71fcf2101c173a297",
+      "sha256": "207584805720d71a5a610f6250f1330916ced31e9b7e2ab71fcf2101c173a297"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_trial.py",
+      "before_format_sha256": "6307e44c4db17412fe81ff6a429befd8add527977dd4f3c1b98341f246824aba",
+      "sha256": "6307e44c4db17412fe81ff6a429befd8add527977dd4f3c1b98341f246824aba"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_execution.py",
+      "before_format_sha256": "1609740aab6c89dd70d000943bc806ab1622333c005c6d6c2b2c2a7098d3d774",
+      "sha256": "895270917c47c0c14c05b418cd87649dc2d2405e4b1d8becef14ef7ac38f7a85"
+    },
+    {
+      "path": "src/harnessix/evals/provider_suite_execution.py",
+      "before_format_sha256": "f5925a8223c376f8e63aa6ef2556fe34fd30575040a24eb1e7332206ef7970fa",
+      "sha256": "f5925a8223c376f8e63aa6ef2556fe34fd30575040a24eb1e7332206ef7970fa"
+    },
+    {
+      "path": "tests/evals/test_task_pack_publication.py",
+      "before_format_sha256": "867df133393f950d85a07aa1881428610a4bd5124ff73e661c4a6e00f62b56b7",
+      "sha256": "9243086c0d1c8207304ad608196687c180657ca9ac1e299d3a3bc263ee65ead7"
+    },
+    {
+      "path": "tests/evals/test_task_pack_evidence_stop.py",
+      "before_format_sha256": "618af9f5af30c1f816caeccfab3930d8a494446385ec595d730d791d68eaf65f",
+      "sha256": "f0657ecc3daeed71313d379ca8597fee7989f1a7dc33e23f96b6ae17fa5b067f"
+    },
+    {
+      "path": "tests/evals/test_provider_suite_execution.py",
+      "before_format_sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846",
+      "sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846"
+    }
+  ],
+  "source_and_tests_frozen": true
+}

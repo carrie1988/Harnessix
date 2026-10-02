@@ -250,3 +250,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR-0105 Artifact原正文持久来源认证](0105-authenticated-artifact-body.md)：复用独立Key、同事务原行Seal、旧行不追认与当前Scope复验。
 
 - [ADR 0106：1.0首发范围与风险分层发布门禁](0106-v1-release-scope-and-risk-based-gates.md)：六个剩余工作包、有限支持矩阵和延期能力拒绝；不降低商用核心门禁。
+
+- [ADR 0107：评测认证宿主与同读完整历史](0107-authenticated-eval-host-and-history-read.md)：复用唯一产品Owner/Key/Scope，原历史完整验真先于恢复；精确新增`evals->secrets`而不扩大治理阈值。

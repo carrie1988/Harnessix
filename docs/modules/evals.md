@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 31
-code_revision: db7567e318375cb1c1fddc20584ce27eb2ed20bc
+version: 32
+code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
 owners:
   - core
 modules:
@@ -23,6 +23,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0087-deterministic-offline-eval-suite-composition.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
   - tests/evals/test_grader.py
   - tests/evals/test_historical.py
@@ -41,6 +42,7 @@ related_tests:
   - tests/evals/test_suite_execution.py
   - tests/integration/test_task_pack_profiles.py
   - tests/evals/test_task_pack_execution.py
+  - tests/evals/test_task_pack_publication.py
   - tests/evals/test_task_pack_profile_outcomes.py
   - tests/evals/test_task_pack_evidence_stop.py
   - tests/integration/test_task_pack_execution.py
@@ -2248,6 +2250,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 32 | 基于`730f0846641700c4c697d7cc6ba03cbf1a8364bc`的集成实现 | 2026-10-02 | 三条Trial路径复用原产品Owner、Key及保护Scope；完整同读历史在恢复与Provider之前认证；固定只读期限及原取消贯穿；唯一Thread识别归入认证宿主，不改变评分或费用 |
 | 30 | 基于`4a9264bfeb84f04fb4976894bf350091dd8870b0`的实现 | 2026-10-02 | 同一原Grant的候选链只追加、旧Suite撤销、完整请求及累计费用保留；显式管理入口与原请求宿主指纹联动，实际登记和真实质量仍独立验收 |
 | 29 | `a0b5df0a3c380b8b058b8e45c99a731a9022e7f0` | 2026-09-30 | 同一40元剩余额度显式切换一次Suite，原授权及全部已用/预留保持，V2旧Reader失败关闭，三重请求身份和恢复指纹绑定；实际预算登记及真实质量仍独立验收 |
 | 28 | `ef582dacb5609fee90e6b3905998dea8db269c53` | 2026-09-30 | 分离固定Profile观测职责，确认无效果参数拒绝不计检查，逐项验证真实终态，指定缺证路径持久停止Campaign/Suite，重开不重放；真实质量门禁保持 |
@@ -2297,3 +2300,53 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 4次完整Usage估算0.096616元，新旧两笔20.77824元预留均保持。
 详见[实际登记与中断报告](../validation/candidate-chain-provider-interruption-2026-10-02-v1/README.md)。
 没有完成Case或Suite质量报告，不自动继续或重放；完整20 Trial质量仍未通过。
+
+## Task Pack认证宿主与同读历史
+
+Task Pack不能使用弱于默认产品的另一套恢复入口。新Run通过原产品初始化原Key，
+已有Run只读取原Key；Session、Artifact、Action及公开材料保护借用同一个Root Owner、Binding和Scope。
+缺Key、缺MAC、错Key、原正文替换或Owner失效必须在Provider及自动恢复入口之前拒绝，
+不得修复、补签、迁移、重放旧Run或修改其质量结果。
+
+### 源码职责与读取合同
+
+| 类型或接口 | 职责与关键字段 | 源码 |
+|---|---|---|
+| `provider_publication_scope` | 冻结原凭据Owner已解析的材料；`eval.provider/1`是逻辑引用版本，不是云端轮换版本 | [认证宿主](../../src/harnessix/evals/task_pack_publication.py) |
+| `TaskPackHistoryReadControl` | 持有原`CancelToken`及单次捕获的绝对`monotonic`期限；不按事件或Run重置 | [读取控制](../../src/harnessix/evals/task_pack_publication.py) |
+| `TaskPackPublicationOwner` | 借用原Root Owner、私有根句柄、Session Binding、Session/Artifact及保护Scope | [宿主装配](../../src/harnessix/evals/task_pack_publication.py) |
+| `authenticated_single_thread` | 发现唯一Thread并认证完整同读历史；空库返回`None`，多Thread按原错误拒绝 | [认证读取](../../src/harnessix/evals/task_pack_publication.py) |
+| `_load_completed_run`、`_completed_session_turn` | 消费认证历史后核对原报告或识别终态，不调用Provider重做已完成Trial | [Trial恢复](../../src/harnessix/evals/task_pack_trial.py) |
+| `_load_prefix`、`_completed_trial` | 已完成Case前缀复用原Token和同一读取期限；不替换费用或评分事实 | [Case编排](../../src/harnessix/evals/task_pack_execution.py) |
+
+普通执行、已完成报告及报告提交窗口恢复共用如下次序：
+
+```text
+捕获只读阶段控制 → 持有原Root Owner → 打开原Key/Binding/Store
+→ 认证身份及完整Thread/事件同读版本 → 核对报告或终态
+→ 必要时才进入Provider/Action/AgentRuntime → 再按原执行预算推进
+```
+
+`authenticated_thread_history`在单一SQLite只读事务中先验原MAC，再解析并重放完整事件；
+投影与重放必须一致。Runtime进入时可能恢复开放Turn，因此其后的驱动属于新的只读阶段，
+重新取得最新完整历史，不拼接缓存`get_thread`与另一时刻的事件。
+普通历史只证明事实，不证明当前Root、批准、凭据映射或执行权。
+
+### 期限、取消和兼容边界
+
+每个只读认证阶段默认120秒，在入口一次捕获；Case完成前缀中的多个Run共享该期限。
+Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取可观察已过期Turn的终态，
+但不能延长Turn、工具、Token或费用预算，也不能恢复其执行资格。
+
+已取消且含历史的非空前缀现在传播原`TurnCancelled`，不绕过认证返回缓存停止结论。
+没有历史读取的空前缀仍返回原停止原因；未取消的报告、停止原因及成本判断顺序不变。
+拒绝路径必须保持0 Provider、0 Trial重放、0 Campaign写入和原已完成前缀不变。
+默认Factory只接受明确的当前`eval.provider/1`映射，不从历史不透明Scope摘要反推凭据。
+
+完整架构、流程图、时序图、数据流、字段、伪代码、异常与部署见
+[认证宿主详设](../changes/m09-r3-eval-publication-wiring.md)、
+[Session同读详设](../changes/m09-r4-authenticated-thread-history.md)和
+[ADR0107](../adr/0107-authenticated-eval-host-and-history-read.md)。
+[正式测试](../../tests/evals/test_task_pack_publication.py)使用真实SQLite及合成材料，
+覆盖原Key、同源Scope、MAC先解析、原取消、共享期限、Provider前拒绝、唯一身份及资源释放。
+这些离线装配证据不替代真实20 Trial质量、消费者平台或商用发布。

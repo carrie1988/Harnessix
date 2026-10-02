@@ -1,0 +1,17 @@
+{
+  "inputs": [
+    {
+      "path": "README.md",
+      "sha256": "31f67dac631b4bfa1056a985c8e401c30cbacd286b5db6b7e4102818cc112a95"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad"
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd"
+    }
+  ],
+  "mutable_until_build": false
+}

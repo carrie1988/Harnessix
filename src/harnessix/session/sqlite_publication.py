@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+from collections.abc import Callable
 from time import monotonic
 from uuid import UUID
 
@@ -196,6 +197,8 @@ async def authenticated_events(
     publication: SessionPublicationBinding,
     thread_id: UUID,
     after: int,
+    *,
+    history_checkpoint: Callable[[], None] | None = None,
 ) -> list[AgentEvent]:
     """从根重算完整前缀再返回选定事件；损坏投影不改变原事件认证依据。"""
     await verify_store(database, publication)
@@ -205,6 +208,8 @@ async def authenticated_events(
     deadline, size = monotonic() + 10.0, 0
 
     def check() -> None:
+        if history_checkpoint is not None:
+            history_checkpoint()
         if monotonic() >= deadline:
             raise KernelError("publication_history_timeout", "Session历史认证超时")
 

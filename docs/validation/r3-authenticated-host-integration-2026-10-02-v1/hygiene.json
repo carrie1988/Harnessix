@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "real_credential_pattern_findings": [],
+  "remaining_sqlite_or_key_files": [],
+  "no_original_run_body_collected": true,
+  "fixtures_not_packaged": true
+}

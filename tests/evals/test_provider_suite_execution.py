@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,6 +12,7 @@ from harnessix.evals.suite_execution_contracts import (
     CodingEvalSuiteCaseRunResult,
     CodingEvalSuiteRunReport,
 )
+from harnessix.evals.task_pack_publication import provider_publication_scope
 from tests.evals.provider_suite_helpers import provider_suite_config
 
 
@@ -34,16 +36,24 @@ async def test_provider_suite_reuses_suite_runner_with_config_fingerprint(
     monkeypatch,
 ) -> None:
     config = provider_suite_config(tmp_path)
+    config = config.model_copy(
+        update={
+            "provider_config": config.provider_config.model_copy(
+                update={"api_key_env": "R3_FIXTURE_KEY"}
+            )
+        }
+    )
 
     async def executor(case, campaign, case_root, cancel):
         return CodingEvalSuiteCaseRunResult(case_id=case.case_id, reason="runtime_failed")
 
     def scope(checked, observability):
         assert checked == config and observability is None
-        return executor
+        return SimpleNamespace(publication_scope=None, provider_factory=executor)
 
     async def run(suite, checked_executor, **kwargs):
-        assert suite == config.suite and checked_executor is executor
+        assert suite == config.suite and checked_executor.publication_scope is not None
+        assert checked_executor.publication_scope.publication_context()["bindings"]
         assert kwargs["execution_binding_sha256"] == config.fingerprint
         assert kwargs["resume"] is True
         return CodingEvalSuiteRunReport(
@@ -59,6 +69,7 @@ async def test_provider_suite_reuses_suite_runner_with_config_fingerprint(
     monkeypatch.setattr(provider_suite_execution, "_require_scope", scope)
     monkeypatch.setattr(provider_suite_execution, "run_coding_eval_suite", run)
 
+    monkeypatch.setenv(config.provider_config.api_key_env, "fixture-suite-credential")
     result = await run_task_pack_provider_suite(config, allow_network=True, resume=True)
     assert result.reason == "completed"
 
@@ -94,13 +105,18 @@ async def test_guarded_factory_is_bound_to_both_scope_and_suite(tmp_path, monkey
     def factory(*_):
         pytest.fail("本测试不得构造HTTP Client")
 
+    publication_scope = provider_publication_scope("FIXTURE_KEY", "fixture-suite-credential")
     expected = digest(
         {"provider_suite_config": config.fingerprint, "provider_binding": guard_fingerprint}
     )
 
     def scope(checked, observability, **kwargs):
         assert checked == config and observability is None
-        assert kwargs == {"provider_factory": factory, "provider_binding_sha256": expected}
+        assert kwargs == {
+            "provider_factory": factory,
+            "provider_binding_sha256": expected,
+            "publication_scope": publication_scope,
+        }
         return object()
 
     async def run(suite, executor, **kwargs):
@@ -122,7 +138,9 @@ async def test_guarded_factory_is_bound_to_both_scope_and_suite(tmp_path, monkey
         allow_network=True,
         provider_factory=factory,
         provider_binding_sha256=guard_fingerprint,
+        publication_scope=publication_scope,
     )
+    publication_scope.close()
     assert result.reason == "completed"
 
 

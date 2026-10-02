@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 149
-code_revision: dfba34e707ed845f3e9d844461e124015c22dca7
+version: 150
+code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
 owners:
   - core
 modules:
@@ -1517,3 +1517,35 @@ helper复用调用者原事务、逐条DDL，不自行提交/回滚，不修改S
 当前证据见[集成验证](validation/git-store-v2-integration-2026-10-02-v1/README.md)。
 默认产品Writer/Loader、legacy全集迁移、Git交付、Backup v2及新Root重新批准未由结构合同完成；
 R3真实质量、消费者Windows、独立Beta及R1～R6商用门禁继续开放。
+
+### R1/R3/R4：同事务认证历史与评测宿主收敛
+
+原Session增加内部完整Thread/事件同读认证接口，复用原MAC、Reducer、容量、绝对期限和资源结算。
+真实SQLite回滚拒绝补足Owner异常与实际清理失败优先级；正式62及原关联780通过，独立62+8通过，
+两项P2修复保留原RED。普通返回元数据不授Root/当前批准或执行权；
+详见[总体与详细设计](changes/m09-r4-authenticated-thread-history.md)及
+[验证资料](validation/authenticated-thread-history-2026-10-02-v1/README.md)。
+
+后继Eval宿主复用单一Owner/原Key/Scope，并以此接缝认证恢复历史；
+[架构决策](adr/0107-authenticated-eval-host-and-history-read.md)不改评分、Pack或费用规则。
+原114通过/1严格预期失败是集成前证据，不是最终通过；原包保持，最终接线与安装须单列实际证据。
+正式接线后133项离线回归通过；后继将唯一Thread认证职责从Trial移入原Owner，
+保留600/100/20结构阈值并新增3项真实SQLite身份回归。集成29个去重选择器1376通过、
+437个生产源码类型与原结构治理通过，原133包和609行结构FAIL保持。
+当前[同候选集成报告](validation/authenticated-product-integration-2026-10-02-v1/README.md)
+分别记录最终独立复核及源码外新Wheel结果，不以旧候选代替新字节。
+独立复核136正式及8私有负例通过，纯格式3文件完整AST相等、两项文档P2闭环；
+最终格式源码已重跑1376。唯一新Wheel在macOS两独立Python3.12.7/3.13.8环境各1376通过，
+全部478产品成员及各70锁定依赖一致。旧源码只在两固定历史夹具生成子进程加载，
+当前及迁移子进程来自新Wheel；首轮22失败/2错误和原准备FAIL保留，不扩大为三平台或质量验收。
+真实R3完整20 Trial、费用未决、完整Git产品/Backup v2、消费者Windows和Beta及R1～R6继续开放。
+
+### R1/R4：固定Windows原生分支观察
+
+`730f0846641700c4c697d7cc6ba03cbf1a8364bc`已发布限定硬件执行断点观察，
+原Git/PE/PDB/source身份、两条SDK选择器、原Owner/期限及两文件低敏发布合同保持。
+[实际Run36969196042](https://github.com/carrie1988/Harnessix/actions/runs/36969196042)首轮终态FAIL，
+低敏原件明确`PREFLIGHT_REFUSED`、`execution_performed=false`；未执行Git业务或进入CDB观察。
+现有字段不足以区分具体准备原因，历史根因仍UNKNOWN，不能从耗时或工具缺少输出臆定原因。
+后继须在同合同内增加有限准备阶段/原因码并取得新的固定原生结果；原FAIL不重跑覆盖。
+该诊断不关闭Windows核心编码、完整Git交付、R3、独立Beta或商用门禁。

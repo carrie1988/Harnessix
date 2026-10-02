@@ -1,0 +1,132 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src", "repo_root_on_sys_path": false}
+.................................FF..................................... [ 74%]
+.........................                                                [100%]
+=================================== FAILURES ===================================
+_ test_rejected_existing_fixture_keeps_all_file_sha_and_zero_provider_requests[missing_header] _
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v3/test_rejected_existing_fixture1')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10a32ec60>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a32c5c0>
+failure = 'missing_header'
+
+    @pytest.mark.parametrize("failure", ["missing_key", "missing_header", "missing_event_seal"])
+    async def test_rejected_existing_fixture_keeps_all_file_sha_and_zero_provider_requests(
+        tmp_path, scope, monkeypatch, failure
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if failure == "missing_key":
+            (root / "session-auth/key.v1").unlink()
+        else:
+            with sqlite3.connect(root / "session.sqlite") as db:
+                db.execute(
+                    "DELETE FROM "
+                    + (
+                        "agent_publication_store"
+                        if failure == "missing_header"
+                        else "agent_event_publications"
+                    )
+                )
+        before = fixture_file_snapshot(root)
+        materialized = SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id),
+            run_root=root,
+            workspace=trial.workspace,
+            manifest=SimpleNamespace(run_id=run_id),
+        )
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: materialized)
+        providers = []
+    
+        def forbidden_provider(*args):
+            providers.append(args)
+            pytest.fail("认证失败不能调用 Provider")
+    
+        with pytest.raises(KernelError):
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded,
+                runs,
+                Path("/missing/git"),
+                Path("/missing/docker"),
+                expected.case_id,
+                run_id,
+                forbidden_provider,
+                campaign.environment,
+                publication_scope=scope,
+            )
+>       assert providers == [] and fixture_file_snapshot(root) == before
+E       AssertionError: assert ([] == []
+E         
+E         Use -v to get more diff and {'report.json...55f8438', ...} == {'report.json...55f8438', ...}
+E         
+E         Omitting 6 identical items, use -vv to show
+E         Differing items:
+E         {'session.sqlite-shm': '3e8f83d85adfd7d8bf788fa4f879cf0ed29a949fa685fec47c55bf9f884879d1'} != {'session.sqlite-shm': 'da6ca82b4f19780a2f5a2476ab0fc894ff2fb6536ddae58258bc2ace2fd2c46f'}
+E         Use -v to get more diff)
+
+tests/evals/test_task_pack_publication.py:666: AssertionError
+_ test_rejected_existing_fixture_keeps_all_file_sha_and_zero_provider_requests[missing_event_seal] _
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v3/test_rejected_existing_fixture2')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10a32dc40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a32e8d0>
+failure = 'missing_event_seal'
+
+    @pytest.mark.parametrize("failure", ["missing_key", "missing_header", "missing_event_seal"])
+    async def test_rejected_existing_fixture_keeps_all_file_sha_and_zero_provider_requests(
+        tmp_path, scope, monkeypatch, failure
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if failure == "missing_key":
+            (root / "session-auth/key.v1").unlink()
+        else:
+            with sqlite3.connect(root / "session.sqlite") as db:
+                db.execute(
+                    "DELETE FROM "
+                    + (
+                        "agent_publication_store"
+                        if failure == "missing_header"
+                        else "agent_event_publications"
+                    )
+                )
+        before = fixture_file_snapshot(root)
+        materialized = SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id),
+            run_root=root,
+            workspace=trial.workspace,
+            manifest=SimpleNamespace(run_id=run_id),
+        )
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: materialized)
+        providers = []
+    
+        def forbidden_provider(*args):
+            providers.append(args)
+            pytest.fail("认证失败不能调用 Provider")
+    
+        with pytest.raises(KernelError):
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded,
+                runs,
+                Path("/missing/git"),
+                Path("/missing/docker"),
+                expected.case_id,
+                run_id,
+                forbidden_provider,
+                campaign.environment,
+                publication_scope=scope,
+            )
+>       assert providers == [] and fixture_file_snapshot(root) == before
+E       AssertionError: assert ([] == []
+E         
+E         Use -v to get more diff and {'report.json...0cad558', ...} == {'report.json...0cad558', ...}
+E         
+E         Omitting 6 identical items, use -vv to show
+E         Differing items:
+E         {'session.sqlite-shm': '5234a86af87928e758322c1ac6d4248c91fd67251426439ad4086438346f279b'} != {'session.sqlite-shm': '5f3f19081b6bcb9ac91d5c9cca58ac1cc47234019378b18934512a7765bb9e52'}
+E         Use -v to get more diff)
+
+tests/evals/test_task_pack_publication.py:666: AssertionError
+=========================== short test summary info ============================
+FAILED tests/evals/test_task_pack_publication.py::test_rejected_existing_fixture_keeps_all_file_sha_and_zero_provider_requests[missing_header]
+FAILED tests/evals/test_task_pack_publication.py::test_rejected_existing_fixture_keeps_all_file_sha_and_zero_provider_requests[missing_event_seal]
+2 failed, 95 passed in 2.38s

@@ -1,0 +1,20 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src", "repo_root_on_sys_path": false}
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 115 items
+
+tests/evals/test_task_pack_publication.py .............................. [ 26%]
+...............x                                                         [ 40%]
+tests/evals/test_task_pack_execution.py .................                [ 54%]
+tests/evals/test_task_pack_evidence_stop.py ............................ [ 79%]
+...                                                                      [ 81%]
+tests/evals/test_provider_suite_execution.py .........                   [ 89%]
+tests/evals/test_provider_suite_cli.py ............                      [100%]
+
+=========================== short test summary info ============================
+XFAIL tests/evals/test_task_pack_publication.py::test_completed_recovery_requires_original_event_body_mac - dfba 的投影 Reader 尚未同读验证原事件正文 MAC；Session 接缝集成后必须移除此标记
+======================== 114 passed, 1 xfailed in 2.78s ========================

@@ -1,0 +1,120 @@
+{
+  "schema": "harnessix.authenticated-product-integration/v1",
+  "base_revision": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "related": {
+    "test_files": 29,
+    "passed": 1376,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xml": "related-publishable.xml"
+  },
+  "whole_production_mypy": {
+    "source_files": 437,
+    "passed": true,
+    "log": "mypy-publishable.log"
+  },
+  "readability": {
+    "passed": true,
+    "source_files": 437,
+    "unique_added_edge": "evals->secrets",
+    "original_cycles_unchanged": true,
+    "policy_other_fields_unchanged": true,
+    "trial_lines": 589,
+    "owner_lines": 264,
+    "source_and_tests_unchanged_after_split": true
+  },
+  "production_source_after_equal": true,
+  "independent_R3_review": {
+    "status": "SCOPED_IMPLEMENTATION_AND_DOCUMENTATION_REVIEW_PASSED",
+    "formal_passed": 136,
+    "private_passed": 8,
+    "source8_before_after_equal": true,
+    "implementation_new_P0_P1_P2": 0,
+    "documentation_P2_closure": "CLOSED",
+    "formal144_identity": "prior byte result only; three format changes independently full-AST equal, final parent1376 rerun",
+    "final_byte_binding_receipt": "peer-format-doc-closure.json"
+  },
+  "installed_wheel": {
+    "status": "PASS_SCOPED_INSTALLED_VALIDATION",
+    "wheel_sha256": "8d0b349ecb796c642155e5be641092b4d0ba563fc528e034be51918d6798960d",
+    "build_count": 1,
+    "current_package_members": 478,
+    "exact_locked_dependencies_each": 70,
+    "parent_independent_package_identity": true,
+    "current_source_fallback": false,
+    "current_wheel_processes_each": 38,
+    "fixed_legacy_fixture_processes_each": 2,
+    "literal_all_processes_current_wheel": false,
+    "legacy_revision": "3c5f6e36d9c9ce98709c5c37ae2316709c443001",
+    "environments": [
+      {
+        "python": "3.12.7",
+        "package_members": 478,
+        "all_installed_names_and_bytes_equal_wheel": true,
+        "passed": 1376,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "python": "3.13.8",
+        "package_members": 478,
+        "all_installed_names_and_bytes_equal_wheel": true,
+        "passed": 1376,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "first_round_failure_retained": {
+      "status": "FIRST_ROUND_FAIL_HOST_TRIAGE_IN_PROGRESS",
+      "build_count": 1,
+      "current_package_members": 478,
+      "current_source_fallback": false,
+      "environments": [
+        {
+          "python": "3.12.7",
+          "tests": 1376,
+          "passed": 1352,
+          "failures": 22,
+          "errors": 2,
+          "skipped": 0
+        },
+        {
+          "python": "3.13.8",
+          "tests": 1376,
+          "passed": 1352,
+          "failures": 22,
+          "errors": 2,
+          "skipped": 0
+        }
+      ],
+      "old_fixture_source_exception": "fixed immutable 3c5f6e36d9c9ce98709c5c37ae2316709c443001 child only",
+      "rebuild": false,
+      "first_failures_preserved": true
+    },
+    "product_or_formal_assertion_changes": false,
+    "native_or_real_quality_acceptance": false
+  },
+  "new_model_requests": 0,
+  "real_R3_quality": "NOT_PROVEN",
+  "commercial_release": false,
+  "production_source_identity": "production-source-sha256-publishable.json",
+  "r3_source_identity": "r3-owned-source-publishable.json",
+  "packaging_source_identity": "packaging-source-publishable.json",
+  "format": {
+    "active_source_and_tests_passed": true,
+    "three_formatted_files_full_ast_equal": true,
+    "historical_raw_scripts_exact_exclusions": 3,
+    "historical_pack_bytes_unchanged": true
+  },
+  "publication_gates": {
+    "documentation_receipt": "docgate-publishable.json",
+    "secret_receipt": "secret-owned-publishable.json",
+    "repo_and_wheel_scan_inputs": 4406,
+    "repo_and_wheel_scan_passed": true,
+    "index_byte_verification": "required before commit; private publication receipt",
+    "commercial_release": false
+  }
+}

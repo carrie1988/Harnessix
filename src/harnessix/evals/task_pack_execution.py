@@ -34,6 +34,7 @@ from harnessix.evals.suite_contracts import CodingEvalSuiteCasePlan
 from harnessix.evals.suite_execution_contracts import CodingEvalSuiteCaseRunResult
 from harnessix.evals.task_pack import LoadedCodingEvalTaskPack
 from harnessix.evals.task_pack_contracts import CodingEvalTaskPackCase
+from harnessix.evals.task_pack_publication import TaskPackHistoryReadControl
 from harnessix.evals.task_pack_trial import (
     Fault,
     TaskPackProviderFactory,
@@ -43,6 +44,7 @@ from harnessix.evals.task_pack_trial import (
 from harnessix.models.costs import bind_price, build_cost_report
 from harnessix.models.pricing import amount_units, format_amount
 from harnessix.observability import Observability
+from harnessix.secrets.publication import SecretPublicationScope
 from harnessix.tools.workspace import digest
 
 _PLAN_FILE = "campaign-plan.json"
@@ -112,12 +114,17 @@ async def _completed_trial(
     case: CodingEvalTaskPackCase,
     campaign: CodingEvalCampaignPlan,
     run_id: UUID,
+    publication_scope: SecretPublicationScope | None = None,
+    *,
+    history_read: TaskPackHistoryReadControl | None = None,
 ) -> CompletedCodingEvalTrial:
     run = await _load_completed_run(
         case_root / _RUNS_DIRECTORY / str(run_id),
         case,
         campaign.environment,
         run_id,
+        publication_scope=publication_scope,
+        history_read=history_read,
     )
     try:
         bindings = tuple(
@@ -151,6 +158,7 @@ class _CaseExecution:
     campaign: CodingEvalCampaignPlan
     root: Path
     case: CodingEvalTaskPackCase
+    publication_scope: SecretPublicationScope | None
 
     @property
     def state_path(self) -> Path:
@@ -204,7 +212,9 @@ def _load_state(context: _CaseExecution) -> CodingEvalCampaignExecutionState:
 async def _load_prefix(
     context: _CaseExecution,
     state: CodingEvalCampaignExecutionState,
+    cancel: CancelToken,
 ) -> tuple[CodingEvalCampaignExecutionState, list[CompletedCodingEvalTrial], int, bool]:
+    history_read = TaskPackHistoryReadControl.begin(cancel)
     completed: list[CompletedCodingEvalTrial] = []
     known_units = 0
     all_costs_complete = True
@@ -221,7 +231,14 @@ async def _load_prefix(
             raise KernelError(
                 "eval_campaign_evidence_order_invalid", "Task Pack Trial证据不是连续前缀"
             )
-        trial = await _completed_trial(context.root, context.case, context.campaign, run_id)
+        trial = await _completed_trial(
+            context.root,
+            context.case,
+            context.campaign,
+            run_id,
+            context.publication_scope,
+            history_read=history_read,
+        )
         units, complete = _known_cost(trial, context.campaign.price.currency)
         completed.append(trial)
         known_units += units
@@ -331,13 +348,21 @@ async def _execute_remaining(
                 cancel,
                 observability=context.observability,
                 fault=context.fault,
+                publication_scope=context.publication_scope,
             )
         except KernelError as error:
             # 只收敛明确的Profile证据缺失；取消、存储故障和崩溃注入仍按原边界传播。
             if error.code != "eval_baseline_invalid":
                 raise
             return state, _stop_case(context, state, "evidence_missing")
-        trial = await _completed_trial(context.root, context.case, context.campaign, run_id)
+        trial = await _completed_trial(
+            context.root,
+            context.case,
+            context.campaign,
+            run_id,
+            context.publication_scope,
+            history_read=TaskPackHistoryReadControl.begin(cancel),
+        )
         units, complete = _known_cost(trial, context.campaign.price.currency)
         completed.append(trial)
         known_units += units
@@ -380,7 +405,7 @@ async def _run_locked_case(
 ) -> CodingEvalSuiteCaseRunResult:
     _require_plan(context)
     state = _load_state(context)
-    state, completed, known_units, costs_complete = await _load_prefix(context, state)
+    state, completed, known_units, costs_complete = await _load_prefix(context, state, cancel)
     recovered = _recover_campaign_report(context, state, completed)
     if recovered is not None:
         return recovered
@@ -404,6 +429,7 @@ class TaskPackCaseExecutor:
     provider_binding_sha256: str | None = None
     observability: Observability | None = None
     fault: Fault = _fault
+    publication_scope: SecretPublicationScope | None = None
 
     async def __call__(
         self,
@@ -442,5 +468,6 @@ class TaskPackCaseExecutor:
                 campaign,
                 case_root,
                 case,
+                self.publication_scope,
             )
             return await _run_locked_case(context, cancel)

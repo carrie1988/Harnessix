@@ -1,0 +1,8 @@
+{
+  "schema": "harnessix.r3-auth-wiring-verification/v1",
+  "status": "PASS",
+  "member_count": 48,
+  "manifest_sha256": "2c9fbff52f79a629552e3641c6cee2dbfd68758c0cf997d3773dc7e9733146e3",
+  "failures": [],
+  "mutating_operations": false
+}

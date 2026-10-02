@@ -1,0 +1,10 @@
+flowchart LR
+    H[受信宿主: 原期限/CancelToken] --> S[SQLiteSessionStore新内部方法]
+    S --> R[sqlite_history: 单事务完整读取]
+    R --> C[原连接资源结算: mode=ro]
+    C --> D[(原Session库: 活跃WAL读版本)]
+    R --> P[原verify_snapshot/authenticated_events]
+    P --> K[同一SessionPublicationBinding: 仅验真]
+    R --> V[原replay与完整投影相等]
+    V --> F[Thread与tuple Events普通元数据]
+    F -. 不授Root/批准/执行权 .-> G[后继Owned Git Loader]

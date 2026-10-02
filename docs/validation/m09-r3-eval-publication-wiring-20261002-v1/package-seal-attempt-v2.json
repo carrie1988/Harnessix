@@ -1,0 +1,12 @@
+{
+  "schema": "harnessix.r3-auth-wiring-seal-attempt/v1",
+  "status": "FAIL",
+  "reason": "original documentation checker also uses unbounded credential regex and matched Schema filename quoted in REPORT",
+  "code": "content_possible_secret",
+  "document": "REPORT.md",
+  "original_line": 96,
+  "correction": "formal report uses semantic file description; precise benign filename stays in bounded JSON evidence",
+  "original_checker_or_policy_changed": false,
+  "source_or_tests_changed": false,
+  "manifest_not_created_on_failed_attempt": true
+}

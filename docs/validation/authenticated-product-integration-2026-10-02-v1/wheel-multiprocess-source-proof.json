@@ -1,0 +1,2273 @@
+{
+  "schema": "harnessix.installed-multiprocess-source/v1",
+  "unique_wheel_sha256": "8d0b349ecb796c642155e5be641092b4d0ba563fc528e034be51918d6798960d",
+  "environments": [
+    {
+      "tag": "312",
+      "interpreter_startups": 40,
+      "one_observer_per_pid": true,
+      "python_child_launches": 39,
+      "launch_startup_fingerprints_exact_multiset_equal": true,
+      "current_wheel_processes": 38,
+      "fixed_legacy_fixture_processes": 2,
+      "all_package_execs_valid": true,
+      "package_exec_count": 4851,
+      "denied_count": 0,
+      "current_source_fallback": false,
+      "legacy_scope": "fixed old_record PROGRAM/revision/cwd/PYTHONPATH and all 380 archive member SHAs only",
+      "startup_inventory": [
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "8bbe829547ae8d5e3ee4820115511b130839ae3e4e029b75240fa2df5892776a",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "b0f6bf68f8ecab484081b110897e10ce5c5e80ee1ecaadae9b2a50d844dde796",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28155,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "a8a81b1f77ac29b889f8da510b483dba8130754c6b809cab89672f9d529110f8",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28157,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "4491bdfebe7ce1ee141c1b52bc8ea5fb4a8d9b4878f0dde021a8fe7f40d8c425",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28164,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "c2856e822580fdfce107bec0326c35da43fe51b0ccd3c15c03c4a1f083639d75",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28579,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "4b6a98976986f219d239e910a9261583381cda24b3541a3f13a2530062ead2ef",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28886,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "3d804c1e555c982d5306bb30f248bce925439eba7c92e514920e8ab2dcd64816",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28892,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "06a075139dcdfc46d7757a22b71bb55e85547b7170219b11414af359d7d2997a",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28896,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "1f882dfc3503e0509f132b9f3a15705ec87f7e5757a06f90ef9b33114356ee57",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28913,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "7b30a35d93e498fa66c20d4d932fc7191f7c66f76a8d2e7ce300f6ca340f0f99",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29214,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "2cd9c6988cfdc8a8002d140b2c9d082bab1372f61117687611f542efff5c0c81",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29217,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "50b8238dd1bda7b78dbd64c4f7e191f218ae88cfa75854ecc3dd73c7a2fee078",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29219,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "ac4a16f4b10cf06a2488d68560ae4d41d4ce741ff68484264e932fb1f2e7d683",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29222,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "19b4d52c1ffe134920d224afd1bee0392cf35134969b1e199c012f0b7980a0ed",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29228,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "3fbfbd0338c4575a9977574d5f2f401951a5e0e45d3358f6780a4b741759a449",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29253,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "30fee8af3b51d93d7835c6ad245ebca9b616c7a6cdfd564f34674e8f594dc066",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29256,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "9d1e028cc114ad1b512d4b3c51fe2609ffc9dcf7e049f4f57c95f9afa0e2708d",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29263,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "0b963bf77b2866c547b547f3e7a8770a5597744807114edca5bb35898a9ba9e9",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29266,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "295fd9a45f3245d88f7c178ae0f988da814ebc097ae124f81e8ef18d1c0e93ca",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29273,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "5de917d6a909f939d21f5730c8f4d96712450e912c6bc632a61caa5e0997c251",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29276,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati0/old-binary",
+          "sys_path": [
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati0/old-binary/src",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati0/old-binary",
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati0/old-binary/src:/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati0/old-binary",
+          "mode": "legacy-fixture-candidate",
+          "orig_argv_sha256": "7c4bb5016bd6da9a4b804876a4b2819ad3073db6002c22e865cc9f2b598618b5",
+          "fixed_program_orig_argv_match": true,
+          "pid": 29283,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "ca6ae9919471941b952e10db4a080e5027a192b6e01d2b15711f9c68357154fe",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29295,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati1/old-binary",
+          "sys_path": [
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati1/old-binary/src",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati1/old-binary",
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati1/old-binary/src:/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati1/old-binary",
+          "mode": "legacy-fixture-candidate",
+          "orig_argv_sha256": "15782d0e8823c8637c428fd9ab990bbd1cf65671931a074dbfe060b3d09bb865",
+          "fixed_program_orig_argv_match": true,
+          "pid": 29307,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "6c2d8e1123ac194216494619b00b2225a1d5aface32b19e9fd84d50fc241bd74",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29314,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "19a67e72e0e79c2e5261bcfe346e3e5ac1d0a7084fd4e32ca0fed400e73898d0",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29328,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "a1824aeb84a2294132d5157a613cc1d8e78002913abe1904226fca31e98d337f",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29338,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "e5333ee97a4d2c968d619105dae25598439bbc639c66c33b7bbd23cc7537b80d",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29343,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "41d64805984b4d0635034658dd656e229d0a8d88ed9b423e9e19e017b17a84d1",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29348,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "c7b03e604f9b2e2dd6f765fbe88aa6f30dd4ededf0eb05fc8e2fce3ddf789224",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29351,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "f6760c6f798860b47b0b8fb438576e295a27009efc17cb84f6f1bb60ebce0e10",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29354,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "5b0fa3eefc7fc224696d78ca0cd56661e58b97dc67dc2ec4f9489b211335b906",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29366,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "04ede061ea34aa244da7f814c1f83cb2e742fe17b23818603368cf8eb405864b",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29368,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "bb5be9231a9fc3b9790af696b16c3db07ca46e5a37ca167ec912acd34023f06e",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29370,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "4b9061c42ecc3cb1940cd0f2cc1042bdb4c9f31e086d3b83a366584de2801ace",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29373,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "ae66c7eccf85389c3f9983f0bcf31be7f2a314acb15b4996bb4e1d852101d2dc",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29375,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "1deaa7c26f4fccd87f9ed60c1fa8cf6e7503b3b46c1f9318bac6278f60aee3a8",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29377,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "cff58bd01bb2230f79c4779787f1c81c7bd056c58a88285452dfb532b0755eb1",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29383,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "efc98bb6bc3d3c841d2f8a137da8e93b5bb83d4b44f75a7b4e2ea01c6d519bd6",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29387,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "6689373e6d3b2d855ac2796166cb403947b5f35f53bbdd0ef34883246ae4d8c8",
+          "fixed_program_orig_argv_match": false,
+          "pid": 31646,
+          "tag": "312"
+        },
+        {
+          "kind": "startup",
+          "python": "3.12.7",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "sys_path": [
+            "/opt/anaconda3/lib/python312.zip",
+            "/opt/anaconda3/lib/python3.12",
+            "/opt/anaconda3/lib/python3.12/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv312/lib/python3.12/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "155c7be217a8f47a4aa186faf3a8ddeb9a5a637e0157797bd96cc6a48ddfc664",
+          "fixed_program_orig_argv_match": false,
+          "pid": 31976,
+          "tag": "312"
+        }
+      ],
+      "launch_inventory": [
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "b0f6bf68f8ecab484081b110897e10ce5c5e80ee1ecaadae9b2a50d844dde796",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "a8a81b1f77ac29b889f8da510b483dba8130754c6b809cab89672f9d529110f8",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "4491bdfebe7ce1ee141c1b52bc8ea5fb4a8d9b4878f0dde021a8fe7f40d8c425",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "c2856e822580fdfce107bec0326c35da43fe51b0ccd3c15c03c4a1f083639d75",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "4b6a98976986f219d239e910a9261583381cda24b3541a3f13a2530062ead2ef",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "3d804c1e555c982d5306bb30f248bce925439eba7c92e514920e8ab2dcd64816",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "06a075139dcdfc46d7757a22b71bb55e85547b7170219b11414af359d7d2997a",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "1f882dfc3503e0509f132b9f3a15705ec87f7e5757a06f90ef9b33114356ee57",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "7b30a35d93e498fa66c20d4d932fc7191f7c66f76a8d2e7ce300f6ca340f0f99",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "2cd9c6988cfdc8a8002d140b2c9d082bab1372f61117687611f542efff5c0c81",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "50b8238dd1bda7b78dbd64c4f7e191f218ae88cfa75854ecc3dd73c7a2fee078",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "ac4a16f4b10cf06a2488d68560ae4d41d4ce741ff68484264e932fb1f2e7d683",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "19b4d52c1ffe134920d224afd1bee0392cf35134969b1e199c012f0b7980a0ed",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "3fbfbd0338c4575a9977574d5f2f401951a5e0e45d3358f6780a4b741759a449",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "30fee8af3b51d93d7835c6ad245ebca9b616c7a6cdfd564f34674e8f594dc066",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "9d1e028cc114ad1b512d4b3c51fe2609ffc9dcf7e049f4f57c95f9afa0e2708d",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "0b963bf77b2866c547b547f3e7a8770a5597744807114edca5bb35898a9ba9e9",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "295fd9a45f3245d88f7c178ae0f988da814ebc097ae124f81e8ef18d1c0e93ca",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "5de917d6a909f939d21f5730c8f4d96712450e912c6bc632a61caa5e0997c251",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "7c4bb5016bd6da9a4b804876a4b2819ad3073db6002c22e865cc9f2b598618b5",
+          "command_kind": "-c",
+          "fixed_legacy_program": true,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati0/old-binary",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "ca6ae9919471941b952e10db4a080e5027a192b6e01d2b15711f9c68357154fe",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "15782d0e8823c8637c428fd9ab990bbd1cf65671931a074dbfe060b3d09bb865",
+          "command_kind": "-c",
+          "fixed_legacy_program": true,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-312/test_real_old_artifact_migrati1/old-binary",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "6c2d8e1123ac194216494619b00b2225a1d5aface32b19e9fd84d50fc241bd74",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "19a67e72e0e79c2e5261bcfe346e3e5ac1d0a7084fd4e32ca0fed400e73898d0",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "a1824aeb84a2294132d5157a613cc1d8e78002913abe1904226fca31e98d337f",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "e5333ee97a4d2c968d619105dae25598439bbc639c66c33b7bbd23cc7537b80d",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "41d64805984b4d0635034658dd656e229d0a8d88ed9b423e9e19e017b17a84d1",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "c7b03e604f9b2e2dd6f765fbe88aa6f30dd4ededf0eb05fc8e2fce3ddf789224",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "f6760c6f798860b47b0b8fb438576e295a27009efc17cb84f6f1bb60ebce0e10",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "5b0fa3eefc7fc224696d78ca0cd56661e58b97dc67dc2ec4f9489b211335b906",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "04ede061ea34aa244da7f814c1f83cb2e742fe17b23818603368cf8eb405864b",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "bb5be9231a9fc3b9790af696b16c3db07ca46e5a37ca167ec912acd34023f06e",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "4b9061c42ecc3cb1940cd0f2cc1042bdb4c9f31e086d3b83a366584de2801ace",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "ae66c7eccf85389c3f9983f0bcf31be7f2a314acb15b4996bb4e1d852101d2dc",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "1deaa7c26f4fccd87f9ed60c1fa8cf6e7503b3b46c1f9318bac6278f60aee3a8",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "cff58bd01bb2230f79c4779787f1c81c7bd056c58a88285452dfb532b0755eb1",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "efc98bb6bc3d3c841d2f8a137da8e93b5bb83d4b44f75a7b4e2ea01c6d519bd6",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "6689373e6d3b2d855ac2796166cb403947b5f35f53bbdd0ef34883246ae4d8c8",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "155c7be217a8f47a4aa186faf3a8ddeb9a5a637e0157797bd96cc6a48ddfc664",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-312",
+          "pid": 28137,
+          "tag": "312"
+        }
+      ]
+    },
+    {
+      "tag": "313",
+      "interpreter_startups": 40,
+      "one_observer_per_pid": true,
+      "python_child_launches": 39,
+      "launch_startup_fingerprints_exact_multiset_equal": true,
+      "current_wheel_processes": 38,
+      "fixed_legacy_fixture_processes": 2,
+      "all_package_execs_valid": true,
+      "package_exec_count": 4851,
+      "denied_count": 0,
+      "current_source_fallback": false,
+      "legacy_scope": "fixed old_record PROGRAM/revision/cwd/PYTHONPATH and all 380 archive member SHAs only",
+      "startup_inventory": [
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "f7c7bbe68de1b91336073a907b93375ff80cd96950c52c431b011a3430f8dd57",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "57daf368844f5f6ff84b5d16cbba0106438cee982e0e2313cfa8479eefcf7b50",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28154,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "e88a0e4595fe0197799ba93c0323027b997befef567ba34e4f6d9214376b460b",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28156,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "3469a0aa9fdd5a528013cfa58605e9190f81966fc51eed12bc6960f7afefc470",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28162,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "b200a9ec0258e65459df27dc447420a481065b9969b12bf82e262734a4cef423",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28876,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "c82a669bacf038f95cb21dc4aee5c8a04f659d632e8b1efae1a8ab0e099c4164",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28891,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "147364c977ed1d190672494b2ca5191c28f70b998d3986f7d4238caef86e2f55",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28894,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "15b13f91371e1d58e05df84c11321d64aefb9c41825147a6cf4a00a855e58106",
+          "fixed_program_orig_argv_match": false,
+          "pid": 28905,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "b6cecc42307d4bf49e151469e9728926c024b0b02d4c2553655755a9f6e575c8",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29024,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "bc669ff93ddb2c5e757b00c89d86355cc45cab7f62bd948311f1352e539377a4",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29215,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "cd4b987df60ba85efd149847371d559d347114c83d2ccb461a2b9be4ab38258d",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29218,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "7f6d49b18558130b9b7e72d49038b65bf00a5829cdccf1293d61f413feb68cc4",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29220,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "27233a0bee0051b4062b627423001eb7fd70551d766451a4f6b80d7804dc0d3d",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29227,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "d8afb9609e6b8e03596c6a74828fd92cf20d0659a521ed2ba4734aadbddc4110",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29229,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "db68e2d9733ab28765c851b0609ee8f2bb04723b81a5666646a664e27812c209",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29255,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "71b8b3d90a7b1cc0df8603720407d518ad45780ae9c9dedb237a020902829e62",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29259,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "5d7a460c40c198be8c05291b884b8b55f98e9f6daaec27466cb7d29f2da34811",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29265,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "43901fdc083ea7b253b326a247c88c4320780e8f79b94e9e304c15f8713dec3a",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29272,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "c3a07703df0ba1a8baa64fcd23d22bc9f2b6f3befefdb213dcd97ac203890404",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29275,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "7359f8f02dd79ea754da9d1ba55106d7cf3ba2abb58ee72fdf7858020c8668ae",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29280,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati0/old-binary",
+          "sys_path": [
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati0/old-binary/src",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati0/old-binary",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati0/old-binary/src:/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati0/old-binary",
+          "mode": "legacy-fixture-candidate",
+          "orig_argv_sha256": "1e04f37bcb2a301810e39299a2a266373d55deb63f3073776ce3a09c1a25b5c8",
+          "fixed_program_orig_argv_match": true,
+          "pid": 29292,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "5d34a209fec93efc75d52ac93327b981e0e8d216fbb905f3f27c541beb5ff655",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29298,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati1/old-binary",
+          "sys_path": [
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati1/old-binary/src",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati1/old-binary",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati1/old-binary/src:/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati1/old-binary",
+          "mode": "legacy-fixture-candidate",
+          "orig_argv_sha256": "e3879ea9f43cc3f04d44728282c3434d0756e78dce92610539debcfcece6b9f2",
+          "fixed_program_orig_argv_match": true,
+          "pid": 29312,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "09d42688a780ac12c38b6636b740c7e9a3c142340207f170564692983814a5f9",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29315,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "82ebf51b6ed6286279375b887878995bd83bcb15f596c41171a995a2e800ddc7",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29333,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "74037c7c3669b44b4d4adfc963f088205bb3bd4e8aecdb5d8566fa3e3785ffb0",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29339,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "144a5e6a5ad17821fb41b6be934b8e6246dc7feda3fea1ca17280e0df0385698",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29344,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "6dc7364c9fd1913c6999bc400138d37eaccfa35aa5b88091e164279abedef0c7",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29349,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "d7eb33156b5d39a3299a32393489383e10a4816e488d71deb6afb3a1a661a7fe",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29350,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "f267e10cc6588102acbfbe856e5fa5335815693ea36ca10c9a24e12254fa8300",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29352,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "873cdccb5932690f2b91cc4c43514549d4fd54c473473734b53525f4d9c0bcea",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29365,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "adedbd61a0300d77dd0ec46224934d546f3c6be183f3a1c0a7b28420ab82b22e",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29367,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "94368794c7dda11234ad5257a1a7cb482aec389e75ac317c1bf9d6ffa0bbbe7b",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29369,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "ad4b496a8318cd44514b31a455eb3606db1dd58218d7bdc6d48e5e1c3a6e89ce",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29372,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "339929100c21f9fef5663a632ee183638ce1cad7ff4e93e620abf734601131dd",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29374,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "d30a9ab7493b9b873958a9a616be4519e66fd5fc81181eb1e1178b7f2e3e0218",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29376,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "bd22aa42a46024bd2479e050ffdfe1355bd435cdb54b7c0359a66a4ab1d2751e",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29380,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "2a36c62661abb0c48882e8ba5721137021072edf3adfd6c31de967ca7f1ef4e8",
+          "fixed_program_orig_argv_match": false,
+          "pid": 29386,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "425834fdc6607fa91a1a0e15aac2998f16fa6d09c26ef7d37122fa79aba9d263",
+          "fixed_program_orig_argv_match": false,
+          "pid": 31802,
+          "tag": "313"
+        },
+        {
+          "kind": "startup",
+          "python": "3.13.8",
+          "prefix": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313",
+          "site_packages": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages",
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "sys_path": [
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python313.zip",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13",
+            "/Users/zhangjinhui/.local/share/uv/python/cpython-3.13.8-macos-aarch64-none/lib/python3.13/lib-dynload",
+            "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/venv313/lib/python3.13/site-packages"
+          ],
+          "PYTHONPATH": null,
+          "mode": "current-wheel",
+          "orig_argv_sha256": "2a9b4b1380b3f301e059fdc009d5d303bc77d4bb63ff23fa0e193602a2b6c3dc",
+          "fixed_program_orig_argv_match": false,
+          "pid": 32140,
+          "tag": "313"
+        }
+      ],
+      "launch_inventory": [
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "57daf368844f5f6ff84b5d16cbba0106438cee982e0e2313cfa8479eefcf7b50",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "e88a0e4595fe0197799ba93c0323027b997befef567ba34e4f6d9214376b460b",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "3469a0aa9fdd5a528013cfa58605e9190f81966fc51eed12bc6960f7afefc470",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "b200a9ec0258e65459df27dc447420a481065b9969b12bf82e262734a4cef423",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "c82a669bacf038f95cb21dc4aee5c8a04f659d632e8b1efae1a8ab0e099c4164",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "147364c977ed1d190672494b2ca5191c28f70b998d3986f7d4238caef86e2f55",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "15b13f91371e1d58e05df84c11321d64aefb9c41825147a6cf4a00a855e58106",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "b6cecc42307d4bf49e151469e9728926c024b0b02d4c2553655755a9f6e575c8",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "bc669ff93ddb2c5e757b00c89d86355cc45cab7f62bd948311f1352e539377a4",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "cd4b987df60ba85efd149847371d559d347114c83d2ccb461a2b9be4ab38258d",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "7f6d49b18558130b9b7e72d49038b65bf00a5829cdccf1293d61f413feb68cc4",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "27233a0bee0051b4062b627423001eb7fd70551d766451a4f6b80d7804dc0d3d",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "d8afb9609e6b8e03596c6a74828fd92cf20d0659a521ed2ba4734aadbddc4110",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "db68e2d9733ab28765c851b0609ee8f2bb04723b81a5666646a664e27812c209",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "71b8b3d90a7b1cc0df8603720407d518ad45780ae9c9dedb237a020902829e62",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "5d7a460c40c198be8c05291b884b8b55f98e9f6daaec27466cb7d29f2da34811",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "43901fdc083ea7b253b326a247c88c4320780e8f79b94e9e304c15f8713dec3a",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "c3a07703df0ba1a8baa64fcd23d22bc9f2b6f3befefdb213dcd97ac203890404",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "7359f8f02dd79ea754da9d1ba55106d7cf3ba2abb58ee72fdf7858020c8668ae",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "1e04f37bcb2a301810e39299a2a266373d55deb63f3073776ce3a09c1a25b5c8",
+          "command_kind": "-c",
+          "fixed_legacy_program": true,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati0/old-binary",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "5d34a209fec93efc75d52ac93327b981e0e8d216fbb905f3f27c541beb5ff655",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "e3879ea9f43cc3f04d44728282c3434d0756e78dce92610539debcfcece6b9f2",
+          "command_kind": "-c",
+          "fixed_legacy_program": true,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/tmp-final-313/test_real_old_artifact_migrati1/old-binary",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "09d42688a780ac12c38b6636b740c7e9a3c142340207f170564692983814a5f9",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "82ebf51b6ed6286279375b887878995bd83bcb15f596c41171a995a2e800ddc7",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "74037c7c3669b44b4d4adfc963f088205bb3bd4e8aecdb5d8566fa3e3785ffb0",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "144a5e6a5ad17821fb41b6be934b8e6246dc7feda3fea1ca17280e0df0385698",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "6dc7364c9fd1913c6999bc400138d37eaccfa35aa5b88091e164279abedef0c7",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "d7eb33156b5d39a3299a32393489383e10a4816e488d71deb6afb3a1a661a7fe",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "f267e10cc6588102acbfbe856e5fa5335815693ea36ca10c9a24e12254fa8300",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "873cdccb5932690f2b91cc4c43514549d4fd54c473473734b53525f4d9c0bcea",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "adedbd61a0300d77dd0ec46224934d546f3c6be183f3a1c0a7b28420ab82b22e",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "94368794c7dda11234ad5257a1a7cb482aec389e75ac317c1bf9d6ffa0bbbe7b",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "ad4b496a8318cd44514b31a455eb3606db1dd58218d7bdc6d48e5e1c3a6e89ce",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "339929100c21f9fef5663a632ee183638ce1cad7ff4e93e620abf734601131dd",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "d30a9ab7493b9b873958a9a616be4519e66fd5fc81181eb1e1178b7f2e3e0218",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "bd22aa42a46024bd2479e050ffdfe1355bd435cdb54b7c0359a66a4ab1d2751e",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "2a36c62661abb0c48882e8ba5721137021072edf3adfd6c31de967ca7f1ef4e8",
+          "command_kind": "-m",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "425834fdc6607fa91a1a0e15aac2998f16fa6d09c26ef7d37122fa79aba9d263",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        },
+        {
+          "kind": "python_child_launch",
+          "argv_sha256": "2a9b4b1380b3f301e059fdc009d5d303bc77d4bb63ff23fa0e193602a2b6c3dc",
+          "command_kind": "-c",
+          "fixed_legacy_program": false,
+          "cwd": "/Users/zhangjinhui/Library/Application Support/Harnessix/verification/authenticated-product-wheel-20261002-v3/installed-input-313",
+          "pid": 28138,
+          "tag": "313"
+        }
+      ]
+    }
+  ],
+  "literal_all_processes_current_wheel_claim": false
+}

@@ -1,0 +1,45 @@
+{
+  "schema": "harnessix.r3-auth-wiring-diagrams/v1",
+  "status": "PASS",
+  "count": 4,
+  "rendering": "local installed mermaid-cli with isolated headless Chrome; disabled external DNS/background traffic/mock Keychain",
+  "figures": [
+    {
+      "id": "01",
+      "sdd_block_same": true,
+      "png_width": 816,
+      "png_height": 1345,
+      "png_sha256": "de76424d2a6d6c75adab1f8de57f286830963f714068805c49b6b2c43a3e0e49",
+      "svg_sha256": "69a8e589163ceb3e3fac3f77dcdb5d0f6a6fe54860aff6573bea190163521104",
+      "visual_review": "PASS: 中文标签可读、无裁切、无标签遮挡，箭头与分支明确"
+    },
+    {
+      "id": "02",
+      "sdd_block_same": true,
+      "png_width": 1717,
+      "png_height": 1457,
+      "png_sha256": "20ac2b47dfbf54abd656378d5c6b008da14c4e5598a9781688b71869f5a2797c",
+      "svg_sha256": "307992dd0bf3ab45bb616ed172c1f5d8b4c069d16308f2a7233b3b2313231c02",
+      "visual_review": "PASS: 中文标签可读、无裁切、无标签遮挡，箭头与分支明确"
+    },
+    {
+      "id": "03",
+      "sdd_block_same": true,
+      "png_width": 1325,
+      "png_height": 648,
+      "png_sha256": "1c2d0291d626b62c04afbe250cfe7dcc9ac6ac9bbf42afc2025d4fc5257bd1a4",
+      "svg_sha256": "c064e5c2c7d4865853d056ea32eee6d1f182daab2eb8d7c68609cc591b2e1f68",
+      "visual_review": "PASS: 中文标签可读、无裁切、无标签遮挡，箭头与分支明确"
+    },
+    {
+      "id": "04",
+      "sdd_block_same": true,
+      "png_width": 1678,
+      "png_height": 394,
+      "png_sha256": "06b393c81f831bc602bcf7d9a6dde269f5590fb60119dc3523def1dffa00b297",
+      "svg_sha256": "dfb4100527cad65117d6e487b9debadabf53593c83e6d8702999bfab844f6f9f",
+      "visual_review": "PASS: 中文标签可读、无裁切、无标签遮挡，箭头与分支明确"
+    }
+  ],
+  "raw_reader_seam_pending_label": true
+}

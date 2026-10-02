@@ -1,0 +1,28 @@
+{
+  "scope": "owned SDD, REPORT, REVIEW only; not full repository check",
+  "content_status": "PASS",
+  "findings": [],
+  "full_change_sync_status": "PENDING_INTEGRATION",
+  "change_sync_findings": [
+    {
+      "code": "doc_sync_module_required",
+      "path": "docs/modules/evals.md",
+      "message": "源码包evals变化时必须同步现行模块设计",
+      "line": null
+    }
+  ],
+  "frozen_documents": [
+    {
+      "path": "docs/changes/m09-r3-eval-publication-wiring.md",
+      "sha256": "81f0d775cdd2b195734c264bba639cf92bfe965690a778291e503bd3d0d3aa94"
+    },
+    {
+      "path": "docs/validation/m09-r3-eval-publication-wiring-20261002-v1/REPORT.md",
+      "sha256": "b658d440f3b21d1e1fc471e50b1400fdaa622eb19f0d031b91e6dcc120cbbcca"
+    },
+    {
+      "path": "docs/validation/m09-r3-eval-publication-wiring-20261002-v1/REVIEW.md",
+      "sha256": "f3acaa947ccaf2137368e927ce181b2d66594adf8fdb9ad0e11270936fcb7699"
+    }
+  ]
+}

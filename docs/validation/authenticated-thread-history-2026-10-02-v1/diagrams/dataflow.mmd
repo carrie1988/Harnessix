@@ -1,0 +1,10 @@
+flowchart LR
+    S[原Header Seal] --> I[同Store/Key验真]
+    P[原投影原字节+Seal] --> V[MAC/完整SHA/序号]
+    E[完整Event原字节+单行Seal] --> M[原MAC及总量/前缀]
+    V --> T[严格Thread]
+    M --> A[严格AgentEvent元组]
+    A --> Q[原Reducer完整重放]
+    T --> C[完整相等比较]
+    Q --> C
+    C --> O[普通历史视图: 无执行权]

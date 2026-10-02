@@ -1,0 +1,8 @@
+{
+  "schema": "harnessix.r3-authenticated-host-integration-verification/v1",
+  "status": "PASS",
+  "member_count": 49,
+  "manifest_sha256": "dc3285684883de2c7f0a7aa93debc6429f9ff34c64e15368a86c3f2c624d8eb9",
+  "failures": [],
+  "mutating_operations": false
+}

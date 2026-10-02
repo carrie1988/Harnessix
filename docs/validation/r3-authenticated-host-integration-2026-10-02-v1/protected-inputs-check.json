@@ -1,0 +1,68 @@
+{
+  "status": "PASS",
+  "inputs": [
+    {
+      "path": "src/harnessix/agent/errors.py",
+      "before_sha256": "9fe2f838132601826162ec35ace4369860e1ab4e485d66adae2bebf04f032607",
+      "sha256": "9fe2f838132601826162ec35ace4369860e1ab4e485d66adae2bebf04f032607",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/session/sqlite.py",
+      "before_sha256": "11e7ee0479689800ada3baa13be396b16972a87524a1bb340d15cd5a5ea46fc2",
+      "sha256": "11e7ee0479689800ada3baa13be396b16972a87524a1bb340d15cd5a5ea46fc2",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/session/sqlite_publication.py",
+      "before_sha256": "747e52c39c039220e35721961eb7f578f65dd224c1931d4cd19b51adaf4098e6",
+      "sha256": "747e52c39c039220e35721961eb7f578f65dd224c1931d4cd19b51adaf4098e6",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/session/sqlite_history.py",
+      "before_sha256": "da59aa54153c347fa7be5cf8d805b7c4bbb9be71ad83a041dbc70aefc91f8d36",
+      "sha256": "da59aa54153c347fa7be5cf8d805b7c4bbb9be71ad83a041dbc70aefc91f8d36",
+      "unchanged": true
+    },
+    {
+      "path": "tests/session/test_authenticated_history.py",
+      "before_sha256": "11a54fc97dd56b50ce5bf8ee96cd2e1fab078f161ba275a89f6be0e4deb9e718",
+      "sha256": "11a54fc97dd56b50ce5bf8ee96cd2e1fab078f161ba275a89f6be0e4deb9e718",
+      "unchanged": true
+    },
+    {
+      "path": "tests/artifacts/test_batch_diff.py",
+      "before_sha256": "ff6f12de60041d64169c7f37bdd61018b2564f984ad40d1a79e2e8328cf42765",
+      "sha256": "ff6f12de60041d64169c7f37bdd61018b2564f984ad40d1a79e2e8328cf42765",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/agent/runtime.py",
+      "before_sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+      "sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/agent/cancellation.py",
+      "before_sha256": "e8e830e6a0349a141917fee735a041f59bb6f85b7b80696b52d56ce95291aa25",
+      "sha256": "e8e830e6a0349a141917fee735a041f59bb6f85b7b80696b52d56ce95291aa25",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/session/store_publication.py",
+      "before_sha256": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+      "sha256": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+      "unchanged": true
+    },
+    {
+      "path": "src/harnessix/secrets/publication.py",
+      "before_sha256": "effc5de4380bfa4193f786512842782b332d430312eeec0410c4ed366e8a628b",
+      "sha256": "effc5de4380bfa4193f786512842782b332d430312eeec0410c4ed366e8a628b",
+      "unchanged": true
+    }
+  ],
+  "original_manifest_sha256": "2c9fbff52f79a629552e3641c6cee2dbfd68758c0cf997d3773dc7e9733146e3",
+  "original_member_count": 48,
+  "all_original_members_unchanged": true
+}

@@ -1,0 +1,2303 @@
+diff --git a/scripts/run_engineering_provider_suite_budgeted.py b/scripts/run_engineering_provider_suite_budgeted.py
+index 0d652ff..b913e08 100644
+--- a/scripts/run_engineering_provider_suite_budgeted.py
++++ b/scripts/run_engineering_provider_suite_budgeted.py
+@@ -22,6 +22,7 @@ from harnessix.evals.provider_suite_contracts import CodingEvalProviderSuiteRunC
+ from harnessix.evals.provider_suite_execution import _require_scope, run_task_pack_provider_suite
+ from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunReport
+ from harnessix.evals.task_pack import builtin_coding_eval_task_pack
++from harnessix.evals.task_pack_publication import provider_publication_scope
+ from harnessix.models._provider_io import validate_key
+ from harnessix.models.contracts import ModelProvider
+ from harnessix.models.openai_chat import OpenAIChatProvider
+@@ -184,14 +185,16 @@ async def run_budgeted_suite(
+             async with OpenAIChatProvider(checked.provider_config, api_key=key) as provider:
+                 yield GuardedVerificationProvider(provider, ledger, bounds, cancellation)
+ 
+-        return await run_task_pack_provider_suite(
+-            checked,
+-            allow_network=True,
+-            resume=resume,
+-            cancel=cancellation,
+-            provider_factory=factory,
+-            provider_binding_sha256=bounds.fingerprint(ledger),
+-        )
++        with provider_publication_scope(checked.provider_config.api_key_env, key) as scope:
++            return await run_task_pack_provider_suite(
++                checked,
++                allow_network=True,
++                resume=resume,
++                cancel=cancellation,
++                provider_factory=factory,
++                provider_binding_sha256=bounds.fingerprint(ledger),
++                publication_scope=scope,
++            )
+ 
+ 
+ class _SafeParser(argparse.ArgumentParser):
+diff --git a/src/harnessix/evals/provider_suite_execution.py b/src/harnessix/evals/provider_suite_execution.py
+index eb01314..8710f80 100644
+--- a/src/harnessix/evals/provider_suite_execution.py
++++ b/src/harnessix/evals/provider_suite_execution.py
+@@ -6,7 +6,7 @@ import os
+ import re
+ import stat
+ import subprocess
+-from contextlib import AbstractAsyncContextManager
++from contextlib import AbstractAsyncContextManager, ExitStack
+ from dataclasses import dataclass
+ from pathlib import Path
+ from uuid import UUID
+@@ -19,11 +19,17 @@ from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunReport
+ from harnessix.evals.task_pack import builtin_coding_eval_task_pack
+ from harnessix.evals.task_pack_contracts import CodingEvalTaskPackCase
+ from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
++from harnessix.evals.task_pack_publication import (
++    PROVIDER_SECRET,
++    provider_publication_scope,
++    require_provider_publication_scope,
++)
+ from harnessix.evals.task_pack_trial import TaskPackProviderFactory
+ from harnessix.models.config import OpenAIChatConfig
+ from harnessix.models.contracts import ModelProvider
+ from harnessix.models.openai_chat import OpenAIChatProvider
+ from harnessix.observability import Observability
++from harnessix.secrets.publication import SecretPublicationScope
+ from harnessix.tools.workspace import digest
+ 
+ _GIT_ENVIRONMENT = {
+@@ -43,6 +49,7 @@ class TaskPackOpenAIChatProviderFactory:
+     """每个Trial创建独立HTTP Client，不跨Session共享Provider状态。"""
+ 
+     config: OpenAIChatConfig
++    publication_scope: SecretPublicationScope | None = None
+ 
+     def __call__(
+         self,
+@@ -50,7 +57,13 @@ class TaskPackOpenAIChatProviderFactory:
+         run_id: UUID,
+     ) -> AbstractAsyncContextManager[ModelProvider]:
+         del case, run_id
+-        return OpenAIChatProvider(self.config)
++        require_provider_publication_scope(self.publication_scope)
++        assert self.publication_scope is not None
++        material = self.publication_scope.resolve(PROVIDER_SECRET.name)
++        try:
++            return OpenAIChatProvider(self.config, api_key=bytes(material.value).decode("utf-8"))
++        finally:
++            material.clear()
+ 
+ 
+ def _require_executable(path: Path, label: str) -> Path:
+@@ -106,6 +119,7 @@ def _require_scope(
+     *,
+     provider_factory: TaskPackProviderFactory | None = None,
+     provider_binding_sha256: str | None = None,
++    publication_scope: SecretPublicationScope | None = None,
+ ) -> TaskPackCaseExecutor:
+     loaded = builtin_coding_eval_task_pack(config.pack_id, config.pack_version)
+     if loaded.manifest.pack_sha256 != config.pack_sha256:
+@@ -114,7 +128,7 @@ def _require_scope(
+     container = _require_executable(Path(config.container_engine), "Container Engine")
+     _require_source_revision(config, git)
+     selected_factory = (
+-        TaskPackOpenAIChatProviderFactory(config.provider_config)
++        TaskPackOpenAIChatProviderFactory(config.provider_config, publication_scope)
+         if provider_factory is None
+         else provider_factory
+     )
+@@ -125,6 +139,7 @@ def _require_scope(
+         selected_factory,
+         provider_binding_sha256=provider_binding_sha256 or config.fingerprint,
+         observability=observability,
++        publication_scope=publication_scope,
+     )
+     return executor
+ 
+@@ -139,6 +154,7 @@ async def run_task_pack_provider_suite(
+     fault: Fault | None = None,
+     provider_factory: TaskPackProviderFactory | None = None,
+     provider_binding_sha256: str | None = None,
++    publication_scope: SecretPublicationScope | None = None,
+ ) -> CodingEvalSuiteRunReport:
+     """执行固定Suite；受托Factory必须显式绑定身份，不能跨恢复偷换请求控制。"""
+ 
+@@ -156,6 +172,10 @@ async def run_task_pack_provider_suite(
+         # 默认路径保留原指纹，既有无注入运行与恢复合同不变。
+         binding = checked.fingerprint
+         executor = _require_scope(checked, observability)
++        if publication_scope is not None:
++            raise KernelError(
++                "eval_provider_suite_binding_invalid", "外部凭据 Scope 必须与受托 Factory 一起提供"
++            )
+     else:
+         if (
+             not callable(provider_factory)
+@@ -171,17 +191,30 @@ async def run_task_pack_provider_suite(
+                 "provider_binding": provider_binding_sha256,
+             }
+         )
++        require_provider_publication_scope(publication_scope)
+         executor = _require_scope(
+             checked,
+             observability,
+             provider_factory=provider_factory,
+             provider_binding_sha256=binding,
++            publication_scope=publication_scope,
++        )
++    with ExitStack() as scopes:
++        if provider_factory is None:
++            # 在正式宿主/配置预检之后冻结指定来源；Provider 不再重新读取可漂移环境。
++            env_name = checked.provider_config.api_key_env
++            publication_scope = scopes.enter_context(
++                provider_publication_scope(env_name, os.environ.get(env_name, ""))
++            )
++            executor.publication_scope = publication_scope
++            executor.provider_factory = TaskPackOpenAIChatProviderFactory(
++                checked.provider_config, publication_scope
++            )
++        return await run_coding_eval_suite(
++            checked.suite,
++            executor,
++            cancel=cancel,
++            resume=resume,
++            fault=fault,
++            execution_binding_sha256=binding,
+         )
+-    return await run_coding_eval_suite(
+-        checked.suite,
+-        executor,
+-        cancel=cancel,
+-        resume=resume,
+-        fault=fault,
+-        execution_binding_sha256=binding,
+-    )
+diff --git a/src/harnessix/evals/task_pack_execution.py b/src/harnessix/evals/task_pack_execution.py
+index a115f6d..e4f8f44 100644
+--- a/src/harnessix/evals/task_pack_execution.py
++++ b/src/harnessix/evals/task_pack_execution.py
+@@ -43,6 +43,7 @@ from harnessix.evals.task_pack_trial import (
+ from harnessix.models.costs import bind_price, build_cost_report
+ from harnessix.models.pricing import amount_units, format_amount
+ from harnessix.observability import Observability
++from harnessix.secrets.publication import SecretPublicationScope
+ from harnessix.tools.workspace import digest
+ 
+ _PLAN_FILE = "campaign-plan.json"
+@@ -112,12 +113,14 @@ async def _completed_trial(
+     case: CodingEvalTaskPackCase,
+     campaign: CodingEvalCampaignPlan,
+     run_id: UUID,
++    publication_scope: SecretPublicationScope | None = None,
+ ) -> CompletedCodingEvalTrial:
+     run = await _load_completed_run(
+         case_root / _RUNS_DIRECTORY / str(run_id),
+         case,
+         campaign.environment,
+         run_id,
++        publication_scope=publication_scope,
+     )
+     try:
+         bindings = tuple(
+@@ -151,6 +154,7 @@ class _CaseExecution:
+     campaign: CodingEvalCampaignPlan
+     root: Path
+     case: CodingEvalTaskPackCase
++    publication_scope: SecretPublicationScope | None
+ 
+     @property
+     def state_path(self) -> Path:
+@@ -221,7 +225,9 @@ async def _load_prefix(
+             raise KernelError(
+                 "eval_campaign_evidence_order_invalid", "Task Pack Trial证据不是连续前缀"
+             )
+-        trial = await _completed_trial(context.root, context.case, context.campaign, run_id)
++        trial = await _completed_trial(
++            context.root, context.case, context.campaign, run_id, context.publication_scope
++        )
+         units, complete = _known_cost(trial, context.campaign.price.currency)
+         completed.append(trial)
+         known_units += units
+@@ -331,13 +337,16 @@ async def _execute_remaining(
+                 cancel,
+                 observability=context.observability,
+                 fault=context.fault,
++                publication_scope=context.publication_scope,
+             )
+         except KernelError as error:
+             # 只收敛明确的Profile证据缺失；取消、存储故障和崩溃注入仍按原边界传播。
+             if error.code != "eval_baseline_invalid":
+                 raise
+             return state, _stop_case(context, state, "evidence_missing")
+-        trial = await _completed_trial(context.root, context.case, context.campaign, run_id)
++        trial = await _completed_trial(
++            context.root, context.case, context.campaign, run_id, context.publication_scope
++        )
+         units, complete = _known_cost(trial, context.campaign.price.currency)
+         completed.append(trial)
+         known_units += units
+@@ -404,6 +413,7 @@ class TaskPackCaseExecutor:
+     provider_binding_sha256: str | None = None
+     observability: Observability | None = None
+     fault: Fault = _fault
++    publication_scope: SecretPublicationScope | None = None
+ 
+     async def __call__(
+         self,
+@@ -442,5 +452,6 @@ class TaskPackCaseExecutor:
+                 campaign,
+                 case_root,
+                 case,
++                self.publication_scope,
+             )
+             return await _run_locked_case(context, cancel)
+diff --git a/src/harnessix/evals/task_pack_trial.py b/src/harnessix/evals/task_pack_trial.py
+index 725b249..3ea8994 100644
+--- a/src/harnessix/evals/task_pack_trial.py
++++ b/src/harnessix/evals/task_pack_trial.py
+@@ -3,7 +3,7 @@
+ from __future__ import annotations
+ 
+ from collections.abc import Awaitable, Callable
+-from contextlib import AbstractAsyncContextManager
++from contextlib import AbstractAsyncContextManager, ExitStack
+ from dataclasses import dataclass
+ from pathlib import Path
+ from typing import Never
+@@ -23,7 +23,6 @@ from harnessix.agent.models import (
+ )
+ from harnessix.agent.reducer import get_turn
+ from harnessix.agent.runtime import AgentRuntime
+-from harnessix.artifacts.sqlite import SQLiteArtifactStore
+ from harnessix.domain.models import ApprovalDecision, ApprovalOutcome, utc_now
+ from harnessix.evals.contracts import (
+     CodingEvalEnvironment,
+@@ -51,13 +50,20 @@ from harnessix.evals.task_pack_materializer import (
+     materialize_task_pack_case,
+ )
+ from harnessix.evals.task_pack_observations import profile_observations as _profile_observations
++from harnessix.evals.task_pack_publication import (
++    TaskPackPublicationOwner,
++    open_task_pack_publication,
++)
+ from harnessix.models.contracts import ModelProvider
+ from harnessix.observability import NoOpObservability, Observability
+ from harnessix.product_config.action_contracts import build_product_action_config
+ from harnessix.product_config.action_runtime import open_default_product_action_runtime
+ from harnessix.product_config.agent_context import build_product_agent_context
+ from harnessix.product_config.process_action import decode_run_profile
++from harnessix.product_config.state_backup_files import PrivateStateTree
++from harnessix.product_config.state_owner import product_state_owner
+ from harnessix.product_config.workspace_patch_review import decode_workspace_patch_input
++from harnessix.secrets.publication import SecretPublicationScope
+ from harnessix.session.sqlite import SQLiteSessionStore
+ from harnessix.tools.runtime import CodingToolRuntime
+ 
+@@ -66,7 +72,6 @@ TaskPackProviderFactory = Callable[
+ ]
+ Fault = Callable[[str], None]
+ 
+-_SESSION_FILE = "session.sqlite"
+ _RUN_STATE_FILE = "run-state.json"
+ _RUN_REPORT_FILE = "report.json"
+ _WORKSPACE_NAMESPACE = UUID("4a82127c-3d31-4c92-8981-9a1f47f2ff39")
+@@ -310,31 +315,43 @@ async def _load_completed_run(
+     case: CodingEvalTaskPackCase,
+     environment: CodingEvalEnvironment,
+     expected_run_id: UUID,
++    *,
++    publication_scope: SecretPublicationScope | None = None,
++    owner: TaskPackPublicationOwner | None = None,
+ ) -> TaskPackCodingEvalResult:
++    if owner is None:
++        async with open_task_pack_publication(
++            run_root, publication_scope, existing_only=True
++        ) as opened:
++            return await _load_completed_run(
++                run_root, case, environment, expected_run_id, owner=opened
++            )
++    owner.require_ready(run_root)
+     state = read_eval_run_state(run_root / _RUN_STATE_FILE)
+     report = read_eval_report(run_root / _RUN_REPORT_FILE)
+     if state.thread_id is None or state.turn_id is None:
+         raise KernelError("eval_run_mismatch", "Task Pack完成状态缺少Thread或Turn")
+-    sessions = SQLiteSessionStore(run_root / _SESSION_FILE)
+-    turn = get_turn(await sessions.get_thread(state.thread_id), state.turn_id)
++    turn = get_turn(await owner.sessions.get_thread(state.thread_id), state.turn_id)
++    owner.require_ready(run_root)
+     _require_completed_trial(state, report, turn, case, environment, expected_run_id)
+     return TaskPackCodingEvalResult(state, report, turn, run_root / "workspace")
+ 
+ 
+ async def _completed_session_turn(
+-    run_root: Path,
++    owner: TaskPackPublicationOwner,
+     workspace: Path,
+     run_id: UUID,
+ ) -> tuple[UUID, Turn] | None:
+     """从持久Session识别已完成Turn，避免报告窗口恢复时重新打开Provider。"""
+ 
+-    if not path_present(run_root / _SESSION_FILE):
+-        return None
+-    sessions = SQLiteSessionStore(run_root / _SESSION_FILE)
++    sessions = owner.sessions
++    owner.require_ready(owner.run_root)
+     thread_id = _single_thread(sessions, await sessions.thread_ids())
++    owner.require_ready(owner.run_root)
+     if thread_id is None:
+         return None
+     thread = await sessions.get_thread(thread_id)
++    owner.require_ready(owner.run_root)
+     if thread.workspace != str(workspace):
+         raise KernelError("eval_run_projection_invalid", "Task Pack Thread与Workspace不一致")
+     turn = _request_turn(thread, f"coding-eval:{run_id}")
+@@ -357,16 +374,20 @@ async def _run_agent(
+     token: CancelToken,
+     observer: Observability,
+     fail: Fault,
++    owner: TaskPackPublicationOwner,
+ ) -> tuple[UUID, Turn]:
+     case = materialized.case
+-    sessions = SQLiteSessionStore(materialized.run_root / _SESSION_FILE)
+-    artifacts = SQLiteArtifactStore(sessions)
++    owner.require_ready(materialized.run_root)
++    sessions, artifacts = owner.sessions, owner.artifacts
+     profile = build_task_pack_product_profile(loaded, case.profile_id, container_engine)
++    owner.require_ready(materialized.run_root)
+     async with provider_factory(case, materialized.manifest.run_id) as provider:
+         async with CodingToolRuntime(
+             materialized.workspace,
+             artifacts=artifacts,
+             git_executable=git_executable,
++            git_state_directory=materialized.run_root,
++            git_output_redaction=owner.scope,
+         ) as tools:
+             async with open_default_product_action_runtime(
+                 materialized.run_root,
+@@ -375,6 +396,8 @@ async def _run_agent(
+                 _NoSecrets(),
+                 build_product_action_config(process_profiles=(profile,)),
+                 artifact_workspace_scope=tools.workspace_scope,
++                output_redaction=owner.scope,
++                root_owner=owner.root_owner,
+             ) as actions:
+                 if actions.gateway is None:
+                     raise KernelError(
+@@ -388,6 +411,7 @@ async def _run_agent(
+                     scoped_tools=tools,
+                     trusted_actions=actions.gateway,
+                     artifacts=artifacts,
++                    public_output_protection=owner.scope,
+                     observability=observer,
+                     fault=fail,
+                     async_context=context.context,
+@@ -413,7 +437,9 @@ async def _grade_and_publish(
+     turn: Turn,
+     token: CancelToken,
+     fail: Fault,
++    owner: TaskPackPublicationOwner,
+ ) -> TaskPackCodingEvalResult:
++    owner.require_ready(materialized.run_root)
+     case = materialized.case
+     baseline, final = _profile_observations(turn, case)
+     git = await collect_git_evidence(
+@@ -423,6 +449,7 @@ async def _grade_and_publish(
+         baseline_tree_sha256=materialized.manifest.baseline_tree_sha256,
+         cancel=token,
+     )
++    owner.require_ready(materialized.run_root)
+     completed_at = turn.completed_at or utc_now()
+     report = grade_coding_eval(
+         case.task,
+@@ -437,6 +464,7 @@ async def _grade_and_publish(
+         required_review_finding_ids=_review_findings(case),
+     )
+     report_path = materialized.run_root / _RUN_REPORT_FILE
++    owner.require_ready(materialized.run_root)
+     if path_present(report_path):
+         if read_eval_report(report_path) != report:
+             raise KernelError("eval_report_mismatch", "Task Pack已发布报告与Session证据不一致")
+@@ -463,10 +491,21 @@ async def _grade_and_publish(
+         started_at=turn.created_at,
+         updated_at=completed_at,
+     )
++    owner.require_ready(materialized.run_root)
+     write_eval_run_state(materialized.run_root / _RUN_STATE_FILE, state)
+     return TaskPackCodingEvalResult(state, report, turn, materialized.workspace)
+ 
+ 
++def _task_pack_run_root(runs_root: Path, run_id: UUID) -> Path:
++    """固定既有运行父目录地址，不因取得 Owner 而创建一个原本不存在的父目录。"""
++    try:
++        return runs_root.resolve(strict=True) / str(run_id)
++    except (OSError, RuntimeError):
++        raise KernelError(
++            "eval_task_pack_materialization_path_invalid", "Task Pack运行根无效"
++        ) from None
++
++
+ async def run_task_pack_coding_eval(
+     loaded: LoadedCodingEvalTaskPack,
+     runs_root: Path,
+@@ -480,46 +519,64 @@ async def run_task_pack_coding_eval(
+     *,
+     observability: Observability | None = None,
+     fault: Fault | None = None,
++    publication_scope: SecretPublicationScope | None = None,
+ ) -> TaskPackCodingEvalResult:
+     """执行或从Session事实恢复一个Task Pack Trial；完成后才发布标准Run状态。"""
+ 
+     token = cancel or CancelToken()
+     fail = fault or _fault
+-    materialized = materialize_task_pack_case(
+-        loaded,
+-        runs_root,
+-        git_executable,
+-        case_id,
+-        run_id,
+-    )
+-    case = materialized.case
+-    run_root = materialized.run_root
+-    state_path = run_root / _RUN_STATE_FILE
+-    report_path = run_root / _RUN_REPORT_FILE
+-    if path_present(state_path):
+-        if not path_present(report_path):
+-            raise KernelError("eval_report_mismatch", "Task Pack完成状态缺少报告")
+-        return await _load_completed_run(run_root, case, environment, run_id)
+-    recovered = await _completed_session_turn(run_root, materialized.workspace, run_id)
+-    if recovered is None:
+-        thread_id, turn = await _run_agent(
++    expected_root = _task_pack_run_root(runs_root, run_id)
++    with product_state_owner(expected_root) as root_owner, ExitStack() as roots:
++        root_owner.require_ready(expected_root)
++        # 既有 Run 的原 inode 必须跨固定物化读取保持；新 Run 在创建后取得原目录 FD。
++        original_tree = (
++            roots.enter_context(PrivateStateTree(expected_root))
++            if path_present(expected_root)
++            else None
++        )
++        materialized = materialize_task_pack_case(
+             loaded,
+-            materialized,
++            runs_root,
+             git_executable,
+-            container_engine,
+-            provider_factory,
+-            token,
+-            observability or NoOpObservability(),
+-            fail,
++            case_id,
++            run_id,
+         )
+-    else:
+-        thread_id, turn = recovered
+-    return await _grade_and_publish(
+-        materialized,
+-        git_executable,
+-        environment,
+-        thread_id,
+-        turn,
+-        token,
+-        fail,
+-    )
++        root_owner.require_ready(materialized.run_root)
++        if original_tree is not None:
++            original_tree.checkpoint()
++        case = materialized.case
++        run_root = materialized.run_root
++        state_path = run_root / _RUN_STATE_FILE
++        report_path = run_root / _RUN_REPORT_FILE
++        async with open_task_pack_publication(
++            run_root, publication_scope, root_owner=root_owner
++        ) as owner:
++            if path_present(state_path):
++                if not path_present(report_path):
++                    raise KernelError("eval_report_mismatch", "Task Pack完成状态缺少报告")
++                return await _load_completed_run(run_root, case, environment, run_id, owner=owner)
++            recovered = await _completed_session_turn(owner, materialized.workspace, run_id)
++            if recovered is None:
++                thread_id, turn = await _run_agent(
++                    loaded,
++                    materialized,
++                    git_executable,
++                    container_engine,
++                    provider_factory,
++                    token,
++                    observability or NoOpObservability(),
++                    fail,
++                    owner,
++                )
++            else:
++                thread_id, turn = recovered
++            return await _grade_and_publish(
++                materialized,
++                git_executable,
++                environment,
++                thread_id,
++                turn,
++                token,
++                fail,
++                owner,
++            )
+diff --git a/tests/evals/test_provider_suite_execution.py b/tests/evals/test_provider_suite_execution.py
+index 1fdf7de..d39258e 100644
+--- a/tests/evals/test_provider_suite_execution.py
++++ b/tests/evals/test_provider_suite_execution.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ 
+ from pathlib import Path
++from types import SimpleNamespace
+ 
+ import pytest
+ 
+@@ -11,6 +12,7 @@ from harnessix.evals.suite_execution_contracts import (
+     CodingEvalSuiteCaseRunResult,
+     CodingEvalSuiteRunReport,
+ )
++from harnessix.evals.task_pack_publication import provider_publication_scope
+ from tests.evals.provider_suite_helpers import provider_suite_config
+ 
+ 
+@@ -34,16 +36,24 @@ async def test_provider_suite_reuses_suite_runner_with_config_fingerprint(
+     monkeypatch,
+ ) -> None:
+     config = provider_suite_config(tmp_path)
++    config = config.model_copy(
++        update={
++            "provider_config": config.provider_config.model_copy(
++                update={"api_key_env": "R3_FIXTURE_KEY"}
++            )
++        }
++    )
+ 
+     async def executor(case, campaign, case_root, cancel):
+         return CodingEvalSuiteCaseRunResult(case_id=case.case_id, reason="runtime_failed")
+ 
+     def scope(checked, observability):
+         assert checked == config and observability is None
+-        return executor
++        return SimpleNamespace(publication_scope=None, provider_factory=executor)
+ 
+     async def run(suite, checked_executor, **kwargs):
+-        assert suite == config.suite and checked_executor is executor
++        assert suite == config.suite and checked_executor.publication_scope is not None
++        assert checked_executor.publication_scope.publication_context()["bindings"]
+         assert kwargs["execution_binding_sha256"] == config.fingerprint
+         assert kwargs["resume"] is True
+         return CodingEvalSuiteRunReport(
+@@ -59,6 +69,7 @@ async def test_provider_suite_reuses_suite_runner_with_config_fingerprint(
+     monkeypatch.setattr(provider_suite_execution, "_require_scope", scope)
+     monkeypatch.setattr(provider_suite_execution, "run_coding_eval_suite", run)
+ 
++    monkeypatch.setenv(config.provider_config.api_key_env, "fixture-suite-credential")
+     result = await run_task_pack_provider_suite(config, allow_network=True, resume=True)
+     assert result.reason == "completed"
+ 
+@@ -94,13 +105,18 @@ async def test_guarded_factory_is_bound_to_both_scope_and_suite(tmp_path, monkey
+     def factory(*_):
+         pytest.fail("本测试不得构造HTTP Client")
+ 
++    publication_scope = provider_publication_scope("FIXTURE_KEY", "fixture-suite-credential")
+     expected = digest(
+         {"provider_suite_config": config.fingerprint, "provider_binding": guard_fingerprint}
+     )
+ 
+     def scope(checked, observability, **kwargs):
+         assert checked == config and observability is None
+-        assert kwargs == {"provider_factory": factory, "provider_binding_sha256": expected}
++        assert kwargs == {
++            "provider_factory": factory,
++            "provider_binding_sha256": expected,
++            "publication_scope": publication_scope,
++        }
+         return object()
+ 
+     async def run(suite, executor, **kwargs):
+@@ -122,7 +138,9 @@ async def test_guarded_factory_is_bound_to_both_scope_and_suite(tmp_path, monkey
+         allow_network=True,
+         provider_factory=factory,
+         provider_binding_sha256=guard_fingerprint,
++        publication_scope=publication_scope,
+     )
++    publication_scope.close()
+     assert result.reason == "completed"
+ 
+ 
+diff --git a/tests/evals/test_task_pack_evidence_stop.py b/tests/evals/test_task_pack_evidence_stop.py
+index 005accc..18d1bd5 100644
+--- a/tests/evals/test_task_pack_evidence_stop.py
++++ b/tests/evals/test_task_pack_evidence_stop.py
+@@ -38,10 +38,10 @@ from harnessix.evals.report import (
+ from harnessix.evals.run_state import write_eval_run_state
+ from harnessix.evals.suite_execution import run_coding_eval_suite
+ from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
++from harnessix.evals.task_pack_publication import open_task_pack_publication
+ from harnessix.evals.task_pack_suite import build_task_pack_suite_config
+ from harnessix.evals.task_pack_trial import TaskPackCodingEvalResult
+ from harnessix.models.pricing import amount_units, format_amount
+-from harnessix.session.sqlite import SQLiteSessionStore
+ from tests.evals.test_campaign import campaign_environment, evidence
+ from tests.evals.test_task_pack_execution import _case_and_campaign
+ from tests.models.pricing_helpers import NOW, context, price
+@@ -75,114 +75,120 @@ def _executor(loaded, *, fault=None):
+     )
+ 
+ 
+-async def _write_fixture_trial(loaded, runs_root, case_id, run_id, environment, *, complete=True):
++async def _write_fixture_trial(
++    loaded, runs_root, case_id, run_id, environment, *, complete=True, publication_scope=None
++):
+     """仅在TempFS追加正式Session事件与失败评分证据，不运行模型或伪造通过结果。"""
+     case = loaded.manifest.case(case_id)
+     fixture = evidence(run_id, outcome="task" if complete else "provider", usage_complete=complete)
+     attempt = fixture.turn.model_attempts[0]
+     run_root = runs_root / str(run_id)
+     run_root.mkdir(mode=0o700)
+-    sessions = SQLiteSessionStore(run_root / "session.sqlite")
+-    await sessions.initialize()
+-    thread_id, turn_id, user_id = uuid4(), uuid4(), uuid4()
+-    user = TextContent(kind="user_message", text=case.task.prompt)
+-    payloads = [
+-        TurnStarted(
+-            request_id=f"coding-eval:{run_id}",
+-            request_fingerprint="a" * 64,
+-            budget=case.task.budget,
+-        ),
+-        ItemStarted(item_id=user_id, content=user),
+-        ItemFinished(item_id=user_id, status=ItemStatus.COMPLETED, content=user),
+-        TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
+-        TurnStateChanged(status=TurnStatus.CALLING_MODEL),
+-        ModelAttemptStarted(
+-            attempt_id=attempt.attempt_id,
+-            step=1,
+-            index=1,
+-            provider=attempt.provider,
+-            requested_model=attempt.requested_model,
+-        ),
+-        ModelUsageObserved(
+-            attempt_id=attempt.attempt_id,
+-            usage=attempt.usage,
+-            actual_model=attempt.actual_model,
+-            response_id=attempt.response_id,
+-        ),
+-        ModelAttemptFinished(
+-            attempt_id=attempt.attempt_id, outcome=attempt.status, error=attempt.error
+-        ),
+-    ]
+-    if complete:
+-        payloads.extend(
+-            (
+-                UsageRecorded(
+-                    step=1,
+-                    usage=Usage(
+-                        input_tokens=attempt.usage.input_tokens,
+-                        output_tokens=attempt.usage.output_tokens,
++    async with open_task_pack_publication(run_root, publication_scope) as owner:
++        sessions = owner.sessions
++        thread_id, turn_id, user_id = uuid4(), uuid4(), uuid4()
++        user = TextContent(kind="user_message", text=case.task.prompt)
++        payloads = [
++            TurnStarted(
++                request_id=f"coding-eval:{run_id}",
++                request_fingerprint="a" * 64,
++                budget=case.task.budget,
++            ),
++            ItemStarted(item_id=user_id, content=user),
++            ItemFinished(item_id=user_id, status=ItemStatus.COMPLETED, content=user),
++            TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
++            TurnStateChanged(status=TurnStatus.CALLING_MODEL),
++            ModelAttemptStarted(
++                attempt_id=attempt.attempt_id,
++                step=1,
++                index=1,
++                provider=attempt.provider,
++                requested_model=attempt.requested_model,
++            ),
++            ModelUsageObserved(
++                attempt_id=attempt.attempt_id,
++                usage=attempt.usage,
++                actual_model=attempt.actual_model,
++                response_id=attempt.response_id,
++            ),
++            ModelAttemptFinished(
++                attempt_id=attempt.attempt_id, outcome=attempt.status, error=attempt.error
++            ),
++        ]
++        if complete:
++            payloads.extend(
++                (
++                    UsageRecorded(
++                        step=1,
++                        usage=Usage(
++                            input_tokens=attempt.usage.input_tokens,
++                            output_tokens=attempt.usage.output_tokens,
++                        ),
+                     ),
+-                ),
+-                TurnStateChanged(status=TurnStatus.FINALIZING),
+-                TurnStateChanged(status=TurnStatus.COMPLETED),
++                    TurnStateChanged(status=TurnStatus.FINALIZING),
++                    TurnStateChanged(status=TurnStatus.COMPLETED),
++                )
+             )
+-        )
+-    else:
+-        error_id = uuid4()
+-        error = ErrorContent(failure=fixture.turn.error)
+-        payloads.extend(
+-            (
+-                ItemStarted(item_id=error_id, content=error),
+-                ItemFinished(item_id=error_id, status=ItemStatus.COMPLETED, content=error),
+-                TurnStateChanged(status=TurnStatus.FAILED, error=fixture.turn.error),
++        else:
++            error_id = uuid4()
++            error = ErrorContent(failure=fixture.turn.error)
++            payloads.extend(
++                (
++                    ItemStarted(item_id=error_id, content=error),
++                    ItemFinished(item_id=error_id, status=ItemStatus.COMPLETED, content=error),
++                    TurnStateChanged(status=TurnStatus.FAILED, error=fixture.turn.error),
++                )
+             )
++        drafts = [
++            EventDraft(
++                payload=ThreadCreated(workspace=str(run_root / "workspace")), occurred_at=NOW
++            ),
++            *(
++                EventDraft(turn_id=turn_id, payload=payload, occurred_at=NOW)
++                for payload in payloads[:-1]
++            ),
++            EventDraft(
++                turn_id=turn_id, payload=payloads[-1], occurred_at=NOW + timedelta(seconds=1)
++            ),
++        ]
++        thread = await sessions.append(thread_id, drafts, expected_sequence=0)
++        turn = thread.turns[0]
++        report = grade_coding_eval(
++            case.task,
++            turn,
++            run_id=run_id,
++            environment=environment,
++            started_at=turn.created_at,
++            completed_at=turn.completed_at,
++            baseline_observations=(),
++            final_observations=(),
++            git=fixture.report.git.model_copy(
++                update={
++                    "baseline_revision": case.task.repository.source_revision,
++                    "baseline_tree_sha256": case.task.repository.baseline_tree_sha256,
++                    "head_revision": case.task.repository.source_revision,
++                    "changed_paths": (),
++                }
++            ),
+         )
+-    drafts = [
+-        EventDraft(payload=ThreadCreated(workspace=str(run_root / "workspace")), occurred_at=NOW),
+-        *(
+-            EventDraft(turn_id=turn_id, payload=payload, occurred_at=NOW)
+-            for payload in payloads[:-1]
+-        ),
+-        EventDraft(turn_id=turn_id, payload=payloads[-1], occurred_at=NOW + timedelta(seconds=1)),
+-    ]
+-    thread = await sessions.append(thread_id, drafts, expected_sequence=0)
+-    turn = thread.turns[0]
+-    report = grade_coding_eval(
+-        case.task,
+-        turn,
+-        run_id=run_id,
+-        environment=environment,
+-        started_at=turn.created_at,
+-        completed_at=turn.completed_at,
+-        baseline_observations=(),
+-        final_observations=(),
+-        git=fixture.report.git.model_copy(
++        assert report.outcome != "passed"
++        state = fixture.state.model_copy(
+             update={
++                "task_id": case.task.task_id,
++                "task_version": case.task.task_version,
++                "task_fingerprint": case.task.fingerprint,
+                 "baseline_revision": case.task.repository.source_revision,
+                 "baseline_tree_sha256": case.task.repository.baseline_tree_sha256,
+-                "head_revision": case.task.repository.source_revision,
+-                "changed_paths": (),
++                "thread_id": thread_id,
++                "turn_id": turn_id,
++                "baseline_observations": (),
++                "environment": environment,
++                "report_sha256": eval_report_sha256(report),
+             }
+-        ),
+-    )
+-    assert report.outcome != "passed"
+-    state = fixture.state.model_copy(
+-        update={
+-            "task_id": case.task.task_id,
+-            "task_version": case.task.task_version,
+-            "task_fingerprint": case.task.fingerprint,
+-            "baseline_revision": case.task.repository.source_revision,
+-            "baseline_tree_sha256": case.task.repository.baseline_tree_sha256,
+-            "thread_id": thread_id,
+-            "turn_id": turn_id,
+-            "baseline_observations": (),
+-            "environment": environment,
+-            "report_sha256": eval_report_sha256(report),
+-        }
+-    )
+-    write_eval_report(run_root / "report.json", report)
+-    write_eval_run_state(run_root / "run-state.json", state)
+-    return TaskPackCodingEvalResult(state, report, turn, run_root / "workspace")
++        )
++        write_eval_report(run_root / "report.json", report)
++        write_eval_run_state(run_root / "run-state.json", state)
++        return TaskPackCodingEvalResult(state, report, turn, run_root / "workspace")
+ 
+ 
+ def _trial_port(monkeypatch, *, completed_before_failure=0, error=None, complete_cost=True):
+@@ -197,7 +203,13 @@ def _trial_port(monkeypatch, *, completed_before_failure=0, error=None, complete
+         if len(calls) > completed_before_failure:
+             raise failure
+         return await _write_fixture_trial(
+-            loaded, runs_root, case_id, run_id, environment, complete=complete_cost
++            loaded,
++            runs_root,
++            case_id,
++            run_id,
++            environment,
++            complete=complete_cost,
++            publication_scope=kwargs.get("publication_scope"),
+         )
+ 
+     monkeypatch.setattr(case_execution, "run_task_pack_coding_eval", scripted_trial)
+diff --git a/src/harnessix/evals/task_pack_publication.py b/src/harnessix/evals/task_pack_publication.py
+new file mode 100644
+index 0000000..689ef80
+--- /dev/null
++++ b/src/harnessix/evals/task_pack_publication.py
+@@ -0,0 +1,197 @@
++"""Task Pack 的单 Run 认证宿主：复用产品 Owner、原 Key 和公开保护 Scope。"""
++
++from __future__ import annotations
++
++import asyncio
++import os
++from collections.abc import AsyncIterator
++from contextlib import ExitStack, asynccontextmanager
++from dataclasses import dataclass, field
++from pathlib import Path
++from typing import Never
++
++from harnessix.agent.errors import KernelError
++from harnessix.artifacts.sqlite import SQLiteArtifactStore
++from harnessix.evals.execution_fs import path_present
++from harnessix.product_config.contracts import SecretReference
++from harnessix.product_config.session_key import (
++    KEY_LOAD_TIMEOUT_SECONDS,
++    open_product_session_binding,
++)
++from harnessix.product_config.session_key_codec import OwnedSessionKey
++from harnessix.product_config.state_backup_files import PrivateStateTree
++from harnessix.product_config.state_backup_validation import original_key
++from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
++from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
++from harnessix.secrets.publication import SecretPublicationScope
++from harnessix.session.sqlite import SQLiteSessionStore
++from harnessix.session.store_publication import SessionPublicationBinding
++
++PROVIDER_SECRET = SecretReference(name="eval.provider", version="1")
++SESSION_FILE = "session.sqlite"
++_EXISTING_STATE = (
++    SESSION_FILE,
++    SESSION_FILE + "-wal",
++    SESSION_FILE + "-shm",
++    "run-state.json",
++    "report.json",
++    "session-auth",
++)
++
++
++class _FixtureSecrets:
++    """无凭据的低层录制评测不能解析材料；真实 Suite 不使用此空 Scope。"""
++
++    def resolve(self, name: str) -> Never:
++        raise KernelError("eval_publication_secret_denied", "离线评测没有可解析的凭据")
++
++
++def provider_publication_scope(api_key_env: str, api_key: str) -> SecretPublicationScope:
++    """冻结凭据 Owner 已解析的唯一材料，不读环境、Keychain 或 Provider 私有字段。"""
++    return SecretPublicationScope(
++        (PROVIDER_SECRET,),
++        EnvironmentSecretProvider(
++            (EnvironmentSecretSource(PROVIDER_SECRET.name, PROVIDER_SECRET.version, api_key_env),),
++            environment={api_key_env: api_key},
++        ),
++    )
++
++
++def require_provider_publication_scope(scope: SecretPublicationScope | None) -> None:
++    """真实自定义 Factory 由凭据 Owner 显式提供非空保护快照。"""
++    if scope is None or not scope.publication_context()["bindings"]:
++        raise KernelError("publication_scope_unavailable", "真实评测缺少同源凭据保护 Scope")
++
++
++def _existing_material(root: Path) -> OwnedSessionKey:
++    material: OwnedSessionKey | None = None
++    try:
++        with PrivateStateTree(root) as tree:
++            material = original_key(tree)
++    except (KernelError, OSError):
++        if material is not None:
++            material.close()
++        raise KernelError("publication_key_unavailable", "评测原 Session 密钥不可用") from None
++    except BaseException:
++        if material is not None:
++            material.close()
++        raise
++    return material
++
++
++async def _load_existing_material(root: Path) -> OwnedSessionKey:
++    task = asyncio.create_task(asyncio.to_thread(_existing_material, root))
++    try:
++        return await asyncio.shield(task)
++    except asyncio.CancelledError:
++        # 原受托线程不能强杀；结算唯一任务并清零迟到材料，再传播父取消。
++        while not task.done():
++            try:
++                await asyncio.shield(task)
++            except asyncio.CancelledError:
++                continue
++            except Exception:
++                break
++        if not task.cancelled() and task.exception() is None:
++            task.result().close()
++        raise
++
++
++@asynccontextmanager
++async def _existing_binding(
++    root: Path, scope: SecretPublicationScope
++) -> AsyncIterator[SessionPublicationBinding]:
++    try:
++        async with asyncio.timeout(KEY_LOAD_TIMEOUT_SECONDS):
++            material = await _load_existing_material(root)
++    except TimeoutError:
++        raise KernelError("publication_key_timeout", "评测原 Session 密钥加载超时") from None
++    binding: SessionPublicationBinding | None = None
++    try:
++        binding = SessionPublicationBinding(material.store_id, material.key_id, material.key, scope)
++        yield binding
++    finally:
++        if binding is not None:
++            binding.close()
++        material.close()
++
++
++@dataclass(frozen=True, slots=True)
++class TaskPackPublicationOwner:
++    """仅借用于 Run 上下文，三条执行／恢复路径共用原 Store、Binding 与 Scope。"""
++
++    run_root: Path
++    root_owner: ProductStateOwner = field(repr=False)
++    binding: SessionPublicationBinding = field(repr=False)
++    scope: SecretPublicationScope = field(repr=False)
++    sessions: SQLiteSessionStore = field(repr=False)
++    artifacts: SQLiteArtifactStore = field(repr=False)
++    private_tree: PrivateStateTree = field(repr=False)
++
++    def require_ready(self, run_root: Path) -> None:
++        """借用前复核原 Run 地址、根外锁及原 Root inode／权限，不只检查锁存在。"""
++        if run_root != self.run_root:
++            raise KernelError("product_state_owner_invalid", "评测 Run Owner 归属不匹配")
++        self.root_owner.require_ready(run_root)
++        self.private_tree.checkpoint()
++
++
++def _retain_session_file(files: ExitStack, tree: PrivateStateTree) -> None:
++    """仅转换取得原叶句柄的系统错误，不把下游业务 OSError 误报为认证失败。"""
++    try:
++        files.enter_context(tree.open_file(SESSION_FILE, metadata_only=os.name == "nt"))
++    except OSError:
++        raise KernelError("eval_publication_session_invalid", "评测原 Session 文件无效") from None
++
++
++@asynccontextmanager
++async def open_task_pack_publication(
++    run_root: Path,
++    publication_scope: SecretPublicationScope | None = None,
++    *,
++    existing_only: bool = False,
++    root_owner: ProductStateOwner | None = None,
++) -> AsyncIterator[TaskPackPublicationOwner]:
++    """恢复只读原 Key；缺材料、旧 MAC 缺失或验证失败均不得退回初始化。"""
++    with ExitStack() as resources:
++        scope = publication_scope
++        if scope is None:
++            scope = resources.enter_context(SecretPublicationScope((), _FixtureSecrets()))
++        if root_owner is None:
++            root_owner = resources.enter_context(product_state_owner(run_root))
++        root_owner.require_ready(run_root)
++        private_tree = resources.enter_context(PrivateStateTree(run_root))
++        if existing_only and not path_present(run_root / SESSION_FILE):
++            raise KernelError("eval_publication_session_missing", "评测原 Session 不存在")
++        # 认证目录本身也表示已开始初始化；不能因 key.v1 丢失而生成替代身份。
++        existing = existing_only or any(path_present(run_root / name) for name in _EXISTING_STATE)
++        binding_context = (
++            _existing_binding(run_root, scope)
++            if existing
++            else open_product_session_binding(run_root, scope)
++        )
++        async with binding_context as binding:
++            private_tree.checkpoint()
++            with ExitStack() as files:
++                present = path_present(run_root / SESSION_FILE)
++                if present:
++                    # 固定原叶 FD／Handle，拒绝链接及文件替换；退出时再次验证原对象。
++                    _retain_session_file(files, private_tree)
++                sessions = SQLiteSessionStore(run_root / SESSION_FILE, publication=binding)
++                if present:
++                    # 恢复先走 enroll=False 的正式 Reader；空旧库也不能补签 Header。
++                    await sessions.thread_ids()
++                elif any(path_present(run_root / name) for name in _EXISTING_STATE[1:5]):
++                    raise KernelError("eval_publication_session_missing", "评测原 Session 不完整")
++                private_tree.checkpoint()
++                await sessions.initialize()
++                if not present:
++                    _retain_session_file(files, private_tree)
++                private_tree.checkpoint()
++                artifacts = SQLiteArtifactStore(sessions, public_output_protection=scope)
++                owner = TaskPackPublicationOwner(
++                    run_root, root_owner, binding, scope, sessions, artifacts, private_tree
++                )
++                owner.require_ready(run_root)
++                yield owner
++                owner.require_ready(run_root)
+diff --git a/tests/evals/test_task_pack_publication.py b/tests/evals/test_task_pack_publication.py
+new file mode 100644
+index 0000000..d7f913b
+--- /dev/null
++++ b/tests/evals/test_task_pack_publication.py
+@@ -0,0 +1,903 @@
++"""认证宿主的真实临时 SQLite／合成 Scope 回归；不请求模型、网络或容器。"""
++
++from __future__ import annotations
++
++import ast
++import asyncio
++import hashlib
++import os
++import socket
++import sqlite3
++import subprocess
++from contextlib import asynccontextmanager
++from pathlib import Path
++from threading import Event
++from types import SimpleNamespace
++from uuid import uuid4
++
++import pytest
++
++from harnessix.agent.cancellation import CancelToken
++from harnessix.agent.errors import KernelError
++from harnessix.agent.models import (
++    Budget,
++    EventDraft,
++    ItemFinished,
++    ItemStarted,
++    ItemStatus,
++    TextContent,
++    ThreadCreated,
++    ToolCallContent,
++    ToolResultContent,
++    TurnStarted,
++    TurnStateChanged,
++    TurnStatus,
++    Usage,
++    UsageRecorded,
++)
++from harnessix.artifacts.contracts import ArtifactToolResult
++from harnessix.domain.models import EffectClass
++from harnessix.evals import provider_suite_execution, task_pack_publication, task_pack_trial
++from harnessix.evals.provider_suite_execution import TaskPackOpenAIChatProviderFactory
++from harnessix.evals.task_pack_execution import _completed_trial
++from harnessix.evals.task_pack_publication import (
++    PROVIDER_SECRET,
++    open_task_pack_publication,
++    provider_publication_scope,
++)
++from harnessix.product_config.session_key_codec import OwnedSessionKey
++from harnessix.product_config.state_owner import product_state_owner
++from harnessix.session.sqlite import SQLiteSessionStore
++from tests.evals.provider_suite_helpers import provider_suite_config
++from tests.evals.test_task_pack_evidence_stop import _write_fixture_trial
++from tests.evals.test_task_pack_execution import _case_and_campaign
++
++
++@pytest.fixture(autouse=True)
++def no_external_effects(monkeypatch):
++    def forbidden(*args, **kwargs):
++        pytest.fail("此验证只允许本地 SQLite、合成材料与固定输入")
++
++    monkeypatch.setattr(socket.socket, "connect", forbidden)
++    monkeypatch.setattr(socket, "create_connection", forbidden)
++    monkeypatch.setattr(subprocess, "Popen", forbidden)
++
++
++@pytest.fixture
++def scope():
++    with provider_publication_scope("FIXTURE_KEY", "fixture-publication-credential") as scoped:
++        yield scoped
++
++
++def run_root(tmp_path):
++    root = tmp_path / "run"
++    root.mkdir(mode=0o700)
++    return root
++
++
++def key_facts(root):
++    path = root / "session-auth/key.v1"
++    info = path.stat()
++    return hashlib.sha256(path.read_bytes()).hexdigest(), info.st_mtime_ns, info.st_ino
++
++
++async def test_new_run_owns_same_binding_scope_and_stable_original_key(
++    tmp_path, scope, monkeypatch
++):
++    root, tid = run_root(tmp_path), uuid4()
++    async with open_task_pack_publication(root, scope) as owner:
++        assert owner.scope is scope
++        assert owner.sessions._publication is owner.binding
++        assert owner.artifacts.session is owner.sessions
++        assert owner.artifacts._publication.binding is owner.binding
++        assert owner.artifacts._publication.protection is scope
++        owner.root_owner.require_ready(root)
++        header = owner.binding.header()
++        key_copy = owner.binding._key
++        await owner.sessions.append(
++            tid,
++            [EventDraft(payload=ThreadCreated(workspace=str(root / "workspace")))],
++            expected_sequence=0,
++        )
++        with sqlite3.connect(owner.sessions.path) as db:
++            assert db.execute("SELECT seal FROM agent_publication_store").fetchone() == (header,)
++            assert db.execute("SELECT COUNT(*) FROM agent_event_publications").fetchone() == (1,)
++            assert db.execute("SELECT COUNT(*) FROM agent_projection_publications").fetchone() == (
++                1,
++            )
++    assert not any(key_copy)
++    before = key_facts(root)
++
++    def forbidden_create(*args):
++        pytest.fail("恢复不得调用 create-or-load")
++
++    monkeypatch.setattr(task_pack_publication, "open_product_session_binding", forbidden_create)
++    async with open_task_pack_publication(root, scope, existing_only=True) as owner:
++        assert owner.binding.header() == header
++        assert (await owner.sessions.get_thread(tid)).sequence == 1
++        assert len(await owner.sessions.events(tid)) == 1
++    assert key_facts(root) == before
++
++
++@pytest.mark.parametrize(
++    "present",
++    ["session.sqlite", "session.sqlite-wal", "report.json", "run-state.json", "session-auth"],
++)
++async def test_lost_key_never_creates_or_falls_back(tmp_path, scope, monkeypatch, present):
++    root = run_root(tmp_path)
++    path = root / present
++    if present == "session-auth":
++        path.mkdir(mode=0o700)
++    else:
++        path.write_bytes(b"isolated-missing-key-fixture")
++        path.chmod(0o600)
++    before = path.stat().st_mtime_ns
++    monkeypatch.setattr(
++        task_pack_publication,
++        "open_product_session_binding",
++        lambda *args: pytest.fail("丢 Key 不得创建替代身份"),
++    )
++    with pytest.raises(KernelError) as denied:
++        async with open_task_pack_publication(root, scope):
++            pytest.fail("缺 Key 的旧状态不得开放")
++    assert denied.value.code == "publication_key_unavailable"
++    assert not (root / "session-auth/key.v1").exists()
++    assert path.stat().st_mtime_ns == before
++
++
++@pytest.mark.parametrize("kind", ["missing", "corrupt", "wide", "link"])
++async def test_original_key_failures_never_replace_material(tmp_path, scope, kind):
++    root = run_root(tmp_path)
++    async with open_task_pack_publication(root, scope):
++        pass
++    key = root / "session-auth/key.v1"
++    if kind == "missing":
++        key.unlink()
++    elif kind == "corrupt":
++        key.write_bytes(b"invalid-original-key")
++    elif kind == "wide":
++        key.chmod(0o644)
++    else:
++        copied = root / "fixture-original-key"
++        key.rename(copied)
++        key.symlink_to(copied)
++    with pytest.raises(KernelError) as denied:
++        async with open_task_pack_publication(root, scope, existing_only=True):
++            pytest.fail("原 Key 无效不得恢复")
++    assert denied.value.code == "publication_key_unavailable"
++    if kind == "corrupt":
++        assert key.read_bytes() == b"invalid-original-key"
++    elif kind == "link":
++        assert key.is_symlink()
++
++
++@pytest.mark.parametrize("nonempty", [False, True])
++async def test_legacy_missing_mac_is_not_enrolled_even_with_fixture_key(tmp_path, scope, nonempty):
++    root, tid = run_root(tmp_path), uuid4()
++    async with open_task_pack_publication(root, scope):
++        pass
++    path = root / "session.sqlite"
++    path.unlink()
++    legacy = SQLiteSessionStore(path)
++    await legacy.initialize()
++    if nonempty:
++        await legacy.append(
++            tid,
++            [EventDraft(payload=ThreadCreated(workspace=str(root / "workspace")))],
++            expected_sequence=0,
++        )
++    with pytest.raises(KernelError) as denied:
++        async with open_task_pack_publication(root, scope, existing_only=True):
++            pytest.fail("无 MAC 历史不能补签")
++    assert denied.value.code == "publication_history_unproven"
++    with sqlite3.connect(path) as db:
++        assert db.execute("SELECT COUNT(*) FROM agent_publication_store").fetchone() == (0,)
++        assert db.execute("SELECT COUNT(*) FROM agent_event_publications").fetchone() == (0,)
++
++
++async def fixture_trial(tmp_path, scope):
++    loaded, expected, campaign = _case_and_campaign()
++    runs = tmp_path / "runs"
++    runs.mkdir(mode=0o700)
++    run_id = campaign.run_ids[0]
++    trial = await _write_fixture_trial(
++        loaded, runs, expected.case_id, run_id, campaign.environment, publication_scope=scope
++    )
++    return loaded, expected, campaign, runs, run_id, trial
++
++
++async def test_completed_and_terminal_paths_share_run_owner_without_provider(tmp_path, scope):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    async with open_task_pack_publication(root, scope, existing_only=True) as owner:
++        loaded_trial = await task_pack_trial._load_completed_run(
++            root, loaded.manifest.case(expected.case_id), campaign.environment, run_id, owner=owner
++        )
++        terminal = await task_pack_trial._completed_session_turn(owner, trial.workspace, run_id)
++        assert loaded_trial.turn == trial.turn
++        assert terminal == (trial.state.thread_id, trial.turn)
++    reopened = await _completed_trial(
++        tmp_path, loaded.manifest.case(expected.case_id), campaign, run_id, scope
++    )
++    assert reopened.turn == trial.turn
++
++
++@pytest.mark.parametrize("window", ["completed", "terminal"])
++async def test_trial_recovers_both_report_windows_with_original_scope(
++    tmp_path, scope, monkeypatch, window
++):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    materialized = SimpleNamespace(
++        case=loaded.manifest.case(expected.case_id),
++        run_root=root,
++        workspace=trial.workspace,
++        manifest=SimpleNamespace(
++            run_id=run_id,
++            baseline_revision=trial.state.baseline_revision,
++            baseline_tree_sha256=trial.state.baseline_tree_sha256,
++        ),
++    )
++    monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: materialized)
++    if window == "terminal":
++        (root / "run-state.json").unlink()
++        (root / "report.json").unlink()
++
++        async def git(*args, **kwargs):
++            return trial.report.git
++
++        monkeypatch.setattr(task_pack_trial, "collect_git_evidence", git)
++
++    def no_provider(*args):
++        pytest.fail("报告窗口恢复不得创建 Provider")
++
++    result = await task_pack_trial.run_task_pack_coding_eval(
++        loaded,
++        runs,
++        Path("/missing/git"),
++        Path("/missing/docker"),
++        expected.case_id,
++        run_id,
++        no_provider,
++        campaign.environment,
++        publication_scope=scope,
++    )
++    assert result.turn == trial.turn
++    assert (root / "run-state.json").is_file() and (root / "report.json").is_file()
++
++
++@pytest.mark.parametrize("fault", ["projection", "event_seal", "header", "key"])
++async def test_trial_authentication_precedes_provider(tmp_path, scope, monkeypatch, fault):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    for name in ("run-state.json", "report.json"):
++        (root / name).unlink()
++    if fault == "key":
++        (root / "session-auth/key.v1").unlink()
++    else:
++        with sqlite3.connect(root / "session.sqlite") as db:
++            statement = {
++                "projection": "UPDATE agent_threads SET snapshot_json='{}'",
++                "event_seal": "DELETE FROM agent_event_publications",
++                "header": "DELETE FROM agent_publication_store",
++            }[fault]
++            db.execute(statement)
++    materialized = SimpleNamespace(
++        case=loaded.manifest.case(expected.case_id),
++        run_root=root,
++        workspace=trial.workspace,
++        manifest=SimpleNamespace(run_id=run_id),
++    )
++    monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: materialized)
++
++    def no_provider(*args):
++        pytest.fail("认证拒绝必须先于 Provider")
++
++    with pytest.raises(KernelError):
++        await task_pack_trial.run_task_pack_coding_eval(
++            loaded,
++            runs,
++            Path("/missing/git"),
++            Path("/missing/docker"),
++            expected.case_id,
++            run_id,
++            no_provider,
++            campaign.environment,
++            publication_scope=scope,
++        )
++
++
++async def test_agent_tool_action_wiring_borrows_identical_scope_and_owner(
++    tmp_path, scope, monkeypatch
++):
++    loaded, expected, campaign = _case_and_campaign()
++    root = run_root(tmp_path)
++    engine = tmp_path / "fixture-engine"
++    engine.write_text("fixture-executable-not-invoked")
++    engine.chmod(0o700)
++    materialized = SimpleNamespace(
++        case=loaded.manifest.case(expected.case_id),
++        run_root=root,
++        workspace=root / "workspace",
++        manifest=SimpleNamespace(run_id=uuid4()),
++    )
++    async with open_task_pack_publication(root, scope) as owner:
++        calls = []
++
++        @asynccontextmanager
++        async def provider_factory(*args):
++            assert await owner.sessions.thread_ids() == []
++            calls.append("provider")
++            yield object()
++
++        @asynccontextmanager
++        async def tools(workspace, **kwargs):
++            assert kwargs["artifacts"] is owner.artifacts
++            assert kwargs["git_output_redaction"] is scope
++            assert kwargs["git_state_directory"] == root
++            yield SimpleNamespace(workspace_scope="a" * 64, workspace_root=object())
++
++        @asynccontextmanager
++        async def actions(*args, **kwargs):
++            assert kwargs["root_owner"] is owner.root_owner
++            assert kwargs["output_redaction"] is scope
++            yield SimpleNamespace(gateway=object())
++
++        @asynccontextmanager
++        async def agent(sessions, provider, **kwargs):
++            assert sessions is owner.sessions
++            assert kwargs["artifacts"] is owner.artifacts
++            assert kwargs["public_output_protection"] is scope
++            yield object()
++
++        async def drive(runtime, sessions, *args):
++            assert sessions is owner.sessions
++            return "fixture-no-model-drive"
++
++        monkeypatch.setattr(task_pack_trial, "CodingToolRuntime", tools)
++        monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", actions)
++        monkeypatch.setattr(task_pack_trial, "AgentRuntime", agent)
++        monkeypatch.setattr(
++            task_pack_trial,
++            "build_product_agent_context",
++            lambda *args: SimpleNamespace(context=None, compaction=None),
++        )
++        monkeypatch.setattr(task_pack_trial, "_drive_turn", drive)
++        result = await task_pack_trial._run_agent(
++            loaded,
++            materialized,
++            Path("/missing/git"),
++            engine,
++            provider_factory,
++            CancelToken(),
++            object(),
++            lambda _: None,
++            owner,
++        )
++        assert result == "fixture-no-model-drive" and calls == ["provider"]
++
++
++async def _publish_fixture_artifact(owner):
++    tid, turn_id, item_id, user_id = uuid4(), uuid4(), uuid4(), uuid4()
++    user = TextContent(kind="user_message", text="fixture-artifact-publication")
++    call = ToolCallContent(
++        call_id=uuid4(),
++        provider_call_id="fixture",
++        tool="grep",
++        tool_version="1",
++        arguments={"query": "safe"},
++        effect_class=EffectClass.READ_ONLY,
++    )
++    payloads = [
++        TurnStarted(request_id="fixture", request_fingerprint="a" * 64, budget=Budget()),
++        ItemStarted(item_id=user_id, content=user),
++        ItemFinished(item_id=user_id, content=user, status=ItemStatus.COMPLETED),
++        TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT),
++        TurnStateChanged(status=TurnStatus.CALLING_MODEL),
++        ItemStarted(item_id=item_id, content=call),
++        ItemFinished(item_id=item_id, content=call, status=ItemStatus.COMPLETED),
++        UsageRecorded(step=1, usage=Usage()),
++        TurnStateChanged(status=TurnStatus.EXECUTING_TOOLS),
++    ]
++    thread = await owner.sessions.append(
++        tid,
++        [
++            EventDraft(payload=ThreadCreated(workspace=str(owner.run_root / "workspace"))),
++            *(EventDraft(turn_id=turn_id, payload=p) for p in payloads),
++        ],
++        expected_sequence=0,
++    )
++    output = ArtifactToolResult(
++        result=ToolResultContent(call_id=call.call_id, outcome="succeeded", output={"count": 1}),
++        body=b'{"text":"safe fixture"}\n',
++        workspace_scope="a" * 64,
++        complete=True,
++        publisher=owner.artifacts,
++    )
++    async with owner.sessions.runtime_owner():
++        thread = await owner.artifacts.publish(
++            tid, turn_id, call, output, expected_sequence=thread.sequence, max_output_chars=10000
++        )
++    result = thread.turns[0].items[-1].content
++    return tid, result.output["artifact"]
++
++
++@pytest.mark.parametrize("change", [None, "seal", "body"])
++async def test_artifact_persists_original_mac_and_rejects_tampering(tmp_path, scope, change):
++    from uuid import UUID
++
++    root = run_root(tmp_path)
++    async with open_task_pack_publication(root, scope) as owner:
++        tid, ref = await _publish_fixture_artifact(owner)
++    with sqlite3.connect(root / "session.sqlite") as db:
++        original = db.execute("SELECT publication_seal FROM agent_artifacts").fetchone()[0]
++        assert isinstance(original, bytes)
++        if change == "seal":
++            db.execute("UPDATE agent_artifacts SET publication_seal=NULL")
++        elif change == "body":
++            db.execute("UPDATE agent_artifacts SET body=?", (b'{"text":"evil fixture"}\n',))
++    async with open_task_pack_publication(root, scope, existing_only=True) as owner:
++        if change is None:
++            page = await owner.artifacts.read(tid, "a" * 64, UUID(ref["artifact_id"]))
++            assert page.text == '{"text":"safe fixture"}\n'
++        else:
++            with pytest.raises(KernelError) as denied:
++                await owner.artifacts.read(tid, "a" * 64, UUID(ref["artifact_id"]))
++            assert denied.value.code == "artifact_publication_unproven"
++
++
++async def test_output_cannot_issue_secret_from_same_scope(tmp_path, scope):
++    root = run_root(tmp_path)
++    async with open_task_pack_publication(root, scope) as owner:
++        with pytest.raises(KernelError) as denied:
++            await owner.artifacts._publication.check_body(
++                b'{"text":"fixture-publication-credential"}\n'
++            )
++        assert denied.value.code == "public_output_secret_leak"
++
++
++async def test_default_suite_freezes_nonempty_credential_scope_before_provider(
++    tmp_path, monkeypatch
++):
++    config = provider_suite_config(tmp_path)
++    config = config.model_copy(
++        update={
++            "provider_config": config.provider_config.model_copy(
++                update={"api_key_env": "R3_FIXTURE_KEY"}
++            )
++        }
++    )
++    fake_executor = SimpleNamespace(publication_scope=None, provider_factory=None)
++    monkeypatch.setenv(config.provider_config.api_key_env, "fixture-first-key")
++    monkeypatch.setattr(provider_suite_execution, "_require_scope", lambda *args: fake_executor)
++    created = []
++
++    def native(config, *, api_key):
++        created.append(api_key)
++        return object()
++
++    monkeypatch.setattr(provider_suite_execution, "OpenAIChatProvider", native)
++
++    async def run(suite, executor, **kwargs):
++        assert executor.publication_scope.publication_context()["bindings"]
++        assert executor.provider_factory.publication_scope is executor.publication_scope
++        monkeypatch.setenv(config.provider_config.api_key_env, "fixture-second-key")
++        executor.provider_factory(None, uuid4())
++        return "fixture-no-suite-request"
++
++    monkeypatch.setattr(provider_suite_execution, "run_coding_eval_suite", run)
++    result = await provider_suite_execution.run_task_pack_provider_suite(config, allow_network=True)
++    assert result == "fixture-no-suite-request" and created == ["fixture-first-key"]
++    with pytest.raises(KernelError):
++        fake_executor.publication_scope.resolve(PROVIDER_SECRET.name)
++
++
++@pytest.mark.parametrize("provided", ["missing", "empty"])
++async def test_real_custom_factory_requires_explicit_nonempty_scope(
++    tmp_path, monkeypatch, provided
++):
++    config = provider_suite_config(tmp_path)
++    monkeypatch.setattr(
++        provider_suite_execution,
++        "_require_scope",
++        lambda *args, **kwargs: pytest.fail("无 Scope 不得进入执行宿主"),
++    )
++    async with open_task_pack_publication(run_root(tmp_path)) as owner:
++        with pytest.raises(KernelError) as denied:
++            await provider_suite_execution.run_task_pack_provider_suite(
++                config,
++                allow_network=True,
++                provider_factory=lambda *args: None,
++                provider_binding_sha256="a" * 64,
++                publication_scope=None if provided == "missing" else owner.scope,
++            )
++    assert denied.value.code == "publication_scope_unavailable"
++
++
++def test_default_factory_cannot_use_environment_without_scope(monkeypatch):
++    monkeypatch.setattr(
++        provider_suite_execution,
++        "OpenAIChatProvider",
++        lambda *args, **kwargs: pytest.fail("不得创建无保护的 Provider"),
++    )
++    with pytest.raises(KernelError) as denied:
++        TaskPackOpenAIChatProviderFactory(None)(None, uuid4())
++    assert denied.value.code == "publication_scope_unavailable"
++
++
++async def test_exception_and_owner_competition_release_key_and_lock(tmp_path, scope):
++    root = run_root(tmp_path)
++    with pytest.raises(RuntimeError, match="fixture-exit"):
++        async with open_task_pack_publication(root, scope) as owner:
++            key_copy = owner.binding._key
++            with pytest.raises(KernelError) as denied:
++                with product_state_owner(root):
++                    pytest.fail("同一 Root 不得出现第二 Owner")
++            assert denied.value.code == "product_state_busy"
++            raise RuntimeError("fixture-exit")
++    assert not any(key_copy)
++    with product_state_owner(root):
++        pass
++
++
++@pytest.mark.parametrize("stop", ["cancel", "timeout"])
++async def test_existing_load_settles_and_clears_late_material(tmp_path, scope, monkeypatch, stop):
++    root = run_root(tmp_path)
++    async with open_task_pack_publication(root, scope):
++        pass
++    started, release = Event(), Event()
++    material = OwnedSessionKey(uuid4(), uuid4(), bytearray(range(32)))
++    calls = []
++
++    def held(root):
++        calls.append(root)
++        started.set()
++        assert release.wait(5)
++        return material
++
++    monkeypatch.setattr(task_pack_publication, "_existing_material", held)
++    if stop == "timeout":
++        monkeypatch.setattr(task_pack_publication, "KEY_LOAD_TIMEOUT_SECONDS", 0.05)
++
++    async def opening():
++        async with open_task_pack_publication(root, scope, existing_only=True):
++            pytest.fail("被取消的加载不得开放 Owner")
++
++    task = asyncio.create_task(opening())
++    async with asyncio.timeout(3):
++        assert await asyncio.to_thread(started.wait, 3)
++        if stop == "cancel":
++            task.cancel()
++            await asyncio.sleep(0.01)
++            task.cancel()
++        else:
++            await asyncio.sleep(0.08)
++        assert not task.done()
++        release.set()
++        if stop == "cancel":
++            with pytest.raises(asyncio.CancelledError):
++                await task
++        else:
++            with pytest.raises(KernelError) as denied:
++                await task
++            assert denied.value.code == "publication_key_timeout"
++    assert calls == [root] and not any(material.key)
++    with product_state_owner(root):
++        pass
++
++
++def test_budget_entry_only_forwards_scope_and_keeps_guard_owner():
++    # 静态核对实际入口，不调用费用入口、账本、凭据读取或 Provider。
++    tree = ast.parse(
++        (
++            Path(__file__).parents[2] / "scripts" / "run_engineering_provider_suite_budgeted.py"
++        ).read_text()
++    )
++    function = next(
++        n
++        for n in tree.body
++        if isinstance(n, ast.AsyncFunctionDef) and n.name == "run_budgeted_suite"
++    )
++    calls = [n for n in ast.walk(function) if isinstance(n, ast.Call)]
++    suite = next(
++        n
++        for n in calls
++        if isinstance(n.func, ast.Name) and n.func.id == "run_task_pack_provider_suite"
++    )
++    assert (
++        ast.unparse(next(k.value for k in suite.keywords if k.arg == "publication_scope"))
++        == "scope"
++    )
++    assert any(
++        isinstance(n.func, ast.Name) and n.func.id == "GuardedVerificationProvider" for n in calls
++    )
++    scopes = [
++        n
++        for n in calls
++        if isinstance(n.func, ast.Name) and n.func.id == "provider_publication_scope"
++    ]
++    assert len(scopes) == 1 and ast.unparse(scopes[0].args[1]) == "key"
++
++
++def fixture_file_snapshot(root):
++    """仅合成旧 Fixture 的文件摘要，不保存正文或材料值。"""
++    return {
++        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
++        for path in root.rglob("*")
++        if path.is_file() and not path.is_symlink()
++    }
++
++
++@pytest.mark.parametrize("failure", ["missing_key", "missing_header", "missing_event_seal"])
++async def test_rejected_existing_fixture_keeps_all_file_sha_and_zero_provider_requests(
++    tmp_path, scope, monkeypatch, failure
++):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    if failure == "missing_key":
++        (root / "session-auth/key.v1").unlink()
++    else:
++        with sqlite3.connect(root / "session.sqlite") as db:
++            db.execute(
++                "DELETE FROM "
++                + (
++                    "agent_publication_store"
++                    if failure == "missing_header"
++                    else "agent_event_publications"
++                )
++            )
++        # sqlite3.Connection 上下文只提交、不关闭；冻结旧夹具前结束构造连接。
++        db.close()
++    before = fixture_file_snapshot(root)
++    materialized = SimpleNamespace(
++        case=loaded.manifest.case(expected.case_id),
++        run_root=root,
++        workspace=trial.workspace,
++        manifest=SimpleNamespace(run_id=run_id),
++    )
++    monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: materialized)
++    providers = []
++
++    def forbidden_provider(*args):
++        providers.append(args)
++        pytest.fail("认证失败不能调用 Provider")
++
++    with pytest.raises(KernelError):
++        await task_pack_trial.run_task_pack_coding_eval(
++            loaded,
++            runs,
++            Path("/missing/git"),
++            Path("/missing/docker"),
++            expected.case_id,
++            run_id,
++            forbidden_provider,
++            campaign.environment,
++            publication_scope=scope,
++        )
++    assert providers == [] and fixture_file_snapshot(root) == before
++    if failure == "missing_key":
++        assert not (root / "session-auth/key.v1").exists()
++
++
++@pytest.mark.skipif(os.name != "posix", reason="POSIX FD 下验证同址目录替换；Windows 原生另验")
++@pytest.mark.parametrize("stage", ["completed_read", "terminal_read", "execution", "report"])
++async def test_root_identity_is_checked_at_every_borrowed_stage(
++    tmp_path, scope, monkeypatch, stage
++):
++    loaded, expected, campaign = _case_and_campaign()
++    case, root = loaded.manifest.case(expected.case_id), run_root(tmp_path)
++    materialized = SimpleNamespace(
++        case=case,
++        run_root=root,
++        workspace=root / "workspace",
++        manifest=SimpleNamespace(run_id=campaign.run_ids[0]),
++    )
++    providers, git_reads = [], []
++
++    def no_provider(*args):
++        providers.append(args)
++        pytest.fail("身份漂移不能创建 Provider")
++
++    async def no_git(*args, **kwargs):
++        git_reads.append(args)
++        pytest.fail("身份漂移不能收集并发布报告")
++
++    monkeypatch.setattr(task_pack_trial, "collect_git_evidence", no_git)
++    with pytest.raises(KernelError):
++        async with open_task_pack_publication(root, scope) as owner:
++            root.rename(tmp_path / "original-root-fixture")
++            root.mkdir(mode=0o700)
++            if stage == "completed_read":
++                await task_pack_trial._load_completed_run(
++                    root, case, campaign.environment, campaign.run_ids[0], owner=owner
++                )
++            elif stage == "terminal_read":
++                await task_pack_trial._completed_session_turn(
++                    owner, materialized.workspace, campaign.run_ids[0]
++                )
++            elif stage == "execution":
++                await task_pack_trial._run_agent(
++                    loaded,
++                    materialized,
++                    Path("/missing/git"),
++                    Path("/missing/docker"),
++                    no_provider,
++                    CancelToken(),
++                    object(),
++                    lambda _: None,
++                    owner,
++                )
++            else:
++                await task_pack_trial._grade_and_publish(
++                    materialized,
++                    Path("/missing/git"),
++                    campaign.environment,
++                    uuid4(),
++                    None,
++                    CancelToken(),
++                    lambda _: None,
++                    owner,
++                )
++    assert providers == [] and git_reads == []
++
++
++@pytest.mark.skipif(os.name != "posix", reason="POSIX 目录替换故障注入")
++async def test_run_creation_post_load_checks_original_root_identity(tmp_path, scope, monkeypatch):
++    root = run_root(tmp_path)
++    original = task_pack_publication.open_product_session_binding
++
++    @asynccontextmanager
++    async def swapped(root, scope):
++        async with original(root, scope) as binding:
++            root.rename(tmp_path / "original-root-fixture")
++            root.mkdir(mode=0o700)
++            yield binding
++
++    monkeypatch.setattr(task_pack_publication, "open_product_session_binding", swapped)
++    with pytest.raises(KernelError):
++        async with open_task_pack_publication(root, scope):
++            pytest.fail("加载期间替换 Root 不能创建 Session")
++    assert not (root / "session.sqlite").exists()
++
++
++async def test_valid_but_other_store_key_rejects_without_resigning(tmp_path, scope):
++    root = run_root(tmp_path)
++    other = tmp_path / "other-run"
++    other.mkdir(mode=0o700)
++    async with open_task_pack_publication(root, scope):
++        pass
++    async with open_task_pack_publication(other, scope):
++        pass
++    (root / "session-auth/key.v1").write_bytes((other / "session-auth/key.v1").read_bytes())
++    before = fixture_file_snapshot(root)
++    with pytest.raises(KernelError) as denied:
++        async with open_task_pack_publication(root, scope, existing_only=True):
++            pytest.fail("另一 Store 的合法 Key 不得认证原 Header")
++    assert denied.value.code == "publication_history_unproven"
++    assert fixture_file_snapshot(root) == before
++
++
++async def test_session_symlink_is_rejected_before_any_sqlite_reader(tmp_path, scope):
++    root = run_root(tmp_path)
++    async with open_task_pack_publication(root, scope):
++        pass
++    db = root / "session.sqlite"
++    original = root / "original-fixture.sqlite"
++    db.rename(original)
++    db.symlink_to(original)
++    before = fixture_file_snapshot(root)
++    with pytest.raises(KernelError) as denied:
++        async with open_task_pack_publication(root, scope, existing_only=True):
++            pytest.fail("不能跟随 Session 叶链接")
++    assert denied.value.code == "eval_publication_session_invalid"
++    assert db.is_symlink() and fixture_file_snapshot(root) == before
++
++
++async def test_case_prefix_and_trial_forward_the_exact_scope(tmp_path, scope, monkeypatch):
++    from harnessix.evals import task_pack_execution
++    from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
++
++    loaded, expected, campaign = _case_and_campaign()
++    seen = []
++
++    async def trial(
++        loaded, runs, git, container, case_id, run_id, provider, environment, token, **kwargs
++    ):
++        assert kwargs["publication_scope"] is scope
++        if seen:
++            raise KernelError("eval_baseline_invalid", "fixture-evidence-stop")
++        seen.append(run_id)
++        return await _write_fixture_trial(
++            loaded, runs, case_id, run_id, environment, publication_scope=scope
++        )
++
++    original = task_pack_execution._completed_trial
++    reads = []
++
++    async def completed(case_root, case, campaign, run_id, publication_scope):
++        assert publication_scope is scope
++        reads.append(run_id)
++        return await original(case_root, case, campaign, run_id, publication_scope)
++
++    monkeypatch.setattr(task_pack_execution, "run_task_pack_coding_eval", trial)
++    monkeypatch.setattr(task_pack_execution, "_completed_trial", completed)
++
++    def no_provider(*args):
++        pytest.fail("前缀 Fixture 不得调用 Provider")
++
++    executor = TaskPackCaseExecutor(
++        loaded, Path("/missing/git"), Path("/missing/docker"), no_provider, publication_scope=scope
++    )
++    case_root = tmp_path / "case"
++    assert (await executor(expected, campaign, case_root, CancelToken())).reason == "cost_unknown"
++    assert (await executor(expected, campaign, case_root, CancelToken())).reason == "cost_unknown"
++    assert reads == [campaign.run_ids[0], campaign.run_ids[0]]
++
++
++async def test_root_owner_is_held_during_materialization_and_report_recovery(
++    tmp_path, scope, monkeypatch
++):
++    loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    visited = []
++
++    def materialize(*args):
++        with pytest.raises(KernelError) as denied:
++            with product_state_owner(root):
++                pytest.fail("固定物化读取期间必须持有原 Run Owner")
++        assert denied.value.code == "product_state_busy"
++        visited.append(root)
++        return SimpleNamespace(
++            case=loaded.manifest.case(expected.case_id),
++            run_root=root,
++            workspace=trial.workspace,
++            manifest=SimpleNamespace(run_id=run_id),
++        )
++
++    monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", materialize)
++
++    def no_provider(*args):
++        pytest.fail("完成恢复不得调用 Provider")
++
++    result = await task_pack_trial.run_task_pack_coding_eval(
++        loaded,
++        runs,
++        Path("/missing/git"),
++        Path("/missing/docker"),
++        expected.case_id,
++        run_id,
++        no_provider,
++        campaign.environment,
++        publication_scope=scope,
++    )
++    assert result.turn == trial.turn and visited == [root]
++
++
++async def test_closed_run_owner_cannot_be_borrowed(tmp_path, scope):
++    root = run_root(tmp_path)
++    async with open_task_pack_publication(root, scope) as owner:
++        owner.require_ready(root)
++    with pytest.raises(KernelError) as denied:
++        owner.require_ready(root)
++    assert denied.value.code == "product_state_owner_invalid"
++
++
++@pytest.mark.xfail(
++    strict=True,
++    reason="dfba 的投影 Reader 尚未同读验证原事件正文 MAC；Session 接缝集成后必须移除此标记",
++)
++async def test_completed_recovery_requires_original_event_body_mac(tmp_path, scope):
++    loaded, expected, campaign, runs, run_id, _ = await fixture_trial(tmp_path, scope)
++    root = runs / str(run_id)
++    with sqlite3.connect(root / "session.sqlite") as db:
++        db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=1")
++    db.close()
++    # 原投影及Seal均保持；不能仅依赖缓存投影而接受已篡改的原事件正文。
++    with pytest.raises(KernelError):
++        await task_pack_trial._load_completed_run(
++            root,
++            loaded.manifest.case(expected.case_id),
++            campaign.environment,
++            run_id,
++            publication_scope=scope,
++        )
+diff --git a/docs/changes/m09-r3-eval-publication-wiring.md b/docs/changes/m09-r3-eval-publication-wiring.md
+new file mode 100644
+index 0000000..a1f895a
+--- /dev/null
++++ b/docs/changes/m09-r3-eval-publication-wiring.md
+@@ -0,0 +1,313 @@
++---
++doc_type: change-design
++status: draft
++version: 1
++code_revision: pending
++owners:
++  - evals
++  - security
++modules:
++  - evals
++  - product_config
++  - session
++  - artifacts
++  - secrets
++related_adrs:
++  - docs/adr/0095-versioned-secret-publication-scope.md
++  - docs/adr/0103-authenticated-sqlite-session-commit.md
++  - docs/adr/0104-managed-session-key-and-default-root.md
++related_tests:
++  - tests/evals/test_task_pack_publication.py
++  - tests/evals/test_task_pack_execution.py
++  - tests/evals/test_task_pack_evidence_stop.py
++  - tests/evals/test_provider_suite_execution.py
++  - tests/evals/test_provider_suite_cli.py
++supersedes: []
++---
++
++# M09：真实 Provider Suite 的 Session／Artifact 认证宿主接线详细设计
++
++## 1. 状态与范围
++
++设计基线：`dfba34e707ed845f3e9d844461e124015c22dca7`。本切片只整改 Task Pack Trial、Case 恢复与真实 Provider Suite 的认证装配。接线实现位于独立工作树，尚未合入正式发布分支；实现及验证状态见第 13 节。
++
++不修改 Session 同读事务、Schema、Key 后端、费用 Guard、额度、登记规则、评分器、Pack、固定 Profile、模型配置或历史证据。离线验证不产生新的 R3 编码成绩，也不解除任何历史费用未决状态。
++
++## 2. 需求背景与问题求证
++
++默认产品宿主在 [server.py](../../src/harnessix/product_config/server.py) 的 `_serve_product_stdio` 中，先取得全状态 Owner，捕获 `SecretPublicationScope`，打开稳定 `SessionPublicationBinding` 并初始化认证 Session，然后才创建 Provider；Artifact、Git、Process、Agent 共用这个 Scope。
++
++基线 [task_pack_trial.py](../../src/harnessix/evals/task_pack_trial.py) 的 `_run_agent`、`_completed_session_turn`、`_load_completed_run` 各自构造没有 Binding 的 `SQLiteSessionStore`。Artifact 也没有公开输出 Scope。[task_pack_execution.py](../../src/harnessix/evals/task_pack_execution.py) 的 `_completed_trial` 在恢复前缀和重算费用时再次走裸 Store。因此新真实 Suite 可能产生无法证明来源的事件与 Artifact；后续恢复不能用 UUID、摘要或正文相等替代 MAC。
++
++低层 Store 的显式 legacy 兼容是既有契约，真实 Provider Suite 的裸装配不是本切片的目标形态。整改在宿主接线，不能重签旧记录或从未经认证的历史正文构造可信事实。
++
++## 3. 设计目标与验收条件
++
++1. 三条 Trial 路径由同一个 Run Owner 持有同一 Binding、Session Store、Artifact Store 与 Scope。
++2. 新 Run 仅在没有 Session／报告／状态／认证目录时允许初始化稳定 Key；恢复只读原 Key。缺 Key、旧 MAC 缺失、身份不匹配和内容篡改都在创建 Provider 前拒绝。
++3. 默认真实 Provider 使用非空、冻结的凭据 Scope；Provider 只从此快照取值。自定义 Factory 由凭据 Owner 显式传入同源 Scope，不窥探 Provider 私有字段。
++4. 完成记录重读、终态 Session 恢复以及已完成 Trial 前缀恢复均保留，且不重新创建 Provider。
++5. Run 退出、失败、超时或取消后释放 Owner，清零 Binding 与自有 Key 材料；受托线程必须结算，不丢弃迟到材料。
++6. 使用真实临时 SQLite、合成 fixture Scope、合成 Key 和内置固定 Case 做离线回归；不得读取旧 Run、真实凭据或实际账本。
++
++## 4. 存量端口、风险与取舍
++
++### 4.1 初始化与恢复必须分开
++
++[session_key.py](../../src/harnessix/product_config/session_key.py) 的 `open_product_session_binding` 调用 create-or-load 的 `load_session_key`。[POSIX 后端](../../src/harnessix/product_config/session_key_posix.py) 可创建目录、锁、pending、Key 并结算 pending；[Windows 后端](../../src/harnessix/product_config/session_key_windows.py) 可创建目录、锁及 DPAPI 封装 Key。两者的旧库创建保护检查的是 `sessions.db`，而 Eval 使用 `session.sqlite`，不能将它们直接用作 Eval 恢复入口。
++
++已有 existing-only 端口为 [state_backup_validation.py](../../src/harnessix/product_config/state_backup_validation.py) 的 `original_key(tree)`，与 [state_backup_files.py](../../src/harnessix/product_config/state_backup_files.py) 的 `PrivateStateTree` 配合：
++
++- POSIX：`open_file(create=False, writable=False)` 使用 `O_RDONLY | O_NOFOLLOW`，验证 uid、0700／0600、链接数、ACL、文件修订与路径身份。
++- Windows：原严格 Key 目录及文件端口、父链句柄／DACL 验证、禁止替换共享、DPAPI 原平台原用户解封。
++- 两平台均有界读取 `session-auth/key.v1`；不调用初始化 Loader，不创建替代材料、不修复 pending、不签发历史。
++
++复用这个正式只读端口，不修改 Key backend，也不在 Eval 重写 Key 文件读取器。新 Run 才调用产品初始化入口。失去原 Key 的已初始化 Run 永远不退回新建分支。
++
++### 4.2 Owner 与公开保护
++
++复用 [state_owner.py](../../src/harnessix/product_config/state_owner.py) 的 `product_state_owner`，以根外稳定锁保护 Run 全生命周期；Action 的 `root_owner` 借用该 Owner，不重入 OS 锁。Owner 只覆盖一个 Run，不替代 Case／Suite 执行锁。Trial 在固定物化之前取得 `product_state_owner`；既有 Root 通过 `PrivateStateTree` 固定原 inode，并在物化返回后复核。认证 Owner 借用同一 `root_owner`，在 Key／Session 创建、读取、Provider 进入、Git 收集、报告及状态写入前后调用 `require_ready`。新 Root 在物化创建后取得私有目录 FD；已有 Root 的原目录 FD 贯穿物化和运行，不接受同址替换。
++
++`TaskPackPublicationOwner.require_ready` 同时验证精确 Run 路径、根外锁和 `PrivateStateTree.checkpoint`；仅有锁文件并不证明 Root 身份。Session 叶文件通过存量严格 FD／Handle 端口固定，拒绝符号链接、宽权限和退出时的对象替换。`root_owner` 失效后不能继续借用。
++
++取消结算复用边界：产品 `_load_owned(root)` 私有 helper 固定调用 create-or-load，不能用于恢复；`run_maintenance_io` 不提供返回 Key 取消后的材料销毁回调。因此恢复使用局部、仅服务 `OwnedSessionKey` 的单任务结算逻辑，保持产品的 shield／迟到材料清零语义，不引入通用异步或 Key 框架。
++
++复用 [SecretPublicationScope](../../src/harnessix/secrets/publication.py)、[EnvironmentSecretProvider](../../src/harnessix/secrets/provider.py)、[SecretReference](../../src/harnessix/product_config/contracts.py)。固定逻辑引用 `eval.provider`／`1` 只表示宿主凭据身份，不包含值、Key 摘要、Keychain 位置，也不是 Process 环境目标。
++
++## 5. 总体架构
++
++```mermaid
++flowchart TD
++    C[真实 Suite 宿主] --> S[凭据 Owner：冻结非空 Scope]
++    S --> E[TaskPackCaseExecutor 显式转发]
++    E --> O[Run Publication Owner]
++    O --> L[产品根外 Owner 锁]
++    O --> K{已有状态或认证目录?}
++    K -->|是| R[PrivateStateTree + original_key]
++    K -->|否，仅新 Run| N[产品 Key 初始化入口]
++    R --> B[同一 SessionPublicationBinding]
++    N --> B
++    B --> Q[认证 SQLiteSessionStore]
++    S --> A[同 Scope ArtifactStore / Agent / Git / Process]
++    Q --> T{Trial 路径}
++    T --> D[完成记录重读]
++    T --> F[终态 Session 恢复并评分]
++    T --> P[认证通过后才创建 Provider]
++    Q --> A
++```
++
++Run Owner 建立 Binding 后，已有库先通过正式 `thread_ids()` Reader 的 `enroll=False` 认证检查，再调用 `sessions.initialize()`；新库直接初始化认证 Header。空 legacy 库也不能被补签 Header。路径读取仍走 Session 与 Artifact 原正式端口，MAC 必须在正文反序列化或返回前验证；本模块不重复实现验 MAC、迁移或 Reader。认证失败传播稳定错误，不转换为成功或费用完整。
++
++## 6. 核心流程与时序
++
++```mermaid
++sequenceDiagram
++    participant H as Suite 凭据 Owner
++    participant E as Case/Trial
++    participant O as Run Publication Owner
++    participant K as 产品 Key 端口
++    participant D as SQLite Session/Artifact
++    participant P as Provider Factory
++    H->>H: 捕获指定凭据，构造非空 Scope
++    H->>E: Factory + 同源 Scope + 原执行指纹
++    E->>E: 固定物化前取得产品根外 Owner，既有 Root 固定原 FD
++    E->>E: 固定物化，复核原 Root 身份
++    E->>O: 借用原根外 Owner 打开认证生命周期
++    O->>O: 检查恢复意图，固定原 Root inode
++    O->>K: 新 Run 初始化；恢复 original_key
++    K-->>O: 可清零材料
++    O->>D: 同一 Binding 初始化并认证
++    E->>D: 查询完成事实/终态事实
++    alt 存在完成或终态事实
++        D-->>E: 经认证事实
++        E->>E: 原评分及报告一致性核对，不创建 Provider
++    else 需要继续执行
++        E->>P: 认证成功后进入 Factory
++        P->>H: 默认 Factory 从原 Scope 解析材料副本
++        E->>D: 追加事件/Artifact 原字节及 MAC
++    end
++    E->>O: 成功/异常/取消退出
++    O->>O: Binding、材料清零，Owner 释放
++    H->>H: 自有 Scope 生命周期结束
++```
++
++完成 Trial 前缀由 Case 适配器转发同源 Scope，再独立重开原 Run Owner 并只加载原 Key。它不是另一个独立裸 Reader，也不会调用 Provider。原费用重算只消费认证后的原 Attempt 事实，计算规则不变。
++
++### 6.1 缺 Key／证明缺失的失败时序
++
++```mermaid
++sequenceDiagram
++    participant E as Trial 完成恢复
++    participant O as 原 Run Owner
++    participant K as 原 Key Reader
++    participant D as Session 正式 Reader
++    participant P as Provider Factory
++    E->>O: 持有根外锁，固定原 Root
++    O->>K: existing-only 读取
++    alt 原 Key 缺失
++        K-->>O: publication_key_unavailable
++    else 原 Key 可用但 MAC 缺失
++        O->>D: enroll=False 认证检查
++        D-->>O: publication_history_unproven
++    end
++    O-->>E: 传播有限错误，清零材料并释放句柄
++    Note over E,P: Provider 调用次数为 0；不补签、不 create、不 fallback
++```
++
++上述两类失败发生在读取 Run 报告正文与 Provider 进入之前。Root Owner 锁锚可创建于 Run 根外；这不是旧正文认证，不生成旧库 Header，不修改旧记录，也不授予恢复执行权。SQLite 合法侧文件生命周期边界见第 14 节。
++
++## 7. 接口设计、类设计与领域契约
++
++新增单责模块 [task_pack_publication.py](../../src/harnessix/evals/task_pack_publication.py)，只承载 Eval 宿主装配，不提供通用安全平台。
++
++| 接口／数据 | 职责与关键字段 |
++|---|---|
++| `TaskPackPublicationOwner` | 借用对象，包含 `run_root`、`root_owner`、`private_tree`、`binding`、`scope`、`sessions`、`artifacts`；不序列化、不持久化 Scope 或 Key |
++| `open_task_pack_publication(run_root, publication_scope, existing_only=False, root_owner=None)` | 单 Run 生命周期；Trial 可显式借用已取得的产品 Owner；恢复显式 `existing_only=True`，不得初始化缺失的库／Key |
++| `provider_publication_scope(api_key_env, api_key)` | 捕获凭据 Owner 已解析材料，返回非空标准 Scope；不读 Keychain、不枚举环境、不改变预算 |
++| `TaskPackCaseExecutor.publication_scope` | Suite／低层离线调用的显式保护依赖；向执行与恢复前缀共同转发 |
++| `run_task_pack_provider_suite(..., publication_scope=...)` | 自定义 Factory 必须提供非空 Scope；默认 Factory 的 Scope 由指定环境凭据冻结 |
++| Trial 内部 `owner` 参数 | 三路径只能使用 Owner 提供的同一 Store／Binding／Scope，不能自行重建裸 Store |
++
++低层录制／无凭据 Fixture 允许显式空材料 Scope，但仍签发认证记录。它只用于不带真实凭据的低层评测，真实 Suite 不接受空材料。既有调用没有 Scope 时由低层 Owner 管理短生命周期空 Scope，绝不沿用到真实 Suite 默认路径。
++
++## 8. 数据结构设计、数据流程与关键字段说明
++
++```mermaid
++flowchart LR
++    V[宿主已解析凭据，仅内存] --> S[冻结 Secret Scope]
++    S --> P[Provider 的临时材料副本]
++    S --> C[当前公开输出保护]
++    K[稳定 store_id / key_id / Key] --> B[Binding]
++    B --> M[事件/投影/Artifact 的认证证明]
++    E[正式原始事件与 Artifact] --> M
++    M --> DB[session.sqlite]
++    DB --> R[原 Reader：先 MAC，再正文；同读接缝待集成]
++    R --> G[不变的 Grader / 费用重算]
++```
++
++- `store_id`、`key_id` 来自原受管 Key 文件，不从 Run UUID 或 Provider 凭据派生。
++- `scope_id` 表示一次冻结材料生命周期，恢复可以使用新的当前 Scope，但原 MAC 仍验证原证明绑定的身份／正文；不能重写历史 Scope 声明。
++- `provider_binding_sha256` 保留既有执行配置／费用控制指纹，不加入凭据值或其摘要，不改变恢复登记。
++- Session 路径保持 `session.sqlite`；Artifact 共用 Session 库。新增 `session-auth/key.v1` 及产品根外 Owner 锁，不更名旧库或移动旧 Run。
++- Scope 的 `bindings` 仅含 `name/version`；Key／凭据值不进入 Report、Manifest、日志或费用状态。
++
++## 9. 核心逻辑伪代码
++
++```text
++open_run(root, scope, existing_only):
++  借用调用方原产品根外锁；独立完成 Reader 才自行取得锁
++  owner.require_ready(root)
++  if existing_only and 原 Session 不存在: fail
++  if existing_only or 任一 Session侧文件/Run报告/Run状态/认证目录存在:
++    original = await 有期限、取消后结算的 original_key(PrivateStateTree(root))
++    binding = SessionPublicationBinding(original, scope)
++  else:
++    binding = 产品 Key 初始化入口(root, scope)
++  sessions = SQLiteSessionStore(root/session.sqlite, publication=binding)
++  固定 Session 原叶 FD/Handle
++  if 原库存在: await sessions.thread_ids()  # enroll=False，不补签空 legacy
++  await sessions.initialize()
++  artifacts = SQLiteArtifactStore(sessions, public_output_protection=scope)
++  yield 同一 Run Owner
++  finally 清零材料、Binding，释放锁；自有空 Scope 关闭
++
++run_trial(..., scope):
++  with 产品根外 Run Owner:
++    已有 Root 固定原 inode；固定 Case 物化；复核 Root（Pack/Profile/Archive 不变）
++    with open_run(root, scope, root_owner=原 Owner):
++      if 完成报告状态存在: 用同一 Owner 认证读取并核对
++      elif Session 已终态: 用同一 Owner 认证恢复，原评分并发布
++      else: 认证成功后创建 Provider，Agent/Tool/Action 共用 Owner 和 Scope
++```
++
++## 10. 异常、取消与恢复边界
++
++| 情形 | 行为 |
++|---|---|
++| 新 Run 首次启动 | 稳定 Key 与认证 Header 先于 Provider 建立 |
++| 已有库缺 Key／仅 pending Key | existing-only 失败；不 create、不 fallback、不补签 |
++| legacy 非空 Session 无 MAC | 原认证契约拒绝；不把历史正文迁移为可信事实 |
++| Key 内容、权限、ACL、链接或身份漂移 | 原产品端口拒绝；不输出材料或原正文 |
++| 事件／投影／Artifact 篡改或证明缺失 | 原 Reader 失败；不调用 Provider 重跑掩盖失败 |
++| 完成报告窗口中断 | 保留终态 Session 路径，重建原报告，不重新调用 Provider |
++| Case 前缀恢复 | 逐 Run 认证，再按原规则核对费用与报告 |
++| Run Owner 竞争／恢复意图未决 | 原产品 Owner 错误，不能另建锁绕过 |
++| 加载超时／重复取消 | 5 秒逻辑期限；唯一受托线程不能强杀，必须等待其收敛并清零迟到材料后传播取消 |
++| 下游 Provider／运行时失败 | 原错误传播；清理本切片自有资源，不修改费用状态或历史 Run |
++
++逻辑加载期限不等于操作系统故障时可强杀线程的硬期限。清零仅承诺本切片持有的可变材料／Binding 副本，不承诺清除 Python 字符串、SDK、OS 的全部副本。
++
++## 11. 预算宿主与部署
++
++[run_engineering_provider_suite_budgeted.py](../../scripts/run_engineering_provider_suite_budgeted.py) 的 `_credential` 是实际凭据 Owner，当前负责 Keychain／launchctl／环境读取。接线仅在其既有读取之后构造同源 Scope，并传入 Suite；Factory 使用相同原材料。预算 Ledger、Guard、费用登记、预留、额度、模型参数和预检次序保持不变。
++
++本模块无需新数据库、中间件、网络权限或迁移命令。只对新认证 Run 生效；历史 legacy Run 不自动升级。POSIX／Windows 沿用产品端口，Windows 原生验收需独立目标平台测试，不能用 macOS 结果替代。
++
++## 12. 测试验证与源码映射
++
++全部测试只使用新临时目录、真实 SQLite、合成 Scope／Key 和录制事实；网络、模型请求、Docker、真实预算入口执行、旧 Run 及真实凭据访问均禁止。
++
++| 测试组 | 必须核对 |
++|---|---|
++| 新 Run | 非空 Header；事件／投影／Artifact MAC；同一 Binding 与 Scope 对象；Owner 借用 |
++| 原 Key 恢复 | store/key 身份稳定；拒绝缺 Key，不调用初始化 Loader；只读材料文件保持 SHA／修订 |
++| 历史拒绝 | 非空 legacy 库、缺 Seal、错误 Key、损坏证明；Provider 调用数为零 |
++| 三路径 | 完成记录重读、终态恢复、执行路径同一 Owner；保留报告窗口恢复与完成前缀 |
++| Scope | 真实默认非空；冻结后环境漂移不改变 Provider 原材料；自定义 Factory 无 Scope／空 Scope 拒绝 |
++| 输出保护 | Agent／Artifact／Git／Process 同 Scope；凭据片段不得签发为公开输出 |
++| 生命周期 | 正常、异常、取消、加载超时、重复取消，迟到材料清零与锁释放 |
++| 非回归 | 原 Task Pack 审批、成本未知、取消、报告一致性与证据缺失语义 |
++
++验证包应包含实际命令与解释器／源码来源、测试结果、边界声明、修改文件精确 SHA256、基线输入 SHA、Manifest 与独立校验；只读代码检查不标为运行通过，Fixture 不标为真实 R3 通过。
++
++## 13. 实现与验证记录
++
++独立工作树接线已实现。实际离线结果为 **114 passed，1 xfailed**；Ruff 与四个源文件的 Mypy 检查通过。解释器固定为产品集成工作树的绝对 Python，`PYTHONPATH` 只包含本工作树 `src`，测试加载时仓库根不在 `sys.path`。
++
++保留的严格预期失败为 `test_completed_recovery_requires_original_event_body_mac`：基线 `dfba34e` 的投影 Reader 验证投影／索引关联，但尚未在同一读取缝验证原事件正文 MAC。仅篡改新合成夹具的原事件正文、保持投影和 Seal 时，完成恢复仍接受缓存投影。该缺口由 Session 读取契约切片整改，本切片没有修改 Session 源码，也不增加第二套 Reader。集成同事务验真后必须移除 `xfail(strict=True)` 并真实通过；不能把预期失败计入认证验收或 R3 新成绩。
++
++验证包：[m09-r3-eval-publication-wiring-20261002-v1](../validation/m09-r3-eval-publication-wiring-20261002-v1/REPORT.md)，包含命令、逐轮失败记录、来源 SHA、边界断言和审查清单。源码尚未提交，frontmatter 保持 `draft/pending`；集成时必须以最终提交更新 `code_revision`，不能用基线提交冒充变更后的代码版本。
++
++
++## 14. 持久化、事务、并发与幂等
++
++认证证明与事件、投影和 Artifact 原行仍由原 SQLite 事务原子提交；本模块不签发报告 MAC，也不改变报告／状态 JSON 合同。完成报告依赖经认证的 Session 事实重新核对，原事件 Reader 的完整同读验真仍是发布前集成条件。
++
++根外 Run Owner 从固定物化到认证宿主、执行与报告全过程持有；Case／Suite 原锁和指纹继续工作。恢复只加载原 Key，Run UUID 不是 Key 派生材料。已完成 Run／终态 Turn／Case 前缀保持查询优先，不重新执行模型或副作用。
++
++恢复拒绝测试对新合成的静止旧夹具做全部文件 SHA 前后比较，包括 Session、Key、报告和状态。夹具构造连接必须关闭：Python `sqlite3.Connection` 上下文只提交事务，并不会关闭连接。活跃 SQLite WAL／SHM 可发生合法生命周期变化，静止夹具 SHA 不变的证明不能推广为活跃 WAL／SHM 字节不可变承诺。没有访问、校正或补签实际历史 Run。
++
++## 15. 安全、隐私与可观测性
++
++新增稳定宿主错误：`eval_publication_session_missing`、`eval_publication_session_invalid`、`eval_publication_secret_denied`；复用 `publication_key_unavailable`、`publication_key_timeout`、`publication_history_unproven` 和产品 Owner 错误。只转换获得原 Session 叶句柄时的系统错误，不将下游 Provider／运行时 `OSError` 误报为认证失败。
++
++沿用原 `Observability` 注入和原 Agent／Action 事件，不增加高基数凭据、Key、路径正文日志。Scope 名称／版本是有限公开声明；MAC 来源认证不授予 Root 执行权，也不代替当前输出保护。报告中不保存 Scope 材料、Key 字节或未认证事件正文。
++
++默认真实 Suite 的来源只有配置指定环境变量；预算宿主的来源是既有 `_credential` Owner 已解析的原值。两者均先冻结后执行。低层 Fixture 的空 Scope 不与真实默认路径混用；自定义真实 Factory 没有非空 Scope 时直接失败。
++
++## 16. 源码／测试追踪及实施切片
++
++| 切片 | 源码与关键符号 | 测试与证据 | 回退边界 |
++|---|---|---|---|
++| Run 生命周期 | [task_pack_publication.py](../../src/harnessix/evals/task_pack_publication.py)：`open_task_pack_publication`、`TaskPackPublicationOwner.require_ready`、`_existing_binding` | [test_task_pack_publication.py](../../tests/evals/test_task_pack_publication.py)：新建、原 Key、缺 Key、legacy、原文件 SHA、Root 身份、取消／超时 | 可回退代码，不移除新 Run Key、不将新认证库降级为 legacy |
++| 三路径共享 | [task_pack_trial.py](../../src/harnessix/evals/task_pack_trial.py)：`run_task_pack_coding_eval`、`_load_completed_run`、`_completed_session_turn`、`_run_agent`、`_grade_and_publish` | 完成状态重读、实际终态报告重建、创建 Provider 前拒绝、Agent／Git／Action／Artifact 依赖同一对象 | 恢复路径保留，不删难测分支 |
++| 完成前缀 | [task_pack_execution.py](../../src/harnessix/evals/task_pack_execution.py)：`TaskPackCaseExecutor`、`_completed_trial` | 精确 Scope 转发；原成本未知／取消／证据缺失测试不变 | 原费用重算与评分器保持 |
++| 真实默认 Scope | [provider_suite_execution.py](../../src/harnessix/evals/provider_suite_execution.py)：`TaskPackOpenAIChatProviderFactory`、`run_task_pack_provider_suite` | 冻结环境后漂移、默认非空、自定义 Scope 缺失拒绝、原指纹及 CLI 回归 | 不改变 Provider 模型参数或执行指纹 |
++| 预算宿主转发 | [run_engineering_provider_suite_budgeted.py](../../scripts/run_engineering_provider_suite_budgeted.py)：`run_budgeted_suite` | AST 核对 Scope 原值、Guard Owner 与归一化基线等价；未执行实际预算入口 | 仅去掉 Scope 包装不改变额度／Guard／登记；实际运行前必须保留保护能力 |
++| Session 依赖 | 原 Session 正式 Reader，不修改源文件 | 严格预期失败的原事件正文 MAC 回归；集成后必须转为真正通过 | 未集成前不得开展真实复验或标记认证验收完成 |
++
++前述范围不增加 ADR 平台、Schema 迁移或新安全模块体系；既有长期 ADR 继续适用。改动只在指定的 Eval 宿主、同源预算转发、受影响测试和本详细设计／验证包。
++
++## 17. 发布、兼容、回退与剩余风险
++
++| 方案 | 取舍与结论 |
++|---|---|
++| 对旧库调用 create-or-load | 拒绝：库名护栏不同，且可创建／修复材料，不满足原 Key 恢复 |
++| Eval 手写 Key 文件／通用认证平台 | 拒绝：重复平台权限、DPAPI、身份与清理实现，扩大边界 |
++| 删除恢复路径或信任旧正文补签 | 拒绝：破坏恢复能力及来源边界 |
++| 复用产品原 Key Reader、Owner 与 Scope | 采用：平台端口不变，宿主单责；完整来源验真依赖原 Session 读取切片 |
++
++发布单元为上述 Eval 接线及同源宿主转发。新增认证 Run 不能再由旧裸 Reader 读取；回退程序必须保留新 Key 与原库并停止真实请求，不能删除 Key、重新初始化旧 Run 或把认证历史当 legacy。
++
++尚未验证：Windows 原生行为、真实 Provider 编码质量、真实费用入口运行、完整 Session 同读验真集成。禁止以本包离线通过解锁真实模型请求、宣布 R3 通过或解除未决费用。合入时应在精确源码 SHA 上重新检查 Session 接缝用例，更新文档版本与状态，然后按既有真实复验许可单独执行验收。

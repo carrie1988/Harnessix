@@ -1,0 +1,16 @@
+{
+  "source_files": 437,
+  "physical_lines": 93182,
+  "logical_lines": 82337,
+  "documented_modules": 437,
+  "classes": 966,
+  "documented_classes": 441,
+  "functions": 3758,
+  "documented_functions": 846,
+  "public_exports": 359,
+  "public_contract_types": 161,
+  "undocumented_public_behavior": 0,
+  "high_risk_callables": 25,
+  "undocumented_high_risk_callables": 0,
+  "package_dependency_edges": 151
+}

@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "removed_self_owned_directories": [
+    "fixtures-final",
+    "fixtures-v1",
+    "fixtures-v2",
+    "fixtures-v3",
+    "fixtures-v4",
+    "fixtures-v5",
+    "fixtures-v6",
+    "fixtures-v7",
+    "fixtures-v8",
+    "mypy-cache"
+  ],
+  "fixture_umask": "022",
+  "remaining_sqlite_or_key_files": [],
+  "other_packages_touched": false
+}

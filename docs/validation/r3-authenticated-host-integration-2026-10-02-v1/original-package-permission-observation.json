@@ -1,0 +1,253 @@
+{
+  "status": "COPIED_ARCHIVE_PERMISSION_FAIL",
+  "copy_root_mode": "0755",
+  "expected_root_mode": "0700",
+  "member_permission_mismatches": [
+    {
+      "path": "REPORT.md",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "REVIEW.md",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "cleanup.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagram-verification.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/01-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/01-svg-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/01.mmd",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/01.png",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/01.svg",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/02-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/02-svg-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/02.mmd",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/02.png",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/02.svg",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/03-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/03-svg-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/03.mmd",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/03.png",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/03.svg",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/04-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/04-svg-render.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/04.mmd",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/04.png",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/04.svg",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "diagrams/puppeteer.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "documentation-check.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "facts.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "mypy-final.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "mypy-v1.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "owned.diff",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "package-hygiene.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "package-seal-attempt-v1.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "package-seal-attempt-v2.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-final-seam.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-final.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-release.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-v1.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-v2.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-v3.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-v4.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-v5.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-v6.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "pytest-v7.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "ruff-final.txt",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "run_offline_tests.py",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "scope-audit.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "source-sha256.json",
+      "mode": "0644",
+      "expected": "0600"
+    },
+    {
+      "path": "verify_manifest.py",
+      "mode": "0644",
+      "expected": "0600"
+    }
+  ],
+  "original_frozen_tree_root_mode": "0700",
+  "all_48_member_sha_unchanged": true,
+  "original_manifest_sha256": "2c9fbff52f79a629552e3641c6cee2dbfd68758c0cf997d3773dc7e9733146e3",
+  "copy_full_verifier": "FAIL at root directory permission assertion",
+  "permission_repair_performed": false,
+  "source_or_authentication_test_results_affected": false
+}

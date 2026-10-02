@@ -1,0 +1,48 @@
+{
+  "schema": "harnessix.r3-authenticated-host-source/v1",
+  "research_base": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "integration_base": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "source_and_tests_frozen": true,
+  "inputs": [
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "before_sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11",
+      "sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_publication.py",
+      "before_sha256": "84357dfc35a4d9cc9fc0aaeda6bd033a93d1929418c5500c3276b4e51d11ecb5",
+      "sha256": "37ec3f7b430f6276d0f3625df249730e8125aef79b658c5a8e3cdd93f7965077"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_trial.py",
+      "before_sha256": "edcd26cff5937de29648c52b50441581b51bd71e61e5c3830cf11042c784178f",
+      "sha256": "016b1c9bb2b74101a63ba43dd3c777f8be20d4e72e59f0ce7989278e3809ad8b"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_execution.py",
+      "before_sha256": "75dd12eedbf78fb59ae94c3c95e54f3692679cf6d4948e95921774c3fa1e1768",
+      "sha256": "1609740aab6c89dd70d000943bc806ab1622333c005c6d6c2b2c2a7098d3d774"
+    },
+    {
+      "path": "src/harnessix/evals/provider_suite_execution.py",
+      "before_sha256": "872bcfa41531f07ea527d09d32ddd259c36d15d4830e757592ae7852a32511c0",
+      "sha256": "f5925a8223c376f8e63aa6ef2556fe34fd30575040a24eb1e7332206ef7970fa"
+    },
+    {
+      "path": "tests/evals/test_task_pack_publication.py",
+      "before_sha256": "b097061433f8185127f1f2f50aceb87026e13941acf2d1320ec64237f4f0f1ae",
+      "sha256": "a6fbf03ef08f521a05a0e5a5fdaf1b4b7aa8c2532c5c6c42b1ca348da2acf0f2"
+    },
+    {
+      "path": "tests/evals/test_task_pack_evidence_stop.py",
+      "before_sha256": "45d297773e6ba397faf7b6d376e3d8ad1e8d81eb460165b75126e918a6321135",
+      "sha256": "91c99e0af221603ac021050eadcd606ec3561b8ab8acc71153629085480b96ad"
+    },
+    {
+      "path": "tests/evals/test_provider_suite_execution.py",
+      "before_sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846",
+      "sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846"
+    }
+  ]
+}

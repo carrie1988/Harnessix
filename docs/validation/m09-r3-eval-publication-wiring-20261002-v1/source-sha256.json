@@ -1,0 +1,72 @@
+{
+  "schema": "harnessix.r3-auth-wiring-source-identity/v1",
+  "baseline": "dfba34e707ed845f3e9d844461e124015c22dca7",
+  "uncommitted": true,
+  "owned_inputs": [
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "working_sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11",
+      "working_bytes": 10827,
+      "baseline_blob": "0d652ff6465e528dbdba95864df91fcf95f2ad17",
+      "baseline_sha256": "8b2dd93a505ec5e2aa4a8ea78daeb0f5bf882a628ced046cfc080dbaebd70710"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_publication.py",
+      "working_sha256": "84357dfc35a4d9cc9fc0aaeda6bd033a93d1929418c5500c3276b4e51d11ecb5",
+      "working_bytes": 8579,
+      "baseline_blob": null,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_trial.py",
+      "working_sha256": "edcd26cff5937de29648c52b50441581b51bd71e61e5c3830cf11042c784178f",
+      "working_bytes": 22146,
+      "baseline_blob": "725b24943dd1441bed56bd178f479ddfd1926b7e",
+      "baseline_sha256": "3ed074fb99a3cc6408f9e152e93b3193d7dd8681332e489cdd2843dbdd7c0890"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_execution.py",
+      "working_sha256": "75dd12eedbf78fb59ae94c3c95e54f3692679cf6d4948e95921774c3fa1e1768",
+      "working_bytes": 17653,
+      "baseline_blob": "a115f6d350ea053149f40c04980e8d3da490da5d",
+      "baseline_sha256": "0e1b6be1abdc46830fdf3f0bfc55de5a010c1bc802d0b8d4a62f0c8baf16a203"
+    },
+    {
+      "path": "src/harnessix/evals/provider_suite_execution.py",
+      "working_sha256": "872bcfa41531f07ea527d09d32ddd259c36d15d4830e757592ae7852a32511c0",
+      "working_bytes": 8374,
+      "baseline_blob": "eb013140c557257b8cc079c17466e50608b5ca6b",
+      "baseline_sha256": "a741d205cd414bf66eb82addd4b7f1d548882b3bcbe6628b696bb132bcdd6098"
+    },
+    {
+      "path": "tests/evals/test_task_pack_publication.py",
+      "working_sha256": "b097061433f8185127f1f2f50aceb87026e13941acf2d1320ec64237f4f0f1ae",
+      "working_bytes": 35125,
+      "baseline_blob": null,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/evals/test_task_pack_evidence_stop.py",
+      "working_sha256": "45d297773e6ba397faf7b6d376e3d8ad1e8d81eb460165b75126e918a6321135",
+      "working_bytes": 23437,
+      "baseline_blob": "005accc83a8b0f08d57353c984f43fdcbeec6325",
+      "baseline_sha256": "0e37fea5991ca17e4212fb578ffb615df1e360c569d2b42e1de1e8d7fe57b689"
+    },
+    {
+      "path": "tests/evals/test_provider_suite_execution.py",
+      "working_sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846",
+      "working_bytes": 5706,
+      "baseline_blob": "1fdf7dec7081786b2553f7ba497c71465ee45d5c",
+      "baseline_sha256": "0c02c5f1a057110e1636a8ca06a2939a11f3fe45f20d50d2843e2d8b7612cfac"
+    },
+    {
+      "path": "docs/changes/m09-r3-eval-publication-wiring.md",
+      "working_sha256": "81f0d775cdd2b195734c264bba639cf92bfe965690a778291e503bd3d0d3aa94",
+      "working_bytes": 24818,
+      "baseline_blob": null,
+      "baseline_sha256": null
+    }
+  ],
+  "owned_diff_sha256": "61edfb66326b8d1f9c3fa09ff10c6bc9a011011e52d8b6eaac445b3b0136b421",
+  "reverse_apply_check": "PASS"
+}

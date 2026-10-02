@@ -1,0 +1,23 @@
+[
+  "tests/session/test_authenticated_history.py",
+  "tests/session/test_git_prefix_publication.py",
+  "tests/session/test_git_publication.py",
+  "tests/session/test_publication_seal.py",
+  "tests/agent/test_authenticated_store.py",
+  "tests/artifacts/test_authenticated_body.py",
+  "tests/artifacts/test_batch_diff.py",
+  "tests/artifacts/test_batch_diff_crash.py",
+  "tests/artifacts/test_batch_diff_upgrade.py",
+  "tests/artifacts/test_batch_verify.py",
+  "tests/artifacts/test_binary_publication.py",
+  "tests/artifacts/test_contracts.py",
+  "tests/artifacts/test_legacy_process_output_reader.py",
+  "tests/artifacts/test_model_history.py",
+  "tests/artifacts/test_process_output_upgrade.py",
+  "tests/artifacts/test_publication_persistence.py",
+  "tests/artifacts/test_publication_upgrade.py",
+  "tests/artifacts/test_recovery.py",
+  "tests/artifacts/test_runtime.py",
+  "tests/artifacts/test_sdk.py",
+  "tests/artifacts/test_store.py"
+]

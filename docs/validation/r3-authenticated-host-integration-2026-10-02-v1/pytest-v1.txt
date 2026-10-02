@@ -1,0 +1,67 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/src", "repo_root_on_sys_path": false}
+................................................................F....... [ 62%]
+...........................................                              [100%]
+=================================== FAILURES ===================================
+__________ test_case_evidence_stop_is_durable_without_trial_replay[1] __________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v1/test_case_evidence_stop_is_dur1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x116eb0230>
+execution = (LoadedCodingEvalTaskPack(manifest=CodingEvalTaskPack(spec_version='harnessix.coding-eval-task-pack/v1', pack_id='harn...tion-2026-10-02-v1/fixtures-v1/test_case_evidence_stop_is_dur1/suite', fee_stop_currency='USD', fee_stop_amount='100'))
+completed_trials = 1
+
+    @pytest.mark.parametrize("completed_trials", (0, 1))
+    async def test_case_evidence_stop_is_durable_without_trial_replay(
+        tmp_path: Path, monkeypatch, execution, completed_trials
+    ) -> None:
+        loaded, config = execution
+        expected, campaign = config.plan.cases[0], config.campaign_plans[0]
+        calls, _ = _trial_port(monkeypatch, completed_before_failure=completed_trials)
+        root = tmp_path / "case"
+    
+        result = await _executor(loaded)(expected, campaign, root, CancelToken())
+    
+        assert result.reason == "evidence_missing" and result.report is None
+        state = _assert_campaign_stop(root, campaign, "evidence_missing", completed_trials)
+        assert state.known_cost_amount == format_amount(completed_trials * amount_units(_TRIAL_COST))
+        assert calls == [
+            (expected.case_id, run_id) for run_id in campaign.run_ids[: completed_trials + 1]
+        ]
+        snapshot = _json_snapshot(root)
+        for cancelled in (False, True):
+            token = CancelToken()
+            if cancelled:
+                token.cancel()
+>           assert await _executor(loaded)(expected, campaign, root, token) == result
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/evals/test_task_pack_evidence_stop.py:261: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/harnessix/evals/task_pack_execution.py:465: in __call__
+    return await _run_locked_case(context, cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/evals/task_pack_execution.py:400: in _run_locked_case
+    state, completed, known_units, costs_complete = await _load_prefix(context, state, cancel)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/evals/task_pack_execution.py:234: in _load_prefix
+    trial = await _completed_trial(
+src/harnessix/evals/task_pack_execution.py:121: in _completed_trial
+    run = await _load_completed_run(
+src/harnessix/evals/task_pack_trial.py:330: in _load_completed_run
+    return await _load_completed_run(
+src/harnessix/evals/task_pack_trial.py:334: in _load_completed_run
+    control.checkpoint(owner)
+src/harnessix/evals/task_pack_publication.py:136: in checkpoint
+    self.cancel.checkpoint()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <harnessix.agent.cancellation.CancelToken object at 0x116edfc50>
+
+    def checkpoint(self) -> None:
+        if self.cancelled:
+>           raise TurnCancelled
+E           harnessix.agent.cancellation.TurnCancelled
+
+src/harnessix/agent/cancellation.py:29: TurnCancelled
+=========================== short test summary info ============================
+FAILED tests/evals/test_task_pack_evidence_stop.py::test_case_evidence_stop_is_durable_without_trial_replay[1]
+1 failed, 114 passed in 2.98s

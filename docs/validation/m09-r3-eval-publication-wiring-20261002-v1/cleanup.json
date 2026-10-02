@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "removed": [
+    {
+      "directory": "fixtures-v1",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-v2",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-v3",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-v4",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-v5",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-v6",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-v7",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-final",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-final-seam",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "fixtures-release",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    },
+    {
+      "directory": "mypy-cache",
+      "type": "owned synthetic fixture or owned type cache",
+      "removed": true
+    }
+  ],
+  "real_run_or_other_archive_touched": false,
+  "retained_all_failure_logs": true
+}

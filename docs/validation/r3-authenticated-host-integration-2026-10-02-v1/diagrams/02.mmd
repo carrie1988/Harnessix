@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant H as Suite 凭据 Owner
+    participant E as Case/Trial
+    participant O as Run Publication Owner
+    participant K as 产品 Key 端口
+    participant D as SQLite Session/Artifact
+    participant P as Provider Factory
+    H->>H: 捕获指定凭据，构造非空 Scope
+    H->>E: Factory + 同源 Scope + 原执行指纹
+    E->>E: 固定物化前取得产品根外 Owner，既有 Root 固定原 FD
+    E->>E: 固定物化，复核原 Root 身份
+    E->>E: 阶段入口捕获一次 120 秒绝对期限，保留原 CancelToken
+    E->>O: 借用原根外 Owner 打开认证生命周期
+    O->>O: 检查恢复意图，固定原 Root inode
+    O->>K: 新 Run 初始化；恢复 original_key
+    K-->>O: 可清零材料
+    O->>D: 新库初始化；已有库仅发现并认证身份
+    E->>D: authenticated_thread_history：原取消 / 同一期限 / 当前 Owner
+    alt 存在完成或终态事实
+        D-->>E: 同读完整事件与 Thread carrier
+        E->>E: 原评分及报告一致性核对，不创建 Provider
+    else 需要继续执行
+        E->>P: 认证成功后进入 Factory
+        P->>H: 默认 Factory 从原 Scope 解析材料副本
+        E->>D: Runtime 恢复后新只读阶段取得最新完整 carrier
+        E->>D: 原 Turn 预算执行；追加事件/Artifact 原字节及 MAC
+    end
+    E->>O: 成功/异常/取消退出
+    O->>O: Binding、材料清零，Owner 释放
+    H->>H: 自有 Scope 生命周期结束

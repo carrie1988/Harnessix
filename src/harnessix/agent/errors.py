@@ -81,6 +81,7 @@ def failure_category(code: str) -> FailureCategory:
         "invalid_event",
         "invalid_batch",
         "invalid_cursor",
+        "invalid_history_request",
         "thread_not_found",
         "turn_not_found",
         "turn_not_retryable",

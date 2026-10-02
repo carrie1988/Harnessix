@@ -7,14 +7,21 @@ import pytest
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import Budget, EventDraft, ItemStarted, ToolResultContent, TurnStatus
+from harnessix.agent.models import (
+    Budget,
+    EventDraft,
+    ItemStarted,
+    ToolCallContent,
+    ToolResultContent,
+    TurnStatus,
+)
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.batch_diff import SQLiteBatchDiffPublisher
 from harnessix.artifacts.contracts import ArtifactPolicy
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.domain.models import utc_now
-from harnessix.models._history import messages_for
+from harnessix.models._history import messages_for, tool_alias
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.patches.batch_agent_bridge import ManagedPatchBatchBridge
 from harnessix.patches.diff_document_contracts import BatchDiffDocumentOptions
@@ -24,6 +31,37 @@ from tests.patches.kernel_batch_helpers import approval_of, batch_step, decide
 from tests.patches.test_kernel_patch import REJECT, results
 from tests.patches.test_managed_batches import PATHS, snapshot
 from tests.patches.test_managed_batches import group_case as group_case
+
+
+def assert_no_private_fields(value):
+    """核对JSON字段，而非封禁合法工具名或应用文本中的同名词。"""
+    if isinstance(value, dict):
+        assert not {"patch_batch", "approval_fingerprint", "workspace_id", "batch_id"}.intersection(
+            value
+        )
+        for member in value.values():
+            assert_no_private_fields(member)
+    elif isinstance(value, list):
+        for member in value:
+            assert_no_private_fields(member)
+
+
+@pytest.mark.parametrize(
+    "field", ["patch_batch", "approval_fingerprint", "workspace_id", "batch_id"]
+)
+@pytest.mark.parametrize("nested", [False, True])
+def test_private_field_guard_rejects_each_top_level_and_nested_field(field, nested):
+    leaked = {field: "fixture-private-value"}
+    if nested:
+        leaked = {"output": [{"nested": leaked}]}
+    with pytest.raises(AssertionError):
+        assert_no_private_fields(leaked)
+
+
+def test_private_field_guard_allows_legitimate_alias_and_application_text():
+    assert_no_private_fields(
+        {"name": tool_alias("apply_patch_batch"), "text": "项目字段workspace_id"}
+    )
 
 
 async def exercise(
@@ -92,10 +130,25 @@ async def test_real_plan_and_effect_are_distinct_atomic_refs(group_case, tmp_pat
     assert await session.rebuild(thread.thread_id) == stored
     assert snapshot(source.root) == original
     if len(provider.requests) == 2:
-        wire = json.dumps(messages_for(provider.requests[-1]))
+        model_request = provider.requests[-1]
+        messages = messages_for(model_request)
+        wire = json.dumps(messages)
         assert str(result.diff_artifact.artifact_id) in wire
-        for private in ("patch_batch", "approval_fingerprint", "workspace_id", "batch_id"):
-            assert private not in wire
+        assert_no_private_fields(messages)
+        calls = {
+            "call_" + item.content.call_id.hex: tool_alias(item.content.tool)
+            for item in model_request.history
+            if isinstance(item.content, ToolCallContent)
+        }
+        observed = {}
+        for message in messages:
+            if message["role"] == "tool":
+                assert_no_private_fields(json.loads(message["content"]))
+            for call in message.get("tool_calls", []):
+                assert call["function"]["name"] == calls[call["id"]]
+                observed[call["id"]] = call["function"]["name"]
+                assert_no_private_fields(json.loads(call["function"]["arguments"]))
+        assert observed == calls
 
 
 @pytest.mark.parametrize("point", ["after_insert", "before_commit", "after_commit"])

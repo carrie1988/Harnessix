@@ -1,0 +1,124 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src", "repo_root_on_sys_path": false}
+.........................................FF............................. [ 64%]
+........................................                                 [100%]
+=================================== FAILURES ===================================
+__________ test_session_symlink_is_rejected_before_any_sqlite_reader ___________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v5/test_session_symlink_is_reject0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bb376e0>
+
+    async def test_session_symlink_is_rejected_before_any_sqlite_reader(tmp_path, scope):
+        root = run_root(tmp_path)
+        async with open_task_pack_publication(root, scope):
+            pass
+        db = root / "session.sqlite"
+        original = root / "original-fixture.sqlite"
+        db.rename(original)
+        db.symlink_to(original)
+        before = fixture_file_snapshot(root)
+        with pytest.raises(KernelError) as denied:
+>           async with open_task_pack_publication(root, scope, existing_only=True):
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/evals/test_task_pack_publication.py:790: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/anaconda3/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/evals/task_pack_publication.py:169: in open_task_pack_publication
+    files.enter_context(
+/opt/anaconda3/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/opt/anaconda3/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tree = <harnessix.product_config.state_backup_files.PrivateStateTree object at 0x10bb361b0>
+relative = 'session.sqlite'
+
+    @contextmanager
+    def _open_private_file(
+        tree: PrivateStateTree,
+        relative: str,
+        *,
+        create: bool = False,
+        writable: bool = False,
+        metadata_only: bool = False,
+    ) -> Iterator[int]:
+        if metadata_only and (create or writable):
+            raise ValueError("元数据观察不能创建或修改文件")
+        parts = _parts(relative)
+        tree.checkpoint()
+        if create and len(parts) > 1:
+            tree.directory("/".join(parts[:-1]))
+        with ExitStack() as resources:
+            if os.name == "posix":
+                from harnessix.product_config.session_key_posix import _private, _private_acl
+    
+                parent = resources.enter_context(_posix_directory(tree, parts[:-1]))
+                flags = os.O_RDWR if create or writable else os.O_RDONLY
+                if create:
+                    flags |= os.O_CREAT | os.O_EXCL
+>               descriptor = os.open(
+                    parts[-1], flags | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=parent
+                )
+E               OSError: [Errno 62] Too many levels of symbolic links: 'session.sqlite'
+
+src/harnessix/product_config/state_backup_files.py:325: OSError
+______________ test_case_prefix_and_trial_forward_the_exact_scope ______________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v5/test_case_prefix_and_trial_for0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10bb37f20>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bb37fb0>
+
+    async def test_case_prefix_and_trial_forward_the_exact_scope(tmp_path, scope, monkeypatch):
+        from harnessix.evals import task_pack_execution
+        from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
+    
+        loaded, expected, campaign = _case_and_campaign()
+        seen = []
+    
+        async def trial(
+            loaded, runs, git, container, case_id, run_id, provider, environment, token, **kwargs
+        ):
+            assert kwargs["publication_scope"] is scope
+            if seen:
+                raise KernelError("eval_baseline_invalid", "fixture-evidence-stop")
+            seen.append(run_id)
+            return await _write_fixture_trial(
+                loaded, runs, case_id, run_id, environment, publication_scope=scope
+            )
+    
+        original = task_pack_execution._completed_trial
+        reads = []
+    
+        async def completed(case_root, case, campaign, run_id, publication_scope):
+            assert publication_scope is scope
+            reads.append(run_id)
+            return await original(case_root, case, campaign, run_id, publication_scope)
+    
+        monkeypatch.setattr(task_pack_execution, "run_task_pack_coding_eval", trial)
+        monkeypatch.setattr(task_pack_execution, "_completed_trial", completed)
+    
+        def no_provider(*args):
+            pytest.fail("前缀 Fixture 不得调用 Provider")
+    
+        executor = TaskPackCaseExecutor(
+            loaded, Path("/missing/git"), Path("/missing/docker"), no_provider, publication_scope=scope
+        )
+        case_root = tmp_path / "case"
+>       assert (
+            await executor(expected, campaign, case_root, CancelToken())
+        ).reason == "evidence_missing"
+E       AssertionError: assert 'cost_unknown' == 'evidence_missing'
+E         
+E         - evidence_missing
+E         + cost_unknown
+
+tests/evals/test_task_pack_publication.py:832: AssertionError
+=========================== short test summary info ============================
+FAILED tests/evals/test_task_pack_publication.py::test_session_symlink_is_rejected_before_any_sqlite_reader
+FAILED tests/evals/test_task_pack_publication.py::test_case_prefix_and_trial_forward_the_exact_scope
+2 failed, 110 passed in 2.65s

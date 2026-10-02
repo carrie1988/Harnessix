@@ -1,0 +1,114 @@
+{
+  "schema": "harnessix.authenticated-product-installed-wheel/v1",
+  "status": "PASS_SCOPED_INSTALLED_VALIDATION",
+  "build_invocations": 1,
+  "wheel_install_invocations": 2,
+  "wheel_sha256": "8d0b349ecb796c642155e5be641092b4d0ba563fc528e034be51918d6798960d",
+  "wheel_name": "harnessix-1.0.0rc1-py3-none-any.whl",
+  "production_python_count": 437,
+  "product_member_count": 478,
+  "total_wheel_member_count": 483,
+  "formal_selector_count": 29,
+  "environments": [
+    {
+      "tag": "312",
+      "python": "3.12.7",
+      "stats": {
+        "tests": 1376,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "passed": 1376,
+      "xfail": 0,
+      "xpass": 0,
+      "test_time_seconds": 65.174,
+      "wheel_sha256": "8d0b349ecb796c642155e5be641092b4d0ba563fc528e034be51918d6798960d",
+      "package_before": {
+        "package_members": 478,
+        "member_set_equal": true,
+        "all_member_bytes_equal": true
+      },
+      "package_after": {
+        "package_members": 478,
+        "member_set_equal": true,
+        "all_member_bytes_equal": true
+      },
+      "locked_dependencies_count": 70,
+      "selectors": 29,
+      "loaded_current_parent_modules": 318,
+      "pytest_exit_code": 0,
+      "formal_inputs_unchanged": true,
+      "xml": "installed-final-312.xml"
+    },
+    {
+      "tag": "313",
+      "python": "3.13.8",
+      "stats": {
+        "tests": 1376,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "passed": 1376,
+      "xfail": 0,
+      "xpass": 0,
+      "test_time_seconds": 66.536,
+      "wheel_sha256": "8d0b349ecb796c642155e5be641092b4d0ba563fc528e034be51918d6798960d",
+      "package_before": {
+        "package_members": 478,
+        "member_set_equal": true,
+        "all_member_bytes_equal": true
+      },
+      "package_after": {
+        "package_members": 478,
+        "member_set_equal": true,
+        "all_member_bytes_equal": true
+      },
+      "locked_dependencies_count": 70,
+      "selectors": 29,
+      "loaded_current_parent_modules": 318,
+      "pytest_exit_code": 0,
+      "formal_inputs_unchanged": true,
+      "xml": "installed-final-313.xml"
+    }
+  ],
+  "r3_offline_eval_tests_per_env": 136,
+  "exact_locked_dependencies_per_env": 70,
+  "first_failed_round": {
+    "312": {
+      "passed": 1352,
+      "failure": 22,
+      "error": 2,
+      "skip": 0
+    },
+    "313": {
+      "passed": 1352,
+      "failure": 22,
+      "error": 2,
+      "skip": 0
+    },
+    "original_xml_and_logs_unchanged": true
+  },
+  "host_only_correction": true,
+  "product_or_formal_assertion_changes": false,
+  "current_wheel_processes_per_env": 38,
+  "fixed_legacy_generator_processes_per_env": 2,
+  "python_child_launch_coverage": "39 launches matched 39 child startups per environment",
+  "legacy_revision": "3c5f6e36d9c9ce98709c5c37ae2316709c443001",
+  "literal_all_processes_current_wheel_claim": false,
+  "old_preparation_v1_v2_unchanged": true,
+  "old_sealed48_49_unchanged": true,
+  "old48_public_content_identity": "PASS",
+  "old48_public_private_mode_verifier": "FAIL",
+  "old48_public_private_mode_policy": "NOT_APPLICABLE_TO_PUBLIC_CLONE",
+  "old48_private_copy_content_and_modes": "PASS",
+  "model_calls": 0,
+  "keychain_access": false,
+  "fee_ledger_access": false,
+  "native_windows_executed": false,
+  "full_repository_pytest_executed": false,
+  "new_live_r3_grade_claimed": false,
+  "commercial_release_claimed": false,
+  "git_stage_commit_push": false
+}

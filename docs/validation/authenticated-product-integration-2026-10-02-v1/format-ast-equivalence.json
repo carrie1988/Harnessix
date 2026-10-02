@@ -1,0 +1,27 @@
+{
+  "files": [
+    {
+      "path": "src/harnessix/evals/task_pack_execution.py",
+      "before_sha256": "1609740aab6c89dd70d000943bc806ab1622333c005c6d6c2b2c2a7098d3d774",
+      "after_sha256": "895270917c47c0c14c05b418cd87649dc2d2405e4b1d8becef14ef7ac38f7a85",
+      "full_ast_equal": true,
+      "assertions_removed": false
+    },
+    {
+      "path": "tests/evals/test_task_pack_evidence_stop.py",
+      "before_sha256": "618af9f5af30c1f816caeccfab3930d8a494446385ec595d730d791d68eaf65f",
+      "after_sha256": "f0657ecc3daeed71313d379ca8597fee7989f1a7dc33e23f96b6ae17fa5b067f",
+      "full_ast_equal": true,
+      "assertions_removed": false
+    },
+    {
+      "path": "tests/evals/test_task_pack_publication.py",
+      "before_sha256": "867df133393f950d85a07aa1881428610a4bd5124ff73e661c4a6e00f62b56b7",
+      "after_sha256": "9243086c0d1c8207304ad608196687c180657ca9ac1e299d3a3bc263ee65ead7",
+      "full_ast_equal": true,
+      "assertions_removed": false
+    }
+  ],
+  "formatter": ".venv/bin/python -m ruff format",
+  "production_semantics_changed": false
+}

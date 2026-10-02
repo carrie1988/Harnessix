@@ -1,0 +1,58 @@
+{
+  "schema": "harnessix.r3-auth-wiring-facts/v1",
+  "baseline": "dfba34e707ed845f3e9d844461e124015c22dca7",
+  "reported_main_revision": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "main_revision_source": "integration notice; no checkout, fetch or rebase performed",
+  "tree": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix",
+  "python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python",
+  "pythonpath": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src",
+  "repo_root_on_sys_path": false,
+  "fixture_umask": "022",
+  "package_directory_mode": "0700",
+  "record_mode": "0600",
+  "source_identity": "source-sha256.json",
+  "tests": {
+    "record": "pytest-release.txt",
+    "passed": 114,
+    "xfailed": 1,
+    "failed": 0,
+    "collection_total": 115,
+    "per_file_passed": {
+      "test_task_pack_publication.py": 45,
+      "test_task_pack_execution.py": 17,
+      "test_task_pack_evidence_stop.py": 31,
+      "test_provider_suite_execution.py": 9,
+      "test_provider_suite_cli.py": 12
+    },
+    "xfail": "test_completed_recovery_requires_original_event_body_mac",
+    "xfail_strict": true,
+    "xfail_not_counted_as_pass": true,
+    "network_and_process_denial_fixture": "test_task_pack_publication.py::no_external_effects"
+  },
+  "quality": {
+    "ruff": "PASS; ruff-final.txt",
+    "mypy": "PASS; 4 source files; mypy-final.txt",
+    "documentation_content": "PASS; documentation-check.json",
+    "full_documentation_change_sync": "PENDING_INTEGRATION: docs/modules/evals.md",
+    "diagrams": "PASS; four locally rendered and visually checked diagrams"
+  },
+  "bounded_effects": {
+    "real_provider_api_requests": 0,
+    "real_budget_entry_calls": 0,
+    "ledger_access": false,
+    "original_real_run_access": false,
+    "original_real_key_access": false,
+    "keychain_access": false,
+    "external_network_requests": 0,
+    "docker_operations": 0,
+    "ci_runs": 0,
+    "historical_signing": false
+  },
+  "remaining": [
+    "Session same-transaction raw body MAC seam; remove strict xfail after integration and verify PASS",
+    "Current evals module documentation synchronization on integrated revision",
+    "Windows native acceptance not exercised",
+    "Real Provider R3 quality and fee entry not exercised"
+  ],
+  "auth_wiring_accepted_as_r3_score": false
+}

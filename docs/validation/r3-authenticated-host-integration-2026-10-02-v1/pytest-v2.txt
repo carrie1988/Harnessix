@@ -1,0 +1,641 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/src", "repo_root_on_sys_path": false}
+........................F.....................FFFFFF.F.....F.F.......... [ 54%]
+...........................................................              [100%]
+=================================== FAILURES ===================================
+_____ test_default_suite_freezes_nonempty_credential_scope_before_provider _____
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_default_suite_freezes_non0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x102dcadb0>
+
+    async def test_default_suite_freezes_nonempty_credential_scope_before_provider(
+        tmp_path, monkeypatch
+    ):
+        config = provider_suite_config(tmp_path)
+        config = config.model_copy(
+            update={
+                "provider_config": config.provider_config.model_copy(
+                    update={"api_key_env": "R3_FIXTURE_KEY"}
+                )
+            }
+        )
+        fake_executor = SimpleNamespace(publication_scope=None, provider_factory=None)
+        monkeypatch.setenv(config.provider_config.api_key_env, "fixture-first-key")
+        monkeypatch.setattr(provider_suite_execution, "_require_scope", lambda *args: fake_executor)
+        created = []
+    
+        def native(config, *, api_key):
+            created.append(api_key)
+            return object()
+    
+        monkeypatch.setattr(provider_suite_execution, "OpenAIChatProvider", native)
+    
+        async def run(suite, executor, **kwargs):
+            assert executor.publication_scope.publication_context()["bindings"]
+            assert executor.provider_factory.publication_scope is executor.publication_scope
+            monkeypatch.setenv(config.provider_config.api_key_env, "fixture-second-key")
+            executor.provider_factory(None, uuid4())
+            return "fixture-no-suite-request"
+    
+        monkeypatch.setattr(provider_suite_execution, "run_coding_eval_suite", run)
+>       result = await provider_suite_execution.run_task_pack_provider_suite(config, allow_network=True)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/evals/test_task_pack_publication.py:490: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/harnessix/evals/provider_suite_execution.py:217: in run_task_pack_provider_suite
+    return await run_coding_eval_suite(
+tests/evals/test_task_pack_publication.py:486: in run
+    executor.provider_factory(None, uuid4())
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = TaskPackOpenAIChatProviderFactory(config=OpenAIChatConfig(base_url='https://dashscope.aliyuncs.com/compatible-mode/v1'...arameter='max_tokens'), publication_scope=<harnessix.secrets.publication.SecretPublicationScope object at 0x106910500>)
+
+    def __call__(
+        self,
+        case: CodingEvalTaskPackCase,
+        run_id: UUID,
+    ) -> AbstractAsyncContextManager[ModelProvider]:
+        del case, run_id
+        require_provider_publication_scope(self.publication_scope)
+        assert self.publication_scope is not None
+        self.publication_scope.require(
+>           (SecretVersionBinding(name=PROVIDER_SECRET.name, version=PROVIDER_SECRET.version),)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for SecretVersionBinding
+E       target
+E         Field required [type=missing, input_value={'name': 'eval.provider', 'version': '1'}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/missing
+
+src/harnessix/evals/provider_suite_execution.py:64: ValidationError
+______ test_original_event_mac_precedes_provider_and_runtime[1-completed] ______
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_original_event_mac_preced0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10698a1b0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106988530>
+window = 'completed', sequence = 1
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+                await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT)),
+                    ],
+                    expected_sequence=0,
+                )
+        with sqlite3.connect(root / "session.sqlite") as db:
+            db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=?", (sequence,))
+        db.close()
+        before = fixture_file_snapshot(root)
+        calls = []
+    
+        def forbidden(*args, **kwargs):
+            calls.append("execution")
+            pytest.fail("原事件验真失败不得进入 Provider、Action 或 AgentRuntime")
+    
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id), run_root=root,
+            workspace=root / "workspace", manifest=SimpleNamespace(run_id=run_id),
+        ))
+        monkeypatch.setattr(task_pack_trial, "AgentRuntime", forbidden)
+        monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", forbidden)
+        with pytest.raises(KernelError) as denied:
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded, runs, Path("/missing/git"), Path("/missing/docker"),
+                expected.case_id, run_id, forbidden, campaign.environment,
+                publication_scope=scope,
+            )
+        assert denied.value.code == "publication_history_unproven"
+>       assert calls == [] and fixture_file_snapshot(root) == before
+E       AssertionError: assert ([] == []
+E         
+E         Use -v to get more diff and {'report.json...3151186', ...} == {'report.json...3151186', ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'session.sqlite': '92e5ef6d0da2bd34731fa7b51bee44aad4cdf688e9b0d5162913725abea2685f'} != {'session.sqlite': 'fcc20f0e638868eab41eb37d9ca704b006b9f39a890e9c5df72ce8dbdbd70b92'}
+E         Left contains 2 more items:
+E         {'session.sqlite-shm': 'fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb',
+E          'session.sqlite-wal': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+E         Use -v to get more diff)
+
+tests/evals/test_task_pack_publication.py:958: AssertionError
+______ test_original_event_mac_precedes_provider_and_runtime[1-terminal] _______
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_original_event_mac_preced1')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x1068e3800>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1068e37d0>
+window = 'terminal', sequence = 1
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+                await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT)),
+                    ],
+                    expected_sequence=0,
+                )
+        with sqlite3.connect(root / "session.sqlite") as db:
+            db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=?", (sequence,))
+        db.close()
+        before = fixture_file_snapshot(root)
+        calls = []
+    
+        def forbidden(*args, **kwargs):
+            calls.append("execution")
+            pytest.fail("原事件验真失败不得进入 Provider、Action 或 AgentRuntime")
+    
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id), run_root=root,
+            workspace=root / "workspace", manifest=SimpleNamespace(run_id=run_id),
+        ))
+        monkeypatch.setattr(task_pack_trial, "AgentRuntime", forbidden)
+        monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", forbidden)
+        with pytest.raises(KernelError) as denied:
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded, runs, Path("/missing/git"), Path("/missing/docker"),
+                expected.case_id, run_id, forbidden, campaign.environment,
+                publication_scope=scope,
+            )
+        assert denied.value.code == "publication_history_unproven"
+>       assert calls == [] and fixture_file_snapshot(root) == before
+E       AssertionError: assert ([] == []
+E         
+E         Use -v to get more diff and {'session-aut...49389eb', ...} == {'session-aut...d666e73fec83'}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'session.sqlite': 'd55c610a90864b426db6e7955a63cb397d020d6424b534b1bb197823e1e2b2e7'} != {'session.sqlite': '3f263cf05d395bed9d6cbab25f7bf996f90e5d7866434dde1269d666e73fec83'}
+E         Left contains 2 more items:
+E         {'session.sqlite-shm': 'fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb',
+E          'session.sqlite-wal': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+E         Use -v to get more diff)
+
+tests/evals/test_task_pack_publication.py:958: AssertionError
+_______ test_original_event_mac_precedes_provider_and_runtime[1-active] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_original_event_mac_preced2')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x1068e3980>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1069658b0>
+window = 'active', sequence = 1
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+>               await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT)),
+                    ],
+                    expected_sequence=0,
+                )
+
+tests/evals/test_task_pack_publication.py:919: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/harnessix/session/sqlite.py:447: in append
+    thread, changed = await self._append_in_transaction(
+src/harnessix/session/sqlite.py:526: in _append_in_transaction
+    return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/session/sqlite_append.py:83: in append_in_transaction
+    thread = apply_event(thread, event)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/reducer.py:138: in apply_event
+    turn = _change_state(thread, turn, event, payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/turn_reducer.py:164: in _change_state
+    require(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = False, message = '模型循环开始前必须持久接受用户输入'
+
+    def require(condition: bool, message: str) -> None:
+        if not condition:
+>           raise KernelError("invalid_event", message)
+E           harnessix.agent.errors.KernelError: 模型循环开始前必须持久接受用户输入
+
+src/harnessix/agent/reducer_support.py:31: KernelError
+______ test_original_event_mac_precedes_provider_and_runtime[3-completed] ______
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_original_event_mac_preced3')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x1066742c0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106674b90>
+window = 'completed', sequence = 3
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+                await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT)),
+                    ],
+                    expected_sequence=0,
+                )
+        with sqlite3.connect(root / "session.sqlite") as db:
+            db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=?", (sequence,))
+        db.close()
+        before = fixture_file_snapshot(root)
+        calls = []
+    
+        def forbidden(*args, **kwargs):
+            calls.append("execution")
+            pytest.fail("原事件验真失败不得进入 Provider、Action 或 AgentRuntime")
+    
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id), run_root=root,
+            workspace=root / "workspace", manifest=SimpleNamespace(run_id=run_id),
+        ))
+        monkeypatch.setattr(task_pack_trial, "AgentRuntime", forbidden)
+        monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", forbidden)
+        with pytest.raises(KernelError) as denied:
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded, runs, Path("/missing/git"), Path("/missing/docker"),
+                expected.case_id, run_id, forbidden, campaign.environment,
+                publication_scope=scope,
+            )
+        assert denied.value.code == "publication_history_unproven"
+>       assert calls == [] and fixture_file_snapshot(root) == before
+E       AssertionError: assert ([] == []
+E         
+E         Use -v to get more diff and {'report.json...f9aa675', ...} == {'report.json...f9aa675', ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'session.sqlite': '996fb9035b994794e03435e8b5246d7d906d14d733fb34b1894a717301151518'} != {'session.sqlite': 'f77802141b4a72796e2c52c12b871cecd7efa7284999017bf9b9318befb67b43'}
+E         Left contains 2 more items:
+E         {'session.sqlite-shm': 'fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb',
+E          'session.sqlite-wal': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+E         Use -v to get more diff)
+
+tests/evals/test_task_pack_publication.py:958: AssertionError
+______ test_original_event_mac_precedes_provider_and_runtime[3-terminal] _______
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_original_event_mac_preced4')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x1068ab0e0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1068abec0>
+window = 'terminal', sequence = 3
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+                await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT)),
+                    ],
+                    expected_sequence=0,
+                )
+        with sqlite3.connect(root / "session.sqlite") as db:
+            db.execute("UPDATE agent_events SET event_json='{}' WHERE sequence=?", (sequence,))
+        db.close()
+        before = fixture_file_snapshot(root)
+        calls = []
+    
+        def forbidden(*args, **kwargs):
+            calls.append("execution")
+            pytest.fail("原事件验真失败不得进入 Provider、Action 或 AgentRuntime")
+    
+        monkeypatch.setattr(task_pack_trial, "materialize_task_pack_case", lambda *args: SimpleNamespace(
+            case=loaded.manifest.case(expected.case_id), run_root=root,
+            workspace=root / "workspace", manifest=SimpleNamespace(run_id=run_id),
+        ))
+        monkeypatch.setattr(task_pack_trial, "AgentRuntime", forbidden)
+        monkeypatch.setattr(task_pack_trial, "open_default_product_action_runtime", forbidden)
+        with pytest.raises(KernelError) as denied:
+            await task_pack_trial.run_task_pack_coding_eval(
+                loaded, runs, Path("/missing/git"), Path("/missing/docker"),
+                expected.case_id, run_id, forbidden, campaign.environment,
+                publication_scope=scope,
+            )
+        assert denied.value.code == "publication_history_unproven"
+>       assert calls == [] and fixture_file_snapshot(root) == before
+E       AssertionError: assert ([] == []
+E         
+E         Use -v to get more diff and {'session-aut...49389eb', ...} == {'session-aut...503b70afeaa3'}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'session.sqlite': 'cebab5d06def22cbc4ad7566376d67bd99eecc8f246e8236260b1a2b9d694c63'} != {'session.sqlite': '22431347ac17bb7ff08df9f1f9451855f0899200dc83c2384808503b70afeaa3'}
+E         Left contains 2 more items:
+E         {'session.sqlite-shm': 'fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb',
+E          'session.sqlite-wal': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+E         Use -v to get more diff)
+
+tests/evals/test_task_pack_publication.py:958: AssertionError
+_______ test_original_event_mac_precedes_provider_and_runtime[3-active] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_original_event_mac_preced5')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x1068aa0c0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1068a8140>
+window = 'active', sequence = 3
+
+    @pytest.mark.parametrize("window", ["completed", "terminal", "active"])
+    @pytest.mark.parametrize("sequence", [1, 3])
+    async def test_original_event_mac_precedes_provider_and_runtime(
+        tmp_path, scope, monkeypatch, window, sequence
+    ):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        root = runs / str(run_id)
+        if window != "completed":
+            (root / "run-state.json").unlink()
+            (root / "report.json").unlink()
+        if window == "active":
+            # 添加新的开放 Turn 会破坏计划身份；用独立新认证夹具模拟原未完成窗口。
+            root = run_root(tmp_path)
+            tid, turn_id = uuid4(), uuid4()
+            async with open_task_pack_publication(root, scope) as owner:
+>               await owner.sessions.append(
+                    tid,
+                    [
+                        EventDraft(payload=ThreadCreated(workspace=str(root / "workspace"))),
+                        EventDraft(
+                            turn_id=turn_id,
+                            payload=TurnStarted(
+                                request_id=f"coding-eval:{run_id}",
+                                request_fingerprint="a" * 64,
+                                budget=loaded.manifest.case(expected.case_id).task.budget,
+                            ),
+                        ),
+                        EventDraft(turn_id=turn_id, payload=TurnStateChanged(status=TurnStatus.PREPARING_CONTEXT)),
+                    ],
+                    expected_sequence=0,
+                )
+
+tests/evals/test_task_pack_publication.py:919: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/harnessix/session/sqlite.py:447: in append
+    thread, changed = await self._append_in_transaction(
+src/harnessix/session/sqlite.py:526: in _append_in_transaction
+    return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/session/sqlite_append.py:83: in append_in_transaction
+    thread = apply_event(thread, event)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/reducer.py:138: in apply_event
+    turn = _change_state(thread, turn, event, payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/turn_reducer.py:164: in _change_state
+    require(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = False, message = '模型循环开始前必须持久接受用户输入'
+
+    def require(condition: bool, message: str) -> None:
+        if not condition:
+>           raise KernelError("invalid_event", message)
+E           harnessix.agent.errors.KernelError: 模型循环开始前必须持久接受用户输入
+
+src/harnessix/agent/reducer_support.py:31: KernelError
+_______ test_terminal_history_read_is_independent_of_expired_turn_budget _______
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_terminal_history_read_is_0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x1068e36b0>
+
+    async def test_terminal_history_read_is_independent_of_expired_turn_budget(tmp_path, scope):
+        loaded, expected, campaign, runs, run_id, trial = await fixture_trial(tmp_path, scope)
+        assert task_pack_trial.remaining_seconds(trial.turn) < 0
+        before = fixture_file_snapshot(runs / str(run_id))
+        result = await task_pack_trial._load_completed_run(
+            runs / str(run_id), loaded.manifest.case(expected.case_id), campaign.environment, run_id,
+            publication_scope=scope, history_read=TaskPackHistoryReadControl.begin(CancelToken()),
+        )
+        assert result.turn == trial.turn
+        assert result.turn.budget == loaded.manifest.case(expected.case_id).task.budget
+>       assert fixture_file_snapshot(runs / str(run_id)) == before
+E       AssertionError: assert {'report.json...b954016', ...} == {'report.json...b954016', ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'session.sqlite': '98bad39808a5c6cba48c41f2ff5f8aa7f9335811991ca9a1bba3858590cbdaf3'} != {'session.sqlite': '9be80c43d6a2d2e769d39a34026737fe91fc4d5766a5d3efc86d3c1068a09aa2'}
+E         Left contains 2 more items:
+E         {'session.sqlite-shm': 'fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb',
+E          'session.sqlite-wal': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+E         Use -v to get more diff
+
+tests/evals/test_task_pack_publication.py:1005: AssertionError
+___________ test_case_prefix_shares_one_deadline_and_original_cancel ___________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_case_prefix_shares_one_de0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x106664c50>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106664b90>
+
+    async def test_case_prefix_shares_one_deadline_and_original_cancel(tmp_path, scope, monkeypatch):
+        from harnessix.evals import task_pack_execution
+        from harnessix.evals.task_pack_execution import TaskPackCaseExecutor
+    
+        loaded, expected, campaign = _case_and_campaign()
+        root = tmp_path / "case"
+        runs = root / "runs"
+        runs.mkdir(parents=True, mode=0o700)
+        for rid in campaign.run_ids:
+            await _write_fixture_trial(loaded, runs, expected.case_id, rid, campaign.environment, publication_scope=scope)
+        token, controls, histories = CancelToken(), [], []
+        original_trial = task_pack_execution._completed_trial
+        original_read = SQLiteSessionStore.authenticated_thread_history
+    
+        async def completed(*args, **kwargs):
+            controls.append(kwargs["history_read"])
+            assert kwargs["history_read"].cancel is token
+            assert args[4] is scope
+            return await original_trial(*args, **kwargs)
+    
+        async def read(store, tid, **kwargs):
+            assert kwargs["cancel"] is token and kwargs["deadline"] == controls[0].deadline
+            result = await original_read(store, tid, **kwargs)
+            histories.append(result)
+            return result
+    
+        monkeypatch.setattr(task_pack_execution, "_completed_trial", completed)
+        monkeypatch.setattr(SQLiteSessionStore, "authenticated_thread_history", read)
+        executor = TaskPackCaseExecutor(loaded, Path("/missing/git"), Path("/missing/docker"),
+            lambda *args: pytest.fail("完成前缀不调用 Provider"), publication_scope=scope)
+>       assert (await executor(expected, campaign, root, token)).reason == "completed"
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/evals/test_task_pack_publication.py:1099: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/harnessix/evals/task_pack_execution.py:434: in __call__
+    ensure_private_directory(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_case_prefix_shares_one_de0/case')
+
+    def ensure_private_directory(path: Path, *, error_code: str, label: str) -> None:
+        """创建或验证0700目录，拒绝符号链接和权限漂移。"""
+    
+        try:
+            if path.is_symlink():
+                raise OSError
+            path.mkdir(mode=0o700, parents=True, exist_ok=True)
+            info = path.stat(follow_symlinks=False)
+            if not stat.S_ISDIR(info.st_mode) or stat.S_IMODE(info.st_mode) != 0o700:
+                raise OSError
+        except OSError:
+>           raise KernelError(error_code, f"{label}缺失、权限错误或不安全") from None
+E           harnessix.agent.errors.KernelError: Task Pack Case目录缺失、权限错误或不安全
+
+src/harnessix/evals/execution_fs.py:26: KernelError
+_____ test_default_factory_rejects_unsupported_application_secret_version ______
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/docs/validation/r3-authenticated-host-integration-2026-10-02-v1/fixtures-v2/test_default_factory_rejects_u0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106674800>
+
+    async def test_default_factory_rejects_unsupported_application_secret_version(tmp_path, monkeypatch):
+        from harnessix.product_config.contracts import SecretReference
+        from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
+        from harnessix.secrets.publication import SecretPublicationScope
+    
+        config = provider_suite_config(tmp_path)
+        monkeypatch.setattr(provider_suite_execution, "OpenAIChatProvider",
+            lambda *args, **kwargs: pytest.fail("版本不匹配不得构造 Provider"))
+        with SecretPublicationScope((SecretReference(name="eval.provider", version="2"),),
+            EnvironmentSecretProvider((EnvironmentSecretSource("eval.provider", "2", "FIXTURE_KEY"),),
+                environment={"FIXTURE_KEY": "fixture-second-version"})) as unsupported:
+            with pytest.raises(KernelError) as denied:
+>               TaskPackOpenAIChatProviderFactory(config.provider_config, unsupported)(None, uuid4())
+
+tests/evals/test_task_pack_publication.py:1136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = TaskPackOpenAIChatProviderFactory(config=OpenAIChatConfig(base_url='https://dashscope.aliyuncs.com/compatible-mode/v1'...arameter='max_tokens'), publication_scope=<harnessix.secrets.publication.SecretPublicationScope object at 0x106989af0>)
+
+    def __call__(
+        self,
+        case: CodingEvalTaskPackCase,
+        run_id: UUID,
+    ) -> AbstractAsyncContextManager[ModelProvider]:
+        del case, run_id
+        require_provider_publication_scope(self.publication_scope)
+        assert self.publication_scope is not None
+        self.publication_scope.require(
+>           (SecretVersionBinding(name=PROVIDER_SECRET.name, version=PROVIDER_SECRET.version),)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for SecretVersionBinding
+E       target
+E         Field required [type=missing, input_value={'name': 'eval.provider', 'version': '1'}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/missing
+
+src/harnessix/evals/provider_suite_execution.py:64: ValidationError
+=========================== short test summary info ============================
+FAILED tests/evals/test_task_pack_publication.py::test_default_suite_freezes_nonempty_credential_scope_before_provider
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[1-completed]
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[1-terminal]
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[1-active]
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[3-completed]
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[3-terminal]
+FAILED tests/evals/test_task_pack_publication.py::test_original_event_mac_precedes_provider_and_runtime[3-active]
+FAILED tests/evals/test_task_pack_publication.py::test_terminal_history_read_is_independent_of_expired_turn_budget
+FAILED tests/evals/test_task_pack_publication.py::test_case_prefix_shares_one_deadline_and_original_cancel
+FAILED tests/evals/test_task_pack_publication.py::test_default_factory_rejects_unsupported_application_secret_version
+10 failed, 121 passed in 3.47s

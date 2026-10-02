@@ -1,0 +1,93 @@
+{
+  "schema": "harnessix.r3-format-doc-limited-receipt/v1",
+  "status": "LIMITED_FORMAT_AND_DOC_CLOSURE_CONFIRMED",
+  "final8": [
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "old144_sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11",
+      "publishable_sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11",
+      "raw_changed": false,
+      "current_match": true
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_publication.py",
+      "old144_sha256": "207584805720d71a5a610f6250f1330916ced31e9b7e2ab71fcf2101c173a297",
+      "publishable_sha256": "207584805720d71a5a610f6250f1330916ced31e9b7e2ab71fcf2101c173a297",
+      "raw_changed": false,
+      "current_match": true
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_trial.py",
+      "old144_sha256": "6307e44c4db17412fe81ff6a429befd8add527977dd4f3c1b98341f246824aba",
+      "publishable_sha256": "6307e44c4db17412fe81ff6a429befd8add527977dd4f3c1b98341f246824aba",
+      "raw_changed": false,
+      "current_match": true
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_execution.py",
+      "old144_sha256": "1609740aab6c89dd70d000943bc806ab1622333c005c6d6c2b2c2a7098d3d774",
+      "publishable_sha256": "895270917c47c0c14c05b418cd87649dc2d2405e4b1d8becef14ef7ac38f7a85",
+      "raw_changed": true,
+      "current_match": true
+    },
+    {
+      "path": "src/harnessix/evals/provider_suite_execution.py",
+      "old144_sha256": "f5925a8223c376f8e63aa6ef2556fe34fd30575040a24eb1e7332206ef7970fa",
+      "publishable_sha256": "f5925a8223c376f8e63aa6ef2556fe34fd30575040a24eb1e7332206ef7970fa",
+      "raw_changed": false,
+      "current_match": true
+    },
+    {
+      "path": "tests/evals/test_task_pack_publication.py",
+      "old144_sha256": "867df133393f950d85a07aa1881428610a4bd5124ff73e661c4a6e00f62b56b7",
+      "publishable_sha256": "9243086c0d1c8207304ad608196687c180657ca9ac1e299d3a3bc263ee65ead7",
+      "raw_changed": true,
+      "current_match": true
+    },
+    {
+      "path": "tests/evals/test_task_pack_evidence_stop.py",
+      "old144_sha256": "618af9f5af30c1f816caeccfab3930d8a494446385ec595d730d791d68eaf65f",
+      "publishable_sha256": "f0657ecc3daeed71313d379ca8597fee7989f1a7dc33e23f96b6ae17fa5b067f",
+      "raw_changed": true,
+      "current_match": true
+    },
+    {
+      "path": "tests/evals/test_provider_suite_execution.py",
+      "old144_sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846",
+      "publishable_sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846",
+      "raw_changed": false,
+      "current_match": true
+    }
+  ],
+  "rawbyte_changes_from_old144": [
+    "src/harnessix/evals/task_pack_execution.py",
+    "tests/evals/test_task_pack_evidence_stop.py",
+    "tests/evals/test_task_pack_publication.py"
+  ],
+  "rawbyte_changes_count": 3,
+  "unchanged_of_old32_count": 29,
+  "ast_equivalent_files_count": 3,
+  "full_ast_attributes_free_independently_equal": true,
+  "assertions_removed": false,
+  "old144_is_old_bytes_result_only": true,
+  "new_candidate_tests_run_this_receipt": 0,
+  "new_candidate_test_or_type_counts_from_parent_not_independently_claimed": true,
+  "doc01": "CLOSED",
+  "doc02": "CLOSED_WITH_HISTORICAL_DELETION_LOCATION_CLASSIFICATION_CORRECTION_RETAINED",
+  "doc_sdd_sha256": "ac3cfcb63560e5d3dad57833b2f01b720eef8e07b77ea054abccd95040e78f32",
+  "current8_publishable_before_after_match": true,
+  "old8_rawbytes_all_unchanged_claim": false,
+  "assets13_unchanged": true,
+  "production437_matches_publishable_and_stable": true,
+  "packaging3_matches_publishable_and_stable": true,
+  "original48_and49_unchanged": true,
+  "old_history14_and_private_reports_unchanged": true,
+  "pyproject_three_literal_exclusions_only": true,
+  "secret_scope_static_contract_unchanged": true,
+  "secret_scan_current_untracked_boundary_documented": true,
+  "new_P0_P1_P2": [],
+  "repository_writes": 0,
+  "cost": 0,
+  "ci_network_models_ledger_keychain_docker_used": false,
+  "all_this_receipt_process_and_file_handles_closed": true
+}

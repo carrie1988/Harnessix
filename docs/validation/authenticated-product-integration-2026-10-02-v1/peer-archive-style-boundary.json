@@ -1,0 +1,60 @@
+{
+  "pyproject_baseline_sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9",
+  "pyproject_publishable_sha256": "ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad",
+  "new_exclusions": [
+    "docs/validation/m09-r3-eval-publication-wiring-20261002-v1/run_offline_tests.py",
+    "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/run_offline_tests.py",
+    "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/validate_documents.py"
+  ],
+  "exactly_three_literal_script_paths": true,
+  "new_wildcards": false,
+  "all_other_toml_fields_equal": true,
+  "old_exclusions_unchanged": [
+    "docs/validation/**/diagnostics/*.py",
+    "docs/validation/**/installation/*.py"
+  ],
+  "raw_manifest_scripts": [
+    {
+      "path": "docs/validation/m09-r3-eval-publication-wiring-20261002-v1/run_offline_tests.py",
+      "frozen_manifest_sha256": "c403964f6dd2b3dd6fd98386e2deb74373f0a9cb9d7e889a244f7269fd429b53",
+      "actual_sha256": "c403964f6dd2b3dd6fd98386e2deb74373f0a9cb9d7e889a244f7269fd429b53",
+      "matches": true,
+      "currently_git_indexed": false
+    },
+    {
+      "path": "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/run_offline_tests.py",
+      "frozen_manifest_sha256": "0f356c569903c5265bb6596816a9aaef0c9f4cb8dc0d88104fca8bc3ecfa4a6e",
+      "actual_sha256": "0f356c569903c5265bb6596816a9aaef0c9f4cb8dc0d88104fca8bc3ecfa4a6e",
+      "matches": true,
+      "currently_git_indexed": false
+    },
+    {
+      "path": "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/validate_documents.py",
+      "frozen_manifest_sha256": "8b872217e6f1430b1b00614910506df2991a8669e249451677d00b14e06b6683",
+      "actual_sha256": "8b872217e6f1430b1b00614910506df2991a8669e249451677d00b14e06b6683",
+      "matches": true,
+      "currently_git_indexed": false
+    }
+  ],
+  "secret_sources": [
+    {
+      "path": "scripts/secret_scan.py",
+      "sha256": "826b35da6b942045e5fda1a9b9e38864b79b9a24942100060dbd900a0d6965a1",
+      "same_as_git_base": true
+    },
+    {
+      "path": "scripts/secret_scan_archives.py",
+      "sha256": "d4bcc2f7cf4741a25d4a819c9bce7f0979f6c6e2fbdc565ab5e994155e650675",
+      "same_as_git_base": true
+    },
+    {
+      "path": "scripts/secret_scan_contracts.py",
+      "sha256": "03ca5a23bf471aac55d689bb13375c789ee60ff482ce9941baad7d4f0b56069d",
+      "same_as_git_base": true
+    }
+  ],
+  "secret_coverage_contract_unchanged": true,
+  "secret_config_source": "不消费Ruff排除；tracked输入+指定发行物递归；输入不完整固定失败",
+  "secret_current_index_caveat": "三新封存脚本当前不在Git索引；默认tracked发现不自动包含，统一候选/发行物扫描需显式纳入，不声称当前全扫描PASS",
+  "secret_scan_executed": false
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "harnessix.review-packet/v1",
+  "status": "LIMITED_SOURCE_AND_INSTALL_REVIEW_PASSED",
+  "scope": "同事务认证Thread和全事件；Artifact守卫只改测试",
+  "finding_closure": [
+    "SH-PEER-01",
+    "SH-PEER-02"
+  ],
+  "required_before_publish": [
+    "精确index字节与原件保护"
+  ],
+  "not_claimed": [
+    "R3真实质量",
+    "Windows原生",
+    "完整GitDB读写和产品交付",
+    "Backup v2",
+    "商用R1-R6"
+  ],
+  "completed_content_gates": [
+    "关联源码与唯一Wheel安装验证",
+    "完整DocGate",
+    "精确写集Secret扫描",
+    "两份公开内容manifest"
+  ],
+  "publication_verification": "提交前由主集成方核对精确写集与Git index；回执位于独立验证目录"
+}

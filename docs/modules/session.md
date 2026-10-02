@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: f887aae8bf54789fa2424f7cbc62bd335a1ccd47
+version: 15
+code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/session/test_authenticated_history.py
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
   - tests/agent/test_store.py
@@ -717,3 +718,17 @@ Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实�
 该端口只产生候选证明，不建立GitDB事务、完整catalog、业务拥有者或执行权限。
 完整Writer／Reader、默认Commit／Checkpoint及Backup v2仍须按原产品交付主线接线，
 不能以独立尾锚端口通过替代完整Git或商用验收。
+
+## 同事务认证Thread与完整事件读取
+
+[`SQLiteSessionStore.authenticated_thread_history`](../../src/harnessix/session/sqlite.py)在原单连接、
+`mode=ro`及单一读事务中复用原Header、投影和全部事件MAC认证，随后用原Reducer重放并完整比较。
+返回`AuthenticatedThreadHistory`只含普通Thread及事件元组；不是Root、当前批准、恢复执行或Git交付能力。
+调用者原CancelToken、绝对单调期限和可选Owner检查点贯穿SQL、事件与关闭后的最终核验。
+原事件/字节/投影限额不变，不创建缺失库，不补签或修复；WAL合法并发提交不造成混合读版本。
+
+Owner的OS/SQLite异常以私有载体保留原对象；原真实回滚/关闭失败和父取消继续按原连接优先级结算，
+不能被早先Owner异常掩盖。源码、字段、四图、失败语义、真实SQLite负例及部署边界见
+[总体与详细设计](../changes/m09-r4-authenticated-thread-history.md)及
+[验证资料](../validation/authenticated-thread-history-2026-10-02-v1/README.md)。
+原`get_thread/events`合同、数据库格式、Key与认证域不变；此接口不承诺跨库原子快照。

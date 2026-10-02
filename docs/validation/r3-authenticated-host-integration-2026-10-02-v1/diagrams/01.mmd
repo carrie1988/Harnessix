@@ -1,0 +1,18 @@
+flowchart TD
+    C[真实 Suite 宿主] --> S[凭据 Owner：冻结非空 Scope]
+    S --> E[TaskPackCaseExecutor 显式转发]
+    E --> O[Run Publication Owner]
+    O --> L[产品根外 Owner 锁]
+    O --> K{已有状态或认证目录?}
+    K -->|是| R[PrivateStateTree + original_key]
+    K -->|否，仅新 Run| N[产品 Key 初始化入口]
+    R --> B[同一 SessionPublicationBinding]
+    N --> B
+    B --> Q[认证 SQLiteSessionStore]
+    S --> A[同 Scope ArtifactStore / Agent / Git / Process]
+    Q --> H[同读完整历史：原取消 / 绝对期限 / 当前 Owner]
+    H --> T{Trial 路径}
+    T --> D[完成记录重读]
+    T --> F[终态 Session 恢复并评分]
+    T --> P[认证通过后才创建 Provider]
+    Q --> A

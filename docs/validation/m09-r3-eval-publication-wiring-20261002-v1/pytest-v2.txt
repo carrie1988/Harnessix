@@ -1,0 +1,135 @@
+{"python": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix/.venv/bin/python", "harnessix_source": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src/harnessix/__init__.py", "pythonpath": "/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/src", "repo_root_on_sys_path": false}
+....................FFF................................................. [ 80%]
+.................                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_artifact_persists_original_mac_and_rejects_tampering[None] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v2/test_artifact_persists_origina0')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10c2eee40>
+change = None
+
+    @pytest.mark.parametrize("change", [None, "seal", "body"])
+    async def test_artifact_persists_original_mac_and_rejects_tampering(tmp_path, scope, change):
+        from uuid import UUID
+    
+        root = run_root(tmp_path)
+        async with open_task_pack_publication(root, scope) as owner:
+>           tid, ref = await _publish_fixture_artifact(owner)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/evals/test_task_pack_publication.py:421: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/evals/test_task_pack_publication.py:392: in _publish_fixture_artifact
+    thread = await owner.sessions.append(
+src/harnessix/session/sqlite.py:424: in append
+    thread, changed = await self._append_in_transaction(
+src/harnessix/session/sqlite.py:503: in _append_in_transaction
+    return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/session/sqlite_append.py:83: in append_in_transaction
+    thread = apply_event(thread, event)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/reducer.py:138: in apply_event
+    turn = _change_state(thread, turn, event, payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/turn_reducer.py:164: in _change_state
+    require(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = False, message = '模型循环开始前必须持久接受用户输入'
+
+    def require(condition: bool, message: str) -> None:
+        if not condition:
+>           raise KernelError("invalid_event", message)
+E           harnessix.agent.errors.KernelError: 模型循环开始前必须持久接受用户输入
+
+src/harnessix/agent/reducer_support.py:31: KernelError
+_______ test_artifact_persists_original_mac_and_rejects_tampering[seal] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v2/test_artifact_persists_origina1')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10c2edc10>
+change = 'seal'
+
+    @pytest.mark.parametrize("change", [None, "seal", "body"])
+    async def test_artifact_persists_original_mac_and_rejects_tampering(tmp_path, scope, change):
+        from uuid import UUID
+    
+        root = run_root(tmp_path)
+        async with open_task_pack_publication(root, scope) as owner:
+>           tid, ref = await _publish_fixture_artifact(owner)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/evals/test_task_pack_publication.py:421: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/evals/test_task_pack_publication.py:392: in _publish_fixture_artifact
+    thread = await owner.sessions.append(
+src/harnessix/session/sqlite.py:424: in append
+    thread, changed = await self._append_in_transaction(
+src/harnessix/session/sqlite.py:503: in _append_in_transaction
+    return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/session/sqlite_append.py:83: in append_in_transaction
+    thread = apply_event(thread, event)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/reducer.py:138: in apply_event
+    turn = _change_state(thread, turn, event, payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/turn_reducer.py:164: in _change_state
+    require(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = False, message = '模型循环开始前必须持久接受用户输入'
+
+    def require(condition: bool, message: str) -> None:
+        if not condition:
+>           raise KernelError("invalid_event", message)
+E           harnessix.agent.errors.KernelError: 模型循环开始前必须持久接受用户输入
+
+src/harnessix/agent/reducer_support.py:31: KernelError
+_______ test_artifact_persists_original_mac_and_rejects_tampering[body] ________
+
+tmp_path = PosixPath('/Users/zhangjinhui/.codex/worktrees/r3-auth-wiring/Harnessix/docs/validation/m09-r3-eval-publication-wiring-20261002-v1/fixtures-v2/test_artifact_persists_origina2')
+scope = <harnessix.secrets.publication.SecretPublicationScope object at 0x10d1bf5c0>
+change = 'body'
+
+    @pytest.mark.parametrize("change", [None, "seal", "body"])
+    async def test_artifact_persists_original_mac_and_rejects_tampering(tmp_path, scope, change):
+        from uuid import UUID
+    
+        root = run_root(tmp_path)
+        async with open_task_pack_publication(root, scope) as owner:
+>           tid, ref = await _publish_fixture_artifact(owner)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/evals/test_task_pack_publication.py:421: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/evals/test_task_pack_publication.py:392: in _publish_fixture_artifact
+    thread = await owner.sessions.append(
+src/harnessix/session/sqlite.py:424: in append
+    thread, changed = await self._append_in_transaction(
+src/harnessix/session/sqlite.py:503: in _append_in_transaction
+    return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/session/sqlite_append.py:83: in append_in_transaction
+    thread = apply_event(thread, event)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/reducer.py:138: in apply_event
+    turn = _change_state(thread, turn, event, payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/harnessix/agent/turn_reducer.py:164: in _change_state
+    require(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = False, message = '模型循环开始前必须持久接受用户输入'
+
+    def require(condition: bool, message: str) -> None:
+        if not condition:
+>           raise KernelError("invalid_event", message)
+E           harnessix.agent.errors.KernelError: 模型循环开始前必须持久接受用户输入
+
+src/harnessix/agent/reducer_support.py:31: KernelError
+=========================== short test summary info ============================
+FAILED tests/evals/test_task_pack_publication.py::test_artifact_persists_original_mac_and_rejects_tampering[None]
+FAILED tests/evals/test_task_pack_publication.py::test_artifact_persists_original_mac_and_rejects_tampering[seal]
+FAILED tests/evals/test_task_pack_publication.py::test_artifact_persists_original_mac_and_rejects_tampering[body]
+3 failed, 86 passed in 2.25s

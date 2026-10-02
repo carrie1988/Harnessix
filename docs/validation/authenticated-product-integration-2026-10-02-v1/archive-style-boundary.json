@@ -1,0 +1,22 @@
+{
+  "added_exact_archived_paths": [
+    {
+      "path": "docs/validation/m09-r3-eval-publication-wiring-20261002-v1/run_offline_tests.py",
+      "sha256": "c403964f6dd2b3dd6fd98386e2deb74373f0a9cb9d7e889a244f7269fd429b53",
+      "preserved_original_bytes": true
+    },
+    {
+      "path": "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/run_offline_tests.py",
+      "sha256": "0f356c569903c5265bb6596816a9aaef0c9f4cb8dc0d88104fca8bc3ecfa4a6e",
+      "preserved_original_bytes": true
+    },
+    {
+      "path": "docs/validation/r3-authenticated-host-integration-2026-10-02-v1/validate_documents.py",
+      "sha256": "8b872217e6f1430b1b00614910506df2991a8669e249451677d00b14e06b6683",
+      "preserved_original_bytes": true
+    }
+  ],
+  "all_other_toml_fields_unchanged": true,
+  "active_source_or_tests_excluded": false,
+  "secret_and_manifest_coverage_retained": true
+}

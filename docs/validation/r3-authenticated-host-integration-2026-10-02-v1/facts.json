@@ -1,0 +1,48 @@
+{
+  "status": "OFFLINE_INTEGRATION_PASS",
+  "research_base": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "integration_base": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "authentication_read_stage_seconds": 120.0,
+  "original_reader_seconds": 10.0,
+  "execution_budget_renewed": false,
+  "actual_tests": {
+    "passed": 133,
+    "xfailed": 0,
+    "skipped": 0,
+    "duration_seconds": 3.43,
+    "log": "pytest-final.txt"
+  },
+  "ruff": "PASS",
+  "mypy_sources": 4,
+  "mypy": "PASS",
+  "compatibility_change": "nonempty cancelled durable-stop prefix now raises TurnCancelled before cached stop; original token is never replaced",
+  "compatibility_assertions": {
+    "original_token_identity": true,
+    "provider_calls": 0,
+    "trial_replays": 0,
+    "campaign_state_writes": 0,
+    "static_prefix_all_file_sha_unchanged": true,
+    "uncancelled_original_stop_and_fee_priority": true,
+    "empty_prefix_original_stop_return": true
+  },
+  "provider_reference_version_semantics": "eval.provider/1 is an application reference version, not a cloud key rotation version",
+  "real_side_effects": {
+    "original_run_read": false,
+    "original_key_read": false,
+    "keychain": false,
+    "ledger": false,
+    "network": false,
+    "container": false,
+    "model": false,
+    "ci": false,
+    "stage": false,
+    "commit": false,
+    "push": false
+  },
+  "peer_review": "PENDING",
+  "wheel_install": "NOT_PERFORMED",
+  "commercial_or_R3_grade": "NOT_CLAIMED",
+  "original_copied_package_full_verifier": "FAIL: copied root permission",
+  "original_48_member_sha_verification": "PASS",
+  "copy_permission_repair": "NOT_PERFORMED"
+}

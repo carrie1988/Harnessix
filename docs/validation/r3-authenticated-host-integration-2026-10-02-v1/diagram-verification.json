@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "renderer": "local mmdc",
+  "chrome_background_network_disabled": true,
+  "viewed_pngs": [
+    "01.png",
+    "02.png",
+    "03.png",
+    "04.png"
+  ],
+  "review": "中文标签可读，无截断；控制捕获先于宿主打开；认证先于Provider；已核对同读与控制数据流",
+  "sdd_sha256": "92f2dbeaf16eebe4ea948b5d82f222759680c6292d20d6ab67ac5c998545697b",
+  "diagrams": [
+    {
+      "name": "01",
+      "source_sha256": "22afb406ef6e3f857da93de2a16951cbce3a3ab5a6f03236018ea7beeb6fb31b",
+      "svg_sha256": "05cb250a2ff8664015f5214e6ee9e7dc69e05501f91c065686e47d5edb0502d5",
+      "png_sha256": "1e3d2648152ea0b0a7a5ec344d557d0779e47ea1283bf3eb9ab06daab2de0bcc"
+    },
+    {
+      "name": "02",
+      "source_sha256": "b226f48bd01ee21d22c9c5989724aa977be367c4d9279ddf4cddcdab53d22fc6",
+      "svg_sha256": "fe1b108cc19e1827518fc1c69566e8fb6ff29a8a0fe7e5895f611cdec214cdd8",
+      "png_sha256": "d1dad6fba44ede795da881403e3ffacce0bb2c5d1c38207e8352cc42dd5650a0"
+    },
+    {
+      "name": "03",
+      "source_sha256": "da2759719761077c7d7fcf3c9612018236ae0ca1ad63f01d1f7f7bf875c765cc",
+      "svg_sha256": "30e33bf759e44bc7aef127e4e563a73d43f996baad661c3726cf59460645d29f",
+      "png_sha256": "8f0d1980c5112a9ca0c541cb0a92a5dc3e4a7ad8cf4854a3d16bb0ecf2e7f90f"
+    },
+    {
+      "name": "04",
+      "source_sha256": "5b52c8a06a2b05b5954285e1753c9376cb166523f129408e6fffc59c2cbf0028",
+      "svg_sha256": "872355c44985f1ed8c659e56515f36209d4de94bf54e0079964e3bb0a8bfe632",
+      "png_sha256": "8e89bf03095408191de0c349255fe8be1b2ed78ac14cfbe0895f99716af39805"
+    }
+  ]
+}

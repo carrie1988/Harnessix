@@ -1,0 +1,32 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "status": "SCOPED_CODE_AND_INSTALLED_ACCEPTANCE_PASSED",
+  "base_revision": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "source_identity": "production-source-sha256-publishable.json",
+  "source_and_packaging_frozen": true,
+  "parent_related_passed": 1376,
+  "actual_source_type_files": 437,
+  "independent_session_passed": 70,
+  "independent_r3_prior_byte_passed": 144,
+  "three_format_files_independent_ast_equal": true,
+  "documentation_findings": [
+    "SH-PEER-01 closed",
+    "SH-PEER-02 closed",
+    "R3-DOC-01 closed",
+    "R3-DOC-02 closed"
+  ],
+  "installed_wheel_sha256": "8d0b349ecb796c642155e5be641092b4d0ba563fc528e034be51918d6798960d",
+  "installed_each_passed": 1376,
+  "test_groups_overlap": true,
+  "old48_and49_preserved": true,
+  "fee_ledger_unchanged": true,
+  "new_model_requests": 0,
+  "not_claimed": [
+    "new real R3 quality",
+    "Windows consumer support",
+    "full Git product and Backup v2",
+    "six-store atomic business snapshot",
+    "Beta",
+    "commercial R1-R6"
+  ]
+}

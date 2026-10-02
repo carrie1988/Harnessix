@@ -1,0 +1,35 @@
+[
+  {
+    "path": "src/harnessix/evals/task_pack_execution.py",
+    "old_sha256": "1609740aab6c89dd70d000943bc806ab1622333c005c6d6c2b2c2a7098d3d774",
+    "new_sha256": "895270917c47c0c14c05b418cd87649dc2d2405e4b1d8becef14ef7ac38f7a85",
+    "independent_full_ast_attributes_false_equal": true,
+    "ast_sha256": "b783d1a8df7f169da5e92293d7244c578e9587f47aead43677edceb21c8faa42",
+    "before_assert_count": 1,
+    "after_assert_count": 1,
+    "no_assert_removed": true,
+    "parent_claim_consistent": true
+  },
+  {
+    "path": "tests/evals/test_task_pack_evidence_stop.py",
+    "old_sha256": "618af9f5af30c1f816caeccfab3930d8a494446385ec595d730d791d68eaf65f",
+    "new_sha256": "f0657ecc3daeed71313d379ca8597fee7989f1a7dc33e23f96b6ae17fa5b067f",
+    "independent_full_ast_attributes_false_equal": true,
+    "ast_sha256": "cf0e4d8146118327d683a97885162a155af9df249a481bd3d973a94bf6f5e697",
+    "before_assert_count": 86,
+    "after_assert_count": 86,
+    "no_assert_removed": true,
+    "parent_claim_consistent": true
+  },
+  {
+    "path": "tests/evals/test_task_pack_publication.py",
+    "old_sha256": "867df133393f950d85a07aa1881428610a4bd5124ff73e661c4a6e00f62b56b7",
+    "new_sha256": "9243086c0d1c8207304ad608196687c180657ca9ac1e299d3a3bc263ee65ead7",
+    "independent_full_ast_attributes_false_equal": true,
+    "ast_sha256": "bf11fb35cd0afc4de947a3d171f92b9399c5013f911b893044e743a0be8e14f6",
+    "before_assert_count": 120,
+    "after_assert_count": 120,
+    "no_assert_removed": true,
+    "parent_claim_consistent": true
+  }
+]

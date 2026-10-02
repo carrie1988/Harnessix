@@ -1,0 +1,107 @@
+{
+  "schema": "harnessix.r3-authenticated-host-inputs/v1",
+  "head": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "tree": "/Users/zhangjinhui/.codex/worktrees/windows-git-raw-proof/Harnessix",
+  "owned_inputs_before": [
+    {
+      "path": "scripts/run_engineering_provider_suite_budgeted.py",
+      "before_sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11",
+      "historical_package_sha256": "9149f797c2539cc2bbb4f12d70813e3a85c0bcc1c509bdbbef39d7e046222a11"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_publication.py",
+      "before_sha256": "84357dfc35a4d9cc9fc0aaeda6bd033a93d1929418c5500c3276b4e51d11ecb5",
+      "historical_package_sha256": "84357dfc35a4d9cc9fc0aaeda6bd033a93d1929418c5500c3276b4e51d11ecb5"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_trial.py",
+      "before_sha256": "edcd26cff5937de29648c52b50441581b51bd71e61e5c3830cf11042c784178f",
+      "historical_package_sha256": "edcd26cff5937de29648c52b50441581b51bd71e61e5c3830cf11042c784178f"
+    },
+    {
+      "path": "src/harnessix/evals/task_pack_execution.py",
+      "before_sha256": "75dd12eedbf78fb59ae94c3c95e54f3692679cf6d4948e95921774c3fa1e1768",
+      "historical_package_sha256": "75dd12eedbf78fb59ae94c3c95e54f3692679cf6d4948e95921774c3fa1e1768"
+    },
+    {
+      "path": "src/harnessix/evals/provider_suite_execution.py",
+      "before_sha256": "872bcfa41531f07ea527d09d32ddd259c36d15d4830e757592ae7852a32511c0",
+      "historical_package_sha256": "872bcfa41531f07ea527d09d32ddd259c36d15d4830e757592ae7852a32511c0"
+    },
+    {
+      "path": "tests/evals/test_task_pack_publication.py",
+      "before_sha256": "b097061433f8185127f1f2f50aceb87026e13941acf2d1320ec64237f4f0f1ae",
+      "historical_package_sha256": "b097061433f8185127f1f2f50aceb87026e13941acf2d1320ec64237f4f0f1ae"
+    },
+    {
+      "path": "tests/evals/test_task_pack_evidence_stop.py",
+      "before_sha256": "45d297773e6ba397faf7b6d376e3d8ad1e8d81eb460165b75126e918a6321135",
+      "historical_package_sha256": "45d297773e6ba397faf7b6d376e3d8ad1e8d81eb460165b75126e918a6321135"
+    },
+    {
+      "path": "tests/evals/test_provider_suite_execution.py",
+      "before_sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846",
+      "historical_package_sha256": "73b56f26296a2303df0771b85903d58b5eb9de2738ca4dd9e5675770489a7846"
+    },
+    {
+      "path": "docs/changes/m09-r3-eval-publication-wiring.md",
+      "before_sha256": "81f0d775cdd2b195734c264bba639cf92bfe965690a778291e503bd3d0d3aa94",
+      "historical_package_sha256": "81f0d775cdd2b195734c264bba639cf92bfe965690a778291e503bd3d0d3aa94"
+    }
+  ],
+  "protected_parent_inputs_before": [
+    {
+      "path": "src/harnessix/agent/errors.py",
+      "sha256": "9fe2f838132601826162ec35ace4369860e1ab4e485d66adae2bebf04f032607"
+    },
+    {
+      "path": "src/harnessix/session/sqlite.py",
+      "sha256": "11e7ee0479689800ada3baa13be396b16972a87524a1bb340d15cd5a5ea46fc2"
+    },
+    {
+      "path": "src/harnessix/session/sqlite_publication.py",
+      "sha256": "747e52c39c039220e35721961eb7f578f65dd224c1931d4cd19b51adaf4098e6"
+    },
+    {
+      "path": "src/harnessix/session/sqlite_history.py",
+      "sha256": "da59aa54153c347fa7be5cf8d805b7c4bbb9be71ad83a041dbc70aefc91f8d36"
+    },
+    {
+      "path": "tests/session/test_authenticated_history.py",
+      "sha256": "11a54fc97dd56b50ce5bf8ee96cd2e1fab078f161ba275a89f6be0e4deb9e718"
+    },
+    {
+      "path": "tests/artifacts/test_batch_diff.py",
+      "sha256": "ff6f12de60041d64169c7f37bdd61018b2564f984ad40d1a79e2e8328cf42765"
+    },
+    {
+      "path": "src/harnessix/agent/runtime.py",
+      "sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c"
+    },
+    {
+      "path": "src/harnessix/agent/cancellation.py",
+      "sha256": "e8e830e6a0349a141917fee735a041f59bb6f85b7b80696b52d56ce95291aa25"
+    },
+    {
+      "path": "src/harnessix/session/store_publication.py",
+      "sha256": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87"
+    },
+    {
+      "path": "src/harnessix/secrets/publication.py",
+      "sha256": "effc5de4380bfa4193f786512842782b332d430312eeec0410c4ed366e8a628b"
+    }
+  ],
+  "frozen_package_manifest_sha256": "2c9fbff52f79a629552e3641c6cee2dbfd68758c0cf997d3773dc7e9733146e3",
+  "frozen_member_count": 48,
+  "frozen_member_sha_verification": "PASS",
+  "side_effects": {
+    "original_run_read": false,
+    "key_read": false,
+    "keychain": false,
+    "ledger": false,
+    "network": false,
+    "container": false,
+    "model": false
+  },
+  "pending_contract": "Run deadline origin for completed/terminal historical reads; no fresh per-read deadline invented"
+}

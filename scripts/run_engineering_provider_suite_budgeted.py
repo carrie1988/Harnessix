@@ -22,6 +22,7 @@ from harnessix.evals.provider_suite_contracts import CodingEvalProviderSuiteRunC
 from harnessix.evals.provider_suite_execution import _require_scope, run_task_pack_provider_suite
 from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunReport
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
+from harnessix.evals.task_pack_publication import provider_publication_scope
 from harnessix.models._provider_io import validate_key
 from harnessix.models.contracts import ModelProvider
 from harnessix.models.openai_chat import OpenAIChatProvider
@@ -184,14 +185,16 @@ async def run_budgeted_suite(
             async with OpenAIChatProvider(checked.provider_config, api_key=key) as provider:
                 yield GuardedVerificationProvider(provider, ledger, bounds, cancellation)
 
-        return await run_task_pack_provider_suite(
-            checked,
-            allow_network=True,
-            resume=resume,
-            cancel=cancellation,
-            provider_factory=factory,
-            provider_binding_sha256=bounds.fingerprint(ledger),
-        )
+        with provider_publication_scope(checked.provider_config.api_key_env, key) as scope:
+            return await run_task_pack_provider_suite(
+                checked,
+                allow_network=True,
+                resume=resume,
+                cancel=cancellation,
+                provider_factory=factory,
+                provider_binding_sha256=bounds.fingerprint(ledger),
+                publication_scope=scope,
+            )
 
 
 class _SafeParser(argparse.ArgumentParser):

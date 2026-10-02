@@ -1,0 +1,10 @@
+flowchart LR
+    V[宿主已解析凭据，仅内存] --> S[冻结 Secret Scope]
+    S --> P[Provider 的临时材料副本]
+    S --> C[当前公开输出保护]
+    K[稳定 store_id / key_id / Key] --> B[Binding]
+    B --> M[事件/投影/Artifact 的认证证明]
+    E[正式原始事件与 Artifact] --> M
+    M --> DB[session.sqlite]
+    DB --> R[原 Reader：先 MAC，再正文；同读接缝待集成]
+    R --> G[不变的 Grader / 费用重算]
