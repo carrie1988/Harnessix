@@ -1,0 +1,274 @@
+{
+  "schema": "harnessix.git-native-branch-integration-manifest/v1",
+  "status": "SEALED_EXACT_OWNED_INPUTS",
+  "integration_base_revision": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "owned_count": 29,
+  "readonly_count": 16,
+  "excluded_self": "docs/validation/git-native-branch-integration-2026-10-02-v1/manifest.json",
+  "artifacts": [
+    {
+      "path": ".github/workflows/windows-git-minimum-commit-probe.yml",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 1873,
+      "sha256": "2dd79bdd79b5bf2a2408079d131c36ba959b68b7b37b8e9f009b070aa3c6b8a5"
+    },
+    {
+      "path": ".github/workflows/windows-git-native-branch-observation.yml",
+      "role": "OWNED",
+      "bytes": 2630,
+      "sha256": "a30351aa6a9fb98667fab0816a0feaa3adcf1c45cc1c068448169947c1c6aa84"
+    },
+    {
+      "path": "docs/changes/m09-r4-git-native-branch-observation.md",
+      "role": "OWNED",
+      "bytes": 17669,
+      "sha256": "308235b4dd98405846eea0054218229e78da162c2000a716f20f6064d4a32616"
+    },
+    {
+      "path": "docs/validation/git-native-branch-integration-2026-10-02-v1/OWNED-FILES.json",
+      "role": "OWNED",
+      "bytes": 8979,
+      "sha256": "b79702a6a9b40a4670c379a8561a926e8d7b283aea62669336ad2ec5a1914ecb"
+    },
+    {
+      "path": "docs/validation/git-native-branch-integration-2026-10-02-v1/README.md",
+      "role": "OWNED",
+      "bytes": 5517,
+      "sha256": "131e74bc04f3cf3b28cc6dc94229ebf154d76f1847960e96e7279e4bf9f68132"
+    },
+    {
+      "path": "docs/validation/git-native-branch-integration-2026-10-02-v1/SOURCE.json",
+      "role": "OWNED",
+      "bytes": 14543,
+      "sha256": "8cf782bcee977e731847a5b32b1564e625ed956ca074de19cdf7e1c951d5d7cd"
+    },
+    {
+      "path": "docs/validation/git-native-branch-integration-2026-10-02-v1/review-packet.json",
+      "role": "OWNED",
+      "bytes": 3021,
+      "sha256": "c9c529b82611ca5b657f978c01679d3112a4491bef4475ae2c1776b73f167477"
+    },
+    {
+      "path": "docs/validation/git-native-branch-integration-2026-10-02-v1/verification.json",
+      "role": "OWNED",
+      "bytes": 1558,
+      "sha256": "34e9400bbab7dac42800252afb9aa059083d845939509359e7e9344e31d71a4f"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/COMMANDS.json",
+      "role": "OWNED",
+      "bytes": 2708,
+      "sha256": "1dc48979692196b154bb3a5c8ed3fd8d2e04d6c07eddb89ff36f964a5a3322ac"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/README.md",
+      "role": "OWNED",
+      "bytes": 3295,
+      "sha256": "c830d71f77b77e56a5f61ba03efe5275b11f60ac25b0d39852560b6ec9d5e32f"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/SOURCE.json",
+      "role": "OWNED",
+      "bytes": 6316,
+      "sha256": "6478798444eb62bcedb8913d77f466ebf3c072ffccd7e6d39cc7f64c0d8e59ea"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/architecture.mmd",
+      "role": "OWNED",
+      "bytes": 528,
+      "sha256": "19b15b07bb0f7f4e80c82db4a17bf87d918d4dc52fe3b7978ea335e59ae942b8"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/architecture.png",
+      "role": "OWNED",
+      "bytes": 59111,
+      "sha256": "1dca2800c3bce12ad9a9ba025a8be30c0c8e98ca918187c993276e0b1d410971"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/execution-sequence.mmd",
+      "role": "OWNED",
+      "bytes": 724,
+      "sha256": "6dbb055f4db6c3e3d6b255432f4e3f26aa7fbd4115368d41ced77cf15b8716c3"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/execution-sequence.png",
+      "role": "OWNED",
+      "bytes": 80177,
+      "sha256": "0dfef5d4f15a9836ddefcefc5e78dac67253c84daab0c6c0d78529acd84315c0"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/failure-dataflow.mmd",
+      "role": "OWNED",
+      "bytes": 477,
+      "sha256": "3bffcaef9e9f1d47b0185a83540859da2d88dab98a240e512f8e9856803470d4"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/failure-dataflow.png",
+      "role": "OWNED",
+      "bytes": 59329,
+      "sha256": "dbb10efba17ee8fb43ac6786cfbcc6e7da4761d75f5aedff7358f203de32d9e4"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/manifest.json",
+      "role": "OWNED",
+      "bytes": 9376,
+      "sha256": "68477380b046e8ee033896784333d915ab676f5e4f549cada1629fcbde9e8b37"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/review-packet.md",
+      "role": "OWNED",
+      "bytes": 2441,
+      "sha256": "8f659b2cf66e098025f114cedc5e77140f8735cc948c25c7d25bd66e25c39ddd"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/verification.json",
+      "role": "OWNED",
+      "bytes": 8691,
+      "sha256": "fb61bcf00d57f443c961e6d1f564e7b261c3e9163ec56bf6442ae2dea91ccf7e"
+    },
+    {
+      "path": "pyproject.toml",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 2149,
+      "sha256": "e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/__init__.py",
+      "role": "OWNED",
+      "bytes": 84,
+      "sha256": "a272dd2b093dec8fab1fd89cf310f5caf5d8b63a512ed976b3b883db227e5ed9"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.json",
+      "role": "OWNED",
+      "bytes": 7667,
+      "sha256": "abf17437af228f0f47f3c913627d399de9362e3097bf6d4de4b7dab5ea5ecc9a"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.py",
+      "role": "OWNED",
+      "bytes": 3937,
+      "sha256": "ad71f7d543659da78645ce1697faa5578036b28be8ceba55e5b9dacbb29db918"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/identity.py",
+      "role": "OWNED",
+      "bytes": 6807,
+      "sha256": "f72291ba963b774861a52cdfbbb195727ad78a0cf67d4ca1e9aef9f1aa4432a7"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/observe.py",
+      "role": "OWNED",
+      "bytes": 7819,
+      "sha256": "0c3e52ac5c186ff0be6f5289fc1201f1c96e9dc61680bf7a9f4fea9cb1d4c055"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/preflight.py",
+      "role": "OWNED",
+      "bytes": 6169,
+      "sha256": "2fd5c198b5c61b03245ce5cce710ebd0c9b753c25e485a3da9947d4372325a60"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/projection.py",
+      "role": "OWNED",
+      "bytes": 7431,
+      "sha256": "07252c6f6fb307af4e0a701aa79e833f74b803b287d0b1420b64e4d993252963"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/run_cases.py",
+      "role": "OWNED",
+      "bytes": 2552,
+      "sha256": "5b0d5944539d9cd9fccd6bc0a346587ae9df7570add276d8af14a70e46e1e249"
+    },
+    {
+      "path": "src/harnessix/delivery/git.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 42334,
+      "sha256": "8848a6aaaefe6b2987fb41fab0fa8b52ecf8d7533fba090e450881bae2e8de74"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_input_contracts.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 17975,
+      "sha256": "4080c84dc577ac24116e6efd97f3db38d54ec7262bc9b71d78f4282d80a75b71"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_native.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 17189,
+      "sha256": "e92ec1751d945c85564bf65f93b74e20e7462b8be56cbc7ef7760cf3fc2166e9"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_native_windows.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 14679,
+      "sha256": "a575db969b45d74b9b71e6120781b39755b0d444ba3d88ffa68ca521a95df56e"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_worker.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 12946,
+      "sha256": "f56b25e5d230abf56702bc12ccf27f8344c67c34bbb8b0777128caea764bf37d"
+    },
+    {
+      "path": "src/harnessix/processes/windows_job.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 6898,
+      "sha256": "33bb11a64e27c0a9478dc07e761c629d6c91bfe033a2cfbfbe5192f9dab90675"
+    },
+    {
+      "path": "src/harnessix/processes/windows_owner.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 18755,
+      "sha256": "82aa3bc13ea30733930bcfd2b0565e78018125c4b0d2d8dd165638b2726571b5"
+    },
+    {
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 24038,
+      "sha256": "15b394e6eb3ded3f6e67638a9d6e3ec414e01e9692ac779b238e74fa4946d403"
+    },
+    {
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 18674,
+      "sha256": "6c203b86d4729fc3ced38f42850e3c8744826c867d0bfeb316c22c7f09c86f4a"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_branch_observation.py",
+      "role": "OWNED",
+      "bytes": 21120,
+      "sha256": "e1a91e141b812596d9f08fcaadb3dcf5cc373608b2446aefb5b6b4d17e07d88c"
+    },
+    {
+      "path": "tests/product_config/git_minimum_commit_probe.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 22432,
+      "sha256": "bceaff4fdb87524189e48f28fcf3d038e50e6b428240b150c99565bcd196cf19"
+    },
+    {
+      "path": "tests/product_config/git_trace2_projection.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 12723,
+      "sha256": "a86a106e35f731f46c81acc9e872e038d391130461cd674a7395a9c05d58d43f"
+    },
+    {
+      "path": "tests/product_config/test_git_delivery_process.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 48083,
+      "sha256": "6fd8a096e54bd8c9d3e3aa3c167d1533984ad08d5c8f99880d8b2babf71a69ba"
+    },
+    {
+      "path": "tests/product_config/test_git_material_cas_integration.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 2790,
+      "sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff"
+    },
+    {
+      "path": "tests/product_config/test_git_material_input.py",
+      "role": "READ_ONLY_BASELINE",
+      "bytes": 19295,
+      "sha256": "2a48f4a9ee130711fe0c7726f1c329400652767b50aeb5b897b4ebd4e0c72b02"
+    }
+  ]
+}

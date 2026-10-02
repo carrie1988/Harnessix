@@ -1,0 +1,66 @@
+name: 固定发行Git两处原生返回分支观察候选
+
+on:
+  workflow_dispatch:
+    inputs:
+      execute:
+        description: 显式执行独立调试观察；默认仅预检
+        required: true
+        type: boolean
+        default: false
+      expected_revision:
+        description: 执行时必须等于经批准的完整40位当前revision
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  native-branch-observation:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: 拒绝当前Run重跑
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_RUN_ATTEMPT -ne '1') { exit 2 }
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: '3.12'
+      - name: 安装锁定项目依赖
+        shell: pwsh
+        run: uv sync --locked --all-extras --dev
+      - name: 现场身份预检及显式单次分支观察
+        timeout-minutes: 5
+        shell: pwsh
+        env:
+          NATIVE_EXECUTE: ${{ inputs.execute }}
+          NATIVE_EXPECTED_REVISION: ${{ inputs.expected_revision }}
+        run: |
+          $env:PYTHONPATH = Join-Path $env:GITHUB_WORKSPACE 'src'
+          $suffix = $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT
+          $private = Join-Path $env:RUNNER_TEMP ('git-native-private-' + $suffix)
+          $report = Join-Path $env:RUNNER_TEMP ('git-native-report-' + $suffix)
+          $arguments = @('-m', 'scripts.windows_git_native_branch_observation.observe',
+            '--output', $private, '--report', $report)
+          if ($env:NATIVE_EXECUTE -eq 'true') {
+            $arguments += @('--execute', '--expected-revision', $env:NATIVE_EXPECTED_REVISION)
+          } elseif ($env:NATIVE_EXECUTE -ne 'false') { exit 2 }
+          & .\.venv\Scripts\python.exe @arguments
+          exit $LASTEXITCODE
+      - name: 仅保存有限结果与结果摘要
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: git-native-branch-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/git-native-report-${{ github.run_id }}-${{ github.run_attempt }}/result.json
+            ${{ runner.temp }}/git-native-report-${{ github.run_id }}-${{ github.run_attempt }}/result-sha256.json
+          if-no-files-found: error
+          retention-days: 14

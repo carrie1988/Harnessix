@@ -1,0 +1,9 @@
+flowchart TB
+    O[既有原生探针<br/>聚合错误位置不可区分] --> U[历史FAIL与UNKNOWN保持]
+    C[新增手动候选<br/>默认仅现场预检] --> M[离线合同SHA核对]
+    M --> I[固定官方PDB与现场PE<br/>全SHA、GUID、age、RVA及机器码核对]
+    I --> E{显式execute及固定revision}
+    E -->|否| D[PREPARED_NOT_EXECUTED]
+    E -->|是| B[CDB两处硬件执行断点<br/>原两个SDK案例]
+    B --> P[有限分支与原v5结果投影]
+    P --> R[诊断结果<br/>不构成产品验收]

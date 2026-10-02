@@ -1,0 +1,73 @@
+{
+  "schema": "harnessix.git-native-branch-parent-commit-review/v1",
+  "status": "READY_FOR_EXACT_COMMIT_REVIEW_NOT_COMMITTED",
+  "research_base_revision": "dfba34e707ed845f3e9d844461e124015c22dca7",
+  "integration_base_revision": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "final_commit_revision": null,
+  "commit_not_created": true,
+  "owned_files_reference": "OWNED-FILES.json",
+  "owned_file_count": 29,
+  "frozen_candidate_manifest_reference": "../git-native-branch-observation-2026-10-02-v1/manifest.json",
+  "frozen_candidate_manifest_sha256": "68477380b046e8ee033896784333d915ab676f5e4f549cada1629fcbde9e8b37",
+  "frozen_code_scope_count": 26,
+  "frozen_code_source_set_sha256": "2db7c80d4bdf720cecb01cf92a835bd16533f1bbc2901a9fe0c1299ea48e3b7e",
+  "readonly_input_count": 16,
+  "peer_manifest_sha256": "46d2b5e488ab48044d9a63d18a9552bfaf923c2b2aaa169c023743c5540ab68b",
+  "peer_findings": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0
+  },
+  "peer_current_passed": 72,
+  "explicit_gate_inputs": 29,
+  "limited_gates_status": "PASS",
+  "commit_conditions": [
+    "精确新增OWNED-FILES.json中29件；禁止顺带修改已跟踪生产文件、现有workflow、模块或路线图",
+    "原23件逐字节与旧封印一致；16原输入在最终提交及当前运行checkout中保持固定SHA",
+    "并行集成产生新基线时重新核验输入，不回退或覆盖其他变更",
+    "最终提交只准新增这29件，索引路径和blob SHA须与最终manifest核对",
+    "精确提交推送后，记录唯一完整40位commit SHA再执行一次固定revision手动WindowsJob"
+  ],
+  "native_dispatch_plan": {
+    "workflow": ".github/workflows/windows-git-native-branch-observation.yml",
+    "event": "workflow_dispatch",
+    "windows_job_count": 1,
+    "inputs": {
+      "execute": true,
+      "expected_revision": "<FINAL_COMMIT_SHA>"
+    },
+    "run_attempt": 1,
+    "repeat_or_rerun": false,
+    "budgets": {
+      "git_command_seconds": 20,
+      "operation_seconds": 45,
+      "watchdog_seconds": 240,
+      "workflow_step_seconds": 300
+    },
+    "actual_return_rvas": [
+      "0x70b74",
+      "0x70bc1"
+    ],
+    "upload_files": [
+      "result.json",
+      "result-sha256.json"
+    ],
+    "identity_mismatch_behavior": "REFUSE_NO_REPLACEMENT_NO_RELAXATION",
+    "dispatch_performed": false,
+    "executed_by_integration_task": false
+  },
+  "native_result_rules": [
+    "ARM/echo/helper成功不代替原发行Git两处返回RVA真实观察",
+    "FSTAT失败时INDEX明确NOT_ENTERED，不伪造返回；原pytest非0继续非0",
+    "分列branch_gate与原raw/proof有限状态；original_sdk_acceptance始终false",
+    "历史Run36949391610与更早FAIL不被覆盖，根因尚未确证保持UNKNOWN"
+  ],
+  "approval_boundary": "诊断研发及一次固定revision原生观察已获授权；当前包只准备精确提交，不执行stage/commit/push/dispatch",
+  "not_closed": [
+    "Windows产品验收",
+    "无调试Owner链验收",
+    "R3",
+    "fullCommit",
+    "商业发布"
+  ]
+}

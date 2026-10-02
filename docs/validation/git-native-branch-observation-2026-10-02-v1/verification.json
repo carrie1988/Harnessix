@@ -1,0 +1,273 @@
+{
+  "schema": "harnessix.native-branch-verification/v1",
+  "status": "LOCAL_CANDIDATE_ONLY_NATIVE_PENDING",
+  "head": "dfba34e707ed845f3e9d844461e124015c22dca7",
+  "source_set_sha256": "2db7c80d4bdf720cecb01cf92a835bd16533f1bbc2901a9fe0c1299ea48e3b7e",
+  "source_count": 26,
+  "source_drift": 0,
+  "new_tests": {
+    "cases": 50,
+    "passed": 50,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "associated_governance": {
+    "cases": 360,
+    "passed": 360,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "includes_new_tests": true,
+    "full_repository": false,
+    "native": false
+  },
+  "ruff": {
+    "exit": 0,
+    "files": 8
+  },
+  "format": {
+    "exit": 0,
+    "files": 8
+  },
+  "readability": {
+    "file_max": 600,
+    "function_max": 100,
+    "files_checked": 8,
+    "passed": true,
+    "whole_repository_gate": false
+  },
+  "official_assets": [
+    {
+      "asset": "pdbs-for-git-64-bit-2.55.0.5-1.zip",
+      "bytes": 17051902,
+      "sha256": "2772406eb625feaf608dee59ed37150a3ed3c1071d0001770326e3f9111e86ea"
+    },
+    {
+      "asset": "MinGit-2.55.0.5-64-bit.zip",
+      "bytes": 38989688,
+      "sha256": "56d7b226b7693196cfc71fef26568f536c4a021ab6c37ff2db4287bed908e96e"
+    }
+  ],
+  "official_static_pairs": [
+    {
+      "role": "wrapper",
+      "pe_sha256": "78211c7ed73988da93a6d8a33d47ec6187f464d7ea2a9a00c182bbd7a1ecf30f",
+      "pdb_sha256": "d4851726c7563545539782876c290576044a93a87e008f1665af1e2b7714f0b8",
+      "matched": true
+    },
+    {
+      "role": "core",
+      "pe_sha256": "d1b62b94aa15e5c3bbcdd6440d5f716f78daa2736a951b0f1fad11d38c5f16da",
+      "pdb_sha256": "ea77731d385f63dbd939750355f993d06fff3c7cd6732db9a904c69b9af7b846",
+      "matched": true
+    }
+  ],
+  "diagrams": [
+    {
+      "name": "architecture",
+      "render_exit": 0,
+      "renderer": "installed mmdc and Chrome",
+      "visual_review": "PASS_READABLE_NO_CLIPPING",
+      "mmd_sha256": "19b15b07bb0f7f4e80c82db4a17bf87d918d4dc52fe3b7978ea335e59ae942b8",
+      "png_sha256": "1dca2800c3bce12ad9a9ba025a8be30c0c8e98ca918187c993276e0b1d410971"
+    },
+    {
+      "name": "execution-sequence",
+      "render_exit": 0,
+      "renderer": "installed mmdc and Chrome",
+      "visual_review": "PASS_READABLE_NO_CLIPPING",
+      "mmd_sha256": "6dbb055f4db6c3e3d6b255432f4e3f26aa7fbd4115368d41ced77cf15b8716c3",
+      "png_sha256": "0dfef5d4f15a9836ddefcefc5e78dac67253c84daab0c6c0d78529acd84315c0"
+    },
+    {
+      "name": "failure-dataflow",
+      "render_exit": 0,
+      "renderer": "installed mmdc and Chrome",
+      "visual_review": "PASS_READABLE_NO_CLIPPING",
+      "mmd_sha256": "3bffcaef9e9f1d47b0185a83540859da2d88dab98a240e512f8e9856803470d4",
+      "png_sha256": "dbb10efba17ee8fb43ac6786cfbcc6e7da4761d75f5aedff7358f203de32d9e4"
+    }
+  ],
+  "documentation": {
+    "initial_exit": 1,
+    "initial_findings": 5,
+    "initial_failure_retained": true,
+    "final_state": "PASS",
+    "final_exit": 0,
+    "final_findings": 0,
+    "actual_svg_render_count": 3
+  },
+  "private_archives": [
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "focused-initial.xml",
+      "bytes": 7951,
+      "sha256": "cbceb2bd67e75c0da709e043f99b1c084270f319afa33ed9a44b892c2fdd9369",
+      "junit": {
+        "cases": 47,
+        "passed": 47,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "focused-final.xml",
+      "bytes": 8420,
+      "sha256": "24959cca848f519ae446031d99d4d2f931bf86dea759378d2b5bc12016e1fcb3",
+      "junit": {
+        "cases": 50,
+        "passed": 50,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "focused-confirmed.xml",
+      "bytes": 8420,
+      "sha256": "6a0e0f712bddc9874bc1349aa2f9a824a463586141c8ac94d0fd7f4c9a851748",
+      "junit": {
+        "cases": 50,
+        "passed": 50,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "associated-governance.xml",
+      "bytes": 61523,
+      "sha256": "f54c8595e8444f02fa3678fa436285d676205279be401c1c616f4441f990eceb",
+      "junit": {
+        "cases": 357,
+        "passed": 357,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "associated-governance-final.xml",
+      "bytes": 61992,
+      "sha256": "c974b885d5a6c04bbd43829726bf50780f06a491c4515ecc3d79d3859f52bad9",
+      "junit": {
+        "cases": 360,
+        "passed": 360,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "associated-governance-confirmed.xml",
+      "bytes": 61992,
+      "sha256": "0f583f9b217a8451a2de3a7c67ce6a30ce84015d882d4a2f6e153b753989f299",
+      "junit": {
+        "cases": 360,
+        "passed": 360,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "documentation-initial.json",
+      "bytes": 1127,
+      "sha256": "d02bb3a15b4d3cabbc181b64d663bf9d67e567c0a0f07cf74daaf747db52d9a4"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "protocol-freeze-before-tests.json",
+      "bytes": 2376,
+      "sha256": "28c75c57646ccbd8a15b684b795d9e95bdbe37ac3dce34838db8bf97274318f9"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "protocol-freeze-final-before-tests.json",
+      "bytes": 2388,
+      "sha256": "885a14be34bdd0365cde548bfb891999eb98202487e83523906ca84f0b198c8e"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "protocol-freeze-sealed-before-tests.json",
+      "bytes": 2393,
+      "sha256": "e3f79a1d3ae5162baf7438caf0040ba272502e353f029ac44125842ea412c6f9"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "offline-identity-source-confirmed.json",
+      "bytes": 1187,
+      "sha256": "40ca5da073a07408219404c84c48bd646195e9f818d140aaf473b58959949880"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "confirmed-command-exits.json",
+      "bytes": 69,
+      "sha256": "437e08705cd5dcadc91325969cb2a306c9c920f60a352da6c07bb5c023d73639"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "documentation-final.json",
+      "bytes": 191,
+      "sha256": "7b4cc71d1c6917bbf2749c30be9968bdbaf6cbc5e1d1f8c707a2265aa2aaf292"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "svg-render-verification.json",
+      "bytes": 72,
+      "sha256": "52a1a69f1dc42d037c537316a0e048a7990671534f1501d5a07f8e50fb5ff3c0"
+    },
+    {
+      "archive": "windows-git-native-branch-candidate-20261002-v1",
+      "member": "source-review-follow-up.json",
+      "bytes": 585,
+      "sha256": "92919ebc551d848df33e9a86247f8574aedf46da2f5d9e5ff072d4c37d9f22cc"
+    }
+  ],
+  "historical_run": {
+    "run_id": 36949391610,
+    "attempt": 1,
+    "revision": "4a9264bfeb84f04fb4976894bf350091dd8870b0",
+    "result": "FAIL_RETAINED",
+    "private_log_sha256": "c21e7ead60cde2b496838209a1adcf0bb21256c5b1dd465443931cb09ebff7f1"
+  },
+  "historical_root": "UNKNOWN",
+  "not_executed": [
+    "Windows",
+    "CDB engine",
+    "actual RVA observations",
+    "original SDK two selectors",
+    "new CI",
+    "models",
+    "Docker",
+    "credential reads",
+    "commit",
+    "stage",
+    "push"
+  ],
+  "publication_boundary": "仅本地限域合同、静态发行身份和图形验证；不是原生或产品验收",
+  "source_review_follow_up": {
+    "initial_47_pass_preserved": true,
+    "finite_return_and_execution_truth_negative_controls_added": true,
+    "final_focused_count": 50,
+    "final_associated_count": 360,
+    "initial_protocol_sha256": "28c75c57646ccbd8a15b684b795d9e95bdbe37ac3dce34838db8bf97274318f9",
+    "final_protocol_sha256": "e3f79a1d3ae5162baf7438caf0040ba272502e353f029ac44125842ea412c6f9"
+  },
+  "old_preparation_archive": {
+    "archive": "windows-git-native-branch-preparation-20261002-v1",
+    "manifest_sha256": "f442d558657b0c8a37afa59994b543448117b78e5b7f374b102e589da89db161",
+    "artifact_count": 80,
+    "artifact_drift": 0,
+    "old_23_pass_retained_not_current_test_count": true
+  },
+  "tracked_changes": []
+}

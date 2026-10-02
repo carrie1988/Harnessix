@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant W as 手动候选
+    participant P as 固定身份预检
+    participant D as 现场CDB
+    participant T as 原两SDK案例
+    participant G as 原发行Git
+    W->>P: 离线SHA、冻结输入、现场PE及官方PDB
+    P-->>W: 匹配或拒绝
+    alt 默认dryrun
+        W-->>W: 仅准备，不执行
+    else 显式固定revision执行
+        W->>D: 启动一次，240秒watchdog
+        D->>T: 原两selector，原Owner与句柄合同
+        T->>G: 原材料写入调用
+        G-->>D: 两处返回寄存器实际见证
+        T-->>W: 原v5有限结果及pytest退出值
+        W->>P: 再验输入、Git、PDB及工具身份
+        W-->>W: 分列branch与原业务结果
+    end

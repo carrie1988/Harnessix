@@ -1,0 +1,187 @@
+{
+  "schema": "harnessix.git-native-branch-owned-files/v1",
+  "integration_base_revision": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "research_base_revision": "dfba34e707ed845f3e9d844461e124015c22dca7",
+  "total_owned_count": 29,
+  "frozen_candidate_count": 23,
+  "new_integration_file_count": 6,
+  "owned_files": [
+    ".github/workflows/windows-git-native-branch-observation.yml",
+    "docs/changes/m09-r4-git-native-branch-observation.md",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/OWNED-FILES.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/README.md",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/SOURCE.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/manifest.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/review-packet.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/verification.json",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/COMMANDS.json",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/README.md",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/SOURCE.json",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/architecture.mmd",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/architecture.png",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/execution-sequence.mmd",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/execution-sequence.png",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/failure-dataflow.mmd",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/failure-dataflow.png",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/manifest.json",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/review-packet.md",
+    "docs/validation/git-native-branch-observation-2026-10-02-v1/verification.json",
+    "scripts/windows_git_native_branch_observation/__init__.py",
+    "scripts/windows_git_native_branch_observation/contract.json",
+    "scripts/windows_git_native_branch_observation/contract.py",
+    "scripts/windows_git_native_branch_observation/identity.py",
+    "scripts/windows_git_native_branch_observation/observe.py",
+    "scripts/windows_git_native_branch_observation/preflight.py",
+    "scripts/windows_git_native_branch_observation/projection.py",
+    "scripts/windows_git_native_branch_observation/run_cases.py",
+    "tests/governance/test_windows_git_native_branch_observation.py"
+  ],
+  "frozen_candidate_files": [
+    {
+      "path": ".github/workflows/windows-git-native-branch-observation.yml",
+      "bytes": 2630,
+      "sha256": "a30351aa6a9fb98667fab0816a0feaa3adcf1c45cc1c068448169947c1c6aa84"
+    },
+    {
+      "path": "docs/changes/m09-r4-git-native-branch-observation.md",
+      "bytes": 17669,
+      "sha256": "308235b4dd98405846eea0054218229e78da162c2000a716f20f6064d4a32616"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/COMMANDS.json",
+      "bytes": 2708,
+      "sha256": "1dc48979692196b154bb3a5c8ed3fd8d2e04d6c07eddb89ff36f964a5a3322ac"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/README.md",
+      "bytes": 3295,
+      "sha256": "c830d71f77b77e56a5f61ba03efe5275b11f60ac25b0d39852560b6ec9d5e32f"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/SOURCE.json",
+      "bytes": 6316,
+      "sha256": "6478798444eb62bcedb8913d77f466ebf3c072ffccd7e6d39cc7f64c0d8e59ea"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/architecture.mmd",
+      "bytes": 528,
+      "sha256": "19b15b07bb0f7f4e80c82db4a17bf87d918d4dc52fe3b7978ea335e59ae942b8"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/architecture.png",
+      "bytes": 59111,
+      "sha256": "1dca2800c3bce12ad9a9ba025a8be30c0c8e98ca918187c993276e0b1d410971"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/execution-sequence.mmd",
+      "bytes": 724,
+      "sha256": "6dbb055f4db6c3e3d6b255432f4e3f26aa7fbd4115368d41ced77cf15b8716c3"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/execution-sequence.png",
+      "bytes": 80177,
+      "sha256": "0dfef5d4f15a9836ddefcefc5e78dac67253c84daab0c6c0d78529acd84315c0"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/failure-dataflow.mmd",
+      "bytes": 477,
+      "sha256": "3bffcaef9e9f1d47b0185a83540859da2d88dab98a240e512f8e9856803470d4"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/failure-dataflow.png",
+      "bytes": 59329,
+      "sha256": "dbb10efba17ee8fb43ac6786cfbcc6e7da4761d75f5aedff7358f203de32d9e4"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/manifest.json",
+      "bytes": 9376,
+      "sha256": "68477380b046e8ee033896784333d915ab676f5e4f549cada1629fcbde9e8b37"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/review-packet.md",
+      "bytes": 2441,
+      "sha256": "8f659b2cf66e098025f114cedc5e77140f8735cc948c25c7d25bd66e25c39ddd"
+    },
+    {
+      "path": "docs/validation/git-native-branch-observation-2026-10-02-v1/verification.json",
+      "bytes": 8691,
+      "sha256": "fb61bcf00d57f443c961e6d1f564e7b261c3e9163ec56bf6442ae2dea91ccf7e"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/__init__.py",
+      "bytes": 84,
+      "sha256": "a272dd2b093dec8fab1fd89cf310f5caf5d8b63a512ed976b3b883db227e5ed9"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.json",
+      "bytes": 7667,
+      "sha256": "abf17437af228f0f47f3c913627d399de9362e3097bf6d4de4b7dab5ea5ecc9a"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.py",
+      "bytes": 3937,
+      "sha256": "ad71f7d543659da78645ce1697faa5578036b28be8ceba55e5b9dacbb29db918"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/identity.py",
+      "bytes": 6807,
+      "sha256": "f72291ba963b774861a52cdfbbb195727ad78a0cf67d4ca1e9aef9f1aa4432a7"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/observe.py",
+      "bytes": 7819,
+      "sha256": "0c3e52ac5c186ff0be6f5289fc1201f1c96e9dc61680bf7a9f4fea9cb1d4c055"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/preflight.py",
+      "bytes": 6169,
+      "sha256": "2fd5c198b5c61b03245ce5cce710ebd0c9b753c25e485a3da9947d4372325a60"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/projection.py",
+      "bytes": 7431,
+      "sha256": "07252c6f6fb307af4e0a701aa79e833f74b803b287d0b1420b64e4d993252963"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/run_cases.py",
+      "bytes": 2552,
+      "sha256": "5b0d5944539d9cd9fccd6bc0a346587ae9df7570add276d8af14a70e46e1e249"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_branch_observation.py",
+      "bytes": 21120,
+      "sha256": "e1a91e141b812596d9f08fcaadb3dcf5cc373608b2446aefb5b6b4d17e07d88c"
+    }
+  ],
+  "new_integration_files": [
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/OWNED-FILES.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/README.md",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/SOURCE.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/manifest.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/review-packet.json",
+    "docs/validation/git-native-branch-integration-2026-10-02-v1/verification.json"
+  ],
+  "not_owned": {
+    "read_only_baseline_paths": [
+      ".github/workflows/windows-git-minimum-commit-probe.yml",
+      "pyproject.toml",
+      "src/harnessix/delivery/git.py",
+      "src/harnessix/delivery/git_material_input_contracts.py",
+      "src/harnessix/delivery/git_material_native.py",
+      "src/harnessix/delivery/git_material_native_windows.py",
+      "src/harnessix/delivery/git_material_worker.py",
+      "src/harnessix/processes/windows_job.py",
+      "src/harnessix/processes/windows_owner.py",
+      "src/harnessix/product_config/git_delivery_process.py",
+      "src/harnessix/product_config/git_material_process.py",
+      "tests/product_config/git_minimum_commit_probe.py",
+      "tests/product_config/git_trace2_projection.py",
+      "tests/product_config/test_git_delivery_process.py",
+      "tests/product_config/test_git_material_cas_integration.py",
+      "tests/product_config/test_git_material_input.py"
+    ],
+    "global_modules_roadmap_and_existing_production": true
+  },
+  "path_rule": "仅提交owned_files精确集合；全部为新增文件；不使用目录或glob扩展范围",
+  "self_hash_rule": "最终字节SHA由manifest及外部封印核验，数组不递归摘要自身"
+}

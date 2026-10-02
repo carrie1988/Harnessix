@@ -1,0 +1,81 @@
+{
+  "schema": "harnessix.native-branch-commands/v1",
+  "environment": {
+    "platform": "darwin",
+    "python": "3.12.7",
+    "PYTHONPATH": "<repository>/src",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "test_cache": "disabled"
+  },
+  "commands": [
+    {
+      "command": "<Python3.12.7> -m pytest -p no:cacheprovider -q tests/governance/test_windows_git_native_branch_observation.py --junitxml=<private-archive>/focused-confirmed.xml",
+      "exit": 0,
+      "result": {
+        "cases": 50,
+        "passed": 50,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "command": "<Python3.12.7> -m pytest -p no:cacheprovider -q tests/governance/test_windows_git_native_branch_observation.py tests/governance/test_git_minimum_commit_probe.py tests/governance/test_git_stderr_branches.py tests/governance/test_git_trace2_projection.py --junitxml=<private-archive>/associated-governance-confirmed.xml",
+      "exit": 0,
+      "result": {
+        "cases": 360,
+        "passed": 360,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "command": "<Python3.12.7> -m ruff check --no-cache scripts/windows_git_native_branch_observation tests/governance/test_windows_git_native_branch_observation.py",
+      "exit": 0,
+      "python_file_count": 8
+    },
+    {
+      "command": "<Python3.12.7> -m ruff format --no-cache --check scripts/windows_git_native_branch_observation tests/governance/test_windows_git_native_branch_observation.py",
+      "exit": 0,
+      "python_file_count": 8
+    },
+    {
+      "command": "mmdc -q -i <diagram>.mmd -o <diagram>.png -p <private-archive>/puppeteer.json -w 1400",
+      "exit": 0,
+      "diagram_count": 3
+    },
+    {
+      "command": "read_contract / source_checks / check_pair + SHA256 of existing official ZIPs",
+      "exit": 0,
+      "official_asset_count": 2,
+      "static_pair_count": 2,
+      "git_execution": false
+    },
+    {
+      "command": "AST budgets for 8 candidate Python files: file<=600, function<=100",
+      "exit": 0
+    },
+    {
+      "command": "<Python3.12.7> -m scripts.documentation_check --format json (initial)",
+      "exit": 1,
+      "findings": 5,
+      "reason": "证据文件尚未生成导致5项链接缺失，原件保留"
+    },
+    {
+      "command": "<Python3.12.7> -m scripts.documentation_check --format json (final)",
+      "exit": 0,
+      "findings": 0
+    },
+    {
+      "command": "documentation_check.render_mermaid(only new SDD, installed Chrome)",
+      "exit": 0,
+      "actual_svg_diagram_count": 3
+    },
+    {
+      "command": "SHA256 recheck of 80 original preparation artifacts",
+      "exit": 0,
+      "original_artifact_drift": 0
+    }
+  ]
+}

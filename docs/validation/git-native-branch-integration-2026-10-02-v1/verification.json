@@ -1,0 +1,49 @@
+{
+  "schema": "harnessix.git-native-branch-integration-verification/v1",
+  "research_base_revision": "dfba34e707ed845f3e9d844461e124015c22dca7",
+  "integration_base_revision": "80c1dad13c98aaabb2db1630c62134a241df44aa",
+  "fast_forward": {
+    "exit": 0,
+    "before_tracked_clean": true,
+    "before_index_clean": true,
+    "before_exact_owned_untracked": 23,
+    "after_tracked_clean": true,
+    "after_index_clean": true,
+    "after_exact_owned_untracked": 23,
+    "candidate_drift": 0,
+    "baseline_count": 16,
+    "baseline_drift": 0
+  },
+  "peer_seal_reference": {
+    "archive": "git-native-branch-observation-peer-20261002-v1",
+    "manifest_sha256": "46d2b5e488ab48044d9a63d18a9552bfaf923c2b2aaa169c023743c5540ab68b",
+    "reviewed_inputs": 39,
+    "findings": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "current_cases": 72,
+    "current_passed": 72,
+    "native_cases": 0,
+    "initial_3_fail_preserved": true,
+    "new_test_execution_in_this_integration": false
+  },
+  "gates": {
+    "status": "PASS_EXPLICIT_OWNED_INPUTS",
+    "secret_input_count": 29,
+    "secret_findings": 0,
+    "scanner_self_check": true,
+    "new_integration_inputs": 6,
+    "markdown_count": 4,
+    "documentation_findings": 0,
+    "checked_sync_rules": true,
+    "whole_repository": false
+  },
+  "original_frozen_results_unchanged": true,
+  "old_native_fail_and_unknown_retained": true,
+  "new_source_or_existing_workflow_edits": false,
+  "stage_commit_push_dispatch": false,
+  "windows_cdb_execution": false,
+  "models_docker_credentials_access": false
+}
