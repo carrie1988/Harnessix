@@ -1,0 +1,79 @@
+{
+  "R1_to_R6_closed": false,
+  "binding_id": "1e2a4baa-fd2b-4c85-93a1-d36bce7fc8c7",
+  "candidate_revision": "db7567e318375cb1c1fddc20584ce27eb2ed20bc",
+  "cold_session_diagnostic": {
+    "WAL_SHM_existed_or_created": false,
+    "body_exported": false,
+    "database_drift": false,
+    "database_sha256": "5c526e54225b920f39359ec2e732c1eb2f36c8723ed5fd7dbf7fb6d6d3cf7d88",
+    "event_count": 70,
+    "payload_MAC_independently_verified": false,
+    "read_mode": "immutable=1 after terminal"
+  },
+  "completed_scored_cases": 0,
+  "costs": {
+    "actual_bill_confirmed": false,
+    "currency": "CNY",
+    "grant_cumulative_charged_including_hold": "22.901924",
+    "grant_remaining": "17.098076",
+    "new_known_estimate": "0.096616",
+    "new_unknown_full_hold": "20.77824",
+    "old_unknown_full_hold": "20.77824",
+    "period_full_hold": "41.55648",
+    "period_headroom": "24.797112",
+    "period_known_estimate": "3.646408",
+    "unknown_released": false
+  },
+  "frozen_source": {
+    "input_count": 1043,
+    "input_drift": [],
+    "input_manifest_sha256": "ae215d851feb061d8150df25e37102c334b50b9d15485b67d69be91ff4916cf5"
+  },
+  "historical_7bb_suite_retained": true,
+  "original_period_id": "d973352f-0392-4d81-a324-8cb58f229a39",
+  "original_reverification_id": "b06cc178-d287-4ed7-b330-ffe25daff045",
+  "quality_metrics": {
+    "reason": "No completed case or suite quality report",
+    "required_tests_pass": null,
+    "strict_success": null
+  },
+  "registration": {
+    "appended_nodes": 1,
+    "old_fields_changed": [],
+    "old_request_count": 136,
+    "receipt_sha256": "514d984adc4186dfc6b68ec4c656602c9e7e0b3ed04b72e40c4f5a830c44d673",
+    "schema_after": "harnessix.provider-verification-budget/v3",
+    "schema_before": "harnessix.provider-verification-budget/v2"
+  },
+  "requests": {
+    "automatic_retries": 0,
+    "completed": 4,
+    "new_requests_allowed": false,
+    "new_total": 5,
+    "resume_executed": false,
+    "terminal_model_attempt_code": "provider_transport",
+    "unique_HTTP_cause_proven": false,
+    "unknown": 1
+  },
+  "runner": {
+    "completed_cases": 0,
+    "current_case_id": "agents-dump-compatible-refactor",
+    "known_cost_amount": "0",
+    "known_cost_currency": "CNY",
+    "reason": "cancelled",
+    "report_published": false,
+    "scheduled_cases": 10,
+    "spec_version": "harnessix.coding-eval-suite-run-report/v1",
+    "suite_id": "213672f6-09e8-409b-96df-13f48689c5f0"
+  },
+  "scheduled_trials": 20,
+  "schema": "harnessix.r3-candidate-chain-interruption/v1",
+  "status": "NO_GO_INCOMPLETE_SUITE_NEW_UNKNOWN_STOP",
+  "suite_id": "213672f6-09e8-409b-96df-13f48689c5f0",
+  "thresholds": {
+    "each_repository_requires_strict_success": true,
+    "required_tests_pass_minimum": 12,
+    "strict_success_minimum": 12
+  }
+}

@@ -529,7 +529,8 @@ PIDs机制的引擎，并在每次启动及MCP连接前复核；不关闭R1整�
 修复前23失败、本地完整5724通过、真实Linux资源值核对及同一新Wheel三平台生命周期结果。
 Scripted 20/20不是新真实质量；消费者OS、版本升级、独立Beta与R1～R6整体仍开放。
 R3原70元周期账本复用，不重置周期或释放旧未决预留。固定镜像及显式同Engine评测链已通过前置检查；
-新完整20 Trial的实际授权范围尚未登记，真实复验未启动。默认Desktop路径与消费者平台仍独立开放。
+固定`7bbce10`的新完整20 Trial已完成，严格成功0/20、必需测试通过1/20，质量未达标；
+后继修复候选尚未完成真实复验。默认Desktop路径与消费者平台仍独立开放。
 预算可用不代表编码质量已验收；不以替换镜像、放宽资源机制或脚本成绩绕过真实20 Trial门禁。
 
 R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
@@ -1483,4 +1484,8 @@ Backup v2、Windows原生失败及R3／Beta／商用门禁仍按原完整产品�
 当前实现与原请求宿主联动，关联合同284通过，独立复核120通过；
 见[总体与详细设计](changes/m09-r3-reverification-candidate-chain.md)及
 [验证资料](validation/reverification-candidate-chain-2026-10-02-v1/README.md)。
-实际候选登记、固定新20 Trial质量验证及R1～R6商用门禁仍开放。
+首次实际候选登记已完成，原136条请求及其他字段不变；新Suite在首个Case第5次请求后停止，
+4次完整Usage估算0.096616元，第5次新增未决保留20.77824元预留，原旧预留仍保留。
+见[实际登记与中断报告](validation/candidate-chain-provider-interruption-2026-10-02-v1/README.md)。
+没有完成Case或Suite质量报告，不按新0/20评分，不自动重试或释放未决；
+完整20 Trial质量及R1～R6商用门禁仍开放。

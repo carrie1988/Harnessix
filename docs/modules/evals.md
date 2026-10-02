@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 30
-code_revision: 4a9264bfeb84f04fb4976894bf350091dd8870b0
+version: 31
+code_revision: db7567e318375cb1c1fddc20584ce27eb2ed20bc
 owners:
   - core
 modules:
@@ -192,6 +192,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 
 | 能力 | 状态 | 当前入口 | 证据边界 |
 |---|---|---|---|
+| 31 | `db7567e318375cb1c1fddc20584ce27eb2ed20bc` | 2026-10-02 | 首次实际候选追加保留原136条请求；新Suite首个Case第5次请求传输失败，新增未知全额预留并停止；真实质量未完成，原完整失败保留 |
 | 版本化任务合同 | 已实现 | `CodingEvalTask` | 严格Pydantic合同和Schema |
 | 内置任务Catalog | 已实现 | `historical_coding_eval` | 仅1个任务、3个版本 |
 | 历史仓库物化 | 已实现 | `materialize_historical_coding_eval` | 本地完整Git历史、POSIX私有目录 |
@@ -2291,4 +2292,8 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 完整字段、失败语义、持久化、部署及测试见
 [总体与详细设计](../changes/m09-r3-reverification-candidate-chain.md)和
 [验证资料](../validation/reverification-candidate-chain-2026-10-02-v1/README.md)。
-离线管理合同通过不代表实际账本已登记，也不代表R3真实编码质量通过。
+离线管理合同通过不能替代实际登记或R3真实质量验收。
+首次实际追加已验证，新Suite因第5次请求产生新增未决而停止；
+4次完整Usage估算0.096616元，新旧两笔20.77824元预留均保持。
+详见[实际登记与中断报告](../validation/candidate-chain-provider-interruption-2026-10-02-v1/README.md)。
+没有完成Case或Suite质量报告，不自动继续或重放；完整20 Trial质量仍未通过。

@@ -1,0 +1,37 @@
+{
+  "credential_preflight": {
+    "available": true,
+    "record_sha256": "50992eeb356ab63b9264c027949eae2df9a1a6ad3d7958564a6ed2b2f8665b95",
+    "secret_stored_or_printed": false
+  },
+  "diagnostic_proof_limit": "Cold immutable metadata is a local structural observation, not independently verified Session MAC or proof of actual HTTP sending/billing.",
+  "image_and_price": {
+    "image_pulls": 0,
+    "official_projection_sha256": "4bafd363e4a84dfdf91fd5bddbf3af237bfb048513d1605781050ec4a9cfd439",
+    "original_fixed_images_verified": true,
+    "original_price_window_retained": true,
+    "raw_HTML_archived": false,
+    "record_sha256": "fc18f1c63a0a0bb88ab40ab62c729c8a0bce3e60a94d8ac05ef2233f0925b383"
+  },
+  "independent_interruption_review": "pending",
+  "interruption_facts_sha256": "c1ffc09899ee3357c4bd890dd8e62a72b8bfb5254b0da1f548191acd27457eac",
+  "no_full_suite_quality_results": true,
+  "no_new_model_requests_after_unknown": true,
+  "registration_receipt_sha256": "514d984adc4186dfc6b68ec4c656602c9e7e0b3ed04b72e40c4f5a830c44d673",
+  "registration_result_sha256": "e9a3d041e9034e7188fcc4c6b7b4ad9e1c64e3e65da22edd26db39eec478262d",
+  "runner_exit_code_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+  "runner_result_sha256": "621e4b4eb676e61ad0056298b0e24e2826816b53ecad62189bf4116eef1f9b2f",
+  "schema": "harnessix.validation-verification/v1",
+  "source_preflight": {
+    "corrected_validation_launcher_only": true,
+    "drift": [],
+    "errors": 0,
+    "failures": 0,
+    "original_launcher_and_selector_failures_retained": true,
+    "skipped": 0,
+    "source_inputs": 1043,
+    "tests": 188,
+    "xml_sha256": "637294ab955574dce0ae226cd78165feb801e0148711208a07bff73d53034499"
+  },
+  "status": "ACTUAL_REGISTRATION_AND_INTERRUPTION_VERIFIED_QUALITY_OPEN"
+}

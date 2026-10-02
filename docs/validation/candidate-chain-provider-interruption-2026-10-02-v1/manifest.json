@@ -1,0 +1,13 @@
+{
+  "algorithm": "sha256",
+  "candidate_revision": "db7567e318375cb1c1fddc20584ce27eb2ed20bc",
+  "files": {
+    "README.md": "f2971da0504448ca0019ed7c84d6f27149173e76aaa6cfd5f2b62a725c37b12d",
+    "facts.json": "52fd1127efbb4e460d6119aceb1a608435dcd8b19bcf7ae3d60cca033b4012a7",
+    "review-packet.json": "f93f8fab92d16cf787fb0f91ed1b4ff44f6727d410fe79effde7936b9e4be053",
+    "verification.json": "164fcd45a032365addb2aaf3281334b9ea0297c192bb7ac0485299e30654cc23"
+  },
+  "schema": "harnessix.validation-manifest/v1",
+  "scope": "actual registration and interrupted first case only",
+  "source_inputs_whole_repository": false
+}
