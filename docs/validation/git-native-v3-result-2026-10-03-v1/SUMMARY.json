@@ -1,0 +1,25 @@
+{
+  "schema": "harnessix.native-v3-actual-result/v1",
+  "revision": "6e440ffad07ee31ed6153838f858240f5754c876",
+  "run_id": 37077033494,
+  "job_id": 111069142609,
+  "attempt": 1,
+  "result": "EXECUTION_INCOMPLETE",
+  "cases_observed": 2,
+  "both_calls_failed": true,
+  "worker_return": 2,
+  "git_return": 128,
+  "raw_projection_not_independently_mac_verified": true,
+  "marker_syntax_counts": {
+    "arm_fullmatch_count": 0,
+    "branch_fullmatch_count": 0,
+    "bad_marker_prefix_count": 0
+  },
+  "counts_not_process_or_callback_attestation": true,
+  "sdk_accepted": false,
+  "root_cause": "UNKNOWN",
+  "old_failures_retained": true,
+  "new_model_requests": 0,
+  "fee_ledger_unchanged": true,
+  "commercial_release": false
+}

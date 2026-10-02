@@ -1,0 +1,145 @@
+{
+  "schema": "harnessix.native-v3-actual-manifest/v1",
+  "revision": "6e440ffad07ee31ed6153838f858240f5754c876",
+  "run_id": 37077033494,
+  "owned_files": [
+    ".gitattributes",
+    "docs/roadmap.md",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/README.md",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/SUMMARY.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/artifact.zip",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/artifacts.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/download-verification.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/jobs.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/manifest.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/result-sha256.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/result.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/review-packet.json",
+    "docs/validation/git-native-v3-result-2026-10-03-v1/run.json"
+  ],
+  "owned_count": 13,
+  "self_excluded": "docs/validation/git-native-v3-result-2026-10-03-v1/manifest.json",
+  "members_count": 24,
+  "members": [
+    {
+      "path": ".gitattributes",
+      "bytes": 9284,
+      "sha256": "ec35ed77f4dd7ec819a16f36a959b50f655bb34157455b9bd2acc3608c03f4d7"
+    },
+    {
+      "path": ".github/workflows/windows-git-native-branch-observation.yml",
+      "bytes": 2630,
+      "sha256": "a30351aa6a9fb98667fab0816a0feaa3adcf1c45cc1c068448169947c1c6aa84"
+    },
+    {
+      "path": "docs/changes/m09-r4-git-native-execution-envelope-v3.md",
+      "bytes": 15383,
+      "sha256": "a25d1cd9c382482053280975cb4aa8ab3f0d7862074c3a28d8e8f4b24864e03c"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "bytes": 157032,
+      "sha256": "83214d6bdb2689a355e897e00c20eb81f3cbb5bc7c6833e2bfbba5e3aa269275"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/manifest.json",
+      "bytes": 16870,
+      "sha256": "6c51bda8f677d9100f88b24dff151a3848eaf1af509285ee7ba2060a6544c07b"
+    },
+    {
+      "path": "docs/validation/git-native-execution-envelope-2026-10-02-v3/publication-manifest.json",
+      "bytes": 6784,
+      "sha256": "4afc171818752b9bfdcaf3963c99b1645a8a88699982e9623e1d98a570545e19"
+    },
+    {
+      "path": "docs/validation/git-native-execution-incomplete-2026-10-02-v1/result.json",
+      "bytes": 1228,
+      "sha256": "1441a4b82f846171a40b0afac4e6bbf2ee22652b7f689fcc7a8ce53a868f0442"
+    },
+    {
+      "path": "docs/validation/git-native-layout-refusal-2026-10-02-v1/result.json",
+      "bytes": 768,
+      "sha256": "32da0d73915b45c8b0eba60cb9caa772d9b8cde4759a7941d243d5e956ce9703"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/README.md",
+      "bytes": 3141,
+      "sha256": "3f4d48aa8270d02bcbdccc0a4f45e15aa9a34f4e8dca0471424f37c302dcf832"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/SUMMARY.json",
+      "bytes": 726,
+      "sha256": "053e79d2196b776ed4ff769710e7a29c19a0324e607d65ccec9e55ffb36206a7"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/artifact.zip",
+      "bytes": 1376,
+      "sha256": "b034d2089d2a118e184a7e829c2ee18b459e07d785e53ea728d69264c93ffd6d"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/artifacts.json",
+      "bytes": 770,
+      "sha256": "4c5740c9f1864e241987d259b60f32e1c57b2ba9c5982c7e4243d4831ed2c801"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/download-verification.json",
+      "bytes": 334,
+      "sha256": "c1d253bf9b8e80b6e9d410a8c8269ba1b1975f7a2f4d31d83bbbc84e26b0e849"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/jobs.json",
+      "bytes": 2792,
+      "sha256": "2e07ce4de8fe2d9c6c045795edd4dcfbba15dfeda302f53dc32efbef3bd8c08a"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/result-sha256.json",
+      "bytes": 87,
+      "sha256": "d367fc30c9e7cbf5c0cbdcc8c4d1beefa1b5b99c01a726d4797fb763d8957a16"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/result.json",
+      "bytes": 2901,
+      "sha256": "118dd5dc8592ea48bf23fb52244261832fa74018d4643d891b05cf1d37ccd263"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/review-packet.json",
+      "bytes": 628,
+      "sha256": "efc8155f3d0599a4f289b346599b135102a6f390188504fc8f90ca35e34a693c"
+    },
+    {
+      "path": "docs/validation/git-native-v3-result-2026-10-03-v1/run.json",
+      "bytes": 12254,
+      "sha256": "b7216d45dec0d5a149293053f2fcb160cf8a3e2b6ac1ecb06181d76183760c8b"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.json",
+      "bytes": 7667,
+      "sha256": "3fdfc2ac2f69e63517d6bdfd747d6242a7c4f734553c289908b48c3c0fffb39f"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.py",
+      "bytes": 3937,
+      "sha256": "6180abd735ee7bdeac177218344630f6a7859269404f87612a4b3d70dca394ea"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/observe.py",
+      "bytes": 9934,
+      "sha256": "06b7595589b766045bbddbc6ffc7f256da0cc2a2eb47f177ba1e6af17410467f"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/preflight.py",
+      "bytes": 7891,
+      "sha256": "b4f6be5ae97adde942fd498347a811a27df69392287a505a2659b3ee294a84e2"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/projection.py",
+      "bytes": 8165,
+      "sha256": "6af3c760b7c9777c7f0741d213a6d0283deb93823f8ca9faddee71e4d91fc840"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/run_cases.py",
+      "bytes": 2980,
+      "sha256": "d2de632ab0264db95e621fbf3d4b077f71e367e1b824d58c9317ea14126cd088"
+    }
+  ]
+}

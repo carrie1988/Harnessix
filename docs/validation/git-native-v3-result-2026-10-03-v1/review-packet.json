@@ -1,0 +1,20 @@
+{
+  "schema": "harnessix.native-v3-actual-review/v1",
+  "decision": "NO_GO_NATIVE_BRANCH_WITNESS_INCOMPLETE",
+  "new_facts": [
+    "原A/B有限病例恢复",
+    "两个Git128/Worker2失败已可见",
+    "日志已读取且三个语法计数0"
+  ],
+  "not_proven": [
+    "硬件执行返回分支",
+    "回调未发生或未创建Git进程",
+    "Git128具体根因",
+    "消费者Windows闭环",
+    "完整Git产品/Backup v2",
+    "R3/Beta/商用验收"
+  ],
+  "next_action": "求证原脚本与材料失败接缝；不重跑旧Run或重复相同候选",
+  "original_contract_changed": false,
+  "new_model_requests": 0
+}

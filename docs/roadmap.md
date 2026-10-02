@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 155
-code_revision: ed8005f00755b9d37a658f9d0c7163f6250586f1
+version: 156
+code_revision: 6e440ffad07ee31ed6153838f858240f5754c876
 owners:
   - core
 modules:
@@ -1623,3 +1623,17 @@ Artifact、API ZIP摘要和结果摘要。CDB/Python存在标志均为null，不
 上述证据不补写历史Run36983172137，不确定原Git128根因；后继原生验证须使用新的固定候选。
 完整Git默认Commit／Checkpoint、Backup v2、R3真实质量、消费者Windows、独立Beta及
 同候选R1～R6商用退出条件继续开放。
+
+### R1/R4：v3固定原生结果恢复两案例失败投影
+
+固定6e440ff的[Run37077033494](https://github.com/carrie1988/Harnessix/actions/runs/37077033494)
+仅执行attempt1并终态FAIL；原十六件输入与selected完整PE/PDB通过，调试执行已启动。
+原A/B有限投影均为call failed、worker返回2、Git返回128、proof ABSENT及操作未正常返回；
+原v5 raw字段验证不代表独立MAC验真，SDK验收仍false，完整branch见证仍缺失。
+新增观察明确FINITE_AB且source invalid=false，日志已测得三个语法计数均0。
+这些计数不证明没有创建Git进程、没有附加或回调未发生；Git128根因保持UNKNOWN。
+
+[实际结果资料](validation/git-native-v3-result-2026-10-03-v1/README.md)保留精确两文件Artifact、
+API ZIP及结果摘要，Windows CRLF回执不转换。旧三个FAIL不重跑、不覆盖，未新增模型请求。
+后继先求证原调试脚本/分支回调与Git材料失败接缝，不重复同一已失败候选；
+完整Git产品/Backup v2、R3真实质量、消费者Windows、Beta及商用R1～R6仍开放。

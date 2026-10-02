@@ -1,0 +1,10 @@
+{
+  "run_id": 37077033494,
+  "artifact_id": 11256673736,
+  "zip_bytes": 1376,
+  "zip_sha256": "b034d2089d2a118e184a7e829c2ee18b459e07d785e53ea728d69264c93ffd6d",
+  "api_digest_matched": true,
+  "result_sha256": "118dd5dc8592ea48bf23fb52244261832fa74018d4643d891b05cf1d37ccd263",
+  "receipt_matched": true,
+  "exact_two_files": true
+}
