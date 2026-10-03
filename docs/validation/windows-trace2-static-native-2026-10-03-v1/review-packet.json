@@ -1,0 +1,18 @@
+{
+  "scope": "fixed native attempt1 and two finite artifact members only",
+  "sha256_record_verified": true,
+  "source_revision_and_attempt_verified": true,
+  "source_input_count": 18,
+  "classification": "FAIL_RETAINED_NO_NEW_STATIC_ENUM_OBSERVED",
+  "raw_private_logs_read_or_published": false,
+  "provider_called": false,
+  "unverified": [
+    "actual Windows Git cause",
+    "original SDK success",
+    "consumer Windows 11",
+    "full Git effects and Backup v2",
+    "R3 coding quality",
+    "independent Beta",
+    "commercial R1-R6"
+  ]
+}

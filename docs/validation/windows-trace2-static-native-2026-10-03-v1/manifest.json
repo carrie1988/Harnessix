@@ -1,0 +1,29 @@
+{
+  "members": [
+    {
+      "path": "docs/validation/windows-trace2-static-native-2026-10-03-v1/README.md",
+      "bytes": 2854,
+      "sha256": "81eda6ab302d5a61cbc863a0705ba370623e57170b46c9324a680dd8c6d0767e"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-native-2026-10-03-v1/facts.json",
+      "bytes": 1416,
+      "sha256": "614bf49c4f3dab3ff180f11cd71326026b00e117b31915b16ce520de0e1cca4b"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-native-2026-10-03-v1/result-sha256.json",
+      "bytes": 90,
+      "sha256": "095875db76a02e0e0cd557260b2f78f62056f5091c08c988548b4c48d22358a3"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-native-2026-10-03-v1/result.json",
+      "bytes": 5547,
+      "sha256": "2ee304b2534c3725e3e65bcdfb42548a0068e187b45294f7b11d4a4f0e5a1be8"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-native-2026-10-03-v1/review-packet.json",
+      "bytes": 546,
+      "sha256": "d5c66a756bd034686cb39272af61ba668de20b2bb7e4a0840322d78b2f563afe"
+    }
+  ]
+}

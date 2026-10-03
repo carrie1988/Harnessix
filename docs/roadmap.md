@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 164
-code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
+version: 165
+code_revision: 9b9e52fdaab74567b5ad7cd5614801f1936689bc
 owners:
   - core
 modules:
@@ -1728,3 +1728,11 @@ Git128/Worker2、proof ABSENT、SDKfalse、RootUNKNOWN及缺branch见证保持�
 新候选八件文件实际944项通过、811件完整输入零漂移；独立审查的原selector覆盖缺口以1项RED及9项定向闭环，原成功标准不变。
 详见[限定验证](validation/windows-trace2-static-formats-2026-10-03-v1/README.md)，离线与原生分别登记，不累加历史成绩。
 完整Git/Backup v2、真实R3、Windows消费者、独立Beta及商用R1～R6继续开放，未新增模型请求。
+
+### R1/R4：精确静态目录候选的原生失败保留
+
+固定9b9e52f的Run37103867851、attempt1终态failure；18源码/PE/PDB合法，两个SDK仍Git128/Worker2、
+proof ABSENT、RootUNKNOWN，未观测三个新增静态ID。Trace2仍UNCLASSIFIED_FORMAT，CDB arm/branch均0。
+结果与原件摘要见[固定现场验证](validation/windows-trace2-static-native-2026-10-03-v1/README.md)。
+该结果排除以本次静态目录扩展宣称现场根因已修复；不自动重跑、扩张诊断或降低原成功条件。
+完整Git/Backup v2、R3、Windows消费者、独立Beta及商用R1～R6继续开放，未新增模型或费用。

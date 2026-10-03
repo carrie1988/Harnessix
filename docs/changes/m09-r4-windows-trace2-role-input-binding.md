@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
+version: 5
+code_revision: 9b9e52fdaab74567b5ad7cd5614801f1936689bc
 owners: [core]
 modules: [delivery, product_config, processes, governance]
 related_adrs:
@@ -348,3 +348,12 @@ validator检查，新增真实退化反例先1失败；仅恢复原测试位置�
 实际原生运行必须固定包含本增量的候选revision，保持原两个Case、期限和成功标准。
 只有新原生结果才可判断是否观察到这些ID；未观测字段继续UNKNOWN。底层Windows故障、
 完整Git产品交付、R3真实质量、独立Beta及R1～R6商用门禁均保持开放。
+
+### 12.6 固定候选实际原生结果
+
+9b9e52f的Run37103867851、attempt1终态failure，没有超时、重跑或新模型请求。
+18件声明输入与官方PE/PDB均合法；两个原SDK Case仍Git128/Worker2、proof ABSENT、SDKfalse、RootUNKNOWN。
+新三个静态ID均未观测，已知集合仍仅HASH_OBJECT_ADD_AGGREGATE；profile匹配但完整性保持UNKNOWN。
+入口/分派/仓库阶段见证存在，CDB arm/branch均0。目录覆盖不足不等于本实际故障的唯一或已证实原因。
+原件和摘要见[固定原生验证](../validation/windows-trace2-static-native-2026-10-03-v1/README.md)。
+后继从实际Windows受控对象操作和原进程见证定位，不猜测errno、不扩大UNKNOWN为成功。
