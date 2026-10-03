@@ -31,6 +31,18 @@
       "failures": 0,
       "errors": 0,
       "skipped": 0
+    },
+    "context_red": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "context_fixed": {
+      "tests": 514,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
     }
   },
   "native_status": "NOT_EXECUTED",
@@ -55,5 +67,12 @@
     "p2": 1,
     "p2_status": "FIXED_AND_LOCAL_VERIFIED",
     "native_proven": false
+  },
+  "dispatch_refused": {
+    "revision": "9c81f9c063cabb4910a7e07a57b7307a4329f555",
+    "http_status": 422,
+    "new_run_created": false,
+    "reason": "job_env_runner_context_unavailable",
+    "status": "STEP_ENV_FIXED"
   }
 }

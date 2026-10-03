@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+import yaml
 
 from harnessix.agent.errors import KernelError
 from tests.product_config import test_git_material_snapshot_differential as differential
@@ -168,3 +169,23 @@ def test_manual_workflow_has_four_independent_steps_and_keeps_original_sdk_failu
         "--showlocals",
     ):
         assert forbidden not in workflow
+
+
+def test_runner_symbol_path_is_only_resolved_in_step_environment():
+    workflow = yaml.safe_load(
+        (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text()
+    )
+    job = workflow["jobs"]["minimum-commit-probe"]
+    key = "HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS"
+    assert key not in job["env"], "job env阶段还不能使用runner上下文"
+    counterfactuals = [
+        step
+        for step in job["steps"]
+        if "test_git_material_snapshot_differential.py::" in step.get("run", "")
+    ]
+    assert len(counterfactuals) == 4
+    for step in counterfactuals:
+        assert step["env"][key] == (
+            "${{ runner.temp }}/git-minimum-identity-"
+            "${{ github.run_id }}-${{ github.run_attempt }}/symbols"
+        )

@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 174
+version: 175
 code_revision: c48b22fec58aa9178bd93e519eff8e7c9fc5309f
 owners:
   - core
@@ -1832,3 +1832,5 @@ Windows失败、完整Git／Backup v2、R3、费用未决、Beta及商用R1～R6
 不以本机通过关闭原Git128、完整Git／Backup v2、真实R3、消费者Windows、Beta或商用R1～R6。
 独立复核的末端期限P2已补两项真实到期负例，保留原2失败，整改后关联513项通过。
 该测试整改不修改生产预算或原请求认证，也不替代新候选Windows现场结果。
+首dispatch被GitHub上下文语法检查拒绝且未创建Run；符号根已改为步骤env，
+新增对应YAML结构负例，旧拒绝保留，后继固定候选另行取得实际运行。

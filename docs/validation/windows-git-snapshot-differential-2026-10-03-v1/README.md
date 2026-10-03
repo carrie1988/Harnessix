@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
-code_revision: 8568a87d58cb594f0a835d54f83be80383c7e11a
+version: 3
+code_revision: 9c81f9c063cabb4910a7e07a57b7307a4329f555
 owners: [core]
 modules: [product_config, delivery, processes, governance]
 related_adrs:
@@ -47,6 +47,8 @@ supersedes: []
 | 原两个SDK选择器 | 2通过、0失败／错误／跳过 | 本机原业务批准、Owner及独立回读，不外推Windows |
 | 末端期限负例原测试 | 2失败 | 效果／发行身份复核跨过真实短预算后原测试仍成功，独立P2复现 |
 | 末端期限整改后关联回归 | 513通过、0失败／错误／跳过 | 两个超期负例现在明确拒绝，四格及全部原治理继续通过 |
+| 工作流上下文负例 | 1失败 | job env错误引用runner.temp，GitHub HTTP422拒绝且没有创建Run |
+| 步骤env整改后关联回归 | 514通过、0失败／错误／跳过 | 结构负例及全部原真实／治理回归通过 |
 
 本机使用Git2.53.0和Python3.12，独立fresh basetemp；上述范围不是全仓、三平台或商用验收。
 511项已包含四格和新增治理，不能重复相加。四格均使用相同算法生成的最低合法SHA256 Commit，
@@ -54,6 +56,8 @@ supersedes: []
 限定独立审查未发现P0／P1，发现的一个P2末端到期缺口已在测试域修复。
 整改后在效果检查前后及最终发行身份复核后复用原预算；新增两个真实Git负例等待至期限之后，
 保留原RED，不mock快照、Git或正文。513项包含原511项，不重复累加。
+首次dispatch的语法拒绝不是原生Git失败。符号根已按官方上下文合同移入四个步骤env，
+job env不再引用runner；514项包含原513项，保留原HTTP422和1失败负例。
 
 ## 4. 固定输入、安全与观察
 

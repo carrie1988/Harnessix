@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 7
-code_revision: 8568a87d58cb594f0a835d54f83be80383c7e11a
+version: 8
+code_revision: 9c81f9c063cabb4910a7e07a57b7307a4329f555
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -534,6 +534,10 @@ stage删除始终走原物理身份检查。回读占用同一剩余操作预算
 本地测试证据和固定输入另按0700／0600验证目录归档；不新建投影Schema或收集服务。
 后继Run仅新候选attempt1，不重跑历史失败。新增步骤即使前一对照失败仍在原预检成功且未取消时执行；
 原SDK也同条件执行。没有continue-on-error，任一对照或原SDK失败仍使整体失败。
+符号根必须放在每个测试步骤的env中，不能在job env使用runner.temp。
+[GitHub上下文可用性](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability)
+只在步骤阶段提供runner。首次dispatch的HTTP422语法拒绝原件保留，未创建新Run，不作为原生Git失败；
+步骤级配置整改和对应YAML结构负例通过后，后继必须使用新的候选SHA。
 
 ### 13.6 解释规则、完备测试与退出条件
 

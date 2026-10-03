@@ -11,7 +11,6 @@ jobs:
     runs-on: windows-latest
     env:
       HARNESSIX_GIT_NATIVE_DIFFERENTIAL: '1'
-      HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
     steps:
       - name: 拒绝当前Run重跑
         shell: pwsh
@@ -43,6 +42,8 @@ jobs:
         if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
         shell: pwsh
         timeout-minutes: 1
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
         run: |
           $base = Join-Path $env:RUNNER_TEMP ('minimum-hash-direct-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
           if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
@@ -54,6 +55,8 @@ jobs:
         if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
         shell: pwsh
         timeout-minutes: 1
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
         run: |
           $base = Join-Path $env:RUNNER_TEMP ('minimum-hash-held-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
           if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
@@ -65,6 +68,8 @@ jobs:
         if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
         shell: pwsh
         timeout-minutes: 1
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
         run: |
           $base = Join-Path $env:RUNNER_TEMP ('minimum-write-direct-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
           if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
@@ -76,6 +81,8 @@ jobs:
         if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
         shell: pwsh
         timeout-minutes: 1
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
         run: |
           $base = Join-Path $env:RUNNER_TEMP ('minimum-write-held-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
           if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }

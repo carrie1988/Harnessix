@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 59
+version: 60
 code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
 owners:
   - core
@@ -2394,6 +2394,7 @@ wrapper只改变Trace2解释器的预期首项，原Worker argv、批准、Owner
 效果检查前后及最终发行身份复核后都检查同一剩余预算，防止尾部超时后仍报告成功。
 
 Windows现场先复用既有observe仅预检及固定官方PE／PDB；每格前后复核18输入和选中映像。
+符号根在步骤env解析runner.temp，job env只放显式诊断标志；GitHub语法拒绝不记为实际原生运行。
 只使用GitHub原步骤结论元数据，不增设采集器或读取业务日志。原两SDK及13接点继续独立执行，
 其五分钟和全部业务门不变；四格直接helper成功也不能替代原Supervisor链或默认Git交付。
 完整需求、架构、流程／时序／数据流、源码、字段、异常及测试见
