@@ -1,0 +1,39 @@
+{
+  "schema": "harnessix.windows-trace2-role-native-result/v1",
+  "run": {
+    "id": 37099316276,
+    "head_sha": "9a0d84aaba6243539abd63e2de69b482350486a2",
+    "status": "completed",
+    "conclusion": "failure",
+    "run_attempt": 1,
+    "html_url": "https://github.com/carrie1988/Harnessix/actions/runs/37099316276",
+    "created_at": "2026-10-03T05:16:43Z",
+    "updated_at": "2026-10-03T05:17:21Z"
+  },
+  "job_id": 111135557244,
+  "artifact_id": 11265218027,
+  "result_sha256": "0a37c29cadb688c14c373102c1930f8a326b3e7d985cc02cb8bfa9b82aceebdf",
+  "metadata_sha256": "902dbdf1f7e837fff3102c1006984b0e4dd177e364e88a2162f21070a179026c",
+  "source_input_count": 16,
+  "pairs_matched": true,
+  "sdk_acceptance": false,
+  "proof": "ABSENT",
+  "git_return": 128,
+  "worker_return": 2,
+  "case_count": 2,
+  "new_finite_stage_witnesses": [
+    "ENTRY_START_MATCHED",
+    "DISPATCH_HASH_OBJECT",
+    "REPO_EVENT_SEEN"
+  ],
+  "reason": "UNCLASSIFIED_FORMAT",
+  "known_error_format_ids": [
+    "HASH_OBJECT_ADD_AGGREGATE"
+  ],
+  "arm_marker_count": 0,
+  "branch_marker_count": 0,
+  "assurance": "UNAUTHENTICATED_DIAGNOSTIC_ONLY",
+  "release_gates_closed": [],
+  "new_model_requests": 0,
+  "dispatch_count": 1
+}

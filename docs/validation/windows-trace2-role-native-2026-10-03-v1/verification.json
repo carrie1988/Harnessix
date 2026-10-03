@@ -1,0 +1,26 @@
+{
+  "state": "NATIVE_FAILURE_RETAINED_WITH_NEW_FINITE_STAGE_EVIDENCE",
+  "run_identity_verified": true,
+  "attempt": 1,
+  "artifact_only_two_expected_files": true,
+  "result_digest_verified": true,
+  "cases_exact_A_B": true,
+  "no_timeout_restart": true,
+  "no_raw_logs_downloaded": true,
+  "no_fee_or_hold_changes": true,
+  "prior_sealed_package_unchanged": true,
+  "next_action": "source-bound format classification and object insertion analysis; never relax UNKNOWN or SDK gate",
+  "not_proven": [
+    "unique Git128 cause",
+    "errno or raw dynamic message",
+    "input proof",
+    "Root identity or effect settlement",
+    "native branch witness",
+    "original SDK success",
+    "consumer Windows",
+    "R3 quality",
+    "full Git delivery",
+    "Beta",
+    "commercial release"
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 5265fdf2d1755b15491f41b770b2d718bab98d2c
+version: 2
+code_revision: 9a0d84aaba6243539abd63e2de69b482350486a2
 owners: [core]
 modules: [delivery, product_config, processes, governance]
 related_adrs:
@@ -204,3 +204,15 @@ metadata差分采用类型敏感的JSON Pointer集合，恰为17个允许叶值�
 有限独立审查及最终身份详见[验证资料](../validation/windows-trace2-input-binding-2026-10-03-v1/README.md)。
 不累计旧611/767结果，不以离线synthetic PE/PDB或memory模型冒充官方现场验真。
 Windows现场耗时、实际Git效果、完整SDK成功和消费者平台验收继续开放。
+
+
+## 11. 固定原生运行结果与后继边界
+
+9a0d84a的Run37099316276、attempt1实际终态failure，原两SDK Case均Git128/Worker2，
+input proof仍ABSENT、Root仍UNKNOWN，原分支gate及SDK均未通过。
+有限观察首次两Case均有ENTRY_START_MATCHED、DISPATCH_HASH_OBJECT、REPO_EVENT_SEEN，
+profile及128返回一致，但仍有UNCLASSIFIED_FORMAT；已知HASH_OBJECT_ADD_AGGREGATE不是唯一根因。
+CDB arm/branch标记均0，不以Trace2阶段信号代替原生独立见证。
+原件、摘要、实际Run身份和失败语义见
+[固定原生结果](../validation/windows-trace2-role-native-2026-10-03-v1/README.md)。
+该阶段变化不改变UNKNOWN或商用门禁，后继从固定官方源码求证格式及对象插入链。

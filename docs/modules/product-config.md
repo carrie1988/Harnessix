@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 53
-code_revision: 5265fdf2d1755b15491f41b770b2d718bab98d2c
+version: 54
+code_revision: 9a0d84aaba6243539abd63e2de69b482350486a2
 owners:
   - core
 modules:
@@ -2361,3 +2361,8 @@ wrapper只改变Trace2解释器的预期首项，原Worker argv、批准、Owner
 接口、字段、流程、时序、失败、源码映射及限定767项离线结果见
 [Windows Trace2角色与发行输入详设](../changes/m09-r4-windows-trace2-role-input-binding.md)。
 离线接线不证明Windows Git128已修复或消费者安装通过。
+
+
+固定9a0d84a的[原生结果](../validation/windows-trace2-role-native-2026-10-03-v1/README.md)
+已取得两Case的start、hash-object分派和仓库事件有限信号；仍Git128/Worker2、proof缺失及SDK未通过，
+不能将内部诊断接线标记为Windows材料写入完成。

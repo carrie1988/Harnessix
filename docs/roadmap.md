@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 162
-code_revision: 5265fdf2d1755b15491f41b770b2d718bab98d2c
+version: 163
+code_revision: 9a0d84aaba6243539abd63e2de69b482350486a2
 owners:
   - core
 modules:
@@ -1704,3 +1704,14 @@ Windows原生故障、R3真实质量、独立Beta和同候选R1～R6继续开放
 [限定验证资料](validation/windows-trace2-input-binding-2026-10-03-v1/README.md)。
 旧冻结失败及Run37089114490仍保留；新原生固定结果、完整Git产品/Backup v2、R3真实质量、
 消费者Windows、独立Beta和同候选R1～R6仍开放。
+
+
+### R1/R4：角色接线后的真实对象插入失败观察
+
+固定9a0d84a的原生Run37099316276、attempt1已终态failure，无超时或重跑。
+16源码/固定PE/PDB合法，两Case首次均有ENTRY_START_MATCHED、DISPATCH_HASH_OBJECT、REPO_EVENT_SEEN
+及MATCHED_128；仍UNCLASSIFIED_FORMAT/UNKNOWN，已知HASH_OBJECT_ADD_AGGREGATE。
+Git128/Worker2、proof ABSENT、SDKfalse、RootUNKNOWN及缺branch见证保持失败，
+详见[固定结果](validation/windows-trace2-role-native-2026-10-03-v1/README.md)。
+后继从固定官方错误格式及对象插入链求证，不忽略UNKNOWN或重启同一Run；
+完整Git/Backup v2、真实R3、Windows消费者、独立Beta和商用R1～R6仍开放，费用预留不变。
