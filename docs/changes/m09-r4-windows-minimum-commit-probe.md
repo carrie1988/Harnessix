@@ -1,14 +1,16 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: 34ce6c015208062646a31356bd231952080bc10d
+version: 6
+code_revision: c48b22fec58aa9178bd93e519eff8e7c9fc5309f
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_material_snapshot_differential.py
+  - tests/governance/test_git_material_snapshot_differential.py
   - tests/governance/test_git_minimum_commit_probe.py
   - tests/governance/test_git_stderr_branches.py
   - tests/product_config/test_git_material_input.py
@@ -377,3 +379,170 @@ Windows根因、完整Git产品交付、真实R3、消费者平台、Beta及商�
 实际新增95项先取得78FAIL／17PASS；与原95项合并190项通过，原两个本机业务场景通过。
 完整输入身份、静态、治理、文档及新原生结果分别登记于
 [固定分支统一验证包](../validation/windows-git-stderr-branches-2026-10-01-v1/README.md)，不累加为全仓或Windows验收。
+
+## 13. 真实快照输入与对象写入的单变量对照
+
+### 13.1 需求背景、目标和非目标
+
+固定0b1e16a的Windows Run37118277852中，原两SDK场景均已启动Git，在git_validate阶段观察到
+Git128；原stdout两个谓词因短路而未求值。现有有限观察不足以区分只读普通文件输入与对象库写入。
+父进程能读取快照不证明Git接收端能读取；目录持有不等于递归拒绝新增对象。不能据此放宽句柄访问权、
+共享模式、命令、Owner、材料容量或成功判据。c48b22f的FD归属修复发生在Popen前，也不能解释此历史故障。
+
+本增量用同一正式快照实现和最低合法SHA256 Commit执行四格真实对照。仅改变两个测试变量：
+是否使用原_namespace持有对象库，以及是否保留原hash-object的-w参数。单边比较只改变一个变量。
+不新增采集器、错误分类器、平台或生产端口；复用原_git的有界stdout和等待／清理实现。
+SDK两场景仍独立执行并保留原失败，四格结果不能产生业务Proof、完成批准或开启默认Git产品。
+
+### 13.2 总体架构与源码位置
+
+```mermaid
+flowchart TB
+  W[既有手动Windows工作流 attempt一] --> I[既有observe仅预检 官方PE与PDB及18输入]
+  I --> M[四个独立pytest步骤 同一固定候选]
+  M --> F[原make_process及真实SHA256仓库]
+  F --> S[原stage_material和RO snapshot]
+  S --> N{是否持有原namespace}
+  N -->|是| H[原目录及控制文件句柄]
+  N -->|否| D[不增加对象库持有 测试对照]
+  H --> G[原_git 有界OID stdout stderr到空设备]
+  D --> G
+  G --> O[原期待OID及真实对象存在性或回读断言]
+  I --> A[原两个SDK及原显式侧车 原五分钟]
+  M --> API[GitHub步骤结论元数据]
+  A --> API
+```
+
+| 职责 | 实际接口／源码 | 设计约束 |
+| --- | --- | --- |
+| 真实仓库、正文和准备 | [原材料测试](../../tests/product_config/test_git_material_input.py)：make_process、_repository、_body、_material、_prepare | 每格fresh仓库；沿用相同最低合法Commit算法，不手工伪造绑定 |
+| 正式快照与持有 | [git_material_native.py](../../src/harnessix/delivery/git_material_native.py)：_Resources、_namespace、_snapshot | 两轴都使用完整RO regular快照；不重开路径、PIPE或提升权限 |
+| 固定命令及实际启动 | [git_material_worker.py](../../src/harnessix/delivery/git_material_worker.py)：_command、_git | 原命令先验；仅测试无写臂删除唯一-w；原66字节stdout上限和完整OID断言保持 |
+| 真实对照 | [test_git_material_snapshot_differential.py](../../tests/product_config/test_git_material_snapshot_differential.py)：test_real_snapshot_hash_and_write | stderr在调用范围内重定向空设备，原_git读取sys.stderr.buffer；不读取错误正文 |
+| 官方身份 | [preflight.py](../../scripts/windows_git_native_branch_observation/preflight.py)：selected_paths；[identity.py](../../scripts/windows_git_native_branch_observation/identity.py)：check_pair | 每格复核实际选中PE、两个PDB和18输入；不是只检查Git版本字符串 |
+| 原生承载 | [既有workflow](../../.github/workflows/windows-git-minimum-commit-probe.yml) | 先运行既有observe默认仅预检，不启动CDB；不下载替代Git或改变依赖 |
+| 防退化 | [治理测试](../../tests/governance/test_git_material_snapshot_differential.py) | 四步、条件、期限、stderr关闭、原SDK选择器及单变量命令差分 |
+
+此测试直接调用既有Git helper，不进入Supervisor批准／MAC回执链；这是所有对照共同的测试边界，
+不是产品执行方式。直接helper成功只能证明此控制环境中输入／写入可行，不能外推受信Owner链或历史失败唯一原因。
+固定同版本官方[launcher源码825～867行](https://github.com/git-for-windows/MINGW-packages/blob/a2e0e11dce73735202e71f2ae60e1bd4082589ae/mingw-w64-git/git-wrapper.c#L825-L867)
+按allocate_console选择HANDLE继承和STARTUPINFO分支，没有显式读取或seek stdin；
+固定[core初始化4301～4468行](https://github.com/git-for-windows/git/blob/32c4f7689275d233577576630e1ac5b7eb354eb0/compat/mingw.c#L4301-L4468)
+包含重定向环境分支和未验证返回值的binary切换。源码未证明选中PE的CRT入口行为，不能把“未见seek”当作现场位置未变。
+
+### 13.3 对照数据、接口和关键字段
+
+| 固定case ID | 保留-w | 持有_namespace | 通过所需事实 |
+| --- | --- | --- | --- |
+| hash-direct | 否 | 否 | 完整期待OID，目标及既有对象字节未改变 |
+| hash-held | 否 | 是 | 相同无写断言，原持有持续至Git退出 |
+| write-direct | 是 | 否 | 完整期待OID，新增目标普通对象，独立cat-file回读正文一致 |
+| write-held | 是 | 是 | 相同写入回读断言，原持有持续至Git退出 |
+
+四格只用原SHA256 Commit正文；正文包含相同baseline tree、固定作者／提交者和空消息。
+每格不同私有根、nonce、时间期限、baseline Commit时间及句柄身份是隔离所需字段，不宣称四份manifest逐字相同。
+对应材料OID、命令尾部和配置语义相同；目标事先必须不存在。对象库初始清单包含每个普通文件的相对位置与SHA256，
+仅用于断言无写臂没有改变既有内容，不作为业务清单、来源认证或新增持久化格式。
+
+_diagnostic_request(request, write)只为本地真实Git helper派生临时测试参数：写臂沿用完整argv，
+无写臂删除唯一-w；expiry取原45秒操作绝对期限和当前时刻加20秒的较早者。
+不修改原prepared、原批准摘要或发送任何伪造worker握手。正式命令先由原_command校验，派生参数不经过或替代批准门。
+测试域_GitInvocation只含git_argv、repo_path、git_environment、expiry_monotonic_ns和expected_oid，
+对应原_git实际读取的五项参数；它不是GitMaterialInput，不持有purpose_digest、nonce、PID、MAC或Proof。
+原正式GitMaterialInput构造器会拒绝未重新认证的命令／期限变更；此拒绝必须保留，不能关闭校验或伪造新的批准摘要。
+首次真实本机四格执行暴露了以dataclasses.replace派生正式请求会被此守卫拒绝，原失败保留；
+后继只修正测试调用描述，不修改生产构造器或业务合同。
+
+Windows只有显式HARNESSIX_GIT_NATIVE_DIFFERENTIAL=1时运行该诊断；缺失时默认测试矩阵跳过，不计算为通过。
+显式运行后，符号根缺失、实际PE／PDB不符、18输入漂移或Git不符均失败，不能降级为跳过或换用另一个Git。
+符号仅复用同Run既有仅预检的私有目录；候选checkout SHA另外绑定新增测试，不把18输入宣称为整个候选身份。
+非Windows使用实际已安装且支持SHA256的Git，结果独立记录，不替代Windows现场。
+
+### 13.4 核心流程、时序、数据流与伪代码
+
+```mermaid
+sequenceDiagram
+  participant C as 固定case独立pytest步骤
+  participant P as 既有官方身份预检
+  participant F as 原fixture与材料端口
+  participant R as 原Resources
+  participant G as 实际选中Git
+  C->>P: 复核18输入及实际PE与PDB
+  C->>F: fresh SHA256仓库及原最低Commit
+  C->>F: 原45秒预算prepare及stage_material
+  C->>R: 原_command 可选原_namespace 原_snapshot
+  R-->>C: offset零且只读普通文件
+  C->>G: 原_git 同一stdin 去掉或保留唯一-w
+  G-->>C: 有界完整OID或原失败
+  C->>R: 退出资源栈 关闭流及FD和持有
+  C->>F: 原stage身份核验删除 无写检查或独立回读
+  C->>P: 再复核实际选中发行身份
+  Note over C,G: stderr空设备 不读取或发布业务输出
+```
+
+```mermaid
+flowchart TB
+  B[固定合法Commit bytes] --> V[原材料OID及sha256验证]
+  V --> S[原RO regular snapshot]
+  S --> G[实际Git继承stdin]
+  G --> Q[最多66字节OID 原完全匹配]
+  G --> E[stderr空设备 不采集]
+  Q --> T[pytest原退出结果]
+  O[对象库前后及回读] --> T
+  T --> M[现有Run Job step状态元数据]
+  M --> R[固定候选验证报告 不改旧FAIL]
+```
+
+```text
+for explicit case selected by pytest:
+    verify current source and selected official executable on Windows
+    construct original fresh repository, original minimum material and 45s prepared request
+    require target OID absent; freeze original object-file bytes digests
+    staged = original stage_material
+    try:
+        with original Resources:
+            original command validation
+            if held: original namespace holding
+            snapshot = original snapshot
+            require regular, correct size, offset zero, actual write rejected
+            derived = original argv or delete only -w; deadline = min(original, now + 20s)
+            with stderr redirected to open null device:
+                original _git(derived, snapshot, fresh finite observation)
+        require no named snapshot left
+    finally:
+        original staged.remove by physical identity
+    if write: require actual target and independently read exact original body
+    else: require target absent and original object-file digests unchanged
+    verify selected official executable and original inputs again
+```
+
+### 13.5 失败、取消、持久化、安全和部署
+
+原_git非零、输出超限／不完整、OID不符和等待超时都保留失败；不捕获转换为成功，不读stderr定位。
+等待期限不超过20秒，整个准备后操作不超过原45秒；每个新增CI步骤限定一分钟，原SDK步骤仍五分钟。
+超时使用原_git kill／wait与fixture清理，不另建进程树平台。直接helper测试没有Supervisor的完整子树回执，
+超时情况下不能据此声明产品进程树已安全回收；CI取消与孤儿风险仍由原Runner生命周期约束。
+stage删除始终走原物理身份检查。回读占用同一剩余操作预算，不重新获得20／45秒。
+
+无业务数据库迁移、Wheel／Schema变化、Secret读取、模型调用或预算修改。仅测试隔离仓库写臂新增一个可丢弃对象。
+不上传原stdout、stderr、CDB日志、pytest日志或JUnit。只使用现有GitHub API步骤结论做四格判别，
+本地测试证据和固定输入另按0700／0600验证目录归档；不新建投影Schema或收集服务。
+后继Run仅新候选attempt1，不重跑历史失败。新增步骤即使前一对照失败仍在原预检成功且未取消时执行；
+原SDK也同条件执行。没有continue-on-error，任一对照或原SDK失败仍使整体失败。
+
+### 13.6 解释规则、完备测试与退出条件
+
+| 实际组合 | 允许的下一步判断 | 不允许的推论 |
+| --- | --- | --- |
+| 无写臂也失败 | 此控制环境下尚不能完成输入／对象解析，优先检查接收端链 | 不凭退出码认定唯一stdin或CRT原因 |
+| 两无写通过，write-direct通过而write-held失败 | 支持原namespace持有与此写入不兼容的控制证据 | 不直接放宽生产共享标志或认定全部历史失败同因 |
+| 两无写通过，两个写臂均失败 | 此控制环境写入路径需要进一步核验 | 不说明只是权限，更不能省略回读或容量 |
+| 四格通过而原SDK失败 | 直接helper可行，继续核验原Owner／worker运行上下文 | 不把直接调用替代正式产品或关闭Windows验收 |
+| 四格及原SDK均通过 | 仅关闭本固定候选、此最低材料范围的实测缺口 | 不外推8MiB全部类型、Windows11、完整Git／Backup v2或1.0 |
+| 预检失败／步骤缺失／skip | 观察不完整，保持旧失败 | 不以缺失当False或四格通过 |
+
+测试覆盖四格真实Git、只读普通文件、offset零、无写字节不变、写入完整回读；治理覆盖唯一-w差分、
+原期限取min、显式Windows准入、原PE／PDB及输入复核、四步骤条件和原两SDK／13接点不变。
+新增测试对照必须先通过非Windows实际运行及离线治理，再执行一次固定Windows候选。
+固定源码、RED／GREEN、静态、文档图示、原生步骤元数据和各观察缺口分别保存；未取得现场结果不预先写PASS。
+R1～R6、真实R3及费用未决、完整Git交付和Backup v2、消费者Windows11及独立Beta仍按原门槛验收。

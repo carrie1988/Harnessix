@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 172
-code_revision: cf35055668f9529c9a677e5226a98bbd40c4cefd
+version: 173
+code_revision: c48b22fec58aa9178bd93e519eff8e7c9fc5309f
 owners:
   - core
 modules:
@@ -1821,3 +1821,12 @@ PE/PDB、selector、13hook、期限及原业务门不改。
 [正式验证](validation/git-snapshot-stream-ownership-2026-10-03-v1/README.md)保留分阶段证据。
 该异常在Popen前发生，不是已有Popen=true／Git128的根因；
 Windows失败、完整Git／Backup v2、R3、费用未决、Beta及商用R1～R6继续开放，未新增模型或原生Run。
+
+### R1/R4：真实快照输入与对象写入的单变量对照
+
+[完整设计第13节](changes/m09-r4-windows-minimum-commit-probe.md#13-真实快照输入与对象写入的单变量对照)
+复用原真实SHA256仓库、最低合法Commit、RO普通文件快照和有界Git helper，分别比较无写／写入
+与namespace持有／直接控制。原正式请求摘要校验保持；测试派生调用不成为批准或业务Proof。
+既有手动工作流先仅预检官方PE／PDB及18输入，再执行四个独立步骤和原两个SDK；
+步骤结论沿用GitHub元数据，不新增采集器，不读取业务日志。Windows现场结果仍须实际取得，
+不以本机通过关闭原Git128、完整Git／Backup v2、真实R3、消费者Windows、Beta或商用R1～R6。

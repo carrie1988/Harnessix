@@ -9,6 +9,9 @@ permissions:
 jobs:
   minimum-commit-probe:
     runs-on: windows-latest
+    env:
+      HARNESSIX_GIT_NATIVE_DIFFERENTIAL: '1'
+      HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
     steps:
       - name: 拒绝当前Run重跑
         shell: pwsh
@@ -25,7 +28,63 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
+      - name: 原官方Git身份仅预检
+        id: preflight
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $env:PYTHONPATH = Join-Path $env:GITHUB_WORKSPACE 'src'
+          $suffix = $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT
+          $private = Join-Path $env:RUNNER_TEMP ('git-minimum-identity-' + $suffix)
+          $report = Join-Path $env:RUNNER_TEMP ('git-minimum-identity-report-' + $suffix)
+          uv run python -m scripts.windows_git_native_branch_observation.observe --output $private --report $report
+          exit $LASTEXITCODE
+      - name: 无写无namespace持有 hash-direct
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 1
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-hash-direct-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_real_snapshot_hash_and_write[hash-direct]'
+          exit $LASTEXITCODE
+      - name: 无写原namespace持有 hash-held
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 1
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-hash-held-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_real_snapshot_hash_and_write[hash-held]'
+          exit $LASTEXITCODE
+      - name: 写入无namespace持有 write-direct
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 1
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-write-direct-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_real_snapshot_hash_and_write[write-direct]'
+          exit $LASTEXITCODE
+      - name: 写入原namespace持有 write-held
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 1
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-write-held-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_real_snapshot_hash_and_write[write-held]'
+          exit $LASTEXITCODE
       - name: 原两个案例及低敏只读侧车
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
         shell: pwsh
         timeout-minutes: 5
         run: |

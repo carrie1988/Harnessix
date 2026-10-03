@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 57
+version: 58
 code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
 owners:
   - core
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_material_snapshot_differential.py
+  - tests/governance/test_git_material_snapshot_differential.py
   - tests/product_config/test_git_shared_process_pre_handoff.py
   - tests/product_config/test_session_key_acl_binding.py
   - tests/product_config/test_git_shared_process_startup.py
@@ -2381,3 +2383,17 @@ wrapper只改变Trace2解释器的预期首项，原Worker argv、批准、Owner
 接口、选型、时序、字段、伪代码和异常边界见
 [托管Key设计4.1.2](../changes/m09-4a-managed-session-key-and-root.md#412-darwin静态ffi绑定与持续acl复核)。
 仪器化Git热点用于定位重复绑定，不构成材料超时已解决或商用性能SLA。
+
+### Git只读快照和对象写入的真实对照边界
+
+既有最低SHA256 Commit手动工作流增加四个独立测试步骤，分别比较原RO普通文件输入的无写／写入
+与原namespace持有／不额外持有。每格复用原材料fixture、_command、_snapshot和_git，
+仅无写臂删除唯一-w；stderr在同步调用范围内重定向空设备，stdout仍走原66字节和完整OID守卫。
+测试域_GitInvocation只描述直接helper读取的五项参数，不是正式GitMaterialInput或批准请求，
+不能交给worker握手或作为MAC／Owner证明。原操作期限与20秒命令期限取min，回读不重置预算。
+
+Windows现场先复用既有observe仅预检及固定官方PE／PDB；每格前后复核18输入和选中映像。
+只使用GitHub原步骤结论元数据，不增设采集器或读取业务日志。原两SDK及13接点继续独立执行，
+其五分钟和全部业务门不变；四格直接helper成功也不能替代原Supervisor链或默认Git交付。
+完整需求、架构、流程／时序／数据流、源码、字段、异常及测试见
+[最低Commit对照设计第13节](../changes/m09-r4-windows-minimum-commit-probe.md#13-真实快照输入与对象写入的单变量对照)。

@@ -1,0 +1,40 @@
+{
+  "schema": "harnessix.windows-git-snapshot-differential-validation/v1",
+  "baseline_revision": "c48b22fec58aa9178bd93e519eff8e7c9fc5309f",
+  "local_results": {
+    "initial": {
+      "tests": 17,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    "local": {
+      "tests": 511,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "original_sdk": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "native_status": "NOT_EXECUTED",
+  "native_run": null,
+  "original_failure_retained": true,
+  "production_code_changed": false,
+  "source_input_count": 18,
+  "updated_source_input": ".github/workflows/windows-git-minimum-commit-probe.yml",
+  "budgets": {
+    "command_seconds": 20,
+    "operation_seconds": 45,
+    "original_sdk_step_seconds": 300,
+    "counterfactual_step_seconds": 60
+  },
+  "new_collector": false,
+  "raw_business_logs_read": false,
+  "provider_requests": 0,
+  "release_gates_closed": []
+}
