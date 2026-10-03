@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 9a424dfcd874fa42efd10208aaf102ce0f09a0b7
+version: 3
+code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
 owners:
   - core
 modules:
@@ -11,6 +11,7 @@ modules:
 related_adrs:
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_shared_process_pre_handoff.py
   - tests/product_config/test_git_shared_process_startup.py
   - tests/product_config/test_git_shared_process_digest.py
   - tests/product_config/test_git_shared_process_capacity.py
@@ -68,7 +69,7 @@ Host是普通Python资源引用，不是可序列化授权凭据。批准仍由�
 | `GitDeliveryProcess(...,runtime_host=host)` | 可选内部资源借用 | 原output_redaction必须与Host.protection是同一个对象 |
 | `open_git_process_resources(...)` | 异步生命周期装配 | 借用分支不创建或关闭外部资源 |
 | `save_git_process_plan(...)` | 原不可变Plan持久化 | 借用分支调用原计划库；独立分支保持旧连接窗口 |
-| `start_git_process(...)` | 原Supervisor启动交接与异常结算 | 只回收本次新登记句柄，不停止已有Process ID或关闭共享宿主 |
+| `start_git_process(...)` | 原Supervisor启动交接与异常结算 | shield持有原启动Task；外层取消先排空本次交接，只回收其句柄，不停止已有Process ID或关闭共享宿主 |
 
 源码位于[资源借用实现](../../src/harnessix/product_config/git_process_host.py)、
 [原Git IO](../../src/harnessix/product_config/git_delivery_process.py)及
@@ -92,7 +93,10 @@ flowchart TD
   Settle --> Known{最终Lease确定停止}
   Known -- exited或failed --> Original
   Known -- UNKNOWN或结算异常 --> Unknown[强未知 原失败与结算失败原因组 禁止重放]
-  Outer[外层取消或超时] --> Drain[排空本次任务 保留已有强错误及原因组]
+  Outer[外层取消或超时] --> Drain[shield排空原启动Task 不取消启动线程]
+  Drain --> Started{原启动任务结果}
+  Started -- 返回本次句柄 --> Settle
+  Started -- 已失败 --> Original
   Input --> Receipt[等待原Owner完整回执]
   Receipt --> Raw[原双流和输入证明完整验真]
   Raw --> Final[重查原共享宿主仍有效]
@@ -113,12 +117,21 @@ sequenceDiagram
   Port->>Host: checkpoint与同保护对象检查
   Port->>Port: 原完整prepared/Plan/批准验证
   Port->>Host: 原Plan Store保存不可变计划
-  Port->>Supervisor: 原start与完整意图参数
-  alt 启动成功
+  Port->>Supervisor: 托管Task调用原start与完整意图参数
+  Note over Port,Supervisor: 外层取消先shield排空原交接，不取消启动线程
+  alt 启动成功且未取消
     Supervisor->>Worker: 原保护封套与Lease
     Worker-->>Port: 原完整回执与双流
     Port->>Host: 完成前再次checkpoint
     Port-->>Runtime: 原Completion
+  else 外层取消
+    Port->>Supervisor: shield排空原启动Task
+    Supervisor-->>Port: 本次句柄或原失败
+    opt 本次启动成功返回句柄
+      Port->>Worker: 托管停止Task执行原stop wait与控制关闭
+      Worker-->>Port: 确定终态或强未知
+    end
+    Port-->>Runtime: 已结算取消或保留强未知与原因组
   else 启动交接失败
     Port->>Supervisor: 对照本次Process ID的已有句柄引用
     opt 仅本次新登记句柄
@@ -164,18 +177,19 @@ run(prepared, original_plan, original_checkpoint, original_budget):
     borrowed: checkpoint; freeze same Scope values; yield same Supervisor
     standalone: open original Supervisor, retain original close window
   save original immutable Plan using original Store
-  previous = original Supervisor's existing handle for this Process ID
-  try:
-    handle = start using original Supervisor and original full intent arguments
-  except original failure:
-    current = original Supervisor's handle for this Process ID
-    if current exists and current is not previous:
-      try:
-        stop and drain current using original settlement; close current control handle
-        require final Lease state in {exited, failed}; UNKNOWN is not successful settlement
-      except settlement failure:
-        raise git_process_unknown, retaining both actual failures in the cause group
-    rethrow original failure after confirmed settlement
+  start_task = owned task holding original start and failure settlement
+  shield-await start_task
+  on outer Task cancellation:
+    drain start_task without cancelling its thread-backed startup
+    if start_task failed: propagate its actual error and cause group
+    if start_task returned a handle:
+      owned stop_task settles only this returned handle
+      shield-drain stop_task even if caller is cancelled again
+    rethrow cancellation only after confirmed settlement
+  inside owned start_task on original startup failure:
+    compare original Supervisor's handle with its pre-start reference
+    settle only a newly registered handle, preserving peer/replay calls
+    require final Lease in {exited, failed}; unknown becomes strong failure
   stage protected full input, send original bounded control input, wait and drain
   authenticate original full raw streams and input proof
   borrowed: checkpoint again; do not close shared Store or Supervisor
@@ -212,6 +226,17 @@ outer cancellation or timeout:
 原`wait`可能正常返回`unknown`，原`aclose`也允许关闭UNKNOWN句柄的控制通道，因此两个调用
 没有抛错不代表停止已验真。helper在关闭后要求最终Lease为`exited`或`failed`；UNKNOWN或其他
 非确定终态均作为停止结算失败进入上述原因组。原Supervisor的UNKNOWN策略和持久记录不被改写。
+
+仅在异常后查询句柄集合不足以覆盖更早的交接：真实Owner可能已经由`to_thread`创建，
+或启动请求已实际写入控制管道，但原协程尚未登记句柄。取消await不会取消该后台线程。
+当前包装器因此以托管Task持有**完整原start及其异常结算**，外层只shield等待；
+外层取消先复用原`_drain`排空该Task，而不是取消启动协程并从暂时为空的集合推断无效果。
+若启动返回句柄，再以另一托管Task执行本次stop/wait/aclose及末次Lease验证；
+重复外层取消也不能切断该结算。若启动自身已强失败，则重抛其实际异常和原因组。
+
+这不修改原Supervisor、数据库、Owner请求或执行批准。Owner仍接收原持久`lease.deadline`，
+原Git预算与父操作期限不续期；调用者等待停止不表示获得新的执行时间。
+包装器不持有或停止其他Process ID，旧同ID重放仍在原Supervisor准入阶段拒绝。
 
 外层`_raise_uncertain_settlement`对已归一化的`git_process_unknown`、
 `git_material_effect_unknown`和`git_material_stage_changed`重抛原异常对象，保留既有原因组。

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from pydantic import JsonValue
 
 from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import ExecutionApprovalCheckpoint, ExecutionPlanV2
@@ -21,6 +24,7 @@ from harnessix.processes.supervisor import (
 from harnessix.product_config.state_owner import ProductStateOwner
 from harnessix.sandbox.process_runtime import ProcessSupervisor
 from harnessix.secrets.publication import SecretPublicationScope
+from harnessix.tools.runtime import _drain
 
 if TYPE_CHECKING:
     from harnessix.product_config.git_delivery_process import PreparedGitProcess
@@ -96,6 +100,44 @@ async def start_git_process(
     checkpoint: ExecutionApprovalCheckpoint | None,
 ) -> SupervisedProcess:
     """启动交接异常只结算本次新登记句柄，不能关闭共享宿主或停止原有调用。"""
+    return await _start_git_process(
+        supervisor, prepared, plan, checkpoint, prepared.approval_arguments()
+    )
+
+
+async def _start_git_process(
+    supervisor: ProcessSupervisor,
+    prepared: PreparedGitProcess,
+    plan: ExecutionPlanV2,
+    checkpoint: ExecutionApprovalCheckpoint | None,
+    arguments: dict[str, JsonValue],
+) -> SupervisedProcess:
+    """父取消不取消启动线程；先完成本次交接及停止，才允许调用方释放租约。"""
+    starting = asyncio.create_task(
+        _start_owned_git_process(supervisor, prepared, plan, checkpoint, arguments)
+    )
+    try:
+        return await asyncio.shield(starting)
+    except asyncio.CancelledError as original:
+        # to_thread取消不能回收已送达的Owner；必须保留并等待原启动任务。
+        await _drain(starting)
+        if not starting.cancelled():
+            # 启动任务的强未知及原异常组优先于外层取消，不能静默丢失。
+            handle = starting.result()
+            stopping = asyncio.create_task(_settle_git_start(handle, original))
+            await _drain(stopping)
+            stopping.result()
+        raise
+
+
+async def _start_owned_git_process(
+    supervisor: ProcessSupervisor,
+    prepared: PreparedGitProcess,
+    plan: ExecutionPlanV2,
+    checkpoint: ExecutionApprovalCheckpoint | None,
+    arguments: dict[str, JsonValue],
+) -> SupervisedProcess:
+    """原启动和异常结算由同一托管任务持有；只处理本次新登记句柄。"""
     previous = supervisor._handles.get(prepared.spec.process_id)
     try:
         return await supervisor.start(
@@ -105,22 +147,24 @@ async def start_git_process(
             workspace=prepared.command.cwd,
             environment=dict(prepared.command.environment),
             checkpoint=checkpoint,
-            intent_arguments=prepared.approval_arguments(),
+            intent_arguments=arguments,
         )
     except BaseException as original:
         current = supervisor._handles.get(prepared.spec.process_id)
         if current is not None and current is not previous:
-            from harnessix.product_config.git_material_process import settle_input_failure
-
-            try:
-                await settle_input_failure(current, uncertain=False)
-                await current.aclose()
-                if current.lease.state not in {"exited", "failed"}:
-                    raise KernelError("git_process_unknown", "Git启动句柄未取得可验真停止终态")
-            except BaseException as cleanup:
-                # 强未知不能被上层取消覆盖，原因组保留原异常与清理异常两个实际对象。
-                cause = BaseExceptionGroup("Git启动及停止结算失败", [original, cleanup])
-                raise KernelError(
-                    "git_process_unknown", "Git启动停止无法完成验真；禁止自动重放"
-                ) from cause
+            await _settle_git_start(current, original)
         raise
+
+
+async def _settle_git_start(handle: SupervisedProcess, original: BaseException) -> None:
+    """只结算已交接的本次Owner；未知终态不能冒充停止成功。"""
+    from harnessix.product_config.git_material_process import settle_input_failure
+
+    try:
+        await settle_input_failure(handle, uncertain=False)
+        await handle.aclose()
+        if handle.lease.state not in {"exited", "failed"}:
+            raise KernelError("git_process_unknown", "Git启动句柄未取得可验真停止终态")
+    except BaseException as cleanup:
+        cause = BaseExceptionGroup("Git启动及停止结算失败", [original, cleanup])
+        raise KernelError("git_process_unknown", "Git启动停止无法完成验真；禁止自动重放") from cause

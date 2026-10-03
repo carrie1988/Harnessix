@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 56
-code_revision: 716a72bccc63b110851650d266e073252ca58d1f
+version: 57
+code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_shared_process_pre_handoff.py
   - tests/product_config/test_session_key_acl_binding.py
   - tests/product_config/test_git_shared_process_startup.py
   - tests/product_config/test_git_shared_process_digest.py
@@ -2344,7 +2345,9 @@ Process Supervisor、Execution Plan Store与同一个冻结SecretPublicationScop
 第二套共享资源。实际原计划、环境、能力、审批、原生回执和完整材料保护约束保持。
 端口关闭只排空自己的调用；Root、Store、Supervisor或Scope失效在原启动前或返回前拒绝，
 完整输入已可能送达后的不明结算仍拒绝自动重放。
-原Supervisor启动交接异常由`start_git_process`只回收本次新登记句柄；不得停止原同ID调用或
+原Supervisor启动由托管Task持有，外层Task取消先shield排空本次交接；即使Owner已创建、
+请求已送达但句柄未登记，也不得提前结束回收。重复取消继续等待本次启动和停止任务。
+启动交接异常由`start_git_process`只回收本次新登记句柄；不得停止原同ID调用或
 关闭共享宿主。停止结算失败保持`git_process_unknown`，原异常与结算异常均保留在原因组。
 等待正常返回UNKNOWN也属未验真停止；外层取消或超时重抛已归一化的原强错误，不能丢失原因组。
 源码接口、完整流程/时序/数据流、字段、伪代码、失败、安全、部署和测试见

@@ -1,0 +1,48 @@
+{
+  "spec_version": "harnessix.git-start-cancellation-verification/v1",
+  "base_revision": "5fbd98d04f27661edce9b9b71d7cacc03d72d62e",
+  "scope": "primary command entry shared-host cancellation and original material/process contracts; not authenticated full parent A or Windows release",
+  "tests": 174,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 81.361,
+  "source_input_count": 438,
+  "test_input_count": 8,
+  "input_drift_count": 0,
+  "runtime": {
+    "python": "3.12.7",
+    "git": "2.53.0",
+    "platform": "macOS POSIX"
+  },
+  "source_sha256": {
+    "src/harnessix/product_config/git_process_host.py": "753399d87d07e674326ece6792c561c57f7a0e5cac5d095f3fb79c064c3267ca",
+    "tests/product_config/test_git_shared_process_pre_handoff.py": "120292410a13de6cc314904252ba9b25566975de0d736b742c17a63c9b057061"
+  },
+  "raw_artifacts_sha256": {
+    "final-2.xml": "da4eeb1ef8e6f6194701b928a303d750b2d1f729e9be75c6d4cba8b0e5176d7b",
+    "final-2.log": "62b3547a627b283916919471cb3ba1535fa787c950df40f7e4dc5a68de40d26f",
+    "result-2.json": "11d6bfbf3c13d3418afdd4f472b51c5cb0d5d948c3910ab2902842c7febe5f87",
+    "inputs-2-before.json": "d57b23ec3d09aa3eceac7d6886b2861266c005294c19118dd8c3098b97857897",
+    "inputs-2-after.json": "d57b23ec3d09aa3eceac7d6886b2861266c005294c19118dd8c3098b97857897"
+  },
+  "original_actual_red": {
+    "tests": 2,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "scope": "development-worktree supervisor caller layer; normal approval fixture, not authenticated full parent A",
+    "state_after_cancel": "starting; no registered handle; owner/target/control active; fixture cleanup separately completed"
+  },
+  "reviewed_coordination_functions_AST_identical": true,
+  "model_requests": 0,
+  "credential_reads": 0,
+  "release_gates_closed": [],
+  "not_verified": [
+    "Windows native",
+    "full product Git delivery",
+    "authenticated parent A by primary entry",
+    "R3 quality",
+    "R1-R6 release"
+  ]
+}

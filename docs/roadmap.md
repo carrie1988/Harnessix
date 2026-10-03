@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 166
-code_revision: 716a72bccc63b110851650d266e073252ca58d1f
+version: 167
+code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
 owners:
   - core
 modules:
@@ -1745,3 +1745,15 @@ proof ABSENT、RootUNKNOWN，未观测三个新增静态ID。Trace2仍UNCLASSIFI
 整体流程93.965秒，单段原60秒维护期限未改变；不能外推全部228项、完整Git效果或三平台验收。
 源码、失败、数据和后继边界见[正式验证](validation/session-acl-static-binding-2026-10-03-v1/README.md)。
 R1～R6、R3费用未决与编码质量、Windows消费者、完整Git/Backup v2和独立Beta继续开放。
+
+### R1/R4：原共享宿主登记前取消交接
+
+启动Task取消不再取消后台Owner创建或原请求写入：原start及其异常结算由托管Task持有，
+外层shield等待；取消后先排空交接，再只停止本次返回句柄。重复取消不能切断停止结算，
+原强未知及异常原因组优先，原批准、持久deadline、peer隔离、同ID重放和容量保持。
+主仓原命令端口八件测试文件实际174通过、无失败/错误/跳过，438件生产源码与8件测试共
+446件输入前后零漂移；原真实登记前RED保留，结果不与开发工作区或历史169项相加。
+总体与详细设计及限定事实见
+[启动取消验证](validation/git-start-cancellation-2026-10-03-v1/README.md)。
+该修复不合入完整Git候选的父意图或A效果，不代表T/Bridge/D、Checkpoint/Commit、
+业务Backup v2、Windows原生、R3真实质量或商用R1～R6验收完成。未新增模型请求或费用。
