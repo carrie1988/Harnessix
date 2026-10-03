@@ -1,0 +1,77 @@
+{
+  "run": 37149652886,
+  "revision": "007d2bd7c7f769616ec94641283274990b2acd66",
+  "status_at_observation": "in_progress",
+  "conclusion_at_observation": "",
+  "jobs": [
+    {
+      "name": "documentation",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows Git 原生验收 (cas-reference)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "python (3.13)",
+      "status": "in_progress",
+      "conclusion": ""
+    },
+    {
+      "name": "container-sandbox",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Windows Git 原生验收 (object-input)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "coding-tools-macos",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "python (3.12)",
+      "status": "in_progress",
+      "conclusion": ""
+    },
+    {
+      "name": "Windows Git 原生验收 (authenticated-raw)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "windows-trusted-execution",
+      "status": "in_progress",
+      "conclusion": "",
+      "steps": [
+        {
+          "name": "验证原生NTFS文件事务与审批编码写链",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "验证原生Git读取与取消回收",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/session tests/agent/test_authenticated_store.py",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run pytest tests/benchmarks",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "raw_business_logs_read": false,
+  "case_counts_not_observed": true
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 185
-code_revision: f84583e5560998683cf07d6b4c138c4f7ff3ad1a
+version: 187
+code_revision: 007d2bd7c7f769616ec94641283274990b2acd66
 owners:
   - core
 modules:
@@ -1999,3 +1999,34 @@ Linux两个Python版本的完整回归失败。只读取运行／步骤元数据
 
 上述为本地缺陷闭环，不是新候选整合或原生通过。完整Git／Backup v2、真实R3质量及两笔费用未决、
 消费者平台、独立Beta、权利和同候选R1～R6商用门禁继续开放。未新增模型请求或调整费用规则。
+
+### R1/R4：固定007d2bd的完整本地回归与后继原生观察
+
+整改候选已发布为`007d2bd`。干净普通Git测试副本完整4826件受管输入与候选逐件原字节核验相同，
+原完整选择11266项实际11129通过、零失败／错误、137跳过；旧四项失败在新完整范围通过，原FAIL保留。
+这是完整本机离线结果，不是从关联用例推算或真实R3质量通过。
+
+同一当前Wheel在Darwin arm64专用venv、Python -I完成源码外安装、完整备份恢复、卸载重装及Thread可读，
+479件实际包／源码成员匹配，用户Workspace不变，模型请求0、commercial_release=false。
+不把此前beda980三平台成绩转移为本候选三平台整体验收。
+
+[Run37149652886](https://github.com/carrie1988/Harnessix/actions/runs/37149652886)观察点三组Windows材料、
+macOS工具、容器与文档success；Windows原NTFS、Git读取／取消及认证Session步骤success，
+不据此推断旧NTFS失败唯一根因，也不声称原生日志用例计数。后继独立观察中两个Linux版本Job已failure，
+但各原完整pytest步骤均success，唯一失败步骤均为原许可证检查；后继SBOM步骤skipped，不能算通过。
+Windows重启及原业务状态备份／恢复步骤success，广泛范围仍in_progress；整体CI和完整Windows尚未验收。
+初始与后继观察分别保留，实际分层结果见[后继验证报告](validation/git-diff-history-successor-2026-10-04-v1/README.md)。
+
+[十二件许可通知有界复核](validation/license-notice-review-boundary-2026-10-04-v1/README.md)确认原失败均来自
+pywin32 312的十二个Windows Wheel，不是十二个包。原函数和原EvidenceBlobs直接复核十二件完整entry均与冻结报告相等，
+现有九个Blob及声明未见可机械补齐的缺口；旧PSF表达式收据或去重显示不能清除现行正文信号。
+原策略、依赖、收据及十二件失败不变；授权与实际适用组件仍待正式处置，低优先并行，不阻挡功能开发或内部验证。
+
+[父目录完整闭包及引用记录设计候选](changes/m09-r4-workspace-parent-closure.md)基于现行源码明确：
+128个分散父目录叶生成257个观察Resource，无法在原逐项表示和256限额下闭合；仅移除父项会丢失安全前置。
+同时确认Store完整记录512KiB读限额与写入准入不对称，长路径存在保存后重开拒绝风险；该风险尚未作运行时复现。
+候选保留全部父目录历史，以原私有CAS和版本化引用承载，不裁剪、不拆事务、不提高原正文和期限，
+但需要明确新计数表示、Snapshot导出Schema、完整Reader／事件及备份兼容；不是现成开关或已完成整改。
+原255来源叶与256mutation模型上限分别说明，T／Bridge独立阶段方案不在本设计中变更。
+
+真实R3及两笔费用未决、完整Git／Backup v2、消费者系统、独立Beta、权利和同候选R1～R6继续开放。

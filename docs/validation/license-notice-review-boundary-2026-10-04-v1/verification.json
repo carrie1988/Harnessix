@@ -1,0 +1,224 @@
+{
+  "revision": "007d2bd7c7f769616ec94641283274990b2acd66",
+  "observed_at_utc": "2026-10-03T21:06:14.639259+00:00",
+  "original_function": "scripts.license_scan._archive_decision",
+  "original_reader": "scripts.license_contracts.EvidenceBlobs",
+  "source_checks": [
+    {
+      "path": "governance/license-scan-v2.json",
+      "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/index.json",
+      "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-policy-v2.json",
+      "sha256": "5a0d17d2ca1963f93fb7e463e495cfb2ed15e321af70516eca96e9a43a29292b",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "scripts/license_scan.py",
+      "sha256": "cb76a1a022da5f4a5911de4abaf18ec45c0ff49c4f58e43a2f1446f5123d125b",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "scripts/license_decisions.py",
+      "sha256": "83cdeeddfa18040fcfd26ed4cdf9688dd34b0453dd2d00bede82365cc33549b0",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "scripts/license_contracts.py",
+      "sha256": "14bd5fbaa445941a16052ce4fc8a4a24bbc7454279465dd9f172a72799d05148",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "scripts/license_inventory.py",
+      "sha256": "5073d09665b3dc77ae5bf4576d27727605b7077061e28a74531273605d1935db",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "docs/changes/m09-4b-archive-license-evidence.md",
+      "sha256": "8eb14e178e7a50b1ea7f3e2fa72b4bff84a1f4d060cec285dab643b5de845d09",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "docs/governance/license-rights-chain-v1.md",
+      "sha256": "986d36f43ee300e822a90b12a2356450c9145ce63e2aae4a86683bdc12226a05",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/README.md",
+      "sha256": "2e939a580bc858cf5baaf4b05242763e5a59796fd23bf48dd1d3ccdfec12d2cf",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "tests/governance/test_license_archive_evidence.py",
+      "sha256": "72a5c0122cf6a575a91272cc86a96fdd8a1968057bd66e1f25865ec06f981f56",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "tests/governance/test_supply_chain.py",
+      "sha256": "28abf3f88770c88964388921a2b2709257a823f9def3e2cd417651ac2ccc2b42",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/77f53e90408dd3bdcf5f73a20d6548504313dee2ad34f8b3794b2202583a84b1",
+      "sha256": "77f53e90408dd3bdcf5f73a20d6548504313dee2ad34f8b3794b2202583a84b1",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e",
+      "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/a74d826efb242db087b850348e20abbfd591b51e2081f2048735290913872924",
+      "sha256": "a74d826efb242db087b850348e20abbfd591b51e2081f2048735290913872924",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/a0fa1e7b8a4230055685e796548ac084a6c0eea395294574093bba72efd9191b",
+      "sha256": "a0fa1e7b8a4230055685e796548ac084a6c0eea395294574093bba72efd9191b",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/fad39c18fc3825fa278db1c86fd52cf88d7c525b3c2fbf7817fa383cbae4d423",
+      "sha256": "fad39c18fc3825fa278db1c86fd52cf88d7c525b3c2fbf7817fa383cbae4d423",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/1c4cf44d2fb8bf2d10214d6da80cc9e05502824cc4460f35be4c7bcb4cde53da",
+      "sha256": "1c4cf44d2fb8bf2d10214d6da80cc9e05502824cc4460f35be4c7bcb4cde53da",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/41383bcc95edb8138d37077ae54bfdcbd2a3b77bf745a8529a9c161146e22303",
+      "sha256": "41383bcc95edb8138d37077ae54bfdcbd2a3b77bf745a8529a9c161146e22303",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/57ec79bbeab4fd1cf7460a7ad450d2ab01471810459aeae9e75e4c66b472095f",
+      "sha256": "57ec79bbeab4fd1cf7460a7ad450d2ab01471810459aeae9e75e4c66b472095f",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "governance/license-evidence-v2/blobs/dedf997c8f5568a0e0aff57d009f501226ea30c401323d67912b6a8f8735a825",
+      "sha256": "dedf997c8f5568a0e0aff57d009f501226ea30c401323d67912b6a8f8735a825",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "/Users/zhangjinhui/.codex/AGENTS.md",
+      "sha256": "2215dbf3ecfda61803032718b34e72171046061e6cbfeeef6e802b44769de381",
+      "matches_prior_analysis": true
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+      "matches_frozen_report": true
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad",
+      "matches_frozen_report": true
+    }
+  ],
+  "selected_archives": 12,
+  "matched_complete_decisions": 12,
+  "unique_read_blobs_including_metadata": 9,
+  "bytes_read_including_metadata": 56510,
+  "results": [
+    {
+      "archive_sha256": "59aba5d5940842075343a5ddc6b11f1cdf0d1567fe745290359dfbcc7c2eb831",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "5c1fbe4a937a73ae9297384a3da38518cbc694c68ad8a809b2e19acd350f03ed",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "6017c58e12f6809fbb0555b75df144c2922a9ffd18e4b9b5afa863b6c1a9d950",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "7a27df850933d16a8eabfbaeb73d52b273e2da667f80d70b01a89d1f6828d02c",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "9fce94568364e0155e6dfb781ac5d95903be8baf28670632beab1b523f300daa",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "a77a90fbb6881238d2ca9c6fd797b25817f3768fe78d214a90137ff055a75f5b",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "a8597d28f267b39074aef51fa593530082b39cbe5a074226096857b1fed2dfb9",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "c2f03a0f73f804a13c2735b99392b0cd426bb4f2c4d0178e5ac966a0f21618d5",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "c53e878d15a1c44788082bfe712a905433473aa38f86375b7cf8b45e3acbaaf9",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    },
+    {
+      "archive_sha256": "dab4f65ac9c4e48400a2a0530c46c3c579cd5905ecd11b80692373915269208b",
+      "complete_entry_matches_frozen_report": true,
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "notice_signal_count": 2
+    }
+  ],
+  "archive_reextraction_performed": false,
+  "full_777_report_executed": false,
+  "policy_or_review_modified": false,
+  "network_requests": 0,
+  "legal_permission_judgment_passed": false,
+  "commercial_release": false
+}

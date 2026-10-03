@@ -1,0 +1,675 @@
+{
+  "revision": "007d2bd7c7f769616ec94641283274990b2acd66",
+  "observed_at_utc": "2026-10-03T21:06:14.639259+00:00",
+  "original_report_sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+  "original_report_header": {
+    "archive_count": 777,
+    "package_count": 74,
+    "violation_count": 12,
+    "policy_sha256": "5a0d17d2ca1963f93fb7e463e495cfb2ed15e321af70516eca96e9a43a29292b",
+    "evidence_index_sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+    "lock_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
+    "project_sha256": "ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad"
+  },
+  "summary": {
+    "packages": [
+      "pywin32"
+    ],
+    "version": "312",
+    "kind": "wheel",
+    "architectures": [
+      "win_amd64",
+      "win_arm64",
+      "win32"
+    ],
+    "python_tags": [
+      "cp312",
+      "cp313",
+      "cp314",
+      "cp315"
+    ],
+    "unique_archive_count": 12,
+    "notices_per_archive": 15,
+    "declared_license_files_per_archive": 8,
+    "unique_referenced_blob_count": 9,
+    "unique_referenced_blob_bytes": 56510,
+    "restricted_signal_members_per_archive": 2,
+    "restricted_blob_sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e",
+    "missing_active_inventory_blob_or_field_gaps_found": 0,
+    "mechanical_only_unblocking_possible": false,
+    "current_release_gate": "blocked",
+    "legal_permission_judgment_passed": false,
+    "legal_rights_or_notice_completeness_claimed": false,
+    "independent_archive_member_origin_proven": false
+  },
+  "items": [
+    {
+      "item_id": "LNR-01",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/03/d9/77040d3b43df3f3be32ea289433d660d2727f5ba327bc73be835127d9d60/pywin32-312-cp312-cp312-win_amd64.whl",
+        "sha256": "b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc",
+        "size_bytes": 6914841,
+        "filename": "pywin32-312-cp312-cp312-win_amd64.whl",
+        "python_tag": "cp312",
+        "abi_tag": "cp312",
+        "platform_tag": "win_amd64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          20495,
+          20613
+        ],
+        "json_pointer": "/entries/589"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13339,
+          13429
+        ],
+        "json_pointer": "/entries/589"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-02",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/0f/cd/7e1de64a4a6f69c04214169657ccab0d93a670ea50e35eb8f489d7378249/pywin32-312-cp315-cp315-win_amd64.whl",
+        "sha256": "c2f03a0f73f804a13c2735b99392b0cd426bb4f2c4d0178e5ac966a0f21618d5",
+        "size_bytes": 7025293,
+        "filename": "pywin32-312-cp315-cp315-win_amd64.whl",
+        "python_tag": "cp315",
+        "abi_tag": "cp315",
+        "platform_tag": "win_amd64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          20614,
+          20732
+        ],
+        "json_pointer": "/entries/590"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13430,
+          13520
+        ],
+        "json_pointer": "/entries/590"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-03",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/21/82/3bf86d2e2808902013132e1ce905a7da0da53790f3836c64bf44d55e24f3/pywin32-312-cp314-cp314-win_amd64.whl",
+        "sha256": "a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e",
+        "size_bytes": 7024157,
+        "filename": "pywin32-312-cp314-cp314-win_amd64.whl",
+        "python_tag": "cp314",
+        "abi_tag": "cp314",
+        "platform_tag": "win_amd64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          20733,
+          20851
+        ],
+        "json_pointer": "/entries/591"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13521,
+          13611
+        ],
+        "json_pointer": "/entries/591"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-04",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/23/ed/4532e9388e65fa16b46776ef47ad631a64eda1631884488af707666350ed/pywin32-312-cp315-cp315-win_arm64.whl",
+        "sha256": "a8597d28f267b39074aef51fa593530082b39cbe5a074226096857b1fed2dfb9",
+        "size_bytes": 6840337,
+        "filename": "pywin32-312-cp315-cp315-win_arm64.whl",
+        "python_tag": "cp315",
+        "abi_tag": "cp315",
+        "platform_tag": "win_arm64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          20852,
+          20970
+        ],
+        "json_pointer": "/entries/592"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13612,
+          13702
+        ],
+        "json_pointer": "/entries/592"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-05",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/2d/41/12fbfd7f36ed2146d8bc9de96c2741296bf0d490b98508496cff322e274c/pywin32-312-cp313-cp313-win32.whl",
+        "sha256": "7a27df850933d16a8eabfbaeb73d52b273e2da667f80d70b01a89d1f6828d02c",
+        "size_bytes": 6370184,
+        "filename": "pywin32-312-cp313-cp313-win32.whl",
+        "python_tag": "cp313",
+        "abi_tag": "cp313",
+        "platform_tag": "win32"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          20971,
+          21089
+        ],
+        "json_pointer": "/entries/593"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13703,
+          13793
+        ],
+        "json_pointer": "/entries/593"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-06",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/83/ff/32aa7d2ed0ab12b323aaa64f9b75e6ad4f8fd09f9ccfc28c79414d46838d/pywin32-312-cp312-cp312-win32.whl",
+        "sha256": "dab4f65ac9c4e48400a2a0530c46c3c579cd5905ecd11b80692373915269208b",
+        "size_bytes": 6371877,
+        "filename": "pywin32-312-cp312-cp312-win32.whl",
+        "python_tag": "cp312",
+        "abi_tag": "cp312",
+        "platform_tag": "win32"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          21090,
+          21208
+        ],
+        "json_pointer": "/entries/594"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13794,
+          13884
+        ],
+        "json_pointer": "/entries/594"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-07",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/84/37/c1697194092b76de9ed47ca124323f02c57ffc8a45c06f88a3d5acaf01eb/pywin32-312-cp313-cp313-win_arm64.whl",
+        "sha256": "59aba5d5940842075343a5ddc6b11f1cdf0d1567fe745290359dfbcc7c2eb831",
+        "size_bytes": 6727640,
+        "filename": "pywin32-312-cp313-cp313-win_arm64.whl",
+        "python_tag": "cp313",
+        "abi_tag": "cp313",
+        "platform_tag": "win_arm64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          21209,
+          21327
+        ],
+        "json_pointer": "/entries/595"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13885,
+          13975
+        ],
+        "json_pointer": "/entries/595"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-08",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/a4/0e/73f6d6800b4f27655abd9e9f6aaeaefcddb2b946e4674efa2bab184a7f7b/pywin32-312-cp314-cp314-win_arm64.whl",
+        "sha256": "9fce94568364e0155e6dfb781ac5d95903be8baf28670632beab1b523f300daa",
+        "size_bytes": 6839598,
+        "filename": "pywin32-312-cp314-cp314-win_arm64.whl",
+        "python_tag": "cp314",
+        "abi_tag": "cp314",
+        "platform_tag": "win_arm64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          21328,
+          21446
+        ],
+        "json_pointer": "/entries/596"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          13976,
+          14066
+        ],
+        "json_pointer": "/entries/596"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-09",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/ba/db/36a78e3403099d31d9746d13fdcde5accc43c1155f375a34d15983a479a7/pywin32-312-cp313-cp313-win_amd64.whl",
+        "sha256": "c53e878d15a1c44788082bfe712a905433473aa38f86375b7cf8b45e3acbaaf9",
+        "size_bytes": 6914298,
+        "filename": "pywin32-312-cp313-cp313-win_amd64.whl",
+        "python_tag": "cp313",
+        "abi_tag": "cp313",
+        "platform_tag": "win_amd64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          21447,
+          21565
+        ],
+        "json_pointer": "/entries/597"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          14067,
+          14157
+        ],
+        "json_pointer": "/entries/597"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-10",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/e3/cc/7b1ec671775756020a0ee7f4feeaf3c568f0ab86bd3900088cf986937a92/pywin32-312-cp312-cp312-win_arm64.whl",
+        "sha256": "6017c58e12f6809fbb0555b75df144c2922a9ffd18e4b9b5afa863b6c1a9d950",
+        "size_bytes": 6727901,
+        "filename": "pywin32-312-cp312-cp312-win_arm64.whl",
+        "python_tag": "cp312",
+        "abi_tag": "cp312",
+        "platform_tag": "win_arm64"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          21566,
+          21684
+        ],
+        "json_pointer": "/entries/598"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          14158,
+          14248
+        ],
+        "json_pointer": "/entries/598"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-11",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/eb/61/caa39686032d2ebdd04ff0ab5cbe163126c0066d98e00c9018646e42393b/pywin32-312-cp315-cp315-win32.whl",
+        "sha256": "5c1fbe4a937a73ae9297384a3da38518cbc694c68ad8a809b2e19acd350f03ed",
+        "size_bytes": 6471159,
+        "filename": "pywin32-312-cp315-cp315-win32.whl",
+        "python_tag": "cp315",
+        "abi_tag": "cp315",
+        "platform_tag": "win32"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          21685,
+          21803
+        ],
+        "json_pointer": "/entries/599"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          14249,
+          14339
+        ],
+        "json_pointer": "/entries/599"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    },
+    {
+      "item_id": "LNR-12",
+      "archive": {
+        "name": "pywin32",
+        "version": "312",
+        "registry": "https://pypi.org/simple",
+        "kind": "wheel",
+        "url": "https://files.pythonhosted.org/packages/fc/2b/1f3cded5822fd49c02f40544cbb5f58c7cfd6b1694869fd476cb6170ee97/pywin32-312-cp314-cp314-win32.whl",
+        "sha256": "a77a90fbb6881238d2ca9c6fd797b25817f3768fe78d214a90137ff055a75f5b",
+        "size_bytes": 6468928,
+        "filename": "pywin32-312-cp314-cp314-win32.whl",
+        "python_tag": "cp314",
+        "abi_tag": "cp314",
+        "platform_tag": "win32"
+      },
+      "report_source": {
+        "path": "governance/license-scan-v2.json",
+        "sha256": "92a42c2160c22c0fedf7552be736818cb5d91bad8952a98c642c80d0b18bd63c",
+        "git_blob_oid": "1f6e9a7b94fca1bf44f98671155d4bb18a3e75e4",
+        "lines": [
+          21804,
+          21922
+        ],
+        "json_pointer": "/entries/600"
+      },
+      "index_source": {
+        "path": "governance/license-evidence-v2/index.json",
+        "sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+        "git_blob_oid": "9b59c8b6a0f2e2d35c2a10bec4dd33ca917e66a9",
+        "lines": [
+          14340,
+          14430
+        ],
+        "json_pointer": "/entries/600"
+      },
+      "declared_license": "PSF",
+      "status": "violation",
+      "reason": "license_notice_review_required",
+      "review_id": null,
+      "notice_review_signals": [
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        },
+        {
+          "reason": "license_notice_restricted_title",
+          "sha256": "5ea2f23c7f00c3006bacf267183e816d8d4b6dc95ea57a4ddb0ff81de6d8719e"
+        }
+      ],
+      "notice_count": 15,
+      "archive_member_origin_independently_reverified_this_pass": false
+    }
+  ],
+  "model_requests": 0,
+  "network_requests": 0,
+  "policy_or_review_modified": false,
+  "commercial_release": false
+}
