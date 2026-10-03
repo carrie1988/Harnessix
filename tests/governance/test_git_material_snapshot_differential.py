@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import inspect
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
+from harnessix.agent.errors import KernelError
 from tests.product_config import test_git_material_snapshot_differential as differential
 from tests.product_config.git_minimum_commit_probe import SELECTORS
 
 ROOT = Path(__file__).resolve().parents[2]
+make_process = differential.material_tests.make_process
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,47 @@ def test_derived_request_changes_only_write_flag_and_never_renews_deadline(
 def test_derived_request_refuses_missing_or_ambiguous_write_flag(flags):
     with pytest.raises(AssertionError):
         differential._diagnostic_request(_Request(flags, 1, object()), write=False)
+
+
+@pytest.mark.parametrize("phase", ["effect", "identity"])
+def test_real_final_checks_cannot_pass_after_original_operation_deadline(
+    make_process, tmp_path, monkeypatch, phase
+):
+    original_prepare = differential.material_tests._prepare
+    original_effect = differential._object_bytes
+    original_identity = differential._checked_executable
+    budgets = []
+    counts = {"effect": 0, "identity": 0}
+    expired = []
+
+    def prepare(*args, **kwargs):
+        # 真实短预算仅用于负例，不修改默认45秒或正式请求构造器。
+        kwargs["budget"] = differential.material_tests.GitOperationBudget(1.0)
+        prepared = original_prepare(*args, **kwargs)
+        budgets.append(prepared.budget)
+        return prepared
+
+    def after_deadline(name, original, *args):
+        counts[name] += 1
+        if name == phase and counts[name] == 2:
+            time.sleep(max(0, budgets[0].expires_at_monotonic_ns / 1e9 - time.monotonic()) + 0.02)
+            expired.append(name)
+        return original(*args)
+
+    monkeypatch.setattr(differential.material_tests, "_prepare", prepare)
+    monkeypatch.setattr(
+        differential,
+        "_object_bytes",
+        lambda *args: after_deadline("effect", original_effect, *args),
+    )
+    monkeypatch.setattr(
+        differential,
+        "_checked_executable",
+        lambda: after_deadline("identity", original_identity),
+    )
+    with pytest.raises(KernelError) as raised:
+        differential.test_real_snapshot_hash_and_write(make_process, tmp_path, False, False)
+    assert expired == [phase] and raised.value.code == "git_process_timeout"
 
 
 def test_real_counterfactuals_reuse_original_io_without_new_output_collector():

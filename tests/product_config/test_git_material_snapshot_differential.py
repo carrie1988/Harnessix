@@ -126,6 +126,7 @@ def test_real_snapshot_hash_and_write(make_process, tmp_path, write, held) -> No
         assert not tuple(Path(request.stage_root).glob("snapshot-*.bin"))
     finally:
         staged.remove()
+    prepared.budget.remaining()
     if write:
         assert target.is_file(), "写臂必须真正新增目标对象"
         returned = case.runner.run(
@@ -136,4 +137,6 @@ def test_real_snapshot_hash_and_write(make_process, tmp_path, write, held) -> No
         assert returned.stdout == body
     else:
         assert not target.exists() and _object_bytes(objects) == before
+    prepared.budget.remaining()
     assert _checked_executable() == executable
+    prepared.budget.remaining()

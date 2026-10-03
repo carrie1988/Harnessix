@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: c48b22fec58aa9178bd93e519eff8e7c9fc5309f
+version: 7
+code_revision: 8568a87d58cb594f0a835d54f83be80383c7e11a
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -511,9 +511,12 @@ for explicit case selected by pytest:
         require no named snapshot left
     finally:
         original staged.remove by physical identity
+    original budget remaining before effects
     if write: require actual target and independently read exact original body
     else: require target absent and original object-file digests unchanged
+    original budget remaining after effects
     verify selected official executable and original inputs again
+    original budget remaining before reporting success
 ```
 
 ### 13.5 失败、取消、持久化、安全和部署
@@ -523,6 +526,8 @@ for explicit case selected by pytest:
 超时使用原_git kill／wait与fixture清理，不另建进程树平台。直接helper测试没有Supervisor的完整子树回执，
 超时情况下不能据此声明产品进程树已安全回收；CI取消与孤儿风险仍由原Runner生命周期约束。
 stage删除始终走原物理身份检查。回读占用同一剩余操作预算，不重新获得20／45秒。
+效果检查前后及最终发行身份复核后再次检查同一预算。真实短预算负例证明，原尾部若不检查，
+效果清单或身份复核耗尽期限后仍能返回成功；必须拒绝而不是用一分钟步骤上限替代45秒合同。
 
 无业务数据库迁移、Wheel／Schema变化、Secret读取、模型调用或预算修改。仅测试隔离仓库写臂新增一个可丢弃对象。
 不上传原stdout、stderr、CDB日志、pytest日志或JUnit。只使用现有GitHub API步骤结论做四格判别，
@@ -543,6 +548,7 @@ stage删除始终走原物理身份检查。回读占用同一剩余操作预算
 
 测试覆盖四格真实Git、只读普通文件、offset零、无写字节不变、写入完整回读；治理覆盖唯一-w差分、
 原期限取min、显式Windows准入、原PE／PDB及输入复核、四步骤条件和原两SDK／13接点不变。
+额外覆盖真实Git完成后效果／发行身份复核实际等待跨过原期限的两个负例，不mock快照或Git输出。
 新增测试对照必须先通过非Windows实际运行及离线治理，再执行一次固定Windows候选。
 固定源码、RED／GREEN、静态、文档图示、原生步骤元数据和各观察缺口分别保存；未取得现场结果不预先写PASS。
 R1～R6、真实R3及费用未决、完整Git交付和Backup v2、消费者Windows11及独立Beta仍按原门槛验收。

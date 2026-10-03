@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 58
+version: 59
 code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
 owners:
   - core
@@ -2391,6 +2391,7 @@ wrapper只改变Trace2解释器的预期首项，原Worker argv、批准、Owner
 仅无写臂删除唯一-w；stderr在同步调用范围内重定向空设备，stdout仍走原66字节和完整OID守卫。
 测试域_GitInvocation只描述直接helper读取的五项参数，不是正式GitMaterialInput或批准请求，
 不能交给worker握手或作为MAC／Owner证明。原操作期限与20秒命令期限取min，回读不重置预算。
+效果检查前后及最终发行身份复核后都检查同一剩余预算，防止尾部超时后仍报告成功。
 
 Windows现场先复用既有observe仅预检及固定官方PE／PDB；每格前后复核18输入和选中映像。
 只使用GitHub原步骤结论元数据，不增设采集器或读取业务日志。原两SDK及13接点继续独立执行，

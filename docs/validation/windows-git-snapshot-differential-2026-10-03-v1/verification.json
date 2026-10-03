@@ -19,6 +19,18 @@
       "failures": 0,
       "errors": 0,
       "skipped": 0
+    },
+    "deadline_red": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    "deadline_fixed": {
+      "tests": 513,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
     }
   },
   "native_status": "NOT_EXECUTED",
@@ -36,5 +48,12 @@
   "new_collector": false,
   "raw_business_logs_read": false,
   "provider_requests": 0,
-  "release_gates_closed": []
+  "release_gates_closed": [],
+  "independent_review": {
+    "p0": 0,
+    "p1": 0,
+    "p2": 1,
+    "p2_status": "FIXED_AND_LOCAL_VERIFIED",
+    "native_proven": false
+  }
 }
