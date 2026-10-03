@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import io
 import json
 import subprocess
@@ -528,13 +529,32 @@ def test_legacy_case_fields_and_full_gate_sources_are_unchanged():
         "scripts/windows_git_native_branch_observation/preflight.py",
         "scripts/windows_git_native_branch_observation/identity.py",
         "scripts/windows_git_native_branch_observation/diagnostics.py",
-        "scripts/windows_git_native_branch_observation/contract.py",
-        "scripts/windows_git_native_branch_observation/contract.json",
-        "tests/product_config/git_minimum_commit_probe.py",
-        "tests/product_config/git_trace2_projection.py",
         "tests/product_config/git_stderr_signals.py",
     ):
         original = subprocess.run(
             ["git", "show", f"{BASE}:{path}"], cwd=ROOT, check=True, capture_output=True
         ).stdout
         assert (ROOT / path).read_bytes() == original
+
+    # 已评审变更改用新的整体字节锚点，不能删除冻结门禁或按语义自动放行。
+    approved = {
+        "scripts/windows_git_native_branch_observation/contract.py": (
+            3937,
+            "98577a357e566e04f8a00e91b4a201dad93e83834a1683312bb26bff10b47a26",
+        ),
+        "scripts/windows_git_native_branch_observation/contract.json": (
+            7667,
+            "902dbdf1f7e837fff3102c1006984b0e4dd177e364e88a2162f21070a179026c",
+        ),
+        "tests/product_config/git_minimum_commit_probe.py": (
+            24603,
+            "f348ddf2d4490870c26511856eabf92dc079494902e679d3b3e04c0d1f56e2fb",
+        ),
+        "tests/product_config/git_trace2_projection.py": (
+            14677,
+            "7cf2410e5b75dc197ad92f573751ed181ab5c4f9c808ce6354b88f44f307d7f4",
+        ),
+    }
+    for path, expected in approved.items():
+        body = (ROOT / path).read_bytes()
+        assert (len(body), hashlib.sha256(body).hexdigest()) == expected

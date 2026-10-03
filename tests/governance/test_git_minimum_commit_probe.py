@@ -752,3 +752,201 @@ async def test_worker_failure_decoder_is_after_all_original_raw_and_protection(
         assert operation.data["post_worker_failure_status"] == "not_observed"
         assert "post_worker_failure" not in operation.data
     assert CANARY not in probe.render()
+
+
+@pytest.fixture
+def verified_role_source(tmp_path, monkeypatch):
+    from scripts.windows_git_native_branch_observation import contract, identity, preflight
+
+    # 来源适配测试使用假validator；原真实解析算法由既有synthetic_pair集合独立覆盖。
+    output = tmp_path / "private-output"
+    paths = {}
+    calls = []
+    for role in ("wrapper", "core"):
+        executable = tmp_path / role / "opaque-launcher"
+        executable.parent.mkdir()
+        executable.write_bytes(b"synthetic executable, not official PE")
+        executable.chmod(0o700)
+        paths[role] = executable
+        symbols = output / "symbols" / role / "git.pdb"
+        symbols.parent.mkdir(parents=True)
+        symbols.write_bytes(b"synthetic symbols, not official PDB")
+
+    def check(executable, symbols, row):
+        calls.append(row["role"])
+        assert executable == paths[row["role"]]
+        assert symbols == output / "symbols" / row["role"] / "git.pdb"
+        return {"matched": True, "role": row["role"]}
+
+    monkeypatch.setattr(identity, "check_pair", check)
+    monkeypatch.setattr(preflight, "selected_paths", lambda: (paths["wrapper"], paths))
+    return output, paths, calls, contract, identity, preflight
+
+
+def test_role_adapter_reuses_fixed_pair_results_and_keeps_them_out_of_payload(verified_role_source):
+    from harnessix.delivery.git_identity import _executable_identity
+
+    output, paths, calls, *_ = verified_role_source
+    probe = probe_module.Probe("A", "stderr-event-v1")
+    probe_module._bind_trace2_roles(probe, str(output / "fixture"))
+    assert calls == ["wrapper", "core"]
+    assert {binding.role for binding in probe.trace2_roles} == {"wrapper", "core"}
+    for binding in probe.trace2_roles:
+        assert binding.executable == str(paths[binding.role])
+        assert binding.identity == _executable_identity(paths[binding.role])
+        with pytest.raises((AttributeError, TypeError)):
+            binding.role = "wrong"
+    assert str(output) not in probe.render()
+    assert "trace2_roles" not in probe.render()
+
+
+@pytest.mark.parametrize(
+    "boundary",
+    [
+        "first-pair",
+        "second-pair",
+        "not-matched",
+        "wrong-role",
+        "identity-change",
+        "missing-symbol",
+        "escape-symbol",
+        "selected-change",
+        "duplicate-path",
+    ],
+)
+def test_role_source_failure_cannot_publish_partial_or_guessed_binding(
+    verified_role_source,
+    monkeypatch,
+    boundary,
+    tmp_path,
+):
+    output, paths, calls, _, identity, preflight = verified_role_source
+    original = identity.check_pair
+
+    def check(executable, symbols, row):
+        if row["role"] == {"first-pair": "wrapper", "second-pair": "core"}.get(boundary):
+            raise ValueError(CANARY)
+        result = original(executable, symbols, row)
+        if boundary == "not-matched":
+            result["matched"] = False
+        elif boundary == "wrong-role":
+            result["role"] = "unverified"
+        elif boundary == "identity-change":
+            executable.write_bytes(b"changed executable")
+        return result
+
+    monkeypatch.setattr(identity, "check_pair", check)
+    if boundary == "missing-symbol":
+        (output / "symbols/core/git.pdb").unlink()
+    elif boundary == "escape-symbol":
+        symbols = output / "symbols/core/git.pdb"
+        symbols.unlink()
+        target = tmp_path / "external-symbols"
+        target.write_bytes(b"synthetic symbol")
+        symbols.symlink_to(target)
+    elif boundary == "selected-change":
+        monkeypatch.setattr(preflight, "selected_paths", lambda: (tmp_path / "wrong", paths))
+    elif boundary == "duplicate-path":
+        paths["core"] = paths["wrapper"]
+    probe = probe_module.Probe("A", "stderr-event-v1")
+    probe_module._safe(probe, probe_module._bind_trace2_roles, probe, str(output / "fixture"))
+    assert probe.incomplete and probe.trace2_roles == ()
+    assert CANARY not in probe.render()
+
+
+@pytest.mark.parametrize("source", [None, True, "relative/fixture"])
+def test_role_adapter_requires_existing_explicit_private_output(source):
+    probe = probe_module.Probe("A", "stderr-event-v1")
+    probe_module._safe(probe, probe_module._bind_trace2_roles, probe, source)
+    assert probe.incomplete and probe.trace2_roles == ()
+
+
+@pytest.mark.parametrize(
+    "mode,platform,count",
+    [
+        ("off", "win32", 0),
+        ("off", "darwin", 0),
+        ("stderr-event-v1", "darwin", 0),
+        ("stderr-event-v1", "win32", 1),
+    ],
+)
+async def test_existing_fixture_wires_role_before_install_and_clears_it_after_settlement(
+    monkeypatch,
+    mode,
+    platform,
+    count,
+):
+    import sys
+
+    order = []
+    sentinel = (object(),)
+    config = SimpleNamespace(
+        getoption=lambda name: mode if name.startswith("--") else "/output/fixture"
+    )
+    request = SimpleNamespace(
+        node=SimpleNamespace(nodeid=next(iter(probe_module.SELECTORS)), stash={}),
+        session=SimpleNamespace(stash={}),
+        config=config,
+    )
+
+    def bind(probe, basetemp):
+        assert basetemp == "/output/fixture"
+        order.append("role")
+        probe.trace2_roles = sentinel
+
+    def install(context, probe):
+        order.append("install")
+        assert bool(probe.trace2_roles) is bool(count)
+
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setattr(probe_module, "_bind_trace2_roles", bind)
+    monkeypatch.setattr(probe_module, "_install", install)
+    fixture = probe_module._minimum_commit_probe.__wrapped__(request, monkeypatch)
+    await anext(fixture)
+    probe = request.node.stash[probe_module._PROBES]
+    assert order == (["role"] if count else []) + ["install"]
+    with pytest.raises(StopAsyncIteration):
+        await anext(fixture)
+    assert probe.trace2_roles == ()
+
+
+@pytest.mark.parametrize("role", ["wrapper", "core"])
+def test_existing_role_source_to_operation_projection_is_fully_wired(verified_role_source, role):
+    from harnessix.delivery.git_identity import _executable_identity
+    from tests.governance import test_git_trace2_projection as trace_tests
+    from tests.product_config import git_trace2_projection as projection
+
+    output, paths, calls, *_ = verified_role_source
+    operation, events = trace_tests._role_operation(role)
+    probe_module._bind_trace2_roles(operation.probe, str(output / "fixture"))
+    request = operation.prepared.write.request
+    request.git_argv = (str(paths[role]), *request.git_argv[1:])
+    request.git_executable_identity = _executable_identity(paths[role])
+    operation.prepared.command.argv = request.git_argv
+    operation.prepared.command.executable_identity = request.git_executable_identity
+    events[1]["argv"] = list(
+        ("git.exe", *request.git_argv[1:]) if role == "wrapper" else request.git_argv
+    )
+    projection.project_operation_trace2(operation, trace_tests._wire(*events), 128)
+    result = operation.data["post_git_trace2"]
+    assert calls == ["wrapper", "core"]
+    assert result["completeness"] == "KNOWN"
+    assert "ENTRY_START_MATCHED" in result["stage_witnesses"]
+    assert str(paths[role]) not in operation.probe.render()
+
+
+def test_failed_rebinding_clears_old_role_without_publishing_partial_results(
+    verified_role_source,
+    monkeypatch,
+):
+    output, _, _, _, identity, _ = verified_role_source
+    probe = probe_module.Probe("A", "stderr-event-v1")
+    probe_module._bind_trace2_roles(probe, str(output / "fixture"))
+    assert len(probe.trace2_roles) == 2
+
+    def fail(*args):
+        raise ValueError(CANARY)
+
+    monkeypatch.setattr(identity, "check_pair", fail)
+    probe_module._safe(probe, probe_module._bind_trace2_roles, probe, str(output / "fixture"))
+    assert probe.incomplete and probe.trace2_roles == ()

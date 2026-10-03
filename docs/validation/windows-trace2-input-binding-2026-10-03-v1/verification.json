@@ -1,0 +1,146 @@
+{
+  "result": "OFFLINE_INPUT_AND_ROLE_BINDING_PASS_NOT_NATIVE_ACCEPTANCE",
+  "evidence_scope": "actual six-file offline run; synthetic roles and memory checks are not Windows execution",
+  "historical_stages": [
+    {
+      "name": "candidate",
+      "passed": 610,
+      "failed": 1,
+      "reason": "old frozen identity correctly rejects new input"
+    },
+    {
+      "name": "binding-red",
+      "passed": 0,
+      "failed": 4
+    },
+    {
+      "name": "integration-fixture-v1",
+      "passed": 742,
+      "failed": 17,
+      "reason": "test expected return fields and mkdir existing parent; no product fix claimed"
+    },
+    {
+      "name": "format-check",
+      "result": "initial three formatting failures preserved; only layout fixed"
+    },
+    {
+      "name": "formatted-v2",
+      "passed": 759,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "type-gap-red",
+      "passed": 0,
+      "failed": 8,
+      "product_metadata_unchanged": true
+    },
+    {
+      "name": "type-sensitive-final-v3",
+      "passed": 767,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "artifacts": {
+    "identity-red.xml": {
+      "bytes": 5613,
+      "sha256": "509e41fb8ff7e2f013545ca517dba51ad70d2234f7fab34550aa32f5148b3819"
+    },
+    "integration-v1.xml": {
+      "bytes": 162058,
+      "sha256": "ddd4bc03bbfc9e301a3c81e92bd8c64ce718119fc17bb51807dad000a04b5c7b"
+    },
+    "final-v2.xml": {
+      "bytes": 134411,
+      "sha256": "678c5ec473012855399e0b29503304ef489452437387f76d4513a1be48bd6376"
+    },
+    "ruff-final.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format-final.log": {
+      "bytes": 26,
+      "sha256": "0321fffcb91606a42c0a19d8c1121d5c544379d663821fce616c71a7bb62f6b5"
+    },
+    "type-gap-red.xml": {
+      "bytes": 13607,
+      "sha256": "ec47d2bf5bd1e8a7753015d7efd94bd6afded496a646aae2db753e7974672a6d"
+    },
+    "final-v3.xml": {
+      "bytes": 135865,
+      "sha256": "ffbb7af14aaf2e4fa678e32311b822657c4feddb4eb9922b6b23cf30fe24afe9"
+    },
+    "ruff-v3.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format-v3.log": {
+      "bytes": 26,
+      "sha256": "0321fffcb91606a42c0a19d8c1121d5c544379d663821fce616c71a7bb62f6b5"
+    }
+  },
+  "independent_identity_review": "COMPLETED_LIMITED_17_TYPED_DELTAS_VERIFIED",
+  "unverified": [
+    "Windows native original cases",
+    "actual SDK success",
+    "Git128 business cause",
+    "consumer Windows acceptance",
+    "full Git effect composition and Backup v2",
+    "real R3 quality",
+    "independent Beta"
+  ],
+  "independent_type_gap_closure": "COMPLETED_LIMITED_EIGHT_NEGATIVES_REJECTED",
+  "independent_review_evidence": {
+    "initial_identity_review": "LIMITED_PASS_WITH_P2_TEST_GAP",
+    "typed_allowed_json_leaf_delta": 17,
+    "original_whole_guards": 9,
+    "R1_closure": "LIMITED_PASS",
+    "independent_type_negatives_rejected": 8,
+    "test_sha256": "b7a73797e81896c92722da0d04af674fbd5381e807f8c40c88f5cd8038482029",
+    "native_execution_proven": false,
+    "reports": {
+      "windows-trace2-input-binding-review-20261003-v1/REPORT.md": "2353809f2125bcbfcee5ba0372e4935e102d0983f93f29bdc4a70e5f6692623b",
+      "windows-trace2-input-binding-r1-closure-20261003-v1/REPORT.md": "2c6f0d71a582dd44329378b8efd6aa83875aef040d8d0065b929927ec3faf19e"
+    }
+  },
+  "documentation": {
+    "state": "PASS",
+    "documents": 514,
+    "links": 12044,
+    "mermaid_blocks": 993,
+    "findings": []
+  },
+  "diagrams": [
+    {
+      "name": "architecture",
+      "rendered": true,
+      "visually_viewed": true,
+      "source_sha256": "f77e224490981d88c7bd51976bc733e048b84511507169dfa9ae4c6a7642e5bf",
+      "png_sha256": "ec12c8b7064e376468938f3fc7c370e444cfefa540bd7843e333c5595253a2e3"
+    },
+    {
+      "name": "role-flow",
+      "rendered": true,
+      "visually_viewed": true,
+      "source_sha256": "77791090dfb2b0712dbd51907a734e75c2093f6502bd3b60ec8304a2e8208a2d",
+      "png_sha256": "34265924ffc3e2ffc67989efb127101cff8d726fd42726c6cf004e70259c79b2"
+    },
+    {
+      "name": "sequence",
+      "rendered": true,
+      "visually_viewed": true,
+      "source_sha256": "8d33fd3817097977a938107e488a0f85cdc9c3c491d6546436e4e31483f18c63",
+      "png_sha256": "cefbc163e93ef710b96c633071b6196cd421cb5b1eab33a93b3a89d1ed0141d8"
+    },
+    {
+      "name": "data-flow",
+      "rendered": true,
+      "visually_viewed": true,
+      "source_sha256": "d76018778b3681a3bb0f41eb82c7c601ef98d3ec834dd72875925d8d44f32307",
+      "png_sha256": "f9357221c29ac3fbf0082eaf626f0766afec58a8e3ebb27ed01791205acb3054"
+    }
+  ]
+}

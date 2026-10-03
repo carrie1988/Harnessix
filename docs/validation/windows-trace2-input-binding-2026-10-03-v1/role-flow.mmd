@@ -1,0 +1,20 @@
+flowchart TD
+  A[原fixture开始] --> B{Windows且显式Trace2}
+  B -- 否 --> H[安装原13 hook]
+  B -- 是 --> C[清空缓存并定位原符号]
+  C --> D[两对PE/PDB完整验真]
+  D --> E{身份稳定与集合完整}
+  E -- 否 --> U[缓存为空且探针不完整]
+  E -- 是 --> F[一次性发布角色tuple]
+  U --> H
+  F --> H
+  H --> G[原真实业务与完整raw前置]
+  G --> Q{Trace2模式off}
+  Q -- 是 --> O[原OFF投影]
+  O --> N
+  Q -- 否 --> J{角色与原请求命令一致}
+  J -- 否 --> K[原绑定UNKNOWN]
+  J -- 是 --> L[仅派生预期首项]
+  L --> M[原SID profile EOF与退出校验]
+  M --> N[原结算后清空角色]
+  K --> N

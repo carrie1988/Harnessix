@@ -1,0 +1,46 @@
+{
+  "scope": "eight owned implementation and test files; not full repository",
+  "baseline_revision": "5265fdf2d1755b15491f41b770b2d718bab98d2c",
+  "members": [
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.py",
+      "bytes": 3937,
+      "sha256": "98577a357e566e04f8a00e91b4a201dad93e83834a1683312bb26bff10b47a26"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.json",
+      "bytes": 7667,
+      "sha256": "902dbdf1f7e837fff3102c1006984b0e4dd177e364e88a2162f21070a179026c"
+    },
+    {
+      "path": "tests/product_config/git_minimum_commit_probe.py",
+      "bytes": 24603,
+      "sha256": "f348ddf2d4490870c26511856eabf92dc079494902e679d3b3e04c0d1f56e2fb"
+    },
+    {
+      "path": "tests/product_config/git_trace2_projection.py",
+      "bytes": 14677,
+      "sha256": "7cf2410e5b75dc197ad92f573751ed181ab5c4f9c808ce6354b88f44f307d7f4"
+    },
+    {
+      "path": "tests/governance/test_git_minimum_commit_probe.py",
+      "bytes": 35883,
+      "sha256": "febf1d668c58c24a0fb56bab5fefc50d11db6e4fa15491c01f8a54e2e3235fc7"
+    },
+    {
+      "path": "tests/governance/test_git_trace2_projection.py",
+      "bytes": 23523,
+      "sha256": "0ccda936019aa6cf44a0bd6e82a5881b56c2e6f5d133ceddc934b1cdfc198077"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_failure_projection.py",
+      "bytes": 21723,
+      "sha256": "1af1ee250faeeecd2b932d01e8e37d2597731eda304c378e737c1eb74beb319f"
+    },
+    {
+      "path": "tests/governance/test_windows_git_trace2_input_binding.py",
+      "bytes": 9462,
+      "sha256": "b7a73797e81896c92722da0d04af674fbd5381e807f8c40c88f5cd8038482029"
+    }
+  ]
+}

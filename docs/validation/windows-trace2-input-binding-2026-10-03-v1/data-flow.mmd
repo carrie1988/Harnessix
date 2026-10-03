@@ -1,0 +1,13 @@
+flowchart TB
+  X[原固定metadata] --> Y[16件源码长度与SHA]
+  Y --> Z[源码合法或精确拒绝]
+  E[原程序PE与符号PDB] --> V[原check_pair]
+  V --> R[私有内存角色与物理身份]
+  A[原请求argv与command身份] --> B[三方精确关联]
+  R --> B
+  S[原已验真stderr] --> T[原封闭流校验]
+  B --> T
+  T --> O[七字段固定枚举]
+  O --> P[原CaseSink与原正式gate]
+  R --> C[finally清空不持久化]
+  Z -. 不授业务执行权限 .-> P

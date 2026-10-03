@@ -1,0 +1,20 @@
+sequenceDiagram
+  participant F as 原fixture
+  participant V as 原PE/PDB验真
+  participant R as 内存角色
+  participant W as 原Worker与Owner
+  participant T as 原Trace2投影
+  F->>V: 原符号与原程序只读复核
+  V-->>F: 完整两角色及稳定物理身份
+  F->>R: 原子发布tuple
+  F->>W: 安装原13 hook并执行原Case
+  W-->>T: 原Completion或完整失败raw守卫
+  T->>R: 匹配原请求和实际命令
+  alt 完整角色匹配
+    R-->>T: wrapper或core固定预期表示
+    T->>T: 原SID profile EOF预算及退出校验
+  else 缺失或变化
+    R-->>T: 绑定UNKNOWN
+  end
+  T-->>F: 原七字段有限投影
+  F->>R: 原结算finally清空

@@ -1,0 +1,70 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 4350,
+      "sha256": "208eba82b3707965a4ec27eb90b1dbf5934ab8d8516ddc520bcded7ab233e4ef"
+    },
+    {
+      "path": "architecture.mmd",
+      "bytes": 454,
+      "sha256": "f77e224490981d88c7bd51976bc733e048b84511507169dfa9ae4c6a7642e5bf"
+    },
+    {
+      "path": "architecture.png",
+      "bytes": 47284,
+      "sha256": "ec12c8b7064e376468938f3fc7c370e444cfefa540bd7843e333c5595253a2e3"
+    },
+    {
+      "path": "data-flow.mmd",
+      "bytes": 479,
+      "sha256": "d76018778b3681a3bb0f41eb82c7c601ef98d3ec834dd72875925d8d44f32307"
+    },
+    {
+      "path": "data-flow.png",
+      "bytes": 42937,
+      "sha256": "f9357221c29ac3fbf0082eaf626f0766afec58a8e3ebb27ed01791205acb3054"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 1165,
+      "sha256": "50c6b158579e58e1b49069299a76e294ca382570b3ff07f27bb814ae6767d6ef"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 849,
+      "sha256": "be616b8969eb222ca368d1fa199172d7f64d8a0e5a51ec5173551385cfd1a68a"
+    },
+    {
+      "path": "role-flow.mmd",
+      "bytes": 666,
+      "sha256": "77791090dfb2b0712dbd51907a734e75c2093f6502bd3b60ec8304a2e8208a2d"
+    },
+    {
+      "path": "role-flow.png",
+      "bytes": 80277,
+      "sha256": "34265924ffc3e2ffc67989efb127101cff8d726fd42726c6cf004e70259c79b2"
+    },
+    {
+      "path": "sequence.mmd",
+      "bytes": 675,
+      "sha256": "8d33fd3817097977a938107e488a0f85cdc9c3c491d6546436e4e31483f18c63"
+    },
+    {
+      "path": "sequence.png",
+      "bytes": 42539,
+      "sha256": "cefbc163e93ef710b96c633071b6196cd421cb5b1eab33a93b3a89d1ed0141d8"
+    },
+    {
+      "path": "source-lock.json",
+      "bytes": 1674,
+      "sha256": "7fa323a27d40c3ac2c56f20045030a28b29f2c0573d2aa8cc84af7dbbb7b6f72"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 4699,
+      "sha256": "ff19759b6428144abfd0349c727e0fcf5ddbd61f4991d49390bfe6bf1a3d882a"
+    }
+  ]
+}

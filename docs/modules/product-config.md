@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 52
-code_revision: 9a424dfcd874fa42efd10208aaf102ce0f09a0b7
+version: 53
+code_revision: 5265fdf2d1755b15491f41b770b2d718bab98d2c
 owners:
   - core
 modules:
@@ -2350,3 +2350,14 @@ Process Supervisor、Execution Plan Store与同一个冻结SecretPublicationScop
 [共享产品宿主总体与详细设计](../changes/m09-r4-git-shared-process-host.md)。
 该内部接缝不表示默认完整Git父意图/效果命令已装配，A/T/D、Checkpoint/Commit、
 业务Backup v2、消费者Windows及商用门禁仍按完整Git业务合同实施。
+
+
+### Windows材料诊断角色与固定源码身份
+
+内部原生探针复用原PE/PDB验真，将已验证wrapper/core关联到实际命令和请求物理身份。
+wrapper只改变Trace2解释器的预期首项，原Worker argv、批准、Owner及完整raw守卫不变。
+角色仅在当前fixture内存保存，结算清空；缺来源不猜测，原公开七字段与正式gate不扩充。
+原16件输入重新固定四件已知源码字节，整体冻结检查和旧失败保留。
+接口、字段、流程、时序、失败、源码映射及限定767项离线结果见
+[Windows Trace2角色与发行输入详设](../changes/m09-r4-windows-trace2-role-input-binding.md)。
+离线接线不证明Windows Git128已修复或消费者安装通过。

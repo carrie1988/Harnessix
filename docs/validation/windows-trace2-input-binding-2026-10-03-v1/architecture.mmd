@@ -1,0 +1,14 @@
+flowchart TB
+  C[固定metadata与16件源码] --> P[原Windows预检]
+  P --> S[原固定PE/PDB符号]
+  P --> D[CDB启动独立Python]
+  D --> F[原探针fixture]
+  S --> V[复用原check_pair与物理身份]
+  F --> V
+  V --> R[当前内存角色tuple]
+  F --> H[原13 hook与原Worker]
+  H --> G[原Completion或失败raw守卫]
+  R --> I[角色与原命令精确绑定]
+  G --> I
+  I --> T[原Trace2流解释器]
+  T --> O[原七字段有限投影]

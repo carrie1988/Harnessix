@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 161
-code_revision: 9a424dfcd874fa42efd10208aaf102ce0f09a0b7
+version: 162
+code_revision: 5265fdf2d1755b15491f41b770b2d718bab98d2c
 owners:
   - core
 modules:
@@ -1690,3 +1690,17 @@ SecretPublicationScope的显式同对象借用；不创建第二套共享资源�
 初版155项、直接回收版159项与最终169项分阶段保留，不继承旧字节成绩或叠加重复结果。
 该内部接缝不表示默认完整Git父意图/效果配方、A/T/D、Checkpoint/Commit或业务Backup v2完成；
 Windows原生故障、R3真实质量、独立Beta和同候选R1～R6继续开放。
+
+
+### R1/R4：Windows Trace2角色接线与新固定输入
+
+原探针在hook安装前复用固定PE/PDB验真，wrapper的预期Trace2首项精确为git.exe；
+原Worker命令、后21项、批准、Owner、MAC/raw/EOF、SID与预算不改。
+角色只读内存绑定到实际命令和请求身份，失败不发布部分来源，结算后清空。
+16件源码成员保持，四件已知源码更新精确LF/CRLF身份；原九件整体字节门禁保留。
+完整六件相关治理测试实际767通过、无失败/错误/跳过，507件有限执行输入零漂移；
+其中479件生产成员含438件Python源码，不是全仓或Windows现场验收。
+详见[总体与详细设计](changes/m09-r4-windows-trace2-role-input-binding.md)及
+[限定验证资料](validation/windows-trace2-input-binding-2026-10-03-v1/README.md)。
+旧冻结失败及Run37089114490仍保留；新原生固定结果、完整Git产品/Backup v2、R3真实质量、
+消费者Windows、独立Beta和同候选R1～R6仍开放。

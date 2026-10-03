@@ -1,6 +1,6 @@
 {
   "schema": "harnessix.git-native-branch-contract/v1",
-  "base_revision": "09a386c5269d476f6d9053c6b1b4c5ad83764372",
+  "base_revision": "5265fdf2d1755b15491f41b770b2d718bab98d2c",
   "official_release": "v2.55.0.windows.5",
   "release_api": "https://api.github.com/repos/git-for-windows/git/releases/tags/v2.55.0.windows.5",
   "assets": {
@@ -111,17 +111,17 @@
     },
     {
       "path": "src/harnessix/product_config/git_delivery_process.py",
-      "bytes": 24038,
-      "sha256": "15b394e6eb3ded3f6e67638a9d6e3ec414e01e9692ac779b238e74fa4946d403",
-      "crlf_bytes": 24630,
-      "crlf_sha256": "f40f5fc2477b18f9265644bbe3b296fc1fe96a3a7d0c5c49f7edb5f5a6e95eb7"
+      "bytes": 24334,
+      "sha256": "5a42a0c93a233f0d0c3893e9c1aa40e53fd13fdc288c27efb20853860adff053",
+      "crlf_bytes": 24929,
+      "crlf_sha256": "554141c41d78d67fee7efc43a5e7b93fe327be8d5863597d1f5b4ed663241d6a"
     },
     {
       "path": "src/harnessix/product_config/git_material_process.py",
-      "bytes": 18674,
-      "sha256": "6c203b86d4729fc3ced38f42850e3c8744826c867d0bfeb316c22c7f09c86f4a",
-      "crlf_bytes": 19149,
-      "crlf_sha256": "b4e76a2f8f548e2ba94f0b4dfdd36f24c648b4cdbfebfe64bbec0cf4da3f7d4e"
+      "bytes": 18821,
+      "sha256": "8895104522c82746fc4bdb7bcf475041d1e7b7e7fc51ea1bc458302696825c7f",
+      "crlf_bytes": 19299,
+      "crlf_sha256": "4fd4191720dbd47d49be6059be37b79809e4981ea6fe5194046c040e9b87a23b"
     },
     {
       "path": "tests/product_config/test_git_material_input.py",
@@ -139,17 +139,17 @@
     },
     {
       "path": "tests/product_config/git_minimum_commit_probe.py",
-      "bytes": 22432,
-      "sha256": "bceaff4fdb87524189e48f28fcf3d038e50e6b428240b150c99565bcd196cf19",
-      "crlf_bytes": 23022,
-      "crlf_sha256": "e178630ef15476fa128492bac82baabf649700b2ff889ff6d634b846eacabd4e"
+      "bytes": 24603,
+      "sha256": "f348ddf2d4490870c26511856eabf92dc079494902e679d3b3e04c0d1f56e2fb",
+      "crlf_bytes": 25236,
+      "crlf_sha256": "361c66e47290095ea1a4b161a3919a2b67bdd5e0ac48521b2257920197de3143"
     },
     {
       "path": "tests/product_config/git_trace2_projection.py",
-      "bytes": 12723,
-      "sha256": "a86a106e35f731f46c81acc9e872e038d391130461cd674a7395a9c05d58d43f",
-      "crlf_bytes": 13070,
-      "crlf_sha256": "f881685cae98232516d35567de80f28f5928996f0fa6d7d5750f5e272ab7e450"
+      "bytes": 14677,
+      "sha256": "7cf2410e5b75dc197ad92f573751ed181ab5c4f9c808ce6354b88f44f307d7f4",
+      "crlf_bytes": 15077,
+      "crlf_sha256": "9fc8edbc7f4c6dc333262cae5cd762fc324a94a7e79affab42ff115c9ed7537f"
     },
     {
       "path": "pyproject.toml",

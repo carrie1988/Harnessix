@@ -27,6 +27,7 @@ from tests.product_config.git_stderr_signals import (
     _stderr_signals as _stderr_signals,
 )
 from tests.product_config.git_trace2_projection import (
+    _Trace2RoleBinding,
     diagnostic_probes_complete,
     initialize_operation_trace2,
     project_operation_trace2,
@@ -201,6 +202,7 @@ class Probe:
         self.incomplete = False
         self.truncated = False
         self.installed_hooks = 0
+        self.trace2_roles: tuple[_Trace2RoleBinding, ...] = ()
 
     def event(
         self, operation: Operation, phase: str, outcome: str, error: BaseException | None = None
@@ -522,6 +524,44 @@ def _install(monkeypatch: Any, probe: Probe) -> None:
         ).hexdigest()
 
 
+def _bind_trace2_roles(probe: Probe, basetemp: object) -> None:
+    """复核原预检已准备的符号；验真全部成功后才原子发布只读内存角色。"""
+    from harnessix.delivery.git_identity import _executable_identity
+    from scripts.windows_git_native_branch_observation.contract import read_contract
+    from scripts.windows_git_native_branch_observation.identity import check_pair
+    from scripts.windows_git_native_branch_observation.preflight import selected_paths
+
+    probe.trace2_roles = ()
+    if type(basetemp) is not str or not Path(basetemp).is_absolute():
+        raise ValueError("verified_trace2_role_source_unavailable")
+    output = Path(basetemp).parent.resolve(strict=True)
+    contract = read_contract()
+    selected, paths = selected_paths()
+    bindings = []
+    for row in contract["pairs"]:
+        executable = paths[row["role"]].resolve(strict=True)
+        symbols = (output / "symbols" / row["role"] / "git.pdb").resolve(strict=True)
+        if not symbols.is_relative_to(output):
+            raise ValueError("verified_trace2_role_source_unavailable")
+        before = _executable_identity(executable)
+        result = check_pair(executable, symbols, row)
+        if (
+            result["matched"] is not True
+            or result["role"] != row["role"]
+            or _executable_identity(executable) != before
+        ):
+            raise ValueError("verified_trace2_role_changed")
+        bindings.append(_Trace2RoleBinding(str(executable), before, result["role"]))
+    if (
+        len(bindings) != 2
+        or {binding.role for binding in bindings} != {"wrapper", "core"}
+        or len({binding.executable for binding in bindings}) != 2
+        or str(selected) not in {binding.executable for binding in bindings}
+    ):
+        raise ValueError("verified_trace2_role_source_unavailable")
+    probe.trace2_roles = tuple(bindings)
+
+
 def pytest_addoption(parser: Any) -> None:
     parser.addoption(
         "--git-material-trace2",
@@ -542,6 +582,8 @@ async def _minimum_commit_probe(request: Any, monkeypatch: Any):
     request.node.stash[_PROBES] = probe
     request.session.stash.setdefault(_SESSION_PROBES, []).append(probe)
     with monkeypatch.context() as context:
+        if probe.trace2_mode != "off" and sys.platform == "win32":
+            _safe(probe, _bind_trace2_roles, probe, request.config.getoption("basetemp"))
         _safe(probe, _install, context, probe)
         yield
         context.undo()
@@ -550,6 +592,7 @@ async def _minimum_commit_probe(request: Any, monkeypatch: Any):
         except Exception:
             probe.incomplete = True
         finally:
+            probe.trace2_roles = ()
             for operation in probe.operations:
                 operation.prepared = operation.handle = operation.protection = None
 

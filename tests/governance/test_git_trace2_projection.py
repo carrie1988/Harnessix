@@ -317,6 +317,7 @@ async def test_trace2_call_requires_original_raw_mac_eof_and_protection(monkeypa
             git_argv=ARGV,
         )
     )
+    _bind_operation_role_for_test(operation)
     seen = []
     original = projection.project_git_trace2_events
 
@@ -427,6 +428,7 @@ def test_successful_original_completion_uses_existing_verified_bytes_without_pos
         stderr=_wire(*_events()),
         input_proof=SimpleNamespace(git_returncode=0),
     )
+    _bind_operation_role_for_test(operation)
     probe_module._success(operation, "complete", (), result)
     assert operation.data["original_completion_authenticated"] is True
     assert operation.data["post_git_trace2"]["return_consistency"] == "MATCHED_ZERO"
@@ -461,3 +463,165 @@ def test_complete_known_carrier_keeps_original_failed_business_outcome():
     before = [dict(probe.outcomes) for probe in probes]
     probe_module.pytest_sessionfinish(session, 1)
     assert session.exitstatus == 1 and [probe.outcomes for probe in probes] == before
+
+
+def _bind_operation_role_for_test(operation, role="core"):
+    # 单测显式模拟已验真来源；不作为PE/PDB、Owner或原生批准证据。
+    request = operation.prepared.write.request
+    request.git_executable_identity = "a" * 64
+    factory = getattr(projection, "_Trace2RoleBinding", SimpleNamespace)
+    operation.probe.trace2_roles = (
+        factory(executable=request.git_argv[0], identity="a" * 64, role=role),
+    )
+    operation.prepared.command = SimpleNamespace(
+        argv=request.git_argv, executable_identity="a" * 64
+    )
+
+
+def _role_operation(role="wrapper", code=128, object_type="blob"):
+    from tests.product_config import git_minimum_commit_probe as probe_module
+
+    probe = probe_module.Probe("A", "stderr-event-v1")
+    from harnessix.delivery.git_material_worker import fixed_git_argv
+
+    argv = fixed_git_argv("opaque-verified-launcher", "opaque-common", "opaque-hooks", object_type)
+    request = SimpleNamespace(
+        trace2_mode="stderr-event-v1",
+        trace2_profile_sha256=TRACE2_PROFILE_SHA256,
+        git_argv=argv,
+    )
+    operation = probe_module.Operation(
+        probe,
+        prepared=SimpleNamespace(write=SimpleNamespace(request=request)),
+        finished=True,
+        data={"kind": "write"},
+    )
+    probe.operations.append(operation)
+    _bind_operation_role_for_test(operation, role)
+    events = _events(code)
+    events[1]["argv"] = list(("git.exe", *argv[1:]) if role == "wrapper" else argv)
+    return operation, events
+
+
+@pytest.mark.parametrize("role", ["wrapper", "core"])
+@pytest.mark.parametrize("code", [0, 128])
+@pytest.mark.parametrize("object_type", ["blob", "tree", "commit"])
+def test_verified_role_reaches_operation_projection_without_changing_request(
+    role,
+    code,
+    object_type,
+):
+    operation, events = _role_operation(role, code, object_type)
+    request = operation.prepared.write.request
+    original_argv = request.git_argv
+    projection.project_operation_trace2(operation, _wire(*events), code)
+    result = operation.data["post_git_trace2"]
+    assert result["completeness"] == "KNOWN"
+    assert "ENTRY_START_MATCHED" in result["stage_witnesses"]
+    assert request.git_argv is original_argv
+    assert set(result) == OUTPUT_FIELDS
+    assert "opaque-verified-launcher" not in operation.probe.render()
+
+
+@pytest.mark.parametrize("role", ["wrapper", "core"])
+async def test_role_wiring_crosses_original_failure_raw_guard_once(monkeypatch, role):
+    from tests.governance.test_git_minimum_commit_probe import _signal_post_operation
+
+    bound, events = _role_operation(role)
+    probe, operation, calls = _signal_post_operation(monkeypatch, "none", _wire(*events))
+    probe.trace2_mode = "stderr-event-v1"
+    probe.trace2_roles = bound.probe.trace2_roles
+    operation.prepared.write = bound.prepared.write
+    operation.prepared.command = bound.prepared.command
+    await probe.post_settlement()
+    await probe.post_settlement()
+    assert operation.data["post_git_trace2"]["completeness"] == "KNOWN"
+    assert calls[:6] == ["receipt", "stdout", "stderr", "raw", "raw", "protection"]
+    assert calls.count("receipt") == 1 and calls.count("stderr") == 1
+    assert operation.data["post_proof"]["status"] == "absent"
+    assert operation.data["original_operation_returned"] is False
+
+
+@pytest.mark.parametrize("role", ["wrapper", "core"])
+def test_role_wiring_crosses_original_completion_without_extra_reads(role):
+    from tests.product_config import git_minimum_commit_probe as probe_module
+
+    operation, events = _role_operation(role, 0)
+    lease = SimpleNamespace(state="exited", stop_reason="exited", returncode=0, pid=33, sequence=3)
+    completion = GitProcessCompletion(
+        lease=lease,
+        receipt=SimpleNamespace(),
+        stdout=b"",
+        stderr=_wire(*events),
+        input_proof=SimpleNamespace(git_returncode=0),
+    )
+    probe_module._success(operation, "complete", (), completion)
+    assert operation.data["post_git_trace2"]["completeness"] == "KNOWN"
+    assert operation.data["original_completion_authenticated"] is True
+    assert not operation.post_attempted
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "missing",
+        "wrong-type",
+        "role",
+        "path",
+        "identity",
+        "request-identity",
+        "command-identity",
+        "command-argv",
+        "duplicate",
+    ],
+)
+def test_role_source_must_match_exact_request_and_command(mutation):
+    operation, events = _role_operation()
+    binding = operation.probe.trace2_roles[0]
+    if mutation == "missing":
+        operation.probe.trace2_roles = ()
+    elif mutation == "wrong-type":
+        operation.probe.trace2_roles = (
+            SimpleNamespace(
+                executable=binding.executable,
+                identity=binding.identity,
+                role=binding.role,
+            ),
+        )
+    elif mutation == "duplicate":
+        operation.probe.trace2_roles *= 2
+    elif mutation in {"role", "path", "identity"}:
+        factory = type(binding)
+        values = dict(executable=binding.executable, identity=binding.identity, role=binding.role)
+        values[{"role": "role", "path": "executable", "identity": "identity"}[mutation]] = "wrong"
+        operation.probe.trace2_roles = (factory(**values),)
+    elif mutation == "request-identity":
+        operation.prepared.write.request.git_executable_identity = "b" * 64
+    elif mutation == "command-identity":
+        operation.prepared.command.executable_identity = "b" * 64
+    else:
+        operation.prepared.command.argv = ("wrong", *operation.prepared.command.argv[1:])
+    projection.project_operation_trace2(operation, _wire(*events), 128)
+    result = operation.data["post_git_trace2"]
+    assert result["completeness"] == "UNKNOWN"
+    assert "ENTRY_START_MATCHED" not in result["stage_witnesses"]
+
+
+@pytest.mark.parametrize("mutation", ["argv0", "tail", "sid", "duplicate", "profile", "extra"])
+@pytest.mark.parametrize("role", ["wrapper", "core"])
+def test_role_binding_never_relaxes_original_stream_predicate(role, mutation):
+    operation, events = _role_operation(role)
+    if mutation == "argv0":
+        events[1]["argv"][0] = "GIT.EXE"
+    elif mutation == "tail":
+        events[1]["argv"][-1] = "changed"
+    elif mutation == "sid":
+        events[1]["sid"] = "different"
+    elif mutation == "duplicate":
+        events.insert(2, dict(events[1]))
+    elif mutation == "profile":
+        events[0]["evt"] = "5"
+    else:
+        events[1]["unapproved"] = "opaque"
+    projection.project_operation_trace2(operation, _wire(*events), 128)
+    assert operation.data["post_git_trace2"]["completeness"] == "UNKNOWN"

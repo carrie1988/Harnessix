@@ -296,6 +296,51 @@ def project_git_trace2_events(
     return stream.finish(git_returncode)
 
 
+@dataclass(frozen=True, slots=True)
+class _Trace2RoleBinding:
+    """已有PE/PDB验真结果的只读关联；仅用于诊断，不授予执行权限。"""
+
+    executable: str = field(repr=False)
+    identity: str = field(repr=False)
+    role: str
+
+
+def _operation_start_argv(operation: Any) -> tuple[str, ...] | None:
+    """绑定原请求与已验真角色；不从路径名或不可信start反推身份。"""
+    request = operation.prepared.write.request
+    argv = request.git_argv
+    if type(argv) is not tuple or len(argv) != 22 or not all(_string(item) for item in argv):
+        return None
+    roles = operation.probe.trace2_roles
+    if type(roles) is not tuple or not roles or len(roles) > 2:
+        return None
+    if any(
+        type(binding) is not _Trace2RoleBinding
+        or not _string(binding.executable)
+        or type(binding.role) is not str
+        or binding.role not in {"wrapper", "core"}
+        or type(binding.identity) is not str
+        or len(binding.identity) != 64
+        or any(char not in "0123456789abcdef" for char in binding.identity)
+        for binding in roles
+    ):
+        return None
+    matched = [binding for binding in roles if binding.executable == argv[0]]
+    if len(matched) != 1 or matched[0].role not in {"wrapper", "core"}:
+        return None
+    binding = matched[0]
+    command = operation.prepared.command
+    if (
+        type(binding.identity) is not str
+        or not binding.identity
+        or binding.identity != request.git_executable_identity
+        or binding.identity != command.executable_identity
+        or command.argv != argv
+    ):
+        return None
+    return ("git.exe", *argv[1:]) if binding.role == "wrapper" else argv
+
+
 def project_operation_trace2(operation: Any, stderr: bytes, git_returncode: object = None) -> None:
     """只能由原完整 raw/protection 之后或原完整 Completion 之后调用。"""
     if operation.probe.trace2_mode == "off":
@@ -305,8 +350,16 @@ def project_operation_trace2(operation: Any, stderr: bytes, git_returncode: obje
     if request.trace2_mode != "stderr-event-v1":
         operation.data["post_git_trace2"] = _record("MISMATCH", "PROFILE_MISMATCH")
     else:
-        operation.data["post_git_trace2"] = project_git_trace2_events(
-            stderr, request.git_argv, request.trace2_profile_sha256, git_returncode=git_returncode
+        expected_start = _operation_start_argv(operation)
+        operation.data["post_git_trace2"] = (
+            _record("MISMATCH", "STREAM_BINDING_MISMATCH")
+            if expected_start is None
+            else project_git_trace2_events(
+                stderr,
+                expected_start,
+                request.trace2_profile_sha256,
+                git_returncode=git_returncode,
+            )
         )
     if operation.data["post_git_trace2"]["completeness"] != "KNOWN":
         operation.probe.incomplete = True

@@ -1,0 +1,25 @@
+{
+  "schema": "harnessix.windows-trace2-input-binding-review/v1",
+  "source_identity_review": "COMPLETED_LIMITED_PASS",
+  "role_semantics_review": "LIMITED_NO_NEW_REPRODUCIBLE_FINDINGS",
+  "role_semantics_method": "synthetic PE/PDB and memory interfaces; not native execution",
+  "old_candidate_identity_fail_preserved": true,
+  "whole_file_guards": 9,
+  "protected_fragments": 18,
+  "not_verified": [
+    "actual Windows native SDK acceptance",
+    "Git128 business cause",
+    "consumer Windows",
+    "full Git delivery and Backup v2",
+    "R3 quality",
+    "Beta",
+    "commercial R1-R6"
+  ],
+  "type_sensitive_difference_finding": {
+    "id": "R1",
+    "severity": "P2 test coverage only",
+    "actual_metadata_unchanged": true,
+    "eight_negative_cases_red_then_green": true,
+    "targeted_independent_closure": "COMPLETED_LIMITED_PASS"
+  }
+}

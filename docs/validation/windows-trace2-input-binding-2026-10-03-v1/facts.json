@@ -1,0 +1,39 @@
+{
+  "schema": "harnessix.windows-trace2-input-binding-evidence/v1",
+  "offline_result": {
+    "tests": 767,
+    "passed": 767,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "test_files": 6
+  },
+  "input_evidence": {
+    "tests": 767,
+    "passed": 767,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inputs": 507,
+    "production_members": 479,
+    "python_production_sources": 438,
+    "drift": [],
+    "index_sha256": "7d59f77ceb5d4ff27027467db8e75747233269eb7253bcffd26e4845ccbdce77",
+    "type_sensitive_delta_negative_cases": 8,
+    "no_native_execution": true,
+    "no_model_requests": true
+  },
+  "metadata_sha256": "902dbdf1f7e837fff3102c1006984b0e4dd177e364e88a2162f21070a179026c",
+  "changed_source_input_rows": 4,
+  "unchanged_source_input_rows": 12,
+  "declared_source_input_members": 16,
+  "source_identity_delta_leaves": 17,
+  "protected_original_source_fragments": 18,
+  "preserved_whole_file_guards": 9,
+  "ruff_python_members": 7,
+  "native_execution_performed": false,
+  "old_native_run_preserved": "37089114490",
+  "native_sdk_acceptance": false,
+  "release_gates_closed": [],
+  "type_sensitive_metadata_delta_negatives": 8
+}
