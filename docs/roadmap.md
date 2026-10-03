@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 187
+version: 188
 code_revision: 007d2bd7c7f769616ec94641283274990b2acd66
 owners:
   - core
@@ -2024,7 +2024,10 @@ pywin32 312的十二个Windows Wheel，不是十二个包。原函数和原Evide
 
 [父目录完整闭包及引用记录设计候选](changes/m09-r4-workspace-parent-closure.md)基于现行源码明确：
 128个分散父目录叶生成257个观察Resource，无法在原逐项表示和256限额下闭合；仅移除父项会丢失安全前置。
-同时确认Store完整记录512KiB读限额与写入准入不对称，长路径存在保存后重开拒绝风险；该风险尚未作运行时复现。
+同时确认Store完整记录512KiB读限额与写入准入不对称；后继原实现已实际复现长路径保存成功后重开拒绝，
+详见[完整记录真实复现](validation/workspace-record-long-path-2026-10-04-v1/README.md)。两组均200叶／209资源／2600字节镜像，
+短路径147549字节记录可读，长路径691196字节记录返回prepared后load及只读重开均delivery_store_corrupt。
+原Planner、Store及原生Snapshot参与，工作区未发布；独立原可执行回归1通过／1失败，原FAIL保留，缺陷未修复。
 候选保留全部父目录历史，以原私有CAS和版本化引用承载，不裁剪、不拆事务、不提高原正文和期限，
 但需要明确新计数表示、Snapshot导出Schema、完整Reader／事件及备份兼容；不是现成开关或已完成整改。
 原255来源叶与256mutation模型上限分别说明，T／Bridge独立阶段方案不在本设计中变更。

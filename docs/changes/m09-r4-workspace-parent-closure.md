@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 1
-code_revision: 007d2bd7c7f769616ec94641283274990b2acd66
+version: 2
+code_revision: 92bdb4d0362cf24dc1907dc3a50fdae5700d176f
 owners: [core]
 modules: [workspace, delivery, execution, product_config]
 related_adrs:
@@ -39,7 +39,9 @@ supersedes: []
 另外，原 [`SQLiteWorkspaceTransactionStore._decode`](../../src/harnessix/delivery/store.py)
 要求完整记录 JSON 不超过 512 KiB，但 `save`、`transition` 和 `_validate` 没有相同的写前字节准入。
 长路径在 Snapshot 和 mutation 中重复编码，存在“保存后重开被拒绝”的合同风险。
-这一结论来自实际代码和静态长度分析，**不是已完成的长路径运行时复现**。
+后继[真实长路径复现](../validation/workspace-record-long-path-2026-10-04-v1/README.md)已将此风险证明为
+实际缺陷：200个叶、209个资源、2600字节镜像的原正式Plan保存成功，但691196字节记录随后由同代Reader拒绝；
+同规模短路径147549字节记录可完整重开。原生Snapshot复核通过，未用替代观察或修改序列化制造失败。
 每个事件重复保存完整 Plan，还受正式备份的 payload 列累计 64 MiB 限制。
 
 **当前没有满足全部旧表示约束的现成开关。** 本文提出内部版本化完整闭包及引用编码，
@@ -208,6 +210,67 @@ Plan／闭包编码必须验证最深路径、不同父链及完整叶容量；�
 必须改用正式的版本化事件 Reader；不得各自复制解引用和验证逻辑。
 实际消费方清单、wire 版本和旧格式读取矩阵是编码开始前的必需产出，不在未核验时宣布兼容完成。
 
+### 5.3 当前实际消费入口与联合适配矩阵
+
+下表来自固定生产源码核验，不是新格式实现结果。解析入口包括直接 Record JSON，也包括嵌套 Snapshot 的模型；
+只改 Store 的 `_decode` 不构成联合兼容。
+
+| 实际入口及源码位置 | 当前合同 | 新格式必须联动的责任 |
+|---|---|---|
+| [Workspace contracts:64～156](../../src/harnessix/workspace/contracts.py) | Snapshot v1；revision 排除 `spec_version` 和自身 revision，算法字段仍参与摘要。 | 保留原 v1 算法；新算法域及完整闭包进入新 revision，不能只换版本标签。 |
+| [Delivery contracts:70～157](../../src/harnessix/delivery/contracts.py) | Plan／Record v1；Plan fingerprint 和 Record digest 覆盖自身版本及完整嵌套事实。 | 解引用后恢复完整领域对象；物理壳摘要不能代替完整领域 digest。 |
+| [Store save／transition:102～200](../../src/harnessix/delivery/store.py) | 当前行和每事件完整 JSON；并发比较旧 payload 原字符串，幂等核对原完整 Plan。 | 当前行、历史事件、幂等、并发比较共用同一版本化编码器和 Reader。 |
+| [Store decode／validate:292～327](../../src/harnessix/delivery/store.py) | 两处直接严格解析 Record；decode 核验当前行、尾事件及事件总数，但不逐条解析完整历史。 | 全事件 Reader 不能以当前行通过替代；领域验证与物理解码分责。 |
+| [Backup delivery:115～155](../../src/harnessix/product_config/state_backup_records.py) | 第137行直接解析每个事件；当前引用闭合只遍历 mutation 镜像。 | 统一读取每个事件，新增 Plan／闭包引用进入完整备份闭合。 |
+| [Execution verify:190～216、268～294](../../src/harnessix/execution/planner.py) | 分别直接解析 Execution v1/v2，再重建并全等核验；两代当前均内嵌 Snapshot v1。 | 两代旧合同保留，新代模型及解析分派明确；已有 Execution v2 不代表已支持新 Snapshot。 |
+| [Execution Store:113～177](../../src/harnessix/execution/store.py) | Plan union JSON 解析；批准登记前还会重读完整 Plan。 | 新代读取分派不能遗漏批准入口。 |
+| [Action Store:36～40、195～240](../../src/harnessix/trusted_actions/store.py) | 直接解析 Route v1，嵌套 Execution v2 和 Snapshot，核对索引及尾事件。 | Route、Execution、Snapshot 的版本化必须一致，禁止局部 Reader 降级。 |
+| [Git material approval:226～243](../../src/harnessix/product_config/git_material_process.py) | 独立直接解析 ExecutionPlanV2 和 ApprovalCheckpoint。 | 正式受管进程的批准重校验必须接入新代分派，不能绕过该入口。 |
+| [Owned Patch source:68～105](../../src/harnessix/product_config/workspace_patch_source.py) | 直接解析 Patch 输入，随后正式加载真实 Route／Record。 | 输入 Schema 保持；领域加载及 fingerprint 绑定使用完整 Reader 结果。 |
+| [Workspace Patch:194～231、341～356](../../src/harnessix/delivery/trusted_action.py) | 事务来源必须与 Route Execution Workspace 全等。 | 不忽略闭包、刷新来源或转换旧 Snapshot 达到表面相等。 |
+| [Rollback:111～147、234～250](../../src/harnessix/delivery/rollback_action.py) | 逆向事务重新捕获，来源也须与 Route Snapshot 全等。 | 同步新捕获规则；原批准不能替代逆向批准。 |
+| [Planning retry:179～192](../../src/harnessix/trusted_actions/planning.py) | 精确 invocation／binding 重试直接返回旧 Route，不重新捕获 Snapshot。 | 旧记录可读与旧计划可执行分别定义；新 Reader 不会自动升级或废止旧批准。 |
+| [Router:197～232、306～331](../../src/harnessix/trusted_actions/router.py) | 核验两库 Plan 全等、Snapshot 新鲜度、批准和 trusted binding。 | 新完整指纹不得复制旧批准；如禁用旧计划，需明确实现绑定或版本准入，不静默重解释。 |
+| [Git source:32～80](../../src/harnessix/product_config/workspace_patch_source_contracts.py) | 从 resources 取叶，source digest 覆盖完整嵌套 Snapshot。 | 保留逐叶查询及完整摘要，闭包核验归正式 Reader，不复制第二套逻辑。 |
+| [Checkpoint:37～71](../../src/harnessix/delivery/git_checkpoint.py) | 保存 transaction_id、完整事务 fingerprint、mutations_digest。 | 使用还原后的完整领域 Plan，不改绑旧 Checkpoint。 |
+
+目前直接 `WorkspaceTransactionRecord.model_validate_json` 只有上述 Store 两处和备份一处；
+这一结论不表示嵌套 Execution／Route 模型或批准复核不受影响。
+Workspace Patch Review JSONL仅绑定事务 fingerprint 和 Workspace revision，
+见[Review接口](../../src/harnessix/delivery/trusted_action_contracts.py)；Review 解析成功也不能证明闭包已经核验。
+
+### 5.4 数据库、原字节认证和公开 Schema 矩阵
+
+| 层级 | 当前实际版本／行为 | 兼容约束 |
+|---|---|---|
+| Workspace DB | `delivery_metadata.schema_version=1`；事件没有独立 wire 版本。 | 新 payload 编码和 DB 准入的关系需固定；旧程序必须拒绝新格式，不能静默读空。 |
+| Execution DB | DB版本1，wire已支持 Execution v1/v2。 | DB版本不能代替嵌套 Snapshot 的版本分派。 |
+| Action audit DB | 当前版本2，可接收既有版本1初始化；Route wire仍v1。 | 既有迁移不是新闭包支持；新模型不得冒充旧 Route。 |
+| 备份 Schema | [`_schemas`](../../src/harnessix/product_config/state_backup_validation.py) 固定接受 Workspace 1、Execution 1、Action audit 2。 | DB若改变必须同步；仅复制文件成功不能证明格式可恢复。 |
+| Workspace digest | 当前 Snapshot／Plan／Record为规范 JSON SHA-256。 | **不是 Workspace Record MAC**；不能将完整性摘要表述为既有来源认证。 |
+| Git publication MAC | [原记录类型](../../src/harnessix/session/git_publication_contracts.py)只含object_inventory、product_link、worktree_event、checkpoint、commit_event；[Verifier](../../src/harnessix/session/store_publication.py)绑定域分离HMAC及原字节SHA／大小。 | 不包含 Workspace Record，不是现成引用 Reader；不得重编码、补签或复用旧证明冒充新来源。 |
+
+当前 Workspace 模型仅接受 v1；省略版本的既有合法输入按原默认 v1 处理，未知版本及字段拒绝。
+新格式应新增独立模型／导出，不修改旧 v1 的定义或摘要算法。实际递归导出影响为以下九件：
+
+- [Snapshot v1](../../spec/workspace-snapshot-v1.schema.json)、[Transaction Plan v1](../../spec/workspace-transaction-plan-v1.schema.json)、[Transaction Record v1](../../spec/workspace-transaction-record-v1.schema.json)；
+- [Execution Plan v1](../../spec/execution-plan-v1.schema.json)、[Execution Plan v2](../../spec/execution-plan-v2.schema.json)；
+- [Action Route Plan v1](../../spec/action-route-plan-v1.schema.json)、[Action Route Snapshot v1](../../spec/action-route-snapshot-v1.schema.json)；
+- [Product Git Delivery Source v1](../../spec/product-git-delivery-source-v1.schema.json)、[Product Git Baseline v1](../../spec/product-git-baseline-v1.schema.json)。
+
+这些是现有受影响消费方，不表示应覆盖同名文件。新代版本号及迁移策略仍需固定。
+Patch／Rollback 输入、ApprovalCheckpoint、只引用摘要的 Review 及 Git 记录不因 CAS 引用自动改变结构，
+但必须验证新的指纹绑定。不能把新实现绑定改变后旧调用的拒绝与历史记录不可读取混为同一事项。
+
+对应原回归重点包括：
+[精确旧 Route 重试与批准](../../tests/trusted_actions/test_router.py)、
+[旧 Patch 批准不可重绑](../../tests/delivery/test_trusted_action_patch.py)、
+[Rollback独立批准](../../tests/delivery/test_rollback_binding.py)、
+[Git材料独立批准解析](../../tests/product_config/test_git_material_trace2_binding.py)、
+[同语义不同原字节证明拒绝](../../tests/session/test_git_publication.py)、
+[生成契约一致性](../../tests/governance/test_generated_specs.py)。
+本消费方调查没有执行这些测试，不能用于证明新格式兼容性已通过。
+
 ## 6. 核心逻辑伪代码
 
 ```text
@@ -263,7 +326,8 @@ Plan／闭包编码必须验证最深路径、不同父链及完整叶容量；�
 | 三平台 | 原 POSIX 身份／权限与 Windows 名称比较／对象身份／Reparse 负对照；Windows11 消费者验收另行执行。 |
 
 关联回归首先复用 frontmatter 中现有测试，不建立另一评测平台。
-最长路径与完整记录风险目前只完成源码／静态分析，以上新增验证均未执行。
+长路径原实现复现已执行：原可执行回归2项中1通过、1失败、零错误／跳过，失败未设xfail。
+其余新格式、完整闭包、批准、备份及三平台验证均未执行，原长路径失败也尚未修复。
 必须取得实际新候选结果，不能以本设计、CAS 基础机制或旧材料 CI success 标记完成。
 
 ## 9. 可观测性、错误分类、风险与取舍

@@ -1,0 +1,25 @@
+{
+  "tests": 2,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "passed": 1,
+  "pytest_exit_code": 1,
+  "cases": [
+    {
+      "name": "test_short_path_saved_record_reopens",
+      "passed": true,
+      "failure_type": null,
+      "expected_original_bug": false
+    },
+    {
+      "name": "test_long_path_saved_record_reopens",
+      "passed": false,
+      "failure_type": null,
+      "expected_original_bug": true
+    }
+  ],
+  "source_or_tests_modified": false,
+  "future_fix_acceptance": "same real long-path prepared transaction saves and reopens without narrowing business capacity",
+  "bug_fixed": false
+}

@@ -1,0 +1,92 @@
+{
+  "source_revision": "92bdb4d0362cf24dc1907dc3a50fdae5700d176f",
+  "published_production_revision": "007d2bd7c7f769616ec94641283274990b2acd66",
+  "observed_at_utc": "2026-10-03T21:31:02.027707+00:00",
+  "environment": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.12.7"
+  },
+  "cases": [
+    {
+      "case": "short",
+      "shared_parent_depth": 8,
+      "component_utf8_bytes": 12,
+      "longest_target_utf8_bytes": 112,
+      "mutation_count": 200,
+      "resource_count": 209,
+      "mirror_bytes": 2600,
+      "plan_seconds": 0.30031,
+      "save_returned": true,
+      "returned_state": "prepared",
+      "stored_payload_utf8_bytes": 147549,
+      "events_count": 1,
+      "event_payload_utf8_bytes": 147549,
+      "live_load_error": null,
+      "read_only_reopen_error": null,
+      "workspace_snapshot_after_store_verified": true,
+      "publisher_executed": false
+    },
+    {
+      "case": "long",
+      "shared_parent_depth": 8,
+      "component_utf8_bytes": 180,
+      "longest_target_utf8_bytes": 1456,
+      "mutation_count": 200,
+      "resource_count": 209,
+      "mirror_bytes": 2600,
+      "plan_seconds": 0.706118,
+      "save_returned": true,
+      "returned_state": "prepared",
+      "stored_payload_utf8_bytes": 691196,
+      "events_count": 1,
+      "event_payload_utf8_bytes": 691196,
+      "live_load_error": "delivery_store_corrupt",
+      "read_only_reopen_error": "delivery_store_corrupt",
+      "workspace_snapshot_after_store_verified": true,
+      "publisher_executed": false
+    }
+  ],
+  "source_checks": [
+    {
+      "path": "src/harnessix/delivery/planner.py",
+      "sha256": "6ecdadd6122a4fe04a197c437f108fc6d95d6e5f70bcd11f76e16798dc4ee8d8",
+      "matches_published_production": true
+    },
+    {
+      "path": "src/harnessix/delivery/store.py",
+      "sha256": "b62a730b6c7fa3e76d89fa1a4550e8c7ff3a7eb73f1da92e0a1b74dd535b7a4e",
+      "matches_published_production": true
+    },
+    {
+      "path": "src/harnessix/delivery/contracts.py",
+      "sha256": "7d28e931dc37f6eb1e6d939ca2f85886207b8c40e6fcb3889fdd1bafd02d9847",
+      "matches_published_production": true
+    },
+    {
+      "path": "src/harnessix/workspace/snapshot.py",
+      "sha256": "42bf5ef5ae0b4f6c8eec258fa1b757828177b10e41824b44d3b7b8df05693b77",
+      "matches_published_production": true
+    },
+    {
+      "path": "src/harnessix/workspace/contracts.py",
+      "sha256": "912d78c3b5cee3848066c66c50dde2bcd8c5726d5600dc4ac27b8c054a81c753",
+      "matches_published_production": true
+    },
+    {
+      "path": "src/harnessix/tools/workspace.py",
+      "sha256": "6507e337b1cbabfd2f332f2f38f7a51b677233f05644d00d89a8325f73e4fd4f",
+      "matches_published_production": true
+    }
+  ],
+  "original_planner_used": true,
+  "original_store_used": true,
+  "original_native_snapshot_used": true,
+  "model_construct_or_replacement_snapshot_used": false,
+  "user_state_or_workspace_read": false,
+  "source_or_policy_changed": false,
+  "new_provider_requests": 0,
+  "bug_reproduced": true,
+  "bug_fixed": false,
+  "commercial_release": false
+}
