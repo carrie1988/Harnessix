@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -106,7 +107,7 @@ def test_real_final_checks_cannot_pass_after_original_operation_deadline(
 
 
 def test_real_counterfactuals_reuse_original_io_without_new_output_collector():
-    source = inspect.getsource(differential.test_real_snapshot_hash_and_write)
+    source = inspect.getsource(differential._run_diagnostic)
     for required in (
         "_command(request, resources, windows)",
         "_namespace(request, resources, windows)",
@@ -121,7 +122,66 @@ def test_real_counterfactuals_reuse_original_io_without_new_output_collector():
         assert required in source
     for forbidden in ("subprocess.Popen", "subprocess.run", "PIPE", "check_pair =", "print("):
         assert forbidden not in source
-    assert source.count("_git(") == 1 and source.count("_checked_executable()") == 2
+    assert source.count("_git(") == 1
+    caller = inspect.getsource(differential.test_real_snapshot_hash_and_write)
+    assert "_run_diagnostic(case, binding, material, write=write, held=held)" in caller
+    assert caller.count("_checked_executable()") == 2
+    assert caller.index("budget.remaining()") > caller.rindex("_checked_executable()")
+
+
+@pytest.mark.parametrize("mutation", ["hardlink", "content"])
+def test_same_seed_controls_refuse_real_file_aliases_or_content_drift(
+    make_process, tmp_path, monkeypatch, mutation
+):
+    executable = differential._checked_executable()
+    original = differential.shutil.copytree
+    changed = []
+
+    def copy(source, destination, *arguments, **options):
+        # copytree内部递归沿用实际实现；只在最外层改变本次测试复制方式。
+        if arguments:
+            return original(source, destination, *arguments, **options)
+        if mutation == "hardlink":
+            options["copy_function"] = os.link
+        result = original(source, destination, **options)
+        files = sorted(path for path in (destination / ".git/objects").rglob("*") if path.is_file())
+        assert files
+        if mutation == "content":
+            os.chmod(files[0], 0o600)
+            files[0].write_bytes(files[0].read_bytes() + b"changed")
+        changed.append(mutation)
+        return result
+
+    monkeypatch.setattr(differential.shutil, "copytree", copy)
+    with pytest.raises(AssertionError):
+        differential._same_seed_repositories(make_process, tmp_path, executable)
+    assert changed == [mutation]
+
+
+def test_single_hold_cannot_replace_full_namespace_or_accept_unknown_scope():
+    with pytest.raises(AssertionError):
+        differential._run_diagnostic(None, None, None, write=True, held=True, extra_hold="fanout")
+    with pytest.raises(AssertionError):
+        differential._run_diagnostic(None, None, None, write=False, held=False, extra_hold="fanout")
+    with pytest.raises(AssertionError):
+        differential._hold_object_target(None, None, None, None, "unknown")
+
+
+def test_windows_link_counterfactual_preserves_real_api_and_single_variable():
+    source = inspect.getsource(differential.test_real_windows_link_sharing_counterfactual)
+    for required in (
+        "(False, 32)",
+        "(True, 0)",
+        "original_open(path, access, share | 2, security, disposition, flags, template)",
+        "0x81",
+        "0x2200000",
+        "len(opened) == 1",
+        "budget.remaining()",
+    ):
+        assert required in source
+    assert "fake" not in source and "except" not in source
+    primitive = inspect.getsource(differential._link_result)
+    assert "CreateHardLinkW" in primitive and 'ctypes.__dict__["get_last_error"]()' in primitive
 
 
 def test_explicit_windows_diagnostic_requires_original_source_pe_and_pdb_authority():
@@ -147,8 +207,11 @@ def test_manual_workflow_has_four_independent_steps_and_keeps_original_sdk_failu
             f"::test_real_snapshot_hash_and_write[{case}]"
         )
         assert workflow.count(selector) == 1
-    assert workflow.count("timeout-minutes: 1") == 4
-    assert workflow.count("if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}") == 5
+    assert workflow.count("timeout-minutes: 1") == 7
+    assert workflow.count("timeout-minutes: 2") == 2
+    assert (
+        workflow.count("if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}") == 10
+    )
     for original in SELECTORS:
         assert workflow.count(original) == 1
     for required in (
@@ -183,9 +246,21 @@ def test_runner_symbol_path_is_only_resolved_in_step_environment():
         for step in job["steps"]
         if "test_git_material_snapshot_differential.py::" in step.get("run", "")
     ]
-    assert len(counterfactuals) == 4
+    assert len(counterfactuals) == 9
     for step in counterfactuals:
         assert step["env"][key] == (
             "${{ runner.temp }}/git-minimum-identity-"
             "${{ github.run_id }}-${{ github.run_attempt }}/symbols"
         )
+    for step in counterfactuals:
+        assert step["timeout-minutes"] == (
+            2 if "test_same_seed_repository_with_single_hold[" in step["run"] else 1
+        )
+    for selector in (
+        "test_same_seed_repository_with_single_hold[fanout]",
+        "test_same_seed_repository_with_single_hold[blob]",
+        "test_real_windows_child_operation_under_fanout_hold[create]",
+        "test_real_windows_child_operation_under_fanout_hold[link]",
+        "test_real_windows_link_sharing_counterfactual",
+    ):
+        assert sum(selector in step["run"] for step in counterfactuals) == 1

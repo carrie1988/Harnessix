@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 176
-code_revision: 9dc4647eab94cda362dd68fc33a3127cc30815cc
+version: 177
+code_revision: abcde35e9fe1435c79b9cea20d470c6f4c323d77
 owners:
   - core
 modules:
@@ -1838,3 +1838,15 @@ Windows失败、完整Git／Backup v2、R3、费用未决、Beta及商用R1～R6
 原持有写入和原SDK步骤失败。只使用API元数据，具体失败调用及历史唯一根因仍UNKNOWN。
 后继在相同初始对象集合下核验目录／文件持有和对象创建／链接访问，再做保持原保护的最小修复；
 不把三格成功外推为原SDK、Windows11、完整Git或商用R1～R6通过。
+
+### R1/R4：同源fanout／blob及真实Win32共享反例
+
+[总体与详细设计第14节](changes/m09-r4-windows-minimum-commit-probe.md#14-既有fanout目录与单对象持有的同源控制)
+先固定一次真实seed仓库，再copy2形成两份非别名对象集合，复用原RO快照和Git helper分辨目录／文件持有。
+三个真实Windows创建／链接／共享因果控制只在显式官方身份准入下执行，POSIX跳过不计原生通过。
+原四格、原SDK、13接点、18输入及20／45／240／300秒正式合同保持；新增二分钟配对步骤不延长原操作。
+不新增采集器、数据库、模型请求或生产共享变更。现场结果仍需固定新候选取得，
+不以新增测试或本机回归关闭历史Git失败、Root UNKNOWN、完整Git／Backup v2、R3、Beta或R1～R6。
+本机五件关联文件520通过／3个Windows控制跳过；原两SDK另行2通过。
+实际记录见[同源控制验证](validation/windows-existing-fanout-control-2026-10-03-v1/README.md)，
+十八输入只改变workflow一行完整表示，17行及其他固定字段保持；原生结果另行验收。

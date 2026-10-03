@@ -90,6 +90,71 @@ jobs:
             --basetemp $base `
             'tests/product_config/test_git_material_snapshot_differential.py::test_real_snapshot_hash_and_write[write-held]'
           exit $LASTEXITCODE
+      - name: 同源fanout单目录持有
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 2
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-single-fanout-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_same_seed_repository_with_single_hold[fanout]'
+          exit $LASTEXITCODE
+      - name: 同源blob单文件持有
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 2
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-single-blob-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_same_seed_repository_with_single_hold[blob]'
+          exit $LASTEXITCODE
+      - name: 真实Win32子文件创建
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 1
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-child-create-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_real_windows_child_operation_under_fanout_hold[create]'
+          exit $LASTEXITCODE
+      - name: 真实Win32硬链接
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 1
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-child-link-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_real_windows_child_operation_under_fanout_hold[link]'
+          exit $LASTEXITCODE
+      - name: 原目录共享拒绝与仅补写共享的真实链接反例
+        if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
+        shell: pwsh
+        timeout-minutes: 1
+        env:
+          HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS: ${{ runner.temp }}/git-minimum-identity-${{ github.run_id }}-${{ github.run_attempt }}/symbols
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP ('minimum-link-sharing-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
+          if (Test-Path -LiteralPath $base -ErrorAction Stop) { exit 2 }
+          uv run pytest -q --tb=no -rN --show-capture=no --disable-warnings --no-header `
+            --basetemp $base `
+            'tests/product_config/test_git_material_snapshot_differential.py::test_real_windows_link_sharing_counterfactual'
+          exit $LASTEXITCODE
       - name: 原两个案例及低敏只读侧车
         if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}
         shell: pwsh

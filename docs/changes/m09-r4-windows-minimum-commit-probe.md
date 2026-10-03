@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 9
-code_revision: 9dc4647eab94cda362dd68fc33a3127cc30815cc
+version: 10
+code_revision: abcde35e9fe1435c79b9cea20d470c6f4c323d77
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -569,3 +569,152 @@ R1～R6、真实R3及费用未决、完整Git交付和Backup v2、消费者Windo
 后继应在同一初始对象集合下，以真实Win32／Git控制分辨目录和既有文件持有、对象创建、链接／重命名的访问需要，
 保留目录不可替换、控制文件不可写、单链接与独立回读反例。没有此证据不放宽FILE_SHARE标志或删除原_namespace。
 原SDK只取得步骤failure，不补写两case的退出码、PID、Proof或Git128。消费者平台和完整Git／Backup v2仍未验收。
+
+## 14. 既有fanout目录与单对象持有的同源控制
+
+### 14.1 需求背景、目标与源码证据
+
+原四格结果已支持优先检查持有后的写入，但其初始Commit时间和目录形状不同，不能断言具体系统调用。
+固定baseline正文baseline换行的SHA256 blob为9146b06f8e631a1f5715af2da44e3eba3a50cf2631d4db952c0eedfc87aa9b5f，
+原最低SHA256 Commit为91bd7f83eff4af0890282b4c4de217e73d86a892cde4728cbaa54ddbc2f36215，
+**两者共用既有91目录**。同fixture的SHA1 blob前缀18、最低Commit前缀7b不同。
+这些值由原Git对象头和实际fixture正文计算，不是未知错误正文或根因见证。
+
+固定Git[create_tmpfile613～640行](https://github.com/git-for-windows/git/blob/32c4f7689275d233577576630e1ac5b7eb354eb0/object-file.c#L613-L640)
+在目标fanout存在时直接创建tmp，缺失时另走mkdir、权限调整和重试。
+[最终发布408～471行](https://github.com/git-for-windows/git/blob/32c4f7689275d233577576630e1ac5b7eb354eb0/object-file.c#L408-L471)
+可能执行链接／重命名。父目录持有并不等于递归禁写；现有静态分析没有证实这些调用与原持有必然冲突。
+本增量先证明实际差异，不修改生产FILE_SHARE、权限、命令、材料、Owner或成功门。
+
+目标：用同一个seed仓库的完整复制消除初始对象差异，分辨只持有目标91目录、只持有既有blob文件，
+并用真实Windows子文件创建／硬链接控制定位操作需求。只沿用既有pytest和CI步骤结论，不增加采集器或投影协议。
+
+### 14.2 总体架构、模块和接口
+
+```mermaid
+flowchart TB
+  S[原fixture创建一次真实SHA256 seed] --> C[copy2完整复制到两个fresh workspace]
+  C --> E[原领域重绑 两臂完整初始对象内容与目录相等]
+  E --> D[直接写入 原snapshot与Git helper]
+  E --> H[仅持有91目录或原baseline blob]
+  H --> W[同正文 同OID 同命令与原预算]
+  D --> R[完整OID及独立cat-file回读]
+  W --> R
+  P[真实Windows创建及硬链接控制] --> A[原91目录句柄持续持有]
+  A --> K[真实OS调用及内容断言]
+  R --> M[既有CI独立步骤元数据]
+  K --> M
+  G[原两SDK及原四格 不弱化] --> M
+```
+
+| 责任 | 源码／接口 | 限定职责 |
+| --- | --- | --- |
+| 对照操作复用 | [真实对照模块](../../tests/product_config/test_git_material_snapshot_differential.py)：_run_diagnostic | 从原四格抽出实际操作；保持原节点、调用顺序、RO普通文件、有界输出和末端预算 |
+| seed与两臂重绑 | 同模块：test_same_seed_repository_with_single_hold | 原make_process和_repository，copy2不使用硬链接，原_repository_binding_existing产生新路径身份 |
+| 单个持有 | 同模块：_hold_object_target | Windows沿原api.open；POSIX沿原_directory／_descriptor，不改共享掩码 |
+| Win32操作控制 | 同模块：test_real_windows_child_operation_under_fanout_hold | 真实本地NTFS、原91目录持有；创建使用CRT os.open，链接使用真实CreateHardLinkW |
+| SDK及原调用 | [git_material_worker.py](../../src/harnessix/delivery/git_material_worker.py)：_command／_git | 原argv、读取上限、错误／清理；不创建新的Owner或批准 |
+| 防退化 | [治理测试](../../tests/governance/test_git_material_snapshot_differential.py) | 原四格委托到真实操作、初始集合／前缀、单目标保护、原SDK期限与selector保持 |
+
+_run_diagnostic接受实际case、binding、material和显式write／held／extra_hold测试参数；extra_hold只能为fanout或blob。
+full namespace和单目标持有互斥。派生_GitInvocation仍只有五个helper参数，不能作为正式请求。
+返回的原GitOperationBudget用于调用者发行身份复核后的最终期限检查，不重置45秒。
+
+### 14.3 数据、流程、时序与伪代码
+
+seed只有一次实际baseline Commit，目录／文件全部复制后重取实际绑定；两个目录有独立物理身份和Store，
+不伪造identity、Head、control hash或source读取。复制使用copy2保留原模式／时间，不使用同inode硬链接。
+两臂开始前比较完整对象文件的相对路径及SHA256、全部相对目录名；每个既有文件链接数必须为一。
+目标OID在两臂事先都不存在，两个操作各使用原45秒绝对期限。不同物理根、SID读取、nonce和句柄是隔离必需字段，
+不把同内容等同于相同FILE_OBJECT，也不宣称相同完整manifest。
+
+fanout定位由目标OID前两位决定；blob定位由原baseline正文计算的实际OID决定。
+必须验证两者91前缀相同、目标不是该blob、目录与blob都已存在；缺失条件失败，不降级为缺失fanout实验。
+创建控制在两臂同形目录内用O_CREAT／O_EXCL／O_RDWR和0444建临时文件，写满、fsync、关闭及独立读取；
+硬链接控制在原持有之后创建新的源文件，再调用真实CreateHardLinkW建立目标，核对两名同inode和完整正文。
+源和目标都是本测试新文件，不以既有受保护blob作为硬链接源，不绕过原单链接保护。
+
+```mermaid
+sequenceDiagram
+  participant T as 独立控制case
+  participant S as 原seed fixture
+  participant B as 原领域绑定
+  participant H as 原Resources与Windows句柄
+  participant G as 实际Git或OS
+  T->>S: 仅一次真实baseline仓库
+  S-->>T: seed完整对象集合
+  T->>B: copy2后两臂分别原生重绑
+  B-->>T: 初始文件内容和目录相等
+  loop direct及单目标held两臂
+    T->>H: 原command 原snapshot 可选单目标持有
+    T->>G: 原20秒Git写入或真实子文件操作
+    G-->>T: 原结果及内容断言
+    T->>H: 退出原栈关闭全部句柄
+    T->>T: 原stage身份清理 真实回读 同一期限
+  end
+  T->>T: 实际发行身份复核 同预算末端检查
+```
+
+```mermaid
+flowchart TB
+  Seed[同一seed对象文件与目录] --> Copy[两份独立普通文件复制]
+  Copy --> Compare[完整相对路径 内容摘要 目录形状与单链接]
+  Compare --> Target[明确91目录或baseline blob目标]
+  Target --> Hold[原访问与共享标志持有]
+  Hold --> Operation[原Git写入 或真实子文件创建与链接]
+  Operation --> Verify[目标OID 完整正文及实际对象存在性]
+  Verify --> Step[原pytest退出及既有步骤结论]
+```
+
+```text
+same_seed_single_hold(scope):
+    original fixture creates seed repository once
+    copy2 to direct and held fresh original process workspaces
+    original domain rebinds each actual repository
+    require initial object bytes, directory shape and single links identical
+    for direct, held:
+        original prepare, stage, command, RO snapshot, Git invocation
+        held arm adds only original open on existing target fanout or baseline blob
+        require original OID, actual new target and independent exact cat-file body
+        preserve original resources cleanup and shared operation deadline
+    require selected official identity unchanged and original remaining budgets
+```
+
+### 14.4 失败、取消、持久化、安全与测试
+
+任何copy、绑定、形状、RO快照、Git／OS调用或回读失败都保留pytest失败；不捕获失败继续写同一目标。
+两个Git臂各一次，目标始终由独立fresh复制保证不存在；不对UNKNOWN原业务重放。
+原_command／_git及20秒命令、45秒操作不改；新配对步骤二分钟，只承载两份独立操作及setup，
+不是延长原业务期限或原五分钟SDK。原四格一分钟步骤、13接点和240秒外围合同不改。
+Win32控制只有真实Windows且显式诊断才执行；POSIX跳过不计通过。API调用为本地NTFS，末端预算和一分钟CI限制保持，
+不宣称可中断任意同步内核调用或已取得Supervisor进程树回执。
+
+stderr仍由被测Git空设备吸收，不读取业务／CDB／Job日志；原fixture和独立回读的既有Runner内部捕获不对外输出。
+不新增DB、保存业务Proof、读取模型Key或修改费用。复制的测试根与新链接只在fresh tmp内，句柄退出后按fixture回收；
+不得用这些控制开放正式CLI高风险入口或标记完整Git产品完成。
+
+必须覆盖：两个OID前缀关系、同seed复制不是别名、两臂初始集合相等、单持有目标、合法写入及完整回读，
+原四格和末端到期负例、原SDK节点和权限／目录不可替换反例。新的workflow参数和18输入只更新必要身份行。
+现场结果只解释具体步骤：单目录／文件持有配对失败不自动等于某系统调用失败；创建／链接独立控制可进一步定位操作。
+若这些控制仍不足，继续保留UNKNOWN，不凭新相关性放宽共享标志、删除源保护或减少材料容量。
+
+### 14.5 真实链接的共享标志因果反例
+
+新增test_real_windows_link_sharing_counterfactual只在显式Windows诊断执行。该测试不替代原正向链接控制，
+而是验证一个可证伪假设：同一真实目录句柄的共享标志是否直接导致新增链接拒绝。
+固定Git源码没有显式另开fanout，但Windows
+[FileLinkInformation规范](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fsa/891bb8eb-89f8-46ca-80b7-9f5d4e8b5583)
+包含目标目录打开与共享检查；该来源仅支持实验假设，不能替代本机调用结果。
+
+| 阶段 | 访问／共享和断言 | 失败解释 |
+| --- | --- | --- |
+| 无持有控制 | 实际CreateHardLinkW成功，完整内容及同inode验证，移除本测试链接 | 失败则基本前提未建立 |
+| 原目录持有 | 原api.open访问0x81、share1及flags保持；实际链接必须返回0且Win32错误32，目标不存在 | 任一条件不符即假设未证明，不更新生产共享 |
+| 仅补目录写共享 | 测试局部包装该api实例的CreateFileW，仅把同目录share1改为3；访问、打开方式、flags及原路径／inode验证保持 | 真实调用不成功即该最小变化不足 |
+| 完整后验 | 两个名字同inode、正文完整；原句柄关闭，原45秒预算及官方身份复核 | 不充当Owner、业务Proof或SDK通过 |
+
+包装器调用原真实CreateFileW，不替代DLL或模拟系统结果；只允许一次预期目录打开并断言全部参数。
+原目录持有退出后才开始新持有，源文件均在fresh目录内创建，不操作受保护baseline blob。
+拒绝阶段必须读取紧邻失败调用的线程Win32 last-error；只用于固定测试断言，不打印、持久化或新增错误投影。
+该测试在既有workflow单列一分钟步骤；原链接正向步骤失败仍为失败，因果反例成功不能抹除它。
+只有真实反例与原SDK／保护负例后续共同支持时，才评估生产目录兼容修复；文件共享、禁止删除与单链接检查不自动改变。

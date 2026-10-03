@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 61
-code_revision: 9dc4647eab94cda362dd68fc33a3127cc30815cc
+version: 62
+code_revision: abcde35e9fe1435c79b9cea20d470c6f4c323d77
 owners:
   - core
 modules:
@@ -2401,3 +2401,12 @@ Windows现场先复用既有observe仅预检及固定官方PE／PDB；每格前�
 [最低Commit对照设计第13节](../changes/m09-r4-windows-minimum-commit-probe.md#13-真实快照输入与对象写入的单变量对照)。
 固定9dc4647原生三格步骤成功，持有写入和原SDK步骤失败；后继集中检查持有后的写入路径，
 不从步骤结论推断具体共享调用或两SDK各自退出码，不放宽生产权限。
+
+新增[同源控制设计第14节](../changes/m09-r4-windows-minimum-commit-probe.md#14-既有fanout目录与单对象持有的同源控制)
+复用_run_diagnostic保持原四格节点及真实I/O；一次seed仓库copy2到两份独立workspace，
+先验证完整对象字节、目录形状、单链接及非同inode，再分别直接写入和仅持有目标fanout／baseline blob。
+Windows单持有只调用原api.open，不增加父目录链；POSIX沿原有限目录／文件持有，不外推其共享效果。
+原Windows保护不修改；真实NTFS创建、CreateHardLinkW和share1拒绝／仅补share3的测试域反例另列步骤，
+仅补共享的包装仍调用原真实DLL并保留原访问及路径／inode检查，未改变生产代码或批准合同。
+新的两个配对步骤各二分钟，新OS控制各一分钟；原四格一分钟和原SDK五分钟保持。
+POSIX跳过三个Windows控制不记为成功；创建／链接反例的结果必须由固定原生候选实际证明。
