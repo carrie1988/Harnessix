@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 34
-code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
+version: 35
+code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
 owners:
   - core
 modules:
@@ -2135,3 +2135,25 @@ Backup v2及新根重授权仍依照
 [总体与详细设计](../changes/m09-r4-git-material-trace2.md)及
 [验证资料](../validation/git-material-trace2-2026-10-02-v1/README.md)。
 本机有限验证不关闭Windows原生失败、默认Git交付、R3真实质量或商用发布门禁。
+
+## Windows对象目录共享与文件保护的类型边界
+
+[`git_material_native_windows._held_share`](../../src/harnessix/delivery/git_material_native_windows.py#L236)
+只按明确的directory类型选择共享：目录FILE_SHARE_READ加FILE_SHARE_WRITE，既有文件只有FILE_SHARE_READ；
+两类都不允许FILE_SHARE_DELETE。原_held_access仍请求真实READ_DATA／LIST_DIRECTORY及READ_ATTRIBUTES，
+private查询仍只额外READ_CONTROL，不为当前句柄增加写权限。原_open核对reparse、类型、单链接、inode、
+完整最终路径及私有DACL；_chain缓存和原Resources清理保持。
+
+共享与权限是不同字段：目录WRITE共享兼容Git插入时新增链接所需的FILE_ADD_FILE目录打开，
+不授予用户NTFS ACL，不开放目录删除或已有文件写入。目录持有并非后代递归不可变封印，
+原真实创建控制已经证明只共享读的目录仍可创建子文件；正式Lease及worker前后namespace复核继续约束效果证明。
+
+固定ffc653e的真实NTFS共享反例证明历史share1拒绝链接并返回错误32，唯独share3变化后成功。
+后继修复测试以真实WINFUNCTYPE显式使能last-error、保持原DLL函数地址和同目录身份，
+原四格、同源fanout／blob、原SDK及Windows文件写／文件目录改名删除保护均继续执行。
+同seed集合在复制和重绑后用三方lstat拒绝文件或目录别名，实际POSIX符号链接负例不记为Windows成绩。
+
+需求、三幅架构／时序／数据流、接口／字段／伪代码、真实失败及恢复边界见
+[兼容详细设计第15节](../changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)；
+固定修复候选的结果见[验证资料](../validation/windows-directory-write-share-2026-10-03-v1/README.md)。
+新源字节自然改变实现摘要，旧批准不跨实现复用。消费者Windows、完整Git／Backup v2及商用R1～R6仍分别验收。

@@ -12,6 +12,7 @@ import pytest
 import yaml
 
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_material_native_windows import _held_share
 from tests.product_config import test_git_material_snapshot_differential as differential
 from tests.product_config.git_minimum_commit_probe import SELECTORS
 
@@ -167,12 +168,31 @@ def test_single_hold_cannot_replace_full_namespace_or_accept_unknown_scope():
         differential._hold_object_target(None, None, None, None, "unknown")
 
 
+@pytest.mark.skipif(os.name != "posix", reason="实际符号链接反例在POSIX验证，不计Windows成绩")
+@pytest.mark.parametrize("directory", [False, True])
+def test_converged_object_views_refuse_real_cross_arm_symlinks(make_process, tmp_path, directory):
+    executable = differential._checked_executable()
+    pairs = differential._same_seed_repositories(make_process, tmp_path, executable)
+    seed = tmp_path / "case-0/source-workspace/.git/objects"
+    direct, held = (case.workspace / ".git/objects" for case, _ in pairs)
+    blob = differential.material_tests._material(b"baseline\n", "sha256", "blob")
+    relative = blob.object_id[:2] if directory else f"{blob.object_id[:2]}/{blob.object_id[2:]}"
+    target = held / relative
+    if directory:
+        differential.shutil.rmtree(target)
+    else:
+        target.unlink()
+    target.symlink_to(direct / relative, target_is_directory=directory)
+    with pytest.raises(AssertionError):
+        differential._assert_independent_object_views(seed, (direct, held))
+
+
 def test_windows_link_counterfactual_preserves_real_api_and_single_variable():
     source = inspect.getsource(differential.test_real_windows_link_sharing_counterfactual)
     for required in (
         "(False, 32)",
         "(True, 0)",
-        "original_open(path, access, share | 2, security, disposition, flags, template)",
+        "original_open(path, access, share & ~2, security, disposition, flags, template)",
         "0x81",
         "0x2200000",
         "len(opened) == 1",
@@ -182,6 +202,15 @@ def test_windows_link_counterfactual_preserves_real_api_and_single_variable():
     assert "fake" not in source and "except" not in source
     primitive = inspect.getsource(differential._link_result)
     assert "CreateHardLinkW" in primitive and 'ctypes.__dict__["get_last_error"]()' in primitive
+    assert 'ctypes.__dict__["WINFUNCTYPE"]' in primitive and "use_last_error=True" in primitive
+    assert "ctypes.cast(create, ctypes.c_void_p).value" in primitive
+
+
+@pytest.mark.parametrize("directory,expected", [(False, 1), (True, 3)])
+def test_directory_write_sharing_never_changes_file_or_delete_protection(directory, expected):
+    share = _held_share(directory=directory)
+    assert share == expected and share & 1 and not share & 4
+    assert bool(share & 2) is directory
 
 
 def test_explicit_windows_diagnostic_requires_original_source_pe_and_pdb_authority():
@@ -207,10 +236,16 @@ def test_manual_workflow_has_four_independent_steps_and_keeps_original_sdk_failu
             f"::test_real_snapshot_hash_and_write[{case}]"
         )
         assert workflow.count(selector) == 1
-    assert workflow.count("timeout-minutes: 1") == 7
+    assert workflow.count("timeout-minutes: 1") == 8
     assert workflow.count("timeout-minutes: 2") == 2
     assert (
-        workflow.count("if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}") == 10
+        workflow.count("if: ${{ !cancelled() && steps.preflight.conclusion == 'success' }}") == 11
+    )
+    assert (
+        workflow.count(
+            "test_git_material_native.py::test_windows_data_read_guard_rejects_write_rename_delete_with_metadata_control"
+        )
+        == 1
     )
     for original in SELECTORS:
         assert workflow.count(original) == 1

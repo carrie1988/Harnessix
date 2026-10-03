@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 177
-code_revision: abcde35e9fe1435c79b9cea20d470c6f4c323d77
+version: 178
+code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
 owners:
   - core
 modules:
@@ -1850,3 +1850,10 @@ Windows失败、完整Git／Backup v2、R3、费用未决、Beta及商用R1～R6
 本机五件关联文件520通过／3个Windows控制跳过；原两SDK另行2通过。
 实际记录见[同源控制验证](validation/windows-existing-fanout-control-2026-10-03-v1/README.md)，
 十八输入只改变workflow一行完整表示，17行及其他固定字段保持；原生结果另行验收。
+
+固定ffc653e的Run37130015232已终态failure：同源blob和创建成功，目录配对与链接失败；
+真实共享因果反例成功，证明该NTFS链接在原share1目录持有下错误32拒绝，仅补share3成功。
+后继[兼容设计第15节](changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)
+只让目录共享READ及WRITE，已有文件仍只共享READ，两者不共享DELETE；全部原身份及ACL后验保持。
+新候选继续执行原四格、同源两臂、原Windows写／改名／删除保护及原两SDK，原生结果尚待取得。
+不确认所有历史Git128唯一根因，不关闭完整Git／Backup v2、R3费用与质量、Beta或R1～R6。

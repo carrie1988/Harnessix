@@ -186,6 +186,26 @@ def _object_directories(objects: Path) -> tuple[str, ...]:
     )
 
 
+def _assert_independent_object_views(seed_objects: Path, copies: tuple[Path, ...]) -> None:
+    """重绑后收敛真实集合；不跟随链接，三方对应目录及文件都不能共用身份。"""
+    files, directories = _object_bytes(seed_objects), _object_directories(seed_objects)
+    roots = (seed_objects, *copies)
+    for objects in copies:
+        assert (_object_bytes(objects), _object_directories(objects)) == (files, directories)
+    nodes = [
+        ("", True),
+        *((name, True) for name in directories),
+        *((name, False) for name, _ in files),
+    ]
+    for name, directory in nodes:
+        observations = [(root / name).lstat() for root in roots]
+        for info in observations:
+            assert not getattr(info, "st_file_attributes", 0) & 0x400
+            assert stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode)
+            assert directory or info.st_nlink == 1
+        assert len({(info.st_dev, info.st_ino) for info in observations}) == len(roots)
+
+
 def _same_seed_repositories(make_process, tmp_path, executable):
     """先复制两臂再执行任何写入；完整初始对象相等且物理文件不共用。"""
     seed = make_process(executable=executable, output_redaction=material_tests._Protection())
@@ -211,6 +231,9 @@ def _same_seed_repositories(make_process, tmp_path, executable):
         rebound = material_tests._repository_binding_existing(case, root)
         assert rebound.head_tree_oid == binding.head_tree_oid
         pairs.append((case, rebound))
+    _assert_independent_object_views(
+        seed_objects, tuple(case.workspace / ".git/objects" for case, _ in pairs)
+    )
     return pairs
 
 
@@ -250,9 +273,14 @@ def _write_child(path: Path) -> bytes:
 
 def _link_result(windows: _Windows, source: Path, target: Path) -> tuple[bool, int]:
     """紧邻真实Win32调用取得本线程错误，仅供固定断言，不作日志投影。"""
-    create = windows.kernel.CreateHardLinkW
-    create.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_void_p]
-    create.restype = ctypes.c_int
+    prototype = ctypes.__dict__["WINFUNCTYPE"](
+        ctypes.c_int, ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_void_p, use_last_error=True
+    )
+    create = prototype(("CreateHardLinkW", windows.kernel))
+    assert (
+        ctypes.cast(create, ctypes.c_void_p).value
+        == ctypes.cast(windows.kernel.CreateHardLinkW, ctypes.c_void_p).value
+    )
     ctypes.__dict__["set_last_error"](0)
     result = bool(create(_api_path(target), _api_path(source), None))
     return result, 0 if result else ctypes.__dict__["get_last_error"]()
@@ -294,12 +322,13 @@ def test_real_windows_child_operation_under_fanout_hold(tmp_path, operation) -> 
 
 @pytest.mark.skipif(os.name != "nt", reason="需要真实Windows共享检查；POSIX不计通过")
 def test_real_windows_link_sharing_counterfactual(tmp_path, monkeypatch) -> None:
-    """可证伪因果反例：原目录share1拒绝，唯独share3变化后真实链接成功。"""
+    """保留历史share1真实拒绝；修复后自然share3仍须真实链接成功。"""
     executable = _checked_executable()
     windows = _Windows()
     directory = tmp_path / "91"
     directory.mkdir()
     _checked_local_directory(windows, directory)
+    directory_identity = directory.lstat()
     source, target = directory / "tmp_obj_control", directory / "new-object"
     budget = GitOperationBudget(45)
     body = _write_child(source)
@@ -308,36 +337,38 @@ def test_real_windows_link_sharing_counterfactual(tmp_path, monkeypatch) -> None
     os.chmod(target, 0o600)
     target.unlink()
     os.chmod(source, 0o444)
-    with _Resources() as resources:
-        windows.open(directory, resources, directory=True)
-        assert _link_result(windows, source, target) == (False, 32)
-        assert not target.exists() and source.read_bytes() == body
-    budget.remaining()
     original_open = windows.kernel.CreateFileW
     opened = []
 
-    def directory_write_share(path, access, share, security, disposition, flags, template):
-        # 只改这个api实例的一次目录共享参数；原DLL、完整原验权及句柄清理不变。
+    def directory_read_share(path, access, share, security, disposition, flags, template):
+        # 明确构造历史共享控制；原DLL、实际访问及完整原验权不变。
         assert (path, access, share, security, disposition, flags, template) == (
             _api_path(directory),
             0x81,
-            1,
+            3,
             None,
             3,
             0x2200000,
             None,
         )
-        opened.append((access, share | 2))
+        opened.append((access, share & ~2))
         assert len(opened) == 1
-        return original_open(path, access, share | 2, security, disposition, flags, template)
+        return original_open(path, access, share & ~2, security, disposition, flags, template)
 
     with monkeypatch.context() as patch:
-        patch.setattr(windows.kernel, "CreateFileW", directory_write_share)
+        patch.setattr(windows.kernel, "CreateFileW", directory_read_share)
         with _Resources() as resources:
+            assert os.path.samestat(directory_identity, directory.lstat())
             windows.open(directory, resources, directory=True)
-            assert _link_result(windows, source, target) == (True, 0)
-            assert source.stat().st_ino == target.stat().st_ino and target.read_bytes() == body
-    assert opened == [(0x81, 3)]
+            assert _link_result(windows, source, target) == (False, 32)
+            assert not target.exists() and source.read_bytes() == body
+    assert opened == [(0x81, 1)]
+    budget.remaining()
+    with _Resources() as resources:
+        assert os.path.samestat(directory_identity, directory.lstat())
+        windows.open(directory, resources, directory=True)
+        assert _link_result(windows, source, target) == (True, 0)
+        assert source.stat().st_ino == target.stat().st_ino and target.read_bytes() == body
     budget.remaining()
     assert _checked_executable() == executable
     budget.remaining()

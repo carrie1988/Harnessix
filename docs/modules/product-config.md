@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 62
-code_revision: abcde35e9fe1435c79b9cea20d470c6f4c323d77
+version: 63
+code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
 owners:
   - core
 modules:
@@ -2406,7 +2406,14 @@ Windows现场先复用既有observe仅预检及固定官方PE／PDB；每格前�
 复用_run_diagnostic保持原四格节点及真实I/O；一次seed仓库copy2到两份独立workspace，
 先验证完整对象字节、目录形状、单链接及非同inode，再分别直接写入和仅持有目标fanout／baseline blob。
 Windows单持有只调用原api.open，不增加父目录链；POSIX沿原有限目录／文件持有，不外推其共享效果。
-原Windows保护不修改；真实NTFS创建、CreateHardLinkW和share1拒绝／仅补share3的测试域反例另列步骤，
-仅补共享的包装仍调用原真实DLL并保留原访问及路径／inode检查，未改变生产代码或批准合同。
+初始ffc653e不修改生产保护；真实NTFS创建、CreateHardLinkW和share1拒绝／仅补share3的测试域反例另列步骤，
+测试包装仍调用原真实DLL并保留原访问及路径／inode检查，初始控制没有生产代码或批准合同变更。
 新的两个配对步骤各二分钟，新OS控制各一分钟；原四格一分钟和原SDK五分钟保持。
 POSIX跳过三个Windows控制不记为成功；创建／链接反例的结果必须由固定原生候选实际证明。
+
+固定ffc653e原生创建及blob配对成功，目录配对和链接失败，共享因果反例成功。
+后继[目录兼容设计第15节](../changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)
+只在原Windows_open以_held_share区分目录3／文件1，不增加当前句柄写权限；文件禁写和双方禁删除共享保持。
+原reparse、类型、inode、完整路径、DACL、单链接和worker后验不变；三个原生控制保留历史share1真实错误32反例。
+原Windows写／改名／删除保护负例另列步骤，原SDK及所有旧节点不弱化。此兼容修复须由新原生候选验收，
+不将初始整体failure、具体链接机制或本机成绩改写为完整Windows产品通过。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: cf35055668f9529c9a677e5226a98bbd40c4cefd
+version: 3
+code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
 owners: [core]
 modules: [delivery, product_config, processes]
 related_adrs:
@@ -106,7 +106,7 @@ Git 子进程不新建 session/group、不使用 shell、不 breakaway，留在�
 | [git_delivery_process](../../src/harnessix/product_config/git_delivery_process.py) | 原批准/Owner 编排、双流验真、生产者 PID 对照和不确定效果优先级 |
 | [input_contracts](../../src/harnessix/delivery/git_material_input_contracts.py) | stdlib 冻结数据、严格 canonical JSON、用途和实现摘要、生产者证明 |
 | [native](../../src/harnessix/delivery/git_material_native.py) | 路径/配置控制集合、对象命名空间、有界完整读取、完整 RO 快照 |
-| [native_windows](../../src/harnessix/delivery/git_material_native_windows.py) | 本地 NTFS 句柄、私有 ACL、拒共享写/删除及从创建开始的快照生命周期 |
+| [native_windows](../../src/harnessix/delivery/git_material_native_windows.py) | 本地NTFS句柄、私有ACL；既有文件拒共享写／删除，目录仅拒共享删除；原快照生命周期不变 |
 | [worker](../../src/harnessix/delivery/git_material_worker.py) | 小握手 EOF、固定 Git argv/env、共享期限、子进程输出上界和证明生成 |
 
 ## 5. 接口设计与重点类设计
@@ -188,7 +188,9 @@ sequenceDiagram
 只停止并结算等待中的原根进程。保护检查和 staging 在线程执行，直接 Task 取消也先取消原令牌并排空该线程。
 
 POSIX 快照先排他建空文件、开 RO 端并去名，随后才写任何正文；写满、fsync、关闭写端后复读 RO。
-Windows 从 `CREATE_NEW` 设置删除关闭与拒共享写/删除，写满后显式降权复制只读句柄，关闭写端后复读。
+Windows快照从 `CREATE_NEW` 设置删除关闭与拒共享写/删除，写满后显式降权复制只读句柄，关闭写端后复读。
+这不同于对象目录守卫：目录共享READ及WRITE以兼容子对象发布，文件继续只共享READ，两者不共享DELETE。
+真实错误32及单变量控制、原SDK和保护负例见[目录兼容详细设计第15节](m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)。
 两个实现都在 Git 前取得完整普通文件，不以正文管道模拟只读快照。
 
 ## 8. 数据流与信任边界

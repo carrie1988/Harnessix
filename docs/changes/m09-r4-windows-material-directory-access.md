@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 6daff318718c05f79752a5e6a873fe3cc9b80fb4
+version: 2
+code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
 owners: [core]
 modules: [delivery, workspace, product_config]
 related_adrs:
@@ -66,7 +66,7 @@ flowchart TD
 | --- | --- | --- |
 | `_directory` | [git_material_native.py](../../src/harnessix/delivery/git_material_native.py) | 把private要求传给原Windows链；POSIX合同保持 |
 | `_held_access` | [git_material_native_windows.py](../../src/harnessix/delivery/git_material_native_windows.py) | 普通`0x81`；private额外READ_CONTROL；不增加写/删除 |
-| `_open` | 同文件 | CreateFileW、实际数据读取及share-read、原身份检查、按需ACL验证 |
+| `_open` | 同文件 | CreateFileW、实际数据读取；目录share3／文件share1，原身份检查及按需ACL验证 |
 | `_chain` | 同文件 | 首开private终点或缓存情况下另开private终点，始终保留原守卫 |
 | `_private` | 同文件 | OWNER/DACL、保护位、两ACE、用户/SYSTEM与原完整掩码，不改校验条件 |
 | `_Resources` | [git_material_native.py](../../src/harnessix/delivery/git_material_native.py) | 持有目录/文件句柄，结算关闭整个作用域 |
@@ -123,7 +123,7 @@ sequenceDiagram
   C->>H: private目录/原cache
   H->>H: 保留所有已有目录守卫
   H->>W: private=True，仅终点增加READ_CONTROL
-  W->>W: 原CreateFileW/share-read
+  W->>W: 原CreateFileW/目录共享READ及WRITE
   W->>R: 成功开句柄即登记关闭回调
   W->>W: 原File ID/路径/类型核对
   W->>S: 原OWNER/DACL严格检查
@@ -135,8 +135,9 @@ sequenceDiagram
   R->>R: 关闭旧守卫与新private句柄
 ```
 
-不能为补权限先关闭旧守卫；该动作会重新打开路径替换窗口。新句柄仍只共享读取，
-不共享写/删除；全部句柄由原Resources结算，不增加跨调用Lease或持久授权。
+不能为补权限先关闭旧守卫；该动作会重新打开路径替换窗口。后继目录兼容修复共享READ及WRITE，
+仍不共享DELETE；文件保持只共享READ。全部句柄由原Resources结算，不增加跨调用Lease或持久授权。
+选型、真实Win32反例及原保护验收见[详细设计第15节](m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)。
 
 ## 7. 数据结构、数据流程与持久化
 

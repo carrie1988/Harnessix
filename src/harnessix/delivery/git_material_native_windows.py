@@ -1,4 +1,4 @@
-"""Git 私有材料的 Windows 本地 NTFS 句柄：不共享写/删除，无独立执行权限。"""
+"""Git材料的Windows本地NTFS句柄：文件不共享写／删除，目录不共享删除。"""
 
 from __future__ import annotations
 
@@ -233,6 +233,11 @@ def _held_access(*, private: bool = False, delete_on_close: bool = False) -> int
     return 0x81 | (0x20000 if private else 0) | (0x10000 if delete_on_close else 0)
 
 
+def _held_share(*, directory: bool) -> int:
+    """目录允许对象发布所需的写共享；既有文件禁写，两者始终禁删除共享。"""
+    return 3 if directory else 1
+
+
 def _open(
     api: _Windows,
     path: Path,
@@ -245,8 +250,10 @@ def _open(
     before = os.lstat(path)
     access = _held_access(private=private, delete_on_close=delete_on_close)
     flags = 0x2200000 | (0x4000000 if delete_on_close else 0)
-    # metadata-only 不参加共享计数；目录/已有对象均请求真实数据读取，且仅共享读。
-    handle = api.kernel.CreateFileW(_api_path(path), access, 1, None, 3, flags, None)
+    # 仍请求真实数据读取；目录FILE_ADD_FILE打开需要写共享，不授予当前句柄写权限。
+    handle = api.kernel.CreateFileW(
+        _api_path(path), access, _held_share(directory=directory), None, 3, flags, None
+    )
     if handle is None or handle == ctypes.c_void_p(-1).value:
         _fail("git_material_binding_changed")
     handle = int(handle)

@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
-code_revision: abcde35e9fe1435c79b9cea20d470c6f4c323d77
+version: 2
+code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
 owners: [core]
 modules: [product_config, delivery, governance]
 related_adrs:
@@ -23,7 +23,7 @@ supersedes: []
 本包落实[完整设计第14节](../../changes/m09-r4-windows-minimum-commit-probe.md#14-既有fanout目录与单对象持有的同源控制)，
 新增测试域控制，不修改生产句柄、批准、Owner、材料或费用合同。原Windows
 [四格失败结果](../windows-git-snapshot-differential-2026-10-03-v1/README.md)保留，Root UNKNOWN不变。
-原生执行尚未取得，不能提前登记生产修复或原SDK通过。
+固定ffc653e原生Run37130015232已整体失败，但真实共享因果反例成功；不能登记原SDK通过。
 
 ## 2. 源码、流程与不变量
 
@@ -57,3 +57,24 @@ windows-existing-fanout-control-20261003-v1目录，目录0700／文件0600。
 
 固定新候选只派发一次attempt1；仅读取Run／Job／step API元数据，不读取Git、CDB或Job业务日志。
 本包不关闭Windows消费者、完整Git产品／Backup v2、真实R3、费用未决、独立Beta及最终R1～R6。
+
+## 4. 实际原生结果与后继
+
+[Run37130015232](https://github.com/carrie1988/Harnessix/actions/runs/37130015232)、attempt1、
+固定ffc653e、Job111223091633终态failure；原官方身份预检、两无写及直接写入步骤成功。
+
+| 步骤 | 结论 | 限定解释 |
+| --- | --- | --- |
+| 原namespace持有写入 | failure | 原业务差异保留，未读取具体失败阶段 |
+| 同源fanout单目录持有 | failure | 原始对象差异已通过固定源码的同seed控制消除；具体失败调用不补写 |
+| 同源blob单文件持有 | success | 同源直接及单文件持有均完成原写入和回读 |
+| 真实Win32子文件创建 | success | 原目录持有下实际创建、写满、fsync和独立读取成功 |
+| 真实Win32硬链接 | failure | 原正向控制失败，保留失败，不以反例成功覆盖 |
+| 共享因果反例 | success | 无持有链接成功；原share1产生错误32且无目标；仅share3变化后真实链接成功 |
+| 原两SDK及低敏侧车 | failure | 原SDK步骤未通过，不补造分别退出码或业务成功 |
+
+只读取Run／Job／step元数据。共享反例解释来自
+[固定ffc653e测试源码](https://github.com/carrie1988/Harnessix/blob/ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6/tests/product_config/test_git_material_snapshot_differential.py#L295)，
+并非读取或新增Win32错误日志；后继当前测试将历史share1明确置于测试反例，不将两个版本混同。
+该事实支持[最小目录兼容修复](../../changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)，
+仍须新候选原SDK及原保护通过。历史唯一Root UNKNOWN、消费者平台和全部商用门禁保持。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 10
-code_revision: abcde35e9fe1435c79b9cea20d470c6f4c323d77
+version: 11
+code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -701,7 +701,7 @@ stderr仍由被测Git空设备吸收，不读取业务／CDB／Job日志；原fi
 ### 14.5 真实链接的共享标志因果反例
 
 新增test_real_windows_link_sharing_counterfactual只在显式Windows诊断执行。该测试不替代原正向链接控制，
-而是验证一个可证伪假设：同一真实目录句柄的共享标志是否直接导致新增链接拒绝。
+而是验证一个可证伪假设：同一目录路径／身份的两个独立真实打开，是否仅因共享标志不同导致新增链接拒绝。
 固定Git源码没有显式另开fanout，但Windows
 [FileLinkInformation规范](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fsa/891bb8eb-89f8-46ca-80b7-9f5d4e8b5583)
 包含目标目录打开与共享检查；该来源仅支持实验假设，不能替代本机调用结果。
@@ -718,3 +718,117 @@ stderr仍由被测Git空设备吸收，不读取业务／CDB／Job日志；原fi
 拒绝阶段必须读取紧邻失败调用的线程Win32 last-error；只用于固定测试断言，不打印、持久化或新增错误投影。
 该测试在既有workflow单列一分钟步骤；原链接正向步骤失败仍为失败，因果反例成功不能抹除它。
 只有真实反例与原SDK／保护负例后续共同支持时，才评估生产目录兼容修复；文件共享、禁止删除与单链接检查不自动改变。
+
+## 15. Windows目录写共享兼容与原保护保留
+
+### 15.1 需求背景、实际证据与目标
+
+固定ffc653e的Run37130015232、attempt1、Job111223091633已终态failure。
+同源目录持有配对失败、同源blob配对成功；子文件创建成功、正向硬链接失败。
+真实共享因果反例成功，结合固定测试源码证明无持有链接成功、原目录share1持有时链接返回错误32，
+只把同一目录的共享改为3后链接成功，原访问0x81、flags、原路径和inode验权保持。
+这证明该固定NTFS链接调用的目录共享冲突，不声明所有历史Git128都是同一根因。
+原两SDK步骤仍失败，必须由新修复候选完整验证，不能从反例成功推定业务修复。
+
+目标是兼容正式Git对象插入，同时保留目录不能替换／删除、既有文件不能写／替换／删除、
+链接／reparse／类型／路径／inode及私有DACL守卫。最小改动限定原_windows._open一个共享选择点。
+不改材料、OID、命令、读取、Supervisor、Owner、批准、数据库、Key或费用。
+
+### 15.2 架构、接口、字段与安全边界
+
+```mermaid
+flowchart TB
+  R[原namespace目录与对象持有] --> T{请求对象类型}
+  T -->|目录| D[访问仍0x81 共享READ及WRITE 不共享DELETE]
+  T -->|既有文件| F[访问仍0x81 只共享READ]
+  D --> L[允许子对象发布需要的FILE_ADD_FILE目录打开]
+  D --> X[目录改名及删除继续拒绝]
+  F --> Y[文件写入 改名 删除继续拒绝]
+  L --> G[原Git实际插入及完整原SDK回读]
+  X --> N[原Windows保护正反例]
+  Y --> N
+  G --> V[同一新候选原生结果]
+  N --> V
+```
+
+| 字段／接口 | 实际变化与不变量 | 源码 |
+| --- | --- | --- |
+| directory | 原调用者明确声明并由实际attributes核验；只影响共享选择 | [Windows_open](../../src/harnessix/delivery/git_material_native_windows.py#L241) |
+| share | _held_share目录3即FILE_SHARE_READ加FILE_SHARE_WRITE；文件继续1；两者均不含FILE_SHARE_DELETE | [_held_share](../../src/harnessix/delivery/git_material_native_windows.py#L236) |
+| access | _held_access不变，真实READ_DATA／LIST_DIRECTORY及READ_ATTRIBUTES；私有／删除关闭模式仍沿原额外位 | [_held_access](../../src/harnessix/delivery/git_material_native_windows.py#L231) |
+| flags／disposition | 原reparse与backup semantics、OPEN_EXISTING及delete-on-close语义不变 | 同上 |
+| 验权及清理 | 原GetFileInformation、单链接、实际类型、inode、完整最终路径、私有DACL及Resources关闭不变 | [_open与_chain](../../src/harnessix/delivery/git_material_native_windows.py#L241) |
+| 后验 | worker完成Git后再次验证snapshot、command和namespace，不跳过证明 | [run_worker](../../src/harnessix/delivery/git_material_worker.py#L251) |
+
+FILE_SHARE_WRITE不是给当前句柄增加写权限，也不是给任何用户授予NTFS ACL。
+目录持有不承诺递归封锁所有子文件修改：修复前的真实os.open创建控制已经成功。
+允许目录对象的写共享用于子对象新增路径；目录本身DELETE共享仍拒绝，已有对象文件继续原share1。
+同UID任意外部写者的不可变OS封印并非本组件承诺；前后namespace验证与正式Workspace Lease继续约束业务证明。
+
+### 15.3 实际流程、时序、数据流及伪代码
+
+```mermaid
+sequenceDiagram
+  participant W as 原材料worker
+  participant H as 原Windows句柄端口
+  participant K as 实际NTFS
+  participant G as 固定Git
+  W->>H: 原namespace观察与持有
+  H->>K: 目录access不变 share3 文件share1
+  K-->>H: 原身份和权限验证通过
+  W->>G: 原RO普通文件stdin 同OID及期限
+  G->>K: 原临时文件写入与链接发布
+  K-->>G: 实际新对象
+  G-->>W: 原完整OID及零退出
+  W->>H: 原snapshot command namespace后验
+  W-->>W: 原Proof合同及原Resources清理
+```
+
+```mermaid
+flowchart TB
+  Type[实际目录或文件类型] --> Share[目录3 文件1 两者禁止DELETE共享]
+  Share --> Handle[原真实CreateFileW句柄]
+  Handle --> Identity[原reparse 类型 inode 路径 DACL核验]
+  Identity --> Effect[原Git插入及独立回读]
+  Effect --> Proof[原后验与正式材料Proof]
+  Identity --> Negative[原写入 改名 删除安全反例]
+  Negative --> Result[实际测试及步骤结论]
+  Proof --> Result
+```
+
+```text
+open_existing_guard(path, expected_directory):
+    before = original lstat
+    access = original held_access
+    share = READ | WRITE if expected_directory else READ
+    handle = original CreateFileW(path, access, share, original flags)
+    require original type, reparse, single-link, inode, final-path and private ACL
+    register original close callback
+    return handle
+```
+
+### 15.4 失败、恢复、测试与发布
+
+任何实际打开／验权失败沿原固定错误拒绝；不创建宽权限替代对象，不以metadata-only访问避开共享检查。
+取消、20秒命令及45秒操作、240秒外围和原SDK五分钟合同保持。句柄由原栈关闭，失败效果按原Owner契约保留。
+新共享反例将历史share1明确构造成测试局部的实际目录控制，再用修复后的自然share3正向验证；
+其包装只把原真实CreateFileW的共享位改回1，不模拟DLL，历史错误32及真实链接成功仍须同时成立。
+
+保持原四格及同源两臂、原Windows写／改名／删除保护负例、原两SDK；新增纯函数检查目录／文件共享选择。
+手动workflow另加一分钟原保护步骤，执行原test_windows_data_read_guard_rejects_write_rename_delete_with_metadata_control两参数；
+原selector、预算及失败判据不变。只更新18输入中的Windows实现和workflow两行及必要整体摘要锚点，其余16行／全部其他字段保持。
+固定新候选只跑一次attempt1；不重跑原失败，不读取业务日志，结果只取Run／Job／step元数据。
+本机静态和POSIX回归不代替原生；SDK步骤或原保护任一失败继续NO-GO。通过本专项也不关闭完整Git／Backup v2、R3、Beta或R1～R6。
+
+### 15.5 限定独立审查后的证明加固
+
+初始窄审查未发现P0／P1，识别三个P2证明缺口，不将其描述为生产漏洞：
+逐臂stat会跟随cross-arm符号链接、last-error使能依赖未自包含、设计把两次打开误称同句柄。
+后继在测试域补充一次复制／重绑后的集合收敛检查：seed与两臂的根、所有目录及文件都以lstat核对类型，
+拒绝reparse／符号链接、文件多链接，并要求三方对应节点身份不同；完整内容／目录形状再次相等。
+新增实际跨臂文件和目录符号链接反例，POSIX反例不能充作Windows成绩。
+
+_link_result用显式use_last_error=True的真实WINFUNCTYPE绑定原kernel32的CreateHardLinkW，
+地址须等于原DLL函数地址；不模拟系统结果，也不依赖私有错误副本的偶然旧值。
+同一目录的两个独立打开在前后再次核对原目录身份；只共享参数变化，时间及HANDLE数值不是相同字段。
+这些测试域加固不改变生产共享政策、错误投影或业务契约，需与原控制和安全负例一起复验。
