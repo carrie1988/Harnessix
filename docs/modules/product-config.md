@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 66
-code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
+version: 67
+code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
 owners:
   - core
 modules:
@@ -2038,6 +2038,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 67 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job实际结果、核心Job可读性失败及Snapshot候选本机回归边界；安装升级治理仅为门禁例证 |
 | 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |
 | 16 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加产品Action最外层Owner、Audit Generation Fence、跨Store恢复扫描、低敏报告持久化与Process期限余量 |
 | 15 | `7bebf3eb4567db321ffefd82fba1c6c13e8f9f86` | 2026-09-20 | 同步Workspace Patch公共参数单一解码入口及正式Task Pack Adapter复用边界；产品Schema与运行语义保持不变 |
@@ -2447,7 +2448,20 @@ pytest仅管理child，不删除存放符号的parent。没有新增搜索fallba
 
 本次仅调整CI调度与验收边界，不改变生产材料流程。原完整8MiB容量、对象格式和原断言不变，
 原材料源码与原最低专项18输入均不改。并行矩阵可能增加总runner分钟，不声称原CI总预算保持。
-本次不是生产缺陷修复；原生结果待新候选验证，不关闭R4或R1～R6。
+
+固定`0f1948c3a258943698a8fe3e4309b81e78b8d5b3`的[CI Run37136790041](https://github.com/carrie1988/Harnessix/actions/runs/37136790041)、attempt 1中，
+三个完整Windows材料Job均为`success`：authenticated-raw的[Job111242837376](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837376)为141秒，
+object-input的[Job111242837311](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837311)为180秒，
+cas-reference的[Job111242837410](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837410)为119秒。
+27个selector保持不变；1306个参数化节点是本地collect-only集合证据，不得表述为Windows原生1306节点无跳过通过。
+
+核心Windows [Job111242837353](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837353)的五个业务步骤均成功，随后readability检查失败，Run仍为FAIL，后续广泛回归未运行；
+[容器沙箱Job111242837229](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837229)和[文档Job111242837340](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837340)成功。
+旧[Run37134036729](https://github.com/carrie1988/Harnessix/actions/runs/37134036729)及308秒失败保留，不认定308秒为唯一超时根因。
+
+当前Snapshot候选不改变Product Config、Action Catalog、完整材料输入或原容量合同。修复后的三组本机回归为1283通过、23个Windows-only跳过、零失败／错误；Snapshot相关测试现为12项，最终关联回归为58节点、54通过／4个Windows-only跳过／零失败或错误，见私有验证目录中的`snapshot-related-sequence.xml`。
+这些结果仅证明候选源码本机行为；固定0f原生`PASS`不证明该Snapshot候选的原生`PASS`。新安装与升级治理2文件41项通过只覆盖门禁正反例，不构成实际安装或升级验收。
+本记录不据此关闭产品Commit/Checkpoint、完整Git／Backup v2、消费者Windows11或R4/R1～R6。
 
 完整的分组、选择器多重集合、步骤保持、失败语义、依赖锁定与验收边界见
 [Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。

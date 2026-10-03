@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 0b1e16ab8482ec324e35f81532ec58a1d09b1b6b
+version: 10
+code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_tests:
   - tests/workspace/test_paths.py
   - tests/workspace/test_snapshot.py
   - tests/workspace/test_snapshot_capacity.py
+  - tests/workspace/test_snapshot_request_refactor.py
   - tests/delivery/test_git_projection_capacity.py
   - tests/tools/test_windows_read_adapter.py
   - tests/tools/test_windows_native_runtime.py
@@ -47,8 +48,8 @@ supersedes: []
 | 下游依赖 | `tools.workspace.Workspace/ReadOperation`、POSIX FD API、Windows Kernel32 Handle API、SQLite与宿主文件系统 |
 | 持久化 | Snapshot由上层Execution/Delivery Plan持久化；包内仅`WorkspaceLeaseStore`持久化当前Owner、Fencing Token和到期时间 |
 | 平台 | macOS/Linux走POSIX Root FD；Windows走原生句柄链；领域路径始终使用UTF-8、`/`分隔的相对路径 |
-| 代码版本 | `8323f0fb5d0dcb95316f76b3e0fcb2140501642d` |
-| 当前完成度 | 路径、选择资源Snapshot、原生Windows只读端口、Secure Reader和跨进程Lease已实现；默认Workspace Patch已逐成员应用Lease，但其他写入口未全部统一，Snapshot也不是全仓锁或Sandbox |
+| 代码版本 | 文档锚定提交`0f1948c3a258943698a8fe3e4309b81e78b8d5b3`；当前Snapshot资源准入候选已完成源码修复与本机差分 |
+| 当前完成度 | 路径、选择资源Snapshot、原生Windows只读端口、Secure Reader和跨进程Lease已实现；默认Workspace Patch已逐成员应用Lease；Snapshot资源准入候选已提取私有helper并完成本机差分，尚待新Windows原生验证，Snapshot仍不是全仓锁或Sandbox |
 
 本文描述[`contracts.py`](../../src/harnessix/workspace/contracts.py)、
 [`paths.py`](../../src/harnessix/workspace/paths.py)、[`snapshot.py`](../../src/harnessix/workspace/snapshot.py)、
@@ -395,7 +396,7 @@ sequenceDiagram
         C->>E: open root and bind path/identity/access
     end
     C->>W: observe cwd as read directory
-    C->>C: add cwd request if absent
+    C->>C: _snapshot_resource_requests: add cwd/read if absent
     C->>C: enforce complete request count including cwd
     loop each requested resource
         C->>C: normalize + platform duplicate/access check
@@ -418,12 +419,14 @@ sequenceDiagram
 | External Root | 16 | 宿主配置数量 |
 | 逻辑路径总字节/段 | 4096/128 | 每个cwd和资源路径 |
 
-调用方恰好提交256个Resource且未包含Workspace cwd/read时，自动补齐后共257项，当前入口在
-逐叶观察前返回`workspace_snapshot_limit`，不构造超限Snapshot。原生根和cwd已按原规则验真，
-退出仍由ExitStack释放；255叶加cwd的合法256项保持原字段和摘要。
+[`_snapshot_resource_requests`](../../src/harnessix/workspace/snapshot.py#L289-L302)只负责复制完整请求、按平台比较键补齐必需的Workspace cwd/read，
+并在逐叶观察前检查完整资源额度；它保留原请求顺序，不改变观察、排序、摘要或错误合同。调用方恰好提交256个Resource且未包含Workspace cwd/read时，
+自动补齐后共257项，当前入口在逐叶观察前返回`workspace_snapshot_limit`，不构造超限Snapshot。原生根和cwd已按原规则验真，
+退出仍由ExitStack释放；255叶加cwd的合法256项保持原字段和摘要。当前候选的`capture_workspace_snapshot`为124行、复杂度27，原策略文件字节不变。
 只有同Location、平台路径比较键、read访问的cwd项能抵扣隐式项；外部根、另一目录或write/execute
 不能抵扣。合格数量内仍拒绝重复资源，超限数量优先拒绝，不通过去重或删观察扩展容量。
 原合同异常、真实父目录扩张缺口及当前有限修复见[容量与顺序设计](../changes/m09-r4-git-projection-ordering.md#11-完整资源容量核验与-snapshot-错误准入)。
+该Snapshot候选的三组材料本机回归为1283通过、23个Windows-only跳过、零失败／错误；最终6个关联文件共58节点为54通过、4个Windows-only跳过、零失败／错误，顺序证据见私有验证目录中的`snapshot-related-sequence.xml`。此前54节点、50通过／4个Windows-only跳过仅作为首次历史结果保留；上述结果不构成该候选的新Windows原生验收，固定0f的原生`PASS`不外推到当前候选。
 
 ### 12.2 资源顺序与重复
 
@@ -1010,6 +1013,7 @@ release(lease):
 | Windows保留/ADS/折叠 | 同上 | `_WINDOWS_RESERVED` | 同上 | `test_windows_rejects_reserved_ads_and_collapsed_names` |
 | 长逻辑路径和比较键 | 同上 | `path_comparison_key` | 同上 | `test_windows_supports_long_logical_paths_without_legacy_260_limit`、`test_platform_comparison_key_only_folds_windows` |
 | Snapshot合同与文件漂移 | [`contracts.py`](../../src/harnessix/workspace/contracts.py)、[`snapshot.py`](../../src/harnessix/workspace/snapshot.py) | `WorkspaceSnapshot`、`capture_workspace_snapshot`、`verify_workspace_snapshot` | [`test_snapshot.py`](../../tests/workspace/test_snapshot.py) | `test_snapshot_binds_file_content_cwd_and_missing_parent` |
+| 完整资源请求准入与顺序 | [`snapshot.py`](../../src/harnessix/workspace/snapshot.py) | `_snapshot_resource_requests`、`capture_workspace_snapshot` | [`test_snapshot_request_refactor.py`](../../tests/workspace/test_snapshot_request_refactor.py)、[`test_snapshot_capacity.py`](../../tests/workspace/test_snapshot_capacity.py) | 测试现为12项：既有8项原`0f`源码动态加载差分及4项直接helper请求序列断言；最终关联回归58节点=54通过／4个Windows-only跳过／零失败或错误，见`snapshot-related-sequence.xml` |
 | 平台重复资源 | 同上 | `unique_resources`、`seen` | 同上 | `test_snapshot_rejects_duplicate_resources_by_platform_semantics` |
 | External Root授权 | [`snapshot.py`](../../src/harnessix/workspace/snapshot.py) | `capture_workspace_snapshot` | 同上 | `test_external_root_access_is_explicit_and_revision_bound` |
 | 缺失父目录 | 同上 | `_PosixRoot.observe`、`WindowsWorkspaceRoot.observe` | 同上 | `test_missing_resource_requires_an_existing_bound_parent` |
@@ -1048,9 +1052,14 @@ uv run pytest \
 本地POSIX测试证明macOS当前宿主语义；Windows专用用例在非Windows平台Skip，必须以Windows CI结果作为
 原生证据。真实Container和Git测试证明消费者组合，不代表所有网络文件系统、文件系统类型或企业策略。
 
+独立Snapshot审查未发现P0/P1；P2指出最终Snapshot排序可能掩盖请求遍历顺序。已补充
+POSIX/Windows显式／隐式cwd、混合Location、非字典序和尾补的4项直接helper序列断言；
+不改变生产源码或原生端口，最终关联回归58节点、54通过／4个平台跳过、零失败／错误。
+该缺口已通过新增测试闭环，证据见`snapshot-related-sequence.xml`，不是以下仍待验证项。
+
 ### 32.2 当前测试缺口
 
-- 256个显式Resource加隐式cwd导致合同溢出的统一错误；
+- Snapshot资源准入候选尚待与当前源码一致的新Windows原生及完整CI验收；
 - 两个External Location绑定同一对象或绑定主Workspace Root的冲突；
 - POSIX传入Root符号链接的明确产品合同；
 - POSIX目录扫描超过时限时的稳定错误和大目录性能基准；
@@ -1210,6 +1219,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 10 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步完整资源请求私有准入提取、原容量合同、Snapshot请求序列P2测试缺口及固定0f Windows原生验收边界；Snapshot候选待新原生验证 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 记录默认Patch规范资源、同源Snapshot、逐成员Fencing Lease及Windows省略边界 |
 | 3 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 为Windows观察增加内容/上限/检查点并拆分缺失、目录、文件和块读取流程，供原生Coding Tool复用；CI 34735529084通过 |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 同步DOC-1.6公共合同漂移门禁及Windows限制；Workspace运行合同不变 |

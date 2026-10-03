@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 34
-code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
+version: 35
+code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
 owners:
   - core
 modules:
@@ -1591,6 +1591,7 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 35 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job、核心Trusted Execution五步成功后可读性失败及Snapshot候选本机回归不替代原生验收的边界 |
 | 15 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c向产品恢复扫描提供低敏Active Lease清单，明确孤儿Lease只Reconcile、不按PID控制或重Spawn，并让Route期限覆盖Process清理余量 |
 | 14 | `0798d84a6ba76d0b658f912c9c41f60b5645629b` | 2026-09-20 | CRT EACCES有界重读与POSIX失败关闭边界由CI 35472231908完成Linux双版本、macOS、Windows、固定Container和Documentation六实例验收 |
 | 13 | `634765887237f9bc4d3d2cb6c76f2cc6d554e692` | 2026-09-20 | 根据Windows CI的`receipt_io=0:13:attempt=1`证据补充CRT EACCES有界重读候选，同时固定POSIX EACCES继续失败关闭 |
@@ -1799,7 +1800,17 @@ Git宿主的可能送达标志覆盖 `Supervisor.__aexit__` 与私有清理，�
 
 本次仅改变CI调度与验收边界，不是生产缺陷修复。原完整8MiB容量、对象格式和原断言不变，
 原材料源码与原最低专项18输入均不改。并行矩阵可能增加总runner分钟，不声称原CI总预算保持。
-原生结果待新候选验证，不关闭R4或R1～R6；矩阵结果不能替代进程Owner、回执及完整产品验收。
+固定`0f1948c3a258943698a8fe3e4309b81e78b8d5b3`的[CI Run37136790041](https://github.com/carrie1988/Harnessix/actions/runs/37136790041)、attempt 1中，
+authenticated-raw、object-input和cas-reference三个完整Windows材料Job分别为141秒、180秒和119秒并均为`success`；27个selector和1306个本地收集参数节点的集合保持不变，
+不得表述为Windows原生1306节点无跳过通过。
+
+核心[windows-trusted-execution Job111242837353](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837353)的NTFS事务与审批编码写链、Git读取与取消回收、产品重启与State创建、
+完整业务状态备份、完整业务状态恢复五个业务步骤均为`success`，其后readability检查失败，整个Run仍为FAIL，后续广泛回归未运行。
+[容器沙箱Job111242837229](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837229)和[文档Job111242837340](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837340)为`success`。
+旧[Run37134036729](https://github.com/carrie1988/Harnessix/actions/runs/37134036729)及308秒失败保留，不认定308秒为唯一超时根因。
+
+Snapshot候选修复后的本机材料回归为1283通过、23个Windows-only跳过、零失败／错误；新增4项直接helper请求序列断言后，相关测试现为12项，最终关联回归为58节点、54通过／4个Windows-only跳过、零失败／错误。
+该结果不替代进程Owner、回执、Windows原生材料或完整产品验收。固定0f的原生`PASS`不证明Snapshot候选的原生`PASS`，R4及R1～R6仍保持开放。
 
 完整分组契约、失败／取消语义、步骤保持及原生验证边界见
 [Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。

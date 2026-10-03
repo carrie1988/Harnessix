@@ -286,6 +286,22 @@ class SecureWorkspaceReader:
         self.close()
 
 
+def _snapshot_resource_requests(
+    resources: Sequence[WorkspaceResourceRequest], cwd: str, platform: PlatformKind
+) -> list[WorkspaceResourceRequest]:
+    """保留原请求顺序，补齐cwd/read并在逐叶观察前检查完整资源额度。"""
+    requested = list(resources)
+    cwd_key = ("workspace", path_comparison_key(cwd, platform), "read")
+    keys = {
+        (item.location, path_comparison_key(item.path, platform), item.access) for item in requested
+    }
+    if cwd_key not in keys:
+        requested.append(WorkspaceResourceRequest(location="workspace", path=cwd, access="read"))
+    if len(requested) > 256:
+        raise KernelError("workspace_snapshot_limit", "Workspace快照资源超过上限")
+    return requested
+
+
 def capture_workspace_snapshot(
     root: str | Path,
     *,
@@ -329,19 +345,7 @@ def capture_workspace_snapshot(
         cwd_observation = workspace.observe(normalized_cwd, access="read")
         if cwd_observation.kind != "directory":
             raise KernelError("workspace_cwd_invalid", "Workspace cwd不是目录")
-        requested = list(resources)
-        cwd_key = ("workspace", path_comparison_key(normalized_cwd, selected_platform), "read")
-        keys = {
-            (item.location, path_comparison_key(item.path, selected_platform), item.access)
-            for item in requested
-        }
-        if cwd_key not in keys:
-            requested.append(
-                WorkspaceResourceRequest(location="workspace", path=normalized_cwd, access="read")
-            )
-        # 必需的 cwd/read 也占用资源额度，须在逐叶观察前完成准入。
-        if len(requested) > 256:
-            raise KernelError("workspace_snapshot_limit", "Workspace快照资源超过上限")
+        requested = _snapshot_resource_requests(resources, normalized_cwd, selected_platform)
         observations: list[WorkspaceResourceObservation] = []
         total_bytes = 0
         seen: set[tuple[str, str, str]] = set()

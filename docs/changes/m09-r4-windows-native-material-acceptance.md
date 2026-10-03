@@ -1,10 +1,10 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
+version: 2
+code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
 owners: [core]
-modules: [delivery, product_config, processes, governance]
+modules: [delivery, product_config, processes, workspace, governance]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
@@ -13,6 +13,10 @@ related_tests:
   - tests/product_config/test_git_material_input.py
   - tests/product_config/test_git_material_cas_integration.py
   - tests/processes/test_windows_raw_receipt.py
+  - tests/workspace/test_snapshot_request_refactor.py
+  - tests/workspace/test_snapshot_capacity.py
+  - tests/delivery/test_git_projection_capacity.py
+  - tests/governance/test_readability_policy.py
 supersedes: []
 ---
 
@@ -36,8 +40,9 @@ supersedes: []
 - 原NTFS、读取、重启、备份、恢复及后继广泛回归步骤保持，只迁出原聚合步骤。
 - 不新增采集器、日志格式、诊断插件、PE／PDB下载或模型请求；最低Commit专项及18输入完全不改。
 
-非目标：没有生产源码修复、默认Git产品装配、Backup v2、消费者Windows11或R3质量验收。
-拆分是CI调度与验收边界变更，不将它称为业务故障已修复。
+分组调度的非目标：不修复生产源码，不装配默认Git产品、Backup v2，不承担消费者Windows11或R3质量验收。
+拆分是CI调度与验收边界变更，不将它称为业务故障已修复。新原生结果暴露的Snapshot热点回归
+由第10节单独设计并整改，不能将调度变化与后续生产源码修复混为同一项。
 
 每成员保留原测试步骤五分钟上限；由一个合并五分钟改为三个可并行五分钟成员。
 因此总runner分钟与最坏资源占用可能增加，不能声称总CI预算未变。实际pytest选择器总量保持，
@@ -164,14 +169,96 @@ Windows-only跳过单列，不能计为原生通过。原最低专项18输入必
 
 ## 9. 当前范围与商用退出条件
 
-本设计是原完整验收范围的并行调度，不增加产品特性，不删除历史代码或更改业务安全契约。
-实施及新原生结果未取得前不标记分组通过。完整Git／Backup v2、真实R3质量与费用未决、消费者三平台、
+前三个分组的设计是原完整验收范围的并行调度，不增加产品特性，不删除历史代码或更改业务安全契约。
+固定0f1948c的三个分组现已取得原生通过；这不代表后续第10节源码修复也已通过原生验收。
+完整Git／Backup v2、真实R3质量与费用未决、消费者三平台、
 独立Beta及同候选R1～R6继续按原完整目标验收，不以CI分组替代商用结果。
 
 当前实现已按上述分组迁移，治理7项通过。collect-only的固定清单实际1306节点，
 认证raw386、对象输入303、CAS引用617；三组节点多重集合与原合并组完整相等。
 本机和新原生候选结果另行记录，不以收集成功视为业务或原生通过。
 
+固定[Run37136790041](https://github.com/carrie1988/Harnessix/actions/runs/37136790041)、attempt1、
+head0f1948c的认证raw Job111242837376、对象输入Job111242837311及CAS引用Job111242837410均success，
+pytest步骤分别141／180／119秒。1306是本机完整收集节点数；原生步骤元数据不提供逐项计数或跳过信息，
+不得将它写成原生1306项无跳过通过。核心Windows Job111242837353五个业务步骤success，
+随后原可读性检查failure，后继广泛回归skipped；整个Run仍failure。文档及容器沙箱Job success。
+
 新治理显式以UTF-8读取当前YAML与冻结Git源码，防止Windows默认locale影响中文步骤名称；
 对应读取守卫通过。三组本机关联实际1283通过／23 Windows相关跳过、零失败／错误；治理7项单列。
 首次文档检查发现三个语义章节标题未匹配规范，内容已具备但规范命名不完整；修正标题后重新检查，原发现保留。
+
+## 10. 生成报告漂移与Snapshot资源准入职责收敛
+
+### 10.1 实际结果与已复现原因
+
+固定0f1948c的Run37136790041三个完整Windows矩阵成员全部success；核心Windows写入、读取、重启、
+完整状态备份与恢复五步success。该job及Linux／macOS后续卡在原可读性检查，不以三组通过宣布完整CI通过。
+本机原检查实际复现：capture_workspace_snapshot长度136超过原133，复杂度30超过原29，且最终报告漂移。
+原600／100／20基础阈值及热点例外不得扩大。报告漂移来自已发生的源码变化，不能简单更新报告而忽略两个真实热点回归。
+
+### 10.2 最小结构设计、接口与源码映射
+
+[快照捕获](../../src/harnessix/workspace/snapshot.py)中的请求复制、cwd/read补入、256项准入形成单一职责，
+提取为包内_snapshot_resource_requests(resources, cwd, platform)，返回原同顺序的list请求。
+原主函数仍先开根、复核外部根与观察cwd，再在同一位置调用helper；没有提前或延后安全检查。
+原逐叶观察、重复拒绝、总量保护、排序、Root及revision payload全部保留，公开接口与Schema不变。
+
+| 重点字段／接口 | 原行为与约束 |
+| --- | --- |
+| resources | 调用者完整Sequence，不删叶或裁剪；主函数异常栈仍保留原入参 |
+| cwd_key／keys | 原workspace、平台路径比较键、read模式；不将别名当新资源 |
+| requested | 原list副本，缺少显式cwd/read时只补一次；补入后仍执行256项拒绝 |
+| WorkspaceSnapshot | 原所有字段、规范化、排序和selected-resources-sha256/v1摘要保持 |
+| generated final report | 原scripts/readability_report.py从当前src/harnessix AST生成，不手工伪造指标 |
+| policy | governance/readability-policy-v1.json原字节不变；热点133／29及基础600／100／20不放宽 |
+
+```mermaid
+flowchart TB
+  Capture[原capture主流程 根及cwd观察] --> Requests[包内请求副本 补cwd及原256准入]
+  Requests --> Original[原逐叶观察 排序及同一payload]
+  Original --> Snapshot[原Snapshot字段与摘要]
+  AST[当前生产源码AST] --> Policy[原阈值及热点上限 不变]
+  Policy --> Generate[原生成器更新当前最终报告]
+  Generate --> Gate[原完整可读性检查 不绕过]
+```
+
+```text
+执行原平台规范化、根打开与cwd观察
+requested = 按原顺序复制全部resources
+仅在原比较键不存在时补入原cwd/read请求
+requested数量超过256 -> 原KernelError，不观察叶子
+执行原逐叶观察、重复检查、字节限额、排序与payload摘要
+在当前源码满足原policy之后，使用原生成器更新最终报告
+```
+
+### 10.3 验证、失败与兼容
+
+先保留原可读性RED和指标差分；结构提取后运行原Workspace容量、Git投影容量及新前后源码差分回归。
+新差分从固定0f1948c加载原模块，只用于隔离测试；对相同实际临时根比较合法Snapshot全模型及超限错误，
+包括显式／隐式cwd、256边界与重复请求。原入参在capture异常帧保留，原根关闭与KernelError不变。
+不更改限额、路径／DACL、跨根访问、资源顺序或既有测试断言；没有状态迁移，旧批准不得跨实现复用。
+
+原生成器只有在不改变policy且检查满足后更新最终报告。继而执行同一--check／--check-final-report，
+所有初始发现保留，指标增长与热点减少分别列明；不通过删checker、改报告比较或抬上限恢复绿色。
+原18材料输入及SDK／Owner／Proof门保持；完整Git／Backup v2、R3、消费者及Beta仍需原目标验收。
+
+当前结构提取后capture为124行、复杂度27，低于原热点133／29；全局100行阈值及原热点例外仍存在，
+不宣称所有函数已低于100行。原policy摘要保持
+`176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c`。
+首次八个新差分案例与原Snapshot、Workspace容量、Git投影容量、可读性及分组治理六个文件合计
+50通过／4个Windows相关跳过、零失败／错误。首次关联运行因Ruff格式化后生成报告失配而失败，
+该失败保留；按最终源码重新生成后，原检查及关联回归通过。修复提交后的新原生和广泛CI仍须独立验收。
+
+同一未提交源码上的三个完整材料分组再次并行实际1283通过／23个Windows相关跳过、零失败／错误，
+分别367／19、299／4、617／0；上述原1306节点与选择器没有减少。全部18专项输入逐件摘要仍匹配，
+原policy字节一致。安装及不同版本升级治理两个文件41项通过，只证明既有验收器的正反例，
+不将它计为三平台实际安装、升级、真实编码或商业发布通过。
+
+独立窄审查未发现P0／P1；P2指出最终Snapshot排序会掩盖请求观察顺序，模型相等不能单独证明
+请求副本保序。补充四个直接序列断言，覆盖POSIX／Windows比较语义及显式／隐式cwd，使用混合location
+和非字典序请求，比较完整列表及原输入不变；显式cwd保留原位置，隐式cwd仅尾补一次。
+这些纯请求断言不替换原生观察器，也不将Windows逻辑参数测试计作Windows原生验收。
+补充后请求提取测试共12项，最终六个关联文件58节点、54通过／4个平台跳过、零失败／错误；
+实际生产源码438个文件的类型检查通过。新增顺序断言由主线程闭环，原独立报告保持原审查源码与测试摘要，
+不宣称它覆盖后续新增的四个断言。

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 181
-code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
+version: 182
+code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
 owners:
   - core
 modules:
@@ -1897,8 +1897,39 @@ Job111234899713已终态success：原身份预检、原四格、同源两臂、�
 
 当前1306个参数化节点的多重集合与原合并组完整相等，三个成员分别386／303／617；
 新治理7项通过，原最低专项18输入及生产材料源码不改。没有新增诊断采集器或放宽容量、格式和安全断言。
-各分组仍须新候选实际原生通过；完整Git／Backup v2、R3、消费者Windows、Beta和同候选R1～R6继续开放。
+固定0f1948c的三个分组已取得下述原生通过；后继Snapshot候选仍须单独验收，
+完整Git／Backup v2、R3、消费者Windows、Beta和同候选R1～R6继续开放。
 
 三组本机关联回归并行实际1283通过／23 Windows相关跳过、零失败／错误；新治理7项单列。
 首次文档检查的三项标题规范发现保留并修正，不用本机结果宣称原生通过。
 结果及范围见[正式验证资料](validation/windows-native-material-acceptance-2026-10-04-v1/README.md)。
+
+### R1/R4：固定0f候选实际结果与当前Snapshot修复待验
+
+固定提交`0f1948c3a258943698a8fe3e4309b81e78b8d5b3`的[CI Run37136790041](https://github.com/carrie1988/Harnessix/actions/runs/37136790041)、
+attempt 1中，三个完整Windows原生材料组均为`success`：
+
+| 组 | Job | pytest耗时 |
+|---|---|---:|
+| authenticated-raw | [111242837376](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837376) | 141秒 |
+| object-input | [111242837311](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837311) | 180秒 |
+| cas-reference | [111242837410](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837410) | 119秒 |
+
+27个selector保持不变；1306个参数化节点来自本地collect-only集合证据，不得表述为Windows原生1306节点无跳过通过。
+核心Windows [Job111242837353](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837353)的五个业务步骤——NTFS事务与审批编码写链、Git读取与取消回收、
+产品重启与State创建、完整业务状态备份、完整业务状态恢复——均为`success`，随后readability检查失败，Run仍为FAIL，后续广泛回归未运行。
+容器沙箱[Job111242837229](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837229)和文档[Job111242837340](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837340)为`success`。
+旧[Run37134036729](https://github.com/carrie1988/Harnessix/actions/runs/37134036729)及308秒失败保留，不认定308秒为唯一超时根因。
+
+Snapshot候选仅把完整资源请求构建、必需`cwd/read`补齐和资源额度准入提取为私有
+[`_snapshot_resource_requests`](../src/harnessix/workspace/snapshot.py#L289-L302)，位置在原cwd验证之后、逐叶观察之前；Resource 256、External Root 16、单文件8MiB、总正文32MiB和单目录10000项等策略不变。
+`capture_workspace_snapshot`由原136行／复杂度30降为124行／27，策略文件原字节不变；固定0f原生PASS不证明Snapshot候选的原生PASS。
+Snapshot候选的本机三组回归为1283通过／23个Windows-only跳过／零失败错误，分组耗时分别27.958秒、63.451秒和31.506秒；最终6个关联文件为58节点、54通过／4个Windows-only跳过／零失败或错误，顺序证据见私有验证目录中的`snapshot-related-sequence.xml`。此前54节点的50通过／4个Windows-only跳过仅作为首次历史结果保留。
+新增4项直接helper请求序列断言后，测试现为12项，覆盖POSIX/Windows显式／隐式cwd、混合Location、非字典序和尾补。
+这些结果均为本机回归，不是新的Windows原生验收。可读性策略SHA-256为`176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c`，
+18份原最小专项输入重新实测字节不变；新安装与升级治理2文件41项通过仅覆盖门禁正反例，不构成实际安装或升级验收。相关SDD第四图已完成渲染与视觉检查并通过；438项生产源码mypy通过，本地离线Wheel构建及制品Secret scan通过，这些结果不改变Windows原生门禁或实际安装升级结论。
+
+独立Snapshot审查未发现P0/P1；发现P2测试缺口：最终Snapshot排序可能掩盖请求遍历顺序。补充的4项直接helper序列断言不改变生产源码或原生端口，最终关联回归为58节点、54通过／4个Windows-only跳过、零失败／错误，见`snapshot-related-sequence.xml`。
+
+当前仍需为Snapshot候选取得一致候选的三组原生结果及同候选门禁。完整Git产品T／Bridge／D／Checkpoint、独立Commit、默认完整Git／Backup v2、消费者Windows11、真实R3（费用仍未决）、
+独立Beta及R1～R6均保持开放，R1～R6不因本次分组或本机回归关闭。

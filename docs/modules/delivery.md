@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
+version: 39
+code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
 owners:
   - core
 modules:
@@ -1802,6 +1802,7 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 39 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f三组Windows材料原生Job结果、核心Job可读性失败与Snapshot候选本机回归边界；完整Git与Backup v2仍开放 |
 | 30 | `871dc3c12deb5fbea227af3dd628b39fea545622` | 2026-10-01 | 同步完整对象目录实际CAS回读、七字段／直接边、两树／并集核验及原8MiB tree补验；来源、授权及默认交付另行接线 |
 | 29 | `9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c` | 2026-10-01 | 同步七个完整对象目录模型、八个纯接口、规范字节、失败／取消与后继CAS及业务授权边界；固定新增源码身份见专项验证包 |
 | 18 | `6a686fdd00162babd0dbaa8b0785186dd15c3cbc` | 2026-09-29 | 发布Workspace Patch操作必填Schema与描述；焦点及受影响双Python通过，原校验/序列化/旧批准拒绝保持；线上认证另行验证 |
@@ -2177,7 +2178,22 @@ SDK符号根修复候选0583b53的Run37134072312已整体success，最低SHA256 
 
 本次是CI调度与验收边界调整，不是生产缺陷修复。原完整8MiB容量、对象格式和原断言不变，
 原材料源码与原最低专项18输入均不改。并行执行可能增加总runner分钟，不声称原CI总预算保持。
-原生结果待新候选验证，不关闭R4或R1～R6；任一矩阵成员失败仍保持失败，不转换为通过。
+
+固定`0f1948c3a258943698a8fe3e4309b81e78b8d5b3`的[CI Run37136790041](https://github.com/carrie1988/Harnessix/actions/runs/37136790041)、attempt 1中，
+三个矩阵Job均为`success`：[authenticated-raw Job111242837376](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837376)耗时141秒，
+[object-input Job111242837311](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837311)耗时180秒，
+[cas-reference Job111242837410](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837410)耗时119秒。
+27个selector保持不变；1306个参数化节点来自本地collect-only集合，不得表述为Windows原生1306节点无跳过通过。
+
+核心Windows [Job111242837353](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837353)的NTFS事务与审批编码写链、Git读取与取消回收、产品重启与State创建、
+完整业务状态备份、完整业务状态恢复五个步骤均为`success`，随后readability检查失败，整个Run仍为FAIL，后续广泛回归未运行。
+[容器沙箱Job111242837229](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837229)和[文档Job111242837340](https://github.com/carrie1988/Harnessix/actions/runs/37136790041/job/111242837340)为`success`。
+旧[Run37134036729](https://github.com/carrie1988/Harnessix/actions/runs/37134036729)及308秒失败保留，不认定308秒为唯一超时根因。
+
+当前Snapshot资源准入提取候选不改变Delivery材料流程、原8MiB/32MiB及其他容量策略；
+其三组本机回归为1283通过／23个Windows-only跳过／零失败错误，Snapshot相关测试现为12项，最终关联回归为58节点、54通过／4个Windows-only跳过／零失败或错误，见私有验证目录中的`snapshot-related-sequence.xml`；这些均属于候选源码本机证据，不是新的Windows原生结果。
+固定0f的原生`PASS`不证明该Snapshot候选的原生`PASS`。
+该候选的完整资源准入顺序与当前边界见[Workspace模块设计](workspace.md#12-snapshot捕获算法)；完整Git交付、默认完整Git／Backup v2及R4或R1～R6仍未关闭。
 
 分组边界、原选择器精确保留、依赖与超时约束、原生失败语义及回退范围见
 [Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。

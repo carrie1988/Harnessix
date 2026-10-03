@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 437,
-    "physical_lines": 93190,
-    "logical_lines": 82345,
-    "documented_modules": 437,
-    "classes": 966,
-    "documented_classes": 441,
-    "functions": 3758,
-    "documented_functions": 846,
+    "source_files": 438,
+    "physical_lines": 93427,
+    "logical_lines": 82550,
+    "documented_modules": 438,
+    "classes": 967,
+    "documented_classes": 442,
+    "functions": 3768,
+    "documented_functions": 856,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1641,10 +1641,10 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "capture_workspace_snapshot",
       "kind": "function",
-      "line": 289,
-      "lines": 133,
+      "line": 305,
+      "lines": 124,
       "documented": true,
-      "decision_complexity": 29
+      "decision_complexity": 27
     },
     {
       "id": "harnessix.workspace.windows:WindowsWorkspaceRoot",
