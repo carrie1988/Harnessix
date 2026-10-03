@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
+version: 16
+code_revision: 634f96c55cfeff5db7e84b177074c4bd5d6a990c
 owners:
   - core
 modules:
@@ -732,3 +732,18 @@ Owner的OS/SQLite异常以私有载体保留原对象；原真实回滚/关闭�
 [总体与详细设计](../changes/m09-r4-authenticated-thread-history.md)及
 [验证资料](../validation/authenticated-thread-history-2026-10-02-v1/README.md)。
 原`get_thread/events`合同、数据库格式、Key与认证域不变；此接口不承诺跨库原子快照。
+
+### Windows测试文件与探针连接所有权
+
+认证Reader的真实WAL夹具使用三平台合法的`uri #% 中文.db`，仍核验特殊字符编码、
+单一事务、DML拒绝、业务行不变及实际连接关闭。问号编码另在原`_session_connection`入口使用
+两类不落盘PurePath核验，不把纯参数测试写成实际Windows数据库读取。
+
+[认证历史测试](../../tests/session/test_authenticated_history.py)的`business_rows`和
+[认证Store测试](../../tests/agent/test_authenticated_store.py)的`ledger`及直接SQL夹具均由外层
+`closing`负责连接关闭，内层原Connection上下文保留提交／回滚。连接事务退出不等于句柄关闭，
+探针不得依赖GC；正常及实际SQL错误后均以保留强引用的原SQLite连接验证已关闭。
+生产连接生命周期、公开接口、数据库表、原认证和取消规则均未改变。
+新增夹具初始化也按相同资源顺序结算；实际SQLite authorizer拒绝INSERT的两例回归
+保证初始化失败不留下强引用连接，不将探针正常路径通过外推为异常安全。
+定位证据、流程/时序/数据图、接口和失败边界见[详细设计第12节](../changes/m09-r4-authenticated-thread-history.md#12-windows原生测试夹具及探针连接生命周期整改)。

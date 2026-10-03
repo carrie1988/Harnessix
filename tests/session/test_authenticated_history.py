@@ -6,7 +6,8 @@ import asyncio
 import hashlib
 import sqlite3
 import threading
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager, closing, contextmanager
+from pathlib import PurePosixPath, PureWindowsPath
 from time import monotonic
 from uuid import uuid4
 
@@ -29,6 +30,7 @@ from harnessix.product_config.contracts import SecretReference
 from harnessix.product_config.state_backup_validation import _VerificationOnlyScope
 from harnessix.secrets.provider import EnvironmentSecretProvider, EnvironmentSecretSource
 from harnessix.secrets.publication import SecretPublicationScope
+from harnessix.session import sqlite as sqlite_module
 from harnessix.session import sqlite_history as history_module
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.session.sqlite_history import AuthenticatedThreadHistory
@@ -74,13 +76,82 @@ async def read(store, tid, **controls):
 
 def business_rows(path):
     """完整业务行作前后比对；不把WAL/SHM辅助字节当作业务写入。"""
-    with sqlite3.connect(path) as db:
+    with closing(sqlite3.connect(path)) as db, db:
         tables = db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
         ).fetchall()
         return {
             name: db.execute(f'SELECT * FROM "{name}" ORDER BY 1').fetchall() for (name,) in tables
         }
+
+
+@pytest.mark.parametrize("fail_first", [False, True], ids=["normal", "sql_error"])
+def test_business_rows_probe_closes_connection(tmp_path, monkeypatch, fail_first):
+    path = tmp_path / "probe.db"
+    with closing(sqlite3.connect(path)) as setup, setup:
+        setup.execute("CREATE TABLE fixture_rows (value TEXT)")
+        setup.execute("INSERT INTO fixture_rows VALUES ('fixture')")
+
+    captured = []
+
+    class CapturedConnection(sqlite3.Connection):
+        def execute(self, statement, parameters=()):
+            if self.fail_first:
+                self.fail_first = False
+                return super().execute("SELECT * FROM missing_probe_table")
+            return super().execute(statement, parameters)
+
+    original_connect = sqlite3.connect
+
+    def capture_connect(*args, **kwargs):
+        connection = original_connect(*args, factory=CapturedConnection, **kwargs)
+        connection.fail_first = fail_first
+        captured.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", capture_connect)
+    if fail_first:
+        with pytest.raises(sqlite3.OperationalError, match="no such table") as caught:
+            business_rows(path)
+        assert "missing_probe_table" in str(caught.value)
+    else:
+        assert business_rows(path) == {"fixture_rows": [("fixture",)]}
+
+    assert len(captured) == 1
+    with pytest.raises(sqlite3.ProgrammingError):
+        captured[0].execute("SELECT 1")
+
+
+@pytest.mark.parametrize("fail_first", [False, True], ids=["normal", "sql_error"])
+def test_business_probe_fixture_closes_setup_connection_on_sql_error(
+    tmp_path, monkeypatch, fail_first
+):
+    """初始化真实SQL失败也须关闭；强引用阻止GC代替夹具结算连接。"""
+    captured = []
+    original_connect = sqlite3.connect
+
+    def connect(*args, **kwargs):
+        connection = original_connect(*args, **kwargs)
+        connection.set_authorizer(
+            lambda action, table, *_: (
+                sqlite3.SQLITE_DENY
+                if action == sqlite3.SQLITE_INSERT and table == "fixture_rows"
+                else sqlite3.SQLITE_OK
+            )
+        )
+        captured.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", connect)
+    try:
+        with pytest.raises(sqlite3.DatabaseError, match="not authorized"):
+            test_business_rows_probe_closes_connection(tmp_path, monkeypatch, fail_first)
+        assert len(captured) == 1
+        with pytest.raises(sqlite3.ProgrammingError):
+            captured[0].execute("SELECT 1")
+    finally:
+        for connection in captured:
+            connection.close()
 
 
 async def test_complete_history_is_original_authenticated_replay_without_business_writes(tmp_path):
@@ -389,7 +460,7 @@ async def test_middle_event_mac_is_checked_before_its_json_parser(tmp_path, monk
             ],
             expected_sequence=1,
         )
-        with sqlite3.connect(store.path) as db:
+        with closing(sqlite3.connect(store.path)) as db, db:
             db.execute("UPDATE agent_events SET event_json='not-json' WHERE sequence=2")
         before = business_rows(store.path)
         original, parsed = AgentEvent.model_validate_json, []
@@ -415,7 +486,7 @@ async def test_snapshot_replacement_even_with_valid_seal_cannot_disagree_with_re
         store, tid, expected = await seed(tmp_path / "state.db", proof)
         changed = expected.model_copy(update={"workspace": (tmp_path / "other").as_posix()})
         body = changed.model_dump_json()
-        with sqlite3.connect(store.path) as db:
+        with closing(sqlite3.connect(store.path)) as db, db:
             if valid_seal:
                 raw = db.execute("SELECT seal FROM agent_projection_publications").fetchone()[0]
                 checkpoint = proof.verify_projection(raw, tid)
@@ -441,7 +512,7 @@ async def test_snapshot_replacement_even_with_valid_seal_cannot_disagree_with_re
 async def test_original_proof_is_not_reissued_when_missing(tmp_path, table):
     with binding() as proof:
         store, tid, _ = await seed(tmp_path / "state.db", proof)
-        with sqlite3.connect(store.path) as db:
+        with closing(sqlite3.connect(store.path)) as db, db:
             db.execute("DELETE FROM " + table)
         before = business_rows(store.path)
         with pytest.raises(KernelError) as caught:
@@ -531,9 +602,42 @@ async def test_preexisting_stop_never_opens_database(tmp_path, monkeypatch, stop
         assert not store.path.exists()
 
 
+@pytest.mark.parametrize(
+    "path,expected_uri",
+    [
+        (
+            PurePosixPath("/private/tmp/uri ?#% 中文.db"),
+            "file:///private/tmp/uri%20%3F%23%25%20%E4%B8%AD%E6%96%87.db",
+        ),
+        (
+            PureWindowsPath("C:/private/tmp/uri ?#% 中文.db"),
+            "file:///C:/private/tmp/uri%20%3F%23%25%20%E4%B8%AD%E6%96%87.db",
+        ),
+    ],
+    ids=["pure-posix", "pure-windows"],
+)
+async def test_readonly_uri_escapes_pure_path_without_opening_database(
+    monkeypatch, path, expected_uri
+):
+    calls = []
+    original = RuntimeError("fixture-uri-capture")
+
+    def capture(database, **kwargs):
+        calls.append((database, kwargs))
+        raise original
+
+    monkeypatch.setattr(sqlite_module.aiosqlite, "connect", capture)
+    with pytest.raises(RuntimeError) as caught:
+        async with sqlite_module._session_connection(path, read_only=True):
+            pytest.fail("URI捕获后不得继续打开数据库")
+
+    assert caught.value is original
+    assert calls == [(expected_uri + "?mode=ro", {"uri": True})]
+
+
 async def test_readonly_connection_observes_wal_and_refuses_business_dml(tmp_path, monkeypatch):
     with binding() as proof:
-        store, tid, expected = await seed(tmp_path / "uri ?#% 中文.db", proof)
+        store, tid, expected = await seed(tmp_path / "uri #% 中文.db", proof)
         original, statements, closed = store._connection, [], []
 
         @asynccontextmanager

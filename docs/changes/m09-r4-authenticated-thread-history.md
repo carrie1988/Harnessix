@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
+version: 4
+code_revision: 634f96c55cfeff5db7e84b177074c4bd5d6a990c
 owners: [core]
 modules: [session, delivery]
 related_adrs:
@@ -25,7 +25,10 @@ supersedes: []
 该缺口直接对应[完整Git交付设计](m09-r4-git-delivery-business-backup-closure.md)的来源与跨库核验前置。
 
 本设计增加内部读取方法和普通元数据聚合，不增加模型Tool、SDK协议、Schema、Key、HMAC域或执行授权。
-原接口继续保持行为。候选实现与62项正式新测试已落地；最新冻结输入的独立复审已闭环，安装验收尚待完成，不将组件通过当作产品交付完成。
+原接口继续保持行为。候选实现与原62项正式测试已落地，原冻结输入的独立复审已闭环。
+固定beda980的[三平台安装生命周期](../validation/installed-product-beda980-2026-10-04-v1/README.md)
+已通过；Windows认证Session夹具新增四项回归后的本地结果见第12节，原生及完整Git交付仍待验，
+不将安装或组件通过当作完整产品交付完成。
 
 ## 2. 设计目标、非目标与不变量
 
@@ -226,7 +229,7 @@ flowchart LR
 正式新文件原48项、追加9项Owner异常对照及5项实际驱动/取消优先级回归共62项均通过，涵盖真实WAL并发提交、原MAC先于对应事件JSON解析、合法Seal但语义投影不符、
 只验真Scope、错误/关闭Key、特殊URI路径、原限额、原生SQLite虚拟机停止与连接关闭、真实Runtime及Fork元数据。
 测试VM停止场景在原连接中注入有限递归SQL/Barrier，仅验证原驱动中断及资源结算；不宣称所有生产SQL都达到硬实时取消。
-最新62项输入的Ruff/格式检查及435个实际生产源码文件Mypy通过；集成GitDB v2和Eval新模块后的文件数与类型结果须另行记录。
+原冻结62项输入的Ruff/格式检查及435个实际生产源码文件Mypy通过；集成GitDB v2和Eval新模块后的文件数与类型结果须另行记录。
 
 首轮三例暴露Binding并无`identity`接口及可选检查点遮蔽原`checkpoint`函数，均在候选内修正；原失败保留。
 完整关联757项中755通过、2项旧Artifact批量Diff断言失败；原结果保持FAIL。
@@ -283,3 +286,140 @@ R3、Windows或商用R1～R6。
 | 原资源结算而非强杀SQLite线程 | 工作线程没有安全的任意强杀接口，取消后须结算连接 | busy/close可能延后完成；不声称硬实时停止，也不遗留后台任务 |
 | 私有异常载体而非扩大storage包装规则 | 只区分宿主回调的系统异常，保留真实驱动失败优先级 | 实际关闭失败没有单独注入证明；其路径保持原资源实现，不外推已验证 |
 | 原Key和原MAC域而非补签或迁移 | 历史来源不能由新本地初始化追认 | 旧无证明历史拒绝，新根/审批/Secret版本不由历史载体授权 |
+
+## 12. Windows原生测试夹具及探针连接生命周期整改
+
+### 12.1 背景、定位证据与目标
+
+固定beda980的[CI Run37140137789](https://github.com/carrie1988/Harnessix/actions/runs/37140137789)
+三个Windows材料组及核心业务步骤通过，后继原`tests/session tests/agent/test_authenticated_store.py`步骤失败。
+本机相同选择495项通过，不构成Windows原生通过，也不证明唯一失败原因。
+
+源码核验发现两个需要独立处理的测试边界：
+
+1. `test_readonly_connection_observes_wal_and_refuses_business_dml`用`uri ?#% 中文.db`落盘。
+   [Windows文件命名规则](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions)
+   明确禁止问号；该夹具在`seed → initialize → os.open`时即可能失败，尚未验证Reader或WAL。
+   这是一项确定的跨平台夹具缺陷，不能据此认定原CI全部失败均由它引起。
+2. 两文件的同步`sqlite3.connect`探针仅使用连接事务上下文。
+   [Python连接上下文合同](https://docs.python.org/3.12/library/sqlite3.html#how-to-use-the-connection-context-manager)
+   负责提交或回滚，不负责关闭连接。强引用或延迟GC可能留下文件句柄，干扰Windows即时删除断言；
+   当前仅确认资源所有权缺口，尚未证明原CI命中此时序。
+
+目标是在不改变生产Session、MAC、只读、取消和资源规则的前提下修正测试自身的文件与连接所有权。
+非目标是扩大读权限、修改URI编码算法、添加平台跳过或重试、裁剪原495项、放宽期限或重置原失败。
+
+### 12.2 总体架构、流程与数据流
+
+```mermaid
+flowchart TB
+  F[原真实WAL及只读测试] --> P[合法磁盘名 保留空格 Unicode 井号 百分号]
+  P --> S[原SQLiteSessionStore及认证Reader]
+  S --> A[原MAC 重放 只读 DML拒绝与关闭断言]
+  U[不落盘的两类PurePath] --> C[原只读连接URI构造]
+  C --> E[截取aiosqlite.connect参数 问号及特殊字符仍编码]
+  H[原同步业务行探针] --> T[原连接事务上下文]
+  I[新增测试初始化 实际SQL错误] --> T
+  T --> X[外层closing 无条件结算探针连接]
+  X --> R[强引用保留连接 正常及实际SQL异常后均已关闭]
+```
+
+```mermaid
+sequenceDiagram
+  participant T as 原测试
+  participant C as 同步SQLite探针
+  participant D as 原认证数据库
+  T->>C: 建立实际连接并保留强引用
+  C->>D: 原业务行SELECT或实际错误SQL
+  D-->>C: 完整行或OperationalError
+  C->>C: 原事务commit或rollback
+  C->>C: 外层closing调用close
+  C-->>T: 原结果或原SQL异常
+  T->>C: 使用保留连接执行SELECT
+  C-->>T: ProgrammingError 已关闭
+```
+
+```mermaid
+flowchart LR
+  D[(原SQLite业务行)] --> Q[原业务探针查询]
+  Q --> V[业务行完整前后比对]
+  Q --> L[仅探针连接生命周期观察]
+  N[PurePosixPath或PureWindowsPath] --> U[原path.as_uri及mode=ro]
+  U --> K[参数断言 无磁盘输入和业务正文]
+```
+
+落盘WAL案例使用`uri #% 中文.db`，保持井号、百分号、空格和Unicode的真实编码/读取覆盖。
+另以`PurePosixPath`及`PureWindowsPath`包含问号的绝对路径进入原`_session_connection`只读分支，
+在`aiosqlite.connect`入口截取完整URI后停止，不创建不合法文件。两类测试证明边界分别是实际WAL读取和
+URI参数构造，不能把不落盘参数测试写成Windows数据库读取成功。
+
+### 12.3 接口、字段与源码追踪
+
+| 责任／接口 | 源码与测试 | 保持或新增的约束 |
+|---|---|---|
+| 只读URI构造与资源结算 | [`sqlite.py`](../../src/harnessix/session/sqlite.py)：`_session_connection` | 生产实现不变，仍`path.as_uri() + ?mode=ro`、`uri=True` |
+| 原真实WAL拒写与关闭 | [`test_authenticated_history.py`](../../tests/session/test_authenticated_history.py)：原readonly测试 | 合法落盘名；原事务数、业务行、DML拒绝、连接关闭断言完整保留 |
+| 完整业务行读取探针 | 同上：`business_rows` | 原查询/排序与结果不变，外层`closing`负责句柄关闭 |
+| 认证账本探针 | [`test_authenticated_store.py`](../../tests/agent/test_authenticated_store.py)：`ledger` | 原四张完整表及排序不变；事务退出后显式关闭 |
+| 直接同步SQL修改夹具 | 同上两个文件的原`sqlite3.connect`上下文 | `closing`外层、原连接事务上下文内层；原commit/rollback语义保留 |
+| URI参数负边界 | Reader测试中两类PurePath参数化案例 | `%3F/%23/%25/%20`、Unicode及仅一项mode=ro；不落盘、不新建Provider |
+| 探针资源负边界 | 两个原探针各正常／实际SQL错误案例 | 保留实际Connection强引用，关闭后查询必须报ProgrammingError；不依赖GC |
+
+本整改不新增生产类、字段、接口、数据库表或持久化记录。测试的连接列表只保留实际SQLite连接以阻止GC，
+不是模拟生产所有权；SQLite异常使用实际无效查询触发，错误不会被测试辅助层改写。
+
+### 12.4 核心伪代码、失败与安全边界
+
+```text
+原探针：创建实际sqlite3.Connection
+  外层closing持有并保证close
+    内层原Connection事务上下文
+      执行原SELECT或原夹具修改
+      返回原完整结果；原异常直接传播
+    正常commit / 异常rollback
+  正常或异常均close，不等待GC
+URI对照：PurePath.as_uri -> 原mode=ro调用 -> 截取参数立即停止
+真实Reader：合法磁盘名 -> 原seed -> 原WAL/拒写/事务/关闭断言
+```
+
+先补强引用正反例，保留未修复探针的失败结果，再添加`closing`和合法磁盘名；
+不通过删除问号覆盖、禁用GC检查或平台skip取得绿灯。资源整改只涉及测试连接，生产关闭失败分类、
+父Task取消优先级、HMAC、原历史上限及500/10000等其他门禁均不受影响。
+
+原完整495项选择必须保留，新增URI两例及两探针各正常/异常两例后预计501项，最终以实际收集为准。
+本地通过仅证明本地回归；需要新固定候选的一次Windows原生执行，旧Run不rerun或覆盖。
+若后继仍失败，应继续定位，不认定为本整改无效或添加跳过。R1/R4整体、完整Git/Backup v2、R3质量、
+消费者系统、独立Beta及商用R1～R6仍按原退出条件验证。未发送模型请求或变更费用规则。
+
+### 12.5 本地红绿验证与原生待验
+
+先只追加两探针各正常／实际SQL错误回归，四项均失败：原连接事务上下文退出后保留强引用的
+真实连接仍可查询，没有发生预期的ProgrammingError。原四项失败原件保留，未依赖GC或模拟close。
+加入外层`closing`后，四项均通过；加两类URI及原真实WAL用例共七项全部通过。
+
+精确两个原文件新增六项后110通过，原CI选择`tests/session tests/agent/test_authenticated_store.py`
+501通过、零失败／错误／跳过，495个原选择全部保留。两文件Ruff检查通过；没有生产源码变化。
+三张新增设计图实际渲染并校阅，流程、事务/关闭顺序和数据边界完整可读。
+固定beda980旧原生FAIL保留；本地501通过不是Windows原生通过，需新固定候选的实际结果后才能关闭该平台专项。
+
+### 12.6 独立复审发现的新增初始化资源缺口
+
+独立复审F1发现P2：新增`test_business_rows_probe_closes_connection`的初始化连接只在正常路径
+显式close。原CREATE、INSERT或commit异常会跳过关闭，未由事务上下文保证回滚。
+复审使用真实SQLite authorizer拒绝INSERT，两参数分支均抛出实际DatabaseError，保留强引用的
+连接仍可查询；原110通过与上述501通过不能覆盖此异常路径，复审原件保留。
+
+整改仍限该测试文件：初始化也使用外层`closing`、内层原Connection事务上下文，删除等价的
+正常路径手工commit/close。原建表和插入SQL不变，异常按原SQLite类型传播；生产源码不修改。
+追加两参数分支的正式回归，以实际authorizer拒绝INSERT，调用同一初始化测试函数并保留实际连接，
+异常后SELECT必须抛ProgrammingError。先取得两项红灯，再验证修复，不用假异常或GC。
+
+这两例证明新增夹具初始化异常资源结算，不扩大成生产SQLite关闭异常或Windows故障唯一根因。
+原501选择保留，新增两例后预计503，两个原文件预计112；最终以实际收集及独立复核为准。
+
+实际新增初始化负例先两项FAIL，外层closing／内层事务修复后两项通过；两个原文件112通过，
+完整原CI选择503通过、零失败／错误／跳过，原495项与全部原参数化保持。
+Ruff检查及格式检查通过；首轮新增lambda格式失败保留，随后仅按原格式规则调整。
+独立F1复核使用新的证据包，原复审发现与110项历史结果不覆盖；原生结论继续待验。
+最终输入的独立复核确认F1闭环：精确两文件112通过，新增两例单独复跑通过，真实INSERT异常后
+清理前连接已关闭。该同行范围未独立复跑完整503选择，不将112与重复两例相加，也不替代Windows原生结果。

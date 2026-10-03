@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from uuid import uuid4
 
 import pytest
@@ -40,7 +40,7 @@ def draft(root, name="workspace"):
 
 
 def ledger(path):
-    with sqlite3.connect(path) as db:
+    with closing(sqlite3.connect(path)) as db, db:
         return {
             table: db.execute("SELECT * FROM " + table + " ORDER BY 1").fetchall()
             for table in (
@@ -50,6 +50,44 @@ def ledger(path):
                 "agent_projection_publications",
             )
         }
+
+
+@pytest.mark.parametrize("fail_first", [False, True], ids=["normal", "sql_error"])
+async def test_ledger_probe_closes_connection(tmp_path, monkeypatch, fail_first):
+    path, store_id, key_id, thread_id = tmp_path / "probe.db", uuid4(), uuid4(), uuid4()
+    with binding(store_id, key_id) as proof:
+        store = SQLiteSessionStore(path, publication=proof)
+        await store.initialize()
+        await store.append(thread_id, [draft(tmp_path)], expected_sequence=0)
+
+    captured = []
+
+    class CapturedConnection(sqlite3.Connection):
+        def execute(self, statement, parameters=()):
+            if self.fail_first:
+                self.fail_first = False
+                return super().execute("SELECT * FROM missing_probe_table")
+            return super().execute(statement, parameters)
+
+    original_connect = sqlite3.connect
+
+    def capture_connect(*args, **kwargs):
+        connection = original_connect(*args, factory=CapturedConnection, **kwargs)
+        connection.fail_first = fail_first
+        captured.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", capture_connect)
+    if fail_first:
+        with pytest.raises(sqlite3.OperationalError, match="no such table") as caught:
+            ledger(path)
+        assert "missing_probe_table" in str(caught.value)
+    else:
+        assert all(ledger(path).values())
+
+    assert len(captured) == 1
+    with pytest.raises(sqlite3.ProgrammingError):
+        captured[0].execute("SELECT 1")
 
 
 async def test_original_event_and_projection_survive_reopen_with_new_scope(tmp_path):
@@ -77,7 +115,7 @@ async def test_replaced_snapshot_and_unkeyed_hash_do_not_authorize_history(tmp_p
         store = SQLiteSessionStore(path, publication=proof)
         await store.initialize()
         await store.append(tid, [draft(tmp_path)], expected_sequence=0)
-        with sqlite3.connect(path) as db:
+        with closing(sqlite3.connect(path)) as db, db:
             raw = db.execute("SELECT snapshot_json FROM agent_threads").fetchone()[0]
             data = json.loads(raw)
             data["workspace"] = (tmp_path / "forged").as_posix()
@@ -116,7 +154,7 @@ async def test_event_tamper_is_rejected_before_replay_or_duplicate_reapproval(tm
         store = SQLiteSessionStore(path, publication=proof)
         await store.initialize()
         await store.append(tid, [item], expected_sequence=0)
-        with sqlite3.connect(path) as db:
+        with closing(sqlite3.connect(path)) as db, db:
             raw = db.execute("SELECT event_json FROM agent_events").fetchone()[0]
             db.execute("UPDATE agent_events SET event_json=?", (raw + " ",))
         before = ledger(path)
@@ -203,7 +241,7 @@ async def test_missing_original_proof_is_never_reissued(tmp_path, table, surface
         await store.initialize()
         tid = uuid4()
         await store.append(tid, [draft(tmp_path)], expected_sequence=0)
-        with sqlite3.connect(store.path) as db:
+        with closing(sqlite3.connect(store.path)) as db, db:
             db.execute("DELETE FROM " + table)
         before = ledger(store.path)
         calls = {
@@ -453,7 +491,7 @@ async def test_truncated_valid_events_do_not_become_a_new_authenticated_prefix(t
             [draft(tmp_path), EventDraft(payload=ThreadArchived(reason=None))],
             expected_sequence=0,
         )
-        with sqlite3.connect(store.path) as db:
+        with closing(sqlite3.connect(store.path)) as db, db:
             identity = db.execute("SELECT event_id FROM agent_events WHERE sequence=2").fetchone()[
                 0
             ]
@@ -514,7 +552,7 @@ async def test_actual_runtime_artifact_transaction_shares_session_proofs(tmp_pat
                 turn = await runtime.run_turn(
                     thread.thread_id, "归档搜索", request_id="auth-artifact"
                 )
-        with sqlite3.connect(store.path) as db:
+        with closing(sqlite3.connect(store.path)) as db, db:
             count = db.execute("SELECT COUNT(*) FROM agent_artifacts").fetchone()[0]
             events = db.execute("SELECT COUNT(*) FROM agent_events").fetchone()[0]
             seals = db.execute("SELECT COUNT(*) FROM agent_event_publications").fetchone()[0]

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 183
-code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
+version: 184
+code_revision: 634f96c55cfeff5db7e84b177074c4bd5d6a990c
 owners:
   - core
 modules:
@@ -1952,3 +1952,23 @@ Windows后继Session／认证回归失败，不将原生材料组成功扩大为
 包含旧Wheel／sdist的本机默认dist超限失败保留，原同选择干净夹具179项通过，不将本机目录问题推定为CI根因。
 后继WindowsSession原生失败仍须单独闭环，本机495项通过不替代原生修复证据。
 完整Git／Backup v2、R3质量及费用未决、消费者系统、独立Beta和R1～R6仍开放。
+
+### R1/R4：Windows认证Session夹具与测试探针资源结算
+
+固定beda980原WindowsSession回归失败保留。源码确认真实WAL夹具的磁盘名含Windows禁止的问号，
+另发现两个原测试文件同步探针的Connection事务上下文不负责关闭句柄。
+[总体与详设第12节](changes/m09-r4-authenticated-thread-history.md#12-windows原生测试夹具及探针连接生命周期整改)
+在实现前固定合法落盘名、两类PurePath问号URI对照及外层closing／内层原事务的精准整改。
+
+两探针各正常／实际SQL错误强引用回归先取得四FAIL，显式关闭后全部通过；
+两原文件110通过，完整原CI选择新增六例后501通过、零跳过，原495项及WAL／认证／取消断言保留。
+不修改生产Session、HMAC、Schema、期限或容量，不把参数捕获当作Windows数据库执行。
+三张新增流程／时序／数据图实际渲染校阅；模块设计同步。
+本地通过不是新原生验收，也不认定原Session失败唯一根因。
+同候选Windows原生结果、完整Git／Backup v2、R3质量与费用未决、消费者系统、独立Beta和商用门禁仍开放。
+
+独立复审另发现新增测试初始化连接的异常关闭缺口，实际authorizer拒绝INSERT两例先FAIL。
+该初始化也改为原事务先退出再显式关闭，两例通过；最终两个文件112通过，完整原选择503通过、
+零跳过，新增八例而非删减原495例。原110／501结果及复审发现均保留，不能据本地闭环宣告原生或商用通过。
+最终测试输入独立复核112项通过并确认初始化异常资源缺口闭环；完整503属于主线程实际回归，
+不是同行重复计数。新固定候选仍须取得Windows原生及后继广泛结果。
