@@ -339,6 +339,9 @@ def capture_workspace_snapshot(
             requested.append(
                 WorkspaceResourceRequest(location="workspace", path=normalized_cwd, access="read")
             )
+        # 必需的 cwd/read 也占用资源额度，须在逐叶观察前完成准入。
+        if len(requested) > 256:
+            raise KernelError("workspace_snapshot_limit", "Workspace快照资源超过上限")
         observations: list[WorkspaceResourceObservation] = []
         total_bytes = 0
         seen: set[tuple[str, str, str]] = set()

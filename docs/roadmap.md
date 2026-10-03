@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 169
-code_revision: daf33bf6e10c6d34ae7a9fe0d87cf74adbf234ee
+version: 170
+code_revision: 0b1e16ab8482ec324e35f81532ec58a1d09b1b6b
 owners:
   - core
 modules:
@@ -1781,3 +1781,15 @@ validator，保留首失败与最终handler、False/None、原status及返回码
 [正式验证](validation/windows-first-failure-projection-2026-10-03-v1/README.md)。
 未发起新Windows运行；既有Git128/Worker2仍未解决，诊断不升级业务认证或SDK成功。
 完整Git/Backup v2、真实R3、消费者Windows、独立Beta及商用R1～R6保持开放，未新增模型请求。
+
+### R1/R4：Git投影父目录容量与Snapshot完整资源准入
+
+真实微小文件证明128个独立父目录下叶read集合129项可被原Snapshot捕获并复核，
+完整Planner扩张为257项而返回workspace_snapshot_limit；127父目录与平坦255叶的正对照保持。
+原隐式cwd补齐后超限曾泄漏Pydantic ValidationError，当前逐叶观察前以原限额错误拒绝；
+合法资源字段/摘要、位置/access、原路径、根与重复拒绝保持，不提高256项或正文限额。
+需求、源码、字段、失败、兼容及流程/时序见[完整资源设计](changes/m09-r4-git-projection-ordering.md#11-完整资源容量核验与-snapshot-错误准入)，
+原失败和[正式验证](validation/git-projection-capacity-2026-10-03-v1/README.md)保持独立。
+主仓受影响集实际3109通过、27平台跳过，514件明确输入零漂移；首次旧Git的六项差分失败保留。
+开发候选容量与错误局部22项另行通过、479输入零漂移，成绩不累计或跨候选继承。
+本修复不闭合T父目录容量、Bridge状态及私有A来源解析，默认完整Git与商用R1～R6仍开放。

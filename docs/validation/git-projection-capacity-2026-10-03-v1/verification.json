@@ -1,0 +1,138 @@
+{
+  "bridge_contract_changed": false,
+  "candidate_base_revision": "0b1e16ab8482ec324e35f81532ec58a1d09b1b6b",
+  "capacity_gap_retained": true,
+  "checks": {
+    "changed_diagrams_rendered_and_visually_reviewed": 3,
+    "documentation_full": {
+      "changed_path_count": 8,
+      "document_count": 495,
+      "findings": [],
+      "link_count": 11807,
+      "mermaid_count": 993,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "documentation_primary": {
+      "changed_path_count": 8,
+      "document_count": 523,
+      "findings": [],
+      "link_count": 12128,
+      "mermaid_count": 1007,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "format": true,
+    "mypy_changed_source": true,
+    "ruff": true,
+    "secret": {
+      "findings": [],
+      "self_check": true
+    }
+  },
+  "default_product_git_enabled": false,
+  "environment_failure_retained": {
+    "cause": "git init --object-format unsupported",
+    "corrected_environment": "Git 2.53.0; same source bytes and selectors",
+    "failure_count": 6,
+    "git": "2.24.3 Apple Git-128"
+  },
+  "limits_changed": false,
+  "locked_inputs": {
+    "full": 479,
+    "full_drift": 0,
+    "primary": 514,
+    "primary_drift": 0
+  },
+  "model_credential_reads": 0,
+  "model_requests": 0,
+  "not_verified": [
+    "full approved product Source and full expanded capacity",
+    "authenticated T/Bridge/D/Checkpoint/Commit",
+    "Backup v2 and new-root restore",
+    "Windows native and consumer platforms",
+    "R3 coding quality",
+    "independent Beta",
+    "R1-R6 release"
+  ],
+  "raw_artifacts_sha256": {
+    "baseline/inputs-before.json": "17e6e34383d2a992ad25f62a5c74b0dbdf5e699aa5f2bae35a6d01b9199bc5a0",
+    "baseline/pytest.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "baseline/pytest.log": "006a87a241811f103ac3ce8498ecd9b44a76c963cae187041969653e56da2d4a",
+    "baseline/pytest.xml": "2dc784b6b9ff54e6fbf80e85e069e54268c6047cd4f9a2512d0e3ac81b3c3fc6",
+    "baseline/selection.json": "ffab030e957f9c30f42e651797cd26f4e3411ab1afe1d5c04f2df4f51437c799",
+    "full/inputs-after.json": "0b47c6af48af453065763e32e053d8107c319552775333761a08906f05c6a31e",
+    "full/inputs-before.json": "0b47c6af48af453065763e32e053d8107c319552775333761a08906f05c6a31e",
+    "full/pytest.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "full/pytest.log": "98b58f868a7007314e1ba56addc15a7757a8d7fb8cc99a23daac0a19cef2bd93",
+    "full/pytest.xml": "5f1fb8d63e35867bc0fcb916b25967c6f2ba509557bc33ede7aad0f013c3444e",
+    "green-fallback/environment.txt": "a6f38305cb0600416c7c2f2f9138522c99dbc6b41f2e07ee6bf5ee61598464f9",
+    "green-fallback/inputs-after.json": "0520ecbf40ed32c65444194affbaccc8b57dcecd1526b648dde36b1e95562bf3",
+    "green-fallback/inputs-before.json": "0520ecbf40ed32c65444194affbaccc8b57dcecd1526b648dde36b1e95562bf3",
+    "green-fallback/pytest.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "green-fallback/pytest.log": "2dd2f0efe7b6ed18b751fead0822eceb456e80300057c61cda0a80637cdbec15",
+    "green-fallback/pytest.xml": "5152e1db50f52eaf32666f2b04053ba086e3ffa26e8ead1b7b1a43cd380f7370",
+    "green/inputs-after.json": "0520ecbf40ed32c65444194affbaccc8b57dcecd1526b648dde36b1e95562bf3",
+    "green/inputs-before.json": "0520ecbf40ed32c65444194affbaccc8b57dcecd1526b648dde36b1e95562bf3",
+    "green/pytest.exitcode": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "green/pytest.log": "da3b6731de6a1e21660ec4b0ab8b7b979050428c9a16298159053458f5565fc8",
+    "green/pytest.xml": "447b301ae87b7e60f200892a4ba794c96979f51c971bed621aab105dc98a01fe",
+    "green/selection.json": "4cd16f0f3d6960a5b1646c166ecedb4da1453521587f67680a462e1cbdf1f7f4",
+    "red/pytest.exitcode": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "red/pytest.log": "04cf7154ecc2e410c290b1d75f4c4a2c8f1b06c568c23fe688b1ca08ec21182a",
+    "red/pytest.xml": "e9c2d4f0e40edb28eb9f210bf7875b69a564499f4e3b66892ba4e66eb03f177b"
+  },
+  "release_gates_closed": [],
+  "runs": {
+    "baseline": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 12,
+      "skipped": 0,
+      "tests": 12,
+      "time": 0.823
+    },
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 22,
+      "skipped": 0,
+      "tests": 22,
+      "time": 1.359
+    },
+    "green": {
+      "errors": 0,
+      "failures": 6,
+      "passed": 3103,
+      "skipped": 27,
+      "tests": 3136,
+      "time": 96.079
+    },
+    "green-fallback": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 3109,
+      "skipped": 27,
+      "tests": 3136,
+      "time": 105.494
+    },
+    "red": {
+      "errors": 0,
+      "failures": 6,
+      "passed": 4,
+      "skipped": 0,
+      "tests": 10,
+      "time": 0.952
+    }
+  },
+  "scope": "real local Snapshot and Planner; cwd admission error fix; not authenticated product Git execution",
+  "source_sha256": {
+    "src/harnessix/delivery/planner.py": "6ecdadd6122a4fe04a197c437f108fc6d95d6e5f70bcd11f76e16798dc4ee8d8",
+    "src/harnessix/workspace/contracts.py": "912d78c3b5cee3848066c66c50dde2bcd8c5726d5600dc4ac27b8c054a81c753",
+    "src/harnessix/workspace/paths.py": "3cca0955106af7a480b5d7e361ee5fa9b8cfffbd8a3908e8f4bba960a995e28d",
+    "src/harnessix/workspace/snapshot.py": "96a3e56f34a7bed94ace6022e7aa0fc0ba8a339d72a1c840af921d73708024d0",
+    "tests/delivery/test_git_projection_capacity.py": "c52cc9556e98cd8b8922e022a383ff646581d5171712417c20d6e0c70d76bfac",
+    "tests/workspace/test_snapshot_capacity.py": "b77e2c2bed49cff2d7a314fef5670fb59ca1dc7bef34fc8b343a7fc4bb03dca8"
+  },
+  "spec_version": "harnessix.git-projection-capacity-verification/v1"
+}

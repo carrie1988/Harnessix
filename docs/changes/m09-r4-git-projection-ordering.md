@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: f07263ce3d4ddb304b2ff054044f86f26d5267c6
+version: 2
+code_revision: 0b1e16ab8482ec324e35f81532ec58a1d09b1b6b
 owners: [core]
 modules: [delivery, product_config, workspace]
 related_adrs:
@@ -10,11 +10,13 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/delivery/test_git_projection_ordering.py
+  - tests/delivery/test_git_projection_capacity.py
   - tests/delivery/test_git.py
+  - tests/workspace/test_snapshot_capacity.py
 supersedes: []
 ---
 
-# Git 派生事务顺序核验与原生来源解析整改设计
+# Git 派生事务顺序、来源解析与资源容量整改设计
 
 ## 1. 文档摘要与需求背景
 
@@ -26,7 +28,8 @@ supersedes: []
 两种语义不能混用。
 
 本文已完成原组件实测和源码核验；第 5 节是**待确认整改方案，不是已实现的新合同**。
-本次只新增回归、设计及限定验证事实，不修改原 Runtime、Bridge 校验或默认产品能力。
+版本 1 仅新增顺序回归、设计及限定验证事实。版本 2 增补第 11 节容量实测，以及
+Snapshot 隐式 cwd 超限的正式错误准入；不修改 Git Runtime、Bridge 校验或默认产品能力。
 开发候选的阶段实现不能据此视为完整 Git 产品已经可用。
 
 ## 2. 设计目标、约束和非目标
@@ -37,7 +40,7 @@ supersedes: []
 - 验证调整阶段顺序是否足够；不能只让一个状态断言通过。
 - 完整交付范围、原容量、期限、CAS/MAC/尾锚及独立 Commit 批准保持不变。
 
-非目标：本次不装配默认 Git 写能力、不实现新来源解析器、不迁移业务状态、不发起模型请求、
+非目标：本次不装配默认 Git 写能力、不实现新来源解析器、不扩大资源或正文限额、不迁移业务状态、不发起模型请求、
 不启动 Windows 原生运行，也不将组件测试提升为 R1～R6 商用验收。
 
 术语：U 是原用户 Workspace；A 是固定基准 Commit 的私有 detached worktree；D 是独立受管交付
@@ -260,7 +263,8 @@ GitDB 的一修订需要领域记录、Link、MAC、完整 catalog 和尾锚共�
 
 ## 10. 部署、兼容、回退与风险取舍
 
-本次只有测试和文档，没有发行接口、Schema、配置或依赖变更；部署及数据回退不适用。
+顺序专项仅包含测试和文档；版本 2 的 Snapshot 准入只统一原超限错误，不改变公共 Schema、配置或依赖。
+成功 Snapshot 的算法、规范化、字段、排序和摘要保持；无需状态迁移，回退程序也不产生新的数据格式。
 原产品能力保持关闭；已有状态及冻结证据不重写。新 Bridge 语义未确认前不修改当前校验。
 
 推荐方案复用原领域契约，代价是需要明确区分投影计划、D 物化及历史角色，并补认证 A 来源解析。
@@ -270,3 +274,122 @@ GitDB 的一修订需要领域记录、Link、MAC、完整 catalog 和尾锚共�
 两项冲突证明更改阶段语义确有必要，但不证明方案已经获得架构确认或完整实现。
 后继顺序为：确认 T/Bridge 语义与兼容边界 → 实现 T 耐久准备 → Bridge 认证 → 明确 A 来源解析和 D
 → Checkpoint → 独立 Commit → 联合 Backup v2 与新根恢复 → 三平台及真实用户验收。
+
+## 11. 完整资源容量核验与 Snapshot 错误准入
+
+### 11.1 背景、目标及实测范围
+
+Git 来源选择每个叶的 read 观察，Workspace Planner 则增加每叶 write 及全部父目录 read。
+二者受同一个 Snapshot 256 项合同限制，但资源扩张量不同。只验证叶读取成功，不能证明完整 T 可准备。
+本节使用真实微小普通文件、原捕获器和原 Planner，不构造替代 Snapshot，不拆 T，不裁剪父目录。
+普通叶读表示不是完整产品 Session/Router、批准、父认领或 Lease 的成功证明。
+
+| 文件布局 | 原叶读 Snapshot | 原 Planner 输入或返回 | 原始结论 |
+|---|---:|---:|---|
+| 127 个不同单层父目录 | 128，捕获及复核通过 | 255，127 mutations，返回 | 边界内正对照 |
+| 128 个不同单层父目录 | 129，捕获及复核通过 | 257，`workspace_snapshot_limit` | 读集合可表示，完整写规划不闭合 |
+| cwd 内 255 个叶 | 256，返回 | 256，255 mutations，返回 | cwd 父观察合并后仍在限额内 |
+| cwd 内 256 个叶 | 隐式 cwd 后原合同异常 | 257，`workspace_snapshot_limit` | 资源数超限，不是正文或 mutation 超限 |
+
+128 个叶的 before/after 镜像合计仅 1664 字节；单文件 8 MiB、总镜像 32 MiB 和
+mutation 256 项限制均未触顶。原新测试 8 项通过，独立复跑附带 4 项既有回归共 12 项通过；
+两组重叠，不累计。主仓再次执行原 12 项，结果保留为修复前基线。
+
+### 11.2 原因、当前实现与明确未解决事项
+
+原 [`capture_workspace_snapshot`](../../src/harnessix/workspace/snapshot.py) 在补 cwd 前只检查
+显式请求数。256 个叶请求会在随后补入 cwd/read，最后构造 257 项的
+[`WorkspaceSnapshot`](../../src/harnessix/workspace/contracts.py)，抛出 Pydantic
+`ValidationError / resources / too_long`，而不是调用方已有的 `KernelError` 错误合同。
+原异常日志及源字节保持只读，不将历史结果改写成修复后的错误。
+
+当前仅增加第二次数量准入：完成原 cwd 观察和平台比较键计算，按原规则补 cwd/read，
+然后在逐资源 native.observe 前检查完整请求数量。超过 256 返回原 `workspace_snapshot_limit`。
+未返回 Snapshot，不开始逐叶正文读取；已打开的主根和外部根由原 ExitStack 退出关闭。
+这修复错误分层，**不解决父目录扩张造成的完整 T 容量缺口**。
+
+完整容量兼容方案仍待设计：必须同时覆盖来源、全父目录安全观察、Planner、记录编码长度、
+Store/CAS、审批指纹、Bridge、旧 Reader 和备份。禁止增加业务拒绝来宣称所有原可表示叶集合闭合，
+禁止拆事务、截断 parents 或仅提高某一个常数后忽略下游合同。
+
+### 11.3 接口、字段、源码和核心逻辑
+
+公共签名、`harnessix.workspace-snapshot/v1` 和 `selected-resources-sha256/v1` 不变。
+
+| 源码或变量 | 当前职责与关键约束 |
+|---|---|
+| `snapshot.py::capture_workspace_snapshot` | 原输入和 cwd 补齐后的完整数量分别准入；不改变路径、根、正文观察 |
+| `resources` | 显式原请求，最多 256；保留数量，不用去重集合掩盖重复 |
+| `cwd_key` / `keys` | 位置、原平台路径比较键、access 三元组；仅完全相同的 Workspace cwd/read 可抵扣隐式项 |
+| `requested` | 原请求加至多一个 cwd/read；新检查使用该列表的真实长度 |
+| `WorkspaceSnapshot.resources` | 仍为不可变观察元组，`max_length=256`，字段及排序不变 |
+| [`paths.py::path_comparison_key`](../../src/harnessix/workspace/paths.py) | POSIX 大小写敏感、Windows casefold；保留原规范化与非法路径拒绝 |
+| [`planner.py::prepare_workspace_transaction`](../../src/harnessix/delivery/planner.py) 的 `resources` 构造 | 叶 write 和完整父目录 read，按原 path/access 合并；本修订不改 |
+| `ExitStack` | 超限及任一原校验失败均释放实际原生根，不新增持久化或外部效果 |
+
+```text
+原显式输入或外部根超过上限 -> 原限额错误
+打开原生根，验真外部访问配置，观察实际 cwd
+计算原位置/平台路径/access 键
+缺少 Workspace cwd/read -> 追加原请求
+完整 requested 数量超过 256 -> 原限额错误，退出并关闭根
+否则 -> 原逐项重复、位置、访问、原生观察、正文预算检查
+        -> 原排序、字段和摘要 -> 原不可变 Snapshot
+```
+
+非 read 访问、外部 location 或另一目录不能代替 cwd/read。数量合格时重复资源仍走原
+`workspace_snapshot_duplicate`；数量已经超限时限额拒绝优先于后续成员错误，不承诺继续读取非法集合。
+原 cwd、外部配置及路径键计算发生在新准入之前，其拒绝语义不移动。
+
+### 11.4 流程、失败时序与数据边界
+
+```mermaid
+flowchart TB
+    Input[显式资源与宿主根] --> Original[原输入上限和外部根配置]
+    Original --> Cwd[原生观察实际 cwd]
+    Cwd --> Keys[原位置 路径 Access 比较键]
+    Keys --> Complete[按原规则补 cwd read]
+    Complete --> Gate{完整数量不超过 256}
+    Gate -->|是| Observe[原逐叶观察与全部安全检查]
+    Observe --> Snapshot[原 v1 Snapshot 和摘要]
+    Gate -->|否| Reject[workspace_snapshot_limit]
+    Reject --> Close[原 ExitStack 关闭根]
+```
+
+**图示说明：** 新增点仅是完整数量门；Snapshot 合同、原生端口、摘要和持久消费者位于原链路，
+拒绝分支没有文件写入、CAS 写入或领域 Store 提交。Planner 的父目录扩张在进入本图之前发生，尚未修复。
+
+```mermaid
+sequenceDiagram
+    participant Caller as 原捕获调用方
+    participant Capture as Snapshot Capture
+    participant Root as 实际原生根
+    participant Model as 原 v1 合同
+    Caller->>Capture: 256 叶 read 未显式带 cwd
+    Capture->>Root: 原打开和 cwd 目录观察
+    Root-->>Capture: 实际 cwd 身份
+    Capture->>Capture: 补 cwd read 后为 257 项
+    Capture->>Capture: 新完整数量准入拒绝
+    Capture->>Root: 原 ExitStack 关闭
+    Capture-->>Caller: KernelError workspace_snapshot_limit
+    Note over Capture,Model: 不逐叶读取 不构造超限合同 不返回 Snapshot
+```
+
+**图示说明：** 时序对应新增的 POSIX 旁观用例：只记录调用路径，原观察方法仍真实执行，
+实际仅观察 cwd；没有模拟 Root 事实或 Snapshot。该旁观测试不能替代 Windows 原生验收。
+合法 255 叶的显隐 cwd 请求则得到逐字段相等的 256 项 Snapshot，并由原 verify 重新捕获通过。
+
+### 11.5 测试、持久化、部署与回退
+
+新 [`test_snapshot_capacity.py`](../../tests/workspace/test_snapshot_capacity.py) 覆盖完整合法边界、
+显隐 cwd、非根 cwd、access 隔离、外部 location、另一目录、原逐叶观察顺序和原重复拒绝。
+原代码上 10 项为 4 通过、6 失败；失败日志保留。新增
+[`test_git_projection_capacity.py`](../../tests/delivery/test_git_projection_capacity.py) 保留父目录拒绝，
+只有隐式 cwd 用例按当前正式错误更新，原测试字节和修复前基线独立冻结。
+
+没有新增数据库、表、事件或 CAS；失败请求不持久化新 Snapshot，没有 UNKNOWN 外部效果需要重放。
+同步捕获函数的取消/期限仍由原上层控制，本修订不宣称增加合作式取消。
+部署无需迁移；回退会恢复原隐式 cwd 合同异常，不允许以回退为由扩大有效资源范围。
+实际验证结果、源码和原失败摘要见[容量专项验证](../validation/git-projection-capacity-2026-10-03-v1/README.md)。
+Git 默认能力、完整 T、Bridge、Checkpoint、独立批准 Commit、Backup v2、Windows、R3、Beta 和
+商用 R1～R6 仍未由本专项完成。

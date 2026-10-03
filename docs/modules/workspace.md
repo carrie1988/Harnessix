@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: d615a7b521d6441d12e412c2214dca7713ba2ac8
+version: 9
+code_revision: 0b1e16ab8482ec324e35f81532ec58a1d09b1b6b
 owners:
   - core
 modules:
@@ -18,6 +18,8 @@ related_tests:
   - tests/processes/test_windows_receipt_contracts.py
   - tests/workspace/test_paths.py
   - tests/workspace/test_snapshot.py
+  - tests/workspace/test_snapshot_capacity.py
+  - tests/delivery/test_git_projection_capacity.py
   - tests/tools/test_windows_read_adapter.py
   - tests/tools/test_windows_native_runtime.py
   - tests/workspace/test_leases.py
@@ -394,6 +396,7 @@ sequenceDiagram
     end
     C->>W: observe cwd as read directory
     C->>C: add cwd request if absent
+    C->>C: enforce complete request count including cwd
     loop each requested resource
         C->>C: normalize + platform duplicate/access check
         C->>W: observe selected resource
@@ -411,13 +414,16 @@ sequenceDiagram
 | 单文件正文 | 8 MiB | 每个已选择普通文件 |
 | Snapshot总正文 | 32 MiB | 文件正文与目录成员序列化正文之和 |
 | 单目录直接成员 | 10,000 | 不递归 |
-| Resource Request | 256 | 调用参数初始数量 |
+| Resource Request | 256 | 显式输入和补 cwd/read 后的完整请求分别准入 |
 | External Root | 16 | 宿主配置数量 |
 | 逻辑路径总字节/段 | 4096/128 | 每个cwd和资源路径 |
 
-若调用方恰好提交256个Resource且未包含cwd/read，函数还会自动追加cwd，最终严格Snapshot超过256条并
-产生Pydantic ValidationError；当前入口没有把该边界统一为`workspace_snapshot_limit`。调用方应预留
-cwd项，后续实现需要在追加前统一预算。
+调用方恰好提交256个Resource且未包含Workspace cwd/read时，自动补齐后共257项，当前入口在
+逐叶观察前返回`workspace_snapshot_limit`，不构造超限Snapshot。原生根和cwd已按原规则验真，
+退出仍由ExitStack释放；255叶加cwd的合法256项保持原字段和摘要。
+只有同Location、平台路径比较键、read访问的cwd项能抵扣隐式项；外部根、另一目录或write/execute
+不能抵扣。合格数量内仍拒绝重复资源，超限数量优先拒绝，不通过去重或删观察扩展容量。
+原合同异常、真实父目录扩张缺口及当前有限修复见[容量与顺序设计](../changes/m09-r4-git-projection-ordering.md#11-完整资源容量核验与-snapshot-错误准入)。
 
 ### 12.2 资源顺序与重复
 
