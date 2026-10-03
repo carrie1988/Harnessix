@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 32
-code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
+version: 33
+code_revision: f84583e5560998683cf07d6b4c138c4f7ff3ad1a
 owners:
   - core
 modules:
@@ -703,7 +703,9 @@ flowchart TD
 ## 18. Git Evidence
 
 `collect_git_evidence`复用[`GitReadRuntime`](../../src/harnessix/tools/git.py)，先读取最多200项完整Status，再
-读取Worktree Diff。只要Status截断、条目数不等于Total或缺少HEAD，就拒绝评分。
+读取Worktree Diff。只要Status截断、条目数不等于Total或缺少HEAD，就拒绝评分。Diff由
+[`_execute_git_read`](../../src/harnessix/tools/git.py)在既有固定只读参数中追加`--full-index`，因此完整正文
+SHA-256跨副本比较不依赖`core.abbrev`等对象缩写配置。完整Blob OID按实际Git对象格式输出，不固定为40位。
 
 `EvalGitEvidence`保存：
 
@@ -715,6 +717,11 @@ flowchart TD
 
 Rename会同时把原路径和新路径加入Changed集合；Staged、Untracked和Unsupported必须是Changed子集。报告不
 保存Diff正文。Git Read自身的模型展示前缀不影响完整观察摘要，但大变更Status超过200项时整体不可评分。
+`observed_sha256`仍摘要完整实际Diff正文，包括完整对象身份行，不改写为展示前缀摘要。Eval沿用原严格
+交付及批准后Workspace漂移检查；本切片不修改Schema、评分、容量或既有字段。旧报告不重签、不重新评分，
+也不声称历史Run可跨候选恢复。总体与详细设计见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md)。
+固定`full_index`策略进入原工具能力元数据，原版本与指纹同步改变；旧能力请求拒绝，
+不把相同公开Schema解释为相同观察策略，也不对旧Eval Report补签或重评分。
 
 ## 19. Grader输入与Transcript投影
 
@@ -1922,7 +1929,7 @@ execute():
 | 取消持久化 | 同上 | `_await_cancel` | 同上 | `test_cancellation_is_durable_and_reopen_grades_terminal_turn` |
 | Report崩溃窗口 | 同上 | `_require_report` | 同上 | `test_report_publication_is_recovered_without_regrading` |
 | Allowlist与Host-only | 同上 | `_require_allowed_approval`、`_provision` | 同上 | `test_task_allowlist_rejects_patch_to_other_managed_file`、`test_provision_rejects_unpinned_host_only_paths` |
-| Git完整证据 | [`git_evidence.py`](../../src/harnessix/evals/git_evidence.py) | `collect_git_evidence` | [`test_git_evidence.py`](../../tests/evals/test_git_evidence.py) | `test_collects_real_git_paths_index_types_and_full_diff_digest` |
+| Git完整证据及对象身份 | [`git_evidence.py`](../../src/harnessix/evals/git_evidence.py)、[`git.py`](../../src/harnessix/tools/git.py)、[`git_contracts.py`](../../src/harnessix/tools/git_contracts.py) | `collect_git_evidence`、`_execute_git_read`、`GitDiffOutput` | [`test_git_evidence.py`](../../tests/evals/test_git_evidence.py) | `test_collects_real_git_paths_index_types_and_full_diff_digest` |
 | Run Report文件 | [`report.py`](../../src/harnessix/evals/report.py) | `write_eval_report`、`read_eval_report` | [`test_report.py`](../../tests/evals/test_report.py) | `test_report_round_trip_uses_private_atomic_file`、`test_report_rejects_symbolic_link_and_invalid_body` |
 | Campaign聚合 | [`campaign.py`](../../src/harnessix/evals/campaign.py) | `build_coding_eval_campaign_report` | [`test_campaign.py`](../../tests/evals/test_campaign.py) | `test_campaign_aggregates_independent_success_provider_and_task_trials` |
 | 未知Cost | 同上 | `_require_evidence` | 同上 | `test_unknown_failed_usage_keeps_partial_cost_without_inventing_zero` |
@@ -2250,6 +2257,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 33 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | 2026-10-04 | Git Diff固定使用`--full-index`，完整正文SHA-256跨副本不依赖`core.abbrev`，完整Blob OID不限40位；Eval沿用原严格交付与漂移检查，不修改Schema、评分或容量，旧报告不重签/重评分，不声明历史Run跨候选恢复可用；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |
 | 32 | 基于`730f0846641700c4c697d7cc6ba03cbf1a8364bc`的集成实现 | 2026-10-02 | 三条Trial路径复用原产品Owner、Key及保护Scope；完整同读历史在恢复与Provider之前认证；固定只读期限及原取消贯穿；唯一Thread识别归入认证宿主，不改变评分或费用 |
 | 30 | 基于`4a9264bfeb84f04fb4976894bf350091dd8870b0`的实现 | 2026-10-02 | 同一原Grant的候选链只追加、旧Suite撤销、完整请求及累计费用保留；显式管理入口与原请求宿主指纹联动，实际登记和真实质量仍独立验收 |
 | 29 | `a0b5df0a3c380b8b058b8e45c99a731a9022e7f0` | 2026-09-30 | 同一40元剩余额度显式切换一次Suite，原授权及全部已用/预留保持，V2旧Reader失败关闭，三重请求身份和恢复指纹绑定；实际预算登记及真实质量仍独立验收 |

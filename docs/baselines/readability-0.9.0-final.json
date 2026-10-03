@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 438,
-    "physical_lines": 93427,
-    "logical_lines": 82550,
+    "physical_lines": 93430,
+    "logical_lines": 82552,
     "documented_modules": 438,
     "classes": 967,
     "documented_classes": 442,
@@ -1548,7 +1548,7 @@
       "path": "src/harnessix/tools/git.py",
       "qualname": "_status",
       "kind": "function",
-      "line": 370,
+      "line": 373,
       "lines": 79,
       "documented": false,
       "decision_complexity": 25

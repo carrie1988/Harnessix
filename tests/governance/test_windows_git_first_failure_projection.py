@@ -28,6 +28,7 @@ from tests.product_config import git_minimum_commit_probe as probe
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "f07263ce3d4ddb304b2ff054044f86f26d5267c6"
+FIRST_FAILURE_REVISION = "0b1e16ab8482ec324e35f81532ec58a1d09b1b6b"
 V2 = "harnessix.git-native-failure-observation/v2"
 FIRST_FIELDS = {
     "schema",
@@ -44,15 +45,15 @@ METADATA = "scripts/windows_git_native_branch_observation/contract.json"
 PARSER = "scripts/windows_git_native_branch_observation/contract.py"
 
 
-def baseline_bytes(path):
+def baseline_bytes(path, *, revision=BASE):
     return subprocess.run(
-        ["git", "show", f"{BASE}:{path}"], cwd=ROOT, check=True, capture_output=True
+        ["git", "show", f"{revision}:{path}"], cwd=ROOT, check=True, capture_output=True
     ).stdout
 
 
 def test_fixed_input_delta_is_exactly_last_four_identity_leaves():
     original = json.loads(baseline_bytes(METADATA))
-    current = contract.read_contract()
+    current = json.loads(baseline_bytes(METADATA, revision=FIRST_FAILURE_REVISION))
     assert _metadata_changes(original, current) == {
         f"/source_inputs/17/{name}" for name in ("bytes", "sha256", "crlf_bytes", "crlf_sha256")
     }
@@ -61,7 +62,7 @@ def test_fixed_input_delta_is_exactly_last_four_identity_leaves():
     assert current["source_inputs"][:17] == original["source_inputs"][:17]
     last = current["source_inputs"][-1]
     assert last["path"] == "scripts/windows_git_native_branch_observation/failure_projection.py"
-    body = (ROOT / last["path"]).read_bytes()
+    body = baseline_bytes(last["path"], revision=FIRST_FAILURE_REVISION)
     crlf = body.replace(b"\n", b"\r\n")
     assert last == {
         "path": last["path"],
@@ -80,13 +81,20 @@ def test_parser_delta_is_only_single_f072_digest_literal():
     assert (ROOT / PARSER).read_bytes() == original.replace(old, new)
 
 
-def test_frozen_metadata_rejects_new_byte_but_original_seventeen_members_stay_exact():
+def test_frozen_metadata_rejects_new_byte_but_original_seventeen_members_stay_exact(tmp_path):
     original = json.loads(baseline_bytes(METADATA))
     with pytest.raises(ValueError, match="^current_source_drift$"):
         contract.source_checks(ROOT, original)
+    candidate = json.loads(baseline_bytes(METADATA, revision=FIRST_FAILURE_REVISION))
+    for row in candidate["source_inputs"]:
+        path = tmp_path / row["path"]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(baseline_bytes(row["path"], revision=FIRST_FAILURE_REVISION))
     for row in original["source_inputs"][:17]:
-        assert (ROOT / row["path"]).read_bytes() == baseline_bytes(row["path"])
-    checked = contract.source_checks(ROOT, {"source_inputs": original["source_inputs"][:17]})
+        assert (tmp_path / row["path"]).read_bytes() == baseline_bytes(row["path"])
+    with pytest.raises(ValueError, match="^current_source_drift$"):
+        contract.source_checks(tmp_path, original)
+    checked = contract.source_checks(tmp_path, {"source_inputs": original["source_inputs"][:17]})
     assert len(checked) == 17 and all(
         row["representation"] == "EXACT_FROZEN_BYTES" for row in checked
     )

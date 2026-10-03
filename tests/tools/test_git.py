@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import shutil
 import subprocess
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.errors import KernelError
+from harnessix.tools.git import GitReadRuntime
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.tools.test_files import call, execute
 
@@ -30,8 +34,9 @@ def _command(root: Path, *arguments: str) -> None:
     )
 
 
-def _repository(root: Path) -> None:
-    _command(root, "init", "-q")
+def _repository(root: Path, *, object_format: str | None = None) -> None:
+    arguments = (f"--object-format={object_format}",) if object_format is not None else ()
+    _command(root, "init", "-q", *arguments)
     _command(root, "config", "user.name", "Harnessix Test")
     _command(root, "config", "user.email", "test@harnessix.invalid")
     (root / "tracked.py").write_text("before\n", encoding="utf-8")
@@ -103,6 +108,79 @@ async def test_git_diff_reports_utf8_prefix_and_full_digest(tmp_path: Path) -> N
     assert output["utf8_bytes"] <= 48 * 1024 < output["observed_bytes"]
     assert len(output["text"].encode()) == output["utf8_bytes"]
     assert len(output["observed_sha256"]) == 64
+
+
+@pytest.mark.parametrize("target", ["worktree", "staged"])
+@pytest.mark.parametrize("object_format", ["sha1", "sha256"])
+async def test_git_diff_full_object_identity_does_not_depend_on_abbreviation(
+    tmp_path: Path, target: str, object_format: str
+) -> None:
+    """相同镜像的完整观察不因本地对象名缩写宽度不同而漂移。"""
+    _repository(tmp_path, object_format=object_format)
+    (tmp_path / "tracked.py").write_text("after\n", encoding="utf-8")
+    if target == "staged":
+        _command(tmp_path, "add", "tracked.py")
+    outputs = []
+    for width in (7, 8):
+        _command(tmp_path, "config", "core.abbrev", str(width))
+        async with CodingToolRuntime(tmp_path, git_executable=_git()) as tools:
+            result = await execute(tools, "git_diff", target=target)
+        assert result.outcome == "succeeded"
+        assert not result.output["truncated"]
+        outputs.append(result.output)
+    assert outputs[0]["text"] == outputs[1]["text"]
+    assert outputs[0]["observed_sha256"] == outputs[1]["observed_sha256"]
+    assert outputs[0]["observed_bytes"] == outputs[1]["observed_bytes"]
+    index = next(line for line in outputs[0]["text"].splitlines() if line.startswith("index "))
+    before, after = index.split()[1].split("..")
+    for expected, arguments in (
+        (before, ("rev-parse", "HEAD:tracked.py")),
+        (after, ("hash-object", "--", "tracked.py")),
+    ):
+        process = await asyncio.create_subprocess_exec(
+            str(_git()),
+            *arguments,
+            cwd=tmp_path,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env={"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"},
+        )
+        output, _ = await process.communicate()
+        assert process.returncode == 0
+        assert expected == output.decode("ascii").strip()
+
+
+@pytest.mark.parametrize("name", ["git_status", "git_diff"])
+async def test_git_full_index_policy_changes_capability_and_rejects_old_call(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    """观察策略变化进入原能力指纹，旧版本请求不得静默继续。"""
+    _repository(tmp_path)
+    current_contract = GitReadRuntime.contract
+
+    def legacy_contract(runtime: GitReadRuntime) -> dict[str, object]:
+        contract = current_contract(runtime)
+        contract.pop("full_index", None)
+        return contract
+
+    with monkeypatch.context() as patch:
+        patch.setattr(GitReadRuntime, "contract", legacy_contract)
+        async with CodingToolRuntime(tmp_path, git_executable=_git()) as legacy:
+            old_call = call(legacy, name)
+    async with CodingToolRuntime(tmp_path, git_executable=_git()) as tools:
+        current_call = call(tools, name)
+        assert current_call.tool_version != old_call.tool_version
+        assert current_call.tool_fingerprint != old_call.tool_fingerprint
+        port = AsyncMock(side_effect=AssertionError("旧能力不得进入Git端口"))
+        with monkeypatch.context() as patch:
+            patch.setattr(GitReadRuntime, "execute", port)
+            with pytest.raises(KernelError, match="工具或工作区能力已变化") as refused:
+                await tools.execute(old_call, CancelToken())
+            port.assert_not_awaited()
+        assert refused.value.code == "tool_contract_changed"
+        result = await tools.execute(current_call, CancelToken())
+        assert result.outcome == "succeeded"
 
 
 async def test_git_disables_external_diff_and_fsmonitor(tmp_path: Path) -> None:

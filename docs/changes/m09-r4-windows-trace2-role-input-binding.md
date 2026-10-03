@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 7
-code_revision: 0b8c6e09b4d8eeb47c4a5e692473cd44239d1d25
+version: 8
+code_revision: f84583e5560998683cf07d6b4c138c4f7ff3ad1a
 owners: [core]
 modules: [delivery, product_config, processes, governance]
 related_adrs:
@@ -641,3 +641,89 @@ Trace2只有ENTRY/DISPATCH/REPO与HASH_OBJECT_ADD_AGGREGATE，completeness UNKNO
 完整分支见证、Owner身份或业务成功。后继围绕原数据供给、Git对象库与调试布防边界作有限源码及
 独立反例求证；不重放同一失败候选，不凭更多相同Run改绿，不改变首发Git/恢复/备份范围或原门。
 默认完整Git、消费者Windows、R3真实质量、Beta与商用R1～R6继续开放。
+
+## 15. 历史精确差分与当前发行输入的独立验证
+
+### 15.1 需求、根因与目标
+
+完整离线回归确认三个历史断言失败。独立逐提交核验表明后来六次源码及身份刷新已有对应设计，
+每次只同步原bytes/sha256/crlf_bytes/crlf_sha256；18个最低成员及字段、路径顺序与预算没有放宽。
+旧断言误把历史单次差分扩展成“当前源码永久不变”，本范围未发现未登记身份漂移。
+
+历史两件追加只比较5306c71与实际引入提交9b9e52f；首失败四叶只比较f07263c与0b1e16a。
+当前目录身份固定于0583b53，与当前真实18成员独立完整比较。
+目标是同时保留历史精确事实与当前严格验真，不增加allowedSet、不降低最低输入或删除旧拒绝。
+这些提交说明可核验变更，不以Git提交代替额外人类授权凭证。
+
+### 15.2 架构、流程与数据流
+
+```mermaid
+flowchart TB
+  B[历史基线Git对象] --> H[固定历史候选Git对象]
+  H --> D[原类型敏感精确差分]
+  H --> T[普通临时源码树 原字节]
+  T --> O[旧前缀接受 旧完整目录拒绝新增字节]
+  C[当前read_contract] --> F[固定0583目录 类型敏感全等]
+  F --> S[当前18源码原source_checks]
+  D --> R[历史与当前均须通过]
+  O --> R
+  S --> R
+```
+
+```mermaid
+sequenceDiagram
+  participant T as 原历史回归
+  participant G as 固定Git对象
+  participant C as 原Contract检查器
+  T->>G: 读取固定基线及实际引入候选
+  G-->>T: 原metadata和原18个源码Blob
+  T->>T: 原四叶或两件追加精确差分
+  T->>C: 临时历史树 旧前17及旧完整18
+  C-->>T: 前17精确接受 完整旧目录拒绝
+  T->>C: 当前真实目录和当前18源码
+  C-->>T: 原严格身份及类型验证
+```
+
+```mermaid
+flowchart LR
+  G[固定历史metadata] --> P[原JSON字段及类型]
+  P --> D[历史严格Pointer集合]
+  L[当前metadata] --> E[固定现行metadata全等]
+  E --> S[真实源文件 LF及CRLF身份]
+  S --> V[原验真结果]
+```
+
+### 15.3 接口、字段与源码追踪
+
+| 责任 | 精确位置 | 合同 |
+|---|---|---|
+| 首失败四叶历史断言 | [`test_windows_git_first_failure_projection.py`](../../tests/governance/test_windows_git_first_failure_projection.py) | 候选固定0b1e16a；第17索引四Pointer、18总数、前17全等及末成员LF/CRLF完整身份保留 |
+| 原17字节及旧拒绝 | 同上原拒绝测试 | 普通tmp_path写实际历史候选18件Blob；前17等于旧基线，旧完整18拒绝该候选；当前旧拒绝及当前18严格接受继续独立保留 |
+| 诊断两成员追加 | [`test_windows_git_trace2_input_binding.py`](../../tests/governance/test_windows_git_trace2_input_binding.py) | 候选固定9b9e52f；原16全等、仅末尾两件及完整恢复后零差分保留 |
+| 当前发行与类型突变 | 同上原追加测试及12个原类型负例 | read_contract与0583固定metadata类型敏感全等；原source_checks完整18件，不能只换历史读取丢掉当前守卫 |
+| 原完整验真 | [`contract.py`](../../scripts/windows_git_native_branch_observation/contract.py) | 生产/脚本实现、metadata及固定摘要本轮均不修改 |
+
+原测试辅助Git Blob读取只扩展显式固定revision参数，默认历史基线保持；不读取非版本化文件。
+临时历史树是有限离线夹具，不是管理worktree，不执行任何SDK、下载或新Collector。
+
+### 15.4 核心逻辑、失败、安全与验证
+
+```text
+固定历史基线和历史候选 -> 原严格历史差分
+用历史候选的完整18个原Blob构造临时树
+旧前17验真必须成功；旧完整18必须因真正末成员变化拒绝
+当前read_contract -> 固定现行目录类型敏感全等
+当前完整18源文件 -> 原source_checks
+12个原等值但异类型突变仍必须被拒绝
+```
+
+独立只读分析先取得原173项170通过/3失败；三个建议函数仅内存替换后173通过，
+不是正式磁盘修复结果。原失败、初次模块别名绑定失败及完整逐字段证据保留。
+实现后须精确两个原文件正式173项通过，并保留12个类型、18件未知字节、18件精确CRLF及表示/配对负例。
+不以无关历史差分造成的正例失败，冒充类型负例覆盖。
+任何固定现行目录或当前源文件漂移均按原合同失败；后继批准刷新须显式同步固定现行身份及设计。
+不修改18输入、27选择器、PE/PDB、13Hook、20/45/240/300预算，不改变历史FAIL、R3或商用判定。
+
+两个原文件的正式磁盘整改已取得173项通过，零失败、错误或跳过；12项现行等值异类型拒绝仍执行。
+原初次Ruff行宽失败及后继格式通过分开留存。生产检查器和固定目录字节均未修改，
+该结果只关闭上述历史断言混用，不证明Windows原生NTFS、完整Git交付或商用门禁通过。

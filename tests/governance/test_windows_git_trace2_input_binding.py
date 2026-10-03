@@ -27,6 +27,8 @@ PROBE = "tests/product_config/git_minimum_commit_probe.py"
 PROJECTION = "tests/product_config/git_trace2_projection.py"
 ROLE_REVISION = "9a0d84aaba6243539abd63e2de69b482350486a2"
 DIAGNOSTIC_BASE = "5306c7134c1301dd10bee682be5ce1e61e120c46"
+DIAGNOSTIC_REVISION = "9b9e52fdaab74567b5ad7cd5614801f1936689bc"
+LIVE_CATALOG_REVISION = "0583b53306f3ab869fb35c5b9eece80fbe2251a4"
 DIAGNOSTIC_INPUTS = (
     "src/harnessix/delivery/git_material_trace2_profile.py",
     "scripts/windows_git_native_branch_observation/failure_projection.py",
@@ -57,9 +59,9 @@ PROTECTED = {
 }
 
 
-def _original(path: str) -> bytes:
+def _original(path: str, *, revision: str = BASE) -> bytes:
     return subprocess.run(
-        ["git", "show", f"{BASE}:{path}"], cwd=ROOT, check=True, capture_output=True
+        ["git", "show", f"{revision}:{path}"], cwd=ROOT, check=True, capture_output=True
     ).stdout
 
 
@@ -155,12 +157,17 @@ def test_new_metadata_appends_only_two_exact_diagnostic_members():
             capture_output=True,
         ).stdout
     )
-    current = contract.read_contract()
+    live = contract.read_contract()
+    assert not _metadata_changes(
+        live, json.loads(_original(METADATA, revision=LIVE_CATALOG_REVISION))
+    )
+    assert len(contract.source_checks(ROOT, live)) == 18
+    current = json.loads(_original(METADATA, revision=DIAGNOSTIC_REVISION))
     assert current["base_revision"] == DIAGNOSTIC_BASE
     assert len(current["source_inputs"]) == 18
     assert not _metadata_changes(current["source_inputs"][:16], original["source_inputs"])
     for row, name in zip(current["source_inputs"][16:], DIAGNOSTIC_INPUTS, strict=True):
-        body = (ROOT / name).read_bytes()
+        body = _original(name, revision=DIAGNOSTIC_REVISION)
         crlf = body.replace(b"\n", b"\r\n")
         expected = dict(
             path=name,

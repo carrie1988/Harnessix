@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 02a4c88a8dbac2b44c0ab0bc3b2733c2eb3dc675
+version: 12
+code_revision: f84583e5560998683cf07d6b4c138c4f7ff3ad1a
 owners:
   - core
 modules:
@@ -233,8 +233,9 @@ Runtime的进程监督，依赖方向只用于执行固定程序；它不开放`
 
 文件与搜索工具版本至少绑定：实现标识、Workspace Scope、输入/输出Schema、并发模式、文本/行/
 扫描/目录/结果/超时边界。搜索额外绑定模式语义、忽略目录和各搜索预算；启用Artifact后还绑定Store
-合同并把输出Schema切换为归档结果。Git额外绑定可执行文件身份、固定环境、固定选项、Process捕获和
-Diff上限。`read_artifact`绑定Workspace Scope、Artifact合同、分页Schema与并发上限。
+合同并把输出Schema切换为归档结果。Git额外绑定可执行文件身份、固定环境、固定选项、完整对象身份
+显示策略、Process捕获和Diff上限；其中Diff固定使用`--full-index`，不能依赖`core.abbrev`等对象
+缩写配置。`read_artifact`绑定Workspace Scope、Artifact合同、分页Schema与并发上限。
 
 因此同名工具在不同根、根对象被替换、策略变化、Artifact开关变化或Git程序变化后具有不同版本。
 已持久化审批不能在新能力上静默继续。
@@ -311,6 +312,13 @@ POSIX超2 MiB文件仍可读有界前页，但不提供完整修改摘要；Wind
 `git_status(limit=100)`的`limit`为1～200。输出包含branch、HEAD OID、upstream、ahead/behind、完整
 条目总数、返回前缀、截断标记和原始porcelain输出摘要。条目类型为ordinary、renamed、unmerged或
 untracked；重命名必须同时携带唯一`original_path`。
+
+`git_diff`由[`_execute_git_read`](../../src/harnessix/tools/git.py)沿既有根、配置、取消和Process边界
+执行；固定Diff参数在原有只读选项中追加`--full-index`，使完整正文的对象身份行不依赖
+`core.abbrev`等仓库对象缩写配置。完整Blob OID按实际Git对象格式输出，不固定为40位；因此
+`observed_sha256`继续覆盖包含完整对象身份行在内的全部实际Diff正文，不忽略或归一化该行。
+`GitReadRuntime.contract()`的`full_index=true`进入原工具能力摘要，因而固定策略改变时原工具版本及
+指纹同步改变；旧版本请求按原`tool_contract_changed`拒绝，不新增模型输入或输出字段。
 
 `git_diff(target="worktree", context_lines=3)`只允许worktree/staged和0～20上下文行。输出包含：
 
@@ -984,6 +992,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 12 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | Git Diff固定追加`--full-index`，使跨副本完整正文SHA-256不依赖`core.abbrev`；完整Blob OID按实际Git对象格式输出且不限40位，不改变Schema、评分或容量；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |
 | 10 | `75c4b7ddfe91824bcb667023c003e4aad18992e4` | 同步Python3.13的Git平台输入测试夹具、仓库边界负例及模拟验证范围；生产代码和公共合同不变 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 明确默认Patch属于Trusted Action而非CodingToolRuntime，并记录POSIX广告与Windows省略边界 |
 | 3 | `82e247a8d083f3f8a7d68ee091a43d59096f298d` | 同步0.9.1e1默认Artifact接线、协议分页证据及不扩大写权限边界；[CI 34739842959](https://github.com/carrie1988/Harnessix/actions/runs/34739842959)全矩阵通过 |

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 184
-code_revision: 634f96c55cfeff5db7e84b177074c4bd5d6a990c
+version: 185
+code_revision: f84583e5560998683cf07d6b4c138c4f7ff3ad1a
 owners:
   - core
 modules:
@@ -1972,3 +1972,30 @@ Windows后继Session／认证回归失败，不将原生材料组成功扩大为
 零跳过，新增八例而非删减原495例。原110／501结果及复审发现均保留，不能据本地闭环宣告原生或商用通过。
 最终测试输入独立复核112项通过并确认初始化异常资源缺口闭环；完整503属于主线程实际回归，
 不是同行重复计数。新固定候选仍须取得Windows原生及后继广泛结果。
+
+### R1/R4：完整回归失败归因与跨副本Diff身份收敛
+
+Session整改已发布为`f84583e`。其[Run37145319930](https://github.com/carrie1988/Harnessix/actions/runs/37145319930)
+三个Windows材料组、容器及文档通过，但整体失败；Windows核心在NTFS事务与审批写链前置步骤失败，
+Session及后继步骤未执行，不能认定Windows Session修复通过。macOS Session步骤通过、后继广泛范围失败；
+Linux两个Python版本的完整回归失败。只读取运行／步骤元数据，不由此猜测精确NTFS根因。
+
+同生产与最终Session测试的干净受管源码回归11260项中11119通过、4失败、137跳过。
+完整XML明确区分三个历史固定输入断言与一个Eval批准交付的真实Diff摘要缺陷，原FAIL均保留。
+两实际仓库前后镜像一致，但index对象缩写分别7位和8位，造成正文SHA不同；
+按[完整对象身份详设](changes/m09-r4-git-diff-full-object-identity.md)，原Git Read端口增加full-index，
+不忽略index、不改评分、Schema或容量。新增真实宽度反例先失败，原三个关联文件26项通过；
+补充SHA-1/SHA-256及原完整argv预期后，六文件扩展127通过、29平台跳过，零失败或错误。
+后继能力核对补充原contract策略身份；旧版本请求两例先失败，固定full_index策略进入原工具摘要后，
+最终同六文件129通过、29平台跳过，旧请求拒绝而新请求成功，公开输入／输出Schema不变。
+
+按[历史与现行目录分离详设](changes/m09-r4-windows-trace2-role-input-binding.md#15-历史精确差分与当前发行输入的独立验证)，
+历史两件追加与首失败四叶分别比较实际固定引入候选；当前18件输入与固定现行身份独立严格验证。
+两个原文件173项通过，原12类型、未知字节、LF/CRLF负例保留；生产检查器和目录未修改。
+原可读性policy不变，仅原生成器同步真实源码行数；Mypy检查438件源码通过。
+完整范围、原失败及边界见[正式验证报告](validation/git-diff-history-convergence-2026-10-04-v1/README.md)。
+最终八文件联合回归302通过、29平台跳过；独立审查相同最终源码的六文件284通过，
+确认能力策略绑定闭环。284为联合范围子集，不与302重复累加。
+
+上述为本地缺陷闭环，不是新候选整合或原生通过。完整Git／Backup v2、真实R3质量及两笔费用未决、
+消费者平台、独立Beta、权利和同候选R1～R6商用门禁继续开放。未新增模型请求或调整费用规则。

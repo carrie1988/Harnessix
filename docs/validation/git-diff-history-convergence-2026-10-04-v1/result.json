@@ -1,0 +1,104 @@
+{
+  "baseline_revision": "f84583e5560998683cf07d6b4c138c4f7ff3ad1a",
+  "environment": {
+    "platform": "macOS arm64",
+    "python": "3.12.7",
+    "git": "git version 2.53.0"
+  },
+  "original_full_regression": {
+    "tests": 11260,
+    "passed": 11119,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 137
+  },
+  "diff_width_red": {
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 0
+  },
+  "initial_associated_green": {
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 26
+  },
+  "expanded_initial": {
+    "tests": 154,
+    "failures": 8,
+    "errors": 0,
+    "skipped": 29,
+    "passed": 117
+  },
+  "expanded_before_policy_binding": {
+    "tests": 156,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 29,
+    "passed": 127
+  },
+  "policy_binding_red": {
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 0
+  },
+  "final_associated": {
+    "tests": 158,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 29,
+    "passed": 129
+  },
+  "historical_contracts": {
+    "tests": 173,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 173
+  },
+  "source_sha256": {
+    "src/harnessix/tools/git.py": "e3d4c176c0719de4a7ccf2c390e9be0bf4c152c9246c014687137a941624d1bc",
+    "tests/tools/test_git.py": "58be4cd9fce0562c9e6fc1a99d230e6b79944ef727fbf9e1e3a983ce2c605c78",
+    "tests/tools/test_git_delivery_reader.py": "c842e2a62c4b776b6ef9a98eff1719f01cc16cd704ce8a99c09ccd61239c2df3",
+    "tests/governance/test_windows_git_first_failure_projection.py": "332be65ff5cd00d3d35844e5054ae5f8e883f4e393c0ee9538ee4a19abe8a2be",
+    "tests/governance/test_windows_git_trace2_input_binding.py": "35729c7761afa13114bd13e5d145a8786e0baee18e94cac7745a131bd7e23dcd"
+  },
+  "readability_policy_sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c",
+  "production_mypy_files": 438,
+  "fixed_catalog_sha256": "e6bc7595e8bb03be446b31c31c7769743011cb5c7faff57d833ebd345eb842aa",
+  "wheel": {
+    "file": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "bytes": 1211181,
+    "sha256": "90bc5bb577b95ef0a30d8a48b63d0ac2af2f6b394267429690b6109c763a7a54",
+    "installed_lifecycle_validated": false
+  },
+  "provider_requests": 0,
+  "native_windows_validated": false,
+  "full_successor_regression_completed": false,
+  "commercial_release": false,
+  "final_integrated": {
+    "tests": 331,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 29,
+    "passed": 302
+  },
+  "independent_review": {
+    "counts": {
+      "tests": 284,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "finding": "F-001",
+    "finding_status": "closed",
+    "unresolved_findings": 0,
+    "final_changed_python_sha256_equal": true,
+    "scope_is_subset_of_integrated": true
+  }
+}

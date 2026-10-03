@@ -124,6 +124,7 @@ class GitReadRuntime:
             "optional_locks": False,
             "external_diff": False,
             "textconv": False,
+            "full_index": True,
             "fsmonitor": False,
             "executable_filters": False,
             "configuration_includes": False,
@@ -199,6 +200,8 @@ async def _execute_git_read(
         "diff",
         "--no-ext-diff",
         "--no-textconv",
+        # 完整观察摘要须跨副本比较，不依赖仓库对象名的自动缩写宽度。
+        "--full-index",
         "--ignore-submodules=all",
         f"--unified={args.context_lines}",
     ]
