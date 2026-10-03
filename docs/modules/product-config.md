@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 60
-code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
+version: 61
+code_revision: 9dc4647eab94cda362dd68fc33a3127cc30815cc
 owners:
   - core
 modules:
@@ -2399,3 +2399,5 @@ Windows现场先复用既有observe仅预检及固定官方PE／PDB；每格前�
 其五分钟和全部业务门不变；四格直接helper成功也不能替代原Supervisor链或默认Git交付。
 完整需求、架构、流程／时序／数据流、源码、字段、异常及测试见
 [最低Commit对照设计第13节](../changes/m09-r4-windows-minimum-commit-probe.md#13-真实快照输入与对象写入的单变量对照)。
+固定9dc4647原生三格步骤成功，持有写入和原SDK步骤失败；后继集中检查持有后的写入路径，
+不从步骤结论推断具体共享调用或两SDK各自退出码，不放宽生产权限。

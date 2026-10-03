@@ -45,8 +45,57 @@
       "skipped": 0
     }
   },
-  "native_status": "NOT_EXECUTED",
-  "native_run": null,
+  "native_status": "COMPLETED_FAILURE",
+  "native_run": {
+    "id": 37125374856,
+    "head_sha": "9dc4647eab94cda362dd68fc33a3127cc30815cc",
+    "run_attempt": 1,
+    "status": "completed",
+    "conclusion": "failure",
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/37125374856",
+    "job_id": 111209499069,
+    "preflight_conclusion": "success",
+    "case_steps": {
+      "hash-direct": {
+        "number": 7,
+        "name": "无写无namespace持有 hash-direct",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-03T13:12:30Z",
+        "completed_at": "2026-10-03T13:12:36Z"
+      },
+      "hash-held": {
+        "number": 8,
+        "name": "无写原namespace持有 hash-held",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-03T13:12:36Z",
+        "completed_at": "2026-10-03T13:12:39Z"
+      },
+      "write-direct": {
+        "number": 9,
+        "name": "写入无namespace持有 write-direct",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-03T13:12:39Z",
+        "completed_at": "2026-10-03T13:12:42Z"
+      },
+      "write-held": {
+        "number": 10,
+        "name": "写入原namespace持有 write-held",
+        "status": "completed",
+        "conclusion": "failure",
+        "started_at": "2026-10-03T13:12:42Z",
+        "completed_at": "2026-10-03T13:12:44Z"
+      }
+    },
+    "original_sdk_step_conclusion": "failure",
+    "individual_sdk_outcomes": "NOT_OBSERVED",
+    "failure_call_stage": "NOT_OBSERVED",
+    "root": "UNKNOWN",
+    "inference": "namespace-held write path differs; not exclusive historical root proof",
+    "business_logs_read": false
+  },
   "original_failure_retained": true,
   "production_code_changed": false,
   "source_input_count": 18,

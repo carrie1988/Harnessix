@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 8
-code_revision: 9c81f9c063cabb4910a7e07a57b7307a4329f555
+version: 9
+code_revision: 9dc4647eab94cda362dd68fc33a3127cc30815cc
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -556,3 +556,16 @@ stage删除始终走原物理身份检查。回读占用同一剩余操作预算
 新增测试对照必须先通过非Windows实际运行及离线治理，再执行一次固定Windows候选。
 固定源码、RED／GREEN、静态、文档图示、原生步骤元数据和各观察缺口分别保存；未取得现场结果不预先写PASS。
 R1～R6、真实R3及费用未决、完整Git交付和Backup v2、消费者Windows11及独立Beta仍按原门槛验收。
+
+### 13.7 固定Windows现场结果与后继故障路径
+
+固定9dc4647的Run37125374856／attempt1／Job111209499069已终态failure。
+原官方身份预检成功；hash-direct、hash-held、write-direct步骤success，write-held和原SDK步骤failure。
+[原生验证记录](../validation/windows-git-snapshot-differential-2026-10-03-v1/README.md)
+保留实际API元数据和各自范围，不读取业务日志，也不重跑此候选。
+
+该结果支持优先核查namespace持有后的写入路径；输入继承／无写hash及直接写入在此控制步骤已成功。
+但是元数据没有具体失败调用，四格初始Commit时间及其对象目录形状可能不同；不能据此确认唯一共享权限缺陷。
+后继应在同一初始对象集合下，以真实Win32／Git控制分辨目录和既有文件持有、对象创建、链接／重命名的访问需要，
+保留目录不可替换、控制文件不可写、单链接与独立回读反例。没有此证据不放宽FILE_SHARE标志或删除原_namespace。
+原SDK只取得步骤failure，不补写两case的退出码、PID、Proof或Git128。消费者平台和完整Git／Backup v2仍未验收。

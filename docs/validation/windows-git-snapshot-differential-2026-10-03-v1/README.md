@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 3
-code_revision: 9c81f9c063cabb4910a7e07a57b7307a4329f555
+version: 4
+code_revision: 9dc4647eab94cda362dd68fc33a3127cc30815cc
 owners: [core]
 modules: [product_config, delivery, processes, governance]
 related_adrs:
@@ -19,7 +19,8 @@ supersedes: []
 
 ## 1. 结论与边界
 
-新增四格直接Git helper对照已经取得本机真实结果，Windows现场尚未执行。
+新增四格直接Git helper对照已经取得本机及一次固定Windows现场结果：三个步骤成功、一个步骤失败，
+原SDK步骤失败，整体Run失败。支持namespace持有后写入路径存在差异，**不确认具体失败调用或历史唯一根因**。
 原Windows Run37118277852的两项Git128、SDK失败及Root UNKNOWN保持，不用本机结果替换。
 没有生产代码、批准合同、Owner、数据库、模型预算或成功门变更；R1～R6仍开放。
 
@@ -71,10 +72,24 @@ job env不再引用runner；514项包含原513项，保留原HTTP422和1失败�
 
 ## 5. 交付、原件与后继
 
-[结构化验证](verification.json)记录实际本机结果和未执行的原生状态。
+[结构化验证](verification.json)记录实际本机和原生步骤元数据。
 完整本机日志／XML、设计前置记录、输入差分、三幅实渲染图、静态结果和Review Packet
 归档于私有windows-git-snapshot-differential-20261003-v1目录，0700目录／0600文件。
 
-下一步仅对新固定候选执行一次Windows attempt1；按四格和原SDK各自事实判断下一条故障路径。
-直接helper通过不替代Supervisor链；原生现场不足仍保留UNKNOWN。
+固定[Run37125374856](https://github.com/carrie1988/Harnessix/actions/runs/37125374856)、attempt1、
+候选9dc4647、Job111209499069已终态failure；checkout、锁定依赖和原官方身份仅预检成功。
+
+| 原生步骤 | 实际结论 | 边界 |
+| --- | --- | --- |
+| hash-direct | success | 直接无写控制步骤成功 |
+| hash-held | success | 原namespace持有的无写控制步骤成功 |
+| write-direct | success | 不额外持有namespace的写入及回读控制步骤成功 |
+| write-held | failure | 持有原namespace的写入控制步骤失败；具体调用阶段未观察 |
+| 原两个SDK及低敏侧车 | failure | 仅取得步骤结论；不宣称分别的case退出码或新Git128记录 |
+
+只读取Run／Job／step API元数据，没有读取日志或CDB输出，没有新增有限投影Schema或上传器。
+四格间fresh根、初始Commit时间和句柄身份仍不同；步骤失败也可能来自准备或后验断言。
+因此不把此结果升级为某个Win32共享调用的唯一根因，不自动放宽生产共享模式或删除原持有。
+下一步在相同初始对象库的真实控制下分辨目录／文件持有及实际对象创建、链接／重命名路径，
+再以最小生产修复和原保护反例、原SDK回读验收闭环。直接helper通过不替代Supervisor链，Root仍UNKNOWN。
 完整Git／Backup v2、真实R3及费用未决、Windows11消费者、独立Beta及最终同候选发布继续独立验收。

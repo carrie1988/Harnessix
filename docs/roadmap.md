@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 175
-code_revision: c48b22fec58aa9178bd93e519eff8e7c9fc5309f
+version: 176
+code_revision: 9dc4647eab94cda362dd68fc33a3127cc30815cc
 owners:
   - core
 modules:
@@ -1834,3 +1834,7 @@ Windows失败、完整Git／Backup v2、R3、费用未决、Beta及商用R1～R6
 该测试整改不修改生产预算或原请求认证，也不替代新候选Windows现场结果。
 首dispatch被GitHub上下文语法检查拒绝且未创建Run；符号根已改为步骤env，
 新增对应YAML结构负例，旧拒绝保留，后继固定候选另行取得实际运行。
+固定9dc4647的Run37125374856／attempt1已终态failure：原身份预检、两无写步骤及无持有写入成功，
+原持有写入和原SDK步骤失败。只使用API元数据，具体失败调用及历史唯一根因仍UNKNOWN。
+后继在相同初始对象集合下核验目录／文件持有和对象创建／链接访问，再做保持原保护的最小修复；
+不把三格成功外推为原SDK、Windows11、完整Git或商用R1～R6通过。
