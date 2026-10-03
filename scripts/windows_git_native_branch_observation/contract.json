@@ -83,10 +83,10 @@
     },
     {
       "path": "src/harnessix/delivery/git_material_native.py",
-      "bytes": 17189,
-      "sha256": "e92ec1751d945c85564bf65f93b74e20e7462b8be56cbc7ef7760cf3fc2166e9",
-      "crlf_bytes": 17621,
-      "crlf_sha256": "6bd0057711c13a424d0b24ad36347ea7115c896675e585d668af6b14ef3cfa69"
+      "bytes": 17387,
+      "sha256": "e095d5582dcd7795937d9f1f86c003962b1bead230661a02261ea6aeedfed2df",
+      "crlf_bytes": 17822,
+      "crlf_sha256": "f11d8c2ab30856f8ee06a8ced1250f7d3e31a3b51461e49cf5f07322911caa99"
     },
     {
       "path": "src/harnessix/delivery/git_material_worker.py",

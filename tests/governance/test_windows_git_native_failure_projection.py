@@ -585,11 +585,11 @@ def test_legacy_case_fields_and_full_gate_sources_are_unchanged():
     approved = {
         "scripts/windows_git_native_branch_observation/contract.py": (
             3937,
-            "ec01176f0124d43272d172dab047b71634d8c7a1b5a51ee5a6471a10b4148f8d",
+            "af5438ca47b16f77a0109ef9723e3804738bc2fcf2ccd5e5e78ebba51b3459f5",
         ),
         "scripts/windows_git_native_branch_observation/contract.json": (
             8291,
-            "b07e5b8b9d5ba66b83892a6816b48b02d9ec9ce6ab22a00c3bd46ef20dfcf544",
+            "1f6e626e7469cea4e31268a8357a7e39847df33b632250f2f978d10a80d96463",
         ),
         "tests/product_config/git_minimum_commit_probe.py": (
             24603,

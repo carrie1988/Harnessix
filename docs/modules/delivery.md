@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 33
+version: 34
 code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
 owners:
   - core
@@ -37,6 +37,7 @@ related_tests:
   - tests/delivery/test_windows_io_contracts.py
   - tests/delivery/test_planner.py
   - tests/delivery/test_store.py
+  - tests/product_config/test_git_material_stream_ownership.py
   - tests/delivery/test_diff.py
   - tests/delivery/test_filesystem.py
   - tests/delivery/test_rollback_binding.py
@@ -1911,6 +1912,11 @@ canonical小manifest与生产者证明分别限64KiB/4096字节，不提高普�
 `GitMaterialProof`认证的是受信生产者输出，不是Owner直接观察内层Git输入；
 必须新批准完整对象回读，不能把该证明当作业务Commit完成。
 Windows实际数据访问拒共享保护及快照关闭语义见[完整设计](../changes/m09-r4-git-object-material-input.md)。
+原`_snapshot`在`fdopen`之前将复制FD登记到同一Resources；FileIO以`closefd=False`借用FD。
+作用域正常退出先关闭流再关闭FD，封装审计／控制异常仍结算复制FD；不按路径重开或升级访问权利。
+提前关闭流只关闭流状态，复制FD仍由原作用域持有。真实审计回归与根因边界见
+[详设第13节](../changes/m09-r4-git-object-material-input.md#13-快照流封装的fd归属与失败清理)。
+此缺陷发生于Git启动前，不是已确认的Windows Git128根因或新的SDK成功证据。
 
 本内部能力没有新增默认写Tool或数据库。CAS业务来源关联、认证业务登记、双工作树、阶段崩溃恢复、
 完整Git备份闭包与新原生验收仍须完成，原R1/R4范围不缩减。

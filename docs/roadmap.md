@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 171
-code_revision: 0b8c6e09b4d8eeb47c4a5e692473cd44239d1d25
+version: 172
+code_revision: cf35055668f9529c9a677e5226a98bbd40c4cefd
 owners:
   - core
 modules:
@@ -1805,3 +1805,19 @@ SDK/branch仍false、proof ABSENT，Trace2 completeness UNKNOWN；原FAIL_RETAIN
 [完整设计增量](changes/m09-r4-windows-trace2-role-input-binding.md#14-v2首失败接合的单次windows实际结果)及
 [实际验证](validation/windows-first-failure-native-2026-10-03-v1/README.md)保留新Run/失败，不重跑同一候选。
 完整Git与Backup v2、Windows消费者、真实R3、独立Beta和商用R1～R6继续开放；未新增模型请求。
+
+
+### R1/R4：完整材料流封装失败的FD归属整改
+
+真实Python审计在原snapshot复制FD后拒绝fdopen，原作用域退出后FD仍有效；
+两种异常各连续六次增长六个FD，初版2失败／2通过及最终合同4失败原件均保留。
+仅将复制FD的关闭责任提前登记到原Resources，FileIO以closefd=False借用；
+正常提前关闭流不释放栈持有FD，退出先关闭流再关闭FD，不扩张权限或改为PIPE。
+新真实审计4项通过；18件原受影响文件1260通过／4 Windows原生跳过，468输入零漂移，
+不累计为全仓或Windows成绩。十八固定输入仅更新native一行完整身份，其余17行、
+PE/PDB、selector、13hook、期限及原业务门不改。
+需求、完整图示、源码／字段／伪代码、失败和部署见
+[详细设计第13节](changes/m09-r4-git-object-material-input.md#13-快照流封装的fd归属与失败清理)，
+[正式验证](validation/git-snapshot-stream-ownership-2026-10-03-v1/README.md)保留分阶段证据。
+该异常在Popen前发生，不是已有Popen=true／Git128的根因；
+Windows失败、完整Git／Backup v2、R3、费用未决、Beta及商用R1～R6继续开放，未新增模型或原生Run。

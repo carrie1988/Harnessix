@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 1502bd19f5f738515ee7f27e6bcfa3ce1e19daf0
+version: 2
+code_revision: cf35055668f9529c9a677e5226a98bbd40c4cefd
 owners: [core]
 modules: [delivery, product_config, processes]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
 related_tests:
   - tests/product_config/test_git_material_input.py
   - tests/product_config/test_git_material_snapshot_lifecycle.py
+  - tests/product_config/test_git_material_stream_ownership.py
   - tests/product_config/test_git_material_native.py
   - tests/product_config/test_git_material_owner_exit.py
   - tests/product_config/test_git_object_material.py
@@ -295,3 +296,127 @@ POSIX 创建空名称至去名之间仍存在短窗口；不宣称抵御此窗�
 不将单机通过推导为消费者Windows11、Linux/macOS全部发行输入或完整商用门禁。
 正式接线仍需来源桥接、完整 Diff 与独立批准、双受管工作树、耐久材料和原认证账本、阶段恢复、Backup v2；
 R3完整20 Trial、独立 Beta 和同候选 R1～R6均继续开放。测试集合重叠不相加，历史失败不覆盖。
+
+
+## 13. 快照流封装的FD归属与失败清理
+
+### 13.1 需求背景、已确认缺陷与设计目标
+
+原[`_snapshot`](../../src/harnessix/delivery/git_material_native.py)以
+`os.fdopen(os.dup(descriptor), "rb", buffering=0)`建立Git标准输入流。复制成功与FileIO封装成功
+是两个不同的资源边界；真实Python审计钩子在`open(integer_fd, ...)`处抛出异常时，
+新FD没有进入原资源栈，资源退出后仍可读取匿名快照。macOS真实反例已确认此失败清理缺陷，
+没有mock `dup/fdopen`，不要求成功启动Git才能触发。
+
+目标是让复制出的FD从流构造前即有明确Owner；流封装的普通异常与控制异常都不能留下该FD。
+正常路径保留原RO、普通文件、完整字节、归零、同一文件对象和退出顺序。
+此缺陷发生于Popen之前，与既有Windows首失败`git_popen_returned=true`不相容，
+**不是Windows Git128根因或原生修复证据**；不更改Windows共享标志、降权、审批或业务成功门。
+
+### 13.2 总体架构、源码位置与职责
+
+```mermaid
+flowchart TD
+    A[原snapshot已写满且复读归零] --> B[os.dup复制只读FD]
+    B --> C[原Resources登记os.close]
+    C --> D[fdopen closefd=false构造流]
+    D -->|成功| E[Resources登记stream.close]
+    D -->|异常| F[原异常传播并退出Resources]
+    E --> G[原Git执行及原证明流程]
+    G --> H[关闭流再关闭复制FD]
+    F --> I[关闭复制FD及既有资源]
+```
+
+| 类／函数／字段 | 职责、契约与来源 | 生命周期 |
+|---|---|---|
+| `_Resources` | 原ExitStack子类；持有本次目录、FD和流，不新增Owner | 原Worker作用域 |
+| `_snapshot` | 原正文和OID验真、RO快照生成、归零及受管流构造 | Git启动前执行 |
+| `descriptor` | 原已完整复读且归零的RO FD | 原Resources已有归属 |
+| `stream_descriptor` | `os.dup`实际返回的同文件对象FD，不按路径重开 | 立即登记到原Resources |
+| `closefd=False` | FileIO负责流状态，FD由资源栈独占结算；避免封装异常出现无主FD | 不改变底层访问权利 |
+| `stream.close` | 在FD关闭前关闭流；调用方提前关闭流不会提前释放栈持有的FD | LIFO先流后FD |
+
+本变更只涉及[`git_material_native.py`](../../src/harnessix/delivery/git_material_native.py)的末端封装，
+不改变输入模型、数据库、manifest、材料Proof或公开错误Schema。
+[`新失败回归`](../../tests/product_config/test_git_material_stream_ownership.py)使用原材料夹具和真实基础解释器，
+与原Owner死亡屏障和完整Git输入测试分工，不代替后两者。
+
+### 13.3 正常与失败流程、时序与数据流
+
+```mermaid
+sequenceDiagram
+    participant W as 原Worker
+    participant S as snapshot
+    participant R as 原Resources
+    participant F as FileIO
+    W->>S: 原材料验真并取得RO FD
+    S->>S: dup并登记FD关闭回调
+    S->>F: fdopen closefd=false
+    alt 封装成功
+        F-->>S: stream
+        S->>R: 登记stream.close
+        S-->>W: 原完整输入流
+        W->>R: 原作用域退出
+        R->>F: stream.close
+        R->>S: os.close复制FD
+    else 审计或控制异常
+        F-->>W: 原异常传播
+        W->>R: 原作用域退出
+        R->>S: os.close已登记FD
+    end
+```
+
+```mermaid
+flowchart LR
+    B[原正文及完整摘要] --> R[已复读RO快照FD]
+    R --> D[同文件对象dup FD]
+    D --> F[不拥有FD的只读FileIO]
+    F --> G[原Git标准输入]
+    O[原Resources] -. 独占FD关闭归属 .-> D
+    O -. 流先于FD结算 .-> F
+```
+
+正文不进入审计结果、日志或公开报告；只是原匿名／DELETE_ON_CLOSE快照的同对象引用，
+不新增副本文件或耐久存储。共享文件位置仍由原构造前归零保证，没有独立offset或新PIPE。
+
+### 13.4 核心逻辑、失败语义与恢复边界
+
+```text
+原完整RO快照已验真并归零
+复制原descriptor为stream_descriptor
+立即登记resources.callback(os.close, stream_descriptor)
+构造fdopen(stream_descriptor, rb, buffering=0, closefd=false)
+登记resources.callback(stream.close)
+返回原用途输入流
+封装抛错时：原异常传播，原作用域关闭已登记的FD
+正常退出时：先关闭流，再关闭FD，再结算更早登记的原资源
+```
+
+采用`closefd=False`而不是失败后盲目再close：流与FD的关闭责任清晰，
+不依赖FileIO在不同失败点是否已接管或关闭FD，也不增加双重关闭或忽略EBADF的补丁。
+原作用域提前关闭流后，复制FD继续由资源栈持有直至作用域退出；该流是内部借用对象，
+不构成新的公开FD转交契约。取消、KeyboardInterrupt与普通异常复用同一LIFO清理，
+不新增线程、重试或持久恢复。进程硬退出仍依赖OS关闭句柄和原快照去名语义，
+不能用本次finally路径替代原真实死亡屏障。
+
+### 13.5 认证实现、固定输入、兼容与部署
+
+native源码属于原安装实现摘要，新Plan必须按实际新字节重新规划并批准；不继承旧批准。
+Windows固定输入名单保持十八件，仅更新native源码一行的完整LF／CRLF大小和SHA，
+合同读器及整体身份回归同步绑定新合同字节。其他十七件、PE/PDB、13hook、两selector、
+20/45/240/300秒期限、原branch/proof/SDK门和旧失败产物均不改。
+只改变安装包内部实现，无数据迁移或新配置；离线通过不宣告Windows现场或1.0通过。
+
+### 13.6 完整验证矩阵与未完成边界
+
+| 场景 | 验证要求 |
+|---|---|
+| 真实封装审计拒绝 | 不mock fdopen/dup，原异常保留，退出后复制FD为EBADF |
+| 真实控制异常 | KeyboardInterrupt同样结算，不能被关闭异常覆盖 |
+| 连续拒绝 | 每次失败均无存活复制FD和命名快照，不能靠子进程最终退出掩盖泄漏 |
+| 正常实际RO流 | 起始offset0、完整二进制字节、拒绝写入、原作用域退出后FD关闭 |
+| 原Owner死亡与材料写入 | 原取消／超时／强杀、8MiB／三类型／两格式及独立回读继续回归 |
+| Windows固定输入与有限门 | 新十八件完整身份可验，旧门不放宽，历史原生FAIL保持 |
+
+RED、修复后结果、精确来源和独立复核须分阶段保存。真实Windows流故障和原两SDK
+成功门仍需现场证据；完整Git业务交付、Backup v2、R3真实质量、Beta与R1～R6均继续开放。

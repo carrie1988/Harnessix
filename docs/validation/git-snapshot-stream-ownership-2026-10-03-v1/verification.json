@@ -1,0 +1,146 @@
+{
+  "schema": "harnessix.git-snapshot-stream-ownership-verification/v1",
+  "source_baseline": "cf35055668f9529c9a677e5226a98bbd40c4cefd",
+  "source_members": [
+    {
+      "path": "src/harnessix/delivery/git_material_native.py",
+      "bytes": 17387,
+      "sha256": "e095d5582dcd7795937d9f1f86c003962b1bead230661a02261ea6aeedfed2df"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.json",
+      "bytes": 8291,
+      "sha256": "1f6e626e7469cea4e31268a8357a7e39847df33b632250f2f978d10a80d96463"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.py",
+      "bytes": 3937,
+      "sha256": "af5438ca47b16f77a0109ef9723e3804738bc2fcf2ccd5e5e78ebba51b3459f5"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_failure_projection.py",
+      "bytes": 23699,
+      "sha256": "9aad4cda930c3dec044f7267f648e93554326ffbeb6daca7cb997c0b180be9d6"
+    },
+    {
+      "path": "tests/product_config/test_git_material_stream_ownership.py",
+      "bytes": 7716,
+      "sha256": "3df31f6535031eacc05074185191236cc5a01638f9d117682041b216a18bc512"
+    }
+  ],
+  "red_initial": {
+    "passed": 2,
+    "failed": 2,
+    "source_sha256": "e92ec1751d945c85564bf65f93b74e20e7462b8be56cbc7ef7760cf3fc2166e9",
+    "test_sha256": "62da12f5f6e33ee40884ec4dedb3acd6a7543a59def20673af61e6321f986277",
+    "fd_growth_per_six_failures": 6
+  },
+  "red_final": {
+    "passed": 0,
+    "failed": 4,
+    "source_sha256": "e92ec1751d945c85564bf65f93b74e20e7462b8be56cbc7ef7760cf3fc2166e9",
+    "test_sha256": "3df31f6535031eacc05074185191236cc5a01638f9d117682041b216a18bc512"
+  },
+  "green_unit": {
+    "passed": 4,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "source_sha256": "e095d5582dcd7795937d9f1f86c003962b1bead230661a02261ea6aeedfed2df",
+    "test_sha256": "3df31f6535031eacc05074185191236cc5a01638f9d117682041b216a18bc512",
+    "fd_growth_per_six_failures": 0,
+    "scope": "unit synthetic snapshot; not Owner/SDK/Windows proof"
+  },
+  "affected_regression": {
+    "returncode": 0,
+    "elapsed_seconds": 88.687,
+    "tests": 1264,
+    "passed": 1260,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 4,
+    "test_files": 18,
+    "input_members": 468,
+    "inputs_unchanged": true,
+    "selectors": [
+      "tests/delivery/test_git_material_cas.py",
+      "tests/delivery/test_git_material_failure.py",
+      "tests/delivery/test_git_material_failure_cleanup.py",
+      "tests/delivery/test_git_material_trace2_contracts.py",
+      "tests/delivery/test_git_material_trace2_static_errors.py",
+      "tests/governance/test_windows_git_native_branch_observation.py",
+      "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+      "tests/governance/test_windows_git_native_execution_v3.py",
+      "tests/governance/test_windows_git_native_failure_projection.py",
+      "tests/governance/test_windows_git_native_process_arming.py",
+      "tests/governance/test_windows_git_native_selected_layout.py",
+      "tests/product_config/test_git_material_cas_integration.py",
+      "tests/product_config/test_git_material_directory_access.py",
+      "tests/product_config/test_git_material_input.py",
+      "tests/product_config/test_git_material_native.py",
+      "tests/product_config/test_git_material_owner_exit.py",
+      "tests/product_config/test_git_material_snapshot_lifecycle.py",
+      "tests/product_config/test_git_material_trace2_binding.py"
+    ],
+    "scope": "current macOS affected regression; not full repository or native Windows"
+  },
+  "fixed_input_delta": {
+    "old_contract_sha256": "b07e5b8b9d5ba66b83892a6816b48b02d9ec9ce6ab22a00c3bd46ef20dfcf544",
+    "new_contract_sha256": "1f6e626e7469cea4e31268a8357a7e39847df33b632250f2f978d10a80d96463",
+    "old_source_row": {
+      "path": "src/harnessix/delivery/git_material_native.py",
+      "bytes": 17189,
+      "sha256": "e92ec1751d945c85564bf65f93b74e20e7462b8be56cbc7ef7760cf3fc2166e9",
+      "crlf_bytes": 17621,
+      "crlf_sha256": "6bd0057711c13a424d0b24ad36347ea7115c896675e585d668af6b14ef3cfa69"
+    },
+    "new_source_row": {
+      "path": "src/harnessix/delivery/git_material_native.py",
+      "bytes": 17387,
+      "sha256": "e095d5582dcd7795937d9f1f86c003962b1bead230661a02261ea6aeedfed2df",
+      "crlf_bytes": 17822,
+      "crlf_sha256": "f11d8c2ab30856f8ee06a8ced1250f7d3e31a3b51461e49cf5f07322911caa99"
+    },
+    "source_inputs_count": 18,
+    "other_source_rows_unchanged": true,
+    "selectors_budgets_pe_pdb_and_other_fields_unchanged": true
+  },
+  "native_execution": false,
+  "git128_root_cause_confirmed": false,
+  "model_requests": 0,
+  "ci_dispatches": 0,
+  "r1_r6_closed": false,
+  "independent_review": {
+    "result": "NO_FINDINGS_LIMITED",
+    "severity_counts": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0
+    },
+    "native": {
+      "bytes": 17387,
+      "sha256": "e095d5582dcd7795937d9f1f86c003962b1bead230661a02261ea6aeedfed2df"
+    },
+    "ownership_test": {
+      "bytes": 7716,
+      "sha256": "3df31f6535031eacc05074185191236cc5a01638f9d117682041b216a18bc512"
+    },
+    "source_stable": true,
+    "formal_unit_passed": 4,
+    "baseline_expected_assertion_failures": 2,
+    "initial_fixture_errors_retained": 4,
+    "scope": "limited ownership and fixed-input review; not Windows or product acceptance"
+  },
+  "full_candidate_unit": {
+    "passed": 4,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "source_sha256": "e095d5582dcd7795937d9f1f86c003962b1bead230661a02261ea6aeedfed2df",
+    "test_sha256": "3df31f6535031eacc05074185191236cc5a01638f9d117682041b216a18bc512",
+    "native_and_test_equal_primary": true,
+    "scope": "Full candidate synthetic snapshot unit only; not product Git acceptance",
+    "windows_observer_inputs": 16,
+    "observer_contract_copied": false
+  }
+}

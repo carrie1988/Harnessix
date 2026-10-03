@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 from urllib.parse import urlsplit
 
-CONTRACT_SHA256 = "b07e5b8b9d5ba66b83892a6816b48b02d9ec9ce6ab22a00c3bd46ef20dfcf544"
+CONTRACT_SHA256 = "1f6e626e7469cea4e31268a8357a7e39847df33b632250f2f978d10a80d96463"
 CONTRACT_PATH = Path(__file__).with_name("contract.json")
 
 

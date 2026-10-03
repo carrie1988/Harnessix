@@ -397,7 +397,10 @@ def _snapshot(
         _fail("git_material_body_changed")
     os.lseek(descriptor, 0, os.SEEK_SET)
     # 只复制已降为 RO 的 FD；Windows 同一 FILE_OBJECT 保留 DELETE_ON_CLOSE。
-    stream = os.fdopen(os.dup(descriptor), "rb", buffering=0)
+    stream_descriptor = os.dup(descriptor)
+    # 流封装失败也由原资源栈结算FD；流本身不接管或重复关闭FD。
+    resources.callback(os.close, stream_descriptor)
+    stream = os.fdopen(stream_descriptor, "rb", buffering=0, closefd=False)
     resources.callback(stream.close)
     return stream
 
