@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 9a0d84aaba6243539abd63e2de69b482350486a2
 owners: [core]
 modules: [delivery, product_config, processes, governance]
@@ -36,6 +36,8 @@ profile MATCHED、返回一致MATCHED_128，已知格式HASH_OBJECT_ADD_AGGREGAT
 
 result.json完整SHA256为0a37c29cadb688c14c373102c1930f8a326b3e7d985cc02cb8bfa9b82aceebdf，
 与[result摘要](result-sha256.json)一致。archive恰含这两个文件；Run实际SHA、attempt、终态和两Case形状已核对。
+artifact原摘要文件使用CRLF，公开摘要文件仅显式转为LF以匹配Git文本发行表示；
+JSON值和result.json原始字节不变，原摘要完整字节在私有包保留，两个表示的长度/SHA见验证记录。
 预算保持20/45/300/240秒。公开[结构化事实](facts.json)、[证明边界](verification.json)、
 [评审范围](review-packet.json)与[清单](manifest.json)限定数据身份和覆盖范围。
 实现及四图见[完整设计](../../changes/m09-r4-windows-trace2-role-input-binding.md)，

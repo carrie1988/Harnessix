@@ -22,5 +22,14 @@
     "full Git delivery",
     "Beta",
     "commercial release"
-  ]
+  ],
+  "digest_record_representation": {
+    "public": "EXACT_LF_TRANSFORM_OF_ORIGINAL_CRLF",
+    "original_bytes": 87,
+    "original_sha256": "ecd954c33789f14fed9594a8ff2a3d148ce6346490083bebd09910d1c24c14c0",
+    "public_bytes": 86,
+    "public_sha256": "e35e109f0db74247af8032c2c949877e254ef0b00f15f71a88ba1b9dfe485e06",
+    "JSON_value_unchanged": true,
+    "result_json_original_bytes_unchanged": true
+  }
 }
