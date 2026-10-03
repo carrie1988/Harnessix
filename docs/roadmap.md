@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 168
-code_revision: f07263ce3d4ddb304b2ff054044f86f26d5267c6
+version: 169
+code_revision: daf33bf6e10c6d34ae7a9fe0d87cf74adbf234ee
 owners:
   - core
 modules:
@@ -1761,7 +1761,7 @@ R1～R6、R3费用未决与编码质量、Windows消费者、完整Git/Backup v2
 ### R4：派生事务顺序冲突与私有来源解析核验
 
 原发布器在真实私有A上发布T后，原Git干净来源和原Snapshot独立拒绝；提前创建D也无法绕过
-Checkpoint的来源保护。普通干净来源正对照证明原组件可在T仍prepared时物化D并完成独立Commit；
+Checkpoint的来源保护。普通干净来源正对照证明原组件可在T仍prepared时物化D并完成原领域确定性Commit；
 真实干净私有A则暴露旧commonDir邻接解析缺口，D登记效果保留creating，不能报ready。
 新增四项正反例并复用一项原完整Commit测试，主仓实际五项通过，442件输入零漂移；
 开发候选五项结果单列，原新增夹具错误码断言失败保留，不相加为产品验收。
@@ -1769,3 +1769,15 @@ Checkpoint的来源保护。普通干净来源正对照证明原组件可在T仍
 [正式验证](validation/git-projection-ordering-2026-10-03-v1/README.md)。
 本次不修改Bridge published前提或任何原保护，不开启默认Git；后继必须同时解决T语义和认证A明确解析，
 再完成T/Bridge/D/Checkpoint、独立Commit及Backup v2。Windows、真实R3、Beta与R1～R6仍开放。
+
+### R1/R4：原首失败九字段到有限结果的发布接合
+
+原Worker/probe已生成并解码的post_worker_failure现可进入显式v2诊断Sibling；复用原九字段
+validator，保留首失败与最终handler、False/None、原status及返回码关联，严格v1读取不补造事实。
+原18输入只更新末行四叶及parser单摘要；审查后原整体guard仅接合两件合同的完整身份，
+其余字节、所有断言、原branch/proof/SDK、Root、13 hooks与期限不改。
+九件相关离线文件实际1034项通过，462输入零漂移；初验旧批准锚点FAIL保留，不累计旧成绩。
+完整设计和验证见[首失败接合设计](changes/m09-r4-windows-trace2-role-input-binding.md#13-首失败九字段有限发布与固定输入接合)及
+[正式验证](validation/windows-first-failure-projection-2026-10-03-v1/README.md)。
+未发起新Windows运行；既有Git128/Worker2仍未解决，诊断不升级业务认证或SDK成功。
+完整Git/Backup v2、真实R3、消费者Windows、独立Beta及商用R1～R6保持开放，未新增模型请求。

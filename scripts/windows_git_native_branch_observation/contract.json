@@ -188,10 +188,10 @@
     },
     {
       "path": "scripts/windows_git_native_branch_observation/failure_projection.py",
-      "bytes": 8012,
-      "sha256": "7e2a262473182ad265c9fae77226058914fa9e1f511cc9e22c80a54a557e857e",
-      "crlf_bytes": 8222,
-      "crlf_sha256": "f131235cb6f16dd52b8de390569aaaea2a2ba719fd3c7a4c3104cf78c3a0d85c"
+      "bytes": 11528,
+      "sha256": "2f720528c0009ebef3b82cbbc48adfc668d8bebbdc3ff396b638c4339b0136ed",
+      "crlf_bytes": 11828,
+      "crlf_sha256": "893255b46a4272ff7c532a0dcda48062d64c43e520d4f3e505ac2775372f3f24"
     }
   ],
   "historical_run": {

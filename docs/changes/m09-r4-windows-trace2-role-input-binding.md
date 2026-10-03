@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: 9b9e52fdaab74567b5ad7cd5614801f1936689bc
+version: 6
+code_revision: f07263ce3d4ddb304b2ff054044f86f26d5267c6
 owners: [core]
 modules: [delivery, product_config, processes, governance]
 related_adrs:
@@ -14,6 +14,7 @@ related_tests:
   - tests/governance/test_git_minimum_commit_probe.py
   - tests/governance/test_windows_git_native_branch_observation.py
   - tests/governance/test_windows_git_native_failure_projection.py
+  - tests/governance/test_windows_git_first_failure_projection.py
   - tests/governance/test_windows_git_native_branch_preflight_v2.py
   - tests/governance/test_windows_git_trace2_input_binding.py
 supersedes: []
@@ -357,3 +358,250 @@ validator检查，新增真实退化反例先1失败；仅恢复原测试位置�
 入口/分派/仓库阶段见证存在，CDB arm/branch均0。目录覆盖不足不等于本实际故障的唯一或已证实原因。
 原件和摘要见[固定原生验证](../validation/windows-trace2-static-native-2026-10-03-v1/README.md)。
 后继从实际Windows受控对象操作和原进程见证定位，不猜测errno、不扩大UNKNOWN为成功。
+
+## 13. 首失败九字段有限发布与固定输入接合
+
+### 13.1 增量身份、需求与非目标
+
+本节实现基线为`f07263ce3d4ddb304b2ff054044f86f26d5267c6`，该值表示工作树增量的
+源码基线，不表示包含本节实现的已提交、已发布或已执行候选。第1至12节的历史成绩、
+SHA、失败运行及发行身份保持原阶段事实，不能用本节覆盖旧结果。
+
+原Worker已在资源清理前冻结首失败，原探针在同一write操作内完成原receipt、raw、
+EOF、SHA及protection守卫后解码。`Probe.render`已携带封闭九字段`post_worker_failure`，
+但原失败Sibling只发布signals、worker status和Trace2，导致首失败边界与最终handler差异丢失。
+本增量仅补齐既有发布接缝，不改变生成失败记录或底层业务执行的模块。
+
+不修改Windows句柄、Git输入、对象读取/写入、Worker短路顺序、Trace2 formats、13 hooks、
+Owner、Root、proof、SDK或branch gate。不新增采集器、异常正文、网络端点、配置、数据库、
+恢复账本、CI任务或自动重跑；Run37103867851已丢弃的字段不能恢复，旧Git128/Worker2仍失败。
+
+### 13.2 模块边界、总体架构与调用链
+
+| 模块 | 原责任与本节增量 | 保持不变的边界 |
+| --- | --- | --- |
+| [`git_material_failure.py`](../../src/harnessix/delivery/git_material_failure.py) | 原清理前冻结、编码、解码及严格`_valid`；发布器直接复用该校验器 | 生产源码、九键、stage/code白名单及数值/一致性约束不改 |
+| [`git_minimum_commit_probe.py`](../../tests/product_config/git_minimum_commit_probe.py) | 原`_post_once → Operation.data → Probe.render → _publish` | 原raw守卫、生命周期、EOF/SHA、限制及发布次数不改 |
+| [`failure_projection.py`](../../scripts/windows_git_native_branch_observation/failure_projection.py) | 同帧字段投影、显式v2、关联检查、严格v1读取与拷贝隔离 | 不读实际raw，不产生首失败，不授予认证或执行权限 |
+| [`run_cases.py`](../../scripts/windows_git_native_branch_observation/run_cases.py) | 原`CaseSink → failure_report → cases.json`，调用接口不变 | 原两例、帧预算、重复键/EOF异常及pytest入口不改 |
+| [`observe.py`](../../scripts/windows_git_native_branch_observation/observe.py) | 原`isolate_failure_report → result`消费新Sibling | 原九字段案例、branch/proof/SDK及异常路径不改 |
+| [`contract.json`](../../scripts/windows_git_native_branch_observation/contract.json) / [`contract.py`](../../scripts/windows_git_native_branch_observation/contract.py) | 第18件完整源码的四叶身份与唯一metadata摘要接合 | 前17件、原基线、PE/PDB、guards、selectors及预算不改 |
+
+```mermaid
+flowchart TB
+    W[原Worker冻结首失败] --> D[原probe守卫后解码]
+    D --> P[同write操作的Probe.render]
+    P --> C[原CaseSink与原九字段案例]
+    P --> F[v2首失败严格有限投影]
+    F --> R[failure_report与cases.json]
+    R --> I[严格v1或v2读取与同案例关联]
+    I --> O[原result中的诊断Sibling]
+    C --> G[原branch/proof/SDK门]
+    O -. 不升级 .-> G
+```
+
+**图示说明与源码映射：** Worker 和 probe 是原首失败来源，CaseSink 仍先执行原
+`project_case`，再由 `project_failure_case` 投影同一个内存帧。`failure_report` 只保存有限
+Sibling，`isolate_failure_report` 再核验版本和原 A/B 案例；诊断结果不改变原成功门。
+
+```mermaid
+sequenceDiagram
+    participant Probe as 原受守卫探针
+    participant Sink as 原CaseSink
+    participant F as 有限发布器
+    participant O as 原结果观察器
+    Probe->>Sink: 同write原帧及已解码首失败
+    Sink->>Sink: 原project_case与原异常检查
+    Sink->>F: project_failure_case同一帧
+    F->>F: 原九字段validator与同status/返回码核对
+    F-->>Sink: 显式v2有限行或原严格v1行
+    Sink->>F: failure_report 两例
+    F-->>Sink: 精确版本Sibling
+    Sink->>O: 原cases.json
+    O->>F: isolate_failure_report
+    F->>F: 再核精确形状及同A/B关联
+    F-->>O: 原legacy报告和有限Sibling
+    O->>O: 原branch/proof/SDK判据保持
+```
+
+**图示说明与源码映射：** 时序对应原 `Probe._publish`、`CaseSink`、
+`project_failure_case/failure_report/isolate_failure_report` 与 `observation_result`。
+这是源码调用链及离线接缝验证范围，不是新的 Windows 现场运行证明。九字段首失败早已由
+原探针解码，发布器不重读 raw、补做短路谓词或签发新的执行事实。
+
+```mermaid
+sequenceDiagram
+    participant Probe as 原探针守卫
+    participant Sink as 原CaseSink
+    participant F as 有限发布器
+    participant O as 原结果观察器
+    alt 原receipt/raw/EOF/SHA失败
+        Probe-->>Sink: 原拒绝或异常
+        Note over Probe,F: 不以新Sibling绕过原输入守卫
+    else 原案例可消费但新首失败损坏或关联不一致
+        Sink->>F: 同帧首失败候选
+        F-->>Sink: 仅新字段REJECTED与None
+        Note over Sink,F: 原三个有限字段仍独立验证
+    end
+    O->>F: 持久Sibling伪造版本 形状或同案例关联
+    F-->>O: 整个Sibling拒绝 原legacy路径保留
+    O->>O: 原失败及业务unknown不得升级
+```
+
+**图示说明与源码映射：** 原输入失败仍由未修改的 probe 和 `project_case` 处理。
+源投影的局部拒绝对应 `project_failure_case`；读侧伪造拒绝对应 `isolate_failure_report`。
+`REJECTED/None` 不等于首失败未发生，诊断未知也不能变成 Root、proof 或 SDK 成功。
+
+```mermaid
+flowchart TB
+    Raw[原receipt/raw/EOF/SHA守卫] --> Op[同操作原有限首失败]
+    Op --> Frame[原Probe.render内存帧]
+    Frame --> Legacy[原九字段案例及成功判据]
+    Frame --> Finite[原validator与固定键重建]
+    Finite --> Sibling[显式v2 或精确冻结v1]
+    Sibling --> File[原cases.json]
+    Legacy --> File
+    File --> Reader[版本 类型及同案例再核验]
+    Reader --> Result[仅有限诊断result]
+    Meta[原18输入精确字节合同] -. 约束发布器源码 .-> Finite
+    Reader -. 不新增业务认证 .-> Legacy
+```
+
+**图示说明与源码映射：** 业务正文停留在原守卫路径，不随新增字段流入报告。
+`contract.source_checks` 固定发布器完整字节，不能将摘要相同等同原 raw 的执行认证。
+没有新增数据库或持久权威；唯一耐久输出仍是原 `cases.json/result`，恢复和重放行为不变。
+
+### 13.3 外层合同与版本隔离
+
+外层v1仍为`harnessix.git-native-failure-observation/v1`，`SCHEMA`与`FAILURE_FIELDS`
+继续指向原三个字段。新增`SCHEMA_V2`为`harnessix.git-native-failure-observation/v2`，
+`FAILURE_FIELDS_V2`只追加`post_worker_failure`。外层仍只有
+`schema/assurance/case_shape_state/cases`四键，assurance始终为
+`UNAUTHENTICATED_DIAGNOSTIC_ONLY`。
+
+v2每行恰有`case/field_states`及四个固定载荷键；`field_states`恰有对应四键，
+每键只允许`FINITE/NOT_AVAILABLE/REJECTED`。后两态载荷只能为`None`。
+内层Worker schema仍为原`harnessix.git-material-worker-failure/v1`，不是Worker v2。
+
+`project_failure_case(line, *, schema=None)`支持显式选择v1/v2；其他版本或错类型抛出
+固定`failure_schema_invalid`。未改调用接口的原CaseSink自动选择规则如下：
+
+1. 源操作缺少`post_worker_failure`，或该值恰为单键`git_returncode`字典且值为原合法
+   整数/`None`：保留旧v1表示，不把单返回码升级为合法九字段。
+2. 其他候选一律进入v2，包括完整帧、空字典、错类型、额外键或损坏字段；损坏不回退为
+   可用首失败。原CaseSink仍先调用原`project_case`，其原有拒绝不会被新Sibling吞掉。
+3. `failure_report`两行均旧形状时输出v1；任一行为v2时，仅将已通过精确v1行校验的
+   另一行补为v2的`post_worker_failure=NOT_AVAILABLE/None`。这是新报告构建，不是旧数据恢复。
+4. `isolate_failure_report`严格按声明版本校验精确形状，读取时不补键、不升级v1、不推断
+   首失败。只改版本标签或混用行形状必须拒绝；合法冻结v1返回值与基线读取器一致。
+
+### 13.4 九字段、实际类型与原约束复用
+
+| 内层字段 | 实际类型及来源 | 语义 |
+| --- | --- | --- |
+| `schema` | 原生`str`，固定Worker v1 | 内层有限帧身份 |
+| `stage` | 原生`str`，原`STAGES`集合 | 原冻结时阶段，不从Git128猜测 |
+| `origin` | 原生`str`，`pre_cleanup/handler` | 首次清理前冻结或最终handler观察 |
+| `error_code` | 原生`str`，原固定有限码表 | 首失败类别；`unclassified`仍是未知 |
+| `handler_error_code` | 原生`str`，同一原码表 | 最终捕获类别，可不同于首失败 |
+| `git_popen_returned` | 原生`bool` | 原Popen是否返回，不证明外部效果 |
+| `git_returncode` | 原生`int`或`None`，`[-2^31, 2^32)` | 原wait结果；不把bool当int |
+| `git_stdout_complete` | 原生`bool`或`None` | 原短路谓词是否实际求值及其结果 |
+| `git_stdout_expected` | 原生`bool`或`None` | 原长度完成后才可能执行的内容谓词 |
+
+发布器直接导入`git_material_failure._valid`，不重建白名单或宽松字典。额外/缺失键、
+标量子类、bool-as-int、非白名单码、坏stage/schema/origin及越界数值均由同一原校验器拒绝。
+`origin=handler`必须首失败码与handler码相等；`pre_cleanup`允许清理二次错误使handler码不同。
+Popen未返回时，其余Git观察必须为`None`；complete求值要求已有返回码；expected求值要求
+complete为`True`且返回码为0。原`False`和`None`均保留，不补做谓词或归一化。
+
+### 13.5 同操作关联、失败关闭与拷贝
+
+新首失败为`FINITE`还要求同一行status为`FINITE/valid`，且内层`git_returncode`与原
+九字段案例的`git_return`实际类型和值全等。原案例必须保留已观察的完整raw验真状态且
+`diagnostic_truncated=False`；不要求失败探针的`diagnostic_incomplete=False`。
+源投影复用同内存帧的原`project_case`，读取侧按同A/B行再次检查，防止持久化Sibling与原
+status/returncode不一致。没有重读现场raw或新增认证。
+
+源字段缺席为`NOT_AVAILABLE/None`；损坏或关联失败为`REJECTED/None`，只丢新首失败载荷，
+原三个有限字段分别保留其合法值或原拒绝态。读取侧遇到伪造关联拒绝整个Sibling，原legacy
+报告、异常类型、案例和完整门仍沿旧路径消费。`not_observed/invalid/valid`不是认证状态。
+
+所有通过校验的九字段都是不可变原生标量，重建字典即可隔离全部可变层；原signals、
+Trace2列表、field_states、rows在构建和读取两侧均重建。返回值不能因输入后续修改而变化。
+首失败为`git_validate/pre_cleanup/git_material_git_failed`而handler为`value_error`时，
+仅表示原首次类别与后续捕获类别不同，不证明Git内部caller、errno或Windows根因。
+
+核心伪代码：
+
+```text
+原CaseSink先执行project_case，同帧再投影Sibling：
+    按严格旧表示或显式版本选择v1/v2固定字段
+    各字段精确验证，首失败直接调用原Worker _valid
+    若首失败候选合法：
+        同status=valid、原git_return实际类型/值、原raw完整事实必须一致
+        否则仅首失败REJECTED/None
+    按固定键重建，不保留原对象别名
+构建报告：
+    任一v2则只提升严格合法旧行为NOT_AVAILABLE，保留A/B形状
+读取报告：
+    声明版本、精确行形状、状态和原案例关联必须全部成立
+    否则拒绝Sibling，不修改legacy或原成功门
+```
+
+### 13.6 精确发行输入、部署与恢复边界
+
+以`f07263c`原metadata作类型敏感比较，仅四个JSON Pointer变化：
+`/source_inputs/17/{bytes,sha256,crlf_bytes,crlf_sha256}`。
+第18行仍是原发布器路径；`base_revision`仍为`5306c7134c1301dd10bee682be5ce1e61e120c46`，
+前17行完整记录、18总数、PE/PDB、分支guards、selectors、预算、historical_run及其他字段不变。
+`contract.py`仅替换唯一`CONTRACT_SHA256`字面量，其余字节与`f07263c`全等。
+
+| 精确身份 | 长度 | SHA256 |
+| --- | ---: | --- |
+| `failure_projection.py`完整LF | 11528 | `2f720528c0009ebef3b82cbbc48adfc668d8bebbdc3ff396b638c4339b0136ed` |
+| 同源码唯一完整LF→CRLF表示 | 11828 | `893255b46a4272ff7c532a0dcda48062d64c43e520d4f3e505ac2775372f3f24` |
+| `contract.json` | 8291 | `b07e5b8b9d5ba66b83892a6816b48b02d9ec9ce6ab22a00c3bd46ef20dfcf544` |
+| `contract.py` | 3937 | `ec01176f0124d43272d172dab047b71634d8c7a1b5a51ee5a6471a10b4148f8d` |
+
+旧metadata必须拒绝新发布器字节；当前18输入与历史前16关系的原断言继续成立，不放宽
+每件来源的新未知字节拒绝及精确CRLF接受条件。原
+`test_legacy_case_fields_and_full_gate_sources_are_unchanged`中contract.py/json的旧批准整体
+摘要在初验中保持不变，故产生真实FAIL并保留。实现和精确四叶差分审查后，只更新这两件
+合同的完整长度/SHA批准身份；旧测试与基线逐字比较，除这三个字面量替换外完全一致。
+原五件历史字节、原四件guard结构、其他两件probe/Trace2摘要和全部断言均保留。
+
+本节不执行CI或现场Windows部署。后续候选仍须固定包含本增量的完整revision，执行既有
+授权、完整来源及原成功标准，不能使用旧合同或仅语义相同的输入。取消、期限、清理、原
+Worker2与业务unknown语义不改；无自动恢复、重放或旧验证目录重写。
+
+### 13.7 离线验证方案与未证明项
+
+新治理测试使用原有限帧编码/解码及原清理前冻结，覆盖原guarded decoder、同操作
+`Probe._publish → CaseSink → cases.json → observation_result`接缝，九字段逐键负例、
+额外msg/path/argv/PID、实际类型/数值/有限码/一致性、清理二次错误、False/None、深拷贝、
+原status/returncode/raw不一致失败关闭、冻结v1读取、v1/v2隔离及末行四叶固定身份。
+合成回执和空合成分支流只验证源码接缝，不是现场Owner/MAC、Git或CDB见证。
+
+相关旧测试原样复用，有限选择不重复旧完整结果大矩阵；硬编码guard真实FAIL必须与通过项
+一起披露，不以跳过该guard形成“总通过”。执行使用指定Python、`PYTHONPATH=src:.`、
+`PYTHONDONTWRITEBYTECODE=1`、pytest umask022和全新`/private/tmp` basetemp，禁用cacheprovider
+及外部插件自动加载；只对变更Python做Ruff/格式检查。交付证据保存实际命令、源SHA、
+各阶段退出码、精确合同差分和未证明项，私有目录0700、文件0600。
+
+离线通过不证明底层Git/Worker修复、实际输入读取、独立分支、对象持久化、Root、SDK、
+Windows验收或商用门禁；所有观察保持`UNAUTHENTICATED_DIAGNOSTIC_ONLY`。
+
+本增量有限离线执行结果：当前固定输入及历史关系检查86项通过；新首失败与原有限发布
+集合246项通过、1项真实FAIL，140项既有完整结果大矩阵未重复；Worker清理/失败及原probe
+守卫定向回归76项通过。发布集合包含新文件全部90项；这些集合存在3项固定输入测试交集，
+不得直接相加称为唯一用例总数。唯一FAIL为上述原整体批准guard，其他旧断言未改。
+三件变更Python的Ruff check及format check通过，限定差分检查通过。全部成绩是有限选择器
+的离线结果，不是全仓、独立审查或最终新候选整合总通过。
+
+上述初验及旧批准锚点FAIL仍保留。后继主线程审查精确字节与版本/关联边界后，九件原相关
+测试文件实际1034项通过、0失败/错误/跳过，2.860秒；462件执行输入前后零漂移。
+1034包含新文件90项及原八件944项，不与初验集合相加。新增四幅图已真实渲染并视检；
+结果、源SHA、原件摘要和未证明项见
+[正式验证](../validation/windows-first-failure-projection-2026-10-03-v1/README.md)。
+该整合仍为本机离线合同验收；未运行新的Windows现场或关闭原Git128/Worker2故障。

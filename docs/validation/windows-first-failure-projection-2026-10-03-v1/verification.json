@@ -1,0 +1,74 @@
+{
+  "assurance": "UNAUTHENTICATED_DIAGNOSTIC_ONLY",
+  "credential_reads": 0,
+  "diagram_count": 4,
+  "implementation_base_revision": "f07263ce3d4ddb304b2ff054044f86f26d5267c6",
+  "initial_failure_retained": "old approved contract identity mismatch; implementation worker did not change original test; final exact identity update reviewed and integrated",
+  "inner_worker_schema": "harnessix.git-material-worker-failure/v1",
+  "input_count": 462,
+  "input_drift_count": 0,
+  "integration_base_revision": "daf33bf6e10c6d34ae7a9fe0d87cf74adbf234ee",
+  "model_requests": 0,
+  "new_windows_run": false,
+  "not_verified": [
+    "actual Windows first-failure stage/origin/error record",
+    "underlying Git/Worker cause or fix",
+    "independent native branch or input proof",
+    "Windows SDK success",
+    "full product Git delivery and Backup v2",
+    "R3 coding quality",
+    "R1-R6 release"
+  ],
+  "outer_versions": [
+    "harnessix.git-native-failure-observation/v1",
+    "harnessix.git-native-failure-observation/v2"
+  ],
+  "raw_artifacts_sha256": {
+    "inputs-after.json": "4789de16b20526b3898d5ab84f3d5fd632c8dd763bedb885f42e39b45f362d5e",
+    "inputs-before.json": "4789de16b20526b3898d5ab84f3d5fd632c8dd763bedb885f42e39b45f362d5e",
+    "pytest.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "pytest.log": "c1aed1d34a5c3be794a69aba55cc6e9f7219772978dccb35c8e6c96edac4bcc7",
+    "pytest.xml": "ea16afb41c63e2eb57dbd76028877c201e25f58f888aa31e18b6daf4505af9de"
+  },
+  "release_gates_closed": [],
+  "root_sdk_proof_branch_gates_unchanged": true,
+  "seconds": 2.86,
+  "selection": [
+    "tests/delivery/test_git_material_trace2_contracts.py",
+    "tests/delivery/test_git_material_trace2_static_errors.py",
+    "tests/governance/test_git_minimum_commit_probe.py",
+    "tests/governance/test_git_trace2_projection.py",
+    "tests/governance/test_windows_git_native_branch_observation.py",
+    "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+    "tests/governance/test_windows_git_native_failure_projection.py",
+    "tests/governance/test_windows_git_trace2_input_binding.py",
+    "tests/governance/test_windows_git_first_failure_projection.py"
+  ],
+  "source_identity_contract": {
+    "approved_guard_change": "only two reviewed contract identities; exact original test byte replacement checked",
+    "changed_member": "scripts/windows_git_native_branch_observation/failure_projection.py",
+    "metadata_changed_json_pointers": [
+      "/source_inputs/17/bytes",
+      "/source_inputs/17/sha256",
+      "/source_inputs/17/crlf_bytes",
+      "/source_inputs/17/crlf_sha256"
+    ],
+    "parser_change": "one CONTRACT_SHA256 literal only",
+    "source_inputs": 18,
+    "unchanged_inputs": 17
+  },
+  "source_sha256": {
+    "scripts/windows_git_native_branch_observation/contract.json": "b07e5b8b9d5ba66b83892a6816b48b02d9ec9ce6ab22a00c3bd46ef20dfcf544",
+    "scripts/windows_git_native_branch_observation/contract.py": "ec01176f0124d43272d172dab047b71634d8c7a1b5a51ee5a6471a10b4148f8d",
+    "scripts/windows_git_native_branch_observation/failure_projection.py": "2f720528c0009ebef3b82cbbc48adfc668d8bebbdc3ff396b638c4339b0136ed",
+    "tests/governance/test_windows_git_first_failure_projection.py": "2fb1495874a1c2c96d7f0219b6d4734ba14d4aee872d0be5c258c3c4dd3f4de5",
+    "tests/governance/test_windows_git_native_failure_projection.py": "d10c2e759cedc33a7e0a1957dfb840c092031f5792d465076fa66a5e90fdea1f"
+  },
+  "spec_version": "harnessix.windows-first-failure-publication-verification/v1",
+  "tests": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 1034
+  }
+}

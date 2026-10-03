@@ -1,16 +1,20 @@
-"""只接收原v5已发布的三个有限字段；与原九字段案例和完整门隔离。"""
+"""原三个有限字段保留v1；首失败九字段另用v2，与原案例和完整门隔离。"""
 
 from __future__ import annotations
 
 import json
 
+from harnessix.delivery.git_material_failure import _valid as worker_failure_valid
 from scripts.windows_git_native_branch_observation.contract import unique_object
 from scripts.windows_git_native_branch_observation.projection import (
     PROBE_PREFIX,
     case_observation_valid,
+    integer,
+    project_case,
 )
 
 SCHEMA = "harnessix.git-native-failure-observation/v1"
+SCHEMA_V2 = "harnessix.git-native-failure-observation/v2"
 ASSURANCE = "UNAUTHENTICATED_DIAGNOSTIC_ONLY"
 SIGNAL_FIELDS = (
     "worker_failure_literal",
@@ -48,6 +52,7 @@ FORMAT_IDS = tuple(
     )
 )
 FAILURE_FIELDS = ("post_stderr_signals", "post_worker_failure_status", "post_git_trace2")
+FAILURE_FIELDS_V2 = (*FAILURE_FIELDS, "post_worker_failure")
 LEGACY_REPORT_FIELDS = frozenset({"pytest_exit", "cases", "invalid"})
 SIBLING_KEY = "unverified_failure_observation"
 
@@ -88,6 +93,8 @@ def _field_valid(key: str, value: object) -> bool:
         return _signals_valid(value)
     if key == "post_git_trace2":
         return _trace_valid(value)
+    if key == "post_worker_failure":
+        return worker_failure_valid(value)
     return type(value) is str and value in {"not_observed", "invalid", "valid"}
 
 
@@ -101,32 +108,81 @@ def _copy_field(key: str, value: object) -> object:
             "stage_witnesses": list(value["stage_witnesses"]),
             "error_format_ids": list(value["error_format_ids"]),
         }
+    if key == "post_worker_failure":
+        # 原校验器已保证九键全部为不可变原生标量，重建字典即可隔离全部可变层。
+        return dict(value)
     return value
 
 
-def project_failure_case(line: str) -> dict:
+def _schema_fields(schema: str) -> tuple[str, ...]:
+    if type(schema) is str and schema == SCHEMA:
+        return FAILURE_FIELDS
+    if type(schema) is str and schema == SCHEMA_V2:
+        return FAILURE_FIELDS_V2
+    raise ValueError("failure_schema_invalid")
+
+
+def _first_failure_matches(row: dict, case: dict | None = None) -> bool:
+    if row["field_states"]["post_worker_failure"] != "FINITE":
+        return True
+    if (
+        row["field_states"]["post_worker_failure_status"] != "FINITE"
+        or row["post_worker_failure_status"] != "valid"
+    ):
+        return False
+    if case is None:
+        return True
+    code = row["post_worker_failure"]["git_returncode"]
+    return (
+        type(code) is type(case["git_return"])
+        and code == case["git_return"]
+        and case["raw_validation"] == "OBSERVED_V5_VERIFIED_NOT_INDEPENDENT_MAC"
+        and case["diagnostic_truncated"] is False
+    )
+
+
+def project_failure_case(line: str, *, schema: str | None = None) -> dict:
     """调用方先完成原project_case；再次解析同一内存帧，不读取原raw。"""
     record = json.loads(line[len(PROBE_PREFIX) :], object_pairs_hook=unique_object)
     operation = next(item for item in record["operations"] if item.get("kind") == "write")
+    if schema is None:
+        candidate = operation.get("post_worker_failure")
+        legacy = "post_worker_failure" not in operation or (
+            type(candidate) is dict
+            and set(candidate) == {"git_returncode"}
+            and (
+                candidate["git_returncode"] is None
+                or integer(candidate["git_returncode"]) is not None
+            )
+        )
+        schema = SCHEMA if legacy else SCHEMA_V2
+    fields = _schema_fields(schema)
     row = {"case": record["selector"], "field_states": {}}
-    for key in FAILURE_FIELDS:
+    for key in fields:
         state = "NOT_AVAILABLE" if key not in operation else "REJECTED"
         row[key] = None
         if key in operation and _field_valid(key, operation[key]):
             state = "FINITE"
             row[key] = _copy_field(key, operation[key])
         row["field_states"][key] = state
+    if (
+        schema == SCHEMA_V2
+        and row["field_states"]["post_worker_failure"] == "FINITE"
+        and not _first_failure_matches(row, project_case(line))
+    ):
+        row["field_states"]["post_worker_failure"] = "REJECTED"
+        row["post_worker_failure"] = None
     return row
 
 
-def _row_valid(row: object) -> bool:
+def _row_valid(row: object, fields: tuple[str, ...] = FAILURE_FIELDS) -> bool:
     if (
         type(row) is not dict
-        or set(row) != {"case", "field_states", *FAILURE_FIELDS}
+        or set(row) != {"case", "field_states", *fields}
         or type(row["case"]) is not str
         or row["case"] not in {"A", "B"}
         or type(row["field_states"]) is not dict
-        or set(row["field_states"]) != set(FAILURE_FIELDS)
+        or set(row["field_states"]) != set(fields)
     ):
         return False
     return all(
@@ -135,13 +191,15 @@ def _row_valid(row: object) -> bool:
             (row["field_states"][key] == "FINITE" and _field_valid(key, row[key]))
             or (row["field_states"][key] in {"NOT_AVAILABLE", "REJECTED"} and row[key] is None)
         )
-        for key in FAILURE_FIELDS
-    )
+        for key in fields
+    ) and (fields == FAILURE_FIELDS or _first_failure_matches(row))
 
 
-def failure_observation(rows: list | None = None, state: str = "NOT_AVAILABLE") -> dict:
+def failure_observation(
+    rows: list | None = None, state: str = "NOT_AVAILABLE", *, schema: str = SCHEMA
+) -> dict:
     return {
-        "schema": SCHEMA,
+        "schema": schema,
         "assurance": ASSURANCE,
         "case_shape_state": state,
         "cases": [] if rows is None else rows,
@@ -149,21 +207,57 @@ def failure_observation(rows: list | None = None, state: str = "NOT_AVAILABLE") 
 
 
 def failure_report(rows: list) -> dict:
-    if len(rows) == 2 and all(_row_valid(row) for row in rows):
-        if [row["case"] for row in rows] == ["A", "B"]:
-            return failure_observation(rows, "FINITE_AB")
-    return failure_observation(state="EMPTY" if not rows else "REJECTED")
+    schema = (
+        SCHEMA_V2
+        if any(type(row) is dict and "post_worker_failure" in row for row in rows)
+        else SCHEMA
+    )
+    fields = _schema_fields(schema)
+    copied = []
+    for row in rows:
+        if _row_valid(row) and schema == SCHEMA_V2:
+            # 只在构建新报告时提升严格旧行；冻结v1读取不补造首失败。
+            row = {
+                **row,
+                "field_states": {**row["field_states"], "post_worker_failure": "NOT_AVAILABLE"},
+                "post_worker_failure": None,
+            }
+        if not _row_valid(row, fields):
+            return failure_observation(state="REJECTED", schema=schema)
+        copied.append(_copy_row(row, fields))
+    if len(copied) == 2 and [row["case"] for row in copied] == ["A", "B"]:
+        return failure_observation(copied, "FINITE_AB", schema=schema)
+    return failure_observation(state="EMPTY" if not rows else "REJECTED", schema=schema)
+
+
+def _copy_row(row: dict, fields: tuple[str, ...]) -> dict:
+    return {
+        "case": row["case"],
+        "field_states": {key: row["field_states"][key] for key in fields},
+        **{
+            key: _copy_field(key, row[key]) if row["field_states"][key] == "FINITE" else None
+            for key in fields
+        },
+    }
 
 
 def isolate_failure_report(report: dict) -> tuple[dict, dict]:
     """仅剥离精确Sibling封装；坏Sibling不改变原案例、旧门或异常路径。"""
     if SIBLING_KEY not in report:
         return report, failure_observation()
-    rejected = failure_observation(state="REJECTED")
+    sibling = report[SIBLING_KEY]
+    schema = (
+        sibling["schema"]
+        if type(sibling) is dict
+        and type(sibling.get("schema")) is str
+        and sibling["schema"] in {SCHEMA, SCHEMA_V2}
+        else SCHEMA
+    )
+    fields = _schema_fields(schema)
+    rejected = failure_observation(state="REJECTED", schema=schema)
     if set(report) != LEGACY_REPORT_FIELDS | {SIBLING_KEY}:
         return report, rejected
     legacy = {key: report[key] for key in LEGACY_REPORT_FIELDS}
-    sibling = report[SIBLING_KEY]
     if (
         type(legacy["cases"]) is not list
         or type(legacy["invalid"]) is not bool
@@ -172,7 +266,7 @@ def isolate_failure_report(report: dict) -> tuple[dict, dict]:
         or type(sibling) is not dict
         or set(sibling) != {"schema", "assurance", "case_shape_state", "cases"}
         or type(sibling["schema"]) is not str
-        or sibling["schema"] != SCHEMA
+        or sibling["schema"] != schema
         or type(sibling["assurance"]) is not str
         or sibling["assurance"] != ASSURANCE
         or type(sibling["case_shape_state"]) is not str
@@ -185,26 +279,22 @@ def isolate_failure_report(report: dict) -> tuple[dict, dict]:
             return legacy, rejected
         if sibling["case_shape_state"] == "EMPTY" and legacy["cases"] != []:
             return legacy, rejected
-        return legacy, failure_observation(state=sibling["case_shape_state"])
+        return legacy, failure_observation(state=sibling["case_shape_state"], schema=schema)
     rows, cases = sibling["cases"], legacy["cases"]
     if (
         len(cases) != 2
         or not all(case_observation_valid(row) for row in cases)
         or [row["case"] for row in cases] != ["A", "B"]
         or len(rows) != 2
-        or not all(_row_valid(row) for row in rows)
+        or not all(_row_valid(row, fields) for row in rows)
         or [row["case"] for row in rows] != ["A", "B"]
+        or (
+            schema == SCHEMA_V2
+            and not all(
+                _first_failure_matches(row, case) for row, case in zip(rows, cases, strict=True)
+            )
+        )
     ):
         return legacy, rejected
-    copied = [
-        {
-            "case": row["case"],
-            "field_states": {key: row["field_states"][key] for key in FAILURE_FIELDS},
-            **{
-                key: _copy_field(key, row[key]) if row["field_states"][key] == "FINITE" else None
-                for key in FAILURE_FIELDS
-            },
-        }
-        for row in rows
-    ]
-    return legacy, failure_observation(copied, "FINITE_AB")
+    copied = [_copy_row(row, fields) for row in rows]
+    return legacy, failure_observation(copied, "FINITE_AB", schema=schema)
