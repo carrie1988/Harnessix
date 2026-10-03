@@ -156,6 +156,15 @@
   ],
   "original_sdk_acceptance": false,
   "pairs_matched": true,
+  "publication_byte_identity": {
+    "correction": "two exact native result paths use -text; both index and final Git blob checked against original bytes",
+    "initial_commit": "328bb08ed661eed8fd82c219db1bd3478c8d72d6",
+    "initial_git_receipt_bytes": 86,
+    "initial_result_matches": true,
+    "initial_sha_receipt_matches": false,
+    "native_receipt_bytes": 87,
+    "other_native_results_modified": false
+  },
   "release_gates_closed": [],
   "result_status": "EXECUTION_INCOMPLETE",
   "retries": 0,

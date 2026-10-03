@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
+version: 2
 code_revision: 0b1e16ab8482ec324e35f81532ec58a1d09b1b6b
 owners: [core]
 modules: [delivery, product_config, processes, governance]
@@ -83,6 +83,12 @@ ZIP只在内存核验一次，没有额外成员、重复名、加密或符号�
 | [result-sha256.json](result-sha256.json) | 87 | 6804b3001e30fad6ce98f3b647fed59aa1c10ad1898c3c71f436829a8e8f9b3c |
 
 两文件按原字节保存，未重序列化；原声明与result摘要匹配。
+初次归档提交`328bb08`中Git文本规范化曾将Windows摘要回执从87字节变为86字节，
+该提交的摘要字节不符合原件身份，失败对照保留。当前通过
+[两条定向行尾规则](../../../.gitattributes)固定原始文件，不影响其他资料；
+index与最终提交Git blob均须独立核对原件SHA，而不是只检查工作目录字节。
+新增规则后仅对两件原件执行定向`git add --renormalize`，确保已有index条目按新属性重算，
+不对整个验证目录或其他历史原件进行规范化。
 result.authorized_revision与Run headSHA精确匹配；metadata_sha256为原合同摘要
 `b07e5b8b9d5ba66b83892a6816b48b02d9ec9ce6ab22a00c3bd46ef20dfcf544`。
 十八项固定名单、LF及唯一LF→CRLF字节都重新核验；pairs_matched=true，现场工具存在，原预检未报告失败阶段。

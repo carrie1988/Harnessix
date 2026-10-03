@@ -141,3 +141,7 @@ docs/validation/git-native-v3-result-2026-10-03-v1/result.json -text
 docs/validation/git-native-v3-result-2026-10-03-v1/result-sha256.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 docs/validation/git-native-cpr-result-2026-10-03-v1/result.json -text
 docs/validation/git-native-cpr-result-2026-10-03-v1/result-sha256.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# 首失败v2原生结果及摘要回执保持下载字节，禁止文本行尾规范化。
+docs/validation/windows-first-failure-native-2026-10-03-v1/result.json -text
+docs/validation/windows-first-failure-native-2026-10-03-v1/result-sha256.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
