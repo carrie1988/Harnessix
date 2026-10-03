@@ -1,0 +1,21 @@
+{
+  "schema": "harnessix.native-cpr-result-review/v1",
+  "run_id": 37080708999,
+  "head_sha": "10d58c597f08d81e4201879e1b9c70fd37454aa6",
+  "attempt": 1,
+  "terminal_conclusion": "failure",
+  "exact_two_members_verified": true,
+  "zip_api_digest_verified": true,
+  "receipt_original_bytes_verified": true,
+  "sdk_acceptance": false,
+  "historical_root": "UNKNOWN",
+  "event_entry_change_resolved_native_failure": false,
+  "not_proven": [
+    "实际cpr回调",
+    "完整原生分支命中",
+    "排他Git128根因",
+    "消费者Windows",
+    "完整Git/Backup v2",
+    "商用R1～R6"
+  ]
+}

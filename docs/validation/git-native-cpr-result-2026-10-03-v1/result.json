@@ -1,0 +1,95 @@
+{
+  "schema": "harnessix.git-native-branch-observation/v3",
+  "status": "EXECUTION_INCOMPLETE",
+  "execution_performed": true,
+  "branch_gate_passed": false,
+  "original_sdk_acceptance": false,
+  "historical_run_result": "FAIL_RETAINED",
+  "historical_root": "UNKNOWN",
+  "metadata_sha256": "3fdfc2ac2f69e63517d6bdfd747d6242a7c4f734553c289908b48c3c0fffb39f",
+  "unverified_execution_observation": {
+    "assurance": "UNAUTHENTICATED_DIAGNOSTIC_ONLY",
+    "case_shape_state": "FINITE_AB",
+    "cases": [
+      {
+        "call": "failed",
+        "case": "A",
+        "diagnostic_incomplete": true,
+        "diagnostic_truncated": false,
+        "git_return": 128,
+        "original_operation_returned": false,
+        "proof": "ABSENT",
+        "raw_validation": "OBSERVED_V5_VERIFIED_NOT_INDEPENDENT_MAC",
+        "worker_return": 2
+      },
+      {
+        "call": "failed",
+        "case": "B",
+        "diagnostic_incomplete": true,
+        "diagnostic_truncated": false,
+        "git_return": 128,
+        "original_operation_returned": false,
+        "proof": "ABSENT",
+        "raw_validation": "OBSERVED_V5_VERIFIED_NOT_INDEPENDENT_MAC",
+        "worker_return": 2
+      }
+    ],
+    "source_case_report_invalid": false,
+    "marker_state": "MEASURED",
+    "marker_counts": {
+      "arm_fullmatch_count": 0,
+      "branch_fullmatch_count": 0,
+      "bad_marker_prefix_count": 0
+    }
+  },
+  "budgets": {
+    "command_seconds": 20,
+    "operation_seconds": 45,
+    "workflow_step_seconds": 300,
+    "outer_watchdog_seconds": 240
+  },
+  "authorized_revision": "10d58c597f08d81e4201879e1b9c70fd37454aa6",
+  "source_input_count": 16,
+  "pairs_matched": true,
+  "cdb_sha256": "31789c2c2645d5fdafb1621c47b0db8bc2fbca47b510a0e4e6fdede0479ce105",
+  "interpreter_sha256": "0b471133e110cfb53a061cad528ce8e517d7b9ac41a0a396c39ad795a487fc14",
+  "debugger_exit": 1,
+  "timed_out": false,
+  "log_limit_stopped": false,
+  "branch_witness": {
+    "two_material_invocations_witnessed": false,
+    "invocations": []
+  },
+  "pytest_exit": 1,
+  "cases": [
+    {
+      "case": "A",
+      "call": "failed",
+      "worker_return": 2,
+      "git_return": 128,
+      "raw_validation": "OBSERVED_V5_VERIFIED_NOT_INDEPENDENT_MAC",
+      "proof": "ABSENT",
+      "original_operation_returned": false,
+      "diagnostic_incomplete": true,
+      "diagnostic_truncated": false
+    },
+    {
+      "case": "B",
+      "call": "failed",
+      "worker_return": 2,
+      "git_return": 128,
+      "raw_validation": "OBSERVED_V5_VERIFIED_NOT_INDEPENDENT_MAC",
+      "proof": "ABSENT",
+      "original_operation_returned": false,
+      "diagnostic_incomplete": true,
+      "diagnostic_truncated": false
+    }
+  ],
+  "case_mapping": "SEQUENTIAL_A_B_NOT_OWNER_PID_ATTESTATION",
+  "preflight_diagnostic": {
+    "first_failed_stage": null,
+    "reason_code": null,
+    "cdb_file_present": true,
+    "interpreter_file_present": true
+  }
+}

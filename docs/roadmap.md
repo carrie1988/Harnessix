@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 157
+version: 158
 code_revision: 6e440ffad07ee31ed6153838f858240f5754c876
 owners:
   - core
@@ -1650,3 +1650,15 @@ API ZIP及结果摘要，Windows CRLF回执不转换。旧三个FAIL不重跑、
 修复后原227与新增8共235通过；16件固定输入、原两个SDK selector、13 hook及全部期限不变。
 后继仅以新固定提交验证一次原生执行；旧Run和FAIL保留，离线证据不等于CDB/SDK实际成功。
 完整Git默认交付/Backup v2、真实R3、消费者Windows、Beta及同候选商用R1～R6仍开放。
+
+### R1/R4：创建事件候选的现场结果未闭环
+
+固定10d58c5的[Run37080708999](https://github.com/carrie1988/Harnessix/actions/runs/37080708999)
+仅attempt1并终态FAIL，checkout、锁定依赖和结果上传通过；原16件输入、selected完整PE/PDB
+及工具存在/启动均通过，未超时或日志超限。A/B仍各为Git128、Worker2、proof ABSENT；
+三个marker完整语法数仍为0，完整见证及SDK验收false，根因UNKNOWN。
+
+[精确现场资料](validation/git-native-cpr-result-2026-10-03-v1/README.md)保留原两文件ZIP/API/摘要
+及Windows CRLF回执。入口合同修复和离线235项通过没有消除此现场失败，不能宣称回调或guard成功，
+也不能由0匹配推断没有Git进程。后继先补齐既有调试脚本/材料接缝的实际定位，不重复该候选或旧Run。
+完整Git产品、Backup v2、R3、消费者Windows、Beta及同候选R1～R6仍开放，未新增模型请求。

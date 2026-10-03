@@ -139,3 +139,5 @@ docs/validation/git-native-execution-incomplete-2026-10-02-v1/result-sha256.json
 # v3原生结果及Windows摘要回执保留精确下载字节。
 docs/validation/git-native-v3-result-2026-10-03-v1/result.json -text
 docs/validation/git-native-v3-result-2026-10-03-v1/result-sha256.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/validation/git-native-cpr-result-2026-10-03-v1/result.json -text
+docs/validation/git-native-cpr-result-2026-10-03-v1/result-sha256.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
