@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 159
-code_revision: 6e440ffad07ee31ed6153838f858240f5754c876
+version: 161
+code_revision: 9a424dfcd874fa42efd10208aaf102ce0f09a0b7
 owners:
   - core
 modules:
@@ -1674,3 +1674,19 @@ API ZIP及结果摘要，Windows CRLF回执不转换。旧三个FAIL不重跑、
 精确兼容差分保持280次原结果/门零差异；历史Git128、Worker2、SDK false、Root UNKNOWN仍保留。
 未启动新原生Run或模型请求。后继固定现场定位、完整Git效果/Backup v2、R3、消费者Windows、
 独立Beta与最终R1～R6仍按原退出条件完成。
+
+### R4：Git IO借用原产品共享宿主
+
+内部Git IO新增原ProductStateOwner、Process Supervisor、Execution Plan Store与冻结
+SecretPublicationScope的显式同对象借用；不创建第二套共享资源，不修改原审批、能力、环境、
+期限、原始回执或完整8MiB材料合同。端口关闭仅排空自身调用，不关闭产品级资源。
+实现、字段、完整流程/时序/数据流、失败、安全及部署见
+[共享宿主总体与详细设计](changes/m09-r4-git-shared-process-host.md)。
+启动交接异常只停止本次新登记句柄，原同ID重放和其他并行调用不能被停止；
+停止结算失败保持强未知且保留原异常与结算异常，不关闭共享宿主掩盖故障。
+最终主仓同候选实际169项通过，覆盖共享宿主14项、六项完整8MiB格式/类型写入回读、
+133项旧合同、2项实现身份反例及14项真实Owner启动交接/UNKNOWN/取消超时组合；
+438件生产源码和450件完整执行输入零漂移，原结构阈值不放宽。
+初版155项、直接回收版159项与最终169项分阶段保留，不继承旧字节成绩或叠加重复结果。
+该内部接缝不表示默认完整Git父意图/效果配方、A/T/D、Checkpoint/Commit或业务Backup v2完成；
+Windows原生故障、R3真实质量、独立Beta和同候选R1～R6继续开放。

@@ -1,0 +1,102 @@
+{
+  "schema": "harnessix.git-shared-host-validation/v1",
+  "state": "LIMITED_COMPONENT_PASS",
+  "source_baseline": "9a424dfcd874fa42efd10208aaf102ce0f09a0b7",
+  "primary": {
+    "final": {
+      "tests": 169,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "distinct_testcases": 169,
+  "production_files": 438,
+  "input_members": 450,
+  "source_drift": [],
+  "independent_worktree_repeats_not_added": true,
+  "shared_owner_new_cases": 14,
+  "full_8mib_format_type_cases": 6,
+  "original_regression": 133,
+  "source_identity_cases": 2,
+  "quality": {
+    "ruff": "PASS",
+    "format": "PASS",
+    "mypy_source_files": 3,
+    "readability": "PASS",
+    "thresholds_relaxed": false
+  },
+  "original_red_retained": true,
+  "new_model_requests": 0,
+  "new_windows_runs": 0,
+  "default_integrated": false,
+  "commercial_gates_closed": false,
+  "diagrams": [
+    {
+      "name": "architecture",
+      "rendered": true,
+      "visually_viewed": true,
+      "sha256": "da61e2a91b066fe1ebe37bc1bc3b03842964f1c2d3f9f0a946409913aba868e4",
+      "source_sha256": "bdb0bf382d40d98242f37fa6e29f0e8cb6e4b41d5260a8fdbab7e3ad0949574b"
+    },
+    {
+      "name": "flow",
+      "rendered": true,
+      "visually_viewed": true,
+      "sha256": "b7b4f41dcf922304360e1d8b2f551910e1e66dd3e9f2b74905145a8a46294d9d",
+      "source_sha256": "2abbc38d43c5c79b4f94a61f17049d72cbc894bb998675497bf58402332db2b7"
+    },
+    {
+      "name": "sequence",
+      "rendered": true,
+      "visually_viewed": true,
+      "sha256": "baf8283eb553a4662888643d6af1175342947567f9f881ab47f3ee7d820885f7",
+      "source_sha256": "14122b913f746a4a31c02854d2082b6ee9cd7acfe92cef86a2f7afdebbf4f46a"
+    },
+    {
+      "name": "data-flow",
+      "rendered": true,
+      "visually_viewed": true,
+      "sha256": "d3dc466eaccb6b9d5ffaa162ca3dde1cbc509ff5a9b39bb9c6bea236bbe8d047",
+      "source_sha256": "5d243ce7df816d0b5a931d7dcd74a7ecc39ac65a715ce8bb1f9edcacaa91aca2"
+    }
+  ],
+  "documentation": {
+    "state": "PASS",
+    "documents": 512,
+    "links": 12020,
+    "mermaid": 993,
+    "findings": []
+  },
+  "secret_scan": {
+    "state": "PASS",
+    "paths": 23,
+    "findings": [],
+    "self_check": true
+  },
+  "independent_review": "COMPLETED_LIMITED_NO_NEW_FINDINGS",
+  "startup_handoff_and_outer_stop_cases": 14,
+  "wait_unknown_requires_strong_failure": true,
+  "cause_group_preserved_at_outer_caller": true,
+  "prior_phases_not_inherited": {
+    "initial_primary": 155,
+    "F1_direct_cleanup": 159
+  },
+  "actual_new_combination_RED": {
+    "tests": 10,
+    "failures": 8,
+    "errors": 0,
+    "skipped": 0
+  },
+  "initial_combination_fixture_hang": {
+    "exit_code": 143,
+    "junit_created": false,
+    "is_product_RED": false
+  },
+  "independent_review_evidence": "source_extraction_and_interface_fixtures_not_native_tests",
+  "reviewed_defects_closed": [
+    "startup_handoff_new_handle_leak",
+    "wait_UNKNOWN_misclassified_as_settlement",
+    "outer_stop_cause_group_loss"
+  ]
+}

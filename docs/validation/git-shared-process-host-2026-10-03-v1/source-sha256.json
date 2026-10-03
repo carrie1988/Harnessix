@@ -1,0 +1,56 @@
+{
+  "schema": "harnessix.git-shared-host-source/v1",
+  "source_baseline": "9a424dfcd874fa42efd10208aaf102ce0f09a0b7",
+  "members": [
+    {
+      "path": "src/harnessix/product_config/git_process_host.py",
+      "bytes": 5404,
+      "sha256": "005caab6375906c51fdf0ee9aed7b8f5a92d907560eab512cbf3e5df81479575"
+    },
+    {
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "bytes": 24334,
+      "sha256": "5a42a0c93a233f0d0c3893e9c1aa40e53fd13fdc288c27efb20853860adff053"
+    },
+    {
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "bytes": 18821,
+      "sha256": "8895104522c82746fc4bdb7bcf475041d1e7b7e7fc51ea1bc458302696825c7f"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_host.py",
+      "bytes": 11557,
+      "sha256": "2cf43321dfcd49075b4c7bbeee8247c137e58c0a60ab55f2934f852eac4819fd"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_capacity.py",
+      "bytes": 3283,
+      "sha256": "0a14be183d199c1721eebb56840af99c20f47a81af925324fa64a835b04e7435"
+    },
+    {
+      "path": "tests/product_config/test_git_delivery_process.py",
+      "bytes": 48083,
+      "sha256": "6fd8a096e54bd8c9d3e3aa3c167d1533984ad08d5c8f99880d8b2babf71a69ba"
+    },
+    {
+      "path": "tests/product_config/test_git_material_input.py",
+      "bytes": 19295,
+      "sha256": "2a48f4a9ee130711fe0c7726f1c329400652767b50aeb5b897b4ebd4e0c72b02"
+    },
+    {
+      "path": "tests/product_config/test_git_material_trace2_binding.py",
+      "bytes": 10303,
+      "sha256": "1c02451e1bb39fb50a4e9ba371ad72f1e27a667934eba53e7128724f3df5660e"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_digest.py",
+      "bytes": 1698,
+      "sha256": "921da7f39cad93f44db78577fef994fb0965e1ffa45a300e503ce35947861c9e"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_startup.py",
+      "bytes": 13568,
+      "sha256": "34c85f6a8dc2cec731163c1f6a6a4d854689f90c61eeaa63bbe67c7361dbc812"
+    }
+  ]
+}

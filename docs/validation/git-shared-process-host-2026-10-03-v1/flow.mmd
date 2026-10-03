@@ -1,0 +1,18 @@
+flowchart TD
+  Begin[Git run] --> Live[原Host Owner Root保护来源存活]
+  Live --> Binding[原prepared Plan能力环境审批完整等式]
+  Binding --> Borrow[借原Supervisor与原Plan Store]
+  Borrow --> Save[原不可变计划保存]
+  Save --> Start[原Supervisor启动并产生原Lease]
+  Start --> Input[保护后落完整私有材料与小握手]
+  Start -- 交接抛错 --> New{本次新登记句柄}
+  New -- 否 --> Original[保留原失败 不停止已有调用]
+  New -- 是 --> Settle[仅停止排空本次句柄 关闭本次控制]
+  Settle --> Known{最终Lease确定停止}
+  Known -- exited或failed --> Original
+  Known -- UNKNOWN或结算异常 --> Unknown[强未知 原失败与结算失败原因组 禁止重放]
+  Outer[外层取消或超时] --> Drain[排空本次任务 保留已有强错误及原因组]
+  Input --> Receipt[等待原Owner完整回执]
+  Receipt --> Raw[原双流和输入证明完整验真]
+  Raw --> Final[重查原共享宿主仍有效]
+  Final --> Return[仅返回原GitProcessCompletion]

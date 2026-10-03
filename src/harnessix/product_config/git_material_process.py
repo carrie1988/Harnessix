@@ -244,13 +244,16 @@ def _diagnostic_approval(
 
 
 def git_process_implementation_digest(adapter: Path) -> str:
-    """原三项适配身份的单一计算职责；字段及真实源码读取范围不变。"""
+    """固定适配和资源借用实现身份；摘要变化须重新规划及批准。"""
     try:
         return canonical_digest(
             {
                 "adapter": hashlib.sha256(adapter.read_bytes()).hexdigest(),
                 "material_adapter": hashlib.sha256(
                     adapter.with_name("git_material_process.py").read_bytes()
+                ).hexdigest(),
+                "runtime_host": hashlib.sha256(
+                    adapter.with_name("git_process_host.py").read_bytes()
                 ).hexdigest(),
                 "delivery": git_delivery_implementation_digest(),
             }

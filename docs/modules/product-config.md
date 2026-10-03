@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 50
-code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
+version: 52
+code_revision: 9a424dfcd874fa42efd10208aaf102ce0f09a0b7
 owners:
   - core
 modules:
@@ -15,6 +15,10 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_shared_process_startup.py
+  - tests/product_config/test_git_shared_process_digest.py
+  - tests/product_config/test_git_shared_process_host.py
+  - tests/product_config/test_git_shared_process_capacity.py
   - tests/product_config/test_git_material_trace2_binding.py
   - tests/product_config/test_git_trace2_success_observation.py
   - tests/product_config/test_git_object_material.py
@@ -2331,3 +2335,18 @@ Windows pipe Owner已增加单一MAC覆盖的v2原始双流统计；正式基准
 诊断无新后台任务、数据库、服务、默认模型Tool或恢复重放；未改六库备份布局、
 Provider请求预算或固定R3评分。接口、装配时序、七字段投影、安全与测试范围见
 [Git材料Trace2总体与详细设计](../changes/m09-r4-git-material-trace2.md)。
+
+## Git IO原产品宿主共享候选
+
+`GitDeliveryProcess(...,runtime_host=GitProcessRuntimeHost(...))`显式借用原产品Owner、
+Process Supervisor、Execution Plan Store与同一个冻结SecretPublicationScope，不创建或关闭
+第二套共享资源。实际原计划、环境、能力、审批、原生回执和完整材料保护约束保持。
+端口关闭只排空自己的调用；Root、Store、Supervisor或Scope失效在原启动前或返回前拒绝，
+完整输入已可能送达后的不明结算仍拒绝自动重放。
+原Supervisor启动交接异常由`start_git_process`只回收本次新登记句柄；不得停止原同ID调用或
+关闭共享宿主。停止结算失败保持`git_process_unknown`，原异常与结算异常均保留在原因组。
+等待正常返回UNKNOWN也属未验真停止；外层取消或超时重抛已归一化的原强错误，不能丢失原因组。
+源码接口、完整流程/时序/数据流、字段、伪代码、失败、安全、部署和测试见
+[共享产品宿主总体与详细设计](../changes/m09-r4-git-shared-process-host.md)。
+该内部接缝不表示默认完整Git父意图/效果命令已装配，A/T/D、Checkpoint/Commit、
+业务Backup v2、消费者Windows及商用门禁仍按完整Git业务合同实施。

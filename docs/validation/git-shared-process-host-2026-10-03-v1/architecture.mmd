@@ -1,0 +1,10 @@
+flowchart LR
+  Runtime[产品运行时资源Owner] --> Host[GitProcessRuntimeHost引用组]
+  Host --> Owner[原ProductStateOwner]
+  Host --> Supervisor[原Process Supervisor]
+  Host --> Plans[原Execution Plan Store]
+  Host --> Scope[原冻结SecretPublicationScope]
+  Port[GitDeliveryProcess] --> Host
+  Port --> Raw[原完整回执与双流校验]
+  Supervisor --> Native[唯一原Process Owner及Git worker]
+  Native --> Raw

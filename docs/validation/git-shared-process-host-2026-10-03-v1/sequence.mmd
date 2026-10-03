@@ -1,0 +1,27 @@
+sequenceDiagram
+  participant Runtime as 产品资源上下文
+  participant Port as Git IO
+  participant Host as 共享Host
+  participant Supervisor as 原Supervisor
+  participant Worker as 原Owner/worker
+  Runtime->>Host: 提供原Owner、Store、Supervisor、Scope引用
+  Port->>Host: checkpoint与同保护对象检查
+  Port->>Port: 原完整prepared/Plan/批准验证
+  Port->>Host: 原Plan Store保存不可变计划
+  Port->>Supervisor: 原start与完整意图参数
+  alt 启动成功
+    Supervisor->>Worker: 原保护封套与Lease
+    Worker-->>Port: 原完整回执与双流
+    Port->>Host: 完成前再次checkpoint
+    Port-->>Runtime: 原Completion
+  else 启动交接失败
+    Port->>Supervisor: 对照本次Process ID的已有句柄引用
+    opt 仅本次新登记句柄
+      Port->>Worker: 原stop wait及控制关闭
+      Worker-->>Port: 确定停止 或 UNKNOWN/结算异常
+    end
+    Port-->>Runtime: 原失败 或强未知及两个原因对象
+    Note over Runtime,Port: 外层取消/超时不能覆盖强未知或切断原因组
+  end
+  Runtime->>Port: aclose
+  Port-->>Runtime: 自身调用排空，共享资源继续有效

@@ -1,0 +1,10 @@
+flowchart LR
+  Scope[原冻结Scope] --> Envelope[原Owner保护封套]
+  Scope --> Check[本次Git输入和原始输出检查]
+  Material[完整CAS材料] --> Check
+  Check --> Stage[原私有材料文件]
+  Stage --> Worker[原小握手worker]
+  Plan[原批准参数/环境/能力] --> Launch[原Process绑定]
+  Launch --> Worker
+  Worker --> Proof[原回执/双流/输入证明]
+  Proof --> Completion[有限Completion]

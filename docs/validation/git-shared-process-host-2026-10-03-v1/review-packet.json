@@ -1,0 +1,26 @@
+{
+  "schema": "harnessix.git-shared-host-review/v1",
+  "method": "source_inspection_real_owner_receipts_and_negative_lifecycle_tests",
+  "independent_review_pending": false,
+  "not_verified": [
+    "full_product_parent_intent_and_effect_recipe",
+    "A_T_D_Checkpoint_Commit",
+    "Backup_v2_Restore",
+    "consumer_windows",
+    "real_R3_quality",
+    "independent_Beta",
+    "commercial_R1_R6"
+  ],
+  "independent_review": "COMPLETED_LIMITED_NO_NEW_FINDINGS",
+  "independent_method": "current_source_extraction_and_interface_fixtures",
+  "independent_native_test_run": false,
+  "F1_F2_F3_closed_within_reviewed_scope": true,
+  "native_candidate_verification": {
+    "test_files": 7,
+    "distinct_cases": 169,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_drift": []
+}

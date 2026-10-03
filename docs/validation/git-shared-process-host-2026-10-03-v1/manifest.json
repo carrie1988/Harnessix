@@ -1,0 +1,118 @@
+{
+  "schema": "harnessix.git-shared-host-manifest/v1",
+  "source_baseline": "9a424dfcd874fa42efd10208aaf102ce0f09a0b7",
+  "scope": "shared_IO_component_not_default_full_Git_product",
+  "self_excluded": "docs/validation/git-shared-process-host-2026-10-03-v1/manifest.json",
+  "members": [
+    {
+      "path": "docs/changes/m09-r4-git-shared-process-host.md",
+      "bytes": 18974,
+      "sha256": "a9896ef5b22f457c7a9eb9170830fab28764a56a76ae94230601ee6deb11b98e"
+    },
+    {
+      "path": "docs/modules/product-config.md",
+      "bytes": 148348,
+      "sha256": "bba4e14966cb602bee03f9873684c0e7d19f048588690e9d86391d683640a1bf"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "bytes": 161315,
+      "sha256": "25746d2371c588bee625794507478c408d46a631ab3649eb5251c27308ee70bc"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/README.md",
+      "bytes": 4351,
+      "sha256": "74e6b8fad0c4a267c6cbad4aa3b141c299f35f0715b728f9a027c7bd6f8f3da5"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/architecture.mmd",
+      "bytes": 429,
+      "sha256": "bdb0bf382d40d98242f37fa6e29f0e8cb6e4b41d5260a8fdbab7e3ad0949574b"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/architecture.png",
+      "bytes": 44410,
+      "sha256": "da61e2a91b066fe1ebe37bc1bc3b03842964f1c2d3f9f0a946409913aba868e4"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/data-flow.mmd",
+      "bytes": 424,
+      "sha256": "5d243ce7df816d0b5a931d7dcd74a7ecc39ac65a715ce8bb1f9edcacaa91aca2"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/data-flow.png",
+      "bytes": 36291,
+      "sha256": "d3dc466eaccb6b9d5ffaa162ca3dde1cbc509ff5a9b39bb9c6bea236bbe8d047"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/flow.mmd",
+      "bytes": 1040,
+      "sha256": "2abbc38d43c5c79b4f94a61f17049d72cbc894bb998675497bf58402332db2b7"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/flow.png",
+      "bytes": 103779,
+      "sha256": "b7b4f41dcf922304360e1d8b2f551910e1e66dd3e9f2b74905145a8a46294d9d"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/review-packet.json",
+      "bytes": 793,
+      "sha256": "5ef7c6e12ef13178f5ca292d347eca5022f55dc8d38617b2e15ab8292dd39689"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/sequence.mmd",
+      "bytes": 1159,
+      "sha256": "14122b913f746a4a31c02854d2082b6ee9cd7acfe92cef86a2f7afdebbf4f46a"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/sequence.png",
+      "bytes": 113705,
+      "sha256": "baf8283eb553a4662888643d6af1175342947567f9f881ab47f3ee7d820885f7"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/source-sha256.json",
+      "bytes": 2016,
+      "sha256": "7d520919c21c6e7ce5a651a630a24aac33d0968bf2b001daff0c57eac31296e5"
+    },
+    {
+      "path": "docs/validation/git-shared-process-host-2026-10-03-v1/verification.json",
+      "bytes": 2970,
+      "sha256": "680e7ca268f294c9a243987be86d3885581edc0a1c856801fcd1230c3fd80681"
+    },
+    {
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "bytes": 24334,
+      "sha256": "5a42a0c93a233f0d0c3893e9c1aa40e53fd13fdc288c27efb20853860adff053"
+    },
+    {
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "bytes": 18821,
+      "sha256": "8895104522c82746fc4bdb7bcf475041d1e7b7e7fc51ea1bc458302696825c7f"
+    },
+    {
+      "path": "src/harnessix/product_config/git_process_host.py",
+      "bytes": 5404,
+      "sha256": "005caab6375906c51fdf0ee9aed7b8f5a92d907560eab512cbf3e5df81479575"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_capacity.py",
+      "bytes": 3283,
+      "sha256": "0a14be183d199c1721eebb56840af99c20f47a81af925324fa64a835b04e7435"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_digest.py",
+      "bytes": 1698,
+      "sha256": "921da7f39cad93f44db78577fef994fb0965e1ffa45a300e503ce35947861c9e"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_host.py",
+      "bytes": 11557,
+      "sha256": "2cf43321dfcd49075b4c7bbeee8247c137e58c0a60ab55f2934f852eac4819fd"
+    },
+    {
+      "path": "tests/product_config/test_git_shared_process_startup.py",
+      "bytes": 13568,
+      "sha256": "34c85f6a8dc2cec731163c1f6a6a4d854689f90c61eeaa63bbe67c7361dbc812"
+    }
+  ]
+}

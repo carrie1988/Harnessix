@@ -29,7 +29,6 @@ from harnessix.execution.contracts import (
     ExecutionApprovalCheckpoint,
     ExecutionPlanV2,
 )
-from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.processes.owner_protocol import OutputRedactionSource
 from harnessix.processes.owner_receipt import ProcessOwnerReceiptV2
 from harnessix.processes.supervision_contracts import (
@@ -40,9 +39,7 @@ from harnessix.processes.supervision_contracts import (
 )
 from harnessix.processes.supervision_planner import build_host_process_binding, build_process_spec
 from harnessix.processes.supervisor import (
-    PosixProcessSupervisor,
     SupervisedProcess,
-    WindowsProcessSupervisor,
 )
 from harnessix.processes.supervisor_capabilities import (
     probe_posix_process_capability,
@@ -53,6 +50,12 @@ from harnessix.product_config.git_material_process import (
     checked_material_trace2_mode,
     git_process_implementation_digest,
     material_trace2_is_approved,
+)
+from harnessix.product_config.git_process_host import (
+    GitProcessRuntimeHost,
+    open_git_process_resources,
+    save_git_process_plan,
+    start_git_process,
 )
 from harnessix.secrets.redaction import secret_patterns
 from harnessix.tools.runtime import _drain
@@ -184,6 +187,7 @@ class GitDeliveryProcess(GitMaterialPreparation):
         *,
         output_redaction: OutputRedactionSource | None = None,
         material_trace2_mode: GitMaterialTrace2Mode = "off",
+        runtime_host: GitProcessRuntimeHost | None = None,
     ) -> None:
         if not state_root.is_absolute():
             raise KernelError("git_process_state_invalid", "Git进程状态根必须是绝对路径")
@@ -191,6 +195,7 @@ class GitDeliveryProcess(GitMaterialPreparation):
         self._runner = runner
         self._state = state_root
         self._output_redaction = output_redaction
+        self._runtime_host = runtime_host
         self._active: tuple[CancelToken, asyncio.Task[GitProcessCompletion]] | None = None
         self._closed = False
 
@@ -330,6 +335,12 @@ async def _run_process(
         raise KernelError("git_process_closed", "Git受控端口已关闭")
     if self._active is not None:
         raise KernelError("git_process_busy", "Git受控端口忙；未隐式排队")
+    if self._runtime_host is not None:
+        if type(self._runtime_host) is not GitProcessRuntimeHost:
+            raise KernelError("git_process_runtime_mismatch", "Git共享宿主类型无效")
+        self._runtime_host.checkpoint(self._state)
+        if self._output_redaction is not self._runtime_host.protection:
+            raise KernelError("git_process_runtime_mismatch", "Git必须使用原宿主保护作用域")
     if prepared.budget is not budget:
         raise KernelError("git_process_budget_mismatch", "Git命令不能更换原操作期限")
     _require_prepared(prepared)
@@ -390,12 +401,14 @@ def _raise_uncertain_settlement(task: asyncio.Task[GitProcessCompletion]) -> Non
             "process_control_lost",
             "process_owner_token_invalid",
         }:
-            code = (
-                error.code
-                if error.code in {"git_material_effect_unknown", "git_material_stage_changed"}
-                else "git_process_unknown"
-            )
-            raise KernelError(code, "Git停止效果无法验真；禁止自动重放") from None
+            if error.code in {
+                "git_material_effect_unknown",
+                "git_material_stage_changed",
+                "git_process_unknown",
+            }:
+                # 已归一化的强失败保留原对象及原因组，不能被外层取消或超时切断。
+                raise error
+            raise KernelError("git_process_unknown", "Git停止效果无法验真；禁止自动重放") from None
 
 
 async def _execute_process(
@@ -407,29 +420,19 @@ async def _execute_process(
 ) -> GitProcessCompletion:
     command = prepared.command
     cancel.checkpoint()
-    supervisor_type = WindowsProcessSupervisor if os.name == "nt" else PosixProcessSupervisor
     protection = (
         _GitOutputProtection(self._output_redaction) if self._output_redaction is not None else None
     )
     staged = None
     input_sent = False
     try:
-        async with supervisor_type(
-            self._state / "process-owner", output_redaction=protection
+        async with open_git_process_resources(
+            self._state, protection, self._runtime_host
         ) as supervisor:
             # 在启动前固定 Plan；重启时原 Lease 可定位完整意图，不生成孤立进程事实。
-            with SQLiteExecutionPlanStore(self._state / "execution-plans.db") as plans:
-                plans.save_plan(plan)
+            save_git_process_plan(self._state, plan, self._runtime_host)
             self._runner.verify_command(command)
-            handle = await supervisor.start(
-                plan,
-                prepared.spec,
-                prepared.capability,
-                workspace=command.cwd,
-                environment=dict(command.environment),
-                checkpoint=checkpoint,
-                intent_arguments=prepared.approval_arguments(),
-            )
+            handle = await start_git_process(supervisor, prepared, plan, checkpoint)
             try:
                 data = command.input_data
                 if prepared.write is not None:
