@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 35
-code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
+version: 36
+code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
 owners:
   - core
 modules:
@@ -2157,3 +2157,8 @@ private查询仍只额外READ_CONTROL，不为当前句柄增加写权限。原_
 [兼容详细设计第15节](../changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)；
 固定修复候选的结果见[验证资料](../validation/windows-directory-write-share-2026-10-03-v1/README.md)。
 新源字节自然改变实现摘要，旧批准不跨实现复用。消费者Windows、完整Git／Backup v2及商用R1～R6仍分别验收。
+
+固定244f9c2原生Run37132088623的四格、同源、真实创建／链接及原Windows保护步骤全部通过；
+SDK加诊断侧车聚合步骤失败，尚未分别验收业务case。源码确认其符号父根装配不一致，
+后继只修改工作流fresh基目录，不修改材料生产端口或原证明门；见
+[详细设计第16节](../changes/m09-r4-windows-minimum-commit-probe.md#16-原sdk诊断侧车的符号根装配一致性)。

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 178
-code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
+version: 179
+code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
 owners:
   - core
 modules:
@@ -1855,5 +1855,20 @@ Windows失败、完整Git／Backup v2、R3、费用未决、Beta及商用R1～R6
 真实共享因果反例成功，证明该NTFS链接在原share1目录持有下错误32拒绝，仅补share3成功。
 后继[兼容设计第15节](changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)
 只让目录共享READ及WRITE，已有文件仍只共享READ，两者不共享DELETE；全部原身份及ACL后验保持。
-新候选继续执行原四格、同源两臂、原Windows写／改名／删除保护及原两SDK，原生结果尚待取得。
+新候选继续执行原四格、同源两臂、原Windows写／改名／删除保护及原两SDK；固定244f9c2原生结果见后续记录。
 不确认所有历史Git128唯一根因，不关闭完整Git／Backup v2、R3费用与质量、Beta或R1～R6。
+
+### R1/R4：目录兼容原生结果与SDK符号根装配整改
+
+固定244f9c2的[Run37132088623](https://github.com/carrie1988/Harnessix/actions/runs/37132088623)、attempt1、
+Job111229042843已终态failure。原四格、同源fanout／blob、真实Windows创建／链接、历史共享反例及
+原文件写／文件目录改名删除保护全部步骤success；原两个SDK加侧车聚合步骤failure。
+仅步骤元数据不能分别确认业务case结论，不能推定所有历史Git128唯一根因或消费者Windows通过。
+
+源码确认原侧车按basetemp.parent寻找固定PDB，而旧SDK工作流基目录父级与原preflight输出不同。
+[总体与详细设计第16节](changes/m09-r4-windows-minimum-commit-probe.md#16-原sdk诊断侧车的符号根装配一致性)
+只将fresh SDK基目录设为原preflight输出的直接子目录，原插件、双角色验真、13接点、两个selector及
+诊断完整性失败门不改；原五分钟及20／45／240／300正式预算保持。
+治理断言先复现旧装配失败，再验证新路径；18输入只更新workflow一行，其余17行与其他固定字段保持。
+新候选必须另取一次原生结果，不重跑或覆盖旧失败；原SDK尚未验收，完整Git／Backup v2、R3费用与质量、
+消费者Windows、独立Beta及最终R1～R6仍开放。

@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 1
-code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
+version: 2
+code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
 owners: [core]
 modules: [delivery, product_config, governance]
 related_adrs:
@@ -24,7 +24,7 @@ supersedes: []
 原share1下链接被Win32错误32拒绝，仅增加WRITE共享后成功。该包原SDK仍失败，不改写历史结果。
 本包落实[总体与详细设计第15节](../../changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)，
 只在原_open用_held_share区分目录3／文件1，两者均禁止DELETE共享。
-新修复候选原生尚未取得，暂不登记SDK或Windows商用通过。
+固定244f9c2原生已取得控制及原保护步骤通过，但SDK加侧车失败，不登记SDK或Windows商用通过。
 
 ## 2. 实现、源码与失败语义
 
@@ -59,3 +59,39 @@ Windows相关7项跳过单列；四幅变化Mermaid实际渲染并视觉复核�
 没有模型调用、Keychain／凭据读取、费用规则变更或原失败重跑。
 
 消费者Windows、完整Git交付／Backup v2、真实R3与费用未决、独立Beta和R1～R6继续开放。
+
+## 4. 固定修复候选的实际原生结果及后继路径整改
+
+[Run37132088623](https://github.com/carrie1988/Harnessix/actions/runs/37132088623)、attempt1、Job111229042843，
+head244f9c2cac250a856505d9b4043410ef6b197189，终态failure。
+
+| 既有步骤／边界 | 实际结论 |
+| --- | --- |
+| 固定官方身份仅预检 | success |
+| 原hash-direct、hash-held、write-direct、write-held | 四步success |
+| 同源fanout／blob单持有配对 | 两步success |
+| 实际子文件创建／CreateHardLinkW／历史share1反例 | 三步success |
+| 原文件写及文件目录改名删除保护负例 | success |
+| 原两个SDK及诊断侧车聚合步骤 | failure，不拆造各case结果 |
+
+目录修复在当前固定控制中取得原生效果与保护证据，不是完整Windows产品、消费者Windows11、
+所有历史错误唯一根因或完整Git／Backup v2通过。
+独立窄复核在固定244f9c2源码范围未发现P0／P1或新P2；原三个测试证明缺口已在源码及治理范围关闭，
+该复核没有执行原生，也不扩大到全部安全或商业验收。
+
+源码另确认原SDK基目录直接位于RUNNER_TEMP，而侧车只从其parent/symbols加载PDB，
+与原preflight输出的git-minimum-identity私有根不同。完整诊断缺失仍可将业务成功转换为聚合失败，
+因此当前元数据不证明业务case失败或成功。后继按
+[详细设计第16节](../../changes/m09-r4-windows-minimum-commit-probe.md#16-原sdk诊断侧车的符号根装配一致性)
+仅将SDK基目录改为原preflight根的fresh child，保留全部角色验真、原selector、五分钟及完整性失败门。
+治理先RED再GREEN，原失败日志只在私有本机测试归档，不读原生业务日志。
+后继新固定候选原生结果尚待取得；不重跑旧候选或用路径测试代替原SDK验收。
+
+## 5. SDK符号根修复的本机验证边界
+
+原路径治理断言实际1失败，修复后同断言通过；九件关联文件实际562通过、7个Windows相关跳过，
+零失败／错误。原两SDK在POSIX另行2通过；不能与关联范围重复累加为全仓或Windows业务结论。
+仅workflow路径与其合同身份变化，其他17件原18输入及预算／角色／selector保持，生产材料源码不变。
+文档静态、精确Secret／自检和三个Python文件Ruff检查／格式通过；第16节三幅图实际渲染及视觉复核。
+设计前置摘要、RED／GREEN日志XML、源码／身份差分、图示和后继原生元数据归档于
+私有windows-sdk-symbol-root-20261003-v1，不覆盖原目录兼容38成员封存包。

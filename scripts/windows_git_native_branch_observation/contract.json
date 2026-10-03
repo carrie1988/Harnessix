@@ -69,10 +69,10 @@
   "source_inputs": [
     {
       "path": ".github/workflows/windows-git-minimum-commit-probe.yml",
-      "bytes": 10686,
-      "sha256": "a065118bc2c0f775b94672d3c6e175ccd9e50b5717ba05129492d0f82297f070",
-      "crlf_bytes": 10877,
-      "crlf_sha256": "e347fd70da4e9a4b34fb48273a4e8c0baf82fc86eb61134f682c0d7787111476"
+      "bytes": 10759,
+      "sha256": "2d477953a6beeeeffece2effd8a0787f02d6e63f8632ac45373de261b2727f12",
+      "crlf_bytes": 10951,
+      "crlf_sha256": "fbe23802957ceebb3bc54f33eef4456461cb3ec232e0d770e8e538cce627cebe"
     },
     {
       "path": "src/harnessix/delivery/git_material_native_windows.py",

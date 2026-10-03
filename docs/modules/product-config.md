@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 63
-code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
+version: 64
+code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
 owners:
   - core
 modules:
@@ -2415,5 +2415,19 @@ POSIX跳过三个Windows控制不记为成功；创建／链接反例的结果�
 后继[目录兼容设计第15节](../changes/m09-r4-windows-minimum-commit-probe.md#15-windows目录写共享兼容与原保护保留)
 只在原Windows_open以_held_share区分目录3／文件1，不增加当前句柄写权限；文件禁写和双方禁删除共享保持。
 原reparse、类型、inode、完整路径、DACL、单链接和worker后验不变；三个原生控制保留历史share1真实错误32反例。
-原Windows写／改名／删除保护负例另列步骤，原SDK及所有旧节点不弱化。此兼容修复须由新原生候选验收，
+原Windows写／改名／删除保护负例另列步骤，原SDK及所有旧节点不弱化。固定244f9c2控制与保护步骤通过，SDK加侧车仍失败；
 不将初始整体failure、具体链接机制或本机成绩改写为完整Windows产品通过。
+
+### 原SDK符号根的装配一致性
+
+最低Commit工作流的preflight将固定PDB放在RUNNER_TEMP下的git-minimum-identity加Run／Attempt私有根。
+[原侧车_bind_trace2_roles](../../tests/product_config/git_minimum_commit_probe.py#L526)只从pytest基目录父节点的symbols
+严格验真wrapper及core，且缺少完整观察仍由原pytest_sessionfinish拒绝成功退出。
+SDK基目录现为同一身份根的fresh子目录minimum-commit-fixture，原Test-Path异常／已存在拒绝段保持；
+pytest仅管理child，不删除存放符号的parent。没有新增搜索fallback、符号环境入口或插件改动。
+
+[治理路径测试](../../tests/governance/test_git_material_snapshot_differential.py)锁定同一父根及原Trace2模式，
+原两个业务selector、五分钟、13接点和18输入门不变。需求、架构／时序／数据流、字段及失败语义见
+[详细设计第16节](../changes/m09-r4-windows-minimum-commit-probe.md#16-原sdk诊断侧车的符号根装配一致性)。
+旧Run失败保留；本机路径通过不证明SDK业务或新的Windows原生通过，正式结论见
+[原生验证资料](../validation/windows-directory-write-share-2026-10-03-v1/README.md)。

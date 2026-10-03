@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 11
-code_revision: ffc653ebc3e6dec9ea67f371562b9581f4bcc9e6
+version: 12
+code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -832,3 +832,88 @@ _link_result用显式use_last_error=True的真实WINFUNCTYPE绑定原kernel32的
 地址须等于原DLL函数地址；不模拟系统结果，也不依赖私有错误副本的偶然旧值。
 同一目录的两个独立打开在前后再次核对原目录身份；只共享参数变化，时间及HANDLE数值不是相同字段。
 这些测试域加固不改变生产共享政策、错误投影或业务契约，需与原控制和安全负例一起复验。
+
+## 16. 原SDK诊断侧车的符号根装配一致性
+
+### 16.1 实际结果、已确认缺陷与设计目标
+
+固定244f9c2的Run37132088623、attempt1、Job111229042843整体failure。
+原四格、同源fanout／blob、真实创建／链接、历史共享反例及原Windows保护步骤全部success；
+原SDK加侧车步骤failure。不能从聚合步骤判断两个业务case各自结果或新具体失败码。
+
+源码确认另一处验证装配缺陷：[_bind_trace2_roles](../../tests/product_config/git_minimum_commit_probe.py#L526)
+从Path(basetemp).parent/symbols寻找固定PDB，而工作流preflight的PDB在
+RUNNER_TEMP/git-minimum-identity-RUN-ATTEMPT/symbols，原SDK基目录却直接位于RUNNER_TEMP。
+即使业务case通过，侧车不完整仍由原[pytest_sessionfinish](../../tests/product_config/git_minimum_commit_probe.py#L627)
+将成功退出改成失败。缺陷来自路径装配，不表示业务已经通过。
+
+目标：只把SDK fresh基目录设为既有preflight私有输出的直接子目录minimum-commit-fixture。
+不修改插件、来源角色验真、13接点、诊断完整性、SDK选择器或五分钟期限，不增加输出或收集器。
+
+### 16.2 架构、接口与字段
+
+```mermaid
+flowchart TB
+  P[原preflight私有输出根] --> S[symbols wrapper及core 原固定PDB]
+  P --> B[直接子目录minimum-commit-fixture fresh pytest基目录]
+  B --> Parent[原侧车Path basetemp.parent]
+  Parent --> S
+  S --> Verify[原PE PDB与执行身份核验]
+  Verify --> SDK[原两个SDK及13接点]
+  SDK --> Gate[原诊断完整性及业务失败门]
+```
+
+| 字段／接口 | 当前合同与变化 | 源码 |
+| --- | --- | --- |
+| preflight private | 原git-minimum-identity加Run／Attempt输出，固定symbols在该根 | [minimum workflow](../../.github/workflows/windows-git-minimum-commit-probe.yml) |
+| SDK basetemp | 该private的直接fresh子目录，不再是RUNNER_TEMP的直接子目录 | 同上 |
+| output／symbols | 原插件基目录父节点及其symbols，不新增环境入口或路径fallback | [_bind_trace2_roles](../../tests/product_config/git_minimum_commit_probe.py#L526) |
+| 失败／清理 | 基目录已存在或Test-Path出错继续拒绝；pytest仅拥有fresh child，不删除preflight父根 | 同workflow原拒绝段 |
+
+### 16.3 流程、时序、数据流及伪代码
+
+```mermaid
+sequenceDiagram
+  participant W as 原工作流
+  participant P as 原preflight
+  participant T as 原pytest SDK
+  participant D as 原诊断侧车
+  W->>P: 原身份预检 输出private及symbols
+  P-->>W: 原预检成功
+  W->>W: private下fresh基目录必须不存在
+  W->>T: 原两个selector 原五分钟与Trace2模式
+  T->>D: 同一基目录
+  D->>P: 基目录父根中的原固定symbols
+  D-->>T: 原验真或原不完整失败
+  T-->>W: 业务及诊断完整性原退出码
+```
+
+```mermaid
+flowchart TB
+  Identity[固定Run Attempt及私有根] --> Symbols[原symbols文件]
+  Identity --> Child[SDK fresh基目录]
+  Child --> Parent[原parent严格解析]
+  Parent --> Bound[原角色验真]
+  Symbols --> Bound
+  Bound --> Outcome[原case断言及原完整性门结论]
+```
+
+```text
+identity_root = original RUNNER_TEMP/git-minimum-identity-RUN-ATTEMPT
+sdk_basetemp = identity_root/minimum-commit-fixture
+require sdk_basetemp absent using original strict Test-Path
+execute original two selectors with original plugin, arguments and timeout
+original plugin resolves sdk_basetemp.parent/symbols and re-verifies both official pairs
+retain original diagnostic failure gate even if both business cases pass
+```
+
+### 16.4 失败、安全、验证与部署
+
+先以治理断言复现旧装配失败，再改两行路径；不移除符号验真、不关闭侧车或放宽原成功门。
+原四格／同源／保护及原两SDK继续，18输入仅更新workflow一行，17行和全部其他合同字段不变。
+旧两个失败Run及历史Root UNKNOWN保留，新候选一次attempt1；仅读取步骤元数据，无原始或业务日志。
+子目录fresh规则、原Resources、Owner、Proof、费用及模型禁止线不改；原生未取得前仍为NO-GO。
+
+本机验证：原路径治理RED为1失败，修复后GREEN；九件关联文件562通过／7 Windows相关跳过，
+原两个SDK在POSIX另行2通过，所有XML零错误。原18输入仅workflow一行变化，17行及其他固定字段一致。
+第16节三图实际渲染及视觉复核通过；上述不替代新候选的原生SDK与侧车完整性验收。

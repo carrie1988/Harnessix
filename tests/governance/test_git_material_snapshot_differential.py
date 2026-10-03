@@ -299,3 +299,15 @@ def test_runner_symbol_path_is_only_resolved_in_step_environment():
         "test_real_windows_link_sharing_counterfactual",
     ):
         assert sum(selector in step["run"] for step in counterfactuals) == 1
+
+
+def test_sdk_fixture_parent_is_original_preflight_symbol_root():
+    workflow = yaml.safe_load(
+        (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text()
+    )
+    steps = workflow["jobs"]["minimum-commit-probe"]["steps"]
+    sdk = next(step for step in steps if step.get("name") == "原两个案例及低敏只读侧车")
+    assert "$identity = Join-Path $env:RUNNER_TEMP ('git-minimum-identity-'" in sdk["run"]
+    assert "$base = Join-Path $identity 'minimum-commit-fixture'" in sdk["run"]
+    assert sdk["timeout-minutes"] == 5
+    assert "--git-material-trace2=stderr-event-v1" in sdk["run"]
