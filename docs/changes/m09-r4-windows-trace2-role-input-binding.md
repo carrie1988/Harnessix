@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: f07263ce3d4ddb304b2ff054044f86f26d5267c6
+version: 7
+code_revision: 0b8c6e09b4d8eeb47c4a5e692473cd44239d1d25
 owners: [core]
 modules: [delivery, product_config, processes, governance]
 related_adrs:
@@ -604,4 +604,40 @@ Windows验收或商用门禁；所有观察保持`UNAUTHENTICATED_DIAGNOSTIC_ONL
 1034包含新文件90项及原八件944项，不与初验集合相加。新增四幅图已真实渲染并视检；
 结果、源SHA、原件摘要和未证明项见
 [正式验证](../validation/windows-first-failure-projection-2026-10-03-v1/README.md)。
-该整合仍为本机离线合同验收；未运行新的Windows现场或关闭原Git128/Worker2故障。
+上述整合本身仍为本机离线合同验收；后继单次现场结果见第14节，不关闭原Git128/Worker2故障。
+
+## 14. v2首失败接合的单次Windows实际结果
+
+固定`0b1e16a`的[Run37118277852](https://github.com/carrie1988/Harnessix/actions/runs/37118277852)
+仅执行attempt1并终态failure，result为EXECUTION_INCOMPLETE。十八输入及官方选中PE/PDB匹配，
+实际执行已启动；无超时或日志上限停止。仅下载原两个有限JSON，GitHub artifact摘要与ZIP、
+原result字节与声明摘要相符；没有读取raw、stderr、CDB或Job业务日志，旧Run不重跑。
+身份、九字段、原门、源码映射及字节摘要见
+[单次原生验证](../validation/windows-first-failure-native-2026-10-03-v1/README.md)。
+
+新增failure sibling实际为v2/FINITE_AB，两例post_worker_failure均FINITE/valid，九字段全同。
+
+| 字段 | A/B实际值 | 分层解释 |
+|---|---|---|
+| schema | harnessix.git-material-worker-failure/v1 | 原内层合同，不是新业务证明 |
+| origin | pre_cleanup | 有限帧声明为原清理前冻结，非独立MAC/PID验真 |
+| stage | git_validate | 原Worker验证子进程结果的阶段 |
+| error_code / handler_error_code | git_material_git_failed / git_material_git_failed | 首记录与最终handler一致，不能据此证明Git内部原因 |
+| git_popen_returned | true | 原有限记录声明Popen已返回 |
+| git_returncode | 128 | 与对应原案例git_return精确类型和值一致 |
+| git_stdout_complete / git_stdout_expected | null / null | 实测null；按原短路保留未求值，不能解释为没有输出 |
+
+源码求证：[`git_material_worker.py::_git`](../../src/harnessix/delivery/git_material_worker.py)的
+git_validate分支先判断reader存活/错误，再判断code非零，然后才计算stdout完整和OID匹配。
+128与两个null符合其原短路顺序；这属于基于固定源码的条件性解释，不是Git128根因已经确认。
+handler和pre_cleanup字段不是来自事后补造值，也不提供独立Worker MAC。
+
+SDK仍false，A/B均call failed、Worker2、Git128、proof ABSENT及操作未返回；branch_gate仍false，
+两个独立PID分支见证不存在，ARM/branch计数均0。零计数不能证明没有Git进程或回调未发生。
+Trace2只有ENTRY/DISPATCH/REPO与HASH_OBJECT_ADD_AGGREGATE，completeness UNKNOWN、UNCLASSIFIED_FORMAT；
+原历史FAIL_RETAINED/UNKNOWN保持。所有新诊断仍为UNAUTHENTICATED_DIAGNOSTIC_ONLY。
+
+本结果只把首失败记录定位到原git_validate/Git128接缝，不证明对象库写入、真实stdin读取、
+完整分支见证、Owner身份或业务成功。后继围绕原数据供给、Git对象库与调试布防边界作有限源码及
+独立反例求证；不重放同一失败候选，不凭更多相同Run改绿，不改变首发Git/恢复/备份范围或原门。
+默认完整Git、消费者Windows、R3真实质量、Beta与商用R1～R6继续开放。

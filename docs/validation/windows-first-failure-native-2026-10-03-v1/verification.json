@@ -1,0 +1,165 @@
+{
+  "artifact_id": 11272222412,
+  "artifact_integrity": {
+    "artifact_id": 11272222412,
+    "artifact_name": "git-native-branch-0b1e16ab8482ec324e35f81532ec58a1d09b1b6b-37118277852-1",
+    "business_logs_downloaded": false,
+    "download_get_count": 1,
+    "github_digest": "sha256:2516721afa453c036112c5580e37cbd5442aba98ec345baa5ccdb3dd7d5402df",
+    "github_digest_matches_zip": true,
+    "github_size_matches_zip": true,
+    "headSHA": "0b1e16ab8482ec324e35f81532ec58a1d09b1b6b",
+    "other_artifact_downloaded": false,
+    "result_sha256": "b1a7ca84765e540148783cb167ff02c778f2649c4ecbf946958cbbcc25bf4301",
+    "result_sha256_declaration_matches": true,
+    "run_attempt": 1,
+    "run_id": 37118277852,
+    "schema": "harnessix.finite-artifact-integrity/v1",
+    "unique_json_keys_and_finite_constants_checked": true,
+    "verified_at": "2026-10-03T11:02:59.896715+00:00",
+    "zip_bytes": 1895,
+    "zip_member_count": 2,
+    "zip_members": [
+      {
+        "bytes": 6553,
+        "name": "result.json",
+        "sha256": "b1a7ca84765e540148783cb167ff02c778f2649c4ecbf946958cbbcc25bf4301"
+      },
+      {
+        "bytes": 87,
+        "name": "result-sha256.json",
+        "sha256": "6804b3001e30fad6ce98f3b647fed59aa1c10ad1898c3c71f436829a8e8f9b3c"
+      }
+    ],
+    "zip_sha256": "2516721afa453c036112c5580e37cbd5442aba98ec345baa5ccdb3dd7d5402df",
+    "zip_written_to_disk": false
+  },
+  "assurance": "UNAUTHENTICATED_DIAGNOSTIC_ONLY",
+  "attempt": 1,
+  "branch_gate_passed": false,
+  "candidate_revision": "0b1e16ab8482ec324e35f81532ec58a1d09b1b6b",
+  "case_shape_state": "FINITE_AB",
+  "cases": [
+    {
+      "case": "A",
+      "field_states": {
+        "post_git_trace2": "FINITE",
+        "post_stderr_signals": "FINITE",
+        "post_worker_failure": "FINITE",
+        "post_worker_failure_status": "FINITE"
+      },
+      "post_git_trace2": {
+        "completeness": "UNKNOWN",
+        "error_format_ids": [
+          "HASH_OBJECT_ADD_AGGREGATE"
+        ],
+        "profile_status": "MATCHED",
+        "reason": "UNCLASSIFIED_FORMAT",
+        "return_consistency": "MATCHED_128",
+        "source_profile_id": "harnessix.git-material-trace2-profile/v1",
+        "stage_witnesses": [
+          "ENTRY_START_MATCHED",
+          "DISPATCH_HASH_OBJECT",
+          "REPO_EVENT_SEEN"
+        ]
+      },
+      "post_stderr_signals": {
+        "HASH_FD": false,
+        "LOOSE_CLOSE": false,
+        "LOOSE_WRITE": false,
+        "READ_ERROR": false,
+        "SHORT_READ": false,
+        "git_malformed_object_literal": false,
+        "git_object_db_permission_prefix": false,
+        "git_temp_create_prefix": false,
+        "worker_failure_literal": true
+      },
+      "post_worker_failure": {
+        "error_code": "git_material_git_failed",
+        "git_popen_returned": true,
+        "git_returncode": 128,
+        "git_stdout_complete": null,
+        "git_stdout_expected": null,
+        "handler_error_code": "git_material_git_failed",
+        "origin": "pre_cleanup",
+        "schema": "harnessix.git-material-worker-failure/v1",
+        "stage": "git_validate"
+      },
+      "post_worker_failure_status": "valid"
+    },
+    {
+      "case": "B",
+      "field_states": {
+        "post_git_trace2": "FINITE",
+        "post_stderr_signals": "FINITE",
+        "post_worker_failure": "FINITE",
+        "post_worker_failure_status": "FINITE"
+      },
+      "post_git_trace2": {
+        "completeness": "UNKNOWN",
+        "error_format_ids": [
+          "HASH_OBJECT_ADD_AGGREGATE"
+        ],
+        "profile_status": "MATCHED",
+        "reason": "UNCLASSIFIED_FORMAT",
+        "return_consistency": "MATCHED_128",
+        "source_profile_id": "harnessix.git-material-trace2-profile/v1",
+        "stage_witnesses": [
+          "ENTRY_START_MATCHED",
+          "DISPATCH_HASH_OBJECT",
+          "REPO_EVENT_SEEN"
+        ]
+      },
+      "post_stderr_signals": {
+        "HASH_FD": false,
+        "LOOSE_CLOSE": false,
+        "LOOSE_WRITE": false,
+        "READ_ERROR": false,
+        "SHORT_READ": false,
+        "git_malformed_object_literal": false,
+        "git_object_db_permission_prefix": false,
+        "git_temp_create_prefix": false,
+        "worker_failure_literal": true
+      },
+      "post_worker_failure": {
+        "error_code": "git_material_git_failed",
+        "git_popen_returned": true,
+        "git_returncode": 128,
+        "git_stdout_complete": null,
+        "git_stdout_expected": null,
+        "handler_error_code": "git_material_git_failed",
+        "origin": "pre_cleanup",
+        "schema": "harnessix.git-material-worker-failure/v1",
+        "stage": "git_validate"
+      },
+      "post_worker_failure_status": "valid"
+    }
+  ],
+  "conclusion": "failure",
+  "dispatch_count": 1,
+  "historical_root": "UNKNOWN",
+  "historical_run_result": "FAIL_RETAINED",
+  "job_id": 111189210671,
+  "local_original_validator_accepted": 2,
+  "local_original_validator_records": 2,
+  "metadata_sha256": "b07e5b8b9d5ba66b83892a6816b48b02d9ec9ce6ab22a00c3bd46ef20dfcf544",
+  "model_credential_reads": 0,
+  "model_requests": 0,
+  "not_verified": [
+    "Git128 root cause",
+    "independent Worker MAC/Owner PID",
+    "input proof and full branch witness",
+    "original SDK business success",
+    "full Git and Backupv2",
+    "R3 real coding quality",
+    "consumer Windows/Beta/R1-R6"
+  ],
+  "original_sdk_acceptance": false,
+  "pairs_matched": true,
+  "release_gates_closed": [],
+  "result_status": "EXECUTION_INCOMPLETE",
+  "retries": 0,
+  "run_id": 37118277852,
+  "schema": "harnessix.windows-first-failure-native-verification/v1",
+  "source_input_count": 18
+}

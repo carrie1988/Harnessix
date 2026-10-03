@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 170
-code_revision: 0b1e16ab8482ec324e35f81532ec58a1d09b1b6b
+version: 171
+code_revision: 0b8c6e09b4d8eeb47c4a5e692473cd44239d1d25
 owners:
   - core
 modules:
@@ -1793,3 +1793,15 @@ validator，保留首失败与最终handler、False/None、原status及返回码
 主仓受影响集实际3109通过、27平台跳过，514件明确输入零漂移；首次旧Git的六项差分失败保留。
 开发候选容量与错误局部22项另行通过、479输入零漂移，成绩不累计或跨候选继承。
 本修复不闭合T父目录容量、Bridge状态及私有A来源解析，默认完整Git与商用R1～R6仍开放。
+
+### R1/R4：v2首失败记录的Windows单次实际结果
+
+固定0b1e16a的[Run37118277852](https://github.com/carrie1988/Harnessix/actions/runs/37118277852)
+仅attempt1，已终态failure；十八输入及选中官方PE/PDB通过，原有限artifact恰好两JSON且摘要链匹配。
+新v2 sibling为FINITE_AB，A/B九字段均FINITE/valid：pre_cleanup、git_validate、
+git_material_git_failed、Popen返回true、Git128，stdout完整/匹配为实测null，最终handler同原错误。
+固定源码的原短路顺序解释两个null，但不确认Git内部根因或外部效果；诊断仍未认证。
+SDK/branch仍false、proof ABSENT，Trace2 completeness UNKNOWN；原FAIL_RETAINED/UNKNOWN保持。
+[完整设计增量](changes/m09-r4-windows-trace2-role-input-binding.md#14-v2首失败接合的单次windows实际结果)及
+[实际验证](validation/windows-first-failure-native-2026-10-03-v1/README.md)保留新Run/失败，不重跑同一候选。
+完整Git与Backup v2、Windows消费者、真实R3、独立Beta和商用R1～R6继续开放；未新增模型请求。
