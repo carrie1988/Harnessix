@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 182
-code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
+version: 183
+code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
 owners:
   - core
 modules:
@@ -1933,3 +1933,22 @@ Snapshot候选的本机三组回归为1283通过／23个Windows-only跳过／零
 
 当前仍需为Snapshot候选取得一致候选的三组原生结果及同候选门禁。完整Git产品T／Bridge／D／Checkpoint、独立Commit、默认完整Git／Backup v2、消费者Windows11、真实R3（费用仍未决）、
 独立Beta及R1～R6均保持开放，R1～R6不因本次分组或本机回归关闭。
+
+### R1/R4：固定beda980的三平台实际安装与后继门禁
+
+Snapshot修复已发布为beda980；常规Run37140137789的三个完整Windows材料组再次success，
+Linux／macOS原可读性门禁通过。macOS前置Secret／控制台回归失败，本机复现四个旧生成报告状态断言；
+Windows后继Session／认证回归失败，不将原生材料组成功扩大为完整Windows通过。
+
+[Run37140188341](https://github.com/carrie1988/Harnessix/actions/runs/37140188341)已整体success：同一规范
+1.0.0rc1 Wheel在Linux x86_64、macOS arm64、Windows AMD64完成源码外安装、状态备份恢复、卸载重装，
+以及原0.1.0→1.0.0rc1不同版本升级和匹配备份回退。六个原结果绑定相同Wheel摘要，并各自核验479个包成员；
+模型请求均为0，commercial_release均false。结果、原件和源码对应见
+[正式安装与升级验证报告](validation/installed-product-beda980-2026-10-04-v1/README.md)。
+
+原生成器完整复算确认SBOM与许可证报告分别仅一个项目元数据摘要字段漂移，组件、依赖边及777个Archive
+决定完全相同，12项许可违规保持；按[原生成器同步详设](changes/m09-4b-reproducible-sbom.md#10-项目元数据摘要漂移的最小同步)
+显式生成，不放宽policy、不在CI自动生成掩盖漂移。原完整源与本轮Wheel目录Secret扫描通过；
+包含旧Wheel／sdist的本机默认dist超限失败保留，原同选择干净夹具179项通过，不将本机目录问题推定为CI根因。
+后继WindowsSession原生失败仍须单独闭环，本机495项通过不替代原生修复证据。
+完整Git／Backup v2、R3质量及费用未决、消费者系统、独立Beta和R1～R6仍开放。

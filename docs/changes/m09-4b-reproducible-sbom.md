@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
-code_revision: 21b5eb1d57055f32ba2178c165b3ad46060ee7c7
+version: 5
+code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_tests:
   - tests/governance/test_sbom.py
   - tests/governance/test_supply_chain.py
   - tests/governance/test_cli_console.py
+  - tests/governance/test_license_archive_evidence.py
+  - tests/governance/test_secret_scan.py
 supersedes: []
 ---
 
@@ -184,3 +186,81 @@ Revision a5fd57e的Windows编码旧失败已消失，但新控制台测试发现
 | 2 | `b06396a` | 2026-09-27 | 登记首轮真实CI的Windows管道编码失败；统一五个治理CLI的UTF-8输出、真实子进程Reader与干净目录依赖，补代码页正反例。 |
 | 3 | `a5fd57eda953ba9f04f8e4673d1432306adac6a9` | 2026-09-27 | 登记Windows中文编码修复后仍存在的两项Eval包执行依赖污染；合同导入边界独立设计和验证，保留原失败证据。 |
 | 4 | `21b5eb1d57055f32ba2178c165b3ad46060ee7c7` | 2026-09-27 | 固定导入隔离候选Revision；SBOM库存字节不变，许可证与Secret独立门禁不关闭 |
+| 5 | `beda980fbeee90a36487b04eac5f1b493539b91f` | 2026-10-04 | 核验项目元数据摘要漂移与四个控制台回归失败，设计原生成器同步两个摘要字段；777件许可决定及12项违规保持，不关闭R2 |
+
+## 10. 项目元数据摘要漂移的最小同步
+
+### 10.1 需求背景、实证与设计目标
+
+固定beda980的[CI Run37140137789](https://github.com/carrie1988/Harnessix/actions/runs/37140137789)
+已通过原可读性检查。macOS前置Secret／控制台回归步骤失败，本机精确重跑两个文件复现四项失败：
+SBOM的module／script检查返回漂移而非成功，许可证的module／script检查返回报告漂移而非原12项违规。
+原编码输出已经是完整UTF-8，不是UnicodeEncodeError；不得修改控制台编码或将失败根因归于平台。
+
+以原生成器在内存复算完整报告并逐字段比较：SBOM仅metadata.properties中
+harnessix:project_sha256变化，许可证报告仅project_sha256变化；两者均由旧
+`e4929170958bb3d104b0b45ac90cc1806b67c11fae6439d7add7e84eba734bd9`
+变为当前pyproject.toml原字节摘要
+`ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad`。
+SBOM components和dependencies全量相同，Schema有效；许可全部777 entries相同，违规仍为12。
+
+目标仅恢复版本化报告与真实输入的字节一致性，不处置许可权利、不提高白名单、不跳过原R2发行门禁。
+非目标为新CLI行为、依赖升级、许可自动批准或运行时SBOM。既有方法、Schema和报告生成契约不变。
+
+### 10.2 总体流程、接口设计与数据字段
+
+```mermaid
+flowchart TB
+  P[当前pyproject原字节] --> S[原build_sbom及离线Schema]
+  P --> L[原build_report及固定许可证据]
+  S --> D[完整字段差分 仅项目摘要]
+  L --> D
+  D --> W[显式原生成器写规范字节]
+  W --> C[原只读check及控制台回归]
+  C --> B[SBOM一致 许可证仍12项违规]
+```
+
+| 接口／字段 | 源码位置 | 约束与解释 |
+|---|---|---|
+| build_sbom／validate_sbom／canonical_bytes | [`scripts/sbom_generate.py`](../../scripts/sbom_generate.py) | 原锁和项目字节、固定Schema、排序与规范JSON；不下载Schema |
+| build_report／main | [`scripts/license_scan.py`](../../scripts/license_scan.py) | 原777件Blob与policy离线验真，不使用本机安装元数据；违规仍退出1 |
+| harnessix:project_sha256 | [`governance/sbom.cyclonedx.json`](../../governance/sbom.cyclonedx.json) | 当前完整pyproject原字节身份，不仅是包版本 |
+| project_sha256 | [`governance/license-scan-v2.json`](../../governance/license-scan-v2.json) | 相同输入身份；不影响单Archive许可决定 |
+| components／dependencies／entries | 同上两份报告 | 全量对象逐项相等，不以数量一致代替内容一致 |
+| --check | 原两个main | 不写报告；缺失／漂移继续失败关闭，许可违规继续返回1 |
+
+先比较完整报告及固定policy、锁和证据摘要，再执行原CLI显式生成。SBOM输出0才确认生成及Schema通过；
+许可证显式生成即使写入报告，也因12项违规返回1，必须继续记录为R2 NO-GO，不使用成功包装忽略退出码。
+随后分别调用只读--check并运行原Secret、控制台、SBOM、Supply Chain与许可证据测试。
+
+### 10.3 核心伪代码、失败、安全与兼容
+
+```text
+使用原生成器从当前锁、项目、policy及证据构造完整报告
+要求SBOM组件及边、许可777个完整决定与旧报告相同
+要求两个差分都只有原项目摘要字段，不改依赖或许可规则
+显式生成原规范JSON，不在CI自动重生成以掩盖未来漂移
+原只读SBOM检查 -> 0
+原只读许可证检查 -> 1，保留12项违规
+原控制台回归 -> UTF-8诊断与上述原状态一致
+```
+
+如果出现更多字段变化、依赖漂移、许可决定变化或证据缺失，应停止本同步并另行核验，不能把它当作摘要刷新。
+无产品源码、公开接口或数据库迁移；原输入及报告历史保留。原18个最低Git专项输入、policy和许可Blob不变，
+没有模型调用、凭据提取、新诊断格式、真实费用变化或旧CI rerun。两份生成报告一致不证明R2权利处置完成，
+也不能替代真实R3、完整Git交付、消费者安装、Beta或同候选R1～R6商用退出条件。
+
+### 10.4 当前验证结果与本机构建目录边界
+
+两个报告的实际Git差分各为一个摘要字段；SBOM只读检查返回0，许可证只读检查返回1并保留12项违规。
+关联Secret、控制台、SBOM、许可证据四个文件169项通过。增加Supply Chain文件的完整五文件本机运行
+发现scan_entry_limit：默认dist混有旧发行Wheel及旧sdist，计数达到4821文件／5180成员，超过原10000总项。
+该失败保留，不能归为SBOM元数据修复失败，也不能直接认定干净CI仓库超限。
+
+不删除存量构建件、不改ScanLimits、不排除仓库文件。完整复制原4814件跟踪输入及八件明确新增验证文件，
+核对干净夹具4822件索引无遗漏、不含旧dist或外来未跟踪目录，再执行相同完整五文件选择：179通过，零跳过、
+零失败／错误。当前仓库与显式本轮Wheel输出目录的原完整Secret扫描也通过，4816输入完整覆盖且零命中。
+这是受管新制品目录与干净输入的证据，不保证包含任意历史构建件的默认dist仍能满足原有界预算。
+
+同候选Windows后继Session认证回归仍failure，本机相同范围495项通过；本机成功不是Windows原生故障修复证据。
+后继必须定位并闭环该平台失败，不能通过生成报告一致、安装成功或本机通过关闭R1／R4。

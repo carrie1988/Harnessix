@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 17
-code_revision: 65d7323b12db782bbf62f109545058256037584e
+version: 18
+code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
 owners:
   - core
 modules:
@@ -41,6 +41,10 @@ supersedes: []
 这不是消费者目标OS、脱离源码安装、升级及独立Beta完成的证明。
 后继[Git/Owner与完整恢复原生焦点](../validation/windows-private-state-2026-09-28-v1/README.md)
 已完成有限场景验证；不能从本地锁定Wheel导入、离线Doctor或焦点通过推导三平台正式安装完成。
+
+固定beda980的[三平台实际源码外安装与不同版本升级验证](../validation/installed-product-beda980-2026-10-04-v1/README.md)
+已取得唯一规范Wheel和三个原生Job通过；当前1.0.0rc1候选在该固定环境完成完整状态备份恢复、卸载重装，
+以及0.1.0→1.0.0rc1升级和匹配备份回退。该结果不是消费者全部OS、真实编码、Beta或1.0商用发布完成证明。
 
 ## 2. 前置条件
 

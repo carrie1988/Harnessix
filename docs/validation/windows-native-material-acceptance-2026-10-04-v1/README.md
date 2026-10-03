@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
-code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
+version: 3
+code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
 owners: [core]
 modules: [delivery, product_config, processes, governance]
 related_adrs:
@@ -113,3 +113,18 @@ Snapshot候选应通过正常push取得一次与候选源码一致的自动CI，
 
 新治理读取当前YAML及冻结Git源码均显式UTF-8，保持跨平台中文步骤比较一致。
 首次文档检查实际发现三个语义章节标题不符合规范，修正命名并重新验证；初始发现保存，不覆盖旧资料。
+
+## 7. 固定Snapshot修复候选的实际结果
+
+beda980的[Run37140137789](https://github.com/carrie1988/Harnessix/actions/runs/37140137789)、attempt1已终态failure。
+三个完整材料Job success：authenticated-raw 111252676234、object-input 111252676194、cas-reference 111252676278。
+原核心Windows Job111252676088五个业务步骤、readability、doccheck、实际Wheel与Secret检查success，
+随后Session／认证回归failure，后继基准及广泛范围未执行。Linux双版本全量pytest、macOS前置回归failure；
+容器沙箱和文档Job success。不读取原日志或推定单案例及唯一根因。
+
+同源[Run37140188341](https://github.com/carrie1988/Harnessix/actions/runs/37140188341)三平台实际安装、
+完整状态恢复、不同版本升级与备份回退全部success；原结果及唯一Wheel身份见
+[正式报告](../installed-product-beda980-2026-10-04-v1/README.md)。这些结果不关闭整个Windows、R4或商用门禁。
+原元数据漂移后继仅生成两个摘要字段，本机控制台焦点169通过、完整干净五文件179通过；
+12项许可违规保留，详见[同步设计](../../changes/m09-4b-reproducible-sbom.md#10-项目元数据摘要漂移的最小同步)。
+后继Windows Session本机495通过，不代表原生故障修复；R3、完整Git、消费者系统、Beta及R1～R6继续开放。

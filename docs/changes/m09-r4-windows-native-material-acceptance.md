@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
+version: 3
+code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
 owners: [core]
 modules: [delivery, product_config, processes, workspace, governance]
 related_adrs:
@@ -262,3 +262,21 @@ requested数量超过256 -> 原KernelError，不观察叶子
 补充后请求提取测试共12项，最终六个关联文件58节点、54通过／4个平台跳过、零失败／错误；
 实际生产源码438个文件的类型检查通过。新增顺序断言由主线程闭环，原独立报告保持原审查源码与测试摘要，
 不宣称它覆盖后续新增的四个断言。
+
+## 11. Snapshot修复候选的实际原生与安装结果
+
+固定beda980的[Run37140137789](https://github.com/carrie1988/Harnessix/actions/runs/37140137789)、attempt1
+三个完整Windows材料Job再次success：authenticated-raw Job111252676234、object-input Job111252676194、
+cas-reference Job111252676278。核心Windows Job111252676088五个业务步骤、原可读性、文档、实际Wheel与
+Secret制品检查均success，随后Session／认证回归failure，后继基准及广泛回归skipped。
+该Run整体failure，Linux双Python全量pytest及macOS前置回归也failure，不能用分组通过覆盖这些结果。
+
+同固定源码的[安装Run37140188341](https://github.com/carrie1988/Harnessix/actions/runs/37140188341)整体success：
+唯一规范Wheel在三个原生环境完成源码外安装、完整备份恢复、卸载重装和不同版本升级回退。
+六个原结果及479包成员验真见[正式验证报告](../validation/installed-product-beda980-2026-10-04-v1/README.md)。
+全部模型请求为0，commercial_release=false；当前成功不替代默认完整Git／Backup v2、R3或Beta。
+
+原生成报告摘要漂移的四项本机复现、两个字段同步、许可12项违规保持及完整干净回归见
+[原生成器同步设计](m09-4b-reproducible-sbom.md#10-项目元数据摘要漂移的最小同步)。
+后继WindowsSession根因未建立，本机相同范围495项通过只能提供对照，不能宣布平台修复。
+同候选材料组已通过；新增Snapshot差分的完整Windows回归及所有剩余R1～R6仍按原范围完成。
