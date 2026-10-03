@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 156
+version: 157
 code_revision: 6e440ffad07ee31ed6153838f858240f5754c876
 owners:
   - core
@@ -1637,3 +1637,16 @@ Artifact、API ZIP摘要和结果摘要。CDB/Python存在标志均为null，不
 API ZIP及结果摘要，Windows CRLF回执不转换。旧三个FAIL不重跑、不覆盖，未新增模型请求。
 后继先求证原调试脚本/分支回调与Git材料失败接缝，不重复同一已失败候选；
 完整Git产品/Backup v2、R3真实质量、消费者Windows、Beta及商用R1～R6仍开放。
+
+### R1/R4：主映像创建事件布防候选
+
+实际生成字节确认原三处printf为正确单反斜线换行，未修改格式串。
+原bootstrap只监听ld:git.exe并忽略cpr；依据Microsoft分离的创建/加载事件合同，
+限定改用唯一cpr:git.exe回调，原同名wrapper/core的size、四处机器码、三处PDB符号、
+两硬件断点、寄存器谓词及自动继续均保留。未放宽原解析或身份门，也不认定历史Git128唯一根因。
+
+[完整详设](changes/m09-r4-git-native-process-arming.md)及
+[限定验证包](validation/git-native-process-arming-2026-10-03-v1/README.md)记录原新例1失败/7通过，
+修复后原227与新增8共235通过；16件固定输入、原两个SDK selector、13 hook及全部期限不变。
+后继仅以新固定提交验证一次原生执行；旧Run和FAIL保留，离线证据不等于CDB/SDK实际成功。
+完整Git默认交付/Backup v2、真实R3、消费者Windows、Beta及同候选商用R1～R6仍开放。

@@ -45,11 +45,12 @@ def debugger_scripts(output: Path, core: dict) -> None:
         f".if ({symbol_guard}) {{ " + "; ".join([*breaks, armed]) + "; } } }\n",
         encoding="ascii",
     )
+    # Git主映像随子进程创建进入调试会话；不以DLL加载事件替代cpr入口。
     (output / "bootstrap.cdb").write_text(
-        ".symopt+0x400\n.symopt-0x40\n.childdbg 1\nsxi ibp\nsxi cpr\nsxi epr\n"
+        ".symopt+0x400\n.symopt-0x40\n.childdbg 1\nsxi ibp\nsxi epr\n"
         + 'sxe -c "$$><'
         + str(output / "on-git-load.cdb")
-        + '; g" ld:git.exe\ng\n',
+        + '; g" cpr:git.exe\ng\n',
         encoding="ascii",
     )
 

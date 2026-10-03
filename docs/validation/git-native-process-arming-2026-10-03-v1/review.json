@@ -1,0 +1,19 @@
+{
+  "schema": "harnessix.native-process-arming-review/v1",
+  "scope": "单一创建事件入口与固定原合同保留",
+  "method": "实际源码/生成字节差分、完整正式回归、文档和Secret复核",
+  "independent_model_review": false,
+  "findings": {
+    "P0": [],
+    "P1": [],
+    "P2": []
+  },
+  "not_proven": [
+    "历史Git128排他根因",
+    "CDB现场布防与分支命中",
+    "原SDK成功",
+    "消费者Windows",
+    "完整Git交付/Backup v2",
+    "R1～R6商用完成"
+  ]
+}

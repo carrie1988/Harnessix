@@ -1,0 +1,44 @@
+{
+  "schema": "harnessix.native-process-arming-verification/v1",
+  "baseline_revision": "dc1953acc92e201714a3fa9a8bc6ad3032b40a2b",
+  "candidate_revision": null,
+  "old_source_tests": {
+    "tests": 8,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "candidate_tests": {
+    "tests": 235,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "exact_bootstrap_delta": true,
+  "unchanged_generated_handlers": 3,
+  "unchanged_other_preflight_ast": true,
+  "fixed_source_inputs_verified": 16,
+  "printf_escape_changed": false,
+  "production_source_changed": false,
+  "controls_changed": false,
+  "ruff": "PASS",
+  "format": "PASS",
+  "diagram_rendered_and_viewed": true,
+  "diagram_sha256": "9003b80bbfaeec72a82237570171ba28f99dd33c98d61f941587a6265fd22810",
+  "windows_execution_performed": false,
+  "sdk_acceptance": false,
+  "historical_root": "UNKNOWN",
+  "R1_R4_complete": false,
+  "new_model_requests": 0,
+  "documentation": {
+    "state": "PASS",
+    "documents": 505,
+    "changed_paths": 12,
+    "findings": []
+  },
+  "secret": {
+    "state": "PASS",
+    "files": 12,
+    "findings": []
+  }
+}

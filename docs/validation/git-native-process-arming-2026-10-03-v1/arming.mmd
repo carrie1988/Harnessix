@@ -1,0 +1,12 @@
+flowchart TB
+    A[原固定提交与16件输入<br/>PE/PDB及工具预检] --> B[原CDB child调试<br/>不改变生产SDK]
+    B --> C[唯一cpr:git.exe创建事件<br/>原回调和自动继续]
+    C --> D{原size/code/symbol<br/>全部符合core?}
+    D -->|否| E[不布防<br/>继续原流程]
+    D -->|是| F[原两处硬件断点<br/>ARM与原寄存器谓词]
+    F --> G[原Git执行与有限记录<br/>handler以gc继续]
+    E --> H[原两例SDK与pytest结果]
+    G --> H
+    H --> I[原完整解析门与v3诊断分列<br/>不放宽grammar或失败语义]
+    I --> J[原两文件结果发布<br/>旧FAIL保留与Root UNKNOWN]
+    J --> K[不等于SDK或商用验收]
