@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 65
-code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
+version: 66
+code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
 owners:
   - core
 modules:
@@ -2436,3 +2436,18 @@ pytest仅管理child，不删除存放符号的parent。没有新增搜索fallba
 本专项的最低SHA256 Commit材料及CAS独立回读原生验收完成，旧聚合failure保持为历史事实。
 [正式验证范围](../validation/windows-directory-write-share-2026-10-03-v1/README.md#6-sdk符号根修复的固定原生通过)
 不外推完整容量、默认Git交付、消费者Windows或商用发布。
+
+## Windows完整Git材料并行原生验收（当前）
+
+本模块的既有材料准备、认证raw、Git基准及对象材料测试保持现行实现；旧CI认证raw／Git合并的27个选择器迁至
+`windows-git-native-material`的三个独立Windows矩阵组，且每个选择器恰好保留一次：
+`authenticated-raw`（16项）、`object-input`（6项）和`cas-reference`（5项）。
+三个成员使用同一CI候选提交、锁定依赖，
+`fail-fast=false`，每个pytest步骤仍为5分钟；原`windows-trusted-execution` job其余所有步骤保持。
+
+本次仅调整CI调度与验收边界，不改变生产材料流程。原完整8MiB容量、对象格式和原断言不变，
+原材料源码与原最低专项18输入均不改。并行矩阵可能增加总runner分钟，不声称原CI总预算保持。
+本次不是生产缺陷修复；原生结果待新候选验证，不关闭R4或R1～R6。
+
+完整的分组、选择器多重集合、步骤保持、失败语义、依赖锁定与验收边界见
+[Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。

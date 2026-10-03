@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 37
-code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
+version: 38
+code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
 owners:
   - core
 modules:
@@ -2166,3 +2166,18 @@ SDK加诊断侧车聚合步骤失败，尚未分别验收业务case。源码确�
 SDK符号根修复候选0583b53的Run37134072312已整体success，最低SHA256 Commit两个原SDK及侧车、
 全部对象写入控制与原保护步骤通过。材料生产代码仍是244f9c2的目录共享最小修复；
 完整Git交付、容量矩阵及Backup v2不由该专项替代，见同一验证资料第6节。
+
+## Windows完整Git材料并行原生验收（当前）
+
+本模块的Git材料Worker、Windows原生端口、对象输入合同及CAS引用验真保持现行实现；旧CI认证raw／Git
+合并的27个选择器迁至`windows-git-native-material`的三个独立Windows矩阵组，并完整保留为
+`authenticated-raw`（16项）、`object-input`（6项）和`cas-reference`（5项）。
+矩阵成员使用同一CI候选提交及锁定依赖，
+`fail-fast=false`，每个pytest步骤仍为5分钟；原`windows-trusted-execution` job其余所有步骤保持。
+
+本次是CI调度与验收边界调整，不是生产缺陷修复。原完整8MiB容量、对象格式和原断言不变，
+原材料源码与原最低专项18输入均不改。并行执行可能增加总runner分钟，不声称原CI总预算保持。
+原生结果待新候选验证，不关闭R4或R1～R6；任一矩阵成员失败仍保持失败，不转换为通过。
+
+分组边界、原选择器精确保留、依赖与超时约束、原生失败语义及回退范围见
+[Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。

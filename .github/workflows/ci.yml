@@ -88,6 +88,60 @@ jobs:
       - run: uv run python -m examples.batch_diff
       - run: uv run python -m examples.host_process
 
+  windows-git-native-material:
+    # 原27个选择器独立并行；失败不取消其余成员，也不忽略失败。
+    name: Windows Git 原生验收 (${{ matrix.group }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: authenticated-raw
+            selectors: >-
+              tests/processes/test_windows_raw_receipt.py
+              tests/tools/test_windows_git.py::test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw
+              tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction
+              tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout-raw-baseline]"
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token-raw-baseline]"
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task-raw-baseline]"
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch-raw-baseline]"
+              tests/processes/test_raw_output_receipt.py
+              tests/processes/test_raw_receipt_supervision.py
+              tests/processes/test_git_raw_observation.py
+              tests/tools/test_git_delivery_reader.py
+              tests/delivery/test_git_store_readonly.py
+              tests/product_config/test_git_delivery_process.py
+              tests/product_config/test_git_baseline.py::test_large_original_blob_uses_complete_observed_digest_not_prefix
+              tests/product_config/test_git_baseline.py::test_consumer_uses_raw_blob_index_and_status_not_redacted_observation
+          - group: object-input
+            selectors: >-
+              tests/product_config/test_git_object_material.py
+              tests/product_config/test_git_material_input.py
+              tests/product_config/test_git_material_snapshot_lifecycle.py
+              tests/product_config/test_git_material_native.py
+              tests/product_config/test_git_material_directory_access.py
+              tests/product_config/test_git_material_owner_exit.py
+          - group: cas-reference
+            selectors: >-
+              tests/delivery/test_git_material_cas.py
+              tests/delivery/test_cas_write_authority.py
+              tests/delivery/test_git_object_references.py
+              tests/delivery/test_git_tree_closure.py
+              tests/product_config/test_git_material_cas_integration.py
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 验证原生Git回执、完整对象输入与CAS引用
+        run: >-
+          uv run pytest ${{ matrix.selectors }} -vv -o faulthandler_timeout=60
+        timeout-minutes: 5
+
   windows-trusted-execution:
     # Windows运行Workspace、Job Object Process、Sandbox/Secret与受管Git交付契约。
     runs-on: windows-latest
@@ -138,37 +192,6 @@ jobs:
           tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner
           -vv -o faulthandler_timeout=60
         timeout-minutes: 3
-      - name: 验证原生认证raw回执与Git基准
-        run: >-
-          uv run pytest tests/processes/test_windows_raw_receipt.py
-          tests/tools/test_windows_git.py::test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw
-          tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction
-          tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline
-          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout-raw-baseline]"
-          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token-raw-baseline]"
-          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task-raw-baseline]"
-          "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch-raw-baseline]"
-          tests/processes/test_raw_output_receipt.py
-          tests/processes/test_raw_receipt_supervision.py
-          tests/processes/test_git_raw_observation.py
-          tests/tools/test_git_delivery_reader.py
-          tests/delivery/test_git_store_readonly.py
-          tests/product_config/test_git_delivery_process.py
-          tests/product_config/test_git_object_material.py
-          tests/product_config/test_git_material_input.py
-          tests/product_config/test_git_material_snapshot_lifecycle.py
-          tests/product_config/test_git_material_native.py
-          tests/product_config/test_git_material_directory_access.py
-          tests/product_config/test_git_material_owner_exit.py
-          tests/delivery/test_git_material_cas.py
-          tests/delivery/test_cas_write_authority.py
-          tests/delivery/test_git_object_references.py
-          tests/delivery/test_git_tree_closure.py
-          tests/product_config/test_git_material_cas_integration.py
-          tests/product_config/test_git_baseline.py::test_large_original_blob_uses_complete_observed_digest_not_prefix
-          tests/product_config/test_git_baseline.py::test_consumer_uses_raw_blob_index_and_status_not_redacted_observation
-          -vv -o faulthandler_timeout=60
-        timeout-minutes: 5
       - name: 验证原生产品重启与State创建边界
         run: >-
           uv run pytest tests/benchmarks/test_soak_restart_child.py

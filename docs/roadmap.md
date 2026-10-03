@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 180
-code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
+version: 181
+code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
 owners:
   - core
 modules:
@@ -1886,3 +1886,19 @@ Job111234899713已终态success：原身份预检、原四格、同源两臂、�
 同候选常规CI Run37134036729的Windows Job111234779832已failure：前两个NTFS及Git读取步骤success，
 认证raw／Git基准聚合步骤failure。原最低专项成功不覆盖该完整矩阵失败，后继仍需定位剩余分组；
 不据步骤元数据虚构各case失败或扩大已通过范围。独立窄源码复核未发现P0／P1／P2，仍不替代原生全矩阵。
+
+### R1/R4：完整Windows材料矩阵的并行验收边界
+
+原Windows认证raw／Git基准聚合含27选择器，固定0583b53的Job111234779832运行308秒后failure，
+各case结果仍未建立，不把接近五分钟推定为唯一超时根因。
+[总体与详细设计](changes/m09-r4-windows-native-material-acceptance.md)保留原完整选择器及其他核心步骤，
+迁入三个独立Windows矩阵成员：认证raw16项、对象输入6项、CAS引用5项，fail-fast=false不互相取消。
+每个pytest仍五分钟；总runner分钟可能增加，不提高原命令／操作或最低专项正式期限。
+
+当前1306个参数化节点的多重集合与原合并组完整相等，三个成员分别386／303／617；
+新治理7项通过，原最低专项18输入及生产材料源码不改。没有新增诊断采集器或放宽容量、格式和安全断言。
+各分组仍须新候选实际原生通过；完整Git／Backup v2、R3、消费者Windows、Beta和同候选R1～R6继续开放。
+
+三组本机关联回归并行实际1283通过／23 Windows相关跳过、零失败／错误；新治理7项单列。
+首次文档检查的三项标题规范发现保留并修正，不用本机结果宣称原生通过。
+结果及范围见[正式验证资料](validation/windows-native-material-acceptance-2026-10-04-v1/README.md)。

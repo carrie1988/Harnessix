@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 33
-code_revision: 2ae1862d3fca46a2baed77bd55451e81028eaf5f
+version: 34
+code_revision: 8162953c80035ffea1cb7b9f6fc23995e3d2bbfb
 owners:
   - core
 modules:
@@ -1788,3 +1788,18 @@ Git宿主的可能送达标志覆盖 `Supervisor.__aexit__` 与私有清理，�
 此归类不吞掉原关闭故障或伪造Lease终态；实际原回执与恢复核对仍为进程事实权威。
 真实故障与快照死亡屏障保留PID、MAC、raw EOF/长度/SHA及实际回收验证，
 单机跳过Windows测试不等于原生验收通过。默认Git写入、完整业务恢复及商用门禁继续开放。
+
+## Windows完整Git材料并行原生验收（当前）
+
+本模块的Windows Supervisor、Owner、Receipt、原始流观察及完整对象输入进程契约保持不变；旧CI认证raw／Git
+合并的27个选择器迁至`windows-git-native-material`的三个独立Windows矩阵组：
+`authenticated-raw`（16项）、`object-input`（6项）和`cas-reference`（5项）。
+各矩阵成员使用同一CI候选提交、锁定依赖，
+`fail-fast=false`，各pytest步骤仍为5分钟；原`windows-trusted-execution` job其余所有步骤保持。
+
+本次仅改变CI调度与验收边界，不是生产缺陷修复。原完整8MiB容量、对象格式和原断言不变，
+原材料源码与原最低专项18输入均不改。并行矩阵可能增加总runner分钟，不声称原CI总预算保持。
+原生结果待新候选验证，不关闭R4或R1～R6；矩阵结果不能替代进程Owner、回执及完整产品验收。
+
+完整分组契约、失败／取消语义、步骤保持及原生验证边界见
+[Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。
