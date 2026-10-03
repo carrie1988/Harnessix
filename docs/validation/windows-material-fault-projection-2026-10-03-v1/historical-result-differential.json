@@ -1,0 +1,26 @@
+{
+  "run_id": 37080708999,
+  "revision": "10d58c597f08d81e4201879e1b9c70fd37454aa6",
+  "original_result_sha256": "b5effba8273f49d21a7c718b5e23837b4b9fb42ab763a97a1bc0995d2b322498",
+  "original_digest_verified": true,
+  "historical_finite_result_replay_equal": true,
+  "all_legacy_result_fields_equal_after_new_field_removed": true,
+  "new_failure_fields_state": "NOT_AVAILABLE",
+  "no_raw_backfill": true,
+  "native_rerun_performed": false,
+  "git_returns": [
+    128,
+    128
+  ],
+  "worker_returns": [
+    2,
+    2
+  ],
+  "marker_counts": {
+    "arm_fullmatch_count": 0,
+    "branch_fullmatch_count": 0,
+    "bad_marker_prefix_count": 0
+  },
+  "historical_root": "UNKNOWN",
+  "original_sdk_acceptance": false
+}

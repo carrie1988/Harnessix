@@ -12,6 +12,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path.cwd().resolve(strict=True)))
 
 from scripts.windows_git_native_branch_observation.contract import read_contract  # noqa: E402
+from scripts.windows_git_native_branch_observation.failure_projection import (  # noqa: E402
+    SIBLING_KEY,
+    failure_report,
+    project_failure_case,
+)
 from scripts.windows_git_native_branch_observation.projection import (  # noqa: E402
     PROBE_PREFIX,
     project_case,
@@ -24,6 +29,7 @@ class CaseSink(io.TextIOBase):
     def __init__(self) -> None:
         self.pending = ""
         self.rows: list[dict] = []
+        self.failure_rows: list[dict] = []
         self.invalid = False
 
     def write(self, text: str) -> int:
@@ -47,6 +53,7 @@ class CaseSink(io.TextIOBase):
                     if len(self.rows) >= 2:
                         raise ValueError("extra_probe_frame")
                     self.rows.append(project_case(line))
+                    self.failure_rows.append(project_failure_case(line))
                 except (ValueError, TypeError, RecursionError, UnicodeError):
                     self.invalid = True
         if len(self.pending) > 65536:
@@ -81,6 +88,7 @@ def main(output: Path) -> int:
         "pytest_exit": code,
         "cases": sink.rows,
         "invalid": sink.invalid or sink.pending.startswith(PROBE_PREFIX),
+        SIBLING_KEY: failure_report(sink.failure_rows),
     }
     (output / "cases.json").write_text(json.dumps(report) + "\n", encoding="utf-8")
     return code

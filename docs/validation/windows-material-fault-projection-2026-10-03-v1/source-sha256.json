@@ -1,0 +1,10 @@
+{
+  "scripts/windows_git_native_branch_observation/failure_projection.py": "844e84510c997501c1295450e143a4853db8136ef34fb08a158a92e7603e0578",
+  "scripts/windows_git_native_branch_observation/run_cases.py": "d2bb80d5c27397f19fba1bdd8d2212205cd95397edc35e5d4bc25a84d3be9465",
+  "scripts/windows_git_native_branch_observation/observe.py": "fd7d0700221b5bf768410c6eaba65625782af0c6c9733a4bb0cef47b99ab14a2",
+  "tests/governance/test_windows_git_native_failure_projection.py": "8195e27e9d0aaa29a9ae7606a5bf910bd27b6eb8d0dc4ec6cfdadc287c3e9732",
+  "docs/changes/m09-r4-windows-material-fault-projection.md": "1955d8c10bd2a7ae340607ce912e57a197f8c0df50b49e96c5a3f9d4d7d74906",
+  "docs/modules/windows-git-native-observation.md": "cce5de0ce5854d0432f778de0e5fae881b9e180d22c4162fbf74a9ecd4e15587",
+  "docs/changes/m09-r4-git-native-execution-envelope-v3.md": "b330f5863c93d2c73d84bc181d735145a72d8c6c12442cc8649c3d39cfe6cb0b",
+  "docs/roadmap.md": "3b14c33834ff9aeeb6a70b065797538709e6624b9af087f9c1f0855ae0249b2a"
+}

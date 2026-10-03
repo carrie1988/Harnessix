@@ -1,0 +1,14 @@
+flowchart TD
+    P["原 v5 Probe.render / _publish<br/>原 13 hook，单次完整 write"] --> S["CaseSink 原边界<br/>65536 上限，两帧上限"]
+    S --> C["原 project_case<br/>九字段保持不变"]
+    C --> O["原 cases / marker 见证<br/>原完整 gate 与非零退出"]
+    C --> F["新 failure_projection<br/>只校验已发布三个有限字段"]
+    F --> R["cases.json 独立 sibling v1<br/>字段缺失 / 拒绝 / 有限分列"]
+    R --> I["observe 精确 schema 隔离<br/>8192 字节门保持"]
+    I --> U["未认证 failure_observation<br/>不发布正文、操作路径、PID、errno、MAC"]
+    O --> Z["result v3<br/>无 SDK 验收提升，Root UNKNOWN"]
+    U --> Z
+    classDef old fill:#edf4ff,stroke:#345d90,color:#1c304a
+    classDef seam fill:#eef9ef,stroke:#377447,color:#183d22
+    class P,S,C,O old
+    class F,R,I,U seam

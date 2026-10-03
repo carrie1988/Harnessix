@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 158
+version: 159
 code_revision: 6e440ffad07ee31ed6153838f858240f5754c876
 owners:
   - core
@@ -1662,3 +1662,15 @@ API ZIP及结果摘要，Windows CRLF回执不转换。旧三个FAIL不重跑、
 及Windows CRLF回执。入口合同修复和离线235项通过没有消除此现场失败，不能宣称回调或guard成功，
 也不能由0匹配推断没有Git进程。后继先补齐既有调试脚本/材料接缝的实际定位，不重复该候选或旧Run。
 完整Git产品、Backup v2、R3、消费者Windows、Beta及同候选R1～R6仍开放，未新增模型请求。
+
+### R1/R4：既有材料失败事实的有限观察接合
+
+原v5已发布的九项stderr bool、Worker失败状态和七字段Trace2，经独立精确sibling
+进入原结果的未认证观察；原九字段案例、完整gate、16源、13 hook及期限不变。
+[完整详细设计](changes/m09-r4-windows-material-fault-projection.md)与
+[现行模块](modules/windows-git-native-observation.md)明确字段、归属、持久化及失败边界。
+原观察器235、新专项289、补充266共790项离线通过；独立289专项加一个真实Completion
+在明确的支持SHA256 Git宿主通过，和原Apple Git2.24.3前置FAIL分列，不相加为全仓或Windows通过。
+精确兼容差分保持280次原结果/门零差异；历史Git128、Worker2、SDK false、Root UNKNOWN仍保留。
+未启动新原生Run或模型请求。后继固定现场定位、完整Git效果/Backup v2、R3、消费者Windows、
+独立Beta与最终R1～R6仍按原退出条件完成。

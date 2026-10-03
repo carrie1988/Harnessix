@@ -19,6 +19,10 @@ from scripts.windows_git_native_branch_observation.contract import (
     unique_object,
 )
 from scripts.windows_git_native_branch_observation.diagnostics import PreflightDiagnostic
+from scripts.windows_git_native_branch_observation.failure_projection import (
+    failure_observation,
+    isolate_failure_report,
+)
 from scripts.windows_git_native_branch_observation.preflight import prepare, recheck
 from scripts.windows_git_native_branch_observation.projection import (
     CASE_FIELDS,
@@ -83,6 +87,7 @@ def unverified_observation() -> dict:
         "source_case_report_invalid": None,
         "marker_state": "NOT_AVAILABLE",
         "marker_counts": None,
+        "failure_observation": failure_observation(),
     }
 
 
@@ -101,6 +106,7 @@ def observation_result(output: Path, execution: dict) -> dict:
         report = json.loads(case_file.read_bytes(), object_pairs_hook=unique_object)
         if type(report) is not dict:
             raise ValueError("case_report_invalid")
+        report, observation["failure_observation"] = isolate_failure_report(report)
         cases, pytest_exit = report.get("cases", []), report.get("pytest_exit")
         cases_valid = (
             type(cases) is list

@@ -1,0 +1,13 @@
+{
+  "status": "limited_source_ready",
+  "source_review": "parent inspected all three changed scripts and fixed field validators; actual differential tests and source checks",
+  "peer_offline_cases": 790,
+  "parent_cases": 290,
+  "overlap": 289,
+  "original_complete_gate_unchanged": true,
+  "native_windows_acceptance": false,
+  "root_cause": "UNKNOWN",
+  "full_product_git_delivery": false,
+  "model_requests": 0,
+  "must_keep_failures": true
+}

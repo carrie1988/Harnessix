@@ -1,0 +1,95 @@
+{
+  "contract_sha256": "3fdfc2ac2f69e63517d6bdfd747d6242a7c4f734553c289908b48c3c0fffb39f",
+  "source_input_count": 16,
+  "source_checks": [
+    {
+      "path": ".github/workflows/windows-git-minimum-commit-probe.yml",
+      "sha256": "2dd79bdd79b5bf2a2408079d131c36ba959b68b7b37b8e9f009b070aa3c6b8a5",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_native_windows.py",
+      "sha256": "a575db969b45d74b9b71e6120781b39755b0d444ba3d88ffa68ca521a95df56e",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_native.py",
+      "sha256": "e92ec1751d945c85564bf65f93b74e20e7462b8be56cbc7ef7760cf3fc2166e9",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_worker.py",
+      "sha256": "f56b25e5d230abf56702bc12ccf27f8344c67c34bbb8b0777128caea764bf37d",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_input_contracts.py",
+      "sha256": "4080c84dc577ac24116e6efd97f3db38d54ec7262bc9b71d78f4282d80a75b71",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/delivery/git.py",
+      "sha256": "8848a6aaaefe6b2987fb41fab0fa8b52ecf8d7533fba090e450881bae2e8de74",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/product_config/git_delivery_process.py",
+      "sha256": "15b394e6eb3ded3f6e67638a9d6e3ec414e01e9692ac779b238e74fa4946d403",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/product_config/git_material_process.py",
+      "sha256": "6c203b86d4729fc3ced38f42850e3c8744826c867d0bfeb316c22c7f09c86f4a",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "tests/product_config/test_git_material_input.py",
+      "sha256": "2a48f4a9ee130711fe0c7726f1c329400652767b50aeb5b897b4ebd4e0c72b02",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "tests/product_config/test_git_material_cas_integration.py",
+      "sha256": "8810afc504a90080fe4e134670cc690e7c13f4b50073c5eb906e1eeda96633ff",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "tests/product_config/git_minimum_commit_probe.py",
+      "sha256": "bceaff4fdb87524189e48f28fcf3d038e50e6b428240b150c99565bcd196cf19",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "tests/product_config/git_trace2_projection.py",
+      "sha256": "a86a106e35f731f46c81acc9e872e038d391130461cd674a7395a9c05d58d43f",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "tests/product_config/test_git_delivery_process.py",
+      "sha256": "6fd8a096e54bd8c9d3e3aa3c167d1533984ad08d5c8f99880d8b2babf71a69ba",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/processes/windows_owner.py",
+      "sha256": "82aa3bc13ea30733930bcfd2b0565e78018125c4b0d2d8dd165638b2726571b5",
+      "representation": "EXACT_FROZEN_BYTES"
+    },
+    {
+      "path": "src/harnessix/processes/windows_job.py",
+      "sha256": "33bb11a64e27c0a9478dc07e761c629d6c91bfe033a2cfbfbe5192f9dab90675",
+      "representation": "EXACT_FROZEN_BYTES"
+    }
+  ],
+  "budgets": {
+    "command_seconds": 20,
+    "operation_seconds": 45,
+    "workflow_step_seconds": 300,
+    "outer_watchdog_seconds": 240
+  },
+  "original_hooks": 13,
+  "all_product_source_unmodified": true,
+  "projection_unchanged": true
+}

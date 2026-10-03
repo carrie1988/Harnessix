@@ -175,3 +175,16 @@ contract、preflight、diagnostics、原plugin、workflow及全部生产源不�
 部署必须采用包含本次三源、必要测试、SDD及新验证包的精确固定发布revision。schema v2消费者不能静默解读新字段；旧v2原件继续历史解释。回退恢复新包保存的三源原字节，不覆写旧FAIL或产品状态，不涉及数据/账本迁移。
 
 观察器发布不自动触发原生运行；固定完整候选后显式执行一次原workflow，仍遵守原全部预检和预算。缺少实际Windows/CDB/SDK证据时保持未验证，不由本地GREEN关闭W1、Git128或商用验收。
+
+## 13. Windows 材料有限失败接缝候选
+
+v3 结果新增独立 `unverified_execution_observation.failure_observation`，消费原 v5
+已发布的九项 stderr bool、失败帧状态与有限 Trace2 七字段；原九字段案例及完整门不改。
+独立 sibling schema 为 `harnessix.git-native-failure-observation/v1`，不提升 assurance。
+当前接缝为未提交源码候选，不能复用本文历史发布 SHA 或旧原生 Run 身份；
+精确实现身份由新验证资料的逐文件摘要绑定。
+
+接口、固定字段、异常与安全限额见
+[有限失败投影详设](m09-r4-windows-material-fault-projection.md)；模块现态见
+[Windows 定点观察模块](../modules/windows-git-native-observation.md)。
+该接缝不扩展 probe、不改变 PATH 或预算，也不实现 Git operation 生命周期。

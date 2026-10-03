@@ -1,0 +1,6 @@
+{
+  "case_sink_write_equal_after_only_new_append_removed": true,
+  "observation_result_equal_after_only_exact_isolation_removed": true,
+  "observe_run_state_exit_exception_logic_identical": true,
+  "project_case_full_file_identical": true
+}

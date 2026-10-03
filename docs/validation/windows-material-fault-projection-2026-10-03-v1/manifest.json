@@ -1,0 +1,72 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "dc68a909cdf1767a6cda18e582f7e1808daa26c2c5cc259a60296f9a5a01880c",
+      "bytes": 3394
+    },
+    {
+      "path": "architecture.mmd",
+      "sha256": "1218da9c47fa1b91561cb5cfe684b40d109a26a9b9be565a674ed5693c3bc916",
+      "bytes": 858
+    },
+    {
+      "path": "architecture.png",
+      "sha256": "e0cbfd6c395ebceb5d6fafc4f52f1f6b289bdc62bb905fce1883cc4d0be4c580",
+      "bytes": 70110
+    },
+    {
+      "path": "ast-differential.json",
+      "sha256": "bfb17e312c5a1f7c01457ce3f2db17c70351e028d4d4e1ac3746a47fcf9532cd",
+      "bytes": 241
+    },
+    {
+      "path": "historical-result-differential.json",
+      "sha256": "2e18d223ea79600775f0b004467db64849581988425ca2ca565d12bf955cdb7e",
+      "bytes": 713
+    },
+    {
+      "path": "offline-790.xml",
+      "sha256": "20a5a54e08773a2ecfb7e8c8a5a6ca4e391abf7171b7b86085f242958891299b",
+      "bytes": 138196
+    },
+    {
+      "path": "parent-290.xml",
+      "sha256": "b09040cce771c26a081303f0a4ad6f0943f1b95e5555456dacc6043fac1b9b3c",
+      "bytes": 51458
+    },
+    {
+      "path": "review-packet.json",
+      "sha256": "afe86d59288c7ab0935db0d43b6b8020e3f230d5794dc1950a022c97282957bb",
+      "bytes": 446
+    },
+    {
+      "path": "sequence.mmd",
+      "sha256": "3fe77b097a090a1ac44fe7b52038db7e337ea489c72dd4b959e0cfa30824eb13",
+      "bytes": 895
+    },
+    {
+      "path": "sequence.png",
+      "sha256": "dccdc86fd62d617eaf4e2ed62cc813417e00c194a8df62189dbf4dbb10499c37",
+      "bytes": 91628
+    },
+    {
+      "path": "source-preservation.json",
+      "sha256": "a50686f22575f5ca795785201282303eb1c986606d04c22dceda52888db09434",
+      "bytes": 3668
+    },
+    {
+      "path": "source-sha256.json",
+      "sha256": "390dc400aba7fad6acfe02ad8a5890a11ca690a416c1a97149d1d648eb22d138",
+      "bytes": 1010
+    },
+    {
+      "path": "verification.json",
+      "sha256": "132460f79b2d480cf6474e8767d36504254f65053bb9718f1201dd08216a76c3",
+      "bytes": 3969
+    }
+  ],
+  "excluded": [
+    "manifest.json"
+  ]
+}

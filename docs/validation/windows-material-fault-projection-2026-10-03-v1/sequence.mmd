@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant P as 原 v5 发布器
+    participant S as CaseSink
+    participant C as 原 project_case
+    participant F as 新有限 helper
+    participant R as cases.json
+    participant O as observe
+    participant Z as result v3
+    P->>S: 原完整协议帧（同一内存行）
+    S->>C: 原验证 / 九字段
+    C-->>S: 原案例或原异常
+    S->>F: 仅原验证通过的帧
+    F-->>S: 三字段逐项 FINITE / NOT_AVAILABLE / REJECTED
+    S->>R: 原三键 + 精确 sibling
+    O->>R: 原既有一次文件读取（≤8192字节）
+    R-->>O: 原 duplicate-key 严格解码
+    O->>F: sibling 精确复验 / 固定对象重建
+    F-->>O: 合法有限对象或 REJECTED 空载荷
+    O->>O: 原 marker / cases / 完整 gate 不消费 sibling
+    O->>Z: 原结果 + 独立未认证观察
+    Note over P,Z: 不新增 hook，不补读 raw，不执行新原生 Run
