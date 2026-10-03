@@ -1,0 +1,84 @@
+{
+  "bridge_contract_changed": false,
+  "candidate_base_revision": "730f0846641700c4c697d7cc6ba03cbf1a8364bc",
+  "candidate_final_inputs": {
+    "configuration": 2,
+    "drift": 0,
+    "production": 473,
+    "tests": 2,
+    "total": 477
+  },
+  "credential_reads": 0,
+  "default_product_git_enabled": false,
+  "model_requests": 0,
+  "not_verified": [
+    "new T/Bridge contract and migration",
+    "authenticated product T/D/Checkpoint/Commit",
+    "Backup v2 and new-root restore",
+    "Windows native",
+    "R3 real coding quality",
+    "independent Beta",
+    "R1-R6 release"
+  ],
+  "observed_errors": {
+    "private_anchor_create": "git_worktree_binding_invalid",
+    "private_anchor_readonly_resolver": "git_repository_changed",
+    "publish_after_ready_checkpoint": "delivery_dirty_conflict",
+    "publish_before_plan": "delivery_dirty_conflict",
+    "published_snapshot": "execution_plan_stale"
+  },
+  "original_candidate_failure": "new test expected internal resolver error rather than wrapped public binding error; only new test corrected",
+  "primary_base_revision": "f07263ce3d4ddb304b2ff054044f86f26d5267c6",
+  "primary_inputs": {
+    "configuration": 2,
+    "drift": 0,
+    "production": 438,
+    "tests": 2,
+    "total": 442
+  },
+  "production_changes": 0,
+  "raw_artifacts_sha256": {
+    "primary-run01/inputs-after.json": "a75dc102e55c1014980ca25890fb52f53a7e25dbb7caa37d2506a7e225fb0d3c",
+    "primary-run01/inputs-before.json": "a75dc102e55c1014980ca25890fb52f53a7e25dbb7caa37d2506a7e225fb0d3c",
+    "primary-run01/pytest.log": "bf168a14e8ba29f27b8e248c83d99c6d8b45ab163b0135f1569e4128b310b727",
+    "primary-run01/pytest.xml": "549c751ddefc46e1821d3ed41ea474ae4b692ce594aeaf3033e2404198c113b5",
+    "pytest-run-01.log": "3c62b4aba33ca328862a84a3bd57f6586ea92bdc398e2b5257c3fa2fa6a176d5",
+    "pytest-run-01.xml": "edbb918e45034ba5be0369cde18b45ad7614337c01bf150e97df7ca2d7f91f17",
+    "pytest-run-02.log": "753677d8fc9db7837376b9731babc1368da71d9452a727f7a769a0ad7087ae59",
+    "pytest-run-02.xml": "97928b7af5f9ff6afdb43b63e07715a01a4c3cecd0e2c8ead5e4ce7c7d2b55b1"
+  },
+  "release_gates_closed": [],
+  "runs": {
+    "candidate_final": {
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5",
+      "time": "5.038"
+    },
+    "candidate_initial": {
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "4",
+      "time": "3.157"
+    },
+    "primary_final": {
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5",
+      "time": "5.003"
+    }
+  },
+  "scope": "original delivery components; real local detached private anchor negative controls; ordinary clean-source Checkpoint and Commit positive control; no product Bridge execution",
+  "source_sha256": {
+    "src/harnessix/delivery/filesystem.py": "9e2ce9b28468e3304ad57eb7e86e01fa6b7eef83a94ce59f102d7912f94d5199",
+    "src/harnessix/delivery/git.py": "8848a6aaaefe6b2987fb41fab0fa8b52ecf8d7533fba090e450881bae2e8de74",
+    "src/harnessix/delivery/planner.py": "6ecdadd6122a4fe04a197c437f108fc6d95d6e5f70bcd11f76e16798dc4ee8d8",
+    "src/harnessix/delivery/store.py": "b62a730b6c7fa3e76d89fa1a4550e8c7ff3a7eb73f1da92e0a1b74dd535b7a4e",
+    "tests/delivery/test_git.py": "5a68e180e6fd0ce57b560916c871910d032e628ba1926cb933ab47c6157961da",
+    "tests/delivery/test_git_projection_ordering.py": "5f6b3d6a4616071169efd503b7d9659153fd13355be0b947189798a1a7e58a9e"
+  },
+  "spec_version": "harnessix.git-projection-ordering-verification/v1"
+}

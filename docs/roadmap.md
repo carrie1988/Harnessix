@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 167
-code_revision: 5fbd98d04f27661edce9b9b71d7cacc03d72d62e
+version: 168
+code_revision: f07263ce3d4ddb304b2ff054044f86f26d5267c6
 owners:
   - core
 modules:
@@ -1757,3 +1757,15 @@ R1～R6、R3费用未决与编码质量、Windows消费者、完整Git/Backup v2
 [启动取消验证](validation/git-start-cancellation-2026-10-03-v1/README.md)。
 该修复不合入完整Git候选的父意图或A效果，不代表T/Bridge/D、Checkpoint/Commit、
 业务Backup v2、Windows原生、R3真实质量或商用R1～R6验收完成。未新增模型请求或费用。
+
+### R4：派生事务顺序冲突与私有来源解析核验
+
+原发布器在真实私有A上发布T后，原Git干净来源和原Snapshot独立拒绝；提前创建D也无法绕过
+Checkpoint的来源保护。普通干净来源正对照证明原组件可在T仍prepared时物化D并完成独立Commit；
+真实干净私有A则暴露旧commonDir邻接解析缺口，D登记效果保留creating，不能报ready。
+新增四项正反例并复用一项原完整Commit测试，主仓实际五项通过，442件输入零漂移；
+开发候选五项结果单列，原新增夹具错误码断言失败保留，不相加为产品验收。
+完整源码、图示、字段/状态和待确认整改见[顺序整改设计](changes/m09-r4-git-projection-ordering.md)及
+[正式验证](validation/git-projection-ordering-2026-10-03-v1/README.md)。
+本次不修改Bridge published前提或任何原保护，不开启默认Git；后继必须同时解决T语义和认证A明确解析，
+再完成T/Bridge/D/Checkpoint、独立Commit及Backup v2。Windows、真实R3、Beta与R1～R6仍开放。
