@@ -1,6 +1,6 @@
 {
   "schema": "harnessix.git-native-branch-contract/v1",
-  "base_revision": "5265fdf2d1755b15491f41b770b2d718bab98d2c",
+  "base_revision": "5306c7134c1301dd10bee682be5ce1e61e120c46",
   "official_release": "v2.55.0.windows.5",
   "release_api": "https://api.github.com/repos/git-for-windows/git/releases/tags/v2.55.0.windows.5",
   "assets": {
@@ -178,6 +178,20 @@
       "sha256": "33bb11a64e27c0a9478dc07e761c629d6c91bfe033a2cfbfbe5192f9dab90675",
       "crlf_bytes": 7075,
       "crlf_sha256": "0db24d78faf5ebc1a1fc3695d74f248745c781cab9cc6ecd2ece4da42e7fdf3b"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_trace2_profile.py",
+      "bytes": 12984,
+      "sha256": "cbbe858c6bde3d0050ff0cbdebb78735d84891fe621ca485a8f1c28d74e49435",
+      "crlf_bytes": 13358,
+      "crlf_sha256": "9b7df0b671fd4ee95ae1acbb2499883f21e69ffe6df34acff504b4ba56125442"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/failure_projection.py",
+      "bytes": 8012,
+      "sha256": "7e2a262473182ad265c9fae77226058914fa9e1f511cc9e22c80a54a557e857e",
+      "crlf_bytes": 8222,
+      "crlf_sha256": "f131235cb6f16dd52b8de390569aaaea2a2ba719fd3c7a4c3104cf78c3a0d85c"
     }
   ],
   "historical_run": {

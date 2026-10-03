@@ -1,0 +1,8 @@
+flowchart TD
+    B[两件诊断源码完整字节] --> H[精确LF与CRLF长度/SHA]
+    H --> M[完整发行合同原16加末尾2]
+    M --> D[原parser固定合同SHA]
+    S[完整静态模板] --> E[有限error enum集合]
+    E --> F[原七字段及失败Sibling]
+    F --> R[原结果记录]
+    X[动态msg/path/errno] -. 不进入发布正文 .-> R

@@ -1,0 +1,22 @@
+{
+  "scope": "9 exact source/test members and append-only 18-input contract; offline and static only",
+  "source_lock": "source-lock.json",
+  "facts": "facts.json",
+  "verification": "verification.json",
+  "findings": [
+    {
+      "severity": "P2",
+      "status": "CLOSED_BY_RED_GREEN_AND_FULL_REGRESSION",
+      "description": "Original catalog selector lost independent finite validator positive checks",
+      "production_changed_for_closure": false
+    }
+  ],
+  "unverified": [
+    "actual Windows Git operation success",
+    "consumer Windows 11",
+    "full Git effect delivery and Backup v2",
+    "real R3 coding quality",
+    "independent Beta",
+    "commercial R1-R6"
+  ]
+}

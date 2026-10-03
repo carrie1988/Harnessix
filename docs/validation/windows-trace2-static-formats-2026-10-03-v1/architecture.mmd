@@ -1,0 +1,8 @@
+flowchart LR
+    S[固定官方源码三处普通error] --> P[深只读九项目录]
+    P --> T[原精确Trace2投影]
+    T --> F[原失败Sibling九enum白名单]
+    F --> O[原有限观察结果]
+    O -. 不授予 .-> G[原branch/proof/SDK成功门]
+    I[原16输入加两件诊断源码] --> C[原完整LF/CRLF验真]
+    C --> O

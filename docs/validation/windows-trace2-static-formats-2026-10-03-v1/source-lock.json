@@ -1,0 +1,50 @@
+{
+  "base_revision": "5306c7134c1301dd10bee682be5ce1e61e120c46",
+  "members": [
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.json",
+      "bytes": 8289,
+      "sha256": "5128c50f679c3ca2d687b1ad69f6a265d4283c11ce3f2f5d7099bc0767e46cf7"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.py",
+      "bytes": 3937,
+      "sha256": "7f1a078d9c89ac28fcd9e2fa223ed4eb68f581b0633697b81746d91bd9bae27f"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/failure_projection.py",
+      "bytes": 8012,
+      "sha256": "7e2a262473182ad265c9fae77226058914fa9e1f511cc9e22c80a54a557e857e"
+    },
+    {
+      "path": "src/harnessix/delivery/git_material_trace2_profile.py",
+      "bytes": 12984,
+      "sha256": "cbbe858c6bde3d0050ff0cbdebb78735d84891fe621ca485a8f1c28d74e49435"
+    },
+    {
+      "path": "tests/delivery/test_git_material_trace2_static_errors.py",
+      "bytes": 10237,
+      "sha256": "22a2a38d4ad8d476ba446f26284fa7deba1e69f27002d1473aab2871cf72e95a"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_branch_observation.py",
+      "bytes": 21120,
+      "sha256": "4a10b8ee2c0101c047434fe69a3f629f751907ff1c7b1c2c9a520184371a5c5a"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_branch_preflight_v2.py",
+      "bytes": 17153,
+      "sha256": "8ac10fd18cd3900a319c4ffdeb3245b3e8b44ef91dd84b0a0b6d317f1357baa2"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_failure_projection.py",
+      "bytes": 23699,
+      "sha256": "d6486a48fef8baa979f4a11040774980e0a406951cb4c03b048896677322443f"
+    },
+    {
+      "path": "tests/governance/test_windows_git_trace2_input_binding.py",
+      "bytes": 11504,
+      "sha256": "3270ebee7f1bacba15fd1cef21270fdb801f7538f613eb1c50c73a57fe562dff"
+    }
+  ]
+}

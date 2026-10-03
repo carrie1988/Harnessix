@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant C as 固定候选预检
+    participant P as 原显式诊断
+    participant T as 原投影器
+    participant F as 原失败发布器
+    C->>C: 验真18件源码及原PE/PDB
+    P->>T: 原已验MAC/EOF/保护后的有限内存
+    T->>T: 原版本/SID/argv/schema和完整模板相等
+    alt 未登记或errno动态尾部
+        T-->>F: UNKNOWN及原有限字段
+    else 已登记精确静态模板
+        T-->>F: 有序去重固定ID
+    end
+    F->>F: 九enum封闭白名单及原case结构
+    F-->>C: 原UNAUTHENTICATED_DIAGNOSTIC_ONLY观察

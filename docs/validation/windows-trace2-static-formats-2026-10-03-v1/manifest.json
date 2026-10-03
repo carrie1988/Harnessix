@@ -1,0 +1,59 @@
+{
+  "members": [
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/README.md",
+      "bytes": 4616,
+      "sha256": "1ba193b7b47d22aad489309b2500e5c2bf913cd7f864f91689900f3c5dba5b43"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/architecture.mmd",
+      "bytes": 338,
+      "sha256": "a344d035c5e0d7dc9ad3c6d8341326e34bba7047e7fed107fee61244fe9f8909"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/architecture.png",
+      "bytes": 11599,
+      "sha256": "1eee88a86cd85635eb771bf932d21bd70b8338f4bd8605f9076f2d6aca28cdfa"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/data-flow.mmd",
+      "bytes": 355,
+      "sha256": "18424ed8aa798a11ae3881cd44174a6e586ffc8b6a568a82438ed0d85ce743a4"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/data-flow.png",
+      "bytes": 34114,
+      "sha256": "bf0204029d0ad6cf5864ea8c6ff6e4e824bfc35daa2a98a9af4a742c3524f8bc"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/facts.json",
+      "bytes": 1689,
+      "sha256": "6b652cd1ee829c98f0fc8897ac309dc75a71da78efa4ae8609dbdfc83da876ca"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/review-packet.json",
+      "bytes": 684,
+      "sha256": "edfb58704ff1d7ea3a106abac07734a3eae107d7fce28937ec12c407c4dce4c7"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/sequence.mmd",
+      "bytes": 584,
+      "sha256": "0c96ba77b36221e22d64d1edb47df7fdeb2a689e5f8ea52b0ba38aaa972c8d7f"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/sequence.png",
+      "bytes": 44083,
+      "sha256": "709bb43d7d25d16c1928882c5fa291dd0429174d5eedb46e37981d943466ccd7"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/source-lock.json",
+      "bytes": 1842,
+      "sha256": "e85bc29e96ab75f4224de2f220ace6d848395ee388ace4ad0257a0688864eedf"
+    },
+    {
+      "path": "docs/validation/windows-trace2-static-formats-2026-10-03-v1/verification.json",
+      "bytes": 2880,
+      "sha256": "1d0e60b02222b80e80de4f9fb72bcb1b696a15113a12101e0674b47473177b88"
+    }
+  ]
+}

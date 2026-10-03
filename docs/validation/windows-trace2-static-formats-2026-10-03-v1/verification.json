@@ -1,0 +1,89 @@
+{
+  "artifacts": {
+    "final.xml": {
+      "bytes": 186059,
+      "sha256": "9bdf0a7233750fce6f2449c6667bae81630dc3a02efc45968c5f4132d27cc42a"
+    },
+    "final-v2.xml": {
+      "bytes": 171958,
+      "sha256": "8a50fc71afb96cc140263149cd00f0fde4a76ac5926bdb557b6d61bc02ac9e32"
+    },
+    "selector-harness-error.xml": {
+      "bytes": 243,
+      "sha256": "c74c2288a2aa0b792089104ffb6d25320b2551fa973dd83819d4192232ebbae5"
+    },
+    "selector-red.xml": {
+      "bytes": 1074,
+      "sha256": "6be7f35916e2f4a23b51a8a72b3a2c12569ce3ec8b0533b7b318bb1a7c3f449a"
+    },
+    "selector-green.xml": {
+      "bytes": 1936,
+      "sha256": "a0074ff7fa80e2b9e986b1656271cc208d9473938a1a25bd9bb3357b0cd8d919"
+    },
+    "final-v3.xml": {
+      "bytes": 172122,
+      "sha256": "8f251dadb4809057e581878fd778602ff555c1adea0d3a7f4881d8acb70635f0"
+    },
+    "final-v3.log": {
+      "bytes": 1273,
+      "sha256": "a5fa80abc4048fe6cf3b844e3e1c25437502d9dcb839b4b762c5e4ad517b64ad"
+    },
+    "execution-inputs-v3.json": {
+      "bytes": 155018,
+      "sha256": "ac91487f378dc84d7548bd243aacbbaab86a7a6766151417a0c5ef50cbdc1176"
+    },
+    "final-v3-drift.json": {
+      "bytes": 42,
+      "sha256": "fbbf555af7465ac41ca8bd5b8a218b2f3f5ad75bd4df5170cfc3fa199594b59a"
+    }
+  },
+  "independent_static_review": {
+    "REPORT.md": "ca91b7ef4c52026316ec2f234cf41c62d02e9a57d29af6acae6668dee8779be1",
+    "ReviewPacket.md": "441b8ce463d34374df137a67ef5bfa7d5b0f6c9f0bd35322fdf3682757323c0c"
+  },
+  "diagrams": [
+    {
+      "name": "architecture",
+      "rendered": true,
+      "visually_viewed": true,
+      "source_sha256": "a344d035c5e0d7dc9ad3c6d8341326e34bba7047e7fed107fee61244fe9f8909",
+      "sha256": "1eee88a86cd85635eb771bf932d21bd70b8338f4bd8605f9076f2d6aca28cdfa"
+    },
+    {
+      "name": "sequence",
+      "rendered": true,
+      "visually_viewed": true,
+      "source_sha256": "0c96ba77b36221e22d64d1edb47df7fdeb2a689e5f8ea52b0ba38aaa972c8d7f",
+      "sha256": "709bb43d7d25d16c1928882c5fa291dd0429174d5eedb46e37981d943466ccd7"
+    },
+    {
+      "name": "data-flow",
+      "rendered": true,
+      "visually_viewed": true,
+      "source_sha256": "18424ed8aa798a11ae3881cd44174a6e586ffc8b6a568a82438ed0d85ce743a4",
+      "sha256": "bf0204029d0ad6cf5864ea8c6ff6e4e824bfc35daa2a98a9af4a742c3524f8bc"
+    }
+  ],
+  "no_original_guard_excluded": true,
+  "duplicate_cases_not_summed": true,
+  "raw_or_private_runtime_content_published": false,
+  "documentation": {
+    "policy_version": "harnessix.documentation-policy/v1",
+    "document_count": 516,
+    "link_count": 12072,
+    "mermaid_count": 996,
+    "source_package_count": 26,
+    "changed_path_count": 25,
+    "findings": []
+  },
+  "candidate_secret_scan": {
+    "findings": [],
+    "self_check": true,
+    "explicit_owned_paths": 25
+  },
+  "ruff": {
+    "changed_python_files": 8,
+    "check": "PASS",
+    "format": "PASS"
+  }
+}

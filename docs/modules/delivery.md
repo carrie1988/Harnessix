@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 32
-code_revision: dfba34e707ed845f3e9d844461e124015c22dca7
+version: 33
+code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
 owners:
   - core
 modules:
@@ -2105,7 +2105,11 @@ Backup v2及新根重授权仍依照
 新实现字节自然改变实现摘要，不宣称旧批准可跨实现复用。
 
 [`git_material_trace2_profile.py`](../../src/harnessix/delivery/git_material_trace2_profile.py)
-提供固定Git版本的30种封闭事件schema和6种静态错误格式，不是Git二进制认证或原生故障根因证明。
+提供固定Git版本的30种封闭事件schema和9种静态错误格式，不是Git二进制认证或原生故障根因证明。
+新增三个普通error模板保持精确完整匹配，errno动态尾部仍UNKNOWN；失败Sibling仅同步固定enum。
+完整发行输入保留原16件并追加profile和失败发布器两件，原安全前置及成功门禁不变；
+来源、字段、流程、时序、数据流与失败边界见
+[静态格式接合详设](../changes/m09-r4-windows-trace2-role-input-binding.md#12-精确静态错误目录与失败发布接合)。
 原Worker仍消费完整材料、小manifest及原Owner控制通道；没有新增文件日志、文件描述符、
 任意Shell、额外Git命令、重试或超时预算。默认产品没有启用该诊断模式。
 

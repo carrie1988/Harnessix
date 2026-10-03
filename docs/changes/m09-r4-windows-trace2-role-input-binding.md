@@ -1,14 +1,15 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 9a0d84aaba6243539abd63e2de69b482350486a2
+version: 4
+code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
 owners: [core]
 modules: [delivery, product_config, processes, governance]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0077-versioned-documentation-contract-and-gates.md
 related_tests:
+  - tests/delivery/test_git_material_trace2_static_errors.py
   - tests/governance/test_git_trace2_projection.py
   - tests/governance/test_git_minimum_commit_probe.py
   - tests/governance/test_windows_git_native_branch_observation.py
@@ -18,7 +19,7 @@ related_tests:
 supersedes: []
 ---
 
-# Windows Git Trace2角色接线与精确发行输入设计
+# Windows Git Trace2角色、静态错误格式与精确发行输入设计
 
 ## 1. 文档摘要和实现边界
 
@@ -31,6 +32,7 @@ supersedes: []
 执行时仍必须使用包含全部变更的完整固定提交，不能用基线、旧摘要或仅语义相等的源码运行。
 
 当前限定离线验证为六件治理测试文件共767项通过，507件实际输入前后零漂移。
+该结果属于已发布角色接线阶段；后继静态格式增量及当前18件发行输入见第12节，不能继承旧成绩。
 507件中包括479件受版本管理的生产成员，其中438件为Python源码；不是507件Python源码或全仓测试。
 测试不执行Windows、调试器、供应商请求或真实SDK。
 原Run `37089114490` 的Git128/Worker2、input proof缺失、SDK未通过和Root未知保持原结果。
@@ -216,3 +218,133 @@ CDB arm/branch标记均0，不以Trace2阶段信号代替原生独立见证。
 原件、摘要、实际Run身份和失败语义见
 [固定原生结果](../validation/windows-trace2-role-native-2026-10-03-v1/README.md)。
 该阶段变化不改变UNKNOWN或商用门禁，后继从固定官方源码求证格式及对象插入链。
+
+## 12. 精确静态错误目录与失败发布接合
+
+### 12.1 背景、目标和非目标
+
+角色接线后的Run37099316276已匹配入口、hash-object分派与仓库事件，但返回128，有限错误
+分类仍为UNKNOWN。固定官方源码证明三个普通`error`模板可能在返回错误后到达聚合失败；
+目录缺失只能解释一种诊断覆盖不足，不能证明这三个模板在该现场触发或是唯一故障根因。
+
+本增量只增加精确模板和有限enum，同步失败Sibling封闭白名单，并将两件诊断源码追加到
+原精确发行输入。它不修复底层对象操作，不解析动态errno、不变更原安全前置或成功门禁。
+
+### 12.2 源码、接口和字段
+
+固定Git for Windows tag `v2.55.0.windows.5`、commit
+`32c4f7689275d233577576630e1ac5b7eb354eb0`的`object-file.c`原字节SHA256为
+`d79dbe915c778016f896ddf61dcc3ff48b75d5356856a97c06f36017afc406cc`。
+三个调用使用普通`error`；`error_errno`经过`usage.c`追加动态错误文本，不能按纯静态模板处理。
+
+| 原精确模板 | 有限ID | 固定官方行号 |
+| --- | --- | --- |
+| `short read while indexing %s` | `OBJECT_INDEX_SHORT_READ` | 1086–1087 |
+| `insufficient permission for adding an object to repository database %s` | `OBJECT_DATABASE_ADD_PERMISSION` | 672–674 |
+| `unable to set permission to '%s'` | `OBJECT_FINALIZE_PERMISSION` | 469–470 |
+
+[git_material_trace2_profile.py](../../src/harnessix/delivery/git_material_trace2_profile.py)
+的`TRACE2_ERROR_FORMATS`由6项增至9项，仍是深只读固定表，每项携带原`Trace2Source`。
+旧六项、event schema及规则的规范字节保持。源码SHA和规范profile SHA随真实字节改变，
+旧profile摘要不能被新观察器接受；Profile版本ID不表示相同目录字节。
+
+原[git_trace2_projection.py](../../tests/product_config/git_trace2_projection.py)算法不改，
+只按精确完整`fmt`相等匹配，输出原`error_format_ids`有序去重集合；没有新增正文或公开字段。
+[失败发布器](../../scripts/windows_git_native_branch_observation/failure_projection.py)的
+`FORMAT_IDS`同步三个固定ID，`_trace_valid`仍拒绝未知值、错类型、重复及乱序，不采用通配符。
+
+### 12.3 总体结构、流程和数据流
+
+```mermaid
+flowchart LR
+    S[固定官方源码三处普通error] --> P[深只读九项目录]
+    P --> T[原精确Trace2投影]
+    T --> F[原失败Sibling九enum白名单]
+    F --> O[原有限观察结果]
+    O -. 不授予 .-> G[原branch/proof/SDK成功门]
+    I[原16输入加两件诊断源码] --> C[原完整LF/CRLF验真]
+    C --> O
+```
+
+```mermaid
+sequenceDiagram
+    participant C as 固定候选预检
+    participant P as 原显式诊断
+    participant T as 原投影器
+    participant F as 原失败发布器
+    C->>C: 验真18件源码及原PE/PDB
+    P->>T: 原已验MAC/EOF/保护后的有限内存
+    T->>T: 原版本/SID/argv/schema和完整模板相等
+    alt 未登记或errno动态尾部
+        T-->>F: UNKNOWN及原有限字段
+    else 已登记精确静态模板
+        T-->>F: 有序去重固定ID
+    end
+    F->>F: 九enum封闭白名单及原case结构
+    F-->>C: 原UNAUTHENTICATED_DIAGNOSTIC_ONLY观察
+```
+
+```mermaid
+flowchart TD
+    B[两件诊断源码完整字节] --> H[精确LF与CRLF长度/SHA]
+    H --> M[完整发行合同原16加末尾2]
+    M --> D[原parser固定合同SHA]
+    S[完整静态模板] --> E[有限error enum集合]
+    E --> F[原七字段及失败Sibling]
+    F --> R[原结果记录]
+    X[动态msg/path/errno] -. 不进入发布正文 .-> R
+```
+
+核心伪代码：
+
+```text
+分类事件：
+    先执行原完整来源、安全、版本、结构及终止一致性检查
+    完整fmt精确命中固定表 -> 增加该有限ID
+    未命中 -> UNKNOWN，不截取前缀、不展开参数、不解析尾部
+发布失败Sibling：
+    字段集合及类型必须与原合同一致
+    ID只能来自固定九项，按固定顺序无重复
+    否则拒绝Sibling，不能影响原案例、branch gate或proof
+预检：
+    原16件输入保持原顺序、完整LF/CRLF身份
+    末尾只追加profile和failure_projection两件源码完整身份
+    原所有源成员逐件验真后才继续原执行
+```
+
+### 12.4 发行身份、持久化、失败与恢复
+
+基线为`5306c7134c1301dd10bee682be5ce1e61e120c46`。
+[contract.json](../../scripts/windows_git_native_branch_observation/contract.json)
+只更新基线并末尾追加两行；原16行、assets、PE/PDB/分支字节、selector、历史结果及预算均不改。
+[contract.py](../../scripts/windows_git_native_branch_observation/contract.py)只修改真实合同SHA常量。
+原九件整体字节guard保留，其中五件历史原字节不改；四件已批准锚点只更新两件合同的实际摘要。
+新增诊断源码另由完整发行合同拒绝任何未评审字节，而不是仅比较目录语义。
+
+[输入身份回归](../../tests/governance/test_windows_git_trace2_input_binding.py)保留9a0d角色合同
+相对原5265基线的17叶类型敏感差分，再独立验证当前合同只追加两件诊断成员。
+18件来源均验证新字节拒绝和精确CRLF表示接受。增加诊断输入不缩减原16件或原预算。
+
+无新数据库、配置、后台服务或持久权威。实际操作期限、取消、清理、MAC/raw/EOF/protection、
+13 hooks及Owner不变。`KNOWN`仅表示给定有限流在当前目录下分类完整，不能升级proof、
+caller、根因或业务结果。多个ID可共存，集合不携带同次调用归属或事件先后顺序。
+旧合同、旧拒绝、两份现场失败及合成发布兼容性FAIL均保留，不能重跑覆盖或自动恢复写入。
+
+### 12.5 验证与部署边界
+
+[test_git_material_trace2_static_errors.py](../../tests/delivery/test_git_material_trace2_static_errors.py)
+覆盖三个精确静态来源/ID、旧六项规范字节、42个近似变体、24个errno家族负例、profile漂移、
+多ID并存及不发布合成私有字段。原失败发布回归新增三个ID实际经过有限Sibling的正例，
+以及未知、重复、乱序和非字符串负例；原完整门禁逐项差分不变。
+
+候选初验392通过、1失败：原Sibling白名单未同步新增ID。首整合929通过、10项测试合同失败，
+修正旧数量断言和类型负例的当前选择器后943通过。独立审查发现原catalog selector漏掉五种正向
+validator检查，新增真实退化反例先1失败；仅恢复原测试位置后9项定向通过，最终八件文件944项
+完整通过、811件执行输入前后零漂移。原九件整体guard和原成功标准未放宽。
+全部失败、943阶段和独立审查资料保留，不累加旧结果，也不将修复方复验称第二次独立审查。
+实际结果与摘要见[正式验证资料](../validation/windows-trace2-static-formats-2026-10-03-v1/README.md)。
+离线分类与发行身份验证不构成Windows业务验收。
+
+实际原生运行必须固定包含本增量的候选revision，保持原两个Case、期限和成功标准。
+只有新原生结果才可判断是否观察到这些ID；未观测字段继续UNKNOWN。底层Windows故障、
+完整Git产品交付、R3真实质量、独立Beta及R1～R6商用门禁均保持开放。

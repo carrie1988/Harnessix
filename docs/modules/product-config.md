@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 54
-code_revision: 9a0d84aaba6243539abd63e2de69b482350486a2
+version: 55
+code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
 owners:
   - core
 modules:
@@ -2358,6 +2358,9 @@ Process Supervisor、Execution Plan Store与同一个冻结SecretPublicationScop
 wrapper只改变Trace2解释器的预期首项，原Worker argv、批准、Owner及完整raw守卫不变。
 角色仅在当前fixture内存保存，结算清空；缺来源不猜测，原公开七字段与正式gate不扩充。
 原16件输入重新固定四件已知源码字节，整体冻结检查和旧失败保留。
+后继精确静态格式目录由六项增至九项；失败Sibling仅增加三个固定enum，不接受动态errno尾部。
+当前完整发行合同保留原16件身份并追加profile和失败发布器两件源码，共18件；
+原预算、selector、PE/PDB、13 hooks与正式成功门不变，旧角色阶段合同和失败保持。
 接口、字段、流程、时序、失败、源码映射及限定767项离线结果见
 [Windows Trace2角色与发行输入详设](../changes/m09-r4-windows-trace2-role-input-binding.md)。
 离线接线不证明Windows Git128已修复或消费者安装通过。

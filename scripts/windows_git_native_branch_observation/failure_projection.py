@@ -40,6 +40,11 @@ FORMAT_IDS = tuple(
     sorted(
         "SETUP_EXPLICIT_NOT_REPOSITORY SETUP_GITDIR_ENV_BOUND HASH_OBJECT_ADD_AGGREGATE "
         "HASH_OBJECT_HASH_AGGREGATE OBJECT_FORMAT_MALFORMED GENERIC_DYNAMIC_FORMAT".split()
+        + [
+            "OBJECT_INDEX_SHORT_READ",
+            "OBJECT_DATABASE_ADD_PERMISSION",
+            "OBJECT_FINALIZE_PERMISSION",
+        ]
     )
 )
 FAILURE_FIELDS = ("post_stderr_signals", "post_worker_failure_status", "post_git_trace2")

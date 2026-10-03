@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 163
-code_revision: 9a0d84aaba6243539abd63e2de69b482350486a2
+version: 164
+code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
 owners:
   - core
 modules:
@@ -1715,3 +1715,16 @@ Git128/Worker2、proof ABSENT、SDKfalse、RootUNKNOWN及缺branch见证保持�
 详见[固定结果](validation/windows-trace2-role-native-2026-10-03-v1/README.md)。
 后继从固定官方错误格式及对象插入链求证，不忽略UNKNOWN或重启同一Run；
 完整Git/Backup v2、真实R3、Windows消费者、独立Beta和商用R1～R6仍开放，费用预留不变。
+
+### R1/R4：精确静态格式与有限失败发布接合
+
+固定官方源码确认三处普通error模板未登记；静态目录由6项增至9项，仅精确完整匹配，
+动态errno尾部、近似模板和未知事件仍UNKNOWN。原失败Sibling同步三个固定ID，字段不扩张；
+目录缺口不是Git128唯一根因，有限分类不改变branch/proof/SDK成功门。
+原16件发行输入逐字节保留并追加profile及失败发布器两件完整源码，共18件；
+角色阶段17叶类型敏感历史回归、原九件整体guard、预算、selector、PE/PDB及旧现场FAIL保持。
+总体结构、接口、字段、流程/时序/数据流、伪代码、安全和验证边界见
+[详设第12节](changes/m09-r4-windows-trace2-role-input-binding.md#12-精确静态错误目录与失败发布接合)。
+新候选八件文件实际944项通过、811件完整输入零漂移；独立审查的原selector覆盖缺口以1项RED及9项定向闭环，原成功标准不变。
+详见[限定验证](validation/windows-trace2-static-formats-2026-10-03-v1/README.md)，离线与原生分别登记，不累加历史成绩。
+完整Git/Backup v2、真实R3、Windows消费者、独立Beta及商用R1～R6继续开放，未新增模型请求。

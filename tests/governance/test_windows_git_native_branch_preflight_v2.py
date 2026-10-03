@@ -33,7 +33,12 @@ POLICY_ROWS = [
 def test_original_sixteen_input_contract_is_still_exact():
     fixed = contract.read_contract()
     rows = contract.source_checks(ROOT, fixed)
-    assert len(rows) == 16
+    assert len(rows) == 18
+    assert len(rows[:16]) == 16
+    assert [row["path"] for row in rows[16:]] == [
+        "src/harnessix/delivery/git_material_trace2_profile.py",
+        "scripts/windows_git_native_branch_observation/failure_projection.py",
+    ]
     assert all(row["representation"] == "EXACT_FROZEN_BYTES" for row in rows)
     assert fixed["budgets"] == {
         "command_seconds": 20,

@@ -140,6 +140,51 @@ def test_catalog_matches_original_nine_signals_and_trace2_projection():
         assert failure._trace_valid(value)
 
 
+def test_original_catalog_selector_detects_validator_regression(monkeypatch):
+    # 原选择器必须独立识别有限发布校验器退化，不能依赖新负例顺带覆盖。
+    monkeypatch.setattr(failure, "_trace_valid", lambda value: False)
+    with pytest.raises(AssertionError):
+        test_catalog_matches_original_nine_signals_and_trace2_projection()
+
+
+@pytest.mark.parametrize(
+    "fixed_id",
+    ["OBJECT_INDEX_SHORT_READ", "OBJECT_DATABASE_ADD_PERMISSION", "OBJECT_FINALIZE_PERMISSION"],
+)
+def test_static_enum_reaches_finite_sibling_without_changing_original_gate(
+    tmp_path, fixed_id, original_observer
+):
+    report = report_with_sibling()
+    for row in report[failure.SIBLING_KEY]["cases"]:
+        row["post_git_trace2"]["error_format_ids"] = [fixed_id]
+    legacy = {key: report[key] for key in failure.LEGACY_REPORT_FIELDS}
+    write_report(tmp_path, legacy)
+    original = original_observer.observation_result(tmp_path, EXECUTION)
+    write_report(tmp_path, report)
+    result = observe.observation_result(tmp_path, EXECUTION)
+    assert without_new_observation(result) == original
+    sibling = result["unverified_execution_observation"]["failure_observation"]
+    assert sibling["case_shape_state"] == "FINITE_AB"
+    assert all(row["post_git_trace2"]["error_format_ids"] == [fixed_id] for row in sibling["cases"])
+    assert not result["branch_gate_passed"]
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        ["OBJECT_FINALIZE_PERMISSION_SUFFIX"],
+        ["OBJECT_FINALIZE_PERMISSION", "OBJECT_FINALIZE_PERMISSION"],
+        ["OBJECT_INDEX_SHORT_READ", "OBJECT_DATABASE_ADD_PERMISSION"],
+        [True],
+    ],
+)
+def test_static_sibling_rejects_unknown_duplicate_unsorted_or_nonstring_ids(values):
+    report = report_with_sibling()
+    report[failure.SIBLING_KEY]["cases"][0]["post_git_trace2"]["error_format_ids"] = values
+    _, sibling = failure.isolate_failure_report(report)
+    assert sibling["case_shape_state"] == "REJECTED"
+
+
 @pytest.mark.parametrize("key", failure.FAILURE_FIELDS)
 @pytest.mark.parametrize("value", [None, True, 1, [], "opaque", {"body": CANARY}])
 def test_wrongtype_is_isolated_without_changing_original_case(key, value):
@@ -517,7 +562,7 @@ def test_sibling_cannot_bypass_legacy_report_types(state, key, value):
 
 def test_legacy_case_fields_and_full_gate_sources_are_unchanged():
     contract = run_cases.read_contract()
-    assert len(contract["source_inputs"]) == 16
+    assert len(contract["source_inputs"]) == 18
     assert contract["budgets"] == {
         "command_seconds": 20,
         "operation_seconds": 45,
@@ -540,11 +585,11 @@ def test_legacy_case_fields_and_full_gate_sources_are_unchanged():
     approved = {
         "scripts/windows_git_native_branch_observation/contract.py": (
             3937,
-            "98577a357e566e04f8a00e91b4a201dad93e83834a1683312bb26bff10b47a26",
+            "7f1a078d9c89ac28fcd9e2fa223ed4eb68f581b0633697b81746d91bd9bae27f",
         ),
         "scripts/windows_git_native_branch_observation/contract.json": (
-            7667,
-            "902dbdf1f7e837fff3102c1006984b0e4dd177e364e88a2162f21070a179026c",
+            8289,
+            "5128c50f679c3ca2d687b1ad69f6a265d4283c11ce3f2f5d7099bc0767e46cf7",
         ),
         "tests/product_config/git_minimum_commit_probe.py": (
             24603,

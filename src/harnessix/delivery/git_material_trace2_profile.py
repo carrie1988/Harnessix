@@ -256,6 +256,42 @@ TRACE2_ERROR_FORMATS: Mapping[str, Trace2ErrorFormat] = MappingProxyType(
                 ),
             ),
         ),
+        "short read while indexing %s": Trace2ErrorFormat(
+            "OBJECT_INDEX_SHORT_READ",
+            (
+                Trace2Source(
+                    _TAG,
+                    "object-file.c",
+                    "d79dbe915c778016f896ddf61dcc3ff48b75d5356856a97c06f36017afc406cc",
+                    1086,
+                    1087,
+                ),
+            ),
+        ),
+        "insufficient permission for adding an object to repository database %s": Trace2ErrorFormat(
+            "OBJECT_DATABASE_ADD_PERMISSION",
+            (
+                Trace2Source(
+                    _TAG,
+                    "object-file.c",
+                    "d79dbe915c778016f896ddf61dcc3ff48b75d5356856a97c06f36017afc406cc",
+                    672,
+                    674,
+                ),
+            ),
+        ),
+        "unable to set permission to '%s'": Trace2ErrorFormat(
+            "OBJECT_FINALIZE_PERMISSION",
+            (
+                Trace2Source(
+                    _TAG,
+                    "object-file.c",
+                    "d79dbe915c778016f896ddf61dcc3ff48b75d5356856a97c06f36017afc406cc",
+                    469,
+                    470,
+                ),
+            ),
+        ),
     }
 )
 

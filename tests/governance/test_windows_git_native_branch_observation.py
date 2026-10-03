@@ -519,4 +519,4 @@ def test_workflow_is_manual_single_windows_job_with_exact_budgets_and_no_raw_upl
         "workflow_step_seconds": 300,
         "outer_watchdog_seconds": 240,
     }
-    assert len(contract.read_contract()["source_inputs"]) == 16
+    assert len(contract.read_contract()["source_inputs"]) == 18

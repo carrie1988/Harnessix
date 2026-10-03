@@ -1,0 +1,58 @@
+{
+  "result": "OFFLINE_PRECISE_STATIC_FORMATS_PASS_NOT_NATIVE_ACCEPTANCE",
+  "distinct_testcases": 944,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "execution_inputs": 811,
+  "source_drift": [],
+  "profile_source_sha256": "cbbe858c6bde3d0050ff0cbdebb78735d84891fe621ca485a8f1c28d74e49435",
+  "contract_sha256": "5128c50f679c3ca2d687b1ad69f6a265d4283c11ce3f2f5d7099bc0767e46cf7",
+  "source_input_count": 18,
+  "unchanged_original_source_inputs": 16,
+  "added_source_inputs": 2,
+  "format_count_before": 6,
+  "format_count_after": 9,
+  "new_format_ids": [
+    "OBJECT_INDEX_SHORT_READ",
+    "OBJECT_DATABASE_ADD_PERMISSION",
+    "OBJECT_FINALIZE_PERMISSION"
+  ],
+  "strict_full_fmt_match": true,
+  "errno_dynamic_suffix_supported": false,
+  "original_success_gate_unchanged": true,
+  "new_model_requests": 0,
+  "new_native_runs": 0,
+  "commercial_gates_closed": false,
+  "independent_review": "ONE_P2_TEST_SELECTOR_GAP_CLOSED_BY_EXECUTION_NOT_SECOND_INDEPENDENT_REVIEW",
+  "review_finding": "Original catalog selector must independently call original finite trace validator",
+  "red_distinct_cases": 1,
+  "red_failures": 1,
+  "closure_distinct_cases": 9,
+  "closure_failures": 0,
+  "historical_runs": [
+    {
+      "stage": "candidate-coverage",
+      "passed": 392,
+      "failed": 1
+    },
+    {
+      "stage": "integration-v1",
+      "passed": 929,
+      "failed": 10
+    },
+    {
+      "stage": "integration-v2",
+      "passed": 943,
+      "failed": 0
+    }
+  ],
+  "unverified": [
+    "actual Windows Git operation success",
+    "consumer Windows 11",
+    "full Git effect delivery and Backup v2",
+    "real R3 coding quality",
+    "independent Beta",
+    "commercial R1-R6"
+  ]
+}
