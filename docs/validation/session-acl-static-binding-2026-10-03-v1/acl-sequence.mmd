@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant C as 原Key或Owner检查点
+    participant B as 静态ABI绑定
+    participant O as 实际Darwin ACL API
+    C->>B: 获取原两个固定函数
+    alt 首次绑定未完成
+        B->>B: 构造系统库与固定签名
+    end
+    B-->>C: 同进程静态函数
+    C->>O: 清线程errno并查询当前FD
+    alt ACL非空或errno未知
+        O-->>C: 原失败关闭并释放非空ACL
+    else 当次原缺ACL错误码
+        O-->>C: 当次检查通过 不缓存结果
+    end

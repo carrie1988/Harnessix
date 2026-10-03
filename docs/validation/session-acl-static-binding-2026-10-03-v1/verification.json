@@ -1,0 +1,84 @@
+{
+  "primary_test_files": [
+    "tests/product_config/test_session_key_acl_binding.py",
+    "tests/product_config/test_session_key.py",
+    "tests/product_config/test_product_state_owner.py",
+    "tests/product_config/test_managed_session_root.py"
+  ],
+  "artifacts": {
+    "red.xml": {
+      "bytes": 2508,
+      "sha256": "9481ce711fcc9d84ba4f0dd55b039694c712d34e4f177f4ecdbf4fd9476532ac"
+    },
+    "green.xml": {
+      "bytes": 12767,
+      "sha256": "65c0423df6d9d0931264de965021b20124a072adced292d1052194193896d83b"
+    },
+    "native-abi-loop.json": {
+      "bytes": 384,
+      "sha256": "b993662cf0c7f219bf5f5fbf2976220d670cb7eba30dfbf4dbb2e3bada15f61f"
+    },
+    "git-integration-evidence/profile.xml": {
+      "bytes": 6159,
+      "sha256": "4364a9d62e357b83d3d7e5ffc7bca3ddaf1c5fea3c96a9e96caefc5a8de20a1d"
+    },
+    "git-integration-evidence/acl-recheck.xml": {
+      "bytes": 424,
+      "sha256": "e5ebd93a96043b8b4209fffc7d8996f890d81a26d265c2117822fc562940f5e1"
+    },
+    "git-integration-evidence/shared-key-change.json": {
+      "bytes": 375,
+      "sha256": "0e58d5c77b2425468b9009efaae1ddd904324dcf06e9db9f05e981858d592d80"
+    },
+    "green-v2.xml": {
+      "bytes": 12767,
+      "sha256": "2c47c76b8dc60e8896de91f8f7675bc7bbd450ea8394439e46b414772e851288"
+    },
+    "full-source-consistency.json": {
+      "bytes": 274,
+      "sha256": "60be9b903d5b6a6cc9274961ca4f0569d571023c2cc0acbb89c685f9ed85eb5f"
+    },
+    "mypy.log": {
+      "bytes": 42,
+      "sha256": "5d4b6d285b77932e3d08212c3b4974d0a803f98ec60408ac6ccf6a063fa6c19e"
+    },
+    "ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format.log": {
+      "bytes": 26,
+      "sha256": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938"
+    },
+    "green-v3.xml": {
+      "bytes": 13078,
+      "sha256": "e73403ca4e8aaa46f1070e55ae278511d0c29a13d18ee37e7149717cc633b720"
+    },
+    "errno-mutant-red.xml": {
+      "bytes": 2909,
+      "sha256": "a70a6d0b4358ee61dd2ab30506bf4aa382c07b40d424c298cf683e76c83cb979"
+    },
+    "ruff-v3.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format-v3.log": {
+      "bytes": 26,
+      "sha256": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938"
+    }
+  },
+  "mypy": "PASS_ONE_SOURCE_FILE",
+  "ruff": "PASS_TWO_CHANGED_FILES",
+  "native_windows_acceptance": false,
+  "global_performance_sla_proven": false,
+  "test_fixture_cross_platform_constant": "Darwin ENOATTR mocked only when host lacks it; production platform and behavior unchanged",
+  "documentation": {
+    "policy_version": "harnessix.documentation-policy/v1",
+    "document_count": 518,
+    "link_count": 12088,
+    "mermaid_count": 997,
+    "source_package_count": 26,
+    "changed_path_count": 11,
+    "findings": []
+  }
+}

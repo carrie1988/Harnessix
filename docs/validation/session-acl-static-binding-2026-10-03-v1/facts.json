@@ -1,0 +1,49 @@
+{
+  "scope": "Darwin static system ABI binding only; all original ACL queries preserved",
+  "primary_related_cases": 84,
+  "primary_failures": 0,
+  "primary_errors": 0,
+  "primary_skipped": 0,
+  "red_cases": 9,
+  "red_passed": 8,
+  "red_failed": 1,
+  "full_original_related_cases": 228,
+  "full_original_passed": 227,
+  "full_original_failed": 1,
+  "full_changed_file": "src/harnessix/product_config/session_key_posix.py",
+  "full_actual_flow_recheck_cases": 1,
+  "full_actual_flow_recheck_passed": 1,
+  "full_actual_flow_seconds": 93.965,
+  "full_original_flow_seconds": 122.13,
+  "original_maintenance_control_seconds": 60,
+  "deadline_or_checkpoint_relaxed": false,
+  "abi_loop": {
+    "scope": "isolated actual Darwin FD ACL loop; not Git latency or production SLA",
+    "results": [
+      {
+        "stage": "original",
+        "acl_query_calls": 5000,
+        "library_loads": 5000,
+        "seconds": 0.04929658301989548
+      },
+      {
+        "stage": "static-binding",
+        "acl_query_calls": 5000,
+        "library_loads": 1,
+        "seconds": 0.005586291023064405
+      }
+    ]
+  },
+  "acl_result_cached": false,
+  "key_or_owner_or_authority_cached": false,
+  "new_model_requests": 0,
+  "new_windows_runs": 0,
+  "full_git_default_enabled": false,
+  "commercial_gates_closed": false,
+  "diagram_rendered_and_visually_verified": true,
+  "independent_review": "NO_PRODUCTION_REGRESSION_FOUND_ONE_TEST_GAP_CLOSED_BY_EXECUTION",
+  "previous_related_matrix_cases": 82,
+  "errno_reset_mutant_red_cases": 2,
+  "errno_reset_mutant_red_failures": 2,
+  "second_independent_review_performed": false
+}

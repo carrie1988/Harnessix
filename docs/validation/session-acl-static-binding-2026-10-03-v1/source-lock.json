@@ -1,0 +1,15 @@
+{
+  "base_revision": "716a72bccc63b110851650d266e073252ca58d1f",
+  "members": [
+    {
+      "path": "src/harnessix/product_config/session_key_posix.py",
+      "bytes": 7665,
+      "sha256": "5097175c963ce88b2198644a6dc0eba90fdabf0b50b683ed53268a9b6d8f3f9b"
+    },
+    {
+      "path": "tests/product_config/test_session_key_acl_binding.py",
+      "bytes": 4502,
+      "sha256": "67c27e5dbdca24883c60f35167b5eea4f4fcf341ff8fc69311ae18f7179a9b80"
+    }
+  ]
+}

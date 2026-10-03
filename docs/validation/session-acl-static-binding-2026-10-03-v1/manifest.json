@@ -1,0 +1,39 @@
+{
+  "members": [
+    {
+      "path": "docs/validation/session-acl-static-binding-2026-10-03-v1/README.md",
+      "bytes": 3550,
+      "sha256": "769029465731972d1f631f65e61291f5ff98601d6a4aa87b85cc484ffc44ed61"
+    },
+    {
+      "path": "docs/validation/session-acl-static-binding-2026-10-03-v1/acl-sequence.mmd",
+      "bytes": 515,
+      "sha256": "5fd6283f968e8d0adb0f509f16d3be8ee672c71c24370a0e145c78e9f0e88e9b"
+    },
+    {
+      "path": "docs/validation/session-acl-static-binding-2026-10-03-v1/acl-sequence.png",
+      "bytes": 57724,
+      "sha256": "f20833fa847bd45d21877f2439ea2e86c43d745892a4a53c646cca38da7bbc06"
+    },
+    {
+      "path": "docs/validation/session-acl-static-binding-2026-10-03-v1/facts.json",
+      "bytes": 1606,
+      "sha256": "3271f5e6dbc473bafc52a78e3f852886215db32985c87bdc80fa17d934a9fadf"
+    },
+    {
+      "path": "docs/validation/session-acl-static-binding-2026-10-03-v1/review-packet.json",
+      "bytes": 872,
+      "sha256": "16d0c95d2aaf2b6b053f57cdcb5ec490dc3e608ff63f3ee6e58555c9815860fa"
+    },
+    {
+      "path": "docs/validation/session-acl-static-binding-2026-10-03-v1/source-lock.json",
+      "bytes": 456,
+      "sha256": "2554a785af65fb367fae22c5a8d12ee220e22532c76ec80e5a17870bcc769a74"
+    },
+    {
+      "path": "docs/validation/session-acl-static-binding-2026-10-03-v1/verification.json",
+      "bytes": 2889,
+      "sha256": "ba5e7de1b171514afebd1ea27264646ce0f1b9ab89dc91ed340691f930aa7782"
+    }
+  ]
+}

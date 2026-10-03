@@ -1,14 +1,15 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 8340ff1cbc6375ad4064b8be6bd4c7bd708c559d
+version: 3
+code_revision: 716a72bccc63b110851650d266e073252ca58d1f
 owners: [core]
 modules: [product_config, session, secrets]
 related_adrs:
   - docs/adr/0104-managed-session-key-and-default-root.md
 related_tests:
   - tests/product_config/test_session_key.py
+  - tests/product_config/test_session_key_acl_binding.py
   - tests/product_config/test_session_key_dpapi.py
   - tests/product_config/test_session_key_windows.py
   - tests/product_config/test_managed_session_root.py
@@ -123,6 +124,67 @@ Root内的数据库、WAL、SHM及其他合法条目可在Key加载期间变化�
 返回前先在已拥有Root/私有子目录FD上重验安全属性，再把FD初始身份与当前原路径比对。
 即使新对象仍为700，也不能用路径替换后的目录接受先前Key。检查不防同UID任意代码或管理员，
 也不是所有目录条目的原子快照；同机状态一致备份仍需停机、全部Store/Artifact及独立Key共同验证。
+
+### 4.1.2 Darwin静态FFI绑定与持续ACL复核
+
+**需求背景。** 完整Git候选的真实材料登记关联测试触发原60秒维护期限，保留该失败。
+同一流程的cProfile记录约5.10亿函数调用；`_private_acl`调用3563323次，独占约11秒、
+累计约49.7秒，其中每次均重新构造CDLL、函数指针及动态ctypes包装类。
+这些是仪器化单例热点，不是未仪器化性能SLA，也不认定为全部超时的唯一原因。
+
+**目标与边界。** 只复用同进程固定系统库及两个函数的静态ABI绑定，不缓存ACL、FD、路径、
+Key、Owner、Scope、权限结果或执行授权。保留每一原检查点、原60秒期限、完整stat/身份及物理ACL查询。
+非Darwin入口不加载本API；首次绑定失败不能缓存为成功。首次并发构造允许重复的相同静态绑定，
+不得把函数缓存误称全局单次初始化锁或新的Owner。
+
+| 接口/字段 | 职责及当前约束 |
+| --- | --- |
+| [`_darwin_acl_library`](../../src/harnessix/product_config/session_key_posix.py) | 私有惰性静态绑定，固定`CDLL(None,use_errno=True)`；无caller文件或动态程序 |
+| `acl_get_fd_np` | 固定`int,int -> void*`；每次查询当前实际FD和原`ACL_TYPE_EXTENDED=0x100` |
+| `acl_free` | 固定`void* -> int`；非空ACL按原finally释放，无缓存原指针 |
+| `_private_acl` | 原每次清errno、查询、拒绝非空ACL及未知errno；原ENOENT/ENOATTR仅表示当次无ACL |
+
+```mermaid
+sequenceDiagram
+    participant C as 原Key或Owner检查点
+    participant B as 静态ABI绑定
+    participant O as 实际Darwin ACL API
+    C->>B: 获取原两个固定函数
+    alt 首次绑定未完成
+        B->>B: 构造系统库与固定签名
+    end
+    B-->>C: 同进程静态函数
+    C->>O: 清线程errno并查询当前FD
+    alt ACL非空或errno未知
+        O-->>C: 原失败关闭并释放非空ACL
+    else 当次原缺ACL错误码
+        O-->>C: 当次检查通过 不缓存结果
+    end
+```
+
+核心伪代码：
+
+```text
+Darwin ACL 检查(fd):
+    取惰性静态ABI绑定，不读或缓存Key/Root
+    清线程局部errno
+    调用原acl_get_fd_np(fd, 原类型)
+    非空ACL -> 原失败关闭，finally释放本次指针
+    空ACL且errno不属于原两个错误码 -> 原失败关闭
+    其他 -> 仅本次通过；下次必须重新查询
+```
+
+**持久化、失败与恢复。** 无数据库、文件格式、Key身份、MAC域或持久状态变化；重启重新绑定。
+ACL在上次成功后新增仍拒绝，同FD权限改变不沿用结果。静态绑定异常保持原异常路径，失败不进入缓存。
+所有Owner/Scope重新读取及取消/超时检查不变，不因优化扩大期限或少检查一次。
+
+**验证。** 新精确反例在原实现上实际8通过、1失败：三次物理查询重复构造三份库绑定。
+后继四件文件84项通过，含静态复用、ACL/errno/不同FD/绑定失败/非Darwin及原真实macOS ACL、Owner、Key重开。
+未合入完整Git候选只借该单文件后，原超时案例实际通过；整体测试93.965秒，含多段各自原60秒维护操作，
+没有扩大单段deadline或少检查一次。该单例不代表全部228项、完整Git效果或三平台已经通过。
+独立审查未发现生产语义回退；指出替身总写errno会掩盖漏清零，两个静默查询反例在独立进程撤去清零后实际全部失败。
+原生产清零保持，新84项完整通过，旧82阶段不覆盖、不累计。
+原件、源锁及局部5000次真实FD循环见[验证资料](../validation/session-acl-static-binding-2026-10-03-v1/README.md)。
 
 ### 4.2 Windows
 

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 165
-code_revision: 9b9e52fdaab74567b5ad7cd5614801f1936689bc
+version: 166
+code_revision: 716a72bccc63b110851650d266e073252ca58d1f
 owners:
   - core
 modules:
@@ -1736,3 +1736,12 @@ proof ABSENT、RootUNKNOWN，未观测三个新增静态ID。Trace2仍UNCLASSIFI
 结果与原件摘要见[固定现场验证](validation/windows-trace2-static-native-2026-10-03-v1/README.md)。
 该结果排除以本次静态目录扩展宣称现场根因已修复；不自动重跑、扩张诊断或降低原成功条件。
 完整Git/Backup v2、R3、Windows消费者、独立Beta及商用R1～R6继续开放，未新增模型或费用。
+
+### R1/R4：Darwin静态ACL绑定与实际材料超时整改
+
+完整Git候选原228项中一项真实材料登记/同claim重入超时；仪器化热点定位到重复CDLL/ctypes绑定。
+仅惰性复用静态系统ABI，每一原FD/ACL/errno、Owner/Scope检查和期限保持；不缓存权限或Key事实。
+四件文件实际84项通过，含真实macOS ACL拒绝；独立审查的errno清零测试缺口以两项实际变异反例闭环。Full只借此单文件后的原失败案例实际通过，
+整体流程93.965秒，单段原60秒维护期限未改变；不能外推全部228项、完整Git效果或三平台验收。
+源码、失败、数据和后继边界见[正式验证](validation/session-acl-static-binding-2026-10-03-v1/README.md)。
+R1～R6、R3费用未决与编码质量、Windows消费者、完整Git/Backup v2和独立Beta继续开放。

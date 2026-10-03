@@ -8,6 +8,7 @@ import os
 import stat
 import sys
 from collections.abc import Callable
+from functools import cache
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
@@ -52,15 +53,22 @@ def _private(info: os.stat_result, *, directory: bool = False, links: int = 1) -
         raise unavailable()
 
 
-def _private_acl(descriptor: int) -> None:
-    """Darwin扩展ACL独立于mode bits；只接受无扩展ACL的规范私有对象。"""
-    if sys.platform != "darwin":
-        return
+@cache
+def _darwin_acl_library() -> ctypes.CDLL:
+    """仅复用固定系统ABI；不缓存FD、ACL、权限结果或任何Key/Owner事实。"""
     library = ctypes.CDLL(None, use_errno=True)
     library.acl_get_fd_np.argtypes = [ctypes.c_int, ctypes.c_int]
     library.acl_get_fd_np.restype = ctypes.c_void_p
     library.acl_free.argtypes = [ctypes.c_void_p]
     library.acl_free.restype = ctypes.c_int
+    return library
+
+
+def _private_acl(descriptor: int) -> None:
+    """Darwin扩展ACL每次重新查询；静态函数复用不替代当前物理权限检查。"""
+    if sys.platform != "darwin":
+        return
+    library = _darwin_acl_library()
     ctypes.set_errno(0)
     acl = library.acl_get_fd_np(descriptor, 0x100)
     if acl:

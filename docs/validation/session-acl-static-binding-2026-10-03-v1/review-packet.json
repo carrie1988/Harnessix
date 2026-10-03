@@ -1,0 +1,24 @@
+{
+  "scope": "Static system ABI binding and exact syscall/errno/freshness preservation",
+  "review_method": "independent source review, not test execution",
+  "production_findings": [],
+  "test_findings": [
+    {
+      "description": "Mock always writes errno and cannot detect missing reset",
+      "status": "CLOSED_BY_TWO_ACTUAL_MUTANT_RED_CASES_AND_IMPLEMENTER_FULL_REGRESSION",
+      "production_modified_for_closure": false
+    }
+  ],
+  "reports": {
+    "REPORT.md": "477055d9f9eb22a86f557e0885ac5f806f80be50de472979a889d1e05330ca28",
+    "ReviewPacket.json": "29791df788e20bb5fd11647fa9e5b42050bc7ab3a67d78af175c05321cf421cf"
+  },
+  "unverified": [
+    "full 228-case Git regression after all pending integration changes",
+    "complete Git effect chain and Backup v2",
+    "Windows consumer",
+    "R3 quality",
+    "independent Beta",
+    "commercial R1-R6"
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 55
-code_revision: 5306c7134c1301dd10bee682be5ce1e61e120c46
+version: 56
+code_revision: 716a72bccc63b110851650d266e073252ca58d1f
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_session_key_acl_binding.py
   - tests/product_config/test_git_shared_process_startup.py
   - tests/product_config/test_git_shared_process_digest.py
   - tests/product_config/test_git_shared_process_host.py
@@ -2369,3 +2370,11 @@ wrapper只改变Trace2解释器的预期首项，原Worker argv、批准、Owner
 固定9a0d84a的[原生结果](../validation/windows-trace2-role-native-2026-10-03-v1/README.md)
 已取得两Case的start、hash-object分派和仓库事件有限信号；仍Git128/Worker2、proof缺失及SDK未通过，
 不能将内部诊断接线标记为Windows材料写入完成。
+
+### Darwin私有ACL静态绑定
+
+`session_key_posix._private_acl`保留每次原FD/ACL/errno查询，只惰性复用同进程静态系统ABI。
+无Key、Root、权限结果或Owner缓存，原检查点和期限不变；实际ACL在一次成功后新增仍失败关闭。
+接口、选型、时序、字段、伪代码和异常边界见
+[托管Key设计4.1.2](../changes/m09-4a-managed-session-key-and-root.md#412-darwin静态ffi绑定与持续acl复核)。
+仪器化Git热点用于定位重复绑定，不构成材料超时已解决或商用性能SLA。
