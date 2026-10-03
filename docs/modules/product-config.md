@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 64
-code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
+version: 65
+code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
 owners:
   - core
 modules:
@@ -2431,3 +2431,8 @@ pytest仅管理child，不删除存放符号的parent。没有新增搜索fallba
 [详细设计第16节](../changes/m09-r4-windows-minimum-commit-probe.md#16-原sdk诊断侧车的符号根装配一致性)。
 旧Run失败保留；本机路径通过不证明SDK业务或新的Windows原生通过，正式结论见
 [原生验证资料](../validation/windows-directory-write-share-2026-10-03-v1/README.md)。
+
+固定0583b53的Run37134072312整体及所有原节点success；原两SDK加侧车步骤通过，原插件完成门未更改。
+本专项的最低SHA256 Commit材料及CAS独立回读原生验收完成，旧聚合failure保持为历史事实。
+[正式验证范围](../validation/windows-directory-write-share-2026-10-03-v1/README.md#6-sdk符号根修复的固定原生通过)
+不外推完整容量、默认Git交付、消费者Windows或商用发布。

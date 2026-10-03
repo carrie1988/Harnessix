@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 12
-code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
+version: 13
+code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
 owners: [core]
 modules: [product_config, processes]
 related_adrs:
@@ -917,3 +917,26 @@ retain original diagnostic failure gate even if both business cases pass
 本机验证：原路径治理RED为1失败，修复后GREEN；九件关联文件562通过／7 Windows相关跳过，
 原两个SDK在POSIX另行2通过，所有XML零错误。原18输入仅workflow一行变化，17行及其他固定字段一致。
 第16节三图实际渲染及视觉复核通过；上述不替代新候选的原生SDK与侧车完整性验收。
+
+### 16.5 新固定候选的实际原生结果与退出边界
+
+固定0583b53306f3ab869fb35c5b9eece80fbe2251a4的
+[Run37134072312](https://github.com/carrie1988/Harnessix/actions/runs/37134072312)、attempt1、Job111234899713
+已终态success；原两SDK及低敏侧车步骤success，全部身份、四格、同源、真实OS及原保护步骤success。
+原diagnostic_probes_complete仍要求A／B两个case，各13接点、正常teardown及MATCHED／KNOWN写入Trace2；
+原sessionfinish失败门及插件整体字节锚保持，不能用仅业务通过绕过完整诊断。
+
+只采集Run／Job／step元数据，不获取原始输出、stderr正文或CDB日志。初次列表尚未索引刚dispatch的Run，
+原观察断言失败保留；依据dispatch返回的同一Run继续核对后确认一次attempt1，不重新dispatch。
+该观察竞态不是源码缺陷或原生业务失败。
+
+专项退出：原目录共享最小修复与SDK符号根装配、最低SHA256 Commit原材料／CAS写入及独立批准回读完成。
+未退出：所有历史Git128唯一根因、完整8MiB／对象种类矩阵、完整产品Git／Backup v2、消费者Windows11、
+R3真实质量及费用未决、独立Beta与同候选R1～R6。
+
+独立窄源码复核在固定0583b53未发现可确认P0／P1／P2；20组定向离线校验覆盖同一父根、fresh child清理、
+角色绑定失败及原完整性退出路由，不计作完整pytest或独立Windows执行。单条新路径测试只断言身份表达式前缀，
+完整后缀一致性另由精确workflow摘要及独立表达式复核证明；该单条用例覆盖边界保留，不宣称全关系覆盖。
+同候选常规CI Run37134036729的Windows Job111234779832中，NTFS写链和Git读取／取消步骤成功，
+认证raw回执与Git基准聚合步骤failure，后续步骤未据此验收。该聚合包含完整材料矩阵但不能拆造各case结果，
+不读取原生业务日志或以最低专项success改写此失败；完整Windows矩阵仍需闭环。

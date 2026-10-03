@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
-code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
+version: 3
+code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
 owners: [core]
 modules: [delivery, product_config, governance]
 related_adrs:
@@ -85,7 +85,7 @@ head244f9c2cac250a856505d9b4043410ef6b197189，终态failure。
 [详细设计第16节](../../changes/m09-r4-windows-minimum-commit-probe.md#16-原sdk诊断侧车的符号根装配一致性)
 仅将SDK基目录改为原preflight根的fresh child，保留全部角色验真、原selector、五分钟及完整性失败门。
 治理先RED再GREEN，原失败日志只在私有本机测试归档，不读原生业务日志。
-后继新固定候选原生结果尚待取得；不重跑旧候选或用路径测试代替原SDK验收。
+后继新固定候选原生结果见第6节；不重跑旧候选或用路径测试代替原SDK验收。
 
 ## 5. SDK符号根修复的本机验证边界
 
@@ -95,3 +95,28 @@ head244f9c2cac250a856505d9b4043410ef6b197189，终态failure。
 文档静态、精确Secret／自检和三个Python文件Ruff检查／格式通过；第16节三幅图实际渲染及视觉复核。
 设计前置摘要、RED／GREEN日志XML、源码／身份差分、图示和后继原生元数据归档于
 私有windows-sdk-symbol-root-20261003-v1，不覆盖原目录兼容38成员封存包。
+
+## 6. SDK符号根修复的固定原生通过
+
+[Run37134072312](https://github.com/carrie1988/Harnessix/actions/runs/37134072312)、attempt1、Job111234899713，
+head0583b53306f3ab869fb35c5b9eece80fbe2251a4，终态success；创建2026-10-03T15:40:28Z，
+更新2026-10-03T15:41:28Z。全部原身份、四格、同源、三个真实Windows控制及原安全保护步骤success，
+原两个最低SHA256 Commit SDK加诊断侧车步骤success。
+
+工作流仍只选择原两个业务case，并执行原五分钟、Trace2模式和插件。
+[原诊断完整门](../../../tests/product_config/git_trace2_projection.py#L377)要求A／B两case、每个13接点、正常teardown、
+未截断与完整已知写入Trace2；原sessionfinish不完整失败门保留。没有通过删除侧车或更改失败门获得成功。
+本专项完成原材料／CAS写入、独立批准回读及目录共享保护的固定原生验收。
+
+dispatch调用一次；首次列表尚未索引新Run，原宿主观察断言失败保留，后续核对同一Run而非重发或重跑。
+仅保存Run／Job／step元数据，不获取原始或业务日志。旧两个failure候选及此前Root UNKNOWN保持，不改写旧结果。
+
+后继必须完成完整对象容量矩阵、默认Git产品交付／Backup v2、消费者Windows11、真实R3及独立Beta。
+该专项success不等于R4或R1～R6商用完成；不再为该已闭合路径增加新的诊断采集设施。
+
+独立窄源码复核在固定0583b53未发现可确认P0／P1／P2；20组定向离线校验覆盖同一父根、fresh child清理、
+角色绑定失败及原完整性退出路由，不计作完整pytest或独立Windows执行。单条新路径测试只断言身份表达式前缀，
+完整后缀一致性另由精确workflow摘要及独立表达式复核证明；该单条用例覆盖边界保留，不宣称全关系覆盖。
+同候选常规CI Run37134036729的Windows Job111234779832中，NTFS写链和Git读取／取消步骤成功，
+认证raw回执与Git基准聚合步骤failure，后续步骤未据此验收。该聚合包含完整材料矩阵但不能拆造各case结果，
+不读取原生业务日志或以最低专项success改写此失败；完整Windows矩阵仍需闭环。

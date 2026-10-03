@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 179
-code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
+version: 180
+code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
 owners:
   - core
 modules:
@@ -1870,5 +1870,19 @@ Job111229042843已终态failure。原四格、同源fanout／blob、真实Window
 只将fresh SDK基目录设为原preflight输出的直接子目录，原插件、双角色验真、13接点、两个selector及
 诊断完整性失败门不改；原五分钟及20／45／240／300正式预算保持。
 治理断言先复现旧装配失败，再验证新路径；18输入只更新workflow一行，其余17行与其他固定字段保持。
-新候选必须另取一次原生结果，不重跑或覆盖旧失败；原SDK尚未验收，完整Git／Backup v2、R3费用与质量、
+新候选必须另取一次原生结果，不重跑或覆盖旧失败；本专项已取得下述原生通过，完整Git／Backup v2、R3费用与质量、
 消费者Windows、独立Beta及最终R1～R6仍开放。
+
+固定0583b53的[Run37134072312](https://github.com/carrie1988/Harnessix/actions/runs/37134072312)、attempt1、
+Job111234899713已终态success：原身份预检、原四格、同源两臂、三个真实Windows控制、原写／改名／删除保护，
+以及原两SDK加诊断侧车全部步骤success。原诊断完成门仍要求两个case、每个13接点、完整已知Trace2观察和正常teardown；
+插件原字节未改变。最低SHA256 Commit原材料／CAS写入及独立批准回读在此固定专项完成原生验收。
+
+该结果关闭本专项的目录共享兼容及SDK符号根装配阻塞，不回写旧FAIL，不证明所有历史Git128唯一根因，
+也不替代完整对象容量矩阵、默认完整Git／Backup v2、消费者Windows11、真实R3、Beta或同候选R1～R6。
+后继集中完成完整产品交付与恢复，不继续新增最低Commit诊断设施。详细结果见
+[正式验证资料第6节](validation/windows-directory-write-share-2026-10-03-v1/README.md#6-sdk符号根修复的固定原生通过)。
+
+同候选常规CI Run37134036729的Windows Job111234779832已failure：前两个NTFS及Git读取步骤success，
+认证raw／Git基准聚合步骤failure。原最低专项成功不覆盖该完整矩阵失败，后继仍需定位剩余分组；
+不据步骤元数据虚构各case失败或扩大已通过范围。独立窄源码复核未发现P0／P1／P2，仍不替代原生全矩阵。

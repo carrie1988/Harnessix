@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 36
-code_revision: 244f9c2cac250a856505d9b4043410ef6b197189
+version: 37
+code_revision: 0583b53306f3ab869fb35c5b9eece80fbe2251a4
 owners:
   - core
 modules:
@@ -2162,3 +2162,7 @@ private查询仍只额外READ_CONTROL，不为当前句柄增加写权限。原_
 SDK加诊断侧车聚合步骤失败，尚未分别验收业务case。源码确认其符号父根装配不一致，
 后继只修改工作流fresh基目录，不修改材料生产端口或原证明门；见
 [详细设计第16节](../changes/m09-r4-windows-minimum-commit-probe.md#16-原sdk诊断侧车的符号根装配一致性)。
+
+SDK符号根修复候选0583b53的Run37134072312已整体success，最低SHA256 Commit两个原SDK及侧车、
+全部对象写入控制与原保护步骤通过。材料生产代码仍是244f9c2的目录共享最小修复；
+完整Git交付、容量矩阵及Backup v2不由该专项替代，见同一验证资料第6节。
