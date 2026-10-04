@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
+version: 11
+code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
 owners:
   - core
 modules:
@@ -14,6 +14,10 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
+  - tests/workspace/test_snapshot_parent_closure.py
+  - tests/workspace/test_parent_closure_contracts.py
+  - tests/workspace/test_parent_closure_reader.py
+  - tests/workspace/test_native_observation_control.py
   - tests/delivery/test_windows_io_contracts.py
   - tests/processes/test_windows_receipt_contracts.py
   - tests/workspace/test_paths.py
@@ -46,10 +50,10 @@ supersedes: []
 | 非职责 | 不实现完整文件编辑、Patch、Workspace Transaction、Git Worktree、OS Sandbox、权限UI、全仓索引、备份、版本控制或分布式锁服务 |
 | 上游调用者 | Execution Planner、Trusted Action、Process/Sandbox、Delivery、Skill和Product Config |
 | 下游依赖 | `tools.workspace.Workspace/ReadOperation`、POSIX FD API、Windows Kernel32 Handle API、SQLite与宿主文件系统 |
-| 持久化 | Snapshot由上层Execution/Delivery Plan持久化；包内仅`WorkspaceLeaseStore`持久化当前Owner、Fencing Token和到期时间 |
+| 持久化 | 默认v1 Snapshot由上层Execution/Delivery Plan持久化；显式v2宿主端口通过原私有CAS保存完整父历史；`WorkspaceLeaseStore`持久化Owner、Fencing Token和到期时间 |
 | 平台 | macOS/Linux走POSIX Root FD；Windows走原生句柄链；领域路径始终使用UTF-8、`/`分隔的相对路径 |
-| 代码版本 | 文档锚定提交`0f1948c3a258943698a8fe3e4309b81e78b8d5b3`；当前Snapshot资源准入候选已完成源码修复与本机差分 |
-| 当前完成度 | 路径、选择资源Snapshot、原生Windows只读端口、Secure Reader和跨进程Lease已实现；默认Workspace Patch已逐成员应用Lease；Snapshot资源准入候选已提取私有helper并完成本机差分，尚待新Windows原生验证，Snapshot仍不是全仓锁或Sandbox |
+| 代码版本 | 本增量以`9eff41b`为基线；独立Snapshot v2实现由验证包绑定，不将基线SHA误记为新增实现SHA |
+| 当前完成度 | 默认v1路径、选择资源Snapshot、Secure Reader及跨进程Lease保持；显式v2宿主端口已实现完整父历史CAS与只读原生验证，默认消费者未切换，新候选Windows原生待验收；不是全仓锁或Sandbox |
 
 本文描述[`contracts.py`](../../src/harnessix/workspace/contracts.py)、
 [`paths.py`](../../src/harnessix/workspace/paths.py)、[`snapshot.py`](../../src/harnessix/workspace/snapshot.py)、
@@ -1219,6 +1223,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 11 | `9eff41b`基线及专项输入清单 | 2026-10-05 | 独立Snapshot v2完整父字典、原CAS全量Reader与只读再验证；原v1资源事实共享校验及原生父checkpoint；默认消费者新代际仍待联合接入 |
 | 10 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步完整资源请求私有准入提取、原容量合同、Snapshot请求序列P2测试缺口及固定0f Windows原生验收边界；Snapshot候选待新原生验证 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 记录默认Patch规范资源、同源Snapshot、逐成员Fencing Lease及Windows省略边界 |
 | 3 | `93723773676349fbfbe0ef42c26d9000cce379c8` | 2026-09-13 | 为Windows观察增加内容/上限/检查点并拆分缺失、目录、文件和块读取流程，供原生Coding Tool复用；CI 34735529084通过 |
@@ -1254,3 +1259,95 @@ Delivery旧导入、私有状态目录发布和Owner Receipt直接复用同一�
 说明新旧Reader快照及未决发布边界；
 [同一实现测试](../../tests/delivery/test_windows_io_contracts.py)验证兼容路径的类、结构和编码函数身份一致。
 原Workspace路径/Handle身份端口与NTFS范围不改变，不新增一级包依赖边或扩大依赖环。
+
+## Snapshot v2 完整父历史增量
+
+### 需求、目标与产品边界
+
+旧显式表示把叶与父目录同时计入256资源，128个分散叶需257资源；删除父观察会丢失目录对象、权限与直接成员前置条件。
+独立Snapshot v2保留原256显式资源（含cwd/read），将全部严格祖先和使用根存入版本化私有CAS闭包。
+目标是消除表示放大，不删除任何父历史，不扩大8 MiB／32 MiB正文、10000直接成员或原路径／期限边界。
+总体方案、字段、失败矩阵及后继联合责任见
+[完整闭包详设第11节](../changes/m09-r4-workspace-parent-closure.md#11-snapshot-v2完整父闭包的实施合同)。
+
+默认Execution、Route、Delivery和Patch仍使用v1。以下是已实现的显式宿主API，不是默认产品已切换，
+也不是全仓递归快照、文件系统锁、业务批准或Sandbox。
+
+### 总体架构与数据流
+
+```mermaid
+flowchart LR
+    Targets[正式目标及cwd] --> Paths[完整父集合与组件字典]
+    Targets --> Native[原POSIX Windows观察]
+    Paths --> Native
+    Native --> Explicit[最多256显式资源]
+    Native --> History[全部父目录原观察]
+    History --> Encode[规范块 Manifest 全集摘要]
+    Encode --> CAS[原宿主私有CAS]
+    CAS --> Reader[完整Reader及精确集合验证]
+    Explicit --> Snapshot[独立Snapshot v2]
+    Reader --> Snapshot
+    Snapshot --> Verify[只读原生再验证]
+```
+
+**图示说明：** CAS承载完整历史，Snapshot保存正式引用；Reader验证后才能返回全部历史。
+只读再验证完整读取原历史，再重新原生观察并纯编码比较；没有写CAS或迁移端口。
+上层当前尚未使用此图的Snapshot v2，旧v1行为按本模块前文保留。
+
+### 类、接口与源码阅读顺序
+
+1. [`WorkspaceSnapshotV2`](../../src/harnessix/workspace/snapshot_contracts.py)：根／cwd／外部授权、原显式资源、`parent_closure`、独立算法域和revision。
+2. [`WorkspaceParentClosureReference / Manifest / ObservationChunk`](../../src/harnessix/workspace/parent_closure_contracts.py)：SHA／大小／父数量／目标摘要；根作用域、字典、连续块与全观察摘要。
+3. [`parent_paths / path_node_payloads / decode_path_nodes`](../../src/harnessix/workspace/parent_closure_paths.py)：规范路径、平台去重、根优先排序、共享前缀字典及精确集合恢复。
+4. [`SnapshotCapture / _Observations`](../../src/harnessix/workspace/snapshot_capture.py)：原生根生命周期、同次read复用和共享正文预算；任何不同access不合并。
+5. [`NativeReadOperation / observe_directory`](../../src/harnessix/workspace/native_observation_io.py)：不重置父期限，沿用局部读取上限，逐目录成员检查并保持原字节事实。
+6. [`encode_parent_closure / read_workspace_parent_closure`](../../src/harnessix/workspace/parent_closure_codec.py)：纯编码与固定版本、完整回读、大小／SHA／规范编码、根、目标、全部路径及全观察验证。
+7. [`capture_workspace_snapshot_v2 / verify_workspace_snapshot_v2`](../../src/harnessix/workspace/snapshot_v2.py)：宿主显式写入与只读验证，使用同一checkpoint。
+
+组件身份、权限和直接成员事实保持原观察的identity／size／kind；不是以新的空观察或仅全局摘要替代逐父历史。
+新[Schema](../../spec/workspace-snapshot-v2.schema.json)独立导出，旧Snapshot和所有旧消费者Schema原字节不变。
+[`snapshot_fields.py`](../../src/harnessix/workspace/snapshot_fields.py)只抽取原跨字段资源校验供两代复用，不改变v1算法或字段。
+
+### 调用示例、失败与恢复
+
+受信宿主先建立原私有Store及父操作，再显式调用；没有任何新增模型输入或用户可选择的CAS路径：
+
+```python
+from harnessix.workspace.snapshot_v2 import (
+    capture_workspace_snapshot_v2,
+    verify_workspace_snapshot_v2,
+)
+
+snapshot = capture_workspace_snapshot_v2(
+    workspace_root,
+    resources=requests,
+    checkpoint=operation.checkpoint,
+    write_blob=store.put_blob,
+    read_blob=store._read_blob,
+)
+verify_workspace_snapshot_v2(
+    snapshot,
+    workspace_root,
+    checkpoint=operation.checkpoint,
+    read_blob=store._read_blob,
+)
+```
+
+`store._read_blob`为原宿主内部完整CAS元数据端口；模型或外部应用不获得该私有入口。
+外部write-only授权不足以读取派生父历史，必须明确具有read；不自动提权。
+未知版本、损坏／缺失／非规范块、错作用域、漏父项／额外项、字典回边或全集摘要错误为`workspace_closure_corrupt`。
+实际父对象、权限或成员变化为`execution_plan_stale`；原敏感路径／平台拒绝不降级。
+取消、超时及原存储错误保持各自语义；检查不能抢占单个系统调用。中断可能遗留无业务引用Blob，
+但不会返回Snapshot或插入业务事务。只读重开不迁移、不补签、不删证据，也不提交恢复效果。
+
+### 测试与后继验收
+
+真实分散叶、深父链、只读CAS和原v1失败对照见
+[`test_snapshot_parent_closure.py`](../../tests/workspace/test_snapshot_parent_closure.py)；
+字典及两代隔离见[`test_parent_closure_contracts.py`](../../tests/workspace/test_parent_closure_contracts.py)；
+完整Reader、深层损坏及全部分块见[`test_parent_closure_reader.py`](../../tests/workspace/test_parent_closure_reader.py)；
+句柄回收、逐项／逐块取消及旧观察字节兼容见
+[`test_native_observation_control.py`](../../tests/workspace/test_native_observation_control.py)。
+
+本机通过只证明此显式端口的POSIX运行及合同。新候选Windows原生、共同Route／Planner、
+Execution／Delivery批准与全部历史备份的新代际仍须联合验收；不得用新端口通过覆盖旧FAIL或默认产品容量。

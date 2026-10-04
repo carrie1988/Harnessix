@@ -1,14 +1,18 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
-code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
+version: 4
+code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
 owners: [core]
 modules: [workspace, delivery, execution, product_config]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/workspace/test_snapshot_parent_closure.py
+  - tests/workspace/test_parent_closure_contracts.py
+  - tests/workspace/test_parent_closure_reader.py
+  - tests/workspace/test_native_observation_control.py
   - tests/delivery/test_workspace_record_reference.py
   - tests/product_config/test_workspace_reference_backup.py
   - tests/delivery/test_git_projection_capacity.py
@@ -46,8 +50,8 @@ supersedes: []
 同规模短路径147549字节记录可完整重开。原生Snapshot复核通过，未用替代观察或修改序列化制造失败。
 每个事件重复保存完整 Plan，还受正式备份的 payload 列累计 64 MiB 限制。
 
-**没有满足全部旧表示约束的现成开关。** 第10节固定正式实施合同；版本化物理记录已开始落地，
-完整父闭包及新Snapshot尚未实施。派生 T／Bridge 的阶段语义由
+**没有满足全部旧表示约束的现成开关。** 第10节实现版本化物理记录；第11节实现独立Snapshot v2的
+完整父闭包捕获、原CAS读取及原生再验证。默认执行／审批／事务消费者的联合代际仍待接入。派生 T／Bridge 的阶段语义由
 [独立顺序设计](m09-r4-git-projection-ordering.md#5-待确认整改方案数据结构与领域契约)约束，不在本文改写。
 
 ## 2. 设计目标、非目标与不变量
@@ -458,7 +462,7 @@ flowchart TD
     Full --> Consumer[Store及完整备份Reader]
 ```
 
-**图示说明：** 本图仅描述已经编码的物理记录层，不包含待实现的父闭包。
+**图示说明：** 本图仅描述已经编码的物理记录层；第11节另述独立父闭包，默认联合消费者尚未接入。
 `record_digest`仍覆盖完整领域事实，引用不能代替原批准或MAC。
 新物理Schema见[StoredRecord v2](../../spec/workspace-stored-record-v2.schema.json)，旧领域v1 Schema保持原字节。
 不能只提高一个解码常数，不能删父目录保护，也不能把新格式解释为既有兼容开关。
@@ -466,3 +470,146 @@ flowchart TD
 完整父目录从逐项Resource计数中分离、完整历史私有CAS引用和prepared T语义已固定为实施方向。
 后继仍须完成实际消费方与版本矩阵，明确255来源叶与256mutation／不同叶承诺的区别。
 本候选及对应源码核验不关闭完整 Git 产品、Backup v2、R3、消费者平台、Beta 或 R1～R6 商用门禁。
+
+## 11. Snapshot v2完整父闭包的实施合同
+
+物理Plan引用层已由9eff41b实现。本层新增独立Snapshot v2及完整父历史生产、读取和原生再验证端口，
+不扩大旧Snapshot v1模型，不在新版Execution／Delivery及批准联合适配前装配默认产品。
+旧v1模型的资源字段校验可以提取为共享纯校验，但字段、算法和旧Schema必须原字节保持。
+
+### 11.1 类型、字段与编码
+
+| 正式类型 | 字段及不变量 |
+|---|---|
+| `WorkspaceSnapshotV2` | `spec_version=harnessix.workspace-snapshot/v2`，算法域`selected-resources-parent-closure-sha256/v2`；保留原根、cwd、外部根及最多256显式资源，新增`parent_closure`引用。revision覆盖原完整事实与引用。 |
+| `WorkspaceParentClosureReference` | `sha256 / size / parent_count / target_set_digest`；绑定完整Manifest原字节，不构成来源MAC。 |
+| `WorkspaceParentClosureManifest` | `harnessix.workspace-parent-closure/v1`；绑定platform、workspace_id、根路径／对象身份、cwd、全部外部根及授权、正式目标摘要、完整路径字典、有序分块引用和完整观察集合摘要。 |
+| `WorkspaceParentPathNode` | 根节点保存location及`.`；子节点保存严格较小parent索引与单个原组件，location为空。重建后仍满足原4096字节／128段和平台等价规则。 |
+| `WorkspaceParentObservationChunk` | `harnessix.workspace-parent-observations/v1`，起始索引及完整观察条目；条目保存kind、identity、content_sha256、size，location／path／read由对应字典节点完整还原。 |
+| 分块引用 | SHA、原字节大小、起始索引及count；顺序连续、不可重排／重复／遗漏，总数与完整字典及父集合严格相等。 |
+
+正式目标集合包含补齐后的cwd/read与原显式请求，不含自动派生父项。按原平台比较语义排序、拒绝重复，
+目标摘要覆盖全部location、原规范路径和access。全部严格祖先及每个使用根确定性派生，
+共享路径按平台语义去重。Windows等价父组件按UTF-8长度、原拼写依次选最小值，
+再由字典父节点重建一致前缀；不改变原叶路径，也不因混合大小写组件增加原路径字节长度。
+每个location根节点先于其他路径，其余按平台比较键排序，名称以`!`等标点开头也不会产生前向父引用。
+数量上界由原256资源×128路径段推导为32768，不接受任意调用方父数量。
+字典须等于该精确集合，不能藏入额外节点或省略父路径；原缺失kind语义保留。
+
+每个Chunk和Manifest均不超过原CAS 8 MiB；闭包编码总量不超过32 MiB，
+原生叶正文与目录枚举仍共用原32 MiB捕获预算，不按分块重置。
+共享的cwd或显式父read观察可复用同次原生事实并只计一次正文预算，但历史须完整保留，
+同一显式与父观察若不相等则拒绝。完整观察集合摘要采用规范JSON流式计算，避免拼接全部长前缀正文。
+
+### 11.2 宿主接口与模块边界
+
+- `capture_workspace_snapshot_v2`：调用方必须传入同一父操作`checkpoint`、原私有CAS耐久写入及完整回读端口。
+  完整观察／编码后先逐块耐久回读，再提交Manifest，最后完整Reader验真才返回Snapshot；无业务SQL提交。
+- `read_workspace_parent_closure`：完整解引用、固定字节／数量准入、SHA／大小／规范编码、根／目标集合、字典／顺序及集合摘要验真；返回全部原领域观察。
+- `verify_workspace_snapshot_v2`：先完整读取原历史，再通过同一原生端口重新观察完整集合；纯内存编码比较，**不写CAS、不迁移或补签**。
+- 新模型与闭包Codec独立于Delivery；宿主注入原`Store.put_blob`和底层完整CAS读取，不引入workspace→delivery／session依赖环或第二CAS。
+
+现有POSIX原生观察增加可选上游checkpoint，Windows复用已有checkpoint参数。
+POSIX文件读取、句柄链和逐目录成员枚举共同检查原父期限／取消；保留原局部读取上限，
+不为每个父项重新创建父绝对截止时间。原v1无参数调用的字节事实与原期限不变。
+必要的IO辅助拆分必须保持原policy，不通过热点白名单增长容纳实现。
+外部根显式目标与派生父read分别检查原授权；write-only外部根不能借闭包派生获得read。
+检查是协作式的，不能抢占已经进入的单个系统调用；原绝对根初始化段仍保留原实现。
+
+### 11.3 流程与失败语义
+
+```mermaid
+sequenceDiagram
+    participant Host as 原宿主与父期限
+    participant Native as 原生观察端口
+    participant CAS as 原私有CAS
+    participant Reader as 完整闭包Reader
+    Host->>Native: 正式叶 cwd 与全部派生父项
+    Native-->>Host: 完整原身份 权限与成员事实
+    Host->>CAS: 写有界Chunk并耐久回读
+    Host->>CAS: 写完整Manifest并耐久回读
+    Host->>Reader: Snapshot v2与相同期限
+    Reader->>CAS: 全部引用回读与严格集合验证
+    Reader-->>Host: 完整父历史
+    Host->>Native: 再次完整观察
+    Native-->>Host: 原前置条件比较
+```
+
+**图示说明：** CAS写入只准备证据；途中失败可遗留无引用私有Blob，不产生成功业务事务。
+Reader与再验证消费同一checkpoint。取消或超时保持原控制异常，不包装成`workspace_closure_corrupt`；
+未知版本、损坏／缺失／非规范块、错根／目标绑定、字典缺项和额外项固定拒绝为`workspace_closure_corrupt`。
+真实根或父目录变化仍由重新观察报`execution_plan_stale`，敏感路径／平台拒绝继续使用原固定错误。
+
+### 11.4 测试、部署及后继责任
+
+本层必须验证真实127／128／255分散叶、共享深父链、原v1失败对照与v2完整父历史，
+同输入确定性编码、关闭重开／只读原CAS读取、任一父对象／权限／成员变化拒绝、symlink与错根拒绝。
+补齐字典缺失／额外／重复／错序、路径逃逸／Windows折叠、块缺失／错SHA／大小／目标／根／代际、
+耐久确认丢失、各写入和读取边界取消／超时、读取无写入及原32 MiB共同预算反例。
+每件旧Schema由原生成器逐件原字节核对；新增Schema分别导出，不覆盖旧名称。
+完整Execution／Route／Delivery新代际、全部批准和备份消费者必须在后继联合切片接入，
+本层不宣称旧默认Planner已经支持128分散叶，不把新域端口或Schema作为完整商用完成。
+
+### 11.5 已实现模块、接口及调用链
+
+| 源码 | 单一职责与关键接口 |
+|---|---|
+| [`snapshot_contracts.py`](../../src/harnessix/workspace/snapshot_contracts.py) | `WorkspaceSnapshotV2`；复用原显式资源不变量，另验根身份、精确父数量、正式目标摘要和新revision。 |
+| [`snapshot_fields.py`](../../src/harnessix/workspace/snapshot_fields.py) | 两代原资源事实共享校验；只校验根排序、规范路径、平台去重、授权和cwd，不改旧摘要算法。 |
+| [`parent_closure_paths.py`](../../src/harnessix/workspace/parent_closure_paths.py) | `parent_paths / path_node_payloads / decode_path_nodes`：精确派生全部严格父集合及用到的根，组件字典压缩与完整重建。 |
+| [`parent_closure_contracts.py`](../../src/harnessix/workspace/parent_closure_contracts.py) | 独立引用、Manifest、节点、分块合同；节点／块数量固定，块连续且覆盖全部字典。 |
+| [`snapshot_capture.py`](../../src/harnessix/workspace/snapshot_capture.py) | `capture_snapshot_facts`管理原生根生命周期；`_Observations`同次缓存等价read并累计叶／目录正文原32 MiB预算。 |
+| [`native_observation_io.py`](../../src/harnessix/workspace/native_observation_io.py) | `NativeReadOperation`组合原局部期限与同一父checkpoint；`observe_directory`保留原直接成员排序和身份编码。 |
+| [`parent_closure_wire.py`](../../src/harnessix/workspace/parent_closure_wire.py) | 规范JSON及流式完整观察摘要；不进行宿主IO、不累积全部长路径JSON数组。 |
+| [`parent_closure_codec.py`](../../src/harnessix/workspace/parent_closure_codec.py) | `encode_parent_closure`纯编码；`read_workspace_parent_closure`完整验证，`read_verified_body`共用原CAS回读边界。 |
+| [`snapshot_v2.py`](../../src/harnessix/workspace/snapshot_v2.py) | `capture_workspace_snapshot_v2 / verify_workspace_snapshot_v2`：宿主显式写入／只读再验证入口，无业务批准或SQL状态推进。 |
+
+所有CAS端口均为宿主注入的原`put_blob / _read_blob`，workspace包不导入delivery、session或product_config。
+Snapshot v2、Manifest v1、Chunk v1分别导出独立[Schema](../../spec/workspace-snapshot-v2.schema.json)，
+原Snapshot、Execution、Route、Plan和StoredRecord格式不在本层偷偷换型。
+
+```text
+capture_workspace_snapshot_v2(root, checkpoint, write_blob, read_blob)
+  capture_snapshot_facts
+    规范完整显式请求并补齐cwd/read；不合并不同access
+    绑定原Root／ExternalRoot；ExitStack关闭全部原生根
+    _Observations：先cwd、全部正式目标、全部派生父目录
+      原observe(checkpoint)；正文累计限额；只复用同次等价read
+  _encode_snapshot → encode_parent_closure
+    全部父路径字典 → 完整观察分块 → 全集流式摘要 → Manifest → 新revision
+  每块原put_blob耐久写入及完整回读 → Manifest同样确认
+  read_workspace_parent_closure：完整解引用且与原捕获父历史全等
+  返回正式Snapshot v2；不新增事务行、历史事件或批准
+
+verify_workspace_snapshot_v2(expected, root, checkpoint, read_blob)
+  严格重验Snapshot字段（含model_copy绕过构造的对象）
+  完整读取历史、精确字典和全部块；不返回任何已读前缀
+  原生重新捕获 → 纯编码 → 完整Snapshot与全部父历史比较
+  相等才返回；差异execution_plan_stale；没有任何write_blob端口
+```
+
+取消／超时在上游checkpoint及CAS回调边界原异常实例传播。POSIX IO会把上游控制异常暂存于内部
+`UpstreamCheckpointError`以跨越原IO错误转换边界，退出原句柄上下文后再抛出原实例；
+局部IO错误仍使用原固定workspace类别。错误分类不包含CAS正文、逻辑路径、Token或授权材料。
+全部写入成功但最终确认失败仍不返回Snapshot；允许遗留未被业务行引用的私有证据，不能将其记作成功事务。
+
+### 11.6 部署与默认产品边界
+
+本层可由受信宿主显式调用；仍使用原私有状态权限、原CAS及原SQLite Store，不新增中间件或独立服务。
+`capture`只需原可写Store，`verify`／完整Reader可使用原只读Store关闭后重开；只读入口不迁移、补签或写入。
+默认`prepare_workspace_transaction`、Execution Plan／Route、原Patch批准及产品Bridge仍使用旧合同。
+只有后继联合新代际及其全部历史／备份消费者闭合后，才能将默认装配切到新Snapshot；
+独立端口容量通过不等于默认产品容量通过，也不等于R3、Windows原生或商用1.0通过。
+
+### 11.7 独立负对照与缺陷闭环
+
+完整Reader独立复审以真实已捕获父历史重新寻址，重算规范块SHA、完整观察集合摘要和合法Snapshot revision。
+workspace及cache的根观察被替换为`missing/size=0`后，原Reader仍接受，两项实际FAIL保留。
+根类型检查原先只位于生产编码边界，不能证明读取来自合法Producer。整改在完整Reader的父观察一致性边界
+也要求每个使用根为directory，不依赖同代写入器已校验；原篡改用例和其正式摘要重算方法不改。
+该类根因适用于任何引用历史：字节完整、版本正确和摘要相等不等于领域结构合法，读取必须独立检验。
+
+全量回归发现原可读性生成报告未同步的单项FAIL；保留原报告与失败，以原生成器重新计算统计及符号位置。
+原policy、阈值、依赖边和公共API不变；修正后完整治理1413项通过。
+专项与全量及治理为互相包含范围，不累加；完整证据及当前默认产品边界见
+[正式验证报告](../validation/workspace-parent-closure-2026-10-05-v1/README.md)。

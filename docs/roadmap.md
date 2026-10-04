@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 189
-code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
+version: 190
+code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
 owners:
   - core
 modules:
@@ -2066,3 +2066,26 @@ Ruff格式／检查、442件生产源码Mypy、Schema及原Secret扫描分别通
 后继立即目标为完整父目录闭包新版、共同Route／Planner捕获及Execution／Delivery批准代际联合适配，
 再闭合prepared T／认证Bridge／A／D／独立Commit和业务Backup v2。
 上述为批准方案的基础依赖落地，不是完整闭包或商用完成。真实R3及费用未决、消费者平台、Beta和同候选R1～R6仍开放。
+
+### R1/R4：Snapshot v2完整父历史宿主端口
+
+[第11节正式详细设计](changes/m09-r4-workspace-parent-closure.md#11-snapshot-v2完整父闭包的实施合同)
+实现独立Snapshot v2、完整祖先字典、原私有CAS块／Manifest、严格全量Reader与只读原生再验证。
+原256显式资源、8 MiB／32 MiB正文、直接成员及路径限制不扩大；所有父身份、权限与成员前置保留。
+原Snapshot跨字段校验共享提取，两代算法独立，260件既有Schema逐件原字节相等。
+POSIX沿用原观察器，父checkpoint覆盖文件块、句柄链和逐目录成员，原v1无参数调用字节保持。
+实际127／128／255分散叶及255共享深链通过显式v2端口完整重开；原v1 128分散叶失败对照保留。
+完整缺失／篡改／版本／字典／作用域／观察摘要与取消、超时、确认失败回归按
+[专项报告](validation/workspace-parent-closure-2026-10-05-v1/README.md)验收；各嵌套范围不累加。
+
+默认Route／Planner、Execution／Delivery新批准代际、全部业务历史和Backup v2尚未联合接入；
+prepared T／Bridge MAC／私有A／D与独立Commit也尚未完成默认装配。
+旧三平台失败、pywin32十二Wheel正文通知复核、真实R3与两笔费用未决、消费者系统、Beta及R1～R6继续开放。
+没有新模型请求、授权预算规则修改、自动化或独立中间件；专项API与本机测试不构成商用1.0验收。
+
+本增量全量首轮11550项为11412通过／137平台跳过／1份生成报告漂移FAIL，原件保留。
+唯一整改是原生成器同步readability报告，原policy及阈值不变，后继治理复验单独记录；
+生产、测试、脚本和Schema输入不变，不将文档修正后的治理通过虚写成第二次完整零失败。
+实际单一Wheel451件源码原字节匹配，源码外128叶／129父观察及只读重开通过；仍不是新三平台或商用验收。
+
+报告同步后的完整治理复验1413项实际全部通过，37.155秒；范围包含原失败节点，原全量FAIL保持。

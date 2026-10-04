@@ -6,7 +6,6 @@ from typing import Literal, Self
 
 from pydantic import ConfigDict, Field, model_validator
 
-from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
 from harnessix.tools.contracts import Revision
 
@@ -75,60 +74,9 @@ class WorkspaceSnapshot(WorkspaceContract):
 
     @model_validator(mode="after")
     def unique_resources(self) -> Self:
-        from harnessix.workspace.paths import normalize_workspace_path, path_comparison_key
+        from harnessix.workspace.snapshot_fields import validate_snapshot_resources
 
-        roots = [root.location for root in self.external_roots]
-        resources = [(item.location, item.path, item.access) for item in self.resources]
-        if (
-            roots != sorted(roots)
-            or len(set(roots)) != len(roots)
-            or len(set(resources)) != len(resources)
-        ):
-            raise ValueError("Workspace Snapshot包含重复根或资源")
-        try:
-            normalized_cwd = normalize_workspace_path(self.cwd, self.platform)
-            normalized_resources = [
-                normalize_workspace_path(item.path, self.platform) for item in self.resources
-            ]
-        except KernelError:
-            raise ValueError("Workspace包含非法逻辑路径") from None
-        if self.cwd != normalized_cwd or any(
-            item.path != normalized
-            for item, normalized in zip(self.resources, normalized_resources, strict=True)
-        ):
-            raise ValueError("Workspace包含非规范逻辑路径")
-        comparison_keys = [
-            (item.location, path_comparison_key(item.path, self.platform), item.access)
-            for item in self.resources
-        ]
-        if len(set(comparison_keys)) != len(comparison_keys):
-            raise ValueError("Workspace资源按平台语义重复")
-        expected_order = sorted(
-            self.resources,
-            key=lambda item: (
-                item.location,
-                path_comparison_key(item.path, self.platform),
-                item.access,
-            ),
-        )
-        if list(self.resources) != expected_order:
-            raise ValueError("Workspace资源顺序不规范")
-        allowed = {"workspace", *roots}
-        if any(item.location not in allowed for item in self.resources):
-            raise ValueError("资源引用了未绑定的外部根")
-        external_access = {root.location: set(root.access) for root in self.external_roots}
-        if any(
-            item.location != "workspace" and item.access not in external_access[item.location]
-            for item in self.resources
-        ):
-            raise ValueError("资源访问模式超出外部根授权")
-        cwd_observations = [
-            item
-            for item in self.resources
-            if item.location == "workspace" and item.path == self.cwd and item.access == "read"
-        ]
-        if len(cwd_observations) != 1 or cwd_observations[0].kind != "directory":
-            raise ValueError("Workspace Snapshot没有绑定cwd目录")
+        validate_snapshot_resources(self)
         if self.revision != workspace_snapshot_revision(self):
             raise ValueError("Workspace Snapshot revision不一致")
         return self

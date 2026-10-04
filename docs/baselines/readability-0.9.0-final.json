@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 442,
-    "physical_lines": 93705,
-    "logical_lines": 82779,
-    "documented_modules": 442,
-    "classes": 970,
-    "documented_classes": 445,
-    "functions": 3778,
-    "documented_functions": 867,
+    "source_files": 451,
+    "physical_lines": 94724,
+    "logical_lines": 83671,
+    "documented_modules": 451,
+    "classes": 984,
+    "documented_classes": 449,
+    "functions": 3813,
+    "documented_functions": 879,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1594,17 +1594,6 @@
       "documented": true
     },
     {
-      "id": "harnessix.workspace.contracts:WorkspaceSnapshot.unique_resources",
-      "module": "harnessix.workspace.contracts",
-      "path": "src/harnessix/workspace/contracts.py",
-      "qualname": "WorkspaceSnapshot.unique_resources",
-      "kind": "function",
-      "line": 77,
-      "lines": 58,
-      "documented": false,
-      "decision_complexity": 27
-    },
-    {
       "id": "harnessix.workspace.leases:WorkspaceLeaseStore",
       "module": "harnessix.workspace.leases",
       "path": "src/harnessix/workspace/leases.py",
@@ -1631,8 +1620,8 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "_PosixRoot",
       "kind": "class",
-      "line": 82,
-      "lines": 125,
+      "line": 88,
+      "lines": 116,
       "documented": false
     },
     {
@@ -1641,7 +1630,7 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "capture_workspace_snapshot",
       "kind": "function",
-      "line": 305,
+      "line": 302,
       "lines": 124,
       "documented": true,
       "decision_complexity": 27

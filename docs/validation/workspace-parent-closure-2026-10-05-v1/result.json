@@ -1,0 +1,222 @@
+{
+  "spec_version": "harnessix.validation.workspace-parent-closure/v1",
+  "base_revision": "9eff41bef88f995d7c856c6af543cc627e9cf128",
+  "environment": {
+    "os": "Darwin",
+    "architecture": "arm64",
+    "python": "3.12.7",
+    "git": "2.53.0",
+    "pytest_umask": "022",
+    "evidence_umask": "077"
+  },
+  "implemented": [
+    "独立Snapshot v2及完整父历史合同",
+    "规范父路径字典和原私有CAS全量Reader",
+    "耐久回读确认及只读原生再验证",
+    "原POSIX父checkpoint及旧资源不变量共享校验"
+  ],
+  "validation": {
+    "new_focus": {
+      "tests": 196,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 196,
+      "seconds": 6.635
+    },
+    "focus_subset_counts": {
+      "native_observation_control": 79,
+      "parent_closure_reader": 77,
+      "snapshot_parent_closure": 25,
+      "parent_closure_contracts": 15
+    },
+    "full_clean_first_run": {
+      "tests": 11550,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 137,
+      "passed": 11412,
+      "seconds": 894.029
+    },
+    "full_clean_first_failures": [
+      "tests/governance/test_readability_policy.py::test_readability_report_and_policy_match_the_reviewed_tree"
+    ],
+    "corrective_governance_rerun": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1413,
+      "seconds": 37.155
+    },
+    "full_suite_not_rerun_after_report_only_correction": true,
+    "counts_overlap": true,
+    "original_schema_count": 260,
+    "original_schema_bytes_equal": true,
+    "new_schema_count": 3,
+    "mypy_source_files": 451,
+    "original_readability_policy_unchanged": true,
+    "generated_report_only_changes": [
+      "summary",
+      "oversized_symbols"
+    ],
+    "native_catalog_source_count": 18,
+    "native_catalog_lf_crlf_leaves_unchanged": true,
+    "production_test_script_schema_unchanged_during_full_and_correction": true,
+    "wheel": {
+      "wheel_sha256": "d0c74274340d8868639d66b6fa66ab9cfa2c993f05ab07ed035c1dc220e95f04",
+      "wheel_name": "harnessix-1.0.0rc1-py3-none-any.whl",
+      "package_source_count": 451,
+      "source_bytes_equal": true,
+      "runtime": "3.12.7",
+      "isolated_imports": 35,
+      "all_imports_from_wheel_target": true,
+      "native_leaf_count": 128,
+      "full_parent_count": 129,
+      "readonly_reopen_verify": true,
+      "model_requests": 0
+    },
+    "ruff_check_passed": true,
+    "ruff_format_check_passed": true,
+    "ruff_formatted_file_count": 1650,
+    "mypy_passed": true,
+    "schema_check_passed": true,
+    "readability_policy_and_final_report_passed": true,
+    "secret_clean_input_count": 4872,
+    "secret_findings": 0,
+    "documentation": {
+      "changed_path_count": 28,
+      "document_count": 539,
+      "findings": [],
+      "link_count": 12534,
+      "mermaid_count": 1043,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "changed_document_mermaid_rendering_passed": true,
+    "new_sequence_diagram_visually_reviewed": true
+  },
+  "preserved_failures": [
+    "新API缺失的初始收集失败",
+    "Reader两项合法重寻址缺失根历史FAIL",
+    "全量生成可读性报告漂移FAIL",
+    "文档代码块初次格式FAIL",
+    "旧v1 128分散叶超限对照"
+  ],
+  "previous_candidate_ci_metadata_only": {
+    "conclusion": null,
+    "head_sha": "9eff41bef88f995d7c856c6af543cc627e9cf128",
+    "html_url": "https://github.com/carrie1988/Harnessix/actions/runs/37222644546",
+    "id": 37222644546,
+    "status": "in_progress",
+    "updated_at": "2026-10-04T18:00:07Z"
+  },
+  "model_requests": 0,
+  "billing_rules_changed": false,
+  "not_completed": [
+    "默认共同Route和Planner接入",
+    "Execution与Delivery批准的新代际联合接入",
+    "完整业务历史及Backup v2",
+    "prepared T认证Bridge及默认A到D与独立Commit装配",
+    "新候选Windows原生与消费者安装验收",
+    "R3真实质量及未决费用",
+    "独立Beta及R1到R6商用发布验收"
+  ],
+  "source_inputs": [
+    {
+      "path": "scripts/generate_specs.py",
+      "size": 26802,
+      "sha256": "09d97b61491adc7042ec891870941f8d2818dd89717f5441c8fab5e48141cf85"
+    },
+    {
+      "path": "spec/workspace-parent-closure-v1.schema.json",
+      "size": 4737,
+      "sha256": "7f8d44cf4b83e2f128ca84d4818fe366088d678c567362cb3e614f9a75a95c52"
+    },
+    {
+      "path": "spec/workspace-parent-observations-v1.schema.json",
+      "size": 1639,
+      "sha256": "0086a8c03be70d5ff585a5478d488abed2f2d4873e86afded7112f5e64bf1747"
+    },
+    {
+      "path": "spec/workspace-snapshot-v2.schema.json",
+      "size": 5201,
+      "sha256": "946384c173af188a548372bc0137e9bde541f0b00cd02237dd2e2ef87ddeb70e"
+    },
+    {
+      "path": "src/harnessix/workspace/contracts.py",
+      "size": 3817,
+      "sha256": "99a67df56752217858b20e2852939d68669a24dbbb231e7672fa3fc187503ad3"
+    },
+    {
+      "path": "src/harnessix/workspace/native_observation_io.py",
+      "size": 2590,
+      "sha256": "84dac29f2627b50f5a882c749277c8851a20ffe75c4741b78c98f08f755c8cbe"
+    },
+    {
+      "path": "src/harnessix/workspace/parent_closure_codec.py",
+      "size": 10609,
+      "sha256": "2f6777ce06dc1d9e2852be6f9d76ee812d824c7d6a192027915a0c45475065a2"
+    },
+    {
+      "path": "src/harnessix/workspace/parent_closure_contracts.py",
+      "size": 3532,
+      "sha256": "da6604fb96959ad3ce47af65abb80a27aa6581ac09e45976f91c4a0f7fddcc02"
+    },
+    {
+      "path": "src/harnessix/workspace/parent_closure_paths.py",
+      "size": 4294,
+      "sha256": "ee7655ffcbc13b9976bd240f0e25eed391f532f5de62d802e49f2c31cfefce0c"
+    },
+    {
+      "path": "src/harnessix/workspace/parent_closure_wire.py",
+      "size": 1213,
+      "sha256": "9c9085f60d95e6b072cc9c848bd10ed39b165bf0b28314ed6f601e6d63105427"
+    },
+    {
+      "path": "src/harnessix/workspace/snapshot.py",
+      "size": 18344,
+      "sha256": "798d01fe6b31f40797a124ef8468c6f1ff15282671b167e5eee7a65d0d56422d"
+    },
+    {
+      "path": "src/harnessix/workspace/snapshot_capture.py",
+      "size": 8168,
+      "sha256": "c905a6b56e60855fa19d848ba6691076fcc668d5e795f63a48e162c8ee7d671a"
+    },
+    {
+      "path": "src/harnessix/workspace/snapshot_contracts.py",
+      "size": 3027,
+      "sha256": "ade075d4b5b4276e53084b744d7ab16c2ab9d48bfe332f45fa26e1528f88d4ae"
+    },
+    {
+      "path": "src/harnessix/workspace/snapshot_fields.py",
+      "size": 3273,
+      "sha256": "3b86176851a1eb4ca32c2e1e3871f5b6c2750671877ed858d36608816078732a"
+    },
+    {
+      "path": "src/harnessix/workspace/snapshot_v2.py",
+      "size": 4324,
+      "sha256": "f5019bc59ccc11080b548671415945d41707db285b6672b1e599d09fb5fa422b"
+    },
+    {
+      "path": "tests/workspace/test_native_observation_control.py",
+      "size": 16681,
+      "sha256": "ab69e2deada209f2cbd422315957db319e79d4cba941e8e5e3a492998defbbb4"
+    },
+    {
+      "path": "tests/workspace/test_parent_closure_contracts.py",
+      "size": 4361,
+      "sha256": "6f57afcca042724047efdc0c84dfb218f9fd4780ef03e761c2aced650ef50918"
+    },
+    {
+      "path": "tests/workspace/test_parent_closure_reader.py",
+      "size": 26836,
+      "sha256": "3ed2507c492d03715cde1ceb5d2745d71139787e68ee5bcdce31688071b31998"
+    },
+    {
+      "path": "tests/workspace/test_snapshot_parent_closure.py",
+      "size": 13894,
+      "sha256": "49bd4a27f47463823aa542d2ee90f690380fefc3ca7ed3a333fb1eab631a13e6"
+    }
+  ]
+}

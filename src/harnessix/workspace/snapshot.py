@@ -6,7 +6,7 @@ import hashlib
 import json
 import os
 import stat
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +23,11 @@ from harnessix.workspace.contracts import (
     WorkspaceResourceObservation,
     WorkspaceResourceRequest,
     WorkspaceSnapshot,
+)
+from harnessix.workspace.native_observation_io import (
+    NativeReadOperation,
+    UpstreamCheckpointError,
+    observe_directory,
 )
 from harnessix.workspace.paths import normalize_workspace_path, path_comparison_key
 
@@ -57,6 +62,7 @@ class _NativeRoot(Protocol):
         path: str,
         *,
         access: ResourceAccess,
+        checkpoint: Callable[[], None] | None = None,
     ) -> _NativeObservation: ...
 
     def close(self) -> None: ...
@@ -93,11 +99,17 @@ class _PosixRoot:
         except (OSError, ReadToolError, ValueError):
             raise KernelError("workspace_binding_invalid", "POSIX Workspace根绑定失败") from None
 
-    def observe(self, path: str, *, access: ResourceAccess) -> _Observed:
+    def observe(
+        self,
+        path: str,
+        *,
+        access: ResourceAccess,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> _Observed:
         parts = self._workspace.parts(path)
         parent = "/".join(parts[:-1]) or "."
         name = parts[-1] if parts else None
-        operation = ReadOperation()
+        operation = ReadOperation() if checkpoint is None else NativeReadOperation(checkpoint)
         try:
             if name is None:
                 return self._observe_existing(".", operation, directory=True, access=access)
@@ -123,6 +135,8 @@ class _PosixRoot:
                 if not directory and not stat.S_ISREG(before.st_mode):
                     raise KernelError("workspace_path_denied", "Workspace资源类型不受支持")
             return self._observe_existing(path, operation, directory=directory, access=access)
+        except UpstreamCheckpointError as error:
+            raise error.error from None
         except KernelError:
             raise
         except FileNotFoundError:
@@ -145,36 +159,19 @@ class _PosixRoot:
             if access == "execute" and not directory and info.st_mode & 0o111 == 0:
                 raise KernelError("workspace_execute_denied", "Workspace文件不可执行")
             if directory:
-                entries: list[tuple[str, int, tuple[int, int]]] = []
-                exposed: list[tuple[str, Literal["file", "directory", "symlink", "special"]]] = []
-                with os.scandir(descriptor) as iterator:
-                    for entry in iterator:
-                        if len(entries) >= MAX_SNAPSHOT_DIRECTORY_ENTRIES:
-                            raise KernelError(
-                                "workspace_snapshot_limit", "Workspace目录观察超过条目上限"
-                            )
-                        child = entry.stat(follow_symlinks=False)
-                        entries.append(
-                            (entry.name, stat.S_IFMT(child.st_mode), (child.st_dev, child.st_ino))
-                        )
-                        if stat.S_ISLNK(child.st_mode):
-                            kind: Literal["file", "directory", "symlink", "special"] = "symlink"
-                        elif stat.S_ISREG(child.st_mode):
-                            kind = "file"
-                        elif stat.S_ISDIR(child.st_mode):
-                            kind = "directory"
-                        else:
-                            kind = "special"
-                        exposed.append((entry.name, kind))
-                entries.sort()
-                exposed.sort()
-                body = json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode()
+                body, count, exposed = observe_directory(
+                    descriptor,
+                    max_entries=MAX_SNAPSHOT_DIRECTORY_ENTRIES,
+                    checkpoint=operation.checkpoint
+                    if isinstance(operation, NativeReadOperation)
+                    else None,
+                )
                 return _Observed(
                     "directory",
                     (*self._stable_directory_identity(info), hashlib.sha256(body).hexdigest()),
                     body,
-                    len(entries),
-                    tuple(exposed),
+                    count,
+                    exposed,
                 )
             if info.st_size > MAX_SNAPSHOT_FILE_BYTES:
                 raise KernelError("workspace_snapshot_limit", "Workspace文件超过快照上限")

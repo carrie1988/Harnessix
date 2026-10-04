@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "WorkspaceParentObservation": {
+      "additionalProperties": false,
+      "description": "索引隐含路径和 read；完整目录身份及直接成员摘要由原 identity 绑定。",
+      "properties": {
+        "kind": {
+          "enum": [
+            "directory",
+            "missing"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "content_sha256": {
+          "default": null,
+          "title": "Content Sha256",
+          "type": "null"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "identity",
+        "size"
+      ],
+      "title": "WorkspaceParentObservation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.workspace-parent-observations/v1",
+      "default": "harnessix.workspace-parent-observations/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "start_index": {
+      "exclusiveMaximum": 32768,
+      "minimum": 0,
+      "title": "Start Index",
+      "type": "integer"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/WorkspaceParentObservation"
+      },
+      "maxItems": 32768,
+      "minItems": 1,
+      "title": "Entries",
+      "type": "array"
+    }
+  },
+  "required": [
+    "start_index",
+    "entries"
+  ],
+  "title": "WorkspaceParentObservationChunk",
+  "type": "object"
+}

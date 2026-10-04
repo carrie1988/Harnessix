@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 55
-code_revision: c64ebb5f24b3f1bdcc82c63e07bbb80f511ed71e
+version: 56
+code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
 owners:
   - core
 modules:
@@ -263,3 +263,10 @@ Windows原生、完整真实20 Trial、独立Beta及商用门禁继续开放。
 最终候选源码、实际单一Wheel、源码外双Python、完整输入目录、独立Review Packet及四幅图各自绑定。
 旧d3175f7 Windows剩余两个失败及原期限退出独立记录，不因本机纯规划通过清除。
 不将此内容结果当作批准、默认Checkpoint/Commit、Backup v2、R3或商用发布完成。
+
+## Snapshot v2完整父目录历史
+
+[专项验证报告](workspace-parent-closure-2026-10-05-v1/README.md)记录真实分散叶、共享深父链、
+原CAS关闭后只读重开、完整Reader与只读再验证、父取消／超时及旧v1失败对照。
+新Snapshot宿主端口不表示默认Route／Planner、批准、完整业务备份或prepared T／认证Bridge已经联合完成；
+三平台、真实R3、独立Beta及商用门禁继续单独验收。

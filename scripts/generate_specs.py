@@ -290,6 +290,11 @@ from harnessix.trusted_actions.recovery_contracts import (
     ActionRouteOperation,
 )
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
+from harnessix.workspace.parent_closure_contracts import (
+    WorkspaceParentClosureManifest,
+    WorkspaceParentObservationChunk,
+)
+from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
 
 if __package__ or __spec__ is not None:
     from scripts.cli_console import configure_utf8_console
@@ -576,6 +581,17 @@ def generate_specs(output: Path) -> None:
     write_json(output / "execution-plan-v2.schema.json", ExecutionPlanV2.model_json_schema())
     write_json(
         output / "workspace-stored-record-v2.schema.json", WorkspaceStoredRecord.model_json_schema()
+    )
+    write_json(
+        output / "workspace-snapshot-v2.schema.json", WorkspaceSnapshotV2.model_json_schema()
+    )
+    write_json(
+        output / "workspace-parent-closure-v1.schema.json",
+        WorkspaceParentClosureManifest.model_json_schema(),
+    )
+    write_json(
+        output / "workspace-parent-observations-v1.schema.json",
+        WorkspaceParentObservationChunk.model_json_schema(),
     )
     for name, model in (
         ("agent-protocol-jsonrpc-request", JsonRpcRequest),

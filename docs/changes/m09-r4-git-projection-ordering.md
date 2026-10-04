@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
+version: 4
+code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
 owners: [core]
 modules: [delivery, product_config, workspace]
 related_adrs:
@@ -435,3 +435,12 @@ sequenceDiagram
 实际验证结果、源码和原失败摘要见[容量专项验证](../validation/git-projection-capacity-2026-10-03-v1/README.md)。
 Git 默认能力、完整 T、Bridge、Checkpoint、独立批准 Commit、Backup v2、Windows、R3、Beta 和
 商用 R1～R6 仍未由本专项完成。
+
+### 10.3 父闭包独立端口及产品联合边界
+
+完整父目录历史已通过[Snapshot v2显式宿主端口](m09-r4-workspace-parent-closure.md#11-snapshot-v2完整父闭包的实施合同)
+实现版本化字典、原CAS全量Reader和只读原生再验证；它不改变prepared T／干净A／受管D／独立Commit的正式顺序。
+第5节的候选历史不再构成未决架构选择；当前实施依据为第10.1节。
+产品Bridge MAC、默认来源解析装配、共同Route／Planner及业务Backup的新代际仍须联合接入，
+不能将新Snapshot API的128分散叶通过描述为原默认Git交付容量已经修复。
+旧Windows失败、消费者安装、R3与商用门禁不由该基础端口结果关闭。

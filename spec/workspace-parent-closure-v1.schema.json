@@ -1,0 +1,213 @@
+{
+  "$defs": {
+    "ExternalRoot": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Location",
+          "type": "string"
+        },
+        "path_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Path Digest",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "access": {
+          "items": {
+            "enum": [
+              "read",
+              "write",
+              "execute"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Access",
+          "type": "array"
+        }
+      },
+      "required": [
+        "location",
+        "path_digest",
+        "identity",
+        "access"
+      ],
+      "title": "ExternalRoot",
+      "type": "object"
+    },
+    "WorkspaceParentChunkReference": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 1,
+          "title": "Size",
+          "type": "integer"
+        },
+        "start_index": {
+          "exclusiveMaximum": 32768,
+          "minimum": 0,
+          "title": "Start Index",
+          "type": "integer"
+        },
+        "count": {
+          "maximum": 32768,
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sha256",
+        "size",
+        "start_index",
+        "count"
+      ],
+      "title": "WorkspaceParentChunkReference",
+      "type": "object"
+    },
+    "WorkspaceParentPathNode": {
+      "additionalProperties": false,
+      "properties": {
+        "parent": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 32768,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parent"
+        },
+        "name": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Location"
+        }
+      },
+      "required": [
+        "parent",
+        "name",
+        "location"
+      ],
+      "title": "WorkspaceParentPathNode",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.workspace-parent-closure/v1",
+      "default": "harnessix.workspace-parent-closure/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "platform": {
+      "enum": [
+        "posix",
+        "windows"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "workspace_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "root_path_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Root Path Digest",
+      "type": "string"
+    },
+    "root_identity": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Root Identity",
+      "type": "string"
+    },
+    "cwd": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Cwd",
+      "type": "string"
+    },
+    "external_roots": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ExternalRoot"
+      },
+      "maxItems": 16,
+      "title": "External Roots",
+      "type": "array"
+    },
+    "target_set_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Target Set Digest",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/WorkspaceParentPathNode"
+      },
+      "maxItems": 32768,
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "chunks": {
+      "items": {
+        "$ref": "#/$defs/WorkspaceParentChunkReference"
+      },
+      "maxItems": 32768,
+      "minItems": 1,
+      "title": "Chunks",
+      "type": "array"
+    },
+    "observations_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Observations Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "platform",
+    "workspace_id",
+    "root_path_digest",
+    "root_identity",
+    "cwd",
+    "target_set_digest",
+    "nodes",
+    "chunks",
+    "observations_digest"
+  ],
+  "title": "WorkspaceParentClosureManifest",
+  "type": "object"
+}
