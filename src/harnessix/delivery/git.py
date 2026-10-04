@@ -7,6 +7,7 @@ import os
 import re
 import stat
 import subprocess
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
@@ -39,6 +40,7 @@ from harnessix.delivery.git_identity import (
     _path_sha256,
     _path_text,
 )
+from harnessix.delivery.git_source import read_worktree_links, verify_git_source
 from harnessix.delivery.git_store import SQLiteGitDeliveryStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.execution.contracts import canonical_digest
@@ -74,6 +76,7 @@ def git_delivery_implementation_digest() -> str:
                     root / "git_command.py",
                     root / "git_material_trace2_profile.py",
                     root / "git_identity.py",
+                    root / "git_source.py",
                     root / "git_object_material.py",
                     root / "git_contracts.py",
                     root / "git_store.py",
@@ -216,7 +219,11 @@ class GitDeliveryRuntime:
         git_store: SQLiteGitDeliveryStore,
         leases: WorkspaceLeaseStore,
         git_executable: str | Path,
+        *,
+        source_resolver: Callable[[GitRepositoryBinding], Path] | None = None,
     ) -> None:
+        # 来源解析端口仅由受信宿主装配，不替代原绑定、批准或租约校验。
+        self._source_resolver = source_resolver
         self._workspace_store = workspace_store
         self._store = git_store
         self._leases = leases
@@ -716,30 +723,11 @@ class GitDeliveryRuntime:
 
     def _capture_worktree_binding(self, plan: ManagedGitWorktreePlan) -> ManagedGitWorktreeBinding:
         path = Path(plan.path)
-        gitfile = path / ".git"
         try:
-            info = gitfile.lstat()
-            if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode) or info.st_size > 4096:
-                raise OSError
-            body = gitfile.read_bytes()
-            prefix = b"gitdir: "
-            if not body.startswith(prefix):
-                raise OSError
-            admin = Path(self._text(body[len(prefix) :]).strip())
-            if not admin.is_absolute():
-                admin = gitfile.parent / admin
-            admin = admin.resolve(strict=True)
             common = self._common_directory(
                 self._repository_root_from_binding(plan.repository, path)
             )
-            if admin.parent != common / "worktrees":
-                raise OSError
-            commondir = self._text((admin / "commondir").read_bytes()).strip()
-            resolved_common = (admin / commondir).resolve(strict=True)
-            backlink = (admin / "gitdir").read_bytes()
-            backlink_path = Path(self._text(backlink).strip()).resolve(strict=True)
-            if resolved_common != common or backlink_path != gitfile.resolve(strict=True):
-                raise OSError
+            body, admin, backlink = read_worktree_links(path, common)
         except (OSError, RuntimeError, UnicodeError):
             raise KernelError("git_worktree_binding_invalid", "受管Git Worktree回链无效") from None
         head = self._git.oid(path, ("rev-parse", "--verify", "HEAD^{commit}"))
@@ -765,6 +753,14 @@ class GitDeliveryRuntime:
     def _repository_root_from_binding(
         self, binding: GitRepositoryBinding, worktree_path: Path
     ) -> Path:
+        if self._source_resolver is not None:
+            root = self._repository_root(self._source_resolver(binding))
+            self._verify_repository(binding, root)
+            common = self._common_directory(worktree_path)
+            if self._common_directory(root) != common:
+                raise KernelError("git_repository_changed", "Git来源与受管Worktree不属于同一仓库")
+            verify_git_source(root, common, self._registered_worktrees(root))
+            return root
         common = self._common_directory(worktree_path)
         for candidate in (common.parent, common):
             try:

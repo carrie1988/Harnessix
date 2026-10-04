@@ -1,0 +1,284 @@
+{
+  "base_revision": "b3a2445f5d0093e08f75027d6bf5d7148d905ecb",
+  "environment": {
+    "os": "Darwin",
+    "architecture": "arm64",
+    "python": "3.12.7",
+    "git": "2.53.0",
+    "pytest_file_creation_umask": "022",
+    "private_evidence_creation_umask": "077"
+  },
+  "implemented": [
+    "workspace physical stored-record v2",
+    "complete plan CAS reference",
+    "schema1 read-only compatibility and metadata-only writable upgrade",
+    "all historical plan reference backup closure",
+    "explicit trusted-host git source port"
+  ],
+  "validation": {
+    "full_clean_regression": {
+      "tests": 11354,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 137,
+      "passed": 11217,
+      "seconds": 916.254
+    },
+    "record_backup_root_order": {
+      "tests": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 60,
+      "seconds": 24.016
+    },
+    "native_source_catalog_regression": {
+      "tests": 177,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 177,
+      "seconds": 1.821
+    },
+    "governance_clean_corrections": {
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 13,
+      "seconds": 11.545
+    },
+    "new_test_files_subset": {
+      "workspace_record_reference": 23,
+      "git_private_source": 30,
+      "workspace_reference_backup": 31
+    },
+    "counts_overlap": true,
+    "mypy_source_files": 442,
+    "ruff_format_and_check_passed": true,
+    "schemas_check_passed": true,
+    "secret_clean_inputs": 4850,
+    "secret_clean_findings": 0,
+    "final_governance_clean": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1413,
+      "seconds": 38.244
+    },
+    "final_secret_clean_inputs": 4853,
+    "final_secret_findings": 0,
+    "final_documentation": {
+      "documents": 538,
+      "links": 12489,
+      "diagrams": 1041,
+      "changed_paths": 30,
+      "findings": 0
+    },
+    "final_unchanged_readability_policy_passed": true
+  },
+  "retained_failures": {
+    "original_long_path_reproduction": {
+      "tests": 2,
+      "passed": 1,
+      "failures": 1
+    },
+    "deep_json_red": {
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 0.795
+    },
+    "integrated_before_root_order_fix": {
+      "tests": 2742,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 23,
+      "passed": 2718,
+      "seconds": 166.653
+    },
+    "original_working_directory_governance": {
+      "tests": 1413,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1411,
+      "seconds": 45.896
+    },
+    "native_catalog_initial": {
+      "tests": 175,
+      "failures": 18,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 157,
+      "seconds": 1.757
+    },
+    "native_catalog_type_sensitive_intermediate": {
+      "tests": 175,
+      "failures": 12,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 163,
+      "seconds": 2.091
+    }
+  },
+  "unchanged_boundaries": {
+    "baseline": "007d2bd7c7f769616ec94641283274990b2acd66",
+    "unchanged_production_and_policy": [
+      {
+        "path": "src/harnessix/delivery/contracts.py",
+        "sha256": "7d28e931dc37f6eb1e6d939ca2f85886207b8c40e6fcb3889fdd1bafd02d9847",
+        "unchanged": true
+      },
+      {
+        "path": "src/harnessix/workspace/contracts.py",
+        "sha256": "912d78c3b5cee3848066c66c50dde2bcd8c5726d5600dc4ac27b8c054a81c753",
+        "unchanged": true
+      },
+      {
+        "path": "governance/readability-policy-v1.json",
+        "sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c",
+        "unchanged": true
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "sha256": "edd750e5dfa3850f7d80a85b2aad2fc76f09f42f5bd4d0c11ac1a4020b129fad",
+        "unchanged": true
+      }
+    ],
+    "old_schema_files": 259,
+    "all_old_schema_bytes_unchanged": true,
+    "native_catalog_changed_leaves": [
+      "/source_inputs/5/bytes",
+      "/source_inputs/5/sha256",
+      "/source_inputs/5/crlf_bytes",
+      "/source_inputs/5/crlf_sha256"
+    ],
+    "native_catalog_only_git_py_identity_changed": true
+  },
+  "long_backup_fixture": {
+    "mutations": 200,
+    "resources": 209,
+    "mirror_bytes": 2600,
+    "domain_record_bytes": 691216,
+    "max_physical_record_bytes": 595,
+    "historical_events": 5,
+    "physical_workspace_publish_performed": false
+  },
+  "private_git_source": {
+    "real_detached_anchor": true,
+    "target_add_delete_modify_binary_materialized": true,
+    "checkpoint_persisted": true,
+    "transaction_state": "prepared",
+    "source_anchor_clean": true,
+    "source_snapshot_verified": true,
+    "product_bridge_mac_validated": false,
+    "default_product_assembled": false
+  },
+  "source_identity": [
+    {
+      "path": "src/harnessix/delivery/git.py",
+      "bytes": 42265,
+      "sha256": "f266b65ee7648b8421943d8cfcf61a08cd589fa871b1756eb70fc48f2d15a1a3"
+    },
+    {
+      "path": "src/harnessix/delivery/git_source.py",
+      "bytes": 2333,
+      "sha256": "a7c39f77aeeadc4f5fc6d47296bd09cc210ed1d81d0452787303d4b4487363b6"
+    },
+    {
+      "path": "src/harnessix/delivery/store.py",
+      "bytes": 14784,
+      "sha256": "555641f8031c96e99bbc8ac1267a2637830482a903bf508c136dc575c030c7a0"
+    },
+    {
+      "path": "src/harnessix/delivery/workspace_record_contracts.py",
+      "bytes": 1512,
+      "sha256": "bdff8ac3f4a2e3f8ef066407b4c391b6b6cb4c3325902cc2684dbc88b0ef540a"
+    },
+    {
+      "path": "src/harnessix/delivery/workspace_record_codec.py",
+      "bytes": 4143,
+      "sha256": "368c28ee9fc36be2b663b2728023f2e2a74eb98a398dbca6adbb9d325d529f18"
+    },
+    {
+      "path": "src/harnessix/delivery/workspace_store_schema.py",
+      "bytes": 3095,
+      "sha256": "0b555f15e6d5d36ee08b966ab22728da79b32128af436de9c4a41d0debfccf63"
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup_records.py",
+      "bytes": 11986,
+      "sha256": "dbca3989ead7fba20c0a3fea5beba0ea90f8dce941ec16b2f5a2c86c221a5746"
+    },
+    {
+      "path": "src/harnessix/product_config/state_backup_validation.py",
+      "bytes": 9590,
+      "sha256": "4768d432ccf9d093a8277c40c4ab06c799d3e6fec70fdc7b16dd378e90dd7ae7"
+    },
+    {
+      "path": "scripts/generate_specs.py",
+      "bytes": 26191,
+      "sha256": "690dbb35949322b9be0ff31c32036152d8618cbb67365c572190da6eaab4c306"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.json",
+      "bytes": 8293,
+      "sha256": "fed45bb68a8a717a6814595a89b438d6ef1fd97dc963f56a5f73fc016ad9d6b7"
+    },
+    {
+      "path": "scripts/windows_git_native_branch_observation/contract.py",
+      "bytes": 3937,
+      "sha256": "3b81101813f03ffac9e88082a160ea688a76f055087a9154ac144070428052b8"
+    },
+    {
+      "path": "spec/workspace-stored-record-v2.schema.json",
+      "bytes": 3006,
+      "sha256": "97d5c0d6bda9a39236ad5e32ad0cc713ad96d90ed1c0dd47daa9c64c3f93aeeb"
+    },
+    {
+      "path": "tests/delivery/test_workspace_record_reference.py",
+      "bytes": 19920,
+      "sha256": "44df360ca4aea6a8ab5c9422ab0ca72dedfa2561229bc88457ce64b17d1558b9"
+    },
+    {
+      "path": "tests/delivery/test_git_private_source.py",
+      "bytes": 19801,
+      "sha256": "c745353944d88813753f5883375ce171f57fa93f251c79ba519a8c7f575848eb"
+    },
+    {
+      "path": "tests/product_config/test_workspace_reference_backup.py",
+      "bytes": 23297,
+      "sha256": "04278c2f3e1499e8b2826508c881be049e0b77445a7e908395b0740bd9913eb0"
+    },
+    {
+      "path": "tests/governance/test_windows_git_trace2_input_binding.py",
+      "bytes": 13838,
+      "sha256": "52439a25228b4d77f408b1c58c995ec6e3bc67b397b624ed76bdeba1bea7424f"
+    },
+    {
+      "path": "tests/governance/test_windows_git_native_failure_projection.py",
+      "bytes": 23699,
+      "sha256": "f0af5f43bf4600096d47c6b066c759efccef8adfddcc4427b12966a71d01843f"
+    }
+  ],
+  "model_requests": 0,
+  "credential_reads": 0,
+  "budget_rules_changed": false,
+  "user_workspace_modified": false,
+  "old_ci_business_logs_read": false,
+  "commercial_release": false,
+  "open_gates": [
+    "versioned complete parent closure",
+    "execution and delivery approval generations",
+    "product prepared T and authenticated Bridge",
+    "full git business backup v2 and new-root recovery",
+    "same-candidate native consumers and installation",
+    "R3 real coding quality",
+    "independent beta",
+    "release rights and same-candidate R1-R6"
+  ]
+}

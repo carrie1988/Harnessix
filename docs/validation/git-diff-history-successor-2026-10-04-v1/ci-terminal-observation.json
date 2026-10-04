@@ -1,0 +1,180 @@
+{
+  "checked_at": "2026-10-04T16:45:03.796142+00:00",
+  "run": {
+    "id": 37149652886,
+    "head_sha": "007d2bd7c7f769616ec94641283274990b2acd66",
+    "status": "completed",
+    "conclusion": "failure",
+    "run_attempt": 1,
+    "updated_at": "2026-10-04T02:00:32Z",
+    "html_url": "https://github.com/carrie1988/Harnessix/actions/runs/37149652886"
+  },
+  "job": {
+    "id": 111280603207,
+    "run_id": 37149652886,
+    "head_sha": "007d2bd7c7f769616ec94641283274990b2acd66",
+    "name": "windows-trusted-execution",
+    "status": "completed",
+    "conclusion": "cancelled",
+    "started_at": "2026-10-03T19:55:31Z",
+    "completed_at": "2026-10-04T02:00:31Z",
+    "html_url": "https://github.com/carrie1988/Harnessix/actions/runs/37149652886/job/111280603207"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:55:33Z",
+      "completed_at": "2026-10-03T19:55:34Z"
+    },
+    {
+      "number": 2,
+      "name": "Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:55:34Z",
+      "completed_at": "2026-10-03T19:55:48Z"
+    },
+    {
+      "number": 3,
+      "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:55:48Z",
+      "completed_at": "2026-10-03T19:55:56Z"
+    },
+    {
+      "number": 4,
+      "name": "Run uv sync --locked --all-extras --dev",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:55:56Z",
+      "completed_at": "2026-10-03T19:55:59Z"
+    },
+    {
+      "number": 5,
+      "name": "验证原生NTFS文件事务与审批编码写链",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:55:59Z",
+      "completed_at": "2026-10-03T19:58:06Z"
+    },
+    {
+      "number": 6,
+      "name": "验证原生Git读取与取消回收",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:58:06Z",
+      "completed_at": "2026-10-03T19:59:27Z"
+    },
+    {
+      "number": 7,
+      "name": "验证原生产品重启与State创建边界",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:59:27Z",
+      "completed_at": "2026-10-03T19:59:52Z"
+    },
+    {
+      "number": 8,
+      "name": "验证原生完整业务状态备份与观察者边界",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T19:59:52Z",
+      "completed_at": "2026-10-03T20:01:26Z"
+    },
+    {
+      "number": 9,
+      "name": "验证原生完整业务状态恢复与元数据边界",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:01:26Z",
+      "completed_at": "2026-10-03T20:04:17Z"
+    },
+    {
+      "number": 10,
+      "name": "Run uv run python scripts/readability_report.py --check --check-final-report --quiet",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:04:17Z",
+      "completed_at": "2026-10-03T20:04:22Z"
+    },
+    {
+      "number": 11,
+      "name": "Run uv run python scripts/documentation_check.py",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:04:22Z",
+      "completed_at": "2026-10-03T20:04:32Z"
+    },
+    {
+      "number": 12,
+      "name": "Run uv run python -c \"import harnessix\"",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:04:32Z",
+      "completed_at": "2026-10-03T20:04:32Z"
+    },
+    {
+      "number": 13,
+      "name": "Run uv build --offline --wheel --out-dir dist/secret-gate",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:04:32Z",
+      "completed_at": "2026-10-03T20:04:34Z"
+    },
+    {
+      "number": 14,
+      "name": "Run uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:04:34Z",
+      "completed_at": "2026-10-03T20:05:00Z"
+    },
+    {
+      "number": 15,
+      "name": "Run uv run pytest tests/session tests/agent/test_authenticated_store.py",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:05:00Z",
+      "completed_at": "2026-10-03T20:05:42Z"
+    },
+    {
+      "number": 16,
+      "name": "Run uv run pytest tests/benchmarks",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T20:05:42Z",
+      "completed_at": "2026-10-03T20:09:42Z"
+    },
+    {
+      "number": 17,
+      "name": "Run uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui tests/tools/test_windows_native_runtime.py tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py -o faulthandler_timeout=120",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at": "2026-10-03T20:09:42Z",
+      "completed_at": null
+    },
+    {
+      "number": 33,
+      "name": "Post Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "number": 34,
+      "name": "Post Run actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    }
+  ],
+  "raw_business_logs_read": false,
+  "restart_requested": false,
+  "unique_root_cause_established": false
+}

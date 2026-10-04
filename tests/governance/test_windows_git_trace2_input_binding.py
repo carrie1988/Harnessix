@@ -158,9 +158,7 @@ def test_new_metadata_appends_only_two_exact_diagnostic_members():
         ).stdout
     )
     live = contract.read_contract()
-    assert not _metadata_changes(
-        live, json.loads(_original(METADATA, revision=LIVE_CATALOG_REVISION))
-    )
+    _assert_live_source_catalog_identity_delta(live)
     assert len(contract.source_checks(ROOT, live)) == 18
     current = json.loads(_original(METADATA, revision=DIAGNOSTIC_REVISION))
     assert current["base_revision"] == DIAGNOSTIC_BASE
@@ -182,6 +180,49 @@ def test_new_metadata_appends_only_two_exact_diagnostic_members():
     restored["source_inputs"] = restored["source_inputs"][:16]
     assert not _metadata_changes(original, restored)
     assert _metadata_changes(original, current) == {"/base_revision", "/source_inputs"}
+
+
+def _assert_live_source_catalog_identity_delta(current):
+    """类型敏感地核对后继四叶；其他身份、预算与原行不能被等值类型绕过。"""
+    original = json.loads(_original(METADATA, revision=LIVE_CATALOG_REVISION))
+    index = next(
+        i
+        for i, row in enumerate(original["source_inputs"])
+        if row["path"] == "src/harnessix/delivery/git.py"
+    )
+    assert _metadata_changes(original, current) == {
+        f"/source_inputs/{index}/{name}"
+        for name in ("bytes", "sha256", "crlf_bytes", "crlf_sha256")
+    }
+    assert len(current["source_inputs"]) == 18
+    row = current["source_inputs"][index]
+    body = (ROOT / row["path"]).read_bytes()
+    crlf = body.replace(b"\n", b"\r\n")
+    expected = {
+        "path": row["path"],
+        "bytes": len(body),
+        "sha256": hashlib.sha256(body).hexdigest(),
+        "crlf_bytes": len(crlf),
+        "crlf_sha256": hashlib.sha256(crlf).hexdigest(),
+    }
+    assert not _metadata_changes(expected, row)
+
+
+def test_live_source_catalog_changes_only_reviewed_git_identity_leaves():
+    """后继来源端口只重绑既有Git输入，不改历史追加事实或原18项准入。"""
+    current = contract.read_contract()
+    _assert_live_source_catalog_identity_delta(current)
+    assert len(contract.source_checks(ROOT, current)) == 18
+
+
+def test_live_source_catalog_refuses_previous_git_bytes(tmp_path):
+    current = contract.read_contract()
+    row = next(r for r in current["source_inputs"] if r["path"] == "src/harnessix/delivery/git.py")
+    destination = tmp_path / row["path"]
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(_original(row["path"], revision=LIVE_CATALOG_REVISION))
+    with pytest.raises(ValueError, match="^current_source_drift$"):
+        contract.source_checks(tmp_path, {"source_inputs": [row]})
 
 
 def test_parser_changes_only_contract_digest_literal():
@@ -279,6 +320,8 @@ def test_original_raw_hooks_stream_and_publication_are_exact(path, symbol):
         (("budgets", "command_seconds"), "float"),
         (("assets", "reference_binary", "bytes"), "float"),
         (("source_inputs", 0, "bytes"), "float"),
+        (("source_inputs", 5, "bytes"), "float"),
+        (("source_inputs", 5, "crlf_bytes"), "float"),
         (("source_inputs", 6, "bytes"), "float"),
         (("source_inputs", 10, "bytes"), "float"),
         (("source_inputs", 16, "bytes"), "float"),

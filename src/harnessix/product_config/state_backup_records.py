@@ -9,7 +9,7 @@ from uuid import UUID
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread, ToolResultContent, TrustedActionApprovalRequestContent
-from harnessix.delivery.contracts import MAX_TRANSACTION_FILE_BYTES, WorkspaceTransactionRecord
+from harnessix.delivery.contracts import MAX_TRANSACTION_FILE_BYTES
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.domain.models import utc_now
 from harnessix.execution.store import SQLiteExecutionPlanStore
@@ -134,7 +134,8 @@ def _delivery(
             )
             for index, (sequence, state, payload) in enumerate(rows):
                 control.checkpoint()
-                event = WorkspaceTransactionRecord.model_validate_json(payload)
+                decoded = store.decode_payload(payload)
+                event = decoded.record
                 if (
                     sequence != index
                     or event.sequence != index
@@ -143,6 +144,13 @@ def _delivery(
                     or event.transaction_id != record.transaction_id
                 ):
                     raise _invalid()
+                for reference in decoded.references:
+                    path = "workspace-transactions/blobs/" + reference.sha256
+                    if path not in paths or file_digest(tree, path, control) != (
+                        reference.size,
+                        reference.sha256,
+                    ):
+                        raise _invalid()
             for mutation in record.plan.mutations:
                 for version in (mutation.before, mutation.after):
                     if version.presence == "file":

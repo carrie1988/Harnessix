@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 2
+version: 3
 code_revision: 007d2bd7c7f769616ec94641283274990b2acd66
 owners: [core]
 modules: [tools, evals, product_config, documentation]
@@ -54,6 +54,9 @@ Doctor、活跃Owner备份拒绝、完整备份恢复、原Key与根保留、同
 [Run37149652886](https://github.com/carrie1988/Harnessix/actions/runs/37149652886)绑定同一固定候选。
 初始观察点和后继观察点分别保存，均不改写为终态。后继观察中整体仍为in_progress；
 两个Linux Job已结束且失败，故即使Windows后继通过，也不能声明本次整体CI通过。
+新增终态观察确认Run为`completed/failure`；Windows Job于2026-10-04T02:00:31Z以`completed/cancelled`结束。
+该Job的第17步元数据仍保留`in_progress`，不能据此构造该步通过、失败计数或唯一超时根因。
+原初始与后继观察的活动状态保留，终态单独保存；没有重启或重跑该Run。
 
 | 已核验层次 | 原步骤／Job事实 | 边界 |
 |---|---|---|
@@ -61,7 +64,7 @@ Doctor、活跃Owner备份拒绝、完整备份恢复、原Key与根保留、同
 | Windows核心前置 | 原NTFS事务／审批写链、Git读取／取消步骤success | 不据本次通过推定较早NTFS失败唯一根因 |
 | Windows认证Session | 原`pytest tests/session tests/agent/test_authenticated_store.py`步骤success | 核验退出结论，未读取原始业务日志或宣称具体原生用例计数 |
 | Windows重启与恢复 | 原产品重启、业务状态备份／恢复步骤success | 不扩大为完整Git业务备份或消费者Windows验收 |
-| Windows后继 | 广泛原选择仍in_progress | 完整Windows未验收 |
+| Windows后继 | 早期广泛原选择in_progress；终态Job cancelled，第17步仍留活动元数据 | 完整Windows未验收；不推算测试成绩或唯一根因 |
 | macOS工具 | coding-tools-macos Job success | 与本机全仓结果分开，仍不代替真实模型任务 |
 | 容器／文档 | 两Job success | 不能外推当前用户Docker或业务结果 |
 | Linux Python3.12／3.13完整回归 | 两Job原完整`Run uv run pytest`步骤均success | 功能回归与整个Job结论分开，不宣称具体原生用例计数 |
@@ -78,7 +81,8 @@ Doctor、活跃Owner备份拒绝、完整备份恢复、原Key与根保留、同
 - [安装原结果](installed-macos-result.json)：既有验收器原字节、来源及Wheel身份。
 - [初始CI观察元数据](ci-observation.json)：原观察字节保留，不冒充终态。
 - [后继CI观察元数据](ci-followup-observation.json)：明确新观察时间、Linux终态与Windows实际活动状态，不覆盖初始记录。
-- [SHA256SUMS](SHA256SUMS)：四份结构化原件摘要。
+- [终态CI观察元数据](ci-terminal-observation.json)：固定Run failure及Windows Job cancelled，与仍未结算的step元数据分开说明。
+- [SHA256SUMS](SHA256SUMS)：五份结构化原件摘要。
 - [完整对象身份设计](../../changes/m09-r4-git-diff-full-object-identity.md)与[前序限定回归报告](../git-diff-history-convergence-2026-10-04-v1/README.md)：根因、正式接口、失败和兼容边界。
 
 私有交付目录保存完整JUnit、日志、4826输入摘要及Review Packet。公共安装原件不包含Key、
@@ -86,7 +90,8 @@ Doctor、活跃Owner备份拒绝、完整备份恢复、原Key与根保留、同
 
 ## 5. 商用边界与后继
 
-后继需核验该Run剩余Windows Job终态及原生完整范围；不因长时间观察或期限推算自动重启或取消。
+该Run已经终止；后继实质生产整改候选仍须取得新的原生完整范围，不原样重跑旧失败，
+也不把Job cancelled改写为通过。原生材料三组通过与完整Windows未验收分别保留。
 真实R3最近完整结果仍严格成功0/20、必需测试1/20，
 两笔费用未决继续阻断模型请求；本次没有新增模型请求或修改费用规则。
 默认完整Git／Backup v2、消费者系统、独立Beta、权利及同候选R1～R6仍开放。

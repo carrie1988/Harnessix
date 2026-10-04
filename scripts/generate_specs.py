@@ -69,6 +69,7 @@ from harnessix.delivery.trusted_action_contracts import (
     WorkspaceActionReviewRecord,
     WorkspacePatchInput,
 )
+from harnessix.delivery.workspace_record_contracts import WorkspaceStoredRecord
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
     CodingEvalCampaignReport,
@@ -573,6 +574,9 @@ def generate_specs(output: Path) -> None:
         ExecutionCapabilityEvidenceV2.model_json_schema(),
     )
     write_json(output / "execution-plan-v2.schema.json", ExecutionPlanV2.model_json_schema())
+    write_json(
+        output / "workspace-stored-record-v2.schema.json", WorkspaceStoredRecord.model_json_schema()
+    )
     for name, model in (
         ("agent-protocol-jsonrpc-request", JsonRpcRequest),
         ("agent-protocol-jsonrpc-notification", JsonRpcNotification),

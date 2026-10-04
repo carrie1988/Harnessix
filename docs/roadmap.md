@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 188
-code_revision: 007d2bd7c7f769616ec94641283274990b2acd66
+version: 189
+code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
 owners:
   - core
 modules:
@@ -2033,3 +2033,36 @@ pywin32 312的十二个Windows Wheel，不是十二个包。原函数和原Evide
 原255来源叶与256mutation模型上限分别说明，T／Bridge独立阶段方案不在本设计中变更。
 
 真实R3及两笔费用未决、完整Git／Backup v2、消费者系统、独立Beta、权利和同候选R1～R6继续开放。
+
+### R1/R4：完整Plan引用持久化与私有A来源端口
+
+按[正式引用记录合同](changes/m09-r4-workspace-parent-closure.md#10-架构决策与正式实施合同)实施物理StoredRecord v2与
+Workspace数据库Schema2；原完整领域Plan／Record和259件既有Schema原字节不变。
+完整Plan通过原私有CAS引用，不裁剪资源、不拆事务、不扩大512 KiB／8 MiB／32 MiB及原期限。
+新旧Reader与完整历史备份共同解码；Schema1只读无迁移，可写仅升级元数据，旧pretty JSON及历史原字节保留。
+状态推进使用实际旧SQL字节CAS，引用缺失、篡改、错大小／指纹／代际及历史专属引用遗漏均失败关闭。
+真实200叶长路径可完整重开；备份历史夹具领域记录691216字节、最大物理壳595字节，
+不把通过原状态函数保存五状态历史解释为200叶真实Workspace发布。
+
+按[正式顺序合同](changes/m09-r4-git-projection-ordering.md#101-正式架构决策与来源解析实施合同)增加宿主明确来源端口。
+真实私有detached A下，原Planner／Store生成prepared T，D通过原Git／Lease物化完整增删改、二进制文件及Checkpoint；
+T保持prepared，A及原U保持干净，原Snapshot仍有效。
+明确来源仍核验原Root、HEAD、clean、commonDir、登记及来源／目标双向回链；helper进入原执行实现摘要。
+端口本身不提供产品Bridge MAC，默认产品写能力及重启认证装配仍未开放。
+
+仅更新原18件目录中git.py四个字节身份叶及对应固定摘要，其他17件、原27个选择器、2分钟SDK、13项Hooks和所有负对照保留。
+初次类型保护回归FAIL保留，恢复完整类型敏感差分并新增float负例后原两文件177通过。
+独立复审发现的深层JSON分类缺口先有四项实际FAIL；共享Reader闭环后通过。
+集成又捕获原错根回滚读取顺序FAIL；保持原测试不变，Plan元数据与镜像端口分离、共用同一严格CAS IO，相关60项通过。
+
+干净普通Git副本4850件初始受管输入逐件原字节相等；全量11354项实际11217通过、137个平台跳过，零失败／错误。
+其中新记录23项、私有来源30项、引用备份31项均通过；关联及全量范围互相包含，不重复累加。
+Ruff格式／检查、442件生产源码Mypy、Schema及原Secret扫描分别通过；原工作目录2项治理FAIL保留。
+实施范围、失败闭环与后继验收见[正式验证报告](validation/workspace-reference-private-source-2026-10-05-v1/README.md)。
+
+原固定007 Run37149652886已completed／failure；Windows Job111280603207终态cancelled，步骤17仍为未完整结算元数据。
+不读取原CI业务日志，不猜测唯一挂起根因，不把该终态或此前材料成功转作新候选三平台通过。
+
+后继立即目标为完整父目录闭包新版、共同Route／Planner捕获及Execution／Delivery批准代际联合适配，
+再闭合prepared T／认证Bridge／A／D／独立Commit和业务Backup v2。
+上述为批准方案的基础依赖落地，不是完整闭包或商用完成。真实R3及费用未决、消费者平台、Beta和同候选R1～R6仍开放。

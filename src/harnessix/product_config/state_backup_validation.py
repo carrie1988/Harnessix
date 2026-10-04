@@ -113,11 +113,11 @@ def _session_schema(database: sqlite3.Connection) -> None:
 
 def _schemas(root: Path, process: bool, control: MaintenanceIOControl) -> None:
     metadata = {
-        "action-audit.db": ("action_audit_metadata", "2"),
-        "execution-plans.db": ("execution_store_metadata", "1"),
-        "product-config.db": ("product_config_metadata", "1"),
-        "workspace-transactions/transactions.db": ("delivery_metadata", "1"),
-        PROCESS_DATABASE: ("process_store_metadata", "2"),
+        "action-audit.db": ("action_audit_metadata", ("2",)),
+        "execution-plans.db": ("execution_store_metadata", ("1",)),
+        "product-config.db": ("product_config_metadata", ("1",)),
+        "workspace-transactions/transactions.db": ("delivery_metadata", ("1", "2")),
+        PROCESS_DATABASE: ("process_store_metadata", ("2",)),
     }
     for path in (*DATABASES, *((PROCESS_DATABASE,) if process else ())):
         with closing(readonly_database(root / path)) as database:
@@ -125,10 +125,11 @@ def _schemas(root: Path, process: bool, control: MaintenanceIOControl) -> None:
             if path == "sessions.db":
                 _session_schema(database)
             elif path in metadata:
-                table, version = metadata[path]
-                if database.execute(
+                table, versions = metadata[path]
+                row = database.execute(
                     f"SELECT value FROM {table} WHERE key='schema_version'"
-                ).fetchone() != (version,):
+                ).fetchone()
+                if row is None or row[0] not in versions:
                     raise invalid_state()
 
 

@@ -20,9 +20,17 @@ from harnessix.delivery.contracts import (
 )
 from harnessix.delivery.planner import PreparedWorkspaceTransaction
 from harnessix.delivery.workspace_cas_io import confirm_blob_durable, read_blob_body
+from harnessix.delivery.workspace_record_codec import (
+    DecodedWorkspaceRecord,
+    decode_workspace_record,
+    encode_workspace_record,
+)
+from harnessix.delivery.workspace_store_schema import (
+    check_workspace_store_schema,
+    initialize_workspace_store,
+)
 from harnessix.sqlite_readonly import readonly_database
 
-_SCHEMA_VERSION = "1"
 _TRANSITIONS: dict[TransactionState, frozenset[TransactionState]] = {
     "prepared": frozenset({"publishing", "diverged", "unknown"}),
     "publishing": frozenset({"publishing", "interrupted", "published", "diverged", "unknown"}),
@@ -44,6 +52,12 @@ class SQLiteWorkspaceTransactionStore:
         self._path = self._root / "transactions.db"
         if read_only:
             self._db = readonly_database(self._path)
+            try:
+                check_workspace_store_schema(self._db)
+            except BaseException:
+                self._db.close()
+                self._closed = True
+                raise
             return
         _prepare_directory(self._root)
         _prepare_directory(self._blobs)
@@ -55,49 +69,11 @@ class SQLiteWorkspaceTransactionStore:
             self._db.execute("PRAGMA synchronous = FULL")
             if os.name == "posix":
                 self._path.chmod(0o600)
-            self._initialize()
+            initialize_workspace_store(self._db)
         except BaseException:
             self._db.close()
             self._closed = True
             raise
-
-    def _initialize(self) -> None:
-        self._db.execute(
-            "CREATE TABLE IF NOT EXISTS delivery_metadata "
-            "(key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT"
-        )
-        row = self._db.execute(
-            "SELECT value FROM delivery_metadata WHERE key='schema_version'"
-        ).fetchone()
-        if row is None:
-            self._db.execute(
-                "INSERT INTO delivery_metadata VALUES ('schema_version', ?)",
-                (_SCHEMA_VERSION,),
-            )
-        elif row[0] != _SCHEMA_VERSION:
-            raise KernelError("delivery_store_version", "Workspace事务存储版本不受支持")
-        self._db.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS workspace_transactions (
-                transaction_id TEXT PRIMARY KEY,
-                request_id TEXT NOT NULL UNIQUE,
-                plan_fingerprint TEXT NOT NULL,
-                state TEXT NOT NULL,
-                sequence INTEGER NOT NULL,
-                payload TEXT NOT NULL
-            ) STRICT;
-            CREATE INDEX IF NOT EXISTS workspace_transactions_state
-                ON workspace_transactions(state);
-            CREATE TABLE IF NOT EXISTS workspace_transaction_events (
-                transaction_id TEXT NOT NULL,
-                sequence INTEGER NOT NULL,
-                state TEXT NOT NULL,
-                payload TEXT NOT NULL,
-                PRIMARY KEY(transaction_id, sequence),
-                FOREIGN KEY(transaction_id) REFERENCES workspace_transactions(transaction_id)
-            ) STRICT;
-            """
-        )
 
     def save(self, prepared: PreparedWorkspaceTransaction) -> WorkspaceTransactionRecord:
         self._require_writable()
@@ -109,7 +85,7 @@ class SQLiteWorkspaceTransactionStore:
             if existing.transaction_id != record.transaction_id or existing.plan != record.plan:
                 raise KernelError("delivery_request_conflict", "Workspace事务请求已绑定其他计划")
             return existing
-        payload = record.model_dump_json(warnings="error")
+        payload = encode_workspace_record(record, self.put_blob)
         try:
             self._db.execute("BEGIN IMMEDIATE")
             current = self._db.execute(
@@ -160,7 +136,7 @@ class SQLiteWorkspaceTransactionStore:
             or after.cursor < before.cursor
         ):
             raise KernelError("delivery_transition_invalid", "Workspace事务状态迁移无效")
-        payload = after.model_dump_json(warnings="error")
+        payload = encode_workspace_record(after, self.put_blob)
         try:
             self._db.execute("BEGIN IMMEDIATE")
             stored = self._db.execute(
@@ -168,21 +144,22 @@ class SQLiteWorkspaceTransactionStore:
                 "WHERE transaction_id=?",
                 (str(before.transaction_id),),
             ).fetchone()
-            if stored != (
-                before.state,
-                before.sequence,
-                before.model_dump_json(warnings="error"),
+            if (
+                stored is None
+                or stored[:2] != (before.state, before.sequence)
+                or self.decode_payload(stored[2]).record != before
             ):
                 raise KernelError("delivery_transaction_stale", "Workspace事务已由其他owner推进")
             self._db.execute(
                 "UPDATE workspace_transactions SET state=?, sequence=?, payload=? "
-                "WHERE transaction_id=? AND sequence=?",
+                "WHERE transaction_id=? AND sequence=? AND payload=?",
                 (
                     after.state,
                     after.sequence,
                     payload,
                     str(after.transaction_id),
                     before.sequence,
+                    stored[2],
                 ),
             )
             self._db.execute(
@@ -218,9 +195,18 @@ class SQLiteWorkspaceTransactionStore:
         return None if row is None else self._decode(row)
 
     def blob(self, digest: str) -> bytes:
+        """读取文件镜像；调用方必须先完成原Workspace来源及执行授权验证。"""
+        return self._read_blob(digest)
+
+    def _read_blob(self, digest: str) -> bytes:
+        """共用原CAS严格IO；Plan元数据读取不触发文件镜像端口。"""
         if not _valid_digest(digest):
             raise KernelError("delivery_blob_invalid", "Workspace事务Blob摘要无效")
         return read_blob_body(self._blobs / digest, digest)
+
+    def decode_payload(self, payload: str) -> DecodedWorkspaceRecord:
+        """完整读取当前行或历史物理记录；校验引用不授予执行、迁移或补签权。"""
+        return decode_workspace_record(payload, self._read_blob)
 
     def _require_writable(self) -> None:
         """只读权限在文件副作用与输入解析之前检查，不只依赖 SQLite 拒绝。"""
@@ -291,9 +277,9 @@ class SQLiteWorkspaceTransactionStore:
 
     def _decode(self, row: tuple[object, ...]) -> WorkspaceTransactionRecord:
         try:
-            if not isinstance(row[5], str) or len(row[5].encode()) > 512 * 1024:
+            if not isinstance(row[5], str):
                 raise ValueError
-            record = WorkspaceTransactionRecord.model_validate_json(row[5], strict=True)
+            record = self.decode_payload(row[5]).record
             if row[:5] != (
                 str(record.transaction_id),
                 record.plan.request_id,

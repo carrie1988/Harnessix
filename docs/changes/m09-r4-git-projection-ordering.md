@@ -1,14 +1,15 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 0b1e16ab8482ec324e35f81532ec58a1d09b1b6b
+version: 3
+code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
 owners: [core]
 modules: [delivery, product_config, workspace]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/delivery/test_git_private_source.py
   - tests/delivery/test_git_projection_ordering.py
   - tests/delivery/test_git_projection_capacity.py
   - tests/delivery/test_git.py
@@ -27,7 +28,8 @@ supersedes: []
 这里的 `published` 不是“事务计划已保存”，而是原 Workspace 发布器已经将所有文件成员写回来源根。
 两种语义不能混用。
 
-本文已完成原组件实测和源码核验；第 5 节是**待确认整改方案，不是已实现的新合同**。
+本文已完成原组件实测和源码核验；第5节保留原候选推导，第10.1节固定正式架构决策与实施合同。
+明确来源解析进入实施；完整产品Bridge和联合交付尚未完成。
 版本 1 仅新增顺序回归、设计及限定验证事实。版本 2 增补第 11 节容量实测，以及
 Snapshot 隐式 cwd 超限的正式错误准入；不修改 Git Runtime、Bridge 校验或默认产品能力。
 开发候选的阶段实现不能据此视为完整 Git 产品已经可用。
@@ -40,7 +42,7 @@ Snapshot 隐式 cwd 超限的正式错误准入；不修改 Git Runtime、Bridge
 - 验证调整阶段顺序是否足够；不能只让一个状态断言通过。
 - 完整交付范围、原容量、期限、CAS/MAC/尾锚及独立 Commit 批准保持不变。
 
-非目标：本次不装配默认 Git 写能力、不实现新来源解析器、不扩大资源或正文限额、不迁移业务状态、不发起模型请求、
+非目标：本层不装配默认Git写能力、不将宿主解析端口冒充产品MAC认证、不扩大资源或正文限额、不迁移业务状态、不发起模型请求、
 不启动 Windows 原生运行，也不将组件测试提升为 R1～R6 商用验收。
 
 术语：U 是原用户 Workspace；A 是固定基准 Commit 的私有 detached worktree；D 是独立受管交付
@@ -48,7 +50,9 @@ worktree；T 是在真实 A 上新生成的目标事务。正对照中的普通�
 
 ## 3. 源码核验与接口设计
 
-| 现有接口与源码 | 实际行为 | 冲突含义 |
+以下表格描述固定`007d2bd`的实施前行为；当前明确来源端口和保留的校验见第10.1节。
+
+| 实施前接口与源码 | 原实际行为 | 冲突含义 |
 |---|---|---|
 | [`prepare_workspace_transaction`](../../src/harnessix/delivery/planner.py) | 冻结来源 Snapshot、before/after CAS、新 UUID 与完整 Mutation；生成前后均核验来源 | T 的 `source` 是变更前的 A，不是发布后的 A |
 | [`SQLiteWorkspaceTransactionStore.save`](../../src/harnessix/delivery/store.py) | 写 CAS、事务记录及事件，初态为 `prepared` | 耐久保存不等于文件已发布 |
@@ -63,7 +67,8 @@ worktree；T 是在真实 A 上新生成的目标事务。正对照中的普通�
 开发候选 `product_config/git_delivery_contracts.py` 的 `ProductGitDeliveryLink.complete_stage` 仍要求
 存在 Bridge 时 `projection_transaction.state == "published"`；其 `ProductGitNativeBridge` 说明具有相同前提。
 这些候选文件尚未作为本次变更合入主仓，不把路径文本冒充现行主仓源码链接。
-候选与主仓本次使用的原 `git.py`、`planner.py`、`filesystem.py`、`store.py` 和复用 Git 测试夹具逐字一致。
+实施前冲突复现使用固定原`git.py`、`planner.py`、`filesystem.py`、`store.py`及原Git测试夹具；
+当前新增明确来源端口及物理记录层，不再把新实现与该历史基线描述为逐字一致。
 
 ## 4. 总体架构与已证明的失败流程
 
@@ -87,8 +92,8 @@ flowchart LR
     end
 ```
 
-**图示说明与源码映射：** “原候选”分组使用表中原 `publish`、`bind_repository` 和 `plan_worktree`；
-“待确认”分组仅为建议结构，组件“受认证明确来源解析”尚未实现。T 保存到 Workspace Store，
+**图示说明与源码映射：** 本图保留实施前候选推导。“原候选”分组使用表中原`publish`、`bind_repository`和`plan_worktree`；
+右组当前已固定为实施方向：宿主明确来源解析端口已实现，产品MAC认证与Bridge尚未闭合。T保存到Workspace Store，
 Bridge 保存到 GitDB；两者不是一个全局事务。D 物化属于 Checkpoint 的外部 Git 效果，不能改名为 A 发布。
 
 ```mermaid
@@ -263,17 +268,54 @@ GitDB 的一修订需要领域记录、Link、MAC、完整 catalog 和尾锚共�
 
 ## 10. 部署、兼容、回退与风险取舍
 
-顺序专项仅包含测试和文档；版本 2 的 Snapshot 准入只统一原超限错误，不改变公共 Schema、配置或依赖。
+版本1的顺序专项仅包含测试和文档；版本2的Snapshot准入只统一原超限错误，不改变公共Schema、配置或依赖。
 成功 Snapshot 的算法、规范化、字段、排序和摘要保持；无需状态迁移，回退程序也不产生新的数据格式。
-原产品能力保持关闭；已有状态及冻结证据不重写。新 Bridge 语义未确认前不修改当前校验。
+原产品能力在完整联合验收前保持关闭；已有状态及冻结证据不重写。
 
 推荐方案复用原领域契约，代价是需要明确区分投影计划、D 物化及历史角色，并补认证 A 来源解析。
 拒绝以下替代：假填 `published`、删脏状态检查、刷新 Snapshot 冒用原批准、给 U/T 换身份、
 仅提前创建 D、复制外部仓库到备份、以降低业务范围绕过冲突。
 
-两项冲突证明更改阶段语义确有必要，但不证明方案已经获得架构确认或完整实现。
+两项冲突证明更改阶段语义确有必要；其原实测本身不证明后继方案已完整实现。
 后继顺序为：确认 T/Bridge 语义与兼容边界 → 实现 T 耐久准备 → Bridge 认证 → 明确 A 来源解析和 D
 → Checkpoint → 独立 Commit → 联合 Backup v2 与新根恢复 → 三平台及真实用户验收。
+
+### 10.1 正式架构决策与来源解析实施合同
+
+T保持原真实 `prepared` 记录，不向来源A调用Workspace发布器；D物化与Checkpoint分别提供实际交付事实。
+Bridge版本化及MAC角色必须绑定该准备事实，不能将旧published证明重解释为prepared。
+
+Git领域Runtime增加仅由受信宿主装配的关键字端口
+`source_resolver: Callable[[GitRepositoryBinding], Path] | None`；它接收原完整
+`GitRepositoryBinding`，返回宿主登记的来源根，不接受模型给出的任意路径，不扫描目录，不回退到另一个同内容根。
+解析结果必须重新通过原 `_verify_repository`，完整比较RootIdentity、路径、HEAD、干净状态、commonDir及执行实现绑定；
+来源根和目标D必须属于实际同一commonDir，且来源根仍在原worktree注册集合。
+私有来源A若使用gitfile，还必须复核其admin／commondir／backlink，不能仅凭目标D回链正确放过来源A。
+未装配新端口的原普通来源解析和拒绝路径保留；显式端口失败时不能自动退回邻接猜测。
+重启后只能由认证阶段重新装配端口，内存路径缓存不能替代持久来源证明。
+
+本层Runtime端口及原生结构复核已经实现，但端口本身不产生或验证产品Bridge MAC。
+默认产品尚未装配此端口；产品重启后的认证阶段、角色历史和联合恢复是后继实施责任。
+共用[`git_source.py`](../../src/harnessix/delivery/git_source.py)分别检查真实来源和目标回链，
+其字节已纳入`git_delivery_implementation_digest`，防止仅helper变化而执行实现绑定不变。
+
+先以真实私有detached A、原Planner／Store和原Lease验证D物化，要求A仍干净、原Snapshot仍有效、T仍prepared。
+同时验证错根、脏A、HEAD变化、注销或伪造来源backlink拒绝。该组件结果不能提升为产品Bridge认证或独立Commit批准成功。
+
+### 10.2 原生固定输入目录的同源接合
+
+`git.py`属于原生诊断目录的18个明确输入之一。来源端口变更后，旧目录拒绝当前源码漂移是正确行为，
+不能通过删检查、跳过选择器或接受语义等价字节绕过。
+现行目录仅刷新该文件的`bytes / sha256 / crlf_bytes / crlf_sha256`四叶，
+Parser只更新合同原字节SHA字面量；其他17行、字段、固定官方资产、基线身份、原2个SDK场景、13个Hook及期限不变。
+旧0583b53目录由固定Git历史及已有封存件保留，不改写旧运行或旧FAIL。
+
+历史“追加两个诊断输入”的测试继续使用其原固定引入提交和旧目录；
+新增后继测试要求当前目录与旧目录的差分恰好为该四叶，当前18项原字节及严格CRLF检查全部仍执行，
+并验证新目录拒绝旧Git源码和任意未评审新字节。
+原失败投影测试的Parser／目录整体字节锚点同步绑定新已评审原件，
+SDK Probe及Trace2投影锚点不变，不以仅比较JSON语义代替整体字节检查。
+该目录仅证明既有明确输入集合，不声称是全部传递依赖或完整产品软件供应链证明。
 
 ## 11. 完整资源容量核验与 Snapshot 错误准入
 

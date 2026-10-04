@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 39
-code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
+version: 40
+code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_workspace_record_reference.py
+  - tests/delivery/test_git_private_source.py
   - tests/delivery/test_git_store_schema_v2.py
   - tests/delivery/test_git_material_trace2_contracts.py
   - tests/product_config/test_git_material_trace2_binding.py
@@ -2197,3 +2199,25 @@ SDK符号根修复候选0583b53的Run37134072312已整体success，最低SHA256 
 
 分组边界、原选择器精确保留、依赖与超时约束、原生失败语义及回退范围见
 [Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。
+
+## Workspace完整Plan的版本化物理记录（当前）
+
+原领域Plan和Record v1的字段、摘要及公开Schema保持不变。
+[`workspace_record_contracts.py`](../../src/harnessix/delivery/workspace_record_contracts.py)定义
+物理`WorkspaceStoredRecord` v2与`WorkspacePlanReference`，将完整Plan从每条SQL事件移入原私有CAS。
+`plan_ref`同时绑定原字节SHA、完整大小和领域fingerprint，全部Record状态字段及原record_digest仍保留。
+
+[`workspace_record_codec.py`](../../src/harnessix/delivery/workspace_record_codec.py)统一新旧读取。
+写入先完整领域校验、构造物理壳并检查原512 KiB UTF-8边界，原Blob耐久回读之后再提交当前行／事件；
+读取依次验证wire版本、引用SHA／大小、完整Plan与fingerprint及原Record状态／digest。
+[`Store.decode_payload`](../../src/harnessix/delivery/store.py)供当前行与备份历史共同使用。
+缺Blob、篡改、跨事务Plan替换和未知版本固定拒绝；引用验证不等于MAC来源认证或执行授权。
+
+Workspace数据库Schema2可读取原合法内嵌v1；只读打开1／2不迁移，可写打开1只升级元数据，
+原JSON和全部历史事件不重写。推进使用原实际SQL字符串进行CAS，不用v2重编码覆盖旧字符串比较。
+同一不可变Plan只存一次，状态事件使用同一引用；旧非法超限行不会被自动修复。
+总体架构、字段、伪代码、数据流、失败及兼容设计见
+[完整闭包与引用记录详设第10节](../changes/m09-r4-workspace-parent-closure.md#10-架构决策与正式实施合同)。
+
+该层关闭长路径SQL重复内嵌造成的可读性缺陷，但不删除任何父目录观察。
+Snapshot v1的128分散叶容量仍待完整闭包整改，完整T／Bridge／D、独立Commit和Git业务Backup v2继续独立验收。

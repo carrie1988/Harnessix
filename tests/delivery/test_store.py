@@ -76,7 +76,7 @@ def test_store_fails_closed_on_unknown_version_and_payload_corruption(tmp_path: 
     database.execute(
         "CREATE TABLE delivery_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT"
     )
-    database.execute("INSERT INTO delivery_metadata VALUES ('schema_version', '2')")
+    database.execute("INSERT INTO delivery_metadata VALUES ('schema_version', '999')")
     database.commit()
     database.close()
     with pytest.raises(KernelError) as version:

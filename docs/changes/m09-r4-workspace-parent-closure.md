@@ -1,14 +1,16 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
-code_revision: 92bdb4d0362cf24dc1907dc3a50fdae5700d176f
+version: 3
+code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
 owners: [core]
 modules: [workspace, delivery, execution, product_config]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/delivery/test_workspace_record_reference.py
+  - tests/product_config/test_workspace_reference_backup.py
   - tests/delivery/test_git_projection_capacity.py
   - tests/workspace/test_snapshot.py
   - tests/workspace/test_snapshot_capacity.py
@@ -21,7 +23,7 @@ related_tests:
 supersedes: []
 ---
 
-# Workspace 父目录完整闭包与引用记录：总体和详细设计候选
+# Workspace 父目录完整闭包与引用记录：总体和详细设计
 
 ## 1. 需求背景与已确认缺陷
 
@@ -44,8 +46,8 @@ supersedes: []
 同规模短路径147549字节记录可完整重开。原生Snapshot复核通过，未用替代观察或修改序列化制造失败。
 每个事件重复保存完整 Plan，还受正式备份的 payload 列累计 64 MiB 限制。
 
-**当前没有满足全部旧表示约束的现成开关。** 本文提出内部版本化完整闭包及引用编码，
-尚未实施或形成新的运行时验收结果。派生 T／Bridge 的阶段语义由
+**没有满足全部旧表示约束的现成开关。** 第10节固定正式实施合同；版本化物理记录已开始落地，
+完整父闭包及新Snapshot尚未实施。派生 T／Bridge 的阶段语义由
 [独立顺序设计](m09-r4-git-projection-ordering.md#5-待确认整改方案数据结构与领域契约)约束，不在本文改写。
 
 ## 2. 设计目标、非目标与不变量
@@ -212,7 +214,7 @@ Plan／闭包编码必须验证最深路径、不同父链及完整叶容量；�
 
 ### 5.3 当前实际消费入口与联合适配矩阵
 
-下表来自固定生产源码核验，不是新格式实现结果。解析入口包括直接 Record JSON，也包括嵌套 Snapshot 的模型；
+下表来自固定007d2bd基线源码核验，不是新格式实现结果。解析入口包括直接 Record JSON，也包括嵌套 Snapshot 的模型；
 只改 Store 的 `_decode` 不构成联合兼容。
 
 | 实际入口及源码位置 | 当前合同 | 新格式必须联动的责任 |
@@ -312,8 +314,9 @@ Patch／Rollback 输入、ApprovalCheckpoint、只引用摘要的 Review 及 Git
 
 ## 8. 部署、测试与验收方案
 
-本候选未改变当前安装、数据库或产品装配。实施时先完成格式与读取矩阵，再准备迁移／拒绝回退策略，
-不得在默认产品中提前写出旧 Reader 无法恢复的数据。
+本层实现保留当前安装和产品装配，Workspace数据库与物理记录已分别新增Schema 2与wire v2。
+新Reader支持旧内嵌记录；旧程序对新Schema拒绝打开。完整父闭包的联合版本与部署切换仍须另行完成，
+不得将旧程序拒绝读取的新格式宣称为向后兼容。
 
 | 验证层 | 必需正反例及通过条件 |
 |---|---|
@@ -326,9 +329,9 @@ Patch／Rollback 输入、ApprovalCheckpoint、只引用摘要的 Review 及 Git
 | 三平台 | 原 POSIX 身份／权限与 Windows 名称比较／对象身份／Reparse 负对照；Windows11 消费者验收另行执行。 |
 
 关联回归首先复用 frontmatter 中现有测试，不建立另一评测平台。
-长路径原实现复现已执行：原可执行回归2项中1通过、1失败、零错误／跳过，失败未设xfail。
-其余新格式、完整闭包、批准、备份及三平台验证均未执行，原长路径失败也尚未修复。
-必须取得实际新候选结果，不能以本设计、CAS 基础机制或旧材料 CI success 标记完成。
+长路径原实现复现2项中1通过、1失败，原失败完整保留；当前新增真实长路径记录回归要求完整重开成功。
+物理记录、历史Reader、备份恢复与错根镜像读取顺序已执行本地正反例，完整父闭包与对应新版批准尚未验收。
+必须取得实际新候选三平台结果，不能以本设计、CAS基础机制或旧材料CI success标记完成。
 
 ## 9. 可观测性、错误分类、风险与取舍
 
@@ -338,8 +341,128 @@ Patch／Rollback 输入、ApprovalCheckpoint、只引用摘要的 Review 及 Git
 
 仅保存聚合摘要虽较简单，但丢失逐父目录历史明细，因此不作为本候选方案。
 完整闭包引用保留可审阅历史并减少重复编码，代价是 Snapshot／Record／Reader／备份的联合版本化。
+
+## 10. 架构决策与正式实施合同
+
+完整父目录历史及版本化引用方案纳入实现范围，不采用丢弃父项、拆分事务或扩大原读取限额的替代方案。
+以下第一层实施合同固定物理记录、读取和备份边界；后继父闭包及 Snapshot 联合版本仍须完成，
+单独关闭长路径记录缺陷不代表完整闭包、Git 产品或商用验收完成。
+
+### 10.1 物理记录与不可变 Plan
+
+[`WorkspaceStoredRecord`](../../src/harnessix/delivery/workspace_record_contracts.py)新增
+`harnessix.workspace-stored-record/v2`，与领域
+`harnessix.workspace-transaction-record/v1` 分别命名。物理壳保存 `transaction_id`、`state`、
+`sequence`、`cursor`、`started_at`、`finished_at`、`error_code`、完整领域 `record_digest`，
+以及 `plan_ref.sha256 / size / fingerprint`；不将领域摘要改成物理壳摘要。
+`domain_spec_version` 固定为原领域 Record v1，未知领域版本拒绝。
+
+Plan 使用原严格领域模型生成的完整 UTF-8 JSON，按原 CAS 摘要地址持久化一次；
+`sha256` 绑定原字节，`size` 绑定完整字节数，`fingerprint` 绑定原领域 Plan。
+每个 Plan Blob 不超过原 8 MiB，物理壳与旧内嵌 Record 共用原 512 KiB 读限额。
+当前 Snapshot v1 的256资源和256 Mutation路径均受原规范路径限额约束，完整合法 Plan 可在原 Blob 边界内表示；
+未来父闭包的历史分块另由第5节合同承载，不能把其全量历史重新内嵌到 Plan。
+
+| 数据字段 | 含义与验证责任 |
+|---|---|
+| `spec_version` | 物理记录代际；未知值拒绝，不能按缺省v1解读未知v2字段。 |
+| `domain_spec_version` | 解引用后恢复的完整领域Record代际；本层固定v1。 |
+| `transaction_id` | 原UUID业务身份；必须与SQL主键、完整Plan及每条历史事件一致。 |
+| `plan_ref.sha256` | 完整Plan UTF-8原字节SHA-256及原CAS固定文件名，不是批准令牌。 |
+| `plan_ref.size` | 完整Plan实际字节数；严格正整数且不超过8 MiB，不能用前缀读取满足验证。 |
+| `plan_ref.fingerprint` | 完整领域Plan原指纹；与还原后Plan及SQL索引核对。 |
+| `state / sequence / cursor` | 原状态机事实、事件序号及成员进度；壳模型限制取值，完整Record继续校验关联条件。 |
+| `started_at / finished_at / error_code` | 原有时刻与固定错误分类；不因引用编码改写成功或失败事实。 |
+| `record_digest` | 原完整Record摘要；重新还原领域模型后核验，不能仅核对壳本身。 |
+
+核心接口分别为`encode_workspace_record(record, write_blob) -> str`、
+`decode_workspace_record(payload, read_blob) -> DecodedWorkspaceRecord`；后者包含完整`record`和
+实际核验的`references`，旧内嵌记录的引用集合为空。写入回调是宿主原`put_blob`，
+读取回调是原CAS底层IO，均不接受模型选择的路径或存储配置。
+
+```text
+保存或推进：
+  完整验证领域Record → 编码完整Plan → 构造严格引用与物理壳
+  检查壳UTF-8不超过512 KiB → 原put_blob耐久回读 → 原SQL事务提交行和事件
+读取或备份历史：
+  检查原UTF-8上限 → 严格识别版本
+  v1：验证原完整Record
+  v2：验证壳 → 完整读取Plan → 核对SHA、大小、指纹 → 还原并验证原完整Record
+  再执行SQL索引、当前尾事件、序号或备份跨Store事实校验
+```
+
+编码前验证完整领域记录并构造、检查物理壳；原`put_blob`完成耐久回读之后，才能原子提交SQL当前行与事件。
+解码先检查原 UTF-8 大小与严格物理模型，再读取 CAS、核对大小和 SHA、严格解析完整 Plan、核对 fingerprint，
+最后还原原领域 Record并验证其摘要、状态及原 SQL 索引。任何缺项、篡改或未知版本均固定拒绝。
+限额内的恶意深层JSON预解析递归异常也转换为`delivery_store_corrupt`，
+当前行和仅历史事件均不能逸出未分类异常；拒绝过程不推进SQL或发布备份。
+
+### 10.2 数据库及旧记录兼容
+
+新 Workspace 数据库使用 Schema 2。可写打开 Schema 1 时，仅在独占 SQL 事务内将元数据升级为2，
+既有当前行、事件及原 JSON 字节不重写；只读打开接受1或2且不迁移。
+当前行和事件允许保留原合法内嵌 v1，新的保存与状态推进写物理 v2。
+旧事件的原始字节保留，推进 CAS 比较直接使用实际旧 SQL 字符串；不能用重新编码的 v2 代替旧字符串比较。
+新 Reader 不修复过去已经超过512 KiB的非法旧行，不将旧失败改写为通过。
+旧程序打开新 Schema 或解析新 wire 必须拒绝，回退需要匹配的旧发行物及旧备份。
+格式准入和升级的单一职责实现位于
+[`workspace_store_schema.py`](../../src/harnessix/delivery/workspace_store_schema.py)，
+Store仅负责连接生命周期和调用；不通过扩大既有类热点或治理白名单承载新增职责。
+
+### 10.3 统一 Reader 与备份
+
+[`workspace_record_codec.py`](../../src/harnessix/delivery/workspace_record_codec.py)提供唯一版本化编码与解码；
+Store提供共享的 `decode_payload(payload)`，返回完整领域 Record及已验证物理引用；
+当前行、尾事件、状态推进和备份历史都复用同一解码实现，不复制另一套 JSON 分支。
+备份继续逐条核对全部历史的 sequence、state、transaction_id、完整 Plan和当前行，
+并确认每个物理 Plan 引用及原 mutation镜像都存在于私有树清单、大小和摘要正确。
+`_schemas` 只为 Workspace 明确接受1／2，其他 Store、原64 MiB列累计及256 MiB／2 GiB备份限制不变。
+引用完整性不是 MAC来源认证，不允许转换或补签旧 Git证明。
+
+### 10.4 实施与验收边界
+
+首先执行真实200叶长路径负对照，要求领域记录仍完整、SQL物理壳不超过512 KiB、只读重开和每个状态推进可读。
+补齐旧 v1原字节保留／推进、只读无迁移、未知版本、错 SHA／大小／fingerprint、缺 Blob、跨事务替换、
+只读拒写、确认丢失、完整备份／恢复及 Plan只存一次的正反例。
+父闭包128分散叶、完整T／Bridge／D及Backup v2尚未闭合时必须继续保持相应产品和发布门禁开放。
+
+#### 10.4.1 Plan元数据与文件镜像的读取顺序
+
+原回滚流程必须先读取并验证完整事务元数据，再比较原Workspace根身份，最后才能读取文件before镜像。
+旧记录的Plan来自SQL内嵌JSON；新记录的同一Plan来自私有CAS。Plan只包含来源观察、版本摘要及状态，
+不包含文件正文，不能因物理介质变化将元数据读取混入文件镜像端口。
+
+Store的私有`_read_blob`复用原有完整CAS IO和摘要准入；`decode_payload`通过该底层读取Plan元数据，
+公开`blob`继续承载文件镜像读取。两个入口使用同一个私有目录、8 MiB限额、权限检查和完整SHA校验，
+不建立第二CAS、不缓存未验证Plan，也不新增根身份提示或信任未经认证的物理字段。
+[`_build_rollback`](../../src/harnessix/delivery/filesystem.py)仍在完整Record验证之后、before镜像读取之前
+检查原根身份，并保留Planner重新捕获后的第二次根身份比较。
+
+集成回归已发现新Reader误用镜像端口，导致原错根负对照在根校验之前触发镜像读取。
+整改必须保持原测试不变，并新增“Plan读取不打开镜像端口”“合法根确实读取原镜像”正反例；
+Plan CAS损坏仍须在执行授权之前拒绝。不得通过忽略错根、补签批准或放宽测试关闭缺陷。
+
+### 10.5 当前物理记录的实现数据流
+
+```mermaid
+flowchart TD
+    Plan[原完整Plan v1] --> Blob[原私有CAS 完整JSON]
+    Blob --> Durable[put_blob 刷盘和完整回读]
+    Durable --> Ref[SHA 大小 Plan指纹]
+    State[原Record全部状态及摘要] --> Wire[物理StoredRecord v2]
+    Ref --> Wire
+    Wire --> SQL[当前行和每条历史事件]
+    SQL --> Decode[同一decode_payload]
+    Decode --> CAS[原Blob读取及SHA大小核对]
+    CAS --> Full[严格完整Plan和领域Record验证]
+    Full --> Consumer[Store及完整备份Reader]
+```
+
+**图示说明：** 本图仅描述已经编码的物理记录层，不包含待实现的父闭包。
+`record_digest`仍覆盖完整领域事实，引用不能代替原批准或MAC。
+新物理Schema见[StoredRecord v2](../../spec/workspace-stored-record-v2.schema.json)，旧领域v1 Schema保持原字节。
 不能只提高一个解码常数，不能删父目录保护，也不能把新格式解释为既有兼容开关。
 
-实施前必须批准完整父目录从逐项 Resource 计数中分离的表示边界，并明确 255 来源叶与
-256 mutation／不同叶承诺的区别；完成实际消费方与版本矩阵。T／Bridge 的独立阶段方案另行确认。
+完整父目录从逐项Resource计数中分离、完整历史私有CAS引用和prepared T语义已固定为实施方向。
+后继仍须完成实际消费方与版本矩阵，明确255来源叶与256mutation／不同叶承诺的区别。
 本候选及对应源码核验不关闭完整 Git 产品、Backup v2、R3、消费者平台、Beta 或 R1～R6 商用门禁。

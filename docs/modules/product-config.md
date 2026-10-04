@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 67
-code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
+version: 68
+code_revision: b3a2445f5d0093e08f75027d6bf5d7148d905ecb
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_workspace_reference_backup.py
   - tests/product_config/test_git_material_snapshot_differential.py
   - tests/governance/test_git_material_snapshot_differential.py
   - tests/product_config/test_git_shared_process_pre_handoff.py
@@ -2465,3 +2466,18 @@ cas-reference的[Job111242837410](https://github.com/carrie1988/Harnessix/action
 
 完整的分组、选择器多重集合、步骤保持、失败语义、依赖锁定与验收边界见
 [Windows完整Git材料的并行原生验收详设](../changes/m09-r4-windows-native-material-acceptance.md)。
+
+## Workspace引用记录的完整备份兼容（当前）
+
+[`state_backup_records._delivery`](../../src/harnessix/product_config/state_backup_records.py)复用正式
+`SQLiteWorkspaceTransactionStore.decode_payload`解码每条历史，不再直接假设SQL列永远内嵌领域Record v1。
+原sequence／state／transaction_id／完整Plan一致性校验保留；解码后的每个物理Plan引用，
+以及before／after镜像都必须存在于原私有树清单并逐件核对大小和SHA。
+缺引用、错字节或遗漏清单不能用“当前行可读”替代完整历史验真。
+
+[`state_backup_validation._schemas`](../../src/harnessix/product_config/state_backup_validation.py)
+仅为Workspace数据库接受Schema1／2；其他Store版本、Key、Owner、原64 MiB列累计、
+256 MiB单文件及2 GiB总量保护不变。备份只读验真不迁移原数据库、不补签旧MAC、不获得新根执行权。
+物理记录合同与联合兼容矩阵见[完整闭包详设第10节](../changes/m09-r4-workspace-parent-closure.md#10-架构决策与正式实施合同)，
+新旧及损坏回归见[`test_workspace_reference_backup.py`](../../tests/product_config/test_workspace_reference_backup.py)。
+完整Git业务Backup v2与Windows消费者恢复不能由该兼容层替代。
