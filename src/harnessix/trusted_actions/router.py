@@ -29,6 +29,7 @@ from harnessix.execution.contracts import (
     execution_is_approved,
 )
 from harnessix.execution.store import SQLiteExecutionPlanStore
+from harnessix.trusted_actions.agent_gateway_invocation import AgentActionPreparer
 from harnessix.trusted_actions.contracts import (
     ActionAuditEvent,
     ActionExecutionOutcome,
@@ -55,6 +56,7 @@ from harnessix.trusted_actions.planning import (
 from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.contracts import ResourceAccess, WorkspaceResourceRequest
+from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 from harnessix.workspace.snapshot_verification import verify_host_workspace_snapshot
 
@@ -98,6 +100,7 @@ class ResolvedAction:
 
     resources: tuple[CanonicalActionResource, ...]
     workspace_resources: tuple[WorkspaceResourceRequest, ...] = ()
+    expected_workspace: WorkspaceSnapshotV2 | None = None
 
 
 class TrustedActionExecutor(Protocol):
@@ -124,6 +127,7 @@ class TrustedActionDefinition:
     executor: TrustedActionExecutor
     input_schema: dict[str, JsonValue] | None = None
     decode_arguments: ArgumentDecoder | None = None
+    agent_prepare: AgentActionPreparer | None = None
 
 
 _ReadCheckpoint = Callable[[], None] | None
@@ -453,4 +457,5 @@ def _validated_definition(definition: TrustedActionDefinition) -> TrustedActionD
         executor=definition.executor,
         input_schema=schema if definition.input_schema is not None else None,
         decode_arguments=definition.decode_arguments,
+        agent_prepare=definition.agent_prepare,
     )

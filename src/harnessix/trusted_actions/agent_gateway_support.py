@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
-from datetime import datetime
 from typing import Literal, Protocol, cast
 
 from harnessix.agent.approvals import (
@@ -28,7 +27,6 @@ from harnessix.domain.models import (
     ApprovalRecord,
     EffectClass,
     ToolDescriptor,
-    utc_now,
 )
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.agent_gateway_invocation import build_agent_action_invocation
@@ -38,6 +36,10 @@ from harnessix.trusted_actions.agent_gateway_output import (
     build_approval,
     terminal_result,
 )
+from harnessix.trusted_actions.agent_gateway_output import (
+    decision_time as _decision_time,
+)
+from harnessix.trusted_actions.agent_preplanning import plan_agent_action
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
     ActionRouteSnapshot,
@@ -168,7 +170,15 @@ async def prepare_action(
             context.checkpoint()
         cancel.checkpoint()
 
-    route = router.plan(invocation, replace(context, checkpoint=parent_cancel_checkpointer(check)))
+    route = await plan_agent_action(
+        router,
+        invocation,
+        replace(context, checkpoint=parent_cancel_checkpointer(check)),
+        thread,
+        turn,
+        call,
+        cancel,
+    )
     _validate_route(route, thread, turn, call, binding)
     if route.state == "pending_approval":
         review = TrustedActionReview()
@@ -439,21 +449,6 @@ def _build_invocation(
         binding,
         requires_idempotency=state.definitions[call.tool].requires_idempotency,
     )
-
-
-def _decision_time(
-    approval: TrustedActionApprovalRequestContent, decision: ApprovalDecision
-) -> datetime:
-    recorded = approval.decision
-    if recorded is None:
-        return utc_now()
-    if (recorded.outcome, recorded.actor, recorded.reason) != (
-        decision.outcome,
-        decision.actor,
-        decision.reason,
-    ):
-        raise KernelError("approval_conflict", "Session审批已经绑定其他决定")
-    return recorded.decided_at
 
 
 def _decision_projection(

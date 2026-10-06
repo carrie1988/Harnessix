@@ -2,26 +2,35 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Callable
-from typing import NoReturn
+from typing import NoReturn, cast
 
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from harnessix.product_config.git_delivery_plan_contracts import ProductGitDeliveryPlan
+from harnessix.product_config.git_delivery_plan_contracts import (
+    ProductGitDeliveryCore,
+    ProductGitDeliveryPlan,
+)
 from harnessix.product_config.git_delivery_plan_snapshot import (
     invalid_git_delivery_plan,
+    snapshot_product_git_delivery_core,
     snapshot_product_git_delivery_plan,
 )
 
 MAX_PRODUCT_GIT_PLAN_BYTES = 512 * 1024
 
 
-def _encode(plan: ProductGitDeliveryPlan, checkpoint: Callable[[], None]) -> bytes:
+def _encode(
+    plan: ProductGitDeliveryPlan | ProductGitDeliveryCore, checkpoint: Callable[[], None]
+) -> bytes:
     """完整逐块编码；超限或取消不返回任何部分记录，不提高现有账本预算。"""
     checkpoint()
-    payload = plan.model_dump(mode="json", warnings="error")
+    # Core 的原内容地址只排除自身指纹；嵌套指纹及全部事实仍完整保留。
+    exclude = {"fingerprint"} if type(plan) is ProductGitDeliveryCore else set()
+    payload = plan.model_dump(mode="json", exclude=exclude, warnings="error")
     encoder = json.JSONEncoder(
         ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
     )
@@ -58,6 +67,26 @@ def decode_product_git_delivery_plan(
     body: object, *, checkpoint: Callable[[], None]
 ) -> ProductGitDeliveryPlan:
     """拒绝重复键、额外字段、大小写别名、缺省补全及任何非规范同义字节。"""
+    return _decode(body, ProductGitDeliveryPlan, checkpoint)
+
+
+def encode_product_git_delivery_core(value: object, *, checkpoint: Callable[[], None]) -> bytes:
+    """原编码算法保存完整 Core，不含自身指纹；仍沿用原 512KiB 上限。"""
+    core = snapshot_product_git_delivery_core(value, checkpoint=checkpoint)
+    return _encode(core, checkpoint)
+
+
+def decode_product_git_delivery_core(
+    body: object, *, checkpoint: Callable[[], None]
+) -> ProductGitDeliveryCore:
+    """从完整规范字节恢复自身内容地址；成功不证明 MAC、Owner 或原 Session。"""
+    return _decode(body, ProductGitDeliveryCore, checkpoint)
+
+
+def _decode[T: ProductGitDeliveryPlan | ProductGitDeliveryCore](
+    body: object, kind: type[T], checkpoint: Callable[[], None]
+) -> T:
+    """两种有限模型共用原严格 JSON 算法，不接受调用方解析器或验证器。"""
     checkpoint()
     if type(body) is not bytes or not 1 <= len(body) <= MAX_PRODUCT_GIT_PLAN_BYTES:
         raise invalid_git_delivery_plan()
@@ -85,14 +114,28 @@ def decode_product_git_delivery_plan(
 
     try:
         # 第一遍拒绝重复键，第二遍由原 Pydantic 严格 JSON 模式保留 UUID/日期语义。
-        json.loads(body.decode("utf-8", "strict"), object_pairs_hook=pairs, parse_constant=constant)
+        payload = json.loads(
+            body.decode("utf-8", "strict"), object_pairs_hook=pairs, parse_constant=constant
+        )
         check()
-        plan = ProductGitDeliveryPlan.model_validate_json(body, context={"checkpoint": check})
-        snapshot = snapshot_product_git_delivery_plan(plan, checkpoint=check)
+        if kind is ProductGitDeliveryCore:
+            if type(payload) is not dict or "fingerprint" in payload or not body.startswith(b"{"):
+                raise invalid_git_delivery_plan()
+            # 只注入由完整原始正文计算的自身指纹，不默认补全任何持久字段。
+            # 保留原始 JSON 字节，让严格 JSON 模式负责 UUID、日期及 hex 解码。
+            digest = hashlib.sha256(body).hexdigest().encode("ascii")
+            full = b'{"fingerprint":"' + digest + b'",' + body[1:]
+            core = ProductGitDeliveryCore.model_validate_json(full, context={"checkpoint": check})
+            snapshot: ProductGitDeliveryCore | ProductGitDeliveryPlan = (
+                snapshot_product_git_delivery_core(core, checkpoint=check)
+            )
+        else:
+            plan = ProductGitDeliveryPlan.model_validate_json(body, context={"checkpoint": check})
+            snapshot = snapshot_product_git_delivery_plan(plan, checkpoint=check)
         if _encode(snapshot, check) != body:
             raise invalid_git_delivery_plan()
         check()
-        return snapshot
+        return cast(T, snapshot)
     except (KernelError, ValidationError, ValueError, TypeError, AttributeError, RecursionError):
         if callback_error is not None:
             raise callback_error from None

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 42
-code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
+version: 43
+code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_git_delivery_core_store.py
+  - tests/product_config/test_git_delivery_route_core.py
   - tests/delivery/test_workspace_record_reference.py
   - tests/delivery/test_git_private_source.py
   - tests/delivery/test_git_store_schema_v2.py
@@ -60,6 +62,14 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Delivery模块设计
+
+## 完整Core CAS与单次控制边界
+
+[可信准备及耐久恢复设计](../changes/m09-r4-git-agent-preplanning.md)将完整Git Core保存到原Workspace CAS，
+不增加Git业务表或批准。原`SQLiteWorkspaceTransactionStore.blob/put_blob`提供可选单次`checkpoint`：
+局部组合原Store检查点和调用方检查点，只用原控制标记保留异常身份，默认调用行为不变。
+不替换共享`_checkpoint`，不通过堆栈、异常类型或错误码猜测控制来源；原CAS写算法、8MiB上限、
+只读门禁、路径与耐久保护不变。组件恢复不能证明Session归属、批准、材料完备或Git外部效果。
 
 ## 1. 模块摘要
 

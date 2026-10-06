@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 70
-code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
+version: 71
+code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_delivery_core_store.py
+  - tests/product_config/test_git_delivery_route_core.py
   - tests/product_config/test_workspace_reference_backup.py
   - tests/product_config/test_git_material_snapshot_differential.py
   - tests/governance/test_git_material_snapshot_differential.py
@@ -67,6 +69,9 @@ supersedes: []
 [完整 Git 交付计划设计](../changes/m09-r4-git-delivery-plan.md)已实现无绑定全对象范围、
 完整 Core→原 Route→Review 引用封套、严格实际类型快照及 512KiB 规范字节。
 材料入口复用原 CAS 全图、父历史、目标树、Diff 及提交编码，不能签发批准或执行 Git。
+[审批前准备与Core耐久恢复](../changes/m09-r4-git-agent-preplanning.md)已接入原Gateway：
+注册准备器仅在首次规划前运行，完整Core原CAS写入及回读，原Route资源寻址恢复并重验。
+原生实际Snapshot2必须等于完整预期，已存原Route不重新生成意图；这不证明Session归属或批准。
 默认产品工具未变化；正式 Artifact/Session/Router 归属、新批准、ProductLink/NativeBridge、
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 

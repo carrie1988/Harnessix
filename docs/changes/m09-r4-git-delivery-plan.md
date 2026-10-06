@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
+version: 2
+code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -25,6 +25,10 @@ supersedes: []
 # 完整 Git 交付执行意图与单向审批计划详细设计
 
 ## 1. 需求背景与变更摘要
+
+完整Core的后继耐久入口与原Gateway审批前准备见
+[可信准备及寻址恢复设计](m09-r4-git-agent-preplanning.md)。本文件仍定义完整计划与材料合同；
+耐久CAS组件不表示原Session归属、真实Review、用户批准或Git业务效果已经闭合。
 
 Coding Agent 的 Git 交付必须只包含选定、原会话拥有的修改，不能将用户工作区的无关
 暂存内容合入提交。原成功 Patch 发生在用户根 U；交付采用干净私有锚 A、在 A 上准备
@@ -330,7 +334,8 @@ verify_materials(Core):
 | 材料回读期间发生变化 | 每次读取仍核验内容；这是多次完整读取，不声称跨库共同原子快照 |
 | 已解码历史 Plan 与当前物理环境不同 | 只能解释历史声明；必须后续新原生观察和批准，不能自动执行 |
 
-当前入口只读原 CAS，纯计算且无持久阶段。重复调用不会创建 A/T/D、写 Git 对象、
+本设计的材料验证入口只读原 CAS，纯计算且无业务持久阶段。后继完整Core CAS写入见
+[可信准备与耐久恢复设计](m09-r4-git-agent-preplanning.md)。重复材料验证不会创建 A/T/D、写 Git 对象、
 改变 Index/Ref、签 MAC 或触发后台续写。恢复无需补写本组件状态；真实阶段恢复必须
 使用尚待接线的认证 ProductLink 和原语义模型，不能从 Plan 字节推断已有外部效果。
 

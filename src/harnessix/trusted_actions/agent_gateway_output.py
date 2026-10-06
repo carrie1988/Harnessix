@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from time import monotonic
 from typing import Literal, Protocol
 from uuid import uuid5
@@ -22,7 +23,7 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
-from harnessix.domain.models import ToolDescriptor
+from harnessix.domain.models import ApprovalDecision, ToolDescriptor, utc_now
 from harnessix.execution.contracts import SecretVersionBinding, canonical_digest
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
 from harnessix.trusted_actions.output_budget import (
@@ -128,6 +129,22 @@ def build_approval(
         route_state="pending_approval",
         diff_artifact=diff,
     )
+
+
+def decision_time(
+    approval: TrustedActionApprovalRequestContent, decision: ApprovalDecision
+) -> datetime:
+    """复用原批准时间与冲突算法，和审批呈现一起维护，不扩大状态语义。"""
+    recorded = approval.decision
+    if recorded is None:
+        return utc_now()
+    if (recorded.outcome, recorded.actor, recorded.reason) != (
+        decision.outcome,
+        decision.actor,
+        decision.reason,
+    ):
+        raise KernelError("approval_conflict", "Session审批已经绑定其他决定")
+    return recorded.decided_at
 
 
 async def terminal_result(

@@ -245,27 +245,35 @@ class ProductGitDeliveryPlan(DeliveryContract):
 
     @model_validator(mode="after")
     def bound_envelope(self) -> Self:
-        core, route, call = self.core, self.route, self.core.call
-        invocation = route.invocation
+        validate_product_git_delivery_route(self.core, self.route)
         if (
-            invocation.invocation_id
-            != trusted_action_invocation_id(core.thread_id, core.turn_id, call)
-            or (invocation.tool, invocation.tool_version, invocation.tool_fingerprint)
-            != (call.tool, call.tool_version, call.tool_fingerprint)
-            or invocation.arguments != call.arguments
-            or route.binding.effect_class is not call.effect_class
-            or route.binding.recovery_mode != "external_reconcile"
-            or route.external_action_id != core.delivery_id
-            or route.execution.workspace != core.baseline.source.workspace
-            or route.execution.policy.decision is not PolicyDecisionKind.REQUIRE_APPROVAL
-            or route.resources != (product_git_delivery_resource(core),)
-            or not self.review_artifact.complete
+            not self.review_artifact.complete
             or self.review_artifact.records < 1
             or self.review_artifact.size_bytes < 1
             or self.fingerprint != product_git_delivery_plan_fingerprint(self)
         ):
             raise ValueError("Git计划必须由原Route绑定完整Core及Review")
         return self
+
+
+def validate_product_git_delivery_route(
+    core: ProductGitDeliveryCore, route: ActionRoutePlanV2
+) -> None:
+    """封套与原 CAS 读回共用的交叉字段算法；不替代严格快照或认证读取。"""
+    call, invocation = core.call, route.invocation
+    if (
+        invocation.invocation_id != trusted_action_invocation_id(core.thread_id, core.turn_id, call)
+        or (invocation.tool, invocation.tool_version, invocation.tool_fingerprint)
+        != (call.tool, call.tool_version, call.tool_fingerprint)
+        or invocation.arguments != call.arguments
+        or route.binding.effect_class is not call.effect_class
+        or route.binding.recovery_mode != "external_reconcile"
+        or route.external_action_id != core.delivery_id
+        or route.execution.workspace != core.baseline.source.workspace
+        or route.execution.policy.decision is not PolicyDecisionKind.REQUIRE_APPROVAL
+        or route.resources != (product_git_delivery_resource(core),)
+    ):
+        raise ValueError("Git计划必须由原Route绑定完整Core及Review")
 
 
 def product_git_delivery_plan_fingerprint(plan: ProductGitDeliveryPlan) -> str:

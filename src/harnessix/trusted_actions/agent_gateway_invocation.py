@@ -2,10 +2,33 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Protocol
+
+from pydantic import BaseModel
+
 from harnessix.agent.approvals import trusted_action_invocation_id
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import Thread, ToolCallContent, Turn
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import CodingActionInvocation, TrustedToolBinding
+
+if TYPE_CHECKING:
+    from harnessix.trusted_actions.router import ActionPlanningContext, ResolvedAction
+
+
+class AgentActionPreparer(Protocol):
+    """注册宿主在首次规划前观察材料；只返回资源，不拥有策略或执行入口。"""
+
+    async def prepare(
+        self,
+        invocation: CodingActionInvocation,
+        arguments: BaseModel,
+        context: ActionPlanningContext,
+        thread: Thread,
+        turn: Turn,
+        call: ToolCallContent,
+        cancel: CancelToken,
+    ) -> ResolvedAction: ...
 
 
 def build_agent_action_invocation(

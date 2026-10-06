@@ -44,6 +44,7 @@ from harnessix.workspace.snapshot_v2 import capture_workspace_snapshot_v2
 if TYPE_CHECKING:
     from harnessix.trusted_actions.router import (
         ActionPlanningContext,
+        ResolvedAction,
         TrustedActionDefinition,
     )
 
@@ -72,23 +73,50 @@ def plan_action(
     policy: DefaultCodingRiskPolicy,
     plans: SQLiteExecutionPlanStore,
     audit: SQLiteActionAuditStore,
+    prepared: ResolvedAction | None = None,
 ) -> ActionRouteSnapshot:
     """冻结一次调用；重复身份只复用精确Route并修复跨Store崩溃窗口。"""
 
     checked, arguments = _normalize_invocation(invocation, definition)
+    return _plan_normalized_action(
+        checked,
+        arguments,
+        context,
+        definition,
+        policy=policy,
+        plans=plans,
+        audit=audit,
+        prepared=prepared,
+    )
+
+
+def _plan_normalized_action(
+    checked: CodingActionInvocation,
+    arguments: BaseModel,
+    context: ActionPlanningContext,
+    definition: TrustedActionDefinition,
+    *,
+    policy: DefaultCodingRiskPolicy,
+    plans: SQLiteExecutionPlanStore,
+    audit: SQLiteActionAuditStore,
+    prepared: ResolvedAction | None = None,
+) -> ActionRouteSnapshot:
+    """唯一规范化后的规划算法；异步准备后不得再次调用参数 Decoder。"""
     binding = definition.binding
     existing = _load_existing_route(audit, checked, binding)
     if existing is not None:
         # Audit持有完整Execution Plan，可修复首次规划在第二个Store写入前中断的窗口。
         plans.save_plan(existing.plan.execution)
         return existing
+    if definition.agent_prepare is not None and prepared is None:
+        raise KernelError("action_preparation_required", "该Action必须经Agent可信准备入口规划")
     if (
         binding.effect_class in {EffectClass.NON_IDEMPOTENT_WRITE, EffectClass.DESTRUCTIVE}
         and checked.idempotency_key is None
     ):
         raise KernelError("idempotency_key_required", "该Action必须携带幂等键")
     try:
-        resolved = definition.resolve(arguments, context)
+        resolved = prepared if prepared is not None else definition.resolve(arguments, context)
     except Exception as error:
         raise sanitize_plan_exception(error, stage="resolve") from None
     resources = _canonical_resources(resolved.resources)
@@ -115,6 +143,10 @@ def plan_action(
             checkpoint=_planning_checkpoint(context),
             write_blob=context.snapshot_ports.write_blob,
             read_blob=context.snapshot_ports.read_blob,
+        )
+    if resolved.expected_workspace is not None and workspace != resolved.expected_workspace:
+        raise KernelError(
+            "action_preparation_workspace_changed", "可信准备后Workspace完整观察已变化"
         )
     route = _build_route(checked, binding, resources, context, decision, workspace)
     initial_state = cast(
@@ -236,6 +268,17 @@ def _load_existing_route(
     return existing
 
 
+def external_action_identity(
+    invocation: CodingActionInvocation, binding: TrustedToolBinding
+) -> UUID | None:
+    """唯一原外部身份算法；供正式规划和完整 Core 恢复共同核对，不签发权限。"""
+    return (
+        uuid5(_EXTERNAL_ACTION_NAMESPACE, f"{invocation.invocation_id}:{binding.binding_digest}")
+        if binding.recovery_mode == "external_reconcile"
+        else None
+    )
+
+
 def _build_route(
     invocation: CodingActionInvocation,
     binding: TrustedToolBinding,
@@ -278,11 +321,7 @@ def _build_route(
             capabilities=context.capabilities,
             plan_id=invocation.invocation_id,
         )
-    external_action_id = (
-        uuid5(_EXTERNAL_ACTION_NAMESPACE, f"{invocation.invocation_id}:{binding.binding_digest}")
-        if binding.recovery_mode == "external_reconcile"
-        else None
-    )
+    external_action_id = external_action_identity(invocation, binding)
     identities = [
         (item.kind, item.access, item.identifier_sha256, item.attributes_sha256)
         for item in resources

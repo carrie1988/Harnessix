@@ -1,0 +1,165 @@
+{
+  "schema": "harnessix.git-agent-preplanning-validation/v1",
+  "baseline_revision": "3443422cc83f804b7c6d09e41ac2645c0a17c1b1",
+  "scope": "trusted-preplanning-and-full-core-durable-recovery-only",
+  "final": {
+    "installed_associated": {
+      "tests": 2475,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 453.675
+    },
+    "governance": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 40.239
+    },
+    "wheel": {
+      "source_modules": 479,
+      "all_bytes_match": true,
+      "wheel_sha256": "4646bfddf8c50c4d9c3cfd4ed969445e0719649e1c4874f854a7ae5c73e75509",
+      "wheel": "harnessix-1.0.0rc1-py3-none-any.whl"
+    },
+    "installed_imports": {
+      "source_outside": true,
+      "no_clone_src_sys_path": true,
+      "all_modules_from_installed_wheel": true,
+      "loaded_modules": 336,
+      "pytest_exit_code": 0
+    },
+    "schema_compatibility": {
+      "original_count": 276,
+      "all_original_bytes_unchanged": true,
+      "generator_check": "PASS",
+      "regenerated_subset_count": 238,
+      "new_schemas": []
+    },
+    "source_inputs": {
+      "scope": "complete-primary-code-test-schema-governance-and-owned-doc-inputs",
+      "count": 1682,
+      "main_clone_exact": true,
+      "source_inputs_sha256": "4a4030bbc70be1b996ff14a740f437001f3aeb7b221a7bb0f7fce345641589ae",
+      "validation_package_self_excluded": true
+    },
+    "original_gates": {
+      "all_bytes_unchanged": true,
+      "paths": [
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.py",
+          "sha256": "f2e57fe1168703757895a8d7a61baf099d8e02dfb99c548963275d3ca666782c"
+        },
+        {
+          "path": "governance/readability-policy-v1.json",
+          "sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c"
+        },
+        {
+          "path": "governance/documentation-policy-v1.json",
+          "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha256": "edd750e5dfa3850f7d80a85b2aad2fc76f09f42f5bd4d0c11ac1a4020b129fad"
+        },
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.json",
+          "sha256": "d76e2a31c2e6ef569dac79096aeef8ff1753ffc600a6441c69d228aef242e668"
+        }
+      ]
+    },
+    "cas_algorithms": {
+      "unchanged_algorithm_bodies": [
+        "_write_blob_body",
+        "_valid_digest",
+        "_fsync_directory"
+      ],
+      "new_control_mode": "local-checkpoint-only",
+      "shared_checkpoint_replaced": false,
+      "stack_introspection": false
+    },
+    "diagrams": {
+      "diagrams": 3,
+      "all_rendered_and_visually_reviewed": true,
+      "overlap_or_clipping": false
+    },
+    "ruff": "PASS",
+    "format": "PASS",
+    "mypy_source_modules": 479,
+    "readability": "PASS with unchanged policy",
+    "secret_scan": {
+      "inputs": 4980,
+      "findings": 0,
+      "scan_stage": "complete-package"
+    },
+    "documentation": {
+      "changed_path_count": 30,
+      "document_count": 552,
+      "findings": [],
+      "link_count": 12745,
+      "mermaid_count": 1058,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    }
+  },
+  "retained_failures": {
+    "preparation_initial": {
+      "tests": 82,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.853
+    },
+    "decoder_red": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.284
+    },
+    "governance_initial_environment": {
+      "tests": 1413,
+      "failures": 7,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 33.957
+    }
+  },
+  "retained_earlier_candidate": {
+    "installed_associated_before_decoder_fix": {
+      "tests": 2473,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 451.273
+    },
+    "final_candidate_replaces_earlier_acceptance": true
+  },
+  "verified_boundary": [
+    "host-registered Gateway preplanning before original Policy and Route",
+    "real original Stores and complete CAS close-reopen recovery",
+    "single original Decoder normalization",
+    "full canonical resources and Workspace requests, deterministic external identity",
+    "original peroperation and Store checkpoints, cancellation and deadlines"
+  ],
+  "not_accepted": [
+    "default Git Planner/Executor and Tool Catalog",
+    "actual authenticated Session and user approval",
+    "formal Git Review Artifact and ProductLink/NativeBridge",
+    "A/T2/D and independently approved Commit",
+    "business Backup2 and new-root rebind",
+    "R1-R6 release gates and real coding quality",
+    "native Windows and three-platform installed business consumers",
+    "same-candidate beta and commercial 1.0"
+  ],
+  "permissions_and_budget": {
+    "model_requests": 0,
+    "credential_access": false,
+    "fee_reservation_changed": false,
+    "automation_changed": false,
+    "docker_operations": false
+  },
+  "evidence_location": "Library/Application Support/Harnessix/verification/git-agent-preplanning-20261007-v1",
+  "sets_overlap_do_not_sum_for_coverage": true
+}

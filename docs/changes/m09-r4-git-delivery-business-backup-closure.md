@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 13
-code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
+version: 14
+code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -91,6 +91,11 @@ Route资源绑定Core指纹，封套不增加业务效果字段，避免计划�
 净Mutation、Diff及完整CommitSpec均保存；原512KiB记录和其他容量、Native18门禁不扩大。
 该合同不证明实际归属、Artifact正文、新批准、NativeBridge或执行权限。
 ProductGitDeliveryPlanner/Executor、正式Link阶段、A/T2/D写装配与Backup2仍待实现。
+
+[审批前可信准备与完整Core耐久恢复](m09-r4-git-agent-preplanning.md)已接入原Gateway首次规划：
+原规范化和查询优先、原Policy、原生Snapshot2完整预期比较及Route持久化保持；完整Core只写原CAS，
+原Route唯一资源可读回原完整Core并复用封套交叉字段算法。该结果不补签归属或批准，不装配默认Git工具，
+不发布GitDB业务阶段，不创建A/T2/D或Commit；正式业务链及其认证恢复仍未闭合。
 
 ## 1. 需求背景、状态与交付定义
 

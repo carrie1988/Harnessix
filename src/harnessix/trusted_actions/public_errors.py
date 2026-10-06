@@ -19,7 +19,7 @@ from harnessix.trusted_actions.outcome_validation import (
 
 PublicActionStage = Literal["execute", "reconcile"]
 PublicOutcomeKind = Literal["succeeded", "failed", "unknown", "manual_intervention"]
-PublicPlanningStage = Literal["decode", "resolve", "policy"]
+PublicPlanningStage = Literal["decode", "resolve", "policy", "preparation"]
 PublicGatewayStage = Literal["context", "review", "output"]
 
 _EXECUTE_TIMEOUT_FAILURE = "executor_timeout"
@@ -42,6 +42,10 @@ _PLAN_MESSAGE = "Action计划阶段失败；内部原因不公开"
 _DECODER_ERRORS = {
     "tool_invalid_arguments": "Action参数不符合Trusted Tool契约",
     "trusted_tool_schema_invalid": "Trusted Tool Schema不是规范JSON对象",
+}
+_PREPARATION_ERRORS = {
+    "action_preparation_invalid": "Action可信准备结果不符合契约",
+    "action_preparation_workspace_changed": "可信准备后Workspace完整观察已变化",
 }
 _RESOLVER_ERRORS = {
     "action_resource_invalid": "Action规范资源无效",
@@ -129,9 +133,12 @@ def sanitize_plan_exception(
 ) -> KernelError:
     """按阶段的固定码表重建公开错误；未知码/Policy错误默认失败关闭。"""
 
-    allowed = (
-        _DECODER_ERRORS if stage == "decode" else _RESOLVER_ERRORS if stage == "resolve" else {}
-    )
+    allowed = {
+        "decode": _DECODER_ERRORS,
+        "resolve": _RESOLVER_ERRORS,
+        "preparation": _PREPARATION_ERRORS,
+        "policy": {},
+    }[stage]
     if isinstance(error, KernelError) and type(error.code) is str:
         message = allowed.get(error.code)
         if message is not None:

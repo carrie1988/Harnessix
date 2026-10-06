@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 36
-code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
+version: 37
+code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/trusted_actions/test_agent_preplanning.py
   - tests/trusted_actions/test_argument_feedback.py
   - tests/product_config/test_profile_argument_feedback_sdk.py
   - tests/product_config/test_product_patch_rollback.py
@@ -43,6 +44,15 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## Agent审批前可信准备
+
+[完整设计](../changes/m09-r4-git-agent-preplanning.md)定义首次规划前的宿主异步准备：
+`TrustedActionDefinition.agent_prepare`只返回原`ResolvedAction`资源和可选完整Snapshot2预期，
+原Policy及原生捕获仍为唯一算法，相等后才持久Route；已存Route查询优先并复用原Store修复。
+首次同步入口不能绕过有准备器的定义。等待使用原Router操作上限和原CancelToken，
+检查点异常保留，托管任务结束后才传播取消；无准备器的默认工具保持原同步路径。
+该能力不新增模型参数、默认Git工具或批准，不建立原Session归属，也不关闭Git交付发布门禁。
 
 ## 1. 模块摘要
 

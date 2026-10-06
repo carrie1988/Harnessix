@@ -216,11 +216,12 @@ class SQLiteWorkspaceTransactionStore:
         ).fetchone()
         return None if row is None else self._decode(row)
 
-    def blob(self, digest: str) -> bytes:
-        """读取文件镜像；调用方必须先完成原Workspace来源及执行授权验证。"""
-        self._check()
+    def blob(self, digest: str, *, checkpoint: Callable[[], None] | None = None) -> bytes:
+        """完整回读；显式操作检查点仅以原控制标记传播，不改变共享回调。"""
+        check = _blob_checkpoint(self._check, checkpoint)
+        check()
         body = self._read_blob(digest)
-        self._check()
+        check()
         return body
 
     def _read_blob(self, digest: str) -> bytes:
@@ -261,25 +262,45 @@ class SQLiteWorkspaceTransactionStore:
         if self._closed:
             raise KernelError("delivery_store_closed", "Workspace事务账本已关闭")
 
-    def put_blob(self, digest: str, body: bytes) -> None:
-        """受信宿主持久化完整正文；复用原 CAS，已有正文也重新刷盘，不登记业务成功。"""
+    def put_blob(
+        self, digest: str, body: bytes, *, checkpoint: Callable[[], None] | None = None
+    ) -> None:
+        """原 CAS 耐久写；显式检查点保留控制标记，默认仍解包为原异常。"""
         self._require_writable()
-        self._check()
-        self._put_blob(digest, body)
+        check = _blob_checkpoint(self._check, checkpoint)
+        check()
+        if checkpoint is None:
+            self._put_blob(digest, body)
+        else:
+            self._put_blob(digest, body, checkpoint=checkpoint)
+        read = (
+            (lambda: _controlled_io(lambda: self.blob(digest)))
+            if checkpoint is None
+            else (lambda: self.blob(digest, checkpoint=checkpoint))
+        )
         try:
             confirm_blob_durable(
                 self._blobs / digest,
                 body,
-                lambda: _controlled_io(lambda: self.blob(digest)),
+                read,
                 _fsync_directory,
             )
         except UpstreamCheckpointError as error:
+            if checkpoint is not None:
+                raise
             raise error.error from None
-        self._check()
+        check()
 
-    def _put_blob(self, digest: str, body: bytes) -> None:
+    def _put_blob(
+        self, digest: str, body: bytes, *, checkpoint: Callable[[], None] | None = None
+    ) -> None:
         self._require_writable()
-        _write_blob_body(self._blobs, digest, body, self.blob, self._check)
+        read = (
+            self.blob
+            if checkpoint is None
+            else lambda digest: self.blob(digest, checkpoint=checkpoint)
+        )
+        _write_blob_body(self._blobs, digest, body, read, _blob_checkpoint(self._check, checkpoint))
 
     def _decode(
         self, row: tuple[object, ...], *, checkpoint: Callable[[], None] | None = None
@@ -325,6 +346,23 @@ class SQLiteWorkspaceTransactionStore:
 
     def __exit__(self, *_: object) -> None:
         self.close()
+
+
+def _blob_checkpoint(
+    original: Callable[[], None], checkpoint: Callable[[], None] | None
+) -> Callable[[], None]:
+    """显式操作先消费原回调再消费调用方；仅实际检查点异常标为控制信号。"""
+    if checkpoint is None:
+        return original
+
+    def check() -> None:
+        try:
+            original()
+            checkpoint()
+        except BaseException as error:
+            raise UpstreamCheckpointError(error) from None
+
+    return check
 
 
 def _controlled_io[T](operation: Callable[[], T]) -> T:

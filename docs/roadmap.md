@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 192
-code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
+version: 193
+code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
 owners:
   - core
 modules:
@@ -2155,3 +2155,12 @@ R3真实编码质量与有限Beta；不删除首发必需功能，不关闭R1—
 复用原完整图/双树/CAS、父历史、Diff和提交编码，保持原容量与Native18门禁，旧Schema不变。
 组件未暴露为默认工具，不表示ProductLink/NativeBridge、实际归属/新批准、A/T2/D写流程、
 Backup2或R4发布完成；上述仍为后续正式业务接线关键路径。
+
+### R4 审批前可信准备与完整Core耐久恢复
+
+[详细设计](changes/m09-r4-git-agent-preplanning.md)已将注册宿主准备接到真实Agent Gateway首次Route之前，
+复用原参数规范化、风险策略、实际Snapshot2和持久Route，漂移或同步绕过失败关闭。
+完整Core按原内容地址写入唯一Workspace CAS并完整回读；原Route唯一资源可寻址原完整Core，
+重启查询优先，不重新分配交付意图。保持原Schema、容量与门禁，不扩大默认产品工具。
+下一关键路径仍为受认证Session的实际Git Planner、完整Review与业务关联、A/T2/D写入及独立Commit；
+此组件接线不关闭R1—R6、真实编码质量、三平台、Backup2或有限Beta，不表示商用1.0完成。
