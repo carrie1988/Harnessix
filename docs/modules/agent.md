@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: 730f0846641700c4c697d7cc6ba03cbf1a8364bc
+version: 21
+code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
 owners:
   - core
 modules:
@@ -853,3 +853,18 @@ Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session�
 `invalid_history_request`归入原INPUT分类；没有新增协议命令、模型Tool或错误重试策略。
 [Session同事务历史读取](../changes/m09-r4-authenticated-thread-history.md)保留原Owner异常对象、
 驱动存储失败及父Task取消的原结算边界。普通认证历史不是当前执行授权，不能凭返回对象恢复外部效果。
+
+
+## 正式审阅完整原文的公开保护
+
+[`protect_review_jsonl`](../../src/harnessix/agent/publication.py)先调用原Scope的JSONL校验，
+再由纯[`review_text_for_protection`](../../src/harnessix/domain/review_text.py)识别已知
+Workspace/Git审阅并重组完整原文，以同一原Scope执行JSON保护。两步共享原10秒公开保护期限，
+不重置取消/期限、不要求二进制输出能力，也不改变JSONL、正文Hash或授权。
+
+原Artifact Guard在发布和每次读取时复用此端口；重开后Scope新增受保护材料，即使材料跨
+Chunk边界也必须拒绝。未知旧通用审阅只沿原JSONL保护，不猜测正文语义。
+失败保留原公开保护错误；纯重组不产生Session认证或执行权。完整接口、流程与时序见
+[Git Review详设](../changes/m09-r4-git-review.md)，
+[保护用例](../../tests/product_config/test_git_delivery_review_protection.py)和
+[实际认证读侧负例](../../tests/product_config/test_git_delivery_review_controls.py)分别记录证据等级。

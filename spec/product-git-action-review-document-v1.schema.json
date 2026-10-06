@@ -1,0 +1,364 @@
+{
+  "$defs": {
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "ProductGitActionReviewEntry": {
+      "additionalProperties": false,
+      "description": "Git完整文件记录；不能误用公共Patch的16文件界限。",
+      "properties": {
+        "record_type": {
+          "const": "entry",
+          "default": "entry",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "index": {
+          "exclusiveMaximum": 256,
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "entry": {
+          "$ref": "#/$defs/WorkspaceDiffEntry"
+        }
+      },
+      "required": [
+        "index",
+        "entry"
+      ],
+      "title": "ProductGitActionReviewEntry",
+      "type": "object"
+    },
+    "ProductGitActionReviewSummary": {
+      "additionalProperties": false,
+      "description": "独立Git首记录，完整用户意图与Core内容地址不可省略。",
+      "properties": {
+        "record_type": {
+          "const": "summary",
+          "default": "summary",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "spec_version": {
+          "const": "harnessix.product-git-action-review/v1",
+          "default": "harnessix.product-git-action-review/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "core_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Core Fingerprint",
+          "type": "string"
+        },
+        "delivery_id": {
+          "format": "uuid",
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "call": {
+          "$ref": "#/$defs/ToolCallContent"
+        },
+        "workspace_revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Revision",
+          "type": "string"
+        },
+        "base_commit_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Base Commit Oid",
+          "type": "string"
+        },
+        "target_tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Target Tree Oid",
+          "type": "string"
+        },
+        "file_count": {
+          "maximum": 256,
+          "minimum": 1,
+          "title": "File Count",
+          "type": "integer"
+        },
+        "diff_utf8_bytes": {
+          "maximum": 67108864,
+          "minimum": 1,
+          "title": "Diff Utf8 Bytes",
+          "type": "integer"
+        },
+        "diff_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Diff Sha256",
+          "type": "string"
+        },
+        "complete": {
+          "const": true,
+          "default": true,
+          "title": "Complete",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "core_fingerprint",
+        "delivery_id",
+        "call",
+        "workspace_revision",
+        "base_commit_oid",
+        "target_tree_oid",
+        "file_count",
+        "diff_utf8_bytes",
+        "diff_sha256"
+      ],
+      "title": "ProductGitActionReviewSummary",
+      "type": "object"
+    },
+    "ToolCallContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_call",
+          "default": "tool_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "provider_call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Provider Call Id",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "requires_approval": {
+          "default": false,
+          "title": "Requires Approval",
+          "type": "boolean"
+        },
+        "tool_fingerprint": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Fingerprint"
+        }
+      },
+      "required": [
+        "call_id",
+        "provider_call_id",
+        "tool",
+        "tool_version",
+        "effect_class"
+      ],
+      "title": "ToolCallContent",
+      "type": "object"
+    },
+    "WorkspaceActionReviewChunk": {
+      "additionalProperties": false,
+      "description": "Review正文分块；每条记录可由Artifact分页独立读取。",
+      "properties": {
+        "record_type": {
+          "const": "text",
+          "default": "text",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "sequence": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "text": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "text"
+      ],
+      "title": "WorkspaceActionReviewChunk",
+      "type": "object"
+    },
+    "WorkspaceDiffEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "added",
+            "modified",
+            "deleted",
+            "renamed"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "original_path": {
+          "anyOf": [
+            {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Original Path"
+        },
+        "before": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        },
+        "after": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        },
+        "binary": {
+          "title": "Binary",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "path",
+        "before",
+        "after",
+        "binary"
+      ],
+      "title": "WorkspaceDiffEntry",
+      "type": "object"
+    },
+    "WorkspaceFileVersion": {
+      "additionalProperties": false,
+      "properties": {
+        "presence": {
+          "enum": [
+            "absent",
+            "file"
+          ],
+          "title": "Presence",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                420,
+                493
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "presence",
+        "size"
+      ],
+      "title": "WorkspaceFileVersion",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "完整连续记录重建原Diff；原Diff SHA与Artifact JSONL SHA各自独立。",
+  "properties": {
+    "summary": {
+      "$ref": "#/$defs/ProductGitActionReviewSummary"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/ProductGitActionReviewEntry"
+      },
+      "maxItems": 256,
+      "title": "Entries",
+      "type": "array"
+    },
+    "chunks": {
+      "items": {
+        "$ref": "#/$defs/WorkspaceActionReviewChunk"
+      },
+      "maxItems": 10000,
+      "minItems": 1,
+      "title": "Chunks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "summary",
+    "entries",
+    "chunks"
+  ],
+  "title": "ProductGitActionReviewDocument",
+  "type": "object"
+}

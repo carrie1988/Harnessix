@@ -2279,3 +2279,16 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 `GitDeliveryRuntime`旧同步入口驱动同一配方，产品观察入口按原受控异步端口驱动，
 不重复校验算法；新配方进入原Git实现摘要，旧批准不能跨实现变化复用。
 详见[共享检查详细设计](../changes/m09-r4-git-repository-observation.md)；本增量不改变GitDB领域装配或实现产品写流程。
+
+
+## 正式Git Review与原Artifact审批链
+
+[完整详细设计](../changes/m09-r4-git-review.md)将完整Core2和同次全Diff接入正式Git审阅合同与原认证Artifact。
+生产者借同一原Session/Router/CAS/Scope/Owner，复核真实成功Patch连续链和当前Source2，
+按唯一JSONL及24KiB/200条/50页原算法预检。完整原文先保护，禁止跨正文块规避敏感材料检查。
+旧Workspace Review字节与公共审批形状保持，Git不虚构Workspace事务ID或新增存储。
+
+[组件验证](../validation/git-review-2026-10-07-v1/README.md)区分严格声明级测试与真实认证SDK发布、分页和审批回指。
+此组件没有默认注册Git写工具，没有业务Git写效果；默认Planner/Executor、业务关联、
+A/T2/D、独立Commit、Backup2及商业验收继续开放。CLI/UI当前显示原始JSONL，
+SDK没有用户必须阅读全部材料才可批准的强制规则。

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 7adfa3ea86b3b3961e67df9140895e48f2aab8fc
+version: 8
+code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
 owners:
   - core
 modules:
@@ -254,3 +254,19 @@ Domain本身不连接数据库。值类型通过上层Event、Plan或Config合�
 显式新Schema进入既有完整Tool指纹；领域层不导入执行器/Owner/Runtime，也不授予Secret权限。
 [完整详设](../changes/m09-4a-custom-success-contract.md)和[合同测试](../../tests/domain/test_public_output_schema.py)
 说明字段、流程、伪代码、预算、取消和兼容边界。
+
+
+## 审阅原文保护与唯一分页定义
+
+[`artifact_pagination.py`](../../src/harnessix/domain/artifact_pagination.py)保存原Artifact
+容量常量及唯一paginate_artifact_lines算法；按完整UTF8记录同时限制24KiB与200条，
+保持1MiB正文、10000记录、50页、5秒消费预算。原artifacts合同和protocol客户端门面
+仅别名导出，不新增预算或业务鉴权。
+
+[`review_text_for_protection`](../../src/harnessix/domain/review_text.py)只识别已知
+Workspace/Git JSONL的summary/entry/text，校验LF、顺序、索引、UTF8长度、完整SHA后
+返回整个text拼接值。未知旧格式返回None，损坏已知格式失败，检查点贯穿有界处理。
+该模块没有IO、存储、Owner、Session或批准能力；不是正式Git合同解析器或认证入口。
+[完整详设](../changes/m09-r4-git-review.md)给出接口、字段、伪代码和取舍，
+[公开保护测试](../../tests/product_config/test_git_delivery_review_protection.py)验证跨块、
+损坏和旧格式边界；声明结果不得计为真实认证或商业完成。

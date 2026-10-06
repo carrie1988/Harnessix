@@ -33,7 +33,7 @@ supersedes: []
 | 已实现的数据及IO能力 | 尚未完成的产品业务 |
 |---|---|
 | Core2/Plan2严格完整合同和显式新代际编解码 | 默认Git Planner/Executor与Tool注册 |
-| 原唯一CAS规范存读及原Route完整资源恢复 | 实际Review JSONL producer及用户审批展示 |
+| 原唯一CAS规范存读及原Route完整资源恢复 | 默认Git Planner/Executor与业务交付；正式Review组件见新详设 |
 | 原唯一完整材料算法返回同次完整Diff | ProductLink/NativeBridge与A/T2/D写闭包 |
 | Core1/Plan1旧字节和Schema兼容 | 独立Commit、Backup2、三平台及商业验收 |
 
@@ -265,3 +265,10 @@ Ruff/Mypy/Secret扫描、渲染图像、失败与修复、Review Packet和manife
 [声明与原CAS支持代码](../../tests/support/git_delivery_observed_core.py)逐字段定义预期Core、
 UserObservation及Plan，并独立规范编码。它不读取真实认证凭据、不调用模型、不创建批准；
 Windows平台参数仅验证声明与路径规则，不能作为Windows原生执行验收。
+
+
+## 10. 后续Review组件接线状态
+
+[正式Git Review详细设计](m09-r4-git-review.md)复用本组件返回的同次完整Diff、原Core2存读与Route恢复，
+不另算Diff或新建存储。原验证包仍是本组件历史范围，不被后续测试覆盖。默认Git业务写入与
+Backup2、三平台及商业验收继续开放。

@@ -11,11 +11,28 @@ from pydantic import JsonValue
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
+from harnessix.domain.review_text import review_text_for_protection
 
 PUBLIC_PROTECTION_POLICY = "harnessix.public-output-protection/v1"
 PUBLIC_PROTECTION_TIMEOUT = 10.0
 
 BinaryStreamDecoder = Callable[[bytes, Callable[[], None]], tuple[bytes, ...]]
+
+
+async def protect_review_jsonl(
+    protection: PublicOutputProtection | None, body: bytes, cancel: CancelToken
+) -> None:
+    """已知完整Review重建原文再扫描，发布和重开读取共用原10秒保护期限。"""
+    if protection is None:
+        return
+
+    def check(checkpoint: Callable[[], None]) -> None:
+        protection.assert_public_jsonl(body, checkpoint=checkpoint)
+        text = review_text_for_protection(body, checkpoint=checkpoint)
+        if text is not None:
+            protection.assert_public_json(text, checkpoint=checkpoint)
+
+    await _protect(check, cancel)
 
 
 class PublicOutputProtection(Protocol):

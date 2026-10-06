@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 18
+code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
 owners:
   - core
 modules:
@@ -764,3 +764,20 @@ Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session�
 [总体与详设](../changes/m09-4a-authenticated-artifact-body.md)包含四图、字段、伪代码与源码导航；
 [测试](../../tests/artifacts/test_authenticated_body.py)和[固定版本验收](../validation/authenticated-artifact-2026-09-28-v1/README.md)
 限定当前证据范围，不宣称0.9.4a完成。
+
+
+## 正式 Git Review与现行完整原文保护
+
+原[`ArtifactPublicationGuard.check_body`](../../src/harnessix/artifacts/publication.py)的
+action_review分支调用原[`protect_review_jsonl`](../../src/harnessix/agent/publication.py)。
+已知Workspace/Git规范正文在发布及每次读取时验证记录连续性、完整UTF8大小与SHA，
+重组完整原文后接受当前Scope检查；其他purpose及未知旧通用Review行为保持。
+该检查不替代原持久MAC、Session反向引用、Workspace Scope、TTL与Owner核验。
+
+原[`read_page`](../../src/harnessix/artifacts/sqlite.py)委托共享
+[`paginate_artifact_lines`](../../src/harnessix/domain/artifact_pagination.py)，
+保持原24KiB及200记录裁切。Git生产者使用同一算法预检真实50页，不另建正文或分页存储。
+稳定ID发布、确认丢失查询先行恢复、原TTL及无审批回指孤立Artifact不可读保持不变，
+没有迁移或新表。详见[完整设计](../changes/m09-r4-git-review.md)、
+[实际认证发布恢复](../../tests/product_config/test_git_delivery_review_controls.py)与
+[实际SDK消费](../../tests/product_config/test_git_delivery_review.py)。默认Git执行仍待独立接线验收。

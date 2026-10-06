@@ -28,7 +28,7 @@ from harnessix.product_config.workspace_patch_source_contracts import (
     product_git_delivery_source_digest,
 )
 from harnessix.trusted_actions.router import TrustedActionRouter
-from harnessix.workspace.contracts import WorkspaceResourceRequest, WorkspaceSnapshot
+from harnessix.workspace.contracts import PlatformKind, WorkspaceResourceRequest, WorkspaceSnapshot
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.paths import path_comparison_key
 from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
@@ -233,15 +233,7 @@ def collect_git_delivery_source(
         checkpoint,
         snapshot_ports if use_parent_history else None,
     )
-    mutations = tuple(
-        WorkspaceMutation(path=path, before=before, after=after)
-        for path, (before, after) in sorted(
-            versions.items(), key=lambda pair: path_comparison_key(pair[0], workspace.platform)
-        )
-        if before != after
-    )
-    if not mutations:
-        raise KernelError("git_delivery_source_no_change", "Git交付来源没有净变化")
+    mutations = _net_mutations(versions, workspace.platform, checkpoint)
     model = ProductGitDeliverySourceV2 if use_parent_history else ProductGitDeliverySource
     candidate = model.model_construct(
         thread_id=thread.thread_id,
@@ -256,3 +248,76 @@ def collect_git_delivery_source(
     )
     checkpoint()
     return result
+
+
+def _net_mutations(
+    versions: dict[str, tuple[WorkspaceFileVersion, WorkspaceFileVersion]],
+    platform: PlatformKind,
+    checkpoint: Callable[[], None],
+) -> tuple[WorkspaceMutation, ...]:
+    """采集与只读复核共用原净变更组成，净零路径仍由完整versions单独验真。"""
+    mutations = []
+    for path, (before, after) in sorted(
+        versions.items(), key=lambda pair: path_comparison_key(pair[0], platform)
+    ):
+        checkpoint()
+        if before != after:
+            mutations.append(WorkspaceMutation(path=path, before=before, after=after))
+    if not mutations:
+        raise KernelError("git_delivery_source_no_change", "Git交付来源没有净变化")
+    return tuple(mutations)
+
+
+def verify_git_delivery_source(
+    thread: Thread,
+    source: ProductGitDeliverySourceV2,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    *,
+    checkpoint: Callable[[], None],
+    snapshot_ports: WorkspaceSnapshotPorts,
+) -> None:
+    """已认证Thread下只读复核原Patch和所有最终版本；不重捕获、不追加CAS。"""
+    checkpoint()
+    if type(source) is not ProductGitDeliverySourceV2 or source.thread_id != thread.thread_id:
+        raise KernelError("git_delivery_source_not_owned", "Git交付来源不属于原认证会话")
+    owned = _owned_selection(
+        thread,
+        tuple(item.transaction_id for item in source.patches),
+        router,
+        transactions,
+        checkpoint,
+    )
+    versions = _merge_versions(owned, checkpoint)
+    base, workspace = owned[0].record.plan.source, source.workspace
+    if (
+        tuple(item.reference for item in owned) != source.patches
+        or _net_mutations(versions, workspace.platform, checkpoint) != source.mutations
+        or any(
+            getattr(base, name) != getattr(workspace, name)
+            for name in ("platform", "workspace_id", "root_path_digest", "root_identity")
+        )
+        or workspace.cwd != "."
+        or workspace.external_roots
+        or {(item.location, item.path, item.access) for item in workspace.resources}
+        != {("workspace", path, "read") for path in (*versions, ".")}
+    ):
+        raise KernelError("git_delivery_source_changed", "Git交付完整来源与原Patch链不一致")
+    root = Path(thread.workspace)
+    _verify_final_snapshot(workspace, root, checkpoint, snapshot_ports)
+    observed = {item.path: item for item in workspace.resources}
+    for path, (_, expected) in versions.items():
+        checkpoint()
+        if observed[path].kind == "missing":
+            actual = WorkspaceFileVersion(presence="absent", size=0)
+        elif observed[path].kind == "file":
+            body, mode = _read_existing(root, path, workspace.platform, checkpoint=checkpoint)
+            actual = WorkspaceFileVersion(
+                presence="file", sha256=hashlib.sha256(body).hexdigest(), size=len(body), mode=mode
+            )
+        else:
+            raise KernelError("git_delivery_source_changed", "Git交付目标不再是普通文件")
+        if actual != expected:
+            raise KernelError("git_delivery_source_changed", "Git交付最终版本或模式已经变化")
+    _verify_final_snapshot(workspace, root, checkpoint, snapshot_ports)
+    checkpoint()

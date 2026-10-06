@@ -1,0 +1,234 @@
+"""正式Git Review：原认证历史、全Core材料、原Artifact发布及唯一审批回指。"""
+
+from __future__ import annotations
+
+import asyncio
+from collections.abc import Callable
+from uuid import UUID, uuid5
+
+from harnessix.agent.approvals import trusted_action_invocation_id
+from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
+from harnessix.agent.errors import KernelError
+from harnessix.agent.execution import ToolExecutionScope
+from harnessix.agent.models import Thread, ToolCallContent, Turn
+from harnessix.agent.publication import protect_json
+from harnessix.agent.reducer import get_turn
+from harnessix.agent.trusted_action_contracts import TrustedActionReview
+from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.delivery.git_material_cas import GitMaterialCAS
+from harnessix.domain.models import utc_now
+from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS
+from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
+from harnessix.product_config.git_delivery_plan_materials import (
+    read_product_git_delivery_core_materials_v2,
+)
+from harnessix.product_config.git_delivery_plan_snapshot import _snapshot
+from harnessix.product_config.git_delivery_process import GitOperationBudget
+from harnessix.product_config.git_delivery_review_codec import (
+    build_product_git_action_review,
+    encode_product_git_action_review,
+)
+from harnessix.product_config.git_delivery_review_host import require_git_review_host
+from harnessix.product_config.git_delivery_route_core import load_product_git_delivery_route_core_v2
+from harnessix.product_config.git_delivery_source import verify_git_delivery_source
+from harnessix.product_config.git_user_observation import _native_checkpointer
+from harnessix.session.sqlite_history import AuthenticatedThreadHistory
+from harnessix.tools.git import GitReadRuntime
+from harnessix.trusted_actions.contracts import ActionRouteSnapshot
+from harnessix.trusted_actions.router import TrustedActionRouter
+from harnessix.trusted_actions.versioned_contracts import ActionRouteSnapshotV2
+from harnessix.workspace.native_observation_io import UpstreamCheckpointError
+from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
+
+_NAMESPACE = UUID("41bb782b-9351-462c-a8a8-df2b98ea4ec0")
+
+
+def _changed() -> KernelError:
+    """公开失败不包含作者消息、来源正文或底层数据库错误。"""
+    return KernelError("git_action_review_changed", "Git审阅会话或原计划已经变化")
+
+
+class ProductGitReviewProvider:
+    """借原宿主生产完整审阅；产品默认Git注册与执行仍由正式装配负责。"""
+
+    def __init__(
+        self,
+        router: TrustedActionRouter,
+        core_store: ProductGitDeliveryCoreStore,
+        artifacts: SQLiteArtifactStore,
+        reader: GitReadRuntime,
+        *,
+        snapshot_ports: WorkspaceSnapshotPorts,
+        workspace_scope: str,
+    ) -> None:
+        self._router, self._core_store = router, core_store
+        self._artifacts, self._reader = artifacts, reader
+        self._ports, self._workspace_scope = snapshot_ports, workspace_scope
+
+    async def review(
+        self,
+        route: ActionRouteSnapshot,
+        thread: Thread,
+        turn: Turn,
+        call: ToolCallContent,
+        cancel: CancelToken,
+    ) -> TrustedActionReview:
+        """单次60秒覆盖全部阶段；取消、超时不重置期限或签发部分审阅。"""
+        await asyncio.sleep(0)
+        if type(cancel) is not CancelToken:
+            raise KernelError("git_action_review_host_invalid", "Git审阅取消宿主无效")
+        cancel.checkpoint()
+        references = (
+            self._router,
+            self._core_store,
+            self._artifacts,
+            self._reader,
+            self._ports,
+            self._workspace_scope,
+        )
+        budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
+        host = require_git_review_host(
+            self._router,
+            self._core_store,
+            self._artifacts,
+            self._reader,
+            self._ports,
+            self._workspace_scope,
+        )
+
+        def control() -> None:
+            cancel.checkpoint()
+            budget.remaining()
+            host()
+            current = (
+                self._router,
+                self._core_store,
+                self._artifacts,
+                self._reader,
+                self._ports,
+                self._workspace_scope,
+            )
+            if any(
+                actual is not original for actual, original in zip(current, references, strict=True)
+            ):
+                raise KernelError("git_action_review_host_invalid", "Git审阅原资源引用已经变化")
+
+        check = parent_cancel_checkpointer(control)
+        check()
+        try:
+            async with asyncio.timeout(budget.remaining()):
+                result = await cancel.run(
+                    _produce(self, route, thread, turn, call, cancel, budget, check)
+                )
+                # 托管任务的finally也会await；公开交付前必须在父任务末端重新检查。
+                check()
+                if result.diff_artifact is None or result.diff_artifact.expires_at <= utc_now():
+                    raise KernelError("artifact_expired", "Git审阅材料已经过期")
+                return result
+        except TimeoutError:
+            raise KernelError("git_process_timeout", "Git审阅总期限已耗尽") from None
+
+
+async def _history(
+    provider: ProductGitReviewProvider,
+    thread: Thread,
+    turn: Turn,
+    call: ToolCallContent,
+    route: ActionRouteSnapshotV2,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    check: Callable[[], None],
+    expected: AuthenticatedThreadHistory | None = None,
+) -> AuthenticatedThreadHistory:
+    """三次均为实际认证完整重放；非认证模型外形或摘要不能替代原来源。"""
+    history = await provider._artifacts.session.authenticated_thread_history(
+        thread.thread_id, cancel=cancel, deadline=budget._deadline, checkpoint=check
+    )
+    check()
+    if history.thread != thread or (expected is not None and history != expected):
+        raise _changed()
+    if get_turn(history.thread, turn.turn_id) != turn:
+        raise _changed()
+    ToolExecutionScope.for_pending_call(history.thread, turn.turn_id, call)
+    actual = provider._router.status(
+        trusted_action_invocation_id(thread.thread_id, turn.turn_id, call), checkpoint=check
+    )
+    if actual != route or route.state != "pending_approval":
+        raise _changed()
+    check()
+    return history
+
+
+async def _produce(
+    provider: ProductGitReviewProvider,
+    supplied: ActionRouteSnapshot,
+    thread: Thread,
+    turn: Turn,
+    call: ToolCallContent,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    check: Callable[[], None],
+) -> TrustedActionReview:
+    """原CAS完整恢复后只读复核来源；仅原Artifact发布允许新增持久状态。"""
+    route = _snapshot(supplied, ActionRouteSnapshotV2, check)
+    thread, turn, call = (
+        _snapshot(thread, Thread, check),
+        _snapshot(turn, Turn, check),
+        _snapshot(call, ToolCallContent, check),
+    )
+    history = await _history(provider, thread, turn, call, route, cancel, budget, check)
+    core = load_product_git_delivery_route_core_v2(
+        provider._core_store, route.plan, checkpoint=check
+    )
+    publication = provider._artifacts.session._publication
+    assert publication is not None
+    if (core.store_id, core.key_id, core.thread_id, core.turn_id, core.call) != (
+        publication._store_id,
+        publication._key_id,
+        thread.thread_id,
+        turn.turn_id,
+        call,
+    ):
+        raise _changed()
+
+    def source_check() -> None:
+        try:
+            verify_git_delivery_source(
+                history.thread,
+                core.baseline.source,
+                provider._router,
+                provider._core_store.store,
+                checkpoint=_native_checkpointer(check),
+                snapshot_ports=provider._ports,
+            )
+        except UpstreamCheckpointError as error:
+            raise error.error from None
+
+    source_check()
+    materials = read_product_git_delivery_core_materials_v2(
+        GitMaterialCAS(provider._core_store.store), core, checkpoint=check
+    )
+    # 先保护完整原文，避免同一密钥被正文切块边界分开后绕过逐记录扫描。
+    await protect_json(publication._events._protection, materials.diff.content.text, cancel)
+    check()
+    body = encode_product_git_action_review(
+        build_product_git_action_review(core, materials.diff, checkpoint=check), checkpoint=check
+    )
+    await _history(provider, thread, turn, call, route, cancel, budget, check, history)
+    source_check()
+    ref = await provider._artifacts.publish_action_review(
+        thread.thread_id,
+        turn.turn_id,
+        call,
+        body,
+        artifact_id=uuid5(
+            _NAMESPACE, f"{route.plan.execution.plan_id}:{core.fingerprint}:git-review:v1"
+        ),
+        workspace_scope=provider._workspace_scope,
+        expected_sequence=thread.sequence,
+    )
+    check()
+    await _history(provider, thread, turn, call, route, cancel, budget, check, history)
+    source_check()
+    check()
+    return TrustedActionReview(diff_artifact=ref)

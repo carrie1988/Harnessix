@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
+version: 10
+code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
 owners:
   - core
 modules:
@@ -1561,3 +1561,17 @@ Artifact Reader.session在构造时要求同一对象，拒绝早于Workspace解
 
 完整架构、五图、字段、接口、错误/取消/恢复、部署和源码导航见[查询边界详设](../changes/m09-4a-query-publication-boundary.md)。
 旧未登记历史、跨重启Seal、全部Provider、内部聚合/Store权限和自定义Request Store物理身份仍开放，不宣称0.9.4a完成。
+
+
+## Artifact客户端预算门面与通用Git审阅
+
+[`artifact_limits.py`](../../src/harnessix/protocol/artifact_limits.py)仅重导出
+[`domain.artifact_pagination`](../../src/harnessix/domain/artifact_pagination.py)中的
+200条/50页/5秒原常量，使客户端不依赖存储实现；没有新协议消息、Schema或运行状态。
+Git Review仍由原ArtifactRef和patch_batch审批公开映射消费，原私有Git合同不进入协议DTO。
+审批回指、分页完整性、取消及期限按原协议和SDK处理，不能把Ref或正文SHA当成执行权。
+
+[详细设计](../changes/m09-r4-git-review.md)描述原Gateway回指与客户端完整读取时序；
+[实际SDK测试](../../tests/product_config/test_git_delivery_review.py)验证多页读取和原拒绝，
+[UI回归](../../tests/product_ui/test_interactions.py)保持原客户端期限。默认Git写接线及
+批准后执行没有由此门面实现，仍须后续单独验收。

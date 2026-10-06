@@ -1,0 +1,166 @@
+{
+  "$defs": {
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "ToolCallContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_call",
+          "default": "tool_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "provider_call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Provider Call Id",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "requires_approval": {
+          "default": false,
+          "title": "Requires Approval",
+          "type": "boolean"
+        },
+        "tool_fingerprint": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Fingerprint"
+        }
+      },
+      "required": [
+        "call_id",
+        "provider_call_id",
+        "tool",
+        "tool_version",
+        "effect_class"
+      ],
+      "title": "ToolCallContent",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "独立Git首记录，完整用户意图与Core内容地址不可省略。",
+  "properties": {
+    "record_type": {
+      "const": "summary",
+      "default": "summary",
+      "title": "Record Type",
+      "type": "string"
+    },
+    "spec_version": {
+      "const": "harnessix.product-git-action-review/v1",
+      "default": "harnessix.product-git-action-review/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "core_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Core Fingerprint",
+      "type": "string"
+    },
+    "delivery_id": {
+      "format": "uuid",
+      "title": "Delivery Id",
+      "type": "string"
+    },
+    "call": {
+      "$ref": "#/$defs/ToolCallContent"
+    },
+    "workspace_revision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Workspace Revision",
+      "type": "string"
+    },
+    "base_commit_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Base Commit Oid",
+      "type": "string"
+    },
+    "target_tree_oid": {
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+      "title": "Target Tree Oid",
+      "type": "string"
+    },
+    "file_count": {
+      "maximum": 256,
+      "minimum": 1,
+      "title": "File Count",
+      "type": "integer"
+    },
+    "diff_utf8_bytes": {
+      "maximum": 67108864,
+      "minimum": 1,
+      "title": "Diff Utf8 Bytes",
+      "type": "integer"
+    },
+    "diff_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Diff Sha256",
+      "type": "string"
+    },
+    "complete": {
+      "const": true,
+      "default": true,
+      "title": "Complete",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "core_fingerprint",
+    "delivery_id",
+    "call",
+    "workspace_revision",
+    "base_commit_oid",
+    "target_tree_oid",
+    "file_count",
+    "diff_utf8_bytes",
+    "diff_sha256"
+  ],
+  "title": "ProductGitActionReviewSummary",
+  "type": "object"
+}

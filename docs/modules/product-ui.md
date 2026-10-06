@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 19
+code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
 owners:
   - product
 modules:
@@ -993,3 +993,18 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 恢复字段及稳定ID行为见[完整恢复设计](../changes/m09-r1-product-state-restore.md)。
 未决状态由Server在准备Root/Key/Store前拒绝；没有在线恢复按钮或自动回退操作。
+
+
+## Git Review通用消费与不变的客户端预算
+
+[`interaction_service.py`](../../src/harnessix/product_ui/interaction_service.py)从
+[`protocol.artifact_limits`](../../src/harnessix/protocol/artifact_limits.py)别名取得
+原200条/50页/5秒读取预算，与后端唯一分页定义一致；没有UI到artifacts的新跨层依赖。
+现有交互流程继续按完整Ref、偏移、条数、正文UTF8字节及SHA读取，正文仍显示原JSONL。
+没有Git专用Diff渲染、额外Approval命令或强制读完的批准策略。
+
+Git审阅材料沿既有patch_batch审批映射和原diff_artifact字段，失败仍走原交互错误处理。
+实际SDK多页读完后拒绝的测试在
+[Git Review专项](../../tests/product_config/test_git_delivery_review.py)，UI原交互回归仍为
+[interactions](../../tests/product_ui/test_interactions.py)。组件不证明所有设备显示SLO或
+默认Git执行能力；[完整设计](../changes/m09-r4-git-review.md)列出时序、部署和后续边界。

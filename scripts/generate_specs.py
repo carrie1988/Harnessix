@@ -230,6 +230,10 @@ from harnessix.product_config.git_delivery_plan_contracts import (
     ProductGitDeliveryCore,
     ProductGitDeliveryPlan,
 )
+from harnessix.product_config.git_delivery_review_contracts import (
+    ProductGitActionReviewDocument,
+    ProductGitActionReviewSummary,
+)
 from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliveryBaselineV2,
     ProductGitDeliverySourceV2,
@@ -344,6 +348,8 @@ def generate_specs(output: Path) -> None:
         ("product-git-delivery-plan-v2", ProductGitDeliveryPlanV2),
         ("product-git-delivery-plan-v1", ProductGitDeliveryPlan),
         ("product-git-user-observation-v1", ProductGitUserObservation),
+        ("product-git-action-review-summary-v1", ProductGitActionReviewSummary),
+        ("product-git-action-review-document-v1", ProductGitActionReviewDocument),
     ):
         write_json(output / f"{name}.schema.json", model.model_json_schema())
     write_json(output / "agent-event-v20.schema.json", AgentEvent.model_json_schema())

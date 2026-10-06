@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
@@ -201,23 +200,13 @@ class WorkspaceActionReviewDocument(ContractModel):
         return self
 
     def to_jsonl(self) -> bytes:
-        records: tuple[ContractModel, ...] = (self.summary, *self.entries, *self.chunks)
-        body = b"".join(
-            (
-                json.dumps(
-                    item.model_dump(mode="json", warnings="error"),
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                    allow_nan=False,
-                )
-                + "\n"
-            ).encode("utf-8")
-            for item in records
+        from harnessix.delivery.review_jsonl import encode_review_records
+
+        return encode_review_records(
+            (self.summary, *self.entries, *self.chunks),
+            checkpoint=lambda: None,
+            max_bytes=MAX_WORKSPACE_ACTION_REVIEW_BYTES,
         )
-        if len(body) > MAX_WORKSPACE_ACTION_REVIEW_BYTES:
-            raise ValueError("Workspace Action Review超过Artifact上限")
-        return body
 
 
 def build_workspace_action_review(

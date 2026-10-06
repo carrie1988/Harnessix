@@ -9,15 +9,21 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, ConfigDict, Field, model_validator
 
+from harnessix.domain.artifact_pagination import (
+    MAX_ARTIFACT_BYTES as MAX_ARTIFACT_BYTES,
+)
+from harnessix.domain.artifact_pagination import (
+    MAX_ARTIFACT_RECORDS as MAX_ARTIFACT_RECORDS,
+)
+from harnessix.domain.artifact_pagination import (
+    MAX_PAGE_BYTES as MAX_PAGE_BYTES,
+)
 from harnessix.domain.models import ContractModel
 
 if TYPE_CHECKING:
     from harnessix.agent.models import ToolResultContent
     from harnessix.artifacts.ports import ArtifactPublisher
 
-MAX_ARTIFACT_BYTES = 1024 * 1024
-MAX_ARTIFACT_RECORDS = 10000
-MAX_PAGE_BYTES = 24 * 1024
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 type HistoryArtifactPurpose = Literal[
     "tool_result",

@@ -14,6 +14,7 @@ from harnessix.agent.publication import (
     PublicOutputProtection,
     protect_binary_jsonl,
     protect_jsonl,
+    protect_review_jsonl,
 )
 from harnessix.artifacts.binary_projection import decode_process_artifact
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES
@@ -51,6 +52,8 @@ class ArtifactPublicationGuard:
                 lambda data, checkpoint: decode_process_artifact(data, purpose, checkpoint),
                 CancelToken(),
             )
+        elif purpose == "action_review":
+            await protect_review_jsonl(self.protection, body, CancelToken())
         else:
             await protect_jsonl(self.protection, body, CancelToken())
         if self.binding is not None:

@@ -26,6 +26,15 @@ from harnessix.product_ui.session import (
     PreparedClientCommand,
     RecoverableAgentSession,
 )
+from harnessix.protocol.artifact_limits import (
+    ARTIFACT_PAGE_LIMIT as ARTIFACT_PAGE_LIMIT,
+)
+from harnessix.protocol.artifact_limits import (
+    ARTIFACT_READ_TIMEOUT_SECONDS as ARTIFACT_READ_TIMEOUT_SECONDS,
+)
+from harnessix.protocol.artifact_limits import (
+    MAX_ARTIFACT_PAGES as MAX_ARTIFACT_PAGES,
+)
 from harnessix.protocol.contracts import (
     MAX_PROTOCOL_TEXT_CHARS,
     ApprovalRespondParams,
@@ -35,9 +44,6 @@ from harnessix.protocol.contracts import (
 )
 from harnessix.sdk import AgentClient, AgentSDKError
 
-ARTIFACT_PAGE_LIMIT: Final = 200
-MAX_ARTIFACT_PAGES: Final = 50
-ARTIFACT_READ_TIMEOUT_SECONDS: Final = 5.0
 LOCAL_APPROVAL_ACTOR: Final = "harnessix-code-local-user"
 
 

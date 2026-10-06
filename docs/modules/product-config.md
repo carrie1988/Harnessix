@@ -2548,7 +2548,20 @@ Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末
 [完整详细设计](../changes/m09-r4-git-observed-core.md)定义独立Core2/Plan2。新代际唯一保存完整UserObservation，
 原CAS存读、Route恢复和原材料算法均保留所有字段，不把配置值塞入旧名称字段。
 原Core1/Plan1字节兼容，错代际拒绝，不新建Store、SQL或认证用途。
-本组件仅闭合数据与IO边界；默认Planner/Review/Executor及Git业务写与恢复仍待实施。
+本组件仅闭合数据与IO边界；默认Planner/Executor及Git业务写与恢复仍待实施；正式Review组件见下文。
 
 [正式组件验收](../validation/git-core-observation-2026-10-07-v1/README.md)留存同候选安装、原Schema及门禁字节、完整测试和失败证据；
 声明合同/原CAS验证与真实认证SDK回归分别记录，不据此关闭默认Git业务或商业发布门禁。
+
+
+## 正式Git Review与原Artifact审批链
+
+[完整详细设计](../changes/m09-r4-git-review.md)将完整Core2和同次全Diff接入正式Git审阅合同与原认证Artifact。
+生产者借同一原Session/Router/CAS/Scope/Owner，复核真实成功Patch连续链和当前Source2，
+按唯一JSONL及24KiB/200条/50页原算法预检。完整原文先保护，禁止跨正文块规避敏感材料检查。
+旧Workspace Review字节与公共审批形状保持，Git不虚构Workspace事务ID或新增存储。
+
+[组件验证](../validation/git-review-2026-10-07-v1/README.md)区分严格声明级测试与真实认证SDK发布、分页和审批回指。
+此组件没有默认注册Git写工具，没有业务Git写效果；默认Planner/Executor、业务关联、
+A/T2/D、独立Commit、Backup2及商业验收继续开放。CLI/UI当前显示原始JSONL，
+SDK没有用户必须阅读全部材料才可批准的强制规则。

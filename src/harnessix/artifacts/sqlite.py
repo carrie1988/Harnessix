@@ -47,6 +47,7 @@ from harnessix.artifacts.contracts import (
 )
 from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
+from harnessix.domain.artifact_pagination import paginate_artifact_lines
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.output_artifact import parse_process_output_document
 from harnessix.session.sqlite import SQLiteSessionStore
@@ -372,18 +373,11 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             await self._publication.check_body(row["body"], purpose=row["purpose"])
         if offset > len(lines):
             raise KernelError("artifact_invalid_cursor", "Artifact 偏移超过记录范围")
-        selected, size = [], 0
-        for line in lines[offset : offset + limit]:
-            encoded = len(line.encode()) + 1
-            if size + encoded > MAX_PAGE_BYTES:
-                break
-            selected.append(line + "\n")
-            size += encoded
-        end = offset + len(selected)
+        text, end = paginate_artifact_lines(lines, offset, limit)
         return ArtifactPage(
             artifact=ref,
             offset=offset,
-            text="".join(selected),
+            text=text,
             next_offset=end if end < len(lines) else None,
         )
 

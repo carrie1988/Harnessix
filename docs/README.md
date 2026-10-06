@@ -366,3 +366,7 @@ Artifact字段缺少证据出发，说明静态字段来源、失败与恢复、
 [完整集合分组](changes/m09-r1-single-child-reaper.md#10-原生验收进程分组与完整性)只调整37/75编排，
 所有112项、恢复断言、原步骤保护和产品期限保留；完整原生门禁尚未通过。
 [安装手册](operations/installation.md)现行操作使用内部1.0.0rc1及哈希锁定源码外环境，原历史版本事实不改写。
+
+
+[正式Git Review详设](changes/m09-r4-git-review.md)与[组件验收](validation/git-review-2026-10-07-v1/README.md)
+定义完整新审阅、原认证Artifact与审批回指；默认Git业务写入及商业验收仍未完成。

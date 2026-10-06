@@ -1,0 +1,266 @@
+{
+  "schema": "harnessix.git-review-validation/v1",
+  "baseline_revision": "3e108d7eddbdff01b952ad8a9c9e403ed58e57be",
+  "scope": "formal-Git-review-original-authenticated-Artifact-and-complete-text-protection-only",
+  "status": "PASS",
+  "final": {
+    "installed_new": {
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 50.024,
+      "passed": 39
+    },
+    "new_evidence_classes": {
+      "declaration_codec_and_public_protection": 20,
+      "actual_authenticated_sdk_orchestration": 19,
+      "git_business_execution": 0
+    },
+    "installed_associated": {
+      "tests": 1813,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 76.897,
+      "passed": 1813
+    },
+    "governance": {
+      "tests": 1413,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 38.645,
+      "passed": 1413
+    },
+    "wheel": {
+      "source_modules": 493,
+      "all_bytes_match": true,
+      "wheel": "harnessix-1.0.0rc1-py3-none-any.whl",
+      "wheel_sha256": "f7ecb0cac052c23028e93cd784e1b5f4e9bc02a67a4d4a872e1c13cce015938f",
+      "dependency_environment": "managed-existing-test-venv",
+      "fresh_dependency_environment": false
+    },
+    "installed_imports": {
+      "new": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 338,
+        "pytest_exit_code": 0
+      },
+      "associated": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 334,
+        "pytest_exit_code": 0
+      }
+    },
+    "schema_compatibility": {
+      "baseline_count": 279,
+      "all_original_bytes_unchanged": true,
+      "changed": [],
+      "new_schemas": [
+        "spec/product-git-action-review-summary-v1.schema.json",
+        "spec/product-git-action-review-document-v1.schema.json"
+      ]
+    },
+    "original_gates": {
+      "all_bytes_unchanged": true,
+      "paths": [
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.py",
+          "sha256": "f2e57fe1168703757895a8d7a61baf099d8e02dfb99c548963275d3ca666782c"
+        },
+        {
+          "path": "governance/readability-policy-v1.json",
+          "sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c"
+        },
+        {
+          "path": "governance/documentation-policy-v1.json",
+          "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha256": "edd750e5dfa3850f7d80a85b2aad2fc76f09f42f5bd4d0c11ac1a4020b129fad"
+        },
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.json",
+          "sha256": "d76e2a31c2e6ef569dac79096aeef8ff1753ffc600a6441c69d228aef242e668"
+        }
+      ],
+      "native_gate_semantics": "Native18/27 selectors/13 Hooks and original bounds unchanged"
+    },
+    "quality": {
+      "ruff": "PASS",
+      "format": {
+        "result": "PASS",
+        "files": 1753
+      },
+      "mypy": {
+        "result": "PASS",
+        "source_files": 493
+      },
+      "readability": {
+        "result": "PASS",
+        "source_files": 493,
+        "package_dependency_edges": 151
+      },
+      "schema_generator": "PASS",
+      "documentation": {
+        "status": "PASS",
+        "changed_path_count": 40,
+        "document_count": 561,
+        "findings": [],
+        "link_count": 12869,
+        "mermaid_count": 1067,
+        "policy_version": "harnessix.documentation-policy/v1",
+        "source_package_count": 26
+      },
+      "secret_scan": {
+        "result": "PASS",
+        "complete_inputs": 5027,
+        "fixed_rule_hits": 0,
+        "candidate_owned_files_staged_before_scan": 40,
+        "wheel_archive_members_included": true
+      }
+    },
+    "diagrams": {
+      "rendered": 3,
+      "visually_inspected": 3,
+      "result": "PASS",
+      "rows": [
+        {
+          "diagram": 1,
+          "source_sha256": "1923d6d05434f840d28e26c52d9433ecba170f5e7f335ff672df6d6b193a6a58",
+          "render_sha256": "90a22bcbf0b6952d5ef8c5445b39c83443d551cba5c9d3f61b703ee2d288bd28",
+          "checks": [
+            "节点箭头完整",
+            "中文无截断重叠",
+            "当前组件及原认证消费边界准确"
+          ]
+        },
+        {
+          "diagram": 2,
+          "source_sha256": "77c9151370fdc96b5b973db904f085d497f0ee66bceb7584918b6fd55393c453",
+          "render_sha256": "498afe496e1a5edc4de1418f0ab6f09a44562d045d2895c5cb47546ab72ae80d",
+          "checks": [
+            "节点箭头完整",
+            "中文无截断重叠",
+            "当前组件及原认证消费边界准确"
+          ]
+        },
+        {
+          "diagram": 3,
+          "source_sha256": "724d9a94427b23a8a1bf56d4065239e7a69c112d1b174a451f7e08f4fa1d658a",
+          "render_sha256": "fc98ad6edf2aadb728953275044ce95b4562712538f01a766fa8b7f3a0401471",
+          "checks": [
+            "节点箭头完整",
+            "中文无截断重叠",
+            "当前组件及原认证消费边界准确"
+          ]
+        }
+      ]
+    },
+    "source_inputs": {
+      "count": 1717,
+      "main_clone_exact": true,
+      "source_inputs_sha256": "deb68f0fb16fb839e2deb0647a981c9b8b20904a357e7cbfe08741d0f0ea2842",
+      "validation_package_self_excluded": true
+    }
+  },
+  "retained_failures": {
+    "dependency_edges": "Three original policy violations repaired with domain/protocol ownership; no policy relaxation",
+    "readability": "Original complexity gate rejection repaired with same-module single responsibilities",
+    "system_git_materials": {
+      "tests": 1126,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 33.778,
+      "passed": 1124
+    },
+    "modern_git_materials": {
+      "tests": 1126,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 34.898,
+      "passed": 1126
+    },
+    "fixture_retries": [
+      "original model-output limit exceeded",
+      "offline response script step mismatch",
+      "prior Artifact correctly rejected before new Git producer"
+    ],
+    "governance_incomplete_candidate": {
+      "tests": 1413,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0,
+      "seconds": 38.324,
+      "passed": 1412
+    },
+    "governance_initial_cause": "Validation documents were not copied to the candidate before the first check; final owned candidate and unchanged policy passed",
+    "documentation_initial": {
+      "changed_path_count": 35,
+      "document_count": 561,
+      "findings": [
+        {
+          "code": "doc_sync_module_required",
+          "line": null,
+          "message": "源码包agent变化时必须同步现行模块设计",
+          "path": "docs/modules/agent.md"
+        },
+        {
+          "code": "doc_sync_module_required",
+          "line": null,
+          "message": "源码包artifacts变化时必须同步现行模块设计",
+          "path": "docs/modules/artifacts.md"
+        },
+        {
+          "code": "doc_sync_module_required",
+          "line": null,
+          "message": "源码包domain变化时必须同步现行模块设计",
+          "path": "docs/modules/domain.md"
+        },
+        {
+          "code": "doc_sync_module_required",
+          "line": null,
+          "message": "源码包product_ui变化时必须同步现行模块设计",
+          "path": "docs/modules/product-ui.md"
+        },
+        {
+          "code": "doc_sync_module_required",
+          "line": null,
+          "message": "源码包protocol变化时必须同步现行模块设计",
+          "path": "docs/modules/protocol.md"
+        },
+        {
+          "code": "link_target_missing",
+          "line": 24,
+          "message": "链接目标不存在：../../../src/harnessix/product_config/git_delivery_observed_core_contracts.py",
+          "path": "docs/validation/git-review-2026-10-07-v1/README.md"
+        }
+      ],
+      "link_count": 12843,
+      "mermaid_count": 1067,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    }
+  },
+  "model_requests": 0,
+  "user_credentials_read": false,
+  "docker_operations": false,
+  "commercial_release_complete": false,
+  "current_boundary": "正式Git Review及原认证Artifact消费链组件已实现；默认Git写接线和业务执行未完成；声明不是授权证据；执行前仍须新鲜核验",
+  "pending_release_work": [
+    "默认Git Planner与完整用户观察到Core2接线",
+    "默认Git Executor及原正式批准到真实写入闭环",
+    "ProductLink/NativeBridge及A/T2/D",
+    "独立Commit与业务Backup2",
+    "真实R3质量与费用对账",
+    "同候选R1–R6、消费者平台和独立有限Beta"
+  ]
+}
