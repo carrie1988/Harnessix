@@ -2139,3 +2139,11 @@ Git业务状态备份闭合、Windows消费者、既定真实Task Pack质量与�
 物理认证不等于完整ProductLink/Approval/NativeBridge/对象图或Backup2，新增桥接索引当前失败关闭。
 后继继续既定正式GitBridge与真实A/T/D、独立Commit、跨Store业务备份恢复、三平台消费者、
 R3真实编码质量与有限Beta；不删除首发必需功能，不关闭R1—R6。
+
+## R1/R4：共享Git仓库检查的受控异步接线
+
+[总体与详细设计](changes/m09-r4-git-repository-observation.md)将原固定仓库检查收敛为同步领域与异步产品共用配方，
+产品内部观察显式借用原Owner、Supervisor、计划库和保护作用域，每条读取仍消费原正式执行计划；
+计划等待、读取及最终身份复核共享原取消与绝对期限，不构造自动批准、不启动同步后台线程。
+该结果仅为完整仓库绑定观察，未完成A/T/D写配方、正式GitBridge、独立Commit或业务Backup2。
+保持A干净、T2仅prepared、D物化；R1—R6、三平台业务消费者和有限Beta门禁仍开放。

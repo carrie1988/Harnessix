@@ -255,6 +255,9 @@ def git_process_implementation_digest(adapter: Path) -> str:
                 "runtime_host": hashlib.sha256(
                     adapter.with_name("git_process_host.py").read_bytes()
                 ).hexdigest(),
+                "repository_observation": hashlib.sha256(
+                    adapter.with_name("git_repository_observation.py").read_bytes()
+                ).hexdigest(),
                 "delivery": git_delivery_implementation_digest(),
             }
         )

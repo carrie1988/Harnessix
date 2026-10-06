@@ -2253,3 +2253,11 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 [产品全前缀原语](../changes/m09-r4-git-prefix-ledger.md)持原Authority/Verifier显式完成空genesis、
 有限新增物理事实及独立尾锚；领域原`SQLiteGitDeliveryStore`仍保持v1装配。
 它不替代正式ProductLink、prepared T2/原生A/D、独立Commit及业务Backup2。
+
+## 共享Git仓库读取配方
+
+[`git_repository_recipe.py`](../../src/harnessix/delivery/git_repository_recipe.py)集中原精确根、配置、
+完整普通文件树、属性、HEAD/tree、clean、actual commonDir及alternates检查。
+`GitDeliveryRuntime`旧同步入口驱动同一配方，产品观察入口按原受控异步端口驱动，
+不重复校验算法；新配方进入原Git实现摘要，旧批准不能跨实现变化复用。
+详见[共享检查详细设计](../changes/m09-r4-git-repository-observation.md)；本增量不改变GitDB领域装配或实现产品写流程。

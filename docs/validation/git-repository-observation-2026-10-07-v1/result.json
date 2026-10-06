@@ -1,0 +1,99 @@
+{
+  "schema": "harnessix.git-repository-observation-validation/v1",
+  "baseline_revision": "e8a0804986666edb613dee7b1c5fd6713777fc77",
+  "scope": "shared-repository-observation-only",
+  "final": {
+    "installed_associated": {
+      "tests": 523,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time": 204.361
+    },
+    "wheel": {
+      "schema": "harnessix.wheel-source-proof/v1",
+      "source_modules": 470,
+      "all_bytes_match": true,
+      "wheel_sha256": "12759b2cf118dfeb9eedea9a4e6705a8eaf984a3a2e9e02389636cd6587549b1",
+      "wheel": "harnessix-1.0.0rc1-py3-none-any.whl"
+    },
+    "installed_imports": {
+      "source_outside": true,
+      "no_clone_src_sys_path": true,
+      "all_modules_from_installed_wheel": true,
+      "loaded_modules": 310,
+      "pytest_exit_code": 0
+    },
+    "historical_schemas": {
+      "schema": "harnessix.schema-byte-compatibility/v1",
+      "baseline": "e8a0804986666edb613dee7b1c5fd6713777fc77",
+      "unchanged_historical_schemas": 272,
+      "new_schemas": []
+    },
+    "native18": {
+      "schema": "harnessix.native18-reviewed-identity-delta/v1",
+      "baseline": "e8a0804986666edb613dee7b1c5fd6713777fc77",
+      "count": 18,
+      "unchanged_inputs": 16,
+      "changed": [
+        {
+          "path": "src/harnessix/delivery/git.py",
+          "fields": [
+            "bytes",
+            "sha256",
+            "crlf_bytes",
+            "crlf_sha256"
+          ]
+        },
+        {
+          "path": "src/harnessix/product_config/git_material_process.py",
+          "fields": [
+            "bytes",
+            "sha256",
+            "crlf_bytes",
+            "crlf_sha256"
+          ]
+        }
+      ],
+      "other_contract_fields_unchanged": true
+    },
+    "diagrams": {
+      "rendered": 3,
+      "all_current_diagram_bytes_match": true,
+      "visually_inspected": 3,
+      "layout": "readable"
+    },
+    "mypy_modules": 470,
+    "governance": {
+      "tests": 1413,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "time": 37.931
+    },
+    "documentation": {
+      "changed_path_count": 0,
+      "document_count": 546,
+      "findings": [],
+      "link_count": 12688,
+      "mermaid_count": 1052,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "ruff": "pass",
+    "ruff_format": "pass",
+    "secret_scan": {
+      "scope": "tracked candidate and final wheel",
+      "input_count": 4944,
+      "fixed_rule_findings": 0
+    },
+    "readability": "original-policy-pass"
+  },
+  "earlier_failed_runs_preserved": true,
+  "test_counts_are_not_additive": true,
+  "release_gate_closed": false,
+  "new_bailian_requests": 0,
+  "cost_rmb": 0,
+  "source_inputs_sha256": "638ceeb9a4c1d45ea6bc5428ce3d7e050687d13e207fc85b00978207adc0196b",
+  "source_input_count": 1640
+}

@@ -28,7 +28,6 @@ from harnessix.delivery.git_contracts import (
     ManagedGitWorktreePlan,
     ManagedGitWorktreeRecord,
     git_commit_spec_fingerprint,
-    git_repository_binding_digest,
     managed_git_worktree_binding_digest,
     managed_git_worktree_plan_fingerprint,
     transition_commit_record,
@@ -39,6 +38,14 @@ from harnessix.delivery.git_identity import (
     _identity,
     _path_sha256,
     _path_text,
+)
+from harnessix.delivery.git_repository_recipe import (
+    GitRepositoryRecipe,
+    common_directory_recipe,
+    drive_git_repository_recipe,
+    repository_binding_recipe,
+    repository_root_recipe,
+    safe_configuration_recipe,
 )
 from harnessix.delivery.git_source import read_worktree_links, verify_git_source
 from harnessix.delivery.git_store import SQLiteGitDeliveryStore
@@ -77,6 +84,7 @@ def git_delivery_implementation_digest() -> str:
                     root / "git_material_trace2_profile.py",
                     root / "git_identity.py",
                     root / "git_source.py",
+                    root / "git_repository_recipe.py",
                     root / "git_workspace_snapshot.py",
                     root / "git_object_material.py",
                     root / "git_contracts.py",
@@ -237,48 +245,24 @@ class GitDeliveryRuntime:
             self._worktrees.chmod(0o700)
 
     def bind_repository(self, root: str | Path, workspace_id: str) -> GitRepositoryBinding:
-        repository = self._repository_root(root)
-        self._reject_unsafe_configuration(repository)
-        head = self._git.oid(repository, ("rev-parse", "--verify", "HEAD^{commit}"))
-        tree = self._git.oid(repository, ("rev-parse", "--verify", "HEAD^{tree}"))
-        object_format = "sha1" if len(head) == 40 else "sha256" if len(head) == 64 else ""
-        if not object_format:
-            raise KernelError("git_object_format_unsupported", "Git对象格式不受支持")
-        status = self._git.run(
-            repository,
-            ("status", "--porcelain=v2", "--untracked-files=all", "-z"),
-        ).stdout
-        if status:
-            raise KernelError("delivery_dirty_conflict", "Git来源仓库不是干净状态")
-        common = self._common_directory(repository)
-        alternates = common / "objects/info/alternates"
-        if alternates.exists() or alternates.is_symlink():
-            raise KernelError("git_alternates_unsupported", "Git alternates在0.7不受支持")
-        config = self._git.run(
-            repository, ("config", "--includes", "--null", "--list", "--show-origin")
-        ).stdout
-        version = self._text(self._git.run(repository, ("version",)).stdout).strip()
-        candidate = GitRepositoryBinding.model_construct(
-            _fields_set=None,
-            platform=_native_platform(),
-            workspace_id=workspace_id,
-            root_path_sha256=_path_sha256(repository),
-            root_identity=_identity(repository, directory=True),
-            common_directory_sha256=_path_sha256(common),
-            common_directory_identity=_identity(common, directory=True),
-            head_oid=head,
-            head_tree_oid=tree,
-            object_format=object_format,
-            status_sha256=hashlib.sha256(status).hexdigest(),
-            config_sha256=hashlib.sha256(config).hexdigest(),
-            git_executable_identity=self._git.identity,
-            git_version=version,
-            implementation_digest=git_delivery_implementation_digest(),
-            digest="0" * 64,
+        return self._read_repository(
+            repository_binding_recipe(
+                root,
+                workspace_id,
+                platform=_native_platform(),
+                executable_identity=self._git.identity,
+                implementation_digest=git_delivery_implementation_digest(),
+                checkpoint=lambda: None,
+            )
         )
-        return GitRepositoryBinding(
-            **candidate.model_dump(exclude={"digest"}),
-            digest=git_repository_binding_digest(candidate),
+
+    def _read_repository[T](self, recipe: GitRepositoryRecipe[T]) -> T:
+        return drive_git_repository_recipe(
+            recipe,
+            lambda request: (
+                self._git.run(request.cwd, request.arguments, accepted=request.accepted).stdout
+            ),
+            checkpoint=lambda: None,
         )
 
     def plan_worktree(
@@ -636,80 +620,13 @@ class GitDeliveryRuntime:
         return self._advance_commit(record, "interrupted")
 
     def _repository_root(self, supplied: str | Path) -> Path:
-        try:
-            path = Path(supplied)
-            if not path.is_absolute() or any(ord(character) < 32 for character in str(path)):
-                raise OSError
-            root = path.resolve(strict=True)
-            if not root.is_dir() or root.is_symlink():
-                raise OSError
-            reported = self._text(
-                self._git.run(root, ("rev-parse", "--show-toplevel")).stdout
-            ).strip()
-            if _path_text(Path(reported).resolve(strict=True)) != _path_text(root):
-                raise OSError
-            return root
-        except (OSError, RuntimeError):
-            raise KernelError("git_repository_invalid", "路径不是精确Git仓库根") from None
+        return self._read_repository(repository_root_recipe(supplied, checkpoint=lambda: None))
 
     def _common_directory(self, repository: Path) -> Path:
-        value = self._text(
-            self._git.run(repository, ("rev-parse", "--git-common-dir")).stdout
-        ).strip()
-        candidate = Path(value)
-        if not candidate.is_absolute():
-            candidate = repository / candidate
-        try:
-            return candidate.resolve(strict=True)
-        except OSError:
-            raise KernelError("git_repository_invalid", "Git common directory无效") from None
+        return self._read_repository(common_directory_recipe(repository, checkpoint=lambda: None))
 
     def _reject_unsafe_configuration(self, repository: Path) -> None:
-        included = self._git.run(
-            repository,
-            ("config", "--local", "--no-includes", "--null", "--get-regexp", r"^include(If)?\."),
-            accepted=(0, 1),
-        ).stdout
-        if included:
-            raise KernelError("git_config_unsupported", "Git本地外部include配置在0.7不受支持")
-        filters = self._git.run(
-            repository,
-            (
-                "config",
-                "--includes",
-                "--null",
-                "--get-regexp",
-                r"^filter\..*\.(clean|smudge|process)$",
-            ),
-            accepted=(0, 1),
-        ).stdout
-        if filters:
-            raise KernelError("git_filter_unsupported", "Git可执行filter在0.7不受支持")
-        sparse = self._git.run(
-            repository,
-            ("config", "--bool", "--get", "core.sparseCheckout"),
-            accepted=(0, 1),
-        ).stdout.strip()
-        if sparse == b"true":
-            raise KernelError("git_sparse_checkout_unsupported", "Git sparse checkout在0.7不受支持")
-        tree = self._git.run(repository, ("ls-tree", "-r", "-z", "--full-tree", "HEAD")).stdout
-        for record in tree.split(b"\0"):
-            if not record:
-                continue
-            try:
-                metadata, raw_path = record.split(b"\t", 1)
-                mode, kind, oid = metadata.decode("ascii").split(" ", 2)
-                path = raw_path.decode("utf-8", errors="strict")
-            except (UnicodeError, ValueError):
-                raise KernelError("git_tree_invalid", "Git tree条目无法解析") from None
-            name = path.rsplit("/", 1)[-1].casefold()
-            if mode == "160000" or kind == "commit" or name in {".gitmodules", ".lfsconfig"}:
-                raise KernelError("git_tree_unsupported", "Git submodule或LFS控制面在0.7不受支持")
-            if name == ".gitattributes":
-                body = self._git.run(repository, ("cat-file", "blob", oid)).stdout
-                lowered = body.lower()
-                if b"filter" in lowered or b"working-tree-encoding" in lowered:
-                    raise KernelError("git_attributes_unsupported", "Git attributes包含转换规则")
+        self._read_repository(safe_configuration_recipe(repository, checkpoint=lambda: None))
 
     def _verify_repository(self, expected: GitRepositoryBinding, root: str | Path) -> None:
         actual = self.bind_repository(root, expected.workspace_id)

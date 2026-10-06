@@ -1,0 +1,47 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "baseline_revision": "e8a0804986666edb613dee7b1c5fd6713777fc77",
+  "scope": "shared-repository-observation-only",
+  "source_files": [
+    "src/harnessix/delivery/git.py",
+    "src/harnessix/delivery/git_repository_recipe.py",
+    "src/harnessix/product_config/git_repository_observation.py",
+    "src/harnessix/product_config/git_material_process.py"
+  ],
+  "design": "docs/changes/m09-r4-git-repository-observation.md",
+  "reviewed_identity_delta": "two existing Native18 rows, eight bytes/digest leaves only",
+  "invariants": [
+    "original 27 selectors",
+    "original Native18 path set",
+    "13 Hooks",
+    "20/45/240/300 seconds",
+    "256 resources",
+    "8MiB CAS",
+    "Root/Owner/Scope/MAC/Lease unchanged",
+    "A clean",
+    "T2 prepared only",
+    "D materialization",
+    "independent Commit approval"
+  ],
+  "open_release_gates": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ],
+  "not_claimed": [
+    "product GitBridge",
+    "business Backup2",
+    "Windows native consumer acceptance",
+    "actual coding quality acceptance",
+    "independent Beta",
+    "commercial 1.0 release"
+  ],
+  "budget": {
+    "new_bailian_requests": 0,
+    "cost_rmb": 0,
+    "existing_budget_and_reservations_unchanged": true
+  }
+}

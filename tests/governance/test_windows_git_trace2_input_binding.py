@@ -28,7 +28,7 @@ PROJECTION = "tests/product_config/git_trace2_projection.py"
 ROLE_REVISION = "9a0d84aaba6243539abd63e2de69b482350486a2"
 DIAGNOSTIC_BASE = "5306c7134c1301dd10bee682be5ce1e61e120c46"
 DIAGNOSTIC_REVISION = "9b9e52fdaab74567b5ad7cd5614801f1936689bc"
-LIVE_CATALOG_REVISION = "0583b53306f3ab869fb35c5b9eece80fbe2251a4"
+LIVE_CATALOG_REVISION = "e8a0804986666edb613dee7b1c5fd6713777fc77"
 DIAGNOSTIC_INPUTS = (
     "src/harnessix/delivery/git_material_trace2_profile.py",
     "scripts/windows_git_native_branch_observation/failure_projection.py",
@@ -127,7 +127,7 @@ def test_new_metadata_changes_only_four_source_rows_and_published_baseline():
         if _metadata_changes(old, new):
             changed.add(new["path"])
             assert set(old) == set(new) == {"path", "bytes", "sha256", "crlf_bytes", "crlf_sha256"}
-            body = (ROOT / new["path"]).read_bytes()
+            body = _original(new["path"], revision=ROLE_REVISION)
             crlf = body.replace(b"\n", b"\r\n")
             expected = {
                 "path": old["path"],
@@ -183,33 +183,40 @@ def test_new_metadata_appends_only_two_exact_diagnostic_members():
 
 
 def _assert_live_source_catalog_identity_delta(current):
-    """类型敏感地核对后继四叶；其他身份、预算与原行不能被等值类型绕过。"""
+    """只核对既有两输入的八个字节叶，其他16项与所有原门禁保持精确冻结。"""
     original = json.loads(_original(METADATA, revision=LIVE_CATALOG_REVISION))
-    index = next(
+    indices = [
         i
         for i, row in enumerate(original["source_inputs"])
-        if row["path"] == "src/harnessix/delivery/git.py"
-    )
+        if row["path"]
+        in {
+            "src/harnessix/delivery/git.py",
+            "src/harnessix/product_config/git_material_process.py",
+        }
+    ]
+    assert len(indices) == 2
     assert _metadata_changes(original, current) == {
         f"/source_inputs/{index}/{name}"
+        for index in indices
         for name in ("bytes", "sha256", "crlf_bytes", "crlf_sha256")
     }
     assert len(current["source_inputs"]) == 18
-    row = current["source_inputs"][index]
-    body = (ROOT / row["path"]).read_bytes()
-    crlf = body.replace(b"\n", b"\r\n")
-    expected = {
-        "path": row["path"],
-        "bytes": len(body),
-        "sha256": hashlib.sha256(body).hexdigest(),
-        "crlf_bytes": len(crlf),
-        "crlf_sha256": hashlib.sha256(crlf).hexdigest(),
-    }
-    assert not _metadata_changes(expected, row)
+    for index in indices:
+        row = current["source_inputs"][index]
+        body = (ROOT / row["path"]).read_bytes()
+        crlf = body.replace(b"\n", b"\r\n")
+        expected = {
+            "path": row["path"],
+            "bytes": len(body),
+            "sha256": hashlib.sha256(body).hexdigest(),
+            "crlf_bytes": len(crlf),
+            "crlf_sha256": hashlib.sha256(crlf).hexdigest(),
+        }
+        assert not _metadata_changes(expected, row)
 
 
 def test_live_source_catalog_changes_only_reviewed_git_identity_leaves():
-    """后继来源端口只重绑既有Git输入，不改历史追加事实或原18项准入。"""
+    """共享配方/观察身份仅重绑原两项，不改历史追加事实或原18项准入。"""
     current = contract.read_contract()
     _assert_live_source_catalog_identity_delta(current)
     assert len(contract.source_checks(ROOT, current)) == 18

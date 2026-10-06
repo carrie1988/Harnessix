@@ -2512,3 +2512,12 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 认证适配位于本产品包，不新增delivery到session依赖，不扩容量/期限，不导出Key。
 当前不解释完整ProductLink/Approval/CAS业务语义，拒绝新增原生桥接索引；
 默认GitBridge、业务Backup2及R1—R6商用门禁仍开放。
+
+## 原共享宿主下的Git仓库绑定观察
+
+[`observe_product_git_repository`](../../src/harnessix/product_config/git_repository_observation.py)
+只借原`GitProcessRuntimeHost`，不隐式创建Owner或Supervisor。
+宿主提供每条固定读取的正式`ExecutionPlanV2`与原批准检查点，原`prepare/run`完成完整参数、
+能力、保护和进程结算核验；计划等待及命令共用原`CancelToken`与绝对`GitOperationBudget`。
+观察结束核验根/commonDir、执行文件及实现身份；结果不是会话MAC、Git业务成功或原子快照。
+完整[总体与详细设计](../changes/m09-r4-git-repository-observation.md)同时列出尚未接入的产品写流程和Backup2。

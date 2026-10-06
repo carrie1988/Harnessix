@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 11
-code_revision: f7d06e2661b4ce91225790edd06a52298446c225
+version: 12
+code_revision: e8a0804986666edb613dee7b1c5fd6713777fc77
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -16,6 +16,13 @@ related_tests:
   - tests/product_config/test_git_baseline.py
   - tests/tools/test_git_delivery_reader.py
   - tests/delivery/test_git.py
+  - tests/delivery/test_git_repository_recipe.py
+  - tests/delivery/git_repository_recipe_support.py
+  - tests/delivery/test_git_repository_recipe_integration.py
+  - tests/product_config/test_git_repository_observation.py
+  - tests/product_config/git_repository_observation_support.py
+  - tests/product_config/test_git_repository_observation_failures.py
+  - tests/product_config/test_git_delivery_process.py
   - tests/delivery/test_git_checkpoint_guard.py
   - tests/delivery/test_git_store_readonly.py
   - tests/delivery/test_git_push.py
@@ -48,9 +55,35 @@ supersedes: []
 本设计后继的业务Writer/Loader及Backup2必须复用该物理原语并补齐语义与宿主共同锁校验，
 不能把任意已认证物理payload认定为真实执行成功或可恢复业务闭包。
 
+## 当前完整仓库绑定观察边界
+
+[完整仓库绑定观察](m09-r4-git-repository-observation.md)已提取唯一固定读取配方，
+旧同步 `GitDeliveryRuntime.bind_repository` 与产品内部异步观察共用完整字段、正常固定查询顺序及拒绝逻辑。
+兼容范围不包括旧畸形输出漏检：根报告须非空绝对且无控制字符，commonDir报告须非空且无控制字符，
+非空树输出须有完整NUL尾、正规mode-kind、严格field OID及非空路径；畸形报告固定拒绝，
+不原样传播NUL路径ValueError。原submodule／LFS错误码及first-refusal顺序不变。
+异步入口严格借原 `GitProcessRuntimeHost` 的 Owner／Scope／Supervisor／PlanStore；
+受信 authorize 回调返回原 `ExecutionPlanV2` 和可选 `ExecutionApprovalCheckpoint`，
+由原 prepare/run 核验，不自行创建 ALLOW，不重开或关闭共享宿主。
+计划等待与全部命令共享原 `CancelToken` 和 `GitOperationBudget` 绝对期限；
+入口先交付既有父 Task 待取消，CPU 解析与最终返回使用原 `parent_cancel_checkpointer`
+交付操作 checkpoint 新增的 Task 取消。原命令强失败及结算语义不被适配层改写，
+返回前重核物理 root／commonDir、Git executable 和领域实现身份。
+
+Native18 元数据仅刷新既有 `git.py`、`git_material_process.py` 两项的各四个字节绑定叶，
+原18路径不增，原16行、全部27 selectors、13 Hooks 及20／45／240／300秒门禁保持。
+共享 recipe 已纳入领域 implementation digest，观察 adapter 已纳入原 process implementation digest；
+旧计划不能复用批准。历史角色四行按固定 `ROLE_REVISION` 历史 bytes 核验，
+live 按 e8a0804 基线仅核对八叶差异并校验精确 current bytes，fullbytes anchors 随对应 meta 更新。
+该元数据更新不改变或删除旧证据，不代表新增 Windows 原生或产品业务验收。
+
+此入口只形成完整仓库绑定观察，不完成 A／T／D 写流程、ProductPlan／Link／NativeBridge、
+Backup2 或默认 Git Tool。A 保持真实干净来源，T2 保持 prepared 且不得向 A 发布，
+D materialize 与 Commit 仍分别需要独立批准。功能测试实际结果待补充，不由源码存在推导通过。
+
 ## 1. 需求背景、状态与交付定义
 
-**实施状态：业务闭包待实现，内部 IO、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。原五类Git记录和独立尾锚认证端口已实现，GitDB v2精确结构合同亦已落地；产品 Git Action、持久关联、完整认证前缀持久化、业务快照、认证对象目录闭包及恢复重绑均未完成；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
+**实施状态：业务闭包待实现，内部 IO、完整仓库绑定观察、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整仓库绑定观察、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。原五类Git记录和独立尾锚认证端口、GitDB v2精确结构及物理全前缀认证账本已实现；产品 Git Action、持久业务关联、完整业务语义与对象目录认证、业务快照及恢复重绑均未完成；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
 
 当前默认产品能完成 Patch 和显式 Rollback，能从认证会话提取持续多 Patch 的完整来源投影，并观察 Git 基准；尚未装配 `GitDeliveryRuntime`／`SQLiteGitDeliveryStore` 形成默认产品 Commit／Checkpoint 闭环。直接把用户已修改的工作区交给要求干净来源的宿主 Runtime，会产生真实的生命周期和身份冲突。
 
@@ -112,12 +145,12 @@ supersedes: []
 | [`git.py`](../../src/harnessix/delivery/git.py) 的 `GitDeliveryRuntime.bind_repository`、`plan_worktree`、`create_worktree`、`create_checkpoint`、`plan_commit`、`commit` | 显式宿主、干净来源、私有 Index、确定性原始 Commit、新 Ref CAS、原 Lease；`plan_worktree` 还执行 `verify_workspace_snapshot(transaction.plan.source, repository_root)`，包括原物理 RootIdentity；不是默认产品入口 | 保留旧干净来源接口，新增受批准的持久原生桥接；不能把原 U 事务直接传给私有镜像，即使镜像内容相同且 Git 干净也会身份不符 |
 | [`git.py`](../../src/harnessix/delivery/git.py) 的 `_repository_root_from_binding`、`_capture_worktree_binding` | 从 commonDir 邻接候选恢复来源路径，验证注册、gitfile、commondir、backlink、HEAD | 干净来源锚位于产品私有根时不能依赖该邻接推导；拟改为已登记、已验证的明确来源根解析，不扩大为路径搜索 |
 | [`git_checkpoint.py`](../../src/harnessix/delivery/git_checkpoint.py) 的 `verify_checkpoint_worktree`、`build_git_checkpoint` | 物化前拒绝第三内容、未知 Index 和计划外跟踪变化；复核 Lease；已知物化结果可验证 | 保持原拒绝语义；产品包装层不能用“恢复”绕过该保护 |
-| [`git.py`](../../src/harnessix/delivery/git.py) 的 `_GitRunner.run` | 当前同步 `subprocess.run` 默认单命令20秒，退出后才检查输出长度；没有产品取消令牌，也不是原生Job监督端口 | 产品写接线前必须将固定命令构造与IO执行分离，复用现有监督端口实现有界捕获、原生进程树回收、合作取消及统一绝对期限；不能仅把现有同步Runtime放入线程就声称完成取消 |
-| [`git_store.py`](../../src/harnessix/delivery/git_store.py) 的 `SQLiteGitDeliveryStore`、`_check_event`；[`git_store_schema.py`](../../src/harnessix/delivery/git_store_schema.py) 的 `verify_git_store_schema` | 原 v1 六表、CAS 转移、严格模型／SHA、冗余列；新增 `read_only=True` 复用原端口。事件校验仅尾部及总数 | 全事件前缀、关联认证、正式枚举快照、对象材料登记均待实现；不能声称现有只读构造器已完成这些验证 |
+| [`git.py`](../../src/harnessix/delivery/git.py) 的 `_GitRunner.run`；[`git_repository_recipe.py`](../../src/harnessix/delivery/git_repository_recipe.py)；[`git_repository_observation.py`](../../src/harnessix/product_config/git_repository_observation.py) | 同步 Runner 保持 `subprocess.run`、默认单命令20秒及退出后长度检查；固定命令与环境已复用。完整仓库观察已由唯一配方接入原受控 IO，严格借共享宿主、正式计划／批准及原取消／绝对期限 | 完整 A／T／D 与 Commit 写阶段仍须逐阶段接入原受控端口及独立批准；只读观察不能代表完整领域 Runtime 已异步化，也不能以后台线程替代监督 |
+| [`git_store.py`](../../src/harnessix/delivery/git_store.py) 的 `SQLiteGitDeliveryStore`、`_check_event`；[`git_store_schema.py`](../../src/harnessix/delivery/git_store_schema.py) 的 `verify_git_store_schema` | 原 v1 六表、CAS 转移、严格模型／SHA、冗余列及 `read_only=True` 保持原合同；v1事件仍核对尾部及总数。另已实现 v2精确结构及物理全前缀认证账本，默认v1装配不变 | 产品业务关联语义、正式业务快照、认证对象目录与跨Store闭合仍待实现；不能用只读构造器或物理全前缀替代业务验真 |
 | [`sqlite_readonly.py`](../../src/harnessix/sqlite_readonly.py) 的 `readonly_database` | `mode=ro`、`query_only`，真实已提交 WAL 可见；不初始化或迁移 | 所有新增 Reader 继续使用该端口；不使用 `immutable=1` 掩盖 WAL |
 | [`store.py`](../../src/harnessix/delivery/store.py) 的 `SQLiteWorkspaceTransactionStore.blob`、`_put_blob`；[`contracts.py`](../../src/harnessix/delivery/contracts.py) | before／after CAS、原 SHA／长度约束、事务模型和镜像限额 | 复用同一 CAS 的耐久写入与只读核验，将 Git 对象材料作为有类型的引用；不另建 Blob 平台 |
 | [`diff.py`](../../src/harnessix/delivery/diff.py) 的 `build_workspace_diff`；[`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) 的 `publish_workspace_review` | 完整 Diff、结构化条目、稳定 Review Artifact、原发布和分页 | 提取唯一纯 Diff 构造逻辑供来源投影复用；Git Review 复用 Artifact 发布机制，但不冒用 Patch Review 的批准语义 |
-| [`publication_seal.py`](../../src/harnessix/session/publication_seal.py) 的 `EventPublicationAuthority`、[`store_publication.py`](../../src/harnessix/session/store_publication.py) 的 `SessionPublicationBinding` | 原Key生命周期、Session/Artifact认证；五kind Git记录认证及独立尾锚端口已实现，见[记录详设](m09-r4-git-record-publication.md)与[尾锚详设](m09-r4-git-prefix-publication.md) | 仍须接通完整catalog、同事务Writer/Loader及备份消费；不向GitStore暴露Key，不把Session Seal或单记录Seal当完整Git尾锚 |
+| [`publication_seal.py`](../../src/harnessix/session/publication_seal.py) 的 `EventPublicationAuthority`、[`store_publication.py`](../../src/harnessix/session/store_publication.py) 的 `SessionPublicationBinding` | 原Key生命周期、Session/Artifact认证；五kind Git记录认证、独立尾锚及物理账本同事务认证旁表已实现，见[记录详设](m09-r4-git-record-publication.md)、[尾锚详设](m09-r4-git-prefix-publication.md)与[物理账本详设](m09-r4-git-prefix-ledger.md) | 仍须接通完整业务catalog、业务语义Writer/Loader及备份消费；不向GitStore暴露Key，不把物理认证payload当产品来源、批准或业务闭包 |
 | [`state_backup_contracts.py`](../../src/harnessix/product_config/state_backup_contracts.py) 的 `DATABASES`、`state_file_kind`、`ProductStateBackupManifest` | 六 DB、原 Key、事务 CAS、可选 Process 闭合 v1；未知路径拒绝 | 版本化 Git 业务剖面、固定 GitDB、材料及快照校验；不是加目录白名单 |
 | [`state_backup.py`](../../src/harnessix/product_config/state_backup.py) 的 `_quiet_databases`、`_copy_database`、`backup_product_state`、`verify_state_snapshot` | 根外 Owner、独立 Runtime 锁、全部 DB 保留写锁、独立连接 SQLite Backup、原回执、不可覆盖发布 | GitDB 同时参加锁集合；同一静默窗口产生关联一致快照；外部 Git 不参与复制 |
 | [`state_backup_validation.py`](../../src/harnessix/product_config/state_backup_validation.py) 的 `validate_product_state`、[`state_backup_records.py`](../../src/harnessix/product_config/state_backup_records.py) 的 `validate_state_records` | 原 Schema、Session 全认证、领域引用和原 CAS 校验 | 增加 Git 全前缀、产品关联、材料闭包、生命周期分类；纯只读核验 |
@@ -714,9 +747,9 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 
 必须统一绝对单调期限，成员循环、原生读取前后、SQLite 进度及 fsync／发布边界均检查。当前领域 `_GitRunner.run` 是同步 `subprocess.run`，只有单命令超时和退出后长度检查；它不能直接满足本节的产品取消、捕获内存和子孙进程回收合同。
 
-拟提取唯一的固定命令／环境／程序身份构造，将产品IO执行接入既有受控 Process／Windows Job 监督端口。原干净来源及Checkpoint保护算法继续复用，不复制一份弱化状态机；同步显式宿主Facade保留，新增产品异步执行入口逐阶段传递原取消令牌和绝对期限。单命令预算取剩余总期限与固定上限的较小值；原始对象消费必须在捕获阶段限制内存，而非等待结束后才检查长度。SQLite连接在其创建任务内使用和关闭，不把默认线程受限连接传入任意工作线程。
+唯一固定命令／环境／程序身份构造及原受控 Process／Windows Job IO端口已实现，完整仓库绑定观察已接入该端口；完整写流程的逐阶段装配仍待实现。原干净来源及Checkpoint保护算法继续复用，不复制一份弱化状态机；同步显式宿主Facade保留，产品写入口仍须逐阶段传递原取消令牌和绝对期限。单命令预算取剩余总期限与固定上限的较小值；原始对象消费必须在捕获阶段限制内存，而非等待结束后才检查长度。SQLite连接按原宿主所有权使用，不把默认线程受限连接传入任意工作线程。
 
-该IO适配、同步Facade等价性、取消后原进程树停止及Owner释放顺序属于首次产品Git写接线的必需实现与回归，不从当前20秒参数推导已经具备。维护 IO 继续复用 [`run_maintenance_io`](../../src/harnessix/session/maintenance_io.py) 的单任务派发与取消结算。
+首次产品Git写接线仍须验证完整写阶段、同步Facade等价性、取消后原进程树停止及Owner释放顺序，不从只读观察或当前20秒参数推导已经完成写流程验收。维护 IO 继续复用 [`run_maintenance_io`](../../src/harnessix/session/maintenance_io.py) 的单任务派发与取消结算。
 
 原 Ref CAS、单次领域事务 COMMIT 及原备份“回执耐久 → 不可覆盖发布”属于短提交区：进入前检查期限／取消，开始后先取得真实结果再传播取消。若结果无法确认，保留可对账意图，不返回虚假未执行。底层文件系统不提供可中断 fsync 时不承诺硬实时停止；不得因上层期限到达提前释放 Owner。重复取消不能派发第二个任务。
 
@@ -927,8 +960,9 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 取消／别名负对照不增加业务认证或写入；原Workspace事务身份与历史表示不变。
 完整Diff内容已可纯规划，Artifact发布、独立批准及第13章步骤2的业务证明仍需另行接线。
 
-完整领域算法的异步接线、双工作树、正式 Checkpoint／Commit、全认证前缀、
-GitDB／Backup v2 和新根重绑仍未完成。只读内容验真不能代替第13章步骤2的完整只读业务验真，
+完整仓库绑定观察的异步接线已实现；完整写领域算法、双工作树、默认产品正式 Checkpoint／Commit、
+完整业务语义及材料目录认证、业务 GitDB／Backup v2 和新根重绑仍未完成。
+物理全前缀账本和只读内容验真不能代替第13章步骤2的完整只读业务验真，
 也不能提前开放默认 Git 写 Tool；业务8MiB及全部树材料范围不得缩减。
 
 ### GitDB v2精确结构实施边界
@@ -937,5 +971,6 @@ GitDB／Backup v2 和新根重绑仍未完成。只读内容验真不能代替�
 [集成验证](../validation/git-store-v2-integration-2026-10-02-v1/README.md)落实13表唯一DDL、
 组合引用、STRICT与UTF-8字节合同；helper只在调用者已有事务执行，不修改metadata或自行提交。
 正式460项及独立私有9项通过，原v1入口和旧历史保持不变。
-当前完整catalog、同事务Writer/Loader、Genesis/legacy全集、业务备份和新Root授权仍属本设计待实现范围。
+物理五kind同事务认证旁表、独立全集尾锚、显式空genesis与只验真Reader已实现，见[物理账本设计](m09-r4-git-prefix-ledger.md)。
+当前完整业务catalog、业务语义Writer/Loader、业务Genesis/legacy归属闭合、业务备份和新Root授权仍属本设计待实现范围。
 不能以结构核验成功推导业务来源MAC、原Approval、Owner或执行权，也不能开放默认Commit/Checkpoint。
