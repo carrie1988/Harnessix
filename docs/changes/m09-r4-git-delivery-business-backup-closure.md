@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 12
-code_revision: e8a0804986666edb613dee7b1c5fd6713777fc77
+version: 13
+code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -50,7 +50,7 @@ supersedes: []
 
 [GitDB v2全前缀认证账本](m09-r4-git-prefix-ledger.md)已实现显式空结构/空genesis初始化、
 有限五kind物理事件的同事务认证旁表及独立规范全集尾锚、专用SQL取消窗口与只验真Reader。
-它不解析尚未实现的完整ProductPlan/ProductLink业务语义，不完成审批、A/T/D原生桥接、
+它不解析完整ProductPlan/ProductLink业务语义，不完成审批、A/T/D原生桥接、
 对象图及跨Store归属；当前明确拒绝新增NativeBridge索引，默认产品与原Git领域v1装配不改变。
 本设计后继的业务Writer/Loader及Backup2必须复用该物理原语并补齐语义与宿主共同锁校验，
 不能把任意已认证物理payload认定为真实执行成功或可恢复业务闭包。
@@ -77,9 +77,20 @@ Native18 元数据仅刷新既有 `git.py`、`git_material_process.py` 两项的
 live 按 e8a0804 基线仅核对八叶差异并校验精确 current bytes，fullbytes anchors 随对应 meta 更新。
 该元数据更新不改变或删除旧证据，不代表新增 Windows 原生或产品业务验收。
 
-此入口只形成完整仓库绑定观察，不完成 A／T／D 写流程、ProductPlan／Link／NativeBridge、
+此入口只形成完整仓库绑定观察，不完成 A／T／D 写流程、ProductLink／NativeBridge、
 Backup2 或默认 Git Tool。A 保持真实干净来源，T2 保持 prepared 且不得向 A 发布，
-D materialize 与 Commit 仍分别需要独立批准。功能测试实际结果待补充，不由源码存在推导通过。
+D materialize 与 Commit 仍分别需要独立批准。
+该组件已完成同候选安装回归523项，完整边界及证据见[仓库观察验证](../validation/git-repository-observation-2026-10-07-v1/README.md)。
+
+## 当前完整产品计划合同边界
+
+[完整 Git 交付计划](m09-r4-git-delivery-plan.md)已实现有限模型输入、完整Core及原Route/Review引用封套、
+无绑定八字段全对象范围、严格规范字节与实际原CAS全内容核验。Core先于Route冻结，
+Route资源绑定Core指纹，封套不增加业务效果字段，避免计划指纹循环。
+完整Source2/Baseline2、全部Manifest/Chunk、物理Index及commonDir声明、A/D新意图、完整树图、
+净Mutation、Diff及完整CommitSpec均保存；原512KiB记录和其他容量、Native18门禁不扩大。
+该合同不证明实际归属、Artifact正文、新批准、NativeBridge或执行权限。
+ProductGitDeliveryPlanner/Executor、正式Link阶段、A/T2/D写装配与Backup2仍待实现。
 
 ## 1. 需求背景、状态与交付定义
 
@@ -380,9 +391,10 @@ flowchart TD
 
 ### 6.2 产品输入与计划
 
-拟新增 `ProductGitCheckpointInput` 只接受显式 Patch UUID 集合及有限意图版本；集合在入口检查唯一性，最终顺序由原 Session 决定。拟新增 `ProductGitCommitInput` 只接受已归属的 Checkpoint ID、分支、作者、消息和有时区时间；不接受 executable、commonDir、环境、Git 参数或文件正文。
+已实现的内部合同 `ProductGitCheckpointInput` 只接受显式 Patch UUID 集合及有限意图版本；集合在入口检查唯一性，最终顺序由原 Session 决定。已实现的内部合同 `ProductGitCommitInput` 只接受已归属的 Checkpoint ID、分支、作者、消息和有时区时间；不接受 executable、commonDir、环境、Git 参数或文件正文。
 
-拟新增 `ProductGitDeliveryPlan` 的重点字段如下：
+当前完整计划以 Core→原 Route→封套分层实现，精确字段及已实现验证见[完整计划设计](m09-r4-git-delivery-plan.md)。
+以下表保存整体业务接线所需的总体字段，不表示归属/批准/原生采集已完成：
 
 | 字段 | 语义与校验 |
 |---|---|
@@ -483,6 +495,22 @@ flowchart TD
 ```
 
 规划可在原 Plan／Audit／Artifact 中保存待审批事实，但不得提前创建 Git 外部效果。若已有待审批关联，按稳定调用身份读取并比较同一计划，不制造重复交付。
+
+#### 原 Route 之前的完整 Core 恢复要求（待实现）
+
+现有 Gateway 的 Review 在同步 `Router.plan` 之后，不能在 Review 内才生成一个未被
+原资源绑定的 Core。正式 Planner 必须在原 Owner/Scope、取消及绝对期限下先完成
+异步来源、基准和材料规划；新前置准备只能用于显式 Git 定义，不改变默认 Patch/Process。
+
+完整 Core 应复用原唯一 CAS 耐久保存：规范正文包含全部 Core 字段但排除自指
+`fingerprint`，因此原正文 SHA 恰好等于 Core 指纹。原 Route 的资源属性由此能在崩溃后
+定位完整冻结事实；读取时以原 CAS SHA 重验并恢复指纹字段，仍不得将内容哈希视为归属。
+该内部材料记录受原容量及严格完整字段约束，不新建数据库、可执行 token 或对象平台。
+
+随后原 Router 绑定该完整 Core，再发布正式 Review 和原 Session 请求，完整封套关联成立
+后才保存 typed ProductLink。不得为提前建立 Link 使用零 Route 指纹、伪造 Artifact 引用、
+待定义阶段或给旧未认证库补签。重放必须先查原 Route 并读取其冻结 Core，不在同一调用
+上悄悄重算新源、新目录 UUID、目标树或费用。此节为后续准入接线要求，并非当前实现。
 
 ### 7.2 Checkpoint 执行
 

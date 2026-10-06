@@ -32,7 +32,10 @@ from harnessix.workspace.parent_closure_codec import read_workspace_parent_closu
 from harnessix.workspace.snapshot_v2 import verify_workspace_snapshot_v2
 from scripts.windows_git_native_branch_observation import contract
 from tests.delivery.test_git import _COMMIT_TIME, _git, _run
-from tests.governance.test_windows_git_trace2_input_binding import _metadata_changes
+from tests.governance.test_windows_git_trace2_input_binding import (
+    _assert_live_source_catalog_identity_delta,
+    _metadata_changes,
+)
 
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="本组验证真实POSIX私有来源")
 
@@ -513,20 +516,23 @@ def test_snapshot_helper_bytes_remain_in_original_implementation_digest(
         assert not Path(planned.plan.path).exists()
 
 
-def _baseline(path: str) -> bytes:
+def _baseline(path: str, *, revision: str = "d7e8668") -> bytes:
     root = Path(__file__).resolve().parents[2]
     return subprocess.run(
-        [str(_git()), "show", f"d7e8668:{path}"], cwd=root, check=True, capture_output=True
+        [str(_git()), "show", f"{revision}:{path}"], cwd=root, check=True, capture_output=True
     ).stdout
 
 
-def test_native18_delta_is_only_git_four_identity_leaves_and_exact_parser_sha() -> None:
+def test_native18_delta_is_only_git_four_identity_leaves_and_exact_parser_sha(tmp_path) -> None:
+    """父历史提交的四叶差异固定按历史验真；现行八叶另按原 live 合同核验。"""
     root = Path(__file__).resolve().parents[2]
     metadata = "scripts/windows_git_native_branch_observation/contract.json"
     parser = "scripts/windows_git_native_branch_observation/contract.py"
     old_body = _baseline(metadata)
-    body = (root / metadata).read_bytes()
-    original, current = json.loads(old_body), contract.read_contract()
+    # 后继仓库观察已评审刷新另一既有输入；不能拿live覆盖本提交历史断言。
+    historical = "f7d06e2661b4ce91225790edd06a52298446c225"
+    body = _baseline(metadata, revision=historical)
+    original, current = json.loads(old_body), json.loads(body)
     index = next(
         i
         for i, row in enumerate(original["source_inputs"])
@@ -537,10 +543,14 @@ def test_native18_delta_is_only_git_four_identity_leaves_and_exact_parser_sha() 
     }
     assert len(current["source_inputs"]) == 18
     for i, row in enumerate(current["source_inputs"]):
+        historical_body = _baseline(row["path"], revision=historical)
+        target = tmp_path / row["path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(historical_body)
         if i != index:
             assert row == original["source_inputs"][i]
-            assert (root / row["path"]).read_bytes() == _baseline(row["path"])
-    git_body = (root / current["source_inputs"][index]["path"]).read_bytes()
+            assert historical_body == _baseline(row["path"])
+    git_body = _baseline(current["source_inputs"][index]["path"], revision=historical)
     crlf = git_body.replace(b"\n", b"\r\n")
     assert current["source_inputs"][index] == {
         "path": "src/harnessix/delivery/git.py",
@@ -553,13 +563,18 @@ def test_native18_delta_is_only_git_four_identity_leaves_and_exact_parser_sha() 
     new_sha = hashlib.sha256(body).hexdigest().encode()
     old_parser = _baseline(parser)
     assert old_parser.count(old_sha) == 1 and old_sha != new_sha
-    assert (root / parser).read_bytes() == old_parser.replace(old_sha, new_sha)
-    assert len(contract.source_checks(root, current)) == 18
+    assert _baseline(parser, revision=historical) == old_parser.replace(old_sha, new_sha)
+    assert len(contract.source_checks(tmp_path, current)) == 18
     with pytest.raises(ValueError, match="^current_source_drift$"):
-        contract.source_checks(root, original)
+        contract.source_checks(tmp_path, original)
+    live = contract.read_contract()
+    _assert_live_source_catalog_identity_delta(live)
+    assert len(contract.source_checks(root, live)) == 18
     _evidence(
         "native18-exact-delta",
         changed_leaves=sorted(_metadata_changes(original, current)),
         unchanged_inputs=17,
         contract_sha256=new_sha.decode(),
+        historical_revision=historical,
+        current_contract_sha256=hashlib.sha256((root / metadata).read_bytes()).hexdigest(),
     )

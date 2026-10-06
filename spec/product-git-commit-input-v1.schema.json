@@ -1,0 +1,56 @@
+{
+  "additionalProperties": false,
+  "description": "有限新提交意图；Checkpoint UUID 本身不证明 Session 归属。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-git-commit-input/v1",
+      "default": "harnessix.product-git-commit-input/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "checkpoint_id": {
+      "format": "uuid",
+      "title": "Checkpoint Id",
+      "type": "string"
+    },
+    "branch_ref": {
+      "maxLength": 1024,
+      "minLength": 12,
+      "title": "Branch Ref",
+      "type": "string"
+    },
+    "author_name": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Author Name",
+      "type": "string"
+    },
+    "author_email": {
+      "maxLength": 320,
+      "minLength": 3,
+      "title": "Author Email",
+      "type": "string"
+    },
+    "message": {
+      "maxLength": 65536,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "authored_at": {
+      "format": "date-time",
+      "title": "Authored At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "checkpoint_id",
+    "branch_ref",
+    "author_name",
+    "author_email",
+    "message",
+    "authored_at"
+  ],
+  "title": "ProductGitCommitInput",
+  "type": "object"
+}

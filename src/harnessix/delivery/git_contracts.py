@@ -307,8 +307,8 @@ class GitCommitSpec(DeliveryContract):
 
     @model_validator(mode="after")
     def complete_spec(self) -> Self:
-        invalid_identity = any(character in self.author_name for character in "\n\r<>") or any(
-            character in self.author_email for character in "\n\r<> \t"
+        invalid_identity = any(character in self.author_name for character in "\0\n\r<>") or any(
+            character in self.author_email for character in "\0\n\r<> \t"
         )
         if (
             not self.branch_ref.startswith("refs/heads/")

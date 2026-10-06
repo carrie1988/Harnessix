@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "description": "模型只能显式选择原 Patch；最终顺序由认证 Session 决定。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-git-checkpoint-input/v1",
+      "default": "harnessix.product-git-checkpoint-input/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "patches": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "title": "Patches",
+      "type": "array"
+    }
+  },
+  "required": [
+    "patches"
+  ],
+  "title": "ProductGitCheckpointInput",
+  "type": "object"
+}

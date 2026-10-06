@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 191
-code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
+version: 192
+code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
 owners:
   - core
 modules:
@@ -2147,3 +2147,11 @@ R3真实编码质量与有限Beta；不删除首发必需功能，不关闭R1—
 计划等待、读取及最终身份复核共享原取消与绝对期限，不构造自动批准、不启动同步后台线程。
 该结果仅为完整仓库绑定观察，未完成A/T/D写配方、正式GitBridge、独立Commit或业务Backup2。
 保持A干净、T2仅prepared、D物化；R1—R6、三平台业务消费者和有限Beta门禁仍开放。
+
+### R4 完整 Git 交付计划与范围合同
+
+[完整执行意图设计](changes/m09-r4-git-delivery-plan.md)将全来源、对象图、目录意图和提交事实先冻结为Core，
+原Route随后绑定Core资源，再封装完整Review引用，避免循环指纹和隐式扩张。
+复用原完整图/双树/CAS、父历史、Diff和提交编码，保持原容量与Native18门禁，旧Schema不变。
+组件未暴露为默认工具，不表示ProductLink/NativeBridge、实际归属/新批准、A/T2/D写流程、
+Backup2或R4发布完成；上述仍为后续正式业务接线关键路径。

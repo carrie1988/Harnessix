@@ -220,6 +220,12 @@ from harnessix.product_config.contracts import (
     ProviderFallbackDecision,
 )
 from harnessix.product_config.git_baseline_contracts import ProductGitDeliveryBaseline
+from harnessix.product_config.git_delivery_plan_contracts import (
+    ProductGitCheckpointInput,
+    ProductGitCommitInput,
+    ProductGitDeliveryCore,
+    ProductGitDeliveryPlan,
+)
 from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliveryBaselineV2,
     ProductGitDeliverySourceV2,
@@ -325,6 +331,13 @@ def generate_specs(output: Path) -> None:
     """把当前Python合同确定性导出到指定目录。"""
 
     output.mkdir(parents=True, exist_ok=True)
+    for name, model in (
+        ("product-git-checkpoint-input-v1", ProductGitCheckpointInput),
+        ("product-git-commit-input-v1", ProductGitCommitInput),
+        ("product-git-delivery-core-v1", ProductGitDeliveryCore),
+        ("product-git-delivery-plan-v1", ProductGitDeliveryPlan),
+    ):
+        write_json(output / f"{name}.schema.json", model.model_json_schema())
     write_json(output / "agent-event-v20.schema.json", AgentEvent.model_json_schema())
     write_json(output / "agent-thread-v20.schema.json", Thread.model_json_schema())
     write_json(

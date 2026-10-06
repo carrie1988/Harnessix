@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
+from typing import cast
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.git_inventory_contracts import (
     GitInventoryObject,
     GitInventoryRoots,
+    GitInventoryScope,
     GitObjectInventory,
+    snapshot_git_inventory_scope,
     snapshot_git_object_inventory,
 )
 from harnessix.delivery.git_material_cas import GitMaterialCAS, GitObjectMaterialReference
@@ -31,7 +34,7 @@ def _mismatch() -> KernelError:
 def _read_object(
     cas: GitMaterialCAS,
     node: GitInventoryObject,
-    inventory: GitObjectInventory,
+    inventory: GitObjectInventory | GitInventoryScope,
     *,
     checkpoint: Callable[[], None],
 ) -> GitInventoryObject:
@@ -72,7 +75,7 @@ def _read_object(
 
 def _actual_closure(
     cas: GitMaterialCAS,
-    inventory: GitObjectInventory,
+    inventory: GitObjectInventory | GitInventoryScope,
     root: GitObjectRead,
     catalog: dict[str, GitInventoryObject],
     entries: int,
@@ -130,12 +133,10 @@ def _complete_union(
     checkpoint()
 
 
-def verify_git_inventory_materials(
-    cas: GitMaterialCAS, inventory: object, *, checkpoint: Callable[[], None]
-) -> GitObjectInventory:
-    """原CAS全成员及两树重新验内容后返回新元数据；不是授权或共同原子快照。"""
-    checkpoint()
-    declared = snapshot_git_object_inventory(inventory, checkpoint=checkpoint)
+def _verify_materials[T: GitObjectInventory | GitInventoryScope](
+    cas: GitMaterialCAS, declared: T, *, checkpoint: Callable[[], None]
+) -> T:
+    """只复用两种完整声明的原 CAS、双树和精确并集算法，不提供扩展回调。"""
     if type(cas) is not GitMaterialCAS:
         raise KernelError("git_inventory_materials_invalid", "Git对象目录材料读取端口无效")
     nodes: list[GitInventoryObject] = []
@@ -165,7 +166,29 @@ def verify_git_inventory_materials(
         checkpoint=checkpoint,
     )
     _complete_union(catalog, actual.roots, base, target, checkpoint=checkpoint)
-    # 原快照根据实际引用再派生全图角色和metrics，并重验原SHA，不修复输入声明。
-    result = snapshot_git_object_inventory(actual, checkpoint=checkpoint)
+    # 两种快照均重新派生完整图；持久目录额外重验原 SHA，不修复输入声明。
+    result: GitObjectInventory | GitInventoryScope
+    if type(actual) is GitObjectInventory:
+        result = snapshot_git_object_inventory(actual, checkpoint=checkpoint)
+    else:
+        result = snapshot_git_inventory_scope(actual, checkpoint=checkpoint)
     checkpoint()
-    return result
+    return cast(T, result)
+
+
+def verify_git_inventory_materials(
+    cas: GitMaterialCAS, inventory: object, *, checkpoint: Callable[[], None]
+) -> GitObjectInventory:
+    """原CAS全成员及两树重新验内容后返回新元数据；不是授权或共同原子快照。"""
+    checkpoint()
+    declared = snapshot_git_object_inventory(inventory, checkpoint=checkpoint)
+    return _verify_materials(cas, declared, checkpoint=checkpoint)
+
+
+def verify_git_inventory_scope_materials(
+    cas: GitMaterialCAS, scope: object, *, checkpoint: Callable[[], None]
+) -> GitInventoryScope:
+    """重验无绑定声明的全部实际材料；不授予写权限或产生持久业务证明。"""
+    checkpoint()
+    declared = snapshot_git_inventory_scope(scope, checkpoint=checkpoint)
+    return _verify_materials(cas, declared, checkpoint=checkpoint)

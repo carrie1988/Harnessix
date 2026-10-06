@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 69
-code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
+version: 70
+code_revision: bea57181dc5991cb69f3beb55f2fdfb21ca4c75b
 owners:
   - core
 modules:
@@ -61,6 +61,14 @@ related_tests:
   - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
+
+## 完整 Git 产品执行意图边界
+
+[完整 Git 交付计划设计](../changes/m09-r4-git-delivery-plan.md)已实现无绑定全对象范围、
+完整 Core→原 Route→Review 引用封套、严格实际类型快照及 512KiB 规范字节。
+材料入口复用原 CAS 全图、父历史、目标树、Diff 及提交编码，不能签发批准或执行 Git。
+默认产品工具未变化；正式 Artifact/Session/Router 归属、新批准、ProductLink/NativeBridge、
+A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Product Config模块设计
 

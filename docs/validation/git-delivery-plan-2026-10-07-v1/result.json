@@ -1,0 +1,138 @@
+{
+  "schema": "harnessix.git-delivery-plan-validation/v1",
+  "baseline_revision": "bea57181dc5991cb69f3beb55f2fdfb21ca4c75b",
+  "scope": "complete-plan-contract-and-materials-only",
+  "final": {
+    "installed_associated": {
+      "tests": 1153,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 402.256
+    },
+    "governance": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 38.962
+    },
+    "wheel": {
+      "source_modules": 475,
+      "all_bytes_match": true,
+      "wheel_sha256": "02fdefa7dac0b2dcc5fd4d29878ecc36087b0fdd4eb1c6fc6817547eda0461f2",
+      "wheel": "harnessix-1.0.0rc1-py3-none-any.whl"
+    },
+    "installed_imports": {
+      "source_outside": true,
+      "no_clone_src_sys_path": true,
+      "all_modules_from_installed_wheel": true,
+      "loaded_modules": 322,
+      "pytest_exit_code": 0
+    },
+    "schema_compatibility": {
+      "old_schemas": 272,
+      "all_old_bytes_match": true,
+      "new_schemas": [
+        "product-git-checkpoint-input-v1.schema.json",
+        "product-git-commit-input-v1.schema.json",
+        "product-git-delivery-core-v1.schema.json",
+        "product-git-delivery-plan-v1.schema.json"
+      ]
+    },
+    "source_inputs": {
+      "count": 1664,
+      "sha256": "05b7e0206c17d5e1c8450c592c5339306603a0c5721f9cefc502f1c3f58e795f"
+    },
+    "original_gates": {
+      "all_bytes_unchanged": true,
+      "paths": [
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.py",
+          "sha256": "f2e57fe1168703757895a8d7a61baf099d8e02dfb99c548963275d3ca666782c"
+        },
+        {
+          "path": "governance/readability-policy-v1.json",
+          "sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c"
+        },
+        {
+          "path": "governance/documentation-policy-v1.json",
+          "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha256": "edd750e5dfa3850f7d80a85b2aad2fc76f09f42f5bd4d0c11ac1a4020b129fad"
+        },
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.json",
+          "sha256": "d76e2a31c2e6ef569dac79096aeef8ff1753ffc600a6441c69d228aef242e668"
+        }
+      ]
+    },
+    "diagrams": {
+      "diagrams": 3,
+      "all_rendered_and_visually_reviewed": true,
+      "overlap_or_clipping": false
+    },
+    "ruff": "PASS",
+    "format": "PASS",
+    "mypy_source_modules": 475,
+    "readability": "PASS with unchanged policy",
+    "secret_scan": {
+      "inputs": 4966,
+      "findings": 0
+    },
+    "documentation": {
+      "changed_path_count": 0,
+      "document_count": 549,
+      "findings": [],
+      "link_count": 12715,
+      "mermaid_count": 1055,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    }
+  },
+  "retained_failures": {
+    "initial_plan": {
+      "tests": 161,
+      "failures": 26,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.395
+    },
+    "plan_second": {
+      "tests": 161,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.406
+    },
+    "review_red": {
+      "tests": 9,
+      "failures": 7,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.279
+    },
+    "governance_initial": {
+      "tests": 1413,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 40.413
+    },
+    "installed_initial": {
+      "tests": 1153,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 402.255
+    }
+  },
+  "business_approval_verified": false,
+  "default_git_tools_connected": false,
+  "product_link_native_bridge_backup2_complete": false,
+  "native_windows_accepted": false,
+  "commercial_release_accepted": false,
+  "model_requests": 0
+}

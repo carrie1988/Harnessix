@@ -31,7 +31,7 @@ def _invalid(code: str = "git_inventory_invalid") -> KernelError:
 
 
 class _Contract:
-    """仅为七种持久模型共用局部构造检查，不提供验真上下文。"""
+    """为有限目录模型共用局部构造检查，不提供验真上下文。"""
 
     __slots__ = ()
 
@@ -108,6 +108,20 @@ class GitInventoryMetrics(_Contract):
 
 
 @dataclass(frozen=True, slots=True)
+class GitInventoryScope(_Contract):
+    """规划前的完整对象图声明；不包含身份、阶段、批准或认证摘要。"""
+
+    action_kind: Literal["checkpoint", "commit"]
+    platform: PlatformKind
+    roots: GitInventoryRoots
+    objects: tuple[GitInventoryObject, ...] = field(repr=False)
+    external_history: GitBaseHistoryBoundary
+    limits: GitTreeClosureLimits
+    max_parents: int
+    metrics: GitInventoryMetrics
+
+
+@dataclass(frozen=True, slots=True)
 class GitObjectInventory(_Contract):
     """保存单阶段完整目录声明；通过形状检查不代表实际 CAS 或业务验真。"""
 
@@ -148,6 +162,7 @@ type _KnownModel = (
     | GitInventoryObject
     | GitBaseHistoryBoundary
     | GitInventoryMetrics
+    | GitInventoryScope
     | GitObjectInventory
     | GitInventoryPrefixProjection
     | GitObjectMaterialReference
@@ -162,6 +177,7 @@ _TYPES: set[type[_KnownModel]] = {
     GitInventoryObject,
     GitBaseHistoryBoundary,
     GitInventoryMetrics,
+    GitInventoryScope,
     GitObjectInventory,
     GitInventoryPrefixProjection,
     GitObjectMaterialReference,
@@ -398,7 +414,9 @@ def _walk(
     return count, maximum_depth, reachable
 
 
-def _root_shape(value: GitObjectInventory, catalog: dict[str, GitInventoryObject]) -> None:
+def _root_shape(
+    value: GitObjectInventory | GitInventoryScope, catalog: dict[str, GitInventoryObject]
+) -> None:
     """核对四根、唯一外部父边边界及交付提交的精确内部父引用。"""
     roots = value.roots
     if (
@@ -431,7 +449,9 @@ def _root_shape(value: GitObjectInventory, catalog: dict[str, GitInventoryObject
 
 
 def _inventory_catalog(
-    value: GitObjectInventory, limits: GitTreeClosureLimits, checkpoint: Callable[[], None]
+    value: GitObjectInventory | GitInventoryScope,
+    limits: GitTreeClosureLimits,
+    checkpoint: Callable[[], None],
 ) -> tuple[dict[str, GitInventoryObject], dict[str, set[GitInventoryRole]], int, int, int]:
     """构建严格有序声明目录，核对直接引用并累计唯一正文和直接边。"""
     catalog: dict[str, GitInventoryObject] = {}
@@ -467,7 +487,9 @@ def _inventory_catalog(
     return catalog, roles, total_bytes, tree_edges, parent_edges
 
 
-def _inventory_shape(value: GitObjectInventory, checkpoint: Callable[[], None]) -> None:
+def _inventory_shape(
+    value: GitObjectInventory | GitInventoryScope, checkpoint: Callable[[], None]
+) -> None:
     """核对完整根并集、逐路径展开、精确角色和声明计数。"""
     if not value.objects:
         raise _invalid()
@@ -528,6 +550,16 @@ def snapshot_git_object_inventory(
 
     snapshot = _snapshot_inventory_shape(value, checkpoint)
     _check_inventory_digests(snapshot, checkpoint)
+    checkpoint()
+    return snapshot
+
+
+def snapshot_git_inventory_scope(
+    value: object, *, checkpoint: Callable[[], None]
+) -> GitInventoryScope:
+    """严格深层重建并校验完整声明图；不验 CAS、摘要、归属或批准。"""
+    snapshot = _snapshot_model(value, GitInventoryScope, checkpoint)
+    _inventory_shape(snapshot, checkpoint)
     checkpoint()
     return snapshot
 
