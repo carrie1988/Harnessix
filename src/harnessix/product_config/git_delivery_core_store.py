@@ -11,13 +11,20 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import cast
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.product_config.git_delivery_observed_contracts import ProductGitDeliveryCoreV2
+from harnessix.product_config.git_delivery_observed_wire import (
+    decode_product_git_delivery_core_v2,
+    encode_product_git_delivery_core_v2,
+)
 from harnessix.product_config.git_delivery_plan_contracts import ProductGitDeliveryCore
 from harnessix.product_config.git_delivery_plan_snapshot import (
     invalid_git_delivery_plan,
     snapshot_product_git_delivery_core,
+    snapshot_product_git_delivery_core_v2,
 )
 from harnessix.product_config.git_delivery_plan_wire import (
     MAX_PRODUCT_GIT_PLAN_BYTES,
@@ -83,6 +90,81 @@ def _body(value: object, digest: str) -> bytes:
     return value
 
 
+def _persist[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
+    source_store: object, core: object, kind: type[T], checkpoint: Callable[[], None]
+) -> T:
+    """两代共用唯一原耐久写/读回算法，规范字节与内容地址全部核验。"""
+    check = _Checkpoint(checkpoint)
+    check()
+    store = _store(source_store)
+    snapshot = (
+        snapshot_product_git_delivery_core(core, checkpoint=check)
+        if kind is ProductGitDeliveryCore
+        else snapshot_product_git_delivery_core_v2(core, checkpoint=check)
+    )
+    body = (
+        encode_product_git_delivery_core(snapshot, checkpoint=check)
+        if kind is ProductGitDeliveryCore
+        else encode_product_git_delivery_core_v2(snapshot, checkpoint=check)
+    )
+    if hashlib.sha256(body).hexdigest() != snapshot.fingerprint:
+        raise invalid_git_delivery_plan()
+    try:
+        check()
+        store.put_blob(snapshot.fingerprint, body, checkpoint=check)
+        check()
+        actual = store.blob(snapshot.fingerprint, checkpoint=check)
+        check()
+        if _body(actual, snapshot.fingerprint) != body:
+            raise _io_error(True)
+        result = (
+            decode_product_git_delivery_core(actual, checkpoint=check)
+            if kind is ProductGitDeliveryCore
+            else decode_product_git_delivery_core_v2(actual, checkpoint=check)
+        )
+        check()
+        return cast(T, result)
+    except UpstreamCheckpointError as error:
+        if check.error is not None:
+            raise check.error from None
+        # 原 Store 显式标记实际检查点，解一层保留原控制身份，不按 code 放行。
+        raise error.error from None
+    except Exception:
+        if check.error is not None:
+            raise check.error from None
+        raise _io_error(True) from None
+
+
+def _load[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
+    source_store: object, fingerprint: object, kind: type[T], checkpoint: Callable[[], None]
+) -> T:
+    """两代共享原固定地址和完整读算法；不新增Store、SQL或授权用途。"""
+    check = _Checkpoint(checkpoint)
+    check()
+    store = _store(source_store)
+    digest = _fingerprint(fingerprint)
+    try:
+        check()
+        body = store.blob(digest, checkpoint=check)
+        check()
+        actual = _body(body, digest)
+        result = (
+            decode_product_git_delivery_core(actual, checkpoint=check)
+            if kind is ProductGitDeliveryCore
+            else decode_product_git_delivery_core_v2(actual, checkpoint=check)
+        )
+        check()
+        return cast(T, result)
+    except UpstreamCheckpointError as error:
+        if check.error is not None:
+            raise check.error from None
+        raise error.error from None
+    except Exception:
+        if check.error is not None:
+            raise check.error from None
+        raise _io_error(False) from None
+
+
 @dataclass(frozen=True, slots=True)
 class ProductGitDeliveryCoreStore:
     """受信宿主原 CAS 的有限 Core 入口；不核验或推断宿主业务权威。"""
@@ -94,50 +176,22 @@ class ProductGitDeliveryCoreStore:
 
     def persist(self, core: object, *, checkpoint: Callable[[], None]) -> ProductGitDeliveryCore:
         """完整快照、规范编码、原 CAS 写入及精确回读全部通过才返回新 Core。"""
-        check = _Checkpoint(checkpoint)
-        check()
-        store = _store(self.store)
-        snapshot = snapshot_product_git_delivery_core(core, checkpoint=check)
-        body = encode_product_git_delivery_core(snapshot, checkpoint=check)
-        if hashlib.sha256(body).hexdigest() != snapshot.fingerprint:
-            raise invalid_git_delivery_plan()
-        try:
-            check()
-            store.put_blob(snapshot.fingerprint, body, checkpoint=check)
-            check()
-            actual = store.blob(snapshot.fingerprint, checkpoint=check)
-            check()
-            if _body(actual, snapshot.fingerprint) != body:
-                raise _io_error(True)
-            result = decode_product_git_delivery_core(actual, checkpoint=check)
-            check()
-            return result
-        except UpstreamCheckpointError as error:
-            # 原 Store 显式标记实际检查点，解一层保留原控制身份，不按 code 放行。
-            raise error.error from None
-        except Exception:
-            if check.error is not None:
-                raise check.error from None
-            raise _io_error(True) from None
+        return _persist(self.store, core, ProductGitDeliveryCore, checkpoint)
+
+    def persist_v2(
+        self, core: object, *, checkpoint: Callable[[], None]
+    ) -> ProductGitDeliveryCoreV2:
+        """全用户观察进入同一原CAS；旧Core1不会在新入口被升级。"""
+        return _persist(self.store, core, ProductGitDeliveryCoreV2, checkpoint)
 
     def load(
         self, fingerprint: object, *, checkpoint: Callable[[], None]
     ) -> ProductGitDeliveryCore:
         """按唯一原内容地址完整恢复新快照，不把 CAS 摘要当作归属或批准证明。"""
-        check = _Checkpoint(checkpoint)
-        check()
-        store = _store(self.store)
-        digest = _fingerprint(fingerprint)
-        try:
-            check()
-            body = store.blob(digest, checkpoint=check)
-            check()
-            result = decode_product_git_delivery_core(_body(body, digest), checkpoint=check)
-            check()
-            return result
-        except UpstreamCheckpointError as error:
-            raise error.error from None
-        except Exception:
-            if check.error is not None:
-                raise check.error from None
-            raise _io_error(False) from None
+        return _load(self.store, fingerprint, ProductGitDeliveryCore, checkpoint)
+
+    def load_v2(
+        self, fingerprint: object, *, checkpoint: Callable[[], None]
+    ) -> ProductGitDeliveryCoreV2:
+        """只恢复完整Core2；缺完整U观察的旧记录不能补签或新代际解读。"""
+        return _load(self.store, fingerprint, ProductGitDeliveryCoreV2, checkpoint)

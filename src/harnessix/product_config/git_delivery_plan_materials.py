@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import cast
 
 from harnessix.delivery.contracts import MAX_WORKSPACE_DIFF_BYTES
 from harnessix.delivery.git import _commit_bytes
 from harnessix.delivery.git_inventory_materials import verify_git_inventory_scope_materials
 from harnessix.delivery.git_material_cas import GitMaterialCAS
 from harnessix.delivery.git_object_material import GitObjectMaterial
-from harnessix.delivery.git_tree_diff import prepare_git_tree_diff
+from harnessix.delivery.git_tree_diff import GitTreeDiff, prepare_git_tree_diff
+from harnessix.product_config.git_delivery_observed_contracts import ProductGitDeliveryCoreV2
 from harnessix.product_config.git_delivery_plan_contracts import ProductGitDeliveryCore
 from harnessix.product_config.git_delivery_plan_snapshot import (
     invalid_git_delivery_plan,
     snapshot_product_git_delivery_core,
+    snapshot_product_git_delivery_core_v2,
 )
 from harnessix.workspace.parent_closure_codec import read_workspace_parent_closure
 
@@ -22,7 +26,41 @@ def verify_product_git_delivery_core_materials(
     cas: GitMaterialCAS, value: object, *, checkpoint: Callable[[], None]
 ) -> ProductGitDeliveryCore:
     """全 CAS → 两树闭包 → 原净变更投影 → 完整 Diff → 原提交编码依次核验。"""
-    core = snapshot_product_git_delivery_core(value, checkpoint=checkpoint)
+    return _verify_materials(cas, value, ProductGitDeliveryCore, checkpoint)[0]
+
+
+def verify_product_git_delivery_core_materials_v2(
+    cas: GitMaterialCAS, value: object, *, checkpoint: Callable[[], None]
+) -> ProductGitDeliveryCoreV2:
+    """完整Core2及全对象/父历史/净变更进入同一原算法，不解包为旧Core。"""
+    return _verify_materials(cas, value, ProductGitDeliveryCoreV2, checkpoint)[0]
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedProductGitDeliveryMaterials:
+    """本次完整验证后的事实数据，不是可转授的Scope、批准或认证收据。"""
+
+    core: ProductGitDeliveryCoreV2 = field(repr=False)
+    diff: GitTreeDiff = field(repr=False)
+
+
+def read_product_git_delivery_core_materials_v2(
+    cas: GitMaterialCAS, value: object, *, checkpoint: Callable[[], None]
+) -> VerifiedProductGitDeliveryMaterials:
+    """Review复用唯一材料算法产出的完整Diff，不另行重算或构造假Workspace事务。"""
+    core, diff = _verify_materials(cas, value, ProductGitDeliveryCoreV2, checkpoint)
+    return VerifiedProductGitDeliveryMaterials(core, diff)
+
+
+def _verify_materials[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
+    cas: GitMaterialCAS, value: object, kind: type[T], checkpoint: Callable[[], None]
+) -> tuple[T, GitTreeDiff]:
+    """两代共用原全闭包、完整Diff及提交正文算法；返回原同一次完整材料事实。"""
+    core = (
+        snapshot_product_git_delivery_core(value, checkpoint=checkpoint)
+        if kind is ProductGitDeliveryCore
+        else snapshot_product_git_delivery_core_v2(value, checkpoint=checkpoint)
+    )
     scope = verify_git_inventory_scope_materials(cas, core.object_scope, checkpoint=checkpoint)
     # Source2 的完整 Manifest/Chunk 仍由原唯一 CAS 读取，摘要字段不是父历史正文。
     read_workspace_parent_closure(
@@ -88,4 +126,4 @@ def verify_product_git_delivery_core_materials(
         if cas.read(roots[spec.expected_commit_oid]).body != expected.body:
             raise invalid_git_delivery_plan()
     checkpoint()
-    return core
+    return cast(T, core), diff

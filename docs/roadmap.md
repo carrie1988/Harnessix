@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 194
-code_revision: db160c8caeafb0385a2362ccd0af1502a1f6e79e
+version: 195
+code_revision: d8524741e12466a8bade4adc72ad8d3e9222cfe1
 owners:
   - core
 modules:
@@ -2173,3 +2173,13 @@ Backup2或R4发布完成；上述仍为后续正式业务接线关键路径。
 不以配置名称摘要冒充配置值绑定，不向旧Core1隐蔽注入新字段。
 后继正式规划仍需显式纳入完整用户观察代际，并接通真实Git Review、ProductLink/NativeBridge、
 A/T2/D、独立Commit和Backup2；本组件不关闭R1—R6、真实模型编码质量、三平台或同候选Beta。
+
+## 完整用户观察的正式Core2与耐久恢复
+
+[完整详细设计](changes/m09-r4-git-observed-core.md)定义独立Core2/Plan2。新代际唯一保存完整UserObservation，
+原CAS存读、Route恢复和原材料算法均保留所有字段，不把配置值塞入旧名称字段。
+原Core1/Plan1字节兼容，错代际拒绝，不新建Store、SQL或认证用途。
+本组件仅闭合数据与IO边界；默认Planner/Review/Executor及Git业务写与恢复仍待实施。
+
+[正式组件验收](validation/git-core-observation-2026-10-07-v1/README.md)留存同候选安装、原Schema及门禁字节、完整测试和失败证据；
+声明合同/原CAS验证与真实认证SDK回归分别记录，不据此关闭默认Git业务或商业发布门禁。

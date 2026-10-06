@@ -1,0 +1,206 @@
+{
+  "schema": "harnessix.git-core-observation-validation/v1",
+  "baseline_revision": "d8524741e12466a8bade4adc72ad8d3e9222cfe1",
+  "scope": "formal-Core2-Plan2-original-CAS-route-and-full-materials-only",
+  "status": "PASS",
+  "final": {
+    "new_contracts": {
+      "tests": 468,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 14.869,
+      "passed": 468
+    },
+    "installed_associated": {
+      "tests": 5818,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 27,
+      "seconds": 949.22,
+      "passed": 5791,
+      "skip_reasons": {
+        "Windows Junction语义": 1,
+        "Windows长路径语义": 1,
+        "Windows句柄所有权语义": 1,
+        "Windows快照稳定性语义": 1,
+        "原生Windows NTFS句柄写入与故障恢复": 23
+      }
+    },
+    "installed_authenticated_sdk": {
+      "tests": 87,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 153.657,
+      "passed": 87
+    },
+    "governance": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 41.334,
+      "passed": 1413
+    },
+    "wheel": {
+      "source_modules": 485,
+      "all_bytes_match": true,
+      "wheel": "harnessix-1.0.0rc1-py3-none-any.whl",
+      "wheel_sha256": "fe7b58afd08425b4a578228d9e8c6f6f048cdde0aa42b850cd7c234c935e7d50",
+      "dependency_environment": "managed-existing-test-venv",
+      "fresh_dependency_environment": false
+    },
+    "schema_compatibility": {
+      "original_count": 277,
+      "all_original_bytes_unchanged": true,
+      "new_schemas": [
+        "spec/product-git-delivery-core-v2.schema.json",
+        "spec/product-git-delivery-plan-v2.schema.json"
+      ],
+      "regenerated_subset_count": 241,
+      "generator_check": "PASS"
+    },
+    "source_inputs": {
+      "count": 1694,
+      "main_clone_exact": true,
+      "source_inputs_sha256": "e17a6e5961f5879d1c27f74eceeeeb812731d85820bbdc552ad04302e779544d",
+      "validation_package_self_excluded": true
+    },
+    "original_gates": {
+      "all_bytes_unchanged": true,
+      "paths": [
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.py",
+          "sha256": "f2e57fe1168703757895a8d7a61baf099d8e02dfb99c548963275d3ca666782c"
+        },
+        {
+          "path": "governance/readability-policy-v1.json",
+          "sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c"
+        },
+        {
+          "path": "governance/documentation-policy-v1.json",
+          "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha256": "edd750e5dfa3850f7d80a85b2aad2fc76f09f42f5bd4d0c11ac1a4020b129fad"
+        },
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.json",
+          "sha256": "d76e2a31c2e6ef569dac79096aeef8ff1753ffc600a6441c69d228aef242e668"
+        }
+      ],
+      "native_gate_semantics": "Native18/27 selectors/13 Hooks and original bounds unchanged"
+    },
+    "diagrams": {
+      "rendered": 3,
+      "visually_inspected": 3,
+      "result": "PASS",
+      "rows": [
+        {
+          "diagram": 1,
+          "source_sha256": "248ea6eb2e561cadb041555b4de0b2c278af24600d12a147642b3aa42018e336",
+          "render_sha256": "0aa9e7e0a09fb9049020bcee3501d741355be6c7731878984d65c491f7c291d9",
+          "checks": [
+            "节点和箭头完整",
+            "文字清晰无截断重叠",
+            "原唯一算法与当前/待实现边界明确"
+          ]
+        },
+        {
+          "diagram": 2,
+          "source_sha256": "25a428af31b0cf7bb4a5e51ffba39cd57a486545241131064d2aa0698304a1d2",
+          "render_sha256": "661608a1bba710c51d0e9beaf58c839f31f3736bde0ba7c92ed79e569c885278",
+          "checks": [
+            "节点和箭头完整",
+            "文字清晰无截断重叠",
+            "原唯一算法与当前/待实现边界明确"
+          ]
+        },
+        {
+          "diagram": 3,
+          "source_sha256": "524c80391f9509a6de228b22a0f91015348d5ad504116bbc157eab3ef28dc92a",
+          "render_sha256": "ab3ff6f5538b34396cef7ce2a595a4193c5f5466175e5b2807ee110c6c1a0529",
+          "checks": [
+            "节点和箭头完整",
+            "文字清晰无截断重叠",
+            "原唯一算法与当前/待实现边界明确"
+          ]
+        }
+      ]
+    },
+    "installed_imports": {
+      "associated": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 356,
+        "pytest_exit_code": 0
+      },
+      "sdk": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 319,
+        "pytest_exit_code": 0
+      }
+    },
+    "quality": {
+      "ruff": "PASS",
+      "format": "PASS",
+      "mypy": {
+        "result": "PASS",
+        "source_files": 485
+      },
+      "readability": "PASS",
+      "documentation": {
+        "changed_path_count": 25,
+        "document_count": 558,
+        "findings": [],
+        "link_count": 12797,
+        "mermaid_count": 1064,
+        "policy_version": "harnessix.documentation-policy/v1",
+        "source_package_count": 26
+      },
+      "secret_scan": {
+        "result": "PASS",
+        "complete_inputs": 5006,
+        "fixed_rule_hits": 0,
+        "candidate_owned_files_staged_before_scan": 25
+      }
+    }
+  },
+  "retained_failures": {
+    "original_boundary_bypass": {
+      "tests": 578,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 13.975,
+      "passed": 573
+    },
+    "governance_protocol_initial": {
+      "tests": 1413,
+      "failures": 18,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 43.533,
+      "passed": 1395
+    },
+    "readability_initial": "original class limit rejected; same-module responsibility split without policy change",
+    "documentation_initial": "two required semantic headings missing; formal persistence/transaction and risk/tradeoff sections added"
+  },
+  "model_requests": 0,
+  "user_credentials_read": false,
+  "commercial_release_complete": false,
+  "current_boundary": "完整观察已进入正式合同和原CAS，但没有默认Git Planner/Review/Executor业务接线；声明fixture不是认证或批准证明；执行前仍必须重新核验当前用户状态",
+  "pending_release_work": [
+    "默认Git Planner与真实用户观察到Core2接线",
+    "正式完整Git Review JSONL与原批准backref",
+    "ProductLink/NativeBridge及A/T2/D真实写闭包",
+    "独立Commit与Backup2",
+    "真实R3质量与费用对账",
+    "同候选R1-R6、消费者平台和独立Beta"
+  ]
+}

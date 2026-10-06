@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 15
-code_revision: db160c8caeafb0385a2362ccd0af1502a1f6e79e
+version: 16
+code_revision: d8524741e12466a8bade4adc72ad8d3e9222cfe1
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -1016,3 +1016,13 @@ common/admin、物理Index、配置值、HEAD/逻辑Index/来源及完整会话�
 新ProductGitUserObservation与干净A的旧GitRepositoryBinding分离；后继正式Core代际必须
 显式绑定完整用户观察，不能只拷贝common/Index字段而丢失完整配置值和宿主身份声明。
 旧Core1、干净A及原容量/Native18不变；默认Planner/Review/Link/Bridge、实际Git写与业务备份仍待完成。
+
+## 完整用户观察的正式Core2与耐久恢复
+
+[完整详细设计](m09-r4-git-observed-core.md)定义独立Core2/Plan2。新代际唯一保存完整UserObservation，
+原CAS存读、Route恢复和原材料算法均保留所有字段，不把配置值塞入旧名称字段。
+原Core1/Plan1字节兼容，错代际拒绝，不新建Store、SQL或认证用途。
+本组件仅闭合数据与IO边界；默认Planner/Review/Executor及Git业务写与恢复仍待实施。
+
+[正式组件验收](../validation/git-core-observation-2026-10-07-v1/README.md)留存同候选安装、原Schema及门禁字节、完整测试和失败证据；
+声明合同/原CAS验证与真实认证SDK回归分别记录，不据此关闭默认Git业务或商业发布门禁。

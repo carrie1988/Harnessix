@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ntpath
 import posixpath
-from typing import Literal, Self
+from typing import TYPE_CHECKING, Literal, Self
 from uuid import UUID
 
 from pydantic import (
@@ -35,6 +35,12 @@ from harnessix.tools.contracts import Revision
 from harnessix.trusted_actions.contracts import CanonicalActionResource
 from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2
 from harnessix.workspace.contracts import PlatformKind
+
+if TYPE_CHECKING:
+    from harnessix.product_config.git_delivery_observed_contracts import (
+        ProductGitDeliveryCoreV2,
+        ProductGitDeliveryPlanV2,
+    )
 
 
 class ProductGitCheckpointInput(DeliveryContract):
@@ -188,7 +194,9 @@ class ProductGitDeliveryCore(DeliveryContract):
         return self
 
 
-def product_git_delivery_core_fingerprint(core: ProductGitDeliveryCore) -> str:
+def product_git_delivery_core_fingerprint(
+    core: ProductGitDeliveryCore | ProductGitDeliveryCoreV2,
+) -> str:
     """覆盖完整 Scope、父引用、来源、目标与提交，不包括后生成的 Route。"""
     return canonical_digest(core.model_dump(mode="json", exclude={"fingerprint"}, warnings="error"))
 
@@ -213,7 +221,9 @@ def _scope_schema(schema: JsonSchemaValue, handler: GetJsonSchemaHandler, seen: 
             _scope_schema(child, handler, seen)
 
 
-def product_git_delivery_resource(core: ProductGitDeliveryCore) -> CanonicalActionResource:
+def product_git_delivery_resource(
+    core: ProductGitDeliveryCore | ProductGitDeliveryCoreV2,
+) -> CanonicalActionResource:
     """绑定原 Router 资源；后续封套不得加入 Core 以外的执行意图。"""
     return CanonicalActionResource(
         kind="external",
@@ -257,7 +267,7 @@ class ProductGitDeliveryPlan(DeliveryContract):
 
 
 def validate_product_git_delivery_route(
-    core: ProductGitDeliveryCore, route: ActionRoutePlanV2
+    core: ProductGitDeliveryCore | ProductGitDeliveryCoreV2, route: ActionRoutePlanV2
 ) -> None:
     """封套与原 CAS 读回共用的交叉字段算法；不替代严格快照或认证读取。"""
     call, invocation = core.call, route.invocation
@@ -276,6 +286,8 @@ def validate_product_git_delivery_route(
         raise ValueError("Git计划必须由原Route绑定完整Core及Review")
 
 
-def product_git_delivery_plan_fingerprint(plan: ProductGitDeliveryPlan) -> str:
+def product_git_delivery_plan_fingerprint(
+    plan: ProductGitDeliveryPlan | ProductGitDeliveryPlanV2,
+) -> str:
     """Artifact SHA 是完整 JSONL SHA；不与原始 Diff SHA 混为一谈。"""
     return canonical_digest(plan.model_dump(mode="json", exclude={"fingerprint"}, warnings="error"))

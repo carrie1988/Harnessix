@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
+from harnessix.product_config.git_delivery_observed_contracts import ProductGitDeliveryCoreV2
 from harnessix.product_config.git_delivery_plan_contracts import (
     ProductGitDeliveryCore,
     validate_product_git_delivery_route,
@@ -34,6 +35,26 @@ def load_product_git_delivery_route_core(
     原 Router 的外部身份必须由稳定 invocation 与完整 binding 摘要派生，不能
     以任意自报 Delivery UUID 同时填入 Core 和 Route 来替代真实规划身份。
     """
+    return _load_route_core(core_store, route, ProductGitDeliveryCore, checkpoint)
+
+
+def load_product_git_delivery_route_core_v2(
+    core_store: ProductGitDeliveryCoreStore,
+    route: ActionRoutePlanV2,
+    *,
+    checkpoint: Callable[[], None],
+) -> ProductGitDeliveryCoreV2:
+    """原完整Route资源指向Core2内容地址；完整U字段必须保留至恢复结果。"""
+    return _load_route_core(core_store, route, ProductGitDeliveryCoreV2, checkpoint)
+
+
+def _load_route_core[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
+    core_store: ProductGitDeliveryCoreStore,
+    route: ActionRoutePlanV2,
+    kind: type[T],
+    checkpoint: Callable[[], None],
+) -> T:
+    """唯一原Route结构和交叉字段算法；明确代际而非按外形自动升级。"""
     checked = _snapshot(route, ActionRoutePlanV2, checkpoint)
     checkpoint()
     if (
@@ -44,7 +65,13 @@ def load_product_git_delivery_route_core(
         != external_action_identity(checked.invocation, checked.binding)
     ):
         raise invalid_git_delivery_plan()
-    core = core_store.load(checked.resources[0].attributes_sha256, checkpoint=checkpoint)
+    digest = checked.resources[0].attributes_sha256
+    loaded = (
+        core_store.load(digest, checkpoint=checkpoint)
+        if kind is ProductGitDeliveryCore
+        else core_store.load_v2(digest, checkpoint=checkpoint)
+    )
+    core = _snapshot(loaded, kind, checkpoint)
     checkpoint()
     try:
         validate_product_git_delivery_route(core, checked)

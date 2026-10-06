@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 72
-code_revision: db160c8caeafb0385a2362ccd0af1502a1f6e79e
+version: 73
+code_revision: d8524741e12466a8bade4adc72ad8d3e9222cfe1
 owners:
   - core
 modules:
@@ -2542,3 +2542,13 @@ Baseline2/物理Index/common/admin及完整配置值观察的内部入口。它�
 Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末端重验历史、HEAD、Index和完整来源。
 原干净A的RepositoryBinding及旧Core1字节不变；新观察合同不签发MAC、归属或批准，不替代
 正式规划/Review/ProductLink/NativeBridge、A/T2/D、独立Commit、Backup2和发布验收。
+
+## 完整用户观察的正式Core2与耐久恢复
+
+[完整详细设计](../changes/m09-r4-git-observed-core.md)定义独立Core2/Plan2。新代际唯一保存完整UserObservation，
+原CAS存读、Route恢复和原材料算法均保留所有字段，不把配置值塞入旧名称字段。
+原Core1/Plan1字节兼容，错代际拒绝，不新建Store、SQL或认证用途。
+本组件仅闭合数据与IO边界；默认Planner/Review/Executor及Git业务写与恢复仍待实施。
+
+[正式组件验收](../validation/git-core-observation-2026-10-07-v1/README.md)留存同候选安装、原Schema及门禁字节、完整测试和失败证据；
+声明合同/原CAS验证与真实认证SDK回归分别记录，不据此关闭默认Git业务或商业发布门禁。

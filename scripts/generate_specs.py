@@ -220,6 +220,10 @@ from harnessix.product_config.contracts import (
     ProviderFallbackDecision,
 )
 from harnessix.product_config.git_baseline_contracts import ProductGitDeliveryBaseline
+from harnessix.product_config.git_delivery_observed_contracts import (
+    ProductGitDeliveryCoreV2,
+    ProductGitDeliveryPlanV2,
+)
 from harnessix.product_config.git_delivery_plan_contracts import (
     ProductGitCheckpointInput,
     ProductGitCommitInput,
@@ -336,6 +340,8 @@ def generate_specs(output: Path) -> None:
         ("product-git-checkpoint-input-v1", ProductGitCheckpointInput),
         ("product-git-commit-input-v1", ProductGitCommitInput),
         ("product-git-delivery-core-v1", ProductGitDeliveryCore),
+        ("product-git-delivery-core-v2", ProductGitDeliveryCoreV2),
+        ("product-git-delivery-plan-v2", ProductGitDeliveryPlanV2),
         ("product-git-delivery-plan-v1", ProductGitDeliveryPlan),
         ("product-git-user-observation-v1", ProductGitUserObservation),
     ):

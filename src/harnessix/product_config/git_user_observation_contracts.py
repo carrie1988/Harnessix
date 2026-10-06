@@ -35,11 +35,16 @@ class ProductGitUserObservation(DeliveryContract):
     @model_validator(mode="after")
     def complete_observation(self) -> Self:
         """保持新来源代际与完整指纹，不能用名称摘要替代配置值观察。"""
-        if type(self.baseline) is not ProductGitDeliveryBaselineV2:
-            raise ValueError("Git用户观察必须包含完整新代际基准")
-        if self.fingerprint != product_git_user_observation_fingerprint(self):
-            raise ValueError("Git用户观察完整指纹不一致")
+        validate_product_git_user_observation(self)
         return self
+
+
+def validate_product_git_user_observation(value: ProductGitUserObservation) -> None:
+    """模型与正式Core消费共同复用唯一完整观察指纹算法，不产生认证或批准。"""
+    if type(value.baseline) is not ProductGitDeliveryBaselineV2:
+        raise ValueError("Git用户观察必须包含完整新代际基准")
+    if value.fingerprint != product_git_user_observation_fingerprint(value):
+        raise ValueError("Git用户观察完整指纹不一致")
 
 
 def product_git_user_observation_fingerprint(value: ProductGitUserObservation) -> str:

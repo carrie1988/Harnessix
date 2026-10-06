@@ -1,0 +1,2288 @@
+{
+  "$defs": {
+    "ActionRoutePlanV2": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.action-route-plan/v2",
+          "default": "harnessix.action-route-plan/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "invocation": {
+          "$ref": "#/$defs/CodingActionInvocation"
+        },
+        "binding": {
+          "$ref": "#/$defs/TrustedToolBinding"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/CanonicalActionResource"
+          },
+          "maxItems": 512,
+          "title": "Resources",
+          "type": "array"
+        },
+        "resources_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Resources Sha256",
+          "type": "string"
+        },
+        "execution": {
+          "$ref": "#/$defs/ExecutionPlanV3"
+        },
+        "external_action_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "External Action Id"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "invocation",
+        "binding",
+        "resources",
+        "resources_sha256",
+        "execution",
+        "fingerprint"
+      ],
+      "title": "ActionRoutePlanV2",
+      "type": "object"
+    },
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "maximum": 1048576,
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "records": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Records",
+          "type": "integer"
+        },
+        "format": {
+          "const": "jsonl/v1",
+          "default": "jsonl/v1",
+          "title": "Format",
+          "type": "string"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "sha256",
+        "size_bytes",
+        "records",
+        "complete",
+        "expires_at"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "CanonicalActionResource": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.action-resource/v1",
+          "default": "harnessix.action-resource/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "workspace",
+            "process",
+            "network",
+            "secret",
+            "git_ref",
+            "external"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "access": {
+          "enum": [
+            "read",
+            "write",
+            "execute",
+            "connect",
+            "use",
+            "update"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "identifier_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identifier Sha256",
+          "type": "string"
+        },
+        "attributes_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Attributes Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "access",
+        "identifier_sha256",
+        "attributes_sha256"
+      ],
+      "title": "CanonicalActionResource",
+      "type": "object"
+    },
+    "CodingActionInvocation": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.coding-action-invocation/v1",
+          "default": "harnessix.coding-action-invocation/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "invocation_id": {
+          "format": "uuid",
+          "title": "Invocation Id",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "builtin",
+            "mcp",
+            "skill",
+            "hook",
+            "custom"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "tool": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "tool_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tool Fingerprint",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        }
+      },
+      "required": [
+        "source",
+        "source_id",
+        "tool",
+        "tool_version",
+        "tool_fingerprint"
+      ],
+      "title": "CodingActionInvocation",
+      "type": "object"
+    },
+    "EffectClass": {
+      "enum": [
+        "read_only",
+        "idempotent_write",
+        "non_idempotent_write",
+        "destructive"
+      ],
+      "title": "EffectClass",
+      "type": "string"
+    },
+    "EnvironmentBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "value_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Value Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value_sha256"
+      ],
+      "title": "EnvironmentBinding",
+      "type": "object"
+    },
+    "ExecutionCapabilityEvidenceV2": {
+      "additionalProperties": false,
+      "properties": {
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "provider": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Provider",
+          "type": "string"
+        },
+        "provider_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider Version",
+          "type": "string"
+        },
+        "sandbox_levels": {
+          "items": {
+            "enum": [
+              "host_guarded",
+              "host_sandboxed",
+              "container_strong"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Sandbox Levels",
+          "type": "array"
+        },
+        "network_modes": {
+          "items": {
+            "enum": [
+              "none",
+              "limited",
+              "restricted",
+              "full"
+            ],
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Network Modes",
+          "type": "array"
+        },
+        "supports_pty": {
+          "title": "Supports Pty",
+          "type": "boolean"
+        },
+        "supports_background": {
+          "title": "Supports Background",
+          "type": "boolean"
+        },
+        "supports_process_tree": {
+          "title": "Supports Process Tree",
+          "type": "boolean"
+        },
+        "evidence_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Evidence Digest",
+          "type": "string"
+        },
+        "spec_version": {
+          "const": "harnessix.execution-capability/v2",
+          "default": "harnessix.execution-capability/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "provider_evidence_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Provider Evidence Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "provider",
+        "provider_version",
+        "sandbox_levels",
+        "network_modes",
+        "supports_pty",
+        "supports_background",
+        "supports_process_tree",
+        "evidence_digest",
+        "provider_evidence_digest"
+      ],
+      "title": "ExecutionCapabilityEvidenceV2",
+      "type": "object"
+    },
+    "ExecutionIntent": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.execution-intent/v1",
+          "default": "harnessix.execution-intent/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "builtin",
+            "mcp",
+            "skill",
+            "hook",
+            "custom"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "tool": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "tool_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tool Fingerprint",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "risk_level": {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        }
+      },
+      "required": [
+        "source",
+        "source_id",
+        "tool",
+        "tool_version",
+        "tool_fingerprint",
+        "effect_class",
+        "risk_level"
+      ],
+      "title": "ExecutionIntent",
+      "type": "object"
+    },
+    "ExecutionPlanV3": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.execution-plan/v3",
+          "default": "harnessix.execution-plan/v3",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "plan_id": {
+          "format": "uuid",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "intent": {
+          "$ref": "#/$defs/ExecutionIntent"
+        },
+        "workspace": {
+          "$ref": "#/$defs/WorkspaceSnapshotV2"
+        },
+        "environment": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EnvironmentBinding"
+          },
+          "maxItems": 128,
+          "title": "Environment",
+          "type": "array"
+        },
+        "secrets": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SecretVersionBinding"
+          },
+          "maxItems": 32,
+          "title": "Secrets",
+          "type": "array"
+        },
+        "sandbox": {
+          "$ref": "#/$defs/SandboxBindingV2"
+        },
+        "policy": {
+          "$ref": "#/$defs/ExecutionPolicyBinding"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/ExecutionCapabilityEvidenceV2"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "workspace",
+        "sandbox",
+        "policy",
+        "capabilities",
+        "fingerprint"
+      ],
+      "title": "ExecutionPlanV3",
+      "type": "object"
+    },
+    "ExecutionPolicyBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/PolicyDecisionKind"
+        },
+        "policy_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policy Id",
+          "type": "string"
+        },
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "decision",
+        "policy_id",
+        "reason_code"
+      ],
+      "title": "ExecutionPolicyBinding",
+      "type": "object"
+    },
+    "ExternalRoot": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Location",
+          "type": "string"
+        },
+        "path_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Path Digest",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "access": {
+          "items": {
+            "enum": [
+              "read",
+              "write",
+              "execute"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Access",
+          "type": "array"
+        }
+      },
+      "required": [
+        "location",
+        "path_digest",
+        "identity",
+        "access"
+      ],
+      "title": "ExternalRoot",
+      "type": "object"
+    },
+    "GitBaseHistoryBoundary": {
+      "additionalProperties": false,
+      "description": "保留基线提交父边的原顺序和重复出现，不授权外部历史读取。",
+      "properties": {
+        "kind": {
+          "const": "base_commit_parent_edges",
+          "title": "Kind",
+          "type": "string"
+        },
+        "base_commit": {
+          "$ref": "#/$defs/GitObjectRead"
+        },
+        "parents": {
+          "items": {
+            "$ref": "#/$defs/GitObjectRead"
+          },
+          "title": "Parents",
+          "type": "array"
+        },
+        "unique_parent_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unique Parent Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "base_commit",
+        "parents",
+        "unique_parent_ids"
+      ],
+      "title": "GitBaseHistoryBoundary",
+      "type": "object"
+    },
+    "GitBaselineMember": {
+      "additionalProperties": false,
+      "description": "原首before的Git树位置；不存在时不伪造空blob。",
+      "properties": {
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "oid": {
+          "anyOf": [
+            {
+              "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Oid"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "100644",
+                "100755"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "GitBaselineMember",
+      "type": "object"
+    },
+    "GitCheckpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.git-checkpoint/v1",
+          "default": "harnessix.git-checkpoint/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "checkpoint_id": {
+          "format": "uuid",
+          "title": "Checkpoint Id",
+          "type": "string"
+        },
+        "worktree_id": {
+          "format": "uuid",
+          "title": "Worktree Id",
+          "type": "string"
+        },
+        "worktree_plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Worktree Plan Fingerprint",
+          "type": "string"
+        },
+        "worktree_binding_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Worktree Binding Digest",
+          "type": "string"
+        },
+        "transaction_id": {
+          "format": "uuid",
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "transaction_plan_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Transaction Plan Fingerprint",
+          "type": "string"
+        },
+        "repository_binding_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Repository Binding Digest",
+          "type": "string"
+        },
+        "base_commit_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Base Commit Oid",
+          "type": "string"
+        },
+        "base_tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Base Tree Oid",
+          "type": "string"
+        },
+        "tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Tree Oid",
+          "type": "string"
+        },
+        "mutations_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Mutations Digest",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "checkpoint_id",
+        "worktree_id",
+        "worktree_plan_fingerprint",
+        "worktree_binding_digest",
+        "transaction_id",
+        "transaction_plan_fingerprint",
+        "repository_binding_digest",
+        "base_commit_oid",
+        "base_tree_oid",
+        "tree_oid",
+        "mutations_digest",
+        "created_at",
+        "digest"
+      ],
+      "title": "GitCheckpoint",
+      "type": "object"
+    },
+    "GitCommitReferences": {
+      "additionalProperties": false,
+      "description": "只记录原 tree 及有序 parent；不把 parent 自动声明为外部历史边界。",
+      "properties": {
+        "tree": {
+          "$ref": "#/$defs/GitObjectRead"
+        },
+        "parents": {
+          "items": {
+            "$ref": "#/$defs/GitObjectRead"
+          },
+          "title": "Parents",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tree",
+        "parents"
+      ],
+      "title": "GitCommitReferences",
+      "type": "object"
+    },
+    "GitCommitSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.git-commit-spec/v1",
+          "default": "harnessix.git-commit-spec/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "commit_id": {
+          "format": "uuid",
+          "title": "Commit Id",
+          "type": "string"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/GitCheckpoint"
+        },
+        "branch_ref": {
+          "maxLength": 1024,
+          "minLength": 12,
+          "title": "Branch Ref",
+          "type": "string"
+        },
+        "parent_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Parent Oid",
+          "type": "string"
+        },
+        "tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Tree Oid",
+          "type": "string"
+        },
+        "author_name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Author Name",
+          "type": "string"
+        },
+        "author_email": {
+          "maxLength": 320,
+          "minLength": 3,
+          "title": "Author Email",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 65536,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "authored_at": {
+          "format": "date-time",
+          "title": "Authored At",
+          "type": "string"
+        },
+        "hooks_policy": {
+          "const": "disabled",
+          "default": "disabled",
+          "title": "Hooks Policy",
+          "type": "string"
+        },
+        "raw_commit_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Raw Commit Sha256",
+          "type": "string"
+        },
+        "expected_commit_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Expected Commit Oid",
+          "type": "string"
+        },
+        "implementation_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Implementation Digest",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commit_id",
+        "checkpoint",
+        "branch_ref",
+        "parent_oid",
+        "tree_oid",
+        "author_name",
+        "author_email",
+        "message",
+        "authored_at",
+        "raw_commit_sha256",
+        "expected_commit_oid",
+        "implementation_digest",
+        "fingerprint"
+      ],
+      "title": "GitCommitSpec",
+      "type": "object"
+    },
+    "GitIndexFileObservation": {
+      "additionalProperties": false,
+      "description": "U 的物理 Index 观察；与逻辑索引摘要分离，不用于修改或恢复 Index。",
+      "properties": {
+        "presence": {
+          "enum": [
+            "absent",
+            "file"
+          ],
+          "title": "Presence",
+          "type": "string"
+        },
+        "identity": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Identity"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sha256"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "presence",
+        "identity",
+        "sha256",
+        "size"
+      ],
+      "title": "GitIndexFileObservation",
+      "type": "object"
+    },
+    "GitInventoryMetrics": {
+      "additionalProperties": false,
+      "description": "保存唯一对象量与两根逐路径展开量，避免对象去重省略路径预算。",
+      "properties": {
+        "object_count": {
+          "title": "Object Count",
+          "type": "integer"
+        },
+        "unique_body_bytes": {
+          "title": "Unique Body Bytes",
+          "type": "integer"
+        },
+        "direct_tree_edges": {
+          "title": "Direct Tree Edges",
+          "type": "integer"
+        },
+        "commit_parent_edges": {
+          "title": "Commit Parent Edges",
+          "type": "integer"
+        },
+        "base_expanded_entries": {
+          "title": "Base Expanded Entries",
+          "type": "integer"
+        },
+        "target_expanded_entries": {
+          "title": "Target Expanded Entries",
+          "type": "integer"
+        },
+        "base_tree_depth": {
+          "title": "Base Tree Depth",
+          "type": "integer"
+        },
+        "target_tree_depth": {
+          "title": "Target Tree Depth",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "object_count",
+        "unique_body_bytes",
+        "direct_tree_edges",
+        "commit_parent_edges",
+        "base_expanded_entries",
+        "target_expanded_entries",
+        "base_tree_depth",
+        "target_tree_depth"
+      ],
+      "title": "GitInventoryMetrics",
+      "type": "object"
+    },
+    "GitInventoryObject": {
+      "additionalProperties": false,
+      "description": "以原七字段 CAS 引用保存一个对象及其全部业务角色、直接引用。",
+      "properties": {
+        "material": {
+          "$ref": "#/$defs/GitObjectMaterialReference"
+        },
+        "roles": {
+          "items": {
+            "enum": [
+              "base_commit",
+              "base_tree",
+              "target_tree",
+              "tree_member",
+              "delivery_commit"
+            ],
+            "type": "string"
+          },
+          "title": "Roles",
+          "type": "array"
+        },
+        "tree_entries": {
+          "items": {
+            "$ref": "#/$defs/GitTreeEntry"
+          },
+          "title": "Tree Entries",
+          "type": "array"
+        },
+        "commit_references": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GitCommitReferences"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "material",
+        "roles",
+        "tree_entries",
+        "commit_references"
+      ],
+      "title": "GitInventoryObject",
+      "type": "object"
+    },
+    "GitInventoryRoots": {
+      "additionalProperties": false,
+      "description": "声明完整基线、目标树及可选交付提交的四个类型根。",
+      "properties": {
+        "base_commit": {
+          "$ref": "#/$defs/GitObjectRead"
+        },
+        "base_tree": {
+          "$ref": "#/$defs/GitObjectRead"
+        },
+        "target_tree": {
+          "$ref": "#/$defs/GitObjectRead"
+        },
+        "delivery_commit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GitObjectRead"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "base_commit",
+        "base_tree",
+        "target_tree",
+        "delivery_commit"
+      ],
+      "title": "GitInventoryRoots",
+      "type": "object"
+    },
+    "GitInventoryScope": {
+      "additionalProperties": false,
+      "description": "规划前的完整对象图声明；不包含身份、阶段、批准或认证摘要。",
+      "properties": {
+        "action_kind": {
+          "enum": [
+            "checkpoint",
+            "commit"
+          ],
+          "title": "Action Kind",
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "roots": {
+          "$ref": "#/$defs/GitInventoryRoots"
+        },
+        "objects": {
+          "items": {
+            "$ref": "#/$defs/GitInventoryObject"
+          },
+          "title": "Objects",
+          "type": "array"
+        },
+        "external_history": {
+          "$ref": "#/$defs/GitBaseHistoryBoundary"
+        },
+        "limits": {
+          "$ref": "#/$defs/GitTreeClosureLimits"
+        },
+        "max_parents": {
+          "title": "Max Parents",
+          "type": "integer"
+        },
+        "metrics": {
+          "$ref": "#/$defs/GitInventoryMetrics"
+        }
+      },
+      "required": [
+        "action_kind",
+        "platform",
+        "roots",
+        "objects",
+        "external_history",
+        "limits",
+        "max_parents",
+        "metrics"
+      ],
+      "title": "GitInventoryScope",
+      "type": "object"
+    },
+    "GitObjectMaterialReference": {
+      "additionalProperties": false,
+      "description": "只有对象与完整正文的内容绑定；普通摘要不是原 Owner 或业务认证证明。",
+      "properties": {
+        "object_type": {
+          "enum": [
+            "blob",
+            "tree",
+            "commit"
+          ],
+          "title": "Object Type",
+          "type": "string"
+        },
+        "object_id": {
+          "title": "Object Id",
+          "type": "string"
+        },
+        "object_format": {
+          "enum": [
+            "sha1",
+            "sha256"
+          ],
+          "title": "Object Format",
+          "type": "string"
+        },
+        "body_sha256": {
+          "title": "Body Sha256",
+          "type": "string"
+        },
+        "body_bytes": {
+          "title": "Body Bytes",
+          "type": "integer"
+        },
+        "cas_digest": {
+          "title": "Cas Digest",
+          "type": "string"
+        },
+        "version": {
+          "const": "harnessix.git-object-material-reference/v1",
+          "default": "harnessix.git-object-material-reference/v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_type",
+        "object_id",
+        "object_format",
+        "body_sha256",
+        "body_bytes",
+        "cas_digest"
+      ],
+      "title": "GitObjectMaterialReference",
+      "type": "object"
+    },
+    "GitObjectRead": {
+      "additionalProperties": false,
+      "description": "明确固定类型、OID和格式；容量不是宿主可调的任意Process预算。",
+      "properties": {
+        "object_type": {
+          "enum": [
+            "blob",
+            "tree",
+            "commit"
+          ],
+          "title": "Object Type",
+          "type": "string"
+        },
+        "object_id": {
+          "title": "Object Id",
+          "type": "string"
+        },
+        "object_format": {
+          "enum": [
+            "sha1",
+            "sha256"
+          ],
+          "title": "Object Format",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_type",
+        "object_id",
+        "object_format"
+      ],
+      "title": "GitObjectRead",
+      "type": "object"
+    },
+    "GitTreeClosureLimits": {
+      "additionalProperties": false,
+      "description": "由受信宿主明确给出的内部验真限额；无产品默认值或额度豁免。",
+      "properties": {
+        "max_objects": {
+          "title": "Max Objects",
+          "type": "integer"
+        },
+        "max_body_bytes": {
+          "title": "Max Body Bytes",
+          "type": "integer"
+        },
+        "max_entries": {
+          "title": "Max Entries",
+          "type": "integer"
+        },
+        "max_depth": {
+          "title": "Max Depth",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_objects",
+        "max_body_bytes",
+        "max_entries",
+        "max_depth"
+      ],
+      "title": "GitTreeClosureLimits",
+      "type": "object"
+    },
+    "GitTreeEntry": {
+      "additionalProperties": false,
+      "description": "原始 basename、规范模式与精确子对象请求；名字不进入 repr。",
+      "properties": {
+        "mode": {
+          "enum": [
+            "40000",
+            "100644",
+            "100755",
+            "120000",
+            "160000"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "name": {
+          "format": "hex",
+          "pattern": "^(?:[0-9a-f]{2})*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "child": {
+          "$ref": "#/$defs/GitObjectRead"
+        }
+      },
+      "required": [
+        "mode",
+        "name",
+        "child"
+      ],
+      "title": "GitTreeEntry",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "PolicyDecisionKind": {
+      "enum": [
+        "allow",
+        "deny",
+        "require_approval"
+      ],
+      "title": "PolicyDecisionKind",
+      "type": "string"
+    },
+    "ProductGitDeliveryBaselineV2": {
+      "additionalProperties": false,
+      "description": "完整Source2绑定固定Git观察；沿用原对象、模式和全字段摘要校验。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-git-baseline/v2",
+          "default": "harnessix.product-git-baseline/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/ProductGitDeliverySourceV2"
+        },
+        "head_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Head Oid",
+          "type": "string"
+        },
+        "head_tree_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Head Tree Oid",
+          "type": "string"
+        },
+        "head_ref": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Head Ref",
+          "type": "string"
+        },
+        "index_observation_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Index Observation Sha256",
+          "type": "string"
+        },
+        "index_observation_bytes": {
+          "maximum": 8388608,
+          "minimum": 0,
+          "title": "Index Observation Bytes",
+          "type": "integer"
+        },
+        "status_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Status Sha256",
+          "type": "string"
+        },
+        "config_names_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Config Names Sha256",
+          "type": "string"
+        },
+        "reader_binding": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Reader Binding",
+          "type": "string"
+        },
+        "members": {
+          "items": {
+            "$ref": "#/$defs/GitBaselineMember"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "title": "Members",
+          "type": "array"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "head_oid",
+        "head_tree_oid",
+        "head_ref",
+        "index_observation_sha256",
+        "index_observation_bytes",
+        "status_sha256",
+        "config_names_sha256",
+        "reader_binding",
+        "members",
+        "digest"
+      ],
+      "title": "ProductGitDeliveryBaselineV2",
+      "type": "object"
+    },
+    "ProductGitDeliveryCoreV2": {
+      "additionalProperties": false,
+      "description": "U观察只序列化一次；只读视图让原唯一算法消费同一完整基准。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-git-delivery-core/v2",
+          "default": "harnessix.product-git-delivery-core/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "delivery_id": {
+          "format": "uuid",
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "store_id": {
+          "format": "uuid",
+          "title": "Store Id",
+          "type": "string"
+        },
+        "key_id": {
+          "format": "uuid",
+          "title": "Key Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "format": "uuid",
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "turn_id": {
+          "format": "uuid",
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "call": {
+          "$ref": "#/$defs/ToolCallContent"
+        },
+        "user_observation": {
+          "$ref": "#/$defs/ProductGitUserObservation"
+        },
+        "anchor_intent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProductGitWorktreeIntent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "worktree_intent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProductGitWorktreeIntent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checkpoint_delivery_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Checkpoint Delivery Id"
+        },
+        "object_scope": {
+          "$ref": "#/$defs/GitInventoryScope"
+        },
+        "diff_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Diff Sha256",
+          "type": "string"
+        },
+        "diff_bytes": {
+          "maximum": 67108864,
+          "minimum": 1,
+          "title": "Diff Bytes",
+          "type": "integer"
+        },
+        "commit_spec": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GitCommitSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "implementation_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Implementation Digest",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "delivery_id",
+        "store_id",
+        "key_id",
+        "thread_id",
+        "turn_id",
+        "call",
+        "user_observation",
+        "anchor_intent",
+        "worktree_intent",
+        "checkpoint_delivery_id",
+        "object_scope",
+        "diff_sha256",
+        "diff_bytes",
+        "commit_spec",
+        "implementation_digest",
+        "fingerprint"
+      ],
+      "title": "ProductGitDeliveryCoreV2",
+      "type": "object"
+    },
+    "ProductGitDeliverySourceV2": {
+      "additionalProperties": false,
+      "description": "当前全路径观察及完整父引用；不包含Git写入权限或新批准。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-git-delivery-source/v2",
+          "default": "harnessix.product-git-delivery-source/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "thread_id": {
+          "format": "uuid",
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "patches": {
+          "items": {
+            "$ref": "#/$defs/WorkspacePatchSourceReference"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "title": "Patches",
+          "type": "array"
+        },
+        "workspace": {
+          "$ref": "#/$defs/WorkspaceSnapshotV2"
+        },
+        "mutations": {
+          "items": {
+            "$ref": "#/$defs/WorkspaceMutation"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "title": "Mutations",
+          "type": "array"
+        },
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "thread_id",
+        "patches",
+        "workspace",
+        "mutations",
+        "digest"
+      ],
+      "title": "ProductGitDeliverySourceV2",
+      "type": "object"
+    },
+    "ProductGitUserObservation": {
+      "additionalProperties": false,
+      "description": "完整 Source2、基准及物理目录/Index 事实；摘要不证明 Session 或批准。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-git-user-observation/v1",
+          "default": "harnessix.product-git-user-observation/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "store_id": {
+          "format": "uuid",
+          "title": "Store Id",
+          "type": "string"
+        },
+        "key_id": {
+          "format": "uuid",
+          "title": "Key Id",
+          "type": "string"
+        },
+        "baseline": {
+          "$ref": "#/$defs/ProductGitDeliveryBaselineV2"
+        },
+        "common_directory_path_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Common Directory Path Sha256",
+          "type": "string"
+        },
+        "common_directory_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Common Directory Identity",
+          "type": "string"
+        },
+        "git_directory_path_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Git Directory Path Sha256",
+          "type": "string"
+        },
+        "git_directory_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Git Directory Identity",
+          "type": "string"
+        },
+        "index_file_observation": {
+          "$ref": "#/$defs/GitIndexFileObservation"
+        },
+        "config_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Config Sha256",
+          "type": "string"
+        },
+        "implementation_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Implementation Digest",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "store_id",
+        "key_id",
+        "baseline",
+        "common_directory_path_sha256",
+        "common_directory_identity",
+        "git_directory_path_sha256",
+        "git_directory_identity",
+        "index_file_observation",
+        "config_sha256",
+        "implementation_digest",
+        "fingerprint"
+      ],
+      "title": "ProductGitUserObservation",
+      "type": "object"
+    },
+    "ProductGitWorktreeIntent": {
+      "additionalProperties": false,
+      "description": "受信规划冻结的新目录意图；实际父身份及目标不存在仍须原生复核。",
+      "properties": {
+        "role": {
+          "enum": [
+            "anchor",
+            "delivery"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "worktree_id": {
+          "format": "uuid",
+          "title": "Worktree Id",
+          "type": "string"
+        },
+        "parent_path": {
+          "maxLength": 4059,
+          "minLength": 1,
+          "title": "Parent Path",
+          "type": "string"
+        },
+        "parent_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Parent Identity",
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "base_commit_oid": {
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "title": "Base Commit Oid",
+          "type": "string"
+        },
+        "expected_missing": {
+          "const": true,
+          "default": true,
+          "title": "Expected Missing",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "role",
+        "worktree_id",
+        "parent_path",
+        "parent_identity",
+        "platform",
+        "base_commit_oid"
+      ],
+      "title": "ProductGitWorktreeIntent",
+      "type": "object"
+    },
+    "RiskLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskLevel",
+      "type": "string"
+    },
+    "SandboxBindingV2": {
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "enum": [
+            "host_guarded",
+            "host_sandboxed",
+            "container_strong"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "backend": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Backend",
+          "type": "string"
+        },
+        "backend_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Backend Version",
+          "type": "string"
+        },
+        "network": {
+          "enum": [
+            "none",
+            "limited",
+            "restricted",
+            "full"
+          ],
+          "title": "Network",
+          "type": "string"
+        },
+        "capability_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Capability Digest",
+          "type": "string"
+        },
+        "profile_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Profile Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level",
+        "backend",
+        "backend_version",
+        "network",
+        "capability_digest",
+        "profile_digest"
+      ],
+      "title": "SandboxBindingV2",
+      "type": "object"
+    },
+    "SecretVersionBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "target": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "target"
+      ],
+      "title": "SecretVersionBinding",
+      "type": "object"
+    },
+    "ToolCallContent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tool_call",
+          "default": "tool_call",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "provider_call_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Provider Call Id",
+          "type": "string"
+        },
+        "tool": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "requires_approval": {
+          "default": false,
+          "title": "Requires Approval",
+          "type": "boolean"
+        },
+        "tool_fingerprint": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Fingerprint"
+        }
+      },
+      "required": [
+        "call_id",
+        "provider_call_id",
+        "tool",
+        "tool_version",
+        "effect_class"
+      ],
+      "title": "ToolCallContent",
+      "type": "object"
+    },
+    "TrustedToolBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.trusted-tool-binding/v1",
+          "default": "harnessix.trusted-tool-binding/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "builtin",
+            "mcp",
+            "skill",
+            "hook",
+            "custom"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "tool": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,255}$",
+          "title": "Tool",
+          "type": "string"
+        },
+        "tool_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "tool_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Tool Fingerprint",
+          "type": "string"
+        },
+        "input_schema_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Input Schema Sha256",
+          "type": "string"
+        },
+        "effect_class": {
+          "$ref": "#/$defs/EffectClass"
+        },
+        "risk_level": {
+          "$ref": "#/$defs/RiskLevel"
+        },
+        "recovery_mode": {
+          "enum": [
+            "none",
+            "durable_ledger",
+            "external_reconcile"
+          ],
+          "title": "Recovery Mode",
+          "type": "string"
+        },
+        "executor_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Executor Id",
+          "type": "string"
+        },
+        "binding_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Binding Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "source_id",
+        "tool",
+        "tool_version",
+        "tool_fingerprint",
+        "input_schema_sha256",
+        "effect_class",
+        "risk_level",
+        "recovery_mode",
+        "executor_id",
+        "binding_digest"
+      ],
+      "title": "TrustedToolBinding",
+      "type": "object"
+    },
+    "WorkspaceFileVersion": {
+      "additionalProperties": false,
+      "properties": {
+        "presence": {
+          "enum": [
+            "absent",
+            "file"
+          ],
+          "title": "Presence",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                420,
+                493
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "presence",
+        "size"
+      ],
+      "title": "WorkspaceFileVersion",
+      "type": "object"
+    },
+    "WorkspaceMutation": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "before": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        },
+        "after": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        }
+      },
+      "required": [
+        "path",
+        "before",
+        "after"
+      ],
+      "title": "WorkspaceMutation",
+      "type": "object"
+    },
+    "WorkspaceParentClosureReference": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 1,
+          "title": "Size",
+          "type": "integer"
+        },
+        "parent_count": {
+          "maximum": 32768,
+          "minimum": 1,
+          "title": "Parent Count",
+          "type": "integer"
+        },
+        "target_set_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Target Set Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sha256",
+        "size",
+        "parent_count",
+        "target_set_digest"
+      ],
+      "title": "WorkspaceParentClosureReference",
+      "type": "object"
+    },
+    "WorkspacePatchSourceReference": {
+      "additionalProperties": false,
+      "description": "原会话调用及两条计划身份；引用本身不能替代Session认证或新批准。",
+      "properties": {
+        "turn_id": {
+          "format": "uuid",
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "transaction_id": {
+          "format": "uuid",
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "route_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Route Fingerprint",
+          "type": "string"
+        },
+        "transaction_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Transaction Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "turn_id",
+        "call_id",
+        "transaction_id",
+        "route_fingerprint",
+        "transaction_fingerprint"
+      ],
+      "title": "WorkspacePatchSourceReference",
+      "type": "object"
+    },
+    "WorkspaceResourceObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Location",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "access": {
+          "enum": [
+            "read",
+            "write",
+            "execute"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "directory",
+            "missing"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "content_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Sha256"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location",
+        "path",
+        "access",
+        "kind",
+        "identity",
+        "size"
+      ],
+      "title": "WorkspaceResourceObservation",
+      "type": "object"
+    },
+    "WorkspaceSnapshotV2": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.workspace-snapshot/v2",
+          "default": "harnessix.workspace-snapshot/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "workspace_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "root_path_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Path Digest",
+          "type": "string"
+        },
+        "root_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Identity",
+          "type": "string"
+        },
+        "cwd": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Cwd",
+          "type": "string"
+        },
+        "external_roots": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExternalRoot"
+          },
+          "maxItems": 16,
+          "title": "External Roots",
+          "type": "array"
+        },
+        "resources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/WorkspaceResourceObservation"
+          },
+          "maxItems": 256,
+          "title": "Resources",
+          "type": "array"
+        },
+        "parent_closure": {
+          "$ref": "#/$defs/WorkspaceParentClosureReference"
+        },
+        "algorithm": {
+          "const": "selected-resources-parent-closure-sha256/v2",
+          "default": "selected-resources-parent-closure-sha256/v2",
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "workspace_id",
+        "root_path_digest",
+        "root_identity",
+        "cwd",
+        "parent_closure",
+        "revision"
+      ],
+      "title": "WorkspaceSnapshotV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Core2与原Route2/完整Artifact构成新封套；旧Plan1不接受新Core。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.product-git-delivery-plan/v2",
+      "default": "harnessix.product-git-delivery-plan/v2",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "core": {
+      "$ref": "#/$defs/ProductGitDeliveryCoreV2"
+    },
+    "route": {
+      "$ref": "#/$defs/ActionRoutePlanV2"
+    },
+    "review_artifact": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Fingerprint",
+      "type": "string"
+    }
+  },
+  "required": [
+    "core",
+    "route",
+    "review_artifact",
+    "fingerprint"
+  ],
+  "title": "ProductGitDeliveryPlanV2",
+  "type": "object"
+}

@@ -10,6 +10,10 @@ from typing import NoReturn, cast
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_delivery_observed_contracts import (
+    ProductGitDeliveryCoreV2,
+    ProductGitDeliveryPlanV2,
+)
 from harnessix.product_config.git_delivery_plan_contracts import (
     ProductGitDeliveryCore,
     ProductGitDeliveryPlan,
@@ -17,19 +21,29 @@ from harnessix.product_config.git_delivery_plan_contracts import (
 from harnessix.product_config.git_delivery_plan_snapshot import (
     invalid_git_delivery_plan,
     snapshot_product_git_delivery_core,
+    snapshot_product_git_delivery_core_v2,
     snapshot_product_git_delivery_plan,
+    snapshot_product_git_delivery_plan_v2,
 )
 
 MAX_PRODUCT_GIT_PLAN_BYTES = 512 * 1024
 
 
 def _encode(
-    plan: ProductGitDeliveryPlan | ProductGitDeliveryCore, checkpoint: Callable[[], None]
+    plan: ProductGitDeliveryPlan
+    | ProductGitDeliveryCore
+    | ProductGitDeliveryCoreV2
+    | ProductGitDeliveryPlanV2,
+    checkpoint: Callable[[], None],
 ) -> bytes:
     """完整逐块编码；超限或取消不返回任何部分记录，不提高现有账本预算。"""
     checkpoint()
     # Core 的原内容地址只排除自身指纹；嵌套指纹及全部事实仍完整保留。
-    exclude = {"fingerprint"} if type(plan) is ProductGitDeliveryCore else set()
+    exclude = (
+        {"fingerprint"}
+        if type(plan) in {ProductGitDeliveryCore, ProductGitDeliveryCoreV2}
+        else set()
+    )
     payload = plan.model_dump(mode="json", exclude=exclude, warnings="error")
     encoder = json.JSONEncoder(
         ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
@@ -83,10 +97,13 @@ def decode_product_git_delivery_core(
     return _decode(body, ProductGitDeliveryCore, checkpoint)
 
 
-def _decode[T: ProductGitDeliveryPlan | ProductGitDeliveryCore](
-    body: object, kind: type[T], checkpoint: Callable[[], None]
-) -> T:
-    """两种有限模型共用原严格 JSON 算法，不接受调用方解析器或验证器。"""
+def _decode[
+    T: ProductGitDeliveryPlan
+    | ProductGitDeliveryCore
+    | ProductGitDeliveryCoreV2
+    | ProductGitDeliveryPlanV2
+](body: object, kind: type[T], checkpoint: Callable[[], None]) -> T:
+    """两代有限模型共用原严格 JSON 算法，不接受调用方解析器或验证器。"""
     checkpoint()
     if type(body) is not bytes or not 1 <= len(body) <= MAX_PRODUCT_GIT_PLAN_BYTES:
         raise invalid_git_delivery_plan()
@@ -118,20 +135,30 @@ def _decode[T: ProductGitDeliveryPlan | ProductGitDeliveryCore](
             body.decode("utf-8", "strict"), object_pairs_hook=pairs, parse_constant=constant
         )
         check()
-        if kind is ProductGitDeliveryCore:
+        if kind is ProductGitDeliveryCore or kind is ProductGitDeliveryCoreV2:
             if type(payload) is not dict or "fingerprint" in payload or not body.startswith(b"{"):
                 raise invalid_git_delivery_plan()
             # 只注入由完整原始正文计算的自身指纹，不默认补全任何持久字段。
             # 保留原始 JSON 字节，让严格 JSON 模式负责 UUID、日期及 hex 解码。
             digest = hashlib.sha256(body).hexdigest().encode("ascii")
             full = b'{"fingerprint":"' + digest + b'",' + body[1:]
-            core = ProductGitDeliveryCore.model_validate_json(full, context={"checkpoint": check})
-            snapshot: ProductGitDeliveryCore | ProductGitDeliveryPlan = (
-                snapshot_product_git_delivery_core(core, checkpoint=check)
-            )
+            parsed = kind.model_validate_json(full, context={"checkpoint": check})
         else:
-            plan = ProductGitDeliveryPlan.model_validate_json(body, context={"checkpoint": check})
-            snapshot = snapshot_product_git_delivery_plan(plan, checkpoint=check)
+            parsed = kind.model_validate_json(body, context={"checkpoint": check})
+        snapshot: (
+            ProductGitDeliveryCore
+            | ProductGitDeliveryCoreV2
+            | ProductGitDeliveryPlan
+            | ProductGitDeliveryPlanV2
+        )
+        if kind is ProductGitDeliveryCore:
+            snapshot = snapshot_product_git_delivery_core(parsed, checkpoint=check)
+        elif kind is ProductGitDeliveryCoreV2:
+            snapshot = snapshot_product_git_delivery_core_v2(parsed, checkpoint=check)
+        elif kind is ProductGitDeliveryPlan:
+            snapshot = snapshot_product_git_delivery_plan(parsed, checkpoint=check)
+        else:
+            snapshot = snapshot_product_git_delivery_plan_v2(parsed, checkpoint=check)
         if _encode(snapshot, check) != body:
             raise invalid_git_delivery_plan()
         check()

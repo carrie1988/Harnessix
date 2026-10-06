@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from harnessix.delivery.git_inventory_contracts import snapshot_git_inventory_scope
 from harnessix.domain.models import EffectClass
@@ -15,9 +16,12 @@ from harnessix.product_config.git_delivery_plan_contracts import (
     product_git_delivery_core_fingerprint,
 )
 
+if TYPE_CHECKING:
+    from harnessix.product_config.git_delivery_observed_contracts import ProductGitDeliveryCoreV2
+
 
 def validate_product_git_delivery_core(
-    core: ProductGitDeliveryCore, checkpoint: Callable[[], None]
+    core: ProductGitDeliveryCore | ProductGitDeliveryCoreV2, checkpoint: Callable[[], None]
 ) -> None:
     """完整来源、调用、对象根及原指纹共同验证，不补造未提供的事实。"""
     source, scope = core.baseline.source, core.object_scope
@@ -41,7 +45,7 @@ def validate_product_git_delivery_core(
         raise ValueError("Git交付Core完整指纹不一致")
 
 
-def validate_checkpoint_core(core: ProductGitDeliveryCore) -> None:
+def validate_checkpoint_core(core: ProductGitDeliveryCore | ProductGitDeliveryCoreV2) -> None:
     """新 A 与 D 的全部意图必须由同一 Checkpoint 调用覆盖。"""
     anchor, delivery = core.anchor_intent, core.worktree_intent
     if (
@@ -63,7 +67,7 @@ def validate_checkpoint_core(core: ProductGitDeliveryCore) -> None:
         raise ValueError("Git Checkpoint选择与完整原Patch集合不一致")
 
 
-def validate_commit_core(core: ProductGitDeliveryCore) -> None:
+def validate_commit_core(core: ProductGitDeliveryCore | ProductGitDeliveryCoreV2) -> None:
     """Commit 不创建新 A/D，不继承 Checkpoint 的批准。"""
     spec, scope = core.commit_spec, core.object_scope
     if (

@@ -16,6 +16,10 @@ from harnessix.delivery.git_inventory_contracts import (
     GitInventoryScope,
     snapshot_git_inventory_scope,
 )
+from harnessix.product_config.git_delivery_observed_contracts import (
+    ProductGitDeliveryCoreV2,
+    ProductGitDeliveryPlanV2,
+)
 from harnessix.product_config.git_delivery_plan_contracts import (
     ProductGitDeliveryCore,
     ProductGitDeliveryPlan,
@@ -125,6 +129,20 @@ def snapshot_product_git_delivery_plan(
 ) -> ProductGitDeliveryPlan:
     """返回新的完整封套，阻止修改调用 arguments 的旧别名改变执行计划。"""
     return _snapshot(value, ProductGitDeliveryPlan, checkpoint)
+
+
+def snapshot_product_git_delivery_core_v2(
+    value: object, *, checkpoint: Callable[[], None]
+) -> ProductGitDeliveryCoreV2:
+    """显式完整Core2深重建；不对旧Core1补观察或升级。"""
+    return _snapshot(value, ProductGitDeliveryCoreV2, checkpoint)
+
+
+def snapshot_product_git_delivery_plan_v2(
+    value: object, *, checkpoint: Callable[[], None]
+) -> ProductGitDeliveryPlanV2:
+    """显式Plan2完整快照，原四个入口共用唯一严格递归算法。"""
+    return _snapshot(value, ProductGitDeliveryPlanV2, checkpoint)
 
 
 def _snapshot[T: BaseModel](value: object, kind: type[T], checkpoint: Callable[[], None]) -> T:
