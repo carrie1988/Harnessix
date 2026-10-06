@@ -1,0 +1,206 @@
+{
+  "$defs": {
+    "GitDeliveryRecordClaims": {
+      "additionalProperties": false,
+      "description": "绑定一条新事实的业务身份和前缀位置；不是跨库归属或完整尾锚证明。",
+      "properties": {
+        "delivery_id": {
+          "format": "uuid",
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "format": "uuid",
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "turn_id": {
+          "format": "uuid",
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "route_id": {
+          "format": "uuid",
+          "title": "Route Id",
+          "type": "string"
+        },
+        "record_id": {
+          "format": "uuid",
+          "title": "Record Id",
+          "type": "string"
+        },
+        "publication_epoch": {
+          "format": "uuid",
+          "title": "Publication Epoch",
+          "type": "string"
+        },
+        "record_kind": {
+          "enum": [
+            "object_inventory",
+            "product_link",
+            "worktree_event",
+            "checkpoint",
+            "commit_event"
+          ],
+          "title": "Record Kind",
+          "type": "string"
+        },
+        "sequence": {
+          "maximum": 9223372036854775807,
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "previous_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Previous Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "delivery_id",
+        "thread_id",
+        "turn_id",
+        "call_id",
+        "route_id",
+        "record_id",
+        "publication_epoch",
+        "record_kind",
+        "sequence",
+        "previous_sha256"
+      ],
+      "title": "GitDeliveryRecordClaims",
+      "type": "object"
+    },
+    "GitPrefixStream": {
+      "additionalProperties": false,
+      "description": "单实体的唯一epoch及完整从零开始领域事件；第一条认证序号为一。",
+      "properties": {
+        "first": {
+          "$ref": "#/$defs/GitDeliveryRecordClaims"
+        },
+        "count": {
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        },
+        "last_body_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Last Body Sha256",
+          "type": "string"
+        },
+        "prefix_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Prefix Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "first",
+        "count",
+        "last_body_sha256",
+        "prefix_sha256"
+      ],
+      "title": "GitPrefixStream",
+      "type": "object"
+    },
+    "GitPrefixTable": {
+      "additionalProperties": false,
+      "description": "覆盖一张表所有列及全部行；包括冗余索引，不只认证payload。",
+      "properties": {
+        "table": {
+          "title": "Table",
+          "type": "string"
+        },
+        "rows": {
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Rows",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "table",
+        "rows",
+        "sha256"
+      ],
+      "title": "GitPrefixTable",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "独立尾锚签发的完整目录；它不是业务备份快照或物理执行绑定。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.git-prefix-catalog/v1",
+      "default": "harnessix.git-prefix-catalog/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "2",
+      "default": "2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "store_id": {
+      "format": "uuid",
+      "title": "Store Id",
+      "type": "string"
+    },
+    "key_id": {
+      "format": "uuid",
+      "title": "Key Id",
+      "type": "string"
+    },
+    "genesis_epoch": {
+      "format": "uuid",
+      "title": "Genesis Epoch",
+      "type": "string"
+    },
+    "revision": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "tables": {
+      "items": {
+        "$ref": "#/$defs/GitPrefixTable"
+      },
+      "maxItems": 12,
+      "minItems": 12,
+      "title": "Tables",
+      "type": "array"
+    },
+    "streams": {
+      "items": {
+        "$ref": "#/$defs/GitPrefixStream"
+      },
+      "maxItems": 100000,
+      "title": "Streams",
+      "type": "array"
+    }
+  },
+  "required": [
+    "store_id",
+    "key_id",
+    "genesis_epoch",
+    "revision",
+    "tables",
+    "streams"
+  ],
+  "title": "GitPrefixCatalog",
+  "type": "object"
+}

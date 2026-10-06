@@ -2243,3 +2243,13 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 原Git领域`plan_worktree`按实际Snapshot代际复核完整历史后才保存计划，缺失或错SHA不得重捕获补签。
 真实私有A中的T2保持prepared；原D物化、Checkpoint、Commit独立批准及Lease边界不变。
 该能力不表示默认认证GitBridge、业务Backup2或R3／R4发布门禁已经完成。
+
+
+## 空GitDB v2显式结构初始化
+
+[`git_store_genesis.py`](../../src/harnessix/delivery/git_store_genesis.py)的
+`initialize_git_store_v2`仅在调用者已有事务内复用原唯一DDL，接受新空库或精确空v1，
+拒绝已有v1业务记录、部分/未知结构及只读连接；不commit、不补签。
+[产品全前缀原语](../changes/m09-r4-git-prefix-ledger.md)持原Authority/Verifier显式完成空genesis、
+有限新增物理事实及独立尾锚；领域原`SQLiteGitDeliveryStore`仍保持v1装配。
+它不替代正式ProductLink、prepared T2/原生A/D、独立Commit及业务Backup2。

@@ -224,6 +224,7 @@ from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliveryBaselineV2,
     ProductGitDeliverySourceV2,
 )
+from harnessix.product_config.git_prefix_catalog import GitPrefixCatalog
 from harnessix.product_config.product_contracts import (
     ConfigurationDraft,
     ConfigurationWriteReceipt,
@@ -400,6 +401,7 @@ def generate_specs(output: Path) -> None:
         TypeAdapter(WorkspaceActionReviewRecord).json_schema(),
     )
     for name, model in (
+        ("git-prefix-catalog", GitPrefixCatalog),
         ("compaction-anchor", CompactionAnchor),
         ("compaction-plan", CompactionPlan),
         ("compaction-policy", CompactionPolicy),

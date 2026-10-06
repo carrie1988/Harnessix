@@ -1,0 +1,168 @@
+{
+  "schema": "harnessix.git-prefix-ledger-validation/v1",
+  "baseline_revision": "f7d06e2661b4ce91225790edd06a52298446c225",
+  "source_inputs_sha256": "8f4ab84bef487e0dfd1d2fabde31a77373cd932de29c9681f7dc007bb7c07410",
+  "scope": "physical-authenticated-ledger-only",
+  "final": {
+    "installed_associated": {
+      "tests": "1094",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "137.399"
+    },
+    "governance": {
+      "tests": "1413",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "39.922"
+    },
+    "wheel": {
+      "schema": "harnessix.wheel-source-proof/v1",
+      "source_modules": 468,
+      "all_bytes_match": true,
+      "wheel_sha256": "613e8dd1948627fc8f4a92a0498c8502ab1002fe746c0c66db415b29ad393753",
+      "wheel": "harnessix-1.0.0rc1-py3-none-any.whl"
+    },
+    "installed_imports": {
+      "source_outside": true,
+      "no_clone_src_sys_path": true,
+      "all_modules_from_installed_wheel": true,
+      "loaded_modules": 306
+    },
+    "historical_schemas": {
+      "schema": "harnessix.schema-byte-compatibility/v1",
+      "baseline": "f7d06e2661b4ce91225790edd06a52298446c225",
+      "unchanged_historical_schemas": 271,
+      "new_schemas": [
+        "spec/git-prefix-catalog-v1.schema.json"
+      ]
+    },
+    "documentation": {
+      "changed_path_count": 0,
+      "document_count": 544,
+      "findings": [],
+      "link_count": 12645,
+      "mermaid_count": 1049,
+      "policy_version": "harnessix.documentation-policy/v1",
+      "source_package_count": 26
+    },
+    "secret_scan": "fixed-rules-complete-scan-no-findings",
+    "ruff": "pass",
+    "ruff_format": "pass",
+    "mypy_modules": 468,
+    "source_revision_scope": "final-wheel-and-final-test-inputs",
+    "secret_scan_input_count": 4930
+  },
+  "earlier_runs": {
+    "source_associated": {
+      "tests": "1091",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "135.117"
+    },
+    "initial_associated": {
+      "tests": "853",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "6.200"
+    },
+    "independent_review_run3": {
+      "tests": "96",
+      "errors": "0",
+      "failures": "3",
+      "skipped": "0",
+      "time": "1.632"
+    },
+    "independent_review_run5": {
+      "tests": "96",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.620"
+    },
+    "main_review_after_fix": {
+      "tests": "110",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "2.549"
+    },
+    "governance_initial": {
+      "tests": "1413",
+      "errors": "0",
+      "failures": "7",
+      "skipped": "0",
+      "time": "34.079"
+    },
+    "main_review_missing_git_environment": {
+      "tests": "110",
+      "errors": "0",
+      "failures": "4",
+      "skipped": "0",
+      "time": "1.805"
+    },
+    "main_domain_fixture_initial": {
+      "tests": "14",
+      "errors": "0",
+      "failures": "2",
+      "skipped": "0",
+      "time": "0.464"
+    },
+    "first_installed_associated": {
+      "tests": "1091",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "137.478"
+    },
+    "first_governance_success": {
+      "tests": "1413",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "37.901"
+    },
+    "control_final": {
+      "tests": "110",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "2.539"
+    },
+    "previous_final_wheel_associated": {
+      "tests": "1091",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "135.937"
+    },
+    "previous_final_governance": {
+      "tests": "1413",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "39.848"
+    }
+  },
+  "counts_not_additive": true,
+  "legacy_default_unchanged": true,
+  "new_native_bridge_index_rejected": true,
+  "bailian_calls": 0,
+  "budget_changed": false,
+  "unknown_fee_reservations_changed": false,
+  "release_gates_closed": [],
+  "open": [
+    "formal-business-model-and-writer",
+    "approved-native-A/prepared-T2/D-bridge",
+    "default-checkpoint-and-independent-commit",
+    "CAS-business-snapshot-and-Backup2",
+    "Windows-consumer-and-installed-lifecycle",
+    "R3-real-task-quality",
+    "limited-independent-beta",
+    "R1-R6-commercial-acceptance"
+  ]
+}

@@ -2129,3 +2129,13 @@ Native18仅git.py四个材料身份叶更新，原选择器、原2分钟SDK和�
 后继仍为正式认证GitBridge与MAC／Owner／Scope／Diff／独立批准／Lease联合接线、
 Git业务状态备份闭合、Windows消费者、既定真实Task Pack质量与有限Beta。
 没有新增模型请求、预算释放、自动化或独立中间件。
+
+
+## R1/R4：GitDB v2物理认证账本
+
+[GitDB v2详细设计](changes/m09-r4-git-prefix-ledger.md)落地空库初始化、原Key有限五kind同事务认证旁表、
+规范完整表/事件目录及独立尾锚、只验真Reader和专用SQL合作取消窗口。
+旧v1非空历史不补签、不静默迁移；保持原容量、期限、27选择器及Native18材料。
+物理认证不等于完整ProductLink/Approval/NativeBridge/对象图或Backup2，新增桥接索引当前失败关闭。
+后继继续既定正式GitBridge与真实A/T/D、独立Commit、跨Store业务备份恢复、三平台消费者、
+R3真实编码质量与有限Beta；不删除首发必需功能，不关闭R1—R6。

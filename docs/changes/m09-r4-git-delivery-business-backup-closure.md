@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 10
-code_revision: d7e8668af32866c9e7fc8a31400e64ac98532539
+version: 11
+code_revision: f7d06e2661b4ce91225790edd06a52298446c225
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -38,6 +38,15 @@ supersedes: []
 
 本草案的Bridge／MAC持久关联、业务Git快照与Backup2仍待实现。
 领域A／T／D成功不表示这些产品接线已经完成，prepared T仍不得向A发布。
+
+## 当前物理认证账本边界
+
+[GitDB v2全前缀认证账本](m09-r4-git-prefix-ledger.md)已实现显式空结构/空genesis初始化、
+有限五kind物理事件的同事务认证旁表及独立规范全集尾锚、专用SQL取消窗口与只验真Reader。
+它不解析尚未实现的完整ProductPlan/ProductLink业务语义，不完成审批、A/T/D原生桥接、
+对象图及跨Store归属；当前明确拒绝新增NativeBridge索引，默认产品与原Git领域v1装配不改变。
+本设计后继的业务Writer/Loader及Backup2必须复用该物理原语并补齐语义与宿主共同锁校验，
+不能把任意已认证物理payload认定为真实执行成功或可恢复业务闭包。
 
 ## 1. 需求背景、状态与交付定义
 
@@ -587,8 +596,9 @@ Git记录认证已经复用原Key托管层的有限域分离端口：
 独立尾锚用途、严格claims及同Key独立HMAC域已由
 [`GitStorePrefixAuthority`/`GitStorePrefixVerifier`](../../src/harnessix/session/git_prefix_publication.py)
 实现，见[详设](m09-r4-git-prefix-publication.md)；它只签发或验真完整私有bytes候选，不解释catalog或写DB。
-后继仍须实现完整canonical catalog及全集覆盖、同事务原子账本、genesis/legacy核验和Backup v2消费，
-不能以现有issue、revision范围或read_only替代这些业务要求。
+规范catalog、物理全集覆盖、同事务认证旁表及尾锚、空genesis/legacy拒绝已由
+[物理账本原语](m09-r4-git-prefix-ledger.md)实现。后继仍须完整业务模型/阶段语义、
+跨Store拥有者/批准/原生桥接及Backup v2消费；物理认证不能代替这些业务要求。
 
 签发与领域事件写入在同一 GitDB 事务中提交；MAC 由宿主验证的新事实构造，不允许对任意已有未认证行批量补签。备份采用原核验 Authority 角色，禁止签发。前缀尾锚只证明所捕获历史，不能证明整个状态目录从未被回滚；合法旧备份回退仍由原 Restore 明确决策控制。
 

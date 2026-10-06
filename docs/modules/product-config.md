@@ -2503,3 +2503,12 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 原Git领域`plan_worktree`按实际Snapshot代际复核完整历史后才保存计划，缺失或错SHA不得重捕获补签。
 真实私有A中的T2保持prepared；原D物化、Checkpoint、Commit独立批准及Lease边界不变。
 该能力不表示默认认证GitBridge、业务Backup2或R3／R4发布门禁已经完成。
+
+
+## GitDB v2完整物理认证前缀
+
+[总体与详细设计](../changes/m09-r4-git-prefix-ledger.md)实现专用SQL检查点、固定全部表/列/事件捕获、
+唯一epoch与连续MAC前缀、独立规范全集尾锚、同事务有限发布及只验真Reader。
+认证适配位于本产品包，不新增delivery到session依赖，不扩容量/期限，不导出Key。
+当前不解释完整ProductLink/Approval/CAS业务语义，拒绝新增原生桥接索引；
+默认GitBridge、业务Backup2及R1—R6商用门禁仍开放。

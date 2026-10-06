@@ -1,0 +1,52 @@
+{
+  "schema": "harnessix.git-prefix-ledger-review-packet/v1",
+  "scope": "physical-authenticated-ledger-only",
+  "design": "docs/changes/m09-r4-git-prefix-ledger.md",
+  "resolved": [
+    {
+      "issue": "URI-readonly-not-query-only",
+      "change": "exact-v2-schema-then-zero-row-write-probe",
+      "coverage": "readonly begin and existing-genesis URI/query-only controls"
+    },
+    {
+      "issue": "self-weakref-not-issuer-origin",
+      "change": "weak-registry-owned-by-original-SQL-window",
+      "coverage": "copy/replace/manual/self-weakref reject"
+    },
+    {
+      "issue": "old-window-can-cross-transactions",
+      "change": "original-SQL-control-and-transaction-epoch",
+      "coverage": "commit/rollback/comments/savepoints/control-replacement"
+    },
+    {
+      "issue": "old-current-redundant-columns-can-change",
+      "change": "immutable binding columns and exact full row when no new entity event",
+      "coverage": "inventory digest and sibling-event negative controls"
+    },
+    {
+      "issue": "genesis-query-before-schema",
+      "change": "exact-schema-check-before-real-main-table-query",
+      "coverage": "temp/view shadow rejection"
+    },
+    {
+      "issue": "SQLite-leading-semicolon-and-BOM-transaction-boundary",
+      "change": "match-SQLite-leading-empty-statements-and-BOM-before-fixed-token",
+      "coverage": "three-added-actual-commit-and-window-reuse-negative-controls"
+    }
+  ],
+  "retained_failures": [
+    "review runs 1-4 including three original defects and four fixture TypeErrors",
+    "main-domain.xml: missing fixture parent",
+    "main-review-final.xml: wrong system Git 2.24 and incomplete readonly fix placement",
+    "governance.xml: wrong system Git instead of required fallback"
+  ],
+  "final_note": "Installed 1094 checks and 1413 governance checks pass; overlapping counts are not summed; no full-repo or new-platform/business acceptance claim",
+  "unchanged": [
+    "271 historical schemas",
+    "Native18 inputs",
+    "27 selectors",
+    "SDK/operation deadlines and original budgets",
+    "readability/documentation policies",
+    "default v1 domain store and product tool composition"
+  ]
+}
