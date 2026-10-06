@@ -20,6 +20,14 @@ supersedes: []
 
 # 产品Git交付的只读基准与完整对象摘要设计
 
+
+## 当前代际说明
+
+本文的Source1／Baseline1是仍受支持的旧合同。默认Patch／Rollback已生成事务领域2，
+其Git消费者采用[完整父历史来源与基准设计](m09-r4-git-parent-consumers.md)：实际来源2要求宿主显式
+提供原Workspace CAS端口，追加不可变父历史材料；原SQL Reader、用户Workspace、Index及Ref仍不写入。
+缺少端口明确拒绝，不把新来源降级到本文的旧只读格式。旧事务的无端口纯只读调用保持。
+
 ## 1. 需求背景、源码研究与设计目标
 
 [产品Git来源](m09-r4-product-git-delivery-source.md)已经证明本认证Thread成功Patch的连续链及当前最终文件，

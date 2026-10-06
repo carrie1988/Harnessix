@@ -1,0 +1,44 @@
+{
+  "schema": "harnessix.git-parent-consumer-review-packet/v1",
+  "baseline_revision": "d7e8668af32866c9e7fc8a31400e64ac98532539",
+  "source_inputs_sha256": "d35926b08b58074e36f847691d91b67b93a0e03d8f7a0dbe81f2824ef6cd490b",
+  "decisions": {
+    "projection_transaction": "真实A上的T2保持prepared，仅D物化；Commit独立批准",
+    "parent_history": "全部Manifest／Chunk引用进入正式新合同，原限额、原控制和原CAS保持",
+    "source_generation": "实际新事务采用Source2／Baseline2，无显式宿主端口不降级",
+    "reader_control": "单次checkpoint显式逐层传递，不临时替换共享属性；Store原控制保留"
+  },
+  "independent_reviews": {
+    "git_domain": {
+      "bounded_passed": 604,
+      "candidate_scope": "原Git领域与Native18；不含认证产品Bridge",
+      "failures_retained": [
+        "原8件红例",
+        "新增测试错误import",
+        "额外广泛回归中止"
+      ]
+    },
+    "product_history": {
+      "initial_failed": 5,
+      "initial_passed": 8,
+      "final_passed": 48,
+      "setup_errors_retained": 44,
+      "setup_errors_reason": "basetemp父目录不存在；未执行测试主体"
+    }
+  },
+  "unchanged_boundaries": {
+    "old_schemas": 269,
+    "native_inputs": 18,
+    "unchanged_native_bodies": 17,
+    "selectors": 27,
+    "sdk_deadline_seconds": 120,
+    "hooks": 13,
+    "resource_limit": 256,
+    "cas_blob_limit_mib": 8,
+    "capture_limit_mib": 32,
+    "physical_record_limit_kib": 512
+  },
+  "release_decision": "组件验证不代表R1—R6通过；认证GitBridge、Backup2、Windows消费者、真实R3及Beta保持开放",
+  "paid_model_calls": 0,
+  "budget_modified": false
+}

@@ -126,6 +126,18 @@ class TrustedActionDefinition:
     decode_arguments: ArgumentDecoder | None = None
 
 
+_ReadCheckpoint = Callable[[], None] | None
+
+
+def _read_action_snapshot(
+    audit: SQLiteActionAuditStore, plan_id: UUID, checkpoint: _ReadCheckpoint
+) -> ActionRouteSnapshot:
+    """有单次控制时显式传递；旧Reader调用不添加参数或替换共享属性。"""
+    if checkpoint is None:
+        return audit.load(plan_id)
+    return audit.load(plan_id, checkpoint=checkpoint)
+
+
 class TrustedActionRouter:
     """唯一计划、批准、执行和对账入口；注册信息全部由宿主持有。"""
 
@@ -291,8 +303,8 @@ class TrustedActionRouter:
 
         return recover_interrupted_action(self, plan_id)
 
-    def status(self, plan_id: UUID) -> ActionRouteSnapshot:
-        return self._audit.load(plan_id)
+    def status(self, plan_id: UUID, *, checkpoint: _ReadCheckpoint = None) -> ActionRouteSnapshot:
+        return _read_action_snapshot(self._audit, plan_id, checkpoint)
 
     def events(self, plan_id: UUID) -> tuple[ActionAuditEvent, ...]:
         return self._audit.events(plan_id)

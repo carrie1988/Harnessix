@@ -21,6 +21,14 @@ supersedes: []
 
 # 产品Git交付来源绑定与连续修改链设计
 
+
+## 当前代际说明
+
+本文的Source1／Baseline1是仍受支持的旧合同。默认Patch／Rollback已生成事务领域2，
+其Git消费者采用[完整父历史来源与基准设计](m09-r4-git-parent-consumers.md)：实际来源2要求宿主显式
+提供原Workspace CAS端口，追加不可变父历史材料；原SQL Reader、用户Workspace、Index及Ref仍不写入。
+缺少端口明确拒绝，不把新来源降级到本文的旧只读格式。旧事务的无端口纯只读调用保持。
+
 ## 1. 需求背景、设计目标与完成边界
 
 默认产品的`apply_patch_batch`先修改用户Workspace；原Git宿主组件则要求来源仓库干净，

@@ -104,10 +104,10 @@
     },
     {
       "path": "src/harnessix/delivery/git.py",
-      "bytes": 42265,
-      "sha256": "f266b65ee7648b8421943d8cfcf61a08cd589fa871b1756eb70fc48f2d15a1a3",
-      "crlf_bytes": 43247,
-      "crlf_sha256": "aa59d1ddeabe92c5ec9c429d3f242b91ccf616e1d7085e6cf360a89e27bcc722"
+      "bytes": 42402,
+      "sha256": "a6b9c763ef6d61ee3b87f1d0951ec4e73f6d5f7c60cc9f5af533a87ed3944e41",
+      "crlf_bytes": 43387,
+      "crlf_sha256": "7cf039a1b9e313ffa3fc603ca8f11340203c6f5562b346fbafc775ba6113d5d9"
     },
     {
       "path": "src/harnessix/product_config/git_delivery_process.py",

@@ -2110,3 +2110,22 @@ prepared T／Bridge MAC／私有A／D与独立Commit也尚未完成默认装配�
 原简单路径保护不修改，后继完整治理1413项通过；最终单一Wheel459件源码匹配，源码外关联1053项通过。
 独立评审的宿主控制与旧Reader缺省标签问题通过真实红例闭环；深度错误保持原存储错误分类，64项最终回归通过。
 首轮完整输入与后继修复输入分开绑定，不宣称最终同候选完整零失败或新平台验收。
+
+
+### R1/R4：完整父历史Git来源、基准与领域消费者
+
+[完整设计](changes/m09-r4-git-parent-consumers.md)贯通Source2／Baseline2、原认证成功来源、
+连续版本归并、全当前观察、固定HEAD／Index基准及原Git Runtime实际代际复核。
+默认SDK16个深层叶／401父观察、两种Git对象格式和认证重启具备真实回归；
+显式原CAS追加不新增业务SQL或用户Workspace／Index／Ref写入。旧269件Schema原字节保持。
+真实私有A中的prepared T2进入原D物化、Checkpoint及独立批准Commit，A／U保持干净；
+Native18仅git.py四个材料身份叶更新，原选择器、原2分钟SDK和原预算／期限不变。
+
+历史读取与当前Native观察共享单次取消／期限，原constructor控制保留；
+控制异常与数据损坏分别分类，未临时替换共享实例属性或放宽readability policy。
+[专项证据](validation/git-parent-consumers-2026-10-07-v1/README.md)区分各次输入、关联安装与治理范围，
+未完成的广泛回归不计为整套通过；本阶段不关闭R1—R6。
+
+后继仍为正式认证GitBridge与MAC／Owner／Scope／Diff／独立批准／Lease联合接线、
+Git业务状态备份闭合、Windows消费者、既定真实Task Pack质量与有限Beta。
+没有新增模型请求、预算释放、自动化或独立中间件。

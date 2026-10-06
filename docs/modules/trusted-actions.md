@@ -1775,3 +1775,12 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 模型接口、16文件公开Patch上限、取消、Lease／Root／Owner和错误语义保持。
 字段、部署升级、接口、源码调用链及验证范围见
 [联合接入详细设计](../changes/m09-r4-workspace-parent-closure.md#13-联合接入的实现与源码阅读入口)。
+
+
+## Git来源的单次完整历史读取控制
+
+[Git父历史消费者详设](../changes/m09-r4-git-parent-consumers.md#10-历史reader的单次控制传递)
+规定`Router.status`与原`Audit.load`可接收调用方checkpoint；它与Store原constructor控制共同执行，
+沿Manifest及每个Chunk传递，不暂时修改共享实例属性或重新开始期限。
+上游控制异常与真实历史损坏分别分类，原异常对象保留；旧无参数调用及全部Route合同字节保持。
+该参数不授予批准、会话访问权或业务写权限，不表示GitBridge完成。

@@ -230,9 +230,15 @@ class WorkspacePatchTransactionPlanner:
         self,
         route: ActionRoutePlan,
         proposal: WorkspacePatchInput,
+        *,
+        checkpoint: Callable[[], None] | None = None,
     ) -> WorkspaceTransactionRecord:
         checked = _validate_route_intent(route, proposal)
-        record = self._transactions.load(route.execution.plan_id)
+        record = (
+            self._transactions.load(route.execution.plan_id)
+            if checkpoint is None
+            else self._transactions.load(route.execution.plan_id, checkpoint=checkpoint)
+        )
         _validate_transaction(route, checked, record.plan)
         return record
 

@@ -220,6 +220,10 @@ from harnessix.product_config.contracts import (
     ProviderFallbackDecision,
 )
 from harnessix.product_config.git_baseline_contracts import ProductGitDeliveryBaseline
+from harnessix.product_config.git_parent_contracts import (
+    ProductGitDeliveryBaselineV2,
+    ProductGitDeliverySourceV2,
+)
 from harnessix.product_config.product_contracts import (
     ConfigurationDraft,
     ConfigurationWriteReceipt,
@@ -601,6 +605,8 @@ def generate_specs(output: Path) -> None:
         WorkspaceParentObservationChunk.model_json_schema(),
     )
     for name, model in (
+        ("product-git-delivery-source-v2", ProductGitDeliverySourceV2),
+        ("product-git-baseline-v2", ProductGitDeliveryBaselineV2),
         ("workspace-transaction-plan-v2", WorkspaceTransactionPlanV2),
         ("workspace-transaction-record-v2", WorkspaceTransactionRecordV2),
         ("workspace-stored-record-v3", WorkspaceStoredRecordV3),

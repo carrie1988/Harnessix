@@ -42,11 +42,11 @@ from harnessix.delivery.git_identity import (
 )
 from harnessix.delivery.git_source import read_worktree_links, verify_git_source
 from harnessix.delivery.git_store import SQLiteGitDeliveryStore
+from harnessix.delivery.git_workspace_snapshot import verify_git_workspace_snapshot
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.execution.contracts import canonical_digest
 from harnessix.workspace.contracts import PlatformKind, WorkspaceLease
 from harnessix.workspace.leases import WorkspaceLeaseStore
-from harnessix.workspace.snapshot import verify_workspace_snapshot
 
 _MAX_GIT_OUTPUT: Final = 1024 * 1024
 _OID = re.compile(rb"^(?:[0-9a-f]{40}|[0-9a-f]{64})\n?$")
@@ -77,6 +77,7 @@ def git_delivery_implementation_digest() -> str:
                     root / "git_material_trace2_profile.py",
                     root / "git_identity.py",
                     root / "git_source.py",
+                    root / "git_workspace_snapshot.py",
                     root / "git_object_material.py",
                     root / "git_contracts.py",
                     root / "git_store.py",
@@ -290,7 +291,9 @@ class GitDeliveryRuntime:
     ) -> ManagedGitWorktreeRecord:
         transaction = self._workspace_store.load(transaction_id)
         binding = self.bind_repository(repository_root, transaction.plan.source.workspace_id)
-        verify_workspace_snapshot(transaction.plan.source, repository_root)
+        verify_git_workspace_snapshot(
+            transaction.plan.source, repository_root, read_blob=self._workspace_store.blob
+        )
         identifier = worktree_id or uuid4()
         path = (self._worktrees / identifier.hex).absolute()
         created = now or datetime.now(UTC)

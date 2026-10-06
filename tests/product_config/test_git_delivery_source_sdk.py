@@ -58,6 +58,7 @@ async def test_sdk_original_authenticated_source_survives_product_restart(
                 observed["router"],
                 transactions,
                 checkpoint=CancelToken().checkpoint,
+                snapshot_ports=observed["router"]._snapshot_ports,
             )
             assert transactions._db.total_changes == before
             return result

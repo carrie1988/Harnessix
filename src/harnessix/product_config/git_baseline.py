@@ -21,11 +21,19 @@ from harnessix.product_config.git_baseline_contracts import (
     ProductGitDeliveryBaseline,
     product_git_baseline_digest,
 )
-from harnessix.product_config.git_delivery_source import collect_git_delivery_source
+from harnessix.product_config.git_delivery_source import (
+    _verify_final_snapshot,
+    collect_git_delivery_source,
+)
+from harnessix.product_config.git_parent_contracts import (
+    ProductGitDeliveryBaselineV2,
+    ProductGitDeliverySourceV2,
+)
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.git import GitReadRuntime, _git_helper_key, _reject_git_helpers
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
+from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 
 _OID = re.compile(rb"(?:[0-9a-f]{40}|[0-9a-f]{64})\n")
 _UNSAFE_CONFIG = re.compile(
@@ -191,6 +199,7 @@ async def collect_product_git_baseline(
     reader: GitReadRuntime,
     *,
     cancel: CancelToken,
+    snapshot_ports: WorkspaceSnapshotPorts | None = None,
 ) -> ProductGitDeliveryBaseline:
     """先验原认证归属；精确观察后再次复核，拒绝任何漂移而非自动修复。"""
     deadline = time.monotonic() + _BASELINE_TIMEOUT_SECONDS
@@ -201,7 +210,7 @@ async def collect_product_git_baseline(
             raise _reject("git_baseline_timeout")
 
     source = collect_git_delivery_source(
-        thread, targets, router, transactions, checkpoint=checkpoint
+        thread, targets, router, transactions, checkpoint=checkpoint, snapshot_ports=snapshot_ports
     )
     contract = reader.contract()
     if contract["implementation"] != "git-baseline-read/v1":
@@ -227,13 +236,23 @@ async def collect_product_git_baseline(
             if await _observe(query) != before:
                 raise _reject("git_baseline_changed")
             checkpoint()
-            verify_workspace_snapshot(source.workspace, Path(thread.workspace))
+            if isinstance(source, ProductGitDeliverySourceV2):
+                _verify_final_snapshot(
+                    source.workspace, Path(thread.workspace), checkpoint, snapshot_ports
+                )
+            else:
+                verify_workspace_snapshot(source.workspace, Path(thread.workspace))
             checkpoint()
     except TimeoutError:
         raise _reject("git_baseline_timeout") from None
     except (ReadToolError, UnicodeError):
         raise _reject("git_baseline_unavailable") from None
-    candidate = ProductGitDeliveryBaseline.model_construct(
+    model = (
+        ProductGitDeliveryBaselineV2
+        if isinstance(source, ProductGitDeliverySourceV2)
+        else ProductGitDeliveryBaseline
+    )
+    candidate = model.model_construct(
         source=source,
         head_oid=before.head,
         head_tree_oid=before.tree,
@@ -246,7 +265,7 @@ async def collect_product_git_baseline(
         members=tuple(members),
         digest="0" * 64,
     )
-    result = ProductGitDeliveryBaseline(
+    result = model(
         **candidate.model_dump(exclude={"digest"}), digest=product_git_baseline_digest(candidate)
     )
     checkpoint()

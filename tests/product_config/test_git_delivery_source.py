@@ -167,7 +167,9 @@ async def test_published_transaction_is_mandatory_even_with_successful_session(
     async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
         owner, target = await publish(runtime, provider, root)
         original = transactions.load(target)
-        monkeypatch.setattr(transactions, "load", lambda _: new_transaction_record(original.plan))
+        monkeypatch.setattr(
+            transactions, "load", lambda _, **_kwargs: new_transaction_record(original.plan)
+        )
         with raises_code("git_delivery_source_not_published"):
             await source(runtime, owner, (target,), router, transactions)
 
@@ -482,7 +484,7 @@ async def test_successful_session_cannot_replace_failed_original_route(tmp_path,
         owner, target = await publish(runtime, provider, root)
         original = router.status(target)
         monkeypatch.setattr(
-            router, "status", lambda _: original.model_copy(update={"state": "unknown"})
+            router, "status", lambda _, **_kwargs: original.model_copy(update={"state": "unknown"})
         )
         with raises_code("git_delivery_source_not_owned"):
             await source(runtime, owner, (target,), router, transactions)

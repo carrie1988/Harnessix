@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
@@ -30,7 +31,7 @@ class CompletedWorkspacePatch:
 
 @dataclass(frozen=True, slots=True)
 class OwnedWorkspacePatch:
-    """沿原正式Reader验证完成的成功来源；不读取Blob或当前文件。"""
+    """沿原完整Reader验证成功来源；不读取当前文件或新增业务事实。"""
 
     reference: WorkspacePatchSourceReference
     record: WorkspaceTransactionRecord
@@ -70,6 +71,8 @@ def load_owned_workspace_patch(
     target: UUID,
     router: TrustedActionRouter,
     transactions: SQLiteWorkspaceTransactionStore,
+    *,
+    checkpoint: Callable[[], None] | None = None,
 ) -> OwnedWorkspacePatch:
     """先确定本认证Thread的成功归属，再核对精确Route和published事务。"""
     matching = [
@@ -78,7 +81,11 @@ def load_owned_workspace_patch(
     if len(matching) != 1:
         raise KernelError("workspace_patch_source_not_owned", "Patch不属于本会话的成功修改")
     completed = matching[0]
-    route = router.status(target)
+    route = (
+        router.status(target)
+        if checkpoint is None
+        else router.status(target, checkpoint=checkpoint)
+    )
     effect = completed.result.trusted_action
     if (
         effect is None
@@ -89,8 +96,11 @@ def load_owned_workspace_patch(
     proposal = WorkspacePatchInput.model_validate_json(json.dumps(completed.call.arguments))
     if route.plan.invocation.arguments != proposal.model_dump(mode="json"):
         raise KernelError("workspace_patch_source_not_owned", "原Patch调用与Route不一致")
-    record = WorkspacePatchTransactionPlanner(transactions, lambda _: Path(thread.workspace)).load(
-        route.plan, proposal
+    planner = WorkspacePatchTransactionPlanner(transactions, lambda _: Path(thread.workspace))
+    record = (
+        planner.load(route.plan, proposal)
+        if checkpoint is None
+        else planner.load(route.plan, proposal, checkpoint=checkpoint)
     )
     if record.state != "published":
         raise KernelError("workspace_patch_source_not_published", "原Patch事务未完成发布")

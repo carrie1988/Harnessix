@@ -194,7 +194,11 @@ class SQLiteWorkspaceTransactionStore:
                 self._db.execute("ROLLBACK")
             raise
 
-    def load(self, transaction_id: UUID) -> WorkspaceTransactionRecord:
+    def load(
+        self, transaction_id: UUID, *, checkpoint: Callable[[], None] | None = None
+    ) -> WorkspaceTransactionRecord:
+        if checkpoint is not None:
+            checkpoint()
         row = self._db.execute(
             "SELECT transaction_id, request_id, plan_fingerprint, state, sequence, payload "
             "FROM workspace_transactions WHERE transaction_id=?",
@@ -202,7 +206,7 @@ class SQLiteWorkspaceTransactionStore:
         ).fetchone()
         if row is None:
             raise KernelError("delivery_transaction_not_found", "Workspace事务不存在")
-        return self._decode(row)
+        return self._decode(row, checkpoint=checkpoint)
 
     def lookup(self, request_id: str) -> WorkspaceTransactionRecord | None:
         row = self._db.execute(
@@ -225,9 +229,17 @@ class SQLiteWorkspaceTransactionStore:
             raise KernelError("delivery_blob_invalid", "Workspace事务Blob摘要无效")
         return read_blob_body(self._blobs / digest, digest)
 
-    def decode_payload(self, payload: str) -> DecodedWorkspaceRecord:
+    def decode_payload(
+        self, payload: str, *, checkpoint: Callable[[], None] | None = None
+    ) -> DecodedWorkspaceRecord:
         """完整读取当前行或历史物理记录；校验引用不授予执行、迁移或补签权。"""
-        return decode_workspace_record(payload, self._read_blob, checkpoint=self._checkpoint)
+
+        def check() -> None:
+            self._check()
+            if checkpoint is not None:
+                checkpoint()
+
+        return decode_workspace_record(payload, self._read_blob, checkpoint=check)
 
     def _encode(self, record: WorkspaceTransactionRecord) -> str:
         return encode_workspace_record(
@@ -269,10 +281,12 @@ class SQLiteWorkspaceTransactionStore:
         self._require_writable()
         _write_blob_body(self._blobs, digest, body, self.blob, self._check)
 
-    def _decode(self, row: tuple[object, ...]) -> WorkspaceTransactionRecord:
+    def _decode(
+        self, row: tuple[object, ...], *, checkpoint: Callable[[], None] | None = None
+    ) -> WorkspaceTransactionRecord:
         if not isinstance(row[5], str):
             raise KernelError("delivery_store_corrupt", "Workspace事务账本损坏")
-        record = self.decode_payload(row[5]).record
+        record = self.decode_payload(row[5], checkpoint=checkpoint).record
         try:
             if row[:5] != (
                 str(record.transaction_id),

@@ -16,6 +16,8 @@ from harnessix.delivery.contracts import (
 )
 from harnessix.delivery.planner import _read_existing
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
+from harnessix.product_config.git_parent_contracts import ProductGitDeliverySourceV2
 from harnessix.product_config.workspace_patch_source import (
     OwnedWorkspacePatch,
     completed_workspace_patches,
@@ -27,8 +29,15 @@ from harnessix.product_config.workspace_patch_source_contracts import (
 )
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.workspace.contracts import WorkspaceResourceRequest, WorkspaceSnapshot
+from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.paths import path_comparison_key
 from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
+from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
+from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
+from harnessix.workspace.snapshot_v2 import (
+    capture_workspace_snapshot_v2,
+    verify_workspace_snapshot_v2,
+)
 
 
 def _owned_selection(
@@ -51,13 +60,25 @@ def _owned_selection(
     ]
     if len(selected) != len(targets) or {item.transaction_id for item in selected} != set(targets):
         raise KernelError("git_delivery_source_not_owned", "Git交付来源不属于本会话成功修改")
+
+    def reader_checkpoint() -> None:
+        try:
+            checkpoint()
+        except BaseException as error:
+            # 控制异常不能进入下方归属错误码映射，即使二者错误码相同。
+            raise UpstreamCheckpointError(error) from None
+
     owned = []
     for item in selected:
         checkpoint()
         try:
             owned.append(
-                load_owned_workspace_patch(thread, item.transaction_id, router, transactions)
+                load_owned_workspace_patch(
+                    thread, item.transaction_id, router, transactions, checkpoint=reader_checkpoint
+                )
             )
+        except UpstreamCheckpointError as error:
+            raise error.error from None
         except KernelError as error:
             codes = {
                 "workspace_patch_source_not_owned": "git_delivery_source_not_owned",
@@ -104,10 +125,11 @@ def _merge_versions(
 
 def _observe_final_versions(
     root: Path,
-    base: WorkspaceSnapshot,
+    base: WorkspaceSnapshot | WorkspaceSnapshotV2,
     versions: dict[str, tuple[WorkspaceFileVersion, WorkspaceFileVersion]],
     checkpoint: Callable[[], None],
-) -> WorkspaceSnapshot:
+    snapshot_ports: WorkspaceSnapshotPorts | None = None,
+) -> WorkspaceSnapshot | WorkspaceSnapshotV2:
     """复用原生安全端口观察，净零路径也必须核对，读取后再验证当前Snapshot。"""
     current_root = capture_workspace_snapshot(root, platform=base.platform)
     if (current_root.workspace_id, current_root.root_path_digest, current_root.root_identity) != (
@@ -117,11 +139,19 @@ def _observe_final_versions(
     ):
         raise KernelError("git_delivery_source_changed", "Git交付当前Workspace根已变化")
     checkpoint()
-    snapshot = capture_workspace_snapshot(
-        root,
-        platform=base.platform,
-        resources=tuple(WorkspaceResourceRequest(path=path, access="read") for path in versions),
-    )
+    resources = tuple(WorkspaceResourceRequest(path=path, access="read") for path in versions)
+    snapshot: WorkspaceSnapshot | WorkspaceSnapshotV2
+    if snapshot_ports is None:
+        snapshot = capture_workspace_snapshot(root, platform=base.platform, resources=resources)
+    else:
+        snapshot = capture_workspace_snapshot_v2(
+            root,
+            platform=base.platform,
+            resources=resources,
+            checkpoint=checkpoint,
+            write_blob=snapshot_ports.write_blob,
+            read_blob=snapshot_ports.read_blob,
+        )
     if (snapshot.workspace_id, snapshot.root_path_digest, snapshot.root_identity) != (
         base.workspace_id,
         base.root_path_digest,
@@ -135,7 +165,10 @@ def _observe_final_versions(
         if observation.kind == "missing":
             actual = WorkspaceFileVersion(presence="absent", size=0)
         elif observation.kind == "file":
-            body, mode = _read_existing(root, path, base.platform)
+            if isinstance(snapshot, WorkspaceSnapshotV2):
+                body, mode = _read_existing(root, path, base.platform, checkpoint=checkpoint)
+            else:
+                body, mode = _read_existing(root, path, base.platform)
             actual = WorkspaceFileVersion(
                 presence="file", sha256=hashlib.sha256(body).hexdigest(), size=len(body), mode=mode
             )
@@ -146,8 +179,25 @@ def _observe_final_versions(
         if actual != after:
             raise KernelError("git_delivery_source_changed", "Git交付目标已包含后续修改")
         checkpoint()
-    verify_workspace_snapshot(snapshot, root)
+    _verify_final_snapshot(snapshot, root, checkpoint, snapshot_ports)
     return snapshot
+
+
+def _verify_final_snapshot(
+    snapshot: WorkspaceSnapshot | WorkspaceSnapshotV2,
+    root: Path,
+    checkpoint: Callable[[], None],
+    ports: WorkspaceSnapshotPorts | None,
+) -> None:
+    """实际代际复核共享调用方控制，不新增读取期限或重捕获历史。"""
+    if isinstance(snapshot, WorkspaceSnapshotV2):
+        if ports is None:
+            raise KernelError("workspace_closure_unavailable", "完整Workspace历史端口不可用")
+        verify_workspace_snapshot_v2(
+            snapshot, root, checkpoint=checkpoint, read_blob=ports.read_blob
+        )
+    else:
+        verify_workspace_snapshot(snapshot, root)
 
 
 def collect_git_delivery_source(
@@ -157,14 +207,24 @@ def collect_git_delivery_source(
     transactions: SQLiteWorkspaceTransactionStore,
     *,
     checkpoint: Callable[[], None],
+    snapshot_ports: WorkspaceSnapshotPorts | None = None,
 ) -> ProductGitDeliverySource:
-    """从宿主已认证Thread派生只读来源；输出Digest不是批准或可转交的身份凭据。"""
+    """从已认证Thread派生来源；显式CAS追加与输出Digest均不授予执行批准。"""
     checkpoint()
     owned = _owned_selection(thread, targets, router, transactions, checkpoint)
     versions = _merge_versions(owned, checkpoint)
+    use_parent_history = any(
+        isinstance(item.record, WorkspaceTransactionRecordV2) for item in owned
+    )
+    if use_parent_history and snapshot_ports is None:
+        raise KernelError("workspace_closure_unavailable", "完整Workspace历史端口不可用")
     checkpoint()
     workspace = _observe_final_versions(
-        Path(thread.workspace), owned[0].record.plan.source, versions, checkpoint
+        Path(thread.workspace),
+        owned[0].record.plan.source,
+        versions,
+        checkpoint,
+        snapshot_ports if use_parent_history else None,
     )
     mutations = tuple(
         WorkspaceMutation(path=path, before=before, after=after)
@@ -175,14 +235,15 @@ def collect_git_delivery_source(
     )
     if not mutations:
         raise KernelError("git_delivery_source_no_change", "Git交付来源没有净变化")
-    candidate = ProductGitDeliverySource.model_construct(
+    model = ProductGitDeliverySourceV2 if use_parent_history else ProductGitDeliverySource
+    candidate = model.model_construct(
         thread_id=thread.thread_id,
         patches=tuple(item.reference for item in owned),
         workspace=workspace,
         mutations=mutations,
         digest="0" * 64,
     )
-    result = ProductGitDeliverySource(
+    result = model(
         **candidate.model_dump(exclude={"digest"}),
         digest=product_git_delivery_source_digest(candidate),
     )

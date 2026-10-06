@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 9
-code_revision: dfba34e707ed845f3e9d844461e124015c22dca7
+version: 10
+code_revision: d7e8668af32866c9e7fc8a31400e64ac98532539
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -26,6 +26,18 @@ supersedes: []
 ---
 
 # Git Commit／Checkpoint 产品接线与业务备份闭包详细设计
+
+
+## 当前完整父历史代际
+
+[Source2／Baseline2与Git领域消费者](m09-r4-git-parent-consumers.md)已经实现。
+默认产品来源、后继Bridge的U观察、真实A快照及新T必须使用完整Snapshot2及Plan2／Record2，
+并以原唯一CAS保持全部Manifest／Chunk引用；本文中的Source／Baseline泛称不能按旧模型序列化新字段。
+新来源捕获显式取得宿主CAS端口，历史读取与当前观察共同使用原调用方控制。
+旧Source1／Baseline1仅保持旧合同兼容，不作为默认新来源的降级路线。
+
+本草案的Bridge／MAC持久关联、业务Git快照与Backup2仍待实现。
+领域A／T／D成功不表示这些产品接线已经完成，prepared T仍不得向A发布。
 
 ## 1. 需求背景、状态与交付定义
 
@@ -122,7 +134,7 @@ supersedes: []
 
 ### 4.2 不伪装原 Patch 事务
 
-原 Patch UUID／原 Route／原事务不可改写。产品计划冻结完整归并后的净 Mutation；批准并创建 A 后，用原 `prepare_workspace_transaction` 在干净 A 上生成**新的交付派生事务 T**，desired 正文来自已核验的原 CAS，派生结果必须与批准的首 before／末 after／模式／目标树逐项一致。
+原 Patch UUID／原 Route／原事务不可改写。产品计划冻结完整归并后的净 Mutation；批准并创建 A 后，用原 `prepare_workspace_transaction_v2` 在干净 A 上生成**新的交付派生事务 T**，desired 正文来自已核验的原 CAS，派生结果必须与批准的首 before／末 after／模式／目标树逐项一致。
 
 T 的来源 Snapshot 是真实 A，绝不是 U 的旧 Snapshot；T 使用新的 UUID，并在关联中明确标记 `role=git_projection`。它不得生成虚假的“用户 Patch 成功”结果，不发布回 U，不计入下一次 source projection 的原成功 Patch 集合。
 
@@ -137,9 +149,9 @@ T 的来源 Snapshot 是真实 A，绝不是 U 的旧 Snapshot；T 使用新的 
 | 来源冻结 | 原 `ProductGitDeliverySource`／`ProductGitDeliveryBaseline`、全部有序 Patch 引用、完整净 Mutation、U 的原 RootIdentity | 只拿最后一次 Patch、只拿来源 digest 或重新拼装 Thread |
 | 新批准 | 完整 Diff、固定 base／target Tree、派生配方、A／D 的 UUID 和原生父目录身份、允许的新注册与对象写效果 | 复用 Patch 批准，或用未来生成的 T 指纹假装用户已批准 |
 | 新原生绑定 | 按批准意图新建 A；原生捕获 A 的 RootIdentity 和 WorkspaceSnapshot，原 `bind_repository` 证明 A 干净且 HEAD 为固定 base OID | 复制 U 的 Snapshot、只比较文件 SHA、放宽旧 RootIdentity 校验 |
-| 确定性派生 | 在真实 A 上运行原 `prepare_workspace_transaction` 生成新 T；完整 Mutation／模式／CAS／目标树符合已批准配方；原库耐久保存 T | 将 U 原事务换路径、换根身份后覆盖保存 |
+| 确定性派生 | 在真实 A 上运行原 `prepare_workspace_transaction_v2` 生成新 T；完整 Mutation／模式／CAS／目标树符合已批准配方；原库耐久保存 T | 将 U 原事务换路径、换根身份后覆盖保存 |
 | 桥接提交 | 在 GitDB 事务中绑定原 Route／新批准、U 来源、新 A 身份／Snapshot、T UUID／指纹、base／target Tree 及配方摘要，签发新的事实证明 | 修改旧事件或向模型提供通用指纹转换能力 |
-| 原领域调用 | 重新核对桥接、原批准及 U／A Lease；以 T 和 A 调用旧 `plan_worktree`，让原 `verify_workspace_snapshot(T.plan.source, A)` 真实通过 | 省略原验证，或把 U 的旧事务传入 A |
+| 原领域调用 | 重新核对桥接、原批准及 U／A Lease；以 T 和 A 调用旧 `plan_worktree`，让原 `verify_git_workspace_snapshot(T.plan.source, A)` 完整读取父历史并真实通过 | 省略原验证，或把 U 的旧事务传入 A |
 
 桥接字段至少为 `bridge_id`、`delivery_id`、`source_digest`、`baseline_digest`、`approved_product_plan_fingerprint`、`approval_reference`、`recipe_digest`、`anchor_root_identity`、`anchor_snapshot`、`projection_transaction_id/fingerprint`、`base_tree_oid`、`target_tree_oid` 及认证前缀锚。它是新批准下产生的有界事实证明，不是旧授权在新根上的自动继承；必须与 `ProductGitDeliveryLink` 同一认证阶段关联。创建 A、保存 T、提交桥接之间任一崩溃只保存已有事实并对账，未完成桥接不得进入旧领域调用。
 

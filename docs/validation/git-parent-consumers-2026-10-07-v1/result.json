@@ -1,0 +1,115 @@
+{
+  "schema": "harnessix.git-parent-consumer-validation/v1",
+  "baseline_revision": "d7e8668af32866c9e7fc8a31400e64ac98532539",
+  "candidate_source_inputs_sha256": "d35926b08b58074e36f847691d91b67b93a0e03d8f7a0dbe81f2824ef6cd490b",
+  "final": {
+    "installed_associated": {
+      "tests": "590",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "780.614"
+    },
+    "installed_255_independent": {
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "387.063"
+    },
+    "governance": {
+      "tests": "1413",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "40.201"
+    },
+    "wheel": {
+      "schema": "harnessix.wheel-source-proof/v1",
+      "source_files": 461,
+      "loaded_modules": 460,
+      "all_source_bytes_match": true,
+      "all_loaded_from_install": true,
+      "source_directory_on_sys_path": false,
+      "wheel_sha256": "0582107c62b4905fd4fb81b2fd254d25f7b71a1107ab09cf786f57cdb77e0a34"
+    },
+    "ruff": true,
+    "format": true,
+    "mypy_source_modules": 461,
+    "readability_policy_unchanged": true,
+    "schemas_unchanged": 269,
+    "new_schemas": 2,
+    "docs_findings": 0
+  },
+  "retained": {
+    "first_baseline_validation": {
+      "tests": "101",
+      "errors": "0",
+      "failures": "2",
+      "skipped": "0",
+      "time": "76.226"
+    },
+    "first_reader_control": {
+      "tests": "57",
+      "errors": "0",
+      "failures": "2",
+      "skipped": "0",
+      "time": "7.395"
+    },
+    "first_governance": {
+      "tests": "1413",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "time": "40.629"
+    },
+    "initial_broad_interrupted": {
+      "tests": "3822",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "27",
+      "time": "777.931"
+    },
+    "first_install_interrupted": {
+      "tests": "378",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "657.419"
+    },
+    "review_red": {
+      "failed": 5,
+      "passed": 8
+    },
+    "setup_only_errors": 44
+  },
+  "current_scope": {
+    "all_parent_history_retained": true,
+    "source2_baseline2_actual": true,
+    "anchor_and_user_clean": true,
+    "projection_transaction_prepared": true,
+    "delivery_materialized": true,
+    "commit_independently_approved": true,
+    "original_selectors": 27,
+    "paid_model_calls": 0,
+    "budget_or_reservation_modified": false
+  },
+  "release": {
+    "complete": false,
+    "authenticated_git_bridge": false,
+    "git_business_backup_v2": false,
+    "windows_consumer_certified": false,
+    "r3_quality_closed": false,
+    "beta_closed": false,
+    "final_same_revision_full_suite": false
+  },
+  "ci_previous": {
+    "run_id": 37446435573,
+    "revision": "d7e8668af32866c9e7fc8a31400e64ac98532539",
+    "conclusion": "failure",
+    "linux312": "pytest failure, root cause unknown",
+    "linux313": "license_scan failure",
+    "windows_trusted": "cancelled",
+    "metadata_only": true
+  }
+}

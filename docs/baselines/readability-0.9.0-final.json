@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 459,
-    "physical_lines": 95755,
-    "logical_lines": 84570,
-    "documented_modules": 459,
-    "classes": 996,
-    "documented_classes": 458,
-    "functions": 3843,
-    "documented_functions": 895,
+    "source_files": 461,
+    "physical_lines": 95962,
+    "logical_lines": 84747,
+    "documented_modules": 461,
+    "classes": 998,
+    "documented_classes": 460,
+    "functions": 3847,
+    "documented_functions": 899,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -212,7 +212,7 @@
     },
     {
       "path": "src/harnessix/delivery/git.py",
-      "lines": 982
+      "lines": 985
     },
     {
       "path": "src/harnessix/delivery/git_push.py",
@@ -644,8 +644,8 @@
       "path": "src/harnessix/delivery/git.py",
       "qualname": "GitDeliveryRuntime",
       "kind": "class",
-      "line": 213,
-      "lines": 741,
+      "line": 214,
+      "lines": 743,
       "documented": true
     },
     {
@@ -654,7 +654,7 @@
       "path": "src/harnessix/delivery/git.py",
       "qualname": "_GitRunner",
       "kind": "class",
-      "line": 91,
+      "line": 92,
       "lines": 120,
       "documented": false
     },
@@ -707,7 +707,7 @@
       "qualname": "SQLiteWorkspaceTransactionStore",
       "kind": "class",
       "line": 49,
-      "lines": 265,
+      "lines": 279,
       "documented": true
     },
     {
@@ -1568,7 +1568,7 @@
       "path": "src/harnessix/trusted_actions/router.py",
       "qualname": "TrustedActionRouter",
       "kind": "class",
-      "line": 129,
+      "line": 141,
       "lines": 220,
       "documented": true
     },
@@ -1578,8 +1578,8 @@
       "path": "src/harnessix/trusted_actions/store.py",
       "qualname": "SQLiteActionAuditStore",
       "kind": "class",
-      "line": 196,
-      "lines": 208,
+      "line": 221,
+      "lines": 213,
       "documented": true
     },
     {

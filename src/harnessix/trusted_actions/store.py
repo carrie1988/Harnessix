@@ -33,6 +33,7 @@ from harnessix.trusted_actions.ownership_store import (
 )
 from harnessix.trusted_actions.transition_store import ActionTransitionStoreMixin
 from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2, ActionRouteSnapshotV2
+from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.parent_closure_codec import read_workspace_parent_closure
 
 _SCHEMA_VERSION = "2"
@@ -42,6 +43,12 @@ ActionRouteSnapshotAny = ActionRouteSnapshot | ActionRouteSnapshotV2
 _PLAN_ADAPTER: TypeAdapter[ActionRoutePlanAny] = TypeAdapter(
     Annotated[ActionRoutePlanAny, Field(discriminator="spec_version")]
 )
+
+
+def _check_read_checkpoint(checkpoint: Callable[[], None] | None) -> None:
+    """单次Reader入口检查；无参数旧调用保持无额外控制。"""
+    if checkpoint is not None:
+        checkpoint()
 
 
 def _decode_plan(payload: str) -> ActionRoutePlanAny:
@@ -131,15 +138,33 @@ class _ActionRouteClosureReader:
     _read_blob: Callable[[str], bytes] | None
     _checkpoint: Callable[[], None]
 
-    def _validate_parent_closure(self, plan: ActionRoutePlanAny, *, error_code: str) -> None:
+    def _validate_parent_closure(
+        self,
+        plan: ActionRoutePlanAny,
+        *,
+        error_code: str,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> None:
         if not isinstance(plan, ActionRoutePlanV2):
             return
         if self._read_blob is None:
             raise KernelError(error_code, "Action Route Plan缺少完整父目录历史读取端口")
+
+        def check() -> None:
+            try:
+                self._checkpoint()
+                if checkpoint is not None:
+                    checkpoint()
+            except BaseException as error:
+                # 上游控制不能因错误码恰与历史损坏相同而被重分类。
+                raise UpstreamCheckpointError(error) from None
+
         try:
             read_workspace_parent_closure(
-                plan.execution.workspace, self._read_blob, checkpoint=self._checkpoint
+                plan.execution.workspace, self._read_blob, checkpoint=check
             )
+        except UpstreamCheckpointError as error:
+            raise error.error from None
         except KernelError as error:
             if error.code != "workspace_closure_corrupt":
                 raise
@@ -317,7 +342,10 @@ class SQLiteActionAuditStore(
             raise
         return self.load(checked.execution.plan_id)
 
-    def load(self, plan_id: UUID) -> ActionRouteSnapshotAny:
+    def load(
+        self, plan_id: UUID, *, checkpoint: Callable[[], None] | None = None
+    ) -> ActionRouteSnapshotAny:
+        _check_read_checkpoint(checkpoint)
         plan_row = self._db.execute(
             "SELECT invocation_id, fingerprint, payload FROM action_route_plans WHERE plan_id = ?",
             (str(plan_id),),
@@ -333,7 +361,9 @@ class SQLiteActionAuditStore(
             plan = _decode_plan(plan_row[2])
         except (ValidationError, ValueError, TypeError, RecursionError):
             raise KernelError("action_audit_store_corrupt", "Action审计记录损坏") from None
-        self._validate_parent_closure(plan, error_code="action_audit_store_corrupt")
+        self._validate_parent_closure(
+            plan, error_code="action_audit_store_corrupt", checkpoint=checkpoint
+        )
         try:
             event_row = self._db.execute(
                 "SELECT digest, payload FROM action_audit_events "
