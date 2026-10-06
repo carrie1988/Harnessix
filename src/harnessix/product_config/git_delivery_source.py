@@ -32,6 +32,7 @@ from harnessix.workspace.contracts import WorkspaceResourceRequest, WorkspaceSna
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.paths import path_comparison_key
 from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
+from harnessix.workspace.snapshot_capture import capture_snapshot_facts
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 from harnessix.workspace.snapshot_v2 import (
@@ -131,11 +132,17 @@ def _observe_final_versions(
     snapshot_ports: WorkspaceSnapshotPorts | None = None,
 ) -> WorkspaceSnapshot | WorkspaceSnapshotV2:
     """复用原生安全端口观察，净零路径也必须核对，读取后再验证当前Snapshot。"""
-    current_root = capture_workspace_snapshot(root, platform=base.platform)
-    if (current_root.workspace_id, current_root.root_path_digest, current_root.root_identity) != (
-        base.workspace_id,
-        base.root_path_digest,
-        base.root_identity,
+    facts = capture_snapshot_facts(
+        root,
+        cwd=".",
+        resources=(),
+        external_roots=None,
+        platform=base.platform,
+        checkpoint=checkpoint,
+    )
+    if any(
+        facts.scope[name] != getattr(base, name)
+        for name in ("workspace_id", "root_path_digest", "root_identity")
     ):
         raise KernelError("git_delivery_source_changed", "Git交付当前Workspace根已变化")
     checkpoint()

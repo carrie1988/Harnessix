@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
@@ -29,10 +30,13 @@ from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliveryBaselineV2,
     ProductGitDeliverySourceV2,
 )
+from harnessix.product_config.workspace_patch_source_contracts import ProductGitDeliverySource
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.git import GitReadRuntime, _git_helper_key, _reject_git_helpers
 from harnessix.trusted_actions.router import TrustedActionRouter
-from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
+from harnessix.workspace.native_observation_io import UpstreamCheckpointError
+from harnessix.workspace.snapshot import verify_workspace_snapshot
+from harnessix.workspace.snapshot_capture import capture_snapshot_facts
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 
 _OID = re.compile(rb"(?:[0-9a-f]{40}|[0-9a-f]{64})\n")
@@ -50,14 +54,22 @@ def _reject(code: str) -> KernelError:
 class _Queries:
     """仅接收模块内部固定查询；复用原端口的取消、期限和完整流证据。"""
 
-    def __init__(self, reader: GitReadRuntime, cancel: CancelToken) -> None:
+    def __init__(
+        self,
+        reader: GitReadRuntime,
+        cancel: CancelToken,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> None:
         self.reader, self.cancel = reader, cancel
+        self.checkpoint = checkpoint or cancel.checkpoint
 
     async def result(self, *arguments: str) -> GitBaselineReadResult:
-        self.cancel.checkpoint()
-        return await self.reader._run_baseline(  # noqa: SLF001 - 固定内部查询不暴露给模型
+        self.checkpoint()
+        result = await self.reader._run_baseline(  # noqa: SLF001 - 固定内部查询不暴露给模型
             (*self.reader._global_arguments, *arguments), self.cancel
         )
+        self.checkpoint()
+        return result
 
     async def full(self, *arguments: str) -> bytes:
         result = await self.result(*arguments)
@@ -212,18 +224,68 @@ async def collect_product_git_baseline(
     source = collect_git_delivery_source(
         thread, targets, router, transactions, checkpoint=checkpoint, snapshot_ports=snapshot_ports
     )
+    return await _collect_baseline_from_source(
+        source,
+        thread,
+        reader,
+        cancel=cancel,
+        snapshot_ports=snapshot_ports,
+        checkpoint=checkpoint,
+        deadline=deadline,
+    )
+
+
+def _root_binding_matches(
+    source: ProductGitDeliverySource | ProductGitDeliverySourceV2,
+    root: Path,
+    checkpoint: Callable[[], None],
+) -> bool:
+    """借原事实捕获端口校验相同根；目录逐项消费父取消和共同期限。"""
+
+    def controlled() -> None:
+        try:
+            checkpoint()
+        except UpstreamCheckpointError:
+            raise
+        except BaseException as error:
+            raise UpstreamCheckpointError(error) from None
+
+    try:
+        facts = capture_snapshot_facts(
+            root,
+            cwd=".",
+            resources=(),
+            external_roots=None,
+            platform=source.workspace.platform,
+            checkpoint=controlled,
+        )
+    except UpstreamCheckpointError as error:
+        raise error.error from None
+    return all(
+        facts.scope[name] == getattr(source.workspace, name)
+        for name in ("workspace_id", "root_path_digest", "root_identity")
+    )
+
+
+async def _collect_baseline_from_source(
+    source: ProductGitDeliverySource | ProductGitDeliverySourceV2,
+    thread: Thread,
+    reader: GitReadRuntime,
+    *,
+    cancel: CancelToken,
+    snapshot_ports: WorkspaceSnapshotPorts | None,
+    checkpoint: Callable[[], None],
+    deadline: float,
+) -> ProductGitDeliveryBaseline | ProductGitDeliveryBaselineV2:
+    """唯一基准算法消费已验真来源；新产品观察不重复捕获或放宽旧合同。"""
+    checkpoint()
     contract = reader.contract()
     if contract["implementation"] != "git-baseline-read/v1":
         raise _reject("git_baseline_reader_required")
     # 原端口只验证自己的仓库根；还必须与认证Thread的原生根身份绑定。
-    root = capture_workspace_snapshot(reader._root, platform=source.workspace.platform)  # noqa: SLF001
-    if (root.workspace_id, root.root_path_digest, root.root_identity) != (
-        source.workspace.workspace_id,
-        source.workspace.root_path_digest,
-        source.workspace.root_identity,
-    ):
+    if not _root_binding_matches(source, reader._root, checkpoint):
         raise _reject("git_baseline_workspace_mismatch")
-    query = _Queries(reader, cancel)
+    query = _Queries(reader, cancel, checkpoint)
     try:
         async with asyncio.timeout(max(0.001, deadline - time.monotonic())):
             await reader._require_repository_root(cancel)  # noqa: SLF001 - 原根核验前置

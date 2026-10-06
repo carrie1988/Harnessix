@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 193
-code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
+version: 194
+code_revision: db160c8caeafb0385a2362ccd0af1502a1f6e79e
 owners:
   - core
 modules:
@@ -2164,3 +2164,12 @@ Backup2或R4发布完成；上述仍为后续正式业务接线关键路径。
 重启查询优先，不重新分配交付意图。保持原Schema、容量与门禁，不扩大默认产品工具。
 下一关键路径仍为受认证Session的实际Git Planner、完整Review与业务关联、A/T2/D写入及独立Commit；
 此组件接线不关闭R1—R6、真实编码质量、三平台、Backup2或有限Beta，不表示商用1.0完成。
+
+### R4 原认证会话到用户 Git 完整只读观察
+
+[内部用户观察](changes/m09-r4-git-user-observation.md)区分真实脏U与原干净A，
+借原Session完整认证Reader、原Router/CAS/Scope形成完整Source2、原基准、实际common/admin/
+物理Index和配置值的前后窗口。新合同显式保存原Store/Key非秘密UUID和完整观察指纹，
+不以配置名称摘要冒充配置值绑定，不向旧Core1隐蔽注入新字段。
+后继正式规划仍需显式纳入完整用户观察代际，并接通真实Git Review、ProductLink/NativeBridge、
+A/T2/D、独立Commit和Backup2；本组件不关闭R1—R6、真实模型编码质量、三平台或同候选Beta。

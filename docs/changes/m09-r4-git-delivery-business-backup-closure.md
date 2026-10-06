@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 14
-code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
+version: 15
+code_revision: db160c8caeafb0385a2362ccd0af1502a1f6e79e
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -1007,3 +1007,12 @@ Action 中采用固定 OID 读取、完整 EOF、重复身份观察及副作用�
 物理五kind同事务认证旁表、独立全集尾锚、显式空genesis与只验真Reader已实现，见[物理账本设计](m09-r4-git-prefix-ledger.md)。
 当前完整业务catalog、业务语义Writer/Loader、业务Genesis/legacy归属闭合、业务备份和新Root授权仍属本设计待实现范围。
 不能以结构核验成功推导业务来源MAC、原Approval、Owner或执行权，也不能开放默认Commit/Checkpoint。
+
+## 当前原认证用户 Git 观察边界
+
+[完整用户观察](m09-r4-git-user-observation.md)实现原Session完整认证历史与一次Source2捕获，
+在共同原期限下借原Router/CAS/Scope及固定Git Reader复用原唯一基准算法，并完整复核
+common/admin、物理Index、配置值、HEAD/逻辑Index/来源及完整会话历史。
+新ProductGitUserObservation与干净A的旧GitRepositoryBinding分离；后继正式Core代际必须
+显式绑定完整用户观察，不能只拷贝common/Index字段而丢失完整配置值和宿主身份声明。
+旧Core1、干净A及原容量/Native18不变；默认Planner/Review/Link/Bridge、实际Git写与业务备份仍待完成。

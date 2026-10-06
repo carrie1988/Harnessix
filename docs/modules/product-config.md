@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 71
-code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
+version: 72
+code_revision: db160c8caeafb0385a2362ccd0af1502a1f6e79e
 owners:
   - core
 modules:
@@ -2534,3 +2534,11 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 能力、保护和进程结算核验；计划等待及命令共用原`CancelToken`与绝对`GitOperationBudget`。
 观察结束核验根/commonDir、执行文件及实现身份；结果不是会话MAC、Git业务成功或原子快照。
 完整[总体与详细设计](../changes/m09-r4-git-repository-observation.md)同时列出尚未接入的产品写流程和Backup2。
+
+## 用户 Git 完整只读观察边界
+
+[用户 Git 观察详设](../changes/m09-r4-git-user-observation.md)新增原Session完整认证历史到Source2/
+Baseline2/物理Index/common/admin及完整配置值观察的内部入口。它冻结同一原Session/Router/CAS/
+Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末端重验历史、HEAD、Index和完整来源。
+原干净A的RepositoryBinding及旧Core1字节不变；新观察合同不签发MAC、归属或批准，不替代
+正式规划/Review/ProductLink/NativeBridge、A/T2/D、独立Commit、Backup2和发布验收。

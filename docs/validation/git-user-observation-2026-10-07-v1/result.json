@@ -1,0 +1,167 @@
+{
+  "schema": "harnessix.git-user-observation-validation/v1",
+  "baseline_revision": "db160c8caeafb0385a2362ccd0af1502a1f6e79e",
+  "scope": "authenticated-user-observation-only",
+  "status": "PASS",
+  "final": {
+    "installed_associated": {
+      "tests": 1563,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "seconds": 125.745,
+      "passed": 1559
+    },
+    "installed_authenticated_sdk": {
+      "tests": 87,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 132.831,
+      "passed": 87
+    },
+    "governance": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 42.12,
+      "passed": 1413
+    },
+    "wheel": {
+      "source_modules": 483,
+      "all_bytes_match": true,
+      "wheel": "harnessix-1.0.0rc1-py3-none-any.whl",
+      "wheel_sha256": "4feccf3463c4e6ea4bf318d7300b8c17f233f9df28fcf01391adc3228a16449d"
+    },
+    "schema_compatibility": {
+      "original_count": 276,
+      "all_original_bytes_unchanged": true,
+      "generator_check": "PASS",
+      "regenerated_subset_count": 239,
+      "new_schemas": [
+        "spec/product-git-user-observation-v1.schema.json"
+      ]
+    },
+    "source_inputs": {
+      "count": 1688,
+      "main_clone_exact": true,
+      "source_inputs_sha256": "8072fa4feb9b264c4394e4c009ea7a6d17b6e97b4d20042b9613f40a667b2edb",
+      "validation_package_self_excluded": true
+    },
+    "original_gates": {
+      "all_bytes_unchanged": true,
+      "paths": [
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.py",
+          "sha256": "f2e57fe1168703757895a8d7a61baf099d8e02dfb99c548963275d3ca666782c"
+        },
+        {
+          "path": "governance/readability-policy-v1.json",
+          "sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c"
+        },
+        {
+          "path": "governance/documentation-policy-v1.json",
+          "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha256": "edd750e5dfa3850f7d80a85b2aad2fc76f09f42f5bd4d0c11ac1a4020b129fad"
+        },
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.json",
+          "sha256": "d76e2a31c2e6ef569dac79096aeef8ff1753ffc600a6441c69d228aef242e668"
+        }
+      ],
+      "native_gate_semantics": "Native18/27 selectors/13 Hooks and original bounds unchanged"
+    },
+    "diagrams": {
+      "rendered": 3,
+      "visually_inspected": 3,
+      "result": "PASS"
+    },
+    "installed_imports": {
+      "associated": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 320,
+        "pytest_exit_code": 0
+      },
+      "sdk": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 319,
+        "pytest_exit_code": 0
+      }
+    },
+    "quality": {
+      "ruff": "PASS",
+      "format": "PASS",
+      "mypy": {
+        "result": "PASS",
+        "source_files": 483
+      },
+      "readability": "PASS",
+      "documentation": {
+        "changed_path_count": 21,
+        "document_count": 555,
+        "findings": [],
+        "link_count": 12767,
+        "mermaid_count": 1061,
+        "policy_version": "harnessix.documentation-policy/v1",
+        "source_package_count": 26
+      },
+      "secret_scan": {
+        "result": "PASS",
+        "complete_inputs": 4994,
+        "fixed_rule_hits": 0,
+        "candidate_owned_files_staged_before_scan": 21
+      }
+    }
+  },
+  "retained_failures": {
+    "old_candidate_sdk": {
+      "tests": 87,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 140.222,
+      "passed": 85
+    },
+    "cross_history_test_protocol_initial": {
+      "tests": 87,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 147.82,
+      "passed": 84
+    },
+    "governance_initial": {
+      "tests": 1413,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 41.961,
+      "passed": 1411
+    }
+  },
+  "model_requests": 0,
+  "commercial_release_complete": false,
+  "remaining_boundary": "H3期间或之后的HEAD/config变化不构成原子观察；实际执行必须重验",
+  "pending_release_work": [
+    "正式Core新代际绑定完整U观察",
+    "默认Planner/Executor与Review Artifact",
+    "ProductLink/NativeBridge与A/T2/D和独立Commit",
+    "完整Backup2业务恢复",
+    "R1至R6、真实R3、三平台原生安装与有限Beta"
+  ],
+  "environment": {
+    "python": "3.12.7",
+    "git": "2.53.0",
+    "platform": "macOS",
+    "provider": "offline ScriptedProvider",
+    "native_windows_acceptance": false
+  }
+}
