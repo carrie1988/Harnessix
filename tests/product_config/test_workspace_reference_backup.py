@@ -478,7 +478,7 @@ async def test_oversized_legacy_inline_record_is_not_repaired(complete_state, tm
     _assert_unpublished(root, destination)
 
 
-@pytest.mark.parametrize("version", ["0", "3", "999"])
+@pytest.mark.parametrize("version", ["0", "4", "999"])
 async def test_workspace_unknown_schema_remains_rejected(complete_state, version):
     root, _ = complete_state
     with sqlite3.connect(root / WORKSPACE_DATABASE) as database:
@@ -494,7 +494,7 @@ async def test_workspace_unknown_schema_remains_rejected(complete_state, version
     ("path", "table", "version"),
     [
         ("action-audit.db", "action_audit_metadata", "1"),
-        ("execution-plans.db", "execution_store_metadata", "2"),
+        ("execution-plans.db", "execution_store_metadata", "3"),
         ("product-config.db", "product_config_metadata", "2"),
         (PROCESS_DATABASE, "process_store_metadata", "1"),
     ],

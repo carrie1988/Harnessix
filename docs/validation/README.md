@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 56
-code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
+version: 57
+code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
 owners:
   - core
 modules:
@@ -38,6 +38,7 @@ supersedes: []
 
 | 日期 | 证据 | 代码Revision | 固定环境与预算 | 冻结结论 | 关系 |
 |---|---|---|---|---|---|
+| 2026-10-06 | [完整父历史默认Patch／Rollback联合接入](workspace-consumer-integration-2026-10-06-v1/README.md) | 基线b1fe1b6；冻结受管输入与实际Wheel身份 | Darwin arm64；原认证SDK、CAS／Lease／备份；零模型请求 | 首轮全量11682通过／18路径夹具失败／137跳过；后继治理1413、最终源码外1053通过 | 新代际消费者增量，不关闭Git Bridge、真实R3、Windows或商用门禁 |
 | 2026-10-01 | [Windows最低SHA256 Commit单次诊断](windows-minimum-commit-probe-2026-10-01-v1/README.md) | v1基线70c0a57；v2基线4d7cada；各1255件代码SHA冻结 | 显式插件／manual-only；v2仅原MAC/raw/保护后有限bytes信号；原20秒／45秒／五分钟；零模型请求 | v2本机87焦点、389完整治理及原两个实际用例通过；v1 Run36836260240、v2 Run36841600538各两个FAIL、观察完整，exit gate拒绝、proof缺失；v2仅worker行命中 | 诊断不是生产修复；不转换UNKNOWN，不放宽Owner／MAC／PID／EOF；文字未匹配不排除原因，Windows及商用门禁开放 |
 | 2026-10-01 | [Git业务记录有限来源认证](git-record-publication-2026-10-01-v1/README.md) | 基线554618c；1252件代码输入SHA冻结 | 原Session Key/Scope，单一Wheel源码外双Python；零模型请求 | 最终焦点193通过；源码及源码外两个Python各2002通过／33跳过，原红例及独立审查P1闭环保留，四图实际渲染 | 内部来源认证；非完整Git账本、默认交付或Backup v2；最新Windows仍2失败，R1～R6开放 |
 | 2026-10-01 | [Git直接引用与完整普通文件树只读验真](git-tree-closure-2026-10-01-v1/README.md) | 基线37a1f01；1241件完整输入SHA绑定 | 原CAS、实际Git差分、单一Wheel源码外双Python；零模型请求 | 新增474通过；无交叠关联1806项、1748通过／58跳过；源码外各970通过／2跳过，五图实际渲染及独立审查 | 内部内容闭包；认证目录、默认Git写接线、Backup v2及R1～R6继续开放；Windows原超时不掩盖 |

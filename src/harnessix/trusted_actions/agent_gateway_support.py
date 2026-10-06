@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Literal, Protocol, cast
 
@@ -12,7 +12,7 @@ from harnessix.agent.approvals import (
     tool_fingerprint,
     trusted_action_invocation_id,
 )
-from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.cancellation import CancelToken, TurnCancelled, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     Thread,
@@ -147,13 +147,13 @@ async def prepare_action(
     call: ToolCallContent,
     cancel: CancelToken,
 ) -> TrustedActionApprovalRequestContent | ToolResultContent:
-    """查询优先地规划；Policy允许时执行，要求审批时只发布投影。"""
+    """组合宿主与父取消控制；查询优先规划，Policy要求审批时只发布投影。"""
 
     cancel.checkpoint()
     binding = _validate_call(state, call)
     invocation = _build_invocation(state, thread, turn, call, binding)
     try:
-        context = state.context(thread, turn, call)
+        router, context = state.router, state.context(thread, turn, call)
     except TurnCancelled:
         raise
     except Exception as error:
@@ -162,7 +162,13 @@ async def prepare_action(
         if result is not None:
             return result
         raise rejection from None
-    route = state.router.plan(invocation, context)
+
+    def check() -> None:
+        if context.checkpoint is not None:
+            context.checkpoint()
+        cancel.checkpoint()
+
+    route = router.plan(invocation, replace(context, checkpoint=parent_cancel_checkpointer(check)))
     _validate_route(route, thread, turn, call, binding)
     if route.state == "pending_approval":
         review = TrustedActionReview()
@@ -174,9 +180,7 @@ async def prepare_action(
                 raise
             except Exception as error:
                 rejection = sanitize_gateway_exception(error, stage="review")
-                result = rollback_preparation_rejection(
-                    state.router, binding, call, rejection, route
-                )
+                result = rollback_preparation_rejection(router, binding, call, rejection, route)
                 if result is not None:
                     return result
                 raise rejection from None

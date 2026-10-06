@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
+version: 12
+code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
 owners:
   - core
 modules:
@@ -50,10 +50,10 @@ supersedes: []
 | 非职责 | 不实现完整文件编辑、Patch、Workspace Transaction、Git Worktree、OS Sandbox、权限UI、全仓索引、备份、版本控制或分布式锁服务 |
 | 上游调用者 | Execution Planner、Trusted Action、Process/Sandbox、Delivery、Skill和Product Config |
 | 下游依赖 | `tools.workspace.Workspace/ReadOperation`、POSIX FD API、Windows Kernel32 Handle API、SQLite与宿主文件系统 |
-| 持久化 | 默认v1 Snapshot由上层Execution/Delivery Plan持久化；显式v2宿主端口通过原私有CAS保存完整父历史；`WorkspaceLeaseStore`持久化Owner、Fencing Token和到期时间 |
+| 持久化 | 默认Patch／Rollback使用v2 Snapshot及原私有CAS完整父历史；旧Process及显式旧宿主仍保留v1；`WorkspaceLeaseStore`持久化Owner、Fencing Token和到期时间 |
 | 平台 | macOS/Linux走POSIX Root FD；Windows走原生句柄链；领域路径始终使用UTF-8、`/`分隔的相对路径 |
-| 代码版本 | 本增量以`9eff41b`为基线；独立Snapshot v2实现由验证包绑定，不将基线SHA误记为新增实现SHA |
-| 当前完成度 | 默认v1路径、选择资源Snapshot、Secure Reader及跨进程Lease保持；显式v2宿主端口已实现完整父历史CAS与只读原生验证，默认消费者未切换，新候选Windows原生待验收；不是全仓锁或Sandbox |
+| 代码版本 | 本增量以`b1fe1b6`为基线；联合消费者实现由验证包绑定，不将基线SHA误记为新增实现SHA |
+| 当前完成度 | 默认Patch／Rollback及新Execution／Route／事务Reader已接入完整父历史；旧Process／Git Bridge未联合切换，新候选Windows原生待验收；不是全仓锁或Sandbox |
 
 本文描述[`contracts.py`](../../src/harnessix/workspace/contracts.py)、
 [`paths.py`](../../src/harnessix/workspace/paths.py)、[`snapshot.py`](../../src/harnessix/workspace/snapshot.py)、
@@ -1270,8 +1270,9 @@ Delivery旧导入、私有状态目录发布和Owner Receipt直接复用同一�
 总体方案、字段、失败矩阵及后继联合责任见
 [完整闭包详设第11节](../changes/m09-r4-workspace-parent-closure.md#11-snapshot-v2完整父闭包的实施合同)。
 
-默认Execution、Route、Delivery和Patch仍使用v1。以下是已实现的显式宿主API，不是默认产品已切换，
-也不是全仓递归快照、文件系统锁、业务批准或Sandbox。
+本节对应Snapshot独立实现切片。默认Patch／Rollback的新消费者接入见
+[联合接入详细设计](../changes/m09-r4-workspace-parent-closure.md#13-联合接入的实现与源码阅读入口)。
+旧Process和Git Bridge保留原代际；以下宿主API不构成全仓递归快照、文件系统锁、业务批准或Sandbox。
 
 ### 总体架构与数据流
 

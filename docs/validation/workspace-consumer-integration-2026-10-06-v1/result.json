@@ -1,0 +1,109 @@
+{
+  "spec_version": "harnessix.workspace-consumer-validation/v1",
+  "base_revision": "b1fe1b629d28001916cef29d5ee3a50462f357ee",
+  "status": "bounded_consumer_increment_verified",
+  "commercial_release": false,
+  "model_requests": 0,
+  "contracts": {
+    "snapshot": 2,
+    "workspace_plan": 2,
+    "workspace_record": 2,
+    "workspace_stored_record": 3,
+    "execution_plan": 3,
+    "action_route": 2
+  },
+  "default_sdk_associated": {
+    "passed": 55,
+    "failed": 0,
+    "seconds": 86.594
+  },
+  "unknown_schema_associated": {
+    "passed": 65,
+    "failed": 0,
+    "seconds": 21.549
+  },
+  "legacy_schema_files_unchanged": 263,
+  "new_schemas": 6,
+  "source_modules": 459,
+  "full_regression": {
+    "tests": 11837,
+    "passed": 11682,
+    "failed": 18,
+    "skipped": 137,
+    "errors": 0,
+    "seconds": 1620.951,
+    "candidate": "initial_before_review_fixes",
+    "failures_retained": true,
+    "failure_scope": "unchanged windows selected layout tests; whitespace in temporary directory",
+    "final_same_candidate_full_not_run": true
+  },
+  "installed_behavior": {
+    "status": "passed",
+    "module_count": 295,
+    "all_imported_modules_from_installed_wheel": true
+  },
+  "independent_review": {
+    "initial_p2": 2,
+    "initial_regression_tests": 49,
+    "initial_failed": 15,
+    "initial_passed": 34,
+    "deep_json_initial_failed": 12,
+    "final_regression": {
+      "tests": 64,
+      "passed": 64,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.836
+    },
+    "scope": "initial static review plus dedicated fixes and actual regression"
+  },
+  "capacity_first_failure": {
+    "tests": 11,
+    "failed": 2,
+    "seconds": 12.196
+  },
+  "capacity_second_failure": {
+    "tests": 11,
+    "failed": 1,
+    "seconds": 400.846
+  },
+  "incomplete_attempt_not_counted": true,
+  "source_catalogue_preserved": 18,
+  "release_gates_still_open": true,
+  "final_governance": {
+    "tests": 1413,
+    "passed": 1413,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 41.561
+  },
+  "final_installed_associated": {
+    "tests": 1053,
+    "passed": 1053,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 137.01
+  },
+  "wheel": {
+    "name": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "sha256": "dec99e57470a5559e53648955ecd04fd8f72375105ae889bb59ddc31e55ae7bd",
+    "bytes": 1244061,
+    "source_modules": 459
+  },
+  "runtime_capacity": {
+    "tests": 11,
+    "passed": 11,
+    "counts": [
+      1,
+      128,
+      255
+    ],
+    "all_historical_events_read": true,
+    "public_patch_limit_unchanged": 16
+  },
+  "final_input_files": 1388,
+  "source_input_sha256": "6c4d7c1b103eb8ddbf8a8b4358c5cdd308449fd9a76881dc9fa09912d20174ed"
+}

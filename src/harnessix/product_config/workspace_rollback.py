@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from harnessix.agent.approvals import trusted_action_invocation_id
-from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread, ToolCallContent, Turn
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
@@ -73,7 +73,9 @@ class WorkspaceRollbackReviewProvider:
         ):
             raise KernelError("trusted_action_review_invalid", "回滚Review与原Route不匹配")
         proposal = decode_workspace_rollback_input(route.plan.invocation.arguments)
-        record = self._planner.prepare(route.plan, proposal)
+        record = self._planner.prepare(
+            route.plan, proposal, checkpoint=parent_cancel_checkpointer(cancel.checkpoint)
+        )
         return await publish_workspace_review(
             route,
             thread,

@@ -1,0 +1,460 @@
+{
+  "$defs": {
+    "ExternalRoot": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Location",
+          "type": "string"
+        },
+        "path_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Path Digest",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "access": {
+          "items": {
+            "enum": [
+              "read",
+              "write",
+              "execute"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Access",
+          "type": "array"
+        }
+      },
+      "required": [
+        "location",
+        "path_digest",
+        "identity",
+        "access"
+      ],
+      "title": "ExternalRoot",
+      "type": "object"
+    },
+    "WorkspaceFileVersion": {
+      "additionalProperties": false,
+      "properties": {
+        "presence": {
+          "enum": [
+            "absent",
+            "file"
+          ],
+          "title": "Presence",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                420,
+                493
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "presence",
+        "size"
+      ],
+      "title": "WorkspaceFileVersion",
+      "type": "object"
+    },
+    "WorkspaceMutation": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "before": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        },
+        "after": {
+          "$ref": "#/$defs/WorkspaceFileVersion"
+        }
+      },
+      "required": [
+        "path",
+        "before",
+        "after"
+      ],
+      "title": "WorkspaceMutation",
+      "type": "object"
+    },
+    "WorkspaceParentClosureReference": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "maximum": 8388608,
+          "minimum": 1,
+          "title": "Size",
+          "type": "integer"
+        },
+        "parent_count": {
+          "maximum": 32768,
+          "minimum": 1,
+          "title": "Parent Count",
+          "type": "integer"
+        },
+        "target_set_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Target Set Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sha256",
+        "size",
+        "parent_count",
+        "target_set_digest"
+      ],
+      "title": "WorkspaceParentClosureReference",
+      "type": "object"
+    },
+    "WorkspaceResourceObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "location": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Location",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "access": {
+          "enum": [
+            "read",
+            "write",
+            "execute"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "directory",
+            "missing"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "content_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Sha256"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location",
+        "path",
+        "access",
+        "kind",
+        "identity",
+        "size"
+      ],
+      "title": "WorkspaceResourceObservation",
+      "type": "object"
+    },
+    "WorkspaceSnapshotV2": {
+      "additionalProperties": false,
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.workspace-snapshot/v2",
+          "default": "harnessix.workspace-snapshot/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "posix",
+            "windows"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "workspace_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Workspace Id",
+          "type": "string"
+        },
+        "root_path_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Path Digest",
+          "type": "string"
+        },
+        "root_identity": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Root Identity",
+          "type": "string"
+        },
+        "cwd": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Cwd",
+          "type": "string"
+        },
+        "external_roots": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExternalRoot"
+          },
+          "maxItems": 16,
+          "title": "External Roots",
+          "type": "array"
+        },
+        "resources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/WorkspaceResourceObservation"
+          },
+          "maxItems": 256,
+          "title": "Resources",
+          "type": "array"
+        },
+        "parent_closure": {
+          "$ref": "#/$defs/WorkspaceParentClosureReference"
+        },
+        "algorithm": {
+          "const": "selected-resources-parent-closure-sha256/v2",
+          "default": "selected-resources-parent-closure-sha256/v2",
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "workspace_id",
+        "root_path_digest",
+        "root_identity",
+        "cwd",
+        "parent_closure",
+        "revision"
+      ],
+      "title": "WorkspaceSnapshotV2",
+      "type": "object"
+    },
+    "WorkspaceTransactionPlanV2": {
+      "additionalProperties": false,
+      "description": "新指纹绑定实际 Snapshot v2 和完整父引用，旧 Plan Schema 不扩张。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.workspace-transaction-plan/v2",
+          "default": "harnessix.workspace-transaction-plan/v2",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "transaction_id": {
+          "format": "uuid",
+          "title": "Transaction Id",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/WorkspaceSnapshotV2"
+        },
+        "mutations": {
+          "items": {
+            "$ref": "#/$defs/WorkspaceMutation"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "title": "Mutations",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "transaction_id",
+        "request_id",
+        "source",
+        "mutations",
+        "created_at",
+        "fingerprint"
+      ],
+      "title": "WorkspaceTransactionPlanV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "全部状态不变量沿用原 Record；序列化始终采用新实际领域类型。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.workspace-transaction-record/v2",
+      "default": "harnessix.workspace-transaction-record/v2",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "transaction_id": {
+      "format": "uuid",
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "plan": {
+      "$ref": "#/$defs/WorkspaceTransactionPlanV2"
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "publishing",
+        "interrupted",
+        "published",
+        "diverged",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "sequence": {
+      "maximum": 4096,
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "cursor": {
+      "maximum": 256,
+      "minimum": 0,
+      "title": "Cursor",
+      "type": "integer"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "record_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Record Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "plan",
+    "state",
+    "sequence",
+    "cursor",
+    "record_digest"
+  ],
+  "title": "WorkspaceTransactionRecordV2",
+  "type": "object"
+}

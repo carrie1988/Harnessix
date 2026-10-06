@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+from collections.abc import Callable
 from contextlib import closing
 from uuid import UUID
 
@@ -53,11 +54,27 @@ def _config(tree: PrivateStateTree, control: MaintenanceIOControl) -> None:
 
 
 def _plans_and_routes(
-    tree: PrivateStateTree, threads: tuple[Thread, ...], control: MaintenanceIOControl
+    tree: PrivateStateTree,
+    threads: tuple[Thread, ...],
+    paths: tuple[str, ...],
+    control: MaintenanceIOControl,
 ) -> None:
     with (
-        SQLiteExecutionPlanStore(tree.path / "execution-plans.db", read_only=True) as plans,
-        SQLiteActionAuditStore(tree.path / "action-audit.db", read_only=True) as audit,
+        SQLiteWorkspaceTransactionStore(
+            tree.path / "workspace-transactions", read_only=True, checkpoint=control.checkpoint
+        ) as workspace,
+        SQLiteExecutionPlanStore(
+            tree.path / "execution-plans.db",
+            read_only=True,
+            read_blob=_inventory_reader(workspace, tree, paths, control),
+            checkpoint=control.checkpoint,
+        ) as plans,
+        SQLiteActionAuditStore(
+            tree.path / "action-audit.db",
+            read_only=True,
+            read_blob=_inventory_reader(workspace, tree, paths, control),
+            checkpoint=control.checkpoint,
+        ) as audit,
     ):
         plans._db.set_progress_handler(control.interrupt, 1000)
         audit._db.set_progress_handler(control.interrupt, 1000)
@@ -121,7 +138,7 @@ def _delivery(
             if size > MAX_TRANSACTION_FILE_BYTES or digest != path.rsplit("/", 1)[1]:
                 raise _invalid()
     with SQLiteWorkspaceTransactionStore(
-        tree.path / "workspace-transactions", read_only=True
+        tree.path / "workspace-transactions", read_only=True, checkpoint=control.checkpoint
     ) as store:
         store._db.set_progress_handler(control.interrupt, 1000)
         for (identity,) in store._db.execute("SELECT transaction_id FROM workspace_transactions"):
@@ -163,6 +180,32 @@ def _delivery(
                             raise _invalid()
 
 
+def _inventory_reader(
+    store: SQLiteWorkspaceTransactionStore,
+    tree: PrivateStateTree,
+    paths: tuple[str, ...],
+    control: MaintenanceIOControl,
+) -> Callable[[str], bytes]:
+    """复用正式CAS及完整Reader；独立Execution／Route也必须逐件属于原清单。"""
+    inventory = frozenset(paths)
+
+    def read_blob(digest: str) -> bytes:
+        control.checkpoint()
+        path = "workspace-transactions/blobs/" + digest
+        if path not in inventory:
+            raise _invalid()
+        body = store.blob(digest)
+        control.checkpoint()
+        if len(body) > MAX_TRANSACTION_FILE_BYTES or file_digest(tree, path, control) != (
+            len(body),
+            digest,
+        ):
+            raise _invalid()
+        return body
+
+    return read_blob
+
+
 def _leases(tree: PrivateStateTree, control: MaintenanceIOControl) -> None:
     with closing(readonly_database(tree.path / "workspace-leases.db")) as database:
         database.set_progress_handler(control.interrupt, 1000)
@@ -191,7 +234,15 @@ def _processes(
         return
     with (
         SQLiteProcessLeaseStore(tree.path / PROCESS_DATABASE, read_only=True) as store,
-        SQLiteExecutionPlanStore(tree.path / "execution-plans.db", read_only=True) as plans,
+        SQLiteWorkspaceTransactionStore(
+            tree.path / "workspace-transactions", read_only=True, checkpoint=control.checkpoint
+        ) as workspace,
+        SQLiteExecutionPlanStore(
+            tree.path / "execution-plans.db",
+            read_only=True,
+            read_blob=_inventory_reader(workspace, tree, paths, control),
+            checkpoint=control.checkpoint,
+        ) as plans,
     ):
         store._db.set_progress_handler(control.interrupt, 1000)
         plans._db.set_progress_handler(control.interrupt, 1000)
@@ -210,6 +261,7 @@ def _processes(
                 (identity,),
             )
             for index, (sequence, state, payload) in enumerate(rows):
+                control.checkpoint()
                 event = ProcessLease.model_validate_json(payload)
                 if (
                     sequence != index
@@ -270,7 +322,7 @@ def validate_state_records(
     control: MaintenanceIOControl,
 ) -> None:
     _config(tree, control)
-    _plans_and_routes(tree, threads, control)
+    _plans_and_routes(tree, threads, paths, control)
     _delivery(tree, paths, control)
     _leases(tree, control)
     _processes(tree, paths, control)

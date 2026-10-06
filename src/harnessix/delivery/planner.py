@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,7 +23,13 @@ from harnessix.delivery.contracts import (
     workspace_transaction_plan_fingerprint,
 )
 from harnessix.tools.workspace import ReadOperation, Workspace
-from harnessix.workspace.contracts import PlatformKind, WorkspaceResourceRequest
+from harnessix.workspace.contracts import (
+    PlatformKind,
+    ResourceAccess,
+    WorkspaceResourceObservation,
+    WorkspaceResourceRequest,
+)
+from harnessix.workspace.native_observation_io import NativeReadOperation, UpstreamCheckpointError
 from harnessix.workspace.paths import normalize_workspace_path, path_comparison_key
 from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
 
@@ -78,34 +84,7 @@ def prepare_workspace_transaction(
         for item in snapshot.resources
         if item.location == "workspace"
     }
-    mutations: list[WorkspaceMutation] = []
-    blobs: dict[str, bytes] = {}
-    for path, target in sorted(
-        normalized.items(), key=lambda item: path_comparison_key(item[0], selected_platform)
-    ):
-        observed = observations[(path, "write")]
-        if observed.kind == "directory":
-            raise KernelError("delivery_path_denied", "Workspace事务目标不能是目录")
-        if observed.kind == "file":
-            before_body, before_mode = _read_existing(Path(root), path, selected_platform)
-            before = _file_version(before_body, before_mode)
-            if before.sha256 != observed.content_sha256 or before.size != observed.size:
-                raise KernelError("delivery_source_changed", "Workspace事务来源读取期间变化")
-            if before.sha256 is None:
-                raise KernelError("delivery_source_changed", "Workspace事务来源摘要缺失")
-            blobs[before.sha256] = before_body
-        else:
-            before = WorkspaceFileVersion(presence="absent", size=0)
-        if target.content is None:
-            after = WorkspaceFileVersion(presence="absent", size=0)
-        else:
-            after = _file_version(target.content, target.mode)
-            if after.sha256 is None:
-                raise KernelError("delivery_plan_invalid", "Workspace事务目标摘要缺失")
-            blobs[after.sha256] = target.content
-        if before == after:
-            raise KernelError("delivery_no_change", "Workspace事务包含无变化文件")
-        mutations.append(WorkspaceMutation(path=path, before=before, after=after))
+    mutations, blobs = _prepare_mutations(Path(root), normalized, observations, selected_platform)
     verify_workspace_snapshot(snapshot, root)
     candidate = WorkspaceTransactionPlan.model_construct(
         _fields_set=None,
@@ -125,6 +104,50 @@ def prepare_workspace_transaction(
         fingerprint=workspace_transaction_plan_fingerprint(candidate),
     )
     return PreparedWorkspaceTransaction(plan=plan, blobs=MappingProxyType(blobs))
+
+
+def _prepare_mutations(
+    root: Path,
+    normalized: Mapping[str, DesiredWorkspaceFile],
+    observations: Mapping[tuple[str, ResourceAccess], WorkspaceResourceObservation],
+    selected_platform: PlatformKind,
+    *,
+    checkpoint: Callable[[], None] | None = None,
+) -> tuple[tuple[WorkspaceMutation, ...], dict[str, bytes]]:
+    """两代计划复用原前后镜像、单文件上限与来源摘要核验。"""
+    mutations: list[WorkspaceMutation] = []
+    blobs: dict[str, bytes] = {}
+    for path, target in sorted(
+        normalized.items(), key=lambda item: path_comparison_key(item[0], selected_platform)
+    ):
+        if checkpoint is not None:
+            checkpoint()
+        observed = observations[(path, "write")]
+        if observed.kind == "directory":
+            raise KernelError("delivery_path_denied", "Workspace事务目标不能是目录")
+        if observed.kind == "file":
+            before_body, before_mode = _read_existing(
+                root, path, selected_platform, checkpoint=checkpoint
+            )
+            before = _file_version(before_body, before_mode)
+            if before.sha256 != observed.content_sha256 or before.size != observed.size:
+                raise KernelError("delivery_source_changed", "Workspace事务来源读取期间变化")
+            if before.sha256 is None:
+                raise KernelError("delivery_source_changed", "Workspace事务来源摘要缺失")
+            blobs[before.sha256] = before_body
+        else:
+            before = WorkspaceFileVersion(presence="absent", size=0)
+        if target.content is None:
+            after = WorkspaceFileVersion(presence="absent", size=0)
+        else:
+            after = _file_version(target.content, target.mode)
+            if after.sha256 is None:
+                raise KernelError("delivery_plan_invalid", "Workspace事务目标摘要缺失")
+            blobs[after.sha256] = target.content
+        if before == after:
+            raise KernelError("delivery_no_change", "Workspace事务包含无变化文件")
+        mutations.append(WorkspaceMutation(path=path, before=before, after=after))
+    return tuple(mutations), blobs
 
 
 def _normalized_targets(
@@ -165,13 +188,21 @@ def _file_version(body: bytes, mode: FileMode | None) -> WorkspaceFileVersion:
     )
 
 
-def _read_existing(root: Path, path: str, platform: PlatformKind) -> tuple[bytes, FileMode]:
+def _read_existing(
+    root: Path, path: str, platform: PlatformKind, *, checkpoint: Callable[[], None] | None = None
+) -> tuple[bytes, FileMode]:
     if platform == "posix" and os.name == "posix":
         try:
             with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
-                with workspace.open(path, ReadOperation(), directory=False) as descriptor:
+                operation = (
+                    ReadOperation() if checkpoint is None else NativeReadOperation(checkpoint)
+                )
+                with workspace.open(path, operation, directory=False) as descriptor:
                     info = os.fstat(descriptor)
-                    body = _read_all(descriptor)
+                    body = _read_all(
+                        descriptor,
+                        checkpoint=operation.checkpoint if checkpoint is not None else None,
+                    )
                     actual_mode = stat.S_IMODE(info.st_mode)
                     if actual_mode == 0o644:
                         mode: FileMode = 0o644
@@ -183,6 +214,8 @@ def _read_existing(root: Path, path: str, platform: PlatformKind) -> tuple[bytes
                             "Workspace事务只支持0644或0755普通文件",
                         )
                     return body, mode
+        except UpstreamCheckpointError as error:
+            raise error.error from None
         except OSError:
             raise KernelError("delivery_source_changed", "Workspace事务来源读取失败") from None
     if platform == "windows" and os.name == "nt":
@@ -190,10 +223,14 @@ def _read_existing(root: Path, path: str, platform: PlatformKind) -> tuple[bytes
         from harnessix.workspace.windows import WindowsWorkspaceRoot
 
         # 写计划先验证原生文件元数据边界，不能把只读或带ADS的文件当作普通0644文件。
+        if checkpoint is not None:
+            checkpoint()
         version = observe_windows_file(root, path)
         native = WindowsWorkspaceRoot(root)
         try:
-            observed = native.observe(path, access="write")
+            observed = native.observe(path, access="write", checkpoint=checkpoint)
+            if checkpoint is not None:
+                checkpoint()
             if (
                 observed.kind != "file"
                 or observed.content is None
@@ -206,9 +243,11 @@ def _read_existing(root: Path, path: str, platform: PlatformKind) -> tuple[bytes
     raise KernelError("workspace_platform_unsupported", "Workspace事务平台与宿主不一致")
 
 
-def _read_all(descriptor: int) -> bytes:
+def _read_all(descriptor: int, *, checkpoint: Callable[[], None] | None = None) -> bytes:
     body = bytearray()
     while True:
+        if checkpoint is not None:
+            checkpoint()
         chunk = os.read(descriptor, min(65_536, MAX_TRANSACTION_FILE_BYTES + 1 - len(body)))
         if not chunk:
             return bytes(body)

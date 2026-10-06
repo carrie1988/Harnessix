@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import ExitStack, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,6 +25,8 @@ from harnessix.tools.workspace import Workspace, identity, revision_state
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
+from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
+from harnessix.workspace.snapshot_v2 import verify_workspace_snapshot_v2
 
 _DIRECTORY_FLAGS = (
     os.O_RDONLY
@@ -38,6 +40,10 @@ _FILE_FLAGS = (
     | getattr(os, "O_CLOEXEC", 0)
     | getattr(os, "O_NONBLOCK", 0)
 )
+
+
+def _checkpoint() -> None:
+    """旧同步入口不新增整体期限；调用方可注入同一父操作检查。"""
 
 
 def _fault(_: str) -> None:
@@ -62,14 +68,17 @@ class WorkspaceTransactionRuntime:
         *,
         approval_fingerprint: str,
         lease: WorkspaceLease,
+        checkpoint: Callable[[], None] | None = None,
     ) -> WorkspaceTransactionRecord:
         """在批准指纹和Workspace Lease仍匹配时发布事务；部分效果转入可恢复状态。"""
+        control = checkpoint or _checkpoint
         while True:
             record = self.publish_next(
                 transaction_id,
                 root,
                 approval_fingerprint=approval_fingerprint,
                 lease=lease,
+                checkpoint=control,
             )
             if record.state == "published":
                 return record
@@ -81,6 +90,7 @@ class WorkspaceTransactionRuntime:
         *,
         approval_fingerprint: str,
         lease: WorkspaceLease,
+        checkpoint: Callable[[], None] | None = None,
     ) -> WorkspaceTransactionRecord:
         """最多提交一个有界成员，供异步Owner在成员之间建立取消检查点。"""
 
@@ -90,6 +100,7 @@ class WorkspaceTransactionRuntime:
             root,
             approval_fingerprint=approval_fingerprint,
             lease=lease,
+            checkpoint=checkpoint or _checkpoint,
         )
 
     def reconcile(self, transaction_id: UUID, root: str | Path) -> WorkspaceTransactionRecord:
@@ -135,6 +146,7 @@ class WorkspaceTransactionRuntime:
         request_id: str,
         rollback_id: UUID | None = None,
         now: datetime | None = None,
+        checkpoint: Callable[[], None] | None = None,
     ) -> WorkspaceTransactionRecord:
         """在原Workspace中规划独立回滚；拒绝根重定位或规划期间的目录置换。"""
 
@@ -145,6 +157,7 @@ class WorkspaceTransactionRuntime:
             request_id=request_id,
             rollback_id=rollback_id,
             now=now,
+            checkpoint=checkpoint or _checkpoint,
         )
 
     def _advance(
@@ -179,11 +192,13 @@ def _build_rollback(
     request_id: str,
     rollback_id: UUID | None,
     now: datetime | None,
+    checkpoint: Callable[[], None],
 ) -> WorkspaceTransactionRecord:
     """绑定原根后构造逆向目标，并在独立Planner捕获之后才保存新事务。"""
 
     from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
 
+    checkpoint()
     original = runtime._store.load(transaction_id)
     if original.state != "published":
         raise KernelError("delivery_rollback_invalid", "只有已发布事务可以创建Rollback")
@@ -193,6 +208,7 @@ def _build_rollback(
         raise KernelError("delivery_source_changed", "Rollback来源Workspace身份已变化")
     desired: dict[str, DesiredWorkspaceFile] = {}
     for mutation in original.plan.mutations:
+        checkpoint()
         if mutation.before.presence == "absent":
             desired[mutation.path] = DesiredWorkspaceFile(None)
         else:
@@ -201,14 +217,30 @@ def _build_rollback(
             desired[mutation.path] = DesiredWorkspaceFile(
                 runtime._store.blob(mutation.before.sha256), mutation.before.mode
             )
-    prepared = prepare_workspace_transaction(
-        root,
-        desired,
-        request_id=request_id,
-        transaction_id=rollback_id or uuid4(),
-        now=now or datetime.now(UTC),
-        platform=original.plan.source.platform,
-    )
+    checkpoint()
+    if isinstance(original.plan.source, WorkspaceSnapshotV2):
+        from harnessix.delivery.planner_v2 import prepare_workspace_transaction_v2
+
+        prepared = prepare_workspace_transaction_v2(
+            root,
+            desired,
+            request_id=request_id,
+            transaction_id=rollback_id or uuid4(),
+            now=now or datetime.now(UTC),
+            platform=original.plan.source.platform,
+            checkpoint=checkpoint,
+            write_blob=runtime._store.put_blob,
+            read_blob=runtime._store.blob,
+        )
+    else:
+        prepared = prepare_workspace_transaction(
+            root,
+            desired,
+            request_id=request_id,
+            transaction_id=rollback_id or uuid4(),
+            now=now or datetime.now(UTC),
+            platform=original.plan.source.platform,
+        )
     # Planner独立捕获完整来源；根在两次捕获之间被替换时不能保存新批准计划。
     if prepared.plan.source.workspace_id != current_root.workspace_id:
         raise KernelError("delivery_source_changed", "Rollback来源Workspace身份已变化")
@@ -245,7 +277,7 @@ def _parent(workspace: Workspace, path: str) -> Iterator[tuple[int, str]]:
 
 
 def _observe(
-    root: Path, path: str, *, source: WorkspaceSnapshot | None = None
+    root: Path, path: str, *, source: WorkspaceSnapshot | WorkspaceSnapshotV2 | None = None
 ) -> WorkspaceFileVersion:
     if os.name == "nt":
         from harnessix.delivery.windows_filesystem import observe_windows_file
@@ -391,6 +423,7 @@ def _publish_next(
     *,
     approval_fingerprint: str,
     lease: WorkspaceLease,
+    checkpoint: Callable[[], None],
 ) -> WorkspaceTransactionRecord:
     """复核执行资格并最多提交一个Workspace事务成员。"""
 
@@ -400,6 +433,7 @@ def _publish_next(
         root,
         approval_fingerprint=approval_fingerprint,
         lease=lease,
+        checkpoint=checkpoint,
     )
     if record.state == "published":
         return record
@@ -446,10 +480,13 @@ def _prepare_publication(
     *,
     approval_fingerprint: str,
     lease: WorkspaceLease,
+    checkpoint: Callable[[], None],
 ) -> WorkspaceTransactionRecord:
     """复核批准、平台、租约和可恢复状态，但不提交文件成员。"""
 
+    checkpoint()
     record = runtime._store.load(transaction_id)
+    checkpoint()
     if approval_fingerprint != record.plan.fingerprint:
         raise KernelError("delivery_approval_mismatch", "Workspace事务批准指纹不匹配")
     _assert_platform(record.plan.source)
@@ -459,7 +496,12 @@ def _prepare_publication(
         raise KernelError("delivery_not_executable", "Workspace事务已处于不可执行终态")
     runtime._assert_lease(record, lease)
     if record.state == "prepared":
-        verify_workspace_snapshot(record.plan.source, root)
+        if isinstance(record.plan.source, WorkspaceSnapshotV2):
+            verify_workspace_snapshot_v2(
+                record.plan.source, root, checkpoint=checkpoint, read_blob=runtime._store.blob
+            )
+        else:
+            verify_workspace_snapshot(record.plan.source, root)
         record = runtime._advance(record, "publishing", 0)
     else:
         record = runtime.reconcile(transaction_id, root)
@@ -473,7 +515,7 @@ def _prepare_publication(
     return record
 
 
-def _assert_platform(source: WorkspaceSnapshot) -> None:
+def _assert_platform(source: WorkspaceSnapshot | WorkspaceSnapshotV2) -> None:
     """跨宿主历史不能落入另一平台的观察/执行端口，也不能据此追认效果。"""
 
     native_platform = "windows" if os.name == "nt" else "posix"

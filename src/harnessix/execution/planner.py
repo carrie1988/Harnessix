@@ -25,7 +25,9 @@ from harnessix.execution.contracts import (
     canonical_digest,
     execution_plan_fingerprint,
 )
+from harnessix.execution.versioned_contracts import ExecutionPlanV3
 from harnessix.workspace.contracts import PlatformKind, WorkspaceSnapshot
+from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
 
 
 def build_capability_evidence(
@@ -292,3 +294,53 @@ def verify_execution_plan_v2(
     )
     if rebuilt != checked or execution_plan_fingerprint(checked) != checked.fingerprint:
         raise KernelError("execution_plan_stale", "执行计划v2绑定事实已经变化")
+
+
+def build_execution_plan_v3(
+    intent: ExecutionIntent,
+    workspace: WorkspaceSnapshotV2,
+    *,
+    environment: Mapping[str, str],
+    secrets: Sequence[SecretVersionBinding],
+    sandbox: SandboxBindingV2,
+    policy: ExecutionPolicyBinding,
+    capabilities: ExecutionCapabilityEvidenceV2,
+    plan_id: UUID | None = None,
+) -> ExecutionPlanV3:
+    """冻结完整父引用，沿用原平台环境排序和 v2 能力约束。"""
+    environment_binding = bind_environment(environment, platform=workspace.platform)
+    secret_binding = tuple(
+        sorted(
+            secrets,
+            key=lambda item: (
+                item.name,
+                item.target.casefold() if workspace.platform == "windows" else item.target,
+            ),
+        )
+    )
+    identifier = plan_id or uuid4()
+    payload = {
+        "spec_version": "harnessix.execution-plan/v3",
+        "plan_id": str(identifier),
+        "intent": intent.model_dump(mode="json", warnings="error"),
+        "workspace": workspace.model_dump(mode="json", warnings="error"),
+        "environment": [item.model_dump(mode="json") for item in environment_binding],
+        "secrets": [item.model_dump(mode="json") for item in secret_binding],
+        "sandbox": sandbox.model_dump(mode="json", warnings="error"),
+        "policy": policy.model_dump(mode="json", warnings="error"),
+        "capabilities": capabilities.model_dump(mode="json", warnings="error"),
+    }
+    try:
+        return ExecutionPlanV3(
+            plan_id=identifier,
+            intent=intent,
+            workspace=workspace,
+            environment=environment_binding,
+            secrets=secret_binding,
+            sandbox=sandbox,
+            policy=policy,
+            capabilities=capabilities,
+            fingerprint=canonical_digest(payload),
+        )
+    except ValidationError:
+        raise KernelError("execution_plan_invalid", "执行计划绑定不符合v3契约") from None

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 190
-code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
+version: 191
+code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
 owners:
   - core
 modules:
@@ -2089,3 +2089,24 @@ prepared T／Bridge MAC／私有A／D与独立Commit也尚未完成默认装配�
 实际单一Wheel451件源码原字节匹配，源码外128叶／129父观察及只读重开通过；仍不是新三平台或商用验收。
 
 报告同步后的完整治理复验1413项实际全部通过，37.155秒；范围包含原失败节点，原全量FAIL保持。
+
+
+### R1/R4：默认Patch与Rollback完整父历史联合接入
+
+独立Snapshot v2已贯通Execution v3、Action Route v2、事务领域v2／物理壳v3及相同CAS的只读备份消费者。
+默认认证产品公开Patch仍最多16个文件；父目录自动完整派生，不删除观察或把资源上限扩大。
+真实SDK覆盖16个分散深链叶和401个父观察，批准发布、独立回滚、重启、全状态备份恢复及再开，
+等待取消保持prepared；当前实现与完整源码入口见
+[联合接入详设](changes/m09-r4-workspace-parent-closure.md#13-联合接入的实现与源码阅读入口)。
+128／255分散叶事务属于领域端口验证，不把它们改称公开产品16文件工具的新上限。
+
+后继仍须闭合prepared T／Bridge MAC／私有A／D／独立Commit、旧Process消费者和Git／Backup v2联合适配，
+开展同候选实际三平台及源码外安装验证、真实R3质量、费用结算、消费者环境与独立Beta。
+本切片不关闭R1～R6，不删除历史失败，不新增模型请求、调整预算或部署独立中间件。
+
+
+本增量最终结果见[消费者联合接入验收](validation/workspace-consumer-integration-2026-10-06-v1/README.md)：
+真实128／255叶发布及独立逆向、完整历史重开通过；首轮全量11682通过／137跳过／18测试路径夹具失败，原FAIL保留。
+原简单路径保护不修改，后继完整治理1413项通过；最终单一Wheel459件源码匹配，源码外关联1053项通过。
+独立评审的宿主控制与旧Reader缺省标签问题通过真实红例闭环；深度错误保持原存储错误分类，64项最终回归通过。
+首轮完整输入与后继修复输入分开绑定，不宣称最终同候选完整零失败或新平台验收。

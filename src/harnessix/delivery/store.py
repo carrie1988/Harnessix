@@ -6,6 +6,7 @@ import hashlib
 import os
 import sqlite3
 import stat
+from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -24,12 +25,16 @@ from harnessix.delivery.workspace_record_codec import (
     DecodedWorkspaceRecord,
     decode_workspace_record,
     encode_workspace_record,
+    validate_workspace_record,
 )
 from harnessix.delivery.workspace_store_schema import (
+    admit_workspace_record_v2,
     check_workspace_store_schema,
     initialize_workspace_store,
 )
+from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
 from harnessix.sqlite_readonly import readonly_database
+from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 
 _TRANSITIONS: dict[TransactionState, frozenset[TransactionState]] = {
     "prepared": frozenset({"publishing", "diverged", "unknown"}),
@@ -44,10 +49,17 @@ _TRANSITIONS: dict[TransactionState, frozenset[TransactionState]] = {
 class SQLiteWorkspaceTransactionStore:
     """私有CAS与append-only事务账本；文件正文不进入公开Plan。"""
 
-    def __init__(self, root: str | Path, *, read_only: bool = False) -> None:
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        read_only: bool = False,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> None:
         self._root = Path(root)
         self._closed = False
         self._read_only = read_only
+        self._checkpoint = checkpoint
         self._blobs = self._root / "blobs"
         self._path = self._root / "transactions.db"
         if read_only:
@@ -77,6 +89,7 @@ class SQLiteWorkspaceTransactionStore:
 
     def save(self, prepared: PreparedWorkspaceTransaction) -> WorkspaceTransactionRecord:
         self._require_writable()
+        self._check()
         for digest, body in sorted(prepared.blobs.items()):
             self._put_blob(digest, body)
         record = new_transaction_record(prepared.plan)
@@ -85,9 +98,10 @@ class SQLiteWorkspaceTransactionStore:
             if existing.transaction_id != record.transaction_id or existing.plan != record.plan:
                 raise KernelError("delivery_request_conflict", "Workspace事务请求已绑定其他计划")
             return existing
-        payload = encode_workspace_record(record, self.put_blob)
+        payload = self._encode(record)
         try:
             self._db.execute("BEGIN IMMEDIATE")
+            self._admit(record)
             current = self._db.execute(
                 "SELECT request_id, plan_fingerprint, state, sequence, payload "
                 "FROM workspace_transactions WHERE transaction_id=?",
@@ -111,6 +125,7 @@ class SQLiteWorkspaceTransactionStore:
                 )
             elif current != expected:
                 raise KernelError("delivery_transaction_conflict", "事务身份已绑定其他计划")
+            self._check()
             self._db.execute("COMMIT")
         except sqlite3.IntegrityError:
             if self._db.in_transaction:
@@ -126,6 +141,7 @@ class SQLiteWorkspaceTransactionStore:
         self, current: WorkspaceTransactionRecord, updated: WorkspaceTransactionRecord
     ) -> None:
         self._require_writable()
+        self._check()
         before = self._validate(current)
         after = self._validate(updated)
         if (
@@ -136,9 +152,10 @@ class SQLiteWorkspaceTransactionStore:
             or after.cursor < before.cursor
         ):
             raise KernelError("delivery_transition_invalid", "Workspace事务状态迁移无效")
-        payload = encode_workspace_record(after, self.put_blob)
+        payload = self._encode(after)
         try:
             self._db.execute("BEGIN IMMEDIATE")
+            self._admit(after)
             stored = self._db.execute(
                 "SELECT state, sequence, payload FROM workspace_transactions "
                 "WHERE transaction_id=?",
@@ -166,6 +183,7 @@ class SQLiteWorkspaceTransactionStore:
                 "INSERT INTO workspace_transaction_events VALUES (?,?,?,?)",
                 (str(after.transaction_id), after.sequence, after.state, payload),
             )
+            self._check()
             self._db.execute("COMMIT")
         except sqlite3.IntegrityError:
             if self._db.in_transaction:
@@ -196,7 +214,10 @@ class SQLiteWorkspaceTransactionStore:
 
     def blob(self, digest: str) -> bytes:
         """读取文件镜像；调用方必须先完成原Workspace来源及执行授权验证。"""
-        return self._read_blob(digest)
+        self._check()
+        body = self._read_blob(digest)
+        self._check()
+        return body
 
     def _read_blob(self, digest: str) -> bytes:
         """共用原CAS严格IO；Plan元数据读取不触发文件镜像端口。"""
@@ -206,7 +227,20 @@ class SQLiteWorkspaceTransactionStore:
 
     def decode_payload(self, payload: str) -> DecodedWorkspaceRecord:
         """完整读取当前行或历史物理记录；校验引用不授予执行、迁移或补签权。"""
-        return decode_workspace_record(payload, self._read_blob)
+        return decode_workspace_record(payload, self._read_blob, checkpoint=self._checkpoint)
+
+    def _encode(self, record: WorkspaceTransactionRecord) -> str:
+        return encode_workspace_record(
+            record, self.put_blob, read_blob=self._read_blob, checkpoint=self._checkpoint
+        )
+
+    def _admit(self, record: WorkspaceTransactionRecord) -> None:
+        if isinstance(record, WorkspaceTransactionRecordV2):
+            admit_workspace_record_v2(self._db)
+
+    def _check(self) -> None:
+        if self._checkpoint is not None:
+            self._checkpoint()
 
     def _require_writable(self) -> None:
         """只读权限在文件副作用与输入解析之前检查，不只依赖 SQLite 拒绝。"""
@@ -218,68 +252,28 @@ class SQLiteWorkspaceTransactionStore:
     def put_blob(self, digest: str, body: bytes) -> None:
         """受信宿主持久化完整正文；复用原 CAS，已有正文也重新刷盘，不登记业务成功。"""
         self._require_writable()
+        self._check()
         self._put_blob(digest, body)
-        confirm_blob_durable(
-            self._blobs / digest, body, lambda: self.blob(digest), _fsync_directory
-        )
+        try:
+            confirm_blob_durable(
+                self._blobs / digest,
+                body,
+                lambda: _controlled_io(lambda: self.blob(digest)),
+                _fsync_directory,
+            )
+        except UpstreamCheckpointError as error:
+            raise error.error from None
+        self._check()
 
     def _put_blob(self, digest: str, body: bytes) -> None:
         self._require_writable()
-        if (
-            not _valid_digest(digest)
-            or type(body) is not bytes
-            or len(body) > MAX_TRANSACTION_FILE_BYTES
-            or hashlib.sha256(body).hexdigest() != digest
-        ):
-            raise KernelError("delivery_blob_invalid", "Workspace事务Blob与摘要不一致")
-        target = self._blobs / digest
-        if target.exists():
-            if self.blob(digest) != body:
-                raise KernelError("delivery_blob_conflict", "Workspace事务Blob发生冲突")
-            return
-        temporary = self._blobs / f".{digest}.{uuid4().hex}.tmp"
-        flags = (
-            os.O_WRONLY
-            | os.O_CREAT
-            | os.O_EXCL
-            | getattr(os, "O_BINARY", 0)
-            | getattr(os, "O_CLOEXEC", 0)
-        )
-        descriptor: int | None = None
-        temporary_owned = False
-        try:
-            descriptor = os.open(temporary, flags, 0o600)
-            temporary_owned = True
-            offset = 0
-            while offset < len(body):
-                written = os.write(descriptor, body[offset : offset + 65_536])
-                if written <= 0:
-                    raise OSError
-                offset += written
-            os.fsync(descriptor)
-            os.close(descriptor)
-            descriptor = None
-            os.replace(temporary, target)
-            _fsync_directory(self._blobs)
-            if self.blob(digest) != body:
-                raise OSError
-        except OSError:
-            raise KernelError("delivery_storage_unavailable", "Workspace事务Blob写入失败") from None
-        finally:
-            if descriptor is not None:
-                os.close(descriptor)
-            # O_EXCL 成功才拥有清理权；创建失败时不能删除同名陌生文件。
-            if temporary_owned:
-                try:
-                    temporary.unlink()
-                except OSError:
-                    pass
+        _write_blob_body(self._blobs, digest, body, self.blob, self._check)
 
     def _decode(self, row: tuple[object, ...]) -> WorkspaceTransactionRecord:
+        if not isinstance(row[5], str):
+            raise KernelError("delivery_store_corrupt", "Workspace事务账本损坏")
+        record = self.decode_payload(row[5]).record
         try:
-            if not isinstance(row[5], str):
-                raise ValueError
-            record = self.decode_payload(row[5]).record
             if row[:5] != (
                 str(record.transaction_id),
                 record.plan.request_id,
@@ -305,12 +299,7 @@ class SQLiteWorkspaceTransactionStore:
 
     @staticmethod
     def _validate(record: WorkspaceTransactionRecord) -> WorkspaceTransactionRecord:
-        try:
-            return WorkspaceTransactionRecord.model_validate_json(
-                record.model_dump_json(warnings="error"), strict=True
-            )
-        except (ValidationError, ValueError, TypeError):
-            raise KernelError("delivery_record_invalid", "Workspace事务记录无效") from None
+        return validate_workspace_record(record)
 
     def close(self) -> None:
         if not self._closed:
@@ -322,6 +311,76 @@ class SQLiteWorkspaceTransactionStore:
 
     def __exit__(self, *_: object) -> None:
         self.close()
+
+
+def _controlled_io[T](operation: Callable[[], T]) -> T:
+    try:
+        return operation()
+    except BaseException as error:
+        raise UpstreamCheckpointError(error) from None
+
+
+def _write_blob_body(
+    blobs: Path,
+    digest: str,
+    body: bytes,
+    read_blob: Callable[[str], bytes],
+    checkpoint: Callable[[], None],
+) -> None:
+    """原 CAS 写入算法及限额不变；控制异常穿过文件错误转换边界。"""
+    if (
+        not _valid_digest(digest)
+        or type(body) is not bytes
+        or len(body) > MAX_TRANSACTION_FILE_BYTES
+        or hashlib.sha256(body).hexdigest() != digest
+    ):
+        raise KernelError("delivery_blob_invalid", "Workspace事务Blob与摘要不一致")
+    target = blobs / digest
+    if target.exists():
+        if read_blob(digest) != body:
+            raise KernelError("delivery_blob_conflict", "Workspace事务Blob发生冲突")
+        return
+    temporary = blobs / f".{digest}.{uuid4().hex}.tmp"
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | getattr(os, "O_BINARY", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    descriptor: int | None = None
+    temporary_owned = False
+    try:
+        descriptor = os.open(temporary, flags, 0o600)
+        temporary_owned = True
+        offset = 0
+        while offset < len(body):
+            _controlled_io(checkpoint)
+            written = os.write(descriptor, body[offset : offset + 65_536])
+            if written <= 0:
+                raise OSError
+            offset += written
+        _controlled_io(checkpoint)
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = None
+        os.replace(temporary, target)
+        _fsync_directory(blobs)
+        if _controlled_io(lambda: read_blob(digest)) != body:
+            raise OSError
+    except UpstreamCheckpointError as error:
+        raise error.error from None
+    except OSError:
+        raise KernelError("delivery_storage_unavailable", "Workspace事务Blob写入失败") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        # O_EXCL 成功才拥有清理权；创建失败时不能删除同名陌生文件。
+        if temporary_owned:
+            try:
+                temporary.unlink()
+            except OSError:
+                pass
 
 
 def _valid_digest(value: str) -> bool:

@@ -49,13 +49,14 @@ from harnessix.trusted_actions.operation_router import (
 )
 from harnessix.trusted_actions.planning import (
     canonical_json_object,
-    decode_action_arguments,
+    decode_persisted_action_arguments,
     plan_action,
 )
 from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.contracts import ResourceAccess, WorkspaceResourceRequest
-from harnessix.workspace.snapshot import verify_workspace_snapshot
+from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
+from harnessix.workspace.snapshot_verification import verify_host_workspace_snapshot
 
 
 def canonical_action_resource(
@@ -87,6 +88,8 @@ class ActionPlanningContext:
     environment: Mapping[str, str] = field(default_factory=dict)
     secrets: tuple[SecretVersionBinding, ...] = ()
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None
+    snapshot_ports: WorkspaceSnapshotPorts | None = None
+    checkpoint: Callable[[], None] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +139,7 @@ class TrustedActionRouter:
         execute_timeout_seconds: float = 300.0,
         reconcile_timeout_seconds: float = 30.0,
         max_reconciliation_attempts: int = 3,
+        snapshot_ports: WorkspaceSnapshotPorts | None = None,
     ) -> None:
         if (
             not 0 < execute_timeout_seconds <= 86400
@@ -143,6 +147,7 @@ class TrustedActionRouter:
             or not 1 <= max_reconciliation_attempts <= 128
         ):
             raise KernelError("action_route_limits_invalid", "Action Route期限或尝试上限无效")
+        self._snapshot_ports = snapshot_ports
         self._plans = plans
         self._audit = audit
         self._workspace_root = workspace_root
@@ -312,15 +317,13 @@ class TrustedActionRouter:
         if persisted != plan.execution:
             raise KernelError("action_plan_mismatch", "Action Route与Execution Plan不一致")
         definition = self._matching_definition(plan)
-        workspace_root = self._workspace_root(plan.execution.workspace.workspace_id)
-        verify_workspace_snapshot(plan.execution.workspace, workspace_root)
+        verify_host_workspace_snapshot(
+            plan.execution.workspace, self._workspace_root, self._snapshot_ports
+        )
         approval = self._plans.load_approval(plan_id)
         if not execution_is_approved(plan.execution, approval):
             raise KernelError("action_not_approved", "Action Execution Plan尚未获得有效批准")
-        try:
-            arguments = decode_action_arguments(definition, plan.invocation.arguments)
-        except (KernelError, ValidationError, ValueError, TypeError):
-            raise KernelError("action_audit_store_corrupt", "持久Action参数不再可解析") from None
+        arguments = decode_persisted_action_arguments(definition, plan.invocation)
         return current, definition, arguments
 
     def _matching_definition(self, plan: ActionRoutePlan) -> TrustedActionDefinition:

@@ -18,6 +18,7 @@ from harnessix.processes.owner_protocol import OutputRedactionSource
 from harnessix.processes.supervisor import PosixProcessSupervisor, WindowsProcessSupervisor
 from harnessix.product_config.action_catalog import ProductActionCatalog
 from harnessix.product_config.action_composition import (
+    FixedProductActionEnvironment,
     ProductActionComposition,
     build_fixed_product_action_environment,
     build_product_action_composition,
@@ -47,6 +48,7 @@ from harnessix.trusted_actions.recovery_contracts import (
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.leases import WorkspaceLeaseStore
+from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 
 _PRODUCT_ACTION_SOURCE = "harnessix.product"
 
@@ -135,17 +137,20 @@ async def _open_action_dependencies(
     """在单Owner窗口内打开Store、Process Supervisor并冻结Profile探测。"""
 
     async with AsyncExitStack() as resources:
-        plans = resources.enter_context(SQLiteExecutionPlanStore(state_root / "execution-plans.db"))
+        transactions = resources.enter_context(
+            SQLiteWorkspaceTransactionStore(state_root / "workspace-transactions")
+        )
+        plans = resources.enter_context(
+            SQLiteExecutionPlanStore(state_root / "execution-plans.db", read_blob=transactions.blob)
+        )
         audit = resources.enter_context(
             SQLiteActionAuditStore(
                 state_root / "action-audit.db",
                 require_runtime_owner=True,
+                read_blob=transactions.blob,
             )
         )
         fence = resources.enter_context(audit.runtime_owner())
-        transactions = resources.enter_context(
-            SQLiteWorkspaceTransactionStore(state_root / "workspace-transactions")
-        )
         leases = resources.enter_context(WorkspaceLeaseStore(state_root / "workspace-leases.db"))
         process_profiles = {
             profile.profile_sha256: profile
@@ -175,6 +180,24 @@ async def _open_action_dependencies(
             supervisor,
             probe_cache,
         )
+
+
+def _product_router(
+    environment: FixedProductActionEnvironment,
+    dependencies: _ProductActionDependencies,
+    *configs: ProductActionConfigV1,
+) -> TrustedActionRouter:
+    """同一Owner窗口复用唯一CAS和Store，恢复与候选目录不创建替代历史端口。"""
+    return TrustedActionRouter(
+        plans=dependencies.plans,
+        audit=dependencies.audit,
+        workspace_root=environment.workspace_root,
+        snapshot_ports=WorkspaceSnapshotPorts(
+            dependencies.transactions.put_blob,
+            dependencies.transactions.blob,
+        ),
+        execute_timeout_seconds=_route_execute_timeout(*configs),
+    )
 
 
 @asynccontextmanager
@@ -209,11 +232,8 @@ async def open_default_product_action_runtime(
         ):
             plans = dependencies.plans
             audit = dependencies.audit
-            recovery_router = TrustedActionRouter(
-                plans=plans,
-                audit=audit,
-                workspace_root=environment.workspace_root,
-                execute_timeout_seconds=_route_execute_timeout(checked_recovery, checked_config),
+            recovery_router = _product_router(
+                environment, dependencies, checked_recovery, checked_config
             )
             recovery_composition = build_product_action_composition(
                 checked_recovery,
@@ -253,12 +273,7 @@ async def open_default_product_action_runtime(
             if checked_recovery == checked_config:
                 composition = recovery_composition
             else:
-                candidate_router = TrustedActionRouter(
-                    plans=plans,
-                    audit=audit,
-                    workspace_root=environment.workspace_root,
-                    execute_timeout_seconds=_route_execute_timeout(checked_config),
-                )
+                candidate_router = _product_router(environment, dependencies, checked_config)
                 composition = build_product_action_composition(
                     checked_config,
                     environment,

@@ -70,6 +70,11 @@ from harnessix.delivery.trusted_action_contracts import (
     WorkspacePatchInput,
 )
 from harnessix.delivery.workspace_record_contracts import WorkspaceStoredRecord
+from harnessix.delivery.workspace_record_v3_contracts import WorkspaceStoredRecordV3
+from harnessix.delivery.workspace_v2_contracts import (
+    WorkspaceTransactionPlanV2,
+    WorkspaceTransactionRecordV2,
+)
 from harnessix.evals.campaign_contracts import (
     CodingEvalCampaignPlan,
     CodingEvalCampaignReport,
@@ -124,6 +129,7 @@ from harnessix.execution.contracts import (
     ExecutionPlan,
     ExecutionPlanV2,
 )
+from harnessix.execution.versioned_contracts import ExecutionPlanV3
 from harnessix.hooks.contracts import (
     HookActionInput,
     HookActionOutput,
@@ -289,6 +295,7 @@ from harnessix.trusted_actions.recovery_contracts import (
     ActionRecoveryScanReport,
     ActionRouteOperation,
 )
+from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2, ActionRouteSnapshotV2
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 from harnessix.workspace.parent_closure_contracts import (
     WorkspaceParentClosureManifest,
@@ -593,6 +600,15 @@ def generate_specs(output: Path) -> None:
         output / "workspace-parent-observations-v1.schema.json",
         WorkspaceParentObservationChunk.model_json_schema(),
     )
+    for name, model in (
+        ("workspace-transaction-plan-v2", WorkspaceTransactionPlanV2),
+        ("workspace-transaction-record-v2", WorkspaceTransactionRecordV2),
+        ("workspace-stored-record-v3", WorkspaceStoredRecordV3),
+        ("execution-plan-v3", ExecutionPlanV3),
+        ("action-route-plan-v2", ActionRoutePlanV2),
+        ("action-route-snapshot-v2", ActionRouteSnapshotV2),
+    ):
+        write_json(output / f"{name}.schema.json", model.model_json_schema())
     for name, model in (
         ("agent-protocol-jsonrpc-request", JsonRpcRequest),
         ("agent-protocol-jsonrpc-notification", JsonRpcNotification),

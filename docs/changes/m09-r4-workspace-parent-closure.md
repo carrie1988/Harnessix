@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
-code_revision: 9eff41bef88f995d7c856c6af543cc627e9cf128
+version: 5
+code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
 owners: [core]
 modules: [workspace, delivery, execution, product_config]
 related_adrs:
@@ -597,7 +597,8 @@ verify_workspace_snapshot_v2(expected, root, checkpoint, read_blob)
 
 本层可由受信宿主显式调用；仍使用原私有状态权限、原CAS及原SQLite Store，不新增中间件或独立服务。
 `capture`只需原可写Store，`verify`／完整Reader可使用原只读Store关闭后重开；只读入口不迁移、补签或写入。
-默认`prepare_workspace_transaction`、Execution Plan／Route、原Patch批准及产品Bridge仍使用旧合同。
+截至Snapshot独立切片，默认`prepare_workspace_transaction`、Execution／Route、Patch批准及产品Bridge使用旧合同。
+后继Patch与Rollback联合实现以第13节为当前事实源，旧Process及Git Bridge边界保持。
 只有后继联合新代际及其全部历史／备份消费者闭合后，才能将默认装配切到新Snapshot；
 独立端口容量通过不等于默认产品容量通过，也不等于R3、Windows原生或商用1.0通过。
 
@@ -613,3 +614,223 @@ workspace及cache的根观察被替换为`missing/size=0`后，原Reader仍接�
 原policy、阈值、依赖边和公共API不变；修正后完整治理1413项通过。
 专项与全量及治理为互相包含范围，不累加；完整证据及当前默认产品边界见
 [正式验证报告](../validation/workspace-parent-closure-2026-10-05-v1/README.md)。
+
+## 12. 默认产品联合接入的正式实施合同
+
+本节固定后继领域、物理格式及宿主装配；完成前不能将默认产品声明为已切换。
+原Snapshot v1、Execution Plan v1/v2、Route v1和领域事务v1全部保留独立Schema，不能原名扩张。
+
+### 12.1 类型与代际
+
+| 新类型 | 绑定及旧不变量 |
+|---|---|
+| WorkspaceTransactionPlanV2 | spec为workspace-transaction-plan/v2；source仅Snapshot v2。原Mutation、时间、request、路径保护、256项／32 MiB及完整fingerprint不变。 |
+| WorkspaceTransactionRecordV2 | spec为workspace-transaction-record/v2；plan仅Plan v2。原prepared／publishing／interrupted／published／diverged／unknown、全部游标和时间及record_digest不变。 |
+| WorkspaceStoredRecordV3 | 物理stored-record/v3，领域版本固定record/v2；原有界Plan引用及全部状态，完整解引用Plan和父闭包后才返回Record。 |
+| ExecutionPlanV3 | spec为execution-plan/v3；保留现有v2 Sandbox／Capability，workspace改为Snapshot v2。不得复用已用于Sandbox证明的Execution v2代际。 |
+| ActionRoutePlanV2 / ActionRouteSnapshotV2 | 独立route-plan/v2与route-snapshot/v2，Execution只接受v3；原调用、Binding、资源、Policy、审批与状态摘要校验全部保留。 |
+
+新领域可以复用旧校验器，但序列化必须使用实际新模型，不能把新父引用按旧类型丢弃。
+完整Plan fingerprint包含新spec和Snapshot revision；旧批准不会因新Reader支持而转换为新批准。
+仅承载plan_id／完整fingerprint的原批准Checkpoint及无嵌套Plan事件保持原合同，不重复定义相同字段。
+
+### 12.2 CAS、数据库与完整读取
+
+统一使用原Workspace事务CAS。新事务Reader返回的实际引用必须包括完整Plan、父Manifest及每个父块，
+供备份逐件清单闭合；Root／SHA／长度／领域摘要及全部历史仍独立检查。
+Workspace数据库新增Schema3准入；原Schema1/2历史字节不重写，首次写新领域v2时在原业务SQL事务内提升元数据。
+仅旧领域写入仍采用原Schema2和wire v2。只读接受1/2/3但不迁移；旧程序打开Schema3拒绝。
+Execution原Schema1首次新Plan提升为2；Audit原Schema2首次新Route提升为3。
+首次新Plan／Route与元数据同事务提交，原有历史payload不重写；旧Schema1到Audit2的既有Owner迁移不变。
+新Execution／Audit Reader必须通过宿主注入的同一CAS端口完整验真父历史，缺端口或损坏不能降级读取；
+宿主参数不是模型可提交字段，不增加execution／workspace向delivery的依赖环。
+
+### 12.3 规划、执行、回滚与恢复
+
+共同正式目标只包含叶访问和cwd；全部父项由Snapshot v2精确派生，不继续扩张显式资源。
+Planner v2调用原规范目标及文件镜像读端口，同一checkpoint贯穿捕获、正文、CAS和复核，
+完整父历史耐久确认在原Record prepared事务之前。
+原Runtime按实际Record代际分派Snapshot复核，成员提交／故障窗口／Lease状态机保持；
+恢复只观察已认证成员事实，不将prepared的外部效果改记published，不自动重放。
+Rollback仍先完整Record及来源根身份，再读before正文；新逆向规划保留v2和全部父历史，独立批准且不刷新旧授权。
+
+### 12.4 默认装配与验证
+
+产品宿主为默认Root的Patch／Rollback配置唯一Workspace CAS读写端口；旧Process及外部构造无端口保留原v1，
+但不能允许新默认路径缺失端口时退回旧容量表示。Router每次规划／验真使用同一父操作checkpoint，
+不在每叶／每父／每块重新创建父期限。旧无参数调用及原期限／字段不变。
+备份只读Store在相同MaintenanceIOControl下验证Execution、Route、事务当前与全部事件的完整父引用，
+缺历史专属父块、跨根替换、错批准、Lease丢失、确认丢失均拒绝；不联网、不补签、不启动业务Executor。
+
+验收须涵盖真实128／255分散叶事务保存、发布及独立Rollback、关闭后重开、全部历史备份，
+以及默认产品16叶深父链的正式审批、原SDK、取消／恢复、Root／Owner／Scope／Lease负对照。
+原260加上新3件共263既有Schema原字节不变，新代际另导出。
+新产品默认路径、源码外安装及新三平台必须以各自实际证据验收；本节不宣称已完成，也不关闭R1～R6。
+
+
+## 13. 联合接入的实现与源码阅读入口
+
+### 13.1 当前边界与需求目标
+
+本增量解决完整父历史在默认编码修改链路中尚未生效的问题，不以增加公开工具限额替代表示治理。
+默认产品通过原装配函数启用Patch／Rollback的版本化CAS端口；原Process Supervisor及Git产品Bridge
+仍采用旧合同，必须在后继联合适配中分别验证。领域255叶容量不等于公开Patch新增255文件能力。
+
+旧构造入口无端口时继续生成原Snapshot v1；携带v2的执行／路由／事务若缺少CAS端口或历史损坏则拒绝，
+不退回旧表示、不重新观察生成替代历史、不补签。CAS和数据库路径、Root Owner、同机认证Key、
+公开Policy及人工批准、16文件上限和原平台写入端口均不替换。
+
+### 13.2 总体架构与数据流
+
+```mermaid
+flowchart LR
+    SDK[认证SDK与默认产品] --> Gateway[Agent Gateway与Turn取消]
+    Gateway --> Router[Route规划及独立审批]
+    Router --> Snapshot[Snapshot v2完整捕获]
+    Snapshot --> CAS[(原Workspace私有CAS)]
+    Router --> Audit[(Route v2与连续事件)]
+    Router --> Plans[(Execution v3与批准指纹)]
+    Gateway --> Review[Patch或Rollback Review]
+    Review --> Planner[实际代际Planner与完整镜像]
+    Planner --> Ledger[(领域v2与物理壳v3)]
+    Planner --> CAS
+    Ledger --> Runtime[原成员状态机与Lease]
+    Runtime --> Workspace[原Workspace文件端口]
+    CAS --> Readers[严格只读代际Reader]
+    Readers --> Backup[完整状态备份及恢复校验]
+    Audit --> Readers
+    Plans --> Readers
+    Ledger --> Readers
+```
+
+**图示说明：** 图中存在唯一原CAS，Snapshot和事务完整Plan均由它保存，不新增远程服务。
+Router记录的是冻结意图，Review仅生成prepared事务及完整Diff；批准之前不执行文件写入。
+Runtime仍在原Lease保护下逐成员提交，成员与SQL之间故障由原前后镜像恢复，只观察prepared外部效果时
+不能追认成功。Backup只读所有当前及历史引用，不装配业务Executor或模型。
+
+### 13.3 类、接口与字段设计
+
+| 源码及类／接口 | 数据与职责 | 核心不变量 |
+|---|---|---|
+| [`workspace_v2_contracts.py`](../../src/harnessix/delivery/workspace_v2_contracts.py)：`WorkspaceTransactionPlanV2 / WorkspaceTransactionRecordV2` | 实际source为Snapshot v2；Record持有完整新Plan、原状态、cursor、sequence与记录摘要。 | 原路径保护、Mutation排序、镜像额度和完整指纹校验继承；序列化不能用旧基类截断parent_closure。 |
+| [`workspace_record_v3_contracts.py`](../../src/harnessix/delivery/workspace_record_v3_contracts.py)：`WorkspaceStoredRecordV3` | 领域代际2的物理壳，使用原PlanReference；Plan正文不放SQL。 | 原512 KiB壳和8 MiB引用上限保持，未知wire／domain组合拒绝。 |
+| [`workspace_record_codec.py`](../../src/harnessix/delivery/workspace_record_codec.py)：`DecodedWorkspaceRecord.references` | 完整解引用Plan、Manifest和全部Chunk，供Reader及历史备份共用。 | references包含实际验证的全部引用，不只列当前Manifest；控制异常原样传播。 |
+| [`planner_v2.py`](../../src/harnessix/delivery/planner_v2.py)：`prepare_workspace_transaction_v2` | 目标、request_id、transaction_id、时间、宿主CAS端口及同一checkpoint；返回严格Plan与镜像集合。 | 只把正式叶及cwd计入显式资源；所有父观察由闭包完整派生；捕获与最终只读验证共享操作控制。 |
+| [`planner.py`](../../src/harnessix/delivery/planner.py)：`_prepare_mutations / _read_existing` | 两代共享原前后镜像、0644／0755或Windows逻辑0644及摘要一致性。 | 原8 MiB单镜像、32 MiB领域限额与安全读取不变；取消覆盖新镜像块读取。 |
+| [`execution/versioned_contracts.py`](../../src/harnessix/execution/versioned_contracts.py)：`ExecutionPlanV3` | 使用Snapshot v2，仍保留原SandboxBindingV2及CapabilityEvidenceV2。 | 新spec与全部绑定进入Fingerprint；原ApprovalCheckpoint只绑定Plan ID及完整新指纹。 |
+| [`trusted_actions/versioned_contracts.py`](../../src/harnessix/trusted_actions/versioned_contracts.py)：`ActionRoutePlanV2 / ActionRouteSnapshotV2` | 实际嵌套Execution v3；调用、Binding、资源、状态及连续事件保持。 | 严格按spec_version分派，不通过接受旧模型额外字段实现迁移。 |
+| [`snapshot_ports.py`](../../src/harnessix/workspace/snapshot_ports.py)：`WorkspaceSnapshotPorts` | 原宿主耐久写入与完整回读两个Callable，不进入公开JSON。 | 不包含批准、来源迁移或业务SQL权限，不引入workspace到delivery的依赖环。 |
+| [`snapshot_verification.py`](../../src/harnessix/workspace/snapshot_verification.py)：`verify_host_workspace_snapshot` | 根据实际代际和原Root Resolver选择复核，v2必须完整旧历史与原生事实相等。 | 新历史缺端口固定拒绝；每次读取期限只创建一次，不按叶或父项重置。 |
+| [`action_transaction_planning.py`](../../src/harnessix/delivery/action_transaction_planning.py) | Patch与独立逆向动作复用相同来源代际分派及CAS，接收Review的父取消检查。 | 调用者仍核对完整Route与Mutation； helper不授予执行权限。 |
+| [`filesystem.py`](../../src/harnessix/delivery/filesystem.py)：`WorkspaceTransactionRuntime` | 实际记录代际验证、逐成员提交、只观察恢复及独立逆向规划。 | prepared不得追认外部效果；逆向重新规划且不能复用原事务指纹；不把原5秒读取期限错误应用为整次发布期限。 |
+| [`action_runtime.py`](../../src/harnessix/product_config/action_runtime.py)：`_product_router / _open_action_dependencies` | 同一Root Owner内先持有唯一Workspace Store，再向Execution、Audit和Router注入同一CAS。 | 恢复和候选Router复用相同端口；逆序关闭资源，不增建第二Store或第二CAS。 |
+| [`action_composition.py`](../../src/harnessix/product_config/action_composition.py)：`_product_call_context` | 仅默认Patch／Rollback启用新端口，原Process保留原Profile／Supervisor合同。 | 回滚仍先认证Thread成功归属，不凭相同Root读取他人来源。 |
+| [`state_backup_records.py`](../../src/harnessix/product_config/state_backup_records.py) | 对Execution、Route、Process引用和全部事务事件注入同一只读Workspace Store及MaintenanceIOControl。 | 任一读取引用都必须已在inventory中且大小／SHA相符；旧历史、同机Key和跨Store绑定不省略。 |
+
+### 13.4 运行顺序与业务逻辑
+
+```mermaid
+sequenceDiagram
+    participant SDK as 认证SDK
+    participant Product as 原产品Owner
+    participant Route as Router与Reader
+    participant CAS as 原CAS
+    participant Review as 事务Planner
+    participant Runtime as 原写状态机
+    SDK->>Product: 正式Patch提案
+    Product->>Route: 正式叶与父取消
+    Route->>CAS: 完整父Chunk与Manifest耐久确认
+    Route->>Route: Execution v3 Route v2与新指纹
+    Route->>Review: 待批准Route及完整镜像
+    Review->>CAS: 完整Plan及原前后镜像
+    Review-->>SDK: 新prepared事务及Diff批准请求
+    SDK->>Route: 完整新指纹人工批准
+    Route->>CAS: 完整历史只读验真
+    Route->>Runtime: 原Root与Lease逐成员执行
+    Runtime-->>SDK: 正式成功效果
+    SDK->>Product: 独立Rollback请求
+    Product->>Review: 本Thread成功来源与新当前历史
+    Review-->>SDK: 新逆向事务及独立批准请求
+```
+
+**时序说明：** SDK不持有CAS或Lease，批准只能对应冻结的新指纹。Rollback不是重新执行原Patch，
+而是在当前来源仍与原after匹配时生成独立before目标；另一次批准和写阶段持有自己的原期限／租约。
+重新打开或恢复只复核认证历史，不触发额外模型请求或自动执行未批准事务。
+
+```text
+plan_action(invocation, context)
+  严格调用解码及绑定 → Policy
+  有宿主端口：正式叶与cwd → 原Native完整父捕获 → CAS全量耐久回读
+  新Snapshot → Execution v3 → Route v2 → Audit与Execution各不可变保存
+
+prepare_action_workspace_transaction(route, root, desired, store, checkpoint)
+  实际Snapshot代际决定Planner；v2使用同一CAS和父检查
+  完整来源捕获 → 共用原镜像读取 → 完整旧历史及当前Native再验证
+  完整新指纹严格Plan → Store.save → 原prepared记录及物理壳
+  Review只发布完整Diff，不写Workspace
+
+publish_next(record, approved_fingerprint, lease)
+  完整Reader → 精确批准 → 原平台及Lease
+  prepared：完整来源复核后进入publishing
+  原成员前置／原子写／后镜像复核 → 原SQL CAS及连续历史
+  interrupted：只观察原效果再沿既有状态机处理，不补写prepared外部效果
+
+backup(state, same_control)
+  独占原Root Owner → 安静状态检查 → 全部原认证Session与跨Store事实
+  每件当前及历史Plan／Manifest／Chunk通过原只读Reader和inventory共同验真
+  原备份Manifest与同机认证证明 → 原恢复流程；零业务执行
+```
+
+### 13.5 异常、安全、兼容升级及测试
+
+新Record、Execution和Route均保留原状态与连续摘要校验。缺引用、错SHA／大小／代际／作用域、
+批准不一致、Lease失效、父对象／权限／成员或叶变化均失败关闭。上游取消／超时不转换为历史损坏，
+原子成员已进入后仍按原效果与记账规则结算，不引入半写成功返回。
+
+新SQLite metadata与首次新记录在同一个原SQL事务中提交：Execution 1→2、Audit 2→3、Workspace 2→3。
+只使用旧记录的新库保持旧metadata，新只读Reader兼容规定的旧代际且不迁移；旧程序不应打开包含新记录的库。
+发布升级应先由原工具创建完整认证备份，再升级整个安装包，不单独替换某个Reader；恢复仍由原独占Owner与同机Key控制。
+所有既有263件Schema原字节保持，新增六件Schema独立导出。完整共享32 MiB捕获、8 MiB CAS／镜像、
+512 KiB物理记录及原64 MiB列累计／256 MiB和2 GiB备份上限不改变。
+
+验证入口：
+- [`test_workspace_record_v3.py`](../../tests/delivery/test_workspace_record_v3.py)：新旧字节、完整引用、readonly、SQL未知确认与控制负例。
+- [`test_parent_closure_runtime.py`](../../tests/delivery/test_parent_closure_runtime.py)：真实128／255分散叶、发布与独立逆向、父漂移、原取消、故障效果与重开；原v1容量失败对照保留。
+- [`test_parent_closure_store.py`](../../tests/execution/test_parent_closure_store.py)：Execution严格代际、完整历史与批准拒绝。
+- [`test_parent_closure_store.py`](../../tests/trusted_actions/test_parent_closure_store.py)：Route新投影与连续历史、不隐式补签或替换缺失来源。
+- [`test_state_backup_parent_closure.py`](../../tests/product_config/test_state_backup_parent_closure.py)：准确metadata准入、独立计划及历史专属引用缺失／损坏、同一维护取消。
+- [`test_parent_closure_product_sdk.py`](../../tests/product_config/test_parent_closure_product_sdk.py)：默认认证产品16叶／401父、人工批准、独立逆向、重启、全备份恢复及再开、等待取消和父成员改变拒绝。
+
+测试证明范围只覆盖各自实际环境。单平台领域、脚本Provider或源码内SDK结果不得外推真实模型编码质量、
+Windows新候选原生成功、消费者部署或商用1.0完成；prepared T／Bridge MAC／A／D与独立Commit仍需联合实现及验收。
+
+
+### 13.6 宿主控制组合与旧历史缺省标签
+
+Gateway必须保留宿主`ActionPlanningContext.checkpoint`，与当前`CancelToken.checkpoint`
+及原父Task取消检查组合；不能直接替换宿主回调。组合在原Route规划入口传入，Snapshot捕获、CAS及镜像
+共用该控制链。宿主取消、超时或自定义控制错误按原异常身份传播，不包装成父历史损坏；
+没有宿主回调时仍保留原Turn及父Task取消规则。源码见
+[`prepare_action`](../../src/harnessix/trusted_actions/agent_gateway_support.py)。
+
+旧Execution1／2和Route1的`spec_version`本来有默认值，旧Reader可以接受仅省略该顶层字段、
+其余内容与完整原指纹仍合法的历史正文。新增discriminator不能追溯收紧这项旧读取合同：
+缺省标签只调用原旧模型／旧Union Reader；有明确标签按准确代际分派，显式未知标签固定拒绝。
+缺标签的Execution3或Route2不能借旧默认值进入新合同，也不能改写原payload或重算、补签原历史指纹。
+各SQLite原索引、完整领域校验及连续事件验证仍继续执行。
+
+```text
+read_persisted_plan(original_payload)
+  仅解析顶层字段是否存在
+  标签缺省：原Execution1／2或Route1 Reader完整校验
+  标签存在：准确代际Reader完整校验，未知值拒绝
+  新代际：完整父Manifest与全部Chunk严格回读
+  原索引与批准／事件一致性继续校验
+  返回实际模型；不更新原SQL正文
+```
+
+JSON预解析也必须保持原错误分类：非法深度、语法或类型归类为原存储损坏，
+不能让Python递归错误越过业务错误边界；数据错误保护不能捕获上游取消或控制异常。
+真实数据库缺省标签、只读重开、原批准与事件、显式未知／新代际缺标签和原Gateway控制回归见
+[`test_parent_closure_integration_review.py`](../../tests/trusted_actions/test_parent_closure_integration_review.py)。
+初次独立评审的两项问题和实际红例保留，后继结果须单独结算；不同代码身份的完整范围不能冒充最终同候选全量。

@@ -20,12 +20,13 @@ from harnessix.delivery.windows_metadata import WindowsFileSecurity, check_regul
 from harnessix.execution.contracts import canonical_digest
 from harnessix.workspace.contracts import WorkspaceSnapshot
 from harnessix.workspace.paths import normalize_workspace_path
+from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
 from harnessix.workspace.windows import WindowsWorkspaceRoot, _read_all
 
 
 @contextmanager
 def _parent(
-    root: Path, path: str, source: WorkspaceSnapshot | None = None
+    root: Path, path: str, source: WorkspaceSnapshot | WorkspaceSnapshotV2 | None = None
 ) -> Iterator[tuple[WindowsWorkspaceRoot, WindowsFileOperations, int, Path, str]]:
     """整个成员操作期间固定所有父段；不跟随Junction，不创建缺失父目录。"""
 
@@ -91,7 +92,7 @@ def windows_workspace_transaction_supported(root: Path) -> bool:
 
 
 def observe_windows_file(
-    root: Path, path: str, *, source: WorkspaceSnapshot | None = None
+    root: Path, path: str, *, source: WorkspaceSnapshot | WorkspaceSnapshotV2 | None = None
 ) -> WorkspaceFileVersion:
     """只读查询成员事实，不发布文件，也不为观察创建临时文件。"""
 
@@ -191,7 +192,7 @@ def apply_windows_mutation(
     index: int,
     mutation: WorkspaceMutation,
     *,
-    source: WorkspaceSnapshot,
+    source: WorkspaceSnapshot | WorkspaceSnapshotV2,
     checkpoint: Callable[[str], None],
 ) -> None:
     """最多应用一个成员；KernelError由上层按真实before/after结算，不重放未知效果。"""

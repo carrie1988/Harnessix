@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
 
 from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.action_transaction_planning import prepare_action_workspace_transaction
 from harnessix.delivery.contracts import WorkspaceTransactionPlan, WorkspaceTransactionRecord
-from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
+from harnessix.delivery.planner import DesiredWorkspaceFile
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
 from harnessix.delivery.trusted_action import (
@@ -108,7 +110,9 @@ def _before_body(transactions: SQLiteWorkspaceTransactionStore, digest: str | No
     return transactions.blob(digest)
 
 
-def resolve_workspace_rollback(original: WorkspaceTransactionPlan) -> ResolvedAction:
+def resolve_workspace_rollback(
+    original: WorkspaceTransactionPlan, *, parent_closure: bool = False
+) -> ResolvedAction:
     """仅从已校验镜像版本构造逆向资源，不读取或限制原Blob正文的文本编码。"""
 
     resources = []
@@ -138,7 +142,7 @@ def resolve_workspace_rollback(original: WorkspaceTransactionPlan) -> ResolvedAc
         workspace[(mutation.path, "write")] = WorkspaceResourceRequest(
             path=mutation.path, access="write"
         )
-        parents = mutation.path.split("/")[:-1]
+        parents = [] if parent_closure else mutation.path.split("/")[:-1]
         for index in range(len(parents) + 1):
             parent = "/".join(parents[:index]) or "."
             workspace[(parent, "read")] = WorkspaceResourceRequest(path=parent, access="read")
@@ -157,7 +161,13 @@ class WorkspaceRollbackTransactionPlanner:
         self.transactions = transactions
         self._workspace_root = workspace_root
 
-    def prepare(self, route: ActionRoutePlan, arguments: BaseModel) -> WorkspaceTransactionRecord:
+    def prepare(
+        self,
+        route: ActionRoutePlan,
+        arguments: BaseModel,
+        *,
+        checkpoint: Callable[[], None] | None = None,
+    ) -> WorkspaceTransactionRecord:
         """只在计划尚不存在时读取原镜像并规划；复用路径不重写文件。"""
 
         original = self._validate_route(route, arguments)
@@ -180,12 +190,8 @@ class WorkspaceRollbackTransactionPlanner:
             for mutation in original.plan.mutations
         }
         try:
-            prepared = prepare_workspace_transaction(
-                root,
-                desired,
-                request_id=f"action:{route.execution.plan_id}",
-                transaction_id=route.execution.plan_id,
-                platform=route.execution.workspace.platform,
+            prepared = prepare_action_workspace_transaction(
+                route, root, desired, self.transactions, checkpoint=checkpoint
             )
         except KernelError as error:
             # 原Mutation保证before/after不同；当前已是回滚目标也属于前置版本冲突。
@@ -236,18 +242,27 @@ class WorkspaceRollbackTransactionPlanner:
         original: WorkspaceTransactionPlan,
         inverse: WorkspaceTransactionPlan,
     ) -> None:
-        if (
-            inverse.transaction_id != route.execution.plan_id
-            or inverse.request_id != f"action:{route.execution.plan_id}"
-            or inverse.source != route.execution.workspace
-            or len(inverse.mutations) != len(original.mutations)
-        ):
-            raise KernelError("delivery_action_mismatch", "逆向事务未绑定原Action来源")
-        if any(
-            (new.path, new.before, new.after) != (old.path, old.after, old.before)
-            for old, new in zip(original.mutations, inverse.mutations, strict=True)
-        ):
-            raise KernelError("workspace_rollback_conflict", "Patch回滚目标存在后续改动")
+        _validate_inverse_record(route, original, inverse)
+
+
+def _validate_inverse_record(
+    route: ActionRoutePlan,
+    original: WorkspaceTransactionPlan,
+    inverse: WorkspaceTransactionPlan,
+) -> None:
+    """同时绑定新Action来源及原镜像，不把第三内容作为可覆盖前置版本。"""
+    if (
+        inverse.transaction_id != route.execution.plan_id
+        or inverse.request_id != f"action:{route.execution.plan_id}"
+        or inverse.source != route.execution.workspace
+        or len(inverse.mutations) != len(original.mutations)
+    ):
+        raise KernelError("delivery_action_mismatch", "逆向事务未绑定原Action来源")
+    if any(
+        (new.path, new.before, new.after) != (old.path, old.after, old.before)
+        for old, new in zip(original.mutations, inverse.mutations, strict=True)
+    ):
+        raise KernelError("workspace_rollback_conflict", "Patch回滚目标存在后续改动")
 
 
 def build_workspace_rollback_definition(
@@ -267,7 +282,9 @@ def build_workspace_rollback_definition(
             context.workspace_root, platform=context.capabilities.platform
         )
         original = _original(transactions, proposal.transaction_id, snapshot.workspace_id)
-        return resolve_workspace_rollback(original.plan)
+        return resolve_workspace_rollback(
+            original.plan, parent_closure=context.snapshot_ports is not None
+        )
 
     return TrustedActionDefinition(
         binding=workspace_rollback_binding(),

@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 451,
-    "physical_lines": 94724,
-    "logical_lines": 83671,
-    "documented_modules": 451,
-    "classes": 984,
-    "documented_classes": 449,
-    "functions": 3813,
-    "documented_functions": 879,
+    "source_files": 459,
+    "physical_lines": 95755,
+    "logical_lines": 84570,
+    "documented_modules": 459,
+    "classes": 996,
+    "documented_classes": 458,
+    "functions": 3843,
+    "documented_functions": 895,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -634,8 +634,8 @@
       "path": "src/harnessix/delivery/filesystem.py",
       "qualname": "WorkspaceTransactionRuntime",
       "kind": "class",
-      "line": 47,
-      "lines": 125,
+      "line": 53,
+      "lines": 132,
       "documented": true
     },
     {
@@ -701,24 +701,13 @@
       "documented": true
     },
     {
-      "id": "harnessix.delivery.planner:prepare_workspace_transaction",
-      "module": "harnessix.delivery.planner",
-      "path": "src/harnessix/delivery/planner.py",
-      "qualname": "prepare_workspace_transaction",
-      "kind": "function",
-      "line": 50,
-      "lines": 78,
-      "documented": false,
-      "decision_complexity": 22
-    },
-    {
       "id": "harnessix.delivery.store:SQLiteWorkspaceTransactionStore",
       "module": "harnessix.delivery.store",
       "path": "src/harnessix/delivery/store.py",
       "qualname": "SQLiteWorkspaceTransactionStore",
       "kind": "class",
-      "line": 44,
-      "lines": 281,
+      "line": 49,
+      "lines": 265,
       "documented": true
     },
     {
@@ -869,8 +858,8 @@
       "path": "src/harnessix/execution/store.py",
       "qualname": "SQLiteExecutionPlanStore",
       "kind": "class",
-      "line": 26,
-      "lines": 174,
+      "line": 133,
+      "lines": 143,
       "documented": true
     },
     {
@@ -1579,7 +1568,7 @@
       "path": "src/harnessix/trusted_actions/router.py",
       "qualname": "TrustedActionRouter",
       "kind": "class",
-      "line": 126,
+      "line": 129,
       "lines": 220,
       "documented": true
     },
@@ -1589,8 +1578,8 @@
       "path": "src/harnessix/trusted_actions/store.py",
       "qualname": "SQLiteActionAuditStore",
       "kind": "class",
-      "line": 43,
-      "lines": 251,
+      "line": 196,
+      "lines": 208,
       "documented": true
     },
     {

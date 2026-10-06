@@ -1,0 +1,135 @@
+{
+  "$defs": {
+    "WorkspacePlanReference": {
+      "additionalProperties": false,
+      "description": "同时绑定完整Plan原字节与领域指纹；摘要地址不授予执行权限。",
+      "properties": {
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "exclusiveMinimum": 0,
+          "maximum": 8388608,
+          "title": "Size",
+          "type": "integer"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sha256",
+        "size",
+        "fingerprint"
+      ],
+      "title": "WorkspacePlanReference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "复用原有界 Plan 引用和全部状态字段，领域代际严格绑定 record/v2。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.workspace-stored-record/v3",
+      "default": "harnessix.workspace-stored-record/v3",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "domain_spec_version": {
+      "const": "harnessix.workspace-transaction-record/v2",
+      "default": "harnessix.workspace-transaction-record/v2",
+      "title": "Domain Spec Version",
+      "type": "string"
+    },
+    "transaction_id": {
+      "format": "uuid",
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "plan_ref": {
+      "$ref": "#/$defs/WorkspacePlanReference"
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "publishing",
+        "interrupted",
+        "published",
+        "diverged",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "sequence": {
+      "maximum": 4096,
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "cursor": {
+      "maximum": 256,
+      "minimum": 0,
+      "title": "Cursor",
+      "type": "integer"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "record_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Record Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "plan_ref",
+    "state",
+    "sequence",
+    "cursor",
+    "record_digest"
+  ],
+  "title": "WorkspaceStoredRecordV3",
+  "type": "object"
+}

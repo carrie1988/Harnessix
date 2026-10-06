@@ -7,7 +7,7 @@ import sqlite3
 from harnessix.agent.errors import KernelError
 
 _SCHEMA_VERSION = "2"
-SUPPORTED_SCHEMA_VERSIONS = frozenset({"1", _SCHEMA_VERSION})
+SUPPORTED_SCHEMA_VERSIONS = frozenset({"1", _SCHEMA_VERSION, "3"})
 
 
 def initialize_workspace_store(database: sqlite3.Connection) -> None:
@@ -62,6 +62,16 @@ def check_workspace_store_schema(database: sqlite3.Connection) -> None:
         raise KernelError("delivery_store_version", "Workspace事务存储版本不受支持") from None
     if row is None or row[0] not in SUPPORTED_SCHEMA_VERSIONS:
         raise KernelError("delivery_store_version", "Workspace事务存储版本不受支持")
+
+
+def admit_workspace_record_v2(database: sqlite3.Connection) -> None:
+    """仅在原业务 SQL 事务内提升至 Schema3；失败随当前记录和事件一起回滚。"""
+    if not database.in_transaction:
+        raise RuntimeError("Workspace领域v2准入必须位于原业务事务内")
+    check_workspace_store_schema(database)
+    database.execute(
+        "UPDATE delivery_metadata SET value='3' WHERE key='schema_version' AND value IN ('1', '2')"
+    )
 
 
 def _upgrade_schema(database: sqlite3.Connection) -> None:

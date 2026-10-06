@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -298,6 +298,11 @@ def _product_call_context(
 ) -> ActionPlanningContext:
     """只在正式产品入口验证回滚原会话归属，先于资源解析与私有Blob读取。"""
     base = _planning_context(environment, process_owners, thread.workspace, call.tool)
+    if (
+        call.tool in {WORKSPACE_PATCH_TOOL, WORKSPACE_ROLLBACK_TOOL}
+        and router._snapshot_ports is not None
+    ):
+        base = replace(base, snapshot_ports=router._snapshot_ports)
     if call.tool == WORKSPACE_ROLLBACK_TOOL:
         authorize_workspace_rollback(thread, call, router, transactions)
     return base

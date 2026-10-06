@@ -12,13 +12,14 @@ from pydantic import BaseModel
 
 from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.action_transaction_planning import prepare_action_workspace_transaction
 from harnessix.delivery.contracts import (
     PROTECTED_COMPONENTS,
     WorkspaceMutation,
     WorkspaceTransactionPlan,
     WorkspaceTransactionRecord,
 )
-from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
+from harnessix.delivery.planner import DesiredWorkspaceFile
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
 from harnessix.delivery.trusted_action_contracts import (
@@ -140,7 +141,11 @@ def build_workspace_patch_definition(
         checked = _arguments(arguments)
         if context.cwd != ".":
             raise KernelError("workspace_patch_cwd_unsupported", "Workspace Patch只支持根级cwd")
-        return resolve_workspace_patch(checked, context.capabilities.platform)
+        return resolve_workspace_patch(
+            checked,
+            context.capabilities.platform,
+            parent_closure=context.snapshot_ports is not None,
+        )
 
     return TrustedActionDefinition(
         binding=binding,
@@ -157,6 +162,8 @@ def build_workspace_patch_definition(
 def resolve_workspace_patch(
     proposal: WorkspacePatchInput,
     platform: PlatformKind,
+    *,
+    parent_closure: bool = False,
 ) -> ResolvedAction:
     """按目标平台规范化路径，并绑定目标内容摘要、操作和所有父目录。"""
 
@@ -166,7 +173,7 @@ def resolve_workspace_patch(
     for path, item in normalized:
         resources.append(_action_resource(path, item))
         workspace[(path, "write")] = WorkspaceResourceRequest(path=path, access="write")
-        parts = path.split("/")[:-1]
+        parts = [] if parent_closure else path.split("/")[:-1]
         for index in range(len(parts) + 1):
             parent = "/".join(parts[:index]) or "."
             workspace[(parent, "read")] = WorkspaceResourceRequest(path=parent, access="read")
@@ -195,6 +202,8 @@ class WorkspacePatchTransactionPlanner:
         self,
         route: ActionRoutePlan,
         proposal: WorkspacePatchInput,
+        *,
+        checkpoint: Callable[[], None] | None = None,
     ) -> WorkspaceTransactionRecord:
         """复用精确计划；不存在时才捕获来源、验证前置条件并保存Blob。"""
 
@@ -208,12 +217,9 @@ class WorkspacePatchTransactionPlanner:
             _validate_transaction(route, checked, existing.plan)
             return existing
         root = self._workspace_root(route.execution.workspace.workspace_id)
-        prepared = prepare_workspace_transaction(
-            root,
-            _desired_files(checked, route.execution.workspace.platform),
-            request_id=_request_id(route.execution.plan_id),
-            transaction_id=route.execution.plan_id,
-            platform=route.execution.workspace.platform,
+        desired = _desired_files(checked, route.execution.workspace.platform)
+        prepared = prepare_action_workspace_transaction(
+            route, root, desired, self._transactions, checkpoint=checkpoint
         )
         _validate_transaction(route, checked, prepared.plan)
         saved = self._transactions.save(prepared)

@@ -820,7 +820,7 @@ def test_audit_store_rejects_unknown_schema(tmp_path: Path) -> None:
     database.execute(
         "CREATE TABLE action_audit_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT"
     )
-    database.execute("INSERT INTO action_audit_metadata VALUES ('schema_version', '3')")
+    database.execute("INSERT INTO action_audit_metadata VALUES ('schema_version', '999')")
     database.commit()
     database.close()
     with pytest.raises(KernelError) as version:

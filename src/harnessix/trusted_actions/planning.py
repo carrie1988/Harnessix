@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, cast
 from uuid import UUID, uuid5
 
@@ -14,12 +14,14 @@ from harnessix.agent.errors import KernelError
 from harnessix.domain.models import EffectClass, PolicyDecisionKind
 from harnessix.execution.contracts import (
     ExecutionIntent,
+    ExecutionPlanV2,
     ExecutionPolicyBinding,
     canonical_digest,
 )
-from harnessix.execution.planner import build_execution_plan_v2
+from harnessix.execution.planner import build_execution_plan_v2, build_execution_plan_v3
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.tools.argument_feedback import invalid_argument_message
+from harnessix.tools.workspace import ReadOperation
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     ActionRouteSnapshot,
@@ -32,8 +34,12 @@ from harnessix.trusted_actions.contracts import (
 from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
 from harnessix.trusted_actions.public_errors import sanitize_plan_exception
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
+from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2
 from harnessix.workspace.contracts import WorkspaceSnapshot
+from harnessix.workspace.native_observation_io import NativeReadOperation, UpstreamCheckpointError
 from harnessix.workspace.snapshot import capture_workspace_snapshot
+from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
+from harnessix.workspace.snapshot_v2 import capture_workspace_snapshot_v2
 
 if TYPE_CHECKING:
     from harnessix.trusted_actions.router import (
@@ -90,13 +96,26 @@ def plan_action(
         decision = policy.evaluate(binding, resources, context.sandbox, context.secrets)
     except Exception as error:
         raise sanitize_plan_exception(error, stage="policy") from None
-    workspace = capture_workspace_snapshot(
-        context.workspace_root,
-        cwd=context.cwd,
-        resources=resolved.workspace_resources,
-        external_roots=context.external_roots,
-        platform=context.capabilities.platform,
-    )
+    workspace: WorkspaceSnapshot | WorkspaceSnapshotV2
+    if context.snapshot_ports is None:
+        workspace = capture_workspace_snapshot(
+            context.workspace_root,
+            cwd=context.cwd,
+            resources=resolved.workspace_resources,
+            external_roots=context.external_roots,
+            platform=context.capabilities.platform,
+        )
+    else:
+        workspace = capture_workspace_snapshot_v2(
+            context.workspace_root,
+            cwd=context.cwd,
+            resources=resolved.workspace_resources,
+            external_roots=context.external_roots,
+            platform=context.capabilities.platform,
+            checkpoint=_planning_checkpoint(context),
+            write_blob=context.snapshot_ports.write_blob,
+            read_blob=context.snapshot_ports.read_blob,
+        )
     route = _build_route(checked, binding, resources, context, decision, workspace)
     initial_state = cast(
         ActionRouteState,
@@ -109,6 +128,21 @@ def plan_action(
     snapshot = audit.save_plan(route, initial_state=initial_state)
     plans.save_plan(route.execution)
     return snapshot
+
+
+def _planning_checkpoint(context: ActionPlanningContext) -> Callable[[], None]:
+    """本次规划复用同一读取期限和上游Turn取消，不按父项重置。"""
+    if context.checkpoint is None:
+        return ReadOperation().checkpoint
+    operation = NativeReadOperation(context.checkpoint)
+
+    def check() -> None:
+        try:
+            operation.checkpoint()
+        except UpstreamCheckpointError as error:
+            raise error.error from None
+
+    return check
 
 
 def canonical_json_object(value: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
@@ -140,6 +174,16 @@ def decode_action_arguments(
     return definition.input_model.model_validate_json(
         json.dumps(copied, ensure_ascii=False, allow_nan=False)
     )
+
+
+def decode_persisted_action_arguments(
+    definition: TrustedActionDefinition, invocation: CodingActionInvocation
+) -> BaseModel:
+    """持久输入使用原Decoder；任何解码不一致均归类为审计历史损坏。"""
+    try:
+        return decode_action_arguments(definition, invocation.arguments)
+    except (KernelError, ValidationError, ValueError, TypeError):
+        raise KernelError("action_audit_store_corrupt", "持久Action参数不再可解析") from None
 
 
 def _normalize_invocation(
@@ -198,7 +242,7 @@ def _build_route(
     resources: tuple[CanonicalActionResource, ...],
     context: ActionPlanningContext,
     decision: ExecutionPolicyBinding,
-    workspace: WorkspaceSnapshot,
+    workspace: WorkspaceSnapshot | WorkspaceSnapshotV2,
 ) -> ActionRoutePlan:
     intent = ExecutionIntent(
         source=binding.source,
@@ -211,16 +255,29 @@ def _build_route(
         risk_level=binding.risk_level,
         idempotency_key=invocation.idempotency_key,
     )
-    execution = build_execution_plan_v2(
-        intent,
-        workspace,
-        environment=context.environment,
-        secrets=context.secrets,
-        sandbox=context.sandbox,
-        policy=decision,
-        capabilities=context.capabilities,
-        plan_id=invocation.invocation_id,
-    )
+    execution: ExecutionPlanV2
+    if isinstance(workspace, WorkspaceSnapshotV2):
+        execution = build_execution_plan_v3(
+            intent,
+            workspace,
+            environment=context.environment,
+            secrets=context.secrets,
+            sandbox=context.sandbox,
+            policy=decision,
+            capabilities=context.capabilities,
+            plan_id=invocation.invocation_id,
+        )
+    else:
+        execution = build_execution_plan_v2(
+            intent,
+            workspace,
+            environment=context.environment,
+            secrets=context.secrets,
+            sandbox=context.sandbox,
+            policy=decision,
+            capabilities=context.capabilities,
+            plan_id=invocation.invocation_id,
+        )
     external_action_id = (
         uuid5(_EXTERNAL_ACTION_NAMESPACE, f"{invocation.invocation_id}:{binding.binding_digest}")
         if binding.recovery_mode == "external_reconcile"
@@ -230,7 +287,10 @@ def _build_route(
         (item.kind, item.access, item.identifier_sha256, item.attributes_sha256)
         for item in resources
     ]
-    candidate = ActionRoutePlan.model_construct(
+    route_type = (
+        ActionRoutePlanV2 if isinstance(workspace, WorkspaceSnapshotV2) else ActionRoutePlan
+    )
+    candidate = route_type.model_construct(
         _fields_set=None,
         invocation=invocation,
         binding=binding,
@@ -240,7 +300,7 @@ def _build_route(
         external_action_id=external_action_id,
         fingerprint="0" * 64,
     )
-    return ActionRoutePlan(
+    return route_type(
         **candidate.model_dump(exclude={"fingerprint"}),
         fingerprint=action_route_plan_fingerprint(candidate),
     )

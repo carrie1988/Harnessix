@@ -158,6 +158,13 @@ def workspace_transaction_record_digest(record: WorkspaceTransactionRecord) -> s
 
 
 def new_transaction_record(plan: WorkspaceTransactionPlan) -> WorkspaceTransactionRecord:
+    from harnessix.delivery.workspace_v2_contracts import (
+        WorkspaceTransactionPlanV2,
+        new_transaction_record_v2,
+    )
+
+    if isinstance(plan, WorkspaceTransactionPlanV2):
+        return new_transaction_record_v2(plan)
     candidate = WorkspaceTransactionRecord.model_construct(
         _fields_set=None,
         transaction_id=plan.transaction_id,
@@ -191,6 +198,15 @@ def transition_transaction_record(
     now: datetime,
     error_code: str | None = None,
 ) -> WorkspaceTransactionRecord:
+    from harnessix.delivery.workspace_v2_contracts import (
+        WorkspaceTransactionRecordV2,
+        transition_transaction_record_v2,
+    )
+
+    if isinstance(record, WorkspaceTransactionRecordV2):
+        return transition_transaction_record_v2(
+            record, state=state, cursor=cursor, now=now, error_code=error_code
+        )
     started = record.started_at or now
     finished = now if state in {"published", "diverged", "unknown"} else None
     candidate = WorkspaceTransactionRecord.model_construct(

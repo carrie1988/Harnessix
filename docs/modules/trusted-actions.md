@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 35
-code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
+version: 36
+code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
 owners:
   - core
 modules:
@@ -1763,3 +1763,15 @@ ready、running、reconciling或已知部分效果仍沿原保守UNKNOWN路径�
 不请求模型、不自动执行余下成员。已全部after但Cursor缺失只补对账事实。
 完整数据流、时序、失败矩阵及正式SDK原件见[详细设计](../changes/m09-r4-product-patch-rollback.md)
 和[验证报告](../validation/product-patch-rollback-2026-09-30-v1/README.md)。
+
+
+## 完整父历史新代际消费者
+
+默认产品Patch与Rollback使用Snapshot v2、Execution Plan v3、Action Route v2以及Workspace事务领域v2／物理壳v3。
+完整父观察通过同一私有CAS验证，人工批准仍绑定完整新指纹；旧领域Schema和历史字节不扩张、不重签。
+Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Workspace首次新事务提升至3；
+只读Reader与全状态备份必须共同完整解引用，不捕获、迁移、执行或补签。
+旧Process及Git Bridge尚未联合切换，不能将新Patch链路或本机测试解释为其生产验收。
+模型接口、16文件公开Patch上限、取消、Lease／Root／Owner和错误语义保持。
+字段、部署升级、接口、源码调用链及验证范围见
+[联合接入详细设计](../changes/m09-r4-workspace-parent-closure.md#13-联合接入的实现与源码阅读入口)。
