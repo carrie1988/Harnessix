@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 43
-code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
+version: 44
+code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
 owners:
   - core
 modules:
@@ -2292,3 +2292,10 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 此组件没有默认注册Git写工具，没有业务Git写效果；默认Planner/Executor、业务关联、
 A/T2/D、独立Commit、Backup2及商业验收继续开放。CLI/UI当前显示原始JSONL，
 SDK没有用户必须阅读全部材料才可批准的强制规则。
+
+## Checkpoint 原范围字段编码兼容
+
+[实际规划详细设计](../changes/m09-r4-git-checkpoint-preparation.md)复用原完整对象材料、树闭包和同源Diff。
+`git_inventory_wire._wire`新增内部显式 `native_fields=True`，只在生成原Core2 JSON时保留其原 `name`
+字段及十六进制字节值；默认False继续产生旧Inventory规范 `name_hex`。没有新增Schema、范围合同、
+对象算法或执行权限。完整base提交及两树并集必须通过原CAS回读和材料验证，外部parent只为历史边界。

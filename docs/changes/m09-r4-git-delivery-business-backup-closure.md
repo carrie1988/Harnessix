@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 16
-code_revision: d8524741e12466a8bade4adc72ad8d3e9222cfe1
+version: 17
+code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -1026,3 +1026,13 @@ common/admin、物理Index、配置值、HEAD/逻辑Index/来源及完整会话�
 
 [正式组件验收](../validation/git-core-observation-2026-10-07-v1/README.md)留存同候选安装、原Schema及门禁字节、完整测试和失败证据；
 声明合同/原CAS验证与真实认证SDK回归分别记录，不据此关闭默认Git业务或商业发布门禁。
+
+
+## 实际 Checkpoint 准备及正式 Review 实施边界
+
+[正式Git Review](m09-r4-git-review.md)已经实现完整Core2、全Diff与原认证Artifact审批回指。
+[实际Checkpoint准备](m09-r4-git-checkpoint-preparation.md)进一步将原认证pending调用、成功Patch来源、
+用户观察、原受控全对象材料、Scope/Diff和Core2耐久CAS接入原可信准备入口。
+这些是实际组件，不再将其列为缺少实现的合同；仍未默认注册或取得Git业务执行批准。
+内部命令授权夹具不是产品默认Policy。完整ProductLink业务Writer/Loader、NativeBridge、A/T2/D、
+独立Commit与业务Backup2仍待联合闭合；物理账本可验真不等于完整业务状态可恢复。

@@ -72,6 +72,10 @@ R4新增[已发布Patch的Git交付来源绑定](docs/changes/m09-r4-product-git
 [Git材料Worker有限首失败观察](docs/changes/m09-r4-git-worker-failure-observation.md)区分清理前首失败与最终捕获，
 不改变成功proof、父端UNKNOWN或原执行权限；本机回归不能替代Windows修复及商用验收。
 
+[实际Checkpoint可信准备](docs/changes/m09-r4-git-checkpoint-preparation.md)将原认证Session和成功Patch
+接入受控全对象采集、Core2持久化、原Route及正式Git Review。当前为内部正式组件，
+未默认开放Git写；ProductLink、A/T2/D、独立Commit及业务Backup2仍是商业验收前置。
+
 ## 项目边界
 
 Harnessix Code 自研 Coding Agent 的关键运行语义：

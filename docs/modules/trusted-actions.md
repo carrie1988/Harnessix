@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 37
-code_revision: 3443422cc83f804b7c6d09e41ac2645c0a17c1b1
+version: 38
+code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
 owners:
   - core
 modules:
@@ -1794,3 +1794,10 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 沿Manifest及每个Chunk传递，不暂时修改共享实例属性或重新开始期限。
 上游控制异常与真实历史损坏分别分类，原异常对象保留；旧无参数调用及全部Route合同字节保持。
 该参数不授予批准、会话访问权或业务写权限，不表示GitBridge完成。
+
+## 可信准备的结算失败优先级
+
+[Checkpoint详细设计](../changes/m09-r4-git-checkpoint-preparation.md)明确两层取消托管均保留结算失败。
+`plan_agent_action`调用原 `CancelToken.run(..., preserve_failure=True)`，避免准备器已归一的未知效果
+被外层Turn取消、父Task退出或Router总期限覆盖。原公开准备错误码表及固定消息不变，内部强失败
+不向用户公开私有原因组。只在首次Route之前准备；已有Route、原Policy、实际Snapshot及幂等约束不变。

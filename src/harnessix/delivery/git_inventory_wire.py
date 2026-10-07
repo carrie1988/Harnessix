@@ -31,7 +31,9 @@ from harnessix.delivery.git_tree_closure import GitTreeClosureLimits
 _MAX_GIT_INVENTORY_RECORD_BYTES = 64 * 1024 * 1024
 
 
-def _wire(value: object, checkpoint: Callable[[], None]) -> JsonValue:
+def _wire(
+    value: object, checkpoint: Callable[[], None], *, native_fields: bool = False
+) -> JsonValue:
     """投影有限模型的完整字段，不输出对象正文或添加任何默认字段。"""
     checkpoint()
     if type(value) is UUID:
@@ -39,7 +41,10 @@ def _wire(value: object, checkpoint: Callable[[], None]) -> JsonValue:
     if type(value) is bytes:
         return value.hex()
     if type(value) is tuple:
-        return [_wire(item, checkpoint) for item in cast(tuple[object, ...], value)]
+        return [
+            _wire(item, checkpoint, native_fields=native_fields)
+            for item in cast(tuple[object, ...], value)
+        ]
     if type(value) in {str, int, type(None)}:
         return cast(str | int | None, value)
     kind = type(value)
@@ -48,8 +53,8 @@ def _wire(value: object, checkpoint: Callable[[], None]) -> JsonValue:
     result: dict[str, JsonValue] = {}
     for name in _annotations(kind):
         checkpoint()
-        key = "name_hex" if kind is GitTreeEntry and name == "name" else name
-        result[key] = _wire(getattr(value, name), checkpoint)
+        key = "name_hex" if not native_fields and kind is GitTreeEntry and name == "name" else name
+        result[key] = _wire(getattr(value, name), checkpoint, native_fields=native_fields)
     return result
 
 

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 195
-code_revision: d8524741e12466a8bade4adc72ad8d3e9222cfe1
+version: 196
+code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
 owners:
   - core
 modules:
@@ -2196,3 +2196,17 @@ A/T2/D、独立Commit和Backup2；本组件不关闭R1—R6、真实模型编码
 此组件没有默认注册Git写工具，没有业务Git写效果；默认Planner/Executor、业务关联、
 A/T2/D、独立Commit、Backup2及商业验收继续开放。CLI/UI当前显示原始JSONL，
 SDK没有用户必须阅读全部材料才可批准的强制规则。
+
+
+## R4 实际 Checkpoint 可信准备与原完整材料接线
+
+[完整详细设计](changes/m09-r4-git-checkpoint-preparation.md)接通原认证Session pending调用、
+完整用户观察、原受控全对象读取、全树与净变更Scope、Core2耐久CAS及原首次Route/Git Review。
+同一原60秒预算、首末来源/历史/配置/物理Index复核和两原UUID缺失复核共同阻止失效观察发布。
+取消托管显式保留内部结算强失败，旧取消默认行为、公开错误、Schema、Native18和原容量上限保持。
+已有Route重试复用原Core，不再读取对象或生成新A/D意图。
+
+[组件验证](validation/git-checkpoint-preparation-2026-10-07-v1/README.md)分别记录原CAS声明/边界、
+实际离线认证SDK准备/Review与模拟结算故障。组件没有默认注册Git写工具，没有A/T2/D或Commit效果；
+下一关键路径为原GitDB认证事务中的完整ProductLink业务语义、NativeBridge及受控执行和Backup2闭合。
+真实模型R3、三平台消费者、有限Beta及同候选R1—R6商业发布门禁继续开放。

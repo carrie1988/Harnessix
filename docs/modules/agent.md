@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 21
-code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
+version: 22
+code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
 owners:
   - core
 modules:
@@ -868,3 +868,11 @@ Chunk边界也必须拒绝。未知旧通用审阅只沿原JSONL保护，不猜�
 [Git Review详设](../changes/m09-r4-git-review.md)，
 [保护用例](../../tests/product_config/test_git_delivery_review_protection.py)和
 [实际认证读侧负例](../../tests/product_config/test_git_delivery_review_controls.py)分别记录证据等级。
+
+## 效果结算托管的取消合同
+
+[Checkpoint详细设计](../changes/m09-r4-git-checkpoint-preparation.md)要求取消不能覆盖Owner未知结算。
+`CancelToken.run(operation, *, preserve_failure=False)`保留既有默认行为；显式True在原回收所有子任务后，
+重新传播非取消子任务异常的原对象。实际Checkpoint准备器和原Agent可信预规划入口使用True，
+正常取消依旧传播，成功但已取消的结果不发布，共享Owner不由准备器关闭。
+该标志不授权重放，不改变持久事件或Schema，不把模拟结算测试当作原生Owner故障验收。

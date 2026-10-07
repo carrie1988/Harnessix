@@ -27,9 +27,9 @@ async def test_actual_review_terminal_settlement_gap_is_fail_closed(
         original_run = CancelToken.run
         saved = {}
 
-        async def observed_run(token, operation):
+        async def observed_run(token, operation, *, preserve_failure=False):
             producing = inspect.iscoroutine(operation) and operation.cr_code.co_name == "_produce"
-            result = await original_run(token, operation)
+            result = await original_run(token, operation, preserve_failure=preserve_failure)
             if producing:
                 saved["reference"] = result.diff_artifact
                 if change == "cancel":

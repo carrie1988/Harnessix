@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 73
-code_revision: d8524741e12466a8bade4adc72ad8d3e9222cfe1
+version: 74
+code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
 owners:
   - core
 modules:
@@ -2565,3 +2565,15 @@ Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末
 此组件没有默认注册Git写工具，没有业务Git写效果；默认Planner/Executor、业务关联、
 A/T2/D、独立Commit、Backup2及商业验收继续开放。CLI/UI当前显示原始JSONL，
 SDK没有用户必须阅读全部材料才可批准的强制规则。
+
+## 实际 Checkpoint 可信准备入口
+
+[详细设计](../changes/m09-r4-git-checkpoint-preparation.md)落实 `ProductGitCheckpointPreparer`：
+原认证Session、成功Patch完整历史和同一用户观察进入有限全对象采集、原Scope/Diff与Core2耐久CAS；
+原首次Route入口、Git Review和认证Artifact继续使用既有实现。对象读取只用原受控
+`cat-file --batch`、正式ExecutionPlan、共享Owner/Lease完整回执，不遍历提交历史或修改用户Index。
+同一60秒覆盖观察、材料、持久化和首末事实复核；A/D原UUID首末都必须缺失。
+已有Route重试仍查询优先，不再次生成意图。原取消托管显式保留结算失败，公开错误仍按原固定码表处理。
+
+此组件尚未默认注册。验证中只读命令授权来自原正式Plan的合成批准夹具，不能视为默认策略
+或用户Git业务批准。Checkpoint业务执行、ProductLink/NativeBridge、独立Commit和Backup2仍未闭合。

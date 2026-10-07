@@ -1,0 +1,162 @@
+{
+  "schema": "harnessix.git-checkpoint-preparation-validation/v1",
+  "baseline_revision": "1e2253b2dd304f8de4a516a40c5919c5d05b68b4",
+  "scope": "actual-original-authenticated-checkpoint-preparation-full-materials-core-and-existing-review-only",
+  "status": "PASS",
+  "final": {
+    "installed_new": {
+      "tests": 141,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 422.765,
+      "passed": 141
+    },
+    "new_evidence_classes": {
+      "declaration_and_original_cas_scope": 66,
+      "actual_offline_authenticated_sdk": 13,
+      "injected_settlement_fault": 62,
+      "git_business_execution": 0
+    },
+    "installed_associated": {
+      "tests": 2008,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 340.687,
+      "passed": 2008
+    },
+    "governance": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 41.312,
+      "passed": 1413
+    },
+    "installed_imports": {
+      "new": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 342,
+        "pytest_exit_code": 0
+      },
+      "associated": {
+        "source_outside": true,
+        "no_clone_src_sys_path": true,
+        "all_modules_from_installed_wheel": true,
+        "loaded_modules": 339,
+        "pytest_exit_code": 0
+      }
+    },
+    "wheel": {
+      "all_bytes_match": true,
+      "source_modules": 496,
+      "wheel_sha256": "88d99511796b5d3f9e318b55034856fe09bf0f0ad7359fe50857ff9e38227046"
+    },
+    "dependency_environment": "managed-existing-test-venv",
+    "fresh_dependency_environment": false,
+    "schema_compatibility": {
+      "baseline_count": 281,
+      "all_original_bytes_unchanged": true,
+      "new_schemas": [],
+      "changed": []
+    },
+    "original_gates": {
+      "all_bytes_unchanged": true,
+      "paths": [
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.py",
+          "sha256": "f2e57fe1168703757895a8d7a61baf099d8e02dfb99c548963275d3ca666782c"
+        },
+        {
+          "path": "governance/readability-policy-v1.json",
+          "sha256": "176ee35bafa474d71f29fe20c484853d6a326ceb2dcf0188193f34b031b75f2c"
+        },
+        {
+          "path": "governance/documentation-policy-v1.json",
+          "sha256": "e8d08431a926cd1c9f3688d473b6fe0974c0727c33d01e35b2b5d69745fa211a"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha256": "edd750e5dfa3850f7d80a85b2aad2fc76f09f42f5bd4d0c11ac1a4020b129fad"
+        },
+        {
+          "path": "scripts/windows_git_native_branch_observation/contract.json",
+          "sha256": "d76e2a31c2e6ef569dac79096aeef8ff1753ffc600a6441c69d228aef242e668"
+        }
+      ]
+    },
+    "quality": {
+      "mypy_source_modules": 496,
+      "ruff": "PASS",
+      "format_files": 1765,
+      "readability_source_modules": 496,
+      "package_dependency_edges": 151,
+      "documentation": {
+        "changed_path_count": 25,
+        "document_count": 564,
+        "link_count": 12931,
+        "mermaid_count": 1072,
+        "policy_version": "harnessix.documentation-policy/v1",
+        "source_package_count": 26
+      },
+      "new_design_diagrams": 5,
+      "secret_scan_inputs": 5040
+    }
+  },
+  "failed_attempts_preserved": [
+    {
+      "attempt": "preparation-first",
+      "reason": "夹具假设不存在的ProcessLease.active；改为原state/returncode核验"
+    },
+    {
+      "attempt": "preparation-third",
+      "reason": "原正式Plan先以execution_plan_stale拒绝来源变化；修正准确预期码"
+    },
+    {
+      "attempt": "preparation-fourth and installed-new-first",
+      "reason": "原NativeRoot以workspace_path_denied拒绝符号链接；修正准确测试预期，拒绝逻辑不变"
+    },
+    {
+      "attempt": "installed-associated-first",
+      "reason": "Review观测包装遗漏新增可选参数；恢复准确透传，原四项末端检查不变"
+    },
+    {
+      "attempt": "governance-first",
+      "reason": "初次错误使用系统Git2.24.3；原要求Git2.53复验1413项通过，未修改用例或阈值"
+    },
+    {
+      "attempt": "build-first",
+      "reason": "受管环境缺少build模块；使用原缓存uv离线构建"
+    },
+    {
+      "attempt": "installed-associated-selector-first",
+      "reason": "两条选择器名称未经求证；核实实际受管选择器并完整复验"
+    },
+    {
+      "attempt": "format-first and second",
+      "reason": "按原Ruff规则格式化新增详设的Python片段"
+    }
+  ],
+  "review": {
+    "independent_source_review": "no-remaining-mustfix-in-reviewed-scope",
+    "settlement_double_cancel_and_turn_cancel_regression": 59,
+    "no_native_owner_fault_acceptance_inferred": true
+  },
+  "default_git_tools_enabled": false,
+  "commercial_release_complete": false,
+  "model_requests": 0,
+  "open_gates": [
+    "typed-full-ProductLink-semantic-writer-loader",
+    "NativeBridge",
+    "A/T2/D",
+    "independent-Commit",
+    "business-Backup2",
+    "real-provider-R3",
+    "three-platform-consumer-acceptance",
+    "limited-independent-Beta",
+    "same-candidate-R1-R6"
+  ]
+}

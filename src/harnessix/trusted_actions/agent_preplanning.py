@@ -91,7 +91,8 @@ async def plan_agent_action(
                     turn.model_copy(deep=True),
                     call.model_copy(deep=True),
                     cancel,
-                )
+                ),
+                preserve_failure=True,
             )
     except TurnCancelled:
         raise

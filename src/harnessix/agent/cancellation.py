@@ -28,8 +28,8 @@ class CancelToken:
         if self.cancelled:
             raise TurnCancelled
 
-    async def run(self, operation: Awaitable[T]) -> T:
-        """托管可协作取消的 I/O；无论成功、取消还是父 Task 退出都回收子任务。"""
+    async def run(self, operation: Awaitable[T], *, preserve_failure: bool = False) -> T:
+        """回收子任务；显式托管效果结算时，结算失败不得被外层取消覆盖。"""
         task = asyncio.ensure_future(operation)
         waiter = asyncio.create_task(self._event.wait())
         try:
@@ -41,7 +41,13 @@ class CancelToken:
             for child in (task, waiter):
                 if not child.done():
                     child.cancel()
-            await asyncio.gather(task, waiter, return_exceptions=True)
+            try:
+                await asyncio.gather(task, waiter, return_exceptions=True)
+            finally:
+                if preserve_failure and task.done() and not task.cancelled():
+                    failure = task.exception()
+                    if failure is not None and not isinstance(failure, TurnCancelled):
+                        raise failure
 
 
 def parent_cancel_checkpointer(check: Callable[[], None]) -> Callable[[], None]:
