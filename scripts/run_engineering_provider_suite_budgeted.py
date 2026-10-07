@@ -15,11 +15,18 @@ from pathlib import Path
 from typing import NoReturn
 from uuid import UUID
 
+import harnessix
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.evals.cli_config import read_private_eval_config
 from harnessix.evals.provider_suite_contracts import CodingEvalProviderSuiteRunConfig
-from harnessix.evals.provider_suite_execution import _require_scope, run_task_pack_provider_suite
+from harnessix.evals.provider_suite_execution import (
+    _GIT_ENVIRONMENT,
+    run_task_pack_provider_suite,
+)
+from harnessix.evals.provider_suite_execution import (
+    _require_scope as _require_runtime_scope,
+)
 from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunReport
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_publication import provider_publication_scope
@@ -27,6 +34,7 @@ from harnessix.models._provider_io import validate_key
 from harnessix.models.contracts import ModelProvider
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.models.pricing import FlatInputPrice
+from harnessix.observability import Observability
 from scripts.provider_verification_budget import VerificationBudgetLedger
 from scripts.provider_verification_guard import (
     MODEL,
@@ -34,6 +42,52 @@ from scripts.provider_verification_guard import (
     BailianVerificationBounds,
     GuardedVerificationProvider,
 )
+
+
+def _require_source_checkout(config: CodingEvalProviderSuiteRunConfig) -> None:
+    """只验证付费宿主准入时的来源和干净状态，不宣称运行期间源码不可变。"""
+    try:
+        root = Path(__file__).resolve(strict=True).parents[1]
+        package = Path(harnessix.__file__).resolve(strict=True).parent
+        if Path(config.source_root).resolve(strict=True) != root or package != (
+            root / "src/harnessix"
+        ).resolve(strict=True):
+            raise ValueError
+        result = subprocess.run(
+            (
+                str(Path(config.git_executable).resolve(strict=True)),
+                "--no-pager",
+                "--no-optional-locks",
+                "-c",
+                "core.hooksPath=/dev/null",
+                "-c",
+                "core.fsmonitor=false",
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ),
+            cwd=root,
+            env=_GIT_ENVIRONMENT,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=30,
+        )
+        if result.returncode != 0 or result.stdout:
+            raise ValueError
+    except (OSError, subprocess.SubprocessError, ValueError, TypeError):
+        raise KernelError(
+            "verification_source_checkout_unavailable", "验证宿主源码来源或干净状态不可用"
+        ) from None
+
+
+def _require_scope(
+    config: CodingEvalProviderSuiteRunConfig, observability: Observability | None
+) -> None:
+    # 保持原Pack、程序和HEAD拒绝优先级；只在受控付费入口增加准入检查。
+    _require_runtime_scope(config, observability)
+    _require_source_checkout(config)
 
 
 def _bounds(config: CodingEvalProviderSuiteRunConfig) -> BailianVerificationBounds:
@@ -249,6 +303,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         # 只公开当前受控边界的有限错误码，不输出SDK异常、私有路径或第三方正文。
         if error.code in {
             "verification_price_unavailable",
+            "verification_source_checkout_unavailable",
             "verification_image_unavailable",
             "verification_credentials_unavailable",
             "verification_budget_busy",
