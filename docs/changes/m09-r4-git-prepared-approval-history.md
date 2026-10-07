@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 2
-code_revision: 2bef425141653360c29e09b38e079065825437cb
+code_revision: 2aa16c161039134d13e13f4decfd9024be99d153
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, artifacts]
 related_adrs:
@@ -289,6 +289,11 @@ return_original_prepared_plus_history_without_execution_permission()
 不把重复消费累积时间当作认证缺陷。SDK 强制到期负控实际等待原 Turn 截止时间，
 保留 `approval_expired`，历史入口保留 `git_approval_history_changed`；不调整时钟或延长期限。
 这与纯历史解释器的日期负控不同，后者不能证明实际耗时通过。
+公开 SDK 的失败类型为 `AgentSDKError`；内部历史 Reader 仍返回原 `KernelError`。
+原 `approval/respond` 幂等契约要求在已有 `sessions.db.protocol_requests` 保存一条
+`failed / approval_expired` 结果，不能把原命令失败记录误判为只读消费者写入。
+负控逐表断言该命令只新增这条原结果、审批/Route/CAS/Index 等状态不变，随后以命令后完整状态
+核对历史 Reader 的零写；该核对仍包含 `protocol_requests`，不排除整表、不改原协议账本或恢复语义。
 原准备入口的细分真实耗时及嵌套计时边界见[prepared 详设](m09-r4-git-prepared-link.md#41-真实耗时根因与验收约束)；
 该测量不能当作历史 Reader 的性能门禁或同步响应性 P1 已关闭的证据。
 
