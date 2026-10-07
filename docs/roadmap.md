@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 201
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 202
+code_revision: 12e30d333334234c1ad73789f392aee4c7bedf36
 owners:
   - core
 modules:
@@ -2262,3 +2262,15 @@ Git同步段响应性仍开放，不把单例诊断或纯保护通过当作性�
 当前只有准备材料，真实试用完成数为零；首位试用不替代正式多用户门槛。
 下一阶段仍是原批准事实、Owner/fence与完整U终端复核、NativeBridge、A/T2/D、独立Commit和Backup2；
 R3真实质量及两笔费用未决、三平台消费者、正式Beta与同候选R1～R6继续开放。
+
+## R4 原 Owner 前置的范围收紧
+
+[原 Owner 详设](changes/m09-r4-git-readonly-owner-fence.md)新增单一只读算法，
+保留原写保护并收紧 Git Host 原对象/字段与显式事务门禁；不新增认证域、Store 或 Schema。
+定向源码与固定 Wheel 安装集合分别24项通过；领域安装3771通过/23个Windows-only跳过，关联59通过、治理1413通过。分组有交集不累加，隐式快照反例仍1失败；不是完整新鲜性或商业验收。
+未耗尽游标可在 `in_transaction=False` 时固定隐式旧快照，真实 SQLite 与原 SDK 反例保留；
+完整 Owner 新鲜性及 B7 继续开放，approved Writer 不启用。
+Git/SQLite 同提交瞬间的整仓强一致尚无可用原语，完整U末轮复核与效果边界语义仍须正式决策，不能静默放宽。
+单人先导只记录实际任务，当前实际试用0项；正式独立用户、R3费用与质量、三平台及R1～R6门槛保持。
+
+[限定验证报告](validation/git-owner-fence-2026-10-07-v1/README.md)固定同一实际Wheel及全部源输入，保留原失败和P1缺口。

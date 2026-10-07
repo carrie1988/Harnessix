@@ -1,0 +1,232 @@
+{
+  "schema": "harnessix.git-owner-fence-validation/v1",
+  "status": "PARTIAL_COMPONENT_NOT_RELEASE",
+  "baseline_revision": "12e30d333334234c1ad73789f392aee4c7bedf36",
+  "commercial_release_complete": false,
+  "default_git_tools_enabled": false,
+  "all_owner_freshness_barriers_complete": false,
+  "model_requests": 0,
+  "wheel": {
+    "wheel_sha256": "bb62c8f817ff80a2e0f3788d397b1fbfd18d77e28b768c2fe461d8acfda7aa8b",
+    "package_members": 545,
+    "python_members": 504,
+    "main_clone_wheel_install_bytes_equal": true
+  },
+  "source_targeted": {
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 24,
+    "seconds": 59.118
+  },
+  "installed": {
+    "new": {
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 24,
+      "seconds": 68.083,
+      "all_modules_from_installed_wheel": true,
+      "no_clone_src_sys_path": true,
+      "loaded_modules": 358
+    },
+    "domain": {
+      "tests": 3794,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 23,
+      "passed": 3771,
+      "seconds": 773.975,
+      "all_modules_from_installed_wheel": true,
+      "no_clone_src_sys_path": true,
+      "loaded_modules": 324
+    },
+    "associated": {
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 59,
+      "seconds": 930.196,
+      "all_modules_from_installed_wheel": true,
+      "no_clone_src_sys_path": true,
+      "loaded_modules": 358
+    },
+    "governance": {
+      "tests": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1413,
+      "seconds": 42.305,
+      "all_modules_from_installed_wheel": true,
+      "no_clone_src_sys_path": true,
+      "loaded_modules": 375
+    }
+  },
+  "retained_failures": {
+    "readonly-fence-red.xml": {
+      "tests": 9,
+      "failures": 9,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 0.31,
+      "sha256": "601263a2fdcac3d999eff795614f2f639324926659e97a19c521f7a9f3e2a674"
+    },
+    "host-fence-red.xml": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 37.482,
+      "sha256": "5def0510238f907e2695c1b24ae742e216560f4fbe2779528fefe703a88cf7d5"
+    },
+    "host-fence-snapshot-red.xml": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 19.125,
+      "sha256": "10ba4370703de897c220230515d3ab419abab48ed69ce3b302ab92ffd31a5502"
+    },
+    "host-fence-green.xml": {
+      "tests": 24,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 21,
+      "seconds": 57.487,
+      "sha256": "417d80aaceea8bc3dec4b064ef52707e9325958bb6c1d22f6dd8c79a1f9a08e4"
+    },
+    "governance-first.xml": {
+      "tests": 1413,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 1412,
+      "seconds": 47.123,
+      "sha256": "527de58c26756b2d0e337f74ac935004bee60b4c1b431043eaf7e461bf28c582"
+    },
+    "implicit-host.xml": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "seconds": 23.112,
+      "sha256": "ddc8557b4b4c573c70591177455b0c14113f1b24b291bb60ba93254a37288416"
+    }
+  },
+  "known_open": [
+    {
+      "id": "P1-OWNER-IMPLICIT-SNAPSHOT",
+      "scope": "单独Git Review Host",
+      "reproduced": true,
+      "reason": "未耗尽SELECT游标可在in_transaction=False时保留旧WAL快照，原Owner核验仍接受旧值",
+      "not_proven": "不据此认定整个Ledger已绕过独立监视连接"
+    },
+    {
+      "id": "GIT-APPROVED-B7",
+      "reason": "完整新鲜性、宿主锁/FD与全部dispatch屏障未闭合，approved Writer仍未实现或启用"
+    },
+    {
+      "id": "GIT-APPROVED-B4",
+      "reason": "Git与SQLite无共同提交事务，完整U终端/效果边界语义仍须正式决策"
+    },
+    {
+      "id": "COMMERCIAL-GATES",
+      "reason": "R3费用和质量、完整Git/Backup2、三平台消费者、正式多用户Beta与R1-R6未完成"
+    }
+  ],
+  "original_write_transaction_positive": {
+    "status": "PASS_ORIGINAL_WRITE_TRANSACTION",
+    "queries": 2,
+    "only_select": true,
+    "original_transaction_preserved": true,
+    "zero_audit_changes": true
+  },
+  "spec_and_gates": {
+    "schema_files": 282,
+    "policy_and_ci_files": [
+      "governance/documentation-policy-v1.json",
+      "governance/readability-policy-v1.json",
+      ".github/workflows/action-recovery-soak-candidate.yml",
+      ".github/workflows/action-recovery-soak.yml",
+      ".github/workflows/artifact-growth-soak-candidate.yml",
+      ".github/workflows/artifact-growth-soak.yml",
+      ".github/workflows/ci.yml",
+      ".github/workflows/installed-product-acceptance.yml",
+      ".github/workflows/long-session-soak-candidate.yml",
+      ".github/workflows/long-session-soak.yml",
+      ".github/workflows/many-threads-soak-candidate.yml",
+      ".github/workflows/many-threads-soak.yml",
+      ".github/workflows/restart-soak-candidate.yml",
+      ".github/workflows/restart-soak.yml",
+      ".github/workflows/sdk-soak-candidate.yml",
+      ".github/workflows/sdk-soak.yml",
+      ".github/workflows/windows-git-minimum-commit-probe.yml",
+      ".github/workflows/windows-git-native-branch-observation.yml"
+    ],
+    "all_baseline_main_clone_equal": true
+  },
+  "diagrams": [
+    {
+      "number": 1,
+      "source_sha256": "bf61d3a4d5f79738fa991bda3e5f14919e26accc3081f562e3390cf43c108ee6",
+      "png": "diagrams/owner-1.png",
+      "visual_review": "PASS",
+      "png_sha256": "686e24bb57ee59898b2f43017d062112c937d098fbaaafd741dfc8c69dd207f1"
+    },
+    {
+      "number": 2,
+      "source_sha256": "913785c2223c70df6125ce6702bb145bcac7a961af46fbce8c6d60e07e095200",
+      "png": "diagrams/owner-2.png",
+      "visual_review": "PASS",
+      "png_sha256": "28cbc11508dff18d7569c5b79240be5e103915dfbd8723bc00bc600356d91c0b"
+    },
+    {
+      "number": 3,
+      "source_sha256": "a0a79dde154631f7afeaa1c50eac8dd1abfbc95efd6969b65bf5739d3ea659b9",
+      "png": "diagrams/owner-3.png",
+      "visual_review": "PASS",
+      "png_sha256": "156ec5981677d799ca2b530335b3e4eb6c0286281511b5a282099859f2cc9e0a"
+    },
+    {
+      "number": 4,
+      "source_sha256": "924f5ddb5f205c283c09abf505b197364cacd379b03d5dc66ba8b491f9bc7cbb",
+      "png": "diagrams/owner-4.png",
+      "visual_review": "PASS",
+      "png_sha256": "6783d64eb4abff8d415dd0c73b9ca271e77505684e69b77b5396392457a4b652"
+    }
+  ],
+  "private_evidence_sha256": {
+    "new.xml": "c8014ba24062ad90896666385704ba5275a8fe5ef75a5b156fd3f898f61e4a18",
+    "new-imports.json": "de376cca8593babcd35aedd570327fac6ecf18921a3bb30245090f8ea7b40d1f",
+    "domain.xml": "d80b95e17c7d0107b34448c73eb43eec3086070fd0f0839cdb4bdb8822cf1852",
+    "domain-imports.json": "0ecd91f692b1c9a5b7e75850bb758217e53a6e3fc2827997a32281d24751a8f4",
+    "associated.xml": "08e3f7f0b75d7033a38ba47817ddf3ccdc7cb9e82cb1c740fdc10ab5427db975",
+    "associated-imports.json": "b55e513f354465f9bac5950353d21659c526aa02c84e632c03674ead21552ab6",
+    "governance.xml": "b287974e7d83f806cb5aacbd43a89d94da3d6d817bc7dca6d7b8c839a8a5878a",
+    "governance-imports.json": "ce97c2390944911ec95533e34ee4bc7aed2c9dc3b3573abcf85ecfcac5641e37",
+    "implicit-host.xml": "ddc8557b4b4c573c70591177455b0c14113f1b24b291bb60ba93254a37288416",
+    "implicit-host-imports.json": "499df81bb0cfc7c69c001fb48462ac800820e8fafb17bcbc629a8dfe43054c37",
+    "implicit-read-probe.json": "43f64e02eef61651a622b065ea209a80512c477254cd8c8c85113774fe8492d6",
+    "data-version-probe.json": "c21d4ce99269f64d3029c555f7125a250e397c7130dcdcdf1130617b6a5df160",
+    "readonly-owner-algorithm-equivalence.json": "aae8dbb3b68a2372df04e4bc693502b7b769a268f6752429ed0112aec7c9b337",
+    "write-transaction-positive.json": "cb0fdaab44846db9e0133cc12788fbaf91c42dfe61e1ce7f966df0d63dabc9f2",
+    "wheel-inputs.json": "94e1fea834983012c52d22effcd14d5ea8cf1f25fd33cf12f0adc9da17b35382",
+    "mypy-first.txt": "1122532051a489e83b3715274086d41c99ffc3998fd89ea36ab3ea4abdd32843",
+    "ruff-final.txt": "15d5cf9fdaee5a5031a5602c2f4516807eaf16f7d343524e5179872a531f7357",
+    "readability-final.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "spec-final.txt": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+    "diagram-review.json": "b642cfb53af8bd449eac559a0569d62a45b9614d00adfe88cf73ca05584d50e4",
+    "host-fence-green2.xml": "948c962cb19a70c6ba66af824498e17011e2604ad6134c4e3eba3a4b5ba3f572",
+    "test_implicit_owner_snapshot.py": "3daf5a5b23e075d82cb8446aa2da51619fa08fca57de2aaeb9f680b757d8bb95",
+    "run-implicit-probe.py": "f443892e1243e5cee6c4d13d4718e4317b05d87bbf813089bcc466c23c98284d"
+  }
+}

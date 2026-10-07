@@ -41,7 +41,12 @@ class ActionOwnerFenceMixin:
         return hashlib.sha256(token.encode("ascii")).hexdigest()
 
     def _assert_runtime_owner(self) -> ActionRuntimeFence | None:
+        """原写入口先校验末端禁止写入，再复用同一持久Owner算法。"""
         require_store_write_allowed(self)
+        return self._read_runtime_owner()
+
+    def _read_runtime_owner(self) -> ActionRuntimeFence | None:
+        """只读核对原内存Fence与持久代次，不取锁、不递增、不执行共享回调。"""
         fence = self._runtime_fence
         if fence is None:
             if self._require_runtime_owner:

@@ -31,7 +31,16 @@ from tests.product_config.test_git_checkpoint_preparation import _pending
 from tests.support.git_user_observation import run_authenticated_observation
 
 
-async def _case(tmp_path, config, monkeypatch, inspect, *, fmt="sha1", continuous=False):
+async def _case(
+    tmp_path,
+    config,
+    monkeypatch,
+    inspect,
+    *,
+    fmt="sha1",
+    continuous=False,
+    explicit_git_ledger=True,
+):
     owners = []
 
     @asynccontextmanager
@@ -58,7 +67,7 @@ async def _case(tmp_path, config, monkeypatch, inspect, *, fmt="sha1", continuou
         observed,
         object_format=fmt,
         continuous=continuous,
-        explicit_git_ledger=True,
+        explicit_git_ledger=explicit_git_ledger,
     )
 
 

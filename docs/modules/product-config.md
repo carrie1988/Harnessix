@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 77
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 78
+code_revision: 12e30d333334234c1ad73789f392aee4c7bedf36
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_review_runtime_fence.py
   - tests/product_config/test_git_checkpoint_preparation_digest.py
   - tests/product_config/test_git_delivery_core_store.py
   - tests/product_config/test_git_delivery_route_core.py
@@ -2603,3 +2604,16 @@ SDK没有用户必须阅读全部材料才可批准的强制规则。
 
 组件只覆盖当前 prepared 阶段，默认未注册。原 TTL、512KiB、60秒及 Native18保持；
 后续真实业务批准、Bridge/A/T2/D、独立 Commit、完整生命周期 Loader 和 Backup2仍未闭合。
+
+## Git 原 Owner 只读核验与显式事务门禁
+
+[详细设计](../changes/m09-r4-git-readonly-owner-fence.md)提取原
+[`_read_runtime_owner`](../../src/harnessix/trusted_actions/ownership_store.py#L48)，只执行原元数据 SELECT；
+原 `_assert_runtime_owner` 仍先执行终端写保护，原 BEGIN IMMEDIATE 写事务语义保持。
+[`Git Host`](../../src/harnessix/product_config/git_delivery_review_host.py#L20)冻结原 Audit、SQLite 连接、
+Fence 对象及三项标量，每个既有检查点拒绝身份/字段改变与显式事务，再执行原可见 Owner 核验。
+不创建 Store、Token、Schema、账本或业务行，不调用共享 checkpoint，也不缓存通过结论。
+
+`in_transaction=False` 不能排除未耗尽游标保留隐式 WAL 旧快照；该反例已经实测，完整新鲜性仍开放。
+此次收紧不关闭完整 B7、OS 锁/FD、全部 dispatch、approved Writer 或商业发布门禁。
+源码研究基线由元数据记录；新增实现字节及分组测试须以专项固定输入和实际安装证据核对。

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Callable
 
 from harnessix.agent.errors import KernelError
@@ -10,7 +11,9 @@ from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_user_authority import require_git_user_authority
 from harnessix.tools.git import GitReadRuntime
+from harnessix.trusted_actions.recovery_contracts import ActionRuntimeFence
 from harnessix.trusted_actions.router import TrustedActionRouter
+from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 
 
@@ -34,6 +37,13 @@ def require_git_review_host(
         raise KernelError("git_action_review_host_invalid", "Git审阅缺少原有效发布宿主")
     session, transactions, guard = artifacts.session, core_store.store, artifacts._publication
     original = require_git_user_authority(session, router, transactions, ports, reader)
+    audit = router._audit
+    if type(audit) is not SQLiteActionAuditStore:
+        raise KernelError("git_action_review_host_invalid", "Git审阅缺少原有效Audit宿主")
+    fence, database = audit._runtime_fence, audit._db
+    if type(fence) is not ActionRuntimeFence or type(database) is not sqlite3.Connection:
+        raise KernelError("git_action_review_host_invalid", "Git审阅缺少原活跃Audit所有权")
+    fence_fields = (fence.generation, fence.token, fence.acquired_at)
     publication, owner = session._publication, session._runtime_owner_token
     assert publication is not None
     protection = publication._events._protection
@@ -50,8 +60,15 @@ def require_git_review_host(
             or guard.binding is not publication
             or guard.protection is not protection
             or reader.contract()["implementation"] != "git-baseline-read/v1"
+            or audit._db is not database
+            or database.in_transaction
+            or audit._require_runtime_owner is not True
+            or audit._runtime_fence is not fence
+            or (fence.generation, fence.token, fence.acquired_at) != fence_fields
         ):
             raise KernelError("git_action_review_host_invalid", "Git审阅原发布宿主已经变化")
+        # 原连接必须处于自动提交，不能用WAL旧读快照中的Owner证明当前代次。
+        audit._read_runtime_owner()
 
     check()
     return check
