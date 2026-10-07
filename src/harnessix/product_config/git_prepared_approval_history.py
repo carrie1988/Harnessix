@@ -27,6 +27,7 @@ from harnessix.product_config.git_prepared_link_ledger import ProductGitPrepared
 from harnessix.product_config.git_prepared_link_observation import PreparedLinkReadSet
 from harnessix.product_config.git_prepared_link_proof import prepared_link_changed
 from harnessix.product_config.git_prepared_link_rows import read_prepared_link_rows
+from harnessix.product_config.git_user_observation import verify_product_git_user_observation
 from harnessix.tools.git import GitReadRuntime
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
@@ -144,6 +145,18 @@ async def _read_all(
             cancel=cancel,
             budget=budget,
             checkpoint=check,
+        )
+        await verify_product_git_user_observation(
+            link.plan.core.user_observation,
+            evidence.materials.history,
+            resources._router,
+            resources._core_store.store,
+            resources._reader,
+            session=resources._artifacts.session,
+            cancel=cancel,
+            budget=budget,
+            checkpoint=check,
+            snapshot_ports=resources._ports,
         )
         check()
         route_id = link.plan.route.execution.plan_id

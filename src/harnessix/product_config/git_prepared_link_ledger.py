@@ -41,6 +41,7 @@ from harnessix.product_config.git_prepared_link_rows import (
     read_prepared_link_rows,
 )
 from harnessix.product_config.git_prepared_link_wire import encode_product_git_prepared_link
+from harnessix.product_config.git_user_observation import verify_product_git_user_observation
 from harnessix.session.git_publication_contracts import GitDeliveryRecordClaims
 from harnessix.tools.git import GitReadRuntime
 from harnessix.trusted_actions.router import TrustedActionRouter
@@ -182,8 +183,8 @@ async def _authenticate(
     budget: GitOperationBudget,
     check: Callable[[], None],
 ) -> PreparedLinkEvidence:
-    """唯一实际业务来源入口，禁止在存储层自行拼接权威声明。"""
-    return await authenticate_prepared_link(
+    """原 pending Proof 后只读复核完整 U；复用同次控制，不重捕获或产生批准。"""
+    evidence = await authenticate_prepared_link(
         route_id,
         ledger._router,
         ledger._core_store,
@@ -194,6 +195,20 @@ async def _authenticate(
         budget=budget,
         checkpoint=check,
     )
+    await verify_product_git_user_observation(
+        evidence.link.plan.core.user_observation,
+        evidence.history,
+        ledger._router,
+        ledger._core_store.store,
+        ledger._reader,
+        session=ledger._artifacts.session,
+        cancel=cancel,
+        budget=budget,
+        checkpoint=check,
+        snapshot_ports=ledger._ports,
+    )
+    check()
+    return evidence
 
 
 async def _read_all(

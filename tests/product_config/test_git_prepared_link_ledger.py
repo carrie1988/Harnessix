@@ -135,8 +135,9 @@ async def _history(actual):
 
 @pytest.mark.parametrize("fmt", ["sha1", "sha256"])
 @pytest.mark.parametrize("continuous", [False, True])
+@pytest.mark.parametrize("operation", ["reopen-read", "stable-retry"])
 async def test_actual_prepared_link_commit_reopen_read_only_and_stable_retry(
-    tmp_path, config, monkeypatch, fmt, continuous
+    tmp_path, config, monkeypatch, fmt, continuous, operation
 ):
     async def inspect(actual):
         scenario = actual.scenario
@@ -146,8 +147,7 @@ async def test_actual_prepared_link_commit_reopen_read_only_and_stable_retry(
         with _database(actual) as db:
             await _genesis(actual, db)
             db.execute("BEGIN IMMEDIATE")
-            ledger = _ledger(actual, db)
-            link = await ledger.prepare(
+            link = await _ledger(actual, db).prepare(
                 actual.route.plan.execution.plan_id, cancel=CancelToken(), checkpoint=lambda: None
             )
             assert db.in_transaction
@@ -156,45 +156,49 @@ async def test_actual_prepared_link_commit_reopen_read_only_and_stable_retry(
             assert len(link.plan.core.baseline.source.patches) == (2 if continuous else 1)
             db.execute("COMMIT")
             baseline = _rows(db)
-            db.execute("BEGIN IMMEDIATE")
-            total = db.total_changes
-            assert (
-                await ledger.prepare(
-                    actual.route.plan.execution.plan_id,
-                    cancel=CancelToken(),
-                    checkpoint=lambda: None,
+        if operation == "stable-retry":
+            with _database(actual) as db:
+                db.execute("BEGIN IMMEDIATE")
+                total = db.total_changes
+                assert (
+                    await _ledger(actual, db).prepare(
+                        actual.route.plan.execution.plan_id,
+                        cancel=CancelToken(),
+                        checkpoint=lambda: None,
+                    )
+                    == link
                 )
-                == link
-            )
-            assert db.total_changes == total
-            db.execute("COMMIT")
-            assert _rows(db) == baseline
-        with _database(actual, read_only=True) as ro:
-            ro.execute("BEGIN")
-            changes = ro.total_changes
-            assert await _ledger(actual, ro).read_all(
-                cancel=CancelToken(), checkpoint=lambda: None
-            ) == (link,)
-            assert ro.total_changes == changes == 0
-            ro.execute("ROLLBACK")
-            assert _rows(ro) == baseline
-            ro.execute("BEGIN")
-            with pytest.raises(KernelError, match="只读"):
-                await _ledger(actual, ro).prepare(
-                    actual.route.plan.execution.plan_id,
-                    cancel=CancelToken(),
-                    checkpoint=lambda: None,
-                )
+                assert db.total_changes == total
+                db.execute("COMMIT")
+                assert _rows(db) == baseline
+        else:
+            with _database(actual, read_only=True) as ro:
+                ro.execute("BEGIN")
+                assert await _ledger(actual, ro).read_all(
+                    cancel=CancelToken(), checkpoint=lambda: None
+                ) == (link,)
+                assert ro.total_changes == 0
+                ro.execute("ROLLBACK")
+                assert _rows(ro) == baseline
+                ro.execute("BEGIN")
+                with pytest.raises(KernelError, match="只读"):
+                    await _ledger(actual, ro).prepare(
+                        actual.route.plan.execution.plan_id,
+                        cancel=CancelToken(),
+                        checkpoint=lambda: None,
+                    )
         assert _source_snapshot(scenario.root) == before
         assert await _history(actual) == history
         assert scenario.router._audit.routes() == routes
         assert not list(actual.preparer.worktree_parent.iterdir())
 
+    # 重开读取与原身份重试分别使用自己的真实原 Turn，不累积三个业务操作。
     await _case(tmp_path, config, monkeypatch, inspect, fmt=fmt, continuous=continuous)
 
 
+@pytest.mark.parametrize("first_outcome", ["rollback", "commit-response-lost"])
 async def test_actual_rollback_then_retry_and_commit_confirmation_loss(
-    tmp_path, config, monkeypatch
+    tmp_path, config, monkeypatch, first_outcome
 ):
     async def inspect(actual):
         with _database(actual) as db:
@@ -205,29 +209,21 @@ async def test_actual_rollback_then_retry_and_commit_confirmation_loss(
             first = await ledger.prepare(
                 actual.route.plan.execution.plan_id, cancel=CancelToken(), checkpoint=lambda: None
             )
-            db.execute("ROLLBACK")
-            assert _rows(db) == genesis
+            db.execute("ROLLBACK" if first_outcome == "rollback" else "COMMIT")
+            sealed = _rows(db)
+            if first_outcome == "rollback":
+                assert sealed == genesis
             db.execute("BEGIN IMMEDIATE")
             retry = await ledger.prepare(
                 actual.route.plan.execution.plan_id, cancel=CancelToken(), checkpoint=lambda: None
             )
             assert retry == first
             db.execute("COMMIT")
-            # 模拟调用方提交后响应丢失；只查询原业务身份，不重新分配发布 epoch。
-            sealed = _rows(db)
-            db.execute("BEGIN IMMEDIATE")
-            assert (
-                await ledger.prepare(
-                    actual.route.plan.execution.plan_id,
-                    cancel=CancelToken(),
-                    checkpoint=lambda: None,
-                )
-                == first
-            )
-            db.execute("COMMIT")
-            assert _rows(db) == sealed
+            if first_outcome == "commit-response-lost":
+                assert _rows(db) == sealed
             assert db.execute("SELECT COUNT(*) FROM git_product_link_events").fetchone() == (1,)
 
+    # 回滚重试与提交后响应丢失各自独立，不把第三次准备放进同一个 Turn。
     await _case(tmp_path, config, monkeypatch, inspect)
 
 

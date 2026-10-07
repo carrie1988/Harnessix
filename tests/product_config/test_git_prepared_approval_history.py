@@ -111,11 +111,8 @@ async def test_original_sdk_history_read_only_and_old_pending_reader_unchanged(
             assert _rows(database) == git_rows
             database.execute("ROLLBACK")
             database.execute("BEGIN")
-            if state == "pending":
-                assert await _ledger(actual, database).read_all(
-                    cancel=CancelToken(), checkpoint=lambda: None
-                ) == (link,)
-            else:
+            # 正向 pending 回读由独立原 Turn 的 Ledger 重开情形覆盖。
+            if state != "pending":
                 with pytest.raises(KernelError):
                     await _ledger(actual, database).read_all(
                         cancel=CancelToken(), checkpoint=lambda: None
