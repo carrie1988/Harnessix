@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
+version: 8
+code_revision: b0b12638c5437b230147a1f027e6172cab283923
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_tests:
   - tests/contracts/provider.py
   - tests/models/test_openai_chat.py
   - tests/models/test_chat_terminal_diagnostics.py
+  - tests/models/test_chat_text_tool_boundary.py
   - tests/models/test_anthropic.py
   - tests/models/test_chat_mapping.py
   - tests/models/test_anthropic_mapping.py
@@ -196,6 +197,14 @@ Context准备后的同一历史同时用于预算和Provider请求。具体Adapt
 
 `ResponseCompleted.finish_reason`支持`completed/tool_calls/max_output_tokens/content_filter/cancelled/unknown`。
 只有前两种是当前普通Agent Loop正常完成；其余由Runtime转换为结构化失败，不自动伪装成功。
+
+`delta.content`中的函数/参数标记、JSON或代码示例始终属于文字，不转为执行来源。
+只有原生字段通过既有身份、参数和结束条件校验后才释放`ToolCallCompleted`；原生调用与同形正文并存
+也不产生第二次调用。正文以wire `stop`结束映射为内部`completed`，不表示业务验收通过；
+wire `tool_calls`却无原生调用按原`finish_tool_mismatch`拒绝且不重试。
+重开与Replay不能将历史文字升级为工具效果，见[总体与详细设计](../changes/m09-r3-native-tool-text-boundary.md)。
+[真实合成原生探针](../validation/native-tool-protocol-2026-10-08-v1/README.md)在固定北京Coder配置下两次native和
+续页revision通过，未执行工具或使用客户代码；不构成旧失败归因、完整SDK或线上普遍可靠性认证。
 
 ### 7.3 错误分类
 

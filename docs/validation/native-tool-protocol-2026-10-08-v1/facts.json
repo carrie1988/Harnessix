@@ -1,0 +1,41 @@
+{
+  "status": "PASS_SCOPED_SYNTHETIC_NATIVE_PROTOCOL_NOT_BETA",
+  "candidate_revision": "3fb2ef57f3a647b20058f987f090e6829c4d8a58",
+  "model": "qwen3-coder-plus-2025-09-23",
+  "region": "cn-beijing",
+  "mode": "streaming_non_thinking",
+  "paid_requests": 2,
+  "v1_paid_requests": 0,
+  "alias_and_schema_unchanged": true,
+  "native_calls_observed": 2,
+  "second_expected_revision_validated": true,
+  "text_chars": 0,
+  "tools_executed": 0,
+  "customer_code_disclosed": false,
+  "synthetic_tool_result_only": true,
+  "raw_wire_saved": false,
+  "wire_metadata_saved": true,
+  "actual_model_usage": {
+    "input_tokens": 1529,
+    "output_tokens": 213,
+    "total_tokens": 1742
+  },
+  "shared_budget": {
+    "allocation_cny": "60",
+    "cost_delta_estimate_cny": "0.009524",
+    "known_estimate_cny": "0.630272",
+    "reserved_cny": "0",
+    "available_estimate_cny": "59.369728",
+    "requests": 23,
+    "all_completed": true,
+    "authoritative_invoice": null
+  },
+  "limits": {
+    "old_v4_root_cause_confirmed": false,
+    "provider_general_reliability_confirmed": false,
+    "customer_source_analysis": false,
+    "runtime_full_sdk": false,
+    "R3_quality": false,
+    "beta_completed": 0
+  }
+}

@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
+version: 10
 code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
 owners:
   - core
@@ -350,3 +350,15 @@ PY
 第四次[独立核心链读取计划](../validation/beta-001-readonly-analysis-2026-10-07-v4/README.md)在两次模型请求后Turn completed，
 但仅核心1/5文件首页，最后文字是工具标记而非分析；宿主技术门正确拒绝，未将文字执行为工具。
 四次共21请求、累计估算0.620748元、预留0、账单未确认；实际任务完成仍0。原失败保留，停止同类重复调用并先定位协议/模型行为。
+
+### 独立业务前测与模型完成边界
+
+[新隔离前测](../validation/beta-001-isolated-baseline-2026-10-08-v1/README.md)已取得前端build/typecheck/18测试及
+后端269生产/78测试源码编译、18认证API测试通过。所有操作均为宿主直接前测，禁网和新目录写入限制保持；
+初始隐私选集缺类及首次动态Mock初始化失败完整保留，未改原项目或参考件。
+423件私有补充输入未放行模型外发，未执行Harnessix受控Profile、整改审批或浏览器验收，完成数仍0。
+[原生工具/正文详设](../changes/m09-r3-native-tool-text-boundary.md)明确协议completed不代表业务完成，
+合法函数标记文本不被解析为工具，也不因关键词整体拒绝。
+[不含客户源码的真实协议探针](../validation/native-tool-protocol-2026-10-08-v1/README.md)两次native及续页revision通过，
+没有实际工具执行，不推广为真实源码质量或Beta。共享新周期估算0.630272元、预留0、剩余估算59.369728元，
+23请求均completed，实际账单未知；旧失败和门槛保持。

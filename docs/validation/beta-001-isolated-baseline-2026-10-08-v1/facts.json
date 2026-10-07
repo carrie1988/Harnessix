@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "status": "PASS_SCOPED_OFFLINE_BASELINE_WITH_OPEN_BETA_GATES",
+  "harnessix_source_revision": "b0b12638c5437b230147a1f027e6172cab283923",
+  "business_frozen_source_revision": "cd0cf278fce916db8ea19378588490c795e5307f",
+  "initial_synthetic_input": {
+    "files": 419,
+    "bytes": 6329558,
+    "changed_files": 18,
+    "privacy_spans": 81,
+    "all_non_span_bytes_exact": true,
+    "outbound_allowed": false
+  },
+  "backend_input": {
+    "files": 423,
+    "frozen_git_supplement_files": 4,
+    "additional_privacy_spans": 3,
+    "outbound_allowed": false,
+    "raw_configs_private_only": true
+  },
+  "execution": {
+    "host_direct_execution": true,
+    "harnessix_agent_or_controlled_profile": false,
+    "network_denied": true,
+    "writes_restricted_to_new_private_directory": true,
+    "original_worktree_read_denied_during_tests": true,
+    "frozen_git_objects_readonly_capture": true,
+    "source_or_reference_application_started": false,
+    "external_business_db_connected": false,
+    "provider_requests": 0,
+    "original_worktree_written": false,
+    "whole_original_content_unchanged_proof": false
+  },
+  "frontend": {
+    "node": "22.23.2",
+    "offline_npm_ci": true,
+    "installed_packages": 185,
+    "lock_changed": false,
+    "build_exit": 0,
+    "typecheck_exit": 0,
+    "test_exit": 0,
+    "test_files": 3,
+    "tests_passed": 18,
+    "large_chunk_warning_retained": true
+  },
+  "backend": {
+    "java": "17.0.6",
+    "maven": "3.9.16",
+    "production_sources_compiled": 269,
+    "test_sources_compiled": 78,
+    "selected_auth_tests": [
+      {
+        "name": "com.mayiyun.aipractical.AuthAndAgentApiTest",
+        "tests": "17",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.mayiyun.aipractical.auth.AuthPasswordApiTest",
+        "tests": "1",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0"
+      }
+    ],
+    "tests_passed": 18,
+    "startup_agent": {
+      "byte_buddy_version": "1.14.19",
+      "dependency_version_changed": false,
+      "cached_sha1_verified": true,
+      "network_or_write_policy_relaxed": false
+    }
+  },
+  "preserved_failures": [
+    {
+      "stage": "review_preparation",
+      "kind": "review_script_empty_dictionary_entry_assertion"
+    },
+    {
+      "stage": "build_wrapper_v1",
+      "kind": "npm_duplicate_config_and_maven_option_space"
+    },
+    {
+      "stage": "backend_v2",
+      "kind": "offline_cache_repository_identity_mismatch"
+    },
+    {
+      "stage": "backend_419_v3",
+      "kind": "required_source_excluded_by_initial_privacy_selection"
+    },
+    {
+      "stage": "source_capture_preparation",
+      "kind": "tree_count_bound_refusal_before_blob_reads"
+    },
+    {
+      "stage": "backend_423_auth_run1",
+      "tests": 18,
+      "errors": 18,
+      "failures": 0,
+      "kind": "inline_mock_dynamic_self_attach_unavailable"
+    }
+  ],
+  "acceptance": {
+    "business_requirement_repaired": false,
+    "full_backend_business_suite": false,
+    "browser_console_and_payload_verified": false,
+    "production_https_verified": false,
+    "beta_completed": 0,
+    "R3_cleared": false,
+    "commercial_release_ready": false
+  }
+}
