@@ -1,0 +1,53 @@
+{
+  "result": "HOLD_NATIVE_TOOL_TEXT_AND_REQUIRED_SOURCE_COVERAGE",
+  "candidate_revision": "3fb2ef57f3a647b20058f987f090e6829c4d8a58",
+  "new_task_plan": true,
+  "same_condition_comparison": false,
+  "actual_model_requests_this_run": 2,
+  "actual_model_requests_period": 21,
+  "turn_status": "completed",
+  "turn_error_code": null,
+  "host_exit": 1,
+  "host_error_code": "verification_required_source_coverage_missing",
+  "technical_gate_pass": false,
+  "required_source_coverage": {
+    "covered": 1,
+    "required": 5
+  },
+  "usage": {
+    "input_tokens": 9328,
+    "output_tokens": 445
+  },
+  "read_file_results": 1,
+  "only_read_page": {
+    "start_line": 1,
+    "end_line": 200,
+    "truncated": true,
+    "next_line": 201
+  },
+  "final_text": {
+    "characters": 292,
+    "shape": "function_parameter_xml_like_markup",
+    "missing_opening_tool_call_tag": true,
+    "native_tool_call_event_emitted_for_this_text": false,
+    "executed_from_text": false,
+    "sha256": "bd2b7fb9ea7cf6d9cea332fe863ba2d6332a28f78f4197e658bfca070cfb79f0"
+  },
+  "raw_wire_response_not_saved": true,
+  "provider_or_alias_root_cause_not_confirmed": true,
+  "analysis_conclusion_present": false,
+  "analysis_accepted": false,
+  "estimated_cost_this_run": "0.044432",
+  "estimated_cost_period": "0.620748",
+  "allocation": "60",
+  "reserved_cost": "0",
+  "invoice_actual_cost": null,
+  "input_hashes_and_identities_unchanged": true,
+  "protected_files_unchanged_in_read": true,
+  "shared_memory_sidecar_unchanged_not_claimed": true,
+  "beta_tasks_completed": 0,
+  "repair_executed": false,
+  "business_tests_executed": false,
+  "receipt_sha256": "036752420767f3205057dee6a04d75b646e9ba74beafde20eced5f1e0db9d1e7",
+  "authenticated_metadata_sha256": "6bad0cf53ba869c59635739a68a873ec0b5266f7fed0d5c6f0ad6844d0885819"
+}

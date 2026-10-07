@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 84
+version: 85
 code_revision: e4f3103feeb0a65e4b3c4ec3fa3720790986ee33
 owners:
   - core
@@ -2711,3 +2711,9 @@ verifier 原固定错误分类与外部控制异常直接传播；prepared 发�
 历史 read_all 不写业务行、不 sync_decision，原 Router-first 恢复仍先原协调器补 Session 后再新读。
 完整 U 的异步观察不是同步终端/COMMIT 的锁或执行权，B4/B7 与 P1 继续开放。
 实际回归见[消费者测试](../../tests/product_config/test_git_link_user_observation_consumption.py)；源码通过不表示安装、三平台或 approved Writer 验收。
+
+### 核心链与原生工具完成门复核
+
+第四次[独立核心链读取计划](../validation/beta-001-readonly-analysis-2026-10-07-v4/README.md)在两次模型请求后Turn completed，
+但仅核心1/5文件首页，最后文字是工具标记而非分析；宿主技术门正确拒绝，未将文字执行为工具。
+四次共21请求、累计估算0.620748元、预留0、账单未确认；实际任务完成仍0。原失败保留，停止同类重复调用并先定位协议/模型行为。
