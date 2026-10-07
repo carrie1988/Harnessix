@@ -2,7 +2,7 @@
 doc_type: validation-evidence
 status: current
 version: 1
-code_revision: 38cf8f7f601ce523d3c76b3473cf8d266339ed0d
+code_revision: ad4bb6425e1b25d4dbf1d546c5d6d64c256a2958
 owners: [core]
 modules: [product_config, session, delivery]
 related_adrs:
