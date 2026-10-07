@@ -308,8 +308,9 @@ async def test_trial_authentication_precedes_provider(tmp_path, scope, monkeypat
         )
 
 
+@pytest.mark.parametrize("available", ["required", "none", "patch_only", "other_profile"])
 async def test_agent_tool_action_wiring_borrows_identical_scope_and_owner(
-    tmp_path, scope, monkeypatch
+    tmp_path, scope, monkeypatch, available
 ):
     loaded, expected, campaign = _case_and_campaign()
     root = run_root(tmp_path)
@@ -329,7 +330,10 @@ async def test_agent_tool_action_wiring_borrows_identical_scope_and_owner(
         async def provider_factory(*args):
             assert await owner.sessions.thread_ids() == []
             calls.append("provider")
-            yield object()
+            try:
+                yield object()
+            finally:
+                calls.append("provider_closed")
 
         @asynccontextmanager
         async def tools(workspace, **kwargs):
@@ -342,16 +346,34 @@ async def test_agent_tool_action_wiring_borrows_identical_scope_and_owner(
         async def actions(*args, **kwargs):
             assert kwargs["root_owner"] is owner.root_owner
             assert kwargs["output_redaction"] is scope
-            yield SimpleNamespace(gateway=object())
+            names = {
+                "required": (f"run_profile.{materialized.case.profile_id}",),
+                "patch_only": ("workspace.apply_patch",),
+                "other_profile": ("run_profile.other",),
+            }
+            gateway = (
+                None
+                if available == "none"
+                else SimpleNamespace(
+                    definitions=lambda: tuple(
+                        SimpleNamespace(name=name) for name in names[available]
+                    )
+                )
+            )
+            yield SimpleNamespace(gateway=gateway)
 
         @asynccontextmanager
         async def agent(sessions, provider, **kwargs):
+            assert available == "required", "缺失固定Profile不得创建AgentRuntime"
+            calls.append("agent")
             assert sessions is owner.sessions
             assert kwargs["artifacts"] is owner.artifacts
             assert kwargs["public_output_protection"] is scope
             yield object()
 
         async def drive(runtime, borrowed_owner, *args):
+            assert available == "required", "缺失固定Profile不得进入模型驱动循环"
+            calls.append("drive")
             assert borrowed_owner is owner
             return "fixture-no-model-drive"
 
@@ -364,7 +386,7 @@ async def test_agent_tool_action_wiring_borrows_identical_scope_and_owner(
             lambda *args: SimpleNamespace(context=None, compaction=None),
         )
         monkeypatch.setattr(task_pack_trial, "_drive_turn", drive)
-        result = await task_pack_trial._run_agent(
+        invocation = task_pack_trial._run_agent(
             loaded,
             materialized,
             Path("/missing/git"),
@@ -375,7 +397,15 @@ async def test_agent_tool_action_wiring_borrows_identical_scope_and_owner(
             lambda _: None,
             owner,
         )
-        assert result == "fixture-no-model-drive" and calls == ["provider"]
+        if available == "required":
+            assert await invocation == "fixture-no-model-drive"
+            assert calls == ["provider", "agent", "drive", "provider_closed"]
+        else:
+            with pytest.raises(KernelError) as failure:
+                await invocation
+            assert failure.value.code == "eval_task_pack_action_unavailable"
+            assert calls == ["provider", "provider_closed"]
+            assert await owner.sessions.thread_ids() == []
 
 
 async def _publish_fixture_artifact(owner):

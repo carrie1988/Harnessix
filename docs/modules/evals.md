@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 34
-code_revision: e0c47ca2f96c4e87a055b3135ac6c3be883275d5
+version: 35
+code_revision: eea6c8ab650d389023b68c97596dec0f79bb1d6c
 owners:
   - core
 modules:
@@ -108,6 +108,11 @@ Project/Workspace/Environment双观察及既有持久Compaction。没有含Task�
 
 首末检查仍来自模型真实工具调用和可信执行终态。缺失事实仍失败，历史0/20保持原样；新质量结论必须使用
 新的预注册完整Suite。完整流程、预算估算及异常边界见[R3共享装配详细设计](../changes/m09-r3-product-context-composition.md)。
+
+`_run_agent`在创建AgentRuntime前核对实际网关`definitions()`中的精确固定Profile名称。
+Patch网关非空不足以证明容器执行能力；缺失时以`eval_task_pack_action_unavailable`拒绝，
+不进入模型驱动循环、不降级宿主命令。Provider构造和清理保留，认证Owner、Scope及缺证评分不变。
+需求、流程、接口、失败语义与负控见[固定Profile准入详设](../changes/m09-r3-required-profile-preflight.md)。
 
 ## 2. 需求背景
 
@@ -2266,6 +2271,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 35 | `eea6c8ab650d389023b68c97596dec0f79bb1d6c`基准上的候选 | 2026-10-07 | 固定Profile必须在实际网关注册，缺失时先于AgentRuntime和模型IO拒绝；不更改探测、安全或评分 |
 | 33 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | 2026-10-04 | Git Diff固定使用`--full-index`，完整正文SHA-256跨副本不依赖`core.abbrev`，完整Blob OID不限40位；Eval沿用原严格交付与漂移检查，不修改Schema、评分或容量，旧报告不重签/重评分，不声明历史Run跨候选恢复可用；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |
 | 32 | 基于`730f0846641700c4c697d7cc6ba03cbf1a8364bc`的集成实现 | 2026-10-02 | 三条Trial路径复用原产品Owner、Key及保护Scope；完整同读历史在恢复与Provider之前认证；固定只读期限及原取消贯穿；唯一Thread识别归入认证宿主，不改变评分或费用 |
 | 30 | 基于`4a9264bfeb84f04fb4976894bf350091dd8870b0`的实现 | 2026-10-02 | 同一原Grant的候选链只追加、旧Suite撤销、完整请求及累计费用保留；显式管理入口与原请求宿主指纹联动，实际登记和真实质量仍独立验收 |

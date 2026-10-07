@@ -400,7 +400,12 @@ async def _run_agent(
                 output_redaction=owner.scope,
                 root_owner=owner.root_owner,
             ) as actions:
-                if actions.gateway is None:
+                # Patch网关存在不代表固定容器Profile已通过能力探测。
+                # 在AgentRuntime/模型IO之前核对实际注册项，缺失时拒绝，不降级宿主执行。
+                if actions.gateway is None or not any(
+                    item.name == f"run_profile.{case.profile_id}"
+                    for item in actions.gateway.definitions()
+                ):
                     raise KernelError(
                         "eval_task_pack_action_unavailable",
                         "Task Pack固定Profile或Workspace Patch能力不可用",

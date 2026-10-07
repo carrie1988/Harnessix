@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 208
-code_revision: b7bb29e00469033394842dcc29cc10b1a9959c9e
+version: 209
+code_revision: eea6c8ab650d389023b68c97596dec0f79bb1d6c
 owners:
   - core
 modules:
@@ -2334,7 +2334,8 @@ Git/SQLite 同提交瞬间的整仓强一致尚无可用原语，完整U末轮�
 [BETA-001：登录密码保护](operations/pilot-tasks/001-login-password-protection.md)已登记，状态为 `QUEUED / NOT_EXECUTED / NOT_EVALUATED`。
 目标项目仅允许从初始源码建立独立副本后开发与隔离测试，原目录任何写入均禁止；必须区分 Console 日志与 Network 载荷的实际暴露来源。
 既有直接整改副本仅作为验收参考，不作为 Agent 输入、自动编码成绩或 Beta 成功。
-真实 Harnessix 完成任务仍为0；新模型请求暂停、原未决费用预留和独立 Beta 正式门槛保持。
+真实 Harnessix 完成任务仍为0；当前采用下述独立60元周期，历史未决保留但不阻塞新周期。
+独立Beta正式门槛仍未完成，初始副本准备不等同自动编码验收。
 
 
 ### R3/Beta：独立60元验证周期与历史费用隔离
@@ -2345,3 +2346,22 @@ R3、BETA-001及其他百炼验证共用一个新60元账本。旧141条请求�
 新周期未继承旧40元授权，不追加第二笔用途额度，不改变请求预留、独占、取消和新增未知停止语义。
 [激活与回归证据](validation/bailian-budget-60-2026-10-07-v1/README.md)单独记录真实费用与离线结果。
 旧中断和0/20、1/20质量记录不改；R3真实完整20 Trial、完整Git交付、消费者安装和Beta仍开放。
+
+
+### R3：固定Profile模型前准入
+
+[固定Profile准入详设](changes/m09-r3-required-profile-preflight.md)将实际注册项核对前移到AgentRuntime与模型IO之前。
+仅Patch网关存在时不再开始不可执行的Trial；复用原错误、Scope和Owner，不改变强隔离或评分分母。
+新增负控在原实现2失败、2通过；候选独立Wheel相关311项回归通过，类型检查507文件通过。
+同一Engine显式端点的正式Workspace挂载、Profile执行和Case恢复3项录制集成通过；
+默认Docker Desktop路径仍独立验证，不外推其可用性或三平台消费者验收。
+录制验证不等同R3真实20 Trial质量通过；后续新Suite与BETA-001仍共用新60元预算。
+
+
+### BETA-001：初始独立输入与只读范围
+
+已准备419个初始源码文件，未共享原文件inode、未复制Git/环境/业务数据，无参考整改答案。
+原目录v3前后及最终快照的受保护差异0；正文摘要仅覆盖允许的432件，其余为元数据观察，
+该非原子只读窗口不能外推全部敏感/生成正文或持续未变。初始副本仍含默认演示口令和
+12处待核对凭据形态文字，外发脱敏及隔离测试环境未完成；Console尚未运行复现、Network仅静态证据。
+[任务登记](operations/pilot-tasks/001-login-password-protection.md)仍为未执行/未验收，真实完成0。
