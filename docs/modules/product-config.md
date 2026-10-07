@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 82
-code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
+version: 83
+code_revision: 0991645
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_user_observation_verification.py
   - tests/product_config/test_git_observation_verification_recipe.py
   - tests/product_config/test_git_review_fresh_owner.py
@@ -2561,8 +2562,8 @@ Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末
 ### 既有观察的阶段无关只读复核
 
 [`verify_product_git_user_observation`](../../src/harnessix/product_config/git_user_observation.py#L184)
-已在实现基准 `82c95e677d1919c60bbb3be32a9a4ef23f35b2e4` 之上的当前工作区落地，作为 B3 必需只读依赖；
-该增量尚未包含在基准提交中，不代表完整 B3 批准认证接线或正式上线。
+已包含在 `7fca4a526bbbd3cde7e7c66552704126757171c2` 基线，现行 Ledger/审批历史消费者进一步接通该依赖；
+不代表正式决定 Writer、完整 B3 批准认证或正式上线。
 实际接口及完整时序见[观察详设第 10 节](../changes/m09-r4-git-user-observation.md#10-阶段无关的原观察只读复核)，
 不使用另一个 CoreStore 签名或独立认证算法。
 
@@ -2646,7 +2647,7 @@ SDK没有用户必须阅读全部材料才可批准的强制规则。
 仍沿原算法重读；不覆盖共享构造回调、不重新打开替身 Store，也不在该作用域执行写入。
 正常异步认证继续执行原 SDK 回调。实际认证 SDK 与最终安装候选仍须另行验收。
 
-组件只覆盖当前 prepared 阶段，默认未注册。原 TTL、512KiB、60秒及 Native18保持；
+组件只覆盖当前 prepared 阶段，默认未注册。Ledger `_authenticate` 已在原 pending Proof 后消费完整 U，覆盖 prepare、重试、全部关联及发布后回读。原 TTL、512KiB、60秒及 Native18保持；
 后续真实业务批准、Bridge/A/T2/D、独立 Commit、完整生命周期 Loader 和 Backup2仍未闭合。
 
 ## Git 原 Owner 与短只读新鲜观察
@@ -2685,7 +2686,7 @@ mode=ro 与 query_only 禁止业务写入，但保留 SQLite WAL/SHM 锁协调�
 同一原控制窗口、四库无变化监视、全 SQL 行和尾锚、末端原材料及决定重验继续生效；
 pending/approved 还要求原 Turn 当前未超时，不刷新原预算。
 内部只读调用不补审批、不签发决定、不 execute/reconcile，不默认注册 Git 写工具。
-阶段无关完整 U verifier 已作为 B3 必需只读依赖落地，但本历史 Reader 尚未接通该依赖；
+历史 `_read_all` 已在 `read_original_approval_evidence` 后逐关联调用原完整 U verifier；
 既有 U 异步复核到同步终端/COMMIT 的外部 Git 一致性 B4、全部宿主/dispatch 的 B7、协作锁与同步响应性 P1 仍开放。
 不据此启用决定 Writer、A/T2/D、Commit、Backup2 或正式发行。
 
@@ -2694,4 +2695,15 @@ pending/approved 还要求原 Turn 当前未超时，不刷新原预算。
 [approved-link 设计](../changes/m09-r4-git-approved-link.md)保持 `draft`；正式决定 Wire/Writer、全集决定 Reader/Proof
 与审批后/重启恢复屏障仍为 `planned`。B3 的只读依赖落地不产生 Git approved 事件，也不改变原 prepared 的 pending-only 合同。
 决定事实接线必须显式复用原 Session/transactions/ports，不能重新准备或签发新材料继承原批准。
-完整 B3 接线、B4、B7、P1 与 approved Writer 未闭合，不关闭默认 Git 写入、R3、三平台、独立 Beta 或 R1～R6 门禁。
+B3 正式决定消费、B4、B7、P1 与 approved Writer 未闭合，不关闭默认 Git 写入、R3、三平台、独立 Beta 或 R1～R6 门禁。
+
+
+### 完整 U 消费的控制与失败边界
+
+两处协调层均传入原 `core_store.store`、Git Reader、显式 Session/snapshot_ports，与同次已有
+`GitOperationBudget`、CancelToken 和 `check`；不新增预算、Store、收集器、CAS 或 Review 发布。
+Ledger 返回原 Evidence，历史 Reader 保存原 Evidence 后仍走原同步终端/SQL 全集重验。
+verifier 原固定错误分类与外部控制异常直接传播；prepared 发布后失败由调用方回滚原事件、MAC、尾锚。
+历史 read_all 不写业务行、不 sync_decision，原 Router-first 恢复仍先原协调器补 Session 后再新读。
+完整 U 的异步观察不是同步终端/COMMIT 的锁或执行权，B4/B7 与 P1 继续开放。
+实际回归见[消费者测试](../../tests/product_config/test_git_link_user_observation_consumption.py)；源码通过不表示安装、三平台或 approved Writer 验收。

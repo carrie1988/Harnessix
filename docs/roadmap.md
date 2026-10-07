@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 209
-code_revision: eea6c8ab650d389023b68c97596dec0f79bb1d6c
+version: 210
+code_revision: 2bef425141653360c29e09b38e079065825437cb
 owners:
   - core
 modules:
@@ -27,6 +27,7 @@ related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
+  - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_coding_workflow_instructions.py
   - tests/product_config/test_product_patch_rollback.py
   - tests/product_config/test_product_rollback_sdk.py
@@ -2324,10 +2325,10 @@ Git/SQLite 同提交瞬间的整仓强一致尚无可用原语，完整U末轮�
 ## R4 B3 阶段无关用户观察只读依赖
 
 [阶段无关 U verifier](changes/m09-r4-git-user-observation.md#10-阶段无关的原观察只读复核)及共享末轮 helper
-已在 `82c95e677d1919c60bbb3be32a9a4ef23f35b2e4` 基准之上的工作区落地：显式借原 Session/transactions/ports，不重收集或写 CAS；
+已包含在 `7fca4a526bbbd3cde7e7c66552704126757171c2` 基线：显式借原 Session/transactions/ports，不重收集或写 CAS；
 基准Reader绑定、每个原HEAD树成员、before正文及Index阶段/flags均由原读取端口逐项求证；重算公开digest/fingerprint不能认证伪造材料。
-原 prepare 的 pending Call 检查及 collector 前后窗口保持。该范围仅为 B3 必需只读依赖，验证以[专项发布原件](validation/git-user-observation-verification-2026-10-07-v1/README.md)为准；
-[approved-link](changes/m09-r4-git-approved-link.md)仍为 `draft`，完整 B3 接线、B4/B7、同步响应性 P1 与 approved Writer 未闭合，默认 Git 写入、R3、三平台、独立 Beta 和 R1～R6 门禁不变。
+原 prepare 的 pending Call 检查及 collector 前后窗口保持。现行 Ledger `_authenticate` 与审批历史 `_read_all` 已消费完整 U，同预算/取消/检查点，不新增材料或认证用途；原依赖验证以[专项发布原件](validation/git-user-observation-verification-2026-10-07-v1/README.md)为准；
+[approved-link](changes/m09-r4-git-approved-link.md)仍为 `draft`，B3 正式决定接线、B4/B7、同步响应性 P1 与 approved Writer 未闭合，默认 Git 写入、R3、三平台、独立 Beta 和 R1～R6 门禁不变。
 
 ## 首个真实先导任务登记
 

@@ -1,13 +1,14 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: e088b09b20de3b2898bd2d4b8479f39b84553018
+version: 2
+code_revision: 2bef425141653360c29e09b38e079065825437cb
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, artifacts]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_approval_history_projection.py
   - tests/product_config/test_git_prepared_approval_history.py
   - tests/product_config/test_git_prepared_link_ledger.py
@@ -18,8 +19,8 @@ supersedes: []
 
 ## 1. 变更摘要
 
-本切片补齐审批历史的只读解释及原认证资源接线，不发布 Git 决定事件，不注册默认 Git 写工具。
-源码研究基线为 `e088b09b20de3b2898bd2d4b8479f39b84553018`；新增实现与验证结果另行记录，基线不是新增代码的提交证明。
+现行组件补齐审批历史的只读解释、原认证资源和完整 U 消费接线，不发布 Git 决定事件，不注册默认 Git 写工具。
+`code_revision` 固定包含现行消费者接线的源码提交；实际测试、安装与平台结果分别记录。
 
 | 项目 | 说明 |
 |---|---|
@@ -48,7 +49,7 @@ supersedes: []
 | G4 取消、绝对期限、Owner、最后回调漂移拒绝 | 原控制异常不包装；终端全行、材料及决定重验 |
 | G5 历史与执行权分离 | 原 prepared Reader 仍拒绝已决定；新结果不含执行权限；无 execute/reconcile 调用 |
 
-非目标：新 Git sequence 1、approved Writer、完整 U 最终 Git 复核、协作锁、A/T2/D、NativeBridge、Commit、Backup2、默认装配和发布验收。
+非目标：新 Git sequence 1、approved Writer、同步终端/COMMIT 的完整 U 一致性闭合、协作锁、A/T2/D、NativeBridge、Commit、Backup2、默认装配和发布验收。
 单人先导与独立 Beta 使用既有[操作手册](../operations/pilot-beta.md)，本切片不增加试用成绩。
 
 ## 4. 当前实现与根因
@@ -78,7 +79,8 @@ flowchart TD
     H --> I[纯投影解释]
     A --> I
     K --> T[首末一致及无共享回调终端重验]
-    I --> T
+    I --> U[同预算完整 U 只读复核]
+    U --> T
     T --> O[prepared 加历史结论 无执行权]
 ```
 
@@ -114,6 +116,21 @@ CAS 与 Artifact 输出完整材料而不是许可。Reader 不向上述数据�
 
 替代方案：放宽旧 Reader 会改变 pending 契约，拒绝；独立通用审批服务产生新权威，拒绝；只读状态表缺请求历史，拒绝。
 
+### 5.2 完整 U 的真实消费者接口与调用链
+
+`ProductGitPreparedApprovalHistoryReader.read_all → _read_all → read_original_approval_evidence`
+先取得每条原前驱的完整私有 Evidence，再调用原 `verify_product_git_user_observation(...) -> None`。
+参数为 `link.plan.core.user_observation`、`evidence.materials.history`、原 Router、
+`resources._core_store.store`、原 Git Reader；keyword-only 借原 Session、cancel、同一 budget、
+`checkpoint=check` 和原 snapshot_ports。成功并完成 `check()` 后才将 Evidence 放入 `_ApprovalReadSet`。
+所有关联均消费，包括非目标和已经 decided 的原调用；verifier 不要求当前仍 pending。
+
+该委托不新增持久字段、公开签名、Store、收集器或预算。Source/CAS/Review、原三方决定解释、
+终端材料/决定/SQL 全集复核继续由原组件承担，Reader 不主动 sync_decision，不产生 sequence 1。
+真实负控的两条前驱来自两个实际 SDK 请求、原 pending Proof 与原物理 MAC；目标 U 成立但非目标
+U 的配置值已经漂移时，整个 read_all 必须拒绝。夹具的物理发布不代表产品完整 Writer 可用。
+
+
 ## 6. 正常、失败与恢复时序
 
 ```mermaid
@@ -131,6 +148,7 @@ sequenceDiagram
     Reader->>Reader: 原请求唯一与合法状态解释
     Reader->>Session: 再读完整历史 必须完全相等
     Reader->>Router: 再读 必须完全相等
+    Reader->>Reader: 原 Evidence 后完整 U verifier 同预算取消检查点
     Reader->>Reader: 最后外部回调后内部终端复核
     Reader-->>Host: 原prepared和历史 无Git决定发布
 ```
@@ -195,10 +213,10 @@ Session 请求指纹绑定 Thread/Turn/Call/Route/Review；Execution 检查点�
 
 | 符号 | 实际位置与职责 |
 |---|---|
-| `ProductGitPreparedApprovalHistoryReader` | [git_prepared_approval_history.py:76](../../src/harnessix/product_config/git_prepared_approval_history.py#L76) |
-| `OriginalGitPreparedApprovalHistory` | [git_prepared_approval_history.py:37](../../src/harnessix/product_config/git_prepared_approval_history.py#L37) |
-| `_ApprovalReadSet` | [git_prepared_approval_history.py:50](../../src/harnessix/product_config/git_prepared_approval_history.py#L50) |
-| `_read_all` | [git_prepared_approval_history.py:121](../../src/harnessix/product_config/git_prepared_approval_history.py#L121) |
+| `ProductGitPreparedApprovalHistoryReader` | [git_prepared_approval_history.py:77](../../src/harnessix/product_config/git_prepared_approval_history.py#L77) |
+| `OriginalGitPreparedApprovalHistory` | [git_prepared_approval_history.py:38](../../src/harnessix/product_config/git_prepared_approval_history.py#L38) |
+| `_ApprovalReadSet` | [git_prepared_approval_history.py:51](../../src/harnessix/product_config/git_prepared_approval_history.py#L51) |
+| `_read_all` | [git_prepared_approval_history.py:122](../../src/harnessix/product_config/git_prepared_approval_history.py#L122) |
 | `ApprovalHistoryEvidence` | [git_approval_history_proof.py:51](../../src/harnessix/product_config/git_approval_history_proof.py#L51) |
 | `read_original_approval_evidence` | [git_approval_history_proof.py:118](../../src/harnessix/product_config/git_approval_history_proof.py#L118) |
 | `verify_original_approval_terminal` | [git_approval_history_proof.py:184](../../src/harnessix/product_config/git_approval_history_proof.py#L184) |
@@ -214,6 +232,10 @@ pending 要求三个原域均未决定。人工 approved 要求同原 Item 的 C
 GitDB 是已有只读事务；四库监视和全部事实首末相等只是可观察漂移检测，不是共同事务或恶意外部 ABA 防护。
 最后原外部回调结束后，复用原内部控制窗口重验全行/尾锚、Core/Source/CAS/Review、原 Route 全链及已验真原审批全行，再返回；不 await、不进入共享构造回调。
 重复读取不产生新事件、幂等键或副作用。Git 写原子性与协作锁仍属于后续独立设计。
+
+原异步完整 U 失败直接传播原固定分类及控制异常；只读 GitDB total_changes 保持零，不补签、
+不重捕获或修复。原绝对预算不刷新，合法历史增长在同次核验期间仍拒绝。四库变化监视不是
+外部 Ref/配置锁；B4/B7 与同步响应性 P1 仍开放，不能返回执行权或启用 approved Writer。
 
 ## 9. 安全、隐私与可观测性
 
@@ -233,6 +255,7 @@ for each_original_prepared_link:
     interpret_unique_request_and_legal_decision_history()
     verify_original_source_complete_cas_and_review()
     reread_complete_history_route_checkpoint_and_core()
+    verify_product_git_user_observation_with_original_history_and_shared_controls()
     reject_any_change()
 freeze_full_git_rows_tail_and_changes()
 after_last_external_callback:
@@ -240,28 +263,63 @@ after_last_external_callback:
 return_original_prepared_plus_history_without_execution_permission()
 ```
 
-## 11. 测试方案
+## 11. 实施切片
+
+| 已实现位置 | 保持契约 | 回归 |
+|---|---|---|
+| 历史 `_read_all` 的原 Evidence 后委托 | 全部关联的同预算/取消/checkpoint 完整 U；输出仍为 prepared/decision_not_linked | 实际 pending/approved/denied/cancelled、非目标漂移、无新增写 |
+| 原 Proof/纯解释器/终端读集合 | 不放宽原决定、取消、期限、Review 或旧 pending-only | 原异常、全 MAC 优先、原 Router-first sync 恢复 |
+| 原产品装配 | 默认 Git 写工具及决定 Writer 不装配 | B4/B7 门禁不改变 |
+
+
+## 12. 源码与测试映射
+
+<a id="11-测试方案"></a>
 
 纯模型测试与原 MAC SDK 集成分开记录，不将前者宣称为认证阳性。
 实际场景使用原 SDK start_turn / approval/respond / turn/cancel、原 Kernel/Router/Session 和正式 Git 规划 Review；仅在执行前观察，不调用 Git Executor。
 检查 pending、approved、denied、cancelled、未同步窗口、请求错配、全前缀损坏、终端漂移、原异常实例及无业务行变化。
 保留现有 pending-only、Owner fresh-view、原审批恢复及全治理回归。
 
-## 12. 部署、兼容与回滚
+[真实消费者接线回归](../../tests/product_config/test_git_link_user_observation_consumption.py)覆盖真实消费者委托与共享控制、恢复及负控；现有原审批历史、纯投影和 pending-only 回归保持。
+
+### 12.1 原 Turn 与真实到期负控
+
+准备/重开历史与 exact retry 使用独立原 SDK 情形；原异常实例负控每个情形只触发一个异常，
+不把重复消费累积时间当作认证缺陷。SDK 强制到期负控实际等待原 Turn 截止时间，
+保留 `approval_expired`，历史入口保留 `git_approval_history_changed`；不调整时钟或延长期限。
+这与纯历史解释器的日期负控不同，后者不能证明实际耗时通过。
+原准备入口的细分真实耗时及嵌套计时边界见[prepared 详设](m09-r4-git-prepared-link.md#41-真实耗时根因与验收约束)；
+该测量不能当作历史 Reader 的性能门禁或同步响应性 P1 已关闭的证据。
+
+## 13. 风险、部署、兼容与回退
+
+<a id="12-部署兼容与回滚"></a>
 
 私有模块进入候选 Wheel；无默认工具广告、CLI 入口、HTTP 服务、DDL、迁移或配置变化。
 只读接口可在原宿主生命周期内显式调用，宿主结束后必须拒绝。旧 pending Reader 不承担历史查询。
 卸载新版本不要求转换持久状态；本切片不会产生新 Git 事件。
 
-## 13. 交付与验证边界
+### 13.1 交付与验证边界
+
+<a id="13-交付与验证边界"></a>
 
 源级、安装级、平台级及真实用户级证据分别记录。测试通过不关闭整个 B2、B4、R3、R4、R5、R6 或商用发布。
-[完整决定接线设计](m09-r4-git-approved-link.md)的 Writer、恢复屏障、完整 U 复核及终端协作边界仍为 planned。
+[完整决定接线设计](m09-r4-git-approved-link.md)的 Writer、恢复屏障及完整 U 终端协作边界仍为 planned；本 Reader 的异步完整 U 消费已经实现。
 验证结果必须注明实际源码摘要、Python/OS、Wheel 输入和未验证项；失败原件不删除。
 
-## 14. 风险与待办
+### 13.2 风险与取舍
+
+<a id="14-风险与待办"></a>
 
 1. 外部非协作 Git/IDE 写入没有共同瞬时原子保证，不能从此 Reader 推导可以执行。
 2. 大仓库完整读取仍可能造成同步调度间隔，既有 P1 不在本切片关闭；保持 60 秒总期限，不扩大预算掩盖问题。
 3. 当前 Git 行只支持 prepared sequence 0；任何未实现表或新版多事件正文继续拒绝。
 4. 真实质量复验、最终安装候选和 Beta 成绩独立推进，不以离线脚本通过替代。
+
+## 14. 实现偏差与最终结论
+
+协调层已经消费原完整 U verifier，签名、数据声明和认证用途均不新增；原 Proof 及 Session/Router
+决定恢复算法不改。相比原仅有只读依赖的状态，新增实际 Git/配置/Index 漂移拒绝，不产生批准发布。
+结果仍只含原 prepared 与审批历史，approved 历史仍明确 decision_not_linked；原 Writer/效果/恢复屏障
+与 B4/B7 不随本次接线闭合。本文保留十四节结构，实际运行结果以固定源码与验证原件为准。

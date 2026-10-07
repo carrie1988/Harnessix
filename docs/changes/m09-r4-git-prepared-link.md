@@ -1,14 +1,15 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 4
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 5
+code_revision: 2bef425141653360c29e09b38e079065825437cb
 owners: [core]
 modules: [product_config, delivery, session, artifacts, trusted_actions, workspace]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_prepared_link_contracts.py
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/product_config/test_git_prepared_link_controls.py
@@ -27,12 +28,16 @@ supersedes: []
 
 # 待审批 Git 业务关联认证写入与回读详细设计
 
-## 1. 文档摘要与需求背景
+## 1. 变更摘要
+
+<a id="1-文档摘要与需求背景"></a>
+
+<a id="11-实现状态"></a>
 
 ### 1.1 实现状态
 
 本文描述实际 `ProductGitPreparedLinkLedger` 内部组件，不描述已经上线的默认 Git 写工具。
-`code_revision` 是增量共同基础，不是新增模块与接口的完整输入版本标识。
+`code_revision` 固定包含现行协调层接线的源码版本；源码结果不代表默认注册或安装验收。
 本文同步连接工厂、全集观察、终端读集合及 Artifact 显式只读接口的现行源码；
 测试结果、输入摘要与验收状态须按同一完整候选另行固定，不在本文填写最终通过结论。
 
@@ -45,6 +50,8 @@ supersedes: []
 | 连接来源 | 原活跃 `open_prepared_git_connection` context 登记的确切 Connection；路径报告不能替代登记 |
 | 默认注册 | 未注册默认 `git_checkpoint` 或 `git_commit`，不修改产品装配 |
 | 未完成范围 | 实际业务批准、A/T2/D、NativeBridge、Checkpoint/Commit 效果、完整生命周期 Loader、Backup2、三平台业务验收及 R3/Beta |
+
+<a id="12-当前验收阻断"></a>
 
 ### 1.2 当前验收阻断
 
@@ -79,6 +86,8 @@ Core、Source 成功 Patch、Route、父闭包、全材料及 Review 仍沿原�
 首轮测试中取消令牌接口名称错误的六项夹具失败单独保留，改用原 `checkpoint()` 后复验。
 这些是组件证据，不是实际认证 SDK 或最终安装候选验收。
 
+<a id="13-需求背景"></a>
+
 ### 1.3 需求背景
 
 [实际 Checkpoint 准备](m09-r4-git-checkpoint-preparation.md)已经生成原认证调用对应的完整 Core2、材料和审阅。
@@ -93,37 +102,9 @@ Core、Source 成功 Patch、Route、父闭包、全材料及 Review 仍沿原�
 
 `prepared` 只表示关联材料已经准备且原调用仍在等待人工决定；它不表示已经批准或已执行。
 
-## 2. 设计目标、范围与非目标
+## 2. 需求背景与证据
 
-### 2.1 设计目标
-
-| 目标 | 实现要求 |
-|---|---|
-| 原实际权威 | Session、Router、CAS、Artifact、Key、Scope、Reader、Owner 与原资源引用保持一致 |
-| 原物理连接 | 工厂只打开已有文件；打开前后逐段检查全部父目录及文件，拒绝符号链接、入口前置换及未登记连接 |
-| 正确审批阶段 | 原 Turn 为 `waiting_approval`；首个 pending Call 与 Core 相同；唯一原审批项目仍为 `started` |
-| 完整请求 | 用原 `build_approval` 重建完整请求指纹，与已认证审批项目逐字段相等 |
-| 完整材料 | 原 CAS 中完整 Core、Scope、双树和净 Diff 均可读且满足原合同 |
-| 完整 Review | 原 Artifact MAC、用途、作用域、唯一 Session 回指、manifest 及所有分页正文全部成立 |
-| 原事务认证 | 业务行、领域事件、认证旁表及尾锚在调用方同一 GitDB 事务内形成 |
-| 查询优先 | 同一 Route 重试复用原业务身份，不刷新 TTL、不重新分配发布 epoch 或追加事件 |
-| 只读无修复 | 所有记录先认证后解释，任何一条失败即拒绝全集；不能补签、迁移或重建 |
-| 全集观察 | 固定四个只读观察连接比较各自 `data_version` 与文件身份，同时检查三个原持久 writer 的 `total_changes` |
-| 终端闭合 | 最后一次外部 callback 后不再 await 或调用外部 callback；同步复核全部 Evidence、SQL 全行、独立尾锚和写计数 |
-| 有界取消 | 原 60 秒单调期限、原 SQL 检查点及当前任务取消覆盖全部阶段 |
-
-### 2.2 非目标
-
-- 不更改原 GitDB v2 十三表 DDL，不增加认证用途或密钥。
-- 不复用 v1 Store 的自提交 Writer 后再补签，不追认旧无证明历史。
-- 不签发 ApprovalDecision，不执行 Git 命令，不写对象库、Ref、用户 Index 或 A/D 工作树。
-- 不提供所有后续 phase 的通用状态机；遇到非 prepared 正文或未实现业务表必须失败关闭。
-- 不提供历史离线归档 Reader。原审批已决定、Turn 已终结、Review 过期或当前来源已改变时，当前待审批回读应拒绝。
-- 不把跨 Session、Route、CAS、Artifact 的变化观察或终端同步重验声明为跨库原子快照。
-- 不把所有父路径的合作式 no-symlink pin 宣称为 OS 原子 no-follow 打开、fd 来源认证或对恶意路径换回的绝对防护。
-- 不凭这一步关闭 R1～R6。完整业务生命周期、备份恢复和实际产品消费者仍须实现。
-
-## 3. 源码研究与架构决策
+<a id="3-源码研究与架构决策"></a>
 
 | 原源码 | 已有责任 | 采用方式 |
 |---|---|---|
@@ -143,7 +124,78 @@ Core、Source 成功 Patch、Route、父闭包、全材料及 Review 仍沿原�
 后续执行阶段必须引入对应实际批准、桥接、工作树及效果事实，不能把当前模型填上一个新 phase 即算完成。
 这属于完整 Git 交付设计的首个业务写入状态，不缩减完整交付目标。
 
-## 4. 总体架构与模块边界
+## 3. 设计目标、非目标与验收标准
+
+<a id="2-设计目标范围与非目标"></a>
+
+<a id="21-设计目标"></a>
+
+### 3.1 设计目标
+
+| 目标 | 实现要求 |
+|---|---|
+| 原实际权威 | Session、Router、CAS、Artifact、Key、Scope、Reader、Owner 与原资源引用保持一致 |
+| 原物理连接 | 工厂只打开已有文件；打开前后逐段检查全部父目录及文件，拒绝符号链接、入口前置换及未登记连接 |
+| 正确审批阶段 | 原 Turn 为 `waiting_approval`；首个 pending Call 与 Core 相同；唯一原审批项目仍为 `started` |
+| 完整请求 | 用原 `build_approval` 重建完整请求指纹，与已认证审批项目逐字段相等 |
+| 完整材料 | 原 CAS 中完整 Core、Scope、双树和净 Diff 均可读且满足原合同 |
+| 完整 Review | 原 Artifact MAC、用途、作用域、唯一 Session 回指、manifest 及所有分页正文全部成立 |
+| 原事务认证 | 业务行、领域事件、认证旁表及尾锚在调用方同一 GitDB 事务内形成 |
+| 查询优先 | 同一 Route 重试复用原业务身份，不刷新 TTL、不重新分配发布 epoch 或追加事件 |
+| 只读无修复 | 所有记录先认证后解释，任何一条失败即拒绝全集；不能补签、迁移或重建 |
+| 全集观察 | 固定四个只读观察连接比较各自 `data_version` 与文件身份，同时检查三个原持久 writer 的 `total_changes` |
+| 终端闭合 | 最后一次外部 callback 后不再 await 或调用外部 callback；同步复核全部 Evidence、SQL 全行、独立尾锚和写计数 |
+| 有界取消 | 原 60 秒单调期限、原 SQL 检查点及当前任务取消覆盖全部阶段 |
+
+<a id="22-非目标"></a>
+
+### 3.2 非目标
+
+- 不更改原 GitDB v2 十三表 DDL，不增加认证用途或密钥。
+- 不复用 v1 Store 的自提交 Writer 后再补签，不追认旧无证明历史。
+- 不签发 ApprovalDecision；仅沿原 GitReadRuntime 执行只读观察命令，不写对象库、Ref、用户 Index 或 A/D 工作树。
+- 不提供所有后续 phase 的通用状态机；遇到非 prepared 正文或未实现业务表必须失败关闭。
+- 不提供历史离线归档 Reader。原审批已决定、Turn 已终结、Review 过期或当前来源已改变时，当前待审批回读应拒绝。
+- 不把跨 Session、Route、CAS、Artifact 的变化观察或终端同步重验声明为跨库原子快照。
+- 不把所有父路径的合作式 no-symlink pin 宣称为 OS 原子 no-follow 打开、fd 来源认证或对恶意路径换回的绝对防护。
+- 不凭这一步关闭 R1～R6。完整业务生命周期、备份恢复和实际产品消费者仍须实现。
+
+## 4. 当前实现与根因
+
+原 pending Proof 已认证调用、Source、完整材料和 Review，但这些断言不覆盖准备后的
+Git Ref、配置值及物理 Index 漂移。完整 U verifier 原先仅作为依赖存在，协调层没有消费它。
+现行 `_authenticate` 在原 Proof 之后接通 verifier；不以放宽 pending-only 条件解决问题。
+
+```mermaid
+flowchart LR
+    P[原 pending Proof] --> E[原完整 Evidence]
+    E --> U[同预算完整 U 只读复核]
+    U --> R[原读集合和发布后全集回读]
+    U -->|漂移或原控制失败| X[原事务拒绝与调用方回滚]
+```
+
+
+### 4.1 真实耗时根因与验收约束
+
+本机 Git 2.53、Python 3.13.8、SHA1 单 Patch 的原认证 SDK 情形中，委托原实现的单调计时得到：
+原 Turn 到待审批入口 23.10 秒；一次 `prepare` 56.10 秒；发布前后两次完整 U 分别 0.797 / 0.804 秒。
+每次 U 包含 22 次原 Git 进程端口查询，累计 0.191 / 0.198 秒，以及两次原 Session 全历史认证，
+累计 0.133 / 0.135 秒；U 严格快照分别 0.096 / 0.094 秒。
+整个准备操作的原 pending Proof 两次累计 34.33 秒，严格规范 JSON 编码七次累计 14.18 秒，
+原新鲜只读 Owner 复核 217620 次累计 34.70 秒；Secret JSON/JSONL 扫描不足 0.003 秒。
+上述为嵌套区间，不可相加；不是生产性能门禁通过结果，也不是对所有仓库规模的保证。
+主要成本是原细粒度检查点反复复核真实 Owner 与规范正文，不是新增 U 的 Git 查询或删不掉的历史认证。
+
+原消费者每次仍共享原 60 秒预算、cancel 和 checkpoint；原 Turn 默认仍为 120 秒，审批期限不刷新。
+多次准备、重试和历史读取累积在同一 Turn 会导致原 `approval_expired`。
+正向测试将重开读取、原身份重试、回滚重试及提交响应丢失拆成各自真实原 Turn，
+保留等待原真实期限届满后的 SDK 拒绝及历史 Reader 拒绝负控；不修改夹具时钟、生产预算或认证强度。
+同步响应性 P1 继续开放；异步 U 复核不能替代同步终端/COMMIT 的外部 Git 一致性门禁。
+
+
+## 5. 方案与变更后总体架构
+
+<a id="4-总体架构与模块边界"></a>
 
 ```mermaid
 flowchart LR
@@ -153,6 +205,9 @@ flowchart LR
     Host --> Ledger
     Ledger --> Observation[固定四库只读观察与原 writer 计数]
     Ledger --> Proof[实际业务来源核验 Evidence]
+    Ledger --> U[完整 U 只读 verifier 同次原控制]
+    U --> Session
+    U --> Git[原固定 GitReadRuntime]
     Proof --> Session[原认证 Session]
     Proof --> Route[原持久 Router]
     Proof --> CAS[原 Core 与全材料 CAS]
@@ -180,9 +235,13 @@ flowchart LR
 领域 delivery 不新增对 session 的依赖；认证适配继续位于 product_config。
 组件不是第二个 Action Plane 服务，没有新网络端口或中间件。
 
-## 5. 核心流程与时序
+## 6. 正常、失败与恢复时序
 
-### 5.1 新准备事实写入
+<a id="5-核心流程与时序"></a>
+
+<a id="51-新准备事实写入"></a>
+
+### 6.1 新准备事实写入
 
 ```mermaid
 sequenceDiagram
@@ -200,6 +259,7 @@ sequenceDiagram
     L->>P: 原历史 H1 pending 审批 Core 全材料 Review
     P-->>L: 完整原待审批事实
     L->>P: 原历史 H2 原 Route Source Core 重验
+    L->>L: 原 Evidence 后消费完整 U verifier 同预算和控制
     L->>O: 保存 Link 历史 Route 与完整 Review 正文证据
     alt 相同原业务身份已存在
         L->>L: 原全文相等 不追加事件或刷新 TTL
@@ -225,7 +285,9 @@ sequenceDiagram
 调用方负责原 Runtime 锁窗口及最终提交。组件既不借助 SQLite ATTACH 假装跨库原子性，也不获取与原 Runtime 无关的新锁。
 返回 `prepared` 之后、COMMIT 之前若调用方放弃操作，应回滚；如果已经提交但响应丢失，应按原 Route 身份查询，而不是重新执行。
 
-### 5.2 当前只读业务回读
+<a id="52-当前只读业务回读"></a>
+
+### 6.2 当前只读业务回读
 
 ```mermaid
 flowchart TD
@@ -252,7 +314,9 @@ flowchart TD
 不提供“跳过坏记录”“修复后读取”或“选一个正确 Link 返回”的路径。
 当前 Reader 的 scope 是待审批实时核验，不能据此宣称完整业务备份或新根恢复已经可用。
 
-### 5.3 数据流程
+<a id="53-数据流程"></a>
+
+### 6.3 数据流程
 
 ```mermaid
 flowchart LR
@@ -273,7 +337,9 @@ Core、Scope、Route 和 ArtifactRef 只通过原 Plan2 嵌套保存，不另建
 `PreparedLinkEvidence.review_body` 是当前操作私有内存中的核验材料，不是新增持久 Review 副本或公开 Artifact。
 私有 Link 正文包含业务事实，不能直接作为模型可见输出、诊断正文或公开验证附件。
 
-### 5.4 当前生命周期
+<a id="54-当前生命周期"></a>
+
+### 6.4 当前生命周期
 
 ```mermaid
 stateDiagram-v2
@@ -288,9 +354,42 @@ stateDiagram-v2
 `Refused` 是读取结果，不会由只读 Reader 写回数据库。
 approved、anchor_ready、native_bridge_closed、checkpoint_closed 等后续领域状态不在本组件实现范围。
 
-## 6. 接口设计与类设计
+### 6.5 失败、取消、超时与恢复
 
-### 6.1 正式契约入口
+<a id="10-失败取消超时与恢复"></a>
+
+| 场景 | 行为 | 数据边界 |
+|---|---|---|
+| 原历史或 MAC 无效 | 原 Reader 拒绝 | 不补签、不追认 |
+| 全表 MAC 有效但业务列/正文错配 | 业务拒绝 | 不返回选中记录，不更新尾锚 |
+| 原审批已决定/Turn 非等待/Call 非首个 pending | 拒绝 | 不退回原状态、不生成新请求 |
+| CAS 缺失、错 SHA 或对象图错误 | 原完整材料拒绝 | 不重新捕获补材料 |
+| Review 非原引用、用途错、过期、正文或 MAC 错 | 原 Artifact 拒绝或业务比对拒绝 | 不再次 publish，不刷新 TTL |
+| Artifact 异步读取时 Session 文件缺失 | prepared 显式 `read_only=True`，沿原只读存储错误拒绝 | 不按默认可创建连接补建 Session 文件 |
+| 取消、任务取消 | 原检查点/await 退出 | 原连接事务由调用方回滚 |
+| 总期限耗尽 | 固定 git_process_timeout | 不给后续步骤新 60 秒 |
+| 调用方检查点抛出异常 | 保留原异常实例 | 不把同类型 TimeoutError 冒认为自身定时器到期 |
+| 最后外部 callback 新取消、撤销宿主或改变资源 | callback 后再次内部检查；同步终端仍消费原取消与期限 | 不因 callback 正常返回而忽略其产生的新状态 |
+| 跨 await 发生 ROLLBACK/COMMIT/SAVEPOINT | 原事务代际改变并拒绝 | 不创建替代 witness |
+| await 后 SQL 行、资源或物理文件变化 | 完整回读或宿主复核拒绝 | 不修复和继续 |
+| 后一条 Link 的 await 改变前序 Link 对应资源 | 四库观察及全部 Evidence 的同步终端复核拒绝 | 不只重验最后一条 Link |
+| 最后 Session await 后 CAS/Review 已改变 | 终端完整 CAS 重读及原 Artifact MAC/正文同步复核拒绝 | 不以已保存正文或最后一次历史相等替代当前材料 |
+| 独立尾锚变化，或写入再还原 SQL 行 | 原 anchor 行、全行及 `total_changes` 均须相等 | 不只比较业务表摘要，不补签尾锚 |
+| 工厂打开前后或 Ledger 入口前置换 DB/任一父目录 | 原活跃连接登记和全部路径 pin 拒绝 | 不接纳只报告相同路径的旧连接 |
+| 无工厂登记、context 已退出或原连接关闭 | `git_prepared_link_host_invalid` | 不提供公开注册 witness，不重新打开替代连接 |
+| 无已有事务、或 prepare 使用只读连接 | 原事务/只读分类拒绝 | 不自动 BEGIN，不升级或迁移 |
+| 同身份重试 | 原全文相等才返回 | 不新增 epoch/事件 |
+
+SQL progress 中断保留首次原取消/期限异常，底层 sqlite 中断不能覆盖该原因。
+本组件没有外部 Git 写副作用，因此失败恢复当前只涉及调用方事务回滚及原身份查询；后续 Git UNKNOWN 结算仍须单独实施。
+
+## 7. 领域契约、接口设计与数据结构
+
+<a id="6-接口设计与类设计"></a>
+
+<a id="61-正式契约入口"></a>
+
+### 7.1 正式契约入口
 
 ```text
 snapshot_product_git_prepared_link(value, *, checkpoint) -> ProductGitPreparedLink
@@ -301,7 +400,9 @@ decode_product_git_prepared_link(body, *, checkpoint) -> ProductGitPreparedLink
 快照检查确切实际类型及全部字段，深层重建原模型，不相信 model_construct、未校验 model_copy、子类或旧可变别名。
 解码拒绝重复键、NaN、额外字段、缺省补全、非规范空白、转义等同义字节；取消检查点原异常实例保持。
 
-### 6.2 宿主内部接口
+<a id="62-宿主内部接口"></a>
+
+### 7.2 宿主内部接口
 
 ```text
 ProductGitPreparedLinkLedger(database, router, core_store, artifacts, reader,
@@ -332,7 +433,9 @@ Ledger 只借用连接，调用方必须将整个操作与提交保持在工厂 
 `PRAGMA database_list` 只是路径一致性检查，不能自行生成或替代原连接登记。
 逐段检查并非内核原子操作，不提供已打开 fd 与路径的 OS 原子绑定证明，也不保证发现检查间恶意替换再换回的全部竞态。
 
-### 6.3 权威核验入口
+<a id="63-权威核验入口"></a>
+
+### 7.3 权威核验入口
 
 [`authenticate_prepared_link`](../../src/harnessix/product_config/git_prepared_link_proof.py)的参数来自原 Ledger 宿主。
 它核对原 Route 状态，完整恢复原 Core2，校验同一原 Store/Key，读取实际历史，核对活跃 Turn 和首个 pending Call，再调用原 build_approval。
@@ -340,7 +443,9 @@ Ledger 只借用连接，调用方必须将整个操作与提交保持在工厂 
 Evidence 保存 `link`、最后的完整认证 `history`、原 `route` 和已经核验的完整 `review_body`。
 Ledger 的两个公开方法仍只返回原 Link 或其 tuple，既不公开 Evidence，也不把它作为执行授权。
 
-### 6.4 全集观察与终端读集合
+<a id="64-全集观察与终端读集合"></a>
+
+### 7.4 全集观察与终端读集合
 
 [`observe_prepared_state`](../../src/harnessix/product_config/git_prepared_link_observation.py)
 在同一操作内保持以下连接与基准，直到终端验证完成：
@@ -411,7 +516,9 @@ PreparedLinkReadSet.terminal
 Blob 长度、正文 SHA、Git OID、原领域记录／索引、父闭包及 Route 状态语义不变。
 原 Artifact／数据库变化监视继续执行；作用域不以取消这些检查来换取回调静默。
 
-### 6.5 调用方事务示例
+<a id="65-调用方事务示例"></a>
+
+### 7.5 调用方事务示例
 
 以下示例只表达组件内部接入合同，不表示默认产品已注册 Git 工具。
 前置条件是固定文件已完成原空库 v2 与认证 Genesis 初始化，所有参数来自同一原活跃 Runtime，
@@ -442,9 +549,11 @@ with open_prepared_git_connection(path, read_only=False) as database:
 只读接入使用 `read_only=True`、已有 `BEGIN` 和 `read_all`；结束时由调用方关闭读事务。
 提交确认丢失不等于尚未提交，应在原身份与锁窗口内查询认证结果，不能重新批准或执行 Git 来恢复响应。
 
-## 7. 数据结构与重点字段
+<a id="7-数据结构与重点字段"></a>
 
-### 7.1 ProductGitPreparedLink
+<a id="71-productgitpreparedlink"></a>
+
+### 7.6 ProductGitPreparedLink
 
 | 字段 | 类型与含义 | 失败条件 |
 |---|---|---|
@@ -457,7 +566,9 @@ with open_prepared_git_connection(path, read_only=False) as database:
 原审批请求与 Plan2 必须一致的字段包括 Call ID、Execution Plan ID、原稳定 Approval ID、Route 指纹、Execution 指纹、策略 ID/版本和完整 Diff ArtifactRef。
 `request_fingerprint` 依赖完整 Thread/Turn/Call，因此数据合同只保留原 Revision 格式；实际真实性由原 build_approval 重建核验。
 
-### 7.2 原业务表投影
+<a id="72-原业务表投影"></a>
+
+### 7.7 原业务表投影
 
 | 原列位置 | 来源 |
 |---|---|
@@ -473,7 +584,9 @@ with open_prepared_git_connection(path, read_only=False) as database:
 相同正文在 `git_product_link_events` 保存一次，领域首序号为 0；`git_record_publications` 的首认证序号为 1。
 原 claims 的 record_id 和 route_id 必须相同，并与全部业务归属字段一致；首 previous_prefix 仍为原空前缀。
 
-### 7.3 容量和声明
+<a id="73-容量和声明"></a>
+
+### 7.8 容量和声明
 
 - 单条关联完整正文沿用原 512 KiB；封套增加审批字段后超限直接拒绝，不提高上限。
 - 原物理全集捕获保留 100000 行、每列 512 KiB、全捕获 32 MiB 等既有边界。
@@ -481,7 +594,76 @@ with open_prepared_git_connection(path, read_only=False) as database:
 - 不修改原 8 MiB 文件、32 MiB 图像或 Native18 等独立产品门禁。
 - 不把测试夹具自选 Scope 限额宣称为默认商业容量。
 
-## 8. 核心业务逻辑伪代码
+### 7.9 协调层完整用户观察消费
+
+`ProductGitPreparedLinkLedger._authenticate` 先等待原 `authenticate_prepared_link`，再调用
+[`verify_product_git_user_observation`](../../src/harnessix/product_config/git_user_observation.py#L184)。
+实际参数为 `evidence.link.plan.core.user_observation`、`evidence.history`、原 `_router`、
+`_core_store.store`、`_reader`，以及 keyword-only 原 `session=_artifacts.session`、`cancel`、
+`budget`、`checkpoint=check`、`snapshot_ports=_ports`。传入 Workspace Transaction Store，不是 CoreStore。
+成功后执行同一个 `check()` 并返回原 Evidence；不修改 Proof 签名、Link 字节或公开方法。
+该唯一协调入口覆盖新 prepare、相同身份重试、全部既有关联及发布后全集回读。
+
+verifier 使用原 Session 重读完整认证历史，以调用方 Evidence 历史作精确比对；沿原端口核对
+Reader、基准成员、HEAD/tree/ref、逻辑 Index/status、完整配置值、目录、物理 Index 和 Source。
+不重新 collect，不写 CAS，不发布 Review，不另建 Store 或预算。操作的唯一 60 秒窗口不刷新。
+既有四库观察、最后外部回调后的同步读集合及调用方 COMMIT 责任保持；异步 U 观察不是终端锁。
+
+
+## 8. 状态、持久化、事务、并发与幂等
+
+<a id="9-持久化事务及并发边界"></a>
+
+原 GitDB 的业务记录、领域事件、MAC 旁表和尾锚处于同一 SQLite 事务。
+Ledger 不 BEGIN、不 COMMIT、不 ROLLBACK；专用 SQL window 只安装原合作取消及事务代际观察。
+连接工厂退出会关闭连接；SQLite 对未提交事务的关闭回滚不代替调用方的显式异常处理和提交确认。
+原物理 Writer 要求原发布 witness 来自同一连接、同一 SQL 控制窗口、同一事务，窗口一次性使用。
+
+Session、Router、Artifact 和 CAS 沿各自原持久边界读取。
+固定四库观察覆盖全部关联的异步核验、Seal 发布及发布后回读；完整 Evidence 与第二 SQL 窗口覆盖最后外部 callback 之后的返回前复核。
+它们可以拒绝可观察到的提交、同连接写入、资源/文件替换及当前正文漂移，但不能锁定外部编辑器、其他进程或 CAS 文件系统，也不能代替调用方原 Runtime 锁。
+同步终端减少应用级可重入时间窗，不是多库或文件系统原子事务；方法返回后到最终 COMMIT 的窗口仍由调用方管理。
+全库业务备份仍需完整生命周期 Reader 和原静默窗口；本组件不实现 Backup2。
+
+首次发布失败可能在当前未提交事务内留有业务行；调用方必须回滚整个事务。
+这是事务内部候选而不是已耐久成功。提交响应丢失时，重试依据原稳定 Route 及已认证正文查询，无第二条 Link/事件或新的 TTL。
+
+## 9. 安全、隐私与可观测性
+
+<a id="11-安全与信任边界"></a>
+
+1. 原 Key 不通过此组件导出；仅使用原 GitPublicationAuthority/Verifier 和原 Prefix 认证域。
+2. 数据合同通过不是认证；有真实 MAC 也不自动拥有业务正确性或执行权限。
+3. 当前写入来源只能由原活跃宿主及实际原认证 Reader 形成，不允许注入替代 Session、Scope、Artifact Guard 或 CAS 端口。
+4. 工厂打开前后固定全部父路径类型及 dev/inode，Ledger 每个内部检查点再次合作式复核；context 退出即撤销登记。该内部来源条件不是跨重启 Root 授权凭证或 OS 原子 fd 证明。
+5. Link 原文只进入私有状态，公开材料仅保存代码、测试统计及内容摘要，不发布用户仓库正文、凭据或 Key。
+6. 原 NativeBridge 新索引拒绝条件保持；不得为了让 prepared 组件通过而打开未实现桥接路径。
+7. 当前 Checkpoint/Commit 的 Core 类型投影不证明实际 Commit Planner 已接线。新增模型不扩大默认工具列表。
+
+### 9.1 错误分类与可观测性
+
+<a id="12-错误分类与可观测性"></a>
+
+新增固定错误为 `git_prepared_link_changed`、`git_prepared_link_host_invalid` 和 `git_prepared_link_scope_unsupported`。
+原 CAS、Artifact、Session、Schema、只读及期限错误沿既有分类传播，固定业务错误不包含 SQL、路径、正文、作者、提交消息或第三方异常正文。
+连接工厂将自身打开、类型、路径及关闭状态的无效条件归为 `git_prepared_link_host_invalid`；
+观察到的变化、读集合错配及终端业务错配归为 `git_prepared_link_changed`，原 MAC 和 Artifact 冲突仍使用其原分类。
+四库观察和同步只读查询直接复用既有 SQLite 端口，未在 Ledger 内为每个底层 I/O 异常增加统一转换；
+不能把所有可能的 SQLite 原生异常都宣称为已归一化业务错误。调用方仍须按异常路径回滚，并在公开出口保持原存储错误边界。
+已有表、原发布 epoch/连续序号、目录 revision 和测试制品构成当前观测证据，不新增诊断数据库或自动上传。
+公开验证需要分别标记纯声明、实际原认证离线 SDK、故障注入、原生平台和 Git 业务执行，不能混计为商业通过。
+### 9.2 完整 U 失败边界
+
+原 verifier 的 `git_user_observation_changed`、`git_user_observation_history_changed`、
+`git_user_observation_host_invalid`、`git_user_observation_unavailable` 及原 Source/CAS/端口分类直接传播，
+不统一包装为 prepared 错误。原外部 checkpoint 的 OSError、SQLite 错误、TimeoutError、领域取消及
+父 Task 取消保持原异常实例与控制语义。任何 U 失败阻止本次返回；发布后回读失败仍由调用方
+ROLLBACK 业务行、事件、publication 和尾锚，已提交的原 Session/Router 决定不改写。
+
+
+## 10. 核心业务逻辑伪代码
+
+<a id="8-核心业务逻辑伪代码"></a>
 
 ```text
 prepare(route_id):
@@ -490,7 +672,8 @@ prepare(route_id):
     每次外部 checkpoint 前后都执行内部检查，消费回调新产生的取消或变化
     只读完整原 MAC 目录并认证所有已存在 prepared 关联
     保存所有已有关联 Evidence 及 SQL 全行、独立尾锚、total_changes
-    从原实际 Session/Route/Core/CAS/Artifact 形成新 Evidence，并加入同一读集合
+    从原实际 Session/Route/Core/CAS/Artifact 形成新 Evidence
+    沿 _authenticate 消费该 Evidence 的完整 U verifier，成功后才加入同一读集合
     核对 GitDB 全行、尾锚和写计数在跨 await 后未变化
     若原 Route 已有关联:
         完整相等 -> 选原关联为候选；不写、不刷新、不重分配 epoch
@@ -509,7 +692,8 @@ read_all():
     新捕获表摘要必须等于认证目录
     任意非 prepared 业务表/状态 -> 拒绝
     全部 Link 规范解码，并比较全部冗余列和原认证 claims
-    对每条 Link 从原实际资源重建 Evidence，完整相等才可继续
+    对每条 Link 从原实际资源重建 Evidence，并以同一预算/取消/检查点复核完整 U
+    包括非目标关联；完整相等才可继续
     保存全部 Evidence、SQL 全行、独立尾锚及 total_changes
     完成第一 SQL 窗口的最后外部 callback 及其后内部检查
     进入下面的终端同步窗口，成功后才返回完整 tuple
@@ -523,71 +707,18 @@ terminal(read_set):
     再次 require_sql，核对原活跃登记连接、四库变化观察、宿主、取消及原期限
 ```
 
-## 9. 持久化、事务及并发边界
+## 11. 实施切片
 
-原 GitDB 的业务记录、领域事件、MAC 旁表和尾锚处于同一 SQLite 事务。
-Ledger 不 BEGIN、不 COMMIT、不 ROLLBACK；专用 SQL window 只安装原合作取消及事务代际观察。
-连接工厂退出会关闭连接；SQLite 对未提交事务的关闭回滚不代替调用方的显式异常处理和提交确认。
-原物理 Writer 要求原发布 witness 来自同一连接、同一 SQL 控制窗口、同一事务，窗口一次性使用。
+| 已实现位置 | 行为与契约 | 回归 | 停止范围 |
+|---|---|---|---|
+| Ledger `_authenticate` | 原 pending Proof 后同次完整 U 复核；prepare/read_all/重试/发布后回读共用 | 真实准备、重开、漂移、原异常与发布后回滚 | 停止新消费者操作；已提交认证历史不删除 |
+| 原终端读集合 | 保持同步只读和全集强度，不加入异步 Git 查询 | 原终端/控制回归 | 不把 U 复核当作锁或执行权 |
+| 原产品装配 | 不更改 Catalog、Policy、Executor | 未注册 Git 写工具的现行边界保持 | B4/B7 与 approved Writer 继续 No-Go |
 
-Session、Router、Artifact 和 CAS 沿各自原持久边界读取。
-固定四库观察覆盖全部关联的异步核验、Seal 发布及发布后回读；完整 Evidence 与第二 SQL 窗口覆盖最后外部 callback 之后的返回前复核。
-它们可以拒绝可观察到的提交、同连接写入、资源/文件替换及当前正文漂移，但不能锁定外部编辑器、其他进程或 CAS 文件系统，也不能代替调用方原 Runtime 锁。
-同步终端减少应用级可重入时间窗，不是多库或文件系统原子事务；方法返回后到最终 COMMIT 的窗口仍由调用方管理。
-全库业务备份仍需完整生命周期 Reader 和原静默窗口；本组件不实现 Backup2。
 
-首次发布失败可能在当前未提交事务内留有业务行；调用方必须回滚整个事务。
-这是事务内部候选而不是已耐久成功。提交响应丢失时，重试依据原稳定 Route 及已认证正文查询，无第二条 Link/事件或新的 TTL。
+## 12. 源码与测试映射
 
-## 10. 失败、取消、超时与恢复
-
-| 场景 | 行为 | 数据边界 |
-|---|---|---|
-| 原历史或 MAC 无效 | 原 Reader 拒绝 | 不补签、不追认 |
-| 全表 MAC 有效但业务列/正文错配 | 业务拒绝 | 不返回选中记录，不更新尾锚 |
-| 原审批已决定/Turn 非等待/Call 非首个 pending | 拒绝 | 不退回原状态、不生成新请求 |
-| CAS 缺失、错 SHA 或对象图错误 | 原完整材料拒绝 | 不重新捕获补材料 |
-| Review 非原引用、用途错、过期、正文或 MAC 错 | 原 Artifact 拒绝或业务比对拒绝 | 不再次 publish，不刷新 TTL |
-| Artifact 异步读取时 Session 文件缺失 | prepared 显式 `read_only=True`，沿原只读存储错误拒绝 | 不按默认可创建连接补建 Session 文件 |
-| 取消、任务取消 | 原检查点/await 退出 | 原连接事务由调用方回滚 |
-| 总期限耗尽 | 固定 git_process_timeout | 不给后续步骤新 60 秒 |
-| 调用方检查点抛出异常 | 保留原异常实例 | 不把同类型 TimeoutError 冒认为自身定时器到期 |
-| 最后外部 callback 新取消、撤销宿主或改变资源 | callback 后再次内部检查；同步终端仍消费原取消与期限 | 不因 callback 正常返回而忽略其产生的新状态 |
-| 跨 await 发生 ROLLBACK/COMMIT/SAVEPOINT | 原事务代际改变并拒绝 | 不创建替代 witness |
-| await 后 SQL 行、资源或物理文件变化 | 完整回读或宿主复核拒绝 | 不修复和继续 |
-| 后一条 Link 的 await 改变前序 Link 对应资源 | 四库观察及全部 Evidence 的同步终端复核拒绝 | 不只重验最后一条 Link |
-| 最后 Session await 后 CAS/Review 已改变 | 终端完整 CAS 重读及原 Artifact MAC/正文同步复核拒绝 | 不以已保存正文或最后一次历史相等替代当前材料 |
-| 独立尾锚变化，或写入再还原 SQL 行 | 原 anchor 行、全行及 `total_changes` 均须相等 | 不只比较业务表摘要，不补签尾锚 |
-| 工厂打开前后或 Ledger 入口前置换 DB/任一父目录 | 原活跃连接登记和全部路径 pin 拒绝 | 不接纳只报告相同路径的旧连接 |
-| 无工厂登记、context 已退出或原连接关闭 | `git_prepared_link_host_invalid` | 不提供公开注册 witness，不重新打开替代连接 |
-| 无已有事务、或 prepare 使用只读连接 | 原事务/只读分类拒绝 | 不自动 BEGIN，不升级或迁移 |
-| 同身份重试 | 原全文相等才返回 | 不新增 epoch/事件 |
-
-SQL progress 中断保留首次原取消/期限异常，底层 sqlite 中断不能覆盖该原因。
-本组件没有外部 Git 写副作用，因此失败恢复当前只涉及调用方事务回滚及原身份查询；后续 Git UNKNOWN 结算仍须单独实施。
-
-## 11. 安全与信任边界
-
-1. 原 Key 不通过此组件导出；仅使用原 GitPublicationAuthority/Verifier 和原 Prefix 认证域。
-2. 数据合同通过不是认证；有真实 MAC 也不自动拥有业务正确性或执行权限。
-3. 当前写入来源只能由原活跃宿主及实际原认证 Reader 形成，不允许注入替代 Session、Scope、Artifact Guard 或 CAS 端口。
-4. 工厂打开前后固定全部父路径类型及 dev/inode，Ledger 每个内部检查点再次合作式复核；context 退出即撤销登记。该内部来源条件不是跨重启 Root 授权凭证或 OS 原子 fd 证明。
-5. Link 原文只进入私有状态，公开材料仅保存代码、测试统计及内容摘要，不发布用户仓库正文、凭据或 Key。
-6. 原 NativeBridge 新索引拒绝条件保持；不得为了让 prepared 组件通过而打开未实现桥接路径。
-7. 当前 Checkpoint/Commit 的 Core 类型投影不证明实际 Commit Planner 已接线。新增模型不扩大默认工具列表。
-
-## 12. 错误分类与可观测性
-
-新增固定错误为 `git_prepared_link_changed`、`git_prepared_link_host_invalid` 和 `git_prepared_link_scope_unsupported`。
-原 CAS、Artifact、Session、Schema、只读及期限错误沿既有分类传播，固定业务错误不包含 SQL、路径、正文、作者、提交消息或第三方异常正文。
-连接工厂将自身打开、类型、路径及关闭状态的无效条件归为 `git_prepared_link_host_invalid`；
-观察到的变化、读集合错配及终端业务错配归为 `git_prepared_link_changed`，原 MAC 和 Artifact 冲突仍使用其原分类。
-四库观察和同步只读查询直接复用既有 SQLite 端口，未在 Ledger 内为每个底层 I/O 异常增加统一转换；
-不能把所有可能的 SQLite 原生异常都宣称为已归一化业务错误。调用方仍须按异常路径回滚，并在公开出口保持原存储错误边界。
-已有表、原发布 epoch/连续序号、目录 revision 和测试制品构成当前观测证据，不新增诊断数据库或自动上传。
-公开验证需要分别标记纯声明、实际原认证离线 SDK、故障注入、原生平台和 Git 业务执行，不能混计为商业通过。
-
-## 13. 测试与验收设计
+<a id="13-测试与验收设计"></a>
 
 | 验证类别 | 用例与判定 |
 |---|---|
@@ -608,12 +739,14 @@ SQL progress 中断保留首次原取消/期限异常，底层 sqlite 中断不�
 测试中借原 Key 签发错误材料只作为物理阳性负控；不能计为认证生产者阳性。
 离线 Provider 夹具不产生计费请求，实际原认证 SDK 并不等于线上模型质量或真实用户 Beta。
 
-同一固定安装源码的[组件结果](../validation/git-prepared-link-2026-10-07-v1/README.md)已完成本机专项：
+消费者接线之前固定安装源码的[历史组件结果](../validation/git-prepared-link-2026-10-07-v1/README.md)已完成本机专项：
 完整 prepared 377 项、关联 3784 项及原控制、公开保护、治理分别通过；全部旧失败保留，不相加重叠集合。
-这仅闭合本文组件，下一阶段审批后事实仍为拟议。Git 大同步段的响应性仍为独立未关闭问题，
+该历史结果不覆盖新增消费者接线；本候选须重新验证，不继承历史通过数量或安装结论。下一阶段审批后事实仍为拟议。Git 大同步段的响应性仍为独立未关闭问题，
 计时边界整改见[公开保护设计](m09-4a-product-publication-boundary.md#62-调度等待与同步扫描期限的整改设计)。
 
-## 14. 源码映射与阅读顺序
+### 12.1 源码阅读顺序
+
+<a id="14-源码映射与阅读顺序"></a>
 
 | 顺序 | 源码 | 阅读问题 |
 |---|---|---|
@@ -630,7 +763,11 @@ SQL progress 中断保留首次原取消/期限异常，底层 sqlite 中断不�
 
 关键状态语义应同时阅读原 Agent trusted_action_session；`ToolExecutionScope.for_pending_call` 是执行阶段工具作用域，不能拿来验证已经进入 waiting_approval 的审批项目。
 
-## 15. 部署、兼容与回退
+[真实消费者接线回归](../../tests/product_config/test_git_link_user_observation_consumption.py)覆盖同次控制、真实配置/Ref/Index 漂移、无重捕获、只读回读、原 Router-first 恢复和发布后回滚。测试存在不替代实际运行结果。
+
+## 13. 风险、部署、兼容与回退
+
+<a id="15-部署兼容与回退"></a>
 
 组件为产品内部 Python 模块，没有公开 CLI 操作、默认启动迁移、HTTP/Worker 或独立部署。
 受信装配必须提供原活跃产品资源、原 Runtime 锁、工厂 context 中的专用 GitDB 原登记连接及原已有事务。
@@ -648,7 +785,9 @@ Artifact 的旧默认 `read_only=False` 保持兼容，不能把该专用只读�
 旧 Core1/Plan1、原 281 Schema 及原数据库 DDL 保持。新增 prepared-link/v1 Schema 描述数据，不表示支持完整业务恢复。
 旧 Reader 无法处理新认证业务状态时不能静默降级；回退程序前必须按原停机/备份协议核对状态版本，不删除新表或将新历史重新签为旧记录。
 
-## 16. 风险、约束与后续取舍
+### 13.1 风险与剩余门禁
+
+<a id="16-风险约束与后续取舍"></a>
 
 - 多库与外部用户代码不能获得仅靠此组件实现的全局原子快照；四库观察和同步终端是合作式验证窗口而非不可变锁定。
 - GitDB 所有父路径的 no-symlink pin 不提供 OS 原子 no-follow/fd 认证；SQLite WAL 读取及常规文件类型检查也不构成完整文件系统攻击防护证明。
@@ -657,3 +796,12 @@ Artifact 的旧默认 `read_only=False` 保持兼容，不能把该专用只读�
 - 当前回读要求原审批仍待决定且 Review 有效，历史备份 Loader 不能复用此实时条件冒充已完成恢复。
 - 下一业务步骤必须真实消费新批准，并补齐 NativeBridge、A/T2/D 和独立 Commit；首次默认外部 Git 写入仍以完整 Backup2 为硬前置。
 - R3 真实质量、消费者三平台、有限 Beta、权利与同候选 R1～R6 继续开放，不用组件通过替代发布退出条件。
+
+B4 的末轮异步 U 到同步终端/COMMIT 漂移窗口、B7 的原 DB FD/锁/全部 dispatch 及 P1 响应性仍未闭合；不得启用 approved Writer。
+
+## 14. 实现偏差与最终结论
+
+实现复用已有完整 U verifier，仅在 Ledger 协调层消费，不新增 Proof/Store/审批/认证接口。
+prepare 和 read_all 的公开签名、pending-only、sequence 0、原 claims/epoch/尾锚及失败回滚语义不变。
+本文按项目十四节变更模板整理，旧标题锚保留用于已有链接；现行模块设计同步更新。
+源码验证与安装、平台、真实产品交付分别验收。本增量不是决定 Writer、效果执行或完整恢复。

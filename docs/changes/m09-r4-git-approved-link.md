@@ -1,13 +1,14 @@
 ---
 doc_type: change-design
 status: draft
-version: 5
-code_revision: 82c95e677d1919c60bbb3be32a9a4ef23f35b2e4
+version: 6
+code_revision: 2bef425141653360c29e09b38e079065825437cb
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_user_observation_verification.py
   - tests/product_config/test_git_observation_verification_recipe.py
   - tests/product_config/test_git_prepared_link_contracts.py
@@ -24,11 +25,11 @@ supersedes: []
 ## 1. 变更摘要
 
 **正式决定接线状态：`planned`。** 新决定类型、Wire/Writer、事件正文及宿主恢复屏障仍为拟议，未实现、未装配。
-文档治理状态保持 `draft`；`code_revision` 固定实现基准，不表示该提交已包含其上的未提交增量。
+文档治理状态保持 `draft`；`code_revision` 固定现行消费者实现，不表示拟议正式决定接口已经落地。
 B3 的必需只读依赖 `verify_product_git_user_observation` 与共享末轮配方已在当前工作区落地；
-它们只复核既有完整 U，原Reader绑定及每个基准成员均向原生端口求证，不接受重新计算公开摘要作为认证；不代表完整 B3 批准认证接线或正式上线。B4、B7、同步响应性 P1 与 approved Writer 均未闭合。
+它们只复核既有完整 U，原Reader绑定及每个基准成员均向原生端口求证，不接受重新计算公开摘要作为认证；不代表完整 B3 批准认证接线或正式上线。原 prepared Ledger 与审批历史 Reader 已在协调层消费该依赖；B4、B7、同步响应性 P1 与 approved Writer 均未闭合。
 独立的[原 prepared 审批历史只读子切片](m09-r4-git-prepared-approval-history.md)已经实现窄域历史解释与原资源读取；
-它不包含本文拟议的 Git 决定 Wire/Writer、完整 U 末轮消费接线、协作锁和恢复屏障，不改变本文新增正式决定接口的 `planned` 状态。
+它不包含本文拟议的 Git 决定 Wire/Writer、正式决定的完整 U 消费与同步终端一致性、协作锁和恢复屏障，不改变本文新增正式决定接口的 `planned` 状态。
 本文采用真实模板 [change-design-template.md](../governance/templates/change-design-template.md) 的十四节结构。
 
 | 项目 | 内容 |
@@ -41,7 +42,7 @@ B3 的必需只读依赖 `verify_product_git_user_observation` 与共享末轮�
 | 发布单元 | 拟议内部认证组件及原宿主恢复屏障；本阶段无默认 Git 写工具注册、无新网络服务 |
 | 回滚单元 | 停止新追加与恢复接线；保留所有认证事件；旧 prepared Reader 对新正文继续拒绝，不删除尾部历史以恢复兼容 |
 
-实现基准为 `82c95e677d1919c60bbb3be32a9a4ef23f35b2e4`；阶段无关 verifier 与共享 helper 属于该基准上的当前工作区候选源码，不能描述为已经包含在基准提交中。
+现行基线及消费者实现由 `code_revision` 固定；阶段无关 verifier、共享 helper 和消费者与拟议正式决定接口分别记录。
 正式决定接线属于独立的下一阶段，不纳入当前 prepared 候选范围及验收。
 B3 只读依赖的[专项证据发布入口](../validation/git-user-observation-verification-2026-10-07-v1/README.md)
 以实际发布原件为准，不由本设计推导测试通过、性能结果、安装或发布验收。
@@ -131,7 +132,7 @@ flowchart LR
 2. 原决定改变 Router 与 Session，但不修改原 prepared 事件。原 prepared MAC 仍可证明**过去确实准备过**，不能证明**现在仍 pending**或**已经批准**。
 3. 物理 Prefix 能覆盖连续多事件，却不解释人工批准、取消、预算或 Review；只修改正文 phase 会得到无业务来源的新声明。
 4. 原 Router、Execution、Session、GitDB 是不同数据库；必须以查询优先恢复串联，不能把 Git 事务说成这些库的一次共同提交。
-5. 原 Git 用户观察包含逻辑和物理事实。当前 prepared Proof 复核 Source/CAS/Review，但没有调用完整用户观察的末轮 Git 复核；不能从该组件推导 HEAD/Ref/配置均已重验。
+5. 原 Git 用户观察包含逻辑和物理事实。原 pending Proof 本身继续复核 Source/CAS/Review；Ledger 的 `_authenticate` 已在原 Evidence 后消费完整 U verifier，审批历史 `_read_all` 同样逐关联消费。异步 HEAD/Ref/配置复核不证明同步终端/COMMIT 的 B4 已闭合。
 
 因此采用新增窄域历史 Reader/Proof，保留 prepared 实时 Reader 原拒绝。不是将当前 waiting 检查替换成宽松的状态列表。
 
@@ -587,13 +588,13 @@ running/reconciling 的宿主中断由原 `recover_interrupted_plan` 收敛 unkn
 
 ## 11. 实施切片
 
-正式决定切片仍为 `planned`；切片 3 中必需只读依赖及共享配方已落地，其终端一致性及宿主接线仍未闭合。
+正式决定切片仍为 `planned`；切片 3 中必需只读依赖及共享配方已落地，两个现行消费者已经接通原完整 U；其同步终端一致性及正式决定宿主接线仍未闭合。
 
 | 顺序 | 拟议改动 | 行为与新契约 | 拟议回归 | 可独立回滚 |
 |---|---|---|---|---|
 | 1 | closed union、严格 wire、事件定位 | prepared 字节不变；负向事实显式映射 failed；512 KiB 上限 | 严格字段、变体交叉错配、构造绕过、规范字节、上限 | 无持久写，可撤回新类型 |
 | 2 | 原完整 Session/Route 决定 Proof | 原 Reducer 与 build_approval、两域指纹、完整取消来源 | ALLOW ready、系统拒绝冒充人工、错时间、后续取消 | 不启用 Writer |
-| 3 | 阶段无关 U verifier/shared helper 已落地；fence 与终端闭合仍待实施 | 显式原 Session/transactions/ports，不重准备、不新增 CAS；准备器 pending Call 和 collector 窗口保持 | 既有只读复核用例见第 12.2 节；终端提交漂移与全部 dispatch 接线仍待验证 | 不启用 Writer；不更改产品权限 |
+| 3 | 阶段无关 U verifier/shared helper 与两个现行消费者已落地；fence 与终端闭合仍待实施 | 原 Ledger `_authenticate` 与历史 `_read_all` 显式借原 Session/transactions/ports，同预算、cancel、check；不重准备、不新增 CAS；准备器 pending Call 和 collector 窗口保持 | 既有只读复核用例见第 12.2 节；终端提交漂移与全部 dispatch 接线仍待验证 | 不启用 Writer；不更改产品权限 |
 | 4 | 新窄域全集 Reader 与读集合 | 历史 prepared 解释不调用 pending-only Proof；效果范围继续拒绝 | mixed pending/decided、坏非目标链、终端全集 | 只读组件可停用 |
 | 5 | 同原事务追加与精确重试 | 原 event/publication/anchor 一次提交；原 epoch 延续 | 逐写边界中断、rollback、确认丢失、并发 CAS | 已写历史保留；停用新追加 |
 | 6 | 原宿主审批后/重启内部屏障 | 先原 sync，再认证追加；全部 Git dispatch 入口受约束 | 三库恢复窗口、取消竞争、调用计数零 | 关闭 Git 专用接线，不影响其他 Action |
@@ -617,7 +618,7 @@ running/reconciling 的宿主中断由原 `recover_interrupted_plan` 收敛 unkn
 | 原 Plan/Core 全绑定 | [PlanV2:113](../../src/harnessix/product_config/git_delivery_observed_contracts.py#L113)、[load_route_core_v2:41](../../src/harnessix/product_config/git_delivery_route_core.py#L41) | 原 Plan2 与完整材料不变，不重新生成 |
 | 原 U/Source 复核 | [verify_product_git_user_observation:184](../../src/harnessix/product_config/git_user_observation.py#L184)、[_verify_observed_git_state:368](../../src/harnessix/product_config/git_user_observation.py#L368)、[_verify_observation:469](../../src/harnessix/product_config/git_checkpoint_preparation.py#L469)、[verify_git_delivery_source:271](../../src/harnessix/product_config/git_delivery_source.py#L271) | 必需只读依赖和共享配方已落地；准备器保留 pending Call，collector 保持原窗口；决定接线及终端缺口未闭合 |
 | 原 Review 全文与 MAC | [Artifact.read:334](../../src/harnessix/artifacts/sqlite.py#L334)、[matching_action_review:141](../../src/harnessix/artifacts/action_review_store.py#L141) | 原只读验证、全页与终端全文；不 publish |
-| 当前 prepared 边界 | [contracts:17](../../src/harnessix/product_config/git_prepared_link_contracts.py#L17)、[proof:162](../../src/harnessix/product_config/git_prepared_link_proof.py#L162)、[rows:46](../../src/harnessix/product_config/git_prepared_link_rows.py#L46)、[ledger:50](../../src/harnessix/product_config/git_prepared_link_ledger.py#L50) | 旧接口不放宽；新增窄域历史适配 |
+| 当前 prepared 边界 | [contracts:17](../../src/harnessix/product_config/git_prepared_link_contracts.py#L17)、[proof:162](../../src/harnessix/product_config/git_prepared_link_proof.py#L162)、[rows:46](../../src/harnessix/product_config/git_prepared_link_rows.py#L46)、[ledger:50](../../src/harnessix/product_config/git_prepared_link_ledger.py#L51) | 旧接口不放宽；新增窄域历史适配 |
 | 原物理事件/claims 连续性 | [record_bodies:63](../../src/harnessix/product_config/git_prefix_records.py#L63)、[verify_record_streams:116](../../src/harnessix/product_config/git_prefix_records.py#L116) | 原 sequence+1 关系及唯一 epoch |
 | 原事务发布与连接 | [begin:138](../../src/harnessix/product_config/git_prefix_writer.py#L138)、[publish:256](../../src/harnessix/product_config/git_prefix_writer.py#L256)、[connection:85](../../src/harnessix/product_config/git_prepared_link_connection.py#L85) | 同原事务追加，NativeBridge 原拒绝保持 |
 | 全集观察与终端 | [observation:56](../../src/harnessix/product_config/git_prepared_link_observation.py#L56)、[terminal_read_control.py](../../src/harnessix/workspace/terminal_read_control.py) | 复用原局部控制；新增决定证据，不直接复用 pending-only terminal Proof |
@@ -637,8 +638,8 @@ running/reconciling 的宿主中断由原 `recover_interrupted_plan` 收敛 unkn
 | [共享末轮配方](../../tests/product_config/test_git_observation_verification_recipe.py) | `test_shared_final_recipe_preserves_order_and_closes_pin`、`test_original_preparer_delegates_same_stage_history_and_source` | 检查原顺序、关闭 pin 与准备器阶段闭包；模拟配方端口不能作为实际认证成功证据 |
 
 B3 只读依赖的验证结果以[专项发布原件](../validation/git-user-observation-verification-2026-10-07-v1/README.md)为准，
-本文不填写通过数量，不据源码或用例存在宣称完整 B3 认证、同候选安装或正式上线。
-尚未实现的决定 Proof/Reader/Writer 与终端接线须另行建立实际用例和证据，不能继承上述只读验证结论。
+本文不推导通过数量，不据源码或用例存在宣称完整 B3 认证、同候选安装或正式上线。
+两个现行消费者的完整 U 接线见[真实消费者回归](../../tests/product_config/test_git_link_user_observation_consumption.py)；它们共享原预算/取消/检查点，先原 Proof 后 U，任何关联失败拒绝全集。正式决定 Proof/Reader/Writer 与终端接线仍须另行建立实际用例和证据，不能继承只读结论。
 
 ### 12.3 必须新增的真实回归矩阵，全部 `planned`
 
@@ -668,7 +669,7 @@ B3 只读依赖的验证结果以[专项发布原件](../validation/git-user-obs
 |---|---|---|
 | B1 | v2 DDL 没有 denied/cancelled phase | 本文采用 failed+闭合 fact_kind 保持 DDL；消费方必须认同该映射。要求字面 phase 时本切片不能在不升代条件下交付 |
 | B2 | 当前 prepared Proof/Reader/terminal 仅接受实时 pending | 必须新增窄域完整历史 Proof/Reader；不能调用 `prepare/read_all` 追认已决定前驱 |
-| B3 | 必需阶段无关只读 verifier 与共享末轮配方已落地；当前 prepared/决定认证尚未接通该依赖 | 显式原 Session/transactions/ports、本次完整历史认证；原准备器 pending Call 与 collector 窗口保持。验证以专项原件为准，不将依赖落地认定为完整 B3 认证或上线 |
+| B3 | 必需阶段无关只读 verifier 与共享末轮配方已落地；现行 prepared/审批历史消费者已经接通该依赖；正式决定认证尚未实现 | 显式原 Session/transactions/ports、本次完整历史认证；原准备器 pending Call 与 collector 窗口保持。验证以专项原件为准，不将依赖落地认定为完整 B3 认证或上线 |
 | B4 | 末轮异步逻辑 Git 观察与同步终端/COMMIT 之间没有已证实的外部 Ref/配置一致性原语 | 必须明确可执行的终端见证或原协作锁方案及剩余外部边界，实测最晚窗口漂移；四库观察/路径 pin 不足以关闭。关闭前禁止启用可用 approved Writer |
 | B5 | Review TTL 与原 Turn 预算不是永久恢复凭据 | 只支持仍有原完整材料、Review 未过期且当前有效窗口内的恢复；过期拒绝，不能续期或重新审批同事实 |
 | B6 | Router ready 不能被取消改判 denied；原 Session 终结可能保留 unknown | 本增量 cancelled 限定审批前完成结算；批准后取消必须拒绝可用性。若需要批准后无效果取消闭合，另需真实模型与执行所有权证据，不在此切片宣称完成 |
@@ -676,7 +677,7 @@ B3 只读依赖的验证结果以[专项发布原件](../validation/git-user-obs
 | B8 | 本研究输入包括未提交候选，并且原候选验收不由本文完成 | 实现前固定完整输入版本与复核以上源码定位；本文不替代候选封板或实际 SDK 验收 |
 | P1 | 原材料、Core 及完整回读/终端认证的同步响应性仍未收口 | verifier/shared helper 复用不构成协作调度或性能整改；须在原取消、期限及完整认证语义下独立完成真实响应性验证 |
 
-B1 是已明确的存储兼容决策；B2、B3 的决定消费接线与 B7 仍是实施缺口，B3 必需只读依赖本身不再列为缺失 API。
+B1 是已明确的存储兼容决策；B2、B3 的决定消费接线与 B7 仍是实施缺口，B3 必需只读依赖及两个现行消费者本身不再列为缺失 API。
 B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放；B5/B6 是不能通过本增量绕过的能力边界。
 没有证据支持完整生命周期恢复或未来效果链可用。
 
@@ -696,9 +697,17 @@ B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放�
 停用组件后保留已经提交的认证决定事实；不可删除 sequence 1、重置 projection 或改写 tail anchor 来伪装只含 prepared。
 旧二进制无法消费新正文时保持停用 Git 写分支或使用兼容只读版本，不宣称可无损降级为 pending-only Reader。
 
+### 13.4 消费者耗时与仍开放的 P1
+
+两个只读消费者没有改变生产期限或完整认证。原准备操作的真实分段测量显示，
+耗时主要来自规范正文与原细粒度检查点的新鲜 Owner 复核，不能把此成本归结为 U 的 native Git 或原历史认证。
+具体数据及不可相加的嵌套计时边界见[prepared 详设](m09-r4-git-prepared-link.md#41-真实耗时根因与验收约束)。
+独立原 Turn 的正向功能通过与强制实际到期负控不等于 P1 响应性通过；
+不得延长审批期限、增大生产默认预算或省略完整认证以获得 Writer 的 Go。
+
 ## 14. 实现偏差与最终结论
 
-正式决定接线状态仍为 `planned`，文档保持 `draft`。B3 必需只读 verifier/shared helper 已落地，
+正式决定接线状态仍为 `planned`，文档保持 `draft`。B3 必需只读 verifier/shared helper 及现行 prepared/审批历史消费者已落地，
 实际接口显式使用原 Session/transactions/ports，而非拟议的 CoreStore 参数；此差异不关闭完整 B3、B4、B7、P1 或 approved Writer。
 验证结论仅以专项发布原件为准，不声明安装、产品验收或正式上线。
 原表与原 Prefix/MAC 能承载连续决定事实，原 Session/Router 审批恢复可复用；新增历史适配不需要第二 Store 或第二授权体系。
@@ -706,5 +715,5 @@ B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放�
 
 本阶段交付终点是**原事实认证与窄域恢复接线**，不是 Git 效果执行。
 A/T2/D/NativeBridge/Checkpoint/Commit、完整 Loader/Backup2 及发布门禁保持未实现或未关闭，不因新增 approved 记录提前默许。
-当前 `code_revision` 仅固定实现基准；正式决定接线完成后须固定包含该实现的提交并更新既有模块设计。
+当前 `code_revision` 仅固定实现基准；元数据固定现行消费者实现；正式决定接线完成后仍须另行固定其实现提交并更新既有模块设计。
 在决定源码、终端及宿主接线和实际回归证据闭合前，不得将本文提升为现行决定认证依据。
