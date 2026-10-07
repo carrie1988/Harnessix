@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 83
-code_revision: 0991645
+version: 84
+code_revision: e4f3103feeb0a65e4b3c4ec3fa3720790986ee33
 owners:
   - core
 modules:
@@ -158,6 +158,10 @@ v5补充通用文件定位策略：文件名/路径模式优先已有有界`glob
 离线回归不证明模型必然遵循，更不能将BETA-001原四步失败改写为通过。
 后继[v5同条件真实复验](../validation/beta-001-readonly-analysis-2026-10-07-v2/README.md)仍四次逐级目录导航、零`read_file`，
 没有观察到改善；停止同条件重复发送，完整分析与业务整改门禁保持开放。
+
+后继[新范围与任务计划分析](../validation/beta-001-readonly-analysis-2026-10-07-v3/README.md)成功读取8件源码、9次结果，
+但累计103,826 Token超过该独立计划100,000上限，Turn失败；模型末段结论另有关键未读和权限误述。
+该新计划不能归因于共享指令v5单一变化，也不能替代完整源码分析或真实编码质量验收。
 
 ## 2. 需求背景
 

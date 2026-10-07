@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
+version: 3
+code_revision: 3fb2ef57f3a647b20058f987f090e6829c4d8a58
 owners: [core]
 modules: [product_config, agent, tools, evals]
 related_adrs:
@@ -193,3 +193,6 @@ v5 Source与指纹可以在实际Adapter请求及持久Context Inspection中追�
 后继正式分析可以明确现有受控输入的允许路径元数据与新的适当任务预算，但不得以新计划改写原失败或宣称v5因果改善。
 是否需要有界索引须另据后继真实证据决策，而非先增加平台复杂度。
 原BETA-001、真实R3、三平台、正式Git Writer及1.0发布门禁仍开放。
+
+后继[新任务计划分析](../validation/beta-001-readonly-analysis-2026-10-07-v3/README.md)已实际读取源码，
+但累计Token超限及关键未读/权限误述分别导致技术和语义拒绝；不证明v5单一改善，也不替代业务完成。

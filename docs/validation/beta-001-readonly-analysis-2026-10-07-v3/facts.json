@@ -1,0 +1,47 @@
+{
+  "result": "HOLD_TOKEN_AND_SEMANTIC_REVIEW",
+  "candidate_revision": "3fb2ef57f3a647b20058f987f090e6829c4d8a58",
+  "same_condition_comparison": false,
+  "new_task_plan": true,
+  "actual_model_requests_this_run": 11,
+  "actual_model_requests_period": 19,
+  "turn_budget": {
+    "max_steps": 16,
+    "max_tokens": 100000,
+    "timeout_seconds": 180.0,
+    "max_output_chars": 65536,
+    "max_tool_calls_per_step": 32
+  },
+  "status": "failed",
+  "error_code": "budget_exceeded",
+  "usage": {
+    "input_tokens": 101641,
+    "output_tokens": 2185
+  },
+  "total_tokens": 103826,
+  "read_file_calls": 10,
+  "read_file_successful_results": 9,
+  "read_file_unique_successful_paths": 8,
+  "tool_failed_calls": 1,
+  "tool_error_codes": [
+    "tool_expected_revision_required"
+  ],
+  "last_model_text_chars": 2331,
+  "semantic_review": "REJECTED_INCOMPLETE_CORE_CHAIN_AND_UNSUPPORTED_CLAIMS",
+  "invoice_actual_cost": null,
+  "estimated_cost_this_run": "0.441524",
+  "estimated_cost_period": "0.576316",
+  "reserved_cost": "0",
+  "allocation": "60",
+  "historical_unknown_charges_preserved": true,
+  "input_hashes_and_identities_unchanged": true,
+  "protected_history_authenticated_readonly": true,
+  "protected_files_unchanged": true,
+  "shared_memory_sidecar_unchanged_not_claimed": true,
+  "beta_tasks_completed": 0,
+  "repair_executed": false,
+  "business_tests_executed": false,
+  "source_body_exported": false,
+  "private_receipt_sha256": "12cc9993dc6aa89c9062db27caec5b541800280a5cb034a05b3e9623833be0ea",
+  "private_authenticated_metadata_sha256": "565749bda5e2c1c54f4e2b2f3f4df302875ba7d3dc1527343e4594b31294cb36"
+}

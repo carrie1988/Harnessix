@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 7
+version: 8
 code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
 owners:
   - core
@@ -218,6 +218,12 @@ P05 恢复必须是明确批准的先导演练，不在唯一生产状态上操�
 原失败与原预算均保留；没有自动重跑。[执行证据](../validation/beta-001-readonly-analysis-2026-10-07-v1/README.md)单独记录候选、费用和未完成项。
 后继[v5同条件复验](../validation/beta-001-readonly-analysis-2026-10-07-v2/README.md)仍失败、零`read_file`；
 两次共8个真实请求，累计估算0.134792元、预留0，未观察到真实导航改善，真实任务完成数仍0。
+
+第三次[新计划限定分析](../validation/beta-001-readonly-analysis-2026-10-07-v3/README.md)明确提供12件已审阅路径，
+采用独立16步/100,000 Token计划；不是原四步条件的效果对照。实际11请求、9次成功源码读取，
+已报告累计103,826 Token后原Runtime拒绝完成。保留的模型末段文字未通过语义审阅：关键链路文件未读取，
+将未读取误写为无权限，不能据此宣称HTTPS或完整分析。三次累计19请求、费用估算0.576316元、预留0；
+供应商账单未确认。原失败/预算/候选均保持，登录整改、取消观察、隔离测试和Beta验收仍未完成。
 
 既有直接修改结果不得计作 Harnessix 自动运行，也不得将整改后的源码、测试或答案喂入 Agent 作为新任务输入。后续执行须补齐完整原目录前后快照、受控工具及文件白名单、真实协议/Thread/Turn/审批、模型用量及费用、取消与恢复、最终隔离测试和使用者人工验收证据。本机登记件为受控证据目录中的 `beta-task-001.json` 与 `beta-registration.md`；私有路径不进入公共资料。单人登记不替代第 10 节正式 Beta 门禁。
 
