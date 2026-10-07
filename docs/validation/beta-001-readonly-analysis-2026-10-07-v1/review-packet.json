@@ -1,0 +1,31 @@
+{
+  "status": "HOLD",
+  "purpose": "BETA-001初始源码只读分析尝试",
+  "facts": "facts.json",
+  "acceptance": {
+    "authenticated_protocol_and_replay": "OBSERVED",
+    "guarded_real_provider_requests": "OBSERVED",
+    "readonly_analysis_completion": "FAIL",
+    "source_fix": "NOT_EXECUTED",
+    "full_original_directory_integrity": "NOT_EVALUATED",
+    "isolated_business_validation": "NOT_EXECUTED",
+    "manual_beta_acceptance": "NOT_EVALUATED"
+  },
+  "blocking_findings": [
+    "原Turn四步均用于合法逐级目录导航，零read_file，真实源码分析未完成",
+    "后继共享导航指令只完成离线发布验证，真实模型行为尚未复验"
+  ],
+  "next_actions": [
+    "保留原认证事件诊断、原四步失败、原预算及费用，不自动重跑",
+    "针对导航缺口进行共享通用指令整改和离线回归，后继新请求与候选独立冻结",
+    "原目录完整快照、取消观察、整改审批、业务测试和人工验收独立补齐"
+  ],
+  "not_claimed": [
+    "默认CLI/TUI通过",
+    "BETA-001完成",
+    "R3质量通过",
+    "正式商业发布"
+  ],
+  "schema": "harnessix.beta-readonly-analysis-review/v1",
+  "infrastructure_observation": "Docker更新后的Engine可用性单独处理，不用原生Endpoint观察冒充完整Workspace就绪"
+}

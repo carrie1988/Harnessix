@@ -1,0 +1,100 @@
+{
+  "observed_at": "2026-10-07T14:14:08.857265+00:00",
+  "result": "READONLY_ANALYSIS_FAILED",
+  "candidate_revision": "7fca4a526bbbd3cde7e7c66552704126757171c2",
+  "wheel_sha256": "731396d93ed1f2e8ee21e1060531bf5ae44217d82e790767a8acb0e20c8fedde",
+  "script_sha256": "ce91b242c7180711cafd776074e2b7d930c080bef93e59853cc96bb9358b2649",
+  "source_manifest_sha256": "6323bb09b2cb97239d7622283779442b9de672da0703cfb09c968ae2b731f3db",
+  "protocol_path": "AgentClient / InProcessAgentTransport / AgentProtocolServer / AgentApplicationService / AgentRuntime",
+  "tool_names": [
+    "list_files",
+    "read_file",
+    "glob",
+    "grep",
+    "read_artifact"
+  ],
+  "input_file_count": 12,
+  "input_bytes": 50712,
+  "analysis_workspace_unchanged": true,
+  "read_file_success_count": 0,
+  "actual_model_requests": 4,
+  "source_read_complete": false,
+  "source_repair_executed": false,
+  "business_tests_executed": false,
+  "beta_task_accepted": false,
+  "beta_task_completed_count": 0,
+  "default_cli_accepted": false,
+  "r3_accepted": false,
+  "commercial_release_accepted": false,
+  "failure_root_cause": "four_successful_serial_directory_navigation_calls_no_source_read",
+  "original_source_snapshot_is_full_content_proof": false,
+  "automatic_rerun": false,
+  "schema": "harnessix.beta-readonly-analysis-observation/v1",
+  "protocol": {
+    "status": "failed",
+    "error_code": "budget_exceeded",
+    "model_steps": 4,
+    "handshake": true
+  },
+  "replay": {
+    "page_scan_limit": 3,
+    "final_cursor": 66,
+    "public_events": 42,
+    "events_sha256": "1cf9f313882eccfd82a12061ca21088921afe2cc20486ae428466697fb42f2aa",
+    "reopened_identical": true
+  },
+  "budget": {
+    "period_id": "bab39be6-7af6-4a77-9da6-fe0664e15f65",
+    "allocation_cny": "60",
+    "known_estimate_cny": "0.072852",
+    "reserved_cny": "0",
+    "invoice_confirmed": false,
+    "actual_invoice_cny": null,
+    "remaining_after_known_and_reserved_cny": "59.927148",
+    "shared_uses": [
+      "R3",
+      "BETA-001",
+      "other-bailian-validation"
+    ],
+    "historical_ledger_sha256": "d923d8e8812e9706229b290f362b472f3934086feb75a908534cd415f88b4385",
+    "historical_ledger_unchanged": true
+  },
+  "host_return_code": 1,
+  "provider_model": "qwen3-coder-plus-2025-09-23",
+  "turn_budget": {
+    "max_steps": 4,
+    "max_tokens": 16000,
+    "timeout_seconds": 180.0,
+    "provider_max_output_tokens": 1024,
+    "provider_max_attempts": 1,
+    "provider_retry_delay_seconds": 0.0
+  },
+  "execution_kind": "real_embedded_sdk_not_default_stdio_or_tui",
+  "private_evidence_root_role": "E/beta-analysis-v1",
+  "diagnosis": {
+    "successful_list_files_calls": 4,
+    "list_files_paths": [
+      ".",
+      "backend",
+      "backend/src",
+      "backend/src/main"
+    ],
+    "read_file_calls": 0,
+    "invalid_parameter_errors": 0,
+    "unknown_tool_errors": 0,
+    "repeated_failed_calls": 0,
+    "input_tokens": 14921,
+    "output_tokens": 823,
+    "total_tokens": 15744,
+    "max_tokens": 16000,
+    "direct_gate": "max_steps_exhausted",
+    "token_gate_not_direct_cause": true,
+    "source_body_exported": false,
+    "key_material_exported": false,
+    "diagnostic_real_model_requests": 0,
+    "shared_budget_opened": false,
+    "physical_sidecar_change_observed": "sessions.db-shm during read window, writer not attributed",
+    "protected_history_and_original_receipts_unchanged": true,
+    "offline_fixture_not_autonomous_model_evidence": true
+  }
+}

@@ -2357,6 +2357,15 @@ R3、BETA-001及其他百炼验证共用一个新60元账本。旧141条请求�
 默认Docker Desktop路径仍独立验证，不外推其可用性或三平台消费者验收。
 录制验证不等同R3真实20 Trial质量通过；后续新Suite与BETA-001仍共用新60元预算。
 
+### R3/Beta：有界源码定位与深目录导航
+
+[BETA-001限定只读分析](validation/beta-001-readonly-analysis-2026-10-07-v1/README.md)已实际发出四个模型请求，
+原四步Turn因连续逐级`list_files`导航耗尽步骤，未发生`read_file`，分析未完成；真实任务完成数仍0。
+四条请求均completed，累计用量估算0.072852元、预留0；供应商实际账单未确认，旧两unknown原件保持。
+[共享导航指令v5详设](changes/m09-r3-bounded-source-navigation.md)使文件/内容定位优先已有`glob/grep`，
+原2751字节护栏、Token/步数/期限、权限及评分门槛不变；2747字节正文与64-case离线回归通过。
+这不是自主模型改善、Beta或R3质量通过；后继真实运行、完整业务整改、三平台及R1～R6仍分别验收。
+
 
 ### BETA-001：初始独立输入与只读范围
 

@@ -1,0 +1,95 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 7703,
+      "sha256": "3bffa2d9850071aaf1674bfedb4d8c268dc33084ea2a0c2350e643d0d229d433"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 3433,
+      "sha256": "4fa92463bdf707b49516a62b4b858c4d1f30036c61a7ac2b2751e22c2afd10af"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 1325,
+      "sha256": "1e1b8e7d34e75ef2d03a76fb5cd0ab4a1dda22181f144f8e934942e927ed11bf"
+    }
+  ],
+  "private_evidence_root_role": "E/beta-analysis-v1",
+  "private_evidence": [
+    {
+      "path": "network-delivery-v1/BUDGET_SNAPSHOT.json",
+      "bytes": 3366,
+      "sha256": "81b77767774db437b797eb5f85113eadc527b8841ef46bb7cc06a105c8b3daa6"
+    },
+    {
+      "path": "network-delivery-v1/FACTS.json",
+      "bytes": 7706,
+      "sha256": "a7ef4aa4066c125af82d8b4625a73d8f7937bd30b2c8380e1b1b1572125fad07"
+    },
+    {
+      "path": "network-delivery-v1/MANIFEST.json",
+      "bytes": 1273,
+      "sha256": "27feac1498a5f7377928bbb8fae9dda9121ffbecc138494dff63e422b2bb34b3"
+    },
+    {
+      "path": "network-delivery-v1/PROCESS_RESULT.json",
+      "bytes": 242,
+      "sha256": "522e3fcfaa4552ae9129616ef06ce1af5721efc72ef11e999c4dd5a4ef62b255"
+    },
+    {
+      "path": "network-delivery-v1/REPORT.md",
+      "bytes": 3125,
+      "sha256": "8e556e74fe7e8b5af80fa04d8f5c3a7d98d6233bed0dc89aa4ab9e84add08ef6"
+    },
+    {
+      "path": "network-delivery-v1/REVIEW_PACKET.json",
+      "bytes": 1126,
+      "sha256": "436cae9584b0cefb559cf707d3c680050cfb04fcf8b4bdaa02f26e72b72fb1b5"
+    },
+    {
+      "path": "network-delivery-v1/RUNTIME_FREEZE.json",
+      "bytes": 999,
+      "sha256": "9074a4627f0b839e57c8d35a4f27bc6ef4136049198c984bec129e9f23a22674"
+    },
+    {
+      "path": "network-delivery-v1/RUN_RECEIPT.json",
+      "bytes": 38109,
+      "sha256": "1026a016ab1c4922f2ff36e86ea6329540c00414f14f3b644bf7dea2bb72e8a3"
+    },
+    {
+      "path": "network-delivery-v1/SOURCES.json",
+      "bytes": 19621,
+      "sha256": "6323bb09b2cb97239d7622283779442b9de672da0703cfb09c968ae2b731f3db"
+    },
+    {
+      "path": "network-diagnosis/REPORT.md",
+      "bytes": 7421,
+      "sha256": "2e9377f75fb340faf9eef95ca82d388313b1f8b053019b34629852d43b1e9198"
+    },
+    {
+      "path": "network-diagnosis/FACTS.json",
+      "bytes": 8344,
+      "sha256": "fa65f8dd7fdd3d09b0483f710b4681a162b6ef403b09e7c5a903652f2d23c9af"
+    },
+    {
+      "path": "network-diagnosis/EVENTS.json",
+      "bytes": 23658,
+      "sha256": "394eeabc4f88582b81ae955a9ea81bca05bacceda0c1ee5dcda3d198d747f832"
+    },
+    {
+      "path": "network-diagnosis/OFFLINE_REPRO.json",
+      "bytes": 1313,
+      "sha256": "f933b05668f6551391fb0c2b65e7ac7f72b6b12dde56eab15e35920cf0f7676b"
+    },
+    {
+      "path": "network-diagnosis/MANIFEST.json",
+      "bytes": 1966,
+      "sha256": "85e74c6304b8bd5427ae18d1b6642ebc79ed7287b315c456094fb6afb0d7c0ea"
+    }
+  ],
+  "self_excluded": true
+}

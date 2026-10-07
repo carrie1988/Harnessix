@@ -37,6 +37,9 @@ from tests.product_config.test_agent_context import _request
         "最终格式只约束交付正文",
         "不得直接生成完成JSON",
         "禁止把<tool_call>或<function>写成正文代替调用",
+        "定位文件优先glob",
+        "定位内容优先grep",
+        "list_files不递归，不逐级遍历",
     ),
 )
 async def test_shared_instructions_define_observed_failure_recovery(
@@ -51,7 +54,7 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in runtime[0]["content"]
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v4"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v5"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
@@ -119,7 +122,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v4"
+        assert fragment["source"] == "harnessix.coding-instructions/v5"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint
