@@ -1,0 +1,15 @@
+{
+  "status": "HOLD",
+  "facts": "facts.json",
+  "source_instruction_and_tool_contract_checks": "PASS_OFFLINE_ONLY",
+  "real_readonly_analysis": "FAIL",
+  "semantic_improvement": "NOT_OBSERVED",
+  "beta_task_acceptance": "NOT_EVALUATED",
+  "required_next_actions": [
+    "保留两次原失败及原四步限制，停止同条件重复发送",
+    "后继正式分析明确输入/允许路径元数据和适当新任务预算，不提供参考答案",
+    "新任务与v5因果验证分开，不把增加预算或路径信息记为原整改改善",
+    "完整业务副本、源码整改、审批、取消、业务测试、人工验收仍另行完成"
+  ],
+  "schema": "harnessix.beta-readonly-analysis-review/v1"
+}

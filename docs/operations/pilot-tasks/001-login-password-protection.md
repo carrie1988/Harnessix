@@ -56,6 +56,8 @@ supersedes: []
 尚无成功的 `read_file` 结果。原认证事件只读诊断确认四次工具均为成功的逐级`list_files`导航，
 没有参数错误或`read_file`调用；[导航整改详设](../../changes/m09-r3-bounded-source-navigation.md)复用已有`glob/grep`策略，
 不扩大原预算，不把指令发布当作真实分析改善。
+后继[v5同条件真实复验](../../validation/beta-001-readonly-analysis-2026-10-07-v2/README.md)仍为相同四步导航且零读取，
+没有观察到改善；两次共8请求、累计估算0.134792元、预留0，不再同条件重复发送。
 
 四个模型请求均关联原Attempt和同一60元周期的预留身份，全部结算为 `completed`：累计用量价格估算
 `0.072852`元、预留`0`、无新增unknown。供应商实际账单金额仍为null，不是0。

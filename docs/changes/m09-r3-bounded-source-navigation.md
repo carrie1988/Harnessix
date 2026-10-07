@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
 owners: [core]
 modules: [product_config, agent, tools, evals]
@@ -172,7 +172,8 @@ v5 Source与指纹可以在实际Adapter请求及持久Context Inspection中追�
 | 等义精简后 | 64 cases全部通过，正文2747字节，护栏仍2751 |
 | 覆盖 | 实际Context片段、Chat/Anthropic映射、新建/重开指纹、原Source、搜索路径/链接/硬链接/截断/预算及取消合同 |
 | 原真实失败回放 | 独立离线SDK夹具保持原4步、原用量、原四次目录调用，仍应失败；不是新模型请求 |
-| 真实行为改善 | 尚未验证；静态正文或离线Provider不能证明模型选择、分析、任务完成或R3质量 |
+| 独立离线验证 | 40 cases通过，包含原预算内深层定位/读取、重开、取消、越界及预算负对照；是固定Provider能力，不是自主效果 |
+| 真实行为改善 | [同条件v5复验](../validation/beta-001-readonly-analysis-2026-10-07-v2/README.md)仍四次逐级目录导航、零read_file、budget_exceeded；未观察到改善，不能计分析、任务完成或R3质量 |
 
 执行日志/XML保存在受控证据根的`navigation-fix/`，原运行及诊断包分别封存，公开资料不复制业务源码或凭据。
 
@@ -188,5 +189,7 @@ v5 Source与指纹可以在实际Adapter请求及持久Context Inspection中追�
 
 随原Wheel发布，无新依赖、配置项、公共协议或状态迁移；新候选必须独立冻结和安装，不能覆盖原失败运行的环境。
 回退使用受控旧程序，不删除历史或复用新预算周期掩盖原请求。
-指令只是通用策略，可能仍不被模型遵循；必要时根据真实后继证据再决定是否需要有界索引，而非先增加平台复杂度。
+指令只是通用策略；本样本同条件真实复验仍未被遵循，不再重复同条件请求。
+后继正式分析可以明确现有受控输入的允许路径元数据与新的适当任务预算，但不得以新计划改写原失败或宣称v5因果改善。
+是否需要有界索引须另据后继真实证据决策，而非先增加平台复杂度。
 原BETA-001、真实R3、三平台、正式Git Writer及1.0发布门禁仍开放。

@@ -1,0 +1,75 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4642,
+      "sha256": "d5936e518655cc33258e58bb9995248527e2ae30abd6efe6a380f732227fd9a9"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 1896,
+      "sha256": "afcf75685e8baa7fa195b46b2e8fb573b8d87f983648676bee892b90b4fc35de"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 716,
+      "sha256": "82b23651cb7b05487712133b438ecf34f77300d8e09e84c190d470e009b5fab2"
+    }
+  ],
+  "private_evidence_root_role": "E/beta-analysis-v2",
+  "private_evidence": [
+    {
+      "path": "network-delivery-v1/BUDGET_SNAPSHOT.json",
+      "bytes": 6390,
+      "sha256": "b89ef01ea53e3a52432afbe4a064bddd5a313b7d2259dc8764a774c77de0374e"
+    },
+    {
+      "path": "network-delivery-v1/DIAGNOSIS.json",
+      "bytes": 2299,
+      "sha256": "49b2003b0433abffc9295b3862816a35786482bfe5c4ea45795f28de80984198"
+    },
+    {
+      "path": "network-delivery-v1/FACTS.json",
+      "bytes": 1833,
+      "sha256": "8d7df104b15a0c053f2d2d365bdd07afa9e3a815c559872d05300012479ee0bb"
+    },
+    {
+      "path": "network-delivery-v1/MANIFEST.json",
+      "bytes": 1421,
+      "sha256": "9a79aeae92d51977153391833b6ead050c83f2db2f6bbf5abbaaac15c8ff0f67"
+    },
+    {
+      "path": "network-delivery-v1/PROCESS_RESULT.json",
+      "bytes": 308,
+      "sha256": "34105a8b4bdfb2c2f7f266ef2df038d61f9099ce03283070cb21ce0c67b2e70a"
+    },
+    {
+      "path": "network-delivery-v1/REPORT.md",
+      "bytes": 2699,
+      "sha256": "aa70973e449780c5913fa54c778079f45f80ce89325a8c191d33bc2aa3e14c26"
+    },
+    {
+      "path": "network-delivery-v1/REVIEW_PACKET.json",
+      "bytes": 658,
+      "sha256": "44c31b0527772a54267eea7e99f63848ac93533d77efa2d6fdd295ce4a545fdd"
+    },
+    {
+      "path": "network-delivery-v1/RUNTIME_FREEZE.json",
+      "bytes": 550,
+      "sha256": "ee912faad362ad9fb85cb28c1a0f4bf68c8153fad6bb2c45b7993047bf1ddba9"
+    },
+    {
+      "path": "network-delivery-v1/RUN_RECEIPT.json",
+      "bytes": 38110,
+      "sha256": "fbdd806c0380b436e5972c90aa3e419b06882a12d92803207acc17066fbd0a2b"
+    },
+    {
+      "path": "network-delivery-v1/SOURCES.json",
+      "bytes": 20012,
+      "sha256": "d624747b65923ec39c0c5a221dad9cae32bc7db530203993cb3a5fdfcb59c2e6"
+    }
+  ],
+  "self_excluded": true
+}
