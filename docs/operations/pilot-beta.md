@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 2
+code_revision: 03529962a63dfc7818d6b0d0b6874d4e9fc118a3
 owners:
   - core
 modules:
@@ -32,10 +32,11 @@ supersedes: []
 
 | 项目 | 当前边界 |
 |---|---|
-| 源码核对基线 | `main`，`29402f764eae88d50364a37817635fbb77ba907b`；后继修改须另行冻结并交付 |
+| 源码核对基线 | `main`，`03529962a63dfc7818d6b0d0b6874d4e9fc118a3`；后继修改须另行冻结并交付 |
 | 包版本 | 内部 `1.0.0rc1`；[包元数据](../../pyproject.toml#L1-L32)不是正式发行证明 |
 | 最新候选 | 尚未封存；安装入口须等待维护者提供交付路径、Revision、SHA256 和锁定依赖 |
 | Git 业务能力 | 默认完整 Git、独立 Commit、业务 Backup2 尚未落地；不能以组件设计或专项结果替代默认产品能力 |
+| 首轮参与 | 单人先导，当前真实任务完成数为 0；尚无独立开发者试用成绩 |
 | 先导结论 | 仅说明实际试用的候选、机器、Provider 配置和任务，不关闭 R3、R4、R5 或 R6 |
 
 Git 边界见[当前产品装配说明](../modules/product-config.md#正式git-review与原artifact审批链)。

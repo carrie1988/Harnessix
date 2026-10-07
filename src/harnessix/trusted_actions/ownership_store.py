@@ -45,15 +45,18 @@ class ActionOwnerFenceMixin:
         require_store_write_allowed(self)
         return self._read_runtime_owner()
 
-    def _read_runtime_owner(self) -> ActionRuntimeFence | None:
-        """只读核对原内存Fence与持久代次，不取锁、不递增、不执行共享回调。"""
+    def _read_runtime_owner(
+        self, *, database: sqlite3.Connection | None = None
+    ) -> ActionRuntimeFence | None:
+        """复用原Owner算法读取原连接或宿主短只读视图；不改变写准入或连接绑定。"""
         fence = self._runtime_fence
         if fence is None:
             if self._require_runtime_owner:
                 raise KernelError("action_runtime_owner_required", "Action写入需要活跃Runtime宿主")
             return None
+        connection = self._db if database is None else database
         rows = dict(
-            self._db.execute(
+            connection.execute(
                 "SELECT key, value FROM action_audit_metadata "
                 "WHERE key IN ('owner_generation', 'owner_token_sha256')"
             ).fetchall()

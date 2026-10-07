@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 2
+version: 3
 code_revision: pending
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -458,8 +458,8 @@ stateDiagram-v2
 ### 8.3 原 Owner、重启与授权边界
 
 [Owner 前置详设](m09-r4-git-readonly-owner-fence.md)已形成原算法提取与宿主收紧候选：
-[require_git_review_host](../../src/harnessix/product_config/git_delivery_review_host.py#L20)冻结原 Audit、连接、Fence 与标量，拒绝显式事务并查询原可见元数据；原 `_assert_runtime_owner` 的终端写保护保留。
-该候选不等于完整 B7：未耗尽游标仍可固定隐式旧快照，完整新鲜性、宿主锁/FD 与全部 dispatch 屏障未闭合。approved Writer 仍未实现、未装配；不从此前置推导当前 fence 永久有效。
+[require_git_review_host](../../src/harnessix/product_config/git_delivery_review_host.py#L64)冻结原 Audit、连接、Fence 与标量；原连接核验后增加一次短 mode=ro 观察，复用原算法并关闭，首末原身份门禁保留。
+该修订不以新连接替代原身份或写事务，明确增加两项连接级 PRAGMA；已拒绝原隐式游标旧快照反例。它仍不等于原 DB FD 认证、查询后永久所有权、全部 dispatch 或完整 B7。approved Writer 仍未实现、未装配。
 Audit events/Execution checkpoint 的同步读接口当前没有本操作 checkpoint 参数；拟议接线在调用前后检查控制，并在终端原读作用域内重验，不虚构已有有参 API。
 
 重启后的进程不能复用过去的 token。必须由原 Runtime 正常启动取得原库的新活跃 Owner generation，再以原 Store/Key/Scope/Route 身份只读重验历史。
@@ -635,7 +635,7 @@ running/reconciling 的宿主中断由原 `recover_interrupted_plan` 收敛 unkn
 | B4 | 末轮异步逻辑 Git 观察与同步终端/COMMIT 之间没有已证实的外部 Ref/配置一致性原语 | 必须明确可执行的终端见证或原协作锁方案及剩余外部边界，实测最晚窗口漂移；四库观察/路径 pin 不足以关闭。关闭前禁止启用可用 approved Writer |
 | B5 | Review TTL 与原 Turn 预算不是永久恢复凭据 | 只支持仍有原完整材料、Review 未过期且当前有效窗口内的恢复；过期拒绝，不能续期或重新审批同事实 |
 | B6 | Router ready 不能被取消改判 denied；原 Session 终结可能保留 unknown | 本增量 cancelled 限定审批前完成结算；批准后取消必须拒绝可用性。若需要批准后无效果取消闭合，另需真实模型与执行所有权证据，不在此切片宣称完成 |
-| B7 | 原身份/字段、显式事务与可见 Owner 核验已有候选；隐式游标旧快照、锁/FD 与全部 dispatch 仍未闭合 | 见原 Owner 前置详设及真实反例；不重复另一套授权，终端写保护保持。完整新鲜性及旁路闭合前禁止启用 approved Writer |
+| B7 | 原身份/字段、显式事务与短新快照 Owner 核验已有候选；原 DB FD、锁及全部 dispatch 仍未闭合 | 见原 Owner 详设的短只读观察合同修订与反例闭环；不复制授权、终端写保护保持。完整 B7 与旁路闭合前禁止启用 approved Writer |
 | B8 | 本研究输入包括未提交候选，并且原候选验收不由本文完成 | 实现前固定完整输入版本与复核以上源码定位；本文不替代候选封板或实际 SDK 验收 |
 
 B1 是已明确的存储兼容决策；B2/B3/B7 是必须实施的接线缺口；B4 是严格漂移门禁尚未关闭的关键正确性条件；B5/B6 是不能通过本增量绕过的能力边界。

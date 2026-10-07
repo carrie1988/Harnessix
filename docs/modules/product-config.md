@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 78
-code_revision: 12e30d333334234c1ad73789f392aee4c7bedf36
+version: 79
+code_revision: 03529962a63dfc7818d6b0d0b6874d4e9fc118a3
 owners:
   - core
 modules:
@@ -15,6 +15,9 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_review_fresh_owner.py
+  - tests/product_config/test_git_fresh_owner_reader.py
+  - tests/trusted_actions/test_runtime_owner_observer.py
   - tests/product_config/test_git_review_runtime_fence.py
   - tests/product_config/test_git_checkpoint_preparation_digest.py
   - tests/product_config/test_git_delivery_core_store.py
@@ -2605,15 +2608,22 @@ SDK没有用户必须阅读全部材料才可批准的强制规则。
 组件只覆盖当前 prepared 阶段，默认未注册。原 TTL、512KiB、60秒及 Native18保持；
 后续真实业务批准、Bridge/A/T2/D、独立 Commit、完整生命周期 Loader 和 Backup2仍未闭合。
 
-## Git 原 Owner 只读核验与显式事务门禁
+## Git 原 Owner 与短只读新鲜观察
 
-[详细设计](../changes/m09-r4-git-readonly-owner-fence.md)提取原
-[`_read_runtime_owner`](../../src/harnessix/trusted_actions/ownership_store.py#L48)，只执行原元数据 SELECT；
-原 `_assert_runtime_owner` 仍先执行终端写保护，原 BEGIN IMMEDIATE 写事务语义保持。
-[`Git Host`](../../src/harnessix/product_config/git_delivery_review_host.py#L20)冻结原 Audit、SQLite 连接、
-Fence 对象及三项标量，每个既有检查点拒绝身份/字段改变与显式事务，再执行原可见 Owner 核验。
-不创建 Store、Token、Schema、账本或业务行，不调用共享 checkpoint，也不缓存通过结论。
+[详细设计](../changes/m09-r4-git-readonly-owner-fence.md)复用唯一原
+[`_read_runtime_owner`](../../src/harnessix/trusted_actions/ownership_store.py#L48)算法；默认仍查询原 `_db`，
+新增 keyword-only `database` 仅用于内部观察视图，不赋值或替换原连接。原 `_assert_runtime_owner`
+仍先执行终端写保护，并在原 BEGIN IMMEDIATE 写事务内核验。
+[`Git Host`](../../src/harnessix/product_config/git_delivery_review_host.py#L64)首末验证原 Audit/连接/Fence/字段、
+原 Session/Scope 与显式事务门禁；先查原连接，再由
+[`短观察`](../../src/harnessix/product_config/git_delivery_review_host.py#L35)打开同路径原 `readonly_database`，
+在独立新快照中复用原算法，并在本次检查内关闭。已有文件的 dev/ino 门禁仅检测可观察路径替换，不证明原 DB FD 来源。
 
-`in_transaction=False` 不能排除未耗尽游标保留隐式 WAL 旧快照；该反例已经实测，完整新鲜性仍开放。
-此次收紧不关闭完整 B7、OS 锁/FD、全部 dispatch、approved Writer 或商业发布门禁。
-源码研究基线由元数据记录；新增实现字节及分组测试须以专项固定输入和实际安装证据核对。
+观察初始化执行连接级 `query_only`、`foreign_keys` 两项 PRAGMA，随后唯一原 Owner SELECT；
+不创建业务 Store、Token、Schema、账本或业务行，不进入共享 checkpoint、不复用连接或缓存通过结论。
+mode=ro 与 query_only 禁止业务写入，但保留 SQLite WAL/SHM 锁协调，不能称物理零触碰。
+观察入口显式接收构造阶段冻结的原连接；工厂重绑当前 `_db` 后返回原连接也会拒绝，且不关闭原连接。
+独立 Connection 子类拒绝前由原生基类关闭，不执行可覆盖的清理回调。
+原隐式旧快照反例在固定安装件中拒绝；原失败仍作为历史证据保留。
+[限定验证报告](../validation/git-owner-fresh-view-2026-10-07-v1/README.md)列出源码、实际SDK、安装与资源清理成绩。
+这不证明查询后的永久 Owner、ABA、OS 锁/FD或完整 B7，也不启用 approved Writer 或关闭商业门禁。

@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 202
-code_revision: 12e30d333334234c1ad73789f392aee4c7bedf36
+version: 204
+code_revision: 03529962a63dfc7818d6b0d0b6874d4e9fc118a3
 owners:
   - core
 modules:
@@ -2263,7 +2263,7 @@ Git同步段响应性仍开放，不把单例诊断或纯保护通过当作性�
 下一阶段仍是原批准事实、Owner/fence与完整U终端复核、NativeBridge、A/T2/D、独立Commit和Backup2；
 R3真实质量及两笔费用未决、三平台消费者、正式Beta与同候选R1～R6继续开放。
 
-## R4 原 Owner 前置的范围收紧
+## R4 原 Owner 前置的范围收紧（历史候选0352996）
 
 [原 Owner 详设](changes/m09-r4-git-readonly-owner-fence.md)新增单一只读算法，
 保留原写保护并收紧 Git Host 原对象/字段与显式事务门禁；不新增认证域、Store 或 Schema。
@@ -2274,3 +2274,15 @@ Git/SQLite 同提交瞬间的整仓强一致尚无可用原语，完整U末轮�
 单人先导只记录实际任务，当前实际试用0项；正式独立用户、R3费用与质量、三平台及R1～R6门槛保持。
 
 [限定验证报告](validation/git-owner-fence-2026-10-07-v1/README.md)固定同一实际Wheel及全部源输入，保留原失败和P1缺口。
+
+## R4 原隐式 Owner 快照的短只读观察整改
+
+[Owner详细设计](changes/m09-r4-git-readonly-owner-fence.md)正式修订原单连接只读合同：
+保留原Store/DB/Fence/原SELECT及写事务，在每次Host检查内复用原readonly_database打开关闭短新视图，
+不复制Owner算法、不新建业务Store/Schema/Token，不缓存连接或通过结论；首末原身份核验保持。
+原真实SDK隐式快照反例1失败保留；旧观察候选资源误关闭反例1失败另行保留。
+修订候选源码与固定安装件定向分别36通过，领域安装1009通过；新增资源归属负控覆盖冻结原连接与独立子类清理。
+500次实际SDK Host检查累计0.068520秒，FD40→40；对照只是旧Host源码+当前默认算法，不是旧Wheel或生产SLA。
+旧关联验证因宿主临时目录隔离错误中断，不计产品缺陷或验收；同输入独立关联59项通过，治理1413项通过。
+[限定验证报告](validation/git-owner-fresh-view-2026-10-07-v1/README.md)固定实际源码、Wheel、安装导入来源与失败历史，分组有交集不累加。
+原DB FD、ABA、查询后的永久Owner、全部B7、approved Writer、B4、R3、三平台及Beta门禁保持开放。
