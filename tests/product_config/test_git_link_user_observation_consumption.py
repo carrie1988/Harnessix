@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import os
 import sqlite3
 import time
@@ -527,6 +529,28 @@ async def test_original_turn_real_expiry_refuses_approval_and_consumers_without_
         with pytest.raises(AgentSDKError) as expired:
             await _decide(actual, monkeypatch, "approved")
         assert expired.value.code == "approval_expired"
+        # 原 SDK 失败命令必须持久化幂等结果；不是只读消费者的新增业务写入。
+        after_command = _readonly_state(actual.scenario)
+        assert after_command[0] == before[0] and after_command[2:] == before[2:]
+        assert after_command[1][1:] == before[1][1:]
+        old_tables, new_tables = dict(before[1][0]), dict(after_command[1][0])
+        assert new_tables.keys() == old_tables.keys()
+        for name in old_tables:
+            if name != "protocol_requests":
+                assert new_tables[name] == old_tables[name]
+        old_requests, new_requests = (
+            old_tables["protocol_requests"],
+            new_tables["protocol_requests"],
+        )
+        assert all(row in new_requests for row in old_requests)
+        added = [row for row in new_requests if row not in old_requests]
+        assert len(new_requests) == len(old_requests) + 1 and len(added) == 1
+        failed = added[0]
+        assert failed[1:3] == ("history-approved", "approval/respond")
+        assert failed[4] == "failed" and json.loads(failed[5])["code"] == "approval_expired"
+        assert failed[6] == hashlib.sha256(failed[5].encode()).hexdigest()
+        # 消费者零写仍比较全部表、原 CAS 与物理 Index，不剔除协议请求表。
+        before = after_command
         with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             with pytest.raises(KernelError) as history:
