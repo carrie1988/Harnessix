@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 86
+version: 87
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners:
   - core
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_decision_link_sources.py
+  - tests/product_config/test_git_decision_source_sdk.py
   - tests/product_config/test_git_decision_link_contracts.py
   - tests/product_config/test_git_authority_pure_paths.py
   - tests/product_config/test_git_link_user_observation_consumption.py
@@ -2736,3 +2738,13 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 确切原生Path在原短路条件位置首次懒构造并于同closure复用；子类仍每次原构造。
 全部live左字段、Owner/短新连接/physical/MAC/SQL/callback与终端检查保持，URI和认证结果不缓存。
 单组候选完整回读35.719→31.602秒仍有约14.300秒事件循环间隔，不关闭P1或B4/B7。
+
+### Git决定声明的原字节来源依赖
+
+[`git_decision_link_sources`](../../src/harnessix/product_config/git_decision_link_sources.py)将同次`ApprovalHistoryEvidence`的原正文定位转换为闭合声明。
+先核对完整定位，再复用原全历史/Route语义解释和既有投影比对，保留原完整prepared编码及两域决定。
+三变体构造沿原模型context消费父控制；原异常载体保持宿主ValueError/TypeError等原对象，不新增批准状态机。
+[详细设计](../changes/m09-r4-git-decision-original-body-sources.md)与[验证交付](../validation/release-followup-2026-10-08-v4/README.md)绑定源位置及测试。
+一次实际本地SDK在原父读窗口消费approved证据并通过末端复核，Git行、源和业务状态不变；
+它发生于UUID比较前置整改前，最终纯负控覆盖收紧，未重复整链，不作为最终同候选SDK验收。
+这是测试内消费，产品Reader输出/`decision_not_linked`及默认装配不变。映射普通构造数据不认证MAC，Writer/恢复/B4/B7仍未完成。

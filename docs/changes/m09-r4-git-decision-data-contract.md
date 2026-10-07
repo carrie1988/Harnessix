@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, delivery, execution, session]
@@ -134,7 +134,7 @@ sequenceDiagram
 | `plan` | 原完整 ProductGitDeliveryPlanV2，不精简材料/父历史/Review |
 | `approval_request` | 原 TrustedActionApprovalRequestContent，decision=None、pending_approval；沿原 prepared 约束 |
 | `prepared_body_sha256` | 原规范前驱正文索引，Revision 格式；不是 MAC 或来源认证 |
-| `request_event` | GitSessionEventRef：UUID、严格正整数 thread-global sequence、Revision digest |
+| `request_event` | GitSessionEventRef：UUID、严格正整数 thread-global sequence、Revision digest；后继来源映射使用原已验真事件UTF-8正文SHA，不是模型规范摘要 |
 | `router_approval` | 完整 ExecutionApprovalCheckpoint，绑定 plan.route.execution 的 ID/指纹；决定必须有时区 |
 | `route_decision_sequence/digest` | 原 Route 决定索引；正整数及 Revision，无权威能力 |
 | `session_decision` | approved/denied 专有，完整请求只允许 decision、route_state 两字段变化 |

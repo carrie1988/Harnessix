@@ -1,0 +1,154 @@
+{
+  "schema": "harnessix.release-followup/v4",
+  "source_base": "b19f7a838772b8dfca9acd4230ee29f40a829dc3",
+  "source_files": [
+    {
+      "path": "src/harnessix/session/event_body_refs.py",
+      "bytes": 434,
+      "sha256": "97a4cf425bd725ec89156444de4ab7997f223f311345565a7a4eb15296c41d5c"
+    },
+    {
+      "path": "src/harnessix/session/sqlite_publication.py",
+      "bytes": 10894,
+      "sha256": "20fd222b1ce6797d7e426eb8c9a99121a137a6f97963fada02a65150e7ad1b56"
+    },
+    {
+      "path": "src/harnessix/session/sqlite_history.py",
+      "bytes": 6471,
+      "sha256": "e970c61fc7bd3673ff0b70274853c9dc8aa0a98d2e9f54bea99ad0462dedda5b"
+    },
+    {
+      "path": "src/harnessix/product_config/git_decision_link_sources.py",
+      "bytes": 7369,
+      "sha256": "15e6872fd9c22bca516007d998b51b96d62df3bdc003126ad3103ef8a7244c4a"
+    },
+    {
+      "path": "tests/session/test_authenticated_body_refs.py",
+      "bytes": 5884,
+      "sha256": "9735cdc6016c15ef962277b5cdf9e20d6d86aa596c1960d85997d6936e0a3fbf"
+    },
+    {
+      "path": "tests/product_config/test_git_decision_link_sources.py",
+      "bytes": 11394,
+      "sha256": "908986b1c1c58d30ca6151ca8574b6771fee25ef60832f3ec8f1c4e317f3c289"
+    },
+    {
+      "path": "tests/product_config/test_git_decision_source_sdk.py",
+      "bytes": 2727,
+      "sha256": "03f51fa6257cd911596133c3c42cbbfb69ab68d2feb140d4ad885d09956eabf7"
+    }
+  ],
+  "final_main_completed": [
+    {
+      "file": "session-green.xml",
+      "tests": 166,
+      "seconds": 4.057,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "file": "mapper-final-v2.xml",
+      "tests": 329,
+      "seconds": 13.775,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "file": "governance.xml",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    }
+  ],
+  "final_main_unique_nodes_excluding_governance": 495,
+  "sdk_pre_identity_guard": {
+    "file": "sdk.xml",
+    "tests": 1,
+    "seconds": 113.204,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "source_mapper_sha256": "5ac12e78393f8534cb57092bba9afba3043c4b1b780538051fa1fdc006fb8e19",
+    "not_same_final_mapper": true,
+    "consumer_limit_seconds": 60,
+    "turn_limit_seconds": 120,
+    "read_seconds_not_measured": true,
+    "code_bailian": false
+  },
+  "prototype": {
+    "scope": "independent private research only",
+    "short_tests": 28,
+    "progress_tests": 2,
+    "sdk_reads": 1,
+    "seconds": 21.89401670799998,
+    "max_loop_gap_seconds": 5.88658866699916,
+    "total_changes": 0,
+    "production_enabled": false,
+    "P1_closed": false,
+    "matrix30_complete": false
+  },
+  "budget": {
+    "period_id": "bab39be6-7af6-4a77-9da6-fe0664e15f65",
+    "allocation_cny": "60",
+    "known_estimate_cny": "0.706096",
+    "reserved_cny": "0",
+    "request_count": 26,
+    "actual_invoice": null,
+    "new_model_calls": 0,
+    "old_unresolved_excluded_not_settled": true,
+    "ledger_sha256": "6c339787afb618a906271db663962067b548f8cda35e41dcbb57ebb0507ab364"
+  },
+  "docker": {
+    "official_status_exit": 1,
+    "engine_socket_present": false,
+    "UI_state": "Mac locked",
+    "restarted_this_turn": false,
+    "original8_restored_verified": false
+  },
+  "source_sdk_scope": "test-only capture inside original read control; full U and terminal remain, no product Reader shape change",
+  "writer": false,
+  "default_git_write": false,
+  "beta_accepted_tasks": 0,
+  "R3_old_strict": "0/20",
+  "R3_old_required_tests": "1/20",
+  "release_gate": "OPEN",
+  "foreign_untracked_read_or_staged": false,
+  "upstream_manifests": [
+    {
+      "name": "git-decision-source-recipe-v1",
+      "sha256": "27e7c29acdf4b407e3d2e897ba2bc3751eda1252201ffcb76104b8bd977f1e3a"
+    },
+    {
+      "name": "git-decoder-boundary-prototype-v1",
+      "sha256": "464ee636a6125ce817b0e614dabb6814fdc9ec5b14565d4514cbb428825c6191"
+    },
+    {
+      "name": "git-decision-source-review-v2",
+      "sha256": "77dd1cfa89ce862a2293292179a0f3c1cc925502aab8553adc696bb3d7db3806"
+    },
+    {
+      "name": "git-decision-source-review-v3",
+      "sha256": "2de838d14dc1bf4e9feb015c2dfacbdefbd0b672d43b8dcf24ae128965294058"
+    }
+  ],
+  "documentation_qa": {
+    "documents": 617,
+    "links": 13699,
+    "mermaid_structure_blocks": 1136,
+    "new_diagrams_rendered": 4,
+    "owned_paths": 20,
+    "findings": 0
+  },
+  "final_main_unique_nodes_including_governance": 518,
+  "sdk_test_final_format_ast_identical": true,
+  "independent_review": {
+    "initial_P2": 1,
+    "final_probe_rejected": true,
+    "foreign_eq_calls": 0,
+    "scope": "isolated real function control flow with dependency stand-ins; no actual MAC integration",
+    "manifest_sha256": "2de838d14dc1bf4e9feb015c2dfacbdefbd0b672d43b8dcf24ae128965294058"
+  }
+}

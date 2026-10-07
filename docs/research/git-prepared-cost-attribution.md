@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 3
+version: 4
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, workspace, trusted_actions, agent]
@@ -250,3 +250,22 @@ auditPhysical369940、四库身份493260、GitDB pin123313及terminal1均相同�
 候选最大心跳间隔14.300秒仍显著阻塞调度。原60秒profile失败、20秒级历史负控和默认关闭的layered研究保持。
 主仓接入仅复用same-closure native纯词法Path，live检查及原异常顺序不削减；
 URI复用没有实施，Owner/连接/认证缓存禁止。完整响应性P1与approved Writer/B4/B7仍开放。
+
+## 单处原正文解码边界研究：默认关闭
+
+在固定`b19f7a838772b8dfca9acd4230ee29f40a829dc3`独立副本，研究仅对原MAC/尾锚验真后的prepared正文decode采用
+“原full Before→原纯递归progress→立即撤销→成功后的原full After”。公开codec/原完整解析/512KiB合同不改；
+未知Callable、混合审批历史、U、真实IO、发布和terminal仍full。只有研究副本3处源码改变，主仓没有该桥或开关。
+
+最终28短测及2实际progress引用/SQL代际负控通过；一次真实SDK候选read 21.894秒，
+同loop最大间隔5.887秒、GitDB total_changes0、全行hash及原业务状态不变。旧基线不同Revision，不计算改善比例。
+原IO-trap仅证明一个实际成功输入的解码闭包，不是所有容量、平台和异常分支纯性证明；完整30条规范矩阵未闭合。
+
+已复现三种不可透明替换的差异：原第三次外callback异常不再触发；无持久痕迹的暂态Owner引用/物理ABA
+失去原逐叶观测；Owner与数据错误并存时首异常可以移动。真实Owner外连接提交后还原仍由原固定observer拒绝，
+不能把全部ABA混成一种结论。默认、迟到叶、跨Task/线程、重入及取消/期限边界分别记录。
+原60/120秒限制不变，但未自然耗尽完整60/120秒或复验实际审批等待余量；不宣称检测SLA或P1解决。
+
+生产观察合同仍HOLD：D1 callback观察、副作用；D2永久漂移/暂态ABA；D3首异常；D4响应/检测/Turn余量；D5明确opt-in。
+剩余原控制/恢复/IO/到期负控须在采用合同前完成。初始收集ERROR、6项夹具FAIL、旧Git bootstrap FAIL及lint失败保留，
+不以最终短测通过覆盖旧失败。[专项交付](../validation/release-followup-2026-10-08-v4/README.md)包含独立封存范围和manifest摘要。

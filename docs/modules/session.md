@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 16
+version: 17
 code_revision: 634f96c55cfeff5db7e84b177074c4bd5d6a990c
 owners:
   - core
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/session/test_authenticated_history.py
+  - tests/session/test_authenticated_body_refs.py
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
   - tests/agent/test_store.py
@@ -723,7 +724,7 @@ Key不入Workspace、DB或公共配置；自有副本退出清零。Windows实�
 
 [`SQLiteSessionStore.authenticated_thread_history`](../../src/harnessix/session/sqlite.py)在原单连接、
 `mode=ro`及单一读事务中复用原Header、投影和全部事件MAC认证，随后用原Reducer重放并完整比较。
-返回`AuthenticatedThreadHistory`只含普通Thread及事件元组；不是Root、当前批准、恢复执行或Git交付能力。
+返回`AuthenticatedThreadHistory`含普通Thread、完整事件及同次原字节定位元组；不是Root、当前批准、恢复执行或Git交付能力。
 调用者原CancelToken、绝对单调期限和可选Owner检查点贯穿SQL、事件与关闭后的最终核验。
 原事件/字节/投影限额不变，不创建缺失库，不补签或修复；WAL合法并发提交不造成混合读版本。
 
@@ -747,3 +748,12 @@ Owner的OS/SQLite异常以私有载体保留原对象；原真实回滚/关闭�
 新增夹具初始化也按相同资源顺序结算；实际SQLite authorizer拒绝INSERT的两例回归
 保证初始化失败不留下强引用连接，不将探针正常路径通过外推为异常安全。
 定位证据、流程/时序/数据图、接口和失败边界见[详细设计第12节](../changes/m09-r4-authenticated-thread-history.md#12-windows原生测试夹具及探针连接生命周期整改)。
+
+### 同次原事件正文定位
+
+[`EventBodyRef`](../../src/harnessix/session/event_body_refs.py)以冻结slots结构保存原Thread、Event ID、Sequence及实际UTF-8正文SHA。
+原`authenticated_events`仅在MAC和原身份校验通过后累积；原完整前缀、Reducer、连接结算及最终控制成功才返回不可变`body_refs`。
+不增加SQL、表、Seal或Key，也不由AgentEvent重编码生成摘要。旧两参历史仍可构造，默认空定位只供语义夹具，不能提供原字节来源。
+普通结构不是真实来源令牌；定位参与历史equality，模型值相同但原正文不同会被视为不同读取事实。
+[详细设计](../changes/m09-r4-git-decision-original-body-sources.md)明确接口、四图、内存代价、原异常和回退；
+[原字节回归](../../tests/session/test_authenticated_body_refs.py)禁止模型编码器，并在窄夹具验证原8检查点/13SQL/12SELECT/BEGIN1不变。

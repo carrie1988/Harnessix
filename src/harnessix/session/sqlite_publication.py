@@ -13,6 +13,7 @@ import aiosqlite
 from harnessix.agent.cancellation import parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
+from harnessix.session.event_body_refs import EventBodyRef
 from harnessix.session.store_publication import (
     EMPTY_PREFIX,
     MAX_HISTORY_BYTES,
@@ -199,8 +200,12 @@ async def authenticated_events(
     after: int,
     *,
     history_checkpoint: Callable[[], None] | None = None,
+    _body_refs: list[EventBodyRef] | None = None,
 ) -> list[AgentEvent]:
     """从根重算完整前缀再返回选定事件；损坏投影不改变原事件认证依据。"""
+    # 仅原历史协调器传入内建空列表；不让累积器变成可执行的自定义回调。
+    if _body_refs is not None and (type(_body_refs) is not list or _body_refs):
+        raise unproven()
     await verify_store(database, publication)
     proof = await checkpoint(database, publication, thread_id)
     if proof is None:
@@ -228,7 +233,8 @@ async def authenticated_events(
         if row["sequence"] != count:
             raise unproven()
         seal = await verified_event(database, publication, row)
-        size += len(row["event_json"].encode()) + len(seal)
+        body = row["event_json"].encode("utf-8")
+        size += len(body) + len(seal)
         if size > MAX_HISTORY_BYTES:
             raise KernelError("publication_history_limit", "Session历史认证超过资源上限")
         prefix = extend_prefix(prefix, seal)
@@ -242,6 +248,16 @@ async def authenticated_events(
             raise unproven()
         if count > after:
             selected.append(event)
+            if _body_refs is not None:
+                # 摘要来自刚完成 MAC 核验的原字节，禁止以模型重编码代替。
+                _body_refs.append(
+                    EventBodyRef(
+                        event.thread_id,
+                        event.event_id,
+                        event.sequence,
+                        hashlib.sha256(body).hexdigest(),
+                    )
+                )
         check_cancel()
     if count != proof.sequence or prefix != proof.prefix_sha256 or size != proof.history_bytes:
         raise unproven()

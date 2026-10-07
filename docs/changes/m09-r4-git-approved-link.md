@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 7
+version: 8
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -13,6 +13,8 @@ related_tests:
   - tests/product_config/test_git_observation_verification_recipe.py
   - tests/product_config/test_git_prepared_link_contracts.py
   - tests/product_config/test_git_decision_link_contracts.py
+  - tests/product_config/test_git_decision_link_sources.py
+  - tests/product_config/test_git_decision_source_sdk.py
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_approval_crash_recovery.py
@@ -27,6 +29,8 @@ supersedes: []
 
 **正式决定接线状态：`planned`。** [三种决定数据声明与严格 Wire](m09-r4-git-decision-data-contract.md)已实现；原来源认证 Proof、事务 Writer、完整历史 Reader 及宿主恢复屏障仍未实现或装配。
 数据契约通过不能签发认证、批准或执行权限；当前没有默认产品 Git 写工具。
+原[事件正文定位及私有声明映射](m09-r4-git-decision-original-body-sources.md)已实现，沿原 Session 同次完整认证读取保留摘要，
+内部映射复用原完整语义解释及父控制；这只补来源依赖，不是正式决定 Proof/Writer，也不装配默认 Reader。
 文档治理状态保持 `draft`；`code_revision` 固定现行消费者实现，不表示拟议正式决定接口已经落地。
 B3 的必需只读依赖 `verify_product_git_user_observation` 与共享末轮配方已在当前工作区落地；
 它们只复核既有完整 U，原Reader绑定及每个基准成员均向原生端口求证，不接受重新计算公开摘要作为认证；不代表完整 B3 批准认证接线或正式上线。原 prepared Ledger 与审批历史 Reader 已在协调层消费该依赖；B4、B7、同步响应性 P1 与 approved Writer 均未闭合。

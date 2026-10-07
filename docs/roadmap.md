@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 217
+version: 218
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners:
   - core
@@ -1885,7 +1885,7 @@ Job111229042843已终态failure。原四格、同源fanout／blob、真实Window
 消费者Windows、独立Beta及最终R1～R6仍开放。
 
 固定0583b53的[Run37134072312](https://github.com/carrie1988/Harnessix/actions/runs/37134072312)、attempt1、
-Job111234899713已终态success：原身份预检、原四格、同源两臂、三个真实Windows控制、原写／改名／删除保护，
+Job111234959713已终态success：原身份预检、原四格、同源两臂、三个真实Windows控制、原写／改名／删除保护，
 以及原两SDK加诊断侧车全部步骤success。原诊断完成门仍要求两个case、每个13接点、完整已知Trace2观察和正常teardown；
 插件原字节未改变。最低SHA256 Commit原材料／CAS写入及独立批准回读在此固定专项完成原生验收。
 
@@ -2466,3 +2466,19 @@ BETA-001的上传Mock反事实仅一测试stub改动，一次整类10/10通过�
 实际控制/Owner定向矩阵60项在1498.19秒终结，其中39纯路径节点与另一集合重复。原操作/Turn期限不改，不等同完整SDK或SLA。
 权限夹具原样H2与本班EXACT反事实均3FAIL：旧403越过后出现可见性、资源和错误码差异，未改生产/断言或放宽GLOBAL。
 这些结果不覆盖原350项FAIL，不增加Beta任务接受数。
+
+### R4原决定声明的原字节来源与隔离响应性复验
+
+[来源详细设计](changes/m09-r4-git-decision-original-body-sources.md)落实同次Session原UTF-8正文定位及私有三变体映射。
+不以模型重编码代替原正文，不新增SQL/DDL/Key/认证权威；原全语义解释、父检查点和异常身份保持。
+最终主仓495唯一功能节点通过，治理另计；一次actual本地SDK approved消费在比较前置整改前完成，完整夹具113.204秒。
+最终9项foreign-equality Spy及纯集合验证收紧，未重跑整链，不宣称同最终候选SDK；原60秒consumer/120秒Turn限制保持。
+不装配Writer或默认Git工具，不把来源数据依赖当作B3/B4/B7完整认证。
+
+单处已验真prepared decode隔离原型完成28短测、2实际progress边界短测及1真实SDK read，
+读21.894秒、最大同loop间隔5.887秒，仅一份候选、非配对性能基线；P1保持OPEN。
+暂态Owner引用/物理ABA、callback副作用和首异常顺序不等价已复现，因此生产HOLD、未合入默认。
+新60元账本保持26请求、估算0.706096元，本交付付费请求0；旧未决记录不计新周期也不报零结算。
+Docker官方status仍退出1、socket缺失，桌面接口明确报告Mac锁定；原8容器及默认挂载尚未恢复验收。
+原R3严格0/20及必需测试1/20、真实Beta接受0、三平台与R1～R6继续开放。
+完整证据、初败及同次来源绑定见[本次交付](validation/release-followup-2026-10-08-v4/README.md)。

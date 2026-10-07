@@ -16,6 +16,7 @@ from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
 from harnessix.agent.reducer import replay
+from harnessix.session.event_body_refs import EventBodyRef
 from harnessix.session.sqlite_publication import authenticated_events
 from harnessix.session.store_publication import SessionPublicationBinding, unproven
 
@@ -29,6 +30,8 @@ class AuthenticatedThreadHistory:
 
     thread: Thread
     events: tuple[AgentEvent, ...]
+    # 旧两参构造仍可用于纯语义夹具；空引用不得作为原字节来源。
+    body_refs: tuple[EventBodyRef, ...] = ()
 
 
 class _OwnerCheckpointFailure(Exception):
@@ -145,13 +148,19 @@ async def _read_in_transaction(
             control.checkpoint()
             if thread is None:
                 raise KernelError("thread_not_found", "Thread不存在")
+            body_refs: list[EventBodyRef] = []
             events = await authenticated_events(
-                database, publication, thread_id, 0, history_checkpoint=control.checkpoint
+                database,
+                publication,
+                thread_id,
+                0,
+                history_checkpoint=control.checkpoint,
+                _body_refs=body_refs,
             )
             control.checkpoint()
             if thread != replay(events):
                 raise unproven()
-            candidate = AuthenticatedThreadHistory(thread, tuple(events))
+            candidate = AuthenticatedThreadHistory(thread, tuple(events), tuple(body_refs))
             control.checkpoint()
         except sqlite3.Error:
             control.rethrow_interruption()

@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: reviewing
-version: 2
+version: 3
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, session, execution, delivery, documentation]
@@ -95,7 +95,7 @@ OrganizationService.addMembers→RoleManagementService.assign补齐本班EXACT�
 主仓RED missing-module、mypy adapter缺标注、选择不存在测试文件的命令、旧系统Git不支持对象格式以及
 移植测试两次检查错误预期均保留。后继修正只涉及本次源码/标注/测试环境及预期；
 实际Git使用2.53原生命令，未改生产限制或真实断言。最初详设缺语义标题的文档门禁失败保留并补齐。
-失败不被重新统计成PASS；903仅来自三份明确终结JUnit。
+失败不被重新统计成PASS；924唯一节点只来自第1节四份明确终结JUnit，重复纯路径节点已经扣除。
 
 ## 6. 预算、部署与发布门禁
 
