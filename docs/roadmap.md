@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 216
+version: 217
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners:
   - core
@@ -2462,7 +2462,7 @@ BETA-001的上传Mock反事实仅一测试stub改动，一次整类10/10通过�
 支持夹具契约错位归因；生产代码与断言未改，不计Agent修复或Beta接受。
 原全业务FAIL及其他组别保持，登录披露面契约、功能回归、浏览器、默认Docker/Profile、R3、三平台与R1～R6仍未完成。
 
-[本次专项交付](validation/release-followup-2026-10-08-v3/README.md)汇总主仓903个已完成节点及独立审阅；
-主仓实际控制/Owner矩阵仍运行，单独保留，不将进度输出转为通过。
+[本次专项交付](validation/release-followup-2026-10-08-v3/README.md)汇总主仓924个去重已完成节点及独立审阅；
+实际控制/Owner定向矩阵60项在1498.19秒终结，其中39纯路径节点与另一集合重复。原操作/Turn期限不改，不等同完整SDK或SLA。
 权限夹具原样H2与本班EXACT反事实均3FAIL：旧403越过后出现可见性、资源和错误码差异，未改生产/断言或放宽GLOBAL。
 这些结果不覆盖原350项FAIL，不增加Beta任务接受数。

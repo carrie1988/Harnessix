@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: reviewing
-version: 1
+version: 2
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, session, execution, delivery, documentation]
@@ -19,7 +19,7 @@ supersedes: []
 # 决定数据与纯路径增量 Review Packet
 
 - 范围：内部闭合决定数据+wire、四个固定原生Path纯值复用；不启用认证Writer/效果。
-- 主仓已终结JUnit：354+487+62=903，节点集合不重叠；实际控制矩阵仍运行，不宣称完成。
+- 主仓已终结JUnit：354+487+62+60，重复纯路径39去重后924唯一节点全PASS；控制矩阵1498.19秒为多个场景，不宣称完整SDK或SLA。
 - 独立声明审阅、三种合法512KiB Oracle、同一瞬间时间取舍及全部初败保全见报告。
 - 纯路径对照只一组，重控计数相同；未证明稳态SLA、整链全量动态顺序或三平台。
 - 上传Mock10PASS是宿主夹具反事实，权限两轮各3FAIL保留；原业务FAIL与Beta未完成。

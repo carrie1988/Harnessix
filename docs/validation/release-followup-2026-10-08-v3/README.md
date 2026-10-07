@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: reviewing
-version: 1
+version: 2
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, session, execution, delivery, documentation]
@@ -29,14 +29,16 @@ supersedes: []
 |---|---|---|
 | 主仓新决定与旧 prepared 合同 | 142+212=354 PASS | 真实 Session/MAC/Owner 来源 Proof、Writer、恢复 |
 | 主仓相邻观察Core/产品codec/目录 | 487 PASS | 实际商用场景、安装与三平台 |
-| 主仓纯路径39+文档策略23 | 62 PASS | 全部实际SDK控制回归、响应性SLA |
+| 主仓纯路径39+文档策略23 | 62 PASS | 响应性SLA、完整SDK及安装 |
+| 主仓原控制/Owner定向矩阵 | 60 PASS，1498.19秒，包含39重复纯路径节点 | 21项实际控制/Owner定向证据，不是完整SDK |
 | 原/候选纯Path对照 | 40短测及各自1 SDK PASS | 单组计数观测，不是全矩阵或主仓新重跑 |
 | 独立数据审阅 | 最新142及独立合法大小Oracle3通过；初始独立完整探针107通过 | 不叠加跨版本/重跑为一套SDK或354独立复验 |
 | Beta 上传Mock反事实 | 一次完整类10/10 PASS | 非Agent修复，原全业务FAIL不变 |
 | Beta 权限运行时及反事实 | 两轮各3 FAIL，原403越过后仍失败 | 未到达断言、资源闭包、业务/Beta通过 |
 
-主仓三个已完成且节点不重叠的集合合计903 PASS/0FAIL/0ERROR/0SKIP。主仓实际控制/Owner矩阵仍运行，
-不计其部分输出为通过，不以单组候选替代此未完成矩阵。没有CI绿色或1.0发布结论。
+主仓四个已终结集合354+487+62+60，减去39个重复纯路径节点，合计924个唯一节点全部PASS，
+0FAIL/0ERROR/0SKIP。控制矩阵在原60/120秒操作/Turn限制下终结；1498.19秒为多个独立场景整套耗时，
+不是一次操作延长到1498秒。不是完整SDK套件，没有CI绿色或1.0发布结论。
 
 ## 2. 架构、源码与数据边界
 

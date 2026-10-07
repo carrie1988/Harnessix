@@ -41,12 +41,20 @@
     "contracts": 354,
     "adjacent": 487,
     "pure_paths_and_governance": 62,
-    "total": 903,
+    "total": 924,
     "failures": 0,
     "errors": 0,
-    "skips": 0
+    "skips": 0,
+    "authenticated_control_matrix": 60,
+    "duplicate_pure_path_cases": 39
   },
-  "main_actual_controls": "RUNNING_NOT_ACCEPTED",
+  "main_actual_controls": {
+    "status": "TARGETED_SUITE_PASS",
+    "tests": 60,
+    "elapsed_seconds": 1498.19,
+    "timeout_limits_unchanged": true,
+    "complete_sdk_suite": false
+  },
   "candidate_full_check": {
     "baseline_seconds": 35.719023542002105,
     "candidate_seconds": 31.601754333001736,

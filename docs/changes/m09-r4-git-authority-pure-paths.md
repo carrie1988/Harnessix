@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, session, trusted_actions, workspace]
@@ -152,7 +152,8 @@ verify:
 ## 11. 实施切片
 
 先独立 tracked archive 候选/原基线；RED 保留1 FAIL/17 PASS；后续40短测和两次各自SDK通过。
-主仓独立审阅后合入原单文件差异，并增加不依赖私有路径的39项回归；原完整实际控制回归另行执行。
+主仓独立审阅后合入原单文件差异，并增加不依赖私有路径的39项回归；原完整实际控制/Owner定向矩阵60项随后通过，其中39项纯路径重复；整套1498.19秒，原单操作60秒/Turn120秒不变。
+这21项新增控制/Owner节点与主仓另903项去重合计924；不是完整SDK或三平台验收。
 原已保存profile、layered研究和失败不覆盖；layered仍未合入。主仓最终结论以新原件为准。
 
 ## 12. 源码与测试映射
