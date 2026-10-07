@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: ba6171f32e5575be727364d166001ca0619db6a0
+version: 3
+code_revision: eca05790fb1b99013e775dc3acd2ad03ccaf2a23
 owners: [core]
 modules: [models, agent, session]
 related_adrs:
@@ -200,3 +200,15 @@ R3编码质量、三平台发行或商用发布。原真实分析失败保持，
 [完整未整改后端前测](../validation/beta-001-complete-baseline-2026-10-08-v1/README.md)保持FAIL，
 后续须解决真实长结果/任务/历史适用性与业务测试失败；禁止同类第五次分析盲试。
 详见[先导任务](../operations/pilot-tasks/001-login-password-protection.md)和[发布门禁](m09-to-v1-release-scope-convergence.md)。
+
+## 15. 人工输入与语义门：接口完成不得追认为正确方案
+
+[后继真实观察](../validation/release-followup-2026-10-08-v2/README.md)通过原SDK提交操作员提供的5完整文件，
+单请求completed并经原Session认证重开一致；原五只读能力及动态Context不变，实际工具调用0。
+人工提供的用户文本不是Agent自主读取证明，`ThreadView`公开元数据不是内部items；
+助手结论只能从认证Thread的`assistant_message`取得。
+
+本次没有原生/正文边界错误，但方案语义拒绝：字段编码格式不代表密码保护，传输类型改变不代表JSON接口兼容，
+登录后Token不自动证明登录提交防重放。原模型正文及错误建议保留，不把文字转成工具、不批准无效Patch、
+不以协议绿色降低任务语义门。生命周期、工具实际效果、正确方案、最终测试和人工接受分别判断。
+验证Guard及生产Adapter/Runtime未变；用量由认证历史单独回读，缺账单仍null而非零。

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "self_excluded": true,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 9979,
+      "sha256": "f6b6c261193cfc1fc27f75e66a3cecc5e59e73b4a573cbe81f65225305639b48"
+    },
+    {
+      "path": "REVIEW_PACKET.md",
+      "bytes": 1583,
+      "sha256": "987b9976d7cbf4a2f659d2e1966318f4605fffd78c70eceeefda77bbee96f74d"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 2931,
+      "sha256": "54ada9ed0c72b80d879f43c2bf56887a8edc4c4f229c50ae0faf44c62cf6784b"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 1
-code_revision: b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c
+version: 2
+code_revision: eca05790fb1b99013e775dc3acd2ad03ccaf2a23
 owners: [core]
 modules: [product_config, workspace, trusted_actions, agent]
 related_adrs:
@@ -217,3 +217,22 @@ flowchart TD
 | [公开合同](../../tests/product_config/test_git_prepared_link_contracts.py) `test_all_boundaries_preserve_exact_original_checkpoint_exception` | 公共snapshot/encode/decode首中末任意回调原异常不被私有分层改变 |
 
 持久写后还原可留下`data_version / total_changes / epoch`痕迹，仍须检测；无持久痕迹的暂态A→B→A可能只被原递归采样观察。分层会改变这部分拒绝集合，且已经发生的其他错误可能先于末端认证，不能靠末端复核恢复旧错误顺序。
+
+## 15. 后继原完整校验单次cProfile：成本主因修正
+
+[固定当前源码专项验证](../validation/release-followup-2026-10-08-v2/README.md)不启用分层桥、
+不减少callback/freshOwner/physical/MAC/授权，不改变60秒消费者或120秒Turn期限。
+一次真实SDK fixture `read_all`进入terminal完整重验时期限拒绝，原FAIL保留；
+Turn年龄约24.8→84.8秒，不是120秒审批过期。fixture签名seed不证明生产Writer。
+
+profile约149M函数调用、wall60.000605秒、父CPU59.841757秒；不重叠self-time显示SQLite约21.996秒、
+文件身份/路径约20.247秒、JSON/model JSON约0.045秒。深快照函数30秒级cumtime大部分是逐叶full检查嵌套，
+不能将其说成JSON解析自耗，也不能将不同cumtime相加。完整SDK历史及nativeGit不是本样本主成本。
+
+freshOwner122898、Owner读取245796、外callback52361、stat2704844；GitDB total_changes=0、
+MAC及全状态前后相同。最大同loop心跳间隔27.304秒是带profile观察，不是无插桩SLA。
+
+未实施小候选：同次factory的四固定期望Path纯值构造，以及同次host closure的原生绝对不可变Path纯URI字符串。
+分别涉及约2.38/1.21秒累计成本，不能宣称足以解决P1。每次live字段读取、connect/PRAGMA、Owner、身份检查、
+回调、MAC、期限及异常关闭均保留；首次URI编码仍在stat后/connect前，子类和相对Path回退原路径，
+不缓存resolve、实体身份、观察连接或认证结论，不引入全局LRU。精确差分及收益验证未执行，P1继续OPEN。

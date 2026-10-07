@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "status": "RELEASE_GATES_OPEN",
+  "source_revision": "eca05790fb1b99013e775dc3acd2ad03ccaf2a23",
+  "provider_candidate_revision": "3fb2ef57f3a647b20058f987f090e6829c4d8a58",
+  "production_code_changed": false,
+  "baseline": {
+    "classes": 76,
+    "tests": 350,
+    "pass": 302,
+    "failure": 9,
+    "error": 39,
+    "skipped": 0,
+    "network_errors": 29,
+    "nonnetwork_records": 19,
+    "groups": {
+      "mock_contract": 9,
+      "missing_labs": 6,
+      "assignment_fixture_pending_runtime_confirmation": 3,
+      "existing_name_mapping": 1
+    },
+    "counterfactual_runs": 0,
+    "failure_result_unchanged": true
+  },
+  "git_profile": {
+    "runs": 1,
+    "result": "FAIL",
+    "code": "git_process_timeout",
+    "wall_seconds": 60.000605,
+    "parent_cpu_seconds": 59.841757,
+    "calls": 149005250,
+    "fresh_owner_reads": 122898,
+    "owner_queries": 245796,
+    "external_callbacks": 52361,
+    "sqlite_changes": 0,
+    "state_unchanged": true,
+    "p1_closed": false,
+    "safe_candidates_implemented": false
+  },
+  "assisted_analysis": {
+    "model_requests": 1,
+    "complete_supplied_files": 5,
+    "autonomous_source_read": false,
+    "native_tool_calls": 0,
+    "protocol_status": "completed",
+    "semantic_review": "REJECTED",
+    "patch_executed": false,
+    "replay_equal": true,
+    "input_tokens": 10122,
+    "output_tokens": 621,
+    "total_tokens": 10743,
+    "cost_estimate_cny": "0.050424",
+    "usage_readback_requests": 0,
+    "beta_accepted": false
+  },
+  "budget": {
+    "allocation_cny": "60",
+    "requests": 26,
+    "completed": 26,
+    "known_estimate_cny": "0.706096",
+    "reserved_cny": "0",
+    "remaining_estimate_cny": "59.293904",
+    "actual_invoice_cny": null,
+    "old_ledger_unchanged": true
+  },
+  "docker": {
+    "engine_socket_available": false,
+    "stale_backend_terminated": true,
+    "detached_start_not_engine_readiness": true,
+    "gui_locked": true,
+    "original_containers_restored": null,
+    "default_workspace_mount_verified": false
+  },
+  "release": {
+    "accepted_beta_tasks": 0,
+    "r3_historical_strict_success": 0,
+    "r3_historical_required_checks_pass": 1,
+    "r3_historical_trials": 20,
+    "r1_to_r6_exit_conditions_unchanged": true
+  },
+  "private_evidence": [
+    {
+      "kind": "business_diagnosis",
+      "members": 10,
+      "manifest_sha256": "8d29e117637021e7fa64f187d5df109ce75f9bb0d7936f67469ed82685334c90"
+    },
+    {
+      "kind": "original_full_profile",
+      "members": 28,
+      "manifest_sha256": "b92954c9635daf9b43be6f71ab0ecb3d8c9361db338425944fa3b0c06b79b28f"
+    },
+    {
+      "kind": "assisted_analysis",
+      "members": 29,
+      "manifest_sha256": "99a30231573286c9f40c4f55f3ae3d6632a73f12497c7703ade7c8a2d5829627"
+    },
+    {
+      "kind": "authenticated_usage_readback",
+      "members": 5,
+      "manifest_sha256": "8469ddda55720761dd2a6d92b166b2cbb92b763e32de92db193464e3db0652be"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 214
+version: 215
 code_revision: 2bef425141653360c29e09b38e079065825437cb
 owners:
   - core
@@ -2431,3 +2431,16 @@ Git层级控制研究v2样本读取约30.57秒/19.28秒，仍有事件循环阻�
 发布约32.03秒、pending只读约18.14秒/写计数0，读取心跳最大间隔5.25秒。
 并行前提、FD诊断污染及首callback故障注入边界保持，不认定SLA、资源或完整SDK通过。
 研究默认关闭、未合入；callback/检测时点/失败顺序合同未决，P1与approved Writer/B4/B7继续开放。
+
+### 发布跟进：前测归因与单请求语义拒绝
+
+[限定验证](validation/release-followup-2026-10-08-v2/README.md)逐项归因原19项非网络失败：
+9旧Mock接口、6缺失课程资源、3动态授权夹具（具体运行时分配待证）、1初始化名称耦合；反事实0，原350项FAIL不改。
+原full-check仅一次cProfile，60秒终端期限失败，主成本为高频SQL及物理身份检查，JSON自耗约0.045秒；
+未实施纯Path/URI候选，不削减安全检查或期限，P1及Writer/B4/B7仍开放。
+
+人工供给5件完整核心源码的真实单请求协议completed，但FormData/JSON兼容及登录重放建议未通过语义审阅，
+未批准Patch或记自主读取成功。认证回读10122/621 Token，新增估算0.050424元；
+新周期26completed、估算0.706096、预留0、剩余估算59.293904，实际账单未知，旧账本保持。
+Docker残留Backend已退出，官方detached start不证明引擎恢复；socket缺失、Mac界面锁定、默认Workspace/Profile仍不可验收。
+真实Beta接受0，R3历史0/20及1/20、三平台和R1～R6门槛不变。
