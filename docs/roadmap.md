@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 213
+version: 214
 code_revision: 2bef425141653360c29e09b38e079065825437cb
 owners:
   - core
@@ -2411,3 +2411,23 @@ Java17编译269生产/78测试源码并取得18认证API测试通过。旧选集
 Git层级控制研究v2样本读取约30.57秒/19.28秒，仍有事件循环阻塞；v3研究桥仅以15项短测验证
 纯段结束立即撤销轻控，保存callback在离段/异常/嵌套/其他任务后回到原full，未重跑整链SDK或性能SLA。
 研究默认关闭、未合入产品，兼容规则、P1及approved Writer/B4/B7保持开放。R1～R6退出条件与评分门槛不变。
+
+### BETA-001：完整未整改后端前测
+
+[新物理输入的完整现有测试](validation/beta-001-complete-baseline-2026-10-08-v1/README.md)按原Maven发现执行76类350项：
+302通过、9失败、39错误、0跳过，206.299秒、exit1、未超时；认证相关25项全部通过，是350项子集。
+29项Socket权限错误说明禁网夹具适用性需正式解决，另19项失败/错误尚未归因，不自动认定原业务缺陷或旧失败。
+423源摘要前后相同，原业务/参考件不运行或写入，未增加网络/写入权限，原JUnit与完整失败集合私有封存。
+没有模型请求、登录整改或Beta接受；完整回归仍FAIL，不以窄范围通过覆盖失败，也不更改R1～R6门槛。
+
+### 原生Context单变量配对与Git P1研究复验
+
+[五工具/同一合成history的Context有无配对](validation/native-context-pair-2026-10-08-v1/README.md)两臂均原生续页通过，
+没有客户源码或实际工具。原Mock预消费失败保持，新根使用未消费异步流；新增2项完成对照后Models全量646项通过，
+不叠加旧644项。本次估算0.025400元；周期25completed、估算0.655672、预留0、剩余估算59.344328元。
+不能倒推原v4、停用产品Context或计为有效真实分析/整改/Beta。
+
+[P1 v4实际SDK复验](validation/git-p1-layered-research-2026-10-08-v1/README.md)3整链及15短测通过；
+发布约32.03秒、pending只读约18.14秒/写计数0，读取心跳最大间隔5.25秒。
+并行前提、FD诊断污染及首callback故障注入边界保持，不认定SLA、资源或完整SDK通过。
+研究默认关闭、未合入；callback/检测时点/失败顺序合同未决，P1与approved Writer/B4/B7继续开放。

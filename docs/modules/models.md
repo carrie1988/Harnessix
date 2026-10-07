@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: b0b12638c5437b230147a1f027e6172cab283923
+version: 9
+code_revision: ba6171f32e5575be727364d166001ca0619db6a0
 owners:
   - core
 modules:
@@ -205,6 +205,9 @@ wire `tool_calls`却无原生调用按原`finish_tool_mismatch`拒绝且不重�
 重开与Replay不能将历史文字升级为工具效果，见[总体与详细设计](../changes/m09-r3-native-tool-text-boundary.md)。
 [真实合成原生探针](../validation/native-tool-protocol-2026-10-08-v1/README.md)在固定北京Coder配置下两次native和
 续页revision通过，未执行工具或使用客户代码；不构成旧失败归因、完整SDK或线上普遍可靠性认证。
+后继[五工具、单system包配对](../validation/native-context-pair-2026-10-08-v1/README.md)两臂原生续页通过，
+只能排除该合成样本的确定性失效说法。新增相同字节预消费/异步流正反例，要求原包装器实际观测DONE；
+当前Models全量646项通过，不与历史644项叠加，不改变原Adapter或工具执行来源。
 
 ### 7.3 错误分类
 

@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: reviewing
-version: 7
+version: 8
 code_revision: pending
 owners:
   - core
@@ -246,3 +246,17 @@ AIPracticalPlatform 的实际入口、认证接口和测试文件尚未从全新
 [新合成协议探针](../../validation/native-tool-protocol-2026-10-08-v1/README.md)不含客户源码，2次真实native及
 续页revision通过，实际工具执行0；不是完整业务分析或第五次同类分析。累计新周期23completed、
 估算0.630272元、预留0、剩余估算59.369728元，实际账单未确认；原四次分析及宿主策略拒绝均保留，任务完成仍0。
+
+### 完整未整改后端回归基线
+
+[新物理副本全量前测](../../validation/beta-001-complete-baseline-2026-10-08-v1/README.md)保留原Maven发现，
+76类350项实际执行：302 PASS、9 failure、39 error、0 skipped，206.299秒、exit1、未超时。
+认证相关25项通过属于350项子集。29项Socket权限错误存在禁网适用性缺口，另19项失败/错误尚未归因；
+不称为历史既有失败已确认，不删除原用例，不扩大网络权限，不依据数量一致豁免登录或必需业务回归。
+423件源摘要和原隔离边界保持。后继修复需先冻结适用前测，再比较完整失败集合；
+模型外发、真实Agent整改、受控Profile、浏览器及人工验收仍开放，任务完成数仍0。
+
+[五工具、单system包合成配对](../../validation/native-context-pair-2026-10-08-v1/README.md)两臂均取得原生续页，
+不支持把产品Context或五工具认定为该合成场景必然失败的原因，也不确认旧v4根因。
+没有客户源码、实际工具或后继自动分析请求。新增估算0.025400元；周期25completed、估算0.655672、
+预留0、剩余估算59.344328元，实际账单未知。实际整改与所有既定验收门保持开放。

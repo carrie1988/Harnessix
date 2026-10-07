@@ -1,0 +1,39 @@
+{
+  "status": "RESEARCH_HOLD_P1_OPEN",
+  "prototype_base_revision": "61c91ce2e254dcc8ed582c924eb44a2bd0cdc123",
+  "main_source_revision": "ba6171f32e5575be727364d166001ca0619db6a0",
+  "tracked_src_base_to_main_unchanged": true,
+  "default_enabled": false,
+  "merged_or_published": false,
+  "real_sdk_tests_passed": 3,
+  "lifecycle_tests_passed": 15,
+  "complete_sdk_proven": false,
+  "pending_read": {
+    "seconds": 18.136543874999916,
+    "max_heartbeat_gap_seconds": 5.246040165999148,
+    "sqlite_changes": 0,
+    "before_after_machash_same": true
+  },
+  "prepared_publication": {
+    "seconds": 32.0343138749995,
+    "sqlite_changes": 4,
+    "approved_writer": false
+  },
+  "fd_acceptance": "INCONCLUSIVE_DIAGNOSTIC_CONNECTION_CONTAMINATION",
+  "steady_sla_proven": false,
+  "callback_semantics_decided": false,
+  "all_failure_windows_covered": false,
+  "original_consumer_deadline_seconds": 60,
+  "original_turn_timeout_seconds": 120,
+  "private_manifest_members": 31,
+  "private_manifest_sha256": "850df4ec0736d584826ef6dd4ec4bb435fb861979753c97e8a733525aa3d1226",
+  "gates": {
+    "P1": "OPEN",
+    "SLA": "NOT_ACCEPTED",
+    "B4": "NO_GO",
+    "B7": "NO_GO",
+    "approved_writer": "NOT_IMPLEMENTED_OR_ACCEPTED"
+  },
+  "provider_requests": 0,
+  "production_source_modified": false
+}

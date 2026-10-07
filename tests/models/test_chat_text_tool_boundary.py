@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import TextContent, Usage
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
@@ -19,8 +20,9 @@ from harnessix.models.contracts import (
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
+from tests.contracts.provider import model_request
 from tests.models.test_openai_chat import collect, config
-from tests.models.wire import WireStream, call, chunk, frame, response
+from tests.models.wire import WireStream, call, chunk, frame, response, tool_frames
 
 ALIAS = tool_alias("test.read")
 MARKUP = (
@@ -87,6 +89,45 @@ async def test_native_call_and_matching_text_release_only_the_native_call() -> N
     assert calls[0].tool == "test.read" and calls[0].arguments == {"path": "fixture.py"}
     assert [event.text for event in events if isinstance(event, TextCompleted)] == [MARKUP]
     assert events[-1].finish_reason == "tool_calls" and wire.closed
+
+
+@pytest.mark.parametrize("streamed", [False, True], ids=["preconsumed", "async-stream"])
+async def test_native_completion_requires_transport_observed_terminal(streamed: bool) -> None:
+    """相同字节的预消费正文不能冒充已经过预算包装器的流式完成。"""
+    parts = tool_frames('{"path":"fixture.py"}')
+    wire = WireStream(parts)
+    replies = []
+
+    def handle(_: httpx.Request) -> httpx.Response:
+        reply = (
+            response(wire)
+            if streamed
+            else httpx.Response(
+                200, headers={"content-type": "text/event-stream"}, content=b"".join(parts)
+            )
+        )
+        replies.append(reply)
+        return reply
+
+    async with OpenAIChatProvider(
+        config(max_attempts=3), transport=httpx.MockTransport(handle)
+    ) as provider:
+        events = [
+            event async for event in provider.stream(model_request(with_tools=True), CancelToken())
+        ]
+    assert len(replies) == 1
+    assert replies[0].extensions["harnessix_stream"].seen_done is streamed
+    if streamed:
+        assert isinstance(events[-1], ResponseCompleted)
+        assert events[-1].finish_reason == "tool_calls" and wire.closed
+        assert sum(isinstance(event, ToolCallCompleted) for event in events) == 1
+    else:
+        assert events[-1] == ResponseFailed(code="invalid_provider_output")
+        assert not any(isinstance(event, ToolCallCompleted | ResponseCompleted) for event in events)
+        attempts = [event for event in events if isinstance(event, ModelAttemptFinished)]
+        assert len(attempts) == 1
+        assert attempts[0].error.message.endswith("chat_protocol/v1:completion_incomplete")
+        assert not attempts[0].error.retryable
 
 
 @pytest.mark.parametrize("text", TEXT_CASES[:2])

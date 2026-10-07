@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
+version: 11
 code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
 owners:
   - core
@@ -362,3 +362,12 @@ PY
 [不含客户源码的真实协议探针](../validation/native-tool-protocol-2026-10-08-v1/README.md)两次native及续页revision通过，
 没有实际工具执行，不推广为真实源码质量或Beta。共享新周期估算0.630272元、预留0、剩余估算59.369728元，
 23请求均completed，实际账单未知；旧失败和门槛保持。
+
+[完整未整改后端基线](../validation/beta-001-complete-baseline-2026-10-08-v1/README.md)已执行原Maven全部发现：
+76类350项，302通过、9失败、39错误、0跳过，exit1；认证相关25项通过是350项子集，不叠加统计。
+29项Socket权限错误与禁网适用性相关，另19项失败/错误未归因，不能豁免或推广为全量通过。
+423源摘要前后不变；旧失败、隔离和Beta门槛保持，尚无Agent整改或任务接受。
+
+[后继单变量Context配对](../validation/native-context-pair-2026-10-08-v1/README.md)在五工具/合成history相同下
+两臂均原生续页通过，新增估算0.025400元；周期25completed、估算0.655672、预留0、剩余估算59.344328元，
+实际账单未知。该样本不能解释原v4或代替真实分析；产品Context不因比较臂被停用，Beta完成仍0。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: b0b12638c5437b230147a1f027e6172cab283923
+version: 2
+code_revision: ba6171f32e5575be727364d166001ca0619db6a0
 owners: [core]
 modules: [models, agent, session]
 related_adrs:
@@ -40,6 +40,7 @@ supersedes: []
 |---|---|---|
 | [_chat_mapping.build_request](../../src/harnessix/models/_chat_mapping.py) | 工具按结构化Schema广告，别名由已有映射生成 | 不改名称或增加第二套工具注册 |
 | [_chat_stream](../../src/harnessix/models/_chat_stream.py) | `delta.content`累积为文字；`delta.tool_calls`累积为原生调用 | 保留两种互不替代的来源 |
+| [_bounded_http](../../src/harnessix/models/_bounded_http.py) | 原异步包装器观测传输终结符，Parser完成仍要求`seen_done` | 预消费Mock正文不冒充受管流式完成 |
 | [_history.tool_alias](../../src/harnessix/models/_history.py) | 原名称与供应商别名映射用于工具身份校验 | 正文中出现同一别名仍不授予执行权 |
 | [Runtime](../../src/harnessix/agent/runtime.py) | 根据已验证Provider事件驱动工具和结束；无待调用时允许正常完成 | 通用Runtime不猜测任意业务是否完成 |
 | [SQLiteSessionStore](../../src/harnessix/session/sqlite.py)及[replay](../../src/harnessix/agent/reducer.py) | 已持久化Item与事件恢复历史 | 重开不能把历史文字升级为工具效果 |
@@ -125,6 +126,7 @@ flowchart TD
 | `ToolCallCompleted` | 校验后的原生工具来源 | 不由文本构造 |
 | `ResponseCompleted` | 单次模型响应结束与Usage | `completed`不是业务成功状态 |
 | `ModelAttemptFinished` | 原尝试完成或失败及类型化错误 | 不改重试语义 |
+| `BoundedStream.seen_done` | 原包装器实际观测传输终结符 | 正文包含相同字节不等于包装器已观测 |
 | `AgentRuntime.run_turn` | Turn生命周期与工具调用 | 不加入XML恢复或业务覆盖猜测 |
 | `SQLiteSessionStore` | 持久化、重开和事件读取 | 无Schema或迁移变化 |
 | `RecordingTools`测试夹具 | 记录实际执行调用 | 零调用负控与原生调用正控分开 |
@@ -166,6 +168,8 @@ Runtime：
 不泄漏自由正文到诊断。普通函数示例仍是合法文字，不能因关键词拒绝正常回答。
 本切片不修改既有取消、期限、输出限制、预算或恢复路径；相关完整回归位于现有Models测试。
 新增重开用例确认Replay一致且工具记录为空，不声称覆盖取消途中所有时窗或完整SDK套件。
+预消费Mock响应即使含完整原生字节，也因原包装器未观测DONE按`completion_incomplete`拒绝，
+不释放调用、不重试；相同字节通过未消费异步流则原生调用正常释放。该对照不宣称所有自定义Transport的内存上界已验收。
 可观测结果分别记录原生调用数、文字类型、Attempt终态、Usage与任务技术门；不保存或向公开诊断回显自由正文。
 
 ## 12. 安全与隐私
@@ -176,8 +180,9 @@ Runtime：
 
 ## 13. 测试、部署兼容与回退
 
-新增[13项边界测试](../../tests/models/test_chat_text_tool_boundary.py)：5类正文保持文字、5类正文不能满足原生结束契约、
-1项原生与正文并存只释放一次、2项Runtime持久化重开无工具效果。分片跨标签、完整与缺失开头形式均纳入。
+新增[15项边界测试](../../tests/models/test_chat_text_tool_boundary.py)：5类正文保持文字、5类正文不能满足原生结束契约、
+1项原生与正文并存只释放一次、2项Runtime持久化重开无工具效果、2项相同字节的预消费/异步流完成对照。
+分片跨标签、完整与缺失开头形式均纳入；最终Models全量646项通过，不与旧644项或重叠分组相加。
 
 首次运行5项失败源于测试将wire的`stop`误用为内部枚举；原件保留，修正测试使用现有`completed`契约，
 不是发现或修复生产解析缺陷。首次静态检查的超长行及格式问题也单独保留。
@@ -190,5 +195,8 @@ Runtime：
 
 本切片证明离线协议边界及重开事实，不证明固定模型线上可靠性、有效源码分析、密码整改、浏览器验收、
 R3编码质量、三平台发行或商用发布。原真实分析失败保持，真实完成数仍为0。
-后续优先做不含客户源码的有界原生协议归因和独立业务构建闭包，禁止同类第五次分析盲试。
+后继[单变量合成Context配对](../validation/native-context-pair-2026-10-08-v1/README.md)在五工具不变时比较一个system包有无，
+两臂均取得原生续页，不支持将产品Context或五工具认定为该合成场景必然失效的原因；旧v4仍未归因。
+[完整未整改后端前测](../validation/beta-001-complete-baseline-2026-10-08-v1/README.md)保持FAIL，
+后续须解决真实长结果/任务/历史适用性与业务测试失败；禁止同类第五次分析盲试。
 详见[先导任务](../operations/pilot-tasks/001-login-password-protection.md)和[发布门禁](m09-to-v1-release-scope-convergence.md)。

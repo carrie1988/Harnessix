@@ -1,0 +1,33 @@
+{
+  "status": "PAIR_OBSERVED_EXPLORATORY_ONLY",
+  "paid_requests": 2,
+  "arm_order": [
+    "product_packet_present",
+    "context_absent"
+  ],
+  "both_native_continuation": true,
+  "input_tokens": 5230,
+  "output_tokens": 280,
+  "cost_delta_estimate_cny": "0.025400",
+  "known_estimate_cny": "0.655672",
+  "reserved_cny": "0",
+  "available_estimate_cny": "59.344328",
+  "all_current_requests_completed": true,
+  "requests_total": 25,
+  "customer_source": false,
+  "tools_executed": 0,
+  "raw_wire_saved": false,
+  "key_echoed": false,
+  "actual_invoice": null,
+  "old_v4_cause_confirmed": false,
+  "provider_reliability_generalized": false,
+  "beta_completed": 0,
+  "candidate_revision": "3fb2ef57f3a647b20058f987f090e6829c4d8a58",
+  "fixed_model": "qwen3-coder-plus-2025-09-23",
+  "single_system_difference": true,
+  "tools_in_each_arm": 5,
+  "offline_controls_passed": 4,
+  "model_suite_passed": 646,
+  "complete_sdk_passed": false,
+  "private_manifest_sha256": "f1d781e5f5b11f09b987a8a4a3c462f2272249c1d4e709cf3741c7d197a56642"
+}

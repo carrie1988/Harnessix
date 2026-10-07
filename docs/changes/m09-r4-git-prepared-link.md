@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 5
-code_revision: 2aa16c161039134d13e13f4decfd9024be99d153
+version: 6
+code_revision: ba6171f32e5575be727364d166001ca0619db6a0
 owners: [core]
 modules: [product_config, delivery, session, artifacts, trusted_actions, workspace]
 related_adrs:
@@ -798,6 +798,12 @@ Artifact 的旧默认 `read_only=False` 保持兼容，不能把该专用只读�
 - R3 真实质量、消费者三平台、有限 Beta、权利与同候选 R1～R6 继续开放，不用组件通过替代发布退出条件。
 
 B4 的末轮异步 U 到同步终端/COMMIT 漂移窗口、B7 的原 DB FD/锁/全部 dispatch 及 P1 响应性仍未闭合；不得启用 approved Writer。
+
+[默认关闭的分层研究复验](../validation/git-p1-layered-research-2026-10-08-v1/README.md)取得3项真实离线SDK链及15项短测，
+pending样本约18.14秒、写计数0；心跳最大间隔5.25秒仍有同步阻塞。
+研究纯段会改变外部callback频次、瞬时漂移检测时点及失败顺序，不能视为现行逐叶合同的等价实现。
+FD诊断连接污染、实际I/O/发布后完整故障时窗、兼容合同及稳态SLA均未闭合，保持不可合入；
+已跟踪生产src的基线一致性不替代完整装配/依赖验证，不以研究桥放开Writer。
 
 ## 14. 实现偏差与最终结论
 
