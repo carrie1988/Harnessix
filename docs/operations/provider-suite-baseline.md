@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: 90de93f565ea88679e54242ee6f1771e9be721b7
+version: 6
+code_revision: b7bb29e00469033394842dcc29cc10b1a9959c9e
 owners:
   - core
 modules:
@@ -41,7 +41,7 @@ supersedes: []
 5. API Key由宿主Secret Manager、macOS launchctl或显式钥匙串配置读取，不写入仓库、配置、命令历史或日志；
 6. 私有配置、私有运行根和公开证据根位于三个独立目录；
 7. 执行前已核对官方模型价格，配置生成时间处于新价格快照窗口。
-8. 已有私有验证预算账本及唯一active周期，已知费用加占用不超过原额度，没有未决请求；不能自动新建或重置预算。
+8. 显式选择可信操作员已登记的私有账本及唯一active周期，已知费用加占用不超过授权额度；运行时不能自动新建或重置预算。当前为[独立60元周期](../changes/m09-provider-budget-period-activation.md)，与真实Beta共用；旧周期两笔未决保留为历史、不计入新额度。新周期新增未决仍拒绝请求。
 
 ## 3. 目录规划
 
@@ -54,6 +54,10 @@ export HX_PROVIDER_EVIDENCE=/secure/harnessix/provider-suite-evidence
 export HX_PROVIDER_BUDGET=/secure/harnessix/provider-budget.json
 export HX_PROVIDER_PERIOD=00000000-0000-0000-0000-000000000001
 ```
+
+账本路径和周期UUID必须取自本机激活收据，不可直接使用上述示例值。新周期不传旧`--reverification-id`，
+也不以`--resume`复用旧候选Suite。总额度60元不是每个用途各60元；不得用账本副本扩充额度。
+恢复同一新周期运行时，继续使用其原配置、Suite身份和已持久事实。
 
 要求：
 

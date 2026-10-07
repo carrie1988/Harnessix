@@ -1,0 +1,264 @@
+{
+  "schema": "harnessix.provider-budget-period-activation-facts/v1",
+  "source_revision": "b7bb29e00469033394842dcc29cc10b1a9959c9e",
+  "execution_identity": {
+    "candidate_role": "E/candidate/Harnessix",
+    "git_revision_is_candidate_baseline_not_new_release": true,
+    "wheel_sha256": "85a8b90e367f6ab8f73235c8ec28012db5930f1f2f2bda0491c6c4deee8011ba",
+    "package_members": 548,
+    "python_members": 507,
+    "installed_package_matches_wheel": true,
+    "candidate_package_matches_wheel_at_regression": true,
+    "host_scripts_imported_from_candidate": true,
+    "harnessix_imported_only_from_installed_wheel": true,
+    "python_version": "3.12.7",
+    "python_isolated": true,
+    "private_provenance": {
+      "path": "recovered-budget/import-and-run-provenance.json",
+      "bytes": 68282,
+      "sha256": "67ff6190cd1c125fe0e361fd820cb49327ecf838031ca32778433652ed570c4f"
+    }
+  },
+  "activation_snapshot": {
+    "evidence": {
+      "path": "ACTIVATION_RECEIPT.json",
+      "bytes": 1563,
+      "sha256": "c35e4059889cb091bc27140ffe9bb0a75c24e2b0582b0609e28da2185c928155"
+    },
+    "activated_at": "2026-10-07T11:42:58.801882+00:00",
+    "provider": "aliyun-bailian",
+    "currency": "CNY",
+    "period_id": "bab39be6-7af6-4a77-9da6-fe0664e15f65",
+    "ledger_reference": "E/budget.json (actual absolute path in private receipt)",
+    "allocation": "60",
+    "shared_purposes": [
+      "R3",
+      "BETA-001",
+      "provider-verification"
+    ],
+    "initial_ledger_sha256": "34a944e91870ec6fa8662301892d801e2f83fe7a3650d45a12f64b3c24e2a0de",
+    "known_cost_estimate": "0",
+    "reserved_cost": "0",
+    "model_requests": 0,
+    "scope": "registration_time_only_not_later_real_R3",
+    "receipt_is_not_automatically_read_by_runtime": true,
+    "consumption_requires_same_explicit_path_and_period_id": true,
+    "sixty_cny_is_total_not_per_purpose": true
+  },
+  "historical_period": {
+    "period_id": "d973352f-0392-4d81-a324-8cb58f229a39",
+    "original_ledger_sha256": "d923d8e8812e9706229b290f362b472f3934086feb75a908534cd415f88b4385",
+    "snapshot": {
+      "path": "previous-budget-snapshot.json",
+      "bytes": 125510,
+      "sha256": "d923d8e8812e9706229b290f362b472f3934086feb75a908534cd415f88b4385"
+    },
+    "allocation": "70.00",
+    "request_count": 141,
+    "request_status_counts": {
+      "completed": 139,
+      "unknown": 2
+    },
+    "known_cost_estimate": "3.646408",
+    "reserved_cost": "41.55648",
+    "unknown_requests": [
+      {
+        "request_id": "09001dc4-cbc1-4e0d-90ec-ba681ae08a93",
+        "status": "unknown",
+        "reserved_cost": "20.77824"
+      },
+      {
+        "request_id": "b44653b3-61a7-4ef9-99e9-f5eee4c79185",
+        "status": "unknown",
+        "reserved_cost": "20.77824"
+      }
+    ],
+    "original_bytes_verified_unchanged": true,
+    "recorded_original_status_field": "active",
+    "operational_status_in_receipt": "historical-no-new-requests",
+    "old_status_field_not_rewritten": true,
+    "costs_excluded_from_new_period": true,
+    "does_not_block_independent_new_path": true,
+    "historical_failure_records_retained": true,
+    "old_reverification_grant_not_inherited": true,
+    "actual_bill_confirmed": false,
+    "actual_bill_cny": null
+  },
+  "read_only_ledger_observation": {
+    "observed_at": "2026-10-07T12:28:14.515131+00:00",
+    "scope": "one_file_read_snapshot_not_real_run_acceptance",
+    "ledger_sha256": "34a944e91870ec6fa8662301892d801e2f83fe7a3650d45a12f64b3c24e2a0de",
+    "period_id": "bab39be6-7af6-4a77-9da6-fe0664e15f65",
+    "allocation": "60",
+    "request_count": 0,
+    "request_status_counts": {},
+    "known_cost_estimate": "0",
+    "reserved_cost": "0",
+    "matches_registration_bytes_at_observation": true
+  },
+  "preserved_test_evidence": [
+    {
+      "path": "budget-tests.xml",
+      "bytes": 49136,
+      "sha256": "caac95a419dc5cbb871936cdf2b405fc85ac44b731ad90e946becf1130d80c12",
+      "evidence_origin": "preserved_source_xml",
+      "executed_in_this_verification": false,
+      "counts_recomputed_from_testcases": {
+        "tests": 291,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suite_declared_counts_match": true,
+      "cases_by_file": {
+        "tests.evals.test_provider_budget_period_isolation": 7,
+        "tests.evals.test_provider_reverification": 37,
+        "tests.evals.test_provider_reverification_chain": 43,
+        "tests.evals.test_provider_reverification_rebinding": 146,
+        "tests.evals.test_provider_verification_budget": 43,
+        "tests.evals.test_provider_verification_host": 15
+      },
+      "period_isolation_case_names": [
+        "test_independent_period_does_not_inherit_or_erase_old_unknown_requests",
+        "test_r3_and_beta_share_one_sixty_yuan_limit_across_reopen",
+        "test_new_period_reserved_or_unknown_still_blocks_restart[False]",
+        "test_new_period_reserved_or_unknown_still_blocks_restart[True]",
+        "test_old_identity_cannot_select_new_period",
+        "test_r3_and_beta_cannot_take_concurrent_owners",
+        "test_not_sent_releases_only_its_own_reservation"
+      ],
+      "original_xml_timestamp": [
+        "2026-10-07T19:44:03.359373+08:00"
+      ]
+    },
+    {
+      "path": "budget-tests-wheel.xml",
+      "bytes": 49136,
+      "sha256": "63592a3b1cb99a2a3f309a3187688a3a0323436ff95fa0e9bf7adc530cf3e3b3",
+      "evidence_origin": "preserved_wheel_xml",
+      "executed_in_this_verification": false,
+      "counts_recomputed_from_testcases": {
+        "tests": 291,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suite_declared_counts_match": true,
+      "cases_by_file": {
+        "tests.evals.test_provider_budget_period_isolation": 7,
+        "tests.evals.test_provider_reverification": 37,
+        "tests.evals.test_provider_reverification_chain": 43,
+        "tests.evals.test_provider_reverification_rebinding": 146,
+        "tests.evals.test_provider_verification_budget": 43,
+        "tests.evals.test_provider_verification_host": 15
+      },
+      "period_isolation_case_names": [
+        "test_independent_period_does_not_inherit_or_erase_old_unknown_requests",
+        "test_r3_and_beta_share_one_sixty_yuan_limit_across_reopen",
+        "test_new_period_reserved_or_unknown_still_blocks_restart[False]",
+        "test_new_period_reserved_or_unknown_still_blocks_restart[True]",
+        "test_old_identity_cannot_select_new_period",
+        "test_r3_and_beta_cannot_take_concurrent_owners",
+        "test_not_sent_releases_only_its_own_reservation"
+      ],
+      "original_xml_timestamp": [
+        "2026-10-07T20:02:17.643621+08:00"
+      ]
+    }
+  ],
+  "current_offline_verification": {
+    "path": "recovered-budget/budget-regression.xml",
+    "bytes": 49136,
+    "sha256": "050310860859de8012616f6984992ad8f70c820ce03a76e97ac4403abc3ce880",
+    "evidence_origin": "recovered_independent_wheel_run",
+    "executed_in_this_verification": true,
+    "counts_recomputed_from_testcases": {
+      "tests": 291,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "suite_declared_counts_match": true,
+    "cases_by_file": {
+      "tests.evals.test_provider_budget_period_isolation": 7,
+      "tests.evals.test_provider_reverification": 37,
+      "tests.evals.test_provider_reverification_chain": 43,
+      "tests.evals.test_provider_reverification_rebinding": 146,
+      "tests.evals.test_provider_verification_budget": 43,
+      "tests.evals.test_provider_verification_host": 15
+    },
+    "period_isolation_case_names": [
+      "test_independent_period_does_not_inherit_or_erase_old_unknown_requests",
+      "test_r3_and_beta_share_one_sixty_yuan_limit_across_reopen",
+      "test_new_period_reserved_or_unknown_still_blocks_restart[False]",
+      "test_new_period_reserved_or_unknown_still_blocks_restart[True]",
+      "test_old_identity_cannot_select_new_period",
+      "test_r3_and_beta_cannot_take_concurrent_owners",
+      "test_not_sent_releases_only_its_own_reservation"
+    ],
+    "original_xml_timestamp": [
+      "2026-10-07T20:15:58.645907+08:00"
+    ],
+    "started_at": "2026-10-07T12:15:58.621137+00:00",
+    "finished_at": "2026-10-07T12:16:02.857298+00:00",
+    "files": 6,
+    "restored_period_isolation_cases": 7,
+    "original_five_file_cases": 284,
+    "model_requests": 0,
+    "real_credentials_read": false,
+    "real_ledger_owner_acquired": false,
+    "runtime_budget_source_modified": false,
+    "real_ledger_written": false
+  },
+  "preserved_preflight_evidence": {
+    "credential_engine": {
+      "path": "credential-engine-preflight.json",
+      "bytes": 1237,
+      "sha256": "6de00de895043032d4bed2315cf8a7d4b87ea62f2d2598f70edb85251ebf399c",
+      "performed_in_this_verification": false,
+      "credential_contract_preflight": "PASS",
+      "fixed_image_preflight": "PASS",
+      "docker_info_ready": true,
+      "model_requests": 0,
+      "credentials_logged": false
+    },
+    "endpoint_auth": {
+      "path": "/compatible-mode/v1/models",
+      "bytes": 306,
+      "sha256": "d2223263d3497edd000382d16fc741e6ec85a3664d0e9fe4d856d1cbf22300d4",
+      "performed_in_this_verification": false,
+      "observed_at": "2026-10-07T11:54:51.635363+00:00",
+      "method": "GET",
+      "http_status": 200,
+      "fixed_model_advertised": true,
+      "model_generation_requests": 0,
+      "is_real_quality_evidence": false
+    },
+    "price": {
+      "source": "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus",
+      "checked_at": "2026-10-07T11:50:45.986011+00:00",
+      "scope": "preserved_price_preflight_not_new_online_verification",
+      "maximum_request_reservation_cny": "20.77824",
+      "actual_bill_confirmed": false,
+      "actual_bill_cny": null
+    }
+  },
+  "later_real_r3": {
+    "scope": "post_activation_real_execution_must_have_its_own_evidence",
+    "evaluated_here": false,
+    "model_request_count": null,
+    "strict_quality_pass": false,
+    "registration_zero_requests_is_not_total_after_activation": true,
+    "offline_mock_attempts_are_not_real_model_requests": true
+  },
+  "release_boundary": {
+    "real_quality_pass": false,
+    "beta_completed_count": 0,
+    "commercial_release_accepted": false,
+    "actual_bill_confirmed": false,
+    "actual_bill_cny": null,
+    "new_reserved_or_unknown_still_stops_default_owner": true,
+    "no_new_budget_reset_api": true,
+    "registration_is_private_one_time_management_not_product_capability": true
+  }
+}

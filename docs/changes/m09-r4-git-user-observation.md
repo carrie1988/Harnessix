@@ -325,8 +325,7 @@ async def verify_product_git_user_observation(
     budget: GitOperationBudget,
     checkpoint: Callable[[], None],
     snapshot_ports: WorkspaceSnapshotPorts,
-) -> None:
-    ...
+) -> None: ...
 ```
 
 必须显式传入原`session`，否则不能重读并认证完整历史；`AuthenticatedThreadHistory`只有Thread与events，不持有Session连接。传入`transactions`而非自由Core声明，与原collect入口一致；调用方从同一原CoreStore取其store，仍由实际Session/Router/Ports共同绑定。
@@ -397,6 +396,7 @@ sequenceDiagram
 - 原Source、Audit和CAS读取可调用原构造回调；原受信装配不等于任意callback已认证只读。新增入口冻结原读取回调引用，操作期间替换拒绝；不全局覆盖共享属性。
 - 同步CAS及文件读取仍不能被外层asyncio timeout即时抢占，P1保持开放；此改造不是响应性提速。
 - 新接口无Schema/DDL/依赖/网络/模型配置；观察七文件实际源码变更会改变实现摘要。旧观察不能自动重签、升级或作为新配方有效输入。
+- 源码格式归一化虽不改变AST，七文件 `implementation_digest` 仍按原字节规则变化；旧观察及Prepare凭证不可复用，必须按正式流程重新采集，禁止自动重签或迁移。
 - 该接口是完整U末轮算法复用，不是连续终端见证，也不是外部Git锁。最后异步Git/历史观察与返回或COMMIT之间仍有变化窗口；B4/B7、approved Writer、NativeBridge、A/T2/D、Commit、Backup2与商用门禁不关闭。
 
 ## 12. 测试与源码追踪

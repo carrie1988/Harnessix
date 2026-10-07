@@ -1,0 +1,94 @@
+{
+  "schema": "harnessix.provider-budget-period-activation-verification/v1",
+  "decision": "budget_isolation_offline_pass_real_quality_not_accepted",
+  "restored_files_scope": [
+    "tests/evals/test_provider_budget_period_isolation.py",
+    "docs/changes/m09-provider-budget-period-activation.md",
+    "docs/validation/bailian-budget-60-2026-10-07-v1/README.md",
+    "docs/validation/bailian-budget-60-2026-10-07-v1/facts.json",
+    "docs/validation/bailian-budget-60-2026-10-07-v1/verification.json",
+    "docs/validation/bailian-budget-60-2026-10-07-v1/review-packet.json",
+    "docs/validation/bailian-budget-60-2026-10-07-v1/manifest.json"
+  ],
+  "runtime_budget_code_unchanged": true,
+  "runtime_default_unknown_stop_unchanged": true,
+  "old_ledger_original_hash_verified_unchanged": true,
+  "real_ledger_writes_by_this_verification": 0,
+  "model_requests_by_this_verification": 0,
+  "real_credentials_read_by_this_verification": false,
+  "historical_xml_recount": [
+    {
+      "path": "budget-tests.xml",
+      "tests": 291,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "rerun_here": false
+    },
+    {
+      "path": "budget-tests-wheel.xml",
+      "tests": 291,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "rerun_here": false
+    }
+  ],
+  "independent_installed_wheel_run": {
+    "path": "recovered-budget/budget-regression.xml",
+    "tests": 291,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "files": 6,
+    "new_cases": 7,
+    "original_cases": 284,
+    "pytest_exit_code": 0,
+    "wheel_sha256": "85a8b90e367f6ab8f73235c8ec28012db5930f1f2f2bda0491c6c4deee8011ba",
+    "source_host_scripts_only": true,
+    "harnessix_only_installed_wheel": true
+  },
+  "validation_checks": {
+    "documentation": {
+      "status": "PASS",
+      "evidence": {
+        "path": "recovered-budget/documentation-check.json",
+        "bytes": 3889,
+        "sha256": "d003208dba1fe23781e004e928e4bd8044d5a196e243aabeaab8bece0f78f372"
+      }
+    },
+    "scope_and_immutability": {
+      "status": "PASS",
+      "evidence": {
+        "path": "recovered-budget/scope-check.json",
+        "bytes": 3406,
+        "sha256": "b188f94310cb362b8f0f3a9de74554721af81338169726af77d4377abad421f9"
+      }
+    },
+    "secret_scan": {
+      "status": "PASS",
+      "evidence": {
+        "path": "recovered-budget/secret-scan.json",
+        "bytes": 568,
+        "sha256": "13423942502c298c3fdfb195e9175e6e5959c9eaa925f00252c7d454ba2281cc"
+      }
+    },
+    "integrity": {
+      "status": "PASS",
+      "evidence": {
+        "path": "recovered-budget/delivery-check.json",
+        "bytes": 808,
+        "sha256": "0148868080ecf02288acd02799483810ae0a98971ea5b272675b3145361d6593"
+      }
+    }
+  },
+  "quality_threshold_achieved": false,
+  "full_real_r3_suite_accepted": false,
+  "beta_completed_count": 0,
+  "actual_bill_confirmed": false,
+  "actual_bill_cny": null,
+  "commercial_release_gate_closed": false,
+  "activation_zero_is_only_registration_snapshot": true,
+  "subsequent_real_r3_not_evaluated_by_offline_regression": true,
+  "roadmap_and_operations_edit_scope": "excluded_primary_owner"
+}

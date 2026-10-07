@@ -26,10 +26,12 @@ async def test_matching_empty_head_reaches_and_rejects_only_nonzero_debug_flags(
         proposal = original_proposal(root, **kwargs)
         first, *remaining = proposal.files
         (root / first.path).write_bytes(b"")
-        return WorkspacePatchInput(files=(
-            first.model_copy(update={"expected_sha256": hashlib.sha256(b"").hexdigest()}),
-            *remaining,
-        ))
+        return WorkspacePatchInput(
+            files=(
+                first.model_copy(update={"expected_sha256": hashlib.sha256(b"").hexdigest()}),
+                *remaining,
+            )
+        )
 
     monkeypatch.setattr(support, "_proposal", empty_before)
 
@@ -62,8 +64,7 @@ async def test_matching_empty_head_reaches_and_rejects_only_nonzero_debug_flags(
             with pytest.raises(KernelError) as caught:
                 await _verify(scenario, expected, history)
             assert caught.value.code == "git_baseline_index_conflict"
-        assert any(args[-5:] == ("ls-files", "--debug", "-z", "--", member.path)
-                   for args in calls)
+        assert any(args[-5:] == ("ls-files", "--debug", "-z", "--", member.path) for args in calls)
         assert not any("cat-file" in args for args in calls)
         assert _readonly_state(scenario) == before
 

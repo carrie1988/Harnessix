@@ -59,8 +59,8 @@ B3 只读依赖的[专项证据发布入口](../validation/git-user-observation-
 | [prepared 合同](../../src/harnessix/product_config/git_prepared_link_contracts.py#L17) | `ProductGitPreparedLink` 固定 `phase=prepared`、`sequence=0`；审批必须未决定且 pending | 不修改该合同使其接受已决定对象 |
 | [prepared Proof](../../src/harnessix/product_config/git_prepared_link_proof.py#L162) | 原 Route 必须 pending；原 active Turn 必须 waiting_approval；首个 pending Call、唯一 started 审批项目及完整 `build_approval` 相等 | 决定后拒绝是当前设计边界，不是可以绕开的校验 |
 | [prepared Rows](../../src/harnessix/product_config/git_prepared_link_rows.py#L46) | 全物理 MAC 先验真，再解释全部关联；每条 stream 必须只有首个认证事件 | 新 Reader 必须读完整事件链，不能仅将 `stream.count != 1` 删掉 |
-| [阶段无关 U verifier](../../src/harnessix/product_config/git_user_observation.py#L183) | 显式借原 Session、transactions、Router、Reader 与 snapshot_ports；本次重读完整认证历史，不要求准备阶段 pending Call | B3 必需只读依赖已落地；不是决定来源 Proof、终端锁或 Writer |
-| [共享末轮配方](../../src/harnessix/product_config/git_user_observation.py#L310) | 准备器与 verifier 共用目录、逻辑 Git、历史、Source、物理 Index 的原顺序；历史/Source 由各入口闭包提供 | 原准备器仍保留 pending Call；collector 不迁入此 helper，原前后观察窗口不变 |
+| [阶段无关 U verifier](../../src/harnessix/product_config/git_user_observation.py#L184) | 显式借原 Session、transactions、Router、Reader 与 snapshot_ports；本次重读完整认证历史，不要求准备阶段 pending Call | B3 必需只读依赖已落地；不是决定来源 Proof、终端锁或 Writer |
+| [共享末轮配方](../../src/harnessix/product_config/git_user_observation.py#L368) | 准备器与 verifier 共用目录、逻辑 Git、历史、Source、物理 Index 的原顺序；历史/Source 由各入口闭包提供 | 原准备器仍保留 pending Call；collector 不迁入此 helper，原前后观察窗口不变 |
 | [原 Session 决定](../../src/harnessix/agent/trusted_action_session.py#L147) | Router 先提交检查点和 Route，Session 再以原时间戳 CAS 追加 `ItemFinished(COMPLETED)` | 三库提交顺序有恢复窗口，不存在共同数据库事务 |
 | [原恢复](../../src/harnessix/agent/trusted_action_session.py#L96) | waiting_approval 下用原 Gateway `sync_decision` 补 Session 投影 | 先由原协调器修复，再进入 Git 事实事务；认证 Writer 自身不作决定 |
 | [原 Router.decide](../../src/harnessix/trusted_actions/router.py#L218) | REQUIRE_APPROVAL 才接受决定；既有决定精确重放；approved→ready，rejected→denied | `ready` 也可能来自策略 ALLOW，必须核对原检查点与完整 Session 决定 |
@@ -221,14 +221,14 @@ Core 的 store/key 与原 Session publication、Git verifier/prefix verifier ide
 不另 publish，不以 Diff 摘要或 Preview 替代全文。Review 已过期或回收必须拒绝本 Reader/追加，不提供绕 TTL 的历史离线特例。
 
 当前 Source 校验继续调用原 `verify_git_delivery_source`，不得追加 CAS。
-阶段无关 U 复核使用已落地的 [verify_product_git_user_observation](../../src/harnessix/product_config/git_user_observation.py#L183)，
+阶段无关 U 复核使用已落地的 [verify_product_git_user_observation](../../src/harnessix/product_config/git_user_observation.py#L184)，
 覆盖原 common/admin 目录、物理 Index、HEAD/tree/ref、逻辑 Index/status、配置名与配置值、Workspace 根及实现身份。
 `session` 必须显式传入；调用方 `history` 只作完整比对，实际来源始终由本次原 Session 重读认证，不能由模型或事件前缀替代。
 Workspace 来源依赖传入原 `transactions: SQLiteWorkspaceTransactionStore`，不是 `ProductGitDeliveryCoreStore`；
 从原 CoreStore 取得其 `.store` 仍须通过原 Session/Router/Ports 的资源绑定。
 [原准备器末轮复核](../../src/harnessix/product_config/git_checkpoint_preparation.py#L469) 与 verifier 共用
-[_verify_observed_git_state](../../src/harnessix/product_config/git_user_observation.py#L310)：目录事实 →
-[逻辑 Git/配置比较](../../src/harnessix/product_config/git_user_observation.py#L469) → 历史 → Source → 物理 Index → 控制检查。
+[_verify_observed_git_state](../../src/harnessix/product_config/git_user_observation.py#L368)：目录事实 →
+[逻辑 Git/配置比较](../../src/harnessix/product_config/git_user_observation.py#L527) → 历史 → Source → 物理 Index → 控制检查。
 原准备器的历史闭包继续调用 `_history` 和 `ToolExecutionScope.for_pending_call`；阶段无关 verifier 不调用该准备入口。
 collector 保持原历史/物理前后观察窗口，不为复用 helper 改变收集顺序。只读复核不重新 collect、写 CAS、发布 Artifact 或生成审批。
 终端逻辑 Git 观察与最终提交间的外部变更闭合仍为真实阻塞，详见第 13 节；不能把四库 data_version 宣称为 Git Ref/配置文件的锁。
@@ -615,7 +615,7 @@ running/reconciling 的宿主中断由原 `recover_interrupted_plan` 收敛 unkn
 | 原 operation 与 Owner | [claim_operation:93](../../src/harnessix/trusted_actions/operation_store.py#L93)、[ownership_store.py:43](../../src/harnessix/trusted_actions/ownership_store.py#L43) | 原租约不变；拟议只读 fence 核验 |
 | 原取消与终结 | [cancel_pending_approval:55](../../src/harnessix/trusted_actions/preparation_rejection.py#L55)、[runtime._finish:2593](../../src/harnessix/agent/runtime.py#L2593) | 严格区分审批前取消、批准后取消与 unknown |
 | 原 Plan/Core 全绑定 | [PlanV2:113](../../src/harnessix/product_config/git_delivery_observed_contracts.py#L113)、[load_route_core_v2:41](../../src/harnessix/product_config/git_delivery_route_core.py#L41) | 原 Plan2 与完整材料不变，不重新生成 |
-| 原 U/Source 复核 | [verify_product_git_user_observation:183](../../src/harnessix/product_config/git_user_observation.py#L183)、[_verify_observed_git_state:310](../../src/harnessix/product_config/git_user_observation.py#L310)、[_verify_observation:469](../../src/harnessix/product_config/git_checkpoint_preparation.py#L469)、[verify_git_delivery_source:271](../../src/harnessix/product_config/git_delivery_source.py#L271) | 必需只读依赖和共享配方已落地；准备器保留 pending Call，collector 保持原窗口；决定接线及终端缺口未闭合 |
+| 原 U/Source 复核 | [verify_product_git_user_observation:184](../../src/harnessix/product_config/git_user_observation.py#L184)、[_verify_observed_git_state:368](../../src/harnessix/product_config/git_user_observation.py#L368)、[_verify_observation:469](../../src/harnessix/product_config/git_checkpoint_preparation.py#L469)、[verify_git_delivery_source:271](../../src/harnessix/product_config/git_delivery_source.py#L271) | 必需只读依赖和共享配方已落地；准备器保留 pending Call，collector 保持原窗口；决定接线及终端缺口未闭合 |
 | 原 Review 全文与 MAC | [Artifact.read:334](../../src/harnessix/artifacts/sqlite.py#L334)、[matching_action_review:141](../../src/harnessix/artifacts/action_review_store.py#L141) | 原只读验证、全页与终端全文；不 publish |
 | 当前 prepared 边界 | [contracts:17](../../src/harnessix/product_config/git_prepared_link_contracts.py#L17)、[proof:162](../../src/harnessix/product_config/git_prepared_link_proof.py#L162)、[rows:46](../../src/harnessix/product_config/git_prepared_link_rows.py#L46)、[ledger:50](../../src/harnessix/product_config/git_prepared_link_ledger.py#L50) | 旧接口不放宽；新增窄域历史适配 |
 | 原物理事件/claims 连续性 | [record_bodies:63](../../src/harnessix/product_config/git_prefix_records.py#L63)、[verify_record_streams:116](../../src/harnessix/product_config/git_prefix_records.py#L116) | 原 sequence+1 关系及唯一 epoch |

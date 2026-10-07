@@ -245,8 +245,15 @@ async def verify_product_git_user_observation(
         async with asyncio.timeout(max(0.001, deadline - time.monotonic())):
             await cancel.run(
                 _verify_authenticated_observation(
-                    expected, history, router, transactions, reader,
-                    session=session, cancel=cancel, deadline=deadline, check=check,
+                    expected,
+                    history,
+                    router,
+                    transactions,
+                    reader,
+                    session=session,
+                    cancel=cancel,
+                    deadline=deadline,
+                    check=check,
                     snapshot_ports=snapshot_ports,
                 ),
                 preserve_failure=True,
@@ -322,9 +329,7 @@ async def _verify_authenticated_observation(
         check,
         verify_history=verify_history,
         verify_source=verify_source,
-        invalid=lambda: KernelError(
-            "git_user_observation_changed", "Git用户观察期间绑定发生变化"
-        ),
+        invalid=lambda: KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化"),
     )
     if observation.implementation_digest != git_user_observation_implementation_digest():
         raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")

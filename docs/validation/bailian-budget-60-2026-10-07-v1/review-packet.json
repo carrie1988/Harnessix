@@ -1,0 +1,51 @@
+{
+  "schema": "harnessix.provider-budget-period-activation-review/v1",
+  "scope": "private_period_registration_contract_and_offline_isolation",
+  "decision": "accept_budget_isolation_evidence_only_keep_real_gates_open",
+  "core_tradeoffs": [
+    "新独立path/id复用Owner，不改运行时预算或新增重置API",
+    "旧141条及两unknown保留，历史费用不计新额度、不阻塞新路径",
+    "R3/Beta及其他用途只有一个总60元，not_sent只释放自有预留",
+    "激活收据仅人工核对，不自动读取；一次性管理登记非新增产品能力",
+    "既存XML与本次291-case Wheel回归分别记录，不将测试PASS视为真实质量PASS",
+    "账单未确认保持null而不是0；新reserved/unknown默认继续停止"
+  ],
+  "acceptance_cases": [
+    "test_independent_period_does_not_inherit_or_erase_old_unknown_requests",
+    "test_r3_and_beta_share_one_sixty_yuan_limit_across_reopen",
+    "test_new_period_reserved_or_unknown_still_blocks_restart[False]",
+    "test_new_period_reserved_or_unknown_still_blocks_restart[True]",
+    "test_old_identity_cannot_select_new_period",
+    "test_r3_and_beta_cannot_take_concurrent_owners",
+    "test_not_sent_releases_only_its_own_reservation"
+  ],
+  "review_sources": [
+    "facts.json",
+    "verification.json",
+    "docs/changes/m09-provider-budget-period-activation.md",
+    "tests/evals/test_provider_budget_period_isolation.py",
+    "E/ACTIVATION_RECEIPT.json",
+    "E/recovered-budget/xml-recount.json"
+  ],
+  "excluded_mutations": [
+    "runtime_budget_source",
+    "real_ledgers",
+    "roadmap",
+    "four_operations_documents",
+    "original_M_restricted_untracked_content",
+    "commit",
+    "push"
+  ],
+  "remaining_real_gates": [
+    "登记后R3固定完整20 Trial及原严格任务/必需测试至少12/20、每仓库严格成功、安全约束证据",
+    "同候选完整Git交付链及消费者安装/跨平台/安全最终门禁",
+    "BETA-001显式共享同一账本与UUID的真实消费接线及完整业务验收，完成数0",
+    "供应商权威账单和历史两unknown的独立费用核对；实际金额仍未知",
+    "每次真实消费前的有效价格窗口、固定镜像、认证及配置/源码身份预检"
+  ],
+  "real_quality_pass": false,
+  "beta_completed_count": 0,
+  "actual_bill_confirmed": false,
+  "actual_bill_cny": null,
+  "later_real_r3_quality_evaluated_here": false
+}

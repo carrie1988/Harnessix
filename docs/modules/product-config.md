@@ -2552,7 +2552,7 @@ Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末
 
 ### 既有观察的阶段无关只读复核
 
-[`verify_product_git_user_observation`](../../src/harnessix/product_config/git_user_observation.py#L183)
+[`verify_product_git_user_observation`](../../src/harnessix/product_config/git_user_observation.py#L184)
 已在实现基准 `82c95e677d1919c60bbb3be32a9a4ef23f35b2e4` 之上的当前工作区落地，作为 B3 必需只读依赖；
 该增量尚未包含在基准提交中，不代表完整 B3 批准认证接线或正式上线。
 实际接口及完整时序见[观察详设第 10 节](../changes/m09-r4-git-user-observation.md#10-阶段无关的原观察只读复核)，
@@ -2566,7 +2566,7 @@ Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末
 | keyword-only `cancel`、`budget`、`checkpoint` | 保留同一绝对期限、取消和父 Task 异常；外部检查点返回后重验控制及宿主，不刷新预算 |
 | `None` | 仅表示本次既有 U 复核未发现不一致，不生成新观察、批准或执行能力 |
 
-[`_verify_observed_git_state`](../../src/harnessix/product_config/git_user_observation.py#L310)
+[`_verify_observed_git_state`](../../src/harnessix/product_config/git_user_observation.py#L368)
 是准备器与 verifier 共用的私有末轮配方：目录事实 → 逻辑 Git/完整配置 → 历史 → Source → 物理 Index → 控制检查。
 各入口以闭包保留原历史/Source 校验；helper 本身不承担独立来源认证。
 阶段无关 verifier 不要求准备阶段 pending Call，不重新 collect、写 CAS、发布 Artifact 或调用批准/执行入口。

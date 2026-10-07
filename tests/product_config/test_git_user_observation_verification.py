@@ -213,6 +213,7 @@ async def test_repaired_baseline_digest_cannot_replace_native_reader_or_tree_mem
     tmp_path, config, monkeypatch, object_format, field
 ):
     """公开摘要可重算，但基准每个来源成员与原Reader仍须向实际端口求证。"""
+
     async def inspect(scenario):
         expected, history = await _ready(scenario)
         baseline = expected.baseline
@@ -227,10 +228,12 @@ async def test_repaired_baseline_digest_cannot_replace_native_reader_or_tree_mem
             assert members[offset].oid != original.oid
             changed = baseline.model_copy(update={"members": tuple(members)})
         # 修复公开两层摘要，并重新通过正式结构校验；不能依赖坏摘要拒绝。
-        changed = type(baseline).model_validate({
-            **changed.model_dump(exclude={"digest"}),
-            "digest": product_git_baseline_digest(changed),
-        })
+        changed = type(baseline).model_validate(
+            {
+                **changed.model_dump(exclude={"digest"}),
+                "digest": product_git_baseline_digest(changed),
+            }
+        )
         forged = _refingerprint(expected, baseline=changed)
         before = _readonly_state(scenario)
         with pytest.raises(KernelError) as caught:
@@ -247,6 +250,7 @@ async def test_repaired_facts_cannot_redirect_actual_git_worktree_away_from_nati
     tmp_path, config, monkeypatch
 ):
     """原生Root未变，仍须核验Git实际工作树；普通配置/状态SHA不能替代根校验。"""
+
     async def inspect(scenario):
         expected, history = await _ready(scenario)
         other = tmp_path / "foreign-worktree"
@@ -255,19 +259,26 @@ async def test_repaired_facts_cannot_redirect_actual_git_worktree_away_from_nati
         assert command(scenario.root, "rev-parse", "--show-toplevel").strip().decode() == str(other)
         query = _Queries(scenario.reader, CancelToken())
         actual = await _observe(query)
-        changed = expected.baseline.model_copy(update={
-            "head_oid": actual.head, "head_tree_oid": actual.tree, "head_ref": actual.ref,
-            "index_observation_sha256": actual.index_sha256,
-            "index_observation_bytes": actual.index_bytes,
-            "status_sha256": actual.status_sha256,
-            "config_names_sha256": actual.config_sha256,
-        })
-        changed = type(changed).model_validate({
-            **changed.model_dump(exclude={"digest"}),
-            "digest": product_git_baseline_digest(changed),
-        })
-        forged = _refingerprint(expected, baseline=changed,
-                               config_sha256=await observation_module._configuration(query))
+        changed = expected.baseline.model_copy(
+            update={
+                "head_oid": actual.head,
+                "head_tree_oid": actual.tree,
+                "head_ref": actual.ref,
+                "index_observation_sha256": actual.index_sha256,
+                "index_observation_bytes": actual.index_bytes,
+                "status_sha256": actual.status_sha256,
+                "config_names_sha256": actual.config_sha256,
+            }
+        )
+        changed = type(changed).model_validate(
+            {
+                **changed.model_dump(exclude={"digest"}),
+                "digest": product_git_baseline_digest(changed),
+            }
+        )
+        forged = _refingerprint(
+            expected, baseline=changed, config_sha256=await observation_module._configuration(query)
+        )
         before = _readonly_state(scenario)
         with pytest.raises(KernelError) as caught:
             await _verify(scenario, forged, history)
@@ -277,10 +288,9 @@ async def test_repaired_facts_cannot_redirect_actual_git_worktree_away_from_nati
     await run_authenticated_observation(tmp_path, config, monkeypatch, inspect)
 
 
-async def test_native_workspace_cannot_inherit_parent_git_repository(
-    tmp_path, config, monkeypatch
-):
+async def test_native_workspace_cannot_inherit_parent_git_repository(tmp_path, config, monkeypatch):
     """根身份相同也不能借父目录的Git仓库；拒绝必须来自实际根查询。"""
+
     async def inspect(scenario):
         expected, history = await _ready(scenario)
         parent_git = scenario.root.parent / ".git"
@@ -302,8 +312,10 @@ async def test_native_workspace_cannot_inherit_parent_git_repository(
             with pytest.raises(KernelError) as caught:
                 await _verify(scenario, expected, history)
             assert caught.value.code == "git_user_observation_unavailable"
-        assert any(args[-2:] == ("rev-parse", "--show-toplevel") and root_check
-                   for args, root_check in observed)
+        assert any(
+            args[-2:] == ("rev-parse", "--show-toplevel") and root_check
+            for args, root_check in observed
+        )
         assert (scenario.unchanged_state(), index.read_bytes(), native_identity(index)) == before
 
     await run_authenticated_observation(tmp_path, config, monkeypatch, inspect)
@@ -316,6 +328,7 @@ async def test_entry_semantically_checks_before_blob_and_index_flags(
     tmp_path, config, monkeypatch, fault
 ):
     """只核对成员算法特有的失败分类，避免整体Index/状态漂移检查掩盖漏检。"""
+
     async def inspect(scenario):
         expected, history = await _ready(scenario)
         member = next(item for item in expected.baseline.members if item.oid is not None)
@@ -363,13 +376,15 @@ async def test_original_reader_binding_drift_is_rejected_after_normal_return(
         await _verify(scenario, expected, history, checkpoint=count)
         before, changed = _readonly_state(scenario), []
         with monkeypatch.context() as context:
+
             def mutate():
                 if changed:
                     return
                 attribute, value = {
                     "binding": ("_binding_fingerprint", "0" * 64),
                     "arguments": (
-                        "_global_arguments", (*scenario.reader._global_arguments, "--no-pager")
+                        "_global_arguments",
+                        (*scenario.reader._global_arguments, "--no-pager"),
                     ),
                     "executable": ("_executable", tmp_path / "different-executable"),
                 }[field]
@@ -407,6 +422,7 @@ async def test_entry_preserves_session_settlement_failure_over_original_control(
     tmp_path, config, monkeypatch, settlement, fault
 ):
     """真实认证会话读取底座；ROLLBACK为驱动拒绝，close为实际关闭后的失败注入。"""
+
     async def inspect(scenario):
         expected, history = await _ready(scenario)
         token = CancelToken()
@@ -419,6 +435,7 @@ async def test_entry_preserves_session_settlement_failure_over_original_control(
             database = None
             try:
                 async with connection(**kwargs) as database:
+
                     def authorizer(action, first, _second, _database, _source):
                         if action == sqlite3.SQLITE_TRANSACTION and first == "BEGIN":
                             state["begun"] = True

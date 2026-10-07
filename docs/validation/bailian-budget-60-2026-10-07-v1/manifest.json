@@ -1,0 +1,148 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 8461,
+      "sha256": "c543a63c777a38ccb828dbf9ce142d1108c91f25c7fbcd02a059a9f1b2ae2960"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 10414,
+      "sha256": "8325caa6e1c54aeefb84aaf854c3f250b34b1a12fa6f87e3007c6272b3d3dd44"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 3132,
+      "sha256": "b74f4bd81910ffed012d7c2c162d68d80a62c1179f78d3c781bc67a43d39de9c"
+    },
+    {
+      "path": "review-packet.json",
+      "bytes": 2416,
+      "sha256": "6bc06c47b3206d0aa24e7d2b45b6040ece183970a06c7102b4ec8c18f98b1f0f"
+    }
+  ],
+  "candidate_files": [
+    {
+      "path": "tests/evals/test_provider_budget_period_isolation.py",
+      "bytes": 6892,
+      "sha256": "80c6beaafd40aa280e28b4f31226cb1e47587071189e568558c407041abe81dc"
+    },
+    {
+      "path": "docs/changes/m09-provider-budget-period-activation.md",
+      "bytes": 21129,
+      "sha256": "747c574c96d7a76032f7dd38f8101be38e3df0676df30265dcad5b3fa24ed311"
+    }
+  ],
+  "private_evidence_root_role": "E",
+  "private_evidence": [
+    {
+      "path": "ACTIVATION_RECEIPT.json",
+      "bytes": 1563,
+      "sha256": "c35e4059889cb091bc27140ffe9bb0a75c24e2b0582b0609e28da2185c928155"
+    },
+    {
+      "path": "activate-budget.py",
+      "bytes": 3676,
+      "sha256": "5b8aa1d14e5ddc1685edd3949fed34353159a7394851909de07cad1a6c04916f"
+    },
+    {
+      "path": "budget-tests.xml",
+      "bytes": 49136,
+      "sha256": "caac95a419dc5cbb871936cdf2b405fc85ac44b731ad90e946becf1130d80c12"
+    },
+    {
+      "path": "budget-tests-wheel.xml",
+      "bytes": 49136,
+      "sha256": "63592a3b1cb99a2a3f309a3187688a3a0323436ff95fa0e9bf7adc530cf3e3b3"
+    },
+    {
+      "path": "previous-budget-snapshot.json",
+      "bytes": 125510,
+      "sha256": "d923d8e8812e9706229b290f362b472f3934086feb75a908534cd415f88b4385"
+    },
+    {
+      "path": "credential-engine-preflight.json",
+      "bytes": 1237,
+      "sha256": "6de00de895043032d4bed2315cf8a7d4b87ea62f2d2598f70edb85251ebf399c"
+    },
+    {
+      "path": "endpoint-auth-preflight.json",
+      "bytes": 306,
+      "sha256": "d2223263d3497edd000382d16fc741e6ec85a3664d0e9fe4d856d1cbf22300d4"
+    },
+    {
+      "path": "wheel-source-match.json",
+      "bytes": 176,
+      "sha256": "9b86cc2356cbd346e1bb15effa913cd48dc6ec91ab1450da57030ae98b34845b"
+    },
+    {
+      "path": "dist/harnessix-1.0.0rc1-py3-none-any.whl",
+      "bytes": 1361350,
+      "sha256": "85a8b90e367f6ab8f73235c8ec28012db5930f1f2f2bda0491c6c4deee8011ba"
+    },
+    {
+      "path": "recovered-budget/budget-regression.log",
+      "bytes": 583,
+      "sha256": "f5523fabf14f96ec4057fe4727bca5cda2262daf6d8083791d5b0a4b1b374166"
+    },
+    {
+      "path": "recovered-budget/budget-regression.xml",
+      "bytes": 49136,
+      "sha256": "050310860859de8012616f6984992ad8f70c820ce03a76e97ac4403abc3ce880"
+    },
+    {
+      "path": "recovered-budget/import-and-run-provenance.json",
+      "bytes": 68282,
+      "sha256": "67ff6190cd1c125fe0e361fd820cb49327ecf838031ca32778433652ed570c4f"
+    },
+    {
+      "path": "recovered-budget/xml-recount.json",
+      "bytes": 4369,
+      "sha256": "6f374c006bb48da57464f4e47ddf986b2ccfbd2ca793e1f4717fcf2698f37f10"
+    },
+    {
+      "path": "recovered-budget/run-budget-regression.py",
+      "bytes": 3525,
+      "sha256": "c21d55caa69eab95e5d05e5513825c46afe66ba59d455c5075c568671403afda"
+    },
+    {
+      "path": "recovered-budget/ruff-check.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "recovered-budget/ruff-format.log",
+      "bytes": 25,
+      "sha256": "fd2299c9f1c6dc869070883e281051bfe93aacf66c1a3b0069f45b4aa410ca50"
+    },
+    {
+      "path": "recovered-budget/documentation-check.json",
+      "bytes": 3889,
+      "sha256": "d003208dba1fe23781e004e928e4bd8044d5a196e243aabeaab8bece0f78f372"
+    },
+    {
+      "path": "recovered-budget/scope-check.json",
+      "bytes": 3406,
+      "sha256": "b188f94310cb362b8f0f3a9de74554721af81338169726af77d4377abad421f9"
+    },
+    {
+      "path": "recovered-budget/secret-scan.json",
+      "bytes": 568,
+      "sha256": "13423942502c298c3fdfb195e9175e6e5959c9eaa925f00252c7d454ba2281cc"
+    },
+    {
+      "path": "recovered-budget/delivery-check.json",
+      "bytes": 808,
+      "sha256": "0148868080ecf02288acd02799483810ae0a98971ea5b272675b3145361d6593"
+    }
+  ],
+  "observed_mutable_new_ledger": {
+    "reference": "E/budget.json",
+    "observed_at": "2026-10-07T12:28:14.515131+00:00",
+    "sha256": "34a944e91870ec6fa8662301892d801e2f83fe7a3650d45a12f64b3c24e2a0de",
+    "not_an_immutable_future_zero_cost_claim": true
+  },
+  "self_excluded_reason": "manifest is hashed by private evidence-manifest; self hash is not embedded"
+}
