@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 14
-code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
+version: 15
+code_revision: c65d6dbef1032b3456c34359959f803aa063ec29
 owners:
   - core
 modules:
@@ -33,7 +33,7 @@ supersedes: []
 参考事实、行为证据、推断和工程取舍，不直接定义Harnessix公共契约。Harnessix采用或拒绝某种机制的决定必须进入
 [ADR索引](../adr/README.md)，当前实现必须进入[模块设计](../README.md#3-当前事实源)。
 
-截至标注代码版本，本目录包含33份冻结或评审中研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
+截至标注代码版本，本目录包含34份冻结或评审中研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
 登记访问日期；参考仓库提交、产品版本、证据路径和适用范围由正文或[统一研究基线](baselines.md)固定。
 
 ## 2. 证据边界
@@ -169,3 +169,7 @@ flowchart LR
 - [认证SQLite提交与派生恢复研究](authenticated-sqlite-session.md)：真实CAS、同事务证明与原前缀恢复；默认Key托管和产品启用未完成。
 
 - [默认产品持久Session密钥](managed-session-key-and-root.md)。
+
+## 8. 当前响应性研究
+
+[Git 同步检查点协作调度](git-checkpoint-cooperation.md)固定2026-10-07的源代码及隔离实验，明确SQL/Terminal不可让出边界与两处CAS入口不足以关闭P1的实测结果，不代表生产采用greenlet。

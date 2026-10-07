@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 204
-code_revision: 03529962a63dfc7818d6b0d0b6874d4e9fc118a3
+version: 205
+code_revision: c65d6dbef1032b3456c34359959f803aa063ec29
 owners:
   - core
 modules:
@@ -2303,3 +2303,9 @@ Git/SQLite 同提交瞬间的整仓强一致尚无可用原语，完整U末轮�
 
 同一固定安装候选的无后台观测线程SDK负控测得最大事件循环心跳间隔 `21.594` 秒，测试通过仅证明原拒绝边界；
 同步响应性P1未关闭，原件及适用边界见[本轮验证报告](validation/r3-final-feedback-order-2026-10-07-v1/README.md)。
+
+## R4 同步响应性：CAS 协作候选的隔离研究结论
+
+[源码与协作研究](research/git-checkpoint-cooperation.md)在保留原检查、取消、期限、SQL和终端语义下，仅接入两处CAS同步配方。机制25项和原终端/SQL限定16项通过；同一SDK物理替换负控两次通过，不累计为两个真实质量场景。
+实测最大事件循环间隔仍约20.419秒，完整行认证/解码最长7.424秒、终端3.878秒；最大间隔尚未完整归因。因此两个入口的协作不能关闭P1，生产默认源码、依赖和既有产品能力保持。
+下一关键路径是完整回读及材料恢复的同步成本、必须连续执行的终端成本边界，而非全局插入yield、缓存认证或扩大期限。[固定验证](validation/git-checkpoint-cooperation-2026-10-07-v1/README.md)保留原型RED及各上下文；源码级研究不替代安装、三平台、真实R3、独立Beta或R1～R6商用门槛。

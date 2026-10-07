@@ -1,0 +1,74 @@
+{
+  "schema_version": "harnessix.checkpoint-cooperation-study/v1",
+  "status": "CAS_BRIDGE_MECHANISM_VERIFIED_RESPONSE_P1_OPEN",
+  "created_at_utc": "2026-10-07T06:46:04.574731+00:00",
+  "source_parent": "c65d6dbef1032b3456c34359959f803aa063ec29",
+  "main_tracked_bytes_unchanged": 5101,
+  "research_source_changes": [
+    "src/harnessix/product_config/git_checkpoint_materials.py",
+    "src/harnessix/product_config/git_checkpoint_preparation.py"
+  ],
+  "production_dependency_added": false,
+  "product_version_or_contract_changed": false,
+  "environment": "macOS arm64 / CPython 3.12.7 / isolated greenlet 3.3.2",
+  "checks": {
+    "mechanism-final": {
+      "tests": 25.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 0.269
+    },
+    "original-boundaries": {
+      "tests": 16.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 0.813
+    },
+    "sdk-r4": {
+      "tests": 1.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 107.591
+    },
+    "sdk-r5-stage": {
+      "tests": 1.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 105.712
+    }
+  },
+  "defects_red": {
+    "tests": 25.0,
+    "failures": 6.0,
+    "errors": 0.0,
+    "skipped": 0.0,
+    "time": 0.293
+  },
+  "sdk_r4_maximum_gap_seconds": 20.620489249937236,
+  "sdk_r5_maximum_gap_seconds": 20.41937829204835,
+  "source_level_sdk_only": true,
+  "installed_new_candidate_accepted": false,
+  "sdk_tests_unique": 1,
+  "research_helper_covered_by_product_authentication": false,
+  "real_model_requests": 0,
+  "commercial_release_accepted": false,
+  "response_p1_closed": false,
+  "next_critical_scope": [
+    "prepared完整前缀认证/行解码与材料恢复的同步成本",
+    "必须保持同步的末端读集合认证成本",
+    "最大20秒占用尚未完整归因，不根据局部span推断全部根因"
+  ],
+  "real_r3_frozen_strict": "0/20",
+  "real_beta_tasks": 0,
+  "deferred": [
+    "正式依赖与受信配方绑定",
+    "三平台同候选运行",
+    "默认完整Git/独立Commit/Backup2",
+    "真实R3与两笔费用未决",
+    "独立Beta及R1—R6发布门槛"
+  ]
+}
