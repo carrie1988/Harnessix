@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
+version: 39
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners:
   - core
 modules:
@@ -19,6 +19,8 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/delivery/test_terminal_read_control.py
+  - tests/product_config/test_git_prepared_link_terminal_callbacks.py
   - tests/trusted_actions/test_agent_preplanning.py
   - tests/trusted_actions/test_argument_feedback.py
   - tests/product_config/test_profile_argument_feedback_sdk.py
@@ -1801,3 +1803,17 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 `plan_agent_action`调用原 `CancelToken.run(..., preserve_failure=True)`，避免准备器已归一的未知效果
 被外层Turn取消、父Task退出或Router总期限覆盖。原公开准备错误码表及固定消息不变，内部强失败
 不向用户公开私有原因组。只在首次Route之前准备；已有Route、原Policy、实际Snapshot及幂等约束不变。
+
+## 待审批 Git 全集的末端只读 Audit 控制
+
+原[`Audit 父闭包 Reader`](../../src/harnessix/trusted_actions/store.py)在
+[操作局部终端作用域](../../src/harnessix/workspace/terminal_read_control.py)中使用同次内部控制及
+原 Workspace Store 严格 CAS Reader，不进入 Audit 的共享构造检查点或任意构造 Reader。
+原 Route 解码、完整父闭包、索引、末事件及状态一致性仍执行；不接纳缓存或摘要作为当前材料。
+普通 Router/Audit 读取仍按原构造回调和单次 checkpoint 组合执行，原对象身份及方法签名保持。
+
+[`Owner 写准入`](../../src/harnessix/trusted_actions/ownership_store.py)在末端只读作用域中拒绝
+同一 Audit 的业务写入和新的 Runtime Owner 获取，不修改代次、不创建替身或签发批准。
+控制随整个 Evidence 集合生效，异常或正常退出后恢复普通 SDK 行为。
+原控制异常实例与真实父历史损坏分别处理；细节、调用链和测试边界见
+[完整设计](../changes/m09-r4-git-prepared-link.md#终端作用域接口字段与调用链)。

@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 496,
-    "physical_lines": 101593,
-    "logical_lines": 89694,
-    "documented_modules": 496,
-    "classes": 1027,
-    "documented_classes": 489,
-    "functions": 4048,
-    "documented_functions": 1070,
+    "source_files": 504,
+    "physical_lines": 102904,
+    "logical_lines": 90837,
+    "documented_modules": 504,
+    "classes": 1032,
+    "documented_classes": 494,
+    "functions": 4094,
+    "documented_functions": 1107,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -487,7 +487,7 @@
       "qualname": "SQLiteArtifactStore",
       "kind": "class",
       "line": 128,
-      "lines": 421,
+      "lines": 425,
       "documented": true
     },
     {
@@ -496,7 +496,7 @@
       "path": "src/harnessix/artifacts/sqlite.py",
       "qualname": "SQLiteArtifactStore._verify_page",
       "kind": "function",
-      "line": 434,
+      "line": 438,
       "lines": 40,
       "documented": false,
       "decision_complexity": 24
@@ -706,7 +706,7 @@
       "path": "src/harnessix/delivery/store.py",
       "qualname": "SQLiteWorkspaceTransactionStore",
       "kind": "class",
-      "line": 49,
+      "line": 53,
       "lines": 300,
       "documented": true
     },
@@ -1578,7 +1578,7 @@
       "path": "src/harnessix/trusted_actions/store.py",
       "qualname": "SQLiteActionAuditStore",
       "kind": "class",
-      "line": 221,
+      "line": 224,
       "lines": 213,
       "documented": true
     },

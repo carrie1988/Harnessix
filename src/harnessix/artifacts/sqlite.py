@@ -339,6 +339,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         *,
         offset: int = 0,
         limit: int = 100,
+        read_only: bool = False,
     ) -> ArtifactPage:
         if (
             type(offset) is not int
@@ -347,7 +348,8 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             or not 1 <= limit <= 200
         ):
             raise KernelError("artifact_invalid_cursor", "Artifact 分页参数不合法")
-        async with self.session._connection() as database:
+        connection = self.session._connection
+        async with connection(read_only=True) if read_only else connection() as database:
             await database.execute("BEGIN")
             cursor = await database.execute(
                 ARTIFACT_READ_SELECT + " WHERE artifact_id = ? "
@@ -390,10 +392,12 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         workspace_scope: str,
         purpose: HistoryArtifactPurpose,
         omitted_field: ArtifactOmittedField | None = None,
+        read_only: bool = False,
     ) -> None:
         if purpose not in _HISTORY_ARTIFACT_PURPOSES:
             raise KernelError("artifact_invalid", "Artifact用途不符合契约")
-        async with self.session._connection() as database:
+        connection = self.session._connection
+        async with connection(read_only=True) if read_only else connection() as database:
             await database.execute("BEGIN")
             cursor = await database.execute(
                 ARTIFACT_READ_SELECT + " WHERE artifact_id = ? AND thread_id = ? "

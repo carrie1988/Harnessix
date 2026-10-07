@@ -14,6 +14,7 @@ from harnessix.domain.models import utc_now
 from harnessix.trusted_actions.recovery_contracts import (
     ActionRuntimeFence,
 )
+from harnessix.workspace.terminal_read_control import require_store_write_allowed
 
 
 def initialize_action_owner_schema(database: sqlite3.Connection) -> None:
@@ -40,6 +41,7 @@ class ActionOwnerFenceMixin:
         return hashlib.sha256(token.encode("ascii")).hexdigest()
 
     def _assert_runtime_owner(self) -> ActionRuntimeFence | None:
+        require_store_write_allowed(self)
         fence = self._runtime_fence
         if fence is None:
             if self._require_runtime_owner:
@@ -67,6 +69,7 @@ class ActionOwnershipStoreMixin(ActionOwnerFenceMixin):
     def runtime_owner(self) -> Iterator[ActionRuntimeFence]:
         """取得产品Action单宿主锁并递增持久Generation，旧Generation不能继续提交。"""
 
+        require_store_write_allowed(self)
         if self._runtime_fence is not None:
             raise KernelError("action_runtime_open", "Action Runtime不能重复取得所有权")
         descriptor = self._open_runtime_lock()

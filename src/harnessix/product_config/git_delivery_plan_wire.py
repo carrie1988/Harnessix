@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable
-from typing import NoReturn, cast
+from typing import TYPE_CHECKING, NoReturn, cast
 
 from pydantic import ValidationError
 
@@ -28,12 +28,16 @@ from harnessix.product_config.git_delivery_plan_snapshot import (
 
 MAX_PRODUCT_GIT_PLAN_BYTES = 512 * 1024
 
+if TYPE_CHECKING:
+    from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
+
 
 def _encode(
     plan: ProductGitDeliveryPlan
     | ProductGitDeliveryCore
     | ProductGitDeliveryCoreV2
-    | ProductGitDeliveryPlanV2,
+    | ProductGitDeliveryPlanV2
+    | ProductGitPreparedLink,
     checkpoint: Callable[[], None],
 ) -> bytes:
     """完整逐块编码；超限或取消不返回任何部分记录，不提高现有账本预算。"""

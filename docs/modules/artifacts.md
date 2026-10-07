@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
+version: 19
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ modules:
   - tools
   - patches
   - processes
+  - product_config
 related_adrs:
   - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0026-transactional-artifacts.md
@@ -39,6 +40,8 @@ related_tests:
   - tests/evals/test_runner.py
   - tests/agent/test_store_maintenance.py
   - tests/product_config/test_action_recovery.py
+  - tests/product_config/test_git_prepared_link_ledger.py
+  - tests/product_config/test_git_prepared_link_controls.py
 supersedes: []
 ---
 
@@ -51,14 +54,15 @@ supersedes: []
 | 当前能力 | 有界JSONL正文、不可变Manifest、Session同事务发布、分页读取、归属/用途/完整性验证、TTL、显式回收、Plan-first离线保留和Action恢复低敏索引清单 |
 | Artifact用途 | 只读Tool Result、Batch Plan/Effect Diff、Process Output、Action Review、Trusted Action Output；模型历史另识别Artifact Page |
 | 本文状态 | 当前实现；`artifacts`包现行实现的事实源 |
-| 代码版本 | 0.9.1f3独立Process Action发布器已删除；0.9.3b增加发布时间、统一显式插入和共库维护；实现Revision `cb3f3ea` |
+| 代码版本 | 历史用途与迁移保持；基线 `29402f7` 上同步单件读取/验证的显式只读参数和 prepared 终端核验，增量结果需按完整候选另行固定 |
 | 当前实现 | `SQLiteArtifactStore`、`SQLiteBatchDiffPublisher`、`ActionOutputArtifactMixin` |
 | 默认产品装配 | `run_product_stdio`创建Session绑定Store并注入Tool、Agent和Scoped Reader；POSIX Patch Review及Verified固定Process Output均复用该Owner |
-| 核心保证 | 正文、Manifest和对应Session引用同事务提交；读取时重新验证Thread、Workspace、用途、正文和Session反向引用 |
+| 核心保证 | 标准Tool/Batch正文、Manifest和对应引用同事务；Review/Output原行需后续Session反向授权才可读；读取时重新验证归属、用途、原认证和正文 |
 
 Artifact不是通用对象存储，也不是外部副作用的事实账本。它保存模型或客户端需要按页读取的有界证据；
 Tool Result和Patch效果的权威状态分别属于Session与Patch账本；Trusted Process效果属于专用Process Owner/Lease。
 旧`process_output`只为历史Session保留读取校验，当前运行使用`action_output`，不存在旧Effect Journal写链。
+`code_revision` 表示增量共同基础，不是新增接口的完整输入版本标识；本文的接口与边界说明不是最终测试或发布通过结论。
 
 ## 2. 需求背景
 
@@ -74,7 +78,7 @@ Artifact模块把正文放入Session同一SQLite数据库，并将“正文存�
 
 ### 3.1 目标
 
-1. 单个Artifact正文、Manifest和Session引用原子发布或整体回滚；
+1. 标准Tool/Batch正文、Manifest和Session引用同事务发布或整体回滚；Review/Output允许先发布原行，后续原Session反向引用才授予读取权限；
 2. 所有正文为有界UTF-8 JSONL，分页不截断记录、Unicode字符或JSON结构；
 3. ID、SHA-256、大小、记录数、完整性和过期时间由受信宿主生成；
 4. 读取使用`thread_id + workspace_scope + artifact_id`，不存在与跨归属统一返回Not Found；
@@ -221,7 +225,10 @@ classDiagram
       +artifacts
       +append(thread_id, drafts, expected_sequence)
     }
-    class SQLiteArtifactStore
+    class SQLiteArtifactStore {
+      +read(thread_id, scope, artifact_id, offset, limit, read_only=False)
+      +verify_reference(thread_id, call_id, reference, purpose, read_only=False)
+    }
     class SQLiteBatchDiffPublisher
     class ActionOutputArtifactMixin
     ArtifactReferenceVerifier <|-- ArtifactPublisher
@@ -234,6 +241,31 @@ classDiagram
 `AgentRuntime`只依赖端口，但SQLite Store与Batch Publisher必须共享同一`SessionStore`对象；Batch Publisher还
 必须绑定Runtime实际使用的Bridge。验证器可独立注入，但不得切换到另一Session。当前具体实现会使用
 `SQLiteSessionStore`私有事务能力，因此替换远端存储不是简单改连接字符串，而需重新实现原子合同。
+
+### 8.1 单件读取与引用验证的显式只读参数
+
+现行 [`SQLiteArtifactStore`](../../src/harnessix/artifacts/sqlite.py) 具体接口为：
+
+```text
+read(thread_id, workspace_scope, artifact_id,
+     *, offset=0, limit=100, read_only: bool=False) -> ArtifactPage
+verify_reference(thread_id, call_id, reference,
+                 *, workspace_scope, purpose, omitted_field=None,
+                 read_only: bool=False) -> None
+```
+
+两者均为异步方法，`read_only` 是仅关键字参数，默认 `False` 保持旧调用行为。
+传 `True` 时使用原 `session._connection(read_only=True)`；未传或传 `False` 时仍使用原默认连接。
+SQLite Session 的只读分支采用 URI `mode=ro` 与 `query_only=ON`，随后仍执行原 Store 认证与读取事务。
+它拒绝创建缺失的主数据库或执行 SQL 写入，不跳过 MAC、Session 反向引用、用途、Scope、TTL、正文与当前保护检查。
+
+该扩展是 SQLite 具体实现的内部参数，不增加公开 `ReadArtifactInput`、`ArtifactPage`、`ArtifactRef` 字段，
+不修改 Artifact 表或持久用途，也不要求其他 `ArtifactReferenceVerifier` 实现接受这一额外参数。
+默认连接可能按 SQLite 默认打开语义创建缺失主文件，之后原 Store 认证仍会拒绝无效内容；
+因此不能仅因方法名为读取，就把所有旧默认调用描述成无创建的只读连接。
+
+prepared 专用路径显式传 `read_only=True`，其终端同步读取也复用原 `readonly_database`。
+这只限定连接模式；不提供文件系统原子打开、fd 来源认证或所有 WAL/共享内存侧车均无访问的保证。
 
 ## 9. 持久化模型与迁移
 
@@ -361,7 +393,8 @@ sequenceDiagram
     G->>D: load current thread workspace
     G->>G: obtain current workspace capability scope
     G->>A: read with trusted thread and scope
-    A->>D: one read transaction loads row and thread snapshot
+    A->>D: 按 read_only 选择原连接并 BEGIN
+    A->>D: 同一读取事务加载原行与 Thread 快照
     A->>A: verify manifest session binding ttl body and purpose
     A->>A: select complete JSONL records within page budget
     A-->>G: ArtifactPage
@@ -373,6 +406,9 @@ sequenceDiagram
 存储查询同时匹配Artifact ID、Thread和Workspace Scope。未知ID、其他Thread及其他Scope均返回
 `artifact_not_found`，避免用错误差异枚举归属。随后`_reference`验证Session反向引用，`_body`验证状态、
 TTL、正文类型、长度、SHA-256、JSONL和记录数；Process用途再验证双流摘要与Action绑定。
+有 Key 的原行先由 `ArtifactPublicationGuard.require_proof` 验持久来源 MAC，正文随后按实际用途复核。
+`read_only=True` 只改变打开方式，不改变上述归属与正文判定。主 Session 数据库文件缺失属于存储打开失败，
+不同于已有库中未知 Artifact ID 的 `artifact_not_found`；专用只读路径不为取得该错误而先补建空库。
 
 ### 13.2 模型历史验证
 
@@ -391,6 +427,46 @@ Thread快照，单步成本O(N²)，约280个引用时超过5秒预算（0.9.3d 
 Fork快照记录原Artifact Owner，模型历史验证按原Owner Thread读取，不复制正文或改写Manifest。当前
 `read_artifact`执行入口仍以新调用所在Thread查询正文，没有接受或解析Fork Owner的公共字段；因此
 继承历史可完成发网前证明，但子Thread主动分页父Thread正文尚未形成完整产品闭环。
+
+### 13.4 待审批 Git 关联的全集读集合与终端核验
+
+[`git_prepared_link_proof._review_body`](../../src/harnessix/product_config/git_prepared_link_proof.py)
+先调用原 `verify_reference(..., purpose="action_review", read_only=True)`，
+再用原 `read(..., limit=200, read_only=True)` 逐页核对完整正文、offset、next_offset 和原 ArtifactRef。
+最多 50 页，必须逐字节覆盖唯一规范 Review 正文；不只核对摘要，不采样、不刷新 TTL 或再次 publish。
+
+异步业务核验返回私有 `PreparedLinkEvidence(link, history, route, review_body)`。
+[`PreparedLinkReadSet`](../../src/harnessix/product_config/git_prepared_link_observation.py)
+保存全部关联的 Evidence 和原 GitDB 全行、独立尾锚及 `total_changes`，
+不能因为正在核验后一个关联，就只保留最后一条 Review 的证据。
+
+```mermaid
+flowchart TD
+    Begin[原活跃宿主与已有 GitDB 事务] --> Monitor[四库固定只读连接观察变化]
+    Monitor --> Async[原引用验证与全部分页 read_only=True]
+    Async --> Evidence[每条关联保存已认证历史 Route 完整 Review 正文]
+    Evidence --> ReadSet[全集 ReadSet 与 SQL 全行 独立尾锚 写计数]
+    ReadSet --> Callback[完成末次外部 callback 及其后内部检查]
+    Callback --> Terminal[仅内部检查点 不再 await 或外部 callback]
+    Terminal --> Materials[全部 Route Source Core CAS Diff 同步重验]
+    Materials --> Row[mode=ro 查询原有界 Artifact 行]
+    Row --> MAC[原 MAC 归属 manifest 完整正文与 TTL]
+    MAC --> SQL[再次核对 SQL 全行 尾锚 写计数及原登记连接]
+    SQL --> Return[返回原 prepared Link 或全集]
+```
+
+终端 [`verify_prepared_link_terminal`](../../src/harnessix/product_config/git_prepared_link_proof.py)
+重新读取完整 Source/Core/CAS 材料并编码唯一 Review 正文，与保存的已核验正文比较，
+然后通过 `ARTIFACT_READ_SELECT` 的原有界查询同步取得原行，
+复用 [`matching_action_review`](../../src/harnessix/artifacts/action_review_store.py) 校验原 MAC、
+Thread/Turn/Call、用途、Scope、稳定 Artifact ID、manifest、记录数与完整正文，最后比较原 Ref 和当前 TTL。
+该匹配入口不独立重放 Session；唯一待审批回指由 Evidence 中的原完整认证历史与持续四库观察保持。
+
+终端不重新 await `ArtifactPublicationGuard.check_body`：异步读取已经完成原当前正文保护，
+终端必须证明重新形成的正文仍逐字节相等，且原 Scope、Guard、Owner 与资源引用仍有效。
+四库 `data_version`、原 writer 计数和路径身份只是变化检测，不是新的 MAC、跨库事务或执行授权。
+GitDB 原连接还必须在专用 factory 的活跃 context 中登记；该全父路径合作式 pin 不对 Session/Artifact 宣称 OS 原子 fd 保证。
+完整调用边界见[待审批 Git 业务关联详细设计](../changes/m09-r4-git-prepared-link.md)。
 
 ## 14. TTL、回收与状态机
 
@@ -428,6 +504,10 @@ Turn时保守保护；否则将状态改为Expired并把BLOB置NULL。游标避�
 | 未知、跨Thread或跨Scope | `artifact_not_found` | 否 | 不泄露归属差异 |
 | TTL到期 | `artifact_expired` | 否 | Tombstone保留 |
 | Manifest、用途、Session引用或正文不一致 | `artifact_corrupt` | 否 | 不返回空页 |
+| 原持久 Seal 缺失或 MAC/原行绑定无效 | `artifact_publication_unproven` | 否 | 不按当前 Scope 补签或刷新原认证 |
+| 显式只读打开时主 Session 文件缺失 | 原 Session 存储打开错误 | 否 | 不创建缺失主数据库，不返回伪造空页 |
+| prepared 终端 Review 行/Ref/正文/TTL 错配 | `git_prepared_link_changed`，或原 MAC/`artifact_conflict` 分类 | 否 | 不返回部分关联，不修复或再次发布 |
+| 后序 await 或末次外部 callback 改变前序关联证据 | prepared 全集观察与同步终端拒绝 | 否 | GitDB 候选事务由调用方回滚 |
 | offset/limit非法或越界 | `artifact_invalid_cursor` | 否 | 无读取副作用 |
 | 标准发布提交前异常/取消 | 原结构化错误或取消 | 否 | Artifact和Result一起回滚 |
 | 标准发布提交后确认丢失 | 调用可能中断 | 否 | 已提交Artifact/Result保留，恢复不重跑Tool |
@@ -442,12 +522,15 @@ Turn时保守保护；否则将状态改为Expired并把BLOB置NULL。游标避�
 
 1. 标准Tool Result由Agent每Thread锁串行进入`publish`；数据库使用`BEGIN IMMEDIATE`重新检查CAS；
 2. 配额读取和正文插入位于同一写事务，并发连接不能同时基于旧总量通过；
-3. 读取在一个SQLite读事务中同时取得Artifact行和Thread Snapshot，避免关联检查跨快照；
+3. 单件异步 `read`/`verify_reference` 在一个SQLite读事务中同时取得Artifact行和Thread Snapshot，避免该次关联检查跨快照；prepared 终端则按第13.4节复用已认证历史与持续观察，不宣称重新取得跨库原子快照；
 4. 回收使用单个有界写事务，任一结构损坏或故障会回滚本批全部状态修改；
 5. Tool执行和分页I/O由`CancelToken.run`托管，关闭Runtime前排空受控子任务；
 6. 发布与用户取消竞争同一Thread串行边界，允许“完整发布后再取消”或“取消先发生而不发布”，不允许半提交；
 7. Batch和Process发布无独立后台重试队列；提交状态不明时先读Event，不盲目重发；
 8. TTL使用带时区UTC墙钟；当前没有单调时钟租约或时钟漂移诊断。
+9. 单件 `read`/`verify_reference` 默认连接保持兼容；仅显式 `read_only=True` 使用不创建主库的只读分支，不能推广为全部旧消费者已切换；
+10. prepared 的四库观察覆盖全集异步读取，随后在末次外部 callback 后同步重验全部证据；此应用级封闭窗口不锁定其他进程或 CAS 文件系统，也不构成跨库原子快照；
+11. prepared 终端采用仅内部取消/期限/宿主检查点的 SQL 窗口，不再执行调用方 callback；原 SQL 全行、独立尾锚及 `total_changes` 在同步材料复核前后都必须保持。
 
 ## 17. 安全与隐私
 
@@ -495,16 +578,40 @@ publish_read_only(thread, turn, call, captured):
     require runtime owner unchanged
     commit
 
-read(thread_id, trusted_scope, artifact_id, offset, limit):
+read(thread_id, trusted_scope, artifact_id, *, offset=0, limit=100, read_only=False):
     validate exact cursor types and bounds
+    if read_only:
+        open original session connection with mode=ro and query_only
+    else:
+        open original default session connection without changing legacy behavior
     begin read transaction
     row = query by artifact_id + thread_id + trusted_scope
     if absent: fail artifact_not_found
     thread = validated session snapshot
+    require original persistent publication proof when the store has a key
     ref = verify manifest indexes purpose and reverse session reference
     lines = verify state ttl body bytes digest jsonl records and purpose details
     select complete records until count or page-byte limit
     return page with exact next_offset
+
+verify_reference(thread_id, call_id, ref, *, workspace_scope, purpose,
+                 omitted_field=None, read_only=False):
+    choose the same explicit-read-only or original-default connection branch
+    begin read transaction and authenticate original row and session snapshot
+    require original ownership, purpose, MAC, reverse reference and exact manifest
+    require full body, TTL, current protection and optional coverage proofs
+    return without publishing, extending TTL or repairing history
+
+prepared_terminal(read_set):
+    enter internal-checkpoint-only SQL window after the last external callback
+    require original registered GitDB connection and unchanged SQL rows/anchor/total_changes
+    for every original evidence:
+        synchronously recheck route, source, core, CAS and diff
+        encode expected review and compare with previously verified complete body
+        synchronously read bounded original artifact row using mode=ro
+        require original MAC, identity, manifest, exact body, original ref and TTL
+    require SQL rows/anchor/total_changes unchanged again
+    never await, invoke an external callback, republish or grant Git execution
 
 publish_optional_effect_evidence(original_events):
     validate original events and durable effect identity first
@@ -535,6 +642,7 @@ collect(limit, after):
 | 读取与损坏 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `read`、`_reference`、`_body` | [`test_store.py`](../../tests/artifacts/test_store.py) | `test_archive_beyond_preview_reopen_integrity_and_replay`、`test_tampering_is_corruption_not_empty_success` | 分页、重开和反向绑定 |
 | 归属隐藏 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `read` | [`test_store.py`](../../tests/artifacts/test_store.py) | `test_unknown_and_cross_owner_have_same_failure` | Thread/Scope/Missing等价失败 |
 | 引用和覆盖验证 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py)、[`batch_verify.py`](../../src/harnessix/artifacts/batch_verify.py) | `verify_reference`、`verify_references`、`_verify_page`、`_verify_coverage` | [`test_model_history.py`](../../tests/artifacts/test_model_history.py)、[`test_batch_verify.py`](../../tests/artifacts/test_batch_verify.py) | `test_artifact_verifier_checks_every_binding_and_body`、`test_batch_verify_rejects_same_errors_as_single`、`test_reduction_requires_actual_coverage_not_just_complete_manifest` | 发网前完整证据；批量入口共享连接与快照且语义等价 |
+| prepared 专用只读与终端 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py)、[`proof`](../../src/harnessix/product_config/git_prepared_link_proof.py)、[`observation`](../../src/harnessix/product_config/git_prepared_link_observation.py)、[`connection`](../../src/harnessix/product_config/git_prepared_link_connection.py) | `read_only`、`PreparedLinkEvidence`、`PreparedLinkReadSet`、`verify_prepared_link_terminal` | [`关联测试`](../../tests/product_config/test_git_prepared_link_ledger.py)、[`故障控制`](../../tests/product_config/test_git_prepared_link_controls.py) | 显式只读、原 Artifact/CAS 损坏、原连接置换与全集漂移判定 | 设计要求与用例入口，不表示本候选最终验收已完成 |
 | TTL和回收 | [`sqlite.py`](../../src/harnessix/artifacts/sqlite.py) | `collect` | [`test_runtime.py`](../../tests/artifacts/test_runtime.py) | `test_gc_protects_active_thread_and_cursor_does_not_starve_others` | Active保护、游标与Tombstone |
 | Runtime装配 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `AgentRuntime.__init__`、`_record_tool_result` | [`test_runtime.py`](../../tests/artifacts/test_runtime.py) | `test_misconfigured_publisher_is_not_silently_used`、`test_default_definitions_unchanged_and_artifact_policy_is_versioned` | 同Session/Scoped绑定与工具版本 |
 | 搜索捕获和读取Tool | [`runtime.py`](../../src/harnessix/tools/runtime.py) | `execute_scoped`、`_read_artifact`、`artifact_workspace_scope` | [`test_runtime.py`](../../tests/artifacts/test_runtime.py) | `test_glob_archive_and_incomplete_grep_are_truthful`、`test_read_tool_uses_actual_thread_and_rebound_workspace` | 受信Scope和真实完整性 |
@@ -575,10 +683,13 @@ collect(limit, after):
 | 升级 | Migration 9/11/24/25/26真退出与旧Artifact/Event原字节保持 | Upgrade测试和独立Probe |
 | SDK/协议 | 多页读取、公开投影、Scope不外泄 | `test_sdk.py`、App Server测试 |
 | 共库维护 | Body过期、accepted全局保护、Thread整组删除、候选漂移、批次崩溃和备份恢复 | `test_store_maintenance.py` |
+| prepared 内部消费 | 显式只读缺失库不创建、旧默认兼容、全部 Review/材料末端复核、独立尾锚与原登记连接 | `test_git_prepared_link_ledger.py`、`test_git_prepared_link_controls.py`及对应候选故障回归 |
 
 Artifact变更至少运行`tests/artifacts`；若修改Session表、Agent装配、Tool定义、模型历史、Patch或Process合同，
 还必须运行对应模块测试和全量`make check`。精确测试数以当前测试运行报告为准。仅验证Happy Path或内存Fake
 不能证明事务、崩溃和归属边界。
+prepared 的连接、全集观察与终端变更需按同一代码候选完成对应故障回归并保留原始失败；
+本文仅同步设计与判定要求，不填写最终测试通过数字，不据此关闭 Git 执行、三平台或商用验收。
 
 ## 22. 已知限制、风险与后续工作
 
@@ -594,6 +705,7 @@ Artifact变更至少运行`tests/artifacts`；若修改Session表、Agent装配�
 | Batch/Process允许无归档降级 | 权威效果仍完整，但详细展示证据可能不可用 | 产品UI必须明确“无可用归档” |
 | TTL依赖UTC墙钟 | 时钟跳变可能提前过期或延后回收 | 0.9.3故障注入与诊断 |
 | 没有通用媒体合同 | 图片、音频及任意二进制不能伪装为字符串Artifact | 后续独立ADR和版本化MIME合同 |
+| 显式只读与合作式路径 pin 不是 OS 原子打开 | 不能据此证明跨库、文件系统或恶意路径 ABA 的不可变快照 | 原 Runtime 锁、受信状态目录及独立平台验证 |
 
 Artifact字段和状态属于本文；模型历史裁剪属于[Context模块设计](context.md)，Session事务和迁移框架属于
 [Session模块设计](session.md)，Batch/Process效果归属分别由后续Patch和Process模块设计维护。
@@ -714,6 +826,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 19 | `29402f7` 增量基础 | 2026-10-07 | 同步 Artifact 单件显式只读参数、prepared 全集 Evidence/ReadSet 与无外部回调的同步终端核验；不记录最终验收结论 |
 | 13 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加只读Action Artifact purpose/call恢复清单；孤儿只计数、不读取正文或自动删除 |
 | 12 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26发布时间、显式列写入、低敏容量和Plan-first Body/Thread保留及备份恢复边界 |
 | 11 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录旧Process发布器删除和历史Artifact只读兼容由CI 35453082992完成全矩阵验收 |
@@ -774,7 +887,7 @@ action_review分支调用原[`protect_review_jsonl`](../../src/harnessix/agent/p
 重组完整原文后接受当前Scope检查；其他purpose及未知旧通用Review行为保持。
 该检查不替代原持久MAC、Session反向引用、Workspace Scope、TTL与Owner核验。
 
-原[`read_page`](../../src/harnessix/artifacts/sqlite.py)委托共享
+原[`read`](../../src/harnessix/artifacts/sqlite.py)委托共享
 [`paginate_artifact_lines`](../../src/harnessix/domain/artifact_pagination.py)，
 保持原24KiB及200记录裁切。Git生产者使用同一算法预检真实50页，不另建正文或分页存储。
 稳定ID发布、确认丢失查询先行恢复、原TTL及无审批回指孤立Artifact不可读保持不变，

@@ -1036,3 +1036,13 @@ common/admin、物理Index、配置值、HEAD/逻辑Index/来源及完整会话�
 这些是实际组件，不再将其列为缺少实现的合同；仍未默认注册或取得Git业务执行批准。
 内部命令授权夹具不是产品默认Policy。完整ProductLink业务Writer/Loader、NativeBridge、A/T2/D、
 独立Commit与业务Backup2仍待联合闭合；物理账本可验真不等于完整业务状态可恢复。
+
+## 待审批业务关联实施边界
+
+[待审批关联详细设计](m09-r4-git-prepared-link.md)已经将完整 Plan2、唯一原审批请求和原认证
+Session/Route/Core/CAS/Artifact核验接入原 GitDB v2 同事务发布。原五 kind 认证域和全表尾锚不变；
+当前只接受 prepared/sequence=0，并对全集逐条实时回读，不默认装配 Git 写工具。
+
+此组件不是本设计要求的完整 ProductLink 生命周期或历史备份 Loader。实际新批准、所有后续 phase、
+原生桥接、A/T2/D、独立 Commit、全对象目录认证、业务 Backup2与新根重新授权仍必须完成。
+首次默认外部 Git 写入仍受业务 Backup2闭合前置约束，不能用 prepared 的原 MAC 或当前只读回读代替。

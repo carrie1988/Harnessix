@@ -504,22 +504,26 @@ async def _verify_observation(
         check()
 
 
+# 只冻结不变的字段名和安装位置；每个控制点仍重读四份源码完整字节。
+# 不以 mtime/size 缓存 SHA，也不缓存文件正文，保持同元数据篡改可被发现。
+_PREPARATION_SOURCE_PATHS = tuple(
+    (str(Path(name)), Path(__file__).parent.parent / name)
+    for name in (
+        "product_config/git_checkpoint_preparation.py",
+        "product_config/git_checkpoint_materials.py",
+        "product_config/git_checkpoint_scope.py",
+        "delivery/git_inventory_wire.py",
+    )
+)
+
+
 def git_checkpoint_preparation_implementation_digest() -> str:
-    """实际规划配方及唯一Scope字段编码入Core摘要，不继承旧实现的批准。"""
-    root = Path(__file__).parent
-    paths = tuple(
-        root / name
-        for name in (
-            "git_checkpoint_preparation.py",
-            "git_checkpoint_materials.py",
-            "git_checkpoint_scope.py",
-        )
-    ) + (root.parent / "delivery/git_inventory_wire.py",)
+    """按原四字段重读完整规划配方；热检查点不重复构造固定路径。"""
     try:
         return canonical_digest(
             {
-                str(p.relative_to(root.parent)): hashlib.sha256(p.read_bytes()).hexdigest()
-                for p in paths
+                name: hashlib.sha256(path.read_bytes()).hexdigest()
+                for name, path in _PREPARATION_SOURCE_PATHS
             }
         )
     except OSError:

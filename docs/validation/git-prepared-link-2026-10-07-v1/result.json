@@ -1,0 +1,578 @@
+{
+  "schema": "harnessix.git-prepared-link-validation/v1",
+  "status": "PASS_COMPONENT_NOT_RELEASE",
+  "baseline_revision": "29402f764eae88d50364a37817635fbb77ba907b",
+  "default_git_tools_enabled": false,
+  "commercial_release_complete": false,
+  "verified_partial": {
+    "factory_integration": {
+      "passed": 82,
+      "scope": "registered connection and actual authenticated prepared-chain regression"
+    },
+    "sql_cleanup_red": {
+      "failed": 3,
+      "preserved": true
+    },
+    "sql_cleanup_green": {
+      "passed": 3
+    },
+    "cas_control_with_original_cas_and_sql_regression": {
+      "passed": 119,
+      "scope": "actual Store control exception identity; not authentication or business execution"
+    },
+    "prior_installed_associated": {
+      "passed": 3003,
+      "same_as_latest_source": false,
+      "scope": "review Wheel before later SQL cleanup and CAS control fixes"
+    },
+    "governance_first_review": {
+      "passed": 1413,
+      "same_as_latest_source": false
+    },
+    "latest_mypy": {
+      "source_modules": 504,
+      "status": "PASS"
+    },
+    "latest_documentation": {
+      "status": "PASS",
+      "changed_paths": 52,
+      "scope": "final explicit owned candidate clone; findings empty; sealed public hash package checked separately"
+    },
+    "prior_installed_new": {
+      "passed": 314,
+      "failed": 2,
+      "tests": 316,
+      "same_as_latest_source": false,
+      "scope": "review Wheel before later SQL/CAS changes; failures were host error-code expectation and SQLite no-op commit assumption; corrected tests require revalidation"
+    },
+    "corrected_real_host_and_session_change_regressions": {
+      "passed": 2,
+      "scope": "actual authenticated SDK; host rejection classification and external write-restore version detection; not complete installed candidate"
+    },
+    "terminal_control_unit": {
+      "passed": 150,
+      "scope": "original CAS/Audit, full parent closure and context lifecycle; not whole authenticated SDK or final installed candidate"
+    },
+    "terminal_actual_first": {
+      "passed": 8,
+      "scope": "actual authenticated SDK positive/retry/read-only and existing terminal faults; shared-constructor-callback regressions remain pending"
+    },
+    "latest_readability": {
+      "status": "PASS",
+      "policy_unchanged": true
+    },
+    "terminal_diagrams": {
+      "count": 5,
+      "rendered": true,
+      "visually_checked": true,
+      "source_matches": true,
+      "stale_previous_inputs_retained": 3,
+      "scope": "current detailed design diagrams; not independent runtime acceptance"
+    },
+    "independent_terminal_review": {
+      "status": "NO_FINDING_IN_BOUNDED_REVIEW",
+      "source_files_unchanged": 36,
+      "source_control_fault_samples": 44,
+      "arbitrary_audit_cached_reader_terminal_calls": 0,
+      "scope": "source review and actual Store probes; not all Ledger interleavings or installed full-suite acceptance"
+    },
+    "installed_terminal_governance": {
+      "passed": 1413,
+      "scope": "prior terminal Wheel test-process imports; governance subprocesses explicitly use installed Wheel and owned clone",
+      "same_as_latest_production_source": false
+    },
+    "terminal_ruff": {
+      "status": "PASS",
+      "formatted_files": 1157,
+      "scope": "current owned clone only"
+    },
+    "terminal_domain": {
+      "passed": 3732,
+      "skipped": 23,
+      "scope": "current owned source clone, Delivery and Trusted Actions; skips are platform-specific, not whole commercial acceptance"
+    },
+    "installed_terminal_control": {
+      "passed": 269,
+      "scope": "prior terminal Wheel test-process imports; original CAS/Audit/parent-closure and final Context/Owner write-denial regressions",
+      "same_as_latest_production_source": false
+    },
+    "isolated_installed_missing_material": {
+      "passed": 1,
+      "scope": "Core, Source parent, Route parent missing after last authentication; read and existing prepare retry; separate run with installed subprocess environment; original full-suite failure unresolved"
+    },
+    "installed_terminal_associated": {
+      "passed": 3784,
+      "duration_seconds": 855.81,
+      "scope": "prior terminal Wheel parent-process imports; complete associated selector set; subprocess provenance not independently established for this initial run",
+      "same_as_latest_production_source": false
+    },
+    "isolated_installed_rollback_retry": {
+      "passed": 1,
+      "duration_seconds": 70.16,
+      "scope": "current installed Wheel, corrected explicit subprocess environment; isolated diagnostic only; original full-suite failure remains unresolved"
+    },
+    "initial_installed_terminal_new": {
+      "passed": 336,
+      "failed": 5,
+      "seconds": 1361.41,
+      "same_as_latest_source": false,
+      "scope": "full initial 341 test run; all five failed during SDK approval wait before prepared business assertions; original XML and import proof retained"
+    },
+    "preparation_digest_control_regression": {
+      "initial_harness_error_preserved": true,
+      "red_failed": 1,
+      "red_passed": 2,
+      "green_passed": 3,
+      "scope": "static path overhead, fresh full bytes despite identical mtime and size, fixed source IO error; not SDK acceptance"
+    },
+    "preparation_cost_profile": {
+      "source_digest_calls": 86771,
+      "relative_path_rebuilds": 347420,
+      "instrumented_failure_preserved": true,
+      "scope": "one instrumented installed SDK fixture; profiling overhead causes original deadline refusal, not production latency or commercial quality"
+    },
+    "installed_final_performance_control": {
+      "tests": 272,
+      "passed": 272,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 3.867,
+      "loaded_modules": 256,
+      "same_as_latest_production_source": false,
+      "wheel_sha256": "8ffded4c7d0dfd656a201decba70272ac708668c88fee49308c16857cb23c602",
+      "scope": "fixed final native-key candidate; installed production imports and explicit subprocess environment; not complete SDK or commercial acceptance"
+    },
+    "installed_final_performance_governance": {
+      "tests": 1413,
+      "passed": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 42.534,
+      "loaded_modules": 375,
+      "same_as_latest_production_source": false,
+      "wheel_sha256": "8ffded4c7d0dfd656a201decba70272ac708668c88fee49308c16857cb23c602",
+      "scope": "fixed final native-key candidate; installed production imports and explicit subprocess environment; not complete SDK or commercial acceptance"
+    },
+    "independent_final_input_review": {
+      "status": "PASS_SCOPED_BYTE_AUDIT",
+      "original_schemas_unchanged": 281,
+      "original_gates_unchanged": 6,
+      "package_members_main_clone_wheel_install_equal": 545,
+      "python_members": 504,
+      "differences": 0,
+      "same_as_latest_production_source": false,
+      "scope": "byte provenance, not runtime safety or commercial acceptance"
+    },
+    "secret_final_performance": {
+      "status": "PASS",
+      "inputs": 5065,
+      "scope": "all 5063 owned indexed source inputs and two Wheel-directory files; no foreign untracked input"
+    },
+    "installed_preliminary_performance_associated": {
+      "passed": 3784,
+      "seconds": 725.5,
+      "same_as_latest_production_source": false,
+      "scope": "preliminary fixed path candidate; final native-key candidate full run still pending"
+    },
+    "installed_native_key_new": {
+      "tests": 344,
+      "passed": 342,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1284.859,
+      "same_as_latest_production_source": false,
+      "scope": "full fixed-path native-key Wheel before public guard scheduling fix; all original failures retained"
+    },
+    "installed_native_key_associated": {
+      "tests": 3784,
+      "passed": 3783,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 756.817,
+      "same_as_latest_production_source": false,
+      "scope": "full fixed-path native-key Wheel before public guard scheduling fix; all original failures retained"
+    },
+    "phase_block_diagnostic": {
+      "passed": 1,
+      "scope": "instrumented fixed-Wheel SDK single case; not complete failure closure or SLA",
+      "maximum_heartbeat_gap_seconds": 19.314656083006412,
+      "gap_contains": [
+        "collect_product_git_checkpoint_materials",
+        "_persist_core"
+      ],
+      "local_variables_or_business_bodies_collected": false
+    },
+    "public_guard_scheduling_red": {
+      "tests": 15,
+      "failed": 6,
+      "passed": 9,
+      "scope": "initial time-boundary regression against old public guard; full stderr and XML retained"
+    },
+    "public_guard_scheduling_initial_green": {
+      "passed": 43,
+      "scope": "current source targeted scheduling and original public guard tests; not final installed candidate"
+    },
+    "installed_scheduling_r2_protection": {
+      "tests": 358,
+      "passed": 358,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 9.367,
+      "loaded_modules": 280,
+      "all_modules_from_installed_wheel": true,
+      "explicit_subprocess_installed_environment": true,
+      "same_as_latest_production_source": true,
+      "wheel_sha256": "fd520997db65ce7ed09217867786f976bcef4bf154ba685e9c87e6da7cc8f7fa",
+      "scope": "fixed r2 installed selector set; overlapping scopes are not added as distinct coverage; not full commercial acceptance"
+    },
+    "installed_scheduling_r2_control": {
+      "tests": 305,
+      "passed": 305,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.014,
+      "loaded_modules": 257,
+      "all_modules_from_installed_wheel": true,
+      "explicit_subprocess_installed_environment": true,
+      "same_as_latest_production_source": true,
+      "wheel_sha256": "fd520997db65ce7ed09217867786f976bcef4bf154ba685e9c87e6da7cc8f7fa",
+      "scope": "fixed r2 installed selector set; overlapping scopes are not added as distinct coverage; not full commercial acceptance"
+    },
+    "installed_scheduling_r2_governance": {
+      "tests": 1413,
+      "passed": 1413,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 43.856,
+      "loaded_modules": 375,
+      "all_modules_from_installed_wheel": true,
+      "explicit_subprocess_installed_environment": true,
+      "same_as_latest_production_source": true,
+      "wheel_sha256": "fd520997db65ce7ed09217867786f976bcef4bf154ba685e9c87e6da7cc8f7fa",
+      "scope": "fixed r2 installed selector set; overlapping scopes are not added as distinct coverage; not full commercial acceptance"
+    },
+    "installed_scheduling_r2_associated": {
+      "tests": 3784,
+      "passed": 3784,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 740.152,
+      "loaded_modules": 388,
+      "all_modules_from_installed_wheel": true,
+      "explicit_subprocess_installed_environment": true,
+      "same_as_latest_production_source": true,
+      "wheel_sha256": "fd520997db65ce7ed09217867786f976bcef4bf154ba685e9c87e6da7cc8f7fa",
+      "scope": "fixed r2 installed selector set; overlapping scopes are not added as distinct coverage; not full commercial acceptance"
+    },
+    "scheduling_r2_static": {
+      "mypy_source_modules": 504,
+      "mypy": "PASS",
+      "ruff": "PASS",
+      "format_files": 1790,
+      "documentation": {
+        "status": "PASS",
+        "document_count": 569,
+        "links": 13116,
+        "mermaid_blocks": 1085,
+        "findings": 0
+      },
+      "secret_scan": {
+        "status": "PASS",
+        "inputs": 5069
+      },
+      "readability": "PASS",
+      "spec_generation": "PASS",
+      "policies_unchanged": true
+    },
+    "approved_design_diagrams": {
+      "count": 6,
+      "rendered": true,
+      "visually_checked": true,
+      "scope": "planned next-stage architecture only; no implementation or runtime acceptance"
+    },
+    "installed_scheduling_r2_new": {
+      "tests": 377,
+      "passed": 377,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1342.098,
+      "loaded_modules": 358,
+      "all_modules_from_installed_wheel": true,
+      "explicit_subprocess_installed_environment": true,
+      "same_as_latest_production_source": true,
+      "wheel_sha256": "fd520997db65ce7ed09217867786f976bcef4bf154ba685e9c87e6da7cc8f7fa",
+      "scope": "same r2 production source installed selector set; overlapping scopes not added; not full commercial acceptance"
+    },
+    "installed_scheduling_r2_cancellation": {
+      "tests": 48,
+      "passed": 48,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.103,
+      "loaded_modules": 12,
+      "all_modules_from_installed_wheel": true,
+      "explicit_subprocess_installed_environment": true,
+      "same_as_latest_production_source": true,
+      "wheel_sha256": "fd520997db65ce7ed09217867786f976bcef4bf154ba685e9c87e6da7cc8f7fa",
+      "scope": "same r2 production source installed selector set; overlapping scopes not added; not full commercial acceptance"
+    },
+    "original_schema_gate_current_recheck": {
+      "status": "PASS",
+      "schemas": 281,
+      "gates": 6,
+      "scope": "current main/owned clone byte equal original HEAD; not runtime acceptance"
+    },
+    "scheduling_r2_spec_generation": {
+      "status": "PASS",
+      "scope": "same fixed installed production source canonical Schema generator; original Schema bytes retained"
+    },
+    "scheduling_r2_protection_review": {
+      "status": "NO_FINDING_IN_BOUNDED_REVIEW",
+      "scope": "time/cancellation/error/cleanup semantics; not full-system proof"
+    },
+    "pilot_beta_material": {
+      "status": "PREPARATION_ONLY",
+      "task_templates": 5,
+      "actual_tasks_completed": 0,
+      "diagram_rendered": true,
+      "diagram_visually_checked": true,
+      "formal_multi_user_gate_unchanged": true
+    }
+  },
+  "open_findings": [
+    {
+      "id": "git-synchronous-responsiveness",
+      "severity": "P1",
+      "scope": "long synchronous preparation/material/core work can block shared event loop; 19.314-second diagnostic heartbeat gap is not an SLA benchmark",
+      "requires": "source-grounded bounded same-task cooperation and end-to-end responsiveness regression without cached trust results, relaxed budgets or new thread authority"
+    }
+  ],
+  "final_installed_regression": "PASS_FIXED_SCHEDULING_R2_SCOPED",
+  "failed_attempts_preserved": [
+    "sdk-first",
+    "sdk-second",
+    "sdk-third",
+    "governance-first",
+    "terminal-first",
+    "terminal-second",
+    "installed-review-new-system-git",
+    "sql-cleanup-red",
+    "mypy-final-first",
+    "installed-review-new",
+    "terminal-control-unit-first",
+    "readability-terminal-revision-mismatch",
+    "terminal-callbacks-old-review-red",
+    "installed-terminal-new-harness-missing-tests",
+    "governance-terminal-first",
+    "documentation-terminal-first",
+    "installed-terminal-new",
+    "rollback-profile",
+    "preparation-digest-red-harness",
+    "preparation-digest-red2",
+    "installed-perf-new",
+    "installed-final-perf-new",
+    "installed-final-perf-associated",
+    "protection-scheduling-red",
+    "documentation-pilot-preseal",
+    "ruff-all-pilot-first",
+    "diagram-input-drift-retained"
+  ],
+  "pending_validation_findings": [],
+  "candidate": {
+    "wheel_sha256": "fd520997db65ce7ed09217867786f976bcef4bf154ba685e9c87e6da7cc8f7fa",
+    "package_members": 545,
+    "python_members": 504,
+    "main_clone_wheel_install_bytes_equal": true,
+    "scope": "same production source fixed Wheel; no source-path production imports; complete commercial release not accepted"
+  },
+  "closed_findings": [
+    {
+      "id": "prepared-terminal-shared-callback-window",
+      "resolution": "operation-local callback-free terminal read scope; same fixed Wheel complete prepared 377 and associated 3784 passes; original controls and negative cases retained",
+      "scope": "prepared component only, not future decided/effect/history consumers"
+    },
+    {
+      "id": "public-guard-scheduling-starvation",
+      "resolution": "10-second synchronous scan clock excludes before/after scheduling waits; cancellation and outer deadlines preserved; installed boundary and cross-case suites pass",
+      "scope": "false protection timeout only; Git CPU responsiveness not resolved"
+    }
+  ],
+  "evidence_artifacts": {
+    "installed-scheduling-r2-new.xml": {
+      "sha256": "65922b8a30fe68084d9f6e07552df83388ae475839d369a15ea83e12ba2c9e72",
+      "size_bytes": 66998,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-new-imports.json": {
+      "sha256": "bfef0a640094dab1270327d0c6df43c913a08279fd141d98b9760e90cd5ba9e8",
+      "size_bytes": 74918,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-new-selectors.json": {
+      "sha256": "83efb22564d9a67f77bc8df464bccecccb1650f93664be120ad32e0b3b9fb6b4",
+      "size_bytes": 651,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-associated.xml": {
+      "sha256": "4159e455ae03e2d5028e0800e432bd65c97874ed660e88a13001ba0f58c1b5c3",
+      "size_bytes": 6872256,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-associated-imports.json": {
+      "sha256": "1204a9b3c58b4186fa88f8177618935dcd7ae478e57e82d176b5fad25bf57a55",
+      "size_bytes": 80431,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-associated-selectors.json": {
+      "sha256": "7f36fe278028812b34f926f6d11fda2c4f39857e1965a87efa10d73bda5c9103",
+      "size_bytes": 4548,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-control.xml": {
+      "sha256": "026c5f41e31059f7a6b79c6dc121bd4669b69733c732b4264d0ababef875dc39",
+      "size_bytes": 50330,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-control-imports.json": {
+      "sha256": "2498f1e04b052378f7276cf746e20b9f3e529b138e2d65844c3a7475d612d916",
+      "size_bytes": 53610,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-control-selectors.json": {
+      "sha256": "2480112816386590efdbbef6cabf49b9c8651355b18dda392a4aa485f2d77f67",
+      "size_bytes": 444,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-protection.xml": {
+      "sha256": "98cab831a3f7a11b3f0b1bfe5622588edf0d14b683078526fb5cc3fc44a6dcc0",
+      "size_bytes": 57307,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-protection-imports.json": {
+      "sha256": "4afd96ccbe8c3bf465abc59ff2fec3d3f3a4711cef6d4e8f01d90a4316f77755",
+      "size_bytes": 57246,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-protection-selectors.json": {
+      "sha256": "7918675e26165b6315ab5f4126c9c5e19f536abfde808daee2cba453d8b1765b",
+      "size_bytes": 639,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-governance.xml": {
+      "sha256": "15d5cd991ebc3546dd734019485759ef46a6cd129ecb8720034cdaca54fb9337",
+      "size_bytes": 241005,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-governance-imports.json": {
+      "sha256": "6b74d43771726c75e328dd70d6bb484810692859b2446587c18843703c88a034",
+      "size_bytes": 76626,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-governance-selectors.json": {
+      "sha256": "5ee35cf8c181e9d63972b681613d101b1b39f3f67e5148a8019e0532634075a6",
+      "size_bytes": 1637,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-cancellation.xml": {
+      "sha256": "52e6547da20f439aea4ea6992350b624b4f0c88887488d7ce93128cedeca5d2a",
+      "size_bytes": 7748,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-cancellation-imports.json": {
+      "sha256": "608a6692b595c937f6df2dc9809c5f37267e1390e37b2125a08338a1189268ac",
+      "size_bytes": 2462,
+      "location": "dedicated private component delivery directory"
+    },
+    "installed-scheduling-r2-cancellation-selectors.json": {
+      "sha256": "108d50cf905ca94ad69a3e6531ce1f3fc6218b193d437ab02cdeb2196392736c",
+      "size_bytes": 111,
+      "location": "dedicated private component delivery directory"
+    },
+    "scheduling-r2-wheel-inputs.json": {
+      "sha256": "28966f481c1a2faf36da5b7d332790c404c91d7e0c71c992fa09dc04d7e8f55f",
+      "size_bytes": 64757,
+      "location": "dedicated private component delivery directory"
+    },
+    "scheduling-r2-package-live-recheck.json": {
+      "sha256": "d26330ac9ca0b40d0a2e1e5a48e5f90ae1cf166760918ef7f984bce501c2a856",
+      "size_bytes": 181,
+      "location": "dedicated private component delivery directory"
+    },
+    "scheduling-r2-original-schema-gates-recheck.json": {
+      "sha256": "3014a83e8d8b30dc8dc970d9c4d9346698a1d45b90fde6bf56429e5367d8f8a5",
+      "size_bytes": 293,
+      "location": "dedicated private component delivery directory"
+    },
+    "spec-scheduling-r2-final.txt": {
+      "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "size_bytes": 28,
+      "location": "dedicated private component delivery directory"
+    },
+    "approved-design-diagram-review.json": {
+      "sha256": "431ec967a1ad3cdd737218cda3c2e6666fa4f3b4c8c4667f59fc2c51890f6b18",
+      "size_bytes": 1497,
+      "location": "dedicated private component delivery directory"
+    },
+    "scheduling-r2-protection-review.json": {
+      "sha256": "524aee93aab638cdcb608b4a972b500093deec8408805fa1941f085e3e4ea5ac",
+      "size_bytes": 690,
+      "location": "dedicated private component delivery directory"
+    },
+    "documentation-scheduling-r2-sealed.json": {
+      "sha256": "b5ab1399f5c33de2a3a979602db830ecd5bbe074390555c7255dd5011caf3281",
+      "size_bytes": 193,
+      "location": "dedicated private component delivery directory"
+    },
+    "secret-scheduling-r2-sealed.txt": {
+      "sha256": "de14e1396845a6cb39d03428f0130b0ae22bea48315e8336fd5deff5f57de2c3",
+      "size_bytes": 101,
+      "location": "dedicated private component delivery directory"
+    },
+    "ruff-pilot-final.txt": {
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "size_bytes": 19,
+      "location": "dedicated private component delivery directory"
+    },
+    "ruff-all-pilot-final.txt": {
+      "sha256": "e3006ef09dfbd694d33a68aa622d0b62731322a2280675738fb6c9a4149228ce",
+      "size_bytes": 29,
+      "location": "dedicated private component delivery directory"
+    },
+    "readability-scheduling-r2-cancellation.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "location": "dedicated private component delivery directory"
+    },
+    "pilot-beta-diagram-render.txt": {
+      "sha256": "561a11b7a6c00acc18c8f2f729f2f7d45d0db369c0d66c9cc61a6a8bfcc0ac6d",
+      "size_bytes": 32,
+      "location": "dedicated private component delivery directory"
+    },
+    "prepared-current-diagram-review.json": {
+      "sha256": "dda8a8dda4aebed7e4af7800bef456f7b283304996f09c831a0f47fa16840b5c",
+      "size_bytes": 1153,
+      "location": "dedicated private component delivery directory"
+    },
+    "diagram-input-drift-retained.json": {
+      "sha256": "c1fe87f28504cdef65a05d1a24527af19ba011c4bf5088e78a3d0e41295c6066",
+      "size_bytes": 179,
+      "location": "dedicated private component delivery directory"
+    },
+    "pilot-beta-diagram-review.json": {
+      "sha256": "a44ffce487e7b7061f984a53f596a23a9083c3ba56f9fcb3ff02703fd82333f6",
+      "size_bytes": 380,
+      "location": "dedicated private component delivery directory"
+    }
+  },
+  "source_binding": "code_revision is source research baseline; exact current candidate bound by source-inputs SHA256, fixed Wheel and package member byte audit; not claiming new modules already exist in baseline commit"
+}

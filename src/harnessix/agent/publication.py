@@ -66,6 +66,8 @@ class PublicTextOutputProtection(Protocol):
 
 
 async def _protect[T](check: Callable[[Callable[[], None]], T], cancel: CancelToken) -> T:
+    # 先交付已有父取消。调度等待不是同步扫描工作，不能消耗尚未开始的扫描期限。
+    await asyncio.sleep(0)
     deadline = monotonic() + PUBLIC_PROTECTION_TIMEOUT
 
     def check_budget() -> None:
@@ -74,20 +76,20 @@ async def _protect[T](check: Callable[[Callable[[], None]], T], cancel: CancelTo
             raise KernelError("public_output_timeout", "公开结果保护超时")
 
     checkpoint = parent_cancel_checkpointer(check_budget)
+    cancel_checkpoint = parent_cancel_checkpointer(cancel.checkpoint)
     try:
-        async with asyncio.timeout(PUBLIC_PROTECTION_TIMEOUT) as timer:
-            await asyncio.sleep(0)
-            checkpoint()
-            result = check(checkpoint)
-            checkpoint()
-            await asyncio.sleep(0)
-            checkpoint()
-            return result
+        checkpoint()
+        result = check(checkpoint)
+        checkpoint()
+        # 扫描完成后仍交付其间排队的取消，但其他Task占用的时间不算扫描超限。
+        await asyncio.sleep(0)
+        cancel_checkpoint()
+        return result
     except TurnCancelled:
         raise
     except TimeoutError:
-        code = "public_output_timeout" if timer.expired() else "public_output_protection_failed"
-        raise KernelError(code, "公开结果未通过保护校验") from None
+        # 同步扫描的时限由前后检查点核对；端口自报TimeoutError不证明本期限耗尽。
+        raise KernelError("public_output_protection_failed", "公开结果未通过保护校验") from None
     except KernelError as error:
         code = {
             "trusted_action_secret_leak": "public_output_secret_leak",

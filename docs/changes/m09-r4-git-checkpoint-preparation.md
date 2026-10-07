@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
+version: 2
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions]
 related_adrs:
@@ -12,6 +12,7 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/product_config/test_git_checkpoint_preparation.py
+  - tests/product_config/test_git_checkpoint_preparation_digest.py
   - tests/product_config/test_git_checkpoint_scope.py
   - tests/trusted_actions/test_agent_preplanning.py
   - tests/trusted_actions/test_agent_preplanning_settlement.py
@@ -31,8 +32,8 @@ supersedes: []
 
 | 项目 | 当前边界 |
 |---|---|
-| 已提交基础版本 | `1e2253b2dd304f8de4a516a40c5919c5d05b68b4` |
-| 设计版本 | 版本 1，2026-10-07；以第 19 节列出的源码内容摘要固定增量实现 |
+| 已提交基础版本 | `29402f764eae88d50364a37817635fbb77ba907b` |
+| 设计版本 | 版本 2，2026-10-07；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | `code_revision` 标识共同基础，不表示新增准备源码或既有源码微调已包含在该提交中 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -51,6 +52,25 @@ supersedes: []
 5. 材料采集后，HEAD、配置、Index、物理目录、历史、Source 和工作树意图仍保持原观察事实。
 
 因此，准备器只补齐“真实调用到耐久 Core2”的纵向链，不新增执行器、审批器、认证体系或交付写入协议。已有 Review 的合同、原认证 Artifact 发布、分页读取和唯一审批回指继续由[正式 Git Review 设计](m09-r4-git-review.md)规定。
+
+### 1.3 同步准备热路径的候选整改
+
+后继 prepared 组件完整安装回归为 336 通过、5 失败。五项失败均发生在实际业务关联验证之前，
+由 SDK 等待审批时的公开输入／输出保护超时或未授权相关 ID 返回触发；不得将其归为 CAS 损坏，
+也不能以单例诊断通过覆盖完整失败。单例 `cProfile` 诊断记录准备实现摘要调用 86,771 次、
+固定相对路径重建 347,420 次；插桩本身增加运行成本，该诊断不是生产任务耗时或 SLA。
+
+整改只移除重复不变的路径计算：模块装载时形成私有 `_PREPARATION_SOURCE_PATHS`，
+保存原四个规范字段名和对应安装 `Path`；POSIX／Windows 字段分隔符沿原 `str(Path(...))` 规则。
+每个原检查点仍执行四次 `read_bytes`、四次完整 SHA256 及原 `canonical_digest`；
+不缓存文件正文、SHA、mtime、size 或批准，也不降低检查点频率。
+四份源码在相同长度、相同 mtime 下改变字节时，摘要仍须改变；源文件读取失败仍为原固定准备错误。
+
+流程仍为：原检查点 → 原预算／取消／宿主／引用检查 → 四文件完整字节摘要 → 与冻结值比较。
+没有新线程、后台任务、SQL、持久数据结构或协议字段；原 60 秒准备期限及 10 秒公开保护期限不变。
+对应回归见 [`test_git_checkpoint_preparation_digest.py`](../../tests/product_config/test_git_checkpoint_preparation_digest.py)。
+此修复的实际 SDK 和固定 Wheel 全套结果由[组件验证](../validation/git-prepared-link-2026-10-07-v1/README.md)
+区分候选记录；最终一致候选尚未通过时，不关闭业务交付或商业发布门禁。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -815,7 +835,7 @@ finally：
 | 有限完整基线读取 | 未变化的大树、特殊模式或大 Blob 也可能导致拒绝 | 保持完整性；不降级为仅变化文件或截断目录 |
 | Core 512 KiB 小于材料范围 | 原对象预算允许的图可能仍超 Core 容量 | 原 Core 合同不放宽；不能把完整目录替成摘要 |
 | 同一 60 秒准备期限 | 慢盘、多对象、受控授权或摘要复核可能耗尽预算 | 不分阶段续期；失败由正式分类报告 |
-| 反复读取实现字节 | 检查点成本与源码文件可读性影响准备 | 冻结实际配方优先；不是包签名或通用防篡改系统 |
+| 反复读取实现字节 | 检查点成本与源码文件可读性影响准备 | 只预计算固定字段名／安装路径，每次仍验全部原字节；不是包签名或通用防篡改系统 |
 | 多资源非原子 | Core 后失败可能保留孤儿，末段后仍有竞争窗口 | 明确非原子事实；未来执行必须新鲜复核 |
 | no-follow/身份观察依赖原端口 | 不同平台的物理身份与收尾需要原生验证 | 复用原端口，不以平台声明测试替代实机验收 |
 | 显式结算失败保留 | 在 `True` 调用中，已完成 child 的非取消失败可能替代外层取消错误 | 原默认不变；done/not-cancelled 与 `TurnCancelled` 排除；原 gather 不新增屏蔽；sanitize 不变 |
@@ -844,7 +864,7 @@ finally：
 
 | 源码 | SHA256 |
 |---|---|
-| `src/harnessix/product_config/git_checkpoint_preparation.py` | `dc88ee1637f8f0d0096c89949c6abb909ed1128ce81739751c7eb8f17dc53db8` |
+| `src/harnessix/product_config/git_checkpoint_preparation.py` | `2688cc28e30cab371d7104fd580041cfa18681c29119d0137ed34c22e4f2c6f4` |
 | `src/harnessix/product_config/git_checkpoint_materials.py` | `51f374ea373a45b537436b22262554cd6105145367b9bcc1ceedd7b190681313` |
 | `src/harnessix/product_config/git_checkpoint_scope.py` | `a0831bc73f3fce298cad19b2f08ecaf2fa5715c4663e0d3232cd56f6c1d3a8a3` |
 | `src/harnessix/delivery/git_inventory_wire.py` | `6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43` |

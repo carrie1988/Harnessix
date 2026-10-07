@@ -35,6 +35,10 @@ from harnessix.delivery.workspace_store_schema import (
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
 from harnessix.sqlite_readonly import readonly_database
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
+from harnessix.workspace.terminal_read_control import (
+    require_store_write_allowed,
+    run_store_read_checkpoint,
+)
 
 _TRANSITIONS: dict[TransactionState, frozenset[TransactionState]] = {
     "prepared": frozenset({"publishing", "diverged", "unknown"}),
@@ -252,11 +256,11 @@ class SQLiteWorkspaceTransactionStore:
             admit_workspace_record_v2(self._db)
 
     def _check(self) -> None:
-        if self._checkpoint is not None:
-            self._checkpoint()
+        run_store_read_checkpoint(self, self._checkpoint)
 
     def _require_writable(self) -> None:
         """只读权限在文件副作用与输入解析之前检查，不只依赖 SQLite 拒绝。"""
+        require_store_write_allowed(self)
         if self._read_only:
             raise KernelError("delivery_store_read_only", "Workspace事务只读账本不接受写入")
         if self._closed:

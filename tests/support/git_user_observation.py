@@ -105,6 +105,7 @@ async def run_authenticated_observation(
     deep=False,
     dirty=True,
     legacy=False,
+    explicit_git_ledger=False,
 ):
     """真实认证Session持久化Patch2后执行检查；重开不重新发起模型请求或批准。"""
     _credentials(monkeypatch)
@@ -249,4 +250,8 @@ async def run_authenticated_observation(
             input_stream=io.BytesIO(),
             output_stream=io.BytesIO(),
         )
-    assert not (state / "git-delivery").exists()
+    if explicit_git_ledger:
+        # 业务关联测试显式创建并拥有此私有账本；默认装配仍走原目录缺失断言。
+        assert (state / "git-delivery" / "git-delivery.db").is_file()
+    else:
+        assert not (state / "git-delivery").exists()

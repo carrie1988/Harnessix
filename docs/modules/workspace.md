@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
+version: 13
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
+  - tests/delivery/test_terminal_read_control.py
+  - tests/product_config/test_git_prepared_link_terminal_callbacks.py
   - tests/workspace/test_snapshot_parent_closure.py
   - tests/workspace/test_parent_closure_contracts.py
   - tests/workspace/test_parent_closure_reader.py
@@ -1352,3 +1354,21 @@ verify_workspace_snapshot_v2(
 
 本机通过只证明此显式端口的POSIX运行及合同。新候选Windows原生、共同Route／Planner、
 Execution／Delivery批准与全部历史备份的新代际仍须联合验收；不得用新端口通过覆盖旧FAIL或默认产品容量。
+
+## 同步末端读取的操作局部控制
+
+[`terminal_read_scope`](../../src/harnessix/workspace/terminal_read_control.py)用于待审批 Git
+关联全集的末端同步复核，详见[业务关联设计](../changes/m09-r4-git-prepared-link.md#终端作用域接口字段与调用链)。
+它只绑定本次原 Workspace Transaction Store、原 Audit、原严格 CAS Reader 及 Ledger 内部控制，
+不持有或签发认证、审批、执行与迁移权。Core、原 Patch、Route、全部父 Manifest/Chunk、
+Git 对象图、Diff 与 Review 仍完整校验，不能用缓存或摘要替代正文。
+
+ContextVar 保存同次 `_TerminalRead`；创建线程、Task 和 active 栅栏阻止跨执行身份或复制上下文
+延迟使用。作用域覆盖整个 Evidence 集合，禁止 await、嵌套及绑定 Store 业务写入，finally 撤销控制。
+原 Store/Audit 属性和构造回调不被替换；作用域外原 SDK 行为保持不变，无关 Store 不受影响。
+控制异常在原 Reader 的来源标记边界传播，实际 CAS IO、长度、SHA 和父闭包损坏仍按原语义拒绝。
+
+[原 Store/Audit 专项](../../tests/delivery/test_terminal_read_control.py)验证回调失效反例、
+完整父闭包缺失、异常身份与作用域生命周期；[实际认证 SDK 回归](../../tests/product_config/test_git_prepared_link_terminal_callbacks.py)
+验证普通路径回调保留、末端静默及退出恢复。源码与专项不等于最终安装候选、跨库原子快照、
+对外部进程的 CAS 文件锁或商用 Git 交付验收。

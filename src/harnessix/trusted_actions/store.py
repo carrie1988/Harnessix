@@ -35,6 +35,10 @@ from harnessix.trusted_actions.transition_store import ActionTransitionStoreMixi
 from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2, ActionRouteSnapshotV2
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.parent_closure_codec import read_workspace_parent_closure
+from harnessix.workspace.terminal_read_control import (
+    run_store_read_checkpoint,
+    terminal_parent_reader,
+)
 
 _SCHEMA_VERSION = "2"
 _PARENT_CLOSURE_SCHEMA_VERSION = "3"
@@ -147,12 +151,13 @@ class _ActionRouteClosureReader:
     ) -> None:
         if not isinstance(plan, ActionRoutePlanV2):
             return
-        if self._read_blob is None:
+        read_blob = terminal_parent_reader(self) or self._read_blob
+        if read_blob is None:
             raise KernelError(error_code, "Action Route Plan缺少完整父目录历史读取端口")
 
         def check() -> None:
             try:
-                self._checkpoint()
+                run_store_read_checkpoint(self, self._checkpoint)
                 if checkpoint is not None:
                     checkpoint()
             except BaseException as error:
@@ -160,9 +165,7 @@ class _ActionRouteClosureReader:
                 raise UpstreamCheckpointError(error) from None
 
         try:
-            read_workspace_parent_closure(
-                plan.execution.workspace, self._read_blob, checkpoint=check
-            )
+            read_workspace_parent_closure(plan.execution.workspace, read_blob, checkpoint=check)
         except UpstreamCheckpointError as error:
             raise error.error from None
         except KernelError as error:

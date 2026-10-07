@@ -80,6 +80,17 @@ def git_prefix_transaction_epoch(database: sqlite3.Connection) -> tuple[object, 
     return control, control.epoch
 
 
+def require_git_prefix_transaction_epoch(
+    database: sqlite3.Connection, expected: tuple[object, int]
+) -> None:
+    """只核对原控制实例及代际，不再次执行宿主回调，供回调后的末端核验使用。"""
+    control = getattr(_owned, "connections", {}).get(database)
+    if control is None or (control, control.epoch) != expected or not database.in_transaction:
+        raise KernelError("publication_history_unproven", "Git原事务代际已经变化")
+    if control.interrupted is not None:
+        raise control.interrupted
+
+
 def _register_git_prefix_write_window(database: sqlite3.Connection, window: object) -> None:
     """仅begin在完成认证后登记原实例；自造weakref不能替代该控制窗口内来源。"""
     require_git_prefix_sql_window(database)
@@ -125,5 +136,11 @@ def git_prefix_sql_window(
         checkpoint()
     finally:
         del connections[database]
-        database.set_progress_handler(None, 0)
-        database.set_trace_callback(None)
+        # 关闭连接已经释放回调；不能让重复清理的 SQLite 异常遮盖原首失败。
+        try:
+            _ = database.in_transaction
+        except sqlite3.ProgrammingError:
+            pass
+        else:
+            database.set_progress_handler(None, 0)
+            database.set_trace_callback(None)

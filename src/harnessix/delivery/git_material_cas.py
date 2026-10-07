@@ -17,6 +17,7 @@ from harnessix.delivery.git_object_material import (
     GitObjectType,
 )
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 
 _VERSION: Final = "harnessix.git-object-material-reference/v1"
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
@@ -140,7 +141,8 @@ class GitMaterialCAS:
         """重验引用并从原 CAS 完整读取，核对长度、正文 SHA 和带真实类型的 Git OID。"""
         snapshot = _reference_snapshot(reference)
         try:
-            body = self.store.blob(snapshot.cas_digest)
+            # 显式启用原 Store 的控制来源标记；不能把原取消或期限误归为材料损坏。
+            body = self.store.blob(snapshot.cas_digest, checkpoint=lambda: None)
             material = GitObjectMaterial(
                 snapshot.object_type, snapshot.object_id, snapshot.object_format, body
             )
@@ -149,6 +151,8 @@ class GitMaterialCAS:
                 or material.body_sha256 != snapshot.body_sha256
             ):
                 raise KernelError("git_material_cas_read_failed", "Git对象材料CAS读取失败")
+        except UpstreamCheckpointError as error:
+            raise error.error from None
         except Exception:
             raise KernelError("git_material_cas_read_failed", "Git对象材料CAS读取失败") from None
         return material

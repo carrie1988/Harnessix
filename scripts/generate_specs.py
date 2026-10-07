@@ -239,6 +239,7 @@ from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliverySourceV2,
 )
 from harnessix.product_config.git_prefix_catalog import GitPrefixCatalog
+from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
 from harnessix.product_config.git_user_observation_contracts import ProductGitUserObservation
 from harnessix.product_config.product_contracts import (
     ConfigurationDraft,
@@ -346,6 +347,7 @@ def generate_specs(output: Path) -> None:
         ("product-git-delivery-core-v1", ProductGitDeliveryCore),
         ("product-git-delivery-core-v2", ProductGitDeliveryCoreV2),
         ("product-git-delivery-plan-v2", ProductGitDeliveryPlanV2),
+        ("product-git-prepared-link-v1", ProductGitPreparedLink),
         ("product-git-delivery-plan-v1", ProductGitDeliveryPlan),
         ("product-git-user-observation-v1", ProductGitUserObservation),
         ("product-git-action-review-summary-v1", ProductGitActionReviewSummary),

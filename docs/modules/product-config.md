@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 74
-code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
+version: 77
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_checkpoint_preparation_digest.py
   - tests/product_config/test_git_delivery_core_store.py
   - tests/product_config/test_git_delivery_route_core.py
   - tests/product_config/test_workspace_reference_backup.py
@@ -2575,5 +2576,30 @@ SDK没有用户必须阅读全部材料才可批准的强制规则。
 同一60秒覆盖观察、材料、持久化和首末事实复核；A/D原UUID首末都必须缺失。
 已有Route重试仍查询优先，不再次生成意图。原取消托管显式保留结算失败，公开错误仍按原固定码表处理。
 
+准备实现摘要仅预计算原四份源码的固定字段名与安装路径；每次原控制点仍完整重读、SHA256及规范封签。
+不缓存字节或文件元数据，不改检查点频率，POSIX／Windows字段名沿原平台规则；
+参见[热路径设计与失败边界](../changes/m09-r4-git-checkpoint-preparation.md#13-同步准备热路径的候选整改)。
+原 60 秒及公开保护 10 秒期限保持，安装整套失败与单例通过必须分别登记。
+
 此组件尚未默认注册。验证中只读命令授权来自原正式Plan的合成批准夹具，不能视为默认策略
 或用户Git业务批准。Checkpoint业务执行、ProductLink/NativeBridge、独立Commit和Backup2仍未闭合。
+
+## 待审批 Git 业务关联的实际认证边界
+
+[业务关联详设](../changes/m09-r4-git-prepared-link.md)新增内部
+[`ProductGitPreparedLinkLedger`](../../src/harnessix/product_config/git_prepared_link_ledger.py)。
+它从原实际资源形成完整 Plan2/审批请求，在原已有 GitDB v2 事务内写一条 prepared 事件及原 MAC/尾锚，
+不接受任意外部模型作为签发来源。调用方拥有原锁、连接及最终提交/回滚。
+
+[`业务证明`](../../src/harnessix/product_config/git_prepared_link_proof.py)使用真实认证等待审批历史、
+首个 pending Call、唯一 started 审批项目、原 build_approval、完整 Core/CAS 和 Review 全页；
+[`业务回读`](../../src/harnessix/product_config/git_prepared_link_rows.py)先核验原全部物理认证，
+再核对全部正文、所有冗余归属列及 claims。任意错误关联或未实现业务表均拒绝，不修复或补签。
+
+全集末端复核使用[操作局部同步只读控制](../../src/harnessix/workspace/terminal_read_control.py)，
+只绑定原事务 Store、Audit 与同次 Ledger 内部控制。Core、Source、Route 父闭包和完整 CAS
+仍沿原算法重读；不覆盖共享构造回调、不重新打开替身 Store，也不在该作用域执行写入。
+正常异步认证继续执行原 SDK 回调。实际认证 SDK 与最终安装候选仍须另行验收。
+
+组件只覆盖当前 prepared 阶段，默认未注册。原 TTL、512KiB、60秒及 Native18保持；
+后续真实业务批准、Bridge/A/T2/D、独立 Commit、完整生命周期 Loader 和 Backup2仍未闭合。

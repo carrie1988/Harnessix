@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 22
-code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
+version: 23
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners:
   - core
 modules:
@@ -21,6 +21,8 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/agent/test_publication_scheduling.py
+  - tests/agent/test_publication_scheduling_cancellation.py
   - tests/session/test_authenticated_history.py
   - tests/artifacts/test_binary_publication.py
   - tests/agent/test_runtime.py
@@ -859,7 +861,7 @@ Snapshot、重放、恢复、Fork、重建和Artifact混合事务中的Session�
 
 [`protect_review_jsonl`](../../src/harnessix/agent/publication.py)先调用原Scope的JSONL校验，
 再由纯[`review_text_for_protection`](../../src/harnessix/domain/review_text.py)识别已知
-Workspace/Git审阅并重组完整原文，以同一原Scope执行JSON保护。两步共享原10秒公开保护期限，
+Workspace/Git审阅并重组完整原文，以同一原Scope执行JSON保护。两步共享原10秒同步扫描期限，
 不重置取消/期限、不要求二进制输出能力，也不改变JSONL、正文Hash或授权。
 
 原Artifact Guard在发布和每次读取时复用此端口；重开后Scope新增受保护材料，即使材料跨
@@ -868,6 +870,12 @@ Chunk边界也必须拒绝。未知旧通用审阅只沿原JSONL保护，不猜�
 [Git Review详设](../changes/m09-r4-git-review.md)，
 [保护用例](../../tests/product_config/test_git_delivery_review_protection.py)和
 [实际认证读侧负例](../../tests/product_config/test_git_delivery_review_controls.py)分别记录证据等级。
+
+纯保护端口的入口与末端调度交接不计入同步扫描工作；入口仍交付既有父取消，
+末端仍交付扫描中排队的领域及父 Task 取消，不能用取消后的正文继续公开。
+端口调用及扫描前后检查全部沿原10秒上限，字节、深度、节点及工作量不变。
+这不是整个异步调用10秒总耗时承诺；外层请求、Turn与工具期限独立保留。
+具体失败路径、原调度误超时及验收边界见[公开保护详设](../changes/m09-4a-product-publication-boundary.md#62-调度等待与同步扫描期限的整改设计)。
 
 ## 效果结算托管的取消合同
 

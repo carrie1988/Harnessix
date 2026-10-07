@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 5a9e81f87ae6117d72099455e774ffd400423886
+version: 3
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners: [core]
 modules: [agent, artifacts, secrets, product_config, session, trusted_actions]
 related_adrs:
@@ -11,6 +11,8 @@ related_adrs:
 related_tests:
   - tests/agent/test_publication.py
   - tests/agent/test_publication_runtime.py
+  - tests/agent/test_publication_scheduling.py
+  - tests/agent/test_publication_scheduling_cancellation.py
   - tests/product_config/test_publication_scope.py
   - tests/artifacts/test_publication_persistence.py
   - tests/artifacts/test_publication_upgrade.py
@@ -179,8 +181,37 @@ flowchart LR
 - 原生单DTO：1 MiB累计标量字节、10256节点、深度64、64 MiB模式工作量。
 - JSONL：原body最多1 MiB；全部解码标量累计1 MiB；深度64；全部记录节点上限1 MiB数量级；全部原字节、原生键值与规范JSON共用64 MiB工作量。
 - JSONL节点限额不同于单DTO限额，避免5000条合法小记录被当作一个小DTO误拒绝；预算仍跨全部记录共享。
-- `_protect`期限10秒，同时使用异步timeout与同步monotonic检查点；宿主不协作的同步代码不能被硬抢占。
+- `_protect`同步扫描期限10秒，使用monotonic及调用前后协作检查点；宿主不协作的同步代码不能被硬抢占。
 - 有限模式沿用[redaction.py](../../src/harnessix/secrets/redaction.py)；完整大小或工作量超限即拒绝，不返回部分被检查正文。
+
+### 6.2 调度等待与同步扫描期限的整改设计
+
+整改前实现将两次 `sleep(0)` 调度交接包含在扫描的 10 秒期限内。
+固定安装诊断中，Git 完整材料与 Core 同步段造成约 19.31 秒的事件循环心跳间隔，
+小型 SDK 输入因此可能在执行扫描前或完成扫描后因其他任务占用事件循环而被拒绝。
+该结果是插桩单例的调度证据，不是生产延迟、唯一根因或性能验收。
+
+现行候选只修订纯保护端口的计时边界，不提高 10 秒扫描上限：
+
+1. 入口先异步交付既有父 Task 取消，再启动同步扫描的原期限。
+2. 原保护端口、前后同步检查点及结果检查全部在原 10 秒窗口内完成；
+   此窗口不主动让出事件循环，也不调用新的线程、进程或异步保护端口。
+   没有 `await` 的同步窗口不设置无效的异步 timeout；完成后仍强制核对 monotonic，
+   端口不协作也不能将超限结果作为成功返回。端口自行抛出的 `TimeoutError` 保留原保护失败分类。
+3. 退出扫描窗口后保留末次调度交接，交付扫描期间排队的领域取消或父 Task 取消；
+   返回前使用同次操作的取消检查点，不能将已排队取消作为成功发布。
+4. 两次调度等待不计为纯扫描工作；外层请求、Turn、Git 准备及效果结算的期限保持原规则。
+
+这是明确的计时语义修订，不声称原整个异步调用的总耗时仍最多 10 秒。
+字节、节点、深度、模式工作量、完整正文扫描、慢扫描的同步完成后拒绝及公开错误归一不变。
+新增[调度回归](../../tests/agent/test_publication_scheduling.py)覆盖输入／JSON／JSONL的
+前后调度等待、真正慢扫描及扫描中排队的两类取消；原实现 6 失败／9 通过，
+现行候选与两个原公开保护集合合计 43 通过。该结果不是源码外安装或完整产品验收。
+Git 大同步段本身的响应性与最大阻塞间隔仍需后续整改，不能由纯保护通过推导已经解决。
+独立窄审查未发现本次时钟及取消差异的具体回归，但不构成全系统证明。
+后继[取消交叉回归](../../tests/agent/test_publication_scheduling_cancellation.py)补充
+尾部调度超预算与排队取消并发、外层期限在尾部触发，以及工厂／feed／finish 的父取消和清理异常。
+该集合与原 33 项调度回归共同在同一固定安装源码下通过 48 项；不与其他重叠集合相加。
 
 ## 7. 类设计、接口设计与核心伪代码
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 44
-code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
+version: 46
+code_revision: 29402f764eae88d50364a37817635fbb77ba907b
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_git_material_cas_control.py
+  - tests/delivery/test_git_prefix_sql_lifecycle.py
   - tests/product_config/test_git_delivery_core_store.py
   - tests/product_config/test_git_delivery_route_core.py
   - tests/delivery/test_workspace_record_reference.py
@@ -2299,3 +2301,33 @@ SDK没有用户必须阅读全部材料才可批准的强制规则。
 `git_inventory_wire._wire`新增内部显式 `native_fields=True`，只在生成原Core2 JSON时保留其原 `name`
 字段及十六进制字节值；默认False继续产生旧Inventory规范 `name_hex`。没有新增Schema、范围合同、
 对象算法或执行权限。完整base提交及两树并集必须通过原CAS回读和材料验证，外部parent只为历史边界。
+
+
+## Git CAS 与 SQL 窗口的控制异常来源
+
+[`GitMaterialCAS.read`](../../src/harnessix/delivery/git_material_cas.py)不再按错误码猜测取消或期限。
+原 `SQLiteWorkspaceTransactionStore.blob` 的显式检查点分支将构造回调异常封装为
+`UpstreamCheckpointError`；CAS 先解包该标记并保留原异常实例，真正 IO、长度、SHA 或 OID
+错误继续归为 `git_material_cas_read_failed`。正常 Store 回调顺序和 `read` 方法签名不变，
+不引入新的授权或材料持久化格式。
+
+[`git_prefix_sql_window`](../../src/harnessix/product_config/git_prefix_sql.py)退出时先撤销原登记。
+活连接继续清除 progress 与 trace 回调；已关闭连接不重复释放失效的回调，以免底层
+`ProgrammingError` 遮盖原取消、期限或主体异常。该处理不提交、回滚或重新打开数据库。
+
+[真实 Store 控制回归](../../tests/delivery/test_git_material_cas_control.py)覆盖读前、读后取消、期限及
+一般回调失败，并以 IO 抛同名期限码作反例；[SQL 生命周期回归](../../tests/delivery/test_git_prefix_sql_lifecycle.py)
+覆盖关闭后首个检查点及主体异常身份。两者证明有限控制语义，不代替实际 Git 交付、商用质量或三平台验收。
+
+## 原 CAS 与 Audit 的同步末端读取控制
+
+[终端只读控制](../../src/harnessix/workspace/terminal_read_control.py)只用于待审批 Git
+关联全集的同步末端重验。原 Store `_check` 和原 Audit 父闭包 Reader 在操作局部 ContextVar
+内消费同次内部控制；所有普通 SDK 读取保留原构造检查点，退出后原对象属性与回调身份不变。
+Audit 父闭包在该作用域直接借原 Store 严格 CAS IO，避免任意构造 Reader 的读后副作用。
+原 CAS/Record/Route/父闭包校验并未取消；Core、完整对象图、双树与 Diff 仍沿原唯一算法重验。
+作用域拒绝跨任务／线程、延迟使用、重入及两个原 Store 的业务写准入。
+
+[原 Store 与 Audit 专项](../../tests/delivery/test_terminal_read_control.py)覆盖读后删除反例、
+无共享回调对照、原父闭包缺失拒绝、控制异常实例保留及上下文生命周期。
+这不是认证收据、跨库快照、外部进程 CAS 文件锁或默认 Git 执行权；最终安装及完整业务验证仍独立。
