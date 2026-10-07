@@ -1,0 +1,15 @@
+{
+  "policy_version": "harnessix.documentation-policy/v1",
+  "document_count": 623,
+  "link_count": 13803,
+  "mermaid_count": 1144,
+  "source_package_count": 26,
+  "changed_path_count": 17,
+  "findings": [],
+  "secret_scan_findings": 0,
+  "three_new_diagrams_rendered": true,
+  "visually_reviewed_diagrams": [
+    "source-1.png",
+    "source-3.png"
+  ]
+}

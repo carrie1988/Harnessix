@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 221
-code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
+version: 222
+code_revision: e1aad041da7817eb5da20896cf092c296544ae25
 owners:
   - core
 modules:
@@ -2513,3 +2513,16 @@ R3历史严格0/20/必需测试1/20与真实Beta接受0保持，不宣称商用�
 只关闭固定安装/0.1.0→rc1匹配回退子项；原生编码、rc1→稳定1.0认证迁移和最终同候选门禁仍待完成。
 不放宽旧Reader、Schema、认证、Owner或R1～R6。
 本切片模型请求0；新60元周期估算0.706096、预留0，实际账单未确认。R3原成绩及Beta接受0不变。
+
+### R3：付费宿主实际源码准入
+
+原生成器要求干净源码，但原付费入口只验证声明根HEAD，不能区分生成后未提交差异或同HEAD其他副本。
+[源码准入详细设计](changes/m09-r3-provider-source-origin-preflight.md)仅在宿主追加canonical脚本根、
+已导入包入口和全部非忽略Git状态检查，保持原Pack/HEAD错误优先、30秒观察上限及Owner/凭据后置。
+共享Runner、产品包、固定Task Pack、20 Trial分母和费用规则均不修改。
+[验证报告](validation/provider-source-checkout-2026-10-08-v1/README.md)保留无效Fixture失败、有效RED和原命令路径失败。
+固定`e1aad04`最终付费宿主回归304项、兼容61项及独立5项通过；组间重叠不累加。
+实际仅已跟踪源码副本及另一个实际包来源进程7项准入观察符合预期，观察脚本首编译失败保留。
+源码准入不证明全部动态模块或执行期间冻结；不修改原R3严格0/20、必需测试1/20、Beta接受0或R1～R6。
+当前Docker Engine尚不可用，先恢复原环境、验默认Workspace及固定全部Profile，再启动新候选的完整真实Suite。
+本切片新增模型请求0，60元周期估算0.706096、预留0；历史两笔未决不阻断本期，实际费用不据此认定结清。

@@ -1,0 +1,57 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "source_revision": "e1aad041da7817eb5da20896cf092c296544ae25",
+  "entry_count": 10,
+  "entries": [
+    {
+      "path": "README.md",
+      "bytes": 7402,
+      "sha256": "158a3a0bef9170687a9bcc9764e3ec71ac2e867d9b5f5b6450dd955a342f666f"
+    },
+    {
+      "path": "ReviewPacket.json",
+      "bytes": 1263,
+      "sha256": "18c30513c4957a2a725b2d0402dde1659ed028a9b4726f9c210fdb2c44b05872"
+    },
+    {
+      "path": "diagrams/source-1.png",
+      "bytes": 14389,
+      "sha256": "df0825082a52310d747af8cf537042c312612fbe8f7d3a742daeb95440b8a361"
+    },
+    {
+      "path": "diagrams/source-2.png",
+      "bytes": 51525,
+      "sha256": "de4ae4fb6d5abd3e3f5532584fc8b6755de16cff3524fe4bbb3886c7e9caafd8"
+    },
+    {
+      "path": "diagrams/source-3.png",
+      "bytes": 38534,
+      "sha256": "fab67fcce489c74c9b9cb8c0d3a8801c2738dd6f771d24c3964eeb2209023d75"
+    },
+    {
+      "path": "facts/actual-source-admission.json",
+      "bytes": 2144,
+      "sha256": "edc9048e1f7848d967bf700526cc577c74fc81054019b331ab948c6ba617ddb5"
+    },
+    {
+      "path": "facts/budget.json",
+      "bytes": 372,
+      "sha256": "e45be1a5d97d04e8ea3b16027b3fcc3716e9b025464b81989a3749e569fab3b5"
+    },
+    {
+      "path": "facts/current-results.json",
+      "bytes": 3273,
+      "sha256": "866af96d311ce8dc75d63eaca29180b686d20f97ed065affa96715fda13d393e"
+    },
+    {
+      "path": "facts/documentation-and-scan.json",
+      "bytes": 355,
+      "sha256": "fa7f4076403932a247ee7d012eb6dff60f0497b5ab4983f3052e3db0f6eaf683"
+    },
+    {
+      "path": "facts/environment-preflight.json",
+      "bytes": 509,
+      "sha256": "45ff84e4012154a4b9639f85a88967b1d4c402978d526e6e7c5b792426c5a4d3"
+    }
+  ]
+}

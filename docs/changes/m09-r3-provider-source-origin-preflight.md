@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: e1aad041da7817eb5da20896cf092c296544ae25
 owners: [core]
 modules: [evals, documentation]
 related_adrs:
@@ -208,5 +208,10 @@ Git明确禁用可选锁、用户/系统配置、交互、Pager、Hooks和文件
 
 本设计只关闭付费宿主源码准入实现及其独立验证子项，具体结果见
 [统一交付报告](../validation/provider-source-checkout-2026-10-08-v1/README.md)。
+固定实现为`e1aad041da7817eb5da20896cf092c296544ae25`；有效RED为5项失败/1项通过，
+最终付费宿主回归304项通过，兼容回归61项通过，独立短负控5项通过，组间重叠不累加。
+实际已提交源码副本及另一个真实包来源进程的7项观察符合预期，未使用路径替身。
+初始Fixture身份错误、错误测试路径及观察脚本编译失败均保留；这些不是有效RED。
+实现与本设计无产品合同偏差；实际观察只覆盖入口检查，不进入Docker、凭据、Owner或Provider。
 不修改原R3严格0/20、必需测试1/20或真实Beta接受0；不宣称生产功能交付或1.0商用完成。
 Docker默认Workspace挂载、固定10 Case Profile、完整真实20 Trial、Beta及其余R1～R6仍须分别验收。

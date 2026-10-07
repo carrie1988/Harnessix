@@ -1,0 +1,96 @@
+{
+  "schema": "harnessix.provider-source-checkout-validation/v1",
+  "base_revision": "bbdd9e073c2f26391f5473a74b3da095dd23ef79",
+  "implementation_revision": "e1aad041da7817eb5da20896cf092c296544ae25",
+  "paid_requests": 0,
+  "production_package_changes": 0,
+  "shared_runner_changes": 0,
+  "actual_checkout_validation": "PASS_LIMITED_SOURCE_ADMISSION",
+  "docker_ready": false,
+  "r3_strict_successes": 0,
+  "r3_required_tests_successes": 1,
+  "r3_trials": 20,
+  "beta_accepted_tasks": 0,
+  "commercial_release": false,
+  "test_runs": [
+    {
+      "artifact": "source-checkout-red.xml",
+      "meaning": "invalid-fixture-identity-not-valid-red",
+      "tests": 6,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "edff8ceb8ca8232dabe6247667d7e0211003cc5b29757281ba1912038bd92584"
+    },
+    {
+      "artifact": "source-checkout-valid-red.xml",
+      "meaning": "valid-red-before-patch",
+      "tests": 6,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5f53966568c2e0aa7abd4997ea33320cd00b98b3ff1013c69e17dca6ed56ab96"
+    },
+    {
+      "artifact": "source-checkout-green.xml",
+      "meaning": "wrong-path-no-tests-collected",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "81acfa4e45d5f81a95aa77d885ee11c0e702b59a55554eea40da8ed5b8a047c2"
+    },
+    {
+      "artifact": "source-checkout-green-v2.xml",
+      "meaning": "paid-host-regression-green",
+      "tests": 299,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "60f6e98b9f29d56464a80110e2c50cb6023f9fc87af9601e99d2984c67037daa"
+    },
+    {
+      "artifact": "source-checkout-compatibility.xml",
+      "meaning": "shared-runner-compatibility-green",
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e1e510a984cab06236ab923b73625e455ffc1ca72a3fb44b44392b1695740452"
+    },
+    {
+      "artifact": "source-checkout-final-regression.xml",
+      "meaning": "final-paid-host-and-independent-controls",
+      "tests": 304,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4af88e3a4433b2ab88de964ce2a0c6079ef75dab6b853619f9b1f3ca203bba12"
+    }
+  ],
+  "actual_checkout_observations": 7,
+  "actual_checkout_positive_observations": 2,
+  "actual_checkout_negative_observations": 5,
+  "initial_actual_probe_compile_failure_preserved": true,
+  "independent_short_controls": {
+    "status": "PASS_LIMITED_SHORT_NEGATIVE_CONTROLS",
+    "tests": 5,
+    "passed": 5,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junit_seconds": 0.938,
+    "boundaries": [
+      "status错误为隔离注入，未实等30秒；仅核对timeout=30参数",
+      "CLI配置Reader被替换为正式夹具配置，不证明真实配置文件读取",
+      "未验证真实付费Suite、Provider、镜像、凭据、预算或完整R3质量",
+      "源码准入只验证一个时间点，不保证运行期不可变",
+      "旧实现RED不纳入本次独立5项结果；已有失败证据未覆盖"
+    ]
+  },
+  "independent_inputs_match_committed_implementation": true,
+  "independent_manifest_recheck": {
+    "verified_entries": 18,
+    "manifest_sha256": "59cb6ce3ee73565cc98f40c1a09a3f11e0c43a17a0c70ccefc55df9ff237a2e5"
+  }
+}

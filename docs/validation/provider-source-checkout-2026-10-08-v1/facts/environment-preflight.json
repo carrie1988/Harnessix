@@ -1,0 +1,20 @@
+{
+  "credential_preflight": {
+    "keychain_attempted": true,
+    "keychain_ready": true,
+    "keychain_exit_code": 0,
+    "keychain_timed_out": false,
+    "raw_value_printed": false,
+    "raw_value_saved": false,
+    "provider_requests": 0
+  },
+  "docker_latest": {
+    "observed_at": "2026-10-07T23:17:52.832820+00:00",
+    "exit_code": 1,
+    "server_available": false,
+    "server": null
+  },
+  "mac_lock_state_proven": false,
+  "business_containers_changed": false,
+  "provider_requests_this_slice": 0
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 90de93f565ea88679e54242ee6f1771e9be721b7
+version: 3
+code_revision: e1aad041da7817eb5da20896cf092c296544ae25
 owners: [core]
 modules: [evals, models]
 related_adrs:
@@ -10,6 +10,8 @@ related_adrs:
 related_tests:
   - tests/evals/test_provider_verification_budget.py
   - tests/evals/test_provider_verification_host.py
+  - tests/evals/test_provider_source_checkout.py
+  - tests/evals/test_provider_source_checkout_failures.py
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_suite_execution.py
   - tests/evals/test_task_pack_execution.py
@@ -276,3 +278,13 @@ Python3.13.8及独立干净Python3.12.7受影响回归各2668项通过、13项�
 显式登记一次70元原周期、40元新Suite授权后，匹配的复验ID/Suite ID仅承接原唯一unknown；
 原文件和完整旧请求摘要冻结，新请求逐项标记、持久预留、双上限核验。新增unknown或reserved始终阻止重启。
 未登记或未显式指定匹配范围时，原任何未决即停语义保持。
+
+## 后继宿主源码准入范围
+
+[源码准入详设](m09-r3-provider-source-origin-preflight.md)仅在受控付费宿主追加来源与Git干净状态检查，
+放在原Pack/HEAD之后、镜像/账本Owner/凭据之前。它不改变本设计原费用语义、Suite身份、Guard或共享Runner。
+声明根、实际宿主脚本根和包入口来源必须相符；Git状态非空、非零或30秒超时以固定码拒绝。
+原失败和历史费用保持；不会为源检查进入费用Owner或生成付费请求。
+
+本设计第1～14节保留其原固定实现和验证身份；新的准入验证不能倒推原Run源码错误，
+不代表R3真实质量达标。全部已加载模块来源、运行期间冻结和Git忽略文件不在新增认证范围。

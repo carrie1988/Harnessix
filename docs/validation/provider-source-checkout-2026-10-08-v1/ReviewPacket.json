@@ -1,0 +1,39 @@
+{
+  "schema": "harnessix.review-packet/v1",
+  "source_revision": "e1aad041da7817eb5da20896cf092c296544ae25",
+  "scope": [
+    "controlled-paid-host-admission",
+    "regressions",
+    "isolated-source-checkout",
+    "formal-design-sync"
+  ],
+  "production_package_changes": 0,
+  "original_failures_preserved": true,
+  "paid_requests": 0,
+  "release_gate_closure": [],
+  "commercial_release": false,
+  "mandatory_inputs": [
+    "README.md",
+    "facts/current-results.json",
+    "facts/budget.json",
+    "facts/actual-source-admission.json",
+    "facts/environment-preflight.json",
+    "facts/documentation-and-scan.json"
+  ],
+  "review_questions": [
+    "Declared root matches actual script and package entry",
+    "Original Pack and HEAD failure priority retained",
+    "Source rejection precedes images, fee Owner, credentials and models",
+    "No API or private project writes",
+    "Runtime immutability and complete module origin not claimed"
+  ],
+  "not_proven": [
+    "Docker default Workspace and fixed Profiles",
+    "Full real 20 Trial coding quality",
+    "Beta acceptance",
+    "R1-R6 commercial exit"
+  ],
+  "actual_checkout_status": "PASS_LIMITED_SOURCE_ADMISSION",
+  "independent_inputs_match": true,
+  "independent_manifest_verified_entries": 18
+}

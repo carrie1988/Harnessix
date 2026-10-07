@@ -1,0 +1,67 @@
+{
+  "implementation_revision": "e1aad041da7817eb5da20896cf092c296544ae25",
+  "admission_only": true,
+  "results": [
+    {
+      "schema": "harnessix.actual-source-admission/v1",
+      "source_revision": "e1aad041da7817eb5da20896cf092c296544ae25",
+      "actual_script_root_matches": true,
+      "actual_package_root_matches": true,
+      "cases": [
+        {
+          "case": "actual-clean-import",
+          "actual": "PASS",
+          "matches_expected": true
+        },
+        {
+          "case": "actual-modified-tracked-source",
+          "actual": "verification_source_checkout_unavailable",
+          "matches_expected": true
+        },
+        {
+          "case": "actual-staged-source",
+          "actual": "verification_source_checkout_unavailable",
+          "matches_expected": true
+        },
+        {
+          "case": "actual-untracked-source",
+          "actual": "verification_source_checkout_unavailable",
+          "matches_expected": true
+        },
+        {
+          "case": "actual-same-head-other-root",
+          "actual": "verification_source_checkout_unavailable",
+          "matches_expected": true
+        },
+        {
+          "case": "actual-restored-clean-import",
+          "actual": "PASS",
+          "matches_expected": true
+        }
+      ],
+      "provider_requests": 0,
+      "credential_reads": 0,
+      "budget_owner_enters": 0,
+      "docker_commands": 0,
+      "package_entry_hash": "95e5e78f26d8bca54bdb135285f2d74b9e369a3222c73256b766e5553b790a8a"
+    },
+    {
+      "schema": "harnessix.actual-source-admission/v1",
+      "source_revision": "e1aad041da7817eb5da20896cf092c296544ae25",
+      "actual_script_root_matches": true,
+      "actual_package_root_matches": false,
+      "cases": [
+        {
+          "case": "actual-foreign-package-import",
+          "actual": "verification_source_checkout_unavailable",
+          "matches_expected": true
+        }
+      ],
+      "provider_requests": 0,
+      "credential_reads": 0,
+      "budget_owner_enters": 0,
+      "docker_commands": 0,
+      "package_entry_hash": "95e5e78f26d8bca54bdb135285f2d74b9e369a3222c73256b766e5553b790a8a"
+    }
+  ]
+}

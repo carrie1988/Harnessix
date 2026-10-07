@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 150
-code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
+version: 151
+code_revision: e1aad041da7817eb5da20896cf092c296544ae25
 owners:
   - core
 modules:
@@ -123,6 +123,10 @@ R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/
 [R3有限真实评测请求预算详设](changes/m09-r3-verification-request-budget.md)说明原预算Owner、
 发送前预留、费用未知停止、双层恢复绑定及正式Adapter/Runner接线；验证宿主保护不等于账户硬上限，
 不扩大首发计价范围，也不替代完整真实任务结果。
+
+[付费验证宿主源码准入详设](changes/m09-r3-provider-source-origin-preflight.md)补齐声明根、实际脚本根、
+包入口来源和Git干净状态检查；[统一验证报告](validation/provider-source-checkout-2026-10-08-v1/README.md)
+区分路径替身回归与实际隔离源码副本验证，不把源码准入当作模型质量、Docker或商用验收。
 
 ## 2. 推荐阅读路径
 

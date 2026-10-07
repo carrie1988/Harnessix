@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 35
-code_revision: eea6c8ab650d389023b68c97596dec0f79bb1d6c
+version: 36
+code_revision: e1aad041da7817eb5da20896cf092c296544ae25
 owners:
   - core
 modules:
@@ -53,6 +53,8 @@ related_tests:
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_verification_budget.py
   - tests/evals/test_provider_verification_host.py
+  - tests/evals/test_provider_source_checkout.py
+  - tests/evals/test_provider_source_checkout_failures.py
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
 supersedes: []
@@ -2271,6 +2273,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 36 | `e1aad041da7817eb5da20896cf092c296544ae25` | 2026-10-08 | 仅付费验证宿主追加实际脚本根、包入口来源和完整非忽略Git状态准入；原Pack/HEAD拒绝优先、Owner/凭据在后；共享Runner和产品Wheel不变 |
 | 35 | `eea6c8ab650d389023b68c97596dec0f79bb1d6c`基准上的候选 | 2026-10-07 | 固定Profile必须在实际网关注册，缺失时先于AgentRuntime和模型IO拒绝；不更改探测、安全或评分 |
 | 33 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | 2026-10-04 | Git Diff固定使用`--full-index`，完整正文SHA-256跨副本不依赖`core.abbrev`，完整Blob OID不限40位；Eval沿用原严格交付与漂移检查，不修改Schema、评分或容量，旧报告不重签/重评分，不声明历史Run跨候选恢复可用；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |
 | 32 | 基于`730f0846641700c4c697d7cc6ba03cbf1a8364bc`的集成实现 | 2026-10-02 | 三条Trial路径复用原产品Owner、Key及保护Scope；完整同读历史在恢复与Provider之前认证；固定只读期限及原取消贯穿；唯一Thread识别归入认证宿主，不改变评分或费用 |
@@ -2373,3 +2376,18 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 [正式测试](../../tests/evals/test_task_pack_publication.py)使用真实SQLite及合成材料，
 覆盖原Key、同源Scope、MAC先解析、原取消、共享期限、Provider前拒绝、唯一身份及资源释放。
 这些离线装配证据不替代真实20 Trial质量、消费者平台或商用发布。
+
+## 付费验证宿主源码准入
+
+配置生成时的干净源码检查不能代替实际执行准入。受控付费宿主现在先调用原Pack、程序、HEAD检查，
+再核验声明`source_root`与实际宿主脚本canonical根一致、已导入`harnessix`包入口位于该根下`src/harnessix`，
+最后以原净化Git环境观察全部非忽略未跟踪状态；非空、非零或30秒超时均拒绝。
+该检查位于镜像、费用Owner、凭据和Provider之前，CLI只公开`verification_source_checkout_unavailable`。
+
+实现仅在[`run_engineering_provider_suite_budgeted.py`](../../scripts/run_engineering_provider_suite_budgeted.py)；
+共享`provider_suite_execution._require_scope`、正式Config、Suite身份、评分和普通Wheel消费者不变。
+它不证明全部动态模块来源或运行期间不可变，不审计Git忽略文件。
+实际执行须使用已提交源码的独立副本，配置/日志/运行根均外置；不得清理并行工作以取得干净状态。
+完整流程、时序、字段、失败与部署见[14节详细设计](../changes/m09-r3-provider-source-origin-preflight.md)，
+实验证据见[统一验证报告](../validation/provider-source-checkout-2026-10-08-v1/README.md)。
+准入通过不替代Docker默认Workspace、完整20 Trial质量或真实Beta验收。

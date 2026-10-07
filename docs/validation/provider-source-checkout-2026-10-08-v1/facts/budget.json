@@ -1,0 +1,12 @@
+{
+  "allocation_cny": "60",
+  "known_cost_estimate_cny": "0.706096",
+  "reserved_cost_cny": "0",
+  "remaining_estimate_cny": "59.293904",
+  "completed_requests": 26,
+  "new_requests": 0,
+  "actual_bill_confirmed": false,
+  "historical_unknown_requests_excluded_from_active_period": 2,
+  "historical_unknown_not_declared_free_or_settled": true,
+  "ledger_changed": false
+}
