@@ -1,0 +1,82 @@
+{
+  "schema_version": "harnessix.validation-manifest/v1",
+  "source_parent": "82c95e677d1919c60bbb3be32a9a4ef23f35b2e4",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "83494adf23f08209494b22790335ef843614fcbd104cb9dde7b68538d59cd0b1",
+      "bytes": 12411
+    },
+    {
+      "path": "artifacts/installed-api-recipe-v2.xml",
+      "sha256": "1a24cccb891d28d69b2cc43e5583f53461434e451aff44920b114cc25525da60",
+      "bytes": 17122
+    },
+    {
+      "path": "artifacts/installed-baseline-v2-fixed-env.xml",
+      "sha256": "0c56ea0c0fdfba10c62059232705acb8740f8b9886000876904c5ef855597806",
+      "bytes": 9890
+    },
+    {
+      "path": "artifacts/installed-intent-debug-v2-final.xml",
+      "sha256": "6f8f6d5da3f75a2bc75b8434cd09ad9f7d51c907ad93bf43992e8bbf7706bea6",
+      "bytes": 434
+    },
+    {
+      "path": "artifacts/installed-regression-v2.xml",
+      "sha256": "5381e7d5c325c7e555e4cddecdaf5501837c6f4886c5441167b5f2c9b6503e9f",
+      "bytes": 36418
+    },
+    {
+      "path": "artifacts/verification-flow.png",
+      "sha256": "81f1b818dd2ffdd3581c90570f28e5fac41a6c53e8e633aa2ef802225894fad2",
+      "bytes": 71919
+    },
+    {
+      "path": "artifacts/verification-sequence.png",
+      "sha256": "c72c8b3978b41a020e5bec363cfbc2863e060ae24108a02331d4afa2828de70f",
+      "bytes": 97764
+    },
+    {
+      "path": "extra-test-inputs.json",
+      "sha256": "7e575c9ac33c294d2691ac9f3a551bd56c835ee75bad6aef6cce85b3e36b421d",
+      "bytes": 636
+    },
+    {
+      "path": "installed-content-proof.json",
+      "sha256": "d2021c7290b04e81e1f711d77f8bd4870799441508e4f6ab0e095ad6fecd21c5",
+      "bytes": 95765
+    },
+    {
+      "path": "private-evidence-index.json",
+      "sha256": "b5f8f294d7e0864f09be65a9d45ddc04159aadd075d7777e0532c7de78e6b86a",
+      "bytes": 1322
+    },
+    {
+      "path": "requirements-all.txt",
+      "sha256": "394cce772a4a6d2ac3d578b25e837951a5d38a243f2c8a14c14e13a89c26151c",
+      "bytes": 70887
+    },
+    {
+      "path": "result.json",
+      "sha256": "4a82ed5eb832e662581fe464a60348923b545b9d644cf3def17c17e1466b0d2d",
+      "bytes": 3594
+    },
+    {
+      "path": "review-packet.md",
+      "sha256": "70cc574fc01b40d76199822baf98b3e3420e6084e6117d64dd56d801ef06c6ca",
+      "bytes": 3770
+    },
+    {
+      "path": "run-history.json",
+      "sha256": "6cbd359d2b2192daa7296cebfb6a3ed68272bace79847e9b85af8b38a9ed91fe",
+      "bytes": 7593
+    },
+    {
+      "path": "source-inputs.json",
+      "sha256": "652c180566546bb2af9dc692ee4ff5ff9f96b5a27cbfff0090a2db4af7a3cedc",
+      "bytes": 267950
+    }
+  ],
+  "self_hash_excluded": true
+}

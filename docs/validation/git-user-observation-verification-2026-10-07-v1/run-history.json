@@ -1,0 +1,281 @@
+{
+  "schema_version": "harnessix.validation-run-history/v1",
+  "runs": [
+    {
+      "name": "actual-root-red.xml",
+      "raw_sha256": "24fac0ffc191c36ff20b39f8b6afe9a0e47b6886d26bc8566fe215c30f9fd419",
+      "bytes": 5285,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.489,
+      "final_core_group": false
+    },
+    {
+      "name": "api-green-candidate.xml",
+      "raw_sha256": "336d7bcdf08d9f8b60d4b0f5a24b3ca6534abd88fdc0d91e5c72fc6c5828aec7",
+      "bytes": 14540,
+      "tests": 55,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 251.624,
+      "final_core_group": false
+    },
+    {
+      "name": "api-recipe-final.xml",
+      "raw_sha256": "45d6174b05cff7cc52e98c59c40f740dfea4d0065d29c729d420748a150de4ba",
+      "bytes": 14118,
+      "tests": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 263.317,
+      "final_core_group": false
+    },
+    {
+      "name": "api-red.xml",
+      "raw_sha256": "3fc382c368de0a3157e6ec12a2a7d777b9a7f8c0316584b1f820ba04291c31d7",
+      "bytes": 278672,
+      "tests": 55,
+      "failures": 55,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 203.19,
+      "final_core_group": false
+    },
+    {
+      "name": "baseline-field-green.xml",
+      "raw_sha256": "d0651b83c436d9e6cf908a923474a9c348366adfdbe31c180d672c1e88e49c8e",
+      "bytes": 1618,
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 24.782,
+      "final_core_group": false
+    },
+    {
+      "name": "baseline-field-red-fixed-git.xml",
+      "raw_sha256": "fe52a087020915e5fa66f3355e1d46fc8da3b8cf7f1949f50eaf4c992d40ce45",
+      "bytes": 20309,
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.525,
+      "final_core_group": false
+    },
+    {
+      "name": "baseline-field-red-native.xml",
+      "raw_sha256": "d305e6fc6237abdf436b6cc70acbe85e28e7e546a763adfa0130cb2fc350eaca",
+      "bytes": 31715,
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.317,
+      "final_core_group": false
+    },
+    {
+      "name": "baseline-field-red.xml",
+      "raw_sha256": "bcd99d518495dd6906c8baf0530ddfac982b59294ef0f351d457c63c03d5538e",
+      "bytes": 31715,
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.696,
+      "final_core_group": false
+    },
+    {
+      "name": "governance-v2-final.xml",
+      "raw_sha256": "9b86a381f15e2db8945e528f044fd6ccd5d3060b53e2b88f0224b4306b985d6a",
+      "bytes": 4467,
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 8.835,
+      "final_core_group": false
+    },
+    {
+      "name": "governance-v2.xml",
+      "raw_sha256": "1e1c283a9346dc689efe3f339822d996ecdca69b443806b156eadc48b61ac9dc",
+      "bytes": 6846,
+      "tests": 29,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 9.436,
+      "final_core_group": false
+    },
+    {
+      "name": "installed-api-recipe-v2.xml",
+      "raw_sha256": "ca2c2ee733d972cf96d1af527a58c87318d8e4a0878c58ca7fd8c89774cc1101",
+      "bytes": 17123,
+      "tests": 90,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 279.044,
+      "final_core_group": true
+    },
+    {
+      "name": "installed-api-recipe.xml",
+      "raw_sha256": "e923dc179220fc0371819d9bbc47494374a5895ce3a1b189b9f22fff4a5926b4",
+      "bytes": 14118,
+      "tests": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 262.008,
+      "final_core_group": false
+    },
+    {
+      "name": "installed-baseline-v2-fixed-env.xml",
+      "raw_sha256": "51504cfe7aec572b7959264ec836478a761afdaa5c450ed7db949e1fbe080141",
+      "bytes": 9891,
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 23.393,
+      "final_core_group": true
+    },
+    {
+      "name": "installed-baseline-v2.xml",
+      "raw_sha256": "089636fc0c61d6f43a51e0f9cbe6c43454156abfd10782c23d60be897113ad42",
+      "bytes": 371256,
+      "tests": 63,
+      "failures": 63,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.267,
+      "final_core_group": false
+    },
+    {
+      "name": "installed-intent-debug-v2-final.xml",
+      "raw_sha256": "df14a519c86d2e3730b3bd59bfcabc1ac1464b2dcc6a0e898c330a42aa3b2e8d",
+      "bytes": 435,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.066,
+      "final_core_group": true
+    },
+    {
+      "name": "installed-intent-debug-v2.xml",
+      "raw_sha256": "9288002cba271e7ccf57356d87bb6d6d49b5bee9b29040a610492f826d62d150",
+      "bytes": 435,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.209,
+      "final_core_group": false
+    },
+    {
+      "name": "installed-regression-v2.xml",
+      "raw_sha256": "3fffbf757b0c9cfef4cf863d28bc458266c5076cec9a31a2fc2cfe2514dd143d",
+      "bytes": 36419,
+      "tests": 191,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 405.841,
+      "final_core_group": true
+    },
+    {
+      "name": "installed-regression.xml",
+      "raw_sha256": "3572ab5c613099cb373783827b7bb9b08497b515d2edf30972ac708177985897",
+      "bytes": 36419,
+      "tests": 191,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 406.602,
+      "final_core_group": false
+    },
+    {
+      "name": "parent-root-green.xml",
+      "raw_sha256": "5353ac6bc55ea8df392e1ae10c5749b5bc8f20672040ca9992d10fdbcdb0454c",
+      "bytes": 416,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.161,
+      "final_core_group": false
+    },
+    {
+      "name": "recipe-green.xml",
+      "raw_sha256": "4c87ed3abceaeab3831d40df15a45583844ef89b9273aeef3d2298e42690da8c",
+      "bytes": 1444,
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.108,
+      "final_core_group": false
+    },
+    {
+      "name": "recipe-red.xml",
+      "raw_sha256": "996dc3b39f78188e2b72f2d84a08d31e57f5f9b6f0dcb3df037e68322c9758e1",
+      "bytes": 5895,
+      "tests": 7,
+      "failures": 7,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.157,
+      "final_core_group": false
+    },
+    {
+      "name": "regression-final.xml",
+      "raw_sha256": "794d5959abcad3945100c2b42a1d89e5273cb4c6f3c67b82a1928c0105fd46d6",
+      "bytes": 105257,
+      "tests": 191,
+      "failures": 11,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 181.232,
+      "final_core_group": false
+    },
+    {
+      "name": "regression.xml",
+      "raw_sha256": "26ef6cb63bcb62b257d1dd63637fcf9b6cd346e448184b51563a495a7a0d7d7a",
+      "bytes": 36419,
+      "tests": 191,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 407.772,
+      "final_core_group": false
+    },
+    {
+      "name": "review-followup-final.xml",
+      "raw_sha256": "502b4aad5f61fcfa093a8bd682013efc663cb2ef832fa0b517255cd1c5e124b1",
+      "bytes": 3097,
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 16.423,
+      "final_core_group": false
+    },
+    {
+      "name": "review-followup.xml",
+      "raw_sha256": "876126e6330608a1714966f8bc1b27ca13ed1b9a57710af4ab380bd3427e1631",
+      "bytes": 7636,
+      "tests": 15,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 15.685,
+      "final_core_group": false
+    }
+  ],
+  "no_summing_diagnostic_runs": true
+}

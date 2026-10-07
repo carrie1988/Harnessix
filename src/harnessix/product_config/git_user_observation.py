@@ -5,28 +5,31 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import Thread
+from harnessix.agent.models import AgentEvent, Thread
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.execution.contracts import canonical_digest
 from harnessix.product_config.git_baseline import (
     _BASELINE_TIMEOUT_SECONDS,
     _collect_baseline_from_source,
+    _member,
     _Observation,
     _observe,
     _Queries,
     _root_binding_matches,
 )
 from harnessix.product_config.git_delivery_plan_contracts import GitIndexFileObservation
+from harnessix.product_config.git_delivery_plan_snapshot import _snapshot
 from harnessix.product_config.git_delivery_process import GitOperationBudget
 from harnessix.product_config.git_delivery_source import (
     _verify_final_snapshot,
     collect_git_delivery_source,
+    verify_git_delivery_source,
 )
 from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliveryBaselineV2,
@@ -47,7 +50,7 @@ from harnessix.product_config.git_user_observation_paths import (
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.session.sqlite_history import AuthenticatedThreadHistory
 from harnessix.tools.contracts import ReadToolError
-from harnessix.tools.git import GitReadRuntime
+from harnessix.tools.git import GitReadRuntime, _reject_git_helpers
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
@@ -176,6 +179,210 @@ def _native_checkpointer(check: Callable[[], None]) -> Callable[[], None]:
             raise UpstreamCheckpointError(error) from None
 
     return controlled
+
+
+async def verify_product_git_user_observation(
+    expected: ProductGitUserObservation,
+    history: AuthenticatedThreadHistory,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    reader: GitReadRuntime,
+    *,
+    session: SQLiteSessionStore,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    checkpoint: Callable[[], None],
+    snapshot_ports: WorkspaceSnapshotPorts,
+) -> None:
+    """借实际完整认证历史只读复核原观察；不限调用阶段，不产生新观察或执行权。"""
+    await asyncio.sleep(0)
+    if (
+        type(cancel) is not CancelToken
+        or type(budget) is not GitOperationBudget
+        or not callable(checkpoint)
+        or type(history) is not AuthenticatedThreadHistory
+        or type(history.thread) is not Thread
+        or type(history.events) is not tuple
+        or any(type(event) is not AgentEvent for event in history.events)
+    ):
+        raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
+    host_check = require_git_user_authority(session, router, transactions, snapshot_ports, reader)
+    audit = router._audit
+    store_check, audit_check, read_blob = (
+        transactions._checkpoint,
+        audit._checkpoint,
+        audit._read_blob,
+    )
+    deadline = min(time.monotonic() + _BASELINE_TIMEOUT_SECONDS, budget._deadline)
+    control_error: BaseException | None = None
+
+    def raw_check() -> None:
+        """回调可取消、耗尽期限或替换资源；返回后必须再次检查，不能继续读取。"""
+        nonlocal control_error
+        try:
+            cancel.checkpoint()
+            budget.remaining()
+            checkpoint()
+            cancel.checkpoint()
+            budget.remaining()
+            host_check()
+            if (
+                transactions._checkpoint is not store_check
+                or audit._checkpoint is not audit_check
+                or audit._read_blob is not read_blob
+            ):
+                raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
+            if time.monotonic() >= deadline:
+                raise KernelError("git_baseline_timeout", "Git交付基准总期限已耗尽")
+        except BaseException as error:
+            control_error = error
+            raise
+
+    check = parent_cancel_checkpointer(raw_check)
+    check()
+
+    try:
+        async with asyncio.timeout(max(0.001, deadline - time.monotonic())):
+            await cancel.run(
+                _verify_authenticated_observation(
+                    expected, history, router, transactions, reader,
+                    session=session, cancel=cancel, deadline=deadline, check=check,
+                    snapshot_ports=snapshot_ports,
+                ),
+                preserve_failure=True,
+            )
+    except TimeoutError as error:
+        if error is control_error:
+            raise
+        raise KernelError("git_baseline_timeout", "Git交付基准总期限已耗尽") from None
+    except (ReadToolError, UnicodeError, OSError) as error:
+        if error is control_error:
+            raise
+        raise KernelError(
+            "git_user_observation_unavailable", "Git用户观察无法完成完整读取"
+        ) from None
+
+
+async def _verify_authenticated_observation(
+    expected: ProductGitUserObservation,
+    history: AuthenticatedThreadHistory,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    reader: GitReadRuntime,
+    *,
+    session: SQLiteSessionStore,
+    cancel: CancelToken,
+    deadline: float,
+    check: Callable[[], None],
+    snapshot_ports: WorkspaceSnapshotPorts,
+) -> None:
+    """先切断调用方别名并重读认证历史，再复核基准所有成员与原末段窗口。"""
+    observation = _snapshot(expected, ProductGitUserObservation, check)
+    publication = session._publication
+    if (
+        publication is None
+        or observation.store_id != publication._store_id
+        or observation.key_id != publication._key_id
+        or observation.implementation_digest != git_user_observation_implementation_digest()
+    ):
+        raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
+    source = observation.baseline.source
+    # 调用方历史仅用于比对；来源认证始终使用本次从原Session重读的完整历史。
+    actual = await session.authenticated_thread_history(
+        source.thread_id, cancel=cancel, deadline=deadline, checkpoint=check
+    )
+    check()
+    if actual != history:
+        raise KernelError("git_user_observation_history_changed", "Git用户观察会话历史已经变化")
+    if not _root_binding_matches(source, reader._root, check):
+        raise KernelError("git_baseline_workspace_mismatch", "Git用户观察不属于原认证Workspace")
+
+    await _verify_observation_baseline(observation.baseline, reader, cancel, check)
+
+    async def verify_history() -> None:
+        await _verify_history(actual, session, cancel, deadline, check)
+
+    def verify_source() -> None:
+        try:
+            verify_git_delivery_source(
+                actual.thread,
+                source,
+                router,
+                transactions,
+                checkpoint=_native_checkpointer(check),
+                snapshot_ports=snapshot_ports,
+            )
+        except UpstreamCheckpointError as error:
+            raise error.error from None
+
+    await _verify_observed_git_state(
+        observation,
+        reader,
+        cancel,
+        check,
+        verify_history=verify_history,
+        verify_source=verify_source,
+        invalid=lambda: KernelError(
+            "git_user_observation_changed", "Git用户观察期间绑定发生变化"
+        ),
+    )
+    if observation.implementation_digest != git_user_observation_implementation_digest():
+        raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
+    check()
+
+
+async def _verify_observation_baseline(
+    baseline: ProductGitDeliveryBaselineV2,
+    reader: GitReadRuntime,
+    cancel: CancelToken,
+    check: Callable[[], None],
+) -> None:
+    """公开基准摘要不是认证；沿原成员算法核对原Reader、树、Index与before正文。"""
+    binding = reader.contract()
+    if (
+        binding["implementation"] != "git-baseline-read/v1"
+        or baseline.reader_binding != binding["binding"]
+    ):
+        raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
+    # 原生Workspace身份不等于Git实际工作树根；core.worktree及父仓库发现也须拒绝。
+    check()
+    await reader._require_repository_root(cancel)
+    check()
+    await _reject_git_helpers(reader, cancel)
+    check()
+    query = _Queries(reader, cancel, check)
+    for expected, mutation in zip(baseline.members, baseline.source.mutations, strict=True):
+        check()
+        if await _member(query, baseline.head_tree_oid, mutation) != expected:
+            raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
+    check()
+    if reader.contract() != binding:
+        raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
+
+
+async def _verify_observed_git_state(
+    observation: ProductGitUserObservation,
+    reader: GitReadRuntime,
+    cancel: CancelToken,
+    check: Callable[[], None],
+    *,
+    verify_history: Callable[[], Awaitable[None]],
+    verify_source: Callable[[], None],
+    invalid: Callable[[], KernelError],
+) -> None:
+    """唯一末轮配方；阶段归属由入口私有闭包检查，原顺序与控制点不缩减。"""
+    query = _Queries(reader, cancel, check)
+    common, admin = await _reports(query, reader._root)
+    with pin_git_user_directories(common, admin, checkpoint=check) as pinned:
+        facts = git_user_directory_facts(pinned)
+        if facts != {name: getattr(observation, name) for name in facts}:
+            raise invalid()
+        await _verify_final_git_facts(query, observation.baseline, observation.config_sha256)
+        await verify_history()
+        verify_source()
+        if pinned.observe_index(check) != observation.index_file_observation:
+            raise invalid()
+        check()
 
 
 async def _collect(

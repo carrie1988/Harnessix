@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: db160c8caeafb0385a2362ccd0af1502a1f6e79e
+version: 2
+code_revision: 82c95e677d1919c60bbb3be32a9a4ef23f35b2e4
 owners: [core]
 modules: [product_config, session, workspace, delivery]
 related_adrs:
@@ -12,6 +12,8 @@ related_adrs:
 related_tests:
   - tests/product_config/test_git_user_observation.py
   - tests/product_config/test_git_user_observation_controls.py
+  - tests/product_config/test_git_user_observation_verification.py
+  - tests/product_config/test_git_observation_verification_recipe.py
   - tests/product_config/test_git_baseline.py
   - tests/product_config/test_git_parent_consumers.py
   - tests/tools/test_git_delivery_reader.py
@@ -280,3 +282,137 @@ Index身份/字节/common/admin/配置值/HEAD/来源漂移、链接/硬链接/�
 三次交叉读取仍存在最后H3读取期间或其后的HEAD/config独立变化窗口；它不是
 跨库原子快照，不能仅凭观察值发布Git效果。后续实际执行必须重新核验当前
 HEAD、配置、来源和物理Index，并按原失效语义拒绝陈旧计划。
+
+
+## 10. 阶段无关的原观察只读复核
+
+### 10.1 需求与总体方案
+
+审批决定后的原历史不再满足准备器的pending-call条件；不能调用准备器私有`_history`追认决定，也不能重新collect来源、写CAS或刷新旧意图。新增`verify_product_git_user_observation`借用实际原Session认证完整当前历史，复核既有完整U观察，并返回`None`；不生成新观察、MAC、Route、审批、执行权或Git效果。
+
+准备器末段与该入口共同复用`_verify_observed_git_state`。其源码位于原七文件观察配方已包含的`git_user_observation.py`，不增加外部未覆盖的配方。准备器的原四文件摘要不是七文件摘要替代物，二者用途不变。
+
+```mermaid
+flowchart TD
+  A[阶段无关只读入口] --> B[冻结原观察及宿主 取消与同一绝对期限]
+  B --> H[实际原Session完整MAC历史与输入相等]
+  H --> M[原Reader绑定 Git实际工作树根及before成员验真]
+  M --> C[唯一原末轮事实配方]
+  P[原准备器] --> X[仍使用原pending-call历史约束]
+  X --> C
+  C --> D[common/admin原生pin与目录事实]
+  D --> G[HEAD tree ref 逻辑Index status 配置名与值]
+  G --> S[原完整认证历史再次相等]
+  S --> V[原Source只读验证 不collect或put_blob]
+  V --> I[物理Index完整身份及字节]
+  I --> E[首末绑定和实现摘要复核 返回None]
+```
+
+共享配方只接受两个内部绑定的语义closure，分别直接await原历史检查和同步执行原Source检查。它们由两个正式入口内部创建，不是新的对外回调API；不导入准备器形成反向依赖，也不创建后台Source任务。
+
+### 10.2 正式内部接口与字段
+
+```python
+async def verify_product_git_user_observation(
+    expected: ProductGitUserObservation,
+    history: AuthenticatedThreadHistory,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    reader: GitReadRuntime,
+    *,
+    session: SQLiteSessionStore,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    checkpoint: Callable[[], None],
+    snapshot_ports: WorkspaceSnapshotPorts,
+) -> None:
+    ...
+```
+
+必须显式传入原`session`，否则不能重读并认证完整历史；`AuthenticatedThreadHistory`只有Thread与events，不持有Session连接。传入`transactions`而非自由Core声明，与原collect入口一致；调用方从同一原CoreStore取其store，仍由实际Session/Router/Ports共同绑定。
+
+| 字段/资源 | 含义与拒绝边界 |
+|---|---|
+| `expected` | 原完整观察深快照，保留所有字段/基准/Source2/指纹；不重建缺失材料 |
+| `history` | 普通数据预期，必须与本次实际原认证Reader完整结果相等；外形不构成证明 |
+| `session` | 唯一实际认证读取来源；非原类型、Publication/Scope替换或错误固定路径拒绝 |
+| `router/transactions/reader/ports` | 同原活跃资源、固定读取配方与Root，不能用同地址或等字节替身 |
+| `cancel/budget/checkpoint` | 同次取消与原绝对期限；每命令不续期，回调正常返回后也复核停止和宿主 |
+| `baseline.reader_binding/members` | 与原Reader合同、原HEAD树成员逐项一致，完整读取原before正文及Index阶段/flags；公开摘要可重算不构成真实性 |
+| `implementation_digest` | 首末重新读原七文件，与冻结的原预期摘要比较；不是仅比较本次首末相等 |
+| 返回`None` | 仅表示本次可观察复核未失败；不签发可执行事实，不承诺返回之后仍未变化 |
+
+### 10.3 顺序、时序与伪代码
+
+```mermaid
+sequenceDiagram
+  participant C as 受信原宿主
+  participant V as 阶段无关Verifier
+  participant S as 原Session认证Reader
+  participant G as 原Git读取及目录能力
+  participant R as 原Source只读端口
+  C->>V: 原观察 完整预期历史与资源 控制
+  V->>V: 深快照与首轮绑定/实现检查
+  V->>S: 实际完整MAC历史
+  S-->>V: 完整Thread与events 必须相等
+  V->>G: 原Reader绑定与Git实际工作树根匹配
+  V->>G: 树成员 Index及before正文逐项验真
+  V->>G: 原common/admin pin 与逻辑Git完整查询
+  V->>S: 再次完整历史相等
+  V->>R: 原成功Patch闭包与最终版本复核
+  V->>G: 原物理Index身份与完整字节
+  V->>V: 原控制 首末实现/Root绑定检查
+  V-->>C: None 或原有限失败
+  Note over C,V: 不取得Git/SQLite同提交锁 不授予Writer能力
+```
+
+```text
+保留父Task入口取消交付
+严格校验控制和原宿主，冻结原观察的完整模型
+固定更短的原60秒上限与输入budget绝对期限
+从原Session认证完整历史；必须与输入history完全相等
+原Reader实现/绑定与冻结基准一致；原生Root与Git实际--show-toplevel均属于原U
+复用原读取端口拒绝危险Git helper配置，不缓存此结论
+逐项复用原_member算法：HEAD树对象、原before正文、Index阶段/flags一致
+成员查询结束后原Reader合同仍相等
+在原目录pin生命周期内：
+    原目录facts相等
+    原完整逻辑Git和完整配置值相等
+    原完整认证历史再次相等
+    原Source只读核验，不collect、不写CAS
+    原物理Index身份和字节相等
+    原控制成功
+撤销目录能力，末轮绑定及原七文件摘要仍等于预期
+正常结束返回None；失败保留原数据与原异常来源
+```
+
+准备器仍把原`_history`及原Source导入site封装为私有closure传入，保留`ToolExecutionScope.for_pending_call`、事实/Index不匹配原错误、原异常解包与原调用顺序。新入口不替换准备器的阶段约束，不降低检查频率。
+
+## 11. 失败、恢复、安全及部署边界
+
+- 预期历史伪造、增长或回放错配仍拒绝；不得只比UUID、事件数量、序号或Thread模型。
+- 公开基准digest与观察fingerprint能由调用方重算，不可替代原Reader绑定或原树成员真实性；SHA1/SHA256负控必须修复摘要后再拒绝；core.worktree重定向即使更新配置和状态SHA也拒绝。
+- 绑定、实现、Source、目录、物理/逻辑Index、HEAD/ref/status和配置值漂移按原有限错误拒绝，不修复。
+- 外部checkpoint异常保留原对象；正常返回后取消/期限也不能返回成功。真实Session回滚/关闭结算失败保持原优先级，不被Verifier掩盖。
+- 原Source、Audit和CAS读取可调用原构造回调；原受信装配不等于任意callback已认证只读。新增入口冻结原读取回调引用，操作期间替换拒绝；不全局覆盖共享属性。
+- 同步CAS及文件读取仍不能被外层asyncio timeout即时抢占，P1保持开放；此改造不是响应性提速。
+- 新接口无Schema/DDL/依赖/网络/模型配置；观察七文件实际源码变更会改变实现摘要。旧观察不能自动重签、升级或作为新配方有效输入。
+- 该接口是完整U末轮算法复用，不是连续终端见证，也不是外部Git锁。最后异步Git/历史观察与返回或COMMIT之间仍有变化窗口；B4/B7、approved Writer、NativeBridge、A/T2/D、Commit、Backup2与商用门禁不关闭。
+
+## 12. 测试与源码追踪
+
+| 入口/合同 | 对应测试及证据范围 |
+|---|---|
+| 新阶段无关入口 | [实际SDK验证](../../tests/product_config/test_git_user_observation_verification.py)：原认证MAC/成功Patch/真实Git，Provider仅替网络；不是模型质量或人工Beta |
+| 唯一末轮配方与原准备器接线 | [配方顺序](../../tests/product_config/test_git_observation_verification_recipe.py)：模拟端口仅证明调用顺序、错误及pin关闭，不能作为认证正例 |
+| 原观察和控制 | [原SDK观察](../../tests/product_config/test_git_user_observation.py)、[原Native控制](../../tests/product_config/test_git_user_observation_controls.py) |
+| 原Source不写与最终版本 | [Source回归](../../tests/product_config/test_git_delivery_source_verification.py) |
+| 原准备器及四文件配方 | [准备器](../../tests/product_config/test_git_checkpoint_preparation.py)、[摘要](../../tests/product_config/test_git_checkpoint_preparation_digest.py) |
+| 原认证历史结算 | [Session历史](../../tests/session/test_authenticated_history.py) |
+
+覆盖SHA1/SHA256、已修复公开摘要的原Reader绑定/成员OID伪造、实际Git工作树重定向及父仓库发现、before blob原生损坏、Index flags、末端Reader漂移及认证读结算优先级、连续Patch、已完成历史、原历史错配/增长、实际逻辑Git及物理目录/Index漂移、宿主替换、控制异常/取消/期限、无新Source捕获或业务写、原准备器顺序与阶段约束。RED原件与后继结果分别保存，源码和安装上下文不得混计。
+
+## 13. 当前能力与验收边界
+
+源码完成与范围测试结果须由对应固定验证报告给出，不由本文的设计描述推定。内部只读Verifier不自动装配模型工具、Git Writer或新的恢复流程。
+原观察模型及业务计划Wire保持；既有数据与当前配方不匹配时拒绝，不补签。复核既有U不代表已完整实现approved决定历史、U连续终端、效果执行或商业1.0。

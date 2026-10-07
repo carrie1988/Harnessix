@@ -1,0 +1,2757 @@
+{
+  "schema_version": "harnessix.installed-package-proof/v1",
+  "generation": "v2-root-member-verification",
+  "source_parent": "82c95e677d1919c60bbb3be32a9a4ef23f35b2e4",
+  "wheel_sha256": "02750deb202d3a98c22f5339ff32e69454baa85e4e28a15d05a6b215d9d77eba",
+  "package_version": "1.0.0rc1",
+  "python_version": "3.12.7",
+  "isolated_mode": true,
+  "runtime_import": "<independent-venv>/lib/python3.12/site-packages/harnessix/__init__.py",
+  "no_source_fallback": true,
+  "members": [
+    {
+      "path": "harnessix/__init__.py",
+      "sha256": "95e5e78f26d8bca54bdb135285f2d74b9e369a3222c73256b766e5553b790a8a",
+      "bytes": 105
+    },
+    {
+      "path": "harnessix/__main__.py",
+      "sha256": "f9fda2c32c3a6905b091e9852d779c67bc3c628b9bc1f179680870e3b0f59ea4",
+      "bytes": 91
+    },
+    {
+      "path": "harnessix/agent/__init__.py",
+      "sha256": "b7884ad312c076b32e170bda30ce615079c29b7adcd56edc15ca58a109c7092c",
+      "bytes": 49
+    },
+    {
+      "path": "harnessix/agent/approvals.py",
+      "sha256": "522d358fdb6d403cadc071c7b9bbd4cf5faaef02a638fd283b5bcb5e4ef79447",
+      "bytes": 11743
+    },
+    {
+      "path": "harnessix/agent/attempt_accounting.py",
+      "sha256": "9759380310bb9677fda1fe418e0017a036acb3b3f74fe6994ceffb02e2fb6f7a",
+      "bytes": 2631
+    },
+    {
+      "path": "harnessix/agent/batch_patching.py",
+      "sha256": "54bfa9a90cdc3ccecfdfa521e74263158291b6014333f8dd5b65af7d3e15cbab",
+      "bytes": 7725
+    },
+    {
+      "path": "harnessix/agent/billing.py",
+      "sha256": "8e13825507fbf4a6c8cf4f166b0e69c1f3bbb4d21331f9f2165436909b69a6a0",
+      "bytes": 2017
+    },
+    {
+      "path": "harnessix/agent/cancellation.py",
+      "sha256": "429b1ade34e2f78666114806961ef59d720a5c606d044734eb34fa96b8ee19be",
+      "bytes": 2117
+    },
+    {
+      "path": "harnessix/agent/compaction_reducer.py",
+      "sha256": "224950ff429a7f9a726567cea0e0eda07de8a09a53b8998c8319411ad348b047",
+      "bytes": 10744
+    },
+    {
+      "path": "harnessix/agent/errors.py",
+      "sha256": "9fe2f838132601826162ec35ace4369860e1ab4e485d66adae2bebf04f032607",
+      "bytes": 3687
+    },
+    {
+      "path": "harnessix/agent/event_compatibility.py",
+      "sha256": "8beb88271a76b08104dbdc6d1920f2dae89c384b93f14a3fff0b68b9f7f24292",
+      "bytes": 7486
+    },
+    {
+      "path": "harnessix/agent/execution.py",
+      "sha256": "a7232b17eca5aee28d28038a83f924ff57127d48523c3f7e7a157f350a3e0695",
+      "bytes": 1762
+    },
+    {
+      "path": "harnessix/agent/ids.py",
+      "sha256": "97a7aabe680edd3219db3b83b56425dfab05b72dac128c8dce36e3d25fd676c5",
+      "bytes": 447
+    },
+    {
+      "path": "harnessix/agent/input_publication.py",
+      "sha256": "c8694b15d4b530ba3b9d441bcd010ae145b72a9a9c7fdcf323fd2b4de2e68c3d",
+      "bytes": 1183
+    },
+    {
+      "path": "harnessix/agent/item_reducer.py",
+      "sha256": "5f70bb208a924e833377686f99dd51642c2f25374495857dcd636ea787df5885",
+      "bytes": 17908
+    },
+    {
+      "path": "harnessix/agent/lifecycle.py",
+      "sha256": "a0c6dcb9127f4fe08fb188af657ecbc5d3168a510c618689f6624b5964089314",
+      "bytes": 7900
+    },
+    {
+      "path": "harnessix/agent/model_history_runtime.py",
+      "sha256": "09351ef4dec09ab6ebdd31afad054c31426bc7bfcf4fb4a46afb3a1775ab1760",
+      "bytes": 4629
+    },
+    {
+      "path": "harnessix/agent/model_text.py",
+      "sha256": "114a1847d149c3ef2439e76255b240a2d2cb06395323a2de845fe6d2863e9ee8",
+      "bytes": 5447
+    },
+    {
+      "path": "harnessix/agent/models.py",
+      "sha256": "32ec80fceb2c5c20a12ff8ecf345744f3ac3c277c27202e868a306fbda8cfe48",
+      "bytes": 31384
+    },
+    {
+      "path": "harnessix/agent/patching.py",
+      "sha256": "d2152dd04615be1662be959fe89a7aa328350770e68fbc976dd189b7ae25d624",
+      "bytes": 3562
+    },
+    {
+      "path": "harnessix/agent/ports.py",
+      "sha256": "9db8d6ca4b8263bf11ffccb7e78945e110ac58e220b76da1294193e3197cac02",
+      "bytes": 5258
+    },
+    {
+      "path": "harnessix/agent/publication.py",
+      "sha256": "62bfed26510900ff79d51ab30bb009ea89a88fadd1ac58158f5b86c63885eacc",
+      "bytes": 7852
+    },
+    {
+      "path": "harnessix/agent/question_events.py",
+      "sha256": "7815ce41f4de5085663249e683ac1c210c13f8048da9359ccff1aabcfa56ce5d",
+      "bytes": 1628
+    },
+    {
+      "path": "harnessix/agent/reducer.py",
+      "sha256": "fa5e03c060868b097c3c9bfa743cd8921b08cc4eb77ae555c93b6dcae8e11592",
+      "bytes": 9722
+    },
+    {
+      "path": "harnessix/agent/reducer_support.py",
+      "sha256": "00d3956d49dd655bb54e21ad71fc02c2014bdbddc0705aabd4ab73ffd8856e97",
+      "bytes": 6809
+    },
+    {
+      "path": "harnessix/agent/runtime.py",
+      "sha256": "7141874d878f6583a71febc9bc49067e881878e8ca394e0ce86c58e587f92f8c",
+      "bytes": 123106
+    },
+    {
+      "path": "harnessix/agent/runtime_configuration.py",
+      "sha256": "06ea208df7a401f9fbb712ffb840a9d4ed99d30978f588f9bc66ba7f28decc34",
+      "bytes": 3651
+    },
+    {
+      "path": "harnessix/agent/runtime_recovery.py",
+      "sha256": "a42fd643165a38cfeb05dfb2d3e902b1d5b4f85d2cfe5c4c61de898412458043",
+      "bytes": 8536
+    },
+    {
+      "path": "harnessix/agent/telemetry.py",
+      "sha256": "37e57f20b2f8f54fc2f1ac004bede77537b7c4a28498a9256950d07e86d8930c",
+      "bytes": 11032
+    },
+    {
+      "path": "harnessix/agent/trusted_action_contracts.py",
+      "sha256": "42d19c14041c0a77e4d86ae721fcbf866d01cd915aaa82a3d058c8f50626d218",
+      "bytes": 3251
+    },
+    {
+      "path": "harnessix/agent/trusted_action_reducer.py",
+      "sha256": "e2156331f47ee4010f05ba41e3385a7a368c14a4400d945baf5feaf6d7388d8d",
+      "bytes": 1506
+    },
+    {
+      "path": "harnessix/agent/trusted_action_runtime.py",
+      "sha256": "f7f659166df939ba1c53ce58c8f893e2fd6330d7f3752351738b396c0843359c",
+      "bytes": 7941
+    },
+    {
+      "path": "harnessix/agent/trusted_action_session.py",
+      "sha256": "e5ad2dcacbae3673d2eaadb2817d7b63b25e39d18b6835c5e9981269f8721662",
+      "bytes": 8560
+    },
+    {
+      "path": "harnessix/agent/turn_reducer.py",
+      "sha256": "7d3c7c61966a2c5e5f405862648b8b70d85f7e29de3ad9102e80200c2a123cec",
+      "bytes": 16372
+    },
+    {
+      "path": "harnessix/agent/usage.py",
+      "sha256": "867997f1395412e25e18c7cdff9c648561833df007fb34678f323f31b04dd2db",
+      "bytes": 6247
+    },
+    {
+      "path": "harnessix/agent_cli.py",
+      "sha256": "8cee31cd089a02c8617270e20a7fae7fdf3c2dd32c54158e2a66deb0f140735d",
+      "bytes": 17341
+    },
+    {
+      "path": "harnessix/app_server/__init__.py",
+      "sha256": "8223aed416df8ef9bd29a3e296182328c7cbe505b0dab3f8037b22746ea4741e",
+      "bytes": 435
+    },
+    {
+      "path": "harnessix/app_server/artifacts.py",
+      "sha256": "42b7320378d0e7bb3a7b58c7c22aef671237b35b64e57bde81f67e1abb778db7",
+      "bytes": 2038
+    },
+    {
+      "path": "harnessix/app_server/command_runtime.py",
+      "sha256": "d718f2acc9cc02abce2b5d881ca9447ea422022151ae4edc2ca6b3e3846d8b21",
+      "bytes": 4217
+    },
+    {
+      "path": "harnessix/app_server/frame_publication.py",
+      "sha256": "b81753146b49091dc16024c567331acabcd0d709842f849d6a164e3b9ccbbbbd",
+      "bytes": 4036
+    },
+    {
+      "path": "harnessix/app_server/handshake.py",
+      "sha256": "5f113aedcb47e6cc91eeb2daf17f65c70fddef95713635da9e6f9ded9d5a2b63",
+      "bytes": 3301
+    },
+    {
+      "path": "harnessix/app_server/query_runtime.py",
+      "sha256": "b532257ae1ebf9ed6ea508557688273732bca79ebd30ba776e8b6bb442ef313d",
+      "bytes": 4396
+    },
+    {
+      "path": "harnessix/app_server/server.py",
+      "sha256": "bc48e8f4b5534b742f6ce3d4016c8a9bf7a42b9873fb9632a5ee179947508094",
+      "bytes": 11954
+    },
+    {
+      "path": "harnessix/app_server/service.py",
+      "sha256": "45be3facf05e05d504ec4ffe041d9b3d092eb9334ce6bca660a5451fb4520d6e",
+      "bytes": 18695
+    },
+    {
+      "path": "harnessix/app_server/stdio.py",
+      "sha256": "2db057e7d92e7d713974b88ce1906c3c00219b815c4ebfb8a5f64ca4bc18e4bc",
+      "bytes": 9865
+    },
+    {
+      "path": "harnessix/artifacts/__init__.py",
+      "sha256": "d3f6a03f7f41e9e094d2efc125d71a9549b041a4a747a5f43b684d35c2cc3d00",
+      "bytes": 49
+    },
+    {
+      "path": "harnessix/artifacts/action_output_store.py",
+      "sha256": "67b0b622de22c126786f036ef5f5a3feeb5ab1ca8920fe628b75f44e6f856d12",
+      "bytes": 14296
+    },
+    {
+      "path": "harnessix/artifacts/action_review_store.py",
+      "sha256": "23ca76fe204eb70a0e21b9c9b687dfd402a8db2ea0ee1f0e88216c9fd2a97540",
+      "bytes": 7407
+    },
+    {
+      "path": "harnessix/artifacts/batch_diff.py",
+      "sha256": "112ce19221b75604ca1868d6beb43c10a13a8c611493a16109ababc56ab8b52b",
+      "bytes": 11374
+    },
+    {
+      "path": "harnessix/artifacts/batch_verify.py",
+      "sha256": "914e58d36723c43ef975dc7721480a18802e730c4a65a891e29d7db220fe17e1",
+      "bytes": 6799
+    },
+    {
+      "path": "harnessix/artifacts/binary_projection.py",
+      "sha256": "88dad912dbb11a63301b5eae2945efedf10ef5d33b8adaccc49786896d79e9a8",
+      "bytes": 1098
+    },
+    {
+      "path": "harnessix/artifacts/contracts.py",
+      "sha256": "d818f396581a4da0256b9fe8b239942f7b3666e77d8140ee89b95c4f887b4886",
+      "bytes": 4424
+    },
+    {
+      "path": "harnessix/artifacts/persistence.py",
+      "sha256": "b64b4a17c076040abee02871059275a50927f8dc55161421a981d0fcf2516a3b",
+      "bytes": 2706
+    },
+    {
+      "path": "harnessix/artifacts/ports.py",
+      "sha256": "9baaad231f20438658e635675a9b5692ea7d6d2efd8ad1cc91ae3c00f10ecdd5",
+      "bytes": 1858
+    },
+    {
+      "path": "harnessix/artifacts/publication.py",
+      "sha256": "2b319a09d45582e19374ae6985d68690c1c23fb95060d5e3800d28dbe4b86baf",
+      "bytes": 5107
+    },
+    {
+      "path": "harnessix/artifacts/reference.py",
+      "sha256": "85743ca40e60cfeeef9224be6e5308047daa952088935cca5a355e7f5b054cef",
+      "bytes": 5280
+    },
+    {
+      "path": "harnessix/artifacts/sqlite.py",
+      "sha256": "6a0add07339618844a9192337996de0a66147d0e3c826ea12da0735a4c5efc61",
+      "bytes": 22907
+    },
+    {
+      "path": "harnessix/cli.py",
+      "sha256": "dd4d2ca80dc998f97578e997fa769eb0d428e6ecf7260e6c831e855f9aea6ca5",
+      "bytes": 2924
+    },
+    {
+      "path": "harnessix/context/__init__.py",
+      "sha256": "985199e2c7849416b8b74ea90f45a82bb12937e92194b812ad22b85309e4006d",
+      "bytes": 2190
+    },
+    {
+      "path": "harnessix/context/compaction.py",
+      "sha256": "ba312ca3519f84eb7de27d68502e2ac486d82f68e6dcc95bc5c05af72766bf38",
+      "bytes": 16681
+    },
+    {
+      "path": "harnessix/context/compaction_contracts.py",
+      "sha256": "594280831ecbff3e43a235105786f83ca79b19bb77c967dcb55eae6c137bdf7a",
+      "bytes": 5301
+    },
+    {
+      "path": "harnessix/context/compaction_ledger_contracts.py",
+      "sha256": "f0bde8ac9ea252d3c8f895e0cbb73498e2845b5cdcd8e9622dd5ec7e44b83a3c",
+      "bytes": 6608
+    },
+    {
+      "path": "harnessix/context/compaction_projection.py",
+      "sha256": "6351e170db3e811cf20b263db53e2826a39af444a697fc3c527a03a0a5014676",
+      "bytes": 1129
+    },
+    {
+      "path": "harnessix/context/compaction_runtime_contracts.py",
+      "sha256": "efc09f6c1cc64331651d0824e5ce3aad0fb63d02d80be00138f442cb56657ec8",
+      "bytes": 993
+    },
+    {
+      "path": "harnessix/context/compaction_window.py",
+      "sha256": "2549a0ca525b023eed0b0dabf956003f8c046d47a32d16c6585795f95d99798b",
+      "bytes": 6593
+    },
+    {
+      "path": "harnessix/context/contracts.py",
+      "sha256": "e52013f14c5269688c8a4ceb08e546dca4b2566f7c047a832ca1d5f68c4d8317",
+      "bytes": 17026
+    },
+    {
+      "path": "harnessix/context/engine.py",
+      "sha256": "11e4c978846354c0b8e48f781380b0fccd7ac1eb53fb9d42ef5e87431f355466",
+      "bytes": 9722
+    },
+    {
+      "path": "harnessix/context/ports.py",
+      "sha256": "a85ed3d0fd8fe77e4305d449f8449be206918cf0bab2d789fcfe84b876463629",
+      "bytes": 578
+    },
+    {
+      "path": "harnessix/context/read_workspace.py",
+      "sha256": "a11dd54aa4b3ad0cc23df0398f6912073cb53182756f33922d41dd79b8e9d72a",
+      "bytes": 3235
+    },
+    {
+      "path": "harnessix/context/sources.py",
+      "sha256": "bdf8b02aef8f76576000e64b3d3efba6c81363ba48b134e23ef329f69f548698",
+      "bytes": 32971
+    },
+    {
+      "path": "harnessix/context/tool_result_contracts.py",
+      "sha256": "a613d1eac8700ae6dbff8669e8801b2f2b8b05cea083e66b5da957786ab6bf09",
+      "bytes": 7626
+    },
+    {
+      "path": "harnessix/context/tool_result_view.py",
+      "sha256": "3c8fe53201ae32a0a4caf3e11bf7870419af49e1a261efb05a1cb99ea07571c1",
+      "bytes": 17725
+    },
+    {
+      "path": "harnessix/delivery/__init__.py",
+      "sha256": "f2ccb32c731ee07a6a507044c49173cda348223d3dfb4166fc229c8264b6a5ea",
+      "bytes": 49
+    },
+    {
+      "path": "harnessix/delivery/action_transaction_planning.py",
+      "sha256": "75e6d3da8fe7763382884f9e29219e52de46b00ed0c11aae65273d7908162832",
+      "bytes": 1900
+    },
+    {
+      "path": "harnessix/delivery/contracts.py",
+      "sha256": "a8fdad820b40c033af08481c5c80815dc7c9eee0abd8b5c7f417f65ef601041e",
+      "bytes": 10751
+    },
+    {
+      "path": "harnessix/delivery/diff.py",
+      "sha256": "0b3a53debcb3ede3b45f40ac9ed3ea36db3f7bf91dbc5ccdb59b64571e07c816",
+      "bytes": 1156
+    },
+    {
+      "path": "harnessix/delivery/diff_content.py",
+      "sha256": "21933aa3cf3438afb434f0c3df95783400c5a53b4bc86ebe105d0209cb67b9c5",
+      "bytes": 7652
+    },
+    {
+      "path": "harnessix/delivery/filesystem.py",
+      "sha256": "c85163213cfe0b8bfdd45f8382a32730b2430319ad39528c795fa0467373ba56",
+      "bytes": 20616
+    },
+    {
+      "path": "harnessix/delivery/git.py",
+      "sha256": "e1d82406c8373902e2fe0e78ff9b093557fb13a06088b5d389f237ed7a3f8cc8",
+      "bytes": 38057
+    },
+    {
+      "path": "harnessix/delivery/git_checkpoint.py",
+      "sha256": "27da76850433aa225946606088f811c0dcef2ee430679cfe2d7e12c253c6116d",
+      "bytes": 5244
+    },
+    {
+      "path": "harnessix/delivery/git_command.py",
+      "sha256": "77518b538954ab9a940748f9a2afd1893bd0df493381a39536c7f2331725d6b1",
+      "bytes": 8741
+    },
+    {
+      "path": "harnessix/delivery/git_contracts.py",
+      "sha256": "a3335614b088abca88617cb3dcbdb903c38c9b5a4628903e2bd9cd6a0f2a66d9",
+      "bytes": 17709
+    },
+    {
+      "path": "harnessix/delivery/git_identity.py",
+      "sha256": "53476a6f6396f2f4a8dbacb55797d0dc86d862a588c3c383cbbd313ca3e79969",
+      "bytes": 1876
+    },
+    {
+      "path": "harnessix/delivery/git_inventory_contracts.py",
+      "sha256": "693963ea77c01dff3183aacc09a29a261a66c8006dd75f833b4a9dd95b5095b1",
+      "bytes": 22132
+    },
+    {
+      "path": "harnessix/delivery/git_inventory_materials.py",
+      "sha256": "cbd3221d35dc545f8664d89129c1544aeba187493118321a94be984ac34fd006",
+      "bytes": 7029
+    },
+    {
+      "path": "harnessix/delivery/git_inventory_wire.py",
+      "sha256": "6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43",
+      "bytes": 12247
+    },
+    {
+      "path": "harnessix/delivery/git_material_cas.py",
+      "sha256": "b2c69d651aff700746b2f4d926bf3cda7a75b8ab4113310d698dad2babb1085f",
+      "bytes": 6442
+    },
+    {
+      "path": "harnessix/delivery/git_material_failure.py",
+      "sha256": "61b70a881e35b2541eafabdd363d77536c8b78fe8f08466bf1b9eed570243fb1",
+      "bytes": 10151
+    },
+    {
+      "path": "harnessix/delivery/git_material_input_contracts.py",
+      "sha256": "4080c84dc577ac24116e6efd97f3db38d54ec7262bc9b71d78f4282d80a75b71",
+      "bytes": 17975
+    },
+    {
+      "path": "harnessix/delivery/git_material_native.py",
+      "sha256": "e095d5582dcd7795937d9f1f86c003962b1bead230661a02261ea6aeedfed2df",
+      "bytes": 17387
+    },
+    {
+      "path": "harnessix/delivery/git_material_native_windows.py",
+      "sha256": "2304e15fbc6f38cffe0f644e6c7bf3ad1abff872f49164bb253aed1b0545a8c8",
+      "bytes": 14908
+    },
+    {
+      "path": "harnessix/delivery/git_material_trace2_profile.py",
+      "sha256": "cbbe858c6bde3d0050ff0cbdebb78735d84891fe621ca485a8f1c28d74e49435",
+      "bytes": 12984
+    },
+    {
+      "path": "harnessix/delivery/git_material_worker.py",
+      "sha256": "f56b25e5d230abf56702bc12ccf27f8344c67c34bbb8b0777128caea764bf37d",
+      "bytes": 12946
+    },
+    {
+      "path": "harnessix/delivery/git_object_material.py",
+      "sha256": "619352678a556563b8400af1bee2b06944edf3b5980f22e1b0f45259ecc4bbc0",
+      "bytes": 5445
+    },
+    {
+      "path": "harnessix/delivery/git_object_references.py",
+      "sha256": "54440de73fa7c76b59f0675f50e6bbbfd121835a9bce015060479ba3390d8132",
+      "bytes": 6697
+    },
+    {
+      "path": "harnessix/delivery/git_push.py",
+      "sha256": "65c19e31c7375385c5222979ee66a2045bb58b69977103c8e7ea91d74ad97ba2",
+      "bytes": 23131
+    },
+    {
+      "path": "harnessix/delivery/git_repository_recipe.py",
+      "sha256": "8f7c52c59889847331dfcfe31f9040c9757bac2ad5fbc5b9a3396712f892a0b6",
+      "bytes": 9971
+    },
+    {
+      "path": "harnessix/delivery/git_source.py",
+      "sha256": "a7c39f77aeeadc4f5fc6d47296bd09cc210ed1d81d0452787303d4b4487363b6",
+      "bytes": 2333
+    },
+    {
+      "path": "harnessix/delivery/git_store.py",
+      "sha256": "fca038298b8528bc6cf858775ad63e493e16da02223fa7c88eb9052a72a3d0ec",
+      "bytes": 16980
+    },
+    {
+      "path": "harnessix/delivery/git_store_genesis.py",
+      "sha256": "85a6f15f4dc9153ec9b4c390d9ce13332df3e4f395844c4d34927359d1b820ac",
+      "bytes": 4146
+    },
+    {
+      "path": "harnessix/delivery/git_store_schema.py",
+      "sha256": "72cf872d4b8c929b95ad03b7e116b7e576580ed0a4f67d4670330fdb8b8d56f6",
+      "bytes": 3499
+    },
+    {
+      "path": "harnessix/delivery/git_store_schema_v2.py",
+      "sha256": "1036cd0295866e0198ef675fb9bf8838d8bc41586e2522ef1536bddd5f3275fe",
+      "bytes": 8708
+    },
+    {
+      "path": "harnessix/delivery/git_tree_closure.py",
+      "sha256": "ccdc5a9a09d2aab6aad9c11fb8aca3b253511c122bdbca985bb391932bfe7984",
+      "bytes": 8488
+    },
+    {
+      "path": "harnessix/delivery/git_tree_diff.py",
+      "sha256": "77907fd7e2ebefbdffc14e33b880a42b9009ff0078fa635b447ab91ad6430937",
+      "bytes": 3584
+    },
+    {
+      "path": "harnessix/delivery/git_tree_projection.py",
+      "sha256": "c62f282d4bb6d56a7e94bfba31ae6c169dff4a4af9e83755a2034ccb3eb766d7",
+      "bytes": 15829
+    },
+    {
+      "path": "harnessix/delivery/git_workspace_snapshot.py",
+      "sha256": "aa50bcb2f42ec37cf13d316239e1e16fa8ef35fd896e1a442fb672a512e6a37d",
+      "bytes": 1032
+    },
+    {
+      "path": "harnessix/delivery/planner.py",
+      "sha256": "1a68ab35e6cb06e3f5b7c33e618e99c138065fae59eb433fe6836b721c5a59ac",
+      "bytes": 11092
+    },
+    {
+      "path": "harnessix/delivery/planner_v2.py",
+      "sha256": "55a2b26ab2042fa74b3b90a79cc01391ebd61c021c93fe502f6f6511a5adbe21",
+      "bytes": 3022
+    },
+    {
+      "path": "harnessix/delivery/review_jsonl.py",
+      "sha256": "d465dab90e67907b66089a98991c3e8946eef23a8c17bbd02a087508f130ed28",
+      "bytes": 1191
+    },
+    {
+      "path": "harnessix/delivery/rollback_action.py",
+      "sha256": "e63939bbaa7c6522360632782a911f753960cd8cd54b4cf561257cc358974d3d",
+      "bytes": 12178
+    },
+    {
+      "path": "harnessix/delivery/store.py",
+      "sha256": "158884fa817ab66dc8dd254613df78003d6ba5e2ab8103001c386f20a66c2934",
+      "bytes": 18142
+    },
+    {
+      "path": "harnessix/delivery/transaction_action_executor.py",
+      "sha256": "589888c5a36da2ed32cb3016a6aad929f0063a75c0676443f00071b8cb307dc0",
+      "bytes": 4842
+    },
+    {
+      "path": "harnessix/delivery/trusted_action.py",
+      "sha256": "232ec1b194422fa58d3b0894e5d493e1f55fdd48adb268b88390e804da8bbc0b",
+      "bytes": 15363
+    },
+    {
+      "path": "harnessix/delivery/trusted_action_contracts.py",
+      "sha256": "59716ae2dc62615dc9ffb2ac26f837c463efc59580748d42214f2168025f0315",
+      "bytes": 10646
+    },
+    {
+      "path": "harnessix/delivery/windows_filesystem.py",
+      "sha256": "26d5388556a574ac692f7e7f1b6215d33e7223d8feb3292984b70a5e0fae5cd1",
+      "bytes": 10291
+    },
+    {
+      "path": "harnessix/delivery/windows_io.py",
+      "sha256": "381ea93cba0b9b2cc1558bfad1463c438bca1ea2c3df1c16fefc31b56604c8d3",
+      "bytes": 854
+    },
+    {
+      "path": "harnessix/delivery/windows_metadata.py",
+      "sha256": "887a85b04c23b3857e4bce37796bb3fa55ced197304f03a29b0786553020cd59",
+      "bytes": 3783
+    },
+    {
+      "path": "harnessix/delivery/workspace_cas_io.py",
+      "sha256": "04e66e80b50fb77395d1e43570b1ed67b24f8be61dd46af86c4bc801deb03cf7",
+      "bytes": 2762
+    },
+    {
+      "path": "harnessix/delivery/workspace_record_codec.py",
+      "sha256": "dff3c4ab6cf9acd903ece1c2467137153cb1408fe2d275881fd0d04aa0b4f014",
+      "bytes": 9847
+    },
+    {
+      "path": "harnessix/delivery/workspace_record_contracts.py",
+      "sha256": "bdff8ac3f4a2e3f8ef066407b4c391b6b6cb4c3325902cc2684dbc88b0ef540a",
+      "bytes": 1512
+    },
+    {
+      "path": "harnessix/delivery/workspace_record_v3_contracts.py",
+      "sha256": "ad0b498b34c66a49b842f56fd410306b868cf69d2c22203f62fdfe37abd56bc9",
+      "bytes": 711
+    },
+    {
+      "path": "harnessix/delivery/workspace_store_schema.py",
+      "sha256": "d64e75a46e5ceaae6219c7fb89f397003cf1d6da44d9f661aa5dba5bff322479",
+      "bytes": 3567
+    },
+    {
+      "path": "harnessix/delivery/workspace_v2_contracts.py",
+      "sha256": "6c995260032251d47f30ee3c61bcadf0a0c411efd576518af3f859f6288f8d7f",
+      "bytes": 2974
+    },
+    {
+      "path": "harnessix/domain/__init__.py",
+      "sha256": "78db2b6c6448fa4b869268938fdb1a4c2a99432e5e24f4debb9f0897ad579d16",
+      "bytes": 37
+    },
+    {
+      "path": "harnessix/domain/artifact_pagination.py",
+      "sha256": "9208e4aad8e29b32f87945d7bfbde323331eb835b98c6ba3877961eb98182d5c",
+      "bytes": 865
+    },
+    {
+      "path": "harnessix/domain/errors.py",
+      "sha256": "bdb7be4d9ef30fabe32999f62330865273214d4f35a0ab10f2df5850e19e4644",
+      "bytes": 493
+    },
+    {
+      "path": "harnessix/domain/file_lock.py",
+      "sha256": "b4535f0632e80b67965cb206ed81c3d59bf716c04e3d8caae0dfe2b832f4037b",
+      "bytes": 953
+    },
+    {
+      "path": "harnessix/domain/models.py",
+      "sha256": "73251407e2ed193aa5bf5efecf7cdbe7beb70dfb52b212311391c741872c928d",
+      "bytes": 4973
+    },
+    {
+      "path": "harnessix/domain/public_output_schema.py",
+      "sha256": "a8a906da697d2266fb4c4f1e76bb4457f7035e3132fcf9bd3ebb4bc490a88b5f",
+      "bytes": 10451
+    },
+    {
+      "path": "harnessix/domain/review_text.py",
+      "sha256": "86d8e6af8522ca3b19afd9cfcaf80bee13e518772e0216857b4fb3d11dabd17d",
+      "bytes": 3295
+    },
+    {
+      "path": "harnessix/evals/__init__.py",
+      "sha256": "6aa7a0f95b4c4e6c996b05fc8433a446d9218004b51a7d02b648552d0e457085",
+      "bytes": 10600
+    },
+    {
+      "path": "harnessix/evals/_historical_check.py",
+      "sha256": "9a51ac01ad64dfb4643cebf3f59deb7d9ce7fc31e3edc0c6460e32797f8982e5",
+      "bytes": 4178
+    },
+    {
+      "path": "harnessix/evals/campaign.py",
+      "sha256": "62560ef3760d3c9691396463aa8a0a3500848bff1a376b767bc53d8268acb23a",
+      "bytes": 7340
+    },
+    {
+      "path": "harnessix/evals/campaign_cli.py",
+      "sha256": "77d71c25452b96b8c8785a0293299426a615671a9910cc7f2a51043dae58a2c0",
+      "bytes": 3205
+    },
+    {
+      "path": "harnessix/evals/campaign_contracts.py",
+      "sha256": "27ef7ffd010bd333df0ccd76a967d18ee2e84146ad65bac1029af63122680974",
+      "bytes": 11198
+    },
+    {
+      "path": "harnessix/evals/campaign_execution.py",
+      "sha256": "dce664eee22ef8851bc2712ca26e3cf3601d6bdfbe49585d1b930ce97a664756",
+      "bytes": 17435
+    },
+    {
+      "path": "harnessix/evals/campaign_execution_contracts.py",
+      "sha256": "2989d9fc0cc59e0bacfbfec350f5371a7ae2f401441da39f05c628e35a9c1ab6",
+      "bytes": 7288
+    },
+    {
+      "path": "harnessix/evals/catalog.py",
+      "sha256": "ae960b94172dff9af49815e5cca5d09121f930e7951393ceb1665d789fdf0a2b",
+      "bytes": 5131
+    },
+    {
+      "path": "harnessix/evals/checks.py",
+      "sha256": "e0ea08c2d2c32289ddbc0737295fca04d76e8b3cf9c66bc119a82c163e85737a",
+      "bytes": 8100
+    },
+    {
+      "path": "harnessix/evals/cli_config.py",
+      "sha256": "f22c0213704feacf70c648f621c2a1e0c8461e87d634e099b657e79a1a60891f",
+      "bytes": 1058
+    },
+    {
+      "path": "harnessix/evals/compaction.py",
+      "sha256": "b4de8f219ab562da4282e5b65c954600f95b17cccb11955bca9e5c40e588e034",
+      "bytes": 3300
+    },
+    {
+      "path": "harnessix/evals/compaction_contracts.py",
+      "sha256": "8389ebe825fdbd05330264f3ece9520af430d9c448e3f9a1fa789d3b960d86ab",
+      "bytes": 5260
+    },
+    {
+      "path": "harnessix/evals/contracts.py",
+      "sha256": "52d138fb92501c50dc9bc2f4a3088a07cf7e3a44b660ffceab9c0a9ee6f13820",
+      "bytes": 19316
+    },
+    {
+      "path": "harnessix/evals/delivery.py",
+      "sha256": "a3a4e6e9aa78ce6f21a747a7f86b2ee11556d46e608fc79820c3fa0efc9a33fa",
+      "bytes": 37510
+    },
+    {
+      "path": "harnessix/evals/delivery_contracts.py",
+      "sha256": "0ce7af4d3b5f882133969a2c8153bf720d4e37d6af3f19daecc6e09454b5b8cf",
+      "bytes": 10070
+    },
+    {
+      "path": "harnessix/evals/execution_fs.py",
+      "sha256": "40c86df38a93eb0e20c933f4617f3f593afcdccd976b453ebd3f97c9575fdced",
+      "bytes": 2127
+    },
+    {
+      "path": "harnessix/evals/git_evidence.py",
+      "sha256": "a794b6b4ac43d0da70ea8715640a1dbcf1722137817dc099dfaf2975d73dd2ca",
+      "bytes": 2509
+    },
+    {
+      "path": "harnessix/evals/grader.py",
+      "sha256": "4e051e80a8a0bf1364497122b81cced597ed2d443c8f07c0299c0e913214d794",
+      "bytes": 17271
+    },
+    {
+      "path": "harnessix/evals/materializer.py",
+      "sha256": "9f57367d7a64428cbe7ce4b5cff94614185ee2c3f9ba5fbf234c5ffb803029eb",
+      "bytes": 14750
+    },
+    {
+      "path": "harnessix/evals/provider_suite_cli.py",
+      "sha256": "958d37ad1513c6e18b5116e8a032bc807dc00905d0670fce6479b24574a39eb7",
+      "bytes": 5900
+    },
+    {
+      "path": "harnessix/evals/provider_suite_contracts.py",
+      "sha256": "374ec4024bbd3069cbf73174a153e70166b280d934bcc8ee2153f13c93a9ea27",
+      "bytes": 8398
+    },
+    {
+      "path": "harnessix/evals/provider_suite_evidence.py",
+      "sha256": "bf99bb9da34d87ea7f3c1af5a0752a17f5036f5bfaa7687cc89ea35e13fa46af",
+      "bytes": 7558
+    },
+    {
+      "path": "harnessix/evals/provider_suite_execution.py",
+      "sha256": "f5925a8223c376f8e63aa6ef2556fe34fd30575040a24eb1e7332206ef7970fa",
+      "bytes": 8544
+    },
+    {
+      "path": "harnessix/evals/report.py",
+      "sha256": "06049b81d3d64b23111e03a4cad7deef499b3c3addcf71139513b4799bd608b6",
+      "bytes": 13062
+    },
+    {
+      "path": "harnessix/evals/run_state.py",
+      "sha256": "0790fa7fe8c0536a65a5ce46950294220977c47d3f47fcc2f0bf670575fdde2e",
+      "bytes": 3442
+    },
+    {
+      "path": "harnessix/evals/runner.py",
+      "sha256": "3aa9db861c942a974fe24049b8dfe0948eac62938800aa1369b22f9ad5d63a8a",
+      "bytes": 25949
+    },
+    {
+      "path": "harnessix/evals/suite.py",
+      "sha256": "b9bc0535b30c6a9f6fabf25d0e80fb983f1dfb835c8969e648df0a489c2fed04",
+      "bytes": 8690
+    },
+    {
+      "path": "harnessix/evals/suite_contracts.py",
+      "sha256": "6d5ce30bf24a6689bb6266f8dd6bd346e292dc4b1aa22dded6951eb7521f057f",
+      "bytes": 16951
+    },
+    {
+      "path": "harnessix/evals/suite_execution.py",
+      "sha256": "81bacd90a953e96420856ef00a9352c270a7cdeb6fa57f091a13263e738381f0",
+      "bytes": 19826
+    },
+    {
+      "path": "harnessix/evals/suite_execution_contracts.py",
+      "sha256": "0dd5df7ebca3a45e1a253145e4e481ca878d99d6510288a8b98f6f4f535c81c2",
+      "bytes": 7382
+    },
+    {
+      "path": "harnessix/evals/task_pack.py",
+      "sha256": "2f9ac31dbe994d4e3eedda3233d440262d5430de6512d52063e28724eabb42b1",
+      "bytes": 8897
+    },
+    {
+      "path": "harnessix/evals/task_pack_contracts.py",
+      "sha256": "cb3c49c131f605e0727f94d85c0eda35ce3f9cf03d6aeffe6988a2f7a86ea9a5",
+      "bytes": 16442
+    },
+    {
+      "path": "harnessix/evals/task_pack_execution.py",
+      "sha256": "895270917c47c0c14c05b418cd87649dc2d2405e4b1d8becef14ef7ac38f7a85",
+      "bytes": 18129
+    },
+    {
+      "path": "harnessix/evals/task_pack_materializer.py",
+      "sha256": "01bee1ace0fe59f3d410ac56f33246a829b1e3064cd5230eedde016d5136679a",
+      "bytes": 18877
+    },
+    {
+      "path": "harnessix/evals/task_pack_observations.py",
+      "sha256": "7a16359bbd0275f76f9d6cf83c3544b0a90428fbd64a75bad34e0a6581db7c98",
+      "bytes": 4209
+    },
+    {
+      "path": "harnessix/evals/task_pack_publication.py",
+      "sha256": "207584805720d71a5a610f6250f1330916ced31e9b7e2ab71fcf2101c173a297",
+      "bytes": 11607
+    },
+    {
+      "path": "harnessix/evals/task_pack_suite.py",
+      "sha256": "dfb7dcf011c5cad2c7f637fd41b11e086c8904c127b20784bb73a8de63347147",
+      "bytes": 5687
+    },
+    {
+      "path": "harnessix/evals/task_pack_trial.py",
+      "sha256": "6307e44c4db17412fe81ff6a429befd8add527977dd4f3c1b98341f246824aba",
+      "bytes": 22671
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v1/archives/agents-utils-benchmark.tar",
+      "sha256": "4132e3c08a23fda6d8b83d5622bcf989a16da0db3cd7abb26d6e6bc05e780b23",
+      "bytes": 20480
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v1/archives/langchain-utils-benchmark.tar",
+      "sha256": "82f306d0f1d7e3bd4268f07e937c9be0842d4f78203153ddfd0e40a23a6c0e13",
+      "bytes": 10240
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v1/archives/opencode-utils-benchmark.tar",
+      "sha256": "b78d26afe8c58ef528f6a609c35c6965bc6b0ce76197ac4314228934350d2052",
+      "bytes": 10240
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v1/manifest.json",
+      "sha256": "1f602b25c3962821b6bc21a40d1ee36b1bd38438d64d89373398be72da8233a9",
+      "bytes": 31523
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v2/archives/agents-utils-benchmark.tar",
+      "sha256": "b9bb525d50a53f8bb84cb01537d1fcb822fd1ff3d1ffc6a79de587a86a8d0e81",
+      "bytes": 20480
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v2/archives/langchain-utils-benchmark.tar",
+      "sha256": "81955e9e4c253b4c3e261f8afb9b961293c42369bbb5e078e16edadaea5053b8",
+      "bytes": 20480
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v2/archives/opencode-utils-benchmark.tar",
+      "sha256": "2089468aee5312c58166b7203119ee076c7429419cb5776cdf4a7fda38b49edf",
+      "bytes": 10240
+    },
+    {
+      "path": "harnessix/evals/taskpacks/engineering-v2/manifest.json",
+      "sha256": "360bfd9d902d528ddade7bdb94e80ec05ba9d6f2b2d93c1bda64e448100beed2",
+      "bytes": 31523
+    },
+    {
+      "path": "harnessix/evals/taskpacks/v1/archives/javascript-slug.tar",
+      "sha256": "e930559031b0147986a53c211bb44c59bf3741eef6c976110937aa77da667d37",
+      "bytes": 40960
+    },
+    {
+      "path": "harnessix/evals/taskpacks/v1/archives/python-mathbox.tar",
+      "sha256": "9f0cf91114fabfd4be1caa64f2c7d80191622bc56d6a56827fb239c6652c6273",
+      "bytes": 40960
+    },
+    {
+      "path": "harnessix/evals/taskpacks/v1/manifest.json",
+      "sha256": "fc935696b7a9767ea79e2bcf1317558b7f130aa28796979c530d067016afce36",
+      "bytes": 7384
+    },
+    {
+      "path": "harnessix/execution/__init__.py",
+      "sha256": "5ce13e36c98a1dfd514242d02127906064aefea9aacfac41c7c4c10291f35742",
+      "bytes": 73
+    },
+    {
+      "path": "harnessix/execution/contracts.py",
+      "sha256": "6e6d5932bf1c762b7d01986d16f09552f166d2aff16d84fd2068b7a13ab38e41",
+      "bytes": 9673
+    },
+    {
+      "path": "harnessix/execution/planner.py",
+      "sha256": "05d0749f41f8fdb83b23b9fee7c9cdb121df11b9d944087d6d7d51f9746a0f46",
+      "bytes": 12740
+    },
+    {
+      "path": "harnessix/execution/public_tool_contracts.py",
+      "sha256": "781c3ad88d9608646532863ee46179f06c090cf36b9c4de493ae142e9f5dfa14",
+      "bytes": 4512
+    },
+    {
+      "path": "harnessix/execution/store.py",
+      "sha256": "6b209e57cddf7b1fd37431a800cf2edb8e511ad009ceceb45ebb923fec6d1650",
+      "bytes": 11686
+    },
+    {
+      "path": "harnessix/execution/versioned_contracts.py",
+      "sha256": "e2d3a9035f1dcd0e6f243a8d874c86af2a527064226b4856bf33bc10cf1ebaae",
+      "bytes": 504
+    },
+    {
+      "path": "harnessix/file_lock.py",
+      "sha256": "5f8965b1763151bdc394d0bec68671dfefb53737d5799aae25956766c70ede1f",
+      "bytes": 193
+    },
+    {
+      "path": "harnessix/hooks/__init__.py",
+      "sha256": "ea307ba9129b68b230bd7752ec28e373c7ecb552be5e240859a805b03d52c683",
+      "bytes": 929
+    },
+    {
+      "path": "harnessix/hooks/contracts.py",
+      "sha256": "a2b5cf8ec9aa9d3a1d5f6452ea969d049bf35b52be210531e77e38ce1177c82c",
+      "bytes": 18992
+    },
+    {
+      "path": "harnessix/hooks/runtime.py",
+      "sha256": "668515d585f519b923caa996c6c63df3cd046169f9a834bf08bd7d7de81a67c0",
+      "bytes": 13647
+    },
+    {
+      "path": "harnessix/hooks/store.py",
+      "sha256": "cdf88d921d0dc3325c1455afa9ef1cb61d06239f96c775b7cc17f0dd81f2e672",
+      "bytes": 15979
+    },
+    {
+      "path": "harnessix/licensing.py",
+      "sha256": "e530f289b4d7eafda9d0c1106348c05fb232e4e6832cc8bb2db012fd5a11bff3",
+      "bytes": 604
+    },
+    {
+      "path": "harnessix/mcp/__init__.py",
+      "sha256": "52c5522b41205cab8a382b0d88977221468a4025b1ecd2acc34505f67a7ccd95",
+      "bytes": 1347
+    },
+    {
+      "path": "harnessix/mcp/actions.py",
+      "sha256": "cd46e4b756bda69a2e6e433913ce93916ae384a7069d74187ffb278344916439",
+      "bytes": 9283
+    },
+    {
+      "path": "harnessix/mcp/contracts.py",
+      "sha256": "98bbeded14b3a3e4458e0847e48ca82a1c27e6282a975e828522bb19e042412f",
+      "bytes": 6950
+    },
+    {
+      "path": "harnessix/mcp/runtime.py",
+      "sha256": "b6eee6d8f7e8051cfc5a088d49d218109ddeb1c67f80398111ae9b6f752f0ce2",
+      "bytes": 23841
+    },
+    {
+      "path": "harnessix/mcp/schema.py",
+      "sha256": "830621d30142c050b869a04d1744b61dad13b40a7c92e199772b5db8e9bd1c85",
+      "bytes": 7152
+    },
+    {
+      "path": "harnessix/mcp/server.py",
+      "sha256": "28f939f053b744806571f59c612249f8a7e0df252ff7137c5da7aeac1436690b",
+      "bytes": 9940
+    },
+    {
+      "path": "harnessix/mcp/startup.py",
+      "sha256": "c681ca5820caefaa088221ff1e88df631d217dc325c5628f57310d557b7285a7",
+      "bytes": 1886
+    },
+    {
+      "path": "harnessix/mcp/store.py",
+      "sha256": "f0bad31172045a5429bc9a2e55f3e86e112e10c4e34f7a2e34d521b95c793643",
+      "bytes": 15100
+    },
+    {
+      "path": "harnessix/models/__init__.py",
+      "sha256": "9b1f68b45399af90116943acc40364a3f18dee0ec11f4c75f7c2a1dd93b8ea5d",
+      "bytes": 85
+    },
+    {
+      "path": "harnessix/models/_anthropic_http.py",
+      "sha256": "c2f6ae573fc63956fc7937ad4664cb42d14cbdec3eba99c6da80ce75fa66e635",
+      "bytes": 2749
+    },
+    {
+      "path": "harnessix/models/_anthropic_mapping.py",
+      "sha256": "642af270d5ee9691925f67a0c88bd7456459462b5d3ce6565308cd809fe2a520",
+      "bytes": 3800
+    },
+    {
+      "path": "harnessix/models/_anthropic_stream.py",
+      "sha256": "de9141c4e090c712a82adcb76d2bc82af668a4245964d8cd44c4f21b93fd66ae",
+      "bytes": 12199
+    },
+    {
+      "path": "harnessix/models/_billing.py",
+      "sha256": "e1cf3051ac8b470ddd6a0f2d03cdbbd5b6b200a28b32cc94e1da46dc0bf4ef15",
+      "bytes": 1052
+    },
+    {
+      "path": "harnessix/models/_bounded_http.py",
+      "sha256": "063c27fe743e20f007a26f273c14577019baa4c6940ae51af1833562fad51507",
+      "bytes": 5101
+    },
+    {
+      "path": "harnessix/models/_chat_errors.py",
+      "sha256": "d5af42afb0631774913eb1877f597ff492bd4fc30e3c74eb8eabe26f78a74a86",
+      "bytes": 2081
+    },
+    {
+      "path": "harnessix/models/_chat_mapping.py",
+      "sha256": "84247bcd600e13b7b22ae1382fa9cb9e71e591c2ff2f37ef9244baf136f35659",
+      "bytes": 2331
+    },
+    {
+      "path": "harnessix/models/_chat_stream.py",
+      "sha256": "9639eefd7cfa40654f163538241902f6d2c2e85c99b6365c90dfa700d67dc3a5",
+      "bytes": 10312
+    },
+    {
+      "path": "harnessix/models/_history.py",
+      "sha256": "226314c74500e10cfc867d726534553fef03f3e1a683a2266b21a7f504605a28",
+      "bytes": 3986
+    },
+    {
+      "path": "harnessix/models/_json.py",
+      "sha256": "316910c807e4acfc05f1f90dae09b618691f403593bde6693e420b84770275d6",
+      "bytes": 805
+    },
+    {
+      "path": "harnessix/models/_provider_io.py",
+      "sha256": "49672f20a34f19da12c35e99cbaef82d7d8b07d2e242d8250a8dcf79eb0a6e52",
+      "bytes": 1840
+    },
+    {
+      "path": "harnessix/models/anthropic.py",
+      "sha256": "3cede7110ccd95329a2463fed1e3c2d9eb9c5b0478450f4ed46fb7b42e1a47f0",
+      "bytes": 8218
+    },
+    {
+      "path": "harnessix/models/billing.py",
+      "sha256": "36149a97ef2c6b58cbaeba2456046dfbcdffe6e922aba2f8448d133987334551",
+      "bytes": 2137
+    },
+    {
+      "path": "harnessix/models/config.py",
+      "sha256": "cc37624624be59ae074530a5a3a7781cb10584d593a76c92574d486a46bec628",
+      "bytes": 2832
+    },
+    {
+      "path": "harnessix/models/contracts.py",
+      "sha256": "d6b45493e9e547986857ea0f1768dcca8ac723cf5a0b6dca4275262db823a66c",
+      "bytes": 3010
+    },
+    {
+      "path": "harnessix/models/costs.py",
+      "sha256": "90d2a16a83090f82fe123ef2e43e341f94b7b2bbb6f6a2cecd15e91977c7ce74",
+      "bytes": 18903
+    },
+    {
+      "path": "harnessix/models/openai_chat.py",
+      "sha256": "093fb840e6f4c5ae0951ab13aaa1c0e59b38003684452f71b5d4db9599a45b5f",
+      "bytes": 9049
+    },
+    {
+      "path": "harnessix/models/pricing.py",
+      "sha256": "573a18002471a962da5f3829d414e7f4f4b5461898ff3ebed5f320b09745bf6c",
+      "bytes": 3600
+    },
+    {
+      "path": "harnessix/models/scripted.py",
+      "sha256": "3bb430affacfa2977c8f30c0b78477e1147a3bf992d94f5447a5613dcf02fc1d",
+      "bytes": 2071
+    },
+    {
+      "path": "harnessix/observability/__init__.py",
+      "sha256": "ede59a86c15efdf628b0348139a98f9dadb6ee1994e8c69a2c3294fffb414a08",
+      "bytes": 1197
+    },
+    {
+      "path": "harnessix/observability/core.py",
+      "sha256": "ca69c0b89fd571c037379e9ab5e824f6cec11aa571b395e168f99eee737c3103",
+      "bytes": 3084
+    },
+    {
+      "path": "harnessix/observability/logging.py",
+      "sha256": "9ab38e39fb6ecca6fa1334b289113685bb5eab7f2e9b7a435743827d8c1744a7",
+      "bytes": 2708
+    },
+    {
+      "path": "harnessix/observability/opentelemetry.py",
+      "sha256": "054a6e9644b7a306097e0e337bcb9767993a3fa59dc3124706200d37a84cf337",
+      "bytes": 6213
+    },
+    {
+      "path": "harnessix/patches/__init__.py",
+      "sha256": "d2c385987f20409d893a68c52b3bef4985453cf99adacb9710294a57017fff5b",
+      "bytes": 76
+    },
+    {
+      "path": "harnessix/patches/agent_bridge.py",
+      "sha256": "200b59aafbb13ed883874acf7c2a8d2a64bd6e369ca4db59c83da4bd9d4e3aae",
+      "bytes": 14117
+    },
+    {
+      "path": "harnessix/patches/batch_agent_bridge.py",
+      "sha256": "4190537c09d3c6e1c32a969fb6ac702cc579197623632c73b86f97e925cea454",
+      "bytes": 19470
+    },
+    {
+      "path": "harnessix/patches/batch_approval_contracts.py",
+      "sha256": "c05b8f5f5c44f03f72a0ed4bd5937276f847e74a6df5dc94323a460d0c5a6c1f",
+      "bytes": 3174
+    },
+    {
+      "path": "harnessix/patches/batch_bridge_contracts.py",
+      "sha256": "23f7aab0c1002c81ea76c8f8d269e7d227c3e14b0741d36839b300afb130361a",
+      "bytes": 4051
+    },
+    {
+      "path": "harnessix/patches/batch_contracts.py",
+      "sha256": "6d9f0b9c2411e522c4428ec36201eab47106c3f191363fcdc4bd16cd4f9ecc54",
+      "bytes": 2344
+    },
+    {
+      "path": "harnessix/patches/batch_execution.py",
+      "sha256": "df200d1e90a9410b904c7077bb1c9984a028c0e9bbd85df15f6e24622dfa1d42",
+      "bytes": 6344
+    },
+    {
+      "path": "harnessix/patches/batch_ledger.py",
+      "sha256": "73bf7529bc9d920875a5f8b43347d819ed20e0fb76dcd71b44c83ef2cffdfbb4",
+      "bytes": 6490
+    },
+    {
+      "path": "harnessix/patches/batch_run_contracts.py",
+      "sha256": "83ec4da6b680979944939d9cbab0c51b6267ed050a8bb8ca44a78484ae67aa66",
+      "bytes": 3731
+    },
+    {
+      "path": "harnessix/patches/batch_run_migrations.py",
+      "sha256": "52de2108cf04ce1e478de12d2fbf1463b186eb0603a2797087afb2665eb4bf66",
+      "bytes": 661
+    },
+    {
+      "path": "harnessix/patches/batch_runs.py",
+      "sha256": "dfdde9c09cb6c2e09077cc91a4d9cc7379dcc340e0ca7876d424235423bcd195",
+      "bytes": 3565
+    },
+    {
+      "path": "harnessix/patches/batches.py",
+      "sha256": "b5509c743b232678c9b68021a829d57f280bb66d55af3c3090161d1558bee6ce",
+      "bytes": 3213
+    },
+    {
+      "path": "harnessix/patches/bridge_contracts.py",
+      "sha256": "b93eab9b664189e15e0ce0a5684cbcd4d0bc8a7a83e7e52021d1167c2d2f540b",
+      "bytes": 2073
+    },
+    {
+      "path": "harnessix/patches/contracts.py",
+      "sha256": "c3c6c04ff904fd680499010a2100b721dae381aac1b0588d830cb6882a94a38c",
+      "bytes": 3391
+    },
+    {
+      "path": "harnessix/patches/diff.py",
+      "sha256": "cfeab4fdd6534545751ea1c0356073975f2dccb746ce2d09da67036be4dc2769",
+      "bytes": 3050
+    },
+    {
+      "path": "harnessix/patches/diff_contracts.py",
+      "sha256": "a920469a243e2c49b325250fd7464646ee078bbb56d100bcf4a78e2586a5de9a",
+      "bytes": 3511
+    },
+    {
+      "path": "harnessix/patches/diff_document.py",
+      "sha256": "23411ef00d06c599b208bb39c087bdf07c5c45c073a221d5bcb721b30fd7605e",
+      "bytes": 5154
+    },
+    {
+      "path": "harnessix/patches/diff_document_contracts.py",
+      "sha256": "645cd738c830da7cb50ef573968f2b689b73d803407cc99eacd349747680b353",
+      "bytes": 6887
+    },
+    {
+      "path": "harnessix/patches/ledger.py",
+      "sha256": "a00b257a21db3654b809c69f8155459d28cf77475e0b44cf970b1f710346254a",
+      "bytes": 8279
+    },
+    {
+      "path": "harnessix/patches/ledger_migrations.py",
+      "sha256": "a369c5d10ee3643bc7b1ef0bbb524059e925c26eee8471bd38a4c5b025eec143",
+      "bytes": 948
+    },
+    {
+      "path": "harnessix/patches/managed.py",
+      "sha256": "b40554277fdbdb6881c4c5176cc3473488e5f05b9474834179fc716f2a968da1",
+      "bytes": 26020
+    },
+    {
+      "path": "harnessix/patches/managed_batches.py",
+      "sha256": "81ec9bc10b1c89984db34b4ef8bf93128fc560343e408e925f1e93b79ab6fc76",
+      "bytes": 6792
+    },
+    {
+      "path": "harnessix/patches/managed_contracts.py",
+      "sha256": "62ace67bbefb64621dc7ee1f41ca2d58b5e223de2a4e3a0b007bbec4f7475859",
+      "bytes": 1994
+    },
+    {
+      "path": "harnessix/patches/managed_io.py",
+      "sha256": "79098076ab453e3bd676abfb99cf2c947e4345650f4a9534a3d30c852b8d9837",
+      "bytes": 6352
+    },
+    {
+      "path": "harnessix/patches/planner.py",
+      "sha256": "4c54f2c109b36df0b7f16dde1985c29b59def4b25f81d864a6db6bde1019ab7b",
+      "bytes": 7697
+    },
+    {
+      "path": "harnessix/processes/__init__.py",
+      "sha256": "29c2f7f74ed39afd346953e3f409f3a8bb414e6de74bf0c7c33d07530f9a4ba9",
+      "bytes": 88
+    },
+    {
+      "path": "harnessix/processes/bridge_contracts.py",
+      "sha256": "617ec0f6e2faf7a36330d561a155025b5d29397855c059df6bfbaefc7a4b2cb4",
+      "bytes": 4301
+    },
+    {
+      "path": "harnessix/processes/capture.py",
+      "sha256": "355e6cda194b32350aa8f8a52dd7233c518f80e79645b336384854cd35216e3a",
+      "bytes": 3003
+    },
+    {
+      "path": "harnessix/processes/contracts.py",
+      "sha256": "d0ee8ed0ca977986819837d2aae5b5ebad11c41bafd3d09c3a06f885cd250334",
+      "bytes": 3424
+    },
+    {
+      "path": "harnessix/processes/git_observation.py",
+      "sha256": "57d4c4a4ce1e7a4571f04cea6b23c8240c934db6e3b817a6faffceaf59cdade8",
+      "bytes": 3174
+    },
+    {
+      "path": "harnessix/processes/git_read_windows.py",
+      "sha256": "59e91f3d4abecfdf169d3d325a5d13c94023099ff3ffa453d7e36cb63e3dae4f",
+      "bytes": 14986
+    },
+    {
+      "path": "harnessix/processes/output_artifact.py",
+      "sha256": "c847601f63a41e68c709ceb865da8ba64fed31a1e4fdb1e434791bd1696082fa",
+      "bytes": 7706
+    },
+    {
+      "path": "harnessix/processes/owner_output.py",
+      "sha256": "1d95826aec9ad7ab94b707b06a631953a5998c8457660a60fb31d842eb98e0ae",
+      "bytes": 6118
+    },
+    {
+      "path": "harnessix/processes/owner_protocol.py",
+      "sha256": "7ca042184add4a56062f42b3927b2fcc1b1f21d9787b942e24428af08fe7074d",
+      "bytes": 8955
+    },
+    {
+      "path": "harnessix/processes/owner_receipt.py",
+      "sha256": "d60bc1bcbf23b8c7ab83339925d5da9fc256ec8f4d00c14430e3560af8b73610",
+      "bytes": 15901
+    },
+    {
+      "path": "harnessix/processes/posix_owner.py",
+      "sha256": "980f78d5e31416d9436bba0915e6a2099502653f0d14bb39039a46b390cff7a0",
+      "bytes": 21005
+    },
+    {
+      "path": "harnessix/processes/public_output.py",
+      "sha256": "827320c1fc9731e280431337b05f4034a25a17bc7afbe2faa1f71aa904821a05",
+      "bytes": 2919
+    },
+    {
+      "path": "harnessix/processes/receipt_projection.py",
+      "sha256": "5a0ae22ffa231d404b873ce62685bca2fbca1a0a5ec2f47a620fbe909973ad40",
+      "bytes": 3224
+    },
+    {
+      "path": "harnessix/processes/runtime.py",
+      "sha256": "6b95b941c1057032fa8eb6e3f7416772bc3181845426b897a6822da4c5b07ba3",
+      "bytes": 12650
+    },
+    {
+      "path": "harnessix/processes/state_directory.py",
+      "sha256": "fcbf953bd040fcf192f92f7623044cbb6a87ebee5d27fde1b1108549c4694e4a",
+      "bytes": 1446
+    },
+    {
+      "path": "harnessix/processes/supervision_contracts.py",
+      "sha256": "19573c67077a93c716063e5092cb3156919aca1c8640c5d4b508434eda5e4c38",
+      "bytes": 11321
+    },
+    {
+      "path": "harnessix/processes/supervision_planner.py",
+      "sha256": "b4e00e0cf8e384ee820055929694175fdb8465be6a60e9726e77842f04682c24",
+      "bytes": 9999
+    },
+    {
+      "path": "harnessix/processes/supervision_store.py",
+      "sha256": "5d6268f4f8ea6d6ab93d5fe6fc17b41a9064927b5c6cf7106d5173d5ce618f0f",
+      "bytes": 10037
+    },
+    {
+      "path": "harnessix/processes/supervisor.py",
+      "sha256": "51d0347fda238165c6a30d85507f481d61da983df1af058c2a9ebaf2aa09e28d",
+      "bytes": 28048
+    },
+    {
+      "path": "harnessix/processes/supervisor_capabilities.py",
+      "sha256": "77ae1fbe9af06eec11cfad311a54fd923c710b6f4b91760cfe61b74262a0aef3",
+      "bytes": 4002
+    },
+    {
+      "path": "harnessix/processes/test_contracts.py",
+      "sha256": "de9bc5f01ab94eeaf22e4fd21ea0e982949f458a98d9c19b94e91ac14ce97202",
+      "bytes": 1575
+    },
+    {
+      "path": "harnessix/processes/trusted_output.py",
+      "sha256": "d1b51b976e8e32400931dc707a7455696f578056069350616f46fe23c6e446b6",
+      "bytes": 12419
+    },
+    {
+      "path": "harnessix/processes/windows_conpty.py",
+      "sha256": "22f3d325b9f48f042b8288a844b18870699d5866b1f17aa8824349960c467950",
+      "bytes": 15630
+    },
+    {
+      "path": "harnessix/processes/windows_job.py",
+      "sha256": "33bb11a64e27c0a9478dc07e761c629d6c91bfe033a2cfbfbe5192f9dab90675",
+      "bytes": 6898
+    },
+    {
+      "path": "harnessix/processes/windows_owner.py",
+      "sha256": "82aa3bc13ea30733930bcfd2b0565e78018125c4b0d2d8dd165638b2726571b5",
+      "bytes": 18755
+    },
+    {
+      "path": "harnessix/processes/windows_owner_observation.py",
+      "sha256": "f332b492f46b1b2bf9b65a3cd03e42c4544ac8453b4774cfbad28b69c5b093df",
+      "bytes": 715
+    },
+    {
+      "path": "harnessix/processes/windows_receipt.py",
+      "sha256": "f90587a5e64cc19442f469f44174237d359fd3dc007b7a0b51b5d077b8e680c0",
+      "bytes": 4507
+    },
+    {
+      "path": "harnessix/product_config/__init__.py",
+      "sha256": "4212208e179f4e925aae3c150c6c63334092ccfe4aea4d3618cb7d6a9ddda447",
+      "bytes": 1559
+    },
+    {
+      "path": "harnessix/product_config/action_catalog.py",
+      "sha256": "e19534a374485ce03caa7b6af612c18ddb5cd6c79ac0a0b93bc21b5434424e70",
+      "bytes": 6308
+    },
+    {
+      "path": "harnessix/product_config/action_codec.py",
+      "sha256": "68a6e5f251c45bf9614eef5a6680fb8f90cdb6e45f4e3b1e832ec38efc9ae795",
+      "bytes": 3933
+    },
+    {
+      "path": "harnessix/product_config/action_composition.py",
+      "sha256": "d6bd1844892694c8ee92fea91c08ef3f63eda3798e62a345488d958c0535b619",
+      "bytes": 17637
+    },
+    {
+      "path": "harnessix/product_config/action_contracts.py",
+      "sha256": "0bd15c81776100014080ef87f4334e1b7038cc9878ff89d4308502178b223aaa",
+      "bytes": 15672
+    },
+    {
+      "path": "harnessix/product_config/action_diagnostics.py",
+      "sha256": "334e9c5c533382fd940dcedd4421ad709580061c44f4732db0aaa76a01511ce1",
+      "bytes": 5034
+    },
+    {
+      "path": "harnessix/product_config/action_owner.py",
+      "sha256": "d8f37a743113f58438b06c42b646e4788783ec4683efbd25e13ed21678ede732",
+      "bytes": 1458
+    },
+    {
+      "path": "harnessix/product_config/action_recovery.py",
+      "sha256": "35f0549ed3844a77951efe208448dcdc0c8cf30d6ce0eb2df2a457bc165f72c6",
+      "bytes": 5479
+    },
+    {
+      "path": "harnessix/product_config/action_runtime.py",
+      "sha256": "d36b90c7dc76de8264839b4d6b167386f60a73f6db9d3f8cc2aed51fdb998b92",
+      "bytes": 15713
+    },
+    {
+      "path": "harnessix/product_config/action_runtime_types.py",
+      "sha256": "7109c2b0fb4ab71726d0e4d4a0ed3928053d8d24189dc9114f4ad1c074671732",
+      "bytes": 508
+    },
+    {
+      "path": "harnessix/product_config/action_store.py",
+      "sha256": "d9e8440f787168f4379d1aab5164e748d581bfc6b5d9cf327bccae2474463d90",
+      "bytes": 19794
+    },
+    {
+      "path": "harnessix/product_config/agent_context.py",
+      "sha256": "fe75df6f33f3dbe62355817ba4f545ab2ca2edfe510e75a1270838b6df195a5a",
+      "bytes": 5394
+    },
+    {
+      "path": "harnessix/product_config/cli.py",
+      "sha256": "4251b55f52f295a3db1e89635e876c0cd6fb380a40248fcf5a674ea7b15d4a40",
+      "bytes": 5077
+    },
+    {
+      "path": "harnessix/product_config/codec.py",
+      "sha256": "1f8ba940b6e33761e02aaa431b46b62afe70a110372d08563b51d554fa417f9c",
+      "bytes": 6479
+    },
+    {
+      "path": "harnessix/product_config/contracts.py",
+      "sha256": "90ecef72d0f012dc002ee41fd9c1ba42eddb9a16b358bac4a59bf02b2ef38f78",
+      "bytes": 20254
+    },
+    {
+      "path": "harnessix/product_config/errors.py",
+      "sha256": "8b44db8b09b0cdb94f6eb2a4a1e4f866adf733aead4dbfa9a8450b6481209816",
+      "bytes": 182
+    },
+    {
+      "path": "harnessix/product_config/eval_action.py",
+      "sha256": "3d5c3374c7b1a9bc559f0b8ef93fe45fb3f11a2c1e224609aea8b123d6527bc4",
+      "bytes": 14517
+    },
+    {
+      "path": "harnessix/product_config/eval_process.py",
+      "sha256": "cfe3c5931c63c54ecb8f64ae4b94dc5dd4a374d5db3728af13c54be325cfcff0",
+      "bytes": 11879
+    },
+    {
+      "path": "harnessix/product_config/git_approval_history_projection.py",
+      "sha256": "122542175579ede78ac6b4a801e01c604a97256bdc8f1862e51e245f35ae23ee",
+      "bytes": 18752
+    },
+    {
+      "path": "harnessix/product_config/git_approval_history_proof.py",
+      "sha256": "2cee8deac9a1f3af09d2cb3e2f88cc7a84e67b3787807ef60f35e9a445529d1e",
+      "bytes": 8536
+    },
+    {
+      "path": "harnessix/product_config/git_baseline.py",
+      "sha256": "43b3cb39cf7e27eca535b9326bb86f745c6282d846b0e12ffb57308be88c55ab",
+      "bytes": 12694
+    },
+    {
+      "path": "harnessix/product_config/git_baseline_contracts.py",
+      "sha256": "59b21be756006c3240b32cf3d96b93b24adf6c5c2fa27eb33dddd44d7d6104d2",
+      "bytes": 3365
+    },
+    {
+      "path": "harnessix/product_config/git_checkpoint_materials.py",
+      "sha256": "51f374ea373a45b537436b22262554cd6105145367b9bcc1ceedd7b190681313",
+      "bytes": 8677
+    },
+    {
+      "path": "harnessix/product_config/git_checkpoint_preparation.py",
+      "sha256": "7b5d50bd5060ccac21fb79d5f98b2313dfa6e190356ff1805b97dfbe1de810a1",
+      "bytes": 19986
+    },
+    {
+      "path": "harnessix/product_config/git_checkpoint_scope.py",
+      "sha256": "a0831bc73f3fce298cad19b2f08ecaf2fa5715c4663e0d3232cd56f6c1d3a8a3",
+      "bytes": 11516
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_core_store.py",
+      "sha256": "d36bc8f2c19eecef16bfa13a929076702d799d5325cb2186f2f31c3e935bc946",
+      "bytes": 7884
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_observed_contracts.py",
+      "sha256": "96b76adeb08adc454a4fcaf27ad50b076021dac55bc616d3054e6539bf8d1b2e",
+      "bytes": 5548
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_observed_wire.py",
+      "sha256": "bdc92ab0f180994202e18840e9a83df5e2534ccd9deea392264d853c1bbb8fbd",
+      "bytes": 1794
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_plan_contracts.py",
+      "sha256": "e87caadbff28f937b24d5606f0c0b3f868d5c1b33562b7618751b3e5958afb87",
+      "bytes": 11672
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_plan_materials.py",
+      "sha256": "628c40f888850e2f52a8f79080067ac53dd90da17f6d9ea45668385b18bd8a04",
+      "bytes": 5649
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_plan_snapshot.py",
+      "sha256": "dec17ec2cf829fad30bcb440867d10436062a347798324bf8c7565b59aba5b9b",
+      "bytes": 6505
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_plan_validation.py",
+      "sha256": "2379cdd216c59d060fe992dfb6308ceae841e14fed1945a69148dc26853583ca",
+      "bytes": 4602
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_plan_wire.py",
+      "sha256": "2e69430485318dfc701b891aab6f09b84137a12bb7cdcd668abaa8c1df1cce33",
+      "bytes": 6858
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_process.py",
+      "sha256": "5a42a0c93a233f0d0c3893e9c1aa40e53fd13fdc288c27efb20853860adff053",
+      "bytes": 24334
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_review.py",
+      "sha256": "738081e734b7f1c058ea615fbda7779e624a552d5ea85cb859a09a8a71904067",
+      "bytes": 9408
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_review_codec.py",
+      "sha256": "b9d85af9ed2564d951c85cfb126cf99a24a1393e327fe9ffd7f1d2db04770729",
+      "bytes": 8133
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_review_contracts.py",
+      "sha256": "702daddd8ef2b7ec3d63ecf9080051b2128b749faebe036c433e5de1163771a2",
+      "bytes": 3174
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_review_host.py",
+      "sha256": "b219899578e674c65b5c2960795773fcaee597018d69a3ae7a84e04e86827385",
+      "bytes": 6054
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_route_core.py",
+      "sha256": "356621a503f0730dd71dcdcab20f66352a851e75142b6dc3ddd01a6fbb969ed4",
+      "bytes": 3348
+    },
+    {
+      "path": "harnessix/product_config/git_delivery_source.py",
+      "sha256": "06c9b93351de6235ae61536b0be6e9616a8c1cf6ea55e0501b33ec178785af7f",
+      "bytes": 13882
+    },
+    {
+      "path": "harnessix/product_config/git_material_process.py",
+      "sha256": "456df2628ffcda82c4dfbcff585a95be54a64fdf00ad62bf1ee020fbd638afce",
+      "bytes": 18994
+    },
+    {
+      "path": "harnessix/product_config/git_parent_contracts.py",
+      "sha256": "be7968a5ca4afed2066aa88c5aed4c5304394070da3f123b75bc45d7f5f34da5",
+      "bytes": 1128
+    },
+    {
+      "path": "harnessix/product_config/git_prefix_catalog.py",
+      "sha256": "faefef029c1903fa97785ff08b4e7d84cc0fd2c9564e6bab212ebd414422233e",
+      "bytes": 3846
+    },
+    {
+      "path": "harnessix/product_config/git_prefix_reader.py",
+      "sha256": "b64589b752a0ac9c3e69f984991d356b6254512fc1a08364cbaf31d5dd98f91f",
+      "bytes": 4092
+    },
+    {
+      "path": "harnessix/product_config/git_prefix_records.py",
+      "sha256": "f2e2a257cf80a2bdc467c08117bc3e5a7173314af985fcff258ae2d0c43c8244",
+      "bytes": 6092
+    },
+    {
+      "path": "harnessix/product_config/git_prefix_rows.py",
+      "sha256": "6931e0c29be6f21e12676bf7d27b5c314cd75c6fc2d14abd7644ee35425d363e",
+      "bytes": 4755
+    },
+    {
+      "path": "harnessix/product_config/git_prefix_sql.py",
+      "sha256": "36e8c828d74d62df52a9f937e95d6c97410a14f211303a54fe13c7f2f08440e5",
+      "bytes": 5874
+    },
+    {
+      "path": "harnessix/product_config/git_prefix_writer.py",
+      "sha256": "23c3cda93d0320e40138f6a272ff7d15c227f345df3b5e8e55df1baa78d8882d",
+      "bytes": 13684
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_approval_history.py",
+      "sha256": "167e0f7c970e1d4cedb22ea44f23edf99a29ea911e7d9f30c173c412d4f1181a",
+      "bytes": 6756
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_link_connection.py",
+      "sha256": "12f3568796ecfccd1881b8ac9b6c0759f069c094d0255aeea957ec6bb2b354c2",
+      "bytes": 5607
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_link_contracts.py",
+      "sha256": "b9e43677bc56637954ca9fb548309214e34c6194f02145b4f022f26d9c349fbe",
+      "bytes": 3514
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_link_ledger.py",
+      "sha256": "599fe1aead3c65aa7c1f98be550971a944b6c24b5ac8f6bacc546baa4f07b98b",
+      "bytes": 12189
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_link_observation.py",
+      "sha256": "49c9c9776bf43423dc6e046a8910606706215b19ed08e5d794aa1651419b6c21",
+      "bytes": 5517
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_link_proof.py",
+      "sha256": "3e306b543c7428cba866361a8da82d83c828b9918c803106312e5eed84d58b77",
+      "bytes": 12385
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_link_rows.py",
+      "sha256": "5cba4a6fbff543feaccb6922332a7330c0b4c52ba83c1baa91b3807bb160e335",
+      "bytes": 3820
+    },
+    {
+      "path": "harnessix/product_config/git_prepared_link_wire.py",
+      "sha256": "b4c21ebf7ba52273de315d6464a2b74505af416e8aa3ca6daa2fff533718eb06",
+      "bytes": 2972
+    },
+    {
+      "path": "harnessix/product_config/git_process_host.py",
+      "sha256": "753399d87d07e674326ece6792c561c57f7a0e5cac5d095f3fb79c064c3267ca",
+      "bytes": 6981
+    },
+    {
+      "path": "harnessix/product_config/git_repository_observation.py",
+      "sha256": "3c3d8e00bf18df74b9a5b89a273d419d45bd1b966a69eda773aa2a39e11ffc0a",
+      "bytes": 4926
+    },
+    {
+      "path": "harnessix/product_config/git_user_authority.py",
+      "sha256": "a9b148add738fb62bfa1f8262596d4db033567e6fc1deb6b9890925736f06557",
+      "bytes": 4056
+    },
+    {
+      "path": "harnessix/product_config/git_user_observation.py",
+      "sha256": "0b7a44bd5e6e9480bbb60cfa8eea4cb740a34a9a1728eb97a18e599e093439d0",
+      "bytes": 22378
+    },
+    {
+      "path": "harnessix/product_config/git_user_observation_contracts.py",
+      "sha256": "4005afa12bca664e7b5d2c2ff55e950d9da59c91ab3aedf2ff7a7a87ca46737f",
+      "bytes": 2273
+    },
+    {
+      "path": "harnessix/product_config/git_user_observation_paths.py",
+      "sha256": "e427d22834f382e711ae515ca624a7fa9219abf15ad64d228da95ed2b899e4c5",
+      "bytes": 5971
+    },
+    {
+      "path": "harnessix/product_config/migration.py",
+      "sha256": "cde4059c58504064c19d05d79a5a98ab18a684b47ad5046aa2911d0b7df51ce5",
+      "bytes": 7661
+    },
+    {
+      "path": "harnessix/product_config/preflight.py",
+      "sha256": "15ce86026b8210a79119e6e095ced7255b3d1369178974ad07a372ca145aaa9f",
+      "bytes": 4030
+    },
+    {
+      "path": "harnessix/product_config/preflight_actions.py",
+      "sha256": "01c58dc29b3370d214a89fc66d82f9c42ba9af049ca3c58ba49564ec88a4fb59",
+      "bytes": 5644
+    },
+    {
+      "path": "harnessix/product_config/preflight_configuration.py",
+      "sha256": "75f672bda23e23ca7c660e43d4a1091906138782831daa6574af41cf3b047914",
+      "bytes": 7823
+    },
+    {
+      "path": "harnessix/product_config/preflight_environment.py",
+      "sha256": "14ea00d17c18852a8565b3dcb8647e78a764a65c3d041cda941478fd4cb4e835",
+      "bytes": 9709
+    },
+    {
+      "path": "harnessix/product_config/preflight_support.py",
+      "sha256": "97f1733b978127f8363554709364002b4e5b08ad4db492b42901f6b5905b1885",
+      "bytes": 2503
+    },
+    {
+      "path": "harnessix/product_config/process_action.py",
+      "sha256": "325bfe95bb27a7b6819d12c70bf0ed735c4a26303fe08a3767ba9d2ad8d50d94",
+      "bytes": 22170
+    },
+    {
+      "path": "harnessix/product_config/process_profile.py",
+      "sha256": "98e7a71c9c5edac6d77b64ddafe91972102906c0241695363cb2c0b32f59abde",
+      "bytes": 12076
+    },
+    {
+      "path": "harnessix/product_config/product_contracts.py",
+      "sha256": "6fbb0e84f363d09abd76ee68ff1f5d54dfa5da9a8ad6bb9d8c82ad6150cc531c",
+      "bytes": 6483
+    },
+    {
+      "path": "harnessix/product_config/runtime.py",
+      "sha256": "77a763699c0d5d38bedfc03b51712b606be0e63c692bbe223273aae35b4efb5c",
+      "bytes": 16369
+    },
+    {
+      "path": "harnessix/product_config/server.py",
+      "sha256": "b19e49d52d9022490859ff9a284656fb5a78b132d6358101ec435a5cca1015b3",
+      "bytes": 17953
+    },
+    {
+      "path": "harnessix/product_config/session_key.py",
+      "sha256": "e9a6e21fd37cf55f9490d808ff90fd5ecf67ef19116c03f2abf2b9dd69ee60b5",
+      "bytes": 1971
+    },
+    {
+      "path": "harnessix/product_config/session_key_codec.py",
+      "sha256": "c5872bbd840e1c395731368eec470947195292d992080f99fdf118bfa310770e",
+      "bytes": 1169
+    },
+    {
+      "path": "harnessix/product_config/session_key_dpapi.py",
+      "sha256": "f5dae58b3d064892a4cd679abd0eda3cefac777ff45c8d222d9f33a09d6a8470",
+      "bytes": 2472
+    },
+    {
+      "path": "harnessix/product_config/session_key_posix.py",
+      "sha256": "5097175c963ce88b2198644a6dc0eba90fdabf0b50b683ed53268a9b6d8f3f9b",
+      "bytes": 7665
+    },
+    {
+      "path": "harnessix/product_config/session_key_store.py",
+      "sha256": "d21c7dbec0ff2ecc5c3436153cb6c0264985bcfe95cd97a21b2d2bdc76f25638",
+      "bytes": 925
+    },
+    {
+      "path": "harnessix/product_config/session_key_windows.py",
+      "sha256": "bb4eb8714a48687a5da02d852088b6bce405682f4e14be3baf01f9033ad8a7aa",
+      "bytes": 3646
+    },
+    {
+      "path": "harnessix/product_config/session_key_windows_files.py",
+      "sha256": "ee96eb6abccf0e12d7b72b2cbeb1c149f1470e70489b1b263d200c4864af7049",
+      "bytes": 7265
+    },
+    {
+      "path": "harnessix/product_config/session_key_windows_security.py",
+      "sha256": "29cc8b53ccb14954c07ec966d6e83108bb2265ad9c544b012adca37cdafa92fe",
+      "bytes": 980
+    },
+    {
+      "path": "harnessix/product_config/state_backup.py",
+      "sha256": "9c353f024f235da324e84bac0a0f6182caac05c7a4bb01688a49cea3c460da66",
+      "bytes": 17074
+    },
+    {
+      "path": "harnessix/product_config/state_backup_cli.py",
+      "sha256": "fcfef97811ccf96072a30e515448f0f3ede50160bc7cd7b31c9117c9cd2f1d7a",
+      "bytes": 4233
+    },
+    {
+      "path": "harnessix/product_config/state_backup_contracts.py",
+      "sha256": "7c87ea6b0dd71965d459040981f1a712f3d84aa56cd874402e438b706971832a",
+      "bytes": 4311
+    },
+    {
+      "path": "harnessix/product_config/state_backup_files.py",
+      "sha256": "b89da20ddbc5a067a0799314318cbe2dac079d2a024ec04b6f5ae8d62fe4f3d8",
+      "bytes": 18539
+    },
+    {
+      "path": "harnessix/product_config/state_backup_records.py",
+      "sha256": "e10627cf5f092e93282862d39ded7a6a6a5e2d180386edc5c179d753c155bcf1",
+      "bytes": 13704
+    },
+    {
+      "path": "harnessix/product_config/state_backup_validation.py",
+      "sha256": "32046c2daaa7c90e9e49fe694370c79742e1bbda67b4324af0f8df7e054a8edb",
+      "bytes": 9603
+    },
+    {
+      "path": "harnessix/product_config/state_backup_windows.py",
+      "sha256": "42b1d33fbef2eec68c1c5192d9e8306a6b92062ada67b7c456e489f9a865cf7e",
+      "bytes": 2435
+    },
+    {
+      "path": "harnessix/product_config/state_owner.py",
+      "sha256": "11f31507ae14fdfad6d5cc9ddacbf8ead84272884fa765fd87a0a6f13145b423",
+      "bytes": 6467
+    },
+    {
+      "path": "harnessix/product_config/state_owner_posix.py",
+      "sha256": "ea854387a14f57524982e89e4bd9db62618535b0f85a00a5a900059a5ac72341",
+      "bytes": 2482
+    },
+    {
+      "path": "harnessix/product_config/state_owner_windows.py",
+      "sha256": "45abe5c7b16092abe449e8cd6cb941d37cf69b1d9479735fe88bdcb49855f183",
+      "bytes": 2913
+    },
+    {
+      "path": "harnessix/product_config/state_restore.py",
+      "sha256": "28315bcc167e4c94aa94fe80898f10c0cbfda500bc2210673ad5fa13b8813ec5",
+      "bytes": 5387
+    },
+    {
+      "path": "harnessix/product_config/state_restore_contracts.py",
+      "sha256": "324fcf1a9fa104a154773e705a25c70cbee0f9cfb6181eb286d0b0fd12ea80c6",
+      "bytes": 3123
+    },
+    {
+      "path": "harnessix/product_config/state_restore_flow.py",
+      "sha256": "93a9b68a457a2f43ceee888da005111ed620323d2d92318b216fd865e8415f0f",
+      "bytes": 6835
+    },
+    {
+      "path": "harnessix/product_config/state_restore_journal.py",
+      "sha256": "b1be62fac6417e58f29f58e8567b99da6c9b1202ff6cf56ed16f67b66aa0692d",
+      "bytes": 7090
+    },
+    {
+      "path": "harnessix/product_config/state_restore_prepare.py",
+      "sha256": "3eb1c98fc057d4068996f988fc2546dab94a3ca0a24a720b464f8a247b917bb3",
+      "bytes": 5444
+    },
+    {
+      "path": "harnessix/product_config/store.py",
+      "sha256": "51066b9fd80abbcbd9bf113ba61f018d2690e5064019ecc65e6d25bfdd5bcd4a",
+      "bytes": 20945
+    },
+    {
+      "path": "harnessix/product_config/wizard.py",
+      "sha256": "9eac21c69aef71f2106aa7de39a25f063d7f1e7e7457e53f75b0731a25987632",
+      "bytes": 12277
+    },
+    {
+      "path": "harnessix/product_config/workspace_patch_review.py",
+      "sha256": "7f385f8e1c1e6bf798e92b01af569bec0c4913f592210aeb9f0fae12076eb713",
+      "bytes": 4414
+    },
+    {
+      "path": "harnessix/product_config/workspace_patch_source.py",
+      "sha256": "6558070bc0dc01345f8f99df70b739ba62aebc54b9afd1b5887b82504dc52d1e",
+      "bytes": 4798
+    },
+    {
+      "path": "harnessix/product_config/workspace_patch_source_contracts.py",
+      "sha256": "f0321bd64d9ee99955761404c45fc1b4bafda6598019a7e505cc4c0e109d547b",
+      "bytes": 3279
+    },
+    {
+      "path": "harnessix/product_config/workspace_rollback.py",
+      "sha256": "8a5175674df6254782c0821dd6f7bc0af067dfd516abdc91b9862a8f4538a341",
+      "bytes": 3440
+    },
+    {
+      "path": "harnessix/product_ui/__init__.py",
+      "sha256": "508ae8d70e556463cbc465026569f95a7988db3d6ac11acd8d67c4b9b7e1c197",
+      "bytes": 3053
+    },
+    {
+      "path": "harnessix/product_ui/app.py",
+      "sha256": "d5aa73b249158b1df3c1a0950e3b9eacd45664942b95ccfe0a05c79d58f95169",
+      "bytes": 7888
+    },
+    {
+      "path": "harnessix/product_ui/cli.py",
+      "sha256": "df08019378a0d8188eb3bb404ebecbfcfea091bab05218ee2f64512a6bd54219",
+      "bytes": 14823
+    },
+    {
+      "path": "harnessix/product_ui/contracts.py",
+      "sha256": "720f35b6c56d075fb26fd8cd5d91626836173a5b20e030427b578c944ea0ab0c",
+      "bytes": 4921
+    },
+    {
+      "path": "harnessix/product_ui/controller.py",
+      "sha256": "10a0f5314e3baef39a92964594be57bc80122ad1fc42e5770ba91865652a69d4",
+      "bytes": 21031
+    },
+    {
+      "path": "harnessix/product_ui/error_help.py",
+      "sha256": "9898ed347f236a971b9f4ad867483c63d3b94019209e32f870fce5f06b340454",
+      "bytes": 5398
+    },
+    {
+      "path": "harnessix/product_ui/errors.py",
+      "sha256": "7315b639a1d5ee36ca47078be199851feef07baff1cb812f97185145eca18854",
+      "bytes": 415
+    },
+    {
+      "path": "harnessix/product_ui/interaction_presenter.py",
+      "sha256": "f88e297dc6a47254f2f5651a24c93b057191b356d49db5510fcf063ddc0ca3ea",
+      "bytes": 3238
+    },
+    {
+      "path": "harnessix/product_ui/interaction_screens.py",
+      "sha256": "773f63a020556eb42a72ebf3af20998b9cf72875340f5a6188f0757e54b46195",
+      "bytes": 10066
+    },
+    {
+      "path": "harnessix/product_ui/interaction_service.py",
+      "sha256": "e0d46b39b9d5fa33b4cebd365d8893b3339c04c9b2c6c7508468389f33404a6c",
+      "bytes": 11466
+    },
+    {
+      "path": "harnessix/product_ui/interactions.py",
+      "sha256": "fd776e23f9647e7ef784c1f9bff64236028c3cc8da4fd121677ee3d59be9d771",
+      "bytes": 11514
+    },
+    {
+      "path": "harnessix/product_ui/main_view.py",
+      "sha256": "f93dc0472be69456e73d8b606a761ce57b481abd7956b44d7eeae45efed50eac",
+      "bytes": 5091
+    },
+    {
+      "path": "harnessix/product_ui/projection.py",
+      "sha256": "b8b5648af1f3b55b2d9ac836095682c56e814c643431894ff8baa3b4ee60914c",
+      "bytes": 10106
+    },
+    {
+      "path": "harnessix/product_ui/rendering.py",
+      "sha256": "fa2f9efd1a312ad5350c653fb02ec39045b84e8d11832b757a0dac96654b2b83",
+      "bytes": 4581
+    },
+    {
+      "path": "harnessix/product_ui/session.py",
+      "sha256": "1cdf5f44e1a05fc64a80a9c2961801491b2ad0e10e5108dbba067d0167354fa3",
+      "bytes": 13805
+    },
+    {
+      "path": "harnessix/product_ui/state_file.py",
+      "sha256": "db0dddfc503eba269d17d622b7cf262618629e74dbc9c9f4fa5d90a2fe0be82c",
+      "bytes": 8211
+    },
+    {
+      "path": "harnessix/product_ui/state_store.py",
+      "sha256": "e1f13d301b26bd37986eb9884594b288578c9acd41f2b94ed3cdf1df006d8406",
+      "bytes": 6839
+    },
+    {
+      "path": "harnessix/protocol/__init__.py",
+      "sha256": "23b9c35bae5e30a4f4d4e3b8a1d25aa18c609df647c2778733b10b582b06112a",
+      "bytes": 2302
+    },
+    {
+      "path": "harnessix/protocol/artifact_limits.py",
+      "sha256": "03f7649f8c19888620a241b1c2d2bcce132dcd630824891dc0a7d5d25e640bbc",
+      "bytes": 408
+    },
+    {
+      "path": "harnessix/protocol/codec.py",
+      "sha256": "c967bc8491d6602948f5b8ea1f0bf0970a710a1ce7dc5a5c370179465e9ca037",
+      "bytes": 3257
+    },
+    {
+      "path": "harnessix/protocol/compatibility.py",
+      "sha256": "0e779ed96c32e5a7bbd3aa355ceab0ed93487f81e395efb4046b7d367799be1c",
+      "bytes": 853
+    },
+    {
+      "path": "harnessix/protocol/contracts.py",
+      "sha256": "a5d95ecce639380867c7f090d88edab1288558aada7edeff832096436b2be48b",
+      "bytes": 20024
+    },
+    {
+      "path": "harnessix/protocol/projection.py",
+      "sha256": "f4c4404c9a04e333e9f005663e38fe1054732b8e27d57f6ebd1b0b9f0377ea96",
+      "bytes": 11252
+    },
+    {
+      "path": "harnessix/protocol/requests.py",
+      "sha256": "c7b25a2fdc09a83b6cb5ee21489e89e24a25375c6e716078c562b51d93f99e4e",
+      "bytes": 10142
+    },
+    {
+      "path": "harnessix/sandbox/__init__.py",
+      "sha256": "25ca8cdee4486b594cc804edd9b8da90a50cafb91a6c01c77e223452329ba465",
+      "bytes": 59
+    },
+    {
+      "path": "harnessix/sandbox/capabilities.py",
+      "sha256": "8dd78b629499768a11e49a6e23c0cd9285a7e60af530ad84497c9b892ea2dd11",
+      "bytes": 12727
+    },
+    {
+      "path": "harnessix/sandbox/container.py",
+      "sha256": "5277097726ea3159947b6647b8fbb57a9f82ff9db2aaf50e1690a5679f01a120",
+      "bytes": 20244
+    },
+    {
+      "path": "harnessix/sandbox/contracts.py",
+      "sha256": "ee4075692a2b6de99c3ad9e1cd6661329387d6c1a416f63d69b1bd2ca45bb926",
+      "bytes": 9883
+    },
+    {
+      "path": "harnessix/sandbox/egress.py",
+      "sha256": "50c766fea5ffe0f93a5393e21284006e91db6b7bd6860a387132bd1ef60ceb09",
+      "bytes": 12172
+    },
+    {
+      "path": "harnessix/sandbox/network.py",
+      "sha256": "1aab472ec24413adf4ad3295d53a334bef78f9c3e80dd3181107c0a659fed411",
+      "bytes": 5754
+    },
+    {
+      "path": "harnessix/sandbox/network_isolation.py",
+      "sha256": "64c710e8c883454bfebe9f0b39f9b7a7a57ff59804f98102632cd0c7ae68d287",
+      "bytes": 2943
+    },
+    {
+      "path": "harnessix/sandbox/planner.py",
+      "sha256": "d17d391bab6219d034f501beb97a9d50cc2f68fc45e2c37a8ffcc4686168a80d",
+      "bytes": 3121
+    },
+    {
+      "path": "harnessix/sandbox/process_runtime.py",
+      "sha256": "36c5c0b6be6d29c098145cb1b146860dd9d061b19e3f6da50029fa8e1a2d7c93",
+      "bytes": 9751
+    },
+    {
+      "path": "harnessix/sandbox/store.py",
+      "sha256": "2bbcef29d4b2d3b70d0888069526780c7815e5134927e31c5c25e57fb030f928",
+      "bytes": 4118
+    },
+    {
+      "path": "harnessix/sdk/__init__.py",
+      "sha256": "f17e6d1573279b8bdc7de95468ba52f7a094f8640c4ba38438ee438ec0e98257",
+      "bytes": 377
+    },
+    {
+      "path": "harnessix/sdk/agent_client.py",
+      "sha256": "4d0bd8848bc367507165d967a36a19cc2a6cdb96a0c912ae188e1f7e909c356c",
+      "bytes": 12762
+    },
+    {
+      "path": "harnessix/sdk/errors.py",
+      "sha256": "fd7aee5ffe0e69f2e99cf9ea5530d0195a8f1beff0ef3c43459c160112557291",
+      "bytes": 649
+    },
+    {
+      "path": "harnessix/sdk/request.py",
+      "sha256": "0f1b6a062de382ef87cd673d4d6f301a6bd3ecebec6c55ea920fa4569e3bdda6",
+      "bytes": 2620
+    },
+    {
+      "path": "harnessix/sdk/response.py",
+      "sha256": "c586dad87eb586b9a1adb1718a12f8066d5d33c4b6bea0d8f662f61f1221b4a3",
+      "bytes": 4331
+    },
+    {
+      "path": "harnessix/sdk/subprocess.py",
+      "sha256": "2d976f579f5a40322a237534d44a7b8a0cc2189bc834c0aac5128702bb0931d7",
+      "bytes": 14248
+    },
+    {
+      "path": "harnessix/secrets/__init__.py",
+      "sha256": "ee8a2e70e973c49c8cc354fce85b93ea1707210d73b16a03d0407832a0c79642",
+      "bytes": 61
+    },
+    {
+      "path": "harnessix/secrets/guard.py",
+      "sha256": "23d9f721607eb06f770f3256fce7feb0b3d7385c563fb6d4d32ebbacd5772125",
+      "bytes": 3095
+    },
+    {
+      "path": "harnessix/secrets/provider.py",
+      "sha256": "bbe17b6ec72d53928a2cded0ddeffd74393763bc403a19e3d8d1d53a8136a51b",
+      "bytes": 5822
+    },
+    {
+      "path": "harnessix/secrets/publication.py",
+      "sha256": "effc5de4380bfa4193f786512842782b332d430312eeec0410c4ed366e8a628b",
+      "bytes": 13428
+    },
+    {
+      "path": "harnessix/secrets/redaction.py",
+      "sha256": "eec9dc685b94300e9b21120c36eaec3bb031e20211e0d6d51c4e1d22c5a01551",
+      "bytes": 3367
+    },
+    {
+      "path": "harnessix/secrets/text_publication.py",
+      "sha256": "bf592be93381cba561166880e9fb56d12929459615aa9e3a3aab722cff5ff03b",
+      "bytes": 3024
+    },
+    {
+      "path": "harnessix/session/__init__.py",
+      "sha256": "71e6d34df3280901a319ad380c962c57c97b722de351c5e3aca6af809bacec8b",
+      "bytes": 57
+    },
+    {
+      "path": "harnessix/session/capacity.py",
+      "sha256": "3a8da2cecae7a84393be171e715d890c19dd3762553b32e341c65f8d42f0e888",
+      "bytes": 10995
+    },
+    {
+      "path": "harnessix/session/errors.py",
+      "sha256": "c8515c11a04501542f969f99b31122c7c30cd317c2a2e7a4ae1b0430d36d5c09",
+      "bytes": 1306
+    },
+    {
+      "path": "harnessix/session/git_prefix_contracts.py",
+      "sha256": "dd7063beb13799f6d76fc4f58a236727875aee232147fad5d3d18e08377e52a5",
+      "bytes": 3538
+    },
+    {
+      "path": "harnessix/session/git_prefix_publication.py",
+      "sha256": "8fe909946fdb8dd6e18231338944af433b2616dc06248416e16e4da9e56ada9e",
+      "bytes": 3673
+    },
+    {
+      "path": "harnessix/session/git_publication_contracts.py",
+      "sha256": "2281750683d21467ba9dc0b7d9e347f839a9ff5c1dfb168f2a28e7baab3da8c4",
+      "bytes": 3279
+    },
+    {
+      "path": "harnessix/session/maintenance.py",
+      "sha256": "db44426e359a0a5edb5cb6b4d1801de787554b76106f0be4a3b1065592698548",
+      "bytes": 9262
+    },
+    {
+      "path": "harnessix/session/maintenance_backup.py",
+      "sha256": "dcecafa3bcdbacd889e7903918d73f73b91d1b2c6b04538f0405f06db1b3626e",
+      "bytes": 8512
+    },
+    {
+      "path": "harnessix/session/maintenance_contracts.py",
+      "sha256": "cba984bd21bbc229a64b08dce14e9e7dc841bc67ff4a1017e35618b6c3c865f3",
+      "bytes": 5852
+    },
+    {
+      "path": "harnessix/session/maintenance_execution.py",
+      "sha256": "64fa8bd1a7dc64fae9d1ed36e43053ae5fc8118d31474ba191af39ba40764502",
+      "bytes": 7932
+    },
+    {
+      "path": "harnessix/session/maintenance_io.py",
+      "sha256": "713fc4a451f8fe76762e1e6542eed870e163b82a605b17686206f18861900b46",
+      "bytes": 2344
+    },
+    {
+      "path": "harnessix/session/maintenance_planning.py",
+      "sha256": "adacc249c3097e31026813ebc8f4a10f034b87d2c5c8f64d3f014bbed26a9342",
+      "bytes": 7303
+    },
+    {
+      "path": "harnessix/session/maintenance_records.py",
+      "sha256": "66cc0f1d4f35d0688183d5cd73c098c0c6c4c7dc6125b0717ab9a40393244116",
+      "bytes": 7895
+    },
+    {
+      "path": "harnessix/session/maintenance_restore.py",
+      "sha256": "b6c109ed3be01c6772b7e7984e12da53eb71a7fd45ce0d2f6c5bf023758858f4",
+      "bytes": 2866
+    },
+    {
+      "path": "harnessix/session/migrations/0001_initial.sql",
+      "sha256": "f511dc6c2c86db4995b8a68b7812d8e6072aa82a1f19b0a559e0975a9e7d2c95",
+      "bytes": 398
+    },
+    {
+      "path": "harnessix/session/migrations/0002_projection_version.sql",
+      "sha256": "043a8da8a557c8eaf18562d0e1679eb7fb56d1203b54cf866fb4d6684e6a0a33",
+      "bytes": 116
+    },
+    {
+      "path": "harnessix/session/migrations/0003_semantic_contract.sql",
+      "sha256": "3c9b395782a2fc000382dd6cdfb2f215c9b04b96b7d0b2a0ab06657af9813b04",
+      "bytes": 100
+    },
+    {
+      "path": "harnessix/session/migrations/0004_model_attempts.sql",
+      "sha256": "301f45039593a6a75237ee1c5e7a0185a71d3603cac589b7b815af1410bfc04d",
+      "bytes": 97
+    },
+    {
+      "path": "harnessix/session/migrations/0005_response_billing.sql",
+      "sha256": "1ef506e410816cb889d50957c7860a0907635d473d790ebcc632a959d4fd8a85",
+      "bytes": 97
+    },
+    {
+      "path": "harnessix/session/migrations/0006_artifacts.sql",
+      "sha256": "b9189c639e65e67c93b0bfc5e8158ef4acf9b3392da2435d781aa36f97b431a0",
+      "bytes": 768
+    },
+    {
+      "path": "harnessix/session/migrations/0007_managed_patch.sql",
+      "sha256": "251f0b9b7c87413cab9488cd751541eead40d3a5d76279e9095ebd61fd57b847",
+      "bytes": 195
+    },
+    {
+      "path": "harnessix/session/migrations/0008_managed_patch_batch.sql",
+      "sha256": "a6b6733ad430adf1bc2a41b69492d6376b551278ff75b2ac6c1dc95c2443c6ca",
+      "bytes": 201
+    },
+    {
+      "path": "harnessix/session/migrations/0009_batch_diff_artifacts.sql",
+      "sha256": "67f19391a613b5525a5404732cc2a2429337fb8a8c5ae10f035c4ee98c5227a7",
+      "bytes": 1171
+    },
+    {
+      "path": "harnessix/session/migrations/0010_agent_process_projection.sql",
+      "sha256": "fbcda6a8f05001fb1834aae2c75ed8e96d052632c8627777b62dabd5edb5b3fa",
+      "bytes": 104
+    },
+    {
+      "path": "harnessix/session/migrations/0011_process_output_artifacts.sql",
+      "sha256": "12295e83c718c367ae0da730ea39395663728752d33cc24b620d3ee5c70104e2",
+      "bytes": 1175
+    },
+    {
+      "path": "harnessix/session/migrations/0012_context_inspection.sql",
+      "sha256": "bb8961f08bc15171001340df72140984aec2889b279243c08be34ef4ae04f918",
+      "bytes": 120
+    },
+    {
+      "path": "harnessix/session/migrations/0013_context_sources.sql",
+      "sha256": "e1e5af67ccd809c8587b24ae962c22bf9eb18b2eb81ae13617fc1f74395c8b09",
+      "bytes": 117
+    },
+    {
+      "path": "harnessix/session/migrations/0014_context_source_consistency.sql",
+      "sha256": "42d2530f4bc718c3cfea3ede22c220d04e7aafb0990e2404039cde87ed8a6157",
+      "bytes": 105
+    },
+    {
+      "path": "harnessix/session/migrations/0015_tool_result_model_view.sql",
+      "sha256": "304f1bf9e5c0170a9a3703c11d655ef8aae98438884ab80d2e4f098b6db22835",
+      "bytes": 119
+    },
+    {
+      "path": "harnessix/session/migrations/0016_compaction_attempt_ledger.sql",
+      "sha256": "5a1babc80cc700c9f372d61ecdcb4457ed6b9552267bcc24fe61b1cddd1f9fbb",
+      "bytes": 108
+    },
+    {
+      "path": "harnessix/session/migrations/0017_compaction_window.sql",
+      "sha256": "d6bdd00f06924d02580129a96e785e000e75e748d0195b64345cefb317b19b02",
+      "bytes": 103
+    },
+    {
+      "path": "harnessix/session/migrations/0018_thread_lifecycle.sql",
+      "sha256": "4cbe8c146e4ed71f021e9be45b63da3b5b691115307412dd61e4ffcb277a2f9c",
+      "bytes": 112
+    },
+    {
+      "path": "harnessix/session/migrations/0019_turn_retry.sql",
+      "sha256": "926e3bbb1ee98971815166b9737032b8bc63ace9d6fb84bc887380606d654c7a",
+      "bytes": 91
+    },
+    {
+      "path": "harnessix/session/migrations/0020_protocol_requests.sql",
+      "sha256": "a431bc67ae1ee6d41e615f338af94c17021042e335c147ef520757ec289c6a1b",
+      "bytes": 602
+    },
+    {
+      "path": "harnessix/session/migrations/0021_deferred_turn_execution.sql",
+      "sha256": "2f9b2447235b7aa22cf5860a1d1765f84a437de6037392f663fd56ee4687bf82",
+      "bytes": 91
+    },
+    {
+      "path": "harnessix/session/migrations/0022_interactive_turns.sql",
+      "sha256": "63e4fa0983de87e2d6bc5c8e4a5bbc126c6de6351c0abec99aacacacc808a0b1",
+      "bytes": 104
+    },
+    {
+      "path": "harnessix/session/migrations/0023_trusted_action_gateway.sql",
+      "sha256": "e84af4b8debbe614e134822e3c2c59d3809c5e80e257dc1baae1c6a8a6fd8a42",
+      "bytes": 122
+    },
+    {
+      "path": "harnessix/session/migrations/0024_trusted_action_review_artifacts.sql",
+      "sha256": "e27386cbfd7e1d4d9fd0f20eb01e893b4d11be0ed398e859a0a4017e97618a46",
+      "bytes": 1235
+    },
+    {
+      "path": "harnessix/session/migrations/0025_trusted_action_output_artifacts.sql",
+      "sha256": "29c9b787d35c9cf9c339b99195e3c751f652c18af12ac748d13f84b2b43fbdfa",
+      "bytes": 1261
+    },
+    {
+      "path": "harnessix/session/migrations/0026_store_maintenance.sql",
+      "sha256": "1ebdbb4cdc20d69c9ea4be5ce8073ae0d64776f36ae6f6ee5b197a743ffa4b35",
+      "bytes": 1577
+    },
+    {
+      "path": "harnessix/session/migrations/0027_thread_list_lookup.sql",
+      "sha256": "893108bb74049829535e5b31629a826c23966d0b34558a75b016e5ff8ee0eefb",
+      "bytes": 152
+    },
+    {
+      "path": "harnessix/session/migrations/0028_artifact_publication_proof.sql",
+      "sha256": "d5dc14568d8ba6dfdcc94a060a17fc5b9c6929d12cba33a562a8ccd5d25d0098",
+      "bytes": 542
+    },
+    {
+      "path": "harnessix/session/migrations/0029_authenticated_session_history.sql",
+      "sha256": "4aab60066b1bde339ac5964f51b21a5bfa56469f57d2fff99dadf665b193fe2e",
+      "bytes": 694
+    },
+    {
+      "path": "harnessix/session/migrations/0030_authenticated_artifact_body.sql",
+      "sha256": "49cfb3045930284211e88d1f3210ecf6a54d686d8bae43e822c8d7375d5075eb",
+      "bytes": 265
+    },
+    {
+      "path": "harnessix/session/migrations/__init__.py",
+      "sha256": "c77d78e621748d4cede5d05688a412d8bd83f33ad6388aa2207509566ee9f893",
+      "bytes": 42
+    },
+    {
+      "path": "harnessix/session/ports.py",
+      "sha256": "a179bff37fc3e743f42e1446a78e9fd839385776fc2d9f29c40208f0b1af58ce",
+      "bytes": 1291
+    },
+    {
+      "path": "harnessix/session/publication_seal.py",
+      "sha256": "0e11b4d93037d6a7ebe7d9e51f05c0e44ab750da10aa4340f24d63a003c2ba36",
+      "bytes": 9005
+    },
+    {
+      "path": "harnessix/session/sqlite.py",
+      "sha256": "11e7ee0479689800ada3baa13be396b16972a87524a1bb340d15cd5a5ea46fc2",
+      "bytes": 26094
+    },
+    {
+      "path": "harnessix/session/sqlite_append.py",
+      "sha256": "17fc0d9c6e3b2e685c2a7a94fe8cdf977c0fa8fd35cf020bfc437b37f803851d",
+      "bytes": 3822
+    },
+    {
+      "path": "harnessix/session/sqlite_history.py",
+      "sha256": "da59aa54153c347fa7be5cf8d805b7c4bbb9be71ad83a041dbc70aefc91f8d36",
+      "bytes": 6108
+    },
+    {
+      "path": "harnessix/session/sqlite_publication.py",
+      "sha256": "747e52c39c039220e35721961eb7f578f65dd224c1931d4cd19b51adaf4098e6",
+      "bytes": 10124
+    },
+    {
+      "path": "harnessix/session/store_publication.py",
+      "sha256": "ca7d1a96b18c4b974a34697084a38302f9aca2a86ba1394678273ce526353c87",
+      "bytes": 14009
+    },
+    {
+      "path": "harnessix/skills/__init__.py",
+      "sha256": "88b7d6150b6f291237b5466199f23820972362c08df8aaee0316630895f58022",
+      "bytes": 1096
+    },
+    {
+      "path": "harnessix/skills/actions.py",
+      "sha256": "fd7e9360adff8db21f3263f32f4b98565f27f5c484f282440335b135ab0d8aa4",
+      "bytes": 8370
+    },
+    {
+      "path": "harnessix/skills/contracts.py",
+      "sha256": "29285d4ab346902151d7e7f99df8899a3dbb63ba7739be89bf981b0c4ff3ef49",
+      "bytes": 9862
+    },
+    {
+      "path": "harnessix/skills/runtime.py",
+      "sha256": "543e68b7f307d63fab3f5f04ca4bb5280a8bec3fcba42e3cefd5f5c8854837a0",
+      "bytes": 28518
+    },
+    {
+      "path": "harnessix/skills/store.py",
+      "sha256": "9e9d37475c0209c61cc066559675ec177415fa92bf2e17d39b05b45d2ecd8b33",
+      "bytes": 10823
+    },
+    {
+      "path": "harnessix/smoke/__init__.py",
+      "sha256": "4da4c1a1f67c9fec4949bb562bd9b549f5cf1c9de2c276479edf563e5c77c8d7",
+      "bytes": 78
+    },
+    {
+      "path": "harnessix/smoke/cli.py",
+      "sha256": "c1106a5f301be63d5fca96b001d8c9b7706f139ced117dd44d15032f9250a534",
+      "bytes": 2720
+    },
+    {
+      "path": "harnessix/smoke/contracts.py",
+      "sha256": "dbe422cc7c65059231010bd4b4e2350ea6921f1eeec792f23c993161bf92ea79",
+      "bytes": 5217
+    },
+    {
+      "path": "harnessix/smoke/runner.py",
+      "sha256": "4bc6728814360c7184177acd4254817da81410997619b4c3b1e091ffa1d43e38",
+      "bytes": 9440
+    },
+    {
+      "path": "harnessix/sqlite_readonly.py",
+      "sha256": "7f22c4f3cfd987b0b0c22c9719f0e3d47103feba619051ddcb1ea9661143862c",
+      "bytes": 631
+    },
+    {
+      "path": "harnessix/tools/__init__.py",
+      "sha256": "44d0b3dc6784d06df36654671e0d1955d9a3f2e04175b8994427e23a55676e66",
+      "bytes": 79
+    },
+    {
+      "path": "harnessix/tools/argument_feedback.py",
+      "sha256": "2ced63b1c8a71edc82431c90654762ef4538d795fa97e1728f84fd0874c747b8",
+      "bytes": 2431
+    },
+    {
+      "path": "harnessix/tools/contracts.py",
+      "sha256": "be40051565e74cbf68f8e6b7831c033ae20a610ffcd1647db2408d24f1dd5118",
+      "bytes": 5048
+    },
+    {
+      "path": "harnessix/tools/files.py",
+      "sha256": "3d215ed005f3653a97af67652a07460010cec81ab6d9306ee4f55a293b05d2c3",
+      "bytes": 7232
+    },
+    {
+      "path": "harnessix/tools/git.py",
+      "sha256": "e3d4c176c0719de4a7ccf2c390e9be0bf4c152c9246c014687137a941624d1bc",
+      "bytes": 17570
+    },
+    {
+      "path": "harnessix/tools/git_contracts.py",
+      "sha256": "cdf4cf141ebb237f96339c09ef778d4e0d98d026e20e477ecc2a8b8fa2f29be6",
+      "bytes": 2798
+    },
+    {
+      "path": "harnessix/tools/patterns.py",
+      "sha256": "c6781864b5b0de522450a5233647a4850cdd5593d15043b1f2e963893e98d3a0",
+      "bytes": 1078
+    },
+    {
+      "path": "harnessix/tools/read_backend.py",
+      "sha256": "7c9a31d5b2137573e4987f8e0c71c3033af9bb2f8ee10b331316499c24724662",
+      "bytes": 2104
+    },
+    {
+      "path": "harnessix/tools/runtime.py",
+      "sha256": "9d324c2016eb1f64b9f47d6e3887942bf9e46736d3245334bbe04ef693f0ffc6",
+      "bytes": 21200
+    },
+    {
+      "path": "harnessix/tools/search.py",
+      "sha256": "54e8917b73e2543eb7777bd0d5ecdf52dcfe1d45b7d713730fb9860ddb67d824",
+      "bytes": 11599
+    },
+    {
+      "path": "harnessix/tools/search_contracts.py",
+      "sha256": "e2e70868352b1bca1a85631d07f97c98327ae77adb8ed5c1970a286d0ddc4e87",
+      "bytes": 4797
+    },
+    {
+      "path": "harnessix/tools/windows_file_read.py",
+      "sha256": "898a9156220f63755297a117cc028b669e2f0fc3648d874f5bc61a02e4b66cbe",
+      "bytes": 5938
+    },
+    {
+      "path": "harnessix/tools/windows_read.py",
+      "sha256": "961a8fd3795726db7f9cfe2c379707cda8cfeb0915fef35e4155b7b59b97e895",
+      "bytes": 3081
+    },
+    {
+      "path": "harnessix/tools/windows_read_port.py",
+      "sha256": "cf70f8e3356d00065b0cee4afa55583485f266aea0f8d1a5c42abad30be16b36",
+      "bytes": 5363
+    },
+    {
+      "path": "harnessix/tools/windows_search.py",
+      "sha256": "5429bdc8faf088e0391f63aba99ab6c4ed882da0dde185a521211cd4e0be46ae",
+      "bytes": 11550
+    },
+    {
+      "path": "harnessix/tools/workspace.py",
+      "sha256": "6507e337b1cbabfd2f332f2f38f7a51b677233f05644d00d89a8325f73e4fd4f",
+      "bytes": 9873
+    },
+    {
+      "path": "harnessix/trusted_actions/__init__.py",
+      "sha256": "f08891541d9a4dcd8ea7413f58e3b55c91bd766299aec0acd43bed102f4537ee",
+      "bytes": 1017
+    },
+    {
+      "path": "harnessix/trusted_actions/agent_gateway.py",
+      "sha256": "bab2e07c099f18731c4b71abb43b37091fe7fcd12ca64c4ab9c0db5f9d8959fa",
+      "bytes": 4547
+    },
+    {
+      "path": "harnessix/trusted_actions/agent_gateway_invocation.py",
+      "sha256": "543534f0b8eecd9aeaacfae4e8507ab53842a1ae677ff1390eb9c096a87b508a",
+      "bytes": 2129
+    },
+    {
+      "path": "harnessix/trusted_actions/agent_gateway_output.py",
+      "sha256": "7ff74fed4783887cef32d083c3f9670784fc3e6b3cab6d43398da40e6629f71a",
+      "bytes": 15035
+    },
+    {
+      "path": "harnessix/trusted_actions/agent_gateway_support.py",
+      "sha256": "3df5adb7de73d2649e0cd22538761262edd02efb1645b98b2918e7a20b206b87",
+      "bytes": 21714
+    },
+    {
+      "path": "harnessix/trusted_actions/agent_preplanning.py",
+      "sha256": "b7a537dfcc403ac1db0c0427f8ee804a3c880be5840ec6547dc3c8eb5ef1ac50",
+      "bytes": 4548
+    },
+    {
+      "path": "harnessix/trusted_actions/builtin_success.py",
+      "sha256": "87a6dc9204ef3e8ce9a95b64558ebb11ce25b0b2fc2ddd72e8ac1816593142b7",
+      "bytes": 3099
+    },
+    {
+      "path": "harnessix/trusted_actions/contracts.py",
+      "sha256": "85adc84c38615f91fa9d2479e3922db043c296bfc2d8fd3345fc8fdffcc0b70e",
+      "bytes": 12974
+    },
+    {
+      "path": "harnessix/trusted_actions/legacy_projection.py",
+      "sha256": "e7c9830f14b7ddd07cb54ce4c00833f70ae8b47fbf0a0658b64756c148131cdc",
+      "bytes": 3799
+    },
+    {
+      "path": "harnessix/trusted_actions/operation_router.py",
+      "sha256": "a27da4b044e277dfaf3d091c33b1e0ac328847a841989794bc937e5e52a81b30",
+      "bytes": 9597
+    },
+    {
+      "path": "harnessix/trusted_actions/operation_store.py",
+      "sha256": "b5b016a0a6653a8c9a8a8fb78c2418a2b93f3f21264be4e5c82de19de954aaf5",
+      "bytes": 13184
+    },
+    {
+      "path": "harnessix/trusted_actions/outcome_validation.py",
+      "sha256": "d8826c7b62d1419b4ffaad77a58bce7db3f6bca8e7eba51055e0470a849ed82d",
+      "bytes": 3598
+    },
+    {
+      "path": "harnessix/trusted_actions/output_budget.py",
+      "sha256": "fca31c55ea8c4fefda8c33d90794811a37ceb5ae7a0d824780e1698333b46cdb",
+      "bytes": 5798
+    },
+    {
+      "path": "harnessix/trusted_actions/ownership_store.py",
+      "sha256": "5af81f3fe17ddb126d0e5005d7717496ee45a641e8757a24f55408e676a2817a",
+      "bytes": 5834
+    },
+    {
+      "path": "harnessix/trusted_actions/planning.py",
+      "sha256": "5bf84d8c491bf1887f83973e6996eb4a529ec9bcb62348d1664df2b316ae7be7",
+      "bytes": 14804
+    },
+    {
+      "path": "harnessix/trusted_actions/policy.py",
+      "sha256": "af245ec1ed84cc000fb3faf30cfc222492466b6d03a6d63a41cc2c3f2757458d",
+      "bytes": 3462
+    },
+    {
+      "path": "harnessix/trusted_actions/preparation_rejection.py",
+      "sha256": "b5a354f65ba825fd5bf3e168ae9a5a655462ecabeab81acbfe359b587dc7c95a",
+      "bytes": 2654
+    },
+    {
+      "path": "harnessix/trusted_actions/prepared_resolution.py",
+      "sha256": "78f0dbcea0b382cae73bac0a8dc5a7118a5655c63b412518d8125788c9991ca6",
+      "bytes": 4321
+    },
+    {
+      "path": "harnessix/trusted_actions/public_errors.py",
+      "sha256": "5afffef706d88d616268fb24ae90cc6f38e09d158d80611c9e584bda9bb62feb",
+      "bytes": 9156
+    },
+    {
+      "path": "harnessix/trusted_actions/public_outcomes.py",
+      "sha256": "58ac0f40b4e6367b34a49d8618b16f99b9adff033fe7921947b05453d4d35372",
+      "bytes": 16609
+    },
+    {
+      "path": "harnessix/trusted_actions/recovery_contracts.py",
+      "sha256": "7c0b53dea6b3421bee4163826f2d68967521c06e1b97a20e6d5e0bed3a6afe96",
+      "bytes": 3851
+    },
+    {
+      "path": "harnessix/trusted_actions/router.py",
+      "sha256": "f73279498feb286cc6fba02343500d947b07e19f7dd4962a42b6b1fb7a9a2e18",
+      "bytes": 18365
+    },
+    {
+      "path": "harnessix/trusted_actions/store.py",
+      "sha256": "67f6015b6fc1bfe1144c3f5114bdecc341c2c60f2a56c7bf14fda55dabb0f605",
+      "bytes": 17947
+    },
+    {
+      "path": "harnessix/trusted_actions/transition_store.py",
+      "sha256": "5bc65d6d981bc286fee46b0ee6978abd39470d1bdfda908b3c38d3a90ac78826",
+      "bytes": 5138
+    },
+    {
+      "path": "harnessix/trusted_actions/versioned_contracts.py",
+      "sha256": "d20b4d60eb5c5e6108b95c20dd35cbbc8e427c05fd8d47c4bbf6e2b32a7e5b3a",
+      "bytes": 731
+    },
+    {
+      "path": "harnessix/workspace/__init__.py",
+      "sha256": "15d5fedc0ceb4a9e6687389864798a40b7db4ed7c3c4879b3d82113ff771c859",
+      "bytes": 57
+    },
+    {
+      "path": "harnessix/workspace/contracts.py",
+      "sha256": "99a67df56752217858b20e2852939d68669a24dbbb231e7672fa3fc187503ad3",
+      "bytes": 3817
+    },
+    {
+      "path": "harnessix/workspace/git_windows_binding.py",
+      "sha256": "8534c2730a39a2ef733eaa8fbb23d616a35269691a7ff46833e0480fc1b4b993",
+      "bytes": 4076
+    },
+    {
+      "path": "harnessix/workspace/leases.py",
+      "sha256": "bbc4d1ebb08136f6ecf3972c027297961915da7fde01cae6c53c797e4315028a",
+      "bytes": 6135
+    },
+    {
+      "path": "harnessix/workspace/native_observation_io.py",
+      "sha256": "84dac29f2627b50f5a882c749277c8851a20ffe75c4741b78c98f08f755c8cbe",
+      "bytes": 2590
+    },
+    {
+      "path": "harnessix/workspace/parent_closure_codec.py",
+      "sha256": "2f6777ce06dc1d9e2852be6f9d76ee812d824c7d6a192027915a0c45475065a2",
+      "bytes": 10609
+    },
+    {
+      "path": "harnessix/workspace/parent_closure_contracts.py",
+      "sha256": "da6604fb96959ad3ce47af65abb80a27aa6581ac09e45976f91c4a0f7fddcc02",
+      "bytes": 3532
+    },
+    {
+      "path": "harnessix/workspace/parent_closure_paths.py",
+      "sha256": "ee7655ffcbc13b9976bd240f0e25eed391f532f5de62d802e49f2c31cfefce0c",
+      "bytes": 4294
+    },
+    {
+      "path": "harnessix/workspace/parent_closure_wire.py",
+      "sha256": "9c9085f60d95e6b072cc9c848bd10ed39b165bf0b28314ed6f601e6d63105427",
+      "bytes": 1213
+    },
+    {
+      "path": "harnessix/workspace/paths.py",
+      "sha256": "3cca0955106af7a480b5d7e361ee5fa9b8cfffbd8a3908e8f4bba960a995e28d",
+      "bytes": 2468
+    },
+    {
+      "path": "harnessix/workspace/snapshot.py",
+      "sha256": "798d01fe6b31f40797a124ef8468c6f1ff15282671b167e5eee7a65d0d56422d",
+      "bytes": 18344
+    },
+    {
+      "path": "harnessix/workspace/snapshot_capture.py",
+      "sha256": "c905a6b56e60855fa19d848ba6691076fcc668d5e795f63a48e162c8ee7d671a",
+      "bytes": 8168
+    },
+    {
+      "path": "harnessix/workspace/snapshot_contracts.py",
+      "sha256": "ade075d4b5b4276e53084b744d7ab16c2ab9d48bfe332f45fa26e1528f88d4ae",
+      "bytes": 3027
+    },
+    {
+      "path": "harnessix/workspace/snapshot_fields.py",
+      "sha256": "3b86176851a1eb4ca32c2e1e3871f5b6c2750671877ed858d36608816078732a",
+      "bytes": 3273
+    },
+    {
+      "path": "harnessix/workspace/snapshot_ports.py",
+      "sha256": "a159b1fd5c20f59b201dc756c8fe70068a6566bcbc39efbd93e44e1994acb0cc",
+      "bytes": 445
+    },
+    {
+      "path": "harnessix/workspace/snapshot_v2.py",
+      "sha256": "f5019bc59ccc11080b548671415945d41707db285b6672b1e599d09fb5fa422b",
+      "bytes": 4324
+    },
+    {
+      "path": "harnessix/workspace/snapshot_verification.py",
+      "sha256": "84d85a85af6ff8f701a67ac2463ae625d6362b7e40b9e9e24b9e569b743253bb",
+      "bytes": 1347
+    },
+    {
+      "path": "harnessix/workspace/terminal_read_control.py",
+      "sha256": "0340a300f911e4245a15fc4789c4efcb56d81f7f8cbc04693da8977cfee811e1",
+      "bytes": 3890
+    },
+    {
+      "path": "harnessix/workspace/windows.py",
+      "sha256": "0b417b36911bd77ca426e33f3f14d7a12e34072dbda9b38e06264920e44c0df0",
+      "bytes": 17763
+    },
+    {
+      "path": "harnessix/workspace/windows_file_io.py",
+      "sha256": "7cf1e0785f4d8e90b69c3f02e6740d7c700a14ca36b1244c8fc69af721f72d53",
+      "bytes": 8462
+    },
+    {
+      "path": "harnessix/workspace/windows_private_directory.py",
+      "sha256": "f63956c43644338470187d2e595fc10e920599e67a778b7e3bfa428103c3b309",
+      "bytes": 2608
+    },
+    {
+      "path": "harnessix/workspace/windows_private_security.py",
+      "sha256": "6368428ea73a8cba9e04bbb1adc7271e8c687802f25b3cbec41b9fbb5ac1a60f",
+      "bytes": 8133
+    }
+  ],
+  "python_members": 507,
+  "match": true,
+  "model_requests": 0,
+  "private_original_retained": true
+}

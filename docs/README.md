@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 147
-code_revision: b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c
+version: 148
+code_revision: 82c95e677d1919c60bbb3be32a9a4ef23f35b2e4
 owners:
   - core
 modules:
@@ -80,6 +80,14 @@ supersedes: []
 
 [原 prepared 审批历史只读详设](changes/m09-r4-git-prepared-approval-history.md)将原完整认证事实与执行权分开，
 不启用默认 Git 写入；[单人先导手册](operations/pilot-beta.md)用于受控试用准备，独立 Beta 门槛保持。
+首个真实需求已登记为[BETA-001：登录密码保护](operations/pilot-tasks/001-login-password-protection.md)，
+从初始源码独立副本执行，原目录禁止写入；当前尚未运行，不计自主编码或 Beta 成功。
+
+[阶段无关用户观察复核](changes/m09-r4-git-user-observation.md#10-阶段无关的原观察只读复核)
+与[模块接口边界](modules/product-config.md#既有观察的阶段无关只读复核)说明 B3 必需只读依赖及共享 helper 的工作区实现：
+显式原 Session/transactions/ports，prepare 保留 pending Call，collector 保留原窗口；不重收集、写 CAS 或生成批准。
+[专项证据发布入口](validation/git-user-observation-verification-2026-10-07-v1/README.md)的结论以实际发布原件为准；
+[approved-link 草案](changes/m09-r4-git-approved-link.md)保持 `draft`，不代表完整 B3 认证或上线，B4/B7、同步响应性 P1 与 approved Writer 均未闭合。
 
 [最终修改反馈详设](changes/m09-r3-final-patch-feedback.md)说明多次成功Patch后必须重新完成全部必需检查的评分误接受整改；原真实成绩不重写。[验证报告](validation/r3-final-feedback-order-2026-10-07-v1/README.md)区分源码、安装回归与真实质量。
 
@@ -159,9 +167,11 @@ R3新增[Profile观测分类与证据缺失停止详设](changes/m09-r3-profile-
 [同一剩余额度的单次Suite切换](changes/m09-r3-same-cap-suite-rebinding.md)保留原授权及完整请求前缀，
 只承接已用后的余额，旧Reader及旧Suite拒绝；实现和实际授权登记、真实质量成绩分别验收。
 
-Git产品接线当前只完成原成功Patch来源和[只读HEAD基准](changes/m09-r4-product-git-baseline.md)，
-阅读[统一验证报告](validation/git-baseline-2026-09-30-v1/README.md)可区分真实Git、离线Windows与待实现写入。
-原组件库Commit/Checkpoint不能视为默认产品已经接线。
+Git 产品接线已有原成功 Patch 来源、[只读 HEAD 基准](changes/m09-r4-product-git-baseline.md)、
+[完整 U 观察/复核](changes/m09-r4-git-user-observation.md)、Core2/Review、Checkpoint 准备及 prepared 认证/审批历史的内部组件，
+实际接口与未装配范围以[模块设计](modules/product-config.md#用户-git-完整只读观察边界)为准。
+[原基准验证](validation/git-baseline-2026-09-30-v1/README.md)只覆盖该固定阶段，不替代后继组件证据；
+原组件库 Commit/Checkpoint、只读依赖或历史 approved 事实均不能视为默认产品写流程已接通。
 
 1. 阅读[文档工程规范](governance/documentation-standard.md)；
 2. 使用[重大变更设计模板](governance/templates/change-design-template.md)形成评审材料；

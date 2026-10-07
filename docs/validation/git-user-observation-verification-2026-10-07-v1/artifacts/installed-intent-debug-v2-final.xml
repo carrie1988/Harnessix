@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="1.066" timestamp="2026-10-07T19:08:49.152887+08:00" hostname="validation-host"><testcase classname="tests.product_config.test_git_observation_intent_flags_verification" name="test_matching_empty_head_reaches_and_rejects_only_nonzero_debug_flags" time="0.944" /></testsuite></testsuites>

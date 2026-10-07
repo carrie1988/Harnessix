@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 206
-code_revision: b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c
+version: 207
+code_revision: 82c95e677d1919c60bbb3be32a9a4ef23f35b2e4
 owners:
   - core
 modules:
@@ -2248,7 +2248,8 @@ NativeBridge、A/T2/D、独立 Commit、Backup2、R3、三平台消费者、Beta
 Git同步段响应性仍开放，不把单例诊断或纯保护通过当作性能与商业验收。
 
 [批准后事实认证设计](changes/m09-r4-git-approved-link.md)为下一阶段草案，明确原决定来源、
-三库恢复顺序、负向事实在原DDL的映射及Owner／完整用户观察终端约束；尚未实现或装配。
+三库恢复顺序、负向事实在原DDL的映射及Owner／完整用户观察终端约束；正式决定 Wire/Writer 与恢复屏障尚未实现或装配，
+B3 阶段无关 U 只读依赖的实际边界见后文。
 单人先导Beta可提前采集真实任务反馈，但不替代原3～5名独立开发者及至少15任务的正式门槛。
 
 ## R4 prepared 组件固定安装闭环与先导试用准备
@@ -2317,3 +2318,18 @@ Git/SQLite 同提交瞬间的整仓强一致尚无可用原语，完整U末轮�
 连接复用无法证明原失败语义等价，未合入产品；逐字段取消与完整事实认证分层为待决契约提案，不静默降低认证检查。后续先明确切分边界、原异常及暂态失效语义，再实施负控与真实响应性验证；P1保持开放。
 
 [固定验证](validation/git-prepared-cost-attribution-2026-10-07-v1/README.md)保留原日志、分析和输入，产品源码、依赖、期限及容量保持。单人先导真实任务0项，不替代独立Beta；原R3、两笔费用未决、默认完整Git/Commit/Backup2、三平台和R1～R6继续开放。
+
+## R4 B3 阶段无关用户观察只读依赖
+
+[阶段无关 U verifier](changes/m09-r4-git-user-observation.md#10-阶段无关的原观察只读复核)及共享末轮 helper
+已在 `82c95e677d1919c60bbb3be32a9a4ef23f35b2e4` 基准之上的工作区落地：显式借原 Session/transactions/ports，不重收集或写 CAS；
+基准Reader绑定、每个原HEAD树成员、before正文及Index阶段/flags均由原读取端口逐项求证；重算公开digest/fingerprint不能认证伪造材料。
+原 prepare 的 pending Call 检查及 collector 前后窗口保持。该范围仅为 B3 必需只读依赖，验证以[专项发布原件](validation/git-user-observation-verification-2026-10-07-v1/README.md)为准；
+[approved-link](changes/m09-r4-git-approved-link.md)仍为 `draft`，完整 B3 接线、B4/B7、同步响应性 P1 与 approved Writer 未闭合，默认 Git 写入、R3、三平台、独立 Beta 和 R1～R6 门禁不变。
+
+## 首个真实先导任务登记
+
+[BETA-001：登录密码保护](operations/pilot-tasks/001-login-password-protection.md)已登记，状态为 `QUEUED / NOT_EXECUTED / NOT_EVALUATED`。
+目标项目仅允许从初始源码建立独立副本后开发与隔离测试，原目录任何写入均禁止；必须区分 Console 日志与 Network 载荷的实际暴露来源。
+既有直接整改副本仅作为验收参考，不作为 Agent 输入、自动编码成绩或 Beta 成功。
+真实 Harnessix 完成任务仍为0；新模型请求暂停、原未决费用预留和独立 Beta 正式门槛保持。

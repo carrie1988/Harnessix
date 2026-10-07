@@ -1,0 +1,17 @@
+{
+  "schema_version": "harnessix.validation-test-extension/v1",
+  "generation": "v2-test-extension",
+  "base_input_sha256": "652c180566546bb2af9dc692ee4ff5ff9f96b5a27cbfff0090a2db4af7a3cedc",
+  "base_files": 1446,
+  "base_drift": [],
+  "product_source_change": false,
+  "wheel_sha256": "02750deb202d3a98c22f5339ff32e69454baa85e4e28a15d05a6b215d9d77eba",
+  "extension": [
+    {
+      "path": "tests/product_config/test_git_observation_intent_flags_verification.py",
+      "sha256": "59dab668a2eebab2095a4f71d4e78e5c4fba40eae265342222e447fe17fac6d2",
+      "bytes": 3035
+    }
+  ],
+  "frozen_at_utc": "2026-10-07T11:08:34.708732+00:00"
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "harnessix.private-evidence-index/v1",
+  "files": [
+    {
+      "private_relative_path": "REVIEW.md",
+      "sha256": "12b856bd6d7874bdf56e4fabc24f81145772509c31b177af546873797460cdff",
+      "bytes": 7134
+    },
+    {
+      "private_relative_path": "REVIEW-FOLLOWUP.md",
+      "sha256": "e8ae6729422a73d667d38cc3a5d3c65030b77a0aa720e7e2e05efd074f6720fd",
+      "bytes": 6740
+    },
+    {
+      "private_relative_path": "SOURCE_INPUTS-V2.json",
+      "sha256": "652c180566546bb2af9dc692ee4ff5ff9f96b5a27cbfff0090a2db4af7a3cedc",
+      "bytes": 267950
+    },
+    {
+      "private_relative_path": "EXTRA_TEST_INPUT-V2.json",
+      "sha256": "7e575c9ac33c294d2691ac9f3a551bd56c835ee75bad6aef6cce85b3e36b421d",
+      "bytes": 636
+    },
+    {
+      "private_relative_path": "INSTALLED_CONTENT_PROOF-V2.json",
+      "sha256": "c2891c3bbb23272d474ff2237c73f742cabc7fd1bcd9976a35a32bede6ec4de2",
+      "bytes": 95846
+    },
+    {
+      "private_relative_path": "requirements-all.txt",
+      "sha256": "394cce772a4a6d2ac3d578b25e837951a5d38a243f2c8a14c14e13a89c26151c",
+      "bytes": 70887
+    },
+    {
+      "private_relative_path": "DIAGRAM_RENDER-V2.json",
+      "sha256": "4933ecf908c2c7e0b53ceef217122fd422e0ea786f1375856d719e36958e2fee",
+      "bytes": 3105
+    }
+  ],
+  "contents_not_public": true
+}

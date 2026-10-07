@@ -23,7 +23,7 @@ from harnessix.delivery.git_material_cas import GitMaterialCAS
 from harnessix.delivery.git_tree_closure import GitTreeClosureLimits
 from harnessix.delivery.git_tree_diff import GitTreeDiff
 from harnessix.execution.contracts import canonical_digest
-from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS, _Queries
+from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS
 from harnessix.product_config.git_checkpoint_materials import (
     collect_product_git_checkpoint_materials,
 )
@@ -49,14 +49,12 @@ from harnessix.product_config.git_repository_observation import GitRepositoryRea
 from harnessix.product_config.git_user_authority import require_git_user_authority
 from harnessix.product_config.git_user_observation import (
     _native_checkpointer,
-    _reports,
-    _verify_final_git_facts,
+    _verify_observed_git_state,
     collect_product_git_user_observation,
 )
 from harnessix.product_config.git_user_observation_contracts import ProductGitUserObservation
 from harnessix.product_config.git_user_observation_paths import (
     PinnedGitUserDirectories,
-    git_user_directory_facts,
     pin_git_user_directories,
 )
 from harnessix.session.sqlite import SQLiteSessionStore
@@ -480,14 +478,11 @@ async def _verify_observation(
     history: AuthenticatedThreadHistory,
 ) -> None:
     """同次末段复核物理目录、配置、逻辑Index、认证历史和当前完整Source。"""
-    query = _Queries(planner.reader, cancel, check)
-    common, admin = await _reports(query, planner.reader._root)
-    with pin_git_user_directories(common, admin, checkpoint=check) as pinned:
-        facts = git_user_directory_facts(pinned)
-        if facts != {name: getattr(observation, name) for name in facts}:
-            raise _invalid()
-        await _verify_final_git_facts(query, observation.baseline, observation.config_sha256)
+
+    async def verify_history() -> None:
         await _history(planner, thread, turn, call, cancel, budget, check, history)
+
+    def verify_source() -> None:
         try:
             verify_git_delivery_source(
                 thread,
@@ -499,9 +494,16 @@ async def _verify_observation(
             )
         except UpstreamCheckpointError as error:
             raise error.error from None
-        if pinned.observe_index(check) != observation.index_file_observation:
-            raise _invalid()
-        check()
+
+    await _verify_observed_git_state(
+        observation,
+        planner.reader,
+        cancel,
+        check,
+        verify_history=verify_history,
+        verify_source=verify_source,
+        invalid=_invalid,
+    )
 
 
 # 只冻结不变的字段名和安装位置；每个控制点仍重读四份源码完整字节。

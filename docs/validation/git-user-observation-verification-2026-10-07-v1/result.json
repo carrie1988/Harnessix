@@ -1,0 +1,112 @@
+{
+  "schema_version": "harnessix.readonly-observation-validation/v1",
+  "status": "READONLY_DEPENDENCY_VERIFIED_NOT_RELEASE",
+  "source_parent": "82c95e677d1919c60bbb3be32a9a4ef23f35b2e4",
+  "package_version": "1.0.0rc1",
+  "wheel_sha256": "02750deb202d3a98c22f5339ff32e69454baa85e4e28a15d05a6b215d9d77eba",
+  "package_members": 548,
+  "python_members": 507,
+  "all_members_equal": true,
+  "model_requests": 0,
+  "sources_frozen": 1446,
+  "extra_test_files": 1,
+  "product_source_drift": 0,
+  "groups": [
+    {
+      "name": "installed-api-recipe-v2",
+      "label": "新入口与共享配方",
+      "context": "installed-v2-wheel",
+      "result": "PASS",
+      "tests": 90,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 279.044,
+      "private_raw_xml_sha256": "ca2c2ee733d972cf96d1af527a58c87318d8e4a0878c58ca7fd8c89774cc1101",
+      "public_xml_sha256": "1a24cccb891d28d69b2cc43e5583f53461434e451aff44920b114cc25525da60",
+      "derivation": "仅泛化hostname；原XML留存"
+    },
+    {
+      "name": "installed-regression-v2",
+      "label": "原准备器、Source、观察及Session",
+      "context": "installed-v2-wheel",
+      "result": "PASS",
+      "tests": 191,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 405.841,
+      "private_raw_xml_sha256": "3fffbf757b0c9cfef4cf863d28bc458266c5076cec9a31a2fc2cfe2514dd143d",
+      "public_xml_sha256": "5381e7d5c325c7e555e4cddecdaf5501837c6f4886c5441167b5f2c9b6503e9f",
+      "derivation": "仅泛化hostname；原XML留存"
+    },
+    {
+      "name": "installed-baseline-v2-fixed-env",
+      "label": "原基准算法",
+      "context": "installed-v2-wheel",
+      "result": "PASS",
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 23.393,
+      "private_raw_xml_sha256": "51504cfe7aec572b7959264ec836478a761afdaa5c450ed7db949e1fbe080141",
+      "public_xml_sha256": "0c56ea0c0fdfba10c62059232705acb8740f8b9886000876904c5ef855597806",
+      "derivation": "仅泛化hostname；原XML留存"
+    },
+    {
+      "name": "installed-intent-debug-v2-final",
+      "label": "独立debug flags入口负控",
+      "context": "installed-v2-wheel",
+      "result": "PASS",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.066,
+      "private_raw_xml_sha256": "df14a519c86d2e3730b3bd59bfcabc1ac1464b2dcc6a0e898c330a42aa3b2e8d",
+      "public_xml_sha256": "6f8f6d5da3f75a2bc75b8434cd09ad9f7d51c907ad93bf43992e8bbf7706bea6",
+      "derivation": "仅泛化hostname；原XML留存"
+    }
+  ],
+  "unique_core_tests": 345,
+  "governance": {
+    "status": "PASS",
+    "tests": 29,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 8.835,
+    "raw_sha256": "9b86a381f15e2db8945e528f044fd6ccd5d3060b53e2b88f0224b4306b985d6a"
+  },
+  "mypy": {
+    "source_files": 507,
+    "status": "PASS"
+  },
+  "readability_policy": {
+    "status": "PASS",
+    "thresholds_changed": false,
+    "current_snapshot_updated": true
+  },
+  "beta": {
+    "task_id": "BETA-001",
+    "status": "QUEUED",
+    "execution": "NOT_EXECUTED",
+    "acceptance": "NOT_EVALUATED",
+    "completed": 0,
+    "reference_copy_credit": 0
+  },
+  "open_gates": [
+    "complete-B3",
+    "B4/B7",
+    "approved-Writer",
+    "NativeBridge-A/T2/D-Commit-Backup2",
+    "sync-read-responsiveness-P1",
+    "R3-quality-and-two-unresolved-billings",
+    "native-consumer-three-platform",
+    "independent-Beta",
+    "R1-R6-commercial-release"
+  ],
+  "commercial_release": false,
+  "budget_schema_or_authorization_change": false
+}
