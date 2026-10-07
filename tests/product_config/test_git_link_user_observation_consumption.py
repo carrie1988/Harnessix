@@ -30,6 +30,7 @@ from harnessix.product_config.git_prepared_link_proof import authenticate_prepar
 from harnessix.product_config.git_prepared_link_rows import prepared_link_columns
 from harnessix.product_config.git_prepared_link_wire import encode_product_git_prepared_link
 from harnessix.protocol.contracts import ApprovalRespondParams, PublicApprovalDecision
+from harnessix.sdk.errors import AgentSDKError
 from harnessix.session.git_publication_contracts import GitDeliveryRecordClaims
 from tests.agent.helpers import answer
 from tests.product_config.test_git_baseline import command
@@ -523,7 +524,7 @@ async def test_original_turn_real_expiry_refuses_approval_and_consumers_without_
         assert time.monotonic() - started >= remaining
         assert remaining_seconds(actual.turn) < 0
         before = _readonly_state(actual.scenario)
-        with pytest.raises(KernelError) as expired:
+        with pytest.raises(AgentSDKError) as expired:
             await _decide(actual, monkeypatch, "approved")
         assert expired.value.code == "approval_expired"
         with _database(actual, read_only=True) as database:
