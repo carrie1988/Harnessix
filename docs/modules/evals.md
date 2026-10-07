@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 33
-code_revision: f84583e5560998683cf07d6b4c138c4f7ff3ad1a
+version: 34
+code_revision: e0c47ca2f96c4e87a055b3135ac6c3be883275d5
 owners:
   - core
 modules:
@@ -26,6 +26,7 @@ related_adrs:
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
   - tests/evals/test_grader.py
+  - tests/evals/test_grader_final_feedback.py
   - tests/evals/test_historical.py
   - tests/evals/test_runner.py
   - tests/evals/test_git_evidence.py
@@ -765,13 +766,21 @@ Transcript只读取Completed Item：
 | 8 | `allowed_changes` | 变更非空、在Allowlist内、无Untracked/Unsupported且Diff非空 | `forbidden_edit` |
 | 9 | `change_count` | 1～`max_changed_files` | `forbidden_edit` |
 | 10 | `clean_index` | 无Staged Path | `forbidden_edit` |
-| 11 | `test_feedback_order` | 每个Profile在首个Patch前失败、Patch后通过且最后一次通过 | `correctness` |
-| 12 | `git_feedback_order` | 通过测试后依次成功执行Status、Diff，最后才回答 | `correctness` |
+| 11 | `test_feedback_order` | 每个Profile在首个成功Patch前失败，最后有效检查通过且晚于最后成功Patch | `correctness` |
+| 12 | `git_feedback_order` | 所有必需Profile最后检查通过且晚于最后成功Patch，随后Status、Diff、回答依次成立 | `correctness` |
 | 13 | `final_answer_consistent` | JSON路径等于Git路径，Profile集合精确且全声明通过 | `final_answer` |
 | 14 | `budget_respected` | Model Steps和累计Token不超过任务预算 | `budget` |
 
 报告反序列化时要求上述Code顺序完整、Category不可重分类，Failure Categories必须从失败项重算，Changed
 Files必须等于Git路径数量。删除失败项或手改Outcome不能通过合同。
+
+### 20.1 多次修改的最终验证绑定
+
+[完整整改设计](../changes/m09-r3-final-patch-feedback.md)修复原反馈投影选错修改边界的误接受：
+早期检查通过不能覆盖后续成功Patch，两个反馈检查共用最后修改后的各必需Profile最终通过位置。
+未完成Item、没有有效结果、失败/拒绝Patch和模型回答声明均不能补出成功事实。
+此为既有v1闭环的实现缺陷修复，14项检查、分类、Schema和持久化不变；以候选Revision区分实现。
+原冻结报告不覆盖或重算，回归通过不表示R3真实模型质量通过。
 
 ## 21. Outcome与失败分类
 
@@ -2060,7 +2069,7 @@ Schema由[`scripts/generate_specs.py`](../../scripts/generate_specs.py)生成并
 Grader Version、Materializer Version、Spec Version和Campaign Plan Fingerprint承担不同兼容职责：
 
 - 任务Prompt/预算/允许路径变化提升Task Version；
-- 评分检查或分类语义变化提升Grader Version并发布新Report Spec；
+- 评分检查或分类语义变化提升Grader Version并发布新Report Spec；既有定义的误接受实现缺陷修复不新增规则，须固定新实现Revision并保留旧报告；
 - 物化规则影响来源身份时提升Materializer Version；
 - 字段、状态或摘要输入变化评估新Spec；
 - 已发布Campaign Plan和Run不得原地迁移到新任务版本。

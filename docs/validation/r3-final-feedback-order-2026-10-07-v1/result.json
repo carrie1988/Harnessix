@@ -1,0 +1,78 @@
+{
+  "schema_version": "harnessix.r3-final-feedback-verification/v1",
+  "status": "FINAL_PATCH_FEEDBACK_BUGFIX_VERIFIED_NOT_REAL_QUALITY_ACCEPTANCE",
+  "source_parent": "e0c47ca2f96c4e87a055b3135ac6c3be883275d5",
+  "source_inputs": 5096,
+  "wheel_sha256": "fd56221c5973ce2da12e3e9a5dfeb3ebc6836a7ed0a3c6e1b60b055c76e66dcd",
+  "package_files": 548,
+  "python_source_files": 507,
+  "red": {
+    "tests": 29.0,
+    "failures": 12.0,
+    "errors": 0.0,
+    "skipped": 0.0,
+    "time": 0.598
+  },
+  "checks": {
+    "source-focused": {
+      "tests": 48.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 0.48
+    },
+    "source-evals-domain": {
+      "tests": 705.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 113.142
+    },
+    "source-governance": {
+      "tests": 1413.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 43.291
+    },
+    "installed-focused-final": {
+      "tests": 48.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 0.349
+    },
+    "final-documentation": {
+      "tests": 29.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 8.786
+    }
+  },
+  "test_signature_format_ast_equal": true,
+  "public_schemas_policy_and_lock_unchanged": true,
+  "guarded_input_files": 517,
+  "grader_rule": "原v1反馈闭环实现纠错；最后成功Patch后各必需Profile最新有效结果通过，再依次GitStatus/Diff/回答",
+  "real_model_requests": 0,
+  "old_reports_rewritten": false,
+  "r3_last_frozen_strict_success": "0/20",
+  "r3_last_frozen_required_tests": "1/20",
+  "release_gates_closed": [],
+  "unverified": [
+    "真实R3质量及两笔未决费用",
+    "默认完整编码/Git交付",
+    "同步调度响应性",
+    "三平台当前候选与消费者编码",
+    "独立Beta及1.0封板"
+  ],
+  "current_sdk_heartbeat": {
+    "test_passed": true,
+    "maximum_gap_seconds": 21.594020999968052,
+    "tick_seconds": 0.05,
+    "samples": 83,
+    "performance_accepted": false,
+    "thread_offload": false
+  },
+  "agent_runtime_semantics_changed": false
+}

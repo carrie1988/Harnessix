@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 144
+version: 145
 code_revision: a0b5df0a3c380b8b058b8e45c99a731a9022e7f0
 owners:
   - core
@@ -80,6 +80,8 @@ supersedes: []
 
 [原 prepared 审批历史只读详设](changes/m09-r4-git-prepared-approval-history.md)将原完整认证事实与执行权分开，
 不启用默认 Git 写入；[单人先导手册](operations/pilot-beta.md)用于受控试用准备，独立 Beta 门槛保持。
+
+[最终修改反馈详设](changes/m09-r3-final-patch-feedback.md)说明多次成功Patch后必须重新完成全部必需检查的评分误接受整改；原真实成绩不重写。[验证报告](validation/r3-final-feedback-order-2026-10-07-v1/README.md)区分源码、安装回归与真实质量。
 
 功能主线优先处理真实编码质量、核心安全恢复、Windows原生编码和安装升级。
 许可证/权利链等治理工作低优先并行，不阻挡功能研发；必要发行处置仍在正式发布前完成。

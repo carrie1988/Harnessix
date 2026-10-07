@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
+version: 4
 code_revision: e088b09b20de3b2898bd2d4b8479f39b84553018
 owners:
   - core
@@ -34,10 +34,12 @@ supersedes: []
 |---|---|
 | 源码核对基线 | `main`，`e088b09b20de3b2898bd2d4b8479f39b84553018`；后继修改须另行冻结并交付 |
 | 包版本 | 内部 `1.0.0rc1`；[包元数据](../../pyproject.toml#L1-L32)不是正式发行证明 |
-| 最新候选 | macOS arm64 / CPython 3.12.7 限定先导安装候选；源码/Wheel/两个独立安装的 548 件包成员一致；实际提交与安装输入由交付记录提供，不代表商用封板 |
+| 已交付先导候选 | macOS arm64 / CPython 3.12.7 限定先导安装候选；源码/Wheel/两个独立安装的 548 件包成员一致；实际提交与安装输入由交付记录提供，不代表商用封板 |
 | Git 业务能力 | 默认完整 Git、独立 Commit、业务 Backup2 尚未落地；不能以组件设计或专项结果替代默认产品能力 |
 | 首轮参与 | 单人先导，当前真实任务完成数为 0；尚无独立开发者试用成绩 |
 | 先导结论 | 仅说明实际试用的候选、机器、Provider 配置和任务，不关闭 R3、R4、R5 或 R6 |
+
+已交付先导环境固定在提交 `e0c47ca2f96c4e87a055b3135ac6c3be883275d5` 的候选输入。后继[评分器反馈整改](../changes/m09-r3-final-patch-feedback.md)不自动替换该环境；换候选须另行固定版本与输入。
 
 Git 边界见[当前产品装配说明](../modules/product-config.md#正式git-review与原artifact审批链)。
 [R5 原门槛](../changes/m09-to-v1-release-scope-convergence.md#5-六个发布工作包与退出条件)保持为 **3～5 名独立开发者、至少 15 个真实任务、三平台均有实际使用**，并要求无未处置 P0/P1。单人五任务不替代该门槛，也不构成三平台产品支持或商用完成声明。

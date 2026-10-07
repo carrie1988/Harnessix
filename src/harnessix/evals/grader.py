@@ -211,27 +211,38 @@ def _selected_observations(
     return tuple(sorted(selected, key=lambda observation: observation.check_id))
 
 
-def _feedback_order(task: CodingEvalTask, transcript: _Transcript) -> bool:
-    if not transcript.patch_positions:
-        return False
-    patch = transcript.patch_positions[0]
+def _final_test_positions(task: CodingEvalTask, transcript: _Transcript) -> tuple[int, ...] | None:
+    """每个必需Profile的最后检查须通过，且不得沿用最后成功修改之前的结果。"""
+    last_patch = transcript.patch_positions[-1] if transcript.patch_positions else -1
+    positions = []
     for profile in task.required_test_profiles:
         profile_tests = [test for test in transcript.tests if test.profile == profile]
-        if not any(not test.passed and test.position < patch for test in profile_tests):
+        if not profile_tests:
+            return None
+        last = profile_tests[-1]
+        if not last.passed or last.position <= last_patch:
+            return None
+        positions.append(last.position)
+    return tuple(positions)
+
+
+def _feedback_order(task: CodingEvalTask, transcript: _Transcript) -> bool:
+    """首次失败基线和最后成功修改后的全部通过共同形成原可见反馈闭环。"""
+    if not transcript.patch_positions:
+        return False
+    first_patch = transcript.patch_positions[0]
+    for profile in task.required_test_profiles:
+        if not any(
+            test.profile == profile and not test.passed and test.position < first_patch
+            for test in transcript.tests
+        ):
             return False
-        if not any(test.passed and test.position > patch for test in profile_tests):
-            return False
-        if not profile_tests[-1].passed:
-            return False
-    return True
+    return _final_test_positions(task, transcript) is not None
 
 
 def _git_feedback_order(task: CodingEvalTask, transcript: _Transcript) -> bool:
-    passed = [
-        test.position
-        for test in transcript.tests
-        if test.profile in task.required_test_profiles and test.passed
-    ]
+    """Git核对只能跟在最后成功修改的全部最终通过之后，不复用旧检查位置。"""
+    passed = _final_test_positions(task, transcript)
     if not passed or not transcript.git_status_positions or not transcript.git_diff_positions:
         return False
     last_pass = max(passed)
