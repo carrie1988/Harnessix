@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path, PosixPath, WindowsPath
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
@@ -52,6 +53,16 @@ def require_git_user_authority(
     root, executable, binding = reader._root, reader._executable, reader.contract()
     process_state = reader._state_directory
     arguments = _git_arguments(for_delivery=True)
+    native_state = type(state) in (PosixPath, WindowsPath)
+    expected_paths: dict[str, Path] = {}
+
+    def expected_path(name: str) -> Path:
+        # 只复用原生Path的固定右值；首次构造仍在原短路条件位置。
+        if not native_state:
+            return state / name
+        if name not in expected_paths:
+            expected_paths[name] = state / name
+        return expected_paths[name]
 
     def verify() -> None:
         """不替换、重开或关闭原资源；同字节 Scope 或 Publication 也不能替身。"""
@@ -72,10 +83,10 @@ def require_git_user_authority(
             or audit._closed
             or plans._closed
             or transactions._closed
-            or session.path != state / "sessions.db"
-            or transactions._root != state / "workspace-transactions"
-            or audit._path != state / "action-audit.db"
-            or plans._path != state / "execution-plans.db"
+            or session.path != expected_path("sessions.db")
+            or transactions._root != expected_path("workspace-transactions")
+            or audit._path != expected_path("action-audit.db")
+            or plans._path != expected_path("execution-plans.db")
             or reader._root != root
             or reader._executable != executable
             or reader._state_directory != process_state

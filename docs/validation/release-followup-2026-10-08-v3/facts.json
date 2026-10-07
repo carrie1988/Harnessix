@@ -1,0 +1,113 @@
+{
+  "schema": "harnessix.release-followup/v3",
+  "source_base": "faec7a017e801dd5376fdb1ca0fb6490c67ef4ba",
+  "source_binding": {
+    "base_revision": "faec7a017e801dd5376fdb1ca0fb6490c67ef4ba",
+    "files": [
+      {
+        "path": "src/harnessix/product_config/git_decision_link_contracts.py",
+        "bytes": 8703,
+        "sha256": "90412a20f9c548345f1dfc683f0a498f1789cd7935fba6a321a032ecc0ecf4b5"
+      },
+      {
+        "path": "src/harnessix/product_config/git_decision_link_wire.py",
+        "bytes": 2903,
+        "sha256": "164f35a2aedb9bba46de24a5629fc78c2c94aaa5bd32a170b25beacf5ac79c3d"
+      },
+      {
+        "path": "src/harnessix/product_config/git_delivery_plan_wire.py",
+        "bytes": 7116,
+        "sha256": "ce8321001ca626a4ab223d933466e1703821e3560462fe1dfb1ad142617db799"
+      },
+      {
+        "path": "src/harnessix/product_config/git_user_authority.py",
+        "bytes": 4550,
+        "sha256": "c9ddf4ad826850366c3b03a67538bb41490f82bbf84c0611775d396e82caace3"
+      },
+      {
+        "path": "tests/product_config/test_git_decision_link_contracts.py",
+        "bytes": 18119,
+        "sha256": "d6c3d84f02af5c7ed7afee9913f0069c393696903e706c81e4b5080eba9fde9f"
+      },
+      {
+        "path": "tests/product_config/test_git_authority_pure_paths.py",
+        "bytes": 9833,
+        "sha256": "136ceb9f8414851df600a14a01fee7646a5a58c97bdd61c86dde25ab3307ce63"
+      }
+    ],
+    "scope": "six explicitly owned production and test files; no foreign untracked input"
+  },
+  "main_completed": {
+    "contracts": 354,
+    "adjacent": 487,
+    "pure_paths_and_governance": 62,
+    "total": 903,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "main_actual_controls": "RUNNING_NOT_ACCEPTED",
+  "candidate_full_check": {
+    "baseline_seconds": 35.719023542002105,
+    "candidate_seconds": 31.601754333001736,
+    "counts_same": true,
+    "one_pair": true,
+    "P1_closed": false
+  },
+  "beta_mock": {
+    "tests": 10,
+    "passed": 10,
+    "changed_production": 0,
+    "agent_repair": false
+  },
+  "beta_permissions": {
+    "original_failures": 3,
+    "counterfactual_failures": 3,
+    "new_GLOBAL": 0,
+    "agent_repair": false
+  },
+  "independent_contract_review": {
+    "latest_tests": 142,
+    "legal_size_oracle": 3,
+    "initial_probe_completed": 107,
+    "whole_sdk": false
+  },
+  "upstream_manifests": {
+    "git-pure-value-candidate-v1": {
+      "file_count": 59,
+      "manifest_sha256": "33bbec99a7d0d5df167f903ca0cdfd3949e27eb1146e7acfd628128ddcfd28fa"
+    },
+    "beta-mock-counterfactual-v1": {
+      "file_count": 1162,
+      "manifest_sha256": "5859d54935dc15053a4ff873610b7033d650e252f31acceea8fc4c984de82a74"
+    },
+    "candidate_source_members": 5180,
+    "git-decision-review-v1": {
+      "members": 40,
+      "manifest_sha256": "d159ac6ac31c784b939c0848017f2ed9a653e74f13ef9dc21d9c5094f14efb32"
+    },
+    "beta-permission-fixture-counterfactual-v1": {
+      "members": 1197,
+      "manifest_sha256": "de3c5149acee34a60194661929906e43b2df6a5b995fda0238d2aa4d9c5e114b"
+    }
+  },
+  "budget": {
+    "allocation_CNY": "60",
+    "estimated_cost_CNY": "0.706096",
+    "reserved_CNY": "0",
+    "estimated_remaining_CNY": "59.293904",
+    "requests_this_delivery": 0,
+    "actual_invoice_CNY": null
+  },
+  "release": {
+    "R3_strict_passes": 0,
+    "R3_required_checks": 1,
+    "R3_trials": 20,
+    "beta_accepted": 0,
+    "released": false,
+    "proof_writer_recovery_enabled": false,
+    "B4": "OPEN",
+    "B7": "OPEN",
+    "P1": "OPEN"
+  }
+}

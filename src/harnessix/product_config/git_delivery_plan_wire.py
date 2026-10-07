@@ -29,6 +29,11 @@ from harnessix.product_config.git_delivery_plan_snapshot import (
 MAX_PRODUCT_GIT_PLAN_BYTES = 512 * 1024
 
 if TYPE_CHECKING:
+    from harnessix.product_config.git_decision_link_contracts import (
+        ProductGitApprovedLink,
+        ProductGitCancelledLink,
+        ProductGitDeniedLink,
+    )
     from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
 
 
@@ -37,7 +42,10 @@ def _encode(
     | ProductGitDeliveryCore
     | ProductGitDeliveryCoreV2
     | ProductGitDeliveryPlanV2
-    | ProductGitPreparedLink,
+    | ProductGitPreparedLink
+    | ProductGitApprovedLink
+    | ProductGitDeniedLink
+    | ProductGitCancelledLink,
     checkpoint: Callable[[], None],
 ) -> bytes:
     """完整逐块编码；超限或取消不返回任何部分记录，不提高现有账本预算。"""

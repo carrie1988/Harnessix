@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 2
+version: 3
 code_revision: eca05790fb1b99013e775dc3acd2ad03ccaf2a23
 owners: [core]
 modules: [product_config, workspace, trusted_actions, agent]
@@ -236,3 +236,17 @@ MAC及全状态前后相同。最大同loop心跳间隔27.304秒是带profile观
 分别涉及约2.38/1.21秒累计成本，不能宣称足以解决P1。每次live字段读取、connect/PRAGMA、Owner、身份检查、
 回调、MAC、期限及异常关闭均保留；首次URI编码仍在stat后/connect前，子类和相对Path回退原路径，
 不缓存resolve、实体身份、观察连接或认证结论，不引入全局LRU。精确差分及收益验证未执行，P1继续OPEN。
+
+## 固定期望路径候选与主仓接入边界
+
+后继候选从`faec7a017e801dd5376fdb1ca0fb6490c67ef4ba`分别建立原与新tracked副本，
+5180件源码逐项核验，仅`git_user_authority.py`改变。完整设计见[纯路径详设](../changes/m09-r4-git-authority-pure-paths.md)。
+40短测及原/候选各一次full-check SDK回读通过，沿原60/120秒，无profile、无layered桥。
+右值构造990412→8；freshOwner123313、Owner246626、verify246627、外callback52361、
+auditPhysical369940、四库身份493260、GitDB pin123313及terminal1均相同。
+各自数据库/CAS/Git/原MAC摘要不变、total_changes0；两个独立随机身份的MAC不要求互相同字节。
+
+读取35.719→31.602秒是单组有计数包装观测，不能据此确认稳态SLA；
+候选最大心跳间隔14.300秒仍显著阻塞调度。原60秒profile失败、20秒级历史负控和默认关闭的layered研究保持。
+主仓接入仅复用same-closure native纯词法Path，live检查及原异常顺序不削减；
+URI复用没有实施，Owner/连接/认证缓存禁止。完整响应性P1与approved Writer/B4/B7仍开放。

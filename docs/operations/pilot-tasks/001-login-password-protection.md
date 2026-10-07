@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: reviewing
-version: 9
+version: 10
 code_revision: pending
 owners:
   - core
@@ -36,7 +36,7 @@ supersedes: []
 | 参与者 | 项目使用者本人，单人先导；不是独立外部 Beta 开发者 |
 | 真实需求 | 浏览器中可见登录明文密码；从初始副本区分 Console 日志、错误输出与 Network Request Payload，整改必须保持原有登录业务及安全约束 |
 | 登记状态 | `QUEUED` |
-| 执行状态 | 限定初始源码只读分析尝试失败；业务整改与测试未执行 |
+| 执行状态 | 限定初始源码只读分析尝试失败；业务整改与整改后回归未执行 |
 | 验收状态 | `NOT_EVALUATED`；没有 Beta PASS 结论 |
 | 真实 Harnessix 完成任务数 | `0`；四次只读尝试共21个模型请求，没有整改审批或任务通过成绩 |
 | 当前阶段 | 419文件合成输入已核验；独立前端构建、类型检查及18测试通过。冻结原Git版本补充4件私有构建依赖，形成423件隔离输入；269生产/78测试源码编译和18认证/API前测通过。外发、实际整改及浏览器验收仍开放 |
@@ -275,3 +275,22 @@ Console、Network及HTTPS观察面必须冻结，写入白名单仍为空。
 认证只读回读10122/621 Token，估算0.050424元；新周期26请求全部completed，估算0.706096元，
 预留0、剩余估算59.293904元，实际账单未知。原12文件及旧账本保持；并非原业务全目录长期未变证明。
 完整整改、合法Profile、浏览器、真实取消、使用者接受及正式Beta仍开放。
+
+## 上传测试 Mock 契约的独立反事实复验
+
+冻结423件输入在新物理副本中，仅把`KnowledgeUploadWorkflowTest`第44行
+`requireDocument` stub对齐实际调用的`requireDocumentForUpdate`。一次完整该类离线运行
+10PASS/0FAIL/0ERROR/0SKIP，28.276秒；完整nodeid不变，原9个NPE消失。
+生产源码、断言、权限、旧输入与旧JUnit均未修改，原禁网及目录写入边界不放宽。
+该结果支持Mock接口错位归因，但不证明生产上传无缺陷、Agent完成整改或Beta接受。
+原76类350项全业务FAIL保持，课程资源、动态权限运行时、名称初始化及网络适用性仍须分别闭合。
+登录Console/Network披露面契约及整改后完整功能回归、实际浏览器验收仍未完成。
+
+## 权限夹具 H2 运行时观察与未关闭断言
+
+独立原样三节点复验确认新增teacher2/student2未建立动态赋权/组织归属；
+通过原OrganizationService.addMembers与RoleManagementService.assign建立本班EXACT后，原403均越过，
+但两轮各3FAIL仍保留：Task可见性期望0实际1；Course缺课程模板400；Workflow越权仍403但错误码不同。
+不新增GLOBAL，不修改生产或断言，不将后续未到达断言视为通过。
+此后继证实原漏赋权原因并暴露范围/错误码/资源契约差异，未修复其他功能或完成Beta验收。
+完整证据见[本次发布跟进](../../validation/release-followup-2026-10-08-v3/README.md)。

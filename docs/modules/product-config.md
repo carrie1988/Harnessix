@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 85
+version: 86
 code_revision: e4f3103feeb0a65e4b3c4ec3fa3720790986ee33
 owners:
   - core
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_decision_link_contracts.py
+  - tests/product_config/test_git_authority_pure_paths.py
   - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_user_observation_verification.py
   - tests/product_config/test_git_observation_verification_recipe.py
@@ -2717,3 +2719,20 @@ verifier 原固定错误分类与外部控制异常直接传播；prepared 发�
 第四次[独立核心链读取计划](../validation/beta-001-readonly-analysis-2026-10-07-v4/README.md)在两次模型请求后Turn completed，
 但仅核心1/5文件首页，最后文字是工具标记而非分析；宿主技术门正确拒绝，未将文字执行为工具。
 四次共21请求、累计估算0.620748元、预留0、账单未确认；实际任务完成仍0。原失败保留，停止同类重复调用并先定位协议/模型行为。
+
+## Git 决定数据边界与纯值成本整改
+
+[决定数据详设](../changes/m09-r4-git-decision-data-contract.md)新增
+[`ProductGitApprovedLink/ProductGitDeniedLink/ProductGitCancelledLink`](../../src/harnessix/product_config/git_decision_link_contracts.py)。
+每个完整封套保留原 Plan2、原未决定审批请求、两域决定检查点及事件索引；
+approved使用approved存储投影，denied/cancelled使用failed，不更改GitDB v2 DDL。
+[`严格 Wire`](../../src/harnessix/product_config/git_decision_link_wire.py)沿原深快照及512KiB编码器，
+拒绝额外/缺失字段、重复键、非规范字节和保留在对象中的construct/copy篡改；控制异常保持原实例。
+这些是纯声明，不认证MAC/Session/Owner、无数据库效果，原prepared/v1仍只接受pending/sequence0。
+正式决定的来源Proof、事务Writer、完整历史Reader和恢复屏障保持未接线，不能据新类型注册默认Git写工具。
+
+[固定期望路径详设](../changes/m09-r4-git-authority-pure-paths.md)仅改变
+[`require_git_user_authority`](../../src/harnessix/product_config/git_user_authority.py)内四个纯右值Path：
+确切原生Path在原短路条件位置首次懒构造并于同closure复用；子类仍每次原构造。
+全部live左字段、Owner/短新连接/physical/MAC/SQL/callback与终端检查保持，URI和认证结果不缓存。
+单组候选完整回读35.719→31.602秒仍有约14.300秒事件循环间隔，不关闭P1或B4/B7。

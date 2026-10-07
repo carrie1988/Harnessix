@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 215
+version: 216
 code_revision: 2bef425141653360c29e09b38e079065825437cb
 owners:
   - core
@@ -27,6 +27,8 @@ related_adrs:
   - docs/adr/0089-bounded-local-transport-lifecycle.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
+  - tests/product_config/test_git_decision_link_contracts.py
+  - tests/product_config/test_git_authority_pure_paths.py
   - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_coding_workflow_instructions.py
   - tests/product_config/test_product_patch_rollback.py
@@ -2251,7 +2253,7 @@ NativeBridge、A/T2/D、独立 Commit、Backup2、R3、三平台消费者、Beta
 Git同步段响应性仍开放，不把单例诊断或纯保护通过当作性能与商业验收。
 
 [批准后事实认证设计](changes/m09-r4-git-approved-link.md)为下一阶段草案，明确原决定来源、
-三库恢复顺序、负向事实在原DDL的映射及Owner／完整用户观察终端约束；正式决定 Wire/Writer 与恢复屏障尚未实现或装配，
+三库恢复顺序、负向事实在原DDL的映射及Owner／完整用户观察终端约束；[决定数据合同及严格Wire](changes/m09-r4-git-decision-data-contract.md)已实现；正式决定来源Proof/Writer与恢复屏障尚未实现或装配，
 B3 阶段无关 U 只读依赖的实际边界见后文。
 单人先导Beta可提前采集真实任务反馈，但不替代原3～5名独立开发者及至少15任务的正式门槛。
 
@@ -2444,3 +2446,23 @@ Git层级控制研究v2样本读取约30.57秒/19.28秒，仍有事件循环阻�
 新周期26completed、估算0.706096、预留0、剩余估算59.293904，实际账单未知，旧账本保持。
 Docker残留Backend已退出，官方detached start不证明引擎恢复；socket缺失、Mac界面锁定、默认Workspace/Profile仍不可验收。
 真实Beta接受0，R3历史0/20及1/20、三平台和R1～R6门槛不变。
+
+### Git 决定数据合同、纯值性能增量与 Beta 前测反事实
+
+[三种决定数据声明及规范字节](changes/m09-r4-git-decision-data-contract.md)沿原prepared、原两域指纹和512KiB上限，
+142新项与212旧prepared合计354通过；原请求/决定/取消索引完整，原检查点异常实例保持。
+该数据层没有认证Proof、事务Writer或恢复屏障，不开放默认Git写工具，整体正式决定接线仍planned。
+
+[纯Path增量](changes/m09-r4-git-authority-pure-paths.md)在exact-native、same-closure、原条件位置懒构造，
+子类逐次回退；不缓存URI/连接/Owner/认证、不减少callback/SQL/physical。
+原/候选分别一次完整SDK回读35.719/31.602秒，全部重控次数相同，单组不构成SLA；
+候选约14.300秒最大调度间隔，P1、B4/B7和Writer保持开放。
+
+BETA-001的上传Mock反事实仅一测试stub改动，一次整类10/10通过、原9NPE消失，
+支持夹具契约错位归因；生产代码与断言未改，不计Agent修复或Beta接受。
+原全业务FAIL及其他组别保持，登录披露面契约、功能回归、浏览器、默认Docker/Profile、R3、三平台与R1～R6仍未完成。
+
+[本次专项交付](validation/release-followup-2026-10-08-v3/README.md)汇总主仓903个已完成节点及独立审阅；
+主仓实际控制/Owner矩阵仍运行，单独保留，不将进度输出转为通过。
+权限夹具原样H2与本班EXACT反事实均3FAIL：旧403越过后出现可见性、资源和错误码差异，未改生产/断言或放宽GLOBAL。
+这些结果不覆盖原350项FAIL，不增加Beta任务接受数。

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 6
+version: 7
 code_revision: 2aa16c161039134d13e13f4decfd9024be99d153
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -12,6 +12,7 @@ related_tests:
   - tests/product_config/test_git_user_observation_verification.py
   - tests/product_config/test_git_observation_verification_recipe.py
   - tests/product_config/test_git_prepared_link_contracts.py
+  - tests/product_config/test_git_decision_link_contracts.py
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_approval_crash_recovery.py
@@ -24,12 +25,13 @@ supersedes: []
 
 ## 1. 变更摘要
 
-**正式决定接线状态：`planned`。** 新决定类型、Wire/Writer、事件正文及宿主恢复屏障仍为拟议，未实现、未装配。
+**正式决定接线状态：`planned`。** [三种决定数据声明与严格 Wire](m09-r4-git-decision-data-contract.md)已实现；原来源认证 Proof、事务 Writer、完整历史 Reader 及宿主恢复屏障仍未实现或装配。
+数据契约通过不能签发认证、批准或执行权限；当前没有默认产品 Git 写工具。
 文档治理状态保持 `draft`；`code_revision` 固定现行消费者实现，不表示拟议正式决定接口已经落地。
 B3 的必需只读依赖 `verify_product_git_user_observation` 与共享末轮配方已在当前工作区落地；
 它们只复核既有完整 U，原Reader绑定及每个基准成员均向原生端口求证，不接受重新计算公开摘要作为认证；不代表完整 B3 批准认证接线或正式上线。原 prepared Ledger 与审批历史 Reader 已在协调层消费该依赖；B4、B7、同步响应性 P1 与 approved Writer 均未闭合。
 独立的[原 prepared 审批历史只读子切片](m09-r4-git-prepared-approval-history.md)已经实现窄域历史解释与原资源读取；
-它不包含本文拟议的 Git 决定 Wire/Writer、正式决定的完整 U 消费与同步终端一致性、协作锁和恢复屏障，不改变本文新增正式决定接口的 `planned` 状态。
+它不包含 Git 决定的来源 Proof/Writer、正式决定的完整 U 消费与同步终端一致性、协作锁和恢复屏障，不改变本文新增正式决定接口的 `planned` 状态。
 本文采用真实模板 [change-design-template.md](../governance/templates/change-design-template.md) 的十四节结构。
 
 | 项目 | 内容 |
@@ -346,14 +348,14 @@ flowchart TD
 | prepared/v1 | 原完整 Plan2、approval、phase prepared、sequence 0 | 不变，仍只支持实时 pending Reader | 保留原 Schema、wire 和拒绝语义；新历史 Reader 可核对其历史字节 |
 | `git_product_links` | 十一列当前投影 | 同行推进 phase/sequence/payload，原八列身份及指纹不变 | 不新增列；严格 CAS 更新，禁止换 Route/Core |
 | `git_product_link_events` | sequence 0 prepared | 追加 sequence 1 决定或取消正文 | 旧事件及冗余 phase 不可改写 |
-| 新正文 spec_version | 不存在 | `harnessix.product-git-decision-link/v1`（拟议） | 明确版本分派；未知 spec/phase 拒绝，不自动升代 |
+| 新正文 spec_version | 旧 prepared 不接受决定 | `harnessix.product-git-decision-link/v1`（数据 Wire 已实现） | 明确版本分派；未知 spec/phase 拒绝，不自动升代 |
 | approved | DDL 已保留名字，尚无本认证消费者 | `fact_kind=approved`、SQL phase approved | 名字存在不等于能力已经实现 |
 | denied/cancelled | 无相应 SQL phase | `fact_kind=denied/cancelled`、SQL phase failed | 只表示未进入本 Git 效果链的负向事实；不等同 Executor failed |
 | `git_record_publications` | 同实体唯一 epoch 连续认证 | 原 epoch、原身份延续；领域序号 n 对应 claims n+1 | 原 MAC 用途、Key、Scope 不变；不再 uuid4 |
 | `git_prefix_anchor` | 原 genesis、全集 revision | 同 genesis 按真实新增事实推进 revision | 不签创世、不重建缺失尾锚、不追认旧未签数据 |
 | Owner | 原 Session token、原 Audit fence、原资源引用 | 本次操作冻结并逐检查点核对 | 不持久化可重放 token，不创建新 Owner 账本 |
 
-### 7.2 拟议闭合正文与字段
+### 7.2 闭合正文与字段：数据已实现，来源认证待接线
 
 采用 closed union，不给 prepared 添加可选批准字段，不构造一个允许任意 phase 的通用 Link。
 共同字段只保存一次 `plan: ProductGitDeliveryPlanV2` 与 `approval_request: TrustedActionApprovalRequestContent`；后者为原始未决定请求。
@@ -707,7 +709,8 @@ B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放�
 
 ## 14. 实现偏差与最终结论
 
-正式决定接线状态仍为 `planned`，文档保持 `draft`。B3 必需只读 verifier/shared helper 及现行 prepared/审批历史消费者已落地，
+正式决定接线状态仍为 `planned`，文档保持 `draft`。三种完整数据声明及严格 Wire 已落地，详见[数据详设](m09-r4-git-decision-data-contract.md)；
+它们不认证来源、不读写原库、不返回执行权。B3 必需只读 verifier/shared helper 及现行 prepared/审批历史消费者已落地，
 实际接口显式使用原 Session/transactions/ports，而非拟议的 CoreStore 参数；此差异不关闭完整 B3、B4、B7、P1 或 approved Writer。
 验证结论仅以专项发布原件为准，不声明安装、产品验收或正式上线。
 原表与原 Prefix/MAC 能承载连续决定事实，原 Session/Router 审批恢复可复用；新增历史适配不需要第二 Store 或第二授权体系。
