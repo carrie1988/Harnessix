@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 205
-code_revision: c65d6dbef1032b3456c34359959f803aa063ec29
+version: 206
+code_revision: b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c
 owners:
   - core
 modules:
@@ -2309,3 +2309,11 @@ Git/SQLite 同提交瞬间的整仓强一致尚无可用原语，完整U末轮�
 [源码与协作研究](research/git-checkpoint-cooperation.md)在保留原检查、取消、期限、SQL和终端语义下，仅接入两处CAS同步配方。机制25项和原终端/SQL限定16项通过；同一SDK物理替换负控两次通过，不累计为两个真实质量场景。
 实测最大事件循环间隔仍约20.419秒，完整行认证/解码最长7.424秒、终端3.878秒；最大间隔尚未完整归因。因此两个入口的协作不能关闭P1，生产默认源码、依赖和既有产品能力保持。
 下一关键路径是完整回读及材料恢复的同步成本、必须连续执行的终端成本边界，而非全局插入yield、缓存认证或扩大期限。[固定验证](validation/git-checkpoint-cooperation-2026-10-07-v1/README.md)保留原型RED及各上下文；源码级研究不替代安装、三平台、真实R3、独立Beta或R1～R6商用门槛。
+
+## R4 原安装待审批完整回读成本归因
+
+[成本研究](research/git-prepared-cost-attribution.md)固定与当前548件包成员相同的原安装产品，一项SDK物理替换负控通过；观测最大心跳间隔20.761515秒，约395523次短Owner观察与791051次完整Owner查询。计时互有嵌套，不相加为总体耗时，也不与不同插桩旧值比较宣称改善。
+
+连接复用无法证明原失败语义等价，未合入产品；逐字段取消与完整事实认证分层为待决契约提案，不静默降低认证检查。后续先明确切分边界、原异常及暂态失效语义，再实施负控与真实响应性验证；P1保持开放。
+
+[固定验证](validation/git-prepared-cost-attribution-2026-10-07-v1/README.md)保留原日志、分析和输入，产品源码、依赖、期限及容量保持。单人先导真实任务0项，不替代独立Beta；原R3、两笔费用未决、默认完整Git/Commit/Backup2、三平台和R1～R6继续开放。

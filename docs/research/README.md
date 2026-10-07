@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 15
-code_revision: c65d6dbef1032b3456c34359959f803aa063ec29
+version: 16
+code_revision: b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c
 owners:
   - core
 modules:
@@ -33,7 +33,7 @@ supersedes: []
 参考事实、行为证据、推断和工程取舍，不直接定义Harnessix公共契约。Harnessix采用或拒绝某种机制的决定必须进入
 [ADR索引](../adr/README.md)，当前实现必须进入[模块设计](../README.md#3-当前事实源)。
 
-截至标注代码版本，本目录包含34份冻结或评审中研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
+截至标注代码版本，本目录包含35份冻结或评审中研究资料和本索引。每份资料均绑定创建时的Harnessix代码提交，并在正文顶部
 登记访问日期；参考仓库提交、产品版本、证据路径和适用范围由正文或[统一研究基线](baselines.md)固定。
 
 ## 2. 证据边界
@@ -173,3 +173,5 @@ flowchart LR
 ## 8. 当前响应性研究
 
 [Git 同步检查点协作调度](git-checkpoint-cooperation.md)固定2026-10-07的源代码及隔离实验，明确SQL/Terminal不可让出边界与两处CAS入口不足以关闭P1的实测结果，不代表生产采用greenlet。
+
+[待审批完整回读成本归因](git-prepared-cost-attribution.md)基于原已安装产品固定 SDK 负控，给出高频 Owner 观察和连续阶段的实测；连接复用不采用，分层检查点仅为未决提案。

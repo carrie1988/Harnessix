@@ -1,0 +1,97 @@
+{
+  "schema_version": "harnessix.installed-prepared-cost-study/v1",
+  "status": "INSTALLED_PREPARED_COST_ATTRIBUTED_RESPONSE_P1_OPEN",
+  "created_at_utc": "2026-10-07T07:10:37.589726+00:00",
+  "source_revision": "b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c",
+  "wheel_sha256": "fd56221c5973ce2da12e3e9a5dfeb3ebc6836a7ed0a3c6e1b60b055c76e66dcd",
+  "package_members_same_bytes": 548,
+  "frozen_source_files": 5104,
+  "environment": "macOS arm64 / CPython 3.12.7 原锁隔离安装",
+  "installed_only": true,
+  "checks": {
+    "installed_sdk_physical_replacement_negative": {
+      "tests": 1.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 102.05
+    },
+    "analysis_synthetic_only": {
+      "tests": 26.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 0.0058
+    }
+  },
+  "pytest_warning_count": 1,
+  "analysis_final_python": "3.12.7",
+  "analysis_initial_setup_errors_preserved": {
+    "python": "3.8.2",
+    "errors": 26,
+    "reason": "隔离启动未将私有分析器目录加入导入路径",
+    "raw_log": "analysis-tests.log",
+    "product_failure": false
+  },
+  "maximum_gap_seconds": 20.761515124933794,
+  "heartbeat_samples": 76,
+  "tick_seconds": 0.05,
+  "high_frequency_functions": [
+    {
+      "function": "host.fresh_owner",
+      "calls": 395523,
+      "total_seconds": 43.281326379976235,
+      "max_seconds": 0.012824542005546391
+    },
+    {
+      "function": "owner.full_query",
+      "calls": 791051,
+      "total_seconds": 26.293215191108175,
+      "max_seconds": 0.012745625106617808
+    },
+    {
+      "function": "host.open_owner_reader",
+      "calls": 395523,
+      "total_seconds": 11.322847384493798,
+      "max_seconds": 0.0009162499336525798
+    }
+  ],
+  "nested_totals_must_not_be_added": true,
+  "longest_gap_interval_union": {
+    "gap_seconds": 20.761515124933794,
+    "explained_seconds": 20.693384957965463,
+    "unexplained_seconds": 0.06813016696833074,
+    "explained_fraction": 0.9967184395474823
+  },
+  "only_input_top_ten_gaps": {
+    "gap_count": 10,
+    "maximum_gap_seconds": 20.761515124933794,
+    "gap_union_seconds": 94.40824720892124,
+    "explained_union_seconds": 82.4261633369606,
+    "unexplained_union_seconds": 11.98208387196064,
+    "explained_fraction": 0.8730822335315174
+  },
+  "profile_input_sha256": "9d0b8fb082604bc0c96109c5c7b418bdab665b1bca4eeb3db13d213a9f181c93",
+  "invalid_timing_records": 0,
+  "uninstrumented_sla_accepted": false,
+  "performance_improvement_claimed": false,
+  "product_source_changed": false,
+  "product_dependency_added": false,
+  "source_schema_budget_or_capacity_changed": false,
+  "new_environment_installed": false,
+  "connection_reuse_adopted": false,
+  "layered_checkpoints_adopted": false,
+  "response_p1_closed": false,
+  "real_model_requests": 0,
+  "real_r3_frozen_strict": "0/20",
+  "real_r3_frozen_required_tests": "1/20",
+  "real_beta_tasks": 0,
+  "independent_beta_users": 0,
+  "commercial_release_accepted": false,
+  "still_open": [
+    "同步响应性P1与分层检查点契约决策",
+    "完整批准事实、U、NativeBridge、A/T2/D、独立Commit和Backup2",
+    "真实R3与两笔费用未决",
+    "消费者安装、三平台、独立Beta和同候选R1—R6"
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 146
-code_revision: c65d6dbef1032b3456c34359959f803aa063ec29
+version: 147
+code_revision: b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c
 owners:
   - core
 modules:
@@ -259,7 +259,7 @@ Git产品接线当前只完成原成功Patch来源和[只读HEAD基准](changes/
 
 - [ADR索引](adr/README.md)：记录90份长期决策的状态、背景、候选方案、选择和后果；
 - [源码研究计划](research-plan.md)：定义参考版本、研究问题和clean-room边界；
-- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code及Provider接入等34份冻结或评审中参考证据及访问日期；
+- [源码研究索引](research/README.md)：Codex、OpenCode、Claude Code及Provider接入等35份冻结或评审中参考证据及访问日期；
 - [自研与复用边界](build-vs-buy.md)：第三方依赖、许可证和自研边界。
 
 ADR回答“为什么这样选择”，源码研究回答“参考实现有什么证据”，二者都不替代当前模块设计。
@@ -379,3 +379,5 @@ Artifact字段缺少证据出发，说明静态字段来源、失败与恢复、
 ## Git 同步响应性研究
 
 [研究及完整设计](research/git-checkpoint-cooperation.md)说明原检查点到同Task协作的候选机制、不可让出段和失败语义；[限定验证](validation/git-checkpoint-cooperation-2026-10-07-v1/README.md)记录实际SDK仍有20秒占用，不作为默认产品或商用性能通过。
+
+[原安装产品成本归因](research/git-prepared-cost-attribution.md)与[固定验证](validation/git-prepared-cost-attribution-2026-10-07-v1/README.md)定位高频认证成本；不把插桩负控通过作为响应性或商用完成。
