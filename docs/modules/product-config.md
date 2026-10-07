@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 79
-code_revision: 03529962a63dfc7818d6b0d0b6874d4e9fc118a3
+version: 80
+code_revision: e088b09b20de3b2898bd2d4b8479f39b84553018
 owners:
   - core
 modules:
@@ -2627,3 +2627,21 @@ mode=ro 与 query_only 禁止业务写入，但保留 SQLite WAL/SHM 锁协调�
 原隐式旧快照反例在固定安装件中拒绝；原失败仍作为历史证据保留。
 [限定验证报告](../validation/git-owner-fresh-view-2026-10-07-v1/README.md)列出源码、实际SDK、安装与资源清理成绩。
 这不证明查询后的永久 Owner、ABA、OS 锁/FD或完整 B7，也不启用 approved Writer 或关闭商业门禁。
+
+
+## 原 prepared Git 审批历史只读核验
+
+[完整详设](../changes/m09-r4-git-prepared-approval-history.md)新增独立
+[`历史 Reader`](../../src/harnessix/product_config/git_prepared_approval_history.py)，
+先复用原全前缀 Row Reader 验真全部 Git MAC 与尾锚，再通过
+[`原资源 Proof`](../../src/harnessix/product_config/git_approval_history_proof.py)读取原完整认证 Session、
+原 Route 全链、Execution 检查点、Core/CAS/Source 和 Review。
+[`纯解释器`](../../src/harnessix/product_config/git_approval_history_projection.py)不自行认证 MAC，
+只检查完整合法历史中唯一请求与原三方决定；不能单独作为认证或执行入口。
+
+原 pending-only Reader/Writer 不变。新 Reader 的结果并列保存原 prepared 与审批历史，
+已经决定但 Git 行仍是 sequence 0 时明确 `decision_not_linked`，不冒充 Git approved 事件。
+同一原控制窗口、四库无变化监视、全 SQL 行和尾锚、末端原材料及决定重验继续生效；
+pending/approved 还要求原 Turn 当前未超时，不刷新原预算。
+内部只读调用不补审批、不签发决定、不 execute/reconcile，不默认注册 Git 写工具。
+完整 U 最终 Git 复核、协作锁、决定 Writer、A/T2/D、Commit、Backup2 与正式发行仍独立开放。

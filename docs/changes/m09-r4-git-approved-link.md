@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 3
+version: 4
 code_revision: pending
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -23,6 +23,8 @@ supersedes: []
 
 **实现状态：`planned`。** 本文所有新增类型、接口、事件正文与接线均为拟议，未实现、未验证、未装配。
 文档治理状态使用现行规范的 `draft`，与接口实现状态 `planned` 分开；设计阶段 `code_revision` 使用 `pending`。
+独立的[原 prepared 审批历史只读子切片](m09-r4-git-prepared-approval-history.md)已经实现窄域历史解释与原资源读取；
+它不包含本文拟议的 Git 决定 Wire/Writer、完整 U 末轮复核、协作锁和恢复屏障，不改变本文新增正式决定接口的 `planned` 状态。
 本文采用真实模板 [change-design-template.md](../governance/templates/change-design-template.md) 的十四节结构。
 
 | 项目 | 内容 |

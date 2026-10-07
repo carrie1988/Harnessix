@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
-code_revision: 03529962a63dfc7818d6b0d0b6874d4e9fc118a3
+version: 3
+code_revision: e088b09b20de3b2898bd2d4b8479f39b84553018
 owners:
   - core
 modules:
@@ -32,9 +32,9 @@ supersedes: []
 
 | 项目 | 当前边界 |
 |---|---|
-| 源码核对基线 | `main`，`03529962a63dfc7818d6b0d0b6874d4e9fc118a3`；后继修改须另行冻结并交付 |
+| 源码核对基线 | `main`，`e088b09b20de3b2898bd2d4b8479f39b84553018`；后继修改须另行冻结并交付 |
 | 包版本 | 内部 `1.0.0rc1`；[包元数据](../../pyproject.toml#L1-L32)不是正式发行证明 |
-| 最新候选 | 尚未封存；安装入口须等待维护者提供交付路径、Revision、SHA256 和锁定依赖 |
+| 最新候选 | macOS arm64 / CPython 3.12.7 限定先导安装候选；源码/Wheel/两个独立安装的 548 件包成员一致；实际提交与安装输入由交付记录提供，不代表商用封板 |
 | Git 业务能力 | 默认完整 Git、独立 Commit、业务 Backup2 尚未落地；不能以组件设计或专项结果替代默认产品能力 |
 | 首轮参与 | 单人先导，当前真实任务完成数为 0；尚无独立开发者试用成绩 |
 | 先导结论 | 仅说明实际试用的候选、机器、Provider 配置和任务，不关闭 R3、R4、R5 或 R6 |
@@ -69,7 +69,12 @@ flowchart TD
 **以下步骤仅在维护者提供完整交付输入后执行。** 未取得输入时停留在准备阶段，不从移动的 `main`、共享源码环境或未知下载地址安装。
 交付至少包含候选 Wheel 的本地绝对路径、完整 Revision、独立可信 SHA256、原锁 `requirements.txt`、绑定该 Wheel 本地路径及相同摘要的 `wheel-requirement.txt`，以及满足锁定输入的离线依赖缓存。
 依赖应包含 `tui` 和选定 Provider 的 Extra；基础 Wheel 不隐式提供这些依赖。
-当前没有本文可承诺的官方 Wheel 下载 URL；旧验证件不能充当最新未封存候选。
+当前没有本文可承诺的官方 Wheel 下载 URL；旧验证件不能充当最新候选。
+当前限定安装输入选择 `openai+tui`，不含 dev；46 个运行依赖使用原锁离线哈希安装。
+已封存缓存采用固定版本 `uv 0.9.1` 的私有格式，仅核验本机 CPython 3.12/arm64；
+不是通用 pip Wheel 目录，也不证明三平台发行或全部原始依赖 Wheel 已交付。
+缓存完整性清单、复制输入和重放说明必须与候选一并提供，不忽略缓存缺失或版本不匹配。
+[审批历史增量验证](../validation/git-approved-history-2026-10-07-v1/README.md)将包一致性、离线预检、SDK 与真实任务结果分开。
 
 以下为 macOS/Linux Bash 示例。先准备本机 Python 3.12 和 `uv`，选择尚不存在的安装目录；**逐段执行，每一步成功后才继续**。
 将路径和摘要替换为可信交付记录中的实际值，不能把本地自算摘要当作来源证明。
@@ -94,8 +99,9 @@ PY
 ```bash
 uv venv --python 3.12 "$INSTALL/venv"
 export PY="$INSTALL/venv/bin/python"
-uv pip install --python "$PY" --offline --require-hashes --no-deps -r "$DELIVERY/requirements.txt"
-uv pip install --python "$PY" --offline --require-hashes --no-deps -r "$DELIVERY/wheel-requirement.txt"
+export CACHE="$DELIVERY/pilot-cache"  # 可信交付的已验证固定版本缓存路径
+uv pip install --python "$PY" --cache-dir "$CACHE" --offline --require-hashes --no-deps -r "$DELIVERY/requirements.txt"
+uv pip install --python "$PY" --cache-dir "$CACHE" --offline --require-hashes --no-deps -r "$DELIVERY/wheel-requirement.txt"
 cd "$INSTALL"
 "$PY" -I -m harnessix --help
 "$PY" -I -m harnessix code --help

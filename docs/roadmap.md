@@ -543,6 +543,12 @@ R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m0
 Windows消费者环境、完整编码闭环、版本升级/回退、独立Beta和同候选全部发布门禁仍开放；不据此关闭R4。
 详细逐项处置、退出阈值、依赖及延期表见[发布范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)。
 
+[原 prepared 审批历史只读增量](changes/m09-r4-git-prepared-approval-history.md)与
+[限定安装验证](validation/git-approved-history-2026-10-07-v1/README.md)独立记录；
+原 pending Reader 不放宽，Git 决定 Writer、完整 U 末轮复核、协作边界及默认写入仍未接通。
+[单人先导手册](operations/pilot-beta.md)使用源码外 macOS arm64 安装候选，真实任务仍为 0；
+单人准备不降低独立 Beta 门槛，不关闭 R3～R6。
+
 
 ### 0.9.1实施计划与完成边界
 

@@ -1,7 +1,7 @@
 ---
 doc_type: governance
 status: current
-version: 79
+version: 80
 code_revision: 33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6
 owners:
   - core
@@ -186,3 +186,13 @@ DOC-1.3与DOC-1.4的当前包级迁移已经完成。整改阶段和责任分组
 已覆盖30份冻结研究、访问日期和采用结果。DOC-1.5结束时189份Markdown已具备标准YAML元数据；
 加入ADR 0077和DOC-1.6详细设计时共有191份Markdown、30个生产源码包；新增Product UI后曾达到31个包。
 0.9.1f3已物理删除5个旧服务包，并由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)完成六实例全矩阵验收；当前26个生产源码包及其源码/测试映射继续由自动门禁持续验证，历史资料不计入当前包覆盖率。
+
+
+## 原 prepared Git 审批历史只读增量
+
+| 文档 | 当前源码 | 验证入口 | 边界 |
+|---|---|---|---|
+| [完整详设](../changes/m09-r4-git-prepared-approval-history.md) | [原模型解释](../../src/harnessix/product_config/git_approval_history_projection.py)、[原资源 Proof](../../src/harnessix/product_config/git_approval_history_proof.py)、[全关联 Reader](../../src/harnessix/product_config/git_prepared_approval_history.py) | [纯投影正反例](../../tests/product_config/test_git_approval_history_projection.py)、[实际认证 SDK](../../tests/product_config/test_git_prepared_approval_history.py) | 只读；Git 仍 prepared；无决定 Writer、执行权或默认装配 |
+
+模型测试不等于原 MAC 阳性；原 SDK 夹具保持正式审批及原持久化，只在执行前禁止后台启动。
+真实编码质量、安装候选与单人/独立 Beta 分开登记，不以此增量关闭 R1～R6。

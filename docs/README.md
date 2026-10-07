@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 143
+version: 144
 code_revision: a0b5df0a3c380b8b058b8e45c99a731a9022e7f0
 owners:
   - core
@@ -77,6 +77,9 @@ supersedes: []
 以R1～R6为执行队列。远端MCP/OAuth、公网Push、全模型/计价矩阵、通用维护平台和自动更新后置；
 已实现功能的安全、原生三平台核心链、真实编码质量、权利和受控Beta不降低。
 本节是当前范围；下表及历史固定验证记录中的更广开放项不自动成为首发前置条件。
+
+[原 prepared 审批历史只读详设](changes/m09-r4-git-prepared-approval-history.md)将原完整认证事实与执行权分开，
+不启用默认 Git 写入；[单人先导手册](operations/pilot-beta.md)用于受控试用准备，独立 Beta 门槛保持。
 
 功能主线优先处理真实编码质量、核心安全恢复、Windows原生编码和安装升级。
 许可证/权利链等治理工作低优先并行，不阻挡功能研发；必要发行处置仍在正式发布前完成。

@@ -1,0 +1,79 @@
+{
+  "spec_version": "harnessix.git-approved-history-verification/v1",
+  "status": "READONLY_HISTORY_VERIFIED_PILOT_INSTALL_READY_NOT_RELEASE",
+  "source_parent": "e088b09b20de3b2898bd2d4b8479f39b84553018",
+  "wheel_sha256": "a9f3ff16a606b07d4aadd2a817862a7bfd7ff89ab49c1143471206e3c27a16d9",
+  "package_files": 548,
+  "python_source_files": 507,
+  "checks": {
+    "governance-session-r2": {
+      "tests": 2020.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 53.142
+    },
+    "reader-source-final-negative": {
+      "tests": 5.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 474.171
+    },
+    "reader-installed-r2-positive": {
+      "tests": 4.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 459.788
+    },
+    "installed-projection-owner-r2": {
+      "tests": 148.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 60.522
+    },
+    "final-documentation-r2": {
+      "tests": 29.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 8.011
+    }
+  },
+  "pilot": {
+    "platform": "macOS 27.0.1 arm64",
+    "python": "3.12.7",
+    "version": "1.0.0rc1",
+    "runtime_dependencies": 46,
+    "extras": [
+      "openai",
+      "tui"
+    ],
+    "dev_in_pilot": false,
+    "source_fallback": false,
+    "doctor_fixture_only": true,
+    "help_verified": true,
+    "single_user_tasks_completed": 0,
+    "independent_beta_completed": false,
+    "cache_format": "uv 0.9.1 private cache",
+    "original_runtime_wheels_missing": 40
+  },
+  "real_api_requests": 0,
+  "real_credentials_read": false,
+  "git_effects_executed": false,
+  "public_schema_changed": false,
+  "default_git_writer_enabled": false,
+  "release_gates_closed": [],
+  "unverified": [
+    "完整B2决定Wire/Writer及恢复屏障",
+    "完整U最终Git复核及B4协作锁边界",
+    "A/T2/D/NativeBridge/Commit/Backup2",
+    "默认Git交付装配",
+    "当前候选Windows/Linux与消费者编码闭环",
+    "R3真实质量复验及未决费用",
+    "P1同步调度长间隔",
+    "独立Beta及1.0正式封板"
+  ]
+}
