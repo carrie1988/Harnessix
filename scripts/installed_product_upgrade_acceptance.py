@@ -292,6 +292,7 @@ def accept_upgrade(arguments: argparse.Namespace) -> dict:
         arguments, arguments.wheel, candidate.sha256, "upgraded", tuple(first["threads"])
     )
     require(second["version"] == candidate.version, "installed_server_version_mismatch")
+    restore_id = str(uuid4())
     restored = run_phase(
         arguments,
         arguments.wheel,
@@ -299,12 +300,32 @@ def accept_upgrade(arguments: argparse.Namespace) -> dict:
         "restore",
         tuple(first["threads"]),
         first["backup_id"],
-        str(uuid4()),
+        restore_id,
     )
     require(key_path.read_bytes() == original_key, "installed_restore_identity_invalid")
+    # 当前Runtime验收会再次升代；旧版切换前必须重建与旧版匹配的完整备份。
+    rollback_restore_id = str(uuid4())
+    require(rollback_restore_id != restore_id, "upgrade_restore_identity_reused")
+    rollback_state = _helpers.cli(
+        (
+            "state",
+            "restore",
+            *case.state_arguments,
+            "--restore-id",
+            rollback_restore_id,
+            "--confirm-backup",
+            first["backup_id"],
+        )
+    )
+    require(
+        rollback_state["status"] == "restored" and rollback_state["retained_previous_state"],
+        "installed_restore_invalid",
+    )
+    require(key_path.read_bytes() == original_key, "installed_restore_identity_invalid")
+    # 此处只切换发行物；不得再启动会前向升代的当前Runtime。
     _switch_without_state_change(arguments, arguments.baseline_wheel, baseline.sha256, "rollback")
     final = run_phase(
-        arguments, arguments.baseline_wheel, baseline.sha256, "rollback", tuple(restored["threads"])
+        arguments, arguments.baseline_wheel, baseline.sha256, "rollback", tuple(first["threads"])
     )
     require(
         final["version"] == baseline.version and key_path.read_bytes() == original_key,
@@ -343,6 +364,9 @@ def accept_upgrade(arguments: argparse.Namespace) -> dict:
         "prior_root_retained": True,
         "rollback_install_preserves_state_bytes": True,
         "rollback_reads_restored_threads": True,
+        "rollback_reads_original_backup_threads": True,
+        "rollback_matching_backup_restored_before_version_switch": True,
+        "candidate_runtime_reopened_after_matching_restore": False,
         "rollback_creates_new_thread": True,
         "workspace_unchanged": True,
         "provider_turn_requests": 0,

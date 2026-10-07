@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
-code_revision: 7564a1384eeeabb667b74efdae9a40513713be10
+version: 10
+code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
 owners:
   - core
 modules:
@@ -43,7 +43,9 @@ Revision支持的操作规则。
 | 旧Action SQLite/PostgreSQL Journal | 冻结历史Schema | 当前产品不自动升级 | 停写归档；按[归档手册](legacy-action-archive.md)处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
-| 当前Trusted Action Audit | `action_audit_metadata` Schema v2、Route/Event/Operation | v1启动时前向补齐Owner元数据和Operation表 | 不支持Down Migration；恢复升级前完整State Root备份 |
+| 当前Trusted Action Audit | 默认Schema v2；准入带父闭包的新Route Plan后v3 | v1启动时前向补齐Owner/Operation；v3不是每次Runtime初始化自动产生 | 不支持Down Migration；恢复升级前完整State Root备份 |
+| Workspace事务 | 初始化Schema v2；实际准入新v2记录后v3；Reader支持1/2/3 | 初始化将v1前向升v2；新记录准入升v3 | 旧0.1.0只接受v1；恢复匹配完整备份，不手改版本 |
+| Execution Plan | 默认Schema v1；实际准入带父闭包的新Plan后v2 | 新Plan准入时前向升代，不是所有Runtime初始化自动产生 | 旧Reader不接受更高代际；恢复匹配完整备份 |
 | Patch/Process/Delivery/扩展账本 | 各模块专用版本或表 | 取决于宿主显式装配 | 必须按模块设计做整组备份和对账 |
 
 旧Action Journal与Agent Session是不同存储合同。当前产品不得初始化或消费旧Journal，也不能把Session的Checksum、`schema_too_new`和`quick_check`能力外推到旧数据。
@@ -231,11 +233,16 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 2. 终止或隔离仍持有Lease/Owner的目标进程；
 3. 保存目标版本失败证据，不覆盖升级前备份；
 4. 对所有可能已发生的外部效果完成对账；
-5. 恢复同一时间点的完整状态集和Product Config；
-6. 启动源版本并验证Migration、Readiness、事件、Snapshot和外部效果；
+5. 以新restore ID恢复与源版本匹配的完整状态集和Product Config，并保留Previous及原Key；重复上一恢复ID不会撤销后来新增的状态；
+6. 恢复后不再启动会前向升代的目标Runtime；安装源版本时核对状态字节不变，再启动源版本验证Migration、Readiness、事件、Snapshot和外部效果；
 7. 只有数据和效果一致后恢复流量。
 
 禁止删除Migration行、手改Schema版本、把新事件交给旧Reader或只恢复Session而保留不匹配的Patch/效果账本。
+
+若曾用目标Runtime打开已恢复状态，须先关闭它，再以新的明确恢复身份重新建立匹配备份；不能只切换旧二进制。
+[匹配回退详设](../changes/m09-r4-matching-backup-rollback-order.md)说明候选Runtime重新升代导致的验收失败与正确顺序。
+Schema来源分别见[Workspace初始化](../../src/harnessix/delivery/workspace_store_schema.py)、
+[Action审计](../../src/harnessix/trusted_actions/store.py)和[Execution Plan](../../src/harnessix/execution/store.py)。
 
 ## 13. 源码与测试映射
 

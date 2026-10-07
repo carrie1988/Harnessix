@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
+version: 3
+code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
 related_tests:
   - tests/governance/test_installed_product_upgrade_acceptance.py
   - tests/governance/test_installed_product_acceptance.py
+  - tests/governance/test_installed_rollback_order.py
   - tests/product_config/test_product_state_restore.py
 supersedes: []
 ---
@@ -40,7 +41,7 @@ supersedes: []
    两份验收脚本的实际字节必须等于指定Revision内原件，不能用未提交驱动替代源码绑定。
 4. 旧包创建认证Thread A并备份六库和原Key；升级安装不修改状态，候选读取A并创建B。
 5. 候选通过正式CLI恢复升级前备份，证明B消失并创建C；同restore ID重复不回退C。
-6. 停机安装原旧包，状态原字节不变；旧包读取A/C并创建D，证明回退后的读写能力。
+6. 候选关闭后以新restore ID再次恢复匹配完整备份，不重开候选Runtime；停机安装原旧包，状态原字节不变；旧包读取原A并创建D，证明回退后的读写能力。含C的Root保留于Previous。
 7. 三平台消费同一个候选Wheel，分别出具事实；Windows Server结果不外推Windows11。
 
 非目标：完整编码质量、真实模型Turn、任意历史版本升级、跨机Key迁移、消费者OS认证、独立Beta。
@@ -86,8 +87,9 @@ sequenceDiagram
     C->>P: 新包读取A 创建B 关闭Transport
     C->>P: 原CLI显式恢复 原restore ID重复
     P->>S: 保留前Root 恢复A 创建C 重复不回退C
+    C->>S: 新restore ID再恢复匹配原备份 不重开候选Runtime
     C->>I: 停机安装原0.1.0
-    C->>P: 旧包读取A/C 创建D
+    C->>P: 旧包读取原A 创建D
     P-->>C: 阶段版本及集合验证通过
     C-->>C: 输出低敏结果 不声明商用完成
 ```
@@ -150,16 +152,16 @@ flowchart TD
 
 产品事实仅存于原数据库、原Key及原恢复Journal；控制器不保存第二套恢复状态机。
 同一case只能创建一次；全过程串行，原Owner拒绝活跃互斥冲突。恢复使用同一个UUID与同一个备份确认身份，
-重复调用只返回原终态，不能再次覆盖后续C。包切换前所有Transport必须为closed。
+重复调用只返回原终态，不能再次覆盖后续C。旧版回退使用不同的新恢复ID再次恢复匹配备份，含C的Root按原恢复合同保留于Previous。包切换前所有Transport必须为closed。
 
-回退是“候选恢复升级前整组状态，然后安装旧包”，不是直接把旧包指向任意候选新状态。
+回退是“候选恢复升级前整组状态，不重开候选Runtime，然后安装旧包”，不是直接把旧包指向任意候选新状态。
 候选恢复后的原Root保留，升级后B保留在此前Root中，不偷偷删除用户升级后的工作。
 Workspace始终独立于State恢复，原`preserved.txt`必须保持。
 
 ## 8. 安全、隐私与可观测性及错误分类
 
 不使用真实模型Key，Provider地址为`provider.invalid`，模型Turn为0。每个阶段设置同一非秘密夹具环境变量，
-不读取钥匙串或70元预算账本。源仓库只作为发行物/辅助脚本来源，不能出现在产品导入路径。
+不读取钥匙串或模型验证预算账本。源仓库只作为发行物/辅助脚本来源，不能出现在产品导入路径。
 实际Wheel先通过原Secret扫描；安装日志不展开产品异常正文，阶段失败仅暴露固定码。
 
 | 错误码 | 含义与动作 |
@@ -189,8 +191,11 @@ install_candidate_and_require_all_case_bytes_unchanged()
 fresh_phase(read_A_and_create_B)
 fresh_phase(restore_original_backup_create_C_repeat_same_restore_id)
 require_original_key_unchanged()
+restore_matching_original_backup_with_a_new_restore_id()
+require_restored_previous_retained_and_original_key_unchanged()
+do_not_open_candidate_runtime_again()
 install_baseline_and_require_all_case_bytes_unchanged()
-fresh_phase(read_A_C_and_create_D)
+fresh_phase(read_original_A_and_create_D)
 require_workspace_unchanged()
 publish_low_sensitive_result_without_commercial_claim()
 on_any_failure: preserve_case_and_stop_without_automatic_retry()
@@ -215,6 +220,10 @@ on_any_failure: preserve_case_and_stop_without_automatic_retry()
 JUnit、原字节Manifest、Review Packet及三份图示；本范围通过不关闭R4整体或其他商用门禁。
 
 ## 11. 源码与测试映射及阅读顺序
+
+固定`702a89c`的三平台安装生命周期通过，但不同版本回退均失败；候选验收重开Runtime后再次升代，
+导致旧包启动前不再是匹配原备份。新顺序及失败保护见[匹配回退详设](m09-r4-matching-backup-rollback-order.md)。
+旧固定版本PASS不能外推当前候选；新鲜实际复验完成前，该子项保持开放。
 
 | 顺序 | 源码/资料 | 验证 |
 |---|---|---|

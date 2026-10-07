@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 219
-code_revision: ad4bb6425e1b25d4dbf1d546c5d6d64c256a2958
+version: 220
+code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
 owners:
   - core
 modules:
@@ -2496,3 +2496,15 @@ R3历史严格0/20/必需测试1/20与真实Beta接受0保持，不宣称商用�
 
 独立审阅P2的合法返回摘要漂移已通过原父同步terminal后internal-only完整来源重建及严格深快照整改；
 不新增外callback/await，保留原三FAIL，foreign comparison不执行。此前117.454秒与中间EF版120.418秒SDK均不是最终交付快照版本。最终源码摘要db0efd11由同源SDK及独立别名重定向探针绑定；上下文完整退出后只交付实际核验的新快照。
+
+### R4：当前规范Wheel安装及匹配回退顺序整改
+
+固定`702a89c`本机Python3.12.8源码外安装生命周期通过，规范Wheel摘要be30cacc，552成员一致；
+[Run 37692147486](https://github.com/carrie1988/Harnessix/actions/runs/37692147486)唯一构建及三个原生安装生命周期通过，
+但不同版本回退三平台均FAIL。一次独立新根诊断仍FAIL，只确认rollback固定顶层错误，未捕获内层Store码。
+只读Schema与源码证明原备份1/2/1在候选Runtime重开后变成2/2/1，旧包切换前不再满足匹配备份前提。
+[顺序详细设计](changes/m09-r4-matching-backup-rollback-order.md)只改验收调度：
+保留候选恢复/原ID幂等测试，以新ID恢复匹配完整备份，不重开候选Runtime，再切旧包读取原备份A并创建D。
+6项新RED后GREEN及47项安装边界通过，不是实际安装证明；原Apple Git CRLF控制失败另存，不改断言。
+修正后的全新实际复验及最终同候选门禁仍待完成；不放宽旧Reader、Schema、认证、Owner或R1～R6。
+本切片模型请求0；新60元周期估算0.706096、预留0，实际账单未确认。R3原成绩及Beta接受0不变。

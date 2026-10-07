@@ -88,7 +88,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
       - name: 安装证据边界正反例
-        run: uv run pytest tests/governance/test_installed_product_acceptance.py tests/governance/test_installed_product_upgrade_acceptance.py
+        run: uv run pytest tests/governance/test_installed_product_acceptance.py tests/governance/test_installed_product_upgrade_acceptance.py tests/governance/test_installed_rollback_order.py
       - name: 新建独立环境并导出原锁依赖
         shell: bash
         env:

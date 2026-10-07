@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 19
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 20
+code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
 owners:
   - core
 modules:
@@ -48,6 +48,11 @@ supersedes: []
 固定beda980的[三平台实际源码外安装与不同版本升级验证](../validation/installed-product-beda980-2026-10-04-v1/README.md)
 已取得唯一规范Wheel和三个原生Job通过；当前1.0.0rc1候选在该固定环境完成完整状态备份恢复、卸载重装，
 以及0.1.0→1.0.0rc1升级和匹配备份回退。该结果不是消费者全部OS、真实编码、Beta或1.0商用发布完成证明。
+
+后继固定`702a89c`的[Run 37692147486](https://github.com/carrie1988/Harnessix/actions/runs/37692147486)
+三个安装生命周期通过，但三个不同版本回退专项均失败，不能继承旧候选的升级PASS。
+[匹配备份回退顺序整改](../changes/m09-r4-matching-backup-rollback-order.md)保留原完整恢复与稳定ID测试，
+增加旧包启动前的匹配恢复且不重开候选Runtime；修正后的新鲜实际复验尚未完成。
 
 ## 2. 前置条件
 
