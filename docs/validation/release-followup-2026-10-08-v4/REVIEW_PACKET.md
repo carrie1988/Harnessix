@@ -2,7 +2,7 @@
 doc_type: validation-evidence
 status: reviewing
 version: 1
-code_revision: pending
+code_revision: 2cc097250435938746d3320043eeb116e07f4633
 owners: [core]
 modules: [session, product_config, documentation]
 related_adrs:

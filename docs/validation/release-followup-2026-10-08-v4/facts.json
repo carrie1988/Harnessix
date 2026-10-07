@@ -150,5 +150,6 @@
     "foreign_eq_calls": 0,
     "scope": "isolated real function control flow with dependency stand-ins; no actual MAC integration",
     "manifest_sha256": "2de838d14dc1bf4e9feb015c2dfacbdefbd0b672d43b8dcf24ae128965294058"
-  }
+  },
+  "implementation_revision": "2cc097250435938746d3320043eeb116e07f4633"
 }

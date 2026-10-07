@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 2
-code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
+code_revision: 2cc097250435938746d3320043eeb116e07f4633
 owners: [core]
 modules: [product_config, delivery, execution, session]
 related_adrs:
