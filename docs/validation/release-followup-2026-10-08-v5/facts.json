@@ -1,0 +1,160 @@
+{
+  "schema": "harnessix.release-followup/v5",
+  "source_base": "38cf8f7f601ce523d3c76b3473cf8d266339ed0d",
+  "source_files": [
+    {
+      "path": "src/harnessix/product_config/git_prepared_approval_history.py",
+      "bytes": 11286,
+      "sha256": "db0efd11070db8860193e927a7e6b0e30cae6a4c973c63ac6c58b539f57d0f59"
+    },
+    {
+      "path": "tests/product_config/test_git_decided_source_reader.py",
+      "bytes": 6641,
+      "sha256": "c6c52c00003e627de516a8b2303fb368dee773f0a8495e9ae7f574133230078d"
+    },
+    {
+      "path": "tests/product_config/test_git_decided_source_terminal.py",
+      "bytes": 4985,
+      "sha256": "9fc02de36b443ce8c0ea3c10d74df00b906d6b8260d01794ba4fb219f39eb96e"
+    },
+    {
+      "path": "tests/product_config/test_git_decision_source_sdk.py",
+      "bytes": 3671,
+      "sha256": "c93d90a8bcb7aa5642e8673a811018020fc285bafcc8adeef052a32652c47881"
+    },
+    {
+      "path": "src/harnessix/product_config/git_decision_link_sources.py",
+      "bytes": 7369,
+      "sha256": "15e6872fd9c22bca516007d998b51b96d62df3bdc003126ad3103ef8a7244c4a"
+    },
+    {
+      "path": "src/harnessix/session/sqlite_history.py",
+      "bytes": 6471,
+      "sha256": "e970c61fc7bd3673ff0b70274853c9dc8aa0a98d2e9f54bea99ad0462dedda5b"
+    }
+  ],
+  "main_tests": {
+    "unique_nodes": 451,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "seconds": 16.319,
+    "new_wiring_nodes": 19,
+    "return_binding_nodes": 12
+  },
+  "independent_fence": {
+    "source_revision": "38cf8f7f601ce523d3c76b3473cf8d266339ed0d",
+    "separate_runs": 5,
+    "pass": 85,
+    "fail": 3,
+    "full_suite_pass": false,
+    "default_source_changed": false,
+    "prepared_fixture_seconds": 110.823,
+    "B4": "OPEN_REAL_DRIFT_REPRODUCED",
+    "B7": "OPEN_FD_AND_DISPATCH",
+    "P1": "OPEN",
+    "manifest_audit": {
+      "regular_files_verified": 1686,
+      "original_link_identity_unbound": 3,
+      "all_physical_entries_verified": false
+    }
+  },
+  "budget": {
+    "period_id": "bab39be6-7af6-4a77-9da6-fe0664e15f65",
+    "allocation_cny": "60",
+    "known_estimate_cny": "0.706096",
+    "reserved_cny": "0",
+    "remaining_estimate_cny": "59.293904",
+    "request_count": 26,
+    "new_model_calls": 0,
+    "actual_invoice": null,
+    "ledger_sha256": "6c339787afb618a906271db663962067b548f8cda35e41dcbb57ebb0507ab364"
+  },
+  "docker": {
+    "bounded_probe_seconds": 8,
+    "timed_out": true,
+    "engine_socket_present": false,
+    "configuration_changed": false,
+    "containers_changed": false
+  },
+  "writer_enabled": false,
+  "commercial_release": false,
+  "beta_accepted": 0,
+  "review": {
+    "status": "SECOND_P2_CLOSED_DELIVERS_VALIDATED_SNAPSHOT",
+    "source_sha256": "db0efd11070db8860193e927a7e6b0e30cae6a4c973c63ac6c58b539f57d0f59",
+    "findings": [],
+    "scope": "trusted Python host callback; defined alias drift and copy redirect; no arbitrary Python reflection sandbox claim",
+    "independent_sdk_runs": 0
+  },
+  "return_guard": {
+    "original_finding": "P2_RETURN_DECLARATION_LAST_CALLBACK_DRIFT",
+    "old_three_fail_preserved": true,
+    "production_fix": "original internal-only mapper + strict deep snapshot under new private read-set terminal",
+    "foreign_equality_calls": 0,
+    "new_external_callbacks": 0,
+    "new_awaits": 0,
+    "actual_return": "strict validated snapshot after original control exit",
+    "second_finding": "P2_OLD_ALIAS_AFTER_VALID_COPY_REDIRECTION",
+    "second_finding_closed": true
+  },
+  "sdk_previous_ef_candidate": {
+    "status": "INTERMEDIATE_CANDIDATE_PASS_NOT_FINAL",
+    "source_sha256": "ef2a8532ab544aeb2ab57e02659906f1001e855d8307cb37a574a8a6b131e4d3",
+    "test_sha256": "c93d90a8bcb7aa5642e8673a811018020fc285bafcc8adeef052a32652c47881",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "fixture_seconds": 120.418,
+    "process_seconds": 120.9483346670022,
+    "consumer_seconds": 60,
+    "turn_seconds": 120,
+    "outer_watchdog_seconds": 180,
+    "outer_watchdog_expired": false,
+    "positive_read_writes": 0,
+    "deliberate_fault_writes": 1,
+    "non_target_original_mac_refused": true,
+    "workspace_unchanged": true,
+    "session_history_unchanged": true,
+    "is_bailian": false,
+    "is_installed_release": false,
+    "initial_git_bootstrap_failed": true,
+    "pre_guard_sdk_tests": 1,
+    "pre_guard_fixture_seconds": 117.454,
+    "pre_guard_not_final": true
+  },
+  "sdk": {
+    "status": "FINAL_MAIN_SAME_SOURCE_PASS",
+    "source_sha256": "db0efd11070db8860193e927a7e6b0e30cae6a4c973c63ac6c58b539f57d0f59",
+    "test_sha256": "c93d90a8bcb7aa5642e8673a811018020fc285bafcc8adeef052a32652c47881",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "fixture_seconds": 123.154,
+    "process_seconds": 123.71948912499647,
+    "consumer_seconds": 60,
+    "turn_seconds": 120,
+    "outer_watchdog_seconds": 180,
+    "outer_watchdog_expired": false,
+    "positive_read_writes": 0,
+    "deliberate_fault_writes": 1,
+    "non_target_original_mac_refused": true,
+    "workspace_unchanged": true,
+    "session_history_unchanged": true,
+    "is_bailian": false,
+    "is_installed_release": false,
+    "initial_git_bootstrap_failed": true,
+    "pre_guard_sdk_tests": 1,
+    "pre_guard_fixture_seconds": 117.454,
+    "pre_guard_not_final": true
+  },
+  "governance": {
+    "unique_nodes": 26,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "seconds": 1.985
+  }
+}

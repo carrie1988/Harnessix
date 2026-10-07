@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 8
+version: 9
 code_revision: 2cc097250435938746d3320043eeb116e07f4633
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -30,7 +30,8 @@ supersedes: []
 **正式决定接线状态：`planned`。** [三种决定数据声明与严格 Wire](m09-r4-git-decision-data-contract.md)已实现；原来源认证 Proof、事务 Writer、完整历史 Reader 及宿主恢复屏障仍未实现或装配。
 数据契约通过不能签发认证、批准或执行权限；当前没有默认产品 Git 写工具。
 原[事件正文定位及私有声明映射](m09-r4-git-decision-original-body-sources.md)已实现，沿原 Session 同次完整认证读取保留摘要，
-内部映射复用原完整语义解释及父控制；这只补来源依赖，不是正式决定 Proof/Writer，也不装配默认 Reader。
+内部映射复用原完整语义解释及父控制；原历史 Reader 的 `read_decided` 已新增完整只读入口。
+它不接收调用方 Evidence/摘要作认证，不签发发布或执行能力；正式决定 Proof/Writer 与默认装配保持 planned。
 文档治理状态保持 `draft`；`code_revision` 固定现行消费者实现，不表示拟议正式决定接口已经落地。
 B3 的必需只读依赖 `verify_product_git_user_observation` 与共享末轮配方已在当前工作区落地；
 它们只复核既有完整 U，原Reader绑定及每个基准成员均向原生端口求证，不接受重新计算公开摘要作为认证；不代表完整 B3 批准认证接线或正式上线。原 prepared Ledger 与审批历史 Reader 已在协调层消费该依赖；B4、B7、同步响应性 P1 与 approved Writer 均未闭合。
@@ -375,7 +376,7 @@ flowchart TD
 | `sequence` | 严格整数 1，本邻接切片的首个决定事实 | 不接受 bool/float；不得越过 sequence 0 或进入 A/T2/D phase |
 | `plan` | 原 prepared.plan 完整快照 | Plan/Core/Route/Review 每个原字段不变 |
 | `approval_request` | 原 prepared.approval | 原 build_approval 全正文相等，不修改请求指纹 |
-| `request_event` | `GitSessionEventRef` | 原 ItemStarted：event_id、thread 全局 sequence、canonical_digest(event 正文)；同 Turn/Item/Call |
+| `request_event` | `GitSessionEventRef` | 原 ItemStarted：event_id、thread 全局 sequence、经原 MAC 验证的原 UTF-8 event_json 正文 SHA-256；同 Turn/Item/Call |
 | `prepared_body_sha256` | 原规范 prepared 事件字节摘要 | 仅为前驱定位；必须先认证原事件 MAC 和 stream |
 
 approved/denied 变体另含 `session_decision`（完整原 completed 审批内容）、`decision_event`（原 ItemFinished 定位）、
@@ -684,6 +685,13 @@ B3 只读依赖的验证结果以[专项发布原件](../validation/git-user-obs
 | P1 | 原材料、Core 及完整回读/终端认证的同步响应性仍未收口 | verifier/shared helper 复用不构成协作调度或性能整改；须在原取消、期限及完整认证语义下独立完成真实响应性验证 |
 
 B1 是已明确的存储兼容决策；B2、B3 的决定消费接线与 B7 仍是实施缺口，B3 必需只读依赖及两个现行消费者本身不再列为缺失 API。
+[真实晚窗口验证](../validation/release-followup-2026-10-08-v5/README.md)已复现末轮历史后的配置与同 OID symbolic HEAD 漂移、
+完整 U 结束后的 prepared 同步终端配置漂移仍被接受；这不是仅有设计上的担忧。
+只读连接的真实 A→B→A 路径恢复也不能证明 SQLite 实际 FD 来源；
+`asyncio.Lock.locked()`不能证明当前 Task 持锁。原 Runtime 响应审批和 sync 恢复确实持锁，
+但正常 prepare/execute、初始化及 Extension dispatch 并非同一全程锁窗口。
+这些反例不表示正式 Writer 已存在或默认产品已执行错误写入；不关闭 B4/B7，不降低原期限或安全门禁。
+
 B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放；B5/B6 是不能通过本增量绕过的能力边界。
 没有证据支持完整生命周期恢复或未来效果链可用。
 
@@ -712,6 +720,10 @@ B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放�
 不得延长审批期限、增大生产默认预算或省略完整认证以获得 Writer 的 Go。
 
 ## 14. 实现偏差与最终结论
+
+原历史 Reader 的 `read_decided` 完整只读入口已实现，复用原全资源读取和同步终端；
+这是实际资源来源依赖，不是不可伪造发布 Proof，不能据此启用 approved Writer。
+跨 Git/SQLite 强一致性和实际 FD/Task 锁方案仍待决，重复观察或普通返回模型不替代该决策。
 
 正式决定接线状态仍为 `planned`，文档保持 `draft`。三种完整数据声明及严格 Wire 已落地，详见[数据详设](m09-r4-git-decision-data-contract.md)；
 它们不认证来源、不读写原库、不返回执行权。B3 必需只读 verifier/shared helper 及现行 prepared/审批历史消费者已落地，

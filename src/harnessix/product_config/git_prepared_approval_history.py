@@ -19,6 +19,13 @@ from harnessix.product_config.git_approval_history_proof import (
     verify_original_approval_terminal,
 )
 from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS
+from harnessix.product_config.git_decision_link_contracts import (
+    ProductGitApprovedLink,
+    ProductGitCancelledLink,
+    ProductGitDeniedLink,
+    snapshot_product_git_decision_link,
+)
+from harnessix.product_config.git_decision_link_sources import build_git_decision_link_sources
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_delivery_process import GitOperationBudget
 from harnessix.product_config.git_prefix_rows import capture_git_prefix_rows
@@ -74,6 +81,45 @@ class _ApprovalReadSet(PreparedLinkReadSet):
             check()
 
 
+@dataclass(slots=True)
+class _DecidedReadSet(_ApprovalReadSet):
+    """新入口的返回绑定；末次外部回调后才比较完整来源，不签发能力。"""
+
+    declaration: (
+        tuple[UUID, ProductGitApprovedLink | ProductGitDeniedLink | ProductGitCancelledLink] | None
+    ) = field(default=None, repr=False)
+
+    validated_result: (
+        ProductGitApprovedLink | ProductGitDeniedLink | ProductGitCancelledLink | None
+    ) = field(default=None, repr=False)
+
+    def terminal(
+        self,
+        router: TrustedActionRouter,
+        core_store: ProductGitDeliveryCoreStore,
+        artifacts: SQLiteArtifactStore,
+        ports: WorkspaceSnapshotPorts,
+        workspace_scope: str,
+        check: Callable[[], None],
+    ) -> None:
+        """原终端成功后以内部控制重建来源，并拒绝仅返回对象发生的漂移。"""
+        super(_DecidedReadSet, self).terminal(
+            router, core_store, artifacts, ports, workspace_scope, check
+        )
+        if self.declaration is None:
+            raise KernelError("git_decision_source_changed", "Git决定返回来源发生变化")
+        route_id, result = self.declaration
+        evidence = self.approvals.get(route_id)
+        if evidence is None:
+            raise KernelError("git_decision_source_changed", "Git决定返回来源发生变化")
+        expected = build_git_decision_link_sources(evidence, checkpoint=check)
+        actual = snapshot_product_git_decision_link(result, checkpoint=check)
+        if actual != expected:
+            raise KernelError("git_decision_source_changed", "Git决定返回来源发生变化")
+        check()
+        self.validated_result = actual
+
+
 class ProductGitPreparedApprovalHistoryReader:
     """复用原 Ledger 控制窗口但不暴露其 prepare；仅读 sequence 0 全部关联。"""
 
@@ -117,6 +163,39 @@ class ProductGitPreparedApprovalHistoryReader:
                 if timeout.expired():
                     raise KernelError("git_process_timeout", "Git审批历史总期限已耗尽") from None
                 raise
+
+    async def read_decided(
+        self, route_id: UUID, *, cancel: CancelToken, checkpoint: Callable[[], None]
+    ) -> ProductGitApprovedLink | ProductGitDeniedLink | ProductGitCancelledLink:
+        """原资源中完整回读一个已决定事实；不签发 Token、发布决定或赋予写能力。"""
+        if type(route_id) is not UUID:
+            raise KernelError("git_decision_source_invalid", "Git决定来源定位无效")
+        resources = self._resources
+        await asyncio.sleep(0)
+        budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
+        read_set = _DecidedReadSet()
+        with _control(resources, cancel, budget, checkpoint, read_set) as check:
+            timeout = asyncio.timeout(budget.remaining())
+            try:
+                async with timeout:
+                    # 全集认证不可退化为只验目标行；原 U/材料/Review/末端集合不变。
+                    await _read_all(resources, cancel, budget, check, read_set)
+                    evidence = read_set.approvals.get(route_id)
+                    if evidence is None:
+                        raise KernelError("git_decision_source_missing", "Git决定原关联不存在")
+                    if evidence.projection.state == "pending":
+                        raise KernelError("git_decision_source_pending", "Git原关联尚未决定")
+                    result = build_git_decision_link_sources(evidence, checkpoint=check)
+                    read_set.declaration = (route_id, result)
+                    check()
+                    # 不交付回调前求值的旧别名；只消费原终端实际核验的新快照。
+            except TimeoutError:
+                if timeout.expired():
+                    raise KernelError("git_process_timeout", "Git决定来源总期限已耗尽") from None
+                raise
+        if read_set.validated_result is None:
+            raise KernelError("git_decision_source_changed", "Git决定返回来源发生变化")
+        return read_set.validated_result
 
 
 async def _read_all(

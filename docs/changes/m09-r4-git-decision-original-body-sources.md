@@ -1,19 +1,21 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 2cc097250435938746d3320043eeb116e07f4633
 owners: [core]
 modules: [session, product_config]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_decided_source_terminal.py
   - tests/session/test_authenticated_body_refs.py
   - tests/session/test_authenticated_history.py
   - tests/agent/test_authenticated_store.py
   - tests/product_config/test_git_approval_history_projection.py
   - tests/product_config/test_git_decision_link_sources.py
   - tests/product_config/test_git_decision_source_sdk.py
+  - tests/product_config/test_git_decided_source_reader.py
 supersedes: []
 ---
 
@@ -25,11 +27,11 @@ supersedes: []
 |---|---|
 | 需求 | 从原完整审批证据构造三种决定声明时，事件摘要必须指向经原 MAC 核验的实际正文 |
 | 当前缺口 | `AgentEvent` 没有原正文摘要；历史解释器保存事件对象，但对象重编码不等于原字节来源 |
-| 实现切片 | 原 Session 同次完整读取保留 `EventBodyRef`；Git 私有声明适配消费该来源，不增加认证权威 |
-| 影响 | 两个原读取模块、一个普通事实结构及 Git 内部适配；没有 DDL、Key、配置、依赖或协议变更 |
+| 实现切片 | 原 Session 保留 `EventBodyRef`；私有映射消费原来源；原历史 Reader 新增 `read_decided` 完整只读入口，不增加认证权威 |
+| 影响 | 原 Session 来源元数据、Git 内部适配及原历史 Reader；没有 DDL、Key、配置、依赖或公开协议变更 |
 | 明确未完成 | 正式决定 Proof、原事务 Writer、完整生命周期 Reader、B4/B7、恢复屏障、默认 Git 写入及发布验收 |
 
-总体方案仍由[正式决定设计](m09-r4-git-approved-link.md)定义；本切片仅实现其原事件正文来源依赖。
+总体方案仍由[正式决定设计](m09-r4-git-approved-link.md)定义；本切片实现原事件正文来源、内部映射及复用原活跃资源的完整只读决定入口。
 `EventBodyRef`、`AuthenticatedThreadHistory` 与 `ApprovalHistoryEvidence` 均为普通事实对象，
 可以由 Python 调用方构造，不能作为不容伪造的认证令牌或执行授权。
 
@@ -55,6 +57,7 @@ supersedes: []
 - G4：原公开 `events/get_thread` 与协议不变；旧两参历史构造保留，但空引用不能提供原字节来源。
 - G5：已决定的声明保存完整原 Plan、未决定请求、原事件及 Router 决定，不接受仅 `ready` 状态。
 - G6：新事实不开放认证发布或执行；pending、缺失来源、混合 Thread、重复/错序定位必须拒绝。
+- G7：新入口只接受 Route UUID 与原控制参数；必须先认证全部关联、原资源、完整 U 和同步终端，不能只查目标或接收调用方 Evidence。
 
 不实现新批准、MAC 签发、SQL 追加、数据库迁移、重签旧历史、自动恢复、Git 效果或业务密码整改。
 不将单个 SQLite 夹具的回调/SQL计数证明扩大为全链性能等价或商业验收。
@@ -95,6 +98,31 @@ flowchart LR
 | 在原读事务外再次查询原行 | 引入第二读版本及额外 SQL | 拒绝 |
 | 保留所有事件正文/Seal | 重复正文、扩大敏感材料及内存面 | 拒绝 |
 | 同次读取保留小型不可变定位元组 | 复用实际已核验字节，无额外 SQL；增加每事件元数据 | 采用 |
+
+### 5.1 原资源只读入口
+
+[`ProductGitPreparedApprovalHistoryReader.read_decided`](../../src/harnessix/product_config/git_prepared_approval_history.py#L167)
+复用既有 `_resources`、`_control`、`_ApprovalReadSet` 和 `_read_all`。没有第二个 Store、锁表、缓存或批准状态机。
+先读取全部原 prepared 关联并完成原资源认证，再从同次私有集合选目标映射；目标不存在也不能跳过坏的其他关联。
+与接收普通 `ApprovalHistoryEvidence` 的纯 mapper 不同，该入口自己回读实际原资源；返回值仍是普通事实，
+离开读操作后不携带锁、不可伪造能力或未来 Writer 可消费的授权。
+
+```mermaid
+flowchart TD
+    Input[Route UUID 与原取消和检查点] --> Control[原60秒操作与宿主控制]
+    Control --> Prefix[全部原Git MAC和独立尾锚]
+    Prefix --> Sources[全部原Session Route Execution Core CAS Review]
+    Sources --> U[每个关联的原完整用户Git观察]
+    U --> Select[同次私有读集合定位目标]
+    Select --> Map[闭合声明映射与原语义重放]
+    Map --> Terminal[原无await同步末端和SQL全集复核]
+    Terminal --> Verified[原内部控制完整来源比较与严格快照]
+    Verified --> Fact[上下文退出后交付已核验快照]
+    Fact -. 不授予 .-> Writer[正式Writer及执行权]
+```
+
+保持原 `read_all`、构造器与所有既有顶层辅助函数的 AST，不因新入口放宽旧 pending Reader。
+新入口不默认装配到 SDK/Protocol，也不是正式决定历史 Loader。
 
 仅原 `authenticated_thread_history` 请求累积定位，原 `authenticated_events` 的默认返回仍是事件列表。
 累积参数只接受内建空列表，拒绝列表子类、自定义累积器和复用非空列表，不增加可执行回调。
@@ -137,6 +165,33 @@ sequenceDiagram
     H-->>H: 原失败传播；不交付定位，不续期，不补签
 ```
 
+### 6.1 完整决定读取时序
+
+```mermaid
+sequenceDiagram
+    participant C as 内部调用方
+    participant H as 原历史Reader
+    participant P as 原父控制窗口
+    participant S as 原全资源读取
+    participant T as 原同步终端
+    C->>H: read_decided(route_id, cancel, checkpoint)
+    H->>P: 原操作期限 原Owner和连接登记
+    H->>S: _read_all 所有关联 不只目标
+    S-->>H: 同次私有审批与材料读集合
+    H->>H: 目标存在且已决定 构造闭合声明
+    H->>P: 原最后检查
+    P->>T: 全行 尾锚 材料 Review 原审批复核
+    alt 任一控制或终端失败
+        T-->>C: 原异常 不返回部分结果
+    else 原终端成功
+        T->>T: 内部控制 原来源比较并保存新快照
+        H-->>C: 上下文退出后返回核验快照 无写权限
+    end
+```
+
+新方法在 `_control.__exit__` 全部成功后才返回 `validated_result`，不再交付 body 中先求值的旧对象。
+最后外部检查点之后原同步终端不新增 await、不重入共享 Execution 回调。该语句顺序不能证明外部 Git 永久不变。
+
 ## 7. 接口设计、领域契约与数据结构
 
 | 结构/字段 | 约束与职责 |
@@ -159,6 +214,42 @@ sequenceDiagram
 结构验证只能保证格式及对应关系，真实性仍取决于原活跃资源、原完整认证读取和未来正式终端 Proof。
 人工 approved/denied 和审批前已完整结算 cancelled 分别映射，不能从系统检查点合成人工决定。
 
+### 7.1 新入口参数、返回与错误分类
+
+| 字段/接口 | 正式约束 |
+|---|---|
+| `route_id: UUID` | exact UUID；不是调用方 SHA、Evidence、ApprovalRecord 或认证 Token；非 UUID 在进入资源控制前拒绝 |
+| `cancel: CancelToken` | 原对象交给 `_control` 与 `_read_all`；不构造新的父取消身份 |
+| `checkpoint: Callable[[], None]` | 原控制闭包消费；异常保持原实例，不包装为输入错误 |
+| 返回三变体 | 原完整 Plan、原请求与真实事件正文定位、两域决定检查点；普通 Pydantic 数据，不是持久 Git 事件 |
+| `git_decision_source_invalid` | 非 exact UUID，拒绝前不调用外来比较或哈希 |
+| `git_decision_source_missing` | 全集原资源读取成功后仍无目标，不合成前驱 |
+| `git_decision_source_pending` | 原请求未决定，不能调用 mapper 造 approved |
+| `git_decision_source_changed` | 同步终端中返回值与原完整来源不同，拒绝已求值对象，不交付部分结果 |
+| `git_process_timeout` | 本操作原 timeout 实际到期；上游自行抛出的 TimeoutError 保持原实例 |
+| 原认证/材料/Owner错误 | 全链原异常直接传播；不部分返回、不补签、不继续效果 |
+
+返回值支持 approved、denied、审批前完整 cancelled；pending 由原 `read_all` 表达，新入口明确拒绝。
+
+### 7.2 返回绑定类设计与同步末端
+
+```mermaid
+classDiagram
+    PreparedLinkReadSet <|-- _ApprovalReadSet
+    _ApprovalReadSet <|-- _DecidedReadSet
+    _DecidedReadSet : declaration Route UUID与待返回三变体
+    _DecidedReadSet : validated_result 实际核验的新快照
+    _DecidedReadSet : terminal 原父终端后完整来源比较
+    ProductGitPreparedApprovalHistoryReader --> _DecidedReadSet : read_decided使用
+    ProductGitPreparedApprovalHistoryReader --> _ApprovalReadSet : 原read_all保持
+```
+
+`_DecidedReadSet.declaration`只保存本次目标与已求值的返回对象，不签发Token，不写数据库，不缓存认证。
+父 `_ApprovalReadSet.terminal`及SQL全行复核保持；在最后外部callback之后，仅以原内部check从同Evidence重建完整expected，
+再用原 `snapshot_product_git_decision_link`严格重建实际返回值，比较全部字段。不能仅校验SHA格式，在原内部终端中保存已经完整比对的新快照为`validated_result`，在父上下文退出后只交付该快照。
+不能在body中提前return旧result；合法副本重定向也不能使旧对象成为实际返回值。来源不同以`git_decision_source_changed`拒绝；原严格快照先排除外来字段/比较运算，再进行相等比较。
+新增深构造控制成本仍在原60/120期限内，不宣称检查点计数或性能完全等价，响应性P1继续开放。
+
 ## 8. 状态、持久化、事务与并发
 
 不增加表或写入，定位在原 Session 的单连接、单只读事务内生成；没有新事务、跨库快照或锁。
@@ -166,8 +257,11 @@ sequenceDiagram
 也不再作为同一个读取事实。这是显式的来源收紧，不是所有观察语义完全等价的声明。
 
 新定位有每事件一份的内存开销，受原事件数/历史字节上限约束；不提高这些上限。
-既有完整历史 Reader 输出和 `linkage_state` 不变；决定声明构造不装配默认 Reader 或 Writer。
-声明重建只供内部后继 Proof 设计使用，不能跨 Task、操作或重启复用为已批准能力。
+既有 `read_all` 输出和 `linkage_state` 不变；新增只读 `read_decided` 不装配默认产品入口或 Writer。
+新方法要求调用方已经打开原登记连接并持有显式原事务；不 BEGIN/COMMIT、不自动回滚调用方事务，也不从模型参数初始化数据库。
+声明和只读结果供内部事实消费使用，不能跨 Task、操作或重启复用为已批准能力。
+当前未关闭的外部逻辑 Git 终端窗口、原 SQLite FD 来源及全部 dispatch 持锁证明不能由此新入口补齐；
+四库变化检测和路径 pin 不等于跨 SQLite/Git 事务或操作系统排他边界。
 
 ## 9. 安全、隐私与可观测性
 
@@ -190,6 +284,18 @@ read_original_history_in_original_transaction():
     settle_original_connection_and_final_checkpoint()
     return ordinary_history(events, immutable_body_refs)
 
+read_decided_from_original_resources(route_id, cancel, checkpoint):
+    require_exact_uuid(route_id)
+    enter_original_control_with_one_60_second_budget()
+    read_all_original_prepared_links_and_resources()
+    require_same_read_set_contains_decided_route(route_id)
+    declaration = map_same_original_evidence()
+    bind_pending_return_object_to_private_decided_read_set()
+    require_original_final_checkpoint_and_synchronous_terminal()
+    rebuild_expected_from_original_evidence_with_internal_control_only()
+    require(strict_snapshot(pending_return) == complete_expected)
+    return ordinary_declaration_without_writer_capability
+
 build_decision_declaration_from_original_evidence():
     require_complete_same_thread_events_and_body_refs()
     locate_original_request_and_decision_or_four_cancel_sources()
@@ -205,6 +311,7 @@ build_decision_declaration_from_original_evidence():
 | 原 Session 定位 | 真实 SQLite 原字节比对；禁止 AgentEvent 重编码；冻结、只读、两参兼容 | 只保证同次来源元数据 |
 | 原控制保持 | 原认证历史、事件 Seal、Store 回归；窄夹具 SQL/检查点与增量前采集比较 | 不宣称全 SDK 或 SLA |
 | Git 声明适配 | 三变体、pending 拒绝、缺失/混合/错序定位及原回调异常 | 只保证声明映射，不是来源认证 Proof |
+| 原资源入口 | 19项接线控制短测与12项末端绑定：三变体、missing/pending、异常身份、非原资源拒绝、期限归类；真实 SDK 单独记录 | 替身短测不是 MAC 或 SDK 通过证明 |
 | 发布治理 | 有限源码/测试扫描、详细设计、链接/图及源摘要清单 | 不关闭 R1～R6 |
 
 原主仓单事件基线为 8 个宿主检查点、13 条 SQL（12 SELECT、1 BEGIN）。
@@ -220,6 +327,7 @@ build_decision_declaration_from_original_evidence():
 | [git_approval_history_projection.py](../../src/harnessix/product_config/git_approval_history_projection.py) | 原请求/决定/取消完整语义 | [原投影回归](../../tests/product_config/test_git_approval_history_projection.py) |
 | [git_approval_history_proof.py](../../src/harnessix/product_config/git_approval_history_proof.py) | 原跨来源读集合与末端复核 | 后继正式 Proof 不得跳过该边界 |
 | [git_decision_link_sources.py](../../src/harnessix/product_config/git_decision_link_sources.py) | 原语义重放、完整定位、原前驱编码与闭合声明 | [51项纯映射负控](../../tests/product_config/test_git_decision_link_sources.py) |
+| [原历史 Reader](../../src/harnessix/product_config/git_prepared_approval_history.py#L167) | `read_decided` 全集原资源读取、同次选择与同步末端后返回 | [19项接线控制](../../tests/product_config/test_git_decided_source_reader.py)及[12项末端绑定](../../tests/product_config/test_git_decided_source_terminal.py)；真实 SDK 另立来源绑定 |
 | [实际SDK测例](../../tests/product_config/test_git_decision_source_sdk.py) | 在原证据读取与末端全复核之间借同一父控制消费 approved 来源 | 不装配产品 Writer，不修改 linkage_state |
 
 ## 13. 风险、部署、兼容与回退
@@ -234,6 +342,17 @@ build_decision_declaration_from_original_evidence():
 
 ## 14. 实现偏差与最终结论
 
+原历史 Reader 已新增完整只读 `read_decided` 入口。主仓本次451唯一功能节点通过，包含19项新接线测试；
+原构造器、read_all 和所有旧辅助函数 AST 保持。最终同源码主仓SDK一次通过：完整夹具123.154秒、实际原资源批准读取与非目标MAC拒绝，读写计数0。
+首次候选完整SDK117.454秒发生在末端返回Guard前，不替代最终版本；Apple Git初始化FAIL保持。
+独立审阅P2发现末次callback只改合法返回摘要仍能交付；新增私有读集合末端原来源重建与严格深快照关闭该三变体反例，
+第二个P2涉及合法副本重定向后返回旧别名，已改为原上下文完整退出后仅交付实际核验的新快照；独立最终AST探针确认闭环。
+foreign equality负控执行数0，不增加外callback/await/权限。终端反例及来源绑定由
+[本次验证](../validation/release-followup-2026-10-08-v5/README.md)单独判定，不能用451项替代实际整链、安装或商用质量。
+正式决定发布 Proof、事务 Writer、完整决定历史 Loader 与恢复屏障仍待实现，B4/B7/P1 保持开放。
+
+### 14.1 前版来源元数据与映射验证
+
 Session 定位和私有声明映射已实现。最终两组主仓 JUnit 为166项原事件/历史/Store及329项映射/原语义/旧合同，
 合计495个唯一功能节点；文档治理另计。详细结果、初败、来源绑定及研究限界见[专项交付](../validation/release-followup-2026-10-08-v4/README.md)。
 一次真实本地 SDK 原已批准证据消费通过，整项夹具113.204秒，不是一次 read_all 的时长；原60秒consumer/120秒Turn不提高。
@@ -243,3 +362,6 @@ Session 定位和私有声明映射已实现。最终两组主仓 JUnit 为166�
 没有另外一套批准状态机。新增纯负控明确展示格式合法的调用方摘要仍能形成声明，恰恰证明它不是来源认证。
 本切片不补造审批、执行权限或正式 Git 决定持久事实，不能据此把 `decision_not_linked` 改为已发布决定。
 完整 Source Proof、Writer、恢复屏障和 B4/B7 是后继工作，不纳入本次完成度。
+
+返回绑定的可信宿主合同不将同进程任意Python代码视为隔离沙箱。内置callback仍需符合原控制边界，
+以上混沌探针验证已识别的别名/类型错误，不声明能够防止任意Python替换所有frame、函数代码或进程内存。

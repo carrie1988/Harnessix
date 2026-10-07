@@ -1,13 +1,14 @@
 ---
 doc_type: change-design
 status: current
-version: 2
+version: 3
 code_revision: 2aa16c161039134d13e13f4decfd9024be99d153
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, artifacts]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_decided_source_reader.py
   - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_approval_history_projection.py
   - tests/product_config/test_git_prepared_approval_history.py
@@ -18,6 +19,11 @@ supersedes: []
 # 原 prepared Git 关联的审批历史只读核验设计
 
 ## 1. 变更摘要
+
+原 Reader 新增 `read_decided(route_id, *, cancel, checkpoint)`，沿本设计全资源、完整 U 与同步终端回读后返回三种普通决定声明；
+原构造器、read_all、linkage_state 及以下既有语义保持。完整接口与字段、控制和限制见
+[来源详设](m09-r4-git-decision-original-body-sources.md#71-新入口参数返回与错误分类)。
+该方法不接收调用方证据，不写 Git 决定，不签发认证 Token，不改变 B4/B7/Writer planned 边界。
 
 现行组件补齐审批历史的只读解释、原认证资源和完整 U 消费接线，不发布 Git 决定事件，不注册默认 Git 写工具。
 `code_revision` 固定包含现行消费者接线的源码提交；实际测试、安装与平台结果分别记录。

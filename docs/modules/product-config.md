@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 87
+version: 88
 code_revision: 2cc097250435938746d3320043eeb116e07f4633
 owners:
   - core
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_decided_source_reader.py
   - tests/product_config/test_git_decision_link_sources.py
   - tests/product_config/test_git_decision_source_sdk.py
   - tests/product_config/test_git_decision_link_contracts.py
@@ -2748,3 +2749,18 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 一次实际本地SDK在原父读窗口消费approved证据并通过末端复核，Git行、源和业务状态不变；
 它发生于UUID比较前置整改前，最终纯负控覆盖收紧，未重复整链，不作为最终同候选SDK验收。
 这是测试内消费，产品Reader输出/`decision_not_linked`及默认装配不变。映射普通构造数据不认证MAC，Writer/恢复/B4/B7仍未完成。
+
+### 原资源已决定事实读取入口
+
+[`ProductGitPreparedApprovalHistoryReader.read_decided`](../../src/harnessix/product_config/git_prepared_approval_history.py#L167)
+只接收原 Route UUID、CancelToken 和检查点。先复用全部原 Git MAC/尾锚、Session/Route/Execution/Core/CAS/Review/完整 U，
+再从同次私有读集合选目标、映射三种闭合声明，并在原同步终端成功后返回。
+目标缺失、pending 或任一坏关联均拒绝；不收调用方 Evidence/hash/批准对象作认证。
+返回仍是普通数据，不是发布 Token；没有新 Store、SQL 写入、事务提交、Key、缓存或默认装配。
+原 read_all、linkage_state、pending Reader 和120秒Turn/60秒consumer保持，正式Writer及恢复屏障仍 planned。
+详设与反例见[来源设计](../changes/m09-r4-git-decision-original-body-sources.md)及[本次交付](../validation/release-followup-2026-10-08-v5/README.md)。
+
+新入口使用私有_DecidedReadSet，原read_all仍使用_ApprovalReadSet。最后外callback后原terminal成功，
+才以内部check重建原来源并严格深快照完整返回对象；合法摘要变化也拒绝，未知类型不进入foreign equality。
+原上下文完整退出后只交付实际核验的新快照，不交付末次回调之前构造的旧别名。
+最终同源码主仓SDK1项通过（完整夹具123.154秒）与12项末端绑定另记，不把新guard控制成本认定为P1通过或B4/B7关闭。

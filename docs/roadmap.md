@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 218
+version: 219
 code_revision: 2cc097250435938746d3320043eeb116e07f4633
 owners:
   - core
@@ -2482,3 +2482,17 @@ BETA-001的上传Mock反事实仅一测试stub改动，一次整类10/10通过�
 Docker官方status仍退出1、socket缺失，桌面接口明确报告Mac锁定；原8容器及默认挂载尚未恢复验收。
 原R3严格0/20及必需测试1/20、真实Beta接受0、三平台与R1～R6继续开放。
 完整证据、初败及同次来源绑定见[本次交付](validation/release-followup-2026-10-08-v4/README.md)。
+
+### 原资源决定读取与真实终端边界
+
+[本次交付](validation/release-followup-2026-10-08-v5/README.md)新增原历史Reader.read_decided，输入仅原Route UUID和控制，
+复用全部原Git MAC、原资源、完整U及同步terminal；输出普通决定事实，不签发发布或执行权，原read_all/构造器/辅助AST保持。
+主仓451去重功能节点通过，含19接线与12末端绑定；最终同源主仓SDK1PASS/完整夹具123.154秒、治理26项和独立验证分项记录，不叠加前版成绩。
+独立五次验证85PASS/3FAIL：三个真实晚配置/同OID symbolic Ref漂移仍被接受，
+SQLite A→B→A路径恢复不能证明实际FD；locked()不证明当前Task持原锁。Writer/B4/B7/P1与全部R1～R6继续开放。
+协作一致性合同尚未确认，不以重复观察、普通DTO或四库监视关闭Git末端问题，保持旧门禁与Writer停用。
+本交付百炼请求0，新60元账本估算0.706096、预留0不变；Docker有界官方观察超时且socket不存在，不确认恢复。
+R3历史严格0/20/必需测试1/20与真实Beta接受0保持，不宣称商用完成。
+
+独立审阅P2的合法返回摘要漂移已通过原父同步terminal后internal-only完整来源重建及严格深快照整改；
+不新增外callback/await，保留原三FAIL，foreign comparison不执行。此前117.454秒与中间EF版120.418秒SDK均不是最终交付快照版本。最终源码摘要db0efd11由同源SDK及独立别名重定向探针绑定；上下文完整退出后只交付实际核验的新快照。
