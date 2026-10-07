@@ -2,7 +2,7 @@
 doc_type: source-research
 status: reviewing
 version: 3
-code_revision: eca05790fb1b99013e775dc3acd2ad03ccaf2a23
+code_revision: 9c5e5d227b718b22d1c9f6f854722f11e453e7f8
 owners: [core]
 modules: [product_config, workspace, trusted_actions, agent]
 related_adrs:
