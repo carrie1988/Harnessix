@@ -208,7 +208,7 @@ async def _next_pending_after_rejection(actual):
         for item in actual.turn.items
         if isinstance(item.content, TrustedActionApprovalRequestContent)
     )
-    scenario.bundle.steps = (answer("请求已拒绝"),)
+    scenario.bundle.steps = (*scenario.bundle.steps, answer("请求已拒绝"))
     await scenario.client.respond_approval(
         ApprovalRespondParams(
             request_id="non-target-reject",
@@ -386,16 +386,9 @@ async def test_router_first_recovery_uses_original_sync_then_reads_u_without_new
     await _case(tmp_path, config, monkeypatch, inspect)
 
 
+@pytest.mark.parametrize("operation", ["prepare", "pending-read", "history-read"])
 @pytest.mark.parametrize(
-    "operation,error_kind",
-    [
-        ("prepare", "kernel"),
-        ("prepare", "os"),
-        ("pending-read", "sqlite"),
-        ("pending-read", "turn-cancel"),
-        ("history-read", "timeout"),
-        ("history-read", "task-cancel"),
-    ],
+    "error_kind", ["kernel", "os", "sqlite", "turn-cancel", "timeout", "task-cancel"]
 )
 async def test_original_checkpoint_exceptions_inside_real_u_verifier_are_preserved(
     tmp_path, config, monkeypatch, operation, error_kind
