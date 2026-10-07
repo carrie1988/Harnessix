@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 149
-code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
+version: 150
+code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners:
   - core
 modules:
@@ -94,7 +94,9 @@ supersedes: []
 功能主线优先处理真实编码质量、核心安全恢复、Windows原生编码和安装升级。
 
 [匹配完整备份回退顺序详设](changes/m09-r4-matching-backup-rollback-order.md)说明当前规范Wheel的安装PASS与回退FAIL区别，
-以及新恢复身份、候选Runtime重开禁区、旧版精确读取集合和失败保留规则；不以历史候选或调度单元测试替代当前实际演练。
+以及新恢复身份、候选Runtime重开禁区、旧版精确读取集合和失败保留规则；
+[当前候选实际验证](validation/matching-backup-rollback-2026-10-08-v1/README.md)完成本机及同一规范Wheel三平台有限生命周期，原失败保留。
+不以该子项代替真实编码、消费者平台或商用全部门禁。
 许可证/权利链等治理工作低优先并行，不阻挡功能研发；必要发行处置仍在正式发布前完成。
 当前R4增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)，
 固定源码与原生专项证据见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)；

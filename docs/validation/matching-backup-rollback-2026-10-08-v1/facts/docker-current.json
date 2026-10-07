@@ -1,0 +1,12 @@
+{
+  "command": "docker desktop status",
+  "exit_code": -9,
+  "timed_out": true,
+  "wall_seconds": 15.067,
+  "docker_socket_present": false,
+  "settings_or_container_changes": 0,
+  "stdout_bytes": 0,
+  "stderr_bytes": 0,
+  "raw_output_disclosed": false,
+  "engine_ready_proven": false
+}

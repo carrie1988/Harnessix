@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
+version: 4
+code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -223,7 +223,9 @@ JUnit、原字节Manifest、Review Packet及三份图示；本范围通过不关
 
 固定`702a89c`的三平台安装生命周期通过，但不同版本回退均失败；候选验收重开Runtime后再次升代，
 导致旧包启动前不再是匹配原备份。新顺序及失败保护见[匹配回退详设](m09-r4-matching-backup-rollback-order.md)。
-旧固定版本PASS不能外推当前候选；新鲜实际复验完成前，该子项保持开放。
+旧固定版本PASS不能外推当前候选。后继固定`b1f8ec4`的本地新根及
+[Run 37696128297](https://github.com/carrie1988/Harnessix/actions/runs/37696128297)取得当前实际匹配回退PASS；
+[正式交付](../validation/matching-backup-rollback-2026-10-08-v1/README.md)保留初始失败，不关闭R4整体。
 
 | 顺序 | 源码/资料 | 验证 |
 |---|---|---|

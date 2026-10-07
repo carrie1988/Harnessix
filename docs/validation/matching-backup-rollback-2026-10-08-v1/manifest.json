@@ -1,0 +1,106 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "source_revision": "b1f8ec49e9281a23f8092934c61d9206443bbc2b",
+  "entry_count": 19,
+  "entries": [
+    {
+      "path": "README.md",
+      "bytes": 10291,
+      "sha256": "76957dcf8c30053d2d4f493e6ad3a3de35bb867af3fc11591400e8d365dd814d"
+    },
+    {
+      "path": "ReviewPacket.json",
+      "bytes": 1885,
+      "sha256": "81a5cb3d5592c17c4b6f22acd30254056403eb9a94582e9e0d6bbad6fba4e420"
+    },
+    {
+      "path": "diagrams/matching-1.png",
+      "bytes": 76369,
+      "sha256": "4e640e8c843c3edf0445e298a8fcae50bd385b007a57ce968d7684b9d69a4609"
+    },
+    {
+      "path": "diagrams/matching-2.png",
+      "bytes": 49390,
+      "sha256": "ae5b4672299c491d6b4fd275346782bc52b93f761de8d9dfc3d899b2d515253d"
+    },
+    {
+      "path": "facts/budget.json",
+      "bytes": 372,
+      "sha256": "88ded78e0eb49a32aa268c824d3dddcd217fd0c64e978df23d719045b07d8760"
+    },
+    {
+      "path": "facts/current-results.json",
+      "bytes": 5314,
+      "sha256": "16250bad0ec651506c2d3c220e1e91b0407b0721fe10a7e82cb3afff646a2495"
+    },
+    {
+      "path": "facts/docker-current.json",
+      "bytes": 286,
+      "sha256": "e148408166d69e5be798ef9972e8e3e7d3b7e9ac056248c99cfee26564290adf"
+    },
+    {
+      "path": "facts/documentation-and-scan.json",
+      "bytes": 486,
+      "sha256": "db0b6821a50e9fc0849b180001b472239ac2420e0f32203e16f1dd7b780d408a"
+    },
+    {
+      "path": "facts/initial-three-platform-failure.json",
+      "bytes": 5318,
+      "sha256": "0a6b65d8959e4ddde9d9315002dd5ef1f3818233799e14969e9ccc561ec65f26"
+    },
+    {
+      "path": "facts/linux-installed-result.json",
+      "bytes": 1144,
+      "sha256": "e352eb6bbd7c8e0343514179889d04e484b6dd72bd5f195e38c311f4f774231a"
+    },
+    {
+      "path": "facts/linux-upgrade-result.json",
+      "bytes": 2318,
+      "sha256": "1fa1d3b1cb1da53325765bb5b8069f948600d7d6a202846c0131b7ada9521b8f"
+    },
+    {
+      "path": "facts/macos-installed-result.json",
+      "bytes": 1145,
+      "sha256": "e51bf436e5acb7aca74974b333eaab59623ad03d745628aa3295e406c971c6f3"
+    },
+    {
+      "path": "facts/macos-upgrade-result.json",
+      "bytes": 2319,
+      "sha256": "7a7f156264eed66f5ada2779b8e9ecddb7bd8e01185c649de07cd4a49ecbc463"
+    },
+    {
+      "path": "facts/native-installed-result.json",
+      "bytes": 1144,
+      "sha256": "7c82e4a9fd4c81b903d9e934f862ab2b605a72d39c6128918c0ce037854a3bcb"
+    },
+    {
+      "path": "facts/native-upgrade-result.json",
+      "bytes": 2318,
+      "sha256": "1a1b82f88877bebd60bfaafd71f648e9fd6a65fb334b9f757aeff0a9fdd5fe8a"
+    },
+    {
+      "path": "facts/schema-mismatch-evidence.json",
+      "bytes": 863,
+      "sha256": "9baa3d1a22078a2107fb86bb7949f9063786e0dd83572572641adfa0cae74c09"
+    },
+    {
+      "path": "facts/tests-and-review.json",
+      "bytes": 1974,
+      "sha256": "2796a1d6059fdd42fd8cdbf85f932e6a19a0c23fe20dd6e451144c7e96a4cade"
+    },
+    {
+      "path": "facts/windows-installed-result.json",
+      "bytes": 1146,
+      "sha256": "3665a9959519c2a15ad16237248e2a9aa3056eb0582121888ea588c650bb547e"
+    },
+    {
+      "path": "facts/windows-upgrade-result.json",
+      "bytes": 2320,
+      "sha256": "01cdfe8a267d12f7fbd62749f2e3664600d3d5977b51d32a788e7665168169f1"
+    }
+  ],
+  "excluded": [
+    "manifest.json"
+  ],
+  "private_state_and_key_included": false
+}

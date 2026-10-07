@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
-code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
+version: 11
+code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners:
   - core
 modules:
@@ -241,7 +241,9 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 
 若曾用目标Runtime打开已恢复状态，须先关闭它，再以新的明确恢复身份重新建立匹配备份；不能只切换旧二进制。
 [匹配回退详设](../changes/m09-r4-matching-backup-rollback-order.md)说明候选Runtime重新升代导致的验收失败与正确顺序。
-Schema来源分别见[Workspace初始化](../../src/harnessix/delivery/workspace_store_schema.py)、
+当前有限实际演练见[报告](../validation/matching-backup-rollback-2026-10-08-v1/README.md)：
+固定`b1f8ec4`的本机及三个原生CI消费者安装/匹配备份回退通过，初始三平台失败仍保留；
+不是任意版本或稳定1.0迁移证明。Schema来源分别见[Workspace初始化](../../src/harnessix/delivery/workspace_store_schema.py)、
 [Action审计](../../src/harnessix/trusted_actions/store.py)和[Execution Plan](../../src/harnessix/execution/store.py)。
 
 ## 13. 源码与测试映射

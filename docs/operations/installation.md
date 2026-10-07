@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 20
-code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
+version: 21
+code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners:
   - core
 modules:
@@ -52,7 +52,10 @@ supersedes: []
 后继固定`702a89c`的[Run 37692147486](https://github.com/carrie1988/Harnessix/actions/runs/37692147486)
 三个安装生命周期通过，但三个不同版本回退专项均失败，不能继承旧候选的升级PASS。
 [匹配备份回退顺序整改](../changes/m09-r4-matching-backup-rollback-order.md)保留原完整恢复与稳定ID测试，
-增加旧包启动前的匹配恢复且不重开候选Runtime；修正后的新鲜实际复验尚未完成。
+增加旧包启动前的匹配恢复且不重开候选Runtime。固定`b1f8ec4`本机及
+[Run 37696128297](https://github.com/carrie1988/Harnessix/actions/runs/37696128297)三平台纠正后验收均通过，
+同一规范Wheel摘要仍为be30cacc；[报告](../validation/matching-backup-rollback-2026-10-08-v1/README.md)保留初始FAIL。
+这只关闭有限安装/固定0.1.0→rc1匹配回退子项，不能作为原生完整编码、消费者OS、rc1→稳定1.0迁移或商用完成依据。
 
 ## 2. 前置条件
 

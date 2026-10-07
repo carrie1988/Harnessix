@@ -1,0 +1,51 @@
+{
+  "schema": "harnessix.release-review-packet/v1",
+  "source_revision": "b1f8ec49e9281a23f8092934c61d9206443bbc2b",
+  "decision": "GO_FINITE_INSTALL_AND_MATCHING_ROLLBACK_ONLY",
+  "implementation_scope": [
+    "acceptance matching-restore order",
+    "six control regressions",
+    "existing platform control-test selection",
+    "formal design and operations sync"
+  ],
+  "production_package_changes": 0,
+  "original_failures_preserved": true,
+  "actual_native_status": "PASS",
+  "actual_three_platform_status": "PASS",
+  "paid_requests": 0,
+  "release_gate_closure": [],
+  "commercial_release": false,
+  "review_questions": [
+    "Matching restore uses a new ID without reopening candidate Runtime",
+    "Previous and original Key preserved by the original product",
+    "Exact original backup Thread set read by old product",
+    "Same candidate canonical Wheel consumed on all three platforms"
+  ],
+  "mandatory_inputs": [
+    "README.md",
+    "facts/current-results.json",
+    "facts/initial-three-platform-failure.json",
+    "facts/schema-mismatch-evidence.json",
+    "facts/tests-and-review.json",
+    "facts/native-upgrade-result.json",
+    "facts/native-installed-result.json",
+    "facts/budget.json"
+  ],
+  "actual_three_platform_run_id": 37696128297,
+  "canonical_wheel_sha256": "be30cacc274ee26053a8f3cbbf7ef3234b43298a51b4e51062babe857cfec79f",
+  "not_proven": [
+    "R1-R6 exit",
+    "consumer OS support matrix",
+    "real coding quality",
+    "Git Writer/B4/B7/P1",
+    "default Docker workspace readiness",
+    "rc1 to stable 1.0 authenticated migration",
+    "independent Beta"
+  ],
+  "native_manifest_recheck": {
+    "verified_entries": 58,
+    "sealed_manifest_sha256": "89f7db147cccfc20dfeb151fe2413a154e30e91fc60b0b4146a1a5dc79fcfb0c",
+    "source_revision": "b1f8ec49e9281a23f8092934c61d9206443bbc2b",
+    "private_state_or_key_read_by_rechecker": false
+  }
+}

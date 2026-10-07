@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
+version: 2
+code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -177,7 +177,10 @@ r1和r2均由原恢复Plan/Journal执行，不写第二套恢复记录，不直�
 新六项与既有两组安装边界共47项在Git2.53环境通过；首次Apple Git2.24旧CRLF控制用例1FAIL另存，未改变断言。
 真实闭环需固定已提交脚本，在全新源码外根使用实际0.1.0/rc1Wheel、真实产品CLI/SDK验证。
 三平台原生CI消费同Run唯一规范Wheel，必须全部产生原不同版本成功结果；不能以单元用例或原安装生命周期PASS关闭此专项。
-当前实际复验尚未完成；R4整体及R1～R6、真实Beta和商用版本仍开放。
+固定`b1f8ec4`本地新根两份实际验收通过；[Run 37696128297](https://github.com/carrie1988/Harnessix/actions/runs/37696128297)
+唯一规范Wheel构建及三平台原安装/不同版本回退均通过，46份低敏下载件核对原字节，
+规范摘要仍为be30cacc，原Key、Previous、原A及新D断言保持。完整[报告及结果](../validation/matching-backup-rollback-2026-10-08-v1/README.md)保留原FAIL。
+这只关闭固定版本对的安装回退子项；R4整体及R1～R6、真实Beta和商用版本仍开放。
 
 ## 12. 源码与测试映射、阅读顺序
 

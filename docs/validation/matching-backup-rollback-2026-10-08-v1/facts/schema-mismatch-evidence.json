@@ -1,0 +1,25 @@
+{
+  "matching_backup": {
+    "workspace-transactions/transactions.db": "1",
+    "action-audit.db": "2",
+    "execution-plans.db": "1"
+  },
+  "failed_rollback_state": {
+    "workspace-transactions/transactions.db": "2",
+    "action-audit.db": "2",
+    "execution-plans.db": "1"
+  },
+  "baseline_writer_expected": {
+    "workspace-transactions/transactions.db": "1",
+    "action-audit.db": "2",
+    "execution-plans.db": "1"
+  },
+  "baseline_wheel_sha256": "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30",
+  "source_revision": "702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3",
+  "backup_matches_baseline_versions": true,
+  "post_candidate_runtime_delivery_schema_matches_baseline": false,
+  "business_rows_read": false,
+  "key_or_key_hash_read": false,
+  "unique_hidden_exception_claimed": false,
+  "necessary_rollback_procedure_defect_proven": true
+}

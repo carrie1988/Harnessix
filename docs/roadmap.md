@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 220
-code_revision: 702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3
+version: 221
+code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners:
   - core
 modules:
@@ -2506,5 +2506,10 @@ R3历史严格0/20/必需测试1/20与真实Beta接受0保持，不宣称商用�
 [顺序详细设计](changes/m09-r4-matching-backup-rollback-order.md)只改验收调度：
 保留候选恢复/原ID幂等测试，以新ID恢复匹配完整备份，不重开候选Runtime，再切旧包读取原备份A并创建D。
 6项新RED后GREEN及47项安装边界通过，不是实际安装证明；原Apple Git CRLF控制失败另存，不改断言。
-修正后的全新实际复验及最终同候选门禁仍待完成；不放宽旧Reader、Schema、认证、Owner或R1～R6。
+修正后固定`b1f8ec4`的全新本机安装/回退及
+[Run 37696128297](https://github.com/carrie1988/Harnessix/actions/runs/37696128297)唯一Wheel和三个原生消费者均PASS，
+规范摘要保持be30cacc，原Key、Previous及精确集合断言保持，46份低敏CI原件已核对。
+[正式交付](validation/matching-backup-rollback-2026-10-08-v1/README.md)保留初始三平台FAIL、一次诊断FAIL、RED及Git工具环境失败。
+只关闭固定安装/0.1.0→rc1匹配回退子项；原生编码、rc1→稳定1.0认证迁移和最终同候选门禁仍待完成。
+不放宽旧Reader、Schema、认证、Owner或R1～R6。
 本切片模型请求0；新60元周期估算0.706096、预留0，实际账单未确认。R3原成绩及Beta接受0不变。

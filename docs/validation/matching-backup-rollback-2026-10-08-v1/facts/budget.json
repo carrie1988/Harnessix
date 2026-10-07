@@ -1,0 +1,11 @@
+{
+  "allocation_cny": "60",
+  "known_estimate_cny": "0.706096",
+  "reserved_cny": "0",
+  "remaining_estimate_cny": "59.293904",
+  "request_count": 26,
+  "paid_requests_this_delivery": 0,
+  "actual_invoice_confirmed": false,
+  "historical_unknown_requests_excluded_not_settled": true,
+  "ledger_sha256": "6c339787afb618a906271db663962067b548f8cda35e41dcbb57ebb0507ab364"
+}

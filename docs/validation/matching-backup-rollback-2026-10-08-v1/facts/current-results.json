@@ -1,0 +1,154 @@
+{
+  "source_revision": "b1f8ec49e9281a23f8092934c61d9206443bbc2b",
+  "status": "PASS_FINITE_INSTALLED_LIFECYCLE_AND_MATCHING_ROLLBACK",
+  "native_result": {
+    "status": "PASS_LOCAL_NATIVE_INSTALLED_AND_MATCHING_ROLLBACK",
+    "source_revision": "b1f8ec49e9281a23f8092934c61d9206443bbc2b",
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.12.8",
+    "uv": "0.9.1",
+    "git": "2.53.0",
+    "root_mode": "0700",
+    "canonical_wheel_sha256": "be30cacc274ee26053a8f3cbbf7ef3234b43298a51b4e51062babe857cfec79f",
+    "canonical_wheel_build_count": 1,
+    "same_wheel_bits_as_previous": true,
+    "source_members_verified": 552,
+    "bound_input_files_unchanged": 563,
+    "locked_dependencies_per_environment": 58,
+    "setup_or_business_stages_passed": 11,
+    "setup_or_business_stages_failed": 0,
+    "original_script_business_runs": {
+      "installed": 1,
+      "upgrade": 1
+    },
+    "retry_count": 0,
+    "installed_acceptance_seconds": 11.326993,
+    "upgrade_acceptance_seconds": 12.732862,
+    "sum_stage_wall_seconds": 33.980198,
+    "flags": {
+      "rollback_reads_original_backup_threads": true,
+      "rollback_matching_backup_restored_before_version_switch": true,
+      "candidate_runtime_reopened_after_matching_restore": false
+    },
+    "provider_turn_requests": 0,
+    "keychain_operations": 0,
+    "budget_modifications": 0,
+    "main_writes": 0,
+    "online_installs": 0,
+    "watchdog_fires": 0,
+    "owned_process_groups_terminal": true,
+    "historical_failures_preserved": true,
+    "commercial_release": false,
+    "known_limits": [
+      "仅Darwin ARM64/Python3.12.8本地环境",
+      "没有本轮Linux/Windows证据",
+      "没有Provider Turn/真实编码/Beta/1.0稳定发布认证",
+      "不关闭R4整体或Git Writer/B4/B7/P1",
+      "没有直接查询case数据库、Schema或枚举Previous Root；依赖原正式CLI/SDK断言及结果",
+      "保留原隐藏子阶段错误分类，不增加诊断观察器",
+      "单次演练耗时不是稳态性能/SLA证明"
+    ]
+  },
+  "native_manifest_recheck": {
+    "verified_entries": 58,
+    "sealed_manifest_sha256": "89f7db147cccfc20dfeb151fe2413a154e30e91fc60b0b4146a1a5dc79fcfb0c",
+    "source_revision": "b1f8ec49e9281a23f8092934c61d9206443bbc2b",
+    "private_state_or_key_read_by_rechecker": false
+  },
+  "three_platform": {
+    "run_id": 37696128297,
+    "run_attempt": 1,
+    "url": "https://github.com/carrie1988/Harnessix/actions/runs/37696128297",
+    "head_sha": "b1f8ec49e9281a23f8092934c61d9206443bbc2b",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "构建并扫描唯一发行Wheel",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "安装与恢复 linux",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "安装与恢复 windows",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "安装与恢复 macos",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "canonical_wheel_sha256": "be30cacc274ee26053a8f3cbbf7ef3234b43298a51b4e51062babe857cfec79f",
+    "artifact_file_count": 46,
+    "consumers": [
+      {
+        "platform": "linux",
+        "results": {
+          "installed": {
+            "path": "facts/linux-installed-result.json",
+            "original_sha256": "e352eb6bbd7c8e0343514179889d04e484b6dd72bd5f195e38c311f4f774231a",
+            "status": "PASS"
+          },
+          "upgrade": {
+            "path": "facts/linux-upgrade-result.json",
+            "original_sha256": "1fa1d3b1cb1da53325765bb5b8069f948600d7d6a202846c0131b7ada9521b8f",
+            "status": "PASS"
+          }
+        }
+      },
+      {
+        "platform": "macos",
+        "results": {
+          "installed": {
+            "path": "facts/macos-installed-result.json",
+            "original_sha256": "e51bf436e5acb7aca74974b333eaab59623ad03d745628aa3295e406c971c6f3",
+            "status": "PASS"
+          },
+          "upgrade": {
+            "path": "facts/macos-upgrade-result.json",
+            "original_sha256": "7a7f156264eed66f5ada2779b8e9ecddb7bd8e01185c649de07cd4a49ecbc463",
+            "status": "PASS"
+          }
+        }
+      },
+      {
+        "platform": "windows",
+        "results": {
+          "installed": {
+            "path": "facts/windows-installed-result.json",
+            "original_sha256": "db182603a5bfb3953f783618902497d465321b05d0eb962a85880e057d5a111c",
+            "status": "PASS"
+          },
+          "upgrade": {
+            "path": "facts/windows-upgrade-result.json",
+            "original_sha256": "885c840e8c3b9f98b4f8b111882accde8b85bf85b74d9dccb5e56a2ace2500a6",
+            "status": "PASS"
+          }
+        }
+      }
+    ]
+  },
+  "original_failures_preserved": true,
+  "commercial_release": false,
+  "release_gates_closed": [],
+  "finite_subset_closed": [
+    "source-external installed lifecycle and fixed 0.1.0 to rc1 matching backup rollback"
+  ],
+  "beta_accepted_tasks": 0,
+  "not_proven": [
+    "R1-R6 exit",
+    "consumer OS support matrix",
+    "real coding quality",
+    "Git Writer/B4/B7/P1",
+    "default Docker workspace readiness",
+    "rc1 to stable 1.0 authenticated migration",
+    "independent Beta"
+  ]
+}

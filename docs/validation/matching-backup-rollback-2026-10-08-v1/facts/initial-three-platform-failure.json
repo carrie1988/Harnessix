@@ -1,0 +1,143 @@
+{
+  "source_revision": "702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3",
+  "run_id": 37692147486,
+  "run_attempt": 1,
+  "conclusion": "failure",
+  "consumers": [
+    {
+      "installed_result": {
+        "spec_version": "harnessix.installed-product-acceptance/v1",
+        "source_revision": "702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3",
+        "product_version": "1.0.0rc1",
+        "platform": "Linux",
+        "machine": "x86_64",
+        "python": "3.12.3",
+        "wheel_sha256": "be30cacc274ee26053a8f3cbbf7ef3234b43298a51b4e51062babe857cfec79f",
+        "installed_package_members_verified": 552,
+        "source_package_members_verified": 552,
+        "isolated": true,
+        "source_checkout_in_sys_path": false,
+        "doctor_ready": true,
+        "active_owner_backup_refused": true,
+        "full_backup_verified": true,
+        "original_key_retained": true,
+        "post_snapshot_thread_removed": true,
+        "prior_root_retained": true,
+        "same_restore_id_does_not_rewind_new_state": true,
+        "backup_file_count": 7,
+        "stable_restore_result": true,
+        "uninstalled_import_absent": true,
+        "uninstall_preserves_all_fixture_bytes": true,
+        "same_wheel_reinstall_verified": true,
+        "reinstalled_threads_readable": true,
+        "workspace_unchanged": true,
+        "provider_turn_requests": 0,
+        "commercial_release": false,
+        "not_proven": [
+          "real_coding_task",
+          "version_upgrade",
+          "beta",
+          "consumer_os_support"
+        ]
+      },
+      "installed_result_sha256": "bac95c35ebcaa189ec82bb0355e2ddcf3a7477441400bdf27c6f4e54ba49bb18",
+      "upgrade_status": "FAIL",
+      "upgrade_result_present": false,
+      "upgrade_fixed_error": {
+        "status": "failed",
+        "code": "upgrade_phase_failed"
+      }
+    },
+    {
+      "installed_result": {
+        "spec_version": "harnessix.installed-product-acceptance/v1",
+        "source_revision": "702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3",
+        "product_version": "1.0.0rc1",
+        "platform": "Darwin",
+        "machine": "arm64",
+        "python": "3.12.10",
+        "wheel_sha256": "be30cacc274ee26053a8f3cbbf7ef3234b43298a51b4e51062babe857cfec79f",
+        "installed_package_members_verified": 552,
+        "source_package_members_verified": 552,
+        "isolated": true,
+        "source_checkout_in_sys_path": false,
+        "doctor_ready": true,
+        "active_owner_backup_refused": true,
+        "full_backup_verified": true,
+        "original_key_retained": true,
+        "post_snapshot_thread_removed": true,
+        "prior_root_retained": true,
+        "same_restore_id_does_not_rewind_new_state": true,
+        "backup_file_count": 7,
+        "stable_restore_result": true,
+        "uninstalled_import_absent": true,
+        "uninstall_preserves_all_fixture_bytes": true,
+        "same_wheel_reinstall_verified": true,
+        "reinstalled_threads_readable": true,
+        "workspace_unchanged": true,
+        "provider_turn_requests": 0,
+        "commercial_release": false,
+        "not_proven": [
+          "real_coding_task",
+          "version_upgrade",
+          "beta",
+          "consumer_os_support"
+        ]
+      },
+      "installed_result_sha256": "9b36dffdaa27ee95a834a55925860a6424e01f33872df74232dcb66dd9ce4bb8",
+      "upgrade_status": "FAIL",
+      "upgrade_result_present": false,
+      "upgrade_fixed_error": {
+        "status": "failed",
+        "code": "upgrade_phase_failed"
+      }
+    },
+    {
+      "installed_result": {
+        "spec_version": "harnessix.installed-product-acceptance/v1",
+        "source_revision": "702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3",
+        "product_version": "1.0.0rc1",
+        "platform": "Windows",
+        "machine": "AMD64",
+        "python": "3.12.10",
+        "wheel_sha256": "be30cacc274ee26053a8f3cbbf7ef3234b43298a51b4e51062babe857cfec79f",
+        "installed_package_members_verified": 552,
+        "source_package_members_verified": 552,
+        "isolated": true,
+        "source_checkout_in_sys_path": false,
+        "doctor_ready": true,
+        "active_owner_backup_refused": true,
+        "full_backup_verified": true,
+        "original_key_retained": true,
+        "post_snapshot_thread_removed": true,
+        "prior_root_retained": true,
+        "same_restore_id_does_not_rewind_new_state": true,
+        "backup_file_count": 7,
+        "stable_restore_result": true,
+        "uninstalled_import_absent": true,
+        "uninstall_preserves_all_fixture_bytes": true,
+        "same_wheel_reinstall_verified": true,
+        "reinstalled_threads_readable": true,
+        "workspace_unchanged": true,
+        "provider_turn_requests": 0,
+        "commercial_release": false,
+        "not_proven": [
+          "real_coding_task",
+          "version_upgrade",
+          "beta",
+          "consumer_os_support"
+        ]
+      },
+      "installed_result_sha256": "95ec0b1c28fba1afe2602a510ac1099e4b390c4b69735d337fc0f35db175d5a6",
+      "upgrade_status": "FAIL",
+      "upgrade_result_present": false,
+      "upgrade_fixed_error": {
+        "status": "failed",
+        "code": "upgrade_phase_failed"
+      }
+    }
+  ],
+  "canonical_wheel_sha256": "be30cacc274ee26053a8f3cbbf7ef3234b43298a51b4e51062babe857cfec79f",
+  "history_preserved": true,
+  "commercial_release": false
+}

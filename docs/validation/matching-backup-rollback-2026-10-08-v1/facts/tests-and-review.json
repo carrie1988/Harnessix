@@ -1,0 +1,50 @@
+{
+  "main_executions": [
+    {
+      "artifact": "rollback-order-red.xml",
+      "original_sha256": "6d78a8f1c2f985a4040a5fd5a1ef26cf3692dc9e892413bed9f168ce1a5608c8",
+      "cases": 6,
+      "failures": 6,
+      "errors": 0,
+      "scope": "control regression; not installed evidence"
+    },
+    {
+      "artifact": "rollback-order-green.xml",
+      "original_sha256": "7c5eb14a6f8335fe5648d471ea42b154ede8b759303cda20b26ba2e76f2af8eb",
+      "cases": 47,
+      "failures": 1,
+      "errors": 0,
+      "scope": "control regression; not installed evidence"
+    },
+    {
+      "artifact": "rollback-order-green-git253.xml",
+      "original_sha256": "bd4030f6f9004975ecd84fc54887307a262e3522c70a7213ed6c4d2fc364b568",
+      "cases": 47,
+      "failures": 0,
+      "errors": 0,
+      "scope": "control regression; not installed evidence"
+    }
+  ],
+  "independent_review": {
+    "status": "LIMITED_REVIEW_GO_ACTUAL_ACCEPTANCE_PENDING",
+    "reviewed_head": "702a89c135d5c7dd243e0e82bfb35cf68f5d8ae3",
+    "live_worktree_script_sha256": "ae369dbac79c777f5385465425d0e9a263f4f1455de1621a5a348a8a8f6fa16d",
+    "owned_test_sha256": "10563bb5694750f9d596464ae40099ac61f1c6161d6428a5f3346d6573dc79f1",
+    "review_blocking_findings": [],
+    "existing_short_tests_passed": 6,
+    "independent_short_tests_passed": 10,
+    "actual_install_runs": 0,
+    "sdk_runs": 0,
+    "model_or_provider_calls": 0,
+    "main_writes": 0,
+    "source_inputs_unchanged_at_end": true,
+    "scope_limitations": [
+      "pre-commit working-tree candidate, not a committed source freeze",
+      "short orchestration mocks do not prove actual database schemas or retained Root bytes",
+      "initial installed rollback FAIL and authorized diagnostic FAIL remain unchanged",
+      "reported main 6RED and Apple-Git CRLF FAIL not re-run or reclassified",
+      "fresh matching rollback installed fixture and platform gates remain pending"
+    ]
+  },
+  "results_are_not_added_across_repeated_nodes": true
+}
