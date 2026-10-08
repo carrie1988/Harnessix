@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 15
-code_revision: 04701ced9d89656a46dd8cda543e83d305ae97f8
+version: 16
+code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
@@ -24,6 +24,7 @@ related_tests:
   - tests/product_config/test_git_layered_projection_control.py
   - tests/product_config/test_git_prepared_link_connection.py
   - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_trusted_action_locked_sync.py
   - tests/agent/test_approval_crash_recovery.py
   - tests/delivery/test_git_prefix_ledger.py
   - tests/delivery/test_git_store_schema_v2.py
@@ -286,7 +287,9 @@ sequenceDiagram
 本阶段恢复屏障只交付事实，不继续调度 Git Executor。其他已实现 Trusted Action 不被该 Git 专用分支拦截。
 审批前取消须先由原取消与结算路径提交原三方事实，再进入同样的追加流程；事实 Writer 不代行取消。
 所有业务行、领域事件、record publication 与 prefix anchor 只存在于调用方原 GitDB 事务；返回不是 COMMIT。
-审批入口已经持有原 Thread 锁时直接借用该锁，不二次获取不可重入的同一锁；重启恢复先完成原 `sync_decision` 的锁作用域，再取得事实窗口锁并重新读取全部来源。
+审批入口已经持有原 Thread 锁时直接借用该锁，不二次获取不可重入的同一锁；
+内部宿主使用已实现的 `_sync_decision_in_owned_thread`，在 Git 事务之外同步原 Session。
+现有重启恢复的普通 `sync_decision` 仍自行获取锁；拟议同锁屏障不得在持锁窗口调用这个普通入口。
 
 ### 6.2 三库窗口与确认丢失
 
@@ -555,6 +558,20 @@ Audit events/Execution checkpoint 的同步读接口当前没有本操作 checkp
 重启后的进程不能复用过去的 token。必须由原 Runtime 正常启动取得原库的新活跃 Owner generation，再以原 Store/Key/Scope/Route 身份只读重验历史。
 这属于原宿主所有权生命周期，不是重新签发业务批准；操作内 token/fence 替换一律拒绝，历史正文不携带可重放 Owner token。
 
+**已实现的同锁同步原语，不等于完整屏障。**
+[`TrustedActionSessionRuntime._sync_decision_in_owned_thread`](../../src/harnessix/agent/trusted_action_runtime.py)
+委托唯一 Session 同步算法，借用实际 `RuntimeThreadLock`；逐边界核对原锁、原 Task 和 acquire 代际，
+不释放重取、不补新决定、不执行效果。原 `sync_decision` 兼容入口保留。
+同步异常原样向上抛出，不得开启 Git BEGIN；若 Session append 已提交，后续漂移拒绝不能反向撤销原事实。
+
+隔离非 editable Wheel 中，原 Router-first 缺口的批准／拒绝、Session CAS 失败／取消后沿原权威重试
+四项实际 SDK 场景通过；同步只追加一个原时间戳事件，精确重复调用不追加，随后原同锁 Writer 追加、
+完整 `prepared_git_commit_scope` 内 COMMIT 及只读重开均通过。原普通同步的既有 SDK 用例另行通过；
+相关安装态回归 198 项包含新增 72 项窄端口负控，不能重复累加。
+初始同锁重入诊断确认旧普通入口会等待，未同步 Writer 被 `git_approval_history_changed` 拒绝、回滚全行不变；
+这是拟议接线风险，不是当前默认产品路径已经发生死锁。
+默认 Writer、全部 dispatch 屏障、完整 B4/B7、代表性 P1 与 R3 发布门槛继续开放。
+
 原 Router `execute` 仍核对持久 Execution Plan、原 binding/Workspace/approval 并领取 execute operation；原 `reconcile` 仍从 unknown 领取对账 operation。
 本阶段不调用它们，也不把新事实作为 `_prepare_execution` 的替身。
 未来消费者接线必须先完成本事实屏障并再次遵循原授权入口；缺失未来 Git Executor 或 A/T2/D/Commit 时保持不装配。
@@ -596,7 +613,7 @@ running/reconciling 的宿主中断由原 `recover_interrupted_plan` 收敛 unkn
 原宿主恢复屏障(route_id):
     保持原 Thread 锁、原活跃 Owner、Git 专用调度停止
     若原 Router 检查点已存在、Session 原审批仍 started:
-        在 Git 事务之外调用原 Session sync_decision
+        在 Git 事务之外调用私有 _sync_decision_in_owned_thread
         不传新 ApprovalDecision，不生成新审批身份
     开启原登记 Git Connection 的新 BEGIN IMMEDIATE
     try:

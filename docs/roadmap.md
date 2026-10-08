@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 233
-code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
+version: 234
+code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
 owners:
   - core
 modules:
@@ -2693,5 +2693,20 @@ R4 的成功 prepare 现在将原 SourceScope 和四库 reader 保留至原 Runt
 当前生产安装候选另有状态 Owner／Runtime 锁 79 项通过，560 个包成员与 Git、Wheel 和安装字节一致；
 这些结果不作为完整 B7 或三平台证明。
 [原生能力复验](research/git-sqlite-native-source.md#71-原连接公开能力复验)确认当前两套运行库的
-公开对象指针不提供完整 FD 身份；固定 Linux 镜像的内存检查因工具链和运行库不匹配未执行。
+公开对象指针不提供完整 FD 身份；此前固定 Linux 内存检查的工具链／版本阻塞已由后继独占容器解除，原失败保留。
 完整原生安全范围尚未形成新的准入决策，原门禁保持不变；本轮无真实模型请求。
+
+原审批同步新增私有持锁入口，借用当前 Task 的原 RuntimeThreadLock 并冻结 acquire 代际，
+复用唯一同步算法、不重入锁；普通 `sync_decision` 兼容入口不变。
+同一隔离安装候选完成批准／拒绝、CAS 失败／取消后恢复四项实际 SDK 验证，
+随后同锁追加、完整提交门及只读重开通过；原普通同步 SDK 一项另行通过。
+相关安装态回归 198 项包含新增 72 项窄端口负控，不重复累计。
+这只完成恢复所需原语，不等于生产 Writer 或全部 dispatch 屏障装配；
+详见[原 Owner 与恢复边界](changes/m09-r4-git-approved-link.md#83-原-owner重启与授权边界)。
+
+[固定 Linux 内存执行](research/git-sqlite-native-source.md#72-固定-linux-原桥的有效内存检查)
+已证明三工具的正负控有效，原桥三组各 21 个 case 真正执行、全部仅映射原 SQLite 3.45.3。
+UBSAN 本次路径无诊断；ASAN／LSAN 因泄漏均非 clean pass，已定位一个原桥初始化分配组，
+不把所有泄漏归于宿主或关闭检测。已知 A→B→A 反例及完整 B7／原生平台门禁仍开放。
+可读性全量旧基线仍有 22 项存量告警，本源码变更未新增；不把零新增称为全量门禁通过。
+真实 R3 复验及其预算规则仍待确认，本轮不调用模型、不提升真实编码评分或商业发布状态。

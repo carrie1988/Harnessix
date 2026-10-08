@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 27
-code_revision: 1aee3faae95c708b629767a9ff4e518e211f1102
+version: 28
+code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
 owners:
   - core
 modules:
@@ -33,6 +33,7 @@ related_tests:
   - tests/agent/test_approval_crash_recovery.py
   - tests/agent/test_interactions.py
   - tests/agent/test_trusted_action_runtime.py
+  - tests/agent/test_trusted_action_locked_sync.py
   - tests/agent/test_legacy_process_compatibility.py
 supersedes: []
 ---
@@ -749,6 +750,24 @@ sequenceDiagram
 ```
 
 执行前由`TrustedActionSessionRuntime.execute`重新读取Session，不接受调用栈中游离的审批对象。Router已经有决定但Session尚未完成审批Item时，`sync_action_decision`读取原Checkpoint并以同一时间戳补投影；冲突决定失败关闭。
+
+[`TrustedActionSessionRuntime`](../../src/harnessix/agent/trusted_action_runtime.py)提供两种锁入口，
+但共享[`trusted_action_session._sync_action_decision`](../../src/harnessix/agent/trusted_action_session.py)的唯一业务算法：
+
+| 入口 | 调用前提 | 锁及失败语义 |
+|---|---|---|
+| `sync_decision` | 调用方未持有该 Thread 锁 | 沿原工厂获取非重入锁；继续支持通用 `asyncio.Lock` 和原 Session 端口 |
+| 私有 `_sync_decision_in_owned_thread` | 当前 Task 已持有原实际 `RuntimeThreadLock` | 不获取或释放锁；冻结 acquire 代际，在 Session 读取、工具合同、Gateway 投影、CAS append 前后核对锁身份与原 Task |
+
+借用入口拒绝未持锁、外 Task／回调、锁子类及工厂换锁；同一 Task 释放后重新获取也不能复用旧代际。
+它只同步原 Router 决定，不新建 `ApprovalDecision`，不调用 execute/reconcile，不重试或刷新 Turn 预算。
+原 Store／Gateway 异常和取消优先保留原对象；CAS 成功后才发现漂移时，已提交 Session 事实不撤销，
+调用方必须停止后续 Git 事务。原正常入口行为及旧恢复流程不变。
+
+新增原语的窄端口负控见[`test_trusted_action_locked_sync.py`](../../tests/agent/test_trusted_action_locked_sync.py)。
+真实认证 SDK 的同锁恢复、原时间戳、失败先于 Git BEGIN 及提交门验证见
+[Git 决定恢复边界](../changes/m09-r4-git-approved-link.md#83-原-owner重启与授权边界)。
+这不是已装配的默认 Git 恢复屏障，也不代替跨资源 Owner、完整来源或 B7 认证。
 
 ### 24.4 失败与恢复
 

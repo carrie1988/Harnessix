@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 3
-code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
+version: 4
+code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -236,6 +236,32 @@ journal 或 WAL；本探针没有把非空指针解释为底层文件身份。`F
 不是通用认证端口，不能以新版文档中的操作码推定旧运行库具备能力。
 六个模式检查保持原行、`total_changes`和显式事务不变，加载结束均验证 SQL 扩展加载被拒绝。
 这些结果不覆盖 Windows 执行、进度回调重入、桥内存安全或完整 FD／WAL／SHM 绑定，B7 仍未完成。
+
+### 7.2 固定 Linux 原桥的有效内存检查
+
+原工具链阻塞已在独占普通容器内解除：固定 Python 镜像不变，无宿主挂载、无额外 capability；
+从官方签名 Alpine 仓库安装 GCC 14.2.0 和 Clang／compiler-rt 20.1.8。
+官方 SQLite 3.45.3 源码与发布页 SHA3-256 匹配；进程启动前选择该共享库，
+63 个实际 case 的映射均只有这一 SQLite 引擎。没有删除原桥的 3.45.3 guard 或加载第二套 SQLite。
+原 C 和 21 项断言逐字保留，runner 只修改 Python 可执行路径。
+
+| 检查 | 工具有效性 | 原桥执行结果 | 准入结论 |
+|---|---|---|---|
+| ASAN | 独立及实际 preload 正／负控有效，UAF 确被发现 | 20 项断言通过、1 项已知反例；21 个进程均因泄漏退出 73 | 非 clean pass |
+| UBSAN | 独立及实际 preload 正／负控有效，非对齐写确被发现 | 20 项断言通过、1 项已知反例；21 个进程退出 0 | 仅本次原桥已执行路径未报告 UB |
+| LSAN | 独立及实际 preload 正／负控有效，故意泄漏确被发现 | 20 项断言通过、1 项已知反例；21 个进程均退出 73 | 未闭合 |
+
+无桥同入口及原标准库定义对照均报告 3824 bytes／4 allocations；只 import 桥、不 attach，
+已报告 55615 bytes／44 allocations。一个 976-byte 分配组包含原 `PyInit_direct_bridge → PyErr_NewException`，
+符号化定位原 C 第 417 行；其余初始化／退出分配尚未完整归因。
+State／lease／userdata 计数归零不等于所有内存释放，不能按 Python 基线全局扣减或 suppression 宣布通过。
+Python／SQLite 本体未插桩；原生桥的已执行路径与分配拦截证据不覆盖全部原生内部。
+
+原首次无效 UBSAN／LSAN 负控、包名解析失败、完整泄漏栈、官方来源和工具二进制均保留。
+独占容器已清理，其他容器未变。原桥仍仅研究、未进入生产包，瞬时 A→B→A 反例仍成立，
+ASAN／LSAN、完整 FD／WAL／SHM、B7 与三平台准入保持开放。
+本轮固定原件位于 `~/Library/Application Support/Harnessix/verification/r4-owned-sync-and-linux-memory-20261008-v1`；
+其中结构化结果与 manifest 可复算，原工具链尝试失败不会被后继有效执行覆盖。
 
 ## 8. 源码映射、取舍与下一步
 
