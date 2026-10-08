@@ -60,6 +60,7 @@ class _Probe:
         self.events = []
         self.scopes = 0
         self.retired = None
+        self.build_control = None
         self.failure_at = None
         self.failure = None
         self.control = GitAuthenticationControl(self.local, self.authenticate)
@@ -89,6 +90,8 @@ def _observe(monkeypatch, case, probe):
             try:
                 if outside:
                     assert not probe.in_pure and probe.control._segment is None
+                    if type(probe.build_control) is GitAuthenticationControl:
+                        assert probe.build_control._segment is None
                 return original(*args, **kwargs)
             finally:
                 probe.events.append((actual_phase, "leave"))
@@ -146,6 +149,13 @@ def _observe(monkeypatch, case, probe):
         probe.phase = "entry"
 
     monkeypatch.setattr(assembly, "pure_git_authentication", pure)
+    original_control = assembly._build_control
+
+    def build_control(*args):
+        probe.build_control = original_control(*args)
+        return probe.build_control
+
+    monkeypatch.setattr(assembly, "_build_control", build_control)
 
 
 def test_only_declarative_inputs_are_layered_and_canonical_scope_diff_unchanged(case, monkeypatch):
@@ -160,16 +170,12 @@ def test_only_declarative_inputs_are_layered_and_canonical_scope_diff_unchanged(
         assert (phase, "auth") not in probe.events
     assert probe.events.count(("pure-enter", "auth")) == 1
     assert probe.events.count(("pure-exit", "auth")) == 1
-    for phase in (
-        "_build",
-        "parse_git_commit",
-        "prepare_git_tree_diff",
-        "_scope",
-        "snapshot_git_inventory_scope",
-        "verify_git_inventory_scope_materials",
-    ):
+    for phase in ("_build", "parse_git_commit", "_scope"):
         assert (phase, "auth") in probe.events
         assert (phase, "local") not in probe.events
+    for phase in ("snapshot_git_inventory_scope", "verify_git_inventory_scope_materials"):
+        assert (phase, "auth") in probe.events and (phase, "local") in probe.events
+    assert ("prepare_git_tree_diff", "auth") in probe.events
     assert canonical(json_facts(scope)) == canonical(json_facts(case.core.object_scope))
     assert diff.content.text.encode() == case.diff_text.encode()
     assert (diff.content.sha256, diff.content.utf8_bytes) == (
@@ -203,6 +209,7 @@ def test_only_declarative_inputs_are_layered_and_canonical_scope_diff_unchanged(
         ("parse_git_commit", "auth"),
         ("prepare_git_tree_diff", "auth"),
         ("snapshot_git_inventory_scope", "auth"),
+        ("snapshot_git_inventory_scope", "local"),
     ],
 )
 def test_first_callback_and_boundary_error_identity_never_delivers_result(

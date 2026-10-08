@@ -17,9 +17,13 @@ from harnessix.delivery.contracts import (
     WorkspaceFileVersion,
     WorkspaceMutation,
 )
+from harnessix.delivery.git_authentication_control import (
+    GitAuthenticationControl,
+    pure_git_authentication,
+)
 from harnessix.delivery.git_material_cas import GitMaterialCAS, GitObjectMaterialReference
 from harnessix.delivery.git_object_material import GitObjectMaterial
-from harnessix.delivery.git_object_references import parse_git_tree
+from harnessix.delivery.git_object_references import GitTreeEntry, parse_git_tree
 from harnessix.delivery.git_tree_closure import (
     GitTreeClosure,
     GitTreeClosureLimits,
@@ -51,17 +55,24 @@ def _version(value: WorkspaceFileVersion) -> WorkspaceFileVersion:
     if type(value) is not WorkspaceFileVersion:
         raise _invalid()
     try:
-        if set(vars(value)) != {"presence", "sha256", "size", "mode"}:
+        state = vars(value)
+        if type(state) is not dict:
+            raise _invalid()
+        fields = tuple(state.items())
+        if any(type(name) is not str for name, _ in fields):
+            raise _invalid()
+        state = dict(fields)
+        if set(state) != {"presence", "sha256", "size", "mode"}:
             raise _invalid()
         if (
             value.__pydantic_extra__ is not None
-            or type(value.presence) is not str
-            or type(value.size) is not int
-            or (value.sha256 is not None and type(value.sha256) is not str)
-            or (value.mode is not None and type(value.mode) is not int)
+            or type(state["presence"]) is not str
+            or type(state["size"]) is not int
+            or (state["sha256"] is not None and type(state["sha256"]) is not str)
+            or (state["mode"] is not None and type(state["mode"]) is not int)
         ):
             raise _invalid()
-        return WorkspaceFileVersion(**vars(value))
+        return WorkspaceFileVersion(**state)
     except (AttributeError, ValidationError):
         raise _invalid() from None
 
@@ -70,14 +81,21 @@ def _mutation(value: WorkspaceMutation) -> WorkspaceMutation:
     if type(value) is not WorkspaceMutation:
         raise _invalid()
     try:
+        state = vars(value)
+        if type(state) is not dict:
+            raise _invalid()
+        fields = tuple(state.items())
+        if any(type(name) is not str for name, _ in fields):
+            raise _invalid()
+        state = dict(fields)
         if (
-            set(vars(value)) != {"path", "before", "after"}
+            set(state) != {"path", "before", "after"}
             or value.__pydantic_extra__ is not None
-            or type(value.path) is not str
+            or type(state["path"]) is not str
         ):
             raise _invalid()
         return WorkspaceMutation(
-            path=value.path, before=_version(value.before), after=_version(value.after)
+            path=state["path"], before=_version(state["before"]), after=_version(state["after"])
         )
     except (AttributeError, ValidationError):
         raise _invalid() from None
@@ -87,6 +105,9 @@ def snapshot_git_tree_mutations(
     values: tuple[WorkspaceMutation, ...], platform: PlatformKind, checkpoint: Callable[[], None]
 ) -> tuple[WorkspaceMutation, ...]:
     """严格深层重建净变化，供完整目标树和Diff共用；不授予来源或执行权限。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        with pure_git_authentication(checkpoint) as check:
+            return snapshot_git_tree_mutations(values, platform, check)
     if not callable(checkpoint):
         raise _invalid()
     if type(platform) is not str or platform not in {"posix", "windows"}:
@@ -171,11 +192,21 @@ def _directories(
     for reference in base.objects:
         checkpoint()
         if reference.object_type == "tree":
-            trees[reference.object_id] = parse_git_tree(
-                cas.read(reference), max_entries=limits.max_entries, checkpoint=checkpoint
-            )
+            material = cas.read(reference)
+            with pure_git_authentication(checkpoint) as check:
+                trees[reference.object_id] = parse_git_tree(
+                    material, max_entries=limits.max_entries, checkpoint=check
+                )
+    with pure_git_authentication(checkpoint) as check:
+        return _directory_paths(trees, base.root.object_id, check)
+
+
+def _directory_paths(
+    trees: dict[str, tuple[GitTreeEntry, ...]], root_oid: str, checkpoint: Callable[[], None]
+) -> set[str]:
+    """无 CAS 的原 DFS；共享子树仍按每条路径展开，保留全部空目录。"""
     result = {""}
-    pending = [(base.root.object_id, "")]
+    pending = [(root_oid, "")]
     while pending:
         checkpoint()
         oid, prefix = pending.pop()
@@ -396,15 +427,17 @@ def prepare_git_tree_projection(
         cas, root, catalog, platform=platform, limits=limits, checkpoint=checkpoint
     )
     directories = _directories(cas, base, limits, checkpoint)
-    files = _before(base, directories, mutations, platform, checkpoint)
-    objects = _Objects(limits)
-    for reference in base.objects:
-        checkpoint()
-        objects.add(reference)
+    with pure_git_authentication(checkpoint) as check:
+        files = _before(base, directories, mutations, platform, check)
+        objects = _Objects(limits)
+        for reference in base.objects:
+            check()
+            objects.add(reference)
     after = _after(cas, after_catalog, mutations, base.root.object_format, objects, checkpoint)
-    _apply(files, directories, mutations, after, checkpoint)
-    entries, depth = _namespace(files, directories, platform, limits, checkpoint)
-    target, new = _trees(files, directories, objects, base.root.object_format, checkpoint)
+    with pure_git_authentication(checkpoint) as check:
+        _apply(files, directories, mutations, after, check)
+        entries, depth = _namespace(files, directories, platform, limits, check)
+        target, new = _trees(files, directories, objects, base.root.object_format, check)
     checkpoint()
     return GitTreeProjection(
         base,
