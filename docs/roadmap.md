@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 236
-code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
+version: 237
+code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
 owners:
   - core
 modules:
@@ -28,6 +28,8 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
 related_tests:
   - tests/product_config/test_git_decision_link_contracts.py
+  - tests/product_config/test_git_decision_recovery.py
+  - tests/product_config/test_git_decision_recovery_observers.py
   - tests/product_config/test_git_authority_pure_paths.py
   - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_coding_workflow_instructions.py
@@ -2726,3 +2728,11 @@ UBSAN 本次路径无诊断；ASAN／LSAN 因泄漏均非 clean pass，已定位
 原 Turn 与 60 秒绝对操作预算不延长，原失败与独立静态评审保留。校验器正控及七项负控通过。
 该候选未进入主仓库默认装配，不关闭完整 B4/B7、FD/WAL/SHM、全部 dispatch、平台或 P1 总体验收。
 真实 R3 复验预算规则及原生安全范围仍待对齐，本轮模型请求为 0；不将隔离测试或源码映射计为商业完成。
+
+[正式内部决定恢复集成](changes/m09-r4-git-approved-link.md#138-正式内部代码集成与回归)
+将隔离方案移入唯一生产 Ledger/恢复实现，未注册默认 dispatch。
+最终同一非 editable Wheel 的 18 项实际 SDK、131 项相关回归、122 项兼容回归通过，
+后者另有 1 项原生 Windows 跳过；562 个包成员逐字节绑定。
+初版复合失效顺序红例与修复均保留，可读性维持原 22 项存量告警且新增 0，未新增 ADR。
+本轮只完成内部切片，不关闭完整 B4/B7、原生平台、P1 或商业发布门禁；真实模型请求 0。
+R3 固定 20 Trial 的真实复验仍待现行预算周期的明确有界授权，不把旧周期授权自动转译为新授权。

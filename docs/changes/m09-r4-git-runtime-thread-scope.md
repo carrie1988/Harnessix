@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
+version: 5
+code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
 owners: [core]
 modules: [agent, product_config]
 related_adrs:
@@ -11,6 +11,8 @@ related_tests:
   - tests/product_config/test_git_prepared_commit_scope.py
   - tests/delivery/test_git_prefix_sql_transaction_scope.py
   - tests/product_config/test_git_prepared_runtime_thread.py
+  - tests/product_config/test_git_decision_recovery.py
+  - tests/product_config/test_git_decision_recovery_observers.py
   - tests/agent/test_runtime_thread_lock_observer.py
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/product_config/test_git_prepared_link_controls.py
@@ -247,6 +249,7 @@ Ledger 构造本身只保存资源；强制 context 的位置是实际受控操�
 |---|---|---|
 | `thread_id` | 原调用方的精确 `UUID`，已通过 Runtime 原锁检查 | 用于目标 prepared 关联匹配；不是 read_all 的过滤器 |
 | `task` | bind 时的实际 `asyncio.current_task()` 对象 | 必须非空；消费窗口要求当前 Task `is scope.task` |
+| `runtime` | bind 时的原 `AgentRuntime` 引用 | 供内部恢复读取原 Thread/Turn；不能替换、复制或当作授权见证 |
 | `router` | `runtime._trusted_actions._state.gateway._state.router` | observer 签发时 Ledger Router 必须 `is` 原实例 |
 | `artifacts` | `runtime._artifacts` 的原 `SQLiteArtifactStore` | observer 签发时 Ledger Artifact 必须 `is` 原实例 |
 | `check` | `_runtime_check` 返回的固定闭包 | 冻结原装配及 acquire 代际；不是外部可提交的授权能力 |
@@ -280,6 +283,13 @@ scope registry 是模块私有 `_owned = threading.local()` 的
 不能因为都使用 `threading.local` 就将其视作同一凭据。
 `_registered_prepared_connection()` 对已登记连接仍核对原 Task；bind 不允许把普通连接降格注册为产品连接。
 原路径 pin 与 `PRAGMA database_list` 用于来源一致性，仍不是 SQLite 实际 FD 证明。
+
+恢复另用 `_prepared_git_connection_registration_observer` 与 `_git_prefix_caller_transaction_observer`：
+均由原 Task 准入后签发，只比较原活跃登记、原长 trace 实例、epoch 和事务存活，不执行物理来源 I/O。
+受管子 Task 可消费观察，仍不能签发观察者或进入 SQL 窗口；完整来源核验仍由原控制在 I/O/提交边界承担。
+关闭、替换登记/trace、ROLLBACK/BEGIN 或 SAVEPOINT 后旧观察者失效，不能恢复为新事务能力。
+对应[观察负控](../../tests/product_config/test_git_decision_recovery_observers.py)及
+[同锁恢复详设](m09-r4-git-approved-link.md#74-内部接口及实现状态)。
 
 ### 6.3 原装配身份快照
 

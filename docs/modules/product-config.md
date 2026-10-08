@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 96
-code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
+version: 97
+code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
 owners:
   - core
 modules:
@@ -16,6 +16,8 @@ related_adrs:
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
   - tests/product_config/test_git_prepared_link_connection.py
+  - tests/product_config/test_git_decision_recovery.py
+  - tests/product_config/test_git_decision_recovery_observers.py
   - tests/delivery/test_git_prefix_task_owner.py
   - tests/product_config/test_git_decided_source_reader.py
   - tests/product_config/test_git_decision_link_sources.py
@@ -2744,7 +2746,7 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 [`严格 Wire`](../../src/harnessix/product_config/git_decision_link_wire.py)沿原深快照及512KiB编码器，
 拒绝额外/缺失字段、重复键、非规范字节和保留在对象中的construct/copy篡改；控制异常保持原实例。
 这些是纯声明，不认证MAC/Session/Owner、无数据库效果，原prepared/v1仍只接受pending/sequence0。
-正式决定的来源Proof、事务Writer、完整历史Reader和恢复屏障保持未接线，不能据新类型注册默认Git写工具。
+声明类型本身不接线认证或写入；当前内部 Ledger/恢复见文末，默认 Git 写工具仍未注册。
 
 [固定期望路径详设](../changes/m09-r4-git-authority-pure-paths.md)仅改变
 [`require_git_user_authority`](../../src/harnessix/product_config/git_user_authority.py)内四个纯右值Path：
@@ -2778,7 +2780,7 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 再从同次私有读集合选目标、映射三种闭合声明，并在原同步终端成功后返回。
 目标缺失、pending 或任一坏关联均拒绝；不收调用方 Evidence/hash/批准对象作认证。
 返回仍是普通数据，不是发布 Token；没有新 Store、SQL 写入、事务提交、Key、缓存或默认装配。
-原 read_all、linkage_state、pending Reader 和120秒Turn/60秒consumer保持，正式Writer及恢复屏障仍 planned。
+原 read_all、linkage_state、pending Reader 和120秒Turn/60秒consumer保持；内部 Writer/恢复复用该读集合，默认接线仍 planned。
 详设与反例见[来源设计](../changes/m09-r4-git-decision-original-body-sources.md)及[本次交付](../validation/release-followup-2026-10-08-v5/README.md)。
 
 新入口使用私有_DecidedReadSet，原read_all仍使用_ApprovalReadSet。最后外callback后原terminal成功，
@@ -2843,3 +2845,15 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 短 SQL 窗口和发布能力仍各自撤销。失败、一次消费或 Runtime 退出均回收原资源。
 详见[资源交接与事务代际](../changes/m09-r4-git-runtime-thread-scope.md#86-原资源交接与跨方法事务代际)。
 该内部入口未接默认 Git Writer，不能拦截裸 COMMIT，不证明原生 SQLite FD、外部 ABA 或跨资源原子性。
+
+## Git 原决定 Ledger 与同锁恢复
+
+[`ProductGitDecisionLinkLedger`](../../src/harnessix/product_config/git_decision_link_ledger.py)
+借原 prepared Ledger 的全部资源，在原受控事务内认证、追加或精确复用决定，返回仍未提交。
+[`recover_decision_link`](../../src/harnessix/product_config/git_decision_recovery.py)
+要求原 Task、原 Runtime 锁 acquire、原 factory/bind，且无调用方已有事务；先私有只读认证 prepared 目标，
+再在 Git 写事务外同锁同步原 Session，最后开启本次原事务、消费唯一 Ledger、原提交门和 COMMIT。
+失败不代管已有/替换事务，清理不遮盖首异常，确认丢失回读复用而非重新 decide；仅一个60秒绝对预算。
+只读登记/事务观察允许受管子 Task 检查原父窗口，不能授予 SQL；完整认证仍在 I/O、发布及提交边界执行。
+这两个正式内部组件没有默认注册、不执行 Git 效果、不关闭完整 B4/B7 或原生门禁。
+详设、失败顺序红例及同包验收统一见[内部恢复集成](../changes/m09-r4-git-approved-link.md#138-正式内部代码集成与回归)。
