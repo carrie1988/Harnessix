@@ -2,7 +2,7 @@
 doc_type: change-design
 status: draft
 version: 2
-code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
+code_revision: 41037fde4915ef2537e7ca91ad29a93b83bfc29e
 owners: [core]
 modules: [product_config, workspace, delivery]
 related_adrs:
@@ -20,7 +20,7 @@ supersedes: []
 
 本设计限定于 B4 的原生来源读集合：关闭原 U 末轮逻辑 Git 查询之后、消费者最后宿主回调之后的 Ref／配置持久漂移窗口。
 不建立新数据库、第二套业务锁、后台服务或授权域，不装配默认 Git 写工具。
-原生来源模块、同次 Scope 与两消费者接线已经实现，限定的安装态验证已完成；`code_revision` 是变更前生产基线，不表示下述增量已经发布。
+原生来源模块、同次 Scope 与两消费者接线已经实现，限定的安装态验证已完成；`code_revision` 固定已验证增量的生产源码，不表示完整 B4 或商业发布通过。
 完整 B4 仍要求执行临界区、COMMIT／实际 Git 效果的条件验证与失败恢复；本子切片不是跨库事务或外部 Git 写锁。
 
 ## 2. 需求背景与证据
