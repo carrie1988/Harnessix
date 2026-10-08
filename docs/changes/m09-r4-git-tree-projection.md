@@ -1,14 +1,16 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 59e129e059ebbe1aff725bbef2e6555767cbcce5
+version: 2
+code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
 owners: [core]
 modules: [delivery, workspace]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_checkpoint_scope_control.py
+  - tests/delivery/test_git_tree_projection_layered.py
   - tests/delivery/test_git_tree_projection.py
   - tests/delivery/test_git_object_material_factory.py
   - tests/delivery/test_git_tree_closure.py
@@ -27,7 +29,7 @@ supersedes: []
 但没有将净Mutation作用于完整base tree，也没有计算目标tree的完整原始正文和OID。
 本设计补齐这一纯规划职责，不提前开放Git写入，也不以新的内部参数代替产品容量决策。
 
-**状态边界：** 本文描述基于59e129e新增的实际纯规划实现，内容由最终1244件输入目录绑定。
+**状态边界：** 初版基于59e129e，原1244件输入及第15章成绩保留为历史；当前分层增量以 `code_revision` 和第13.2节为准。
 第15章分别列出源码、安装、审查及最终治理状态；局部通过不关闭完整Git产品工作包。
 
 ## 2. 设计目标、非目标与不变量
@@ -364,6 +366,27 @@ Windows只复用原路径合同；本机双Python测试不等于Windows原生验
 官方命令接口以[git-init](https://git-scm.com/docs/git-init)和
 [git-mktree](https://git-scm.com/docs/git-mktree)为依据；官方支持对象格式的说明不是本项目验收证据。
 原完整输入及关联结果保留，新目录只更改此测试文件，C3生产模块和既有业务限制字节不变。
+
+### 13.2 分层控制与实际 I/O 分界
+
+本文“纯规划”指不产生写效果，不等同于控制契约的“同步无 I/O 纯段”；图中的 CAS 回读仍完整认证。
+总体算法、读取次数、两次独立 Mutation 快照、排序、空目录、共享子树逐路径展开、限额和结果正文／OID 均不变。
+
+| 阶段及源码符号 | 控制范围 | 失败边界 |
+|---|---|---|
+| `_version` / `_mutation` | exactdict → 原生 items 元组 → 全部键 exactstr → 重建后校验固定字段与值 | 不先 copy、set 或查找；恶意键／字典子类零回调，仍固定 projection 错误 |
+| `snapshot_git_tree_mutations` | 确切控制的同步深快照 | 纯段完整首末；未知回调原轨迹，Diff 和 Projection 不合并快照 |
+| `_directories` | 每个原 CAS 读在 pure 外，随后单独纯解析 | 不利用先前 Closure 正文缓存代替重读 |
+| `_directory_paths` | 原 LIFO DFS，无 CAS 参数／调用 | 共享子树按路径展开，全部空目录保留 |
+| `_before` / `_Objects.add` | 原 before 校验及 base 并集登记纯段 | 原 before、容量与模式检查不删减 |
+| `_after` | 全部 full | 每个原 after 引用与 CAS 正文完整回读 |
+| `_apply` / `_namespace` / `_trees` | 一段原纯算法 | 局部取消／到期、段边界漂移不交付结果；末尾完整 checkpoint 仍先于返回排序 |
+
+仅原确切控制分层，函数／代理／子类保持原完整 checkpoint／read 序列，foreign Task／线程不取得原 local。
+异常不增加新的解包器；Scope 的一层载体及出口保留原 callback／nested Upstream 身份。没有新 Wire、持久格式、缓存或默认 Writer。
+[分层测试](../../tests/delivery/test_git_tree_projection_layered.py)与[Scope 控制传递](../../tests/product_config/test_git_checkpoint_scope_control.py)覆盖输入可执行形状、CAS token 撤销、全字节输出、异常／漂移及 foreign 负控。
+最终同一非 editable 包树模块 822 项、相关 1232 项和实际 SDK 16＋4 项通过；562 成员与源码、Wheel、安装态一致。
+97 层合成对照 full 次数由 2579 到 1398、CAS 仍 200 次，仅机制计数不是生产 SLO；同包 v10 原深路径仍 60 秒准备失败、未进入恢复，P1 仍开放。
 
 ## 14. 风险、维护与评审检查清单
 

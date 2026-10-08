@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 242
-code_revision: ddbb2eb0a713dd6837e906e3a1e862861dab77df
+version: 243
+code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
 owners:
   - core
 modules:
@@ -2762,3 +2762,9 @@ R4 [准备／材料／Scope 分层接线](changes/m09-r4-git-checkpoint-preparat
 同包 v9 原深路径仍 60 秒准备 FAIL、未进入恢复；固定负载不变，不以机械缺陷闭环宣称响应性通过。
 P1、B4/B7、原生平台及默认 Git Writer 仍开放；下一顺序为树投影／闭包的纯计算与 I/O 分界 → 原深路径复验。
 R3 未新增真实模型请求，不以离线 SDK 或诊断通过替代真实编码质量。
+
+
+R4 [Scope 控制传递与树投影纯段](changes/m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)已落地，未整体降级混合构建或删减 CAS 读取。
+最终同一非 editable 包相关 1232 项、树模块 822 项、实际 SDK 16＋4 项通过，562 成员绑定；不累计重复候选成绩。
+同包 v10 固定原负载仍 60 秒准备 FAIL、未进入恢复；采样转向 Closure／Inventory 实际闭包验真，下一步优先拆清闭包声明与读后解析边界。
+P1、完整默认写链、B4/B7、原生平台及 R3 真实质量仍开放；本轮真实模型请求 0。

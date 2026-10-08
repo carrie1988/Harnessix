@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 49
-code_revision: ddbb2eb0a713dd6837e906e3a1e862861dab77df
+version: 50
+code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_git_checkpoint_scope_control.py
+  - tests/delivery/test_git_tree_projection_layered.py
   - tests/product_config/test_git_authentication_origin.py
   - tests/delivery/test_git_material_cas_control.py
   - tests/delivery/test_git_prefix_sql_lifecycle.py
@@ -2357,3 +2359,5 @@ PrefixSQL建立与消费时另核对产品连接的原登记，防止其他Task�
 先校验原生字典 items 的确切字符串键，再重建字典，避免稀疏复制执行键比较。失败清理不遮盖原异常。
 [创建绑定负控](../../tests/product_config/test_git_authentication_origin.py)已在非 editable 包通过；
 这不证明任意私有内存改写防护、深路径期限或默认 Git Writer 已通过。
+Projection 的净变更快照、无 CAS 目录 DFS、before／并集登记和 apply／namespace／tree 编码现已分段；
+读后解析单独分段，Closure、CAS 及 after 仍完整。正式边界见[树投影详设](../changes/m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)。

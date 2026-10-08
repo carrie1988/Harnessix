@@ -1,13 +1,15 @@
 ---
 doc_type: change-design
 status: draft
-version: 23
-code_revision: ddbb2eb0a713dd6837e906e3a1e862861dab77df
+version: 24
+code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_checkpoint_scope_control.py
+  - tests/delivery/test_git_tree_projection_layered.py
   - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_user_observation_verification.py
   - tests/product_config/test_git_observation_verification_recipe.py
@@ -912,6 +914,11 @@ CoreStore 的 `blob` I/O 与解析分开；不将 Store、发布、`await`、任
 三场景 20 毫秒心跳的最大间隔分别为 13.303／13.442／14.594 秒，
 说明同步响应性仍有阻塞；期限正向通过不能关闭 P1 或商用门禁。
 
+Scope 的 `_build_control` 只在原创建 Task／线程传递确切控制，冻结原 origin 而非当前字段。
+局部调用和父绑定失败各只添加一层控制标记，完整调用复用原包装；Scope 出口仅去除本入口的那一层，保留原 Upstream／嵌套对象。
+`_build` 本身不成为纯段。Projection 的声明、无 CAS DFS 与树编码由[树投影设计](m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)限定，真实 I/O 和 Closure 仍完整。
+对应负控见[控制传递](../../tests/product_config/test_git_checkpoint_scope_control.py)与[树算法分层](../../tests/delivery/test_git_tree_projection_layered.py)。
+
 ### 13.6 异常包装与纯算法边界
 
 原决定声明入口先调用 `_native_checkpointer`，Review 入口先构造异常记录闭包，
@@ -1056,3 +1063,8 @@ approved/denied/审批前完整 cancelled 都经原 SDK 决定或取消、原 Le
 A/T2/D/NativeBridge/Checkpoint/Commit、完整 Loader/Backup2 及发布门禁保持未实现或未关闭，不因新增 approved 记录提前默许。
 当前 `code_revision` 仅固定实现基准；元数据固定现行内部组件实现；默认决定接线完成后仍须另行固定其实现提交并更新既有模块设计。
 在决定源码、终端及宿主接线和实际回归证据闭合前，不得将本文提升为现行决定认证依据。
+
+
+2026-10-09 后继 Scope／Projection 候选同包相关 1232 项、树模块 822 项、实际 SDK 准备 16 项及三态决定 4 项通过，562 成员逐字节绑定。
+这四组分项计数，不累加先前候选或源级重复成绩；有界静态复核不作为独立运行验收。
+同包 v10 原深路径仍 60 秒准备 FAIL、未进入恢复，热点转向完整 Closure；原全部期限和默认未注册状态保留，P1、R3／R4 不据此关闭。
