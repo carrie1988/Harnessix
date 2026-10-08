@@ -2,7 +2,7 @@
 doc_type: change-design
 status: draft
 version: 15
-code_revision: 051d4a5a3a2f12e0effb9ffb93e87f343b6f2f00
+code_revision: 04701ced9d89656a46dd8cda543e83d305ae97f8
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
