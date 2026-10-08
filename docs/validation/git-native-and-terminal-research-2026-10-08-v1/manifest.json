@@ -1,0 +1,29 @@
+{
+  "spec_version": "harnessix.public-delivery-manifest/v1",
+  "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+  "private_manifest_sha256": "492dc3a9fc6a717b993b38b4fdca1dd0276fc5a1d2750f26a5f814d375e081f2",
+  "private_member_count": 694,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 4911,
+      "sha256": "822a35c60de824a22b67602c77b147de23e0affc63a5d098f007377021a0c6b9"
+    },
+    {
+      "path": "REVIEW_PACKET.md",
+      "bytes": 1433,
+      "sha256": "791ff99ad896a129fc0186c00503a7145ae0448f8df6690cbc8062c424e9eeb8"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 10021,
+      "sha256": "529247e5354f4e4c463218ab6369f3d3bbfdf1229ba908d74dfbf9bc30c841a7"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1528,
+      "sha256": "cd88dd92dba2b5154647e4897d832768b83a091491c2551567f7cadfcfaed1a0"
+    }
+  ],
+  "self_excluded": true
+}

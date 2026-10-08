@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 2
+version: 3
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners: [core]
 modules: [agent, product_config]
@@ -686,7 +686,8 @@ BEGIN 在 bind 前或 COMMIT 在 bind 后；持锁 await 同 Thread SDK 审批�
 扩展回归不等同组件正控。旧终端替身引用已移除入口，旧历史次数注入没有涵盖完整 U，
 对应测试接入已按现行语义修订并复验；原失败保留。两条原审批正控在原 Turn 期限内未完成，
 独立二项原审批正控复核通过，扩展 consumer 三个完整文件 49 项通过；原并行期限失败保留，
-独立子集通过不等于完整回归或 P1 达标。
+剩余 ports 七完整文件125项、history四完整文件41项均已获得通过终态；
+这闭合明确列出的两个完整集合，不外推全部SDK或P1达标。
 不扩大 60 秒消费期限、120 秒 Turn 窗口，不延续 TTL，不删用例或降低认证覆盖。
 
 本设计包含十四节及三个真实编译的 Mermaid 图；元数据、源码／测试链接与完整文档门禁独立核验。
@@ -694,6 +695,7 @@ BEGIN 在 bind 前或 COMMIT 在 bind 后；持锁 await 同 Thread SDK 审批�
 固定组件结果见[交付 v1](../validation/r4-runtime-thread-scope-2026-10-08-v1/README.md)，
 后续二项复核及最终质量门禁见[补充复核 v2](../validation/r4-runtime-thread-scope-2026-10-08-v2/README.md)。
 扩展 consumer 终态及有界响应性诊断见[追加证据 v3](../validation/r4-runtime-thread-scope-2026-10-08-v3/README.md)。
+剩余十一完整文件及原候选再次复核见[完整集合追加 v4](../validation/r4-runtime-thread-scope-2026-10-08-v4/README.md)。
 历史固定快照不得追写后来结果。
 
 ## 13. 部署、兼容、升级与回退

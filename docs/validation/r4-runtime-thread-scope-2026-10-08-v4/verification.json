@@ -1,0 +1,48 @@
+{
+  "spec_version": "harnessix.r4-runtime-thread-verification/v4",
+  "private_manifest_sha256": "334f5c9352942f009fccd1b590961fba521bf12a792d760afe0701b2d9492579",
+  "private_member_count": 14,
+  "all_private_members_hash_verified": true,
+  "production_candidate_modified": false,
+  "new_model_requests": 0,
+  "quality": {
+    "documentation": {
+      "documents": 647,
+      "links": 14161,
+      "findings": 0
+    },
+    "tracked_plus_candidate_secret_scan": {
+      "complete_inputs": 5351,
+      "findings": 0,
+      "limits_unchanged": true
+    },
+    "tracked_plus_research_secret_scan": {
+      "complete_inputs": 6032,
+      "findings": 0,
+      "limits_unchanged": true
+    },
+    "new_research_diagrams_rendered": 2,
+    "new_architecture_diagram_visually_checked": true,
+    "assembly_scan_precedes_generated_seal_metadata": true,
+    "sealed_complete_input_scan": {
+      "tracked_plus_candidate": 5351,
+      "tracked_plus_sealed_research": 6044,
+      "findings": 0,
+      "candidate_log_sha256": "7fc909ada4b3e7f8e16a7bb651b2d1f83e404d26e19eb1c4335b8e16ae40c8ff",
+      "research_log_sha256": "22e034f67441551bd27cb93d22cb65001cf89a1ed7037b500b71db1582fb98e4",
+      "limits_unchanged": true
+    }
+  },
+  "release_acceptance": false,
+  "ports": {
+    "passed": 125,
+    "failed": 0,
+    "skipped": 0
+  },
+  "history": {
+    "passed": 41,
+    "failed": 0,
+    "skipped": 0
+  },
+  "all_prior_fixed_members_hash_verified": true
+}

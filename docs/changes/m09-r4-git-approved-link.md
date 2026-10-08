@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 10
+version: 11
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -592,6 +592,27 @@ running/reconciling 的宿主中断由原 `recover_interrupted_plan` 收敛 unkn
 
 `U 末端见证` 是尚待关闭的设计依赖，不是现有端口或已证明能力；其验收失败时禁止启用 Writer。
 对其他关联同样完成全文与终端复核，不只核对目标 Route 或最后一条证据。
+
+### 10.1 实际 Ref/config 末端缺口与接线顺序
+
+现行末轮为异步 Ref/config → 原完整历史 await → Source 同步复核 → 物理 Index → U 返回 →
+外部 callback → 同步 terminal → Ledger 返回 → 调用方 COMMIT。
+[原配方](../../src/harnessix/product_config/git_user_observation.py)的最后 Ref/config 位于历史 await之前；
+[同步证据复核](../../src/harnessix/product_config/git_prepared_link_proof.py)没有再次观察实际 Ref/config。
+四库稳定、Source和Index未变，不能证明同OID symbolic HEAD或配置值未变。
+
+同一原安装候选的隔离实际 SDK诊断已执行两例：最后U正常返回后，原外部callback分别改变配置值及
+同OID symbolic HEAD；原pending Ledger仍返回一条关联，GitDB行、写计数及其他Store均未变。
+诊断JUnit的2通过表示探针到达该窗口，**两例均为已确认拒绝缺口，不是B4安全通过**；
+原件由[隔离研究交付](../validation/git-native-and-terminal-research-2026-10-08-v1/README.md)绑定。
+未知NativeBridge索引仍拒绝，Writer不能据此启用。
+
+最小后继实现需保留每条原关联对应的私有Ref/config来源见证：原Reader签发、实际完整输入映射、
+最后callback之后用内部控制消费、并明确保持至COMMIT的合同。不能由caller提交摘要，不能只检查最后一条，
+也不能只读取通用`.git/HEAD`和`.git/config`假定覆盖worktree、packed refs及实际配置origin。
+同步点时检测不等于所有外部写方遵守协作锁或整个事务冻结；生产设计必须明确选择及剩余并发边界。
+B4原语可以独立于SQLite原生来源研究开发，但默认Writer准入仍需要B4、B7及全部实际消费者同时满足。
+
 
 ## 11. 实施切片
 

@@ -1,0 +1,157 @@
+{
+  "spec_version": "harnessix.r4-runtime-thread-delivery/v4",
+  "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+  "wheel_sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+  "production_members": 556,
+  "candidate_reverified": {
+    "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+    "wheel_sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+    "production_members": 556,
+    "source_wheel_installed_git_equal": true,
+    "checked_after_remaining_full_regression_start": true
+  },
+  "complete_batches": {
+    "ports": {
+      "tests": 125,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 125,
+      "seconds": 642.543,
+      "raw_file": "installed-ports-complete-final.xml",
+      "sha256": "9cd5929231f16a3e5d187b1467a42aae446cffdf7ee4acf7e6a3ff4ecec8a1e9",
+      "per_file_case_counts": {
+        "tests.delivery.test_git_prefix_sql_lifecycle": 3,
+        "tests.delivery.test_git_prefix_task_owner": 11,
+        "tests.product_config.test_git_fresh_owner_reader": 4,
+        "tests.product_config.test_git_prepared_link_connection": 95,
+        "tests.product_config.test_git_prepared_link_terminal": 7,
+        "tests.product_config.test_git_review_fresh_owner": 2,
+        "tests.product_config.test_git_review_runtime_fence": 3
+      },
+      "complete_file_count": 7
+    },
+    "history": {
+      "tests": 41,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 41,
+      "seconds": 932.18,
+      "raw_file": "installed-history-complete-final.xml",
+      "sha256": "89627bf577fc2f8214e1a5b692b571027fa90e0455caf088df96b303d957512c",
+      "per_file_case_counts": {
+        "tests.product_config.test_git_decided_source_reader": 19,
+        "tests.product_config.test_git_decided_source_terminal": 12,
+        "tests.product_config.test_git_decision_source_sdk": 1,
+        "tests.product_config.test_git_prepared_approval_history": 9
+      },
+      "complete_file_count": 4
+    }
+  },
+  "batch_exit_results": [
+    {
+      "group": "ports",
+      "exit_code": 0
+    },
+    {
+      "group": "history",
+      "exit_code": 0
+    }
+  ],
+  "frozen_inputs": {
+    "kind": "remaining_complete_file_regression",
+    "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+    "wheel_sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+    "test_groups": {
+      "ports": [
+        "tests/delivery/test_git_prefix_sql_lifecycle.py",
+        "tests/delivery/test_git_prefix_task_owner.py",
+        "tests/product_config/test_git_fresh_owner_reader.py",
+        "tests/product_config/test_git_prepared_link_connection.py",
+        "tests/product_config/test_git_prepared_link_terminal.py",
+        "tests/product_config/test_git_review_fresh_owner.py",
+        "tests/product_config/test_git_review_runtime_fence.py"
+      ],
+      "history": [
+        "tests/product_config/test_git_decided_source_reader.py",
+        "tests/product_config/test_git_decided_source_terminal.py",
+        "tests/product_config/test_git_decision_source_sdk.py",
+        "tests/product_config/test_git_prepared_approval_history.py"
+      ]
+    },
+    "test_members": [
+      {
+        "path": "tests/delivery/test_git_prefix_sql_lifecycle.py",
+        "sha256": "fbc3c18babdedee099ee197dcc9fb708b2911364f941e15e7741696901b3e391"
+      },
+      {
+        "path": "tests/delivery/test_git_prefix_task_owner.py",
+        "sha256": "01359cb3618eb840e9f2e0b7eef73e056e23c28504186cd18c3a73c18ef4a371"
+      },
+      {
+        "path": "tests/product_config/test_git_decided_source_reader.py",
+        "sha256": "c6c52c00003e627de516a8b2303fb368dee773f0a8495e9ae7f574133230078d"
+      },
+      {
+        "path": "tests/product_config/test_git_decided_source_terminal.py",
+        "sha256": "c7d8fcfb8d602c5483602c5f2127bf45beb08622400d97765717a28cfeba53fa"
+      },
+      {
+        "path": "tests/product_config/test_git_decision_source_sdk.py",
+        "sha256": "4593c98328ecfaed654170691dfd39c574e0ed27d32bec3268fb36d73f49dfcd"
+      },
+      {
+        "path": "tests/product_config/test_git_fresh_owner_reader.py",
+        "sha256": "33997c80a38e3cfc5a28c3b10922b7fa7c6982f5014e9526c0456c7e3dd81dd4"
+      },
+      {
+        "path": "tests/product_config/test_git_prepared_approval_history.py",
+        "sha256": "fa924ca57860b8265cc5c29d2cca4447b31cb15640a450be3e5a1fbcc36dde37"
+      },
+      {
+        "path": "tests/product_config/test_git_prepared_link_connection.py",
+        "sha256": "1d978c87bcc9bbbb067f46357942f8e11210bc6b8925b8711da0d7036a7e586b"
+      },
+      {
+        "path": "tests/product_config/test_git_prepared_link_terminal.py",
+        "sha256": "202004055c5fd48468ceacc71412b48e913e12066efc33ab951bee153adc499c"
+      },
+      {
+        "path": "tests/product_config/test_git_review_fresh_owner.py",
+        "sha256": "baf093a0252ff55605c9639afd65d9758472d3fbd6f088da31c326ce9ff08c74"
+      },
+      {
+        "path": "tests/product_config/test_git_review_runtime_fence.py",
+        "sha256": "54714ea3e175b8b6b4ab59cfb4eea326e096e056c6bd36ff8d295057dce9a95c"
+      }
+    ],
+    "original_deadlines_or_checks_changed": false,
+    "serial_sdk_batches": true
+  },
+  "prior_fixed_snapshots": [
+    {
+      "version": 1,
+      "manifest_sha256": "47bbd0c044214f5ca0f5a82a0596d6abb6a03b3ef1b54a6fb925c97b8b0afe3e",
+      "members": 56,
+      "all_hash_verified": true
+    },
+    {
+      "version": 2,
+      "manifest_sha256": "f6133966a0119b271ccfe5d3fe4e7b3c28da65300322dc784c6688daac6e9cdd",
+      "members": 8,
+      "all_hash_verified": true
+    },
+    {
+      "version": 3,
+      "manifest_sha256": "0b01a55d1169be556c37bda52ad812461c661d6a0064315ceeac7ec6d9b6b2b4",
+      "members": 14,
+      "all_hash_verified": true
+    }
+  ],
+  "original_deadlines_and_checks_unchanged": true,
+  "full_product_regression_complete": false,
+  "native_bridge_in_this_wheel": false,
+  "new_model_requests": 0,
+  "release_acceptance": false
+}

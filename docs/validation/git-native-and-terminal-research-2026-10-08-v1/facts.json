@@ -1,0 +1,292 @@
+{
+  "spec_version": "harnessix.git-native-terminal-research/v1",
+  "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+  "wheel_sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+  "production_candidate_modified": false,
+  "native_in_product": false,
+  "production_decision": "NO-GO",
+  "sql_udf_reproduced": {
+    "scope": "isolated_native_SQLite_C_API_research_not_production",
+    "python_sqlite": "3.45.3",
+    "exact_standard_Connection_retained": true,
+    "CPython_private_offsets_used": false,
+    "production_sources_modified": false,
+    "second_SQLite_connection_for_attestation": false,
+    "library_sha256": "f910c1e8ca7e761ad2f946adeff529d494a87bf87abc3da65e37944965fcfde0",
+    "source_sha256": "a4746394baf7e64981c4624f91a4cb41cbb51c1e0f45360da5455fbc83a895b3",
+    "runner_sha256": "9a4757fe5411efa7e0cf46458d24dae76b439a2a514e189771266008e49c0db2",
+    "cases": [
+      {
+        "case": "original_A_path_replaced_by_B",
+        "native_moved": 1,
+        "query_marker": "A",
+        "result": "PASS"
+      },
+      {
+        "case": "ABA_restores_A_but_original_connection_is_B",
+        "path_pin_same": true,
+        "native_moved": 1,
+        "query_marker": "B",
+        "result": "PASS"
+      },
+      {
+        "case": "Python_UDF_replacement_is_not_native_attestation",
+        "native_flags": 524288,
+        "replaced_flags": 0,
+        "forged_scalar": 0,
+        "result": "PASS_RISK_REPRODUCED"
+      },
+      {
+        "case": "SQL_extension_loading_remains_disabled",
+        "result": "PASS"
+      },
+      {
+        "case": "unsupported_memory_filecontrol_fails_closed",
+        "result": "PASS"
+      }
+    ],
+    "limitations": [
+      "main_VFS_path_inode_only_not_full_FD_dev_inode",
+      "no_WAL_SHM_attestation",
+      "no_Windows_or_Linux_execution",
+      "SQL_UDF_override_and_progress_reentry_not_production_safe",
+      "full_B7_open"
+    ]
+  },
+  "official_VFS_sources": [
+    {
+      "url": "https://raw.githubusercontent.com/sqlite/sqlite/version-3.45.3/src/os_unix.c",
+      "file": "sqlite-3.45.3-os_unix.c",
+      "sha256": "513025fda3c6342c90258e35b5ef1b7e1987265d639f4b02fcceddd3b23d6372",
+      "locations": {
+        "SQLITE_FCNTL_HAS_MOVED": [
+          4050
+        ],
+        "SQLITE_FCNTL_WIN32_GET_HANDLE": [],
+        "fileHasMoved": [
+          1500,
+          1541,
+          4051
+        ]
+      }
+    },
+    {
+      "url": "https://raw.githubusercontent.com/sqlite/sqlite/version-3.45.3/src/os_win.c",
+      "file": "sqlite-3.45.3-os_win.c",
+      "sha256": "d4fdc4adf697053f3e02c7b513e548d8cd503438665d9106e1bb7fac48164cbc",
+      "locations": {
+        "SQLITE_FCNTL_HAS_MOVED": [],
+        "SQLITE_FCNTL_WIN32_GET_HANDLE": [
+          3585
+        ],
+        "fileHasMoved": []
+      }
+    },
+    {
+      "url": "https://raw.githubusercontent.com/sqlite/sqlite/version-3.53.4/src/os_unix.c",
+      "file": "sqlite-3.53.4-os_unix.c",
+      "sha256": "bad02ce9e25e3842c116a9f9bb13128b74f965692c5987202103423c86f62475",
+      "locations": {
+        "SQLITE_FCNTL_HAS_MOVED": [
+          4203
+        ],
+        "SQLITE_FCNTL_WIN32_GET_HANDLE": [],
+        "fileHasMoved": [
+          1623,
+          1664,
+          4204
+        ]
+      }
+    },
+    {
+      "url": "https://raw.githubusercontent.com/sqlite/sqlite/version-3.53.4/src/os_win.c",
+      "file": "sqlite-3.53.4-os_win.c",
+      "sha256": "c31b0943eac42931c3778c2491d157df44177dc4b47e081215d4237d794b57c7",
+      "locations": {
+        "SQLITE_FCNTL_HAS_MOVED": [],
+        "SQLITE_FCNTL_WIN32_GET_HANDLE": [
+          3677
+        ],
+        "fileHasMoved": []
+      }
+    }
+  ],
+  "native": {
+    "research_decision": "Version-pinned original pApi errcode guard experimentally rejects retained zombie handle on SQLite 3.45.3",
+    "phase_results": [
+      {
+        "number": 1,
+        "result_path": "/private/tmp/harnessix-r4-native-sqlite-research-20261008/direct-bridge/run-01/research-results.json",
+        "counts": {
+          "passed": 14,
+          "failed": 3,
+          "counterexamples_confirmed": 1,
+          "skipped": 0
+        },
+        "failed_cases": [
+          "progress_moved_denial_propagates",
+          "failure_paths_cleanup_no_policy_change",
+          "Connection_reinit_original_handle_boundary"
+        ],
+        "parent_pid": 95658,
+        "resource_handles_zero": true
+      },
+      {
+        "number": 2,
+        "result_path": "/private/tmp/harnessix-r4-native-sqlite-research-20261008/direct-bridge/run-02/research-results.json",
+        "counts": {
+          "passed": 16,
+          "failed": 1,
+          "counterexamples_confirmed": 1,
+          "skipped": 0
+        },
+        "failed_cases": [
+          "Connection_reinit_original_handle_boundary"
+        ],
+        "parent_pid": 97765,
+        "resource_handles_zero": true
+      },
+      {
+        "number": 3,
+        "result_path": "/private/tmp/harnessix-r4-native-sqlite-research-20261008/direct-bridge/run-03/research-results.json",
+        "counts": {
+          "passed": 18,
+          "failed": 1,
+          "counterexamples_confirmed": 1,
+          "skipped": 0
+        },
+        "failed_cases": [
+          "Connection_reinit_original_handle_boundary"
+        ],
+        "parent_pid": 4699,
+        "resource_handles_zero": true
+      },
+      {
+        "number": 4,
+        "result_path": "/private/tmp/harnessix-r4-native-sqlite-research-20261008/direct-bridge/run-04/research-results.json",
+        "counts": {
+          "passed": 20,
+          "failed": 0,
+          "counterexamples_confirmed": 1,
+          "skipped": 0
+        },
+        "failed_cases": [],
+        "parent_pid": 14648,
+        "resource_handles_zero": true
+      }
+    ],
+    "paired_guard": {
+      "directory": "/private/tmp/harnessix-r4-native-sqlite-research-20261008/direct-bridge/run-05",
+      "single_variable_diff": "/private/tmp/harnessix-r4-native-sqlite-research-20261008/direct-bridge/run-05/single-variable-guard.diff",
+      "control": {
+        "status": "failed_security",
+        "failed_security": 2,
+        "exit_code": 1,
+        "pid": 22706
+      },
+      "guarded": {
+        "status": "passed",
+        "passed": 2,
+        "exit_code": 0,
+        "pid": 22719
+      },
+      "API_ARMOR": 0,
+      "open_errcode": 0,
+      "zombie_errcode": 21,
+      "guarded_zombie_file_control_calls": 0
+    },
+    "exception_identity": {
+      "directory": "/private/tmp/harnessix-r4-native-sqlite-research-20261008/direct-bridge/run-06",
+      "status": "passed",
+      "pid": 25548,
+      "same_precreated_object_in_both_rounds": true,
+      "callback_counts": [
+        7,
+        7
+      ],
+      "outer_SQLITE_INTERRUPT": 9
+    },
+    "limits": {
+      "main_scope": "Original exact stdlib main handle pathname rename and open-B-restore-A detection only",
+      "HAS_MOVED": "Current main path inode versus VFS-saved inode; no actual FD, fstat st_dev/full device identity; excludes WAL/SHM",
+      "unobserved_ABA": "Confirmed positive check after original A restored without observation of intermediate B",
+      "Windows": "UNSUPPORTED; WIN32_GET_HANDLE not implemented or tested",
+      "MISUSE_conservative_false_reject": "A legitimate open handle with prior MISUSE is also revoked. errcode==MISUSE does not uniquely prove zombie; this scenario was not artificially manufactured as an executed case.",
+      "public_contract": "Public errcode API, but zombie rejection is implementation-verified and version-pinned, not cross-version public lifecycle-introspection guarantee",
+      "TOCTOU": "No atomic relation to following writes or concurrent pathname/Connection mutation",
+      "API_guard": "Synthetic distinct pApi table refusal only; no second engine loaded",
+      "resource_evidence": "Counters zero for all completed cases, FD stress 4->4, callback GC cycle collected; ASan/LSan not executed"
+    },
+    "preservation": {
+      "numbered_snapshots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "initial_failures_retained": 3,
+      "original_case_JSON_log_byte_checks": 36,
+      "test_01_and_results_byte_checks": true,
+      "early_runner_reconstruction_disclosed": [
+        1,
+        2
+      ],
+      "future_runner": "Unique numbered run directory and source/binary snapshot before execution; no root result overwrite"
+    },
+    "runtime": {
+      "active_jobs": [],
+      "live_connection_token_statement_handles": 0,
+      "all_spawned_children_waited": true
+    }
+  },
+  "b4_diagnostic": {
+    "junit_tests": 2,
+    "junit_failures": 0,
+    "seconds": 193.696,
+    "junit_sha256": "f3cbfc23c02977e9adc5fdc6751b8a2437a4f8cf54b413731138ec4854ad4329",
+    "meaning": "two_confirmed_rejection_gaps_not_safety_PASS",
+    "cases": [
+      {
+        "scope": "diagnostic_not_acceptance",
+        "fault": "config-value",
+        "injected_after_original_U_return": true,
+        "original_U_calls": 1,
+        "consumer_accepted": true,
+        "result_count": 1,
+        "error": null,
+        "git_rows_unchanged": true,
+        "git_total_changes_unchanged": true,
+        "stores_unchanged": true,
+        "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2"
+      },
+      {
+        "scope": "diagnostic_not_acceptance",
+        "fault": "same-oid-head-ref",
+        "injected_after_original_U_return": true,
+        "original_U_calls": 1,
+        "consumer_accepted": true,
+        "result_count": 1,
+        "error": null,
+        "git_rows_unchanged": true,
+        "git_total_changes_unchanged": true,
+        "stores_unchanged": true,
+        "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2"
+      }
+    ]
+  },
+  "new_model_requests": 0,
+  "keychain_or_budget_access": false,
+  "B4": "NO-GO",
+  "full_B7": "NO-GO",
+  "P1": "OPEN",
+  "R3": "OPEN",
+  "R4": "OPEN",
+  "release_acceptance": false,
+  "native_raw_manifest": {
+    "file_count": 659,
+    "sha256": "44ba9f0709edb8c1c0e9cb7f3d1cb3dd42b0ed7feacdca33298e4aa14fa12378",
+    "all_files_hash_verified": true
+  }
+}

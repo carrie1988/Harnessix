@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 16
+version: 17
 code_revision: b3760f560d2e83f85bc9d880cd9f8b0b0893ad4c
 owners:
   - core
@@ -175,3 +175,8 @@ flowchart LR
 [Git 同步检查点协作调度](git-checkpoint-cooperation.md)固定2026-10-07的源代码及隔离实验，明确SQL/Terminal不可让出边界与两处CAS入口不足以关闭P1的实测结果，不代表生产采用greenlet。
 
 [待审批完整回读成本归因](git-prepared-cost-attribution.md)基于原已安装产品固定 SDK 负控，给出高频 Owner 观察和连续阶段的实测；连接复用不采用，分层检查点仅为未决提案。
+
+## 5. 当前 Git 来源检查专题
+
+[原 SQLite 公开原生 API 研究](git-sqlite-native-source.md)绑定固定官方 VFS 源文件和原标准库连接实验。
+普通置换、指定 ABA 与 UDF 覆盖风险已经复现；不表示完整 FD、B7、P1 或正式三平台 Wheel 已通过。
