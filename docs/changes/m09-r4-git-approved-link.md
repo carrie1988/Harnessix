@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 19
-code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
+version: 20
+code_revision: ba7ab34f0a4ebe04ab1b79afd3261accad966d01
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
@@ -939,6 +939,14 @@ exact control → 完整进入认证 → 原纯算法（局部频检、原异常
 原 60 秒操作和 120 秒 Turn 未变，无真实模型请求、无 Git 写效果。
 测时同机另有离线回归并行；这些小输入正控不证明代表性负载响应性，
 亦不关闭生产 Writer、B4／B7 或默认写链。
+
+2026-10-09 深路径诊断扩大为16文件、400目录、连续2个真实SDK Patch。
+纠正诊断宿主的Git版本及Process Owner拦截后，原60秒期限在Checkpoint准备阶段拒绝，
+尚未进入决定恢复，故没有恢复耗时或心跳通过结论；诊断含采样开销，不认作无探针生产基线。
+采样指向准备阶段重复实现摘要及来源检查，P1后续须从该前置关键路径定位，不继续用小输入追加绿测替代。
+原无效运行与实际超时分别保留于本机诊断目录
+`/private/tmp/harnessix-r4-responsiveness-20261009-v1-worker`、
+`/private/tmp/harnessix-r4-responsiveness-20261009-v2`、`/private/tmp/harnessix-r4-responsiveness-20261009-v3`。
 
 ### 13.7 同锁决定恢复屏障的隔离验证
 

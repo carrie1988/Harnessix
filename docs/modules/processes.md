@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 35
-code_revision: 0f1948c3a258943698a8fe3e4309b81e78b8d5b3
+version: 36
+code_revision: ba7ab34f0a4ebe04ab1b79afd3261accad966d01
 owners:
   - core
 modules:
@@ -781,10 +781,16 @@ Supervisor按顺序执行：
 |---|---|---|
 | Lease创建前 | 无Lease | 未调用Owner |
 | `prepared`后run目录创建失败 | `failed/launch_failed` | 未启动Owner |
+| `starting`后匿名管道创建失败，或启动线程明确返回普通异常 | `failed/launch_failed`，sequence=2 | 未得到Owner；关闭本次已创建的管道，重开保留终态，禁止同ID重放 |
 | `starting`后Owner spawn/Start发送失败 | `failed/launch_failed` | Supervisor杀死已创建Owner；不宣称有运行结果 |
 | Owner发布`failed` Receipt | `failed/launch_failed` | Owner证明目标未建立运行身份 |
 | Owner已启动目标但无法证明清理 | `unknown/cleanup_failed` | 禁止自动重放 |
 | 约5秒内未报告启动结果 | 先请求关闭并等待，再抛`process_launch_failed` | 持久Lease可能为exited或unknown，诊断必须读取Lease |
+
+[`_start_bound`](../../src/harnessix/processes/supervisor.py#L417)将管道创建纳入原启动保护块，
+普通异常复用原失败结算。`CancelledError`不属于`Exception`，不据此将仍可能运行的后台spawn写成failed；
+Git宿主仍先排空原启动任务，再停止并认证真实回执。定向[管道/启动前异常负控](../../tests/processes/test_supervisor.py#L330)
+验证FD关闭、持久终态、无活动Lease、重开及禁止重放；原[真实spawn取消回归](../../tests/processes/test_posix_raw_receipt.py#L374)保留。
 
 ## 20. Owner控制协议
 
