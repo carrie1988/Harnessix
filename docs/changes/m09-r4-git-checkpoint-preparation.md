@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 10
-code_revision: b5244e28d92d7eacfacf53d0f383e4b3092aa6f1
+version: 11
+code_revision: d964d5dffef56c78fbdc8551f369393c7cbfc2b3
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace]
 related_adrs:
@@ -11,6 +11,10 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_owned_progress_sdk.py
+  - tests/product_config/test_git_checkpoint_boundary.py
+  - tests/delivery/test_owned_parent_progress.py
+  - tests/workspace/test_progress_adapters.py
   - tests/product_config/test_git_review_layered_native.py
   - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_source_native_progress.py
@@ -48,7 +52,7 @@ supersedes: []
 | 项目 | 当前边界 |
 |---|---|
 | 已提交基础版本 | 以 `code_revision` 为准 |
-| 设计版本 | 版本 8，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
+| 设计版本 | 版本 11，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | 当前实现已包含在 `code_revision`；第 19 节摘要补充固定具体源码字节 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -228,11 +232,42 @@ flowchart LR
 | [`verify_workspace_snapshot_v2`](../../src/harnessix/workspace/snapshot_v2.py) | 转发工厂给历史 Reader；原生上下文结束后另起纯段执行原 `_encode_snapshot`。最终全等比较仍在段外；捕获 API 的写入及耐久回读没有修改 |
 | [`_verify_final_snapshot`](../../src/harnessix/product_config/git_delivery_source.py) | 仅 exact GAC 注入 `same_task_pure_git_authentication`：同创建者首末 full、段内 local；foreign Task／线程不追加纯段首末调用；unknown／代理／子类不注入，原参数和轨迹保留 |
 
-伪代码为 `完整读块 → with fresh_pure(): 全量展开 → 完整读下块 → with fresh_pure(): 全量摘要 → 原生捕获 → with fresh_pure(): 原编码 → 原比较`。没有新持久状态、依赖、格式、Schema、权限或默认 Tool。Patch 归属／Store／Record Codec 的合并控制仍按原 full，不能据本切片声称全链局部化。
+伪代码为 `完整读块 → with fresh_pure(): 全量展开 → 完整读下块 → with fresh_pure(): 全量摘要 → 原生捕获 → with fresh_pure(): 原编码 → 原比较`。没有新持久状态、依赖、格式、Schema、权限或默认 Tool。此处只处理 Snapshot；归属 Reader 的后继分层见1.8，仍不能声称整个读取链都是纯计算。
 
 取消、期限、原锁／资源代际仍细粒度检查；首失败不返回前缀、不追加出口认证，保存 local 在段外撤销。Full 在 I/O 前后和段首末拒绝持续漂移；段内改变后恢复不保证检出，不宣称逐项 full 的检测时点等价。原 60 秒操作／120 秒 Turn 不变。
 
 [Reader 负控](../../tests/workspace/test_parent_closure_pure_progress.py)覆盖实际多块 CAS 顺序、每块及摘要段的首末／第一个和最后一个局部失败、同码控制异常、晚块损坏、撤销、foreign 与冻结旧轨迹；[Source 负控](../../tests/product_config/test_git_source_native_progress.py)覆盖编码入口／出口、原异常层、实际文件仍 full，以及 foreign 完整轨迹和逐个 Full 失败前缀。完整验收结果随后记入路线图；这些机械验证不单独关闭 P1 或 R4。
+
+### 1.8 原 Patch 归属 Reader 的显式计算进度与异常归属
+
+v18 原负载已经完成审批历史证明，随后完整 U 的 Source 复核耗尽原 Turn。
+归属读取中合并为普通函数的 checkpoint 隐藏了 GAC，导致完整父历史计算重复调用 full。
+本切片仅向原读后展开／摘要传递可选工厂，不续期、不减少 CAS 或省略第二次 Source。
+
+```text
+Source._owned_selection → load_owned_workspace_patch
+  ├─ Router.status → Audit.load → 原父历史 Reader
+  └─ Planner.load → Transaction.load → decode_workspace_record → 原父历史 Reader
+每个原计算检查点：原 Store 观察 → 原 Caller local
+实际 CAS／SQL、段首末、原 Source 尾部：完整检查与原读取
+```
+
+| 源码 | 明确职责与边界 |
+|---|---|
+| [`_owned_selection`](../../src/harnessix/product_config/git_delivery_source.py) | 同创建 Task／线程的 exact GAC 才注入工厂；绑定派生的 Reader 控制而非直接借父局部闭包。foreign、普通函数、代理、子类仍使用旧参数形状与完整轨迹 |
+| [`load_owned_workspace_patch`](../../src/harnessix/product_config/workspace_patch_source.py) | 仅转发工厂至原 Route／事务读器；原成功结果、参数、指纹及 published 校验仍完整。内部归属拒绝类型不构成执行权或批准证明 |
+| [`decode_payload`](../../src/harnessix/delivery/store.py)／[`_validate_parent_closure`](../../src/harnessix/trusted_actions/store.py) | 计算频检保留各自原观察回调；不替换共享属性。观察可能有只读 I/O，因此宿主用 `same_task_io_git_authentication`，不能把整个组合称为严格纯段 |
+| [`snapshot_ports`](../../src/harnessix/workspace/snapshot_ports.py) | `observed_workspace_pure_progress` 保留观察顺序；`protected_workspace_pure_progress` 只隔离工厂／local 控制，主体首错误不被退出失败或抑制覆盖。Workspace 不导入 Git 类型 |
+| [`Record Codec`](../../src/harnessix/delivery/workspace_record_codec.py)／Audit | 本次调用记录实际创建的异常标记对象；只解自己的一层。原 CAS 端口的嵌套异常、同码控制异常保持原对象；真实 Blob 损坏及算法验真失败仍沿原数据分类 |
+| [`git_checkpoint_boundary`](../../src/harnessix/product_config/git_native_control.py) | U 四处及[原 prepared Source](../../src/harnessix/product_config/git_prepared_link_proof.py)边界按对象身份解层，不按错误类型／错误码猜归属；后续清理再次失败不会使较早的自有标记失去归属 |
+
+缺省工厂为 `None`，不新增持久字段、编码域、批准、Owner 或默认写工具。
+Router 的批准／状态／事件原转发正文集中到同文件私有 `_ActionReadRouter`；公开实例类型及原 Store 不变。
+Audit 只向自己的私有校验方法转发可选工厂，删除重复分支；不新增第二读取实现或放宽结构阈值。
+检测时点仍遵循1.4：local 保留取消／原期限／原归属频检，来源及完整 Owner 在原 full 边界认证；段内改变后恢复不承诺检出。
+验证覆盖实际连续两次 SDK Patch、原观察的 Full／晚局部失败、CAS 首失败、五处真实 AST 运输块及默认／foreign 轨迹。
+AST 隔离块不是认证 SDK；机械绿例不是响应性、R3 真实质量或商业验收。原负载复验结果以路线图与封存报告为准。
+仍需单独关闭一个来源负控：默认 Audit CAS 端口沿 `transactions.blob(checkpoint=None)` 读取时，原观察若抛 `delivery_blob_corrupt`／`delivery_blob_invalid`，现有两码白名单仍会按坏数据分类。需要在实际观察入口区分控制来源与真实 Blob 拒绝，不能简单删掉坏数据分类，也不能以本节的其他首错绿例覆盖该反例。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -1032,20 +1067,20 @@ finally：
 | `src/harnessix/product_config/git_checkpoint_preparation.py` | `b7c996d33b5926a9cb8be5da3e6e9cd8e4fee9b22b96fa3dfaed0029b2cd3643` |
 | `src/harnessix/product_config/git_checkpoint_materials.py` | `dc4a386f9233a117bac51c2446feb8da2678f4c90b6d5254488d37fc3dd8f69c` |
 | `src/harnessix/product_config/git_checkpoint_scope.py` | `4a4396118d1578b90246c0aae42716ba90a5448f7205d2ec6d52647bad2b3981` |
-| `src/harnessix/delivery/git_authentication_control.py` | `d3388bca7e13a26ed13c568b5e828238692c09cb54ce90878eff30cc3fe5c23b` |
+| `src/harnessix/delivery/git_authentication_control.py` | `61782267e52728cb11d7ae9cfcf97c38eb4e51247d25798ea0a36ec6327f26eb` |
 | `src/harnessix/product_config/git_baseline.py` | `9876687427a6067662fcfcabb2223bb5309fe552f4bd9975425734804c135f52` |
 | `src/harnessix/delivery/git_inventory_wire.py` | `6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43` |
 | `src/harnessix/product_config/git_delivery_plan_snapshot.py` | `5dd8a297bd082feb5e58d6967be7afb3121e34ed24e0c2cfa2034afc1fb62983` |
 | `src/harnessix/product_config/git_delivery_core_store.py` | `10c1ef7b7246866bd8d25dc1f122f39f83521d374355d845858c4abf93535fcc` |
 | `src/harnessix/trusted_actions/agent_preplanning.py` | `b7a537dfcc403ac1db0c0427f8ee804a3c880be5840ec6547dc3c8eb5ef1ac50` |
 | `src/harnessix/agent/cancellation.py` | `429b1ade34e2f78666114806961ef59d720a5c606d044734eb34fa96b8ee19be` |
-| `src/harnessix/product_config/git_native_control.py` | `0d0773716a1e72d4c767e576761cf3c4395a19ac4f849100f1ad5d9cca824612` |
-| `src/harnessix/product_config/git_user_observation.py` | `22ef2d541452a1105f8f4c52cdfd7835580e6b628b7d5039a97524f015092e27` |
+| `src/harnessix/product_config/git_native_control.py` | `1c7c8fa2d428d4d3ca3b71cc8d22c3e95e045c2c4ea8de788c44f58c56e03e78` |
+| `src/harnessix/product_config/git_user_observation.py` | `7b62db51e4830038074ffbe5b86674812a0449f640779c6d0bcde46fc26dda6f` |
 | `src/harnessix/product_config/git_prepared_link_ledger.py` | `738179473c6cf7638c3a197211c127da27b32c41c30cf8e762423062c8748219` |
-| `src/harnessix/product_config/git_delivery_source.py` | `72c4a6a3577eb28e3c512c1d334395075a9c24ff6bf85f52f5d630a15dc3eb33` |
+| `src/harnessix/product_config/git_delivery_source.py` | `e1f069c86a71cb4b6251550e7416223969f1a01df7f3173d7dbb1bdb14edb1e0` |
 | `src/harnessix/product_config/git_delivery_review_host.py` | `d976c5497397640e7c987efeb531d348491d954d4e556c69669a9fdd1d865a65` |
 | `src/harnessix/product_config/git_delivery_review.py` | `c8e31019e6996d155dfe6ab91d6a1c0f3cf2a97c5161d7d8290a894fedb148e3` |
-| `src/harnessix/workspace/snapshot_v2.py` | `cb269ab7fd30e8bbbea62955ee1126cae624b221cf4764306df718a5cf0e119b` |
+| `src/harnessix/workspace/snapshot_v2.py` | `42bd9d9e71da70ffda7253c1b7128767eebbdc32e3bd3c7e32892a8beab162e0` |
 
 后续源码微调必须按实际字节复核本设计及上述摘要；不能只保留基础提交号而宣称增量说明持续对应现状。发布时应将已整合增量的实际提交/安装源码证据与该设计版本关联，不能把工作树实现描述当作已发布证明。
 

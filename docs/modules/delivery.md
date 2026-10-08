@@ -2371,3 +2371,5 @@ Closure 仅对候选声明与 CAS 读后解析启用分层；DFS 和真实读取
 Git 控制适配复用[原创建绑定与异常边界](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)：原生只读捕获不是 pure；未知回调沿旧完整路径，嵌套控制错误保留原对象。完整 Writer／恢复屏障及原生平台门禁仍独立开放。
 
 Inventory 的 CAS 后字节解析、完整 Closure 返回后的统计和精确并集采用[同创建 Task 分层](../changes/m09-r4-git-object-inventory-materials.md#101-材料读后计算的分层控制)；原实际读序与重复次数不变。外来 Task／线程及未知回调不追加首末检查，不扩大原期限或宣称完整恢复通过。
+
+Transaction Store／Record Codec 的[可选归属读进度](../changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)仅覆盖原父历史读后计算，保留 Store 原观察及完整 CAS。异常运输只解本次自建标记，Plan／Manifest／Chunk 首失败保留原对象及真实读前缀；编码／写入未分层。默认 Audit CAS 原观察的 Blob 同码来源反例仍需独立闭环，不称完整异常合同通过。

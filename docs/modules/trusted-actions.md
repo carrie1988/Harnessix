@@ -1798,7 +1798,10 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 [Git父历史消费者详设](../changes/m09-r4-git-parent-consumers.md#10-历史reader的单次控制传递)
 规定`Router.status`与原`Audit.load`可接收调用方checkpoint；它与Store原constructor控制共同执行，
 沿Manifest及每个Chunk传递，不暂时修改共享实例属性或重新开始期限。
-上游控制异常与真实历史损坏分别分类，原异常对象保留；旧无参数调用及全部Route合同字节保持。
+上游检查点的自建运输层与历史损坏分别分类，原异常对象保留；旧无参数调用及全部Route合同字节保持。
+可选 `pure_progress` 沿原读后计算传递，计算频检仍执行 Audit 原观察；组合可能 I/O，不能整体视为纯段。
+批准／状态／事件原正文集中到私有 `_ActionReadRouter`，公开 Router 实例类型与原 Store 不变。
+CAS 端口原观察的 Blob 同码来源反例仍开放，详见[归属读器边界及负控](../changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)。
 该参数不授予批准、会话访问权或业务写权限，不表示GitBridge完成。
 
 ## 可信准备的结算失败优先级

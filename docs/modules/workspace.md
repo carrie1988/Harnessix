@@ -1374,4 +1374,4 @@ ContextVar 保存同次 `_TerminalRead`；创建线程、Task 和 active 栅栏�
 验证普通路径回调保留、末端静默及退出恢复。源码与专项不等于最终安装候选、跨库原子快照、
 对外部进程的 CAS 文件锁或商用 Git 交付验收。
 
-`verify_workspace_snapshot_v2(..., native_progress=None, pure_progress=None)` 区分原生读取上下文与纯计算工厂：前者只包实际捕获，后者只包 CAS 完整验真后的历史展开／摘要及捕获后的原算法编码；真实 CAS、最终比较和捕获 API 的耐久写入不在纯段。缺省／显式 `None` 保留旧参数、字节和回调轨迹；不注入事实、跳过成员或授予执行权。见[唯一分层详设](../changes/m09-r4-git-checkpoint-preparation.md#17-已验真父历史与-snapshot-重编码的纯计算端口)、[原生端口负控](../../tests/workspace/test_snapshot_v2_native_progress.py)及[纯计算负控](../../tests/workspace/test_parent_closure_pure_progress.py)。
+`verify_workspace_snapshot_v2(..., native_progress=None, pure_progress=None)` 区分原生读取上下文与纯计算工厂：前者只包实际捕获，后者只包 CAS 完整验真后的历史展开／摘要及捕获后的原算法编码；真实 CAS、最终比较和捕获 API 的耐久写入不在纯段。缺省／显式 `None` 保留旧参数、字节和回调轨迹；不注入事实、跳过成员或授予执行权。宿主可通过通用适配器保留原 Store 观察及控制异常运输；观察可能 I/O，不代表整个组合严格纯计算，见[归属 Reader 契约](../changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)。原 Snapshot 边界见[唯一分层详设](../changes/m09-r4-git-checkpoint-preparation.md#17-已验真父历史与-snapshot-重编码的纯计算端口)、[原生端口负控](../../tests/workspace/test_snapshot_v2_native_progress.py)及[纯计算负控](../../tests/workspace/test_parent_closure_pure_progress.py)。

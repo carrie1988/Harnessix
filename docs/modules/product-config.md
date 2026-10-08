@@ -2875,6 +2875,6 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 三态正式追加、批准后取消拒绝及决定提交间隙已建立实际 SDK 回归；这不放行默认写入口。
 详设、失败顺序红例及同包验收统一见[内部恢复集成](../changes/m09-r4-git-approved-link.md#138-正式内部代码集成与回归)。
 
-来源／Review 原生控制按[分层读取设计](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)实现：原子 Task 创建自身控制，只读观察不转移父 SQL 权限；局部字段观察不调用动态宿主方法，首末仍完整认证。Source 另按[纯计算端口契约](../changes/m09-r4-git-checkpoint-preparation.md#17-已验真父历史与-snapshot-重编码的纯计算端口)只对已验真历史和捕获后编码分层，真实读取、两次完整复核及旧 foreign 轨迹保留；不将整个 Patch 归属 Reader 降级。User 实现摘要纳入共享控制。默认完整 Writer 仍未启用。
+来源／Review 原生控制按[分层读取设计](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)实现：原子 Task 创建自身控制，只读观察不转移父 SQL 权限；局部字段观察不调用动态宿主方法，首末仍完整认证。Source 的[Snapshot 计算端口](../changes/m09-r4-git-checkpoint-preparation.md#17-已验真父历史与-snapshot-重编码的纯计算端口)及[归属 Reader 传递](../changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)保留实际读取、原 Store 观察、两次完整复核和旧 foreign 轨迹；组合观察可能 I/O，不将整个 Reader 降级为纯段。U／原 prepared Source 边界只解本次自建异常标记，原嵌套对象不递归解包。User 实现摘要纳入共享控制；默认完整 Writer 仍未启用。
 
 审批历史 `_read_evidence` 同样转发原 Ledger 的合格只读观察与同次 Source scope，详见[完整 U 消费链](../changes/m09-r4-git-prepared-approval-history.md#52-完整-u-的真实消费者接口与调用链)。不另建权限或预算；原 Proof、U、完整检查成功后才登记读集合，默认 Writer 仍不因此启用。
