@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 22
-code_revision: a4b492af3eb5866138b7046dde79144cab79bb0f
+version: 23
+code_revision: ddbb2eb0a713dd6837e906e3a1e862861dab77df
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
@@ -24,6 +24,7 @@ related_tests:
   - tests/product_config/test_git_linked_decision_sdk.py
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/product_config/test_git_authentication_control.py
+  - tests/product_config/test_git_authentication_origin.py
   - tests/product_config/test_git_layered_codec_control.py
   - tests/product_config/test_git_layered_projection_control.py
   - tests/product_config/test_git_prepared_link_connection.py
@@ -875,6 +876,14 @@ Writer 候选或 ASAN 初始化失败原件；本节时长只保留历史运行�
 CoreStore 的 `blob` I/O 与解析分开；不将 Store、发布、`await`、任意业务回调放入纯段。
 只识别原控制的确切类型，函数、代理和子类保持原调用轨迹，不自动开启优化。
 
+创建期绑定采用原 Task／线程／两闭包的私有 slot 元组；`_origin` 和实际 `_segment` 为只读视图。
+每个局部检查与完整入口核验声明字段是否仍为原引用，材料派生控制借用原局部闭包，不在当前 Task 重新绑定。
+原生字典先取 `items` 元组、拒绝非确切字符串键，才重建及查找；不能先 `copy` 稀疏字典而执行碰撞键比较。
+内部进入／退出／完整降级使用类定义的方法，实例 `pure`／`__call__` shadow 不接管原控制；
+异 Task 的 `MethodType` 委托保留方法归属和原完整轨迹。清理仅撤销私有 token，不读可删除的声明字段、不遮盖首失败。
+这属于 v2 内部机械修复，不变更 Wire、Schema、业务身份或任意私有内存改写的安全范围；
+[创建期绑定负控](../../tests/product_config/test_git_authentication_origin.py)覆盖替换、foreign fallback、撤销与原异常身份。
+
 每个纯段持有一次性的内存 token。完整调用先撤销 token；嵌套退出不恢复旧段。
 保存的回调在退出、异常、另一个 Task／线程或完整回调重入后退回完整认证，
 不缓存认证结果、不保存 token、不授予新的 SQL 或执行能力。
@@ -948,14 +957,21 @@ exact control → 完整进入认证 → 原纯算法（局部频检、原异常
 `/private/tmp/harnessix-r4-responsiveness-20261009-v1-worker`、
 `/private/tmp/harnessix-r4-responsiveness-20261009-v2`、`/private/tmp/harnessix-r4-responsiveness-20261009-v3`。
 
-2026-10-09 后继材料／Scope 接线仅扩展同步声明段：同创建 Task／线程借原局部闭包，
+2026-10-09 前一材料／Scope 候选接线仅扩展同步声明段：同创建 Task／线程借原局部闭包，
 Scope 严格入参快照保留错误身份；Owner、根绑定、CAS、投影和 `_build` 仍完整认证。
 Host 类型替换和基线输入别名在前候选各有红例，后继已修复；不得把候选绿测累加为最终验收。
 最终同一非 editable Python 3.12.7／SQLite 3.45.3 包的相关回归 1136 项、实际 SDK 准备 16 项和三态决定 4 项通过；
 562 个源码／Wheel／安装成员一致。深路径仍在原 60 秒准备期限失败，未进入恢复；GIL 依赖采样指向 `_build` 内的树投影／闭包，并非 CPU 百分比或生产 SLO。
 最终同包结果与深路径诊断由本机 `Library/Application Support/Harnessix/verification/r4-layered-material-scope-20261009-v1` 固定。
-原 60 秒准备期限、120 秒 Turn、默认未注册状态不变；创建期控制身份的两个新增机械负控仍 FAIL。
+原 60 秒准备期限、120 秒 Turn、默认未注册状态不变；该前候选的创建身份两个机械负控为 FAIL，原件保留。
 可读性与原 HEAD 基线同为 23 项存量告警，新增 0，不改阈值。
+
+当前创建绑定修复候选将上述两例转绿；另保留方法 shadow、token 清理和稀疏复制的修前红例。
+最终同一非 editable 包相关 1193 项、实际 SDK 准备 16 项和三态决定 4 项通过，562 成员逐字节绑定。
+只读有界审查无剩余 P1／P2；审查者没有执行测试，不作为独立运行验收。证据固定于本机
+`Library/Application Support/Harnessix/verification/r4-layered-origin-20261009-v1`；可读性仍为 23 项存量、新增 0。
+创建绑定机械缺陷已闭环；深路径响应性、P1 总体验收和默认 Git Writer 仍开放，不以离线 SDK 代替 R3 真实编码质量。
+同包 v9 固定 16 文件／400 目录／2 Patch 的原深路径再次为 60 秒准备 FAIL、未进入恢复；不延长期限，不覆盖旧 FAIL。
 无真实模型请求；P1、默认写链及完整 B4/B7、原生平台和商业门禁继续开放。
 
 ### 13.7 同锁决定恢复屏障的隔离验证

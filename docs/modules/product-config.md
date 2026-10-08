@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 100
-code_revision: a4b492af3eb5866138b7046dde79144cab79bb0f
+version: 101
+code_revision: ddbb2eb0a713dd6837e906e3a1e862861dab77df
 owners:
   - core
 modules:
@@ -2843,7 +2843,9 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 准备器在原父 Task 冻结资源，在实际受管 child 构造控制；局部检查先比较 planner 内存快照，
 再读取冻结的原对象，不解引用替换代理。Core 持久化仅将严格快照／编码及回读后解码设为纯段，
 CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原局部闭包，Scope 只分层入参声明，
-`_build` 的混合 I/O 仍 full；控制创建期身份锚定和深路径期限仍未通过。范围、错误身份与负控见[准备分层设计](../changes/m09-r4-git-checkpoint-preparation.md#14-原准备-task-与-core-持久化的分层控制)。
+`_build` 的混合 I/O 仍 full。控制原 Task／线程／闭包与实际段 token 已固定在私有 slot，
+借用前及频检比较原绑定，声明键先验后重建，防止稀疏复制执行键比较；不接受当前字段作为新的创建证明。
+创建绑定机械缺陷已闭环，但深路径期限和完整 P1 仍开放。范围、错误身份与负控见[准备分层设计](../changes/m09-r4-git-checkpoint-preparation.md#14-原准备-task-与-core-持久化的分层控制)。
 
 ## Git prepared 同步提交门
 

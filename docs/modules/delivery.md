@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 48
-code_revision: 04701ced9d89656a46dd8cda543e83d305ae97f8
+version: 49
+code_revision: ddbb2eb0a713dd6837e906e3a1e862861dab77df
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_git_authentication_origin.py
   - tests/delivery/test_git_material_cas_control.py
   - tests/delivery/test_git_prefix_sql_lifecycle.py
   - tests/product_config/test_git_delivery_core_store.py
@@ -2345,10 +2346,14 @@ PrefixSQL建立与消费时另核对产品连接的原登记，防止其他Task�
 
 ## Git 声明纯计算与材料 I/O 边界
 
-[`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)为唯一标准库实现，
+[`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)为唯一轻量控制实现，
 由产品 Ledger 装配本地频检和完整来源认证；Delivery 不反向引用产品层。
 [`snapshot_git_inventory_scope`](../../src/harnessix/delivery/git_inventory_contracts.py)
 仅对原控制确切类型启用同步声明图纯段，全部字段和图校验仍执行原算法。
 材料 verifier 的前后快照可以消费该边界，原 CAS 与实际双树读取不进入纯段。
 生命周期、异常首失败、跨所有者降级及源码映射复用[分层控制设计](../changes/m09-r4-git-approved-link.md#136-异常包装与纯算法边界)，
 实际 I/O 接线见[编解码负控](../../tests/product_config/test_git_layered_codec_control.py)。
+创建期 Task／线程／两闭包与实际段 token 固定在私有 slot，声明字段或实例方法 shadow 不能重绑定；
+先校验原生字典 items 的确切字符串键，再重建字典，避免稀疏复制执行键比较。失败清理不遮盖原异常。
+[创建绑定负控](../../tests/product_config/test_git_authentication_origin.py)已在非 editable 包通过；
+这不证明任意私有内存改写防护、深路径期限或默认 Git Writer 已通过。
