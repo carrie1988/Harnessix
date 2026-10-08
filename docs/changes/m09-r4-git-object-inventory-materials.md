@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 871dc3c12deb5fbea227af3dd628b39fea545622
+version: 2
+code_revision: d17a1161c742d5b16b24c37273d429fe13db4113
 owners: [core]
 modules: [delivery]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
 related_tests:
   - tests/delivery/test_git_inventory_materials.py
   - tests/delivery/test_git_inventory_materials_capacity.py
+  - tests/delivery/test_git_inventory_materials_layered.py
   - tests/delivery/test_git_inventory_contracts.py
   - tests/delivery/test_git_material_cas.py
   - tests/delivery/test_git_tree_closure.py
@@ -253,6 +254,25 @@ flowchart TB
 独立审查、实际新候选源码／同Wheel源码外验证、治理／文档／Secret及源输入清单须分别绑定实际字节。
 原collection RED、开发测试错误、职责复杂度拒绝与各次结果保留；不以测试相加或旧Wheel继承形成新候选PASS。
 当前设计没有凭空登记完整W1、R3真实Suite、消费者Windows11或Beta验收结果。
+
+### 10.1 材料读后计算的分层控制
+
+需求是消除完整对象图的计算循环反复读 Owner／SQL 的开销，而非少读材料或延长期限。
+实际调用链为 `_verify_materials → _read_object → 原 CAS.read → 纯字节重算／解析／比较`；
+`_actual_closure` 仍先完整观察两树，只对返回后的引用核对／正文求和分段；
+`_complete_union` 只做原两树和 commit 根的精确并集。外层对象循环、CAS、两树读取仍在段外。
+
+唯一适配器 [`same_task_pure_git_authentication`](../../src/harnessix/delivery/git_authentication_control.py)
+仅对确切控制及其创建 Task／线程启用原 `pure`。段首末完整认证，段内原进度点执行取消、
+原期限和资源代际频检；纯计算失败不补出口认证遮盖首异常。普通函数、代理、子类和外来
+Task／线程原样透传，不追加认证次数。保存的局部检查点退出后撤销，不缓存认证或正文。
+
+正常时序：完整检查 → 原 CAS 完整读取 → 完整入口 → 局部重算／解析／比较 → 完整出口 → 返回。
+Owner 或文件在计算期间漂移由完整出口鲜查；不能宣称每个局部检查都观察外部状态。
+失败时不返回部分节点；仍没有发布、提交、迁移或新的持久字段。
+[分层负控](../../tests/delivery/test_git_inventory_materials_layered.py)对照真实 CAS 读序、两格式、
+三类对象、首异常身份、未知回调计数、外来 Task／线程及撤销；原材料／容量矩阵继续回归。
+机械边界通过不等于原深负载恢复、P1 或 R3／R4 已通过，实际结果另绑定安装包原件。
 
 ## 11. 风险、兼容、回滚与后继完整产品接线
 

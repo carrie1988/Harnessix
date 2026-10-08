@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 8
-code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
+version: 9
+code_revision: d17a1161c742d5b16b24c37273d429fe13db4113
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace]
 related_adrs:
@@ -1003,7 +1003,7 @@ finally：
 | `src/harnessix/product_config/git_checkpoint_preparation.py` | `b7c996d33b5926a9cb8be5da3e6e9cd8e4fee9b22b96fa3dfaed0029b2cd3643` |
 | `src/harnessix/product_config/git_checkpoint_materials.py` | `dc4a386f9233a117bac51c2446feb8da2678f4c90b6d5254488d37fc3dd8f69c` |
 | `src/harnessix/product_config/git_checkpoint_scope.py` | `4a4396118d1578b90246c0aae42716ba90a5448f7205d2ec6d52647bad2b3981` |
-| `src/harnessix/delivery/git_authentication_control.py` | `bc170a28a714071b78a5e869d4d14025810ce63820c8ec2850f6be140d0f7105` |
+| `src/harnessix/delivery/git_authentication_control.py` | `d3388bca7e13a26ed13c568b5e828238692c09cb54ce90878eff30cc3fe5c23b` |
 | `src/harnessix/product_config/git_baseline.py` | `9876687427a6067662fcfcabb2223bb5309fe552f4bd9975425734804c135f52` |
 | `src/harnessix/delivery/git_inventory_wire.py` | `6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43` |
 | `src/harnessix/product_config/git_delivery_plan_snapshot.py` | `5dd8a297bd082feb5e58d6967be7afb3121e34ed24e0c2cfa2034afc1fb62983` |

@@ -2369,3 +2369,5 @@ Closure 仅对候选声明与 CAS 读后解析启用分层；DFS 和真实读取
 准备器另将无 I/O 的 Scope 引用资格／完整并集规划设为纯段；根事实捕获使用不同的 `io_progress` 契约，段内保留原生只读保护与本地频检、段首末完整认证。两者复用私有 token 生命周期，不缓存认证，不将 CAS 或任意 I/O 放入 pure。准确调用链、错误时序及负控见[准备分段](../changes/m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)。
 
 Git 控制适配复用[原创建绑定与异常边界](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)：原生只读捕获不是 pure；未知回调沿旧完整路径，嵌套控制错误保留原对象。完整 Writer／恢复屏障及原生平台门禁仍独立开放。
+
+Inventory 的 CAS 后字节解析、完整 Closure 返回后的统计和精确并集采用[同创建 Task 分层](../changes/m09-r4-git-object-inventory-materials.md#101-材料读后计算的分层控制)；原实际读序与重复次数不变。外来 Task／线程及未知回调不追加首末检查，不扩大原期限或宣称完整恢复通过。

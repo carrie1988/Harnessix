@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: ad4bb6425e1b25d4dbf1d546c5d6d64c256a2958
+version: 4
+code_revision: d17a1161c742d5b16b24c37273d429fe13db4113
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, artifacts]
 related_adrs:
@@ -12,6 +12,7 @@ related_tests:
   - tests/product_config/test_git_link_user_observation_consumption.py
   - tests/product_config/test_git_approval_history_projection.py
   - tests/product_config/test_git_prepared_approval_history.py
+  - tests/product_config/test_git_approval_native_control.py
   - tests/product_config/test_git_prepared_link_ledger.py
 supersedes: []
 ---
@@ -131,6 +132,14 @@ CAS 与 Artifact 输出完整材料而不是许可。Reader 不向上述数据�
 `checkpoint=check` 和原 snapshot_ports。成功并完成 `check()` 后才将 Evidence 放入 `_ApprovalReadSet`。
 所有关联均消费，包括非目标和已经 decided 的原调用；verifier 不要求当前仍 pending。
 
+`_read_evidence` 另转发原 Ledger `_native_user_observer(resources, cancel, budget, check)`
+与同次 `source_scope`，复用[来源子 Task 契约](m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)。
+只有确切 Ledger／控制及原创建 Task／线程可签发只读观察；未知或外来控制返回 `None`，保留旧完整路径。
+观察不移交 SQL 登记、不借父局部控制、不授予写入或重新认证历史的权力。原 Proof 先执行，
+原 U 再验证，最后完整检查成功才登记读集合；任一首异常直接传播。
+[两项接缝测试](../../tests/product_config/test_git_approval_native_control.py)只证明参数转发，
+资格与漂移由原观察负控及实际 SDK 矩阵验证，不计为完整恢复通过。
+
 该委托不新增持久字段、公开签名、Store、收集器或预算。Source/CAS/Review、原三方决定解释、
 终端材料/决定/SQL 全集复核继续由原组件承担，Reader 不主动 sync_decision，不产生 sequence 1。
 真实负控的两条前驱来自两个实际 SDK 请求、原 pending Proof 与原物理 MAC；目标 U 成立但非目标
@@ -219,10 +228,11 @@ Session 请求指纹绑定 Thread/Turn/Call/Route/Review；Execution 检查点�
 
 | 符号 | 实际位置与职责 |
 |---|---|
-| `ProductGitPreparedApprovalHistoryReader` | [git_prepared_approval_history.py:77](../../src/harnessix/product_config/git_prepared_approval_history.py#L77) |
-| `OriginalGitPreparedApprovalHistory` | [git_prepared_approval_history.py:38](../../src/harnessix/product_config/git_prepared_approval_history.py#L38) |
-| `_ApprovalReadSet` | [git_prepared_approval_history.py:51](../../src/harnessix/product_config/git_prepared_approval_history.py#L51) |
-| `_read_all` | [git_prepared_approval_history.py:122](../../src/harnessix/product_config/git_prepared_approval_history.py#L122) |
+| `ProductGitPreparedApprovalHistoryReader` | [git_prepared_approval_history.py:144](../../src/harnessix/product_config/git_prepared_approval_history.py#L144) |
+| `OriginalGitPreparedApprovalHistory` | [git_prepared_approval_history.py:54](../../src/harnessix/product_config/git_prepared_approval_history.py#L54) |
+| `_ApprovalReadSet` | [git_prepared_approval_history.py:67](../../src/harnessix/product_config/git_prepared_approval_history.py#L67) |
+| `_read_all` | [git_prepared_approval_history.py:258](../../src/harnessix/product_config/git_prepared_approval_history.py#L258) |
+| `_read_evidence` | [git_prepared_approval_history.py:280](../../src/harnessix/product_config/git_prepared_approval_history.py#L280) |
 | `ApprovalHistoryEvidence` | [git_approval_history_proof.py:51](../../src/harnessix/product_config/git_approval_history_proof.py#L51) |
 | `read_original_approval_evidence` | [git_approval_history_proof.py:118](../../src/harnessix/product_config/git_approval_history_proof.py#L118) |
 | `verify_original_approval_terminal` | [git_approval_history_proof.py:184](../../src/harnessix/product_config/git_approval_history_proof.py#L184) |

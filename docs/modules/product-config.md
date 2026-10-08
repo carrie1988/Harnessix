@@ -2876,3 +2876,5 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 详设、失败顺序红例及同包验收统一见[内部恢复集成](../changes/m09-r4-git-approved-link.md#138-正式内部代码集成与回归)。
 
 来源／Review 原生控制按[分层读取设计](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)实现：原子 Task 创建自身控制，只读观察不转移父 SQL 权限；局部字段观察不调用动态宿主方法，首末仍完整认证。User 实现摘要纳入共享控制。默认完整 Writer 仍未启用。
+
+审批历史 `_read_evidence` 同样转发原 Ledger 的合格只读观察与同次 Source scope，详见[完整 U 消费链](../changes/m09-r4-git-prepared-approval-history.md#52-完整-u-的真实消费者接口与调用链)。不另建权限或预算；原 Proof、U、完整检查成功后才登记读集合，默认 Writer 仍不因此启用。
