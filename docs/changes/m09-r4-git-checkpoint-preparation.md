@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: c3f2619424085e7a77b23cb21a087528783634f4
+version: 4
+code_revision: a4b492af3eb5866138b7046dde79144cab79bb0f
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions]
 related_adrs:
@@ -12,6 +12,8 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/product_config/test_git_checkpoint_layered_control.py
+  - tests/product_config/test_git_material_layered_control.py
+  - tests/product_config/test_git_checkpoint_scope_layered.py
   - tests/product_config/test_git_core_store_layered_persist.py
   - tests/product_config/test_git_authentication_control.py
   - tests/product_config/test_git_checkpoint_preparation.py
@@ -36,7 +38,7 @@ supersedes: []
 | 项目 | 当前边界 |
 |---|---|
 | 已提交基础版本 | 以 `code_revision` 为准 |
-| 设计版本 | 版本 3，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
+| 设计版本 | 版本 4，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | `code_revision` 标识共同基础，不表示新增准备源码或既有源码微调已包含在该提交中 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -85,12 +87,16 @@ supersedes: []
 |---|---|---|
 | [`_preparation_control` / `_prepare_entry`](../../src/harnessix/product_config/git_checkpoint_preparation.py) | 原入口冻结两条闭包；实际受管 child 创建唯一 `GitAuthenticationControl`，原严格声明快照可借用局部频检 | 入口、纯段首末、所有普通检查点及原结算出口 |
 | [`ProductGitDeliveryCoreStore._persist`](../../src/harnessix/product_config/git_delivery_core_store.py) | 原 Core 严格快照＋规范编码；实际 CAS 回读后的严格解码 | 两纯段首末、`put_blob`、`blob`、正文完整核验；I/O 不持有纯段 |
+| [`_material_control`](../../src/harnessix/product_config/git_checkpoint_materials.py) | 仅同一创建 Task／线程借用上游原局部闭包，冻结四项上游控制字段和原 Port／CAS 引用 | 原 Owner、根绑定、对象命令及 CAS 仍完整；根检查跟随 collector 的深快照基线，不保留输入别名 |
+| [`_snapshot_inputs`](../../src/harnessix/product_config/git_checkpoint_scope.py) | 只把 baseline、对象引用目录、limits、max_parents 的严格声明校验置于同步纯段 | `_build`、解析、投影、CAS、终末对象材料复核保持 full／mixed；边界错误不进入解析器的单层解包 |
 
 准备局部检查只核对原取消、同一期限、Core Store／Process Host／Owner token／runner 引用及 planner 原字段身份。
+确切字典副本和确切字符串键先验后才比较身份；closed 标志只接受 `False`，原资源及 Host 类型替换先拒绝，不能借 `copy`、键比较、布尔转换或属性代理执行回调。
 不调用外部 checkpoint、来源读器、SQL 或 Owner；不宣称新增 Runtime 锁／FD 证明。
 完整闭包保留原顺序：取消／期限 → 上游 checkpoint → authority → 宿主引用 → 四源码完整摘要 → planner → `_verify_host`。
 两闭包在父 Task 冻结；控制在 `CancelToken.run` 的实际 child 构造，不能在 child 重新捕获并认可替换资源。
-异 Task／线程和未知 callable 的降级规则不变，没有通用“重新绑定 Task”接口。
+异 Task／线程和未知 callable 的降级规则不变，准备器子类保留完整控制，没有通用“重新绑定 Task”接口。
+材料绑定不重新捕获上游局部身份；collector 的基线访问闭包只在完整根边界调用，局部频检不调用它。
 
 纯段中的引用替换会在局部频检拒绝；外部来源漂移在完整边界拒绝。
 来源在同步纯段内改变后恢复不保证可见，不能将分层检查称为逐叶完整认证等价。
@@ -103,9 +109,17 @@ naive 值仍交原日期校验拒绝，不自动加时区；此约束只收紧 P
 原 60 秒预算、120 秒 Turn、512 KiB Core 上限、取消结算及默认未注册状态不变。
 
 负控分工为[准备闭包与原 child](../../tests/product_config/test_git_checkpoint_layered_control.py)、
-[真实临时 SQLite CAS 的持久化分层](../../tests/product_config/test_git_core_store_layered_persist.py)，
+[真实临时 SQLite CAS 的持久化分层](../../tests/product_config/test_git_core_store_layered_persist.py)、
+[材料的同 Task 引用与基线别名负控](../../tests/product_config/test_git_material_layered_control.py)、
+[Scope 入参及错误身份矩阵](../../tests/product_config/test_git_checkpoint_scope_layered.py)，
 再由原实际 SDK 测例核验认证准备／审批／恢复。替身控制单测不计为真实 Owner 授权，
 小输入或单次深路径通过也不关闭 P1、B4/B7 或商用门禁。
+
+控制创建期锚定仍未闭合：隔离安装探针表明改写控制自身 `_local_check` 或创建 Task 字段，
+可以让替换回调或另一 Task 获得局部调用。这是两个机械负控 FAIL，不是实际 SDK Owner 越权证明。
+后续先冻结创建时的 Task／线程／两闭包，借用前及每个纯段核验原绑定，并重验错误身份与 foreign fallback；
+不接受“当前字段等于当前 Task”作为创建期证明，也不将其扩张为任意同进程内存改写的连续防护。
+上述负控和深路径未通过前，分层内部实现不得作为默认 Writer 或 P1 关闭证据。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -902,9 +916,9 @@ finally：
 
 | 源码 | SHA256 |
 |---|---|
-| `src/harnessix/product_config/git_checkpoint_preparation.py` | `445ad35edb982194181162f4aaf588569be54381fd43c76bdc40f5151db64f03` |
-| `src/harnessix/product_config/git_checkpoint_materials.py` | `51f374ea373a45b537436b22262554cd6105145367b9bcc1ceedd7b190681313` |
-| `src/harnessix/product_config/git_checkpoint_scope.py` | `a0831bc73f3fce298cad19b2f08ecaf2fa5715c4663e0d3232cd56f6c1d3a8a3` |
+| `src/harnessix/product_config/git_checkpoint_preparation.py` | `0b65f3732f0afa849a401ad83fc1a4c8b11cf37318eae73ae9e7f3a203e98115` |
+| `src/harnessix/product_config/git_checkpoint_materials.py` | `49de555e60a58c2c77f28baf670015c30ce3b5a291bf4edf67d256c6520b4c8e` |
+| `src/harnessix/product_config/git_checkpoint_scope.py` | `e916fef396961038ffa027f730ac8317b1cddbbd7b94ccfa2126259430661709` |
 | `src/harnessix/delivery/git_inventory_wire.py` | `6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43` |
 | `src/harnessix/product_config/git_delivery_plan_snapshot.py` | `5dd8a297bd082feb5e58d6967be7afb3121e34ed24e0c2cfa2034afc1fb62983` |
 | `src/harnessix/product_config/git_delivery_core_store.py` | `10c1ef7b7246866bd8d25dc1f122f39f83521d374355d845858c4abf93535fcc` |
