@@ -18,6 +18,7 @@ from harnessix.product_config.git_prepared_link_proof import (
     prepared_link_changed,
     verify_prepared_link_terminal,
 )
+from harnessix.product_config.git_user_source_scope import GitUserSourceScope
 from harnessix.sqlite_readonly import readonly_database
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
@@ -96,6 +97,7 @@ class PreparedLinkReadSet:
     rows: GitPrefixRows | None = field(default=None, repr=False)
     anchor: tuple[object, ...] | None = field(default=None, repr=False)
     changes: int | None = None
+    source_scope: GitUserSourceScope = field(default_factory=GitUserSourceScope, repr=False)
 
     def complete(
         self, rows: GitPrefixRows, anchor: tuple[object, ...] | None, changes: int
@@ -141,4 +143,5 @@ class PreparedLinkReadSet:
                     workspace_scope,
                     checkpoint=check,
                 )
+                self.source_scope.require(evidence.link.plan.core.user_observation, check)
             check()

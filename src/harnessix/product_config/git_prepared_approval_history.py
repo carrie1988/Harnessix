@@ -236,6 +236,7 @@ async def _read_all(
             budget=budget,
             checkpoint=check,
             snapshot_ports=resources._ports,
+            source_scope=read_set.source_scope,
         )
         check()
         route_id = link.plan.route.execution.plan_id

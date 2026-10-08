@@ -134,7 +134,10 @@ def _control(
     observe_connection = _prepared_git_connection_observer(database, path)
     observe_thread = _prepared_runtime_thread_observer(database, ledger._router, ledger._artifacts)
 
-    with observe_prepared_state(ledger._router, ledger._core_store, ledger._artifacts) as unchanged:
+    with (
+        read_set.source_scope,
+        observe_prepared_state(ledger._router, ledger._core_store, ledger._artifacts) as unchanged,
+    ):
         epoch: tuple[object, int] | None = None
 
         def internal() -> None:
@@ -189,6 +192,7 @@ async def _authenticate(
     cancel: CancelToken,
     budget: GitOperationBudget,
     check: Callable[[], None],
+    read_set: PreparedLinkReadSet,
 ) -> PreparedLinkEvidence:
     """原 pending Proof 后只读复核完整 U；复用同次控制，不重捕获或产生批准。"""
     evidence = await authenticate_prepared_link(
@@ -213,6 +217,7 @@ async def _authenticate(
         budget=budget,
         checkpoint=check,
         snapshot_ports=ledger._ports,
+        source_scope=read_set.source_scope,
     )
     check()
     return evidence
@@ -233,7 +238,7 @@ async def _read_all(
     links, rows = read_prepared_link_rows(ledger._database, publication, checkpoint=check)
     for link in links:
         actual = await _authenticate(
-            ledger, link.plan.route.execution.plan_id, cancel, budget, check
+            ledger, link.plan.route.execution.plan_id, cancel, budget, check, read_set
         )
         check()
         if actual.link != link:
@@ -270,7 +275,7 @@ async def _prepare(
     existing, rows = await _read_all(ledger, cancel, budget, check, read_set)
     changes = database.total_changes
     anchor = database.execute("SELECT * FROM git_prefix_anchor").fetchone()
-    evidence = await _authenticate(ledger, route_id, cancel, budget, check)
+    evidence = await _authenticate(ledger, route_id, cancel, budget, check, read_set)
     link = evidence.link
     require_prepared_git_runtime_thread(database, link.plan.core.thread_id)
     read_set.evidence[route_id] = evidence

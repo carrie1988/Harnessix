@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 91
+version: 92
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners:
   - core
@@ -2580,7 +2580,7 @@ Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末
 
 ### 既有观察的阶段无关只读复核
 
-[`verify_product_git_user_observation`](../../src/harnessix/product_config/git_user_observation.py#L184)
+[`verify_product_git_user_observation`](../../src/harnessix/product_config/git_user_observation.py#L188)
 已包含在 `7fca4a526bbbd3cde7e7c66552704126757171c2` 基线，现行 Ledger/审批历史消费者进一步接通该依赖；
 不代表正式决定 Writer、完整 B3 批准认证或正式上线。
 实际接口及完整时序见[观察详设第 10 节](../changes/m09-r4-git-user-observation.md#10-阶段无关的原观察只读复核)，
@@ -2594,7 +2594,7 @@ Scope和固定Reader配方，保留全部父引用，来源只捕获一次，末
 | keyword-only `cancel`、`budget`、`checkpoint` | 保留同一绝对期限、取消和父 Task 异常；外部检查点返回后重验控制及宿主，不刷新预算 |
 | `None` | 仅表示本次既有 U 复核未发现不一致，不生成新观察、批准或执行能力 |
 
-[`_verify_observed_git_state`](../../src/harnessix/product_config/git_user_observation.py#L368)
+[`_verify_observed_git_state`](../../src/harnessix/product_config/git_user_observation.py#L376)
 是准备器与 verifier 共用的私有末轮配方：目录事实 → 逻辑 Git/完整配置 → 历史 → Source → 物理 Index → 控制检查。
 各入口以闭包保留原历史/Source 校验；helper 本身不承担独立来源认证。
 阶段无关 verifier 不要求准备阶段 pending Call，不重新 collect、写 CAS、发布 Artifact 或调用批准/执行入口。
@@ -2797,6 +2797,11 @@ Task身份不是持锁证明，路径pin不是FD证明；本切片不关闭B4/B7
 该 context 冻结原 Runtime／Owner、Session、TrustedActionSessionState 的原 bound lock factory、
 原 Gateway／Router、Artifact 及持锁代际。调用方窗口覆盖事务的 BEGIN、业务认证和 COMMIT／ROLLBACK，
 不由绑定组件自动获取锁、提交、回滚或重开资源。
+
+Ref／配置的[原生来源复核](../changes/m09-r4-git-terminal-source-files.md)在末轮 Git 查询前捕获，
+同次私有 `GitUserSourceScope` 只持有一个固定根集合，全部原 U 认证完成后逐条登记；
+消费者末次外部回调后同步重验，取消或失败关闭所有原生资源，不按关联数量累计句柄。
+该内部接线不替代原 U／历史认证，不提供外部 Git 写锁、连续 ABA 或 COMMIT 原子性。
 
 Ledger `_control`、HistoryReader `read_all/read_decided`强制消费上述登记。
 原 Task 签发的观察闭包允许受管 U 子 Task 检查原父 Task 的同次持锁，

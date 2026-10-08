@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import time
 from collections.abc import Awaitable, Callable
+from contextlib import nullcontext
 from pathlib import Path
 from uuid import UUID
 
@@ -47,6 +48,7 @@ from harnessix.product_config.git_user_observation_paths import (
     pin_git_user_directories,
     reported_git_path,
 )
+from harnessix.product_config.git_user_source_scope import GitUserSourceScope
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.session.sqlite_history import AuthenticatedThreadHistory
 from harnessix.tools.contracts import ReadToolError
@@ -67,6 +69,8 @@ def git_user_observation_implementation_digest() -> str:
                     "git_user_observation.py",
                     "git_user_observation_contracts.py",
                     "git_user_observation_paths.py",
+                    "git_user_source_files.py",
+                    "git_user_source_scope.py",
                     "git_user_authority.py",
                     "git_baseline.py",
                     "git_delivery_source.py",
@@ -193,6 +197,7 @@ async def verify_product_git_user_observation(
     budget: GitOperationBudget,
     checkpoint: Callable[[], None],
     snapshot_ports: WorkspaceSnapshotPorts,
+    source_scope: GitUserSourceScope | None = None,
 ) -> None:
     """借实际完整认证历史只读复核原观察；不限调用阶段，不产生新观察或执行权。"""
     await asyncio.sleep(0)
@@ -255,6 +260,7 @@ async def verify_product_git_user_observation(
                     deadline=deadline,
                     check=check,
                     snapshot_ports=snapshot_ports,
+                    source_scope=source_scope,
                 ),
                 preserve_failure=True,
             )
@@ -282,6 +288,7 @@ async def _verify_authenticated_observation(
     deadline: float,
     check: Callable[[], None],
     snapshot_ports: WorkspaceSnapshotPorts,
+    source_scope: GitUserSourceScope | None = None,
 ) -> None:
     """先切断调用方别名并重读认证历史，再复核基准所有成员与原末段窗口。"""
     observation = _snapshot(expected, ProductGitUserObservation, check)
@@ -330,6 +337,7 @@ async def _verify_authenticated_observation(
         verify_history=verify_history,
         verify_source=verify_source,
         invalid=lambda: KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化"),
+        source_scope=source_scope,
     )
     if observation.implementation_digest != git_user_observation_implementation_digest():
         raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
@@ -374,20 +382,29 @@ async def _verify_observed_git_state(
     verify_history: Callable[[], Awaitable[None]],
     verify_source: Callable[[], None],
     invalid: Callable[[], KernelError],
+    source_scope: GitUserSourceScope | None = None,
 ) -> None:
     """唯一末轮配方；阶段归属由入口私有闭包检查，原顺序与控制点不缩减。"""
     query = _Queries(reader, cancel, check)
     common, admin = await _reports(query, reader._root)
-    with pin_git_user_directories(common, admin, checkpoint=check) as pinned:
+    lifetime = GitUserSourceScope() if source_scope is None else nullcontext(source_scope)
+    with (
+        lifetime as sources_scope,
+        pin_git_user_directories(common, admin, checkpoint=check) as pinned,
+    ):
         facts = git_user_directory_facts(pinned)
         if facts != {name: getattr(observation, name) for name in facts}:
             raise invalid()
+        sources = sources_scope.pin(reader._root, common, admin, check)
         await _verify_final_git_facts(query, observation.baseline, observation.config_sha256)
         await verify_history()
         verify_source()
         if pinned.observe_index(check) != observation.index_file_observation:
             raise invalid()
         check()
+        sources.verify(check)
+        if source_scope is not None:
+            source_scope.retain(observation, sources)
 
 
 async def _collect(
@@ -457,7 +474,11 @@ async def _observe_user_baseline(
     root, binding = reader._root, reader.contract()
     before = await _reports(query, root)
     config = await _configuration(query)
-    with pin_git_user_directories(*before, checkpoint=check) as pinned:
+    with (
+        GitUserSourceScope() as sources_scope,
+        pin_git_user_directories(*before, checkpoint=check) as pinned,
+    ):
+        sources = sources_scope.pin(root, *before, check)
         index = pinned.observe_index(check)
 
         try:
@@ -492,6 +513,7 @@ async def _observe_user_baseline(
             raise error.error from None
         if pinned.observe_index(check) != index:
             raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
+        sources.verify(check)
         publication = session._publication
         if publication is None:
             raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")

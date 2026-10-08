@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 227
+version: 228
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners:
   - core
@@ -2626,5 +2626,8 @@ P1 同步认证成本与事件循环响应仍为阻塞项，不通过放宽期�
 详见[完整集合追加交付](validation/r4-runtime-thread-scope-2026-10-08-v4/README.md)。
 
 [原SQLite公开原生API研究](research/git-sqlite-native-source.md)与产品隔离；普通置换、指定ABA与UDF覆盖风险已复现，
-不变更正式依赖、连接或Writer装配。B4实际Ref/config末端、完整B7、P1及默认完整Git链仍为关键路径。
+不变更正式依赖、连接或 Writer 装配。[B4 原生来源复核](changes/m09-r4-git-terminal-source-files.md)
+已新增内部接线与资源所有权，安装态单位集合 112 项通过、1 项原生 Windows 跳过；完整 SDK 六项通过；同一安装候选七个核心目录 2815 项通过、1 项原生 Windows 跳过。
+原同 Turn 连续两次消费的期限失败仍保留，独立正控通过不关闭 P1。
+完整 B4／COMMIT、B7、P1 及默认完整 Git 链仍为关键路径。
 真实R3评分与Beta接受数不据组件回归提高，非阻塞首发工作仍不扩张。

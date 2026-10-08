@@ -39,6 +39,22 @@ def recipe(monkeypatch, *, fault=None):
         finally:
             calls.append("pin-close")
 
+    class Sources:
+        def verify(self, check):
+            calls.append("native-sources-verify")
+
+    class Scope:
+        def __enter__(self):
+            calls.append("source-scope-open")
+            return self
+
+        def __exit__(self, *args):
+            calls.append("source-scope-close")
+
+        def pin(self, *args):
+            calls.append("native-sources-pin")
+            return Sources()
+
     def facts(*args):
         calls.append("directory-facts")
         return {"directory": "changed" if fault == "directory" else value.directory}
@@ -63,6 +79,7 @@ def recipe(monkeypatch, *, fault=None):
         ("_verify_final_git_facts", git),
         ("pin_git_user_directories", pin),
         ("git_user_directory_facts", facts),
+        ("GitUserSourceScope", Scope),
     ):
         monkeypatch.setattr(observation_module, name, function)
     return value, reader, calls, history, source, check, original
@@ -78,20 +95,24 @@ async def test_shared_final_recipe_preserves_order_and_closes_pin(monkeypatch, f
         await invoke(value, reader, CancelToken(), check, **arguments)
         assert calls == [
             "reports",
+            "source-scope-open",
             "pin-open",
             "directory-facts",
+            "native-sources-pin",
             "logical-git",
             "history",
             "source",
             "physical-index",
             "control",
+            "native-sources-verify",
             "pin-close",
+            "source-scope-close",
         ]
     else:
         with pytest.raises(BaseException) as caught:
             await invoke(value, reader, CancelToken(), check, **arguments)
         assert caught.value is (rejected if fault in {"directory", "index"} else original)
-        assert calls[-1] == "pin-close"
+        assert calls[-2:] == ["pin-close", "source-scope-close"]
         if fault == "directory":
             assert "logical-git" not in calls
         if fault == "history":
@@ -126,12 +147,16 @@ async def test_original_preparer_delegates_same_stage_history_and_source(monkeyp
     )
     assert calls == [
         "reports",
+        "source-scope-open",
         "pin-open",
         "directory-facts",
+        "native-sources-pin",
         "logical-git",
         "history",
         "source",
         "physical-index",
         "control",
+        "native-sources-verify",
         "pin-close",
+        "source-scope-close",
     ]

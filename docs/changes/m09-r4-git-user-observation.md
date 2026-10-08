@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 2
+version: 3
 code_revision: 82c95e677d1919c60bbb3be32a9a4ef23f35b2e4
 owners: [core]
 modules: [product_config, session, workspace, delivery]
@@ -290,7 +290,7 @@ HEAD、配置、来源和物理Index，并按原失效语义拒绝陈旧计划�
 
 审批决定后的原历史不再满足准备器的pending-call条件；不能调用准备器私有`_history`追认决定，也不能重新collect来源、写CAS或刷新旧意图。新增`verify_product_git_user_observation`借用实际原Session认证完整当前历史，复核既有完整U观察，并返回`None`；不生成新观察、MAC、Route、审批、执行权或Git效果。
 
-准备器末段与该入口共同复用`_verify_observed_git_state`。其源码位于原七文件观察配方已包含的`git_user_observation.py`，不增加外部未覆盖的配方。准备器的原四文件摘要不是七文件摘要替代物，二者用途不变。
+准备器末段与该入口共同复用`_verify_observed_git_state`。其源码位于 `git_user_observation.py`，新增 `git_user_source_files.py` 与 `git_user_source_scope.py` 也纳入实现摘要，形成九文件配方。准备器的原四文件摘要不是七文件摘要替代物，二者用途不变。
 
 ```mermaid
 flowchart TD
@@ -301,11 +301,13 @@ flowchart TD
   P[原准备器] --> X[仍使用原pending-call历史约束]
   X --> C
   C --> D[common/admin原生pin与目录事实]
-  D --> G[HEAD tree ref 逻辑Index status 配置名与值]
+  D --> N[固定Ref与配置来源捕获]
+  N --> G[HEAD tree ref 逻辑Index status 配置名与值]
   G --> S[原完整认证历史再次相等]
   S --> V[原Source只读验证 不collect或put_blob]
   V --> I[物理Index完整身份及字节]
-  I --> E[首末绑定和实现摘要复核 返回None]
+  I --> F[原生来源同步复核]
+  F --> E[首末绑定和实现摘要复核 返回None]
 ```
 
 共享配方只接受两个内部绑定的语义closure，分别直接await原历史检查和同步执行原Source检查。它们由两个正式入口内部创建，不是新的对外回调API；不导入准备器形成反向依赖，也不创建后台Source任务。
@@ -325,6 +327,7 @@ async def verify_product_git_user_observation(
     budget: GitOperationBudget,
     checkpoint: Callable[[], None],
     snapshot_ports: WorkspaceSnapshotPorts,
+    source_scope: GitUserSourceScope | None = None,
 ) -> None: ...
 ```
 
@@ -338,8 +341,11 @@ async def verify_product_git_user_observation(
 | `router/transactions/reader/ports` | 同原活跃资源、固定读取配方与Root，不能用同地址或等字节替身 |
 | `cancel/budget/checkpoint` | 同次取消与原绝对期限；每命令不续期，回调正常返回后也复核停止和宿主 |
 | `baseline.reader_binding/members` | 与原Reader合同、原HEAD树成员逐项一致，完整读取原before正文及Index阶段/flags；公开摘要可重算不构成真实性 |
-| `implementation_digest` | 首末重新读原七文件，与冻结的原预期摘要比较；不是仅比较本次首末相等 |
+| `implementation_digest` | 首末重新读原九文件，与冻结的原预期摘要比较；不是仅比较本次首末相等 |
 | 返回`None` | 仅表示本次可观察复核未失败；不签发可执行事实，不承诺返回之后仍未变化 |
+
+私有可选 `source_scope` 由原消费者拥有；逻辑 Git 末轮前捕获固定 Ref／配置来源，U 复核后登记并延续至消费者同步终端。
+未传入时使用局部资源 Scope，返回值仍为 `None`；资源、来源成员与完整 B4 边界见[原生来源复核](m09-r4-git-terminal-source-files.md)。
 
 ### 10.3 顺序、时序与伪代码
 
@@ -381,7 +387,7 @@ sequenceDiagram
     原Source只读核验，不collect、不写CAS
     原物理Index身份和字节相等
     原控制成功
-撤销目录能力，末轮绑定及原七文件摘要仍等于预期
+撤销目录能力，末轮绑定及原九文件摘要仍等于预期
 正常结束返回None；失败保留原数据与原异常来源
 ```
 
@@ -395,8 +401,8 @@ sequenceDiagram
 - 外部checkpoint异常保留原对象；正常返回后取消/期限也不能返回成功。真实Session回滚/关闭结算失败保持原优先级，不被Verifier掩盖。
 - 原Source、Audit和CAS读取可调用原构造回调；原受信装配不等于任意callback已认证只读。新增入口冻结原读取回调引用，操作期间替换拒绝；不全局覆盖共享属性。
 - 同步CAS及文件读取仍不能被外层asyncio timeout即时抢占，P1保持开放；此改造不是响应性提速。
-- 新接口无Schema/DDL/依赖/网络/模型配置；观察七文件实际源码变更会改变实现摘要。旧观察不能自动重签、升级或作为新配方有效输入。
-- 源码格式归一化虽不改变AST，七文件 `implementation_digest` 仍按原字节规则变化；旧观察及Prepare凭证不可复用，必须按正式流程重新采集，禁止自动重签或迁移。
+- 新接口无Schema/DDL/依赖/网络/模型配置；观察九文件实际源码变更会改变实现摘要。旧观察不能自动重签、升级或作为新配方有效输入。
+- 源码格式归一化虽不改变AST，九文件 `implementation_digest` 仍按原字节规则变化；旧观察及Prepare凭证不可复用，必须按正式流程重新采集，禁止自动重签或迁移。
 - 该接口是完整U末轮算法复用，不是连续终端见证，也不是外部Git锁。最后异步Git/历史观察与返回或COMMIT之间仍有变化窗口；B4/B7、approved Writer、NativeBridge、A/T2/D、Commit、Backup2与商用门禁不关闭。
 
 ## 12. 测试与源码追踪
