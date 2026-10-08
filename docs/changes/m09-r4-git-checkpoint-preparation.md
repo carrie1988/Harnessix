@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
+version: 7
+code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions]
 related_adrs:
@@ -11,6 +11,8 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_root_io_control.py
+  - tests/product_config/test_git_checkpoint_scope_references.py
   - tests/product_config/test_git_checkpoint_scope_control.py
   - tests/delivery/test_git_tree_projection_layered.py
   - tests/product_config/test_git_checkpoint_layered_control.py
@@ -41,7 +43,7 @@ supersedes: []
 | 项目 | 当前边界 |
 |---|---|
 | 已提交基础版本 | 以 `code_revision` 为准 |
-| 设计版本 | 版本 6，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
+| 设计版本 | 版本 7，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | 当前实现已包含在 `code_revision`；第 19 节摘要补充固定具体源码字节 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -84,14 +86,14 @@ supersedes: []
 
 深路径原 60 秒失败指向重复完整认证。根因不是期限不足，而是纯计算入口丢失确切控制类型：
 准备器原闭包没有携带分层契约，Core 的 `_Checkpoint` 包装又隐藏控制类型。
-分层只覆盖明确声明快照和规范编码，不缓存认证、删减 I/O 检查或整体包裹材料采集器。
+本节初始切片只覆盖明确声明快照和规范编码；后继引用规划与原生只读端口的精确边界见第 1.5 节。两者不缓存认证或整体包裹材料采集器。
 
 | 原源码位置 | 分层范围 | 完整认证仍执行的位置 |
 |---|---|---|
 | [`_preparation_control` / `_prepare_entry`](../../src/harnessix/product_config/git_checkpoint_preparation.py) | 原入口冻结两条闭包；实际受管 child 创建唯一 `GitAuthenticationControl`，原严格声明快照可借用局部频检 | 入口、纯段首末、所有普通检查点及原结算出口 |
 | [`ProductGitDeliveryCoreStore._persist`](../../src/harnessix/product_config/git_delivery_core_store.py) | 原 Core 严格快照＋规范编码；实际 CAS 回读后的严格解码 | 两纯段首末、`put_blob`、`blob`、正文完整核验；I/O 不持有纯段 |
-| [`_material_control`](../../src/harnessix/product_config/git_checkpoint_materials.py) | 仅同一创建 Task／线程借用上游原局部闭包，冻结四项上游控制字段和原 Port／CAS 引用 | 原 Owner、根绑定、对象命令及 CAS 仍完整；根检查跟随 collector 的深快照基线，不保留输入别名 |
-| [`_snapshot_inputs` / `_build_control`](../../src/harnessix/product_config/git_checkpoint_scope.py) | 入参严格快照；仅原创建 Task／线程传递带一层控制异常标记的确切控制 | `_build` 保持 mixed，CAS 与完整边界仍 full；异常出口只解包一层，原 nested Upstream 身份不变 |
+| [`_material_control`](../../src/harnessix/product_config/git_checkpoint_materials.py) | 仅同一创建 Task／线程借用上游原局部闭包，冻结四项上游控制字段和原 Port／CAS 引用 | 原 Owner、根绑定首末、对象命令及 CAS 仍完整；根捕获内部进度见第 1.5 节，基线仍为深快照，不保留输入别名 |
+| [`_snapshot_inputs` / `_build_control`](../../src/harnessix/product_config/git_checkpoint_scope.py) | 入参严格快照、投影引用资格及完整并集规划；仅原创建 Task／线程传递带一层控制异常标记的确切控制 | `_build` 保持 mixed，CAS 与完整边界仍 full；异常出口只解包一层，原 nested Upstream 身份不变 |
 | [`prepare_git_tree_projection`](../../src/harnessix/delivery/git_tree_projection.py) | 净变更深快照、读后解析、无 CAS 的目录 DFS、before／并集登记和 apply／namespace／tree 编码 | Closure 观察、所有原 CAS 读、after 校验和最终完整 checkpoint 保留；不把整个 Projection 放入纯段 |
 
 准备局部检查只核对原取消、同一期限、Core Store／Process Host／Owner token／runner 引用及 planner 原字段身份。
@@ -134,6 +136,39 @@ foreign Task／线程、函数、代理和子类仍交原 full。新控制只用
 后继 Scope／Projection 切片已在同一非 editable 包完成相关 1232 项、树模块 822 项和实际 SDK 16＋4 项全通过；562 个包成员一致。
 前述 v9 FAIL 保留；同包 v10 固定负载仍在原 60 秒准备期限失败、未进入恢复。栈采样的主要剩余路径转向 Closure 和 Inventory 的实际闭包验真，不是 CPU 百分比。
 证据固定于本机 `Library/Application Support/Harnessix/verification/r4-layered-tree-20261009-v1`；不关闭 P1 或默认 Writer。
+
+### 1.5 引用纯规划与原生只读端口进度
+
+原 v12 固定负载仍在 60 秒准备阶段失败：根事实捕获的逐目录进度重复执行父完整认证，Scope 的纯内存资格与并集规划也仍逐项完整认证。整改不扩大预算，而是按实际职责拆分两个边界；原材料采集、CAS、发布和提交不整体降级。
+
+| 段与源码入口 | 内部工作／检查 | 完整认证与返回条件 |
+|---|---|---|
+| [`_projection_references`](../../src/harnessix/product_config/git_checkpoint_scope.py) | 只核对 base 目录资格、基线 member 的 OID／mode、规划新 Tree 引用，按原 `_union` 验证完整图预算；没有 CAS 参数或 I/O | exact 控制才进入 `pure`；入口与成功出口完整认证，之后 `_build` 才按原顺序 `cas.persist` |
+| [`_root_binding_matches`](../../src/harnessix/product_config/git_baseline.py) | 实际 `capture_snapshot_facts` 是同步原生只读 I/O，使用 `io_git_authentication`，不是 `pure`；逐项消费原取消、同一期限及原资源代际 | 段入口、成功出口完整认证；退出后比较原 `workspace_id`、`root_path_digest`、`root_identity` 三字段；原生读取保护不删减 |
+| [`GitAuthenticationControl.io_progress`](../../src/harnessix/delivery/git_authentication_control.py) | 与 `pure` 共享私有段 token 生命周期；频检不读认证源码、不访问 SQL／Owner、不调用外部 checkpoint | 保存检查点在段外、异 Task／线程、嵌套或任何完整重入后撤销，回到 full；不签发权限或复用认证结果 |
+| 其他混合／效果边界 | `_build`、对象命令、CAS、数据库、Artifact 发布、事务提交仍沿原控制 | 不整体包裹这些入口，不把只读根捕获例外扩展为任意 I/O 优化 |
+
+对照调用链：
+
+```text
+Scope: 原 CAS／Diff → pure(资格 + member + 新引用 + 完整并集预算)
+                    → 成功出口 full → 原 CAS persist／Closure／Inventory
+Root: 入口 full → io_progress(原生事实捕获 + 原本地频检／读取保护)
+                 → 成功出口 full → 原三字段比较 → 返回匹配结论
+```
+
+没有新增字段、持久化格式、数据库迁移、异步线程或公开 Agent Protocol 能力；控制版本仍为 v2，创建 origin 的字段及私有绑定不变。未知函数、代理、子类保持原回调轨迹，不自动降级；新控制不得重新捕获当前 Task／资源作为原创建证明。原生读取也不持有 `pure` 段。
+
+失败语义：入口失败不开始该段；内部首失败先撤销 token，不追加出口认证；成功出口失败不交付规划结果或根匹配结论。Root 的入口／成功出口位于原生异常解包 `try` 外，边界异常保留原对象；捕获内部仍沿原 `UpstreamCheckpointError` 边界解包。并集超限在新 Tree 持久化前失败；其他阶段先前存在的 CAS 材料仍按原孤儿语义处理。
+
+认证检测时点明确改变：段内外部来源改变后恢复不保证可见，也不保证抢占同步 OS 调用。局部锁代际单测不是实际 Runtime 锁或原生 FD 证明。原 60 秒准备／120 秒 Turn、容量、完整对象范围和默认未注册状态不变。
+
+验证分工：原[Scope 分层矩阵](../../tests/product_config/test_git_checkpoint_scope_layered.py)增加 references 首失败；[引用规划负控](../../tests/product_config/test_git_checkpoint_scope_references.py)核验并集预算、出口漂移、CAS 不提前写及未知回调轨迹；[根端口负控](../../tests/product_config/test_git_root_io_control.py)核验真实 POSIX 捕获、原生取消／期限、三字段漂移、首异常、保存／跨 Task／线程与旧轨迹。Windows 原生捕获需独立验收，不以 POSIX 用例替代。
+
+同一非 editable 包完成 1381＋917＋16＋4＝2318 项回归，零失败／错误／跳过，源码／Wheel／安装态 562 成员一致；独立审查无 P1／P2 发现。旧实现对新引用测试为 14 FAIL／3 PASS，新实现 17 PASS，这是机制红绿对照，不是 14 个安全漏洞。上述集合有重叠的单测运行不重复累计。
+固定原负载 v13 已走到 pending Review，但诊断脚本误读不存在的 `Turn.constraints` 而失败，尚未进入恢复；原件保留。后继 v14 仅改为正式 `Turn.budget`，保持原 60 秒／120 秒及负载，独立结果在本节后继记录；回归通过不关闭 P1 响应性、默认 Writer、B4／B7、R3 真实编码质量或商用门禁。
+
+v14 同包固定负载已完成原 Checkpoint 准备及 Review，随后在 `fixture.prepare_original_link_and_router_first` 的 Ledger 准备耗尽原 60 秒操作期限（`git_process_timeout`），未进入决定恢复，没有恢复心跳成绩。诊断总时长 183.083 秒含前置夹具与并行回归／采样开销，不是准备 SLO。栈证据转向 `_authenticate → verify_git_delivery_source → _verify_final_snapshot → capture_snapshot_facts` 的进度与认证边界。源码复查区分确切类型被包装、U 的真实子 Task 边界和 Review 原本只有完整控制三种情形，不能简单透传或放宽 Task 绑定。下一步先研究该包装与来源读器边界，保留 v12、v13、v14 原失败，不对整个来源 verifier 降级。首次控制类结构门禁失败（101 行）已通过精简重复说明收敛到 99 行；前后除文档字符串外算法 AST 一致，最终门禁仍为 23 项存量／新增 0。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -926,14 +961,15 @@ finally：
 
 ## 19. 源码版本封存与最终边界
 
-下表固定本文研究对象的实际源码内容，补充 frontmatter 的已提交基础版本。运行时 `implementation_digest` 只覆盖前三个新增模块及 InventoryWire，其余项用于标识严格快照、Core 持久化、取消和原 Gateway 的配套版本，不扩大运行时摘要覆盖集合。
+下表固定本文研究对象的实际源码内容，补充 frontmatter 的已提交基础版本。运行时 `implementation_digest` 只覆盖前三个新增模块及 InventoryWire，其余项用于标识控制与根捕获、严格快照、Core 持久化、取消和原 Gateway 的配套版本，不扩大运行时摘要覆盖集合。
 
 | 源码 | SHA256 |
 |---|---|
 | `src/harnessix/product_config/git_checkpoint_preparation.py` | `b7c996d33b5926a9cb8be5da3e6e9cd8e4fee9b22b96fa3dfaed0029b2cd3643` |
 | `src/harnessix/product_config/git_checkpoint_materials.py` | `dc4a386f9233a117bac51c2446feb8da2678f4c90b6d5254488d37fc3dd8f69c` |
-| `src/harnessix/product_config/git_checkpoint_scope.py` | `e348a19b3b8097f884f9ef5b55b927b9f0014f40ce68de81bea388194a656ae9` |
-| `src/harnessix/delivery/git_authentication_control.py` | `550384977413de2ede3a2c6bb4aa0e605ae486b08fa36ca78bffedd4bba08d25` |
+| `src/harnessix/product_config/git_checkpoint_scope.py` | `300436ab3d223df654d0d12988501a55af9ad6aa882fd285897d3d2bff82ad10` |
+| `src/harnessix/delivery/git_authentication_control.py` | `bc170a28a714071b78a5e869d4d14025810ce63820c8ec2850f6be140d0f7105` |
+| `src/harnessix/product_config/git_baseline.py` | `a05b0bdf35440229305719395f2e12a2de2758d4bb3a14f8d0ac1dd51a25ffdc` |
 | `src/harnessix/delivery/git_inventory_wire.py` | `6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43` |
 | `src/harnessix/product_config/git_delivery_plan_snapshot.py` | `5dd8a297bd082feb5e58d6967be7afb3121e34ed24e0c2cfa2034afc1fb62983` |
 | `src/harnessix/product_config/git_delivery_core_store.py` | `10c1ef7b7246866bd8d25dc1f122f39f83521d374355d845858c4abf93535fcc` |

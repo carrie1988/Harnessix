@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 51
-code_revision: 711660fa8b75a02b58696556825ef726756cfec0
+version: 52
+code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
 owners:
   - core
 modules:
@@ -2363,3 +2363,5 @@ Projection 的净变更快照、无 CAS 目录 DFS、before／并集登记和 ap
 树投影读后解析单独分段，CAS 与 after 仍保持完整认证，边界见[树投影详设](../changes/m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)。
 Closure 仅对候选声明与 CAS 读后解析启用分层；DFS 和真实读取保持原顺序，读后成功出口认证前不登记 observed。
 正式边界、异常时序及负控见[闭包详设](../changes/m09-r4-git-tree-closure.md#114-分层控制的实际计算io-边界)。
+
+准备器另将无 I/O 的 Scope 引用资格／完整并集规划设为纯段；根事实捕获使用不同的 `io_progress` 契约，段内保留原生只读保护与本地频检、段首末完整认证。两者复用私有 token 生命周期，不缓存认证，不将 CAS 或任意 I/O 放入 pure。准确调用链、错误时序及负控见[准备分段](../changes/m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)。

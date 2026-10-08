@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 24
-code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
+version: 25
+code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
@@ -859,12 +859,12 @@ Writer 候选或 ASAN 初始化失败原件；本节时长只保留历史运行�
 
 `harnessix.git-authentication-control/v2` 明确调整认证检测时点，不宣称与逐叶完整认证等价。
 原 120 秒 Turn、60 秒操作总期限、Review TTL、正文上限、完整 MAC／历史及业务范围均不变。
-只允许在明确列举的同步纯计算段减少来源 I/O；所有数据库、文件、发布和提交边界仍完整认证。
+来源认证减少仅用于明确列举的同步纯段，以及[准备根捕获只读端口](m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)的内部进度。该原生 I/O 段不属于 pure；段首末、CAS、数据库、发布与提交边界仍完整认证。
 
 | 层级 | 校验与边界 | 当前源码 |
 |---|---|---|
 | 局部频检 | 原取消、绝对期限、父 Task 取消、原连接登记及存活、原 Runtime Thread 锁代际、原资源身份及事务代际；无 SQL、路径 I/O 或新 Owner 查询 | [`_control.local_check`](../../src/harnessix/product_config/git_prepared_link_ledger.py)、[原连接生命周期观察](../../src/harnessix/product_config/git_prepared_link_connection.py) |
-| 完整认证 | 原 `internal → 上游 callback → internal`；包括新鲜 Owner、连接实际路径、四库变化和原完整资源控制；普通调用、纯段进入和正常退出均执行 | [`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)、[`_control.authenticate`](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
+| 完整认证 | 原 `internal → 上游 callback → internal`；包括新鲜 Owner、连接实际路径、四库变化和原完整资源控制；普通调用、显式段进入和正常退出均执行 | [`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)、[`_control.authenticate`](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
 | 终端 | 无外部 callback 的原完整 `internal`，沿原同步终端读集合复验；不是提交后的认证保证 | [`_control` 终端窗口](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
 
 纯段仅覆盖原[严格字段快照](../../src/harnessix/product_config/git_delivery_plan_snapshot.py)、
@@ -916,7 +916,7 @@ CoreStore 的 `blob` I/O 与解析分开；不将 Store、发布、`await`、任
 
 Scope 的 `_build_control` 只在原创建 Task／线程传递确切控制，冻结原 origin 而非当前字段。
 局部调用和父绑定失败各只添加一层控制标记，完整调用复用原包装；Scope 出口仅去除本入口的那一层，保留原 Upstream／嵌套对象。
-`_build` 本身不成为纯段。Projection 的声明、无 CAS DFS 与树编码由[树投影设计](m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)限定，真实 I/O 和 Closure 仍完整。
+`_build` 本身不成为纯段。Projection 的声明、无 CAS DFS 与树编码由[树投影设计](m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)限定，真实 CAS I/O 仍完整；Closure 只分层声明／读后解析，见[闭包边界](m09-r4-git-tree-closure.md#114-分层控制的实际计算io-边界)。引用规划与原生根端口的例外按[准备分段](m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)限定。
 对应负控见[控制传递](../../tests/product_config/test_git_checkpoint_scope_control.py)与[树算法分层](../../tests/delivery/test_git_tree_projection_layered.py)。
 
 ### 13.6 异常包装与纯算法边界
@@ -927,7 +927,7 @@ Scope 的 `_build_control` 只在原创建 Task／线程传递确切控制，冻
 194 次包含 Review；这是包含式采样而非互斥耗时，不能相加求占比。
 仅对这两个无 I/O 入口先进入纯段、再沿原异常包装执行；声明图快照采用相同边界。
 
-控制的唯一实现下沉至 `delivery`，只依赖标准库；产品协调层向下引用，
+控制的唯一实现下沉至 `delivery`，只依赖标准库及原领域错误；产品协调层向下引用，
 不新增反向产品依赖、适配代理或旧路径副本。材料 verifier 不整体进入纯段，
 原 `cas.read`、树闭包 I/O、来源观察和末端共享回调隔离均保持原样。
 
@@ -1068,3 +1068,5 @@ A/T2/D/NativeBridge/Checkpoint/Commit、完整 Loader/Backup2 及发布门禁保
 2026-10-09 后继 Scope／Projection 候选同包相关 1232 项、树模块 822 项、实际 SDK 准备 16 项及三态决定 4 项通过，562 成员逐字节绑定。
 这四组分项计数，不累加先前候选或源级重复成绩；有界静态复核不作为独立运行验收。
 同包 v10 原深路径仍 60 秒准备 FAIL、未进入恢复，热点转向完整 Closure；原全部期限和默认未注册状态保留，P1、R3／R4 不据此关闭。
+
+准备链后继分段与负控详见[引用规划及根捕获设计](m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)。同包 v14 原深负载已完成 Checkpoint／Review，但原 Ledger 准备仍在 60 秒操作期限失败，尚未进入恢复；不能据前置门槛推进关闭本节 Writer 或 P1。

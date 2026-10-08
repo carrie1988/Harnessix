@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 102
-code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
+version: 103
+code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
 owners:
   - core
 modules:
@@ -2831,20 +2831,20 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 不改通用 Runtime prepare/execute/cancel，不对任意裸 `sqlite3.execute` 安装权限拦截，
 不关闭 SQLite FD、B4、P1、全部 dispatch 或完整 B7，不装配默认 Git Writer。
 
-## Git 纯计算段分层控制
+## Git 纯计算与受信只读端口分层控制
 
 [`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)
 将原取消、期限、锁／连接登记及资源代际的局部频检与完整来源认证分开。
 唯一控制实现位于 Delivery 层，产品层不持有第二份类型。
-只有明确适配的同步纯快照、声明图、决定／Review 构建、规范 JSON 和 CAS 读取后的解析启用局部频检；
-普通调用、纯段首末、I/O、发布和原终端边界仍完整核验，不缓存 Owner 或扩展操作期限。
+纯段局部频检覆盖明确适配的同步快照、声明图、决定／Review 构建、规范 JSON 和 CAS 读取后的解析；
+普通调用、显式段首末、CAS、发布和原终端边界仍完整核验；原生根捕获只读进度的例外见[准备分段](../changes/m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)，不缓存 Owner 或扩展操作期限。
 保存检查点、嵌套、跨 Task／线程及完整重入不能继承局部段；异常保持原首失败。
 正式边界与测试见[控制契约 v2](../changes/m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)，
 不宣称逐叶认证等价或完整 P1／R4 通过。
 
 准备器在原父 Task 冻结资源，在实际受管 child 构造控制；局部检查先比较 planner 内存快照，
 再读取冻结的原对象，不解引用替换代理。Core 持久化仅将严格快照／编码及回读后解码设为纯段，
-CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原局部闭包，Scope 只分层入参声明，
+CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原局部闭包，Scope 分层入参声明及引用资格／完整并集规划，
 `_build` 保持 mixed；`_build_control` 只在原创建 Task／线程传递确切控制与一层异常标记，使声明／树算法可识别局部频检，CAS 不进入纯段。控制原 Task／线程／闭包与实际段 token 已固定在私有 slot，
 借用前及频检比较原绑定，声明键先验后重建，防止稀疏复制执行键比较；不接受当前字段作为新的创建证明。
 创建绑定机械缺陷已闭环，但深路径期限和完整 P1 仍开放。范围、错误身份与负控见[准备分层设计](../changes/m09-r4-git-checkpoint-preparation.md#14-原准备-task-与-core-持久化的分层控制)。

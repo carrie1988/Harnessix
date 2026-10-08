@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 244
-code_revision: 711660fa8b75a02b58696556825ef726756cfec0
+version: 245
+code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
 owners:
   - core
 modules:
@@ -2772,5 +2772,7 @@ P1、完整默认写链、B4/B7、原生平台及 R3 真实质量仍开放；本
 R4 [闭包声明与CAS读后解析分层](changes/m09-r4-git-tree-closure.md#114-分层控制的实际计算io-边界)已落地，DFS、真实读顺序及容量未降级。
 同包1232＋822＋16＋4＋95项全通过；97层机制计数完整检查1089→794、实际CAS仍100次，不作为时延或质量验收。
 v12原负载仍60秒准备FAIL、未进入恢复；栈证据显示原生根事实捕获的内部进度重复调用父完整认证，另有Scope纯内存资格／并集组装待分段。
-下一顺序：Scope纯组装与原生根事实端口进度／认证职责 → 保留原失败和原期限的深路径复验；不缓存四份源码认证或取消Owner检查。
+后继[Scope纯引用规划及原生根只读进度](changes/m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)已完成；同一非editable包1381＋917＋16＋4＝2318项全通过、562成员绑定，结构门禁23存量／新增0。
+v13首次走到pending Review后因诊断误读Turn.constraints失败；v14只改正式Turn.budget，固定原负载已走过Checkpoint准备／Review，随后Ledger准备仍60秒操作FAIL，未进入恢复。旧失败保留，不以门槛推进宣称P1通过。
+下一顺序：来源快照读器的确切控制传递及同步只读进度边界 → 首异常／漂移／未知回调负控 → 原期限完整恢复复验；不缓存四份源码认证或取消Owner检查。
 P1、默认完整写链、B4/B7、原生平台及R3真实质量仍开放；本轮模型请求0，不增加真实编码／Beta通过数。
