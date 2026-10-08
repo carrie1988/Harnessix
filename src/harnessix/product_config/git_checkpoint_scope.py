@@ -7,6 +7,7 @@ from typing import get_args
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.contracts import MAX_WORKSPACE_DIFF_BYTES
+from harnessix.delivery.git_authentication_control import pure_git_authentication
 from harnessix.delivery.git_inventory_contracts import (
     GitBaseHistoryBoundary,
     GitInventoryMetrics,
@@ -250,6 +251,44 @@ def _build(
     return scope, diff
 
 
+def _snapshot_inputs(
+    baseline: ProductGitDeliveryBaselineV2,
+    base_commit: GitObjectMaterialReference,
+    base_catalog: tuple[GitObjectMaterialReference, ...],
+    after_catalog: tuple[GitObjectMaterialReference, ...],
+    limits: GitTreeClosureLimits,
+    max_parents: int,
+    checkpoint: Callable[[], None],
+) -> tuple[
+    ProductGitDeliveryBaselineV2,
+    GitObjectMaterialReference,
+    tuple[GitObjectMaterialReference, ...],
+    tuple[GitObjectMaterialReference, ...],
+    GitTreeClosureLimits,
+    int,
+]:
+    """只快照声明入参；纯段边界异常不进入原控制标记的单层解包。"""
+    with pure_git_authentication(checkpoint) as pure_check:
+
+        def check() -> None:
+            try:
+                pure_check()
+            except BaseException as error:
+                raise UpstreamCheckpointError(error) from None
+
+        try:
+            baseline = _snapshot(baseline, ProductGitDeliveryBaselineV2, check)
+            base_commit = _snapshot_model(base_commit, GitObjectMaterialReference, check)
+            base_catalog = _catalog(base_catalog, check)
+            after_catalog = _catalog(after_catalog, check)
+            limits = _snapshot_model(limits, GitTreeClosureLimits, check)
+            if type(max_parents) is not int or max_parents < 0:
+                raise KernelError("git_inventory_limit_invalid", "Git对象目录父边容量声明无效")
+            return baseline, base_commit, base_catalog, after_catalog, limits, max_parents
+        except UpstreamCheckpointError as error:
+            raise error.error from None
+
+
 def build_product_git_checkpoint_scope(
     cas: GitMaterialCAS,
     baseline: ProductGitDeliveryBaselineV2,
@@ -280,15 +319,13 @@ def build_product_git_checkpoint_scope(
         check()
         if type(cas) is not GitMaterialCAS:
             raise KernelError("git_inventory_materials_invalid", "Git对象目录材料读取端口无效")
-        baseline = _snapshot(baseline, ProductGitDeliveryBaselineV2, check)
-        base_commit = _snapshot_model(base_commit, GitObjectMaterialReference, check)
-        base_catalog = _catalog(base_catalog, check)
-        after_catalog = _catalog(after_catalog, check)
-        limits = _snapshot_model(limits, GitTreeClosureLimits, check)
-        if type(max_parents) is not int or max_parents < 0:
-            raise KernelError("git_inventory_limit_invalid", "Git对象目录父边容量声明无效")
-        return _build(
-            cas, baseline, base_commit, base_catalog, after_catalog, limits, max_parents, check
-        )
+    except UpstreamCheckpointError as error:
+        raise error.error from None
+
+    snapshots = _snapshot_inputs(
+        baseline, base_commit, base_catalog, after_catalog, limits, max_parents, checkpoint
+    )
+    try:
+        return _build(cas, *snapshots, check)
     except UpstreamCheckpointError as error:
         raise error.error from None

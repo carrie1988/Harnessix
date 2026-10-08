@@ -123,6 +123,24 @@ class ProductGitCheckpointPreparer:
         )
 
 
+def _original_preparation_fields(
+    planner: ProductGitCheckpointPreparer, original: tuple[tuple[str, object], ...]
+) -> bool:
+    """只比较确切原字典快照，拒绝字典／键子类借 copy、比较或查找执行回调。"""
+    if type(planner) is not ProductGitCheckpointPreparer:
+        return False
+    current = object.__getattribute__(planner, "__dict__")
+    if type(current) is not dict:
+        return False
+    current = current.copy()
+    return (
+        all(type(name) is str for name in current)
+        and all(type(name) is str for name, _ in original)
+        and tuple(current) == tuple(name for name, _ in original)
+        and all(current[name] is value for name, value in original)
+    )
+
+
 def _preparation_control(
     planner: ProductGitCheckpointPreparer,
     context: ActionPlanningContext,
@@ -133,6 +151,7 @@ def _preparation_control(
     """冻结原资源，返回纯段频检与完整认证；两者借用同一期限和父取消。"""
     original = tuple(vars(planner).items())
     core_store, material_port, session = planner.core_store, planner.material_port, planner.session
+    resource_types = tuple(map(type, (core_store, material_port, session)))
     transactions = planner.core_store.store
     implementation = git_checkpoint_preparation_implementation_digest()
     authority = require_git_user_authority(
@@ -185,14 +204,18 @@ def _preparation_control(
             cancel.checkpoint()
             budget.remaining()
             # 先比对一次内存快照，再读冻结的原对象；替换代理不能借属性执行回调。
-            current = vars(planner).copy()
-            if tuple(current) != tuple(name for name, _ in original) or any(
-                current[name] is not value for name, value in original
-            ):
+            if not _original_preparation_fields(planner, original):
                 raise _invalid()
             if (
-                getattr(core_store, "store", None) is not transactions
-                or getattr(material_port, "_closed", True)
+                any(
+                    type(resource) is not expected
+                    for resource, expected in zip(
+                        (core_store, material_port, session), resource_types, strict=True
+                    )
+                )
+                or type(host) is not GitProcessRuntimeHost
+                or getattr(core_store, "store", None) is not transactions
+                or getattr(material_port, "_closed", None) is not False
                 or getattr(material_port, "_runtime_host", None) is not host
                 or getattr(session, "_runtime_owner_token", None) is not owner
                 or any(
@@ -244,7 +267,11 @@ async def _prepare_entry(
 
     async def prepare_original() -> ResolvedAction:
         # 在实际受管子Task内创建纯段控制，但认证闭包仍冻结入口的原资源。
-        control = GitAuthenticationControl(local_check, check)
+        control = (
+            GitAuthenticationControl(local_check, check)
+            if type(planner) is ProductGitCheckpointPreparer
+            else check
+        )
         return await _prepare(
             planner, invocation, arguments, context, thread, turn, call, cancel, budget, control
         )

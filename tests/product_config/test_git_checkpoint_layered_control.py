@@ -171,6 +171,58 @@ async def test_local_missing_original_resource_member_is_canonical_failure(case,
     assert case.failures == [caught.value]
 
 
+@pytest.mark.parametrize(
+    "fault", ["closed_flag", "dict_subclass", "key_subclass", "port_class", "host_class"]
+)
+async def test_local_rejects_executable_memory_shapes_before_callbacks(case, fault):
+    local, _ = controls(case)
+    invoked = []
+
+    def forbidden(*args):
+        invoked.append(True)
+        raise AssertionError("局部内存检查不得执行外部回调")
+
+    if fault == "closed_flag":
+
+        class Flag:
+            __bool__ = forbidden
+
+        case.planner.material_port._closed = Flag()
+    elif fault == "dict_subclass":
+
+        class Attributes(dict):
+            copy = forbidden
+
+        case.planner.__dict__ = Attributes(vars(case.planner))
+    elif fault == "key_subclass":
+
+        class Name(str):
+            __eq__ = forbidden
+            __hash__ = str.__hash__
+
+        case.planner.__dict__ = {
+            Name(name) if name == "session" else name: value
+            for name, value in vars(case.planner).items()
+        }
+    elif fault == "port_class":
+
+        class Port(GitDeliveryProcess):
+            __getattribute__ = forbidden
+
+        case.planner.material_port.__class__ = Port
+    else:
+
+        class Host(GitProcessRuntimeHost):
+            __slots__ = ()
+            __getattribute__ = forbidden
+
+        object.__setattr__(case.planner.material_port._runtime_host, "__class__", Host)
+    with pytest.raises(KernelError) as caught:
+        local()
+    assert caught.value.code == "git_checkpoint_preparation_invalid"
+    assert invoked == []
+
+
 @pytest.mark.parametrize("fault", ["cancel", "deadline"])
 async def test_local_stop_precedes_resource_drift(case, fault):
     local, _ = controls(case)
@@ -235,6 +287,30 @@ async def test_managed_child_can_use_pure_without_recapturing_parent_resources(c
         case.planner, None, None, case.context, None, None, None, case.cancel
     )
     assert actual is result
+
+
+async def test_preparer_subclass_keeps_original_full_control(case, monkeypatch):
+    class Preparer(preparation.ProductGitCheckpointPreparer):
+        pass
+
+    case.planner.__class__ = Preparer
+    result = ResolvedAction(())
+
+    async def prepare(*args):
+        control = args[-1]
+        assert type(control) is not GitAuthenticationControl
+        case.trace.clear()
+        control()
+        assert case.trace == ["caller", "authority", "source", "host"]
+        return result
+
+    monkeypatch.setattr(preparation, "_prepare", prepare)
+    assert (
+        await preparation._prepare_entry(
+            case.planner, None, None, case.context, None, None, None, case.cancel
+        )
+        is result
+    )
 
 
 @pytest.mark.parametrize("fault", ["resource", "timeout"])

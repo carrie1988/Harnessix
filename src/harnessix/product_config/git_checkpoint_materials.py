@@ -5,9 +5,11 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable
 from pathlib import Path
+from threading import get_ident
 
 from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.delivery.git_inventory_contracts import GitInventoryScope
 from harnessix.delivery.git_material_cas import GitMaterialCAS, GitObjectMaterialReference
 from harnessix.delivery.git_object_material import GitObjectFormat, GitObjectMaterial, GitObjectRead
@@ -90,35 +92,7 @@ async def collect_product_git_checkpoint_materials(
         or type(cas.store) is not SQLiteWorkspaceTransactionStore
     ):
         raise _invalid()
-    host, runner, state, protection = (
-        port._runtime_host,
-        port._runner,
-        port._state,
-        port._output_redaction,
-    )
-    store = cas.store
-
-    def control() -> None:
-        cancel.checkpoint()
-        budget.remaining()
-        checkpoint()
-        if (
-            port._closed
-            or port._runtime_host is not host
-            or port._runner is not runner
-            or port._state != state
-            or port._output_redaction is not protection
-            or protection is not host.protection
-            or cas.store is not store
-            or store._closed
-            or store._root != state / "workspace-transactions"
-        ):
-            raise _invalid()
-        host.checkpoint(state)
-        if not _root_binding_matches(baseline.source, root, checkpoint):
-            raise _invalid()
-
-    check = parent_cancel_checkpointer(control)
+    check = _material_control(port, root, lambda: baseline, cas, cancel, budget, checkpoint)
     check()
     baseline = _snapshot(baseline, ProductGitDeliveryBaselineV2, check)
     fmt: GitObjectFormat = "sha1" if len(baseline.head_oid) == 40 else "sha256"
@@ -138,6 +112,98 @@ async def collect_product_git_checkpoint_materials(
     )
     check()
     return result
+
+
+def _material_control(
+    port: GitDeliveryProcess,
+    root: Path,
+    current_baseline: Callable[[], ProductGitDeliveryBaselineV2],
+    cas: GitMaterialCAS,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    checkpoint: Callable[[], None],
+) -> Callable[[], None]:
+    """同Task借原局部闭包；完整根检查仍跟随调用方已深快照的原基线。"""
+    host, runner, state, protection = (
+        port._runtime_host,
+        port._runner,
+        port._state,
+        port._output_redaction,
+    )
+    if type(host) is not GitProcessRuntimeHost:
+        raise _invalid()
+    store = cas.store
+
+    def control() -> None:
+        cancel.checkpoint()
+        budget.remaining()
+        checkpoint()
+        if (
+            port._closed
+            or port._runtime_host is not host
+            or port._runner is not runner
+            or port._state != state
+            or port._output_redaction is not protection
+            or protection is not host.protection
+            or cas.store is not store
+            or store._closed
+            or store._root != state / "workspace-transactions"
+        ):
+            raise _invalid()
+        host.checkpoint(state)
+        if not _root_binding_matches(current_baseline().source, root, checkpoint):
+            raise _invalid()
+
+    full = parent_cancel_checkpointer(control)
+    if type(checkpoint) is not GitAuthenticationControl:
+        return full
+    parent = vars(checkpoint)
+    if (
+        type(parent) is not dict
+        or any(type(name) is not str for name in parent)
+        or parent.get("_task") is not asyncio.current_task()
+        or type(parent.get("_thread")) is not int
+        or parent.get("_thread") != get_ident()
+    ):
+        return full
+    parent_fields = tuple(
+        (name, parent.get(name)) for name in ("_task", "_thread", "_local_check", "_authenticate")
+    )
+    original_local = checkpoint._local_check
+    store_root = store._root
+
+    def local() -> None:
+        cancel.checkpoint()
+        budget.remaining()
+        if type(checkpoint) is not GitAuthenticationControl:
+            raise _invalid()
+        current = vars(checkpoint)
+        if type(current) is not dict:
+            raise _invalid()
+        current = current.copy()
+        if any(type(name) is not str for name in current):
+            raise _invalid()
+        if any(current.get(name) is not value for name, value in parent_fields):
+            raise _invalid()
+        original_local()
+        if (
+            type(port) is not GitDeliveryProcess
+            or type(cas) is not GitMaterialCAS
+            or type(store) is not SQLiteWorkspaceTransactionStore
+            or type(host) is not GitProcessRuntimeHost
+            or getattr(port, "_closed", None) is not False
+            or getattr(port, "_runtime_host", None) is not host
+            or getattr(port, "_runner", None) is not runner
+            or getattr(port, "_state", None) is not state
+            or getattr(port, "_output_redaction", None) is not protection
+            or getattr(host, "protection", None) is not protection
+            or getattr(cas, "store", None) is not store
+            or getattr(store, "_closed", None) is not False
+            or getattr(store, "_root", None) is not store_root
+        ):
+            raise _invalid()
+
+    return GitAuthenticationControl(parent_cancel_checkpointer(local), full)
 
 
 async def _collect_base(
