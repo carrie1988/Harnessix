@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 7
+version: 8
 code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners: [core]
 modules: [product_config, delivery, session, artifacts, trusted_actions, workspace]
@@ -58,7 +58,11 @@ supersedes: []
 连接与异步SQL窗口新增准确Task准入；原U验证子Task仅消费原Task签发的来源观察闭包，
 Owner、路径pin、事务代际及取消期限检查保持。通用同步SQL窗口仍是线程合同，不能作为Task认证证明。
 详见[任务准入与来源观察详设](m09-r4-git-connection-ownership.md)。
-本子项不证明实际SQLite FD、原Task持协作锁或完整B7，默认Git写工具仍未装配。
+后续[原 Runtime Thread 绑定](m09-r4-git-runtime-thread-scope.md)已接入本 Ledger 的
+`_control`及审批历史消费者：入口须处于原 Task 已持原 Thread 锁的活动绑定 context，
+冻结实际原 Runtime 装配与同次 acquire 代际；发布目标 Thread 另外匹配。
+调用方窗口覆盖原事务 COMMIT／ROLLBACK，不自动获得执行授权；全集回读不按当前 Thread 过滤。
+实际 SQLite FD、全部 dispatch 与完整 B7 仍未闭合，默认 Git 写工具仍未装配。
 
 本候选尚未封板。原先的同步复核仍会调用 SDK Store 的构造检查点，
 使已读取 CAS 失效而不改变数据库版本。现行源码已引入下述操作局部终端只读控制，

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 9
+version: 10
 code_revision: ad4bb6425e1b25d4dbf1d546c5d6d64c256a2958
 owners: [core]
 modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -694,7 +694,9 @@ B1 是已明确的存储兼容决策；B2、B3 的决定消费接线与 B7 仍�
 
 原 Runtime 另提供[实际 Task 锁归属原语](m09-r4-runtime-thread-lock-ownership.md)：
 检查该 Runtime 已登记的原锁及当前实际持有者，不接受 `locked()`声明。
-该基础实现尚不覆盖 Git 所需整个临界区、全部 dispatch 或 SQLite 实际 FD，B7 仍开放。
+后续[原 Runtime Thread 绑定](m09-r4-git-runtime-thread-scope.md)已将同次持锁来源接入
+prepared Ledger 和审批历史消费者；调用方活动窗口须覆盖原事务 COMMIT／ROLLBACK。
+这不是对任意裸 SQL 的授权拦截或全部 dispatch 接线，SQLite 实际 FD 仍未闭合，B7 仍开放。
 
 B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放；B5/B6 是不能通过本增量绕过的能力边界。
 没有证据支持完整生命周期恢复或未来效果链可用。

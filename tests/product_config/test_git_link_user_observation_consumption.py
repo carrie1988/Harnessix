@@ -115,7 +115,7 @@ async def test_real_prepare_and_history_consume_u_without_recapture_or_new_write
             patch.setattr(SQLiteWorkspaceTransactionStore, "_put_blob", forbidden)
             patch.setattr(scenario.router, "execute", forbidden)
             patch.setattr(scenario.router, "reconcile", forbidden)
-            with _database(actual) as database:
+            async with _database(actual) as database:
                 await _genesis(actual, database)
                 database.execute("BEGIN IMMEDIATE")
                 token = CancelToken()
@@ -136,7 +136,7 @@ async def test_real_prepare_and_history_consume_u_without_recapture_or_new_write
         before = _readonly_state(scenario)
         history = await _history(actual)
         calls.clear()
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             result = await _consume(
                 actual, database, "history-read", cancel=token, checkpoint=lambda: None
@@ -168,7 +168,7 @@ async def test_frozen_u_drift_rejects_real_consumers_and_prepare_rolls_back(
         if operation != "prepare":
             await _prepared(actual)
         else:
-            with _database(actual) as database:
+            async with _database(actual) as database:
                 await _genesis(actual, database)
         if fault == "config-value":
             names = command(scenario.root, "config", "--no-includes", "--name-only", "--list")
@@ -186,7 +186,7 @@ async def test_frozen_u_drift_rejects_real_consumers_and_prepare_rolls_back(
             replacement.write_bytes(index.read_bytes())
             os.replace(replacement, index)
         before = _readonly_state(scenario)
-        with _database(actual, read_only=operation != "prepare") as database:
+        async with _database(actual, read_only=operation != "prepare") as database:
             rows = _rows(database)
             database.execute("BEGIN IMMEDIATE" if operation == "prepare" else "BEGIN")
             with pytest.raises(KernelError) as caught:
@@ -320,7 +320,7 @@ async def test_valid_target_does_not_hide_non_target_original_u_drift(
     async def inspect(actual):
         first, _ = await _prepared(actual)
         second = await _next_pending_after_rejection(actual)
-        with _database(actual) as database:
+        async with _database(actual) as database:
             database.execute("BEGIN IMMEDIATE")
             target = await _publish_authenticated_second_predecessor(second, database)
             database.execute("COMMIT")
@@ -331,7 +331,7 @@ async def test_valid_target_does_not_hide_non_target_original_u_drift(
             )
             assert database.execute("SELECT COUNT(*) FROM git_product_links").fetchone() == (2,)
         before = _readonly_state(actual.scenario)
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             rows = _rows(database)
             database.execute("BEGIN")
             with pytest.raises(KernelError) as caught:
@@ -362,7 +362,7 @@ async def test_router_first_recovery_uses_original_sync_then_reads_u_without_new
             ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="original-recovery"),
         )
         before = await _history(actual)
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             with pytest.raises(KernelError) as caught:
                 await _reader(actual, database).read_all(
@@ -375,7 +375,7 @@ async def test_router_first_recovery_uses_original_sync_then_reads_u_without_new
         after = await _history(actual)
         assert after != before
         stable = _readonly_state(actual.scenario)
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             token = CancelToken()
             result = await _reader(actual, database).read_all(cancel=token, checkpoint=lambda: None)
@@ -399,7 +399,7 @@ async def test_original_checkpoint_exceptions_inside_real_u_verifier_are_preserv
     async def inspect(actual):
         if operation != "prepare":
             await _prepared(actual)
-        with _database(actual, read_only=operation != "prepare") as database:
+        async with _database(actual, read_only=operation != "prepare") as database:
             if operation == "prepare":
                 await _genesis(actual, database)
             rows = _rows(database)
@@ -465,7 +465,7 @@ async def test_post_publication_u_control_failure_rolls_back_event_mac_and_tail(
         monkeypatch.setattr(
             ledger_module, "verify_product_git_user_observation", verified, raising=False
         )
-        with _database(actual) as database:
+        async with _database(actual) as database:
             await _genesis(actual, database)
             rows = _rows(database)
             before = _readonly_state(actual.scenario)
@@ -497,7 +497,7 @@ async def test_real_prepared_commit_reopen_and_exact_retry_share_controls_withou
         link, sealed = await _prepared(actual)
         calls = _record_verification(monkeypatch, actual)
         before = _readonly_state(actual.scenario)
-        with _database(actual) as database:
+        async with _database(actual) as database:
             database.execute("BEGIN IMMEDIATE")
             token = CancelToken()
             assert (
@@ -551,7 +551,7 @@ async def test_original_turn_real_expiry_refuses_approval_and_consumers_without_
         assert failed[6] == hashlib.sha256(failed[5].encode()).hexdigest()
         # 消费者零写仍比较全部表、原 CAS 与物理 Index，不剔除协议请求表。
         before = after_command
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             with pytest.raises(KernelError) as history:
                 await _reader(actual, database).read_all(

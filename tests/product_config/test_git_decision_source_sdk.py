@@ -30,7 +30,7 @@ async def test_corrected_one_approved_read_then_non_target_mac_rejected(tmp_path
         history = await _history(actual)
         source = _source_snapshot(actual.scenario.root)
         unchanged = actual.scenario.unchanged_state()
-        with _database(actual, read_only=True) as db:
+        async with _database(actual, read_only=True) as db:
             db.execute("BEGIN")
             result = await _reader(actual, db).read_decided(
                 route, cancel=CancelToken(), checkpoint=lambda: None
@@ -46,7 +46,7 @@ async def test_corrected_one_approved_read_then_non_target_mac_rejected(tmp_path
         assert await _history(actual) == history
         assert _source_snapshot(actual.scenario.root) == source
         assert actual.scenario.unchanged_state() == unchanged
-        with _database(actual) as fault:
+        async with _database(actual) as fault:
             original = fault.execute("SELECT seal FROM git_record_publications").fetchall()
             assert len(original) == 1 and type(original[0][0]) is bytes
             seal = original[0][0]
@@ -54,7 +54,7 @@ async def test_corrected_one_approved_read_then_non_target_mac_rejected(tmp_path
             cursor = fault.execute("UPDATE git_record_publications SET seal=?", (corrupt,))
             assert cursor.rowcount == 1
             receipt["deliberate_fault_writes"] = fault.total_changes
-        with _database(actual, read_only=True) as db:
+        async with _database(actual, read_only=True) as db:
             db.execute("BEGIN")
             with pytest.raises(KernelError) as caught:
                 await _reader(actual, db).read_decided(

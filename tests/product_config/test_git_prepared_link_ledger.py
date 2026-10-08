@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import pytest
@@ -24,10 +24,12 @@ from harnessix.product_config.git_prepared_link_connection import open_prepared_
 from harnessix.product_config.git_prepared_link_ledger import ProductGitPreparedLinkLedger
 from harnessix.product_config.git_prepared_link_rows import prepared_link_columns
 from harnessix.product_config.git_prepared_link_wire import encode_product_git_prepared_link
+from harnessix.product_config.git_prepared_runtime_thread import bind_prepared_git_runtime_thread
 from harnessix.product_config.server import open_default_product_action_runtime
 from harnessix.session.git_publication_contracts import GitDeliveryRecordClaims
 from tests.product_config.git_repository_observation_support import _source_snapshot
 from tests.product_config.test_git_checkpoint_preparation import _pending
+from tests.support.git_runtime_thread_scope import git_runtime_thread_scope
 from tests.support.git_user_observation import run_authenticated_observation
 
 
@@ -71,22 +73,26 @@ async def _case(
     )
 
 
-@contextmanager
-def _database(actual, *, path=None, read_only=False):
-    path = path or actual.scenario.state / "git-delivery" / "git-delivery.db"
-    if not read_only and not path.exists():
-        # 目录和空 v1 文件仅由原 Store 准备；业务连接工厂本身绝不创建或迁移。
-        if path.name == "git-delivery.db":
-            SQLiteGitDeliveryStore(path.parent).close()
-        else:
-            # 故障注入副本不是产品账本，仅创建已有文件供工厂接管。
-            path.touch(mode=0o600)
-    with open_prepared_git_connection(path, read_only=read_only) as db:
-        try:
-            yield db
-        finally:
-            if db.in_transaction:
-                db.execute("ROLLBACK")
+@asynccontextmanager
+async def _database(actual, *, path=None, read_only=False):
+    runtime = actual.scenario.client.transport.server.service.runtime
+    thread_id = actual.thread.thread_id
+    async with git_runtime_thread_scope(runtime, thread_id):
+        path = path or actual.scenario.state / "git-delivery" / "git-delivery.db"
+        if not read_only and not path.exists():
+            # 目录和空 v1 文件仅由原 Store 准备；业务连接工厂本身绝不创建或迁移。
+            if path.name == "git-delivery.db":
+                SQLiteGitDeliveryStore(path.parent).close()
+            else:
+                # 故障注入副本不是产品账本，仅创建已有文件供工厂接管。
+                path.touch(mode=0o600)
+        with open_prepared_git_connection(path, read_only=read_only) as db:
+            with bind_prepared_git_runtime_thread(db, runtime, thread_id):
+                try:
+                    yield db
+                finally:
+                    if db.in_transaction:
+                        db.execute("ROLLBACK")
 
 
 def _ledger(actual, db):
@@ -144,7 +150,7 @@ async def test_actual_prepared_link_commit_reopen_read_only_and_stable_retry(
         before = _source_snapshot(scenario.root)
         history = await _history(actual)
         routes = scenario.router._audit.routes()
-        with _database(actual) as db:
+        async with _database(actual) as db:
             await _genesis(actual, db)
             db.execute("BEGIN IMMEDIATE")
             link = await _ledger(actual, db).prepare(
@@ -157,7 +163,7 @@ async def test_actual_prepared_link_commit_reopen_read_only_and_stable_retry(
             db.execute("COMMIT")
             baseline = _rows(db)
         if operation == "stable-retry":
-            with _database(actual) as db:
+            async with _database(actual) as db:
                 db.execute("BEGIN IMMEDIATE")
                 total = db.total_changes
                 assert (
@@ -172,7 +178,7 @@ async def test_actual_prepared_link_commit_reopen_read_only_and_stable_retry(
                 db.execute("COMMIT")
                 assert _rows(db) == baseline
         else:
-            with _database(actual, read_only=True) as ro:
+            async with _database(actual, read_only=True) as ro:
                 ro.execute("BEGIN")
                 assert await _ledger(actual, ro).read_all(
                     cancel=CancelToken(), checkpoint=lambda: None
@@ -201,7 +207,7 @@ async def test_actual_rollback_then_retry_and_commit_confirmation_loss(
     tmp_path, config, monkeypatch, first_outcome
 ):
     async def inspect(actual):
-        with _database(actual) as db:
+        async with _database(actual) as db:
             await _genesis(actual, db)
             genesis = _rows(db)
             ledger = _ledger(actual, db)
@@ -286,7 +292,7 @@ async def test_valid_original_mac_does_not_prove_prepared_business_semantics(
     )
 
     async def inspect(actual):
-        with _database(actual) as db:
+        async with _database(actual) as db:
             await _genesis(actual, db)
             genesis = _rows(db)
             ledger = _ledger(actual, db)
@@ -343,7 +349,7 @@ async def test_cancellation_callback_epoch_and_late_write_reject_without_persist
     async def inspect(actual):
         from harnessix.product_config import git_prepared_link_ledger as module
 
-        with _database(actual) as db:
+        async with _database(actual) as db:
             await _genesis(actual, db)
             original = _rows(db)
             ledger = _ledger(actual, db)

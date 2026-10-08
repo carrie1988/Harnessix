@@ -1,7 +1,7 @@
 ---
 doc_type: system-architecture
 status: current
-version: 87
+version: 88
 code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
 owners:
   - core
@@ -696,7 +696,13 @@ Plan/Pointer/粘性回退/Result记录位于原Root外，状态机只按实际�
 Thread 锁继续位于单一 Agent Runtime 原集合；实际 acquire／release 绑定当前 Task，
 同步私有检查不接受外来布尔证明、不新增执行权限，详见
 [原锁归属详设](changes/m09-r4-runtime-thread-lock-ownership.md)。
-Git FD、完整宿主临界区及末端一致性仍为独立门禁，不能由锁原语替代。
+Git Ledger 与审批历史 Reader 现强制消费原连接活动 context 中的
+[Runtime Thread 绑定](changes/m09-r4-git-runtime-thread-scope.md)。
+调用方先持原锁，绑定冻结实际 Runtime、Session、Gateway、Router、Artifact 和本次 acquire 代际；
+U 验证子 Task 只能观察原父 Task 仍持锁，不能借用 SQL 窗口。
+prepared 发布另外核对目标 Thread，全集回读仍认证全部关联而非仅筛选当前 Thread。
+该内部接线不自动获取锁、不拦截任意裸 SQL，调用方窗口须覆盖 COMMIT／ROLLBACK；
+默认 Git 分派、实际 DB FD 与末端 Ref／配置一致性仍独立开放。
 
 验证宿主预算合同为封闭版本：v1 的 70／40 与 v2 的 60／38。
 两者沿同一独占 Owner、旧请求前缀和原 Guard，不自动授权、不改变产品公开协议，

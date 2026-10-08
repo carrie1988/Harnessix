@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 225
+version: 226
 code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
 owners:
   - core
@@ -2598,3 +2598,15 @@ R4消费者2、其他SDK消费者81、产品CLI15通过/1原生Windows跳过分�
 默认 Checkpoint／Commit 和三平台完整编码仍需后继纵向闭环。
 终态与候选绑定见[切片交付](validation/r3-budget-v2-runtime-lock-2026-10-08-v1/README.md)；
 R3 原严格成功0/20、必需测试1/20、真实 Beta 接受0及商用门禁不据此提升。
+
+### R4：Git 原 Runtime Thread 临界区消费者接线
+
+[原 Runtime Thread 绑定](changes/m09-r4-git-runtime-thread-scope.md)将原持锁来源接入实际
+prepared Ledger 和审批历史 Reader。原连接活动 context、原 Runtime 装配和同次持锁代际必须同时成立；
+原 Task 签发的观察闭包不授予受管子 Task SQL 能力。发布目标 Thread 必须匹配，全集回读仍认证所有关联。
+调用方原锁窗口覆盖 BEGIN、认证与 COMMIT／ROLLBACK，不以第二套 Git 锁或可复制证明替代。
+
+此项属于 B7 内部消费者进展，不代表完整 B7 或商用完成。
+默认正常执行、初始化／扩展等全部 dispatch、实际 DB FD、B4 末端一致性、P1、决定 Writer、
+A／T2／NativeBridge／D、Checkpoint／Commit、Backup2 和三平台完整编码仍开放。
+R3 仍需有效预算登记和新冻结候选下的完整真实 Trial；本项不新增模型请求或提高历史成绩。

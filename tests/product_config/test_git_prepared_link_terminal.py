@@ -55,47 +55,49 @@ async def test_original_session_commit_after_actual_authentication_is_rejected(
     """原 Session 跨连接写后还原也拒绝；零物理变更的空提交不视为状态变化。"""
 
     async def inspect(actual):
-        with _business_unchanged(actual), _database(actual) as db:
-            link, sealed = await _sealed(actual, db)
-            authenticate = module._authenticate
+        with _business_unchanged(actual):
+            async with _database(actual) as db:
+                link, sealed = await _sealed(actual, db)
+                authenticate = module._authenticate
 
-            async def changed(*args, **kwargs):
-                evidence = await authenticate(*args, **kwargs)
-                with closing(sqlite3.connect(actual.scenario.session.path)) as write:
-                    identity = str(link.plan.review_artifact.artifact_id)
-                    body = write.execute(
-                        "SELECT body FROM agent_artifacts WHERE artifact_id=?", (identity,)
-                    ).fetchone()[0]
-                    cursor = write.execute(
-                        "UPDATE agent_artifacts SET body=? WHERE artifact_id=?",
-                        (b"X" + body[1:], identity),
-                    )
-                    assert cursor.rowcount == 1
-                    write.commit()
-                    write.execute(
-                        "UPDATE agent_artifacts SET body=? WHERE artifact_id=?", (body, identity)
-                    )
-                    write.commit()
-                return evidence
+                async def changed(*args, **kwargs):
+                    evidence = await authenticate(*args, **kwargs)
+                    with closing(sqlite3.connect(actual.scenario.session.path)) as write:
+                        identity = str(link.plan.review_artifact.artifact_id)
+                        body = write.execute(
+                            "SELECT body FROM agent_artifacts WHERE artifact_id=?", (identity,)
+                        ).fetchone()[0]
+                        cursor = write.execute(
+                            "UPDATE agent_artifacts SET body=? WHERE artifact_id=?",
+                            (b"X" + body[1:], identity),
+                        )
+                        assert cursor.rowcount == 1
+                        write.commit()
+                        write.execute(
+                            "UPDATE agent_artifacts SET body=? WHERE artifact_id=?",
+                            (body, identity),
+                        )
+                        write.commit()
+                    return evidence
 
-            for operation in ("read", "prepare"):
-                db.execute("BEGIN IMMEDIATE")
-                with monkeypatch.context() as patch:
-                    patch.setattr(module, "_authenticate", changed)
-                    ledger = _ledger(actual, db)
-                    with pytest.raises(KernelError) as caught:
-                        if operation == "read":
-                            await ledger.read_all(cancel=CancelToken(), checkpoint=lambda: None)
-                        else:
-                            await ledger.prepare(
-                                actual.route.plan.execution.plan_id,
-                                cancel=CancelToken(),
-                                checkpoint=lambda: None,
-                            )
-                assert caught.value.code == "git_prepared_link_changed"
-                assert db.in_transaction and _rows(db) == sealed
-                db.execute("ROLLBACK")
-                _persisted(actual, sealed)
+                for operation in ("read", "prepare"):
+                    db.execute("BEGIN IMMEDIATE")
+                    with monkeypatch.context() as patch:
+                        patch.setattr(module, "_authenticate", changed)
+                        ledger = _ledger(actual, db)
+                        with pytest.raises(KernelError) as caught:
+                            if operation == "read":
+                                await ledger.read_all(cancel=CancelToken(), checkpoint=lambda: None)
+                            else:
+                                await ledger.prepare(
+                                    actual.route.plan.execution.plan_id,
+                                    cancel=CancelToken(),
+                                    checkpoint=lambda: None,
+                                )
+                    assert caught.value.code == "git_prepared_link_changed"
+                    assert db.in_transaction and _rows(db) == sealed
+                    db.execute("ROLLBACK")
+                    await _persisted(actual, sealed)
 
     await _case(tmp_path, config, monkeypatch, inspect)
 
@@ -103,83 +105,87 @@ async def test_original_session_commit_after_actual_authentication_is_rejected(
 async def test_final_history_await_cas_and_review_changes_are_rejected(
     tmp_path, config, monkeypatch
 ):
-    """原 H2 完成后只移除 Git Commit 材料或破坏 Review，不能通过末端回读。"""
+    """原完整认证及 U 验证返回后移除 Git Commit 材料或破坏 Review，末端必须拒绝。"""
 
     async def inspect(actual):
-        with _business_unchanged(actual), _database(actual) as db:
-            link, sealed = await _sealed(actual, db)
-            session = actual.scenario.session
-            material = next(
-                node.material
-                for node in link.plan.core.object_scope.objects
-                if node.material.object_type == "commit"
-            )
-            path = actual.scenario.transactions._blobs / material.cas_digest
-            moved = path.with_name(path.name + ".terminal-missing")
-            ref = link.plan.review_artifact
-            with closing(sqlite3.connect(session.path)) as read:
-                body = read.execute(
-                    "SELECT body FROM agent_artifacts WHERE artifact_id=?", (str(ref.artifact_id),)
-                ).fetchone()[0]
-            for fault in ("cas", "review"):
-                for operation in ("read", "prepare"):
-                    history = session.authenticated_thread_history
-                    visited = []
-                    last_history = 2 if operation == "read" else 4
+        with _business_unchanged(actual):
+            async with _database(actual) as db:
+                link, sealed = await _sealed(actual, db)
+                session = actual.scenario.session
+                material = next(
+                    node.material
+                    for node in link.plan.core.object_scope.objects
+                    if node.material.object_type == "commit"
+                )
+                path = actual.scenario.transactions._blobs / material.cas_digest
+                moved = path.with_name(path.name + ".terminal-missing")
+                ref = link.plan.review_artifact
+                with closing(sqlite3.connect(session.path)) as read:
+                    body = read.execute(
+                        "SELECT body FROM agent_artifacts WHERE artifact_id=?",
+                        (str(ref.artifact_id),),
+                    ).fetchone()[0]
+                authenticate = module._authenticate
+                for fault in ("cas", "review"):
+                    for operation in ("read", "prepare"):
+                        visited = []
+                        last_authentication = 1 if operation == "read" else 2
 
-                    async def changed(
-                        *args,
-                        history=history,
-                        fault=fault,
-                        visited=visited,
-                        last_history=last_history,
-                        **kwargs,
-                    ):
-                        result = await history(*args, **kwargs)
-                        visited.append(True)
-                        if len(visited) == last_history:
+                        async def after_last_authentication(
+                            *args,
+                            fault=fault,
+                            visited=visited,
+                            last_authentication=last_authentication,
+                            **kwargs,
+                        ):
+                            evidence = await authenticate(*args, **kwargs)
+                            visited.append(True)
+                            if len(visited) == last_authentication:
+                                # 单条关联回读一次，精确重试再认证目标；完整 U 已验证成功。
+                                if fault == "cas":
+                                    path.rename(moved)
+                                else:
+                                    with closing(sqlite3.connect(session.path)) as write:
+                                        write.execute(
+                                            "UPDATE agent_artifacts SET body=? WHERE artifact_id=?",
+                                            (b"X" + body[1:], str(ref.artifact_id)),
+                                        )
+                                        write.commit()
+                            return evidence
+
+                        db.execute("BEGIN IMMEDIATE")
+                        changes = db.total_changes
+                        try:
+                            with monkeypatch.context() as patch:
+                                patch.setattr(module, "_authenticate", after_last_authentication)
+                                ledger = _ledger(actual, db)
+                                with pytest.raises(KernelError):
+                                    if operation == "read":
+                                        await ledger.read_all(
+                                            cancel=CancelToken(), checkpoint=lambda: None
+                                        )
+                                    else:
+                                        await ledger.prepare(
+                                            actual.route.plan.execution.plan_id,
+                                            cancel=CancelToken(),
+                                            checkpoint=lambda: None,
+                                        )
+                            assert len(visited) == last_authentication
+                            assert db.in_transaction and _rows(db) == sealed
+                            assert db.total_changes == changes
+                        finally:
+                            db.execute("ROLLBACK")
                             if fault == "cas":
-                                path.rename(moved)
+                                assert moved.is_file() and not path.exists()
+                                moved.rename(path)
                             else:
                                 with closing(sqlite3.connect(session.path)) as write:
                                     write.execute(
                                         "UPDATE agent_artifacts SET body=? WHERE artifact_id=?",
-                                        (b"X" + body[1:], str(ref.artifact_id)),
+                                        (body, str(ref.artifact_id)),
                                     )
                                     write.commit()
-                        return result
-
-                    db.execute("BEGIN IMMEDIATE")
-                    try:
-                        with monkeypatch.context() as patch:
-                            patch.setattr(session, "authenticated_thread_history", changed)
-                            ledger = _ledger(actual, db)
-                            with pytest.raises(KernelError):
-                                if operation == "read":
-                                    await ledger.read_all(
-                                        cancel=CancelToken(), checkpoint=lambda: None
-                                    )
-                                else:
-                                    await ledger.prepare(
-                                        actual.route.plan.execution.plan_id,
-                                        cancel=CancelToken(),
-                                        checkpoint=lambda: None,
-                                    )
-                        assert len(visited) == last_history
-                        assert db.in_transaction and _rows(db) == sealed
-                    finally:
-                        db.execute("ROLLBACK")
-                        if fault == "cas":
-                            assert moved.is_file() and not path.exists()
-                            moved.rename(path)
-                        else:
-                            with closing(sqlite3.connect(session.path)) as write:
-                                write.execute(
-                                    "UPDATE agent_artifacts SET body=? WHERE artifact_id=?",
-                                    (body, str(ref.artifact_id)),
-                                )
-                                write.commit()
-                    _persisted(actual, sealed)
+                        await _persisted(actual, sealed)
 
     await _case(tmp_path, config, monkeypatch, inspect)
 
@@ -190,36 +196,37 @@ async def test_anchor_only_write_and_restore_after_authentication_is_rejected(
     """仅同连接尾锚写后还原也必须拒绝，不能只比较十二个业务表的最终字节。"""
 
     async def inspect(actual):
-        with _business_unchanged(actual), _database(actual) as db:
-            _link, sealed = await _sealed(actual, db)
-            original = module._authenticate
+        with _business_unchanged(actual):
+            async with _database(actual) as db:
+                _link, sealed = await _sealed(actual, db)
+                original = module._authenticate
 
-            async def changed(*args, **kwargs):
-                evidence = await original(*args, **kwargs)
-                db.execute("UPDATE git_prefix_anchor SET revision=revision+1")
-                db.execute("UPDATE git_prefix_anchor SET revision=revision-1")
-                return evidence
+                async def changed(*args, **kwargs):
+                    evidence = await original(*args, **kwargs)
+                    db.execute("UPDATE git_prefix_anchor SET revision=revision+1")
+                    db.execute("UPDATE git_prefix_anchor SET revision=revision-1")
+                    return evidence
 
-            for operation in ("read", "prepare"):
-                db.execute("BEGIN IMMEDIATE")
-                changes = db.total_changes
-                with monkeypatch.context() as patch:
-                    patch.setattr(module, "_authenticate", changed)
-                    ledger = _ledger(actual, db)
-                    with pytest.raises(KernelError) as caught:
-                        if operation == "read":
-                            await ledger.read_all(cancel=CancelToken(), checkpoint=lambda: None)
-                        else:
-                            await ledger.prepare(
-                                actual.route.plan.execution.plan_id,
-                                cancel=CancelToken(),
-                                checkpoint=lambda: None,
-                            )
-                assert caught.value.code == "git_prepared_link_changed"
-                assert db.in_transaction and _rows(db) == sealed
-                assert db.total_changes == changes + 2
-                db.execute("ROLLBACK")
-                _persisted(actual, sealed)
+                for operation in ("read", "prepare"):
+                    db.execute("BEGIN IMMEDIATE")
+                    changes = db.total_changes
+                    with monkeypatch.context() as patch:
+                        patch.setattr(module, "_authenticate", changed)
+                        ledger = _ledger(actual, db)
+                        with pytest.raises(KernelError) as caught:
+                            if operation == "read":
+                                await ledger.read_all(cancel=CancelToken(), checkpoint=lambda: None)
+                            else:
+                                await ledger.prepare(
+                                    actual.route.plan.execution.plan_id,
+                                    cancel=CancelToken(),
+                                    checkpoint=lambda: None,
+                                )
+                    assert caught.value.code == "git_prepared_link_changed"
+                    assert db.in_transaction and _rows(db) == sealed
+                    assert db.total_changes == changes + 2
+                    db.execute("ROLLBACK")
+                    await _persisted(actual, sealed)
 
     await _case(tmp_path, config, monkeypatch, inspect)
 
@@ -230,44 +237,45 @@ async def test_last_external_sql_callback_cancel_or_expiry_cannot_return_success
     """在原 SQL 窗口正常退出的最后一次外部回调注入，不提前取消以掩盖空窗。"""
 
     async def inspect(actual):
-        with _business_unchanged(actual), _database(actual) as db:
-            _link, sealed = await _sealed(actual, db)
-            original_window, authenticate = module.git_prefix_sql_window, module._authenticate
-            for fault in ("cancel", "deadline"):
-                token, controls = CancelToken(), {}
+        with _business_unchanged(actual):
+            async with _database(actual) as db:
+                _link, sealed = await _sealed(actual, db)
+                original_window, authenticate = module.git_prefix_sql_window, module._authenticate
+                for fault in ("cancel", "deadline"):
+                    token, controls = CancelToken(), {}
 
-                async def capture(*args, controls=controls, **kwargs):
-                    controls["budget"] = args[3]
-                    return await authenticate(*args, **kwargs)
+                    async def capture(*args, controls=controls, **kwargs):
+                        controls["budget"] = args[3]
+                        return await authenticate(*args, **kwargs)
 
-                @contextmanager
-                def final_callback(database, *, checkpoint, controls=controls):
-                    with original_window(database, checkpoint=checkpoint):
-                        yield
-                        controls["last_external_callback"] = True
+                    @contextmanager
+                    def final_callback(database, *, checkpoint, controls=controls):
+                        with original_window(database, checkpoint=checkpoint):
+                            yield
+                            controls["last_external_callback"] = True
 
-                def checkpoint(controls=controls, fault=fault, token=token):
-                    if controls.pop("last_external_callback", False):
-                        controls["injected"] = True
-                        if fault == "cancel":
-                            token.cancel()
-                        else:
-                            controls["budget"]._deadline = 0
+                    def checkpoint(controls=controls, fault=fault, token=token):
+                        if controls.pop("last_external_callback", False):
+                            controls["injected"] = True
+                            if fault == "cancel":
+                                token.cancel()
+                            else:
+                                controls["budget"]._deadline = 0
 
-                db.execute("BEGIN IMMEDIATE")
-                with monkeypatch.context() as patch:
-                    patch.setattr(module, "git_prefix_sql_window", final_callback)
-                    patch.setattr(module, "_authenticate", capture)
-                    with pytest.raises(
-                        TurnCancelled if fault == "cancel" else KernelError
-                    ) as caught:
-                        await _ledger(actual, db).read_all(cancel=token, checkpoint=checkpoint)
-                if fault == "deadline":
-                    assert caught.value.code == "git_process_timeout"
-                assert controls["injected"]
-                assert db.in_transaction and _rows(db) == sealed
-                db.execute("ROLLBACK")
-                _persisted(actual, sealed)
+                    db.execute("BEGIN IMMEDIATE")
+                    with monkeypatch.context() as patch:
+                        patch.setattr(module, "git_prefix_sql_window", final_callback)
+                        patch.setattr(module, "_authenticate", capture)
+                        with pytest.raises(
+                            TurnCancelled if fault == "cancel" else KernelError
+                        ) as caught:
+                            await _ledger(actual, db).read_all(cancel=token, checkpoint=checkpoint)
+                    if fault == "deadline":
+                        assert caught.value.code == "git_process_timeout"
+                    assert controls["injected"]
+                    assert db.in_transaction and _rows(db) == sealed
+                    db.execute("ROLLBACK")
+                    await _persisted(actual, sealed)
 
     await _case(tmp_path, config, monkeypatch, inspect)
 

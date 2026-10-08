@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
 owners: [core]
 modules: [agent, product_config]
@@ -9,6 +9,7 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
   - tests/agent/test_runtime_thread_lock.py
+  - tests/agent/test_runtime_thread_lock_observer.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_approval_crash_recovery.py
 supersedes: []
@@ -21,6 +22,10 @@ supersedes: []
 本切片为原 Runtime 的进程内 Thread 锁记录实际持有 Task，提供同步私有归属检查。
 不新增执行权限或持久字段，不装配默认 Git Writer，不把该原语称为完整 B7 关闭。
 原 `_lock(thread_id)` 返回类型与异步上下文调用方式保持兼容；锁仍属于同一 Runtime 的同一 Thread。
+`observe_owner()`另提供同次持锁的只读观察：仅当前持有者可以签发，冻结原 Task 和每次 acquire 的独立代际。
+它允许受管验证子 Task 观察父 Task 仍持原锁，不授予当前 Task 持有者权限或 SQL 能力；
+释放后同 Task 重新 acquire 也永久撤销旧观察。实际消费者见
+[Git 原 Runtime Thread 绑定](m09-r4-git-runtime-thread-scope.md)。
 
 ## 2. 需求背景与源码研究
 
@@ -98,6 +103,7 @@ sequenceDiagram
 |---|---|
 | `RuntimeThreadLock.acquire()` | 等待标准 Lock；成功后绑定实际 `asyncio.current_task()` |
 | `require_current_owner()` | 原锁必须被持有且当前 Task 就是记录的原持有者，否则拒绝 |
+| `observe_owner()` | 原持有者签发只读闭包，冻结原 Task 和本次独立 acquire 代际；不授予持锁权限 |
 | `release()` | 先核对当前持有者，再释放原锁并清空 Task 引用 |
 | `AgentRuntime._lock(thread_id)` | 复用或建立 Runtime 原集合成员；保留原 `asyncio.Lock` 返回类型 |
 | `AgentRuntime._require_thread_lock(thread_id)` | 只检查该 Runtime 已登记的实际成员，不建立锁、不消费外来证明 |
@@ -107,7 +113,9 @@ sequenceDiagram
 ## 8. 数据结构、重点字段与数据流程
 
 `_locks: dict[UUID, RuntimeThreadLock]`将 Thread 身份绑定到原实例。
-每个锁只有一个当前 Task 引用，空值表示没有成功持有者，不能解释为“任意 Task 可以释放”。
+每个锁保存当前 Task 引用及 `_owner_generation: object | None`。
+每次成功 acquire 新建独立对象代际；等待取消不改写它，release 同时清空两字段。
+空值表示没有成功持有者，不能解释为“任意 Task 可以释放”。
 Task 比较为实例身份，不使用 Task 名称、整数 ID、ContextVar 字符串或调用方声明。
 状态流为未持有→标准 acquire 成功／原 Task 记录→检查→原 Task release／引用清空。
 等待者不进入该状态机的持有者字段，不能通过等待或取消改变原持有者。

@@ -38,7 +38,9 @@ async def test_last_callback_return_binding(case, tmp_path, monkeypatch, kind, m
         yield lambda: None
 
     monkeypatch.setattr(ledger, "require_git_review_host", lambda *args: lambda: None)
-    monkeypatch.setattr(ledger, "require_prepared_git_connection", lambda *args, **kwargs: None)
+    # 仅隔离来源依赖以验证返回绑定；此替身不是原连接或 Runtime 锁的认证正控。
+    monkeypatch.setattr(ledger, "_prepared_git_connection_observer", lambda *args: lambda: None)
+    monkeypatch.setattr(ledger, "_prepared_runtime_thread_observer", lambda *args: lambda: None)
     monkeypatch.setattr(ledger, "observe_prepared_state", unchanged)
 
     async def read_all(resources, cancel, budget, check, read_set):

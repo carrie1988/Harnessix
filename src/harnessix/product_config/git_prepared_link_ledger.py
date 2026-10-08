@@ -41,6 +41,10 @@ from harnessix.product_config.git_prepared_link_rows import (
     read_prepared_link_rows,
 )
 from harnessix.product_config.git_prepared_link_wire import encode_product_git_prepared_link
+from harnessix.product_config.git_prepared_runtime_thread import (
+    _prepared_runtime_thread_observer,
+    require_prepared_git_runtime_thread,
+)
 from harnessix.product_config.git_user_observation import verify_product_git_user_observation
 from harnessix.session.git_publication_contracts import GitDeliveryRecordClaims
 from harnessix.tools.git import GitReadRuntime
@@ -128,6 +132,7 @@ def _control(
     database, state = ledger._database, ledger._artifacts.session.path.parent
     path = state / "git-delivery" / "git-delivery.db"
     observe_connection = _prepared_git_connection_observer(database, path)
+    observe_thread = _prepared_runtime_thread_observer(database, ledger._router, ledger._artifacts)
 
     with observe_prepared_state(ledger._router, ledger._core_store, ledger._artifacts) as unchanged:
         epoch: tuple[object, int] | None = None
@@ -138,6 +143,7 @@ def _control(
             host()
             # 受管U验证子Task只复核来源；SQL消费与发布仍由原Task窗口准入。
             observe_connection()
+            observe_thread()
             unchanged()
             if any(a is not b for a, b in zip(vars(ledger).values(), references, strict=True)):
                 raise prepared_link_changed()
@@ -266,6 +272,7 @@ async def _prepare(
     anchor = database.execute("SELECT * FROM git_prefix_anchor").fetchone()
     evidence = await _authenticate(ledger, route_id, cancel, budget, check)
     link = evidence.link
+    require_prepared_git_runtime_thread(database, link.plan.core.thread_id)
     read_set.evidence[route_id] = evidence
     if (
         changes != database.total_changes

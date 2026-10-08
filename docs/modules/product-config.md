@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 90
+version: 91
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -2789,3 +2789,20 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 完整架构、时序、字段和失败恢复见[详设](../changes/m09-r4-git-connection-ownership.md)，
 候选绑定及实际SDK正控见[交付报告](../validation/r3-r4-connection-boundaries-2026-10-08-v1/README.md)。
 Task身份不是持锁证明，路径pin不是FD证明；本切片不关闭B4/B7/P1，不装配默认Git写工具。
+
+## Git 原 Runtime Thread 临界区绑定
+
+[`bind_prepared_git_runtime_thread`](../../src/harnessix/product_config/git_prepared_runtime_thread.py)
+要求原 Task 已持实际 Runtime 的原 Thread 锁，并使用原连接工厂的活动登记连接。
+该 context 冻结原 Runtime／Owner、Session、TrustedActionSessionState 的原 bound lock factory、
+原 Gateway／Router、Artifact 及持锁代际。调用方窗口覆盖事务的 BEGIN、业务认证和 COMMIT／ROLLBACK，
+不由绑定组件自动获取锁、提交、回滚或重开资源。
+
+Ledger `_control`、HistoryReader `read_all/read_decided`强制消费上述登记。
+原 Task 签发的观察闭包允许受管 U 子 Task 检查原父 Task 的同次持锁，
+但新窗口、SQL 消费及发布仍只准入原 Task。释放后重新 acquire、替换原锁或装配引用均拒绝。
+prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证，不能借当前 Thread 筛掉其他行。
+
+架构、字段、时序、失败与恢复及核心伪代码见[总体与详细设计](../changes/m09-r4-git-runtime-thread-scope.md)。
+不改通用 Runtime prepare/execute/cancel，不对任意裸 `sqlite3.execute` 安装权限拦截，
+不关闭 SQLite FD、B4、P1、全部 dispatch 或完整 B7，不装配默认 Git Writer。

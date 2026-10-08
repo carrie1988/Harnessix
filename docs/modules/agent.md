@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 25
+version: 26
 code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
 owners:
   - core
@@ -42,7 +42,11 @@ supersedes: []
 原 Runtime 的 Thread 锁现采用实际 Task 归属检查，沿原 acquire／release 记录持有者，
 不以 `locked()`布尔值代替当前 Task 来源。原 `_lock`上下文接口保持；私有检查不创建锁，
 不产生批准或执行权。详见[锁归属总体及详细设计](../changes/m09-r4-runtime-thread-lock-ownership.md)。
-该原语不是完整 Git 宿主临界区、SQLite FD 或 R4 验收。
+`observe_owner()`仅由当前持锁 Task 签发，冻结原 Task 和每次 acquire 的独立对象代际。
+受管子 Task 可检查父 Task 原持锁生命周期，不因此获得当前持有者或释放权限；
+释放后即使同 Task 重新获取也不能恢复旧观察函数。
+Git 消费者接线见[原 Runtime Thread 绑定](../changes/m09-r4-git-runtime-thread-scope.md)。
+该原语不是完整 Git dispatch、SQLite FD 或 R4 验收；通用执行及取消顺序未改变。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 

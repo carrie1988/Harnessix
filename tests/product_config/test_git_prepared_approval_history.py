@@ -36,7 +36,7 @@ def _reader(actual, database):
 
 
 async def _prepared(actual):
-    with _database(actual) as database:
+    async with _database(actual) as database:
         await _genesis(actual, database)
         database.execute("BEGIN IMMEDIATE")
         link = await _ledger(actual, database).prepare(
@@ -93,7 +93,7 @@ async def test_original_sdk_history_read_only_and_old_pending_reader_unchanged(
         history = await _history(actual)
         source = _source_snapshot(scenario.root)
         unchanged = scenario.unchanged_state()
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             result = await _reader(actual, database).read_all(
                 cancel=CancelToken(), checkpoint=lambda: None
@@ -143,7 +143,7 @@ async def test_original_router_first_window_rejected_then_original_sync_recovery
             ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="original-recovery"),
         )
         before = await _history(actual)
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             with pytest.raises(KernelError) as caught:
                 await _reader(actual, database).read_all(
@@ -155,7 +155,7 @@ async def test_original_router_first_window_rejected_then_original_sync_recovery
         await actions.sync_decision(actual.thread.thread_id, actual.turn.turn_id)
         after_sync = await _history(actual)
         assert after_sync != before
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             result = await _reader(actual, database).read_all(
                 cancel=CancelToken(), checkpoint=lambda: None
@@ -187,7 +187,7 @@ async def test_original_upstream_checkpoint_exception_instances_preserved(
             def checkpoint(original=sentinel):
                 raise original
 
-            with _database(actual, read_only=True) as database:
+            async with _database(actual, read_only=True) as database:
                 database.execute("BEGIN")
                 with pytest.raises(type(sentinel)) as caught:
                     await _reader(actual, database).read_all(
@@ -228,7 +228,7 @@ async def test_last_upstream_callback_same_value_original_write_is_rejected(
                     "UPDATE workspace_transaction_events SET payload=payload"
                 ).close()
 
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             with pytest.raises(KernelError) as caught:
                 await _reader(actual, database).read_all(
@@ -259,7 +259,7 @@ async def test_terminal_does_not_reenter_execution_shared_checkpoint(tmp_path, c
             original()
 
         monkeypatch.setattr(plans, "_checkpoint", shared_checkpoint)
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             result = await _reader(actual, database).read_all(
                 cancel=CancelToken(), checkpoint=lambda: None
@@ -279,7 +279,7 @@ async def test_all_original_git_mac_checked_before_history_interpretation(
 
     async def inspect(actual):
         await _prepared(actual)
-        with _database(actual) as database:
+        async with _database(actual) as database:
             with git_prefix_sql_window(database, checkpoint=lambda: None):
                 database.execute("BEGIN IMMEDIATE")
                 database.execute("UPDATE git_product_links SET payload=payload || ' '")
@@ -290,7 +290,7 @@ async def test_all_original_git_mac_checked_before_history_interpretation(
 
         monkeypatch.setattr(module, "read_original_approval_evidence", must_not_interpret)
         history = await _history(actual)
-        with _database(actual, read_only=True) as database:
+        async with _database(actual, read_only=True) as database:
             database.execute("BEGIN")
             damaged = _rows(database)
             with pytest.raises(KernelError):
