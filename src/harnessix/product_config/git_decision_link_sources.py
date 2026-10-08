@@ -19,6 +19,7 @@ from harnessix.product_config.git_decision_link_contracts import (
     ProductGitCancelledLink,
     ProductGitDeniedLink,
 )
+from harnessix.product_config.git_delivery_plan_snapshot import _snapshot
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
 from harnessix.product_config.git_prepared_link_proof import PreparedLinkEvidence
 from harnessix.product_config.git_prepared_link_wire import encode_product_git_prepared_link
@@ -73,6 +74,13 @@ def session_event_refs(
             or event.event_id in result
         ):
             raise _changed()
+        # 按原字段和原联合 Schema 验真；旧版本 serializer 会隐藏字段，不能作为校验输入。
+        try:
+            _snapshot(event, AgentEvent, _native_checkpointer(checkpoint))
+        except UpstreamCheckpointError as error:
+            raise error.error from None
+        except KernelError:
+            raise _changed() from None
         result[event.event_id] = GitSessionEventRef(
             event_id=event.event_id, sequence=event.sequence, digest=ref.body_sha256
         )

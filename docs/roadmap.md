@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 228
+version: 229
 code_revision: 41037fde4915ef2537e7ca91ad29a93b83bfc29e
 owners:
   - core
@@ -2629,5 +2629,10 @@ P1 同步认证成本与事件循环响应仍为阻塞项，不通过放宽期�
 不变更正式依赖、连接或 Writer 装配。[B4 原生来源复核](changes/m09-r4-git-terminal-source-files.md)
 已新增内部接线与资源所有权，安装态单位集合 112 项通过、1 项原生 Windows 跳过；完整 SDK 六项通过；同一安装候选七个核心目录 2815 项通过、1 项原生 Windows 跳过。
 原同 Turn 连续两次消费的期限失败仍保留，独立正控通过不关闭 P1。
-完整 B4／COMMIT、B7、P1 及默认完整 Git 链仍为关键路径。
+已存决定的窄域只读 `read_linked_decision` 已实现，复用原资源规则，严格回读完整 prepared 前驱及唯一决定。
+原请求/等待/决定时间及坏的非目标正文与关联均拒绝；缺失决定不根据原批准补造。
+详见[决定设计](changes/m09-r4-git-approved-link.md#75-已存决定的实际只读回读)。
+同一非 editable 安装候选完成实际 SDK 九项（新增回读五项、旧入口四项）、相关原语／来源回归 406 项、七核心目录 2815 项；核心集合另有 1 项原生 Windows 平台跳过。
+这些集合不合并为独立总数，不替代 Windows／Linux 实机、响应性或完整商用验收。
+该进展不包含生产 Writer 或恢复屏障；完整 B4／COMMIT、B7、P1 及默认完整 Git 链仍为关键路径。
 真实R3评分与Beta接受数不据组件回归提高，非阻塞首发工作仍不扩张。

@@ -25,10 +25,15 @@ from harnessix.product_config.git_decision_link_contracts import (
     ProductGitDeniedLink,
     snapshot_product_git_decision_link,
 )
+from harnessix.product_config.git_decision_link_rows import (
+    GitLinkHistory,
+    link_history_changed,
+    read_git_link_history_rows,
+)
 from harnessix.product_config.git_decision_link_sources import build_git_decision_link_sources
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_delivery_process import GitOperationBudget
-from harnessix.product_config.git_prefix_rows import capture_git_prefix_rows
+from harnessix.product_config.git_prefix_rows import GitPrefixRows, capture_git_prefix_rows
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
 from harnessix.product_config.git_prepared_link_ledger import ProductGitPreparedLinkLedger, _control
 from harnessix.product_config.git_prepared_link_observation import PreparedLinkReadSet
@@ -92,6 +97,7 @@ class _DecidedReadSet(_ApprovalReadSet):
     validated_result: (
         ProductGitApprovedLink | ProductGitDeniedLink | ProductGitCancelledLink | None
     ) = field(default=None, repr=False)
+    linked: tuple[GitLinkHistory, ...] = field(default=(), repr=False)
 
     def terminal(
         self,
@@ -106,6 +112,17 @@ class _DecidedReadSet(_ApprovalReadSet):
         super(_DecidedReadSet, self).terminal(
             router, core_store, artifacts, ports, workspace_scope, check
         )
+        # 所有已存决定都须匹配同次原来源，包括未被请求的关联。
+        for history in self.linked:
+            check()
+            if history.decision is not None:
+                route_id = history.prepared.plan.route.execution.plan_id
+                evidence = self.approvals.get(route_id)
+                actual = snapshot_product_git_decision_link(history.decision, checkpoint=check)
+                if evidence is None or actual != build_git_decision_link_sources(
+                    evidence, checkpoint=check
+                ):
+                    raise link_history_changed()
         if self.declaration is None:
             raise KernelError("git_decision_source_changed", "Git决定返回来源发生变化")
         route_id, result = self.declaration
@@ -121,7 +138,7 @@ class _DecidedReadSet(_ApprovalReadSet):
 
 
 class ProductGitPreparedApprovalHistoryReader:
-    """复用原 Ledger 控制窗口但不暴露其 prepare；仅读 sequence 0 全部关联。"""
+    """复用原 Ledger 控制窗口，只读原审批及决定；不暴露 prepare 或发布能力。"""
 
     def __init__(
         self,
@@ -197,6 +214,42 @@ class ProductGitPreparedApprovalHistoryReader:
             raise KernelError("git_decision_source_changed", "Git决定返回来源发生变化")
         return read_set.validated_result
 
+    async def read_linked_decision(
+        self, route_id: UUID, *, cancel: CancelToken, checkpoint: Callable[[], None]
+    ) -> ProductGitApprovedLink | ProductGitDeniedLink | ProductGitCancelledLink:
+        """回读已存 sequence 1 并核对全部原来源；缺失时不由原批准补造或补签。"""
+        if type(route_id) is not UUID:
+            raise KernelError("git_decision_source_invalid", "Git决定来源定位无效")
+        resources = self._resources
+        await asyncio.sleep(0)
+        budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
+        read_set = _DecidedReadSet()
+        with _control(resources, cancel, budget, checkpoint, read_set) as check:
+            timeout = asyncio.timeout(budget.remaining())
+            try:
+                async with timeout:
+                    histories = await _read_linked_all(resources, cancel, budget, check, read_set)
+                    decision = next(
+                        (
+                            history.decision
+                            for history in histories
+                            if history.prepared.plan.route.execution.plan_id == route_id
+                        ),
+                        None,
+                    )
+                    if decision is None:
+                        raise KernelError("git_decision_link_missing", "Git原决定尚未关联")
+                    read_set.linked = histories
+                    read_set.declaration = (route_id, decision)
+                    check()
+            except TimeoutError:
+                if timeout.expired():
+                    raise KernelError("git_process_timeout", "Git决定关联总期限已耗尽") from None
+                raise
+        if read_set.validated_result is None:
+            raise link_history_changed()
+        return read_set.validated_result
+
 
 async def _read_all(
     resources: ProductGitPreparedLinkLedger,
@@ -214,35 +267,88 @@ async def _read_all(
     prepared, rows = read_prepared_link_rows(database, publication, checkpoint=check)
     result = []
     for link in prepared:
-        evidence = await read_original_approval_evidence(
-            link,
-            resources._router,
-            resources._core_store,
-            resources._artifacts,
-            resources._ports,
-            resources._workspace_scope,
-            cancel=cancel,
-            budget=budget,
-            checkpoint=check,
-        )
-        await verify_product_git_user_observation(
-            link.plan.core.user_observation,
-            evidence.materials.history,
-            resources._router,
-            resources._core_store.store,
-            resources._reader,
-            session=resources._artifacts.session,
-            cancel=cancel,
-            budget=budget,
-            checkpoint=check,
-            snapshot_ports=resources._ports,
-            source_scope=read_set.source_scope,
-        )
-        check()
-        route_id = link.plan.route.execution.plan_id
-        read_set.evidence[route_id] = evidence.materials
-        read_set.approvals[route_id] = evidence
+        evidence = await _read_evidence(resources, link, cancel, budget, check, read_set)
         result.append(OriginalGitPreparedApprovalHistory(link, evidence.projection))
+    _complete_read(resources, rows, anchor, changes, check, read_set)
+    return tuple(result)
+
+
+async def _read_evidence(
+    resources: ProductGitPreparedLinkLedger,
+    link: ProductGitPreparedLink,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    check: Callable[[], None],
+    read_set: _ApprovalReadSet,
+) -> ApprovalHistoryEvidence:
+    """两种物理入口共用原审批、材料、Review、U 全集认证，不重捕获或准备。"""
+    evidence = await read_original_approval_evidence(
+        link,
+        resources._router,
+        resources._core_store,
+        resources._artifacts,
+        resources._ports,
+        resources._workspace_scope,
+        cancel=cancel,
+        budget=budget,
+        checkpoint=check,
+    )
+    await verify_product_git_user_observation(
+        link.plan.core.user_observation,
+        evidence.materials.history,
+        resources._router,
+        resources._core_store.store,
+        resources._reader,
+        session=resources._artifacts.session,
+        cancel=cancel,
+        budget=budget,
+        checkpoint=check,
+        snapshot_ports=resources._ports,
+        source_scope=read_set.source_scope,
+    )
+    check()
+    route_id = link.plan.route.execution.plan_id
+    read_set.evidence[route_id] = evidence.materials
+    read_set.approvals[route_id] = evidence
+    return evidence
+
+
+async def _read_linked_all(
+    resources: ProductGitPreparedLinkLedger,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    check: Callable[[], None],
+    read_set: _ApprovalReadSet,
+) -> tuple[GitLinkHistory, ...]:
+    """全部物理关联先验真，再逐关联核对原业务；坏的非目标决定同样拒绝。"""
+    publication = resources._artifacts.session._publication
+    assert publication is not None
+    database = resources._database
+    changes = database.total_changes
+    anchor = database.execute("SELECT * FROM git_prefix_anchor").fetchone()
+    histories, rows = read_git_link_history_rows(database, publication, checkpoint=check)
+    for history in histories:
+        evidence = await _read_evidence(
+            resources, history.prepared, cancel, budget, check, read_set
+        )
+        if history.decision is not None and history.decision != build_git_decision_link_sources(
+            evidence, checkpoint=check
+        ):
+            raise link_history_changed()
+    _complete_read(resources, rows, anchor, changes, check, read_set)
+    return histories
+
+
+def _complete_read(
+    resources: ProductGitPreparedLinkLedger,
+    rows: GitPrefixRows,
+    anchor: tuple[object, ...] | None,
+    changes: int,
+    check: Callable[[], None],
+    read_set: _ApprovalReadSet,
+) -> None:
+    """跨 await 后原全行、尾锚及同连接写计数必须不变，最后由原终端再次消费。"""
+    database = resources._database
     if (
         database.total_changes != changes
         or database.execute("SELECT * FROM git_prefix_anchor").fetchone() != anchor
@@ -251,4 +357,3 @@ async def _read_all(
         raise prepared_link_changed()
     read_set.complete(rows, anchor, changes)
     check()
-    return tuple(result)

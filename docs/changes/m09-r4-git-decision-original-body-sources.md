@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 2
+version: 3
 code_revision: ad4bb6425e1b25d4dbf1d546c5d6d64c256a2958
 owners: [core]
 modules: [session, product_config]
@@ -99,9 +99,12 @@ flowchart LR
 | 保留所有事件正文/Seal | 重复正文、扩大敏感材料及内存面 | 拒绝 |
 | 同次读取保留小型不可变定位元组 | 复用实际已核验字节，无额外 SQL；增加每事件元数据 | 采用 |
 
+原事件字段在定位映射前沿 `_snapshot` 原字段快照及原 `AgentEvent` 严格 Schema 验证，坏的非目标正文、UUID 子类及旧版本非法字段均拒绝。不能借会隐去字段的 serializer 投影替代原对象校验；该验证不得用于重算来源摘要。
+已存决定的新增只读入口及跨域时序见[决定设计第 7.5 节](m09-r4-git-approved-link.md#75-已存决定的实际只读回读)。
+
 ### 5.1 原资源只读入口
 
-[`ProductGitPreparedApprovalHistoryReader.read_decided`](../../src/harnessix/product_config/git_prepared_approval_history.py#L167)
+[`ProductGitPreparedApprovalHistoryReader.read_decided`](../../src/harnessix/product_config/git_prepared_approval_history.py#L184)
 复用既有 `_resources`、`_control`、`_ApprovalReadSet` 和 `_read_all`。没有第二个 Store、锁表、缓存或批准状态机。
 先读取全部原 prepared 关联并完成原资源认证，再从同次私有集合选目标映射；目标不存在也不能跳过坏的其他关联。
 与接收普通 `ApprovalHistoryEvidence` 的纯 mapper 不同，该入口自己回读实际原资源；返回值仍是普通事实，
@@ -121,7 +124,7 @@ flowchart TD
     Fact -. 不授予 .-> Writer[正式Writer及执行权]
 ```
 
-保持原 `read_all`、构造器与所有既有顶层辅助函数的 AST，不因新入口放宽旧 pending Reader。
+保持原 `read_all` 输出、构造器及旧 pending Reader 合同。审批资源读取与完成边界抽取为共享私有 helper；不以 AST 字节相等代替行为回归。
 新入口不默认装配到 SDK/Protocol，也不是正式决定历史 Loader。
 
 仅原 `authenticated_thread_history` 请求累积定位，原 `authenticated_events` 的默认返回仍是事件列表。
@@ -308,7 +311,7 @@ build_decision_declaration_from_original_evidence():
 
 | 切片 | 验证 | 退出范围 |
 |---|---|---|
-| 原 Session 定位 | 真实 SQLite 原字节比对；禁止 AgentEvent 重编码；冻结、只读、两参兼容 | 只保证同次来源元数据 |
+| 原 Session 定位 | 真实 SQLite 原字节比对；禁止以 AgentEvent 重编码代替来源摘要；冻结、只读、两参兼容 | 只保证同次来源元数据 |
 | 原控制保持 | 原认证历史、事件 Seal、Store 回归；窄夹具 SQL/检查点与增量前采集比较 | 不宣称全 SDK 或 SLA |
 | Git 声明适配 | 三变体、pending 拒绝、缺失/混合/错序定位及原回调异常 | 只保证声明映射，不是来源认证 Proof |
 | 原资源入口 | 19项接线控制短测与12项末端绑定：三变体、missing/pending、异常身份、非原资源拒绝、期限归类；真实 SDK 单独记录 | 替身短测不是 MAC 或 SDK 通过证明 |
@@ -327,7 +330,7 @@ build_decision_declaration_from_original_evidence():
 | [git_approval_history_projection.py](../../src/harnessix/product_config/git_approval_history_projection.py) | 原请求/决定/取消完整语义 | [原投影回归](../../tests/product_config/test_git_approval_history_projection.py) |
 | [git_approval_history_proof.py](../../src/harnessix/product_config/git_approval_history_proof.py) | 原跨来源读集合与末端复核 | 后继正式 Proof 不得跳过该边界 |
 | [git_decision_link_sources.py](../../src/harnessix/product_config/git_decision_link_sources.py) | 原语义重放、完整定位、原前驱编码与闭合声明 | [51项纯映射负控](../../tests/product_config/test_git_decision_link_sources.py) |
-| [原历史 Reader](../../src/harnessix/product_config/git_prepared_approval_history.py#L167) | `read_decided` 全集原资源读取、同次选择与同步末端后返回 | [19项接线控制](../../tests/product_config/test_git_decided_source_reader.py)及[12项末端绑定](../../tests/product_config/test_git_decided_source_terminal.py)；真实 SDK 另立来源绑定 |
+| [原历史 Reader](../../src/harnessix/product_config/git_prepared_approval_history.py#L184) | `read_decided` 全集原资源读取、同次选择与同步末端后返回 | [19项接线控制](../../tests/product_config/test_git_decided_source_reader.py)及[12项末端绑定](../../tests/product_config/test_git_decided_source_terminal.py)；真实 SDK 另立来源绑定 |
 | [实际SDK测例](../../tests/product_config/test_git_decision_source_sdk.py) | 在原证据读取与末端全复核之间借同一父控制消费 approved 来源 | 不装配产品 Writer，不修改 linkage_state |
 
 ## 13. 风险、部署、兼容与回退
@@ -343,7 +346,7 @@ build_decision_declaration_from_original_evidence():
 ## 14. 实现偏差与最终结论
 
 原历史 Reader 已新增完整只读 `read_decided` 入口。主仓本次451唯一功能节点通过，包含19项新接线测试；
-原构造器、read_all 和所有旧辅助函数 AST 保持。最终同源码主仓SDK一次通过：完整夹具123.154秒、实际原资源批准读取与非目标MAC拒绝，读写计数0。
+前版验证中的构造器、read_all 和辅助函数 AST 保持只描述该固定版本，不要求后继实现复制业务规则。最终同源码主仓SDK一次通过：完整夹具123.154秒、实际原资源批准读取与非目标MAC拒绝，读写计数0。
 首次候选完整SDK117.454秒发生在末端返回Guard前，不替代最终版本；Apple Git初始化FAIL保持。
 独立审阅P2发现末次callback只改合法返回摘要仍能交付；新增私有读集合末端原来源重建与严格深快照关闭该三变体反例，
 第二个P2涉及合法副本重定向后返回旧别名，已改为原上下文完整退出后仅交付实际核验的新快照；独立最终AST探针确认闭环。

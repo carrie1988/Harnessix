@@ -985,3 +985,61 @@ def test_cancel_before_waiting_boundary_is_not_original_waiting_approval_cancel(
     events = [event for event in transcript.events if event is not waiting]
     events = [event.model_copy(update={"sequence": index}) for index, event in enumerate(events, 1)]
     reject(transcript, history=history_with(transcript, events))
+
+
+@pytest.mark.parametrize("outcome", [ApprovalOutcome.APPROVED, ApprovalOutcome.REJECTED])
+@pytest.mark.parametrize("boundary", ["request", "waiting"])
+def test_decision_cannot_predate_original_request_or_waiting(transcript, outcome, boundary):
+    waiting = next(
+        event
+        for event in transcript.events
+        if isinstance(event.payload, TurnStateChanged)
+        and event.payload.status is TurnStatus.WAITING_APPROVAL
+    )
+    origin = transcript.request if boundary == "request" else waiting
+    transcript.decide(outcome, at=origin.occurred_at - timedelta(microseconds=1))
+    # 原严格 Schema 和 Reducer 均允许该声明；跨域原审批链必须单独拒绝逆序时间。
+    for event in transcript.events:
+        assert AgentEvent.model_validate_json(event.model_dump_json(), strict=True) == event
+    reject(transcript)
+
+
+@pytest.mark.parametrize("outcome", [ApprovalOutcome.APPROVED, ApprovalOutcome.REJECTED])
+def test_initial_route_cannot_be_later_than_original_request(transcript, outcome):
+    transcript.decide(outcome)
+    first = build_audit_event(
+        transcript.case.plan.route,
+        sequence=1,
+        from_state=None,
+        to_state="pending_approval",
+        previous_digest=None,
+        occurred_at=transcript.request.occurred_at + timedelta(seconds=1),
+    )
+    last = build_audit_event(
+        transcript.case.plan.route,
+        sequence=2,
+        from_state="pending_approval",
+        to_state="ready" if outcome is ApprovalOutcome.APPROVED else "denied",
+        previous_digest=first.digest,
+        approval_outcome=outcome,
+        approval_actor=transcript.checkpoint.decision.actor,
+        error_code=None if outcome is ApprovalOutcome.APPROVED else "approval_rejected",
+        occurred_at=transcript.checkpoint.decision.decided_at,
+    )
+    transcript.route_events = (first, last)
+    transcript.route = transcript.route_snapshot()
+    reject(transcript)
+
+
+@pytest.mark.parametrize("outcome", [ApprovalOutcome.APPROVED, ApprovalOutcome.REJECTED])
+def test_equal_waiting_and_decision_time_keeps_original_clock_resolution(transcript, outcome):
+    waiting = next(
+        event
+        for event in transcript.events
+        if isinstance(event.payload, TurnStateChanged)
+        and event.payload.status is TurnStatus.WAITING_APPROVAL
+    )
+    transcript.decide(outcome, at=waiting.occurred_at)
+    assert transcript.interpret().state == (
+        "approved" if outcome is ApprovalOutcome.APPROVED else "denied"
+    )

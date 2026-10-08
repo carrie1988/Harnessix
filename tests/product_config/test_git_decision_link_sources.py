@@ -15,6 +15,7 @@ from harnessix.agent.models import (
     Thread,
     ThreadCreated,
 )
+from harnessix.agent.reducer import replay
 from harnessix.domain.models import ApprovalOutcome
 from harnessix.product_config.git_approval_history_proof import ApprovalHistoryEvidence
 from harnessix.product_config.git_decision_link_sources import (
@@ -208,6 +209,128 @@ def test_original_semantic_projection_is_replayed_not_trusted_by_state_label(cas
     forged = replace(evidence, materials=replace(evidence.materials, history=changed_history))
     with pytest.raises(KernelError):
         build_git_decision_link_sources(forged, checkpoint=lambda: None)
+
+
+def test_malformed_non_target_content_cannot_be_replayed_as_valid_original_history(case):
+    from harnessix.agent.models import ItemFinished, ItemStarted, TextContent
+
+    evidence = fixture(case, "approved")
+    history = evidence.materials.history
+    changed = []
+    for event in history.events:
+        payload = event.payload
+        if isinstance(payload, ItemStarted | ItemFinished) and isinstance(
+            payload.content, TextContent
+        ):
+            payload = payload.model_copy(
+                update={"content": payload.content.model_copy(update={"text": 123})}
+            )
+            event = event.model_copy(update={"payload": payload})
+        changed.append(event)
+    assert any(event != original for event, original in zip(changed, history.events, strict=True))
+    malformed = replace(history, thread=replay(tuple(changed)), events=tuple(changed))
+    forged = replace(evidence, materials=replace(evidence.materials, history=malformed))
+    with pytest.raises(KernelError):
+        build_git_decision_link_sources(forged, checkpoint=lambda: None)
+
+
+def test_foreign_identity_rejected_before_event_comparison(case):
+    evidence = fixture(case, "approved")
+    history = evidence.materials.history
+    calls = []
+
+    class FakeId(str):
+        def __eq__(self, other):
+            calls.append(other)
+            return True
+
+    event = history.events[0]
+    forged = replace(
+        history, events=(event.model_copy(update={"event_id": FakeId("fake")}), *history.events[1:])
+    )
+    with pytest.raises(KernelError):
+        session_event_refs(forged, checkpoint=lambda: None)
+    assert not calls
+
+
+def test_foreign_approval_identity_cannot_invoke_equality_in_replay(case):
+    from harnessix.agent.models import ItemStarted, TrustedActionApprovalRequestContent
+
+    evidence = fixture(case, "approved")
+    history = evidence.materials.history
+    calls = []
+
+    class FakeId(str):
+        def __eq__(self, other):
+            calls.append(other)
+            return True
+
+    events = list(history.events)
+    index = next(
+        index
+        for index, event in enumerate(events)
+        if isinstance(event.payload, ItemStarted)
+        and isinstance(event.payload.content, TrustedActionApprovalRequestContent)
+    )
+    payload = events[index].payload
+    content = payload.content.model_copy(update={"approval_id": FakeId("fake")})
+    events[index] = events[index].model_copy(
+        update={"payload": payload.model_copy(update={"content": content})}
+    )
+    with pytest.raises(KernelError):
+        session_event_refs(replace(history, events=tuple(events)), checkpoint=lambda: None)
+    assert not calls
+
+
+def test_original_budget_default_has_declared_float_type_without_changing_limit():
+    from harnessix.agent.models import Budget
+
+    budget = Budget()
+    assert type(budget.timeout_seconds) is float and budget.timeout_seconds == 120
+    assert Budget.model_validate({"timeout_seconds": 120}, strict=True) == budget
+
+
+def test_foreign_turn_identity_rejected_without_calling_its_comparison(case):
+    evidence = fixture(case, "approved")
+    history = evidence.materials.history
+    calls = []
+
+    class FakeUUID(UUID):
+        def __eq__(self, other):
+            calls.append(other)
+            return True
+
+        __hash__ = UUID.__hash__
+
+    events = list(history.events)
+    index = next(index for index, event in enumerate(events) if event.turn_id is not None)
+    events[index] = events[index].model_copy(update={"turn_id": FakeUUID(int=999)})
+    with pytest.raises(KernelError):
+        session_event_refs(replace(history, events=tuple(events)), checkpoint=lambda: None)
+    assert not calls
+
+
+def test_legacy_serializer_must_not_hide_disallowed_original_fields(case):
+    from harnessix.agent.models import TurnStateChanged
+
+    evidence = fixture(case, "approved")
+    history = evidence.materials.history
+    events = list(history.events)
+    index = next(
+        index for index, event in enumerate(events) if isinstance(event.payload, TurnStateChanged)
+    )
+    event = events[index]
+    events[index] = event.model_copy(
+        update={
+            "schema_version": 18,
+            "payload": event.payload.model_copy(update={"reason": "context_overflow"}),
+        }
+    )
+    # 旧 serializer 隐去 reason；校验该投影会错误地恢复 normal。
+    projected = AgentEvent.model_validate_json(events[index].model_dump_json(), strict=True)
+    assert projected.payload.reason == "normal"
+    with pytest.raises(KernelError):
+        session_event_refs(replace(history, events=tuple(events)), checkpoint=lambda: None)
 
 
 @pytest.mark.parametrize("stage", ["first", "inside", "last"])

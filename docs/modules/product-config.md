@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 92
+version: 93
 code_revision: 41037fde4915ef2537e7ca91ad29a93b83bfc29e
 owners:
   - core
@@ -19,6 +19,9 @@ related_tests:
   - tests/delivery/test_git_prefix_task_owner.py
   - tests/product_config/test_git_decided_source_reader.py
   - tests/product_config/test_git_decision_link_sources.py
+  - tests/product_config/test_git_decision_link_rows.py
+  - tests/product_config/test_git_linked_decision_reader.py
+  - tests/product_config/test_git_linked_decision_sdk.py
   - tests/product_config/test_git_decision_source_sdk.py
   - tests/product_config/test_git_decision_link_contracts.py
   - tests/product_config/test_git_authority_pure_paths.py
@@ -2711,8 +2714,7 @@ pending/approved 还要求原 Turn 当前未超时，不刷新原预算。
 
 ## 正式 Git 决定认证的待实施边界
 
-[approved-link 设计](../changes/m09-r4-git-approved-link.md)保持 `draft`；正式决定 Wire/Writer、全集决定 Reader/Proof
-与审批后/重启恢复屏障仍为 `planned`。B3 的只读依赖落地不产生 Git approved 事件，也不改变原 prepared 的 pending-only 合同。
+[approved-link 设计](../changes/m09-r4-git-approved-link.md)保持 `draft`；正式决定 Writer、发布 Proof 与审批后/重启恢复屏障仍为 `planned`；严格 Wire 和已存决定窄域只读 Reader 已实现。B3 的只读依赖落地不产生 Git approved 事件，也不改变原 prepared 的 pending-only 合同。
 决定事实接线必须显式复用原 Session/transactions/ports，不能重新准备或签发新材料继承原批准。
 B3 正式决定消费、B4、B7、P1 与 approved Writer 未闭合，不关闭默认 Git 写入、R3、三平台、独立 Beta 或 R1～R6 门禁。
 
@@ -2760,9 +2762,18 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 它发生于UUID比较前置整改前，最终纯负控覆盖收紧，未重复整链，不作为最终同候选SDK验收。
 这是测试内消费，产品Reader输出/`decision_not_linked`及默认装配不变。映射普通构造数据不认证MAC，Writer/恢复/B4/B7仍未完成。
 
+### 已存 Git 决定的来源核验
+
+[`read_linked_decision`](../../src/harnessix/product_config/git_prepared_approval_history.py#L217)
+借原全 Prefix/MAC/尾锚回读 prepared→决定，每个关联复用同一 `_read_evidence` 核对完整原审批及 U。
+缺失决定拒绝而不根据批准补造；坏的非目标决定拒绝全集，末端严格重建和新快照交付。
+原请求/Route/waiting/决定的跨域时间不可逆序，事件类型校验不改变原字节摘要。
+没有新 Store、签发权、SQL 写入、提交、Git 效果或默认装配。完整字段、失败与兼容边界见
+[决定设计第 7.5 节](../changes/m09-r4-git-approved-link.md#75-已存决定的实际只读回读)。
+
 ### 原资源已决定事实读取入口
 
-[`ProductGitPreparedApprovalHistoryReader.read_decided`](../../src/harnessix/product_config/git_prepared_approval_history.py#L167)
+[`ProductGitPreparedApprovalHistoryReader.read_decided`](../../src/harnessix/product_config/git_prepared_approval_history.py#L184)
 只接收原 Route UUID、CancelToken 和检查点。先复用全部原 Git MAC/尾锚、Session/Route/Execution/Core/CAS/Review/完整 U，
 再从同次私有读集合选目标、映射三种闭合声明，并在原同步终端成功后返回。
 目标缺失、pending 或任一坏关联均拒绝；不收调用方 Evidence/hash/批准对象作认证。

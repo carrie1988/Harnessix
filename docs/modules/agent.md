@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 26
+version: 27
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners:
   - core
@@ -126,6 +126,8 @@ Agent Runtime因此解决五类核心问题：
 
 预算由[`Budget`](../../src/harnessix/agent/models.py)定义：默认最多16步、100,000 Token、120秒、
 65,536输出字符和每步32个Tool Call；字段都有上限，不能使用无限预算绕开状态机。
+`timeout_seconds` 的默认字面量为 `120.0`，与原 float 字段一致；默认时长及 `(0,86400]` 约束不变。
+旧整数 JSON 仍通过原 Schema 读取，不重写原事件或改变其认证字节。
 
 ## 5. 模块上下文与信任边界
 

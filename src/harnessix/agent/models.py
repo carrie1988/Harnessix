@@ -67,7 +67,7 @@ from harnessix.tools.contracts import Revision
 class Budget(ContractModel):
     max_steps: int = Field(default=16, ge=1, le=1000)
     max_tokens: int = Field(default=100_000, ge=1)
-    timeout_seconds: float = Field(default=120, gt=0, le=86400, allow_inf_nan=False)
+    timeout_seconds: float = Field(default=120.0, gt=0, le=86400, allow_inf_nan=False)
     max_output_chars: int = Field(default=65536, ge=1, le=1_000_000)
     max_tool_calls_per_step: int = Field(default=32, ge=1, le=128)
 

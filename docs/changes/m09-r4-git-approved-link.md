@@ -1,10 +1,10 @@
 ---
 doc_type: change-design
 status: draft
-version: 12
+version: 13
 code_revision: 41037fde4915ef2537e7ca91ad29a93b83bfc29e
 owners: [core]
-modules: [product_config, session, trusted_actions, execution, delivery, artifacts, workspace]
+modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
@@ -15,6 +15,9 @@ related_tests:
   - tests/product_config/test_git_decision_link_contracts.py
   - tests/product_config/test_git_decision_link_sources.py
   - tests/product_config/test_git_decision_source_sdk.py
+  - tests/product_config/test_git_decision_link_rows.py
+  - tests/product_config/test_git_linked_decision_reader.py
+  - tests/product_config/test_git_linked_decision_sdk.py
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_approval_crash_recovery.py
@@ -27,7 +30,7 @@ supersedes: []
 
 ## 1. 变更摘要
 
-**正式决定接线状态：`planned`。** [三种决定数据声明与严格 Wire](m09-r4-git-decision-data-contract.md)已实现；原来源认证 Proof、事务 Writer、完整历史 Reader 及宿主恢复屏障仍未实现或装配。
+**正式决定接线状态：`planned`。** [三种决定数据声明与严格 Wire](m09-r4-git-decision-data-contract.md)已实现；原来源认证发布 Proof、事务 Writer 与宿主恢复屏障仍未实现或装配；原已存决定的窄域只读回读已实现。
 数据契约通过不能签发认证、批准或执行权限；当前没有默认产品 Git 写工具。
 原[事件正文定位及私有声明映射](m09-r4-git-decision-original-body-sources.md)已实现，沿原 Session 同次完整认证读取保留摘要，
 内部映射复用原完整语义解释及父控制；原历史 Reader 的 `read_decided` 已新增完整只读入口。
@@ -179,7 +182,7 @@ flowchart LR
 
 ### 5.2 组件职责与实现边界
 
-除阶段无关 U verifier 及其共享 helper 已落地外，下列新增决定组件与宿主恢复屏障仍为 `planned`。
+阶段无关 U verifier、原审批来源读取及已存决定的窄域 Reader 已实现；可用于发布的决定 Proof、事务 Writer 与宿主恢复屏障仍为 `planned`。
 
 | 类型/组件 | 单一职责 | 原依赖与禁止边界 |
 |---|---|---|
@@ -461,6 +464,48 @@ async def verify_product_git_user_observation(
 对已决定但尚未追加的原 prepared，历史 Reader 可认定其过去绑定，并报告 `decision_not_linked`（拟议有限状态），不能返回 approved 声明或新签发证明。
 历史 Reader 不要求过去请求今天仍 pending；当前执行可用性另受取消、原 Turn 期限、Review 和全部漂移约束。
 
+### 7.5 已存决定的实际只读回读
+
+实现入口为 [`read_linked_decision`](../../src/harnessix/product_config/git_prepared_approval_history.py#L217)。
+与 `read_decided` 根据原资源形成普通声明不同，它要求原 GitDB 已存在唯一 `sequence=1` 决定。
+缺失时以 `git_decision_link_missing` 拒绝，即使原 Router 已批准也不补造、重签或提交。
+调用参数只有原 Route UUID、CancelToken 和检查点；调用方不能提交决定、Evidence 或摘要充当来源。
+原 60 秒操作期限、120 秒 Turn 与 Review TTL 不变。
+
+[`GitLinkHistory`](../../src/harnessix/product_config/git_decision_link_rows.py#L26)只保存完整
+`prepared` 和可选 `decision`。其 frozen/repr 隐藏仅防止意外赋值及正文显示，不构成授权凭据。
+[`read_git_link_history_rows`](../../src/harnessix/product_config/git_decision_link_rows.py#L92)
+先借原 Prefix Reader 认证全部 MAC、事件连续性、冗余物理投影和独立尾锚，再解释全部正文：
+
+1. 每个 stream 只能是原 prepared，或原 prepared 加一个闭合决定；缺失前驱、第三事件、未知正文与效果表均拒绝。
+2. 原八列稳定归属、原 claims 身份、完整 Plan、原请求及规范 prepared 正文 SHA 必须一致。
+3. approved 使用 `approved`，denied/cancelled 使用 `failed`；不能仅凭 SQL phase 区分决定。
+4. 每个关联均进入原完整 Session/Route/Execution/Core/CAS/Source/Review/U 读取；任何坏的非目标关联拒绝整个操作。
+5. 每个已存决定须与 `build_git_decision_link_sources` 从同次原来源重建的完整模型相等，不只比摘要。
+6. 最后外部回调之后，原全 SQL、材料、Review、Ref/配置来源和审批检查点再次同步复核；所有已存决定先严格深快照再比较，禁止外来 equality。
+7. 原上下文完全退出后，只返回终端已验证的新快照；没有 SQL 写入、CAS/Artifact 发布、COMMIT、审批或 Git 效果。
+
+```text
+原连接/Runtime Thread 窗口
+  → 全 Prefix/MAC/尾锚 → 全 prepared/decision 严格 Rows
+  → 逐关联原审批材料 + 原 U → 完整来源字段比较
+  → 全 SQL/原材料/原生来源终端复核 → 返回目标的新快照
+```
+
+共用 [`_read_evidence`](../../src/harnessix/product_config/git_prepared_approval_history.py#L276)
+和 `_complete_read`，避免旧 `read_all` 与新入口复制审批读取规则。旧输出、pending-only Reader 与零写边界不改变。
+原解释器新增 `Route 初态时间 ≤ 请求时间 ≤ 首个 waiting 时间 ≤ 决定时间` 校验，审批结束事件同样不能早于 waiting；
+相等时间保留原时钟粒度。逆序的合法 Schema/Hash 链不能成为原决定。
+定位映射复用原字段严格快照 `_snapshot`，再由原 `AgentEvent` 联合 Schema 校验；不使用会隐去旧版本字段的 serializer 投影。
+它排除 `model_copy` 造成的非目标坏正文、UUID 子类及旧版本不允许的 reason；
+这一类型校验不重新计算 `EventBodyRef`，原摘要仍来自实际认证 `event_json` 原字节。
+`Budget.timeout_seconds` 的默认字面量修正为 `120.0`，与既有 float 字段声明一致；默认 120 秒及 `(0,86400]` 字段约束不变，旧整数 JSON 仍沿原 Schema 读取为 float，不重写存量事件。
+
+该只读组件不持有不可伪造发布 Proof，不承诺 Git/SQLite 持续一致性；B4/COMMIT、B7、P1、Writer 与恢复屏障仍开放。
+物理测试使用原 MAC 签发器制造输入，仅为拒绝矩阵，不表示生产 Writer 已交付。
+最终同一 Python 3.12.7／SQLite 3.45.3 非 editable 安装包通过实际 SDK 九项、相关集合 406 项和七核心目录 2815 项，另有 1 项原生 Windows 平台跳过；不合并重复集合，不认定三平台或 P1 完成。
+原逆序时序六项拒绝缺口、serializer 两项投影反例及中间安装失败均保留，不修改历史失败成绩。
+
 ## 8. 状态、事务、并发与幂等
 
 ### 8.1 本增量有限状态机
@@ -627,7 +672,7 @@ B4原语可以独立于SQLite原生来源研究开发，但默认Writer准入仍
 | 1 | closed union、严格 wire、事件定位 | prepared 字节不变；负向事实显式映射 failed；512 KiB 上限 | 严格字段、变体交叉错配、构造绕过、规范字节、上限 | 无持久写，可撤回新类型 |
 | 2 | 原完整 Session/Route 决定 Proof | 原 Reducer 与 build_approval、两域指纹、完整取消来源 | ALLOW ready、系统拒绝冒充人工、错时间、后续取消 | 不启用 Writer |
 | 3 | 阶段无关 U verifier/shared helper 与两个现行消费者已落地；fence 与终端闭合仍待实施 | 原 Ledger `_authenticate` 与历史 `_read_all` 显式借原 Session/transactions/ports，同预算、cancel、check；不重准备、不新增 CAS；准备器 pending Call 和 collector 窗口保持 | 既有只读复核用例见第 12.2 节；终端提交漂移与全部 dispatch 接线仍待验证 | 不启用 Writer；不更改产品权限 |
-| 4 | 新窄域全集 Reader 与读集合 | 历史 prepared 解释不调用 pending-only Proof；效果范围继续拒绝 | mixed pending/decided、坏非目标链、终端全集 | 只读组件可停用 |
+| 4 | 已存决定的窄域全集只读 Reader 已实现 | 保留完整 prepared 前驱；每个已存决定与原来源全文比较；不补造缺失决定；效果范围继续拒绝 | mixed prepared/decided、坏非目标链、三种决定、缺失及终端全集 | 不注册 Writer 或默认 Git 写工具 |
 | 5 | 同原事务追加与精确重试 | 原 event/publication/anchor 一次提交；原 epoch 延续 | 逐写边界中断、rollback、确认丢失、并发 CAS | 已写历史保留；停用新追加 |
 | 6 | 原宿主审批后/重启内部屏障 | 先原 sync，再认证追加；全部 Git dispatch 入口受约束 | 三库恢复窗口、取消竞争、调用计数零 | 关闭 Git 专用接线，不影响其他 Action |
 
@@ -752,7 +797,7 @@ B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放�
 
 ## 14. 实现偏差与最终结论
 
-原历史 Reader 的 `read_decided` 完整只读入口已实现，复用原全资源读取和同步终端；
+原历史 Reader 的 `read_decided` 与已存决定 `read_linked_decision` 只读入口已实现，复用原全资源读取和同步终端；
 这是实际资源来源依赖，不是不可伪造发布 Proof，不能据此启用 approved Writer。
 跨 Git/SQLite 强一致性和实际 FD/Task 锁方案仍待决，重复观察或普通返回模型不替代该决策。
 

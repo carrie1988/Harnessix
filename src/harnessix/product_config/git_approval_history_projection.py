@@ -97,14 +97,14 @@ def _replay_history(
     prepared: ProductGitPreparedLink,
     route: ActionRouteSnapshotV2,
     checkpoint: Callable[[], None],
-) -> tuple[AgentEvent, tuple[AgentEvent, ...], Turn]:
+) -> tuple[AgentEvent, AgentEvent, tuple[AgentEvent, ...], Turn]:
     """从根逐事件重放全部后继；只从本 Thread 的原 ItemStarted 定位请求。"""
     core = prepared.plan.core
     thread: Thread | None = None
     request: AgentEvent | None = None
     following: list[AgentEvent] = []
     seen = set()
-    waiting = False
+    waiting: AgentEvent | None = None
     for event in history.events:
         # 回调不在语义错误包装内，取消、超时、Owner 错误须原实例传播。
         checkpoint()
@@ -129,12 +129,18 @@ def _replay_history(
             ):
                 calls = pending_calls(get_turn(thread, core.turn_id))
                 _require(bool(calls) and calls[0] == core.call)
-                waiting = True
+                if waiting is None:
+                    waiting = event
         except (KernelError, ValueError, TypeError):
             raise KernelError("git_approval_history_changed", "Git审批历史无法核验") from None
-    _require(thread is not None and thread == history.thread and request is not None and waiting)
-    assert thread is not None and request is not None
-    return request, tuple(following), get_turn(thread, core.turn_id)
+    _require(
+        thread is not None
+        and thread == history.thread
+        and request is not None
+        and waiting is not None
+    )
+    assert thread is not None and request is not None and waiting is not None
+    return request, waiting, tuple(following), get_turn(thread, core.turn_id)
 
 
 def _require_route_event_binding(
@@ -412,7 +418,11 @@ def interpret_git_approval_history(
         and prepared.approval.route_state == "pending_approval"
     )
     route_decision = _route_history(prepared, route, route_events, checkpoint)
-    request, following, turn = _replay_history(history, prepared, route, checkpoint)
+    request, waiting, following, turn = _replay_history(history, prepared, route, checkpoint)
+    # 各来源内部链合法，仍不能证明跨库时序；允许同一时钟粒度下的相等时间。
+    _require(route_events[0].occurred_at <= request.occurred_at <= waiting.occurred_at)
+    if route_decision is not None:
+        _require(waiting.occurred_at <= route_decision.occurred_at)
     assert isinstance(request.payload, ItemStarted)
     finishes = tuple(
         event
@@ -436,6 +446,7 @@ def interpret_git_approval_history(
     else:
         approval = _router_decision(prepared, approval, route_decision)
         finish = finishes[0]
+        _require(waiting.occurred_at <= finish.occurred_at)
         assert isinstance(finish.payload, ItemFinished)
         if finish.payload.status is ItemStatus.CANCELLED:
             _require(route.state == "denied")
