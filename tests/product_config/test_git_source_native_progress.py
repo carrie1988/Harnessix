@@ -1,4 +1,4 @@
-"""Source 仅在 exact 控制的原生捕获段分层，保留控制异常的每层身份。"""
+"""Source 显式分离真实读取与已验真事实计算，保留控制异常的每层身份。"""
 
 from __future__ import annotations
 
@@ -54,9 +54,11 @@ class _Probe:
     def __init__(self):
         self.phase = "history"
         self.trace = []
+        self.cas_reads = []
         self.failure = None
         self.error = None
         self.full_marker = None
+        self.failure_call = 1
         self.control = GitAuthenticationControl(self.local, self.full)
 
     def local(self):
@@ -67,7 +69,10 @@ class _Probe:
 
     def record(self, mode):
         self.trace.append((mode, self.phase))
-        if self.failure == (mode, self.phase):
+        if (
+            self.failure == (mode, self.phase)
+            and self.trace.count(self.failure) == self.failure_call
+        ):
             raise self.error
 
     def protected(self):
@@ -119,6 +124,7 @@ def observed(case, monkeypatch):
 
     def read(digest):
         probe.trace.append(("cas", probe.phase))
+        probe.cas_reads.append(digest)
         return blobs[digest]
 
     monkeypatch.setattr(snapshot_module, "read_workspace_parent_closure", history)
@@ -133,19 +139,56 @@ def observed(case, monkeypatch):
 
 
 @pytest.mark.parametrize("protected", [False, True])
-def test_exact_source_uses_native_progress_but_history_and_encoding_stay_full(observed, protected):
+def test_exact_source_layers_history_and_encoding_but_all_cas_stay_full(observed, protected):
     root, snapshot, blobs, probe, ports, _ = observed
     before = dict(blobs)
     control = probe.protected() if protected else probe.control
     module._verify_final_snapshot(snapshot, root, control, ports)
     assert ("full", "entry") in probe.trace and ("full", "exit") in probe.trace
     assert ("local", "native") in probe.trace and ("local", "native-read") in probe.trace
-    assert all(mode == "full" for mode, phase in probe.trace if phase == "encode")
+    assert ("local", "encode") in probe.trace and ("local", "history") in probe.trace
+    assert [mode for mode, phase in probe.trace if phase == "encode"][-1] == "full"
     assert all(phase == "history" for mode, phase in probe.trace if mode == "cas")
-    assert all(mode in {"full", "cas"} for mode, phase in probe.trace if phase == "history")
+    assert all(
+        mode in {"full", "local", "cas"} for mode, phase in probe.trace if phase == "history"
+    )
+    for index, (mode, _) in enumerate(probe.trace):
+        if mode == "cas":
+            assert probe.trace[index - 1] == probe.trace[index + 1] == ("full", "history")
     assert ("full", "native") not in probe.trace
     assert ("full", "native-read") not in probe.trace
     assert before == blobs
+
+
+@pytest.mark.parametrize("protected", [False, True])
+@pytest.mark.parametrize(
+    "failure,call",
+    [
+        (("local", "history"), 1),
+        (("full", "exit"), 2),
+        (("local", "encode"), 1),
+        (("full", "encode"), 1),
+    ],
+)
+@pytest.mark.parametrize("error_name", ERRORS)
+def test_pure_history_and_encoding_preserve_original_control_error(
+    observed, protected, failure, call, error_name
+):
+    root, snapshot, blobs, probe, ports, _ = observed
+    error = _error(error_name)
+    probe.failure, probe.error = failure, error
+    probe.failure_call = call
+    control = probe.protected() if protected else probe.control
+    before = dict(blobs)
+    with pytest.raises(BaseException) as caught:
+        module._verify_final_snapshot(snapshot, root, control, ports)
+    if protected:
+        assert type(caught.value) is UpstreamCheckpointError and caught.value.error is error
+        if failure[0] == "full":
+            assert caught.value is probe.full_marker
+    else:
+        assert caught.value is error
+    assert probe.trace[-1] == failure and blobs == before
 
 
 @pytest.mark.parametrize("protected", [False, True])
@@ -248,7 +291,7 @@ def test_historical_cas_is_full_and_changed_binding_is_rejected_before_capture(
         )
     assert caught.value is error and saved == {}
     assert probe.trace[-1] == ("full", "history" if timing == "cas" else "entry")
-    assert not any(mode == "local" for mode, _ in probe.trace)
+    assert not any(mode == "local" and phase != "history" for mode, phase in probe.trace)
 
 
 def _frozen_final_verifier():
@@ -410,7 +453,10 @@ def test_complete_exact_source_keeps_files_full_and_captures_only_native_locally
     assert ("local", "native-read") in probe.trace
     assert ("local", "file") not in probe.trace and ("full", "file") in probe.trace
     assert probe.trace.count(("full", "entry")) == 2
-    assert probe.trace.count(("full", "exit")) == 2
+    # 原生出口以及随后的编码入口各认证一次，两次完整 Source 复核均保留。
+    assert probe.trace.count(("full", "exit")) == 4
+    # 编码纯段出口与原 Source 尾部检查各一次；没有削减原尾部检查。
+    assert probe.trace.count(("full", "encode")) == 4
     assert before == blobs and (root / source.mutations[0].path).read_bytes() == b"native facts\n"
 
 
@@ -507,6 +553,64 @@ def test_actual_other_thread_native_capture_falls_back_to_full(observed):
         pool.submit(module._verify_final_snapshot, snapshot, root, probe.control, ports).result(5)
     assert ("full", "entry") in probe.trace and ("full", "native-read") in probe.trace
     assert all(mode != "local" for mode, _ in probe.trace)
+
+
+@pytest.mark.parametrize("owner", ["task", "thread"])
+@pytest.mark.asyncio
+async def test_foreign_source_pure_port_matches_old_trace_and_each_full_failure(
+    observed, monkeypatch, owner
+):
+    root, snapshot, _, probe, ports, _ = observed
+    original = module.verify_workspace_snapshot_v2
+    layered = False
+    failure_call = None
+    full_calls = 0
+    error = KernelError("workspace_closure_corrupt", "original foreign control")
+
+    def verify(*args, **kwargs):
+        if not layered:
+            kwargs.pop("pure_progress", None)
+        return original(*args, **kwargs)
+
+    def full():
+        nonlocal full_calls
+        full_calls += 1
+        probe.full()
+        if full_calls == failure_call:
+            raise error
+
+    control = GitAuthenticationControl(probe.local, full)
+    monkeypatch.setattr(module, "verify_workspace_snapshot_v2", verify)
+
+    def run(enabled, fail_at):
+        nonlocal layered, failure_call, full_calls
+        layered, failure_call, full_calls = enabled, fail_at, 0
+        probe.trace.clear()
+        probe.cas_reads.clear()
+        probe.phase = "history"
+        try:
+            module._verify_final_snapshot(snapshot, root, control, ports)
+        except BaseException as caught:
+            assert fail_at is not None and caught is error
+            return tuple(probe.trace), tuple(probe.cas_reads)
+        assert fail_at is None
+        return tuple(probe.trace), tuple(probe.cas_reads)
+
+    async def invoke(enabled, fail_at=None):
+        if owner == "thread":
+            return await asyncio.to_thread(run, enabled, fail_at)
+
+        async def child():
+            return run(enabled, fail_at)
+
+        return await asyncio.create_task(child())
+
+    expected = await invoke(False)
+    assert await invoke(True) == expected
+    assert all(mode != "local" for mode, _ in expected[0])
+    assert len(expected[1]) == 2
+    for fail_at in range(1, sum(mode == "full" for mode, _ in expected[0]) + 1):
+        assert await invoke(True, fail_at) == await invoke(False, fail_at)
 
 
 @pytest.mark.parametrize("owner", ["task", "thread"])

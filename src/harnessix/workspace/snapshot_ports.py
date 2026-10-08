@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
+
+type WorkspacePureProgressFactory = Callable[[], AbstractContextManager[Callable[[], None]]]
 
 
 @dataclass(frozen=True, slots=True)

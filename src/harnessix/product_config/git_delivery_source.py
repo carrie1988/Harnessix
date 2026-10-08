@@ -19,6 +19,7 @@ from harnessix.delivery.contracts import (
 from harnessix.delivery.git_authentication_control import (
     GitAuthenticationControl,
     io_git_authentication,
+    same_task_pure_git_authentication,
 )
 from harnessix.delivery.planner import _read_existing
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
@@ -261,6 +262,7 @@ def _verify_final_snapshot(
                 checkpoint=checkpoint,
                 read_blob=ports.read_blob,
                 native_progress=_native_snapshot_progress(checkpoint),
+                pure_progress=lambda: same_task_pure_git_authentication(checkpoint),
             )
         else:
             verify_workspace_snapshot_v2(

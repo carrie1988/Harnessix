@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import nullcontext
 from dataclasses import dataclass
 
 from pydantic import ValidationError
@@ -29,6 +30,7 @@ from harnessix.workspace.parent_closure_wire import (
     observations_digest,
 )
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2, snapshot_requests
+from harnessix.workspace.snapshot_ports import WorkspacePureProgressFactory
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,6 +205,7 @@ def read_workspace_parent_closure(
     read_blob: Callable[[str], bytes],
     *,
     checkpoint: Callable[[], None],
+    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> tuple[WorkspaceResourceObservation, ...]:
     """所有历史解引用完成才能返回；任何坏块都不能返回已读前缀。"""
     checkpoint()
@@ -240,20 +243,23 @@ def read_workspace_parent_closure(
         )
         if chunk.start_index != chunk_ref.start_index or len(chunk.entries) != chunk_ref.count:
             raise KernelError("workspace_closure_corrupt", "Workspace父目录历史索引无效")
-        for index, entry in enumerate(chunk.entries, start=chunk.start_index):
-            checkpoint()
-            location, path = paths[index]
-            parents.append(
-                WorkspaceResourceObservation(
-                    location=location,
-                    path=path,
-                    access="read",
-                    **entry.model_dump(),
+        # 完整 CAS／规范正文／索引验真后才展开已解析事实；下块读取仍在段外。
+        with pure_progress() if pure_progress is not None else nullcontext(checkpoint) as check:
+            for index, entry in enumerate(chunk.entries, start=chunk.start_index):
+                check()
+                location, path = paths[index]
+                parents.append(
+                    WorkspaceResourceObservation(
+                        location=location,
+                        path=path,
+                        access="read",
+                        **entry.model_dump(),
+                    )
                 )
-            )
-    if observations_digest(parents, checkpoint) != manifest.observations_digest:
-        raise KernelError("workspace_closure_corrupt", "Workspace父目录完整观察摘要无效")
-    _validate_shared_observations(snapshot, parents)
+    with pure_progress() if pure_progress is not None else nullcontext(checkpoint) as check:
+        if observations_digest(parents, check) != manifest.observations_digest:
+            raise KernelError("workspace_closure_corrupt", "Workspace父目录完整观察摘要无效")
+        _validate_shared_observations(snapshot, parents)
     return tuple(parents)
 
 

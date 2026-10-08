@@ -17,6 +17,7 @@ from harnessix.workspace.parent_closure_paths import target_set_payload
 from harnessix.workspace.parent_closure_wire import canonical_bytes, canonical_digest
 from harnessix.workspace.snapshot_capture import SnapshotCapture, capture_snapshot_facts
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2, snapshot_requests
+from harnessix.workspace.snapshot_ports import WorkspacePureProgressFactory
 
 
 def _encode_snapshot(
@@ -95,9 +96,15 @@ def verify_workspace_snapshot_v2(
     read_blob: Callable[[str], bytes],
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
     native_progress: AbstractContextManager[Callable[[], None]] | None = None,
+    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> WorkspaceSnapshotV2:
     """先验证完整旧历史，再只观察当前事实；没有 CAS 写入或补签端口。"""
-    historical = read_workspace_parent_closure(expected, read_blob, checkpoint=checkpoint)
+    if pure_progress is None:
+        historical = read_workspace_parent_closure(expected, read_blob, checkpoint=checkpoint)
+    else:
+        historical = read_workspace_parent_closure(
+            expected, read_blob, checkpoint=checkpoint, pure_progress=pure_progress
+        )
     capture_progress = native_progress if native_progress is not None else nullcontext(checkpoint)
     with capture_progress as native_check:
         facts = capture_snapshot_facts(
@@ -108,7 +115,9 @@ def verify_workspace_snapshot_v2(
             platform=expected.platform,
             checkpoint=native_check,
         )
-    current, _ = _encode_snapshot(facts, checkpoint)
+    # 原生捕获已经结束；新纯段只重编码事实，不读取或追加 CAS。
+    with pure_progress() if pure_progress is not None else nullcontext(checkpoint) as pure_check:
+        current, _ = _encode_snapshot(facts, pure_check)
     if current != expected or facts.parents != historical:
         raise KernelError("execution_plan_stale", "Workspace Snapshot已变化")
     return current
