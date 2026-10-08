@@ -4,23 +4,23 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 7087,
-      "sha256": "f32c55ac21a12d22ccd6e5b77f834387156206e917948372a21b0f4ea286f5d1"
+      "bytes": 7521,
+      "sha256": "10b6cc82cd316e7eef45e391126f5b6d7b9b8dace18c10a4493fa20f798e675b"
     },
     {
       "path": "REVIEW_PACKET.md",
-      "bytes": 1889,
-      "sha256": "83168fbf060114aa7d4944c21023881a538ea1db2ebdf1038648cd9bb7d7a780"
+      "bytes": 1920,
+      "sha256": "5bc6a7005c6953a8cbfbbb28f576ebcd31ff93667c3e62953fba954bf90b46f0"
     },
     {
       "path": "facts.json",
-      "bytes": 4329,
-      "sha256": "e14abbeb05204328fee1f229ec601979a1d06fe7ba6a4ccf06c12581757e2b6a"
+      "bytes": 7640,
+      "sha256": "f5792a059a0ace7db7790dc0a3687827174fc8d948aef547c687c941debf01d8"
     },
     {
       "path": "verification.json",
-      "bytes": 4273,
-      "sha256": "8ae8c9a3b64f6b7a71cd2f2cea817ae74160518dd4478408ba5a7ed9c8e7ba85"
+      "bytes": 6575,
+      "sha256": "cdb66d805a7c0c41a9f53ac2c15807caeccc875fb9cbef176ba8c0692e393692"
     }
   ]
 }

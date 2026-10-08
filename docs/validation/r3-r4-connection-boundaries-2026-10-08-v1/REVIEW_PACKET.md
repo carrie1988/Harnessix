@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners: [core]
 modules: [product_config, delivery, models, agent]
 related_adrs:

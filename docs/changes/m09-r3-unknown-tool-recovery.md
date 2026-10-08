@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 1
-code_revision: pending
+version: 2
+code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners: [core]
 modules: [models, agent, session, context, evals]
 related_adrs:
@@ -44,7 +44,8 @@ Docker环境复验通过后，后继真实Suite仍因第二个模型请求的未
 |---|---|---|
 | Harnessix Adapter | [_chat_stream.py](../../src/harnessix/models/_chat_stream.py)：`_complete_calls`、`ChatStream.finish` | 全调用组通过后才释放工具；名称校验早于类型及JSON校验，因此原未知名称诊断不是结构完整证明 |
 | Harnessix目录 | [_chat_mapping.py](../../src/harnessix/models/_chat_mapping.py)：`build_request`；[_history.py](../../src/harnessix/models/_history.py)：`tool_alias` | 本次广告使用精确Alias反向目录；不能把未知Wire字符串直接当原工具名传给Kernel |
-| Harnessix Kernel | [runtime.py](../../src/harnessix/agent/runtime.py)：`_sample_events`、`_execute_tool` | 中立事件中未登记工具已有`unknown_tool`失败结果，原Loop可以消费后续新提案；真实SDK在此前拒绝 |
+| Harnessix Kernel | [runtime.py](../../src/harnessix/agent/runtime.py)：`_sample_events`、`_execute_tool`、`_close_model_step` | 旧中立未知调用通过普通待执行调用形成失败后继续；拒绝若在采样时已配对且没有待执行调用，原步骤结束逻辑会直接结束Turn，不能只新增事件 |
+| Anthropic Adapter | [_anthropic_stream.py](../../src/harnessix/models/_anthropic_stream.py) | `tool_use`起始块即检查目录，参数及消息终态尚未完成；同样需要完整结构校验后分类 |
 | Codex公开源码 | `a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67`，[registry.rs](https://github.com/openai/codex/blob/a0dcfe2ada3f5bbd5059a34c0fc6fac244741a67/codex-rs/core/src/tools/registry.rs)：`dispatch`、`unsupported_tool_call_message` | 工具不存在时返回模型可见错误，不调用工具。借鉴“拒绝且反馈”，不移植其原参数日志或原名称回显 |
 | OpenCode公开源码 | `69c172e8a7c0086887b1f93ed5a162f14b6aa0c5`，[llm.ts](https://github.com/anomalyco/opencode/blob/69c172e8a7c0086887b1f93ed5a162f14b6aa0c5/packages/opencode/src/session/llm.ts)中DWS `toolExecutor` | 特定Workflow桥在目录缺失时返回错误。只证明该分支，不推广为所有OpenCode Provider的统一合同 |
 
@@ -155,17 +156,55 @@ sequenceDiagram
 | 拒绝结果 | 复用原失败结果的配对与固定`unknown_tool`类别；`retryable=false`不触发传输层重试 | 旧调用重试授权、相似工具建议、未可信原字段回显 |
 | 历史映射 | 已完成拒绝及结果必须唯一配对；使用固定不可执行拒绝标记表达历史 | 反向补造原未知名称、把标记加入广告或映射至真实工具 |
 
-事件和Item类型名、最终字段、Schema代际及旧Reader行为尚未冻结；不得在实现前标为正式契约。
-历史标记只表达过去的拒绝，Adapter不得从标记签发工具能力；两种Provider的映射都须验证。
-若不能完成明确配对和兼容设计，应保持原失败，不通过临时伪工具规避。
+### 7.1 有界合同候选
+
+下列为源码核查后的具体候选，尚未成为发布合同；生产代码、Schema及默认装配均未更改。
+
+| 类型 | 闭合字段与约束 | 责任 |
+|---|---|---|
+| `ToolCallRejected` | `type="tool_call_rejected"`；`call_id`严格字符串1～256字符、本响应唯一；`reason="unregistered_tool"`；`argument_chars`必填严格整数0～1,000,000，不接受布尔/字符串转换 | Provider中立事件；不含原名称、参数或执行契约 |
+| `ToolCallRejectionContent` | `kind="tool_call_rejection"`；`call_id`新UUID；`provider_call_id`严格字符串1～256字符；`model_step`严格整数1～1000且等于当前步骤；固定reason | 认证Session拒绝事实；Item状态COMPLETED、Item.error为空，不表示工具成功 |
+| 原`ToolResultContent` | 同一持久call_id；`outcome="failed"`、output为空；固定`unknown_tool/工具未注册/tool/retryable=false`；所有Action、Patch、Process、Trusted Action、Artifact效果字段为空 | 复用结果配对；不触发传输重试，不授予新授权 |
+| `TurnStateChanged.reason` | 新增`tool_rejection`，仅允许CALLING_MODEL→PREPARING_CONTEXT；当前步骤真实完成、拒绝闭合、无普通未结算调用、无开放Item/Attempt | 全拒绝步骤进入原下一步骤；不增加新状态或刷新期限 |
+
+`argument_chars`仅用于不削减原输出预算，不进入持久拒绝Item。当前步骤归属必须明确，不能因压缩保留的旧拒绝而无限继续。
+工具提案数量与ID去重由正常调用和拒绝共用，所有字段禁止额外属性。
+
+### 7.2 历史序列化候选与执行隔离
+
+统一固定历史标记拟为`harnessix_rejected_tool_v1`，参数固定空对象；不广告、不注册、不重新计算Alias。
+OpenAI映射为assistant function调用与配对tool失败消息；Anthropic映射为assistant tool_use与同ID的user错误tool_result。
+历史调用ID复用原`call_`加持久UUID的映射方式，不回填原未知名称。
+
+广告反向目录只来自本次`request.tools`，不从历史生成；正常Alias固定为`hx_…`，不等于上述标记。
+即使Kernel原名注册表存在同名字串，拒绝事件没有tool字段，不能选择执行对象；模型再次提出该标记仍应拒绝。
+这证明本地权限隔离，不证明远端服务接受未在当前广告目录中的历史占位调用；后者须独立验证，失败时禁止广告标记绕过。
+
+### 7.3 版本、认证与备份候选
+
+| 边界 | 拟议处理 |
+|---|---|
+| Provider Schema | 新增provider-event-v4，冻结旧v3文件 |
+| Agent事件/Thread | 新增agent-event-v21、agent-thread-v21；新写默认21，旧版本明确禁止拒绝正文及tool_rejection原因 |
+| 最低Reader标记 | 拟新增0031语义迁移；实施时重新核对序号，旧程序schema_too_new失败关闭 |
+| 事件与投影认证 | 原EventPublicationSeal、ProjectionPublicationSeal、verify_snapshot/save_projection三个版本固定点同步处理；验证原20、新21与实际事件/投影准确相符，不改MAC域或重签旧历史 |
+| 产品备份 | 原完整v30与新完整v31迁移集合逐项校验冻结checksum，不放宽成任意旧前缀；验证后恢复原字节，再沿正式初始化升级 |
+| 回退 | 使用匹配程序版本的完整状态备份；不删新事实、不仅回退Adapter、不补签为旧版本 |
+| 公共协议与Fork | 当前PublicItemContent/project_item与Fork v1未识别新拒绝类型；必须先完成正式出口合同及回归，否则不得启用默认产品路径 |
+
+公共出口、Fork及压缩不是可忽略的内部附属项；否则新事实虽可存储，产品仍不能完整显示或继续使用。
+旧Schema、新签发、认证读取与备份是不同责任，不能只修改EventDraft版本号即宣称兼容。
 
 ## 8. 状态、事务、并发与幂等
 
 - 原响应成员顺序、调用数量限制和整组结构拒绝保持；不得提前执行流中的已登记成员。
+- Kernel暂存本步骤全部工具提案，等合法终态且流正常结束；在同一原Session CAS追加事务中按响应顺序先提交全部调用/拒绝事实，再提交固定拒绝结果及Usage。不要求配对事件相邻，保证历史调用组先于结果组。
 - 拒绝事实及其结果应在原Session追加事务中成对形成，不开新账本或后台重试队列。
 - 整个响应验证通过后，已登记成员可以进入原审批；未知成员没有副作用，不能占用或伪造高风险授权。
 - 新模型步骤的提案是新调用，不重用旧Call身份；并行工具调度不能将拒绝当并行只读执行。
 - 重复事件、ID重复、缺结果或状态不合法必须拒绝；`UNKNOWN`效果仍由原对账处理，拒绝不改变任何既有未知效果。
+- `pending_calls`仍仅返回普通`ToolCallContent`，拒绝不进入执行/并行/审批。Reducer使用独立拒绝结果分支，验证固定失败及所有效果字段为空；追加批次结束、Replay末尾及快照均核对闭合配对。
+- 全拒绝按有证据的tool_rejection重入；混合组先执行正常调用再沿原Loop继续。合法混合组中的已登记写调用仍可能创建原审批，不能将旧诊断下的“整组零审批”误用为新语义预期。
 
 ## 9. 安全、隐私与可观测性
 
@@ -229,6 +268,21 @@ flowchart LR
 | 原步骤/取消边界 | 同上；[scripted.py](../../src/harnessix/models/scripted.py) | 同测试：`test_normalized_unknown_calls_consume_original_step_budget`、`test_cancel_after_normalized_rejection_does_not_request_correction_or_execute` |
 | 未决费用拒绝 | [原Guard](../../scripts/provider_verification_guard.py)：`GuardedVerificationProvider.stream` | [原费用回归](../../tests/evals/test_provider_verification_budget.py) |
 | 原Alias精确身份 | [_history.py](../../src/harnessix/models/_history.py) | [身份回归](../../tests/models/test_tool_alias_identity.py) |
+
+### 12.1 后续实际修改责任
+
+| 范围 | 准确入口与必要工作 |
+|---|---|
+| 事件及两个Adapter | [models/contracts.py](../../src/harnessix/models/contracts.py)、[_chat_stream.py](../../src/harnessix/models/_chat_stream.py)、[_anthropic_stream.py](../../src/harnessix/models/_anthropic_stream.py)：闭合事件、全结构校验后分类 |
+| 历史映射 | [_history.py](../../src/harnessix/models/_history.py)、[_chat_mapping.py](../../src/harnessix/models/_chat_mapping.py)、[_anthropic_mapping.py](../../src/harnessix/models/_anthropic_mapping.py)：闭合调用组、固定标记、工具历史能力前置核验 |
+| 模型与Reducer | [agent/models.py](../../src/harnessix/agent/models.py)、[event_compatibility.py](../../src/harnessix/agent/event_compatibility.py)、[item_reducer.py](../../src/harnessix/agent/item_reducer.py)、[reducer_support.py](../../src/harnessix/agent/reducer_support.py)、[reducer.py](../../src/harnessix/agent/reducer.py)、[turn_reducer.py](../../src/harnessix/agent/turn_reducer.py)：拒绝数据、旧版本拒绝、独立配对、最终闭合与有证据重入 |
+| 采样提交 | [runtime.py](../../src/harnessix/agent/runtime.py)：全组暂存、一次CAS配对、参数字符预算和全拒绝继续，不扩大执行pending类型 |
+| Context | [tool_result_view.py](../../src/harnessix/context/tool_result_view.py)、[compaction.py](../../src/harnessix/context/compaction.py)：固定拒绝视图、闭合组和恢复，不伪造原工具身份 |
+| Session | [sqlite_append.py](../../src/harnessix/session/sqlite_append.py)、[sqlite.py](../../src/harnessix/session/sqlite.py)：批次与投影闭合；[publication_seal.py](../../src/harnessix/session/publication_seal.py)、[store_publication.py](../../src/harnessix/session/store_publication.py)、[sqlite_publication.py](../../src/harnessix/session/sqlite_publication.py)：原认证版本兼容及准确新签发 |
+| 状态兼容与生成 | [state_backup_validation.py](../../src/harnessix/product_config/state_backup_validation.py)、[generate_specs.py](../../scripts/generate_specs.py)：原完整迁移集合、新Schema、旧文件冻结 |
+
+新迁移与Schema路径为候选，尚未创建；公共出口与Fork另须按其正式合同实现，不静默删除拒绝事实。
+必要新增回归包括：两Adapter畸形组零释放、合法混合组原审批、历史标记重提、零执行、批次提交故障、非法效果字段、全拒绝有界重入、参数预算、压缩闭合、认证版本错配、v30/v31备份恢复及旧Reader拒绝。
 
 ## 13. 风险、部署、兼容与回退
 

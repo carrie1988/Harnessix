@@ -1,8 +1,8 @@
 ---
 doc_type: validation-evidence
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners: [core]
 modules: [product_config, delivery, models, agent, session, evals]
 related_adrs:
@@ -28,6 +28,8 @@ R3新增当前行为的边界验证及完整恢复方案设计，**生产Adapter
 最终原语及边界回归**389通过、失败0、错误0、跳过0**；模型、Kernel及原预算适用回归
 **747通过、失败0、错误0、跳过0**。两集合有交集，不相加为独立用例数。
 新增场景合计41项：R3十五项、连接十五项、SQL任务及生命周期十一项。
+两个集合均在同一最终Wheel正式安装后独立复验通过，父进程未以PYTHONPATH覆盖产品源码。
+原源码运行与安装后重复运行分别保留，不合计为新增用例。
 
 同一最终Wheel的两项实际认证SDK消费者**2/2通过**：prepare、COMMIT后非空只读重开，
 以及四种原上游异常实例原样传播。JUnit运行157.894秒，错误/失败/跳过均零。
@@ -70,7 +72,7 @@ Apple Git2.24.3不支持object-format参数，其失败独立保存，不通过�
 未安装产品的隔离环境不能让受管Owner子进程导入Harnessix；该失败原样保留。
 最终候选使用离线构建并正式安装的Wheel，`python -I -B`确认进程Owner模块可导入。
 
-版本仍为1.0.0rc1。Wheel552个生产成员；三个修改模块逐字节等同候选源码，摘要见事实文件。
+版本仍为1.0.0rc1。Wheel552个生产成员全部逐字节等同候选源码，摘要见事实文件。
 这不是正式1.0发布或发行矩阵通过声明。
 
 ## 5. 测试、持久化与恢复边界
@@ -91,6 +93,7 @@ R3组覆盖未知诊断先后、整组零释放、原步骤预算、取消、不
 ## 7. 遗留工作与风险
 
 - R3：拒绝事件/Item/Reducer/两个Provider历史配对及旧Reader兼容仍须冻结并实现，然后完成原固定Pack的真实20 Trial复验。
+- R3出口：现有公共Item投影、Fork及Context也须明确消费新事实；未完成前不能默认启用。远端是否接受未广告的历史拒绝标记尚无真实请求证据，不以广告标记绕过。
 - R4：当前Task准入不证明实际FD、原协作锁持有或完整B7；B4、P1、approved Writer、默认完整Git交付及三平台原生编码继续开放。
 - 原R3严格成功0/20、必需测试1/20与真实Beta接受零不因离线通过而改变。
 - 本证据不关闭R1～R6，不启动稳定版本发布，不增加真实付费模型请求。

@@ -2,7 +2,7 @@
 doc_type: roadmap
 status: current
 version: 224
-code_revision: 2e96e78e75e7c6cd9bd7332770b90aa925449a1d
+code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners:
   - core
 modules:
@@ -2557,6 +2557,8 @@ R3新增十五项离线边界验证：原未知名称诊断早于类型及JSON�
 同组已登记写调用不部分释放、不创建审批，原Kernel错误反馈消耗原预算并响应取消。
 [拒绝反馈详设](changes/m09-r3-unknown-tool-recovery.md)仍是draft，生产Adapter与旧费用预留不变，
 不把录制Wire、脚本化Kernel或设计通过算作真实质量改善。
+拒绝详设已补充具体字段、全组暂存/原子配对、有证据重入、认证版本及备份候选；
+公共Item投影、Fork、压缩与远端历史标记接受性属于启用前必需边界，均未据此宣称实现。
 
 R4在原连接及异步SQL窗口增加准确Task准入，受管U子Task仅消费固定来源观察闭包；
 通用同步窗口保留原线程兼容，产品连接的窗口建立与消费必须核对原私有登记，不能借通用模式降级。

@@ -2,7 +2,7 @@
 doc_type: change-design
 status: reviewing
 version: 7
-code_revision: pending
+code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners: [core]
 modules: [product_config, delivery, session, artifacts, trusted_actions, workspace]
 related_adrs:

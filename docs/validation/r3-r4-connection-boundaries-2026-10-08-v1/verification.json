@@ -88,6 +88,56 @@
       "inputs": 5267,
       "fixed_rule_hits": 0,
       "version": "harnessix.secret-scan/v2"
+    },
+    {
+      "id": "r34-final-installed-primitives",
+      "command": "python -m pytest tests/models/test_unknown_tool_boundaries.py tests/product_config/test_git_prepared_link_connection.py tests/delivery/test_git_prefix_task_owner.py tests/delivery/test_git_prefix_sql_lifecycle.py tests/delivery/test_git_prefix_ledger.py tests/delivery/test_git_prefix_ledger_review.py tests/session/test_git_prefix_publication.py",
+      "parent_PYTHONPATH_override": false,
+      "installed_candidate": "b32e3bf9833859f94724be437dca204f2e86606195b5b9539ac2e07e6860da98",
+      "result": {
+        "id": "r34-final-installed-primitives",
+        "candidate_wheel_sha256": "b32e3bf9833859f94724be437dca204f2e86606195b5b9539ac2e07e6860da98",
+        "installed_candidate": true,
+        "scope": "connection_prefix_session_and_r3_boundaries",
+        "terminal": true,
+        "tests": 389,
+        "passed": 389,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 5.499,
+        "status": "PASS",
+        "original": {
+          "name": "harnessix-r34-final-installed-primitives-20261008.xml",
+          "bytes": 64369,
+          "sha256": "013e0dd6441fb460100deae92247ae814f89151a48722297e79af2caab0b5525"
+        }
+      }
+    },
+    {
+      "id": "r3-final-installed-models",
+      "command": "python -m pytest tests/models tests/agent/test_runtime.py tests/evals/test_provider_budget_period_isolation.py tests/evals/test_provider_verification_budget.py",
+      "parent_PYTHONPATH_override": false,
+      "installed_candidate": "b32e3bf9833859f94724be437dca204f2e86606195b5b9539ac2e07e6860da98",
+      "result": {
+        "id": "r3-final-installed-models",
+        "candidate_wheel_sha256": "b32e3bf9833859f94724be437dca204f2e86606195b5b9539ac2e07e6860da98",
+        "installed_candidate": true,
+        "scope": "models_plus_kernel_and_original_verification_budget",
+        "terminal": true,
+        "tests": 747,
+        "passed": 747,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 21.77,
+        "status": "PASS",
+        "original": {
+          "name": "harnessix-r34-final-models-20261008.xml",
+          "bytes": 106480,
+          "sha256": "6297255ef34223b56b3ba8938109993ce8b45bc0c0d07bd5c63d22642940f2e1"
+        }
+      }
     }
   ],
   "environment_failures_preserved": [
