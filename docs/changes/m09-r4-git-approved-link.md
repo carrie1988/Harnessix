@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 20
-code_revision: ba7ab34f0a4ebe04ab1b79afd3261accad966d01
+version: 21
+code_revision: c3f2619424085e7a77b23cb21a087528783634f4
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
@@ -947,6 +947,16 @@ exact control → 完整进入认证 → 原纯算法（局部频检、原异常
 原无效运行与实际超时分别保留于本机诊断目录
 `/private/tmp/harnessix-r4-responsiveness-20261009-v1-worker`、
 `/private/tmp/harnessix-r4-responsiveness-20261009-v2`、`/private/tmp/harnessix-r4-responsiveness-20261009-v3`。
+
+2026-10-09 原准备入口与 Core 持久化完成[分层接线及严格时区负控](m09-r4-git-checkpoint-preparation.md#14-原准备-task-与-core-持久化的分层控制)。
+最终同一非 editable Python 3.12.7／SQLite 3.45.3 包的相关回归 864 项、实际 SDK 准备 16 项及三态决定 4 项通过；
+562 个源码／Wheel／安装成员一致，不累计前两候选或 worker 的重复集合。
+静态复核发现的替换代理解引用、可执行时区两个 P1 已保留红例并修复，限定复核剩余 0 P1／0 P2。
+可读性与当前 HEAD 基线同为 23 项存量告警，新增 0，不改阈值。
+同包深路径诊断仍在原 60 秒 Checkpoint 准备期限失败，未进入恢复；采样指向材料／Scope 检查点的根绑定观察，
+不把混合 I/O 整体设为纯段、不缓存认证，也不据相关回归宣布 P1 完成。
+无真实模型请求；默认写链及完整 B4/B7、原生平台和商业门禁继续开放。
+本轮原件封存于本机 `Library/Application Support/Harnessix/verification/r4-layered-preparation-20261009-v1`。
 
 ### 13.7 同锁决定恢复屏障的隔离验证
 

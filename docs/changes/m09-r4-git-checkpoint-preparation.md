@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 3
+code_revision: c3f2619424085e7a77b23cb21a087528783634f4
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions]
 related_adrs:
@@ -11,6 +11,9 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_checkpoint_layered_control.py
+  - tests/product_config/test_git_core_store_layered_persist.py
+  - tests/product_config/test_git_authentication_control.py
   - tests/product_config/test_git_checkpoint_preparation.py
   - tests/product_config/test_git_checkpoint_preparation_digest.py
   - tests/product_config/test_git_checkpoint_scope.py
@@ -32,8 +35,8 @@ supersedes: []
 
 | 项目 | 当前边界 |
 |---|---|
-| 已提交基础版本 | `29402f764eae88d50364a37817635fbb77ba907b` |
-| 设计版本 | 版本 2，2026-10-07；以第 19 节列出的源码内容摘要固定实现 |
+| 已提交基础版本 | 以 `code_revision` 为准 |
+| 设计版本 | 版本 3，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | `code_revision` 标识共同基础，不表示新增准备源码或既有源码微调已包含在该提交中 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -71,6 +74,38 @@ supersedes: []
 对应回归见 [`test_git_checkpoint_preparation_digest.py`](../../tests/product_config/test_git_checkpoint_preparation_digest.py)。
 此修复的实际 SDK 和固定 Wheel 全套结果由[组件验证](../validation/git-prepared-link-2026-10-07-v1/README.md)
 区分候选记录；最终一致候选尚未通过时，不关闭业务交付或商业发布门禁。
+
+### 1.4 原准备 Task 与 Core 持久化的分层控制
+
+深路径原 60 秒失败指向重复完整认证。根因不是期限不足，而是纯计算入口丢失确切控制类型：
+准备器原闭包没有携带分层契约，Core 的 `_Checkpoint` 包装又隐藏控制类型。
+本轮只修复这两处接线，不缓存认证、删减 I/O 检查或整体包裹材料采集器。
+
+| 原源码位置 | 分层范围 | 完整认证仍执行的位置 |
+|---|---|---|
+| [`_preparation_control` / `_prepare_entry`](../../src/harnessix/product_config/git_checkpoint_preparation.py) | 原入口冻结两条闭包；实际受管 child 创建唯一 `GitAuthenticationControl`，原严格声明快照可借用局部频检 | 入口、纯段首末、所有普通检查点及原结算出口 |
+| [`ProductGitDeliveryCoreStore._persist`](../../src/harnessix/product_config/git_delivery_core_store.py) | 原 Core 严格快照＋规范编码；实际 CAS 回读后的严格解码 | 两纯段首末、`put_blob`、`blob`、正文完整核验；I/O 不持有纯段 |
+
+准备局部检查只核对原取消、同一期限、Core Store／Process Host／Owner token／runner 引用及 planner 原字段身份。
+不调用外部 checkpoint、来源读器、SQL 或 Owner；不宣称新增 Runtime 锁／FD 证明。
+完整闭包保留原顺序：取消／期限 → 上游 checkpoint → authority → 宿主引用 → 四源码完整摘要 → planner → `_verify_host`。
+两闭包在父 Task 冻结；控制在 `CancelToken.run` 的实际 child 构造，不能在 child 重新捕获并认可替换资源。
+异 Task／线程和未知 callable 的降级规则不变，没有通用“重新绑定 Task”接口。
+
+纯段中的引用替换会在局部频检拒绝；外部来源漂移在完整边界拒绝。
+来源在同步纯段内改变后恢复不保证可见，不能将分层检查称为逐叶完整认证等价。
+回调及纯段首末失败保留原异常对象；退出认证失败不交付已计算结果。
+CAS／解析非回调失败仍沿原错误分类，持久成功后失败可留下未引用 CAS，不登记成功。
+严格声明快照在验证／序列化前拒绝可执行时区：确切 `datetime` 只接受确切
+`datetime.timezone`、`pydantic_core.TzInfo`、`zoneinfo.ZoneInfo`；不调用 `utcoffset`／`tzname` 探测类型。
+自定义 `tzinfo` 及子类返回 `git_delivery_plan_invalid`，不触发回调或 CAS；合法原时区与 JSON 字节不变。
+naive 值仍交原日期校验拒绝，不自动加时区；此约束只收紧 Python 声明输入，不改变 JSON Wire。
+原 60 秒预算、120 秒 Turn、512 KiB Core 上限、取消结算及默认未注册状态不变。
+
+负控分工为[准备闭包与原 child](../../tests/product_config/test_git_checkpoint_layered_control.py)、
+[真实临时 SQLite CAS 的持久化分层](../../tests/product_config/test_git_core_store_layered_persist.py)，
+再由原实际 SDK 测例核验认证准备／审批／恢复。替身控制单测不计为真实 Owner 授权，
+小输入或单次深路径通过也不关闭 P1、B4/B7 或商用门禁。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -341,7 +376,7 @@ Core 保存 Diff 的摘要和字节数，不把不完整 Diff 片段当作全文
 | 模块与关键符号 | 单一职责 | 不承担的职责 |
 |---|---|---|
 | `ProductGitCheckpointPreparer` | 将原认证 pending Call 协调为经复核的 Core2 准备资源 | Policy、业务批准、Git 写入、Review 发布 |
-| `_preparation_control` / `_verify_host` | 冻结原宿主引用、原授权边界和准备配方，提供同一检查点 | 替换宿主、重绑定 Owner 或续期 |
+| `_preparation_control` / `_verify_host` | 冻结原宿主引用与准备配方，分别提供局部频检及原完整认证 | 替换宿主、重绑定 Owner 或续期 |
 | `_history` / `_verify_observation` | 首末完整认证历史和物理/逻辑 Git、Source 事实复核 | 修复历史、重捕获来源或补签 |
 | `_capture_intents` / `_verify_intents` | 固定两项 UUID 意图及首末 missing 事实 | 创建工作树或生成占位文件 |
 | `collect_product_git_checkpoint_materials` | 原受控读取完整基线对象，核对全部 after 正文 | 遍历父历史、写 Git 对象库 |
@@ -524,7 +559,10 @@ Diff 只表达原净变更，Scope 则覆盖两树和全部必要对象。Commit
     prepare 首先异步交付既有父取消
     budget = 原单一 60 秒绝对预算
     freeze = 原宿主引用 + 实际准备实现摘要
-    check = 原取消 + 父新增取消 + 剩余期限 + 上游 checkpoint + freeze
+    local, full = 父Task冻结的原资源检查 / 原完整认证
+    full()
+    在受管child内创建control(local, full)，不重新冻结资源
+    check = control；仅明确同步纯算法适配局部频检，其他调用完整认证
     深快照 Thread/Turn/Call/参数/invocation/binding
     核对实际注册定义和原 invocation 构造规则
     H1 = 原 Session 完整认证历史；要求原 pending Call
@@ -678,7 +716,7 @@ finally：
 
 ### 13.2 宿主与实现冻结
 
-每个控制点均检查取消、剩余预算、原上游 checkpoint、原 authority 和宿主引用。实现摘要覆盖三份新增准备源码及 `delivery/git_inventory_wire.py` 的实际字节 SHA256，再由原规范摘要封装。启动时冻结该值，采集/持久/末段期间变化即失败；Core 保存同一配方摘要，不能继承旧实现的批准含义。
+每个完整控制点均检查取消、剩余预算、原上游 checkpoint、原 authority 和宿主引用。实现摘要覆盖三份新增准备源码及 `delivery/git_inventory_wire.py` 的实际字节 SHA256，再由原规范摘要封装。启动时冻结该值，完整边界观察到变化即失败；纯段频检规则见 §1.4。Core 保存同一配方摘要，不能继承旧实现的批准含义。
 
 该摘要不是代码签名、发行包认证或权限凭据，也不包含 CancelToken、preplanning 或所有传递依赖。第 19 节对相关既有源码另列审计摘要，不能把二者混为同一个运行时覆盖集合。源码摘要的读盘成本属于本次准备，异常则固定失败。
 
@@ -860,14 +898,16 @@ finally：
 
 ## 19. 源码版本封存与最终边界
 
-下表固定本文研究对象的实际源码内容，补充 frontmatter 的已提交基础版本。运行时 `implementation_digest` 只覆盖前三个新增模块及 InventoryWire，另外两项用于标识取消和原 Gateway 微调的配套版本。
+下表固定本文研究对象的实际源码内容，补充 frontmatter 的已提交基础版本。运行时 `implementation_digest` 只覆盖前三个新增模块及 InventoryWire，其余项用于标识严格快照、Core 持久化、取消和原 Gateway 的配套版本，不扩大运行时摘要覆盖集合。
 
 | 源码 | SHA256 |
 |---|---|
-| `src/harnessix/product_config/git_checkpoint_preparation.py` | `2688cc28e30cab371d7104fd580041cfa18681c29119d0137ed34c22e4f2c6f4` |
+| `src/harnessix/product_config/git_checkpoint_preparation.py` | `445ad35edb982194181162f4aaf588569be54381fd43c76bdc40f5151db64f03` |
 | `src/harnessix/product_config/git_checkpoint_materials.py` | `51f374ea373a45b537436b22262554cd6105145367b9bcc1ceedd7b190681313` |
 | `src/harnessix/product_config/git_checkpoint_scope.py` | `a0831bc73f3fce298cad19b2f08ecaf2fa5715c4663e0d3232cd56f6c1d3a8a3` |
 | `src/harnessix/delivery/git_inventory_wire.py` | `6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43` |
+| `src/harnessix/product_config/git_delivery_plan_snapshot.py` | `5dd8a297bd082feb5e58d6967be7afb3121e34ed24e0c2cfa2034afc1fb62983` |
+| `src/harnessix/product_config/git_delivery_core_store.py` | `10c1ef7b7246866bd8d25dc1f122f39f83521d374355d845858c4abf93535fcc` |
 | `src/harnessix/trusted_actions/agent_preplanning.py` | `b7a537dfcc403ac1db0c0427f8ee804a3c880be5840ec6547dc3c8eb5ef1ac50` |
 | `src/harnessix/agent/cancellation.py` | `429b1ade34e2f78666114806961ef59d720a5c606d044734eb34fa96b8ee19be` |
 

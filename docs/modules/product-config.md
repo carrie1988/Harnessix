@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 98
-code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
+version: 99
+code_revision: c3f2619424085e7a77b23cb21a087528783634f4
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_checkpoint_layered_control.py
+  - tests/product_config/test_git_core_store_layered_persist.py
   - tests/product_config/test_git_prepared_link_connection.py
   - tests/product_config/test_git_decision_recovery.py
   - tests/product_config/test_git_decision_link_ledger_sdk.py
@@ -2837,6 +2839,10 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 保存检查点、嵌套、跨 Task／线程及完整重入不能继承局部段；异常保持原首失败。
 正式边界与测试见[控制契约 v2](../changes/m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)，
 不宣称逐叶认证等价或完整 P1／R4 通过。
+
+准备器在原父 Task 冻结资源，在实际受管 child 构造控制；局部检查先比较 planner 内存快照，
+再读取冻结的原对象，不解引用替换代理。Core 持久化仅将严格快照／编码及回读后解码设为纯段，
+CAS 和完整边界保持原认证。范围、错误身份与负控见[准备分层设计](../changes/m09-r4-git-checkpoint-preparation.md#14-原准备-task-与-core-持久化的分层控制)。
 
 ## Git prepared 同步提交门
 
