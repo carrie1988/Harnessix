@@ -106,11 +106,9 @@ class GitAuthenticationControl:
 
     @contextmanager
     def io_progress(self) -> Iterator[Callable[[], None]]:
-        """仅给受信同步原生只读端口的 I/O 段，不是无 I/O 纯计算。
-
-        入口和成功出口完整认证；内部消费原取消、同一期限、原锁资源代际的
-        本地检查，不替代原生读取保护。保存检查点在段外、异 Task/线程或
-        任一完整检查后撤销并回到完整认证；异常不追加出口认证。
+        """受信同步原生只读端口段；首末完整认证，不是无 I/O 纯计算。
+        内部消费原取消、同一期限和原锁资源代际，不替代原生读取保护。
+        保存检查点在段外、异 Task/线程或完整重入后撤销；首失败不追加出口认证。
         """
         with GitAuthenticationControl._segments_check(self) as check:
             yield check
