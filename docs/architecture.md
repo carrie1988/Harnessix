@@ -1,8 +1,8 @@
 ---
 doc_type: system-architecture
 status: current
-version: 85
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 86
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -106,7 +106,7 @@ supersedes: []
 
 ## 1. 文档摘要
 
-Harnessix Code是本地优先、Provider中立的Coding Agent。唯一公共控制协议是Agent Protocol v1；CLI、TUI和Python
+Harnessix Code是本地优先、Provider中立的Coding Agent。唯一公共控制协议是Agent Protocol 2.0；CLI、TUI和Python
 SDK均通过Headless App Server进入同一个Agent Runtime。高风险副作用统一由Trusted Action Gateway/Router持有计划、
 Policy、审批、执行和对账权威，不存在面向用户的第二套Action HTTP API或独立Worker Queue。
 
@@ -164,7 +164,7 @@ Prompt或一个Shell工具中，就无法回答“谁批准了什么、效果是
 ```mermaid
 flowchart LR
     User[终端用户或上层应用] --> Client[CLI / TUI / Agent SDK]
-    Client <-->|Agent Protocol v1<br/>stdio JSONL| Server[Headless App Server]
+    Client <-->|Agent Protocol 2.0<br/>stdio JSONL| Server[Headless App Server]
     Server --> Agent[Agent Runtime]
     Agent --> Provider[Model Provider]
     Agent --> Context[Context Engine]
@@ -676,3 +676,17 @@ Plan/Pointer/粘性回退/Result记录位于原Root外，状态机只按实际�
 默认产品启动仅观察旧Git查询，不重放。系统、时序、数据流与Host Guarded约束见
 [Windows Git读取详设](changes/m09-r4-windows-native-git-read.md)。
 原生焦点验收、真实模型质量、脱离源码安装升级和真实用户Beta仍须分别确认。
+
+
+## 当前类型化拒绝与协议升级
+
+合法完整模型响应中的未登记工具调用产生独立、不可执行的拒绝事实，不转换为普通工具、不创建审批。
+两Provider先验证全调用组结构，Runtime在流正常关闭后以一个CAS提交调用及固定拒绝结果；
+原Usage独立记账，纠正步骤继续消费原预算。认证Session、Context/Fork、公共投影和SDK/UI共享这一事实，
+不增加独立Action服务或第二个执行入口。
+
+当前合同为Provider v4、Agent Event/Thread v21、Fork v2、Agent Protocol 2.0及migration31。
+六份受影响公共Schema为v2；未变化的公共Thread等结构仍保留v1，结构版本不等同连接协议版本。
+原Schema、旧事件与MAC保持原字节；旧1.0客户端在握手时明确失败。升级Server、SDK、CLI/UI必须使用匹配候选，
+回退使用完整匹配备份，不降写新历史。详见[完整详细设计](changes/m09-r3-unknown-tool-recovery.md)。
+离线、安装态组件验证与真实编码质量是不同门禁，R3真实Trial、R4完整Git写链及三平台原生编码仍需独立验收。

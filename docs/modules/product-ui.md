@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
+version: 20
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - product
 modules:
@@ -37,6 +37,14 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：类型化工具拒绝与配套协议升级
+
+新PublicToolCallRejectionContent显示正式中文拒绝信息，不生成执行、审批或重试操作。分页、重复页幂等、持久游标及瞬时Delta沿原投影规则，拒绝不落入Compaction分支。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/product_ui/test_rejection_rendering.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
 
 ## 1. 模块摘要
 
@@ -99,7 +107,7 @@ supersedes: []
 - 不自动清理第1001个Thread Cursor；只有上层验证Thread已归档后才能调用显式遗忘；
 - 不自动重放发生歧义的业务命令；显式Reconnect只重建连接并从持久事实恢复；
 - 不把Client Instance ID当作认证身份；
-- 不修改Agent Protocol v1、Server Session Schema或Protocol Request Ledger；
+- 不修改Agent Protocol 2.0、Server Session Schema或Protocol Request Ledger；
 - 不保存Approval Evidence、Question Answer、Steer正文或错误原文；进程重开后从持久事实重新推导；
 - 不从Provider名、模型名或内部账本推断金额；
 - 不宣称0.9.1或Windows产品支持已经完成。

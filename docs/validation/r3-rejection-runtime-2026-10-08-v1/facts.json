@@ -1,0 +1,278 @@
+{
+  "schema": "harnessix.r3-rejection-delivery/v1",
+  "source_base_revision": "e297ea89959762cb982a1299087edd5ba0db6aea",
+  "code_revision": "e297ea89959762cb982a1299087edd5ba0db6aea",
+  "package_version": "1.0.0rc1",
+  "versions": {
+    "agent_protocol": "2.0",
+    "provider_event": 4,
+    "agent_event_thread": 21,
+    "fork": 2,
+    "session_migration": 31,
+    "changed_public_schemas": 6
+  },
+  "candidate": {
+    "wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+    "exact_production_members": 554,
+    "source_wheel_installed_bytes_equal": true,
+    "production_members_sha256": "02fdadb91e2a52c98dc9d2fbea003e838752564bb4761ed356a3ff439f615e11",
+    "metadata_excluded": [
+      "__pycache__",
+      "*.pyc",
+      ".DS_Store"
+    ]
+  },
+  "final_installed_runs": [
+    {
+      "id": "installed-complete",
+      "scope": "完整Agent/Context/Session/Models/Protocol/AppServer/ProductUI七目录",
+      "terminal": true,
+      "tests": 2764,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "passed": 2763,
+      "seconds": 112.932,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-complete.xml",
+        "bytes": 1438184,
+        "sha256": "ac736989025d463eb9598d784531276c6606e68dd197d8c008872a421153ce01"
+      }
+    },
+    {
+      "id": "installed-backup-guards",
+      "scope": "完整备份、迁移清单、父闭包、原预算及产品收敛适用集合",
+      "terminal": true,
+      "tests": 318,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 318,
+      "seconds": 36.32,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-backup-guards.xml",
+        "bytes": 51397,
+        "sha256": "e87289b14404eaa99659567de757934f10db767bcd579beb4eb04a29af342336"
+      }
+    },
+    {
+      "id": "installed-r4-consumers",
+      "scope": "实际认证SDK到prepared关联COMMIT、非空只读重开及原异常身份",
+      "terminal": true,
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 2,
+      "seconds": 164.307,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-r4-consumers.xml",
+        "bytes": 607,
+        "sha256": "b4d6f4c8f669bd61558684d9dd636e349912245a5ad02b2836b3654bc39873ed"
+      }
+    },
+    {
+      "id": "installed-sdk-consumers",
+      "scope": "Artifact/Patch SDK、公开CLI、Eval CLI及Soak契约适用消费者；不是稳态Soak",
+      "terminal": true,
+      "tests": 81,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 81,
+      "seconds": 13.04,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-sdk-consumers.xml",
+        "bytes": 536687,
+        "sha256": "41a3850b0bab7ded6650a3f0744cba9e17ca4bdbd3c7a6d310eac0c1b8f89a31"
+      }
+    },
+    {
+      "id": "installed-product-cli",
+      "scope": "完整产品Server/CLI测试文件",
+      "terminal": true,
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "passed": 15,
+      "seconds": 2.718,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-product-cli.xml",
+        "bytes": 2852,
+        "sha256": "73074cee10433ce53a2a6ac9a9124cafe320b2c3ca7de3d1d6bbbd3e19b05175"
+      }
+    }
+  ],
+  "source_runs": [
+    {
+      "id": "source-complete",
+      "scope": "源码六目录回归",
+      "terminal": true,
+      "tests": 1903,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "passed": 1902,
+      "seconds": 84.226,
+      "status": "PASS",
+      "candidate_wheel_sha256": null,
+      "original": {
+        "name": "harnessix-r3-complete-finals-20261008.xml",
+        "bytes": 1312543,
+        "sha256": "162ec94fc5f360759cea102c6f577cd1737df1d49ed035fd05e47c6490b08561"
+      }
+    },
+    {
+      "id": "source-backup",
+      "scope": "源码备份及原预算",
+      "terminal": true,
+      "tests": 318,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 318,
+      "seconds": 33.33,
+      "status": "PASS",
+      "candidate_wheel_sha256": null,
+      "original": {
+        "name": "harnessix-r3-backup-guard-final-20261008.xml",
+        "bytes": 51397,
+        "sha256": "343614e324294d397d6462240ad2943e5f47d3b15ceeb85a2212c7355d30f140"
+      }
+    },
+    {
+      "id": "source-fork",
+      "scope": "Fork及所有旧事件版本边界",
+      "terminal": true,
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 49,
+      "seconds": 3.243,
+      "status": "PASS",
+      "candidate_wheel_sha256": null,
+      "original": {
+        "name": "harnessix-r3-fork-final-20261008.xml",
+        "bytes": 7582,
+        "sha256": "4ae3405f45c6993b92edcf27e72b9b0a18efe9a86e23e3d02f6b85bf9dfc624c"
+      }
+    }
+  ],
+  "intermediate_runs": [
+    {
+      "id": "preformat-installed-complete",
+      "scope": "格式收尾前安装候选；不代替最终候选",
+      "terminal": true,
+      "tests": 2764,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "passed": 2763,
+      "seconds": 112.838,
+      "status": "PASS",
+      "candidate_wheel_sha256": "74311b1b9ca30635997e42f7a5335db6067dd57af74930f68604e0ebc2814187",
+      "original": {
+        "name": "harnessix-r3-v21-installed-suites-20261008.xml",
+        "bytes": 1438184,
+        "sha256": "1f39177c0030305bc386a2af9ca7162f78589303fbf75f43e19d75088016634f"
+      }
+    },
+    {
+      "id": "preformat-installed-r4",
+      "scope": "格式收尾前消费者；不代替最终候选",
+      "terminal": true,
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 2,
+      "seconds": 148.168,
+      "status": "PASS",
+      "candidate_wheel_sha256": "74311b1b9ca30635997e42f7a5335db6067dd57af74930f68604e0ebc2814187",
+      "original": {
+        "name": "harnessix-r3-v21-r4-installed-20261008.xml",
+        "bytes": 607,
+        "sha256": "8888d6d471fbc884865c8b56dd3be8d116da686395cb40e1dcfdac70b3eb37d3"
+      }
+    },
+    {
+      "id": "intermediate-b",
+      "scope": "31项原消费者中间候选B；父源码覆盖且早于当前拒绝实现，不证明最终Wheel或Writer",
+      "terminal": true,
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 31,
+      "seconds": 3085.687,
+      "status": "PASS",
+      "candidate_wheel_sha256": null,
+      "original": {
+        "name": "harnessix-r4-consumers-installed-py312-20261008.xml",
+        "bytes": 5687,
+        "sha256": "230f7b9d2dd4c0a9cf74b608b691b60ce865c1e1e296c3e7e88799edd4d5a88e"
+      }
+    }
+  ],
+  "counting_policy": "同一用例的源码、安装及重复运行分开记录，不累加为独立用例；各集合不据耗时外推产品SLA",
+  "frozen_original_schemas": {
+    "spec/agent-event-v20.schema.json": "b9b7ab20184832c017f25bd91a67bd90b5f30cbe7f37dd6b91a5891a20cb992c",
+    "spec/agent-thread-v20.schema.json": "23f7de0415044e6eae78d1b264df4551278d65a30d2298a52b62f1c425d3dbe7",
+    "spec/provider-event-v3.schema.json": "af529e302e99bd793737262054235fd5f3c9352fbdbef2f9d138220361bfd0d5",
+    "spec/thread-fork-v1.schema.json": "9e7f154ce8b45369ef4f3ab9900151c0355345ffafab44e85d68b59430e0466c",
+    "spec/agent-protocol-command-params-v1.schema.json": "601a1d507747c6c2e04e4431cd1e1ff1fe873b364798fbeb4c0855edbca0f90f",
+    "spec/agent-protocol-event-v1.schema.json": "3f863bf7b456dd0759227a424b5dd3796092ceef917c7e7e6bd9468ee609265a",
+    "spec/agent-protocol-initialize-params-v1.schema.json": "56499b89ca9e9c9ba82b0c3bdca1435b87dc696649877d25c5ce5fc3f0ea2299",
+    "spec/agent-protocol-initialize-result-v1.schema.json": "7d97fa5a970f63d84d52dc7dea1360a5bf88adf1df779f8ee75802915a25aa91",
+    "spec/agent-protocol-item-v1.schema.json": "3b1abcdcd1f3c2978c7ff683937566c405387f2b346fdeb2a59ba13516df7de8",
+    "spec/agent-protocol-jsonrpc-error-v1.schema.json": "0df291832154e485650c4d0740ad67b72caa6160c11397e5275650beb6eb7eec",
+    "spec/agent-protocol-jsonrpc-notification-v1.schema.json": "f0a8cd8f1e9c6e24d668de8deab03af89b053633139babf339e8665433d274af",
+    "spec/agent-protocol-jsonrpc-request-v1.schema.json": "3a022a10662f53a106c639a1d00d2f07f149e4a36aae663eb422e7ec0350c83f",
+    "spec/agent-protocol-jsonrpc-success-v1.schema.json": "b0f0f8ddd02b2f8ee2a1de60f6db04ea96ca9197d6ec45189ea96aadfa10b109",
+    "spec/agent-protocol-next-result-v1.schema.json": "391be9b1970c78fe605f9cf6bd577ec22c8fb125d8a9cc6c6416fd8de6c3be73",
+    "spec/agent-protocol-query-params-v1.schema.json": "d3b9c5505ab0acbd18a9cc97c0075d7fe850a087280d6022ec230e89918c97be",
+    "spec/agent-protocol-replay-result-v1.schema.json": "7080ac8b22765c627258bea176a4f48c4b40cd92fdc4c20f2c4784aa20bf15b7",
+    "spec/agent-protocol-thread-v1.schema.json": "53af8cde1fd92ad9af742fa3f765b7ae5bcf9ec29c96d9bac2be6dc07c1c5126",
+    "spec/agent-protocol-turn-v1.schema.json": "fe2bfae38ec6c327edf23cad66377fae8367491621b55b35a9c50085b3d74e4b"
+  },
+  "migration31": {
+    "name": "0031_unknown_tool_rejection.sql",
+    "bytes": 96,
+    "sha256": "0c4203f385ceb42ceb191e0f847cd5fa3525e7ac5c33eb99870fd3defd72d380"
+  },
+  "model_requests_added": 0,
+  "quality_credit_added": 0,
+  "release_gates": {
+    "r3_strict_success": {
+      "passed": 0,
+      "required": 20
+    },
+    "r3_required_tests": {
+      "passed": 1,
+      "required": 20
+    },
+    "beta_accepted_tasks": 0,
+    "r3": "OPEN",
+    "r4": "OPEN",
+    "commercial_release": "NO_GO"
+  },
+  "remaining": [
+    "真实供应商接受未广告历史拒绝标记",
+    "同一候选完整真实20 Trial及原样评分",
+    "R4 B4/B7实际FD与锁归属",
+    "R4 P1及approved Writer/default Git完整授权写链",
+    "三平台实际编码与最终候选迁移/恢复"
+  ]
+}

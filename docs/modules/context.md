@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 6
-code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
+version: 7
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -29,6 +29,14 @@ supersedes: []
 ---
 
 # Context模块设计
+
+## 当前增量：类型化工具拒绝与配套协议升级
+
+模型历史及摘要包含独立拒绝事实，拒绝结果保持固定无效果视图。压缩不可拆散拒绝/结果；Fork v2继承闭合只读历史及原Artifact所有者，不转换为待执行调用。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/context/test_rejection_fork_v2.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
 
 函数级调用链、逐流程时序、合同字段及可跳转源码索引见 [Context 模块源码与设计解读](context-code-reading.md)。
 

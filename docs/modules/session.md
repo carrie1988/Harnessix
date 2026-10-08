@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: 2cc097250435938746d3320043eeb116e07f4633
+version: 18
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -35,6 +35,14 @@ supersedes: []
 ---
 
 # Session模块设计
+
+## 当前增量：类型化工具拒绝与配套协议升级
+
+新写事件及派生投影显式21，migration31推进最低Reader。原Seal缺省20可验证，版本声明与原正文准确相符。追加批次/Replay尾/Snapshot/Fork验证拒绝闭合；旧20不得隐藏新拒绝或空Fork v2。不更改MAC域、不补签历史。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/session/test_rejection_publication_versions.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
 
 ## 1. 文档摘要
 
@@ -529,7 +537,7 @@ rebuild(thread):
 
 ## 21. Trusted Action投影升级（0.9.1e2）
 
-migration23不新增业务表或列，只声明当前Reader能够验证Agent Event/Thread v20并阻止旧Reader接管新语义。SQLite写入仍在`_save`中把Event批次和Projection v20放入同一事务；旧v1～v19 Event JSON保持原字节。
+migration23不新增业务表或列，只声明当前Reader能够验证Agent Event/Thread v20并阻止旧Reader接管新语义。该阶段SQLite写入在`_save`中把Event批次和Projection v20放入同一事务；当前migration31新写v21；旧v1～v19 Event JSON保持原字节。
 
 ```mermaid
 sequenceDiagram
@@ -551,7 +559,7 @@ sequenceDiagram
 1. migration资源序号必须连续到26，旧25数据库只追加新的Migration记录；
 2. `_snapshot`接受Projection 1～20，未知21及以上失败关闭；
 3. `_parse_event`接受Event 1～20，v19及更早若出现统一Action字段由模型版本守卫拒绝；
-4. 新写入统一使用v20，旧事件序列和摘要不重写；
+4. migration23阶段新写v20；当前migration31新写v21，旧事件序列和摘要不重写；
 5. Snapshot重建继续复用同一Reducer，因此在线追加与离线重放对统一Action具有相同校验。
 
 专项证据位于[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)、[`test_schemas.py`](../../tests/agent/test_schemas.py)和[`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py)。

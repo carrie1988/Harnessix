@@ -20,7 +20,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-AGENT_PROTOCOL_VERSION: Literal["1.0"] = "1.0"
+AGENT_PROTOCOL_VERSION: Literal["2.0"] = "2.0"
 MAX_SAFE_JSON_INTEGER = (1 << 53) - 1
 MAX_PROTOCOL_TEXT_CHARS = 1_000_000
 MAX_PROTOCOL_COLLECTION = 8192
@@ -122,7 +122,7 @@ class ClientCapabilities(ProtocolModel):
 
 
 class InitializeParams(ProtocolModel):
-    protocol_version: Literal["1.0"]
+    protocol_version: StrictStr = Field(min_length=1, max_length=32)
     client_info: ClientInfo
     client_instance_id: UUID
     capabilities: ClientCapabilities = Field(default_factory=ClientCapabilities)
@@ -153,7 +153,7 @@ class ServerCapabilities(ProtocolModel):
 
 
 class InitializeResult(ProtocolModel):
-    protocol_version: Literal["1.0"] = AGENT_PROTOCOL_VERSION
+    protocol_version: Literal["2.0"] = AGENT_PROTOCOL_VERSION
     server_info: ServerInfo
     capabilities: ServerCapabilities
     limits: ProtocolLimits
@@ -356,6 +356,15 @@ class PublicToolCallContent(ProtocolModel):
     requires_approval: bool
 
 
+class PublicToolCallRejectionContent(ProtocolModel):
+    """仅公开拒绝事实，不携带供应商身份、原参数或执行契约。"""
+
+    kind: Literal["tool_call_rejection"] = "tool_call_rejection"
+    call_id: UUID
+    model_step: int = Field(ge=1, le=1000, strict=True)
+    reason: Literal["unregistered_tool"] = "unregistered_tool"
+
+
 class PublicToolResultContent(ProtocolModel):
     kind: Literal["tool_result"] = "tool_result"
     call_id: UUID
@@ -437,6 +446,7 @@ class PublicErrorContent(ProtocolModel):
 PublicItemContent = Annotated[
     PublicTextContent
     | PublicToolCallContent
+    | PublicToolCallRejectionContent
     | PublicToolResultContent
     | PublicApprovalRequestContent
     | PublicQuestionRequestContent
@@ -546,7 +556,7 @@ PublicEventData = Annotated[
 
 
 class PublicEvent(ProtocolModel):
-    spec_version: Literal["harnessix.agent-protocol-event/v1"] = "harnessix.agent-protocol-event/v1"
+    spec_version: Literal["harnessix.agent-protocol-event/v2"] = "harnessix.agent-protocol-event/v2"
     event_id: UUID
     thread_id: UUID
     turn_id: UUID | None = None

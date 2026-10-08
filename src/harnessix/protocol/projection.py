@@ -29,6 +29,7 @@ from harnessix.agent.models import (
     ThreadCreated,
     ThreadForked,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     TrustedActionApprovalRequestContent,
     Turn,
@@ -60,6 +61,7 @@ from harnessix.protocol.contracts import (
     PublicQuestionRequestContent,
     PublicTextContent,
     PublicToolCallContent,
+    PublicToolCallRejectionContent,
     PublicToolResultContent,
     PublicUsage,
     ThreadArchiveView,
@@ -144,6 +146,12 @@ def project_item(item: Item) -> PublicItem:
     public: PublicItemContent
     if isinstance(content, TextContent):
         public = PublicTextContent(kind=content.kind, text=content.text)
+    elif isinstance(content, ToolCallRejectionContent):
+        public = PublicToolCallRejectionContent(
+            call_id=content.call_id,
+            model_step=content.model_step,
+            reason=content.reason,
+        )
     elif isinstance(content, ToolCallContent):
         public = PublicToolCallContent(
             call_id=content.call_id,

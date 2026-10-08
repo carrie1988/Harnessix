@@ -18,7 +18,12 @@ from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.models.anthropic import AnthropicProvider
 from harnessix.models.config import AnthropicConfig, ChatCapabilities, OpenAIChatConfig
-from harnessix.models.contracts import ResponseCompleted, ResponseFailed, ToolCallCompleted
+from harnessix.models.contracts import (
+    ResponseCompleted,
+    ResponseFailed,
+    ToolCallCompleted,
+    ToolCallRejected,
+)
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
@@ -76,7 +81,9 @@ def repack(value: dict[str, Any]) -> bytes:
 async def test_bad_tool_json_never_releases_call(arguments: str) -> None:
     events, wire = await collect(tool_frames(arguments))
     assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(isinstance(e, ToolCallCompleted | ResponseCompleted) for e in events)
+    assert not any(
+        isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
+    )
     assert wire.closed
 
 
@@ -225,8 +232,19 @@ async def test_invalid_protocol(case: str) -> None:
     elif case == "server_usage":
         parts[0] = start(server_tool_use={"web_search_requests": 1, "web_fetch_requests": 0})
     events, wire = await collect(parts)
-    assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(isinstance(e, ToolCallCompleted | ResponseCompleted) for e in events)
+    if case == "unknown_tool":
+        assert [e for e in events if isinstance(e, ToolCallCompleted | ToolCallRejected)] == [
+            ToolCallRejected(call_id="toolu_0", argument_chars=2)
+        ]
+        assert events[-1] == ResponseCompleted(
+            finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=2)
+        )
+        assert all("unknown" not in event.model_dump_json() for event in events)
+    else:
+        assert events[-1] == ResponseFailed(code="invalid_provider_output")
+        assert not any(
+            isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
+        )
     assert CANARY not in repr(events) and wire.closed
 
 

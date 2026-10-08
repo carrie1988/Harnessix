@@ -273,7 +273,7 @@ async def test_raw_protocol_metadata_rejection_does_not_echo_registered_values(t
             )
             server = AgentProtocolServer(service)
             params = {
-                "protocolVersion": "1.0",
+                "protocolVersion": "2.0",
                 "clientInfo": {"name": "test", "version": "1"},
                 "clientInstanceId": str(uuid4()),
             }

@@ -406,3 +406,11 @@ Artifact字段缺少证据出发，说明静态字段来源、失败与恢复、
 [研究及完整设计](research/git-checkpoint-cooperation.md)说明原检查点到同Task协作的候选机制、不可让出段和失败语义；[限定验证](validation/git-checkpoint-cooperation-2026-10-07-v1/README.md)记录实际SDK仍有20秒占用，不作为默认产品或商用性能通过。
 
 [原安装产品成本归因](research/git-prepared-cost-attribution.md)与[固定验证](validation/git-prepared-cost-attribution-2026-10-07-v1/README.md)定位高频认证成本；不把插桩负控通过作为响应性或商用完成。
+
+## R3 类型化拒绝与 Agent Protocol 2.0
+
+[完整详细设计](changes/m09-r3-unknown-tool-recovery.md)定义整组结构先验、无执行能力拒绝、原预算纠正、
+认证Session v21/Fork v2、旧合同冻结及Server/SDK/UI配套升级。固定Wire、取消/超时/硬退出和安装态回归
+仅证明该链路，不替代真实编码Trial、R4默认Git完整写链或商用验收。
+
+- [R3类型化拒绝、Protocol 2.0与安装态闭环交付](validation/r3-rejection-runtime-2026-10-08-v1/README.md)：同一Wheel、完整适用回归、原失败及未关闭质量门禁。

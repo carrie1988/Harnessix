@@ -32,7 +32,7 @@ def frame(method, params, identity=17):
 
 def initialization(client=None):
     return {
-        "protocolVersion": "1.0",
+        "protocolVersion": "2.0",
         "clientInfo": {"name": "test", "version": "1"},
         "clientInstanceId": str(client or uuid4()),
     }

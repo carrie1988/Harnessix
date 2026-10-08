@@ -19,6 +19,7 @@ from harnessix.agent.models import (
     TextContent,
     Thread,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     TurnStatus,
 )
@@ -119,7 +120,7 @@ def _closed_group_steps(
             groups.append((item,))
         elif isinstance(content, TextContent) and content.kind == "assistant_message":
             current.append(item)
-        elif isinstance(content, ToolCallContent):
+        elif isinstance(content, ToolCallContent | ToolCallRejectionContent):
             if content.call_id in seen:
                 raise KernelError("context_compaction_invalid_history", "工具调用身份重复")
             seen.add(content.call_id)
@@ -172,6 +173,10 @@ def _summary_source(items: tuple[Item, ...]) -> str:
             data = content.model_dump(mode="json")
         elif isinstance(content, ToolCallContent):
             data = content.model_dump(mode="json", include={"kind", "call_id", "tool", "arguments"})
+        elif isinstance(content, ToolCallRejectionContent):
+            data = content.model_dump(
+                mode="json", include={"kind", "call_id", "reason", "model_step"}
+            )
         else:
             assert isinstance(content, ToolResultContent)
             data = content.model_dump(

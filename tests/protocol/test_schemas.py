@@ -34,14 +34,14 @@ def test_agent_protocol_schemas_match_runtime_contracts() -> None:
             JsonRpcSuccessResponse.model_json_schema()
         ),
         "agent-protocol-jsonrpc-error-v1.schema.json": (JsonRpcErrorResponse.model_json_schema()),
-        "agent-protocol-initialize-params-v1.schema.json": InitializeParams.model_json_schema(),
-        "agent-protocol-initialize-result-v1.schema.json": InitializeResult.model_json_schema(),
+        "agent-protocol-initialize-params-v2.schema.json": InitializeParams.model_json_schema(),
+        "agent-protocol-initialize-result-v2.schema.json": InitializeResult.model_json_schema(),
         "agent-protocol-thread-v1.schema.json": ThreadView.model_json_schema(),
         "agent-protocol-turn-v1.schema.json": TurnView.model_json_schema(),
-        "agent-protocol-item-v1.schema.json": PublicItem.model_json_schema(),
-        "agent-protocol-event-v1.schema.json": PublicEvent.model_json_schema(),
-        "agent-protocol-replay-result-v1.schema.json": EventsReplayResult.model_json_schema(),
-        "agent-protocol-next-result-v1.schema.json": EventsNextResult.model_json_schema(),
+        "agent-protocol-item-v2.schema.json": PublicItem.model_json_schema(),
+        "agent-protocol-event-v2.schema.json": PublicEvent.model_json_schema(),
+        "agent-protocol-replay-result-v2.schema.json": EventsReplayResult.model_json_schema(),
+        "agent-protocol-next-result-v2.schema.json": EventsNextResult.model_json_schema(),
         "agent-protocol-command-params-v1.schema.json": (
             TypeAdapter(AgentCommandParams).json_schema()
         ),

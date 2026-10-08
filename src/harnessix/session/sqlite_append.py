@@ -11,6 +11,7 @@ import aiosqlite
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, EventDraft, Thread
 from harnessix.agent.reducer import apply_event
+from harnessix.agent.tool_rejections import require_closed_rejections
 from harnessix.session.sqlite_publication import checkpoint, persist_event, verified_event
 from harnessix.session.store_publication import EMPTY_PREFIX, SessionPublicationBinding
 
@@ -54,8 +55,9 @@ async def append_in_transaction(
         row = await cursor.fetchone()
         if row is not None:
             if store._publication is not None:
-                await verified_event(database, store._publication, row)
-            event = store._parse_event(row)
+                _, event = await verified_event(database, store._publication, row)
+            else:
+                event = store._parse_event(row)
             stored = EventDraft.model_validate(event.model_dump(exclude={"thread_id", "sequence"}))
             if stored != draft or event.thread_id != thread_id:
                 raise KernelError("event_conflict", "同一事件 ID 已绑定不同载荷")
@@ -85,6 +87,8 @@ async def append_in_transaction(
             database, store._publication, event, prefix, history_bytes
         )
     assert thread is not None
+    # 同一批次中允许合法临时前缀，只有全部事件归约后才核验拒绝闭合。
+    require_closed_rejections(thread)
     store._fault("session.after_events")
     await store._save(database, thread, prefix=prefix, history_bytes=history_bytes)
     store._fault("session.after_projection")

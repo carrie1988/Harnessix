@@ -20,6 +20,7 @@ from harnessix.agent.models import (
     QuestionRequestContent,
     TextContent,
     Thread,
+    ToolCallRejectionContent,
     ToolResultContent,
     Turn,
     TurnStateChanged,
@@ -33,6 +34,7 @@ from harnessix.agent.reducer_support import (
     pending_calls,
     require,
 )
+from harnessix.agent.tool_rejections import require_closed_rejection_items
 from harnessix.agent.usage import (
     ModelAttempt,
     ModelAttemptFinished,
@@ -86,6 +88,30 @@ def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnSt
         require(len(history_items(thread)) == raw_items_before, "模型已输出语义Item，禁止压缩重试")
         require(not pending_calls(turn), "Context Overflow恢复时存在未结算调用")
         require(all(c.status not in COMPACTION_OPEN for c in turn.compactions), "存在开放压缩")
+    elif model_reentry and payload.reason == "tool_rejection":
+        require(event.schema_version >= 21, "目录拒绝重入需要Agent Event v21")
+        require(payload.error is None, "目录拒绝重入不能携带终止错误")
+        require(
+            turn.usage_step == turn.model_steps and turn.model_steps > 0,
+            "拒绝重入缺少当前完整响应记账",
+        )
+        require(
+            any(
+                isinstance(i.content, ToolCallRejectionContent)
+                and i.content.model_step == turn.model_steps
+                for i in turn.items
+            ),
+            "拒绝重入缺少当前步骤拒绝事实",
+        )
+        require_closed_rejection_items(turn.items)
+        require(not pending_calls(turn), "拒绝重入存在普通未结算调用")
+        require(all(i.status != ItemStatus.STARTED for i in turn.items), "拒绝重入存在开放Item")
+        require(
+            all(a.status != "running" for a in turn.accounted_attempts), "拒绝重入存在开放模型尝试"
+        )
+        require(
+            all(c.status not in COMPACTION_OPEN for c in turn.compactions), "拒绝重入存在开放压缩"
+        )
     elif model_reentry:
         require(event.schema_version >= 19 and payload.reason == "steering", "模型重入原因无效")
         inspections = [
@@ -110,6 +136,7 @@ def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnSt
         )
         require(not pending_calls(turn), "存在工具调用时不提前Steering重入")
     if target in TERMINAL_TURNS:
+        require_closed_rejection_items(turn.items)
         require(all(a.status != "running" for a in turn.accounted_attempts), "存在未结算模型尝试")
         require(all(c.status not in COMPACTION_OPEN for c in turn.compactions), "存在开放压缩")
         require(all(i.status != ItemStatus.STARTED for i in turn.items), "存在未结算 Item")

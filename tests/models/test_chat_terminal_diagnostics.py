@@ -9,13 +9,23 @@ import httpx
 import pytest
 from openai import APIConnectionError
 
-from harnessix.agent.models import Usage
+from harnessix.agent.models import (
+    ToolCallContent,
+    ToolCallRejectionContent,
+    ToolResultContent,
+    Usage,
+)
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason, diagnostic_failure
 from harnessix.models._provider_io import finish_attempt
-from harnessix.models.contracts import ResponseCompleted, ResponseFailed, ToolCallCompleted
+from harnessix.models.contracts import (
+    ResponseCompleted,
+    ResponseFailed,
+    ToolCallCompleted,
+    ToolCallRejected,
+)
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
@@ -95,17 +105,38 @@ SCENARIOS = [
 
 @pytest.mark.parametrize("scenario,reason", SCENARIOS)
 async def test_sdk_terminal_diagnostic_preserves_failure_and_releases_no_tools(scenario, reason):
+    """保留全部结构负控；完整的目录外成员仅产生闭合拒绝，不伪造协议诊断。"""
     events, wire = await collect(malformed_frames(scenario), max_attempts=3)
-    assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(isinstance(e, ToolCallCompleted | ResponseCompleted) for e in events)
     starts = [e for e in events if isinstance(e, ModelAttemptStarted)]
     ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
     assert len(starts) == len(ends) == 1
     assert ends[0].attempt_id == starts[0].attempt_id
-    assert ends[0].outcome == "failed"
-    assert ends[0].error.code == "provider_invalid_provider_output"
-    assert not ends[0].error.retryable and ends[0].error.category == "provider"
-    assert ends[0].error.message == f"Provider 返回结构化失败；chat_protocol/v1:{reason}"
+    if scenario in {"unknown_tool", "second_tool_invalid"}:
+        expected = []
+        if scenario == "second_tool_invalid":
+            expected.append(ToolCallCompleted(call_id=call()["id"], tool="test.read", arguments={}))
+        expected.append(
+            ToolCallRejected(
+                call_id=call(index=1 if scenario == "second_tool_invalid" else 0)["id"],
+                argument_chars=2,
+            )
+        )
+        assert [
+            e for e in events if isinstance(e, ToolCallCompleted | ToolCallRejected)
+        ] == expected
+        assert events[-1] == ResponseCompleted(
+            finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=2)
+        )
+        assert ends[0].outcome == "completed" and ends[0].error is None
+    else:
+        assert events[-1] == ResponseFailed(code="invalid_provider_output")
+        assert not any(
+            isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
+        )
+        assert ends[0].outcome == "failed"
+        assert ends[0].error.code == "provider_invalid_provider_output"
+        assert not ends[0].error.retryable and ends[0].error.category == "provider"
+        assert ends[0].error.message == f"Provider 返回结构化失败；chat_protocol/v1:{reason}"
     assert IDENTITY_CANARY not in repr(events)
     assert wire.closed
     if scenario != "no_usage":
@@ -121,12 +152,13 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
 ):
     store = SQLiteSessionStore(tmp_path / "session.sqlite")
     wire = WireStream(malformed_frames(scenario))
+    correction = WireStream(text_frames())
     tools = RecordingTools()
     requests = []
 
     def handle(request):
         requests.append(request)
-        return response(wire)
+        return response(wire if len(requests) == 1 else correction)
 
     with caplog.at_level(logging.INFO):
         async with OpenAIChatProvider(
@@ -135,11 +167,64 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
             async with AgentRuntime(store, provider, tools) as runtime:
                 thread = await runtime.create_thread(str(tmp_path))
                 turn = await runtime.run_turn(thread.thread_id, "协议失败诊断", request_id="r")
-    assert turn.status == "failed" and turn.error.code == "provider_invalid_provider_output"
-    assert turn.usage == Usage(input_tokens=10, output_tokens=2)
-    assert turn.model_attempts[0].status == "failed"
-    assert "chat_protocol/v1:" in turn.model_attempts[0].error.message
-    assert len(requests) == 1 and tools.calls == [] and wire.closed
+    if scenario in {"unknown_tool", "second_tool_invalid"}:
+        assert turn.status == "completed" and turn.error is None and turn.model_steps == 2
+        assert turn.usage == Usage(input_tokens=20, output_tokens=4)
+        assert len(turn.model_attempts) == 2 and all(
+            attempt.status == "completed" and attempt.error is None
+            for attempt in turn.model_attempts
+        )
+        rejected = [
+            item.content
+            for item in turn.items
+            if isinstance(item.content, ToolCallRejectionContent)
+        ]
+        assert len(rejected) == 1 and rejected[0].reason == "unregistered_tool"
+        assert rejected[0].model_step == 1
+        rejected_results = [
+            item.content
+            for item in turn.items
+            if isinstance(item.content, ToolResultContent)
+            and item.content.call_id == rejected[0].call_id
+        ]
+        assert len(rejected_results) == 1
+        result = rejected_results[0]
+        assert result.outcome == "failed" and result.output is None
+        assert result.error.model_dump() == {
+            "code": "unknown_tool",
+            "message": "工具未注册",
+            "retryable": False,
+            "category": "tool",
+        }
+        assert all(
+            getattr(result, field) is None
+            for field in (
+                "action_id",
+                "patch",
+                "patch_batch",
+                "process",
+                "trusted_action",
+                "diff_artifact",
+            )
+        )
+        assert len(requests) == 2 and wire.closed and correction.closed
+        assert len(tools.calls) == (1 if scenario == "second_tool_invalid" else 0)
+        assert all(invoked.tool == "test.read" for invoked in tools.calls)
+    else:
+        assert turn.status == "failed" and turn.error.code == "provider_invalid_provider_output"
+        assert turn.usage == Usage(input_tokens=10, output_tokens=2)
+        assert len(turn.model_attempts) == 1 and turn.model_attempts[0].status == "failed"
+        expected_reason = (
+            "tool_arguments_invalid" if scenario == "bad_json" else "completion_incomplete"
+        )
+        assert turn.model_attempts[0].error.message == (
+            f"Provider 返回结构化失败；chat_protocol/v1:{expected_reason}"
+        )
+        assert len(requests) == 1 and tools.calls == [] and wire.closed
+        assert not any(
+            isinstance(item.content, ToolCallContent | ToolCallRejectionContent | ToolResultContent)
+            for item in turn.items
+        )
     reopened = SQLiteSessionStore(store.path)
     restored = await reopened.get_thread(thread.thread_id)
     events = await reopened.events(thread.thread_id)
@@ -161,7 +246,7 @@ async def test_max_output_reason_does_not_release_partial_tools_or_get_failure_d
     assert events[-1] == ResponseCompleted(
         finish_reason="max_output_tokens", usage=Usage(input_tokens=10, output_tokens=2)
     )
-    assert not any(isinstance(e, ToolCallCompleted) for e in events)
+    assert not any(isinstance(e, ToolCallCompleted | ToolCallRejected) for e in events)
     assert [e.outcome for e in events if isinstance(e, ModelAttemptFinished)] == ["completed"]
     assert wire.closed
 

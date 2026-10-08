@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: 184fb125f6159de4202a64a525f6b5cc99f0ab97
+version: 9
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -24,6 +24,14 @@ supersedes: []
 ---
 
 # App Server模块设计
+
+## 当前增量：类型化工具拒绝与配套协议升级
+
+握手输入协议版本为严格有界字符串1～32，合法字符串再精确比较2.0。旧1.0返回 unsupported_protocol_version且连接保持NEW；坏类型/空/过长返回 invalid_params。原身份、能力、帧预算和无await发布复核不变。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/app_server/test_handshake_protocol_v2.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
 
 ## 1. 模块摘要
 

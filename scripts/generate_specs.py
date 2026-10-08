@@ -13,6 +13,7 @@ from harnessix.agent.models import (
     CompactionWindow,
     Thread,
     ThreadArchiveRecord,
+    ThreadForkSnapshotV2,
 )
 from harnessix.artifacts.contracts import (
     ArtifactPage,
@@ -354,12 +355,13 @@ def generate_specs(output: Path) -> None:
         ("product-git-action-review-document-v1", ProductGitActionReviewDocument),
     ):
         write_json(output / f"{name}.schema.json", model.model_json_schema())
-    write_json(output / "agent-event-v20.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v20.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v21.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v21.schema.json", Thread.model_json_schema())
+    write_json(output / "thread-fork-v2.schema.json", ThreadForkSnapshotV2.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
     )
-    write_json(output / "provider-event-v3.schema.json", TypeAdapter(ProviderEvent).json_schema())
+    write_json(output / "provider-event-v4.schema.json", TypeAdapter(ProviderEvent).json_schema())
     write_json(output / "openai-chat-config-v1.schema.json", OpenAIChatConfig.model_json_schema())
     write_json(output / "anthropic-config-v1.schema.json", AnthropicConfig.model_json_schema())
     write_json(
@@ -660,7 +662,20 @@ def generate_specs(output: Path) -> None:
         ("agent-protocol-replay-result", EventsReplayResult),
         ("agent-protocol-next-result", EventsNextResult),
     ):
-        write_json(output / f"{name}-v1.schema.json", model.model_json_schema())
+        version = (
+            2
+            if name
+            in {
+                "agent-protocol-initialize-params",
+                "agent-protocol-initialize-result",
+                "agent-protocol-item",
+                "agent-protocol-event",
+                "agent-protocol-replay-result",
+                "agent-protocol-next-result",
+            }
+            else 1
+        )
+        write_json(output / f"{name}-v{version}.schema.json", model.model_json_schema())
     write_json(
         output / "agent-protocol-command-params-v1.schema.json",
         TypeAdapter(AgentCommandParams).json_schema(),

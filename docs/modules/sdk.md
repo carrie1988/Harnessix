@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: f11359447f3bc68ffb97a100bb8b4bbcc1a891e5
+version: 9
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -26,12 +26,20 @@ supersedes: []
 
 # SDK模块设计
 
+## 当前增量：类型化工具拒绝与配套协议升级
+
+AgentClient通过共享AGENT_PROTOCOL_VERSION只发送2.0；SDK与Server/UI配套升级，不回退1.0。新拒绝在Replay/Next按正式联合解析；未知类型仍拒绝。JSON-RPC Envelope版本2.0与Agent Protocol连接版本是不同合同。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/app_server/test_rejection_sdk_chain.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/sdk`](../../src/harnessix/sdk/) |
-| 当前职责 | 提供Agent Protocol v1异步客户端及进程内/子进程Transport |
+| 当前职责 | 提供Agent Protocol 2.0异步客户端及进程内/子进程Transport |
 | 非职责 | 不实现Agent状态机、协议Server、Action状态迁移、自动重连、游标持久化、认证、重试策略、CLI呈现或跨语言代码生成 |
 | 兼容边界 | 旧`client.py`和`HarnessixClient/HarnessixAsyncClient`已物理删除；Agent Protocol是唯一SDK合同 |
 | 上游调用者 | 薄Agent CLI、Product UI、Python宿主和测试 |
@@ -487,9 +495,9 @@ sequenceDiagram
 
 | 字段 | 当前来源 | 真实行为 |
 |---|---|---|
-| `protocolVersion` | 固定`AGENT_PROTOCOL_VERSION` | 只发送1.0，无版本范围协商 |
+| `protocolVersion` | 固定`AGENT_PROTOCOL_VERSION` | 只发送2.0，无版本范围协商 |
 | `clientInfo.name` | 构造参数，默认`harnessix-python-sdk` | 由Protocol模型校验 |
-| `clientInfo.version` | 构造参数，默认`0.8.0` | 当前与包版本`0.1.0`不一致，不自动读取安装版本 |
+| `clientInfo.version` | 构造参数，默认`0.8.0` | 默认客户端应用身份版本仍为0.8.0，与内部RC包1.0.0rc1独立，不自动读取安装版本 |
 | `clientInstanceId` | 注入或`uuid4()` | SDK不持久；调用方负责重连复用 |
 | `capabilities.itemDeltas` | 硬编码`true` | 调用方不能关闭；其他能力使用模型默认值 |
 | `limits` | `InitializeParams`默认 | 构造接口不允许调用方自定义 |

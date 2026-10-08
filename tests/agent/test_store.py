@@ -305,7 +305,7 @@ async def test_archive_lookup_migration_upgrades_legacy_projection(tmp_path: Pat
     assert [thread.thread_id for thread in active_page] == [active.thread_id]
     assert [thread.thread_id for thread in archived_page] == [archived.thread_id]
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 30
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 31
 
 
 async def test_archive_lookup_migration_rejects_invalid_legacy_json(tmp_path: Path) -> None:
@@ -343,13 +343,13 @@ async def test_migration_idempotent_future_and_checksum(tmp_path: Path) -> None:
     await asyncio.gather(store.initialize(), SQLiteSessionStore(store.path).initialize())
     assert store.path.stat().st_mode & 0o777 == 0o600
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 30
+        assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == 31
         assert database.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
-        database.execute("INSERT INTO agent_migrations VALUES (31, 'future')")
+        database.execute("INSERT INTO agent_migrations VALUES (32, 'future')")
     with pytest.raises(KernelError, match="高于"):
         await store.initialize()
     with sqlite3.connect(store.path) as database:
-        database.execute("DELETE FROM agent_migrations WHERE version = 31")
+        database.execute("DELETE FROM agent_migrations WHERE version = 32")
         database.execute("UPDATE agent_migrations SET checksum = 'changed'")
     with pytest.raises(KernelError, match="发生变化"):
         await store.initialize()

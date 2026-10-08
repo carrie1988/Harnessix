@@ -2555,7 +2555,7 @@ R3历史严格0/20/必需测试1/20与真实Beta接受0保持，不宣称商用�
 当前优先推进R3真实编码质量及R4完整Git交付、三平台原生编码；非阻塞的其他工作暂停推进，不扩大首发范围。
 R3新增十五项离线边界验证：原未知名称诊断早于类型及JSON检查，不能据此认定结构合法；
 同组已登记写调用不部分释放、不创建审批，原Kernel错误反馈消耗原预算并响应取消。
-[拒绝反馈详设](changes/m09-r3-unknown-tool-recovery.md)仍是draft，生产Adapter与旧费用预留不变，
+该阶段[拒绝反馈详设](changes/m09-r3-unknown-tool-recovery.md)为draft；后继类型化拒绝实现见下节，旧费用预留仍不改变，
 不把录制Wire、脚本化Kernel或设计通过算作真实质量改善。
 拒绝详设已补充具体字段、全组暂存/原子配对、有证据重入、认证版本及备份候选；
 公共Item投影、Fork、压缩与远端历史标记接受性属于启用前必需边界，均未据此宣称实现。
@@ -2568,3 +2568,19 @@ SQL消费检查点前后复核同一原窗口及连接来源；正常返回但�
 同一最终Wheel的实际prepare/COMMIT后非空只读重开、四类原异常身份两项适用消费者2/2通过，完整矩阵与R4仍开放。
 详见[连接归属详设](changes/m09-r4-git-connection-ownership.md)。
 实际FD、协作锁归属、B4/B7、P1、approved Writer、三平台完整编码与R3真实门槛仍独立开放。
+
+
+### R3/R4：类型化拒绝闭环与公共协议升级
+
+两Adapter整组结构校验后按精确广告目录分类；类型化拒绝永不执行，固定失败反馈沿原预算进入新步骤。
+新增Provider v4、Agent Event/Thread v21、Fork v2与migration31；公共Agent Protocol 2.0及六份v2 Schema配套SDK/UI，
+旧Schema原字节保留，旧1.0连接明确版本拒绝。详见[总体及详细设计](changes/m09-r3-unknown-tool-recovery.md)。
+原20来源认证、旧快照重建、备份v30/v31、取消、超时、硬退出及完整回归独立验证，不删除旧失败记录。
+R4中间候选安装态Git consumer B完成31/31，耗时3085.687秒；这不是新最终Wheel、P1性能或完整默认Writer通过。
+R3仍需同一安装候选完整真实Trial及原样评分；R4仍需FD/锁、B4/B7、P1、approved Writer、默认Git完整链与三平台。
+本切片不提高原0/20、1/20及Beta接受0，不关闭商用门禁；非阻塞首发工作不扩张。
+
+同一最终Wheel554生产成员与源码/安装字节一致；完整七目录2763通过/1原生Windows跳过、备份及预算318、
+R4消费者2、其他SDK消费者81、产品CLI15通过/1原生Windows跳过分别完成，不累加重复集合。
+512源码类型检查与18份原Schema摘要通过；真实模型请求新增零，
+详见[安装态交付](validation/r3-rejection-runtime-2026-10-08-v1/README.md)。

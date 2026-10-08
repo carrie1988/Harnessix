@@ -60,6 +60,7 @@ from harnessix.agent.models import (
     ThreadCreated,
     ThreadForked,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     Turn,
     TurnStarted,
@@ -100,6 +101,7 @@ from harnessix.agent.runtime_recovery import (
     result_resume_safe,
 )
 from harnessix.agent.telemetry import KernelTelemetry
+from harnessix.agent.tool_rejections import rejection_result
 from harnessix.agent.trusted_action_runtime import (
     action_definitions,
     action_name_owned,
@@ -169,6 +171,7 @@ from harnessix.models.contracts import (
     TextDelta,
     TextStarted,
     ToolCallCompleted,
+    ToolCallRejected,
 )
 from harnessix.observability.core import NoOpObservability, Observability
 from harnessix.session.ports import SessionStore
@@ -540,11 +543,25 @@ class AgentRuntime:
             )
             async with self._lock(source_thread_id):
                 source = await self.store.get_thread(source_thread_id)
+                # 沿用v1身份命名空间；升级不能让同一请求生成第二个子Thread。
+                try:
+                    existing = await self.store.get_thread(destination_thread_id)
+                except KernelError as error:
+                    if error.code != "thread_not_found":
+                        raise
+                    existing = None
+                if existing is not None and existing.fork_snapshot is None:
+                    raise KernelError("thread_fork_conflict", "目标Thread不是该请求的Fork")
                 prepared = prepare_fork_snapshot(
                     source,
                     request_id=request_id,
                     through_turn_id=through_turn_id,
                     policy=self._tool_result_view_policy,
+                    spec_version=(
+                        existing.fork_snapshot.spec_version
+                        if existing is not None and existing.fork_snapshot is not None
+                        else "harnessix.thread-fork/v2"
+                    ),
                 )
                 if prepared.model_history is not None:
                     await self._verify_history_artifacts(
@@ -555,6 +572,16 @@ class AgentRuntime:
                     occurred_at=source.updated_at,
                     payload=ThreadForked(workspace=source.workspace, snapshot=prepared.snapshot),
                 )
+                if existing is not None:
+                    if (
+                        existing.workspace != source.workspace
+                        or existing.fork_snapshot != prepared.snapshot
+                    ):
+                        raise KernelError("event_conflict", "Fork请求已绑定其他来源历史")
+                    self._telemetry.thread_lifecycle(
+                        "fork", "completed", inherited_items=len(prepared.snapshot.items)
+                    )
+                    return existing
                 await self.validate_public_output(draft.payload.model_dump(mode="json"))
                 forked = await self.store.fork(
                     source_thread_id,
@@ -1811,8 +1838,15 @@ class AgentRuntime:
                 and item.content.kind == "user_message"
                 for item in turn.items
             )
-            target = TurnStatus.PREPARING_CONTEXT if steered else TurnStatus.FINALIZING
-            reason: Literal["normal", "steering"] = "steering" if steered else "normal"
+            rejected = any(
+                isinstance(item.content, ToolCallRejectionContent)
+                and item.content.model_step == request.step
+                for item in turn.items
+            )
+            target = TurnStatus.PREPARING_CONTEXT if steered or rejected else TurnStatus.FINALIZING
+            reason: Literal["normal", "steering", "tool_rejection"] = (
+                "steering" if steered else "tool_rejection" if rejected else "normal"
+            )
             updated = await self.store.append(
                 request.thread_id,
                 [
@@ -2443,6 +2477,7 @@ class AgentRuntime:
         completed: ResponseCompleted | None = None
         texts = ModelTextPublication(request, token, protection, self._commit, self._emit_delta)
         call_ids: set[str] = set()
+        proposals: list[ToolCallCompleted | ToolCallRejected] = []
         event_count = 0
         attempt_mode = False
         open_attempt: UUID | None = None
@@ -2529,38 +2564,16 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "Provider 尚未开始响应")
                 if isinstance(event, TextStarted | TextDelta | TextCompleted):
                     await texts.accept(event)
-                elif isinstance(event, ToolCallCompleted):
+                elif isinstance(event, ToolCallCompleted | ToolCallRejected):
                     if event.call_id in call_ids:
                         raise KernelError("invalid_provider_output", "Provider Tool Call ID 重复")
                     call_ids.add(event.call_id)
                     if len(call_ids) > request.budget.max_tool_calls_per_step:
                         raise KernelError("tool_call_limit", "单步骤 Tool Call 数量超过上限")
                     texts.account(len(event.model_dump_json()))
-                    definition = self._definitions.get(event.tool)
-                    call = ToolCallContent(
-                        call_id=new_id(),
-                        provider_call_id=event.call_id,
-                        tool=event.tool,
-                        tool_version=definition.version if definition else "unregistered",
-                        effect_class=definition.effect_class
-                        if definition
-                        else EffectClass.READ_ONLY,
-                        arguments=event.arguments,
-                        requires_approval=definition.requires_approval if definition else False,
-                        tool_fingerprint=tool_fingerprint(definition) if definition else None,
-                    )
-                    item_id = new_id()
-                    await self._commit(
-                        request.thread_id,
-                        request.turn_id,
-                        [
-                            ItemStarted(item_id=item_id, content=call),
-                            ItemFinished(
-                                item_id=item_id, status=ItemStatus.COMPLETED, content=call
-                            ),
-                        ],
-                    )
-                    self._fault("runtime.after_tool_call")
+                    if isinstance(event, ToolCallRejected):
+                        texts.account(event.argument_chars)
+                    proposals.append(event)
                 elif isinstance(event, ResponseCompleted):
                     if not texts.all_completed:
                         raise KernelError("invalid_provider_output", "响应结束时文本块尚未完成")
@@ -2589,6 +2602,52 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
+        # 原用量路径独立保留；调用组仅在流正常关闭后原子形成，拒绝无执行权。
+        payloads: list[EventPayload] = []
+        rejected_results: list[ToolResultContent] = []
+        for proposal in proposals:
+            definition = (
+                self._definitions.get(proposal.tool)
+                if isinstance(proposal, ToolCallCompleted)
+                else None
+            )
+            content: ToolCallContent | ToolCallRejectionContent
+            if isinstance(proposal, ToolCallRejected) or definition is None:
+                content = ToolCallRejectionContent(
+                    call_id=new_id(), provider_call_id=proposal.call_id, model_step=request.step
+                )
+                rejected_results.append(rejection_result(content.call_id))
+            else:
+                assert isinstance(proposal, ToolCallCompleted)
+                content = ToolCallContent(
+                    call_id=new_id(),
+                    provider_call_id=proposal.call_id,
+                    tool=proposal.tool,
+                    tool_version=definition.version,
+                    effect_class=definition.effect_class,
+                    arguments=proposal.arguments,
+                    requires_approval=definition.requires_approval,
+                    tool_fingerprint=tool_fingerprint(definition),
+                )
+            item_id = new_id()
+            payloads.extend(
+                [
+                    ItemStarted(item_id=item_id, content=content),
+                    ItemFinished(item_id=item_id, status=ItemStatus.COMPLETED, content=content),
+                ]
+            )
+        for result in rejected_results:
+            item_id = new_id()
+            payloads.extend(
+                [
+                    ItemStarted(item_id=item_id, content=result),
+                    ItemFinished(item_id=item_id, status=ItemStatus.COMPLETED, content=result),
+                ]
+            )
+        if payloads:
+            await self._commit(request.thread_id, request.turn_id, payloads)
+            for _proposal in proposals:
+                self._fault("runtime.after_tool_call")
 
     async def _finish(
         self,

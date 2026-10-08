@@ -209,7 +209,7 @@ async def test_unkeyed_adapter_cannot_overwrite_keyed_target(tmp_path):
             ("0" * 64,),
             "migration_changed",
         ),
-        ("INSERT INTO agent_migrations VALUES (31,?)", ("0" * 64,), "schema_too_new"),
+        ("INSERT INTO agent_migrations VALUES (32,?)", ("0" * 64,), "schema_too_new"),
         ("DELETE FROM agent_threads", (), "projection_missing"),
         ("UPDATE agent_threads SET snapshot_sha256=?", ("0" * 64,), "projection_corrupt"),
     ],

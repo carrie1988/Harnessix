@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: ba6171f32e5575be727364d166001ca0619db6a0
+version: 10
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -43,13 +43,21 @@ supersedes: []
 
 # Model Runtime模块设计
 
+## 当前增量：类型化工具拒绝与配套协议升级
+
+Provider Event v4新增 `ToolCallRejected`。两个Adapter先验证全组结构，再按本次精确广告目录分类；合法未知名称不透传，坏结构零提案。统一历史固定标记不进入广告，参数为空；原用量与Attempt路径保持。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/models/test_tool_rejection.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
+
 ## 1. 文档摘要
 
 | 项目 | 内容 |
 |---|---|
 | 当前Provider | OpenAI-compatible Chat Completions、Anthropic Messages、确定性Scripted/Fake Provider |
 | 核心端口 | `ModelProvider.stream(ModelRequest, CancelToken) -> AsyncGenerator[ProviderEvent]` |
-| 当前事件合同 | Provider Event v3；文本、Tool Call、结构化终态、尝试、累计用量和响应计费元数据 |
+| 当前事件合同 | Provider Event v4；文本、Tool Call、无执行能力的目录拒绝、结构化终态、尝试、累计用量和响应计费元数据 |
 | 计价合同 | Price Snapshot v1；Cost Report v1/v2/v3；显式绑定后的可重算事后估算 |
 | 本文状态 | 当前实现；`models`包现行实现的事实源 |
 | 代码版本 | 设计基线`850c7ba90bab5b1821015f3182c6ba6ac253e8aa`；增量源码身份见专项验证包 |
@@ -207,7 +215,7 @@ wire `tool_calls`却无原生调用按原`finish_tool_mismatch`拒绝且不重�
 续页revision通过，未执行工具或使用客户代码；不构成旧失败归因、完整SDK或线上普遍可靠性认证。
 后继[五工具、单system包配对](../validation/native-context-pair-2026-10-08-v1/README.md)两臂原生续页通过，
 只能排除该合成样本的确定性失效说法。新增相同字节预消费/异步流正反例，要求原包装器实际观测DONE；
-当前Models全量646项通过，不与历史644项叠加，不改变原Adapter或工具执行来源。
+该原生文本边界切片的Models全量646项曾通过，不与历史644项叠加；后继类型化拒绝改造及独立验证见本模块当前增量。
 
 ### 7.3 错误分类
 

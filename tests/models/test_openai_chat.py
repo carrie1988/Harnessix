@@ -16,7 +16,12 @@ from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
-from harnessix.models.contracts import ResponseCompleted, ResponseFailed, ToolCallCompleted
+from harnessix.models.contracts import (
+    ResponseCompleted,
+    ResponseFailed,
+    ToolCallCompleted,
+    ToolCallRejected,
+)
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
@@ -59,7 +64,9 @@ async def collect(parts: list[bytes], **limits: Any) -> tuple[list[Any], WireStr
 async def test_invalid_arguments_never_release_calls(arguments: str) -> None:
     events, wire = await collect(tool_frames(arguments))
     assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(isinstance(e, ToolCallCompleted | ResponseCompleted) for e in events)
+    assert not any(
+        isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
+    )
     assert wire.closed
 
 
@@ -154,8 +161,19 @@ async def test_malformed_wire(scenario: str) -> None:
     elif scenario == "duplicate_done":
         parts[-1] += parts[-1]
     events, wire = await collect(parts)
-    assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(isinstance(e, ToolCallCompleted | ResponseCompleted) for e in events)
+    if scenario == "unknown_tool":
+        assert [e for e in events if isinstance(e, ToolCallCompleted | ToolCallRejected)] == [
+            ToolCallRejected(call_id=call()["id"], argument_chars=2)
+        ]
+        assert events[-1] == ResponseCompleted(
+            finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=2)
+        )
+        assert "not-registered" not in repr(events)
+    else:
+        assert events[-1] == ResponseFailed(code="invalid_provider_output")
+        assert not any(
+            isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
+        )
     assert wire.closed
 
 

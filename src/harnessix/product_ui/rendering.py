@@ -17,6 +17,7 @@ from harnessix.protocol.contracts import (
     PublicQuestionRequestContent,
     PublicTextContent,
     PublicToolCallContent,
+    PublicToolCallRejectionContent,
     PublicToolResultContent,
     ThreadView,
 )
@@ -48,6 +49,14 @@ def _item_lines(item: PublicItem) -> tuple[TranscriptLine, ...]:
                 f"{index}. [{step.status}] {step.description}",
             )
             for index, step in enumerate(content.steps, 1)
+        )
+    if isinstance(content, PublicToolCallRejectionContent):
+        return (
+            TranscriptLine(
+                item_id,
+                "工具调用拒绝",
+                f"第 {content.model_step} 步：工具未注册，调用已拒绝",
+            ),
         )
     if isinstance(content, PublicToolCallContent):
         approval = "需要审批" if content.requires_approval else "无需审批"

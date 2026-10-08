@@ -18,8 +18,10 @@ from harnessix.agent.models import (
     TextContent,
     Thread,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
 )
+from harnessix.agent.tool_rejections import require_rejection_result
 from harnessix.artifacts.contracts import ArtifactOmittedField, ArtifactPage, ArtifactRef
 from harnessix.context.tool_result_contracts import (
     TOOL_RESULT_OMISSION_VERSION,
@@ -76,7 +78,10 @@ def history_items(thread: Thread) -> tuple[Item, ...]:
         for turn in thread.turns
         for item in turn.items
         if item.status == ItemStatus.COMPLETED
-        and isinstance(item.content, TextContent | ToolCallContent | ToolResultContent)
+        and isinstance(
+            item.content,
+            TextContent | ToolCallContent | ToolCallRejectionContent | ToolResultContent,
+        )
     )
     return (*inherited, *local)
 
@@ -108,8 +113,11 @@ def _artifact(value: object) -> ArtifactRef:
 
 
 def _bindings(
-    content: ToolResultContent, call: ToolCallContent
+    content: ToolResultContent, call: ToolCallContent | ToolCallRejectionContent
 ) -> tuple[ToolResultArtifactBinding, ...]:
+    if isinstance(call, ToolCallRejectionContent):
+        require_rejection_result(content)
+        return ()
     found: list[ToolResultArtifactBinding] = []
     output = content.output
     if isinstance(output, dict) and "artifact" in output:
@@ -211,7 +219,11 @@ def _replacement(
 
 
 def _new_decision(
-    item: Item, call: ToolCallContent, policy: ToolResultViewPolicy, *, legacy: bool
+    item: Item,
+    call: ToolCallContent | ToolCallRejectionContent,
+    policy: ToolResultViewPolicy,
+    *,
+    legacy: bool,
 ) -> tuple[ToolResultViewDecision, ToolResultContent]:
     assert isinstance(item.content, ToolResultContent)
     content = item.content
@@ -255,7 +267,7 @@ def _new_decision(
 
 def _apply_decision(
     item: Item,
-    call: ToolCallContent,
+    call: ToolCallContent | ToolCallRejectionContent,
     decision: ToolResultViewDecision,
     policy: ToolResultViewPolicy,
 ) -> ToolResultContent:
@@ -360,14 +372,14 @@ def prepare_model_history_items(
     supplied = {decision.item_id: decision for decision in decisions or ()}
     if len(supplied) != len(decisions or ()) or set(supplied) & set(decisions_by_item):
         raise KernelError("context_tool_result_decision_mismatch", "新模型视图决定重复")
-    calls: dict[UUID, ToolCallContent] = {}
+    calls: dict[UUID, ToolCallContent | ToolCallRejectionContent] = {}
     settled: set[UUID] = set()
 
     prepared: list[Item] = []
     used: list[ToolResultViewDecision] = []
     created: list[ToolResultViewDecision] = []
     for item in source_history:
-        if isinstance(item.content, ToolCallContent):
+        if isinstance(item.content, ToolCallContent | ToolCallRejectionContent):
             if item.content.call_id in calls:
                 raise KernelError("context_tool_result_decision_mismatch", "历史调用身份重复")
             calls[item.content.call_id] = item.content

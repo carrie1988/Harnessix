@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from typing import Literal
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
@@ -13,6 +14,8 @@ from harnessix.agent.models import (
     Item,
     Thread,
     ThreadForkSnapshot,
+    ThreadForkSnapshotRecord,
+    ThreadForkSnapshotV2,
     ToolResultContent,
     TurnStatus,
 )
@@ -27,7 +30,7 @@ from harnessix.context.tool_result_view import (
 
 @dataclass(frozen=True, slots=True)
 class PreparedForkSnapshot:
-    snapshot: ThreadForkSnapshot
+    snapshot: ThreadForkSnapshotRecord
     model_history: PreparedModelHistory | None
 
 
@@ -149,7 +152,13 @@ def prepare_fork_snapshot(
     request_id: str,
     through_turn_id: UUID | None,
     policy: ToolResultViewPolicy,
+    spec_version: Literal["harnessix.thread-fork/v1", "harnessix.thread-fork/v2"] = (
+        "harnessix.thread-fork/v2"
+    ),
 ) -> PreparedForkSnapshot:
+    snapshot_type = (
+        ThreadForkSnapshot if spec_version == "harnessix.thread-fork/v1" else ThreadForkSnapshotV2
+    )
     source = _source_history(thread, through_turn_id)
     effective_turn_id = through_turn_id
     if effective_turn_id is None:
@@ -159,7 +168,7 @@ def prepare_fork_snapshot(
             effective_turn_id = thread.fork_snapshot.through_turn_id
     if not source:
         digest = _history_sha256(())
-        snapshot = ThreadForkSnapshot(
+        snapshot = snapshot_type(
             request_id=request_id,
             source_thread_id=thread.thread_id,
             source_sequence=thread.sequence,
@@ -173,7 +182,7 @@ def prepare_fork_snapshot(
         return PreparedForkSnapshot(snapshot=snapshot, model_history=None)
     prepared = prepare_model_history_items(thread, source, 1, policy)
     decisions = _ordered_decisions(thread, source, prepared.new_decisions)
-    snapshot = ThreadForkSnapshot(
+    snapshot = snapshot_type(
         request_id=request_id,
         source_thread_id=thread.thread_id,
         source_sequence=thread.sequence,
@@ -195,7 +204,7 @@ def prepare_fork_snapshot(
 
 
 def validate_fork_snapshot(
-    source: Thread, snapshot: ThreadForkSnapshot
+    source: Thread, snapshot: ThreadForkSnapshotRecord
 ) -> PreparedModelHistory | None:
     if (
         snapshot.source_thread_id != source.thread_id
@@ -208,6 +217,7 @@ def validate_fork_snapshot(
         request_id=snapshot.request_id,
         through_turn_id=snapshot.through_turn_id,
         policy=snapshot.tool_result_view_policy,
+        spec_version=snapshot.spec_version,
     )
     if expected.snapshot != snapshot:
         raise KernelError("thread_fork_invalid", "Fork快照不能由来源Thread确定性重建")

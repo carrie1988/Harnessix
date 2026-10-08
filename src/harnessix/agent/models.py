@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Any, ClassVar, Literal, Self
 from uuid import UUID
 
 from pydantic import (
@@ -165,6 +165,16 @@ class ToolCallContent(ContractModel):
     arguments: dict[str, JsonValue] = Field(default_factory=dict)
     requires_approval: bool = False
     tool_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+
+class ToolCallRejectionContent(ContractModel):
+    """已完成的目录拒绝事实，不携带可执行工具契约或原参数。"""
+
+    kind: Literal["tool_call_rejection"] = "tool_call_rejection"
+    call_id: UUID
+    provider_call_id: str = Field(min_length=1, max_length=256, strict=True)
+    model_step: int = Field(ge=1, le=1000, strict=True)
+    reason: Literal["unregistered_tool"] = "unregistered_tool"
 
 
 class AskUserInput(ContractModel):
@@ -470,6 +480,7 @@ class ErrorContent(ContractModel):
 ItemContent = Annotated[
     TextContent
     | ToolCallContent
+    | ToolCallRejectionContent
     | ToolResultContent
     | ApprovalRequestContent
     | PatchApprovalRequestContent
@@ -498,10 +509,10 @@ class ForkArtifactOwner(ContractModel):
     owner_thread_id: UUID
 
 
-class ThreadForkSnapshot(ContractModel):
+class _ThreadForkSnapshotBase(ContractModel):
     """Fork继承的只读历史；不属于子Thread的可执行Turn。"""
 
-    spec_version: Literal["harnessix.thread-fork/v1"] = "harnessix.thread-fork/v1"
+    _allow_rejections: ClassVar[bool] = False
     authority: Literal["none"] = "none"
     request_id: str = Field(min_length=1, max_length=256)
     source_thread_id: UUID
@@ -526,11 +537,14 @@ class ThreadForkSnapshot(ContractModel):
         settled: set[UUID] = set()
         result_ids: set[UUID] = set()
         for item in self.items:
-            if item.status != ItemStatus.COMPLETED or not isinstance(
-                item.content, TextContent | ToolCallContent | ToolResultContent
-            ):
+            history_types = (
+                (TextContent, ToolCallContent, ToolResultContent, ToolCallRejectionContent)
+                if self._allow_rejections
+                else (TextContent, ToolCallContent, ToolResultContent)
+            )
+            if item.status != ItemStatus.COMPLETED or not isinstance(item.content, history_types):
                 raise ValueError("Fork只能继承已完成的模型历史Item")
-            if isinstance(item.content, ToolCallContent):
+            if isinstance(item.content, ToolCallContent | ToolCallRejectionContent):
                 if item.content.call_id in calls:
                     raise ValueError("Fork历史Tool Call身份重复")
                 calls.add(item.content.call_id)
@@ -541,6 +555,14 @@ class ThreadForkSnapshot(ContractModel):
                 result_ids.add(item.item_id)
         if calls != settled:
             raise ValueError("Fork历史不能继承未结算Tool Call")
+        if self._allow_rejections:
+            from harnessix.agent.errors import KernelError
+            from harnessix.agent.tool_rejections import require_closed_rejection_items
+
+            try:
+                require_closed_rejection_items(self.items)
+            except KernelError:
+                raise ValueError("Fork工具拒绝事实及结果不完整或无效") from None
         decisions = self.tool_result_view_decisions
         if (
             len({decision.item_id for decision in decisions}) != len(decisions)
@@ -567,6 +589,24 @@ class ThreadForkSnapshot(ContractModel):
         if hashlib.sha256(encoded).hexdigest() != self.source_history_sha256:
             raise ValueError("Fork历史摘要与Item不一致")
         return self
+
+
+class ThreadForkSnapshot(_ThreadForkSnapshotBase):
+    """冻结v1白名单；禁止在旧快照中加入拒绝历史。"""
+
+    spec_version: Literal["harnessix.thread-fork/v1"] = "harnessix.thread-fork/v1"
+
+
+class ThreadForkSnapshotV2(_ThreadForkSnapshotBase):
+    """v2继承闭合拒绝历史；拒绝记录不携带执行权限。"""
+
+    _allow_rejections: ClassVar[bool] = True
+    spec_version: Literal["harnessix.thread-fork/v2"] = "harnessix.thread-fork/v2"
+
+
+ThreadForkSnapshotRecord = Annotated[
+    ThreadForkSnapshot | ThreadForkSnapshotV2, Field(discriminator="spec_version")
+]
 
 
 class ThreadArchiveRecord(ContractModel):
@@ -652,10 +692,21 @@ class Thread(ContractModel):
     turns: tuple[Turn, ...] = ()
     compaction_windows: tuple[CompactionWindow, ...] = Field(default_factory=tuple, max_length=1000)
     active_compaction_window_id: UUID | None = None
-    fork_snapshot: ThreadForkSnapshot | None = None
+    fork_snapshot: ThreadForkSnapshotRecord | None = None
     archive: ThreadArchiveRecord | None = None
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="after")
+    def closed_tool_rejections(self) -> Self:
+        from harnessix.agent.errors import KernelError
+        from harnessix.agent.tool_rejections import require_closed_rejections
+
+        try:
+            require_closed_rejections(self)
+        except KernelError:
+            raise ValueError("Thread目录拒绝配对不完整或无效") from None
+        return self
 
     @model_validator(mode="after")
     def linear_compaction_windows(self) -> Self:
@@ -711,7 +762,7 @@ class ThreadCreated(ContractModel):
 class ThreadForked(ContractModel):
     type: Literal["thread_forked"] = "thread_forked"
     workspace: str = Field(min_length=1, max_length=4096)
-    snapshot: ThreadForkSnapshot
+    snapshot: ThreadForkSnapshotRecord
 
     @field_validator("workspace")
     @classmethod
@@ -740,7 +791,7 @@ class TurnStateChanged(ContractModel):
     type: Literal["turn_state_changed"] = "turn_state_changed"
     status: TurnStatus
     error: AgentFailure | None = None
-    reason: Literal["normal", "context_overflow", "steering"] = "normal"
+    reason: Literal["normal", "context_overflow", "steering", "tool_rejection"] = "normal"
 
 
 class ItemStarted(ContractModel):
@@ -796,8 +847,8 @@ EventPayload = Annotated[
 
 class EventDraft(ContractModel):
     schema_version: Literal[
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-    ] = 20
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
+    ] = 21
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)

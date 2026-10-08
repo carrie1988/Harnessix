@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "self_excluded": true,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 10432,
+      "sha256": "a724e602da5f2786a5d15f73256aa30cabd7609f0f17679e43b6a231baf24bf9"
+    },
+    {
+      "path": "REVIEW_PACKET.md",
+      "bytes": 3073,
+      "sha256": "694a9124ea6d3f2a493a1700a12fdb94e3e05c1eb8749957adaaa841fe899f48"
+    },
+    {
+      "path": "diagrams/diagram-1.svg",
+      "bytes": 21707,
+      "sha256": "6b01faa0e978eb5d6e88b04ffbd5b32b0e77ab9327354a421d0854efa903acdc"
+    },
+    {
+      "path": "diagrams/diagram-2.svg",
+      "bytes": 27387,
+      "sha256": "f30c71e1bca27669eb0d162a71c9e65c84bad35042b707b513bb237ca22090d4"
+    },
+    {
+      "path": "diagrams/diagram-3.svg",
+      "bytes": 19069,
+      "sha256": "dce3ecfd0b793e27f2f74ba1c54f723995c47b785a7efb14000e66b7e28ddef6"
+    },
+    {
+      "path": "diagrams/diagram-4.svg",
+      "bytes": 15602,
+      "sha256": "0a06ca616e18136c071330122285b5c88fdf07689090da64b7bf38e0a5de7893"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 10234,
+      "sha256": "fac3ecec05693d617e81ad3b004f261204d552fc291518772b67d6dc7a3e7a5b"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 9987,
+      "sha256": "bd2e1fdcab7821dc40911a59402ccd86735609259780b41d6813e49265f2bee8"
+    }
+  ]
+}

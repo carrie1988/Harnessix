@@ -219,4 +219,7 @@ def replay(events: Iterable[AgentEvent]) -> Thread:
         thread = apply_event(thread, event)
     if thread is None:
         raise KernelError("empty_transcript", "Transcript 为空")
+    from harnessix.agent.tool_rejections import require_closed_rejections
+
+    require_closed_rejections(thread)
     return thread

@@ -54,6 +54,15 @@ class ToolCallCompleted(ContractModel):
     arguments: dict[str, JsonValue] = Field(default_factory=dict)
 
 
+class ToolCallRejected(ContractModel):
+    """结构完整但不在本次目录的提案；无名称、参数或执行能力。"""
+
+    type: Literal["tool_call_rejected"] = "tool_call_rejected"
+    call_id: str = Field(min_length=1, max_length=256, strict=True)
+    reason: Literal["unregistered_tool"] = "unregistered_tool"
+    argument_chars: int = Field(ge=0, le=1_000_000, strict=True)
+
+
 class ResponseCompleted(ContractModel):
     type: Literal["response_completed"] = "response_completed"
     finish_reason: Literal[
@@ -86,6 +95,7 @@ ProviderEvent = Annotated[
     | TextDelta
     | TextCompleted
     | ToolCallCompleted
+    | ToolCallRejected
     | ResponseCompleted
     | ResponseFailed
     | ModelAttemptStarted

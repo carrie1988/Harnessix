@@ -110,7 +110,8 @@ Harnessix Code复用模型供应商SDK、OpenTelemetry、SQLite、Git、系统�
 
 ## 当前已实现：产品运行时与可信扩展（0.8）
 
-- Agent Protocol v1使用严格JSON-RPC 2.0/stdio JSONL合同，Command的持久`requestId`与连接内JSON-RPC `id`分离；
+- Agent Protocol 2.0使用严格JSON-RPC 2.0/stdio JSONL合同，Command的持久`requestId`与连接内JSON-RPC `id`分离；
+- Protocol 2.0新增不可执行的工具拒绝Item；内置SDK/UI配套升级，旧1.0在握手时明确拒绝；旧Schema保持原字节，详见[拒绝闭环设计](docs/changes/m09-r3-unknown-tool-recovery.md)；
 - Headless App Server复用唯一Agent Runtime和Session Store，支持Thread创建、恢复、分叉、归档，Turn开始、重试、取消、审批、提问与Steering；
 - Python Agent SDK支持进程内和子进程传输；子进程传输以唯一Reader和`id → Future`表归并乱序响应，长轮询不会阻塞控制命令；
 - 0.9.3a为本地传输增加`Pending + Abandoned`共享容量、守护stdio Reader/Writer泵、Writer故障主动唤醒和取消安全Close；资源快照只返回状态、计数、stderr字节数和稳定失败Code；
@@ -615,7 +616,7 @@ Anthropic 当前是非 Thinking 的 Messages 配置，要求完整缓存计数�
 - unknown/partial/complete 用量，缓存与推理子集不重复加总，未知值不填零；
 - 重复累计观测、最终响应与重试共用一份预算记账；
 - 失败/取消保留已知用量，进程恢复不重发模型请求；
-- 当时交付Agent Event/Thread v4、Provider Event v2、真实v1/v2/v3会话升级与冻结Schema（当前为Agent Event v19/Provider v3）；
+- 当时交付Agent Event/Thread v4、Provider Event v2、真实v1/v2/v3会话升级与冻结Schema（当前为Agent Event/Thread v21、Provider v4）；
 - 两类实际 SDK 在 HTTP 前发布尝试意图，重试使用独立 UUID，不把意图当作已收费；
 - 缓存读取/创建与公开推理计数映射、响应失败时保留最后合法观测；
 - 当时交付 23 个模型尝试相关子进程崩溃切点，全项目合计 49 个；0.4.3b2 后分别为 28 / 54 个；差额 Token 指标。

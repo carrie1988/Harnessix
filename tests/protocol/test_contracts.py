@@ -80,12 +80,12 @@ def test_jsonrpc_wire_shape_is_standard_and_strict() -> None:
 
 def test_initialize_and_command_params_use_camel_case_and_reject_unknown_fields() -> None:
     initialized = InitializeParams(
-        protocol_version="1.0",
+        protocol_version="2.0",
         client_info=ClientInfo(name="harnessix-cli", version="0.8.0"),
         client_instance_id=uuid4(),
     )
     wire = initialized.model_dump(mode="json", by_alias=True)
-    assert wire["protocolVersion"] == "1.0"
+    assert wire["protocolVersion"] == "2.0"
     assert wire["clientInfo"]["name"] == "harnessix-cli"
     assert "client_instance_id" not in wire
 

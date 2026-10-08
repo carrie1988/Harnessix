@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 11
-code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
+version: 12
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -39,7 +39,7 @@ Revision支持的操作规则。
 
 | 状态 | 当前Schema机制 | 自动升级 | 降级策略 |
 |---|---|---|---|
-| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0030 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份或Plan绑定维护备份 |
+| Agent Session `sessions.db` | `agent_migrations(version, checksum)`，当前资源到0031 | 初始化时同一事务顺序执行 | 不支持Down Migration；恢复升级前完整备份或Plan绑定维护备份 |
 | 旧Action SQLite/PostgreSQL Journal | 冻结历史Schema | 当前产品不自动升级 | 停写归档；按[归档手册](legacy-action-archive.md)处理 |
 | Product Config源 | v1/v2严格JSON与源摘要CAS | 只通过显式`config migrate` | v1备份文件或配置管理系统版本 |
 | Product Config审计库 | 内部SQLite表和Hash链 | Store初始化 | 与对应配置源和Session一起恢复 |
@@ -283,3 +283,19 @@ Agent Server通过`--expected-active-sha256`和`--expected-active-profile`对配
 不是程序版本自动回退，也不授权旧Reader读取新Schema。原Root保留于Previous，
 目录切换前Plan/指针耐久，回退决定粘性，详见[恢复设计](../changes/m09-r1-product-state-restore.md)。
 当前尚不能据此宣称候选至1.0三平台升级或旧未证明历史迁移完成。
+
+
+## Agent Protocol 2.0与拒绝事实升级
+
+当前Agent Event/Thread为v21、Provider Event为v4、Fork为v2，Session迁移资源到0031。
+新拒绝事实及固定失败结果原子配对，旧认证来源v20继续按原MAC和完整原字节验证，不补签或重写旧历史。
+0031仅为语义兼容界标，不增业务表；旧Reader即使表布局相同也必须拒绝更高迁移版本。
+备份读取只接受完整、准确的已冻结30/31项迁移清单与Checksum，不接受任意前缀或重复条目。
+
+1. 停止入口并保留原程序、匹配配置和完整State Root备份，记录活动Turn及未决效果。
+2. Server、内置SDK、CLI/UI安装同一候选；Agent Protocol仅支持2.0，旧1.0连接返回unsupported_protocol_version。
+3. 在隔离副本验证迁移、认证重开、拒绝配对、Replay/Fork及恢复，不自动重发原模型请求。
+4. 回退先停写，再恢复旧版本匹配的完整备份，最后切换旧程序；不得删除新拒绝记录或手改Migration版本。
+
+本次离线旧Reader验证使用冻结的旧迁移资源，不等同所有历史发行可执行包的实际降级验证；
+macOS、Linux、Windows实际安装与编码仍需独立验收。详见[契约及详细设计](../changes/m09-r3-unknown-tool-recovery.md)。

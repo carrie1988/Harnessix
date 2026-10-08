@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 89
-code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
+version: 90
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -91,6 +91,14 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Product Config模块设计
+
+## 当前增量：类型化工具拒绝与配套协议升级
+
+产品备份只接受冻结完整Session v30或v31 checksum集合；拒绝任意旧前缀、重复/混合集合和v30隐藏v21事实。恢复原字节后沿正式初始化升级，不重签历史；配套Protocol 2.0不改变原Provider预算或价格。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/product_config/test_rejection_backup_versions.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
 
 ## 1. 模块摘要
 

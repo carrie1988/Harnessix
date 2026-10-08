@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from openai.types.chat import ChatCompletionChunk
-from pydantic import ValidationError
+from pydantic import JsonValue, ValidationError
 
 from harnessix.agent.billing import ResponseBillingMetadata
 from harnessix.agent.models import Usage
@@ -24,6 +24,7 @@ from harnessix.models.contracts import (
     TextDelta,
     TextStarted,
     ToolCallCompleted,
+    ToolCallRejected,
 )
 
 
@@ -35,19 +36,23 @@ class CallParts:
     type: str | None = None
 
 
-def _complete_calls(calls: dict[int, CallParts], names: dict[str, str]) -> list[ToolCallCompleted]:
-    """先校验完整调用组再返回事件；任一失败都不向外释放部分工具。"""
+def _complete_calls(
+    calls: dict[int, CallParts], names: dict[str, str]
+) -> list[ToolCallCompleted | ToolCallRejected]:
+    """先校验整组结构，再按本次精确目录分类；畸形组不释放任何提案。"""
     if sorted(calls) != list(range(len(calls))):
         raise ChatProtocolError(ChatProtocolReason.TOOL_INDEX_GAP)
-    events: list[ToolCallCompleted] = []
+    validated: list[tuple[str, str, dict[str, JsonValue], int]] = []
     ids: set[str] = set()
     for index in sorted(calls):
         call = calls[index]
         if not call.call_id:
             raise ChatProtocolError(ChatProtocolReason.TOOL_ID_MISSING)
+        if len(call.call_id) > 256:
+            raise InvalidWireData("工具调用 ID 超过长度上限")
         if call.call_id in ids:
             raise ChatProtocolError(ChatProtocolReason.TOOL_ID_DUPLICATE)
-        if call.name is None or call.name not in names:
+        if not isinstance(call.name, str) or not 1 <= len(call.name) <= 256:
             raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_UNKNOWN)
         if call.type != "function":
             raise ChatProtocolError(ChatProtocolReason.TOOL_TYPE_INVALID)
@@ -58,10 +63,13 @@ def _complete_calls(calls: dict[int, CallParts], names: dict[str, str]) -> list[
             raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_INVALID) from None
         if not isinstance(arguments, dict):
             raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT)
-        events.append(
-            ToolCallCompleted(call_id=call.call_id, tool=names[call.name], arguments=arguments)
-        )
-    return events
+        validated.append((call.call_id, call.name, arguments, len(call.arguments)))
+    return [
+        ToolCallCompleted(call_id=call_id, tool=names[name], arguments=arguments)
+        if name in names
+        else ToolCallRejected(call_id=call_id, argument_chars=argument_chars)
+        for call_id, name, arguments, argument_chars in validated
+    ]
 
 
 def validate_frame(name: bytes, data: bytes) -> None:
@@ -175,6 +183,8 @@ class ChatStream:
                 call.type = part.type
             if part.function is not None:
                 if part.function.name is not None:
+                    if not 1 <= len(part.function.name) <= 256:
+                        raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_UNKNOWN)
                     if call.name is not None and call.name != part.function.name:
                         raise InvalidWireData("工具名称漂移")
                     call.name = part.function.name

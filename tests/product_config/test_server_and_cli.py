@@ -698,7 +698,7 @@ async def test_product_server_advertises_default_scoped_artifact_reader(
         "id": "initialize-artifacts",
         "method": "initialize",
         "params": {
-            "protocolVersion": "1.0",
+            "protocolVersion": "2.0",
             "clientInfo": {"name": "product-artifact-test", "version": "1"},
             "clientInstanceId": str(uuid4()),
         },
@@ -737,6 +737,7 @@ async def test_product_server_advertises_default_scoped_artifact_reader(
 
     messages = [json.loads(line) for line in output.getvalue().splitlines()]
     assert len(messages) == 2
+    assert messages[0]["result"]["protocolVersion"] == "2.0"
     capabilities = messages[0]["result"]["capabilities"]
     assert capabilities["artifactPages"] is True
     assert "artifact/read" in capabilities["methods"]

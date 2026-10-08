@@ -79,7 +79,7 @@ class InProcessAgentTransport:
 
 
 class AgentClient:
-    """Agent Protocol v1异步SDK；领域requestId由调用方控制并可安全复用。"""
+    """Agent Protocol 2.0异步SDK；领域requestId由调用方控制并可安全复用。"""
 
     def __init__(
         self,

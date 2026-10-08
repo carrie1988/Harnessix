@@ -207,7 +207,8 @@ async def test_tool_call_publication_rejects_before_persistence_or_execution(tmp
                 ResponseStarted(response_id="r"),
                 ToolCallCompleted(**data),
                 ResponseCompleted(finish_reason="tool_calls"),
-            ]
+            ],
+            answer(),
         ]
     )
     store = SQLiteSessionStore(tmp_path / "s.db")
@@ -215,7 +216,15 @@ async def test_tool_call_publication_rejects_before_persistence_or_execution(tmp
         async with AgentRuntime(store, provider, tools, public_output_protection=scope) as agent:
             thread = await agent.create_thread(str(tmp_path))
             result = await agent.run_turn(thread.thread_id, "参数保护", request_id="call")
-            assert result.error.code == "public_output_secret_leak" and not tools.calls
+            if field == "tool":
+                # 未登记名称不进入持久化：只留下不可执行的目录拒绝与固定失败反馈。
+                from harnessix.agent.models import ToolCallRejectionContent
+
+                assert result.status is TurnStatus.COMPLETED and result.error is None
+                assert any(isinstance(i.content, ToolCallRejectionContent) for i in result.items)
+            else:
+                assert result.error.code == "public_output_secret_leak"
+            assert not tools.calls
             assert CANARY not in result.model_dump_json()
             assert CANARY not in (await store.get_thread(thread.thread_id)).model_dump_json()
 

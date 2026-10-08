@@ -13,8 +13,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import AgentEvent, Thread
+from harnessix.agent.models import AgentEvent, Thread, ToolCallRejectionContent
 from harnessix.agent.publication import PublicOutputProtection, protect_json
+from harnessix.agent.tool_rejections import require_closed_rejections
 from harnessix.session.git_prefix_contracts import GitStorePrefixAnchorClaims
 from harnessix.session.git_publication_contracts import (
     GitDeliveryRecordClaims,
@@ -50,6 +51,29 @@ def original_bytes(value: object, maximum: int) -> bytes:
     return body
 
 
+def require_projection_content_version(thread: Thread, version: int) -> None:
+    """投影没有内嵌版本；旧声明不得容纳v21拒绝事实，包括继承历史。"""
+    if type(version) is not int or not 1 <= version <= 21:
+        raise unproven()
+    if version < 21:
+        if (
+            thread.fork_snapshot is not None
+            and thread.fork_snapshot.spec_version != "harnessix.thread-fork/v1"
+        ):
+            raise unproven()
+        groups = (turn.items for turn in thread.turns)
+        if any(
+            isinstance(item.content, ToolCallRejectionContent) for items in groups for item in items
+        ) or (
+            thread.fork_snapshot is not None
+            and any(
+                isinstance(item.content, ToolCallRejectionContent)
+                for item in thread.fork_snapshot.items
+            )
+        ):
+            raise unproven()
+
+
 def extend_prefix(previous: str, encoded_event_seal: bytes) -> str:
     """无密钥链摘要只由认证Checkpoint赋予信任，单独存储值不构成证明。"""
     return hashlib.sha256(
@@ -79,7 +103,8 @@ class ProjectionPublicationSeal(_Identity):
     thread_id: UUID
     sequence: Annotated[int, Field(ge=1, le=MAX_HISTORY_EVENTS)]
     history_bytes: Annotated[int, Field(ge=1, le=MAX_HISTORY_BYTES)]
-    projection_version: Annotated[int, Field(ge=20, le=20)] = 20
+    # 原声明的缺省版本保持20，新投影签发显式使用21。
+    projection_version: Annotated[int, Field(ge=20, le=21)] = 20
     prefix_sha256: Digest
     snapshot_sha256: Digest
 
@@ -355,11 +380,11 @@ class SessionPublicationBinding:
 
     def verify_event(
         self, seal: object, body: bytes, event_id: UUID, thread_id: UUID, sequence: int
-    ) -> None:
+    ) -> AgentEvent:
         self._ensure_open()
         if type(seal) is not bytes:
             raise unproven()
-        self._events.verify_event(
+        return self._events.verify_event(
             seal,
             body,
             store_id=self._store_id,
@@ -370,6 +395,7 @@ class SessionPublicationBinding:
 
     def projection(self, thread: Thread, encoded: str, prefix: str, history_bytes: int) -> bytes:
         self._ensure_open()
+        require_closed_rejections(thread)
         return _signed(
             ProjectionPublicationSeal(
                 store_id=self._store_id,
@@ -378,6 +404,7 @@ class SessionPublicationBinding:
                 sequence=thread.sequence,
                 prefix_sha256=prefix,
                 history_bytes=history_bytes,
+                projection_version=21,
                 snapshot_sha256=hashlib.sha256(
                     original_bytes(encoded, MAX_PROJECTION_BYTES)
                 ).hexdigest(),

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from contextlib import closing
 from importlib.resources import files
 from pathlib import Path
 from uuid import UUID
@@ -186,13 +187,14 @@ async def test_old_transcript_migrates_without_rewriting_history(
             (28,),
             (29,),
             (30,),
+            (31,),
         ]
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 20
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 21
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         assert [row[0] for row in stored[: len(originals)]] == originals
-        assert all(json.loads(row[0])["schema_version"] == 20 for row in stored[len(originals) :])
+        assert all(json.loads(row[0])["schema_version"] == 21 for row in stored[len(originals) :])
     assert await store.rebuild(thread_id) == await store.get_thread(thread_id)
 
 
@@ -201,13 +203,15 @@ async def test_unknown_projection_version_fails_closed(tmp_path: Path) -> None:
     async with AgentRuntime(store, FakeProvider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
     with sqlite3.connect(store.path) as database:
-        database.execute("UPDATE agent_threads SET projection_version = 21")
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 21
+        database.execute("UPDATE agent_threads SET projection_version = 22")
     with pytest.raises(KernelError) as error:
         await store.get_thread(thread.thread_id)
     assert error.value.code == "projection_too_new"
 
 
 async def test_v19_session_appends_v20_without_rewriting_old_event(tmp_path: Path) -> None:
+    """保留原回归标识与v19原事件，当前新事件及投影必须准确写为v21。"""
     store = SQLiteSessionStore(tmp_path / "v19.db")
     await store.initialize()
     thread_id = UUID("aebf4df1-c012-4c5e-a252-5344a29c8a3f")
@@ -227,7 +231,7 @@ async def test_v19_session_appends_v20_without_rewriting_old_event(tmp_path: Pat
         )
 
     async with AgentRuntime(store, FakeProvider("升级成功")) as runtime:
-        completed = await runtime.run_turn(thread_id, "继续任务", request_id="v20")
+        completed = await runtime.run_turn(thread_id, "继续任务", request_id="v21")
 
     assert completed.status == "completed"
     with sqlite3.connect(store.path) as database:
@@ -237,13 +241,36 @@ async def test_v19_session_appends_v20_without_rewriting_old_event(tmp_path: Pat
         ).fetchall()
         assert rows[0][0] == original
         assert json.loads(rows[0][0])["schema_version"] == 19
-        assert all(json.loads(row[0])["schema_version"] == 20 for row in rows[1:])
+        assert all(json.loads(row[0])["schema_version"] == 21 for row in rows[1:])
         assert (
             database.execute(
                 "SELECT projection_version FROM agent_threads WHERE thread_id = ?",
                 (str(thread_id),),
             ).fetchone()[0]
-            == 20
+            == 21
+        )
+
+
+async def test_unknown_migration_v32_fails_closed_without_rewriting_history(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "future-schema.db")
+    await store.initialize()
+    with closing(sqlite3.connect(store.path)) as database, database:
+        assert database.execute(
+            "SELECT version FROM agent_migrations ORDER BY version"
+        ).fetchall() == [(version,) for version in range(1, 32)]
+        database.execute("INSERT INTO agent_migrations VALUES (32, ?)", ("0" * 64,))
+        before = database.execute(
+            "SELECT version, checksum FROM agent_migrations ORDER BY version"
+        ).fetchall()
+    with pytest.raises(KernelError) as error:
+        await store.initialize()
+    assert error.value.code == "schema_too_new"
+    with closing(sqlite3.connect(store.path)) as database:
+        assert (
+            database.execute(
+                "SELECT version, checksum FROM agent_migrations ORDER BY version"
+            ).fetchall()
+            == before
         )
 
 

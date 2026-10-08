@@ -45,7 +45,8 @@ class EventPublicationSeal(BaseModel):
     thread_id: UUID
     event_id: UUID
     sequence: Annotated[int, Field(ge=1)]
-    event_schema_version: Annotated[int, Field(ge=20, le=20)] = 20
+    # 原声明的缺省版本保持20；新签发必须显式绑定正文的21。
+    event_schema_version: Annotated[int, Field(ge=20, le=21)] = 20
     scope_sha256: Digest
     body_sha256: Digest
     tag: Digest
@@ -101,7 +102,7 @@ def _verify_event(
     thread_id: UUID,
     event_id: UUID,
     sequence: int,
-) -> None:
+) -> AgentEvent:
     """先约束输入与原身份，再验证MAC和完整正文摘要，不反序列化未经认证的事件。"""
     if type(encoded_seal) is not bytes or not 1 <= len(encoded_seal) <= MAX_SEAL_BYTES:
         raise _failure("publication_history_unproven")
@@ -128,6 +129,19 @@ def _verify_event(
         seal.body_sha256, hashlib.sha256(body).hexdigest()
     ):
         raise _failure("publication_history_unproven")
+    try:
+        # 只在原MAC和完整正文摘要验证通过后解析，禁止把新事实声明为旧版本。
+        event = AgentEvent.model_validate_json(body)
+    except Exception:
+        raise _failure("publication_history_unproven") from None
+    if (event.schema_version, event.thread_id, event.event_id, event.sequence) != (
+        seal.event_schema_version,
+        thread_id,
+        event_id,
+        sequence,
+    ):
+        raise _failure("publication_history_unproven")
+    return event
 
 
 class EventPublicationAuthority:
@@ -161,7 +175,7 @@ class EventPublicationAuthority:
         if (
             type(store_id) is not UUID
             or type(event) is not AgentEvent
-            or event.schema_version != 20
+            or event.schema_version != 21
         ):
             raise _failure("publication_event_invalid")
         try:
@@ -188,6 +202,7 @@ class EventPublicationAuthority:
             thread_id=frozen.thread_id,
             event_id=frozen.event_id,
             sequence=frozen.sequence,
+            event_schema_version=frozen.schema_version,
             scope_sha256=self._context_sha256,
             body_sha256=hashlib.sha256(body).hexdigest(),
             tag="0" * 64,
@@ -208,10 +223,10 @@ class EventPublicationAuthority:
         thread_id: UUID,
         event_id: UUID,
         sequence: int,
-    ) -> None:
+    ) -> AgentEvent:
         """只证明原事件来源与完整性；调用方仍须在公开/模型出站点检查当前材料。"""
         self._ensure_open()
-        _verify_event(
+        return _verify_event(
             self._key_id,
             self._key,
             encoded_seal,

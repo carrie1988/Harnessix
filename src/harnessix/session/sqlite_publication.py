@@ -13,6 +13,7 @@ import aiosqlite
 from harnessix.agent.cancellation import parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
+from harnessix.agent.tool_rejections import require_closed_rejections
 from harnessix.session.event_body_refs import EventBodyRef
 from harnessix.session.store_publication import (
     EMPTY_PREFIX,
@@ -23,6 +24,7 @@ from harnessix.session.store_publication import (
     SessionPublicationBinding,
     extend_prefix,
     original_bytes,
+    require_projection_content_version,
     unproven,
 )
 
@@ -100,11 +102,21 @@ async def verify_snapshot(
         if proof is not None:
             raise unproven()
         return
-    if proof is None or row["projection_version"] != 20 or row["sequence"] != proof.sequence:
+    if (
+        proof is None
+        or row["projection_version"] != proof.projection_version
+        or row["sequence"] != proof.sequence
+    ):
         raise unproven()
     digest = hashlib.sha256(original_bytes(row["snapshot_json"], MAX_PROJECTION_BYTES)).hexdigest()
     if not hmac.compare_digest(proof.snapshot_sha256, digest):
         raise unproven()
+    try:
+        thread = Thread.model_validate_json(row["snapshot_json"])
+    except ValueError:
+        raise unproven() from None
+    require_projection_content_version(thread, proof.projection_version)
+    require_closed_rejections(thread)
     cursor = await database.execute(
         "SELECT COUNT(*) FROM agent_events e JOIN agent_event_publications p "
         "ON e.event_id=p.event_id WHERE e.thread_id=?",
@@ -125,7 +137,7 @@ async def verify_snapshot(
 
 async def verified_event(
     database: aiosqlite.Connection, publication: SessionPublicationBinding, row: aiosqlite.Row
-) -> bytes:
+) -> tuple[bytes, AgentEvent]:
     cursor = await database.execute(
         "SELECT substr(seal,1,4097) AS seal FROM agent_event_publications WHERE event_id=?",
         (row["event_id"],),
@@ -134,7 +146,7 @@ async def verified_event(
     if sealed is None:
         raise unproven()
     try:
-        publication.verify_event(
+        event = publication.verify_event(
             sealed["seal"],
             original_bytes(row["event_json"], 1024 * 1024),
             UUID(row["event_id"]),
@@ -146,7 +158,7 @@ async def verified_event(
     seal = sealed["seal"]
     if not isinstance(seal, bytes):
         raise unproven()
-    return seal
+    return seal, event
 
 
 async def persist_event(
@@ -232,14 +244,13 @@ async def authenticated_events(
             raise KernelError("publication_history_limit", "Session历史认证超过资源上限")
         if row["sequence"] != count:
             raise unproven()
-        seal = await verified_event(database, publication, row)
+        seal, event = await verified_event(database, publication, row)
         body = row["event_json"].encode("utf-8")
         size += len(body) + len(seal)
         if size > MAX_HISTORY_BYTES:
             raise KernelError("publication_history_limit", "Session历史认证超过资源上限")
         prefix = extend_prefix(prefix, seal)
-        # MAC成功后才允许反序列化事件，索引与原Body身份也必须一致。
-        event = AgentEvent.model_validate_json(row["event_json"])
+        # 复用MAC成功后唯一解析的事件，索引与原Body身份也必须一致。
         if (
             str(event.thread_id) != row["thread_id"]
             or str(event.event_id) != row["event_id"]
@@ -272,11 +283,12 @@ async def save_projection(
     history_bytes: int | None,
 ) -> None:
     """原投影与认证Checkpoint共用调用方事务；Rebuild复用已认证原前缀。"""
+    require_closed_rejections(thread)
     encoded = thread.model_dump_json()
     await database.execute(
         "INSERT INTO agent_threads "
         "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-        "VALUES (?, ?, ?, ?, 20) "
+        "VALUES (?, ?, ?, ?, 21) "
         "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
         "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
         "projection_version = excluded.projection_version",

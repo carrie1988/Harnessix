@@ -84,7 +84,7 @@ async def test_handshake_enforces_state_version_and_params(tmp_path: Path) -> No
                 _request(
                     "initialize",
                     {
-                        "protocolVersion": "1.0",
+                        "protocolVersion": "2.0",
                         "clientInfo": {"name": "test", "version": "1"},
                         "clientInstanceId": str(uuid4()),
                         "unknown": True,
@@ -100,14 +100,14 @@ async def test_handshake_enforces_state_version_and_params(tmp_path: Path) -> No
                 _request(
                     "initialize",
                     {
-                        "protocolVersion": "1.0",
+                        "protocolVersion": "2.0",
                         "clientInfo": {"name": "test", "version": "1"},
                         "clientInstanceId": str(uuid4()),
                     },
                 )
             )
         )
-        assert initialized["result"]["protocolVersion"] == "1.0"  # type: ignore[index]
+        assert initialized["result"]["protocolVersion"] == "2.0"  # type: ignore[index]
         assert not initialized["result"]["capabilities"]["itemDeltas"]  # type: ignore[index]
         assert server.state.value == ConnectionState.INITIALIZED_PENDING_ACK.value
         assert (
@@ -624,7 +624,7 @@ async def test_stdio_uses_jsonl_and_closes_on_eof(tmp_path: Path) -> None:
         _request(
             "initialize",
             {
-                "protocolVersion": "1.0",
+                "protocolVersion": "2.0",
                 "clientInfo": {"name": "stdio-test", "version": "1"},
                 "clientInstanceId": str(client_id),
             },
@@ -664,7 +664,7 @@ async def test_stdio_long_poll_does_not_block_concurrent_request(tmp_path: Path)
                 _request(
                     "initialize",
                     {
-                        "protocolVersion": "1.0",
+                        "protocolVersion": "2.0",
                         "clientInfo": {"name": "multiplex-test", "version": "1"},
                         "clientInstanceId": str(client_id),
                     },
@@ -721,7 +721,7 @@ async def test_stdio_honors_negotiated_pending_request_limit(tmp_path: Path) -> 
                 _request(
                     "initialize",
                     {
-                        "protocolVersion": "1.0",
+                        "protocolVersion": "2.0",
                         "clientInfo": {"name": "pending-limit-test", "version": "1"},
                         "clientInstanceId": str(uuid4()),
                         "limits": {"maxPendingRequests": 1},
@@ -787,7 +787,7 @@ async def test_stdio_closes_slow_client_without_session_damage(tmp_path: Path) -
     initialize = _request(
         "initialize",
         {
-            "protocolVersion": "1.0",
+            "protocolVersion": "2.0",
             "clientInfo": {"name": "slow-test", "version": "1"},
             "clientInstanceId": str(client_id),
             "limits": {"maxOutboundMessages": 8},
@@ -833,7 +833,7 @@ async def test_stdio_writer_failure_wakes_open_input_and_closes_server(tmp_path:
                 _request(
                     "initialize",
                     {
-                        "protocolVersion": "1.0",
+                        "protocolVersion": "2.0",
                         "clientInfo": {"name": "writer-failure-test", "version": "1"},
                         "clientInstanceId": str(uuid4()),
                     },
@@ -1120,7 +1120,7 @@ async def test_events_next_omits_deltas_when_client_did_not_negotiate_them(
             _request(
                 "initialize",
                 {
-                    "protocolVersion": "1.0",
+                    "protocolVersion": "2.0",
                     "clientInfo": {"name": "no-delta", "version": "1"},
                     "clientInstanceId": str(uuid4()),
                 },

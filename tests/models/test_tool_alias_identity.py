@@ -13,7 +13,14 @@ import httpx2
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
-from harnessix.agent.models import TextContent, ToolCallContent, ToolResultContent, TurnStatus
+from harnessix.agent.models import (
+    ItemStatus,
+    TextContent,
+    ToolCallContent,
+    ToolCallRejectionContent,
+    ToolResultContent,
+    TurnStatus,
+)
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.models import _anthropic_mapping, _chat_mapping
 from harnessix.models._history import InvalidModelRequest, messages_for, tool_alias
@@ -22,8 +29,8 @@ from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import (
     ModelRequest,
     ResponseCompleted,
-    ResponseFailed,
     ToolCallCompleted,
+    ToolCallRejected,
 )
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.models.scripted import ScriptedProvider
@@ -225,7 +232,7 @@ async def test_persisted_original_tool_name_survives_both_wire_projections(tmp_p
     "identity", ["current", "unknown", "legacy_hash", "wrong_case", "not_in_directory", "raw_name"]
 )
 async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
-    kind: str, identity: str, monkeypatch: pytest.MonkeyPatch
+    kind: str, identity: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
     monkeypatch.delenv("ANTHROPIC_CUSTOM_HEADERS", raising=False)
@@ -272,6 +279,41 @@ async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
         calls = [event for event in events if isinstance(event, ToolCallCompleted)]
         assert len(calls) == 1 and calls[0].tool == "test.read" and calls[0].arguments == {}
         assert isinstance(events[-1], ResponseCompleted)
+        assert not any(isinstance(event, ToolCallRejected) for event in events)
     else:
-        assert events[-1] == ResponseFailed(code="invalid_provider_output")
-        assert not any(isinstance(event, ToolCallCompleted | ResponseCompleted) for event in events)
+        assert [
+            event for event in events if isinstance(event, ToolCallCompleted | ToolCallRejected)
+        ] == [
+            ToolCallRejected(
+                call_id="wire-call-0" if kind == "openai" else "toolu_0", argument_chars=2
+            )
+        ]
+        assert (
+            isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
+        )
+        assert returned_name not in "".join(event.model_dump_json() for event in events)
+    # 把实际 SDK 已归一化的事件交给原 Kernel，证明目录外原名也不具执行权。
+    tools = RecordingTools()
+    scripted = ScriptedProvider([events, answer()])
+    store = SQLiteSessionStore(tmp_path / "alias-runtime.db")
+    async with AgentRuntime(store, scripted, tools) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "精确别名边界", request_id="alias-boundary")
+    assert turn.status is TurnStatus.COMPLETED and turn.error is None and turn.model_steps == 2
+    rejected = [
+        entry for entry in turn.items if isinstance(entry.content, ToolCallRejectionContent)
+    ]
+    results = [
+        entry.content for entry in turn.items if isinstance(entry.content, ToolResultContent)
+    ]
+    assert len(results) == 1
+    if identity == "current":
+        assert not rejected and len(tools.calls) == 1
+        assert tools.calls[0].tool == "test.read" and results[0].outcome == "succeeded"
+    else:
+        assert tools.calls == [] and len(rejected) == 1
+        assert rejected[0].status is ItemStatus.COMPLETED and rejected[0].error is None
+        assert not any(isinstance(entry.content, ToolCallContent) for entry in turn.items)
+        assert results[0].call_id == rejected[0].content.call_id
+        assert results[0].outcome == "failed" and results[0].error.code == "unknown_tool"
+        assert results[0].output is None and not results[0].error.retryable

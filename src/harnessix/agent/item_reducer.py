@@ -31,6 +31,7 @@ from harnessix.agent.models import (
     TextContent,
     Thread,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     TrustedActionApprovalRequestContent,
     Turn,
@@ -43,6 +44,7 @@ from harnessix.agent.reducer_support import (
     pending_calls,
     require,
 )
+from harnessix.agent.tool_rejections import require_rejection_result
 from harnessix.agent.trusted_action_reducer import validate_trusted_action_effect
 from harnessix.context.tool_result_contracts import ModelHistoryInspectionV2
 from harnessix.context.tool_result_view import history_items
@@ -110,11 +112,14 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                 )
         else:
             require(turn.status == TurnStatus.CALLING_MODEL, "模型 Item 只能在模型步骤内开始")
-    elif isinstance(content, ToolCallContent):
+    elif isinstance(content, ToolCallContent | ToolCallRejectionContent):
         require(turn.status == TurnStatus.CALLING_MODEL, "Tool Call 只能由模型步骤产生")
+        if isinstance(content, ToolCallRejectionContent):
+            require(event.schema_version >= 21, "目录拒绝需要Agent Event v21")
+            require(content.model_step == turn.model_steps, "目录拒绝不属于当前模型步骤")
         require(
             all(
-                not isinstance(item.content, ToolCallContent)
+                not isinstance(item.content, ToolCallContent | ToolCallRejectionContent)
                 or item.content.call_id != content.call_id
                 for item in history_items(thread)
             ),
@@ -211,18 +216,42 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                 if t.status in TERMINAL_TURNS
                 for i in t.items
                 if i.status == ItemStatus.COMPLETED
-                and isinstance(i.content, TextContent | ToolCallContent | ToolResultContent)
+                and isinstance(
+                    i.content,
+                    TextContent | ToolCallContent | ToolCallRejectionContent | ToolResultContent,
+                )
             }
             require(
                 all(item_id in sources for item_id in content.source_item_ids),
                 "Compaction 来源必须属于已终结 Turn 的完成消息或工具 Item",
             )
             selected = [sources[item_id].content for item_id in content.source_item_ids]
-            selected_calls = {c.call_id for c in selected if isinstance(c, ToolCallContent)}
+            selected_calls = {
+                c.call_id
+                for c in selected
+                if isinstance(c, ToolCallContent | ToolCallRejectionContent)
+            }
             results = {c.call_id for c in selected if isinstance(c, ToolResultContent)}
             require(selected_calls == results, "Compaction 不能拆散工具调用与结果")
     elif isinstance(content, ErrorContent):
         pass  # 失败可发生于任意活跃阶段；终态校验要求错误事实与终态一致。
+    elif isinstance(content, ToolResultContent) and any(
+        isinstance(item.content, ToolCallRejectionContent)
+        and item.status == ItemStatus.COMPLETED
+        and item.content.call_id == content.call_id
+        for item in turn.items
+    ):
+        require(event.schema_version >= 21, "目录拒绝结果需要Agent Event v21")
+        require(turn.status == TurnStatus.CALLING_MODEL, "拒绝结果只能随完整模型步骤提交")
+        require_rejection_result(content)
+        require(
+            not any(
+                isinstance(item.content, ToolResultContent)
+                and item.content.call_id == content.call_id
+                for item in turn.items
+            ),
+            "目录拒绝结果已经开始",
+        )
     else:
         calls = pending_calls(turn)
         require(bool(calls) and calls[0].call_id == content.call_id, "Tool Result 缺失、重复或乱序")
@@ -330,7 +359,7 @@ def _start_item(thread: Thread, turn: Turn, event: AgentEvent, payload: ItemStar
                 )
     item = Item(item_id=payload.item_id, status=ItemStatus.STARTED, content=content)
     step_item = (isinstance(content, TextContent) and content.kind != "user_message") or isinstance(
-        content, ToolCallContent | ToolResultContent
+        content, ToolCallContent | ToolCallRejectionContent | ToolResultContent
     )
     items = (
         _append_step_item_before_pending_steering(thread, turn, item)
@@ -346,6 +375,19 @@ def _finish_item(turn: Turn, event: AgentEvent, payload: ItemFinished) -> Turn:
     assert original is not None
     require(original.status == ItemStatus.STARTED, "Item 终态不可改写")
     require(original.content.kind == payload.content.kind, "Item 类型不可改变")
+    rejection = isinstance(original.content, ToolCallRejectionContent) or (
+        isinstance(original.content, ToolResultContent)
+        and any(
+            isinstance(i.content, ToolCallRejectionContent)
+            and i.content.call_id == original.content.call_id
+            for i in turn.items
+        )
+    )
+    if rejection:
+        require(
+            payload.status == ItemStatus.COMPLETED and payload.error is None,
+            "拒绝配对事实必须完整提交且无Item终止错误",
+        )
     if isinstance(original.content, ApprovalContent):
         require(
             isinstance(payload.content, ApprovalContent),

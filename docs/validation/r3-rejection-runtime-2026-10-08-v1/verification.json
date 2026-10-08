@@ -1,0 +1,280 @@
+{
+  "schema": "harnessix.r3-rejection-verification/v1",
+  "python": "3.12.8",
+  "git": "2.53.0",
+  "platform": "macOS",
+  "offline_dependency_install": true,
+  "parent_PYTHONPATH_override": false,
+  "crash_worker_scope": "部分崩溃测试显式子进程使用源码PYTHONPATH；与最终安装包554成员逐字节相同，不宣称每个子进程均为Wheel隔离",
+  "commands": [
+    {
+      "id": "installed-complete",
+      "command": "python -B -m pytest tests/agent tests/context tests/session tests/models tests/protocol tests/app_server tests/product_ui",
+      "result": {
+        "id": "installed-complete",
+        "scope": "完整Agent/Context/Session/Models/Protocol/AppServer/ProductUI七目录",
+        "terminal": true,
+        "tests": 2764,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 2763,
+        "seconds": 112.932,
+        "status": "PASS",
+        "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+        "original": {
+          "name": "installed-complete.xml",
+          "bytes": 1438184,
+          "sha256": "ac736989025d463eb9598d784531276c6606e68dd197d8c008872a421153ce01"
+        }
+      }
+    },
+    {
+      "id": "installed-backup-guards",
+      "command": "python -B -m pytest tests/product_config/test_product_state_backup.py tests/product_config/test_rejection_backup_versions.py tests/product_config/test_state_backup_parent_closure.py tests/product_config/test_workspace_reference_backup.py tests/evals/test_provider_verification_budget.py tests/governance/test_product_runtime_convergence.py",
+      "result": {
+        "id": "installed-backup-guards",
+        "scope": "完整备份、迁移清单、父闭包、原预算及产品收敛适用集合",
+        "terminal": true,
+        "tests": 318,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 318,
+        "seconds": 36.32,
+        "status": "PASS",
+        "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+        "original": {
+          "name": "installed-backup-guards.xml",
+          "bytes": 51397,
+          "sha256": "e87289b14404eaa99659567de757934f10db767bcd579beb4eb04a29af342336"
+        }
+      }
+    },
+    {
+      "id": "installed-r4-consumers",
+      "command": "python -B -m pytest 'tests/product_config/test_git_prepared_link_ledger.py::test_actual_prepared_link_commit_reopen_read_only_and_stable_retry[reopen-read-False-sha1]' tests/product_config/test_git_prepared_approval_history.py::test_original_upstream_checkpoint_exception_instances_preserved",
+      "result": {
+        "id": "installed-r4-consumers",
+        "scope": "实际认证SDK到prepared关联COMMIT、非空只读重开及原异常身份",
+        "terminal": true,
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 2,
+        "seconds": 164.307,
+        "status": "PASS",
+        "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+        "original": {
+          "name": "installed-r4-consumers.xml",
+          "bytes": 607,
+          "sha256": "b4d6f4c8f669bd61558684d9dd636e349912245a5ad02b2836b3654bc39873ed"
+        }
+      }
+    },
+    {
+      "id": "installed-sdk-consumers",
+      "command": "python -B -m pytest tests/artifacts/test_sdk.py tests/patches/test_kernel_batch_sdk.py tests/patches/test_kernel_patch_sdk.py tests/product_config/test_protocol_publication_cli.py tests/evals/test_campaign_cli.py tests/evals/test_provider_suite_cli.py tests/governance/test_cli_console.py tests/benchmarks/test_run_sdk_soak_candidate.py tests/benchmarks/test_run_sdk_soak_release.py tests/benchmarks/test_soak_sdk_capacity.py",
+      "result": {
+        "id": "installed-sdk-consumers",
+        "scope": "Artifact/Patch SDK、公开CLI、Eval CLI及Soak契约适用消费者；不是稳态Soak",
+        "terminal": true,
+        "tests": 81,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 81,
+        "seconds": 13.04,
+        "status": "PASS",
+        "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+        "original": {
+          "name": "installed-sdk-consumers.xml",
+          "bytes": 536687,
+          "sha256": "41a3850b0bab7ded6650a3f0744cba9e17ca4bdbd3c7a6d310eac0c1b8f89a31"
+        }
+      }
+    },
+    {
+      "id": "installed-product-cli",
+      "command": "python -B -m pytest tests/product_config/test_server_and_cli.py",
+      "result": {
+        "id": "installed-product-cli",
+        "scope": "完整产品Server/CLI测试文件",
+        "terminal": true,
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 15,
+        "seconds": 2.718,
+        "status": "PASS",
+        "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+        "original": {
+          "name": "installed-product-cli.xml",
+          "bytes": 2852,
+          "sha256": "73074cee10433ce53a2a6ac9a9124cafe320b2c3ca7de3d1d6bbbd3e19b05175"
+        }
+      }
+    },
+    {
+      "id": "identity",
+      "command": "python -I -B verify_identity.py",
+      "result": "PASS",
+      "production_members": 554,
+      "scope": "Wheel全部harnessix生产成员等同源码及site-packages；显式排除构建不包含的Finder/字节码元数据"
+    },
+    {
+      "id": "typing",
+      "command": "PYTHONPATH=src mypy src/harnessix",
+      "result": "PASS",
+      "source_files": 512,
+      "original": {
+        "name": "mypy.log",
+        "bytes": 45,
+        "sha256": "e9bdca0cc280e3c9266f4ae4fb680b1cb3b719a619f7c18920ebf1ff409cf426"
+      }
+    },
+    {
+      "id": "schema",
+      "command": "PYTHONPATH=src python scripts/generate_specs.py --check",
+      "result": "PASS",
+      "original": {
+        "name": "spec.log",
+        "bytes": 28,
+        "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+      }
+    },
+    {
+      "id": "lint",
+      "command": "ruff check <本切片源码、生成器及适用测试集合>",
+      "result": "PASS",
+      "original": {
+        "name": "ruff.log",
+        "bytes": 19,
+        "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+      }
+    },
+    {
+      "id": "format",
+      "command": "ruff format --check <本切片源码、生成器及适用测试集合>",
+      "result": "PASS",
+      "original": {
+        "name": "format.log",
+        "bytes": 28,
+        "sha256": "22728b34ab6ca369e20e152bfcadbfb2cab8ee18e689e24b26a7823fc7c5b1ee"
+      }
+    },
+    {
+      "id": "mermaid",
+      "command": "mmdc -p <本机Chrome配置> -i <详设图> -o <SVG>",
+      "result": "PASS",
+      "rendered": 4,
+      "visually_inspected": 1
+    },
+    {
+      "id": "documentation",
+      "command": "python scripts/documentation_check.py --changed-from <source_base_revision> --format json",
+      "result": "PASS",
+      "documents": 631,
+      "links": 13992,
+      "mermaids": 1154,
+      "findings": 0,
+      "original": {
+        "name": "doccheck-final.json",
+        "bytes": 195,
+        "sha256": "7675d562445d9a5d59570a9a39c7dbe0a27de093b855fe97eea1c58ee763f215"
+      }
+    },
+    {
+      "id": "secret-scan",
+      "command": "python scripts/secret_scan.py --artifact-dir <canonical_final_wheel_directory>",
+      "result": "PASS",
+      "inputs": 5300,
+      "fixed_rule_hits": 0,
+      "original": {
+        "name": "secret-scan-before-commit.json",
+        "bytes": 101,
+        "sha256": "3d88aae95153b8de420f235ccd7f6d58d055d262be51f7cc17195a60d29c47dc"
+      }
+    }
+  ],
+  "skips": [
+    {
+      "run": "installed-complete",
+      "count": 1,
+      "reason": "真实Windows Context Handle仅原生Windows宿主"
+    },
+    {
+      "run": "installed-product-cli",
+      "count": 1,
+      "reason": "原生Windows默认产品Git/SDK装配"
+    }
+  ],
+  "preserved_failures": [
+    {
+      "scope": "旧安装包尚无拒绝合同的初始RED",
+      "status": "ERROR"
+    },
+    {
+      "scope": "初始Context回归",
+      "failures": 5,
+      "cause": "四项旧默认版本与一项旧名称断言"
+    },
+    {
+      "scope": "初始恢复回归",
+      "failures": 2,
+      "cause": "新增测试误写原超时代码，实际为time_budget_exceeded"
+    },
+    {
+      "scope": "SDK新增测试",
+      "failures": 1,
+      "cause": "新增测试误写EventsNextResult字段，实际为replay"
+    },
+    {
+      "scope": "六目录初始全回归",
+      "failures": 24,
+      "cause": "旧默认/迁移/未来版本断言，保留负控并更新新边界"
+    },
+    {
+      "scope": "Adapter初始完整回归",
+      "passed": 807,
+      "failures": 15,
+      "cause": "旧未知工具失败预期；未删除822原用例，新增39历史负控"
+    },
+    {
+      "scope": "不存在的备份路径和SDK目录选择",
+      "exit_code": 4,
+      "test_execution": false
+    },
+    {
+      "scope": "格式检查收尾",
+      "unformatted": 2,
+      "cause": "一源码、一测试；格式化后重建新Wheel并重新完整验证"
+    },
+    {
+      "scope": "安装身份脚本",
+      "attempts_failed": 2,
+      "cause": "源发现包含构建排除Finder元数据；字段应为schema_version；仅诊断脚本，不改变产品或门槛"
+    },
+    {
+      "scope": "产品Artifact正控旧握手",
+      "failures": 1,
+      "cause": "旧1.0按新合同拒绝；正控升级2.0，独立旧版本负控仍保留"
+    },
+    {
+      "scope": "初次新增Review Packet元数据",
+      "findings": 1,
+      "cause": "缺少YAML头；补齐正式元数据后重新验证631文档零发现"
+    }
+  ],
+  "not_claimed": [
+    "真实模型质量通过",
+    "Anthropic真实供应商验证",
+    "全部历史发行Reader降级",
+    "Writer启用或完整Git业务写入",
+    "三平台原生编码",
+    "产品P1/SLA",
+    "CI通过"
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
+version: 11
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -28,20 +28,28 @@ supersedes: []
 
 # Protocol模块设计
 
+## 当前增量：类型化工具拒绝与配套协议升级
+
+当前连接版本为Agent Protocol 2.0。公共拒绝只含 kind/callId/modelStep/reason，公共Event规格v2。六份受影响Schema新增v2，原14份公共v1保留原字节，不代表双栈。旧客户端在握手返回 unsupported_protocol_version，不隐式降级。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/protocol/test_rejection_protocol_v2.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
+
 ## 1. 模块摘要
 
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/protocol`](../../src/harnessix/protocol/) |
-| 当前职责 | 定义Agent Protocol v1公共JSON-RPC合同、严格入站帧解码、公共状态白名单投影、Replay游标语义、旧客户端结果兼容读取，以及跨进程写命令幂等账本 |
+| 当前职责 | 定义Agent Protocol 2.0公共JSON-RPC合同、严格入站帧解码、公共状态白名单投影、Replay游标语义、旧客户端结果兼容读取，以及跨进程写命令幂等账本 |
 | 非职责 | 不实现stdio读写、连接调度、方法路由、Agent业务状态机、Artifact授权、SDK进程管理、网络认证、远程传输或Session事件存储 |
 | 上游调用者 | [`app_server`](../../src/harnessix/app_server/)、[`sdk`](../../src/harnessix/sdk/)、Schema生成脚本和合同测试 |
 | 下游依赖 | Pydantic、标准库JSON/SHA-256、`aiosqlite`、Agent领域模型、Artifact合同、Domain审批记录和Session数据库Migration |
-| 公共版本 | `AGENT_PROTOCOL_VERSION = "1.0"`；公共Thread、Turn和Event各自带`.../v1`规格标识 |
+| 公共版本 | `AGENT_PROTOCOL_VERSION = "2.0"`；公共Event为v2，未改变的Thread/Turn摘要仍为v1 |
 | 持久化 | `SQLiteProtocolRequestStore`复用Session数据库中的`protocol_requests`表；只保存参数摘要和有界公开终态，不保存原始参数 |
-| 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在v1范围 |
+| 平台 | 合同、投影和SQLite账本没有显式平台分支；当前产品传输是本地stdio JSONL，远程TCP/WebSocket/HTTP不在当前范围 |
 | 代码版本 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` |
-| 当前完成度 | v1合同、投影、Schema与命令账本已实现；内部Trusted Action审批已兼容映射；终态请求已纳入Plan-first离线保留，accepted仍保守全局保护业务状态；accepted恢复、远程安全和协议多版本协商尚未实现 |
+| 当前完成度 | 2.0合同、投影及六份v2 Schema与命令账本已实现；内部Trusted Action审批已兼容映射；终态请求已纳入Plan-first离线保留，accepted仍保守全局保护业务状态；accepted恢复、远程安全和协议多版本协商尚未实现 |
 
 本文是[`codec.py`](../../src/harnessix/protocol/codec.py)、
 [`compatibility.py`](../../src/harnessix/protocol/compatibility.py)、
@@ -327,7 +335,7 @@ Server方法表。
 ```mermaid
 stateDiagram-v2
     [*] --> NEW
-    NEW --> INITIALIZED_PENDING_ACK: initialize v1成功
+    NEW --> INITIALIZED_PENDING_ACK: initialize 2.0成功
     NEW --> NEW: 非initialize Request返回not_initialized
     INITIALIZED_PENDING_ACK --> READY: notifications/initialized参数有效
     INITIALIZED_PENDING_ACK --> INITIALIZED_PENDING_ACK: 业务Request返回not_initialized
@@ -346,16 +354,15 @@ stateDiagram-v2
 握手顺序固定为：
 
 1. Client发送`initialize` Request；
-2. Server严格校验`InitializeParams`；该模型当前把`protocolVersion`声明为`Literal["1.0"]`；
+2. Server严格校验`InitializeParams`；`protocolVersion`为严格1～32字符字符串，随后精确匹配2.0；
 3. Server准备原身份/能力/Limit候选，对完整响应执行协商字节与保护检查；复核NEW/关闭状态后无await提交并返回原`InitializeResult`；
 4. Client发送`notifications/initialized` Notification；
 5. Server校验空`InitializedParams`后进入`READY`；
 6. 进入`READY`前的业务Request返回`-32012 not_initialized`。
 
-当前存在一个实现与错误合同不一致点：非`1.0`值会在步骤2的Pydantic校验阶段直接返回
-`-32602 invalid_params`，因此[`prepare_initialization`](../../src/harnessix/app_server/handshake.py)
-后续用于返回`unsupported_protocol_version`的显式比较分支不可达。现行客户端必须把该场景按
-`invalid_params`处理；专用版本错误码只能在合同类型与Server分支同步修复并增加回归测试后对外承诺。
+`prepare_initialization`在结构合法后比较当前2.0版本；旧1.0及其他版本返回
+`-32602 unsupported_protocol_version`并保持NEW。空值、过长值或坏类型仍返回invalid_params。
+新SDK不自动回退旧协议；旧Schema用于历史识别，不表示服务端双栈。
 
 ### 10.1 初始化字段
 
@@ -363,7 +370,7 @@ stateDiagram-v2
 |---|---|---|
 | `ClientInfo.name` | 1～64字符的字母数字起始标识，后续允许`_.-` | 仅合同标识，当前不持久化、不用于授权 |
 | `ClientInfo.version` | 1～64字符 | 仅协议信息，当前不参与兼容选择 |
-| `protocolVersion` | 只能为`1.0` | 精确匹配，不支持范围协商 |
+| `protocolVersion` | 严格字符串1～32字符，当前仅支持`2.0` | 不支持范围协商；旧1.0明确版本拒绝 |
 | `clientInstanceId` | UUID | 固定到连接并参与写命令账本主键 |
 | `capabilities` | 五个布尔能力 | 当前仅`itemDeltas`直接改变事件返回行为 |
 | `limits` | 四个有界整数 | Server逐字段返回Client与Server配置的最小值 |
@@ -1052,7 +1059,7 @@ v1产品传输是由同一用户启动的本地stdio子进程，信任父进程�
 
 ### 22.1 兼容矩阵
 
-| 变化 | v1当前策略 | 是否兼容 |
+| 变化 | 当前策略 | 是否兼容 |
 |---|---|---|
 | 客户端Request增加未知字段 | 服务端严格拒绝 | 否；需双方合同一致 |
 | 客户端Params字段类型变化 | 严格拒绝，不隐式转换 | 否 |
@@ -1062,7 +1069,7 @@ v1产品传输是由同一用户启动的本地stdio子进程，信任父进程�
 | 已知Notification Envelope非法 | 客户端校验失败 | 否 |
 | 公共联合增加未知`kind/type` | 当前旧模型判别联合无法解析 | 通常否；需版本或兼容设计 |
 | 内部Session Event升级 | 只要投影输出不变，不自动影响协议 | 是 |
-| 协议版本不是`1.0` | `InitializeParams`的Literal校验返回`invalid_params`；专用`unsupported_protocol_version`分支当前不可达 | 否；无降级协商 |
+| 合法版本字符串不是`2.0` | 明确返回`unsupported_protocol_version`，保持NEW | 否；无降级协商 |
 | 方法存在Schema但未被Server广告 | 客户端必须以`capabilities.methods`为准 | 不可调用 |
 
 `validate_server_output`通过JSON序列化后按目标模型读取，并只对顶层及嵌套模型的额外字段采用忽略策略；
@@ -1082,7 +1089,7 @@ v1产品传输是由同一用户启动的本地stdio子进程，信任父进程�
 flowchart LR
     P["Pydantic ProtocolModels"] --> G["scripts/generate_specs.py"]
     U["AgentCommandParams / AgentQueryParams"] --> G
-    G --> S["14份 spec/agent-protocol-*-v1.schema.json"]
+    G --> S["6份受影响v2及8份未变v1 Schema，旧14份v1原字节保留"]
     P --> T["tests/protocol/test_schemas.py"]
     U --> T
     S --> T
@@ -1102,7 +1109,7 @@ Command联合和Query联合共14份Schema。`make spec`应在合同变化后重�
 3. 新增判别联合成员需要评估旧客户端解析失败，不能仅依赖“未知字段忽略”；
 4. 修改方法语义、错误码、Cursor或幂等域属于协议兼容变更，必须更新ADR、Schema、SDK和Golden测试；
 5. 公共Thread/Turn/Event规格版本与连接协议版本是不同层次，不能只改其中一处；
-6. 当前没有`minVersion/maxVersion`或多版本路由；不兼容变化应设计v2，而不是放宽v1严格性；
+6. 当前没有`minVersion/maxVersion`或多版本路由；新拒绝采用2.0及受影响v2 Schema，原v1文件冻结，不放宽旧严格联合；
 7. 内部Session Migration不能自动证明公共协议兼容，必须通过投影与Schema回归独立验证。
 
 ## 23. 重点类、函数与接口设计
@@ -1171,7 +1178,7 @@ Command联合和Query联合共14份Schema。`make spec`应在合同变化后重�
 
 | 字段 | 约束 | 语义 |
 |---|---|---|
-| `PublicEvent.specVersion` | 固定`harnessix.agent-protocol-event/v1` | 事件公共结构版本 |
+| `PublicEvent.specVersion` | 固定`harnessix.agent-protocol-event/v2` | 事件公共结构版本 |
 | `eventId` | UUID | 内部事件稳定身份 |
 | `threadId/turnId` | UUID/可选Turn | 事件所属范围 |
 | `cursor` | ≥1 | Thread内部Sequence，不透明且可跳跃 |

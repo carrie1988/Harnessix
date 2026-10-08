@@ -20,6 +20,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.lifecycle import validate_fork_snapshot
 from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
 from harnessix.agent.reducer import replay
+from harnessix.agent.tool_rejections import require_closed_rejections
 from harnessix.file_lock import acquire_exclusive_file_lock
 from harnessix.session import sqlite_history
 from harnessix.session.errors import storage_errors
@@ -30,7 +31,10 @@ from harnessix.session.sqlite_publication import (
     verify_snapshot,
     verify_store,
 )
-from harnessix.session.store_publication import SessionPublicationBinding
+from harnessix.session.store_publication import (
+    SessionPublicationBinding,
+    require_projection_content_version,
+)
 
 _APPLICATION_ID = 0x4858534B
 _WAL_TIMEOUT_SECONDS = 5.0
@@ -126,7 +130,7 @@ def _validated_snapshot(
             raise KernelError("projection_missing", "投影缺失，请从事件日志重建")
         return None
     encoded: str = row["snapshot_json"]
-    if row["projection_version"] not in range(1, 21):
+    if row["projection_version"] not in range(1, 22):
         raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
     if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
         raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
@@ -134,6 +138,8 @@ def _validated_snapshot(
         thread = Thread.model_validate_json(encoded)
     except ValidationError:
         raise KernelError("projection_corrupt", "快照结构损坏，请重建投影") from None
+    require_projection_content_version(thread, row["projection_version"])
+    require_closed_rejections(thread)
     if (
         thread.thread_id != thread_id
         or thread.sequence != row["sequence"]

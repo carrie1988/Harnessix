@@ -20,7 +20,7 @@ from anthropic.types import (
 from anthropic.types import (
     TextDelta as AnthropicTextDelta,
 )
-from pydantic import TypeAdapter
+from pydantic import JsonValue, TypeAdapter
 
 from harnessix.agent.billing import ResponseBillingMetadata
 from harnessix.agent.models import Usage
@@ -38,6 +38,7 @@ from harnessix.models.contracts import (
     TextDelta,
     TextStarted,
     ToolCallCompleted,
+    ToolCallRejected,
 )
 
 _EVENT: TypeAdapter[RawMessageStreamEvent] = TypeAdapter(RawMessageStreamEvent)
@@ -58,7 +59,7 @@ class Block:
     type: str
     text: str = ""
     call_id: str = ""
-    tool: str = ""
+    name: str = ""
     arguments: str = ""
     closed: bool = False
 
@@ -122,7 +123,7 @@ class AnthropicStream:
                     not content.id
                     or len(content.id) > 256
                     or content.id in self._call_ids
-                    or content.name not in self._names
+                    or not 1 <= len(content.name) <= 256
                     or content.input
                     or content.toolset_name is not None
                     or (content.caller is not None and content.caller.type != "direct")
@@ -134,7 +135,7 @@ class AnthropicStream:
                 ):
                     raise InvalidWireData("工具数量超过能力或预算")
                 self._blocks[event.index] = Block(
-                    type="tool_use", call_id=content.id, tool=self._names[content.name]
+                    type="tool_use", call_id=content.id, name=content.name
                 )
                 return []
             raise InvalidWireData("不支持的内容 Block；不丢弃私有签名或推理后继续")
@@ -254,16 +255,31 @@ class AnthropicStream:
                 raise InvalidWireData("结束原因与工具调用不匹配")
             if not self._call_ids and not any(block.text for block in self._blocks.values()):
                 raise InvalidWireData("响应没有语义内容")
+        # 所有参数先通过原严格 JSON 校验，才允许整组按当前目录分类。
+        arguments_by_index: dict[int, dict[str, JsonValue]] = {}
+        if self._finish == "tool_use":
+            for index, block in self._blocks.items():
+                if block.type != "tool_use":
+                    continue
+                # 无 Delta 的空输入使用起始块明确提供的 {}，不是修复截断 JSON。
+                arguments = strict_json(block.arguments) if block.arguments else {}
+                if not isinstance(arguments, dict):
+                    raise InvalidWireData("工具参数必须是 JSON object")
+                arguments_by_index[index] = arguments
         events: list[ProviderEvent] = []
         for index, block in self._blocks.items():
             if block.type == "text":
                 events.append(TextCompleted(content_id=str(index), text=block.text))
             elif self._finish == "tool_use":
-                # 无 Delta 的空输入使用起始块明确提供的 {}，不是修复截断 JSON。
-                arguments = strict_json(block.arguments) if block.arguments else {}
-                if not isinstance(arguments, dict):
-                    raise InvalidWireData("工具参数必须是 JSON object")
                 events.append(
-                    ToolCallCompleted(call_id=block.call_id, tool=block.tool, arguments=arguments)
+                    ToolCallCompleted(
+                        call_id=block.call_id,
+                        tool=self._names[block.name],
+                        arguments=arguments_by_index[index],
+                    )
+                    if block.name in self._names
+                    else ToolCallRejected(
+                        call_id=block.call_id, argument_chars=len(block.arguments)
+                    )
                 )
         return [*events, reasons[self._finish]]

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 23
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 24
+code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
 owners:
   - core
 modules:
@@ -39,15 +39,23 @@ supersedes: []
 
 # Agent Runtime模块设计
 
+## 当前增量：类型化工具拒绝与配套协议升级
+
+拒绝事实属于独立 `ToolCallRejectionContent`，不进入 `pending_calls`、审批或执行。新写Agent Event/Thread v21，migration31；旧事件只读兼容。全拒绝步骤按有证据的 `tool_rejection` 沿原预算重入。Fork新建v2，旧v1快照重建与确定性请求身份不变。
+
+完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
+对应回归见[验证用例](../../tests/agent/test_tool_rejection_runtime.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
+以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
+
 ## 1. 文档摘要
 
 | 项目 | 内容 |
 |---|---|
 | 当前能力 | Provider中立的Thread/Turn Agent Loop、事件溯源Session、Context准备、Tool调度、审批、提问、Steering、取消、Retry、崩溃恢复、统一Trusted Action Gateway，以及历史Process等待事实的只读兼容 |
 | 本文状态 | 当前实现；本文是`agent`包现行实现的事实源 |
-| 代码版本 | 当前实现Revision `aa3372c0eb0c3b4ab674b19d26754a80dd035b46`；0.9.1f3单Runtime边界由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
+| 代码版本 | 既有单Runtime基线 `aa3372c0eb0c3b4ab674b19d26754a80dd035b46`；类型化拒绝当前增量见专项设计；0.9.1f3单Runtime边界由[CI 35453082992](https://github.com/carrie1988/Harnessix/actions/runs/35453082992)验收 |
 | 默认产品装配 | Provider、SQLite Session、只读Coding Tool、POSIX Trusted Workspace Patch、经证明的固定Container Process、外部Action Config、启动恢复和App Server |
-| 稳定版本 | Agent Protocol `1.0`；新Agent Event写`schema_version=20`；SQLite Session迁移连续到30 |
+| 稳定版本 | Agent Protocol `2.0`；新Agent Event写`schema_version=21`；SQLite Session迁移连续到31 |
 | 关键入口 | [`AgentRuntime`](../../src/harnessix/agent/runtime.py)、[`apply_event`](../../src/harnessix/agent/reducer.py)、[`SQLiteSessionStore`](../../src/harnessix/session/sqlite.py) |
 
 本文把“已实现”和“默认已装配”分开描述。当前Process能力经统一Trusted Action组合进入Agent，

@@ -8,7 +8,15 @@ import re
 from typing import Any
 from uuid import UUID
 
-from harnessix.agent.models import ItemStatus, TextContent, ToolCallContent, ToolResultContent
+from harnessix.agent.errors import KernelError
+from harnessix.agent.models import (
+    ItemStatus,
+    TextContent,
+    ToolCallContent,
+    ToolCallRejectionContent,
+    ToolResultContent,
+)
+from harnessix.agent.tool_rejections import require_rejection_result
 from harnessix.models.contracts import ModelRequest
 
 
@@ -34,6 +42,7 @@ def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
     messages: list[dict[str, Any]] = []
     assistant: dict[str, Any] | None = None
     pending: set[UUID] = set()
+    rejected: set[UUID] = set()
     seen: set[UUID] = set()
     taking_results = False
     for item in request.history:
@@ -43,6 +52,11 @@ def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
         if isinstance(content, ToolResultContent):
             if content.call_id not in pending:
                 raise InvalidModelRequest("工具结果缺少唯一配对调用")
+            if content.call_id in rejected:
+                try:
+                    require_rejection_result(content)
+                except KernelError:
+                    raise InvalidModelRequest("拒绝工具结果不符合固定合同") from None
             if assistant is not None:
                 messages.append(assistant)
                 assistant = None
@@ -74,11 +88,13 @@ def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
             if assistant is None:
                 assistant = {"role": "assistant", "content": ""}
             assistant["content"] += content.text
-        elif isinstance(content, ToolCallContent):
+        elif isinstance(content, ToolCallContent | ToolCallRejectionContent):
             if content.call_id in seen:
                 raise InvalidModelRequest("工具调用身份重复")
             pending.add(content.call_id)
             seen.add(content.call_id)
+            if isinstance(content, ToolCallRejectionContent):
+                rejected.add(content.call_id)
             if assistant is None:
                 assistant = {"role": "assistant", "content": ""}
             assistant.setdefault("tool_calls", []).append(
@@ -86,8 +102,13 @@ def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
                     "id": "call_" + content.call_id.hex,
                     "type": "function",
                     "function": {
-                        "name": tool_alias(content.tool),
-                        "arguments": encode_json(content.arguments),
+                        # 拒绝标记仅表达闭合历史，不参与广告或重新计算别名。
+                        "name": tool_alias(content.tool)
+                        if isinstance(content, ToolCallContent)
+                        else "harnessix_rejected_tool_v1",
+                        "arguments": encode_json(content.arguments)
+                        if isinstance(content, ToolCallContent)
+                        else "{}",
                     },
                 }
             )

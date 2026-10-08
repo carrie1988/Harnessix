@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from harnessix.agent.models import ToolCallContent, ToolResultContent
+from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, ToolResultContent
 from harnessix.models._history import InvalidModelRequest, encode_json, messages_for, tool_alias
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelRequest
@@ -17,7 +17,10 @@ def build_request(
     tools: list[dict[str, Any]] = []
     if not config.capabilities.tool_calls and (
         request.tools
-        or any(isinstance(i.content, ToolCallContent | ToolResultContent) for i in request.history)
+        or any(
+            isinstance(i.content, ToolCallContent | ToolCallRejectionContent | ToolResultContent)
+            for i in request.history
+        )
     ):
         raise InvalidModelRequest("当前 Provider 不支持工具调用")
     for definition in request.tools:

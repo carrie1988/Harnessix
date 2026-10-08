@@ -20,7 +20,9 @@ from harnessix.agent.models import (
     QuestionRequestContent,
     ThreadArchived,
     ThreadForked,
+    ThreadForkSnapshotV2,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     TrustedActionApprovalRequestContent,
     TurnStarted,
@@ -44,6 +46,20 @@ from harnessix.context.tool_result_contracts import ModelHistoryInspectionV2
 def validate_event_boundary(event: EventDraft) -> None:
     """拒绝把新语义伪装成旧版本事件。"""
 
+    if event.schema_version < 21 and (
+        (
+            isinstance(event.payload, ItemStarted | ItemFinished)
+            and isinstance(event.payload.content, ToolCallRejectionContent)
+        )
+        or (
+            isinstance(event.payload, TurnStateChanged) and event.payload.reason == "tool_rejection"
+        )
+        or (
+            isinstance(event.payload, ThreadForked)
+            and isinstance(event.payload.snapshot, ThreadForkSnapshotV2)
+        )
+    ):
+        raise ValueError("工具拒绝事实及重入需要Agent Event v21")
     _validate_v20_to_v18(event)
     _validate_v17_to_v15(event)
     _validate_v14_to_v9(event)
