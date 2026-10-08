@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.product_config.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_delivery_process import GitOperationBudget
@@ -25,7 +26,10 @@ from harnessix.product_config.git_prefix_writer import (
     begin_git_prefix_write,
     publish_git_prefix_changes,
 )
-from harnessix.product_config.git_prepared_link_connection import _prepared_git_connection_observer
+from harnessix.product_config.git_prepared_link_connection import (
+    _prepared_git_connection_lifecycle_observer,
+    _prepared_git_connection_observer,
+)
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
 from harnessix.product_config.git_prepared_link_observation import (
     PreparedLinkReadSet,
@@ -132,6 +136,7 @@ def _control(
     database, state = ledger._database, ledger._artifacts.session.path.parent
     path = state / "git-delivery" / "git-delivery.db"
     observe_connection = _prepared_git_connection_observer(database, path)
+    observe_lifecycle = _prepared_git_connection_lifecycle_observer(database)
     observe_thread = _prepared_runtime_thread_observer(database, ledger._router, ledger._artifacts)
 
     with (
@@ -155,11 +160,25 @@ def _control(
 
         internal = parent_cancel_checkpointer(internal)
 
-        def control() -> None:
+        def local_check() -> None:
+            # 纯段不访问 SQL/文件/Owner；不缓存认证结果，边界仍走完整 internal。
+            cancel.checkpoint()
+            budget.remaining()
+            observe_lifecycle()
+            observe_thread()
+            if any(a is not b for a, b in zip(vars(ledger).values(), references, strict=True)):
+                raise prepared_link_changed()
+            if epoch is not None:
+                require_git_prefix_transaction_epoch(database, epoch)
+
+        local_check = parent_cancel_checkpointer(local_check)
+
+        def authenticate() -> None:
             internal()
             checkpoint()
             internal()
 
+        control = GitAuthenticationControl(local_check, authenticate)
         control()
         if not database.in_transaction:
             raise KernelError("git_delivery_store_transaction_required", "Git业务关联需要已有事务")
@@ -170,19 +189,20 @@ def _control(
             control()
         # 原 SQL finally 的末次宿主回调之后不再 await 或调用外部回调。
         epoch = None
-        with git_prefix_sql_window(database, checkpoint=internal):
+        terminal = GitAuthenticationControl(local_check, internal)
+        with git_prefix_sql_window(database, checkpoint=terminal):
             epoch = git_prefix_transaction_epoch(database)
-            read_set.require_sql(database, internal)
+            read_set.require_sql(database, terminal)
             read_set.terminal(
                 ledger._router,
                 ledger._core_store,
                 ledger._artifacts,
                 ledger._ports,
                 ledger._workspace_scope,
-                internal,
+                terminal,
             )
-            read_set.require_sql(database, internal)
-            internal()
+            read_set.require_sql(database, terminal)
+            terminal()
         epoch = None
 
 

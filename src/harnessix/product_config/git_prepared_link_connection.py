@@ -200,3 +200,17 @@ def _prepared_git_connection_observer(
         _observe_source(database, path, issued, None)
 
     return observe
+
+
+def _prepared_git_connection_lifecycle_observer(database: sqlite3.Connection) -> Callable[[], None]:
+    """原 Task 的纯段只检查登记和存活；路径及实际 SQL 来源仍由完整边界复核。"""
+    issued = _registered_prepared_connection(database)
+    if issued is None:
+        raise _invalid()
+
+    def observe() -> None:
+        if _registered_prepared_connection(database) is not issued:
+            raise _invalid()
+        _require_alive(database)
+
+    return observe

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 8
+version: 9
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners: [core]
 modules: [product_config, delivery, session, artifacts, trusted_actions, workspace]
@@ -438,7 +438,8 @@ require_prepared_git_connection(database, path: Path, *, checkpoint=None) -> Non
 工厂不创建目录或数据库、不迁移、不生成 Genesis、不获取业务锁；退出时撤销登记并关闭连接。
 Ledger 只借用连接，调用方必须将整个操作与提交保持在工厂 context 和原 Runtime 锁内。
 
-每个内部检查点，包括终端窗口，均调用 `require_prepared_git_connection`；
+完整认证检查点（包括原终端边界）核对原连接来源；P1 v2 纯计算段的局部检查点仅核对原登记与存活，
+不执行路径查询。准确范围与失败顺序见[分层控制契约](m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)。
 `PRAGMA database_list` 只是路径一致性检查，不能自行生成或替代原连接登记。
 逐段检查并非内核原子操作，不提供已打开 fd 与路径的 OS 原子绑定证明，也不保证发现检查间恶意替换再换回的全部竞态。
 
@@ -644,7 +645,7 @@ Session、Router、Artifact 和 CAS 沿各自原持久边界读取。
 1. 原 Key 不通过此组件导出；仅使用原 GitPublicationAuthority/Verifier 和原 Prefix 认证域。
 2. 数据合同通过不是认证；有真实 MAC 也不自动拥有业务正确性或执行权限。
 3. 当前写入来源只能由原活跃宿主及实际原认证 Reader 形成，不允许注入替代 Session、Scope、Artifact Guard 或 CAS 端口。
-4. 工厂打开前后固定全部父路径类型及 dev/inode，Ledger 每个内部检查点再次合作式复核；context 退出即撤销登记。该内部来源条件不是跨重启 Root 授权凭证或 OS 原子 fd 证明。
+4. 工厂打开前后固定全部父路径类型及 dev/inode，Ledger 在完整认证边界再次合作式复核；纯计算段持续频检原登记与存活，context 退出即撤销登记。该内部来源条件不是跨重启 Root 授权凭证或 OS 原子 fd 证明。
 5. Link 原文只进入私有状态，公开材料仅保存代码、测试统计及内容摘要，不发布用户仓库正文、凭据或 Key。
 6. 原 NativeBridge 新索引拒绝条件保持；不得为了让 prepared 组件通过而打开未实现桥接路径。
 7. 当前 Checkpoint/Commit 的 Core 类型投影不证明实际 Commit Planner 已接线。新增模型不扩大默认工具列表。
@@ -810,9 +811,12 @@ B4 的末轮异步 U 到同步终端/COMMIT 漂移窗口、B7 的原 DB FD/锁/�
 
 [默认关闭的分层研究复验](../validation/git-p1-layered-research-2026-10-08-v1/README.md)取得3项真实离线SDK链及15项短测，
 pending样本约18.14秒、写计数0；心跳最大间隔5.25秒仍有同步阻塞。
-研究纯段会改变外部callback频次、瞬时漂移检测时点及失败顺序，不能视为现行逐叶合同的等价实现。
+该历史研究纯段改变外部callback频次、瞬时漂移检测时点及失败顺序，不是逐叶完整认证的等价实现。
 FD诊断连接污染、实际I/O/发布后完整故障时窗、兼容合同及稳态SLA均未闭合，保持不可合入；
 已跟踪生产src的基线一致性不替代完整装配/依赖验证，不以研究桥放开Writer。
+
+现行 P1 v2 独立于上述研究桥：明确版本化检测时点，仅适配原同步纯算法，保留全部 I/O 及认证边界，
+不缓存 Owner、不借原生 Token 放行；以[分层控制契约及负控](m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)为准。
 
 ## 14. 实现偏差与最终结论
 

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 13
+version: 14
 code_revision: 1aee3faae95c708b629767a9ff4e518e211f1102
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -19,6 +19,9 @@ related_tests:
   - tests/product_config/test_git_linked_decision_reader.py
   - tests/product_config/test_git_linked_decision_sdk.py
   - tests/product_config/test_git_prepared_link_ledger.py
+  - tests/product_config/test_git_authentication_control.py
+  - tests/product_config/test_git_layered_codec_control.py
+  - tests/product_config/test_git_prepared_link_connection.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_approval_crash_recovery.py
   - tests/delivery/test_git_prefix_ledger.py
@@ -794,6 +797,71 @@ B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放�
 具体数据及不可相加的嵌套计时边界见[prepared 详设](m09-r4-git-prepared-link.md#41-真实耗时根因与验收约束)。
 独立原 Turn 的正向功能通过与强制实际到期负控不等于 P1 响应性通过；
 不得延长审批期限、增大生产默认预算或省略完整认证以获得 Writer 的 Go。
+
+未装配的事务追加候选已执行真实 SDK 的原 prepared→人工批准→决定追加路径。
+候选复用原全关联来源读取、十一列 CAS、原 Prefix/MAC 发布、原 epoch 和全集终端控制；
+没有改变默认 120 秒 Turn、60 秒操作期限或 Review TTL。
+实际正向验收在发布后的完整来源回读阶段因原 Turn 到期拒绝，错误为
+`git_approval_history_changed`，完整夹具耗时 123.89 秒。该失败说明 P1 会阻止默认批准写链闭合，
+不能以物理签发成功或隔离 SQL 单测通过认定 Writer 可用。
+
+同输入冻结 Wheel 的 denied 正向路径另在发布后完整材料复验时触发原 60 秒操作期限，
+错误为 `git_process_timeout`，完整夹具耗时 127.93 秒；不将夹具总时长当作单次操作预算。
+按首失败停止，cancelled 未继续执行。安装态物理／接线集合 32 项通过，其中跨域控制与审批来源
+使用替身，只证明真实 SQLite、严格正文、Prefix/MAC、精确重试和回滚原语，不证明 SDK 来源认证或性能通过。
+
+上述 Writer 候选未合入生产包、未注册工具。临时实验目录已失效，当前没有可回验的
+Writer 候选或 ASAN 初始化失败原件；本节时长只保留历史运行观察，不作为当前候选验收证据。
+后续优先完成控制契约及同步认证响应性整改，再按相同期限重新验证批准正向路径；
+上述历史失败不被后续正控覆盖；Writer、恢复屏障、B4、B7 和商业门禁继续开放。
+
+### 13.5 P1 分层控制契约 v2
+
+`harnessix.git-authentication-control/v2` 明确调整认证检测时点，不宣称与逐叶完整认证等价。
+原 120 秒 Turn、60 秒操作总期限、Review TTL、正文上限、完整 MAC／历史及业务范围均不变。
+只允许在明确列举的同步纯计算段减少来源 I/O；所有数据库、文件、发布和提交边界仍完整认证。
+
+| 层级 | 校验与边界 | 当前源码 |
+|---|---|---|
+| 局部频检 | 原取消、绝对期限、父 Task 取消、原连接登记及存活、原 Runtime Thread 锁代际、原资源身份及事务代际；无 SQL、路径 I/O 或新 Owner 查询 | [`_control.local_check`](../../src/harnessix/product_config/git_prepared_link_ledger.py)、[原连接生命周期观察](../../src/harnessix/product_config/git_prepared_link_connection.py) |
+| 完整认证 | 原 `internal → 上游 callback → internal`；包括新鲜 Owner、连接实际路径、四库变化和原完整资源控制；普通调用、纯段进入和正常退出均执行 | [`GitAuthenticationControl`](../../src/harnessix/product_config/git_authentication_control.py)、[`_control.authenticate`](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
+| 终端 | 无外部 callback 的原完整 `internal`，沿原同步终端读集合复验；不是提交后的认证保证 | [`_control` 终端窗口](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
+
+纯段仅覆盖原[严格字段快照](../../src/harnessix/product_config/git_delivery_plan_snapshot.py)、
+[规范 JSON 算法](../../src/harnessix/product_config/git_delivery_plan_wire.py)、
+[prepared 解码](../../src/harnessix/product_config/git_prepared_link_wire.py)、
+[决定解码](../../src/harnessix/product_config/git_decision_link_wire.py)，以及
+[原 CoreStore 读取完成后的解析](../../src/harnessix/product_config/git_delivery_core_store.py)。
+CoreStore 的 `blob` I/O 与解析分开；不将 Store、发布、`await`、任意业务回调放入纯段。
+只识别原控制的确切类型，函数、代理和子类保持原调用轨迹，不自动开启优化。
+
+每个纯段持有一次性的内存 token。完整调用先撤销 token；嵌套退出不恢复旧段。
+保存的回调在退出、异常、另一个 Task／线程或完整回调重入后退回完整认证，
+不缓存认证结果、不保存 token、不授予新的 SQL 或执行能力。
+异所有者降级传递完整方法委托，而非原控制实例，避免确切类型适配器再次进入纯段而递归。
+局部／正文首异常保持原对象，异常退出撤销段且不以退出回调覆盖首失败；
+正常退出完整认证失败时不交付已算出的结果。
+
+外部来源在纯段内持续改变会在完整边界拒绝；段内改变后恢复不保证被观察。
+此契约不能关闭持续 FD／WAL／SHM 绑定、跨库原子性、B4／COMMIT 或完整 B7。
+恢复必须重新进入原 Owner、原连接及 Runtime 锁窗口，不能复用先前的纯段回调。
+
+验收分为[生命周期与失败顺序](../../tests/product_config/test_git_authentication_control.py)、
+[实际编解码及 CAS 接线](../../tests/product_config/test_git_layered_codec_control.py)、
+[真实连接局部检查与路径漂移](../../tests/product_config/test_git_prepared_link_connection.py)，
+再复验原 SDK 的取消、到期、漂移、恢复和批准路径。替身单测不计为实际 Owner／SDK 认证。
+控制契约落地不代表 P1 响应性完成，尤其不能替代真实 Writer 的同期限正向验收。
+
+最终非 editable Python 3.12.7／SQLite 3.45.3 候选通过相关集合 1136 项及定向实际 SDK 3 项，
+七个核心目录（Models／Agent／Session／Context／App Server／UI／Protocol）另有 2815 项通过、1 项原生 Windows 跳过。
+后者覆盖批准来源、原同步恢复屏障和末次回调的取消／到期。前一候选另有 19 项 SDK 通过；
+跨所有者降级修正后候选不同，不将前一成绩计为最终包验收，不合并重复集合。
+隔离 Writer 三种决定均完成同事务追加、调用方提交及只读重开，操作分别耗时
+26.823／26.826／28.817 秒，原 60 秒操作及 120 秒 Turn 未放宽。
+该 Writer 仍未合入生产包，亦未装配默认工具；拒绝和取消使用原物理 `failed` phase，
+不将 `fact_kind` 直接当作存储 phase。
+三场景 20 毫秒心跳的最大间隔分别为 13.303／13.442／14.594 秒，
+说明同步响应性仍有阻塞；期限正向通过不能关闭 P1 或商用门禁。
 
 ## 14. 实现偏差与最终结论
 

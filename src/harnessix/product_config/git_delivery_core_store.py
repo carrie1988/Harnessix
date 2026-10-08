@@ -15,6 +15,7 @@ from typing import cast
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.product_config.git_authentication_control import pure_git_authentication
 from harnessix.product_config.git_delivery_observed_contracts import ProductGitDeliveryCoreV2
 from harnessix.product_config.git_delivery_observed_wire import (
     decode_product_git_delivery_core_v2,
@@ -148,13 +149,6 @@ def _load[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
         body = store.blob(digest, checkpoint=check)
         check()
         actual = _body(body, digest)
-        result = (
-            decode_product_git_delivery_core(actual, checkpoint=check)
-            if kind is ProductGitDeliveryCore
-            else decode_product_git_delivery_core_v2(actual, checkpoint=check)
-        )
-        check()
-        return cast(T, result)
     except UpstreamCheckpointError as error:
         if check.error is not None:
             raise check.error from None
@@ -163,6 +157,22 @@ def _load[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
         if check.error is not None:
             raise check.error from None
         raise _io_error(False) from None
+
+    # CAS I/O 已完成；只给原纯解析器局部频检，不把原 Store 放入纯段。
+    with pure_git_authentication(checkpoint) as pure_check:
+        check = _Checkpoint(pure_check)
+        try:
+            result = (
+                decode_product_git_delivery_core(actual, checkpoint=check)
+                if kind is ProductGitDeliveryCore
+                else decode_product_git_delivery_core_v2(actual, checkpoint=check)
+            )
+            check()
+            return cast(T, result)
+        except Exception:
+            if check.error is not None:
+                raise check.error from None
+            raise _io_error(False) from None
 
 
 @dataclass(frozen=True, slots=True)

@@ -16,6 +16,7 @@ from harnessix.delivery.git_inventory_contracts import (
     GitInventoryScope,
     snapshot_git_inventory_scope,
 )
+from harnessix.product_config.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_delivery_observed_contracts import (
     ProductGitDeliveryCoreV2,
     ProductGitDeliveryPlanV2,
@@ -147,6 +148,10 @@ def snapshot_product_git_delivery_plan_v2(
 
 def _snapshot[T: BaseModel](value: object, kind: type[T], checkpoint: Callable[[], None]) -> T:
     """检查点异常保留原身份，即使其类型与解析器错误相同也不得重新分类。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        # 只包装原纯算法；边界认证异常位于解析器收敛之外，保持原对象。
+        with checkpoint.pure() as pure_check:
+            return _snapshot(value, kind, pure_check)
     callback_error: BaseException | None = None
 
     def check() -> None:

@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 1
+version: 2
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners: [core]
 modules: [product_config, delivery]
@@ -177,6 +177,14 @@ sequenceDiagram
 须在正式生产合同中说明，不能删除检测来追求全部正控成功。
 原 A 句柄存续时路径 A→B→A 且检查未观察到 B，是明确未检测反例；
 成功点时观察不证明整个历史或至后续 COMMIT 的连续性。
+
+### 5.4 内存检查的实际环境阻塞
+
+同一冻结桥源码的 ASAN 构建成功；本机 Apple Clang 12.0.0／Darwin 27.0.0 的
+独立可执行程序与 Python 3.12 正控均在 ASAN 拦截器初始化阶段失败，未进入桥的生命周期测试。
+LSAN 正控明确报告该平台不支持 `detect_leaks`。因此 ASAN、LSAN 均未通过，
+没有据此观察或排除候选内存缺陷。该轮临时实验目录已失效，初始化失败原件当前不可回验；
+普通资源计数归零不能替代有效内存检查，也不改变 B7 或生产准入结论。
 
 ## 6. 失败、恢复、持久化与安全边界
 

@@ -171,6 +171,56 @@ async def test_child_source_observer_rejects_replaced_path_and_preserves_origina
 
 
 @pytest.mark.parametrize("read_only", [False, True])
+async def test_local_lifecycle_observer_has_no_sql_or_path_io_and_retires(
+    tmp_path, monkeypatch, read_only
+):
+    path = _database(tmp_path / "git-delivery.db")
+    with open_prepared_git_connection(path, read_only=read_only) as database:
+        observe = connection._prepared_git_connection_lifecycle_observer(database)
+        statements = []
+        database.set_trace_callback(statements.append)
+
+        def forbidden(*args):
+            pytest.fail("纯段生命周期检查不得访问文件或查询数据库来源")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(connection, "_physical_pin", forbidden)
+            patch.setattr(connection, "_database_path", forbidden)
+            observe()
+            assert not statements
+
+            async def sibling():
+                with _invalid():
+                    observe()
+
+            await asyncio.create_task(sibling())
+        database.set_trace_callback(None)
+        assert database.total_changes == 0
+    with _invalid():
+        observe()
+
+
+@pytest.mark.parametrize("closed", [False, True])
+async def test_local_lifecycle_does_not_replace_full_source_authentication(tmp_path, closed):
+    path = _database(tmp_path / "git-delivery.db")
+    replacement = _database(tmp_path / "replacement.db", "B")
+    with open_prepared_git_connection(path, read_only=True) as database:
+        local = connection._prepared_git_connection_lifecycle_observer(database)
+        full = connection._prepared_git_connection_observer(database, path)
+        if closed:
+            database.close()
+            with _invalid():
+                local()
+        else:
+            path.rename(tmp_path / "retired.db")
+            replacement.rename(path)
+            # 局部频检只负责原登记与存活，持久路径漂移必须由完整边界拒绝。
+            local()
+        with _invalid():
+            full()
+
+
+@pytest.mark.parametrize("read_only", [False, True])
 @pytest.mark.parametrize("name", ["git-delivery.db", "Git 中文 ?#%.db"])
 def test_existing_database_uses_original_connection_without_creating_files(
     tmp_path, read_only, name

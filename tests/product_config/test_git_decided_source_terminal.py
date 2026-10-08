@@ -40,6 +40,9 @@ async def test_last_callback_return_binding(case, tmp_path, monkeypatch, kind, m
     monkeypatch.setattr(ledger, "require_git_review_host", lambda *args: lambda: None)
     # 仅隔离来源依赖以验证返回绑定；此替身不是原连接或 Runtime 锁的认证正控。
     monkeypatch.setattr(ledger, "_prepared_git_connection_observer", lambda *args: lambda: None)
+    monkeypatch.setattr(
+        ledger, "_prepared_git_connection_lifecycle_observer", lambda *args: lambda: None
+    )
     monkeypatch.setattr(ledger, "_prepared_runtime_thread_observer", lambda *args: lambda: None)
     monkeypatch.setattr(ledger, "observe_prepared_state", unchanged)
 

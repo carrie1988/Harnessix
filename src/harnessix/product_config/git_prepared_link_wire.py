@@ -9,6 +9,7 @@ from typing import NoReturn
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_delivery_plan_snapshot import invalid_git_delivery_plan
 from harnessix.product_config.git_delivery_plan_wire import MAX_PRODUCT_GIT_PLAN_BYTES, _encode
 from harnessix.product_config.git_prepared_link_contracts import (
@@ -28,6 +29,9 @@ def decode_product_git_prepared_link(
     body: object, *, checkpoint: Callable[[], None]
 ) -> ProductGitPreparedLink:
     """只接收规范 bytes；原解码器的有限类型分派不改动，不放宽旧 Schema。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        with checkpoint.pure() as pure_check:
+            return decode_product_git_prepared_link(body, checkpoint=pure_check)
     checkpoint()
     if type(body) is not bytes or not 1 <= len(body) <= MAX_PRODUCT_GIT_PLAN_BYTES:
         raise invalid_git_delivery_plan()

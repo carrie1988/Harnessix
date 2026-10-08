@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 93
+version: 94
 code_revision: 1aee3faae95c708b629767a9ff4e518e211f1102
 owners:
   - core
@@ -2822,3 +2822,13 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 架构、字段、时序、失败与恢复及核心伪代码见[总体与详细设计](../changes/m09-r4-git-runtime-thread-scope.md)。
 不改通用 Runtime prepare/execute/cancel，不对任意裸 `sqlite3.execute` 安装权限拦截，
 不关闭 SQLite FD、B4、P1、全部 dispatch 或完整 B7，不装配默认 Git Writer。
+
+## Git 纯计算段分层控制
+
+[`GitAuthenticationControl`](../../src/harnessix/product_config/git_authentication_control.py)
+将原取消、期限、锁／连接登记及资源代际的局部频检与完整来源认证分开。
+只有明确适配的同步纯快照、规范 JSON 和 CAS 读取后的解析启用局部频检；
+普通调用、纯段首末、I/O、发布和原终端边界仍完整核验，不缓存 Owner 或扩展操作期限。
+保存检查点、嵌套、跨 Task／线程及完整重入不能继承局部段；异常保持原首失败。
+正式边界与测试见[控制契约 v2](../changes/m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)，
+不宣称逐叶认证等价或完整 P1／R4 通过。

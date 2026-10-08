@@ -9,6 +9,7 @@ from typing import NoReturn
 from pydantic import TypeAdapter, ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_decision_link_contracts import (
     ProductGitApprovedLink,
     ProductGitCancelledLink,
@@ -34,6 +35,9 @@ def decode_product_git_decision_link(
     body: object, *, checkpoint: Callable[[], None]
 ) -> ProductGitApprovedLink | ProductGitDeniedLink | ProductGitCancelledLink:
     """双遍严格解析及原字节比对；未知变体、缺省补全和非规范字节均拒绝。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        with checkpoint.pure() as pure_check:
+            return decode_product_git_decision_link(body, checkpoint=pure_check)
     checkpoint()
     if type(body) is not bytes or not 1 <= len(body) <= MAX_PRODUCT_GIT_PLAN_BYTES:
         raise invalid_git_delivery_plan()

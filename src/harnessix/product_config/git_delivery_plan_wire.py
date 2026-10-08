@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, NoReturn, cast
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_delivery_observed_contracts import (
     ProductGitDeliveryCoreV2,
     ProductGitDeliveryPlanV2,
@@ -49,6 +50,9 @@ def _encode(
     checkpoint: Callable[[], None],
 ) -> bytes:
     """完整逐块编码；超限或取消不返回任何部分记录，不提高现有账本预算。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        with checkpoint.pure() as check:
+            return _encode(plan, check)
     checkpoint()
     # Core 的原内容地址只排除自身指纹；嵌套指纹及全部事实仍完整保留。
     exclude = (
@@ -116,6 +120,9 @@ def _decode[
     | ProductGitDeliveryPlanV2
 ](body: object, kind: type[T], checkpoint: Callable[[], None]) -> T:
     """两代有限模型共用原严格 JSON 算法，不接受调用方解析器或验证器。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        with checkpoint.pure() as pure_check:
+            return _decode(body, kind, pure_check)
     checkpoint()
     if type(body) is not bytes or not 1 <= len(body) <= MAX_PRODUCT_GIT_PLAN_BYTES:
         raise invalid_git_delivery_plan()
