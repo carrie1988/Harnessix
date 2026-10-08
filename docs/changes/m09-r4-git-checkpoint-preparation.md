@@ -1,16 +1,20 @@
 ---
 doc_type: change-design
 status: current
-version: 7
-code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
+version: 8
+code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
 owners: [core]
-modules: [product_config, delivery, agent, trusted_actions]
+modules: [product_config, delivery, agent, trusted_actions, workspace]
 related_adrs:
   - docs/adr/0007-agent-loop-and-cancellation.md
   - docs/adr/0042-process-saga-recovery-and-cancellation.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_review_layered_native.py
+  - tests/product_config/test_git_user_native_control.py
+  - tests/product_config/test_git_source_native_progress.py
+  - tests/workspace/test_snapshot_v2_native_progress.py
   - tests/product_config/test_git_root_io_control.py
   - tests/product_config/test_git_checkpoint_scope_references.py
   - tests/product_config/test_git_checkpoint_scope_control.py
@@ -43,7 +47,7 @@ supersedes: []
 | 项目 | 当前边界 |
 |---|---|
 | 已提交基础版本 | 以 `code_revision` 为准 |
-| 设计版本 | 版本 7，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
+| 设计版本 | 版本 8，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | 当前实现已包含在 `code_revision`；第 19 节摘要补充固定具体源码字节 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -169,6 +173,37 @@ Root: 入口 full → io_progress(原生事实捕获 + 原本地频检／读取�
 固定原负载 v13 已走到 pending Review，但诊断脚本误读不存在的 `Turn.constraints` 而失败，尚未进入恢复；原件保留。后继 v14 仅改为正式 `Turn.budget`，保持原 60 秒／120 秒及负载，独立结果在本节后继记录；回归通过不关闭 P1 响应性、默认 Writer、B4／B7、R3 真实编码质量或商用门禁。
 
 v14 同包固定负载已完成原 Checkpoint 准备及 Review，随后在 `fixture.prepare_original_link_and_router_first` 的 Ledger 准备耗尽原 60 秒操作期限（`git_process_timeout`），未进入决定恢复，没有恢复心跳成绩。诊断总时长 183.083 秒含前置夹具与并行回归／采样开销，不是准备 SLO。栈证据转向 `_authenticate → verify_git_delivery_source → _verify_final_snapshot → capture_snapshot_facts` 的进度与认证边界。源码复查区分确切类型被包装、U 的真实子 Task 边界和 Review 原本只有完整控制三种情形，不能简单透传或放宽 Task 绑定。下一步先研究该包装与来源读器边界，保留 v12、v13、v14 原失败，不对整个来源 verifier 降级。首次控制类结构门禁失败（101 行）已通过精简重复说明收敛到 99 行；前后除文档字符串外算法 AST 一致，最终门禁仍为 23 项存量／新增 0。
+
+### 1.6 来源读取、子 Task 与 Review 的原生控制
+
+v14 已通过准备与 Review，仍在 Ledger 的来源复核耗尽原 60 秒。根因不是需要更长预算，而是包装后确切控制丢失、User verifier 的实际子 Task 无法继承父局部控制，以及 Review 只有完整宿主检查。按批准的分层契约收敛如下；没有扩大文件范围、截断事实或借缓存替代认证。
+
+| 入口与职责 | 局部频检 | 完整认证／失败边界 |
+|---|---|---|
+| [`git_native_control`](../../src/harnessix/product_config/git_native_control.py) | 原创建 Task／线程才能保留 exact 控制；只读 observer 显式交付，不借父 local | Scope 原 `_build_control` 函数体原样抽取复用；unknown／代理／子类保持旧 full 路径 |
+| [`verify_workspace_snapshot_v2`](../../src/harnessix/workspace/snapshot_v2.py) | 可选 `native_progress` 仅包实际 `capture_snapshot_facts`，没有业务认证依赖 | 原历史／CAS 完整读取、编码与比较均在段外；默认 `None` 与旧轨迹一致 |
+| [`Source`](../../src/harnessix/product_config/git_delivery_source.py)／[`Root`](../../src/harnessix/product_config/git_baseline.py) | 仅确切控制的同步原生捕获使用 `io_progress`；原端口读取保护保留 | 首末 full；控制异常只解本边界新增层，嵌套标记保留原对象；Root unknown 沿旧语义 |
+| [`User verifier`](../../src/harnessix/product_config/git_user_observation.py)／[`Ledger observer`](../../src/harnessix/product_config/git_prepared_link_ledger.py) | 实际 `cancel.run` 子 Task 创建自身控制；父显式交付原资源身份、登记、Runtime 锁和 SQL epoch 的只读观察 | 全历史／MAC／Source 认证仍走 full；不登记子 Task 的 SQL 权限；观察摘要每次读取含共享控制的 10 份源码，缺失或漂移拒绝 |
+| [`Review host`](../../src/harnessix/product_config/git_delivery_review_host.py)／[`Provider`](../../src/harnessix/product_config/git_delivery_review.py) | exact 产品 Provider 在实际子 Task 创建控制；local 只检查取消、期限及选定原字段身份 | 先拒绝非原生字典／非 exact 字符串键；不调用旧 bound、contract、路径比较或布尔魔术方法；full 保留原 Owner／独立只读 Owner 检查、Artifact 发布末核 |
+
+```text
+父 Ledger 原连接／持锁登记 → 只读 observer（不迁移 SQL 权限）
+  → User 实际子 Task 的新控制 → 原生捕获段（首末 full，段内 local）
+  → 完整原 Source／历史复核 → 原父事务发布／提交检查
+Review 原宿主全认证 → 实际子 Task 的新控制 → 完整审阅与原 Artifact 发布
+```
+
+选定字段只冻结所需原引用，不冻结整份宿主字典，因此合法缓存更新不误拒绝。`native_observer` 不是恢复批准或写入授权；提交仍需要原登记 Task、连接、持锁代际和正式事务窗口。准备摘要保留原四成员规划配方；User 摘要增加抽取后的共享控制，二者都不是全部依赖闭包代码签名，发行绑定另覆盖全部包成员。
+
+局部检测不保证发现段内外部来源短暂改变后恢复，也不抢占同步 OS 调用。首失败撤销 token、不追加出口认证、不返回部分事实；未知回调不自动优化。原 60 秒操作／120 秒 Turn、容量、格式、协议和默认 Writer 未启用状态保持。
+
+验证映射：[Workspace 端口矩阵](../../tests/workspace/test_snapshot_v2_native_progress.py)、[Source 异常与旧轨迹](../../tests/product_config/test_git_source_native_progress.py)、[User／SQL 非转移负控](../../tests/product_config/test_git_user_native_control.py)、[Review 元数据与 Owner](../../tests/product_config/test_git_review_layered_native.py)、[根捕获首失败](../../tests/product_config/test_git_root_io_control.py)。同包回归、原负载深链及原生平台仍必须分别验收，不按局部绿测关闭 R3／R4。
+
+同一非 editable 安装包完成 1732＋917＋16＋4＋211＋216＝3096 项回归，零失败／错误／跳过；563 个源码／输入／Wheel／安装态成员一致，Ruff／九源码 strict mypy 通过，结构门禁保持 23 项存量／新增 0。独立审查的根捕获嵌套异常与共享控制摘要两项 P2 已修复并复核；不据此宣称全面安全验收。冻结旧 User 新契约测试为 29 FAIL／9 PASS，Root 首失败为 4 FAIL／112 PASS；Review 修复前 53 FAIL／89 PASS、新 142 PASS，Source 原件 143 FAIL／38 PASS、新 181 PASS。红绿是机制／契约对照，不是同数量漏洞；重叠运行不重复计分。
+
+同包 v15 沿 v14 原 Harness（测试正文逐字节相同）单次运行，16 文件／400 目录／25 级／连续两次 Patch、60 秒操作与 120 秒 Turn 不变。本次已走过 Checkpoint／Review、Ledger 准备与提交、原 Router 批准，并首次进入 `recover.original_decision_link`；随后原 Turn 剩余期限耗尽，报 `git_process_timeout`。准备／Review 诊断区间约 57.899 秒，原关联准备／Router 区间约 52.784 秒；恢复测量约 9.128 秒，不能误写成恢复自身运行了 60 秒。恢复通过 `_limit_to_original_turn` 收紧自身预算，未延长期限。20 毫秒诊断心跳最大采样间隔约 6.790 秒，未设通过阈值；总诊断 142.890 秒含前置夹具，不是生产 SLO。正式恢复提交及只读重开断言未通过。
+
+后继优先审查原审批历史材料的控制转发（`git_approval_history_proof → git_delivery_plan_materials → prepare_git_tree_diff/Projection`）及剩余前置区间；原 `native_observer` 尚未接入审批历史消费也需另行核验，不对整个材料／来源 verifier 降级。旧 v14、v15 FAIL 全部保留；P1、默认完整 Writer、B4／B7、原生平台与 R3 真实质量仍开放。本轮真实模型请求 0、不新增 Beta 通过数。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -967,14 +1002,21 @@ finally：
 |---|---|
 | `src/harnessix/product_config/git_checkpoint_preparation.py` | `b7c996d33b5926a9cb8be5da3e6e9cd8e4fee9b22b96fa3dfaed0029b2cd3643` |
 | `src/harnessix/product_config/git_checkpoint_materials.py` | `dc4a386f9233a117bac51c2446feb8da2678f4c90b6d5254488d37fc3dd8f69c` |
-| `src/harnessix/product_config/git_checkpoint_scope.py` | `300436ab3d223df654d0d12988501a55af9ad6aa882fd285897d3d2bff82ad10` |
+| `src/harnessix/product_config/git_checkpoint_scope.py` | `4a4396118d1578b90246c0aae42716ba90a5448f7205d2ec6d52647bad2b3981` |
 | `src/harnessix/delivery/git_authentication_control.py` | `bc170a28a714071b78a5e869d4d14025810ce63820c8ec2850f6be140d0f7105` |
-| `src/harnessix/product_config/git_baseline.py` | `a05b0bdf35440229305719395f2e12a2de2758d4bb3a14f8d0ac1dd51a25ffdc` |
+| `src/harnessix/product_config/git_baseline.py` | `9876687427a6067662fcfcabb2223bb5309fe552f4bd9975425734804c135f52` |
 | `src/harnessix/delivery/git_inventory_wire.py` | `6666cdbadee96a9103eb9b3b620cbc77c3f01667aceae6a089082eca2e686e43` |
 | `src/harnessix/product_config/git_delivery_plan_snapshot.py` | `5dd8a297bd082feb5e58d6967be7afb3121e34ed24e0c2cfa2034afc1fb62983` |
 | `src/harnessix/product_config/git_delivery_core_store.py` | `10c1ef7b7246866bd8d25dc1f122f39f83521d374355d845858c4abf93535fcc` |
 | `src/harnessix/trusted_actions/agent_preplanning.py` | `b7a537dfcc403ac1db0c0427f8ee804a3c880be5840ec6547dc3c8eb5ef1ac50` |
 | `src/harnessix/agent/cancellation.py` | `429b1ade34e2f78666114806961ef59d720a5c606d044734eb34fa96b8ee19be` |
+| `src/harnessix/product_config/git_native_control.py` | `0d0773716a1e72d4c767e576761cf3c4395a19ac4f849100f1ad5d9cca824612` |
+| `src/harnessix/product_config/git_user_observation.py` | `22ef2d541452a1105f8f4c52cdfd7835580e6b628b7d5039a97524f015092e27` |
+| `src/harnessix/product_config/git_prepared_link_ledger.py` | `738179473c6cf7638c3a197211c127da27b32c41c30cf8e762423062c8748219` |
+| `src/harnessix/product_config/git_delivery_source.py` | `72c4a6a3577eb28e3c512c1d334395075a9c24ff6bf85f52f5d630a15dc3eb33` |
+| `src/harnessix/product_config/git_delivery_review_host.py` | `d976c5497397640e7c987efeb531d348491d954d4e556c69669a9fdd1d865a65` |
+| `src/harnessix/product_config/git_delivery_review.py` | `c8e31019e6996d155dfe6ab91d6a1c0f3cf2a97c5161d7d8290a894fedb148e3` |
+| `src/harnessix/workspace/snapshot_v2.py` | `cb269ab7fd30e8bbbea62955ee1126cae624b221cf4764306df718a5cf0e119b` |
 
 后续源码微调必须按实际字节复核本设计及上述摘要；不能只保留基础提交号而宣称增量说明持续对应现状。发布时应将已整合增量的实际提交/安装源码证据与该设计版本关联，不能把工作树实现描述当作已发布证明。
 

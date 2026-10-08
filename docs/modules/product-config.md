@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 103
-code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
+version: 104
+code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
 owners:
   - core
 modules:
@@ -15,6 +15,9 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_review_layered_native.py
+  - tests/product_config/test_git_user_native_control.py
+  - tests/product_config/test_git_source_native_progress.py
   - tests/product_config/test_git_checkpoint_scope_control.py
   - tests/delivery/test_git_tree_projection_layered.py
   - tests/product_config/test_git_checkpoint_layered_control.py
@@ -2871,3 +2874,5 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 这两个正式内部组件没有默认注册、不执行 Git 效果、不关闭完整 B4/B7 或原生门禁。
 三态正式追加、批准后取消拒绝及决定提交间隙已建立实际 SDK 回归；这不放行默认写入口。
 详设、失败顺序红例及同包验收统一见[内部恢复集成](../changes/m09-r4-git-approved-link.md#138-正式内部代码集成与回归)。
+
+来源／Review 原生控制按[分层读取设计](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)实现：原子 Task 创建自身控制，只读观察不转移父 SQL 权限；局部字段观察不调用动态宿主方法，首末仍完整认证。User 实现摘要纳入共享控制。默认完整 Writer 仍未启用。

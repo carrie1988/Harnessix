@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 245
-code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
+version: 246
+code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
 owners:
   - core
 modules:
@@ -2776,3 +2776,5 @@ v12原负载仍60秒准备FAIL、未进入恢复；栈证据显示原生根事�
 v13首次走到pending Review后因诊断误读Turn.constraints失败；v14只改正式Turn.budget，固定原负载已走过Checkpoint准备／Review，随后Ledger准备仍60秒操作FAIL，未进入恢复。旧失败保留，不以门槛推进宣称P1通过。
 下一顺序：来源快照读器的确切控制传递及同步只读进度边界 → 首异常／漂移／未知回调负控 → 原期限完整恢复复验；不缓存四份源码认证或取消Owner检查。
 P1、默认完整写链、B4/B7、原生平台及R3真实质量仍开放；本轮模型请求0，不增加真实编码／Beta通过数。
+
+来源／Review 的[只读子 Task 分层契约](changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)已落实；同包3096项全通过、563成员绑定，新增结构债务0。固定原负载v15首次进入原决定恢复，原120秒Turn剩余期限耗尽，恢复及只读重开仍未通过；诊断最大心跳间隔约6.790秒，不按前移一阶段关闭P1。下一步聚焦审批历史材料转发与剩余前置开销；默认完整写链、B4/B7、平台及R3真实质量仍开放，本轮模型请求0。

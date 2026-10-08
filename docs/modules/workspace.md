@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 14
+code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
+  - tests/workspace/test_snapshot_v2_native_progress.py
   - tests/delivery/test_terminal_read_control.py
   - tests/product_config/test_git_prepared_link_terminal_callbacks.py
   - tests/workspace/test_snapshot_parent_closure.py
@@ -1372,3 +1373,5 @@ ContextVar 保存同次 `_TerminalRead`；创建线程、Task 和 active 栅栏�
 完整父闭包缺失、异常身份与作用域生命周期；[实际认证 SDK 回归](../../tests/product_config/test_git_prepared_link_terminal_callbacks.py)
 验证普通路径回调保留、末端静默及退出恢复。源码与专项不等于最终安装候选、跨库原子快照、
 对外部进程的 CAS 文件锁或商用 Git 交付验收。
+
+`verify_workspace_snapshot_v2(..., native_progress=None)` 新增可选同步读取进度上下文，仅包原生事实捕获，不注入事实、跳过成员或授予执行权；完整历史/CAS、编码、比较均在段外，默认路径不变。见[唯一分层详设](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)及[端口负控](../../tests/workspace/test_snapshot_v2_native_progress.py)。

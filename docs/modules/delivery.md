@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 52
-code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
+version: 53
+code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/product_config/test_git_source_native_progress.py
+  - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_checkpoint_scope_control.py
   - tests/delivery/test_git_tree_projection_layered.py
   - tests/product_config/test_git_authentication_origin.py
@@ -2365,3 +2367,5 @@ Closure 仅对候选声明与 CAS 读后解析启用分层；DFS 和真实读取
 正式边界、异常时序及负控见[闭包详设](../changes/m09-r4-git-tree-closure.md#114-分层控制的实际计算io-边界)。
 
 准备器另将无 I/O 的 Scope 引用资格／完整并集规划设为纯段；根事实捕获使用不同的 `io_progress` 契约，段内保留原生只读保护与本地频检、段首末完整认证。两者复用私有 token 生命周期，不缓存认证，不将 CAS 或任意 I/O 放入 pure。准确调用链、错误时序及负控见[准备分段](../changes/m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)。
+
+Git 控制适配复用[原创建绑定与异常边界](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)：原生只读捕获不是 pure；未知回调沿旧完整路径，嵌套控制错误保留原对象。完整 Writer／恢复屏障及原生平台门禁仍独立开放。

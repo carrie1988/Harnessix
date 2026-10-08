@@ -1,13 +1,14 @@
 ---
 doc_type: change-design
 status: draft
-version: 25
-code_revision: 68f4033b6f88b51b7053c2d9a631f1bd2cb4c1ae
+version: 26
+code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_checkpoint_scope_control.py
   - tests/delivery/test_git_tree_projection_layered.py
   - tests/product_config/test_git_link_user_observation_consumption.py
@@ -1070,3 +1071,5 @@ A/T2/D/NativeBridge/Checkpoint/Commit、完整 Loader/Backup2 及发布门禁保
 同包 v10 原深路径仍 60 秒准备 FAIL、未进入恢复，热点转向完整 Closure；原全部期限和默认未注册状态保留，P1、R3／R4 不据此关闭。
 
 准备链后继分段与负控详见[引用规划及根捕获设计](m09-r4-git-checkpoint-preparation.md#15-引用纯规划与原生只读端口进度)。同包 v14 原深负载已完成 Checkpoint／Review，但原 Ledger 准备仍在 60 秒操作期限失败，尚未进入恢复；不能据前置门槛推进关闭本节 Writer 或 P1。
+
+Ledger 原 U 来源消费采用[只读子 Task 分层契约](m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)，不借用父 local、移交 SQL 登记或沿用过期实现摘要。此整改不扩大批准／恢复权限，原写入、提交及默认未启用状态不变。
