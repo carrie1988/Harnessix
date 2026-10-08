@@ -492,15 +492,17 @@ class PosixProcessSupervisor(_ProcessObservation):
             raise KernelError("process_launch_failed", "Process owner状态目录创建失败") from None
         starting = _validated_lease(lease, state="starting", sequence=1)
         self._store.transition(lease, starting)
-        read_fd, write_fd = os.pipe()
+        read_fd = write_fd = -1
         owner: subprocess.Popen[bytes] | None = None
         try:
+            read_fd, write_fd = os.pipe()
             owner = await asyncio.to_thread(self._spawn_owner, read_fd, run_directory)
             os.close(read_fd)
             read_fd = -1
             body = owner_request.model_dump_json(warnings="error").encode("utf-8") + b"\n"
             await asyncio.to_thread(SupervisedProcess._write_all, write_fd, body)
-        except (OSError, ValueError, subprocess.SubprocessError):
+        except Exception:
+            # 普通启动异常已完成；等待取消不证明后台 spawn 结束，不能落 failed。
             if owner is not None:
                 owner.kill()
                 await asyncio.to_thread(owner.wait)

@@ -322,7 +322,56 @@ async def test_launch_failure_is_terminal_and_duplicate_is_not_replayed(tmp_path
                 workspace=workspace,
                 environment={},
             )
-    assert duplicate.value.code == "process_already_exists"
+        assert duplicate.value.code == "process_already_exists"
+
+
+@pytest.mark.parametrize("failure", ["pipe-oserror", "spawn-oserror", "spawn-runtimeerror"])
+async def test_prelaunch_failure_closes_pipe_and_persists_terminal_lease(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    """确定未创建 Owner 的普通异常必须结算；不能把等待取消归类为未启动。"""
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    descriptors: list[int] = []
+    original_pipe = os.pipe
+
+    def pipe() -> tuple[int, int]:
+        if failure == "pipe-oserror":
+            raise OSError("prelaunch-canary")
+        pair = original_pipe()
+        descriptors.extend(pair)
+        return pair
+
+    def spawn(*_args: object) -> None:
+        error = RuntimeError if failure == "spawn-runtimeerror" else OSError
+        raise error("prelaunch-canary")
+
+    async with PosixProcessSupervisor(tmp_path / "state") as supervisor:
+        spec = build_process_spec(invocation="argv", argv=(sys.executable, "-V"))
+        plan = _plan(workspace, spec, supervisor)
+        with monkeypatch.context() as patch:
+            patch.setattr(os, "pipe", pipe)
+            patch.setattr(supervisor, "_spawn_owner", spawn)
+            with pytest.raises(KernelError) as caught:
+                await supervisor.start(
+                    plan, spec, supervisor.capability, workspace=workspace, environment={}
+                )
+        assert caught.value.code == "process_launch_failed"
+        assert "prelaunch-canary" not in str(caught.value)
+        lease = supervisor._store.load(spec.process_id)
+        assert (lease.state, lease.sequence, lease.stop_reason) == ("failed", 2, "launch_failed")
+        assert lease.pid is None and lease.owner_identity is None and lease.finished_at is not None
+        assert not supervisor._store.active() and not supervisor._handles
+        for descriptor in descriptors:
+            with pytest.raises(OSError):
+                os.fstat(descriptor)
+        with pytest.raises(KernelError) as duplicate:
+            await supervisor.start(
+                plan, spec, supervisor.capability, workspace=workspace, environment={}
+            )
+        assert duplicate.value.code == "process_already_exists"
+    async with PosixProcessSupervisor(tmp_path / "state") as reopened:
+        assert reopened._store.load(spec.process_id) == lease and not reopened._store.active()
 
 
 async def test_input_budget_overrun_stops_process(tmp_path: Path) -> None:
