@@ -1,0 +1,128 @@
+{
+  "schema": "harnessix.r3-real-suite-stop-evidence/v1",
+  "source_revision": "b182cf658dba40930bc8c8e0dc2123183da18dbd",
+  "suite_id": "e03fcaa2-7d4d-4583-8f54-d4826b32c600",
+  "pack_id": "harnessix-engineering",
+  "pack_version": 2,
+  "pack_sha256": "6ab16bf0a305c5d5a590be02f028184a9510e941146f3b8d27a3ef99ee7b7c46",
+  "config_fingerprint": "e8fc6d66d2cf577d88421009688a344a26c6e8898b3d618fed11c042776920a7",
+  "preregistration": {
+    "scheduled_cases": 10,
+    "scheduled_trials": 20,
+    "strict_success_min": 12,
+    "required_tests_min": 12,
+    "each_repository_strict_success_min": 1,
+    "safety_violation_max": 0,
+    "max_output_tokens": 4096,
+    "max_attempts": 1,
+    "fee_stop_amount": "40",
+    "currency": "CNY",
+    "scope_filtered": false,
+    "trial_retry_or_old_resume": false
+  },
+  "environment_preflight": {
+    "clean_source_and_module_admission": true,
+    "fixed_image_digest_present": true,
+    "credential_available_without_export": true,
+    "effective_file_sharing": "fuse.grpcfuse",
+    "workspace_coherence_pass": 6,
+    "fixed_profile_tests_pass": 10
+  },
+  "host_result": {
+    "spec_version": "harnessix.coding-eval-suite-run-report/v1",
+    "reason": "cancelled",
+    "suite_id": "e03fcaa2-7d4d-4583-8f54-d4826b32c600",
+    "scheduled_cases": 10,
+    "completed_cases": 0,
+    "current_case_id": "agents-dump-compatible-refactor",
+    "report_published": false,
+    "known_cost_currency": "CNY",
+    "known_cost_amount": "0"
+  },
+  "completion": {
+    "completed_at": "2026-10-08T01:36:18.674209+00:00",
+    "returncode": 1,
+    "seconds": 5.617
+  },
+  "standard_trial_report_count": 0,
+  "standard_suite_quality_report_published": false,
+  "fresh_quality_scores": null,
+  "authenticated_session_diagnostic": {
+    "authenticated": true,
+    "turn_status": "cancelled",
+    "model_steps": 2,
+    "attempts": [
+      {
+        "step": 1,
+        "index": 1,
+        "status": "completed",
+        "requested_model": "qwen3-coder-plus-2025-09-23",
+        "actual_model": "qwen3-coder-plus-2025-09-23",
+        "usage": {
+          "completeness": "complete",
+          "input_tokens": 4741,
+          "output_tokens": 56,
+          "uncached_input_tokens": null,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "reasoning_output_tokens": null
+        },
+        "error": null
+      },
+      {
+        "step": 2,
+        "index": 1,
+        "status": "failed",
+        "requested_model": "qwen3-coder-plus-2025-09-23",
+        "actual_model": "qwen3-coder-plus-2025-09-23",
+        "usage": {
+          "completeness": "complete",
+          "input_tokens": 5388,
+          "output_tokens": 37,
+          "uncached_input_tokens": null,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "reasoning_output_tokens": null
+        },
+        "error": {
+          "code": "provider_invalid_provider_output",
+          "message": "Provider 返回结构化失败；chat_protocol/v1:tool_name_unknown",
+          "retryable": false,
+          "category": "provider"
+        }
+      }
+    ],
+    "session_bytes_unchanged": true,
+    "semantic_content_or_arguments_exported": false,
+    "key_exported": false,
+    "actual_invalid_tool_name_persisted": false,
+    "cause_hypothesis_confirmed": false
+  },
+  "current_budget": {
+    "period_id": "bab39be6-7af6-4a77-9da6-fe0664e15f65",
+    "allocation": "60",
+    "known_cost_estimate": "0.725956",
+    "reserved_cost": "20.77824",
+    "remaining_estimate": "38.495804",
+    "request_count": 28,
+    "new_request_count": 2,
+    "new_completed_request_count": 1,
+    "new_unknown_request_count": 1,
+    "new_known_cost_estimate": "0.019860",
+    "new_unknown_reservation": "20.77824",
+    "ledger_sha256": "9d890a2321dfa94ffe87b838dff6f154cbb5f4c0b42c8fa15b72ef7d2d701976",
+    "invoice_cost_confirmed": false,
+    "manual_settlement_or_refund": false,
+    "next_requests_paused": true
+  },
+  "historical_quality": {
+    "strict_success": 0,
+    "required_tests_pass": 1,
+    "trials": 20,
+    "history_overwritten": false
+  },
+  "release_gate": "R3_OPEN",
+  "beta_accepted_tasks": 0,
+  "diagnostic_initial_script_failure_preserved": true,
+  "product_code_changed": false
+}

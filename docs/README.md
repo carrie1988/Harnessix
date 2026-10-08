@@ -1,8 +1,8 @@
 ---
 doc_type: governance-index
 status: current
-version: 151
-code_revision: e1aad041da7817eb5da20896cf092c296544ae25
+version: 152
+code_revision: b182cf658dba40930bc8c8e0dc2123183da18dbd
 owners:
   - core
 modules:
@@ -127,6 +127,12 @@ R3已补[正式产品Context、编码指令与自动压缩统一装配](changes/
 [付费验证宿主源码准入详设](changes/m09-r3-provider-source-origin-preflight.md)补齐声明根、实际脚本根、
 包入口来源和Git干净状态检查；[统一验证报告](validation/provider-source-checkout-2026-10-08-v1/README.md)
 区分路径替身回归与实际隔离源码副本验证，不把源码准入当作模型质量、Docker或商用验收。
+
+[当前 Workspace 一致性复验](validation/r3-workspace-coherence-2026-10-08-v1/README.md)
+保留 VirtioFS 下的原子替换失败；切换后的实际 gRPC FUSE 挂载通过六项一致性检查及十个固定 Profile。
+后继[真实 Suite 停止记录](validation/r3-workspace-coherence-2026-10-08-v1/real-suite-stop.json)
+确认第二次模型请求为 `tool_name_unknown`，完整 Usage 不满足现行 Guard 的成功结算要求。
+新未知预留保持，尚无新质量报告；环境通过与 R3 质量、Beta、商用验收分开。
 
 ## 2. 推荐阅读路径
 

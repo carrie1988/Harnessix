@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: ef582dacb5609fee90e6b3905998dea8db269c53
 owners: [core]
 modules: [evals]
@@ -241,3 +241,40 @@ flowchart TB
 本整改防止模型参数错误污染检查证据，并使明确缺证路径可靠停止；不会使模型自动遵循Schema。
 真实成功率、完整20 Trial报告、三平台消费者验收及独立Beta仍需各自证据。
 R3以及R1～R6不因离线修复、宿主前置或停止记录发布而关闭。
+
+## 11. 当前宿主复验与真实请求停止边界
+
+2026-10-08 的[Workspace 一致性专项验证](../validation/r3-workspace-coherence-2026-10-08-v1/README.md)
+使用干净候选 `b182cf658dba40930bc8c8e0dc2123183da18dbd`。实际 VirtioFS 下，新增文件可见，
+但宿主原子替换后直接读失败；同一容器先重读父目录再读取可以恢复可见性。
+该对照支持目录缓存失效方向的故障假设，不证明供应商实现的具体根因。
+
+通过 Docker Desktop 正式设置界面关闭 VirtioFS、选择 gRPC FUSE 并应用重启后，
+实际容器挂载类型为 `fuse.grpcfuse`。默认与显式端点均指向同一 Engine，
+首次读取、新增文件、原子替换的六项检查通过；全部十个固定 Profile 通过。
+没有增加目录预读、等待、重试、Host fallback 或放宽 Profile 约束。
+原八个容器恢复为 `running`，容器身份及持久配置摘要保持；这不是业务功能验收。
+
+随后新完整 Suite 在首个 Case、第二次模型请求停止，详情见
+[真实停止记录](../validation/r3-workspace-coherence-2026-10-08-v1/real-suite-stop.json)。
+认证 Session 历史显示，第二次尝试实际模型匹配、Usage 完整，但以
+`provider_invalid_provider_output / chat_protocol/v1:tool_name_unknown` 失败。
+实际未登记的工具名原值没有持久化；不能据此断言是原名、别名或拼写错误。
+该路径不属于本设计的 `eval_baseline_invalid → evidence_missing` 转换：
+原费用 Guard 要求成功尝试与完整响应终态才能结算，因而保留未知预留并取消 Suite，
+其持久停止原因为 `cancelled`，不得重标为 `evidence_missing` 或质量失败。
+
+| 当前调用链 | 源码与职责 | 本次事实 |
+|---|---|---|
+| 完整工具组校验 | [`_complete_calls`](../../src/harnessix/models/_chat_stream.py#L38) 只接受当前 wire 名称表中的名称，组内任一错误都不释放部分工具 | 第二次尝试记录未知工具名类别，不执行该未登记工具 |
+| Provider 失败终态 | [`OpenAIChatProvider.stream`](../../src/harnessix/models/openai_chat.py#L178) 在 `state.finish` 失败后走原失败终态与流关闭 | 已观察完整 Usage，仍是失败尝试，不能改记成功 |
+| 费用保守结算 | [`GuardedVerificationProvider.stream`](../../scripts/provider_verification_guard.py#L191) 在 `finally` 要求完整成功链，否则保留预留并取消 Suite | 当前完整 Token 不满足成功终态条件，未知预留保持 |
+| 原历史认证回读 | [`authenticated_thread_history`](../../src/harnessix/evals/task_pack_publication.py#L173) 使用原 Owner、取消令牌和绝对期限 | 一次认证读取通过，Session 字节前后相同，无模型或工具重放 |
+
+协议失败类别、用量完整性、结算状态及检查效果是四个不同的领域事实，不能相互替代。
+后续可恢复工具错误的设计须另行定义合同；当前实现未进行模糊名称匹配、名称自动映射或失败自动重试。
+
+新运行发布零份标准 Trial 报告、零份完整 Suite 质量报告，不制造新的 `0/20` 成绩。
+旧严格成功 `0/20`、必需测试 `1/20` 原样保留。新增已知估算为 `0.019860` 元，
+另有 `20.77824` 元未知请求预留；六十元周期不重置、不手动退款、不据 Token 补写结算。
+新的模型请求暂停，离线诊断和文档维护不依赖继续联网。

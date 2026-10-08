@@ -1,0 +1,187 @@
+{
+  "schema": "harnessix.workspace-coherence-documentation-validation/v1",
+  "status": "PASS",
+  "source_revision": "b182cf658dba40930bc8c8e0dc2123183da18dbd",
+  "documentation_policy": {
+    "selected_markdown": [
+      "README.md",
+      "Review Packet.md"
+    ],
+    "findings": [],
+    "reused_checker": "scripts/documentation_check.py",
+    "whole_repository_checker_run": false
+  },
+  "evidence_reconciliation": {
+    "status": "PASS",
+    "check_count": 59,
+    "checks": [
+      "selected_documentation_policy",
+      "virtiofs_baseline_coherence",
+      "virtiofs_baseline_profile_counts",
+      "virtiofs_baseline_profile_cases",
+      "virtiofs_baseline_timers",
+      "virtiofs_baseline_clean_fixed_source_api0",
+      "grpc_fuse_revalidation_coherence",
+      "grpc_fuse_revalidation_profile_counts",
+      "grpc_fuse_revalidation_profile_cases",
+      "grpc_fuse_revalidation_timers",
+      "grpc_fuse_revalidation_clean_fixed_source_api0",
+      "old_fail_not_overwritten",
+      "actual_backend_not_ui_only",
+      "inode_changed",
+      "content_initial_default",
+      "content_initial_explicit",
+      "content_create_default",
+      "content_create_explicit",
+      "content_atomic_replace_default",
+      "content_atomic_replace_explicit",
+      "counterfactual_not_root_cause",
+      "8_running_4_healthy_2_networks_not_business_acceptance",
+      "real_host_canonical_match",
+      "separate_zero_reports_not_zero_of_twenty",
+      "usage_complete_attempt_failed",
+      "authenticated_history_readonly",
+      "stage_zero_vs_new_two",
+      "budget_arithmetic_unknown_retained",
+      "unknown_name_not_inferred_decoder_not_proven",
+      "source_symbols_src/harnessix/evals/task_pack.py",
+      "source_symbols_src/harnessix/evals/task_pack_materializer.py",
+      "source_symbols_src/harnessix/product_config/action_runtime.py",
+      "source_symbols_src/harnessix/product_config/process_profile.py",
+      "source_symbols_src/harnessix/sandbox/container.py",
+      "source_symbols_src/harnessix/sandbox/process_runtime.py",
+      "source_symbols_src/harnessix/product_config/process_action.py",
+      "source_symbols_src/harnessix/sandbox/contracts.py",
+      "source_symbols_tests/integration/test_task_pack_profiles.py",
+      "two_mermaid_types",
+      "diagram_source_and_svg_workspace-architecture",
+      "png_integrity_workspace-architecture",
+      "diagram_source_and_svg_atomic-replacement-sequence",
+      "png_integrity_atomic-replacement-sequence",
+      "safe_text_README.md",
+      "line_endings_README.md",
+      "safe_text_Review Packet.md",
+      "line_endings_Review Packet.md",
+      "safe_text_facts.json",
+      "line_endings_facts.json",
+      "safe_text_qa/mermaid-browser.json",
+      "line_endings_qa/mermaid-browser.json",
+      "safe_text_diagrams/workspace-architecture.mmd",
+      "line_endings_diagrams/workspace-architecture.mmd",
+      "safe_text_diagrams/workspace-architecture.svg",
+      "safe_text_diagrams/atomic-replacement-sequence.mmd",
+      "line_endings_diagrams/atomic-replacement-sequence.mmd",
+      "safe_text_diagrams/atomic-replacement-sequence.svg",
+      "no_manifest",
+      "fixed_head"
+    ],
+    "evidence_read_policy": "explicit_named_json_log_xml_only",
+    "private_source_checkout_traversed": false,
+    "real_suite_source_configuration_workspace_read": false,
+    "canonical_real_suite_projection_modified": false
+  },
+  "source_validation": {
+    "status": "PASS",
+    "files_and_symbols": {
+      "src/harnessix/evals/task_pack.py": [
+        "builtin_coding_eval_task_pack",
+        "build_task_pack_product_profile"
+      ],
+      "src/harnessix/evals/task_pack_materializer.py": [
+        "materialize_task_pack_case"
+      ],
+      "src/harnessix/product_config/action_runtime.py": [
+        "open_default_product_action_runtime"
+      ],
+      "src/harnessix/product_config/process_profile.py": [
+        "_attested_product_process_profile",
+        "probe_product_process_profile"
+      ],
+      "src/harnessix/sandbox/container.py": [
+        "ContainerCommandBuilder",
+        "prepare"
+      ],
+      "src/harnessix/sandbox/process_runtime.py": [
+        "ContainerProcessRuntime",
+        "run",
+        "SupervisedContainerProcess",
+        "wait"
+      ],
+      "src/harnessix/product_config/process_action.py": [
+        "RunProfileInput",
+        "ProductProcessActionExecutor",
+        "execute",
+        "_process_lease_outcome"
+      ],
+      "src/harnessix/sandbox/contracts.py": [
+        "ContainerSandboxProfile",
+        "ContainerCommandSpec"
+      ],
+      "tests/integration/test_task_pack_profiles.py": [
+        "test_engineering_task_pack_profiles_fail_then_pass_through_product_runtime",
+        "_approved_profile_turn"
+      ]
+    }
+  },
+  "diagram_validation": {
+    "status": "PASS",
+    "svg_count": 2,
+    "png_count": 2,
+    "diagrams": [
+      {
+        "name": "workspace-architecture",
+        "svg_rendered": true,
+        "png_rendered": true,
+        "png_dimensions": [
+          677,
+          990
+        ],
+        "source_matches_markdown": true
+      },
+      {
+        "name": "atomic-replacement-sequence",
+        "svg_rendered": true,
+        "png_rendered": true,
+        "png_dimensions": [
+          1247,
+          1026
+        ],
+        "source_matches_markdown": true
+      }
+    ],
+    "renderer": "installed_local_mermaid_cli",
+    "network_resolution_disabled": true,
+    "visual_review": "both_diagrams_reviewed"
+  },
+  "scope": {
+    "docker_operations": 0,
+    "network_requests": 0,
+    "real_model_api_requests": 0,
+    "budget_mutations": 0,
+    "production_code_edits": 0,
+    "existing_document_edits": 0,
+    "git_index_mutation_commands": 0,
+    "unassigned_tests_security_or_verification_inspected": false,
+    "final_manifest_created": false
+  },
+  "earlier_documentation_tool_attempts": [
+    {
+      "outcome": "default_python_process_killed"
+    },
+    {
+      "outcome": "bundled_python_ModuleNotFoundError_yaml"
+    },
+    {
+      "outcome": "project_python_ModuleNotFoundError_PIL"
+    },
+    {
+      "outcome": "renderer_svg_missing_final_newline_not_a_document_policy_violation"
+    }
+  ],
+  "final_validation_environment": {
+    "python_version": "3.13.8",
+    "yaml_dependency_available": true,
+    "png_integrity_checker": "standard_library_signature_chunks_crc"
+  },
+  "boundary": "documentation_validation_not_docker_rerun_model_quality_business_acceptance_or_final_seal"
+}

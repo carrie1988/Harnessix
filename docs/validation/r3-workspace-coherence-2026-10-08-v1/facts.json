@@ -1,0 +1,448 @@
+{
+  "schema": "harnessix.workspace-coherence-validation/v1",
+  "validation_date": "2026-10-08",
+  "source_revision": "b182cf658dba40930bc8c8e0dc2123183da18dbd",
+  "scope": "environment_workspace_coherence_and_fixed_profile_execution_with_separate_real_suite_stop_supplement",
+  "environment": {
+    "docker_desktop": {
+      "version": "4.94.0",
+      "provenance": "actual_general_settings_ui_final_reobservation",
+      "independently_verified_in_named_json": true,
+      "evidence": "grpc-fuse-revalidation-v1/UI_FINAL_REOBSERVATION.json"
+    },
+    "docker_engine": {
+      "version": "29.8.2",
+      "available_observation_count": 3,
+      "evidence": "grpc-fuse-revalidation-v1/ENGINE_AFTER_APPLY.json"
+    },
+    "baseline_filesystem": "virtiofs",
+    "revalidated_filesystem": "fuse.grpcfuse",
+    "same_default_and_explicit_engine": true,
+    "pack_id": "harnessix-engineering",
+    "pack_version": 2,
+    "fixed_images": [
+      {
+        "image": "node@sha256:1b2479dd35a99687d6638f5976fd235e26c5b37e8122f786fcd5fe231d63de5b",
+        "exact_digest_present": true
+      },
+      {
+        "image": "python@sha256:efcdfa6a6b2fd2afb9c7dfa9a5b288a6f68338b5cfdebe6b637d986067d85757",
+        "exact_digest_present": true
+      }
+    ],
+    "image_pulls": 0,
+    "profile_command_source_clean_recorded": true,
+    "profile_command_default_engine_recorded": true
+  },
+  "virtiofs_baseline": {
+    "coherence": {
+      "status": "FAIL",
+      "observations": 5,
+      "passed": 4,
+      "failed": 1,
+      "atomic_replace_inode_changed": null,
+      "rows": [
+        {
+          "phase": "initial",
+          "endpoint": "default",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "initial",
+          "endpoint": "explicit",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "create",
+          "endpoint": "default",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "create",
+          "endpoint": "explicit",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "atomic_replace",
+          "endpoint": "default",
+          "returncode": 0,
+          "pass": false
+        }
+      ]
+    },
+    "profiles": {
+      "tests": 10,
+      "passed": 5,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "returncode": 1,
+      "process_seconds": 18.593,
+      "junit_suite_seconds": 17.919,
+      "real_model_api_requests": 0,
+      "cases": [
+        {
+          "case_id": "agents-dump-compatible-refactor",
+          "status": "PASS"
+        },
+        {
+          "case_id": "agents-normalize-tool-name",
+          "status": "PASS"
+        },
+        {
+          "case_id": "agents-payload-bytes-test",
+          "status": "FAIL"
+        },
+        {
+          "case_id": "agents-secret-redaction-review",
+          "status": "PASS"
+        },
+        {
+          "case_id": "langchain-batch-none-test",
+          "status": "FAIL"
+        },
+        {
+          "case_id": "langchain-storage-replacement",
+          "status": "PASS"
+        },
+        {
+          "case_id": "langchain-stringify-dict-keys",
+          "status": "PASS"
+        },
+        {
+          "case_id": "opencode-path-normalization",
+          "status": "FAIL"
+        },
+        {
+          "case_id": "opencode-retry-delay-refactor",
+          "status": "FAIL"
+        },
+        {
+          "case_id": "opencode-terminal-url-review",
+          "status": "FAIL"
+        }
+      ]
+    },
+    "explicit_atomic_replace_result": "NOT_RECORDED",
+    "old_failures_preserved": true
+  },
+  "grpc_fuse_revalidation": {
+    "coherence": {
+      "status": "PASS",
+      "observations": 6,
+      "passed": 6,
+      "failed": 0,
+      "atomic_replace_inode_changed": true,
+      "rows": [
+        {
+          "phase": "initial",
+          "endpoint": "default",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "initial",
+          "endpoint": "explicit",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "create",
+          "endpoint": "default",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "create",
+          "endpoint": "explicit",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "atomic_replace",
+          "endpoint": "default",
+          "returncode": 0,
+          "pass": true
+        },
+        {
+          "phase": "atomic_replace",
+          "endpoint": "explicit",
+          "returncode": 0,
+          "pass": true
+        }
+      ]
+    },
+    "profiles": {
+      "tests": 10,
+      "passed": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "returncode": 0,
+      "process_seconds": 19.064,
+      "junit_suite_seconds": 18.51,
+      "real_model_api_requests": 0,
+      "cases": [
+        {
+          "case_id": "agents-dump-compatible-refactor",
+          "status": "PASS"
+        },
+        {
+          "case_id": "agents-normalize-tool-name",
+          "status": "PASS"
+        },
+        {
+          "case_id": "agents-payload-bytes-test",
+          "status": "PASS"
+        },
+        {
+          "case_id": "agents-secret-redaction-review",
+          "status": "PASS"
+        },
+        {
+          "case_id": "langchain-batch-none-test",
+          "status": "PASS"
+        },
+        {
+          "case_id": "langchain-storage-replacement",
+          "status": "PASS"
+        },
+        {
+          "case_id": "langchain-stringify-dict-keys",
+          "status": "PASS"
+        },
+        {
+          "case_id": "opencode-path-normalization",
+          "status": "PASS"
+        },
+        {
+          "case_id": "opencode-retry-delay-refactor",
+          "status": "PASS"
+        },
+        {
+          "case_id": "opencode-terminal-url-review",
+          "status": "PASS"
+        }
+      ]
+    },
+    "actual_backend_evidence": "grpc-fuse-revalidation-v1/ACTUAL_FILE_SHARING_AFTER_APPLY.json",
+    "ui_apply_success_count": 1,
+    "not_a_model_quality_result": true
+  },
+  "profile_comparison": [
+    {
+      "case_id": "agents-dump-compatible-refactor",
+      "virtiofs": "PASS",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "agents-normalize-tool-name",
+      "virtiofs": "PASS",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "agents-payload-bytes-test",
+      "virtiofs": "FAIL",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "agents-secret-redaction-review",
+      "virtiofs": "PASS",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "langchain-batch-none-test",
+      "virtiofs": "FAIL",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "langchain-storage-replacement",
+      "virtiofs": "PASS",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "langchain-stringify-dict-keys",
+      "virtiofs": "PASS",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "opencode-path-normalization",
+      "virtiofs": "FAIL",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "opencode-retry-delay-refactor",
+      "virtiofs": "FAIL",
+      "grpc_fuse": "PASS"
+    },
+    {
+      "case_id": "opencode-terminal-url-review",
+      "virtiofs": "FAIL",
+      "grpc_fuse": "PASS"
+    }
+  ],
+  "directory_read_counterfactual": {
+    "evidence": "DIRECT_READDIR_COUNTERFACTUAL.json",
+    "sequence": [
+      "direct_before_readdir",
+      "directory_refresh",
+      "direct_after_readdir"
+    ],
+    "initial_direct_bytes_before_and_after": 8,
+    "replacement_direct_before_error": "FileNotFoundError",
+    "replacement_directory_contains_target": true,
+    "replacement_direct_after_bytes": 9,
+    "replacement_digest_matches_host": true,
+    "late_observation_evidence": "LATE_ATOMIC_REPLACEMENT_OBSERVATION.json",
+    "late_replacement_bytes": 33,
+    "vendor_root_cause_confirmed": false,
+    "old_fail_overwritten": false
+  },
+  "stage_requests": {
+    "phase": "environment_revalidation",
+    "real_model_api_requests": 0,
+    "budget_new_requests": 0,
+    "includes_subsequent_real_suite": false
+  },
+  "budget_snapshot": {
+    "phase": "environment_revalidation_snapshot",
+    "currency": "CNY",
+    "allocation": "60",
+    "known_cost_estimate": "0.706096",
+    "reserved_cost": "0",
+    "cumulative_request_count": 26,
+    "new_provider_requests": 0,
+    "actual_invoice_confirmed": false,
+    "ledger_reset": false,
+    "snapshot_not_live_parallel_balance": true,
+    "evidence": "BUDGET_FINAL.json"
+  },
+  "business_recovery": {
+    "evidence": "grpc-fuse-revalidation-v1/BUSINESS_FINAL.json",
+    "original_container_count": 8,
+    "all_original_status_running": true,
+    "healthy_count": 4,
+    "same_original_container_ids": true,
+    "persistent_config_unchanged": true,
+    "id_config_hostconfig_mount_digests_preserved": true,
+    "declared_network_reattached_count": 2,
+    "deleted_data_or_containers": false,
+    "business_acceptance_proven": false,
+    "manual_network_recovery_is_business_acceptance": false,
+    "entire_stage_business_operation_free": false
+  },
+  "real_suite_stop_supplement": {
+    "phase": "subsequent_real_model_suite",
+    "canonical_public_evidence": "real-suite-stop.json",
+    "suite_id": "e03fcaa2-7d4d-4583-8f54-d4826b32c600",
+    "run_time_utc_declared": "2026-10-08T01:36:14Z",
+    "process_seconds": 5.617,
+    "returncode": 1,
+    "host_reason": "cancelled",
+    "state": "stopped",
+    "turn_status": "cancelled",
+    "completed_cases": 0,
+    "standard_trial_report_count": 0,
+    "fresh_quality_scores": null,
+    "new_real_model_api_requests": 2,
+    "new_completed_ledger_requests": 1,
+    "new_unknown_ledger_requests": 1,
+    "new_known_cost_estimate": "0.019860",
+    "unknown_reservation": "20.77824",
+    "second_attempt_status": "failed",
+    "second_attempt_usage_completeness": "complete",
+    "provider_error_code": "provider_invalid_provider_output",
+    "protocol_error_code": "chat_protocol/v1:tool_name_unknown",
+    "guard_requires_success_terminal_state_for_settlement": true,
+    "actual_invalid_tool_name_persisted": false,
+    "tool_name_cause_hypothesis_confirmed": false,
+    "tool_decoder_remediation_proven": false,
+    "authenticated_history_read_succeeded": true,
+    "session_digest_unchanged": true,
+    "semantic_content_arguments_or_keys_exported": false,
+    "initial_diagnostic_script_failure_preserved": true,
+    "initial_diagnostic_failure_class": "AttributeError",
+    "initial_diagnostic_invalid_attribute": "TextContent.type",
+    "v2_uses_actual_content_class_names": true,
+    "initial_diagnostic_failure_is_product_defect": false,
+    "real_model_requests_during_diagnostic": 0,
+    "post_stop_new_requests": 0,
+    "manual_settlement_or_refund": false,
+    "subsequent_budget_snapshot": {
+      "currency": "CNY",
+      "allocation": "60",
+      "request_count": 28,
+      "completed_request_count": 27,
+      "unknown_request_count": 1,
+      "known_cost_estimate": "0.725956",
+      "reserved_cost": "20.77824",
+      "remaining_estimate": "38.495804",
+      "ledger_reset": false,
+      "invoice_cost_confirmed": false,
+      "is_live_balance": false
+    }
+  },
+  "release_boundary": {
+    "workspace_coherence_subitem": "PASS_THIS_RUN",
+    "fixed_profile_subitem": "PASS_THIS_RUN",
+    "r3_model_quality_gate_closed": false,
+    "business_acceptance_proven": false,
+    "commercial_release_approved": false,
+    "vendor_root_cause_confirmed": false,
+    "profiles_or_thresholds_changed": false,
+    "new_zero_of_twenty_score_created": false,
+    "final_manifest_created_by_documentation_stage": false
+  },
+  "evidence_members": {
+    "environment_set": "r3-restored-engine-20261008-v1",
+    "baseline": [
+      "ACTUAL_MOUNT_FILESYSTEM.json",
+      "CURRENT_FILE_SHARING_FLAGS.json",
+      "ENGINE_IMAGE_READY.json",
+      "MOUNT_COHERENCE_RESULT.json",
+      "LATE_ATOMIC_REPLACEMENT_OBSERVATION.json",
+      "DIRECT_READDIR_COUNTERFACTUAL.json",
+      "DEFAULT_PROFILES_COMMAND.json",
+      "DEFAULT_PROFILES_RESULT.json",
+      "default-profiles.xml",
+      "BUDGET_FINAL.json"
+    ],
+    "revalidation_subdirectory": "grpc-fuse-revalidation-v1",
+    "revalidation": [
+      "UI_APPLY_RESULT.json",
+      "ENGINE_AFTER_APPLY.json",
+      "ACTUAL_FILE_SHARING_AFTER_APPLY.json",
+      "ENGINE_IMAGE_READY.json",
+      "MOUNT_COHERENCE_RESULT.json",
+      "DEFAULT_PROFILES_COMMAND.json",
+      "DEFAULT_PROFILES_RESULT.json",
+      "default-profiles.log",
+      "default-profiles.xml",
+      "POST_RESTART_BUSINESS_RECOVERY.json",
+      "POST_RESTART_NETWORK_REOBSERVATION.json",
+      "BUSINESS_FINAL.json",
+      "UI_FINAL_REOBSERVATION.json"
+    ],
+    "real_suite_set": "r3-grpcfuse-real-suite-20261008-v1",
+    "real_suite": [
+      "PREREGISTRATION.json",
+      "PREFLIGHT.json",
+      "HOST_RESULT.json",
+      "HOST_COMPLETION.json",
+      "AUTHENTICATED_DIAGNOSTIC.json"
+    ],
+    "public_real_suite_projection": "real-suite-stop.json"
+  },
+  "publication": {
+    "raw_logs_or_xml_copied": false,
+    "private_paths_identities_or_credentials_published": false,
+    "source_checkout_traversed": false,
+    "real_suite_configuration_or_workspace_read": false,
+    "unknown_tool_name_inferred": false,
+    "final_manifest_created": true
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema": "harnessix.workspace-coherence-final-verification/v1",
+  "status": "PASS",
+  "source_revision": "b182cf658dba40930bc8c8e0dc2123183da18dbd",
+  "checked_at": "2026-10-08T01:54:15.917179+00:00",
+  "documentation_policy": {
+    "policy_version": "harnessix.documentation-policy/v1",
+    "document_count": 625,
+    "link_count": 13847,
+    "mermaid_count": 1146,
+    "source_package_count": 26,
+    "changed_path_count": 18,
+    "findings": []
+  },
+  "source_and_private_fact_comparison": "PASS",
+  "historical_baseline_sha256_unchanged": "232cd80fa7412b886b60ab7ba632fbc321c84d672c9bbb41af150585c4dfab6f",
+  "publication_secret_scan_findings": 0,
+  "private_identity_path_markers": 0,
+  "diagram_visual_review": {
+    "count": 2,
+    "readable": true,
+    "source_matches_markdown": true
+  },
+  "offline_terminal_budget_regression": {
+    "source_revision": "b182cf658dba40930bc8c8e0dc2123183da18dbd",
+    "selection": [
+      "tests/models/test_chat_terminal_diagnostics.py",
+      "tests/evals/test_provider_verification_budget.py",
+      "tests/evals/test_provider_budget_period_isolation.py"
+    ],
+    "result": {
+      "tests": 83,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    "command_uses_source_checkout_python_and_explicit_test_paths": true,
+    "working_directory": "main_checkout",
+    "production_code_changed": false,
+    "model_network_requests": 0,
+    "score_or_budget_policy_changed": false
+  },
+  "model_requests_during_final_verification": 0,
+  "budget_ledger_changed_during_verification": false,
+  "production_code_changed": false,
+  "commercial_release_gate_closed": false,
+  "manifest_self_hash_excluded": true
+}

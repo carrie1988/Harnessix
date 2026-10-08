@@ -1,0 +1,73 @@
+{
+  "schema": "harnessix.validation-manifest/v1",
+  "source_revision": "b182cf658dba40930bc8c8e0dc2123183da18dbd",
+  "hash_algorithm": "sha256",
+  "self_excluded": true,
+  "files": [
+    {
+      "path": "README.md",
+      "size_bytes": 33259,
+      "sha256": "dfa5b79987a8394b8386ec691b635deab131b4013136478e48ab8c44c85f95df"
+    },
+    {
+      "path": "Review Packet.md",
+      "size_bytes": 8010,
+      "sha256": "09f81a5908e150e82a95ad5eae69c21894beaab2f5a49eefd07bac046b545c91"
+    },
+    {
+      "path": "diagrams/atomic-replacement-sequence.mmd",
+      "size_bytes": 1007,
+      "sha256": "b01a6f44a9a640146399707ce907242de5f766caa153de7e8f9c95eafeb91d6e"
+    },
+    {
+      "path": "diagrams/atomic-replacement-sequence.png",
+      "size_bytes": 109922,
+      "sha256": "6fb49a426c43b1167afd06355c99998e7c86a4e2662ce8bef2086da621544e38"
+    },
+    {
+      "path": "diagrams/atomic-replacement-sequence.svg",
+      "size_bytes": 27893,
+      "sha256": "a440c5f90e19df2d4a66d45444e57aec2720c3b3c4b9b36d18f01c559cfb233e"
+    },
+    {
+      "path": "diagrams/workspace-architecture.mmd",
+      "size_bytes": 688,
+      "sha256": "ad5fa4946e06be5f4e0c7f1434832e5acaff00568844b4489cb0acc8b6813e5f"
+    },
+    {
+      "path": "diagrams/workspace-architecture.png",
+      "size_bytes": 69007,
+      "sha256": "3669aab4314a8702adb27675bc83f1f492cc0ceeca8c5cd335750523626157c5"
+    },
+    {
+      "path": "diagrams/workspace-architecture.svg",
+      "size_bytes": 22096,
+      "sha256": "8c1e6121d1628070f4314abb045b52035379560a5bd35c86c876adaae5e25f59"
+    },
+    {
+      "path": "facts.json",
+      "size_bytes": 13258,
+      "sha256": "eab10b02cad4e4fb7b43788c40b98864f188ec08d4136f579d66182ac5ce9164"
+    },
+    {
+      "path": "qa/documentation-validation.json",
+      "size_bytes": 6451,
+      "sha256": "48bda9e1f06b09c9dede3658cfa112f8080877a636a0e2cb9beb1427a0acc916"
+    },
+    {
+      "path": "qa/final-verification.json",
+      "size_bytes": 1671,
+      "sha256": "d55d3fee01918c6f0d8cd7168c51d45a7c753bb21360625eb945bfd1919eba9d"
+    },
+    {
+      "path": "qa/mermaid-browser.json",
+      "size_bytes": 215,
+      "sha256": "e69f8b54573603ce4b6e07ba5bec83f5f51ea8c1508c0cd9435dccfb5e9e590c"
+    },
+    {
+      "path": "real-suite-stop.json",
+      "size_bytes": 4247,
+      "sha256": "b2383b2f70671e8bb5fe6f11e28f2a4eb2bbd2a8e3f2793054547c4d33b69f6f"
+    }
+  ]
+}

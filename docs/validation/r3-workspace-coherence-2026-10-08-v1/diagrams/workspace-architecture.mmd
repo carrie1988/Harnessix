@@ -1,0 +1,15 @@
+flowchart TB
+    T[固定集成测试] -->|加载并校验| P[内置 Task Pack v2]
+    P -->|物化独立工作目录| W[宿主 Workspace]
+    T -->|脚本化工具调用| A[Agent Runtime]
+    A -->|审批后执行| R[产品 Trusted Action Runtime]
+    R -->|固定 Profile 与执行合同| C[Container Runtime]
+    C -->|只读绑定至 workspace| F[Docker 文件共享后端]
+    W -->|路径与内容| F
+    F -->|容器直接读取| K[固定检查程序]
+    K -->|退出码与受控输出| R
+    R -->|工具结果| A
+    H[宿主一致性探针] -->|长度与摘要| W
+    H -->|默认及显式端点观测| F
+    A -->|断言结果| E[结构化证据]
+    H -->|逐阶段比较| E

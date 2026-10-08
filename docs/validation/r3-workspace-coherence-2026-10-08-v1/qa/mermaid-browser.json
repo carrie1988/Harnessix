@@ -1,0 +1,10 @@
+{
+  "args": [
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-sync",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--host-resolver-rules=MAP * ~NOTFOUND"
+  ]
+}

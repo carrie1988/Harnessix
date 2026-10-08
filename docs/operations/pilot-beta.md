@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 11
+version: 12
 code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
 owners:
   - core
@@ -209,6 +209,12 @@ P05 恢复必须是明确批准的先导演练，不在唯一生产状态上操�
 | 参考结果 | 已有直接整改副本及 350/429 测试记录仅作为参考；12 个既有失败集合一致、79 个新增通过为已报告信息，登记未重跑 |
 | 费用与候选 | [新60元周期](../changes/m09-provider-budget-period-activation.md)已登记，与R3共用；旧两笔未决不计入新额度、不阻塞新周期；执行候选仍须冻结，新周期新增未知停止 |
 | HTTPS | 生产 HTTPS 及其验收范围待确认，不假定已部署 |
+
+2026-10-08 的[共享验证周期更新](../validation/r3-workspace-coherence-2026-10-08-v1/real-suite-stop.json)
+登记 R3 新请求两次，周期累计二十八次、已知估算 `0.725956` 元及未知预留 `20.77824` 元。
+实际 gRPC FUSE Workspace 与十项固定 Profile 复验通过，但新 Suite 因未知工具名的失败尝试停止，
+没有新质量报告。该未知请求仍属于当前六十元周期；不得按旧两笔未决的隔离规则忽略它。
+R3 与本先导继续共用原账本，新的模型请求暂停，不改写 Beta 分析、修改许可或任务接受数。
 
 2026-10-07 的限定只读分析使用冻结候选 `7fca4a526bbbd3cde7e7c66552704126757171c2` 的独立已安装 Wheel、
 真实嵌入式 SDK 协议和 12 件经审阅的初始源码输入。原 Turn 在四个模型步骤后以 `budget_exceeded` 失败，

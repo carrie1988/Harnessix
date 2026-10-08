@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant H as 宿主探针
+    participant W as 独立 Workspace
+    participant D as Docker 文件共享后端
+    participant G as 容器直接读取探针
+    participant E as 结果记录
+    H->>W: 建立初始文件
+    H->>D: 通过默认及显式端点启动只读探针
+    D->>G: 绑定 Workspace
+    G-->>H: 初始文件存在性、长度、摘要
+    H->>W: 新建测试及模块文件
+    H->>D: 再次直接读取，分别观察两端点
+    G-->>H: 新建文件长度及摘要
+    H->>W: 同目录原子替换原文件，核对 inode 改变
+    H->>D: 不预先枚举目录，分别直接读取
+    alt 初次 VirtioFS 默认端点
+        G-->>H: FileNotFoundError，宿主目标仍存在
+        H->>E: 保留第5条 FAIL，显式原子替换未记录
+    else 本次实际 gRPC FUSE
+        G-->>H: 两端点内容与宿主一致
+        H->>E: 记录第5及第6条 PASS，共6条
+    end
+    Note over H,E: 目录枚举前后观察单独记录，不改写原失败
