@@ -7,6 +7,10 @@ from dataclasses import dataclass, field
 from typing import Literal, cast
 
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_authentication_control import (
+    GitAuthenticationControl,
+    pure_git_authentication,
+)
 from harnessix.delivery.git_material_cas import GitMaterialCAS, GitObjectMaterialReference
 from harnessix.delivery.git_object_material import GitObjectRead
 from harnessix.delivery.git_object_references import GitTreeEntry, parse_git_tree
@@ -71,6 +75,9 @@ def _catalog(
     limits: GitTreeClosureLimits,
     checkpoint: Callable[[], None],
 ) -> dict[str, GitObjectMaterialReference]:
+    if type(checkpoint) is GitAuthenticationControl:
+        with pure_git_authentication(checkpoint) as check:
+            return _catalog(root, catalog, limits, check)
     if type(catalog) is not tuple:
         raise _invalid()
     if len(catalog) > limits.max_objects:
@@ -120,13 +127,15 @@ class _Traversal:
         ):
             raise _invalid("git_tree_closure_limit")
         material = self.cas.read(reference)
-        self.checkpoint()
-        if material.object_type == "tree":
-            self.trees[request.object_id] = parse_git_tree(
-                material,
-                max_entries=self.limits.max_entries - self.expanded_entries,
-                checkpoint=self.checkpoint,
-            )
+        # 入口完整认证对应原回读后检查；CAS 本身始终在纯段之外。
+        with pure_git_authentication(self.checkpoint) as check:
+            check()
+            if material.object_type == "tree":
+                self.trees[request.object_id] = parse_git_tree(
+                    material,
+                    max_entries=self.limits.max_entries - self.expanded_entries,
+                    checkpoint=check,
+                )
         self.observed[request.object_id] = reference
         self.body_bytes += reference.body_bytes
         return reference
