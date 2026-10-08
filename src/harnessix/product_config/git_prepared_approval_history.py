@@ -35,7 +35,11 @@ from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryC
 from harnessix.product_config.git_delivery_process import GitOperationBudget
 from harnessix.product_config.git_prefix_rows import GitPrefixRows, capture_git_prefix_rows
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
-from harnessix.product_config.git_prepared_link_ledger import ProductGitPreparedLinkLedger, _control
+from harnessix.product_config.git_prepared_link_ledger import (
+    ProductGitPreparedLinkLedger,
+    _control,
+    _native_user_observer,
+)
 from harnessix.product_config.git_prepared_link_observation import PreparedLinkReadSet
 from harnessix.product_config.git_prepared_link_proof import prepared_link_changed
 from harnessix.product_config.git_prepared_link_rows import read_prepared_link_rows
@@ -305,6 +309,7 @@ async def _read_evidence(
         checkpoint=check,
         snapshot_ports=resources._ports,
         source_scope=read_set.source_scope,
+        native_observer=_native_user_observer(resources, cancel, budget, check),
     )
     check()
     route_id = link.plan.route.execution.plan_id

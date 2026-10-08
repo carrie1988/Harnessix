@@ -7,6 +7,7 @@ from dataclasses import replace
 from typing import cast
 
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_authentication_control import same_task_pure_git_authentication
 from harnessix.delivery.git_inventory_contracts import (
     GitInventoryObject,
     GitInventoryRoots,
@@ -41,36 +42,38 @@ def _read_object(
     """完整重读一个对象，从实际字节重算类型OID并比较全部直接引用。"""
     checkpoint()
     read = cas.read(node.material)
-    checkpoint()
-    if type(read) is not GitObjectMaterial:
-        raise _mismatch()
-    material = GitObjectMaterial.from_body(read.object_type, read.object_format, read.body)
-    checksum = material.body_sha256
-    reference = GitObjectMaterialReference(
-        material.object_type,
-        material.object_id,
-        material.object_format,
-        checksum,
-        material.body_bytes,
-        checksum,
-    )
-    checkpoint()
-    if reference != node.material:
-        raise _mismatch()
-    entries: tuple[GitTreeEntry, ...] = ()
-    references: GitCommitReferences | None = None
-    if material.object_type == "tree":
-        entries = parse_git_tree(
-            material, max_entries=inventory.limits.max_entries, checkpoint=checkpoint
+    # 实际 CAS 回读在段外；下面只消费完整字节，不缓存材料或认证结果。
+    with same_task_pure_git_authentication(checkpoint) as check:
+        check()
+        if type(read) is not GitObjectMaterial:
+            raise _mismatch()
+        material = GitObjectMaterial.from_body(read.object_type, read.object_format, read.body)
+        checksum = material.body_sha256
+        reference = GitObjectMaterialReference(
+            material.object_type,
+            material.object_id,
+            material.object_format,
+            checksum,
+            material.body_bytes,
+            checksum,
         )
-    elif material.object_type == "commit":
-        references = parse_git_commit(
-            material, max_parents=inventory.max_parents, checkpoint=checkpoint
-        )
-    checkpoint()
-    if entries != node.tree_entries or references != node.commit_references:
-        raise _mismatch()
-    return GitInventoryObject(reference, node.roles, entries, references)
+        check()
+        if reference != node.material:
+            raise _mismatch()
+        entries: tuple[GitTreeEntry, ...] = ()
+        references: GitCommitReferences | None = None
+        if material.object_type == "tree":
+            entries = parse_git_tree(
+                material, max_entries=inventory.limits.max_entries, checkpoint=check
+            )
+        elif material.object_type == "commit":
+            references = parse_git_commit(
+                material, max_parents=inventory.max_parents, checkpoint=check
+            )
+        check()
+        if entries != node.tree_entries or references != node.commit_references:
+            raise _mismatch()
+        return GitInventoryObject(reference, node.roles, entries, references)
 
 
 def _actual_closure(
@@ -93,22 +96,23 @@ def _actual_closure(
         limits=inventory.limits,
         checkpoint=checkpoint,
     )
-    checkpoint()
-    if closure.root != catalog[root.object_id].material or (
-        closure.expanded_entries,
-        closure.tree_depth,
-    ) != (entries, depth):
-        raise _mismatch()
-    body_bytes = 0
-    for reference in closure.objects:
-        checkpoint()
-        node = catalog.get(reference.object_id)
-        if node is None or node.material != reference:
+    with same_task_pure_git_authentication(checkpoint) as check:
+        check()
+        if closure.root != catalog[root.object_id].material or (
+            closure.expanded_entries,
+            closure.tree_depth,
+        ) != (entries, depth):
             raise _mismatch()
-        body_bytes += reference.body_bytes
-    if closure.body_bytes != body_bytes:
-        raise _mismatch()
-    checkpoint()
+        body_bytes = 0
+        for reference in closure.objects:
+            check()
+            node = catalog.get(reference.object_id)
+            if node is None or node.material != reference:
+                raise _mismatch()
+            body_bytes += reference.body_bytes
+        if closure.body_bytes != body_bytes:
+            raise _mismatch()
+        check()
     return closure
 
 
@@ -121,16 +125,17 @@ def _complete_union(
     checkpoint: Callable[[], None],
 ) -> None:
     """两实际树和业务commit根必须精确覆盖完整目录，不扩张外部父历史。"""
-    observed = {roots.base_commit.object_id}
-    if roots.delivery_commit is not None:
-        observed.add(roots.delivery_commit.object_id)
-    for closure in (base, target):
-        for reference in closure.objects:
-            checkpoint()
-            observed.add(reference.object_id)
-    if observed != catalog.keys():
-        raise _mismatch()
-    checkpoint()
+    with same_task_pure_git_authentication(checkpoint) as check:
+        observed = {roots.base_commit.object_id}
+        if roots.delivery_commit is not None:
+            observed.add(roots.delivery_commit.object_id)
+        for closure in (base, target):
+            for reference in closure.objects:
+                check()
+                observed.add(reference.object_id)
+        if observed != catalog.keys():
+            raise _mismatch()
+        check()
 
 
 def _verify_materials[T: GitObjectInventory | GitInventoryScope](
