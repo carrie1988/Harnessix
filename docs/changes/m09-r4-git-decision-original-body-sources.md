@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 3
-code_revision: ad4bb6425e1b25d4dbf1d546c5d6d64c256a2958
+code_revision: 1aee3faae95c708b629767a9ff4e518e211f1102
 owners: [core]
 modules: [session, product_config]
 related_adrs:
