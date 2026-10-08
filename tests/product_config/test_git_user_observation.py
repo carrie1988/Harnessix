@@ -176,8 +176,11 @@ async def test_authenticated_continuous_dirty_observation_and_reopen_are_read_on
                 name: hashlib.sha256((implementation_root / name).read_bytes()).hexdigest()
                 for name in (
                     "git_user_observation.py",
+                    "git_native_control.py",
                     "git_user_observation_contracts.py",
                     "git_user_observation_paths.py",
+                    "git_user_source_files.py",
+                    "git_user_source_scope.py",
                     "git_user_authority.py",
                     "git_baseline.py",
                     "git_delivery_source.py",

@@ -13,6 +13,7 @@ from uuid import UUID
 from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.execution.contracts import canonical_digest
 from harnessix.product_config.git_baseline import (
@@ -31,6 +32,12 @@ from harnessix.product_config.git_delivery_source import (
     _verify_final_snapshot,
     collect_git_delivery_source,
     verify_git_delivery_source,
+)
+from harnessix.product_config.git_native_control import (
+    native_git_checkpoint as _native_checkpointer,
+)
+from harnessix.product_config.git_native_control import (
+    qualified_native_observer,
 )
 from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliveryBaselineV2,
@@ -67,6 +74,7 @@ def git_user_observation_implementation_digest() -> str:
                 name: hashlib.sha256((root / name).read_bytes()).hexdigest()
                 for name in (
                     "git_user_observation.py",
+                    "git_native_control.py",
                     "git_user_observation_contracts.py",
                     "git_user_observation_paths.py",
                     "git_user_source_files.py",
@@ -171,20 +179,6 @@ async def collect_product_git_user_observation(
         ) from None
 
 
-def _native_checkpointer(check: Callable[[], None]) -> Callable[[], None]:
-    """只在原生来源与快照边界隔离控制异常，不改写认证Reader的取消语义。"""
-
-    def controlled() -> None:
-        try:
-            check()
-        except UpstreamCheckpointError:
-            raise
-        except BaseException as error:
-            raise UpstreamCheckpointError(error) from None
-
-    return controlled
-
-
 async def verify_product_git_user_observation(
     expected: ProductGitUserObservation,
     history: AuthenticatedThreadHistory,
@@ -198,6 +192,7 @@ async def verify_product_git_user_observation(
     checkpoint: Callable[[], None],
     snapshot_ports: WorkspaceSnapshotPorts,
     source_scope: GitUserSourceScope | None = None,
+    native_observer: Callable[[], None] | None = None,
 ) -> None:
     """借实际完整认证历史只读复核原观察；不限调用阶段，不产生新观察或执行权。"""
     await asyncio.sleep(0)
@@ -211,30 +206,35 @@ async def verify_product_git_user_observation(
         or any(type(event) is not AgentEvent for event in history.events)
     ):
         raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
+    native_observer = qualified_native_observer(checkpoint, native_observer)
     host_check = require_git_user_authority(session, router, transactions, snapshot_ports, reader)
     audit = router._audit
-    store_check, audit_check, read_blob = (
-        transactions._checkpoint,
-        audit._checkpoint,
-        audit._read_blob,
-    )
+    callbacks = (transactions._checkpoint, audit._checkpoint, audit._read_blob)
     deadline = min(time.monotonic() + _BASELINE_TIMEOUT_SECONDS, budget._deadline)
     control_error: BaseException | None = None
 
-    def raw_check() -> None:
+    def raw_check(*, native_only: bool = False) -> None:
         """回调可取消、耗尽期限或替换资源；返回后必须再次检查，不能继续读取。"""
         nonlocal control_error
         try:
             cancel.checkpoint()
             budget.remaining()
-            checkpoint()
+            if native_only:
+                assert native_observer is not None
+                native_observer()
+            else:
+                checkpoint()
             cancel.checkpoint()
             budget.remaining()
-            host_check()
-            if (
-                transactions._checkpoint is not store_check
-                or audit._checkpoint is not audit_check
-                or audit._read_blob is not read_blob
+            if not native_only:
+                host_check()
+            if any(
+                current is not original
+                for current, original in zip(
+                    (transactions._checkpoint, audit._checkpoint, audit._read_blob),
+                    callbacks,
+                    strict=True,
+                )
             ):
                 raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
             if time.monotonic() >= deadline:
@@ -243,7 +243,11 @@ async def verify_product_git_user_observation(
             control_error = error
             raise
 
+    def native_check() -> None:
+        raw_check(native_only=True)
+
     check = parent_cancel_checkpointer(raw_check)
+    native_check = parent_cancel_checkpointer(native_check)
     check()
 
     try:
@@ -261,6 +265,7 @@ async def verify_product_git_user_observation(
                     check=check,
                     snapshot_ports=snapshot_ports,
                     source_scope=source_scope,
+                    native_check=native_check if native_observer is not None else None,
                 ),
                 preserve_failure=True,
             )
@@ -289,8 +294,11 @@ async def _verify_authenticated_observation(
     check: Callable[[], None],
     snapshot_ports: WorkspaceSnapshotPorts,
     source_scope: GitUserSourceScope | None = None,
+    native_check: Callable[[], None] | None = None,
 ) -> None:
-    """先切断调用方别名并重读认证历史，再复核基准所有成员与原末段窗口。"""
+    """实际子 Task 构造只读控制，不迁移父 SQL 归属；快照后完整复核原历史与末段。"""
+    if native_check is not None:
+        check = GitAuthenticationControl(native_check, check)
     observation = _snapshot(expected, ProductGitUserObservation, check)
     publication = session._publication
     if (
@@ -464,7 +472,7 @@ async def _observe_user_baseline(
     check: Callable[[], None],
     deadline: float,
 ) -> ProductGitUserObservation:
-    """原基准算法被完整物理前后观察包围；借用原句柄直至会话复核完成。"""
+    """原基准完整物理前后观察；末次await后复核Source2/Index，不承诺跨库原子性。"""
     if reader.contract()["implementation"] != "git-baseline-read/v1":
         raise KernelError("git_baseline_reader_required", "Git用户观察需要固定交付读取端口")
     if not _root_binding_matches(source, reader._root, check):
@@ -506,7 +514,6 @@ async def _observe_user_baseline(
         await _verify_history(history, session, cancel, deadline, check)
         await _verify_final_git_facts(query, baseline, config)
         await _verify_history(history, session, cancel, deadline, check)
-        # 最后一次 await 后仍复核原 Source2 与物理 Index；不承诺跨库原子观察。
         try:
             _verify_final_snapshot(source.workspace, root, _native_checkpointer(check), ports)
         except UpstreamCheckpointError as error:

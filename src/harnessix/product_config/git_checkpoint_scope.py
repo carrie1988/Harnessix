@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
-from threading import get_ident
 from typing import get_args
 
 from harnessix.agent.errors import KernelError
@@ -42,6 +40,7 @@ from harnessix.product_config.git_delivery_plan_snapshot import (
     _snapshot,
     invalid_git_delivery_plan,
 )
+from harnessix.product_config.git_native_control import protected_git_control as _build_control
 from harnessix.product_config.git_parent_contracts import ProductGitDeliveryBaselineV2
 from harnessix.workspace.contracts import PlatformKind
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
@@ -311,41 +310,6 @@ def _snapshot_inputs(
             return baseline, base_commit, base_catalog, after_catalog, limits, max_parents
         except UpstreamCheckpointError as error:
             raise error.error from None
-
-
-def _build_control(checkpoint: Callable[[], None], full: Callable[[], None]) -> Callable[[], None]:
-    """原创建 Task 才可传递局部检查；保留跨解析边界的一层控制异常标记。"""
-    if type(checkpoint) is not GitAuthenticationControl:
-        return full
-    origin = GitAuthenticationControl._binding(checkpoint)
-    try:
-        task = asyncio.current_task()
-    except RuntimeError:
-        task = None
-    if origin[2] is not task or origin[3] != get_ident():
-        return full
-
-    def verify_parent() -> None:
-        try:
-            if type(checkpoint) is not GitAuthenticationControl:
-                raise KernelError("git_authentication_control_invalid", "Git控制创建绑定已改变")
-            GitAuthenticationControl._binding(checkpoint, origin)
-        except BaseException as error:
-            raise UpstreamCheckpointError(error) from None
-
-    def local() -> None:
-        verify_parent()
-        try:
-            origin[0]()
-        except BaseException as error:
-            raise UpstreamCheckpointError(error) from None
-
-    def authenticate() -> None:
-        verify_parent()
-        full()
-
-    # 不扩大身份或重绑归属；只有原 Task／线程在本同步入口派生控制。
-    return GitAuthenticationControl(local, authenticate)
 
 
 def build_product_git_checkpoint_scope(

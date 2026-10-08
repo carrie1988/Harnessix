@@ -15,7 +15,10 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread
 from harnessix.delivery.contracts import MAX_TRANSACTION_FILE_BYTES, WorkspaceMutation
-from harnessix.delivery.git_authentication_control import io_git_authentication
+from harnessix.delivery.git_authentication_control import (
+    GitAuthenticationControl,
+    io_git_authentication,
+)
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.processes.git_observation import GitBaselineReadResult
 from harnessix.product_config.git_baseline_contracts import (
@@ -247,8 +250,11 @@ def _root_binding_matches(
         def controlled() -> None:
             try:
                 progress()
-            except UpstreamCheckpointError:
-                raise
+            except UpstreamCheckpointError as error:
+                if type(checkpoint) is not GitAuthenticationControl:
+                    raise
+                # exact局部控制也可能已携带多层标记；此边界只解自己新增的一层。
+                raise UpstreamCheckpointError(error) from None
             except BaseException as error:
                 raise UpstreamCheckpointError(error) from None
 

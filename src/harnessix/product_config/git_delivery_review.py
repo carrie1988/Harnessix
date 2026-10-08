@@ -7,7 +7,7 @@ from collections.abc import Callable
 from uuid import UUID, uuid5
 
 from harnessix.agent.approvals import trusted_action_invocation_id
-from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
+from harnessix.agent.cancellation import CancelToken, TurnCancelled, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import Thread, ToolCallContent, Turn
@@ -15,6 +15,7 @@ from harnessix.agent.publication import protect_json
 from harnessix.agent.reducer import get_turn
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.delivery.git_material_cas import GitMaterialCAS
 from harnessix.domain.models import utc_now
 from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS
@@ -28,10 +29,17 @@ from harnessix.product_config.git_delivery_review_codec import (
     build_product_git_action_review,
     encode_product_git_action_review,
 )
-from harnessix.product_config.git_delivery_review_host import require_git_review_host
+from harnessix.product_config.git_delivery_review_host import (
+    _git_review_host_checks,
+    _metadata_fields,
+    _selected_fields_guard,
+    require_git_review_host,
+)
 from harnessix.product_config.git_delivery_route_core import load_product_git_delivery_route_core_v2
 from harnessix.product_config.git_delivery_source import verify_git_delivery_source
-from harnessix.product_config.git_user_observation import _native_checkpointer
+from harnessix.product_config.git_native_control import (
+    native_git_checkpoint as _native_checkpointer,
+)
 from harnessix.session.sqlite_history import AuthenticatedThreadHistory
 from harnessix.tools.git import GitReadRuntime
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot
@@ -41,6 +49,15 @@ from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 
 _NAMESPACE = UUID("41bb782b-9351-462c-a8a8-df2b98ea4ec0")
+_BUDGET_IMPLEMENTATION = GitOperationBudget
+_REVIEW_RESOURCE_FIELDS = (
+    "_router",
+    "_core_store",
+    "_artifacts",
+    "_reader",
+    "_ports",
+    "_workspace_scope",
+)
 
 
 def _changed() -> KernelError:
@@ -78,47 +95,22 @@ class ProductGitReviewProvider:
         if type(cancel) is not CancelToken:
             raise KernelError("git_action_review_host_invalid", "Git审阅取消宿主无效")
         cancel.checkpoint()
-        references = (
-            self._router,
-            self._core_store,
-            self._artifacts,
-            self._reader,
-            self._ports,
-            self._workspace_scope,
-        )
-        budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
-        host = require_git_review_host(
-            self._router,
-            self._core_store,
-            self._artifacts,
-            self._reader,
-            self._ports,
-            self._workspace_scope,
-        )
-
-        def control() -> None:
-            cancel.checkpoint()
-            budget.remaining()
-            host()
-            current = (
-                self._router,
-                self._core_store,
-                self._artifacts,
-                self._reader,
-                self._ports,
-                self._workspace_scope,
-            )
-            if any(
-                actual is not original for actual, original in zip(current, references, strict=True)
-            ):
-                raise KernelError("git_action_review_host_invalid", "Git审阅原资源引用已经变化")
-
-        check = parent_cancel_checkpointer(control)
+        budget, local_check, check = _review_operation_controls(self, cancel)
         check()
         try:
             async with asyncio.timeout(budget.remaining()):
                 result = await cancel.run(
-                    _produce(self, route, thread, turn, call, cancel, budget, check)
+                    _produce(
+                        self,
+                        route,
+                        thread,
+                        turn,
+                        call,
+                        cancel,
+                        budget,
+                        check,
+                        local_check=local_check,
+                    )
                 )
                 # 托管任务的finally也会await；公开交付前必须在父任务末端重新检查。
                 check()
@@ -127,6 +119,105 @@ class ProductGitReviewProvider:
                 return result
         except TimeoutError:
             raise KernelError("git_process_timeout", "Git审阅总期限已耗尽") from None
+
+
+def _require_review_references(
+    provider: ProductGitReviewProvider, references: tuple[object, ...]
+) -> None:
+    """full保留原动态引用读取顺序；纯metadata检查不调用本函数。"""
+    current = (
+        provider._router,
+        provider._core_store,
+        provider._artifacts,
+        provider._reader,
+        provider._ports,
+        provider._workspace_scope,
+    )
+    if any(actual is not original for actual, original in zip(current, references, strict=True)):
+        raise KernelError("git_action_review_host_invalid", "Git审阅原资源引用已经变化")
+
+
+def _review_local_progress(cancel: CancelToken, budget: GitOperationBudget) -> Callable[[], None]:
+    """同一取消/预算的原生读侧；实例shadow、非原生布尔/期限不能执行回调。"""
+    code = "git_action_review_host_invalid"
+    event = _metadata_fields(cancel, CancelToken, code).get("_event")
+    if type(event) is not asyncio.Event:
+        raise KernelError(code, "Git审阅原取消元数据已经变化")
+    cancel_guard = _selected_fields_guard(
+        cancel, CancelToken, ("_event", "checkpoint", "cancelled"), code
+    )
+    event_guard = _selected_fields_guard(event, asyncio.Event, ("is_set",), code)
+    budget_guard = _selected_fields_guard(budget, _BUDGET_IMPLEMENTATION, ("remaining",), code)
+    remaining = _BUDGET_IMPLEMENTATION.remaining
+
+    def progress() -> None:
+        cancel_guard()
+        event_guard()
+        event_fields = _metadata_fields(event, asyncio.Event, code)
+        if type(event_fields.get("_value")) is not bool:
+            raise KernelError(code, "Git审阅原取消元数据已经变化")
+        if asyncio.Event.is_set(event):
+            raise TurnCancelled
+        budget_guard()
+        budget_fields = _metadata_fields(budget, _BUDGET_IMPLEMENTATION, code)
+        if type(budget_fields.get("_deadline")) is not float:
+            raise KernelError(code, "Git审阅原期限元数据已经变化")
+        remaining(budget)
+
+    return progress
+
+
+def _review_operation_controls(
+    provider: ProductGitReviewProvider, cancel: CancelToken
+) -> tuple[GitOperationBudget, Callable[[], None] | None, Callable[[], None]]:
+    """在原父Task冻结资源与共同预算；只向exact受管生产者交付纯元数据频检。"""
+    references = (
+        provider._router,
+        provider._core_store,
+        provider._artifacts,
+        provider._reader,
+        provider._ports,
+        provider._workspace_scope,
+    )
+    budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
+    observer: Callable[[], None] | None = None
+    if type(provider) is ProductGitReviewProvider:
+        observer, host = _git_review_host_checks(*references)
+    else:
+        host = require_git_review_host(
+            provider._router,
+            provider._core_store,
+            provider._artifacts,
+            provider._reader,
+            provider._ports,
+            provider._workspace_scope,
+        )
+
+    def control() -> None:
+        cancel.checkpoint()
+        budget.remaining()
+        host()
+        _require_review_references(provider, references)
+
+    check = parent_cancel_checkpointer(control)
+    local_check: Callable[[], None] | None = None
+    if observer is not None:
+        local_host = observer
+        progress = _review_local_progress(cancel, budget)
+        resources = _selected_fields_guard(
+            provider,
+            ProductGitReviewProvider,
+            _REVIEW_RESOURCE_FIELDS,
+            "git_action_review_host_invalid",
+        )
+
+        def local() -> None:
+            progress()
+            local_host()
+            resources()
+
+        local_check = parent_cancel_checkpointer(local)
+    return budget, local_check, check
 
 
 async def _history(
@@ -168,8 +259,13 @@ async def _produce(
     cancel: CancelToken,
     budget: GitOperationBudget,
     check: Callable[[], None],
+    *,
+    local_check: Callable[[], None] | None = None,
 ) -> TrustedActionReview:
     """原CAS完整恢复后只读复核来源；仅原Artifact发布允许新增持久状态。"""
+    # 父闭包继续观察父取消；控制仅在本次cancel.run拥有的原子子Task创建。
+    if type(provider) is ProductGitReviewProvider and local_check is not None:
+        check = GitAuthenticationControl(local_check, check)
     route = _snapshot(supplied, ActionRouteSnapshotV2, check)
     thread, turn, call = (
         _snapshot(thread, Thread, check),

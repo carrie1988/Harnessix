@@ -6,6 +6,7 @@ import asyncio
 import sqlite3
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack, contextmanager
+from threading import get_ident
 from uuid import UUID, uuid4
 
 from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
@@ -15,7 +16,10 @@ from harnessix.delivery.git_authentication_control import GitAuthenticationContr
 from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_delivery_process import GitOperationBudget
-from harnessix.product_config.git_delivery_review_host import require_git_review_host
+from harnessix.product_config.git_delivery_review_host import (
+    _git_review_host_checks,
+    require_git_review_host,
+)
 from harnessix.product_config.git_prefix_rows import GitPrefixRows, capture_git_prefix_rows
 from harnessix.product_config.git_prefix_sql import (
     git_prefix_sql_window,
@@ -29,6 +33,7 @@ from harnessix.product_config.git_prefix_writer import (
 from harnessix.product_config.git_prepared_link_connection import (
     _prepared_git_connection_lifecycle_observer,
     _prepared_git_connection_observer,
+    _prepared_git_connection_registration_observer,
 )
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
 from harnessix.product_config.git_prepared_link_observation import (
@@ -231,6 +236,48 @@ def _control(
             _register_prepared_git_commit(database, resources, terminal_read)
 
 
+def _native_user_observer(
+    ledger: ProductGitPreparedLinkLedger,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    control: Callable[[], None],
+) -> Callable[[], None] | None:
+    """原持锁 Task 签发只读生命周期观察；不移交连接登记、SQL 或父局部控制。"""
+    if (
+        type(ledger) is not ProductGitPreparedLinkLedger
+        or type(control) is not GitAuthenticationControl
+    ):
+        return None
+    origin = GitAuthenticationControl._binding(control)
+    if origin[2] is not asyncio.current_task() or origin[3] != get_ident():
+        return None
+    database, references = ledger._database, tuple(vars(ledger).values())
+    registration = _prepared_git_connection_registration_observer(database)
+    runtime = _prepared_runtime_thread_observer(database, ledger._router, ledger._artifacts)
+    epoch = git_prefix_transaction_epoch(database)
+    bound, _ = _git_review_host_checks(
+        ledger._router,
+        ledger._core_store,
+        ledger._artifacts,
+        ledger._reader,
+        ledger._ports,
+        ledger._workspace_scope,
+    )
+
+    def observe() -> None:
+        GitAuthenticationControl._binding(control, origin)
+        cancel.checkpoint()
+        budget.remaining()
+        bound()
+        registration()
+        runtime()
+        if any(a is not b for a, b in zip(vars(ledger).values(), references, strict=True)):
+            raise prepared_link_changed()
+        require_git_prefix_transaction_epoch(database, epoch)
+
+    return parent_cancel_checkpointer(observe)
+
+
 async def _authenticate(
     ledger: ProductGitPreparedLinkLedger,
     route_id: UUID,
@@ -263,6 +310,7 @@ async def _authenticate(
         checkpoint=check,
         snapshot_ports=ledger._ports,
         source_scope=read_set.source_scope,
+        native_observer=_native_user_observer(ledger, cancel, budget, check),
     )
     check()
     return evidence

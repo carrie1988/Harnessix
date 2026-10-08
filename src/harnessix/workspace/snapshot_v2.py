@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
@@ -93,17 +94,20 @@ def verify_workspace_snapshot_v2(
     checkpoint: Callable[[], None],
     read_blob: Callable[[str], bytes],
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
+    native_progress: AbstractContextManager[Callable[[], None]] | None = None,
 ) -> WorkspaceSnapshotV2:
     """先验证完整旧历史，再只观察当前事实；没有 CAS 写入或补签端口。"""
     historical = read_workspace_parent_closure(expected, read_blob, checkpoint=checkpoint)
-    facts = capture_snapshot_facts(
-        root,
-        cwd=expected.cwd,
-        resources=snapshot_requests(expected),
-        external_roots=external_roots,
-        platform=expected.platform,
-        checkpoint=checkpoint,
-    )
+    capture_progress = native_progress if native_progress is not None else nullcontext(checkpoint)
+    with capture_progress as native_check:
+        facts = capture_snapshot_facts(
+            root,
+            cwd=expected.cwd,
+            resources=snapshot_requests(expected),
+            external_roots=external_roots,
+            platform=expected.platform,
+            checkpoint=native_check,
+        )
     current, _ = _encode_snapshot(facts, checkpoint)
     if current != expected or facts.parents != historical:
         raise KernelError("execution_plan_stale", "Workspace Snapshot已变化")

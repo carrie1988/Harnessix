@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from uuid import UUID
 
@@ -11,12 +12,18 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread
 from harnessix.delivery.contracts import (
     MAX_TRANSACTION_IMAGE_BYTES,
+    FileMode,
     WorkspaceFileVersion,
     WorkspaceMutation,
+)
+from harnessix.delivery.git_authentication_control import (
+    GitAuthenticationControl,
+    io_git_authentication,
 )
 from harnessix.delivery.planner import _read_existing
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
+from harnessix.product_config.git_native_control import protected_git_control
 from harnessix.product_config.git_parent_contracts import ProductGitDeliverySourceV2
 from harnessix.product_config.workspace_patch_source import (
     OwnedWorkspacePatch,
@@ -173,7 +180,7 @@ def _observe_final_versions(
             actual = WorkspaceFileVersion(presence="absent", size=0)
         elif observation.kind == "file":
             if isinstance(snapshot, WorkspaceSnapshotV2):
-                body, mode = _read_existing(root, path, base.platform, checkpoint=checkpoint)
+                body, mode = _read_source_file(root, path, base.platform, checkpoint)
             else:
                 body, mode = _read_existing(root, path, base.platform)
             actual = WorkspaceFileVersion(
@@ -190,6 +197,53 @@ def _observe_final_versions(
     return snapshot
 
 
+@contextmanager
+def _native_snapshot_progress(checkpoint: Callable[[], None]) -> Iterator[Callable[[], None]]:
+    """只解自己新增的控制层；段首末认证异常不进入原生解包边界。"""
+    with io_git_authentication(checkpoint) as progress:
+        owned_error: UpstreamCheckpointError | None = None
+
+        def check() -> None:
+            nonlocal owned_error
+            try:
+                progress()
+            except BaseException as error:
+                owned_error = UpstreamCheckpointError(error)
+                raise owned_error from None
+
+        try:
+            yield check
+        except UpstreamCheckpointError as error:
+            if error is not owned_error:
+                raise
+            raise error.error from None
+
+
+def _read_source_file(
+    root: Path, path: str, platform: PlatformKind, checkpoint: Callable[[], None]
+) -> tuple[bytes, FileMode]:
+    """段外文件读取始终 full；只给 exact 控制隔离原生 OSError 转换。"""
+    if type(checkpoint) is not GitAuthenticationControl:
+        return _read_existing(root, path, platform, checkpoint=checkpoint)
+    owned_error: UpstreamCheckpointError | None = None
+
+    def full() -> None:
+        nonlocal owned_error
+        try:
+            checkpoint()
+        except BaseException as error:
+            owned_error = UpstreamCheckpointError(error)
+            raise owned_error from None
+
+    control = protected_git_control(checkpoint, full)
+    try:
+        return _read_existing(root, path, platform, checkpoint=control)
+    except UpstreamCheckpointError as error:
+        if error is not owned_error:
+            raise
+        raise error.error from None
+
+
 def _verify_final_snapshot(
     snapshot: WorkspaceSnapshot | WorkspaceSnapshotV2,
     root: Path,
@@ -200,9 +254,18 @@ def _verify_final_snapshot(
     if isinstance(snapshot, WorkspaceSnapshotV2):
         if ports is None:
             raise KernelError("workspace_closure_unavailable", "完整Workspace历史端口不可用")
-        verify_workspace_snapshot_v2(
-            snapshot, root, checkpoint=checkpoint, read_blob=ports.read_blob
-        )
+        if type(checkpoint) is GitAuthenticationControl:
+            verify_workspace_snapshot_v2(
+                snapshot,
+                root,
+                checkpoint=checkpoint,
+                read_blob=ports.read_blob,
+                native_progress=_native_snapshot_progress(checkpoint),
+            )
+        else:
+            verify_workspace_snapshot_v2(
+                snapshot, root, checkpoint=checkpoint, read_blob=ports.read_blob
+            )
     else:
         verify_workspace_snapshot(snapshot, root)
 
@@ -311,7 +374,7 @@ def verify_git_delivery_source(
         if observed[path].kind == "missing":
             actual = WorkspaceFileVersion(presence="absent", size=0)
         elif observed[path].kind == "file":
-            body, mode = _read_existing(root, path, workspace.platform, checkpoint=checkpoint)
+            body, mode = _read_source_file(root, path, workspace.platform, checkpoint)
             actual = WorkspaceFileVersion(
                 presence="file", sha256=hashlib.sha256(body).hexdigest(), size=len(body), mode=mode
             )

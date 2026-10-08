@@ -11,14 +11,152 @@ from pathlib import Path
 from harnessix.agent.errors import KernelError
 from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_user_authority import require_git_user_authority
+from harnessix.secrets.publication import SecretPublicationScope
+from harnessix.session.publication_seal import EventPublicationAuthority
+from harnessix.session.sqlite import SQLiteSessionStore
+from harnessix.session.store_publication import SessionPublicationBinding
 from harnessix.sqlite_readonly import readonly_database
 from harnessix.tools.git import GitReadRuntime
 from harnessix.trusted_actions.recovery_contracts import ActionRuntimeFence
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
+
+_READER_METADATA_FIELDS = (
+    "_output_redaction",
+    "_root",
+    "_executable",
+    "_state_directory",
+    "_global_arguments",
+    "_for_delivery",
+    "_binding_fingerprint",
+    "contract",
+)
+
+
+def _metadata_fields(subject: object, kind: type[object], code: str) -> dict[str, object]:
+    """先拒绝可执行字典/键，再重建原生字符串索引；不触发字段属性或比较。"""
+    if type(subject) is not kind:
+        raise KernelError(code, "Git原资源元数据已经变化")
+    current = object.__getattribute__(subject, "__dict__")
+    if type(current) is not dict:
+        raise KernelError(code, "Git原资源元数据已经变化")
+    fields = tuple(current.items())
+    if any(type(name) is not str for name, _ in fields):
+        raise KernelError(code, "Git原资源元数据已经变化")
+    return dict(fields)
+
+
+def _selected_fields_guard(
+    subject: object, kind: type[object], names: tuple[str, ...], code: str
+) -> Callable[[], None]:
+    """仅冻结必要字段及方法shadow的原引用；未绑定的合法缓存可继续更新。"""
+    missing = object()
+    initial = _metadata_fields(subject, kind, code)
+    selected = tuple((name, initial.get(name, missing)) for name in names)
+
+    def check() -> None:
+        current = _metadata_fields(subject, kind, code)
+        if any(current.get(name, missing) is not value for name, value in selected):
+            raise KernelError(code, "Git原资源元数据已经变化")
+
+    return check
+
+
+def _git_review_metadata(
+    router: TrustedActionRouter,
+    core_store: ProductGitDeliveryCoreStore,
+    artifacts: SQLiteArtifactStore,
+    reader: GitReadRuntime,
+    ports: WorkspaceSnapshotPorts,
+) -> Callable[[], None]:
+    """只借原全认证后的元数据；不调用旧bound、动态方法、Path比较或Owner查询。"""
+    user_code, review_code = "git_user_observation_host_invalid", "git_action_review_host_invalid"
+    artifact_fields = _metadata_fields(artifacts, SQLiteArtifactStore, review_code)
+    session = artifact_fields.get("_session")
+    publication = _metadata_fields(session, SQLiteSessionStore, user_code).get("_publication")
+    events = _metadata_fields(publication, SessionPublicationBinding, user_code).get("_events")
+    protection = _metadata_fields(events, EventPublicationAuthority, user_code).get("_protection")
+    router_fields = _metadata_fields(router, TrustedActionRouter, user_code)
+    audit, plans = router_fields.get("_audit"), router_fields.get("_plans")
+    audit_fields = _metadata_fields(audit, SQLiteActionAuditStore, user_code)
+    database, fence = audit_fields.get("_db"), audit_fields.get("_runtime_fence")
+    if type(core_store) is not ProductGitDeliveryCoreStore:
+        raise KernelError(review_code, "Git审阅原资源元数据已经变化")
+    if type(ports) is not WorkspaceSnapshotPorts:
+        raise KernelError(user_code, "Git原资源元数据已经变化")
+    transactions = object.__getattribute__(core_store, "store")
+    write_blob = object.__getattribute__(ports, "write_blob")
+    read_blob = object.__getattribute__(ports, "read_blob")
+    user_checks = tuple(
+        _selected_fields_guard(subject, kind, names, user_code)
+        for subject, kind, names in (
+            (session, SQLiteSessionStore, ("_publication", "path")),
+            (
+                publication,
+                SessionPublicationBinding,
+                ("_closed", "_events", "_store_id", "_key_id"),
+            ),
+            (events, EventPublicationAuthority, ("_closed", "_protection", "_key_id")),
+            (protection, SecretPublicationScope, ("_closed",)),
+            (router, TrustedActionRouter, ("_audit", "_plans", "_snapshot_ports")),
+            (audit, SQLiteActionAuditStore, ("_closed", "_path", "_checkpoint", "_read_blob")),
+            (plans, SQLiteExecutionPlanStore, ("_closed", "_path")),
+            (
+                transactions,
+                SQLiteWorkspaceTransactionStore,
+                ("_closed", "_root", "_checkpoint", "put_blob", "blob"),
+            ),
+            (reader, GitReadRuntime, _READER_METADATA_FIELDS),
+        )
+    )
+    review_checks = tuple(
+        _selected_fields_guard(subject, kind, names, review_code)
+        for subject, kind, names in (
+            (session, SQLiteSessionStore, ("_runtime_owner_token",)),
+            (artifacts, SQLiteArtifactStore, ("_session", "_publication", "session")),
+            (
+                artifact_fields.get("_publication"),
+                ArtifactPublicationGuard,
+                ("binding", "protection"),
+            ),
+            (
+                audit,
+                SQLiteActionAuditStore,
+                ("_db", "_runtime_fence", "_require_runtime_owner", "_read_runtime_owner"),
+            ),
+            (fence, ActionRuntimeFence, ("generation", "token", "acquired_at")),
+        )
+    )
+
+    def observe() -> None:
+        for check in user_checks:
+            check()
+        if (
+            type(ports) is not WorkspaceSnapshotPorts
+            or object.__getattribute__(ports, "write_blob") is not write_blob
+            or object.__getattribute__(ports, "read_blob") is not read_blob
+        ):
+            raise KernelError(user_code, "Git原CAS端口元数据已经变化")
+        for check in review_checks:
+            check()
+        if (
+            type(core_store) is not ProductGitDeliveryCoreStore
+            or object.__getattribute__(core_store, "store") is not transactions
+            or type(database) is not sqlite3.Connection
+        ):
+            raise KernelError(review_code, "Git审阅原资源元数据已经变化")
+        try:
+            if database.in_transaction is not False:
+                raise KernelError(review_code, "Git审阅原连接元数据已经变化")
+        except sqlite3.Error:
+            raise KernelError(review_code, "Git审阅原连接不可用") from None
+
+    return observe
 
 
 def _audit_file_identity(path: Path) -> tuple[int, int]:
@@ -70,6 +208,18 @@ def require_git_review_host(
     workspace_scope: str,
 ) -> Callable[[], None]:
     """同次操作冻结原发布Guard/Session/Scope/Owner，原用户宿主检查继续生效。"""
+    return _git_review_host_checks(router, core_store, artifacts, reader, ports, workspace_scope)[1]
+
+
+def _git_review_host_checks(
+    router: TrustedActionRouter,
+    core_store: ProductGitDeliveryCoreStore,
+    artifacts: SQLiteArtifactStore,
+    reader: GitReadRuntime,
+    ports: WorkspaceSnapshotPorts,
+    workspace_scope: str,
+) -> tuple[Callable[[], None], Callable[[], None]]:
+    """复用原冻结流程与初始全认证；第一项仅观察元数据，不授予Owner授权。"""
     if (
         type(core_store) is not ProductGitDeliveryCoreStore
         or type(artifacts) is not SQLiteArtifactStore
@@ -114,12 +264,12 @@ def require_git_review_host(
         ):
             raise KernelError("git_action_review_host_invalid", "Git审阅原发布宿主已经变化")
 
-    def check() -> None:
+    def full() -> None:
         """首末复核原身份；补充短只读视图，不能仅信任自动提交标志。"""
         bound()
         audit._read_runtime_owner()
         _read_fresh_owner(audit, path, identity, original=database)
         bound()
 
-    check()
-    return check
+    full()
+    return _git_review_metadata(router, core_store, artifacts, reader, ports), full

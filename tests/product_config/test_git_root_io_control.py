@@ -125,11 +125,12 @@ def _error(kind):
         "timeout": lambda: TimeoutError("marker"),
         "oserror": lambda: OSError("marker"),
         "upstream": lambda: UpstreamCheckpointError(KernelError("git_test_inner", "marker")),
+        "nested": lambda: UpstreamCheckpointError(UpstreamCheckpointError(OSError("marker"))),
     }[kind]()
 
 
 @pytest.mark.parametrize(
-    "kind", ["kernel", "cancel", "turn-cancel", "timeout", "oserror", "upstream"]
+    "kind", ["kernel", "cancel", "turn-cancel", "timeout", "oserror", "upstream", "nested"]
 )
 @pytest.mark.parametrize("boundary", ["entry", "native-outer", "native-directory", "tail", "exit"])
 def test_real_boundary_failure_identity_and_no_result(root_source, monkeypatch, kind, boundary):
@@ -161,7 +162,7 @@ def test_real_boundary_failure_identity_and_no_result(root_source, monkeypatch, 
     probe.hook = fail
     monkeypatch.setattr(snapshot, "observe_directory", directory)
     monkeypatch.setattr(baseline, "capture_snapshot_facts", capture)
-    expected = error.error if kind == "upstream" and boundary.startswith("native-") else error
+    expected = error
     delivered = []
     with pytest.raises(type(expected)) as caught:
         delivered.append(baseline._root_binding_matches(source, root, probe.control))
