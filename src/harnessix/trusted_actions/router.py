@@ -57,7 +57,7 @@ from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.contracts import ResourceAccess, WorkspaceResourceRequest
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
-from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
+from harnessix.workspace.snapshot_ports import WorkspacePureProgressFactory, WorkspaceSnapshotPorts
 from harnessix.workspace.snapshot_verification import verify_host_workspace_snapshot
 
 
@@ -134,15 +134,48 @@ _ReadCheckpoint = Callable[[], None] | None
 
 
 def _read_action_snapshot(
-    audit: SQLiteActionAuditStore, plan_id: UUID, checkpoint: _ReadCheckpoint
+    audit: SQLiteActionAuditStore,
+    plan_id: UUID,
+    checkpoint: _ReadCheckpoint,
+    *,
+    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> ActionRouteSnapshot:
     """有单次控制时显式传递；旧Reader调用不添加参数或替换共享属性。"""
+    if pure_progress is not None:
+        return audit.load(plan_id, checkpoint=checkpoint, pure_progress=pure_progress)
     if checkpoint is None:
         return audit.load(plan_id)
     return audit.load(plan_id, checkpoint=checkpoint)
 
 
-class TrustedActionRouter:
+class _ActionReadRouter:
+    """原批准、状态与事件的只读转发；不持有计划或执行入口。"""
+
+    _plans: SQLiteExecutionPlanStore
+    _audit: SQLiteActionAuditStore
+
+    def approval(self, plan_id: UUID) -> ExecutionApprovalCheckpoint | None:
+        """读取Router执行批准检查点；调用方只能据此补齐相同Session投影。"""
+
+        checkpoint = self._plans.load_approval(plan_id)
+        return checkpoint.model_copy(deep=True) if checkpoint is not None else None
+
+    def status(
+        self,
+        plan_id: UUID,
+        *,
+        checkpoint: _ReadCheckpoint = None,
+        pure_progress: WorkspacePureProgressFactory | None = None,
+    ) -> ActionRouteSnapshot:
+        if pure_progress is None:
+            return _read_action_snapshot(self._audit, plan_id, checkpoint)
+        return _read_action_snapshot(self._audit, plan_id, checkpoint, pure_progress=pure_progress)
+
+    def events(self, plan_id: UUID) -> tuple[ActionAuditEvent, ...]:
+        return self._audit.events(plan_id)
+
+
+class TrustedActionRouter(_ActionReadRouter):
     """唯一计划、批准、执行和对账入口；注册信息全部由宿主持有。"""
 
     def __init__(
@@ -281,12 +314,6 @@ class TrustedActionRouter:
             occurred_at=checkpoint.decision.decided_at,
         )
 
-    def approval(self, plan_id: UUID) -> ExecutionApprovalCheckpoint | None:
-        """读取Router执行批准检查点；调用方只能据此补齐相同Session投影。"""
-
-        checkpoint = self._plans.load_approval(plan_id)
-        return checkpoint.model_copy(deep=True) if checkpoint is not None else None
-
     async def execute(self, plan_id: UUID) -> ActionExecutionOutcome:
         """在持久Operation期限内执行一次；不确定写效果只允许进入对账。"""
 
@@ -306,12 +333,6 @@ class TrustedActionRouter:
         """把单个遗留执行态收敛为UNKNOWN，不调用Executor。"""
 
         return recover_interrupted_action(self, plan_id)
-
-    def status(self, plan_id: UUID, *, checkpoint: _ReadCheckpoint = None) -> ActionRouteSnapshot:
-        return _read_action_snapshot(self._audit, plan_id, checkpoint)
-
-    def events(self, plan_id: UUID) -> tuple[ActionAuditEvent, ...]:
-        return self._audit.events(plan_id)
 
     def extension_port(
         self,

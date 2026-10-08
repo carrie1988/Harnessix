@@ -34,9 +34,8 @@ from harnessix.product_config.git_delivery_source import (
     verify_git_delivery_source,
 )
 from harnessix.product_config.git_native_control import (
-    native_git_checkpoint as _native_checkpointer,
-)
-from harnessix.product_config.git_native_control import (
+    git_checkpoint_boundary,
+    native_git_checkpoint,
     qualified_native_observer,
 )
 from harnessix.product_config.git_parent_contracts import (
@@ -61,8 +60,10 @@ from harnessix.session.sqlite_history import AuthenticatedThreadHistory
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.git import GitReadRuntime, _reject_git_helpers
 from harnessix.trusted_actions.router import TrustedActionRouter
-from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
+
+# 既有私有调用方仍沿原适配器；本模块的新读取边界只解自己拥有的标记。
+_native_checkpointer = native_git_checkpoint
 
 
 def git_user_observation_implementation_digest() -> str:
@@ -325,17 +326,15 @@ async def _verify_authenticated_observation(
         await _verify_history(actual, session, cancel, deadline, check)
 
     def verify_source() -> None:
-        try:
+        with git_checkpoint_boundary(check) as source_check:
             verify_git_delivery_source(
                 actual.thread,
                 source,
                 router,
                 transactions,
-                checkpoint=_native_checkpointer(check),
+                checkpoint=source_check,
                 snapshot_ports=snapshot_ports,
             )
-        except UpstreamCheckpointError as error:
-            raise error.error from None
 
     await _verify_observed_git_state(
         observation,
@@ -437,17 +436,15 @@ async def _collect(
     check()
     if history.thread != thread:
         raise KernelError("git_user_observation_history_changed", "Git用户观察会话历史已经变化")
-    try:
+    with git_checkpoint_boundary(check) as source_check:
         source = collect_git_delivery_source(
             history.thread,
             targets,
             router,
             transactions,
-            checkpoint=_native_checkpointer(check),
+            checkpoint=source_check,
             snapshot_ports=ports,
         )
-    except UpstreamCheckpointError as error:
-        raise error.error from None
     if type(source) is not ProductGitDeliverySourceV2:
         raise KernelError("workspace_closure_unavailable", "Git用户观察需要完整新代际来源")
     return await _observe_user_baseline(
@@ -489,18 +486,16 @@ async def _observe_user_baseline(
         sources = sources_scope.pin(root, *before, check)
         index = pinned.observe_index(check)
 
-        try:
+        with git_checkpoint_boundary(check) as source_check:
             baseline = await _collect_baseline_from_source(
                 source,
                 history.thread,
                 reader,
                 cancel=cancel,
                 snapshot_ports=ports,
-                checkpoint=_native_checkpointer(check),
+                checkpoint=source_check,
                 deadline=deadline,
             )
-        except UpstreamCheckpointError as error:
-            raise error.error from None
         if (
             type(baseline) is not ProductGitDeliveryBaselineV2
             or await _reports(query, root) != before
@@ -514,10 +509,8 @@ async def _observe_user_baseline(
         await _verify_history(history, session, cancel, deadline, check)
         await _verify_final_git_facts(query, baseline, config)
         await _verify_history(history, session, cancel, deadline, check)
-        try:
-            _verify_final_snapshot(source.workspace, root, _native_checkpointer(check), ports)
-        except UpstreamCheckpointError as error:
-            raise error.error from None
+        with git_checkpoint_boundary(check) as source_check:
+            _verify_final_snapshot(source.workspace, root, source_check, ports)
         if pinned.observe_index(check) != index:
             raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
         sources.verify(check)

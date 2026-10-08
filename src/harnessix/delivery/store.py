@@ -35,6 +35,10 @@ from harnessix.delivery.workspace_store_schema import (
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
 from harnessix.sqlite_readonly import readonly_database
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
+from harnessix.workspace.snapshot_ports import (
+    WorkspacePureProgressFactory,
+    observed_workspace_pure_progress,
+)
 from harnessix.workspace.terminal_read_control import (
     require_store_write_allowed,
     run_store_read_checkpoint,
@@ -199,7 +203,11 @@ class SQLiteWorkspaceTransactionStore:
             raise
 
     def load(
-        self, transaction_id: UUID, *, checkpoint: Callable[[], None] | None = None
+        self,
+        transaction_id: UUID,
+        *,
+        checkpoint: Callable[[], None] | None = None,
+        pure_progress: WorkspacePureProgressFactory | None = None,
     ) -> WorkspaceTransactionRecord:
         if checkpoint is not None:
             checkpoint()
@@ -210,7 +218,9 @@ class SQLiteWorkspaceTransactionStore:
         ).fetchone()
         if row is None:
             raise KernelError("delivery_transaction_not_found", "Workspace事务不存在")
-        return self._decode(row, checkpoint=checkpoint)
+        if pure_progress is None:
+            return self._decode(row, checkpoint=checkpoint)
+        return self._decode(row, checkpoint=checkpoint, pure_progress=pure_progress)
 
     def lookup(self, request_id: str) -> WorkspaceTransactionRecord | None:
         row = self._db.execute(
@@ -235,7 +245,11 @@ class SQLiteWorkspaceTransactionStore:
         return read_blob_body(self._blobs / digest, digest)
 
     def decode_payload(
-        self, payload: str, *, checkpoint: Callable[[], None] | None = None
+        self,
+        payload: str,
+        *,
+        checkpoint: Callable[[], None] | None = None,
+        pure_progress: WorkspacePureProgressFactory | None = None,
     ) -> DecodedWorkspaceRecord:
         """完整读取当前行或历史物理记录；校验引用不授予执行、迁移或补签权。"""
 
@@ -244,7 +258,14 @@ class SQLiteWorkspaceTransactionStore:
             if checkpoint is not None:
                 checkpoint()
 
-        return decode_workspace_record(payload, self._read_blob, checkpoint=check)
+        if pure_progress is None:
+            return decode_workspace_record(payload, self._read_blob, checkpoint=check)
+        return decode_workspace_record(
+            payload,
+            self._read_blob,
+            checkpoint=check,
+            pure_progress=observed_workspace_pure_progress(pure_progress, self._check),
+        )
 
     def _encode(self, record: WorkspaceTransactionRecord) -> str:
         return encode_workspace_record(
@@ -307,11 +328,19 @@ class SQLiteWorkspaceTransactionStore:
         _write_blob_body(self._blobs, digest, body, read, _blob_checkpoint(self._check, checkpoint))
 
     def _decode(
-        self, row: tuple[object, ...], *, checkpoint: Callable[[], None] | None = None
+        self,
+        row: tuple[object, ...],
+        *,
+        checkpoint: Callable[[], None] | None = None,
+        pure_progress: WorkspacePureProgressFactory | None = None,
     ) -> WorkspaceTransactionRecord:
         if not isinstance(row[5], str):
             raise KernelError("delivery_store_corrupt", "Workspace事务账本损坏")
-        record = self.decode_payload(row[5], checkpoint=checkpoint).record
+        record = (
+            self.decode_payload(row[5], checkpoint=checkpoint)
+            if pure_progress is None
+            else self.decode_payload(row[5], checkpoint=checkpoint, pure_progress=pure_progress)
+        ).record
         try:
             if row[:5] != (
                 str(record.transaction_id),

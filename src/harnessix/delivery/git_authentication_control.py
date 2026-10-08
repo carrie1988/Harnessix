@@ -178,6 +178,20 @@ def same_task_pure_git_authentication(
 
 
 @contextmanager
+def same_task_io_git_authentication(
+    checkpoint: Callable[[], None],
+) -> Iterator[Callable[[], None]]:
+    """数据计算保留原宿主观察 I/O；外来控制不追加段首末完整调用。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        origin = GitAuthenticationControl._binding(checkpoint)
+        if origin[2] is _current_task() and origin[3] == get_ident():
+            with io_git_authentication(checkpoint) as check:
+                yield check
+            return
+    yield checkpoint
+
+
+@contextmanager
 def io_git_authentication(checkpoint: Callable[[], None]) -> Iterator[Callable[[], None]]:
     """只给 exact 控制的受信同步原生只读 I/O 端口分层；未知回调不追加调用。"""
     if type(checkpoint) is GitAuthenticationControl:

@@ -19,15 +19,20 @@ from harnessix.delivery.contracts import (
 from harnessix.delivery.git_authentication_control import (
     GitAuthenticationControl,
     io_git_authentication,
+    same_task_io_git_authentication,
     same_task_pure_git_authentication,
 )
 from harnessix.delivery.planner import _read_existing
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
-from harnessix.product_config.git_native_control import protected_git_control
+from harnessix.product_config.git_native_control import (
+    git_checkpoint_boundary,
+    protected_git_control,
+)
 from harnessix.product_config.git_parent_contracts import ProductGitDeliverySourceV2
 from harnessix.product_config.workspace_patch_source import (
     OwnedWorkspacePatch,
+    WorkspacePatchOwnershipError,
     completed_workspace_patches,
     load_owned_workspace_patch,
 )
@@ -70,32 +75,35 @@ def _owned_selection(
     if len(selected) != len(targets) or {item.transaction_id for item in selected} != set(targets):
         raise KernelError("git_delivery_source_not_owned", "Git交付来源不属于本会话成功修改")
 
-    def reader_checkpoint() -> None:
-        try:
-            checkpoint()
-        except BaseException as error:
-            # 控制异常不能进入下方归属错误码映射，即使二者错误码相同。
-            raise UpstreamCheckpointError(error) from None
-
     owned = []
-    for item in selected:
-        checkpoint()
-        try:
-            owned.append(
-                load_owned_workspace_patch(
-                    thread, item.transaction_id, router, transactions, checkpoint=reader_checkpoint
-                )
-            )
-        except UpstreamCheckpointError as error:
-            raise error.error from None
-        except KernelError as error:
-            codes = {
-                "workspace_patch_source_not_owned": "git_delivery_source_not_owned",
-                "workspace_patch_source_not_published": "git_delivery_source_not_published",
-            }
-            if error.code not in codes:
-                raise
-            raise KernelError(codes[error.code], "Git交付原Patch来源不成立") from None
+    with git_checkpoint_boundary(checkpoint) as read_control:
+        for item in selected:
+            checkpoint()
+            try:
+                if type(read_control) is GitAuthenticationControl:
+                    patch = load_owned_workspace_patch(
+                        thread,
+                        item.transaction_id,
+                        router,
+                        transactions,
+                        checkpoint=read_control,
+                        pure_progress=lambda: same_task_io_git_authentication(read_control),
+                    )
+                else:
+                    patch = load_owned_workspace_patch(
+                        thread, item.transaction_id, router, transactions, checkpoint=read_control
+                    )
+                owned.append(patch)
+            except KernelError as error:
+                if type(error) is not WorkspacePatchOwnershipError:
+                    raise
+                codes = {
+                    "workspace_patch_source_not_owned": "git_delivery_source_not_owned",
+                    "workspace_patch_source_not_published": "git_delivery_source_not_published",
+                }
+                if error.code not in codes:
+                    raise
+                raise KernelError(codes[error.code], "Git交付原Patch来源不成立") from None
     return tuple(owned)
 
 

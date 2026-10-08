@@ -17,6 +17,11 @@ from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL, WorkspacePat
 from harnessix.delivery.trusted_action_contracts import WorkspacePatchInput
 from harnessix.product_config.workspace_patch_source_contracts import WorkspacePatchSourceReference
 from harnessix.trusted_actions.router import TrustedActionRouter
+from harnessix.workspace.snapshot_ports import WorkspacePureProgressFactory
+
+
+class WorkspacePatchOwnershipError(KernelError):
+    """仅本 Reader 的归属／发布事实拒绝；同码宿主控制异常不是该领域事实。"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,37 +78,54 @@ def load_owned_workspace_patch(
     transactions: SQLiteWorkspaceTransactionStore,
     *,
     checkpoint: Callable[[], None] | None = None,
+    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> OwnedWorkspacePatch:
     """先确定本认证Thread的成功归属，再核对精确Route和published事务。"""
     matching = [
         item for item in completed_workspace_patches(thread) if item.transaction_id == target
     ]
     if len(matching) != 1:
-        raise KernelError("workspace_patch_source_not_owned", "Patch不属于本会话的成功修改")
+        raise WorkspacePatchOwnershipError(
+            "workspace_patch_source_not_owned", "Patch不属于本会话的成功修改"
+        )
     completed = matching[0]
-    route = (
-        router.status(target)
-        if checkpoint is None
-        else router.status(target, checkpoint=checkpoint)
-    )
+    if pure_progress is not None:
+        route = router.status(target, checkpoint=checkpoint, pure_progress=pure_progress)
+    else:
+        route = (
+            router.status(target)
+            if checkpoint is None
+            else router.status(target, checkpoint=checkpoint)
+        )
     effect = completed.result.trusted_action
     if (
         effect is None
         or route.state != "succeeded"
         or effect.plan_fingerprint != route.plan.fingerprint
     ):
-        raise KernelError("workspace_patch_source_not_owned", "原Patch成功来源不一致")
+        raise WorkspacePatchOwnershipError(
+            "workspace_patch_source_not_owned", "原Patch成功来源不一致"
+        )
     proposal = WorkspacePatchInput.model_validate_json(json.dumps(completed.call.arguments))
     if route.plan.invocation.arguments != proposal.model_dump(mode="json"):
-        raise KernelError("workspace_patch_source_not_owned", "原Patch调用与Route不一致")
+        raise WorkspacePatchOwnershipError(
+            "workspace_patch_source_not_owned", "原Patch调用与Route不一致"
+        )
     planner = WorkspacePatchTransactionPlanner(transactions, lambda _: Path(thread.workspace))
-    record = (
-        planner.load(route.plan, proposal)
-        if checkpoint is None
-        else planner.load(route.plan, proposal, checkpoint=checkpoint)
-    )
+    if pure_progress is not None:
+        record = planner.load(
+            route.plan, proposal, checkpoint=checkpoint, pure_progress=pure_progress
+        )
+    else:
+        record = (
+            planner.load(route.plan, proposal)
+            if checkpoint is None
+            else planner.load(route.plan, proposal, checkpoint=checkpoint)
+        )
     if record.state != "published":
-        raise KernelError("workspace_patch_source_not_published", "原Patch事务未完成发布")
+        raise WorkspacePatchOwnershipError(
+            "workspace_patch_source_not_published", "原Patch事务未完成发布"
+        )
     return OwnedWorkspacePatch(
         WorkspacePatchSourceReference(
             turn_id=completed.turn_id,

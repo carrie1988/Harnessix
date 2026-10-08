@@ -46,6 +46,7 @@ from harnessix.workspace.contracts import (
 )
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from harnessix.workspace.paths import normalize_workspace_path, path_comparison_key
+from harnessix.workspace.snapshot_ports import WorkspacePureProgressFactory
 
 WORKSPACE_PATCH_TOOL = "apply_patch_batch"
 WORKSPACE_PATCH_VERSION = "harnessix.workspace-patch/v1"
@@ -232,13 +233,19 @@ class WorkspacePatchTransactionPlanner:
         proposal: WorkspacePatchInput,
         *,
         checkpoint: Callable[[], None] | None = None,
+        pure_progress: WorkspacePureProgressFactory | None = None,
     ) -> WorkspaceTransactionRecord:
         checked = _validate_route_intent(route, proposal)
-        record = (
-            self._transactions.load(route.execution.plan_id)
-            if checkpoint is None
-            else self._transactions.load(route.execution.plan_id, checkpoint=checkpoint)
-        )
+        if pure_progress is not None:
+            record = self._transactions.load(
+                route.execution.plan_id, checkpoint=checkpoint, pure_progress=pure_progress
+            )
+        else:
+            record = (
+                self._transactions.load(route.execution.plan_id)
+                if checkpoint is None
+                else self._transactions.load(route.execution.plan_id, checkpoint=checkpoint)
+            )
         _validate_transaction(route, checked, record.plan)
         return record
 

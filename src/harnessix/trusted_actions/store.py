@@ -35,6 +35,11 @@ from harnessix.trusted_actions.transition_store import ActionTransitionStoreMixi
 from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2, ActionRouteSnapshotV2
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.parent_closure_codec import read_workspace_parent_closure
+from harnessix.workspace.snapshot_ports import (
+    WorkspacePureProgressFactory,
+    observed_workspace_pure_progress,
+    protected_workspace_pure_progress,
+)
 from harnessix.workspace.terminal_read_control import (
     run_store_read_checkpoint,
     terminal_parent_reader,
@@ -148,12 +153,30 @@ class _ActionRouteClosureReader:
         *,
         error_code: str,
         checkpoint: Callable[[], None] | None = None,
+        pure_progress: WorkspacePureProgressFactory | None = None,
     ) -> None:
         if not isinstance(plan, ActionRoutePlanV2):
             return
         read_blob = terminal_parent_reader(self) or self._read_blob
         if read_blob is None:
             raise KernelError(error_code, "Action Route Plan缺少完整父目录历史读取端口")
+        owned_errors: list[UpstreamCheckpointError] = []
+
+        def mark(error: BaseException) -> UpstreamCheckpointError:
+            marked = UpstreamCheckpointError(error)
+            owned_errors.append(marked)
+            return marked
+
+        def read(digest: str) -> bytes:
+            assert read_blob is not None
+            try:
+                return read_blob(digest)
+            except KernelError as error:
+                if error.code in {"delivery_blob_corrupt", "delivery_blob_invalid"}:
+                    raise
+                raise mark(error) from None
+            except BaseException as error:
+                raise mark(error) from None
 
         def check() -> None:
             try:
@@ -162,11 +185,26 @@ class _ActionRouteClosureReader:
                     checkpoint()
             except BaseException as error:
                 # 上游控制不能因错误码恰与历史损坏相同而被重分类。
-                raise UpstreamCheckpointError(error) from None
+                raise mark(error) from None
 
         try:
-            read_workspace_parent_closure(plan.execution.workspace, read_blob, checkpoint=check)
+            if pure_progress is None:
+                read_workspace_parent_closure(plan.execution.workspace, read, checkpoint=check)
+            else:
+                read_workspace_parent_closure(
+                    plan.execution.workspace,
+                    read,
+                    checkpoint=check,
+                    pure_progress=protected_workspace_pure_progress(
+                        observed_workspace_pure_progress(
+                            pure_progress, lambda: run_store_read_checkpoint(self, self._checkpoint)
+                        ),
+                        mark_error=mark,
+                    ),
+                )
         except UpstreamCheckpointError as error:
+            if not any(error is marked for marked in owned_errors):
+                raise
             raise error.error from None
         except KernelError as error:
             if error.code != "workspace_closure_corrupt":
@@ -346,7 +384,11 @@ class SQLiteActionAuditStore(
         return self.load(checked.execution.plan_id)
 
     def load(
-        self, plan_id: UUID, *, checkpoint: Callable[[], None] | None = None
+        self,
+        plan_id: UUID,
+        *,
+        checkpoint: Callable[[], None] | None = None,
+        pure_progress: WorkspacePureProgressFactory | None = None,
     ) -> ActionRouteSnapshotAny:
         _check_read_checkpoint(checkpoint)
         plan_row = self._db.execute(
@@ -365,7 +407,10 @@ class SQLiteActionAuditStore(
         except (ValidationError, ValueError, TypeError, RecursionError):
             raise KernelError("action_audit_store_corrupt", "Action审计记录损坏") from None
         self._validate_parent_closure(
-            plan, error_code="action_audit_store_corrupt", checkpoint=checkpoint
+            plan,
+            error_code="action_audit_store_corrupt",
+            checkpoint=checkpoint,
+            pure_progress=pure_progress,
         )
         try:
             event_row = self._db.execute(

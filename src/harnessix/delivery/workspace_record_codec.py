@@ -29,6 +29,10 @@ from harnessix.workspace.parent_closure_contracts import (
     WorkspaceParentClosureReference,
 )
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
+from harnessix.workspace.snapshot_ports import (
+    WorkspacePureProgressFactory,
+    protected_workspace_pure_progress,
+)
 
 WorkspaceRecordReference = (
     WorkspacePlanReference | WorkspaceParentClosureReference | WorkspaceParentChunkReference
@@ -104,13 +108,40 @@ def decode_workspace_record(
     read_blob: Callable[[str], bytes],
     *,
     checkpoint: Callable[[], None] | None = None,
+    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> DecodedWorkspaceRecord:
     """严格版本分派、完整CAS回读和领域摘要核验；未知版本不降级解析。"""
 
-    check = _protected_checkpoint(checkpoint)
+    owned_errors: list[UpstreamCheckpointError] = []
+
+    def mark(error: BaseException) -> UpstreamCheckpointError:
+        marked = UpstreamCheckpointError(error)
+        owned_errors.append(marked)
+        return marked
+
+    def read(digest: str) -> bytes:
+        try:
+            return read_blob(digest)
+        except KernelError as error:
+            if error.code in {"delivery_blob_corrupt", "delivery_blob_invalid"}:
+                raise
+            raise mark(error) from None
+        except BaseException as error:
+            raise mark(error) from None
+
+    check = _protected_checkpoint(checkpoint, mark_error=mark)
     try:
-        return _decode(payload, read_blob, check)
+        if pure_progress is None:
+            return _decode(payload, read, check)
+        return _decode(
+            payload,
+            read,
+            check,
+            pure_progress=protected_workspace_pure_progress(pure_progress, mark_error=mark),
+        )
     except UpstreamCheckpointError as error:
+        if not any(error is marked for marked in owned_errors):
+            raise
         raise error.error from None
 
 
@@ -118,6 +149,8 @@ def _decode(
     payload: str,
     read_blob: Callable[[str], bytes],
     check: Callable[[], None],
+    *,
+    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> DecodedWorkspaceRecord:
     check()
     try:
@@ -177,7 +210,12 @@ def _decode(
         raise KernelError("delivery_store_corrupt", "Workspace事务账本损坏") from None
     references: tuple[WorkspaceRecordReference, ...] = (reference,)
     if isinstance(record, WorkspaceTransactionRecordV2):
-        references += _closure_references(record.plan.source, read_blob, check)
+        if pure_progress is None:
+            references += _closure_references(record.plan.source, read_blob, check)
+        else:
+            references += _closure_references(
+                record.plan.source, read_blob, check, pure_progress=pure_progress
+            )
     check()
     return DecodedWorkspaceRecord(record, references)
 
@@ -201,6 +239,7 @@ def _closure_references(
     check: Callable[[], None],
     *,
     write_blob: Callable[[str, bytes], None] | None = None,
+    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> tuple[WorkspaceRecordReference, ...]:
     manifest_body = b""
 
@@ -225,7 +264,12 @@ def _closure_references(
         return body
 
     try:
-        read_workspace_parent_closure(snapshot, read, checkpoint=check)
+        if pure_progress is None:
+            read_workspace_parent_closure(snapshot, read, checkpoint=check)
+        else:
+            read_workspace_parent_closure(
+                snapshot, read, checkpoint=check, pure_progress=pure_progress
+            )
     except KernelError as error:
         if error.code == "workspace_closure_corrupt":
             raise KernelError("delivery_store_corrupt", "Workspace事务账本损坏") from None
@@ -237,13 +281,17 @@ def _closure_references(
     return (snapshot.parent_closure, *manifest.chunks)
 
 
-def _protected_checkpoint(checkpoint: Callable[[], None] | None) -> Callable[[], None]:
+def _protected_checkpoint(
+    checkpoint: Callable[[], None] | None,
+    *,
+    mark_error: Callable[[BaseException], UpstreamCheckpointError] = UpstreamCheckpointError,
+) -> Callable[[], None]:
     def check() -> None:
         if checkpoint is not None:
             try:
                 checkpoint()
             except BaseException as error:
-                raise UpstreamCheckpointError(error) from None
+                raise mark_error(error) from None
 
     return check
 

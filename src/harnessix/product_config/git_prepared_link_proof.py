@@ -35,14 +35,13 @@ from harnessix.product_config.git_delivery_review_codec import (
 )
 from harnessix.product_config.git_delivery_route_core import load_product_git_delivery_route_core_v2
 from harnessix.product_config.git_delivery_source import verify_git_delivery_source
+from harnessix.product_config.git_native_control import git_checkpoint_boundary
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
-from harnessix.product_config.git_user_observation import _native_checkpointer
 from harnessix.session.sqlite_history import AuthenticatedThreadHistory
 from harnessix.sqlite_readonly import readonly_database
 from harnessix.trusted_actions.agent_gateway_output import build_approval
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.versioned_contracts import ActionRouteSnapshotV2
-from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 from harnessix.workspace.terminal_read_control import require_terminal_read_scope
 
@@ -119,17 +118,15 @@ def _source(
     check: Callable[[], None],
 ) -> None:
     """只读核验原成功 Patch 连续链与当前 Source2，不重新准备或覆盖用户代码。"""
-    try:
+    with git_checkpoint_boundary(check) as source_check:
         verify_git_delivery_source(
             history.thread,
             link.plan.core.baseline.source,
             router,
             core_store.store,
-            checkpoint=_native_checkpointer(check),
+            checkpoint=source_check,
             snapshot_ports=ports,
         )
-    except UpstreamCheckpointError as error:
-        raise error.error from None
 
 
 def _envelope(

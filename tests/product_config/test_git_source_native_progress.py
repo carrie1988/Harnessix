@@ -747,11 +747,6 @@ def test_actual_user_source_callers_single_unwrap_retains_original_nested_identi
     )
     with pytest.raises(BaseException) as caught:
         namespace[caller.name]()
-    # 原 full wrapper 已标记时不再包；局部 protected 控制则总加自己的层。
-    expected = (
-        error.error
-        if isinstance(error, UpstreamCheckpointError) and failure[0] == "full"
-        else error
-    )
-    assert caught.value is expected
+    # 边界只解自己新增的一层；Full/Local 的原嵌套错误对象均不能递归解包。
+    assert caught.value is error
     assert probe.trace[-1] == failure
