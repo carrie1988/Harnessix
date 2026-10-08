@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 94
+version: 95
 code_revision: 051d4a5a3a2f12e0effb9ffb93e87f343b6f2f00
 owners:
   - core
@@ -2825,9 +2825,10 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 
 ## Git 纯计算段分层控制
 
-[`GitAuthenticationControl`](../../src/harnessix/product_config/git_authentication_control.py)
+[`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)
 将原取消、期限、锁／连接登记及资源代际的局部频检与完整来源认证分开。
-只有明确适配的同步纯快照、规范 JSON 和 CAS 读取后的解析启用局部频检；
+唯一控制实现位于 Delivery 层，产品层不持有第二份类型。
+只有明确适配的同步纯快照、声明图、决定／Review 构建、规范 JSON 和 CAS 读取后的解析启用局部频检；
 普通调用、纯段首末、I/O、发布和原终端边界仍完整核验，不缓存 Owner 或扩展操作期限。
 保存检查点、嵌套、跨 Task／线程及完整重入不能继承局部段；异常保持原首失败。
 正式边界与测试见[控制契约 v2](../changes/m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)，

@@ -10,13 +10,15 @@ import pytest
 
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
+from harnessix.delivery.git_inventory_contracts import snapshot_git_inventory_scope
+from harnessix.delivery.git_inventory_materials import verify_git_inventory_scope_materials
 from harnessix.delivery.git_material_cas import GitMaterialCAS
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.product_config import git_decision_link_wire as decision_wire
 from harnessix.product_config import git_delivery_observed_wire as observed_wire
 from harnessix.product_config import git_delivery_plan_wire as wire
 from harnessix.product_config import git_prepared_link_wire as prepared_wire
-from harnessix.product_config.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_delivery_plan_snapshot import _snapshot
 from tests.product_config.git_delivery_plan_support import canonical_bytes, make_case
@@ -85,7 +87,7 @@ def codecs(case, tmp_path):
     ]
 
 
-@pytest.fixture(params=("snapshot", "load", "encode", "decode"))
+@pytest.fixture(params=("snapshot", "load", "encode", "decode", "inventory"))
 def port(case, request):
     core = case.core
     body = canonical_bytes(core.model_dump(mode="json", exclude={"fingerprint"}))
@@ -96,8 +98,32 @@ def port(case, request):
         "load": (partial(owner.load, core.fingerprint), core),
         "encode": (partial(wire.encode_product_git_delivery_core, core), body),
         "decode": (partial(wire.decode_product_git_delivery_core, body), core),
+        "inventory": (partial(snapshot_git_inventory_scope, core.object_scope), core.object_scope),
     }
     return operations[request.param]
+
+
+def test_inventory_declaration_is_pure_but_actual_cas_reads_are_not(case, monkeypatch):
+    trace, reads = Trace(), []
+    scope = case.core.object_scope
+    assert snapshot_git_inventory_scope(scope, checkpoint=trace.control) == scope
+    assert trace.events.count("full") == 2 and trace.locals > 2
+    original = case.cas.read
+
+    def read(cas, reference):
+        # 真实 CAS 入口必须已经结束声明纯段；不以局部频检替代材料 I/O 认证。
+        assert cas is case.cas
+        assert trace.control._segment is None
+        start = len(trace.events)
+        trace.control()
+        result = original(reference)
+        assert set(trace.events[start:]) == {"full"}
+        reads.append(reference)
+        return result
+
+    monkeypatch.setattr(GitMaterialCAS, "read", read)
+    assert verify_git_inventory_scope_materials(case.cas, scope, checkpoint=trace.control) == scope
+    assert reads and trace.events[-1] == "full"
 
 
 @pytest.mark.parametrize(

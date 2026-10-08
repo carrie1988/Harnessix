@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from threading import get_ident
 
-from harnessix.product_config.git_prepared_link_connection import _current_task
+
+def _current_task() -> asyncio.Task[object] | None:
+    try:
+        return asyncio.current_task()
+    except RuntimeError:
+        return None
 
 
 class GitAuthenticationControl:

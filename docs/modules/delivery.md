@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 47
+version: 48
 code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners:
   - core
@@ -2342,3 +2342,13 @@ PrefixSQL建立与消费时另核对产品连接的原登记，防止其他Task�
 
 完整字段、正常/拒绝/恢复时序、数据流及取舍见[连接归属详设](../changes/m09-r4-git-connection-ownership.md)。
 本子项不证明实际SQLite FD、当前Task持协作锁、B4/B7整体、P1响应性或默认Git交付完成。
+
+## Git 声明纯计算与材料 I/O 边界
+
+[`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)为唯一标准库实现，
+由产品 Ledger 装配本地频检和完整来源认证；Delivery 不反向引用产品层。
+[`snapshot_git_inventory_scope`](../../src/harnessix/delivery/git_inventory_contracts.py)
+仅对原控制确切类型启用同步声明图纯段，全部字段和图校验仍执行原算法。
+材料 verifier 的前后快照可以消费该边界，原 CAS 与实际双树读取不进入纯段。
+生命周期、异常首失败、跨所有者降级及源码映射复用[分层控制设计](../changes/m09-r4-git-approved-link.md#136-异常包装与纯算法边界)，
+实际 I/O 接线见[编解码负控](../../tests/product_config/test_git_layered_codec_control.py)。

@@ -12,11 +12,11 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel, JsonValue, ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.delivery.git_inventory_contracts import (
     GitInventoryScope,
     snapshot_git_inventory_scope,
 )
-from harnessix.product_config.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_delivery_observed_contracts import (
     ProductGitDeliveryCoreV2,
     ProductGitDeliveryPlanV2,

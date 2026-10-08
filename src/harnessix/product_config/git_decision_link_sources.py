@@ -8,6 +8,7 @@ from uuid import UUID
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, ItemFinished, Thread
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_approval_history_projection import (
     OriginalGitApprovalHistory,
     interpret_git_approval_history,
@@ -92,6 +93,10 @@ def build_git_decision_link_sources(
     evidence: ApprovalHistoryEvidence, *, checkpoint: Callable[[], None]
 ) -> ProductGitApprovedLink | ProductGitDeniedLink | ProductGitCancelledLink:
     """原控制窗口内重建闭合声明，不装配 Reader/Writer 或发布认证事实。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        # 只对内存声明解释分层；先进入纯段，再包装控制异常，保留边界首失败。
+        with checkpoint.pure() as check:
+            return build_git_decision_link_sources(evidence, checkpoint=check)
     # 复用原控制异常载体，避免 Pydantic 把宿主 ValueError 当成数据错误。
     try:
         return _build(evidence, _native_checkpointer(checkpoint))

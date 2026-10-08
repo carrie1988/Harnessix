@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 14
+version: 15
 code_revision: 051d4a5a3a2f12e0effb9ffb93e87f343b6f2f00
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -21,6 +21,7 @@ related_tests:
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/product_config/test_git_authentication_control.py
   - tests/product_config/test_git_layered_codec_control.py
+  - tests/product_config/test_git_layered_projection_control.py
   - tests/product_config/test_git_prepared_link_connection.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_approval_crash_recovery.py
@@ -824,13 +825,16 @@ Writer 候选或 ASAN 初始化失败原件；本节时长只保留历史运行�
 | 层级 | 校验与边界 | 当前源码 |
 |---|---|---|
 | 局部频检 | 原取消、绝对期限、父 Task 取消、原连接登记及存活、原 Runtime Thread 锁代际、原资源身份及事务代际；无 SQL、路径 I/O 或新 Owner 查询 | [`_control.local_check`](../../src/harnessix/product_config/git_prepared_link_ledger.py)、[原连接生命周期观察](../../src/harnessix/product_config/git_prepared_link_connection.py) |
-| 完整认证 | 原 `internal → 上游 callback → internal`；包括新鲜 Owner、连接实际路径、四库变化和原完整资源控制；普通调用、纯段进入和正常退出均执行 | [`GitAuthenticationControl`](../../src/harnessix/product_config/git_authentication_control.py)、[`_control.authenticate`](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
+| 完整认证 | 原 `internal → 上游 callback → internal`；包括新鲜 Owner、连接实际路径、四库变化和原完整资源控制；普通调用、纯段进入和正常退出均执行 | [`GitAuthenticationControl`](../../src/harnessix/delivery/git_authentication_control.py)、[`_control.authenticate`](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
 | 终端 | 无外部 callback 的原完整 `internal`，沿原同步终端读集合复验；不是提交后的认证保证 | [`_control` 终端窗口](../../src/harnessix/product_config/git_prepared_link_ledger.py) |
 
 纯段仅覆盖原[严格字段快照](../../src/harnessix/product_config/git_delivery_plan_snapshot.py)、
 [规范 JSON 算法](../../src/harnessix/product_config/git_delivery_plan_wire.py)、
 [prepared 解码](../../src/harnessix/product_config/git_prepared_link_wire.py)、
-[决定解码](../../src/harnessix/product_config/git_decision_link_wire.py)，以及
+[决定解码](../../src/harnessix/product_config/git_decision_link_wire.py)、
+[声明图快照](../../src/harnessix/delivery/git_inventory_contracts.py)、
+[决定声明构建](../../src/harnessix/product_config/git_decision_link_sources.py)、
+[Review 编解码](../../src/harnessix/product_config/git_delivery_review_codec.py)，以及
 [原 CoreStore 读取完成后的解析](../../src/harnessix/product_config/git_delivery_core_store.py)。
 CoreStore 的 `blob` I/O 与解析分开；不将 Store、发布、`await`、任意业务回调放入纯段。
 只识别原控制的确切类型，函数、代理和子类保持原调用轨迹，不自动开启优化。
@@ -852,7 +856,7 @@ CoreStore 的 `blob` I/O 与解析分开；不将 Store、发布、`await`、任
 再复验原 SDK 的取消、到期、漂移、恢复和批准路径。替身单测不计为实际 Owner／SDK 认证。
 控制契约落地不代表 P1 响应性完成，尤其不能替代真实 Writer 的同期限正向验收。
 
-最终非 editable Python 3.12.7／SQLite 3.45.3 候选通过相关集合 1136 项及定向实际 SDK 3 项，
+前一非 editable Python 3.12.7／SQLite 3.45.3 候选通过相关集合 1136 项及定向实际 SDK 3 项，
 七个核心目录（Models／Agent／Session／Context／App Server／UI／Protocol）另有 2815 项通过、1 项原生 Windows 跳过。
 后者覆盖批准来源、原同步恢复屏障和末次回调的取消／到期。前一候选另有 19 项 SDK 通过；
 跨所有者降级修正后候选不同，不将前一成绩计为最终包验收，不合并重复集合。
@@ -862,6 +866,43 @@ CoreStore 的 `blob` I/O 与解析分开；不将 Store、发布、`await`、任
 不将 `fact_kind` 直接当作存储 phase。
 三场景 20 毫秒心跳的最大间隔分别为 13.303／13.442／14.594 秒，
 说明同步响应性仍有阻塞；期限正向通过不能关闭 P1 或商用门禁。
+
+### 13.6 异常包装与纯算法边界
+
+原决定声明入口先调用 `_native_checkpointer`，Review 入口先构造异常记录闭包，
+均会隐藏原控制的确切类型，使字段递归退回逐叶完整认证。
+实际原 SDK 隔离追加的 10 毫秒栈采样共 2212 次，其中 1512 次包含决定构建，
+194 次包含 Review；这是包含式采样而非互斥耗时，不能相加求占比。
+仅对这两个无 I/O 入口先进入纯段、再沿原异常包装执行；声明图快照采用相同边界。
+
+控制的唯一实现下沉至 `delivery`，只依赖标准库；产品协调层向下引用，
+不新增反向产品依赖、适配代理或旧路径副本。材料 verifier 不整体进入纯段，
+原 `cas.read`、树闭包 I/O、来源观察和末端共享回调隔离均保持原样。
+
+```text
+exact control → 完整进入认证 → 原纯算法（局部频检、原异常包装）
+              → 撤销局部段 → 完整退出认证 → 交付结果
+```
+
+边界认证位于解析错误收敛之外，局部首失败保持原实例；正常退出漂移不交付结果。
+[投影负控](../../tests/product_config/test_git_layered_projection_control.py)覆盖三种决定及 Review，
+[编解码负控](../../tests/product_config/test_git_layered_codec_control.py)另核对实际 CAS 入口不持有纯段。
+未知 callable／代理／子类及跨 Task／线程仍走完整轨迹，不以新适配器扩大权限。
+
+最终 Python 3.12.7／SQLite 3.45.3 非 editable 包完成相关集合 1592 项、
+七核心目录 2815 项（另 1 项原生 Windows 跳过）；完整实际 SDK 集合 19 项通过，
+覆盖原取消／期限、同值写漂移、非目标坏 MAC、恢复及共享回调隔离。不累加重复集合。
+同代码加未合入 Writer 的隔离包，三种决定仍完成原事务追加、提交及只读重开：
+
+| 原决定 | 追加耗时（秒） | 20 毫秒心跳最大间隔（秒） |
+|---|---:|---:|
+| approved | 4.693 | 0.621 |
+| denied | 5.164 | 0.660 |
+| cancelled | 5.226 | 0.668 |
+
+原 60 秒操作和 120 秒 Turn 未变，无真实模型请求、无 Git 写效果。
+测时同机另有离线回归并行；这些小输入正控不证明代表性负载响应性，
+亦不关闭生产 Writer、B4／B7 或默认写链。
 
 ## 14. 实现偏差与最终结论
 

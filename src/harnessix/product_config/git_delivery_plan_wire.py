@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, NoReturn, cast
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from harnessix.product_config.git_authentication_control import GitAuthenticationControl
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_delivery_observed_contracts import (
     ProductGitDeliveryCoreV2,
     ProductGitDeliveryPlanV2,

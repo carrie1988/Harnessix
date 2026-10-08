@@ -9,7 +9,7 @@ from typing import NoReturn
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
-from harnessix.product_config.git_authentication_control import GitAuthenticationControl
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_delivery_plan_snapshot import invalid_git_delivery_plan
 from harnessix.product_config.git_delivery_plan_wire import MAX_PRODUCT_GIT_PLAN_BYTES, _encode
 from harnessix.product_config.git_prepared_link_contracts import (

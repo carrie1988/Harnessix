@@ -6,8 +6,8 @@ from contextvars import ContextVar, copy_context
 
 import pytest
 
-from harnessix.product_config import git_authentication_control as control_module
-from harnessix.product_config.git_authentication_control import (
+from harnessix.delivery import git_authentication_control as control_module
+from harnessix.delivery.git_authentication_control import (
     GitAuthenticationControl,
     pure_git_authentication,
 )

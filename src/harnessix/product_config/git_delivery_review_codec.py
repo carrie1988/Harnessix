@@ -11,6 +11,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES
 from harnessix.artifacts.sqlite import records
 from harnessix.delivery.diff_content import WorkspaceDiffContent
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.delivery.git_tree_diff import GitTreeDiff
 from harnessix.delivery.review_jsonl import ReviewJSONLLimitError, encode_review_records
 from harnessix.delivery.trusted_action_contracts import WorkspaceActionReviewChunk
@@ -163,6 +164,10 @@ def _controlled[T](
     operation: Callable[[Callable[[], None]], T], checkpoint: Callable[[], None]
 ) -> T:
     """调用方控制异常优先保留原对象；仅组件自身解析失败映射固定公开分类。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        # 三个调用方仅处理内存材料；Artifact 读取和发布仍在原完整控制边界外。
+        with checkpoint.pure() as pure_check:
+            return _controlled(operation, pure_check)
     error: BaseException | None = None
 
     def check() -> None:

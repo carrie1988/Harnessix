@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 from typing import cast
 
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_authentication_control import pure_git_authentication
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
-from harnessix.product_config.git_authentication_control import pure_git_authentication
 from harnessix.product_config.git_delivery_observed_contracts import ProductGitDeliveryCoreV2
 from harnessix.product_config.git_delivery_observed_wire import (
     decode_product_git_delivery_core_v2,

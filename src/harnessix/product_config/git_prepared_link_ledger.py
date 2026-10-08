@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
-from harnessix.product_config.git_authentication_control import GitAuthenticationControl
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config.git_baseline import _BASELINE_TIMEOUT_SECONDS
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_delivery_process import GitOperationBudget

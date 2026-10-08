@@ -10,6 +10,7 @@ from typing import Literal, cast, get_args, get_origin, get_type_hints
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.delivery.git_material_cas import GitObjectMaterialReference
 from harnessix.delivery.git_object_material import GitObjectRead
 from harnessix.delivery.git_object_references import GitCommitReferences, GitTreeEntry
@@ -558,6 +559,10 @@ def snapshot_git_inventory_scope(
     value: object, *, checkpoint: Callable[[], None]
 ) -> GitInventoryScope:
     """严格深层重建并校验完整声明图；不验 CAS、摘要、归属或批准。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        # 仅声明图的内存重建；材料读取和后续 CAS 认证仍由原调用方完整检查。
+        with checkpoint.pure() as pure_check:
+            return snapshot_git_inventory_scope(value, checkpoint=pure_check)
     snapshot = _snapshot_model(value, GitInventoryScope, checkpoint)
     _inventory_shape(snapshot, checkpoint)
     checkpoint()
