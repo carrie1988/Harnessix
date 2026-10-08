@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 1
-code_revision: 687c9394597ae59c6b5f584f64fa497a3a0e1765
+code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners: [core]
 modules: [agent, product_config]
 related_adrs:
@@ -657,7 +657,7 @@ BEGIN 在 bind 前或 COMMIT 在 bind 后；持锁 await 同 Thread SDK 审批�
 |---|---|---|
 | [prepared Ledger](../../tests/product_config/test_git_prepared_link_ledger.py) | commit／只读重开／精确重试／回滚／确认丢失／取消及业务语义 | `_database` 已采用 async context：原锁 → factory → bind；事务清理在 bind 内 |
 | [prepared controls](../../tests/product_config/test_git_prepared_link_controls.py) | 宿主替换、真实材料／MAC／策略、连接路径变化、原取消与期限 | 嵌套故障连接复用已验证原 Task 持锁，不能二次 acquire |
-| [prepared terminal](../../tests/product_config/test_git_prepared_link_terminal.py) | 最后认证之后 Session／CAS／Review／anchor 变化及末回调失败 | helper 漏迁移已发现并保留失败；四处 mixed-with 消费由独立测试 worker 迁移，结果仍待核验，不归为生产断言根因 |
+| [prepared terminal](../../tests/product_config/test_git_prepared_link_terminal.py) | 最后认证之后 Session／CAS／Review／anchor 变化及末回调失败 | 四处旧同步 helper 消费已完整迁移；故障注入绑定完整认证含 U 返回之后，四格矩阵及原首失败保持，安装完整文件 7 项通过，旧失败保留 |
 | [terminal callbacks](../../tests/product_config/test_git_prepared_link_terminal_callbacks.py) | 同步末端不重入共享回调、原构造回调恢复、原材料消失拒绝 | 不得为 scope 兼容删除末端校验或新增共享回调 |
 | [approval history](../../tests/product_config/test_git_prepared_approval_history.py) | pending／approved／denied／cancelled、原审批恢复、原异常身份及全集 MAC | prepared 窗口结束后调用正式 SDK 决定，再新开历史只读窗口 |
 | [decision source SDK](../../tests/product_config/test_git_decision_source_sdk.py) | 原批准来源只读、非目标原 MAC 坏行拒绝 | 目标只读仍先验全集；不借结果签发 Writer 或增加模型请求 |
@@ -685,11 +685,15 @@ BEGIN 在 bind 前或 COMMIT 在 bind 后；持锁 await 同 Thread SDK 审批�
 
 扩展回归不等同组件正控。旧终端替身引用已移除入口，旧历史次数注入没有涵盖完整 U，
 对应测试接入已按现行语义修订并复验；原失败保留。两条原审批正控在原 Turn 期限内未完成，
-独立复核与扩展 consumer 回归仍在执行，整体回归及 P1 不标记为通过。
+独立二项原审批正控复核通过，扩展 consumer 回归仍在执行；原并行期限失败保留，
+独立子集通过不等于完整回归或 P1 达标。
 不扩大 60 秒消费期限、120 秒 Turn 窗口，不延续 TTL，不删用例或降低认证覆盖。
 
 本设计包含十四节及三个真实编译的 Mermaid 图；元数据、源码／测试链接与完整文档门禁独立核验。
 组件正控、完整回归、响应性、三平台业务验收和商用发布属于不同证据层级。
+固定组件结果见[交付 v1](../validation/r4-runtime-thread-scope-2026-10-08-v1/README.md)，
+后续二项复核及最终质量门禁见[补充复核 v2](../validation/r4-runtime-thread-scope-2026-10-08-v2/README.md)。
+历史固定快照不得追写后来结果。
 
 ## 13. 部署、兼容、升级与回退
 
@@ -735,7 +739,7 @@ Runtime scope 模块、Ledger 接入和锁 observer／代际实现须作为匹�
 | 尾部检查被误称为提交拦截／撤回能力 | bind 不装 authorizer、不接管事务；正常链持锁，恶意私有 host 越界提交不提供补偿保证 |
 | 全集认证增加成本或隐藏跨 Thread 风险 | 不筛其他 Thread、不截断全集；规模、跨库竞争与期限需实际验证，Thread 锁不等于全库锁 |
 | 测试 fixture 迁移遗漏 | 对七个既有 SDK 文件逐点核验 async context 与事务范围，保留 terminal helper 已发现的测试接入失败；独立迁移不作为生产断言根因 |
-| 已完成 Task 的附加原语检查扩大范围 | 正常正式 scope 依附仍活跃父 Task；额外 `Task.done()` worker 防护暂缓，不承诺当前已经实现 |
+| 已完成 Task 的附加原语检查扩大范围 | 正常正式 scope 依附仍活跃父 Task；额外 `Task.done()` 原语防护不属于本切片，不承诺当前已经实现 |
 | 工作区代码与固定 revision 范围不同 | frontmatter 记录基线，最终同候选源码、依赖、测试与安装证据另行冻结；当前不填最终 artifactHash |
 
 本切片提供 B7 所需的一个内部原 Runtime Thread scope，**不自动闭合 B7**。
@@ -755,4 +759,5 @@ Runtime scope 模块、Ledger 接入和锁 observer／代际实现须作为匹�
 
 取舍结论：复用原锁、原工厂、原 Owner 与 Ledger 控制，仅补活动实例关系和 acquire 连续性；
 不扩大公开授权、不改通用执行／取消、不承诺任意私有 host 隔离。
-当前状态为实现设计待同候选验证，而非完整 Git 交付、安全门禁闭合或产品发布完成。
+当前状态为内部组件及明确列出的同候选集合已验证，扩展回归尚未封板；
+不是完整 Git 交付、安全门禁闭合或产品发布完成。

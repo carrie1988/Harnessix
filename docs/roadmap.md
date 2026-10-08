@@ -2,7 +2,7 @@
 doc_type: roadmap
 status: current
 version: 226
-code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
+code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners:
   - core
 modules:
@@ -2610,3 +2610,10 @@ prepared Ledger 和审批历史 Reader。原连接活动 context、原 Runtime �
 默认正常执行、初始化／扩展等全部 dispatch、实际 DB FD、B4 末端一致性、P1、决定 Writer、
 A／T2／NativeBridge／D、Checkpoint／Commit、Backup2 和三平台完整编码仍开放。
 R3 仍需有效预算登记和新冻结候选下的完整真实 Trial；本项不新增模型请求或提高历史成绩。
+
+安装同一候选的完整七核心目录 2815 项通过、1 项原生 Windows 跳过；实际 scope 与完整 Ledger 20 项、
+决定单位集合 31 项及完整 terminal 7 项通过，各集合不得跨版本或重复累加。
+原两项审批正控独立复核通过，原并行负载下的期限失败仍保留；扩展 consumer 完整集合尚在执行。
+详见[固定组件交付](validation/r4-runtime-thread-scope-2026-10-08-v1/README.md)与
+[补充复核](validation/r4-runtime-thread-scope-2026-10-08-v2/README.md)。
+P1 同步认证成本与事件循环响应仍为阻塞项，不通过放宽期限、减少检查或仅调整测试调度关闭。

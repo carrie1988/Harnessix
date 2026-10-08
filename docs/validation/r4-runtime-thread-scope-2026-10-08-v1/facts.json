@@ -1,0 +1,116 @@
+{
+  "spec_version": "harnessix.r4-runtime-thread-delivery/v1",
+  "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+  "snapshot_kind": "component_delivery_not_release_acceptance",
+  "wheel": {
+    "version": "1.0.0rc1",
+    "sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+    "production_members": 556,
+    "source_installed_git_bytes_equal": true
+  },
+  "tests": {
+    "source_scope": {
+      "tests": 8.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 349.699,
+      "passed": 8.0,
+      "raw_file": "source-scope-fixed.xml",
+      "sha256": "eb2e55fd15683e933d0f93d273bd091b7f1cefd6895f02e0d1838828ea5b597f"
+    },
+    "source_lock": {
+      "tests": 52.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 0.558,
+      "passed": 52.0,
+      "raw_file": "source-lock.xml",
+      "sha256": "aa45c5fce8c906db02b8202462472a420c04b31bab9bcd455d86fb5b6c6452dc"
+    },
+    "installed_core": {
+      "tests": 2816.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 1.0,
+      "time": 123.917,
+      "passed": 2815.0,
+      "raw_file": "installed-core.xml",
+      "sha256": "ed76b7c2a908c070ff8c012267985c58b3bb1c7f26f75ebde72fd2683adc1cd3"
+    },
+    "installed_ledger": {
+      "tests": 20.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 1884.437,
+      "passed": 20.0,
+      "raw_file": "installed-git-ledger.xml",
+      "sha256": "ea9b9c2ebabdae732303f20cd6e9bd89d249ac1f6509416ebab434ebb82a6245"
+    },
+    "installed_decision_units": {
+      "tests": 31.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 2.254,
+      "passed": 31.0,
+      "raw_file": "installed-decision-unit-final.xml",
+      "sha256": "d71807799402ec0626bd9f8f43c54699ab8619b0ab354421f97518cc491765ff"
+    },
+    "installed_terminal": {
+      "tests": 7.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 584.237,
+      "passed": 7.0,
+      "raw_file": "installed-terminal-semantic-final.xml",
+      "sha256": "78b05983125408906aed8ac358eccc1a9d2d83fc37ae4c59450f806d4359a6ab"
+    },
+    "initial_history": {
+      "tests": 41.0,
+      "failures": 14.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 1095.93,
+      "passed": 27.0,
+      "raw_file": "installed-git-history.xml",
+      "sha256": "7a29db21f06a2734b9def1a9d477b07ad920899433c356f8ea3fa199e36d04b9"
+    },
+    "initial_ports": {
+      "tests": 125.0,
+      "failures": 4.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 254.306,
+      "passed": 121.0,
+      "raw_file": "installed-ports.xml",
+      "sha256": "b23aa6f527cc760e408bfc8204b34313eb174a45955ee0fbdeaecbf34a0b5c9b"
+    },
+    "ports_after_helper": {
+      "tests": 125.0,
+      "failures": 1.0,
+      "errors": 0.0,
+      "skipped": 0.0,
+      "time": 647.066,
+      "passed": 124.0,
+      "raw_file": "installed-ports-accepted.xml",
+      "sha256": "7e0dbf432da6359bc668d4540ffa1e5bb324e565cbe707883e91bd93a5257088"
+    }
+  },
+  "open": {
+    "R3": "OPEN",
+    "R4": "OPEN",
+    "B7_full_scope": "OPEN",
+    "B4": "OPEN",
+    "P1": "OPEN",
+    "expanded_consumer_suite": "RUNNING",
+    "approval_expiry_recheck": "RUNNING"
+  },
+  "new_provider_requests": 0,
+  "new_beta_acceptances": 0,
+  "private_histories_modified": false,
+  "new_schema_or_permissions": false
+}

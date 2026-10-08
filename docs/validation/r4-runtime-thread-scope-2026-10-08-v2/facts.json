@@ -1,0 +1,62 @@
+{
+  "spec_version": "harnessix.r4-runtime-thread-delivery/v2",
+  "snapshot_kind": "additional_recheck_not_full_acceptance",
+  "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+  "prior_public_manifest_sha256": "c6c551cbc2329875e07f379b543fee0a865fd4a767fbdec309a707b4197ea093",
+  "prior_private_manifest_sha256": "47bbd0c044214f5ca0f5a82a0596d6abb6a03b3ef1b54a6fb925c97b8b0afe3e",
+  "wheel": {
+    "version": "1.0.0rc1",
+    "sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+    "production_members": 556,
+    "source_installed_git_bytes_equal": true
+  },
+  "tests": {
+    "approval_expiry_recheck": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 2,
+      "time": 230.383,
+      "cases": [
+        {
+          "classname": "tests.product_config.test_git_prepared_approval_history",
+          "name": "test_original_router_first_window_rejected_then_original_sync_recovery",
+          "seconds": 115.039
+        },
+        {
+          "classname": "tests.product_config.test_git_decision_source_sdk",
+          "name": "test_corrected_one_approved_read_then_non_target_mac_rejected",
+          "seconds": 115.132
+        }
+      ],
+      "raw_file": "installed-approval-time-window-recheck.xml",
+      "sha256": "93471ef9586d5de424b29779233afe4c0c5a51b3b02231c108da3ae3aa9e922c"
+    }
+  },
+  "retained_original_history": {
+    "tests": 41,
+    "failures": 14,
+    "passed": 27,
+    "raw_file": "installed-git-history.xml",
+    "raw_in_prior_seal": true
+  },
+  "expanded_consumer": "RUNNING_NOT_ACCEPTED",
+  "sampling": {
+    "tool": "macOS sample",
+    "seconds": 3,
+    "performance_acceptance": false,
+    "python_business_call_attribution": false
+  },
+  "open": [
+    "R3",
+    "R4",
+    "B4",
+    "B7_full_scope",
+    "P1",
+    "expanded_consumer_suite"
+  ],
+  "new_provider_requests": 0,
+  "new_beta_acceptances": 0,
+  "prior_fixed_snapshots_modified": false
+}

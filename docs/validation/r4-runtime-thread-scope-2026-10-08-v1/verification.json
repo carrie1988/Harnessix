@@ -1,0 +1,32 @@
+{
+  "private_manifest_sha256": "47bbd0c044214f5ca0f5a82a0596d6abb6a03b3ef1b54a6fb925c97b8b0afe3e",
+  "private_member_count": 56,
+  "private_member_hashes_verified": true,
+  "seal_scope": "finished evidence snapshot; unfinished jobs excluded",
+  "quality": {
+    "mypy": {
+      "production_files": 514,
+      "result": "PASS"
+    },
+    "ruff": "PASS",
+    "format": "PASS",
+    "mermaid_count": 3,
+    "mermaid_compiled": true,
+    "architecture_png_visually_checked": true,
+    "secret_scan": {
+      "inputs": 5328,
+      "result": "PASS",
+      "artifact_scope": "complete tracked repository plus exact candidate wheel; limits unchanged"
+    },
+    "documentation_delivery_pre_manifest": "required two report links awaited new metadata files; final gate recorded after creation"
+  },
+  "open": [
+    "R3",
+    "R4",
+    "B7",
+    "B4",
+    "P1",
+    "expanded consumer suite",
+    "approval expiry recheck"
+  ]
+}
