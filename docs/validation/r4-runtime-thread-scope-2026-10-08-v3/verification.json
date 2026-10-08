@@ -1,0 +1,33 @@
+{
+  "spec_version": "harnessix.r4-runtime-thread-verification/v3",
+  "private_manifest_sha256": "0b01a55d1169be556c37bda52ad812461c661d6a0064315ceeac7ec6d9b6b2b4",
+  "private_member_count": 14,
+  "all_private_members_hash_verified": true,
+  "all_prior_fixed_members_hash_verified": true,
+  "consumer_complete_files": 3,
+  "consumer_passed": 49,
+  "consumer_failed": 0,
+  "consumer_skipped": 0,
+  "diagnostic": {
+    "junit_failed": 1,
+    "profiler_cli_exit_code": 0,
+    "junit_authoritative": true,
+    "product_error": "git_process_timeout",
+    "diagnostic_limit_hit": false,
+    "not_acceptance": true
+  },
+  "quality": {
+    "documentation": {
+      "documents": 642,
+      "links": 14119,
+      "findings": 0
+    },
+    "secret_scan": {
+      "result": "PASS",
+      "tracked_plus_candidate_inputs": 5340,
+      "limits_unchanged": true
+    },
+    "mypy_ruff_format_mermaid_same_production_candidate": "bound_in_v1"
+  },
+  "release_acceptance": false
+}

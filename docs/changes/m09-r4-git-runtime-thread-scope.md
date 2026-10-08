@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
 owners: [core]
 modules: [agent, product_config]
@@ -250,7 +250,7 @@ scope registry 是模块私有 `_owned = threading.local()` 的
 同一 OS 线程的多个 asyncio Task 可以看到线程局部映射，所以准入另用准确 Task 实例比较。
 不同连接可独立登记；同一连接在活跃 bind 内重复登记拒绝。没有 ContextVar 继承准入。
 正式正常 context 的父 Task 在该窗口内仍处于运行或等待状态；当前 scope 不增加 `Task.done()` 额外检查。
-锁原语针对已完成 Task 的附加 worker 防护建议暂缓，不属于已实现语义、当前验收承诺或本切片生产断言。
+锁原语针对已完成 Task 的附加防护不属于已实现语义、当前验收承诺或本切片生产断言。
 
 ### 6.2 锁与原连接的相关事实
 
@@ -685,7 +685,7 @@ BEGIN 在 bind 前或 COMMIT 在 bind 后；持锁 await 同 Thread SDK 审批�
 
 扩展回归不等同组件正控。旧终端替身引用已移除入口，旧历史次数注入没有涵盖完整 U，
 对应测试接入已按现行语义修订并复验；原失败保留。两条原审批正控在原 Turn 期限内未完成，
-独立二项原审批正控复核通过，扩展 consumer 回归仍在执行；原并行期限失败保留，
+独立二项原审批正控复核通过，扩展 consumer 三个完整文件 49 项通过；原并行期限失败保留，
 独立子集通过不等于完整回归或 P1 达标。
 不扩大 60 秒消费期限、120 秒 Turn 窗口，不延续 TTL，不删用例或降低认证覆盖。
 
@@ -693,6 +693,7 @@ BEGIN 在 bind 前或 COMMIT 在 bind 后；持锁 await 同 Thread SDK 审批�
 组件正控、完整回归、响应性、三平台业务验收和商用发布属于不同证据层级。
 固定组件结果见[交付 v1](../validation/r4-runtime-thread-scope-2026-10-08-v1/README.md)，
 后续二项复核及最终质量门禁见[补充复核 v2](../validation/r4-runtime-thread-scope-2026-10-08-v2/README.md)。
+扩展 consumer 终态及有界响应性诊断见[追加证据 v3](../validation/r4-runtime-thread-scope-2026-10-08-v3/README.md)。
 历史固定快照不得追写后来结果。
 
 ## 13. 部署、兼容、升级与回退
@@ -759,5 +760,65 @@ Runtime scope 模块、Ledger 接入和锁 observer／代际实现须作为匹�
 
 取舍结论：复用原锁、原工厂、原 Owner 与 Ledger 控制，仅补活动实例关系和 acquire 连续性；
 不扩大公开授权、不改通用执行／取消、不承诺任意私有 host 隔离。
-当前状态为内部组件及明确列出的同候选集合已验证，扩展回归尚未封板；
+当前状态为内部组件及明确列出的同候选集合已验证，完整产品回归尚未封板；
 不是完整 Git 交付、安全门禁闭合或产品发布完成。
+
+### 14.1 同步认证成本：静态调用链与复杂度
+
+以下数字来自当前源码正常成功路径的调用关系，不是已测热点占比或目标环境性能成绩。
+`control → internal → checkpoint → internal` 不形成 U 的无限递归；
+每轮 `internal` 仍包含宿主、原连接、原锁、四库观察及事务代际复核。
+因此每次普通 `control` 至少带来两次 Audit 鲜读连接开关、四次 Owner SELECT
+以及八次监视连接 `PRAGMA data_version`，外部 callback 仍只有一次。
+源码入口为 [Ledger `_control`](../../src/harnessix/product_config/git_prepared_link_ledger.py)、
+[宿主 `_read_fresh_owner/check`](../../src/harnessix/product_config/git_delivery_review_host.py)
+与 [四库 `observe_prepared_state`](../../src/harnessix/product_config/git_prepared_link_observation.py)。
+
+[JSON 编码 `_encode`](../../src/harnessix/product_config/git_delivery_plan_wire.py)在取得每个
+`iterencode` 片段之前和片段的每个 16384 字符分块处检查，并包含结束检查。
+设实际片段数为 P、所有片段分块总数为 L，一次编码调用 P＋L＋3 次 checkpoint；
+常见短片段时接近 2P＋3，不是对整个文档每 16 KiB 才检查一次。
+字段／token 数会放大上游认证成本，不能仅按最终 JSON 字节数估计。
+
+设原关联数为 N，普通 `read_all` 执行 N 次完整 `_authenticate`，
+精确重试执行 N＋1 次，新增 prepare 执行 2N＋2 次。
+连续新增 K 条的认证次数为 Θ(K²)，但不等于单次递归指数增长。
+每次 `_authenticate` 中 Proof 首末、U 入口及 U 末轮合计四次完整 Session 历史认证；
+历史 H 个事件的前后检查至少贡献 8H 次上游 checkpoint。
+具体见 [Proof](../../src/harnessix/product_config/git_prepared_link_proof.py)、
+[U 验证](../../src/harnessix/product_config/git_user_observation.py)
+和 [authenticated_events](../../src/harnessix/session/sqlite_publication.py)。
+
+此外仍存在完整模型快照后的 validator 再快照、Review 构造验证编码后消费端再编码、
+U 首末各读取并哈希七份实现源码，以及全集物理行与同步末端的重复捕获。
+这些观察窗口各自有认证与失败合同，静态重复不等于可以直接删除。
+其实际次数与时间占比必须通过安装候选的独立诊断确认，不把 3 秒系统采样当作 Python 业务归因。
+
+### 14.2 P1 后继诊断与优化边界
+
+使用标准库 cProfile 对冻结安装候选的一个实际 SDK scope 正控进行独立诊断，
+在原完整 consumer 进程结束后启动，诊断自身墙钟上限为 240 秒。
+诊断期限只用于终止诊断进程，不改变产品的原 Turn、Git 操作期限或取消语义；
+如仪器开销导致原业务超时，结果保留为诊断，不纳入功能／性能验收。
+原 callback、全集读取、宿主身份及事务边界不做插桩替换。
+
+本候选的独立 cProfile 诊断在原 60 秒 Git 预算耗尽后结束，场景 JUnit 为 1 FAIL，
+外层 profiler CLI 为 0；不得以进程退出码解释测试通过。未触发诊断 240 秒上限。
+该不完整工作流记录约 2.305 亿函数调用、205176 次 `_read_fresh_owner`、
+1744865 次 SQLite `execute` 和 4243002 次 `stat`；
+Ledger `control` 为 92299 次、`internal` 为 184597 次。
+原完整消费回归与未插桩的 scope 正控另有通过证据，诊断不加入通过计数。
+计数覆盖场景装配及超时前阶段，不外推为一条生产 SQL 的固定成本；
+累计函数时间彼此嵌套，不能相加计算比例，插桩时间不能替代未插桩 SLA。
+
+当前 `_matches` 累计仅约 0.022 秒，已有 annotation／字段集合纯常数优化建议不列为
+响应性整改主路径。不得缓存可变模型实例、认证结果或实现摘要。
+后继主路径需要先明确检查层次与来源认证合同；
+[既有分层研究](../validation/git-p1-layered-research-2026-10-08-v1/README.md)
+仍默认关闭，未合入且不与当前 Runtime scope 候选等同。
+若改变纯段 callback 次数或瞬时漂移检测点，必须建立版本化内部契约、完整适用负控及
+实际 I/O／发布／提交前全认证，不宣称与当前逐点鲜读轨迹严格等价。
+任何候选都必须保持检查点轨迹及第 k 次注入首异常的分类与对象身份，
+并验证嵌套参数／字段修改与恢复、非目标坏关联、取消与期限竞争、最后 callback 后漂移。
+没有同输入的实际计数、完整负控与目标环境响应性证据，不得关闭 P1，
+也不得承诺上述常数优化足以解决当前长耗时。

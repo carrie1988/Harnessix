@@ -1,0 +1,220 @@
+{
+  "spec_version": "harnessix.r4-runtime-thread-delivery/v3",
+  "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+  "wheel_sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+  "production_members": 556,
+  "complete_three_file_consumer": {
+    "tests": 49,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 49,
+    "seconds": 5200.738,
+    "raw_file": "installed-git-control.xml",
+    "sha256": "64154896b00ad07608a16da8b1c39c85a5cbc034e7f3af79c2f0fba70e48c060"
+  },
+  "per_file_case_counts": {
+    "tests.product_config.test_git_prepared_link_controls": 10,
+    "tests.product_config.test_git_prepared_link_terminal_callbacks": 3,
+    "tests.product_config.test_git_link_user_observation_consumption": 36
+  },
+  "diagnostic": {
+    "run": {
+      "kind": "bounded_diagnostic_not_acceptance",
+      "instrumentation": "stdlib cProfile",
+      "code_revision": "d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2",
+      "wheel_sha256": "8837b8db98439d8840fae1a59bf455e6fe3f7364d5adc077066a28c039d48f98",
+      "node": "tests/product_config/test_git_prepared_runtime_thread.py::test_actual_scope_lives_through_commit_and_child_is_only_an_observer",
+      "wall_limit_seconds": 240,
+      "wall_elapsed_seconds": 98.8292380419989,
+      "interrupted_by_diagnostic_limit": false,
+      "exit_code": 0,
+      "started_after_original_consumer_process_ended": true,
+      "original_deadlines_changed": false,
+      "profile_exists": true
+    },
+    "test_result": {
+      "kind": "diagnostic_result_not_functional_acceptance",
+      "profiler_cli_exit_code": 0,
+      "junit": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "junit_authoritative_for_test_status": true,
+      "result": "FAIL",
+      "product_failure": "git_process_timeout",
+      "failed_in_original_60_second_git_budget": true,
+      "diagnostic_wall_limit_interruption": false,
+      "instrumentation_can_change_timing": true,
+      "junit_sha256": "d3e8c57d4b60a68df5d757636364b8c1f4d16970a8fed7276fd5e0adbb3f4fbe",
+      "raw_logs_retained": true
+    },
+    "total_profiled_function_calls": 230520976,
+    "primitive_calls": 224922675,
+    "total_profiled_seconds": 97.67459392000035,
+    "profile_sha256": "04c0958945f6593838a1c913189a564c00381b7708c5b4480ed9de7c4ffa9954",
+    "selected_functions": [
+      {
+        "path": "harnessix/product_config/git_prepared_link_ledger.py",
+        "line": 155,
+        "function": "control",
+        "primitive_calls": 89415,
+        "total_calls": 92299,
+        "self_seconds": 0.052027144000000004,
+        "cumulative_seconds": 58.576776763000005
+      },
+      {
+        "path": "harnessix/product_config/git_prepared_link_ledger.py",
+        "line": 140,
+        "function": "internal",
+        "primitive_calls": 178829,
+        "total_calls": 184597,
+        "self_seconds": 0.46381796300000006,
+        "cumulative_seconds": 58.418101993
+      },
+      {
+        "path": "harnessix/product_config/git_delivery_plan_snapshot.py",
+        "line": 103,
+        "function": "_model",
+        "primitive_calls": 58,
+        "total_calls": 1156,
+        "self_seconds": 0.011661093,
+        "cumulative_seconds": 39.982474374000006
+      },
+      {
+        "path": "harnessix/product_config/git_delivery_review_host.py",
+        "line": 35,
+        "function": "_read_fresh_owner",
+        "primitive_calls": 205176,
+        "total_calls": 205176,
+        "self_seconds": 0.5397222460000001,
+        "cumulative_seconds": 27.360212476
+      },
+      {
+        "path": "harnessix/product_config/git_delivery_plan_snapshot.py",
+        "line": 60,
+        "function": "_field",
+        "primitive_calls": 673,
+        "total_calls": 9755,
+        "self_seconds": 0.018719525,
+        "cumulative_seconds": 27.332257542
+      },
+      {
+        "path": "harnessix/product_config/git_checkpoint_preparation.py",
+        "line": 151,
+        "function": "control",
+        "primitive_calls": 91586,
+        "total_calls": 91586,
+        "self_seconds": 0.40703294300000004,
+        "cumulative_seconds": 24.867323617
+      },
+      {
+        "path": "harnessix/product_config/git_checkpoint_materials.py",
+        "line": 101,
+        "function": "control",
+        "primitive_calls": 4397,
+        "total_calls": 4397,
+        "self_seconds": 0.015472642000000002,
+        "cumulative_seconds": 22.070861833000002
+      },
+      {
+        "path": "harnessix/product_config/git_delivery_plan_wire.py",
+        "line": 40,
+        "function": "_encode",
+        "primitive_calls": 9,
+        "total_calls": 9,
+        "self_seconds": 0.027724018000000003,
+        "cumulative_seconds": 16.668265667
+      },
+      {
+        "path": "harnessix/product_config/git_delivery_review.py",
+        "line": 99,
+        "function": "control",
+        "primitive_calls": 20578,
+        "total_calls": 20578,
+        "self_seconds": 0.022452937000000003,
+        "cumulative_seconds": 3.2053811970000003
+      },
+      {
+        "path": "harnessix/product_config/session_key_posix.py",
+        "line": 67,
+        "function": "_private_acl",
+        "primitive_calls": 288082,
+        "total_calls": 288082,
+        "self_seconds": 0.5348008000000001,
+        "cumulative_seconds": 0.606442613
+      },
+      {
+        "path": "harnessix/session/sqlite_publication.py",
+        "line": 208,
+        "function": "authenticated_events",
+        "primitive_calls": 1330,
+        "total_calls": 1330,
+        "self_seconds": 0.003871859,
+        "cumulative_seconds": 0.5610956450000001
+      },
+      {
+        "path": "harnessix/product_config/git_delivery_review_codec.py",
+        "line": 60,
+        "function": "_encode",
+        "primitive_calls": 6,
+        "total_calls": 6,
+        "self_seconds": 4.3164e-05,
+        "cumulative_seconds": 0.35741
+      },
+      {
+        "path": "harnessix/delivery/git_tree_projection.py",
+        "line": 318,
+        "function": "_encode",
+        "primitive_calls": 45,
+        "total_calls": 45,
+        "self_seconds": 0.00018449700000000002,
+        "cumulative_seconds": 0.08536470800000001
+      },
+      {
+        "path": "harnessix/delivery/store.py",
+        "line": 249,
+        "function": "_encode",
+        "primitive_calls": 7,
+        "total_calls": 7,
+        "self_seconds": 6.831e-06,
+        "cumulative_seconds": 0.023310249
+      },
+      {
+        "path": "harnessix/delivery/workspace_record_codec.py",
+        "line": 63,
+        "function": "_encode",
+        "primitive_calls": 7,
+        "total_calls": 7,
+        "self_seconds": 9.370900000000001e-05,
+        "cumulative_seconds": 0.023267251000000003
+      },
+      {
+        "path": "harnessix/product_config/git_delivery_plan_snapshot.py",
+        "line": 46,
+        "function": "_matches",
+        "primitive_calls": 10482,
+        "total_calls": 10840,
+        "self_seconds": 0.007901375,
+        "cumulative_seconds": 0.021525696
+      }
+    ],
+    "times_are_overlapping_not_additive": true,
+    "partial_workflow_due_product_deadline": true,
+    "response_sla_pass": false
+  },
+  "open": [
+    "R3",
+    "R4",
+    "B4",
+    "B7_full_scope",
+    "P1",
+    "complete_product_regression"
+  ],
+  "new_provider_requests": 0,
+  "new_beta_acceptances": 0,
+  "original_failures_retained": true,
+  "prior_fixed_snapshots_modified": false
+}
