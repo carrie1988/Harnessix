@@ -530,3 +530,33 @@ def test_parent_binding_drift_rejected_not_rebound(subject, case_factory, segmen
     assert events == (["full", "local"] if segment == "catalog" else ["full", "full", "local"])
     assert control._origin is origin and control._segment is None
     assert not state.observed and state.body_bytes == 0
+
+
+@pytest.mark.parametrize("stage", ["entry", "local", "exit-local", "exit"])
+@pytest.mark.parametrize("error_kind", ["kernel", "cancelled", "nested-upstream"])
+def test_catalog_fault_identity_and_success_exit_not_skipped(
+    subject, case_factory, stage, error_kind
+):
+    case, events = case_factory(), []
+    error = KernelError("test_parent", "parent")
+    if error_kind == "cancelled":
+        error = asyncio.CancelledError("parent")
+    elif error_kind == "nested-upstream":
+        error = UpstreamCheckpointError(UpstreamCheckpointError(error))
+    full_at = {"entry": 1, "exit": 2}.get(stage)
+    local_at = {"local": 1, "exit-local": len(case.catalog) + 1}.get(stage)
+
+    def check(kind, fail_at):
+        events.append(kind)
+        if events.count(kind) == fail_at:
+            raise error
+
+    control = GitAuthenticationControl(
+        lambda: check("local", local_at), lambda: check("full", full_at)
+    )
+    case.cas.store._checkpoint = lambda: pytest.fail("声明纯段不得访问 CAS")
+    with pytest.raises(BaseException) as caught:
+        subject._catalog(case.root, case.catalog, limits(subject), control)
+    assert caught.value is error and control._segment is None
+    assert events.count("full") == (full_at or 1)
+    assert events.count("local") == (local_at or (len(case.catalog) + 1 if stage == "exit" else 0))

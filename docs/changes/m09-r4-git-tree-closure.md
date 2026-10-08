@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 37a1f01bee0dc4747af8680b4918e4c85cae266c
+version: 2
+code_revision: 711660fa8b75a02b58696556825ef726756cfec0
 owners: [core]
 modules: [delivery, workspace]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
 related_tests:
   - tests/delivery/test_git_object_references.py
   - tests/delivery/test_git_tree_closure.py
+  - tests/delivery/test_git_tree_closure_layered.py
   - tests/delivery/test_git_material_cas.py
   - tests/delivery/test_cas_write_authority.py
 supersedes: []
@@ -22,8 +23,8 @@ supersedes: []
 
 本设计覆盖两个内部模块：`git_object_references.py` 的 tree／commit 直接引用解析，
 以及 `git_tree_closure.py` 在原材料 CAS 上完成的普通文件树只读验真。
-`code_revision` 是研究、依赖和比较基线，**不是这两个新增模块的实现提交号**。
-新增实现的最终提交、完整输入摘要、测试选择器及发行物身份由第17章的验证记录绑定。
+首版研究、依赖和比较基线为 `37a1f01b`；当前 `code_revision` 对应第11.4节的分层增量。
+第17章保留初版记录并分别登记本增量，历史通过不能自动覆盖新实现。
 未填写的结果不得解释为通过。
 
 原 `GitObjectMaterial` 已按真实对象类型头、正文长度和完整正文计算 Git OID，
@@ -491,6 +492,29 @@ graph 在候选处理、目录任务、对象读取前后、每条路径和最�
 过程不调用 `persist`、`put_blob`、事务登记或 unlink；失败也不删除现有 CAS 孤儿。
 文件系统读取可能具有原文件系统访问元数据行为，不将逻辑只读夸大为物理介质零副作用。
 
+### 11.4 分层控制的实际计算／I/O 边界
+
+原60秒深路径在准备阶段超时，栈采样将剩余成本定位到本模块的候选处理和实际闭包读取。
+本增量复用 [Git 分层控制](../../src/harnessix/delivery/git_authentication_control.py)，不缓存来源认证、
+不减少 CAS 回读，不把整个 DFS 或 `read` 标为纯算法，也不放宽对象、条目、深度或原期限。
+
+| 源码阶段 | 认证与频检 | 约束 |
+| --- | --- | --- |
+| [`_catalog`](../../src/harnessix/delivery/git_tree_closure.py) | 仅原生控制在入口／出口完整认证，原循环本地频检 | 只重建严格引用声明，无 CAS；入口认证先于声明拒绝 |
+| [`_Traversal.read`](../../src/harnessix/delivery/git_tree_closure.py) 的查询、预算与真实读取 | 保留原完整检查和读顺序 | 缺失、类型及预算失败仍先于 CAS；已观察对象仍只返回原引用 |
+| 实际 CAS 返回后的检查与树解析 | 纯段入口对应原读后完整检查，解析频检本地；出口完整认证 | 进入后先 `check()` 再访问材料；退出认证成功后才登记 observed／字节计数 |
+| DFS、路径展开与最终返回 | 保留原完整检查 | 不前移后续路径检查，不改变首个坏输入、重复子树展开或最终排序顺序 |
+
+流程为“候选声明纯段 → 完整遍历检查 → 完整读前检查 → 原 CAS → 读后解析纯段 → 原计数登记”。
+纯段异常直接传播原错误并撤销 token，不追加退出认证覆盖首个失败；成功出口的认证异常不返回部分闭包。
+保存的本地检查点在 CAS、段外、异 Task／线程使用时回退完整检查，不重新绑定创建上下文。
+未知函数、代理或子类维持原 checkpoint 调用轨迹；新增边界只适用于原生可信控制。
+空 tree 及 blob 也须读后认证；blob 多一次成功出口完整检查，不把这种机制变化宣称为耗时改善。
+
+新增负控由 `tests/delivery/test_git_tree_closure_layered.py` 覆盖实际只读 CAS、token、故障身份及旧轨迹。
+设计不等于验收：以本轮冻结旧源码反控、最终非 editable 安装包回归和原深路径复验分别记录，
+局部通过不关闭 P1、默认 Writer、恢复或 R3 真实编码门禁。
+
 ## 12. 持久化、安全与信任边界
 
 ### 12.1 原 CAS 边界
@@ -681,9 +705,9 @@ tests/delivery/test_cas_write_authority.py
 | 文件 | 设计核对时的 SHA256 |
 | --- | --- |
 | `src/harnessix/delivery/git_object_references.py` | `54440de73fa7c76b59f0675f50e6bbbfd121835a9bce015060479ba3390d8132` |
-| `src/harnessix/delivery/git_tree_closure.py` | `ccdc5a9a09d2aab6aad9c11fb8aca3b253511c122bdbca985bb391932bfe7984` |
+| `src/harnessix/delivery/git_tree_closure.py` | `425094b04b0157a9b805aff171edc03f160af728db3fcbebb2533e8701138cce` |
 
-这些是当前实现观察字节，不是由基线提交派生的新实现提交声明，也不代替最终完整验证输入目录。
+这些是当前实际观察字节；闭包分层归属于当前 `code_revision`，不能替代最终完整验证输入目录。
 新增代码如改变，必须同步本设计、选择器和验证输入，不能沿用旧 SHA 的通过结果。
 
 ### 17.2 实际测试结果与统一证据
@@ -742,6 +766,20 @@ done
 
 实际渲染时序图首次使用宽度 1800，其余最终图使用 2200；宽度参数为浏览器视口而非 PNG 裁切宽度。
 图源内嵌字体和主题配置。最终尺寸来自 PNG 头读取，不是仅根据渲染命令推定。
+
+### 17.4 分层增量的实际结果
+
+第11.4节已在当前 `code_revision` 落地，算法、实际读顺序和容量规则未变。
+同一非 editable Wheel 的562成员源码／构建输入／归档／安装字节一致；
+相关分层回归1232、树模块822、SDK准备16、SDK决定4、新增闭包95全部通过，零失败／错误／跳过。
+95项含声明入口／本地／出口异常身份、真实只读CAS、原轨迹、跨Task／线程回退和绑定漂移；
+冻结旧Closure面对最终95项为45失败／50通过，表示新分层契约差异，不是45个独立安全漏洞。
+SHA-1／SHA-256的97层合成树均完整检查1089→794次、本地598次，CAS仍100次、输出一致；不作为时延成绩。
+最终原负载v12（16文件／400目录／两个认证SDK Patch）仍在原60秒准备期限报`git_process_timeout`，未进入恢复。
+v11曾因诊断器ENV仍指向旧安装包，在fixture开始前被来源检查拒绝；原失败保留，v12只修正绑定、未移除检查。
+代码和证据局部通过不关闭P1、完整默认Writer、B4/B7、原生平台或R3真实编码门禁。
+最新证据为本机 `Library/Application Support/Harnessix/verification/r4-layered-closure-20261009-v1` 的日志、XML、562成员绑定、快照与清单；
+独立审查只覆盖静态代码/首83项测试，不冒充独立执行或完整业务验收；追加12项由最终安装包实测。
 
 ## 18. 维护和验收边界清单
 

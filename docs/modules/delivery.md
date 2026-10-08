@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 50
-code_revision: c32b8a745ddea7f0135d8fc0984e109d9210a701
+version: 51
+code_revision: 711660fa8b75a02b58696556825ef726756cfec0
 owners:
   - core
 modules:
@@ -2360,4 +2360,6 @@ PrefixSQL建立与消费时另核对产品连接的原登记，防止其他Task�
 [创建绑定负控](../../tests/product_config/test_git_authentication_origin.py)已在非 editable 包通过；
 这不证明任意私有内存改写防护、深路径期限或默认 Git Writer 已通过。
 Projection 的净变更快照、无 CAS 目录 DFS、before／并集登记和 apply／namespace／tree 编码现已分段；
-读后解析单独分段，Closure、CAS 及 after 仍完整。正式边界见[树投影详设](../changes/m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)。
+树投影读后解析单独分段，CAS 与 after 仍保持完整认证，边界见[树投影详设](../changes/m09-r4-git-tree-projection.md#132-分层控制与实际-io-分界)。
+Closure 仅对候选声明与 CAS 读后解析启用分层；DFS 和真实读取保持原顺序，读后成功出口认证前不登记 observed。
+正式边界、异常时序及负控见[闭包详设](../changes/m09-r4-git-tree-closure.md#114-分层控制的实际计算io-边界)。
