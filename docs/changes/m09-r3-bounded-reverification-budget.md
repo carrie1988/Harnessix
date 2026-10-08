@@ -17,6 +17,10 @@ supersedes: []
 
 # R3 原未决全额保留的单次有界复验预算设计
 
+本文保留原 v1 的 70／40 版本解释。当前脚本另提供封闭 v2 的 60／38 合同，
+两者不混搭、不自动迁移、不替换已登记授权；完整增量及实际授权边界见
+[版本化合同总体与详细设计](m09-r3-reverification-budget-v2.md)。
+
 ## 1. 需求背景、源码研究与设计目标
 
 [原真实Suite中断](../validation/provider-suite-interruption-2026-09-30-v1/README.md)后，原70元周期

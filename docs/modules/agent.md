@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 24
+version: 25
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -38,6 +38,11 @@ supersedes: []
 ---
 
 # Agent Runtime模块设计
+
+原 Runtime 的 Thread 锁现采用实际 Task 归属检查，沿原 acquire／release 记录持有者，
+不以 `locked()`布尔值代替当前 Task 来源。原 `_lock`上下文接口保持；私有检查不创建锁，
+不产生批准或执行权。详见[锁归属总体及详细设计](../changes/m09-r4-runtime-thread-lock-ownership.md)。
+该原语不是完整 Git 宿主临界区、SQLite FD 或 R4 验收。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 

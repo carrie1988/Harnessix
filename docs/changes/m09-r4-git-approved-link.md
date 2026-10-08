@@ -692,6 +692,10 @@ B1 是已明确的存储兼容决策；B2、B3 的决定消费接线与 B7 仍�
 但正常 prepare/execute、初始化及 Extension dispatch 并非同一全程锁窗口。
 这些反例不表示正式 Writer 已存在或默认产品已执行错误写入；不关闭 B4/B7，不降低原期限或安全门禁。
 
+原 Runtime 另提供[实际 Task 锁归属原语](m09-r4-runtime-thread-lock-ownership.md)：
+检查该 Runtime 已登记的原锁及当前实际持有者，不接受 `locked()`声明。
+该基础实现尚不覆盖 Git 所需整个临界区、全部 dispatch 或 SQLite 实际 FD，B7 仍开放。
+
 B4 是严格漂移门禁尚未关闭的关键正确性条件；P1 独立开放；B5/B6 是不能通过本增量绕过的能力边界。
 没有证据支持完整生命周期恢复或未来效果链可用。
 

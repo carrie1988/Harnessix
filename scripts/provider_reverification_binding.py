@@ -13,13 +13,13 @@ from harnessix.tools.workspace import digest
 from scripts.provider_reverification_plan import (
     Amount,
     Sha256,
-    VerificationReverificationPlan,
+    VerificationReverificationPlanRecord,
     validate_reverification_plan,
 )
 
 
 class VerificationReverificationBinding(ContractModel):
-    """明确切换到唯一新Suite；已用费用承接，不生成新的40元额度。"""
+    """明确切换到唯一新Suite；已用费用承接，不生成新的复验额度。"""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
     spec_version: Literal["harnessix.provider-reverification-binding/v1"]
@@ -39,7 +39,7 @@ class VerificationReverificationBinding(ContractModel):
 
 def validate_reverification_binding(
     period: dict[str, Any],
-    plan: VerificationReverificationPlan,
+    plan: VerificationReverificationPlanRecord,
     binding: VerificationReverificationBinding,
 ) -> None:
     """核验唯一切换、全部旧事实和同一上限；新未决仍由运行入口拒绝。"""

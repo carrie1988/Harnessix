@@ -18,7 +18,7 @@ from scripts.provider_reverification_binding import (
 from scripts.provider_reverification_plan import (
     Amount,
     Sha256,
-    VerificationReverificationPlan,
+    VerificationReverificationPlanRecord,
     validate_reverification_plan,
 )
 
@@ -90,7 +90,7 @@ def candidate_bindings(period: dict[str, Any]) -> tuple[VerificationCandidateBin
 
 def validate_candidate_chain(
     period: dict[str, Any],
-    plan: VerificationReverificationPlan,
+    plan: VerificationReverificationPlanRecord,
     original: VerificationReverificationBinding,
     bindings: tuple[VerificationCandidateBinding, ...],
 ) -> None:

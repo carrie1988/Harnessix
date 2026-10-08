@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 224
+version: 225
 code_revision: eb72c6e5fa4bb4c6789a1a8336d8f42e4a38a696
 owners:
   - core
@@ -2584,3 +2584,17 @@ R3仍需同一安装候选完整真实Trial及原样评分；R4仍需FD/锁、B4
 R4消费者2、其他SDK消费者81、产品CLI15通过/1原生Windows跳过分别完成，不累加重复集合。
 512源码类型检查与18份原Schema摘要通过；真实模型请求新增零，
 详见[安装态交付](validation/r3-rejection-runtime-2026-10-08-v1/README.md)。
+
+### R3/R4：封闭预算版本与原 Runtime 锁归属
+
+[复验合同 v2](changes/m09-r3-reverification-budget-v2.md)为原 60 元周期提供封闭 38 元累计上限，
+保留原 v1 的 70／40 Schema、序列化和历史解释。原前缀及未知预留不可变，
+新未知即停、最坏档预留、双上限、原绑定及候选链均不放宽。
+合同交付不表示实际授权已登记或费用已结算；本切片不发起真实模型请求。
+
+[原 Runtime Thread 锁](changes/m09-r4-runtime-thread-lock-ownership.md)补充实际 Task 归属，
+沿标准锁等待、取消和释放，私有检查只消费该 Runtime 已登记原成员。
+该基础能力不关闭实际 FD、Git 全程临界区／全部 dispatch、B4、P1 或 approved Writer，
+默认 Checkpoint／Commit 和三平台完整编码仍需后继纵向闭环。
+终态与候选绑定见[切片交付](validation/r3-budget-v2-runtime-lock-2026-10-08-v1/README.md)；
+R3 原严格成功0/20、必需测试1/20、真实 Beta 接受0及商用门禁不据此提升。

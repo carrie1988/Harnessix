@@ -10,7 +10,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.evals.cli_config import read_private_eval_config
 from scripts.provider_reverification_binding import VerificationReverificationBinding
 from scripts.provider_reverification_chain import VerificationCandidateBinding
-from scripts.provider_reverification_plan import VerificationReverificationPlan
+from scripts.provider_reverification_plan import read_reverification_plan
 from scripts.provider_verification_budget import VerificationBudgetLedger
 from scripts.run_engineering_provider_suite_budgeted import _SafeParser
 
@@ -44,9 +44,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 "binding_id": str(binding.binding_id),
             }
         else:
-            plan = read_private_eval_config(
-                arguments.plan, VerificationReverificationPlan, max_bytes=64 * 1024
-            )
+            plan = read_reverification_plan(arguments.plan)
             VerificationBudgetLedger.authorize_reverification(arguments.budget_ledger, plan)
             result = {"reason": "authorized", "reverification_id": str(plan.reverification_id)}
         print(json.dumps(result))

@@ -28,7 +28,9 @@ from scripts.provider_reverification_chain import (
     validate_candidate_chain,
 )
 from scripts.provider_reverification_plan import (
-    VerificationReverificationPlan,
+    VerificationReverificationPlanRecord,
+    parse_reverification_plan,
+    snapshot_reverification_plan,
     validate_reverification_plan,
 )
 
@@ -131,12 +133,12 @@ class VerificationBudgetLedger:
         return next(p for p in self.data["periods"] if p["period_id"] == self.period_id)
 
     @property
-    def reverification_plan(self) -> VerificationReverificationPlan | None:
+    def reverification_plan(self) -> VerificationReverificationPlanRecord | None:
         """读取原周期唯一授权；未登记账本保持默认未决即停语义。"""
         raw = self.period.get("bounded_reverification")
         if raw is None:
             return None
-        return VerificationReverificationPlan.model_validate_json(json.dumps(raw), strict=True)
+        return parse_reverification_plan(json.dumps(raw))
 
     @property
     def reverification_binding(self) -> VerificationReverificationBinding | None:
@@ -201,8 +203,14 @@ class VerificationBudgetLedger:
             owner._save()
 
     @classmethod
-    def authorize_reverification(cls, path: Path, plan: VerificationReverificationPlan) -> None:
+    def authorize_reverification(
+        cls, path: Path, plan: VerificationReverificationPlanRecord
+    ) -> None:
         """仅可信预算管理宿主调用；独占登记后退出，不读取凭据或发出模型请求。"""
+        try:
+            plan = snapshot_reverification_plan(plan)
+        except Exception:
+            raise KernelError("verification_reverification_invalid", "复验授权合同无效") from None
         owner = cls(path, plan.period_id)
         owner._registration_only = True
         with owner:
@@ -316,9 +324,7 @@ class VerificationBudgetLedger:
             raise ValueError
         raw_plan = period.get("bounded_reverification")
         if raw_plan is not None:
-            plan = VerificationReverificationPlan.model_validate_json(
-                json.dumps(raw_plan), strict=True
-            )
+            plan = parse_reverification_plan(json.dumps(raw_plan))
             validate_reverification_plan(period, plan)
         elif any("reverification_id" in request for request in requests):
             raise ValueError

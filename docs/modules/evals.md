@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 36
+version: 37
 code_revision: e1aad041da7817eb5da20896cf092c296544ae25
 owners:
   - core
@@ -53,6 +53,7 @@ related_tests:
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_verification_budget.py
   - tests/evals/test_provider_verification_host.py
+  - tests/evals/test_provider_reverification_v2.py
   - tests/evals/test_provider_source_checkout.py
   - tests/evals/test_provider_source_checkout_failures.py
   - tests/evals/test_provider_suite_cli.py
@@ -61,6 +62,12 @@ supersedes: []
 ---
 
 # Evals模块设计
+
+验证宿主的复验计划采用封闭版本：原 v1 保留 70／40，v2 固定 60／38；
+必须显式登记同一原周期、冻结整个旧前缀并保留原未知预留。
+原 Guard 的请求预留、双上限、新未知即停及评分均不放宽。
+合同可用不等于实际授权或真实质量通过，详见
+[版本化合同总体与详细设计](../changes/m09-r3-reverification-budget-v2.md)。
 
 ## 1. 模块摘要
 

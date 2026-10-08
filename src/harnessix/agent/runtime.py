@@ -100,6 +100,7 @@ from harnessix.agent.runtime_recovery import (
     recoverable_compaction,
     result_resume_safe,
 )
+from harnessix.agent.runtime_thread_lock import RuntimeThreadLock
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.tool_rejections import rejection_result
 from harnessix.agent.trusted_action_runtime import (
@@ -310,7 +311,7 @@ class AgentRuntime:
         self._delta_listeners: set[Callable[[ItemDelta], None]] = set()
         self._owner: AbstractAsyncContextManager[None] | None = None
         self._open = False
-        self._locks: dict[UUID, asyncio.Lock] = {}
+        self._locks: dict[UUID, RuntimeThreadLock] = {}
         self._active: dict[UUID, tuple[UUID, CancelToken, asyncio.Task[object]]] = {}
         self._max_parallel_tools = max_parallel_tools
         self._context = context
@@ -454,7 +455,14 @@ class AgentRuntime:
             raise KernelError("runtime_closed", "请在 async with AgentRuntime 中执行")
 
     def _lock(self, thread_id: UUID) -> asyncio.Lock:
-        return self._locks.setdefault(thread_id, asyncio.Lock())
+        return self._locks.setdefault(thread_id, RuntimeThreadLock())
+
+    def _require_thread_lock(self, thread_id: UUID) -> None:
+        """仅核对本 Runtime 已登记锁的当前 Task 所有权，不创建锁。"""
+        lock = self._locks.get(thread_id)
+        if type(lock) is not RuntimeThreadLock:
+            raise KernelError("runtime_thread_lock_unowned", "当前 Task 未持有 Runtime Thread 锁")
+        lock.require_current_owner()
 
     def subscribe_deltas(self, listener: Callable[[ItemDelta], None]) -> Callable[[], None]:
         """订阅live-only文本增量；持久恢复仍以ItemFinished和Replay为准。"""

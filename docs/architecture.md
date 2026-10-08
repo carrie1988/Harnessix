@@ -1,7 +1,7 @@
 ---
 doc_type: system-architecture
 status: current
-version: 86
+version: 87
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -690,3 +690,14 @@ Plan/Pointer/粘性回退/Result记录位于原Root外，状态机只按实际�
 原Schema、旧事件与MAC保持原字节；旧1.0客户端在握手时明确失败。升级Server、SDK、CLI/UI必须使用匹配候选，
 回退使用完整匹配备份，不降写新历史。详见[完整详细设计](changes/m09-r3-unknown-tool-recovery.md)。
 离线、安装态组件验证与真实编码质量是不同门禁，R3真实Trial、R4完整Git写链及三平台原生编码仍需独立验收。
+
+## 原运行时锁归属与私有验证合同
+
+Thread 锁继续位于单一 Agent Runtime 原集合；实际 acquire／release 绑定当前 Task，
+同步私有检查不接受外来布尔证明、不新增执行权限，详见
+[原锁归属详设](changes/m09-r4-runtime-thread-lock-ownership.md)。
+Git FD、完整宿主临界区及末端一致性仍为独立门禁，不能由锁原语替代。
+
+验证宿主预算合同为封闭版本：v1 的 70／40 与 v2 的 60／38。
+两者沿同一独占 Owner、旧请求前缀和原 Guard，不自动授权、不改变产品公开协议，
+详见[版本化预算合同详设](changes/m09-r3-reverification-budget-v2.md)。
