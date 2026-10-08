@@ -132,10 +132,12 @@ def _original_preparation_fields(
     current = object.__getattribute__(planner, "__dict__")
     if type(current) is not dict:
         return False
-    current = current.copy()
+    fields = tuple(current.items())
+    if any(type(name) is not str for name, _ in fields):
+        return False
+    current = dict(fields)
     return (
-        all(type(name) is str for name in current)
-        and all(type(name) is str for name, _ in original)
+        all(type(name) is str for name, _ in original)
         and tuple(current) == tuple(name for name, _ in original)
         and all(current[name] is value for name, value in original)
     )

@@ -157,19 +157,21 @@ def _material_control(
     full = parent_cancel_checkpointer(control)
     if type(checkpoint) is not GitAuthenticationControl:
         return full
-    parent = vars(checkpoint)
+    origin = GitAuthenticationControl._binding(checkpoint)
     if (
-        type(parent) is not dict
-        or any(type(name) is not str for name in parent)
-        or parent.get("_task") is not asyncio.current_task()
-        or type(parent.get("_thread")) is not int
-        or parent.get("_thread") != get_ident()
+        origin[2] is not asyncio.current_task()
+        or type(origin[3]) is not int
+        or origin[3] != get_ident()
     ):
         return full
     parent_fields = tuple(
-        (name, parent.get(name)) for name in ("_task", "_thread", "_local_check", "_authenticate")
+        zip(
+            ("_task", "_thread", "_local_check", "_authenticate"),
+            (origin[2], origin[3], origin[0], origin[1]),
+            strict=True,
+        )
     )
-    original_local = checkpoint._local_check
+    original_local = origin[0]
     store_root = store._root
 
     def local() -> None:
@@ -180,11 +182,13 @@ def _material_control(
         current = vars(checkpoint)
         if type(current) is not dict:
             raise _invalid()
-        current = current.copy()
-        if any(type(name) is not str for name in current):
+        fields = tuple(current.items())
+        if any(type(name) is not str for name, _ in fields):
             raise _invalid()
+        current = dict(fields)
         if any(current.get(name) is not value for name, value in parent_fields):
             raise _invalid()
+        GitAuthenticationControl._binding(checkpoint, origin)
         original_local()
         if (
             type(port) is not GitDeliveryProcess

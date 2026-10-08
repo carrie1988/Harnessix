@@ -148,7 +148,7 @@ async def test_local_ref_drift_rejects_without_root_or_owner_io(case, drift):
     assert case.trace == ["local"] and check._segment is None
 
 
-@pytest.mark.parametrize("field", ["_local_check", "_authenticate", "_task", "_thread"])
+@pytest.mark.parametrize("field", ["_local_check", "_authenticate", "_task", "_thread", "_origin"])
 async def test_parent_control_replacement_cannot_invoke_a_new_local_callback(case, field):
     parent = original(case)
     check = bind(case, parent)
@@ -158,7 +158,11 @@ async def test_parent_control_replacement_cannot_invoke_a_new_local_callback(cas
             case.trace.clear()
             setattr(parent, field, lambda: invoked.append(True))
             leaf()
-    assert caught.value.code == "git_checkpoint_materials_invalid"
+    assert caught.value.code == (
+        "git_authentication_control_invalid"
+        if field == "_origin"
+        else "git_checkpoint_materials_invalid"
+    )
     assert case.trace == [] and invoked == []
 
 

@@ -143,6 +143,35 @@ async def test_local_missing_planner_field_is_canonical_failure(case, field):
     assert caught.value.code == "git_checkpoint_preparation_invalid"
 
 
+async def test_sparse_planner_dictionary_rejects_keys_before_copy_can_execute_equality(case):
+    local, _ = controls(case)
+    calls, armed = [], [False]
+
+    class Name(str):
+        def __hash__(self):
+            return 17
+
+        def __eq__(self, other):
+            if armed[0]:
+                calls.append("equality")
+                raise AssertionError("planner dictionary copy must not invoke key equality")
+            return str.__eq__(self, other)
+
+    attributes = case.planner.__dict__.copy()
+    attributes.update({Name("bad-one"): None, Name("bad-two"): None})
+    for index in range(100):
+        attributes[f"filler-{index}"] = None
+    for index in range(100):
+        del attributes[f"filler-{index}"]
+    case.planner.__dict__ = attributes
+    armed[0] = True
+    case.trace.clear()
+    with pytest.raises(KernelError) as failure:
+        local()
+    assert failure.value.code == "git_checkpoint_preparation_invalid"
+    assert calls == [] and case.trace == [] and case.failures == [failure.value]
+
+
 @pytest.mark.parametrize(
     "resource,field",
     [
