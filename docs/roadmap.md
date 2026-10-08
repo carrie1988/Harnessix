@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 232
+version: 233
 code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
 owners:
   - core
@@ -2681,3 +2681,17 @@ R4 的成功 prepare 现在将原 SourceScope 和四库 reader 保留至原 Runt
 提交门设计与失败语义见[原资源交接](changes/m09-r4-git-runtime-thread-scope.md#86-原资源交接与跨方法事务代际)。
 该入口不拦截裸 COMMIT，不证明 SQLite 实际 FD、外部 ABA 或跨资源原子性；
 默认 Writer、全部 dispatch、完整 B4／B7、代表性响应性与真实 R3 门槛仍开放。
+
+最新生产源码与隔离 Writer 已在同一非 editable Wheel 中组合验证：原 Writer 未保留提交资源，
+真实提交门拒绝该候选；保留该红测后，仅在原控制入口增加提交资源保留标志。
+新安装候选的十项实际 SDK 门控验证通过，覆盖原来源保留、门内提交及只读重开、
+提交前配置／同 OID 的 HEAD 漂移、失败后全行回滚、pending／missing 无 DML、
+同事务精确重试、原取消／期限／首异常，以及其他 Task／无 Task 回调拒绝。
+同一组合候选的原九项故障／幂等回归另有9 PASS，保留全部首次失败；
+其中裸 COMMIT 不作为新增提交门验收，不与十项新用例或历史集合混算。
+这关闭隔离候选的资源交接缺口，不表示生产 Writer、恢复屏障或默认 dispatch 已装配。
+当前生产安装候选另有状态 Owner／Runtime 锁 79 项通过，560 个包成员与 Git、Wheel 和安装字节一致；
+这些结果不作为完整 B7 或三平台证明。
+[原生能力复验](research/git-sqlite-native-source.md#71-原连接公开能力复验)确认当前两套运行库的
+公开对象指针不提供完整 FD 身份；固定 Linux 镜像的内存检查因工具链和运行库不匹配未执行。
+完整原生安全范围尚未形成新的准入决策，原门禁保持不变；本轮无真实模型请求。

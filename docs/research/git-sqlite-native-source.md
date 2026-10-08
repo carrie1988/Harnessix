@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 2
-code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
+version: 3
+code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -17,7 +17,7 @@ supersedes: []
 # 原 SQLite 连接来源检查：公开原生 API 研究与接线约束
 
 - 冻结访问日期：2026-10-08。
-- Harnessix 生产参考提交：d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2。
+- Harnessix 当前生产参考提交：ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111；第 4、5 节原桥研究参考提交仍为 d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2。
 - 研究结论：公开扩展入口可以获得原标准库连接对应的 SQLite C 句柄；主库移动检查可复现普通置换及指定 ABA 反例。
 - 准入结论：**仅研究，未装配产品；实际完整 FD、B7、P1、默认 Git Writer 与发布均不因此通过。**
 
@@ -186,6 +186,13 @@ LSAN 正控明确报告该平台不支持 `detect_leaks`。因此 ASAN、LSAN �
 没有据此观察或排除候选内存缺陷。该轮临时实验目录已失效，初始化失败原件当前不可回验；
 普通资源计数归零不能替代有效内存检查，也不改变 B7 或生产准入结论。
 
+后继固定 Python 镜像的真实环境为 Alpine 3.22.2／aarch64-musl、Python 3.12.11、
+SQLite 3.49.2。原桥源码从封存清单恢复并验哈希，3.45.3 版本保护未修改。
+该镜像没有编译器、SQLite 开发头或 sanitizer runtime；普通编译以及
+ASAN／UBSAN／LSAN 各自正负控的编译均以 127 退出，控制程序和桥生命周期矩阵均未运行。
+报告生成成功不代表工具有效，不能把缺少编译器造成的非零退出计为内存负控通过。
+该轮无下载、无安装、无挂载、无网络，只回收本轮创建的容器，不改变原生准入结论。
+
 ## 6. 失败、恢复、持久化与安全边界
 
 这是瞬时来源观察，不新增持久 Schema、MAC、业务凭证或迁移。
@@ -211,6 +218,24 @@ LSAN 正控明确报告该平台不支持 `detect_leaks`。因此 ASAN、LSAN �
 当前正式构建使用 hatchling，候选是纯 Python Wheel。原生桥将引入平台与 Python ABI、
 可信二进制定位、完整性、编译及安装门禁；需要显式设计，不能复制本机 dylib 到产品目录即发布。
 Windows不支持 Unix实验分支时应明确拒绝，不能标记平台全绿。当前主仓依赖及 Wheel均未变。
+
+### 7.1 原连接公开能力复验
+
+在本机两套独立 Python 进程中，通过公开扩展入口直接检查各自原标准库连接，
+分别运行 DELETE、WAL、内存库三种模式。探针仅依赖系统 C 库，SQLite 调用使用原连接的 API 表，
+不链接第二套 SQLite、不访问业务状态、不输出指针值，也不承担认证。
+
+| 运行库 | `FILE_POINTER`／`JOURNAL_POINTER` | `HAS_MOVED` | `WIN32_GET_HANDLE`／`FILESTAT` |
+|---|---|---|---|
+| Python 3.12.7／SQLite 3.45.3 | 三模式均返回成功及非空对象指针 | DELETE／WAL 返回 0；内存库返回 `SQLITE_NOTFOUND` | 本机各模式均返回 `SQLITE_NOTFOUND` |
+| Python 3.13.8／SQLite 3.50.4 | 三模式均返回成功及非空对象指针 | DELETE／WAL 返回 0；内存库返回 `SQLITE_NOTFOUND` | 本机各模式均返回 `SQLITE_NOTFOUND` |
+
+[官方操作码合同](https://www.sqlite.org/c3ref/c_fcntl_begin_atomic_write.html)将前两项定义为
+`sqlite3_file*`，不是 Unix OS FD。内存库也返回非空对象，实际说明“指针存在”不能证明打开了普通文件、
+journal 或 WAL；本探针没有把非空指针解释为底层文件身份。`FILESTAT`是依赖编译选项的诊断能力，
+不是通用认证端口，不能以新版文档中的操作码推定旧运行库具备能力。
+六个模式检查保持原行、`total_changes`和显式事务不变，加载结束均验证 SQL 扩展加载被拒绝。
+这些结果不覆盖 Windows 执行、进度回调重入、桥内存安全或完整 FD／WAL／SHM 绑定，B7 仍未完成。
 
 ## 8. 源码映射、取舍与下一步
 
