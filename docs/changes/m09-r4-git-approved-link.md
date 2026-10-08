@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 18
+version: 19
 code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -14,6 +14,8 @@ related_tests:
   - tests/product_config/test_git_prepared_link_contracts.py
   - tests/product_config/test_git_decision_link_contracts.py
   - tests/product_config/test_git_decision_recovery.py
+  - tests/product_config/test_git_decision_link_ledger_sdk.py
+  - tests/product_config/test_git_decision_commit_boundary.py
   - tests/product_config/test_git_decision_recovery_observers.py
   - tests/product_config/test_git_decision_link_sources.py
   - tests/product_config/test_git_decision_source_sdk.py
@@ -377,7 +379,7 @@ flowchart TD
 | `git_prefix_anchor` | 原 genesis、全集 revision | 同 genesis 按真实新增事实推进 revision | 不签创世、不重建缺失尾锚、不追认旧未签数据 |
 | Owner | 原 Session token、原 Audit fence、原资源引用 | 本次操作冻结并逐检查点核对 | 不持久化可重放 token，不创建新 Owner 账本 |
 
-### 7.2 闭合正文与字段：数据已实现，来源认证待接线
+### 7.2 已实现的闭合正文与字段：完整准入仍开放
 
 采用 closed union，不给 prepared 添加可选批准字段，不构造一个允许任意 phase 的通用 Link。
 共同字段只保存一次 `plan: ProductGitDeliveryPlanV2` 与 `approval_request: TrustedActionApprovalRequestContent`；后者为原始未决定请求。
@@ -700,7 +702,8 @@ B4原语可以独立于SQLite原生来源研究开发，但默认Writer准入仍
 
 ## 11. 实施切片
 
-正式决定切片仍为 `planned`；切片 3 中必需只读依赖及共享配方已落地，两个现行消费者已经接通原完整 U；其 Ref／配置同步读集合已新增内部接线，限定安装态六项拒绝／独立正控已通过；完整 B4 与正式决定宿主接线仍未闭合。
+数据、原来源读取、内部决定 Ledger 与同锁恢复已落地；切片 3 的完整 B4 与切片 6 的全部 dispatch 接线仍未闭合。
+内部接口只追加/恢复事实，不注册默认 Git 写工具；实际验收范围以 §13.8 为准，不能由接口存在推导完整准入。
 
 | 顺序 | 拟议改动 | 行为与新契约 | 拟议回归 | 可独立回滚 |
 |---|---|---|---|---|
@@ -708,10 +711,10 @@ B4原语可以独立于SQLite原生来源研究开发，但默认Writer准入仍
 | 2 | 原完整 Session/Route 决定 Proof | 原 Reducer 与 build_approval、两域指纹、完整取消来源 | ALLOW ready、系统拒绝冒充人工、错时间、后续取消 | 不启用 Writer |
 | 3 | 阶段无关 U verifier/shared helper 与两个现行消费者已落地；fence 与终端闭合仍待实施 | 原 Ledger `_authenticate` 与历史 `_read_all` 显式借原 Session/transactions/ports，同预算、cancel、check；不重准备、不新增 CAS；准备器 pending Call 和 collector 窗口保持 | 既有只读复核用例见第 12.2 节；终端提交漂移与全部 dispatch 接线仍待验证 | 不启用 Writer；不更改产品权限 |
 | 4 | 已存决定的窄域全集只读 Reader 已实现 | 保留完整 prepared 前驱；每个已存决定与原来源全文比较；不补造缺失决定；效果范围继续拒绝 | mixed prepared/decided、坏非目标链、三种决定、缺失及终端全集 | 不注册 Writer 或默认 Git 写工具 |
-| 5 | 同原事务追加与精确重试 | 原 event/publication/anchor 一次提交；原 epoch 延续 | 逐写边界中断、rollback、确认丢失、并发 CAS | 已写历史保留；停用新追加 |
-| 6 | 原宿主审批后/重启内部屏障 | 先原 sync，再认证追加；全部 Git dispatch 入口受约束 | 三库恢复窗口、取消竞争、调用计数零 | 关闭 Git 专用接线，不影响其他 Action |
+| 5 | 正式内部同原事务追加与精确重试已实现 | 原 event/publication/anchor 一次提交；原 epoch 延续 | 逐写边界中断、rollback、确认丢失、并发 CAS | 已写历史保留；停用新追加 |
+| 6 | 原 Task 同锁恢复已实现；全部 dispatch 待接线 | 先原 sync，再认证追加；全部 Git dispatch 入口受约束 | 三库恢复窗口、取消竞争、调用计数零 | 关闭 Git 专用接线，不影响其他 Action |
 
-切片 3 的终端一致性及宿主接线缺口未关闭时，后续切片只能在隔离测试中验证，不能据此发布可用认证 Writer。
+完整终端一致性与默认宿主接线未关闭时，后续组件只能作为正式内部实现和显式测试宿主消费，不能发布默认可执行写权限。
 
 ## 12. 源码与测试映射
 
@@ -753,9 +756,10 @@ B3 只读依赖的验证结果以[专项发布原件](../validation/git-user-obs
 本文不推导通过数量，不据源码或用例存在宣称完整 B3 认证、同候选安装或正式上线。
 两个现行消费者的完整 U 接线见[真实消费者回归](../../tests/product_config/test_git_link_user_observation_consumption.py)；它们共享原预算/取消/检查点，先原 Proof 后 U，任何关联失败拒绝全集。正式决定 Proof/Reader/Writer 与终端接线仍须另行建立实际用例和证据，不能继承只读结论。
 
-### 12.3 必须新增的真实回归矩阵，全部 `planned`
+### 12.3 总体验收矩阵与已完成子集
 
-本矩阵面向正式决定接线及终端闭合；第 12.2 节的 B3 只读依赖用例不因此重新归为未实现。
+本矩阵面向正式决定接线及终端闭合；已实现依赖和已执行内部子集不重新归为 planned。
+§13.8 记录具体验收，未列明完成的完整来源、代表性负载、持续安全及平台范围仍开放。
 
 | 场景组 | 必须验证的输入 | 预期 |
 |---|---|---|
@@ -781,7 +785,7 @@ B3 只读依赖的验证结果以[专项发布原件](../validation/git-user-obs
 |---|---|---|
 | B1 | v2 DDL 没有 denied/cancelled phase | 本文采用 failed+闭合 fact_kind 保持 DDL；消费方必须认同该映射。要求字面 phase 时本切片不能在不升代条件下交付 |
 | B2 | 当前 prepared Proof/Reader/terminal 仅接受实时 pending | 必须新增窄域完整历史 Proof/Reader；不能调用 `prepare/read_all` 追认已决定前驱 |
-| B3 | 必需阶段无关只读 verifier 与共享末轮配方已落地；现行 prepared/审批历史消费者已经接通该依赖；正式决定认证尚未实现 | 显式原 Session/transactions/ports、本次完整历史认证；原准备器 pending Call 与 collector 窗口保持。验证以专项原件为准，不将依赖落地认定为完整 B3 认证或上线 |
+| B3 | 必需阶段无关只读 verifier 与共享末轮配方已落地；现行 prepared/审批历史消费者已经接通该依赖；内部决定消费者已消费原完整认证；全部准入矩阵未完成 | 显式原 Session/transactions/ports、本次完整历史认证；原准备器 pending Call 与 collector 窗口保持。验证以专项原件为准，不将依赖落地认定为完整 B3 认证或上线 |
 | B4 | 末轮异步逻辑 Git 观察与同步终端/COMMIT 之间没有已证实的外部 Ref/配置一致性原语 | 必须明确可执行的终端见证或原协作锁方案及剩余外部边界，实测最晚窗口漂移；四库观察/路径 pin 不足以关闭。关闭前禁止启用可用 approved Writer |
 | B5 | Review TTL 与原 Turn 预算不是永久恢复凭据 | 只支持仍有原完整材料、Review 未过期且当前有效窗口内的恢复；过期拒绝，不能续期或重新审批同事实 |
 | B6 | Router ready 不能被取消改判 denied；原 Session 终结可能保留 unknown | 本增量 cancelled 限定审批前完成结算；批准后取消必须拒绝可用性。若需要批准后无效果取消闭合，另需真实模型与执行所有权证据，不在此切片宣称完成 |
@@ -789,7 +793,8 @@ B3 只读依赖的验证结果以[专项发布原件](../validation/git-user-obs
 | B8 | 本研究输入包括未提交候选，并且原候选验收不由本文完成 | 实现前固定完整输入版本与复核以上源码定位；本文不替代候选封板或实际 SDK 验收 |
 | P1 | 原材料、Core 及完整回读/终端认证的同步响应性仍未收口 | verifier/shared helper 复用不构成协作调度或性能整改；须在原取消、期限及完整认证语义下独立完成真实响应性验证 |
 
-B1 是已明确的存储兼容决策；B2、B3 的决定消费接线与 B7 仍是实施缺口，B3 必需只读依赖及两个现行消费者本身不再列为缺失 API。
+B1 是已明确的存储兼容决策；B2/B3 的内部读/写/恢复消费者已落地，完整验收和 B4/B7 仍开放。
+不再将现行内部消费者或 B3 必需只读依赖列为缺失 API，也不把测试宿主当作默认产品接线。
 [真实晚窗口验证](../validation/release-followup-2026-10-08-v5/README.md)已复现末轮历史后的配置与同 OID symbolic HEAD 漂移、
 完整 U 结束后的 prepared 同步终端配置漂移仍被接受；这不是仅有设计上的担忧。
 只读连接的真实 A→B→A 路径恢复也不能证明 SQLite 实际 FD 来源；
@@ -987,6 +992,18 @@ v1—v3 原失败、v4 正控通过后发现的两个 P1/一个 P2，以及 v5 �
 独立评审仅为静态未执行；默认装配链未导入/注册新端口。原失败和修复包均保留，
 原件位于本机 `~/Library/Application Support/Harnessix/verification/r4-decision-runtime-integration-20261009-v1`。
 这些成绩只关闭本次内部集成及其负控，不关闭完整 B4/B7、FD/WAL/SHM、平台、P1 或 R3。
+
+后继复用同一生产源码和非 editable 包，补齐[正式 Ledger 三态实际 SDK](../../tests/product_config/test_git_decision_link_ledger_sdk.py)：
+approved/denied/审批前完整 cancelled 都经原 SDK 决定或取消、原 Ledger 追加、原提交门、精确重试零 DML及只读重开。
+取消四事件与两域决定指纹逐项核对；批准后真实取消保留 ready/人工批准，以 interrupted 结算，Writer/Reader 拒绝，不能伪装为审批前 cancelled。
+[决定提交间隙六项负控](../../tests/product_config/test_git_decision_commit_boundary.py)覆盖配置、同 OID HEAD、事务重开、SAVEPOINT、原取消和原预算到期；
+均在 COMMIT 前拒绝，不代管调用方事务，回滚后原行不变。新增已结算 cancelled 的恢复正控不再追加 Session 事实。
+准备 helper 只抽取唯一原配方，仍在原 Task/factory/bind 内消费原提交门，不增加授权或重置期限。
+本次同包最终 29 项实际 SDK 通过（Ledger 4、提交间隙 6、恢复 19，其中 18 项是原回归）；首轮重复场景不累计。
+生产源码与原包 562 个成员逐字节一致，无需重打未变化的生产包；独立评审只为静态未执行。
+专项原件位于本机 `~/Library/Application Support/Harnessix/verification/r4-decision-ledger-matrix-20261009-v1`；
+本次仅补齐内部事实语义及其当前验收矩阵，不关闭 B4/B7、平台或真实 R3，也不新增 ADR。
+
 
 ## 14. 实现偏差与最终结论
 

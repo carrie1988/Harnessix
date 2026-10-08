@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 237
+version: 238
 code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
 owners:
   - core
@@ -29,6 +29,8 @@ related_adrs:
 related_tests:
   - tests/product_config/test_git_decision_link_contracts.py
   - tests/product_config/test_git_decision_recovery.py
+  - tests/product_config/test_git_decision_link_ledger_sdk.py
+  - tests/product_config/test_git_decision_commit_boundary.py
   - tests/product_config/test_git_decision_recovery_observers.py
   - tests/product_config/test_git_authority_pure_paths.py
   - tests/product_config/test_git_link_user_observation_consumption.py
@@ -2736,3 +2738,9 @@ UBSAN 本次路径无诊断；ASAN／LSAN 因泄漏均非 clean pass，已定位
 初版复合失效顺序红例与修复均保留，可读性维持原 22 项存量告警且新增 0，未新增 ADR。
 本轮只完成内部切片，不关闭完整 B4/B7、原生平台、P1 或商业发布门禁；真实模型请求 0。
 R3 固定 20 Trial 的真实复验仍待现行预算周期的明确有界授权，不把旧周期授权自动转译为新授权。
+
+[正式决定三态与提交间隙验收](changes/m09-r4-git-approved-link.md#138-正式内部代码集成与回归)
+复用同一生产源码/非 editable 包完成 29 项实际 SDK：三态追加及批准后取消 4、提交间隙负控 6、恢复回归 19。
+本轮新增 11 项，原 18 项回归重新验证；只按最终集合计数，不叠加首轮重复。
+准备 helper 复用唯一正式提交配方，生产包 562 成员逐字节一致；只同步既有详设/模块/路线图。
+默认写入口、完整 B4/B7、原生平台和 R3 真实质量仍开放，本轮真实模型请求为 0。

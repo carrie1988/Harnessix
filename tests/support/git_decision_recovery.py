@@ -15,11 +15,8 @@ from tests.product_config.test_git_prepared_link_ledger import (
 )
 
 
-async def router_first(actual, outcome):
-    """在真实 Router 已持久化、Session 尚未同步处停止，不伪造决定来源。"""
-    runtime = actual.scenario.client.transport.server.service.runtime
-    actions = runtime._trusted_actions
-    assert actions is not None
+async def prepare_original_link(actual):
+    """沿原工厂与持锁 Task 准备关联，通过原提交门返回 (prepared, baseline_rows)。"""
     async with _database(actual) as database:
         await _genesis(actual, database)
         database.execute("BEGIN IMMEDIATE")
@@ -28,7 +25,16 @@ async def router_first(actual, outcome):
         )
         with prepared_git_commit_scope(database):
             database.execute("COMMIT")
-        baseline = _rows(database)
+        baseline_rows = _rows(database)
+    return prepared, baseline_rows
+
+
+async def router_first(actual, outcome):
+    """在真实 Router 已持久化、Session 尚未同步处停止，不伪造决定来源。"""
+    runtime = actual.scenario.client.transport.server.service.runtime
+    actions = runtime._trusted_actions
+    assert actions is not None
+    prepared, baseline = await prepare_original_link(actual)
     actions._state.gateway.decide(
         actual.thread,
         actual.turn,

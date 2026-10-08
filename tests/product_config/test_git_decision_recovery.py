@@ -24,7 +24,11 @@ from tests.product_config.test_git_prepared_link_ledger import (
     _ledger,
     _rows,
 )
-from tests.support.git_decision_recovery import recover_original_decision, router_first
+from tests.support.git_decision_recovery import (
+    prepare_original_link,
+    recover_original_decision,
+    router_first,
+)
 
 
 @pytest.mark.parametrize("outcome", [ApprovalOutcome.APPROVED, ApprovalOutcome.REJECTED])
@@ -56,6 +60,39 @@ async def test_recovery_commits_original_fact_and_exact_retry_has_no_dml(
             )
             assert reopened == fact and database.total_changes == 0
         assert actual.scenario.unchanged_state() == effects
+
+    await _case(tmp_path, config, monkeypatch, inspect)
+
+
+async def test_recovery_reuses_settled_preapproval_cancellation_without_session_append(
+    tmp_path, config, monkeypatch
+):
+    async def inspect(actual):
+        await prepare_original_link(actual)
+        await actual.scenario.client.cancel_turn(
+            actual.thread.thread_id, actual.turn.turn_id, request_id="original-recovery-cancel"
+        )
+        history = await _history(actual)
+        effects = actual.scenario.unchanged_state()
+        async with _database(actual) as database:
+            fact = await recover_original_decision(actual, database)
+            assert fact.fact_kind == "cancelled" and fact.phase == "failed"
+            assert not database.in_transaction and await _history(actual) == history
+            committed, changes = _rows(database), database.total_changes
+            assert await recover_original_decision(actual, database) == fact
+            assert _rows(database) == committed and database.total_changes == changes
+        async with _database(actual, read_only=True) as reopened:
+            reopened.execute("BEGIN")
+            assert (
+                await _reader(actual, reopened).read_linked_decision(
+                    actual.route.plan.execution.plan_id,
+                    cancel=CancelToken(),
+                    checkpoint=lambda: None,
+                )
+                == fact
+            )
+            assert reopened.total_changes == 0
+        assert await _history(actual) == history and actual.scenario.unchanged_state() == effects
 
     await _case(tmp_path, config, monkeypatch, inspect)
 

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 97
+version: 98
 code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
 owners:
   - core
@@ -17,6 +17,8 @@ related_adrs:
 related_tests:
   - tests/product_config/test_git_prepared_link_connection.py
   - tests/product_config/test_git_decision_recovery.py
+  - tests/product_config/test_git_decision_link_ledger_sdk.py
+  - tests/product_config/test_git_decision_commit_boundary.py
   - tests/product_config/test_git_decision_recovery_observers.py
   - tests/delivery/test_git_prefix_task_owner.py
   - tests/product_config/test_git_decided_source_reader.py
@@ -2856,4 +2858,5 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 失败不代管已有/替换事务，清理不遮盖首异常，确认丢失回读复用而非重新 decide；仅一个60秒绝对预算。
 只读登记/事务观察允许受管子 Task 检查原父窗口，不能授予 SQL；完整认证仍在 I/O、发布及提交边界执行。
 这两个正式内部组件没有默认注册、不执行 Git 效果、不关闭完整 B4/B7 或原生门禁。
+三态正式追加、批准后取消拒绝及决定提交间隙已建立实际 SDK 回归；这不放行默认写入口。
 详设、失败顺序红例及同包验收统一见[内部恢复集成](../changes/m09-r4-git-approved-link.md#138-正式内部代码集成与回归)。
