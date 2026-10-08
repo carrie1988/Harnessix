@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 5
-code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
+version: 6
+code_revision: b5244e28d92d7eacfacf53d0f383e4b3092aa6f1
 owners: [core]
 modules: [workspace, delivery, execution, product_config]
 related_adrs:
@@ -12,6 +12,7 @@ related_tests:
   - tests/workspace/test_snapshot_parent_closure.py
   - tests/workspace/test_parent_closure_contracts.py
   - tests/workspace/test_parent_closure_reader.py
+  - tests/workspace/test_parent_closure_pure_progress.py
   - tests/workspace/test_native_observation_control.py
   - tests/delivery/test_workspace_record_reference.py
   - tests/product_config/test_workspace_reference_backup.py
@@ -201,6 +202,8 @@ flowchart TB
 新增闭包数量必须由原目标上限、路径 128 段上限及去重后的真实父集合推导，不能接受任意调用方数量。
 集合派生、规范编码、CAS 读写和完整复核共同使用同一原绝对截止时间及取消检查。
 当前代码不存在可注入的 `SnapshotLimits` 类型，不应在实现中猜测一个已有配置接口。
+
+历史 Reader 与 `verify_workspace_snapshot_v2` 现接受可选 `WorkspacePureProgressFactory`，仅为已验真块展开／摘要及捕获后编码提供宿主局部检查点；完整 CAS、规范正文、索引及原容量仍逐项验证。默认 `None` 与旧完整轨迹一致，控制异常不转换成历史损坏；不改变捕获写入 API、任何持久格式或授权。实际边界、流程和失败语义统一见[纯计算端口详设](m09-r4-git-checkpoint-preparation.md#17-已验真父历史与-snapshot-重编码的纯计算端口)，不另复制设计。
 
 物理记录仍在原 512 KiB 读取边界内；写入必须以相同编码器校验 UTF-8 字节数，随后再提交。
 该边界不能拿来截断完整业务 Plan，完整 Plan 和闭包改由受限 CAS 载入。

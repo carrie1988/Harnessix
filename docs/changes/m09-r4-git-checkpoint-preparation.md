@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 9
-code_revision: d17a1161c742d5b16b24c37273d429fe13db4113
+version: 10
+code_revision: b5244e28d92d7eacfacf53d0f383e4b3092aa6f1
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace]
 related_adrs:
@@ -15,6 +15,7 @@ related_tests:
   - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_source_native_progress.py
   - tests/workspace/test_snapshot_v2_native_progress.py
+  - tests/workspace/test_parent_closure_pure_progress.py
   - tests/product_config/test_git_root_io_control.py
   - tests/product_config/test_git_checkpoint_scope_references.py
   - tests/product_config/test_git_checkpoint_scope_control.py
@@ -181,8 +182,8 @@ v14 已通过准备与 Review，仍在 Ledger 的来源复核耗尽原 60 秒。
 | 入口与职责 | 局部频检 | 完整认证／失败边界 |
 |---|---|---|
 | [`git_native_control`](../../src/harnessix/product_config/git_native_control.py) | 原创建 Task／线程才能保留 exact 控制；只读 observer 显式交付，不借父 local | Scope 原 `_build_control` 函数体原样抽取复用；unknown／代理／子类保持旧 full 路径 |
-| [`verify_workspace_snapshot_v2`](../../src/harnessix/workspace/snapshot_v2.py) | 可选 `native_progress` 仅包实际 `capture_snapshot_facts`，没有业务认证依赖 | 原历史／CAS 完整读取、编码与比较均在段外；默认 `None` 与旧轨迹一致 |
-| [`Source`](../../src/harnessix/product_config/git_delivery_source.py)／[`Root`](../../src/harnessix/product_config/git_baseline.py) | 仅确切控制的同步原生捕获使用 `io_progress`；原端口读取保护保留 | 首末 full；控制异常只解本边界新增层，嵌套标记保留原对象；Root unknown 沿旧语义 |
+| [`verify_workspace_snapshot_v2`](../../src/harnessix/workspace/snapshot_v2.py) | `native_progress` 仅包实际捕获；独立 `pure_progress` 工厂只包已验真历史展开／摘要及捕获后重编码，详见1.7 | 全部 CAS 读取、规范正文／索引校验和最终比较保留；默认 `None` 与旧轨迹一致 |
+| [`Source`](../../src/harnessix/product_config/git_delivery_source.py)／[`Root`](../../src/harnessix/product_config/git_baseline.py) | exact 控制的同步原生捕获使用 `io_progress`；Source 另显式注入同创建 Task／线程的纯段工厂 | 首末 full；实际文件读取与两次完整 Snapshot 复核保留；控制异常只解本边界新增层；Root unknown 沿旧语义 |
 | [`User verifier`](../../src/harnessix/product_config/git_user_observation.py)／[`Ledger observer`](../../src/harnessix/product_config/git_prepared_link_ledger.py) | 实际 `cancel.run` 子 Task 创建自身控制；父显式交付原资源身份、登记、Runtime 锁和 SQL epoch 的只读观察 | 全历史／MAC／Source 认证仍走 full；不登记子 Task 的 SQL 权限；观察摘要每次读取含共享控制的 10 份源码，缺失或漂移拒绝 |
 | [`Review host`](../../src/harnessix/product_config/git_delivery_review_host.py)／[`Provider`](../../src/harnessix/product_config/git_delivery_review.py) | exact 产品 Provider 在实际子 Task 创建控制；local 只检查取消、期限及选定原字段身份 | 先拒绝非原生字典／非 exact 字符串键；不调用旧 bound、contract、路径比较或布尔魔术方法；full 保留原 Owner／独立只读 Owner 检查、Artifact 发布末核 |
 
@@ -203,7 +204,35 @@ Review 原宿主全认证 → 实际子 Task 的新控制 → 完整审阅与原
 
 同包 v15 沿 v14 原 Harness（测试正文逐字节相同）单次运行，16 文件／400 目录／25 级／连续两次 Patch、60 秒操作与 120 秒 Turn 不变。本次已走过 Checkpoint／Review、Ledger 准备与提交、原 Router 批准，并首次进入 `recover.original_decision_link`；随后原 Turn 剩余期限耗尽，报 `git_process_timeout`。准备／Review 诊断区间约 57.899 秒，原关联准备／Router 区间约 52.784 秒；恢复测量约 9.128 秒，不能误写成恢复自身运行了 60 秒。恢复通过 `_limit_to_original_turn` 收紧自身预算，未延长期限。20 毫秒诊断心跳最大采样间隔约 6.790 秒，未设通过阈值；总诊断 142.890 秒含前置夹具，不是生产 SLO。正式恢复提交及只读重开断言未通过。
 
-后继优先审查原审批历史材料的控制转发（`git_approval_history_proof → git_delivery_plan_materials → prepare_git_tree_diff/Projection`）及剩余前置区间；原 `native_observer` 尚未接入审批历史消费也需另行核验，不对整个材料／来源 verifier 降级。旧 v14、v15 FAIL 全部保留；P1、默认完整 Writer、B4／B7、原生平台与 R3 真实质量仍开放。本轮真实模型请求 0、不新增 Beta 通过数。
+上述 v15 的后继调查保留原失败；审批观察现已按[审批历史详设](m09-r4-git-prepared-approval-history.md#52-完整-u-的真实消费者接口与调用链)接入。v17 仍在第二次 Source 复核耗尽原 Turn 期限，后续源码整改见1.7，不对整个材料／来源 verifier 降级。P1、默认完整 Writer、B4／B7、原生平台与 R3 真实质量仍开放。
+
+### 1.7 已验真父历史与 Snapshot 重编码的纯计算端口
+
+v17 的真实恢复已越过材料／Review，失败位置转到第二次 Source。源码显示一次 Snapshot 复核的历史展开、历史摘要、编码与编码摘要各遍历完整父集合，约 `4P` 次 full；这是静态调用量，不是耗时归因。目标是减少纯计算中的重复完整认证，而非少读历史、续期或删掉两次复核。
+
+[`WorkspacePureProgressFactory`](../../src/harnessix/workspace/snapshot_ports.py)是可选宿主端口：`Callable[[], AbstractContextManager[Callable[[], None]]]`。每段新建上下文，Workspace 不依赖 Git 认证类型，也不保存端口或事实缓存。
+
+```mermaid
+flowchart LR
+    A[完整 CAS 回读 SHA 规范正文 索引] --> B[纯段 展开该块全部观察]
+    B --> C[下一块完整 CAS 回读]
+    C --> D[纯段 完整摘要和共享观察比较]
+    D --> E[独立原生捕获段]
+    E --> F[新纯段 原算法重编码]
+    F --> G[完整 Snapshot 比较 原 Source 尾部检查]
+```
+
+| 源码入口 | 实际业务边界与控制 |
+|---|---|
+| [`read_workspace_parent_closure`](../../src/harnessix/workspace/parent_closure_codec.py) | 每块原 `_read_model` 完成、索引通过后才展开；全部块完成后计算完整摘要及共享观察。两个 `with` 均在数据异常转换范围外，首末／局部控制异常不冒充坏数据 |
+| [`verify_workspace_snapshot_v2`](../../src/harnessix/workspace/snapshot_v2.py) | 转发工厂给历史 Reader；原生上下文结束后另起纯段执行原 `_encode_snapshot`。最终全等比较仍在段外；捕获 API 的写入及耐久回读没有修改 |
+| [`_verify_final_snapshot`](../../src/harnessix/product_config/git_delivery_source.py) | 仅 exact GAC 注入 `same_task_pure_git_authentication`：同创建者首末 full、段内 local；foreign Task／线程不追加纯段首末调用；unknown／代理／子类不注入，原参数和轨迹保留 |
+
+伪代码为 `完整读块 → with fresh_pure(): 全量展开 → 完整读下块 → with fresh_pure(): 全量摘要 → 原生捕获 → with fresh_pure(): 原编码 → 原比较`。没有新持久状态、依赖、格式、Schema、权限或默认 Tool。Patch 归属／Store／Record Codec 的合并控制仍按原 full，不能据本切片声称全链局部化。
+
+取消、期限、原锁／资源代际仍细粒度检查；首失败不返回前缀、不追加出口认证，保存 local 在段外撤销。Full 在 I/O 前后和段首末拒绝持续漂移；段内改变后恢复不保证检出，不宣称逐项 full 的检测时点等价。原 60 秒操作／120 秒 Turn 不变。
+
+[Reader 负控](../../tests/workspace/test_parent_closure_pure_progress.py)覆盖实际多块 CAS 顺序、每块及摘要段的首末／第一个和最后一个局部失败、同码控制异常、晚块损坏、撤销、foreign 与冻结旧轨迹；[Source 负控](../../tests/product_config/test_git_source_native_progress.py)覆盖编码入口／出口、原异常层、实际文件仍 full，以及 foreign 完整轨迹和逐个 Full 失败前缀。完整验收结果随后记入路线图；这些机械验证不单独关闭 P1 或 R4。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
