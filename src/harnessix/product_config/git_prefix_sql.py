@@ -1,10 +1,12 @@
-"""专用Git前缀连接的SQL合作中断窗口；由宿主明确持有，不覆盖共享连接。"""
+"""专用Git前缀连接的SQL合作中断与内部事务代际观察；不覆盖共享连接。"""
 
 from __future__ import annotations
 
 import sqlite3
+import sys
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from functools import partial
 from threading import local
 from weakref import WeakValueDictionary
 
@@ -52,12 +54,6 @@ class _SQLCheckpoint:
         self.epoch = 0
         self.windows: WeakValueDictionary[int, object] = WeakValueDictionary()
 
-    def trace(self, statement: str) -> None:
-        """仅识别事务边界，不保存SQL或正文；任何回滚/提交都撤销旧窗口。"""
-        token = _transaction_token(statement)
-        if token in {"BEGIN", "COMMIT", "END", "ROLLBACK", "SAVEPOINT", "RELEASE"}:
-            self.epoch += 1
-
     def interrupt(self) -> int:
         try:
             self.checkpoint()
@@ -66,6 +62,114 @@ class _SQLCheckpoint:
                 self.interrupted = error
             return 1
         return 0
+
+
+class _TransactionTrace:
+    """长寿命原事务观察，仅保存实例代际与来源，不持有检查点或发布窗口。"""
+
+    def __init__(self, prepared_source: object) -> None:
+        self.prepared_source = prepared_source
+        self.task = _current_task()
+        self.epoch = 0
+
+
+def _dispatch_git_prefix_trace(database: sqlite3.Connection, statement: str) -> None:
+    """唯一合作式 trace 同时推进长观察和活动短窗口，不保存正文或执行宿主回调。"""
+    if _transaction_token(statement) not in {
+        "BEGIN",
+        "COMMIT",
+        "END",
+        "ROLLBACK",
+        "SAVEPOINT",
+        "RELEASE",
+    }:
+        return
+    for controls in (
+        getattr(_owned, "transaction_traces", {}),
+        getattr(_owned, "connections", {}),
+    ):
+        control = controls.get(database)
+        if control is not None:
+            control.epoch += 1
+
+
+def _clear_git_prefix_callbacks(
+    database: sqlite3.Connection, *, progress: bool, trace: bool
+) -> None:
+    """清理所有已安装部分；关闭已释放回调，清理错误不能遮盖原首失败。"""
+    try:
+        _ = database.in_transaction
+    except sqlite3.ProgrammingError:
+        return
+    pending = sys.exception()
+    first_error: BaseException | None = None
+    callbacks: list[tuple[Callable[..., None], tuple[object, ...]]] = []
+    if progress:
+        callbacks.append((database.set_progress_handler, (None, 0)))
+    if trace:
+        callbacks.append((database.set_trace_callback, (None,)))
+    for callback, arguments in callbacks:
+        try:
+            callback(*arguments)
+        except BaseException as error:
+            if first_error is None:
+                first_error = error
+    if first_error is not None and pending is None:
+        raise first_error
+
+
+@contextmanager
+def _git_prefix_transaction_scope(database: sqlite3.Connection) -> Iterator[None]:
+    """Runtime 在原 factory 连接上持有长观察；不授权 SQL，不控制调用方事务。
+
+    必须由原 Task 安装，禁止覆盖已有长观察或短窗口。宿主覆盖 trace 属于既有
+    合作边界，不提供 authorizer 拦截或恶意同进程隔离。
+    """
+    source = _registered_prepared_connection(database)
+    if source is None:
+        raise KernelError("git_prefix_sql_owner_invalid", "Git前缀事务观察需要原专用连接")
+    traces = getattr(_owned, "transaction_traces", None)
+    if traces is None:
+        traces = {}
+        _owned.transaction_traces = traces
+    if database in traces or database in getattr(_owned, "connections", {}):
+        raise KernelError("git_prefix_sql_control_conflict", "Git前缀连接已有事务观察或SQL窗口")
+    traces[database] = _TransactionTrace(source)
+    try:
+        database.set_trace_callback(partial(_dispatch_git_prefix_trace, database))
+        yield
+    finally:
+        del traces[database]
+        _clear_git_prefix_callbacks(
+            database, progress=False, trace=database not in getattr(_owned, "connections", {})
+        )
+
+
+def _git_prefix_caller_transaction_epoch(database: sqlite3.Connection) -> tuple[object, int]:
+    """短同步读原长观察实例与事务代际；不执行 Owner 或其他外部回调。"""
+    trace = getattr(_owned, "transaction_traces", {}).get(database)
+    if trace is None:
+        raise KernelError("publication_history_unproven", "Git原事务观察已经变化")
+    if _current_task() is not trace.task or _registered_prepared_connection(database) is not (
+        trace.prepared_source
+    ):
+        raise KernelError("git_prefix_sql_owner_invalid", "Git前缀事务观察原任务或来源已经变化")
+    try:
+        in_transaction = database.in_transaction
+    except sqlite3.ProgrammingError:
+        in_transaction = False
+    if not in_transaction:
+        raise KernelError("publication_history_unproven", "Git原事务代际已经变化")
+    return trace, trace.epoch
+
+
+def _require_git_prefix_caller_transaction_epoch(
+    database: sqlite3.Connection, expected: tuple[object, int]
+) -> None:
+    """只比对长观察原实例及代际，不把观察令牌转换为 SQL 或发布权限。"""
+    trace, epoch = _git_prefix_caller_transaction_epoch(database)
+    if trace is not expected[0] or epoch != expected[1]:
+        raise KernelError("publication_history_unproven", "Git原事务代际已经变化")
 
 
 def require_git_prefix_sql_window(database: sqlite3.Connection) -> None:
@@ -145,26 +249,23 @@ def git_prefix_sql_window(
         raise KernelError("git_prefix_sql_control_conflict", "Git前缀连接已有SQL检查点窗口")
     control = _SQLCheckpoint(checkpoint)
     control.prepared_source = source
-    database.set_progress_handler(control.interrupt, 1000)
-    database.set_trace_callback(control.trace)
     connections[database] = control
     try:
-        yield
-    except BaseException:
-        if control.interrupted is not None:
-            raise control.interrupted from None
-        raise
-    else:
-        if control.interrupted is not None:
-            raise control.interrupted from None
-        checkpoint()
+        database.set_progress_handler(control.interrupt, 1000)
+        if database not in getattr(_owned, "transaction_traces", {}):
+            database.set_trace_callback(partial(_dispatch_git_prefix_trace, database))
+        try:
+            yield
+        except BaseException:
+            if control.interrupted is not None:
+                raise control.interrupted from None
+            raise
+        else:
+            if control.interrupted is not None:
+                raise control.interrupted from None
+            checkpoint()
     finally:
         del connections[database]
-        # 关闭连接已经释放回调；不能让重复清理的 SQLite 异常遮盖原首失败。
-        try:
-            _ = database.in_transaction
-        except sqlite3.ProgrammingError:
-            pass
-        else:
-            database.set_progress_handler(None, 0)
-            database.set_trace_callback(None)
+        _clear_git_prefix_callbacks(
+            database, progress=True, trace=database not in getattr(_owned, "transaction_traces", {})
+        )

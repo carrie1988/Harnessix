@@ -59,6 +59,8 @@ def observe_prepared_state(
     router: TrustedActionRouter,
     core_store: ProductGitDeliveryCoreStore,
     artifacts: SQLiteArtifactStore,
+    *,
+    check_on_exit: bool = True,
 ) -> Iterator[Callable[[], None]]:
     """固定只读监视连接覆盖所有 await；发现库变化、原连接写或替换即拒绝。"""
     paths = (
@@ -86,7 +88,9 @@ def observe_prepared_state(
 
         unchanged()
         yield unchanged
-        unchanged()
+        # 提交资源的清理只关闭 reader；提交前已完整复核，不在提交后发布迟到拒绝。
+        if check_on_exit:
+            unchanged()
 
 
 @dataclass(slots=True)

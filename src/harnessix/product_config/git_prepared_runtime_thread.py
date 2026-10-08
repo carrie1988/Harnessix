@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import sqlite3
+import sys
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
-from dataclasses import dataclass
+from contextlib import ExitStack, contextmanager
+from dataclasses import dataclass, field
 from threading import local
 from types import MethodType
 from uuid import UUID
@@ -16,6 +17,11 @@ from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.runtime_thread_lock import RuntimeThreadLock
 from harnessix.agent.trusted_action_runtime import TrustedActionSessionRuntime
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.product_config.git_prefix_sql import (
+    _git_prefix_caller_transaction_epoch,
+    _git_prefix_transaction_scope,
+    _require_git_prefix_caller_transaction_epoch,
+)
 from harnessix.product_config.git_prepared_link_connection import (
     _current_task,
     _registered_prepared_connection,
@@ -32,6 +38,32 @@ def _invalid() -> KernelError:
 
 
 @dataclass(frozen=True, slots=True)
+class _PreparedCommitRecord:
+    """仅完整 prepare 成功后保留原操作资源；不是可复制或持久化的授权。"""
+
+    epoch: tuple[object, int]
+    resources: ExitStack
+    check: Callable[[], None]
+
+
+@dataclass(slots=True)
+class _PreparedCommitState:
+    """每个原 Runtime 窗口最多保留一个可复核的提交候选。"""
+
+    record: _PreparedCommitRecord | None = None
+    consuming: bool = False
+
+    def discard(self, *, error: BaseException | None = None) -> None:
+        record, self.record = self.record, None
+        if record is not None:
+            try:
+                record.resources.close()
+            except BaseException:
+                if error is None:
+                    raise
+
+
+@dataclass(frozen=True, slots=True)
 class _RuntimeThreadScope:
     """仅活动 context 登记原实例；既不是持久 Fence，也不是可复制的执行授权。"""
 
@@ -40,6 +72,7 @@ class _RuntimeThreadScope:
     router: TrustedActionRouter
     artifacts: SQLiteArtifactStore
     check: Callable[[], None]
+    commit: _PreparedCommitState = field(default_factory=_PreparedCommitState)
 
 
 def _runtime_check(runtime: AgentRuntime, thread_id: UUID) -> Callable[[], None]:
@@ -141,10 +174,69 @@ def bind_prepared_git_runtime_thread(
     scope = _RuntimeThreadScope(thread_id, task, gateway._state.router, artifacts, check)
     scopes[database] = scope
     try:
-        yield
-        _require_scope(database).check()
+        with _git_prefix_transaction_scope(database):
+            yield
+            _require_scope(database).check()
     finally:
-        del scopes[database]
+        try:
+            scope.commit.discard(error=sys.exc_info()[1])
+        finally:
+            del scopes[database]
+
+
+@contextmanager
+def _prepared_git_commit_resources(database: sqlite3.Connection) -> Iterator[ExitStack]:
+    """新 prepare 先复核旧候选，再原子替换资源；失败不能留下旧提交入口。"""
+    scope = _require_scope(database)
+    if scope.commit.consuming:
+        raise _invalid()
+    previous = scope.commit.record
+    if previous is not None:
+        try:
+            # 已结束的事务只撤销旧候选；新 prepare 必须重新完成全部认证。
+            if _git_prefix_caller_transaction_epoch(database) == previous.epoch:
+                previous.check()
+        finally:
+            scope.commit.discard(error=sys.exc_info()[1])
+    with ExitStack() as resources:
+        yield resources
+
+
+def _register_prepared_git_commit(
+    database: sqlite3.Connection, resources: ExitStack, check: Callable[[], None]
+) -> None:
+    """仅内部 Ledger 成功出口转移原资源；不接受调用方提供的持久见证。"""
+    scope = _require_scope(database)
+    if scope.commit.record is not None or scope.commit.consuming:
+        raise _invalid()
+    epoch = _git_prefix_caller_transaction_epoch(database)
+    scope.commit.record = _PreparedCommitRecord(epoch, resources.pop_all(), check)
+
+
+@contextmanager
+def prepared_git_commit_scope(database: sqlite3.Connection) -> Iterator[None]:
+    """同步复核原 prepare 后才允许调用方提交；不提交、不回滚、不延长期限。
+
+    验证的 SQL 窗口在交付控制前已结束。调用方须在本同步段直接 COMMIT，
+    不得 await 或调用外部回调。退出仅撤销和回收；不将正常退出当作提交证明。
+    裸 SQL 不受此端口拦截，默认 Git 写工具尚未装配。
+    """
+    scope = _require_scope(database)
+    record = scope.commit.record
+    if record is None or scope.commit.consuming:
+        raise _invalid()
+    scope.commit.consuming = True
+    try:
+        _require_git_prefix_caller_transaction_epoch(database, record.epoch)
+        record.check()
+        _require_scope(database)
+        _require_git_prefix_caller_transaction_epoch(database, record.epoch)
+        yield
+    finally:
+        try:
+            scope.commit.discard(error=sys.exc_info()[1])
+        finally:
+            scope.commit.consuming = False
 
 
 def _require_scope(database: sqlite3.Connection) -> _RuntimeThreadScope:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import sqlite3
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from uuid import UUID, uuid4
 
 from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
@@ -46,7 +46,9 @@ from harnessix.product_config.git_prepared_link_rows import (
 )
 from harnessix.product_config.git_prepared_link_wire import encode_product_git_prepared_link
 from harnessix.product_config.git_prepared_runtime_thread import (
+    _prepared_git_commit_resources,
     _prepared_runtime_thread_observer,
+    _register_prepared_git_commit,
     require_prepared_git_runtime_thread,
 )
 from harnessix.product_config.git_user_observation import verify_product_git_user_observation
@@ -81,7 +83,7 @@ class ProductGitPreparedLinkLedger:
         await asyncio.sleep(0)
         budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
         read_set = PreparedLinkReadSet()
-        with _control(self, cancel, budget, checkpoint, read_set) as check:
+        with _control(self, cancel, budget, checkpoint, read_set, retain_for_commit=True) as check:
             timeout = asyncio.timeout(budget.remaining())
             try:
                 async with timeout:
@@ -120,6 +122,8 @@ def _control(
     budget: GitOperationBudget,
     checkpoint: Callable[[], None],
     read_set: PreparedLinkReadSet,
+    *,
+    retain_for_commit: bool = False,
 ) -> Iterator[Callable[[], None]]:
     """专用 SQL 合作窗口冻结原宿主、文件及事务代际；不覆盖共享 Session 回调。"""
     if type(cancel) is not CancelToken or type(ledger._database) is not sqlite3.Connection:
@@ -139,10 +143,21 @@ def _control(
     observe_lifecycle = _prepared_git_connection_lifecycle_observer(database)
     observe_thread = _prepared_runtime_thread_observer(database, ledger._router, ledger._artifacts)
 
-    with (
-        read_set.source_scope,
-        observe_prepared_state(ledger._router, ledger._core_store, ledger._artifacts) as unchanged,
-    ):
+    with ExitStack() as stack:
+        resources = (
+            stack.enter_context(_prepared_git_commit_resources(database))
+            if retain_for_commit
+            else stack
+        )
+        resources.enter_context(read_set.source_scope)
+        unchanged = resources.enter_context(
+            observe_prepared_state(
+                ledger._router,
+                ledger._core_store,
+                ledger._artifacts,
+                check_on_exit=not retain_for_commit,
+            )
+        )
         epoch: tuple[object, int] | None = None
 
         def internal() -> None:
@@ -189,21 +204,31 @@ def _control(
             control()
         # 原 SQL finally 的末次宿主回调之后不再 await 或调用外部回调。
         epoch = None
-        terminal = GitAuthenticationControl(local_check, internal)
-        with git_prefix_sql_window(database, checkpoint=terminal):
-            epoch = git_prefix_transaction_epoch(database)
-            read_set.require_sql(database, terminal)
-            read_set.terminal(
-                ledger._router,
-                ledger._core_store,
-                ledger._artifacts,
-                ledger._ports,
-                ledger._workspace_scope,
-                terminal,
-            )
-            read_set.require_sql(database, terminal)
-            terminal()
-        epoch = None
+
+        def terminal_read() -> None:
+            # 原操作期限及 Owner 鲜读保持；提交前复核不调用上游/共享回调。
+            nonlocal epoch
+            terminal = GitAuthenticationControl(local_check, internal)
+            try:
+                with git_prefix_sql_window(database, checkpoint=terminal):
+                    epoch = git_prefix_transaction_epoch(database)
+                    read_set.require_sql(database, terminal)
+                    read_set.terminal(
+                        ledger._router,
+                        ledger._core_store,
+                        ledger._artifacts,
+                        ledger._ports,
+                        ledger._workspace_scope,
+                        terminal,
+                    )
+                    read_set.require_sql(database, terminal)
+                    terminal()
+            finally:
+                epoch = None
+
+        terminal_read()
+        if retain_for_commit:
+            _register_prepared_git_commit(database, resources, terminal_read)
 
 
 async def _authenticate(
