@@ -12,6 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.product_config import git_prepared_link_connection as connection
 from harnessix.product_config.git_prepared_link_connection import (
@@ -38,6 +39,135 @@ def _invalid():
 def _closed(database):
     with pytest.raises(sqlite3.ProgrammingError, match="closed"):
         database.execute("SELECT 1")
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+async def test_original_task_keeps_connection_across_cooperative_wait(tmp_path, read_only):
+    path = _database(tmp_path / "git-delivery.db")
+    before = path.read_bytes()
+    with open_prepared_git_connection(path, read_only=read_only) as database:
+        require_prepared_git_connection(database, path)
+        await asyncio.sleep(0)
+        require_prepared_git_connection(database, path)
+        assert database.execute("SELECT * FROM records").fetchall() == [("A",)]
+    _closed(database)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+@pytest.mark.parametrize("via_cancel_token", [False, True])
+async def test_other_task_cannot_borrow_live_connection(tmp_path, read_only, via_cancel_token):
+    path = _database(tmp_path / "git-delivery.db")
+    before = path.read_bytes()
+    with open_prepared_git_connection(path, read_only=read_only) as database:
+
+        async def borrow():
+            with _invalid():
+                require_prepared_git_connection(database, path)
+
+        if via_cancel_token:
+            await CancelToken().run(borrow())
+        else:
+            await asyncio.create_task(borrow())
+        require_prepared_git_connection(database, path)
+        assert database.execute("SELECT * FROM records").fetchall() == [("A",)]
+    _closed(database)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+async def test_event_loop_callback_cannot_borrow_task_owned_connection(tmp_path, read_only):
+    path = _database(tmp_path / "git-delivery.db")
+    with open_prepared_git_connection(path, read_only=read_only) as database:
+        result = asyncio.get_running_loop().create_future()
+
+        def borrow():
+            try:
+                require_prepared_git_connection(database, path)
+            except KernelError as error:
+                result.set_result(error.code)
+            else:
+                result.set_result(None)
+
+        asyncio.get_running_loop().call_soon(borrow)
+        assert await result == "git_prepared_link_host_invalid"
+        require_prepared_git_connection(database, path)
+    _closed(database)
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+def test_synchronous_context_cannot_lend_connection_to_async_task(tmp_path, read_only):
+    path = _database(tmp_path / "git-delivery.db")
+    with open_prepared_git_connection(path, read_only=read_only) as database:
+
+        async def borrow():
+            with _invalid():
+                require_prepared_git_connection(database, path)
+
+        asyncio.run(borrow())
+        require_prepared_git_connection(database, path)
+    _closed(database)
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+async def test_independent_task_opens_its_own_connection_without_revoking_parent(
+    tmp_path, read_only
+):
+    path = _database(tmp_path / "git-delivery.db")
+    with open_prepared_git_connection(path, read_only=read_only) as original:
+
+        async def independent():
+            with open_prepared_git_connection(path, read_only=read_only) as owned:
+                assert owned is not original
+                require_prepared_git_connection(owned, path)
+                await asyncio.sleep(0)
+                require_prepared_git_connection(owned, path)
+            _closed(owned)
+
+        await asyncio.create_task(independent())
+        require_prepared_git_connection(original, path)
+    _closed(original)
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+async def test_parent_issued_observer_checks_source_without_granting_child_sql_admission(
+    tmp_path, read_only
+):
+    path = _database(tmp_path / "git-delivery.db")
+    before = path.read_bytes()
+    with open_prepared_git_connection(path, read_only=read_only) as database:
+        observe = connection._prepared_git_connection_observer(database, path)
+
+        async def inspect_source():
+            observe()
+            with _invalid():
+                require_prepared_git_connection(database, path)
+            with _invalid():
+                connection._prepared_git_connection_observer(database, path)
+
+        await CancelToken().run(inspect_source(), preserve_failure=True)
+        assert database.total_changes == 0
+        require_prepared_git_connection(database, path)
+    with _invalid():
+        observe()
+    assert path.read_bytes() == before
+
+
+async def test_child_source_observer_rejects_replaced_path_and_preserves_original_error(tmp_path):
+    path = _database(tmp_path / "git-delivery.db")
+    replacement = _database(tmp_path / "replacement.db", "B")
+    with open_prepared_git_connection(path, read_only=True) as database:
+        observe = connection._prepared_git_connection_observer(database, path)
+        path.rename(tmp_path / "retired.db")
+        replacement.rename(path)
+
+        async def inspect_source():
+            observe()
+
+        with pytest.raises(KernelError) as caught:
+            await CancelToken().run(inspect_source(), preserve_failure=True)
+        assert caught.value.code == "git_prepared_link_host_invalid"
+        assert database.total_changes == 0
 
 
 @pytest.mark.parametrize("read_only", [False, True])

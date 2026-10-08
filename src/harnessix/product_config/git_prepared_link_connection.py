@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import sqlite3
 import stat
 from collections.abc import Callable, Iterator
@@ -17,8 +18,25 @@ from harnessix.agent.errors import KernelError
 from harnessix.sqlite_readonly import readonly_database
 
 type _PhysicalPin = tuple[tuple[int, int], ...]
+type _ConnectionSource = tuple[Path, _PhysicalPin, _PhysicalPin, asyncio.Task[object] | None]
 
 _owned = local()
+
+
+def _current_task() -> asyncio.Task[object] | None:
+    """同步调用没有Task；准确任务身份不能用会被子任务继承的ContextVar代替。"""
+    try:
+        return asyncio.current_task()
+    except RuntimeError:
+        return None
+
+
+def _registered_prepared_connection(database: sqlite3.Connection) -> _ConnectionSource | None:
+    """通用原始连接没有登记；已登记产品连接必须属于当前原Task，不能降为通用模式。"""
+    issued: _ConnectionSource | None = getattr(_owned, "connections", {}).get(database)
+    if issued is not None and _current_task() is not issued[3]:
+        raise _invalid()
+    return issued
 
 
 def _invalid() -> KernelError:
@@ -89,7 +107,8 @@ def open_prepared_git_connection(
 
     只读复用原 mode=ro 端口；写连接使用 mode=rw 与显式事务模式。仅本 context
     可登记原 exact Connection，没有可由调用方提交的 witness 或注册入口。
-    正常或异常退出均撤销登记并关闭；不自动 COMMIT，未提交事务随关闭回滚。
+    登记原Task身份；同线程的子Task、回调不能借用。正常或异常退出均撤销登记
+    并关闭；不自动 COMMIT，未提交事务随关闭回滚。同步调用仍由原线程隔离。
     """
     _checkpoint(checkpoint)
     path = _absolute_path(path)
@@ -123,7 +142,7 @@ def open_prepared_git_connection(
         if connections is None:
             connections = {}
             _owned.connections = connections
-        connections[database] = (path, before, after)
+        connections[database] = (path, before, after, _current_task())
         try:
             yield database
             _checkpoint(checkpoint)
@@ -136,7 +155,7 @@ def open_prepared_git_connection(
 def require_prepared_git_connection(
     database: sqlite3.Connection, path: Path, *, checkpoint: Callable[[], None] | None = None
 ) -> None:
-    """仅当前线程中原活跃 context 的原连接与原路径可进入，关闭或置换即拒绝。
+    """仅原线程及原Task中活跃context的原连接与原路径可进入，关闭或置换即拒绝。
 
     检查点直接传播原异常，不安装 SQL 回调、不处理事务、不替代 Owner/Key 校验。
     """
@@ -146,10 +165,38 @@ def require_prepared_git_connection(
     issued = getattr(_owned, "connections", {}).get(database)
     if issued is None:
         raise _invalid()
-    original_path, before, after = issued
+    original_path, before, after, task = issued
+    if _current_task() is not task:
+        raise _invalid()
+    _observe_source(database, path, issued, checkpoint)
+
+
+def _observe_source(
+    database: sqlite3.Connection,
+    path: Path,
+    issued: _ConnectionSource,
+    checkpoint: Callable[[], None] | None,
+) -> None:
+    """只观察原连接来源，不授予当前Task使用原连接或进入SQL发布窗口的权限。"""
+    if getattr(_owned, "connections", {}).get(database) is not issued:
+        raise _invalid()
+    original_path, before, after, _task = issued
     if _absolute_path(path) != original_path or before != after:
         raise _invalid()
     _database_path(database, original_path, checkpoint)
     if _physical_pin(original_path, checkpoint) != after:
         raise _invalid()
     _require_alive(database)
+
+
+def _prepared_git_connection_observer(
+    database: sqlite3.Connection, path: Path
+) -> Callable[[], None]:
+    """原Task先准入后签发只读来源检查点，可交给受管验证子Task，不签发SQL能力。"""
+    require_prepared_git_connection(database, path)
+    issued = _owned.connections[database]
+
+    def observe() -> None:
+        _observe_source(database, path, issued, None)
+
+    return observe

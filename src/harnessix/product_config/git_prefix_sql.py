@@ -9,6 +9,10 @@ from threading import local
 from weakref import WeakValueDictionary
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_prepared_link_connection import (
+    _current_task,
+    _registered_prepared_connection,
+)
 
 _owned = local()
 
@@ -42,6 +46,8 @@ class _SQLCheckpoint:
 
     def __init__(self, checkpoint: Callable[[], None]) -> None:
         self.checkpoint = checkpoint
+        self.task = _current_task()
+        self.prepared_source: object | None = None
         self.interrupted: BaseException | None = None
         self.epoch = 0
         self.windows: WeakValueDictionary[int, object] = WeakValueDictionary()
@@ -67,10 +73,24 @@ def require_git_prefix_sql_window(database: sqlite3.Connection) -> None:
     control = getattr(_owned, "connections", {}).get(database)
     if control is None:
         raise KernelError("git_prefix_sql_control_required", "Git前缀需要专用SQL检查点窗口")
-    if control.interrupted is not None:
-        raise control.interrupted
+    _require_control_owner(database, control)
     # 不能只依赖1000步回调；小表和await之后仍须立即消费原Owner/Scope/绝对期限。
     control.checkpoint()
+    # 上游检查点可正常返回却已撤销连接或窗口；准入返回前再核对原来源。
+    _require_control_owner(database, control)
+
+
+def _require_control_owner(database: sqlite3.Connection, control: _SQLCheckpoint) -> None:
+    """首失败优先，核对同一原窗口及连接/任务来源，不执行新的上游回调。"""
+    if control.interrupted is not None:
+        raise control.interrupted
+    if getattr(_owned, "connections", {}).get(database) is not control:
+        raise KernelError("git_prefix_sql_owner_invalid", "Git前缀原SQL窗口已经变化")
+    if _registered_prepared_connection(database) is not control.prepared_source:
+        raise KernelError("git_prefix_sql_owner_invalid", "Git前缀原连接来源已经变化")
+    # 通用同步窗口保留原线程合同；产品Ledger在原Task内创建窗口，必须精确匹配。
+    if control.task is not None and _current_task() is not control.task:
+        raise KernelError("git_prefix_sql_owner_invalid", "Git前缀SQL窗口不属于当前任务")
 
 
 def git_prefix_transaction_epoch(database: sqlite3.Connection) -> tuple[object, int]:
@@ -113,7 +133,10 @@ def git_prefix_sql_window(
     宿主须为该窗口提供未装配其他进度回调的专用连接，并将原取消、Owner、
     Key与绝对期限检查合成同一检查点。该窗口不创建新期限，不获取业务锁。
     """
+    source = _registered_prepared_connection(database)
     checkpoint()
+    if _registered_prepared_connection(database) is not source:
+        raise KernelError("git_prefix_sql_owner_invalid", "Git前缀原连接来源已经变化")
     connections = getattr(_owned, "connections", None)
     if connections is None:
         connections = {}
@@ -121,6 +144,7 @@ def git_prefix_sql_window(
     if database in connections:
         raise KernelError("git_prefix_sql_control_conflict", "Git前缀连接已有SQL检查点窗口")
     control = _SQLCheckpoint(checkpoint)
+    control.prepared_source = source
     database.set_progress_handler(control.interrupt, 1000)
     database.set_trace_callback(control.trace)
     connections[database] = control

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 6
-code_revision: ba6171f32e5575be727364d166001ca0619db6a0
+version: 7
+code_revision: pending
 owners: [core]
 modules: [product_config, delivery, session, artifacts, trusted_actions, workspace]
 related_adrs:
@@ -47,13 +47,18 @@ supersedes: []
 | 输出 | 原 GitDB v2 内一条 `prepared / sequence=0` 业务记录、首个原 MAC 发布及完整尾锚 |
 | 成功提交 | 组件不提交事务；调用方必须在原锁窗口自行 COMMIT |
 | 当前回读 | 所有关联的原物理全前缀认证、业务交叉核验、固定四库变化观察与终端同步全集复核 |
-| 连接来源 | 原活跃 `open_prepared_git_connection` context 登记的确切 Connection；路径报告不能替代登记 |
+| 连接来源 | 原活跃context登记的确切Connection及原Task；来源观察不授予子Task SQL消费权；路径报告不能替代登记 |
 | 默认注册 | 未注册默认 `git_checkpoint` 或 `git_commit`，不修改产品装配 |
 | 未完成范围 | 实际业务批准、A/T2/D、NativeBridge、Checkpoint/Commit 效果、完整生命周期 Loader、Backup2、三平台业务验收及 R3/Beta |
 
 <a id="12-当前验收阻断"></a>
 
 ### 1.2 当前验收阻断
+
+连接与异步SQL窗口新增准确Task准入；原U验证子Task仅消费原Task签发的来源观察闭包，
+Owner、路径pin、事务代际及取消期限检查保持。通用同步SQL窗口仍是线程合同，不能作为Task认证证明。
+详见[任务准入与来源观察详设](m09-r4-git-connection-ownership.md)。
+本子项不证明实际SQLite FD、原Task持协作锁或完整B7，默认Git写工具仍未装配。
 
 本候选尚未封板。原先的同步复核仍会调用 SDK Store 的构造检查点，
 使已读取 CAS 失效而不改变数据库版本。现行源码已引入下述操作局部终端只读控制，

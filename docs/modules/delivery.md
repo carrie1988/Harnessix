@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 46
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 47
+code_revision: 2e96e78e75e7c6cd9bd7332770b90aa925449a1d
 owners:
   - core
 modules:
@@ -2331,3 +2331,14 @@ Audit 父闭包在该作用域直接借原 Store 严格 CAS IO，避免任意构
 [原 Store 与 Audit 专项](../../tests/delivery/test_terminal_read_control.py)覆盖读后删除反例、
 无共享回调对照、原父闭包缺失拒绝、控制异常实例保留及上下文生命周期。
 这不是认证收据、跨库快照、外部进程 CAS 文件锁或默认 Git 执行权；最终安装及完整业务验证仍独立。
+
+## Git连接任务准入与来源观察
+
+原prepared连接登记增加准确Task身份，公开连接准入拒绝同线程兄弟Task和loop callback。
+Ledger先在原Task准入，随后向受管U验证子Task传递固定来源观察闭包；闭包保留原登记、路径pin、
+连接存活、Owner及事务代际核验，不返回SQL能力。原取消及`preserve_failure`保持。
+PrefixSQL建立与消费时另核对产品连接的原登记，防止其他Task自建窗口或降为通用同步模式。
+未登记原始连接的通用同步窗口仍采用线程合同，不是Task认证证据。
+
+完整字段、正常/拒绝/恢复时序、数据流及取舍见[连接归属详设](../changes/m09-r4-git-connection-ownership.md)。
+本子项不证明实际SQLite FD、当前Task持协作锁、B4/B7整体、P1响应性或默认Git交付完成。

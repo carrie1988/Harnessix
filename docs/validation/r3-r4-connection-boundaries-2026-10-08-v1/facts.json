@@ -1,0 +1,143 @@
+{
+  "schema": "harnessix.r34-task-boundary-evidence/v1",
+  "date": "2026-10-08",
+  "base_revision": "2e96e78e75e7c6cd9bd7332770b90aa925449a1d",
+  "implementation_revision": null,
+  "status": "TASK_SUBGAP_VALIDATED_FULL_GATES_OPEN",
+  "real_model_requests": 0,
+  "runs": [
+    {
+      "id": "r3-model-kernel-budget",
+      "scope": "models_plus_kernel_and_original_verification_budget",
+      "terminal": true,
+      "tests": 747,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 747,
+      "seconds": 25.57,
+      "status": "PASS",
+      "original": {
+        "name": "harnessix-r3-broad-py312-20261008.xml",
+        "bytes": 106480,
+        "sha256": "1b05f8be64da347e52d68232a0c74ab115fd76c6a60c00463328926fc4320e8d"
+      }
+    },
+    {
+      "id": "r34-final-primitives",
+      "scope": "connection_prefix_session_and_r3_boundaries",
+      "terminal": true,
+      "tests": 389,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 389,
+      "seconds": 4.609,
+      "status": "PASS",
+      "original": {
+        "name": "harnessix-r34-closed-correctgit3-20261008.xml",
+        "bytes": 64369,
+        "sha256": "cb201d229c7e2cd470a8187228c9e63b724ce55d708304abd9bc7ed7a2e77fbe"
+      }
+    },
+    {
+      "id": "r4-final-installed-consumers",
+      "scope": "actual_authenticated_prepare_commit_readonly_reopen_and_original_exception_identity",
+      "terminal": true,
+      "tests": 2,
+      "passed": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 157.894,
+      "status": "PASS",
+      "original": {
+        "name": "harnessix-r34-final-consumer-20261008.xml",
+        "bytes": 607,
+        "sha256": "c7ed4b1f0ca91d15139aae0c970820dab3a02d0a3dfe458ad0ad6f8331665c00"
+      }
+    },
+    {
+      "id": "r4-intermediate-py313-consumers",
+      "candidate": "intermediate_source_session_not_final_wheel",
+      "terminal": true,
+      "tests": 113,
+      "passed": 113,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2293.048,
+      "status": "PASS",
+      "original": {
+        "name": "harnessix-r4-task-owner-coupled-20261008.xml",
+        "bytes": 19670,
+        "sha256": "4b1bddc59f49e6cf077252d5528368a69409fa6e2270175b55b930a3c7765fac"
+      }
+    }
+  ],
+  "sets_overlap": true,
+  "new_cases": {
+    "r3": 15,
+    "connection": 15,
+    "sql_task": 11
+  },
+  "r3": {
+    "production_changed": false,
+    "recovery_contract": "PROPOSED_NOT_IMPLEMENTED",
+    "historical_strict_success": {
+      "passed": 0,
+      "total": 20
+    },
+    "historical_required_tests": {
+      "passed": 1,
+      "total": 20
+    },
+    "quality_gate": "OPEN"
+  },
+  "r4": {
+    "implementation": "task_admission_and_source_only_observation",
+    "latest_candidate_consumer": "PASS_2_TARGETED_NOT_FULL_SUITE",
+    "full_git_writer": "NOT_ASSEMBLED",
+    "b4": "OPEN",
+    "b7_fd_and_lock": "OPEN",
+    "p1": "OPEN",
+    "three_os_coding": "OPEN",
+    "consumer_candidates_are_not_combined": true
+  },
+  "beta_accepted": 0,
+  "commercial_release": false,
+  "wheel": {
+    "name": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "bytes": 1371455,
+    "sha256": "b32e3bf9833859f94724be437dca204f2e86606195b5b9539ac2e07e6860da98",
+    "production_members": 552,
+    "changed_module_bytes_equal": true,
+    "all_production_member_bytes_equal": true
+  },
+  "source_files": {
+    "src/harnessix/product_config/git_prefix_sql.py": {
+      "bytes": 7364,
+      "sha256": "4eb51df45838ae1adbfa5490cc67f938309fe1f81f5d98edf89ccbcfc75567eb"
+    },
+    "src/harnessix/product_config/git_prepared_link_connection.py": {
+      "bytes": 7458,
+      "sha256": "eb41cc3b47c41282bb1710e97accb4b46077f41114d3852564a9d46cffac7e6e"
+    },
+    "src/harnessix/product_config/git_prepared_link_ledger.py": {
+      "bytes": 12797,
+      "sha256": "82b384731b31d476c93ca9d6d4e610b8e5a6a367c5e30f441b2c395c564a2b28"
+    }
+  },
+  "independent_review": {
+    "mode": "read_only_static",
+    "findings_fixed": [
+      "foreign_task_generic_sql_registration",
+      "normal_return_checkpoint_revokes_prepared_context"
+    ],
+    "final_static_result": "GO_FOR_REVIEWED_DIFF_NOT_RELEASE"
+  },
+  "intermediate_long_runs": {
+    "py313_prepared_ledger_history": "PASS_113_INTERMEDIATE_NOT_FINAL_WHEEL",
+    "py312_installed_consumers": "RUNNING_PRE_FINAL_DIFF"
+  }
+}

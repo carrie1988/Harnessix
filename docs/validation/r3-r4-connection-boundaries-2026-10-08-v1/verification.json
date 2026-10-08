@@ -1,0 +1,120 @@
+{
+  "schema": "harnessix.r34-task-boundary-verification/v1",
+  "python": "3.12.8",
+  "git": "2.53.0",
+  "offline_dependencies": true,
+  "new_model_requests": 0,
+  "commands": [
+    {
+      "id": "r34-final-primitives",
+      "command": "python -m pytest tests/models/test_unknown_tool_boundaries.py tests/product_config/test_git_prepared_link_connection.py tests/delivery/test_git_prefix_task_owner.py tests/delivery/test_git_prefix_sql_lifecycle.py tests/delivery/test_git_prefix_ledger.py tests/delivery/test_git_prefix_ledger_review.py tests/session/test_git_prefix_publication.py",
+      "result": {
+        "id": "r34-final-primitives",
+        "scope": "connection_prefix_session_and_r3_boundaries",
+        "terminal": true,
+        "tests": 389,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 389,
+        "seconds": 4.609,
+        "status": "PASS",
+        "original": {
+          "name": "harnessix-r34-closed-correctgit3-20261008.xml",
+          "bytes": 64369,
+          "sha256": "cb201d229c7e2cd470a8187228c9e63b724ce55d708304abd9bc7ed7a2e77fbe"
+        }
+      }
+    },
+    {
+      "id": "typing",
+      "command": "mypy src/harnessix/product_config/git_prefix_sql.py src/harnessix/product_config/git_prepared_link_connection.py src/harnessix/product_config/git_prepared_link_ledger.py",
+      "status": "PASS",
+      "source_files": 3
+    },
+    {
+      "id": "lint",
+      "command": "ruff check <three_changed_modules_and_three_owned_test_files>",
+      "status": "PASS"
+    },
+    {
+      "id": "installed_owner_import",
+      "command": "python -I -B -c \"import harnessix.processes.posix_owner\"",
+      "status": "PASS"
+    },
+    {
+      "id": "mermaid_render",
+      "command": "mmdc -p <isolated_installed_chrome_config> -i <owned_design_diagram> -o <diagram.svg>",
+      "status": "PASS",
+      "rendered": 8,
+      "visual_inspections": 2
+    },
+    {
+      "id": "r4-final-installed-consumers",
+      "command": "python -m pytest 'tests/product_config/test_git_prepared_link_ledger.py::test_actual_prepared_link_commit_reopen_read_only_and_stable_retry[reopen-read-False-sha1]' tests/product_config/test_git_prepared_approval_history.py::test_original_upstream_checkpoint_exception_instances_preserved",
+      "installed_candidate": "b32e3bf9833859f94724be437dca204f2e86606195b5b9539ac2e07e6860da98",
+      "result": {
+        "id": "r4-final-installed-consumers",
+        "scope": "actual_authenticated_prepare_commit_readonly_reopen_and_original_exception_identity",
+        "terminal": true,
+        "tests": 2,
+        "passed": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 157.894,
+        "status": "PASS",
+        "original": {
+          "name": "harnessix-r34-final-consumer-20261008.xml",
+          "bytes": 607,
+          "sha256": "c7ed4b1f0ca91d15139aae0c970820dab3a02d0a3dfe458ad0ad6f8331665c00"
+        }
+      }
+    },
+    {
+      "id": "documentation",
+      "command": "python scripts/documentation_check.py --changed-from <base_revision> --format json",
+      "status": "PASS",
+      "documents": 629,
+      "links": 13902,
+      "mermaids": 1154,
+      "findings": 0,
+      "scope": "documentation_tree_and_source_module_sync_not_foreign_untracked_content"
+    },
+    {
+      "id": "secret_scan",
+      "command": "python scripts/secret_scan.py --artifact-dir <canonical_final_wheel_directory>",
+      "status": "PASS",
+      "inputs": 5267,
+      "fixed_rule_hits": 0,
+      "version": "harnessix.secret-scan/v2"
+    }
+  ],
+  "environment_failures_preserved": [
+    {
+      "category": "apple_git_unsupported_object_format",
+      "tests": 389,
+      "passed": 387,
+      "failures": 2
+    },
+    {
+      "category": "mistyped_test_selection_path",
+      "runs": 2,
+      "test_execution": false
+    },
+    {
+      "category": "isolated_managed_child_package_not_installed",
+      "status": "FAIL"
+    },
+    {
+      "category": "secret_scan_staged_paths_changed_during_rename",
+      "status": "INCOMPLETE_NOT_PASS"
+    },
+    {
+      "category": "secret_scan_artifact_symlink_parent_tmp",
+      "status": "INCOMPLETE_NOT_PASS",
+      "canonical_directory_same_wheel_bytes_verified": true
+    }
+  ],
+  "intermediate_failures_preserved": true
+}

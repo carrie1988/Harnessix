@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 88
-code_revision: ad4bb6425e1b25d4dbf1d546c5d6d64c256a2958
+version: 89
+code_revision: 2e96e78e75e7c6cd9bd7332770b90aa925449a1d
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_prepared_link_connection.py
+  - tests/delivery/test_git_prefix_task_owner.py
   - tests/product_config/test_git_decided_source_reader.py
   - tests/product_config/test_git_decision_link_sources.py
   - tests/product_config/test_git_decision_source_sdk.py
@@ -2764,3 +2766,18 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 才以内部check重建原来源并严格深快照完整返回对象；合法摘要变化也拒绝，未知类型不进入foreign equality。
 原上下文完整退出后只交付实际核验的新快照，不交付末次回调之前构造的旧别名。
 最终同源码主仓SDK1项通过（完整夹具123.154秒）与12项末端绑定另记，不把新guard控制成本认定为P1通过或B4/B7关闭。
+
+## Git连接的任务准入与来源观察
+
+[`open_prepared_git_connection`](../../src/harnessix/product_config/git_prepared_link_connection.py)
+在原线程私有登记中增加准确Task身份；其他Task或loop callback不能借用原连接。
+原Task准入后签发固定无参数来源观察闭包，供合法U验证子Task检查原登记、路径pin和存活，
+不授予SQL消费、事务发布或工具执行能力。原Owner、Key、MAC、取消及绝对期限检查保持。
+
+[`git_prefix_sql_window`](../../src/harnessix/product_config/git_prefix_sql.py)建立和消费时绑定同一原产品连接登记；
+异步窗口还核对准确Task。消费checkpoint前后检查原控制实例及来源，回调正常返回但撤销原context仍拒绝。
+原首失败及checkpoint原异常实例优先；不增加上游回调。未登记同步通用窗口保持原线程兼容，产品连接不能降为通用模式。
+
+完整架构、时序、字段和失败恢复见[详设](../changes/m09-r4-git-connection-ownership.md)，
+候选绑定及实际SDK正控见[交付报告](../validation/r3-r4-connection-boundaries-2026-10-08-v1/README.md)。
+Task身份不是持锁证明，路径pin不是FD证明；本切片不关闭B4/B7/P1，不装配默认Git写工具。
