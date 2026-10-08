@@ -1,4 +1,4 @@
-"""Git 纯计算段的有界控制契约；完整来源认证仍在段边界和原 I/O 端口执行。"""
+"""Git 有界进度控制；区分无 I/O 纯段与受信同步原生只读端口段。"""
 
 from __future__ import annotations
 
@@ -55,8 +55,8 @@ def _validated_origin(
 class GitAuthenticationControl:
     """分开本地频检与完整认证，不缓存认证结果或签发持久能力。
 
-    仅宿主原操作创建；普通调用仍执行完整检查。只有显式纯计算段收到局部
-    检查点，段外、嵌套撤销、另一 Task 或线程使用旧检查点都回到完整检查。
+    仅宿主原操作创建；普通调用仍执行完整检查。显式纯段或受信同步原生
+    只读端口段收到局部检查点；段外、嵌套撤销、另一 Task 或线程都回到完整检查。
     """
 
     contract_version = "harnessix.git-authentication-control/v2"
@@ -92,7 +92,7 @@ class GitAuthenticationControl:
         return _validated_origin(self, self.__origin, self.__segment, expected)
 
     def __call__(self) -> None:
-        """完整检查先撤销纯段，防止上游回调借用保存的局部检查点。"""
+        """完整检查先撤销当前段，防止上游回调借用保存的局部检查点。"""
         self.__segment = None
         origin = GitAuthenticationControl._binding(self)
         origin[1]()
@@ -101,6 +101,23 @@ class GitAuthenticationControl:
     @contextmanager
     def pure(self) -> Iterator[Callable[[], None]]:
         """同步无 I/O 的纯段；异常先撤销，不用退出认证遮盖原首失败。"""
+        with GitAuthenticationControl._segments_check(self) as check:
+            yield check
+
+    @contextmanager
+    def io_progress(self) -> Iterator[Callable[[], None]]:
+        """仅给受信同步原生只读端口的 I/O 段，不是无 I/O 纯计算。
+
+        入口和成功出口完整认证；内部消费原取消、同一期限、原锁资源代际的
+        本地检查，不替代原生读取保护。保存检查点在段外、异 Task/线程或
+        任一完整检查后撤销并回到完整认证；异常不追加出口认证。
+        """
+        with GitAuthenticationControl._segments_check(self) as check:
+            yield check
+
+    @contextmanager
+    def _segments_check(self) -> Iterator[Callable[[], None]]:
+        """共享段 token 生命周期；不缓存认证结果，也不重新绑定创建来源。"""
         GitAuthenticationControl.__call__(self)
         origin = GitAuthenticationControl._binding(self)
         local_check, _, task, thread = origin
@@ -109,7 +126,7 @@ class GitAuthenticationControl:
             or _current_task() is not task
             or get_ident() != thread
         ):
-            # 受管子 Task 可走原完整观察，但不能继承父 Task 的纯段频检。
+            # 受管子 Task 可走原完整观察，但不能继承父 Task 的段内频检。
             # 使用完整委托而非控制实例，避免严格编解码入口再次递归适配。
             yield MethodType(GitAuthenticationControl.__call__, self)
             GitAuthenticationControl.__call__(self)
@@ -143,6 +160,16 @@ def pure_git_authentication(checkpoint: Callable[[], None]) -> Iterator[Callable
     """只接受原控制实例分层；任意函数、代理或子类保持其原完整调用轨迹。"""
     if type(checkpoint) is GitAuthenticationControl:
         with GitAuthenticationControl.pure(checkpoint) as check:
+            yield check
+    else:
+        yield checkpoint
+
+
+@contextmanager
+def io_git_authentication(checkpoint: Callable[[], None]) -> Iterator[Callable[[], None]]:
+    """只给 exact 控制的受信同步原生只读 I/O 端口分层；未知回调不追加调用。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        with GitAuthenticationControl.io_progress(checkpoint) as check:
             yield check
     else:
         yield checkpoint

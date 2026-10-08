@@ -15,6 +15,7 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread
 from harnessix.delivery.contracts import MAX_TRANSACTION_FILE_BYTES, WorkspaceMutation
+from harnessix.delivery.git_authentication_control import io_git_authentication
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.processes.git_observation import GitBaselineReadResult
 from harnessix.product_config.git_baseline_contracts import (
@@ -240,27 +241,29 @@ def _root_binding_matches(
     root: Path,
     checkpoint: Callable[[], None],
 ) -> bool:
-    """借原事实捕获端口校验相同根；目录逐项消费父取消和共同期限。"""
+    """原生只读根捕获是 I/O 段；内部逐项消费父取消、共同期限和原本地控制。"""
+    with io_git_authentication(checkpoint) as progress:
 
-    def controlled() -> None:
+        def controlled() -> None:
+            try:
+                progress()
+            except UpstreamCheckpointError:
+                raise
+            except BaseException as error:
+                raise UpstreamCheckpointError(error) from None
+
+        # 段入口/成功出口在此 try 外；只有原捕获端口沿旧边界解包上游异常。
         try:
-            checkpoint()
-        except UpstreamCheckpointError:
-            raise
-        except BaseException as error:
-            raise UpstreamCheckpointError(error) from None
-
-    try:
-        facts = capture_snapshot_facts(
-            root,
-            cwd=".",
-            resources=(),
-            external_roots=None,
-            platform=source.workspace.platform,
-            checkpoint=controlled,
-        )
-    except UpstreamCheckpointError as error:
-        raise error.error from None
+            facts = capture_snapshot_facts(
+                root,
+                cwd=".",
+                resources=(),
+                external_roots=None,
+                platform=source.workspace.platform,
+                checkpoint=controlled,
+            )
+        except UpstreamCheckpointError as error:
+            raise error.error from None
     return all(
         facts.scope[name] == getattr(source.workspace, name)
         for name in ("workspace_id", "root_path_digest", "root_identity")

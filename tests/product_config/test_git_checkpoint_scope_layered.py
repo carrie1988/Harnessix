@@ -1,4 +1,4 @@
-"""真实临时 SQLite CAS 的 Scope 入参纯段；控制替身不证明 SDK 来源认证。"""
+"""真实临时 SQLite CAS 的 Scope 输入与引用规划纯段；不是 SDK 来源认证。"""
 
 from __future__ import annotations
 
@@ -114,6 +114,7 @@ def _observe(monkeypatch, case, probe):
     watch(assembly, "_snapshot", "baseline")
     watch(assembly, "_snapshot_model", model_phase)
     watch(assembly, "_catalog", catalog_phase)
+    watch(assembly, "_projection_references", "references")
     for name in (
         "_build",
         "_scope",
@@ -158,18 +159,18 @@ def _observe(monkeypatch, case, probe):
     monkeypatch.setattr(assembly, "_build_control", build_control)
 
 
-def test_only_declarative_inputs_are_layered_and_canonical_scope_diff_unchanged(case, monkeypatch):
+def test_inputs_and_reference_plan_are_layered_without_changing_scope_or_diff(case, monkeypatch):
     probe = _Probe()
     _observe(monkeypatch, case, probe)
     before = canonical(json_facts(inputs(case)))
     rows = tuple(case.cas.store._db.iterdump())
     scope, diff = build(case, checkpoint=probe.control)
-    assert probe.scopes == 1
-    for phase in ("baseline", "reference", "base-catalog", "after-catalog", "limits"):
+    assert probe.scopes == 2
+    for phase in ("baseline", "reference", "base-catalog", "after-catalog", "limits", "references"):
         assert (phase, "local") in probe.events
         assert (phase, "auth") not in probe.events
-    assert probe.events.count(("pure-enter", "auth")) == 1
-    assert probe.events.count(("pure-exit", "auth")) == 1
+    assert probe.events.count(("pure-enter", "auth")) == 2
+    assert probe.events.count(("pure-exit", "auth")) == 2
     for phase in ("_build", "parse_git_commit", "_scope"):
         assert (phase, "auth") in probe.events
         assert (phase, "local") not in probe.events
@@ -189,7 +190,7 @@ def test_only_declarative_inputs_are_layered_and_canonical_scope_diff_unchanged(
     assert probe.events[-1] == ("entry", "auth")
     reads = probe.events.count(("cas-read", "enter"))
     assert build(case, checkpoint=probe.control)[0] == scope
-    assert probe.scopes == 2 and probe.events.count(("cas-read", "enter")) > reads
+    assert probe.scopes == 4 and probe.events.count(("cas-read", "enter")) > reads
 
 
 @pytest.mark.parametrize("error_kind", ERROR_KINDS)
@@ -205,6 +206,7 @@ def test_only_declarative_inputs_are_layered_and_canonical_scope_diff_unchanged(
         ("base-catalog", "local"),
         ("after-catalog", "local"),
         ("limits", "local"),
+        ("references", "local"),
         ("_build", "auth"),
         ("parse_git_commit", "auth"),
         ("prepare_git_tree_diff", "auth"),
@@ -243,6 +245,8 @@ def test_first_callback_and_boundary_error_identity_never_delivers_result(
         probe.phase = "retired"
         probe.retired()
         assert probe.events[-1] == ("retired", "auth")
+    if phase == "references":
+        assert ("cas-persist", "enter") not in probe.events
 
 
 @pytest.mark.parametrize("port", ["_snapshot", "_catalog", "_snapshot_model", "_build"])

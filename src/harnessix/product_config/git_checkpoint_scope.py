@@ -167,6 +167,54 @@ def _scope(
     )
 
 
+def _projection_references(
+    baseline: ProductGitDeliveryBaselineV2,
+    base_commit: GitObjectMaterialReference,
+    base_catalog: tuple[GitObjectMaterialReference, ...],
+    after_catalog: tuple[GitObjectMaterialReference, ...],
+    diff: GitTreeDiff,
+    limits: GitTreeClosureLimits,
+    checkpoint: Callable[[], None],
+) -> dict[str, GitObjectMaterialReference]:
+    """只核对投影资格并规划完整引用并集；成功退出认证前不触及 CAS 写入。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        with pure_git_authentication(checkpoint) as check:
+            return _projection_references(
+                baseline, base_commit, base_catalog, after_catalog, diff, limits, check
+            )
+    base = diff.projection.base
+    # 基线目录可含显式提交根，但不得夹带不属于完整基线树的历史或其他对象。
+    allowed = {ref.object_id for ref in base.objects} | {base_commit.object_id}
+    for reference in base_catalog:
+        checkpoint()
+        if reference.object_id not in allowed or (
+            reference.object_id == base_commit.object_id and reference != base_commit
+        ):
+            raise invalid_git_delivery_plan()
+    files = {file.path: file for file in base.files}
+    for member in baseline.members:
+        checkpoint()
+        actual = files.get(member.path)
+        if (member.oid, member.mode) != (
+            (None, None) if actual is None else (actual.material.object_id, actual.mode)
+        ):
+            raise invalid_git_delivery_plan()
+    new_references = []
+    for material in diff.projection.new_trees:
+        checkpoint()
+        new_references.append(
+            GitObjectMaterialReference(
+                material.object_type,
+                material.object_id,
+                material.object_format,
+                material.body_sha256,
+                material.body_bytes,
+                material.body_sha256,
+            )
+        )
+    return _union((base_commit, *base.objects, *after_catalog, *new_references), limits, checkpoint)
+
+
 def _build(
     cas: GitMaterialCAS,
     baseline: ProductGitDeliveryBaselineV2,
@@ -201,37 +249,8 @@ def _build(
         max_diff_bytes=MAX_WORKSPACE_DIFF_BYTES,
     )
     base = diff.projection.base
-    # 基线目录可含显式提交根，但不得夹带不属于完整基线树的历史或其他对象。
-    allowed = {ref.object_id for ref in base.objects} | {base_commit.object_id}
-    for reference in base_catalog:
-        checkpoint()
-        if reference.object_id not in allowed or (
-            reference.object_id == base_commit.object_id and reference != base_commit
-        ):
-            raise invalid_git_delivery_plan()
-    files = {file.path: file for file in base.files}
-    for member in baseline.members:
-        checkpoint()
-        actual = files.get(member.path)
-        if (member.oid, member.mode) != (
-            (None, None) if actual is None else (actual.material.object_id, actual.mode)
-        ):
-            raise invalid_git_delivery_plan()
-    new_references = []
-    for material in diff.projection.new_trees:
-        checkpoint()
-        new_references.append(
-            GitObjectMaterialReference(
-                material.object_type,
-                material.object_id,
-                material.object_format,
-                material.body_sha256,
-                material.body_bytes,
-                material.body_sha256,
-            )
-        )
-    references = _union(
-        (base_commit, *base.objects, *after_catalog, *new_references), limits, checkpoint
+    references = _projection_references(
+        baseline, base_commit, base_catalog, after_catalog, diff, limits, checkpoint
     )
     # 先核对整个图的容量，再把原投影的新树原样写入同一 CAS；不写 Git 对象库或 Ref。
     for material in diff.projection.new_trees:
