@@ -1,0 +1,186 @@
+{
+  "schema_version": "harnessix.validation-slice-facts/v1",
+  "source_revision": "bef1ab088d271bec205f07d9a6ec942514b0efa7",
+  "candidate": {
+    "version": "1.0.0rc1",
+    "wheel_sha256": "0ac0725bb1e9c28d7164cc8918663e060475d86137e88fc453c31caeee445d26",
+    "production_member_count": 555,
+    "source_installed_all_equal": true,
+    "input_count": 1559,
+    "python": "3.12.7",
+    "pytest": "8.4.2",
+    "dependencies": "uv.lock all-extras and dev",
+    "installed_noneditable": true
+  },
+  "runs": [
+    {
+      "id": "installed-seven-final",
+      "scope": "七完整产品目录，正式非editable安装",
+      "terminal": true,
+      "status": "PASS",
+      "tests": 2792,
+      "passed": 2791,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 1,
+      "seconds": 107.291,
+      "candidate_wheel_sha256": "0ac0725bb1e9c28d7164cc8918663e060475d86137e88fc453c31caeee445d26",
+      "original": {
+        "name": "installed-seven-final.xml",
+        "bytes": 1442143,
+        "sha256": "f6bbcf4cb71bfdf7cddb6e39ec56e720ea7fd21437bc470214ef5047d530fbaa"
+      }
+    },
+    {
+      "id": "installed-budget-complete",
+      "scope": "七文件预算管理及宿主，投影脚本加正式安装产品",
+      "terminal": true,
+      "status": "PASS",
+      "tests": 516,
+      "passed": 516,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 4.327,
+      "candidate_wheel_sha256": "0ac0725bb1e9c28d7164cc8918663e060475d86137e88fc453c31caeee445d26",
+      "original": {
+        "name": "installed-budget-complete.xml",
+        "bytes": 92274,
+        "sha256": "722740115eb512dc9786c2e21c5096b296031cf3f6f5502019fbda2fd7ccd156"
+      }
+    },
+    {
+      "id": "source-evals-final",
+      "scope": "源码完整Evals，无真实网络请求",
+      "terminal": true,
+      "status": "PASS",
+      "tests": 951,
+      "passed": 951,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 107.673,
+      "candidate_wheel_sha256": null,
+      "original": {
+        "name": "source-evals-final.xml",
+        "bytes": 684019,
+        "sha256": "fbf2127b2c776b6cd4de61a8e5109369ec03d8f315c85790dab329c24b9d55e8"
+      }
+    }
+  ],
+  "subsets": [
+    {
+      "id": "new-v2-final",
+      "scope": "新计划文件，包含于预算集合",
+      "terminal": true,
+      "status": "PASS",
+      "tests": 225,
+      "passed": 225,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 1.144,
+      "candidate_wheel_sha256": null,
+      "original": {
+        "name": "new-v2-final.xml",
+        "bytes": 43393,
+        "sha256": "ddae97fb5389890857963b20d2dcfa2c5bf2a4851d3034dcd37afaf99945c09f"
+      }
+    },
+    {
+      "id": "new-lock-final",
+      "scope": "新锁文件，包含于七目录",
+      "terminal": true,
+      "status": "PASS",
+      "tests": 28,
+      "passed": 28,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 0.511,
+      "candidate_wheel_sha256": null,
+      "original": {
+        "name": "new-lock-final.xml",
+        "bytes": 4199,
+        "sha256": "5f55894fd9dbbb87a2b01cfd8ee92cb4e4142391ac2ac37cd8cdc68822152246"
+      }
+    }
+  ],
+  "subset_counts_are_not_additive": true,
+  "v1_compatibility": {
+    "source_revision": "15f8e145cf85e859910ddc5f87a21e7844cbc118",
+    "serialization_equal": true,
+    "payload_sha256": "9da1995179b6abf34d78b7a33cdff2d53e8d3f54d70f8ca2674fe1432f0e8965",
+    "schema": {
+      "validation": {
+        "equal": true,
+        "sha256": "f2e357166711e36c3ab530784ecc9f471e58c50b8c00eef849df1598bd39bd76"
+      },
+      "serialization": {
+        "equal": true,
+        "sha256": "f2e357166711e36c3ab530784ecc9f471e58c50b8c00eef849df1598bd39bd76"
+      }
+    }
+  },
+  "actual_provider_calls": 0,
+  "actual_budget_registration": false,
+  "actual_budget_ledger_changed": false,
+  "customer_original_or_copy_accessed": false,
+  "release_gates": {
+    "R3": "OPEN",
+    "R4": "OPEN",
+    "commercial_v1": "NO-GO"
+  },
+  "historical_quality_not_rerun": {
+    "strict_success": 0,
+    "required_tests": 1,
+    "trials": 20,
+    "beta_accepted": 0
+  },
+  "open_items": [
+    "actual bounded reverification authorization and new fixed full Suite",
+    "original Git Runtime full critical section and all dispatch",
+    "SQLite actual FD provenance",
+    "B4 terminal Ref/config consistency",
+    "P1 responsiveness",
+    "formal decision Writer and recovery barrier",
+    "A/T2/NativeBridge/D/Checkpoint/local Commit/Backup2",
+    "three-platform real coding"
+  ],
+  "initial_error_preserved": {
+    "installed_budget": {
+      "tests": 516,
+      "setup_errors": 4,
+      "product_assertion_failures": 0,
+      "reason": "missing historical Git objects in isolated test projection",
+      "originals": [
+        {
+          "name": "installed-budget-final.xml",
+          "bytes": 113650,
+          "sha256": "a8182119d916058110cfa5c07e53c87f95c91f6b4373a6e600e9e5ceb6c88c5b"
+        },
+        {
+          "name": "installed-budget-final.log",
+          "bytes": 22197,
+          "sha256": "5e1e818146361c28d9d75ea8d3604ff1cb601a3a8c8a4e2e59a2b6c2af4deea7"
+        }
+      ]
+    },
+    "missing_test_path_commands": {
+      "exit_code": 4,
+      "count": 2,
+      "originals": [
+        {
+          "name": "original-budget-host.xml",
+          "bytes": 243,
+          "sha256": "5317e52c7e7d7d74fe69eb8e93aa3e9c0fb2f6aee99a5f904b201f177ff112ec"
+        },
+        {
+          "name": "original-budget-host-final.xml",
+          "bytes": 243,
+          "sha256": "5553322e583b710c27606e680b4c485e34d8566bf7664d122de93c14459eaa98"
+        }
+      ]
+    }
+  }
+}

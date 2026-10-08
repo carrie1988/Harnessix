@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: draft
+status: current
 version: 1
-code_revision: pending
+code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
 owners: [core]
 modules: [evals, models]
 related_adrs:

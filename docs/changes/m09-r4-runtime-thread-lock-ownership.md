@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: draft
+status: current
 version: 1
-code_revision: pending
+code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
 owners: [core]
 modules: [agent, product_config]
 related_adrs:
@@ -111,6 +111,21 @@ sequenceDiagram
 Task 比较为实例身份，不使用 Task 名称、整数 ID、ContextVar 字符串或调用方声明。
 状态流为未持有→标准 acquire 成功／原 Task 记录→检查→原 Task release／引用清空。
 等待者不进入该状态机的持有者字段，不能通过等待或取消改变原持有者。
+
+```mermaid
+flowchart TB
+    Thread[原Thread UUID] --> Map[原Runtime锁集合]
+    Acquire[实际acquire成功Task引用] --> Owner[原锁owner字段]
+    Map --> Exact[精确登记实例]
+    Current[当前Task实例] --> Compare[实例身份比较]
+    Owner --> Compare
+    Exact --> Compare
+    Compare --> Result[成功或固定拒绝 无持久化能力]
+    Release[原Task释放] --> Clear[清空owner引用]
+```
+
+Thread身份只用于取原集合成员；实际Task引用来自成功获取，不来自调用方输入。
+检查沿这两份原事实比较，不复制、序列化或长期保存结果；释放流只清理当前锁中的Task引用。
 
 ## 9. 核心逻辑与持久化、事务、并发
 

@@ -1,0 +1,62 @@
+{
+  "schema_version": "harnessix.validation-slice-verification/v1",
+  "source_revision": "bef1ab088d271bec205f07d9a6ec942514b0efa7",
+  "candidate_wheel_sha256": "0ac0725bb1e9c28d7164cc8918663e060475d86137e88fc453c31caeee445d26",
+  "pytest_terminal": true,
+  "source_mypy": {
+    "status": "PASS",
+    "files": 520,
+    "original": {
+      "name": "source-mypy-final.log",
+      "bytes": 45,
+      "sha256": "c80a866d55f3176614caa26d92071334e6b961337dd5c9ab32d791d796de003a"
+    }
+  },
+  "script_mypy": {
+    "status": "PASS",
+    "files": 5,
+    "original": {
+      "name": "script-mypy-final.log",
+      "bytes": 43,
+      "sha256": "e317872697c2cbfdefa321527a6efe73290dff3a390b0fa8723b87092eccba6a"
+    }
+  },
+  "ruff": {
+    "status": "PASS",
+    "original": {
+      "name": "ruff-final.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "format": {
+    "status": "PASS",
+    "files": 9,
+    "original": {
+      "name": "ruff-format-final.log",
+      "bytes": 26,
+      "sha256": "2ce9758b9f8abd876ec3e76c589e099e8b05377b1e7ea2331e81ee80f07bdff8"
+    }
+  },
+  "v1_schema_and_serialization": "PASS",
+  "mermaid": {
+    "compiled_svg_count": 7,
+    "budget_architecture_visual_checked": true
+  },
+  "documentation": {
+    "status": "PASS",
+    "documents": 635,
+    "links": 14032,
+    "mermaids": 1161,
+    "findings": 0
+  },
+  "tracked_secret_scan": {
+    "status": "PASS",
+    "scope": "all tracked files plus exact final candidate Wheel directory; default historical dist not accepted",
+    "result": "Secret扫描通过（harnessix.secret-scan/v2）：5317个输入完整覆盖且固定规则零命中",
+    "limits_unchanged": true
+  },
+  "foreign_untracked_content_accessed": false,
+  "private_history_modified": false,
+  "git_object_bytes_equal": true
+}

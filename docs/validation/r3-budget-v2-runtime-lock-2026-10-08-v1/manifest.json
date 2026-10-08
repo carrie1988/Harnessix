@@ -1,0 +1,68 @@
+{
+  "schema_version": "harnessix.validation-slice-manifest/v1",
+  "source_revision": "bef1ab088d271bec205f07d9a6ec942514b0efa7",
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 7753,
+      "sha256": "76a611f45a6a0f17fb7bba135a78ab5738171d8be0fcc838fc9191d2083e9685"
+    },
+    {
+      "path": "REVIEW_PACKET.md",
+      "bytes": 1800,
+      "sha256": "3bd0e5e12fafc39629e0ac42f7042bebbf5a52dc86642834fd2c3180d1aef8d9"
+    },
+    {
+      "path": "budget-1.svg",
+      "bytes": 14379,
+      "sha256": "33f6fb0068f38293e68d20426d902dd24d8e8a0a4789fe24f3d1426f36b96177"
+    },
+    {
+      "path": "budget-2.svg",
+      "bytes": 26186,
+      "sha256": "7d44590e225ef919ce84892032cbd20a12f19f5d37621257144c324ce931d7a2"
+    },
+    {
+      "path": "budget-3.svg",
+      "bytes": 16847,
+      "sha256": "471271a17c4a9cd2372697b0ca1d997c6d7614ca8fd88af00041c408b575ccf0"
+    },
+    {
+      "path": "facts.json",
+      "bytes": 5617,
+      "sha256": "c83dbea9a57df131653ba71d7175f2c7b3f898b416ad1e3b1e9e846f127cefcf"
+    },
+    {
+      "path": "lock-1.svg",
+      "bytes": 9702,
+      "sha256": "356586b741f61c57cdace72fb5a1a51ef920465f94a91a8eafe5f6f17ef1632e"
+    },
+    {
+      "path": "lock-2.svg",
+      "bytes": 14183,
+      "sha256": "f4adfcf243ecbdab1c1450d3e2760f00050becfc6419ef4416b3519e51065d2c"
+    },
+    {
+      "path": "lock-3.svg",
+      "bytes": 24001,
+      "sha256": "74f7d8ecd583a3014e32572e24125320cd5f9563f0198e1f3af6c68f204e6069"
+    },
+    {
+      "path": "lock-4.svg",
+      "bytes": 16189,
+      "sha256": "5964309d714245bd1c94738c9a45e599852f43c107b8717e54fef06e490742fb"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1833,
+      "sha256": "52cdd0bb41249bd6ad1fd5dc1177e9a1c69b19e3a51d49186f39728db1b6d8b8"
+    }
+  ],
+  "self_excluded": true,
+  "private_seal": {
+    "id": "r3-budget-v2-runtime-lock-20261008-v1",
+    "file": "manifest-terminal-v1.json",
+    "member_count": 88,
+    "sha256": "7e71c009b77cc45681f89540a058c2b9f2b87a3a9b6d9cb1c2f57b9014483812"
+  }
+}
