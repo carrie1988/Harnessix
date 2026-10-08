@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 4
+version: 5
 code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
 owners: [core]
 modules: [product_config, delivery]
@@ -17,7 +17,7 @@ supersedes: []
 # 原 SQLite 连接来源检查：公开原生 API 研究与接线约束
 
 - 冻结访问日期：2026-10-08。
-- Harnessix 当前生产参考提交：ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111；第 4、5 节原桥研究参考提交仍为 d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2。
+- Harnessix 当前生产源码参考提交：1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9；第 4、5 节原桥研究参考提交仍为 d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2。
 - 研究结论：公开扩展入口可以获得原标准库连接对应的 SQLite C 句柄；主库移动检查可复现普通置换及指定 ABA 反例。
 - 准入结论：**仅研究，未装配产品；实际完整 FD、B7、P1、默认 Git Writer 与发布均不因此通过。**
 
@@ -262,6 +262,33 @@ Python／SQLite 本体未插桩；原生桥的已执行路径与分配拦截证�
 ASAN／LSAN、完整 FD／WAL／SHM、B7 与三平台准入保持开放。
 本轮固定原件位于 `~/Library/Application Support/Harnessix/verification/r4-owned-sync-and-linux-memory-20261008-v1`；
 其中结构化结果与 manifest 可复算，原工具链尝试失败不会被后继有效执行覆盖。
+
+### 7.3 模块引用释放窄修复与标准库错误缓冲对照
+
+原桥已实现 `m_clear`，但没有 `m_free`；[公开模块合同](https://docs.python.org/3.12/c-api/module.html#c.PyModuleDef.m_clear)
+明确引用计数析构不保证先调用 `m_clear`。固定 [CPython 3.12.11 析构源码](https://github.com/python/cpython/blob/v3.12.11/Objects/moduleobject.c#L705-L727)
+同样只调用已登记的 `m_free`，不会自动释放桥的 ModuleState 所持引用。
+隔离候选只增加 `module_free → 原 module_clear` 和对应登记，不改 SQLite、Token、加载失败、版本保护或安全算法。
+
+| 配对验证 | 原版 | 窄修复候选 | 可证明范围 |
+|---|---|---|---|
+| 公开 C API 析构宿主，三工具各 100 次 | 各保留 100 个 BridgeError 类；ASAN／LSAN 报 259386 bytes | 各保留 0 个；三进程退出 0，无泄漏／UB 诊断 | 该直接析构路径的模块引用缺陷已消除，不是产品 SDK |
+| 同入口只 import 桥，LSAN | 55615 bytes／44 allocations，退出 73 | 3824 bytes／4 allocations，与无桥一致，仍退出 73 | 桥相关新增组消失，不扣减基线宣布成功 |
+| 原 21 项矩阵、每版三工具 | 每组 20 项通过／1 个已知反例 | 同样结果；ASAN／LSAN 各 21 进程仍退出 73 | 原断言未改；完整内存门禁仍失败 |
+
+候选三项加载失败场景另有 80／160／248 bytes 的 SQLite 分配。
+后继**不加载桥**的标准库 `load_extension` 失败对照使用同一固定引擎与有效 preload：
+ASAN／LSAN 的 0、1、100 次失败分别报告 3824、4168、38224 bytes，即每次新增 344 bytes；
+UBSAN 三进程退出 0。完整映射确认没有桥、只有 SQLite 3.45.3。
+[固定标准库源码](https://github.com/python/cpython/blob/v3.12.11/Modules/_sqlite/connection.c#L1679-L1702)
+在加载错误后创建 Python 异常但没有释放 `errmsg`，与实际 SQLite 分配栈一致；
+这定位了独立于桥的上游错误缓冲释放缺口，但不据此排除所有剩余分配。
+
+首次无桥对照缺少 libstdc++／libgcc，九进程均退出 127、未进入测试，原失败保留；
+补齐官方签名运行依赖后才得到上述有效结果。没有关闭检测、添加 suppression、改变错误返回或修改生产依赖。
+新原件位于 `~/Library/Application Support/Harnessix/verification/r4-native-module-lifetime-20261008-v1`，
+保留配对源码、完整泄漏栈、映射、工具控制、来源、复算结果和清单；旧交付不追写。
+窄修复仍仅隔离研究，完整 FD／WAL／SHM、B7、三平台和默认 Writer 均未因此准入。
 
 ## 8. 源码映射、取舍与下一步
 
