@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from types import UnionType
 from typing import Annotated, Literal, Union, cast, get_args, get_origin
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from pydantic import AwareDatetime, BaseModel, JsonValue, ValidationError
+from pydantic_core import TzInfo
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.git_authentication_control import GitAuthenticationControl
@@ -58,6 +60,14 @@ def _matches(value: object, annotation: object) -> bool:
     return type(value) is (origin or annotation)
 
 
+def _declarative_datetime(value: datetime) -> datetime:
+    """拒绝可执行时区而不调用 offset/tzname；naive 沿用原模型验证。"""
+    zone = value.tzinfo
+    if zone is not None and type(zone) not in {timezone, TzInfo, ZoneInfo}:
+        raise invalid_git_delivery_plan()
+    return value
+
+
 def _field(value: object, annotation: object, checkpoint: Callable[[], None]) -> object:
     """按已声明字段分派，保留 UUID、Enum、日期、tuple 的实际类型。"""
     checkpoint()
@@ -74,6 +84,8 @@ def _field(value: object, annotation: object, checkpoint: Callable[[], None]) ->
         return _field(value, candidates[0], checkpoint)
     if not _matches(value, annotation):
         raise invalid_git_delivery_plan()
+    if annotation in {datetime, AwareDatetime}:
+        return _declarative_datetime(cast(datetime, value))
     if origin is Literal or annotation in {
         str,
         int,
@@ -81,8 +93,6 @@ def _field(value: object, annotation: object, checkpoint: Callable[[], None]) ->
         bool,
         type(None),
         UUID,
-        datetime,
-        AwareDatetime,
     }:
         return value
     if isinstance(annotation, type) and issubclass(annotation, Enum):

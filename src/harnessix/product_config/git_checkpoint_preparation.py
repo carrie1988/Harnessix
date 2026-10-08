@@ -17,6 +17,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import Thread, ToolCallContent, Turn
 from harnessix.agent.reducer import get_turn
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.delivery.git_inventory_contracts import GitInventoryScope
 from harnessix.delivery.git_inventory_wire import _wire
 from harnessix.delivery.git_material_cas import GitMaterialCAS
@@ -128,9 +129,10 @@ def _preparation_control(
     cancel: CancelToken,
     budget: GitOperationBudget,
     failures: list[BaseException],
-) -> Callable[[], None]:
-    """冻结同一原宿主引用及实现配方；每次检查拒绝中途替换，不重绑权限。"""
+) -> tuple[Callable[[], None], Callable[[], None]]:
+    """冻结原资源，返回纯段频检与完整认证；两者借用同一期限和父取消。"""
     original = tuple(vars(planner).items())
+    core_store, material_port, session = planner.core_store, planner.material_port, planner.session
     transactions = planner.core_store.store
     implementation = git_checkpoint_preparation_implementation_digest()
     authority = require_git_user_authority(
@@ -177,7 +179,43 @@ def _preparation_control(
             failures.append(error)
             raise
 
-    return parent_cancel_checkpointer(control)
+    def local_check() -> None:
+        """同步纯算法只比较原内存引用；不调用来源读器、Owner或外部回调。"""
+        try:
+            cancel.checkpoint()
+            budget.remaining()
+            # 先比对一次内存快照，再读冻结的原对象；替换代理不能借属性执行回调。
+            current = vars(planner).copy()
+            if tuple(current) != tuple(name for name, _ in original) or any(
+                current[name] is not value for name, value in original
+            ):
+                raise _invalid()
+            if (
+                getattr(core_store, "store", None) is not transactions
+                or getattr(material_port, "_closed", True)
+                or getattr(material_port, "_runtime_host", None) is not host
+                or getattr(session, "_runtime_owner_token", None) is not owner
+                or any(
+                    actual is not expected
+                    for actual, expected in zip(
+                        (
+                            getattr(host, "owner", None),
+                            getattr(host, "supervisor", None),
+                            getattr(host, "plans", None),
+                            getattr(host, "protection", None),
+                            getattr(material_port, "_runner", None),
+                        ),
+                        host_references,
+                        strict=True,
+                    )
+                )
+            ):
+                raise _invalid()
+        except BaseException as error:
+            failures.append(error)
+            raise
+
+    return parent_cancel_checkpointer(local_check), parent_cancel_checkpointer(control)
 
 
 async def _prepare_entry(
@@ -201,23 +239,20 @@ async def _prepare_entry(
         raise _invalid()
     budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
     failures: list[BaseException] = []
-    check = _preparation_control(planner, context, cancel, budget, failures)
+    local_check, check = _preparation_control(planner, context, cancel, budget, failures)
     check()
+
+    async def prepare_original() -> ResolvedAction:
+        # 在实际受管子Task内创建纯段控制，但认证闭包仍冻结入口的原资源。
+        control = GitAuthenticationControl(local_check, check)
+        return await _prepare(
+            planner, invocation, arguments, context, thread, turn, call, cancel, budget, control
+        )
+
     try:
         async with asyncio.timeout(budget.remaining()):
             result = await cancel.run(
-                _prepare(
-                    planner,
-                    invocation,
-                    arguments,
-                    context,
-                    thread,
-                    turn,
-                    call,
-                    cancel,
-                    budget,
-                    check,
-                ),
+                prepare_original(),
                 preserve_failure=True,
             )
             check()

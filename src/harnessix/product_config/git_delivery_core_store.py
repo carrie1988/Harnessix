@@ -98,16 +98,18 @@ def _persist[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
     check = _Checkpoint(checkpoint)
     check()
     store = _store(source_store)
-    snapshot = (
-        snapshot_product_git_delivery_core(core, checkpoint=check)
-        if kind is ProductGitDeliveryCore
-        else snapshot_product_git_delivery_core_v2(core, checkpoint=check)
-    )
-    body = (
-        encode_product_git_delivery_core(snapshot, checkpoint=check)
-        if kind is ProductGitDeliveryCore
-        else encode_product_git_delivery_core_v2(snapshot, checkpoint=check)
-    )
+    with pure_git_authentication(checkpoint) as pure_check:
+        pure = _Checkpoint(pure_check)
+        snapshot = (
+            snapshot_product_git_delivery_core(core, checkpoint=pure)
+            if kind is ProductGitDeliveryCore
+            else snapshot_product_git_delivery_core_v2(core, checkpoint=pure)
+        )
+        body = (
+            encode_product_git_delivery_core(snapshot, checkpoint=pure)
+            if kind is ProductGitDeliveryCore
+            else encode_product_git_delivery_core_v2(snapshot, checkpoint=pure)
+        )
     if hashlib.sha256(body).hexdigest() != snapshot.fingerprint:
         raise invalid_git_delivery_plan()
     try:
@@ -118,13 +120,6 @@ def _persist[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
         check()
         if _body(actual, snapshot.fingerprint) != body:
             raise _io_error(True)
-        result = (
-            decode_product_git_delivery_core(actual, checkpoint=check)
-            if kind is ProductGitDeliveryCore
-            else decode_product_git_delivery_core_v2(actual, checkpoint=check)
-        )
-        check()
-        return cast(T, result)
     except UpstreamCheckpointError as error:
         if check.error is not None:
             raise check.error from None
@@ -134,6 +129,26 @@ def _persist[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
         if check.error is not None:
             raise check.error from None
         raise _io_error(True) from None
+
+    # 只在实际 CAS 回读及正文核验之后解析；纯段边界不进入 IO 错误映射。
+    with pure_git_authentication(checkpoint) as pure_check:
+        check = _Checkpoint(pure_check)
+        try:
+            result = (
+                decode_product_git_delivery_core(actual, checkpoint=check)
+                if kind is ProductGitDeliveryCore
+                else decode_product_git_delivery_core_v2(actual, checkpoint=check)
+            )
+            check()
+            return cast(T, result)
+        except UpstreamCheckpointError as error:
+            if check.error is not None:
+                raise check.error from None
+            raise error.error from None
+        except Exception:
+            if check.error is not None:
+                raise check.error from None
+            raise _io_error(True) from None
 
 
 def _load[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
