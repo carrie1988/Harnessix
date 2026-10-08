@@ -1,7 +1,7 @@
 {
   "schema": "harnessix.r3-rejection-delivery/v1",
   "source_base_revision": "e297ea89959762cb982a1299087edd5ba0db6aea",
-  "code_revision": "e297ea89959762cb982a1299087edd5ba0db6aea",
+  "code_revision": "5e26f952ead508dcf003c73fc54e717c6a4169d7",
   "package_version": "1.0.0rc1",
   "versions": {
     "agent_protocol": "2.0",
@@ -12,7 +12,7 @@
     "changed_public_schemas": 6
   },
   "candidate": {
-    "wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+    "wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
     "exact_production_members": 554,
     "source_wheel_installed_bytes_equal": true,
     "production_members_sha256": "02fdadb91e2a52c98dc9d2fbea003e838752564bb4761ed356a3ff439f615e11",
@@ -20,7 +20,10 @@
       "__pycache__",
       "*.pyc",
       ".DS_Store"
-    ]
+    ],
+    "source_revision": "5e26f952ead508dcf003c73fc54e717c6a4169d7",
+    "metadata_readme_exact": true,
+    "readme_sha256": "d9f0c3a8bf544803a40f36534bae30d460ea772c755886abb4fa81befc48b2a2"
   },
   "final_installed_runs": [
     {
@@ -32,31 +35,31 @@
       "errors": 0,
       "skipped": 1,
       "passed": 2763,
-      "seconds": 112.932,
+      "seconds": 110.494,
       "status": "PASS",
-      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
       "original": {
         "name": "installed-complete.xml",
         "bytes": 1438184,
-        "sha256": "ac736989025d463eb9598d784531276c6606e68dd197d8c008872a421153ce01"
+        "sha256": "2c582099600291926900ca8c70d63fa85deff4c6d61c32e1a3d05d4328553219"
       }
     },
     {
-      "id": "installed-backup-guards",
-      "scope": "完整备份、迁移清单、父闭包、原预算及产品收敛适用集合",
+      "id": "installed-product-consumers",
+      "scope": "备份及预算318、适用SDK消费者81、产品CLI16合并一次执行；414通过、1原生Windows跳过",
       "terminal": true,
-      "tests": 318,
+      "tests": 415,
       "failures": 0,
       "errors": 0,
-      "skipped": 0,
-      "passed": 318,
-      "seconds": 36.32,
+      "skipped": 1,
+      "passed": 414,
+      "seconds": 49.335,
       "status": "PASS",
-      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
       "original": {
-        "name": "installed-backup-guards.xml",
-        "bytes": 51397,
-        "sha256": "e87289b14404eaa99659567de757934f10db767bcd579beb4eb04a29af342336"
+        "name": "installed-product-consumers.xml",
+        "bytes": 590427,
+        "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
       }
     },
     {
@@ -68,49 +71,13 @@
       "errors": 0,
       "skipped": 0,
       "passed": 2,
-      "seconds": 164.307,
+      "seconds": 163.395,
       "status": "PASS",
-      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
       "original": {
         "name": "installed-r4-consumers.xml",
         "bytes": 607,
-        "sha256": "b4d6f4c8f669bd61558684d9dd636e349912245a5ad02b2836b3654bc39873ed"
-      }
-    },
-    {
-      "id": "installed-sdk-consumers",
-      "scope": "Artifact/Patch SDK、公开CLI、Eval CLI及Soak契约适用消费者；不是稳态Soak",
-      "terminal": true,
-      "tests": 81,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0,
-      "passed": 81,
-      "seconds": 13.04,
-      "status": "PASS",
-      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
-      "original": {
-        "name": "installed-sdk-consumers.xml",
-        "bytes": 536687,
-        "sha256": "41a3850b0bab7ded6650a3f0744cba9e17ca4bdbd3c7a6d310eac0c1b8f89a31"
-      }
-    },
-    {
-      "id": "installed-product-cli",
-      "scope": "完整产品Server/CLI测试文件",
-      "terminal": true,
-      "tests": 16,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 1,
-      "passed": 15,
-      "seconds": 2.718,
-      "status": "PASS",
-      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
-      "original": {
-        "name": "installed-product-cli.xml",
-        "bytes": 2852,
-        "sha256": "73074cee10433ce53a2a6ac9a9124cafe320b2c3ca7de3d1d6bbbd3e19b05175"
+        "sha256": "8ff1bb09e142512b2e26f08403ef82e6514d8c4bb2c399bace15dd270ca00aee"
       }
     }
   ],
@@ -224,6 +191,96 @@
         "bytes": 5687,
         "sha256": "230f7b9d2dd4c0a9cf74b608b691b60ce865c1e1e296c3e7e88799edd4d5a88e"
       }
+    },
+    {
+      "id": "installed-complete",
+      "scope": "README元数据同步前候选；仅中间证据，不代替最终Wheel。完整Agent/Context/Session/Models/Protocol/AppServer/ProductUI七目录",
+      "terminal": true,
+      "tests": 2764,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "passed": 2763,
+      "seconds": 112.932,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-complete.xml",
+        "bytes": 1438184,
+        "sha256": "ac736989025d463eb9598d784531276c6606e68dd197d8c008872a421153ce01"
+      }
+    },
+    {
+      "id": "installed-backup-guards",
+      "scope": "README元数据同步前候选；仅中间证据，不代替最终Wheel。完整备份、迁移清单、父闭包、原预算及产品收敛适用集合",
+      "terminal": true,
+      "tests": 318,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 318,
+      "seconds": 36.32,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-backup-guards.xml",
+        "bytes": 51397,
+        "sha256": "e87289b14404eaa99659567de757934f10db767bcd579beb4eb04a29af342336"
+      }
+    },
+    {
+      "id": "installed-r4-consumers",
+      "scope": "README元数据同步前候选；仅中间证据，不代替最终Wheel。实际认证SDK到prepared关联COMMIT、非空只读重开及原异常身份",
+      "terminal": true,
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 2,
+      "seconds": 164.307,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-r4-consumers.xml",
+        "bytes": 607,
+        "sha256": "b4d6f4c8f669bd61558684d9dd636e349912245a5ad02b2836b3654bc39873ed"
+      }
+    },
+    {
+      "id": "installed-sdk-consumers",
+      "scope": "README元数据同步前候选；仅中间证据，不代替最终Wheel。Artifact/Patch SDK、公开CLI、Eval CLI及Soak契约适用消费者；不是稳态Soak",
+      "terminal": true,
+      "tests": 81,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 81,
+      "seconds": 13.04,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-sdk-consumers.xml",
+        "bytes": 536687,
+        "sha256": "41a3850b0bab7ded6650a3f0744cba9e17ca4bdbd3c7a6d310eac0c1b8f89a31"
+      }
+    },
+    {
+      "id": "installed-product-cli",
+      "scope": "README元数据同步前候选；仅中间证据，不代替最终Wheel。完整产品Server/CLI测试文件",
+      "terminal": true,
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "passed": 15,
+      "seconds": 2.718,
+      "status": "PASS",
+      "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
+      "original": {
+        "name": "installed-product-cli.xml",
+        "bytes": 2852,
+        "sha256": "73074cee10433ce53a2a6ac9a9124cafe320b2c3ca7de3d1d6bbbd3e19b05175"
+      }
     }
   ],
   "counting_policy": "同一用例的源码、安装及重复运行分开记录，不累加为独立用例；各集合不据耗时外推产品SLA",
@@ -274,5 +331,90 @@
     "R4 B4/B7实际FD与锁归属",
     "R4 P1及approved Writer/default Git完整授权写链",
     "三平台实际编码与最终候选迁移/恢复"
-  ]
+  ],
+  "derived_product_consumer_subsets": [
+    {
+      "id": "backup-guards",
+      "subset_of": "installed-product-consumers",
+      "selector_classnames": [
+        "tests.evals.test_provider_verification_budget",
+        "tests.governance.test_product_runtime_convergence",
+        "tests.product_config.test_product_state_backup",
+        "tests.product_config.test_rejection_backup_versions",
+        "tests.product_config.test_state_backup_parent_closure",
+        "tests.product_config.test_workspace_reference_backup"
+      ],
+      "tests": 318,
+      "passed": 318,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+      "original": {
+        "name": "installed-product-consumers.xml",
+        "bytes": 590427,
+        "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
+      }
+    },
+    {
+      "id": "sdk-consumers",
+      "subset_of": "installed-product-consumers",
+      "selector_classnames": [
+        "tests.artifacts.test_sdk",
+        "tests.benchmarks.test_run_sdk_soak_candidate",
+        "tests.benchmarks.test_run_sdk_soak_release",
+        "tests.benchmarks.test_soak_sdk_capacity",
+        "tests.evals.test_campaign_cli",
+        "tests.evals.test_provider_suite_cli",
+        "tests.governance.test_cli_console",
+        "tests.patches.test_kernel_batch_sdk",
+        "tests.patches.test_kernel_patch_sdk",
+        "tests.product_config.test_protocol_publication_cli"
+      ],
+      "tests": 81,
+      "passed": 81,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+      "original": {
+        "name": "installed-product-consumers.xml",
+        "bytes": 590427,
+        "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
+      }
+    },
+    {
+      "id": "product-cli",
+      "subset_of": "installed-product-consumers",
+      "selector_classnames": [
+        "tests.product_config.test_server_and_cli"
+      ],
+      "tests": 16,
+      "passed": 15,
+      "skipped": 1,
+      "failures": 0,
+      "errors": 0,
+      "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+      "original": {
+        "name": "installed-product-consumers.xml",
+        "bytes": 590427,
+        "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
+      }
+    }
+  ],
+  "current_budget_read_only": {
+    "allocation": "60",
+    "known_estimate": "0.725956",
+    "reserved": "20.77824",
+    "request_count": 28,
+    "statuses": {
+      "completed": 27,
+      "unknown": 1
+    },
+    "remaining_estimate": "38.495804",
+    "has_bounded_reverification": false,
+    "read_only": true,
+    "currency": "CNY",
+    "unknown_policy": "STOP；只有有效新周期有界复验合同或权威结算可重新准入，旧周期授权不自动沿用"
+  }
 }

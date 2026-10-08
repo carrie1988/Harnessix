@@ -2,7 +2,7 @@
 doc_type: validation-evidence
 status: current
 version: 1
-code_revision: e297ea89959762cb982a1299087edd5ba0db6aea
+code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners: [core]
 modules: [models, agent, session, context, protocol, app_server, sdk, product_ui, product_config, evals]
 related_adrs:

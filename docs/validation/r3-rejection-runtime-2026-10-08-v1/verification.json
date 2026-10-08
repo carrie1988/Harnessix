@@ -19,6 +19,319 @@
         "errors": 0,
         "skipped": 1,
         "passed": 2763,
+        "seconds": 110.494,
+        "status": "PASS",
+        "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+        "original": {
+          "name": "installed-complete.xml",
+          "bytes": 1438184,
+          "sha256": "2c582099600291926900ca8c70d63fa85deff4c6d61c32e1a3d05d4328553219"
+        }
+      }
+    },
+    {
+      "id": "installed-product-consumers",
+      "command": "python -B -m pytest tests/product_config/test_product_state_backup.py tests/product_config/test_rejection_backup_versions.py tests/product_config/test_state_backup_parent_closure.py tests/product_config/test_workspace_reference_backup.py tests/evals/test_provider_verification_budget.py tests/governance/test_product_runtime_convergence.py tests/artifacts/test_sdk.py tests/patches/test_kernel_batch_sdk.py tests/patches/test_kernel_patch_sdk.py tests/product_config/test_protocol_publication_cli.py tests/evals/test_campaign_cli.py tests/evals/test_provider_suite_cli.py tests/governance/test_cli_console.py tests/benchmarks/test_run_sdk_soak_candidate.py tests/benchmarks/test_run_sdk_soak_release.py tests/benchmarks/test_soak_sdk_capacity.py tests/product_config/test_server_and_cli.py",
+      "result": {
+        "id": "installed-product-consumers",
+        "scope": "备份及预算318、适用SDK消费者81、产品CLI16合并一次执行；414通过、1原生Windows跳过",
+        "terminal": true,
+        "tests": 415,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 414,
+        "seconds": 49.335,
+        "status": "PASS",
+        "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+        "original": {
+          "name": "installed-product-consumers.xml",
+          "bytes": 590427,
+          "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
+        }
+      },
+      "derived_subsets": [
+        {
+          "id": "backup-guards",
+          "subset_of": "installed-product-consumers",
+          "selector_classnames": [
+            "tests.evals.test_provider_verification_budget",
+            "tests.governance.test_product_runtime_convergence",
+            "tests.product_config.test_product_state_backup",
+            "tests.product_config.test_rejection_backup_versions",
+            "tests.product_config.test_state_backup_parent_closure",
+            "tests.product_config.test_workspace_reference_backup"
+          ],
+          "tests": 318,
+          "passed": 318,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0,
+          "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+          "original": {
+            "name": "installed-product-consumers.xml",
+            "bytes": 590427,
+            "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
+          }
+        },
+        {
+          "id": "sdk-consumers",
+          "subset_of": "installed-product-consumers",
+          "selector_classnames": [
+            "tests.artifacts.test_sdk",
+            "tests.benchmarks.test_run_sdk_soak_candidate",
+            "tests.benchmarks.test_run_sdk_soak_release",
+            "tests.benchmarks.test_soak_sdk_capacity",
+            "tests.evals.test_campaign_cli",
+            "tests.evals.test_provider_suite_cli",
+            "tests.governance.test_cli_console",
+            "tests.patches.test_kernel_batch_sdk",
+            "tests.patches.test_kernel_patch_sdk",
+            "tests.product_config.test_protocol_publication_cli"
+          ],
+          "tests": 81,
+          "passed": 81,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0,
+          "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+          "original": {
+            "name": "installed-product-consumers.xml",
+            "bytes": 590427,
+            "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
+          }
+        },
+        {
+          "id": "product-cli",
+          "subset_of": "installed-product-consumers",
+          "selector_classnames": [
+            "tests.product_config.test_server_and_cli"
+          ],
+          "tests": 16,
+          "passed": 15,
+          "skipped": 1,
+          "failures": 0,
+          "errors": 0,
+          "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+          "original": {
+            "name": "installed-product-consumers.xml",
+            "bytes": 590427,
+            "sha256": "8a81d8b7988f5bf7bc181aa3dd57e16f05b958594cb3fb82ddfdccb97753d897"
+          }
+        }
+      ]
+    },
+    {
+      "id": "installed-r4-consumers",
+      "command": "python -B -m pytest 'tests/product_config/test_git_prepared_link_ledger.py::test_actual_prepared_link_commit_reopen_read_only_and_stable_retry[reopen-read-False-sha1]' tests/product_config/test_git_prepared_approval_history.py::test_original_upstream_checkpoint_exception_instances_preserved",
+      "result": {
+        "id": "installed-r4-consumers",
+        "scope": "实际认证SDK到prepared关联COMMIT、非空只读重开及原异常身份",
+        "terminal": true,
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 2,
+        "seconds": 163.395,
+        "status": "PASS",
+        "candidate_wheel_sha256": "67343ba31d181d71140ec83b82daf80ded777eb350c4e9d623645867badb87f9",
+        "original": {
+          "name": "installed-r4-consumers.xml",
+          "bytes": 607,
+          "sha256": "8ff1bb09e142512b2e26f08403ef82e6514d8c4bb2c399bace15dd270ca00aee"
+        }
+      }
+    },
+    {
+      "id": "identity",
+      "command": "python -I -B verify_identity.py",
+      "result": "PASS",
+      "production_members": 554,
+      "scope": "Wheel全部harnessix生产成员等同源码及site-packages；显式排除构建不包含的Finder/字节码元数据"
+    },
+    {
+      "id": "typing",
+      "command": "PYTHONPATH=src mypy src/harnessix",
+      "result": "PASS",
+      "source_files": 512,
+      "original": {
+        "name": "mypy.log",
+        "bytes": 45,
+        "sha256": "e9bdca0cc280e3c9266f4ae4fb680b1cb3b719a619f7c18920ebf1ff409cf426"
+      }
+    },
+    {
+      "id": "schema",
+      "command": "PYTHONPATH=src python scripts/generate_specs.py --check",
+      "result": "PASS",
+      "original": {
+        "name": "spec.log",
+        "bytes": 28,
+        "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+      }
+    },
+    {
+      "id": "lint",
+      "command": "ruff check <本切片源码、生成器及适用测试集合>",
+      "result": "PASS",
+      "original": {
+        "name": "ruff.log",
+        "bytes": 19,
+        "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+      }
+    },
+    {
+      "id": "format",
+      "command": "ruff format --check <本切片源码、生成器及适用测试集合>",
+      "result": "PASS",
+      "original": {
+        "name": "format.log",
+        "bytes": 28,
+        "sha256": "22728b34ab6ca369e20e152bfcadbfb2cab8ee18e689e24b26a7823fc7c5b1ee"
+      }
+    },
+    {
+      "id": "mermaid",
+      "command": "mmdc -p <本机Chrome配置> -i <详设图> -o <SVG>",
+      "result": "PASS",
+      "rendered": 4,
+      "visually_inspected": 1
+    },
+    {
+      "id": "documentation",
+      "command": "python scripts/documentation_check.py --changed-from <source_base_revision> --format json",
+      "result": "PASS",
+      "documents": 631,
+      "links": 13992,
+      "mermaids": 1154,
+      "findings": 0,
+      "original": {
+        "name": "doccheck-final.json",
+        "bytes": 195,
+        "sha256": "7675d562445d9a5d59570a9a39c7dbe0a27de093b855fe97eea1c58ee763f215"
+      }
+    },
+    {
+      "id": "secret-scan",
+      "command": "python scripts/secret_scan.py --artifact-dir <canonical_final_wheel_directory>",
+      "result": "PASS",
+      "inputs": 5300,
+      "fixed_rule_hits": 0,
+      "original": {
+        "name": "secret-scan-final.json",
+        "bytes": 101,
+        "sha256": "3d88aae95153b8de420f235ccd7f6d58d055d262be51f7cc17195a60d29c47dc"
+      }
+    },
+    {
+      "id": "readme-metadata",
+      "command": "BytesParser(policy=default) parse METADATA; decode UTF-8 payload and compare repository README",
+      "result": "PASS",
+      "original": {
+        "name": "metadata-readme.json",
+        "bytes": 227,
+        "sha256": "5fa8ee72bba95317fe5698a8cf5e7948ffd608a544ed793ec790c684dd70b847"
+      }
+    }
+  ],
+  "skips": [
+    {
+      "run": "installed-complete",
+      "count": 1,
+      "reason": "真实Windows Context Handle仅原生Windows宿主"
+    },
+    {
+      "run": "installed-product-cli",
+      "count": 1,
+      "reason": "原生Windows默认产品Git/SDK装配"
+    }
+  ],
+  "preserved_failures": [
+    {
+      "scope": "旧安装包尚无拒绝合同的初始RED",
+      "status": "ERROR"
+    },
+    {
+      "scope": "初始Context回归",
+      "failures": 5,
+      "cause": "四项旧默认版本与一项旧名称断言"
+    },
+    {
+      "scope": "初始恢复回归",
+      "failures": 2,
+      "cause": "新增测试误写原超时代码，实际为time_budget_exceeded"
+    },
+    {
+      "scope": "SDK新增测试",
+      "failures": 1,
+      "cause": "新增测试误写EventsNextResult字段，实际为replay"
+    },
+    {
+      "scope": "六目录初始全回归",
+      "failures": 24,
+      "cause": "旧默认/迁移/未来版本断言，保留负控并更新新边界"
+    },
+    {
+      "scope": "Adapter初始完整回归",
+      "passed": 807,
+      "failures": 15,
+      "cause": "旧未知工具失败预期；未删除822原用例，新增39历史负控"
+    },
+    {
+      "scope": "不存在的备份路径和SDK目录选择",
+      "exit_code": 4,
+      "test_execution": false
+    },
+    {
+      "scope": "格式检查收尾",
+      "unformatted": 2,
+      "cause": "一源码、一测试；格式化后重建新Wheel并重新完整验证"
+    },
+    {
+      "scope": "安装身份脚本",
+      "attempts_failed": 2,
+      "cause": "源发现包含构建排除Finder元数据；字段应为schema_version；仅诊断脚本，不改变产品或门槛"
+    },
+    {
+      "scope": "产品Artifact正控旧握手",
+      "failures": 1,
+      "cause": "旧1.0按新合同拒绝；正控升级2.0，独立旧版本负控仍保留"
+    },
+    {
+      "scope": "初次新增Review Packet元数据",
+      "findings": 1,
+      "cause": "缺少YAML头；补齐正式元数据后重新验证631文档零发现"
+    },
+    {
+      "scope": "Wheel说明元数据收尾",
+      "cause": "源码成员相同但README文档更新后需重建元数据；新Wheel完整重验。首次RFC兼容字符串解析未正确解码UTF-8，显式字节解码后原说明匹配",
+      "product_behavior_changed": false
+    }
+  ],
+  "not_claimed": [
+    "真实模型质量通过",
+    "Anthropic真实供应商验证",
+    "全部历史发行Reader降级",
+    "Writer启用或完整Git业务写入",
+    "三平台原生编码",
+    "产品P1/SLA",
+    "CI通过"
+  ],
+  "code_revision": "5e26f952ead508dcf003c73fc54e717c6a4169d7",
+  "intermediate_installed_commands": [
+    {
+      "id": "installed-complete",
+      "command": "python -B -m pytest tests/agent tests/context tests/session tests/models tests/protocol tests/app_server tests/product_ui",
+      "result": {
+        "id": "installed-complete",
+        "scope": "完整Agent/Context/Session/Models/Protocol/AppServer/ProductUI七目录",
+        "terminal": true,
+        "tests": 2764,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 2763,
         "seconds": 112.932,
         "status": "PASS",
         "candidate_wheel_sha256": "25b190b9862da6aca542ab70a2434a2991a76f8b270d59b63ec3dfcd83012c2e",
@@ -116,165 +429,6 @@
           "sha256": "73074cee10433ce53a2a6ac9a9124cafe320b2c3ca7de3d1d6bbbd3e19b05175"
         }
       }
-    },
-    {
-      "id": "identity",
-      "command": "python -I -B verify_identity.py",
-      "result": "PASS",
-      "production_members": 554,
-      "scope": "Wheel全部harnessix生产成员等同源码及site-packages；显式排除构建不包含的Finder/字节码元数据"
-    },
-    {
-      "id": "typing",
-      "command": "PYTHONPATH=src mypy src/harnessix",
-      "result": "PASS",
-      "source_files": 512,
-      "original": {
-        "name": "mypy.log",
-        "bytes": 45,
-        "sha256": "e9bdca0cc280e3c9266f4ae4fb680b1cb3b719a619f7c18920ebf1ff409cf426"
-      }
-    },
-    {
-      "id": "schema",
-      "command": "PYTHONPATH=src python scripts/generate_specs.py --check",
-      "result": "PASS",
-      "original": {
-        "name": "spec.log",
-        "bytes": 28,
-        "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
-      }
-    },
-    {
-      "id": "lint",
-      "command": "ruff check <本切片源码、生成器及适用测试集合>",
-      "result": "PASS",
-      "original": {
-        "name": "ruff.log",
-        "bytes": 19,
-        "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
-      }
-    },
-    {
-      "id": "format",
-      "command": "ruff format --check <本切片源码、生成器及适用测试集合>",
-      "result": "PASS",
-      "original": {
-        "name": "format.log",
-        "bytes": 28,
-        "sha256": "22728b34ab6ca369e20e152bfcadbfb2cab8ee18e689e24b26a7823fc7c5b1ee"
-      }
-    },
-    {
-      "id": "mermaid",
-      "command": "mmdc -p <本机Chrome配置> -i <详设图> -o <SVG>",
-      "result": "PASS",
-      "rendered": 4,
-      "visually_inspected": 1
-    },
-    {
-      "id": "documentation",
-      "command": "python scripts/documentation_check.py --changed-from <source_base_revision> --format json",
-      "result": "PASS",
-      "documents": 631,
-      "links": 13992,
-      "mermaids": 1154,
-      "findings": 0,
-      "original": {
-        "name": "doccheck-final.json",
-        "bytes": 195,
-        "sha256": "7675d562445d9a5d59570a9a39c7dbe0a27de093b855fe97eea1c58ee763f215"
-      }
-    },
-    {
-      "id": "secret-scan",
-      "command": "python scripts/secret_scan.py --artifact-dir <canonical_final_wheel_directory>",
-      "result": "PASS",
-      "inputs": 5300,
-      "fixed_rule_hits": 0,
-      "original": {
-        "name": "secret-scan-before-commit.json",
-        "bytes": 101,
-        "sha256": "3d88aae95153b8de420f235ccd7f6d58d055d262be51f7cc17195a60d29c47dc"
-      }
     }
-  ],
-  "skips": [
-    {
-      "run": "installed-complete",
-      "count": 1,
-      "reason": "真实Windows Context Handle仅原生Windows宿主"
-    },
-    {
-      "run": "installed-product-cli",
-      "count": 1,
-      "reason": "原生Windows默认产品Git/SDK装配"
-    }
-  ],
-  "preserved_failures": [
-    {
-      "scope": "旧安装包尚无拒绝合同的初始RED",
-      "status": "ERROR"
-    },
-    {
-      "scope": "初始Context回归",
-      "failures": 5,
-      "cause": "四项旧默认版本与一项旧名称断言"
-    },
-    {
-      "scope": "初始恢复回归",
-      "failures": 2,
-      "cause": "新增测试误写原超时代码，实际为time_budget_exceeded"
-    },
-    {
-      "scope": "SDK新增测试",
-      "failures": 1,
-      "cause": "新增测试误写EventsNextResult字段，实际为replay"
-    },
-    {
-      "scope": "六目录初始全回归",
-      "failures": 24,
-      "cause": "旧默认/迁移/未来版本断言，保留负控并更新新边界"
-    },
-    {
-      "scope": "Adapter初始完整回归",
-      "passed": 807,
-      "failures": 15,
-      "cause": "旧未知工具失败预期；未删除822原用例，新增39历史负控"
-    },
-    {
-      "scope": "不存在的备份路径和SDK目录选择",
-      "exit_code": 4,
-      "test_execution": false
-    },
-    {
-      "scope": "格式检查收尾",
-      "unformatted": 2,
-      "cause": "一源码、一测试；格式化后重建新Wheel并重新完整验证"
-    },
-    {
-      "scope": "安装身份脚本",
-      "attempts_failed": 2,
-      "cause": "源发现包含构建排除Finder元数据；字段应为schema_version；仅诊断脚本，不改变产品或门槛"
-    },
-    {
-      "scope": "产品Artifact正控旧握手",
-      "failures": 1,
-      "cause": "旧1.0按新合同拒绝；正控升级2.0，独立旧版本负控仍保留"
-    },
-    {
-      "scope": "初次新增Review Packet元数据",
-      "findings": 1,
-      "cause": "缺少YAML头；补齐正式元数据后重新验证631文档零发现"
-    }
-  ],
-  "not_claimed": [
-    "真实模型质量通过",
-    "Anthropic真实供应商验证",
-    "全部历史发行Reader降级",
-    "Writer启用或完整Git业务写入",
-    "三平台原生编码",
-    "产品P1/SLA",
-    "CI通过"
   ]
 }
