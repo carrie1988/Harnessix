@@ -21,6 +21,7 @@ from harnessix.agent.trusted_action_session import (
     LockFactory,
     PendingCallExecutor,
     ToolContractValidator,
+    _sync_action_decision_in_owned_thread,
     build_session_state,
     execute_action,
     prepare_action,
@@ -67,6 +68,11 @@ class TrustedActionSessionRuntime:
 
     async def sync_decision(self, thread_id: UUID, turn_id: UUID) -> Turn | None:
         return await sync_action_decision(self._state, thread_id, turn_id)
+
+    async def _sync_decision_in_owned_thread(self, thread_id: UUID, turn_id: UUID) -> Turn | None:
+        """仅供已持原 Thread 锁的宿主同步决定，不接入默认 dispatch。"""
+
+        return await _sync_action_decision_in_owned_thread(self._state, thread_id, turn_id)
 
     async def record_decision(
         self,

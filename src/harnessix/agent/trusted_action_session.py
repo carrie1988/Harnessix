@@ -24,6 +24,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.ports import TrustedActionGateway
 from harnessix.agent.reducer_support import get_turn, pending_calls
+from harnessix.agent.runtime_thread_lock import RuntimeThreadLock
 from harnessix.domain.models import ApprovalDecision, ToolDescriptor
 from harnessix.session.ports import SessionStore
 
@@ -99,28 +100,70 @@ async def sync_action_decision(
     """恢复Router已提交、Session尚未提交的审批决定。"""
 
     async with state.lock(thread_id):
-        thread = await state.store.get_thread(thread_id)
-        turn = get_turn(thread, turn_id)
-        calls = pending_calls(turn)
-        if turn.status != TurnStatus.WAITING_APPROVAL or not calls:
-            return None
-        item = approval_for(turn, calls[0])
-        if item is None or not isinstance(item.content, TrustedActionApprovalRequestContent):
-            return None
-        if item.status != ItemStatus.STARTED or item.content.decision is not None:
-            return None
-        call = calls[0]
-        state.validate_tool_contract(call)
-        projected = state.gateway.sync_decision(thread, turn, call, item.content)
-        if projected is None:
-            return turn
-        assert projected.decision is not None
-        updated = await state.store.append(
-            thread_id,
-            [_decision_event(turn_id, item.item_id, projected)],
-            expected_sequence=thread.sequence,
-        )
-        return get_turn(updated, turn_id)
+        return await _sync_action_decision(state, thread_id, turn_id)
+
+
+async def _sync_action_decision_in_owned_thread(
+    state: TrustedActionSessionState, thread_id: UUID, turn_id: UUID
+) -> Turn | None:
+    """私有宿主原语：借用当前 Task 的原锁，不获取、释放或重入。"""
+
+    lock = state.lock(thread_id)
+    if type(lock) is not RuntimeThreadLock:
+        raise KernelError("runtime_thread_lock_unowned", "当前 Task 未持有 Runtime Thread 锁")
+    lock.require_current_owner()
+    return await _sync_action_decision(state, thread_id, turn_id, owned_lock=lock)
+
+
+async def _sync_action_decision(
+    state: TrustedActionSessionState,
+    thread_id: UUID,
+    turn_id: UUID,
+    *,
+    owned_lock: RuntimeThreadLock | None = None,
+) -> Turn | None:
+    """唯一同步算法；借用时在每个账本边界核对原锁、原 Task 和本次代际。"""
+
+    observer = owned_lock.observe_owner() if owned_lock is not None else None
+
+    def require_owned_lock() -> None:
+        if owned_lock is None:
+            return
+        if state.lock(thread_id) is not owned_lock:
+            raise KernelError("runtime_thread_lock_unowned", "当前 Task 未持有 Runtime Thread 锁")
+        # observer 允许子 Task 观察；同步权限还必须由实际持锁 Task 核对。
+        owned_lock.require_current_owner()
+        assert observer is not None
+        observer()
+
+    require_owned_lock()
+    thread = await state.store.get_thread(thread_id)
+    require_owned_lock()
+    turn = get_turn(thread, turn_id)
+    calls = pending_calls(turn)
+    if turn.status != TurnStatus.WAITING_APPROVAL or not calls:
+        return None
+    item = approval_for(turn, calls[0])
+    if item is None or not isinstance(item.content, TrustedActionApprovalRequestContent):
+        return None
+    if item.status != ItemStatus.STARTED or item.content.decision is not None:
+        return None
+    call = calls[0]
+    state.validate_tool_contract(call)
+    require_owned_lock()
+    projected = state.gateway.sync_decision(thread, turn, call, item.content)
+    require_owned_lock()
+    if projected is None:
+        return turn
+    assert projected.decision is not None
+    require_owned_lock()
+    updated = await state.store.append(
+        thread_id,
+        [_decision_event(turn_id, item.item_id, projected)],
+        expected_sequence=thread.sequence,
+    )
+    require_owned_lock()
+    return get_turn(updated, turn_id)
 
 
 async def resume_action_execution(
