@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 16
+version: 17
 code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
 owners: [core]
 modules: [product_config, agent, session, trusted_actions, execution, delivery, artifacts, workspace]
@@ -920,6 +920,36 @@ exact control → 完整进入认证 → 原纯算法（局部频检、原异常
 原 60 秒操作和 120 秒 Turn 未变，无真实模型请求、无 Git 写效果。
 测时同机另有离线回归并行；这些小输入正控不证明代表性负载响应性，
 亦不关闭生产 Writer、B4／B7 或默认写链。
+
+### 13.7 同锁决定恢复屏障的隔离验证
+
+2026-10-09 续验完成的候选从原 Ledger 和稳定 Route ID 恢复原 Thread/Turn/Call，
+在原 Task、原 RuntimeThreadLock acquire 内执行以下顺序：
+
+```text
+原 Owner/连接/Route/Core/Turn 准入
+→ 同锁下私有 mode=ro 全前缀/MAC/typed prepared 目标匹配 → 关闭只读连接
+→ 原 Session 同锁同步（Git 写事务外）
+→ BEGIN IMMEDIATE + 原事务代际 → 唯一 Ledger 追加/复用
+→ 原完整 prepared_git_commit_scope → COMMIT
+```
+
+前置只认 prepared 来源，不认定批准；Router-first 缺口仍不能直接通过原完整审批 Reader。
+全屏障只用一个 60 秒绝对操作预算，原 Turn 120 秒期限只缩短窗口，不续期。
+子 Task 只能观察父 Task 原实例，不准入 SQL；失败只清理仍匹配本屏障原代际的事务，
+不回滚回调新开的替换事务。私有只读连接由原工厂统一关闭，清理不能覆盖原首异常；
+COMMIT 确认丢失沿原事实回读和幂等复用，不重新 decide、不 execute/reconcile。
+
+同一 v6 非 editable Wheel 完成 17 项实际 SDK 场景及 131 项相关回归，后者包含 6 项观察负控，不重复累计。
+SDK 覆盖批准/拒绝、精确重试、CAS、取消、期限、追加失败、替换事务、缺目标、跨 Task、已有事务、确认丢失和异常身份。
+v1—v3 原失败、v4 正控通过后发现的两个 P1/一个 P2，以及 v5 清理覆盖异常的真实红例均保留；
+独立 v6 评审仅为静态未执行，不能替代上述动态结果。562 个源码/Wheel/安装成员逐字节绑定，校验器正控及七项负控通过。
+完整原件位于本机 `~/Library/Application Support/Harnessix/verification/r4-decision-recovery-barrier-20261008-v1`，
+目录按启动日固定，含设计、候选源码、原日志/JUnit、包绑定、Review Packet 和成员清单。
+封存清单含 682 个成员，SHA256 为 `48cfd92ecea025503640581eeb7e0f8de4fb4f763600835ffd2b934dd9bdb00d`；
+封存前完整 Secret 扫描含六个 Wheel 及原始失败，零命中；封存后只读复算通过。
+**该屏障仍为隔离候选，不在主仓库或默认 dispatch 装配。** 完整 B4/B7、FD/WAL/SHM、平台和 P1 总体验收未关闭；
+本轮真实模型请求为 0，真实 R3 成绩及商业验收不变，不新增 ADR。
 
 ## 14. 实现偏差与最终结论
 
