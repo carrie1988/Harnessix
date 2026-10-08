@@ -13,6 +13,7 @@ from weakref import WeakValueDictionary
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.git_prepared_link_connection import (
     _current_task,
+    _prepared_git_connection_registration_observer,
     _registered_prepared_connection,
 )
 
@@ -170,6 +171,24 @@ def _require_git_prefix_caller_transaction_epoch(
     trace, epoch = _git_prefix_caller_transaction_epoch(database)
     if trace is not expected[0] or epoch != expected[1]:
         raise KernelError("publication_history_unproven", "Git原事务代际已经变化")
+
+
+def _git_prefix_caller_transaction_observer(database: sqlite3.Connection) -> Callable[[], None]:
+    """原 Task 签发只读观察；子 Task 可比较原代际，但不能新开 SQL 窗口。"""
+    trace, epoch = _git_prefix_caller_transaction_epoch(database)
+    if not isinstance(trace, _TransactionTrace):
+        raise KernelError("publication_history_unproven", "Git原事务观察已经变化")
+    observe_registration = _prepared_git_connection_registration_observer(database)
+
+    def observe() -> None:
+        observe_registration()
+        current: object = getattr(_owned, "transaction_traces", {}).get(database)
+        if current is not trace:
+            raise KernelError("publication_history_unproven", "Git原事务观察已经变化")
+        if trace.epoch != epoch or not database.in_transaction:
+            raise KernelError("publication_history_unproven", "Git原事务代际已经变化")
+
+    return observe
 
 
 def require_git_prefix_sql_window(database: sqlite3.Connection) -> None:

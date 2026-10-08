@@ -69,6 +69,7 @@ class _RuntimeThreadScope:
 
     thread_id: UUID
     task: asyncio.Task[object]
+    runtime: AgentRuntime
     router: TrustedActionRouter
     artifacts: SQLiteArtifactStore
     check: Callable[[], None]
@@ -171,7 +172,7 @@ def bind_prepared_git_runtime_thread(
         _owned.scopes = scopes
     if database in scopes:
         raise _invalid()
-    scope = _RuntimeThreadScope(thread_id, task, gateway._state.router, artifacts, check)
+    scope = _RuntimeThreadScope(thread_id, task, runtime, gateway._state.router, artifacts, check)
     scopes[database] = scope
     try:
         with _git_prefix_transaction_scope(database):

@@ -214,3 +214,19 @@ def _prepared_git_connection_lifecycle_observer(database: sqlite3.Connection) ->
         _require_alive(database)
 
     return observe
+
+
+def _prepared_git_connection_registration_observer(
+    database: sqlite3.Connection,
+) -> Callable[[], None]:
+    """原 Task 签发登记只读观察；不授予观察子 Task SQL 或事务权限。"""
+    issued = _registered_prepared_connection(database)
+    if issued is None:
+        raise _invalid()
+
+    def observe() -> None:
+        if getattr(_owned, "connections", {}).get(database) is not issued:
+            raise _invalid()
+        _require_alive(database)
+
+    return observe
