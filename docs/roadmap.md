@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 231
-code_revision: 04701ced9d89656a46dd8cda543e83d305ae97f8
+version: 232
+code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
 owners:
   - core
 modules:
@@ -2658,3 +2658,26 @@ P1 改为显式分层控制 v2：同步纯编解码中频检取消、原期限�
 性能改善不关闭代表性负载的响应性验收、生产 Writer、B4／B7 或完整默认写链；
 后续沿[异常包装与纯算法边界](changes/m09-r4-git-approved-link.md#136-异常包装与纯算法边界)完成验收。
 真实R3评分与Beta接受数不据组件回归提高，非阻塞首发工作仍不扩张。
+
+
+### R3/R4：冻结执行链与 prepared 同步提交门
+
+R3 在独立干净源码候选 `3c9379fa` 完成原 Task Pack v2 的 10 Case／20 Trial Recorded 回放，
+保留 Case 证据及报告发布两处崩溃恢复，固定 Python／Node 镜像通过原 Digest 准入。
+该回放包含已知参考修复，不是真实模型编码质量成绩；原严格成功0/20、必需测试1/20不变。
+付费 Suite 配置不含凭据值，真实费用授权、凭据及账本准入尚未执行，模型请求为0。
+
+R4 的成功 prepare 现在将原 SourceScope 和四库 reader 保留至原 Runtime 窗口，
+[`prepared_git_commit_scope`](../src/harnessix/product_config/git_prepared_runtime_thread.py)
+在交付调用方 COMMIT 前同步复核原期限、Owner、完整前缀／尾锚和全集终端，
+长事务 trace 拒绝跨方法回滚后新 BEGIN 或 SAVEPOINT／RELEASE 对旧候选的复用。
+同一非 editable Wheel 安装候选完成新增实际 SDK 13 项、既有控制回归18项及相关原语148项；
+集合按原件分别统计，不与历史10项探索性正控或其他重叠集合累加。
+隔离 Writer 故障矩阵保留首次6 PASS／3 FAIL：精确重试及 pending／missing 仍执行零行 UPDATE，
+违反无 DML 合同。后继隔离候选复用实际新增写窗口的写准入，去掉只读路径的冗余探测，
+相同九项矩阵9 PASS／0 FAIL；重试及 pending／missing 均无 DML、无 MAC 生成。
+该候选基于独立旧安装输入，不与本次提交门候选混合，仍未合入或启用生产 Writer。
+
+提交门设计与失败语义见[原资源交接](changes/m09-r4-git-runtime-thread-scope.md#86-原资源交接与跨方法事务代际)。
+该入口不拦截裸 COMMIT，不证明 SQLite 实际 FD、外部 ABA 或跨资源原子性；
+默认 Writer、全部 dispatch、完整 B4／B7、代表性响应性与真实 R3 门槛仍开放。

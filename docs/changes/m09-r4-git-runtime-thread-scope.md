@@ -1,13 +1,15 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2
+version: 4
+code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
 owners: [core]
 modules: [agent, product_config]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_prepared_commit_scope.py
+  - tests/delivery/test_git_prefix_sql_transaction_scope.py
   - tests/product_config/test_git_prepared_runtime_thread.py
   - tests/agent/test_runtime_thread_lock_observer.py
   - tests/product_config/test_git_prepared_link_ledger.py
@@ -36,8 +38,8 @@ Ledger 受控入口必须消费该 context，并在发布 prepared 关联时核�
 
 | 项目 | 范围 |
 |---|---|
-| 已实现生产元素 | `git_prepared_runtime_thread.py`、Ledger 的 Runtime observer 接入、`RuntimeThreadLock.observe_owner()` 及独立 acquire 代际 |
-| 新增能力 | 活跃原连接与原 Runtime Thread 持锁生命周期绑定、装配实例身份复核、prepared 目标 Thread 核对 |
+| 已实现生产元素 | 原 Runtime bind、Ledger observer、锁 acquire 代际、跨方法事务 trace 与同步 `prepared_git_commit_scope` |
+| 新增能力 | 原持锁及装配实例核对、prepared 目标 Thread 核对、成功 prepare 资源延寿及受控提交前复核 |
 | 保持能力 | 原连接来源、Owner、认证前缀、事务 epoch、材料及 U 验证、原审批历史、原取消与期限合同 |
 | 调用方式 | 原调用方先持 Thread 锁，再打开原 factory、进入 bind；context 覆盖 BEGIN、业务读写、COMMIT 或 ROLLBACK |
 | 不新增 | 数据库 Schema、迁移、可复制授权 Token、模型请求、计费请求、公共 SDK／协议接口或独立服务 |
@@ -72,7 +74,7 @@ Ledger 受控入口必须消费该 context，并在发布 prepared 关联时核�
 - 不自动获取、转交或强制释放 Runtime Thread 锁；不改变通用 Runtime 执行与取消流程。
 - 不对裸 `sqlite3.Connection.execute()` 安装 authorizer 拦截，不把 Python 私有宿主代码隔离为不可信进程。
 - 不承诺任意私有 host 代码恶意移除锁、绕开受控入口并提交后，已提交内容仍可撤回。
-- 不证明 SQLite 实际 FD、OS 原子 no-follow、跨库原子快照或实际 Git Ref／config 的终端保护。
+- 不证明 SQLite 实际 FD、OS 原子 no-follow、跨库原子快照或外部 Git Ref／config 连续一致性；提交前复核是同步点观察，不是外部写锁。
 - 不新增批准、执行 claim、持久 Fence、授权 Token、approved Writer 或默认 Checkpoint／Commit 注册。
 - 不以组件测试替代 P1 响应性、三平台安装验收、R3 实际编码质量或完整 R4 验收。
 
@@ -118,6 +120,10 @@ flowchart TB
     Router --> Bind
     Stores --> Bind
     Bind --> Ledger["Ledger 受控入口及 SQL 合作窗口"]
+    Ledger --> Held["成功 prepare：原来源及四库 reader 保留"]
+    Held --> CommitGate["同步提交前：原期限 / Owner / 全集复核"]
+    Caller --> CommitGate
+    CommitGate --> Commit["调用方原连接 COMMIT / 回滚"]
     Ledger --> Observer["父 Task 签发固定 observer"]
     Observer --> Child["受管 U 子 Task：仅观察"]
 ```
@@ -150,7 +156,7 @@ Artifact 的 Session 必须就是 Runtime store。Owner 与发布器仍由原 Se
 | 事务与控制 | 调用方 BEGIN／BEGIN IMMEDIATE；Ledger 原 Task 准入及内部前后复核 | 事务由调用方管理，控制失败不继续业务发布 |
 | 业务认证 | 认证全集、原材料与原 U；prepare 另核对目标 Thread 并发布、回读 | 坏行、目标不匹配或原来源变化均失败，不隐藏非目标行 |
 | 同步末端 | 完成原终端读集合和内部复核 | 不新增 await 或外部回调绕开末端合同 |
-| 提交与收束 | 调用方在 bind 内 COMMIT 或结束只读事务，随后撤登记、关连接、释放锁 | 未提交异常在 bind 内回滚并保留首失败，再逆序退出 |
+| 提交与收束 | 写入先进入 `prepared_git_commit_scope`，同步原连接 COMMIT；只读事务由调用方结束 | 提交前失败不能到达 COMMIT；调用方回滚；资源清理保留首异常 |
 
 必须按锁 → factory → bind → 事务的顺序嵌套，逆序退出。Ledger `prepare()` 成功返回时仍未提交；
 调用方须在 bind 内完成提交或回滚，而不是先退出 bind 再处理事务。
@@ -221,6 +227,7 @@ SDK 测试中 `_decide` 停止后台 `_spawn` 是执行前测试隔离，不属�
 | `require_prepared_git_runtime_thread(database, thread_id)` | 成功无返回载荷 | 原 scope 准入；精确 UUID 且值等于 scope Thread；供 prepare 目标核对 |
 | `ProductGitPreparedLinkLedger.prepare(route_id, *, cancel, checkpoint)` | 返回 `ProductGitPreparedLink` | 原受控宿主、scope 及已有写事务；结果仍未 COMMIT；失败由调用方回滚 |
 | `ProductGitPreparedLinkLedger.read_all(*, cancel, checkpoint)` | 返回完整 tuple | 原 scope、原受控宿主、已有事务；全集认证，不按 scope Thread 筛行 |
+| `prepared_git_commit_scope(database)` | 同步 context，yield 无载荷 | 仅消费成功 prepare 的私有原资源；复核原事务、原期限、Owner、全集及来源；不提交或回滚 |
 
 上述 bind／require 是正式内部组件接口，不进入模型工具 Schema、公开 SDK 参数或协议数据。
 调用方只能提供原实例，不能提供“已检查”布尔值、任意闭包、可复制 scope 或历史锁证明替代原事实。
@@ -243,6 +250,14 @@ Ledger 构造本身只保存资源；强制 context 的位置是实际受控操�
 | `router` | `runtime._trusted_actions._state.gateway._state.router` | observer 签发时 Ledger Router 必须 `is` 原实例 |
 | `artifacts` | `runtime._artifacts` 的原 `SQLiteArtifactStore` | observer 签发时 Ledger Artifact 必须 `is` 原实例 |
 | `check` | `_runtime_check` 返回的固定闭包 | 冻结原装配及 acquire 代际；不是外部可提交的授权能力 |
+| `commit` | 私有 `_PreparedCommitState` | 最多保留一个成功 prepare 候选；一次消费后撤销，不序列化 |
+
+提交状态只包含 `record` 和防重入 `consuming`。记录保留原长 trace 实例／epoch、
+拥有原 SourceScope 与四库只读 reader 的 `ExitStack`、Ledger 创建的同步终端闭包。
+闭包复用原取消和 60 秒绝对期限，不创建新预算，不缓存 Owner。
+长 trace 只保存原 factory 来源、原 Task 与事务边界代际，不保存 SQL 或持有 WriteWindow。
+代码位置分别为[Runtime 资源登记及提交门](../../src/harnessix/product_config/git_prepared_runtime_thread.py)
+与[长短 SQL 观察](../../src/harnessix/product_config/git_prefix_sql.py)。
 
 scope registry 是模块私有 `_owned = threading.local()` 的
 `scopes: dict[sqlite3.Connection, _RuntimeThreadScope]`。
@@ -342,8 +357,11 @@ prepared 精确重试仍使用原 route 身份与完整关联相等判断；新 
 读取目标、返回已有相同关联与新关联发布，均受相同 Runtime scope 约束。
 COMMIT 确认丢失、进程退出后的对账与恢复沿原合同处理；旧 scope／observer 不能恢复或重放。
 
-scope 覆盖 COMMIT 仅表示正常调用链在整个事务期间仍处于原持锁 context。
-它不拦截裸 COMMIT；正常 context 的退出检查发生在 body 完成之后。
+原 bind 退出检查在 body 完成后执行，不能阻止已提交内容。
+`prepared_git_commit_scope` 因此在交付控制前同步复核成功 prepare 的原资源；
+调用方在该同步段直接执行原连接 COMMIT，不能 await 或进入外部回调。
+验证的短 SQL 窗口在 yield 前退出，合法 COMMIT 不被旧 epoch 的出口检查误拒绝。
+该入口仍不拦截裸 COMMIT；未接默认产品宿主及 Writer，不能认定全部 dispatch 已覆盖。
 若任意私有 host 代码恶意释放锁后直接 COMMIT，末端拒绝不具备撤销已提交内容的能力。
 该情形不属于本组件可证明的隔离或事务补偿边界，不能宣传为“所有 SQL 均被强制授权”。
 
@@ -419,7 +437,7 @@ bind(database, runtime, thread_id):
     task = 实际 current_task；必须非空
     从原 actions 取得 router 与 artifacts
     取本线程 scopes 映射；同一 database 已登记 -> 拒绝
-    scope = 冻结的五字段 _RuntimeThreadScope
+    scope = 冻结的身份字段及私有提交资源状态
     scopes[database] = scope
     try:
         yield None
@@ -458,7 +476,8 @@ _control(ledger, 原 cancel, 原 budget, checkpoint, read_set):
     冻结 ledger 资源引用
     observe_connection = 原 Task 签发的原连接来源 observer
     observe_thread = 原 Task 签发的 Runtime Thread observer
-    进入原 observe_prepared_state
+    prepare 借原 Runtime 的资源交接 context；只读仍由本方法拥有资源
+    进入原 SourceScope 和 observe_prepared_state
     epoch = None
 
     raw_internal():
@@ -486,6 +505,8 @@ _control(ledger, 原 cancel, 原 budget, checkpoint, read_set):
         不再 await，不再调用外部 checkpoint
         使用 checkpoint=internal 的新原 SQL 窗口
         read_set.require_sql -> terminal -> require_sql -> internal
+    prepare 成功：将原资源及 terminal_read 闭包交给原 Runtime 提交状态
+    read_all／历史 Reader：仍在方法退出时关闭资源，不签发提交候选
 
 prepare(route_id):
     先原异步取消交付点，建立既有 GitOperationBudget
@@ -521,7 +542,8 @@ read_all():
                 database.execute("BEGIN IMMEDIATE")
                 link = await 原 Ledger.prepare(route_id, cancel=cancel, checkpoint=checkpoint)
                 require_prepared_git_runtime_thread(database, link.plan.core.thread_id)
-                database.execute("COMMIT")
+                with prepared_git_commit_scope(database):
+                    database.execute("COMMIT")
             except BaseException:
                 若还有活跃事务，在当前 bind 内尝试 ROLLBACK
                 回滚次生错误按原宿主清理合同处理，不能覆盖首次异常
@@ -537,17 +559,44 @@ read_all():
        在 bind 内结束只读事务 -> 撤销登记 -> 关闭连接 -> 释放锁
 ```
 
-提交前的显式 require 是调用方核对示例，不表示 bind 安装了 COMMIT 拦截器；
-它不能替代 Ledger 原材料、认证、取消与期限控制。示例不引入额外 await／外部回调夹在末次 scope 核对与 COMMIT 之间。
+提交门复用 Ledger 原材料、认证、取消与期限控制，不是 bind 的 COMMIT 拦截器；
+示例不引入额外 await／外部回调夹在末次完整复核与 COMMIT 之间。
 如果原回滚本身失败或连接已经关闭，保留首次异常，沿原资源关闭合同收束，不伪造回滚成功。
 不能将异常清理描述成新增事务补偿机制。
+
+### 8.6 原资源交接与跨方法事务代际
+
+```text
+prepare 成功出口:
+    同事务存在旧候选 -> 先完整同步重验旧候选，再关闭旧资源
+    旧事务已经结束 -> 仅撤销旧候选；本次 prepare 重新完成全部认证
+    操作失败 -> 关闭新资源，无提交候选
+    操作及同步终端成功 -> pop_all 原资源，登记原长 epoch 和 terminal_read
+
+prepared_git_commit_scope(database):
+    原 Task / factory / Runtime acquire 准入
+    必须已有成功候选，拒绝 consuming 重入
+    核对原长 trace 身份、epoch 和活跃事务
+    terminal_read: 完整 Owner / 四库 / 原行与尾锚 / 全集材料与 Ref-config
+    短 SQL 窗口退出，再核对原 Runtime 和长事务 epoch
+    yield 无载荷 -> 调用方同步 COMMIT
+    finally: 撤销候选、关闭原资源、清除 consuming，不检查已提交的旧 epoch
+```
+
+长 trace 覆盖两次短窗口之间的间隙。BEGIN、COMMIT／END、ROLLBACK、SAVEPOINT、
+RELEASE 都推进代际；普通 SELECT／DML 不推进。短窗口仍独占自己的进度回调和发布窗口，
+结束后只撤销短控制，保留长 trace。它不提供 SQL 权限，也不是 COMMIT 否决回调。
+同事务替换成功候选最多保留一个原来源集合；原 Task 复核或消费失败后旧候选不可复用。
+其他 Task／无 Task 回调的准入失败不消费原 Task 的候选，也不使其取得提交权。
+资源清理不在 COMMIT 后再做四库验收，避免把已经提交的事务报告成提交前拒绝。
+期限仍属于原 prepare 操作；仅进入提交门不能续期或重新捕获 U。
 
 ## 9. 失败、恢复、取消与超时
 
 ### 9.1 首失败与资源收束
 
 bind body 的 `KernelError`、普通异常、`asyncio.CancelledError` 或原领域取消直接传播，
-`finally` 仅撤销 scope registry。正常退出才执行新增末端检查；body 失败后不得再运行该检查覆盖原失败。
+`finally` 撤销 scope registry 并关闭保留的原资源。正常退出才执行新增末端检查；body 失败后不得再运行该检查覆盖原失败。
 原连接 context 异常退出不执行正常尾部 checkpoint，仍撤销连接登记并关闭。
 原 SQL 窗口将 progress 捕获的首次异常保存在 `interrupted`，按原合同优先传播原异常实例，
 不将其降为泛化 `sqlite3.OperationalError` 或新增 scope 错误。
@@ -755,7 +804,7 @@ Runtime scope 模块、Ledger 接入和锁 observer／代际实现须作为匹�
 2. **B7**：原 DB 实际 SQLite FD、全部实际消费者与正确持锁／事务范围的完整接线仍缺证；
    scope、路径 pin、原 Task 归属和同次 acquire 只能证明各自有限事实。
 3. **B4**：实际 Git Ref／config 在末轮异步 U、同步终端与 COMMIT／真实执行边界的保护仍开放；
-   本组件不新增实际 Git 防漂移事务或末端保护机制。
+   提交门新增同步末端复核，不形成实际 Git 写锁或 Git／SQLite 跨资源事务。
 4. **P1**：真实负载的事件循环响应、取消排队、同步 SQL／认证阻塞与稳态 SLA 仍开放；
    不允许以整体加锁、扩大期限或减少原认证规避该门禁。
 5. **R3 与产品验收**：真实编码评测、三平台正式安装、有限 Beta 与完整 R4／发布退出条件仍独立开放。
@@ -815,12 +864,10 @@ Ledger `control` 为 92299 次、`internal` 为 184597 次。
 
 当前 `_matches` 累计仅约 0.022 秒，已有 annotation／字段集合纯常数优化建议不列为
 响应性整改主路径。不得缓存可变模型实例、认证结果或实现摘要。
-后继主路径需要先明确检查层次与来源认证合同；
-[既有分层研究](../validation/git-p1-layered-research-2026-10-08-v1/README.md)
-仍默认关闭，未合入且不与当前 Runtime scope 候选等同。
-若改变纯段 callback 次数或瞬时漂移检测点，必须建立版本化内部契约、完整适用负控及
-实际 I/O／发布／提交前全认证，不宣称与当前逐点鲜读轨迹严格等价。
-任何候选都必须保持检查点轨迹及第 k 次注入首异常的分类与对象身份，
+[分层控制 v2](m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)已经形成正式内部契约，
+仅审计的同步纯算法使用局部频检；I/O、发布及提交门同步终端仍完整核验。
+它明确调整认证检测时点，不宣称与旧逐叶鲜读轨迹严格等价。
+适用纯算法保持第 k 次注入首异常的分类与对象身份，
 并验证嵌套参数／字段修改与恢复、非目标坏关联、取消与期限竞争、最后 callback 后漂移。
 没有同输入的实际计数、完整负控与目标环境响应性证据，不得关闭 P1，
 也不得承诺上述常数优化足以解决当前长耗时。

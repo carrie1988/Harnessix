@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 95
-code_revision: 04701ced9d89656a46dd8cda543e83d305ae97f8
+version: 96
+code_revision: ff7dfcd875f3f3bf30ab4ad9cb1013427e95a111
 owners:
   - core
 modules:
@@ -2833,3 +2833,13 @@ prepare 发布前核对目标 Core Thread；read_all 保持全部原关联认证
 保存检查点、嵌套、跨 Task／线程及完整重入不能继承局部段；异常保持原首失败。
 正式边界与测试见[控制契约 v2](../changes/m09-r4-git-approved-link.md#135-p1-分层控制契约-v2)，
 不宣称逐叶认证等价或完整 P1／R4 通过。
+
+## Git prepared 同步提交门
+
+[`prepared_git_commit_scope`](../../src/harnessix/product_config/git_prepared_runtime_thread.py)
+保留成功 prepare 的原来源和四库只读资源，交付调用方 COMMIT 前同步复核原期限、Owner、
+完整 SQL 前缀／尾锚及全集终端。调用方仍拥有 BEGIN／COMMIT／ROLLBACK，不提交、不自动重试。
+长事务 trace 覆盖方法间隙，回滚后新 BEGIN 或 SAVEPOINT／RELEASE 不能复用旧提交候选；
+短 SQL 窗口和发布能力仍各自撤销。失败、一次消费或 Runtime 退出均回收原资源。
+详见[资源交接与事务代际](../changes/m09-r4-git-runtime-thread-scope.md#86-原资源交接与跨方法事务代际)。
+该内部入口未接默认 Git Writer，不能拦截裸 COMMIT，不证明原生 SQLite FD、外部 ABA 或跨资源原子性。
