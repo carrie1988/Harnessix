@@ -1,4 +1,4 @@
-name: 源码外安装与完整状态生命周期验收
+name: macOS首发源码外安装与完整状态生命周期验收
 
 on:
   workflow_dispatch:
@@ -66,12 +66,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: linux
-            runner: ubuntu-latest
           - platform: macos
             runner: macos-latest
-          - platform: windows
-            runner: windows-latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         # 仅本Checkout使用Git规范LF；不改用户全局配置或冻结证据原字节。

@@ -1,7 +1,7 @@
 ---
 doc_type: product-charter
 status: current
-version: 3
+version: 5
 code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
@@ -33,7 +33,7 @@ supersedes: []
 
 第一阶段目标用户是：
 
-- 希望在macOS、Linux或Windows本地代码仓库中长期使用可控Coding Agent的独立开发者；
+- 希望在macOS本地代码仓库中长期使用可控Coding Agent的独立开发者；
 - 需要接入不同模型供应商，又不希望业务绑定单一模型 SDK 的团队；
 - 对命令执行、文件写入、网络访问和外部系统副作用有审计与审批要求的工程团队；
 - 需要研究和扩展 Agent Loop、Context、Tool、Sandbox、MCP、Skills 的 Agent 工程师。
@@ -42,7 +42,7 @@ supersedes: []
 
 1.0采用以下约束：
 
-- 本地优先，1.0正式支持macOS、Linux和Windows；
+- 本地优先，首版本仅交付macOS（macOS only）；Linux和Windows版本交付已从当前任务中取消；
 - 提供CLI/TUI、无界面的App Server和Python Agent SDK；
 - 单个 Workspace 对应一个明确的文件系统边界；
 - 支持交互式会话和一次性 Headless 任务；
@@ -52,11 +52,15 @@ supersedes: []
 - 支持受控本地stdio MCP、项目指令和Skills/Hooks；远端HTTP MCP及OAuth进入1.1+；
 - 支持Host安全级别与至少一种Container隔离执行后端；
 - 高风险文件、进程、Git和外部副作用由内部Trusted Action Runtime统一治理；首发Git交付止于本地审查/Commit，公网Push由用户在Agent外执行。
-- 首发采用统一Wheel通道、有限OS/架构、手动停机升级和同机同用户数据库/Key备份；多安装器、自动更新和跨机Key迁移不作为发布前置条件。
+- 首发采用统一Wheel通道、有限macOS版本/架构、手动停机升级和同机同用户数据库/Key备份；多安装器、自动更新和跨机Key迁移不作为发布前置条件。
 
-具体范围、逐项延期和六个发布工作包见[首发范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)及[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)。延期能力不能以实验性名义继续开放已知危险入口。
+当前范围、逐项处置和六个发布工作包以[首发范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)为准；[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)保留原范围决策。延期能力不能以实验性名义继续开放已知危险入口。
 
-1.0面向大量相互独立的本地终端实例，规模能力体现为发行物可重复安装、兼容升级、稳定运行、故障恢复、问题诊断和质量回归，不表示集中式多租户SaaS。Windows必须具备原生Workspace、Git、Process和CLI能力；强隔离优先使用受管WSL2或Docker Desktop后端，不能把仅能在WSL2运行声明为Windows原生支持。IDE、Web、远程Sandbox、云任务、多租户控制面和大规模分布式调度进入1.x候选范围，但核心协议和执行端口不得阻断后续演进。产品与平台边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)。
+Linux/Windows交付已从当前未完成任务、必需矩阵、R4/R5退出条件及R6依赖中删除，不标完成；不是延期必做项，不自动列入1.1或1.x，未来重启须单独立项，无当前必做承诺。已实现跨平台代码、历史测试及ADR历史保留，不再据旧三平台条款派生当前交付任务。
+当前最高优先为BETA-001真实登录密码整改与测试验收的完整任务闭环，其次为macOS安装交付及其余R3/R4收口；不把R3/R4整体关闭或R4原生组件完成设为BETA-001启动前置。
+Mac支持资格按具体OS/CPU架构的原生证据逐项核定，不默认覆盖Intel与Apple Silicon。R3原完整20 Trial及原评分/限制、Mac安全/恢复和Beta真实业务验收等非平台门槛不变；当前R4未完成，商业发布仍为**NO-GO**。
+
+1.0面向大量相互独立的macOS本地终端实例，规模能力体现为发行物可重复安装、兼容升级、稳定运行、故障恢复、问题诊断和质量回归，不表示集中式多租户SaaS。原Windows原生Workspace、Git、Process、CLI与WSL2的支持边界作为历史决策保留，不构成当前交付承诺。IDE、Web、远程Sandbox、云任务、多租户控制面和大规模分布式调度进入1.x候选范围，但核心协议和执行端口不得阻断后续演进。原产品与平台边界见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)。
 
 ## 4. 核心价值
 
@@ -122,7 +126,7 @@ Harnessix Code 1.0 必须满足：
 6. 支持受控本地stdio MCP、项目指令和Skills/Hooks；
 7. 有稳定、版本化的 App Server 协议；
 8. 有单元、契约、集成、端到端、故障注入和真实仓库 Eval；
-9. 提供有限目标下macOS、Linux和Windows原生核心流程、统一安装、当前认证候选升级、同机备份恢复、卸载、配置、诊断和安全文档；
+9. 仅提供按macOS版本/架构验收的原生核心流程、统一安装、当前认证候选升级、同机备份恢复、卸载、配置、诊断和安全文档；
 10. 提供用户数据导出、删除、保留及诊断脱敏能力；
 11. 使用既有固定Task Pack达到运行前冻结的真实质量门槛；报告Usage、时延、人工干预及显式适用的估算费用，未知不能报零；
 12. 复用仍适用的已关闭Soak，补受影响故障/安全回归；小批真实Beta和同一候选完整必要门禁通过。

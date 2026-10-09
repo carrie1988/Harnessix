@@ -27,7 +27,7 @@
 
 Harnessix Code的目标是独立实现面向真实软件工程任务的生产级Coding Agent，在真实仓库中稳定完成理解、规划、修改、执行、验证、审查和交付，并把Agent Loop、模型适配、Context、工具、会话恢复、权限、Sandbox和外部副作用治理纳入同一个可恢复、可审计、可评测的运行时。
 
-> 当前状态：已完成0.1～0.9.3路线图范围和DOC-1.0～DOC-1.6文档治理；ADR和源码研究资料进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档。0.9.2已交付多仓库Suite与Transcript合同、不可变Task Pack、可恢复Suite Runner、3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型记录318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格结果为任务成功0/20、测试通过0/20，已按原始失败[冻结低敏证据](docs/validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b持久容量与保留已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收；0.9.3c已增加Action双层Owner、持久Operation期限、只对账恢复和跨Store扫描，修复版Revision `33fcf02`本地`make check`为3597 passed、32 skipped，并由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)完成六实例验收。0.9.4已推进有限公开失败合同、有界成功Owner投影及执行器原始返回预算；许可证12件和其他安全/发布边界仍阻断。0.9.3d已完成三平台正式负载与第二独立PASS验收；0.9.4已实现默认产品独立持久Session Key与强制历史认证。新Artifact正文已按独立Key跨重启认证；密钥恢复、Windows原生产品、真实质量及当前范围的发布门禁仍开放，项目尚未达到1.0正式商用状态。
+> 当前状态：已完成0.1～0.9.3路线图范围和DOC-1.0～DOC-1.6文档治理；ADR和源码研究资料进入版本化文档合同。0.9.1f3已经物理删除独立Action HTTP/Worker体系，保留历史Session只读兼容和旧数据库离线归档。0.9.2已交付多仓库Suite与Transcript合同、不可变Task Pack、可恢复Suite Runner、3仓10 Case/20 Trial离线与真实Provider基线，关闭Revision `6dd391a`由[CI 35492831821](https://github.com/carrie1988/Harnessix/actions/runs/35492831821)完成六实例验收。固定北京模型记录318,478输入Token、12,148输出Token和CNY 1.46828完整已知成本；严格结果为任务成功0/20、测试通过0/20，已按原始失败[冻结低敏证据](docs/validation/provider-engineering-2026-09-20-v1/README.md)。0.9.3a本地传输可靠性已由[CI 35494960166](https://github.com/carrie1988/Harnessix/actions/runs/35494960166)完成六实例验收；0.9.3b持久容量与保留已由[CI 35498012926](https://github.com/carrie1988/Harnessix/actions/runs/35498012926)完成六实例验收；0.9.3c已增加Action双层Owner、持久Operation期限、只对账恢复和跨Store扫描，修复版Revision `33fcf02`本地`make check`为3597 passed、32 skipped，并由[CI 35691402329](https://github.com/carrie1988/Harnessix/actions/runs/35691402329)完成六实例验收。0.9.4已推进有限公开失败合同、有界成功Owner投影及执行器原始返回预算；许可证12件和其他安全/发布边界仍阻断。0.9.3d已完成三平台正式负载与第二独立PASS验收；0.9.4已实现默认产品独立持久Session Key与强制历史认证。新Artifact正文已按独立Key跨重启认证；密钥恢复、macOS正式交付、真实质量及当前范围的发布门禁仍开放，项目尚未达到1.0正式商用状态。
 
 ```text
               CLI / TUI / Agent SDK
@@ -46,9 +46,9 @@ Harnessix Code的目标是独立实现面向真实软件工程任务的生产级
 
 ## 1.0剩余发布范围
 
-0.9.0～0.9.3已关闭，剩余工作收敛为：**R1安全/恢复、R2权利/发行输入、R3真实编码质量与有限模型认证、R4三平台发行、R5小批Beta、R6正式封板**。
+0.9.0～0.9.3已关闭，剩余工作收敛为：**R1安全/恢复、R2权利/发行输入、R3真实编码质量与有限模型认证、R4 macOS发行、R5小批Beta、R6正式封板**。
 远端MCP/OAuth、Agent公网Push、通用维护平台、全模型/计价矩阵、自动更新与多安装器进入1.1+；
-三平台原生核心编码、安全/恢复、许可证、真实质量和Beta仍是必要条件。延期不等于功能已完成或已从实现删除。
+首版本仅交付macOS，安全/恢复、真实编码质量和Beta仍是必要条件。Linux/Windows交付已从首发范围、剩余任务及验收门槛删除，不是延期必做项；未来支持需另行立项。已有跨平台实现及历史验证保留，不代表首发支持或已完成相应交付。
 详见[范围收敛与逐项处置](docs/changes/m09-to-v1-release-scope-convergence.md)及[路线图](docs/roadmap.md)。
 
 R1已增加[认证容量与旧式维护安全边界](docs/changes/m09-r1-store-maintenance-safety.md)；
@@ -93,7 +93,7 @@ Harnessix Code 自研 Coding Agent 的关键运行语义：
 
 Harnessix Code复用模型供应商SDK、OpenTelemetry、SQLite、Git、系统搜索工具和成熟Sandbox，不重新实现已有标准与底层系统能力。LangGraph等框架只作为源码研究与外部集成参考；1.0公共集成面是Agent Protocol，不内置Action级LangGraph Adapter。
 
-1.0目标是面向大量独立macOS、Linux和Windows终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；0.8已提供Agent Protocol、MCP/Skill/Hook和Provider/Profile产品配置边界，完整TUI已按0.9.1验收；三平台安装与不同版本升级专项已有固定原件，完整Windows核心编码、消费者支持及正式发行门禁仍未完成。
+1.0目标是面向大量独立macOS终端用户安装和长期使用的本地优先正式商用版本，提供CLI/TUI、Headless App Server和Python Agent SDK。大量用户表示大量相互独立的本地实例，不表示1.0建设集中式多租户SaaS；IDE、Web、远程Sandbox、云任务和分布式Agent Worker在1.x按真实需求评估。当前0.7 Workspace Snapshot、Process/Job Object/ConPTY、受管Git交付和统一Action入口均已通过Windows原生或平台中立门禁；0.8已提供Agent Protocol、MCP/Skill/Hook和Provider/Profile产品配置边界，完整TUI已按0.9.1验收；三平台安装与不同版本升级专项已有固定原件，这些跨平台实现是历史研发成果，不是当前首发交付承诺；macOS消费者支持、真实编码及正式发行门禁仍未完成。
 
 ## 当前已完成：0.7可信执行与工程交付
 
@@ -813,7 +813,7 @@ examples/                       当前Coding Agent可运行样例
 | 0.7 | 跨平台端口、可信执行、通用Process、多文件事务与Git交付 |
 | 0.8 | Agent Protocol、Headless、薄CLI、MCP、Skills、Hooks、Provider/Profile产品配置 |
 | 0.9 | 代码可维护性治理、完整CLI/TUI、三平台CI与发行物、故障注入、质量工程和Dogfooding |
-| 1.0 | macOS/Linux/Windows本地优先正式商用发布 |
+| 1.0 | 仅macOS本地优先正式商用发布；Linux/Windows不在本次交付任务中 |
 | 1.x | 按需求评估云任务、多租户、IDE与分布式运行 |
 
 ## 重要语义

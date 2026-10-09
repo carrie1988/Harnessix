@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 259
+version: 261
 code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
 owners:
   - core
@@ -71,7 +71,7 @@ supersedes: []
 
 Harnessix Code通过研究Codex、OpenCode、Claude Code等主流Coding Agent的架构、公开行为和可核验实现思路，独立设计并实现面向真实软件工程任务的、本地优先、模型无关、安全可控、可恢复、可审计、可评测、可扩展的生产级Coding Agent。系统必须在真实代码仓库中稳定完成理解、规划、修改、执行、验证、审查和交付闭环，并具备完整的协议契约、失败语义、持久化、可观测性、安全边界、兼容升级、真实评测和产品发布能力。
 
-Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，而是能够供大量独立macOS、Linux和Windows终端用户安装并长期使用的本地优先正式商用版本。“大量用户”指大量相互独立的本地实例，不表示1.0包含集中式多租户云控制面；远程Sandbox、云任务和分布式Agent Worker按真实需求在1.x评估。产品与平台边界由[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)固化。
+Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，而是以大量独立终端用户可安装并长期使用为目标的本地优先正式商用版本；首版本仅交付macOS（macOS only），Linux和Windows版本交付已从当前任务中取消。“大量用户”指大量相互独立的本地实例，不表示1.0包含集中式多租户云控制面；远程Sandbox、云任务和分布式Agent Worker按真实需求在1.x评估。原产品与平台目标见[ADR 0062](adr/0062-local-first-v1-commercial-boundary.md)和[ADR 0063](adr/0063-windows-v1-platform-support.md)，历史决策保留，当前交付范围按下述调整执行。
 
 路线图采用“可发布的纵向切片”，每个切片都必须包含正式契约、失败语义、持久化、可观测性、完备测试、总体方案设计和详细设计。参考项目仅作为架构与行为证据，研究必须记录固定提交或产品版本、来源和Harnessix独立决策；任何代码复用必须满足许可证和归属要求。
 
@@ -88,7 +88,11 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 重大变更必须在实现前形成可评审的正式设计，并在合入前同步现行模块设计、源码与测试映射；
 文档角色、结构和完成门槛以[文档工程规范](governance/documentation-standard.md)为准。
 
-**首发范围收敛**：0.9～1.0剩余工作以[六个发布工作包与逐项处置](changes/m09-to-v1-release-scope-convergence.md)及[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)为准。保留完整本地编码产品、三平台原生核心流程、安全/恢复、权利及真实质量；远端MCP/OAuth、公网Git自动Push、通用维护平台、全模型/价格矩阵、自动更新与多安装渠道后置。延期不计作已完成，也不允许已知危险入口继续暴露。
+**首发范围收敛**：0.9～1.0剩余工作以[六个发布工作包与逐项处置](changes/m09-to-v1-release-scope-convergence.md)为活动依据；[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)保留原范围决策。首发仅保留macOS完整本地编码产品、安装交付、安全/恢复、权利及真实质量；Linux/Windows交付不是延期必做项，不自动进入1.1或1.x，未来重启须单独立项，无当前必做承诺。远端MCP/OAuth、公网Git自动Push、通用维护平台、全模型/价格矩阵、自动更新与多安装渠道后置。取消或延期均不计作已完成，也不允许已知危险入口继续暴露。
+
+**当前活动优先级（2026-10-09）**：BETA-001真实登录密码整改与测试验收的完整任务闭环 > macOS安装交付及其余R3/R4收口。Beta完成数仍为0；不把R3/R4整体关闭或R4原生组件完成设为该真实任务的前置，正式R5的非平台验收要求不变。
+R4/R5的Linux/Windows交付、实际使用及其R6依赖已从当前未完成任务和必需矩阵删除，不标记完成；已实现跨平台代码、历史测试和历史决策保留，旧三平台条款不再构成当前任务。
+Mac资格按具体OS/CPU架构的原生证据逐项核定，不默认覆盖Intel与Apple Silicon。当前Mac原生组件是正式内部候选、非默认Writer，R4未完成；R3原完整20 Trial及原评分/限制、Mac安全/恢复与Beta真实业务验收均不放松，商业发布仍为**NO-GO**。
 
 ## 2. 历史基线：0.1 Action Plane
 
@@ -129,8 +133,8 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 | 0.6 | Context 与持久会话 | 指令、预算、压缩、恢复、取消和 Replay | 0.5 |
 | 0.7 | 可信执行与工程交付 | 跨平台端口、Permission、Sandbox、Process、事务性交付和Trusted Action Runtime | 0.6 |
 | 0.8 | 产品运行时与扩展 | 双向协议、Headless、薄CLI、MCP、Skills、Hooks、Provider/Profile产品配置 | 0.7 |
-| 0.9 | Release Candidate与质量工程 | 可维护性和文档工程基线、完整CLI/TUI、三平台发行物、质量/成本基线、安装与Dogfooding | 0.8 |
-| 1.0 | 本地优先正式商用发布 | macOS/Linux/Windows稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
+| 0.9 | Release Candidate与质量工程 | 可维护性和文档工程基线、完整CLI/TUI、macOS发行物、质量/成本基线、安装与Dogfooding | 0.8 |
+| 1.0 | 本地优先正式商用发布 | macOS only稳定契约、升级回滚、安全审查和发布保障 | 0.9 |
 | 1.x | 按需求演进 | 云任务、多租户、远程Sandbox、IDE和分布式运行 | 1.0 |
 
 版本号代表能力成熟度，不承诺固定日期。每个里程碑完成后根据 Eval、风险和实际投入重新估算后续计划。
@@ -476,7 +480,7 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 状态：**0.9.0～0.9.3已完成；0.9.4～0.9.6按收敛范围继续，整体0.9未完成**。
 DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20基线](validation/provider-engineering-2026-09-20-v1/README.md)和当前许可/Windows失败保持原判定。范围缩减不是验收通过。
-后续执行以R1～R6为活动队列，不根据附录中的历史开放项恢复已延期功能。
+后续执行以macOS only范围的R1～R6为活动队列，不根据附录中的历史开放项恢复已取消的平台交付或已延期功能。
 
 ### 目标
 
@@ -489,7 +493,7 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 - [x] **0.9.2 Eval与Transcript基线**：覆盖Bug Fix、Feature、Refactor、Test和Review的多仓库任务集，记录任务成功率、测试通过率、人工干预率、Token、成本和延迟；离线20/20执行链与真实Provider 0/20严格质量基线均已冻结；
 - [x] **0.9.3 可靠性与性能**：长会话Soak、进程/数据库/客户端故障注入、并发与锁、内存、启动时延、Artifact和数据库增长基准；
 - [ ] **0.9.4 安全、许可证与供应链（R1/R2）**：首发实际可达的公开输出/凭据、Owner/取消/恢复、高风险副作用、许可证/权利链、锁定安装输入、SBOM与发行物扫描；复用现有TM相关测试，不建设重复安全平台；
-- [ ] **0.9.5 三平台发行、停机升级与小批Beta（R4/R5）**：统一Wheel通道，全新安装、当前认证候选升级、数据库与Key同机恢复、卸载、低敏诊断、3～5名真实开发者及至少15个任务；公网Git认证和自动更新后置；
+- [ ] **0.9.5 macOS发行、停机升级与小批Beta（R4/R5）**：统一Wheel通道，全新安装、当前认证候选升级、数据库与Key同机恢复、卸载、低敏诊断、3～5名真实开发者及至少15个macOS真实任务；公网Git认证和自动更新后置；
 - [ ] **0.9.6 真实编码与有限Provider发布证据（R3）**：原0/20归因及主链整改，现有Task Pack固定质量运行；至少一份认证配置的真实功能、Usage、取消、凭据保护与价格适用边界；不扩大模型/地域/计价矩阵。
 
 ### 0.9.4收敛后的完成边界
@@ -522,11 +526,13 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 | R1 | 核心安全与恢复收口 | 正式入口安全；取消/超时及恢复确定；错Key/坏备份不破坏原状态；延期危险能力拒绝 |
 | R2 | 权利与发布输入 | 许可证/商业权利处置、锁定安装输入、实际发行物SBOM/Secret/通知一致 |
 | R3 | 真实编码质量与有限模型认证 | 原0/20归因；现有20 Trial按预注册门槛验证；至少一份真实认证配置 |
-| R4 | 三平台发行与手动升级 | 脱离源码安装，原生编码闭环，认证候选升级、同机恢复和卸载通过 |
-| R5 | 小批真实Beta与文档 | 3～5名独立开发者、至少15任务及三平台使用；P0/P1处置；用户可独立操作 |
-| R6 | 1.0正式封板 | 同一候选必要门禁通过，版本/制品/支持矩阵与商业授权资料交付 |
+| R4 | macOS发行与手动升级 | 按声明的macOS版本/架构脱离源码安装，原生编码闭环，认证候选升级、同机恢复和卸载通过 |
+| R5 | macOS小批真实Beta与文档 | 3～5名独立开发者、至少15个真实任务及macOS实际使用；P0/P1处置；用户可独立操作 |
+| R6 | 1.0正式封板 | 同一候选必要门禁通过，版本/制品/macOS支持矩阵与商业授权资料交付 |
 
-执行优先级按实际产品能力排序：R1高风险安全与恢复、R3真实编码质量、R4原生Windows核心编码及安装升级优先推进。
+首发发行安装矩阵仅macOS；`canonical-wheel`的Ubuntu Job仅构建纯Python制品，普通`ci.yml`跨平台兼容回归保留，均不构成Linux/Windows版本交付任务。R6依赖的是macOS only范围的R1～R5，不因取消其他平台交付而放过影响macOS的共用缺陷。
+
+执行顺序为BETA-001完整真实整改/测试/验收闭环 > macOS安装交付及其余R3/R4收口；R4原生组件不是Beta前置。R1高风险安全与恢复约束始终有效，影响macOS的共用缺陷不能借其他平台交付取消豁免。
 R2中的许可证、权利链和其他不直接改变功能的治理工作低优先并行处理，不阻挡功能研发与内部验证；
 正式发行前仍必须完成必要处置，不能把未处置事项标记为已通过。不得新增不必要的治理平台。
 
@@ -534,22 +540,22 @@ R1已补[Container资源能力准入](changes/m09-r1-container-resource-admissio
 PIDs机制的引擎，并在每次启动及MCP连接前复核；不关闭R1整体或真实编码发布门禁。
 固定`753d6a8`的[专项验收](validation/container-resource-admission-2026-09-29-v1/README.md)保留
 修复前23失败、本地完整5724通过、真实Linux资源值核对及同一新Wheel三平台生命周期结果。
-Scripted 20/20不是新真实质量；消费者OS、版本升级、独立Beta与R1～R6整体仍开放。
+Scripted 20/20不是新真实质量；macOS消费者环境、版本升级、独立Beta与R1～R6整体仍开放。
 R3与真实Beta现使用[独立60元验证周期](changes/m09-provider-budget-period-activation.md)，共用同一预算Owner；
 原70元周期及两笔未决仅保留为历史，不计入新额度、不再阻塞新周期。旧原件不修改，新周期新增未知仍停止。
 固定镜像及显式同Engine评测链已有历史前置通过记录，新的运行候选仍须重做预检；
 固定`7bbce10`的新完整20 Trial已完成，严格成功0/20、必需测试通过1/20，质量未达标；
-后继修复候选尚未完成真实复验。默认Desktop路径与消费者平台仍独立开放。
+后继修复候选尚未完成真实复验。默认Desktop路径与macOS消费者环境仍独立开放。
 预算可用不代表编码质量已验收；不以替换镜像、放宽资源机制或脚本成绩绕过真实20 Trial门禁。
 
-R4当前增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
+R4历史增量见[Windows原生NTFS文件事务与默认审批写链](changes/m09-r4-windows-native-file-transactions.md)。
 固定源码`87f9353`已完成该文件事务专项及双Python受影响回归，详见[验证报告](validation/windows-native-file-transactions-2026-09-28-v1/README.md)。
-该增量不关闭R4：Windows默认Git读取/交付、三平台脱离源码安装、升级恢复、独立Beta与最终同候选门禁仍需完成。
-该切片复用原审批、Lease和Transaction状态机；原生验证、Git产品装配及三平台发行退出条件仍分别验收。
+该增量不关闭当前R4：macOS默认Git读取/交付、脱离源码安装、升级恢复、独立Beta与最终同候选门禁仍需完成。
+该切片复用原审批、Lease和Transaction状态机；既有Windows结果保留，不再派生当前Windows交付任务；首发macOS原生验证、Git产品装配及发行退出仍分别验收。
 [规范发行Wheel详设](changes/m09-r4-installed-product-acceptance.md)及
 [固定源码实际验证](validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
 完成同一Run唯一Wheel三平台源码外安装、完整备份恢复、卸载及重装，制品摘要一致。
-Windows消费者环境、完整编码闭环、版本升级/回退、独立Beta和同候选全部发布门禁仍开放；不据此关闭R4。
+macOS消费者环境、完整编码闭环、版本升级/回退、独立Beta和同候选全部发布门禁仍开放；不据历史三平台专项关闭R4。
 详细逐项处置、退出阈值、依赖及延期表见[发布范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)。
 
 [原 prepared 审批历史只读增量](changes/m09-r4-git-prepared-approval-history.md)与
@@ -724,33 +730,33 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 - 编码行为变更补受影响回归；固定候选统一进行真实Eval，不对不影响编码行为的文档/局部修复反复调用模型；
 - 连续故障注入和Soak后无Session损坏、孤儿进程、未归因文件和重复外部副作用；
 - 受控Beta发现的发布阻塞缺陷已关闭或有明确降级边界；
-- 新用户仅依据正式文档即可完成安装、配置、首个真实任务、恢复和卸载。
+- 声明支持的macOS版本/架构上，新用户仅依据正式文档即可完成安装、配置、首个真实任务、恢复和卸载。
 
 ## 12. 1.0：本地优先正式商用发布
 
 ### 发布范围
 
 - [ ] 版本化Agent/Tool/Provider/Context/Session/Protocol；现有CLI/TUI、stdio和Python SDK；
-- [ ] 三平台Git仓库中的读取、搜索、多文件修改、受控进程、测试、Diff、本地Commit、Checkpoint和Rollback闭环；
+- [ ] macOS Git仓库中的读取、搜索、多文件修改、受控进程、测试、Diff、本地Commit、Checkpoint和Rollback闭环；
 - [ ] 持久会话、恢复、取消、审批、压缩、当前状态认证以及同机同用户数据库/Key备份；
 - [ ] 两类Provider Adapter与离线契约；至少一份真实认证配置及明确的Usage/估算边界；
 - [ ] 受控本地stdio MCP、项目指令、Skills/Hooks、Host等级及一种Container后端；
-- [ ] 统一Wheel通道、有限三平台目标、手动升级/回退、删除/卸载、低敏诊断、支持文档与商业授权。
+- [ ] 统一Wheel通道、按原生证据核定的macOS版本/架构、手动升级/回退、删除/卸载、低敏诊断、支持文档与商业授权。
 
 ### 发布门禁
 
 - [ ] **R1**：正式装配安全与失败恢复通过；没有可达但未经处置的高风险延期入口；
 - [ ] **R2**：自有权利链、12件许可复核、精确安装输入和实际发行物扫描/SBOM/通知通过；
 - [ ] **R3**：真实编码结果达到预注册阈值，认证配置的功能/Usage/保护通过；0/20不能视为商用质量；
-- [ ] **R4**：三平台核心链、脱离源码全新安装、当前认证候选升级、同机恢复及卸载通过；
-- [ ] **R5**：小批真实Beta及正式资料完成，无未处置P0/P1；
-- [ ] **R6**：同一候选Revision的必要离线/原生/真实门禁通过，版本、校验、Changelog、迁移和支持矩阵一致。
+- [ ] **R4**：声明支持的macOS各版本/架构的核心链、脱离源码全新安装、当前认证候选升级、同机恢复及卸载通过；
+- [ ] **R5**：macOS小批真实Beta及正式资料完成，无未处置P0/P1；
+- [ ] **R6**：同一候选Revision的必要离线/macOS原生/真实门禁通过，版本、校验、Changelog、迁移和macOS支持矩阵一致。
 
 公共Schema保留版本/兼容/废弃策略；现有数据库及Artifact变更仍需迁移和失败恢复证据。
 R3已补[产品与评测的共享Context、编码指令及持久压缩装配](changes/m09-r3-product-context-composition.md)。
 该整改保持Task Pack v2及评分合同不变；默认产品接线、离线回归或API鉴权均不能替代完整真实任务质量验收。
 后续[R3可信文件快照](changes/m09-r3-trusted-file-snapshot.md)补齐默认模型读取至受管Patch前置摘要的来源；
-旧分页合同保留，新目录版本化，读取/审批后文件漂移不得覆盖实际内容。该切片不关闭真实质量或Windows写入门禁。
+旧分页合同保留，新目录版本化，读取/审批后文件漂移不得覆盖实际内容。该切片不关闭真实质量；当时的Windows写入门禁状态仅作历史记录，不构成当前交付任务。
 [独立验证资料](validation/trusted-file-snapshot-2026-09-28-v1/README.md)保留原Python 3.12相关回归FAIL，
 后继源码修复POSIX目录观察后984项通过/13项跳过；同机完整备份恢复及R1整体仍未关闭。
 [R3验证请求预算](changes/m09-r3-verification-request-budget.md)复用正式Suite、Case和官方Adapter，
@@ -812,11 +818,11 @@ Schema/源码/制品身份、原Validator不变及旧持久批准拒绝；本专
 0.4.3c只保留R3所列首发边界；延期的全计价、远端MCP、公网Push、自动更新、通用维护CLI和跨机Key迁移不再阻断1.0。
 
 1.0限定为大量独立本地实例，不宣称多租户、云端高可用、远程执行池或集中服务SLO。
-Windows原生核心编码承诺不取消；具体有限OS/架构和模型支持表由[R4及认证白名单](changes/m09-to-v1-release-scope-convergence.md#3-首发产品边界与总体架构)定义，未验收不广告支持。
+首版本仅交付macOS；具体有限macOS版本/架构和模型支持表由[R4及认证白名单](changes/m09-to-v1-release-scope-convergence.md#3-首发产品边界与总体架构)定义，未验收不广告支持。Linux/Windows交付已取消，未来重启须单独立项。
 
 ## 13. 1.x与后续演进
 
-只有1.0单Agent本地产品稳定且真实用户证据充分后，才评估以下方向。
+只有1.0单Agent本地产品稳定且真实用户证据充分后，才评估以下方向。Linux/Windows版本交付不列入本节，也不自动进入1.1；未来重启须单独立项，无当前必做承诺。
 
 ### 云端运行候选
 
@@ -832,7 +838,7 @@ Windows原生核心编码承诺不取消；具体有限OS/架构和模型支持�
 - Agent公网HTTPS/SSH Git认证、known-hosts、凭据Helper和Push装配；
 - 更多Provider/模型/地域/模式认证、全面计价、供应商账单对账及实时费用硬上限；
 - 通用保留/GC与维护CLI、跨机Key导出/轮换和旧无证明历史有权导入；
-- 原生安装器、多包管理器、自动更新、正式Agent镜像及额外OS/架构；
+- macOS原生安装器、多包管理器、自动更新、正式Agent镜像及额外macOS版本/架构；
 - 在线一致性快照、滚动升级、自动回退和扩大Beta/评测生态；
 - Subagent、Reviewer和并行任务；
 - IDE、桌面客户端和Web；
@@ -861,7 +867,7 @@ Windows原生核心编码承诺不取消；具体有限OS/架构和模型支持�
 
 ## 附录：0.9.4a既有切片证据
 
-以下记录对应各自固定版本，不是新增活动任务。旧段落中的开放项按R1～R6重新分类；延期项不因历史文字重入首发。
+以下全部切片及后续进展记录对应各自固定版本，不是当前活动任务清单。旧段落中的三平台、Linux/Windows开放项及后继安排仅保留历史语境；当前R1～R6按macOS only范围执行，已取消的平台交付不恢复、不标完成、不自动转入1.1。历史测试、跨平台实现及当时决策不改写。
 
 ### 0.9.4a 原协议帧子切片进展
 

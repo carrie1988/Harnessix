@@ -106,11 +106,8 @@ def test_installed_acceptance_workflow_uploads_no_private_state() -> None:
     path = Path(__file__).parents[2] / ".github/workflows/installed-product-acceptance.yml"
     workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
     job = workflow["jobs"]["installed-product"]
-    assert {entry["platform"] for entry in job["strategy"]["matrix"]["include"]} == {
-        "linux",
-        "macos",
-        "windows",
-    }
+    # 首发只交付Mac；保留既有跨平台单测，不把它们恢复成发行任务。
+    assert job["strategy"]["matrix"]["include"] == [{"platform": "macos", "runner": "macos-latest"}]
     assert job["strategy"]["fail-fast"] is False
     uploads = [step for step in job["steps"] if "upload-artifact@" in step.get("uses", "")]
     assert {step["id"] for step in uploads} == {"installed-evidence", "upgrade-evidence"}
@@ -121,7 +118,7 @@ def test_installed_acceptance_workflow_uploads_no_private_state() -> None:
     assert not any("/case" in line or "*" in line for line in paths)
 
 
-def test_three_platform_jobs_consume_one_scanned_canonical_wheel() -> None:
+def test_mac_release_consumes_one_scanned_canonical_wheel() -> None:
     import yaml
 
     path = Path(__file__).parents[2] / ".github/workflows/installed-product-acceptance.yml"

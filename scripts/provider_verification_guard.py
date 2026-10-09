@@ -1,4 +1,4 @@
-"""固定北京Coder快照的验证请求保护；不提供通用产品计价或账户硬限额。"""
+"""北京Coder验证保护；固定评测快照与独立Beta配置，不提供通用账户硬限额。"""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 from contextlib import aclosing
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import ClassVar
 from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
@@ -65,6 +66,19 @@ class VerificationRequestPacer:
 class BailianVerificationBounds:
     """可信宿主核验的有限价格窗口；最高档预留，不削减模型输入以凑预算。"""
 
+    model: ClassVar[str] = MODEL
+    price_source: ClassVar[str] = PRICE_SOURCE
+    purpose: ClassVar[str] = "engineering-suite-model-request"
+    guard_version: ClassVar[str] = "harnessix.bailian-verification-request-guard/v1"
+    maximum_input_tokens: ClassVar[int] = 997_952
+    # 单位为毫元/百万Token，避免1.5等阶梯单价经过浮点运算。
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
+        (32_000, 4_000, 16_000),
+        (128_000, 6_000, 24_000),
+        (256_000, 10_000, 40_000),
+        (1_000_000, 20_000, 200_000),
+    )
+
     valid_from: datetime
     valid_until: datetime
     max_output_tokens: int
@@ -82,39 +96,35 @@ class BailianVerificationBounds:
 
     @property
     def maximum_units(self) -> int:
-        # 最大输入997952、最高输入20/输出200元每百万；不计缓存、免费额度或折扣。
-        return (997_952 * 20 + self.max_output_tokens * 200) * 10**12
+        # 完整输入上限、最高价格档预留；不把Token估算当硬上限，不扣除优惠。
+        _, input_rate, output_rate = self.price_tiers[-1]
+        return (
+            self.maximum_input_tokens * input_rate + self.max_output_tokens * output_rate
+        ) * 10**9
 
     def cost_units(self, usage: UsageObservation) -> int | None:
         if (
             usage.completeness != "complete"
             or usage.input_tokens is None
             or usage.output_tokens is None
-            or usage.input_tokens > 997_952
+            or usage.input_tokens > self.maximum_input_tokens
             or usage.output_tokens > self.max_output_tokens
         ):
             return None
         input_rate, output_rate = next(
-            (ir, outr)
-            for limit, ir, outr in (
-                (32_000, 4, 16),
-                (128_000, 6, 24),
-                (256_000, 10, 40),
-                (1_000_000, 20, 200),
-            )
-            if usage.input_tokens <= limit
+            (ir, outr) for limit, ir, outr in self.price_tiers if usage.input_tokens <= limit
         )
-        return (usage.input_tokens * input_rate + usage.output_tokens * output_rate) * 10**12
+        return (usage.input_tokens * input_rate + usage.output_tokens * output_rate) * 10**9
 
     def fingerprint(
         self, ledger: VerificationBudgetLedger, *, pacer: VerificationRequestPacer | None = None
     ) -> str:
         binding: dict[str, object] = {
-            "spec_version": "harnessix.bailian-verification-request-guard/v1",
-            "model": MODEL,
+            "spec_version": self.guard_version,
+            "model": self.model,
             "region": "cn-beijing",
             "mode": "non-thinking",
-            "price_source": PRICE_SOURCE,
+            "price_source": self.price_source,
             "valid_from": self.valid_from.isoformat(),
             "valid_until": self.valid_until.isoformat(),
             "max_output_tokens": self.max_output_tokens,
@@ -142,6 +152,22 @@ class BailianVerificationBounds:
         return digest(binding)
 
 
+@dataclass(frozen=True, slots=True)
+class BailianBetaVerificationBounds(BailianVerificationBounds):
+    """仅BETA-001的Coder Next北京价；不改变R3固定模型或评测计分。"""
+
+    model: ClassVar[str] = "qwen3-coder-next"
+    price_source: ClassVar[str] = "https://help.aliyun.com/zh/model-studio/qwen3-coder-next"
+    purpose: ClassVar[str] = "beta-001-model-request"
+    guard_version: ClassVar[str] = "harnessix.bailian-beta-request-guard/v1"
+    maximum_input_tokens: ClassVar[int] = 204_800
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
+        (32_000, 1_000, 4_000),
+        (128_000, 1_500, 6_000),
+        (262_144, 2_500, 10_000),
+    )
+
+
 @dataclass(slots=True)
 class GuardedVerificationProvider:
     """托管官方Adapter的单请求预留与结算；歧义会取消整个Suite。"""
@@ -162,18 +188,22 @@ class GuardedVerificationProvider:
             await self.pacer.wait(cancel, self.suite_cancel)
         try:
             self.bounds.checkpoint()
+            if isinstance(self.bounds, BailianBetaVerificationBounds) and (
+                self.ledger.task_id != "BETA-001" or self.ledger.suite_id is not None
+            ):
+                raise KernelError("verification_budget_unresolved", "Beta模型只属于单任务授权")
             reservation = self.ledger.reserve(
                 self.bounds.maximum_units,
                 {
-                    "purpose": "engineering-suite-model-request",
-                    "requested_model": MODEL,
+                    "purpose": self.bounds.purpose,
+                    "requested_model": self.bounds.model,
                     "region": "cn-beijing",
                     "max_output_tokens": self.bounds.max_output_tokens,
                     "max_attempts": 1,
                     "thread_id": str(request.thread_id),
                     "turn_id": str(request.turn_id),
                     "step": request.step,
-                    "price_basis": PRICE_SOURCE,
+                    "price_basis": self.bounds.price_source,
                 },
             )
         except Exception:
@@ -208,7 +238,7 @@ class GuardedVerificationProvider:
                         if (
                             attempt is not None
                             or event.index != 1
-                            or event.requested_model != MODEL
+                            or event.requested_model != self.bounds.model
                             or event.provider != "openai_chat"
                             or event.step != request.step
                         ):
@@ -225,7 +255,7 @@ class GuardedVerificationProvider:
                         event.usage.validate_successor(usage)
                         usage = event.usage
                         if event.actual_model is not None:
-                            model_mismatch |= event.actual_model != MODEL
+                            model_mismatch |= event.actual_model != self.bounds.model
                             actual_model = event.actual_model
                     elif isinstance(event, ModelAttemptFinished):
                         if event.attempt_id != attempt or attempt_ended:
@@ -245,7 +275,7 @@ class GuardedVerificationProvider:
                     clean_end
                     and completion is not None
                     and finished
-                    and actual_model == MODEL
+                    and actual_model == self.bounds.model
                     and not model_mismatch
                     and completion.usage.input_tokens == usage.input_tokens
                     and completion.usage.output_tokens == usage.output_tokens

@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 21
+version: 22
 code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners:
   - core
@@ -37,6 +37,8 @@ supersedes: []
 试用必须绑定可信候选及实际安装输入；内部候选或单人试用结果不等于正式发行及多用户验收。
 
 ## 1. 适用范围
+
+**2026-10-09首发范围：仅macOS。** Linux/Windows安装交付、升级及原生业务验收已从当前首发任务与发布门槛删除，不保留为延期必做项。以下非Mac源码开发步骤和三平台实测属于已实现能力/历史证据，不是当前产品支持承诺；未来支持须另行立项。macOS仍按实际OS、CPU架构和固定候选独立验收。
 
 本文描述当前内部`1.0.0rc1`候选、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
@@ -82,10 +84,8 @@ flowchart TD
     Product -- Coding Agent --> Agent[源码安装含Provider Extra]
     Agent --> Configure[code configure生成配置]
     Configure --> Diagnose[code doctor离线预检]
-    Diagnose --> Platform{macOS/Linux/Windows?}
-    Platform -- macOS/Linux --> Posix[POSIX受管编码与审批执行]
-    Platform -- Windows --> Win[Handle读取 受管Git与本地NTFS审批Patch]
-    Win --> GitGate[原生焦点已验证；完整安装待R4验收]
+    Diagnose --> Mac[首发仅macOS 受管编码与审批执行]
+    Mac --> Gate[固定OS与架构 完整安装及恢复验收]
 ```
 
 当前没有可直接下载的官方二进制。任何第三方Wheel、镜像或安装脚本必须单独核对来源、Revision、许可证和摘要。
@@ -223,12 +223,12 @@ gzip→tar→验证Wheel→包内Task Pack tar层级，现行Secret扫描正确�
 原Key保留与相同restore ID不回退新状态均通过。数据和Key未进入公开交付。
 详见[安装与恢复原件](../validation/product-restart-release-boundary-2026-09-29-v1/README.md#6-脱离源码安装与完整状态恢复)。
 该结果没有真实模型Turn，不证明真实编码任务、Linux/Windows安装、版本升级、卸载或Beta。
-三平台消费者安装验收、正式来源证明和1.0发行仍开放；开发Wheel不可称为已发布商用包。
+首发macOS消费者安装验收、正式来源证明和1.0发行仍开放；开发Wheel不可称为已发布商用包。
 
 后继[统一安装生命周期详设](../changes/m09-r4-installed-product-acceptance.md)将正式SDK/CLI恢复流程
 推广至三平台独立Job，并新增指定venv卸载、全新解释器导入消失、原Key/库/Workspace保持和同一Wheel重装读取。
 执行始终使用安装解释器`-I -m harnessix`，不把构建Checkout放入产品导入路径。
-三平台实际结果、版本升级及消费者目标OS未验收前仍不关闭R4。
+该历史三平台计划不再作为首发R4门槛；当前R4只要求声明支持的macOS目标、版本升级及真实编码验收。
 
 [当前三平台独立生命周期实测](../validation/installed-product-three-platform-2026-09-29-v1/README.md)
 已完成源码外安装、完整备份恢复、指定venv卸载与同Wheel重装；原Key、库、备份和Workspace保持。
@@ -308,9 +308,9 @@ docker run --rm harnessix:<revision>
 
 ## 11. 未完成的制品治理
 
-首发按[范围收敛计划](../changes/m09-to-v1-release-scope-convergence.md)采用统一Wheel通道和有限三平台目标：
+首发按[范围收敛计划](../changes/m09-to-v1-release-scope-convergence.md)采用统一Wheel通道，且仅交付macOS；Linux/Windows交付任务取消。首发Mac的OS/架构须绑定实际验收证据，不自动覆盖所有Mac：
 固定版本、精确安装输入、来源/校验、实际发行物SBOM/依赖/Secret检查、脱离源码安装、手动升级及同机恢复必须通过。
-MSI/DMG、多包管理器、自动更新、额外架构和正式Agent镜像延期1.1+，不能被误列为首发前置条件。
+DMG、多包管理器、自动更新、额外架构和正式Agent镜像延期1.1+；Windows MSI随Windows交付任务一并取消，不能被误列为首发前置条件。
 当前Wheel仍是开发/候选制品，不因计划收敛自动变为正式商用发行物。
 
 ## 默认产品首次启动与持久密钥

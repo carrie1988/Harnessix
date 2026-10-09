@@ -61,8 +61,29 @@ class VerificationReverificationPlanV2(_ReverificationPlanFields):
     maximum_cost: Literal["38"]
 
 
+class VerificationBetaTaskReverificationPlan(ContractModel):
+    """原60元周期内只授予BETA-001新增5元；不是Eval Suite授权。"""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    spec_version: Literal["harnessix.provider-task-reverification-plan/v1"]
+    authority: Literal["budget-owner-explicit"]
+    reverification_id: UUID
+    task_id: Literal["BETA-001"]
+    period_id: UUID
+    allocation: Literal["60"]
+    maximum_cost: Literal["5"]
+    ledger_before_sha256: Sha256
+    prior_request_count: Annotated[int, Field(ge=1, le=10000)]
+    prior_requests_sha256: Sha256
+    carried_requests: Annotated[
+        tuple[CarriedVerificationRequest, ...], Field(min_length=1, max_length=1)
+    ]
+
+
 type VerificationReverificationPlanRecord = (
-    VerificationReverificationPlan | VerificationReverificationPlanV2
+    VerificationReverificationPlan
+    | VerificationReverificationPlanV2
+    | VerificationBetaTaskReverificationPlan
 )
 
 _PLAN_ADAPTER: TypeAdapter[VerificationReverificationPlanRecord] = TypeAdapter(
@@ -70,23 +91,34 @@ _PLAN_ADAPTER: TypeAdapter[VerificationReverificationPlanRecord] = TypeAdapter(
 )
 
 
+class _ReverificationPlanFile(_ReverificationPlanFields):
+    """只作私有文件读入；保留显式null/混合字段供封闭版本解析拒绝。"""
+
+    suite_id: UUID | None = None
+    task_id: str | None = None
+
+
 def parse_reverification_plan(text: str) -> VerificationReverificationPlanRecord:
-    """只接受两种完整版本组合，拒绝重复JSON键、金额混搭和未知版本。"""
+    """只接受完整Suite或Beta task版本，拒绝重复键、金额及身份混搭。"""
     strict_json(text)
     return _PLAN_ADAPTER.validate_json(text, strict=True)
 
 
 def read_reverification_plan(path: str) -> VerificationReverificationPlanRecord:
     """沿用0600、有界、无链接私有读器；共用字段不能直接授予请求权限。"""
-    fields = read_private_eval_config(path, _ReverificationPlanFields, max_bytes=64 * 1024)
-    return parse_reverification_plan(fields.model_dump_json())
+    fields = read_private_eval_config(path, _ReverificationPlanFile, max_bytes=64 * 1024)
+    return parse_reverification_plan(fields.model_dump_json(exclude_unset=True))
 
 
 def snapshot_reverification_plan(value: object) -> VerificationReverificationPlanRecord:
     """重建真实类型与嵌套字段，阻止copy或construct绕过封闭金额合同。"""
     if (
-        type(value) not in {VerificationReverificationPlan, VerificationReverificationPlanV2}
-        or not isinstance(value, _ReverificationPlanFields)
+        type(value)
+        not in {
+            VerificationReverificationPlan,
+            VerificationReverificationPlanV2,
+            VerificationBetaTaskReverificationPlan,
+        }
         or set(value.__dict__) != set(type(value).model_fields)
         or value.__pydantic_extra__ is not None
         or type(value.carried_requests) is not tuple
@@ -113,6 +145,12 @@ def validate_reverification_plan(
     period: dict[str, Any], plan: VerificationReverificationPlanRecord
 ) -> int:
     """核验整个旧请求前缀不可变；累计新增已知费用与全额预留，不猜测未知费用。"""
+    plan = snapshot_reverification_plan(plan)
+    task_scoped = isinstance(plan, VerificationBetaTaskReverificationPlan)
+    if task_scoped and any(
+        field in period for field in ("reverification_binding", "reverification_binding_chain")
+    ):
+        raise ValueError
     requests = period["requests"]
     prefix = requests[: plan.prior_request_count]
     if (
@@ -120,7 +158,9 @@ def validate_reverification_plan(
         or amount_units(period["allocation"]) != amount_units(plan.allocation)
         or len(prefix) != plan.prior_request_count
         or digest(prefix) != plan.prior_requests_sha256
-        or any(r["status"] == "reserved" or "reverification_id" in r for r in prefix)
+        or any(
+            r["status"] == "reserved" or "reverification_id" in r or "task_id" in r for r in prefix
+        )
     ):
         raise ValueError
     unknown = {r["request_id"]: r for r in prefix if r["status"] == "unknown"}
@@ -138,6 +178,15 @@ def validate_reverification_plan(
     charged = 0
     for request in requests[plan.prior_request_count :]:
         if request.get("reverification_id") != str(plan.reverification_id):
+            raise ValueError
+        if isinstance(plan, VerificationBetaTaskReverificationPlan):
+            if (
+                request.get("task_id") != plan.task_id
+                or "suite_id" in request
+                or "reverification_binding_id" in request
+            ):
+                raise ValueError
+        elif "task_id" in request:
             raise ValueError
         charged += amount_units(request["reserved_cost"])
         if request["status"] in {"completed", "not_sent"}:

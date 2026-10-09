@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 12
+version: 14
 code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
 owners:
   - core
@@ -46,17 +46,18 @@ supersedes: []
 
 ## 2. 首发目标与当前判定
 
-首发以[范围收敛计划](../changes/m09-to-v1-release-scope-convergence.md)的R4及R5为准，采用统一Wheel通道：
+首发以[范围收敛计划](../changes/m09-to-v1-release-scope-convergence.md)的活动优先级及R4/R5验收为准，采用统一Wheel通道。首版本仅交付macOS（macOS only）；Linux/Windows版本交付已从当前任务、必需矩阵、退出条件及依赖中删除，不标完成，不是延期必做项，也不自动列入1.1或1.x。未来重启须单独立项，无当前必做承诺。
 
-| 首批目标 | Python | 必需验证 | 当前判定 |
+| 首发目标 | Python | 必需验证 | 当前判定 |
 |---|---|---|---|
-| macOS ARM64 | 经验证的3.12补丁 | 脱离源码安装、原生Git编码闭环、进程、手动升级、匹配Key备份恢复及Beta | 正式发行门禁未关闭 |
-| Ubuntu x86_64 | 同上 | 同上；必要受管Container后端 | 正式发行门禁未关闭 |
-| Windows 11 x86_64 | 同上 | 原生写入/测试/进程/终端/恢复，不能仅以只读Tool或WSL2代替 | 文件事务专项已有原生证据；完整产品与正式发行门禁未关闭 |
+| macOS（具体版本/架构逐项核定） | 经验证的3.12补丁 | 脱离源码安装、原生Git编码闭环、进程、必要受管Container后端、手动升级、匹配Key备份恢复及Beta | 正式发行门禁未关闭 |
+
+原macOS ARM64目标保留，仍须对应架构的原生验收；Intel x86_64与Apple Silicon ARM64证据不能互相代替，不因“macOS only”就声明所有macOS版本或双架构全覆盖。
+当前Mac原生组件为正式内部候选、非默认Writer，R4未完成；组件回归不等于安装或产品支持。R3原完整20 Trial及原评分/限制、Mac安全/恢复与Beta真实业务验收不放松，商业发布仍为**NO-GO**。
 
 最近固定Revision `ffdc641`的[CI 36359755491](https://github.com/carrie1988/Harnessix/actions/runs/36359755491)
 不是全矩阵成功。已关闭0.9.3d三平台Soak保持原结论，不替代当前候选的安装、模型质量及真实Beta。
-其他OS版本、CPU架构、Python 3.13正式发行、多安装器、自动更新与正式Agent镜像进入1.1+；
+其他macOS版本、CPU架构、Python 3.13正式发行、多安装器、自动更新与正式Agent镜像作为1.1+候选，不包含已取消的Linux/Windows版本交付；
 现有额外CI回归可以保留，但不扩大正式支持声明。
 
 ### 2.1 历史候选矩阵
@@ -88,6 +89,9 @@ supersedes: []
 
 ## 3. CI证据矩阵
 
+首发[发行安装矩阵](../../.github/workflows/installed-product-acceptance.yml)仅有macOS；`canonical-wheel`的Ubuntu Job是纯Python制品构建宿主，不是Linux安装交付。
+下列普通`ci.yml`跨平台兼容回归继续保留，与历史测试结果一样，不构成Linux/Windows首发任务或支持承诺。影响macOS的共用缺陷仍须处置，不能因取消其他平台交付豁免。
+
 | Job | OS/服务 | Python | 覆盖边界 |
 |---|---|---|---|
 | `python` | Ubuntu | 3.12、3.13 | 锁定依赖、Ruff、Readability、Mypy、全量Pytest与离线示例 |
@@ -105,8 +109,8 @@ Windows、PostgreSQL、Container与文档矩阵验收。该证据只证明基础
 CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。0.9.1d已把Windows真实`agent-server`启动、
 四项Tool、长路径、Junction、ADS、保留名、硬链接和关闭场景加入`windows-trusted-execution`，并由
 [CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成验收。当前仍缺
-有限三平台正式发行、真实终端交互、当前候选升级/恢复和小批Beta。
-网络文件系统、多安装器和额外架构不属于首发支持范围；macOS ARM64仍需R4实际安装验证。
+macOS正式发行、真实终端交互、当前候选升级/恢复和小批Beta；Linux/Windows交付不在当前未完成清单中。
+网络文件系统、多安装器和额外架构不自动进入首发支持范围；Mac具体OS/架构仍需R4实际安装验证。
 
 ## 4. 文件系统要求
 
@@ -121,6 +125,8 @@ CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。
 
 ### 4.2 Windows
 
+以下保留已实现端口的技术与安全边界，不构成Windows版本交付任务。
+
 - Workspace观察通过Win32 Handle、File ID和Reparse Point检查提供底层能力；
 - Process通过挂起创建、不可Breakaway Job Object和ConPTY管理进程树；
 - 普通文件事务复用原父句柄链，拒绝Reparse/Junction、特殊属性、附加流与不一致权限；只接受本地固定NTFS；
@@ -130,7 +136,7 @@ CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。
 - 0.9.1d固定版本默认入口装配四项Windows只读Tool；当时Git、普通目录写与完整Delivery失败关闭，不代表后续候选已通过原生写入验收。
 
 Windows读取及文件事务入口必须使用`WindowsWorkspaceRoot`的逐段Handle、Final Path、File ID和Reparse检查；不得替换为
-字符串前缀或把POSIX权限位映射到Windows。正式发行须验证当前配置/状态/Key ACL及实际Wheel来源、校验和安装，不要求额外安装器。
+字符串前缀或把POSIX权限位映射到Windows。若未来单独立项重启Windows交付，须重新评审配置/状态/Key ACL及实际Wheel来源、校验和安装要求；当前无此发行任务。
 
 ### 4.3 大小写与Unicode
 
@@ -145,11 +151,11 @@ macOS默认文件系统也可能大小写不敏感；测试环境需要同时覆
 | Windows | Suspended Process + Job Object | 终止Job并核对回执 | ConPTY候选 |
 | Container | 宿主容器CLI与持久Owner账本 | 通过容器生命周期停止 | 默认非交互，取决于Profile |
 
-平台Process合同必须验证启动前Plan、环境白名单、输出预算、Timeout、取消、进程树、Owner Lease、回执和重启恢复。
+上表是既有端口机制，不是首发交付矩阵。首发macOS Process合同必须验证启动前Plan、环境白名单、输出预算、Timeout、取消、进程树、Owner Lease、回执和重启恢复。
 只验证`subprocess` Exit Code不足以证明平台支持。
 
 0.9.1b TUI以Textual 8.2.8的`App.run_test()`验证按键、会话选择、Composer、Resize和Context退出，不依赖真实TTY。
-该证据证明View/Controller合同，不证明平台终端全部键盘布局、IME、Shell启动、睡眠唤醒或长时间交互。真实终端和安装器
+该证据证明View/Controller合同，不证明平台终端全部键盘布局、IME、Shell启动、睡眠唤醒或长时间交互。macOS真实终端、安装及
 真实Beta属于R4/R5，不要求额外专用安装器。
 
 ## 6. Sandbox与网络
@@ -191,20 +197,20 @@ Provider端点必须为无用户信息、Query或Fragment的HTTPS URL。平台�
 
 ```mermaid
 flowchart LR
-    Install[全新安装] --> Start[启动与配置诊断]
+    Install[macOS声明版本与架构的全新安装] --> Start[启动与配置诊断]
     Start --> IO[文件/Git/终端交互]
     IO --> Failure[取消、Timeout、崩溃]
     Failure --> Recover[重启、Replay、Reconcile]
     Recover --> Upgrade[旧版本升级与回退]
     Upgrade --> Soak[长时间Dogfooding]
-    Soak --> Claim[平台支持声明]
+    Soak --> Claim[有原生证据的macOS支持声明]
 ```
 
-每个平台必须至少覆盖：
+首发仅对声明支持的macOS版本/架构独立覆盖以下要求；Linux/Windows不在当前验收矩阵中，影响macOS的共用安全/恢复缺陷仍须处置：
 
 1. 安装、升级、卸载和权限；
-2. 路径大小写、Unicode、长路径、Symlink/Junction/Reparse Point、Hardlink和TOCTOU；
-3. Pipe/PTY、进程树、Signal/Job、Timeout和强制取消；
+2. 路径大小写、Unicode、长路径、Symlink、Hardlink和TOCTOU；
+3. Pipe/PTY、进程树、Signal/Process Group、Timeout和强制取消；
 4. Git路径、Hook禁用、配置隔离和Credential不继承；
 5. SQLite WAL、锁、备份和崩溃恢复；
 6. Provider TLS、证书、DNS、代理和断网；
@@ -213,7 +219,7 @@ flowchart LR
 
 ## 9.1 历史默认Workspace Patch平台矩阵
 
-以下是0.9.1阶段默认端口边界；首发Git仓库写入和三平台完整编码闭环以R4候选证据为准。
+以下是0.9.1阶段默认端口边界，不是当前交付任务；首发macOS的Git仓库写入和完整编码闭环以R4候选证据为准。
 后继Windows本地NTFS端口由第2节与专项报告描述，不应继续按以下历史表推断当前Catalog。
 新增文件系统后端及通用目录维护平台继续延期，不降低既有主链的取消、恢复、审批和回归要求。
 
@@ -240,19 +246,21 @@ POSIX测试同时覆盖Unicode、创建/替换/删除、链接拒绝、Lease竞�
 
 ## 11. 当前风险
 
-- Windows文件事务专项有原生证据；默认Git、完整编码/测试、实际发行安装与恢复仍属R4，不由专项或历史只读验收代替；
+- Windows文件事务专项原生证据保留，但不等于Windows完整产品支持；其版本交付不再属于当前R4，也不转为延期必做项；
 - 既有0.9.1交互及0.9.3d Soak证据保留，但TUI仍需小批真实用户终端和正式发行物验证；
-- 三平台统一Wheel发行和真实Beta未关闭，源码候选不能视为正式产品支持；
+- macOS统一Wheel发行和真实Beta未关闭；源码候选或取消其他平台交付均不能视为正式产品支持；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；
 - 正式Agent镜像延期，不阻断首发；实际发布Wheel及Container执行后端的必要门禁保留；
-- macOS ARM64须实测；额外架构、网络文件系统及特殊离线环境没有正式支持承诺；
+- Mac资格逐OS/架构实测，原ARM64目标不预判通过，也不自动扩为Intel与Apple Silicon全覆盖；网络文件系统及特殊离线环境没有正式支持承诺；
 - Provider网络与系统代理/证书缺少统一配置合同。
 
 ## Windows原生Git读取候选边界
+
+以下仅说明已有实现与证据边界，不派生当前Windows交付或验收任务。
 
 显式`--git-executable`进入原生Git读取候选，必须绑定本机Git for Windows绝对普通EXE。
 实际宿主Doctor核对原生EXE及Process Owner；模拟平台结果不算能力证明。
 只开放固定Status/Diff，拒绝可执行Filter/Include，关闭子模块辅助查询；
 不开放任意Git命令、自动Commit/Push或一般宿主Shell。
 状态、取消、备份与原生测试入口见[详设](../changes/m09-r4-windows-native-git-read.md)。
-本项不关闭R4完整编码、脱离源码安装、升级及Beta边界。
+本项不改变历史验收结论，也不关闭当前macOS R4完整编码、脱离源码安装、升级及Beta边界。

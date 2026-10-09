@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 12
+version: 13
 code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
 owners:
   - core
@@ -42,7 +42,7 @@ supersedes: []
 已交付先导环境固定在提交 `e0c47ca2f96c4e87a055b3135ac6c3be883275d5` 的候选输入。后继[评分器反馈整改](../changes/m09-r3-final-patch-feedback.md)不自动替换该环境；换候选须另行固定版本与输入。
 
 Git 边界见[当前产品装配说明](../modules/product-config.md#正式git-review与原artifact审批链)。
-[R5 原门槛](../changes/m09-to-v1-release-scope-convergence.md#5-六个发布工作包与退出条件)保持为 **3～5 名独立开发者、至少 15 个真实任务、三平台均有实际使用**，并要求无未处置 P0/P1。单人五任务不替代该门槛，也不构成三平台产品支持或商用完成声明。
+[R5 当前门槛](../changes/m09-to-v1-release-scope-convergence.md#5-六个发布工作包与退出条件)为 **3～5 名独立开发者、至少 15 个真实任务、首发macOS实际使用**，并要求无未处置 P0/P1。2026-10-09按用户决定取消Linux/Windows首发交付及对应任务，不再作为退出条件或延期必做项；未来支持需另行立项。单人五任务不替代正式Beta门槛。
 
 ## 2. 开始前的范围与安全约束
 
@@ -78,7 +78,7 @@ flowchart TD
 缓存完整性清单、复制输入和重放说明必须与候选一并提供，不忽略缓存缺失或版本不匹配。
 [审批历史增量验证](../validation/git-approved-history-2026-10-07-v1/README.md)将包一致性、离线预检、SDK 与真实任务结果分开。
 
-以下为 macOS/Linux Bash 示例。先准备本机 Python 3.12 和 `uv`，选择尚不存在的安装目录；**逐段执行，每一步成功后才继续**。
+以下为首发 macOS Bash 示例。先准备本机 Python 3.12 和 `uv`，选择尚不存在的安装目录；**逐段执行，每一步成功后才继续**。
 将路径和摘要替换为可信交付记录中的实际值，不能把本地自算摘要当作来源证明。
 
 ```bash
@@ -112,7 +112,7 @@ cd "$INSTALL"
 ```
 
 版本须匹配交付记录，导入路径须位于独立 venv，而非源码目录。Help 成功不证明模型、任务或恢复成功；CLI 入口由[顶层分派](../../src/harnessix/cli.py#L12-L74)定义。
-Windows 使用 venv 的 `Scripts/python.exe` 和 PowerShell 环境变量语法，不照抄 Bash；按[安装手册](installation.md#5-本地wheel与锁定安装输入)的原生步骤另记结果。
+Linux/Windows不属于本次首发交付及Beta平台任务；已有开发步骤不构成支持承诺。
 
 ## 4. Provider 配置与离线预检
 
@@ -196,6 +196,24 @@ P05 恢复必须是明确批准的先导演练，不在唯一生产状态上操�
 每项完成人工范围/语义核对；`git diff --check` 仅检查格式，不证明业务正确，不替代必需测试。
 
 ### 6.1 首个真实任务登记
+
+**2026-10-09当前执行约束**：BETA-001为最高优先级，仅使用已授权12文件独立副本进行模型调查；完整423文件基线仅供本地测试，不外发，也不重新访问原项目目录。以下日期化记录保留为历史，不代表本次预算或候选。
+
+用户已批准原60元周期内保留旧未决请求20.77824元预留，BETA-001新增费用封顶5元。
+[任务授权合同](../../scripts/provider_reverification_plan.py)使用独立task身份，不是R3 Suite授权；
+[账本](../../scripts/provider_verification_budget.py)保留原请求前缀并拒绝新增未决后的继续执行。
+[请求保护](../../scripts/provider_verification_guard.py)为本任务单独核验北京`qwen3-coder-next`价格与用量，
+按模型完整输入上限预留；不改变R3模型、评分或原限额。模型兼容性及真实业务验收仍须单独取得证据，
+新unknown即停、无自动重试。离线回归见[任务边界](../../tests/evals/test_provider_reverification_task.py)及
+[原生Adapter预算测试](../../tests/evals/test_beta_verification_guard.py)，不计作Beta完成。
+
+本次授权已登记，原129条请求前缀、60元额度和20.77824元旧预留保持不变。
+2026-10-09唯一真实SDK Turn在原生工具执行前因`provider_invalid_provider_output`失败，
+返回模型标识匹配但用量未知；新增请求全额预留0.54272元，账本总预留21.32096元，
+已知用量费用估算仍为3.102568元。没有自动重试，后续付费请求停止。
+本轮五核心文件真实覆盖0/5、Patch/回归尚未执行，Beta完成数仍0；
+没有原始响应证据，暂不归因供应商或Parser。预算/原生Adapter离线回归633通过不替代此真实失败。
+
 
 首个已登记需求为 AIPracticalPlatform 登录过程中浏览器可见明文密码整改，登记及后续执行验收以[任务 001：登录密码传输保护](pilot-tasks/001-login-password-protection.md)为准。该任务对应 P03 类真实缺陷整改，并覆盖取消、重开及人工验收观察；多个 Turn 不拆算多个真实任务。
 
@@ -348,7 +366,7 @@ PY
 - 达到人工时限/费用/尝试上限，或 Provider 用量不可判定：停止发起新 Turn，记录未完成结果。
 - P0/P1 未处置、无法独立完成核心步骤或缺少必需验证：先导不得标记为无阻塞；缺陷修复后绑定新候选定向复核，保留旧失败。
 
-先导汇总只报告五项的实际结果、人工介入、限制及待处置问题，不预填通过率。正式 Beta 仍须满足 R3/R4 候选前提、3～5 名独立开发者、至少 15 个真实任务和三平台实际使用，以及原 R5 退出条件。
+先导汇总只报告五项的实际结果、人工介入、限制及待处置问题，不预填通过率。正式 Beta 仍须满足 R3/R4 候选前提、3～5 名独立开发者、至少 15 个真实任务和首发macOS实际使用，以及原 R5 退出条件。
 正式发布另须同一冻结候选满足 R1～R5 并通过 R6 封板；单人先导、安装 Help、离线 Doctor 或绿色测试均不能替代这些门禁。
 
 ### 核心链与原生工具完成门复核

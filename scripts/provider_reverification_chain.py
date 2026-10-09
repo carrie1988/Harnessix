@@ -18,6 +18,7 @@ from scripts.provider_reverification_binding import (
 from scripts.provider_reverification_plan import (
     Amount,
     Sha256,
+    VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
     validate_reverification_plan,
 )
@@ -95,7 +96,11 @@ def validate_candidate_chain(
     bindings: tuple[VerificationCandidateBinding, ...],
 ) -> None:
     """分段核验旧V1与每个V2候选，同时按原授权累计全部费用，新增未决不豁免。"""
-    if not bindings or len(bindings) > MAX_CANDIDATE_BINDINGS:
+    if (
+        isinstance(plan, VerificationBetaTaskReverificationPlan)
+        or not bindings
+        or len(bindings) > MAX_CANDIDATE_BINDINGS
+    ):
         raise ValueError
     requests = period["requests"]
     validate_reverification_binding(

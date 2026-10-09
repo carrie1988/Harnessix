@@ -28,6 +28,7 @@ from scripts.provider_reverification_chain import (
     validate_candidate_chain,
 )
 from scripts.provider_reverification_plan import (
+    VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
     parse_reverification_plan,
     snapshot_reverification_plan,
@@ -61,6 +62,7 @@ class VerificationBudgetLedger:
         *,
         reverification_id: UUID | None = None,
         suite_id: UUID | None = None,
+        task_id: str | None = None,
     ) -> None:
         self.path = path.absolute()
         self.period_id = str(period_id)
@@ -72,6 +74,7 @@ class VerificationBudgetLedger:
         self.allocation = 0
         self.reverification_id = reverification_id
         self.suite_id = suite_id
+        self.task_id = task_id
         self._registration_only = False
         self._candidate_registration = False
 
@@ -184,6 +187,7 @@ class VerificationBudgetLedger:
             plan, original = owner.reverification_plan, owner.reverification_binding
             if (
                 plan is None
+                or isinstance(plan, VerificationBetaTaskReverificationPlan)
                 or original is None
                 or len(existing) >= MAX_CANDIDATE_BINDINGS
                 or checked.ledger_before_sha256 != sha256(owner._body).hexdigest()
@@ -265,7 +269,11 @@ class VerificationBudgetLedger:
                     ) from None
                 return
             plan = owner.reverification_plan
-            if plan is None or sha256(owner._body).hexdigest() != checked.ledger_before_sha256:
+            if (
+                plan is None
+                or isinstance(plan, VerificationBetaTaskReverificationPlan)
+                or sha256(owner._body).hexdigest() != checked.ledger_before_sha256
+            ):
                 raise KernelError("verification_reverification_invalid", "切换不属于原授权预算")
             if len(owner.period["requests"]) != checked.prior_request_count:
                 raise KernelError("verification_reverification_invalid", "切换请求前缀已变化")
@@ -326,7 +334,7 @@ class VerificationBudgetLedger:
         if raw_plan is not None:
             plan = parse_reverification_plan(json.dumps(raw_plan))
             validate_reverification_plan(period, plan)
-        elif any("reverification_id" in request for request in requests):
+        elif any("reverification_id" in request or "task_id" in request for request in requests):
             raise ValueError
         raw_binding = period.get("reverification_binding")
         if value["schema"] in {_REBOUND_SCHEMA, CHAIN_SCHEMA}:
@@ -475,12 +483,19 @@ class VerificationBudgetLedger:
         plan = self.reverification_plan
         binding = self.active_reverification_binding
         allowed: set[str] = set()
-        if self.reverification_id is not None or self.suite_id is not None:
-            if (
-                plan is None
-                or self.reverification_id != plan.reverification_id
-                or self.suite_id != (binding.suite_id if binding is not None else plan.suite_id)
-            ):
+        if any(
+            identity is not None
+            for identity in (self.reverification_id, self.suite_id, self.task_id)
+        ):
+            if plan is None or self.reverification_id != plan.reverification_id:
+                raise KernelError("verification_budget_unresolved", "复验身份与持久授权不一致")
+            if isinstance(plan, VerificationBetaTaskReverificationPlan):
+                matched = self.task_id == plan.task_id and self.suite_id is None and binding is None
+            else:
+                matched = self.task_id is None and self.suite_id == (
+                    binding.suite_id if binding is not None else plan.suite_id
+                )
+            if not matched:
                 raise KernelError("verification_budget_unresolved", "复验身份与持久授权不一致")
             validate_reverification_plan(self.period, plan)
             allowed = {str(r.request_id) for r in plan.carried_requests}
@@ -527,6 +542,11 @@ class VerificationBudgetLedger:
             {
                 **metadata,
                 **({"reverification_id": str(plan.reverification_id)} if plan is not None else {}),
+                **(
+                    {"task_id": plan.task_id}
+                    if isinstance(plan, VerificationBetaTaskReverificationPlan)
+                    else {}
+                ),
                 **(
                     {
                         "reverification_binding_id": str(binding.binding_id),

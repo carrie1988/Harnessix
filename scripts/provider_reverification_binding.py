@@ -13,6 +13,7 @@ from harnessix.tools.workspace import digest
 from scripts.provider_reverification_plan import (
     Amount,
     Sha256,
+    VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
     validate_reverification_plan,
 )
@@ -44,6 +45,8 @@ def validate_reverification_binding(
 ) -> None:
     """核验唯一切换、全部旧事实和同一上限；新未决仍由运行入口拒绝。"""
 
+    if isinstance(plan, VerificationBetaTaskReverificationPlan):
+        raise ValueError
     prefix = period["requests"][: binding.prior_request_count]
     if (
         binding.period_id != plan.period_id
