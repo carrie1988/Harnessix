@@ -15,6 +15,7 @@ from harnessix.tools.workspace import digest
 from scripts.provider_reverification_plan import (
     CarriedVerificationRequest,
     Sha256,
+    VerificationBetaTaskBudgetPlan,
     VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
     validate_reverification_plan,
@@ -66,7 +67,21 @@ class VerificationTaskContinuationV2(_TaskContinuationBase):
     previous_continuation_id: UUID
 
 
-type TaskContinuationRecord = VerificationTaskContinuation | VerificationTaskContinuationV2
+class VerificationBetaBudgetContinuation(_TaskContinuationBase):
+    """原60/10累计授权内保留已冻结未决；不新增次数或金额授权。"""
+
+    spec_version: Literal["harnessix.provider-beta-budget-continuation/v1"]
+
+    @property
+    def maximum_requests(self) -> None:
+        return None
+
+
+type TaskContinuationRecord = (
+    VerificationTaskContinuation
+    | VerificationTaskContinuationV2
+    | VerificationBetaBudgetContinuation
+)
 
 
 def parse_task_continuation(text: str) -> TaskContinuationRecord:
@@ -74,19 +89,23 @@ def parse_task_continuation(text: str) -> TaskContinuationRecord:
     if len(text.encode("utf-8")) > MAX_TASK_CONTINUATION_BYTES:
         raise ValueError
     raw = strict_json(text)
-    kind = (
-        VerificationTaskContinuationV2
-        if isinstance(raw, dict)
-        and raw.get("spec_version") == "harnessix.provider-task-continuation/v2"
-        else VerificationTaskContinuation
-    )
-    return kind.model_validate_json(text, strict=True)
+    version = raw.get("spec_version") if isinstance(raw, dict) else None
+    if version == "harnessix.provider-beta-budget-continuation/v1":
+        return VerificationBetaBudgetContinuation.model_validate_json(text, strict=True)
+    if version == "harnessix.provider-task-continuation/v2":
+        return VerificationTaskContinuationV2.model_validate_json(text, strict=True)
+    return VerificationTaskContinuation.model_validate_json(text, strict=True)
 
 
 def snapshot_task_continuation(value: object) -> TaskContinuationRecord:
     """不信任伪类或construct/copy绕过；递归重建严格冻结的合同。"""
     if (
-        type(value) not in (VerificationTaskContinuation, VerificationTaskContinuationV2)
+        type(value)
+        not in (
+            VerificationTaskContinuation,
+            VerificationTaskContinuationV2,
+            VerificationBetaBudgetContinuation,
+        )
         or set(value.__dict__) != set(type(value).model_fields)
         or value.__pydantic_extra__ is not None
         or type(value.carried_requests) is not tuple
@@ -130,7 +149,11 @@ def _validate_window(
     plan: VerificationReverificationPlanRecord,
     record: TaskContinuationRecord,
 ) -> None:
-    if type(plan) is not VerificationBetaTaskReverificationPlan:
+    budget_only = type(record) is VerificationBetaBudgetContinuation
+    expected_plan = (
+        VerificationBetaTaskBudgetPlan if budget_only else VerificationBetaTaskReverificationPlan
+    )
+    if type(plan) is not expected_plan:
         raise ValueError
     validate_reverification_plan(period, plan)
     requests = period["requests"]
@@ -145,10 +168,10 @@ def _validate_window(
         or digest(prefix) != record.prior_requests_sha256
         or any(r["status"] == "reserved" for r in prefix)
         or (
-            type(record) is VerificationTaskContinuation
+            type(record) in (VerificationTaskContinuation, VerificationBetaBudgetContinuation)
             and any("task_continuation_id" in r for r in prefix)
         )
-        or len(suffix) > record.maximum_requests
+        or (record.maximum_requests is not None and len(suffix) > record.maximum_requests)
         or any(r["status"] not in {"completed", "not_sent"} for r in suffix[:-1])
     ):
         raise ValueError

@@ -672,7 +672,8 @@ class VerificationBudgetLedger:
                 raise KernelError("verification_budget_unresolved", "任务承接身份不匹配")
             validate_task_continuation(self.period, plan, continuation)
             if (
-                len(self.period["requests"]) - continuation.prior_request_count
+                continuation.maximum_requests is not None
+                and len(self.period["requests"]) - continuation.prior_request_count
                 >= continuation.maximum_requests
             ):
                 raise KernelError("verification_budget_unresolved", "任务承接请求次数已耗尽")

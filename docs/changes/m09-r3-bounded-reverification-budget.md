@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: ebbcd1d7e1f595862633dd28f173b1c3105b7ecf
+version: 7
+code_revision: bd8d9f6368b32c5795905ad20d77ec90e45d13fc
 owners: [core]
 modules: [evals, models]
 related_adrs:
@@ -18,6 +18,7 @@ related_tests:
   - tests/evals/test_beta_instruct_bounds.py
   - tests/evals/test_beta_coder_flash_bounds.py
   - tests/evals/test_beta_max_bounds.py
+  - tests/evals/test_beta_budget_continuation.py
 supersedes: []
 ---
 
@@ -58,6 +59,12 @@ Flash两轮均产生不合格Java提案，拒绝后取消守卫，未继续收�
 [官方北京快照契约](https://help.aliyun.com/zh/model-studio/model-qwen3-max)于2026-10-09核验：
 支持工具调用、非思考；完整输入258048，三档输入/输出为6/24、10/40、15/60元每百万Token。
 仍预留3072输出，单次最高`(258048×15＋3072×60)/1000000 = 4.05504`元；沿用原累计账本和未决即停规则。
+
+Max首请求有完整usage，但因缺失/无效工具名而无成功Provider终态；原规则保留4.05504元未决，未自动重试。
+用户随后明确允许原Beta 10元内保留该预留继续。独立`provider-beta-budget-continuation/v1`承接记录
+只追加到原账本，冻结59件请求前缀及未决原件；不结算旧请求、不重新登记60/10计划、不授予新的次数或金额。
+仅`VerificationBetaTaskBudgetPlan`可配此记录；旧5元及1/4次合同原义不变，旧Owner/旧Reader拒绝新承接。
+继续前仍足额预留，费用累计含1.341082元已知估算及4.05504元未决；新增未决立即停止。
 
 下文是旧周期的完整历史记录，不再作为本轮金额或次数授权。
 
