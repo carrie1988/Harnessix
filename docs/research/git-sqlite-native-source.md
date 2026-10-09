@@ -561,9 +561,9 @@ Python ASAN／LSAN 正控自身仍报泄漏，不能记为完整 clean pass。
 
 另纠正诊断脚本的过宽假设：3.14 宿主的 macOS 系统依赖会自行映射 `/usr/lib/libsqlite3.dylib`。
 现行合同要求桥不引入第二套 SQLite，且原连接 API／VFS 同源；不是禁止操作系统其他组件使用 SQLite。
-初次“全进程只能有一个映像”预检失败保留，后继记录所有映像，并确认 stdlib 驱动依赖的四个入口均指向
+初次“全进程只能有一个映像”预检失败保留，后继同时记录上述两个已识别映像，并确认 stdlib 驱动依赖的四个入口均指向
 原 `/opt/anaconda3/lib/libsqlite3.0.dylib`；桥自己的 source ID／API／VFS 守卫未改，逐场景仍实际执行。
-这里没有把系统库隐藏掉，也没有宣称逐场景全生命周期映像跟踪。
+映像诊断按 `libsqlite3` 文件名筛选，不是所有可能 SQLite 实现的完备枚举，也不是逐场景全生命周期跟踪。
 
 所有解释器、驱动、构建和 wheel 都在任务私有目录；没有替换 Anaconda、项目 `.venv`、`uv.lock` 或默认启动。
 该 3.14.0 是固定研究版本，**不是最终安全维护基线**；wheel 只验证当前 macOS 27 arm64，
