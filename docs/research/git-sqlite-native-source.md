@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 14
-code_revision: 384d6f164c0a9d65d7c92f51806b7079ab57c8c5
+version: 15
+code_revision: 3ed75274be7f28f1d550a74d398281f46218a3cf
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -571,6 +571,23 @@ Python ASAN／LSAN 正控自身仍报泄漏，不能记为完整 clean pass。
 回归以及 SHM／历史连续性仍需独立关闭；R3、Beta 接受数和默认 Git Writer 状态不变。
 证据位于本机 `verification-working/r4-cpython-minimal-20261010-v1`：`matrix-review.json`复核逐场景与真实负控，
 `pristine314`保留修复前失败，`private-driver314-fix`保存唯一驱动补丁，`free-errmsg314`保存最终原始退出和 JUnit。
+
+#### 候选宿主的安装态产品复验
+
+后继在两个新 venv 中复用原 Wheel，逐字核对当前源码与安装件的 568 个包成员；依赖从原 `uv.lock`
+导出并按哈希安装，不改锁或默认运行时。原六项 Owner／提交作用域 SDK 用例全部通过。
+另冻结六个完整 SDK 测试文件共 77 项，默认模式与显式原生父进程模式均 **77 通过、零跳过**，
+覆盖审批、只读重开、首异常、取消、Patch／Rollback、完整父历史及硬退出恢复；原断言和期限不变。
+原生组创建／释放 170129 个状态对象，末次 states／leases／userdata 均为零；这不是全产品 sanitizer 检查。
+Provider 为原离线夹具；硬退出子进程仍按原测试使用默认模式，不冒充全链原生启动或 R3 真实任务。
+
+独立默认 stdio 产品链完成源码外安装、活跃 Owner 备份拒绝、六库及原 Key 恢复、稳定 restore ID、
+专用环境卸载和同一 Wheel 重装；没有发送模型 Turn，**同版本重装不是版本升级**。
+初次系统 Git 2.24 不支持夹具参数的六项失败、测试快照缺共享辅助包的两组收集失败均保留；
+后继只为验证进程指定 Git 2.53，并补齐原辅助文件，没有修改系统 Git、产品代码或测试正文。
+证据位于 `verification-working/r4-cpython314-product-20261010-v1`，以 `inputs.json`、`RESULTS.json`、
+各原始 JUnit 和 `lifecycle/result.json`复核。旧宿主封存清单复核无漂移；本轮不解除前述分发、SHM、
+历史连续性、P1 或完整 R4 门槛，也不增加 Beta 接受数。
 
 ### 7.7 WAL 点时观察可行，SHM 尚未解决
 
