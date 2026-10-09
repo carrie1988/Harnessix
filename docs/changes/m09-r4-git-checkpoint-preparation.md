@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 13
-code_revision: 586941578f73ecf40bb416994088c76e1493baaa
+version: 14
+code_revision: a2ca7bfa387074cbacc85744c3ee0ed4c75b200c
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace, execution]
 related_adrs:
@@ -11,6 +11,8 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_source_capture_progress.py
+  - tests/workspace/test_snapshot_v2_capture_progress.py
   - tests/product_config/test_git_proof_route_progress.py
   - tests/product_config/test_git_proof_route_progress_sdk.py
   - tests/delivery/test_blob_control_origin.py
@@ -341,6 +343,42 @@ authenticate_prepared_link／read_original_approval_evidence／verify_prepared_l
 原 SDK 用例核对真实 prepared 提交、回读和原构造观察首失败，无新增部分 Prefix；
 机制用例的 sentinel 截止点不等于完整 Session／MAC／审批验收。
 原负载恢复与平台发布状态以对应冻结候选的实际结果为准，不按检查次数推导速度或商业完成。
+
+### 1.11 原 Snapshot 捕获的分层控制
+
+原负载 v23 通过了第二次 Core 回读，但仍在终端 Source2 复核耗尽原 Turn；准备／Review
+已占用约61秒。源码核对发现：只读 Snapshot **复核**已分层，Source **采集**仍把原生
+目录捕获、已得事实编码及父历史内存展开全部传给 Full，逐父目录反复重读认证来源。
+以下契约已实现，不代表已通过原深目录或商用验收。
+
+`capture_workspace_snapshot_v2`复用复核已有的两个可选端口：`native_progress`仅包住
+`capture_snapshot_facts`，`pure_progress`仅包住`_encode_snapshot`及父历史Reader现有纯段。
+原Blob写入、每块耐久回读和完整父历史CAS读取仍在段外使用原Full；不截断历史、缓存
+认证、复用上次Snapshot、重捕获终端Source或改变Wire／公共协议。
+
+```text
+Source采集 -> 原生同步只读段[首末Full、内部原取消/期限/锁检查]
+          -> 已得事实编码纯段[首末Full、内部原局部检查]
+          -> 原CAS逐块write / 回读[原Full与原顺序]
+          -> 完整父历史[CAS Full、已解析事实局部展开]
+          -> 原文件版本读取Full -> 原完整Snapshot复核
+```
+
+[`Source采集`](../../src/harnessix/product_config/git_delivery_source.py)仅给exact控制注入端口，
+捕获段只允许原创建Task／线程分层；unknown／foreign
+保留原Full轨迹。复用原生异常边界，只解本次控制标记，取消、Owner漂移、坏CAS与主体
+首失败不得被出口认证覆盖。默认及显式`None`必须与修改前冻结实现同轨迹、同字节。
+验收须包括真实目录／耐久CAS、控制负例、完整SDK审批恢复及原16文件／400目录／25层／
+两次Patch、60秒操作／120秒Turn；仅机制测试通过不能关闭R4。
+对应[真实捕获及CAS负控](../../tests/workspace/test_snapshot_v2_capture_progress.py)与
+[Source宿主接线／foreign轨迹](../../tests/product_config/test_git_source_capture_progress.py)
+使用随仓库固定原件；不依赖外部源码路径环境变量。
+
+同一非editable安装件最终2403个唯一关联节点通过、4项平台跳过，564成员逐字节绑定；
+不累计旧件负控及本地重复集。原正文不变的单次v25仍FAIL：准备／Review约60.171秒、
+原Ledger／Router约35.060秒、恢复约24.705秒。原追加返回后，第二次完整读取已通过
+原审批材料、U历史及Git事实，在U来源复核耗尽原Turn；正式审批事实COMMIT、只读重开
+与全部副作用断言未通过。测试复制引发的仓根／诊断路径夹具错误保留并修正，不充作产品通过。
 
 ## 2. 设计目标、范围、非目标与验收标准
 

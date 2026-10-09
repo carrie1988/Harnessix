@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 106
-code_revision: 586941578f73ecf40bb416994088c76e1493baaa
+version: 107
+code_revision: a2ca7bfa387074cbacc85744c3ee0ed4c75b200c
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_source_capture_progress.py
   - tests/product_config/test_git_review_layered_native.py
   - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_source_native_progress.py
@@ -107,6 +108,8 @@ A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业
 # Product Config模块设计
 
 原准备／审批证明的 Route 回读共用[父闭包进度接线](../changes/m09-r4-git-checkpoint-preparation.md#110-业务证明的原-route-父闭包进度接线)。只补显式计算工厂，真实 CAS、原 Store 观察、终端内部 Full、原首末复核及未知／foreign 调用身份保持；不启用默认 Writer 或据此关闭 R4。
+
+Source 末轮 Snapshot 捕获显式接入[原生读取与纯编码进度](../changes/m09-r4-git-checkpoint-preparation.md#111-原-snapshot-捕获的分层控制)。仅准确 Git 控制的原 Task 可进入局部段；所有 CAS 写入、独立回读与最终成员读取仍执行完整检查。未知回调、子类和 foreign Task/线程保持原轨迹，不延长期限，不据此宣布深目录、默认 Writer 或 R4 验收完成。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 

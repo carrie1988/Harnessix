@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 249
-code_revision: 0aa84ae536a8618210d96ef9ad5bffe2016f48a2
+version: 250
+code_revision: a2ca7bfa387074cbacc85744c3ee0ed4c75b200c
 owners:
   - core
 modules:
@@ -2798,3 +2798,17 @@ R4 [业务证明的原 Route 父闭包进度接线](changes/m09-r4-git-checkpoin
 原SQLite审批事实事务COMMIT、只读重开和全部副作用断言未通过；这不是Git提交验收。下一步优先核对
 准备链与终端Source2实际认证／原生观察成本，而非继续只优化Core落点；不删复核、不延长60／120秒。
 真实模型请求0，R3历史成绩、Beta接受数、默认完整Writer、B4/B7和三平台门禁仍开放。
+
+### R4：Source 捕获分段及当前深目录结果
+
+[Source原Snapshot捕获](changes/m09-r4-git-checkpoint-preparation.md#111-原-snapshot-捕获的分层控制)
+复用既有原生／纯段，原CAS写入、耐久回读、完整成员读取及终端复核不删；仅准确原Task分层，foreign保持旧轨迹。
+同一非editable安装件2403个唯一关联节点通过、4项平台跳过，564成员绑定；结构原始FAIL仍23项、无新增。
+旧件273节点260 FAIL／13 PASS中229项为新增端口不匹配、31项为分段断言，不能统称产品缺陷。
+复制夹具仓根失败一项按原测试字节与实际仓根重验通过；误绑旧诊断路径的v24在fixture.begin失败，
+原工作元数据从既有封存原件恢复，初版错误原件保留。修正后v25原正文、负载及60／120秒不变，单次仍FAIL：
+准备／Review60.171秒、Ledger／Router35.060秒、恢复24.705秒；追加后的第二次完整读取通过原审批材料、
+U历史与Git事实，在U来源复核到期。审批事实事务COMMIT、只读重开及全部副作用断言未通过。
+最大诊断心跳间隔约4.652秒，无验收阈值，不声明配对加速或P1通过。下一步定位整个准备链与U来源复核
+的实际Full／原生读成本，不只优化报错落点，不延长期限或删复核。R3独立冻结评测环境并行准备，
+未登记38元承接未决费用规则、未调用模型；历史成绩、Beta接受数、默认完整Writer、B4/B7及三平台门禁不变。

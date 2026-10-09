@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 0aa84ae536a8618210d96ef9ad5bffe2016f48a2
+version: 17
+code_revision: a2ca7bfa387074cbacc85744c3ee0ed4c75b200c
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0079-preflight-and-native-read-port.md
 related_tests:
+  - tests/workspace/test_snapshot_v2_capture_progress.py
   - tests/workspace/test_snapshot_v2_native_progress.py
   - tests/delivery/test_terminal_read_control.py
   - tests/product_config/test_git_prepared_link_terminal_callbacks.py
@@ -1392,3 +1393,9 @@ ContextVar 保存同次 `_TerminalRead`；创建线程、Task 和 active 栅栏�
 `verify_workspace_snapshot_v2(..., native_progress=None, pure_progress=None)` 区分原生读取上下文与纯计算工厂：前者只包实际捕获，后者只包 CAS 完整验真后的历史展开／摘要及捕获后的原算法编码；真实 CAS、最终比较和捕获 API 的耐久写入不在纯段。缺省／显式 `None` 保留旧参数、字节和回调轨迹；不注入事实、跳过成员或授予执行权。宿主可通过通用适配器保留原 Store 观察及控制异常运输；观察可能 I/O，不代表整个组合严格纯计算，见[归属 Reader 契约](../changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)。原 Snapshot 边界见[唯一分层详设](../changes/m09-r4-git-checkpoint-preparation.md#17-已验真父历史与-snapshot-重编码的纯计算端口)、[原生端口负控](../../tests/workspace/test_snapshot_v2_native_progress.py)及[纯计算负控](../../tests/workspace/test_parent_closure_pure_progress.py)。
 
 `WorkspaceSnapshotPorts.controlled_read_blob=None` 是[可选控制来源端口](../changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)，不是新的 CAS Reader 算法；旧两参数构造和原绑定读写方法保持，消费方只解自己的控制标记，未明确装配的端口保持旧轨迹。
+
+`capture_workspace_snapshot_v2`复用相同两个可选端口：原生段仅捕获事实，编码及已验真历史
+展开使用独立纯段，原Blob逐块写入／耐久回读及所有CAS观察仍消费原Full。默认与显式
+`None`保留旧完整轨迹和Wire；Source仅在原创建Task／线程分层，foreign不新增首末认证。
+字段、流程、异常及实际Source接线见[捕获分层详设](../changes/m09-r4-git-checkpoint-preparation.md#111-原-snapshot-捕获的分层控制)，
+不据此宣布完整Git响应性或平台发布通过。
