@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 252
-code_revision: 91c5333979a977bd81a6266f822350aa47123127
+version: 253
+code_revision: 6a809bad096d67ae06b9440650e2c43a5d657cc8
 owners:
   - core
 modules:
@@ -2818,7 +2818,9 @@ U历史与Git事实，在U来源复核到期。审批事实事务COMMIT、只读
 [来源读取整改](changes/m09-r4-git-checkpoint-preparation.md#113-来源文件的同步只读段)
 复用原控制及读器：exact 创建 Task／线程的文件段内 Local、首末 Full；原 no-follow、FD、
 完整分块、CAS、历史、两轮 Source 与提交复核不减。未知／foreign 旧轨迹及错误身份保持。
-同一非 editable 候选901个唯一关联节点通过、零跳过，564生产成员逐字节绑定；
+材料恢复的[父历史读后纯段](changes/m09-r4-git-checkpoint-preparation.md#114-材料父历史的读后纯计算接线)
+也已补齐：不减真实CAS读数及规范／Owner验证，unknown／foreign旧轨迹保持。
+当前同一非 editable 候选834个唯一关联节点通过、7项平台跳过，564生产成员逐字节绑定；
 旧断言／插桩／收集路径失败原件保留，结构原始FAIL仍23项、无新增。
 v26提交前超时原件保留；v27原16文件／400目录／25层／两次Patch、60秒操作／120秒Turn不变，
 单次已完成原审批事实SQL COMMIT及六项原断言，只读Prefix为prepared／0、approved／1。
@@ -2827,6 +2829,10 @@ v26提交前超时原件保留；v27原16文件／400目录／25层／两次Patc
 下一步降低完整读取链的冗余认证成本，保留所有来源、Owner和提交复核；不增加首发范围。
 
 R3的本期费用承接规则已由用户明确确认：原60元总额内保留20.77824元未决预留与全部历史，
-新增复验累计封顶38元，出现新增未决即停止、不重试。新独立e13候选继续原完整20 Trial准备，
-不等待整个R4，也不把配置、固定Profile或关联回归计成模型编码成绩；原严格0/20、必需测试1/20保留。
+新增复验累计封顶38元，出现新增未决即停止、不重试。Docker原Engine已恢复，正式固定10 Profile
+及挂载负控／正控通过。独立e13候选的新完整评测尝试已终态停止：发布4/20份Trial报告，严格0/4、
+必需测试4/4；第三Case `agents-payload-bytes-test` 因 `evidence_missing` 停止，没有完整20评分。
+新增41请求全部completed，按Token／价格估算1.200704元，不是实际账单；新增未决及预留0，旧预留不减。
+这不是费用Guard拒绝，不重启或自动重跑；下一步离线定位证据缺失。原完整严格0/20、必需测试1/20另行保留，
+不把环境、固定Profile、部分成绩或关联回归计成完整模型质量验收。
 默认完整Writer、B4/B7、原生三平台与商业门禁保持开放。

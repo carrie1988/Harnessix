@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 109
-code_revision: 91c5333979a977bd81a6266f822350aa47123127
+version: 110
+code_revision: 6a809bad096d67ae06b9440650e2c43a5d657cc8
 owners:
   - core
 modules:
@@ -2895,6 +2895,9 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 来源文件仅在原创建 Task／线程的 exact 控制下进入同步只读段，首末完整认证，
 原路径／FD／分块检查和关闭不减；未知及 foreign 旧轨迹保持，详见
 [来源文件读取合同](../changes/m09-r4-git-checkpoint-preparation.md#113-来源文件的同步只读段)。
-同包901个唯一关联节点通过、零跳过，564成员与源码／Wheel／安装字节一致。
+材料恢复另补齐[父历史读后纯计算接线](../changes/m09-r4-git-checkpoint-preparation.md#114-材料父历史的读后纯计算接线)，
+物理CAS／规范验证仍Full，exact同Task展开及完整摘要段内Local、首末Full，unknown／foreign原轨迹保持。
+当前同包834个唯一关联节点通过、7项平台跳过，564成员与源码／Wheel／安装字节一致；
+不将早先来源文件候选901项重复累加。
 原深目录v27已完成审批事实COMMIT和六项原断言；只读重开时原Turn过期，
 重开成功及全部外部副作用断言仍未证明。它不是Git业务提交，也不关闭默认Writer、P1、B4/B7或商业门禁。

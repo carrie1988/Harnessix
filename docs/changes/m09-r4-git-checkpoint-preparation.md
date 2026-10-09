@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 16
-code_revision: 91c5333979a977bd81a6266f822350aa47123127
+version: 17
+code_revision: 6a809bad096d67ae06b9440650e2c43a5d657cc8
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace, execution]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_material_parent_progress.py
   - tests/product_config/test_git_source_file_progress.py
   - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
@@ -62,7 +63,7 @@ supersedes: []
 | 项目 | 当前边界 |
 |---|---|
 | 已提交基础版本 | 以 `code_revision` 为准 |
-| 设计版本 | 版本 16，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
+| 设计版本 | 版本 17，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | 当前实现已包含在 `code_revision`；第 19 节摘要补充固定具体源码字节 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -472,6 +473,26 @@ COMMIT、只读重开和全部副作用断言必须另行复验，不能据段�
 这里的 COMMIT 是审批事实 SQLite 事务，不是用户 Git 提交。原 120 秒期限、失效拒绝不变，
 不让历史批准替过期 Turn 续期；下一步优先降低完整读取链的冗余认证成本，保留所有真实复核。
 最大诊断心跳间隔 11.659 秒，无验收阈值，不宣称配对加速或 P1／R4 通过。
+
+### 1.14 材料父历史的读后纯计算接线
+
+**根因与目标：** [材料恢复 `_verify_materials`](../../src/harnessix/product_config/git_delivery_plan_materials.py)
+此前没有传递父历史 Reader 已有的 `pure_progress`。400 条已解析父事实的展开及完整摘要仍逐项
+触发宿主 Full；Ledger 的每次 Full 又包含原 Owner 查询、独立只读 Owner 鲜读及四库观察。
+优化这些计算循环，不合并宿主前后检查，不复用 Owner 鲜读结果。
+
+**流程和边界：** 原 Core 深快照／对象材料 → 原 Manifest、每块正文及规范字节验证（Full）
+→ 同创建 Task／线程的纯段展开及完整摘要（Local，首末 Full）→ 原 Diff／提交正文复核。
+只向 exact `GitAuthenticationControl` 传入既有 `same_task_pure_git_authentication` 工厂；
+普通函数、代理、子类不传工厂，foreign 控制仍逐项走原 Full 次数。没有新控制协议或持久授权。
+取消、同一期限及原绑定继续频检；首失败原对象传出、不追加出口认证。原物理 Blob 读取顺序、
+次数、完整规范验证、二次回读与过期拒绝不减，不缓存父历史或认证。
+
+[120 项机制回归](../../tests/product_config/test_git_material_parent_progress.py)覆盖真实400父事实／多块CAS、
+三入口、foreign Task／线程、旧轨迹、首错、取消／期限、保存控制撤销及末块／完整摘要损坏。
+同一候选834个唯一关联节点通过，7项平台跳过；初版四项子进程夹具路径错误和十项负控夹具
+Snapshot摘要域错误保留，分别按原断言及正式摘要域复验，不作为产品缺陷或删例。
+完整SDK44项通过；尚不能替代原深目录、P1、默认Writer或原生三平台验收。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -1286,6 +1307,7 @@ finally：
 | `src/harnessix/product_config/git_delivery_source.py` | `3c9e44378b6568c19281cbb685823c2ee5a560550757a8826315ef55d72d25b4` |
 | `src/harnessix/product_config/git_delivery_review_host.py` | `d976c5497397640e7c987efeb531d348491d954d4e556c69669a9fdd1d865a65` |
 | `src/harnessix/product_config/git_delivery_review.py` | `c8e31019e6996d155dfe6ab91d6a1c0f3cf2a97c5161d7d8290a894fedb148e3` |
+| `src/harnessix/product_config/git_delivery_plan_materials.py` | `5e6e9831b76df7a4ede5f63e693151bb22365cfd237f95e0bb16998356dd7116` |
 | `src/harnessix/workspace/snapshot_v2.py` | `36d02c16899fe57443fecad722f33d8156e61412a4759d9a965570082a7e059f` |
 
 后续源码微调必须按实际字节复核本设计及上述摘要；不能只保留基础提交号而宣称增量说明持续对应现状。发布时应将已整合增量的实际提交/安装源码证据与该设计版本关联，不能把工作树实现描述当作已发布证明。
