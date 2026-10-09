@@ -1,7 +1,7 @@
 """待审批 Git 的专用 SQLite 原连接来源；事务与业务认证仍由调用方负责。
 
-打开前后的路径及 dev/inode 检查是协作式私有状态边界：拒绝打开 A 后将路径
-替换为 B 的旧连接，不承诺恶意并发换回路径时的 OS 原子 no-follow 或 FD 认证。
+默认保留协作式路径边界；显式独占启动的原生模式另核验原 main FD 点时身份。
+两种模式都不承诺 OS 原子 no-follow、历史 ABA 连续性或跨资源原子提交。
 """
 
 from __future__ import annotations
@@ -9,16 +9,32 @@ from __future__ import annotations
 import asyncio
 import sqlite3
 import stat
+import sys
 from collections.abc import Callable, Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
 from threading import local
+from typing import NamedTuple
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_prepared_native_identity import (
+    PreparedIdentityToken,
+    attach_prepared_identity,
+    check_prepared_identity,
+    prepared_identity_backend,
+)
 from harnessix.sqlite_readonly import readonly_database
 
 type _PhysicalPin = tuple[tuple[int, int], ...]
-type _ConnectionSource = tuple[Path, _PhysicalPin, _PhysicalPin, asyncio.Task[object] | None]
+
+
+class _ConnectionSource(NamedTuple):
+    path: Path
+    before: _PhysicalPin
+    after: _PhysicalPin
+    task: asyncio.Task[object] | None
+    native_identity: PreparedIdentityToken | None
+
 
 _owned = local()
 
@@ -34,7 +50,7 @@ def _current_task() -> asyncio.Task[object] | None:
 def _registered_prepared_connection(database: sqlite3.Connection) -> _ConnectionSource | None:
     """通用原始连接没有登记；已登记产品连接必须属于当前原Task，不能降为通用模式。"""
     issued: _ConnectionSource | None = getattr(_owned, "connections", {}).get(database)
-    if issued is not None and _current_task() is not issued[3]:
+    if issued is not None and _current_task() is not issued.task:
         raise _invalid()
     return issued
 
@@ -114,8 +130,10 @@ def open_prepared_git_connection(
     path = _absolute_path(path)
     if type(read_only) is not bool:
         raise _invalid()
+    backend = prepared_identity_backend()
     before = _physical_pin(path, checkpoint)
     _checkpoint(checkpoint)
+    native_identity = None
     try:
         database = (
             readonly_database(path)
@@ -138,18 +156,41 @@ def open_prepared_git_connection(
         _require_alive(database)
         if before != after:
             raise _invalid()
+        _checkpoint(checkpoint)
+        native_identity = attach_prepared_identity(backend, database, before[-1])
+        _checkpoint(checkpoint)
+        check_prepared_identity(native_identity)
+        _require_alive(database)
         connections = getattr(_owned, "connections", None)
         if connections is None:
             connections = {}
             _owned.connections = connections
-        connections[database] = (path, before, after, _current_task())
+        connections[database] = _ConnectionSource(
+            path, before, after, _current_task(), native_identity
+        )
         try:
             yield database
             _checkpoint(checkpoint)
         finally:
             del connections[database]
     finally:
-        database.close()
+        _close_connection(database, native_identity)
+
+
+def _close_connection(
+    database: sqlite3.Connection, native_identity: PreparedIdentityToken | None
+) -> None:
+    """先撤销 lease 再关闭原连接；已有取消、期限或首失败不被清理异常覆盖。"""
+    primary_error = sys.exception()
+    try:
+        try:
+            if native_identity is not None:
+                native_identity.release()
+        finally:
+            database.close()
+    except BaseException:
+        if primary_error is None:
+            raise
 
 
 def require_prepared_git_connection(
@@ -165,8 +206,7 @@ def require_prepared_git_connection(
     issued = getattr(_owned, "connections", {}).get(database)
     if issued is None:
         raise _invalid()
-    original_path, before, after, task = issued
-    if _current_task() is not task:
+    if _current_task() is not issued.task:
         raise _invalid()
     _observe_source(database, path, issued, checkpoint)
 
@@ -180,12 +220,14 @@ def _observe_source(
     """只观察原连接来源，不授予当前Task使用原连接或进入SQL发布窗口的权限。"""
     if getattr(_owned, "connections", {}).get(database) is not issued:
         raise _invalid()
-    original_path, before, after, _task = issued
-    if _absolute_path(path) != original_path or before != after:
+    original_path = issued.path
+    if _absolute_path(path) != original_path or issued.before != issued.after:
         raise _invalid()
     _database_path(database, original_path, checkpoint)
-    if _physical_pin(original_path, checkpoint) != after:
+    if _physical_pin(original_path, checkpoint) != issued.after:
         raise _invalid()
+    _checkpoint(checkpoint)
+    check_prepared_identity(issued.native_identity)
     _require_alive(database)
 
 

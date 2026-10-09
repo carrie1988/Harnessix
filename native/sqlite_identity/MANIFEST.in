@@ -1,0 +1,6 @@
+include pyproject.toml setup.py MANIFEST.in README.md LICENSE
+recursive-include src/harnessix_sqlite_identity *.py *.pyi py.typed
+include src/harnessix_sqlite_identity/bridge.c
+include src/harnessix_sqlite_identity/file_identity_backend.h
+include third_party/sqlite/sqlite3.h third_party/sqlite/sqlite3ext.h
+include third_party/sqlite/SOURCE.json third_party/sqlite/README.md

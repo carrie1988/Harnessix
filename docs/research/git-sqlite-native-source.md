@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 6
-code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
+version: 8
+code_revision: 897c5df42ddb15d180f532eb0a29c574e3ea7edd
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -17,9 +17,9 @@ supersedes: []
 # 原 SQLite 连接来源检查：公开原生 API 研究与接线约束
 
 - 冻结访问日期：2026-10-08。
-- Harnessix 当前生产源码参考提交：1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9；第 4、5 节原桥研究参考提交仍为 d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2。
+- 本轮工厂接线前源码基线：897c5df42ddb15d180f532eb0a29c574e3ea7edd；第 4、5 节原桥研究参考提交仍为 d5c572aff2fedae11d25fd1b0e8a4ca41062a8d2。
 - 研究结论：公开扩展入口可以获得原标准库连接对应的 SQLite C 句柄；主库移动检查可复现普通置换及指定 ABA 反例。
-- 准入结论：**仅研究，未装配产品；实际完整 FD、B7、P1、默认 Git Writer 与发布均不因此通过。**
+- 准入结论：**原生组件已接入原连接工厂的显式启动模式，尚未默认启用；完整 FD、B7、P1、默认 Git Writer 与发布均不因此通过。**
 
 ## 1. 需求背景与设计目标
 
@@ -327,6 +327,79 @@ GC。另4项合成callback控制只证明返回码／errno透明转发，不充�
 历史连续性、后续提交原子性、三平台封装及有效内存检查仍未关闭。错误pin测试不是跨设备挂载实测。
 上述点时main身份观察不关闭完整B7、默认Writer或R4发布门禁。
 
+### 7.5 内部原生组件：发行边界与正式错误契约
+
+正式路线保留 Python 主体，增加独立内部发行物 `harnessix-sqlite-identity`，
+而不是替换全部 Store 驱动。[构建入口](../../native/sqlite_identity/setup.py)使用标准
+`setuptools.Extension`；主项目继续使用原 Hatchling 和纯 Python Wheel，不增加未发布的索引依赖。
+附属 Wheel 使用实际 CPython／平台标签，不标记 `abi3`；只使用 SQLite 官方头文件，
+所有调用仍经过原连接给出的 API 表，不链接或打包第二套 SQLite 引擎。
+该结构允许先验证一对实际安装件，不表示 Windows 或 Linux 已通过资格验收。
+
+#### 接口、状态与错误分类
+
+[Python 导出](../../native/sqlite_identity/src/harnessix_sqlite_identity/__init__.py)及
+[类型契约](../../native/sqlite_identity/src/harnessix_sqlite_identity/_bridge.pyi)仅提供以下消费入口：
+
+| 接口／类型 | 前提及结果 | 失败／恢复语义 |
+|---|---|---|
+| `initialize_backend(connection)` | 独占启动期，原引擎已允许公开扩展加载；一次装配永久 callback | 自身后端资格失败为 `BackendUnavailable`；初始化失败不在原进程重试 |
+| `attach_identity(connection, dev, ino)` | exact Connection；pin 来自工厂先前登记；签发原线程令牌 | 未初始化／后端漂移为 `BackendUnavailable`；本桥来源准入失败为 `ConnectionIdentityError` |
+| `IdentityToken.check()` | 无 SQL step、无新增连接；只检查当前原 main 身份 | 原线程错误拒绝但不撤销合法持有者；关闭、移位等来源失效撤销令牌 |
+| `IdentityToken.release()` | 原线程幂等释放 lease；不关闭调用方连接 | 释放后不可再用，下一次使用需重新走工厂准入，不自动恢复旧令牌 |
+
+`BridgeError`是上述两类内部异常的共同基类；不借此新增 Agent Protocol 公共错误或升级协议。
+本扩展入口只登记自身固定错误原因，不靠解析 SQLite 异常文本分类。TLS请求中的原生入口应答
+不是身份准入：公开加载正常返回后，Python包装必须先消费失败记录，才能发布Token或全局callback。
+公开加载抛出的异常始终原样传播，包括audit回调重入原生入口后再抛出的调用方原异常；
+没有受控pending请求的原始加载仍返回SQLite错误。参数类型与整数范围错误维持`TypeError`／`OverflowError`。
+动态库缺失／ABI不兼容仍为导入失败，宿主接线不得静默回落到路径检查。
+
+[C 生命周期实现](../../native/sqlite_identity/src/harnessix_sqlite_identity/bridge.c)中，
+`ConnectionState`保存原 db、原 API、prepare-only lease、预先固定的 dev/inode和撤销位；
+`IdentityToken`持原 Python Connection、错误类与线程 cookie；`Pending`只覆盖一次公开加载，
+避免重入消费同一绑定。它们不保存密钥、正文、Owner 或业务许可。
+启动状态是 `NOT_STARTED → LOADING → PERMANENT → READY`，中途失败进入 `FAILED`；
+永久驻留后不得宣称初始化失败没有副作用。callback仅持纯 C 状态，不能依赖可销毁的Python模块对象。
+
+数据流保持 `工厂固定 pin → 原连接加载 → 原 main FD 的 fstat → pin 比对 → Token`。
+检查流程保持 `原线程／存活 → lease保活的原mutex → zombie拒绝 → HAS_MOVED → 实际main身份`；
+释放顺序为先断开Token并撤销，再释放GIL完成lease finalize，最后释放连接引用。
+未执行 SQL 的 lease不提交业务事务，也不引入新持久化文件或迁移。
+
+旧研究入口 `attach`、`_native_status`、`_api_guard_probe`不进入正式组件，避免绕过expected pin。
+`_resource_counts`仅用于资源诊断，计数归零不替代ASAN／LSAN。
+组件测试在独立进程隔离引擎全局hook；[实际消费者回归](../../native/sqlite_identity/integration/test_product_consumers.py)
+直接消费非editable安装的原工厂、Task检查、SQL窗口和只读WAL事务，原取消／期限异常不得被覆盖。
+
+#### 工厂接线：显式启动，不静默降级
+
+[产品启动入口](../../src/harnessix/product_config/git_prepared_native_identity.py)
+`initialize_prepared_git_identity()`只接受尚未打开待审批连接、无事件循环及工作线程的主线程启动期。
+宿主还须保证没有其他SQLite使用者；检测到一个Python线程不等于证明整个引擎独占。
+状态单向`not_started → loading → ready/failed`，失败不能重试、不能退化为路径检查。
+组件缺失、后端不合格或原生身份失败映射既有`git_prepared_link_host_invalid`；调用方取消／期限保留原异常。
+
+原工厂先固定路径pin，打开原连接，再用**打开前**的dev/inode调用原生attach并检查，成功后才登记及yield。
+`_ConnectionSource`保存原路径、前后pin、Task与令牌；完整来源观察核验令牌，细粒度lifecycle/registration不增加I/O。
+退出顺序是撤销登记、释放lease、关闭原连接，未提交事务按原规则回滚；清理异常不覆盖原首失败。
+未显式启动仍是历史合作式模式，不能标为FD认证。默认CLI/SDK暂不启用，因此不是完整默认Writer闭环。
+
+[真实安装件消费测试](../../native/sqlite_identity/integration/test_prepared_factory.py)直接通过产品工厂而非测试wrapper，
+覆盖读写、原Task及观察子Task、回滚、取消／期限，以及路径首末为A但SQLite实际打开B时yield前拒绝。
+Audit原连接、Owner鲜读和四库监视连接的后续接线、WAL/SHM与内存门禁保持开放。
+本轮新增工厂控制96项通过；非editable产品与原生组件组合102通过、1项历史未观察ABA保持xfail，
+567个产品文件与工作树及安装件逐字节一致。来源位于本机`verification-working/r4-factory-identity-20261009-v1`，
+其中`installed-binding.json`、`installed-final.xml`记录安装件边界；并非默认Writer或完整R4通过。
+
+#### 部署、风险与尚未接入的边界
+
+独立stdio宿主应在线程、Session Store及异步SQLite连接启动之前初始化；当前没有把它默认接入
+CLI、SDK或Writer。嵌入式SDK不能因收到initialize握手就假定引擎独占，需独立明确启动合同。
+当前首发仅macOS：完整WAL／SHM身份、未观察到的历史ABA连续性、内存门禁和声明Mac目标的安装仍需验收。
+Linux/Windows实际句柄与发行工作已从本次交付任务删除；历史研究保留，未来支持须另行立项。
+附属组件构建或局部安装成功不关闭这些门禁，也不提高R3真实质量成绩或Beta业务接受数。
+
 ## 8. 源码映射、取舍与下一步
 
 - [连接工厂及登记](../../src/harnessix/product_config/git_prepared_link_connection.py)：来源装配和原 Task 归属。
@@ -337,7 +410,7 @@ GC。另4项合成callback控制只证明返回码／errno透明转发，不充�
 - [当前 Runtime scope 详设](../changes/m09-r4-git-runtime-thread-scope.md)：本研究独立于原锁归属切片。
 
 优先验证公开 API 的窄桥，而不是整体 Store 驱动迁移。SQL UDF 是已复现的排除项，不是生产方案。
-后继以非 SQL 生命周期及原 progress 负控决定是否继续窄桥；只有正式接口、安全范围、三平台封装
+后继以非 SQL 生命周期及原 progress 负控决定是否继续窄桥；只有正式接口、安全范围、首发macOS封装
 及原实际消费者验证齐备才更新准入结论。完整 FD／B7 与 P1合同各自仍需关闭，不能互相替代。
 
 [隔离研究交付](../validation/git-native-and-terminal-research-2026-10-08-v1/README.md)绑定可执行原件、红测、矩阵与实际末端反例；不将研究结果计入发布成绩。

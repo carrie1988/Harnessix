@@ -1,0 +1,23 @@
+"""与同名 CPython 扩展一起发行的内部类型契约。"""
+
+from sqlite3 import Connection
+from typing import final
+
+class BridgeError(RuntimeError): ...
+class BackendUnavailable(BridgeError): ...
+class ConnectionIdentityError(BridgeError): ...
+
+@final
+class IdentityToken:
+    """不可直接构造，原线程持有；release 幂等，释放后 check 拒绝。"""
+
+    def check(self) -> bool: ...
+    def release(self) -> None: ...
+
+def initialize_backend(connection: Connection, /) -> None: ...
+def attach_identity(
+    connection: Connection, expected_dev: int, expected_ino: int, /
+) -> IdentityToken:
+    """expected pin 必须来自先前工厂准入，不在此处重采样。"""
+
+def _resource_counts() -> dict[str, int]: ...
