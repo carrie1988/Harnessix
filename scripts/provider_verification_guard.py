@@ -185,6 +185,22 @@ class BailianBetaInstructVerificationBounds(BailianBetaVerificationBounds):
     price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = ((129_024, 2_000, 8_000),)
 
 
+@dataclass(frozen=True, slots=True)
+class BailianBetaCoderFlashVerificationBounds(BailianBetaVerificationBounds):
+    """仅BETA-001的Coder Flash北京快照价；沿用宿主输出上限，不替换历史模型。"""
+
+    model: ClassVar[str] = "qwen3-coder-flash-2025-07-28"
+    price_source: ClassVar[str] = "https://help.aliyun.com/zh/model-studio/qwen3-coder-flash"
+    guard_version: ClassVar[str] = "harnessix.bailian-beta-coder-flash-request-guard/v1"
+    maximum_input_tokens: ClassVar[int] = 997_952
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
+        (32_000, 1_000, 4_000),
+        (128_000, 1_500, 6_000),
+        (256_000, 2_500, 10_000),
+        (1_000_000, 5_000, 25_000),
+    )
+
+
 @dataclass(slots=True)
 class GuardedVerificationProvider:
     """托管官方Adapter的单请求预留与结算；歧义会取消整个Suite。"""

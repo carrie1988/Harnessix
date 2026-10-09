@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 812af76304b5744844b4dcd3761adbec041af1fd
+version: 5
+code_revision: 142c3d31509d34255e1012c3e68771496ef75429
 owners: [core]
 modules: [evals, models]
 related_adrs:
@@ -16,6 +16,7 @@ related_tests:
   - tests/evals/test_provider_task_continuation_chain.py
   - tests/evals/test_beta_task_budget_plan.py
   - tests/evals/test_beta_instruct_bounds.py
+  - tests/evals/test_beta_coder_flash_bounds.py
 supersedes: []
 ---
 
@@ -35,12 +36,20 @@ supersedes: []
 没有次数门不等于无资源边界：原Turn步数、期限和Token限制保留；累计估算加全部未决预留不能超过10元，
 新未决即停，无自动重试。登记后的任务账本也拒绝无身份Owner，避免绕过单任务控制。
 
-Beta独立选用北京`qwen3-235b-a22b-instruct-2507`，不改变R3固定模型或评分。
+Beta前序独立选用北京`qwen3-235b-a22b-instruct-2507`，不改变R3固定模型或评分。
 [官方能力与价格](https://help.aliyun.com/zh/model-studio/qwen3-235b-a22b-instruct-2507)于2026-10-09核验：
 北京支持Function Calling，完整输入上限129024，输入/输出为2/8元每百万Token。
 宿主输出仍为3072，单请求最高预留`(129024×2＋3072×8)/1000000 = 0.282624`元；
 不使用其他地域价格、不削减输入上限凑预算、不把官方能力声明当真实兼容或编码质量通过。
 模型、价格窗口、原任务合同均进入指纹，返回模型不符、用量不完整或没有成功终态保留预留。
+
+实际提案审阅发现Instruct生成的Java有编译、挑战绑定和并发边界缺陷，未批准写入。
+后继仅Beta改用固定`qwen3-coder-flash-2025-07-28`，复用同一60/10周期，不追加额度或清零已消费。
+[官方北京能力与价格](https://help.aliyun.com/zh/model-studio/qwen3-coder-flash)于2026-10-09核验，
+快照支持Function Calling；输入上限997952，四档输入/输出单价为1/4、1.5/6、2.5/10、5/25元每百万Token。
+宿主输出仍3072，最高档全输入预留`(997952×5＋3072×25)/1000000 = 5.06656`元。
+`BailianBetaCoderFlashVerificationBounds`只提供独立模型/价格配置，沿用原Guard；余额不足全额预留则不调用。
+预留不是实际消费；每次完整结算后才能再次预留，新未决立即停止，R3仍使用原固定模型与评分。
 
 下文是旧周期的完整历史记录，不再作为本轮金额或次数授权。
 
