@@ -74,7 +74,8 @@ CPython >= 3.12 只是构建条件，不等于任意 SQLite 后端通过资格�
 
 分别以 `asan`、`ubsan`、`lsan` 及匹配的 wheel／runtime 执行；不得混用三套 OPTIONS。
 入口保存源码／工具哈希、Junit 和原场景日志，但不自行宣布内存或发布验收通过。
-当前 macOS 复验仍有泄漏诊断，结论与未解除门槛见
+原 Python 3.12.7 宿主仍有泄漏诊断；隔离 Python 3.14.0 候选及私有驱动修复后，
+四组原场景各 93 通过、1 个历史 ABA 已知反例。候选并未替换产品运行时，也不是可分发安装包；详见
 [原生来源研究 §7.6](../../docs/research/git-sqlite-native-source.md#76-macos-有效检测与子进程预加载)。
 
 ## 来源与许可证

@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 13
-code_revision: 198aa4399e15af79b7e6038481e77f690a0ec8f3
+version: 14
+code_revision: 384d6f164c0a9d65d7c92f51806b7079ab57c8c5
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -537,6 +537,40 @@ Python ASAN／LSAN 正控自身仍报泄漏，不能记为完整 clean pass。
 另一次允许 `PYTHONMALLOC=malloc` 的诊断增加了泄漏量，并非解决办法；该次未使用原 `-I` 合同，不作正式验收。
 证据集中于本机 `verification-working/r4-macos-host-leaks-20261010-v1`，包含官方来源／摘要、单行补丁、
 构建、原始非零退出及断言结果。宿主基线、正式运行时交付与完整内存门禁仍待解决，不能修改桥来掩盖驱动缺陷。
+
+#### 隔离候选已完成原 94 场景内存复验，产品运行时尚未变更
+
+同日后继实验先验证宿主，再运行原桥。3.12.7 的最小导入将问题缩到宿主终结／分配器可见性：
+仅导入桥退出 0，导入 `datetime` 即报告 3824 bytes／4 allocations；不能据此把全部报告认作误报。
+源码确认 3.13 引入[受管静态扩展类型清理](https://github.com/python/cpython/pull/120009)，
+3.14 又引入[普通构建动态 immortal 字符串清理](https://github.com/python/cpython/pull/113601)。
+这些变化提供实验依据，不是对旧宿主每个未释放地址的完整归因，也不能在桥内强制清空 Python 对象。
+
+| 隔离宿主／配对阶段 | 实际结果 | 处置 |
+|---|---|---|
+| framework 3.12.8 | 导入退出 0，但实际 preload 缺失，真实负控无效 | 排除，不记内存通过 |
+| PBS 3.13.8 | 最小导入及负控有效；内建 `_sqlite3` 使用 3.50.4 | 排除，不覆盖原驱动引入第二套连接引擎 |
+| 官方 3.13.8，无 pymalloc／mimalloc，原 SQLite 3.45.3 | 空宿主仍报告 144486 bytes／2693 allocations | 停止 native 准入，不扣基线 |
+| 官方 3.14.0，同样构建边界，未修复 stdlib 驱动 | 宿主控通过；普通组 93 通过／1 xfail；ASAN 90 通过／3 失败／1 xfail | 三个失败均复现既有 `errmsg` 额外泄漏 |
+| 同一 3.14.0，仅私有 stdlib 驱动增加 `sqlite3_free(errmsg)` | 普通、ASAN、UBSAN、LSAN **各 93 通过／1 个历史 ABA xfail**；四组各 94 个子进程全部退出 0 | 原场景内存复验通过；不计为历史 ABA 修复或产品验收 |
+
+最终宿主有 12 项有效检查：空宿主／来源／正确分配释放各三项退出 0，UAF、整数溢出、127-byte 故意泄漏
+三个负控分别以 73／74／73 退出并给出匹配诊断。原桥 C/H、94 场景断言及 30 秒期限不变；
+最终 376 次场景执行均无 sanitizer 错误诊断，资源计数归零。没有 suppression、泄漏基线抵扣或关闭检测。
+这仍不是 Python／SQLite 全量编译插桩，也不是所有可能路径无缺陷的证明。
+
+另纠正诊断脚本的过宽假设：3.14 宿主的 macOS 系统依赖会自行映射 `/usr/lib/libsqlite3.dylib`。
+现行合同要求桥不引入第二套 SQLite，且原连接 API／VFS 同源；不是禁止操作系统其他组件使用 SQLite。
+初次“全进程只能有一个映像”预检失败保留，后继记录所有映像，并确认 stdlib 驱动依赖的四个入口均指向
+原 `/opt/anaconda3/lib/libsqlite3.0.dylib`；桥自己的 source ID／API／VFS 守卫未改，逐场景仍实际执行。
+这里没有把系统库隐藏掉，也没有宣称逐场景全生命周期映像跟踪。
+
+所有解释器、驱动、构建和 wheel 都在任务私有目录；没有替换 Anaconda、项目 `.venv`、`uv.lock` 或默认启动。
+该 3.14.0 是固定研究版本，**不是最终安全维护基线**；wheel 只验证当前 macOS 27 arm64，
+还依赖本机 Anaconda 动态库，不能作为可分发 macOS 安装包。支持目标、可复现依赖封装、产品消费者／SDK
+回归以及 SHM／历史连续性仍需独立关闭；R3、Beta 接受数和默认 Git Writer 状态不变。
+证据位于本机 `verification-working/r4-cpython-minimal-20261010-v1`：`matrix-review.json`复核逐场景与真实负控，
+`pristine314`保留修复前失败，`private-driver314-fix`保存唯一驱动补丁，`free-errmsg314`保存最终原始退出和 JUnit。
 
 ### 7.7 WAL 点时观察可行，SHM 尚未解决
 
