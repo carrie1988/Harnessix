@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 16
-code_revision: d659d017f8c2a1c8a9496615239a2877aa88ad82
+version: 17
+code_revision: 05f1d45b183446de5d7f2ccd3277705d3ce1c9ff
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -615,6 +615,27 @@ journal/WAL 的合法方法表没有 `xShmMap`，不能机械照搬 main 条件�
 不能作为无副作用查询，探针没有调用它。下一步须证明独立 expected WAL pin、重开／checkpoint／置换，
 并独立设计 SHM 的连接归属；本轮不添加生产接口，不关闭完整 FD、B7 或 R4。
 源码、首轮失败和两轮复验位于本机 `verification-working/r4-wal-shm-probe-20261010-v1`。
+
+#### 独立 WAL pin 与生命周期补证
+
+后继在被测连接打开前，以独立 `O_NOFOLLOW` FD 固定预期文件，持有旧 FD 防止 inode 回收；
+不从桥的观察结果回填预期。最终两轮各13个新进程、54次观察，覆盖读写/只读、错库pin、
+路径/连接双向置换、未观察ABA、四种checkpoint、读者阻塞、模式切换、关闭重开及`PERSIST_WAL`。
+所有观察窗口保持原事务、计数、文件集合/内容及禁用扩展加载的边界；5项实际文件/网络隔离控制通过。
+这些是研究断言，不是108项产品测试，也不是原生桥消费者或SHM认证。
+
+| 实际反例 | 正式接线必须保留的区分 |
+|---|---|
+| 原FD仍指向A，路径已换B；或路径恢复A而连接实际持有B | 单查FD或路径均不足；两者点时一致仍不证明原子联合观察或未观察历史连续性 |
+| TRUNCATE后文件为0字节，再写后仍是同一inode | 文件身份不是WAL逻辑代次；独立pin不提供SQLite读锁 |
+| 持有旧snapshot时PASSIVE返回`(0,4,3)`，RESTART/TRUNCATE返回`(1,4,3)` | SQL执行成功不等于checkpoint完成；必须核对busy与帧数，不能据返回正常推断已截断 |
+| `PERSIST_WAL`下关闭后新连接仍匹配旧文件pin | 文件身份不是连接或WAL handle代次；不能凭同inode续接旧授权 |
+| `PERSIST_WAL`下DELETE返回值之后仍观察到活动WAL | 模式字符串不代替实际文件观察；首次“应无WAL”断言的两份FAIL原样保留 |
+
+最后一项的固定源码链为`OP_JournalMode → PagerCloseWal → BtreeSetVersion → pagerOpenWalIfPresent`；
+源码存在保留文件再打开的路径，但本轮没有完整open/close事件记录，不把该推导升级为动态历史证明。
+证据位于本机`verification-working/r4-wal-pin-lifecycle-20261010-v1`，原冻结输入未变；
+生产API、默认Writer与SHM方案未改。WAL集成仍须区分文件实例、命名空间、handle代次和逻辑代次，不能只给现有token增加两个整数便宣布完整认证。
 
 #### SHM 合同决策：原点查路线 NO-GO，生命周期方案待对齐
 
