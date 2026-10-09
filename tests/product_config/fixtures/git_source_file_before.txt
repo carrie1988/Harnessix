@@ -1,0 +1,28 @@
+# Frozen Git commit: e13db8c5f5b20efb7a5911f723e831891c60e444
+# Frozen Git path: src/harnessix/product_config/git_delivery_source.py
+# Frozen source SHA256: dbf0ef13406872ac266dd6eb684c9ac601e44a27b5d02dd01382f2b6ac07a722
+from __future__ import annotations
+
+def _read_source_file(
+    root: Path, path: str, platform: PlatformKind, checkpoint: Callable[[], None]
+) -> tuple[bytes, FileMode]:
+    """段外文件读取始终 full；只给 exact 控制隔离原生 OSError 转换。"""
+    if type(checkpoint) is not GitAuthenticationControl:
+        return _read_existing(root, path, platform, checkpoint=checkpoint)
+    owned_error: UpstreamCheckpointError | None = None
+
+    def full() -> None:
+        nonlocal owned_error
+        try:
+            checkpoint()
+        except BaseException as error:
+            owned_error = UpstreamCheckpointError(error)
+            raise owned_error from None
+
+    control = protected_git_control(checkpoint, full)
+    try:
+        return _read_existing(root, path, platform, checkpoint=control)
+    except UpstreamCheckpointError as error:
+        if error is not owned_error:
+            raise
+        raise error.error from None

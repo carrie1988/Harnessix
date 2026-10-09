@@ -427,7 +427,7 @@ def test_complete_unknown_source_verifier_native_cas_and_file_trace_matches_froz
     assert before == blobs and Path(thread.workspace) == root
 
 
-def test_complete_exact_source_keeps_files_full_and_captures_only_native_locally(
+def test_complete_exact_source_layers_file_io_and_keeps_full_snapshot_boundaries(
     case,
     observed,
     monkeypatch,
@@ -451,12 +451,12 @@ def test_complete_exact_source_keeps_files_full_and_captures_only_native_locally
         snapshot_ports=ports,
     )
     assert ("local", "native-read") in probe.trace
-    assert ("local", "file") not in probe.trace and ("full", "file") in probe.trace
+    assert ("local", "file") in probe.trace and ("full", "file") in probe.trace
     assert probe.trace.count(("full", "entry")) == 2
     # 原生出口以及随后的编码入口各认证一次，两次完整 Source 复核均保留。
     assert probe.trace.count(("full", "exit")) == 4
-    # 编码纯段出口与原 Source 尾部检查各一次；没有削减原尾部检查。
-    assert probe.trace.count(("full", "encode")) == 4
+    # 保留原四次编码/尾部认证；首个文件段入口再完整认证一次。
+    assert probe.trace.count(("full", "encode")) == 5
     assert before == blobs and (root / source.mutations[0].path).read_bytes() == b"native facts\n"
 
 
@@ -662,7 +662,8 @@ def test_exact_final_file_read_preserves_original_error_even_windows_style_conve
         assert caught.value is probe.full_marker and caught.value.error is error
     else:
         assert caught.value is error
-    assert len(calls) == 1 and probe.trace == [("full", "file")]
+    # exact 文件段入口完整认证失败时，不应开始原生读取。
+    assert calls == [] and probe.trace == [("full", "file")]
 
 
 def test_unknown_file_read_preserves_original_argument_and_error_conversion(observed, monkeypatch):

@@ -1,4 +1,4 @@
-"""Source真实采集接线：原生/编码分层，CAS和最终文件复核仍Full。"""
+"""Source真实采集接线：原生/编码/文件读取分层，CAS仍完整认证。"""
 
 from __future__ import annotations
 
@@ -147,7 +147,7 @@ def _frozen():
     return namespace["_observe_final_versions"]
 
 
-def test_real_exact_capture_layers_native_and_encode_but_keeps_all_cas_and_files_full(capture_case):
+def test_real_exact_capture_layers_native_encode_and_files_but_keeps_all_cas_full(capture_case):
     case, probe = capture_case, capture_case.probe
     before = dict(case.blobs)
     result = _run(case, probe.control)
@@ -156,7 +156,7 @@ def test_real_exact_capture_layers_native_and_encode_but_keeps_all_cas_and_files
     assert ("full", "capture-entry") in probe.trace and ("full", "capture-exit") in probe.trace
     assert ("full", "encoded") in probe.trace
     assert ("local", "cas-write") not in probe.trace and ("local", "cas-read") not in probe.trace
-    assert ("local", "file") not in probe.trace and ("full", "file") in probe.trace
+    assert ("local", "file") in probe.trace and ("full", "file") in probe.trace
     assert sum(mode == "write" for mode, _ in probe.trace) == 2
     assert sum(mode == "read" for mode, _ in probe.trace) == 6
     for index, (mode, _) in enumerate(probe.trace):

@@ -27,7 +27,6 @@ from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
 from harnessix.product_config.git_native_control import (
     git_checkpoint_boundary,
-    protected_git_control,
 )
 from harnessix.product_config.git_parent_contracts import ProductGitDeliverySourceV2
 from harnessix.product_config.workspace_patch_source import (
@@ -255,26 +254,11 @@ def _native_snapshot_progress(
 def _read_source_file(
     root: Path, path: str, platform: PlatformKind, checkpoint: Callable[[], None]
 ) -> tuple[bytes, FileMode]:
-    """段外文件读取始终 full；只给 exact 控制隔离原生 OSError 转换。"""
+    """原创建控制的同步只读段；完整路径/FD复核不删，首末仍 full。"""
     if type(checkpoint) is not GitAuthenticationControl:
         return _read_existing(root, path, platform, checkpoint=checkpoint)
-    owned_error: UpstreamCheckpointError | None = None
-
-    def full() -> None:
-        nonlocal owned_error
-        try:
-            checkpoint()
-        except BaseException as error:
-            owned_error = UpstreamCheckpointError(error)
-            raise owned_error from None
-
-    control = protected_git_control(checkpoint, full)
-    try:
-        return _read_existing(root, path, platform, checkpoint=control)
-    except UpstreamCheckpointError as error:
-        if error is not owned_error:
-            raise
-        raise error.error from None
+    with _native_snapshot_progress(checkpoint, same_task_only=True) as read:
+        return _read_existing(root, path, platform, checkpoint=read)
 
 
 @contextmanager
