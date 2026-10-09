@@ -139,13 +139,13 @@ def _actual_source_transport_blocks():
     return blocks
 
 
-@pytest.mark.parametrize("index", range(5))
+@pytest.mark.parametrize("index", range(6))
 @pytest.mark.parametrize("phase", ["full", "local", "foreign_body"])
 @pytest.mark.parametrize("kind", ["nested", "cancel", "task", "same_code", "deadline"])
-async def test_five_actual_source_transport_blocks_preserve_first_error(index, phase, kind):
-    """只执行五处真实 AST 边界；隔离调用不是认证 SDK 或正式授权验收。"""
+async def test_six_actual_transport_blocks_preserve_first_error(index, phase, kind):
+    """覆盖五处原 Source 和新增 Route AST 边界；隔离调用不是认证 SDK。"""
     blocks = _actual_source_transport_blocks()
-    assert len(blocks) == 5
+    assert len(blocks) == 6
     module, block = blocks[index]
     error = _error(kind)
 
@@ -170,9 +170,12 @@ async def test_five_actual_source_transport_blocks_preserve_first_error(index, p
     async def async_read(*args, **kwargs):
         return read(*args, **kwargs)
 
+    control = GitAuthenticationControl(local, full)
     namespace = {
         **vars(module),
-        "check": GitAuthenticationControl(local, full),
+        "check": control,
+        "checkpoint": control,
+        "route_id": object(),
         "actual": SimpleNamespace(thread=object()),
         "history": SimpleNamespace(thread=object()),
         "link": SimpleNamespace(
@@ -185,7 +188,6 @@ async def test_five_actual_source_transport_blocks_preserve_first_error(index, p
         "_verify_final_snapshot": read,
         **dict.fromkeys(
             (
-                "router",
                 "transactions",
                 "snapshot_ports",
                 "ports",
@@ -196,6 +198,7 @@ async def test_five_actual_source_transport_blocks_preserve_first_error(index, p
                 "root",
             )
         ),
+        "router": SimpleNamespace(status=read),
         "core_store": SimpleNamespace(store=object()),
     }
     wrapper = ast.AsyncFunctionDef(

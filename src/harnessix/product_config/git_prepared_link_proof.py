@@ -16,6 +16,10 @@ from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.artifacts.action_review_store import matching_action_review
 from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.delivery.git_authentication_control import (
+    GitAuthenticationControl,
+    same_task_io_git_authentication,
+)
 from harnessix.delivery.git_material_cas import GitMaterialCAS
 from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import canonical_digest
@@ -40,6 +44,7 @@ from harnessix.product_config.git_prepared_link_contracts import ProductGitPrepa
 from harnessix.session.sqlite_history import AuthenticatedThreadHistory
 from harnessix.sqlite_readonly import readonly_database
 from harnessix.trusted_actions.agent_gateway_output import build_approval
+from harnessix.trusted_actions.contracts import ActionRouteSnapshot
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.versioned_contracts import ActionRouteSnapshotV2
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
@@ -49,6 +54,22 @@ from harnessix.workspace.terminal_read_control import require_terminal_read_scop
 def prepared_link_changed() -> KernelError:
     """业务错误不包含作者、消息、路径、对象正文或底层解析异常。"""
     return KernelError("git_prepared_link_changed", "Git待审批业务关联无法核验")
+
+
+def _route_status(
+    router: TrustedActionRouter, route_id: UUID, checkpoint: Callable[[], None]
+) -> ActionRouteSnapshot:
+    """原 Route 完整回读；仅父闭包计算分层，Store 观察与终端 Full 保持。"""
+    if type(checkpoint) is not GitAuthenticationControl:
+        return router.status(route_id, checkpoint=checkpoint)
+    with git_checkpoint_boundary(checkpoint) as read_control:
+        if type(read_control) is GitAuthenticationControl:
+            return router.status(
+                route_id,
+                checkpoint=read_control,
+                pure_progress=lambda: same_task_io_git_authentication(read_control),
+            )
+        return router.status(route_id, checkpoint=checkpoint)
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,7 +194,7 @@ async def authenticate_prepared_link(
     if type(route_id) is not UUID:
         raise prepared_link_changed()
     route = _snapshot(
-        router.status(route_id, checkpoint=checkpoint), ActionRouteSnapshotV2, checkpoint
+        _route_status(router, route_id, checkpoint), ActionRouteSnapshotV2, checkpoint
     )
     if route.state != "pending_approval":
         raise prepared_link_changed()
@@ -229,7 +250,7 @@ async def authenticate_prepared_link(
         core.thread_id, cancel=cancel, deadline=budget._deadline, checkpoint=checkpoint
     )
     checkpoint()
-    if terminal != history or router.status(route_id, checkpoint=checkpoint) != route:
+    if terminal != history or _route_status(router, route_id, checkpoint) != route:
         raise prepared_link_changed()
     _source(terminal, link, router, core_store, ports, checkpoint)
     if (
@@ -255,7 +276,7 @@ def verify_prepared_link_terminal(
     require_terminal_read_scope(core_store.store, router._audit)
     link, core = evidence.link, evidence.link.plan.core
     checkpoint()
-    if router.status(link.plan.route.execution.plan_id, checkpoint=checkpoint) != evidence.route:
+    if _route_status(router, link.plan.route.execution.plan_id, checkpoint) != evidence.route:
         raise prepared_link_changed()
     _source(evidence.history, link, router, core_store, ports, checkpoint)
     if (

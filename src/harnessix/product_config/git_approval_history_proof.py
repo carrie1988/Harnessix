@@ -32,6 +32,7 @@ from harnessix.product_config.git_prepared_link_contracts import ProductGitPrepa
 from harnessix.product_config.git_prepared_link_proof import (
     PreparedLinkEvidence,
     _review_body,
+    _route_status,
     _source,
 )
 from harnessix.session.sqlite_history import AuthenticatedThreadHistory
@@ -131,7 +132,7 @@ async def read_original_approval_evidence(
     check = checkpoint
     route_id = prepared.plan.route.execution.plan_id
     check()
-    route = _snapshot(router.status(route_id, checkpoint=check), ActionRouteSnapshotV2, check)
+    route = _snapshot(_route_status(router, route_id, check), ActionRouteSnapshotV2, check)
     if route.plan != prepared.plan.route:
         raise _changed()
     core = load_product_git_delivery_route_core_v2(core_store, route.plan, checkpoint=check)
@@ -162,7 +163,7 @@ async def read_original_approval_evidence(
         core.thread_id, cancel=cancel, deadline=budget._deadline, checkpoint=check
     )
     check()
-    if terminal != history or router.status(route_id, checkpoint=check) != route:
+    if terminal != history or _route_status(router, route_id, check) != route:
         raise _changed()
     if _route_history(router, prepared, check) != (events, approval) or (
         _approval_row(router, prepared, check) != approval_row

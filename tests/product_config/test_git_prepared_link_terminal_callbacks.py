@@ -11,6 +11,7 @@ from harnessix.product_config import action_runtime
 from harnessix.product_config import git_prepared_link_ledger as ledger_module
 from harnessix.product_config import git_prepared_link_observation as observation
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
+from harnessix.workspace.blob_read_control import WorkspaceBlobReader
 from tests.product_config.test_git_prepared_link_controls import (
     _business_unchanged,
     _persisted,
@@ -88,8 +89,14 @@ async def test_actual_sdk_terminal_never_calls_shared_callbacks_and_restores_nor
             assert transactions._checkpoint is transaction_callback
             assert audit._checkpoint is audit_callback
             assert audit._read_blob is audit_reader
-            assert original_reader.__self__ is transactions
-            assert original_reader.__func__ is SQLiteWorkspaceTransactionStore.blob
+            assert type(original_reader) is WorkspaceBlobReader
+            assert original_reader.original.__self__ is transactions
+            assert original_reader.original.__func__ is SQLiteWorkspaceTransactionStore.blob
+            assert original_reader.controlled.__self__ is transactions
+            assert (
+                original_reader.controlled.__func__
+                is SQLiteWorkspaceTransactionStore.controlled_blob
+            )
             assert "_read_blob" not in vars(transactions)
             assert transactions._read_blob.__self__ is transactions
             assert transactions._read_blob.__func__ is strict_reader
