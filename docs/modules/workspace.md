@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
+version: 16
+code_revision: 0aa84ae536a8618210d96ef9ad5bffe2016f48a2
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_tests:
   - tests/delivery/test_windows_io_contracts.py
   - tests/processes/test_windows_receipt_contracts.py
   - tests/workspace/test_paths.py
+  - tests/workspace/test_path_validation_cost.py
   - tests/workspace/test_snapshot.py
   - tests/workspace/test_snapshot_capacity.py
   - tests/workspace/test_snapshot_request_refactor.py
@@ -291,7 +292,7 @@ flowchart TB
 | 根表示 | 仅`.`表示Root |
 | 路径形式 | 拒绝`/`、反斜线开头、盘符前缀和控制字符 |
 | 分段 | 最多128段；拒绝空段、`.`、`..` |
-| 输出 | `PurePosixPath(...).as_posix()`规范形式 |
+| 输出 | 全部检查通过的原逻辑路径字符串；不再次构造宿主路径对象 |
 
 领域路径与宿主路径严格分离。即使在Windows上，模型也不能提交`C:/repo/file`、`C:file`或UNC；宿主
 通过Root参数绑定实际盘符/共享路径。
@@ -310,6 +311,20 @@ flowchart TB
 POSIX比较键保持规范路径原值，大小写不同是不同资源。`normalize_workspace_path`本身不拒绝POSIX合法但
 由`tools.workspace.Workspace`控制面禁止的名称；原生打开阶段还会拒绝`.git`、`.harnessix`、
 `.codex`、`.ssh`、`.aws`、`.gnupg`、`.env*`和常见私钥后缀。这意味着“词法合法”不等于“可观察”。
+
+### 8.4 高频纯校验的等价计算收敛
+
+完整父目录历史与深层模型重建反复调用同一逻辑路径检查。原算法在已拒绝空段、`.`、
+`..`、反斜杠和绝对路径后，再构造 `PurePosixPath`；该步骤的输出必然就是原字符串。
+现直接返回通过全部检查的原值，并用固定字符类检查 `U+0000～U+001F` 与 `U+007F`，
+替代逐字符 Python 生成器。仍先检查平台、实际字符串类型、UTF-8及4096字节，再检查
+通用路径形式、128段及Windows保留名／ADS／UTF-16单段上限；首失败顺序不变。
+
+这是纯字符串算法调整：不缓存输入、路径、文件身份或认证结果，不减少任何取消、
+Owner、SQL、CAS或原生观察检查，也不把逻辑路径校验当作文件系统安全证明。
+[差分用例](../../tests/workspace/test_path_validation_cost.py)以修改前冻结源码核对两平台
+返回值和错误分类，覆盖控制字符、组合Unicode、深目录、边界及错误输入；原生支持与
+完整Git响应性仍须独立验收，不能以该纯算法通过宣布R4完成。
 
 ## 9. Workspace合同总览
 

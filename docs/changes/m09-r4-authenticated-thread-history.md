@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 634f96c55cfeff5db7e84b177074c4bd5d6a990c
+version: 5
+code_revision: 0aa84ae536a8618210d96ef9ad5bffe2016f48a2
 owners: [core]
 modules: [session, delivery]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
   - tests/session/test_authenticated_history.py
+  - tests/session/test_read_original_bytes.py
   - tests/agent/test_authenticated_store.py
 supersedes: []
 ---
@@ -194,6 +195,34 @@ flowchart LR
 不写新表、认证旁表、Schema或版本行。旧`get_thread/events/rebuild/append`及连接默认写模式不变。
 新接口在无独立PublicationBinding的旧式Store上拒绝，不升级、补签或伪称旧历史已认证。
 回退只需停机切换一致源码版本，无数据库格式回退；不删除既有历史。
+
+### 7.1 同次读取的原字节复用
+
+原事件在 MAC 校验后，为容量及 `EventBodyRef` 再次 UTF-8 编码；原投影在 Seal 校验后，
+为独立快照 SHA 校验再次编码。这是同次原行的重复内存分配，不是必须重复的物理读取。
+本整改只传递该次编码得到的 `bytes`，不复用认证结论、已解析模型或跨次读取状态。
+
+| 私有入口 | 返回／消费 | 不变的责任 |
+|---|---|---|
+| [`verified_event`](../../src/harnessix/session/sqlite_publication.py) | 返回原 `seal, event, body`；历史消费方使用同一 `body` | 原 MAC、身份、序号、总字节容量、前缀与正文定位 SHA |
+| [`verify_snapshot`](../../src/harnessix/session/sqlite_publication.py) | 完整验证成功后返回原投影 `body`；无认证或无投影返回 `None` | Header／Seal、投影 SHA、第一次解析、事件数量与尾前缀 |
+| [`_validated_snapshot`](../../src/harnessix/session/sqlite.py) | 只接收同次私有消费方传入的 `snapshot_bytes`；旧式读取仍自行编码 | 原第二次 SHA、第二次解析、版本、拒绝闭合及索引／事件序号一致性 |
+| [`append_in_transaction`](../../src/harnessix/session/sqlite_append.py) | 机械适配事件三元组，忽略正文返回值 | 原幂等事件比对与事务追加 |
+
+```text
+原 SQLite 行 -> original_bytes 一次编码
+  事件：原 MAC / 解析 -> 同一 body 的容量及正文 SHA -> 原前缀、身份及末次检查
+  投影：原 Seal SHA / 第一次解析 / 原 SQL -> 同一 body 的独立 SHA / 第二次解析
+下一次历史读取：重新读取、重新编码、重新认证；不消费上次 body
+```
+
+SQL 顺序、Owner 回调及其 Task／线程、取消和期限、10 秒历史子期限、原异常分类与
+首失败顺序均不改。编码失败、坏 MAC／SHA、序号缺口、前缀不符、容量超限或 Binding
+关闭仍不返回部分历史。`bytes` 是普通内部数据，不是权限或认证令牌；私有返回类型变更
+不改变公共 Session 接口、数据库、Seal、Key 或协议版本。
+
+验证须覆盖原字节身份、Unicode／语义相同的非规范 JSON、两次摘要及两次解析、原失败
+顺序、重读时变更和旧式无认证路径。此小步不单独证明完整 Git 恢复响应性或 R4 通过。
 
 ## 8. 异常、安全及可观测性
 

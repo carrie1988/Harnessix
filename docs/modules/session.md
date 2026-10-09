@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
+version: 19
+code_revision: 0aa84ae536a8618210d96ef9ad5bffe2016f48a2
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/session/test_authenticated_history.py
+  - tests/session/test_read_original_bytes.py
   - tests/session/test_authenticated_body_refs.py
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
@@ -52,7 +53,7 @@ supersedes: []
 | 本文状态 | 当前实现；`session`包现行实现的事实源 |
 | 代码版本 | 当前研究基线`554618ccc47bcf537c034672631db7a11cef655e`；R1维护及Git记录认证增量分别见对应详设与验证包 |
 | 当前实现 | `SQLiteSessionStore`；`SessionStore`端口允许后续实现，但当前没有生产级远端Session Store |
-| 兼容边界 | 新投影版本20；Agent Event可读1～20；数据库迁移1～30连续且校验和不可变；认证状态不可降级为无Key旧式维护 |
+| 兼容边界 | 新投影版本21；Agent Event可读1～21；数据库迁移1～31连续且校验和不可变；认证状态不可降级为无Key旧式维护 |
 | 上游 | `AgentRuntime`、App Server恢复与Protocol事件查询 |
 | 核心保证 | 同一事件批次的Event与Snapshot同事务提交；在线与重放使用同一Reducer |
 
@@ -741,6 +742,10 @@ Owner的OS/SQLite异常以私有载体保留原对象；原真实回滚/关闭�
 [总体与详细设计](../changes/m09-r4-authenticated-thread-history.md)及
 [验证资料](../validation/authenticated-thread-history-2026-10-02-v1/README.md)。
 原`get_thread/events`合同、数据库格式、Key与认证域不变；此接口不承诺跨库原子快照。
+
+同次事件／投影读取只复用一次 UTF-8 编码的原 `bytes`，不缓存认证或解析模型。
+原第二次投影 SHA／解析、MAC、SQL、控制回调及期限仍保留；后继读取重新取得原行。
+私有三元组与投影正文返回、调用链及失败边界见[详细设计第7.1节](../changes/m09-r4-authenticated-thread-history.md#71-同次读取的原字节复用)。
 
 ### Windows测试文件与探针连接所有权
 
