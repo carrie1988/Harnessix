@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 277f38439b3ed21ed46908ebbf0625155cd58937
 owners: [core]
 modules: [product_config, context, evals, models]
@@ -178,3 +178,16 @@ Runtime规则仍高于项目来源；AGENTS目录作用域、用户原修改、S
 随原内部RC Wheel发布，无依赖、配置或Store升级。回退使用原受控候选程序，不改写旧Session或预算。
 选择小范围共享指令整改而非新图编排/强制完成框架：可直接针对已观察行为，并保持产品架构收敛。
 代价是不能硬保证模型遵循规则；真实质量、累计Token控制、原费用核对及商用门禁继续开放。
+
+## 11. 实测失败后的目录与收尾约定（v7）
+
+完整新候选20 Trial的严格成绩仍为1/20：7次正式未知工具拒绝，13个无有效基线／最终检查对的
+Trial；正常失败Profile已有完整诊断预览时仍追加日志读取。分类可重叠，不能等同Docker故障。
+目录广告、历史映射和解码共用[`tool_alias`](../../src/harnessix/models/_history.py)，别名
+基于精确逻辑名生成；不能将拒绝的原始模型名字或参数重新写入持久历史来修复提示。
+
+本次仅修改共享`CODING_INSTRUCTIONS`为v7：实际调用逐字取本次目录`name`；根据预览决定是否
+读取Artifact；确定允许修改路径；最终检查后依次`git_status`、`git_diff`、交付正文。
+不改别名算法、拒绝DTO、工具数量、Task Pack、Grader、50000 Token、60／120秒或审批合同。
+2751字节原护栏及新建／重开Turn、Chat／Anthropic映射、目录身份和Token发布边界均回归。
+提示词送达证明不是模型遵循率；新真实Suite独立记录，不回填旧报告、不合并候选成绩。
