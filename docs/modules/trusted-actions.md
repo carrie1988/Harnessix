@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 41
-code_revision: 03529962a63dfc7818d6b0d0b6874d4e9fc118a3
+version: 42
+code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
 owners:
   - core
 modules:
@@ -1844,3 +1844,5 @@ mode=ro 与 query_only 禁止业务写入，但保留 SQLite WAL/SHM 锁协调�
 原隐式旧快照反例在固定安装件中拒绝；原失败仍作为历史证据保留。
 [限定验证报告](../validation/git-owner-fresh-view-2026-10-07-v1/README.md)列出源码、实际SDK、安装与资源清理成绩。
 这不证明查询后的永久 Owner、ABA、OS 锁/FD或完整 B7，也不启用 approved Writer 或关闭商业门禁。
+
+Audit 的完整父历史沿[成对 Blob 读端口](../changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)区分原观察控制与真实 CAS 损坏；异常按本次标记身份运输，不缓存通过结论或产生批准／写权限。

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: b1fe1b629d28001916cef29d5ee3a50462f357ee
+version: 8
+code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
 owners:
   - core
 modules:
@@ -1245,3 +1245,5 @@ Execution数据库首次新记录提升至2，Audit首次新Route提升至3，Wo
 模型接口、16文件公开Patch上限、取消、Lease／Root／Owner和错误语义保持。
 字段、部署升级、接口、源码调用链及验证范围见
 [联合接入详细设计](../changes/m09-r4-workspace-parent-closure.md#13-联合接入的实现与源码阅读入口)。
+
+Execution Store 原父历史读取使用[显式 Blob 控制边界](../changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)：原 Transaction 观察不能因同码被当成坏历史；真实缺失／SHA 损坏仍沿原 Plan／Store 数据分类，失败不产生审批或业务写入。

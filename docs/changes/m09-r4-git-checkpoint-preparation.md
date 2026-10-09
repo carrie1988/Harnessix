@@ -1,16 +1,20 @@
 ---
 doc_type: change-design
 status: current
-version: 11
-code_revision: d964d5dffef56c78fbdc8551f369393c7cbfc2b3
+version: 12
+code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
 owners: [core]
-modules: [product_config, delivery, agent, trusted_actions, workspace]
+modules: [product_config, delivery, agent, trusted_actions, workspace, execution]
 related_adrs:
   - docs/adr/0007-agent-loop-and-cancellation.md
   - docs/adr/0042-process-saga-recovery-and-cancellation.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/delivery/test_blob_control_origin.py
+  - tests/workspace/test_blob_read_control.py
+  - tests/product_config/test_git_approval_projection_control.py
+  - tests/product_config/test_git_blob_port_authority.py
   - tests/product_config/test_git_owned_progress_sdk.py
   - tests/product_config/test_git_checkpoint_boundary.py
   - tests/delivery/test_owned_parent_progress.py
@@ -52,7 +56,7 @@ supersedes: []
 | 项目 | 当前边界 |
 |---|---|
 | 已提交基础版本 | 以 `code_revision` 为准 |
-| 设计版本 | 版本 11，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
+| 设计版本 | 版本 12，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | 当前实现已包含在 `code_revision`；第 19 节摘要补充固定具体源码字节 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -267,7 +271,43 @@ Audit 只向自己的私有校验方法转发可选工厂，删除重复分支�
 检测时点仍遵循1.4：local 保留取消／原期限／原归属频检，来源及完整 Owner 在原 full 边界认证；段内改变后恢复不承诺检出。
 验证覆盖实际连续两次 SDK Patch、原观察的 Full／晚局部失败、CAS 首失败、五处真实 AST 运输块及默认／foreign 轨迹。
 AST 隔离块不是认证 SDK；机械绿例不是响应性、R3 真实质量或商业验收。原负载复验结果以路线图与封存报告为准。
-仍需单独关闭一个来源负控：默认 Audit CAS 端口沿 `transactions.blob(checkpoint=None)` 读取时，原观察若抛 `delivery_blob_corrupt`／`delivery_blob_invalid`，现有两码白名单仍会按坏数据分类。需要在实际观察入口区分控制来源与真实 Blob 拒绝，不能简单删掉坏数据分类，也不能以本节的其他首错绿例覆盖该反例。
+此前16项真实 SDK Blob 同码来源负控为12 PASS／4 FAIL，原件保留；后继显式端口在实际观察入口标记来源，合同见1.9。其他绿例不能覆盖旧反例，后继最终安装件与原负载的结果单独记录。
+
+
+### 1.9 Blob 控制来源端口与审批内存投影
+
+**背景与目标。** 原 Transaction 观察与物理 CAS Reader 都可能抛两种 Blob 错误码，仅靠白名单无法判定来源。
+整改在实际观察回调处标记控制异常，不取消真实缺失／坏摘要分类、不重写正文、不改变原读取顺序。
+
+```text
+产品组合根：WorkspaceBlobReader(original=transactions.blob, controlled=transactions.controlled_blob)
+消费方创建本次 mark → 原观察 → 原物理 CAS 完整读取 → 原观察
+  原观察失败：mark(原异常) → 越过坏数据分类 → 消费方只解自己创建的一层
+  物理 CAS 失败：原 Blob 错误 → 原父历史／Record／Plan／Route 坏数据分类
+```
+
+| 位置 | 类、字段与失败边界 |
+|---|---|
+| [`blob_read_control.py`](../../src/harnessix/workspace/blob_read_control.py) | `WorkspaceBlobReader.original` 保留普通调用，`controlled` 显式接收消费方的 `mark_error`。精确类型才派发控制端口；普通函数、代理及子类沿旧轨迹。`workspace_blob_read_boundary` 只解本次实际标记对象，外来嵌套及较早首失败不丢失 |
+| [`Transaction Store`](../../src/harnessix/delivery/store.py) | `blob(digest, checkpoint=None)` 签名保持；`controlled_blob` 只将原观察异常交给消费方标记。两者复用 `_read_checked_blob` 的原读前／物理读取／读后顺序，原 CAS 算法、Owner／权限／大小／SHA 验证不变 |
+| [`Record Codec`](../../src/harnessix/delivery/workspace_record_codec.py)、[`Execution Store`](../../src/harnessix/execution/store.py)、[`Audit`](../../src/harnessix/trusted_actions/store.py) | 全量父历史解引用不变，先消费明确端口，再进行原坏数据映射；只移除自己拥有的控制标记，不按错误码猜观察来源。未装配明确端口的普通 Callable 保持原兼容行为，不承诺区分同码的未知来源 |
+| [`产品装配`](../../src/harnessix/product_config/action_runtime.py)、[`Snapshot Ports`](../../src/harnessix/workspace/snapshot_ports.py) | Audit／Execution 共用原 Store 的成对读端口；Snapshot 原 `write_blob`／`read_blob` 仍是原绑定方法，追加可选 `controlled_read_blob=None`。旧两参数构造不变；Source 捕获／最终复核仅消费本次标记边界，无新的读器算法或写权限 |
+| [`原宿主资格`](../../src/harnessix/product_config/git_user_authority.py) | 冻结控制读端口对象并逐 Full 复核其原 Store 和原方法；显式端口必须是原生 `MethodType`，伪造方法元数据不构成资格；撤除、包装、替换或 foreign Store 均拒绝。端口不是认证证明，不扩大原 Task／锁／资源归属 |
+| [`审批投影`](../../src/harnessix/product_config/git_approval_history_projection.py) | 原已认证完整事实的内存重放收到 exact GAC 时固定调用既有类实现 `GitAuthenticationControl.pure(checkpoint)`，不分派可覆盖的实例属性；保留每个原检查点、原 Reducer 和语义比较。Session／Route／CAS／终端交叉读取仍在父协调层完整认证，不给整个审批证明或二次读取套 pure |
+
+核心逻辑为 `mark 原观察 → 真实完整 read → mark 原观察 → 原历史验真 → 按对象身份解本次 mark`。
+没有共享回调替换、异常对象附加属性、认证缓存、持久字段、Schema、迁移或默认 Git Writer 启用。
+纯段首末 Full、细粒度取消／原期限／原锁频检、首失败撤销及 unknown／foreign 回退沿既有契约；
+检测时点不等同逐项 Full，不承诺发现段内短暂漂移后恢复或抢占同步 OS 调用。
+
+负控分别验证 [7种真实 Store 消费](../../tests/delivery/test_blob_control_origin.py)、
+[控制运输归属](../../tests/workspace/test_blob_read_control.py)、
+[实际 SDK 最后 Blob 与旧同码反例](../../tests/product_config/test_git_owned_progress_sdk.py)、
+[原端口重绑](../../tests/product_config/test_git_blob_port_authority.py)及
+[四种审批状态的投影](../../tests/product_config/test_git_approval_projection_control.py)。
+包括 Manifest／末 Chunk 读前读后、裸／嵌套异常对象、真实缺失／同长度篡改、精确原读取前缀、无 DML、
+原投影事实及检查频次、首失败、出口持续漂移、未知回调和异 Task／线程。
+这些机制回归不是 MAC 来源验收或真实编码评分；原60秒操作／120秒Turn、原深层负载及完整恢复／只读重开仍须独立通过。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -1077,7 +1117,7 @@ finally：
 | `src/harnessix/product_config/git_native_control.py` | `1c7c8fa2d428d4d3ca3b71cc8d22c3e95e045c2c4ea8de788c44f58c56e03e78` |
 | `src/harnessix/product_config/git_user_observation.py` | `7b62db51e4830038074ffbe5b86674812a0449f640779c6d0bcde46fc26dda6f` |
 | `src/harnessix/product_config/git_prepared_link_ledger.py` | `738179473c6cf7638c3a197211c127da27b32c41c30cf8e762423062c8748219` |
-| `src/harnessix/product_config/git_delivery_source.py` | `e1f069c86a71cb4b6251550e7416223969f1a01df7f3173d7dbb1bdb14edb1e0` |
+| `src/harnessix/product_config/git_delivery_source.py` | `bfb0831b482665d4735f5e895dc8ef14ff97d258db409255d3780fdc7852bb3f` |
 | `src/harnessix/product_config/git_delivery_review_host.py` | `d976c5497397640e7c987efeb531d348491d954d4e556c69669a9fdd1d865a65` |
 | `src/harnessix/product_config/git_delivery_review.py` | `c8e31019e6996d155dfe6ab91d6a1c0f3cf2a97c5161d7d8290a894fedb148e3` |
 | `src/harnessix/workspace/snapshot_v2.py` | `42bd9d9e71da70ffda7253c1b7128767eebbdc32e3bd3c7e32892a8beab162e0` |
@@ -1085,3 +1125,12 @@ finally：
 后续源码微调必须按实际字节复核本设计及上述摘要；不能只保留基础提交号而宣称增量说明持续对应现状。发布时应将已整合增量的实际提交/安装源码证据与该设计版本关联，不能把工作树实现描述当作已发布证明。
 
 最终边界为：真实原认证调用和成功 Patch 被转换成有界完整、耐久且末段复核的 Core2 准备材料，再交给原 Route 和已有认证 GitReview。默认未注册、无 A/T2/D 写入、不授权 Git 业务执行、命令授权夹具不代表默认 Policy 或业务批准，均保持不变。
+| `src/harnessix/delivery/store.py` | `61953313225de152d0d5ea98c1074c6e0c3079d987444f211821ea376db4a1f5` |
+| `src/harnessix/delivery/workspace_record_codec.py` | `ac64e7643022ac4cbf9ace935726d24f146a19575c53961023116145f2de32c7` |
+| `src/harnessix/execution/store.py` | `4dc909522ac1ef4b80d4afc14ecc7f4747545279b1a177a55aad3bc5ee87b1c6` |
+| `src/harnessix/product_config/action_runtime.py` | `699c9b092f2a67c6fcad9cdf29a374ea60f6da0cddcd2c8be43271859c22e51b` |
+| `src/harnessix/product_config/git_approval_history_projection.py` | `ddc1837f7c6984539e945cd6c60a037d2ff81f60d7b2895daa8544bc2f8975ac` |
+| `src/harnessix/product_config/git_user_authority.py` | `cf2cf3b3baef0deae20812b6bfb17113b1911b6b1088dbaff2e33c185f9db123` |
+| `src/harnessix/trusted_actions/store.py` | `267d933fa8611a9deff11d46e2fb8df443e65dc604b176591bc05e6aa6fd459a` |
+| `src/harnessix/workspace/blob_read_control.py` | `9cc4390cce5d525b5ea0171986b5e17eb51cf75d680d21a7ad00056e046eaef1` |
+| `src/harnessix/workspace/snapshot_ports.py` | `0415616edc72aabf9a12fa25ac6b894ecd748b2dc1d653d3650cd0b583331009` |

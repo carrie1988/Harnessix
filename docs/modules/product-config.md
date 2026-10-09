@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 104
-code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
+version: 105
+code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
 owners:
   - core
 modules:
@@ -2878,3 +2878,5 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 来源／Review 原生控制按[分层读取设计](../changes/m09-r4-git-checkpoint-preparation.md#16-来源读取子-task-与-review-的原生控制)实现：原子 Task 创建自身控制，只读观察不转移父 SQL 权限；局部字段观察不调用动态宿主方法，首末仍完整认证。Source 的[Snapshot 计算端口](../changes/m09-r4-git-checkpoint-preparation.md#17-已验真父历史与-snapshot-重编码的纯计算端口)及[归属 Reader 传递](../changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)保留实际读取、原 Store 观察、两次完整复核和旧 foreign 轨迹；组合观察可能 I/O，不将整个 Reader 降级为纯段。U／原 prepared Source 边界只解本次自建异常标记，原嵌套对象不递归解包。User 实现摘要纳入共享控制；默认完整 Writer 仍未启用。
 
 审批历史 `_read_evidence` 同样转发原 Ledger 的合格只读观察与同次 Source scope，详见[完整 U 消费链](../changes/m09-r4-git-prepared-approval-history.md#52-完整-u-的真实消费者接口与调用链)。不另建权限或预算；原 Proof、U、完整检查成功后才登记读集合，默认 Writer 仍不因此启用。
+
+[Blob 来源与审批纯投影](../changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)由产品组合根显式装配：端口保持原 Store／方法绑定并拒绝重绑；仅审批已读事实进入内存纯段，原 Session／Route／CAS 和追加后二次完整复核不减少。

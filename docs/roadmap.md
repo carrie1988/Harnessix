@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 246
-code_revision: 589ffe589ed1e5e1dc0afdf9c70b5d4cfc309ea6
+version: 247
+code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
 owners:
   - core
 modules:
@@ -2778,3 +2778,5 @@ v13首次走到pending Review后因诊断误读Turn.constraints失败；v14只�
 P1、默认完整写链、B4/B7、原生平台及R3真实质量仍开放；本轮模型请求0，不增加真实编码／Beta通过数。
 
 R4 [原 Patch 归属读器分层](changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)已落地：工厂仅沿原 Route／Store／Record Codec 进入读后计算，保留真实 CAS、原 Store 观察和完整认证边界；运输只解本次自建异常标记，未知／foreign 路径不借局部身份。三个只读转发集中到原 Router 的私有基类，新增结构债务0。最终同一非editable包2403项关联回归＋24项R3离线控制通过，去重2427节点、563成员逐字节绑定；不累加候选重复成绩。原16文件／400目录／25层／2连续Patch的单次v19已完成首次审批证明和完整U／Source，`_append`返回后第二次完整读取仍耗尽原Turn期限；正式恢复COMMIT及只读重开未通过，夹具退出后Prefix仍仅prepared/sequence=0，不能据此宣称全部外部副作用检查通过。最大诊断心跳间隔约4.552秒，无通过阈值，不作配对速度或P1验收。另16项真实SDK Blob同码来源负控保留12 PASS／4 FAIL，不能被其他绿例覆盖。下一步优先在实际观察入口区分控制与真实Blob拒绝，再核对确认后二次完整读取；不删复核或延长期限。默认完整Writer、B4/B7、平台及R3真实质量仍开放。本轮模型请求0；现60元周期新增未决预留保留，38元有界复验规则待答复，不增加质量或Beta通过数。
+
+R4 [Blob 控制来源端口与审批内存投影](changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)已落地：原 Store 观察显式标记控制来源，真实 CAS 仍沿原数据分类；未知 Callable 保持旧轨迹，宿主冻结原绑定方法，审批投影只对已读取事实使用既有纯段。原16项同码负控、可覆盖实例方法及伪造方法元数据反例均保留；最终同一非editable安装包3040项关联回归＋24项R3离线控制通过，3064个唯一节点、564成员逐字节绑定，新增结构债务0。单次原负载v20仍FAIL：准备／Review约64.095秒，原Ledger／Router约44.557秒，恢复约11.148秒后原Turn到期；失败位于首次审批证明的终端Source复核，未到原追加、正式恢复COMMIT与只读重开。退出后只读Prefix仍为prepared/sequence=0，不能推导全部副作用断言通过。最大诊断心跳间隔约6.264秒，无验收阈值；不作配对加速或P1通过声明。下一步核对尚未分层的内存计算与重复完整认证成本，不删除终端复核、不放宽原60／120秒期限。R3真实成绩、Beta接受数、默认完整Writer、B4/B7及三平台门禁不变；本轮模型请求0，现预算未决预留及待答复规则保持。
