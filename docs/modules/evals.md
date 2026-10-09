@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 37
-code_revision: bef1ab088d271bec205f07d9a6ec942514b0efa7
+version: 38
+code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
 owners:
   - core
 modules:
@@ -2398,3 +2398,7 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 完整流程、时序、字段、失败与部署见[14节详细设计](../changes/m09-r3-provider-source-origin-preflight.md)，
 实验证据见[统一验证报告](../validation/provider-source-checkout-2026-10-08-v1/README.md)。
 准入通过不替代Docker默认Workspace、完整20 Trial质量或真实Beta验收。
+
+### 当前增量：固定审批策略的拒绝也须正式结算
+
+`_require_allowed_approval`的允许集合、文件／选择器校验不变；`_approval_decision`将其确定`eval_approval_denied`转为原Runtime的指纹绑定REJECTED，持久回复后继续原预算内Turn。异常身份、损坏投影、取消与持久化失败仍中止，不批准回滚或扩大Task Pack；详见[第14节调用顺序与恢复负控](../changes/m09-r3-coding-workflow-instructions.md#14-固定审批拒绝不得扩大成suite宿主崩溃)。

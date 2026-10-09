@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 42
-code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
+version: 43
+code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
 owners:
   - core
 modules:
@@ -1846,3 +1846,7 @@ mode=ro 与 query_only 禁止业务写入，但保留 SQLite WAL/SHM 锁协调�
 这不证明查询后的永久 Owner、ABA、OS 锁/FD或完整 B7，也不启用 approved Writer 或关闭商业门禁。
 
 Audit 的完整父历史沿[成对 Blob 读端口](../changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)区分原观察控制与真实 CAS 损坏；异常按本次标记身份运输，不缓存通过结论或产生批准／写权限。
+
+### 当前增量：原准备拒绝的窄结算
+
+`workspace_patch_preparation_rejection`仅接受原内置Review绑定的SHA／no-op原生来源标记；核对当前相同Plan／Binding仍未批准，原Router CAS确认为denied后才给固定failed反馈。直接同code／自建类型、外部Review、过期Plan、已批准／执行状态和Executor异常保留原边界；不重放unknown。字段与顺序、拒绝后恢复及真实变化审批见[共享整改详设第14.2节](../changes/m09-r3-coding-workflow-instructions.md)。

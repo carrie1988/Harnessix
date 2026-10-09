@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 54
-code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
+version: 55
+code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
 owners:
   - core
 modules:
@@ -2373,3 +2373,7 @@ Git 控制适配复用[原创建绑定与异常边界](../changes/m09-r4-git-che
 Inventory 的 CAS 后字节解析、完整 Closure 返回后的统计和精确并集采用[同创建 Task 分层](../changes/m09-r4-git-object-inventory-materials.md#101-材料读后计算的分层控制)；原实际读序与重复次数不变。外来 Task／线程及未知回调不追加首末检查，不扩大原期限或宣称完整恢复通过。
 
 Transaction Store／Record Codec 的[可选归属读进度](../changes/m09-r4-git-checkpoint-preparation.md#18-原-patch-归属-reader-的显式计算进度与异常归属)仅覆盖原父历史读后计算，保留 Store 原观察及完整 CAS。异常运输只解本次自建标记，Plan／Manifest／Chunk 首失败保留原对象及真实读前缀；编码／写入未分层。Blob 同码来源按[显式读端口契约](../changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)在原观察入口标记；`blob`原签名与物理 CAS 验证不变，未知 Callable 保留旧行为，不以局部绿例宣称完整恢复通过。
+
+### 当前增量：原Mutation无变化拒绝的来源证明
+
+原`_prepare_mutations`仍在第一个无变化条目立即拒绝；只有普通文件全文和mode都相同时产生专用来源标记，不继续读后续条目、不删项执行其余文件。类型仍继承KernelError并保持`delivery_no_change`；缺失／删除等未经证明情形保持原错误。完整调用链、字段／失败顺序和负控见[共享整改详设第14.2节](../changes/m09-r3-coding-workflow-instructions.md)。

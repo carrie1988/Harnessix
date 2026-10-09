@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 110
-code_revision: 6a809bad096d67ae06b9440650e2c43a5d657cc8
+version: 111
+code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
 owners:
   - core
 modules:
@@ -2901,3 +2901,7 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 不将早先来源文件候选901项重复累加。
 当前原深目录v28仍只完成审批事实COMMIT和六项原断言；只读重开时原Turn过期，
 重开成功及全部外部副作用断言仍未证明。它不是Git业务提交，也不关闭默认Writer、P1、B4/B7或商业门禁。
+
+### 当前增量：v9通用顺序与确定准备拒绝
+
+共享编码指令v9先确认路径并观察适用Profile的修改前基线，再直接定位给定路径；保留原Context、累计预算、审批、安全和最终验证约束。内置Patch Review仅给原Planner证明的no-op绑定Plan，并复核replace／SHA／正文摘要／mode；它不是任意同码回调降级，也不绕过完整差异审批。设计、实际旧失败及安装证据见[第14节](../changes/m09-r3-coding-workflow-instructions.md#14-固定审批拒绝不得扩大成suite宿主崩溃)。R4文件探针只纠正无I/O checkpoint的测量归类，[真实I/O负控](../changes/m09-r4-git-checkpoint-preparation.md)不改变生产权限。

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 17
-code_revision: 6a809bad096d67ae06b9440650e2c43a5d657cc8
+version: 18
+code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace, execution]
 related_adrs:
