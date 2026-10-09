@@ -24,7 +24,7 @@ def audit_case(folder, *, wal=True):
     with SQLiteActionAuditStore(folder / "原 Audit #%.db", require_runtime_owner=True) as audit:
         if not wal:
             assert audit._db.execute("PRAGMA journal_mode=DELETE").fetchone() == ("delete",)
-        with audit.runtime_owner():
+        with bind_product_audit_identity(audit), audit.runtime_owner():
             yield audit
     resources_released()
 
@@ -58,7 +58,7 @@ def fresh_views_are_readonly_and_borrowed_audit_survives(folder):
 
             def inspect(*, database, original=original, read_owner=read_owner, views=views):
                 assert database is not original
-                assert _bridge._resource_counts()["leases_live"] == 1
+                assert _bridge._resource_counts()["leases_live"] == 2
                 assert database.execute("PRAGMA query_only").fetchone() == (1,)
                 database.execute("PRAGMA query_only=OFF")
                 with pytest.raises(sqlite3.OperationalError, match="readonly"):
@@ -71,7 +71,7 @@ def fresh_views_are_readonly_and_borrowed_audit_survives(folder):
             with patch.object(audit, "_read_runtime_owner", inspect):
                 for _ in range(3):
                     observe(audit)
-                    assert _bridge._resource_counts()["leases_live"] == 0
+                    assert _bridge._resource_counts()["leases_live"] == 1
             assert len(views) == 3 and audit._db is original
             assert original.total_changes == changes and not original.in_transaction
             assert original.execute("SELECT 1").fetchone() == (1,)
@@ -107,7 +107,7 @@ def fresh_opened_b_then_path_restored_a(folder):
         assert len(opened) == 1
         assert_closed(opened[0])
         assert audit._db.execute("SELECT 1").fetchone() == (1,)
-        assert _bridge._resource_counts()["leases_live"] == 0
+        assert _bridge._resource_counts()["leases_live"] == 1
 
 
 def closed_fresh_handle_after_owner_read_is_rejected(folder):
@@ -123,7 +123,7 @@ def closed_fresh_handle_after_owner_read_is_rejected(folder):
         with patch.object(audit, "_read_runtime_owner", close_after_read), host_invalid():
             observe(audit)
         assert_closed(views[0])
-        assert _bridge._resource_counts()["leases_live"] == 0
+        assert _bridge._resource_counts()["leases_live"] == 1
         assert audit._db.execute("SELECT 1").fetchone() == (1,)
 
 
@@ -140,7 +140,7 @@ def owner_first_failure_and_revoked_observer(folder):
                 with pytest.raises(type(error)) as caught:
                     observe(audit)
             assert caught.value is error
-            assert _bridge._resource_counts()["leases_live"] == 0
+            assert _bridge._resource_counts()["leases_live"] == 1
             with closing(hosts.readonly_database(audit._path)) as view:
                 with hosts._observe_review_connection(
                     view, hosts._audit_file_identity(audit._path)
@@ -201,6 +201,7 @@ if __name__ == "__main__":
     from harnessix_sqlite_identity import _bridge
 
     from harnessix.product_config import git_delivery_review_host as hosts
+    from harnessix.product_config.git_review_identity import bind_product_audit_identity
     from harnessix.trusted_actions.store import SQLiteActionAuditStore
 
     for module in (identity, hosts):

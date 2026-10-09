@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 7
-code_revision: 3de8a4c2ec79f546784d63c843dd217ef6e50d18
+version: 8
+code_revision: 013a7c73d42106b771fa62d7df6db2a7ff0ad9a0
 owners: [core]
 modules: [agent, product_config]
 related_adrs:
@@ -10,6 +10,7 @@ related_adrs:
 related_tests:
   - tests/product_config/test_git_prepared_monitor_identity.py
   - tests/product_config/test_git_review_connection_identity.py
+  - tests/product_config/test_git_audit_identity_lifetime.py
   - tests/product_config/test_git_prepared_commit_scope.py
   - tests/delivery/test_git_prefix_sql_transaction_scope.py
   - tests/product_config/test_git_prepared_runtime_thread.py
@@ -893,6 +894,7 @@ Ledger `control` 为 92299 次、`internal` 为 184597 次。
 来源、已验证矩阵及未覆盖范围集中记录于[原生接线研究](../research/git-sqlite-native-source.md#四库监视接线每条实际连接分别检查)，不重复扩展本合同的默认Writer或P1结论。
 
 Owner鲜读的新连接亦已按原pin接入显式原生观察，保留原Owner算法和完整复核顺序；
-原Audit长连接不能每轮重新attach，仍等待Store生命周期接线。
-详见[鲜读身份及重复绑定反例](../research/git-sqlite-native-source.md#owner-鲜读接线短连接拥有短令牌原-audit-不重复绑定)，
-不据此关闭原Audit来源、默认Writer或P1。
+原Audit由ActionRuntime生命周期进入绑定作用域，重复复核只消费同一令牌；缺失登记不得临时attach。
+退出先撤销登记和令牌再关闭Store，子Task只借观察，既有SQL门禁不变。
+详见[宿主身份生命周期](../research/git-sqlite-native-source.md#原-audit-接线宿主生命周期持有观察不重新签发)，
+不据此关闭完整FD、默认Writer或P1。

@@ -32,6 +32,7 @@ from harnessix.product_config.action_contracts import (
 )
 from harnessix.product_config.action_owner import product_action_runtime_lock
 from harnessix.product_config.action_recovery import scan_product_action_recovery
+from harnessix.product_config.git_review_identity import bind_product_audit_identity
 from harnessix.product_config.process_profile import (
     ProductProcessProfileProbeResult,
     probe_product_process_profile,
@@ -152,6 +153,7 @@ async def _open_action_dependencies(
                 read_blob=history_reader,
             )
         )
+        resources.enter_context(bind_product_audit_identity(audit))
         fence = resources.enter_context(audit.runtime_owner())
         leases = resources.enter_context(WorkspaceLeaseStore(state_root / "workspace-leases.db"))
         process_profiles = {

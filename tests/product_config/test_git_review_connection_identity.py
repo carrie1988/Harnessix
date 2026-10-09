@@ -30,6 +30,8 @@ class _BridgeError(RuntimeError):
 
 @pytest.fixture(autouse=True)
 def isolated_native_state(monkeypatch):
+    # 本文件只测短鲜读接线；原 Audit 长期登记另由生命周期和真实安装件测试覆盖。
+    monkeypatch.setattr(hosts, "original_audit_observer", lambda *_: lambda: None)
     monkeypatch.setattr(native, "_state", "not_started")
     monkeypatch.setattr(native, "_backend", None)
     monkeypatch.setattr(native, "_connections_started", False)

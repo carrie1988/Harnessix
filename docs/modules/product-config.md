@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 113
-code_revision: 3de8a4c2ec79f546784d63c843dd217ef6e50d18
+version: 114
+code_revision: 013a7c73d42106b771fa62d7df6db2a7ff0ad9a0
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_tests:
   - tests/product_config/test_git_source_capture_progress.py
   - tests/product_config/test_git_review_layered_native.py
   - tests/product_config/test_git_review_connection_identity.py
+  - tests/product_config/test_git_audit_identity_lifetime.py
   - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_source_native_progress.py
   - tests/product_config/test_git_checkpoint_scope_control.py
@@ -2822,9 +2823,10 @@ Task身份不是持锁证明，路径pin不是FD证明；本切片不关闭B4/B7
 
 四库监视连接已统一从该工厂创建，各自保留来源闭包；显式原生启动时才检查各自实际主库身份，
 未启动则保持历史模式。Writer引用、路径、data_version和total_changes检查仍在；退出先撤销观察能力。
-Owner鲜读在显式原生模式下按原pin核验每条新连接，原Audit仍需Store生命周期接线；
-不解除同连接重复attach禁令，不更改原完整复核顺序。错误、清理及安装件反例见
-[Owner鲜读接线](../research/git-sqlite-native-source.md#owner-鲜读接线短连接拥有短令牌原-audit-不重复绑定)。
+Owner鲜读在显式原生模式下按原pin核验每条新连接；原Audit由ActionRuntime资源作用域持有同一令牌，
+完整边界复核不重复attach，退出先撤销、释放再关闭Store。不更改原Owner顺序，不将观察能力当作SQL授权。
+错误、清理及安装件反例见[原Audit生命周期接线](../research/git-sqlite-native-source.md#原-audit-接线宿主生命周期持有观察不重新签发)。
+这些接线不等于默认启用原生模式，WAL/SHM、历史ABA、内存与完整Writer门禁仍独立开放。
 
 ## Git 原 Runtime Thread 临界区绑定
 
