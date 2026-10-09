@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from uuid import UUID, uuid5
 
@@ -22,10 +23,13 @@ from harnessix.delivery.trusted_action_contracts import (
     build_workspace_action_review,
 )
 from harnessix.delivery.workspace_patch_errors import (
+    WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
+    is_workspace_patch_no_change,
     is_workspace_patch_sha_mismatch,
 )
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot
+from harnessix.workspace.paths import normalize_workspace_path
 
 _ACTION_REVIEW_NAMESPACE = UUID("2beb71e9-794e-4ffb-a789-f1d19fecc9f9")
 
@@ -80,6 +84,26 @@ class WorkspacePatchReviewProvider:
             if is_workspace_patch_sha_mismatch(error):
                 # 只绑定原纯校验路径；Artifact发布或扩展回调不能借同码宣称未执行。
                 error.review_plan_id = route.plan.execution.plan_id
+            raise
+        except WorkspacePatchNoChangeError as error:
+            if is_workspace_patch_no_change(error):
+                matching = tuple(
+                    item
+                    for item in proposal.files
+                    if normalize_workspace_path(item.path, route.plan.execution.workspace.platform)
+                    == error.unchanged_path
+                )
+                if len(matching) == 1:
+                    item = matching[0]
+                    if (
+                        item.operation == "replace"
+                        and item.expected_sha256 == error.unchanged_sha256
+                        and hashlib.sha256((item.content or "").encode("utf-8")).hexdigest()
+                        == error.unchanged_sha256
+                        and item.mode == error.unchanged_mode
+                    ):
+                        # 只绑定原Mutation已拒绝的唯一replace，不推断批内其他项也无变化。
+                        error.review_plan_id = route.plan.execution.plan_id
             raise
         return await publish_workspace_review(
             route,

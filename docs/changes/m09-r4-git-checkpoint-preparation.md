@@ -1374,3 +1374,9 @@ finally：
 | `src/harnessix/trusted_actions/store.py` | `267d933fa8611a9deff11d46e2fb8df443e65dc604b176591bc05e6aa6fd459a` |
 | `src/harnessix/workspace/blob_read_control.py` | `9cc4390cce5d525b5ea0171986b5e17eb51cf75d680d21a7ad00056e046eaef1` |
 | `src/harnessix/workspace/snapshot_ports.py` | `0415616edc72aabf9a12fa25ac6b894ecd748b2dc1d653d3650cd0b583331009` |
+
+最终合并候选 `fb4e0c6d` 的同一非editable安装件（566生产成员、Wheel `5481d297590feb31fda7094a1cac0a9b0669d8689bd83523edf41b1a2b8545ee`）单次v33仍 **1 PASS**：原八断言全通过，原夹具字节／几何及60／120秒不变；guard原689等价＋2真实cwd撤销负控通过。JUnit suite 124.071秒、testcase 122.919秒均含生命周期，不误写成Turn期限。外部原件 `r4-root-binding-deep-recovery-20261009-v4` 清单SHA-256 `d0a9f3ead37581357bf4477758ce8d92639c5c7a806b194b25a5fcbfe45876d6`。R4整体仍OPEN，单夹具不代替默认Writer、B4/B7及平台门禁。
+
+#### 原file探针的真实I/O边界
+
+旧收集测试把`_read_existing`整个包围段当作物理I/O，误计40次无I/O checkpoint；408次真实syscall内observer为0。仅[原测试探针](../../tests/product_config/test_git_user_collection_progress.py)改为配对观察原`_read_source_file`、checkpoint和实际open／stat／fstat／read／close：认证段首末仍Full，observer只允许在I/O外的原进度回调。保留62项原参数及`file`负控，新增19项真实I/O／认证注入、取消和saved-port负控；旧最终安装件81项通过，关联矩阵106项通过。生产源码不改，旧FAIL与轨迹保留；本轮合并安装件的原81节点全量通过，包含在1866项回归内，不另行叠加计数。

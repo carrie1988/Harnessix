@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 277f38439b3ed21ed46908ebbf0625155cd58937
+version: 3
+code_revision: fb4e0c6d2ff9837c8bd26e1ac04c74b2c47adacf
 owners: [core]
 modules: [product_config, context, evals, models]
 related_adrs:
@@ -15,6 +15,8 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/evals/test_task_pack_execution.py
   - tests/evals/test_provider_verification_budget.py
+  - tests/evals/test_task_pack_approval_denial.py
+  - tests/product_config/test_patch_precondition_rejection.py
 supersedes: []
 ---
 
@@ -262,3 +264,29 @@ flowchart LR
 [验证宿主](../../scripts/run_engineering_provider_suite_budgeted.py)可选`--minimum-request-interval-seconds`（默认0、0～60有限数），同一Suite共享[准入节奏](../../scripts/provider_verification_guard.py)，策略绑定进Provider证据指纹。等待在费用预留前，取消回收整个锁临界段；不生成已发送/费用记录，不自动重试、不延长Turn，不是跨进程或账户级限流。缺少本次服务子码，不能确定RPM/TPM或其他调用方根因；[百炼官方限流说明](https://help.aliyun.com/zh/model-studio/rate-limit)不能替代账户实际配额证据。
 
 回归：[SHA拒绝](../../tests/product_config/test_patch_precondition_rejection.py)、[Schema等价与两Provider](../../tests/models/test_tool_schema_projection.py)、[准入取消/费用/锁](../../tests/evals/test_verification_request_pacing.py)。源级定向回归分别为SHA拒绝97 PASS、Schema及映射240 PASS、准入及原费用链116 PASS。负控覆盖直接构造同类错误、泛化同code、外部Review、已批准/执行态、审批竞态；原Route拒绝后、Session失败反馈落盘前的崩溃，通过原恢复链得到failed且Executor调用0。此进程内标记不是恶意宿主Python代码的隔离边界。三类改动须以最终安装件回归和新完整20 Trial验收；不回填部分成绩、不缩小分母，缺失和业务失败均保持开放。
+
+最终候选 `fb4e0c6d` 的38个明确关联文件在非editable安装件 **1467 PASS/0 FAIL/0 SKIP**，566生产成员源码／输入／Wheel／安装件逐字节一致，Wheel SHA-256 `5481d297590feb31fda7094a1cac0a9b0669d8689bd83523edf41b1a2b8545ee`；原外部夹具遗漏Schema导致的失败原件保留，只补齐原Schema、不改断言。外部证据包 `r3-precondition-schema-paced-installed-20261009-v1`，清单SHA-256 `4589bb5b76d19da4f1e78142c7f416deb557b3bd25b17729456a3eaa7d18a228`。新Suite `f705a6cf-2b08-405b-abf4-e170a3f96023` 在原10 Case／20 Trial下以3秒Suite内准入节奏运行，完整评分待正式总报告，回归不替代质量。
+
+## 14. 固定审批拒绝不得扩大成Suite宿主崩溃
+
+候选`fb4e0c6d`的新Suite发布16/20份报告（7 passed／2 failed／7 invalid；部分严格7、必需检查9），第17个Trial停在回滚审批。原宿主日志只有`verification_host_failed`；从原持久投影沿原纯审批检查复现`eval_approval_denied`，不声称保存了历史内层异常。117请求均completed，Token／冻结价格估算2.828696元、未决0；本轮原件保留，不恢复、不拼接、不当完整评分。外部包`r3-precondition-paced-interrupted-20261009-v1`清单SHA-256 `317770073289b1c4908b04515520071ff674d226de002b4582065dd256308287`。
+
+[原驱动](../../src/harnessix/evals/task_pack_trial.py)的`_require_allowed_approval`允许项与所有校验保持原样；新`_approval_decision`只把该纯策略的确定拒绝转换为原`ApprovalDecision.REJECTED`。`_drive_turn`经原Runtime回复指纹绑定审批并持久结算，再按原Turn预算继续；不批准回滚，不扩大文件范围/操作/选择器，不改TaskPack、Grader或质量阈值。身份/投影异常、取消、持久化失败仍中止，不能一概当策略拒绝。
+
+控制顺序：原认证历史→原纯审批校验→允许时APPROVED／拒绝时REJECTED→原Runtime回复与持久结算→恢复Turn；回复后崩溃沿原恢复链，不重复批准或执行。新增[拒绝测试](../../tests/evals/test_task_pack_approval_denial.py)区分纯驱动替身与真实产品链：真实已归属Patch的回滚被拒绝后Route为denied、没有Executor事件、原三种文件修改保留，重复resume不执行逆向Patch。直接审批参数负控、原完整历史认证、原Grader回归继续执行；不以控制回归代替20 Trial质量。
+
+### 14.1 输入预算的实际约束与下一步
+
+后继只读诊断对照旧/新dump两个Trial的Provider实测usage：新输入52907/52839、输出735/737，第八请求落账后超过原50000；完整preview却读取同Artifact原JSONL/base64，四个样本均发生。单请求上下文未超原上限，不等于累计Turn预算允许闭环；UTF-8字节估算、历史阈值和Schema字节节流不能充当实测Token。正确SHA的后继payload原先仍在审批准备边界unknown；后继单次离线复现已确定为原Planner的`delivery_no_change`：全文与mode均相同。它是后继复现，不是历史内层异常原件；不能泛化“未进入Executor就一定已知失败”。
+
+通用共享指令v9改为：先确认允许路径，有固定Profile时先观察基线；随后读取源码/必要测试，任务已给路径时直接定位、只有位置不清才搜索。保留全部原信任/审批/SHA/基线与最终验证/Git顺序/Artifact分页/失败护栏及2751字节上限；不隐藏工具、不改Context/压缩/预算，不写入任务答案、不按Case特化。v9只是下一轮行为假设，须新完整20 Trial实测，未建立的确定性日志模型视图暂不仓促扩展持久协议。
+
+### 14.2 原Planner确定拒绝的no-op，不等于执行结果未知
+
+需求来自上述实际payload输入：SHA正确，但提交的正文与mode未变化。原Planner在准备Mutation时以`delivery_no_change`拒绝，尚未保存事务或进入Executor；原公开失败收尾仍保守形成unknown，阻断后续纠正。一次独立副本的ScriptedProvider复现保留原Review／Planner，观察该固定码、Route未批准、事务0、Executor操作0及副本未变；这不是付费质量评分，也不补写历史异常。
+
+实现复用[原Planner](../../src/harnessix/delivery/planner.py)→[专用进程内来源标记](../../src/harnessix/delivery/workspace_patch_errors.py)→[原Review绑定](../../src/harnessix/product_config/workspace_patch_review.py)→[原拒绝CAS](../../src/harnessix/trusted_actions/preparation_rejection.py)。仅普通文件全文与mode的原生no-op拒绝能够获得标记；Review还核对replace条目与来源SHA，Gateway继续核对精确内置Provider、Binding、Plan及当前未批准状态。关闭Route后才返回固定failed，不给原异常正文／路径，不自动批准、删去无变化条目执行剩余文件或重放unknown。
+
+流程为：原有Source核验和Mutation准备→遇到无变化条目立即拒绝→核对原拒绝来源与Plan→原Router持久REJECTED→Agent得到failed并自行决定新提案。保留原fail-fast与失败顺序；其他同码、自建类型／Review、Artifact异常、执行阶段失败及未经证明的状态保持原unknown边界。内容变化或仅mode变化仍走完整差异审批与执行，不能借no-op拒绝绕过。
+
+测试沿[原SHA／准备拒绝矩阵](../../tests/product_config/test_patch_precondition_rejection.py)补充真实no-op、混合批次整体拒绝、真实变化、mode-only、来源／Plan／状态负控及拒绝后的原恢复。最终合并候选的48个明确测试文件在非editable安装件1866 PASS／0 FAIL／0 SKIP，566生产成员源码／输入／Wheel／安装件逐字节一致；Wheel SHA-256为`4b4b3b3a04881ef8b56af0fe334d3f1f90a3fbe7366a907f205ea6f8d48509df`。新增no-op及原SHA负控、拒绝驱动、v9和原file探针一起重验；源级参考fixture未运行的节点没有带入安装回归筛选。新完整20 Trial尚待真实运行，回归不替代编码质量。

@@ -1,9 +1,10 @@
-"""窄切SHA拒绝：真实产品路径与审批、扩展、执行、取消负控。"""
+"""窄切SHA与原生no-op拒绝：真实产品路径、fail-fast及安全负控。"""
 
 from __future__ import annotations
 
 import asyncio
 from dataclasses import replace
+from uuid import uuid4
 
 import pytest
 
@@ -17,13 +18,16 @@ from harnessix.agent.models import (
     TurnStatus,
 )
 from harnessix.delivery.contracts import WorkspaceFileVersion
+from harnessix.delivery.planner import DesiredWorkspaceFile, prepare_workspace_transaction
 from harnessix.delivery.trusted_action import (
     WorkspacePatchActionExecutor,
     WorkspacePatchTransactionPlanner,
     _validate_mutation,
 )
 from harnessix.delivery.workspace_patch_errors import (
+    WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
+    is_workspace_patch_no_change,
     is_workspace_patch_sha_mismatch,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
@@ -78,6 +82,171 @@ def assert_unchanged(root):
     assert (root / "src/modified.py").read_bytes() == b"old\n"
     assert (root / "tests/deleted.txt").read_bytes() == b"remove\n"
     assert not (root / "src/新增.py").exists()
+
+
+def no_change_proposal(count=1):
+    original = _proposal()
+    files = [original.files[0].model_copy(update={"content": "old\n"})]
+    if count == 2:
+        files.append(
+            original.files[2].model_copy(
+                update={"operation": "replace", "content": "remove\n", "mode": 0o644}
+            )
+        )
+    return original.model_copy(update={"files": tuple(files)})
+
+
+def original_no_change_error(root):
+    with pytest.raises(WorkspacePatchNoChangeError) as caught:
+        prepare_workspace_transaction(
+            root,
+            {"src/modified.py": DesiredWorkspaceFile(b"old\n", 0o644)},
+            request_id="no-change-proof",
+        )
+    assert is_workspace_patch_no_change(caught.value)
+    return caught.value
+
+
+@pytest.mark.parametrize("count", [1, 2])
+@pytest.mark.parametrize("tampered", [False, True])
+async def test_proven_no_change_rejects_before_approval_or_execution(
+    tmp_path, monkeypatch, count, tampered
+):
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        original = WorkspacePatchTransactionPlanner.prepare
+
+        def prepare(*args, **kwargs):
+            try:
+                return original(*args, **kwargs)
+            except KernelError as error:
+                if tampered:
+                    error.code = "internal-no-change-canary"
+                    error.message = "internal-no-change-canary"
+                    error.retryable = True
+                raise
+
+        def forbidden_save(*_args):
+            pytest.fail("完整no-op不得保存事务")
+
+        async def forbidden_execute(*_args):
+            pytest.fail("完整no-op不得执行")
+
+        monkeypatch.setattr(WorkspacePatchTransactionPlanner, "prepare", prepare)
+        monkeypatch.setattr(transactions, "save", forbidden_save)
+        monkeypatch.setattr(WorkspacePatchActionExecutor, "execute", forbidden_execute)
+        modes = [(root / item.path).stat().st_mode for item in no_change_proposal(count).files]
+        thread, turn, call = await patch_turn(runtime, provider, root, no_change_proposal(count))
+        output = result(turn)
+        assert turn.status is TurnStatus.COMPLETED and output.outcome == "failed"
+        assert output.error.code == "delivery_no_change" and not output.error.retryable
+        assert output.error.message == "Workspace事务包含无变化文件"
+        assert "internal-no-change-canary" not in turn.model_dump_json()
+        assert not any(
+            isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
+        )
+        plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
+        assert router.status(plan_id).state == "denied"
+        decision = router.approval(plan_id).decision
+        assert (decision.outcome, decision.actor, decision.reason) == (
+            ApprovalOutcome.REJECTED,
+            "system.validation",
+            "delivery_no_change",
+        )
+        assert all(event.executor_id is None for event in router.events(plan_id))
+        with pytest.raises(KernelError) as missing:
+            transactions.load(plan_id)
+        assert missing.value.code == "delivery_transaction_not_found"
+        with pytest.raises(KernelError) as conflict:
+            router.decide(plan_id, ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="user"))
+        assert conflict.value.code == "approval_conflict"
+        assert modes == [
+            (root / item.path).stat().st_mode for item in no_change_proposal(count).files
+        ]
+        assert_unchanged(root)
+
+
+@pytest.mark.parametrize("change", ["mode-only", "content"])
+async def test_real_change_still_requires_approval_and_executes(tmp_path, change):
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        target = root / "src/modified.py"
+        proposal = no_change_proposal()
+        item = proposal.files[0].model_copy(
+            update={"mode": 0o755} if change == "mode-only" else {"content": "new\n"}
+        )
+        proposal = proposal.model_copy(update={"files": (item,)})
+        thread, waiting, _ = await patch_turn(runtime, provider, root, proposal)
+        assert waiting.status is TurnStatus.WAITING_APPROVAL
+        approval = _approval(waiting)
+        assert router.status(approval.plan_id).state == "pending_approval"
+        assert target.read_bytes() == b"old\n" and target.stat().st_mode & 0o777 == 0o644
+        assert transactions.load(approval.plan_id).state == "prepared"
+        await runtime.reply_approval(
+            thread.thread_id,
+            waiting.turn_id,
+            approval.approval_id,
+            fingerprint=approval.request_fingerprint,
+            decision=ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="user"),
+        )
+        completed = await runtime.resume_turn(thread.thread_id, waiting.turn_id)
+        assert completed.status is TurnStatus.COMPLETED and result(completed).outcome == "succeeded"
+        assert router.status(approval.plan_id).state == "succeeded"
+        assert target.read_bytes() == item.content.encode()
+        assert target.stat().st_mode & 0o777 == item.mode
+
+
+@pytest.mark.parametrize("no_change_first", [False, True])
+async def test_mixed_batch_preserves_original_no_change_rejection(tmp_path, no_change_first):
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        # 原Planner拒绝包含no-op的整批；不删项执行，也不声称其余项均无变化。
+        original = _proposal()
+        files = (
+            no_change_proposal().files[0] if no_change_first else original.files[0],
+            original.files[2].model_copy(
+                update={
+                    "operation": "replace",
+                    "content": "changed\n" if no_change_first else "remove\n",
+                    "mode": 0o644,
+                }
+            ),
+        )
+        thread, turn, call = await patch_turn(
+            runtime, provider, root, original.model_copy(update={"files": files})
+        )
+        plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
+        assert turn.status is TurnStatus.COMPLETED and result(turn).outcome == "failed"
+        assert result(turn).error.code == "delivery_no_change"
+        assert router.status(plan_id).state == "denied"
+        assert router.approval(plan_id).decision.outcome is ApprovalOutcome.REJECTED
+        assert all(event.executor_id is None for event in router.events(plan_id))
+        assert not any(
+            isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
+        )
+        with pytest.raises(KernelError) as missing:
+            transactions.load(plan_id)
+        assert missing.value.code == "delivery_transaction_not_found"
+        assert_unchanged(root)
+
+
+@pytest.mark.parametrize("invalid", ["wrong-sha", "create-existing", "delete-missing"])
+async def test_equal_images_do_not_bypass_operation_or_sha_checks(tmp_path, invalid):
+    async with product(tmp_path) as (root, runtime, provider, router, _, _, _):
+        proposal = no_change_proposal()
+        updates = (
+            {"expected_sha256": "0" * 64}
+            if invalid == "wrong-sha"
+            else {"operation": "create", "expected_sha256": None}
+            if invalid == "create-existing"
+            else {"operation": "delete", "path": "missing.txt", "content": None, "mode": None}
+        )
+        proposal = proposal.model_copy(
+            update={"files": (proposal.files[0].model_copy(update=updates),)}
+        )
+        thread, turn, call = await patch_turn(runtime, provider, root, proposal)
+        plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
+        assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
+        assert router.status(plan_id).state == "pending_approval"
+        assert router.approval(plan_id) is None
+        assert_unchanged(root)
 
 
 @pytest.mark.parametrize("operation", ["replace", "delete"])
@@ -140,6 +309,163 @@ class DerivedPreconditionError(WorkspacePatchPreconditionError):
     pass
 
 
+class DerivedNoChangeError(WorkspacePatchNoChangeError):
+    pass
+
+
+@pytest.mark.parametrize("origin", [None, True, object()], ids=["none", "boolean", "foreign"])
+def test_direct_no_change_error_cannot_forge_native_marker(origin):
+    error = WorkspacePatchNoChangeError()
+    error._no_change_origin = origin
+    error.unchanged_path = "src/modified.py"
+    error.unchanged_sha256 = _proposal().files[0].expected_sha256
+    error.unchanged_mode = 0o644
+    error.review_plan_id = uuid4()
+    assert not is_workspace_patch_no_change(error)
+    assert not is_workspace_patch_no_change(DerivedNoChangeError())
+
+
+@pytest.mark.parametrize(
+    "invalid", ["wrong-plan", "forged-marker", "artifact-origin", "wrong-content", "wrong-mode"]
+)
+async def test_no_change_origin_requires_original_preparation_and_bound_plan(
+    tmp_path, monkeypatch, invalid
+):
+    async with product(tmp_path) as (root, runtime, provider, router, _, _, artifacts):
+        if invalid == "artifact-origin":
+
+            async def fail_publication(*_args, **_kwargs):
+                raise original_no_change_error(root)
+
+            monkeypatch.setattr(artifacts, "publish_action_review", fail_publication)
+            proposal = _proposal()
+        elif invalid == "forged-marker":
+
+            def fail_prepare(*_args, **_kwargs):
+                error = WorkspacePatchNoChangeError()
+                error._no_change_origin = True
+                error.unchanged_path = "src/modified.py"
+                error.unchanged_sha256 = _proposal().files[0].expected_sha256
+                error.unchanged_mode = 0o644
+                raise error
+
+            monkeypatch.setattr(WorkspacePatchTransactionPlanner, "prepare", fail_prepare)
+            proposal = no_change_proposal()
+        elif invalid in {"wrong-content", "wrong-mode"}:
+            original = WorkspacePatchTransactionPlanner.prepare
+
+            def mismatched_proof(self, route, proposal, **kwargs):
+                try:
+                    return original(self, route, proposal, **kwargs)
+                except WorkspacePatchNoChangeError as error:
+                    # 保留原生origin，只改Review接到的内容或mode；不得借proof绑定其他参数。
+                    item = proposal.files[0].model_copy(
+                        update={"content": "new\n"}
+                        if invalid == "wrong-content"
+                        else {"mode": 0o755}
+                    )
+                    object.__setattr__(proposal, "files", (item,))
+                    raise error
+
+            monkeypatch.setattr(WorkspacePatchTransactionPlanner, "prepare", mismatched_proof)
+            proposal = no_change_proposal()
+        else:
+            original = WorkspacePatchReviewProvider.review
+
+            async def wrong_plan(self, *args):
+                try:
+                    return await original(self, *args)
+                except WorkspacePatchNoChangeError as error:
+                    assert is_workspace_patch_no_change(error) and error.review_plan_id is not None
+                    error.review_plan_id = uuid4()
+                    raise
+
+            monkeypatch.setattr(WorkspacePatchReviewProvider, "review", wrong_plan)
+            proposal = no_change_proposal()
+        thread, turn, call = await patch_turn(runtime, provider, root, proposal)
+        plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
+        assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
+        assert router.status(plan_id).state == "pending_approval"
+        assert router.approval(plan_id) is None
+        assert all(event.executor_id is None for event in router.events(plan_id))
+        assert_unchanged(root)
+
+
+@pytest.mark.parametrize("generation", [1, 2])
+@pytest.mark.parametrize("batch", ["whole", "mixed-noop-first", "mixed-change-first"])
+def test_native_no_change_proof_identifies_first_unchanged_file(tmp_path, generation, batch):
+    from harnessix.delivery.planner_v2 import prepare_workspace_transaction_v2
+
+    for name in ("a.txt", "z.txt"):
+        (tmp_path / name).write_bytes(b"old\n")
+        (tmp_path / name).chmod(0o644)
+    desired = {
+        "a.txt": DesiredWorkspaceFile(
+            b"new\n" if batch == "mixed-change-first" else b"old\n", 0o644
+        ),
+        "z.txt": DesiredWorkspaceFile(b"new\n" if batch == "mixed-noop-first" else b"old\n", 0o644),
+    }
+    blobs = {}
+    kwargs = (
+        {
+            "checkpoint": lambda: None,
+            "write_blob": blobs.__setitem__,
+            "read_blob": blobs.__getitem__,
+        }
+        if generation == 2
+        else {}
+    )
+    prepare = prepare_workspace_transaction_v2 if generation == 2 else prepare_workspace_transaction
+    with pytest.raises(KernelError) as caught:
+        prepare(tmp_path, desired, request_id="whole-batch-proof", **kwargs)
+    assert is_workspace_patch_no_change(caught.value)
+    assert caught.value.unchanged_path == ("z.txt" if batch == "mixed-change-first" else "a.txt")
+    assert caught.value.unchanged_mode == 0o644
+    assert caught.value.review_plan_id is None
+    assert all((tmp_path / name).read_bytes() == b"old\n" for name in desired)
+
+
+@pytest.mark.parametrize("generation", [1, 2])
+@pytest.mark.parametrize("no_change_first", [False, True])
+def test_original_fail_fast_order_does_not_read_later_mutation(
+    tmp_path, monkeypatch, generation, no_change_first
+):
+    from harnessix.delivery import planner
+    from harnessix.delivery.planner_v2 import prepare_workspace_transaction_v2
+
+    file_path, directory_path = ("a.txt", "z.txt") if no_change_first else ("z.txt", "a.txt")
+    (tmp_path / file_path).write_bytes(b"old\n")
+    (tmp_path / file_path).chmod(0o644)
+    (tmp_path / directory_path).mkdir()
+    reads = []
+    original_read = planner._read_existing
+
+    def read_existing(root, path, platform, **kwargs):
+        reads.append(path)
+        return original_read(root, path, platform, **kwargs)
+
+    monkeypatch.setattr(planner, "_read_existing", read_existing)
+    desired = {path: DesiredWorkspaceFile(b"old\n", 0o644) for path in ("a.txt", "z.txt")}
+    blobs = {}
+    kwargs = (
+        {
+            "checkpoint": lambda: None,
+            "write_blob": blobs.__setitem__,
+            "read_blob": blobs.__getitem__,
+        }
+        if generation == 2
+        else {}
+    )
+    prepare = prepare_workspace_transaction_v2 if generation == 2 else prepare_workspace_transaction
+    with pytest.raises(KernelError) as caught:
+        prepare(tmp_path, desired, request_id="original-failure-order", **kwargs)
+    assert caught.value.code == (
+        "delivery_no_change" if no_change_first else "delivery_path_denied"
+    )
+    assert is_workspace_patch_no_change(caught.value) is no_change_first
+    assert reads == ([file_path] if no_change_first else [])
+
+
 @pytest.mark.parametrize("origin", [None, True, object()], ids=["none", "boolean", "foreign"])
 def test_direct_typed_error_has_no_original_sha_identity(origin):
     error = WorkspacePatchPreconditionError()
@@ -152,16 +478,18 @@ def test_direct_typed_error_has_no_original_sha_identity(origin):
 @pytest.mark.parametrize(
     "kind", ["same-code", "subclass", "review-runtime", "artifact-typed", "typed-prepare"]
 )
-async def test_non_sha_review_errors_remain_unknown(tmp_path, monkeypatch, kind):
+@pytest.mark.parametrize("no_change", [False, True])
+async def test_non_sha_review_errors_remain_unknown(tmp_path, monkeypatch, kind, no_change):
     async with product(tmp_path) as (root, runtime, provider, router, transactions, _, artifacts):
+        error_type = WorkspacePatchNoChangeError if no_change else WorkspacePatchPreconditionError
         error = (
-            DerivedPreconditionError()
+            (DerivedNoChangeError() if no_change else DerivedPreconditionError())
             if kind == "subclass"
-            else WorkspacePatchPreconditionError()
+            else error_type()
             if kind in {"artifact-typed", "typed-prepare"}
             else RuntimeError("internal-path-canary")
             if kind == "review-runtime"
-            else KernelError(CODE, "internal-path-canary", retryable=True)
+            else KernelError(error_type().code, "internal-path-canary", retryable=True)
         )
         if kind == "artifact-typed":
 
@@ -188,18 +516,22 @@ async def test_non_sha_review_errors_remain_unknown(tmp_path, monkeypatch, kind)
         assert_unchanged(root)
 
 
-@pytest.mark.parametrize("kind", ["same-code", "typed", "forged-review-origin"])
-async def test_replacement_callback_cannot_claim_builtin_sha_rejection(tmp_path, kind):
+@pytest.mark.parametrize("kind", ["same-code", "typed", "forged-review-origin", "native-origin"])
+@pytest.mark.parametrize("no_change", [False, True])
+async def test_replacement_callback_cannot_claim_builtin_sha_rejection(tmp_path, kind, no_change):
     async with product(tmp_path) as (root, runtime, provider, router, _, composition, _):
+        error_type = WorkspacePatchNoChangeError if no_change else WorkspacePatchPreconditionError
 
         class ExtensionReview:
             async def review(self, route, *_args):
                 error = (
-                    KernelError(CODE, "callback-canary")
+                    KernelError(error_type().code, "callback-canary")
                     if kind == "same-code"
-                    else (WorkspacePatchPreconditionError())
+                    else original_no_change_error(root)
+                    if kind == "native-origin" and no_change
+                    else error_type()
                 )
-                if kind == "forged-review-origin":
+                if kind in {"forged-review-origin", "native-origin"}:
                     error.review_plan_id = route.plan.execution.plan_id
                 raise error
 
@@ -268,7 +600,8 @@ async def test_other_tool_and_extension_review_errors_are_not_downgraded(tmp_pat
 @pytest.mark.parametrize(
     "race", ["approved-during-review", "approval-cas", "route-cas", "not-closed"]
 )
-async def test_rejection_requires_successful_route_close(tmp_path, monkeypatch, race):
+@pytest.mark.parametrize("no_change", [False, True])
+async def test_rejection_requires_successful_route_close(tmp_path, monkeypatch, race, no_change):
     async with product(tmp_path) as (root, runtime, provider, router, _, _, _):
         other_plans = SQLiteExecutionPlanStore(tmp_path / "state/plans.db")
         other_audit = SQLiteActionAuditStore(tmp_path / "state/audit.db")
@@ -284,7 +617,7 @@ async def test_rejection_requires_successful_route_close(tmp_path, monkeypatch, 
         async def held_review(self, *args):
             try:
                 return await original_review(self, *args)
-            except WorkspacePatchPreconditionError:
+            except (WorkspacePatchPreconditionError, WorkspacePatchNoChangeError):
                 entered.set()
                 await release.wait()
                 raise
@@ -306,7 +639,11 @@ async def test_rejection_requires_successful_route_close(tmp_path, monkeypatch, 
             monkeypatch.setattr(router._audit, "transition", failed_transition)
         else:
             monkeypatch.setattr(router, "decide", lambda plan_id, *_args: router.status(plan_id))
-        task = asyncio.create_task(patch_turn(runtime, provider, root, bad_proposal()))
+        task = asyncio.create_task(
+            patch_turn(
+                runtime, provider, root, no_change_proposal() if no_change else bad_proposal()
+            )
+        )
         try:
             async with asyncio.timeout(5):
                 if race == "approved-during-review":
@@ -317,7 +654,7 @@ async def test_rejection_requires_successful_route_close(tmp_path, monkeypatch, 
                 thread, turn, call = await task
             plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
             assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
-            assert result(turn).error.code != CODE
+            assert result(turn).error.code != ("delivery_no_change" if no_change else CODE)
             checkpoint = router.approval(plan_id)
             if race in {"approved-during-review", "approval-cas"}:
                 assert router.status(plan_id).state == "ready"
@@ -336,7 +673,7 @@ async def test_rejection_requires_successful_route_close(tmp_path, monkeypatch, 
             other_audit.close()
 
 
-@pytest.mark.parametrize("kind", ["same-code", "typed"])
+@pytest.mark.parametrize("kind", ["same-code", "typed", "native-no-change"])
 async def test_executor_error_is_still_unknown_after_approval(tmp_path, monkeypatch, kind):
     async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
         thread, waiting, _ = await patch_turn(runtime, provider, root, _proposal())
@@ -347,6 +684,10 @@ async def test_executor_error_is_still_unknown_after_approval(tmp_path, monkeypa
         async def fail_execute(*_args):
             nonlocal calls
             calls += 1
+            if kind == "native-no-change":
+                error = original_no_change_error(root)
+                error.review_plan_id = request.plan_id
+                raise error
             raise (
                 WorkspacePatchPreconditionError()
                 if kind == "typed"
@@ -373,8 +714,9 @@ async def test_executor_error_is_still_unknown_after_approval(tmp_path, monkeypa
 @pytest.mark.parametrize(
     "state", ["unmarked-pending", "approved-pending", "ready", "running", "unknown"]
 )
+@pytest.mark.parametrize("no_change", [False, True])
 async def test_stale_review_cannot_downgrade_approved_or_started_route(
-    tmp_path, monkeypatch, state
+    tmp_path, monkeypatch, state, no_change
 ):
     async with product(tmp_path) as (root, runtime, provider, router, transactions, composition, _):
         _, waiting, call = await patch_turn(runtime, provider, root, _proposal())
@@ -401,8 +743,10 @@ async def test_stale_review_cannot_downgrade_approved_or_started_route(
             router.events(plan_id),
             router.approval(plan_id),
         )
-        error = WorkspacePatchPreconditionError()
-        if state != "unmarked-pending":
+        error = WorkspacePatchNoChangeError() if no_change else WorkspacePatchPreconditionError()
+        if state != "unmarked-pending" and no_change:
+            error = original_no_change_error(root)
+        elif state != "unmarked-pending":
             record = transactions.load(plan_id)
             mutation = next(
                 item for item in record.plan.mutations if item.path == "src/modified.py"
@@ -451,7 +795,10 @@ async def test_only_original_before_sha_check_uses_dedicated_type(tmp_path):
             assert generic.value.message == "Workspace Patch前置条件不成立"
 
 
-async def test_denied_route_recovers_before_failed_result_is_persisted(tmp_path, monkeypatch):
+@pytest.mark.parametrize("no_change", [False, True])
+async def test_denied_route_recovers_before_failed_result_is_persisted(
+    tmp_path, monkeypatch, no_change
+):
     class HostInterrupted(BaseException):
         pass
 
@@ -476,7 +823,7 @@ async def test_denied_route_recovers_before_failed_result_is_persisted(tmp_path,
             "_state",
             replace(runtime._trusted_actions._state, fault=stop_before_result),
         )
-        provider.steps = (_action_step(bad_proposal()),)
+        provider.steps = (_action_step(no_change_proposal() if no_change else bad_proposal()),)
         thread = await runtime.create_thread(str(root))
         with pytest.raises(HostInterrupted):
             await runtime.run_turn(thread.thread_id, "修改文件", request_id="denied-gap")

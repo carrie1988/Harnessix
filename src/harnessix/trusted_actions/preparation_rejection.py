@@ -5,7 +5,9 @@ from __future__ import annotations
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import ToolCallContent, ToolResultContent, Turn, TurnStatus
 from harnessix.delivery.workspace_patch_errors import (
+    WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
+    is_workspace_patch_no_change,
     is_workspace_patch_sha_mismatch,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
@@ -21,11 +23,16 @@ def workspace_patch_preparation_rejection(
     route: ActionRouteSnapshot,
     provider: object,
 ) -> ToolResultContent | None:
-    """仅原内置Review的确定SHA拒绝，成功关闭原Route后才报告failed。"""
+    """仅原内置Review的确定SHA/包含no-op拒绝，关闭原Route后才报告failed。"""
 
     if (
-        type(rejection) is not WorkspacePatchPreconditionError
-        or not is_workspace_patch_sha_mismatch(rejection)
+        (
+            type(rejection) is not WorkspacePatchPreconditionError
+            and type(rejection) is not WorkspacePatchNoChangeError
+        )
+        or not (
+            is_workspace_patch_sha_mismatch(rejection) or is_workspace_patch_no_change(rejection)
+        )
         or rejection.review_plan_id != route.plan.execution.plan_id
         or route.state != "pending_approval"
         or route.plan.binding != binding
@@ -46,7 +53,11 @@ def workspace_patch_preparation_rejection(
         or router.approval(plan_id) is not None
     ):
         return None
-    failure = WorkspacePatchPreconditionError().to_failure()
+    failure = (
+        WorkspacePatchPreconditionError()
+        if is_workspace_patch_sha_mismatch(rejection)
+        else WorkspacePatchNoChangeError()
+    ).to_failure()
     closed = router.decide(
         plan_id,
         ApprovalDecision(

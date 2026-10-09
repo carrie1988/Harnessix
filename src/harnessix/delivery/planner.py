@@ -22,6 +22,7 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionPlan,
     workspace_transaction_plan_fingerprint,
 )
+from harnessix.delivery.workspace_patch_errors import _no_change_error
 from harnessix.tools.workspace import ReadOperation, Workspace
 from harnessix.workspace.contracts import (
     PlatformKind,
@@ -123,6 +124,7 @@ def _prepare_mutations(
         if checkpoint is not None:
             checkpoint()
         observed = observations[(path, "write")]
+        before_body: bytes | None = None
         if observed.kind == "directory":
             raise KernelError("delivery_path_denied", "Workspace事务目标不能是目录")
         if observed.kind == "file":
@@ -145,6 +147,13 @@ def _prepare_mutations(
                 raise KernelError("delivery_plan_invalid", "Workspace事务目标摘要缺失")
             blobs[after.sha256] = target.content
         if before == after:
+            if (
+                before.presence == "file"
+                and before.sha256 is not None
+                and before.mode is not None
+                and before_body == target.content
+            ):
+                raise _no_change_error(path, before.sha256, before.mode)
             raise KernelError("delivery_no_change", "Workspace事务包含无变化文件")
         mutations.append(WorkspaceMutation(path=path, before=before, after=after))
     return tuple(mutations), blobs

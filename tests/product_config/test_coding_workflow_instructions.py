@@ -61,7 +61,7 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v8"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v9"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
@@ -131,7 +131,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v8"
+        assert fragment["source"] == "harnessix.coding-instructions/v9"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint
@@ -139,3 +139,11 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         assert restored.turns[-1].context_inspections[0].instruction_fingerprint == fingerprint
         fingerprints.append(fingerprint)
     assert fingerprints[0] == fingerprints[1]
+
+
+def test_workflow_starts_with_baseline_and_uses_given_paths() -> None:
+    """通用诊断顺序提示，不把提示词当强制安全边界或实测提效。"""
+    text = " ".join(CODING_INSTRUCTIONS.split())
+    assert text.index("observe the pre-edit baseline") < text.index("Read source/tests")
+    assert "use given paths directly, search only if unclear" in text
+    assert "if sufficient, do not reread its Artifact" in text

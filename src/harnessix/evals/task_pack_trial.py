@@ -171,6 +171,29 @@ def _require_allowed_approval(
     return "patch"
 
 
+def _approval_decision(
+    turn: Turn,
+    approval: TrustedActionApprovalRequestContent,
+    case: CodingEvalTaskPackCase,
+) -> tuple[str, ApprovalDecision]:
+    """固定策略拒绝经原Runtime持久结算；身份/投影错误仍中止，不扩大允许项。"""
+    try:
+        kind = _require_allowed_approval(turn, approval, case)
+    except KernelError as error:
+        if error.code != "eval_approval_denied":
+            raise
+        return "rejected", ApprovalDecision(
+            outcome=ApprovalOutcome.REJECTED,
+            actor=_AUTOMATED_APPROVAL_ACTOR,
+            reason="Task Pack固定审批边界拒绝该请求",
+        )
+    return kind, ApprovalDecision(
+        outcome=ApprovalOutcome.APPROVED,
+        actor=_AUTOMATED_APPROVAL_ACTOR,
+        reason="Task Pack固定边界内的自动评测审批",
+    )
+
+
 async def _await_cancel[T](operation: Awaitable[T], cancel: CancelToken) -> T:
     return await cancel.run(operation)
 
@@ -219,18 +242,14 @@ async def _drive_turn(
             if approval is None:
                 turn = await _await_cancel(runtime.resume_turn(thread_id, turn.turn_id), cancel)
                 continue
-            kind = _require_allowed_approval(turn, approval, case)
+            kind, decision = _approval_decision(turn, approval, case)
             turn = await _await_cancel(
                 runtime.reply_approval(
                     thread_id,
                     turn.turn_id,
                     approval.approval_id,
                     fingerprint=approval.request_fingerprint,
-                    decision=ApprovalDecision(
-                        outcome=ApprovalOutcome.APPROVED,
-                        actor=_AUTOMATED_APPROVAL_ACTOR,
-                        reason="Task Pack固定边界内的自动评测审批",
-                    ),
+                    decision=decision,
                 ),
                 cancel,
             )

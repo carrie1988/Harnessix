@@ -104,6 +104,9 @@ class _Probe:
         self.parent = None
         self.history_control = None
         self.source_control = None
+        self.file_path = None
+        self.file_checkpoints = []
+        self.file_io_hook = None
         self.child = None
         self.readonly = False
         self.deadline = None
@@ -113,14 +116,36 @@ class _Probe:
         self.events.append((mode, self.phase, detail))
 
     def full(self):
-        self.record("full")
-        if self.full_hook is not None:
-            self.full_hook()
+        previous = self.phase
+        if self.file_path is not None:
+            self.phase = "file"
+        try:
+            self.record("full")
+            if self.full_hook is not None:
+                self.full_hook()
+        finally:
+            self.phase = previous
 
     def observer(self):
+        if self.file_path is not None and self.phase == "file-source":
+            # _segments_check 在 _read_existing 返回后还有一次原局部出口检查。
+            self.file_progress(self._observe)
+        else:
+            self._observe()
+
+    def _observe(self):
         self.record("observer")
         if self.observer_hook is not None:
             self.observer_hook()
+
+    def file_progress(self, checkpoint):
+        previous, self.phase = self.phase, "file-progress"
+        self.record("file-checkpoint-enter", self.file_path)
+        try:
+            checkpoint()
+        finally:
+            self.record("file-checkpoint-exit", self.file_path)
+            self.phase = previous
 
     def forbidden_parent_local(self):
         pytest.fail("collector 不得借任意父控制的 local_check")
@@ -244,6 +269,7 @@ def _observe_real_io(monkeypatch, case):
     original_history = snapshots.read_workspace_parent_closure
     original_snapshot = source.capture_workspace_snapshot_v2
     original_file = source._read_existing
+    original_source_file = source._read_source_file
     original_observe = native._PosixRoot.observe
     original_read = case.store._read_blob
     original_write = case.ports.write_blob
@@ -286,10 +312,55 @@ def _observe_real_io(monkeypatch, case):
     def file(*args, **kwargs):
         previous, probe.phase = probe.phase, "file"
         probe.record("file-read", args[1])
+        checkpoint = kwargs.get("checkpoint")
+        if checkpoint is not None:
+            probe.file_checkpoints.append(checkpoint)
+
+            def progress():
+                # 旧 file 宽段包含原生端口的无 I/O checkpoint；只隔离这次原委托。
+                probe.file_progress(checkpoint)
+
+            kwargs = {**kwargs, "checkpoint": progress}
         try:
             return original_file(*args, **kwargs)
         finally:
             probe.phase = previous
+
+    def source_file(root, path, platform, checkpoint):
+        # _read_existing 外的原段首末 full 也属于文件边界，不能漏测。
+        previous, probe.phase = probe.phase, "file"
+        previous_path, probe.file_path = probe.file_path, path
+        probe.record("file-source-enter", path)
+        probe.phase = "file-source"
+        try:
+            return original_source_file(root, path, platform, checkpoint)
+        finally:
+            probe.phase = "file"
+            probe.record("file-source-exit", path)
+            probe.phase, probe.file_path = previous, previous_path
+
+    def physical_file_io(operation):
+        original = getattr(os, operation)
+
+        def io(*args, **kwargs):
+            if probe.file_path is None:
+                return original(*args, **kwargs)
+            # 即使 checkpoint/observer 内意外做 I/O，也必须重新落到 file 负控。
+            previous, probe.phase = probe.phase, "file"
+            detail = probe.file_path, operation
+            probe.record("file-io-enter", detail)
+            try:
+                if probe.file_io_hook is not None:
+                    probe.file_io_hook(operation, "before")
+                result = original(*args, **kwargs)
+                if probe.file_io_hook is not None:
+                    probe.file_io_hook(operation, "after")
+                return result
+            finally:
+                probe.record("file-io-exit", detail)
+                probe.phase = previous
+
+        return io
 
     def physical_read(digest):
         previous, probe.phase = probe.phase, "physical-cas"
@@ -316,6 +387,9 @@ def _observe_real_io(monkeypatch, case):
     monkeypatch.setattr(snapshots, "read_workspace_parent_closure", history)
     monkeypatch.setattr(source, "capture_workspace_snapshot_v2", snapshot)
     monkeypatch.setattr(source, "_read_existing", file)
+    monkeypatch.setattr(source, "_read_source_file", source_file)
+    for operation in ("open", "stat", "lstat", "readlink", "fstat", "read", "close"):
+        monkeypatch.setattr(os, operation, physical_file_io(operation))
     monkeypatch.setattr(native._PosixRoot, "observe", observe)
     monkeypatch.setattr(case.store, "_read_blob", physical_read)
     # 固定 audit 原 read 引用与实际操作端口，均不修改生产装配。
@@ -381,6 +455,7 @@ async def test_managed_child_uses_declared_readonly_without_rebinding_parent_and
     assert {"native", "encode"} <= phases
     assert not phases & {"cas-write", "physical-cas", "file"}
     assert any(mode == "full" and phase == "file" for mode, phase, _ in probe.events)
+    _assert_file_boundaries(probe, case.versions)
     assert sum(mode == "write" for mode, _, _ in probe.events) == 2
     bodies = {path.name: path.read_bytes() for path in case.store._blobs.iterdir()}
     with SQLiteWorkspaceTransactionStore(case.state, read_only=True) as reopened:
@@ -398,6 +473,182 @@ async def test_managed_child_uses_declared_readonly_without_rebinding_parent_and
     # 已保存的真正 native 局部端口离段后回到 full，不留下借用权限。
     probe.events.clear()
     probe.saved[0]()
+    assert any(mode == "full" for mode, _, _ in probe.events)
+    assert not any(mode == "observer" for mode, _, _ in probe.events)
+
+
+def _assert_file_boundaries(probe, versions):
+    for path in versions:
+        start = probe.events.index(("file-source-enter", "file", path))
+        end = probe.events.index(("file-source-exit", "file", path))
+        events = probe.events[start + 1 : end]
+        controls = [event for event in events if event[0] in {"full", "observer"}]
+        assert controls[0] == controls[-1] == ("full", "file", None)
+        assert sum(mode == "full" for mode, _, _ in controls) == 2
+        assert any(mode == "observer" and phase == "file-progress" for mode, phase, _ in controls)
+        assert events.index(controls[0]) < next(
+            index for index, event in enumerate(events) if event[0] == "file-io-enter"
+        )
+        assert max(index for index, event in enumerate(events) if event[0] == "file-io-exit") < (
+            len(events) - 1 - events[::-1].index(controls[-1])
+        )
+        active_io = active_checkpoint = None
+        for mode, phase, detail in events:
+            if mode == "file-checkpoint-enter":
+                assert active_io is None and active_checkpoint is None
+                active_checkpoint = detail
+            elif mode == "file-checkpoint-exit":
+                assert detail == active_checkpoint and active_io is None
+                active_checkpoint = None
+            elif mode == "file-io-enter":
+                assert phase == "file" and active_io is None and active_checkpoint is None
+                active_io = detail
+            elif mode == "file-io-exit":
+                assert detail == active_io
+                active_io = None
+            elif mode == "observer":
+                assert phase == "file-progress" and active_checkpoint == path and active_io is None
+        assert active_io is None and active_checkpoint is None
+        assert {detail[1] for mode, _, detail in events if mode == "file-io-enter"} >= {
+            "open",
+            "stat",
+            "fstat",
+            "read",
+            "close",
+        }
+
+
+@pytest.mark.parametrize("operation", ["open", "stat", "fstat", "read", "close"])
+async def test_actual_file_io_observer_mutation_still_trips_original_file_negative_control(
+    mechanism, operation
+):
+    probe = mechanism.probe
+    injected = False
+
+    def inject(actual_operation, moment):
+        nonlocal injected
+        if actual_operation == operation and moment == "before" and not injected:
+            injected = True
+            probe.observer()
+
+    probe.file_io_hook = inject
+    with pytest.raises(AssertionError, match="cas-write"):
+        await test_managed_child_uses_declared_readonly_without_rebinding_parent_and_real_cas(
+            mechanism
+        )
+    assert injected and mechanism.probe.child.done()
+    assert ("observer", "file", None) in probe.events
+    assert any(
+        mode == "file-io-enter" and detail[1] == operation for mode, _, detail in probe.events
+    )
+
+
+@pytest.mark.parametrize("boundary", ["entry", "exit"])
+async def test_file_full_auth_observer_mutation_still_trips_original_file_negative_control(
+    mechanism, boundary
+):
+    probe = mechanism.probe
+    calls = 0
+    injected = False
+
+    def full():
+        nonlocal calls, injected
+        if probe.file_path is not None:
+            calls += 1
+            if calls == (1 if boundary == "entry" else 2):
+                injected = True
+                probe.observer()
+
+    probe.full_hook = full
+    with pytest.raises(AssertionError, match="cas-write"):
+        await test_managed_child_uses_declared_readonly_without_rebinding_parent_and_real_cas(
+            mechanism
+        )
+    assert injected and ("observer", "file", None) in probe.events
+
+
+@pytest.mark.parametrize("name", _ERROR_NAMES)
+async def test_first_file_checkpoint_error_keeps_identity_without_exit_auth_or_later_io(
+    mechanism, name
+):
+    case, probe = mechanism, mechanism.probe
+    error = _error(name)
+    failed_at = None
+
+    def observer():
+        nonlocal failed_at
+        if probe.phase == "file-progress":
+            failed_at = len(probe.events)
+            raise error
+
+    def full():
+        if failed_at is not None:
+            pytest.fail("首文件 checkpoint 失败不得追加出口 full 认证")
+
+    probe.observer_hook, probe.full_hook = observer, full
+    with pytest.raises(BaseException) as caught:
+        await _invoke(case, observer=probe.observer)
+    assert caught.value is error and failed_at is not None and probe.child.done()
+    assert not any(
+        mode == "file-io-enter" and detail[1] != "close"
+        for mode, _, detail in probe.events[failed_at:]
+    )
+    assert not any(mode in {"read", "physical-read"} for mode, _, _ in probe.events[failed_at:])
+
+
+@pytest.mark.parametrize("location", ["checkpoint", "after-read"])
+@pytest.mark.parametrize("signal", ["cancel", "budget"])
+async def test_file_checkpoint_and_real_read_stop_before_next_io_on_original_signals(
+    mechanism, location, signal
+):
+    case, probe = mechanism, mechanism.probe
+    signalled_at = None
+
+    def signal_once():
+        nonlocal signalled_at
+        if signalled_at is None:
+            probe.record("file-signal", (location, signal))
+            signalled_at = len(probe.events)
+            if signal == "cancel":
+                case.cancel.cancel()
+            else:
+                case.budget._deadline = time.monotonic() - 1
+
+    def observer():
+        if probe.phase == "file-progress" and location == "checkpoint":
+            signal_once()
+
+    def io(operation, moment):
+        if operation == "read" and moment == "after" and location == "after-read":
+            signal_once()
+
+    probe.observer_hook, probe.file_io_hook = observer, io
+    with pytest.raises(TurnCancelled if signal == "cancel" else KernelError) as caught:
+        await _invoke(case, observer=probe.observer)
+    assert signalled_at is not None and probe.child.done()
+    if signal == "cancel":
+        assert case.cancel.cancelled
+    else:
+        assert caught.value.code == "git_process_timeout"
+    assert not any(
+        mode == "file-io-enter" and detail[1] != "close"
+        for mode, _, detail in probe.events[signalled_at:]
+    )
+    assert not any(
+        mode == "full" and phase == "file" for mode, phase, _ in probe.events[signalled_at:]
+    )
+    assert sum(
+        mode == "file-io-enter" and detail[1] == "read" for mode, _, detail in probe.events
+    ) == (1 if location == "after-read" else 0)
+
+
+async def test_saved_file_checkpoint_returns_to_full_after_original_segment(mechanism):
+    case, probe = mechanism, mechanism.probe
+    with pytest.raises(RuntimeError) as caught:
+        await _invoke(case, observer=probe.observer)
+    assert caught.value is probe.stop and probe.file_checkpoints
+    probe.events.clear()
+    probe.file_checkpoints[0]()
     assert any(mode == "full" for mode, _, _ in probe.events)
     assert not any(mode == "observer" for mode, _, _ in probe.events)
 
