@@ -229,3 +229,36 @@ v7 的新独立 Suite `5d865146-af93-48cc-8754-59b848f54a6d` 完整20 Trial，�
 完整20 Trial下另行实测，不回填当前1/20。
 
 最终候选非editable安装包关联回归 **1228 PASS**（三个record_property警告），564生产成员在源码／构建输入／Wheel／安装件间逐字节一致；Wheel SHA-256 `e33d6f8e804d1d519df589ce3954072bb220877629727b0ea9afa31b56404ea4`。不包含R4存量失败的旧阶段观察测试，不据此宣称全仓绿或真实质量通过。
+
+## 13. v8 中止事实与审批前确定拒绝整改
+
+新独立Suite `e1b44eec-18b1-4f50-afb3-08791b3272de`只发布14/20份报告：5 passed／3 failed／6 invalid；部分严格5个、必需测试8个，不能报成完整20评分。第八Case第七请求为`provider_rate_limit`，没有response_id/完整usage；107新增请求中106 completed、1 unknown，已知估算2.706172元、新预留20.77824元均非账单。旧记录保留且终态停止、不重试。外部原件包 `r3-feedback-quality-interrupted-20261009-v1`，清单SHA-256 `41dc49994430e2bf42443c12aa2c047e106620690040d18ea14fc07ead6b7cfa`。
+
+用户随后明确忽略该次费用、重新授予百炼验证60元。新独立周期 `9bd01f96-6db5-4c89-800a-18380eb5bb73` 从零开始；原452请求、已知估算12.329136元和41.55648元未决预留原件不改写、不假结清。新的未决仍停止，不自动追加额度。
+
+### 13.1 根因与失败语义
+
+三项`uncertain_effect`实为Patch审批前摘要不匹配：原调用目标存在，但expected_sha256不等于冻结Source摘要，且没有匹配的完整read_file证据。持久Route停在pending_approval，审批、执行操作、事务、Profile及changed_files皆0。历史内层异常已被归一化，不能把后继离线复现当历史原始错误；可确认未进入Executor，而非Docker/Profile失败。
+
+原链：`_validate_mutation`前置拒绝→Review通用错误→没有专用失败ToolResult→Runtime对未结算写调用保守unknown。整改不改全局unknown：仅原纯SHA检查的私有工厂附加进程内来源标记、原内置Review绑定Plan，Gateway核对精确类型/来源标记/Review/内置Binding及当前未批准Route，原Router拒绝CAS成功后才返回failed。错误反馈只给固定字段规则，不含参数、路径或第三方异常正文。
+
+```mermaid
+flowchart LR
+  A[冻结Source SHA校验] -->|已知不匹配| B[原Review绑定专用拒绝与Plan ID]
+  B --> C{精确来源且仍未批准}
+  C -->|是| D[原Router决定 CAS关闭Route]
+  D -->|确认denied| E[failed ToolResult 可纠正新调用]
+  C -->|否或状态竞态| F[原保守失败与unknown边界]
+```
+
+实现入口：[纯前置校验](../../src/harnessix/delivery/trusted_action.py)、[专用错误](../../src/harnessix/delivery/workspace_patch_errors.py)、[原Review](../../src/harnessix/product_config/workspace_patch_review.py)、[拒绝结算](../../src/harnessix/trusted_actions/preparation_rejection.py)。不自动批准，不修改旧Run/Route，不重放unknown，不放宽SHA或Source验证。
+
+### 13.2 无验证能力损失的wire节流
+
+[临时Schema投影](../../src/harnessix/models/_tool_schema.py)只在标准Schema节点去除字符串title注解；不删除名为title的业务属性，不改const/enum/default/examples/扩展数据、引用、必填/类型/范围。未知方言/词汇和错误类型标题原样保留。两Provider使用同一深复制投影，原ToolDescriptor、指纹、Session和输入校验不变。九个实际内置输入Schema少865 UTF-8字节，**不是Token实测或质量承诺**。原单次Context容量与累计预算未调整。
+
+### 13.3 限流处置边界
+
+[验证宿主](../../scripts/run_engineering_provider_suite_budgeted.py)可选`--minimum-request-interval-seconds`（默认0、0～60有限数），同一Suite共享[准入节奏](../../scripts/provider_verification_guard.py)，策略绑定进Provider证据指纹。等待在费用预留前，取消回收整个锁临界段；不生成已发送/费用记录，不自动重试、不延长Turn，不是跨进程或账户级限流。缺少本次服务子码，不能确定RPM/TPM或其他调用方根因；[百炼官方限流说明](https://help.aliyun.com/zh/model-studio/rate-limit)不能替代账户实际配额证据。
+
+回归：[SHA拒绝](../../tests/product_config/test_patch_precondition_rejection.py)、[Schema等价与两Provider](../../tests/models/test_tool_schema_projection.py)、[准入取消/费用/锁](../../tests/evals/test_verification_request_pacing.py)。源级定向回归分别为SHA拒绝97 PASS、Schema及映射240 PASS、准入及原费用链116 PASS。负控覆盖直接构造同类错误、泛化同code、外部Review、已批准/执行态、审批竞态；原Route拒绝后、Session失败反馈落盘前的崩溃，通过原恢复链得到failed且Executor调用0。此进程内标记不是恶意宿主Python代码的隔离边界。三类改动须以最终安装件回归和新完整20 Trial验收；不回填部分成绩、不缩小分母，缺失和业务失败均保持开放。

@@ -7,6 +7,7 @@ from typing import Any
 from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, ToolResultContent
 from harnessix.models._history import InvalidModelRequest, encode_json, messages_for, tool_alias
 from harnessix.models._json import strict_json
+from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import AnthropicConfig
 from harnessix.models.contracts import ModelRequest
 
@@ -74,7 +75,7 @@ def build_request(
             {
                 "name": alias,
                 "description": definition.name + ": " + definition.description,
-                "input_schema": definition.input_schema,
+                "input_schema": provider_tool_schema(definition.input_schema),
             }
         )
     body: dict[str, Any] = {

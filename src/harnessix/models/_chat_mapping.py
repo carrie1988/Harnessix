@@ -6,6 +6,7 @@ from typing import Any
 
 from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, ToolResultContent
 from harnessix.models._history import InvalidModelRequest, encode_json, messages_for, tool_alias
+from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelRequest
 
@@ -39,7 +40,7 @@ def build_request(
                 "function": {
                     "name": alias,
                     "description": definition.name + ": " + definition.description,
-                    "parameters": definition.input_schema,
+                    "parameters": provider_tool_schema(definition.input_schema),
                 },
             }
         )

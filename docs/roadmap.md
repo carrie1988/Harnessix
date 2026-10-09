@@ -2881,3 +2881,5 @@ v7候选`0e246773`独立Suite `5d865146-af93-48cc-8754-59b848f54a6d`完成原20 
 当前[v8目录与反馈收敛](changes/m09-r3-coding-workflow-instructions.md#12-v7-真实结果与-v8-低歧义输入反馈)只更改Provider临时名字、已验证Process反馈和等价内部指令；1228项安装回归通过，未改Task Pack／Grader／50000 Token／期限／权限。下一步新独立20 Trial，不恢复旧Suite或自动重试；新增未决费用立即停止。
 
 R4[鲜读根绑定](changes/m09-r4-git-checkpoint-preparation.md#115-根身份鲜读与完整资源快照分责)后原16文件／400目录／25层／两Patch夹具取得干净 **1 PASS**，恢复COMMIT与只读重开均通过、60／120秒不变。诊断hook纯词法缓存不作为生产收益；相关回归1704 PASS／1存量FAIL／19 skipped保留。默认Writer、B4/B7、Windows/Linux及R4整体门禁未完成，不以单夹具代替发布验收。
+
+后继v8真实Suite在百炼限流处终态中止，只发布14/20份报告、部分严格5个/测试8个；无完整总成绩，不能替代旧完整1/20。用户已明确将百炼预算重新设为60元，新周期独立登记，旧452请求及41.55648元预留原件保留、不是结清。当前优先修正[审批前确定SHA拒绝的误unknown、Schema临时节流及有界准入](changes/m09-r3-coding-workflow-instructions.md#13-v8-中止事实与审批前确定拒绝整改)，不改Task Pack/Grader/预算/期限；通过离线负控后再新完整20 Trial。最终e2964e3f安装件的R4原深目录夹具亦1 PASS，R4整体发布门禁仍开放。

@@ -26,6 +26,7 @@ from harnessix.delivery.trusted_action_contracts import (
     WorkspacePatchFile,
     WorkspacePatchInput,
 )
+from harnessix.delivery.workspace_patch_errors import _sha_mismatch_error
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import (
@@ -379,9 +380,9 @@ def _validate_mutation(item: WorkspacePatchFile, mutation: WorkspaceMutation) ->
     if item.operation == "create":
         before_valid = mutation.before.presence == "absent"
     else:
-        before_valid = (
-            mutation.before.presence == "file" and mutation.before.sha256 == item.expected_sha256
-        )
+        before_valid = mutation.before.presence == "file"
+        if before_valid and mutation.before.sha256 != item.expected_sha256:
+            raise _sha_mismatch_error()
     if item.operation == "delete":
         after_valid = mutation.after.presence == "absent"
     else:

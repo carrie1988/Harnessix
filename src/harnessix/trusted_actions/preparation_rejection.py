@@ -4,9 +4,60 @@ from __future__ import annotations
 
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import ToolCallContent, ToolResultContent, Turn, TurnStatus
+from harnessix.delivery.workspace_patch_errors import (
+    WorkspacePatchPreconditionError,
+    is_workspace_patch_sha_mismatch,
+)
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
 from harnessix.trusted_actions.router import TrustedActionRouter
+
+
+def workspace_patch_preparation_rejection(
+    router: TrustedActionRouter,
+    binding: TrustedToolBinding,
+    call: ToolCallContent,
+    rejection: Exception,
+    route: ActionRouteSnapshot,
+    provider: object,
+) -> ToolResultContent | None:
+    """仅原内置Review的确定SHA拒绝，成功关闭原Route后才报告failed。"""
+
+    if (
+        type(rejection) is not WorkspacePatchPreconditionError
+        or not is_workspace_patch_sha_mismatch(rejection)
+        or rejection.review_plan_id != route.plan.execution.plan_id
+        or route.state != "pending_approval"
+        or route.plan.binding != binding
+        or (binding.source, binding.source_id, binding.tool, binding.executor_id)
+        != ("builtin", "harnessix.product", "apply_patch_batch", "product.workspace-patch")
+    ):
+        return None
+    # Review依赖Delivery/Router；延迟导入避免把产品组合引入Router启动链。
+    from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
+
+    if type(provider) is not WorkspacePatchReviewProvider:
+        return None
+    plan_id = route.plan.execution.plan_id
+    current = router.status(plan_id)
+    if (
+        current.plan != route.plan
+        or current.state != "pending_approval"
+        or router.approval(plan_id) is not None
+    ):
+        return None
+    failure = WorkspacePatchPreconditionError().to_failure()
+    closed = router.decide(
+        plan_id,
+        ApprovalDecision(
+            outcome=ApprovalOutcome.REJECTED,
+            actor="system.validation",
+            reason=failure.code,
+        ),
+    )
+    if closed.state != "denied" or closed.plan != route.plan:
+        return None
+    return ToolResultContent(call_id=call.call_id, outcome="failed", error=failure)
 
 
 def rollback_preparation_rejection(

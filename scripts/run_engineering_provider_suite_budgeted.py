@@ -41,6 +41,7 @@ from scripts.provider_verification_guard import (
     PRICE_SOURCE,
     BailianVerificationBounds,
     GuardedVerificationProvider,
+    VerificationRequestPacer,
 )
 
 
@@ -216,6 +217,7 @@ async def run_budgeted_suite(
     keychain_service: str | None = None,
     keychain_account: str | None = None,
     reverification_id: UUID | None = None,
+    minimum_request_interval_seconds: float = 0,
 ) -> CodingEvalSuiteRunReport:
     if allow_network is not True:
         raise KernelError("eval_provider_suite_network_disabled", "真实Provider Suite默认禁止网络")
@@ -225,6 +227,7 @@ async def run_budgeted_suite(
     bounds = _bounds(checked)
     _require_scope(checked, None)
     _require_images(checked)
+    pacer = VerificationRequestPacer(minimum_request_interval_seconds)
     cancellation = CancelToken()
     with VerificationBudgetLedger(
         budget_path,
@@ -237,7 +240,7 @@ async def run_budgeted_suite(
         @asynccontextmanager
         async def factory(*_: object) -> AsyncIterator[ModelProvider]:
             async with OpenAIChatProvider(checked.provider_config, api_key=key) as provider:
-                yield GuardedVerificationProvider(provider, ledger, bounds, cancellation)
+                yield GuardedVerificationProvider(provider, ledger, bounds, cancellation, pacer)
 
         with provider_publication_scope(checked.provider_config.api_key_env, key) as scope:
             return await run_task_pack_provider_suite(
@@ -246,7 +249,7 @@ async def run_budgeted_suite(
                 resume=resume,
                 cancel=cancellation,
                 provider_factory=factory,
-                provider_binding_sha256=bounds.fingerprint(ledger),
+                provider_binding_sha256=bounds.fingerprint(ledger, pacer=pacer),
                 publication_scope=scope,
             )
 
@@ -270,6 +273,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--keychain-service")
     parser.add_argument("--keychain-account")
+    parser.add_argument("--minimum-request-interval-seconds", type=float, default=0)
     arguments = parser.parse_args(argv)
     if not arguments.allow_network:
         print('{"reason":"network_not_enabled"}')
@@ -292,6 +296,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 keychain_service=arguments.keychain_service,
                 keychain_account=arguments.keychain_account,
                 reverification_id=arguments.reverification_id,
+                minimum_request_interval_seconds=arguments.minimum_request_interval_seconds,
             )
         )
         result = report.model_dump(mode="json")
@@ -306,6 +311,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "verification_source_checkout_unavailable",
             "verification_image_unavailable",
             "verification_credentials_unavailable",
+            "verification_request_pacing_invalid",
             "verification_budget_busy",
             "verification_budget_unavailable",
             "verification_budget_unresolved",

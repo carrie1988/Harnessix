@@ -50,6 +50,7 @@ from harnessix.trusted_actions.legacy_projection import project_legacy_terminal
 from harnessix.trusted_actions.preparation_rejection import (
     cancel_pending_approval,
     rollback_preparation_rejection,
+    workspace_patch_preparation_rejection,
 )
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
 from harnessix.trusted_actions.router import ActionPlanningContext, TrustedActionRouter
@@ -189,6 +190,11 @@ async def prepare_action(
             except TurnCancelled:
                 raise
             except Exception as error:
+                result = workspace_patch_preparation_rejection(
+                    router, binding, call, error, route, provider
+                )
+                if result is not None:
+                    return result
                 rejection = sanitize_gateway_exception(error, stage="review")
                 result = rollback_preparation_rejection(router, binding, call, rejection, route)
                 if result is not None:

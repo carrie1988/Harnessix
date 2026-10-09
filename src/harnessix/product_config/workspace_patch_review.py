@@ -21,6 +21,10 @@ from harnessix.delivery.trusted_action_contracts import (
     WorkspacePatchInput,
     build_workspace_action_review,
 )
+from harnessix.delivery.workspace_patch_errors import (
+    WorkspacePatchPreconditionError,
+    is_workspace_patch_sha_mismatch,
+)
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot
 
 _ACTION_REVIEW_NAMESPACE = UUID("2beb71e9-794e-4ffb-a789-f1d19fecc9f9")
@@ -68,9 +72,15 @@ class WorkspacePatchReviewProvider:
         ):
             raise KernelError("trusted_action_review_invalid", "Action Review与Route不匹配")
         proposal = decode_workspace_patch_input(route.plan.invocation.arguments)
-        record = self._planner.prepare(
-            route.plan, proposal, checkpoint=parent_cancel_checkpointer(cancel.checkpoint)
-        )
+        try:
+            record = self._planner.prepare(
+                route.plan, proposal, checkpoint=parent_cancel_checkpointer(cancel.checkpoint)
+            )
+        except WorkspacePatchPreconditionError as error:
+            if is_workspace_patch_sha_mismatch(error):
+                # 只绑定原纯校验路径；Artifact发布或扩展回调不能借同码宣称未执行。
+                error.review_plan_id = route.plan.execution.plan_id
+            raise
         return await publish_workspace_review(
             route,
             thread,

@@ -544,6 +544,8 @@ foreign Task／线程仍走原 `capture_snapshot_facts`，保持原成员观察�
 
 原深目录后继v31在同一qualified安装件下 **1 PASS、exit=0**：八项审批／COMMIT／原锁／只读重开／无新增效果断言全部通过，未调整60／120秒。诊断hook只缓存纯词法路径，cwd变化立即撤销，689项等价比较与两个真实cwd负控通过；不缓存准入或身份，不称为生产加速。v29业务失败、v30清理失败保留。外部证据 `r4-root-binding-deep-recovery-20261009-v1`，清单SHA-256 `188b982fcb6fc412b901508b9da2feac03c493680ed496c24d183136342a939c`。此单夹具不关闭默认Writer、B4/B7、三平台或R4整体门禁。
 
+最终合并候选e2964e3f（Wheel e33d6f8）原夹具独立v32也取得1 PASS、exit=0，Junit套件120.843秒（含夹具生命周期，不等同Turn耗时）；八项原断言与60／120秒均保持。外部权威包 `r4-root-binding-deep-recovery-20261009-v3`，清单SHA-256 `e4828fcd1566706c7f39a18f5d060ddaef20c6854d5103313af5ee5f8ed6d73b`。v2元数据计时录入错误保留但不作为权威，v3改用原XML；v31及所有旧FAIL保留。
+
 ## 2. 设计目标、范围、非目标与验收标准
 
 ### 2.1 设计目标

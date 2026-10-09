@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import math
 from collections.abc import AsyncGenerator
 from contextlib import aclosing
 from dataclasses import dataclass
@@ -22,6 +24,41 @@ from scripts.provider_verification_budget import VerificationBudgetLedger
 
 MODEL = "qwen3-coder-plus-2025-09-23"
 PRICE_SOURCE = "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus"
+
+
+class VerificationRequestPacer:
+    """同一验证 Suite 的发送间隔；不是账户级限流，也不重试或延长 Turn。"""
+
+    def __init__(self, minimum_interval_seconds: float) -> None:
+        if (
+            type(minimum_interval_seconds) not in {int, float}
+            or not math.isfinite(minimum_interval_seconds)
+            or not 0 <= minimum_interval_seconds <= 60
+        ):
+            raise KernelError("verification_request_pacing_invalid", "验证发送间隔无效")
+        self._minimum_interval_seconds = float(minimum_interval_seconds)
+        self._next_start = 0.0
+        self._lock = asyncio.Lock()
+
+    async def wait(self, cancel: CancelToken, suite_cancel: CancelToken) -> None:
+        cancel.checkpoint()
+        suite_cancel.checkpoint()
+        # 托管整个临界段，而非单独 acquire，避免取消竞态遗留已获取的锁。
+        await cancel.run(suite_cancel.run(self._wait()))
+        cancel.checkpoint()
+        suite_cancel.checkpoint()
+
+    @property
+    def minimum_interval_seconds(self) -> float:
+        return self._minimum_interval_seconds
+
+    async def _wait(self) -> None:
+        async with self._lock:
+            loop = asyncio.get_running_loop()
+            delay = self._next_start - loop.time()
+            if delay > 0:
+                await asyncio.sleep(delay)
+            self._next_start = loop.time() + self.minimum_interval_seconds
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,7 +106,9 @@ class BailianVerificationBounds:
         )
         return (usage.input_tokens * input_rate + usage.output_tokens * output_rate) * 10**12
 
-    def fingerprint(self, ledger: VerificationBudgetLedger) -> str:
+    def fingerprint(
+        self, ledger: VerificationBudgetLedger, *, pacer: VerificationRequestPacer | None = None
+    ) -> str:
         binding: dict[str, object] = {
             "spec_version": "harnessix.bailian-verification-request-guard/v1",
             "model": MODEL,
@@ -93,6 +132,13 @@ class BailianVerificationBounds:
             )
         if "reverification_binding_chain" in ledger.period:
             binding["reverification_binding_chain"] = ledger.period["reverification_binding_chain"]
+        if pacer is not None and pacer.minimum_interval_seconds > 0:
+            binding["request_pacing"] = {
+                "spec_version": "harnessix.verification-request-pacing/v1",
+                "minimum_interval_seconds": pacer.minimum_interval_seconds,
+                "scope": "single-suite",
+                "automatic_retry": False,
+            }
         return digest(binding)
 
 
@@ -104,12 +150,16 @@ class GuardedVerificationProvider:
     ledger: VerificationBudgetLedger
     bounds: BailianVerificationBounds
     suite_cancel: CancelToken
+    pacer: VerificationRequestPacer | None = None
 
     async def stream(
         self, request: ModelRequest, cancel: CancelToken
     ) -> AsyncGenerator[ProviderEvent, None]:
         cancel.checkpoint()
         self.suite_cancel.checkpoint()
+        if self.pacer is not None:
+            # 等待发生在持久费用预留之前；取消不制造“已发送”或费用未决事实。
+            await self.pacer.wait(cancel, self.suite_cancel)
         try:
             self.bounds.checkpoint()
             reservation = self.ledger.reserve(
