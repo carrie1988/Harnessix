@@ -1380,3 +1380,5 @@ finally：
 #### 原file探针的真实I/O边界
 
 旧收集测试把`_read_existing`整个包围段当作物理I/O，误计40次无I/O checkpoint；408次真实syscall内observer为0。仅[原测试探针](../../tests/product_config/test_git_user_collection_progress.py)改为配对观察原`_read_source_file`、checkpoint和实际open／stat／fstat／read／close：认证段首末仍Full，observer只允许在I/O外的原进度回调。保留62项原参数及`file`负控，新增19项真实I/O／认证注入、取消和saved-port负控；旧最终安装件81项通过，关联矩阵106项通过。生产源码不改，旧FAIL与轨迹保留；本轮合并安装件的原81节点全量通过，包含在1866项回归内，不另行叠加计数。
+
+最新合并源码`70c71744`／Wheel `4b4b3b3a04881ef8b56af0fe334d3f1f90a3fbe7366a907f205ea6f8d48509df`的v34复验同样取得1 PASS，原几何／60／120秒与8断言不变；JUnit测试时间122.133秒含夹具生命周期，不当作Turn期限或性能收益。封存包`r4-root-binding-deep-recovery-20261009-v5`，清单SHA-256 `133445e24a06d830b09d60b3ec285bdb445280faf767be33d66004d5550cde4b`；默认完整Writer、B4/B7及原生三平台仍开放。

@@ -290,3 +290,5 @@ flowchart LR
 流程为：原有Source核验和Mutation准备→遇到无变化条目立即拒绝→核对原拒绝来源与Plan→原Router持久REJECTED→Agent得到failed并自行决定新提案。保留原fail-fast与失败顺序；其他同码、自建类型／Review、Artifact异常、执行阶段失败及未经证明的状态保持原unknown边界。内容变化或仅mode变化仍走完整差异审批与执行，不能借no-op拒绝绕过。
 
 测试沿[原SHA／准备拒绝矩阵](../../tests/product_config/test_patch_precondition_rejection.py)补充真实no-op、混合批次整体拒绝、真实变化、mode-only、来源／Plan／状态负控及拒绝后的原恢复。最终合并候选的48个明确测试文件在非editable安装件1866 PASS／0 FAIL／0 SKIP，566生产成员源码／输入／Wheel／安装件逐字节一致；Wheel SHA-256为`4b4b3b3a04881ef8b56af0fe334d3f1f90a3fbe7366a907f205ea6f8d48509df`。新增no-op及原SHA负控、拒绝驱动、v9和原file探针一起重验；源级参考fixture未运行的节点没有带入安装回归筛选。新完整20 Trial尚待真实运行，回归不替代编码质量。
+
+本轮新Suite `c940a5ef-da24-4af3-b375-08fd39daf907`已因第二Trial新限流中止，仅1/20份正式报告，不能形成完整质量成绩。9新请求completed、1unknown，估算0.240872元及20.77824元未决预留原件保留；不自动重试／恢复。完整历史成绩不变，后续先做累计输入模型视图与真实失败归因，避免单凭指令假设重复付费。封存包`r3-v9-rate-limit-interrupted-20261009-v1`，清单SHA-256 `665b1addd44a4b8adb3f6ba1e53f9b32d0765e505ed59c2855cdc224c5ffc052`。
