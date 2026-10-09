@@ -8,6 +8,10 @@ from typing import cast
 
 from harnessix.delivery.contracts import MAX_WORKSPACE_DIFF_BYTES
 from harnessix.delivery.git import _commit_bytes
+from harnessix.delivery.git_authentication_control import (
+    GitAuthenticationControl,
+    same_task_pure_git_authentication,
+)
 from harnessix.delivery.git_inventory_materials import verify_git_inventory_scope_materials
 from harnessix.delivery.git_material_cas import GitMaterialCAS
 from harnessix.delivery.git_object_material import GitObjectMaterial
@@ -63,9 +67,18 @@ def _verify_materials[T: ProductGitDeliveryCore | ProductGitDeliveryCoreV2](
     )
     scope = verify_git_inventory_scope_materials(cas, core.object_scope, checkpoint=checkpoint)
     # Source2 的完整 Manifest/Chunk 仍由原唯一 CAS 读取，摘要字段不是父历史正文。
-    read_workspace_parent_closure(
-        core.baseline.source.workspace, cas.store.blob, checkpoint=checkpoint
-    )
+    if type(checkpoint) is GitAuthenticationControl:
+        # Blob 仍在完整认证边界内读取；仅已解析父事实的展开与摘要使用本地频检。
+        read_workspace_parent_closure(
+            core.baseline.source.workspace,
+            cas.store.blob,
+            checkpoint=checkpoint,
+            pure_progress=lambda: same_task_pure_git_authentication(checkpoint),
+        )
+    else:
+        read_workspace_parent_closure(
+            core.baseline.source.workspace, cas.store.blob, checkpoint=checkpoint
+        )
     catalog = tuple(node.material for node in scope.objects)
     roots = {node.material.object_id: node.material for node in scope.objects}
     after_digests = {
