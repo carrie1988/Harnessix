@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 37
+version: 38
 code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
 owners:
   - core
@@ -103,7 +103,9 @@ null或诊断不足时再读日志；正文2745 UTF-8字节，仍小于原2751�
 Owner缺失、Secret跨分片及预览外拒绝；实际Product批准链和分页均有回归，不将模拟Owner当作容器验收。
 本轮同一非editable安装包494项：492 PASS、2 FAIL；两项旧迁移测试在前一安装包同样失败，
 原失败保留，不能据此宣称全套回归或商用通过。全量Schema检查的四项存量漂移同样保留；新v2与旧v1合同单测通过。
-R3仍须独立新候选完整20 Trial，R4仍须原期限只读重开及默认完整写链验收。
+后继独立新候选已完成20 Trial，严格1/20、必需测试7/20，仍未通过；22份实际结果有预览，
+但7项Trial仍读Artifact，不宣称节省输入。完整结果见[当前路线图](../roadmap.md#当前r3新候选完整20-trial已结束质量门禁未通过)。
+R4仍须原期限只读重开及默认完整写链验收。
 
 > **0.9.1f3收敛说明：** 旧`ProcessActionExecutor`、`ProcessAgentBridge`、`RunTestsAgentBridge`和
 > Process Artifact发布器已物理删除；第10～12节、22.3、32.3和35.4只保留删除前设计的历史解释，不是当前调用链。
