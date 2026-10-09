@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: fb4a0ea8f7ffcd14113212fb77b2028143af9914
+version: 5
+code_revision: 8a8d38819b6162a11a93a8786f7bd084ef4cbfcd
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
 related_tests:
   - tests/evals/test_provider_suite_contracts.py
+  - tests/evals/test_provider_suite_parallel_config.py
   - tests/evals/test_provider_suite_execution.py
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
@@ -64,7 +65,7 @@ Prompt、回答、工具参数、代码和宿主路径。
 1. 复用现有Suite Runner、Task Pack Case Adapter、Agent Runtime和产品Trusted Action主链；
 2. 在首个Provider创建前冻结并校验Pack、源码Revision、宿主程序、模型、端点、凭据引用、价格和预算；
 3. 默认禁网，只有显式CLI参数才允许读取私有配置和环境凭据；
-4. 每Trial使用独立Provider生命周期，禁止自动重试和并行Tool Call；
+4. 每Trial使用独立Provider生命周期，禁止自动重试；原v1保持串行，显式v2配置见14.1节；
 5. 把完整私有配置摘要绑定Suite和Case恢复身份，拒绝重开漂移；
 6. 沿用既有费用和成本完整性语义，在Trial边界停止后续请求；
 7. 只发布严格白名单的低敏计划、报告和证据清单；
@@ -375,7 +376,7 @@ classDiagram
 | `container_engine` | 同上 | 可执行普通文件绝对路径 | 固定检查宿主绑定 |
 | `api_key_env` | 默认`DASHSCOPE_API_KEY` | 仅环境变量名 | 不保存Secret值 |
 | `max_attempts` | 固定1 | 不允许自动重试 | 请求、费用和失败可解释 |
-| `parallel_tool_calls` | 固定false | 串行Tool Call | 与当前Agent调度和费用基线一致 |
+| `parallel_tool_calls` | v1固定false；v2显式选择 | 同轮原生工具提案能力 | 不授权并行写入，版本与值共同绑定恢复身份 |
 | `fee_stop_amount` | 操作参数，默认40 CNY | 与Price币种一致 | Trial边界停止 |
 | `fingerprint` | 全配置内容摘要 | 64位SHA-256 | Suite和Case恢复绑定 |
 | `cost_completeness` | 报告聚合 | 公开Manifest必须`complete` | 禁止未知成本发布完成证据 |
@@ -476,6 +477,30 @@ Suite/Case执行绑定参数是可选值。省略时执行指纹完全沿用原�
 `not_applicable`，聚合会因“没有适用测试”失败。工程Pack中的每个Task都声明必需的Behavior/Regression Check，
 因此“模型没有运行测试”必须投影为`outcome=failed`、`total_checks=任务声明检查数`、`passed_checks=0`，而不是不适用。
 该修正不改变Grader、Task成功数或Process证据，也不合成任何测试结果；它只纠正Suite测试分母的业务语义。
+
+### 14.1 显式v2批量提案：减少模型往返，不降低评分
+
+**背景与取舍。** 2026-10-09首Trial完成Patch和最终测试，却在Git反馈前累计53809 Token超过原50000预算。
+这是累计输入问题，不是单次Context超限。Artifact两种可逆投影的离线样本只有1080字节节省或270字节净增，
+不足以证明Token收益，故不增加新的Artifact协议。优先复用现有Runtime的批量调用能力；真实模型是否采用、
+能否完成原20 Trial仍待实测，不能把本配置计作质量提升。
+
+**契约与入口。** [`CodingEvalProviderSuiteRunConfig`](../../src/harnessix/evals/provider_suite_contracts.py)
+默认与旧JSON仍为v1，v1拒绝并行。生成脚本显式传`--parallel-tool-calls`才写v2和能力true；不触发网络或执行。
+原[v1 Schema](../../spec/coding-eval-provider-suite-run-config-v1.schema.json)逐字节保留，
+新增[v2读取Schema](../../spec/coding-eval-provider-suite-run-config-v2.schema.json)同时描述当前可读的v1/v2；
+旧读取器拒绝v2。Task Pack、10 Case×2 Trial、原50000 Token/期限、模型、审批、Grader及无重试规则均不变。
+
+**执行与恢复。** `config → Provider原生提案组 → 原Runtime调度 → 按提案顺序持久结果 → 下一模型请求`。
+[`_parallel_read_prefix`](../../src/harnessix/agent/runtime.py)只并行明确opt-in、无需审批的只读前缀；
+写入、未知或非opt-in工具仍是串行屏障。模型仍负责满足依赖关系；把Patch排在Baseline前不能获得原评分PASS。
+取消回收在途只读任务、并发上限和失败语义沿用原Runtime，不新增执行循环。完整配置Fingerprint包含版本与能力值，
+原Suite和Case恢复绑定拒绝切换；新配置必须新Suite，不把旧串行前缀与新批量结果拼接。
+
+**验证。** [新合同测试](../../tests/evals/test_provider_suite_parallel_config.py)覆盖v1往返、显式生成、能力负控、
+原输出/尝试上限、真实落盘后的配置漂移拒绝，以及正式SDK MockTransport→两文件工具→下一轮完整结果。
+[原调度测试](../../tests/agent/test_tool_scheduling.py)覆盖并发上限、顺序、取消回收与失败；无真实模型请求，
+不证明模型会主动选择批量、不改变费用停止条件。旧失败样本保留，新真实质量结论只能来自完整正式报告。
 
 ## 15. 测试设计与验收矩阵
 

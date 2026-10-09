@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
+version: 11
+code_revision: 8a8d38819b6162a11a93a8786f7bd084ef4cbfcd
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_tests:
   - tests/contracts/provider.py
   - tests/models/test_openai_chat.py
   - tests/models/test_chat_terminal_diagnostics.py
+  - tests/models/test_chat_transport_diagnostics.py
   - tests/models/test_chat_text_tool_boundary.py
   - tests/models/test_anthropic.py
   - tests/models/test_chat_mapping.py
@@ -229,6 +230,12 @@ Chat终态校验新增内部封闭原因，源码为[`_chat_errors.py`](../../sr
 `chat_protocol/v1:<reason>`；code/category/retryable、Usage、自动重试和Schema不变。
 严格工具调用组全部通过后才释放；未知异常、早期feed失败、Anthropic和旧持久事件保持通用诊断。
 不保存响应正文、身份或参数值；详见[总体与详细设计](../changes/m09-r3-chat-terminal-diagnostics.md)。
+
+Chat传输失败复用原Attempt消息，附`chat_transport/v1:<reason>`固定低敏原因：HTTPX各类timeout、
+connect/read/write/proxy/protocol failure及核验状态码408/409；SDK连接异常只检查一层受控cause。
+直接原生`TimeoutError`只记`timeout_origin_unknown`，不证明async deadline；未知仍为通用消息。
+原code/retryable、身份、Usage、重试、Schema和费用Guard不变，不保存异常字符串、URL、Header或Body。
+旧事件不能追认HTTP429或限流；429仍沿用原分类，不从`provider_transport`推断。
 
 ## 8. 历史与请求映射
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
+version: 39
+code_revision: 8a8d38819b6162a11a93a8786f7bd084ef4cbfcd
 owners:
   - core
 modules:
@@ -25,6 +25,7 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
+  - tests/evals/test_provider_suite_parallel_config.py
   - tests/evals/test_grader.py
   - tests/evals/test_grader_final_feedback.py
   - tests/evals/test_historical.py
@@ -1118,7 +1119,7 @@ sequenceDiagram
 ```
 
 CLI缺少`--allow-network`时在配置读取前输出`network_not_enabled`。固定基线要求`openai_chat`、
-`qwen3-coder-plus-2025-09-23`、北京地域、串行Tool Call、无自动重试、单请求输出不超过4096 Token和精确价格窗口。
+`qwen3-coder-plus-2025-09-23`、北京地域、v1串行Tool Call、无自动重试、单请求输出不超过4096 Token和精确价格窗口。
 当前价格快照只覆盖输入不超过32K的请求；超区间或Usage缺失会使成本未知并停止后续请求。费用停止线在完整Trial边界
 生效，不是供应商账单硬上限。
 
@@ -1139,6 +1140,11 @@ CNY 1.46828完整已知成本；20个Turn均正常终结，但任务成功与测
 
 完整背景、字段、失败恢复和运维步骤见[0.9.2e详细设计](../changes/m09-2e-controlled-real-provider-baseline.md)、
 [ADR 0088](../adr/0088-controlled-real-provider-suite-baseline.md)和[运维手册](../operations/provider-suite-baseline.md)。
+
+新显式配置v2允许同轮多个原生提案，复用原Runtime只读并行/审批写入串行规则；旧v1默认和Schema保持。
+版本与能力共同进入恢复Fingerprint，切换须新Suite，不拼接历史。契约、失败与测试见
+[14.1节](../changes/m09-2e-controlled-real-provider-baseline.md#141-显式v2批量提案减少模型往返不降低评分)。
+这是离线验证的候选能力，尚未证明原20 Trial质量改善，也不改变下述费用守卫。
 
 ### 23.7 有限验证宿主的持久请求预算
 
@@ -2048,7 +2054,7 @@ Provider Factory，不访问公网。版本化百炼真实结果位于[验证资
 
 ## 48. Schema、版本与兼容
 
-当前生成28份Evals公共Schema：
+当前维护以下Evals公共Schema（包含保留的历史v1配置）：
 
 - [`coding-eval-task-v1`](../../spec/coding-eval-task-v1.schema.json)；
 - [`coding-eval-final-answer-v1`](../../spec/coding-eval-final-answer-v1.schema.json)；
@@ -2068,6 +2074,7 @@ Provider Factory，不访问公网。版本化百炼真实结果位于[验证资
 - [`coding-eval-suite-execution-state-v1`](../../spec/coding-eval-suite-execution-state-v1.schema.json)；
 - [`coding-eval-suite-run-report-v1`](../../spec/coding-eval-suite-run-report-v1.schema.json)；
 - [`coding-eval-provider-suite-run-config-v1`](../../spec/coding-eval-provider-suite-run-config-v1.schema.json)；
+- [`coding-eval-provider-suite-run-config-v2`](../../spec/coding-eval-provider-suite-run-config-v2.schema.json)；
 - [`coding-eval-provider-suite-run-report-v1`](../../spec/coding-eval-provider-suite-run-report-v1.schema.json)；
 - [`coding-eval-provider-suite-evidence-v1`](../../spec/coding-eval-provider-suite-evidence-v1.schema.json)；
 - [`coding-eval-task-pack-v1`](../../spec/coding-eval-task-pack-v1.schema.json)；

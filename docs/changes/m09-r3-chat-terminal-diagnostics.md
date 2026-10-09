@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 850c7ba90bab5b1821015f3182c6ba6ac253e8aa
+version: 2
+code_revision: 8a8d38819b6162a11a93a8786f7bd084ef4cbfcd
 owners: [core]
 modules: [models, agent]
 related_adrs:
@@ -12,13 +12,14 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/models/test_chat_terminal_diagnostics.py
+  - tests/models/test_chat_transport_diagnostics.py
   - tests/models/test_openai_chat.py
   - tests/models/test_attempt_usage.py
   - tests/models/test_attempt_crash_recovery.py
 supersedes: []
 ---
 
-# Chat终态校验失败的低敏尝试账本诊断
+# Chat终态与传输失败的低敏尝试账本诊断
 
 ## 1. 需求背景、源码研究与设计目标
 
@@ -49,14 +50,14 @@ flowchart LR
     Attempt --> Ledger[原持久账本与Replay]
 ```
 
-- 新内部[`_chat_errors.py`](../../src/harnessix/models/_chat_errors.py)只拥有终态原因Enum、类型安全异常和既有尝试消息投影，不拥有HTTP、工具或重试。
+- 内部[`_chat_errors.py`](../../src/harnessix/models/_chat_errors.py)只拥有封闭协议/传输原因、类型安全异常和既有尝试消息投影，不拥有HTTP、工具或重试。
 - `_complete_calls`从原`finish`提取完整调用校验；全部校验完成后才返回本地事件列表，不提前yield工具。
   提取是为了单一职责和保持既有类热点上限，不修改治理阈值。
 - 原`_failure`继续负责认证、Transport、Quota、Rate Limit、内容和协议错误归一。
 - 原Runtime/Session继续提交尝试、Usage及Turn失败；公开ResponseFailed与Agent/Event Schema不变。
 
 选择内部类型及封闭Enum，不用第三方异常文本推导诊断，不新增公开诊断字段。
-只覆盖有直接源码证据的Chat终态条件；feed早期校验、未知SDK异常、Anthropic和其他Provider保持原消息，
+协议细分只覆盖有直接源码证据的Chat终态条件；feed早期校验、未知SDK异常、Anthropic和其他Provider保持原消息，
 不能将“无详细原因”误报为某种确定协议错误。
 
 ## 3. 接口设计、数据结构与重点字段
@@ -64,11 +65,12 @@ flowchart LR
 | 元素 | 来源、责任与约束 |
 |---|---|
 | `ChatProtocolReason` | 内部封闭Enum，只含固定终态原因，不接受供应商自由文本 |
+| `ChatTransportReason` | 内部封闭Enum，只依据已知原生异常类型及核验状态码，不推测超时来源 |
 | `ChatProtocolError(reason)` | 继承原InvalidWireData；构造要求准确Enum类型，异常正文固定且不含输入 |
 | `_complete_calls(calls, names)` | 输入原增量Parts和已公布名称表；返回全量合法Tool事件或抛受控错误 |
-| `diagnostic_failure(error, attempt)` | 只细化原`provider_invalid_provider_output`的尝试message；其余字段不变 |
+| `diagnostic_failure(error, attempt)` | 只细化原`provider_invalid_provider_output`或`provider_transport`的尝试message；其余字段不变 |
 | `_failed_response(attempt_id, error)` | 复用原失败分类和finish_attempt，返回原ResponseFailed与尝试终态 |
-| `ModelAttemptFinished.error.message` | 固定前缀加`chat_protocol/v1:<reason>`，不增加字段，远低于原2000字符上限 |
+| `ModelAttemptFinished.error.message` | 固定前缀加`chat_protocol/v1:<reason>`或`chat_transport/v1:<reason>`，不增加字段 |
 
 Turn的通用失败消息仍由原ResponseFailed生成；详细原因属于单次Attempt，不强行复制为所有Turn、重试
 或Fallback的唯一根因。原Attempt与Turn的code/category/retryable仍相同；发生此细化时message可不同。
@@ -80,6 +82,11 @@ Turn的通用失败消息仍由原ResponseFailed生成；详细原因属于单�
 
 诊断只认原异常的准确内部类型，或原SDK APIError直接cause的准确内部类型，并要求准确Enum类型。
 任意字符串、未知异常、子类伪造或被改写的原因都沿用通用失败；不调用第三方异常`str/repr`，不遍历栈。
+
+传输细分区分HTTPX connect/read/write/pool timeout、connect/read/write/proxy/protocol failure及
+核验绑定Response状态码的408/409；SDK连接异常只检查一层受控`__cause__`，未知仍用原通用消息。
+直接原生`TimeoutError`只记`timeout_origin_unknown`，不能证明是async deadline；不保存异常文本、URL、
+Header或Body。原失败分类、retryable、Attempt身份、Usage、重试及费用Guard不变；429仍由原分类处理。
 
 ## 4. 核心流程、时序与数据流程
 
@@ -134,6 +141,7 @@ catch Exception：
 使用原AttemptFinished事件、AgentFailure字段、认证事件提交和Reducer；无新表、迁移或Schema。
 旧失败保持原字节和原消息，不能补签旧请求的新原因。重开与Replay必须得到同一Attempt错误，
 不重新解析旧流、不重发HTTP、不执行未释放Tool。
+旧`provider_transport`事件不能据此追认HTTP429或限流。
 先前合法Usage继续保留；诊断不改变完整性、金额估算或账本状态。失败请求即使Usage完整，
 真实验证Guard仍沿用原未知预留/停止规则；原70元周期不退款、不重新结算、不新建周期。
 
@@ -170,6 +178,9 @@ catch Exception：
 重开/回放链、准确类型安全与原成功/长度终态。关联1377项为1376通过、1项平台跳过。
 首次关联的两个Attempt/Turn消息全等失败保留；后继只对确认Chat原因断言准确新消息及其余所有字段全等，
 没有放松失败code、类别、重试、Usage或工具执行断言。
+
+传输诊断后继以`timeout_origin_unknown`保留来源边界；最终原8个测试文件305通过、无失败或跳过，
+含63个传输诊断节点，不与前304及25节点证据叠加，也不构成真实Provider或安装件验收。
 
 正式源码SHA、原件摘要、图渲染、发行物及开放风险见
 [统一验证包](../validation/chat-terminal-diagnostics-2026-09-30-v1/README.md)。

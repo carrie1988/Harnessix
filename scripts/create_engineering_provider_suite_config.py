@@ -123,6 +123,9 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--suite-id", type=UUID)
     parser.add_argument("--api-key-env", default="DASHSCOPE_API_KEY")
     parser.add_argument("--fee-stop-amount", default="40")
+    parser.add_argument(
+        "--parallel-tool-calls", action="store_true", help="显式生成v2批量调用配置；不启动运行"
+    )
     return parser
 
 
@@ -150,6 +153,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         created_at=now,
     )
     config = CodingEvalProviderSuiteRunConfig(
+        spec_version=(
+            "harnessix.coding-eval-provider-suite-run-config/v2"
+            if arguments.parallel_tool_calls
+            else "harnessix.coding-eval-provider-suite-run-config/v1"
+        ),
         suite=suite,
         pack_id=loaded.manifest.pack_id,
         pack_version=loaded.manifest.pack_version,
@@ -161,7 +169,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             base_url=_BASE_URL,
             model=_MODEL,
             api_key_env=arguments.api_key_env,
-            capabilities=ChatCapabilities(tool_calls=True, parallel_tool_calls=False),
+            capabilities=ChatCapabilities(
+                tool_calls=True, parallel_tool_calls=arguments.parallel_tool_calls
+            ),
             max_output_tokens=4096,
             timeout_seconds=900,
             io_timeout_seconds=60,

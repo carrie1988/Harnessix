@@ -34,9 +34,11 @@ class ProviderSuiteContract(ContractModel):
 class CodingEvalProviderSuiteRunConfig(ProviderSuiteContract):
     """由可信宿主提供的真实Provider Suite配置；只引用凭据环境变量。"""
 
-    spec_version: Literal["harnessix.coding-eval-provider-suite-run-config/v1"] = (
-        "harnessix.coding-eval-provider-suite-run-config/v1"
-    )
+    # v1保留串行基线；v2显式允许同轮多个提案，执行权限仍由原Runtime逐项决定。
+    spec_version: Literal[
+        "harnessix.coding-eval-provider-suite-run-config/v1",
+        "harnessix.coding-eval-provider-suite-run-config/v2",
+    ] = "harnessix.coding-eval-provider-suite-run-config/v1"
     suite: CodingEvalSuiteRunConfig
     pack_id: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     pack_version: int = Field(ge=1, strict=True)
@@ -69,8 +71,13 @@ class CodingEvalProviderSuiteRunConfig(ProviderSuiteContract):
         if environment.isolation != "fixed-container-checks-provider-network":
             raise ValueError("真实Provider Suite隔离声明不受支持")
         capabilities = provider.capabilities
-        if not capabilities.tool_calls or capabilities.parallel_tool_calls:
-            raise ValueError("真实Provider Suite要求串行工具调用")
+        if not capabilities.tool_calls:
+            raise ValueError("真实Provider Suite要求原生工具调用")
+        if (
+            self.spec_version == "harnessix.coding-eval-provider-suite-run-config/v1"
+            and capabilities.parallel_tool_calls
+        ):
+            raise ValueError("真实Provider Suite v1要求串行工具调用；批量调用须显式使用v2")
         if provider.max_attempts != 1 or provider.retry_delay_seconds != 0:
             raise ValueError("真实Provider Suite禁止Provider自动重试")
         if provider.max_output_tokens > 4096:

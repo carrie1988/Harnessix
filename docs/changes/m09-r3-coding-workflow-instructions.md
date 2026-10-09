@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 3
+version: 4
 code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
 owners: [core]
 modules: [product_config, context, evals, models]
@@ -291,4 +291,14 @@ flowchart LR
 
 测试沿[原SHA／准备拒绝矩阵](../../tests/product_config/test_patch_precondition_rejection.py)补充真实no-op、混合批次整体拒绝、真实变化、mode-only、来源／Plan／状态负控及拒绝后的原恢复。最终合并候选的48个明确测试文件在非editable安装件1866 PASS／0 FAIL／0 SKIP，566生产成员源码／输入／Wheel／安装件逐字节一致；Wheel SHA-256为`4b4b3b3a04881ef8b56af0fe334d3f1f90a3fbe7366a907f205ea6f8d48509df`。新增no-op及原SHA负控、拒绝驱动、v9和原file探针一起重验；源级参考fixture未运行的节点没有带入安装回归筛选。新完整20 Trial尚待真实运行，回归不替代编码质量。
 
-本轮新Suite `c940a5ef-da24-4af3-b375-08fd39daf907`已因第二Trial新限流中止，仅1/20份正式报告，不能形成完整质量成绩。9新请求completed、1unknown，估算0.240872元及20.77824元未决预留原件保留；不自动重试／恢复。完整历史成绩不变，后续先做累计输入模型视图与真实失败归因，避免单凭指令假设重复付费。封存包`r3-v9-rate-limit-interrupted-20261009-v1`，清单SHA-256 `665b1addd44a4b8adb3f6ba1e53f9b32d0765e505ed59c2855cdc224c5ffc052`。
+本轮新Suite `c940a5ef-da24-4af3-b375-08fd39daf907`已因第二Trial传输失败中止（后继认证回读纠正原“限流”判断），仅1/20份正式报告，不能形成完整质量成绩。9新请求completed、1unknown，估算0.240872元及20.77824元未决预留原件保留；不自动重试／恢复。完整历史成绩不变，后续先做累计输入模型视图与真实失败归因，避免单凭指令假设重复付费。封存包`r3-v9-rate-limit-interrupted-20261009-v1`，清单SHA-256 `665b1addd44a4b8adb3f6ba1e53f9b32d0765e505ed59c2855cdc224c5ffc052`。
+
+### 14.3 后继认证勘误与输入候选取舍
+
+对第二Trial原28事件完成正式认证回读，失败code为`provider_transport`，无response_id、完整usage或
+已持久HTTP状态/细分原因；不能认定429、RPM/TPM或代理故障。原封存包名称包含rate-limit属旧判断，
+原件不覆盖，本勘误优先；20.77824元预留和停止新付费规则保持，不以诊断更正释放预留。
+
+Artifact两种可逆投影对首Trial累计messages JSON字节分别节省1080、增加270；Beta样本无收益。
+该结果不能等同Token，不实施复杂投影。后继仅[显式启用已有批量提案能力](m09-2e-controlled-real-provider-baseline.md#141-显式v2批量提案减少模型往返不降低评分)，
+并补充[低敏传输诊断](m09-r3-chat-terminal-diagnostics.md)以免再误判失败；两者均不改变历史评分或费用账本。

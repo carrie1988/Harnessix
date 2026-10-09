@@ -114,7 +114,12 @@ async def test_failure_preserves_last_valid_observation(adapter, tmp_path: Path,
         if adapter.kind == "openai"
         else None
     )
-    if diagnostic is None:
+    if adapter.kind == "openai" and failing:
+        assert attempt.error.message == (
+            "Provider 返回结构化失败；chat_transport/v1:httpx_read_failure"
+        )
+        assert attempt.error.model_copy(update={"message": turn.error.message}) == turn.error
+    elif diagnostic is None:
         assert attempt.error == turn.error
     else:
         # Turn沿用稳定通用失败；已确认终态原因只位于原Attempt诊断字段。
