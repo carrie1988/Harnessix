@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 20
-code_revision: 1793af58f969979f8418736dd3698c7788f7bc8f
+version: 21
+code_revision: 5ac65db3da9a2ecdd572e8c1247d5a40ebabc860
 owners:
   - core
 modules:
@@ -247,6 +247,15 @@ v3仅1请求再次缺失工具名，新增4.05504元未决后立即停止；费�
 后继对 v2 原提案原字节做禁网黑盒补测：原19项再次通过；新增26项为20通过、6失败，
 失败集中于用户名/keyId的null、空值、超长值未消费可定位挑战；错误密文消费及未命中挑战不损坏其他挑战的正控通过。
 只新增独立验收代码，没有代替Agent修业务实现或批准落盘。证据位于本机`verification-working/beta-001-challenge-consumption-20261010-v1`；完整业务及浏览器验收仍开放。
+
+**未整改浏览器基线（2026-10-10）**：从冻结423件副本独立复制70件前端输入，build/typecheck及原18项测试通过；
+实际Chrome 155运行生产构建，API仅用合成桩，不启动原代理或真实后端。两轮独立Context分别用按钮/Enter，覆盖成功、401、500、断网：
+8次请求均含合成密码明文；6次失败的Console错误对象`config.data`均命中密码，日志文字本身未命中，不能只扫描文字或删显式日志。
+两个成功场景均进入首页、观察窗口无Console事件；六个失败场景均留在登录页且按钮恢复，没有额外登录请求。
+检测器嵌套对象正控及纯数据负控通过；错误对象存在未读取的访问器，覆盖缺口保留，不把未命中当作安全通过。
+macOS外层沙箱的6项文件/网络控制通过；本机启动时Chrome内层沙箱初始化被拒绝，限定此次合成前测关闭内层而保留外层，不计浏览器隔离安全验收。
+证据位于本机`verification-working/beta-001-browser-baseline-20261010-v1`；源摘要不变、未访问原项目、未发付费请求，启动及检测器前置失败完整保留。
+这是整改前复现，不是Harnessix整改成绩；后继必须同时复验载荷与错误对象，真实后端、生产HTTPS及最终Beta接受仍未完成。
 
 **旧周期历史**：用户曾批准原60元周期内保留旧未决请求20.77824元预留，BETA-001新增费用封顶5元。
 [任务授权合同](../../scripts/provider_reverification_plan.py)使用独立task身份，不是R3 Suite授权；
