@@ -6,13 +6,13 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from openai.types.chat import ChatCompletionChunk
+from openai.types.completion_usage import CompletionUsage
 from pydantic import JsonValue, ValidationError
 
 from harnessix.agent.billing import ResponseBillingMetadata
 from harnessix.agent.models import Usage
 from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._billing import merge_billing
-from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason
 from harnessix.models._json import strict_json
 from harnessix.models.contracts import (
@@ -49,7 +49,7 @@ def _complete_calls(
         if not call.call_id:
             raise ChatProtocolError(ChatProtocolReason.TOOL_ID_MISSING)
         if len(call.call_id) > 256:
-            raise InvalidWireData("工具调用 ID 超过长度上限")
+            raise ChatProtocolError(ChatProtocolReason.TOOL_ID_LIMIT_EXCEEDED)
         if call.call_id in ids:
             raise ChatProtocolError(ChatProtocolReason.TOOL_ID_DUPLICATE)
         if not isinstance(call.name, str) or not 1 <= len(call.name) <= 256:
@@ -76,14 +76,35 @@ def validate_frame(name: bytes, data: bytes) -> None:
     if data == b"[DONE]":
         return
     if name not in {b"", b"message", b"error"}:
-        raise InvalidWireData("不支持的 Chat SSE 事件")
+        raise ChatProtocolError(ChatProtocolReason.FRAME_EVENT_UNSUPPORTED)
     value = strict_json(data)
     if isinstance(value, dict) and value.get("error"):
         return  # 错误类型交给 SDK 分类，不保存原始错误内容。
     try:
         ChatCompletionChunk.model_validate(value, strict=True)
     except ValidationError:
-        raise InvalidWireData("Chat SSE 结构或计数类型无效") from None
+        raise ChatProtocolError(ChatProtocolReason.FRAME_SCHEMA_INVALID) from None
+
+
+def _complete_usage_observation(usage: CompletionUsage) -> UsageObservation:
+    """使用原领域合同验证明细；原始计数和验证异常不进入诊断消息。"""
+    inputs, outputs = usage.prompt_tokens_details, usage.completion_tokens_details
+    cached = inputs.cached_tokens if inputs else None
+    written = inputs.cache_write_tokens if inputs else None
+    try:
+        return UsageObservation(
+            completeness="complete",
+            input_tokens=usage.prompt_tokens,
+            output_tokens=usage.completion_tokens,
+            cache_read_input_tokens=cached,
+            cache_creation_input_tokens=written,
+            uncached_input_tokens=usage.prompt_tokens - cached - written
+            if cached is not None and written is not None
+            else None,
+            reasoning_output_tokens=outputs.reasoning_tokens if outputs else None,
+        )
+    except ValidationError:
+        raise ChatProtocolError(ChatProtocolReason.USAGE_DETAILS_INVALID) from None
 
 
 class ChatStream:
@@ -114,13 +135,16 @@ class ChatStream:
             self._model = chunk.model
             events.append(ResponseStarted(response_id=chunk.id))
         elif chunk.id != self._response_id or chunk.model != self._model:
-            raise InvalidWireData("响应 ID 或实际模型不一致")
+            raise ChatProtocolError(ChatProtocolReason.RESPONSE_IDENTITY_CHANGED)
         if self._usage is not None:
-            raise InvalidWireData("Usage 之后出现额外 chunk")
-        self._billing = merge_billing(
-            self._billing,
-            service_tier=None if chunk.service_tier == "auto" else chunk.service_tier,
-        )
+            raise ChatProtocolError(ChatProtocolReason.CHUNK_AFTER_USAGE)
+        try:
+            self._billing = merge_billing(
+                self._billing,
+                service_tier=None if chunk.service_tier == "auto" else chunk.service_tier,
+            )
+        except ValueError:
+            raise ChatProtocolError(ChatProtocolReason.BILLING_METADATA_INVALID) from None
         if chunk.usage is not None:
             usage = chunk.usage
             if (
@@ -130,21 +154,8 @@ class ChatStream:
                 or usage.completion_tokens < 0
                 or usage.total_tokens != usage.prompt_tokens + usage.completion_tokens
             ):
-                raise InvalidWireData("Usage 结构或顺序无效")
-            inputs, outputs = usage.prompt_tokens_details, usage.completion_tokens_details
-            cached = inputs.cached_tokens if inputs else None
-            written = inputs.cache_write_tokens if inputs else None
-            observation = UsageObservation(
-                completeness="complete",
-                input_tokens=usage.prompt_tokens,
-                output_tokens=usage.completion_tokens,
-                cache_read_input_tokens=cached,
-                cache_creation_input_tokens=written,
-                uncached_input_tokens=usage.prompt_tokens - cached - written
-                if cached is not None and written is not None
-                else None,
-                reasoning_output_tokens=outputs.reasoning_tokens if outputs else None,
-            )
+                raise ChatProtocolError(ChatProtocolReason.USAGE_SHAPE_OR_ORDER_INVALID)
+            observation = _complete_usage_observation(usage)
             self._usage = Usage(
                 input_tokens=usage.prompt_tokens, output_tokens=usage.completion_tokens
             )
@@ -152,11 +163,11 @@ class ChatStream:
             return [*events, *self._observe()]
         events.extend(self._observe())
         if self._finish is not None or len(chunk.choices) != 1 or chunk.choices[0].index != 0:
-            raise InvalidWireData("choices 或结束顺序无效")
+            raise ChatProtocolError(ChatProtocolReason.CHOICE_SHAPE_OR_ORDER_INVALID)
         choice = chunk.choices[0]
         delta = choice.delta
         if delta.role not in (None, "assistant") or delta.function_call is not None:
-            raise InvalidWireData("不支持的消息类型")
+            raise ChatProtocolError(ChatProtocolReason.MESSAGE_TYPE_UNSUPPORTED)
         if delta.refusal:
             raise ContentRefused
         if delta.content:
@@ -168,31 +179,31 @@ class ChatStream:
             events.append(TextDelta(content_id="text", delta=delta.content))
         for part in delta.tool_calls or []:
             if not 0 <= part.index < self._request.budget.max_tool_calls_per_step:
-                raise InvalidWireData("工具 index 超过上限")
+                raise ChatProtocolError(ChatProtocolReason.TOOL_INDEX_LIMIT_EXCEEDED)
             call = self._calls.setdefault(part.index, CallParts())
             if len(self._calls) > 1 and not self._parallel:
-                raise InvalidWireData("Provider 不支持并行工具")
+                raise ChatProtocolError(ChatProtocolReason.PARALLEL_TOOL_CALLS_DISABLED)
             # 兼容服务可用空字符串表示本分片不再提供 ID；非空身份仍不可漂移。
             if part.id not in (None, ""):
                 if call.call_id is not None and call.call_id != part.id:
-                    raise InvalidWireData("工具调用 ID 漂移")
+                    raise ChatProtocolError(ChatProtocolReason.TOOL_ID_CHANGED)
                 call.call_id = part.id
             if part.type is not None:
                 if part.type != "function":
-                    raise InvalidWireData("未知工具类型")
+                    raise ChatProtocolError(ChatProtocolReason.TOOL_TYPE_INVALID)
                 call.type = part.type
             if part.function is not None:
                 if part.function.name is not None:
                     if not 1 <= len(part.function.name) <= 256:
                         raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_UNKNOWN)
                     if call.name is not None and call.name != part.function.name:
-                        raise InvalidWireData("工具名称漂移")
+                        raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_CHANGED)
                     call.name = part.function.name
                 if part.function.arguments is not None:
                     self._characters += len(part.function.arguments)
                     call.arguments += part.function.arguments
         if self._characters > self._request.budget.max_output_chars:
-            raise InvalidWireData("模型文本或参数超过大小上限")
+            raise ChatProtocolError(ChatProtocolReason.OUTPUT_CHAR_LIMIT_EXCEEDED)
         if choice.finish_reason is not None:
             self._finish = choice.finish_reason
         return events

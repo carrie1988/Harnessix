@@ -298,11 +298,13 @@ def test_untrusted_or_inapplicable_diagnostic_returns_original_event(kind):
     assert changed is original and IDENTITY_CANARY not in changed.model_dump_json()
 
 
-async def test_early_feed_identity_drift_retains_generic_failure_message():
+async def test_early_feed_identity_drift_records_reason_without_identity_value():
     parts = tool_frames()
     parts[1] = frame(chunk(finish="tool_calls", response_id=IDENTITY_CANARY))
     events, wire = await collect(parts)
     assert events[-1] == ResponseFailed(code="invalid_provider_output")
     failure = next(e for e in events if isinstance(e, ModelAttemptFinished))
-    assert failure.error.message == "Provider 返回结构化失败"
+    assert failure.error.message == (
+        "Provider 返回结构化失败；chat_protocol/v1:response_identity_changed"
+    )
     assert wire.closed and IDENTITY_CANARY not in repr(events)

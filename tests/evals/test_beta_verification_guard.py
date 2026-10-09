@@ -11,7 +11,7 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
-from harnessix.agent.usage import UsageObservation
+from harnessix.agent.usage import ModelAttemptFinished, UsageObservation
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ResponseCompleted
 from harnessix.models.openai_chat import OpenAIChatProvider
@@ -107,11 +107,30 @@ def authorized_beta_ledger(tmp_path):
     return path, plan
 
 
-@pytest.mark.parametrize("case", ["complete", "missing_usage", "wrong_model", "truncated"])
+@pytest.mark.parametrize(
+    "case",
+    [
+        "complete",
+        "missing_usage",
+        "wrong_model",
+        "truncated",
+        "usage_details_invalid",
+        "billing_metadata_invalid",
+        "chunk_after_usage",
+    ],
+)
 async def test_beta_native_adapter_preserves_reserve_settle_and_unknown_stop(tmp_path, case):
     path, plan = authorized_beta_ledger(tmp_path)
+    before = period(path)
     bounds = beta_bounds(128)
     parts = [chunk({"content": "fixture"}), chunk(finish="stop"), chunk(usage=True)]
+    if case == "usage_details_invalid":
+        parts[-1]["usage"]["prompt_tokens_details"] = {"cached_tokens": 11}
+    elif case == "billing_metadata_invalid":
+        parts[0]["service_tier"] = "default"
+        parts[1]["service_tier"] = "priority"
+    elif case == "chunk_after_usage":
+        parts.append(chunk())
     for part in parts:
         part["model"] = "wrong-model" if case == "wrong_model" else bounds.model
     if case == "missing_usage":
@@ -162,3 +181,13 @@ async def test_beta_native_adapter_preserves_reserve_settle_and_unknown_stop(tmp
     assert latest["status"] == ("completed" if case == "complete" else "unknown")
     assert any(isinstance(e, ResponseCompleted) for e in seen) == (case == "complete")
     assert token.cancelled == (case != "complete")
+    if case != "complete":
+        after = period(path)
+        assert amount_units(after["reserved_cost"]) == (
+            amount_units(before["reserved_cost"]) + bounds.maximum_units
+        )
+        assert after["known_cost"] == before["known_cost"]
+        assert after["requests"][:-1] == before["requests"]
+    if case in {"usage_details_invalid", "billing_metadata_invalid", "chunk_after_usage"}:
+        failure = next(e for e in seen if isinstance(e, ModelAttemptFinished))
+        assert failure.error.message.endswith("chat_protocol/v1:" + case)

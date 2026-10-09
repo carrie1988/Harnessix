@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 8a8d38819b6162a11a93a8786f7bd084ef4cbfcd
+version: 3
+code_revision: 36a6b554ab73b4bf6313abaae4d4734841f2c077
 owners: [core]
 modules: [models, agent]
 related_adrs:
@@ -12,14 +12,16 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/models/test_chat_terminal_diagnostics.py
+  - tests/models/test_chat_stream_diagnostics.py
   - tests/models/test_chat_transport_diagnostics.py
   - tests/models/test_openai_chat.py
   - tests/models/test_attempt_usage.py
   - tests/models/test_attempt_crash_recovery.py
+  - tests/evals/test_beta_verification_guard.py
 supersedes: []
 ---
 
-# Chat终态与传输失败的低敏尝试账本诊断
+# Chat流、终态与传输失败的低敏尝试账本诊断
 
 ## 1. 需求背景、源码研究与设计目标
 
@@ -33,18 +35,34 @@ supersedes: []
 [finish_attempt](../../src/harnessix/models/_provider_io.py)又生成相同尝试错误消息。
 既有账本已允许受控错误消息，因此无须增加响应正文日志、遥测平台、公开字段或数据库迁移。
 
-目标：后续Chat终态失败在原尝试账本中保留封闭原因，能够不读取原正文即定位正式拒绝条件。
+目标：后续Chat流及终态失败在原尝试账本中保留封闭原因，能够不读取原正文即定位正式拒绝条件。
 非目标：重建旧请求原因、放宽协议、补工具ID/名称、自动重试、改变Alias/Prompt/模型、结算未知费用、
 增加预算、修正历史事件或以离线诊断测试替代真实任务质量。
+
+### 1.1 BETA-001暴露的流阶段诊断缺口（2026-10-09）
+
+固定`f01f047`安装件的北京Coder Next真实Turn失败于`provider_invalid_provider_output`；
+认证Attempt中模型标识匹配、Usage未知、没有细分诊断，五核心文件真实覆盖0/5。
+原始wire未保存，因此无法从旧记录确定是并行调用越界、分片身份漂移、Usage顺序还是其他解析失败。
+本机实际OpenAI 2.54.0的`PromptTokensDetails`包含`cache_write_tokens`，已排除“该SDK字段不存在”的假设。
+
+本轮只把原`validate_frame`和`ChatStream.feed`已有的明确拒绝分支改为同一封闭异常类型，
+在**原拒绝点**记录条件名，不读取异常正文/栈，不扩大工具、并行、计数、身份或Usage接收范围。
+原失败Code、重试、取消、流关闭、工具整组完成后释放与费用未决停止保持不变。
+旧失败不追补原因；新增未决预留0.54272元照留，不授权下一次付费请求。
+测试用合成wire逐分支验证精确原因和负控，再经正式Runtime持久化/Replay验证；
+这些验证只能证明下次同条件失败可定位，不表示此次根因或Beta业务已经解决。
 
 ## 2. 总体架构、模块边界与取舍
 
 ```mermaid
 flowchart LR
     Stream[原有界SSE与SDK流] --> State[原ChatStream状态机]
+    Stream -->|已知帧拒绝| Reason[内部封闭ChatProtocolError]
+    State -->|已知状态拒绝| Reason
     State --> Terminal[原终态完整性校验]
     Terminal -->|合法| Complete[原完成与Tool事件]
-    Terminal -->|非法| Reason[内部封闭ChatProtocolError]
+    Terminal -->|非法| Reason
     Reason --> Failure[原invalid_provider_output]
     Reason --> Attempt[原Attempt失败消息附固定原因]
     Attempt --> Ledger[原持久账本与Replay]
@@ -53,18 +71,20 @@ flowchart LR
 - 内部[`_chat_errors.py`](../../src/harnessix/models/_chat_errors.py)只拥有封闭协议/传输原因、类型安全异常和既有尝试消息投影，不拥有HTTP、工具或重试。
 - `_complete_calls`从原`finish`提取完整调用校验；全部校验完成后才返回本地事件列表，不提前yield工具。
   提取是为了单一职责和保持既有类热点上限，不修改治理阈值。
+- `_complete_usage_observation`复用原UsageObservation校验，不重算或补齐供应商未给出的明细；
+  只有验证通过才赋值原Usage状态，失败时仍保留先前观察。
 - 原`_failure`继续负责认证、Transport、Quota、Rate Limit、内容和协议错误归一。
 - 原Runtime/Session继续提交尝试、Usage及Turn失败；公开ResponseFailed与Agent/Event Schema不变。
 
 选择内部类型及封闭Enum，不用第三方异常文本推导诊断，不新增公开诊断字段。
-协议细分只覆盖有直接源码证据的Chat终态条件；feed早期校验、未知SDK异常、Anthropic和其他Provider保持原消息，
+协议细分覆盖有直接源码证据的Chat帧Schema、feed流状态和终态条件；共享传输限额、未知SDK异常、Anthropic和其他Provider保持原消息，
 不能将“无详细原因”误报为某种确定协议错误。
 
 ## 3. 接口设计、数据结构与重点字段
 
 | 元素 | 来源、责任与约束 |
 |---|---|
-| `ChatProtocolReason` | 内部封闭Enum，只含固定终态原因，不接受供应商自由文本 |
+| `ChatProtocolReason` | 内部封闭Enum，只含固定帧、流状态与终态原因，不接受供应商自由文本 |
 | `ChatTransportReason` | 内部封闭Enum，只依据已知原生异常类型及核验状态码，不推测超时来源 |
 | `ChatProtocolError(reason)` | 继承原InvalidWireData；构造要求准确Enum类型，异常正文固定且不含输入 |
 | `_complete_calls(calls, names)` | 输入原增量Parts和已公布名称表；返回全量合法Tool事件或抛受控错误 |
@@ -75,10 +95,25 @@ flowchart LR
 Turn的通用失败消息仍由原ResponseFailed生成；详细原因属于单次Attempt，不强行复制为所有Turn、重试
 或Fallback的唯一根因。原Attempt与Turn的code/category/retryable仍相同；发生此细化时message可不同。
 
-封闭原因：`completion_incomplete`、`finish_reason_unsupported`、`finish_tool_mismatch`、
+终态封闭原因：`completion_incomplete`、`finish_reason_unsupported`、`finish_tool_mismatch`、
 `semantic_output_missing`、`tool_index_gap`、`tool_id_missing`、`tool_id_duplicate`、
 `tool_name_unknown`、`tool_type_invalid`、`tool_arguments_invalid`、`tool_arguments_not_object`。
 `tool_arguments_invalid`表示未通过既有严格JSON合同，含语法、重复键及非有限数值，不推断具体子原因。
+
+流阶段及长度诊断仅标注原拒绝条件：
+
+| 原校验点 | 固定原因 |
+|---|---|
+| SSE事件名、ChatCompletionChunk严格Schema | `frame_event_unsupported`、`frame_schema_invalid` |
+| 响应ID或模型漂移、完整Usage之后仍有chunk | `response_identity_changed`、`chunk_after_usage` |
+| 计费字段合并失败 | `billing_metadata_invalid` |
+| Usage顺序/choices/总数、领域明细验证 | `usage_shape_or_order_invalid`、`usage_details_invalid` |
+| choice数量/index/结束后增量、role/旧function_call | `choice_shape_or_order_invalid`、`message_type_unsupported` |
+| Tool index范围、显式禁用并行 | `tool_index_limit_exceeded`、`parallel_tool_calls_disabled` |
+| Tool ID、名称漂移 | `tool_id_changed`、`tool_name_changed` |
+| 原字符预算、终态Tool ID长度 | `output_char_limit_exceeded`、`tool_id_limit_exceeded` |
+
+这些原因不宣称完整定位供应商根因。原始JSON解析、共享Framer限额和未明确分类异常仍可返回通用失败。
 
 诊断只认原异常的准确内部类型，或原SDK APIError直接cause的准确内部类型，并要求准确Enum类型。
 任意字符串、未知异常、子类伪造或被改写的原因都沿用通用失败；不调用第三方异常`str/repr`，不遍历栈。
@@ -97,10 +132,10 @@ sequenceDiagram
     participant P as OpenAIChatProvider
     participant R as Agent Runtime
     participant L as Session Ledger
-    S->>C: 原合法增量与Usage
+    S->>C: 原帧与增量校验
     C-->>R: 原Started及Usage观察
-    P->>C: finish原DONE事实
-    C->>C: 原终态条件校验
+    P->>C: feed或finish原DONE事实
+    C->>C: 原流状态或终态条件校验
     C-->>P: 固定类型与原因，无原值
     P->>P: 原失败分类与Attempt构造
     P->>S: 原finally关闭流
@@ -122,6 +157,10 @@ flowchart TD
 ```
 
 ```text
+validate_frame / feed：
+    在原事件、Schema、身份、顺序、计费、Usage、工具与长度拒绝点抛固定原因
+    Usage明细仍由原领域合同验证，成功后才保存Usage
+    原始JSON及未覆盖异常保持原行为，不从异常正文推导原因
 finish：
     原DONE、finish、Usage缺少 -> completion_incomplete
     保持原finish reason、内容与tool一致性判断
@@ -143,17 +182,18 @@ catch Exception：
 不重新解析旧流、不重发HTTP、不执行未释放Tool。
 旧`provider_transport`事件不能据此追认HTTP429或限流。
 先前合法Usage继续保留；诊断不改变完整性、金额估算或账本状态。失败请求即使Usage完整，
-真实验证Guard仍沿用原未知预留/停止规则；原70元周期不退款、不重新结算、不新建周期。
+真实验证Guard仍沿用原未知预留/停止规则；历史周期不退款、不重新结算、不新建周期。
+当前BETA-001仍受既定60元周期、单任务5元及新未决立即停止规则约束。
 
 ## 6. 异常、安全、取消与可观测性
 
 | 情况 | 正式语义 |
 |---|---|
-| 已知终态条件失败 | 原invalid_provider_output且不可自动重试；Attempt记录静态原因 |
+| 已知帧、流状态及终态条件失败 | 原invalid_provider_output且不可自动重试；Attempt记录静态原因 |
 | 原名称/ID/JSON含凭据或用户路径 | 不复制到诊断，Tool不释放；保留原严格拒绝 |
 | 已通过前一个Tool、后一个Tool非法 | 所有完成事件仍在本地列表；失败时没有任何ToolCallCompleted被发布 |
 | 未知异常或不可信“原因”字符串 | 原通用错误，不回显值，不构造假原因 |
-| 提前feed或Framer失败 | 原失败分类，不扩大此次终态原因承诺 |
+| 未覆盖的JSON/Framer/SDK失败 | 原失败分类和通用消息，不伪造具体原因 |
 | 取消、IO超时、关闭失败、SDK重试 | 沿用原行为，详细原因不会触发额外请求 |
 | Session提交失败 | 原Kernel存储/恢复语义，不伪装成供应商错误 |
 
@@ -168,6 +208,8 @@ catch Exception：
 3. 正式SDK→Runtime→实际Session→重开与纯Replay；记录失败原因而不执行Tool或重发HTTP。
 4. Enum构造/篡改/子类/SDK cause正反例及Secret Canary；拒绝不可信自由文本，公共事件与日志无正文。
 5. 原Chat/Anthropic/Attempt/Compaction/预算保护回归、Schema、可读性、文档图实际渲染及发行物扫描。
+6. 合成流覆盖全部新增原因；非法明细不发布完整Usage，已验证Usage不丢失；
+   实际Guard在新诊断失败后全额预留、已知费用及历史记录不变，停止后续发送。
 
 无依赖、配置、用户安装步骤或数据迁移；随原Python Wheel发布。回退恢复通用消息，旧事件仍可读取。
 专项退出仅证明诊断及严格协议不变，不证明旧请求根因、真实质量、消费者平台或商用1.0完成。
@@ -184,3 +226,11 @@ catch Exception：
 
 正式源码SHA、原件摘要、图渲染、发行物及开放风险见
 [统一验证包](../validation/chat-terminal-diagnostics-2026-09-30-v1/README.md)。
+
+2026-10-09流阶段增量：新29项测试覆盖26种流/长度拒绝与3条持久回放链；
+最终关联模型、Attempt/Usage/恢复、Beta Guard和任务预算集合 **1265通过**，含首帧不重试及零拒绝事件释放负控。
+源码格式、定向类型检查通过；可读性差分无新增问题，feed由90行/复杂度43降到80行/39，
+全仓仍有25个存量治理问题，未放宽阈值或宣称全仓治理通过。
+原始XML与差分保存在本机`~/Library/Application Support/Harnessix/verification-working/`下的
+`beta-stream-diagnostics-integrated-20261009-v2.xml`及`beta-stream-readability-delta-20261009-v1.json`；
+这些离线结果不覆盖旧真实请求，不解除费用停止，也不增加Beta完成数。

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 8a8d38819b6162a11a93a8786f7bd084ef4cbfcd
+version: 12
+code_revision: 36a6b554ab73b4bf6313abaae4d4734841f2c077
 owners:
   - core
 modules:
@@ -24,6 +24,7 @@ related_tests:
   - tests/contracts/provider.py
   - tests/models/test_openai_chat.py
   - tests/models/test_chat_terminal_diagnostics.py
+  - tests/models/test_chat_stream_diagnostics.py
   - tests/models/test_chat_transport_diagnostics.py
   - tests/models/test_chat_text_tool_boundary.py
   - tests/models/test_anthropic.py
@@ -225,10 +226,11 @@ Provider失败Code固定为：`invalid_request`、`authentication`、`rate_limit
 `cancelled`和`unknown`。Adapter只基于SDK异常类型、状态码和受控错误类型字段映射，不持久化错误Body或
 从任意服务端文案推断业务语义。
 
-Chat终态校验新增内部封闭原因，源码为[`_chat_errors.py`](../../src/harnessix/models/_chat_errors.py)。
+Chat已知帧、流状态及终态校验使用内部封闭原因，源码为[`_chat_errors.py`](../../src/harnessix/models/_chat_errors.py)。
 原`ResponseFailed`与Turn通用消息保持不变，只有确认类型的`ModelAttemptFinished.error.message`附
 `chat_protocol/v1:<reason>`；code/category/retryable、Usage、自动重试和Schema不变。
-严格工具调用组全部通过后才释放；未知异常、早期feed失败、Anthropic和旧持久事件保持通用诊断。
+严格工具调用组全部通过后才释放；Usage明细通过原领域校验后才保存，不把非法计数变成完整用量。
+未知异常、未覆盖的JSON/Framer失败、Anthropic和旧持久事件保持通用诊断。
 不保存响应正文、身份或参数值；详见[总体与详细设计](../changes/m09-r3-chat-terminal-diagnostics.md)。
 
 Chat传输失败复用原Attempt消息，附`chat_transport/v1:<reason>`固定低敏原因：HTTPX各类timeout、
@@ -730,7 +732,7 @@ estimate_cost(attempt, price, verified_context):
 | Price Snapshot由宿主提供且未签名 | 来源URL和摘要不能证明费率真实性 | 0.9.6价格来源与账单核对流程 |
 | 无实时价格目录、税/折扣/汇率 | Cost Report只能做显式快照估算 | 商业计费系统独立边界 |
 | SDK Client持有不可变Key字符串 | 关闭前无法可靠清零内存副本 | 0.9.4Secret生命周期审计 |
-| 无Raw Wire诊断 | Chat确认的终态条件有低敏原因；未知/早期失败仍为通用消息 | 不采集正文，旧请求原因不得补推 |
+| 无Raw Wire诊断 | Chat已知帧、流状态与终态条件有低敏原因；未覆盖失败仍为通用消息 | 不采集正文，旧请求原因不得补推 |
 | 默认Provider配置不支持热重载 | 活动Turn使用旧Bundle直到重启 | 当前有意保持可复现；后续需独立迁移语义 |
 
 Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agent Runtime模块设计](agent.md)，Context
@@ -741,6 +743,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | 设计基线`36a6b554` | 2026-10-09 | 为原Chat流阶段拒绝补齐封闭诊断；不改变协议接收、Usage、工具释放、重试和预算停止规则 |
 | 6 | 设计基线`850c7ba` | 2026-09-30 | 内部封闭Chat终态原因、原Attempt持久诊断及严格工具组原子释放 |
 | 4 | `684a17ecc013549e3472978f1c0e8c1eca4db92e` | 2026-09-13 | 记录Scripted Provider协作取消实现及[CI 34727612571](https://github.com/carrie1988/Harnessix/actions/runs/34727612571)全矩阵验收 |
 | 3 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 明确Scripted Provider延时遵循协作取消合同，为App Server关闭和Product UI Cancel提供确定性测试端口 |

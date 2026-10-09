@@ -1,4 +1,4 @@
-"""Chat终态失败：内部封闭原因与原尝试账本的低敏投影，不保存响应正文。"""
+"""Chat流及终态失败：内部封闭原因与原尝试账本的低敏投影，不保存响应正文。"""
 
 from __future__ import annotations
 
@@ -12,6 +12,21 @@ from harnessix.models._bounded_http import InvalidWireData
 
 
 class ChatProtocolReason(StrEnum):
+    FRAME_EVENT_UNSUPPORTED = "frame_event_unsupported"
+    FRAME_SCHEMA_INVALID = "frame_schema_invalid"
+    RESPONSE_IDENTITY_CHANGED = "response_identity_changed"
+    CHUNK_AFTER_USAGE = "chunk_after_usage"
+    BILLING_METADATA_INVALID = "billing_metadata_invalid"
+    USAGE_SHAPE_OR_ORDER_INVALID = "usage_shape_or_order_invalid"
+    USAGE_DETAILS_INVALID = "usage_details_invalid"
+    CHOICE_SHAPE_OR_ORDER_INVALID = "choice_shape_or_order_invalid"
+    MESSAGE_TYPE_UNSUPPORTED = "message_type_unsupported"
+    TOOL_INDEX_LIMIT_EXCEEDED = "tool_index_limit_exceeded"
+    PARALLEL_TOOL_CALLS_DISABLED = "parallel_tool_calls_disabled"
+    TOOL_ID_CHANGED = "tool_id_changed"
+    TOOL_NAME_CHANGED = "tool_name_changed"
+    OUTPUT_CHAR_LIMIT_EXCEEDED = "output_char_limit_exceeded"
+    TOOL_ID_LIMIT_EXCEEDED = "tool_id_limit_exceeded"
     COMPLETION_INCOMPLETE = "completion_incomplete"
     FINISH_REASON_UNSUPPORTED = "finish_reason_unsupported"
     FINISH_TOOL_MISMATCH = "finish_tool_mismatch"
