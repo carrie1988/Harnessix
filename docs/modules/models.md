@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: 36a6b554ab73b4bf6313abaae4d4734841f2c077
+version: 13
+code_revision: 1793af58f969979f8418736dd3698c7788f7bc8f
 owners:
   - core
 modules:
@@ -27,6 +27,7 @@ related_tests:
   - tests/models/test_chat_stream_diagnostics.py
   - tests/models/test_chat_transport_diagnostics.py
   - tests/models/test_chat_text_tool_boundary.py
+  - tests/models/test_chat_empty_name.py
   - tests/models/test_anthropic.py
   - tests/models/test_chat_mapping.py
   - tests/models/test_anthropic_mapping.py
@@ -363,7 +364,9 @@ stateDiagram-v2
 
 原始SSE Frame先严格解析为`ChatCompletionChunk`，防止SDK把布尔或字符串宽松转换为计数。响应ID和实际
 模型首次确定后不可漂移；只接受Choice Index 0，Usage只能在Finish Reason后以无Choice Chunk到达，
-并要求输入加输出等于总量。Tool分片按连续Index聚合，ID/名称不可漂移，参数终值必须为JSON Object。
+并要求输入加输出等于总量。Tool分片按连续Index聚合，非空ID/名称不可漂移，参数终值必须为JSON Object。
+Chat名称的空字符串分片与缺省一样不更新已有名称；迟到的完整名称可补齐，最终仍缺名则整批拒绝。
+不猜名称或拼接不同非空名称；相关兼容边界及失败时点见[详细说明](../changes/m09-r3-chat-terminal-diagnostics.md#81-空名称增量兼容修正2026-10-10)。
 成功结束还要求`[DONE]`、Finish Reason和完整Usage同时存在。
 
 ### 11.2 Anthropic状态机

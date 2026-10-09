@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 19
-code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
+version: 20
+code_revision: 1793af58f969979f8418736dd3698c7788f7bc8f
 owners:
   - core
 modules:
@@ -243,6 +243,10 @@ v2认证历史重建确认每一步均保留完整原需求与修订提示；未
 Max单工具v1/v2各3请求：v1提案实际编译3错误；v2编译及19项组件检查通过，但追加负测证明null用户名未消耗可定位挑战，仍拒绝写入。
 v3仅1请求再次缺失工具名，新增4.05504元未决后立即停止；费用核算规则变更正在请求用户决策，尚未应用。
 三轮冻结输入及12件Workspace文件均验真未变；证据位于本机`verification-working/beta-001-max-single-tool-20261009-v1`至`v3`，不把模型提案、Node WebCrypto互操作或预算449项回归计作整个Beta完成。
+
+后继对 v2 原提案原字节做禁网黑盒补测：原19项再次通过；新增26项为20通过、6失败，
+失败集中于用户名/keyId的null、空值、超长值未消费可定位挑战；错误密文消费及未命中挑战不损坏其他挑战的正控通过。
+只新增独立验收代码，没有代替Agent修业务实现或批准落盘。证据位于本机`verification-working/beta-001-challenge-consumption-20261010-v1`；完整业务及浏览器验收仍开放。
 
 **旧周期历史**：用户曾批准原60元周期内保留旧未决请求20.77824元预留，BETA-001新增费用封顶5元。
 [任务授权合同](../../scripts/provider_reverification_plan.py)使用独立task身份，不是R3 Suite授权；

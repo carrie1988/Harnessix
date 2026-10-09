@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: 36a6b554ab73b4bf6313abaae4d4734841f2c077
+version: 4
+code_revision: 1793af58f969979f8418736dd3698c7788f7bc8f
 owners: [core]
 modules: [models, agent]
 related_adrs:
@@ -14,6 +14,8 @@ related_tests:
   - tests/models/test_chat_terminal_diagnostics.py
   - tests/models/test_chat_stream_diagnostics.py
   - tests/models/test_chat_transport_diagnostics.py
+  - tests/models/test_chat_empty_name.py
+  - tests/models/test_chat_empty_call_id.py
   - tests/models/test_openai_chat.py
   - tests/models/test_attempt_usage.py
   - tests/models/test_attempt_crash_recovery.py
@@ -275,3 +277,25 @@ catch Exception：
 原始XML与差分保存在本机`~/Library/Application Support/Harnessix/verification-working/`下的
 `beta-stream-diagnostics-integrated-20261009-v2.xml`及`beta-stream-readability-delta-20261009-v1.json`；
 这些离线结果不覆盖旧真实请求，不解除费用停止，也不增加Beta完成数。
+
+### 8.1 空名称增量兼容修正（2026-10-10）
+
+源码基线如元数据所示。独立合成复现发现：原 `feed()` 会把已完整提供工具名后的空字符串分片
+当成 `tool_name_unknown`，虽然它没有提供新名称。官方[工具调用流说明](https://developers.openai.com/api/docs/guides/function-calling)
+指出名称等字段通常只在首片提供；本地 OpenAI SDK 2.54.0 的 `accumulate_delta` 也不会因空字符串覆盖已累积名称。
+这是兼容边界修正，不是依据诊断猜测旧百炼响应正文。
+
+采用与空 ID 相同的无更新语义：`name` 为 `None` 或 `""` 时不改 `CallParts.name`；同片类型、参数、字符上限仍校验。
+迟到的完整非空名称可以补齐，但最终缺名仍由 `_complete_calls()` 拒绝；非空名称变化、超长名称、畸形参数及
+缺 DONE/Usage 仍失败，整批没有任何工具释放。结构合法的目录外名称仍只生成闭合拒绝，不猜名称、不修改广告目录。
+本轮不拼接多个不同的非空名称分片，也不改变稳定公开错误、事件 Schema、存储、资源期限或费用结算规则。
+
+新增测试先在原实现复现失败，再验证正向流、未注册名称、全组拒绝、单次尝试及 Runtime 实际执行/Session 重开/Replay。
+原空 ID 测试中的名称漂移负控改为真正不同的非空名称；原空字符串场景转为独立正控，而非删除覆盖。
+这不证明最新 Beta 失败已修复：其脱敏认证证据为完整 Usage 后才出现 `tool_name_unknown`；按当前代码，
+更符合终态始终缺名的路径，仍缺少足够真实证据归因。旧失败及未决预留保持，不能据本修正自动启动付费请求。
+
+新增13项原实现为5失败/8通过，最终25个完整模型测试文件1044通过、8个预算保护文件215通过，均零跳过。
+初次沙箱收集被外来目录元数据访问拒绝，后继仅显式忽略禁区，没有放宽权限；另保留一项旧空名早期失败断言不匹配，
+修正为“空增量不留存、终态仍缺名拒绝”，超长名称仍在feed阶段拒绝。类型检查通过，feed复杂度39不变、81行未超原88行上限。
+原始RED、收集失败、断言差异及最终XML保存于本机`verification-working/beta-001-challenge-consumption-20261010-v1/provider-regression`。

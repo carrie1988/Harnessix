@@ -364,7 +364,7 @@ async def test_unknown_name_accepts_only_nonempty_bounded_strings(
 
 @pytest.mark.parametrize("provider", ["chat", "anthropic"])
 @pytest.mark.parametrize("name", ["", "界" * 257], ids=["empty", "overlength"])
-def test_invalid_name_is_fatal_before_storing_raw_name(provider: Provider, name: str) -> None:
+def test_invalid_name_is_not_retained_or_released(provider: Provider, name: str) -> None:
     request = model_request(with_tools=True)
     names = {tool_alias("test.read"): "test.read"}
     if provider == "chat":
@@ -372,8 +372,16 @@ def test_invalid_name_is_fatal_before_storing_raw_name(provider: Provider, name:
         value = ChatCompletionChunk.model_validate(
             wire.chunk({"tool_calls": [_call(0, name, ARGUMENTS)]}), strict=True
         )
-        with pytest.raises(ChatProtocolError) as caught:
-            state.feed(value)
+        if name == "":
+            # 空增量与缺省一样可等待后片；整流结束仍缺名时才判定失败。
+            for raw in _values("chat", [_call(0, name, ARGUMENTS)]):
+                events = state.feed(ChatCompletionChunk.model_validate(raw, strict=True))
+                assert not any(isinstance(event, PROPOSALS) for event in events)
+            with pytest.raises(ChatProtocolError) as caught:
+                state.finish(seen_done=True)
+        else:
+            with pytest.raises(ChatProtocolError) as caught:
+                state.feed(value)
         assert caught.value.reason is ChatProtocolReason.TOOL_NAME_UNKNOWN
         assert str(caught.value) == "Chat终态不符合协议"
         assert all(call.name is None for call in state._calls.values())

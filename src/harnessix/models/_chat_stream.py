@@ -193,7 +193,8 @@ class ChatStream:
                     raise ChatProtocolError(ChatProtocolReason.TOOL_TYPE_INVALID)
                 call.type = part.type
             if part.function is not None:
-                if part.function.name is not None:
+                # 空增量不覆盖名称；最终仍须有完整名称，非空名称仍不得漂移。
+                if part.function.name:
                     if not 1 <= len(part.function.name) <= 256:
                         raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_UNKNOWN)
                     if call.name is not None and call.name != part.function.name:

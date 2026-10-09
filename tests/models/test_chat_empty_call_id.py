@@ -51,7 +51,7 @@ async def test_empty_id_does_not_hide_other_protocol_violations(violation):
         update.update(
             {
                 "id_drift": {"id": "another-id"},
-                "name_drift": {"function": {"name": ""}},
+                "name_drift": {"function": {"name": "changed"}},
                 "invalid_type": {"type": ""},
             }[violation]
         )
