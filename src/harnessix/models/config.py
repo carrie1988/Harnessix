@@ -11,6 +11,8 @@ from harnessix.domain.models import ContractModel
 
 
 class ChatCapabilities(ContractModel):
+    """约束模型单响应能力；多调用接收不等于并发执行，后者由Runtime控制。"""
+
     tool_calls: bool = True
     parallel_tool_calls: bool = True
     streaming_usage: Literal[True] = True

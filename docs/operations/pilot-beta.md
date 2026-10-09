@@ -207,12 +207,23 @@ P05 恢复必须是明确批准的先导演练，不在唯一生产状态上操�
 新unknown即停、无自动重试。离线回归见[任务边界](../../tests/evals/test_provider_reverification_task.py)及
 [原生Adapter预算测试](../../tests/evals/test_beta_verification_guard.py)，不计作Beta完成。
 
-本次授权已登记，原129条请求前缀、60元额度和20.77824元旧预留保持不变。
-2026-10-09唯一真实SDK Turn在原生工具执行前因`provider_invalid_provider_output`失败，
+首次任务授权已登记，原129条请求前缀、60元额度和20.77824元旧预留保持不变。
+2026-10-09首次任务授权的真实SDK Turn在原生工具执行前因`provider_invalid_provider_output`失败，
 返回模型标识匹配但用量未知；新增请求全额预留0.54272元，账本总预留21.32096元，
 已知用量费用估算仍为3.102568元。没有自动重试，后续付费请求停止。
 本轮五核心文件真实覆盖0/5、Patch/回归尚未执行，Beta完成数仍0；
 没有原始响应证据，暂不归因供应商或Parser。预算/原生Adapter离线回归633通过不替代此真实失败。
+
+**最新单次承接结果（2026-10-09）**：用户另授权保留两笔共21.32096元预留、在原60/5元范围内最多一次请求。
+独立安装`cb40b89`经22项离线隔离检查后实际执行一次，无重试；认证Attempt定位到
+`chat_protocol/v1:parallel_tool_calls_disabled`：请求显式禁止单响应多调用，但流出现第二个不同工具索引。
+这是本次明确拒绝条件，不推断旧失败原因，也不证明返回的整组参数有效。模型匹配，用量未知，
+新增0.54272元全额预留；131条请求累计已知估算3.102568元、预留21.86368元，均非实际账单。
+唯一次数已消耗，新付费停止；五文件覆盖0/5、整改及业务回归未执行、Beta完成数0。
+低敏证据位于本机`~/Library/Application Support/Harnessix/verification-working/beta-001-single-request-20261009-v1/`，
+包括`authenticated-attempt-diagnostic.json`、`live-ledger-settlement.json`和`live-terminal-replay.json`。
+后续先离线验证现有“接收多调用、Runtime串行执行”配置，不删除协议拒绝、不修改冻结候选；
+真实复验须有新的明确授权，离线通过不算供应商兼容或Beta完成。
 
 
 首个已登记需求为 AIPracticalPlatform 登录过程中浏览器可见明文密码整改，登记及后续执行验收以[任务 001：登录密码传输保护](pilot-tasks/001-login-password-protection.md)为准。该任务对应 P03 类真实缺陷整改，并覆盖取消、重开及人工验收观察；多个 Turn 不拆算多个真实任务。

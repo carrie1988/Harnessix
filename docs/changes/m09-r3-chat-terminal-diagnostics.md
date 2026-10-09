@@ -53,6 +53,29 @@ supersedes: []
 测试用合成wire逐分支验证精确原因和负控，再经正式Runtime持久化/Replay验证；
 这些验证只能证明下次同条件失败可定位，不表示此次根因或Beta业务已经解决。
 
+### 1.2 单次真实复验定位与最小处置
+
+2026-10-09经单次明确授权，`cb40b89`独立安装件的认证Attempt记录
+`chat_protocol/v1:parallel_tool_calls_disabled`。对应
+[`ChatStream.feed`](../../src/harnessix/models/_chat_stream.py)的拒绝条件为
+`len(self._calls) > 1 and not self._parallel`；宿主确实发送`parallel_tool_calls=false`。
+即此次响应出现多个工具索引，与请求约定不符；整组未完成、没有工具释放。
+不从本次推断上次根因，也不认定整组调用名称、参数与用量已经有效。
+
+无需新Provider或降低Parser校验。已有两个独立控制：
+
+- [`ChatCapabilities.parallel_tool_calls`](../../src/harnessix/models/config.py)：是否请求并接收单响应多工具调用。
+- [`AgentRuntime._parallel_read_prefix`](../../src/harnessix/agent/runtime.py)：受`max_parallel_tools`、只读效果、
+  显式并行能力和审批限制选择执行组；`max_parallel_tools=1`仍然串行。
+
+建议后续候选显式启用前者、保持后者为1、保持12文件只读及原工具数/期限/费用边界。
+这是待真实验证的配置方案，不能把本次冻结的false响应在事后当作true接收。
+[合成wire集成测试](../../tests/models/test_chat_batch_serial_execution.py)覆盖串行/并行对照、
+调用结果配对及持久回放、禁用多调用、尾调用非法、缺DONE、数量越界和串行取消；
+已有拒绝仍整组零执行，取消后不启动第二个工具。真实请求结果与预算见
+[先导当前记录](../operations/pilot-beta.md#61-首个真实任务登记)。
+新增7项与原Chat/调度/单次预算关联回归共253项通过；没有发起第二次真实请求。
+
 ## 2. 总体架构、模块边界与取舍
 
 ```mermaid
