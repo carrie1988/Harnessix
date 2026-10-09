@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 12
-code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
+version: 13
+code_revision: 586941578f73ecf40bb416994088c76e1493baaa
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace, execution]
 related_adrs:
@@ -11,6 +11,8 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_proof_route_progress.py
+  - tests/product_config/test_git_proof_route_progress_sdk.py
   - tests/delivery/test_blob_control_origin.py
   - tests/workspace/test_blob_read_control.py
   - tests/product_config/test_git_approval_projection_control.py
@@ -308,6 +310,37 @@ AST 隔离块不是认证 SDK；机械绿例不是响应性、R3 真实质量或
 包括 Manifest／末 Chunk 读前读后、裸／嵌套异常对象、真实缺失／同长度篡改、精确原读取前缀、无 DML、
 原投影事实及检查频次、首失败、出口持续漂移、未知回调和异 Task／线程。
 这些机制回归不是 MAC 来源验收或真实编码评分；原60秒操作／120秒Turn、原深层负载及完整恢复／只读重开仍须独立通过。
+
+### 1.10 业务证明的原 Route 父闭包进度接线
+
+**根因与范围。** 准备证明及审批证明的五处 `router.status` 未传现成计算工厂；
+返回后的 `_snapshot` 分层不能降低此前已执行的父闭包展开成本。
+整改只共用 [`_route_status`](../../src/harnessix/product_config/git_prepared_link_proof.py)，
+不改 Router、Audit、CAS、原认证方法或终端读取契约，不处理另一个 Session 字节复制问题。
+
+```text
+authenticate_prepared_link／read_original_approval_evidence／verify_prepared_link_terminal
+→ _route_status → 原 router.status → 原 Audit.load → 原父闭包 Reader
+  SQL、完整 CAS／规范正文／索引验真：原 Full 与原完整读取
+  已解析 chunk 展开／观察摘要：原 Store 观察 → 本 Task 的局部频检
+  每段首末与终端原作用域：原 Full；失败不返回 Route 或追加业务行
+```
+
+| 接线与字段 | 精确边界 |
+|---|---|
+| `_route_status(router, route_id, checkpoint)` | 保留位置参数、原首末读取、模型严格重建及短路顺序；不发布批准、创建授权或复用上次 Route |
+| `read_control` | 同创建 Task／线程的 exact 控制才从原 `git_checkpoint_boundary` 派生；异常只按本次标记对象身份解层。unknown／foreign 原 callback 对象和旧参数形状保持 |
+| `pure_progress` | 复用 `same_task_io_git_authentication`；原 Store 观察可能 I/O，不称严格纯段。真实 CAS 仍在计算段外，不能改成缓存或省略终端第二次回读 |
+| 终端观察 | [`run_store_read_checkpoint`](../../src/harnessix/workspace/terminal_read_control.py) 的内部 Full 保持，不能拿局部检查替换；本接线不声称消除了该层成本 |
+| 重入 | 同一派生控制的 Full 撤销该段 token；父 Full 不自动撤销子 token。保存检查点段外、异 Task／线程及未知回调不能借原局部身份 |
+
+不改变公共协议、Schema、持久字段、Owner 检测契约或原60／120秒期限。
+机制负控见[原 Store 证明入口](../../tests/product_config/test_git_proof_route_progress.py)、
+[实际 SDK 准备／回读](../../tests/product_config/test_git_proof_route_progress_sdk.py)及
+[六处运输边界](../../tests/product_config/test_git_checkpoint_boundary.py)。
+原 SDK 用例核对真实 prepared 提交、回读和原构造观察首失败，无新增部分 Prefix；
+机制用例的 sentinel 截止点不等于完整 Session／MAC／审批验收。
+原负载恢复与平台发布状态以对应冻结候选的实际结果为准，不按检查次数推导速度或商业完成。
 
 ## 2. 设计目标、范围、非目标与验收标准
 

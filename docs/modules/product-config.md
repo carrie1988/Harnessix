@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 105
-code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
+version: 106
+code_revision: 586941578f73ecf40bb416994088c76e1493baaa
 owners:
   - core
 modules:
@@ -105,6 +105,8 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Product Config模块设计
+
+原准备／审批证明的 Route 回读共用[父闭包进度接线](../changes/m09-r4-git-checkpoint-preparation.md#110-业务证明的原-route-父闭包进度接线)。只补显式计算工厂，真实 CAS、原 Store 观察、终端内部 Full、原首末复核及未知／foreign 调用身份保持；不启用默认 Writer 或据此关闭 R4。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
