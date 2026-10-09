@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 38cc5a04face1517c137a0a96af03d41e6dfc19e
+version: 2
+code_revision: cb40b89cae18540387f6ee417b5a9c7ae48bcbb3
 owners: [core]
 modules: [evals, models]
 related_adrs:
@@ -12,6 +12,7 @@ related_tests:
   - tests/evals/test_provider_reverification.py
   - tests/evals/test_provider_verification_budget.py
   - tests/evals/test_provider_verification_host.py
+  - tests/evals/test_provider_task_continuation.py
 supersedes: []
 ---
 
@@ -20,6 +21,36 @@ supersedes: []
 本文保留原 v1 的 70／40 版本解释。当前脚本另提供封闭 v2 的 60／38 合同，
 两者不混搭、不自动迁移、不替换已登记授权；完整增量及实际授权边界见
 [版本化合同总体与详细设计](m09-r3-reverification-budget-v2.md)。
+
+## 当前增量：BETA-001原五元上限内仅一次承接
+
+2026-10-09预算所有者明确允许：原60元周期及Beta任务5元**累计**上限不变，
+保留两笔合计21.32096元的原未知预留，新增最多一次请求；不自动重试，新未知立即停止。
+原`VerificationBetaTaskReverificationPlan`及全部历史不覆盖、不改为新5元额度。
+此授权仅用于定位真实SDK失败，不代表完整Beta整改或R3评测授权。
+
+复用原Ledger独占、原子发布、Guard与定点计费，增加
+[`VerificationTaskContinuation`](../../scripts/provider_task_continuation.py)封闭记录。
+记录固定原period/task/reverification身份、最多1次、登记前字节SHA、完整请求前缀及全部旧unknown摘要；
+没有可追加金额字段。`authority`仍只是可信管理宿主的授权记录，不是签名或模型可兑换的凭证。
+
+```text
+授权登记 → 原Owner独占 → 核对原计划和当前完整前缀 → 持久化task_continuation
+显式携带continuation_id → 核对原task与旧未决 → 原5元累计及60元总限额 → 持久预留 → 原Adapter
+有一笔新reserved即消耗唯一次数 → completed / not_sent / unknown均不得再次请求
+```
+
+接口为`VerificationBudgetLedger.authorize_task_continuation(path, record)`；运行Owner新增
+`task_continuation_id`，缺少、错误或跨Suite身份一律拒绝。第一次登记后只允许完全相同记录幂等确认，
+不能替换、追加第二次许可或改写历史；当前任务已有0.54272元预留继续计入5元，不从承接点重新计费。
+账本显式升为`harnessix.provider-verification-budget/v4`，旧Reader拒绝，旧v1—v3合同不变。
+恢复仍使用原请求记录：预留后即使未发送、进程重启、发送失败或正常完成，也不能恢复该一次许可。
+任意新未决保留全部预留；取消、超时、持久化不确定及Secret保护继续沿用原Guard规则。
+
+定向回归须覆盖旧前缀/计划/预留不可变、并发登记、精确一次、未发送不复用、旧Owner拒绝、
+5元/60元最小货币单位越界、伪造类型、登记持久化失败和实际MockTransport发送次数。
+新增98项及原预算/Guard/绑定关联集合合计734项离线通过；不计作真实编码质量或Beta完成。
+下述章节保留原Suite合同说明，不把70/40数值套用到这项60/5任务授权。
 
 ## 1. 需求背景、源码研究与设计目标
 

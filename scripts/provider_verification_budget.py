@@ -34,6 +34,13 @@ from scripts.provider_reverification_plan import (
     snapshot_reverification_plan,
     validate_reverification_plan,
 )
+from scripts.provider_task_continuation import (
+    TASK_CONTINUATION_SCHEMA,
+    VerificationTaskContinuation,
+    parse_task_continuation,
+    snapshot_task_continuation,
+    validate_task_continuation,
+)
 
 _MAX_LEDGER_BYTES = 1024 * 1024
 _SCHEMA = "harnessix.provider-verification-budget/v1"
@@ -63,6 +70,7 @@ class VerificationBudgetLedger:
         reverification_id: UUID | None = None,
         suite_id: UUID | None = None,
         task_id: str | None = None,
+        task_continuation_id: UUID | None = None,
     ) -> None:
         self.path = path.absolute()
         self.period_id = str(period_id)
@@ -75,8 +83,10 @@ class VerificationBudgetLedger:
         self.reverification_id = reverification_id
         self.suite_id = suite_id
         self.task_id = task_id
+        self.task_continuation_id = task_continuation_id
         self._registration_only = False
         self._candidate_registration = False
+        self._continuation_registration = False
 
     def __enter__(self) -> Self:
         if self.root is not None:
@@ -142,6 +152,51 @@ class VerificationBudgetLedger:
         if raw is None:
             return None
         return parse_reverification_plan(json.dumps(raw))
+
+    @property
+    def task_continuation(self) -> VerificationTaskContinuation | None:
+        raw = self.period.get("task_continuation")
+        return None if raw is None else parse_task_continuation(json.dumps(raw))
+
+    @classmethod
+    def authorize_task_continuation(cls, path: Path, record: VerificationTaskContinuation) -> None:
+        """独占登记原任务唯一承接；相等重试只确认持久化，不重置请求次数。"""
+        try:
+            checked = snapshot_task_continuation(record)
+        except Exception:
+            raise KernelError("verification_reverification_invalid", "任务承接合同无效") from None
+        owner = cls(path, checked.period_id)
+        owner._registration_only = owner._continuation_registration = True
+        with owner:
+            existing = owner.task_continuation
+            if existing is not None:
+                if existing != checked:
+                    raise KernelError("verification_reverification_invalid", "不能替换任务承接")
+                assert owner.root is not None
+                try:
+                    os.fsync(owner.root)
+                except OSError:
+                    raise KernelError(
+                        "verification_budget_persist_failed", "任务承接未能可靠确认"
+                    ) from None
+                return
+            plan = owner.reverification_plan
+            if (
+                plan is None
+                or checked.ledger_before_sha256 != sha256(owner._body).hexdigest()
+                or checked.prior_request_count != len(owner.period["requests"])
+            ):
+                raise KernelError("verification_reverification_invalid", "承接不属于原账本")
+            try:
+                validate_task_continuation(owner.period, plan, checked)
+            except ValueError:
+                raise KernelError(
+                    "verification_reverification_invalid", "任务承接前缀无效"
+                ) from None
+            owner.period["task_continuation"] = checked.model_dump(mode="json")
+            # 不理解单请求撤销语义的旧Reader必须拒绝，不得恢复原task权限。
+            owner.data["schema"] = TASK_CONTINUATION_SCHEMA
+            owner._save()
 
     @property
     def reverification_binding(self) -> VerificationReverificationBinding | None:
@@ -291,7 +346,8 @@ class VerificationBudgetLedger:
     def _validate(self, value: object) -> dict[str, Any]:
         if (
             not isinstance(value, dict)
-            or value.get("schema") not in {_SCHEMA, _REBOUND_SCHEMA, CHAIN_SCHEMA}
+            or value.get("schema")
+            not in {_SCHEMA, _REBOUND_SCHEMA, CHAIN_SCHEMA, TASK_CONTINUATION_SCHEMA}
             or (value.get("provider"), value.get("currency")) != ("aliyun-bailian", "CNY")
         ):
             raise ValueError
@@ -355,6 +411,15 @@ class VerificationBudgetLedger:
             raise ValueError
         if value["schema"] == _SCHEMA and "reverification_binding_chain" in period:
             raise ValueError
+        if value["schema"] == TASK_CONTINUATION_SCHEMA:
+            if raw_plan is None or "task_continuation" not in period:
+                raise ValueError
+            record = parse_task_continuation(json.dumps(period["task_continuation"]))
+            validate_task_continuation(period, plan, record)
+        elif "task_continuation" in period or any(
+            "task_continuation_id" in request for request in requests
+        ):
+            raise ValueError
         return value
 
     def _read(self) -> bytes:
@@ -396,6 +461,64 @@ class VerificationBudgetLedger:
         finally:
             os.close(descriptor)
 
+    def _validate_continuation_save(self, original: dict[str, Any]) -> None:
+        """承接登记只添加记录；之后冻结账本历史，只允许唯一新预留及其结算。"""
+        old_period = next(p for p in original["periods"] if p["period_id"] == self.period_id)
+        old_record = old_period.get("task_continuation")
+        record = self.period.get("task_continuation")
+        if old_record is None and record is None:
+            return
+        # 除活动周期的承接/请求/金额外，其余周期及顶层历史完全不可变。
+        restored = {
+            **self.data,
+            "schema": original["schema"],
+            "periods": [old_period if p is self.period else p for p in self.data["periods"]],
+        }
+        if restored != original:
+            raise ValueError
+        if old_record is None:
+            if (
+                not self._continuation_registration
+                or record["ledger_before_sha256"] != sha256(self._body).hexdigest()
+                or record["prior_request_count"] != len(old_period["requests"])
+                or {k: v for k, v in self.period.items() if k != "task_continuation"} != old_period
+            ):
+                raise ValueError
+            return
+        if record != old_record or self.data["schema"] != original["schema"]:
+            raise ValueError
+        mutable = {"requests", "known_cost", "reserved_cost"}
+        if {k: v for k, v in self.period.items() if k not in mutable} != {
+            k: v for k, v in old_period.items() if k not in mutable
+        }:
+            raise ValueError
+        old_requests, requests = old_period["requests"], self.period["requests"]
+        if len(requests) < len(old_requests):
+            raise ValueError
+        if len(requests) > len(old_requests) and (
+            requests[-1]["status"] != "reserved"
+            or "cost_estimate" in requests[-1]
+            or "completed_at" in requests[-1]
+        ):
+            raise ValueError
+        for before, after in zip(old_requests, requests, strict=False):
+            if before == after:
+                continue
+            if before["status"] != "reserved" or not isinstance(after.get("completed_at"), str):
+                raise ValueError
+            expected = {**before, "status": after["status"], "completed_at": after["completed_at"]}
+            if after["status"] in {"completed", "not_sent"}:
+                cost = _amount(after["cost_estimate"])
+                if cost > _amount(before["reserved_cost"]) or (
+                    after["status"] == "not_sent" and cost
+                ):
+                    raise ValueError
+                expected.update(reserved_cost="0", cost_estimate=after["cost_estimate"])
+            elif after["status"] != "unknown":
+                raise ValueError
+            if after != expected:
+                raise ValueError
+
     def _save(self) -> None:
         """原字节未变才发布自有候选；同步失败保留可能已发布预留，不发请求。"""
         assert self.root is not None
@@ -403,6 +526,7 @@ class VerificationBudgetLedger:
         try:
             self._validate(self.data)
             original = self._validate(strict_json(self._body))
+            self._validate_continuation_save(original)
             original_period = next(
                 p for p in original["periods"] if p["period_id"] == self.period_id
             )
@@ -482,7 +606,23 @@ class VerificationBudgetLedger:
             raise KernelError("verification_budget_unresolved", "验证预算存在未决请求")
         plan = self.reverification_plan
         binding = self.active_reverification_binding
+        continuation = self.task_continuation
         allowed: set[str] = set()
+        if continuation is not None or self.task_continuation_id is not None:
+            if (
+                continuation is None
+                or self.task_continuation_id != continuation.continuation_id
+                or self.reverification_id != continuation.reverification_id
+                or self.task_id != continuation.task_id
+                or self.suite_id is not None
+                or plan is None
+            ):
+                raise KernelError("verification_budget_unresolved", "任务承接身份不匹配")
+            validate_task_continuation(self.period, plan, continuation)
+            if len(self.period["requests"]) != continuation.prior_request_count:
+                raise KernelError(
+                    "verification_budget_unresolved", "任务承接唯一请求已预留或已使用"
+                )
         if any(
             identity is not None
             for identity in (self.reverification_id, self.suite_id, self.task_id)
@@ -499,6 +639,8 @@ class VerificationBudgetLedger:
                 raise KernelError("verification_budget_unresolved", "复验身份与持久授权不一致")
             validate_reverification_plan(self.period, plan)
             allowed = {str(r.request_id) for r in plan.carried_requests}
+            if continuation is not None:
+                allowed = {str(r.request_id) for r in continuation.carried_requests}
         if any(
             request["status"] == "reserved"
             or (request["status"] == "unknown" and request["request_id"] not in allowed)
@@ -545,6 +687,11 @@ class VerificationBudgetLedger:
                 **(
                     {"task_id": plan.task_id}
                     if isinstance(plan, VerificationBetaTaskReverificationPlan)
+                    else {}
+                ),
+                **(
+                    {"task_continuation_id": str(self.task_continuation_id)}
+                    if self.task_continuation_id is not None
                     else {}
                 ),
                 **(
