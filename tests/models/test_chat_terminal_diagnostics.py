@@ -48,6 +48,8 @@ def malformed_frames(scenario):
         return parts
     elif scenario == "unknown_tool":
         item["function"]["name"] = IDENTITY_CANARY
+    elif scenario == "missing_name":
+        item["function"].pop("name")
     elif scenario == "missing_type":
         item.pop("type")
     elif scenario == "index_gap":
@@ -88,6 +90,7 @@ SCENARIOS = [
     ("missing_id", "tool_id_missing"),
     ("duplicate_id", "tool_id_duplicate"),
     ("unknown_tool", "tool_name_unknown"),
+    ("missing_name", "tool_name_unknown"),
     ("missing_type", "tool_type_invalid"),
     ("index_gap", "tool_index_gap"),
     ("second_tool_invalid", "tool_name_unknown"),
@@ -101,6 +104,34 @@ SCENARIOS = [
     ("finish_mismatch", "finish_tool_mismatch"),
     ("unsupported_finish", "finish_reason_unsupported"),
 ]
+
+
+@pytest.mark.parametrize("supply_late_name", [False, True])
+async def test_deferred_name_must_arrive_before_batch_completion(supply_late_name):
+    first, second = call(), call(index=1)
+    second["function"].pop("name")
+    parts = [frame(chunk({"tool_calls": [first, second]}))]
+    if supply_late_name:
+        parts.append(
+            frame(
+                chunk(
+                    {"tool_calls": [{"index": 1, "function": {"name": first["function"]["name"]}}]}
+                )
+            )
+        )
+    parts.extend([frame(chunk(finish="tool_calls")), frame(chunk(usage=True)), b"data: [DONE]\n\n"])
+    events, wire = await collect(parts, max_attempts=3)
+    observations = [e for e in events if isinstance(e, ModelUsageObserved)]
+    assert observations[-1].usage.completeness == "complete"
+    assert wire.closed and sum(isinstance(e, ModelAttemptStarted) for e in events) == 1
+    calls = [e for e in events if isinstance(e, ToolCallCompleted | ToolCallRejected)]
+    if supply_late_name:
+        assert len(calls) == 2 and all(isinstance(e, ToolCallCompleted) for e in calls)
+        assert isinstance(events[-1], ResponseCompleted)
+    else:
+        assert calls == [] and events[-1] == ResponseFailed(code="invalid_provider_output")
+        finished = next(e for e in events if isinstance(e, ModelAttemptFinished))
+        assert finished.error.message.endswith("chat_protocol/v1:tool_name_unknown")
 
 
 @pytest.mark.parametrize("scenario,reason", SCENARIOS)
@@ -146,7 +177,9 @@ async def test_sdk_terminal_diagnostic_preserves_failure_and_releases_no_tools(s
         assert observations[-1].usage.output_tokens == 2
 
 
-@pytest.mark.parametrize("scenario", ["unknown_tool", "second_tool_invalid", "bad_json", "no_done"])
+@pytest.mark.parametrize(
+    "scenario", ["unknown_tool", "second_tool_invalid", "missing_name", "bad_json", "no_done"]
+)
 async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execution(
     tmp_path, scenario, caplog
 ):
@@ -214,9 +247,11 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
         assert turn.status == "failed" and turn.error.code == "provider_invalid_provider_output"
         assert turn.usage == Usage(input_tokens=10, output_tokens=2)
         assert len(turn.model_attempts) == 1 and turn.model_attempts[0].status == "failed"
-        expected_reason = (
-            "tool_arguments_invalid" if scenario == "bad_json" else "completion_incomplete"
-        )
+        expected_reason = {
+            "bad_json": "tool_arguments_invalid",
+            "missing_name": "tool_name_unknown",
+            "no_done": "completion_incomplete",
+        }[scenario]
         assert turn.model_attempts[0].error.message == (
             f"Provider 返回结构化失败；chat_protocol/v1:{expected_reason}"
         )
