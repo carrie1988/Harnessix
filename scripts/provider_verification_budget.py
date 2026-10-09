@@ -676,7 +676,7 @@ class VerificationBudgetLedger:
                 >= continuation.maximum_requests
             ):
                 raise KernelError("verification_budget_unresolved", "任务承接请求次数已耗尽")
-        if any(
+        if isinstance(plan, VerificationBetaTaskReverificationPlan) or any(
             identity is not None
             for identity in (self.reverification_id, self.suite_id, self.task_id)
         ):

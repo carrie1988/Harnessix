@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, TypeAdapter
+from pydantic import ConfigDict, Field, TypeAdapter, field_validator
 
 from harnessix.domain.models import ContractModel
 from harnessix.evals.cli_config import read_private_eval_config
@@ -80,10 +80,31 @@ class VerificationBetaTaskReverificationPlan(ContractModel):
     ]
 
 
+class VerificationBetaTaskBudgetPlan(VerificationBetaTaskReverificationPlan):
+    """空新60元周期内的BETA-001累计10元授权；不承接旧费用或限制请求次数。"""
+
+    spec_version: Literal["harnessix.provider-beta-task-budget/v1"]
+    maximum_cost: Literal["10"]
+    prior_request_count: Literal[0]
+    prior_requests_sha256: Literal[
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    ]
+    carried_requests: tuple[()]
+
+    @field_validator("prior_request_count", mode="before")
+    @classmethod
+    def validate_empty_prefix_count(cls, value: object) -> int:
+        # Literal[0]本身会把False或0.0归一化为0，授权合同禁止这种隐式转换。
+        if type(value) is not int:
+            raise ValueError("旧请求数量必须为整数0")
+        return value
+
+
 type VerificationReverificationPlanRecord = (
     VerificationReverificationPlan
     | VerificationReverificationPlanV2
     | VerificationBetaTaskReverificationPlan
+    | VerificationBetaTaskBudgetPlan
 )
 
 _PLAN_ADAPTER: TypeAdapter[VerificationReverificationPlanRecord] = TypeAdapter(
@@ -96,6 +117,10 @@ class _ReverificationPlanFile(_ReverificationPlanFields):
 
     suite_id: UUID | None = None
     task_id: str | None = None
+    prior_request_count: Annotated[int, Field(ge=0, le=10000)]
+    carried_requests: Annotated[
+        tuple[CarriedVerificationRequest, ...], Field(min_length=0, max_length=1)
+    ]
 
 
 def parse_reverification_plan(text: str) -> VerificationReverificationPlanRecord:
@@ -118,6 +143,7 @@ def snapshot_reverification_plan(value: object) -> VerificationReverificationPla
             VerificationReverificationPlan,
             VerificationReverificationPlanV2,
             VerificationBetaTaskReverificationPlan,
+            VerificationBetaTaskBudgetPlan,
         }
         or set(value.__dict__) != set(type(value).model_fields)
         or value.__pydantic_extra__ is not None

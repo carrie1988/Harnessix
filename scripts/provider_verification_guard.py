@@ -172,6 +172,19 @@ class BailianBetaVerificationBounds(BailianVerificationBounds):
     )
 
 
+@dataclass(frozen=True, slots=True)
+class BailianBetaInstructVerificationBounds(BailianBetaVerificationBounds):
+    """仅BETA-001的Instruct北京非思考价；沿用宿主输出上限，保留Next历史。"""
+
+    model: ClassVar[str] = "qwen3-235b-a22b-instruct-2507"
+    price_source: ClassVar[str] = (
+        "https://help.aliyun.com/zh/model-studio/qwen3-235b-a22b-instruct-2507"
+    )
+    guard_version: ClassVar[str] = "harnessix.bailian-beta-instruct-request-guard/v1"
+    maximum_input_tokens: ClassVar[int] = 129_024
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = ((129_024, 2_000, 8_000),)
+
+
 @dataclass(slots=True)
 class GuardedVerificationProvider:
     """托管官方Adapter的单请求预留与结算；歧义会取消整个Suite。"""

@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 13
+version: 14
 code_revision: 7fca4a526bbbd3cde7e7c66552704126757171c2
 owners:
   - core
@@ -199,7 +199,14 @@ P05 恢复必须是明确批准的先导演练，不在唯一生产状态上操�
 
 **2026-10-09当前执行约束**：BETA-001为最高优先级，仅使用已授权12文件独立副本进行模型调查；完整423文件基线仅供本地测试，不外发，也不重新访问原项目目录。以下日期化记录保留为历史，不代表本次预算或候选。
 
-用户已批准原60元周期内保留旧未决请求20.77824元预留，BETA-001新增费用封顶5元。
+**最新预算授权**：用户重置新一轮总预算60元、Beta累计10元，不限定Beta请求次数。
+旧账本132条请求及22.40640元未决预留原样留存，不结算、不退款、不删除；本次新周期不承接旧费用。
+新周期`18f94ea3-92bb-4ebc-8cef-6dab61420bb3`使用独立BETA-001身份，后继各Turn累计同一10元额度。
+替代模型为北京`qwen3-235b-a22b-instruct-2507`；工具串行，原Turn资源边界不变，新未决即停，不自动重试。
+[新合同及价格依据](../changes/m09-r3-bounded-reverification-budget.md)不改变R3固定评测。
+当前新空账本已建立，宿主离线准备中；没有因此新增Beta完成数。
+
+**旧周期历史**：用户曾批准原60元周期内保留旧未决请求20.77824元预留，BETA-001新增费用封顶5元。
 [任务授权合同](../../scripts/provider_reverification_plan.py)使用独立task身份，不是R3 Suite授权；
 [账本](../../scripts/provider_verification_budget.py)保留原请求前缀并拒绝新增未决后的继续执行。
 [请求保护](../../scripts/provider_verification_guard.py)为本任务单独核验北京`qwen3-coder-next`价格与用量，

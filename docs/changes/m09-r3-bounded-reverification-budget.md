@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 3
+version: 4
 code_revision: 812af76304b5744844b4dcd3761adbec041af1fd
 owners: [core]
 modules: [evals, models]
@@ -14,6 +14,8 @@ related_tests:
   - tests/evals/test_provider_verification_host.py
   - tests/evals/test_provider_task_continuation.py
   - tests/evals/test_provider_task_continuation_chain.py
+  - tests/evals/test_beta_task_budget_plan.py
+  - tests/evals/test_beta_instruct_bounds.py
 supersedes: []
 ---
 
@@ -22,6 +24,25 @@ supersedes: []
 本文保留原 v1 的 70／40 版本解释。当前脚本另提供封闭 v2 的 60／38 合同，
 两者不混搭、不自动迁移、不替换已登记授权；完整增量及实际授权边界见
 [版本化合同总体与详细设计](m09-r3-reverification-budget-v2.md)。
+
+## 最新授权：新60元周期、Beta累计10元、无请求次数门
+
+2026-10-09用户明确重置总预算为60元，Beta累计限额10元，不限制Beta请求次数。
+这不是将旧四次许可恢复或将旧未决认作零费用：旧账本及132条请求原样保存，新空周期独立登记。
+`VerificationBetaTaskBudgetPlan`使用`harnessix.provider-beta-task-budget/v1`，固定BETA-001、
+60/10金额、零长度前缀及空承接集合；原60/5、70/40及历史次数合同不变。
+登记复用`authorize_reverification`，请求仍先持久预留再发送，重开与多Turn累计不得归零。
+没有次数门不等于无资源边界：原Turn步数、期限和Token限制保留；累计估算加全部未决预留不能超过10元，
+新未决即停，无自动重试。登记后的任务账本也拒绝无身份Owner，避免绕过单任务控制。
+
+Beta独立选用北京`qwen3-235b-a22b-instruct-2507`，不改变R3固定模型或评分。
+[官方能力与价格](https://help.aliyun.com/zh/model-studio/qwen3-235b-a22b-instruct-2507)于2026-10-09核验：
+北京支持Function Calling，完整输入上限129024，输入/输出为2/8元每百万Token。
+宿主输出仍为3072，单请求最高预留`(129024×2＋3072×8)/1000000 = 0.282624`元；
+不使用其他地域价格、不削减输入上限凑预算、不把官方能力声明当真实兼容或编码质量通过。
+模型、价格窗口、原任务合同均进入指纹，返回模型不符、用量不完整或没有成功终态保留预留。
+
+下文是旧周期的完整历史记录，不再作为本轮金额或次数授权。
 
 ## 当前增量：BETA-001原五元上限内仅一次承接
 
