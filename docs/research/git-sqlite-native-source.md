@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 12
-code_revision: a5b738200de454a0aebc461507b791310fa29cfb
+version: 13
+code_revision: 198aa4399e15af79b7e6038481e77f690a0ec8f3
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -519,6 +519,25 @@ Python ASAN／LSAN 正控自身仍报泄漏，不能记为完整 clean pass。
 证据集中于本机 `verification-working/r4-macos-memory-20261010-v1`，
 以 `llvm22/control-results.json`、`formal-runner-results.json`、`attribution/results.json`及交付清单复核。
 
+#### 加载失败额外泄漏：已归因，未替换宿主驱动
+
+后继隔离配对确认，[CPython 3.12.7 的加载失败分支](https://github.com/python/cpython/blob/v3.12.7/Modules/_sqlite/connection.c#L1690-L1695)
+设置 Python 异常后没有按 [SQLite 合同](https://www.sqlite.org/c3ref/load_extension.html)释放 `errmsg`。
+官方源包复制两份，仅一份补 `sqlite3_free(errmsg)`；以相同编译参数、原 Python 头文件、同一原 SQLite 动态库构建。
+两个驱动都只加载到专用 `-I -B` 子进程，不安装、不替换 Anaconda 或产品依赖；原生桥和原测试源码不变。
+
+| 配对实验 | 原安装驱动／官方未修复副本 | 单行修复副本 |
+|---|---|---|
+| 无桥，禁用扩展后调用 0／1／100 次 | 两工具均为 25408／25424／27008 bytes | 均为 25408 bytes；异常、审计次数及无新增 SQL 断言保持 |
+| 原三个失败场景 | 额外 32／72 bytes 可复现 | 额外泄漏消失；仍报告基线 69553 bytes／65 allocations |
+| 原 14 个加载、读写／只读及审计否决场景 | 原断言通过 | 原断言通过；所有进程仍因泄漏退出 73 |
+
+18 次无桥配对与 84 次原场景执行只是归因证据，**没有一个据此获得 clean memory pass**。
+调用栈定位到 `sqlite3_load_extension → pysqlite_connection_load_extension_impl`；不把基线相同解释为完整无泄漏证明。
+另一次允许 `PYTHONMALLOC=malloc` 的诊断增加了泄漏量，并非解决办法；该次未使用原 `-I` 合同，不作正式验收。
+证据集中于本机 `verification-working/r4-macos-host-leaks-20261010-v1`，包含官方来源／摘要、单行补丁、
+构建、原始非零退出及断言结果。宿主基线、正式运行时交付与完整内存门禁仍待解决，不能修改桥来掩盖驱动缺陷。
+
 ### 7.7 WAL 点时观察可行，SHM 尚未解决
 
 固定[SQLite 3.45.3 官方源码](https://www.sqlite.org/2024/sqlite-amalgamation-3450300.zip)及原引擎的
@@ -534,6 +553,23 @@ journal/WAL 的合法方法表没有 `xShmMap`，不能机械照搬 main 条件�
 不能作为无副作用查询，探针没有调用它。下一步须证明独立 expected WAL pin、重开／checkpoint／置换，
 并独立设计 SHM 的连接归属；本轮不添加生产接口，不关闭完整 FD、B7 或 R4。
 源码、首轮失败和两轮复验位于本机 `verification-working/r4-wal-shm-probe-20261010-v1`。
+
+#### SHM 合同决策：原点查路线 NO-GO，生命周期方案待对齐
+
+固定 3.45.3 源码的 `unixOpenSharedMemory`可让连接 B 复用 A 的已有共享节点；
+`unixShmMap`复用已映射区域时返回原地址，不必产生新的 SHM open／fstat／mmap。
+因此三个 syscall 记录只能说明进程见过资源，不能证明 B 的成员归属；纯转发 VFS 也不导出实际 SHM FD。
+本轮是源码求证，没有运行数据库探针或实现候选；不再沿“给旧桥补一次公开调用”的路线尝试。
+
+建议先有界验证：**具名公共 VFS 包装层 + 完整 FD／映射生命周期记录**，底层继续委托固定 unix，
+以自然 `xShmMap`返回的映射关联文件实例，再用 close／munmap 撤销物理代次；检查只读登记，不触发映射或 SQL。
+这不是已批准的新合同：需把顶层默认 unix 改成受信具名包装层，把事后 attach 改成打开前纳管，
+并明确全引擎独占启动、相关连接全部纳管及冷启动创建授权。进程默认 VFS 不改，不能直接接管任意已有连接。
+独立 expected SHM 身份或创建授权缺失、历史缺口、只读堆内存回退、代次漂移均不得认证成功。
+单连接离开不能撤销其他共享成员，checkpoint 不等于解除映射；取消、期限、原异常和锁序合同继续保留。
+
+决策材料位于本机 `verification-working/r4-shm-contract-20261010-v1`，主线复核了官方摘要和关键复用分支。
+用户确认前不实现新后端、不改变现行资格守卫或默认 Writer；该方案也不承诺解决未观察历史 ABA 连续性。
 
 ## 8. 源码映射、取舍与下一步
 
