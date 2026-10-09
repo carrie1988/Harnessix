@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 29
-code_revision: c2c1ee1a7ef8b6a014ab955c302658c8480de2f3
+version: 30
+code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
 owners:
   - core
 modules:
@@ -40,6 +40,9 @@ supersedes: []
 ---
 
 # Agent Runtime模块设计
+
+固定Profile新输出的有界诊断与共享指令v6见[Process当前设计](processes.md#当前增量经审计的有界诊断预览)。
+只减少不必要的日志往返，不改变调用发布前Token门控、恢复、审批或完整评测要求。
 
 原 Runtime 的 Thread 锁现采用实际 Task 归属检查，沿原 acquire／release 记录持有者，
 不以 `locked()`布尔值代替当前 Task 来源。原 `_lock`上下文接口保持；私有检查不创建锁，

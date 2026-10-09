@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 36
-code_revision: ba7ab34f0a4ebe04ab1b79afd3261accad966d01
+version: 37
+code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
 owners:
   - core
 modules:
@@ -23,6 +23,9 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/processes/test_diagnostic_preview.py
+  - tests/product_config/test_process_diagnostic_preview.py
+  - tests/trusted_actions/test_process_preview_projection.py
   - tests/processes/test_posix_raw_receipt.py
   - tests/product_config/test_git_delivery_process.py
   - tests/processes/test_raw_output_receipt.py
@@ -51,6 +54,56 @@ supersedes: []
 ---
 
 # Harnessix Code Process Runtime模块设计
+
+## 当前增量：经审计的有界诊断预览
+
+**背景与目标。** R3旧候选四份报告的八次模型调用累计输入约5.4～5.8万Token；
+Profile只返回元数据，模型另发`read_artifact`读取Base64日志。现在直接提供可显示的短诊断，
+减少这类往返；不提高任务Token、期限、压缩阈值，不删基线、最终检查或Git反馈。
+提示词不保证模型行为，离线通过也不证明完整真实质量通过。
+
+### 契约与调用链
+
+```mermaid
+sequenceDiagram
+    participant O as Process Owner
+    participant E as Product Executor
+    participant R as Router
+    participant P as Output Provider
+    participant S as Session与Artifact
+    O->>E: 验真的Lease及持久流
+    E->>R: v2公开输出与原v1归档Hash
+    R->>R: 保留终态及输出Hash 不保存诊断正文
+    P->>O: 重建同一规范归档
+    P->>P: 按原审计Hash选择v2或历史v1
+    P->>S: 完整正文保护后发布原归档
+    S->>S: 原Session保护与v2 DTO校验
+```
+
+| 对象／字段 | 源码及约束 |
+|---|---|
+| `PublicProcessOutputSummaryV2` | [`public_output.py`](../../src/harnessix/processes/public_output.py)：`version=trusted-process-output/v2`，严格禁止额外字段；旧v1及Eval DTO不变 |
+| `diagnostic_preview.stdout/stderr` | 各流`text`、`size_bytes`、`truncated`；最多1024 UTF-8字节，`truncated`按已观察字节判断，不等同于归档`complete` |
+| `text=null` | 归档前缀含非法UTF-8或非显示控制字符时不替换字节、不展示伪造文本；模型仍可用原Artifact分页 |
+| 原文档 | [`trusted_output.py`](../../src/harnessix/processes/trusted_output.py)：文档及Base64分片保持v1、原规范字节及SHA；多字节文本只在完整字符处截断 |
+| 审计与恢复 | [`process_action.py`](../../src/harnessix/product_config/process_action.py)：新执行的预览进入原输出Hash；重建先匹配v2，再精确匹配历史v1，均不匹配则拒绝，无重新执行 |
+| 读取与公开 | [`action_output_store.py`](../../src/harnessix/artifacts/action_output_store.py)按已提交版本重建并精确比较；[`public_outcomes.py`](../../src/harnessix/trusted_actions/public_outcomes.py)按版本选闭合DTO并核对计划、Hash |
+
+核心流程为：`验真Owner流 → 构造原归档 → 派生v2预览 → 终态审计 → Owner重建与双Hash复核
+→ 全归档二进制/Secret保护 → 原Session发布 → Artifact分页按相同版本回验`。
+Secret扫描仍覆盖整个归档双流，包括预览之外及分片边界，不因预览截断而减少扫描。
+取消、期限、输出损坏、Owner缺失或投影拒绝保留原效果语义，不刷新期限、不补写成功、不重放。
+此处升版是公开Process输出DTO，不是归档格式、Agent Item或输入/执行权限合同的升版。
+
+### 指令、测试与验收边界
+
+共享[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)升至v6：先用预览，截断、
+null或诊断不足时再读日志；正文2745 UTF-8字节，仍小于原2751护栏。它不是自动跳过验证的规则。
+三个新增测试文件覆盖UTF-8边界、控制字符、双流、公示字段/Hash篡改、原v1恢复、取消/期限、
+Owner缺失、Secret跨分片及预览外拒绝；实际Product批准链和分页均有回归，不将模拟Owner当作容器验收。
+本轮同一非editable安装包494项：492 PASS、2 FAIL；两项旧迁移测试在前一安装包同样失败，
+原失败保留，不能据此宣称全套回归或商用通过。全量Schema检查的四项存量漂移同样保留；新v2与旧v1合同单测通过。
+R3仍须独立新候选完整20 Trial，R4仍须原期限只读重开及默认完整写链验收。
 
 > **0.9.1f3收敛说明：** 旧`ProcessActionExecutor`、`ProcessAgentBridge`、`RunTestsAgentBridge`和
 > Process Artifact发布器已物理删除；第10～12节、22.3、32.3和35.4只保留删除前设计的历史解释，不是当前调用链。
