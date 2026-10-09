@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 256
+version: 257
 code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
 owners:
   - core
@@ -2865,3 +2865,11 @@ R4一次有界无Owner微测证实重复路径打开，相关open约11毫秒、F
 清单SHA-256为`c6cb7d718d539ce9c74280120abe45ed7a188d0a2aa2ce5140196396a1c677cf`。
 下一步先整改实测目录拒绝／漏验证及重复输入，再建立新候选；本Suite不恢复、不自动重试。
 R3仍未通过，R4原期限重开、默认完整Writer、B4/B7与平台门禁继续开放，商用NO-GO。
+
+R4后继一次原认证fixture诊断已完成首次准备／Review后主动Skipped，非业务验收；
+原16文件／400目录／25层／两Patch及60／120秒不变，Owner／认证callback未替换。
+准备段实测根链open 620,546次／包围计时21.528秒，相对组件142,872次／6.106秒；
+fresh Owner连接7,795次／0.264秒，SELECT／fetch／close耗时未测。
+计时含审计hook／探针，不是裸syscall或优化收益，不能与嵌套计时相加解释总时延。
+FD 4→6尚未归属，不宣称无泄漏；Ledger／恢复／重开未执行。
+后续优先追踪完整认证链中根路径重开的调用来源与Local／Full边界，不削减物理复核来换速度。
