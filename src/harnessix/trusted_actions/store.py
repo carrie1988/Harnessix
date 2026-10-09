@@ -33,6 +33,7 @@ from harnessix.trusted_actions.ownership_store import (
 )
 from harnessix.trusted_actions.transition_store import ActionTransitionStoreMixin
 from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2, ActionRouteSnapshotV2
+from harnessix.workspace.blob_read_control import read_workspace_blob
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.parent_closure_codec import read_workspace_parent_closure
 from harnessix.workspace.snapshot_ports import (
@@ -170,12 +171,14 @@ class _ActionRouteClosureReader:
         def read(digest: str) -> bytes:
             assert read_blob is not None
             try:
-                return read_blob(digest)
+                return read_workspace_blob(read_blob, digest, mark)
             except KernelError as error:
                 if error.code in {"delivery_blob_corrupt", "delivery_blob_invalid"}:
                     raise
                 raise mark(error) from None
             except BaseException as error:
+                if any(error is marked for marked in owned_errors):
+                    raise
                 raise mark(error) from None
 
         def check() -> None:

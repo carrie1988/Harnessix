@@ -21,6 +21,7 @@ from harnessix.execution.contracts import (
 )
 from harnessix.execution.versioned_contracts import ExecutionPlanV3
 from harnessix.sqlite_readonly import readonly_database
+from harnessix.workspace.blob_read_control import workspace_blob_read_boundary
 from harnessix.workspace.parent_closure_codec import read_workspace_parent_closure
 
 _SCHEMA_VERSION = "1"
@@ -108,14 +109,13 @@ class _ExecutionPlanValidation:
         if isinstance(plan, ExecutionPlanV3):
             if self._read_blob is None:
                 raise KernelError(error_code, "Execution Plan缺少完整父目录历史读取端口")
-            try:
-                read_workspace_parent_closure(
-                    plan.workspace, self._read_blob, checkpoint=self._checkpoint
-                )
-            except KernelError as error:
-                if error.code != "workspace_closure_corrupt":
-                    raise
-                raise KernelError(error_code, "Execution Plan父目录历史损坏") from None
+            with workspace_blob_read_boundary(self._read_blob) as read:
+                try:
+                    read_workspace_parent_closure(plan.workspace, read, checkpoint=self._checkpoint)
+                except KernelError as error:
+                    if error.code != "workspace_closure_corrupt":
+                        raise
+                    raise KernelError(error_code, "Execution Plan父目录历史损坏") from None
         return plan
 
     @staticmethod

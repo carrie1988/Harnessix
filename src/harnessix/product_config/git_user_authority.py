@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path, PosixPath, WindowsPath
+from types import MethodType
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
@@ -50,6 +51,7 @@ def require_git_user_authority(
     ):
         raise _invalid()
     audit, plans, state = router._audit, router._plans, session.path.parent
+    controlled_read = ports.controlled_read_blob
     root, executable, binding = reader._root, reader._executable, reader.contract()
     process_state = reader._state_directory
     arguments = _git_arguments(for_delivery=True)
@@ -80,6 +82,16 @@ def require_git_user_authority(
             or router._audit is not audit
             or router._plans is not plans
             or router._snapshot_ports is not ports
+            or ports.controlled_read_blob is not controlled_read
+            or (
+                controlled_read is not None
+                and (
+                    type(controlled_read) is not MethodType
+                    or getattr(controlled_read, "__self__", None) is not transactions
+                    or getattr(controlled_read, "__func__", None)
+                    is not transactions.controlled_blob.__func__
+                )
+            )
             or audit._closed
             or plans._closed
             or transactions._closed

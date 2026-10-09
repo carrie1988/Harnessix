@@ -47,6 +47,7 @@ from harnessix.trusted_actions.recovery_contracts import (
 )
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
+from harnessix.workspace.blob_read_control import WorkspaceBlobReader
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 
@@ -140,14 +141,15 @@ async def _open_action_dependencies(
         transactions = resources.enter_context(
             SQLiteWorkspaceTransactionStore(state_root / "workspace-transactions")
         )
+        history_reader = WorkspaceBlobReader(transactions.blob, transactions.controlled_blob)
         plans = resources.enter_context(
-            SQLiteExecutionPlanStore(state_root / "execution-plans.db", read_blob=transactions.blob)
+            SQLiteExecutionPlanStore(state_root / "execution-plans.db", read_blob=history_reader)
         )
         audit = resources.enter_context(
             SQLiteActionAuditStore(
                 state_root / "action-audit.db",
                 require_runtime_owner=True,
-                read_blob=transactions.blob,
+                read_blob=history_reader,
             )
         )
         fence = resources.enter_context(audit.runtime_owner())
@@ -195,6 +197,7 @@ def _product_router(
         snapshot_ports=WorkspaceSnapshotPorts(
             dependencies.transactions.put_blob,
             dependencies.transactions.blob,
+            dependencies.transactions.controlled_blob,
         ),
         execute_timeout_seconds=_route_execute_timeout(*configs),
     )

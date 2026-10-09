@@ -21,6 +21,7 @@ from harnessix.delivery.workspace_v2_contracts import (
     WorkspaceTransactionPlanV2,
     WorkspaceTransactionRecordV2,
 )
+from harnessix.workspace.blob_read_control import read_workspace_blob
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.parent_closure_codec import read_workspace_parent_closure
 from harnessix.workspace.parent_closure_contracts import (
@@ -121,12 +122,14 @@ def decode_workspace_record(
 
     def read(digest: str) -> bytes:
         try:
-            return read_blob(digest)
+            return read_workspace_blob(read_blob, digest, mark)
         except KernelError as error:
             if error.code in {"delivery_blob_corrupt", "delivery_blob_invalid"}:
                 raise
             raise mark(error) from None
         except BaseException as error:
+            if any(error is marked for marked in owned_errors):
+                raise
             raise mark(error) from None
 
     check = _protected_checkpoint(checkpoint, mark_error=mark)

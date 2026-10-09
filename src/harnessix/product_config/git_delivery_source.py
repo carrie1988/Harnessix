@@ -41,6 +41,10 @@ from harnessix.product_config.workspace_patch_source_contracts import (
     product_git_delivery_source_digest,
 )
 from harnessix.trusted_actions.router import TrustedActionRouter
+from harnessix.workspace.blob_read_control import (
+    WorkspaceBlobReader,
+    workspace_blob_read_boundary,
+)
 from harnessix.workspace.contracts import PlatformKind, WorkspaceResourceRequest, WorkspaceSnapshot
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.paths import path_comparison_key
@@ -167,14 +171,15 @@ def _observe_final_versions(
     if snapshot_ports is None:
         snapshot = capture_workspace_snapshot(root, platform=base.platform, resources=resources)
     else:
-        snapshot = capture_workspace_snapshot_v2(
-            root,
-            platform=base.platform,
-            resources=resources,
-            checkpoint=checkpoint,
-            write_blob=snapshot_ports.write_blob,
-            read_blob=snapshot_ports.read_blob,
-        )
+        with _snapshot_blob_reader(snapshot_ports) as read:
+            snapshot = capture_workspace_snapshot_v2(
+                root,
+                platform=base.platform,
+                resources=resources,
+                checkpoint=checkpoint,
+                write_blob=snapshot_ports.write_blob,
+                read_blob=read,
+            )
     if (snapshot.workspace_id, snapshot.root_path_digest, snapshot.root_identity) != (
         base.workspace_id,
         base.root_path_digest,
@@ -253,6 +258,18 @@ def _read_source_file(
         raise error.error from None
 
 
+@contextmanager
+def _snapshot_blob_reader(ports: WorkspaceSnapshotPorts) -> Iterator[Callable[[str], bytes]]:
+    """原绑定端口不变；观察回调仅在本次完整历史消费中获得来源标记。"""
+    reader = (
+        ports.read_blob
+        if ports.controlled_read_blob is None
+        else WorkspaceBlobReader(ports.read_blob, ports.controlled_read_blob)
+    )
+    with workspace_blob_read_boundary(reader) as read:
+        yield read
+
+
 def _verify_final_snapshot(
     snapshot: WorkspaceSnapshot | WorkspaceSnapshotV2,
     root: Path,
@@ -263,19 +280,18 @@ def _verify_final_snapshot(
     if isinstance(snapshot, WorkspaceSnapshotV2):
         if ports is None:
             raise KernelError("workspace_closure_unavailable", "完整Workspace历史端口不可用")
-        if type(checkpoint) is GitAuthenticationControl:
-            verify_workspace_snapshot_v2(
-                snapshot,
-                root,
-                checkpoint=checkpoint,
-                read_blob=ports.read_blob,
-                native_progress=_native_snapshot_progress(checkpoint),
-                pure_progress=lambda: same_task_pure_git_authentication(checkpoint),
-            )
-        else:
-            verify_workspace_snapshot_v2(
-                snapshot, root, checkpoint=checkpoint, read_blob=ports.read_blob
-            )
+        with _snapshot_blob_reader(ports) as read:
+            if type(checkpoint) is GitAuthenticationControl:
+                verify_workspace_snapshot_v2(
+                    snapshot,
+                    root,
+                    checkpoint=checkpoint,
+                    read_blob=read,
+                    native_progress=_native_snapshot_progress(checkpoint),
+                    pure_progress=lambda: same_task_pure_git_authentication(checkpoint),
+                )
+            else:
+                verify_workspace_snapshot_v2(snapshot, root, checkpoint=checkpoint, read_blob=read)
     else:
         verify_workspace_snapshot(snapshot, root)
 

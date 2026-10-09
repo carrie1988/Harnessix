@@ -34,6 +34,7 @@ from harnessix.delivery.workspace_store_schema import (
 )
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
 from harnessix.sqlite_readonly import readonly_database
+from harnessix.workspace.blob_read_control import BlobErrorMarker
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.snapshot_ports import (
     WorkspacePureProgressFactory,
@@ -233,10 +234,11 @@ class SQLiteWorkspaceTransactionStore:
     def blob(self, digest: str, *, checkpoint: Callable[[], None] | None = None) -> bytes:
         """完整回读；显式操作检查点仅以原控制标记传播，不改变共享回调。"""
         check = _blob_checkpoint(self._check, checkpoint)
-        check()
-        body = self._read_blob(digest)
-        check()
-        return body
+        return _read_checked_blob(digest, self._read_blob, check)
+
+    def controlled_blob(self, digest: str, mark_error: BlobErrorMarker) -> bytes:
+        check = _blob_checkpoint(self._check, None, mark_error=mark_error)
+        return _read_checked_blob(digest, self._read_blob, check)
 
     def _read_blob(self, digest: str) -> bytes:
         """共用原CAS严格IO；Plan元数据读取不触发文件镜像端口。"""
@@ -381,19 +383,33 @@ class SQLiteWorkspaceTransactionStore:
         self.close()
 
 
+def _read_checked_blob(
+    digest: str, read: Callable[[str], bytes], check: Callable[[], None]
+) -> bytes:
+    """共用原读前／物理完整读取／读后顺序；不合并或新增检查点。"""
+    check()
+    body = read(digest)
+    check()
+    return body
+
+
 def _blob_checkpoint(
-    original: Callable[[], None], checkpoint: Callable[[], None] | None
+    original: Callable[[], None],
+    checkpoint: Callable[[], None] | None,
+    *,
+    mark_error: BlobErrorMarker | None = None,
 ) -> Callable[[], None]:
     """显式操作先消费原回调再消费调用方；仅实际检查点异常标为控制信号。"""
-    if checkpoint is None:
+    if checkpoint is None and mark_error is None:
         return original
 
     def check() -> None:
         try:
             original()
-            checkpoint()
+            if checkpoint is not None:
+                checkpoint()
         except BaseException as error:
-            raise UpstreamCheckpointError(error) from None
+            raise (mark_error or UpstreamCheckpointError)(error) from None
 
     return check
 

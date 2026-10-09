@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 
@@ -17,7 +18,13 @@ from tests.support.git_user_observation import run_authenticated_observation
 
 @pytest.mark.parametrize("store_kind", ["audit", "transactions"])
 @pytest.mark.parametrize(
-    "code", ["workspace_patch_source_not_owned", "workspace_patch_source_not_published"]
+    "code",
+    [
+        "workspace_patch_source_not_owned",
+        "workspace_patch_source_not_published",
+        "delivery_blob_corrupt",
+        "delivery_blob_invalid",
+    ],
 )
 @pytest.mark.parametrize("layered", [False, True])
 @pytest.mark.parametrize("nested", [False, True])
@@ -159,6 +166,54 @@ async def test_complete_authenticated_continuous_source_keeps_original_reads_and
             snapshot_ports=scenario.router._snapshot_ports,
         )
         assert tuple(reads) == old_reads and local and full
+        assert scenario.unchanged_state() == before
+
+    await run_authenticated_observation(tmp_path, config, monkeypatch, inspect, continuous=True)
+
+
+@pytest.mark.parametrize("code", ["delivery_blob_corrupt", "delivery_blob_invalid"])
+@pytest.mark.parametrize("edge", ["before", "after"])
+@pytest.mark.parametrize("layered", [False, True])
+@pytest.mark.parametrize("nested", [False, True])
+async def test_final_snapshot_last_blob_observer_is_not_historical_corruption(
+    tmp_path, config, monkeypatch, code, edge, layered, nested
+):
+    async def inspect(scenario):
+        source = (await scenario.collect()).baseline.source
+        before = scenario.unchanged_state()
+        original = scenario.transactions._read_blob
+        reads = []
+
+        def read(digest):
+            reads.append(digest)
+            return original(digest)
+
+        check = CancelToken().checkpoint
+        control = GitAuthenticationControl(check, check) if layered else check
+        root, ports = Path(scenario.thread.workspace), scenario.router._snapshot_ports
+        with monkeypatch.context() as patch:
+            patch.setattr(scenario.transactions, "_read_blob", read)
+            git_delivery_source._verify_final_snapshot(source.workspace, root, control, ports)
+            expected_reads = tuple(reads)
+            assert len(expected_reads) >= 2
+            reads.clear()
+            error = KernelError(code, "final Snapshot original observer, not physical CAS")
+            if nested:
+                error = UpstreamCheckpointError(UpstreamCheckpointError(error))
+            fail_at = 2 * (len(expected_reads) - 1) + (1 if edge == "before" else 2)
+            observations = []
+
+            def observer():
+                observations.append(len(reads))
+                if len(observations) == fail_at:
+                    raise error
+
+            patch.setattr(scenario.transactions, "_checkpoint", observer)
+            with pytest.raises(BaseException) as caught:
+                git_delivery_source._verify_final_snapshot(source.workspace, root, control, ports)
+        assert caught.value is error
+        assert tuple(reads) == expected_reads[: len(expected_reads) - (edge == "before")]
+        assert len(observations) == fail_at
         assert scenario.unchanged_state() == before
 
     await run_authenticated_observation(tmp_path, config, monkeypatch, inspect, continuous=True)

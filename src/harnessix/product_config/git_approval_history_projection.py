@@ -26,6 +26,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import apply_event, get_turn, pending_calls
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
+from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.domain.models import ApprovalOutcome, PolicyDecisionKind
 from harnessix.execution.contracts import ExecutionApprovalCheckpoint, canonical_digest
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
@@ -406,6 +407,12 @@ def interpret_git_approval_history(
     checkpoint: Callable[[], None],
 ) -> OriginalGitApprovalHistory:
     """消费原完整已认证历史，只形成事实；不验证 MAC、修复或签发批准。"""
+    if type(checkpoint) is GitAuthenticationControl:
+        # 仅内存投影分段；Session、Route、CAS 原读取仍在父协调层完整认证。
+        with GitAuthenticationControl.pure(checkpoint) as check:
+            return interpret_git_approval_history(
+                history, prepared, route, route_events, approval, checkpoint=check
+            )
     checkpoint()
     _require(
         type(history) is AuthenticatedThreadHistory

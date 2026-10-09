@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 
+from harnessix.workspace.blob_read_control import ControlledBlobRead
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 
 type WorkspacePureProgressFactory = Callable[[], AbstractContextManager[Callable[[], None]]]
@@ -69,3 +70,4 @@ class WorkspaceSnapshotPorts:
 
     write_blob: Callable[[str, bytes], None]
     read_blob: Callable[[str], bytes]
+    controlled_read_blob: ControlledBlobRead | None = None
