@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 15
-code_revision: 3ed75274be7f28f1d550a74d398281f46218a3cf
+version: 16
+code_revision: d659d017f8c2a1c8a9496615239a2877aa88ad82
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -588,6 +588,17 @@ Provider 为原离线夹具；硬退出子进程仍按原测试使用默认模�
 证据位于 `verification-working/r4-cpython314-product-20261010-v1`，以 `inputs.json`、`RESULTS.json`、
 各原始 JUnit 和 `lifecycle/result.json`复核。旧宿主封存清单复核无漂移；本轮不解除前述分发、SHM、
 历史连续性、P1 或完整 R4 门槛，也不增加 Beta 接受数。
+
+同一候选宿主又在独立新环境执行原[不同版本验收器](../../scripts/installed_product_upgrade_acceptance.py)：
+固定原归档 `0.1.0` 与原字节 `1.0.0rc1`，四个新隔离阶段实际完成旧包建档、升级读写、
+完整备份恢复及旧版回退读写，控制器退出 0，耗时 17.909 秒。候选恢复后使用新 restore ID
+再次恢复匹配旧版的七文件备份，旧版安装前不重开候选 Runtime；两次版本切换均不改变状态字节，
+原 Key、Previous 与 Workspace 检查通过。结束后仍安装原 `0.1.0`，432 个成员逐字匹配原 Wheel。
+此轮使用默认产品模式，没有启用原生桥或发送模型 Turn；不将版本升级通过外推为默认 Writer、Beta 或商用通过。
+证据位于 `verification-working/r4-cpython314-upgrade-20261010-v1` 的 `upgrade/result.json`及 `review.json`；
+两份原验收脚本逐字绑定上述源码 Revision，原期限、断言及恢复算法不变。另在独立已安装环境并行执行
+三个完整安装／升级／回退治理文件，**47 项通过、零跳过**，覆盖同版本拒绝、来源漂移、失败保留及回退顺序；
+这些合成负控与上述实际产品链分别计证，不互相替代。旧宿主和既有产品报告封存复核均无漂移。
 
 ### 7.7 WAL 点时观察可行，SHM 尚未解决
 
