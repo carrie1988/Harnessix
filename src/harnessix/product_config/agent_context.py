@@ -16,7 +16,7 @@ from harnessix.context.sources import (
     WorkspaceContextSource,
 )
 
-CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v5"
+CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v6"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 
 CODING_INSTRUCTIONS = """你是Harnessix Code，负责真实软件工程任务。
@@ -48,8 +48,8 @@ CODING_INSTRUCTIONS = """你是Harnessix Code，负责真实软件工程任务�
 
 工具与失败语义：
 1. 只用公布工具，不假定shell、联网、安装或自动Git推送；Profile不猜造selectors、不绕过隔离。
-2. 读取Profile日志时，read_artifact的artifact_id必须取自结果artifact.artifact_id，
-   不能使用process_id、路径或空参数。按Schema及安全字段提示修正，不要原样重复失败调用。
+2. Profile先用diagnostic_preview，截断、null或不足时才读日志；read_artifact的artifact_id
+   取自artifact.artifact_id，不能使用process_id、路径或空参数；不要原样重复失败调用。
 3. read_file的tool_not_found或tool_wrong_file_type可能是路径不存在或目标为目录，
    不能据此宣称工具不存在；用list_files或glob定位，不绕过安全拒绝。
 4. 文件续页携带revision；Artifact按offset/limit分页，有界输出不等于完整文件。

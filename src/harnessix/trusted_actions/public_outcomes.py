@@ -18,7 +18,11 @@ from harnessix.domain.public_output_schema import (
     validate_public_output,
 )
 from harnessix.execution.contracts import canonical_digest
-from harnessix.processes.public_output import PublicEvalOutputSummary, PublicProcessOutputSummary
+from harnessix.processes.public_output import (
+    PublicEvalOutputSummary,
+    PublicProcessOutputSummary,
+    PublicProcessOutputSummaryV2,
+)
 from harnessix.trusted_actions.builtin_success import validate_builtin_success
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRoutePlan
 from harnessix.trusted_actions.public_errors import PublicActionStage
@@ -424,11 +428,19 @@ def _validate_process_success(plan: ActionRoutePlan, output: JsonValue) -> None:
         raise ValueError("成功Process摘要与计划或终态不匹配")
 
 
-def _process_summary(plan: ActionRoutePlan, output: JsonValue) -> PublicProcessOutputSummary:
+def _process_summary(
+    plan: ActionRoutePlan, output: JsonValue
+) -> PublicProcessOutputSummary | PublicProcessOutputSummaryV2:
     """成功与失败共用正式DTO及计划身份检查，不重写用于摘要的原JSON。"""
 
     family = failure_family(plan)
-    model = PublicEvalOutputSummary if family == "eval" else PublicProcessOutputSummary
+    model = (
+        PublicEvalOutputSummary
+        if family == "eval"
+        else PublicProcessOutputSummaryV2
+        if isinstance(output, dict) and output.get("version") == "trusted-process-output/v2"
+        else PublicProcessOutputSummary
+    )
     summary = model.model_validate(output)
     if (
         summary.profile != plan.invocation.arguments.get("profile")

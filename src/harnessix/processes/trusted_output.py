@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import codecs
 import hashlib
 import json
 from typing import Annotated, Literal, Self, cast
@@ -10,6 +11,7 @@ from typing import Annotated, Literal, Self, cast
 from pydantic import Field, JsonValue, TypeAdapter, ValidationError, model_validator
 
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, MAX_PAGE_BYTES
+from harnessix.processes.public_output import MAX_PROCESS_PREVIEW_STREAM_BYTES
 from harnessix.processes.supervision_contracts import ProcessLease, ProcessOutputObservation
 from harnessix.tools.contracts import ReadContract, Revision
 
@@ -186,10 +188,18 @@ def trusted_process_public_output(
     document: TrustedProcessOutputDocument,
     *,
     include_passed: bool = False,
+    include_preview: bool = False,
 ) -> dict[str, JsonValue]:
-    """投影模型可见摘要；测试结论只能由受信终态事实确定性派生。"""
+    """从同一验真文档派生公开合同；默认精确保留历史v1及Eval摘要。"""
 
+    if include_passed and include_preview:
+        raise ValueError("Eval v1合同不包含Process v2预览")
     public = document.summary.public_output()
+    if include_preview:
+        public["version"] = "trusted-process-output/v2"
+        public["diagnostic_preview"] = {
+            name: _stream_preview(document, name) for name in ("stdout", "stderr")
+        }
     if include_passed:
         summary = document.summary
         public["passed"] = (
@@ -198,6 +208,26 @@ def trusted_process_public_output(
             and summary.returncode == 0
         )
     return public
+
+
+def _stream_preview(document: TrustedProcessOutputDocument, name: str) -> dict[str, JsonValue]:
+    data = b"".join(chunk.data() for chunk in document.chunks if chunk.stream == name)
+    try:
+        decoded = data.decode("utf-8")
+    except UnicodeError:
+        text = None
+    else:
+        # 先检查整个归档前缀；不将后半段含乱码/控制符的流伪装成普通文本。
+        text = (
+            codecs.getincrementaldecoder("utf-8")().decode(
+                data[:MAX_PROCESS_PREVIEW_STREAM_BYTES], final=False
+            )
+            if all(char.isprintable() or char in "\t\r\n" for char in decoded)
+            else None
+        )
+    size = len(text.encode("utf-8")) if text is not None else 0
+    summary = document.summary.stdout if name == "stdout" else document.summary.stderr
+    return {"text": text, "size_bytes": size, "truncated": size < summary.observed_bytes}
 
 
 def _archive_lengths(stdout_bytes: int, stderr_bytes: int) -> tuple[int, int]:

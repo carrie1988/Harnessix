@@ -9,6 +9,7 @@ from harnessix.delivery.git_contracts import GitPushActionInput, GitPushIntent, 
 from harnessix.processes.public_output import (
     PublicEvalOutputSummary,
     PublicProcessOutputSummary,
+    PublicProcessOutputSummaryV2,
     PublicProcessStreamSummary,
 )
 from harnessix.trusted_actions.contracts import (
@@ -44,3 +45,6 @@ def test_action_plane_public_schemas_match_generated_contracts() -> None:
     for name, model in contracts.items():
         persisted = json.loads((root / f"{name}-v1.schema.json").read_text(encoding="utf-8"))
         assert persisted == model.model_json_schema()
+    assert json.loads((root / "public-process-output-summary-v2.schema.json").read_text()) == (
+        PublicProcessOutputSummaryV2.model_json_schema()
+    )

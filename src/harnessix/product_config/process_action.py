@@ -26,6 +26,7 @@ from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.processes.trusted_output import (
     TrustedProcessOutputDocument,
     build_trusted_process_output,
+    trusted_process_public_output,
 )
 from harnessix.sandbox.contracts import ContainerExecutionSpec
 from harnessix.sandbox.planner import build_container_command, build_container_execution
@@ -356,7 +357,6 @@ async def _process_lease_outcome(
             kind="unknown" if origin == "execution" else "manual_intervention",
             error_code="process_output_unavailable",
         )
-    summary = document.summary
     if lease.state == "unknown":
         kind: Literal["succeeded", "failed", "unknown", "manual_intervention"] = (
             "unknown" if origin == "execution" else "manual_intervention"
@@ -387,7 +387,7 @@ async def _process_lease_outcome(
     body = document.to_jsonl()
     return ActionExecutionOutcome(
         kind=kind,
-        output=summary.public_output(),
+        output=trusted_process_public_output(document, include_preview=True),
         artifact_sha256=hashlib.sha256(body).hexdigest(),
         error_code=error_code,
     )
@@ -527,7 +527,10 @@ class ProductProcessOutputProvider:
         cancel.checkpoint()
         document = await self._executor.output_document(route.plan.execution.plan_id)
         body = document.to_jsonl()
-        public = document.summary.public_output()
+        public = trusted_process_public_output(document, include_preview=True)
+        if canonical_digest(public) != expected_output_sha256:
+            # 历史终态只按原Hash恢复v1，不能给旧审计事实追加预览或重放Process。
+            public = trusted_process_public_output(document)
         if (
             canonical_digest(public) != expected_output_sha256
             or hashlib.sha256(body).hexdigest() != expected_artifact_sha256

@@ -1,4 +1,4 @@
-"""Process模型可见摘要合同：只接受有界终态元数据，不包含输出正文。"""
+"""Process公开输出合同：历史纯摘要与经审计的有界诊断预览分版验证。"""
 
 from __future__ import annotations
 
@@ -9,6 +9,8 @@ from pydantic import Field, model_validator
 
 from harnessix.processes.supervision_contracts import MAX_PROCESS_OUTPUT_BYTES, ProcessStopReason
 from harnessix.tools.contracts import ReadContract, Revision
+
+MAX_PROCESS_PREVIEW_STREAM_BYTES = 1024
 
 
 class PublicProcessStreamSummary(ReadContract):
@@ -33,10 +35,10 @@ class PublicProcessStreamSummary(ReadContract):
         return self
 
 
-class PublicProcessOutputSummary(ReadContract):
-    """与既有public_output形状相同；验证使用原JSON，不重编码审计摘要。"""
+class _PublicProcessOutputFields(ReadContract):
+    """两版共用终态事实约束，不给历史摘要追加默认字段。"""
 
-    version: Literal["trusted-process-output/v1"]
+    version: str
     profile: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     process_id: str = Field(pattern=r"^[0-9a-f-]{36}$")
     state: Literal["exited", "failed", "unknown"]
@@ -61,6 +63,54 @@ class PublicProcessOutputSummary(ReadContract):
             "unknown",
         }:
             raise ValueError("公开Process未知状态原因不一致")
+        return self
+
+
+class PublicProcessOutputSummary(_PublicProcessOutputFields):
+    """与既有public_output形状相同；验证使用原JSON，不重编码审计摘要。"""
+
+    version: Literal["trusted-process-output/v1"]
+
+
+class PublicProcessStreamPreview(ReadContract):
+    """UTF-8前缀；二进制或控制字符流返回null，不替换原字节或伪造诊断。"""
+
+    text: str | None = Field(max_length=MAX_PROCESS_PREVIEW_STREAM_BYTES)
+    size_bytes: int = Field(ge=0, le=MAX_PROCESS_PREVIEW_STREAM_BYTES)
+    truncated: bool
+
+    @model_validator(mode="after")
+    def truthful_text(self) -> Self:
+        if self.text is None:
+            if self.size_bytes != 0:
+                raise ValueError("不可见预览不能携带正文长度")
+        elif len(self.text.encode("utf-8")) != self.size_bytes or any(
+            not char.isprintable() and char not in "\t\r\n" for char in self.text
+        ):
+            raise ValueError("诊断预览不是有界可显示UTF-8")
+        return self
+
+
+class PublicProcessDiagnosticPreview(ReadContract):
+    stdout: PublicProcessStreamPreview
+    stderr: PublicProcessStreamPreview
+
+
+class PublicProcessOutputSummaryV2(_PublicProcessOutputFields):
+    """预览进入Router输出摘要；归档文档仍保留原v1字节和完整二进制流。"""
+
+    version: Literal["trusted-process-output/v2"]
+    diagnostic_preview: PublicProcessDiagnosticPreview
+
+    @model_validator(mode="after")
+    def consistent_preview(self) -> Self:
+        for name in ("stdout", "stderr"):
+            stream = getattr(self, name)
+            preview = getattr(self.diagnostic_preview, name)
+            if preview.size_bytes > stream.persisted_bytes or preview.truncated != (
+                preview.size_bytes < stream.observed_bytes
+            ):
+                raise ValueError("诊断预览与观察摘要不一致")
         return self
 
 

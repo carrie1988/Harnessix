@@ -325,6 +325,7 @@ def validate_action_output_body(
         expected = trusted_process_public_output(
             document,
             include_passed="passed" in public,
+            include_preview=public.get("version") == "trusted-process-output/v2",
         )
         if (
             public != expected
