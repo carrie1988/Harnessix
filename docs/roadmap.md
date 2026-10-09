@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 258
+version: 259
 code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
 owners:
   - core
@@ -2909,3 +2909,8 @@ Artifact投影收益不足，停止该扩展；[显式v2批量提案](changes/m0
 `6687d2ea89761a39ee6c72e34fa91f96dcb1c0efdf1eeb05c274e24881acb366`。
 初次JUnit类名误作为文件路径导致收集失败的原件保留，仅纠正宿主路径后复跑；未改用例或放宽断言。
 这不是新真实质量成绩；恢复付费需保留旧预留并明确新有界授权，R3/R4整体均未关闭。
+
+R4[原连接实际main身份候选](research/git-sqlite-native-source.md#74-实际-main-身份复用-lease排除-audit-hook-重造路线)
+已复用存量lease生命周期，不采用被3个反例证伪的audit-hook Token。新候选保留原20 PASS／1个历史ABA反例，
+新增12项独立进程控制通过；4项合成callback控制仅证明透明转发。生产代码和依赖未改，未将实验桥装入默认Writer。
+独占初始化、完整WAL／SHM、内存检查及三平台仍开放，不据此提升R3成绩或Beta完成数；本轮模型请求0。

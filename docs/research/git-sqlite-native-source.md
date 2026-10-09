@@ -1,7 +1,7 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 5
+version: 6
 code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
 owners: [core]
 modules: [product_config, delivery]
@@ -289,6 +289,43 @@ UBSAN 三进程退出 0。完整映射确认没有桥、只有 SQLite 3.45.3。
 新原件位于 `~/Library/Application Support/Harnessix/verification/r4-native-module-lifetime-20261008-v1`，
 保留配对源码、完整泄漏栈、映射、工具控制、来源、复算结果和清单；旧交付不追写。
 窄修复仍仅隔离研究，完整 FD／WAL／SHM、B7、三平台和默认 Writer 均未因此准入。
+
+### 7.4 实际 main 身份：复用 lease，排除 audit-hook 重造路线
+
+2026-10-09 的独立反证已排除新建 audit-hook Token 的方案：加载权限回调重入会把 A
+误绑定为 B；已有 Python audit hook 可静默阻止 native hook 注册；禁用扩展加载被拒绝后，
+原型还会遗留加载权限。三个独立进程均复现，候选为 **NO-GO**，不能用它此前18项正常控制
+抵消反例。[Python audit 注册合同](https://docs.python.org/3.12/c-api/sys.html#c.PySys_AddAuditHook)
+也不保证返回0就实际安装成功。这些是隔离原型缺陷，不是已发布产品新增缺陷。
+
+后继复用7.3已修正模块清理的原桥，仅增加两个明确接口：
+
+- `initialize_backend(connection)`：独占进程启动期经原引擎认证，先取得
+  [永久扩展驻留](https://www.sqlite.org/loadext.html#persistent_loadable_extensions)，再一次装配透明
+  `fstat`观察；bootstrap连接不是业务身份见证，关闭后不保留其句柄。
+- `attach_identity(connection, expected_dev, expected_ino)`：沿用原State、lease、dummy撤销、线程
+  cookie与递归mutex。两处完整来源检查经原`FILE_POINTER/VFS_POINTER → xFileSize → fstat`
+  观察实际main文件，并与工厂先前固定的pin比较，不能以attach时自取样代替来源验证。
+
+初始化限定固定SQLite3.45.3的source ID、原API表、原默认Unix VFS及同引擎方法来源，拒绝未知
+syscall包装与无mutex连接。加载授权仍由调用方管理；不安装audit hook，不使用私有Python布局，
+不在progress内prepare、step或装配hook。装配时原`SELECT 1`仍为prepare-only生命周期lease，
+因此“检查不执行SQL”不能误写成“装配完全不涉及SQL”。旧`attach`仅保留为原研究矩阵对照，
+不能用于实际身份准入。
+
+同一候选原生命周期矩阵保持20 PASS及1个已知历史ABA反例；新增12项独立进程控制通过，覆盖
+读写／只读事务、错误dev／inode、打开B后路径恢复A、置换后不复活、未知VFS／内存库拒绝、
+原progress第7次取消及异常对象、关闭／重初始化／失败初始化、audit重入、启动后多连接并发及
+GC。另4项合成callback控制只证明返回码／errno透明转发，不充当实际SQLite身份或内存安全证据。
+初次编译错用API表字段`threadsafe`的失败日志保留；核对头文件后使用正式字段`xthreadsafe`。
+
+冻结原件位于`~/Library/Application Support/Harnessix/verification/r4-lease-main-identity-20261009-v1`，
+包含可执行C、测试、源码／二进制摘要及拒绝路线反证；清单SHA-256为
+`c15605344a2f69ef70b27893579e6f447748d1090e0a57794ecdda31140d3733`。
+独立复核工具终态失败，未得到评审结论，不记为评审通过。
+**未接入生产**：Unix syscall表为全引擎共享，当前嵌入式SDK不能保证独占启动；完整WAL／SHM、
+历史连续性、后续提交原子性、三平台封装及有效内存检查仍未关闭。错误pin测试不是跨设备挂载实测。
+上述点时main身份观察不关闭完整B7、默认Writer或R4发布门禁。
 
 ## 8. 源码映射、取舍与下一步
 
