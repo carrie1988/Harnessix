@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 107
-code_revision: a2ca7bfa387074cbacc85744c3ee0ed4c75b200c
+version: 108
+code_revision: d387abdd566118162b0a47d9e0dfe06b9d665239
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
   - tests/product_config/test_git_review_layered_native.py
   - tests/product_config/test_git_user_native_control.py
@@ -2885,3 +2886,11 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 审批历史 `_read_evidence` 同样转发原 Ledger 的合格只读观察与同次 Source scope，详见[完整 U 消费链](../changes/m09-r4-git-prepared-approval-history.md#52-完整-u-的真实消费者接口与调用链)。不另建权限或预算；原 Proof、U、完整检查成功后才登记读集合，默认 Writer 仍不因此启用。
 
 [Blob 来源与审批纯投影](../changes/m09-r4-git-checkpoint-preparation.md#19-blob-控制来源端口与审批内存投影)由产品组合根显式装配：端口保持原 Store／方法绑定并拒绝重绑；仅审批已读事实进入内存纯段，原 Session／Route／CAS 和追加后二次完整复核不减少。
+
+原 User **采集**现显式接入准备器的冻结只读观察，实际托管子 Task 创建其控制，不继承父 SQL／Owner 权限；
+默认及 unknown／foreign Full 路径、真实 CAS、全部末段来源复核与原 60／120 秒期限保持。
+原取消对象的首失败归属、回调冻结及纯模型同字节设计见
+[采集接线详设](../changes/m09-r4-git-checkpoint-preparation.md#112-原-user-采集子-task-的只读进度接线)。
+
+当前同包583个唯一关联节点通过，但原深目录在提交门终端Review重建耗尽原期限；
+COMMIT／只读重开尚未通过，不据采集接线关闭默认Writer、P1、B4/B7或商业门禁。

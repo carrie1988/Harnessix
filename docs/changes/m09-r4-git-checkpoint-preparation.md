@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 14
-code_revision: a2ca7bfa387074cbacc85744c3ee0ed4c75b200c
+version: 15
+code_revision: d387abdd566118162b0a47d9e0dfe06b9d665239
 owners: [core]
 modules: [product_config, delivery, agent, trusted_actions, workspace, execution]
 related_adrs:
@@ -11,6 +11,7 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
   - tests/workspace/test_snapshot_v2_capture_progress.py
   - tests/product_config/test_git_proof_route_progress.py
@@ -60,7 +61,7 @@ supersedes: []
 | 项目 | 当前边界 |
 |---|---|
 | 已提交基础版本 | 以 `code_revision` 为准 |
-| 设计版本 | 版本 12，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
+| 设计版本 | 版本 15，2026-10-09；以第 19 节列出的源码内容摘要固定实现 |
 | 基础版本与增量的关系 | 当前实现已包含在 `code_revision`；第 19 节摘要补充固定具体源码字节 |
 | 主要增量 | `git_checkpoint_preparation`、`git_checkpoint_materials`、`git_checkpoint_scope` 三个模块 |
 | 既有模块调整 | InventoryWire 增加内部字段投影选项；CancelToken 增加可选失败保留；Agent preplanning 显式启用失败保留 |
@@ -379,6 +380,46 @@ Source采集 -> 原生同步只读段[首末Full、内部原取消/期限/锁检
 原Ledger／Router约35.060秒、恢复约24.705秒。原追加返回后，第二次完整读取已通过
 原审批材料、U历史及Git事实，在U来源复核耗尽原Turn；正式审批事实COMMIT、只读重开
 与全部副作用断言未通过。测试复制引发的仓根／诊断路径夹具错误保留并修正，不充作产品通过。
+
+### 1.12 原 User 采集子 Task 的只读进度接线
+
+v25 准备阶段采样中，2424 次有效观察有 1593 次位于原生目录捕获，1450 次同时包含
+完整控制调用。实际调用链显示：Source 已支持分段，但 User **采集器**把父控制包装成
+普通函数后交给 `cancel.run`，子 Task 未得到明确的只读端口；复核器已有的分层没有覆盖采集。
+采样是诊断线索，不是 CPU 占比、速度对比或验收结果。
+
+[`_prepare_entry`](../../src/harnessix/product_config/git_checkpoint_preparation.py)仅为 exact
+准备器交付原冻结的 `local_check`；[`collect_product_git_user_observation`](../../src/harnessix/product_config/git_user_observation.py)
+先用既有 `qualified_native_observer` 核对父控制创建 Task／线程和原字段，再在实际 `_collect`
+子 Task 内构造只读控制。父 SQL 准入、Runtime Owner、审批和持久权限均不迁移。
+
+```text
+原 prepare Full → 显式只读观察归属核对 → 原宿主认证／回调冻结
+→ 实际托管采集 child 创建控制 → 原 Session 历史／Source 捕获／完整 Git 基准
+→ 原终端文件、Source、Git 事实与历史复核 → 原 Core 持久／Review
+```
+
+受信同步只读段首末仍 Full；内部检查原取消、同一期限、资源引用，并通过
+[`freeze_git_user_read_callbacks`](../../src/harnessix/product_config/git_user_authority.py)
+核对原 Audit 和三个回调，先拒绝 Audit 替身再读取字段。CAS 读写、最终文件读取及全部来源
+复核不删、不缓存；未交付显式观察时，默认 `None`、普通函数／代理／子类及 foreign
+控制保持原 Full 轨迹；向 unknown／foreign 控制显式交付观察则在读取前拒绝。
+仅显式观察路径恢复已捕获的原取消异常对象，防止托管收尾生成的新取消覆盖首失败；
+不调整 `CancelToken.run` 默认语义。纯观察模型组装移到原 contracts，字段、字节和指纹不变。
+
+新增[固定原件差分与控制矩阵](../../tests/product_config/test_git_user_collection_progress.py)
+使用真实目录和耐久 CAS，但权限／Session 探针不冒充业务成功。原准备控制及结算测试保留，
+只修正新增尾参数后错误的探针位置。验收仍要求同包完整 SDK 与原深目录／两次 Patch／
+60 秒操作／120 秒 Turn、审批事实事务 COMMIT、只读重开及全部副作用断言，不延长期限。
+
+同一非editable安装包最终583个唯一关联节点通过、零跳过，564成员与源码／Wheel／安装字节一致；
+62项机制原件差分与186项准备链、295项User、43项SDK有3个重复节点，不重复累计。
+初版2项取消身份失败、5项旧探针位置错误及磁盘ENOSPC原件保留；结构门禁仍23项存量FAIL、
+无新增类别。单次原负载v26仍FAIL：准备／Review43.092秒、Ledger／Router36.071秒、恢复40.769秒。
+原追加及完整回读已返回，提交门再次完整终端复核在Review规范重建的Inventory纯快照到期；
+尚未到SQL COMMIT与只读重开，失败后只读Prefix仍prepared／sequence=0。
+最大诊断心跳间隔11.136秒，无验收阈值；不宣称配对加速、P1通过或全部副作用断言通过。
+下一步以整个准备／恢复链的Owner鲜读与原生文件观察为诊断对象，保留提交前复核，不只优化最后报错点。
 
 ## 2. 设计目标、范围、非目标与验收标准
 
@@ -1175,7 +1216,7 @@ finally：
 
 | 源码 | SHA256 |
 |---|---|
-| `src/harnessix/product_config/git_checkpoint_preparation.py` | `b7c996d33b5926a9cb8be5da3e6e9cd8e4fee9b22b96fa3dfaed0029b2cd3643` |
+| `src/harnessix/product_config/git_checkpoint_preparation.py` | `edf80e74ceffd6844cb2b652c9dea6b83841cb11655245fdfad14118adf61924` |
 | `src/harnessix/product_config/git_checkpoint_materials.py` | `dc4a386f9233a117bac51c2446feb8da2678f4c90b6d5254488d37fc3dd8f69c` |
 | `src/harnessix/product_config/git_checkpoint_scope.py` | `4a4396118d1578b90246c0aae42716ba90a5448f7205d2ec6d52647bad2b3981` |
 | `src/harnessix/delivery/git_authentication_control.py` | `61782267e52728cb11d7ae9cfcf97c38eb4e51247d25798ea0a36ec6327f26eb` |
@@ -1186,12 +1227,14 @@ finally：
 | `src/harnessix/trusted_actions/agent_preplanning.py` | `b7a537dfcc403ac1db0c0427f8ee804a3c880be5840ec6547dc3c8eb5ef1ac50` |
 | `src/harnessix/agent/cancellation.py` | `429b1ade34e2f78666114806961ef59d720a5c606d044734eb34fa96b8ee19be` |
 | `src/harnessix/product_config/git_native_control.py` | `1c7c8fa2d428d4d3ca3b71cc8d22c3e95e045c2c4ea8de788c44f58c56e03e78` |
-| `src/harnessix/product_config/git_user_observation.py` | `7b62db51e4830038074ffbe5b86674812a0449f640779c6d0bcde46fc26dda6f` |
+| `src/harnessix/product_config/git_user_observation.py` | `ca32c7642b1fe049a64f3d7994f9e72c1336cbfeb863feeb59993968f8de7820` |
+| `src/harnessix/product_config/git_user_authority.py` | `076d337ce882f4f6a7843a2697a74d83bffdef15349d87392771faeafe05fa4b` |
+| `src/harnessix/product_config/git_user_observation_contracts.py` | `497b04fb2a67f94c84ec9dd3162e56f5f86e22bd82dba4869c69da02ad808947` |
 | `src/harnessix/product_config/git_prepared_link_ledger.py` | `738179473c6cf7638c3a197211c127da27b32c41c30cf8e762423062c8748219` |
-| `src/harnessix/product_config/git_delivery_source.py` | `bfb0831b482665d4735f5e895dc8ef14ff97d258db409255d3780fdc7852bb3f` |
+| `src/harnessix/product_config/git_delivery_source.py` | `dbf0ef13406872ac266dd6eb684c9ac601e44a27b5d02dd01382f2b6ac07a722` |
 | `src/harnessix/product_config/git_delivery_review_host.py` | `d976c5497397640e7c987efeb531d348491d954d4e556c69669a9fdd1d865a65` |
 | `src/harnessix/product_config/git_delivery_review.py` | `c8e31019e6996d155dfe6ab91d6a1c0f3cf2a97c5161d7d8290a894fedb148e3` |
-| `src/harnessix/workspace/snapshot_v2.py` | `42bd9d9e71da70ffda7253c1b7128767eebbdc32e3bd3c7e32892a8beab162e0` |
+| `src/harnessix/workspace/snapshot_v2.py` | `36d02c16899fe57443fecad722f33d8156e61412a4759d9a965570082a7e059f` |
 
 后续源码微调必须按实际字节复核本设计及上述摘要；不能只保留基础提交号而宣称增量说明持续对应现状。发布时应将已整合增量的实际提交/安装源码证据与该设计版本关联，不能把工作树实现描述当作已发布证明。
 
@@ -1201,7 +1244,7 @@ finally：
 | `src/harnessix/execution/store.py` | `4dc909522ac1ef4b80d4afc14ecc7f4747545279b1a177a55aad3bc5ee87b1c6` |
 | `src/harnessix/product_config/action_runtime.py` | `699c9b092f2a67c6fcad9cdf29a374ea60f6da0cddcd2c8be43271859c22e51b` |
 | `src/harnessix/product_config/git_approval_history_projection.py` | `ddc1837f7c6984539e945cd6c60a037d2ff81f60d7b2895daa8544bc2f8975ac` |
-| `src/harnessix/product_config/git_user_authority.py` | `cf2cf3b3baef0deae20812b6bfb17113b1911b6b1088dbaff2e33c185f9db123` |
+| `src/harnessix/product_config/git_user_authority.py` | `076d337ce882f4f6a7843a2697a74d83bffdef15349d87392771faeafe05fa4b` |
 | `src/harnessix/trusted_actions/store.py` | `267d933fa8611a9deff11d46e2fb8df443e65dc604b176591bc05e6aa6fd459a` |
 | `src/harnessix/workspace/blob_read_control.py` | `9cc4390cce5d525b5ea0171986b5e17eb51cf75d680d21a7ad00056e046eaef1` |
 | `src/harnessix/workspace/snapshot_ports.py` | `0415616edc72aabf9a12fa25ac6b894ecd748b2dc1d653d3650cd0b583331009` |
