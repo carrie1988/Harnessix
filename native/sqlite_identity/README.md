@@ -57,6 +57,26 @@ CPython >= 3.12 只是构建条件，不等于任意 SQLite 后端通过资格�
 当前首发只交付macOS，按实际OS/架构核验原安全门槛。Linux/Windows交付任务取消，
 未来若另行立项须独立验收；Windows构建阻断、跳过或模拟检查不算该平台PASS。
 
+### macOS 内存检查入口
+
+先独立验证检测器的真实正／负控，再用**安装了对应插桩 wheel**的解释器执行
+`tests/run_sanitized.py`。父解释器不能预加载检测器；入口会检查实际映射，仅向原场景
+子进程设置预加载。直接预加载 pytest 父进程会被 Darwin 运行库清除继承变量，不能据
+子进程退出 0 推断检测有效。原测试的断言、30 秒子进程期限及失败退出码保持不变。
+
+以下变量均为已核验的绝对路径；`new_output` 必须尚不存在：
+
+```bash
+"$installed_python" -I -B "$repo/native/sqlite_identity/tests/run_sanitized.py" \
+  --sanitizer asan --runtime "$llvm/lib/clang/22/lib/darwin/libclang_rt.asan_osx_dynamic.dylib" \
+  --symbolizer "$llvm/bin/llvm-symbolizer" --output "$new_output"
+```
+
+分别以 `asan`、`ubsan`、`lsan` 及匹配的 wheel／runtime 执行；不得混用三套 OPTIONS。
+入口保存源码／工具哈希、Junit 和原场景日志，但不自行宣布内存或发布验收通过。
+当前 macOS 复验仍有泄漏诊断，结论与未解除门槛见
+[原生来源研究 §7.6](../../docs/research/git-sqlite-native-source.md#76-macos-有效检测与子进程预加载)。
+
 ## 来源与许可证
 
 固定 SQLite 3.45.3 官方头文件；来源 URL、压缩包及逐文件 SHA-256、官方 SHA3 核对

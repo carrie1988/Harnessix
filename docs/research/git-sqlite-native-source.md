@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 11
-code_revision: 013a7c73d42106b771fa62d7df6db2a7ff0ad9a0
+version: 12
+code_revision: a5b738200de454a0aebc461507b791310fa29cfb
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -487,6 +487,53 @@ CLI、SDK或Writer。嵌入式SDK不能因收到initialize握手就假定引擎�
 当前首发仅macOS：完整WAL／SHM身份、未观察到的历史ABA连续性、内存门禁和声明Mac目标的安装仍需验收。
 Linux/Windows实际句柄与发行工作已从本次交付任务删除；历史研究保留，未来支持须另行立项。
 附属组件构建或局部安装成功不关闭这些门禁，也不提高R3真实质量成绩或Beta业务接受数。
+
+### 7.6 macOS 有效检测与子进程预加载
+
+2026-10-10 在 macOS 27.0.1 arm64／原 Python 3.12.7／固定 SQLite 3.45.3 上复验。
+LLVM 21.1.8 的独立 ASAN 正控在初始化阶段超时；实际采样显示
+`get_dyld_hdr → dyld_shared_cache_iterate_text_swift → malloc → AsanInitFromRtl`重入锁。
+改用包含[上游修复](https://github.com/llvm/llvm-project/pull/182943)的 LLVM 22.1.8，
+三工具独立正负控有效，实际 Python preload 负控也能发现 UAF／溢出／故意泄漏。
+Python ASAN／LSAN 正控自身仍报泄漏，不能记为完整 clean pass。
+两个官方 Homebrew bottle 均核对 SHA256，版本隔离安装，不替换系统 clang 或修改产品依赖。
+
+另一个已复现的测试缺陷是父 pytest 预加载后，
+[compiler-rt 的 StripEnv](https://github.com/llvm/llvm-project/blob/llvmorg-22.1.8/compiler-rt/lib/sanitizer_common/sanitizer_mac.cpp#L1021-L1096)
+清除子进程继承变量：ASAN 子进程在断言前拒绝迟加载，LSAN 子进程曾退出 0，却没有有效分配拦截。
+新增[薄测试入口](../../native/sqlite_identity/tests/run_sanitized.py)保持父进程未插桩，检查实际映射，
+只为原测试子进程设置匹配运行库及单套选项；原 94 场景、断言和期限逐字保留。
+输出目录必须新建，绑定源码／runtime／symbolizer 哈希；不使用 suppression、关闭泄漏检查或扣减基线。
+[启动器单测](../../native/sqlite_identity/tests/test_sanitized_runner.py)36 项通过，覆盖输入、实际映射拒绝、
+环境隔离和失败退出；其中 mock 不计为原生内存证据，原生结果另列如下。
+
+| 原安装态场景 | 实际结果 | 判定 |
+|---|---|---|
+| 普通构建、UBSAN 构建 | 各 93 通过，1 个历史 ABA 已知反例；进程退出 0 | 仅既定功能／已执行 UB 路径证据 |
+| ASAN、LSAN 构建 | 场景断言同上，但各 94 个子进程因泄漏退出 73，pytest 判 94 失败 | 内存门禁仍未通过 |
+| 不加载桥／只 import／bootstrap／100 次 attach-release 配对对照 | 两工具均报告 69553 bytes／65 allocations；均非零退出 | 提示宿主基线需归因，不据此抵扣或保证桥完全无泄漏 |
+
+三个加载失败场景另报 32／72 bytes，仍须保留并归因。Python／SQLite 本体未插桩；
+各构建独立映射探针确认单个原 SQLite 引擎，不等同于逐场景全程映射跟踪。
+旧 SDK 缺失、选项混用、LLVM 21 超时及首次预加载失效原件均保留。
+证据集中于本机 `verification-working/r4-macos-memory-20261010-v1`，
+以 `llvm22/control-results.json`、`formal-runner-results.json`、`attribution/results.json`及交付清单复核。
+
+### 7.7 WAL 点时观察可行，SHM 尚未解决
+
+固定[SQLite 3.45.3 官方源码](https://www.sqlite.org/2024/sqlite-amalgamation-3450300.zip)及原引擎的
+两轮独立探针确认：WAL 已自然打开后，读写及 `mode=ro` 连接均可通过
+`JOURNAL_POINTER → 同引擎 xFileSize → 一次成功 fstat`取得实际 WAL dev/inode。
+DELETE 写事务得到的是 rollback journal；冷连接对象虽非空，但 `pMethods=NULL`，不能算身份成功或强行打开。
+journal/WAL 的合法方法表没有 `xShmMap`，不能机械照搬 main 条件；探针改为先限定 main，
+再核验 journal 的同引擎 `xFileSize`与已限定 main 相同，原版本／sourceid／VFS／mutex 守卫不放宽。
+
+每轮六个隔离进程、14 次观察，事务、计数、既有行和文件集合／内容在观察窗口内不变；
+这不否认探针临时 syscall hook 和结果 UDF 的副作用，也不是生产桥集成测试。
+公开接口没有提供 SHM 文件指针；`xShmMap(bExtend=0)`仍可能打开、创建、加锁或映射，
+不能作为无副作用查询，探针没有调用它。下一步须证明独立 expected WAL pin、重开／checkpoint／置换，
+并独立设计 SHM 的连接归属；本轮不添加生产接口，不关闭完整 FD、B7 或 R4。
+源码、首轮失败和两轮复验位于本机 `verification-working/r4-wal-shm-probe-20261010-v1`。
 
 ## 8. 源码映射、取舍与下一步
 
