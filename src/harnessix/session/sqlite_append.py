@@ -55,7 +55,7 @@ async def append_in_transaction(
         row = await cursor.fetchone()
         if row is not None:
             if store._publication is not None:
-                _, event = await verified_event(database, store._publication, row)
+                _, event, _ = await verified_event(database, store._publication, row)
             else:
                 event = store._parse_event(row)
             stored = EventDraft.model_validate(event.model_dump(exclude={"thread_id", "sequence"}))

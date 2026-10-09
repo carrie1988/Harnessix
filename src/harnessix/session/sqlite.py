@@ -119,7 +119,12 @@ def _close_runtime_owner_lock(descriptor: int) -> None:
 
 
 def _validated_snapshot(
-    thread_id: UUID, row: sqlite3.Row | None, last_sequence: int, event_count: int
+    thread_id: UUID,
+    row: sqlite3.Row | None,
+    last_sequence: int,
+    event_count: int,
+    *,
+    snapshot_bytes: bytes | None = None,
 ) -> Thread | None:
     """逐项校验投影与权威事件序列，供单条读取和批量恢复共用。"""
 
@@ -132,7 +137,8 @@ def _validated_snapshot(
     encoded: str = row["snapshot_json"]
     if row["projection_version"] not in range(1, 22):
         raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
-    if hashlib.sha256(encoded.encode()).hexdigest() != row["snapshot_sha256"]:
+    body = snapshot_bytes if snapshot_bytes is not None else encoded.encode()
+    if hashlib.sha256(body).hexdigest() != row["snapshot_sha256"]:
         raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
     try:
         thread = Thread.model_validate_json(encoded)
@@ -182,9 +188,13 @@ async def _scan_recovery_threads(
         except ValueError:
             raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
         projection = row if row["projection_thread_id"] is not None else None
-        await verify_snapshot(database, publication, thread_id, projection)
+        snapshot_bytes = await verify_snapshot(database, publication, thread_id, projection)
         thread = _validated_snapshot(
-            thread_id, projection, row["last_sequence"], row["event_count"]
+            thread_id,
+            projection,
+            row["last_sequence"],
+            row["event_count"],
+            snapshot_bytes=snapshot_bytes,
         )
         if thread is not None and thread.active_turn_id is not None:
             active.append(thread)
@@ -342,8 +352,10 @@ class SQLiteSessionStore:
         )
         last_row = await cursor.fetchone()
         assert last_row is not None
-        await verify_snapshot(database, self._publication, thread_id, row)
-        return _validated_snapshot(thread_id, row, last_row[0], last_row[1])
+        snapshot_bytes = await verify_snapshot(database, self._publication, thread_id, row)
+        return _validated_snapshot(
+            thread_id, row, last_row[0], last_row[1], snapshot_bytes=snapshot_bytes
+        )
 
     async def get_thread(self, thread_id: UUID) -> Thread:
         async with self._connection() as database:

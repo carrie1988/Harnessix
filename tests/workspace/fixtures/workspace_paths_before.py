@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import PurePosixPath
 
 from harnessix.agent.errors import KernelError
 from harnessix.workspace.contracts import PlatformKind
@@ -15,7 +16,6 @@ _WINDOWS_RESERVED = frozenset(
     | {f"LPT{index}" for index in "¹²³"}
 )
 _DRIVE_PREFIX = re.compile(r"^[a-zA-Z]:")
-_CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
 
 
 def normalize_workspace_path(value: str, platform: PlatformKind) -> str:
@@ -35,7 +35,7 @@ def normalize_workspace_path(value: str, platform: PlatformKind) -> str:
         or value.startswith(("/", "\\"))
         or "\\" in value
         or _DRIVE_PREFIX.match(value)
-        or _CONTROL_CHARACTER.search(value) is not None
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
     ):
         raise KernelError("workspace_path_denied", "Workspace路径不是规范相对路径")
     if value == ".":
@@ -50,8 +50,7 @@ def normalize_workspace_path(value: str, platform: PlatformKind) -> str:
             stem = part.split(".", 1)[0].upper()
             if stem in _WINDOWS_RESERVED or len(part.encode("utf-16-le")) // 2 > 255:
                 raise KernelError("workspace_path_denied", "Windows路径包含保留名或超长段")
-    # 全部段已拒绝空值、点与父引用；原输入就是规范形式，无需再构造路径对象。
-    return value
+    return PurePosixPath(*parts).as_posix()
 
 
 def path_comparison_key(value: str, platform: PlatformKind) -> str:

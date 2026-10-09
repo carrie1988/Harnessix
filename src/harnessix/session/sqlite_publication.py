@@ -93,22 +93,23 @@ async def verify_snapshot(
     publication: SessionPublicationBinding | None,
     thread_id: UUID,
     row: aiosqlite.Row | None,
-) -> None:
+) -> bytes | None:
     if publication is None:
-        return
+        return None
     await verify_store(database, publication)
     proof = await checkpoint(database, publication, thread_id)
     if row is None:
         if proof is not None:
             raise unproven()
-        return
+        return None
     if (
         proof is None
         or row["projection_version"] != proof.projection_version
         or row["sequence"] != proof.sequence
     ):
         raise unproven()
-    digest = hashlib.sha256(original_bytes(row["snapshot_json"], MAX_PROJECTION_BYTES)).hexdigest()
+    body = original_bytes(row["snapshot_json"], MAX_PROJECTION_BYTES)
+    digest = hashlib.sha256(body).hexdigest()
     if not hmac.compare_digest(proof.snapshot_sha256, digest):
         raise unproven()
     try:
@@ -133,11 +134,12 @@ async def verify_snapshot(
     tail = await cursor.fetchone()
     if tail is None or tail[0] != proof.prefix_sha256:
         raise unproven()
+    return body
 
 
 async def verified_event(
     database: aiosqlite.Connection, publication: SessionPublicationBinding, row: aiosqlite.Row
-) -> tuple[bytes, AgentEvent]:
+) -> tuple[bytes, AgentEvent, bytes]:
     cursor = await database.execute(
         "SELECT substr(seal,1,4097) AS seal FROM agent_event_publications WHERE event_id=?",
         (row["event_id"],),
@@ -146,9 +148,10 @@ async def verified_event(
     if sealed is None:
         raise unproven()
     try:
+        body = original_bytes(row["event_json"], 1024 * 1024)
         event = publication.verify_event(
             sealed["seal"],
-            original_bytes(row["event_json"], 1024 * 1024),
+            body,
             UUID(row["event_id"]),
             UUID(row["thread_id"]),
             row["sequence"],
@@ -158,7 +161,7 @@ async def verified_event(
     seal = sealed["seal"]
     if not isinstance(seal, bytes):
         raise unproven()
-    return seal, event
+    return seal, event, body
 
 
 async def persist_event(
@@ -244,8 +247,7 @@ async def authenticated_events(
             raise KernelError("publication_history_limit", "Session历史认证超过资源上限")
         if row["sequence"] != count:
             raise unproven()
-        seal, event = await verified_event(database, publication, row)
-        body = row["event_json"].encode("utf-8")
+        seal, event, body = await verified_event(database, publication, row)
         size += len(body) + len(seal)
         if size > MAX_HISTORY_BYTES:
             raise KernelError("publication_history_limit", "Session历史认证超过资源上限")
