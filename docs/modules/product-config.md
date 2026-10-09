@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 108
-code_revision: d387abdd566118162b0a47d9e0dfe06b9d665239
+version: 109
+code_revision: 91c5333979a977bd81a6266f822350aa47123127
 owners:
   - core
 modules:
@@ -2892,5 +2892,9 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 原取消对象的首失败归属、回调冻结及纯模型同字节设计见
 [采集接线详设](../changes/m09-r4-git-checkpoint-preparation.md#112-原-user-采集子-task-的只读进度接线)。
 
-当前同包583个唯一关联节点通过，但原深目录在提交门终端Review重建耗尽原期限；
-COMMIT／只读重开尚未通过，不据采集接线关闭默认Writer、P1、B4/B7或商业门禁。
+来源文件仅在原创建 Task／线程的 exact 控制下进入同步只读段，首末完整认证，
+原路径／FD／分块检查和关闭不减；未知及 foreign 旧轨迹保持，详见
+[来源文件读取合同](../changes/m09-r4-git-checkpoint-preparation.md#113-来源文件的同步只读段)。
+同包901个唯一关联节点通过、零跳过，564成员与源码／Wheel／安装字节一致。
+原深目录v27已完成审批事实COMMIT和六项原断言；只读重开时原Turn过期，
+重开成功及全部外部副作用断言仍未证明。它不是Git业务提交，也不关闭默认Writer、P1、B4/B7或商业门禁。
