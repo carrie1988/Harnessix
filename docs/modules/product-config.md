@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 111
-code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
+version: 112
+code_revision: cb571e9416bc99ebc9a7eadc453d75343b41dc27
 owners:
   - core
 modules:
@@ -25,6 +25,7 @@ related_tests:
   - tests/product_config/test_git_checkpoint_layered_control.py
   - tests/product_config/test_git_core_store_layered_persist.py
   - tests/product_config/test_git_prepared_link_connection.py
+  - tests/product_config/test_git_prepared_monitor_identity.py
   - tests/product_config/test_git_decision_recovery.py
   - tests/product_config/test_git_decision_link_ledger_sdk.py
   - tests/product_config/test_git_decision_commit_boundary.py
@@ -2817,6 +2818,10 @@ approved使用approved存储投影，denied/cancelled使用failed，不更改Git
 完整架构、时序、字段和失败恢复见[详设](../changes/m09-r4-git-connection-ownership.md)，
 候选绑定及实际SDK正控见[交付报告](../validation/r3-r4-connection-boundaries-2026-10-08-v1/README.md)。
 Task身份不是持锁证明，路径pin不是FD证明；本切片不关闭B4/B7/P1，不装配默认Git写工具。
+
+四库监视连接已统一从该工厂创建，各自保留来源闭包；显式原生启动时才检查各自实际主库身份，
+未启动则保持历史模式。Writer引用、路径、data_version和total_changes检查仍在；退出先撤销观察能力。
+原Audit及Owner鲜读尚待接线，详见[原生接线与验证边界](../research/git-sqlite-native-source.md#四库监视接线每条实际连接分别检查)。
 
 ## Git 原 Runtime Thread 临界区绑定
 

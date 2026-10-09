@@ -1,14 +1,15 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 8
-code_revision: 897c5df42ddb15d180f532eb0a29c574e3ea7edd
+version: 9
+code_revision: cb571e9416bc99ebc9a7eadc453d75343b41dc27
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
   - tests/product_config/test_git_prepared_link_connection.py
+  - tests/product_config/test_git_prepared_monitor_identity.py
   - tests/product_config/test_git_review_fresh_owner.py
   - tests/delivery/test_git_prefix_sql_lifecycle.py
 supersedes: []
@@ -387,10 +388,27 @@ GC。另4项合成callback控制只证明返回码／errno透明转发，不充�
 
 [真实安装件消费测试](../../native/sqlite_identity/integration/test_prepared_factory.py)直接通过产品工厂而非测试wrapper，
 覆盖读写、原Task及观察子Task、回滚、取消／期限，以及路径首末为A但SQLite实际打开B时yield前拒绝。
-Audit原连接、Owner鲜读和四库监视连接的后续接线、WAL/SHM与内存门禁保持开放。
+Audit原连接、Owner鲜读的后续接线、WAL/SHM与内存门禁保持开放。
 本轮新增工厂控制96项通过；非editable产品与原生组件组合102通过、1项历史未观察ABA保持xfail，
 567个产品文件与工作树及安装件逐字节一致。来源位于本机`verification-working/r4-factory-identity-20261009-v1`，
 其中`installed-binding.json`、`installed-final.xml`记录安装件边界；并非默认Writer或完整R4通过。
+
+#### 四库监视接线：每条实际连接分别检查
+
+`observe_prepared_state()`的Session、Audit、Plan、Core四条只读监视连接现在复用原工厂，
+分别签发来源观察闭包；只有显式启动原生模式才取得原生身份令牌，默认模式不变。
+完整检查依次核对原Writer对象、路径身份、各监视连接来源、`data_version`与Writer的`total_changes`。
+子Task只能调用原Task签发的观察闭包，不能取得原连接的SQL准入；细粒度控制不新增原生I/O。
+工厂身份失败映射`git_prepared_link_changed`，原取消／超时及其他错误继续传播。
+退出先撤销闭包，再释放令牌和连接；`check_on_exit=False`不增加提交后的迟到拒绝。
+
+[专用测试](../../tests/product_config/test_git_prepared_monitor_identity.py)78项通过，覆盖四位置漂移、
+中途打开失败、WAL只读、变化窗口、子Task边界、退出和原异常优先。
+[原生测试](../../native/sqlite_identity/integration/test_prepared_monitors.py)另验实际打开B后恢复A，
+不把fake令牌单测当作FD证明。独立非editable安装件的6个监视场景及3个工厂场景复验全部通过，
+接线模块在源码快照、Wheel和安装目录摘要一致；本机证据为
+`verification-working/r4-monitor-identity-20261009-v1/main-review-native.xml`。
+该接线仍不代表默认Writer或完整R4通过。
 
 #### 部署、风险与尚未接入的边界
 

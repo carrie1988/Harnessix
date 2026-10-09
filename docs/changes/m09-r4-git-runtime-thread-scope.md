@@ -1,13 +1,14 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: c0e0f24d20193695b90e821d6c46f4ccb9afb2ad
+version: 6
+code_revision: cb571e9416bc99ebc9a7eadc453d75343b41dc27
 owners: [core]
 modules: [agent, product_config]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
+  - tests/product_config/test_git_prepared_monitor_identity.py
   - tests/product_config/test_git_prepared_commit_scope.py
   - tests/delivery/test_git_prefix_sql_transaction_scope.py
   - tests/product_config/test_git_prepared_runtime_thread.py
@@ -881,3 +882,11 @@ Ledger `control` 为 92299 次、`internal` 为 184597 次。
 并验证嵌套参数／字段修改与恢复、非目标坏关联、取消与期限竞争、最后 callback 后漂移。
 没有同输入的实际计数、完整负控与目标环境响应性证据，不得关闭 P1，
 也不得承诺上述常数优化足以解决当前长耗时。
+
+### 四库监视连接来源补齐
+
+`observe_prepared_state`现在用原工厂打开四条只读monitor，由创建Task签发各自的来源观察闭包。
+调用观察不转移SQL权限；完整边界保留Writer对象、路径、data_version和total_changes核验。
+原生身份仅在显式启动模式检查，不进入细粒度纯控制；仅工厂身份错误转为prepared-link变化，
+原取消、超时及其他异常不改写。退出先撤销闭包，`check_on_exit=False`不新增提交后拒绝。
+来源、已验证矩阵及未覆盖范围集中记录于[原生接线研究](../research/git-sqlite-native-source.md#四库监视接线每条实际连接分别检查)，不重复扩展本合同的默认Writer或P1结论。

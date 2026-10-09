@@ -10,16 +10,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID
 
+from harnessix.agent.errors import KernelError
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_prefix_rows import GitPrefixRows, capture_git_prefix_rows
+from harnessix.product_config.git_prepared_link_connection import (
+    _prepared_git_connection_observer,
+    open_prepared_git_connection,
+)
 from harnessix.product_config.git_prepared_link_proof import (
     PreparedLinkEvidence,
     prepared_link_changed,
     verify_prepared_link_terminal,
 )
 from harnessix.product_config.git_user_source_scope import GitUserSourceScope
-from harnessix.sqlite_readonly import readonly_database
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 from harnessix.workspace.terminal_read_control import terminal_read_scope
@@ -33,14 +37,6 @@ def _identity(path: Path) -> tuple[int, int]:
     if not stat.S_ISREG(value.st_mode):
         raise prepared_link_changed()
     return value.st_dev, value.st_ino
-
-
-def _reader(path: Path) -> sqlite3.Connection:
-    """监视连接失败只发布固定错误，不暴露 SQLite 文件或路径信息。"""
-    try:
-        return readonly_database(path)
-    except sqlite3.Error:
-        raise prepared_link_changed() from None
 
 
 def _version(database: sqlite3.Connection) -> int:
@@ -72,25 +68,53 @@ def observe_prepared_state(
     writers = (router._audit._db, router._plans._db, core_store.store._db)
     with ExitStack() as stack:
         identities = tuple(_identity(path) for path in paths)
-        readers = tuple(stack.enter_context(closing(_reader(path))) for path in paths)
+        try:
+            readers = tuple(
+                stack.enter_context(open_prepared_git_connection(path, read_only=True))
+                for path in paths
+            )
+            # 原 Task 签发每个实际 monitor 的来源观察；子 Task 不获得原 SQL 准入。
+            sources = tuple(
+                _prepared_git_connection_observer(db, path)
+                for db, path in zip(readers, paths, strict=True)
+            )
+        except KernelError as error:
+            if error.code == "git_prepared_link_host_invalid":
+                raise prepared_link_changed() from None
+            raise
         versions = tuple(_version(db) for db in readers)
         changes = tuple(db.total_changes for db in writers)
+        active = True
 
         def unchanged() -> None:
+            if not active:
+                raise prepared_link_changed()
             current = (router._audit._db, router._plans._db, core_store.store._db)
             if any(a is not b for a, b in zip(current, writers, strict=True)):
                 raise prepared_link_changed()
-            if tuple(_identity(path) for path in paths) != identities or (
-                tuple(_version(db) for db in readers) != versions
-                or tuple(db.total_changes for db in writers) != changes
+            if tuple(_identity(path) for path in paths) != identities:
+                raise prepared_link_changed()
+            try:
+                for observe in sources:
+                    observe()
+            except KernelError as error:
+                if error.code == "git_prepared_link_host_invalid":
+                    raise prepared_link_changed() from None
+                raise
+            if tuple(_version(db) for db in readers) != versions or (
+                tuple(db.total_changes for db in writers) != changes
             ):
                 raise prepared_link_changed()
 
-        unchanged()
-        yield unchanged
-        # 提交资源的清理只关闭 reader；提交前已完整复核，不在提交后发布迟到拒绝。
-        if check_on_exit:
+        try:
             unchanged()
+            yield unchanged
+            # 提交前已完整复核；保留资源的退出不发布迟到拒绝。
+            if check_on_exit:
+                unchanged()
+        finally:
+            # ExitStack 清理可触发外部代码；先撤销闭包，再由原工厂释放令牌和连接。
+            active = False
 
 
 @dataclass(slots=True)
