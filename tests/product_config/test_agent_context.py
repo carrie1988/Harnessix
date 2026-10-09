@@ -47,7 +47,8 @@ async def test_shared_context_preserves_trust_sources_budget_and_does_not_captur
     runtime = [item for item in fragments if item["kind"] == "runtime_instruction"]
     assert len(runtime) == 1 and runtime[0]["source"] == CODING_INSTRUCTIONS_VERSION
     assert runtime[0]["trust"] == "runtime"
-    assert "基线" in runtime[0]["content"] and "最终工作区" in runtime[0]["content"]
+    assert "pre-edit baseline" in runtime[0]["content"]
+    assert "final workspace" in runtime[0]["content"]
     projects = [item for item in fragments if item["kind"] == "project_instruction"]
     assert [item["source"] for item in projects] == ["AGENTS.override.md"]
     assert projects[0]["trust"] == "project"

@@ -8,6 +8,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from threading import get_ident
 from typing import Literal, cast
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from harnessix.agent.models import Thread
 from harnessix.delivery.contracts import MAX_TRANSACTION_FILE_BYTES, WorkspaceMutation
 from harnessix.delivery.git_authentication_control import (
     GitAuthenticationControl,
+    _current_task,
     io_git_authentication,
 )
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
@@ -40,7 +42,7 @@ from harnessix.tools.git import GitReadRuntime, _git_helper_key, _reject_git_hel
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.workspace.native_observation_io import UpstreamCheckpointError
 from harnessix.workspace.snapshot import verify_workspace_snapshot
-from harnessix.workspace.snapshot_capture import capture_snapshot_facts
+from harnessix.workspace.snapshot_capture import capture_snapshot_facts, capture_workspace_binding
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
 
 _OID = re.compile(rb"(?:[0-9a-f]{40}|[0-9a-f]{64})\n")
@@ -245,6 +247,10 @@ def _root_binding_matches(
     checkpoint: Callable[[], None],
 ) -> bool:
     """原生只读根捕获是 I/O 段；内部逐项消费父取消、共同期限和原本地控制。"""
+    binding_only = False
+    if type(checkpoint) is GitAuthenticationControl:
+        origin = GitAuthenticationControl._binding(checkpoint)
+        binding_only = origin[2] is _current_task() and origin[3] == get_ident()
     with io_git_authentication(checkpoint) as progress:
 
         def controlled() -> None:
@@ -260,18 +266,24 @@ def _root_binding_matches(
 
         # 段入口/成功出口在此 try 外；只有原捕获端口沿旧边界解包上游异常。
         try:
-            facts = capture_snapshot_facts(
-                root,
-                cwd=".",
-                resources=(),
-                external_roots=None,
-                platform=source.workspace.platform,
-                checkpoint=controlled,
-            )
+            if binding_only:
+                binding = capture_workspace_binding(
+                    root, platform=source.workspace.platform, checkpoint=controlled
+                )
+            else:
+                # 未知或异Task/线程控制保留原成员观察及首失败顺序。
+                binding = capture_snapshot_facts(
+                    root,
+                    cwd=".",
+                    resources=(),
+                    external_roots=None,
+                    platform=source.workspace.platform,
+                    checkpoint=controlled,
+                ).scope
         except UpstreamCheckpointError as error:
             raise error.error from None
     return all(
-        facts.scope[name] == getattr(source.workspace, name)
+        binding[name] == getattr(source.workspace, name)
         for name in ("workspace_id", "root_path_digest", "root_identity")
     )
 

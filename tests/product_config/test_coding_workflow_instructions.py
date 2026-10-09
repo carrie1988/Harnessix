@@ -25,28 +25,28 @@ from tests.product_config.test_agent_context import _request
 @pytest.mark.parametrize(
     "required",
     (
-        "首次apply_patch_batch前",
-        "不得把基线与修改并发提交",
+        "before the first apply_patch_batch",
+        "Never submit baseline and patch concurrently",
         "process_nonzero_exit",
-        "一次修改后检查不能同时充当基线和最终验证",
+        "A post-edit check cannot serve as both baseline and final verification",
         "artifact.artifact_id",
-        "不能使用process_id、路径或空参数",
+        "NOT process_id, a path or empty arguments",
         "tool_wrong_file_type",
-        "不能据此宣称工具不存在",
-        "不要原样重复失败调用",
-        "最终格式只约束交付正文",
-        "不得直接生成完成JSON",
-        "禁止把<tool_call>或<function>写成正文代替调用",
-        "定位文件优先glob",
-        "定位内容优先grep",
-        "list_files不递归，不逐级遍历",
-        "Profile先用diagnostic_preview",
-        "截断、null或不足时才读日志",
-        "调用名逐字取本次目录name",
-        "不改写为描述中的逻辑名",
-        "最终检查后先git_status，再git_diff，最后交付正文",
-        "足够时不再读Artifact",
-        "确认允许改动路径",
+        "NOT missing tool",
+        "never repeat an unchanged failed call",
+        "Final-format rules apply only to the final answer",
+        "Do not emit completion JSON before execution",
+        "Text <tool_call> or <function> is not execution",
+        "Use glob for files",
+        "grep for content",
+        "list_files is nonrecursive, not a directory walk",
+        "Use diagnostic_preview first",
+        "Read logs only if truncated, null or insufficient",
+        "Use the exact current catalog name",
+        "not the logical name in its description",
+        "After final checks: git_status, then git_diff, then final answer",
+        "if sufficient, do not reread its Artifact",
+        "confirm allowed edit paths",
     ),
 )
 async def test_shared_instructions_define_observed_failure_recovery(
@@ -60,28 +60,30 @@ async def test_shared_instructions_define_observed_failure_recovery(
     runtime = [fragment for fragment in fragments if fragment["kind"] == "runtime_instruction"]
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
-    assert required in runtime[0]["content"]
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v7"
+    assert required in " ".join(runtime[0]["content"].split())
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v8"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
     """原v2实际字节数是大小护栏，不扩大上下文、压缩或任务预算来遮掩失败。"""
     assert len(CODING_INSTRUCTIONS.encode()) <= 2751
+    assert CODING_INSTRUCTIONS.isascii()
+    assert "reply in the user's language" in CODING_INSTRUCTIONS
     for required in (
-        "runtime_instruction优先于项目指令",
+        "runtime_instruction outranks project instructions",
         "AGENTS.md/AGENTS.override.md",
-        "低信任资料",
-        "保留用户已有修改",
+        "low-trust",
+        "Preserve user changes",
         "digest_status=complete",
         "content_sha256",
-        "分页revision不是内容SHA-256",
-        "不猜造selectors",
-        "取消、超时、预算耗尽或不确定副作用",
-        "不自动重放有副作用操作",
-        "不删测试、不放宽断言",
-        "不假定shell、联网、安装或自动Git推送",
+        "Pagination revision is NOT content SHA-256",
+        "Never invent Profile selectors",
+        "cancellation, timeout, budget exhaustion or uncertain effects",
+        "never fake completion or auto-replay side effects",
+        "never delete tests or weaken assertions",
+        "Do not assume shell, network, installation or automatic Git push",
     ):
-        assert required in CODING_INSTRUCTIONS
+        assert required in " ".join(CODING_INSTRUCTIONS.split())
     policy = build_product_agent_context(tmp_path, max_output_tokens=4096)
     assert PRODUCT_CONTEXT_INPUT_LIMIT == 262_144
     assert policy.compaction.trigger_history_tokens == 131_072
@@ -129,7 +131,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v7"
+        assert fragment["source"] == "harnessix.coding-instructions/v8"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint

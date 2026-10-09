@@ -67,6 +67,9 @@ ASCII_STEM_CHARACTERS = string.ascii_letters + string.digits + "_-"
 )
 def test_alias_has_readable_stem_and_exact_original_utf8_digest(name: str, stem: str) -> None:
     alias = tool_alias(name)
+    if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", name):
+        assert alias == name
+        return
     digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:32]
     assert alias == f"hx_{stem}_{digest}"
     assert alias.startswith("hx_") and alias.isascii()
@@ -87,8 +90,7 @@ def test_each_disallowed_ascii_character_is_replaced_once(code: int) -> None:
 def test_each_allowed_ascii_character_is_preserved_without_case_repair() -> None:
     for character in ASCII_STEM_CHARACTERS:
         name = "a" + character + "Z"
-        digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:32]
-        assert tool_alias(name) == f"hx_{name}_{digest}"
+        assert tool_alias(name) == name
 
 
 @pytest.mark.parametrize(
@@ -108,15 +110,25 @@ def test_each_allowed_ascii_character_is_preserved_without_case_repair() -> None
 )
 def test_distinct_full_names_keep_distinct_digest_identity(first: str, second: str) -> None:
     assert tool_alias(first) != tool_alias(second)
-    assert tool_alias(first)[-32:] == hashlib.sha256(first.encode("utf-8")).hexdigest()[:32]
-    assert tool_alias(second)[-32:] == hashlib.sha256(second.encode("utf-8")).hexdigest()[:32]
+    for name in (first, second):
+        if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", name):
+            assert tool_alias(name) == name
+        else:
+            assert tool_alias(name)[-32:] == hashlib.sha256(name.encode("utf-8")).hexdigest()[:32]
 
 
-@pytest.mark.parametrize("length", [1, 26, 27, 28, 256, 10000])
-def test_ascii_byte_limit_is_63_even_for_long_original_names(length: int) -> None:
+@pytest.mark.parametrize("length", [1, 26, 27, 28, 64, 65, 256, 10000])
+def test_ascii_byte_limit_preserves_canonical_or_bounded_fallback(length: int) -> None:
     alias = tool_alias("x" * length)
-    assert alias.startswith("hx_" + "x" * min(length, 27) + "_")
-    assert len(alias.encode("ascii")) == 36 + min(length, 27)
+    if length <= 64:
+        assert alias == "x" * length
+    else:
+        assert alias.startswith("hx_" + "x" * 27 + "_")
+        assert len(alias.encode("ascii")) == 63
+
+
+def test_rejection_history_marker_is_not_advertised_as_a_canonical_tool() -> None:
+    assert tool_alias("harnessix_rejected_tool_v1") != "harnessix_rejected_tool_v1"
 
 
 def build_for(kind: str, request: ModelRequest) -> tuple[dict[str, Any], dict[str, str]]:
@@ -194,6 +206,15 @@ def test_alias_collision_still_rejects_the_request(
         build_for(kind, request)
 
 
+@pytest.mark.parametrize("kind", ["openai", "anthropic"])
+def test_canonical_name_colliding_with_fallback_is_rejected(kind: str) -> None:
+    request = model_request(with_tools=True)
+    names = ("test.read", tool_alias("test.read"))
+    definitions = tuple(request.tools[0].model_copy(update={"name": name}) for name in names)
+    with pytest.raises(InvalidModelRequest, match="工具名称或输入 Schema 无效"):
+        build_for(kind, request.model_copy(update={"tools": definitions}))
+
+
 async def test_persisted_original_tool_name_survives_both_wire_projections(tmp_path: Path) -> None:
     store = SQLiteSessionStore(tmp_path / "legacy-original-tool.db")
     tools = RecordingTools()
@@ -228,21 +249,22 @@ async def test_persisted_original_tool_name_survives_both_wire_projections(tmp_p
 
 
 @pytest.mark.parametrize("kind", ["openai", "anthropic"])
+@pytest.mark.parametrize("logical_name", ["test.read", "read_file"])
 @pytest.mark.parametrize(
     "identity", ["current", "unknown", "legacy_hash", "wrong_case", "not_in_directory", "raw_name"]
 )
 async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
-    kind: str, identity: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    kind: str, logical_name: str, identity: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
     monkeypatch.delenv("ANTHROPIC_CUSTOM_HEADERS", raising=False)
     returned_name = {
-        "current": tool_alias("test.read"),
+        "current": tool_alias(logical_name),
         "unknown": "hx_unknown_fixture",
-        "legacy_hash": "hx_" + hashlib.sha256(b"test.read").hexdigest()[:60],
-        "wrong_case": tool_alias("test.read").upper(),
+        "legacy_hash": "hx_" + hashlib.sha256(logical_name.encode()).hexdigest()[:60],
+        "wrong_case": tool_alias(logical_name).upper(),
         "not_in_directory": tool_alias("test.other"),
-        "raw_name": "test.read",
+        "raw_name": logical_name,
     }[identity]
     provider: OpenAIChatProvider | AnthropicProvider
     stream: wire.WireStream | anthropic_wire.WireStream
@@ -270,14 +292,16 @@ async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
             api_key="offline-alias-fixture",
             transport=httpx2.MockTransport(lambda _: anthropic_wire.response(stream)),
         )
+    request = model_request(with_tools=True)
+    request = request.model_copy(
+        update={"tools": (request.tools[0].model_copy(update={"name": logical_name}),)}
+    )
     async with provider:
-        events = [
-            event async for event in provider.stream(model_request(with_tools=True), CancelToken())
-        ]
+        events = [event async for event in provider.stream(request, CancelToken())]
     assert stream.closed
-    if identity == "current":
+    if returned_name == tool_alias(logical_name):
         calls = [event for event in events if isinstance(event, ToolCallCompleted)]
-        assert len(calls) == 1 and calls[0].tool == "test.read" and calls[0].arguments == {}
+        assert len(calls) == 1 and calls[0].tool == logical_name and calls[0].arguments == {}
         assert isinstance(events[-1], ResponseCompleted)
         assert not any(isinstance(event, ToolCallRejected) for event in events)
     else:
@@ -292,8 +316,16 @@ async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
             isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
         )
         assert returned_name not in "".join(event.model_dump_json() for event in events)
+
     # 把实际 SDK 已归一化的事件交给原 Kernel，证明目录外原名也不具执行权。
-    tools = RecordingTools()
+    class RegisteredTools(RecordingTools):
+        def definitions(self):
+            return tuple(
+                definition.model_copy(update={"name": logical_name})
+                for definition in super().definitions()
+            )
+
+    tools = RegisteredTools()
     scripted = ScriptedProvider([events, answer()])
     store = SQLiteSessionStore(tmp_path / "alias-runtime.db")
     async with AgentRuntime(store, scripted, tools) as runtime:
@@ -307,9 +339,9 @@ async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
         entry.content for entry in turn.items if isinstance(entry.content, ToolResultContent)
     ]
     assert len(results) == 1
-    if identity == "current":
+    if returned_name == tool_alias(logical_name):
         assert not rejected and len(tools.calls) == 1
-        assert tools.calls[0].tool == "test.read" and results[0].outcome == "succeeded"
+        assert tools.calls[0].tool == logical_name and results[0].outcome == "succeeded"
     else:
         assert tools.calls == [] and len(rejected) == 1
         assert rejected[0].status is ItemStatus.COMPLETED and rejected[0].error is None

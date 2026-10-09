@@ -36,6 +36,7 @@ from harnessix.trusted_actions.public_errors import (
     sanitize_gateway_exception,
 )
 from harnessix.trusted_actions.public_outcomes import (
+    failure_family,
     normalize_failure_outcome,
     public_success_schema,
     validate_public_projection,
@@ -217,13 +218,43 @@ async def terminal_result(
             approval=approval,
         )
 
-    return build_result(
+    result = build_result(
         route,
         call,
         outcome.model_copy(update={"output": projected}),
         origin=origin,
         approval=approval,
     )
+    return _process_failure_feedback(route, result)
+
+
+def _process_failure_feedback(
+    route: ActionRouteSnapshot, result: ToolResultContent
+) -> ToolResultContent:
+    """只消费刚通过Owner、审计Hash、Secret及DTO验证的投影；不复制日志正文。"""
+    output, error = result.output, result.error
+    if (
+        failure_family(route.plan) != "process"
+        or result.outcome != "failed"
+        or error is None
+        or error.code != "process_nonzero_exit"
+        or not isinstance(output, dict)
+        or output.get("version") != "trusted-process-output/v2"
+    ):
+        return result
+    preview = output["diagnostic_preview"]
+    assert isinstance(preview, dict)
+    visible = all(
+        isinstance(stream, dict) and stream["text"] is not None and not stream["truncated"]
+        for stream in (preview["stdout"], preview["stderr"])
+    )
+    message = "检查已运行并以非零退出，不是启动失败。"
+    message += (
+        "diagnostic_preview已完整展示stdout/stderr诊断正文；无需仅为重复诊断读取Artifact。"
+        if output["complete"] and visible
+        else "diagnostic_preview不完整或不可显示；需要更多诊断时按原Artifact引用有界读取。"
+    )
+    return result.model_copy(update={"error": error.model_copy(update={"message": message})})
 
 
 async def _inline_success(

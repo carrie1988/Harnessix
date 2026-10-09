@@ -27,8 +27,10 @@ class InvalidModelRequest(ValueError):
 def tool_alias(name: str) -> str:
     """生成可读线协议别名，不作为持久身份或执行权限。
 
-    摘要基于精确原名的UTF-8字节，不做规范化。
+    合法原名直接广告；其他名字的摘要基于精确UTF-8字节，不做规范化。
     """
+    if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", name) and name != "harnessix_rejected_tool_v1":
+        return name
     stem = re.sub(r"[^A-Za-z0-9_-]", "_", name) or "tool"
     return f"hx_{stem[:27]}_{hashlib.sha256(name.encode()).hexdigest()[:32]}"
 

@@ -2873,3 +2873,11 @@ fresh Owner连接7,795次／0.264秒，SELECT／fetch／close耗时未测。
 计时含审计hook／探针，不是裸syscall或优化收益，不能与嵌套计时相加解释总时延。
 FD 4→6尚未归属，不宣称无泄漏；Ledger／恢复／重开未执行。
 后续优先追踪完整认证链中根路径重开的调用来源与Local／Full边界，不削减物理复核来换速度。
+
+### 当前复验：v7完整质量未改善，v8候选待真实评分
+
+v7候选`0e246773`独立Suite `5d865146-af93-48cc-8754-59b848f54a6d`完成原20 Trial，仍严格 **1/20**、必需测试 **7/20**，商用NO-GO。141新请求completed，估算3.956308元、非账单；345条历史保持、20.77824元旧预留不减，同一38元累计剩余29.102992元。冻结证据 `r3-full-quality-workflow-20261009-v2`，不合并旧成绩。
+
+当前[v8目录与反馈收敛](changes/m09-r3-coding-workflow-instructions.md#12-v7-真实结果与-v8-低歧义输入反馈)只更改Provider临时名字、已验证Process反馈和等价内部指令；1228项安装回归通过，未改Task Pack／Grader／50000 Token／期限／权限。下一步新独立20 Trial，不恢复旧Suite或自动重试；新增未决费用立即停止。
+
+R4[鲜读根绑定](changes/m09-r4-git-checkpoint-preparation.md#115-根身份鲜读与完整资源快照分责)后原16文件／400目录／25层／两Patch夹具取得干净 **1 PASS**，恢复COMMIT与只读重开均通过、60／120秒不变。诊断hook纯词法缓存不作为生产收益；相关回归1704 PASS／1存量FAIL／19 skipped保留。默认Writer、B4/B7、Windows/Linux及R4整体门禁未完成，不以单夹具代替发布验收。

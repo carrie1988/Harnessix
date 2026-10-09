@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -11,6 +12,8 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.tools.contracts import ReadToolError
+from harnessix.tools.workspace import Workspace
 from harnessix.workspace.contracts import (
     ExternalRoot,
     PlatformKind,
@@ -18,6 +21,7 @@ from harnessix.workspace.contracts import (
     WorkspaceResourceObservation,
     WorkspaceResourceRequest,
 )
+from harnessix.workspace.native_observation_io import NativeReadOperation, UpstreamCheckpointError
 from harnessix.workspace.parent_closure_paths import parent_paths
 from harnessix.workspace.paths import normalize_workspace_path, path_comparison_key
 from harnessix.workspace.snapshot import (
@@ -38,6 +42,58 @@ class SnapshotCapture:
     resources: tuple[WorkspaceResourceObservation, ...]
     parents: tuple[WorkspaceResourceObservation, ...]
     requests: tuple[WorkspaceResourceRequest, ...]
+
+
+def capture_workspace_binding(
+    root: Path, *, platform: PlatformKind, checkpoint: Callable[[], None]
+) -> dict[str, object]:
+    """鲜读根作用域，不读取未参与根身份的成员；完整资源快照仍走原端口。"""
+    if platform != "posix" or os.name != "posix":
+        return capture_snapshot_facts(
+            root,
+            cwd=".",
+            resources=(),
+            external_roots=None,
+            platform=platform,
+            checkpoint=checkpoint,
+        ).scope
+    checkpoint()
+    try:
+        workspace = Workspace(root, path_max_bytes=4096, path_max_parts=128)
+    except (OSError, ReadToolError, ValueError):
+        raise KernelError("workspace_binding_invalid", "POSIX Workspace根绑定失败") from None
+    with workspace:
+        try:
+            # 同一次完整 no-follow 链保留 FD；出口仍鲜读根路径及复核原 FD。
+            # 不枚举目录，也不把本次身份缓存给后继检查点。
+            with workspace.open(".", NativeReadOperation(checkpoint), directory=True) as descriptor:
+                info = os.fstat(descriptor)
+                return _binding_scope(workspace.root, (info.st_dev, info.st_ino), platform)
+        except UpstreamCheckpointError as error:
+            raise error.error from None
+        except ReadToolError as error:
+            raise KernelError(f"workspace_{error.code}", "Workspace资源观察失败") from None
+        except OSError:
+            raise KernelError("workspace_observation_failed", "Workspace资源观察失败") from None
+
+
+def _binding_scope(
+    path: Path, root_identity: tuple[object, ...], platform: PlatformKind
+) -> dict[str, object]:
+    root_path_digest = _digest(_root_path_key(path, platform))
+    identity = _digest(root_identity)
+    return {
+        "platform": platform,
+        "workspace_id": _digest(
+            {
+                "platform": platform,
+                "root_path_digest": root_path_digest,
+                "root_identity": identity,
+            }
+        ),
+        "root_path_digest": root_path_digest,
+        "root_identity": identity,
+    }
 
 
 class _Observations:
@@ -123,22 +179,13 @@ def capture_snapshot_facts(
             observer.observe(WorkspaceResourceRequest(location=location, path=path, access="read"))
             for location, path in paths
         )
-        root_path_digest = _digest(_root_path_key(roots["workspace"].path, selected))
-        root_identity = _digest(roots["workspace"].root_identity)
-        workspace_id = _digest(
-            {
-                "platform": selected,
-                "root_path_digest": root_path_digest,
-                "root_identity": root_identity,
-            }
+        binding = _binding_scope(
+            roots["workspace"].path, roots["workspace"].root_identity, selected
         )
         checkpoint()
         return SnapshotCapture(
             {
-                "platform": selected,
-                "workspace_id": workspace_id,
-                "root_path_digest": root_path_digest,
-                "root_identity": root_identity,
+                **binding,
                 "cwd": cwd,
                 "external_roots": [item.model_dump(mode="json") for item in contracts],
             },

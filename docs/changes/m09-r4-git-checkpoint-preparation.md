@@ -164,7 +164,7 @@ foreign Task／线程、函数、代理和子类仍交原 full。新控制只用
 | 段与源码入口 | 内部工作／检查 | 完整认证与返回条件 |
 |---|---|---|
 | [`_projection_references`](../../src/harnessix/product_config/git_checkpoint_scope.py) | 只核对 base 目录资格、基线 member 的 OID／mode、规划新 Tree 引用，按原 `_union` 验证完整图预算；没有 CAS 参数或 I/O | exact 控制才进入 `pure`；入口与成功出口完整认证，之后 `_build` 才按原顺序 `cas.persist` |
-| [`_root_binding_matches`](../../src/harnessix/product_config/git_baseline.py) | 实际 `capture_snapshot_facts` 是同步原生只读 I/O，使用 `io_git_authentication`，不是 `pure`；逐项消费原取消、同一期限及原资源代际 | 段入口、成功出口完整认证；退出后比较原 `workspace_id`、`root_path_digest`、`root_identity` 三字段；原生读取保护不删减 |
+| [`_root_binding_matches`](../../src/harnessix/product_config/git_baseline.py) | 原 `capture_snapshot_facts`／当前专用根身份端口（见1.15）是同步原生只读 I/O，使用 `io_git_authentication`，不是 `pure`；逐项消费原取消、同一期限及原资源代际 | 段入口、成功出口完整认证；退出后比较原 `workspace_id`、`root_path_digest`、`root_identity` 三字段；原生读取保护不删减 |
 | [`GitAuthenticationControl.io_progress`](../../src/harnessix/delivery/git_authentication_control.py) | 与 `pure` 共享私有段 token 生命周期；频检不读认证源码、不访问 SQL／Owner、不调用外部 checkpoint | 保存检查点在段外、异 Task／线程、嵌套或任何完整重入后撤销，回到 full；不签发权限或复用认证结果 |
 | 其他混合／效果边界 | `_build`、对象命令、CAS、数据库、Artifact 发布、事务提交仍沿原控制 | 不整体包裹这些入口，不把只读根捕获例外扩展为任意 I/O 优化 |
 
@@ -499,6 +499,50 @@ Snapshot摘要域错误保留，分别按原断言及正式摘要域复验，不
 重开成功及全部外部副作用断言未证明，最大诊断心跳间隔11.171秒，无验收阈值；
 不作配对速度或P1通过声明。下一步需定位整个Source原生观察与认证链的累计成本，
 不能靠继续叠加微优化次数、删除物理复核或放宽期限宣布完成。
+
+### 1.15 根身份鲜读与完整资源快照分责
+
+**源码研究与决策：** 原 `_root_binding_matches` 只消费 `workspace_id`、`root_path_digest`、
+`root_identity`，却捕获并枚举未参与这三个值的根目录成员。原认证夹具的有界调用来源诊断显示，
+材料控制的 6674 次根校验触发 33370 次根链打开；这是归因诊断，不是验收或收益测量。
+将“当前根是谁”和“文件及父历史是否仍完整一致”分责，不缓存物理身份或认证结果。
+
+**接口与流程：** [`capture_workspace_binding`](../../src/harnessix/workspace/snapshot_capture.py)
+输入原 `Path`、平台及同一检查点，返回原三个摘要和平台；不持久化新凭据。
+仅原 `GitAuthenticationControl` 的创建 Task／线程进入根身份专用端口：
+
+```text
+原控制资格 → I/O 段入口 Full → 父取消/期限检查
+→ 新建 no-follow 根能力 → 原生读前鲜读 → FD 身份读取
+→ 原生读后控制、原 FD 与当前路径鲜读 → 关闭全部 FD
+→ 成功出口 Full → 比较原三个摘要
+```
+
+根能力与读前／读后仍各走一次完整 no-follow 链（每次调用共3次），不跨检查点复用。
+[`_root_binding_matches`](../../src/harnessix/product_config/git_baseline.py) 对普通函数、代理、子类、
+foreign Task／线程仍走原 `capture_snapshot_facts`，保持原成员观察与首失败轨迹。
+非 POSIX 专用端口回落原完整捕获，不据本轮宣称 Windows 优化或平台验收。
+`_binding_scope` 只复用原摘要算法；完整 Source、Snapshot V2、父闭包和实际 CAS 读取均不削减。
+
+**失败契约：** 专用端口不再枚举不参与根身份的目录成员，因此该一步不承担成员数量／枚举错误
+判定；真正资源与父目录验证仍在原完整 Snapshot 边界拒绝变化与超限。这是明确分责，不是全局
+错误顺序等价。上游取消／超时／同码错误与嵌套标记保留原对象；首失败不追加成功出口认证。
+根或祖先替换、同次路径漂移仍拒绝，FD 在成功和各类首失败后关闭。
+
+**验证与限制：** [根作用域测试](../../tests/workspace/test_root_binding.py)证明原摘要一致、深路径、
+未枚举成员、每次鲜读、替换／漂移、取消／超时及 FD 清理，完整 Snapshot 仍拒绝内容／父成员变化。
+[原控制矩阵](../../tests/product_config/test_git_root_io_control.py)保留全部未知控制旧轨迹矩阵；
+原 exact 原生成员阶段迁移为实际根 FD 读阶段，错误种类及入口／内读／尾部／出口维度不删。
+同一非 editable候选564个生产成员逐字节绑定，1704 PASS／1存量FAIL／19平台跳过；存量失败
+为 User 采集器的阶段观察断言，已在整改前安装件复现，不以总绿例覆盖。
+
+原负载 v29 完成审批事实 COMMIT 和六项原断言，但只读重开仍因原 Turn 过期失败。
+准备38.100秒、Ledger34.378秒、恢复40.112秒；并行回归和诊断开销使之不是配对性能比较。
+诊断 guard 每次 open 的词法 `abspath` 采样占比高，不能误归因为生产 `root.resolve`。
+后继测量只降低 guard 的纯词法归一化重复计算；所有生产检查点、60／120秒、原fixture字节
+及物理复核不变，独立记录 guard 版本、固定 cwd 前提和拒绝负控，不能将测量开销变化称产品加速。
+
+原深目录后继v31在同一qualified安装件下 **1 PASS、exit=0**：八项审批／COMMIT／原锁／只读重开／无新增效果断言全部通过，未调整60／120秒。诊断hook只缓存纯词法路径，cwd变化立即撤销，689项等价比较与两个真实cwd负控通过；不缓存准入或身份，不称为生产加速。v29业务失败、v30清理失败保留。外部证据 `r4-root-binding-deep-recovery-20261009-v1`，清单SHA-256 `188b982fcb6fc412b901508b9da2feac03c493680ed496c24d183136342a939c`。此单夹具不关闭默认Writer、B4/B7、三平台或R4整体门禁。
 
 ## 2. 设计目标、范围、非目标与验收标准
 

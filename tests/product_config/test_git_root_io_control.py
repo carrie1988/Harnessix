@@ -15,9 +15,8 @@ from harnessix.agent.errors import KernelError
 from harnessix.delivery import git_authentication_control as controls
 from harnessix.delivery.git_authentication_control import GitAuthenticationControl
 from harnessix.product_config import git_baseline as baseline
-from harnessix.workspace import snapshot
 from harnessix.workspace.native_observation_io import NativeReadOperation, UpstreamCheckpointError
-from harnessix.workspace.snapshot_capture import capture_snapshot_facts
+from harnessix.workspace.snapshot_capture import capture_snapshot_facts, capture_workspace_binding
 
 
 class _Probe:
@@ -88,20 +87,17 @@ def test_real_root_capture_uses_io_progress_and_is_readonly(root_source, monkeyp
     def capture(path, **kwargs):
         assert path == root
         assert {key: value for key, value in kwargs.items() if key != "checkpoint"} == {
-            "cwd": ".",
-            "resources": (),
-            "external_roots": None,
             "platform": "posix",
         }
         calls.append(path)
-        return capture_snapshot_facts(path, **kwargs)
+        return capture_workspace_binding(path, **kwargs)
 
-    monkeypatch.setattr(baseline, "capture_snapshot_facts", capture)
+    monkeypatch.setattr(baseline, "capture_workspace_binding", capture)
     assert baseline._root_binding_matches(source, root, probe.control)
     assert calls == [root] and before == _tree(root)
     assert probe.trace[0] == probe.trace[-1] == "full"
     assert probe.trace.count("full") == 2
-    assert probe.trace.count("local") > len(tuple(root.iterdir()))
+    assert probe.trace.count("local") >= 3  # 根能力前后频检，不枚举未参与根身份的成员。
     probe.control()
     probe.control()
     assert probe.trace[-2:] == ["full", "full"]  # 普通父调用没有认证缓存。
@@ -132,23 +128,23 @@ def _error(kind):
 @pytest.mark.parametrize(
     "kind", ["kernel", "cancel", "turn-cancel", "timeout", "oserror", "upstream", "nested"]
 )
-@pytest.mark.parametrize("boundary", ["entry", "native-outer", "native-directory", "tail", "exit"])
+@pytest.mark.parametrize("boundary", ["entry", "native-outer", "native-read", "tail", "exit"])
 def test_real_boundary_failure_identity_and_no_result(root_source, monkeypatch, kind, boundary):
     """入口/段尾/出口不解包；native 内部沿旧 controlled/NativeReadOperation 解包。"""
     root, source = root_source
     probe, error, state = _Probe(), _error(kind), {"where": "outside"}
-    original_directory = snapshot.observe_directory
+    original_check = NativeReadOperation.checkpoint
 
-    def directory(*args, **kwargs):
-        state["where"] = "native-directory"
+    def native_check(operation):
+        state["where"] = "native-read"
         try:
-            return original_directory(*args, **kwargs)
+            return original_check(operation)
         finally:
             state["where"] = "capture"
 
     def capture(*args, **kwargs):
         state["where"] = "native-outer"
-        facts = capture_snapshot_facts(*args, **kwargs)
+        facts = capture_workspace_binding(*args, **kwargs)
         state["where"] = "tail"
         return facts
 
@@ -160,8 +156,8 @@ def test_real_boundary_failure_identity_and_no_result(root_source, monkeypatch, 
             state["where"] = "capture"
 
     probe.hook = fail
-    monkeypatch.setattr(snapshot, "observe_directory", directory)
-    monkeypatch.setattr(baseline, "capture_snapshot_facts", capture)
+    monkeypatch.setattr(NativeReadOperation, "checkpoint", native_check)
+    monkeypatch.setattr(baseline, "capture_workspace_binding", capture)
     expected = error
     delivered = []
     with pytest.raises(type(expected)) as caught:
@@ -172,8 +168,8 @@ def test_real_boundary_failure_identity_and_no_result(root_source, monkeypatch, 
 
 
 @pytest.mark.parametrize("stop", ["cancel", "deadline", "lock-generation"])
-def test_native_members_consume_same_parent_local_controls(root_source, monkeypatch, stop):
-    """真实目录读取，合成锁代际；不声称真实宿主锁/SDK 已验收。"""
+def test_native_root_consumes_same_parent_local_controls(root_source, monkeypatch, stop):
+    """真实根FD读取，合成锁代际；不声称真实宿主锁/SDK 已验收。"""
     root, source = root_source
     cancel, clock, generation = CancelToken(), [0], [7]
     error = KernelError("git_local_control_invalid", "local marker")
@@ -184,18 +180,18 @@ def test_native_members_consume_same_parent_local_controls(root_source, monkeypa
             raise error
 
     control = GitAuthenticationControl(local, local)
-    original_directory = snapshot.observe_directory
+    original_check = NativeReadOperation.checkpoint
 
-    def directory(*args, **kwargs):
+    def native_check(operation):
         if stop == "cancel":
             cancel.cancel()
         elif stop == "deadline":
             clock[0] = 10
         else:
             generation[0] = 8
-        return original_directory(*args, **kwargs)
+        return original_check(operation)
 
-    monkeypatch.setattr(snapshot, "observe_directory", directory)
+    monkeypatch.setattr(NativeReadOperation, "checkpoint", native_check)
     with pytest.raises(TurnCancelled if stop == "cancel" else KernelError) as caught:
         baseline._root_binding_matches(source, root, control)
     if stop != "cancel":

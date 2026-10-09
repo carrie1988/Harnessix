@@ -191,3 +191,41 @@ Trial；正常失败Profile已有完整诊断预览时仍追加日志读取。�
 不改别名算法、拒绝DTO、工具数量、Task Pack、Grader、50000 Token、60／120秒或审批合同。
 2751字节原护栏及新建／重开Turn、Chat／Anthropic映射、目录身份和Token发布边界均回归。
 提示词送达证明不是模型遵循率；新真实Suite独立记录，不回填旧报告、不合并候选成绩。
+
+## 12. v7 真实结果与 v8 低歧义输入／反馈
+
+v7 的新独立 Suite `5d865146-af93-48cc-8754-59b848f54a6d` 完整20 Trial，严格1/20、必需测试7/20，
+1 passed／7 failed／12 invalid，质量没有达标。141新增请求均completed，估算3.956308元、非账单；
+同一38元累计剩余29.102992元，原60元周期和20.77824元旧预留不变。204条历史前缀保留。
+正式20报告与结果投影封存在外部 `r3-full-quality-workflow-20261009-v2`，清单SHA-256为
+`1d37a8eb3876bed8e4504beb10b40ed71938559e8faffadec81f7767e48918bc`；旧失败不合并、不删除。
+
+**根因：** 15次Artifact读取中10次与已展示、未截断的Process预览逐字节相同；通用错误仍建议
+查审计记录。首轮实际输入4714～4763 Token，输入占本Suite总Token98.35%。完整Descriptor
+的10490是宿主UTF-8字节估算，不是实际wire或供方Token；重建首Case广告10工具为8917字节。
+只在模型输入与已验证结果反馈处收敛，不能删除工具或审计来减少表面数字。
+
+**实现与正式边界：**
+- [`tool_alias`](../../src/harnessix/models/_history.py)直接广告合法ASCII原名（1～64字符）；含点号、
+  Unicode或超长名字仍用原精确字节摘要别名。拒绝历史占位名保留专用含义，不直接广告。
+  目录、历史重编码和反向映射共用同一算法；自然 canonical／fallback 碰撞也先于网络拒绝。
+  仅改变Provider临时名字，不改Session业务名、Tool版本、审批身份或执行权限，不接受旧别名作隐藏后门。
+- [`terminal_result`](../../src/harnessix/trusted_actions/agent_gateway_output.py)只有在原Owner输出、
+  Router双Hash、Secret和正式DTO均通过后，对已知Process非零正常退出提供固定反馈。
+  两路预览可见、未截断且归档完整时提示无需重复读取；不完整／null仍允许有界读取原Artifact。
+  不复制日志正文到错误，不改变失败状态、错误码、retryable、归档引用或审计；v1、无Owner、超时和
+  UNKNOWN不获“完整诊断”声明，也不自动重放。恢复同样先验证后反馈。
+- Profile描述指向已有预览。内部共享指令v8用等价英文表达工程闭环，明确按用户语言回复；
+  文档仍简体中文。原每条信任、权限、审批、SHA取值、基线／最终检查、依赖顺序、分页与失败规则
+  逐条保留，原2751字节护栏及Context／压缩阈值不变。英文切换不是另增权限或供方容量承诺。
+
+**负控与交付：** [目录身份矩阵](../../tests/models/test_tool_alias_identity.py)含合法名、大小写、Unicode、
+64／65字符、占位名、真实自然碰撞、两SDK流、原Kernel及持久原名；未知名字／错误大小写不具执行权。
+[反馈矩阵](../../tests/trusted_actions/test_process_preview_projection.py)核对两种来源／Owner与inline、
+完整／截断／null／归档未完整／v1／超时／UNKNOWN，保留原输出、错误分类、双Hash和不重执行断言；
+原坏DTO与Hash负控仍执行。[共享Context测试](../../tests/product_config/test_coding_workflow_instructions.py)
+核对原约束逐条送达、新建／重开持久指纹及Chat／Anthropic实际映射。
+离线送达、字节节流或反事实估算不代表模型质量达标；必须在原Task Pack／Grader／50000 Token和
+完整20 Trial下另行实测，不回填当前1/20。
+
+最终候选非editable安装包关联回归 **1228 PASS**（三个record_property警告），564生产成员在源码／构建输入／Wheel／安装件间逐字节一致；Wheel SHA-256 `e33d6f8e804d1d519df589ce3954072bb220877629727b0ea9afa31b56404ea4`。不包含R4存量失败的旧阶段观察测试，不据此宣称全仓绿或真实质量通过。

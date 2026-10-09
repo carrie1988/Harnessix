@@ -157,6 +157,7 @@ def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor
                 else "非空选择器仅允许受限相对测试目标。"
             )
             + "程序、镜像、资源、环境和Secret由宿主冻结。"
+            "检查失败先看diagnostic_preview；两路完整且可见时无需再读相同日志Artifact。"
         ),
         input_schema=run_profile_schema(profile.profile_id, profile.selector_policy),
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
