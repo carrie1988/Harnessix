@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 28
-code_revision: 1fe158e159bda0afe7e2dfb3d6cc235b87a5d2f9
+version: 29
+code_revision: c2c1ee1a7ef8b6a014ab955c302658c8480de2f3
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/agent/test_runtime_sampled_token_budget.py
   - tests/agent/test_publication_scheduling.py
   - tests/agent/test_publication_scheduling_cancellation.py
   - tests/session/test_authenticated_history.py
@@ -56,6 +57,30 @@ Git 消费者接线见[原 Runtime Thread 绑定](../changes/m09-r4-git-runtime-
 完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
 对应回归见[验证用例](../../tests/agent/test_tool_rejection_runtime.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
 以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
+
+## 当前增量：已知 Token 用量的调用发布前门控
+
+固定真实评测发现：已耗尽用量的模型步骤仍将写入提案发布为 `ToolCallContent`，随后
+`_finish`按未结算写入保守转为 `uncertain_effect`。网关虽未准备或执行，评测仍必须拒绝
+缺少可信进程终态的结果；这不是 Docker 执行失败，也不能靠放宽证据提取解决。
+
+[`_sample_events`](../../src/harnessix/agent/runtime.py)现在遵循以下顺序：
+**持久记录全部已知用量 → 校验完整流及正常关闭 → 预算检查 → 原子发布调用组 → 原调度／审批**。
+沿用 `accounted: Usage`，它包含原步骤及已知失败尝试，不只读取末次响应的用量；不额外查询
+Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上限。
+
+| 情况 | 正式结果 |
+|---|---|
+| 存在已注册调用且累计用量 `>= max_tokens` | `FAILED / budget_exceeded`；用量保留，整个调用组不发布，不准备／执行工具 |
+| 仅拒绝或未知名称 | 原拒绝事实及反馈保留；沿原预算决定是否再次调用模型 |
+| 无调用、最终文本且用量恰好等于上限 | 原成功收尾语义保留；超上限仍失败 |
+| 不完整／畸形流、取消或到期 | 原错误顺序和已知用量保留；不授予草稿执行权 |
+| 已发布写入或实际执行存在未知效果 | 原保守恢复不变；准备后审批前崩溃仍可为 `uncertain_effect` |
+
+[十五项边界测试](../../tests/agent/test_runtime_sampled_token_budget.py)覆盖真实网关、累计尝试、
+混合调用组、拒绝审计、实际未知、准备崩溃、取消、期限及事件 replay。当前非 editable 安装包
+391 个唯一关联节点通过；原复现失败及夹具修正前结果保留。这只闭环预算发布顺序缺陷，
+不降低已发生模型输入用量，不构成 R3 完整真实质量或 R4 商用验收。
 
 ## 1. 文档摘要
 
