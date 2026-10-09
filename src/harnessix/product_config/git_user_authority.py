@@ -22,6 +22,27 @@ def _invalid() -> KernelError:
     return KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
 
 
+def freeze_git_user_read_callbacks(
+    router: TrustedActionRouter, transactions: SQLiteWorkspaceTransactionStore
+) -> Callable[[], None]:
+    """原只读段复核固定回调身份；先拒绝 Audit 替身，再读取其字段。"""
+    audit = router._audit
+    callbacks = (transactions._checkpoint, audit._checkpoint, audit._read_blob)
+
+    def verify() -> None:
+        if router._audit is not audit or any(
+            current is not original
+            for current, original in zip(
+                (transactions._checkpoint, audit._checkpoint, audit._read_blob),
+                callbacks,
+                strict=True,
+            )
+        ):
+            raise _invalid()
+
+    return verify
+
+
 def require_git_user_authority(
     session: SQLiteSessionStore,
     router: TrustedActionRouter,

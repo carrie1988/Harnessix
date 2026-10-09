@@ -301,7 +301,8 @@ async def test_managed_child_can_use_pure_without_recapturing_parent_resources(c
 
     async def prepare(*args):
         assert asyncio.current_task() is not parent
-        control = args[-1]
+        control, native_observer = args[-2:]
+        assert callable(native_observer) and native_observer is not control
         assert type(control) is GitAuthenticationControl
         assert control._task is asyncio.current_task()
         case.trace.clear()
@@ -326,7 +327,8 @@ async def test_preparer_subclass_keeps_original_full_control(case, monkeypatch):
     result = ResolvedAction(())
 
     async def prepare(*args):
-        control = args[-1]
+        control, native_observer = args[-2:]
+        assert native_observer is None
         assert type(control) is not GitAuthenticationControl
         case.trace.clear()
         control()
@@ -349,7 +351,8 @@ async def test_child_uses_parent_frozen_refs_and_preserves_callback_timeout(
     marker = TimeoutError("same upstream timeout")
 
     async def prepare(*args):
-        control = args[-1]
+        control, native_observer = args[-2:]
+        assert callable(native_observer) and native_observer is not control
         if fault == "resource":
             case.planner.reader = object()
         else:

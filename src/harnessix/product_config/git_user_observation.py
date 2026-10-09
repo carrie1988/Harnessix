@@ -10,7 +10,7 @@ from contextlib import nullcontext
 from pathlib import Path
 from uuid import UUID
 
-from harnessix.agent.cancellation import CancelToken, parent_cancel_checkpointer
+from harnessix.agent.cancellation import CancelToken, TurnCancelled, parent_cancel_checkpointer
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
 from harnessix.delivery.git_authentication_control import GitAuthenticationControl
@@ -25,7 +25,6 @@ from harnessix.product_config.git_baseline import (
     _Queries,
     _root_binding_matches,
 )
-from harnessix.product_config.git_delivery_plan_contracts import GitIndexFileObservation
 from harnessix.product_config.git_delivery_plan_snapshot import _snapshot
 from harnessix.product_config.git_delivery_process import GitOperationBudget
 from harnessix.product_config.git_delivery_source import (
@@ -42,13 +41,15 @@ from harnessix.product_config.git_parent_contracts import (
     ProductGitDeliveryBaselineV2,
     ProductGitDeliverySourceV2,
 )
-from harnessix.product_config.git_user_authority import require_git_user_authority
+from harnessix.product_config.git_user_authority import (
+    freeze_git_user_read_callbacks,
+    require_git_user_authority,
+)
 from harnessix.product_config.git_user_observation_contracts import (
     ProductGitUserObservation,
-    product_git_user_observation_fingerprint,
+    build_product_git_user_observation,
 )
 from harnessix.product_config.git_user_observation_paths import (
-    PinnedGitUserDirectories,
     git_user_directory_facts,
     invalid_git_user_paths,
     pin_git_user_directories,
@@ -122,6 +123,7 @@ async def collect_product_git_user_observation(
     budget: GitOperationBudget,
     checkpoint: Callable[[], None],
     snapshot_ports: WorkspaceSnapshotPorts,
+    native_observer: Callable[[], None] | None = None,
 ) -> ProductGitUserObservation:
     """先认证实际历史，借原 CAS 捕获一次 Source2，再完整前后复核用户仓库。"""
     await asyncio.sleep(0)
@@ -131,24 +133,39 @@ async def collect_product_git_user_observation(
         or not callable(checkpoint)
     ):
         raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
+    native_observer = qualified_native_observer(checkpoint, native_observer)
     host_check = require_git_user_authority(session, router, transactions, snapshot_ports, reader)
+    verify_callbacks = (
+        None if native_observer is None else freeze_git_user_read_callbacks(router, transactions)
+    )
     deadline = min(time.monotonic() + _BASELINE_TIMEOUT_SECONDS, budget._deadline)
     control_error: BaseException | None = None
 
-    def raw_check() -> None:
+    def raw_check(*, native_only: bool = False) -> None:
         nonlocal control_error
         try:
             cancel.checkpoint()
             budget.remaining()
-            checkpoint()
-            host_check()
+            if native_only:
+                assert native_observer is not None and verify_callbacks is not None
+                native_observer()
+                cancel.checkpoint()
+                budget.remaining()
+                verify_callbacks()
+            else:
+                checkpoint()
+                host_check()
             if time.monotonic() >= deadline:
                 raise KernelError("git_baseline_timeout", "Git交付基准总期限已耗尽")
         except BaseException as error:
             control_error = error
             raise
 
+    def native_check() -> None:
+        raw_check(native_only=True)
+
     check = parent_cancel_checkpointer(raw_check)
+    native_check = parent_cancel_checkpointer(native_check)
     check()
     if type(thread) is not Thread or type(reader) is not GitReadRuntime:
         raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
@@ -166,7 +183,9 @@ async def collect_product_git_user_observation(
                     snapshot_ports,
                     check,
                     deadline,
-                )
+                    native_check=native_check if native_observer is not None else None,
+                ),
+                preserve_failure=native_observer is not None,
             )
     except TimeoutError as error:
         if error is control_error:
@@ -178,6 +197,11 @@ async def collect_product_git_user_observation(
         raise KernelError(
             "git_user_observation_unavailable", "Git用户观察无法完成完整读取"
         ) from None
+    except (TurnCancelled, asyncio.CancelledError):
+        # 仅显式只读段保留已捕获的原取消对象；不改变默认托管取消语义。
+        if native_observer is not None and control_error is not None:
+            raise control_error from None
+        raise
 
 
 async def verify_product_git_user_observation(
@@ -425,8 +449,12 @@ async def _collect(
     ports: WorkspaceSnapshotPorts,
     check: Callable[[], None],
     deadline: float,
+    *,
+    native_check: Callable[[], None] | None = None,
 ) -> ProductGitUserObservation:
     """同一历史与物理窗口；实际执行权仍须新规划、原审批及再次原生验证。"""
+    if native_check is not None:
+        check = GitAuthenticationControl(native_check, check)
     history = await session.authenticated_thread_history(
         thread.thread_id,
         cancel=cancel,
@@ -517,9 +545,9 @@ async def _observe_user_baseline(
         publication = session._publication
         if publication is None:
             raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
-        result = _observation(
+        result = build_product_git_user_observation(
             baseline,
-            pinned,
+            git_user_directory_facts(pinned),
             index,
             config,
             implementation,
@@ -561,33 +589,3 @@ async def _verify_final_git_facts(
     )
     if await _observe(query) != expected or await _configuration(query) != config:
         raise KernelError("git_user_observation_changed", "Git用户观察期间绑定发生变化")
-
-
-def _observation(
-    baseline: ProductGitDeliveryBaselineV2,
-    pinned: PinnedGitUserDirectories,
-    index: GitIndexFileObservation,
-    config: str,
-    implementation: str,
-    store_id: UUID,
-    key_id: UUID,
-) -> ProductGitUserObservation:
-    """只组装完整已读事实；原 Session身份元数据不被转换为新的MAC或批准。"""
-    facts = git_user_directory_facts(pinned)
-    candidate = ProductGitUserObservation.model_construct(
-        store_id=store_id,
-        key_id=key_id,
-        baseline=baseline,
-        common_directory_path_sha256=facts["common_directory_path_sha256"],
-        common_directory_identity=facts["common_directory_identity"],
-        git_directory_path_sha256=facts["git_directory_path_sha256"],
-        git_directory_identity=facts["git_directory_identity"],
-        index_file_observation=index,
-        config_sha256=config,
-        implementation_digest=implementation,
-        fingerprint="0" * 64,
-    )
-    return ProductGitUserObservation(
-        **candidate.model_dump(exclude={"fingerprint"}),
-        fingerprint=product_git_user_observation_fingerprint(candidate),
-    )

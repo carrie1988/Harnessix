@@ -235,7 +235,7 @@ async def test_planner_preserves_injected_owner_settlement_not_outer_cancellatio
     tmp_path, config, monkeypatch, stop
 ):
     """仅模拟Owner未知结算；真实前置归属和两层托管不冒充原生停止故障验收。"""
-    from harnessix.agent.cancellation import TurnCancelled
+    from harnessix.agent.cancellation import CancelToken, TurnCancelled
     from harnessix.agent.errors import KernelError
     from harnessix.product_config import git_checkpoint_preparation as preparation
     from harnessix.product_config import git_delivery_process as processes
@@ -256,7 +256,9 @@ async def test_planner_preserves_injected_owner_settlement_not_outer_cancellatio
     original = preparation._prepare
 
     async def captured_prepare(*args, **kwargs):
-        controls["cancel"], controls["task"] = args[-3], asyncio.current_task()
+        # cancel 是原第八个参数；尾部新增只读观察端口不改变其归属。
+        controls["cancel"], controls["task"] = args[7], asyncio.current_task()
+        assert type(controls["cancel"]) is CancelToken
         return await original(*args, **kwargs)
 
     monkeypatch.setattr(preparation, "_prepare", captured_prepare)

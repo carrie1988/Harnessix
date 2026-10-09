@@ -52,3 +52,32 @@ def product_git_user_observation_fingerprint(value: ProductGitUserObservation) -
     return canonical_digest(
         value.model_dump(mode="json", exclude={"fingerprint"}, warnings="error")
     )
+
+
+def build_product_git_user_observation(
+    baseline: ProductGitDeliveryBaselineV2,
+    facts: dict[str, str],
+    index: GitIndexFileObservation,
+    config: str,
+    implementation: str,
+    store_id: UUID,
+    key_id: UUID,
+) -> ProductGitUserObservation:
+    """只组装完整已读事实；原 Session身份元数据不被转换为新的MAC或批准。"""
+    candidate = ProductGitUserObservation.model_construct(
+        store_id=store_id,
+        key_id=key_id,
+        baseline=baseline,
+        common_directory_path_sha256=facts["common_directory_path_sha256"],
+        common_directory_identity=facts["common_directory_identity"],
+        git_directory_path_sha256=facts["git_directory_path_sha256"],
+        git_directory_identity=facts["git_directory_identity"],
+        index_file_observation=index,
+        config_sha256=config,
+        implementation_digest=implementation,
+        fingerprint="0" * 64,
+    )
+    return ProductGitUserObservation(
+        **candidate.model_dump(exclude={"fingerprint"}),
+        fingerprint=product_git_user_observation_fingerprint(candidate),
+    )

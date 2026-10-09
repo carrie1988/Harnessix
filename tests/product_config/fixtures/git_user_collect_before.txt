@@ -1,0 +1,145 @@
+# Pinned before/src/harnessix/product_config/git_user_observation.py
+# Source SHA256: 7b62db51e4830038074ffbe5b86674812a0449f640779c6d0bcde46fc26dda6f
+from __future__ import annotations
+
+async def collect_product_git_user_observation(
+    thread: Thread,
+    targets: tuple[UUID, ...],
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    reader: GitReadRuntime,
+    *,
+    session: SQLiteSessionStore,
+    cancel: CancelToken,
+    budget: GitOperationBudget,
+    checkpoint: Callable[[], None],
+    snapshot_ports: WorkspaceSnapshotPorts,
+) -> ProductGitUserObservation:
+    """先认证实际历史，借原 CAS 捕获一次 Source2，再完整前后复核用户仓库。"""
+    await asyncio.sleep(0)
+    if (
+        type(cancel) is not CancelToken
+        or type(budget) is not GitOperationBudget
+        or not callable(checkpoint)
+    ):
+        raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
+    host_check = require_git_user_authority(session, router, transactions, snapshot_ports, reader)
+    deadline = min(time.monotonic() + _BASELINE_TIMEOUT_SECONDS, budget._deadline)
+    control_error: BaseException | None = None
+
+    def raw_check() -> None:
+        nonlocal control_error
+        try:
+            cancel.checkpoint()
+            budget.remaining()
+            checkpoint()
+            host_check()
+            if time.monotonic() >= deadline:
+                raise KernelError("git_baseline_timeout", "Git交付基准总期限已耗尽")
+        except BaseException as error:
+            control_error = error
+            raise
+
+    check = parent_cancel_checkpointer(raw_check)
+    check()
+    if type(thread) is not Thread or type(reader) is not GitReadRuntime:
+        raise KernelError("git_user_observation_host_invalid", "Git用户观察缺少原有效宿主")
+    try:
+        async with asyncio.timeout(max(0.001, deadline - time.monotonic())):
+            return await cancel.run(
+                _collect(
+                    thread,
+                    targets,
+                    router,
+                    transactions,
+                    reader,
+                    session,
+                    cancel,
+                    snapshot_ports,
+                    check,
+                    deadline,
+                )
+            )
+    except TimeoutError as error:
+        if error is control_error:
+            raise
+        raise KernelError("git_baseline_timeout", "Git交付基准总期限已耗尽") from None
+    except (ReadToolError, UnicodeError, OSError) as error:
+        if error is control_error:
+            raise
+        raise KernelError(
+            "git_user_observation_unavailable", "Git用户观察无法完成完整读取"
+        ) from None
+
+async def _collect(
+    thread: Thread,
+    targets: tuple[UUID, ...],
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    reader: GitReadRuntime,
+    session: SQLiteSessionStore,
+    cancel: CancelToken,
+    ports: WorkspaceSnapshotPorts,
+    check: Callable[[], None],
+    deadline: float,
+) -> ProductGitUserObservation:
+    """同一历史与物理窗口；实际执行权仍须新规划、原审批及再次原生验证。"""
+    history = await session.authenticated_thread_history(
+        thread.thread_id,
+        cancel=cancel,
+        deadline=deadline,
+        checkpoint=check,
+    )
+    check()
+    if history.thread != thread:
+        raise KernelError("git_user_observation_history_changed", "Git用户观察会话历史已经变化")
+    with git_checkpoint_boundary(check) as source_check:
+        source = collect_git_delivery_source(
+            history.thread,
+            targets,
+            router,
+            transactions,
+            checkpoint=source_check,
+            snapshot_ports=ports,
+        )
+    if type(source) is not ProductGitDeliverySourceV2:
+        raise KernelError("workspace_closure_unavailable", "Git用户观察需要完整新代际来源")
+    return await _observe_user_baseline(
+        source,
+        history,
+        session,
+        reader,
+        cancel,
+        ports,
+        check,
+        deadline,
+    )
+
+def _observation(
+    baseline: ProductGitDeliveryBaselineV2,
+    pinned: PinnedGitUserDirectories,
+    index: GitIndexFileObservation,
+    config: str,
+    implementation: str,
+    store_id: UUID,
+    key_id: UUID,
+) -> ProductGitUserObservation:
+    """只组装完整已读事实；原 Session身份元数据不被转换为新的MAC或批准。"""
+    facts = git_user_directory_facts(pinned)
+    candidate = ProductGitUserObservation.model_construct(
+        store_id=store_id,
+        key_id=key_id,
+        baseline=baseline,
+        common_directory_path_sha256=facts["common_directory_path_sha256"],
+        common_directory_identity=facts["common_directory_identity"],
+        git_directory_path_sha256=facts["git_directory_path_sha256"],
+        git_directory_identity=facts["git_directory_identity"],
+        index_file_observation=index,
+        config_sha256=config,
+        implementation_digest=implementation,
+        fingerprint="0" * 64,
+    )
+    return ProductGitUserObservation(
+        **candidate.model_dump(exclude={"fingerprint"}),
+        fingerprint=product_git_user_observation_fingerprint(candidate),
+    )

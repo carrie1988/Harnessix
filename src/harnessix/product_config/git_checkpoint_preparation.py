@@ -264,18 +264,19 @@ async def _prepare_entry(
         raise _invalid()
     budget = GitOperationBudget(_BASELINE_TIMEOUT_SECONDS)
     failures: list[BaseException] = []
-    local_check, check = _preparation_control(planner, context, cancel, budget, failures)
-    check()
+    local_check, authenticate = _preparation_control(planner, context, cancel, budget, failures)
+    authenticate()
 
     async def prepare_original() -> ResolvedAction:
-        # 在实际受管子Task内创建纯段控制，但认证闭包仍冻结入口的原资源。
-        control = (
-            GitAuthenticationControl(local_check, check)
+        # 原资源频检显式只读借予采集子Task；不迁移SQL权限，首末仍完整认证。
+        check = (
+            GitAuthenticationControl(local_check, authenticate)
             if type(planner) is ProductGitCheckpointPreparer
-            else check
+            else authenticate
         )
+        read = local_check if type(planner) is ProductGitCheckpointPreparer else None
         return await _prepare(
-            planner, invocation, arguments, context, thread, turn, call, cancel, budget, control
+            planner, invocation, arguments, context, thread, turn, call, cancel, budget, check, read
         )
 
     try:
@@ -284,7 +285,7 @@ async def _prepare_entry(
                 prepare_original(),
                 preserve_failure=True,
             )
-            check()
+            authenticate()
             return result
     except TimeoutError as error:
         if any(error is failure for failure in failures):
@@ -362,6 +363,7 @@ async def _prepare(
     cancel: CancelToken,
     budget: GitOperationBudget,
     check: Callable[[], None],
+    native_observer: Callable[[], None] | None = None,
 ) -> ResolvedAction:
     """原认证调用到真实完整材料的纵向链；CAS孤儿不是业务成功或执行权限。"""
     thread, turn, call = (
@@ -394,6 +396,7 @@ async def _prepare(
         budget=budget,
         checkpoint=check,
         snapshot_ports=planner.ports,
+        native_observer=native_observer,
     )
     parent = planner.worktree_parent
     if not parent.is_absolute() or not parent.is_relative_to(planner.session.path.parent):
