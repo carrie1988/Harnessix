@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import sqlite3
 import stat
-from collections.abc import Callable
-from contextlib import closing
+from collections.abc import Callable, Iterator
+from contextlib import closing, contextmanager
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
@@ -13,6 +13,7 @@ from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.execution.store import SQLiteExecutionPlanStore
+from harnessix.product_config import git_prepared_native_identity as native
 from harnessix.product_config.git_delivery_core_store import ProductGitDeliveryCoreStore
 from harnessix.product_config.git_user_authority import require_git_user_authority
 from harnessix.secrets.publication import SecretPublicationScope
@@ -170,6 +171,56 @@ def _audit_file_identity(path: Path) -> tuple[int, int]:
     return value.st_dev, value.st_ino
 
 
+@contextmanager
+def _observe_review_connection(
+    database: sqlite3.Connection, identity: tuple[int, int]
+) -> Iterator[Callable[[], None]]:
+    """核验新鲜读连接的既有 pin；短期令牌不能用于原 Audit 的重复绑定。"""
+    try:
+        backend = native.prepared_identity_backend()
+        token = native.attach_prepared_identity(backend, database, identity)
+    except KernelError as error:
+        if error.code == "git_prepared_link_host_invalid":
+            raise KernelError(
+                "git_action_review_host_invalid", "Git审阅原生连接身份不可用"
+            ) from None
+        raise
+    active = True
+
+    def check() -> None:
+        if not active:
+            raise KernelError("git_action_review_host_invalid", "Git审阅连接观察已经结束")
+        try:
+            native.check_prepared_identity(token)
+        except KernelError as error:
+            if error.code == "git_prepared_link_host_invalid":
+                raise KernelError(
+                    "git_action_review_host_invalid", "Git审阅原生连接身份不可用"
+                ) from None
+            raise
+
+    failed = False
+    try:
+        check()
+        yield check
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        active = False
+        # 先撤销闭包，再释放令牌；清理错误不能覆盖 Owner、取消或超时的首失败。
+        try:
+            if token is not None:
+                token.release()
+        except BaseException as error:
+            if not failed:
+                if backend is not None and isinstance(error, (backend.BridgeError, sqlite3.Error)):
+                    raise KernelError(
+                        "git_action_review_host_invalid", "Git审阅原生连接身份不可用"
+                    ) from None
+                raise
+
+
 def _read_fresh_owner(
     audit: SQLiteActionAuditStore,
     path: Path,
@@ -189,10 +240,14 @@ def _read_fresh_owner(
                 # 拒绝子类且通过原生基类关闭，不能执行可覆盖的close回调。
                 sqlite3.Connection.close(observer)
             raise KernelError("git_action_review_host_invalid", "Git审阅只读观察连接无效")
-        with closing(observer):
+        with closing(observer), _observe_review_connection(observer, identity) as fresh_identity:
             if observer.in_transaction or _audit_file_identity(path) != identity:
                 raise KernelError("git_action_review_host_invalid", "Git审阅只读观察已经变化")
             audit._read_runtime_owner(database=observer)
+            fresh_identity()
+    except TimeoutError:
+        # TimeoutError 也是 OSError；上游期限不能被下方存储错误分类吞掉。
+        raise
     except (sqlite3.Error, OSError):
         raise KernelError("git_action_review_host_invalid", "Git审阅原所有权观察不可用") from None
     if _audit_file_identity(path) != identity:

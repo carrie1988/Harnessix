@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 9
-code_revision: cb571e9416bc99ebc9a7eadc453d75343b41dc27
+version: 10
+code_revision: 3de8a4c2ec79f546784d63c843dd217ef6e50d18
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -11,6 +11,7 @@ related_tests:
   - tests/product_config/test_git_prepared_link_connection.py
   - tests/product_config/test_git_prepared_monitor_identity.py
   - tests/product_config/test_git_review_fresh_owner.py
+  - tests/product_config/test_git_review_connection_identity.py
   - tests/delivery/test_git_prefix_sql_lifecycle.py
 supersedes: []
 ---
@@ -61,16 +62,17 @@ Unix `HAS_MOVED`是**原 SQLite 句柄驱动的主库移动检查**，不是完�
 flowchart LR
     Factory[现行原连接工厂] --> Conn[原 stdlib Connection]
     Conn --> Current[现行路径和 Task 检查]
-    Conn -. 隔离扩展实验 .-> Entry[原 SQLite 扩展入口]
+    Conn -. 显式原生启动 .-> Entry[原 SQLite 扩展入口]
     Entry --> API[原 sqlite3 指针及 API 表]
-    API --> UDF[已执行 SQL UDF 研究]
-    API -. 非 SQL 候选 .-> Token[原连接生命周期 Token]
+    API -. 历史实验 .-> UDF[已执行 SQL UDF 研究]
+    API --> Token[原连接生命周期 Token]
     UDF --> Risk[覆盖风险及 progress SQL 重入]
-    Token -. 待集成 .-> Consumer[原消费者与 Owner 鲜读]
+    Token --> Consumer[工厂 四库监视 Owner鲜读]
+    Token -. 尚未接入 .-> Audit[长期存活的原Audit连接]
 ```
 
-实线仅表示当前组件或已经执行的隔离研究关系，虚线不是生产接线。
-产品仍使用当前路径／Task／锁合同。候选只增加单连接来源观察，不取代 Session 历史、MAC、
+图中 Token 消费链仅在显式启动原生模式时生效，默认 CLI/SDK 尚未启用；历史实验和待接线分支已分开标注。
+产品保留路径／Task／锁合同。原生检查只增加单连接来源观察，不取代 Session 历史、MAC、
 策略、Artifact 或四库变化检测。原 Audit 连接、鲜读 Audit 连接和固定变化监视连接是不同实际实例，
 不能用其中一条的检查结果替代其他连接。
 
@@ -388,7 +390,7 @@ GC。另4项合成callback控制只证明返回码／errno透明转发，不充�
 
 [真实安装件消费测试](../../native/sqlite_identity/integration/test_prepared_factory.py)直接通过产品工厂而非测试wrapper，
 覆盖读写、原Task及观察子Task、回滚、取消／期限，以及路径首末为A但SQLite实际打开B时yield前拒绝。
-Audit原连接、Owner鲜读的后续接线、WAL/SHM与内存门禁保持开放。
+该轮尚未接线原Audit及Owner鲜读；鲜读的后继接线见下文，原Audit、WAL/SHM与内存门禁仍开放。
 本轮新增工厂控制96项通过；非editable产品与原生组件组合102通过、1项历史未观察ABA保持xfail，
 567个产品文件与工作树及安装件逐字节一致。来源位于本机`verification-working/r4-factory-identity-20261009-v1`，
 其中`installed-binding.json`、`installed-final.xml`记录安装件边界；并非默认Writer或完整R4通过。
@@ -409,6 +411,40 @@ Audit原连接、Owner鲜读的后续接线、WAL/SHM与内存门禁保持开放
 接线模块在源码快照、Wheel和安装目录摘要一致；本机证据为
 `verification-working/r4-monitor-identity-20261009-v1/main-review-native.xml`。
 该接线仍不代表默认Writer或完整R4通过。
+
+#### Owner 鲜读接线：短连接拥有短令牌，原 Audit 不重复绑定
+
+需求是拒绝“路径首末为 A、鲜读连接实际打开 B”的来源混淆，同时保留独立鲜读对旧 WAL 快照的检测。
+[_read_fresh_owner](../../src/harnessix/product_config/git_delivery_review_host.py)仍使用原 `readonly_database` 和
+`audit._read_runtime_owner(database=observer)`，不复制 Owner 算法，不关闭或替换原 Audit 连接。
+`_observe_review_connection`只拥有本次新连接的令牌；输入 pin 是宿主先前冻结的 `(dev, ino)`，不能重新采样冒充原身份。
+
+```text
+完整复核：原 bound → 原 Audit Owner 读取 → Owner 鲜读 → 原 bound
+Owner 鲜读：核对原路径 → 打开 mode=ro → 拒绝原连接别名/子类
+          → 显式原生模式 attach(鲜读连接, 原 pin) 并检查
+          → 原无事务/路径检查 → 原 Owner SELECT → 再检查同一令牌
+          → 撤销观察闭包 → 释放令牌 → 关闭鲜读连接 → 末次路径检查
+```
+
+完整复核及局部元数据检查的函数体保持原样，细粒度控制不新增原生 I/O。
+未启用原生时不加载组件、不新增 SQL；鲜读仍只有两个原 PRAGMA 和原 Owner SELECT。
+自身来源错误映射 `git_action_review_host_invalid`；Owner 抛出同名错误码不能冒充来源错误。
+取消、`TimeoutError`及其他非存储首异常保留原对象，后续令牌清理失败不覆盖它们；
+`TimeoutError`必须先于 `OSError`分类，因为它是后者子类。正常退出的清理失败仍应报告，
+不能因调用者恰处于另一个已处理异常的 `except`块就被吞掉。退出后的观察闭包永久失效。
+
+真实安装件首轮尝试给原 Audit 每轮创建短令牌，复验失败：原桥明确禁止同连接再次 attach，
+即使先前令牌已释放也不允许。保留该失败证据及安全合同；本实现只接每轮新建的鲜读连接。
+原 Audit 必须随后设计随 Store 生命周期持有、清理及复用同一令牌，不能解除重复绑定禁令或伪称已认证。
+
+[接线单测](../../tests/product_config/test_git_review_connection_identity.py)验证错误归属、原连接保留、
+别名／子类拒绝、清理顺序及默认 SQL 轨迹；fake 令牌不计为 FD 证据。
+[安装件场景](../../native/sqlite_identity/integration/test_review_owner_identity.py)实际验证重复鲜读、只读模式、
+路径 A/B/A、Owner 后连接关闭、取消／期限和 WAL 陈旧 Owner；原生桥既有重复绑定拒绝测试不变。
+本机证据集中于 `verification-working/r4-review-owner-identity-20261009-v1`，
+`installed-binding.json`绑定工作树、快照、Wheel 与安装件，`closure-native.xml`和`closure-product.xml`记录复验。
+资源计数只用于清理诊断，不能替代内存门禁；本切片不关闭原 Audit、默认 Writer、B7 或 P1。
 
 #### 部署、风险与尚未接入的边界
 

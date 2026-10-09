@@ -1,14 +1,15 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: cb571e9416bc99ebc9a7eadc453d75343b41dc27
+version: 7
+code_revision: 3de8a4c2ec79f546784d63c843dd217ef6e50d18
 owners: [core]
 modules: [agent, product_config]
 related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
 related_tests:
   - tests/product_config/test_git_prepared_monitor_identity.py
+  - tests/product_config/test_git_review_connection_identity.py
   - tests/product_config/test_git_prepared_commit_scope.py
   - tests/delivery/test_git_prefix_sql_transaction_scope.py
   - tests/product_config/test_git_prepared_runtime_thread.py
@@ -890,3 +891,8 @@ Ledger `control` 为 92299 次、`internal` 为 184597 次。
 原生身份仅在显式启动模式检查，不进入细粒度纯控制；仅工厂身份错误转为prepared-link变化，
 原取消、超时及其他异常不改写。退出先撤销闭包，`check_on_exit=False`不新增提交后拒绝。
 来源、已验证矩阵及未覆盖范围集中记录于[原生接线研究](../research/git-sqlite-native-source.md#四库监视接线每条实际连接分别检查)，不重复扩展本合同的默认Writer或P1结论。
+
+Owner鲜读的新连接亦已按原pin接入显式原生观察，保留原Owner算法和完整复核顺序；
+原Audit长连接不能每轮重新attach，仍等待Store生命周期接线。
+详见[鲜读身份及重复绑定反例](../research/git-sqlite-native-source.md#owner-鲜读接线短连接拥有短令牌原-audit-不重复绑定)，
+不据此关闭原Audit来源、默认Writer或P1。
