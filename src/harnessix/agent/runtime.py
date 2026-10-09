@@ -2610,6 +2610,13 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
+        has_registered_call = any(
+            isinstance(proposal, ToolCallCompleted) and proposal.tool in self._definitions
+            for proposal in proposals
+        )
+        if has_registered_call and accounted.total_tokens >= request.budget.max_tokens:
+            # 已知用量已落账；未调度提案不得成为可恢复的写入调用。
+            raise KernelError("budget_exceeded", "Token 预算耗尽，未发布本步工具调用")
         # 原用量路径独立保留；调用组仅在流正常关闭后原子形成，拒绝无执行权。
         payloads: list[EventPayload] = []
         rejected_results: list[ToolResultContent] = []
