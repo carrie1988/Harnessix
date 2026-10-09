@@ -138,6 +138,8 @@ class BailianVerificationBounds:
             binding["bounded_reverification"] = ledger.reverification_plan.model_dump(mode="json")
         if ledger.task_continuation is not None:
             binding["task_continuation"] = ledger.task_continuation.model_dump(mode="json")
+        if "task_continuation_chain" in ledger.period:
+            binding["task_continuation_chain"] = ledger.period["task_continuation_chain"]
         if ledger.active_reverification_binding is not None:
             binding["reverification_binding"] = ledger.active_reverification_binding.model_dump(
                 mode="json"

@@ -35,10 +35,13 @@ from scripts.provider_reverification_plan import (
     validate_reverification_plan,
 )
 from scripts.provider_task_continuation import (
+    TASK_CONTINUATION_CHAIN_SCHEMA,
     TASK_CONTINUATION_SCHEMA,
-    VerificationTaskContinuation,
+    TaskContinuationRecord,
+    VerificationTaskContinuationV2,
     parse_task_continuation,
     snapshot_task_continuation,
+    task_continuation_chain,
     validate_task_continuation,
 )
 
@@ -154,13 +157,16 @@ class VerificationBudgetLedger:
         return parse_reverification_plan(json.dumps(raw))
 
     @property
-    def task_continuation(self) -> VerificationTaskContinuation | None:
+    def task_continuation(self) -> TaskContinuationRecord | None:
+        chain = task_continuation_chain(self.period)
+        if chain:
+            return chain[-1]
         raw = self.period.get("task_continuation")
         return None if raw is None else parse_task_continuation(json.dumps(raw))
 
     @classmethod
-    def authorize_task_continuation(cls, path: Path, record: VerificationTaskContinuation) -> None:
-        """独占登记原任务唯一承接；相等重试只确认持久化，不重置请求次数。"""
+    def authorize_task_continuation(cls, path: Path, record: TaskContinuationRecord) -> None:
+        """原V1不替换；另授V2只追加，相等重试不重置请求次数或金额。"""
         try:
             checked = snapshot_task_continuation(record)
         except Exception:
@@ -169,9 +175,7 @@ class VerificationBudgetLedger:
         owner._registration_only = owner._continuation_registration = True
         with owner:
             existing = owner.task_continuation
-            if existing is not None:
-                if existing != checked:
-                    raise KernelError("verification_reverification_invalid", "不能替换任务承接")
+            if existing == checked:
                 assert owner.root is not None
                 try:
                     os.fsync(owner.root)
@@ -180,6 +184,14 @@ class VerificationBudgetLedger:
                         "verification_budget_persist_failed", "任务承接未能可靠确认"
                     ) from None
                 return
+            successor = type(checked) is VerificationTaskContinuationV2
+            if (existing is not None and not successor) or (
+                successor
+                and (
+                    existing is None or checked.previous_continuation_id != existing.continuation_id
+                )
+            ):
+                raise KernelError("verification_reverification_invalid", "不能替换或跳过任务承接")
             plan = owner.reverification_plan
             if (
                 plan is None
@@ -187,15 +199,21 @@ class VerificationBudgetLedger:
                 or checked.prior_request_count != len(owner.period["requests"])
             ):
                 raise KernelError("verification_reverification_invalid", "承接不属于原账本")
+            if successor:
+                owner.period.setdefault("task_continuation_chain", []).append(
+                    checked.model_dump(mode="json")
+                )
+                owner.data["schema"] = TASK_CONTINUATION_CHAIN_SCHEMA
+            else:
+                owner.period["task_continuation"] = checked.model_dump(mode="json")
+                owner.data["schema"] = TASK_CONTINUATION_SCHEMA
             try:
                 validate_task_continuation(owner.period, plan, checked)
             except ValueError:
                 raise KernelError(
                     "verification_reverification_invalid", "任务承接前缀无效"
                 ) from None
-            owner.period["task_continuation"] = checked.model_dump(mode="json")
             # 不理解单请求撤销语义的旧Reader必须拒绝，不得恢复原task权限。
-            owner.data["schema"] = TASK_CONTINUATION_SCHEMA
             owner._save()
 
     @property
@@ -347,7 +365,13 @@ class VerificationBudgetLedger:
         if (
             not isinstance(value, dict)
             or value.get("schema")
-            not in {_SCHEMA, _REBOUND_SCHEMA, CHAIN_SCHEMA, TASK_CONTINUATION_SCHEMA}
+            not in {
+                _SCHEMA,
+                _REBOUND_SCHEMA,
+                CHAIN_SCHEMA,
+                TASK_CONTINUATION_SCHEMA,
+                TASK_CONTINUATION_CHAIN_SCHEMA,
+            }
             or (value.get("provider"), value.get("currency")) != ("aliyun-bailian", "CNY")
         ):
             raise ValueError
@@ -411,13 +435,25 @@ class VerificationBudgetLedger:
             raise ValueError
         if value["schema"] == _SCHEMA and "reverification_binding_chain" in period:
             raise ValueError
-        if value["schema"] == TASK_CONTINUATION_SCHEMA:
+        if value["schema"] in {TASK_CONTINUATION_SCHEMA, TASK_CONTINUATION_CHAIN_SCHEMA}:
             if raw_plan is None or "task_continuation" not in period:
                 raise ValueError
-            record = parse_task_continuation(json.dumps(period["task_continuation"]))
+            chain = task_continuation_chain(period)
+            if value["schema"] == TASK_CONTINUATION_SCHEMA:
+                if "task_continuation_chain" in period:
+                    raise ValueError
+            elif not chain:
+                raise ValueError
+            record = (
+                chain[-1]
+                if chain
+                else parse_task_continuation(json.dumps(period["task_continuation"]))
+            )
             validate_task_continuation(period, plan, record)
-        elif "task_continuation" in period or any(
-            "task_continuation_id" in request for request in requests
+        elif (
+            "task_continuation" in period
+            or "task_continuation_chain" in period
+            or any("task_continuation_id" in request for request in requests)
         ):
             raise ValueError
         return value
@@ -476,6 +512,21 @@ class VerificationBudgetLedger:
         }
         if restored != original:
             raise ValueError
+        old_chain = old_period.get("task_continuation_chain", [])
+        chain = self.period.get("task_continuation_chain", [])
+        if chain != old_chain:
+            if (
+                not self._continuation_registration
+                or self.data["schema"] != TASK_CONTINUATION_CHAIN_SCHEMA
+                or len(chain) != len(old_chain) + 1
+                or chain[:-1] != old_chain
+                or chain[-1]["ledger_before_sha256"] != sha256(self._body).hexdigest()
+                or chain[-1]["prior_request_count"] != len(old_period["requests"])
+                or {k: v for k, v in self.period.items() if k != "task_continuation_chain"}
+                != {k: v for k, v in old_period.items() if k != "task_continuation_chain"}
+            ):
+                raise ValueError
+            return
         if old_record is None:
             if (
                 not self._continuation_registration
@@ -496,7 +547,8 @@ class VerificationBudgetLedger:
         if len(requests) < len(old_requests):
             raise ValueError
         if len(requests) > len(old_requests) and (
-            requests[-1]["status"] != "reserved"
+            len(requests) != len(old_requests) + 1
+            or requests[-1]["status"] != "reserved"
             or "cost_estimate" in requests[-1]
             or "completed_at" in requests[-1]
         ):
@@ -619,10 +671,11 @@ class VerificationBudgetLedger:
             ):
                 raise KernelError("verification_budget_unresolved", "任务承接身份不匹配")
             validate_task_continuation(self.period, plan, continuation)
-            if len(self.period["requests"]) != continuation.prior_request_count:
-                raise KernelError(
-                    "verification_budget_unresolved", "任务承接唯一请求已预留或已使用"
-                )
+            if (
+                len(self.period["requests"]) - continuation.prior_request_count
+                >= continuation.maximum_requests
+            ):
+                raise KernelError("verification_budget_unresolved", "任务承接请求次数已耗尽")
         if any(
             identity is not None
             for identity in (self.reverification_id, self.suite_id, self.task_id)

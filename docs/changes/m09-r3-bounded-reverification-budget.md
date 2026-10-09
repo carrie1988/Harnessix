@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: cb40b89cae18540387f6ee417b5a9c7ae48bcbb3
+version: 3
+code_revision: 812af76304b5744844b4dcd3761adbec041af1fd
 owners: [core]
 modules: [evals, models]
 related_adrs:
@@ -13,6 +13,7 @@ related_tests:
   - tests/evals/test_provider_verification_budget.py
   - tests/evals/test_provider_verification_host.py
   - tests/evals/test_provider_task_continuation.py
+  - tests/evals/test_provider_task_continuation_chain.py
 supersedes: []
 ---
 
@@ -54,6 +55,27 @@ supersedes: []
 旧130条请求及原计划未改写，累计预留21.86368元。该许可不能继续使用，
 没有自动重试或追加额度；完整结果见[先导记录](../operations/pilot-beta.md#61-首个真实任务登记)。
 下述章节保留原Suite合同说明，不把70/40数值套用到这项60/5任务授权。
+
+### 后续明确授权：四请求追加记录，不替换旧许可
+
+用户随后明确允许接收单响应多调用、Runtime保持串行1，在原60/5元累计限额内最多新增4次请求；
+保留全部21.86368元预留、新未知立即停止，无自动重试。新记录使用
+`VerificationTaskContinuationV2`（`harnessix.provider-task-continuation/v2`），
+固定`maximum_requests=4`及`previous_continuation_id`，其他完整前缀／旧未知摘要约束复用V1。
+没有新增金额或恢复旧次数的字段；V1仍严格只允许1，不把旧失败重新解释为可重用请求。
+
+Ledger显式升为v5，在原`task_continuation`旁**追加**`task_continuation_chain`，不覆盖旧记录。
+登记仍沿同一独占API，仅可链接当前末项；首次登记冻结全部当前请求，旧计划和费用不变。
+Reader按各记录的前缀边界分段校验，只有末项ID能进入Owner，旧Owner及Suite拒绝。
+每笔预留消耗一次，`completed/not_sent`也计次，第四次后重开或幂等登记不能再次发送；
+出现新`reserved/unknown`时，即使尚有次数也立即拒绝后续请求。
+原5元累计费用核验从最初任务计划计数，不从最新承接记录重新计算；旧Reader拒绝v5。
+Guard的请求指纹同时绑定当前许可和完整追加链。该链只供可信验证宿主管理，不能由模型申请授权。
+
+回归复用原临时账本、无网络/凭据约束，新增验收覆盖四次计数、第五次零发送、
+旧Owner拒绝、历史不可变、未知即停与原金额上限。新候选与旧失败证据独立保存，
+模型兼容性和完整登录整改仍以真实SDK任务结果判定，不以预算回归通过代替。
+新增25项与原预算/Guard关联集合合计759项通过（警告视为错误）；未调整原测试或金额阈值。
 
 ## 1. 需求背景、源码研究与设计目标
 
