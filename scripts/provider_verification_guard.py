@@ -201,6 +201,21 @@ class BailianBetaCoderFlashVerificationBounds(BailianBetaVerificationBounds):
     )
 
 
+@dataclass(frozen=True, slots=True)
+class BailianBetaMaxVerificationBounds(BailianBetaVerificationBounds):
+    """仅BETA-001的Max北京快照非思考价；沿用宿主输出上限，不替换历史模型。"""
+
+    model: ClassVar[str] = "qwen3-max-2025-09-23"
+    price_source: ClassVar[str] = "https://help.aliyun.com/zh/model-studio/model-qwen3-max"
+    guard_version: ClassVar[str] = "harnessix.bailian-beta-max-request-guard/v1"
+    maximum_input_tokens: ClassVar[int] = 258_048
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
+        (32_000, 6_000, 24_000),
+        (128_000, 10_000, 40_000),
+        (262_144, 15_000, 60_000),
+    )
+
+
 @dataclass(slots=True)
 class GuardedVerificationProvider:
     """托管官方Adapter的单请求预留与结算；歧义会取消整个Suite。"""

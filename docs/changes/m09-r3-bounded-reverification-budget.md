@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: 142c3d31509d34255e1012c3e68771496ef75429
+version: 6
+code_revision: ebbcd1d7e1f595862633dd28f173b1c3105b7ecf
 owners: [core]
 modules: [evals, models]
 related_adrs:
@@ -17,6 +17,7 @@ related_tests:
   - tests/evals/test_beta_task_budget_plan.py
   - tests/evals/test_beta_instruct_bounds.py
   - tests/evals/test_beta_coder_flash_bounds.py
+  - tests/evals/test_beta_max_bounds.py
 supersedes: []
 ---
 
@@ -50,6 +51,13 @@ Beta前序独立选用北京`qwen3-235b-a22b-instruct-2507`，不改变R3固定�
 宿主输出仍3072，最高档全输入预留`(997952×5＋3072×25)/1000000 = 5.06656`元。
 `BailianBetaCoderFlashVerificationBounds`只提供独立模型/价格配置，沿用原Guard；余额不足全额预留则不调用。
 预留不是实际消费；每次完整结算后才能再次预留，新未决立即停止，R3仍使用原固定模型与评分。
+
+Flash两轮均产生不合格Java提案，拒绝后取消守卫，未继续收费；不能把Function Calling通过当作编码质量通过。
+对各步认证历史的重建确认需求及修订提示完整，但这不是远端处理或网络抓包证据。
+后继仅Beta增加固定`qwen3-max-2025-09-23`独立配置，不改变默认产品或R3。
+[官方北京快照契约](https://help.aliyun.com/zh/model-studio/model-qwen3-max)于2026-10-09核验：
+支持工具调用、非思考；完整输入258048，三档输入/输出为6/24、10/40、15/60元每百万Token。
+仍预留3072输出，单次最高`(258048×15＋3072×60)/1000000 = 4.05504`元；沿用原累计账本和未决即停规则。
 
 下文是旧周期的完整历史记录，不再作为本轮金额或次数授权。
 
