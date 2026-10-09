@@ -172,14 +172,26 @@ def _observe_final_versions(
         snapshot = capture_workspace_snapshot(root, platform=base.platform, resources=resources)
     else:
         with _snapshot_blob_reader(snapshot_ports) as read:
-            snapshot = capture_workspace_snapshot_v2(
-                root,
-                platform=base.platform,
-                resources=resources,
-                checkpoint=checkpoint,
-                write_blob=snapshot_ports.write_blob,
-                read_blob=read,
-            )
+            if type(checkpoint) is GitAuthenticationControl:
+                snapshot = capture_workspace_snapshot_v2(
+                    root,
+                    platform=base.platform,
+                    resources=resources,
+                    checkpoint=checkpoint,
+                    write_blob=snapshot_ports.write_blob,
+                    read_blob=read,
+                    native_progress=_native_snapshot_progress(checkpoint, same_task_only=True),
+                    pure_progress=lambda: same_task_pure_git_authentication(checkpoint),
+                )
+            else:
+                snapshot = capture_workspace_snapshot_v2(
+                    root,
+                    platform=base.platform,
+                    resources=resources,
+                    checkpoint=checkpoint,
+                    write_blob=snapshot_ports.write_blob,
+                    read_blob=read,
+                )
     if (snapshot.workspace_id, snapshot.root_path_digest, snapshot.root_identity) != (
         base.workspace_id,
         base.root_path_digest,
@@ -212,9 +224,16 @@ def _observe_final_versions(
 
 
 @contextmanager
-def _native_snapshot_progress(checkpoint: Callable[[], None]) -> Iterator[Callable[[], None]]:
+def _native_snapshot_progress(
+    checkpoint: Callable[[], None], *, same_task_only: bool = False
+) -> Iterator[Callable[[], None]]:
     """只解自己新增的控制层；段首末认证异常不进入原生解包边界。"""
-    with io_git_authentication(checkpoint) as progress:
+    boundary = (
+        same_task_io_git_authentication(checkpoint)
+        if same_task_only
+        else io_git_authentication(checkpoint)
+    )
+    with boundary as progress:
         owned_error: UpstreamCheckpointError | None = None
 
         def check() -> None:

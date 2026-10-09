@@ -1,3 +1,7 @@
+# Frozen Git commit: 80c4184f3d20e0d7e6741dbe2ab7c701ee5fb710
+# Frozen Git path: src/harnessix/workspace/snapshot_v2.py
+# Frozen source SHA256: 42bd9d9e71da70ffda7253c1b7128767eebbdc32e3bd3c7e32892a8beab162e0
+# The source below is byte-for-byte unchanged.
 """显式宿主 Snapshot v2 API；默认执行、审批和事务仍由原代际约束。"""
 
 from __future__ import annotations
@@ -63,22 +67,17 @@ def capture_workspace_snapshot_v2(
     resources: Sequence[WorkspaceResourceRequest] = (),
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
     platform: PlatformKind | None = None,
-    native_progress: AbstractContextManager[Callable[[], None]] | None = None,
-    pure_progress: WorkspacePureProgressFactory | None = None,
 ) -> WorkspaceSnapshotV2:
     """原耐久写入后完整回读；取消或确认丢失不产生业务事务成功。"""
-    capture_progress = native_progress if native_progress is not None else nullcontext(checkpoint)
-    with capture_progress as native_check:
-        facts = capture_snapshot_facts(
-            root,
-            cwd=cwd,
-            resources=resources,
-            external_roots=external_roots,
-            platform=platform,
-            checkpoint=native_check,
-        )
-    with pure_progress() if pure_progress is not None else nullcontext(checkpoint) as pure_check:
-        snapshot, blobs = _encode_snapshot(facts, pure_check)
+    facts = capture_snapshot_facts(
+        root,
+        cwd=cwd,
+        resources=resources,
+        external_roots=external_roots,
+        platform=platform,
+        checkpoint=checkpoint,
+    )
+    snapshot, blobs = _encode_snapshot(facts, checkpoint)
     for digest, body in blobs:
         checkpoint()
         write_blob(digest, body)
@@ -87,13 +86,7 @@ def capture_workspace_snapshot_v2(
         if read_verified_body(digest, len(body), read_blob, checkpoint) != body:
             raise KernelError("workspace_closure_corrupt", "Workspace父目录历史回读不一致")
         checkpoint()
-    if pure_progress is None:
-        parents = read_workspace_parent_closure(snapshot, read_blob, checkpoint=checkpoint)
-    else:
-        parents = read_workspace_parent_closure(
-            snapshot, read_blob, checkpoint=checkpoint, pure_progress=pure_progress
-        )
-    if parents != facts.parents:
+    if read_workspace_parent_closure(snapshot, read_blob, checkpoint=checkpoint) != facts.parents:
         raise KernelError("workspace_closure_corrupt", "Workspace父目录历史回读不一致")
     checkpoint()
     return snapshot

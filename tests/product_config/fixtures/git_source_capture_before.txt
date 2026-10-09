@@ -1,0 +1,65 @@
+def _observe_final_versions(
+    root: Path,
+    base: WorkspaceSnapshot | WorkspaceSnapshotV2,
+    versions: dict[str, tuple[WorkspaceFileVersion, WorkspaceFileVersion]],
+    checkpoint: Callable[[], None],
+    snapshot_ports: WorkspaceSnapshotPorts | None = None,
+) -> WorkspaceSnapshot | WorkspaceSnapshotV2:
+    """复用原生安全端口观察，净零路径也必须核对，读取后再验证当前Snapshot。"""
+    facts = capture_snapshot_facts(
+        root,
+        cwd=".",
+        resources=(),
+        external_roots=None,
+        platform=base.platform,
+        checkpoint=checkpoint,
+    )
+    if any(
+        facts.scope[name] != getattr(base, name)
+        for name in ("workspace_id", "root_path_digest", "root_identity")
+    ):
+        raise KernelError("git_delivery_source_changed", "Git交付当前Workspace根已变化")
+    checkpoint()
+    resources = tuple(WorkspaceResourceRequest(path=path, access="read") for path in versions)
+    snapshot: WorkspaceSnapshot | WorkspaceSnapshotV2
+    if snapshot_ports is None:
+        snapshot = capture_workspace_snapshot(root, platform=base.platform, resources=resources)
+    else:
+        with _snapshot_blob_reader(snapshot_ports) as read:
+            snapshot = capture_workspace_snapshot_v2(
+                root,
+                platform=base.platform,
+                resources=resources,
+                checkpoint=checkpoint,
+                write_blob=snapshot_ports.write_blob,
+                read_blob=read,
+            )
+    if (snapshot.workspace_id, snapshot.root_path_digest, snapshot.root_identity) != (
+        base.workspace_id,
+        base.root_path_digest,
+        base.root_identity,
+    ):
+        raise KernelError("git_delivery_source_changed", "Git交付当前Workspace根已变化")
+    observed = {item.path: item for item in snapshot.resources}
+    for path, (_, after) in versions.items():
+        checkpoint()
+        observation = observed[path]
+        if observation.kind == "missing":
+            actual = WorkspaceFileVersion(presence="absent", size=0)
+        elif observation.kind == "file":
+            if isinstance(snapshot, WorkspaceSnapshotV2):
+                body, mode = _read_source_file(root, path, base.platform, checkpoint)
+            else:
+                body, mode = _read_existing(root, path, base.platform)
+            actual = WorkspaceFileVersion(
+                presence="file", sha256=hashlib.sha256(body).hexdigest(), size=len(body), mode=mode
+            )
+            if actual.sha256 != observation.content_sha256 or actual.size != observation.size:
+                raise KernelError("git_delivery_source_changed", "Git交付来源读取期间变化")
+        else:
+            raise KernelError("git_delivery_source_changed", "Git交付目标不再是普通文件")
+        if actual != after:
+            raise KernelError("git_delivery_source_changed", "Git交付目标已包含后续修改")
+        checkpoint()
+    _verify_final_snapshot(snapshot, root, checkpoint, snapshot_ports)
+    return snapshot
