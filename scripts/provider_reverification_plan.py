@@ -101,11 +101,20 @@ class VerificationBetaTaskBudgetPlan(VerificationBetaTaskReverificationPlan):
         return value
 
 
+class VerificationBetaTaskBudgetPlanV2(VerificationBetaTaskBudgetPlan):
+    """空新50元周期内的BETA-001累计授权；旧周期与旧费用不承接。"""
+
+    spec_version: Literal["harnessix.provider-beta-task-budget/v2"]
+    allocation: Literal["50"]
+    maximum_cost: Literal["50"]
+
+
 type VerificationReverificationPlanRecord = (
     VerificationReverificationPlan
     | VerificationReverificationPlanV2
     | VerificationBetaTaskReverificationPlan
     | VerificationBetaTaskBudgetPlan
+    | VerificationBetaTaskBudgetPlanV2
 )
 
 _PLAN_ADAPTER: TypeAdapter[VerificationReverificationPlanRecord] = TypeAdapter(
@@ -145,6 +154,7 @@ def snapshot_reverification_plan(value: object) -> VerificationReverificationPla
             VerificationReverificationPlanV2,
             VerificationBetaTaskReverificationPlan,
             VerificationBetaTaskBudgetPlan,
+            VerificationBetaTaskBudgetPlanV2,
         }
         or set(value.__dict__) != set(type(value).model_fields)
         or value.__pydantic_extra__ is not None

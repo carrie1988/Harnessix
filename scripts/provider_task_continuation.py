@@ -16,6 +16,7 @@ from scripts.provider_reverification_plan import (
     CarriedVerificationRequest,
     Sha256,
     VerificationBetaTaskBudgetPlan,
+    VerificationBetaTaskBudgetPlanV2,
     VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
     validate_reverification_plan,
@@ -151,10 +152,13 @@ def _validate_window(
     record: TaskContinuationRecord,
 ) -> None:
     budget_only = type(record) is VerificationBetaBudgetContinuation
-    expected_plan = (
-        VerificationBetaTaskBudgetPlan if budget_only else VerificationBetaTaskReverificationPlan
-    )
-    if type(plan) is not expected_plan:
+    if budget_only:
+        valid_plan = isinstance(
+            plan, (VerificationBetaTaskBudgetPlan, VerificationBetaTaskBudgetPlanV2)
+        )
+    else:
+        valid_plan = type(plan) is VerificationBetaTaskReverificationPlan
+    if not valid_plan:
         raise ValueError
     validate_reverification_plan(period, plan)
     requests = period["requests"]

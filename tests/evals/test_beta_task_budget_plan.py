@@ -26,6 +26,7 @@ from tests.evals.test_provider_verification_budget import model_request, period
 
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="验证宿主账本限定POSIX")
 VERSION = "harnessix.provider-beta-task-budget/v1"
+VERSION_V2 = "harnessix.provider-beta-task-budget/v2"
 
 
 def empty_ledger(tmp_path):
@@ -70,6 +71,22 @@ def budget_plan(path):
     )
 
 
+def budget_plan_v2(path):
+    return plans.VerificationBetaTaskBudgetPlanV2(
+        spec_version=VERSION_V2,
+        authority="budget-owner-explicit",
+        reverification_id=uuid4(),
+        task_id="BETA-001",
+        period_id=UUID(period(path)["period_id"]),
+        allocation="50",
+        maximum_cost="50",
+        ledger_before_sha256=sha256(path.read_bytes()).hexdigest(),
+        prior_request_count=0,
+        prior_requests_sha256=digest([]),
+        carried_requests=(),
+    )
+
+
 def authorized_budget(tmp_path):
     path = empty_ledger(tmp_path)
     plan = budget_plan(path)
@@ -103,6 +120,31 @@ def test_empty_plan_schema_parse_private_read_and_snapshot(tmp_path):
         assert type(restored) is plans.VerificationBetaTaskBudgetPlan
         assert restored == plan and restored is not plan
     assert plan.prior_request_count == 0 and plan.carried_requests == ()
+
+
+def test_v2_records_exact_fifty_yuan_reset_without_inheriting_old_cost(tmp_path):
+    path = empty_ledger(tmp_path)
+    data = json.loads(path.read_text())
+    data["periods"][0]["allocation"] = "50"
+    path.write_text(json.dumps(data))
+    plan = budget_plan_v2(path)
+
+    for restored in (
+        plans.parse_reverification_plan(plan.model_dump_json()),
+        plans.snapshot_reverification_plan(plan),
+    ):
+        assert type(restored) is plans.VerificationBetaTaskBudgetPlanV2
+        assert restored == plan and restored is not plan
+
+    VerificationBudgetLedger.authorize_reverification(path, plan)
+    with task_scope(path, plan) as ledger:
+        request = ledger.reserve(amount_units("50"), {})
+        ledger.settle(request, amount_units("50"), sent=True)
+    with task_scope(path, plan) as ledger:
+        with pytest.raises(KernelError) as failed:
+            ledger.reserve(1, {})
+    assert failed.value.code == "verification_budget_exhausted"
+    assert period(path)["known_cost"] == "50"
 
 
 @pytest.mark.parametrize(
