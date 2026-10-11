@@ -166,7 +166,7 @@ async def test_v2_native_group_reads_two_files_before_next_model_request(tmp_pat
     async with (
         OpenAIChatProvider(
             config.provider_config,
-            api_key="synthetic-fixture-credential",
+            api_key="synthetic-fixture",
             transport=httpx.MockTransport(handle),
         ) as provider,
         CodingToolRuntime(workspace) as tools,
