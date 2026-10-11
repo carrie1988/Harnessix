@@ -67,6 +67,29 @@ async def test_legacy_selection_does_not_autodetect_scoped_method(tmp_path):
     assert len(tools.calls) == 1
 
 
+async def test_model_tool_view_is_the_execution_boundary_for_one_request(tmp_path):
+    class EmptyView:
+        def select(self, turn, definitions):
+            return ()
+
+    tools = RecordingTools()
+    provider = ScriptedProvider([tool_step("test.read"), answer()])
+    async with AgentRuntime(
+        SQLiteSessionStore(tmp_path / "s.db"),
+        provider,
+        tools,
+        model_tool_view=EmptyView(),
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "不可见工具", request_id="hidden")
+
+    assert turn.status == TurnStatus.COMPLETED and not tools.calls
+    assert all(not request.tools for request in provider.requests)
+    results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]
+    assert len(results) == 1 and results[0].error is not None
+    assert results[0].error.code == "unknown_tool"
+
+
 async def test_scope_comes_from_durable_state_not_model_arguments(tmp_path):
     store = SQLiteSessionStore(tmp_path / "s.db")
     snapshots = []

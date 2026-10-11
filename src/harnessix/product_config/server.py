@@ -28,6 +28,7 @@ from harnessix.product_config.action_runtime import open_default_product_action_
 from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStore
 from harnessix.product_config.agent_context import build_product_agent_context
 from harnessix.product_config.codec import load_product_config
+from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProfileSelection
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import ProductPreflightReport
@@ -310,6 +311,7 @@ async def _serve_product_stdio(
                             async_context=context.context,
                             compaction=context.compaction,
                             summary_provider=bundle,
+                            model_tool_view=CodingWorkflowToolView(),
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(

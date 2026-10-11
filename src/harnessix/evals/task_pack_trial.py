@@ -60,6 +60,7 @@ from harnessix.observability import NoOpObservability, Observability
 from harnessix.product_config.action_contracts import build_product_action_config
 from harnessix.product_config.action_runtime import open_default_product_action_runtime
 from harnessix.product_config.agent_context import build_product_agent_context
+from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
 from harnessix.product_config.process_action import decode_run_profile
 from harnessix.product_config.state_backup_files import PrivateStateTree
 from harnessix.product_config.state_owner import product_state_owner
@@ -458,6 +459,7 @@ async def _run_agent(
                     async_context=context.context,
                     compaction=context.compaction,
                     summary_provider=provider,
+                    model_tool_view=CodingWorkflowToolView(),
                 ) as runtime:
                     return await _drive_turn(
                         runtime,

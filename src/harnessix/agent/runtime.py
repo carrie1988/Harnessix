@@ -71,6 +71,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.patching import execution_approval, inspection_scope, result_content
 from harnessix.agent.ports import (
+    ModelToolView,
     NoTools,
     PatchBatchRuntime,
     PatchRuntime,
@@ -215,6 +216,7 @@ class AgentRuntime:
         context: ContextPlanner | None = None,
         async_context: AsyncContextPlanner | None = None,
         tool_result_view_policy: ToolResultViewPolicy | None = None,
+        model_tool_view: ModelToolView | None = None,
         compaction: CompactionRuntimeConfig | None = None,
         summary_provider: ModelProvider | None = None,
     ) -> None:
@@ -319,6 +321,7 @@ class AgentRuntime:
         self._tool_result_view_policy = (
             tool_result_view_policy or ToolResultViewPolicy()
         ).model_copy(deep=True)
+        self._model_tool_view = model_tool_view
         self._compaction = compaction.model_copy(deep=True) if compaction is not None else None
         self._summary_provider = summary_provider
 
@@ -1867,6 +1870,32 @@ class AgentRuntime:
             )
             return get_turn(updated, request.turn_id).status
 
+    def _select_model_tools(
+        self,
+        turn: Turn,
+        available: tuple[ToolDescriptor, ...],
+    ) -> tuple[ToolDescriptor, ...]:
+        """Apply a model-facing view without changing executable registrations."""
+
+        if self._model_tool_view is None:
+            return available
+        selected = self._model_tool_view.select(
+            turn.model_copy(deep=True),
+            tuple(definition.model_copy(deep=True) for definition in available),
+        )
+        selected_by_name = {definition.name: definition for definition in selected}
+        available_by_name = {definition.name: definition for definition in available}
+        if len(selected_by_name) != len(selected) or any(
+            name not in available_by_name
+            or tool_fingerprint(definition) != tool_fingerprint(available_by_name[name])
+            for name, definition in selected_by_name.items()
+        ):
+            raise KernelError(
+                "model_tool_view_invalid",
+                "模型工具视图只能选择当前已注册的原始工具契约",
+            )
+        return tuple(definition for definition in available if definition.name in selected_by_name)
+
     async def _drive(self, thread_id: UUID, turn_id: UUID, token: CancelToken) -> Turn:
         """推进单个Turn的Context、模型与Tool循环，直到等待外部输入或进入终态。"""
         reactive_compaction_required = False
@@ -1905,7 +1934,7 @@ class AgentRuntime:
                     operation.finish("ok")
                     history = prepared_history.history
                     turn = get_turn(thread, turn_id)
-                tools = tuple(
+                available_tools = tuple(
                     d
                     for d in self._definitions.values()
                     if d.effect_class == EffectClass.READ_ONLY
@@ -1913,6 +1942,7 @@ class AgentRuntime:
                     or (self._patches is not None and d.name == "apply_patch")
                     or (self._patch_batches is not None and d.name == "apply_patch_batch")
                 )
+                tools = self._select_model_tools(turn, available_tools)
                 instructions: str | None = None
                 if self._context is not None or self._async_context is not None:
                     with self._telemetry.operation(
@@ -2610,8 +2640,12 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
+        advertised = {definition.name: definition for definition in request.tools}
+        proposal_definitions = (
+            advertised if self._model_tool_view is not None else self._definitions
+        )
         has_registered_call = any(
-            isinstance(proposal, ToolCallCompleted) and proposal.tool in self._definitions
+            isinstance(proposal, ToolCallCompleted) and proposal.tool in proposal_definitions
             for proposal in proposals
         )
         if has_registered_call and accounted.total_tokens >= request.budget.max_tokens:
@@ -2622,7 +2656,7 @@ class AgentRuntime:
         rejected_results: list[ToolResultContent] = []
         for proposal in proposals:
             definition = (
-                self._definitions.get(proposal.tool)
+                proposal_definitions.get(proposal.tool)
                 if isinstance(proposal, ToolCallCompleted)
                 else None
             )

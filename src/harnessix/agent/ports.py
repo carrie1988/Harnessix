@@ -39,6 +39,16 @@ class ScopedToolRuntime(Protocol):
     ) -> ToolResultContent | ArtifactToolResult: ...
 
 
+class ModelToolView(Protocol):
+    """Select the exact registered tools advertised for the next model step."""
+
+    def select(
+        self,
+        turn: Turn,
+        definitions: tuple[ToolDescriptor, ...],
+    ) -> tuple[ToolDescriptor, ...]: ...
+
+
 class NoTools:
     def definitions(self) -> tuple[ToolDescriptor, ...]:
         return ()
