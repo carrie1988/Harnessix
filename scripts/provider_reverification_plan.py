@@ -77,6 +77,13 @@ class VerificationRollingReverificationPlan(_ReverificationPlanFields):
     allocation: Literal["60"]
 
 
+class VerificationRollingReverificationPlanV2(_ReverificationPlanFields):
+    """80元新周期继续承接全额预留；旧周期费用不进入该周期。"""
+
+    spec_version: Literal["harnessix.provider-reverification-plan/v5"]
+    allocation: Literal["80"]
+
+
 class VerificationBetaTaskReverificationPlan(ContractModel):
     """原60元周期内只授予BETA-001新增5元；不是Eval Suite授权。"""
 
@@ -129,6 +136,7 @@ type VerificationReverificationPlanRecord = (
     | VerificationReverificationPlanV2
     | VerificationReverificationPlanV3
     | VerificationRollingReverificationPlan
+    | VerificationRollingReverificationPlanV2
     | VerificationBetaTaskReverificationPlan
     | VerificationBetaTaskBudgetPlan
     | VerificationBetaTaskBudgetPlanV2
@@ -171,6 +179,7 @@ def snapshot_reverification_plan(value: object) -> VerificationReverificationPla
             VerificationReverificationPlanV2,
             VerificationReverificationPlanV3,
             VerificationRollingReverificationPlan,
+            VerificationRollingReverificationPlanV2,
             VerificationBetaTaskReverificationPlan,
             VerificationBetaTaskBudgetPlan,
             VerificationBetaTaskBudgetPlanV2,
