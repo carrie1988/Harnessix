@@ -317,20 +317,29 @@ class GuardedVerificationProvider:
                     else:
                         yield event
         finally:
+            # 费用由Adapter发布的完整用量确定，与业务响应是否可接受分开结算。
+            # ResponseCompleted存在时仍须与同一尝试的用量完全一致，避免成功路径降级。
             cost = (
                 self.bounds.cost_units(usage)
                 if (
                     clean_end
-                    and completion is not None
-                    and finished
+                    and attempt_ended
                     and actual_model == self.bounds.model
                     and not model_mismatch
-                    and completion.usage.input_tokens == usage.input_tokens
-                    and completion.usage.output_tokens == usage.output_tokens
+                    and (
+                        completion is None
+                        or (
+                            finished
+                            and completion.usage.input_tokens == usage.input_tokens
+                            and completion.usage.output_tokens == usage.output_tokens
+                        )
+                    )
                 )
                 else None
             )
-            if possibly_sent and cost is None:
+            successful_response = completion is not None and finished
+            if possibly_sent and (cost is None or not successful_response):
+                # 费用已知只释放预算差额；业务响应无效仍停止本次宿主，不能自动续费重试。
                 self.suite_cancel.cancel()
             try:
                 self.ledger.settle(reservation, cost, sent=possibly_sent)

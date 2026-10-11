@@ -20,6 +20,7 @@ from scripts.provider_reverification_plan import (
     VerificationReverificationPlanRecord,
     validate_reverification_plan,
 )
+from scripts.provider_usage_reconciliation import reconciliation_costs
 
 TASK_CONTINUATION_SCHEMA = "harnessix.provider-verification-budget/v4"
 TASK_CONTINUATION_CHAIN_SCHEMA = "harnessix.provider-verification-budget/v5"
@@ -159,6 +160,7 @@ def _validate_window(
     requests = period["requests"]
     prefix = requests[: record.prior_request_count]
     suffix = requests[record.prior_request_count :]
+    reconciled = reconciliation_costs(period)
     if (
         record.period_id != plan.period_id
         or record.reverification_id != plan.reverification_id
@@ -172,7 +174,10 @@ def _validate_window(
             and any("task_continuation_id" in r for r in prefix)
         )
         or (record.maximum_requests is not None and len(suffix) > record.maximum_requests)
-        or any(r["status"] not in {"completed", "not_sent"} for r in suffix[:-1])
+        or any(
+            r["status"] not in {"completed", "not_sent"} and r["request_id"] not in reconciled
+            for r in suffix[:-1]
+        )
     ):
         raise ValueError
     unknown = {r["request_id"]: r for r in prefix if r["status"] == "unknown"}

@@ -12,6 +12,7 @@ from harnessix.evals.cli_config import read_private_eval_config
 from harnessix.models._json import strict_json
 from harnessix.models.pricing import amount_units
 from harnessix.tools.workspace import digest
+from scripts.provider_usage_reconciliation import reconciliation_costs
 
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 Amount = Annotated[str, Field(pattern=r"^[0-9]+(?:\.[0-9]{1,18})?$")]
@@ -202,6 +203,7 @@ def validate_reverification_plan(
         ):
             raise ValueError
     charged = 0
+    reconciled = reconciliation_costs(period)
     for request in requests[plan.prior_request_count :]:
         if request.get("reverification_id") != str(plan.reverification_id):
             raise ValueError
@@ -214,7 +216,10 @@ def validate_reverification_plan(
                 raise ValueError
         elif "task_id" in request:
             raise ValueError
-        charged += amount_units(request["reserved_cost"])
+        if request["request_id"] in reconciled:
+            charged += reconciled[request["request_id"]]
+        else:
+            charged += amount_units(request["reserved_cost"])
         if request["status"] in {"completed", "not_sent"}:
             charged += amount_units(request["cost_estimate"])
     if charged > amount_units(plan.maximum_cost):

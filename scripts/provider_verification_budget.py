@@ -44,6 +44,15 @@ from scripts.provider_task_continuation import (
     task_continuation_chain,
     validate_task_continuation,
 )
+from scripts.provider_usage_reconciliation import (
+    BUDGET_SCHEMA as USAGE_RECONCILIATION_SCHEMA,
+)
+from scripts.provider_usage_reconciliation import (
+    UsageReconciliation,
+    reconciliation_costs,
+    snapshot_usage_reconciliation,
+    usage_reconciliations,
+)
 
 _MAX_LEDGER_BYTES = 1024 * 1024
 _SCHEMA = "harnessix.provider-verification-budget/v1"
@@ -90,6 +99,7 @@ class VerificationBudgetLedger:
         self._registration_only = False
         self._candidate_registration = False
         self._continuation_registration = False
+        self._usage_reconciliation_registration = False
 
     def __enter__(self) -> Self:
         if self.root is not None:
@@ -280,6 +290,70 @@ class VerificationBudgetLedger:
             owner._save()
 
     @classmethod
+    def reconcile_usage(cls, path: Path, record: UsageReconciliation) -> None:
+        """追加完整 usage 对账；原 unknown 请求和旧账本哈希保持可审计。"""
+        try:
+            checked = snapshot_usage_reconciliation(record)
+        except Exception:
+            raise KernelError(
+                "verification_usage_reconciliation_invalid", "usage 对账合同无效"
+            ) from None
+        owner = cls(path, checked.period_id)
+        owner._registration_only = owner._usage_reconciliation_registration = True
+        try:
+            with owner:
+                existing = usage_reconciliations(owner.period)
+                for item in existing:
+                    if item.reconciliation_id == checked.reconciliation_id:
+                        if item != checked:
+                            raise KernelError(
+                                "verification_usage_reconciliation_invalid", "对账身份已存在"
+                            )
+                        assert owner.root is not None
+                        os.fsync(owner.root)
+                        return
+                    if item.request_id == checked.request_id:
+                        raise KernelError(
+                            "verification_usage_reconciliation_invalid", "请求已经完成 usage 对账"
+                        )
+                if checked.ledger_before_sha256 != sha256(
+                    owner._body
+                ).hexdigest() or checked.previous_reconciliation_id != (
+                    existing[-1].reconciliation_id if existing else None
+                ):
+                    raise KernelError(
+                        "verification_usage_reconciliation_invalid", "对账不属于当前原账本"
+                    )
+                request = next(
+                    item
+                    for item in owner.period["requests"]
+                    if item["request_id"] == str(checked.request_id)
+                )
+                held = _amount(request["reserved_cost"])
+                cost = _amount(checked.cost_estimate)
+                owner.period.setdefault("usage_reconciliations", []).append(
+                    checked.model_dump(mode="json")
+                )
+                owner.period["known_cost"] = format_amount(
+                    _amount(owner.period["known_cost"]) + cost
+                )
+                owner.period["reserved_cost"] = format_amount(
+                    _amount(owner.period["reserved_cost"]) - held
+                )
+                owner.data["schema"] = USAGE_RECONCILIATION_SCHEMA
+                owner._save()
+        except KernelError as error:
+            if error.code == "verification_usage_reconciliation_invalid":
+                raise
+            raise KernelError(
+                "verification_usage_reconciliation_invalid", "usage 对账未通过"
+            ) from None
+        except Exception:
+            raise KernelError(
+                "verification_usage_reconciliation_invalid", "usage 对账未通过"
+            ) from None
+
+    @classmethod
     def authorize_reverification(
         cls, path: Path, plan: VerificationReverificationPlanRecord
     ) -> None:
@@ -371,6 +445,7 @@ class VerificationBudgetLedger:
                 CHAIN_SCHEMA,
                 TASK_CONTINUATION_SCHEMA,
                 TASK_CONTINUATION_CHAIN_SCHEMA,
+                USAGE_RECONCILIATION_SCHEMA,
             }
             or (value.get("provider"), value.get("currency")) != ("aliyun-bailian", "CNY")
         ):
@@ -384,6 +459,12 @@ class VerificationBudgetLedger:
         period = selected[0]
         requests = period.get("requests")
         if not isinstance(requests, list) or len(requests) > 10000:
+            raise ValueError
+        reconciled = reconciliation_costs(period)
+        if value["schema"] == USAGE_RECONCILIATION_SCHEMA:
+            if not reconciled:
+                raise ValueError
+        elif "usage_reconciliations" in period:
             raise ValueError
         known = reserved = 0
         identities: set[str] = set()
@@ -403,9 +484,14 @@ class VerificationBudgetLedger:
                 if held:
                     raise ValueError
                 known += _amount(request["cost_estimate"])
+            elif request["status"] == "unknown" and identity in reconciled:
+                known += reconciled[identity]
             elif held <= 0:
                 raise ValueError
-            reserved += held
+            if request["status"] == "reserved" or (
+                request["status"] == "unknown" and identity not in reconciled
+            ):
+                reserved += held
         if known != _amount(period["known_cost"]) or reserved != _amount(period["reserved_cost"]):
             raise ValueError
         if known + reserved > _amount(period["allocation"]):
@@ -435,11 +521,15 @@ class VerificationBudgetLedger:
             raise ValueError
         if value["schema"] == _SCHEMA and "reverification_binding_chain" in period:
             raise ValueError
-        if value["schema"] in {TASK_CONTINUATION_SCHEMA, TASK_CONTINUATION_CHAIN_SCHEMA}:
+        if value["schema"] in {
+            TASK_CONTINUATION_SCHEMA,
+            TASK_CONTINUATION_CHAIN_SCHEMA,
+            USAGE_RECONCILIATION_SCHEMA,
+        }:
             if raw_plan is None or "task_continuation" not in period:
                 raise ValueError
             chain = task_continuation_chain(period)
-            if value["schema"] == TASK_CONTINUATION_SCHEMA:
+            if value["schema"] in {TASK_CONTINUATION_SCHEMA, USAGE_RECONCILIATION_SCHEMA}:
                 if "task_continuation_chain" in period:
                     raise ValueError
             elif not chain:
@@ -578,7 +668,10 @@ class VerificationBudgetLedger:
         try:
             self._validate(self.data)
             original = self._validate(strict_json(self._body))
-            self._validate_continuation_save(original)
+            if self._usage_reconciliation_registration:
+                self._validate_usage_reconciliation_save(original)
+            else:
+                self._validate_continuation_save(original)
             original_period = next(
                 p for p in original["periods"] if p["period_id"] == self.period_id
             )
@@ -653,6 +746,44 @@ class VerificationBudgetLedger:
             except OSError:
                 pass
 
+    def _validate_usage_reconciliation_save(self, original: dict[str, Any]) -> None:
+        """对账登记只能追加一条记录并按原预留精确调整累计金额。"""
+        old_period = next(p for p in original["periods"] if p["period_id"] == self.period_id)
+        old_records = old_period.get("usage_reconciliations", [])
+        records = self.period.get("usage_reconciliations", [])
+        if (
+            not self._usage_reconciliation_registration
+            or self.data["schema"] != USAGE_RECONCILIATION_SCHEMA
+            or len(records) != len(old_records) + 1
+            or records[:-1] != old_records
+        ):
+            raise ValueError
+        record = usage_reconciliations(self.period)[-1]
+        request = next(
+            item for item in old_period["requests"] if item["request_id"] == str(record.request_id)
+        )
+        if (
+            record.ledger_before_sha256 != sha256(self._body).hexdigest()
+            or self.period["requests"] != old_period["requests"]
+            or _amount(self.period["known_cost"])
+            != _amount(old_period["known_cost"]) + _amount(record.cost_estimate)
+            or _amount(self.period["reserved_cost"])
+            != _amount(old_period["reserved_cost"]) - _amount(request["reserved_cost"])
+        ):
+            raise ValueError
+        mutable = {"known_cost", "reserved_cost", "usage_reconciliations"}
+        if {k: v for k, v in self.period.items() if k not in mutable} != {
+            k: v for k, v in old_period.items() if k not in mutable
+        }:
+            raise ValueError
+        restored = {
+            **self.data,
+            "schema": original["schema"],
+            "periods": [old_period if p is self.period else p for p in self.data["periods"]],
+        }
+        if restored != original:
+            raise ValueError
+
     def require_available(self) -> None:
         if self.root is None or self._registration_only:
             raise KernelError("verification_budget_unresolved", "验证预算存在未决请求")
@@ -697,7 +828,11 @@ class VerificationBudgetLedger:
                 allowed = {str(r.request_id) for r in continuation.carried_requests}
         if any(
             request["status"] == "reserved"
-            or (request["status"] == "unknown" and request["request_id"] not in allowed)
+            or (
+                request["status"] == "unknown"
+                and request["request_id"] not in allowed
+                and request["request_id"] not in reconciliation_costs(self.period)
+            )
             for request in self.period["requests"]
         ):
             raise KernelError("verification_budget_unresolved", "验证预算存在未决请求")

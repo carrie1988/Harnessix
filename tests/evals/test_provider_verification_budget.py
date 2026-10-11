@@ -14,7 +14,7 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import Budget, Usage
+from harnessix.agent.models import AgentFailure, Budget, Usage
 from harnessix.agent.usage import (
     ModelAttemptFinished,
     ModelAttemptStarted,
@@ -134,6 +134,17 @@ class ObservedProvider:
                     usage=usage,
                     actual_model="other-model" if self.mode == "alias" else MODEL,
                 )
+            if self.mode == "failed_after_usage":
+                yield ModelAttemptFinished(
+                    attempt_id=attempt,
+                    outcome="failed",
+                    error=AgentFailure(
+                        code="provider_invalid_provider_output",
+                        message="Provider 返回结构化失败",
+                    ),
+                )
+                yield ResponseFailed(code="invalid_provider_output")
+                return
             yield ModelAttemptFinished(attempt_id=attempt, outcome="completed")
             yield ResponseCompleted(usage=Usage(input_tokens=counts, output_tokens=output))
             if self.mode == "after_terminal":
@@ -198,6 +209,25 @@ async def test_not_sent_and_explicit_complete_zero_are_not_unknown(tmp_path, mod
     assert period(path)["requests"][-1]["status"] == (
         "not_sent" if mode == "not_sent" else "completed"
     )
+
+
+async def test_failed_response_with_complete_usage_settles_known_cost_without_publishing_success(
+    tmp_path,
+):
+    path = ledger_file(tmp_path)
+    token = CancelToken()
+    with VerificationBudgetLedger(path, PERIOD) as ledger:
+        provider = ObservedProvider(path, "failed_after_usage")
+        events = await consume(GuardedVerificationProvider(provider, ledger, bounds(), token))
+        ledger.require_available()
+
+    latest = period(path)["requests"][-1]
+    assert provider.sent == 1 and provider.closed and token.cancelled
+    assert latest["status"] == "completed" and latest["reserved_cost"] == "0"
+    assert latest["cost_estimate"] == "0.000068"
+    assert period(path)["known_cost"] == "0.000136"
+    assert any(isinstance(event, ResponseFailed) for event in events)
+    assert not any(isinstance(event, ResponseCompleted) for event in events)
 
 
 async def test_insufficient_money_and_expired_price_never_send(tmp_path):
@@ -416,9 +446,11 @@ async def test_native_adapter_wire_is_reserved_before_transport_and_closed(
                 except KernelError:
                     pass
     assert sent == 1 and wire.closed
-    if case == "complete":
-        assert isinstance(seen[-1], ResponseCompleted) and not token.cancelled
+    if case in {"complete", "truncated"}:
+        assert token.cancelled == (case == "truncated")
         assert period(path)["known_cost"] == "0.00014"
+        assert period(path)["requests"][-1]["status"] == "completed"
+        assert any(isinstance(event, ResponseCompleted) for event in seen) == (case == "complete")
     else:
         assert token.cancelled and period(path)["requests"][-1]["status"] == "unknown"
         assert not any(isinstance(event, ResponseCompleted) for event in seen)
