@@ -44,9 +44,14 @@ from tests.product_config.test_agent_context import _request
         "Read logs only if truncated, null or insufficient",
         "Use the exact current catalog name",
         "not the logical name in its description",
-        "After final checks: git_status, then git_diff, then final answer",
+        "After final checks: submit git_status then git_diff in one response, then final answer",
         "if sufficient, do not reread its Artifact",
         "confirm allowed edit paths",
+        "put independent direct reads/searches before the baseline call",
+        "put the baseline last",
+        "call read_file/grep directly",
+        "do not navigate with list_files/glob first",
+        "Batch independent reads in one response",
     ),
 )
 async def test_shared_instructions_define_observed_failure_recovery(
@@ -61,7 +66,7 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v9"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v10"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
@@ -131,7 +136,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v9"
+        assert fragment["source"] == "harnessix.coding-instructions/v10"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint
