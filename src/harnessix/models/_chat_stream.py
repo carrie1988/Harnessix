@@ -229,21 +229,25 @@ class ChatStream:
         events: list[ProviderEvent] = []
         if self._text_started:
             events.append(TextCompleted(content_id="text", text=self._text))
+        finish = self._finish
+        if finish == "stop" and self._calls and self._request.tool_choice == "required":
+            # 部分OpenAI兼容端点在遵守required并返回原生调用后仍发送stop。
+            finish = "tool_calls"
         reasons: dict[str, ResponseCompleted] = {
             "stop": ResponseCompleted(usage=self._usage),
             "tool_calls": ResponseCompleted(finish_reason="tool_calls", usage=self._usage),
             "length": ResponseCompleted(finish_reason="max_output_tokens", usage=self._usage),
             "content_filter": ResponseCompleted(finish_reason="content_filter", usage=self._usage),
         }
-        if self._finish not in reasons:
+        if finish not in reasons:
             raise ChatProtocolError(ChatProtocolReason.FINISH_REASON_UNSUPPORTED)
-        if self._finish in {"stop", "tool_calls"}:
-            if bool(self._calls) != (self._finish == "tool_calls"):
+        if finish in {"stop", "tool_calls"}:
+            if bool(self._calls) != (finish == "tool_calls"):
                 raise ChatProtocolError(ChatProtocolReason.FINISH_TOOL_MISMATCH)
             if not self._calls and not self._text:
                 raise ChatProtocolError(ChatProtocolReason.SEMANTIC_OUTPUT_MISSING)
             events.extend(_complete_calls(self._calls, self._names))
-        events.append(reasons[self._finish])
+        events.append(reasons[finish])
         return events
 
 

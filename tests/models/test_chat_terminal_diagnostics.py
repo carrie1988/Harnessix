@@ -9,6 +9,7 @@ import httpx
 import pytest
 from openai import APIConnectionError
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import (
     ToolCallContent,
     ToolCallRejectionContent,
@@ -29,6 +30,7 @@ from harnessix.models.contracts import (
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools
+from tests.contracts.provider import model_request
 from tests.models.test_openai_chat import collect, config
 from tests.models.test_openai_chat import credentials as credentials
 from tests.models.wire import WireStream, call, chunk, frame, response, text_frames, tool_frames
@@ -104,6 +106,24 @@ SCENARIOS = [
     ("finish_mismatch", "finish_tool_mismatch"),
     ("unsupported_finish", "finish_reason_unsupported"),
 ]
+
+
+async def test_required_tool_call_accepts_compatible_stop_finish() -> None:
+    parts = tool_frames()
+    parts[1] = frame(chunk(finish="stop"))
+    wire = WireStream(parts)
+    request = model_request(with_tools=True).model_copy(update={"tool_choice": "required"})
+
+    async with OpenAIChatProvider(
+        config(max_attempts=1), transport=httpx.MockTransport(lambda _: response(wire))
+    ) as provider:
+        events = [event async for event in provider.stream(request, CancelToken())]
+
+    assert any(isinstance(event, ToolCallCompleted) for event in events)
+    assert events[-1] == ResponseCompleted(
+        finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=2)
+    )
+    assert wire.closed
 
 
 @pytest.mark.parametrize("supply_late_name", [False, True])
