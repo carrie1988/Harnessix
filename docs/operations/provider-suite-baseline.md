@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: b7bb29e00469033394842dcc29cc10b1a9959c9e
+version: 7
+code_revision: 234c661abcf05a386f1050f7d06e4f6dcd1e68f7
 owners:
   - core
 modules:
@@ -41,7 +41,7 @@ supersedes: []
 5. API Key由宿主Secret Manager、macOS launchctl或显式钥匙串配置读取，不写入仓库、配置、命令历史或日志；
 6. 私有配置、私有运行根和公开证据根位于三个独立目录；
 7. 执行前已核对官方模型价格，配置生成时间处于新价格快照窗口。
-8. 显式选择可信操作员已登记的私有账本及唯一active周期，已知费用加占用不超过授权额度；运行时不能自动新建或重置预算。当前为[独立60元周期](../changes/m09-provider-budget-period-activation.md)，与真实Beta共用；旧周期两笔未决保留为历史、不计入新额度。新周期新增未决仍拒绝请求。
+8. 显式选择可信操作员已登记的私有账本及唯一active周期，已知费用加占用不超过授权额度；运行时不能自动新建或重置预算。当前为独立50元周期，历史费用与预留不结转；新周期新增未决仍拒绝请求。
 
 ## 3. 目录规划
 
@@ -56,7 +56,7 @@ export HX_PROVIDER_PERIOD=00000000-0000-0000-0000-000000000001
 ```
 
 账本路径和周期UUID必须取自本机激活收据，不可直接使用上述示例值。新周期不传旧`--reverification-id`，
-也不以`--resume`复用旧候选Suite。总额度60元不是每个用途各60元；不得用账本副本扩充额度。
+也不以`--resume`复用旧候选Suite。总额度50元不是每个用途各50元；不得用账本副本扩充额度。
 恢复同一新周期运行时，继续使用其原配置、Suite身份和已持久事实。
 
 要求：
@@ -211,6 +211,16 @@ Revision `fb4a0ea8f7ffcd14113212fb77b2028143af9914`已经通过
 
 [冻结证据](../validation/provider-engineering-2026-09-20-v1/README.md)已完成正式合同重读、Report摘要重算和递归敏感字段检查。
 该结果是固定组合的质量基线，不是成功率达标声明；后续改进必须建立新Suite，不得恢复、覆盖或挑选本次Trial。
+
+### 8.3 当前R3模型基线迁移
+
+旧固定模型`qwen3-coder-plus-2025-09-23`已不在当前北京模型目录中，宿主预检因此在任何生成请求前
+以`verification_model_unavailable`停止。R3从Revision `234c661abcf05a386f1050f7d06e4f6dcd1e68f7`
+起显式迁移到`qwen3-coder-flash`，采用Guard v2及其北京非思考原价；Task Pack、20 Trial、评分器、
+资源上限、安全边界和12/20发布阈值均不变。4096输出上限的单请求最高档预留为5.09216元。
+
+该迁移必须创建全新Suite、配置和Work Root。历史1/20完整成绩与全部中止运行继续保留，不能与新结果拼接；
+新模型只有在独立20 Trial完成并通过同一严格门槛后才能替代历史质量结论。
 
 ## 9. 发布低敏证据
 

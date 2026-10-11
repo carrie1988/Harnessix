@@ -178,6 +178,14 @@ Prompt、工具参数、响应正文、代码或供应商错误。Suite证据继
 已知用量按对应档位结算；最大输入/输出越界、模型漂移或用量未知不释放预留。
 原Campaign仍仅认证32k价格范围，超范围不能伪造原Campaign可结算成绩。
 
+### 7.3 当前R3模型与Guard v2
+
+2026-10-11预检确认旧固定快照已不在当前北京模型目录，且未产生生成请求。当前R3改用
+[官方Coder Flash模型](https://help.aliyun.com/zh/model-studio/qwen3-coder-flash)的`qwen3-coder-flash`
+标识，Guard升为v2；四档输入/输出原价为1/4、1.5/6、2.5/10、5/25元每百万Token。
+最大输入997952、输出4096时保守预留5.09216元。旧Guard v1、旧价格、旧预留及历史Suite均保持原件，
+不得换Guard恢复；当前基线必须使用新的Suite身份和独立50元周期。
+
 ## 8. 持久化、事务、并发与幂等
 
 - 700原父目录和600单硬链接账本/锁；no-follow、Owner、Darwin ACL及描述符/路径身份核对。
