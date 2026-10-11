@@ -1,0 +1,51 @@
+{
+  "schema": "harnessix.beta-validation/v1",
+  "task_id": "BETA-001",
+  "status": "READY_FOR_USER_ACCEPTANCE",
+  "accepted_by_user": false,
+  "agent_approvals": {
+    "login_password_service": "9a5b662b-4fe6-545b-b3f3-ba6fdece83db",
+    "auth_controller": "7bd98374-3a78-50b0-9b92-4c2865b84730",
+    "security_config": "62a17a42-90e5-5767-821a-ea85ac62541b",
+    "frontend_login": "84a103d4-0278-52fa-be1b-23edae86521c"
+  },
+  "tests": {
+    "frontend": {"tests": 19, "passed": 19, "typecheck": "PASS", "build": "PASS"},
+    "backend_focused": "PASS",
+    "backend_baseline": {"tests": 350, "passed": 332, "failures": 8, "errors": 10},
+    "backend_modified": {"tests": 351, "passed": 333, "failures": 8, "errors": 10},
+    "new_failure_or_error_tests": 0
+  },
+  "browser": {
+    "success_login": "PASS",
+    "wrong_password": "PASS",
+    "success_console_entries": 0,
+    "request_body_fields": ["challengeId", "ciphertext", "keyId", "username"],
+    "password_field_present": false,
+    "plaintext_sentinel_log_occurrences": 0,
+    "screenshot_sha256": "8e9517b086814bfc706e3023da75a849045ef0e2cfa659044a3bd0483552ac6a"
+  },
+  "budget": {
+    "period_id": "8450814a-8e89-40a7-96de-3cba141a09e0",
+    "allocation_cny": "50",
+    "known_cost_cny": "0",
+    "reserved_cost_cny": "0",
+    "requests": 0,
+    "prior_costs_included": false,
+    "per_request_authorization_required": false
+  },
+  "original_project": {
+    "path": "<原项目目录>",
+    "file_reads_or_writes_in_this_acceptance_run": 0,
+    "directory_stat_only": true,
+    "directory_mtime": "2026-09-30 11:42:18 +0800",
+    "full_tree_manifest_compared": false
+  },
+  "delivery": {
+    "path": "<本机交付目录>/AIPracticalPlatform-Harnessix-Beta-001-20261011",
+    "files": 431,
+    "symlinks": 0,
+    "manifest_sha256": "438cf3dcfefb05099fbc2e87220356291baa4a6adb4d32062b93f8695383e67a"
+  },
+  "production_https_verified": false
+}

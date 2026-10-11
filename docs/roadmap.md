@@ -2943,3 +2943,14 @@ DELETE-journal GitDB 验证 v2 精确结构、完整认证前缀及 Manifest 剖
 Manifest SHA；当前未实现业务表非空时明确拒绝。当前 ProductLink 又逐项核对原 Session/Event、Plan、
 Route/Audit、Approval、Review Artifact、Workspace Transaction 与 CAS，且不读取外部 Workspace。
 实时 WAL／SHM 捕获、其他 Git 业务阶段、完整备份入口、恢复与默认 Writer 仍保持关闭。
+
+### BETA-001：真实整改完成，等待用户接受
+
+AIPracticalPlatform 登录密码传输保护已完成四个真实 Agent 生产分片及审批；隔离副本的前端19项、
+后端聚焦测试、351项全量回归对照和正确/错误密码浏览器验收已完成。整改后8失败/10错误与350项基线集合一致，
+新增1项安全测试通过；请求体不再含`password`字段。当前为`READY_FOR_USER_ACCEPTANCE`，
+用户签字和生产HTTPS仍开放，故真实Beta完成数保持0。证据见
+[BETA-001最终验证](validation/beta-001-login-password-protection-2026-10-11-v1/README.md)。
+
+云模型预算同时切换到独立50元周期，历史费用不结转、无需逐请求授权、没有用户侧次数上限；
+新周期创建时请求0、已知费用0、预留0。旧60元周期段落保留为历史，不再代表当前额度。
