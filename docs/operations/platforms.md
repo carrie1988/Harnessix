@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 15
+version: 16
 code_revision: 84a682c1b399575f213f7bd3ea1e289d444721fd
 owners:
   - core
@@ -114,6 +114,9 @@ CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。
 原件位于本机 `verification-working/r4-current-main-install-20261011-v4` 和
 `verification-working/r4-current-main-upgrade-20261011-v1`。当前仍缺默认原生Git Writer、真实终端交互、
 对应Revision的正式发行工作流和小批Beta；Linux/Windows交付不在当前未完成清单中。
+同一安装件另在固定无网络容器完成工程Task Pack v2的10 Case／20 Trial确定性编码链，任务与必需测试
+均20/20、人工干预0，并通过两个发布崩溃窗口恢复；该结果只证明已安装代码的离线编码执行能力，
+不代表真实Provider质量、默认stdio入口或Beta通过。
 网络文件系统、多安装器和额外架构不自动进入首发支持范围；Mac具体OS/架构仍需R4实际安装验证。
 
 ## 4. 文件系统要求
@@ -252,7 +255,7 @@ POSIX测试同时覆盖Unicode、创建/替换/删除、链接拒绝、Lease竞�
 
 - Windows文件事务专项原生证据保留，但不等于Windows完整产品支持；其版本交付不再属于当前R4，也不转为延期必做项；
 - 既有0.9.1交互及0.9.3d Soak证据保留，但TUI仍需小批真实用户终端和正式发行物验证；
-- macOS当前主线统一Wheel已完成一次本机源码外安装、恢复与不同版本转换，但正式工作流发行、默认原生Git Writer和真实Beta仍未关闭；
+- macOS当前主线统一Wheel已完成一次本机源码外安装、恢复、不同版本转换及确定性离线编码链，但正式工作流发行、默认原生Git Writer、真实Provider质量和真实Beta仍未关闭；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；
 - 正式Agent镜像延期，不阻断首发；实际发布Wheel及Container执行后端的必要门禁保留；
 - Mac资格逐OS/架构实测，原ARM64目标不预判通过，也不自动扩为Intel与Apple Silicon全覆盖；网络文件系统及特殊离线环境没有正式支持承诺；

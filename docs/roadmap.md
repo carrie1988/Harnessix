@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 261
-code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
+version: 262
+code_revision: 84a682c1b399575f213f7bd3ea1e289d444721fd
 owners:
   - core
 modules:
@@ -2919,4 +2919,16 @@ Artifact投影收益不足，停止该扩展；[显式v2批量提案](changes/m0
 R4[原连接实际main身份候选](research/git-sqlite-native-source.md#74-实际-main-身份复用-lease排除-audit-hook-重造路线)
 已复用存量lease生命周期，不采用被3个反例证伪的audit-hook Token。新候选保留原20 PASS／1个历史ABA反例，
 新增12项独立进程控制通过；4项合成callback控制仅证明透明转发。生产代码和依赖未改，未将实验桥装入默认Writer。
-独占初始化、完整WAL／SHM、内存检查及三平台仍开放，不据此提升R3成绩或Beta完成数；本轮模型请求0。
+独占初始化、完整WAL／SHM、内存检查及首发macOS封装仍开放，不据此提升R3成绩或Beta完成数；本轮模型请求0。
+
+### R4：当前主线源码外安装、版本转换与离线编码链
+
+候选`84a682c1`的规范`1.0.0rc1` Wheel在macOS 27.0.1 arm64／Python 3.12.7的源码外新环境完成
+安装、七文件备份恢复、卸载重装及`0.1.0 → rc1 → 匹配备份恢复 → 0.1.0`，568个源码／安装成员一致，
+原Key、Previous、Workspace和状态字节保持。随后同一安装件以固定无网络容器完成工程Pack v2的
+3仓库、10 Case／20 Trial确定性编码链，严格任务与必需测试均20/20、人工干预0，Case证据和最终报告
+两个崩溃窗口恢复通过。安装、升级和编码原件分别位于本机`r4-current-main-install-20261011-v4`、
+`r4-current-main-upgrade-20261011-v1`和`r4-current-main-offline-coding-20261011-v3`。
+
+该结果关闭当前候选的本机纯Python安装生命周期和Recorded Provider离线编码执行事实；不证明真实模型质量、
+默认stdio产品入口、原生Git Writer／SHM、全部macOS环境或Beta。R3完整门槛仍沿原真实Suite，R4总门禁保持开放。

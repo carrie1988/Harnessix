@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 5
+version: 6
 code_revision: 84a682c1b399575f213f7bd3ea1e289d444721fd
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
@@ -267,3 +267,12 @@ Windows Server CI也不替代消费者Windows11。后继格式边界源码为`10
 没有 Provider Turn。低敏原件位于本机 `verification-working/r4-current-main-install-20261011-v4` 与
 `verification-working/r4-current-main-upgrade-20261011-v1`。这关闭的是当前主线的本机源码外生命周期事实，
 不关闭原生桥、默认 Git Writer、真实编码任务、Beta、全部macOS环境或商用发布。
+
+同一候选 Wheel 随后从 `site-packages` 运行工程 Task Pack v2 的确定性离线编码链：3个仓库、
+10个 Case、20个 Trial、120次 Recorded Provider 请求全部完成，严格任务与必需测试均为20/20，
+人工干预0；Case证据提交和最终报告发布的两个崩溃窗口均完成原恢复验证。产品包未从源码树导入，
+固定容器无网络，候选源码副本终态无改动。低敏原件位于本机
+`verification-working/r4-current-main-offline-coding-20261011-v3`，报告摘要为
+`0649aaeb31f65a1d0e9b1b53bc9a2edd0203c55dfe612584e20d52362d700dce`。
+它证明安装件可执行既有确定性编码、测试、审批和恢复链；Recorded Provider、Golden Patch及源码侧验收脚本
+不是真实模型、默认stdio产品入口或用户Beta，不能计入R3真实质量分子，也不关闭默认原生Git Writer。
