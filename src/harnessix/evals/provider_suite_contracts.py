@@ -96,6 +96,8 @@ class CodingEvalProviderSuiteRunConfig(ProviderSuiteContract):
                 for field in ("billing_provider", "region", "service_tier", "inference_mode")
             ):
                 raise ValueError("真实Provider Suite计费上下文与价格快照不一致")
+            if context.inference_mode != "non-thinking":
+                raise ValueError("真实Provider Suite只接受非思考计费范围")
             if not price.valid_from <= self.suite.plan.created_at < price.valid_until:
                 raise ValueError("真实Provider Suite计划时间不在价格快照窗口内")
         return self

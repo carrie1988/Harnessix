@@ -56,6 +56,35 @@ def test_provider_suite_config_rejects_execution_drift(
         )
 
 
+def test_provider_suite_config_rejects_thinking_billing_scope(tmp_path: Path) -> None:
+    config = provider_suite_config(tmp_path)
+    campaigns = tuple(
+        campaign.model_copy(
+            update={
+                "price": campaign.price.model_copy(update={"inference_mode": "thinking"}),
+                "billing_context": campaign.billing_context.model_copy(
+                    update={"inference_mode": "thinking"}
+                ),
+            }
+        )
+        for campaign in config.suite.campaign_plans
+    )
+    cases = tuple(
+        case.model_copy(update={"campaign_plan_fingerprint": campaign.fingerprint})
+        for case, campaign in zip(config.suite.plan.cases, campaigns, strict=True)
+    )
+    body = config.model_dump(mode="python")
+    body["suite"] = config.suite.model_copy(
+        update={
+            "plan": config.suite.plan.model_copy(update={"cases": cases}),
+            "campaign_plans": campaigns,
+        }
+    )
+
+    with pytest.raises(ValidationError, match="只接受非思考计费范围"):
+        CodingEvalProviderSuiteRunConfig.model_validate(body, strict=True)
+
+
 def test_provider_suite_run_report_hides_identity_until_config_is_accepted() -> None:
     disabled = CodingEvalProviderSuiteRunReport(reason="network_not_enabled")
     assert disabled.suite_id is None and disabled.scheduled_cases == 0

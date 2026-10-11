@@ -378,6 +378,17 @@ def test_execution_config_rejects_retry_parallel_tools_and_source_child(tmp_path
     )
     with pytest.raises(ValidationError, match="显式关闭思考模式"):
         CodingEvalCampaignRunConfig.model_validate(body)
+    body = config.model_dump(mode="python")
+    body["plan"] = config.plan.model_copy(
+        update={
+            "price": config.plan.price.model_copy(update={"inference_mode": "thinking"}),
+            "billing_context": config.plan.billing_context.model_copy(
+                update={"inference_mode": "thinking"}
+            ),
+        }
+    )
+    with pytest.raises(ValidationError, match="显式关闭思考模式"):
+        CodingEvalCampaignRunConfig.model_validate(body, strict=True)
     body = config.model_dump(mode="json")
     body["work_root"] = str(ROOT / "private")
     with pytest.raises(ValidationError):
