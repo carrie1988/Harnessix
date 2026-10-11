@@ -282,7 +282,7 @@ async def test_rebound_guard_carries_39780864_balance_and_tags_reservation_befor
         events = await consume(GuardedVerificationProvider(provider, owner, bounds(), token))
     assert isinstance(events[-1], ResponseCompleted)
     assert provider.sent == 1 and provider.closed and not token.cancelled
-    assert period(path)["known_cost"] == "0.219221"
+    assert period(path)["known_cost"] == "0.219396"
     assert period(path)["reverification_binding"] == binding.model_dump(mode="json")
     assert_old_facts(path, before)
     with new_scope(path, binding):
@@ -961,7 +961,7 @@ VerificationBudgetLedger.rebind_reverification(Path(sys.argv[1]), plan)
 def unbound_guard_fingerprint(limits, owner):
     """独立计算当前未绑定Guard身份，避免用待测fingerprint生成预期值。"""
     data = {
-        "spec_version": "harnessix.bailian-verification-request-guard/v2",
+        "spec_version": "harnessix.bailian-verification-request-guard/v3",
         "model": MODEL,
         "region": "cn-beijing",
         "mode": "non-thinking",
@@ -975,6 +975,8 @@ def unbound_guard_fingerprint(limits, owner):
         "ledger_locator_sha256": digest(str(owner.path)),
         "allocation_units": owner.allocation,
     }
+    if limits.maximum_request_bytes is not None:
+        data["maximum_request_bytes"] = limits.maximum_request_bytes
     if owner.reverification_plan is not None:
         data["bounded_reverification"] = owner.reverification_plan.model_dump(mode="json")
     return digest(data)

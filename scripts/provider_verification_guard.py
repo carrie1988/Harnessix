@@ -23,8 +23,8 @@ from harnessix.models.contracts import ModelProvider, ModelRequest, ProviderEven
 from harnessix.tools.workspace import digest
 from scripts.provider_verification_budget import VerificationBudgetLedger
 
-MODEL = "qwen3-coder-flash"
-PRICE_SOURCE = "https://help.aliyun.com/zh/model-studio/qwen3-coder-flash"
+MODEL = "qwen3.8-max"
+PRICE_SOURCE = "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
 
 
 class VerificationRequestPacer:
@@ -69,15 +69,12 @@ class BailianVerificationBounds:
     model: ClassVar[str] = MODEL
     price_source: ClassVar[str] = PRICE_SOURCE
     purpose: ClassVar[str] = "engineering-suite-model-request"
-    guard_version: ClassVar[str] = "harnessix.bailian-verification-request-guard/v2"
-    maximum_input_tokens: ClassVar[int] = 997_952
-    maximum_request_bytes: ClassVar[int | None] = None
+    guard_version: ClassVar[str] = "harnessix.bailian-verification-request-guard/v3"
+    maximum_input_tokens: ClassVar[int] = 250_000
+    maximum_request_bytes: ClassVar[int | None] = 250_000
     # 单位为毫元/百万Token，避免1.5等阶梯单价经过浮点运算。
     price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
-        (32_000, 1_000, 4_000),
-        (128_000, 1_500, 6_000),
-        (256_000, 2_500, 10_000),
-        (1_000_000, 5_000, 25_000),
+        (1_000_000, 12_000, 36_000),
     )
 
     valid_from: datetime
@@ -176,6 +173,7 @@ class BailianBetaVerificationBounds(BailianVerificationBounds):
     purpose: ClassVar[str] = "beta-001-model-request"
     guard_version: ClassVar[str] = "harnessix.bailian-beta-request-guard/v1"
     maximum_input_tokens: ClassVar[int] = 204_800
+    maximum_request_bytes: ClassVar[int | None] = None
     price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
         (32_000, 1_000, 4_000),
         (128_000, 1_500, 6_000),

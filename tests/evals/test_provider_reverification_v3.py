@@ -102,7 +102,7 @@ async def test_v3_preserves_prefix_and_settles_only_new_request(tmp_path):
     assert isinstance(events[-1], ResponseCompleted)
     assert provider.sent == 1 and provider.closed and not token.cancelled
     assert current["requests"][: plan.prior_request_count] == original["requests"]
-    assert current["known_cost"] == "0.07481"
+    assert current["known_cost"] == "0.074985"
     assert current["reserved_cost"] == "5.09216"
     assert current["requests"][-1]["reverification_id"] == str(plan.reverification_id)
 

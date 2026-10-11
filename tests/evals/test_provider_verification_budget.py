@@ -170,7 +170,7 @@ async def test_reservation_precedes_send_and_settlement_precedes_success(tmp_pat
                 assert period(path)["reserved_cost"] == "0"
     current = period(path)
     assert current["requests"][0] == before and current["allocation"] == "70"
-    assert current["known_cost"] == "0.000085"
+    assert current["known_cost"] == "0.00026"
     assert provider.sent == 1 and provider.closed and not host_cancel.cancelled
     assert path.stat().st_mode & 0o777 == 0o600
 
@@ -224,8 +224,8 @@ async def test_failed_response_with_complete_usage_settles_known_cost_without_pu
     latest = period(path)["requests"][-1]
     assert provider.sent == 1 and provider.closed and token.cancelled
     assert latest["status"] == "completed" and latest["reserved_cost"] == "0"
-    assert latest["cost_estimate"] == "0.000017"
-    assert period(path)["known_cost"] == "0.000085"
+    assert latest["cost_estimate"] == "0.000192"
+    assert period(path)["known_cost"] == "0.00026"
     assert any(isinstance(event, ResponseFailed) for event in events)
     assert not any(isinstance(event, ResponseCompleted) for event in events)
 
@@ -327,12 +327,10 @@ def test_unsafe_or_inconsistent_existing_ledger_is_not_repaired(tmp_path, case):
 @pytest.mark.parametrize(
     "tokens,expected",
     [
-        (32_000, "0.032004"),
-        (32_001, "0.0480075"),
-        (128_000, "0.192006"),
-        (128_001, "0.3200125"),
-        (256_000, "0.64001"),
-        (256_001, "1.28003"),
+        (0, "0.000036"),
+        (32_000, "0.384036"),
+        (128_000, "1.536036"),
+        (250_000, "3.000036"),
     ],
 )
 def test_price_tier_boundaries_use_exact_integer_amounts(tokens, expected):
@@ -342,9 +340,10 @@ def test_price_tier_boundaries_use_exact_integer_amounts(tokens, expected):
 
 def test_current_r3_model_guard_and_full_reservation_are_frozen():
     expected = bounds()
-    assert MODEL == expected.model == "qwen3-coder-flash"
-    assert expected.guard_version == "harnessix.bailian-verification-request-guard/v2"
-    assert expected.maximum_units == amount_units("4.99296")
+    assert MODEL == expected.model == "qwen3.8-max"
+    assert expected.guard_version == "harnessix.bailian-verification-request-guard/v3"
+    assert expected.maximum_request_bytes == 250_000
+    assert expected.maximum_units == amount_units("3.004608")
 
 
 def test_body_or_credentials_cannot_be_added_to_request_metadata(tmp_path):
@@ -397,7 +396,7 @@ async def test_reservation_or_settlement_sync_failure_never_publishes_success(
     else:
         # replace已发生但目录fsync失败：不发布成功；重启以实际可读原字节为准。
         assert current["requests"][-1]["status"] == "completed"
-        assert current["known_cost"] == "0.000085"
+        assert current["known_cost"] == "0.00026"
     assert not tuple(tmp_path.glob(".budget-*.tmp"))
 
 
@@ -455,7 +454,7 @@ async def test_native_adapter_wire_is_reserved_before_transport_and_closed(
     assert sent == 1 and wire.closed
     if case in {"complete", "truncated"}:
         assert token.cancelled == (case == "truncated")
-        assert period(path)["known_cost"] == "0.000086"
+        assert period(path)["known_cost"] == "0.00026"
         assert period(path)["requests"][-1]["status"] == "completed"
         assert any(isinstance(event, ResponseCompleted) for event in seen) == (case == "complete")
     else:

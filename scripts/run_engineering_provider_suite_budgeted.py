@@ -114,10 +114,10 @@ def _bounds(config: CodingEvalProviderSuiteRunConfig) -> BailianVerificationBoun
             )
             != ("aliyun-bailian", MODEL, "cn-beijing", "payg", "non-thinking", "CNY", PRICE_SOURCE)
             or not isinstance(price.input_price, FlatInputPrice)
-            or price.input_price.per_million != "1"
-            or price.output_per_million != "4"
+            or price.input_price.per_million != "12"
+            or price.output_per_million != "36"
             or price.input_tokens_min != 0
-            or price.input_tokens_max != 32_000
+            or price.input_tokens_max != 991_808
             for price in prices
         )
     ):

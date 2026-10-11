@@ -62,8 +62,8 @@ def test_full_model_reservation_is_independent_of_prompt_estimates():
     assert beta_bounds(4096).maximum_units == amount_units("0.55296")
     current = beta_bounds()
     original = BailianVerificationBounds(current.valid_from, current.valid_until, 4096)
-    assert original.maximum_units == amount_units("5.09216")
-    assert original.model == "qwen3-coder-flash"
+    assert original.maximum_units == amount_units("3.147456")
+    assert original.model == "qwen3.8-max"
 
 
 @pytest.mark.parametrize("input_tokens,output_tokens", [(204801, 1), (10, 3073)])

@@ -289,7 +289,7 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(
         reverification_id=plan.reverification_id if plan is not None else None,
     )
     assert result.reason == "completed" and wire.closed
-    assert period(path)["known_cost"] == "0.000086" and period(path)["allocation"] == "70"
+    assert period(path)["known_cost"] == "0.00026" and period(path)["allocation"] == "70"
     assert period(path)["reserved_cost"] == ("20.77824" if bounded else "0")
 
 

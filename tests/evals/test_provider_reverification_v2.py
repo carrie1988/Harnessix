@@ -417,12 +417,12 @@ async def test_v2_authorize_idempotence_guard_known_cost_and_reopen_preserve_old
             if isinstance(event, ResponseCompleted):
                 completions += 1
                 assert period(path)["requests"][-1]["status"] == "completed"
-                assert period(path)["known_cost"] == "0.725973"
+                assert period(path)["known_cost"] == "0.726148"
     assert completions == 1 and provider.sent == 1 and provider.closed and not token.cancelled
     current = period(path)
     assert current["requests"][: plan.prior_request_count] == old["requests"]
     assert digest(current["requests"][: plan.prior_request_count]) == plan.prior_requests_sha256
-    assert current["requests"][-1]["cost_estimate"] == "0.000017"
+    assert current["requests"][-1]["cost_estimate"] == "0.000192"
     assert current["requests"][-1]["reverification_id"] == str(plan.reverification_id)
     assert current["allocation"] == "60" and current["reserved_cost"] == OLD_HOLD
     assert current["bounded_reverification"] == plan.model_dump(mode="json")
@@ -431,7 +431,7 @@ async def test_v2_authorize_idempotence_guard_known_cost_and_reopen_preserve_old
     with scoped(path, plan) as reopened:
         assert reopened.reverification_plan == plan
         assert reopened.period["requests"][: plan.prior_request_count] == old["requests"]
-        assert plans.validate_reverification_plan(reopened.period, plan) == amount_units("0.000017")
+        assert plans.validate_reverification_plan(reopened.period, plan) == amount_units("0.000192")
     assert path.read_bytes() == settled and path.stat().st_mode & 0o777 == 0o600
 
 

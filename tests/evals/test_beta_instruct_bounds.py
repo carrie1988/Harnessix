@@ -306,22 +306,18 @@ def test_independent_fingerprint_preserves_r3_and_next_configuration(tmp_path):
     instruct = instruct_bounds()
     r3 = BailianVerificationBounds(instruct.valid_from, instruct.valid_until, 3072)
     next_model = BailianBetaVerificationBounds(instruct.valid_from, instruct.valid_until, 3072)
-    assert r3.model == MODEL == "qwen3-coder-flash"
+    assert r3.model == MODEL == "qwen3.8-max"
     assert (
         r3.price_source
         == PRICE_SOURCE
-        == "https://help.aliyun.com/zh/model-studio/qwen3-coder-flash"
+        == "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
     )
-    assert r3.guard_version == "harnessix.bailian-verification-request-guard/v2"
+    assert r3.guard_version == "harnessix.bailian-verification-request-guard/v3"
     assert r3.purpose == "engineering-suite-model-request"
-    assert r3.maximum_input_tokens == 997_952
-    assert r3.price_tiers == (
-        (32_000, 1_000, 4_000),
-        (128_000, 1_500, 6_000),
-        (256_000, 2_500, 10_000),
-        (1_000_000, 5_000, 25_000),
-    )
-    assert r3.maximum_units == amount_units("5.06656")
+    assert r3.maximum_input_tokens == 250_000
+    assert r3.maximum_request_bytes == 250_000
+    assert r3.price_tiers == ((1_000_000, 12_000, 36_000),)
+    assert r3.maximum_units == amount_units("3.110592")
     assert next_model.model == "qwen3-coder-next"
     assert next_model.price_source == "https://help.aliyun.com/zh/model-studio/qwen3-coder-next"
     assert next_model.guard_version == "harnessix.bailian-beta-request-guard/v1"
