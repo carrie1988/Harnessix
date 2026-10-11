@@ -6,8 +6,8 @@ import asyncio
 import hashlib
 import os
 import sqlite3
-from collections.abc import Callable
-from contextlib import closing
+from collections.abc import Callable, Iterator
+from contextlib import closing, contextmanager
 from pathlib import Path
 from uuid import UUID
 
@@ -106,6 +106,27 @@ def original_key(tree: PrivateStateTree) -> OwnedSessionKey:
 
         return decode_payload(_decode(body))
     raise invalid_state()
+
+
+@contextmanager
+def verification_publication_binding(
+    tree: PrivateStateTree,
+) -> Iterator[SessionPublicationBinding]:
+    """从候选原Key创建只验真Binding，并按创建逆序关闭Binding、清零Key。"""
+    material = original_key(tree)
+    binding: SessionPublicationBinding | None = None
+    try:
+        binding = SessionPublicationBinding(
+            material.store_id,
+            material.key_id,
+            bytes(material.key),
+            _VerificationOnlyScope(),
+        )
+        yield binding
+    finally:
+        if binding is not None:
+            binding.close()
+        material.close()
 
 
 def _bounded_tables(database: sqlite3.Connection, control: MaintenanceIOControl) -> None:
@@ -229,18 +250,11 @@ def validate_product_state(
     """复制完成后核验所有原事实；成功不授予公开读取或高风险效果重放权限。"""
     process = PROCESS_DATABASE in paths
     _schemas(tree.path, process, control)
-    material = original_key(tree)
-    binding = SessionPublicationBinding(
-        material.store_id, material.key_id, bytes(material.key), _VerificationOnlyScope()
-    )
-    try:
+    with verification_publication_binding(tree) as binding:
         threads = asyncio.run(_session_facts(tree.path, binding, control))
         validate_state_records(tree, threads, paths, control)
         control.checkpoint()
-        return material.store_id, material.key_id
-    finally:
-        binding.close()
-        material.close()
+        return binding.git_verifier.identity()
 
 
 async def _workspaces(
@@ -262,17 +276,11 @@ def require_backup_outside_workspaces(
     tree: PrivateStateTree, destination: Path, control: MaintenanceIOControl
 ) -> None:
     """复制Key之前，从原认证投影核对目标，避免把私有备份写入用户Git工作区。"""
-    with closing(original_key(tree)) as material:
-        binding = SessionPublicationBinding(
-            material.store_id, material.key_id, bytes(material.key), _VerificationOnlyScope()
-        )
-        try:
-            for workspace in asyncio.run(_workspaces(tree, binding, control)):
-                control.checkpoint()
-                root = Path(workspace).resolve(strict=False)
-                if destination.is_relative_to(root) or root.is_relative_to(destination):
-                    raise KernelError(
-                        "product_backup_workspace_overlap", "备份目录不能与受管Workspace重叠"
-                    )
-        finally:
-            binding.close()
+    with verification_publication_binding(tree) as binding:
+        for workspace in asyncio.run(_workspaces(tree, binding, control)):
+            control.checkpoint()
+            root = Path(workspace).resolve(strict=False)
+            if destination.is_relative_to(root) or root.is_relative_to(destination):
+                raise KernelError(
+                    "product_backup_workspace_overlap", "备份目录不能与受管Workspace重叠"
+                )

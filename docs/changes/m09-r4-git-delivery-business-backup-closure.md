@@ -39,7 +39,10 @@ supersedes: []
 [`state_backup_v2_contracts.py`](../../src/harnessix/product_config/state_backup_v2_contracts.py)
 已固定 v1 六库和 Key 之外唯一允许新增的 GitDB、业务快照、Git 前缀锚、捕获根身份及根外 v2 回执；
 未知 Git 子树、运行时 worktree／anchor、SQLite sidecar 仍不进入恢复成员。该增量只关闭清单与回执的数据合同，
-尚未接入停机捕获、联合验真、Restore Journal、重绑或默认 Git Writer，因此本文仍为 `draft`。
+[`state_backup_v2_validation.py`](../../src/harnessix/product_config/state_backup_v2_validation.py)
+进一步只读核对候选 GitDB 的 v2 精确结构、完整认证前缀、Store／Key、genesis、revision 及规范目录摘要，
+并拒绝 WAL 格式或残留 sidecar。它尚未接入停机捕获、业务快照、Restore Journal、重绑或默认 Git Writer，
+因此本文仍为 `draft`。
 
 
 ## 当前完整父历史代际

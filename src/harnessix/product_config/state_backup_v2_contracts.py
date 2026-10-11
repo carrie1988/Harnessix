@@ -58,7 +58,8 @@ class ProductStateGitBackupProfile(ContractModel):
     profile: Literal["git-delivery"] = "git-delivery"
     git_store_schema_version: Literal["2"] = "2"
     store_genesis_epoch: UUID
-    prefix_revision: int = Field(ge=0, le=100_000)
+    prefix_revision: int = Field(ge=0, le=2**63 - 1)
+    # 名称沿已冻结合同；值是尾锚认证的规范 GitPrefixCatalog 原字节摘要。
     prefix_anchor_sha256: Digest
     business_snapshot_sha256: Digest
 

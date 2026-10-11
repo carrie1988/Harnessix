@@ -81,6 +81,17 @@ def test_git_backup_profile_is_a_closed_versioned_manifest() -> None:
     }
 
 
+def test_git_profile_revision_uses_the_same_range_as_the_authenticated_tail_anchor() -> None:
+    values = _profile().model_dump()
+    values["prefix_revision"] = 2**63 - 1
+    profile = ProductStateGitBackupProfile.model_validate(values)
+
+    assert profile.prefix_revision == 2**63 - 1
+    values["prefix_revision"] = 2**63
+    with pytest.raises(ValidationError):
+        ProductStateGitBackupProfile.model_validate(values)
+
+
 def test_v1_reader_rejects_v2_manifest_instead_of_guessing_layout() -> None:
     with pytest.raises(ValidationError):
         ProductStateBackupManifest.model_validate_json(_manifest().model_dump_json())

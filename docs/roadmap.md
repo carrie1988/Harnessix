@@ -2936,3 +2936,7 @@ R4[原连接实际main身份候选](research/git-sqlite-native-source.md#74-实�
 R4 Backup v2 已落地首个封闭合同切片：固定 v1 既有成员、唯一 GitDB／业务快照、Git 前缀锚、捕获根身份及
 根外 v2 回执，未知 Git 子树与SQLite sidecar不能冒充恢复成员。该切片尚未接入真实停机捕获、联合验真、
 Restore Journal、重绑或默认 Writer，不据此关闭R4。
+
+R4 Backup v2 候选只读验真切片已接入：复用原 Key 的 verification-only Binding，对已复制且无 sidecar 的
+DELETE-journal GitDB 验证 v2 精确结构、完整认证前缀及 Manifest 剖面身份；验证前后候选字节和目录成员不变。
+实时 WAL／SHM 捕获、业务快照、完整备份入口、恢复与默认 Writer 仍保持关闭。
