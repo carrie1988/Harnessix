@@ -60,7 +60,7 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v15"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v16"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
@@ -81,6 +81,11 @@ def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_
         "do not replay effects or fake completion",
         "never delete or weaken tests",
         "Never assume shell, network, installation, or Git push",
+        "Solve only explicitly requested behavior/cases",
+        "do not add speculative cases",
+        "never send a no-op patch",
+        "Never inspect the check implementation",
+        "diff_sha256 is never expected_sha256",
     ):
         assert required in " ".join(CODING_INSTRUCTIONS.split())
     policy = build_product_agent_context(tmp_path, max_output_tokens=4096)
@@ -130,7 +135,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v15"
+        assert fragment["source"] == "harnessix.coding-instructions/v16"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint

@@ -40,6 +40,7 @@ def _definitions(*, second_profile: bool = False) -> tuple[ToolDescriptor, ...]:
         _descriptor("read_file"),
         _descriptor("glob"),
         _descriptor("grep"),
+        _descriptor("read_artifact"),
         _descriptor("git_status"),
         _descriptor("git_diff"),
         _descriptor(_PROFILE, EffectClass.NON_IDEMPOTENT_WRITE),
@@ -122,7 +123,7 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
         (_PATCH, "succeeded", None),
         (_PROFILE, "failed", "process_nonzero_exit"),
     )
-    assert _PATCH in _names(correction) and _PROFILE not in _names(correction)
+    assert _names(correction) == {_PATCH, "read_file", "read_artifact"}
 
     validated = _turn(
         (_PROFILE, "failed", "process_nonzero_exit"),

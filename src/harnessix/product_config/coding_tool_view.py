@@ -17,6 +17,7 @@ from harnessix.domain.models import EffectClass, ToolDescriptor
 _PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
 _HIDDEN_WORKFLOW_ACTIONS = frozenset({WORKSPACE_ROLLBACK_TOOL})
+_CORRECTION_READ_TOOLS = frozenset({"read_file", "read_artifact"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +102,10 @@ class CodingWorkflowToolView:
             and validation.result.error is not None
             and validation.result.error.code == "process_nonzero_exit"
         ) or (validation.result.outcome == "succeeded" and last_patch < 0):
+            if last_patch >= 0:
+                names = set(_CORRECTION_READ_TOOLS)
+                names.add(patch)
+                return tuple(item for item in definitions if item.name in names)
             names = {
                 item.name
                 for item in definitions
