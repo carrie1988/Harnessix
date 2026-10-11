@@ -240,7 +240,7 @@ def _local_http_proxy(value: str | None) -> str | None:
 def _provider(
     config: OpenAIChatConfig, api_key: str, local_http_proxy: str | None
 ) -> OpenAIChatProvider:
-    """每个短生命周期Adapter显式选择直连或已校验的本机代理。"""
+    """为一次验证Suite创建显式直连或本机代理的共享Adapter。"""
     if local_http_proxy is None:
         return OpenAIChatProvider(config, api_key=api_key)
     return OpenAIChatProvider(
@@ -292,40 +292,42 @@ async def run_budgeted_suite(
         # 未决费用先拒绝；模型目录只读请求不得绕过预算Owner或形成推理预留。
         ledger.require_available()
         key = _credential(checked, keychain_service, keychain_account)
+        binding: dict[str, object] = {
+            "guard": bounds.fingerprint(ledger, pacer=pacer),
+            "provider_lifecycle": {
+                "spec_version": "harnessix.verification-provider-lifecycle/v1",
+                "scope": "single-suite",
+            },
+        }
+        if proxy is not None:
+            binding["transport"] = {
+                "spec_version": "harnessix.verification-local-http-proxy/v1",
+                "endpoint": proxy,
+                "connect_retries": 1,
+                "max_connections": 1,
+                "max_keepalive_connections": 1,
+                "keepalive_expiry_seconds": 60,
+            }
+        provider_binding = digest(binding)
+        # OpenAIChatProvider不保存会话消息；复用其HTTP池只减少每个Trial重建代理隧道。
         async with _provider(checked.provider_config, key, proxy) as provider:
             if not await provider.probe_model_availability(cancellation):
                 raise KernelError("verification_model_unavailable", "固定验证模型对当前凭据不可用")
 
-        @asynccontextmanager
-        async def factory(*_: object) -> AsyncIterator[ModelProvider]:
-            async with _provider(checked.provider_config, key, proxy) as provider:
+            @asynccontextmanager
+            async def factory(*_: object) -> AsyncIterator[ModelProvider]:
                 yield GuardedVerificationProvider(provider, ledger, bounds, cancellation, pacer)
 
-        provider_binding = bounds.fingerprint(ledger, pacer=pacer)
-        if proxy is not None:
-            provider_binding = digest(
-                {
-                    "guard": provider_binding,
-                    "transport": {
-                        "spec_version": "harnessix.verification-local-http-proxy/v1",
-                        "endpoint": proxy,
-                        "connect_retries": 1,
-                        "max_connections": 1,
-                        "max_keepalive_connections": 1,
-                        "keepalive_expiry_seconds": 60,
-                    },
-                }
-            )
-        with provider_publication_scope(checked.provider_config.api_key_env, key) as scope:
-            return await run_task_pack_provider_suite(
-                checked,
-                allow_network=True,
-                resume=resume,
-                cancel=cancellation,
-                provider_factory=factory,
-                provider_binding_sha256=provider_binding,
-                publication_scope=scope,
-            )
+            with provider_publication_scope(checked.provider_config.api_key_env, key) as scope:
+                return await run_task_pack_provider_suite(
+                    checked,
+                    allow_network=True,
+                    resume=resume,
+                    cancel=cancellation,
+                    provider_factory=factory,
+                    provider_binding_sha256=provider_binding,
+                    publication_scope=scope,
+                )
 
 
 class _SafeParser(argparse.ArgumentParser):

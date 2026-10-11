@@ -314,21 +314,27 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(
         assert json.loads(request.content)["max_tokens"] == 4096
         return response(wire)
 
+    providers = []
+
     def native(provider_config, *, api_key):
         assert api_key == "fixture-SECRET-CANARY"
-        return OpenAIChatProvider(
+        provider = OpenAIChatProvider(
             provider_config, api_key=api_key, transport=httpx.MockTransport(transport)
         )
+        providers.append(provider)
+        return provider
 
     monkeypatch.setattr(host, "OpenAIChatProvider", native)
 
     async def runner(checked, **kwargs):
         assert checked == config and kwargs["allow_network"] is True and kwargs["resume"] is True
         assert len(kwargs["provider_binding_sha256"]) == 64
-        async with kwargs["provider_factory"](None, UUID(int=1)) as provider:
-            events = [event async for event in provider.stream(model_request(), CancelToken())]
+        async with kwargs["provider_factory"](None, UUID(int=1)) as first:
+            events = [event async for event in first.stream(model_request(), CancelToken())]
             assert isinstance(events[-1], ResponseCompleted)
             assert not kwargs["cancel"].cancelled
+        async with kwargs["provider_factory"](None, UUID(int=2)) as second:
+            assert second is not first and second.provider is first.provider
         return CodingEvalSuiteRunReport(
             reason="completed",
             suite_id=checked.suite.plan.suite_id,
@@ -349,6 +355,7 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(
         reverification_id=plan.reverification_id if plan is not None else None,
     )
     assert result.reason == "completed" and wire.closed
+    assert len(providers) == 1 and providers[0]._closed  # noqa: SLF001
     assert period(path)["known_cost"] == "0.00026" and period(path)["allocation"] == "70"
     assert period(path)["reserved_cost"] == ("20.77824" if bounded else "0")
 
