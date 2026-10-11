@@ -2932,3 +2932,7 @@ R4[原连接实际main身份候选](research/git-sqlite-native-source.md#74-实�
 
 该结果关闭当前候选的本机纯Python安装生命周期和Recorded Provider离线编码执行事实；不证明真实模型质量、
 默认stdio产品入口、原生Git Writer／SHM、全部macOS环境或Beta。R3完整门槛仍沿原真实Suite，R4总门禁保持开放。
+
+R4 Backup v2 已落地首个封闭合同切片：固定 v1 既有成员、唯一 GitDB／业务快照、Git 前缀锚、捕获根身份及
+根外 v2 回执，未知 Git 子树与SQLite sidecar不能冒充恢复成员。该切片尚未接入真实停机捕获、联合验真、
+Restore Journal、重绑或默认 Writer，不据此关闭R4。
