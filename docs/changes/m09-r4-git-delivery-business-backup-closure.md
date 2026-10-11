@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: draft
-version: 18
-code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
+version: 19
+code_revision: d0b3253ba60d922fdf7423aa4b87ccbb7139e45e
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
 related_adrs:
@@ -32,6 +32,7 @@ related_tests:
   - tests/product_config/test_git_business_snapshot.py
   - tests/product_config/test_product_state_backup_v2_contracts.py
   - tests/product_config/test_product_state_backup_v2_validation.py
+  - tests/product_config/test_git_business_associations.py
 supersedes: []
 ---
 
@@ -46,8 +47,10 @@ supersedes: []
 进一步只读核对候选 GitDB 的 v2 精确结构、完整认证前缀、Store／Key、genesis、revision 及规范目录摘要，
 并拒绝 WAL 格式或残留 sidecar。当前又增加了固定 `business-snapshot.json`：同一轮认证捕获只扫描一次，
 把已实现的 `prepared → approved/denied/cancelled` 全历史编码为唯一规范字节，并同时绑定捕获 ID、完整前缀和
-Manifest SHA；缺失、非规范、篡改或当前未实现业务表非空均失败关闭。它仍未接入原六库的逐关联交叉验真、
-实时停机捕获、Restore Journal、重绑或默认 Git Writer，因此本文仍为 `draft`。
+Manifest SHA；缺失、非规范、篡改或当前未实现业务表非空均失败关闭。当前 ProductLink 又经只读入口逐项关联回
+原 Session/Event、Plan、Route/Audit、Approval、Review Artifact、Workspace Transaction 与 CAS；该入口不读取
+外部 Workspace，不补签、不执行。实时停机捕获、Restore Journal、重绑、其他 Git 业务阶段及默认 Git Writer
+仍未接入，因此本文仍为 `draft`。
 
 
 ## 当前完整父历史代际
@@ -58,8 +61,8 @@ Manifest SHA；缺失、非规范、篡改或当前未实现业务表非空均�
 新来源捕获显式取得宿主CAS端口，历史读取与当前观察共同使用原调用方控制。
 旧Source1／Baseline1仅保持旧合同兼容，不作为默认新来源的降级路线。
 
-本草案的Bridge／MAC持久关联及完整Backup2仍待实现；现有业务快照只覆盖已正式实现的ProductLink历史，
-不得外推为A／T／D、Checkpoint／Commit或跨Store恢复闭包。
+本草案的Bridge及完整Backup2仍待实现；现有业务快照和跨库验真只覆盖已正式实现的ProductLink历史，
+不得外推为A／T／D、Checkpoint／Commit或完整恢复闭包。
 领域A／T／D成功不表示这些产品接线已经完成，prepared T仍不得向A发布。
 
 ## 当前物理认证账本边界
@@ -115,7 +118,7 @@ ProductGitDeliveryPlanner/Executor、正式Link阶段、A/T2/D写装配与Backup
 
 ## 1. 需求背景、状态与交付定义
 
-**实施状态：业务闭包待实现，内部 IO、完整仓库绑定观察、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整仓库绑定观察、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。原五类Git记录和独立尾锚认证端口、GitDB v2精确结构及物理全前缀认证账本已实现；业务快照 v1 已能严格重建并核对当前 ProductLink 全历史，但跨 Session／Plan／Audit／Artifact／CAS 的逐关联验真、其他Git业务阶段、恢复重绑和默认产品写链仍未完成；现有测试链接仅指向对应复用边界，不表示完整业务方案已经通过验收。
+**实施状态：业务闭包待实现，内部 IO、完整仓库绑定观察、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整仓库绑定观察、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。原五类Git记录和独立尾锚认证端口、GitDB v2精确结构及物理全前缀认证账本已实现；业务快照 v1 已能严格重建当前 ProductLink 全历史，并逐项核对 Session／Plan／Audit／Artifact／Transaction／CAS 原事实。其他Git业务阶段、实时一致捕获、恢复重绑和默认产品写链仍未完成；现有测试链接仅指向对应复用边界，不表示完整业务方案已经通过验收。
 
 当前默认产品能完成 Patch 和显式 Rollback，能从认证会话提取持续多 Patch 的完整来源投影，并观察 Git 基准；尚未装配 `GitDeliveryRuntime`／`SQLiteGitDeliveryStore` 形成默认产品 Commit／Checkpoint 闭环。直接把用户已修改的工作区交给要求干净来源的宿主 Runtime，会产生真实的生命周期和身份冲突。
 
@@ -178,7 +181,7 @@ ProductGitDeliveryPlanner/Executor、正式Link阶段、A/T2/D写装配与Backup
 | [`git.py`](../../src/harnessix/delivery/git.py) 的 `_repository_root_from_binding`、`_capture_worktree_binding` | 从 commonDir 邻接候选恢复来源路径，验证注册、gitfile、commondir、backlink、HEAD | 干净来源锚位于产品私有根时不能依赖该邻接推导；拟改为已登记、已验证的明确来源根解析，不扩大为路径搜索 |
 | [`git_checkpoint.py`](../../src/harnessix/delivery/git_checkpoint.py) 的 `verify_checkpoint_worktree`、`build_git_checkpoint` | 物化前拒绝第三内容、未知 Index 和计划外跟踪变化；复核 Lease；已知物化结果可验证 | 保持原拒绝语义；产品包装层不能用“恢复”绕过该保护 |
 | [`git.py`](../../src/harnessix/delivery/git.py) 的 `_GitRunner.run`；[`git_repository_recipe.py`](../../src/harnessix/delivery/git_repository_recipe.py)；[`git_repository_observation.py`](../../src/harnessix/product_config/git_repository_observation.py) | 同步 Runner 保持 `subprocess.run`、默认单命令20秒及退出后长度检查；固定命令与环境已复用。完整仓库观察已由唯一配方接入原受控 IO，严格借共享宿主、正式计划／批准及原取消／绝对期限 | 完整 A／T／D 与 Commit 写阶段仍须逐阶段接入原受控端口及独立批准；只读观察不能代表完整领域 Runtime 已异步化，也不能以后台线程替代监督 |
-| [`git_store.py`](../../src/harnessix/delivery/git_store.py) 的 `SQLiteGitDeliveryStore`、`_check_event`；[`git_store_schema.py`](../../src/harnessix/delivery/git_store_schema.py) 的 `verify_git_store_schema` | 原 v1 六表、CAS 转移、严格模型／SHA、冗余列及 `read_only=True` 保持原合同；v1事件仍核对尾部及总数。另已实现 v2精确结构及物理全前缀认证账本，默认v1装配不变 | 产品业务关联语义、正式业务快照、认证对象目录与跨Store闭合仍待实现；不能用只读构造器或物理全前缀替代业务验真 |
+| [`git_store.py`](../../src/harnessix/delivery/git_store.py) 的 `SQLiteGitDeliveryStore`、`_check_event`；[`git_store_schema.py`](../../src/harnessix/delivery/git_store_schema.py) 的 `verify_git_store_schema` | 原 v1 六表、CAS 转移、严格模型／SHA、冗余列及 `read_only=True` 保持原合同；v1事件仍核对尾部及总数。另已实现 v2精确结构、物理全前缀认证账本及当前 ProductLink 跨Store验真，默认v1装配不变 | 其他 Git 业务阶段、实时捕获、恢复重绑与默认 Writer 仍待实现；不能用当前 ProductLink 验真外推完整业务闭包 |
 | [`sqlite_readonly.py`](../../src/harnessix/sqlite_readonly.py) 的 `readonly_database` | `mode=ro`、`query_only`，真实已提交 WAL 可见；不初始化或迁移 | 所有新增 Reader 继续使用该端口；不使用 `immutable=1` 掩盖 WAL |
 | [`store.py`](../../src/harnessix/delivery/store.py) 的 `SQLiteWorkspaceTransactionStore.blob`、`_put_blob`；[`contracts.py`](../../src/harnessix/delivery/contracts.py) | before／after CAS、原 SHA／长度约束、事务模型和镜像限额 | 复用同一 CAS 的耐久写入与只读核验，将 Git 对象材料作为有类型的引用；不另建 Blob 平台 |
 | [`diff.py`](../../src/harnessix/delivery/diff.py) 的 `build_workspace_diff`；[`workspace_patch_review.py`](../../src/harnessix/product_config/workspace_patch_review.py) 的 `publish_workspace_review` | 完整 Diff、结构化条目、稳定 Review Artifact、原发布和分页 | 提取唯一纯 Diff 构造逻辑供来源投影复用；Git Review 复用 Artifact 发布机制，但不冒用 Patch Review 的批准语义 |

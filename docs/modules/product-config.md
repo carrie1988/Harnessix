@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 114
-code_revision: 013a7c73d42106b771fa62d7df6db2a7ff0ad9a0
+version: 115
+code_revision: d0b3253ba60d922fdf7423aa4b87ccbb7139e45e
 owners:
   - core
 modules:
@@ -30,6 +30,7 @@ related_tests:
   - tests/product_config/test_git_prepared_monitor_identity.py
   - tests/product_config/test_git_decision_recovery.py
   - tests/product_config/test_git_decision_link_ledger_sdk.py
+  - tests/product_config/test_git_business_associations.py
   - tests/product_config/test_git_decision_commit_boundary.py
   - tests/product_config/test_git_decision_recovery_observers.py
   - tests/delivery/test_git_prefix_task_owner.py
@@ -106,8 +107,10 @@ supersedes: []
 [审批前准备与Core耐久恢复](../changes/m09-r4-git-agent-preplanning.md)已接入原Gateway：
 注册准备器仅在首次规划前运行，完整Core原CAS写入及回读，原Route资源寻址恢复并重验。
 原生实际Snapshot2必须等于完整预期，已存原Route不重新生成意图；这不证明Session归属或批准。
-默认产品工具未变化；正式 Artifact/Session/Router 归属、新批准、ProductLink/NativeBridge、
-A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
+默认产品工具未变化；当前 ProductLink 的 Artifact/Session/Router/Transaction/CAS 原归属已由
+[`git_business_associations.py`](../../src/harnessix/product_config/git_business_associations.py)只读交叉验真，
+不读取外部 Workspace，也不授予恢复后执行权。NativeBridge、A/T2/D 写阶段、实时一致捕获、恢复和默认 Writer
+仍须闭合，不将该关联验证当作 R4 或商业发布验收。
 
 # Product Config模块设计
 

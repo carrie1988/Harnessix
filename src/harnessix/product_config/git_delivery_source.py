@@ -370,6 +370,48 @@ def verify_git_delivery_source(
     snapshot_ports: WorkspaceSnapshotPorts,
 ) -> None:
     """已认证Thread下只读复核原Patch和所有最终版本；不重捕获、不追加CAS。"""
+    versions = _persisted_source_versions(thread, source, router, transactions, checkpoint)
+    root = Path(thread.workspace)
+    _verify_final_snapshot(source.workspace, root, checkpoint, snapshot_ports)
+    observed = {item.path: item for item in source.workspace.resources}
+    for path, (_, expected) in versions.items():
+        checkpoint()
+        if observed[path].kind == "missing":
+            actual = WorkspaceFileVersion(presence="absent", size=0)
+        elif observed[path].kind == "file":
+            body, mode = _read_source_file(root, path, source.workspace.platform, checkpoint)
+            actual = WorkspaceFileVersion(
+                presence="file", sha256=hashlib.sha256(body).hexdigest(), size=len(body), mode=mode
+            )
+        else:
+            raise KernelError("git_delivery_source_changed", "Git交付目标不再是普通文件")
+        if actual != expected:
+            raise KernelError("git_delivery_source_changed", "Git交付最终版本或模式已经变化")
+    _verify_final_snapshot(source.workspace, root, checkpoint, snapshot_ports)
+    checkpoint()
+
+
+def verify_persisted_git_delivery_source(
+    thread: Thread,
+    source: ProductGitDeliverySourceV2,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    *,
+    checkpoint: Callable[[], None],
+) -> None:
+    """只核对备份内的Session、Route、Transaction和CAS来源，不读取外部Workspace。"""
+    _persisted_source_versions(thread, source, router, transactions, checkpoint)
+    checkpoint()
+
+
+def _persisted_source_versions(
+    thread: Thread,
+    source: ProductGitDeliverySourceV2,
+    router: TrustedActionRouter,
+    transactions: SQLiteWorkspaceTransactionStore,
+    checkpoint: Callable[[], None],
+) -> dict[str, tuple[WorkspaceFileVersion, WorkspaceFileVersion]]:
+    """共享原Patch归属、连续链及持久投影校验；返回版本链供实时读端继续复核。"""
     checkpoint()
     if type(source) is not ProductGitDeliverySourceV2 or source.thread_id != thread.thread_id:
         raise KernelError("git_delivery_source_not_owned", "Git交付来源不属于原认证会话")
@@ -395,21 +437,15 @@ def verify_git_delivery_source(
         != {("workspace", path, "read") for path in (*versions, ".")}
     ):
         raise KernelError("git_delivery_source_changed", "Git交付完整来源与原Patch链不一致")
-    root = Path(thread.workspace)
-    _verify_final_snapshot(workspace, root, checkpoint, snapshot_ports)
     observed = {item.path: item for item in workspace.resources}
     for path, (_, expected) in versions.items():
         checkpoint()
-        if observed[path].kind == "missing":
-            actual = WorkspaceFileVersion(presence="absent", size=0)
-        elif observed[path].kind == "file":
-            body, mode = _read_source_file(root, path, workspace.platform, checkpoint)
-            actual = WorkspaceFileVersion(
-                presence="file", sha256=hashlib.sha256(body).hexdigest(), size=len(body), mode=mode
-            )
-        else:
-            raise KernelError("git_delivery_source_changed", "Git交付目标不再是普通文件")
-        if actual != expected:
-            raise KernelError("git_delivery_source_changed", "Git交付最终版本或模式已经变化")
-    _verify_final_snapshot(workspace, root, checkpoint, snapshot_ports)
+        observation = observed[path]
+        if (observation.kind, observation.content_sha256, observation.size) != (
+            "missing" if expected.presence == "absent" else "file",
+            expected.sha256,
+            expected.size,
+        ):
+            raise KernelError("git_delivery_source_changed", "Git交付持久来源与原Patch链不一致")
     checkpoint()
+    return versions

@@ -9,7 +9,11 @@ from contextlib import closing
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_business_associations import (
+    validate_git_business_associations,
+)
 from harnessix.product_config.git_business_snapshot import build_git_delivery_business_snapshot
+from harnessix.product_config.git_business_snapshot_contracts import GitDeliveryBusinessSnapshot
 from harnessix.product_config.git_business_snapshot_wire import (
     decode_git_delivery_business_snapshot,
     encode_git_delivery_business_snapshot,
@@ -26,10 +30,12 @@ from harnessix.product_config.state_backup_files import PrivateStateTree, read_s
 from harnessix.product_config.state_backup_v2_contracts import (
     GIT_BUSINESS_SNAPSHOT,
     GIT_DATABASE,
+    ProductStateBackupManifestV2,
     ProductStateGitBackupProfile,
 )
 from harnessix.product_config.state_backup_validation import (
     invalid_state,
+    validate_product_state,
     verification_publication_binding,
 )
 from harnessix.session.maintenance_io import MaintenanceIOControl
@@ -91,7 +97,7 @@ def validate_git_backup_profile(
     store_id: UUID,
     key_id: UUID,
     control: MaintenanceIOControl,
-) -> None:
+) -> GitDeliveryBusinessSnapshot:
     """核对候选GitDB的原身份、完整认证前缀及Manifest剖面，不产生SQLite写入。"""
     _require_delete_journal_candidate(tree, control)
     with verification_publication_binding(tree) as binding:
@@ -142,3 +148,33 @@ def validate_git_backup_profile(
             raise invalid_state() from None
         control.checkpoint()
     _require_delete_journal_candidate(tree, control)
+    return actual
+
+
+def validate_product_state_v2(
+    tree: PrivateStateTree,
+    manifest: ProductStateBackupManifestV2,
+    control: MaintenanceIOControl,
+) -> tuple[UUID, UUID]:
+    """依次验真原六库、GitDB业务快照及其逐关联；全程只读。"""
+    paths = tuple(entry.path for entry in manifest.files)
+    identity = validate_product_state(tree, paths, control)
+    if identity != (manifest.store_id, manifest.key_id):
+        raise invalid_state()
+    profile = manifest.business_profiles[0]
+    snapshot = validate_git_backup_profile(
+        tree,
+        profile,
+        manifest.store_id,
+        manifest.key_id,
+        control,
+    )
+    with verification_publication_binding(tree) as binding:
+        try:
+            validate_git_business_associations(tree, snapshot, binding, control)
+        except KernelError as error:
+            if error.code in {"maintenance_io_cancelled", "maintenance_io_timeout"}:
+                raise
+            raise invalid_state() from None
+    control.checkpoint()
+    return identity

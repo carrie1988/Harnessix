@@ -2940,5 +2940,6 @@ Restore Journal、重绑或默认 Writer，不据此关闭R4。
 R4 Backup v2 候选只读验真切片已接入：复用原 Key 的 verification-only Binding，对已复制且无 sidecar 的
 DELETE-journal GitDB 验证 v2 精确结构、完整认证前缀及 Manifest 剖面身份；验证前后候选字节和目录成员不变。
 后继业务快照 v1 已对同一轮认证捕获的 ProductLink 全历史执行规范编码和逐字节回验，绑定捕获 ID、完整前缀及
-Manifest SHA；当前未实现业务表非空时明确拒绝。跨 Session／Plan／Audit／Artifact／CAS 的逐关联验真、实时
-WAL／SHM 捕获、完整备份入口、恢复与默认 Writer 仍保持关闭。
+Manifest SHA；当前未实现业务表非空时明确拒绝。当前 ProductLink 又逐项核对原 Session/Event、Plan、
+Route/Audit、Approval、Review Artifact、Workspace Transaction 与 CAS，且不读取外部 Workspace。
+实时 WAL／SHM 捕获、其他 Git 业务阶段、完整备份入口、恢复与默认 Writer 仍保持关闭。
