@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -9,15 +10,136 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import ItemStatus, Thread, TurnStatus
-from harnessix.domain.models import ApprovalOutcome, utc_now
+from harnessix.agent.models import (
+    ItemStatus,
+    Thread,
+    ToolCallContent,
+    ToolResultContent,
+    TrustedActionApprovalRequestContent,
+    TurnStatus,
+)
+from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_trial import _approval_decision, _drive_turn
 from tests.agent.helpers import answer
 from tests.delivery.test_trusted_action_patch import _approval
-from tests.evals.test_grader import item
+from tests.evals.test_grader import completed_turn, item
 from tests.evals.test_task_pack_execution import _profile_approval
 from tests.product_config.test_product_patch_rollback import product, publish, result, rollback_step
+
+
+def _patch_approval(*prior_items):
+    case = builtin_coding_eval_task_pack("harnessix-engineering", 2).manifest.case(
+        "agents-dump-compatible-refactor"
+    )
+    call = ToolCallContent(
+        call_id=uuid4(),
+        provider_call_id="patch-approval-test",
+        tool="apply_patch_batch",
+        tool_version="1",
+        effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
+        arguments={
+            "spec_version": "harnessix.workspace-patch-input/v1",
+            "files": [
+                {
+                    "operation": "replace",
+                    "path": case.task.allowed_changed_paths[0],
+                    "expected_sha256": "a" * 64,
+                    "content": "fixed\n",
+                    "mode": 420,
+                }
+            ],
+        },
+        requires_approval=True,
+    )
+    turn = completed_turn().model_copy(update={"items": (*prior_items, item(call))})
+    approval = TrustedActionApprovalRequestContent(
+        approval_id=uuid4(),
+        call_id=call.call_id,
+        presentation="patch_batch",
+        plan_id=uuid4(),
+        plan_fingerprint="1" * 64,
+        execution_fingerprint="2" * 64,
+        request_fingerprint="3" * 64,
+        policy_id="test.policy",
+        policy_version="1",
+        diff_artifact=ArtifactRef(
+            artifact_id=uuid4(),
+            sha256="4" * 64,
+            size_bytes=1,
+            records=1,
+            complete=True,
+            expires_at=utc_now() + timedelta(hours=1),
+        ),
+    )
+    return turn, approval, case
+
+
+def _profile_exit_items(*, returncode: int, trusted: bool = True):
+    turn, _, case = _profile_approval({"profile": "agents-dump-compatible-refactor-check"})
+    call = turn.items[0]
+    output = (
+        {
+            "profile": case.profile_id,
+            "state": "exited",
+            "stop_reason": "exited",
+            "returncode": returncode,
+            "stdout": "fixture",
+            "stderr": "",
+            "complete": True,
+        }
+        if trusted
+        else {"profile": case.profile_id, "state": "running"}
+    )
+    result_item = item(
+        ToolResultContent(
+            call_id=call.content.call_id,
+            outcome="succeeded" if returncode == 0 else "failed",
+            output=output,
+        )
+    )
+    return call, result_item
+
+
+def test_patch_is_rejected_until_fixed_profile_has_failed() -> None:
+    turn, request, case = _patch_approval()
+
+    kind, decision = _approval_decision(turn, request, case)
+
+    assert kind == "rejected"
+    assert decision.outcome is ApprovalOutcome.REJECTED
+    assert decision.reason == "Task Pack要求修改前先运行固定Profile并观察失败基线"
+
+
+def test_passing_baseline_does_not_authorize_a_patch() -> None:
+    turn, request, case = _patch_approval(*_profile_exit_items(returncode=0))
+
+    kind, decision = _approval_decision(turn, request, case)
+
+    assert kind == "rejected"
+    assert decision.outcome is ApprovalOutcome.REJECTED
+    assert decision.reason == "Task Pack要求修改前先运行固定Profile并观察失败基线"
+
+
+def test_failed_baseline_authorizes_an_in_scope_patch() -> None:
+    turn, request, case = _patch_approval(*_profile_exit_items(returncode=1))
+
+    kind, decision = _approval_decision(turn, request, case)
+
+    assert kind == "patch"
+    assert decision.outcome is ApprovalOutcome.APPROVED
+
+
+def test_untrusted_profile_terminal_still_aborts_patch_approval() -> None:
+    turn, request, case = _patch_approval(
+        *_profile_exit_items(returncode=1, trusted=False)
+    )
+
+    with pytest.raises(KernelError) as failure:
+        _approval_decision(turn, request, case)
+
+    assert failure.value.code == "eval_baseline_invalid"
 
 
 @pytest.mark.parametrize(

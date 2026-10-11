@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: current
-version: 4
-code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
+status: reviewing
+version: 5
+code_revision: pending
 owners: [core]
 modules: [product_config, context, evals, models]
 related_adrs:
@@ -302,3 +302,9 @@ flowchart LR
 Artifact两种可逆投影对首Trial累计messages JSON字节分别节省1080、增加270；Beta样本无收益。
 该结果不能等同Token，不实施复杂投影。后继仅[显式启用已有批量提案能力](m09-2e-controlled-real-provider-baseline.md#141-显式v2批量提案减少模型往返不降低评分)，
 并补充[低敏传输诊断](m09-r3-chat-terminal-diagnostics.md)以免再误判失败；两者均不改变历史评分或费用账本。
+
+## 15. 修改前失败基线成为写审批前置条件
+
+v7完整结果证明只靠指令不足：多个Trial先提交Patch、随后只运行一次Profile，虽然修改及该次检查可能成功，仍缺少可验证的失败基线。Task Pack写审批现复用[`profile_observations`](../../src/harnessix/evals/task_pack_observations.py)，只在同一Turn已经取得固定Profile的可信非零退出后批准受限`apply_patch_batch`。没有基线或首个基线已经通过时，沿原审批链持久`REJECTED`并返回固定可纠正原因；状态、停止原因或返回码不可信时仍以`eval_baseline_invalid`中止，不把坏证据降格成普通拒绝。
+
+该门只约束正式评测的写审批，不自动运行Profile、不修改Task Pack、Grader、预算、文件白名单或产品默认审批，也不注入任务答案。范围、参数和删除操作仍先按原边界拒绝；取得失败基线后，Patch仍须通过全部原审批和执行合同。相关232项Task Pack回归通过，但这只是控制链证据；R3仍必须用新候选重跑原10 Case／20 Trial并满足原质量阈值。

@@ -136,6 +136,17 @@ def _approval_call(turn: Turn, approval: TrustedActionApprovalRequestContent) ->
     return calls[0]
 
 
+def _require_failed_baseline(turn: Turn, case: CodingEvalTaskPackCase) -> None:
+    """写审批只接受同一Turn中可信且失败的固定Profile基线。"""
+
+    baseline, _ = _profile_observations(turn, case)
+    if not baseline or baseline[0].passed:
+        raise KernelError(
+            "eval_failed_baseline_required",
+            "Task Pack要求修改前先运行固定Profile并观察失败基线",
+        )
+
+
 def _require_allowed_approval(
     turn: Turn,
     approval: TrustedActionApprovalRequestContent,
@@ -168,6 +179,7 @@ def _require_allowed_approval(
         or any(item.operation == "delete" for item in proposal.files)
     ):
         raise KernelError("eval_approval_denied", "Task Pack Patch超出任务允许变更边界")
+    _require_failed_baseline(turn, case)
     return "patch"
 
 
@@ -180,12 +192,16 @@ def _approval_decision(
     try:
         kind = _require_allowed_approval(turn, approval, case)
     except KernelError as error:
-        if error.code != "eval_approval_denied":
+        if error.code == "eval_failed_baseline_required":
+            reason = "Task Pack要求修改前先运行固定Profile并观察失败基线"
+        elif error.code == "eval_approval_denied":
+            reason = "Task Pack固定审批边界拒绝该请求"
+        else:
             raise
         return "rejected", ApprovalDecision(
             outcome=ApprovalOutcome.REJECTED,
             actor=_AUTOMATED_APPROVAL_ACTOR,
-            reason="Task Pack固定审批边界拒绝该请求",
+            reason=reason,
         )
     return kind, ApprovalDecision(
         outcome=ApprovalOutcome.APPROVED,
