@@ -16,6 +16,7 @@ from harnessix.delivery.trusted_action_contracts import WorkspacePatchInput
 from harnessix.domain.models import ToolDescriptor
 from harnessix.models._anthropic_mapping import build_request as anthropic_request
 from harnessix.models._chat_mapping import build_request as chat_request
+from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from tests.contracts.provider import model_request
 
@@ -78,7 +79,7 @@ def test_actual_provider_payload_preserves_operation_schema(adapter: str) -> Non
     else:
         body, _ = anthropic_request(request, AnthropicConfig(model="test", api_key_env="TEST_KEY"))
         published = body["tools"][0]["input_schema"]
-    assert published == descriptor.input_schema
+    assert published == provider_tool_schema(descriptor.input_schema)
     assert "oneOf" in published["$defs"]["WorkspacePatchFile"]
 
 

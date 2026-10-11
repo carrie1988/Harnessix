@@ -97,27 +97,26 @@ class _ReadBinding:
 _BINDINGS = (
     _ReadBinding(
         "list_files",
-        "分页列出工作区目录；隐藏拒绝路径，不递归、不跟随链接",
+        "分页列出目录；不递归、不跟随链接",
         ListFilesInput,
         ListFilesOutput,
     ),
     _ReadBinding(
         "read_file",
-        "有界读取UTF-8文本页；后续页携带revision作为expected_revision。digest_status=complete时，"
-        "content_sha256是完整原始文件摘要，可用于Patch expected_sha256；"
-        "摘要超限时不提供，不跟随链接",
+        "读取UTF-8文本页；后续页用revision。digest_status=complete时，content_sha256是完整"
+        "文件摘要，可作Patch expected_sha256；不跟随链接",
         ReadFileInput,
         ReadFileSnapshotOutput,
     ),
     _ReadBinding(
         "glob",
-        "在工作区目录内有界定位文件；支持 * ? [] 和 ** 路径段，显式报告截断",
+        "定位文件；支持 * ? [] 和 ** 路径段，显式报告截断",
         GlobInput,
         GlobOutput,
     ),
     _ReadBinding(
         "grep",
-        "工作区目录内按大小写敏感字面量查找命中行，不支持正则；返回片段和 revision",
+        "按大小写敏感字面量查找行，不支持正则；返回片段和revision",
         GrepInput,
         GrepOutput,
     ),
@@ -126,13 +125,13 @@ _BINDINGS = (
 _GIT_BINDINGS = (
     _ReadBinding(
         "git_status",
-        "读取当前仓库的分支和结构化变更状态；不刷新索引、不执行Hook",
+        "读取分支和结构化变更状态；不刷新索引或执行Hook",
         GitStatusInput,
         GitStatusOutput,
     ),
     _ReadBinding(
         "git_diff",
-        "读取当前仓库有界工作区或暂存区差异；禁用外部Diff和textconv",
+        "读取有界工作区或暂存区差异；禁用外部Diff和textconv",
         GitDiffInput,
         GitDiffOutput,
     ),
@@ -265,7 +264,7 @@ def _artifact_descriptor(
     return ToolDescriptor(
         name="read_artifact",
         version=f"1.{contract}",
-        description="分页读取当前会话/工作区的 JSONL Artifact；过期或损坏明确失败",
+        description="分页读取当前会话/工作区JSONL Artifact；过期或损坏失败",
         input_schema=ReadArtifactInput.model_json_schema(),
         effect_class=EffectClass.READ_ONLY,
         risk_level=RiskLevel.LOW,

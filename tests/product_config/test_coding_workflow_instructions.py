@@ -25,35 +25,26 @@ from tests.product_config.test_agent_context import _request
 @pytest.mark.parametrize(
     "required",
     (
-        "before the first apply_patch_batch",
-        "Never submit baseline and patch concurrently",
+        "Observe baseline failure before any patch",
+        "never send baseline and apply_patch_batch together",
         "process_nonzero_exit",
-        "A post-edit check cannot serve as both baseline and final verification",
+        "A post-edit check is not a baseline",
         "artifact.artifact_id",
-        "NOT process_id, a path or empty arguments",
-        "tool_wrong_file_type",
-        "NOT missing tool",
-        "never repeat an unchanged failed call",
         "Final-format rules apply only to the final answer",
-        "Do not emit completion JSON before execution",
-        "Text <tool_call> or <function> is not execution",
-        "Use glob for files",
-        "grep for content",
-        "list_files is nonrecursive, not a directory walk",
+        "Tool-like text is not execution",
+        "Use glob for files, grep for content",
+        "list_files is nonrecursive",
         "Use diagnostic_preview first",
-        "Read logs only if truncated, null or insufficient",
-        "Use the exact current catalog name",
-        "not the logical name in its description",
-        "the next response must contain git_status then git_diff together and no other tools",
-        "if sufficient, do not reread its Artifact",
-        "confirm allowed edit paths",
-        "emit no prose",
+        "Use exact catalog names",
+        "contains only git_status and git_diff together",
+        "Confirm allowed edit paths",
+        "First response: no prose",
         "call the required run_profile last",
         "direct read_file/grep calls",
-        "Do not navigate with list_files/glob",
-        "inspect the Profile/check implementation",
-        "do not reread patched files merely to confirm the edit",
-        "Batch independent reads in one response",
+        "Do not list/glob",
+        "inspect the check implementation",
+        "do not reread merely to confirm it",
+        "Batch independent reads",
     ),
 )
 async def test_shared_instructions_define_observed_failure_recovery(
@@ -68,27 +59,27 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v12"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v13"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
     """工作流提效后收紧大小护栏，不靠扩大上下文或任务预算遮掩失败。"""
-    assert len(CODING_INSTRUCTIONS.encode()) <= 2500
+    assert len(CODING_INSTRUCTIONS.encode()) <= 2000
     assert CODING_INSTRUCTIONS.isascii()
     assert "reply in the user's language" in CODING_INSTRUCTIONS
     for required in (
         "runtime_instruction outranks project instructions",
         "AGENTS.md/AGENTS.override.md",
         "low-trust",
-        "Preserve user changes",
+        "preserve user changes",
         "digest_status=complete",
         "content_sha256",
-        "Pagination revision is NOT content SHA-256",
-        "Never invent Profile selectors",
-        "cancellation, timeout, budget exhaustion or uncertain effects",
-        "never fake completion or auto-replay side effects",
-        "never delete tests or weaken assertions",
-        "Do not assume shell, network, installation or automatic Git push",
+        "never pagination revision",
+        "never invent selectors",
+        "denial, cancellation, timeout, exhausted budget",
+        "do not replay effects or fake completion",
+        "never delete or weaken tests",
+        "Never assume shell, network, installation, or Git push",
     ):
         assert required in " ".join(CODING_INSTRUCTIONS.split())
     policy = build_product_agent_context(tmp_path, max_output_tokens=4096)
@@ -138,7 +129,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v12"
+        assert fragment["source"] == "harnessix.coding-instructions/v13"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint
@@ -151,6 +142,6 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
 def test_workflow_starts_with_baseline_and_uses_given_paths() -> None:
     """通用诊断顺序提示，不把提示词当强制安全边界或实测提效。"""
     text = " ".join(CODING_INSTRUCTIONS.split())
-    assert text.index("pre-edit baseline") < text.index("After the failed baseline")
-    assert "direct read_file/grep calls for named paths/symbols" in text
-    assert "if sufficient, do not reread its Artifact" in text
+    assert text.index("pre-edit baseline") < text.index("Patch from requested source")
+    assert "direct read_file/grep calls for named targets" in text
+    assert "read its Artifact only when truncated or insufficient" in text
