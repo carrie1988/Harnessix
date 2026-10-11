@@ -30,6 +30,7 @@ from scripts.provider_reverification_chain import (
 from scripts.provider_reverification_plan import (
     VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
+    VerificationRollingReverificationPlan,
     parse_reverification_plan,
     snapshot_reverification_plan,
     validate_reverification_plan,
@@ -824,6 +825,14 @@ class VerificationBudgetLedger:
                 raise KernelError("verification_budget_unresolved", "复验身份与持久授权不一致")
             validate_reverification_plan(self.period, plan)
             allowed = {str(r.request_id) for r in plan.carried_requests}
+            if isinstance(plan, VerificationRollingReverificationPlan):
+                # 每笔未知请求继续保留完整预留；只有同一授权下的新请求可恢复。
+                allowed.update(
+                    request["request_id"]
+                    for request in self.period["requests"][plan.prior_request_count :]
+                    if request["status"] == "unknown"
+                    and request.get("reverification_id") == str(plan.reverification_id)
+                )
             if continuation is not None:
                 allowed = {str(r.request_id) for r in continuation.carried_requests}
         if any(
