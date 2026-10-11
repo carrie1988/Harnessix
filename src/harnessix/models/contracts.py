@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
-from typing import Annotated, Literal, Protocol
+from typing import Annotated, Literal, Protocol, Self
 from uuid import UUID
 
-from pydantic import Field, JsonValue
+from pydantic import Field, JsonValue, model_validator
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import Budget, Item, Usage
@@ -23,6 +23,19 @@ class ModelRequest(ContractModel):
     instructions: str | None = Field(default=None, min_length=1, max_length=1_000_000)
     budget: Budget
     remaining_tokens: int | None = Field(default=None, ge=1)
+    tool_choice: Literal["auto", "required"] = "auto"
+    forced_tool: str | None = Field(default=None, min_length=1, max_length=256)
+
+    @model_validator(mode="after")
+    def validate_tool_choice(self) -> Self:
+        names = {tool.name for tool in self.tools}
+        if self.tool_choice == "required" and not names:
+            raise ValueError("required工具选择至少需要一个可见工具")
+        if self.forced_tool is not None and (
+            self.tool_choice != "required" or self.forced_tool not in names
+        ):
+            raise ValueError("强制工具必须来自required可见目录")
+        return self
 
 
 class ResponseStarted(ContractModel):

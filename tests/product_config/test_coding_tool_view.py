@@ -18,6 +18,7 @@ from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
 _PROFILE = "run_profile.fixed-check"
 _PATCH = "apply_patch_batch"
 _ROLLBACK = "rollback_workspace_patch"
+_Result = tuple[str, str, str | None] | tuple[str, str, str | None, object]
 
 
 def _descriptor(name: str, effect: EffectClass = EffectClass.READ_ONLY) -> ToolDescriptor:
@@ -52,9 +53,10 @@ def _definitions(*, second_profile: bool = False) -> tuple[ToolDescriptor, ...]:
     return tuple(values)
 
 
-def _turn(*results: tuple[str, str, str | None]) -> Turn:
+def _turn(*results: _Result) -> Turn:
     items: list[Item] = []
-    for tool, outcome, error_code in results:
+    for result_spec in results:
+        tool, outcome, error_code = result_spec[:3]
         call_id = uuid4()
         effect = (
             EffectClass.NON_IDEMPOTENT_WRITE
@@ -68,11 +70,15 @@ def _turn(*results: tuple[str, str, str | None]) -> Turn:
             tool_version="1",
             effect_class=effect,
             requires_approval=effect != EffectClass.READ_ONLY,
-            arguments={},
+            arguments=({"files": [{"path": "src/example.py"}]} if tool == _PATCH else {}),
+        )
+        default_output = (
+            {"path": "src/example.py"} if tool == "read_file" and outcome == "succeeded" else None
         )
         result = ToolResultContent(
             call_id=call_id,
             outcome=outcome,
+            output=result_spec[3] if len(result_spec) == 4 else default_output,
             error=(
                 AgentFailure(code=error_code, message="failed") if error_code is not None else None
             ),
@@ -98,12 +104,12 @@ def _names(turn: Turn, *, second_profile: bool = False) -> set[str]:
         turn,
         _definitions(second_profile=second_profile),
     )
-    return {item.name for item in selected}
+    return {item.name for item in selected.tools}
 
 
 def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
     initial = _names(_turn())
-    assert _PROFILE in initial and _PATCH in initial
+    assert _PROFILE in initial and _PATCH not in initial
     assert not {"git_status", "git_diff"} & initial
     assert _ROLLBACK not in initial
 
@@ -123,7 +129,14 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
         (_PATCH, "succeeded", None),
         (_PROFILE, "failed", "process_nonzero_exit"),
     )
-    assert _names(correction) == {_PATCH, "read_file", "read_artifact"}
+    assert _names(correction) == {"read_file", "read_artifact"}
+    correction_read = _turn(
+        (_PROFILE, "failed", "process_nonzero_exit"),
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "failed", "process_nonzero_exit"),
+        ("read_file", "succeeded", None),
+    )
+    assert _names(correction_read) == {_PATCH, "read_file", "read_artifact"}
 
     validated = _turn(
         (_PROFILE, "failed", "process_nonzero_exit"),
@@ -141,7 +154,7 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
             ).items
         }
     )
-    assert _names(status_only) == {"git_status", "git_diff"}
+    assert _names(status_only) == {"git_diff"}
     closed = _turn(
         (_PROFILE, "failed", "process_nonzero_exit"),
         (_PATCH, "succeeded", None),
@@ -154,7 +167,41 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
 
 def test_ambiguous_or_infrastructure_workflow_keeps_full_catalog() -> None:
     definitions = _definitions(second_profile=True)
-    assert CodingWorkflowToolView().select(_turn(), definitions) == definitions
+    assert CodingWorkflowToolView().select(_turn(), definitions).tools == definitions
 
     unavailable = _turn((_PROFILE, "failed", "process_timeout"))
-    assert CodingWorkflowToolView().select(unavailable, _definitions()) == _definitions()
+    assert CodingWorkflowToolView().select(unavailable, _definitions()).tools == _definitions()
+
+
+def test_recognized_workflow_requires_tools_and_forces_post_patch_profile() -> None:
+    initial = CodingWorkflowToolView().select(_turn(), _definitions())
+    assert initial.choice == "required" and initial.forced_tool is None
+
+    patched = CodingWorkflowToolView().select(
+        _turn(
+            (_PROFILE, "failed", "process_nonzero_exit"),
+            (_PATCH, "succeeded", None),
+        ),
+        _definitions(),
+    )
+    assert {tool.name for tool in patched.tools} == {_PROFILE}
+    assert patched.choice == "required" and patched.forced_tool == _PROFILE
+
+
+def test_complete_profile_diagnostic_does_not_advertise_artifact_read() -> None:
+    complete_diagnostic = {
+        "diagnostic_preview": {
+            "stdout": {"text": "", "truncated": False},
+            "stderr": {"text": "assert failed", "truncated": False},
+        }
+    }
+    correction = CodingWorkflowToolView().select(
+        _turn(
+            (_PROFILE, "failed", "process_nonzero_exit"),
+            (_PATCH, "succeeded", None),
+            (_PROFILE, "failed", "process_nonzero_exit", complete_diagnostic),
+        ),
+        _definitions(),
+    )
+    assert {tool.name for tool in correction.tools} == {"read_file"}
+    assert correction.choice == "required" and correction.forced_tool is None

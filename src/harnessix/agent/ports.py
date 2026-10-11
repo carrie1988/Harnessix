@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.execution import ToolExecutionScope
@@ -39,6 +40,15 @@ class ScopedToolRuntime(Protocol):
     ) -> ToolResultContent | ArtifactToolResult: ...
 
 
+@dataclass(frozen=True, slots=True)
+class ModelToolSelection:
+    """Tools exposed for one model step and the required call behavior."""
+
+    tools: tuple[ToolDescriptor, ...]
+    choice: Literal["auto", "required"] = "auto"
+    forced_tool: str | None = None
+
+
 class ModelToolView(Protocol):
     """Select the exact registered tools advertised for the next model step."""
 
@@ -46,7 +56,7 @@ class ModelToolView(Protocol):
         self,
         turn: Turn,
         definitions: tuple[ToolDescriptor, ...],
-    ) -> tuple[ToolDescriptor, ...]: ...
+    ) -> ModelToolSelection: ...
 
 
 class NoTools:

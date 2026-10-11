@@ -7,7 +7,7 @@ import pytest
 from harnessix.agent.errors import AgentFailure, FailureCategory
 from harnessix.agent.models import Item, ItemStatus, TextContent, ToolResultContent
 from harnessix.models._anthropic_mapping import build_request
-from harnessix.models._history import InvalidModelRequest
+from harnessix.models._history import InvalidModelRequest, tool_alias
 from harnessix.models.anthropic import AnthropicProvider
 from harnessix.models.config import AnthropicConfig, ChatCapabilities
 from tests.contracts.provider import model_request
@@ -57,6 +57,26 @@ def test_instructions_use_anthropic_system_field() -> None:
     body, _ = build_request(request, AnthropicConfig(model="test"))
     assert body["system"] == "runtime > user > project"
     assert body["messages"][0]["role"] == "user"
+
+
+@pytest.mark.parametrize("forced", [False, True])
+def test_required_tool_choice_is_projected_to_anthropic_wire(forced: bool) -> None:
+    request = model_request(with_tools=True)
+    tool_name = request.tools[0].name
+    request = request.model_copy(
+        update={
+            "tool_choice": "required",
+            "forced_tool": tool_name if forced else None,
+        }
+    )
+
+    body, _ = build_request(request, AnthropicConfig(model="test"))
+
+    assert body["tool_choice"] == {
+        "type": "tool" if forced else "any",
+        "disable_parallel_tool_use": False,
+        **({"name": tool_alias(tool_name)} if forced else {}),
+    }
 
 
 @pytest.mark.parametrize(

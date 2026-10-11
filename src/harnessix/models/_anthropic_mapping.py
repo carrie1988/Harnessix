@@ -92,9 +92,17 @@ def build_request(
     if tools:
         body["tools"] = tools
         body["tool_choice"] = {
-            "type": "auto",
+            "type": (
+                "tool"
+                if request.forced_tool is not None
+                else "any"
+                if request.tool_choice == "required"
+                else "auto"
+            ),
             "disable_parallel_tool_use": not config.capabilities.parallel_tool_calls,
         }
+        if request.forced_tool is not None:
+            body["tool_choice"]["name"] = tool_alias(request.forced_tool)
     if len(encode_json(body).encode()) > config.max_request_bytes:
         raise InvalidModelRequest("模型请求超过大小上限")
     return body, names

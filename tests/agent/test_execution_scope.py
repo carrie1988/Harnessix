@@ -10,6 +10,7 @@ from harnessix.agent.approvals import request_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import ToolResultContent, TurnStatus
+from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import EffectClass
@@ -70,7 +71,7 @@ async def test_legacy_selection_does_not_autodetect_scoped_method(tmp_path):
 async def test_model_tool_view_is_the_execution_boundary_for_one_request(tmp_path):
     class EmptyView:
         def select(self, turn, definitions):
-            return ()
+            return ModelToolSelection(())
 
     tools = RecordingTools()
     provider = ScriptedProvider([tool_step("test.read"), answer()])

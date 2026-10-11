@@ -71,6 +71,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.patching import execution_approval, inspection_scope, result_content
 from harnessix.agent.ports import (
+    ModelToolSelection,
     ModelToolView,
     NoTools,
     PatchBatchRuntime,
@@ -1874,15 +1875,18 @@ class AgentRuntime:
         self,
         turn: Turn,
         available: tuple[ToolDescriptor, ...],
-    ) -> tuple[ToolDescriptor, ...]:
+    ) -> ModelToolSelection:
         """Apply a model-facing view without changing executable registrations."""
 
         if self._model_tool_view is None:
-            return available
-        selected = self._model_tool_view.select(
+            return ModelToolSelection(available)
+        selection = self._model_tool_view.select(
             turn.model_copy(deep=True),
             tuple(definition.model_copy(deep=True) for definition in available),
         )
+        if type(selection) is not ModelToolSelection:
+            raise KernelError("model_tool_view_invalid", "模型工具视图必须返回选择契约")
+        selected = selection.tools
         selected_by_name = {definition.name: definition for definition in selected}
         available_by_name = {definition.name: definition for definition in available}
         if len(selected_by_name) != len(selected) or any(
@@ -1894,7 +1898,15 @@ class AgentRuntime:
                 "model_tool_view_invalid",
                 "模型工具视图只能选择当前已注册的原始工具契约",
             )
-        return tuple(definition for definition in available if definition.name in selected_by_name)
+        if (selection.choice == "required" and not selected) or (
+            selection.forced_tool is not None
+            and (selection.choice != "required" or selection.forced_tool not in selected_by_name)
+        ):
+            raise KernelError("model_tool_view_invalid", "模型工具选择模式与可见目录不一致")
+        ordered = tuple(
+            definition for definition in available if definition.name in selected_by_name
+        )
+        return ModelToolSelection(ordered, selection.choice, selection.forced_tool)
 
     async def _drive(self, thread_id: UUID, turn_id: UUID, token: CancelToken) -> Turn:
         """推进单个Turn的Context、模型与Tool循环，直到等待外部输入或进入终态。"""
@@ -1942,7 +1954,8 @@ class AgentRuntime:
                     or (self._patches is not None and d.name == "apply_patch")
                     or (self._patch_batches is not None and d.name == "apply_patch_batch")
                 )
-                tools = self._select_model_tools(turn, available_tools)
+                tool_selection = self._select_model_tools(turn, available_tools)
+                tools = tool_selection.tools
                 instructions: str | None = None
                 if self._context is not None or self._async_context is not None:
                     with self._telemetry.operation(
@@ -2002,6 +2015,8 @@ class AgentRuntime:
                     instructions=instructions,
                     budget=turn.budget,
                     remaining_tokens=turn.budget.max_tokens - turn.usage.total_tokens,
+                    tool_choice=tool_selection.choice,
+                    forced_tool=tool_selection.forced_tool,
                 )
                 try:
                     await self._sample(request, token)

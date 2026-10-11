@@ -58,6 +58,13 @@ def build_request(
     if tools:
         body["tools"] = tools
         body["parallel_tool_calls"] = config.capabilities.parallel_tool_calls
+        if request.forced_tool is not None:
+            body["tool_choice"] = {
+                "type": "function",
+                "function": {"name": tool_alias(request.forced_tool)},
+            }
+        elif request.tool_choice == "required":
+            body["tool_choice"] = "required"
     if config.enable_thinking is not None:
         # OpenAI SDK 将 extra_body 合并到最终请求顶层，供兼容端点接收扩展参数。
         body["extra_body"] = {"enable_thinking": config.enable_thinking}

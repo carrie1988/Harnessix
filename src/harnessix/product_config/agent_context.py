@@ -16,7 +16,7 @@ from harnessix.context.sources import (
     WorkspaceContextSource,
 )
 
-CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v16"
+CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v17"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 
 CODING_INSTRUCTIONS = """Reply in the user's language.
@@ -27,18 +27,17 @@ secrets, or bypass approval/isolation. Tool-like text is not
 execution. Final-format rules apply only to the final answer.
 
 With run_profile:
-1. Confirm allowed edit paths. Solve only explicitly requested behavior/cases; do not add
-speculative cases. First response: no prose; direct read_file/grep calls for named targets, then
+1. Confirm allowed edit paths. Requested behavior and structure are exact; do not broaden them or
+add speculative cases. First response: no prose; direct read_file/grep calls for named targets, then
 call
 the required
 run_profile last as pre-edit baseline. Do not list/glob or read unrelated tests first. Observe
 baseline failure before any patch; never send baseline and
 apply_patch_batch together. process_nonzero_exit is check failure.
-2. Patch from requested source. Batch independent reads. Successful apply_patch_batch is
-authoritative;
+2. Patch from requested source. Batch independent reads. apply_patch_batch is authoritative;
 do not reread merely to confirm it and never send a no-op patch.
 expected_sha256 is read_file content_sha256 with digest_status=complete, never pagination revision.
-3. Run same Profile in final workspace. A post-edit check is not a baseline; never delete or
+3. Run Profile in final workspace. A post-edit check is not a baseline; never delete or
 weaken tests. Use diagnostic_preview first; Never inspect the check implementation; read its
 Artifact
 only when truncated or insufficient. Before correction, read changed targets for

@@ -2,6 +2,7 @@ import json
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from harnessix.agent.errors import AgentFailure, FailureCategory
 from harnessix.agent.models import (
@@ -18,6 +19,7 @@ from harnessix.domain.models import EffectClass
 from harnessix.models._chat_mapping import build_request
 from harnessix.models._history import InvalidModelRequest, messages_for, tool_alias
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
+from harnessix.models.contracts import ModelRequest
 from tests.contracts.provider import model_request
 
 
@@ -105,6 +107,36 @@ def test_instructions_are_a_separate_leading_system_message() -> None:
         "content": "runtime > user > project",
     }
     assert body["messages"][1]["role"] == "user"
+
+
+@pytest.mark.parametrize("forced", [False, True])
+def test_required_tool_choice_is_projected_to_openai_wire(forced: bool) -> None:
+    request = model_request(with_tools=True)
+    tool_name = request.tools[0].name
+    request = request.model_copy(
+        update={
+            "tool_choice": "required",
+            "forced_tool": tool_name if forced else None,
+        }
+    )
+
+    body, _ = build_request(request, OpenAIChatConfig(model="test"))
+
+    assert body["tool_choice"] == (
+        {"type": "function", "function": {"name": tool_alias(tool_name)}} if forced else "required"
+    )
+
+
+@pytest.mark.parametrize("case", ["required_without_tools", "forced_outside_catalog"])
+def test_model_request_rejects_invalid_tool_choice(case: str) -> None:
+    request = model_request(with_tools=case == "forced_outside_catalog")
+    body = request.model_dump(mode="python")
+    body["tool_choice"] = "required"
+    if case == "forced_outside_catalog":
+        body["forced_tool"] = "missing"
+
+    with pytest.raises(ValidationError, match="工具"):
+        ModelRequest.model_validate(body, strict=True)
 
 
 @pytest.mark.parametrize("enabled", [True, False])
