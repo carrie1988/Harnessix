@@ -44,13 +44,15 @@ from tests.product_config.test_agent_context import _request
         "Read logs only if truncated, null or insufficient",
         "Use the exact current catalog name",
         "not the logical name in its description",
-        "After final checks: submit git_status then git_diff in one response, then final answer",
+        "the next response must contain git_status then git_diff together and no other tools",
         "if sufficient, do not reread its Artifact",
         "confirm allowed edit paths",
-        "put independent direct reads/searches before the baseline call",
-        "put the baseline last",
-        "call read_file/grep directly",
-        "do not navigate with list_files/glob first",
+        "emit no prose",
+        "call the required run_profile last",
+        "direct read_file/grep calls",
+        "Do not navigate with list_files/glob",
+        "inspect the Profile/check implementation",
+        "do not reread patched files merely to confirm the edit",
         "Batch independent reads in one response",
     ),
 )
@@ -66,7 +68,7 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v11"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v12"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
@@ -136,7 +138,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v11"
+        assert fragment["source"] == "harnessix.coding-instructions/v12"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint
@@ -149,6 +151,6 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
 def test_workflow_starts_with_baseline_and_uses_given_paths() -> None:
     """通用诊断顺序提示，不把提示词当强制安全边界或实测提效。"""
     text = " ".join(CODING_INSTRUCTIONS.split())
-    assert text.index("observe the pre-edit baseline") < text.index("Read source/tests")
-    assert "use given paths directly, search only if unclear" in text
+    assert text.index("pre-edit baseline") < text.index("After the failed baseline")
+    assert "direct read_file/grep calls for named paths/symbols" in text
     assert "if sufficient, do not reread its Artifact" in text
