@@ -1,8 +1,11 @@
 {
   "schema": "harnessix.beta-validation/v1",
   "task_id": "BETA-001",
-  "status": "READY_FOR_USER_ACCEPTANCE",
-  "accepted_by_user": false,
+  "status": "ACCEPTED",
+  "accepted_by_user": true,
+  "accepted_at": "2026-10-11T17:37:55+08:00",
+  "acceptance_source": "user_explicit_chat_confirmation",
+  "completed_task_count": 1,
   "agent_approvals": {
     "login_password_service": "9a5b662b-4fe6-545b-b3f3-ba6fdece83db",
     "auth_controller": "7bd98374-3a78-50b0-9b92-4c2865b84730",
