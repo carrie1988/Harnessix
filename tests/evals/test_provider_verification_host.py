@@ -82,6 +82,7 @@ def test_local_http_proxy_is_explicit_and_does_not_enable_environment_proxy(monk
     transports = []
     providers = []
     transport_marker = object()
+    limits_marker = object()
 
     def transport(**kwargs):
         transports.append(kwargs)
@@ -92,6 +93,7 @@ def test_local_http_proxy_is_explicit_and_does_not_enable_environment_proxy(monk
         return object()
 
     monkeypatch.setattr(host.httpx, "AsyncHTTPTransport", transport)
+    monkeypatch.setattr(host.httpx, "Limits", lambda **kwargs: (limits_marker, kwargs))
     monkeypatch.setattr(host, "OpenAIChatProvider", provider)
     config_marker = object()
     assert host._provider(config_marker, "fixture-key", None) is not None
@@ -99,7 +101,21 @@ def test_local_http_proxy_is_explicit_and_does_not_enable_environment_proxy(monk
     assert host._local_http_proxy(None) is None
     proxy = host._local_http_proxy("http://127.0.0.1:7890")
     assert host._provider(config_marker, "fixture-key", proxy) is not None
-    assert transports == [{"proxy": proxy, "trust_env": False}]
+    assert transports == [
+        {
+            "proxy": proxy,
+            "trust_env": False,
+            "retries": 1,
+            "limits": (
+                limits_marker,
+                {
+                    "max_connections": 1,
+                    "max_keepalive_connections": 1,
+                    "keepalive_expiry": 60,
+                },
+            ),
+        }
+    ]
     assert providers[-1] == (config_marker, "fixture-key", transport_marker)
 
 

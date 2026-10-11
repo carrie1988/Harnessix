@@ -246,7 +246,16 @@ def _provider(
     return OpenAIChatProvider(
         config,
         api_key=api_key,
-        transport=httpx.AsyncHTTPTransport(proxy=local_http_proxy, trust_env=False),
+        transport=httpx.AsyncHTTPTransport(
+            proxy=local_http_proxy,
+            trust_env=False,
+            retries=1,
+            limits=httpx.Limits(
+                max_connections=1,
+                max_keepalive_connections=1,
+                keepalive_expiry=60,
+            ),
+        ),
     )
 
 
@@ -300,6 +309,10 @@ async def run_budgeted_suite(
                     "transport": {
                         "spec_version": "harnessix.verification-local-http-proxy/v1",
                         "endpoint": proxy,
+                        "connect_retries": 1,
+                        "max_connections": 1,
+                        "max_keepalive_connections": 1,
+                        "keepalive_expiry_seconds": 60,
                     },
                 }
             )

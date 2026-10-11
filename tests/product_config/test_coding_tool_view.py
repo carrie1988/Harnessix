@@ -17,6 +17,7 @@ from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
 
 _PROFILE = "run_profile.fixed-check"
 _PATCH = "apply_patch_batch"
+_ROLLBACK = "rollback_workspace_patch"
 
 
 def _descriptor(name: str, effect: EffectClass = EffectClass.READ_ONLY) -> ToolDescriptor:
@@ -43,6 +44,7 @@ def _definitions(*, second_profile: bool = False) -> tuple[ToolDescriptor, ...]:
         _descriptor("git_diff"),
         _descriptor(_PROFILE, EffectClass.NON_IDEMPOTENT_WRITE),
         _descriptor(_PATCH, EffectClass.NON_IDEMPOTENT_WRITE),
+        _descriptor(_ROLLBACK, EffectClass.NON_IDEMPOTENT_WRITE),
     ]
     if second_profile:
         values.append(_descriptor("run_profile.other-check", EffectClass.NON_IDEMPOTENT_WRITE))
@@ -102,6 +104,7 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
     initial = _names(_turn())
     assert _PROFILE in initial and _PATCH in initial
     assert not {"git_status", "git_diff"} & initial
+    assert _ROLLBACK not in initial
 
     baseline_failed = _turn((_PROFILE, "failed", "process_nonzero_exit"))
     editing = _names(baseline_failed)

@@ -10,10 +10,13 @@ from harnessix.agent.models import (
     ToolResultContent,
     Turn,
 )
+from harnessix.delivery.rollback_action import WORKSPACE_ROLLBACK_TOOL
+from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import EffectClass, ToolDescriptor
 
-_PATCH_TOOLS = frozenset({"apply_patch", "apply_patch_batch"})
+_PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
+_HIDDEN_WORKFLOW_ACTIONS = frozenset({WORKSPACE_ROLLBACK_TOOL})
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,7 +58,7 @@ class CodingWorkflowToolView:
             or not _GIT_REVIEW_TOOLS <= by_name.keys()
             or any(
                 definition.effect_class != EffectClass.READ_ONLY
-                and definition.name not in {*profiles, *patches}
+                and definition.name not in {*profiles, *patches, *_HIDDEN_WORKFLOW_ACTIONS}
                 for definition in definitions
             )
         ):
@@ -74,7 +77,11 @@ class CodingWorkflowToolView:
         )
 
         if not profile_results:
-            names = {profile} if last_patch >= 0 else set(by_name) - _GIT_REVIEW_TOOLS
+            names = (
+                {profile}
+                if last_patch >= 0
+                else set(by_name) - _GIT_REVIEW_TOOLS - _HIDDEN_WORKFLOW_ACTIONS
+            )
             return tuple(item for item in definitions if item.name in names)
 
         validation = profile_results[-1]
