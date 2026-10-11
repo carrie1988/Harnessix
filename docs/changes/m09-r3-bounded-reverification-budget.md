@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
-status: current
-version: 8
-code_revision: 6b4c8f3a4490fb748721a5d59e891047ca93e770
+status: reviewing
+version: 9
+code_revision: pending
 owners: [core]
 modules: [evals, models]
 related_adrs:
@@ -18,6 +18,7 @@ related_tests:
   - tests/evals/test_beta_instruct_bounds.py
   - tests/evals/test_beta_coder_flash_bounds.py
   - tests/evals/test_beta_max_bounds.py
+  - tests/evals/test_beta_qwen38_max_bounds.py
   - tests/evals/test_beta_budget_continuation.py
 supersedes: []
 ---
@@ -65,6 +66,14 @@ Max首请求有完整usage，但因缺失/无效工具名而无成功Provider终
 只追加到原账本，冻结59件请求前缀及未决原件；不结算旧请求、不重新登记60/10计划、不授予新的次数或金额。
 仅`VerificationBetaTaskBudgetPlan`可配此记录；旧5元及1/4次合同原义不变，旧Owner/旧Reader拒绝新承接。
 继续前仍足额预留，费用累计含1.341082元已知估算及4.05504元未决；新增未决立即停止。
+
+2026-10-11只读模型目录确认旧快照不可用、北京`qwen3.8-max`可用；该查询不产生模型推理费用。
+[官方模型页](https://help.aliyun.com/zh/model-studio/qwen3-8-max)确认Function Calling、非思考模式及
+12/36元每百万Token原价。新`BailianBetaQwen38MaxVerificationBounds`不放宽Beta累计10元：
+本次宿主把HTTP请求体与可结算输入同时限制为250000，输出仍为3072，发送前全额预留
+`(250000×12＋3072×36)/1000000 = 3.110592`元；请求体限制进入Guard指纹。
+返回模型不符、用量不完整、输入或输出越界时保留全部预留并停止。该边界只是下一候选的安全前置；
+当前账本仍为67请求、已知估算1.700956元、未决预留4.05504元，尚未据此发送新请求，Beta完成数仍为0。
 
 该承接已登记，后继三轮实际增加3、3、1次请求。前两轮结算并拒绝不合格提案；第三轮再次缺失工具名，
 按原规则停止。当前66请求、估算1.631434元、未决预留8.11008元，Beta余量0.258486元；旧记录未改写。

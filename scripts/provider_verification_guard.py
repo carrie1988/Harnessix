@@ -71,6 +71,7 @@ class BailianVerificationBounds:
     purpose: ClassVar[str] = "engineering-suite-model-request"
     guard_version: ClassVar[str] = "harnessix.bailian-verification-request-guard/v1"
     maximum_input_tokens: ClassVar[int] = 997_952
+    maximum_request_bytes: ClassVar[int | None] = None
     # 单位为毫元/百万Token，避免1.5等阶梯单价经过浮点运算。
     price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
         (32_000, 4_000, 16_000),
@@ -91,6 +92,14 @@ class BailianVerificationBounds:
             or not (self.valid_from <= now < self.valid_until)
             or type(self.max_output_tokens) is not int
             or not 1 <= self.max_output_tokens <= 4096
+            or (
+                self.maximum_request_bytes is not None
+                and (
+                    type(self.maximum_request_bytes) is not int
+                    or not 1024 <= self.maximum_request_bytes <= 16_777_216
+                    or self.maximum_input_tokens > self.maximum_request_bytes
+                )
+            )
         ):
             raise KernelError("verification_price_unavailable", "验证价格窗口或输出边界不可用")
 
@@ -153,6 +162,8 @@ class BailianVerificationBounds:
                 "scope": "single-suite",
                 "automatic_retry": False,
             }
+        if self.maximum_request_bytes is not None:
+            binding["maximum_request_bytes"] = self.maximum_request_bytes
         return digest(binding)
 
 
@@ -213,6 +224,21 @@ class BailianBetaMaxVerificationBounds(BailianBetaVerificationBounds):
         (32_000, 6_000, 24_000),
         (128_000, 10_000, 40_000),
         (262_144, 15_000, 60_000),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class BailianBetaQwen38MaxVerificationBounds(BailianBetaVerificationBounds):
+    """仅BETA-001的Qwen3.8 Max北京快照价与本次请求上限。"""
+
+    model: ClassVar[str] = "qwen3.8-max"
+    price_source: ClassVar[str] = "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
+    guard_version: ClassVar[str] = "harnessix.bailian-beta-qwen38-max-request-guard/v1"
+    # 当前Beta输入远小于该值；HTTP Adapter必须同时限制请求体，才能在剩余额度内足额预留。
+    maximum_input_tokens: ClassVar[int] = 250_000
+    maximum_request_bytes: ClassVar[int] = 250_000
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
+        (1_000_000, 12_000, 36_000),
     )
 
 
