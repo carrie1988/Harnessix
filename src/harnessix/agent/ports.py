@@ -56,7 +56,7 @@ class ModelToolView(Protocol):
         self,
         turn: Turn,
         definitions: tuple[ToolDescriptor, ...],
-    ) -> ModelToolSelection: ...
+    ) -> ModelToolSelection | tuple[ToolDescriptor, ...]: ...
 
 
 class NoTools:

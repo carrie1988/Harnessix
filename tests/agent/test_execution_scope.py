@@ -71,7 +71,7 @@ async def test_legacy_selection_does_not_autodetect_scoped_method(tmp_path):
 async def test_model_tool_view_is_the_execution_boundary_for_one_request(tmp_path):
     class EmptyView:
         def select(self, turn, definitions):
-            return ModelToolSelection(())
+            return ()
 
     tools = RecordingTools()
     provider = ScriptedProvider([tool_step("test.read"), answer()])
@@ -89,6 +89,29 @@ async def test_model_tool_view_is_the_execution_boundary_for_one_request(tmp_pat
     results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]
     assert len(results) == 1 and results[0].error is not None
     assert results[0].error.code == "unknown_tool"
+
+
+async def test_required_model_tool_view_rejects_plain_text_completion(tmp_path):
+    class RequiredView:
+        def select(self, turn, definitions):
+            return ModelToolSelection(definitions, "required", definitions[0].name)
+
+    tools = RecordingTools()
+    provider = ScriptedProvider([answer()])
+    async with AgentRuntime(
+        SQLiteSessionStore(tmp_path / "s.db"),
+        provider,
+        tools,
+        model_tool_view=RequiredView(),
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "必须调用工具", request_id="required")
+
+    assert turn.status == TurnStatus.FAILED and turn.error is not None
+    assert turn.error.code == "invalid_provider_output"
+    assert provider.requests[0].tool_choice == "required"
+    assert provider.requests[0].forced_tool == "test.read"
+    assert not tools.calls
 
 
 async def test_scope_comes_from_durable_state_not_model_arguments(tmp_path):

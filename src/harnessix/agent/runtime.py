@@ -1880,11 +1880,15 @@ class AgentRuntime:
 
         if self._model_tool_view is None:
             return ModelToolSelection(available)
-        selection = self._model_tool_view.select(
+        selected_view = self._model_tool_view.select(
             turn.model_copy(deep=True),
             tuple(definition.model_copy(deep=True) for definition in available),
         )
-        if type(selection) is not ModelToolSelection:
+        if type(selected_view) is tuple:
+            selection = ModelToolSelection(selected_view)
+        elif type(selected_view) is ModelToolSelection:
+            selection = selected_view
+        else:
             raise KernelError("model_tool_view_invalid", "模型工具视图必须返回选择契约")
         selected = selection.tools
         selected_by_name = {definition.name: definition for definition in selected}
@@ -2655,6 +2659,15 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
+        completed_calls = tuple(
+            proposal for proposal in proposals if isinstance(proposal, ToolCallCompleted)
+        )
+        if request.tool_choice == "required" and not completed_calls:
+            raise KernelError("invalid_provider_output", "Provider 未返回要求的工具调用")
+        if request.forced_tool is not None and any(
+            proposal.tool != request.forced_tool for proposal in completed_calls
+        ):
+            raise KernelError("invalid_provider_output", "Provider 未遵守强制工具选择")
         advertised = {definition.name: definition for definition in request.tools}
         proposal_definitions = (
             advertised if self._model_tool_view is not None else self._definitions
