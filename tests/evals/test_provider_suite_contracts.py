@@ -24,6 +24,7 @@ def test_provider_suite_config_binds_complete_pack_provider_price_and_budget(
     assert config.provider_config.max_attempts == 1
     assert config.provider_config.io_timeout_seconds == 180
     assert config.provider_config.capabilities.parallel_tool_calls is False
+    assert config.provider_config.enable_thinking is False
     assert len(config.fingerprint) == 64
     assert config.provider_config.api_key_env == "DASHSCOPE_API_KEY"
     assert "api_key" not in type(config.provider_config).model_fields
@@ -35,6 +36,8 @@ def test_provider_suite_config_binds_complete_pack_provider_price_and_budget(
         ("model", "another-model", "环境与Provider"),
         ("max_attempts", 2, "禁止Provider自动重试"),
         ("max_output_tokens", 4097, "输出上限"),
+        ("enable_thinking", None, "显式关闭思考模式"),
+        ("enable_thinking", True, "显式关闭思考模式"),
     ],
 )
 def test_provider_suite_config_rejects_execution_drift(

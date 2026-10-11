@@ -77,6 +77,8 @@ class CodingEvalCampaignRunConfig(CampaignExecutionContract):
             raise ValueError("Campaign要求串行工具调用能力")
         if self.provider_config.max_attempts != 1 or self.provider_config.retry_delay_seconds != 0:
             raise ValueError("Campaign真实基线禁止Provider自动重试")
+        if self.provider_config.enable_thinking is not False:
+            raise ValueError("Campaign非思考计费范围要求显式关闭思考模式")
         if self.fee_stop_currency != self.plan.price.currency:
             raise ValueError("Campaign费用停止线币种与价格快照不一致")
         if amount_units(self.fee_stop_amount) <= 0:

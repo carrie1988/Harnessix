@@ -80,6 +80,8 @@ class CodingEvalProviderSuiteRunConfig(ProviderSuiteContract):
             raise ValueError("真实Provider Suite v1要求串行工具调用；批量调用须显式使用v2")
         if provider.max_attempts != 1 or provider.retry_delay_seconds != 0:
             raise ValueError("真实Provider Suite禁止Provider自动重试")
+        if provider.enable_thinking is not False:
+            raise ValueError("真实Provider Suite非思考计费范围要求显式关闭思考模式")
         if provider.max_output_tokens > 4096:
             raise ValueError("真实Provider Suite单请求输出上限不能超过4096 Token")
         if len(self.suite.plan.cases) != 10:

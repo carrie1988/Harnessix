@@ -142,6 +142,7 @@ def execution_config(
             max_attempts=1,
             retry_delay_seconds=0,
             output_token_parameter="max_tokens",
+            enable_thinking=False,
         ),
         fee_stop_currency="CNY",
         fee_stop_amount=fee_stop_amount,
@@ -370,6 +371,12 @@ def test_execution_config_rejects_retry_parallel_tools_and_source_child(tmp_path
     body = config.model_dump(mode="json")
     body["provider_config"]["capabilities"]["parallel_tool_calls"] = True
     with pytest.raises(ValidationError):
+        CodingEvalCampaignRunConfig.model_validate(body)
+    body = config.model_dump(mode="python")
+    body["provider_config"] = config.provider_config.model_copy(
+        update={"enable_thinking": None}
+    )
+    with pytest.raises(ValidationError, match="显式关闭思考模式"):
         CodingEvalCampaignRunConfig.model_validate(body)
     body = config.model_dump(mode="json")
     body["work_root"] = str(ROOT / "private")

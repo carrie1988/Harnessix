@@ -181,6 +181,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             max_request_bytes=250_000,
             max_response_bytes=4 * 1024 * 1024,
             output_token_parameter="max_tokens",
+            enable_thinking=False,
         ),
     )
     _write_private(arguments.output, config)

@@ -104,6 +104,7 @@ def _bounds(config: CodingEvalProviderSuiteRunConfig) -> BailianVerificationBoun
         provider.base_url != "https://dashscope.aliyuncs.com/compatible-mode/v1"
         or provider.model != MODEL
         or provider.output_token_parameter != "max_tokens"
+        or provider.enable_thinking is not False
         or config.pack_id != "harnessix-engineering"
         or config.pack_version != 2
         or config.suite.fee_stop_currency != "CNY"

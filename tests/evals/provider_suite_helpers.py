@@ -95,6 +95,7 @@ def provider_suite_config(tmp_path: Path) -> CodingEvalProviderSuiteRunConfig:
             retry_delay_seconds=0,
             max_request_bytes=250_000,
             output_token_parameter="max_tokens",
+            enable_thinking=False,
         ),
     )
 
