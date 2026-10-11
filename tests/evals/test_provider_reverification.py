@@ -93,7 +93,7 @@ async def test_authorized_guard_preserves_entire_prefix_and_settles_only_new_req
     assert isinstance(events[-1], ResponseCompleted) and provider.sent == 1 and not token.cancelled
     assert current["requests"][: len(old["requests"])] == old["requests"]
     assert current["reserved_cost"] == "20.77824" and current["allocation"] == "70"
-    assert current["known_cost"] == "0.000136"
+    assert current["known_cost"] == "0.000085"
     assert current["requests"][-1]["reverification_id"] == str(plan.reverification_id)
     with scoped(path, plan):
         pass

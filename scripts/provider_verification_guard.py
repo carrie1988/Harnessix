@@ -1,4 +1,4 @@
-"""北京Coder验证保护；固定评测快照与独立Beta配置，不提供通用账户硬限额。"""
+"""北京Coder验证保护；固定当前R3模型与独立Beta配置，不提供通用账户硬限额。"""
 
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ from harnessix.models.contracts import ModelProvider, ModelRequest, ProviderEven
 from harnessix.tools.workspace import digest
 from scripts.provider_verification_budget import VerificationBudgetLedger
 
-MODEL = "qwen3-coder-plus-2025-09-23"
-PRICE_SOURCE = "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus"
+MODEL = "qwen3-coder-flash"
+PRICE_SOURCE = "https://help.aliyun.com/zh/model-studio/qwen3-coder-flash"
 
 
 class VerificationRequestPacer:
@@ -69,15 +69,15 @@ class BailianVerificationBounds:
     model: ClassVar[str] = MODEL
     price_source: ClassVar[str] = PRICE_SOURCE
     purpose: ClassVar[str] = "engineering-suite-model-request"
-    guard_version: ClassVar[str] = "harnessix.bailian-verification-request-guard/v1"
+    guard_version: ClassVar[str] = "harnessix.bailian-verification-request-guard/v2"
     maximum_input_tokens: ClassVar[int] = 997_952
     maximum_request_bytes: ClassVar[int | None] = None
     # 单位为毫元/百万Token，避免1.5等阶梯单价经过浮点运算。
     price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
-        (32_000, 4_000, 16_000),
-        (128_000, 6_000, 24_000),
-        (256_000, 10_000, 40_000),
-        (1_000_000, 20_000, 200_000),
+        (32_000, 1_000, 4_000),
+        (128_000, 1_500, 6_000),
+        (256_000, 2_500, 10_000),
+        (1_000_000, 5_000, 25_000),
     )
 
     valid_from: datetime
@@ -237,9 +237,7 @@ class BailianBetaQwen38MaxVerificationBounds(BailianBetaVerificationBounds):
     # 当前Beta输入远小于该值；HTTP Adapter必须同时限制请求体，才能在剩余额度内足额预留。
     maximum_input_tokens: ClassVar[int] = 250_000
     maximum_request_bytes: ClassVar[int] = 250_000
-    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
-        (1_000_000, 12_000, 36_000),
-    )
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = ((1_000_000, 12_000, 36_000),)
 
 
 @dataclass(slots=True)

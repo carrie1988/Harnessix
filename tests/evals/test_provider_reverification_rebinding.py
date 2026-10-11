@@ -282,7 +282,7 @@ async def test_rebound_guard_carries_39780864_balance_and_tags_reservation_befor
         events = await consume(GuardedVerificationProvider(provider, owner, bounds(), token))
     assert isinstance(events[-1], ResponseCompleted)
     assert provider.sent == 1 and provider.closed and not token.cancelled
-    assert period(path)["known_cost"] == "0.219272"
+    assert period(path)["known_cost"] == "0.219221"
     assert period(path)["reverification_binding"] == binding.model_dump(mode="json")
     assert_old_facts(path, before)
     with new_scope(path, binding):
@@ -958,10 +958,10 @@ VerificationBudgetLedger.rebind_reverification(Path(sys.argv[1]), plan)
         pass
 
 
-def legacy_fingerprint(limits, owner):
-    """冻结未绑定v1的既有恢复身份，不以待测fingerprint自身计算预期值。"""
+def unbound_guard_fingerprint(limits, owner):
+    """独立计算当前未绑定Guard身份，避免用待测fingerprint生成预期值。"""
     data = {
-        "spec_version": "harnessix.bailian-verification-request-guard/v1",
+        "spec_version": "harnessix.bailian-verification-request-guard/v2",
         "model": MODEL,
         "region": "cn-beijing",
         "mode": "non-thinking",
@@ -981,7 +981,7 @@ def legacy_fingerprint(limits, owner):
 
 
 @pytest.mark.parametrize("has_grant", [False, True])
-def test_unbound_v1_guard_fingerprint_is_exactly_backward_compatible(tmp_path, has_grant):
+def test_unbound_current_guard_fingerprint_is_exact(tmp_path, has_grant):
     if has_grant:
         path, plan = authorized_ledger(tmp_path)
         ledger = scoped(path, plan)
@@ -990,7 +990,7 @@ def test_unbound_v1_guard_fingerprint_is_exactly_backward_compatible(tmp_path, h
         ledger = VerificationBudgetLedger(path, PERIOD)
     with ledger as owner:
         limits = bounds()
-        assert limits.fingerprint(owner) == legacy_fingerprint(limits, owner)
+        assert limits.fingerprint(owner) == unbound_guard_fingerprint(limits, owner)
 
 
 @pytest.mark.parametrize("field", BINDING_FIELDS)
@@ -1000,7 +1000,7 @@ def test_guard_fingerprint_includes_every_binding_field_not_only_id(rebound, fie
     with new_scope(path, binding) as owner:
         limits = bounds()
         original = limits.fingerprint(owner)
-        assert original != legacy_fingerprint(limits, owner)
+        assert original != unbound_guard_fingerprint(limits, owner)
         raw = owner.period["reverification_binding"]
         if field in {"spec_version", "authority"}:
             # Literal值无需制造无效合同；移除整个绑定仍必须改变恢复身份。

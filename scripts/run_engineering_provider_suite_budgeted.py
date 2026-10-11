@@ -114,8 +114,8 @@ def _bounds(config: CodingEvalProviderSuiteRunConfig) -> BailianVerificationBoun
             )
             != ("aliyun-bailian", MODEL, "cn-beijing", "payg", "non-thinking", "CNY", PRICE_SOURCE)
             or not isinstance(price.input_price, FlatInputPrice)
-            or price.input_price.per_million != "4"
-            or price.output_per_million != "16"
+            or price.input_price.per_million != "1"
+            or price.output_per_million != "4"
             or price.input_tokens_min != 0
             or price.input_tokens_max != 32_000
             for price in prices
@@ -240,9 +240,7 @@ async def run_budgeted_suite(
         key = _credential(checked, keychain_service, keychain_account)
         async with OpenAIChatProvider(checked.provider_config, api_key=key) as provider:
             if not await provider.probe_model_availability(cancellation):
-                raise KernelError(
-                    "verification_model_unavailable", "固定验证模型对当前凭据不可用"
-                )
+                raise KernelError("verification_model_unavailable", "固定验证模型对当前凭据不可用")
 
         @asynccontextmanager
         async def factory(*_: object) -> AsyncIterator[ModelProvider]:

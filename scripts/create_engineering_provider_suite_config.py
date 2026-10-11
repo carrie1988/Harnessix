@@ -24,9 +24,9 @@ from harnessix.models.pricing import BillingContext, FlatInputPrice, PriceSnapsh
 _ROOT = Path(__file__).resolve().parents[1]
 _PACK_ID = "harnessix-engineering"
 _PACK_VERSION = 2
-_MODEL = "qwen3-coder-plus-2025-09-23"
+_MODEL = "qwen3-coder-flash"
 _BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-_PRICE_URL = "https://help.aliyun.com/zh/model-studio/qwen3-coder-plus"
+_PRICE_URL = "https://help.aliyun.com/zh/model-studio/qwen3-coder-flash"
 
 
 def _executable(name: str) -> Path:
@@ -61,7 +61,7 @@ def _require_clean_revision(git: Path) -> str:
 def _price(now: datetime) -> PriceSnapshot:
     end = now + timedelta(hours=24)
     return PriceSnapshot(
-        version=f"aliyun-bailian-{now.date().isoformat()}-qwen3-coder-plus-32k",
+        version=f"aliyun-bailian-{now.date().isoformat()}-qwen3-coder-flash-32k",
         source_url=_PRICE_URL,
         billing_provider="aliyun-bailian",
         model=_MODEL,
@@ -73,8 +73,8 @@ def _price(now: datetime) -> PriceSnapshot:
         valid_until=end,
         input_tokens_min=0,
         input_tokens_max=32_000,
-        input_price=FlatInputPrice(per_million="4"),
-        output_per_million="16",
+        input_price=FlatInputPrice(per_million="1"),
+        output_per_million="4",
     )
 
 

@@ -295,13 +295,13 @@ def test_flash_fingerprint_is_distinct_without_changing_r3_next_or_instruct(tmp_
             BailianBetaInstructVerificationBounds,
         )
     ]
-    assert MODEL == old[0].model == "qwen3-coder-plus-2025-09-23"
+    assert MODEL == old[0].model == "qwen3-coder-flash"
     assert [bounds.model for bounds in old[1:]] == [
         "qwen3-coder-next",
         "qwen3-235b-a22b-instruct-2507",
     ]
     assert [bounds.maximum_units for bounds in old] == [
-        amount_units(value) for value in ("20.57344", "0.54272", "0.282624")
+        amount_units(value) for value in ("5.06656", "0.54272", "0.282624")
     ]
     with task_scope(path, plan) as ledger:
         assert len({bounds.fingerprint(ledger) for bounds in (*old, flash)}) == 4

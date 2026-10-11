@@ -29,7 +29,7 @@ from harnessix.models.pricing import (
     content_digest,
 )
 
-MODEL = "qwen3-coder-plus-2025-09-23"
+MODEL = "qwen3-coder-flash"
 CREATED_AT = datetime(2026, 9, 20, 3, tzinfo=UTC)
 SUITE_ID = UUID("8c8c625f-a884-51de-8574-c50b0dce4df8")
 REVISION = "2983898358e6beb0dfb182dc80b5a85341c97d77"
@@ -38,8 +38,8 @@ REVISION = "2983898358e6beb0dfb182dc80b5a85341c97d77"
 def provider_suite_config(tmp_path: Path) -> CodingEvalProviderSuiteRunConfig:
     loaded = builtin_coding_eval_task_pack("harnessix-engineering", 2)
     price = PriceSnapshot(
-        version="aliyun-bailian-2026-09-20-qwen3-coder-plus-32k",
-        source_url="https://help.aliyun.com/zh/model-studio/qwen3-coder-plus",
+        version="aliyun-bailian-2026-09-20-qwen3-coder-flash-32k",
+        source_url="https://help.aliyun.com/zh/model-studio/qwen3-coder-flash",
         billing_provider="aliyun-bailian",
         model=MODEL,
         region="cn-beijing",
@@ -50,8 +50,8 @@ def provider_suite_config(tmp_path: Path) -> CodingEvalProviderSuiteRunConfig:
         valid_until=datetime(2026, 9, 21, tzinfo=UTC),
         input_tokens_min=0,
         input_tokens_max=32_000,
-        input_price=FlatInputPrice(per_million="4"),
-        output_per_million="16",
+        input_price=FlatInputPrice(per_million="1"),
+        output_per_million="4",
     )
     billing = BillingContext(
         billing_provider="aliyun-bailian",
