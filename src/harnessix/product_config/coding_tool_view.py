@@ -73,7 +73,9 @@ def _successful_reads_after(observations: tuple[_Observation, ...], index: int) 
     return frozenset(paths)
 
 
-def _patched_paths(observations: tuple[_Observation, ...], patch_index: int) -> frozenset[str]:
+def _patched_paths_requiring_reread(
+    observations: tuple[_Observation, ...], patch_index: int
+) -> frozenset[str]:
     observation = next(item for item in observations if item.index == patch_index)
     arguments = observation.call.arguments
     if observation.tool == "apply_patch":
@@ -85,7 +87,9 @@ def _patched_paths(observations: tuple[_Observation, ...], patch_index: int) -> 
     return frozenset(
         path
         for item in files
-        if isinstance(item, dict) and isinstance((path := item.get("path")), str)
+        if isinstance(item, dict)
+        and item.get("operation") != "delete"
+        and isinstance((path := item.get("path")), str)
     )
 
 
@@ -171,8 +175,8 @@ class CodingWorkflowToolView:
                 names = {"read_file"}
                 if not _diagnostic_is_complete(validation.result):
                     names.add("read_artifact")
-                patched_paths = _patched_paths(observations, last_patch)
-                if patched_paths and patched_paths <= _successful_reads_after(
+                patched_paths = _patched_paths_requiring_reread(observations, last_patch)
+                if patched_paths <= _successful_reads_after(
                     observations, validation.index
                 ):
                     names.add(patch)

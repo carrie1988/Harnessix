@@ -18,7 +18,11 @@ from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
 _PROFILE = "run_profile.fixed-check"
 _PATCH = "apply_patch_batch"
 _ROLLBACK = "rollback_workspace_patch"
-_Result = tuple[str, str, str | None] | tuple[str, str, str | None, object]
+_Result = (
+    tuple[str, str, str | None]
+    | tuple[str, str, str | None, object]
+    | tuple[str, str, str | None, object, dict[str, object]]
+)
 
 
 def _descriptor(name: str, effect: EffectClass = EffectClass.READ_ONLY) -> ToolDescriptor:
@@ -63,6 +67,7 @@ def _turn(*results: _Result) -> Turn:
             if tool == _PATCH or tool.startswith("run_profile.")
             else EffectClass.READ_ONLY
         )
+        default_arguments = {"files": [{"path": "src/example.py"}]} if tool == _PATCH else {}
         call = ToolCallContent(
             call_id=call_id,
             provider_call_id=f"provider-{call_id}",
@@ -70,7 +75,7 @@ def _turn(*results: _Result) -> Turn:
             tool_version="1",
             effect_class=effect,
             requires_approval=effect != EffectClass.READ_ONLY,
-            arguments=({"files": [{"path": "src/example.py"}]} if tool == _PATCH else {}),
+            arguments=result_spec[4] if len(result_spec) == 5 else default_arguments,
         )
         default_output = (
             {"path": "src/example.py"} if tool == "read_file" and outcome == "succeeded" else None
@@ -205,3 +210,19 @@ def test_complete_profile_diagnostic_does_not_advertise_artifact_read() -> None:
     )
     assert {tool.name for tool in correction.tools} == {"read_file"}
     assert correction.choice == "required" and correction.forced_tool is None
+
+
+def test_failed_validation_after_delete_can_propose_corrective_patch() -> None:
+    correction = _turn(
+        (_PROFILE, "failed", "process_nonzero_exit"),
+        (
+            _PATCH,
+            "succeeded",
+            None,
+            None,
+            {"files": [{"operation": "delete", "path": "src/example.py"}]},
+        ),
+        (_PROFILE, "failed", "process_nonzero_exit"),
+    )
+
+    assert _PATCH in _names(correction)
