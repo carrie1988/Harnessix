@@ -59,6 +59,50 @@ def forbidden(*_, **__):
     pytest.fail("该前置拒绝路径不得读取凭据或发出请求")
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        "https://127.0.0.1:7890",
+        "http://localhost:7890",
+        "http://127.0.0.1",
+        "http://127.0.0.1:0",
+        "http://127.0.0.1:65536",
+        "http://user@127.0.0.1:7890",
+        "http://127.0.0.1:7890/path",
+        "http://192.0.2.1:7890",
+    ],
+)
+def test_local_http_proxy_rejects_noncanonical_or_nonlocal_endpoints(value):
+    with pytest.raises(KernelError) as failed:
+        host._local_http_proxy(value)
+    assert failed.value.code == "verification_proxy_invalid"
+
+
+def test_local_http_proxy_is_explicit_and_does_not_enable_environment_proxy(monkeypatch):
+    transports = []
+    providers = []
+    transport_marker = object()
+
+    def transport(**kwargs):
+        transports.append(kwargs)
+        return transport_marker
+
+    def provider(config, *, api_key, transport=None):
+        providers.append((config, api_key, transport))
+        return object()
+
+    monkeypatch.setattr(host.httpx, "AsyncHTTPTransport", transport)
+    monkeypatch.setattr(host, "OpenAIChatProvider", provider)
+    config_marker = object()
+    assert host._provider(config_marker, "fixture-key", None) is not None
+    assert transports == [] and providers[-1] == (config_marker, "fixture-key", None)
+    assert host._local_http_proxy(None) is None
+    proxy = host._local_http_proxy("http://127.0.0.1:7890")
+    assert host._provider(config_marker, "fixture-key", proxy) is not None
+    assert transports == [{"proxy": proxy, "trust_env": False}]
+    assert providers[-1] == (config_marker, "fixture-key", transport_marker)
+
+
 def test_default_cli_never_reads_config_budget_or_credentials(monkeypatch, capsys):
     monkeypatch.setattr(host, "read_private_eval_config", forbidden)
     monkeypatch.setattr(host, "_credential", forbidden)

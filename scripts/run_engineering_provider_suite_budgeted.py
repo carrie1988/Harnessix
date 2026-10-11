@@ -1,4 +1,4 @@
-"""有限北京Coder验证宿主；复用正式Suite，仅增加持久请求预留与显式凭据注入。"""
+"""有限北京Coder验证宿主；增加持久预留、显式凭据与受控本机代理。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,10 @@ from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import NoReturn
+from urllib.parse import urlsplit
 from uuid import UUID
+
+import httpx
 
 import harnessix
 from harnessix.agent.cancellation import CancelToken
@@ -31,10 +34,12 @@ from harnessix.evals.suite_execution_contracts import CodingEvalSuiteRunReport
 from harnessix.evals.task_pack import builtin_coding_eval_task_pack
 from harnessix.evals.task_pack_publication import provider_publication_scope
 from harnessix.models._provider_io import validate_key
+from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelProvider
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.models.pricing import FlatInputPrice
 from harnessix.observability import Observability
+from harnessix.tools.workspace import digest
 from scripts.provider_verification_budget import VerificationBudgetLedger
 from scripts.provider_verification_guard import (
     MODEL,
@@ -207,6 +212,44 @@ def _credential(
         ) from None
 
 
+def _local_http_proxy(value: str | None) -> str | None:
+    """只接受无凭据的IPv4回环代理；真实Provider仍不读取环境代理。"""
+    if value is None:
+        return None
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+        if (
+            parsed.scheme != "http"
+            or parsed.hostname != "127.0.0.1"
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+            or port is None
+            or not 1 <= port <= 65535
+            or value != f"http://127.0.0.1:{port}"
+        ):
+            raise ValueError
+        return value
+    except (ValueError, TypeError):
+        raise KernelError("verification_proxy_invalid", "验证代理必须是本机回环HTTP端点") from None
+
+
+def _provider(
+    config: OpenAIChatConfig, api_key: str, local_http_proxy: str | None
+) -> OpenAIChatProvider:
+    """每个短生命周期Adapter显式选择直连或已校验的本机代理。"""
+    if local_http_proxy is None:
+        return OpenAIChatProvider(config, api_key=api_key)
+    return OpenAIChatProvider(
+        config,
+        api_key=api_key,
+        transport=httpx.AsyncHTTPTransport(proxy=local_http_proxy, trust_env=False),
+    )
+
+
 async def run_budgeted_suite(
     config: CodingEvalProviderSuiteRunConfig,
     *,
@@ -218,6 +261,7 @@ async def run_budgeted_suite(
     keychain_account: str | None = None,
     reverification_id: UUID | None = None,
     minimum_request_interval_seconds: float = 0,
+    local_http_proxy: str | None = None,
 ) -> CodingEvalSuiteRunReport:
     if allow_network is not True:
         raise KernelError("eval_provider_suite_network_disabled", "真实Provider Suite默认禁止网络")
@@ -228,6 +272,7 @@ async def run_budgeted_suite(
     _require_scope(checked, None)
     _require_images(checked)
     pacer = VerificationRequestPacer(minimum_request_interval_seconds)
+    proxy = _local_http_proxy(local_http_proxy)
     cancellation = CancelToken()
     with VerificationBudgetLedger(
         budget_path,
@@ -238,15 +283,26 @@ async def run_budgeted_suite(
         # 未决费用先拒绝；模型目录只读请求不得绕过预算Owner或形成推理预留。
         ledger.require_available()
         key = _credential(checked, keychain_service, keychain_account)
-        async with OpenAIChatProvider(checked.provider_config, api_key=key) as provider:
+        async with _provider(checked.provider_config, key, proxy) as provider:
             if not await provider.probe_model_availability(cancellation):
                 raise KernelError("verification_model_unavailable", "固定验证模型对当前凭据不可用")
 
         @asynccontextmanager
         async def factory(*_: object) -> AsyncIterator[ModelProvider]:
-            async with OpenAIChatProvider(checked.provider_config, api_key=key) as provider:
+            async with _provider(checked.provider_config, key, proxy) as provider:
                 yield GuardedVerificationProvider(provider, ledger, bounds, cancellation, pacer)
 
+        provider_binding = bounds.fingerprint(ledger, pacer=pacer)
+        if proxy is not None:
+            provider_binding = digest(
+                {
+                    "guard": provider_binding,
+                    "transport": {
+                        "spec_version": "harnessix.verification-local-http-proxy/v1",
+                        "endpoint": proxy,
+                    },
+                }
+            )
         with provider_publication_scope(checked.provider_config.api_key_env, key) as scope:
             return await run_task_pack_provider_suite(
                 checked,
@@ -254,7 +310,7 @@ async def run_budgeted_suite(
                 resume=resume,
                 cancel=cancellation,
                 provider_factory=factory,
-                provider_binding_sha256=bounds.fingerprint(ledger, pacer=pacer),
+                provider_binding_sha256=provider_binding,
                 publication_scope=scope,
             )
 
@@ -279,6 +335,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--keychain-service")
     parser.add_argument("--keychain-account")
     parser.add_argument("--minimum-request-interval-seconds", type=float, default=0)
+    parser.add_argument("--local-http-proxy")
     arguments = parser.parse_args(argv)
     if not arguments.allow_network:
         print('{"reason":"network_not_enabled"}')
@@ -302,6 +359,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 keychain_account=arguments.keychain_account,
                 reverification_id=arguments.reverification_id,
                 minimum_request_interval_seconds=arguments.minimum_request_interval_seconds,
+                local_http_proxy=arguments.local_http_proxy,
             )
         )
         result = report.model_dump(mode="json")
@@ -318,6 +376,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "verification_credentials_unavailable",
             "verification_model_unavailable",
             "verification_request_pacing_invalid",
+            "verification_proxy_invalid",
             "verification_budget_busy",
             "verification_budget_unavailable",
             "verification_budget_unresolved",
