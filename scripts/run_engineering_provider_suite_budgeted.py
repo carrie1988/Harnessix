@@ -242,8 +242,6 @@ def _provider(
     config: OpenAIChatConfig, api_key: str, local_http_proxy: str | None
 ) -> OpenAIChatProvider:
     """为一次验证Suite创建显式直连或本机代理的共享Adapter。"""
-    if local_http_proxy is None:
-        return OpenAIChatProvider(config, api_key=api_key)
     return OpenAIChatProvider(
         config,
         api_key=api_key,
@@ -299,16 +297,16 @@ async def run_budgeted_suite(
                 "spec_version": "harnessix.verification-provider-lifecycle/v1",
                 "scope": "single-suite",
             },
-        }
-        if proxy is not None:
-            binding["transport"] = {
-                "spec_version": "harnessix.verification-local-http-proxy/v1",
-                "endpoint": proxy,
+            "transport": {
+                "spec_version": "harnessix.verification-http-transport/v1",
+                "mode": "direct" if proxy is None else "local-http-proxy",
+                **({"endpoint": proxy} if proxy is not None else {}),
                 "connect_retries": 1,
                 "max_connections": 1,
                 "max_keepalive_connections": 1,
                 "keepalive_expiry_seconds": 60,
-            }
+            },
+        }
         provider_binding = digest(binding)
         # OpenAIChatProvider不保存会话消息；复用其HTTP池只减少每个Trial重建代理隧道。
         async with _provider(checked.provider_config, key, proxy) as provider:

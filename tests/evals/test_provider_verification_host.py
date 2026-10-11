@@ -78,7 +78,7 @@ def test_local_http_proxy_rejects_noncanonical_or_nonlocal_endpoints(value):
     assert failed.value.code == "verification_proxy_invalid"
 
 
-def test_local_http_proxy_is_explicit_and_does_not_enable_environment_proxy(monkeypatch):
+def test_direct_and_local_proxy_transports_share_bounded_connection_policy(monkeypatch):
     transports = []
     providers = []
     transport_marker = object()
@@ -97,13 +97,9 @@ def test_local_http_proxy_is_explicit_and_does_not_enable_environment_proxy(monk
     monkeypatch.setattr(host, "OpenAIChatProvider", provider)
     config_marker = object()
     assert host._provider(config_marker, "fixture-key", None) is not None
-    assert transports == [] and providers[-1] == (config_marker, "fixture-key", None)
-    assert host._local_http_proxy(None) is None
-    proxy = host._local_http_proxy("http://127.0.0.1:7890")
-    assert host._provider(config_marker, "fixture-key", proxy) is not None
     assert transports == [
         {
-            "proxy": proxy,
+            "proxy": None,
             "trust_env": False,
             "retries": 1,
             "limits": (
@@ -116,6 +112,24 @@ def test_local_http_proxy_is_explicit_and_does_not_enable_environment_proxy(monk
             ),
         }
     ]
+    assert providers[-1] == (config_marker, "fixture-key", transport_marker)
+    assert host._local_http_proxy(None) is None
+    proxy = host._local_http_proxy("http://127.0.0.1:7890")
+    assert host._provider(config_marker, "fixture-key", proxy) is not None
+    assert len(transports) == 2
+    assert transports[1] == {
+        "proxy": proxy,
+        "trust_env": False,
+        "retries": 1,
+        "limits": (
+            limits_marker,
+            {
+                "max_connections": 1,
+                "max_keepalive_connections": 1,
+                "keepalive_expiry": 60,
+            },
+        ),
+    }
     assert providers[-1] == (config_marker, "fixture-key", transport_marker)
 
 
@@ -235,7 +249,7 @@ async def test_unavailable_model_stops_before_inference_or_budget_mutation(tmp_p
     monkeypatch.setattr(host, "_require_images", lambda *_: None)
     monkeypatch.setattr(host, "_credential", lambda *_: "fixture-SECRET-CANARY")
 
-    def transport(request: httpx.Request) -> httpx.Response:
+    def handle_request(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         return httpx.Response(
             200,
@@ -253,9 +267,10 @@ async def test_unavailable_model_stops_before_inference_or_budget_mutation(tmp_p
             },
         )
 
-    def native(provider_config, *, api_key):
+    def native(provider_config, *, api_key, transport=None):
+        assert transport is not None
         return OpenAIChatProvider(
-            provider_config, api_key=api_key, transport=httpx.MockTransport(transport)
+            provider_config, api_key=api_key, transport=httpx.MockTransport(handle_request)
         )
 
     monkeypatch.setattr(host, "OpenAIChatProvider", native)
@@ -293,7 +308,7 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(
         part["model"] = host.MODEL
     wire = WireStream([frame(part) for part in parts] + [b"data: [DONE]\n\n"])
 
-    def transport(request):
+    def handle_request(request):
         if request.method == "GET":
             return httpx.Response(
                 200,
@@ -316,10 +331,11 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(
 
     providers = []
 
-    def native(provider_config, *, api_key):
+    def native(provider_config, *, api_key, transport=None):
+        assert transport is not None
         assert api_key == "fixture-SECRET-CANARY"
         provider = OpenAIChatProvider(
-            provider_config, api_key=api_key, transport=httpx.MockTransport(transport)
+            provider_config, api_key=api_key, transport=httpx.MockTransport(handle_request)
         )
         providers.append(provider)
         return provider
