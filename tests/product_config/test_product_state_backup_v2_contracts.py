@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -43,8 +43,11 @@ def _manifest_files(snapshot_digest: str = "2" * 64) -> tuple[ProductStateFileV2
     return tuple(sorted(entries, key=lambda entry: entry.path))
 
 
-def _profile(snapshot_digest: str = "2" * 64) -> ProductStateGitBackupProfile:
+def _profile(
+    capture_id: UUID | None = None, snapshot_digest: str = "2" * 64
+) -> ProductStateGitBackupProfile:
     return ProductStateGitBackupProfile(
+        capture_id=capture_id or uuid4(),
         store_genesis_epoch=uuid4(),
         prefix_revision=7,
         prefix_anchor_sha256="3" * 64,
@@ -53,14 +56,16 @@ def _profile(snapshot_digest: str = "2" * 64) -> ProductStateGitBackupProfile:
 
 
 def _manifest(**changes: object) -> ProductStateBackupManifestV2:
+    backup_id = changes.get("backup_id", uuid4())
+    assert isinstance(backup_id, UUID)
     values: dict[str, object] = {
-        "backup_id": uuid4(),
+        "backup_id": backup_id,
         "created_at": utc_now(),
         "platform": "posix",
         "store_id": uuid4(),
         "key_id": uuid4(),
         "captured_state_root_identity": (1, 2),
-        "business_profiles": (_profile(),),
+        "business_profiles": (_profile(backup_id),),
         "files": _manifest_files(),
     }
     values.update(changes)
@@ -121,8 +126,17 @@ def test_git_profile_rejects_missing_fixed_member(missing: str) -> None:
 
 
 def test_git_profile_rejects_snapshot_digest_mismatch() -> None:
+    manifest = _manifest()
     with pytest.raises(ValidationError, match="业务快照摘要"):
-        _manifest(business_profiles=(_profile("4" * 64),))
+        _manifest(
+            backup_id=manifest.backup_id,
+            business_profiles=(_profile(manifest.backup_id, "4" * 64),),
+        )
+
+
+def test_git_profile_rejects_capture_identity_mismatch() -> None:
+    with pytest.raises(ValidationError, match="捕获身份"):
+        _manifest(business_profiles=(_profile(),))
 
 
 @pytest.mark.parametrize(

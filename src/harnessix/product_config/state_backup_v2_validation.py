@@ -8,14 +8,23 @@ import sqlite3
 from contextlib import closing
 from uuid import UUID
 
+from harnessix.agent.errors import KernelError
+from harnessix.product_config.git_business_snapshot import build_git_delivery_business_snapshot
+from harnessix.product_config.git_business_snapshot_wire import (
+    decode_git_delivery_business_snapshot,
+    encode_git_delivery_business_snapshot,
+)
 from harnessix.product_config.git_prefix_catalog import (
     GitPrefixCatalog,
     encode_git_prefix_catalog,
 )
-from harnessix.product_config.git_prefix_reader import read_git_prefix_catalog
+from harnessix.product_config.git_prefix_reader import read_git_prefix_catalog_and_rows
+from harnessix.product_config.git_prefix_rows import GitPrefixRows
 from harnessix.product_config.git_prefix_sql import git_prefix_sql_window
-from harnessix.product_config.state_backup_files import PrivateStateTree
+from harnessix.product_config.state_backup_contracts import MAX_STATE_FILE_BYTES
+from harnessix.product_config.state_backup_files import PrivateStateTree, read_small
 from harnessix.product_config.state_backup_v2_contracts import (
+    GIT_BUSINESS_SNAPSHOT,
     GIT_DATABASE,
     ProductStateGitBackupProfile,
 )
@@ -54,7 +63,7 @@ def _read_authenticated_catalog(
     tree: PrivateStateTree,
     binding: SessionPublicationBinding,
     control: MaintenanceIOControl,
-) -> GitPrefixCatalog:
+) -> tuple[GitPrefixCatalog, GitPrefixRows]:
     try:
         with closing(readonly_database(tree.path / GIT_DATABASE)) as database:
             with git_prefix_sql_window(database, checkpoint=control.checkpoint):
@@ -65,7 +74,7 @@ def _read_authenticated_catalog(
                     or database.execute("PRAGMA main.foreign_key_check").fetchone() is not None
                 ):
                     raise invalid_state()
-                return read_git_prefix_catalog(
+                return read_git_prefix_catalog_and_rows(
                     database,
                     binding.git_verifier,
                     binding.git_prefix_verifier,
@@ -88,7 +97,7 @@ def validate_git_backup_profile(
     with verification_publication_binding(tree) as binding:
         if binding.git_verifier.identity() != (store_id, key_id):
             raise invalid_state()
-        catalog = _read_authenticated_catalog(tree, binding, control)
+        catalog, rows = _read_authenticated_catalog(tree, binding, control)
         if (
             (catalog.store_id, catalog.key_id) != (store_id, key_id)
             or catalog.genesis_epoch != profile.store_genesis_epoch
@@ -97,5 +106,39 @@ def validate_git_backup_profile(
             != profile.prefix_anchor_sha256
         ):
             raise invalid_state()
+        try:
+            body = read_small(tree, GIT_BUSINESS_SNAPSHOT, MAX_STATE_FILE_BYTES)
+        except (KernelError, OSError, ValueError):
+            raise invalid_state() from None
+        if hashlib.sha256(body).hexdigest() != profile.business_snapshot_sha256:
+            raise invalid_state()
+        try:
+            actual = decode_git_delivery_business_snapshot(body, checkpoint=control.checkpoint)
+            expected = build_git_delivery_business_snapshot(
+                profile.capture_id, catalog, rows, checkpoint=control.checkpoint
+            )
+            if (
+                actual.capture_id != profile.capture_id
+                or actual.prefix != catalog
+                or encode_git_delivery_business_snapshot(expected, checkpoint=control.checkpoint)
+                != body
+            ):
+                raise invalid_state()
+        except KernelError as error:
+            if error.code == "git_business_snapshot_scope_unsupported":
+                raise
+            if error.code in {
+                "git_business_snapshot_invalid",
+                "git_decision_link_history_changed",
+                "git_delivery_plan_invalid",
+                "publication_history_unproven",
+            }:
+                raise invalid_state() from None
+            raise
+        try:
+            if read_small(tree, GIT_BUSINESS_SNAPSHOT, MAX_STATE_FILE_BYTES) != body:
+                raise invalid_state()
+        except (KernelError, OSError, ValueError):
+            raise invalid_state() from None
         control.checkpoint()
     _require_delete_journal_candidate(tree, control)

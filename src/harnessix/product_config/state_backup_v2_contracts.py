@@ -57,6 +57,7 @@ class ProductStateGitBackupProfile(ContractModel):
 
     profile: Literal["git-delivery"] = "git-delivery"
     git_store_schema_version: Literal["2"] = "2"
+    capture_id: UUID
     store_genesis_epoch: UUID
     prefix_revision: int = Field(ge=0, le=2**63 - 1)
     # 名称沿已冻结合同；值是尾锚认证的规范 GitPrefixCatalog 原字节摘要。
@@ -104,7 +105,10 @@ class ProductStateBackupManifestV2(ContractModel):
         if any(entry.kind == "process" for entry in self.files) and PROCESS_DATABASE not in paths:
             raise ValueError("Process事实缺少原Lease库")
         snapshot = next(entry for entry in self.files if entry.path == GIT_BUSINESS_SNAPSHOT)
-        if snapshot.sha256 != self.business_profiles[0].business_snapshot_sha256:
+        profile = self.business_profiles[0]
+        if profile.capture_id != self.backup_id:
+            raise ValueError("Git业务快照捕获身份与备份不匹配")
+        if snapshot.sha256 != profile.business_snapshot_sha256:
             raise ValueError("Git业务快照摘要与剖面不匹配")
         return self
 

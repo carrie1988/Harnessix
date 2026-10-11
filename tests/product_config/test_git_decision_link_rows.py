@@ -7,6 +7,7 @@ import pytest
 
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
+from harnessix.product_config import git_decision_link_rows, git_prefix_reader
 from harnessix.product_config.git_decision_link_rows import read_git_link_history_rows
 from harnessix.product_config.git_decision_link_sources import build_git_decision_link_sources
 from harnessix.product_config.git_decision_link_wire import encode_product_git_decision_link
@@ -177,6 +178,98 @@ async def test_real_mac_reopen_reads_complete_predecessor_and_decision(tmp_path,
                 with pytest.raises(KernelError):
                     read_prepared_link_rows(db, binding, checkpoint=lambda: None)
             db.execute("ROLLBACK")
+
+
+async def test_single_capture_rows_feed_pure_interpreter_and_reader_equally(
+    tmp_path, case, monkeypatch
+):
+    evidence = fixture(case, "approved")
+    prepared = evidence.materials.link
+    decision = build_git_decision_link_sources(evidence, checkpoint=lambda: None)
+    captured_rows = []
+    interpreted_inputs = []
+    original_capture = git_prefix_reader.capture_git_prefix_rows
+    original_interpret = git_decision_link_rows.interpret_git_link_histories
+
+    def capture_once(database, *, checkpoint):
+        rows = original_capture(database, checkpoint=checkpoint)
+        captured_rows.append(rows)
+        return rows
+
+    def observe_interpretation(catalog, rows, *, checkpoint):
+        interpreted_inputs.append((catalog, rows))
+        return original_interpret(catalog, rows, checkpoint=checkpoint)
+
+    with _binding() as (binding, guard), _connection(tmp_path / "single-capture.db") as db:
+        await _genesis(db, binding, guard)
+        await _persist(db, binding, guard, prepared, decision)
+        monkeypatch.setattr(git_prefix_reader, "capture_git_prefix_rows", capture_once)
+        monkeypatch.setattr(
+            git_decision_link_rows, "interpret_git_link_histories", observe_interpretation
+        )
+        db.execute("BEGIN")
+        histories, rows = read_git_link_history_rows(db, binding, checkpoint=lambda: None)
+        assert len(captured_rows) == len(interpreted_inputs) == 1
+        catalog, interpreted_rows = interpreted_inputs[0]
+        assert captured_rows[0] is interpreted_rows is rows
+        assert catalog.tables == rows.tables
+        db.execute("ROLLBACK")
+
+    assert original_interpret(catalog, rows, checkpoint=lambda: None) == histories
+    current = rows.table("git_product_links")
+    tampered_current = ((*current[0][:7], "f" * 64, *current[0][8:]), *current[1:])
+    tampered_rows = replace(
+        rows,
+        rows=tuple(
+            (name, tampered_current if name == "git_product_links" else values)
+            for name, values in rows.rows
+        ),
+    )
+    with pytest.raises(KernelError) as caught:
+        original_interpret(catalog, tampered_rows, checkpoint=lambda: None)
+    assert caught.value.code == "git_decision_link_history_changed"
+
+
+async def test_authenticated_unsupported_scope_is_still_rejected(tmp_path, case):
+    prepared = fixture(case, "approved").materials.link
+    core = prepared.plan.core
+    identities = (
+        prepared.plan.route.execution.plan_id,
+        core.delivery_id,
+        core.thread_id,
+        core.turn_id,
+        core.call.call_id,
+    )
+    worktree_id = UUID(int=778)
+    body = '{"fixture":"unsupported-worktree"}'
+    with _binding() as (binding, guard), _connection(tmp_path / "unsupported.db") as db:
+        await _genesis(db, binding, guard)
+        await _persist(db, binding, guard, prepared)
+        db.execute("BEGIN IMMEDIATE")
+        window = begin_git_prefix_write(
+            db, binding.git, binding.git_prefix, checkpoint=lambda: None
+        )
+        db.execute(
+            "INSERT INTO git_worktrees VALUES (?,?,?,?,?,?)",
+            (str(worktree_id), str(UUID(int=779)), "a" * 64, "prepared", 0, body),
+        )
+        db.execute(
+            "INSERT INTO git_worktree_events VALUES (?,?,?,?)",
+            (str(worktree_id), 0, "prepared", body),
+        )
+        await _publish(
+            db,
+            binding,
+            guard,
+            window,
+            (_claim(identities, "worktree_event", worktree_id),),
+        )
+        db.execute("COMMIT")
+        db.execute("BEGIN")
+        with pytest.raises(KernelError) as caught:
+            read_git_link_history_rows(db, binding, checkpoint=lambda: None)
+        assert caught.value.code == "git_decision_link_scope_unsupported"
+        db.execute("ROLLBACK")
 
 
 @pytest.mark.parametrize(

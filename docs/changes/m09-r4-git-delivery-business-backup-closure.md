@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: draft
-version: 17
+version: 18
 code_revision: 1e2253b2dd304f8de4a516a40c5919c5d05b68b4
 owners: [core]
 modules: [product_config, delivery, trusted_actions, workspace, session, artifacts]
@@ -29,6 +29,9 @@ related_tests:
   - tests/product_config/test_product_state_backup.py
   - tests/product_config/test_product_state_restore.py
   - tests/product_config/test_product_backup_files_windows.py
+  - tests/product_config/test_git_business_snapshot.py
+  - tests/product_config/test_product_state_backup_v2_contracts.py
+  - tests/product_config/test_product_state_backup_v2_validation.py
 supersedes: []
 ---
 
@@ -41,8 +44,10 @@ supersedes: []
 未知 Git 子树、运行时 worktree／anchor、SQLite sidecar 仍不进入恢复成员。该增量只关闭清单与回执的数据合同，
 [`state_backup_v2_validation.py`](../../src/harnessix/product_config/state_backup_v2_validation.py)
 进一步只读核对候选 GitDB 的 v2 精确结构、完整认证前缀、Store／Key、genesis、revision 及规范目录摘要，
-并拒绝 WAL 格式或残留 sidecar。它尚未接入停机捕获、业务快照、Restore Journal、重绑或默认 Git Writer，
-因此本文仍为 `draft`。
+并拒绝 WAL 格式或残留 sidecar。当前又增加了固定 `business-snapshot.json`：同一轮认证捕获只扫描一次，
+把已实现的 `prepared → approved/denied/cancelled` 全历史编码为唯一规范字节，并同时绑定捕获 ID、完整前缀和
+Manifest SHA；缺失、非规范、篡改或当前未实现业务表非空均失败关闭。它仍未接入原六库的逐关联交叉验真、
+实时停机捕获、Restore Journal、重绑或默认 Git Writer，因此本文仍为 `draft`。
 
 
 ## 当前完整父历史代际
@@ -53,7 +58,8 @@ supersedes: []
 新来源捕获显式取得宿主CAS端口，历史读取与当前观察共同使用原调用方控制。
 旧Source1／Baseline1仅保持旧合同兼容，不作为默认新来源的降级路线。
 
-本草案的Bridge／MAC持久关联、业务Git快照与Backup2仍待实现。
+本草案的Bridge／MAC持久关联及完整Backup2仍待实现；现有业务快照只覆盖已正式实现的ProductLink历史，
+不得外推为A／T／D、Checkpoint／Commit或跨Store恢复闭包。
 领域A／T／D成功不表示这些产品接线已经完成，prepared T仍不得向A发布。
 
 ## 当前物理认证账本边界
@@ -109,7 +115,7 @@ ProductGitDeliveryPlanner/Executor、正式Link阶段、A/T2/D写装配与Backup
 
 ## 1. 需求背景、状态与交付定义
 
-**实施状态：业务闭包待实现，内部 IO、完整仓库绑定观察、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整仓库绑定观察、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。原五类Git记录和独立尾锚认证端口、GitDB v2精确结构及物理全前缀认证账本已实现；产品 Git Action、持久业务关联、完整业务语义与对象目录认证、业务快照及恢复重绑均未完成；现有测试链接仅指向复用边界，不表示完整业务方案已经通过验收。
+**实施状态：业务闭包待实现，内部 IO、完整仓库绑定观察、完整对象材料、只读文件树验真与完整目标树纯规划前置已实现。** 本文为 `status: draft` 的详细设计草案，以元数据中的提交为研究基线，并纳入已实现的 GitStore 只读接口、受控命令 IO、完整仓库绑定观察、完整对象读取／输入、原 CAS 类型适配、完整普通文件树验真及完整目标树纯规划。原五类Git记录和独立尾锚认证端口、GitDB v2精确结构及物理全前缀认证账本已实现；业务快照 v1 已能严格重建并核对当前 ProductLink 全历史，但跨 Session／Plan／Audit／Artifact／CAS 的逐关联验真、其他Git业务阶段、恢复重绑和默认产品写链仍未完成；现有测试链接仅指向对应复用边界，不表示完整业务方案已经通过验收。
 
 当前默认产品能完成 Patch 和显式 Rollback，能从认证会话提取持续多 Patch 的完整来源投影，并观察 Git 基准；尚未装配 `GitDeliveryRuntime`／`SQLiteGitDeliveryStore` 形成默认产品 Commit／Checkpoint 闭环。直接把用户已修改的工作区交给要求干净来源的宿主 Runtime，会产生真实的生命周期和身份冲突。
 

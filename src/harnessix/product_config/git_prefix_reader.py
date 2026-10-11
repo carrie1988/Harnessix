@@ -64,14 +64,14 @@ def _anchor(database: sqlite3.Connection) -> tuple[GitStorePrefixAnchorClaims, b
         raise unproven() from None
 
 
-def read_git_prefix_catalog(
+def read_git_prefix_catalog_and_rows(
     database: sqlite3.Connection,
     verifier: GitPublicationVerifier,
     prefix_verifier: GitStorePrefixVerifier,
     *,
     checkpoint: Callable[[], None],
-) -> GitPrefixCatalog:
-    """在原事务与宿主共同锁窗口内验证全集；历史认证不授予新执行权限。"""
+) -> tuple[GitPrefixCatalog, GitPrefixRows]:
+    """在同一事务捕获并认证目录与原始行；历史认证不授予新执行权限。"""
     checkpoint()
     require_git_prefix_sql_window(database)
     epoch, changes = git_prefix_transaction_epoch(database), database.total_changes
@@ -103,4 +103,18 @@ def read_git_prefix_catalog(
         raise unproven()
     verifier.identity()
     prefix_verifier.identity()
-    return actual
+    return actual, rows
+
+
+def read_git_prefix_catalog(
+    database: sqlite3.Connection,
+    verifier: GitPublicationVerifier,
+    prefix_verifier: GitStorePrefixVerifier,
+    *,
+    checkpoint: Callable[[], None],
+) -> GitPrefixCatalog:
+    """兼容目录读取入口；复用同一轮认证捕获且不重复扫描。"""
+    catalog, _rows = read_git_prefix_catalog_and_rows(
+        database, verifier, prefix_verifier, checkpoint=checkpoint
+    )
+    return catalog

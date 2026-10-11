@@ -10,9 +10,9 @@ from hashlib import sha256
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.git_decision_link_contracts import ProductGitDecisionLink
 from harnessix.product_config.git_decision_link_wire import decode_product_git_decision_link
-from harnessix.product_config.git_prefix_catalog import GitPrefixStream
-from harnessix.product_config.git_prefix_reader import read_git_prefix_catalog
-from harnessix.product_config.git_prefix_rows import GitPrefixRows, Row, capture_git_prefix_rows
+from harnessix.product_config.git_prefix_catalog import GitPrefixCatalog, GitPrefixStream
+from harnessix.product_config.git_prefix_reader import read_git_prefix_catalog_and_rows
+from harnessix.product_config.git_prefix_rows import GitPrefixRows, Row
 from harnessix.product_config.git_prepared_link_contracts import ProductGitPreparedLink
 from harnessix.product_config.git_prepared_link_rows import (
     _UNIMPLEMENTED_TABLES,
@@ -91,17 +91,13 @@ def _read_stream(
     return GitLinkHistory(prepared, decision)
 
 
-def read_git_link_history_rows(
-    database: sqlite3.Connection,
-    publication: SessionPublicationBinding,
+def interpret_git_link_histories(
+    catalog: GitPrefixCatalog,
+    rows: GitPrefixRows,
     *,
     checkpoint: Callable[[], None],
-) -> tuple[tuple[GitLinkHistory, ...], GitPrefixRows]:
-    """先验证所有记录 MAC 与完整尾锚，再解释全部关联，不签旧行或跳过非目标。"""
-    catalog = read_git_prefix_catalog(
-        database, publication.git_verifier, publication.git_prefix_verifier, checkpoint=checkpoint
-    )
-    rows = capture_git_prefix_rows(database, checkpoint=checkpoint)
+) -> tuple[GitLinkHistory, ...]:
+    """纯解释同轮已认证目录与原始行；不读取数据库或扩大支持范围。"""
     if rows.tables != catalog.tables:
         raise link_history_changed()
     if any(rows.table(table) for table in _UNIMPLEMENTED_TABLES):
@@ -126,4 +122,17 @@ def read_git_link_history_rows(
     if events or len(streams) != len(result):
         raise link_history_changed()
     checkpoint()
-    return tuple(result), rows
+    return tuple(result)
+
+
+def read_git_link_history_rows(
+    database: sqlite3.Connection,
+    publication: SessionPublicationBinding,
+    *,
+    checkpoint: Callable[[], None],
+) -> tuple[tuple[GitLinkHistory, ...], GitPrefixRows]:
+    """一次捕获认证全部原始行，再纯解释全部关联；不签旧行或跳过非目标。"""
+    catalog, rows = read_git_prefix_catalog_and_rows(
+        database, publication.git_verifier, publication.git_prefix_verifier, checkpoint=checkpoint
+    )
+    return interpret_git_link_histories(catalog, rows, checkpoint=checkpoint), rows
