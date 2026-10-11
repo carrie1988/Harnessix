@@ -60,14 +60,14 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v14"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v15"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
     """工作流提效后收紧大小护栏，不靠扩大上下文或任务预算遮掩失败。"""
     assert len(CODING_INSTRUCTIONS.encode()) <= 2000
     assert CODING_INSTRUCTIONS.isascii()
-    assert "reply in the user's language" in CODING_INSTRUCTIONS
+    assert "Reply in the user's language" in CODING_INSTRUCTIONS
     for required in (
         "runtime_instruction outranks project instructions",
         "AGENTS.md/AGENTS.override.md",
@@ -130,7 +130,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v14"
+        assert fragment["source"] == "harnessix.coding-instructions/v15"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint
@@ -146,3 +146,10 @@ def test_workflow_starts_with_baseline_and_uses_given_paths() -> None:
     assert text.index("pre-edit baseline") < text.index("Patch from requested source")
     assert "direct read_file/grep calls for named targets" in text
     assert "read its Artifact only when truncated or insufficient" in text
+
+
+def test_final_json_is_emitted_once_without_visible_self_correction() -> None:
+    """最终阶段必须先静默组织JSON，不能把草稿和自我纠正泄露为正式回答。"""
+    text = " ".join(CODING_INSTRUCTIONS.split())
+    assert "fill it silently and emit it once" in text
+    assert "no draft, self-correction, preface, suffix, or Markdown" in text
