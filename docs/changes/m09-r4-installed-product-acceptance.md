@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 1cda7adae334adfec5e716770d0da8f19f4f87d2
+version: 5
+code_revision: 84a682c1b399575f213f7bd3ea1e289d444721fd
 owners: [core]
 modules: [deployment, product_config, sdk, documentation]
 related_adrs:
@@ -11,6 +11,8 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
   - tests/governance/test_installed_product_acceptance.py
+  - tests/governance/test_installed_product_upgrade_acceptance.py
+  - tests/governance/test_installed_rollback_order.py
   - tests/product_config/test_product_state_restore.py
   - tests/product_config/test_product_state_backup.py
 supersedes: []
@@ -23,7 +25,7 @@ supersedes: []
 开发环境中的`uv run`会使用源码安装及开发依赖，不能证明用户安装Wheel后可独立运行。
 已有[macOS源码外恢复证据](../validation/product-restart-release-boundary-2026-09-29-v1/README.md#6-脱离源码安装与完整状态恢复)
 完成实际SDK/CLI及完整状态恢复，但执行脚本绑定POSIX的`venv/bin`路径，没有验证卸载及重装。
-R4要求三平台安装与生命周期证据；本切片复用正式入口，补统一、可拒绝、可复验的安装验收路径。
+当前首发范围只要求macOS安装与生命周期证据；本切片复用正式入口，补统一、可拒绝、可复验的安装验收路径。
 
 既有`e08d248`三平台生命周期全部通过，但各Job独立构建，Windows Wheel摘要与另两平台不同。
 该事实不能证明同一发行物跨平台可用；后继工作流将构建收敛为一次，不改产品或恢复算法。
@@ -41,8 +43,8 @@ R4要求三平台安装与生命周期证据；本切片复用正式入口，补
 2. 以已安装解释器的`python -I -m harnessix`运行产品与CLI，排除源码路径和开发环境借用。
 3. 保持实际State Owner、原Key及原认证机制；State地址由产品首次创建，不预建ACL或自动改权。
 4. 完成活跃备份拒绝、六库/原Key备份验真、整体恢复、稳定restore ID及卸载重装后的会话读取。
-5. 三平台分别产出实际结果；失败和缺失不能折算成功，不把CI宿主当作消费者OS支持声明。
-6. 唯一构建Job先扫描实际Wheel并发布其摘要；三个安装Job消费同一Run同一Artifact，安装前核对原摘要。
+5. macOS安装Job产出实际结果；失败和缺失不能折算成功，不把单个Runner外推为全部macOS支持声明。
+6. 唯一构建Job先扫描实际Wheel并发布其摘要；macOS安装Job消费同一Run同一Artifact，安装前核对原摘要。
 
 非目标：真实编码任务、版本升级、独立Beta及1.0商用关闭。
 不同版本升级由[独立专项](m09-r4-different-version-upgrade.md)验证，其余继续由R3、R4后续和R5验收。
@@ -56,10 +58,10 @@ flowchart TD
     Checkout[固定Git规范Checkout与原uv锁] --> Build[Ubuntu唯一构建并扫描Wheel]
     Build --> Identity[构建Job发布Wheel SHA256]
     Build --> Artifact[同一Run唯一Wheel Artifact]
-    Artifact --> Check[三平台下载并校验构建摘要]
+    Artifact --> Check[macOS安装Job下载并校验构建摘要]
     Identity --> Check
-    Checkout --> Export[各平台导出生产依赖及哈希]
-    Check --> Install[各平台新专用venv精确安装]
+    Checkout --> Export[macOS导出生产依赖及哈希]
+    Check --> Install[macOS新专用venv精确安装]
     Export --> Install
     Install --> Gate[隔离解释器与逐成员字节验真]
     Gate --> CLI[已安装正式CLI Configure Doctor State]
@@ -88,7 +90,7 @@ Artifact名包含Revision、Run ID及Attempt，下载Action限定当前Run；构
 sequenceDiagram
     participant B as Ubuntu唯一构建Job
     participant A as 同一Run的Wheel Artifact
-    participant G as 三平台固定Checkout
+    participant G as macOS固定Checkout
     participant V as 源码外专用venv
     participant C as 实际SDK与CLI
     participant P as 已安装产品Server
@@ -151,7 +153,7 @@ publish_low_sensitivity_result_only_after_all_checks()
 | `verify_restore` | 复用原备份、验真及整体恢复CLI；活跃拒绝、原Key与稳定终态都必须成立 |
 | `state_snapshot` | 仅对新建自有case的已关闭文件做内存摘要；遇到Symlink/Junction拒绝；摘要不公开 |
 | `uninstall_reinstall` | 指定venv卸载、全新解释器导入拒绝、原文件不变及同一Wheel精确离线重装 |
-| [三平台工作流](../../.github/workflows/installed-product-acceptance.yml) | 固定Checkout/Python；`canonical-wheel`唯一构建、扫描和发布摘要，三个消费者只下载、验真和安装；`fail-fast=false`保留各平台结果 |
+| [macOS首发工作流](../../.github/workflows/installed-product-acceptance.yml) | 固定Checkout/Python；`canonical-wheel`唯一构建、扫描和发布摘要，macOS消费者只下载、验真和安装 |
 
 复用的产品接口详设：[SDK](../modules/sdk.md)、[Product Config](../modules/product-config.md)、
 [完整备份](m09-r1-product-state-backup.md)和[完整恢复](m09-r1-product-state-restore.md)。
@@ -175,7 +177,7 @@ publish_low_sensitivity_result_only_after_all_checks()
 
 工作流新增`canonical-wheel.outputs.wheel-sha256`，通过消费端的`CANONICAL_WHEEL_SHA256`传递。
 它来自构建Job中实际Wheel的SHA256，不是包版本或浮动Ref；三份原`result.json`的`wheel_sha256`
-必须全部等于它，才能给出规范发行物三平台专项结论。原结果Schema和产品领域接口不变。
+必须等于它，才能给出该macOS安装Job消费规范发行物的专项结论。原结果Schema和产品领域接口不变。
 Artifact保留14天；若缺失或过期，需要新的完整Run，不能把另一Run的Wheel拼入当前结果。
 
 CLI阶段日志仅记录固定phase/status，不展开子进程正文。失败退出1且不生成新的成功结果。
@@ -204,7 +206,7 @@ CLI阶段日志仅记录固定phase/status，不展开子进程正文。失败�
 下载件篡改时没有输入生成；另核对唯一构建、同Run Artifact绑定、固定Action摘要和原七文件上传白名单。
 真实Git临时仓库以自有配置模拟CRLF默认值，规范Checkout得到LF，对照目录及配置原字节保持。
 
-三平台独立Job须核对固定源、实际Wheel及安装成员、原CLI/SDK结果、失败原件和低敏上传集合。
+macOS安装Job须核对固定源、实际Wheel及安装成员、原CLI/SDK结果、失败原件和低敏上传集合。
 上传仅允许结果、requirements、Wheel输入及四份安装阶段日志，不上传整个环境目录。
 失败公开`AcceptanceFailure`固定错误码或通用`installed_acceptance_failed`，不公开异常正文、路径和子进程stderr。
 
@@ -244,7 +246,7 @@ CLI阶段日志仅记录固定phase/status，不展开子进程正文。失败�
 
 Windows使用专用`venv/Scripts/python.exe`，产品CLI仍走`-I -m harnessix`，不硬编码`bin/harnessix`。
 已有失败case不可复用；复验必须用新环境根，不清理旧结果伪造冷启动。
-正式三平台支持仍受有限目标OS、原生核心编码、版本升级和Beta门禁约束。
+正式macOS支持仍受有限目标OS、原生核心编码、版本升级和Beta门禁约束。
 选择固定Wheel而不是多个安装器降低组合数，选择真实Server/CLI而不是Store模拟保留数据保护语义。
 小规模无模型生命周期不能替代真实编码，必须继续完成R3/R4/R5；R1～R6及1.0整体不因本切片自动关闭。
 
@@ -257,3 +259,11 @@ Windows Server CI也不替代消费者Windows11。后继格式边界源码为`10
 `a4f7f33`的[规范Wheel三平台实测](../validation/canonical-wheel-three-platform-2026-09-29-v1/README.md)
 已完成唯一构建、实际Secret扫描及三个消费者的完整生命周期；三份结果均为同一原字节摘要，专项通过。
 这不追认旧独立构建的差异归因，不承诺可复现构建，也不关闭版本升级、消费者Windows11、R3/R5或商用门禁。
+
+当前主线 `84a682c1b399575f213f7bd3ea1e289d444721fd` 又在 macOS 27.0.1 arm64／Python 3.12.7
+以唯一 `1.0.0rc1` Wheel 完成源码外安装、七文件备份恢复、卸载重装，并在另一全新环境完成
+`0.1.0 → 1.0.0rc1 → 匹配备份恢复 → 0.1.0`。候选 Wheel 摘要为
+`b9b9e14a3f30ceb976a22b78ecc8eaa7f252888475637af1b598f7f53d963c4b`，568 个候选安装成员逐字匹配；
+没有 Provider Turn。低敏原件位于本机 `verification-working/r4-current-main-install-20261011-v4` 与
+`verification-working/r4-current-main-upgrade-20261011-v1`。这关闭的是当前主线的本机源码外生命周期事实，
+不关闭原生桥、默认 Git Writer、真实编码任务、Beta、全部macOS环境或商用发布。

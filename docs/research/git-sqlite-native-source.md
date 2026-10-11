@@ -1,8 +1,8 @@
 ---
 doc_type: source-research
 status: reviewing
-version: 17
-code_revision: 05f1d45b183446de5d7f2ccd3277705d3ce1c9ff
+version: 18
+code_revision: 84a682c1b399575f213f7bd3ea1e289d444721fd
 owners: [core]
 modules: [product_config, delivery]
 related_adrs:
@@ -599,6 +599,21 @@ Provider 为原离线夹具；硬退出子进程仍按原测试使用默认模�
 两份原验收脚本逐字绑定上述源码 Revision，原期限、断言及恢复算法不变。另在独立已安装环境并行执行
 三个完整安装／升级／回退治理文件，**47 项通过、零跳过**，覆盖同版本拒绝、来源漂移、失败保留及回退顺序；
 这些合成负控与上述实际产品链分别计证，不互相替代。旧宿主和既有产品报告封存复核均无漂移。
+
+#### 当前主线规范 Wheel 的源码外生命周期复验
+
+2026-10-11 又以当前主线 `84a682c1b399575f213f7bd3ea1e289d444721fd` 构建并扫描唯一
+`1.0.0rc1` Wheel；摘要为 `b9b9e14a3f30ceb976a22b78ecc8eaa7f252888475637af1b598f7f53d963c4b`。
+在 macOS 27.0.1 arm64／Python 3.12.7 的全新源码外环境中，568 个源码与安装成员逐字节一致，
+安装、七文件备份恢复、卸载、同 Wheel 重装及状态保持全部通过；随后在另一全新环境完成
+`0.1.0 → 1.0.0rc1 → 匹配备份恢复 → 0.1.0`，两个版本的安装成员、原 Key、Previous、Workspace
+及状态字节均通过原验收器核对，全程没有 Provider Turn。
+
+最终原件分别位于本机 `verification-working/r4-current-main-install-20261011-v4` 与
+`verification-working/r4-current-main-upgrade-20261011-v1`。前两次安装尝试分别因输入 Revision
+不匹配、旧系统 Python 生成空 Wheel URI 而失败，原目录继续保留，没有覆盖后重跑。
+这组证据只关闭当前纯 Python 产品的源码外安装、恢复与版本转换事实；它没有启用或证明原生桥、
+SHM、默认 Git Writer、真实编码质量、Beta 或商用发布。
 
 ### 7.7 WAL 点时观察可行，SHM 尚未解决
 

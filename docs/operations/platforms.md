@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 14
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 15
+code_revision: 84a682c1b399575f213f7bd3ea1e289d444721fd
 owners:
   - core
 modules:
@@ -50,7 +50,7 @@ supersedes: []
 
 | 首发目标 | Python | 必需验证 | 当前判定 |
 |---|---|---|---|
-| macOS（具体版本/架构逐项核定） | 经验证的3.12补丁 | 脱离源码安装、原生Git编码闭环、进程、必要受管Container后端、手动升级、匹配Key备份恢复及Beta | 正式发行门禁未关闭 |
+| macOS（具体版本/架构逐项核定） | 经验证的3.12补丁 | 脱离源码安装、原生Git编码闭环、进程、必要受管Container后端、手动升级、匹配Key备份恢复及Beta | 当前主线已在macOS 27.0.1 arm64完成源码外安装、恢复和不同版本转换；其余门禁未关闭 |
 
 原macOS ARM64目标保留，仍须对应架构的原生验收；Intel x86_64与Apple Silicon ARM64证据不能互相代替，不因“macOS only”就声明所有macOS版本或双架构全覆盖。
 当前Mac原生组件为正式内部候选、非默认Writer，R4未完成；组件回归不等于安装或产品支持。R3原完整20 Trial及原评分/限制、Mac安全/恢复与Beta真实业务验收不放松，商业发布仍为**NO-GO**。
@@ -108,8 +108,12 @@ Windows、PostgreSQL、Container与文档矩阵验收。该证据只证明基础
 
 CI定义以[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)为准。0.9.1d已把Windows真实`agent-server`启动、
 四项Tool、长路径、Junction、ADS、保留名、硬链接和关闭场景加入`windows-trusted-execution`，并由
-[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成验收。当前仍缺
-macOS正式发行、真实终端交互、当前候选升级/恢复和小批Beta；Linux/Windows交付不在当前未完成清单中。
+[CI 34735529084](https://github.com/carrie1988/Harnessix/actions/runs/34735529084)完成验收。当前主线
+`84a682c1b399575f213f7bd3ea1e289d444721fd` 已在 macOS 27.0.1 arm64／Python 3.12.7 本机以同一
+`1.0.0rc1` Wheel 完成源码外安装、备份恢复、卸载重装及 `0.1.0 ↔ 1.0.0rc1` 不同版本转换；
+原件位于本机 `verification-working/r4-current-main-install-20261011-v4` 和
+`verification-working/r4-current-main-upgrade-20261011-v1`。当前仍缺默认原生Git Writer、真实终端交互、
+对应Revision的正式发行工作流和小批Beta；Linux/Windows交付不在当前未完成清单中。
 网络文件系统、多安装器和额外架构不自动进入首发支持范围；Mac具体OS/架构仍需R4实际安装验证。
 
 ## 4. 文件系统要求
@@ -248,7 +252,7 @@ POSIX测试同时覆盖Unicode、创建/替换/删除、链接拒绝、Lease竞�
 
 - Windows文件事务专项原生证据保留，但不等于Windows完整产品支持；其版本交付不再属于当前R4，也不转为延期必做项；
 - 既有0.9.1交互及0.9.3d Soak证据保留，但TUI仍需小批真实用户终端和正式发行物验证；
-- macOS统一Wheel发行和真实Beta未关闭；源码候选或取消其他平台交付均不能视为正式产品支持；
+- macOS当前主线统一Wheel已完成一次本机源码外安装、恢复与不同版本转换，但正式工作流发行、默认原生Git Writer和真实Beta仍未关闭；
 - CI Runner不能覆盖真实用户终端、安全软件、代理、企业证书和文件系统差异；
 - 正式Agent镜像延期，不阻断首发；实际发布Wheel及Container执行后端的必要门禁保留；
 - Mac资格逐OS/架构实测，原ARM64目标不预判通过，也不自动扩为Intel与Apple Silicon全覆盖；网络文件系统及特殊离线环境没有正式支持承诺；
