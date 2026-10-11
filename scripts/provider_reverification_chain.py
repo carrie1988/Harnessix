@@ -20,6 +20,7 @@ from scripts.provider_reverification_plan import (
     Sha256,
     VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
+    VerificationRollingReverificationPlanV2,
     validate_reverification_plan,
 )
 
@@ -125,7 +126,13 @@ def validate_candidate_chain(
             or len(prefix) != binding.prior_request_count
             or digest(prefix) != binding.prior_requests_sha256
             or any(item["status"] == "reserved" for item in prefix)
-            or {item["request_id"] for item in prefix if item["status"] == "unknown"} != carried
+            or (
+                not carried
+                <= {item["request_id"] for item in prefix if item["status"] == "unknown"}
+                if isinstance(plan, VerificationRollingReverificationPlanV2)
+                else {item["request_id"] for item in prefix if item["status"] == "unknown"}
+                != carried
+            )
         ):
             raise ValueError
         charged = validate_reverification_plan({**period, "requests": prefix}, plan)

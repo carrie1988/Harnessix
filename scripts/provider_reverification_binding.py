@@ -15,6 +15,7 @@ from scripts.provider_reverification_plan import (
     Sha256,
     VerificationBetaTaskReverificationPlan,
     VerificationReverificationPlanRecord,
+    VerificationRollingReverificationPlanV2,
     validate_reverification_plan,
 )
 
@@ -59,10 +60,15 @@ def validate_reverification_binding(
         or digest(prefix) != binding.prior_requests_sha256
     ):
         raise ValueError
-    # 切换只承接原授权声明的旧unknown，不能替新请求豁免未决。
+    # v5把当前周期的新unknown也全额计入原上限，才能切到新Suite。
     carried = {str(request.request_id) for request in plan.carried_requests}
     unknown = {request["request_id"] for request in prefix if request["status"] == "unknown"}
-    if unknown != carried or any(
+    unresolved_mismatch = (
+        not carried <= unknown
+        if isinstance(plan, VerificationRollingReverificationPlanV2)
+        else unknown != carried
+    )
+    if unresolved_mismatch or any(
         request["status"] == "reserved" or "reverification_binding_id" in request
         for request in prefix
     ):

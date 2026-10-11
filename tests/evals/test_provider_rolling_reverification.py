@@ -11,6 +11,7 @@ import pytest
 
 from harnessix.models.pricing import amount_units
 from harnessix.tools.workspace import digest
+from scripts.provider_reverification_binding import VerificationReverificationBinding
 from scripts.provider_reverification_plan import (
     CarriedVerificationRequest,
     VerificationRollingReverificationPlan,
@@ -186,3 +187,31 @@ def test_v5_keeps_current_unknown_reserved_and_reopens_an_80_yuan_period(tmp_pat
     with VerificationBudgetLedger(path, plan.period_id, **scope) as owner:
         assert owner.period["known_cost"] == "4.724844"
         assert owner.period["reserved_cost"] == "6.147456"
+
+    current = json.loads(path.read_text(encoding="utf-8"))["periods"][0]
+    binding = VerificationReverificationBinding(
+        spec_version="harnessix.provider-reverification-binding/v1",
+        authority="budget-owner-explicit",
+        binding_id=uuid4(),
+        reverification_id=plan.reverification_id,
+        period_id=plan.period_id,
+        previous_suite_id=plan.suite_id,
+        suite_id=uuid4(),
+        ledger_before_sha256=sha256(path.read_bytes()).hexdigest(),
+        original_plan_sha256=digest(plan.model_dump(mode="json")),
+        prior_request_count=len(current["requests"]),
+        prior_requests_sha256=digest(current["requests"]),
+        charged_cost="3",
+        remaining_cost="69.1277",
+    )
+    VerificationBudgetLedger.rebind_reverification(path, binding)
+    rebound_scope = {
+        "reverification_id": binding.reverification_id,
+        "suite_id": binding.suite_id,
+    }
+    with VerificationBudgetLedger(path, binding.period_id, **rebound_scope) as owner:
+        request_id = owner.reserve(amount_units("1"), {"purpose": "new-suite-model-request"})
+        owner.settle(request_id, 0, sent=False)
+
+    persisted = json.loads(path.read_text(encoding="utf-8"))["periods"][0]
+    assert persisted["reserved_cost"] == "6.147456"
