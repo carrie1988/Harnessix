@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
-status: current
-version: 1
+status: historical
+version: 2
 code_revision: 7bbce1033925eaf758e295b3c76fc65dee446f30
 owners: [core]
 modules: [evals, models]
@@ -496,3 +496,11 @@ Turn/工具 `budget_exceeded` 属于Agent或工具执行边界，不能据此宣
 本交付只新增独占验证目录下的README、四份JSON、四份Mermaid源码及四份PNG，并新增本文件；不修改生产代码、原测试、旧失败材料、roadmap或模块文档。逐文件SHA见[manifest.json](../validation/r3-real-suite-2026-10-02-v1/manifest.json)，评审检查表见[review-packet.json](../validation/r3-real-suite-2026-10-02-v1/review-packet.json)。
 
 文档评审完成只表示事实投影与正式结果一致。真实质量仍为**严格0/20、测试1/20、NO-GO**；原历史失败与未知费用预留继续保留。
+
+## 13. 后继独立验收
+
+本文件继续作为Revision `7bbce103`的历史失败证据，不改写原0/20结论。当前R3状态由独立Suite
+`f930752e-a55e-4075-b97d-6cc1de9dba5d`更新：原Task Pack v2、10 Case×2 Trial、50K Token、16 Step、
+900秒期限、权限与Grader均未放宽，严格任务与必需测试均为20/20，人工干预0。后继低敏证据见
+[R3最终真实Provider Suite](../validation/r3-engineering-provider-suite-2026-10-12-v1/README.md)。该验收关闭R3，
+不关闭R4、R5或1.0商用发布总门禁。

@@ -1,0 +1,1967 @@
+{
+  "spec_version": "harnessix.coding-eval-suite-report/v1",
+  "plan": {
+    "spec_version": "harnessix.coding-eval-suite-plan/v1",
+    "suite_id": "f930752e-a55e-4075-b97d-6cc1de9dba5d",
+    "suite_version": 1,
+    "environment": {
+      "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+      "provider": "openai_chat",
+      "model": "qwen3.8-max",
+      "platform": "darwin",
+      "isolation": "fixed-container-checks-provider-network"
+    },
+    "cases": [
+      {
+        "case_id": "agents-dump-compatible-refactor",
+        "task_kind": "refactor",
+        "task_id": "engineering-agents-dump-compatible-refactor",
+        "task_version": 1,
+        "task_fingerprint": "f4e2d35fc91b69cf5c1190d4d7cd394ffe94b3c7e7d9fae57ea93974b7967175",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "b3102d599324b481ddb3bdf74d2bb4bc672c2263b0fb1952ad260accddb71543"
+      },
+      {
+        "case_id": "agents-normalize-tool-name",
+        "task_kind": "bug_fix",
+        "task_id": "engineering-agents-normalize-tool-name",
+        "task_version": 1,
+        "task_fingerprint": "fff9d6fe482e5935c68da8608344f57e62607e945d3a6771f879b4748589df27",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "3bc99ef74ea6db4c043f771d5e49736fc013badef98befe7231e894cc711b3ef"
+      },
+      {
+        "case_id": "agents-payload-bytes-test",
+        "task_kind": "test",
+        "task_id": "engineering-agents-payload-bytes-test",
+        "task_version": 1,
+        "task_fingerprint": "938a5bf790657da88292324e4838c045abb74aa1122dd9eb5001e14694937bf1",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "d653af11b9a3e6496d25e637dbcc0c6e0e0b8902d6eac79104dd591c20c37d34"
+      },
+      {
+        "case_id": "agents-secret-redaction-review",
+        "task_kind": "review",
+        "task_id": "engineering-agents-secret-redaction-review",
+        "task_version": 1,
+        "task_fingerprint": "398d8e16ceca0da4e333bbb215926c3b106956d4114645aa43f7b57376d6120b",
+        "repository": {
+          "name": "agents-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:agents-utils-benchmark",
+          "source_revision": "91a4edc1eb208746b127c6e67d28abd9bf1aae2b",
+          "baseline_tree_sha256": "95d97adeb22297ea22547a0257460bc756c102c98c5f349faf9a9ba3ea2b1ecd"
+        },
+        "campaign_plan_fingerprint": "11bdd9e60d5a472c22a39f781ab12cb129621aea0bee66980edda560f27886f4"
+      },
+      {
+        "case_id": "langchain-batch-none-test",
+        "task_kind": "test",
+        "task_id": "engineering-langchain-batch-none-test",
+        "task_version": 1,
+        "task_fingerprint": "8a7be0c6d10a624c800ee2e917d2c85e72b71fe6458303fade7fd0ee520b6705",
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "campaign_plan_fingerprint": "fa6d5700a0fb59b9a89397f4d76045ab47841b8a4b42c3cb2b94c1412a946fd3"
+      },
+      {
+        "case_id": "langchain-storage-replacement",
+        "task_kind": "feature",
+        "task_id": "engineering-langchain-storage-replacement",
+        "task_version": 1,
+        "task_fingerprint": "1b3fc0a293ce29d8a5e3bc627483987efeadfa519a09511d762a85fd4dd33c13",
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "campaign_plan_fingerprint": "4b924a38c49f1a1c11cd10afa27e9aba205063a428d6e65c42b94845055ce6ba"
+      },
+      {
+        "case_id": "langchain-stringify-dict-keys",
+        "task_kind": "bug_fix",
+        "task_id": "engineering-langchain-stringify-dict-keys",
+        "task_version": 1,
+        "task_fingerprint": "61cf7bf1ce5aa1d799a8198393647e1f0f60c83a688b88e6210fba7031f500cb",
+        "repository": {
+          "name": "langchain-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:langchain-utils-benchmark",
+          "source_revision": "531047a21366b4b8042d3515233ec4e0ccc563a9",
+          "baseline_tree_sha256": "cf435575626f3a419bfa0a8d5f40c5b3da79421062b33bfd528104df6f6825a9"
+        },
+        "campaign_plan_fingerprint": "edabda05489324082061eb421f94a1ada9c719b14a71ed1bd87e66e45edcb46f"
+      },
+      {
+        "case_id": "opencode-path-normalization",
+        "task_kind": "feature",
+        "task_id": "engineering-opencode-path-normalization",
+        "task_version": 1,
+        "task_fingerprint": "be712726a47c546c8d86b73f2529f2f35561f0a2e677d79152f04c29a2d5e995",
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "campaign_plan_fingerprint": "6d9f624028e2ff0a1ff1136f1555f29b7de66db4cda16f90c4347331ad6c4ada"
+      },
+      {
+        "case_id": "opencode-retry-delay-refactor",
+        "task_kind": "refactor",
+        "task_id": "engineering-opencode-retry-delay-refactor",
+        "task_version": 1,
+        "task_fingerprint": "66203c97dc7a19e7525266680e1b996d48c32169d93824b85a3653720b96a3ba",
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "campaign_plan_fingerprint": "cf45b61a77ec6cb23a147ce9e54aeb49bc37300c1176e56b4d61503cfed5b6b7"
+      },
+      {
+        "case_id": "opencode-terminal-url-review",
+        "task_kind": "review",
+        "task_id": "engineering-opencode-terminal-url-review",
+        "task_version": 1,
+        "task_fingerprint": "802139ad275628def7fcde364801b3789546965688e1d7a7a9cd84326db4081b",
+        "repository": {
+          "name": "opencode-utils-benchmark",
+          "origin": "urn:harnessix:task-pack:engineering-v2:opencode-utils-benchmark",
+          "source_revision": "b2cece9e4b4e81c17a92c67a523da79a661609f0",
+          "baseline_tree_sha256": "3690855ffd19700e62b3b91c2c5dded2558f45170040268a2f67f267d6ac7dc0"
+        },
+        "campaign_plan_fingerprint": "02eb853625f34d36771b9cb9afd2fc4dc36b0bf6ee4365eae909af2f6bd5d241"
+      }
+    ],
+    "created_at": "2026-10-11T16:17:56.954780Z"
+  },
+  "plan_fingerprint": "6d18ea495160782f9cf9dd00b0b814cf2b8cfd43197c45a6df358dc4608b0b50",
+  "cases": [
+    {
+      "case_id": "agents-dump-compatible-refactor",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "4f1f8d61-d57a-5978-ad74-99d8a70753bb",
+          "task_id": "engineering-agents-dump-compatible-refactor",
+          "task_version": 1,
+          "task_fingerprint": "f4e2d35fc91b69cf5c1190d4d7cd394ffe94b3c7e7d9fae57ea93974b7967175",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "adb8035c-d6ed-5d98-bb87-3e4c2033411f",
+            "703186a0-dffd-5de1-b3a7-d46597d55058"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "b3102d599324b481ddb3bdf74d2bb4bc672c2263b0fb1952ad260accddb71543",
+        "trials": [
+          {
+            "run_id": "adb8035c-d6ed-5d98-bb87-3e4c2033411f",
+            "eval_report_sha256": "61634f6c0cf9e93729036b6e236f6533eed8e3f32dc1e4f6cb6ad49b35360575",
+            "turn_id": "01a12bc2-311d-7880-bcc0-c17248b8b03f",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 25138,
+            "output_tokens": 693,
+            "elapsed_seconds": 63.832367,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.326604",
+            "started_at": "2026-10-11T16:18:29.279138Z",
+            "completed_at": "2026-10-11T16:19:33.111505Z"
+          },
+          {
+            "run_id": "703186a0-dffd-5de1-b3a7-d46597d55058",
+            "eval_report_sha256": "31d20adc20ca875dc801e64dad9dc18f4a29942e5cd5586790a19d2b6e6358f1",
+            "turn_id": "01a12bc3-2cbd-7ff1-911c-fcec92635d84",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 25185,
+            "output_tokens": 712,
+            "elapsed_seconds": 69.585413,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.327852",
+            "started_at": "2026-10-11T16:19:33.695046Z",
+            "completed_at": "2026-10-11T16:20:43.280459Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 14,
+          "input_tokens": 50323,
+          "output_tokens": 1405,
+          "elapsed_min_seconds": 63.832367,
+          "elapsed_p50_seconds": 63.832367,
+          "elapsed_p95_seconds": 69.585413,
+          "elapsed_max_seconds": 69.585413,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.654456",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:20:43.280459Z"
+      },
+      "campaign_report_fingerprint": "929c3f077029e82911fce316bde6625502a42a62b798c17b87ae80fb7e14d6a9",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "adb8035c-d6ed-5d98-bb87-3e4c2033411f",
+          "turn_id": "01a12bc2-311d-7880-bcc0-c17248b8b03f",
+          "turn_status": "completed",
+          "transcript_sha256": "5c33fe92016ba7f517851aa2411592e472969a30ef7103a56c8ec0be40eb5659",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 25138,
+          "output_tokens": 693,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "703186a0-dffd-5de1-b3a7-d46597d55058",
+          "turn_id": "01a12bc3-2cbd-7ff1-911c-fcec92635d84",
+          "turn_status": "completed",
+          "transcript_sha256": "592f2cbd0aa8e87427dd739674828e86ea953b12a72c52e0d787eb055457b08f",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 25185,
+          "output_tokens": 712,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "adb8035c-d6ed-5d98-bb87-3e4c2033411f",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "703186a0-dffd-5de1-b3a7-d46597d55058",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "agents-normalize-tool-name",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "a9025fdd-d709-5ce4-bd64-e1ab2f30f0c5",
+          "task_id": "engineering-agents-normalize-tool-name",
+          "task_version": 1,
+          "task_fingerprint": "fff9d6fe482e5935c68da8608344f57e62607e945d3a6771f879b4748589df27",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "15978e61-2e6d-5287-80a0-b5ef2e4e3923",
+            "19ba1735-ea6c-5959-a612-89c11789f4ed"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "3bc99ef74ea6db4c043f771d5e49736fc013badef98befe7231e894cc711b3ef",
+        "trials": [
+          {
+            "run_id": "15978e61-2e6d-5287-80a0-b5ef2e4e3923",
+            "eval_report_sha256": "b64c81f501ae2a3d9d8bb96c08a5295884e034d0efc0e83926ce0bd73b110d42",
+            "turn_id": "01a12bc4-3ec3-7d0d-9589-5dd7c500e04d",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 25013,
+            "output_tokens": 707,
+            "elapsed_seconds": 69.542408,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.325608",
+            "started_at": "2026-10-11T16:20:43.845376Z",
+            "completed_at": "2026-10-11T16:21:53.387784Z"
+          },
+          {
+            "run_id": "19ba1735-ea6c-5959-a612-89c11789f4ed",
+            "eval_report_sha256": "0a2c8abb4864274382acf7eff7b0b9d4d4e9b882643640cedcd0b1fbb98ec76e",
+            "turn_id": "01a12bc5-50a5-7db2-a410-e8c3c4039b8c",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 25109,
+            "output_tokens": 710,
+            "elapsed_seconds": 69.589579,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.326868",
+            "started_at": "2026-10-11T16:21:53.958783Z",
+            "completed_at": "2026-10-11T16:23:03.548362Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 14,
+          "input_tokens": 50122,
+          "output_tokens": 1417,
+          "elapsed_min_seconds": 69.542408,
+          "elapsed_p50_seconds": 69.542408,
+          "elapsed_p95_seconds": 69.589579,
+          "elapsed_max_seconds": 69.589579,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.652476",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:23:03.548362Z"
+      },
+      "campaign_report_fingerprint": "96509eb6fa954fe3b0c45e168acea6f376ab7800fa59683150a67edb4807cc5f",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "15978e61-2e6d-5287-80a0-b5ef2e4e3923",
+          "turn_id": "01a12bc4-3ec3-7d0d-9589-5dd7c500e04d",
+          "turn_status": "completed",
+          "transcript_sha256": "0e4f14941d69daf5a2ad93166640251b12173b10a25c216fe51a4fd1206ee77f",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 25013,
+          "output_tokens": 707,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "19ba1735-ea6c-5959-a612-89c11789f4ed",
+          "turn_id": "01a12bc5-50a5-7db2-a410-e8c3c4039b8c",
+          "turn_status": "completed",
+          "transcript_sha256": "8253161e3c6db70b426b4a4ac5fce74287180313c62c1fcb6d4ab527b5f36a3d",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 25109,
+          "output_tokens": 710,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "15978e61-2e6d-5287-80a0-b5ef2e4e3923",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "19ba1735-ea6c-5959-a612-89c11789f4ed",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "agents-payload-bytes-test",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "615bd0f3-2917-5464-90cc-66a12bbabafe",
+          "task_id": "engineering-agents-payload-bytes-test",
+          "task_version": 1,
+          "task_fingerprint": "938a5bf790657da88292324e4838c045abb74aa1122dd9eb5001e14694937bf1",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "c2af302b-6685-5d11-ac59-bd5a64af7dfc",
+            "2e81529c-0bc8-579c-bbc3-6f9c5064428f"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "d653af11b9a3e6496d25e637dbcc0c6e0e0b8902d6eac79104dd591c20c37d34",
+        "trials": [
+          {
+            "run_id": "c2af302b-6685-5d11-ac59-bd5a64af7dfc",
+            "eval_report_sha256": "f02296d259c58984b58e17f393b2526dfef9e0b41cc355776825ee48e0dec027",
+            "turn_id": "01a12bc6-653d-71cf-b7a2-16361c260b7c",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 10,
+            "input_tokens": 36927,
+            "output_tokens": 793,
+            "elapsed_seconds": 99.978518,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.471672",
+            "started_at": "2026-10-11T16:23:04.767266Z",
+            "completed_at": "2026-10-11T16:24:44.745784Z"
+          },
+          {
+            "run_id": "2e81529c-0bc8-579c-bbc3-6f9c5064428f",
+            "eval_report_sha256": "9472eb52d1dd3ddb33d893c15be2b587ff0c80e2ee5771da0bc156d6193de965",
+            "turn_id": "01a12bc7-ee2f-7659-ae75-c9669c54f686",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 8,
+            "input_tokens": 29024,
+            "output_tokens": 606,
+            "elapsed_seconds": 79.211614,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.370104",
+            "started_at": "2026-10-11T16:24:45.360969Z",
+            "completed_at": "2026-10-11T16:26:04.572583Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 18,
+          "input_tokens": 65951,
+          "output_tokens": 1399,
+          "elapsed_min_seconds": 79.211614,
+          "elapsed_p50_seconds": 79.211614,
+          "elapsed_p95_seconds": 99.978518,
+          "elapsed_max_seconds": 99.978518,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.841776",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:26:04.572583Z"
+      },
+      "campaign_report_fingerprint": "90c753402ff4f191c1bdf8b85fdd6771a292f5f51dd196d9b7facf916601a41b",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "c2af302b-6685-5d11-ac59-bd5a64af7dfc",
+          "turn_id": "01a12bc6-653d-71cf-b7a2-16361c260b7c",
+          "turn_status": "completed",
+          "transcript_sha256": "2398c3677553704a252339a67880f5bbcf09f931948b8422f2471795c6b686ac",
+          "completed_items": 23,
+          "model_steps": 10,
+          "model_attempts": 10,
+          "input_tokens": 36927,
+          "output_tokens": 793,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "2e81529c-0bc8-579c-bbc3-6f9c5064428f",
+          "turn_id": "01a12bc7-ee2f-7659-ae75-c9669c54f686",
+          "turn_status": "completed",
+          "transcript_sha256": "4fc2c8336174f44757344a65a1bda84d9d46858048ed2b898d7d9a05992c4f0e",
+          "completed_items": 19,
+          "model_steps": 8,
+          "model_attempts": 8,
+          "input_tokens": 29024,
+          "output_tokens": 606,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "c2af302b-6685-5d11-ac59-bd5a64af7dfc",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "2e81529c-0bc8-579c-bbc3-6f9c5064428f",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "agents-secret-redaction-review",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "c64d8c60-1791-58c4-9410-7146b5a597d4",
+          "task_id": "engineering-agents-secret-redaction-review",
+          "task_version": 1,
+          "task_fingerprint": "398d8e16ceca0da4e333bbb215926c3b106956d4114645aa43f7b57376d6120b",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "10913501-0f52-55dc-9386-9e3e86759e0d",
+            "24c79778-dc42-5958-9080-750bc8e31aec"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "11bdd9e60d5a472c22a39f781ab12cb129621aea0bee66980edda560f27886f4",
+        "trials": [
+          {
+            "run_id": "10913501-0f52-55dc-9386-9e3e86759e0d",
+            "eval_report_sha256": "a6050006132c470d9c9da3e026c555a7483d16e6fe73e13b2583af22ba2600b4",
+            "turn_id": "01a12bc9-25ec-7646-b351-019944b4c44b",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 10,
+            "input_tokens": 47550,
+            "output_tokens": 1312,
+            "elapsed_seconds": 98.160781,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.617832",
+            "started_at": "2026-10-11T16:26:05.166516Z",
+            "completed_at": "2026-10-11T16:27:43.327297Z"
+          },
+          {
+            "run_id": "24c79778-dc42-5958-9080-750bc8e31aec",
+            "eval_report_sha256": "f2809cdc9ebda0129df5ca24833df9b72e300a8ea6e5b9579ed00b29f8044d2f",
+            "turn_id": "01a12bca-a7ed-7cfc-8a98-f628201eaa66",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 10,
+            "input_tokens": 48187,
+            "output_tokens": 1387,
+            "elapsed_seconds": 99.264623,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.628176",
+            "started_at": "2026-10-11T16:27:43.982870Z",
+            "completed_at": "2026-10-11T16:29:23.247493Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 20,
+          "input_tokens": 95737,
+          "output_tokens": 2699,
+          "elapsed_min_seconds": 98.160781,
+          "elapsed_p50_seconds": 98.160781,
+          "elapsed_p95_seconds": 99.264623,
+          "elapsed_max_seconds": 99.264623,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "1.246008",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:29:23.247493Z"
+      },
+      "campaign_report_fingerprint": "6ec776b2c868144227043db3e0167bb47853d1dd745fd53847b94da02e5b2495",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "10913501-0f52-55dc-9386-9e3e86759e0d",
+          "turn_id": "01a12bc9-25ec-7646-b351-019944b4c44b",
+          "turn_status": "completed",
+          "transcript_sha256": "0bc0fd9172e61947227caca6619dd4b4e5f63210ce1487ffba4481e04e32af45",
+          "completed_items": 25,
+          "model_steps": 10,
+          "model_attempts": 10,
+          "input_tokens": 47550,
+          "output_tokens": 1312,
+          "approval_requests": 5,
+          "automated_approval_decisions": 5,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "24c79778-dc42-5958-9080-750bc8e31aec",
+          "turn_id": "01a12bca-a7ed-7cfc-8a98-f628201eaa66",
+          "turn_status": "completed",
+          "transcript_sha256": "2161d4bf52faf178afc210bc90eaa1d64b2a629162bdcab2d012815b1b115f2b",
+          "completed_items": 25,
+          "model_steps": 10,
+          "model_attempts": 10,
+          "input_tokens": 48187,
+          "output_tokens": 1387,
+          "approval_requests": 5,
+          "automated_approval_decisions": 5,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "10913501-0f52-55dc-9386-9e3e86759e0d",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "24c79778-dc42-5958-9080-750bc8e31aec",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "langchain-batch-none-test",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "13abae03-8d13-5757-b741-bce9337aad13",
+          "task_id": "engineering-langchain-batch-none-test",
+          "task_version": 1,
+          "task_fingerprint": "8a7be0c6d10a624c800ee2e917d2c85e72b71fe6458303fade7fd0ee520b6705",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "f905840b-ce29-5cf1-9b5c-4d41b075c6cc",
+            "1d9c20ab-f4f2-5b0c-abce-0deac593fbb7"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "fa6d5700a0fb59b9a89397f4d76045ab47841b8a4b42c3cb2b94c1412a946fd3",
+        "trials": [
+          {
+            "run_id": "f905840b-ce29-5cf1-9b5c-4d41b075c6cc",
+            "eval_report_sha256": "707e5ce78ce5eaeab32e9b4cecf88096fb142facbba658a47919d39bc4d0fdfc",
+            "turn_id": "01a12bcc-2e4d-793e-ab56-5544bb5261c0",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 8,
+            "input_tokens": 30087,
+            "output_tokens": 619,
+            "elapsed_seconds": 79.216246,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.383328",
+            "started_at": "2026-10-11T16:29:23.919248Z",
+            "completed_at": "2026-10-11T16:30:43.135494Z"
+          },
+          {
+            "run_id": "1d9c20ab-f4f2-5b0c-abce-0deac593fbb7",
+            "eval_report_sha256": "07bf82c8b1c142687d813796046e3f2fbcc6bc8d0b0ea04e88a9811b6ff4e5f2",
+            "turn_id": "01a12bcd-6604-7a5f-b6fc-12949e2842f8",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 8,
+            "input_tokens": 30038,
+            "output_tokens": 570,
+            "elapsed_seconds": 79.363522,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.380976",
+            "started_at": "2026-10-11T16:30:43.718470Z",
+            "completed_at": "2026-10-11T16:32:03.081992Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 16,
+          "input_tokens": 60125,
+          "output_tokens": 1189,
+          "elapsed_min_seconds": 79.216246,
+          "elapsed_p50_seconds": 79.216246,
+          "elapsed_p95_seconds": 79.363522,
+          "elapsed_max_seconds": 79.363522,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.764304",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:32:03.081992Z"
+      },
+      "campaign_report_fingerprint": "900ff213b3f94caebd0a20fc79fba625d06d5ded737e1c9abd72ccd5fb913235",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "f905840b-ce29-5cf1-9b5c-4d41b075c6cc",
+          "turn_id": "01a12bcc-2e4d-793e-ab56-5544bb5261c0",
+          "turn_status": "completed",
+          "transcript_sha256": "7c2e0734a35563270dd65a113d818f650793c8b1b4692cba4a069f2db2884653",
+          "completed_items": 19,
+          "model_steps": 8,
+          "model_attempts": 8,
+          "input_tokens": 30087,
+          "output_tokens": 619,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "1d9c20ab-f4f2-5b0c-abce-0deac593fbb7",
+          "turn_id": "01a12bcd-6604-7a5f-b6fc-12949e2842f8",
+          "turn_status": "completed",
+          "transcript_sha256": "31fac622418398577a61796c88425a7ce0af8addb4631970a695901a88c1af01",
+          "completed_items": 19,
+          "model_steps": 8,
+          "model_attempts": 8,
+          "input_tokens": 30038,
+          "output_tokens": 570,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "f905840b-ce29-5cf1-9b5c-4d41b075c6cc",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "1d9c20ab-f4f2-5b0c-abce-0deac593fbb7",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "langchain-storage-replacement",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "dfa9c581-e7f4-5f80-9222-56a1b867d0c5",
+          "task_id": "engineering-langchain-storage-replacement",
+          "task_version": 1,
+          "task_fingerprint": "1b3fc0a293ce29d8a5e3bc627483987efeadfa519a09511d762a85fd4dd33c13",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "e301a782-ae10-5fb6-8fe5-f9d2508d402f",
+            "aa7d9660-6c05-50a3-b6ff-959d2f29b516"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "4b924a38c49f1a1c11cd10afa27e9aba205063a428d6e65c42b94845055ce6ba",
+        "trials": [
+          {
+            "run_id": "e301a782-ae10-5fb6-8fe5-f9d2508d402f",
+            "eval_report_sha256": "89a66cc64727bab41fdd55fa3a7466a848cd6d46fbf05306d2e207ed3c092684",
+            "turn_id": "01a12bce-9e50-7b87-892b-01ccc6e69ae5",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 24274,
+            "output_tokens": 599,
+            "elapsed_seconds": 69.066096,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.312852",
+            "started_at": "2026-10-11T16:32:03.666436Z",
+            "completed_at": "2026-10-11T16:33:12.732532Z"
+          },
+          {
+            "run_id": "aa7d9660-6c05-50a3-b6ff-959d2f29b516",
+            "eval_report_sha256": "62880975cc7f40f80fc88675edfc69449f925233ea0af7545410480c1960f0a8",
+            "turn_id": "01a12bcf-ae65-763d-a757-42d5083284d9",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 24294,
+            "output_tokens": 636,
+            "elapsed_seconds": 69.412454,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.314424",
+            "started_at": "2026-10-11T16:33:13.318983Z",
+            "completed_at": "2026-10-11T16:34:22.731437Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 14,
+          "input_tokens": 48568,
+          "output_tokens": 1235,
+          "elapsed_min_seconds": 69.066096,
+          "elapsed_p50_seconds": 69.066096,
+          "elapsed_p95_seconds": 69.412454,
+          "elapsed_max_seconds": 69.412454,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.627276",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:34:22.731437Z"
+      },
+      "campaign_report_fingerprint": "7224300fb12aeb6b25c68647651a96b218ec9b3ddecf196798578e78b38aa6f7",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "e301a782-ae10-5fb6-8fe5-f9d2508d402f",
+          "turn_id": "01a12bce-9e50-7b87-892b-01ccc6e69ae5",
+          "turn_status": "completed",
+          "transcript_sha256": "4ae5f69c16a9e03d73645f8bbb023dfdb0f2799b141281f56839f78cfa5206f1",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 24274,
+          "output_tokens": 599,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "aa7d9660-6c05-50a3-b6ff-959d2f29b516",
+          "turn_id": "01a12bcf-ae65-763d-a757-42d5083284d9",
+          "turn_status": "completed",
+          "transcript_sha256": "fac45243f3b9b2f9d198058f58cc75f1817597ca882a4642395ee0f26b23c928",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 24294,
+          "output_tokens": 636,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "e301a782-ae10-5fb6-8fe5-f9d2508d402f",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "aa7d9660-6c05-50a3-b6ff-959d2f29b516",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "langchain-stringify-dict-keys",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "5c4eeeb6-0cf0-5133-9502-6d4a7c13c668",
+          "task_id": "engineering-langchain-stringify-dict-keys",
+          "task_version": 1,
+          "task_fingerprint": "61cf7bf1ce5aa1d799a8198393647e1f0f60c83a688b88e6210fba7031f500cb",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "5c689021-8cfa-50ec-a7b2-03593debe8a1",
+            "6974d9ef-1166-52a8-88c1-98c1528923a2"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "edabda05489324082061eb421f94a1ada9c719b14a71ed1bd87e66e45edcb46f",
+        "trials": [
+          {
+            "run_id": "5c689021-8cfa-50ec-a7b2-03593debe8a1",
+            "eval_report_sha256": "454bd744a1280944108a939c74cc9e81e546b4fa5872884f2f963f3635bcd28e",
+            "turn_id": "01a12bd0-c2af-7e24-b9d0-618eee64fc0e",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 24914,
+            "output_tokens": 701,
+            "elapsed_seconds": 69.011182,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.324204",
+            "started_at": "2026-10-11T16:34:24.049527Z",
+            "completed_at": "2026-10-11T16:35:33.060709Z"
+          },
+          {
+            "run_id": "6974d9ef-1166-52a8-88c1-98c1528923a2",
+            "eval_report_sha256": "a84417af3e214b5a7c4c1fdf0a30dff4ad5f1817860a59c1cb3b54ad900ed3f4",
+            "turn_id": "01a12bd1-d282-74a7-8cf7-316f5a9aa5a8",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 24780,
+            "output_tokens": 625,
+            "elapsed_seconds": 69.535485,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.31986",
+            "started_at": "2026-10-11T16:35:33.636679Z",
+            "completed_at": "2026-10-11T16:36:43.172164Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 14,
+          "input_tokens": 49694,
+          "output_tokens": 1326,
+          "elapsed_min_seconds": 69.011182,
+          "elapsed_p50_seconds": 69.011182,
+          "elapsed_p95_seconds": 69.535485,
+          "elapsed_max_seconds": 69.535485,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.644064",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:36:43.172164Z"
+      },
+      "campaign_report_fingerprint": "39b1deacf89f33a7991d899d90f37db8ceb213710e348f6f888430952df20182",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "5c689021-8cfa-50ec-a7b2-03593debe8a1",
+          "turn_id": "01a12bd0-c2af-7e24-b9d0-618eee64fc0e",
+          "turn_status": "completed",
+          "transcript_sha256": "0d99892cc209ce770adfed2cf61311cada78e99a70de6931db55df5574d7b468",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 24914,
+          "output_tokens": 701,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "6974d9ef-1166-52a8-88c1-98c1528923a2",
+          "turn_id": "01a12bd1-d282-74a7-8cf7-316f5a9aa5a8",
+          "turn_status": "completed",
+          "transcript_sha256": "ad63f3471b35b3f843ebcc410ddebb0e9ec9d11ed8c35ebd724fbaff8e6a854f",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 24780,
+          "output_tokens": 625,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "5c689021-8cfa-50ec-a7b2-03593debe8a1",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "6974d9ef-1166-52a8-88c1-98c1528923a2",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "opencode-path-normalization",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "ccaec8c0-2f67-5080-90df-49b11663a0d6",
+          "task_id": "engineering-opencode-path-normalization",
+          "task_version": 1,
+          "task_fingerprint": "be712726a47c546c8d86b73f2529f2f35561f0a2e677d79152f04c29a2d5e995",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "92488be1-1ab1-5caa-b561-4cde323b9a9e",
+            "e9403c9b-6371-5b5b-b6c4-f50c7de56222"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "6d9f624028e2ff0a1ff1136f1555f29b7de66db4cda16f90c4347331ad6c4ada",
+        "trials": [
+          {
+            "run_id": "92488be1-1ab1-5caa-b561-4cde323b9a9e",
+            "eval_report_sha256": "b5e12c25a575681108e6e39118f4bec5abd54f6225fbb647ebe3c10a84585e53",
+            "turn_id": "01a12bd2-e45f-7a8e-b2c5-fde6d31150b9",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 22890,
+            "output_tokens": 493,
+            "elapsed_seconds": 70.079049,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.292428",
+            "started_at": "2026-10-11T16:36:43.745393Z",
+            "completed_at": "2026-10-11T16:37:53.824442Z"
+          },
+          {
+            "run_id": "e9403c9b-6371-5b5b-b6c4-f50c7de56222",
+            "eval_report_sha256": "092e07a4930f3fd6ba936f861b5bb3adab13c89b376d2bcb8bc52b1cd60f31ea",
+            "turn_id": "01a12bd3-f83a-7d42-87a7-656cb2e9f1ee",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 23101,
+            "output_tokens": 497,
+            "elapsed_seconds": 68.856302,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.295104",
+            "started_at": "2026-10-11T16:37:54.364358Z",
+            "completed_at": "2026-10-11T16:39:03.220660Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 14,
+          "input_tokens": 45991,
+          "output_tokens": 990,
+          "elapsed_min_seconds": 68.856302,
+          "elapsed_p50_seconds": 68.856302,
+          "elapsed_p95_seconds": 70.079049,
+          "elapsed_max_seconds": 70.079049,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.587532",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:39:03.220660Z"
+      },
+      "campaign_report_fingerprint": "86ab1506f66721013a257a7680f297c01cc80df5f64139c9e77c1263a994ba34",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "92488be1-1ab1-5caa-b561-4cde323b9a9e",
+          "turn_id": "01a12bd2-e45f-7a8e-b2c5-fde6d31150b9",
+          "turn_status": "completed",
+          "transcript_sha256": "3a00b9801dd6ca9793b1bc7ffd1033a52ed8d9d8eb615475c9bd7101f20019ad",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 22890,
+          "output_tokens": 493,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "e9403c9b-6371-5b5b-b6c4-f50c7de56222",
+          "turn_id": "01a12bd3-f83a-7d42-87a7-656cb2e9f1ee",
+          "turn_status": "completed",
+          "transcript_sha256": "306a82d94ccb1efadcc44cccd72ed7459397fbd63295980059c3a9d5f4630f11",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 23101,
+          "output_tokens": 497,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "92488be1-1ab1-5caa-b561-4cde323b9a9e",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "e9403c9b-6371-5b5b-b6c4-f50c7de56222",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "opencode-retry-delay-refactor",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "fddb5a0d-3810-5dc7-b6d2-3318f7376ef2",
+          "task_id": "engineering-opencode-retry-delay-refactor",
+          "task_version": 1,
+          "task_fingerprint": "66203c97dc7a19e7525266680e1b996d48c32169d93824b85a3653720b96a3ba",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "c65d9c9c-f877-5dc9-92e0-ed6d6c984da6",
+            "f48ea031-9766-56e5-99c6-0cec792267e8"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "cf45b61a77ec6cb23a147ce9e54aeb49bc37300c1176e56b4d61503cfed5b6b7",
+        "trials": [
+          {
+            "run_id": "c65d9c9c-f877-5dc9-92e0-ed6d6c984da6",
+            "eval_report_sha256": "b4306afdb37a89a19873405956ad9f625dd89dd9e2cab7bf1ef0fa11a7b4295d",
+            "turn_id": "01a12bd5-0760-7bcd-be56-95cb73823a3c",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 22574,
+            "output_tokens": 487,
+            "elapsed_seconds": 68.847831,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.28842",
+            "started_at": "2026-10-11T16:39:03.779139Z",
+            "completed_at": "2026-10-11T16:40:12.626970Z"
+          },
+          {
+            "run_id": "f48ea031-9766-56e5-99c6-0cec792267e8",
+            "eval_report_sha256": "4594d38b0d30e41b08090daf76b1ddec197faa010010a8e594b3bbac1b2b207a",
+            "turn_id": "01a12bd6-18d0-7a1f-aa92-ff8c148d2a3b",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 22517,
+            "output_tokens": 476,
+            "elapsed_seconds": 69.267802,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.28734",
+            "started_at": "2026-10-11T16:40:13.778190Z",
+            "completed_at": "2026-10-11T16:41:23.045992Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 14,
+          "input_tokens": 45091,
+          "output_tokens": 963,
+          "elapsed_min_seconds": 68.847831,
+          "elapsed_p50_seconds": 68.847831,
+          "elapsed_p95_seconds": 69.267802,
+          "elapsed_max_seconds": 69.267802,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.57576",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:41:23.045992Z"
+      },
+      "campaign_report_fingerprint": "d8f41fc2aba5fb94b5e12083fa140d3e81fea1ff487e168be7996ed07cc087ad",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "c65d9c9c-f877-5dc9-92e0-ed6d6c984da6",
+          "turn_id": "01a12bd5-0760-7bcd-be56-95cb73823a3c",
+          "turn_status": "completed",
+          "transcript_sha256": "18fd72b2d8fdfcbbdffa07917069ca45a519e6937a668b695dc4664434c854d6",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 22574,
+          "output_tokens": 487,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "f48ea031-9766-56e5-99c6-0cec792267e8",
+          "turn_id": "01a12bd6-18d0-7a1f-aa92-ff8c148d2a3b",
+          "turn_status": "completed",
+          "transcript_sha256": "db2383e742cf1f0c158beb3f22572200e0fa471e2b4f20233f61a5f4656734bd",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 22517,
+          "output_tokens": 476,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "c65d9c9c-f877-5dc9-92e0-ed6d6c984da6",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "f48ea031-9766-56e5-99c6-0cec792267e8",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    },
+    {
+      "case_id": "opencode-terminal-url-review",
+      "campaign": {
+        "spec_version": "harnessix.coding-eval-campaign-report/v1",
+        "plan": {
+          "spec_version": "harnessix.coding-eval-campaign-plan/v1",
+          "campaign_id": "49dfaa11-9f3f-53a8-9066-7d254369a382",
+          "task_id": "engineering-opencode-terminal-url-review",
+          "task_version": 1,
+          "task_fingerprint": "802139ad275628def7fcde364801b3789546965688e1d7a7a9cd84326db4081b",
+          "environment": {
+            "harnessix_revision": "c6c58b690095bb5be493144a8f9c89f13b4b74f3",
+            "provider": "openai_chat",
+            "model": "qwen3.8-max",
+            "platform": "darwin",
+            "isolation": "fixed-container-checks-provider-network"
+          },
+          "run_ids": [
+            "0468562a-9806-5979-9500-7897fd1d1888",
+            "4163dec0-6d7a-5da0-aea2-365b8d6ae4fb"
+          ],
+          "price": {
+            "spec_version": "harnessix.price/v1",
+            "version": "aliyun-bailian-2026-10-11-qwen3-8-max",
+            "source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+            "billing_provider": "aliyun-bailian",
+            "model": "qwen3.8-max",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "currency": "CNY",
+            "valid_from": "2026-10-11T16:17:56.954780Z",
+            "valid_until": "2026-10-12T16:17:56.954780Z",
+            "input_tokens_min": 0,
+            "input_tokens_max": 991808,
+            "input_price": {
+              "kind": "flat",
+              "per_million": "12"
+            },
+            "output_per_million": "36"
+          },
+          "billing_context": {
+            "billing_provider": "aliyun-bailian",
+            "region": "cn-beijing",
+            "service_tier": "payg",
+            "inference_mode": "non-thinking",
+            "cache_write_ttl": null
+          },
+          "created_at": "2026-10-11T16:17:56.954780Z"
+        },
+        "plan_fingerprint": "02eb853625f34d36771b9cb9afd2fc4dc36b0bf6ee4365eae909af2f6bd5d241",
+        "trials": [
+          {
+            "run_id": "0468562a-9806-5979-9500-7897fd1d1888",
+            "eval_report_sha256": "43b86917fe1f23208100eeb7866aca911a482b8dac865f70f002ce0e98fb222c",
+            "turn_id": "01a12bd7-29af-7051-962c-8a8c759583da",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 23519,
+            "output_tokens": 557,
+            "elapsed_seconds": 244.183755,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.30228",
+            "started_at": "2026-10-11T16:41:23.633250Z",
+            "completed_at": "2026-10-11T16:45:27.817005Z"
+          },
+          {
+            "run_id": "4163dec0-6d7a-5da0-aea2-365b8d6ae4fb",
+            "eval_report_sha256": "98b82ee9ec23c96e4d1ebffbd94bb38954623423e1bfc1bf45d44e36005714af",
+            "turn_id": "01a12bda-e5d2-75f9-8f1d-a9e0d30fc4fe",
+            "turn_status": "completed",
+            "classification": "passed",
+            "eval_outcome": "passed",
+            "failure_categories": [],
+            "agent_failure_category": null,
+            "provider_failure": null,
+            "actual_models": [
+              "qwen3.8-max"
+            ],
+            "model_attempts": 7,
+            "input_tokens": 23607,
+            "output_tokens": 620,
+            "elapsed_seconds": 70.085041,
+            "cost_completeness": "complete",
+            "known_cost_currency": "CNY",
+            "known_cost_amount": "0.305604",
+            "started_at": "2026-10-11T16:45:28.403913Z",
+            "completed_at": "2026-10-11T16:46:38.488954Z"
+          }
+        ],
+        "summary": {
+          "scheduled_trials": 2,
+          "passed_trials": 2,
+          "provider_failed_trials": 0,
+          "eval_infrastructure_failed_trials": 0,
+          "runtime_failed_trials": 0,
+          "task_failed_trials": 0,
+          "budget_failed_trials": 0,
+          "model_attempts": 14,
+          "input_tokens": 47126,
+          "output_tokens": 1177,
+          "elapsed_min_seconds": 70.085041,
+          "elapsed_p50_seconds": 70.085041,
+          "elapsed_p95_seconds": 244.183755,
+          "elapsed_max_seconds": 244.183755,
+          "cost_completeness": "complete",
+          "known_cost_currency": "CNY",
+          "known_cost_amount": "0.607884",
+          "incomplete_cost_run_ids": []
+        },
+        "completed_at": "2026-10-11T16:46:38.488954Z"
+      },
+      "campaign_report_fingerprint": "cbb7439b7352948c684a9fbdf8488662f280a40762cc3498e590e75ba24a94e3",
+      "transcripts": [
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "0468562a-9806-5979-9500-7897fd1d1888",
+          "turn_id": "01a12bd7-29af-7051-962c-8a8c759583da",
+          "turn_status": "completed",
+          "transcript_sha256": "5ddb49b31a1f31b77cf6bb19e9745b9a32d756d9ad773ef5653298bda8f00cfe",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 23519,
+          "output_tokens": 557,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        },
+        {
+          "spec_version": "harnessix.coding-eval-transcript-evidence/v1",
+          "run_id": "4163dec0-6d7a-5da0-aea2-365b8d6ae4fb",
+          "turn_id": "01a12bda-e5d2-75f9-8f1d-a9e0d30fc4fe",
+          "turn_status": "completed",
+          "transcript_sha256": "0c1ee8695ff7619b8ab1c5dae53d87c046e02f46af138edc28f3694c11de6dc8",
+          "completed_items": 17,
+          "model_steps": 7,
+          "model_attempts": 7,
+          "input_tokens": 23607,
+          "output_tokens": 620,
+          "approval_requests": 3,
+          "automated_approval_decisions": 3,
+          "human_approval_interventions": 0,
+          "question_requests": 0,
+          "question_answers": 0,
+          "steering_messages": 0,
+          "manual_recovery_results": 0
+        }
+      ],
+      "tests": [
+        {
+          "run_id": "0468562a-9806-5979-9500-7897fd1d1888",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        },
+        {
+          "run_id": "4163dec0-6d7a-5da0-aea2-365b8d6ae4fb",
+          "outcome": "passed",
+          "total_checks": 1,
+          "passed_checks": 1
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "scheduled_cases": 10,
+    "repositories": 3,
+    "scheduled_trials": 20,
+    "passed_trials": 20,
+    "tests_applicable_trials": 20,
+    "tests_passed_trials": 20,
+    "human_intervention_trials": 0,
+    "task_success_rate": {
+      "numerator": 20,
+      "denominator": 20,
+      "basis_points": 10000
+    },
+    "test_pass_rate": {
+      "numerator": 20,
+      "denominator": 20,
+      "basis_points": 10000
+    },
+    "human_intervention_rate": {
+      "numerator": 0,
+      "denominator": 20,
+      "basis_points": 0
+    },
+    "model_attempts": 152,
+    "input_tokens": 558728,
+    "output_tokens": 13800,
+    "elapsed_min_seconds": 63.832367,
+    "elapsed_p50_seconds": 69.585413,
+    "elapsed_p95_seconds": 99.978518,
+    "elapsed_max_seconds": 244.183755,
+    "cost_completeness": "complete",
+    "known_cost_currency": "CNY",
+    "known_cost_amount": "7.201536",
+    "incomplete_cost_run_ids": []
+  },
+  "completed_at": "2026-10-11T16:46:38.488954Z"
+}

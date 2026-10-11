@@ -1,8 +1,8 @@
 ---
 doc_type: roadmap
 status: current
-version: 262
-code_revision: 84a682c1b399575f213f7bd3ea1e289d444721fd
+version: 263
+code_revision: c6c58b690095bb5be493144a8f9c89f13b4b74f3
 owners:
   - core
 modules:
@@ -90,9 +90,9 @@ Harnessix Code 1.0不是POC、功能演示或仅供二次开发的Runtime库，�
 
 **首发范围收敛**：0.9～1.0剩余工作以[六个发布工作包与逐项处置](changes/m09-to-v1-release-scope-convergence.md)为活动依据；[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)保留原范围决策。首发仅保留macOS完整本地编码产品、安装交付、安全/恢复、权利及真实质量；Linux/Windows交付不是延期必做项，不自动进入1.1或1.x，未来重启须单独立项，无当前必做承诺。远端MCP/OAuth、公网Git自动Push、通用维护平台、全模型/价格矩阵、自动更新与多安装渠道后置。取消或延期均不计作已完成，也不允许已知危险入口继续暴露。
 
-**当前活动优先级（2026-10-11）**：R3完整真实20 Trial达标 > R4 macOS发行收口。BETA-001已由用户明确接受，真实Beta完成数为1；正式R5的独立开发者与任务总量要求不变。
+**当前活动优先级（2026-10-12）**：R3完整真实20 Trial已经20/20通过，当前转入R4 macOS发行收口。BETA-001已由用户明确接受，真实Beta完成数为1；正式R5的独立开发者与任务总量要求不变。
 R4/R5的Linux/Windows交付、实际使用及其R6依赖已从当前未完成任务和必需矩阵删除，不标记完成；已实现跨平台代码、历史测试和历史决策保留，旧三平台条款不再构成当前任务。
-Mac资格按具体OS/CPU架构的原生证据逐项核定，不默认覆盖Intel与Apple Silicon。当前Mac原生组件是正式内部候选、非默认Writer，R4未完成；R3原完整20 Trial及原评分/限制、Mac安全/恢复与Beta真实业务验收均不放松，商业发布仍为**NO-GO**。
+Mac资格按具体OS/CPU架构的原生证据逐项核定，不默认覆盖Intel与Apple Silicon。当前Mac原生组件是正式内部候选、非默认Writer，R4未完成；R3已在原Task Pack、评分与预算限制下通过，Mac安全/恢复与Beta正式门槛仍不放松，商业发布仍为**NO-GO**。
 
 ## 2. 历史基线：0.1 Action Plane
 
@@ -532,7 +532,7 @@ DOC-1文档治理与三平台0.9.3d Soak保持关闭；既有真实编码[0/20�
 
 首发发行安装矩阵仅macOS；`canonical-wheel`的Ubuntu Job仅构建纯Python制品，普通`ci.yml`跨平台兼容回归保留，均不构成Linux/Windows版本交付任务。R6依赖的是macOS only范围的R1～R5，不因取消其他平台交付而放过影响macOS的共用缺陷。
 
-执行顺序为R3完整真实20 Trial达标 > R4 macOS安装交付收口；BETA-001已完成本地隔离整改验收。R1高风险安全与恢复约束始终有效，影响macOS的共用缺陷不能借其他平台交付取消豁免。
+R3完整真实20 Trial已经达标，后续执行顺序转为R4 macOS安装交付收口；BETA-001已完成本地隔离整改验收。R1高风险安全与恢复约束始终有效，影响macOS的共用缺陷不能借其他平台交付取消豁免。
 R2中的许可证、权利链和其他不直接改变功能的治理工作低优先并行处理，不阻挡功能研发与内部验证；
 正式发行前仍必须完成必要处置，不能把未处置事项标记为已通过。不得新增不必要的治理平台。
 
@@ -2962,3 +2962,17 @@ AIPracticalPlatform 登录密码传输保护已完成四个真实 Agent 生产�
 `qwen3-coder-flash`及Guard v2，保留原Task Pack、10 Case／20 Trial、评分器、50K Token、期限、
 目录策略和12/20门槛；完整`tests/evals`回归通过。下一步只从该提交后的干净Revision创建全新Suite并
 执行完整真实评测，不恢复旧Suite、不拼接部分成绩。新Suite完成前，权威完整质量成绩仍为1/20。
+
+### 当前R3：完整真实20 Trial验收通过
+
+候选`c6c58b69`的独立Suite `f930752e-a55e-4075-b97d-6cc1de9dba5d`已在原
+`harnessix-engineering/v2`上完成3仓库、10 Case×2 Trial：严格任务 **20/20**、必需测试
+**20/20**、人工干预0。模型固定为`qwen3.8-max`、non-thinking、Provider `max_attempts=1`；
+每Task的16 Step、50K累计Token、900秒、65,536字符和每Step 8次工具调用边界均未放宽，
+单Trial最大实测为10 Step、49,574 Token、244.183755秒。全部Usage与成本证据完整，Suite成本
+7.201536元；报告SHA-256为`72881f59688eb2a0b1fa6eb23bcc6138a4b90cb621a2a09ba1c92677ba240d0a`。
+公开证据见[R3真实Provider工程Suite验收](validation/r3-engineering-provider-suite-2026-10-12-v1/README.md)。
+
+本次80元新周期不承接旧周期费用；当前已知16.785252元、两个历史传输未知请求继续全额预留
+6.294912元，合计占用23.080164元，无活动请求，未超过上限。旧0/20、1/20及各中止Suite原件
+继续保留，不拼接、不改写。R3门禁据此关闭；R4 macOS发行、R5正式Beta与1.0商业发布总门禁仍开放。
