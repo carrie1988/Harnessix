@@ -27,6 +27,7 @@ _PACK_VERSION = 2
 _MODEL = "qwen3-coder-flash"
 _BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 _PRICE_URL = "https://help.aliyun.com/zh/model-studio/qwen3-coder-flash"
+_MODEL_IO_TIMEOUT_SECONDS = 180
 
 
 def _executable(name: str) -> Path:
@@ -174,7 +175,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             ),
             max_output_tokens=4096,
             timeout_seconds=900,
-            io_timeout_seconds=60,
+            io_timeout_seconds=_MODEL_IO_TIMEOUT_SECONDS,
             max_attempts=1,
             retry_delay_seconds=0,
             max_request_bytes=4 * 1024 * 1024,

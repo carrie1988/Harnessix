@@ -22,6 +22,7 @@ def test_provider_suite_config_binds_complete_pack_provider_price_and_budget(
     assert sum(len(plan.run_ids) for plan in config.suite.campaign_plans) == 20
     assert config.suite.fee_stop_amount == "40"
     assert config.provider_config.max_attempts == 1
+    assert config.provider_config.io_timeout_seconds == 180
     assert config.provider_config.capabilities.parallel_tool_calls is False
     assert len(config.fingerprint) == 64
     assert config.provider_config.api_key_env == "DASHSCOPE_API_KEY"

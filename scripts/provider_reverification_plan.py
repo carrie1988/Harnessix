@@ -62,6 +62,14 @@ class VerificationReverificationPlanV2(_ReverificationPlanFields):
     maximum_cost: Literal["38"]
 
 
+class VerificationReverificationPlanV3(_ReverificationPlanFields):
+    """50元当前周期内的唯一40元复验；旧未决继续占用总预算。"""
+
+    spec_version: Literal["harnessix.provider-reverification-plan/v3"]
+    allocation: Literal["50"]
+    maximum_cost: Literal["40"]
+
+
 class VerificationBetaTaskReverificationPlan(ContractModel):
     """原60元周期内只授予BETA-001新增5元；不是Eval Suite授权。"""
 
@@ -112,6 +120,7 @@ class VerificationBetaTaskBudgetPlanV2(VerificationBetaTaskBudgetPlan):
 type VerificationReverificationPlanRecord = (
     VerificationReverificationPlan
     | VerificationReverificationPlanV2
+    | VerificationReverificationPlanV3
     | VerificationBetaTaskReverificationPlan
     | VerificationBetaTaskBudgetPlan
     | VerificationBetaTaskBudgetPlanV2
@@ -152,6 +161,7 @@ def snapshot_reverification_plan(value: object) -> VerificationReverificationPla
         not in {
             VerificationReverificationPlan,
             VerificationReverificationPlanV2,
+            VerificationReverificationPlanV3,
             VerificationBetaTaskReverificationPlan,
             VerificationBetaTaskBudgetPlan,
             VerificationBetaTaskBudgetPlanV2,

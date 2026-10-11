@@ -90,7 +90,7 @@ def provider_suite_config(tmp_path: Path) -> CodingEvalProviderSuiteRunConfig:
             capabilities=ChatCapabilities(tool_calls=True, parallel_tool_calls=False),
             max_output_tokens=4096,
             timeout_seconds=900,
-            io_timeout_seconds=60,
+            io_timeout_seconds=180,
             max_attempts=1,
             retry_delay_seconds=0,
             output_token_parameter="max_tokens",
