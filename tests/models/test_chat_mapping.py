@@ -107,6 +107,29 @@ def test_instructions_are_a_separate_leading_system_message() -> None:
     assert body["messages"][1]["role"] == "user"
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+def test_explicit_thinking_mode_is_forwarded_as_provider_extra_body(enabled: bool) -> None:
+    body, _ = build_request(
+        model_request(), OpenAIChatConfig(model="test", enable_thinking=enabled)
+    )
+
+    assert body["extra_body"] == {"enable_thinking": enabled}
+
+
+def test_unspecified_thinking_mode_keeps_provider_default() -> None:
+    body, _ = build_request(model_request(), OpenAIChatConfig(model="test"))
+
+    assert "extra_body" not in body
+
+
+def test_unspecified_thinking_mode_preserves_legacy_serialized_config() -> None:
+    legacy = OpenAIChatConfig(model="test").model_dump(mode="json")
+    explicit = OpenAIChatConfig(model="test", enable_thinking=False).model_dump(mode="json")
+
+    assert "enable_thinking" not in legacy
+    assert explicit["enable_thinking"] is False
+
+
 @pytest.mark.parametrize(
     "case",
     [

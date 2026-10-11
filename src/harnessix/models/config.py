@@ -62,6 +62,11 @@ class OpenAIChatConfig(ModelHTTPConfig):
     base_url: str = Field(default="https://api.openai.com/v1", max_length=2048)
     api_key_env: str = Field(default="OPENAI_API_KEY", pattern=r"^[A-Z_][A-Z0-9_]{0,127}$")
     output_token_parameter: Literal["max_completion_tokens", "max_tokens"] = "max_completion_tokens"
+    # 未显式配置时不改变既有序列化和恢复指纹；显式布尔值才进入Provider契约。
+    enable_thinking: bool | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
 
 class AnthropicConfig(ModelHTTPConfig):

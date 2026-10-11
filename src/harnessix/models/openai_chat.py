@@ -123,6 +123,18 @@ class OpenAIChatProvider:
         self._closed = True
         await self._client.close()
 
+    async def probe_model_availability(self, cancel: CancelToken) -> bool:
+        """只读查询当前凭据可见模型；调用方应在费用预留和推理请求前执行。"""
+        cancel.checkpoint()
+        if self._closed:
+            raise RuntimeError("Provider 已关闭")
+        deadline = asyncio.get_running_loop().time() + self.config.io_timeout_seconds
+        page = await wait_for_io(self._client.models.list(), cancel, deadline)
+        cancel.checkpoint()
+        if page.has_next_page():
+            raise InvalidWireData("模型目录分页无法完整判定")
+        return any(model.id == self.config.model for model in page.data)
+
     async def stream(
         self, request: ModelRequest, cancel: CancelToken
     ) -> AsyncGenerator[ProviderEvent, None]:

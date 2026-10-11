@@ -263,6 +263,86 @@ async def test_retry_then_success_and_credential_isolation(monkeypatch: pytest.M
         assert CANARY not in outgoing.content.decode()
 
 
+async def test_explicit_thinking_mode_reaches_openai_compatible_wire() -> None:
+    requests: list[dict[str, Any]] = []
+    wire = WireStream(text_frames())
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(json.loads(request.content))
+        return response(wire)
+
+    async with OpenAIChatProvider(
+        config(enable_thinking=False), transport=httpx.MockTransport(handle)
+    ) as provider:
+        events = [event async for event in provider.stream(model_request(), CancelToken())]
+
+    assert isinstance(events[-1], ResponseCompleted)
+    assert requests[0]["enable_thinking"] is False
+    assert "extra_body" not in requests[0]
+
+
+@pytest.mark.parametrize("available", [True, False])
+async def test_model_availability_probe_is_read_only_and_exact(available: bool) -> None:
+    requests: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        models = ["test-model"] if available else ["test-model-newer"]
+        return httpx.Response(
+            200,
+            request=request,
+            json={
+                "object": "list",
+                "data": [
+                    {"id": model, "object": "model", "created": 0, "owned_by": "provider"}
+                    for model in models
+                ],
+            },
+        )
+
+    async with OpenAIChatProvider(
+        config(), transport=httpx.MockTransport(handle)
+    ) as provider:
+        result = await provider.probe_model_availability(CancelToken())
+
+    assert result is available
+    assert len(requests) == 1
+    assert requests[0].method == "GET"
+    assert requests[0].url.path == "/v1/models"
+    assert requests[0].content == b""
+
+
+async def test_model_availability_probe_honors_pre_cancel() -> None:
+    requests = 0
+
+    def handle(_: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        pytest.fail("取消后的目录预检不应发网")
+
+    async with OpenAIChatProvider(
+        config(), transport=httpx.MockTransport(handle)
+    ) as provider:
+        cancel = CancelToken()
+        cancel.cancel()
+        with pytest.raises(TurnCancelled):
+            await provider.probe_model_availability(cancel)
+
+    assert requests == 0
+
+
+async def test_model_availability_probe_obeys_io_timeout() -> None:
+    async def handle(_: httpx.Request) -> httpx.Response:
+        await asyncio.Event().wait()
+        raise AssertionError("unreachable")
+
+    async with OpenAIChatProvider(
+        config(io_timeout_seconds=0.01), transport=httpx.MockTransport(handle)
+    ) as provider:
+        with pytest.raises(TimeoutError):
+            await provider.probe_model_availability(CancelToken())
+
+
 @pytest.mark.parametrize("where", ["connect", "backoff", "body", "parent_task", "before_start"])
 async def test_cancel_each_wait(where: str) -> None:
     entered = asyncio.Event()

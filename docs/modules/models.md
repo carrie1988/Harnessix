@@ -46,6 +46,12 @@ supersedes: []
 
 # Model Runtime模块设计
 
+## 当前增量：兼容端点模型预检与显式思考开关
+
+`OpenAIChatConfig.enable_thinking`仅在明确配置时通过SDK `extra_body`进入最终请求顶层；省略时不改变
+Provider默认行为。`OpenAIChatProvider.probe_model_availability`使用同一有界Client读取`GET /models`，
+支持取消和I/O期限，但不发起推理，也不自动切换模型。付费宿主可在费用预留前据此失败关闭。
+
 ## 当前增量：类型化工具拒绝与配套协议升级
 
 Provider Event v4新增 `ToolCallRejected`。两个Adapter先验证全组结构，再按本次精确广告目录分类；合法未知名称不透传，坏结构零提案。统一历史固定标记不进入广告，参数为空；原用量与Attempt路径保持。
@@ -101,7 +107,7 @@ Model Runtime不是Agent Loop，也不是Prompt/Context规划器。它把已准�
 ### 3.2 非目标
 
 1. 当前不支持OpenAI Responses API、Realtime、Batch API或SDK内置Agent/Tool Runner；
-2. 当前不支持Thinking/Reasoning正文、Citations、图片、音频、结构化输出或服务器工具；
+2. 当前不解析或发布Thinking/Reasoning正文；仅支持显式转发兼容端点思考开关；仍不支持Citations、图片、音频、结构化输出或服务器工具；
 3. 不自动抓取实时价格，不把估算金额声明为供应商账单；
 4. 不从Adapter类型、Base URL、请求模型别名或响应文案猜测计费平台；
 5. 不提供全局并发限流、账户配额、Circuit Breaker或跨进程请求调度；
@@ -673,14 +679,14 @@ estimate_cost(attempt, price, verified_context):
 |---|---|---|---|---|---|
 | Provider端口与事件 | [`contracts.py`](../../src/harnessix/models/contracts.py) | `ModelRequest`、`ProviderEvent`、`ModelProvider` | [`provider.py`](../../tests/contracts/provider.py) | `ProviderContract.test_text_and_usage`、`test_tool_fragments` | 双Adapter统一语义 |
 | History配对 | [`_history.py`](../../src/harnessix/models/_history.py) | `messages_for`、`tool_alias` | [`test_chat_mapping.py`](../../tests/models/test_chat_mapping.py) | `test_parallel_history_and_stable_aliases`、`test_invalid_history_fails_explicitly` | 配对、并行组和稳定别名 |
-| OpenAI请求映射 | [`_chat_mapping.py`](../../src/harnessix/models/_chat_mapping.py) | `build_request` | [`test_chat_mapping.py`](../../tests/models/test_chat_mapping.py) | `test_instructions_are_a_separate_leading_system_message`、`test_invalid_request_is_rejected_before_network` | System、Tool和请求预算 |
+| OpenAI请求映射 | [`_chat_mapping.py`](../../src/harnessix/models/_chat_mapping.py) | `build_request` | [`test_chat_mapping.py`](../../tests/models/test_chat_mapping.py) | `test_instructions_are_a_separate_leading_system_message`、`test_explicit_thinking_mode_is_forwarded_as_provider_extra_body`、`test_invalid_request_is_rejected_before_network` | System、Tool、显式思考开关和请求预算 |
 | Anthropic请求映射 | [`_anthropic_mapping.py`](../../src/harnessix/models/_anthropic_mapping.py) | `build_request` | [`test_anthropic_mapping.py`](../../tests/models/test_anthropic_mapping.py) | `test_parallel_results_form_one_user_message`、`test_instructions_use_anthropic_system_field` | Block结构和消息角色 |
 | HTTP配置 | [`config.py`](../../src/harnessix/models/config.py) | `ModelHTTPConfig`、`ChatCapabilities` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、[`test_anthropic_mapping.py`](../../tests/models/test_anthropic_mapping.py) | `test_endpoint_constraints`、`test_https_endpoint_constraints` | HTTPS、能力和数值边界 |
 | Secret读取 | [`_provider_io.py`](../../src/harnessix/models/_provider_io.py) | `read_key`、`validate_key` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_configuration_fails_without_exposing_credentials` | Key格式和Header污染隔离 |
 | 有界传输 | [`_bounded_http.py`](../../src/harnessix/models/_bounded_http.py) | `BoundedStream`、`BoundedTransport` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_wire_budgets`、`test_compressed_response_rejected`、`test_error_response_body_is_bounded_and_closed` | 字节/Frame/Chunk和关闭 |
 | OpenAI流状态 | [`_chat_stream.py`](../../src/harnessix/models/_chat_stream.py) | `ChatStream.feed`、`finish` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_invalid_arguments_never_release_calls`、`test_malformed_wire`、`test_kernel_tool_loop_pairing_usage_and_replay` | 工具、终态和Replay |
 | Anthropic流状态 | [`_anthropic_stream.py`](../../src/harnessix/models/_anthropic_stream.py) | `AnthropicStream.feed`、`finish` | [`test_anthropic.py`](../../tests/models/test_anthropic.py) | `test_bad_tool_json_never_releases_call`、`test_invalid_protocol`、`test_cumulative_usage_includes_caches_without_double_counting` | Block、Usage和工具门禁 |
-| Adapter重试合同 | [`openai_chat.py`](../../src/harnessix/models/openai_chat.py)、[`anthropic.py`](../../src/harnessix/models/anthropic.py) | `stream`、`_failure` | [`provider.py`](../../tests/contracts/provider.py) | `test_error_codes_and_bounded_retry`、`test_midstream_failure_not_retried` | 零暴露重试和错误分类 |
+| Adapter重试与模型预检 | [`openai_chat.py`](../../src/harnessix/models/openai_chat.py)、[`anthropic.py`](../../src/harnessix/models/anthropic.py) | `probe_model_availability`、`stream`、`_failure` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、[`provider.py`](../../tests/contracts/provider.py) | `test_model_availability_probe_is_read_only_and_exact`、`test_model_availability_probe_honors_pre_cancel`、`test_model_availability_probe_obeys_io_timeout`、`test_error_codes_and_bounded_retry` | 无推理目录检查、取消/期限、零暴露重试和错误分类 |
 | 取消和资源关闭 | [`_provider_io.py`](../../src/harnessix/models/_provider_io.py) | `wait_for_io` | [`provider.py`](../../tests/contracts/provider.py) | `test_cancel_closes_blocked_stream`、`test_consumer_exit_closes_stream` | 全等待点取消和Owned Stream |
 | Attempt/Usage合同 | [`usage.py`](../../src/harnessix/agent/usage.py) | `UsageObservation`、`ModelAttempt`及三类Event | [`test_attempt_usage.py`](../../tests/models/test_attempt_usage.py) | `test_native_usage_details_and_alias_identity`、`test_duplicate_cumulative_report_is_not_added_twice` | 累计、身份和不双记 |
 | Attempt崩溃恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_sample_events`、`_finish` | [`test_attempt_crash_recovery.py`](../../tests/models/test_attempt_crash_recovery.py) | `test_sdk_crash_preserves_attempt_and_never_reissues_request` | 意图先提交和不重发 |

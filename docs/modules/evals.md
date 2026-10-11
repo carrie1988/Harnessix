@@ -1165,6 +1165,8 @@ Started-before-IO语义的官方Adapter。唯一Attempt、单调完整Usage、�
 验证宿主限定北京精确Coder快照和有限价格窗口；最高档预留及分档估算不是账户硬停止或最终账单。
 原Campaign的32k认证价格范围不扩大。镜像只观察原Pack Digest，不自动拉取或更换；
 凭据采用显式短生命周期注入，macOS可使用宿主指定钥匙串服务/账户，不硬编码个人凭据标识。
+账本仍先执行未决费用拒绝；通过后，宿主使用同一有界OpenAI Client只读查询`GET /models`，固定模型
+不在当前凭据目录时以`verification_model_unavailable`停止，且不创建推理请求、费用预留或Suite报告。
 完整架构、流程/时序/数据流、字段、伪代码、安全与故障矩阵见
 [专项总体与详细设计](../changes/m09-r3-verification-request-budget.md)。
 离线线协议和预算回归不替代新的20 Trial真实质量成绩，历史0/20及R3仍开放。

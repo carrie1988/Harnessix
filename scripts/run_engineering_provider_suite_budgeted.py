@@ -235,7 +235,14 @@ async def run_budgeted_suite(
         reverification_id=reverification_id,
         suite_id=checked.suite.plan.suite_id if reverification_id is not None else None,
     ) as ledger:
+        # 未决费用先拒绝；模型目录只读请求不得绕过预算Owner或形成推理预留。
+        ledger.require_available()
         key = _credential(checked, keychain_service, keychain_account)
+        async with OpenAIChatProvider(checked.provider_config, api_key=key) as provider:
+            if not await provider.probe_model_availability(cancellation):
+                raise KernelError(
+                    "verification_model_unavailable", "固定验证模型对当前凭据不可用"
+                )
 
         @asynccontextmanager
         async def factory(*_: object) -> AsyncIterator[ModelProvider]:
@@ -311,6 +318,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "verification_source_checkout_unavailable",
             "verification_image_unavailable",
             "verification_credentials_unavailable",
+            "verification_model_unavailable",
             "verification_request_pacing_invalid",
             "verification_budget_busy",
             "verification_budget_unavailable",

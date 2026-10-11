@@ -165,6 +165,52 @@ async def test_unresolved_budget_rejection_precedes_credentials(tmp_path, monkey
     assert failed.value.code == "verification_budget_unresolved" and path.read_bytes() == before
 
 
+async def test_unavailable_model_stops_before_inference_or_budget_mutation(tmp_path, monkeypatch):
+    path = ledger_file(tmp_path)
+    before = path.read_bytes()
+    config = live_config(tmp_path)
+    requests: list[httpx.Request] = []
+    monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
+    monkeypatch.setattr(host, "_require_scope", lambda *_: None)
+    monkeypatch.setattr(host, "_require_images", lambda *_: None)
+    monkeypatch.setattr(host, "_credential", lambda *_: "fixture-SECRET-CANARY")
+
+    def transport(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            request=request,
+            json={
+                "object": "list",
+                "data": [
+                    {
+                        "id": "replacement-model",
+                        "object": "model",
+                        "created": 0,
+                        "owned_by": "provider",
+                    }
+                ],
+            },
+        )
+
+    def native(provider_config, *, api_key):
+        return OpenAIChatProvider(
+            provider_config, api_key=api_key, transport=httpx.MockTransport(transport)
+        )
+
+    monkeypatch.setattr(host, "OpenAIChatProvider", native)
+    monkeypatch.setattr(host, "run_task_pack_provider_suite", forbidden)
+
+    with pytest.raises(KernelError) as failed:
+        await host.run_budgeted_suite(
+            config, budget_path=path, period_id=PERIOD, allow_network=True
+        )
+
+    assert failed.value.code == "verification_model_unavailable"
+    assert path.read_bytes() == before
+    assert len(requests) == 1 and requests[0].method == "GET"
+
+
 @pytest.mark.parametrize("bounded", [False, True])
 async def test_host_factory_runs_native_adapter_and_binds_original_runner(
     tmp_path, monkeypatch, bounded
@@ -188,6 +234,22 @@ async def test_host_factory_runs_native_adapter_and_binds_original_runner(
     wire = WireStream([frame(part) for part in parts] + [b"data: [DONE]\n\n"])
 
     def transport(request):
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                request=request,
+                json={
+                    "object": "list",
+                    "data": [
+                        {
+                            "id": host.MODEL,
+                            "object": "model",
+                            "created": 0,
+                            "owned_by": "provider",
+                        }
+                    ],
+                },
+            )
         assert period(path)["requests"][-1]["status"] == "reserved"
         assert json.loads(request.content)["max_tokens"] == 4096
         return response(wire)
