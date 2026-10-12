@@ -198,12 +198,14 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
 
     patched = view.select(_turn((_PATCH, "succeeded", None)), definitions)
     assert {item.name for item in patched.tools} == {"git_status", "git_diff"}
+    assert patched.choice == "required" and patched.forced_tool == "git_status"
 
     reviewed = view.select(
         _turn((_PATCH, "succeeded", None), ("git_status", "succeeded", None)),
         definitions,
     )
     assert {item.name for item in reviewed.tools} == {"git_diff"}
+    assert reviewed.choice == "required" and reviewed.forced_tool == "git_diff"
 
     correction_or_finish = view.select(
         _turn(
@@ -242,6 +244,22 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
     )
     assert {item.name for item in failed_patch.tools} == {"read_file"}
     assert failed_patch.choice == "required"
+    assert failed_patch.forced_tool == "read_file"
+
+    invalid_patch = view.select(
+        _turn(
+            (
+                _PATCH,
+                "failed",
+                "tool_invalid_arguments",
+                None,
+                {"files": [{"operation": "edit", "path": "src/example.py"}]},
+            )
+        ),
+        definitions,
+    )
+    assert {item.name for item in invalid_patch.tools} == {_PATCH}
+    assert invalid_patch.choice == "required" and invalid_patch.forced_tool == _PATCH
 
     failed_create = view.select(
         _turn(
@@ -255,8 +273,8 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
         ),
         definitions,
     )
-    assert {item.name for item in failed_create.tools} == {"read_file", _PATCH}
-    assert failed_create.choice == "required"
+    assert {item.name for item in failed_create.tools} == {_PATCH}
+    assert failed_create.choice == "required" and failed_create.forced_tool == _PATCH
 
 
 def test_ambiguous_or_infrastructure_workflow_keeps_full_catalog() -> None:

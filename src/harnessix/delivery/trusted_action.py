@@ -80,6 +80,7 @@ def workspace_patch_descriptor() -> ToolDescriptor:
             "保留原文件mode；replace只用于已读取完整文件的整体重写，必填完整content及mode；"
             "delete必填可信读取的expected_sha256，content和mode省略或null。"
             "content是完整正文，可为空，不是Diff；edit不得用局部片段替换整个文件；"
+            "同一路径在files中只能出现一次，多处精确修改必须合并到该文件的edits数组；"
             "mode是JSON十进制420或493，Windows只支持420。"
         ),
         input_schema=WorkspacePatchInput.model_json_schema(),

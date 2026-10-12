@@ -16,6 +16,36 @@ from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
 from harnessix.trusted_actions.router import TrustedActionRouter
 
+_WORKSPACE_PATCH_PLANNING_FAILURES = frozenset(
+    {
+        "delivery_metadata_unsupported",
+        "delivery_path_denied",
+        "workspace_patch_cwd_unsupported",
+        "workspace_path_denied",
+        "workspace_platform_unsupported",
+    }
+)
+
+
+def workspace_patch_planning_rejection(
+    binding: TrustedToolBinding,
+    call: ToolCallContent,
+    rejection: KernelError,
+) -> ToolResultContent | None:
+    """把内置Patch规划期的确定性边界拒绝投影为可修正Tool Result。"""
+
+    if (
+        (binding.source, binding.source_id, binding.tool, binding.executor_id)
+        != ("builtin", "harnessix.product", "apply_patch_batch", "product.workspace-patch")
+        or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES
+    ):
+        return None
+    return ToolResultContent(
+        call_id=call.call_id,
+        outcome="failed",
+        error=AgentFailure(code=rejection.code, message=rejection.message),
+    )
+
 
 def workspace_patch_preparation_rejection(
     router: TrustedActionRouter,

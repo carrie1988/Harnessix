@@ -85,6 +85,28 @@ def assert_unchanged(root):
     assert not (root / "src/新增.py").exists()
 
 
+async def test_absolute_patch_path_is_a_failed_result_before_approval_or_effect(tmp_path):
+    async with product(tmp_path) as (root, runtime, provider, _router, _transactions, _, _):
+        proposal = _proposal().model_copy(
+            update={
+                "files": (
+                    _proposal().files[1].model_copy(update={"path": "/tmp/search.txt"}),
+                )
+            }
+        )
+        thread, turn, _call = await patch_turn(runtime, provider, root, proposal)
+
+        output = result(turn)
+        assert turn.status is TurnStatus.COMPLETED
+        assert output.outcome == "failed"
+        assert output.error is not None and output.error.code == "workspace_path_denied"
+        assert not any(
+            isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
+        )
+        assert not (root / "tmp/search.txt").exists()
+        assert_unchanged(root)
+
+
 def no_change_proposal(count=1):
     original = _proposal()
     files = [original.files[0].model_copy(update={"content": "old\n"})]

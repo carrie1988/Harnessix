@@ -148,15 +148,19 @@ class CodingWorkflowToolView:
             if last_patch < 0:
                 if patch_results:
                     failed_patch = patch_results[-1]
-                    names = {"read_file"}
                     patched_paths = _patched_paths_requiring_reread(
                         observations,
                         failed_patch.index,
                         include_created=False,
                     )
-                    if patched_paths <= _successful_reads_after(observations, failed_patch.index):
-                        names.add(patch)
-                    return _selection(definitions, names)
+                    if (
+                        failed_patch.result.error is not None
+                        and failed_patch.result.error.code == "tool_invalid_arguments"
+                    ) or patched_paths <= _successful_reads_after(
+                        observations, failed_patch.index
+                    ):
+                        return _selection(definitions, {patch}, forced_tool=patch)
+                    return _selection(definitions, {"read_file"}, forced_tool="read_file")
                 inspections = sum(item.tool in _SOURCE_INSPECTION_TOOLS for item in observations)
                 if inspections >= _MAX_NO_PROFILE_INSPECTIONS:
                     return _selection(definitions, {patch}, forced_tool=patch)
@@ -171,7 +175,8 @@ class CodingWorkflowToolView:
             }
             missing_review = set(_GIT_REVIEW_TOOLS) - reviewed
             if missing_review:
-                return _selection(definitions, missing_review)
+                forced_review = "git_status" if "git_status" in missing_review else "git_diff"
+                return _selection(definitions, missing_review, forced_tool=forced_review)
             review_index = max(
                 item.index
                 for item in observations
@@ -211,7 +216,8 @@ class CodingWorkflowToolView:
                 and item.result.outcome == "succeeded"
             }
             names = set(_GIT_REVIEW_TOOLS) - reviewed
-            return _selection(definitions, names)
+            forced_review = "git_status" if "git_status" in names else "git_diff"
+            return _selection(definitions, names, forced_tool=forced_review)
 
         if (
             validation.result.outcome == "failed"

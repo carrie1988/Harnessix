@@ -50,6 +50,7 @@ from harnessix.trusted_actions.legacy_projection import project_legacy_terminal
 from harnessix.trusted_actions.preparation_rejection import (
     cancel_pending_approval,
     rollback_preparation_rejection,
+    workspace_patch_planning_rejection,
     workspace_patch_preparation_rejection,
 )
 from harnessix.trusted_actions.public_errors import sanitize_gateway_exception
@@ -171,15 +172,21 @@ async def prepare_action(
             context.checkpoint()
         cancel.checkpoint()
 
-    route = await plan_agent_action(
-        router,
-        invocation,
-        replace(context, checkpoint=parent_cancel_checkpointer(check)),
-        thread,
-        turn,
-        call,
-        cancel,
-    )
+    try:
+        route = await plan_agent_action(
+            router,
+            invocation,
+            replace(context, checkpoint=parent_cancel_checkpointer(check)),
+            thread,
+            turn,
+            call,
+            cancel,
+        )
+    except KernelError as error:
+        result = workspace_patch_planning_rejection(binding, call, error)
+        if result is not None:
+            return result
+        raise
     _validate_route(route, thread, turn, call, binding)
     if route.state == "pending_approval":
         review = TrustedActionReview()
