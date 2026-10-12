@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
+import os
 from collections.abc import Sequence
 from pathlib import Path
 from typing import NoReturn
 
 from harnessix.agent.errors import KernelError
+from harnessix.evals.execution_fs import ensure_private_directory, path_present
 from harnessix.evals.swebench.contracts import (
     SweBenchModelConfig,
     SweBenchModelParameter,
@@ -16,6 +19,7 @@ from harnessix.evals.swebench.contracts import (
     SweBenchTaskBudget,
     build_swebench_preregistration_plan,
 )
+from harnessix.evals.swebench.execution import run_swebench_agent_suite
 from harnessix.evals.swebench.io import (
     read_dataset_jsonl,
     read_preregistration_plan,
@@ -32,6 +36,13 @@ from harnessix.evals.swebench.predictions import (
     read_predictions,
     write_predictions,
 )
+from harnessix.evals.swebench.run_config import build_swebench_agent_run_config
+from harnessix.evals.swebench.run_config_io import (
+    read_swebench_agent_run_config,
+    write_swebench_agent_run_config,
+)
+
+_RUN_CONFIG_FILE = "run-config.json"
 
 
 class _SafeParser(argparse.ArgumentParser):
@@ -71,6 +82,17 @@ def _parser() -> argparse.ArgumentParser:
 
     validate = subcommands.add_parser("validate", allow_abbrev=False)
     validate.add_argument("--plan", required=True)
+
+    run_agent = subcommands.add_parser("run-agent", allow_abbrev=False)
+    run_agent.add_argument("--plan", required=True)
+    run_agent.add_argument("--source-root", required=True)
+    run_agent.add_argument("--work-root", required=True)
+    run_agent.add_argument("--cache-root", required=True)
+    run_agent.add_argument("--git", required=True)
+    run_agent.add_argument("--api-key-env", default="DASHSCOPE_API_KEY")
+    run_agent.add_argument("--fee-stop-amount", default="80")
+    run_agent.add_argument("--allow-repository-network", action="store_true")
+    run_agent.add_argument("--allow-provider-network", action="store_true")
 
     export = subcommands.add_parser("export-predictions", allow_abbrev=False)
     export.add_argument("--plan", required=True)
@@ -163,6 +185,55 @@ def _export_predictions(arguments: argparse.Namespace) -> dict[str, object]:
     }
 
 
+def _run_agent(arguments: argparse.Namespace) -> dict[str, object]:
+    if not arguments.allow_provider_network:
+        raise KernelError("swebench_network_not_enabled", "SWE-bench Provider联网未启用")
+    plan = read_preregistration_plan(Path(arguments.plan))
+    source_root = Path(arguments.source_root).resolve(strict=True)
+    git_executable = Path(arguments.git).resolve(strict=True)
+    work_root = Path(arguments.work_root).resolve(strict=False)
+    cache_root = Path(arguments.cache_root).resolve(strict=False)
+    ensure_private_directory(
+        work_root,
+        error_code="swebench_execution_root_invalid",
+        label="SWE-bench私有运行目录",
+    )
+    config_path = work_root / _RUN_CONFIG_FILE
+    if path_present(config_path):
+        config = read_swebench_agent_run_config(config_path)
+        if (
+            config.plan_sha256 != plan.plan_sha256
+            or config.source_root != str(source_root)
+            or config.work_root != str(work_root)
+            or config.cache_root != str(cache_root)
+            or config.git_executable != str(git_executable)
+            or config.provider_config.api_key_env != arguments.api_key_env
+            or config.fee_stop_amount != arguments.fee_stop_amount
+        ):
+            raise KernelError("swebench_run_config_invalid", "SWE-bench既有执行配置与参数不一致")
+    else:
+        config = build_swebench_agent_run_config(
+            plan,
+            source_root=source_root,
+            work_root=work_root,
+            cache_root=cache_root,
+            git_executable=git_executable,
+            fee_stop_amount=arguments.fee_stop_amount,
+            api_key_env=arguments.api_key_env,
+        )
+        write_swebench_agent_run_config(config_path, config)
+    api_key = os.environ.get(config.provider_config.api_key_env, "")
+    return asyncio.run(
+        run_swebench_agent_suite(
+            plan,
+            config,
+            api_key=api_key,
+            allow_repository_network=arguments.allow_repository_network,
+            allow_provider_network=True,
+        )
+    )
+
+
 def _evaluate(arguments: argparse.Namespace) -> dict[str, object]:
     plan = read_preregistration_plan(Path(arguments.plan))
     predictions = read_predictions(Path(arguments.predictions), plan)
@@ -210,6 +281,8 @@ def main(argv: Sequence[str]) -> None:
                 "registered_cases": len(plan.cases),
                 "plan_sha256": plan.plan_sha256,
             }
+        elif arguments.operation == "run-agent":
+            result = _run_agent(arguments)
         elif arguments.operation == "export-predictions":
             result = _export_predictions(arguments)
         elif arguments.operation == "evaluate":

@@ -79,6 +79,34 @@ def test_disabled_network_evaluate_fails_without_running_subprocess(
     assert output.err == ""
 
 
+def test_run_agent_requires_explicit_provider_network_before_reading_plan(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    with pytest.raises(SystemExit) as caught:
+        main(
+            [
+                "coding-eval-swebench",
+                "run-agent",
+                "--plan",
+                str(tmp_path / "missing-plan.json"),
+                "--source-root",
+                str(tmp_path),
+                "--work-root",
+                str(tmp_path / "work"),
+                "--cache-root",
+                str(tmp_path / "cache"),
+                "--git",
+                str(GIT),
+            ]
+        )
+
+    output = capsys.readouterr()
+    assert caught.value.code == 1
+    assert json.loads(output.out) == {"reason": "failed"}
+    assert not (tmp_path / "work").exists()
+
+
 def test_preregister_writes_exactly_25_public_cases_without_gold_fields(
     tmp_path: Path,
     capsys,
