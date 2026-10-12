@@ -25,7 +25,9 @@ from harnessix.delivery.trusted_action_contracts import (
 from harnessix.delivery.workspace_patch_errors import (
     WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
+    WorkspacePatchPreparationError,
     is_workspace_patch_no_change,
+    is_workspace_patch_preparation_error,
     is_workspace_patch_sha_mismatch,
 )
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot
@@ -104,6 +106,10 @@ class WorkspacePatchReviewProvider:
                     ):
                         # 只绑定原Mutation已拒绝的唯一replace，不推断批内其他项也无变化。
                         error.review_plan_id = route.plan.execution.plan_id
+            raise
+        except WorkspacePatchPreparationError as error:
+            if is_workspace_patch_preparation_error(error):
+                error.review_plan_id = route.plan.execution.plan_id
             raise
         return await publish_workspace_review(
             route,

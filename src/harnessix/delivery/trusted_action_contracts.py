@@ -20,6 +20,7 @@ from harnessix.execution.public_tool_contracts import (
 from harnessix.execution.public_tool_contracts import (
     PublicWorkspacePatchOutput as PublicWorkspacePatchOutput,
 )
+from harnessix.patches.contracts import ExactEdit
 from harnessix.tools.contracts import Revision
 
 MAX_WORKSPACE_PATCH_INPUT_BYTES = 512 * 1024
@@ -28,7 +29,7 @@ MAX_REVIEW_CHUNK_CHARACTERS = 3000
 
 
 class WorkspacePatchFile(ContractModel):
-    """一个带来源前置条件的创建、替换或删除意图。"""
+    """一个带来源前置条件的创建、精确编辑、完整替换或删除意图。"""
 
     # 公开原组合校验的条件；字段默认值与实际解码仍由下方原模型负责。
     model_config = ConfigDict(
@@ -39,6 +40,7 @@ class WorkspacePatchFile(ContractModel):
                         "operation": {"const": "create"},
                         "expected_sha256": {"type": "null"},
                         "content": {"type": "string"},
+                        "edits": {"type": "null"},
                         "mode": {"type": "integer"},
                     },
                     "required": ["content", "mode"],
@@ -48,15 +50,27 @@ class WorkspacePatchFile(ContractModel):
                         "operation": {"const": "replace"},
                         "expected_sha256": {"type": "string"},
                         "content": {"type": "string"},
+                        "edits": {"type": "null"},
                         "mode": {"type": "integer"},
                     },
                     "required": ["expected_sha256", "content", "mode"],
                 },
                 {
                     "properties": {
+                        "operation": {"const": "edit"},
+                        "expected_sha256": {"type": "string"},
+                        "content": {"type": "null"},
+                        "edits": {"type": "array", "minItems": 1, "maxItems": 32},
+                        "mode": {"type": "null"},
+                    },
+                    "required": ["expected_sha256", "edits"],
+                },
+                {
+                    "properties": {
                         "operation": {"const": "delete"},
                         "expected_sha256": {"type": "string"},
                         "content": {"type": "null"},
+                        "edits": {"type": "null"},
                         "mode": {"type": "null"},
                     },
                     "required": ["expected_sha256"],
@@ -65,7 +79,7 @@ class WorkspacePatchFile(ContractModel):
         }
     )
 
-    operation: Literal["create", "replace", "delete"]
+    operation: Literal["create", "edit", "replace", "delete"]
     path: str = Field(min_length=1, max_length=4096)
     expected_sha256: Revision | None = Field(
         default=None,
@@ -75,6 +89,12 @@ class WorkspacePatchFile(ContractModel):
         default=None,
         max_length=MAX_WORKSPACE_PATCH_INPUT_BYTES,
         description="create/replace必填且非null，提供完整新文件正文，可为空字符串；delete省略或null。",
+    )
+    edits: tuple[ExactEdit, ...] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=32,
+        description="edit必填；每项old_text必须在完整前镜像中唯一，编辑间不得重叠。",
     )
     mode: FileMode | None = Field(
         default=None,
@@ -101,16 +121,32 @@ class WorkspacePatchFile(ContractModel):
     def operation_shape(self) -> Self:
         if self.operation == "create":
             valid = (
-                self.expected_sha256 is None and self.content is not None and self.mode is not None
+                self.expected_sha256 is None
+                and self.content is not None
+                and self.edits is None
+                and self.mode is not None
             )
         elif self.operation == "replace":
             valid = (
                 self.expected_sha256 is not None
                 and self.content is not None
+                and self.edits is None
                 and self.mode is not None
             )
+        elif self.operation == "edit":
+            valid = (
+                self.expected_sha256 is not None
+                and self.content is None
+                and self.edits is not None
+                and self.mode is None
+            )
         else:
-            valid = self.expected_sha256 is not None and self.content is None and self.mode is None
+            valid = (
+                self.expected_sha256 is not None
+                and self.content is None
+                and self.edits is None
+                and self.mode is None
+            )
         if not valid:
             raise ValueError("Workspace Patch操作字段组合无效")
         return self
@@ -119,8 +155,8 @@ class WorkspacePatchFile(ContractModel):
 class WorkspacePatchInput(ContractModel):
     """模型可见的多文件事务提案；宿主持有事务、租约和Artifact身份。"""
 
-    spec_version: Literal["harnessix.workspace-patch-input/v1"] = (
-        "harnessix.workspace-patch-input/v1"
+    spec_version: Literal["harnessix.workspace-patch-input/v2"] = (
+        "harnessix.workspace-patch-input/v2"
     )
     files: tuple[WorkspacePatchFile, ...] = Field(
         min_length=1,
@@ -130,7 +166,14 @@ class WorkspacePatchInput(ContractModel):
     @model_validator(mode="after")
     def bounded_unique_files(self) -> Self:
         paths = [item.path for item in self.files]
-        total = sum(len((item.content or "").encode("utf-8")) for item in self.files)
+        total = sum(
+            len((item.content or "").encode("utf-8"))
+            + sum(
+                len(edit.old_text.encode("utf-8")) + len(edit.new_text.encode("utf-8"))
+                for edit in (item.edits or ())
+            )
+            for item in self.files
+        )
         if len(paths) != len(set(paths)):
             raise ValueError("Workspace Patch不能重复定位同一路径")
         if total > MAX_WORKSPACE_PATCH_INPUT_BYTES:

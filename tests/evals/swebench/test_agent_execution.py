@@ -67,7 +67,7 @@ def _approval_fixture(
         call_id=uuid4(),
         provider_call_id="swebench-patch-call",
         tool=tool,
-        tool_version="harnessix.workspace-patch/v1",
+        tool_version="harnessix.workspace-patch/v2",
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         arguments=arguments,
         requires_approval=True,
@@ -104,7 +104,7 @@ def _approval_fixture(
 
 def _valid_patch_arguments() -> dict[str, object]:
     return {
-        "spec_version": "harnessix.workspace-patch-input/v1",
+        "spec_version": "harnessix.workspace-patch-input/v2",
         "files": [
             {
                 "operation": "replace",
@@ -139,9 +139,13 @@ def test_prompt_uses_only_projected_public_case_material() -> None:
 
     assert prompt == (
         "You are solving one SWE-bench task in the current repository.\n"
-        "Investigate the code, implement the smallest correct fix, and leave the working tree "
-        "with the final patch. Work autonomously: do not ask the user questions. Do not use "
-        "network access, hidden tests, reference patches, hints, or evaluator artifacts.\n\n"
+        "Work autonomously and leave the working tree with the smallest correct patch. Start from "
+        "the named symbols and files; use focused grep/read calls rather than broad exploration. "
+        "After at most four source-inspection calls, either submit the best justified "
+        "patch or stop with a precise blocker. For existing files use exact edit operations with "
+        "unique old_text/new_text anchors; never replace an entire file with an excerpt. Review "
+        "the final git status and diff. Do not ask questions or use network access, hidden tests, "
+        "reference patches, hints, or evaluator artifacts.\n\n"
         "Instance: owner__repo-42\n"
         "Repository: owner/repo\n"
         f"Base commit: {'b' * 40}\n\n"
@@ -175,7 +179,7 @@ def test_valid_workspace_patch_batch_is_approved() -> None:
         pytest.param(
             WORKSPACE_PATCH_TOOL,
             "patch_batch",
-            {"spec_version": "harnessix.workspace-patch-input/v1", "files": []},
+            {"spec_version": "harnessix.workspace-patch-input/v2", "files": []},
             id="invalid-patch-arguments",
         ),
         pytest.param(

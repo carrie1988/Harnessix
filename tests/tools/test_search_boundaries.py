@@ -61,6 +61,18 @@ async def test_subdirectory_patterns_and_literal_not_regex(tmp_path):
         assert result.output["scan_complete"]
 
 
+async def test_file_path_searches_only_that_file(tmp_path):
+    (tmp_path / "target.py").write_text("before\nneedle\nafter\n", encoding="utf-8")
+    (tmp_path / "other.py").write_text("needle\n", encoding="utf-8")
+    async with CodingToolRuntime(tmp_path) as tools:
+        grep = await execute(tools, "grep", path="target.py", query="needle")
+        glob = await execute(tools, "glob", path="target.py")
+
+    assert [(item["path"], item["line"]) for item in grep.output["matches"]] == [("target.py", 2)]
+    assert grep.output["stats"]["entries_scanned"] == 1
+    assert glob.output["paths"] == ["target.py"]
+
+
 async def test_unterminated_line_retains_its_literal_carriage_return(tmp_path):
     (tmp_path / "x").write_bytes(b"needle\r")
     async with CodingToolRuntime(tmp_path) as tools:

@@ -85,7 +85,7 @@ def _anthropic_tool_frames(step, arguments):
 
 
 @pytest.mark.parametrize("provider_name", ["openai", "anthropic"])
-async def test_sdk_kernel_corrects_missing_paging_revision_and_replays(
+async def test_sdk_kernel_accepts_independent_random_range_and_replays(
     tmp_path, monkeypatch, provider_name
 ):
     monkeypatch.setenv("HARNESSIX_PAGING_FIXTURE_KEY", "fixture-key")
@@ -113,16 +113,8 @@ async def test_sdk_kernel_corrects_missing_paging_revision_and_replays(
             )
             assert output["content_sha256"] != output["revision"]
             arguments = {"path": "main.py", "start_line": 2}
-        elif step == 3:
-            assert results[-1]["error"]["code"] == "tool_expected_revision_required"
-            assert results[-1]["error"]["category"] == "tool"
-            arguments = {
-                "path": "main.py",
-                "start_line": 2,
-                "expected_revision": results[0]["output"]["revision"],
-            }
         else:
-            assert step == 4
+            assert step == 3
             assert results[-1]["output"]["text"] == "第二行\n"
             parts = (
                 openai_wire.text_frames()
@@ -188,8 +180,8 @@ async def test_sdk_kernel_corrects_missing_paging_revision_and_replays(
 
     results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]
     assert turn.status == TurnStatus.COMPLETED
-    assert [result.outcome for result in results] == ["succeeded", "failed", "succeeded"]
-    assert len(requests) == 4 and all(wire.closed for wire in wires)
+    assert [result.outcome for result in results] == ["succeeded", "succeeded"]
+    assert len(requests) == 3 and all(wire.closed for wire in wires)
     reopened = SQLiteSessionStore(store.path)
     await reopened.initialize()
     assert replay(await reopened.events(thread.thread_id)) == await reopened.get_thread(

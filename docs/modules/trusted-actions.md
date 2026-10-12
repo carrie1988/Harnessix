@@ -1488,7 +1488,7 @@ transition audit using checkpoint.decided_at
 
 ## 44. 默认Workspace Patch Route（0.9.1e3）
 
-`apply_patch_batch`的Definition由[`action_composition.py`](../../src/harnessix/product_config/action_composition.py)构造，固定`source=harnessix.product`、`executor_id=product.workspace-patch`和版本`harnessix.workspace-patch/v1`。公开Schema、Binding、Capability Evidence、规范资源解析、Executor和Reconciler在Catalog安装前逐项闭合。
+`apply_patch_batch`的Definition由[`action_composition.py`](../../src/harnessix/product_config/action_composition.py)构造，固定`source=harnessix.product`、`executor_id=product.workspace-patch`。当前`harnessix.workspace-patch/v2`在原事务、审批和恢复链上增加`edit`：宿主从完整前镜像应用唯一且不重叠的`old_text/new_text`锚点并继承文件模式。`replace`仍表示完整文件重写；异常缩减会在写入前拒绝，避免把局部读取片段误作完整文件。v1 Schema继续冻结为历史协议，不被原地改写。
 
 Prepare继续由Router先持久Action Audit，再保存Execution Plan；Review阶段物化同Plan ID的Delivery事务与完整Artifact。批准后Router Claim并调用[`WorkspacePatchActionExecutor`](../../src/harnessix/delivery/trusted_action.py)。Lease竞争、取消、宿主退出或效果不确定均进入UNKNOWN/对账路径，Reconciler不执行剩余写入。
 

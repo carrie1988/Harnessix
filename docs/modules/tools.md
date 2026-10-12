@@ -90,7 +90,7 @@ Session事实，也不把未提交结果当作已经发生。
 2. Workspace根、对象身份、拒绝策略、输入/输出Schema和执行预算进入工具版本；
 3. 路径逐段禁止链接跟随，拒绝特殊文件和多硬链接普通文件；
 4. 目录、文件、搜索和Git输出均有可验证硬上限，并显式区分完整、截断和跳过；
-5. 文件与目录分页携带revision，版本漂移时失败而非拼接不同观察；
+5. 目录分页以及需要绑定既有快照的文件续读携带revision；独立的文件定点读取可省略revision并形成新观察，禁止把不同观察静默拼接为同一快照；
 6. 搜索结果确定性排序，非法UTF-8、二进制、超大文件和长行形成可见缺口；
 7. 受信`ToolExecutionScope`与模型参数分离，Artifact归属绑定实际Thread和Workspace能力；
 8. 任务取消、Token取消和Runtime关闭均等待工作线程或子进程回收后返回；
@@ -263,7 +263,7 @@ Runtime的进程监督，依赖方向只用于执行固定程序；它不开放`
 | 字段 | 类型/默认 | 来源 | 语义与约束 |
 |---|---|---|---|
 | `path` | 必填相对路径 | 模型 | 仅普通、单硬链接文件 |
-| `start_line` | `int`, 1 | 模型 | 1起始；大于1必须带revision |
+| `start_line` | `int`, 1 | 模型 | 1起始；省略revision表示独立新观察，携带revision表示绑定既有快照 |
 | `max_lines` | `int`, 200 | 模型 | 1～2000 |
 | `expected_revision` | 64位hex或`null` | 上一页/搜索命中 | 与当前对象观察不一致时`page_changed` |
 | `text` | UTF-8字符串 | 文件 | 保留原换行；不替换非法字节 |
@@ -412,9 +412,9 @@ sequenceDiagram
 `list_files`观察全部允许条目的名称、设备/inode和类型后计算revision，再进行排序分页。这样后续页
 不会因为条目替换、增删或类型变化而继续，但目录中子文件内容变化不属于目录页revision。
 
-缺少分页revision时，Runtime只在“补入合法占位revision后其余输入全部有效”的窄条件下返回
-`tool_expected_revision_required`。消息只说明修正动作，不回显路径或参数值；模型必须发起新的调用，
-Runtime不会从历史自动注入revision。
+`list_files`缺少分页revision时，Runtime只在“补入合法占位revision后其余输入全部有效”的窄条件下
+返回`tool_expected_revision_required`。消息只说明修正动作，不回显路径或参数值；模型必须发起新的
+调用，Runtime不会从历史自动注入revision。`read_file`省略revision的定点范围读取则是独立新观察。
 
 ## 11. 搜索、完整性与Artifact数据流
 

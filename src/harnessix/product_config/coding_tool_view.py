@@ -17,7 +17,9 @@ from harnessix.domain.models import EffectClass, ToolDescriptor
 
 _PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
+_SOURCE_INSPECTION_TOOLS = frozenset({"read_file", "grep", "glob"})
 _HIDDEN_WORKFLOW_ACTIONS = frozenset({WORKSPACE_ROLLBACK_TOOL})
+_MAX_NO_PROFILE_INSPECTIONS = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,7 +76,10 @@ def _successful_reads_after(observations: tuple[_Observation, ...], index: int) 
 
 
 def _patched_paths_requiring_reread(
-    observations: tuple[_Observation, ...], patch_index: int
+    observations: tuple[_Observation, ...],
+    patch_index: int,
+    *,
+    include_created: bool = True,
 ) -> frozenset[str]:
     observation = next(item for item in observations if item.index == patch_index)
     arguments = observation.call.arguments
@@ -89,6 +94,7 @@ def _patched_paths_requiring_reread(
         for item in files
         if isinstance(item, dict)
         and item.get("operation") != "delete"
+        and (include_created or item.get("operation") != "create")
         and isinstance((path := item.get("path")), str)
     )
 
@@ -119,7 +125,7 @@ class CodingWorkflowToolView:
         profiles = tuple(name for name in by_name if name.startswith("run_profile."))
         patches = tuple(name for name in by_name if name in _PATCH_TOOLS)
         if (
-            len(profiles) != 1
+            len(profiles) > 1
             or len(patches) != 1
             or not _GIT_REVIEW_TOOLS <= by_name.keys()
             or any(
@@ -130,14 +136,55 @@ class CodingWorkflowToolView:
         ):
             return ModelToolSelection(definitions)
 
-        profile, patch = profiles[0], patches[0]
+        profile = profiles[0] if profiles else None
+        patch = patches[0]
         observations = _observations(turn)
+        patch_results = tuple(item for item in observations if item.tool == patch)
         successful_patches = tuple(
-            item.index
-            for item in observations
-            if item.tool == patch and item.result.outcome == "succeeded"
+            item.index for item in patch_results if item.result.outcome == "succeeded"
         )
         last_patch = successful_patches[-1] if successful_patches else -1
+        if profile is None:
+            if last_patch < 0:
+                if patch_results:
+                    failed_patch = patch_results[-1]
+                    names = {"read_file"}
+                    patched_paths = _patched_paths_requiring_reread(
+                        observations,
+                        failed_patch.index,
+                        include_created=False,
+                    )
+                    if patched_paths <= _successful_reads_after(observations, failed_patch.index):
+                        names.add(patch)
+                    return _selection(definitions, names)
+                inspections = sum(item.tool in _SOURCE_INSPECTION_TOOLS for item in observations)
+                if inspections >= _MAX_NO_PROFILE_INSPECTIONS:
+                    return ModelToolSelection((by_name[patch],))
+                names = {*_SOURCE_INSPECTION_TOOLS, patch}
+                return _selection(definitions, names)
+            reviewed = {
+                item.tool
+                for item in observations
+                if item.index > last_patch
+                and item.tool in _GIT_REVIEW_TOOLS
+                and item.result.outcome == "succeeded"
+            }
+            missing_review = set(_GIT_REVIEW_TOOLS) - reviewed
+            if missing_review:
+                return _selection(definitions, missing_review)
+            review_index = max(
+                item.index
+                for item in observations
+                if item.index > last_patch
+                and item.tool in _GIT_REVIEW_TOOLS
+                and item.result.outcome == "succeeded"
+            )
+            names = {"read_file"}
+            patched_paths = _patched_paths_requiring_reread(observations, last_patch)
+            if patched_paths <= _successful_reads_after(observations, review_index):
+                names.add(patch)
+            return ModelToolSelection(tuple(item for item in definitions if item.name in names))
+
         profile_results = tuple(
             item for item in observations if item.tool == profile and item.index > last_patch
         )
@@ -176,9 +223,7 @@ class CodingWorkflowToolView:
                 if not _diagnostic_is_complete(validation.result):
                     names.add("read_artifact")
                 patched_paths = _patched_paths_requiring_reread(observations, last_patch)
-                if patched_paths <= _successful_reads_after(
-                    observations, validation.index
-                ):
+                if patched_paths <= _successful_reads_after(observations, validation.index):
                     names.add(patch)
                 return _selection(definitions, names)
             names = {

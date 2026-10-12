@@ -37,7 +37,8 @@ from harnessix.tools.workspace import ReadOperation, Workspace, digest, identity
 
 def execution_contract() -> dict[str, object]:
     return {
-        "version": "bounded-search/v1",
+        "version": "bounded-search/v2",
+        "start_path": "regular-file-or-directory",
         "pattern": "case-sensitive-segments-and-globstar",
         "grep": "case-sensitive-literal-lines",
         "ignored_directories": IGNORED_DIRECTORIES,
@@ -114,6 +115,16 @@ def _collect(
 ) -> list[_Candidate]:
     candidates: list[_Candidate] = []
 
+    try:
+        with workspace.open(args.path, operation, directory=False) as fd:
+            info = os.fstat(fd)
+            scan.entries_scanned = 1
+            scan.names_bytes = len(os.fsencode(args.path.rsplit("/", 1)[-1]))
+            return [_Candidate(args.path, info)]
+    except ReadToolError as error:
+        if error.code != "wrong_file_type":
+            raise
+
     def visit(path: str, depth: int, expected: _Candidate | None = None) -> None:
         operation.checkpoint()
         if depth > MAX_SEARCH_DEPTH:
@@ -186,7 +197,11 @@ class _Records:
 
 
 def _relative(path: str, root: str) -> str:
-    return path if root == "." else path[len(root) + 1 :]
+    if root == ".":
+        return path
+    if path == root:
+        return path.rsplit("/", 1)[-1]
+    return path[len(root) + 1 :]
 
 
 def glob(

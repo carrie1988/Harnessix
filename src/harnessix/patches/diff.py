@@ -33,7 +33,7 @@ def _patch_edits(
     for patch in patches:
         shift = 0
         for index, (start, stop, replacement) in enumerate(
-            _edit_ranges(patch.before, patch.proposal, operation)
+            _edit_ranges(patch.before, patch.proposal.edits, operation, len(patch.after))
         ):
             _checkpoint(operation)
             yield PatchEditDiff(

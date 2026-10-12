@@ -66,7 +66,11 @@ def same_observation(first: Observation, second: Observation) -> bool:
 def relative_path(path: str, root: str) -> str:
     """返回相对于搜索起点的逻辑路径。"""
 
-    return path if root == "." else path[len(root) + 1 :]
+    if root == ".":
+        return path
+    if path == root:
+        return path.rsplit("/", 1)[-1]
+    return path[len(root) + 1 :]
 
 
 def file_revision(port: WindowsReadPort, path: str, observed: Observation) -> str:

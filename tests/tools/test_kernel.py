@@ -34,7 +34,7 @@ def read_step():
     ]
 
 
-class PagingCorrectionProvider:
+class RandomRangeProvider:
     def __init__(self) -> None:
         self.requests = []
 
@@ -48,16 +48,10 @@ class PagingCorrectionProvider:
         elif len(self.requests) == 2:
             assert results[-1].outcome == "succeeded"
             arguments = {"path": "main.py", "start_line": 2}
-        elif len(self.requests) == 3:
-            assert results[-1].error is not None
-            assert results[-1].error.code == "tool_expected_revision_required"
-            assert "expected_revision" in results[-1].error.message
-            arguments = {
-                "path": "main.py",
-                "start_line": 2,
-                "expected_revision": results[0].output["revision"],
-            }
         else:
+            assert len(self.requests) == 3
+            assert results[-1].outcome == "succeeded"
+            assert results[-1].output["text"] == "第二行\n"
             for event in answer("分页读取完成"):
                 yield event
             return
@@ -70,22 +64,20 @@ class PagingCorrectionProvider:
         yield ResponseCompleted(finish_reason="tool_calls")
 
 
-async def test_kernel_persists_actionable_paging_error_and_model_can_correct(tmp_path):
+async def test_kernel_accepts_independent_random_range_and_replays_it(tmp_path):
     root = tmp_path / "repo"
     root.mkdir()
     (root / "main.py").write_text("第一行\n第二行\n", encoding="utf-8")
     store = SQLiteSessionStore(tmp_path / "session.db")
-    provider = PagingCorrectionProvider()
+    provider = RandomRangeProvider()
     async with CodingToolRuntime(root) as tools:
         async with AgentRuntime(store, provider, tools) as runtime:
             thread = await runtime.create_thread(str(root))
             turn = await runtime.run_turn(thread.thread_id, "分页读取", request_id="paging")
     results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]
     assert turn.status == TurnStatus.COMPLETED
-    assert [result.outcome for result in results] == ["succeeded", "failed", "succeeded"]
-    assert results[1].error is not None
-    assert results[1].error.code == "tool_expected_revision_required"
-    assert results[2].output["text"] == "第二行\n"
+    assert [result.outcome for result in results] == ["succeeded", "succeeded"]
+    assert results[1].output["text"] == "第二行\n"
     reopened = SQLiteSessionStore(store.path)
     await reopened.initialize()
     snapshot = await reopened.get_thread(thread.thread_id)

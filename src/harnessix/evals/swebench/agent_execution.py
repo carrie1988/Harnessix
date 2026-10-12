@@ -46,7 +46,7 @@ from harnessix.product_config.workspace_patch_review import decode_workspace_pat
 from harnessix.tools.runtime import CodingToolRuntime
 
 _AUTOMATED_APPROVAL_ACTOR = "harnessix-swebench-runner"
-_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v1"
+_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v2"
 
 
 class _NoSecrets:
@@ -61,9 +61,13 @@ def build_swebench_agent_prompt(case: SweBenchPublicCase) -> str:
 
     return (
         "You are solving one SWE-bench task in the current repository.\n"
-        "Investigate the code, implement the smallest correct fix, and leave the working tree "
-        "with the final patch. Work autonomously: do not ask the user questions. Do not use "
-        "network access, hidden tests, reference patches, hints, or evaluator artifacts.\n\n"
+        "Work autonomously and leave the working tree with the smallest correct patch. Start from "
+        "the named symbols and files; use focused grep/read calls rather than broad exploration. "
+        "After at most four source-inspection calls, either submit the best justified "
+        "patch or stop with a precise blocker. For existing files use exact edit operations with "
+        "unique old_text/new_text anchors; never replace an entire file with an excerpt. Review "
+        "the final git status and diff. Do not ask questions or use network access, hidden tests, "
+        "reference patches, hints, or evaluator artifacts.\n\n"
         f"Instance: {case.instance_id}\n"
         f"Repository: {case.repo}\n"
         f"Base commit: {case.base_commit}\n\n"
@@ -93,9 +97,7 @@ def _pending_approval(turn: Turn) -> TrustedActionApprovalRequestContent | None:
     return pending[0] if pending else None
 
 
-def _approval_call(
-    turn: Turn, approval: TrustedActionApprovalRequestContent
-) -> ToolCallContent:
+def _approval_call(turn: Turn, approval: TrustedActionApprovalRequestContent) -> ToolCallContent:
     matches = tuple(
         item.content
         for item in turn.items
@@ -163,8 +165,7 @@ async def _drive_turn(
         raise KernelError("swebench_run_projection_invalid", "SWE-bench Thread与Workspace不一致")
 
     request_id = (
-        f"swebench:{plan.plan_sha256}:{execution_fingerprint}:"
-        f"{case.instance_id}:{_PROMPT_VERSION}"
+        f"swebench:{plan.plan_sha256}:{execution_fingerprint}:{case.instance_id}:{_PROMPT_VERSION}"
     )
     turn = _request_turn(thread, request_id)
     if turn is None:
@@ -185,9 +186,7 @@ async def _drive_turn(
             turn = await _await_cancel(runtime.cancel(thread.thread_id, turn.turn_id), cancel)
             continue
         if remaining_seconds(turn) <= 0:
-            turn = await _await_cancel(
-                runtime.resume_turn(thread.thread_id, turn.turn_id), cancel
-            )
+            turn = await _await_cancel(runtime.resume_turn(thread.thread_id, turn.turn_id), cancel)
             continue
         if turn.status is TurnStatus.WAITING_APPROVAL:
             approval = _pending_approval(turn)
@@ -206,26 +205,20 @@ async def _drive_turn(
                 ),
                 cancel,
             )
-            turn = await _await_cancel(
-                runtime.resume_turn(thread.thread_id, turn.turn_id), cancel
-            )
+            turn = await _await_cancel(runtime.resume_turn(thread.thread_id, turn.turn_id), cancel)
             continue
         if turn.status in {
             TurnStatus.ACCEPTED,
             TurnStatus.EXECUTING_TOOLS,
             TurnStatus.WAITING_ACTION,
         }:
-            turn = await _await_cancel(
-                runtime.resume_turn(thread.thread_id, turn.turn_id), cancel
-            )
+            turn = await _await_cancel(runtime.resume_turn(thread.thread_id, turn.turn_id), cancel)
             continue
         raise KernelError("swebench_run_projection_invalid", "SWE-bench Turn停留在不可恢复状态")
     return thread.thread_id, turn
 
 
-def _provider(
-    config: OpenAIChatConfig, api_key: str
-) -> AbstractAsyncContextManager[ModelProvider]:
+def _provider(config: OpenAIChatConfig, api_key: str) -> AbstractAsyncContextManager[ModelProvider]:
     return OpenAIChatProvider(config, api_key=api_key)
 
 
@@ -251,9 +244,7 @@ async def run_swebench_agent_case(
     token = cancel or CancelToken()
     with provider_publication_scope(provider_config.api_key_env, api_key) as scope:
         history = TaskPackHistoryReadControl.begin(token)
-        async with open_task_pack_publication(
-            run_root, scope, history_read=history
-        ) as owner:
+        async with open_task_pack_publication(run_root, scope, history_read=history) as owner:
             # Provider 打开前先认证已有完整历史，禁止用新凭据掩盖损坏状态。
             await owner.authenticated_single_thread(history)
             async with _provider(provider_config, api_key) as provider:

@@ -54,16 +54,37 @@ def test_public_schema_exposes_each_operation_required_fields() -> None:
     branches = {
         branch["properties"]["operation"]["const"]: branch for branch in file_schema["oneOf"]
     }
-    assert set(branches) == {"create", "replace", "delete"}
+    assert set(branches) == {"create", "edit", "replace", "delete"}
     assert set(branches["create"]["required"]) == {"content", "mode"}
+    assert set(branches["edit"]["required"]) == {"expected_sha256", "edits"}
     assert set(branches["replace"]["required"]) == {"expected_sha256", "content", "mode"}
     assert set(branches["delete"]["required"]) == {"expected_sha256"}
+
+
+def test_edit_requires_unique_anchor_contract_without_complete_file_content() -> None:
+    proposal = {
+        "files": [
+            {
+                "operation": "edit",
+                "path": "a.py",
+                "expected_sha256": "a" * 64,
+                "edits": [{"old_text": "old", "new_text": "new"}],
+            }
+        ]
+    }
+
+    decoded = WorkspacePatchInput.model_validate(proposal)
+
+    assert decoded.files[0].content is None
+    assert decoded.files[0].mode is None
+    assert Draft202012Validator(workspace_patch_descriptor().input_schema).is_valid(proposal)
 
 
 def test_patch_descriptor_explains_complete_content_and_decimal_modes() -> None:
     description = workspace_patch_descriptor().description
     assert all(
-        word in description for word in ("create", "replace", "delete", "mode", "420", "493")
+        word in description
+        for word in ("create", "edit", "replace", "delete", "mode", "420", "493")
     )
     assert "完整" in description and "Windows" in description
     assert "必填" in description and "十进制" in description
@@ -83,7 +104,7 @@ def test_actual_provider_payload_preserves_operation_schema(adapter: str) -> Non
     assert "oneOf" in published["$defs"]["WorkspacePatchFile"]
 
 
-def test_operation_schema_does_not_change_legacy_valid_json_or_tool_version() -> None:
+def test_v2_tool_keeps_legacy_operation_shapes_but_not_legacy_identity() -> None:
     legacy = ToolDescriptor.model_validate_json(
         (
             Path(__file__).parent / "fixtures/workspace-patch-descriptor-pre-discovery-v1.json"
@@ -94,7 +115,8 @@ def test_operation_schema_does_not_change_legacy_valid_json_or_tool_version() ->
         tool_fingerprint(legacy)
         == "e8b12d190a387e5e35d891d4ea47f8a51fe858e0e6331e0740062ee94b76aeca"
     )
-    assert current.name == legacy.name and current.version == legacy.version
+    assert current.name == legacy.name and current.version == "harnessix.workspace-patch/v2"
+    assert current.version != legacy.version
     assert tool_fingerprint(current) != tool_fingerprint(legacy)
     assert current.effect_class == legacy.effect_class
     assert current.requires_approval and current.requires_idempotency

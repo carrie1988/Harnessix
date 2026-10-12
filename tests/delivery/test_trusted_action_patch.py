@@ -50,6 +50,7 @@ from harnessix.models.contracts import (
     ToolCallCompleted,
 )
 from harnessix.models.scripted import ScriptedProvider
+from harnessix.patches.contracts import ExactEdit
 from harnessix.product_config.action_composition import (
     build_fixed_product_action_environment,
     build_workspace_patch_composition,
@@ -235,10 +236,138 @@ def test_workspace_patch_input_rejects_ambiguous_operations_and_total_budget() -
         )
 
 
+async def test_exact_edit_preserves_unread_file_content_and_mode(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    target = root / "app.py"
+    target.write_text("prefix\nold = True\nsuffix\n", encoding="utf-8")
+    proposal = WorkspacePatchInput(
+        files=(
+            WorkspacePatchFile(
+                operation="edit",
+                path="app.py",
+                expected_sha256=_sha("prefix\nold = True\nsuffix\n"),
+                edits=(ExactEdit(old_text="old = True", new_text="old = False"),),
+            ),
+        )
+    )
+    router, _, _, plans, audit, transactions, leases, route = _planned_action(
+        root, tmp_path, proposal
+    )
+
+    outcome = await router.execute(route.plan.execution.plan_id)
+
+    assert outcome.kind == "succeeded"
+    assert target.read_text(encoding="utf-8") == "prefix\nold = False\nsuffix\n"
+    assert target.stat().st_mode & 0o777 == 0o644
+    transactions.close()
+    leases.close()
+    plans.close()
+    audit.close()
+
+
+def test_exact_edit_rejects_ambiguous_anchor_without_preparing_effect(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    target = root / "app.py"
+    target.write_text("same\nsame\n", encoding="utf-8")
+    proposal = WorkspacePatchInput(
+        files=(
+            WorkspacePatchFile(
+                operation="edit",
+                path="app.py",
+                expected_sha256=_sha("same\nsame\n"),
+                edits=(ExactEdit(old_text="same", new_text="changed"),),
+            ),
+        )
+    )
+
+    with pytest.raises(KernelError) as ambiguous:
+        _planned_action(root, tmp_path, proposal)
+
+    assert ambiguous.value.code == "patch_ambiguous_context"
+    assert target.read_text(encoding="utf-8") == "same\nsame\n"
+
+
+@pytest.mark.parametrize("size", [64, 1023, 1024])
+def test_full_replace_rejects_unexplained_truncation_at_all_file_sizes(
+    tmp_path: Path, size: int
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    before = "a" * size
+    target = root / "app.py"
+    target.write_text(before, encoding="utf-8")
+    proposal = WorkspacePatchInput(
+        files=(
+            WorkspacePatchFile(
+                operation="replace",
+                path="app.py",
+                expected_sha256=_sha(before),
+                content="class Partial:\n    pass\n",
+                mode=0o644,
+            ),
+        )
+    )
+
+    with pytest.raises(KernelError) as unsafe:
+        _planned_action(root, tmp_path, proposal)
+
+    assert unsafe.value.code == "workspace_patch_unsafe_full_replace"
+    assert target.read_text(encoding="utf-8") == before
+
+
+def test_exact_edit_supports_files_above_managed_patch_limit(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    before = "a" * 1_100_000 + "\nneedle\n"
+    (root / "large.py").write_text(before, encoding="utf-8")
+    proposal = WorkspacePatchInput(
+        files=(
+            WorkspacePatchFile(
+                operation="edit",
+                path="large.py",
+                expected_sha256=_sha(before),
+                edits=(ExactEdit(old_text="needle", new_text="changed"),),
+            ),
+        )
+    )
+
+    _, _, _, plans, audit, transactions, leases, _ = _planned_action(root, tmp_path, proposal)
+
+    assert len(transactions.blob(_sha(before.replace("needle", "changed")))) == len(before) + 1
+    transactions.close()
+    leases.close()
+    plans.close()
+    audit.close()
+
+
+def test_exact_edit_rejects_files_beyond_model_digest_limit(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    before = "a" * 2_100_000 + "\nneedle\n"
+    (root / "large.py").write_text(before, encoding="utf-8")
+    proposal = WorkspacePatchInput(
+        files=(
+            WorkspacePatchFile(
+                operation="edit",
+                path="large.py",
+                expected_sha256=_sha(before),
+                edits=(ExactEdit(old_text="needle", new_text="changed"),),
+            ),
+        )
+    )
+
+    with pytest.raises(KernelError) as too_large:
+        _planned_action(root, tmp_path, proposal)
+
+    assert too_large.value.code == "patch_limit_exceeded"
+
+
 def test_workspace_patch_public_schemas_match_runtime_contracts() -> None:
     root = Path(__file__).parents[2] / "spec"
     assert (
-        json.loads((root / "workspace-patch-input-v1.schema.json").read_text(encoding="utf-8"))
+        json.loads((root / "workspace-patch-input-v2.schema.json").read_text(encoding="utf-8"))
         == WorkspacePatchInput.model_json_schema()
     )
     assert (
@@ -289,7 +418,10 @@ async def test_workspace_patch_legacy_approval_is_not_rebound_or_executed(
     with pytest.raises(KernelError) as rebound:
         current.plan(
             route.plan.invocation.model_copy(
-                update={"tool_fingerprint": tool_fingerprint(workspace_patch_descriptor())}
+                update={
+                    "tool_version": workspace_patch_descriptor().version,
+                    "tool_fingerprint": tool_fingerprint(workspace_patch_descriptor()),
+                }
             ),
             environment.context(str(root)),
         )

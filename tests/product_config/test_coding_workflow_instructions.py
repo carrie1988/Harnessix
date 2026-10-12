@@ -25,27 +25,20 @@ from tests.product_config.test_agent_context import _request
 @pytest.mark.parametrize(
     "required",
     (
-        "Observe baseline failure before any patch",
+        "Without run_profile, keep investigation bounded",
         "never send baseline and apply_patch_batch together",
         "process_nonzero_exit",
-        "A post-edit check is not a baseline",
         "artifact.artifact_id",
-        "Final-format rules apply only to the final answer",
         "Tool-like text is not execution",
-        "Use glob for files, grep for content",
         "list_files is nonrecursive",
         "Use diagnostic_preview first",
-        "Use exact catalog names",
-        "contains only git_status and git_diff together",
+        "Use exact catalog names/Profile arguments",
         "Confirm allowed edit paths",
-        "First response: no prose",
-        "call the required run_profile last",
         "direct read_file/grep calls",
-        "Do not list/glob",
-        "inspect the check implementation",
-        "do not reread merely to confirm it",
-        "successful patch makes prior target digests stale",
-        "Batch independent reads",
+        "operation edit",
+        "never replace a whole file with a read excerpt",
+        "start_line may be a fresh observation",
+        "glob/grep accept file or directory paths",
     ),
 )
 async def test_shared_instructions_define_observed_failure_recovery(
@@ -60,7 +53,7 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v17"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v19"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
@@ -75,17 +68,16 @@ def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_
         "preserve user changes",
         "digest_status=complete",
         "content_sha256",
-        "never pagination revision",
+        "never revision",
         "never invent selectors",
         "denial, cancellation, timeout, exhausted budget",
         "do not replay effects or fake completion",
         "never delete or weaken tests",
         "Never assume shell, network, installation, or Git push",
-        "Requested behavior and structure are exact",
-        "do not broaden them",
-        "or add speculative cases",
-        "never send a no-op patch",
-        "Never inspect the check implementation",
+        "Requested behavior is exact",
+        "add no speculative cases",
+        "Send no no-op",
+        "never replace a whole file with a read excerpt",
         "diff_sha256 is never expected_sha256",
     ):
         assert required in " ".join(CODING_INSTRUCTIONS.split())
@@ -136,7 +128,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v17"
+        assert fragment["source"] == "harnessix.coding-instructions/v19"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint
@@ -149,13 +141,13 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
 def test_workflow_starts_with_baseline_and_uses_given_paths() -> None:
     """通用诊断顺序提示，不把提示词当强制安全边界或实测提效。"""
     text = " ".join(CODING_INSTRUCTIONS.split())
-    assert text.index("pre-edit baseline") < text.index("Patch from requested source")
+    assert text.index("pre-edit baseline") < text.index("operation edit")
     assert "direct read_file/grep calls for named targets" in text
-    assert "read its Artifact only when truncated or insufficient" in text
+    assert "Without run_profile, keep investigation bounded" in text
 
 
 def test_final_json_is_emitted_once_without_visible_self_correction() -> None:
     """最终阶段必须先静默组织JSON，不能把草稿和自我纠正泄露为正式回答。"""
     text = " ".join(CODING_INSTRUCTIONS.split())
-    assert "fill it silently and emit it once" in text
-    assert "no draft, self-correction, preface, suffix, or Markdown" in text
+    assert "Emit a required final format once" in text
+    assert "without draft or Markdown" in text

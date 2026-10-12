@@ -1,0 +1,237 @@
+{
+  "$defs": {
+    "ExactEdit": {
+      "additionalProperties": false,
+      "properties": {
+        "old_text": {
+          "maxLength": 131072,
+          "minLength": 1,
+          "title": "Old Text",
+          "type": "string"
+        },
+        "new_text": {
+          "maxLength": 131072,
+          "title": "New Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "old_text",
+        "new_text"
+      ],
+      "title": "ExactEdit",
+      "type": "object"
+    },
+    "WorkspacePatchFile": {
+      "additionalProperties": false,
+      "description": "一个带来源前置条件的创建、精确编辑、完整替换或删除意图。",
+      "oneOf": [
+        {
+          "properties": {
+            "operation": {
+              "const": "create"
+            },
+            "expected_sha256": {
+              "type": "null"
+            },
+            "content": {
+              "type": "string"
+            },
+            "edits": {
+              "type": "null"
+            },
+            "mode": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "content",
+            "mode"
+          ]
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "replace"
+            },
+            "expected_sha256": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "edits": {
+              "type": "null"
+            },
+            "mode": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "expected_sha256",
+            "content",
+            "mode"
+          ]
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "edit"
+            },
+            "expected_sha256": {
+              "type": "string"
+            },
+            "content": {
+              "type": "null"
+            },
+            "edits": {
+              "maxItems": 32,
+              "minItems": 1,
+              "type": "array"
+            },
+            "mode": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "expected_sha256",
+            "edits"
+          ]
+        },
+        {
+          "properties": {
+            "operation": {
+              "const": "delete"
+            },
+            "expected_sha256": {
+              "type": "string"
+            },
+            "content": {
+              "type": "null"
+            },
+            "edits": {
+              "type": "null"
+            },
+            "mode": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "expected_sha256"
+          ]
+        }
+      ],
+      "properties": {
+        "operation": {
+          "enum": [
+            "create",
+            "edit",
+            "replace",
+            "delete"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "expected_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "replace/delete必填，使用可信读取返回的完整SHA-256；create省略或null。",
+          "title": "Expected Sha256"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "maxLength": 524288,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "create/replace必填且非null，提供完整新文件正文，可为空字符串；delete省略或null。",
+          "title": "Content"
+        },
+        "edits": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ExactEdit"
+              },
+              "maxItems": 32,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "edit必填；每项old_text必须在完整前镜像中唯一，编辑间不得重叠。",
+          "title": "Edits"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                420,
+                493
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "create/replace必填且非null，JSON十进制整数420或493；Windows只支持420；delete省略或null。",
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "operation",
+        "path"
+      ],
+      "title": "WorkspacePatchFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "模型可见的多文件事务提案；宿主持有事务、租约和Artifact身份。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.workspace-patch-input/v2",
+      "default": "harnessix.workspace-patch-input/v2",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/WorkspacePatchFile"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "files"
+  ],
+  "title": "WorkspacePatchInput",
+  "type": "object"
+}

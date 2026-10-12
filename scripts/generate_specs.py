@@ -421,7 +421,7 @@ def generate_specs(output: Path) -> None:
         WorkspaceRollbackInput.model_json_schema(),
     )
     write_json(
-        output / "workspace-patch-input-v1.schema.json",
+        output / "workspace-patch-input-v2.schema.json",
         WorkspacePatchInput.model_json_schema(),
     )
     write_json(

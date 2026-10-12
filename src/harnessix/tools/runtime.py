@@ -103,20 +103,21 @@ _BINDINGS = (
     ),
     _ReadBinding(
         "read_file",
-        "读取UTF-8文本页；后续页用revision。digest_status=complete时，content_sha256是完整"
+        "读取UTF-8文本范围；可直接指定start_line，若需与先前观察保持同一版本则传revision。"
+        "digest_status=complete时，content_sha256是完整"
         "文件摘要，可作Patch expected_sha256；不跟随链接",
         ReadFileInput,
         ReadFileSnapshotOutput,
     ),
     _ReadBinding(
         "glob",
-        "定位文件；支持 * ? [] 和 ** 路径段，显式报告截断",
+        "在文件或目录起点定位文件；支持 * ? [] 和 ** 路径段，显式报告截断",
         GlobInput,
         GlobOutput,
     ),
     _ReadBinding(
         "grep",
-        "按大小写敏感字面量查找行，不支持正则；返回片段和revision",
+        "在文件或目录起点按大小写敏感字面量查找行，不支持正则；返回片段和revision",
         GrepInput,
         GrepOutput,
     ),
@@ -149,10 +150,7 @@ def _invalid_arguments(
 
 def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) -> tuple[str, str]:
     invalid = _invalid_arguments(binding.input_model, arguments)
-    if binding.input_model is ReadFileInput:
-        position = arguments.get("start_line", 1)
-        first_position = 1
-    elif binding.input_model is ListFilesInput:
+    if binding.input_model is ListFilesInput:
         position = arguments.get("offset", 0)
         first_position = 0
     else:
@@ -223,6 +221,7 @@ def _binding_rules(
         "timeout": READ_TIMEOUT_SECONDS,
     }
     if binding.output_model is ReadFileSnapshotOutput:
+        rules["random_access"] = "start_line_without_revision_is_a_fresh_observation"
         rules["snapshot"] = {
             "spec_version": "harnessix.read-file-snapshot/v1",
             "algorithm": "sha256",

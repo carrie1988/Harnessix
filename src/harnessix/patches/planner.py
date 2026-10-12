@@ -10,6 +10,7 @@ import stat
 from harnessix.agent.errors import KernelError
 from harnessix.patches.contracts import (
     MAX_PATCH_BYTES,
+    ExactEdit,
     PatchManifest,
     PatchProposal,
     PreparedPatch,
@@ -65,10 +66,13 @@ def _read_image(
 
 
 def _edit_ranges(
-    before: bytes, proposal: PatchProposal, operation: ReadOperation
+    before: bytes,
+    edits: tuple[ExactEdit, ...],
+    operation: ReadOperation,
+    max_bytes: int,
 ) -> list[tuple[int, int, bytes]]:
     ranges: list[tuple[int, int, bytes]] = []
-    for edit in proposal.edits:
+    for edit in edits:
         _checkpoint(operation)
         old, new = edit.old_text.encode(), edit.new_text.encode()
         start = before.find(old)
@@ -84,13 +88,26 @@ def _edit_ranges(
             raise KernelError("patch_overlapping_edits", "编辑区间重叠")
         end = stop
         size += len(new) - (stop - start)
-    if size > MAX_PATCH_BYTES:
+    if size > max_bytes:
         raise KernelError("patch_limit_exceeded", "Patch 完整后镜像超限")
     return ranges
 
 
-def _target(before: bytes, proposal: PatchProposal, operation: ReadOperation) -> bytes:
-    ranges = _edit_ranges(before, proposal, operation)
+def apply_exact_edits(
+    before: bytes,
+    edits: tuple[ExactEdit, ...],
+    operation: ReadOperation,
+    *,
+    max_bytes: int | None = None,
+) -> bytes:
+    """把唯一锚定且不重叠的精确编辑应用到完整UTF-8前镜像。"""
+
+    ranges = _edit_ranges(
+        before,
+        edits,
+        operation,
+        MAX_PATCH_BYTES if max_bytes is None else max_bytes,
+    )
     chunks: list[bytes] = []
     offset = 0
     for start, stop, new in ranges:
@@ -102,6 +119,12 @@ def _target(before: bytes, proposal: PatchProposal, operation: ReadOperation) ->
     if before == after:
         raise KernelError("patch_no_change", "Patch 未产生内容变化")
     return after
+
+
+def _target(before: bytes, proposal: PatchProposal, operation: ReadOperation) -> bytes:
+    """保留受管Patch内部验证接缝，并把实际编辑委托给通用精确编辑器。"""
+
+    return apply_exact_edits(before, proposal.edits, operation)
 
 
 def _manifest(

@@ -38,9 +38,9 @@ supersedes: []
 
 ## 3. 已定契约
 
-`glob(path='.', pattern='**/*', max_results=100, include_ignored=False)`：path 是相对目录；匹配相对于它的完整路径，但结果返回相对于 Workspace 的路径。支持单段 `*` / `?` / `[]` 与完整段 `**`（零或多级）；不扩展波浪线、环境变量、花括号或正则。模式最多 256 UTF-8 字节、32 段，禁止空段、`.`/`..`、反斜线和控制字符。点开头的普通名称参与匹配，不冒充 Shell 默认隐藏规则。
+`glob(path='.', pattern='**/*', max_results=100, include_ignored=False)`：path 是相对普通文件或目录；文件起点只检查该文件，目录起点递归匹配相对于它的完整路径，结果均返回相对于 Workspace 的路径。支持单段 `*` / `?` / `[]` 与完整段 `**`（零或多级）；不扩展波浪线、环境变量、花括号或正则。模式最多 256 UTF-8 字节、32 段，禁止空段、`.`/`..`、反斜线和控制字符。点开头的普通名称参与匹配，不冒充 Shell 默认隐藏规则。
 
-`grep(path='.', query, include='**/*', max_results=100, include_ignored=False)`：只搜索目录下匹配 include 的文件；query 最多 256 UTF-8 字节、非空、无控制字符/换行。每个命中行返回一条记录，包含相对路径、1 起始行号、包含首次命中的有界原文片段、片段是否裁剪及文件 revision；此 revision 可直接传给 read_file 的 expected_revision，不是内容哈希。
+`grep(path='.', query, include='**/*', max_results=100, include_ignored=False)`：搜索文件起点本身，或目录下匹配 include 的文件；query 最多 256 UTF-8 字节、非空、无控制字符/换行。每个命中行返回一条记录，包含相对路径、1 起始行号、包含首次命中的有界原文片段、片段是否裁剪及文件 revision；此 revision 可直接传给 read_file 的 expected_revision，不是内容哈希。
 
 默认未启用 Artifact 时，两工具最多返回 200 项。先有界发现候选，再按完整相对路径排序；grep 同文件按行号排序。达到结果数量或 24 KiB 记录预算时返回显式 truncated/reason，scan_complete=false；没有搜索分页游标或自动保留的完整输出，调用方应缩小路径/模式。
 

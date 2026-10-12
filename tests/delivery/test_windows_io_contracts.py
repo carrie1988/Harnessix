@@ -95,7 +95,7 @@ def test_windows_executor_evidence_changes_with_native_rename_semantics_without_
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     common = {
-        "action": "harnessix.workspace-patch/v1",
+        "action": "harnessix.workspace-patch/v2",
         "member_checkpoint": True,
         "reconcile_writes": False,
     }

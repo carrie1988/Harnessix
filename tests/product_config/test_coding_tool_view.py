@@ -112,6 +112,10 @@ def _names(turn: Turn, *, second_profile: bool = False) -> set[str]:
     return {item.name for item in selected.tools}
 
 
+def _definitions_without_profile() -> tuple[ToolDescriptor, ...]:
+    return tuple(item for item in _definitions() if item.name != _PROFILE)
+
+
 def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
     initial = _names(_turn())
     assert _PROFILE in initial and _PATCH not in initial
@@ -168,6 +172,90 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
         ("git_diff", "succeeded", None),
     )
     assert _names(closed) == set()
+
+
+def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> None:
+    view = CodingWorkflowToolView()
+    definitions = _definitions_without_profile()
+
+    initial = view.select(_turn(), definitions)
+    assert _PATCH in {item.name for item in initial.tools}
+    assert not {"git_status", "git_diff"} & {item.name for item in initial.tools}
+    assert initial.choice == "required"
+
+    bounded = view.select(
+        _turn(
+            ("grep", "succeeded", None),
+            ("read_file", "succeeded", None),
+            ("glob", "failed", "result_limit"),
+            ("read_file", "succeeded", None),
+        ),
+        definitions,
+    )
+    assert {item.name for item in bounded.tools} == {_PATCH}
+    assert bounded.choice == "auto"
+
+    patched = view.select(_turn((_PATCH, "succeeded", None)), definitions)
+    assert {item.name for item in patched.tools} == {"git_status", "git_diff"}
+
+    reviewed = view.select(
+        _turn((_PATCH, "succeeded", None), ("git_status", "succeeded", None)),
+        definitions,
+    )
+    assert {item.name for item in reviewed.tools} == {"git_diff"}
+
+    correction_or_finish = view.select(
+        _turn(
+            (_PATCH, "succeeded", None),
+            ("git_status", "succeeded", None),
+            ("git_diff", "succeeded", None),
+        ),
+        definitions,
+    )
+    assert {item.name for item in correction_or_finish.tools} == {"read_file"}
+    assert correction_or_finish.choice == "auto"
+
+    correction_ready = view.select(
+        _turn(
+            (_PATCH, "succeeded", None),
+            ("git_status", "succeeded", None),
+            ("git_diff", "succeeded", None),
+            ("read_file", "succeeded", None),
+        ),
+        definitions,
+    )
+    assert {item.name for item in correction_ready.tools} == {"read_file", _PATCH}
+    assert correction_ready.choice == "auto"
+
+    failed_patch = view.select(
+        _turn(
+            (
+                _PATCH,
+                "failed",
+                "patch_ambiguous_context",
+                None,
+                {"files": [{"operation": "edit", "path": "src/example.py"}]},
+            )
+        ),
+        definitions,
+    )
+    assert {item.name for item in failed_patch.tools} == {"read_file"}
+    assert failed_patch.choice == "required"
+
+    failed_create = view.select(
+        _turn(
+            (
+                _PATCH,
+                "failed",
+                "delivery_path_conflict",
+                None,
+                {"files": [{"operation": "create", "path": "src/new.py"}]},
+            )
+        ),
+        definitions,
+    )
+    assert {item.name for item in failed_create.tools} == {"read_file", _PATCH}
+    assert failed_create.choice == "required"
 
 
 def test_ambiguous_or_infrastructure_workflow_keeps_full_catalog() -> None:

@@ -181,6 +181,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 - 不接受用户动态提供的任意Git URL、测试命令或隐藏检查脚本；
 - 不在运行时下载第三方仓库；v1只发布权利链已审查的内置Archive，不提供远端对象存储或动态导入；
 - SWE-bench仅提供固定Revision、预注册范围内的专用适配，不扩展为任意Benchmark平台；
+- 当前SWE-bench Agent侧没有受控测试Profile；无Profile工作流只暴露文件读搜与Workspace Patch，最多四次源码观察后收敛到Patch或明确阻塞，并在成功Patch后强制Git状态与Diff复核。官方隐藏测试仍只在隔离Evaluator侧运行；这不等同于Agent自主测试能力已验收；
 - 不在评分器中执行模型、测试、Patch、Git写入或发布；
 - 不使用LLM Judge，不评价代码风格、可维护性或唯一实现文本；
 - 不提供请求内硬费用上限；费用停止只发生在完整试验之间；

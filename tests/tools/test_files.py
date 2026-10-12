@@ -119,8 +119,6 @@ async def test_strict_arguments(tmp_path, arguments):
 @pytest.mark.parametrize(
     ("name", "arguments"),
     [
-        ("read_file", {"path": "private-canary.py", "start_line": 2}),
-        ("read_file", {"path": "private-canary.py", "start_line": 2, "expected_revision": None}),
         ("list_files", {"path": "private-canary", "offset": 1}),
     ],
 )
@@ -132,6 +130,16 @@ async def test_page_without_revision_returns_bounded_correction(tmp_path, name, 
         f"{name}后续页必须携带上一成功结果的revision作为expected_revision"
     )
     assert "private-canary" not in result.model_dump_json()
+
+
+async def test_read_range_without_revision_is_an_independent_observation(tmp_path):
+    (tmp_path / "source.py").write_text("one\ntwo\nthree\n", encoding="utf-8")
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await execute(tools, path="source.py", start_line=2, max_lines=1)
+
+    assert result.outcome == "succeeded"
+    assert result.output["text"] == "two\n"
+    assert result.output["start_line"] == result.output["end_line"] == 2
 
 
 @pytest.mark.parametrize("kind", ["symlink", "parent_symlink", "hardlink", "fifo", "directory"])

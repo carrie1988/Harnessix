@@ -32,6 +32,7 @@ from harnessix.delivery.workspace_patch_errors import (
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.execution.store import SQLiteExecutionPlanStore
+from harnessix.patches.contracts import ExactEdit
 from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, build_trusted_tool_binding
@@ -302,6 +303,45 @@ async def test_bad_sha_fails_without_executor_or_transaction_and_cannot_be_appro
             router.decide(plan_id, ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="user"))
         assert conflict.value.code == "approval_conflict"
         assert router.status(plan_id).state == "denied"
+        assert_unchanged(root)
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected_code"),
+    [
+        ("missing-anchor", "patch_context_not_found"),
+        ("unsafe-replace", "workspace_patch_unsafe_full_replace"),
+    ],
+)
+async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
+    tmp_path, kind, expected_code
+):
+    async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
+        original = _proposal().files[0]
+        if kind == "missing-anchor":
+            item = original.model_copy(
+                update={
+                    "operation": "edit",
+                    "content": None,
+                    "edits": (ExactEdit(old_text="missing", new_text="new"),),
+                    "mode": None,
+                }
+            )
+        else:
+            item = original.model_copy(update={"content": "x"})
+        proposal = _proposal().model_copy(update={"files": (item,)})
+
+        thread, turn, call = await patch_turn(runtime, provider, root, proposal)
+
+        output = result(turn)
+        plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
+        assert turn.status is TurnStatus.COMPLETED
+        assert output.outcome == "failed" and output.error.code == expected_code
+        assert router.status(plan_id).state == "denied"
+        assert router.approval(plan_id).decision.reason == expected_code
+        with pytest.raises(KernelError) as missing:
+            transactions.load(plan_id)
+        assert missing.value.code == "delivery_transaction_not_found"
         assert_unchanged(root)
 
 

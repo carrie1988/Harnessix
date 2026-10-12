@@ -14,21 +14,30 @@ from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.action_transaction_planning import prepare_action_workspace_transaction
 from harnessix.delivery.contracts import (
+    MAX_TRANSACTION_FILE_BYTES,
     PROTECTED_COMPONENTS,
     WorkspaceMutation,
     WorkspaceTransactionPlan,
     WorkspaceTransactionRecord,
 )
-from harnessix.delivery.planner import DesiredWorkspaceFile
+from harnessix.delivery.planner import DesiredWorkspaceFile, _read_existing
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
 from harnessix.delivery.trusted_action_contracts import (
     WorkspacePatchFile,
     WorkspacePatchInput,
 )
-from harnessix.delivery.workspace_patch_errors import _sha_mismatch_error
+from harnessix.delivery.workspace_patch_errors import (
+    _sha_mismatch_error,
+    workspace_patch_preparation_error,
+)
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.execution.contracts import canonical_digest
+from harnessix.patches.contracts import ExactEdit
+from harnessix.patches.planner import apply_exact_edits
+from harnessix.tools.contracts import MAX_SCAN_BYTES, ReadToolError
+from harnessix.tools.files import _decode
+from harnessix.tools.workspace import ReadOperation
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     CanonicalActionResource,
@@ -50,7 +59,7 @@ from harnessix.workspace.paths import normalize_workspace_path, path_comparison_
 from harnessix.workspace.snapshot_ports import WorkspacePureProgressFactory
 
 WORKSPACE_PATCH_TOOL = "apply_patch_batch"
-WORKSPACE_PATCH_VERSION = "harnessix.workspace-patch/v1"
+WORKSPACE_PATCH_VERSION = "harnessix.workspace-patch/v2"
 WORKSPACE_PATCH_EXECUTOR = "product.workspace-patch"
 PRODUCT_ACTION_SOURCE = "harnessix.product"
 WORKSPACE_PATCH_LEASE_SECONDS = 300.0
@@ -65,11 +74,13 @@ def workspace_patch_descriptor() -> ToolDescriptor:
         name=WORKSPACE_PATCH_TOOL,
         version=WORKSPACE_PATCH_VERSION,
         description=(
-            "以需审批、可恢复的事务创建、替换或删除最多16个Workspace文本文件；"
+            "以需审批、可恢复的事务创建、精确编辑、完整替换或删除最多16个Workspace文本文件；"
             "create必填完整content及mode，expected_sha256省略或null；"
-            "replace必填可信读取的完整expected_sha256、完整新文件content及mode；"
+            "edit是修改已有文件的首选操作：必填可信读取的完整expected_sha256和唯一锚定的edits，"
+            "保留原文件mode；replace只用于已读取完整文件的整体重写，必填完整content及mode；"
             "delete必填可信读取的expected_sha256，content和mode省略或null。"
-            "content是完整正文，可为空，不是Diff；mode是JSON十进制420或493，Windows只支持420。"
+            "content是完整正文，可为空，不是Diff；edit不得用局部片段替换整个文件；"
+            "mode是JSON十进制420或493，Windows只支持420。"
         ),
         input_schema=WorkspacePatchInput.model_json_schema(),
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
@@ -215,16 +226,21 @@ class WorkspacePatchTransactionPlanner:
             if error.code != "delivery_transaction_not_found":
                 raise
         else:
-            _validate_transaction(route, checked, existing.plan)
+            _validate_transaction(route, checked, existing.plan, self._transactions.blob)
             return existing
         root = self._workspace_root(route.execution.workspace.workspace_id)
-        desired = _desired_files(checked, route.execution.workspace.platform)
+        desired = _desired_files(
+            checked,
+            route.execution.workspace.platform,
+            root,
+            checkpoint=checkpoint,
+        )
         prepared = prepare_action_workspace_transaction(
             route, root, desired, self._transactions, checkpoint=checkpoint
         )
-        _validate_transaction(route, checked, prepared.plan)
+        _validate_transaction(route, checked, prepared.plan, prepared.blobs.__getitem__)
         saved = self._transactions.save(prepared)
-        _validate_transaction(route, checked, saved.plan)
+        _validate_transaction(route, checked, saved.plan, self._transactions.blob)
         return saved
 
     def load(
@@ -246,7 +262,7 @@ class WorkspacePatchTransactionPlanner:
                 if checkpoint is None
                 else self._transactions.load(route.execution.plan_id, checkpoint=checkpoint)
             )
-        _validate_transaction(route, checked, record.plan)
+        _validate_transaction(route, checked, record.plan, self._transactions.blob)
         return record
 
 
@@ -301,20 +317,78 @@ def _normalized_files(
 def _desired_files(
     proposal: WorkspacePatchInput,
     platform: PlatformKind,
+    root: Path,
+    *,
+    checkpoint: Callable[[], None] | None = None,
 ) -> dict[str, DesiredWorkspaceFile]:
-    return {
-        path: DesiredWorkspaceFile(
-            None if item.operation == "delete" else (item.content or "").encode("utf-8"),
-            item.mode,
+    desired: dict[str, DesiredWorkspaceFile] = {}
+    operation = ReadOperation()
+
+    def check() -> None:
+        operation.checkpoint()
+        if checkpoint is not None:
+            checkpoint()
+
+    for path, item in _normalized_files(proposal, platform):
+        check()
+        if item.operation == "delete":
+            desired[path] = DesiredWorkspaceFile(None)
+            continue
+        if item.operation != "edit":
+            desired[path] = DesiredWorkspaceFile((item.content or "").encode("utf-8"), item.mode)
+            continue
+        before, mode = _read_existing(
+            root,
+            path,
+            platform,
+            checkpoint=check,
         )
-        for path, item in _normalized_files(proposal, platform)
-    }
+        if hashlib.sha256(before).hexdigest() != item.expected_sha256:
+            raise _sha_mismatch_error()
+        assert item.edits is not None
+        desired[path] = DesiredWorkspaceFile(
+            _apply_workspace_exact_edits(before, item.edits, operation),
+            mode,
+        )
+    return desired
+
+
+def _apply_workspace_exact_edits(
+    before: bytes,
+    edits: tuple[ExactEdit, ...],
+    operation: ReadOperation,
+) -> bytes:
+    """把精确编辑错误收敛为尚未执行、可由模型修正的正式拒绝。"""
+
+    try:
+        _decode(before)
+        return apply_exact_edits(
+            before,
+            edits,
+            operation,
+            max_bytes=min(MAX_TRANSACTION_FILE_BYTES, MAX_SCAN_BYTES),
+        )
+    except ReadToolError as error:
+        raise workspace_patch_preparation_error(
+            "workspace_patch_edit_source_invalid",
+            f"edit目标不是受支持的UTF-8文本：{error.code}",
+        ) from None
+    except KernelError as error:
+        if error.code not in {
+            "patch_context_not_found",
+            "patch_ambiguous_context",
+            "patch_overlapping_edits",
+            "patch_limit_exceeded",
+            "patch_no_change",
+        }:
+            raise
+        raise workspace_patch_preparation_error(error.code, error.message) from None
 
 
 def _action_resource(path: str, item: WorkspacePatchFile) -> CanonicalActionResource:
     after_sha256 = (
         hashlib.sha256((item.content or "").encode("utf-8")).hexdigest()
-        if item.operation != "delete"
+        if item.operation in {"create", "replace"}
         else None
     )
     return canonical_action_resource(
@@ -325,6 +399,11 @@ def _action_resource(path: str, item: WorkspacePatchFile) -> CanonicalActionReso
             "operation": item.operation,
             "expected_sha256": item.expected_sha256,
             "after_sha256": after_sha256,
+            "edits_sha256": (
+                canonical_digest([edit.model_dump(mode="json") for edit in item.edits])
+                if item.edits is not None
+                else None
+            ),
             "mode": item.mode,
         },
     )
@@ -361,6 +440,7 @@ def _validate_transaction(
     route: ActionRoutePlan,
     proposal: WorkspacePatchInput,
     transaction: WorkspaceTransactionPlan,
+    read_blob: Callable[[str], bytes],
 ) -> None:
     files = _normalized_files(proposal, transaction.source.platform)
     expected = {path: item for path, item in files}
@@ -372,10 +452,14 @@ def _validate_transaction(
     ):
         raise KernelError("delivery_action_mismatch", "Delivery计划未绑定原Action计划")
     for mutation in transaction.mutations:
-        _validate_mutation(expected[mutation.path], mutation)
+        _validate_mutation(expected[mutation.path], mutation, read_blob)
 
 
-def _validate_mutation(item: WorkspacePatchFile, mutation: WorkspaceMutation) -> None:
+def _validate_mutation(
+    item: WorkspacePatchFile,
+    mutation: WorkspaceMutation,
+    read_blob: Callable[[str], bytes] | None = None,
+) -> None:
     if item.operation == "create":
         before_valid = mutation.before.presence == "absent"
     else:
@@ -384,8 +468,25 @@ def _validate_mutation(item: WorkspacePatchFile, mutation: WorkspaceMutation) ->
             raise _sha_mismatch_error()
     if item.operation == "delete":
         after_valid = mutation.after.presence == "absent"
+    elif item.operation == "edit":
+        assert item.edits is not None and mutation.before.sha256 is not None
+        if read_blob is None:
+            raise KernelError("delivery_action_mismatch", "edit校验缺少受信前镜像读取端口")
+        before = read_blob(mutation.before.sha256)
+        expected_body = _apply_workspace_exact_edits(before, item.edits, ReadOperation())
+        after_valid = (
+            mutation.after.presence == "file"
+            and mutation.after.sha256 == hashlib.sha256(expected_body).hexdigest()
+            and mutation.after.size == len(expected_body)
+            and mutation.after.mode == mutation.before.mode
+        )
     else:
         expected_body = (item.content or "").encode("utf-8")
+        if item.operation == "replace" and len(expected_body) * 4 < mutation.before.size * 3:
+            raise workspace_patch_preparation_error(
+                "workspace_patch_unsafe_full_replace",
+                "完整替换会删除现有文件超过四分之一；请改用唯一锚定的edit或显式delete",
+            )
         after_valid = (
             mutation.after.presence == "file"
             and mutation.after.sha256 == hashlib.sha256(expected_body).hexdigest()

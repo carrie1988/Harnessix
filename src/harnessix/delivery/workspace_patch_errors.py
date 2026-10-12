@@ -8,6 +8,7 @@ from harnessix.agent.errors import KernelError
 
 _SHA_MISMATCH_ORIGIN = object()
 _NO_CHANGE_ORIGIN = object()
+_PREPARATION_ORIGIN = object()
 
 
 class WorkspacePatchPreconditionError(KernelError):
@@ -55,4 +56,26 @@ def _no_change_error(path: str, sha256: str, mode: int) -> WorkspacePatchNoChang
 def is_workspace_patch_no_change(error: object) -> bool:
     return (
         type(error) is WorkspacePatchNoChangeError and error._no_change_origin is _NO_CHANGE_ORIGIN
+    )
+
+
+class WorkspacePatchPreparationError(KernelError):
+    """可信Patch在执行前发现、可由模型修正的确定性提案错误。"""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(code, message)
+        self._preparation_origin: object | None = None
+        self.review_plan_id: UUID | None = None
+
+
+def workspace_patch_preparation_error(code: str, message: str) -> WorkspacePatchPreparationError:
+    error = WorkspacePatchPreparationError(code, message)
+    error._preparation_origin = _PREPARATION_ORIGIN
+    return error
+
+
+def is_workspace_patch_preparation_error(error: object) -> bool:
+    return (
+        type(error) is WorkspacePatchPreparationError
+        and error._preparation_origin is _PREPARATION_ORIGIN
     )

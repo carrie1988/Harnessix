@@ -40,12 +40,6 @@ class ReadFileInput(ReadContract):
     max_lines: int = Field(default=200, ge=1, le=2000)
     expected_revision: Revision | None = None
 
-    @model_validator(mode="after")
-    def validate_page(self) -> Self:
-        if self.start_line > 1 and self.expected_revision is None:
-            raise ValueError("后续页必须携带 revision")
-        return self
-
 
 class DirectoryEntry(ReadContract):
     name: str = Field(min_length=1, max_length=255)

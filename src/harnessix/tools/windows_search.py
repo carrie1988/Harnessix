@@ -113,12 +113,23 @@ def _collect(
     scan: _Scan,
 ) -> list[_Candidate]:
     candidates: list[_Candidate] = []
+    root = port.path(args.path)
+    observed = port.observe(root, operation, include_content=False)
+    if observed.kind == "file":
+        scan.entries_scanned = 1
+        scan.names_bytes = len(root.rsplit("/", 1)[-1].encode("utf-8"))
+        return [_Candidate(path=root, identity=observed.identity, size=observed.size)]
+    require_kind(observed, "directory")
 
     def visit(path: str, depth: int) -> None:
         operation.checkpoint()
         if depth > MAX_SEARCH_DEPTH:
             raise ReadToolError("limit_exceeded")
-        before = port.observe(path, operation, include_content=False)
+        before = (
+            observed
+            if depth == 0 and path == root
+            else port.observe(path, operation, include_content=False)
+        )
         require_kind(before, "directory")
         if before.entries is None:
             raise ReadToolError("io_failed")
@@ -144,7 +155,7 @@ def _collect(
         if not same_observation(before, after):
             raise ReadToolError("workspace_changed")
 
-    visit(port.path(args.path), 0)
+    visit(root, 0)
     return sorted(candidates, key=lambda item: item.path)
 
 

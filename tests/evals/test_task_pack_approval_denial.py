@@ -40,7 +40,7 @@ def _patch_approval(*prior_items):
         tool_version="1",
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         arguments={
-            "spec_version": "harnessix.workspace-patch-input/v1",
+            "spec_version": "harnessix.workspace-patch-input/v2",
             "files": [
                 {
                     "operation": "replace",
@@ -132,9 +132,7 @@ def test_failed_baseline_authorizes_an_in_scope_patch() -> None:
 
 
 def test_untrusted_profile_terminal_still_aborts_patch_approval() -> None:
-    turn, request, case = _patch_approval(
-        *_profile_exit_items(returncode=1, trusted=False)
-    )
+    turn, request, case = _patch_approval(*_profile_exit_items(returncode=1, trusted=False))
 
     with pytest.raises(KernelError) as failure:
         _approval_decision(turn, request, case)

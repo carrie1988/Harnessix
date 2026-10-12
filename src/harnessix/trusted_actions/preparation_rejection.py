@@ -7,7 +7,9 @@ from harnessix.agent.models import ToolCallContent, ToolResultContent, Turn, Tur
 from harnessix.delivery.workspace_patch_errors import (
     WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
+    WorkspacePatchPreparationError,
     is_workspace_patch_no_change,
+    is_workspace_patch_preparation_error,
     is_workspace_patch_sha_mismatch,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
@@ -23,15 +25,18 @@ def workspace_patch_preparation_rejection(
     route: ActionRouteSnapshot,
     provider: object,
 ) -> ToolResultContent | None:
-    """仅原内置Review的确定SHA/包含no-op拒绝，关闭原Route后才报告failed。"""
+    """仅原内置Review的确定性Patch拒绝，关闭原Route后才报告failed。"""
 
     if (
         (
             type(rejection) is not WorkspacePatchPreconditionError
             and type(rejection) is not WorkspacePatchNoChangeError
+            and type(rejection) is not WorkspacePatchPreparationError
         )
         or not (
-            is_workspace_patch_sha_mismatch(rejection) or is_workspace_patch_no_change(rejection)
+            is_workspace_patch_sha_mismatch(rejection)
+            or is_workspace_patch_no_change(rejection)
+            or is_workspace_patch_preparation_error(rejection)
         )
         or rejection.review_plan_id != route.plan.execution.plan_id
         or route.state != "pending_approval"
@@ -53,11 +58,12 @@ def workspace_patch_preparation_rejection(
         or router.approval(plan_id) is not None
     ):
         return None
-    failure = (
-        WorkspacePatchPreconditionError()
-        if is_workspace_patch_sha_mismatch(rejection)
-        else WorkspacePatchNoChangeError()
-    ).to_failure()
+    if is_workspace_patch_sha_mismatch(rejection):
+        failure = WorkspacePatchPreconditionError().to_failure()
+    elif is_workspace_patch_no_change(rejection):
+        failure = WorkspacePatchNoChangeError().to_failure()
+    else:
+        failure = AgentFailure(code=rejection.code, message=rejection.message)
     closed = router.decide(
         plan_id,
         ApprovalDecision(
