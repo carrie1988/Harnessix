@@ -27,7 +27,7 @@ from harnessix.product_config.action_contracts import (
 ImageListRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[str]]
 
 PUBLIC_TEST_PROFILE_ID = "public-tests"
-_PROFILE_VERSION = "swebench-public-tests-v1"
+_PROFILE_VERSION = "swebench-public-tests-v2"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -37,13 +37,17 @@ _LIST_TIMEOUT_SECONDS = 30.0
 _MAX_STDOUT_BYTES = 4 * 1024 * 1024
 _MAX_STDERR_BYTES = 16 * 1024
 _PROGRAM = "/usr/bin/env"
-_ARGUMENTS = (
+_COMMON_ENVIRONMENT_ARGUMENTS = (
     "HOME=/tmp",
     "TMPDIR=/tmp",
     "XDG_CACHE_HOME=/tmp",
     "MPLCONFIGDIR=/tmp",
     "HYPOTHESIS_STORAGE_DIRECTORY=/tmp",
+    "PYTHONPATH=/workspace",
     "PYTHONDONTWRITEBYTECODE=1",
+)
+_PYTEST_ARGUMENTS = (
+    *_COMMON_ENVIRONMENT_ARGUMENTS,
     "/opt/miniconda3/envs/testbed/bin/python",
     "-B",
     "-m",
@@ -54,6 +58,12 @@ _ARGUMENTS = (
     "--disable-warnings",
     "--tb=short",
     "--maxfail=1",
+)
+_DJANGO_TEST_ARGUMENTS = (
+    *_COMMON_ENVIRONMENT_ARGUMENTS,
+    "/opt/miniconda3/envs/testbed/bin/python",
+    "-B",
+    "tests/runtests.py",
 )
 _TIMEOUT_SECONDS = 300
 _MAX_OUTPUT_BYTES = 1024 * 1024
@@ -75,6 +85,11 @@ class SweBenchCaseProcessProfile(ContractModel):
         max_length=256,
         pattern=r"^[A-Za-z0-9_.-]+__[A-Za-z0-9_.-]+-[0-9]+$",
     )
+    repo: str = Field(
+        min_length=3,
+        max_length=256,
+        pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+    )
     profile: ProductProcessProfile
 
     @model_validator(mode="after")
@@ -85,7 +100,7 @@ class SweBenchCaseProcessProfile(ContractModel):
             or profile.version != _PROFILE_VERSION
             or profile.description != _PROFILE_DESCRIPTION
             or profile.program != _PROGRAM
-            or profile.arguments != _ARGUMENTS
+            or profile.arguments != _profile_arguments(self.repo)
             or profile.selector_policy != "bounded_test_selector"
             or profile.timeout_seconds != _TIMEOUT_SECONDS
             or profile.max_output_bytes != _MAX_OUTPUT_BYTES
@@ -98,6 +113,12 @@ class SweBenchCaseProcessProfile(ContractModel):
         ):
             raise ValueError("SWE-bench公开测试Profile不符合固定执行边界")
         return self
+
+
+def _profile_arguments(repo: str) -> tuple[str, ...]:
+    """按公开仓库家族选择固定测试入口，不按单个 Case 定制。"""
+
+    return _DJANGO_TEST_ARGUMENTS if repo == "django/django" else _PYTEST_ARGUMENTS
 
 
 def _run_image_list(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
@@ -194,6 +215,7 @@ def _expected_image_repository(instance_id: str) -> str:
 def build_swebench_case_process_profile(
     instance_id: str,
     *,
+    repo: str,
     container_engine: Path,
     image_id: str,
 ) -> SweBenchCaseProcessProfile:
@@ -212,7 +234,7 @@ def build_swebench_case_process_profile(
         container_engine=str(engine),
         image=image_id,
         program=_PROGRAM,
-        arguments=_ARGUMENTS,
+        arguments=_profile_arguments(repo),
         selector_policy="bounded_test_selector",
         timeout_seconds=_TIMEOUT_SECONDS,
         max_output_bytes=_MAX_OUTPUT_BYTES,
@@ -221,7 +243,7 @@ def build_swebench_case_process_profile(
         memory_bytes=_MEMORY_BYTES,
         process_limit=_PROCESS_LIMIT,
     )
-    return SweBenchCaseProcessProfile(instance_id=instance_id, profile=profile)
+    return SweBenchCaseProcessProfile(instance_id=instance_id, repo=repo, profile=profile)
 
 
 def discover_swebench_case_process_profiles(
@@ -255,6 +277,7 @@ def discover_swebench_case_process_profiles(
         bindings.append(
             build_swebench_case_process_profile(
                 case.instance_id,
+                repo=case.repo,
                 container_engine=engine,
                 image_id=matches[0],
             )

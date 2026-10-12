@@ -77,6 +77,7 @@ def _profiles(tmp_path: Path, plan, *, image_offset: int = 0):
     return tuple(
         build_swebench_case_process_profile(
             case.instance_id,
+            repo=case.repo,
             container_engine=engine,
             image_id=f"sha256:{index + 1 + image_offset:064x}",
         )
@@ -163,6 +164,7 @@ def test_run_config_rejects_missing_duplicate_and_plan_drifted_profile_mappings(
                 *config.case_process_profiles[1:],
                 SweBenchCaseProcessProfile(
                     instance_id="other__repo-999",
+                    repo="other/repo",
                     profile=config.case_process_profiles[0].profile,
                 ),
             ),

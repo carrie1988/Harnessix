@@ -10,6 +10,7 @@ import pytest
 from harnessix.agent.errors import KernelError
 from harnessix.evals.swebench.public_test_profile import (
     PUBLIC_TEST_PROFILE_ID,
+    build_swebench_case_process_profile,
     discover_swebench_case_process_profiles,
 )
 from tests.evals.swebench.test_predictions import build_test_plan
@@ -92,6 +93,7 @@ def test_discovery_freezes_one_complete_profile_per_case_from_public_image_list(
             "XDG_CACHE_HOME=/tmp",
             "MPLCONFIGDIR=/tmp",
             "HYPOTHESIS_STORAGE_DIRECTORY=/tmp",
+            "PYTHONPATH=/workspace",
             "PYTHONDONTWRITEBYTECODE=1",
             "/opt/miniconda3/envs/testbed/bin/python",
             "-B",
@@ -111,6 +113,26 @@ def test_discovery_freezes_one_complete_profile_per_case_from_public_image_list(
         assert profile.memory_bytes == 3 * 1024 * 1024 * 1024
         assert profile.process_limit == 256
         assert profile.max_output_bytes == 1024 * 1024
+
+
+def test_django_profile_uses_repository_native_runner_and_workspace_imports(
+    tmp_path: Path,
+) -> None:
+    engine = _docker(tmp_path)
+
+    profile = build_swebench_case_process_profile(
+        "django__django-11734",
+        repo="django/django",
+        container_engine=engine,
+        image_id="sha256:" + "a" * 64,
+    ).profile
+
+    assert profile.arguments[-3:] == (
+        "/opt/miniconda3/envs/testbed/bin/python",
+        "-B",
+        "tests/runtests.py",
+    )
+    assert "PYTHONPATH=/workspace" in profile.arguments
 
 
 def test_discovery_rejects_missing_exact_repository_and_tag(tmp_path: Path) -> None:

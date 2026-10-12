@@ -130,6 +130,7 @@ def _process_profile(tmp_path: Path):
     engine.chmod(0o700)
     return build_swebench_case_process_profile(
         "owner__repo-42",
+        repo="owner/repo",
         container_engine=engine,
         image_id="sha256:" + "a" * 64,
     ).profile
@@ -162,8 +163,9 @@ def test_prompt_uses_only_projected_public_case_material() -> None:
         "After at most four source-inspection calls, either submit the best justified "
         "patch or stop with a precise blocker. For existing files use exact edit operations with "
         "unique old_text/new_text anchors; never replace an entire file with an excerpt. After "
-        "patching, select focused relative pytest targets that exist in the public repository and "
-        "run the public-tests profile. If a test fails, diagnose the failure, repair the patch, "
+        "patching, select focused relative test targets or repository-native test labels that "
+        "exist in the public repository and run the public-tests profile. If a test fails, "
+        "diagnose the failure, repair the patch, "
         "and rerun the public-tests profile; the latest patched state must be retested before "
         "finishing. Review the final git status and diff. Do not ask questions or use network "
         "access, hidden tests, reference patches, hints, or evaluator artifacts.\n\n"

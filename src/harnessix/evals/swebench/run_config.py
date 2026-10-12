@@ -120,15 +120,15 @@ class SweBenchAgentRunConfig(ContractModel):
 
     def require_plan(self, plan: SweBenchPreRegistrationPlan) -> None:
         parameters = {item.name: item.value for item in plan.model_settings.parameters}
-        expected_case_ids = tuple(sorted(case.instance_id for case in plan.cases))
+        expected_cases = tuple(sorted((case.instance_id, case.repo) for case in plan.cases))
         if (
             self.plan_sha256 != plan.plan_sha256
             or plan.model_name != _PUBLIC_MODEL
             or plan.model_settings.provider != _PROVIDER
             or parameters != {"thinking": "disabled"}
             or self.provider_config.timeout_seconds != plan.task_budget.timeout_seconds
-            or tuple(binding.instance_id for binding in self.case_process_profiles)
-            != expected_case_ids
+            or tuple((binding.instance_id, binding.repo) for binding in self.case_process_profiles)
+            != expected_cases
         ):
             raise ValueError("SWE-bench运行配置与预注册计划不一致")
         if amount_units(self.worst_case_amount(plan)) > amount_units(self.fee_stop_amount):

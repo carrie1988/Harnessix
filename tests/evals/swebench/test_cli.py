@@ -156,6 +156,7 @@ def test_run_agent_resume_reuses_frozen_profiles_without_rediscovery(
     profiles = tuple(
         build_swebench_case_process_profile(
             case.instance_id,
+            repo=case.repo,
             container_engine=engine,
             image_id=f"sha256:{index + 1:064x}",
         )
