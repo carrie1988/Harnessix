@@ -37,11 +37,12 @@ from harnessix.sandbox.planner import build_container_sandbox_profile
 from harnessix.sandbox.process_runtime import ContainerProcessRuntime, ProcessSupervisor
 from harnessix.secrets.provider import SecretProvider
 
-from .action_contracts import ProductProcessProfile
+from .action_contracts import ProductProcessProfile, product_process_image_reference_type
 
 ProfileProbeRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[str]]
 _ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
 _IMAGE_PROBE_TIMEOUT_SECONDS = 15.0
+_IMAGE_INSPECT_FORMAT = "[{{json .Id}},{{json .RepoDigests}}]"
 
 
 def process_tool_name(profile_id: str) -> str:
@@ -74,13 +75,14 @@ def _attest_image(
     runner: ProfileProbeRunner,
 ) -> str:
     try:
+        reference_type = product_process_image_reference_type(image)
         completed = runner(
             (
                 str(path),
                 "image",
                 "inspect",
                 "--format",
-                "{{json .RepoDigests}}",
+                _IMAGE_INSPECT_FORMAT,
                 image,
             ),
             _IMAGE_PROBE_TIMEOUT_SECONDS,
@@ -94,16 +96,34 @@ def _attest_image(
         values = json.loads(completed.stdout)
         if (
             not isinstance(values, list)
-            or image not in values
-            or any(not isinstance(item, str) for item in values)
+            or len(values) != 2
+            or not isinstance(values[0], str)
+            or not isinstance(values[1], list)
+            or any(not isinstance(item, str) for item in values[1])
         ):
             raise ValueError
-        canonical = tuple(sorted(set(values)))
+        image_id = values[0]
+        if product_process_image_reference_type(image_id) != "local_image_id":
+            raise ValueError
+        if any(product_process_image_reference_type(item) != "repo_digest" for item in values[1]):
+            raise ValueError
+        canonical = tuple(sorted(set(values[1])))
+        if (reference_type == "local_image_id" and image_id != image) or (
+            reference_type == "repo_digest" and image not in canonical
+        ):
+            raise ValueError
     except (OSError, UnicodeError, ValueError, TypeError, subprocess.SubprocessError):
         raise KernelError(
             "container_image_unavailable", "Process Profile镜像摘要不可证明"
         ) from None
-    return canonical_digest({"image": image, "repo_digests": canonical})
+    return canonical_digest(
+        {
+            "reference_type": reference_type,
+            "image": image,
+            "image_id": image_id,
+            "repo_digests": canonical,
+        }
+    )
 
 
 def _probe_secrets(profile: ProductProcessProfile, provider: SecretProvider) -> None:

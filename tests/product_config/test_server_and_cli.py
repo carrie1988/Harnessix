@@ -468,7 +468,7 @@ async def test_product_server_catalog_includes_only_verified_process_profile(
                 else "[true,true,true,true]"
             )
         else:
-            output = json.dumps([image]) + "\n"
+            output = json.dumps(["sha256:" + "b" * 64, [image]]) + "\n"
         return subprocess.CompletedProcess(argv, 0, output, "")
 
     def probe(profile, supervisor, secrets):

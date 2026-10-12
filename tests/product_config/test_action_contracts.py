@@ -49,11 +49,23 @@ def test_action_config_and_process_profile_round_trip_strictly(tmp_path: Path) -
     assert checked_config.process_profiles[0].profile_sha256 == profile.profile_sha256
 
 
+def test_process_profile_accepts_exact_local_image_id(tmp_path: Path) -> None:
+    image_id = "sha256:" + "b" * 64
+
+    profile = process_profile(tmp_path, image=image_id)
+
+    assert profile.image == image_id
+    assert ProductProcessProfile.model_validate_json(profile.model_dump_json()) == profile
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
         ("container_engine", "container-engine"),
         ("image", "registry.example/harnessix/tests:latest"),
+        ("image", "sha256:" + "a" * 63),
+        ("image", "sha256:" + "A" * 64),
+        ("image", "a" * 64),
         ("program", "usr/bin/python"),
         ("network_mode", "restricted"),
         ("arguments", ("-m", "bad\nargument")),

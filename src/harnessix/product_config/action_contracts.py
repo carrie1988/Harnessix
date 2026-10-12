@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Literal, Self
@@ -19,11 +20,22 @@ ActionCapabilityStatus = Literal["verified", "omitted"]
 SelectorPolicy = Literal["none", "bounded_test_selector"]
 ProductActionConfigSource = Literal["builtin", "file"]
 ProductActionConfigOperation = Literal["loaded", "activated"]
+ProductProcessImageReferenceType = Literal["local_image_id", "repo_digest"]
 
 _IDENTIFIER = r"^[a-z][a-z0-9_-]{0,63}$"
 _EXECUTOR_ID = r"^[a-z][a-z0-9_.-]{0,127}$"
-_IMAGE_DIGEST = r"^[a-z0-9][a-z0-9._/-]{0,255}@sha256:[0-9a-f]{64}$"
+_LOCAL_IMAGE_ID = r"sha256:[0-9a-f]{64}"
+_REPOSITORY_IMAGE_DIGEST = r"[a-z0-9][a-z0-9._/-]{0,255}@sha256:[0-9a-f]{64}"
+_IMAGE_REFERENCE = rf"^(?:{_LOCAL_IMAGE_ID}|{_REPOSITORY_IMAGE_DIGEST})$"
 _CONTAINER_PROGRAM = r"^/[A-Za-z0-9._/+:-]+(?:/[A-Za-z0-9._+:-]+)*$"
+
+
+def product_process_image_reference_type(image: str) -> ProductProcessImageReferenceType:
+    if re.fullmatch(_LOCAL_IMAGE_ID, image):
+        return "local_image_id"
+    if re.fullmatch(_REPOSITORY_IMAGE_DIGEST, image):
+        return "repo_digest"
+    raise ValueError("容器镜像引用不是不可变SHA-256引用")
 
 
 class ProductProcessProfile(ProductConfigContract):
@@ -36,7 +48,7 @@ class ProductProcessProfile(ProductConfigContract):
     version: str = Field(min_length=1, max_length=128)
     description: str = Field(min_length=1, max_length=500)
     container_engine: str = Field(min_length=1, max_length=4096)
-    image: str = Field(pattern=_IMAGE_DIGEST)
+    image: str = Field(pattern=_IMAGE_REFERENCE)
     program: str = Field(pattern=_CONTAINER_PROGRAM)
     arguments: tuple[str, ...] = Field(default=(), max_length=128)
     selector_policy: SelectorPolicy = "none"

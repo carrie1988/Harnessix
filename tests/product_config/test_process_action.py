@@ -25,6 +25,7 @@ from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome, utc_now
+from harnessix.execution.contracts import canonical_digest
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
@@ -213,13 +214,18 @@ def _observation(body: bytes) -> ProcessOutputObservation:
     )
 
 
-def _profile(engine: Path) -> ProductProcessProfile:
+_REPOSITORY_IMAGE = "registry.example/harnessix/tests@sha256:" + "a" * 64
+_LOCAL_IMAGE_ID = "sha256:" + "b" * 64
+_ACTUAL_REPOSITORY_IMAGE_ID = "sha256:" + "c" * 64
+
+
+def _profile(engine: Path, *, image: str = _REPOSITORY_IMAGE) -> ProductProcessProfile:
     return build_product_process_profile(
         profile_id="unit-tests",
         version="2026.09.1",
         description="在固定容器中运行单元测试",
         container_engine=str(engine),
-        image="registry.example/harnessix/tests@sha256:" + "a" * 64,
+        image=image,
         program="/usr/bin/python",
         arguments=("-m", "pytest"),
         selector_policy="bounded_test_selector",
@@ -238,8 +244,11 @@ def _probe_runner(argv: Sequence[str], timeout: float) -> subprocess.CompletedPr
         )
     else:
         assert argv[1:3] == ("image", "inspect")
+        assert argv[-2] == "[{{json .Id}},{{json .RepoDigests}}]"
         image = argv[-1]
-        output = json.dumps([image]) + "\n"
+        image_id = image if image.startswith("sha256:") else _ACTUAL_REPOSITORY_IMAGE_ID
+        repo_digests = [] if image == image_id else [image]
+        output = json.dumps([image_id, repo_digests]) + "\n"
     return subprocess.CompletedProcess(argv, 0, output, "")
 
 
@@ -489,7 +498,12 @@ async def test_process_profile_probe_omits_unattested_image(tmp_path: Path) -> N
     def missing_image(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
         completed = _probe_runner(argv, timeout)
         if argv[1] == "image":
-            return subprocess.CompletedProcess(argv, 0, "[]\n", "")
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                json.dumps([_ACTUAL_REPOSITORY_IMAGE_ID, []]) + "\n",
+                "",
+            )
         return completed
 
     async with PosixProcessSupervisor(tmp_path / "process-state") as supervisor:
@@ -499,6 +513,107 @@ async def test_process_profile_probe_omits_unattested_image(tmp_path: Path) -> N
             _NoSecrets(),
             probe_runner=missing_image,
         )
+    assert probe.verified is None
+    assert probe.reason_code == "container_image_unavailable"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="镜像证明测试使用POSIX Process Owner能力")
+@pytest.mark.parametrize(
+    ("image", "image_id", "repo_digests", "reference_type"),
+    [
+        (
+            _REPOSITORY_IMAGE,
+            _ACTUAL_REPOSITORY_IMAGE_ID,
+            (
+                "registry.example/another/image@sha256:" + "d" * 64,
+                _REPOSITORY_IMAGE,
+                _REPOSITORY_IMAGE,
+            ),
+            "repo_digest",
+        ),
+        (
+            _LOCAL_IMAGE_ID,
+            _LOCAL_IMAGE_ID,
+            ("registry.example/another/image@sha256:" + "d" * 64,),
+            "local_image_id",
+        ),
+    ],
+)
+async def test_process_profile_attestation_binds_reference_id_and_canonical_repo_digests(
+    tmp_path: Path,
+    image: str,
+    image_id: str,
+    repo_digests: tuple[str, ...],
+    reference_type: str,
+) -> None:
+    profile = _profile(_fake_engine(tmp_path), image=image)
+
+    def inspect(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
+        completed = _probe_runner(argv, timeout)
+        if argv[1] == "image":
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                json.dumps([image_id, repo_digests]) + "\n",
+                "",
+            )
+        return completed
+
+    async with PosixProcessSupervisor(tmp_path / "process-state") as supervisor:
+        probe = probe_product_process_profile(
+            profile,
+            supervisor,
+            _NoSecrets(),
+            probe_runner=inspect,
+        )
+
+    assert probe.reason_code == "verified" and probe.verified is not None
+    assert probe.verified.image_attestation_sha256 == canonical_digest(
+        {
+            "reference_type": reference_type,
+            "image": image,
+            "image_id": image_id,
+            "repo_digests": tuple(sorted(set(repo_digests))),
+        }
+    )
+
+
+@pytest.mark.skipif(os.name != "posix", reason="镜像证明测试使用POSIX Process Owner能力")
+@pytest.mark.parametrize(
+    ("image", "inspect_payload"),
+    [
+        (_LOCAL_IMAGE_ID, ("sha256:" + "d" * 64, ())),
+        (_LOCAL_IMAGE_ID, ("sha256:not-a-digest", ())),
+        (_LOCAL_IMAGE_ID, (_LOCAL_IMAGE_ID, ("registry.example/image:latest",))),
+        (_REPOSITORY_IMAGE, (_ACTUAL_REPOSITORY_IMAGE_ID, ())),
+    ],
+)
+async def test_process_profile_attestation_fails_closed_on_malformed_or_drifted_image(
+    tmp_path: Path,
+    image: str,
+    inspect_payload: tuple[object, object],
+) -> None:
+    profile = _profile(_fake_engine(tmp_path), image=image)
+
+    def inspect(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
+        completed = _probe_runner(argv, timeout)
+        if argv[1] == "image":
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                json.dumps(inspect_payload) + "\n",
+                "",
+            )
+        return completed
+
+    async with PosixProcessSupervisor(tmp_path / "process-state") as supervisor:
+        probe = probe_product_process_profile(
+            profile,
+            supervisor,
+            _NoSecrets(),
+            probe_runner=inspect,
+        )
+
     assert probe.verified is None
     assert probe.reason_code == "container_image_unavailable"
 
