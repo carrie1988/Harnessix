@@ -97,43 +97,8 @@ async def test_runtime_drives_patch_test_and_git_review_to_completion(tmp_path: 
         "git_diff",
     ]
     assert provider.requests[4].tools[0].name == "apply_patch"
+    assert provider.requests[4].forced_tool == "apply_patch"
     assert provider.requests[5].forced_tool == "run_profile.public-tests"
     assert provider.requests[6].forced_tool == "git_status"
     assert provider.requests[7].forced_tool == "git_diff"
     assert provider.requests[8].tools == ()
-
-
-async def test_runtime_forces_patch_after_bounded_catalog_rejection(tmp_path: Path) -> None:
-    tools = _SuccessfulCodingTools()
-    steps = [
-        *(_tool_step(index, "read_file", {"path": f"src/file_{index}.py"}) for index in range(4)),
-        _tool_step(4, "read_file", {"path": "src/hidden-after-boundary.py"}),
-        _tool_step(5, "apply_patch", {"path": "src/file_0.py"}),
-        _tool_step(6, "run_profile.public-tests", {"profile": "public-tests"}),
-        _tool_step(7, "git_status", {}),
-        _tool_step(8, "git_diff", {}),
-        answer("完成"),
-    ]
-    provider = ScriptedProvider(steps)
-    async with AgentRuntime(
-        SQLiteSessionStore(tmp_path / "rejected.db"),
-        provider,
-        tools,
-        model_tool_view=CodingWorkflowToolView(require_pre_edit_profile=False),
-    ) as runtime:
-        thread = await runtime.create_thread(str(tmp_path))
-        turn = await runtime.run_turn(thread.thread_id, "修复公开回归", request_id="recovery")
-
-    assert turn.status is TurnStatus.COMPLETED
-    assert tools.calls == [
-        "read_file",
-        "read_file",
-        "read_file",
-        "read_file",
-        "apply_patch",
-        "run_profile.public-tests",
-        "git_status",
-        "git_diff",
-    ]
-    assert provider.requests[4].forced_tool is None
-    assert provider.requests[5].forced_tool == "apply_patch"

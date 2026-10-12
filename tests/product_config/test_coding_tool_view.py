@@ -247,7 +247,7 @@ def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review(
         require_pre_edit_profile=False,
     )
     assert {item.name for item in at_limit.tools} == {_PATCH}
-    assert at_limit.choice == "auto" and at_limit.forced_tool is None
+    assert at_limit.choice == "required" and at_limit.forced_tool == _PATCH
 
     rejected_at_limit = _selection_for(
         _with_rejected_tool(
@@ -399,8 +399,8 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
         definitions,
     )
     assert {item.name for item in bounded.tools} == {_PATCH}
-    assert bounded.choice == "auto"
-    assert bounded.forced_tool is None
+    assert bounded.choice == "required"
+    assert bounded.forced_tool == _PATCH
 
     bounded_turn = _turn(
         ("grep", "succeeded", None),

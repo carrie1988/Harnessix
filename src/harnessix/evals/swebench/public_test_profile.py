@@ -27,7 +27,7 @@ from harnessix.product_config.action_contracts import (
 ImageListRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[str]]
 
 PUBLIC_TEST_PROFILE_ID = "public-tests"
-_PROFILE_VERSION = "swebench-public-tests-v3"
+_PROFILE_VERSION = "swebench-public-tests-v4"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -46,18 +46,87 @@ _COMMON_ENVIRONMENT_ARGUMENTS = (
     "PYTHONPATH=/workspace",
     "PYTHONDONTWRITEBYTECODE=1",
 )
+
+# 测试源码来自只读 /workspace，编译扩展与构建期生成模块只允许从同一
+# SWE-bench 官方镜像的 /testbed 回退加载。测试进程在 /tmp 运行，避免
+# pytest、图片比较等工具把临时结果写回待交付 Workspace。
+_PYTEST_BOOTSTRAP_SOURCE = """\
+import importlib.abc
+import importlib.machinery
+import os
+from pathlib import Path
+import sys
+
+workspace = Path(sys.argv[1])
+image_workspace = Path(sys.argv[2])
+arguments = sys.argv[3:]
+separator = arguments.index("--")
+fixed_arguments = arguments[:separator]
+selectors = arguments[separator + 1:]
+source_pairs = tuple(
+    (workspace / name, image_workspace / name)
+    for name in ("src", "lib", "")
+    if (workspace / name).is_dir() and (image_workspace / name).is_dir()
+)
+
+
+class ImageBuildFallback(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        parts = fullname.split(".")
+        if len(parts) < 2:
+            return None
+        for workspace_root, image_root in source_pairs:
+            workspace_package = workspace_root / parts[0]
+            image_package = image_root / parts[0]
+            if not (workspace_package / "__init__.py").is_file() or not image_package.is_dir():
+                continue
+            relative = Path(*parts[1:])
+            workspace_module = workspace_package / relative
+            if (
+                workspace_module.with_suffix(".py").is_file()
+                or (workspace_module / "__init__.py").is_file()
+                or tuple(workspace_module.parent.glob(workspace_module.name + ".*.so"))
+            ):
+                return None
+            image_parent = image_package / relative.parent
+            spec = importlib.machinery.PathFinder.find_spec(fullname, [str(image_parent)])
+            if spec is not None:
+                return spec
+        return None
+
+
+def workspace_selector(value):
+    path, separator, node = value.partition("::")
+    absolute = str(workspace / path)
+    return absolute + (separator + node if separator else "")
+
+
+sys.meta_path.insert(0, ImageBuildFallback())
+sys.path[:0] = [str(workspace_root) for workspace_root, _ in source_pairs]
+os.chdir("/tmp")
+if not selectors:
+    selectors = [str(workspace)]
+else:
+    selectors = [workspace_selector(value) for value in selectors]
+import pytest
+raise SystemExit(pytest.main([*fixed_arguments, *selectors]))
+"""
+_PYTEST_BOOTSTRAP_ARGUMENT = f"exec({_PYTEST_BOOTSTRAP_SOURCE!r})"
 _PYTEST_ARGUMENTS = (
     *_COMMON_ENVIRONMENT_ARGUMENTS,
     "/opt/miniconda3/envs/testbed/bin/python",
     "-B",
-    "-m",
-    "pytest",
+    "-c",
+    _PYTEST_BOOTSTRAP_ARGUMENT,
+    "/workspace",
+    "/testbed",
     "-q",
     "-p",
     "no:cacheprovider",
     "--disable-warnings",
     "--tb=short",
     "--maxfail=1",
+    "--",
 )
 _DJANGO_TEST_ARGUMENTS = (
     *_COMMON_ENVIRONMENT_ARGUMENTS,

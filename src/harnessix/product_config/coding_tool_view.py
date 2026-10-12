@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from harnessix.agent.models import (
     ItemStatus,
     ToolCallContent,
-    ToolCallRejectionContent,
     ToolResultContent,
     Turn,
 )
@@ -157,7 +156,6 @@ def _failed_patch_selection(
 
 def _pre_patch_selection(
     definitions: tuple[ToolDescriptor, ...],
-    turn: Turn,
     observations: tuple[_Observation, ...],
     patch: str,
     patch_results: tuple[_Observation, ...],
@@ -169,18 +167,7 @@ def _pre_patch_selection(
     )
     successful_inspections = sum(item.result.outcome == "succeeded" for item in source_inspections)
     if successful_inspections >= _MAX_NO_PROFILE_INSPECTIONS:
-        last_successful_inspection = max(
-            item.index for item in source_inspections if item.result.outcome == "succeeded"
-        )
-        rejected_after_boundary = any(
-            index > last_successful_inspection
-            and item.status == ItemStatus.COMPLETED
-            and isinstance(item.content, ToolCallRejectionContent)
-            for index, item in enumerate(turn.items)
-        )
-        if rejected_after_boundary:
-            return _selection(definitions, {patch}, forced_tool=patch)
-        return ModelToolSelection(tuple(item for item in definitions if item.name == patch))
+        return _selection(definitions, {patch}, forced_tool=patch)
     tools = tuple(item for item in definitions if item.name in {*_SOURCE_INSPECTION_TOOLS, patch})
     if any(item.result.outcome != "succeeded" for item in source_inspections):
         return ModelToolSelection(tools)
@@ -252,7 +239,6 @@ class CodingWorkflowToolView:
             if last_patch < 0:
                 return _pre_patch_selection(
                     definitions,
-                    turn,
                     observations,
                     patch,
                     patch_results,
@@ -287,7 +273,6 @@ class CodingWorkflowToolView:
         if not self.require_pre_edit_profile and last_patch < 0:
             return _pre_patch_selection(
                 definitions,
-                turn,
                 observations,
                 patch,
                 patch_results,

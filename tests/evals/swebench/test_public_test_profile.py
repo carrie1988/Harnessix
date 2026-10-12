@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -9,6 +10,7 @@ import pytest
 
 from harnessix.agent.errors import KernelError
 from harnessix.evals.swebench.public_test_profile import (
+    _PYTEST_BOOTSTRAP_ARGUMENT,
     PUBLIC_TEST_PROFILE_ID,
     build_swebench_case_process_profile,
     discover_swebench_case_process_profiles,
@@ -97,14 +99,17 @@ def test_discovery_freezes_one_complete_profile_per_case_from_public_image_list(
             "PYTHONDONTWRITEBYTECODE=1",
             "/opt/miniconda3/envs/testbed/bin/python",
             "-B",
-            "-m",
-            "pytest",
+            "-c",
+            _PYTEST_BOOTSTRAP_ARGUMENT,
+            "/workspace",
+            "/testbed",
             "-q",
             "-p",
             "no:cacheprovider",
             "--disable-warnings",
             "--tb=short",
             "--maxfail=1",
+            "--",
         )
         assert profile.selector_policy == "bounded_test_selector"
         assert profile.network_mode == "none"
@@ -113,6 +118,55 @@ def test_discovery_freezes_one_complete_profile_per_case_from_public_image_list(
         assert profile.memory_bytes == 3 * 1024 * 1024 * 1024
         assert profile.process_limit == 256
         assert profile.max_output_bytes == 1024 * 1024
+
+
+def test_pytest_bootstrap_uses_workspace_source_and_image_generated_fallback(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    image_workspace = tmp_path / "image"
+    (workspace / "src" / "example").mkdir(parents=True)
+    (workspace / "tests").mkdir()
+    (image_workspace / "src" / "example").mkdir(parents=True)
+    (workspace / "src" / "example" / "__init__.py").write_text(
+        "from .generated import VALUE\n",
+        encoding="utf-8",
+    )
+    (image_workspace / "src" / "example" / "__init__.py").write_text("", encoding="utf-8")
+    (image_workspace / "src" / "example" / "generated.py").write_text(
+        "VALUE = 'from-image-build'\n",
+        encoding="utf-8",
+    )
+    (workspace / "tests" / "test_example.py").write_text(
+        "from pathlib import Path\n"
+        "from example import VALUE\n\n"
+        "def test_workspace_with_generated_fallback():\n"
+        "    assert VALUE == 'from-image-build'\n"
+        "    assert Path.cwd().resolve() == Path('/tmp').resolve()\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        (
+            sys.executable,
+            "-B",
+            "-c",
+            _PYTEST_BOOTSTRAP_ARGUMENT,
+            str(workspace),
+            str(image_workspace),
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "--",
+            "tests/test_example.py",
+        ),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_django_profile_uses_repository_native_runner_and_workspace_imports(
