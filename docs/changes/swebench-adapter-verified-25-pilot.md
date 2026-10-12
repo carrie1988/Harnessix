@@ -34,7 +34,8 @@ supersedes: []
 
 已生成的预注册计划位于
 [`benchmarks/swebench/verified-25-v1/plan.json`](../../benchmarks/swebench/verified-25-v1/plan.json)。
-它是 **25 Case 分层 Pilot**，不是 500 Case 完整榜单结果，也不是已完成 25 次模型执行。
+它是 **25 Case 分层 Pilot**，不是 500 Case 完整榜单结果。当前已完成25次真实模型执行及官方Docker
+评分，冻结结果为`resolved 1/25`、`unresolved 2/25`、`empty_patch 22/25`、基础设施失败0。
 
 ## 2. 固定输入
 
@@ -139,14 +140,18 @@ harnessix coding-eval-swebench verify-results --plan ... --predictions ...
 
 - 500 Case公开总体投影、摘要和25 Case预注册真实生成；
 - 无泄漏、重排稳定、篡改、预算、空补丁、Git完整Diff、官方命令与结果证据单元测试；
-- 适配层42项测试及既有Task Pack/Provider CLI相关回归通过；
+- 适配层88项测试及受影响Task Pack/Provider CLI回归共181项通过；
 - Ruff与全源码Mypy通过。
-
-当前未完成：
-
 - 已实现并验证25 Case真实 Agent 执行、恢复、费用边界与Prediction冻结宿主；
-- 尚未完成本计划的25次真实模型 Turn，`predictions.jsonl`尚未生成；
-- 尚未运行官方 Docker 评分，因此当前没有`resolved/25`质量结论；
+- 25/25真实模型Turn已完成：1个正常完成、23个达到任务预算、1个Provider输出无效；最终3个非空补丁、
+  22个空补丁；
+- 官方固定Task Repo Dockerfile在Docker Desktop上本地构建3个`x86_64`镜像，没有回退拉取；
+- 官方评分完成且独立复核通过：`resolved 1/25`、`unresolved 2/25`、`empty_patch 22/25`、
+  基础设施失败0；结构化证据见
+  [`runs/harnessix-64c385da3fcf-290a0c97ab1a.json`](../../benchmarks/swebench/verified-25-v1/runs/harnessix-64c385da3fcf-290a0c97ab1a.json)。
+
+当前边界：
+
 - 25 Case完成后仍只能发布 Pilot 结果，完整排行榜需要独立的完整数据集评测。
 
 首轮只支持macOS上的计划、导出和CLI合同验证；正式官方评分使用Docker，执行环境必须另行保存环境证据。

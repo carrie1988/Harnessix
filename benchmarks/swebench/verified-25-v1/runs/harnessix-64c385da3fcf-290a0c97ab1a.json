@@ -1,0 +1,115 @@
+{
+  "agent_execution": {
+    "completed_predictions": 25,
+    "cost": {
+      "currency": "CNY",
+      "known_amount": "17.323164",
+      "price_version": "aliyun-bailian-2026-10-12-qwen3-8-max",
+      "reserved_amount": "0",
+      "unaccounted_requests": 0
+    },
+    "non_empty_patches": [
+      {
+        "error_code": "budget_exceeded",
+        "instance_id": "pallets__flask-5014",
+        "patch_sha256": "e0be77ebb982125c1e0047b970659b86c63797457d6978f4bb5b7482c55aa9fd",
+        "turn_status": "failed"
+      },
+      {
+        "error_code": null,
+        "instance_id": "pytest-dev__pytest-7205",
+        "patch_sha256": "5f2289675bbb259eccda497c699f5221a6ed1c237dd8cc485757c9febfce9560",
+        "turn_status": "completed"
+      },
+      {
+        "error_code": "budget_exceeded",
+        "instance_id": "django__django-13590",
+        "patch_sha256": "8182aa13a40376faff95e2ab05e1ea606a9edc1e932103a03a7f09b98fc8dbd7",
+        "turn_status": "failed"
+      }
+    ],
+    "patch_counts": {
+      "empty": 22,
+      "non_empty": 3
+    },
+    "scheduled_cases": 25,
+    "status": "completed",
+    "terminal_turns": {
+      "completed": 1,
+      "failed_budget_exceeded": 23,
+      "failed_provider_invalid_output": 1
+    },
+    "token_usage": {
+      "input": 1349205,
+      "output": 31464
+    }
+  },
+  "budget_context": {
+    "combined_known_amount": "21.573624",
+    "current_run_known_amount": "17.323164",
+    "cycle_cap_amount": "80",
+    "currency": "CNY",
+    "prior_partial_known_amount": "4.250460",
+    "prior_partial_unaccounted_requests": 1,
+    "runner_stop_amount": "72"
+  },
+  "integrity": {
+    "artifact_files": 15,
+    "artifacts_sha256": "b89501efc20d9918c5f0da7f4042de9dcf0a33a031e34e9ee652c0ada8ad43a8",
+    "official_results_sha256": "38705a15ff1e37553061b540a01cbeb27e324ee640d3186a21dd92fc5ee292de",
+    "predictions_sha256": "290a0c97ab1a60330175045755367b544cca7f820d3e2e8b255715009bf80aea",
+    "suite_state_sha256": "7bf478c05f502f0bba6c0e054e330d10436211a8526cd588ec11e30b87bf1c02"
+  },
+  "official_evaluation": {
+    "ambiguous_failures": 0,
+    "completed_cases": 3,
+    "empty_patch_cases": 22,
+    "environment": {
+      "docker_architecture": "aarch64",
+      "docker_desktop": "4.94.0 (241994)",
+      "docker_memory_bytes": 8318709760,
+      "docker_server": "29.8.2",
+      "image_architecture": "x86_64",
+      "images_built_from_fixed_task_repo": 3,
+      "images_pulled": 0,
+      "logical_cpus": 16,
+      "official_swebench_revision": "02e7a74ffd0b707aab73d203fe87bdc7c76afc8e",
+      "task_repo_revision": "3d07b464b7b311a0cbfb5ed5b2d8a3b96f84a33d"
+    },
+    "error_cases": 0,
+    "infrastructure_failures": 0,
+    "patch_results": [
+      {
+        "instance_id": "django__django-13590",
+        "patch_applied": false,
+        "resolved": false
+      },
+      {
+        "instance_id": "pallets__flask-5014",
+        "patch_applied": false,
+        "resolved": false
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7205",
+        "patch_applied": true,
+        "resolved": true
+      }
+    ],
+    "resolved_cases": 1,
+    "status": "completed",
+    "submitted_cases": 25,
+    "unresolved_cases": 2,
+    "unstopped_containers": 0
+  },
+  "plan": {
+    "dataset": "SWE-bench/SWE-bench_Verified",
+    "harnessix_revision": "ff3d25c83f445430ff3c87f258b8cd5122ea7855",
+    "plan_sha256": "64c385da3fcfa350779817c34f5d9088ef1c257ab5c0472d14f174ee1fdd6079",
+    "selection": "repo_round_robin_sha256_v1",
+    "trials_per_case": 1
+  },
+  "run_id": "harnessix-64c385da3fcf-290a0c97ab1a",
+  "scope_boundary": "25 Case预注册Pilot，不代表SWE-bench Verified 500 Case完整榜单，也不构成Harnessix 1.0发布验收。",
+  "spec_version": "harnessix.swebench-pilot-evidence/v1",
+  "status": "completed"
+}
