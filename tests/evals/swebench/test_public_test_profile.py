@@ -22,9 +22,14 @@ def _docker(tmp_path: Path) -> Path:
     return engine
 
 
+def _repository(instance_id: str, *, platform: str = "x86_64") -> str:
+    owner, repository_case = instance_id.split("__", 1)
+    return f"swebench/sweb.eval.{platform}.{owner}_1776_{repository_case}"
+
+
 def _row(instance_id: str, image_id: str, *, platform: str = "x86_64") -> dict[str, str]:
     return {
-        "Repository": f"swebench/sweb.eval.{platform}_{instance_id}",
+        "Repository": _repository(instance_id, platform=platform),
         "Tag": "latest",
         "ID": image_id,
     }
@@ -108,7 +113,7 @@ def test_discovery_freezes_one_complete_profile_per_case_from_public_image_list(
         assert profile.max_output_bytes == 1024 * 1024
 
 
-def test_discovery_rejects_missing_exact_repository_tag_suffix(tmp_path: Path) -> None:
+def test_discovery_rejects_missing_exact_repository_and_tag(tmp_path: Path) -> None:
     plan = build_test_plan()
     engine = _docker(tmp_path)
     missing = sorted(plan.cases, key=lambda case: case.instance_id)[0]
@@ -121,7 +126,7 @@ def test_discovery_rejects_missing_exact_repository_tag_suffix(tmp_path: Path) -
         (
             {
                 **_row(missing.instance_id, "sha256:" + "a" * 64),
-                "Repository": f"other/sweb.eval.x86_64_{missing.instance_id}",
+                "Repository": _repository(missing.instance_id).replace("swebench/", "other/"),
             },
             {
                 **_row(missing.instance_id, "sha256:" + "b" * 64),
@@ -129,7 +134,7 @@ def test_discovery_rejects_missing_exact_repository_tag_suffix(tmp_path: Path) -
             },
             {
                 **_row(missing.instance_id, "sha256:" + "c" * 64),
-                "Repository": f"swebench/sweb.eval.x86_64_{missing.instance_id}-extra",
+                "Repository": _repository(missing.instance_id) + "-extra",
             },
         )
     )
@@ -147,7 +152,7 @@ def test_discovery_rejects_duplicate_case_matches(tmp_path: Path) -> None:
     rows = [
         _row(case.instance_id, f"sha256:{index + 1:064x}") for index, case in enumerate(plan.cases)
     ]
-    rows.append(_row(duplicate.instance_id, "sha256:" + "f" * 64, platform="arm64"))
+    rows.append(_row(duplicate.instance_id, "sha256:" + "f" * 64))
 
     with pytest.raises(KernelError) as caught:
         discover_swebench_case_process_profiles(plan, engine, runner=_runner(rows))

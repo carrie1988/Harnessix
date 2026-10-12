@@ -30,6 +30,8 @@ PUBLIC_TEST_PROFILE_ID = "public-tests"
 _PROFILE_VERSION = "swebench-public-tests-v1"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
+_IMAGE_REPOSITORY_PLATFORM = "x86_64"
+_IMAGE_BUILD_NAMESPACE = "1776"
 _IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 _LIST_TIMEOUT_SECONDS = 30.0
 _MAX_STDOUT_BYTES = 4 * 1024 * 1024
@@ -174,6 +176,21 @@ def _local_image_rows(
         ) from None
 
 
+def _expected_image_repository(instance_id: str) -> str:
+    """按 SWE-bench 公共镜像命名规则派生唯一仓库名。"""
+
+    owner, separator, repository_case = instance_id.partition("__")
+    if not separator or not owner or not repository_case:
+        raise KernelError(
+            "swebench_public_test_profile_invalid",
+            "SWE-bench Case身份无法派生公开测试镜像",
+        )
+    return (
+        f"{_IMAGE_REPOSITORY_PREFIX}{_IMAGE_REPOSITORY_PLATFORM}."
+        f"{owner}_{_IMAGE_BUILD_NAMESPACE}_{repository_case}"
+    )
+
+
 def build_swebench_case_process_profile(
     instance_id: str,
     *,
@@ -219,14 +236,11 @@ def discover_swebench_case_process_profiles(
     rows = _local_image_rows(engine, runner=runner)
     bindings: list[SweBenchCaseProcessProfile] = []
     for case in sorted(plan.cases, key=lambda item: item.instance_id):
-        suffix = f"_{case.instance_id}"
+        expected_repository = _expected_image_repository(case.instance_id)
         matches = tuple(
             image_id
             for repository, tag, image_id in rows
-            if tag == "latest"
-            and repository.startswith(_IMAGE_REPOSITORY_PREFIX)
-            and len(repository) > len(_IMAGE_REPOSITORY_PREFIX) + len(suffix)
-            and repository.endswith(suffix)
+            if tag == "latest" and repository == expected_repository
         )
         if not matches:
             raise KernelError(
