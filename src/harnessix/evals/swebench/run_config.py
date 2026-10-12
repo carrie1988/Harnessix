@@ -9,7 +9,8 @@ from typing import Literal, Self
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from harnessix.domain.models import ContractModel
-from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
+from harnessix.evals.swebench.contracts import SWE_BENCH_CASE_COUNT, SweBenchPreRegistrationPlan
+from harnessix.evals.swebench.public_test_profile import SweBenchCaseProcessProfile
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
 from harnessix.models.pricing import (
     Amount,
@@ -21,6 +22,7 @@ from harnessix.models.pricing import (
     format_amount,
     rate_units,
 )
+from harnessix.product_config.action_contracts import ProductProcessProfile
 
 _MODEL = "qwen3.8-max"
 _PUBLIC_MODEL = "harnessix-qwen3.8-max"
@@ -38,8 +40,8 @@ class SweBenchAgentRunConfig(ContractModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v1"] = (
-        "harnessix.swebench-agent-run-config/v1"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v2"] = (
+        "harnessix.swebench-agent-run-config/v2"
     )
     plan_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_root: str = Field(min_length=1, max_length=4096)
@@ -51,6 +53,10 @@ class SweBenchAgentRunConfig(ContractModel):
     billing_context: BillingContext
     fee_stop_amount: Amount
     reserve_unaccounted_requests: Literal[True] = True
+    case_process_profiles: tuple[SweBenchCaseProcessProfile, ...] = Field(
+        min_length=SWE_BENCH_CASE_COUNT,
+        max_length=SWE_BENCH_CASE_COUNT,
+    )
 
     @field_validator("source_root", "work_root", "cache_root")
     @classmethod
@@ -100,6 +106,12 @@ class SweBenchAgentRunConfig(ContractModel):
             raise ValueError("SWE-bench价格或计费上下文与Provider不一致")
         if amount_units(self.fee_stop_amount) <= 0:
             raise ValueError("SWE-bench费用停止线必须大于零")
+        instance_ids = [binding.instance_id for binding in self.case_process_profiles]
+        if instance_ids != sorted(instance_ids) or len(set(instance_ids)) != len(instance_ids):
+            raise ValueError("SWE-bench Case Profile映射必须按instance_id排序且唯一")
+        engines = {binding.profile.container_engine for binding in self.case_process_profiles}
+        if len(engines) != 1:
+            raise ValueError("SWE-bench Case Profile必须绑定同一个Container Engine")
         return self
 
     @property
@@ -108,16 +120,31 @@ class SweBenchAgentRunConfig(ContractModel):
 
     def require_plan(self, plan: SweBenchPreRegistrationPlan) -> None:
         parameters = {item.name: item.value for item in plan.model_settings.parameters}
+        expected_case_ids = tuple(sorted(case.instance_id for case in plan.cases))
         if (
             self.plan_sha256 != plan.plan_sha256
             or plan.model_name != _PUBLIC_MODEL
             or plan.model_settings.provider != _PROVIDER
             or parameters != {"thinking": "disabled"}
             or self.provider_config.timeout_seconds != plan.task_budget.timeout_seconds
+            or tuple(binding.instance_id for binding in self.case_process_profiles)
+            != expected_case_ids
         ):
             raise ValueError("SWE-bench运行配置与预注册计划不一致")
         if amount_units(self.worst_case_amount(plan)) > amount_units(self.fee_stop_amount):
             raise ValueError("SWE-bench费用停止线无法覆盖固定最坏情况")
+
+    def process_profile_for(self, instance_id: str) -> ProductProcessProfile:
+        """返回配置中该 Case 唯一冻结的完整 Process Profile。"""
+
+        matches = tuple(
+            binding.profile
+            for binding in self.case_process_profiles
+            if binding.instance_id == instance_id
+        )
+        if len(matches) != 1:
+            raise ValueError("SWE-bench Case缺少唯一冻结的Process Profile")
+        return matches[0]
 
     def worst_case_amount(self, plan: SweBenchPreRegistrationPlan) -> Amount:
         """覆盖全部已结算预算，外加单个未结算请求的最大预留。"""
@@ -141,6 +168,7 @@ def build_swebench_agent_run_config(
     work_root: Path,
     cache_root: Path,
     git_executable: Path,
+    case_process_profiles: tuple[SweBenchCaseProcessProfile, ...],
     fee_stop_amount: Amount,
     api_key_env: str = "DASHSCOPE_API_KEY",
     observed_at: datetime | None = None,
@@ -192,6 +220,7 @@ def build_swebench_agent_run_config(
             inference_mode="non-thinking",
         ),
         fee_stop_amount=fee_stop_amount,
+        case_process_profiles=case_process_profiles,
     )
     config.require_plan(plan)
     return config

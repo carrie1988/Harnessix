@@ -6,18 +6,23 @@ from pathlib import Path
 import pytest
 
 from harnessix.cli import main
-from harnessix.evals.swebench import official
+from harnessix.evals.swebench import cli, official
 from harnessix.evals.swebench.io import (
     read_preregistration_plan,
     write_preregistration_plan,
 )
 from harnessix.evals.swebench.predictions import write_predictions
+from harnessix.evals.swebench.public_test_profile import (
+    build_swebench_case_process_profile,
+)
+from harnessix.evals.swebench.run_config_io import read_swebench_agent_run_config
 from tests.evals.swebench.test_predictions import (
     GIT,
     build_dataset_rows,
     build_test_plan,
     build_test_predictions,
 )
+from tests.evals.swebench.test_run_config import build_agent_test_plan
 
 
 def test_top_level_help_discovers_swebench_cli(capsys) -> None:
@@ -98,6 +103,8 @@ def test_run_agent_requires_explicit_provider_network_before_reading_plan(
                 str(tmp_path / "cache"),
                 "--git",
                 str(GIT),
+                "--container-engine",
+                str(tmp_path / "docker"),
             ]
         )
 
@@ -105,6 +112,120 @@ def test_run_agent_requires_explicit_provider_network_before_reading_plan(
     assert caught.value.code == 1
     assert json.loads(output.out) == {"reason": "failed"}
     assert not (tmp_path / "work").exists()
+
+
+def test_run_agent_requires_container_engine_argument(tmp_path: Path, capsys) -> None:
+    with pytest.raises(SystemExit) as caught:
+        main(
+            [
+                "coding-eval-swebench",
+                "run-agent",
+                "--plan",
+                str(tmp_path / "plan.json"),
+                "--source-root",
+                str(tmp_path),
+                "--work-root",
+                str(tmp_path / "work"),
+                "--cache-root",
+                str(tmp_path / "cache"),
+                "--git",
+                str(GIT),
+                "--allow-provider-network",
+            ]
+        )
+
+    output = capsys.readouterr()
+    assert caught.value.code == 2
+    assert "参数无效" in output.err
+
+
+def test_run_agent_resume_reuses_frozen_profiles_without_rediscovery(
+    tmp_path: Path,
+    capsys,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plan = build_agent_test_plan()
+    plan_path = tmp_path / "plan.json"
+    source_root = tmp_path / "source"
+    work_root = tmp_path / "work"
+    cache_root = tmp_path / "cache"
+    source_root.mkdir()
+    engine = tmp_path / "docker"
+    engine.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    engine.chmod(0o700)
+    profiles = tuple(
+        build_swebench_case_process_profile(
+            case.instance_id,
+            container_engine=engine,
+            image_id=f"sha256:{index + 1:064x}",
+        )
+        for index, case in enumerate(sorted(plan.cases, key=lambda item: item.instance_id))
+    )
+    write_preregistration_plan(plan_path, plan)
+    discoveries = 0
+    executions = 0
+
+    def discover(_plan, _engine):
+        nonlocal discoveries
+        discoveries += 1
+        assert _plan == plan
+        assert _engine == engine
+        return profiles
+
+    async def run_suite(_plan, config, **_kwargs):
+        nonlocal executions
+        executions += 1
+        assert config.case_process_profiles == profiles
+        return {"reason": "completed", "completed_cases": 25}
+
+    monkeypatch.setattr(cli, "discover_swebench_case_process_profiles", discover)
+    monkeypatch.setattr(cli, "run_swebench_agent_suite", run_suite)
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "secret")
+    arguments = [
+        "coding-eval-swebench",
+        "run-agent",
+        "--plan",
+        str(plan_path),
+        "--source-root",
+        str(source_root),
+        "--work-root",
+        str(work_root),
+        "--cache-root",
+        str(cache_root),
+        "--git",
+        str(GIT),
+        "--container-engine",
+        str(engine),
+        "--allow-provider-network",
+    ]
+
+    main(arguments)
+    first_output = json.loads(capsys.readouterr().out)
+    frozen = read_swebench_agent_run_config(work_root / "run-config.json")
+    assert first_output["reason"] == "completed"
+    assert frozen.case_process_profiles == profiles
+
+    def forbidden_discovery(*_args, **_kwargs):
+        pytest.fail("恢复既有run-config不得重新发现或替换Profile")
+
+    monkeypatch.setattr(cli, "discover_swebench_case_process_profiles", forbidden_discovery)
+    main(arguments)
+    second_output = json.loads(capsys.readouterr().out)
+    assert second_output["reason"] == "completed"
+    assert discoveries == 1
+    assert executions == 2
+
+    other_engine = tmp_path / "docker-other"
+    other_engine.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    other_engine.chmod(0o700)
+    drifted_arguments = list(arguments)
+    drifted_arguments[drifted_arguments.index(str(engine))] = str(other_engine)
+    with pytest.raises(SystemExit) as caught:
+        main(drifted_arguments)
+
+    assert caught.value.code == 1
+    assert json.loads(capsys.readouterr().out) == {"reason": "failed"}
+    assert executions == 2
 
 
 def test_preregister_writes_exactly_25_public_cases_without_gold_fields(

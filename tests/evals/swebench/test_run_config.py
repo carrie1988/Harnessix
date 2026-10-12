@@ -13,14 +13,21 @@ from harnessix.evals.swebench.contracts import (
     SweBenchTaskBudget,
     build_swebench_preregistration_plan,
 )
-from harnessix.evals.swebench.run_config import build_swebench_agent_run_config
+from harnessix.evals.swebench.public_test_profile import (
+    SweBenchCaseProcessProfile,
+    build_swebench_case_process_profile,
+)
+from harnessix.evals.swebench.run_config import (
+    SweBenchAgentRunConfig,
+    build_swebench_agent_run_config,
+)
 from harnessix.evals.swebench.run_config_io import (
     read_swebench_agent_run_config,
     write_swebench_agent_run_config,
 )
 
 
-def _plan():
+def build_agent_test_plan():
     rows = tuple(
         {
             "instance_id": f"owner__repo-{index}",
@@ -57,15 +64,38 @@ def _plan():
     )
 
 
-def _config(tmp_path: Path, *, amount: str = "80"):
+def _docker(tmp_path: Path, name: str = "docker") -> Path:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    engine = tmp_path / name
+    engine.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    engine.chmod(0o700)
+    return engine
+
+
+def _profiles(tmp_path: Path, plan, *, image_offset: int = 0):
+    engine = _docker(tmp_path)
+    return tuple(
+        build_swebench_case_process_profile(
+            case.instance_id,
+            container_engine=engine,
+            image_id=f"sha256:{index + 1 + image_offset:064x}",
+        )
+        for index, case in enumerate(sorted(plan.cases, key=lambda item: item.instance_id))
+    )
+
+
+def _config(tmp_path: Path, *, amount: str = "80", image_offset: int = 0):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     root = tmp_path / "source"
     root.mkdir()
+    plan = build_agent_test_plan()
     return build_swebench_agent_run_config(
-        _plan(),
+        plan,
         source_root=root,
         work_root=tmp_path / "runs",
         cache_root=tmp_path / "cache",
         git_executable=Path("/usr/bin/git"),
+        case_process_profiles=_profiles(tmp_path, plan, image_offset=image_offset),
         fee_stop_amount=amount,
         observed_at=datetime(2026, 10, 12, tzinfo=UTC),
     )
@@ -79,8 +109,72 @@ def test_run_config_binds_provider_price_budget_and_separate_roots(tmp_path: Pat
     assert config.provider_config.enable_thinking is False
     assert config.price.input_price.per_million == "12"
     assert config.price.output_per_million == "36"
-    assert config.worst_case_amount(_plan()) == "48.147456"
+    assert config.worst_case_amount(build_agent_test_plan()) == "48.147456"
     assert config.fingerprint == config.fingerprint
+    assert tuple(binding.instance_id for binding in config.case_process_profiles) == tuple(
+        sorted(case.instance_id for case in build_agent_test_plan().cases)
+    )
+
+
+def test_run_config_fingerprint_covers_complete_case_profiles(tmp_path: Path) -> None:
+    first = _config(tmp_path)
+    second = SweBenchAgentRunConfig.model_validate(
+        {
+            **first.model_dump(mode="python"),
+            "case_process_profiles": _profiles(
+                tmp_path,
+                build_agent_test_plan(),
+                image_offset=100,
+            ),
+        },
+        strict=True,
+    )
+
+    assert first.plan_sha256 == second.plan_sha256
+    assert (
+        first.case_process_profiles[0].profile.image
+        != second.case_process_profiles[0].profile.image
+    )
+    assert first.fingerprint != second.fingerprint
+
+
+def test_run_config_rejects_missing_duplicate_and_plan_drifted_profile_mappings(
+    tmp_path: Path,
+) -> None:
+    config = _config(tmp_path)
+    payload = config.model_dump(mode="python")
+
+    with pytest.raises(ValueError):
+        SweBenchAgentRunConfig.model_validate(
+            {**payload, "case_process_profiles": config.case_process_profiles[:-1]},
+            strict=True,
+        )
+
+    duplicate = (*config.case_process_profiles[:-1], config.case_process_profiles[0])
+    with pytest.raises(ValueError, match="排序且唯一"):
+        SweBenchAgentRunConfig.model_validate(
+            {**payload, "case_process_profiles": duplicate},
+            strict=True,
+        )
+
+    drifted = tuple(
+        sorted(
+            (
+                *config.case_process_profiles[1:],
+                SweBenchCaseProcessProfile(
+                    instance_id="other__repo-999",
+                    profile=config.case_process_profiles[0].profile,
+                ),
+            ),
+            key=lambda binding: binding.instance_id,
+        )
+    )
+    drifted_config = SweBenchAgentRunConfig.model_validate(
+        {**payload, "case_process_profiles": drifted},
+        strict=True,
+    )
+    with pytest.raises(ValueError, match="预注册计划"):
+        drifted_config.require_plan(build_agent_test_plan())
 
 
 def test_run_config_rejects_budget_below_proved_worst_case(tmp_path: Path) -> None:
@@ -94,11 +188,12 @@ def test_run_config_rejects_private_root_inside_source(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="源码树内"):
         build_swebench_agent_run_config(
-            _plan(),
+            (plan := build_agent_test_plan()),
             source_root=source,
             work_root=source / "runs",
             cache_root=tmp_path / "cache",
             git_executable=Path("/usr/bin/git"),
+            case_process_profiles=_profiles(tmp_path, plan),
             fee_stop_amount="80",
             observed_at=datetime(2026, 10, 12, tzinfo=UTC),
         )

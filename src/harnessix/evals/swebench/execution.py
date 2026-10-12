@@ -45,6 +45,7 @@ from harnessix.evals.swebench.source_revision import require_harnessix_execution
 from harnessix.evals.swebench.workspace import materialize_swebench_workspace
 from harnessix.models.costs import bind_price, build_cost_report
 from harnessix.models.pricing import FlatInputPrice, amount_units, format_amount, rate_units
+from harnessix.product_config.action_contracts import ProductProcessProfile
 
 _RUN_NAMESPACE = UUID("be7c86aa-71bb-5fdc-9bb4-47612c041d40")
 _CASES_DIRECTORY = "cases"
@@ -229,6 +230,7 @@ async def _open_case_turn(
     case: SweBenchPublicCase,
     case_root: Path,
     workspace: Path,
+    process_profile: ProductProcessProfile,
     api_key: str,
     cancel: CancelToken,
 ) -> tuple[UUID, Turn]:
@@ -246,6 +248,7 @@ async def _open_case_turn(
         git_executable=Path(config.git_executable),
         provider_config=config.provider_config,
         execution_fingerprint=config.fingerprint,
+        process_profile=process_profile,
         api_key=api_key,
         cancel=cancel,
     )
@@ -324,6 +327,7 @@ async def run_swebench_agent_suite(
                 case,
                 _case_root(root, index),
                 workspace,
+                config.process_profile_for(case.instance_id),
                 api_key,
                 token,
             )

@@ -36,6 +36,9 @@ from harnessix.evals.swebench.predictions import (
     read_predictions,
     write_predictions,
 )
+from harnessix.evals.swebench.public_test_profile import (
+    discover_swebench_case_process_profiles,
+)
 from harnessix.evals.swebench.run_config import build_swebench_agent_run_config
 from harnessix.evals.swebench.run_config_io import (
     read_swebench_agent_run_config,
@@ -89,6 +92,7 @@ def _parser() -> argparse.ArgumentParser:
     run_agent.add_argument("--work-root", required=True)
     run_agent.add_argument("--cache-root", required=True)
     run_agent.add_argument("--git", required=True)
+    run_agent.add_argument("--container-engine", required=True)
     run_agent.add_argument("--api-key-env", default="DASHSCOPE_API_KEY")
     run_agent.add_argument("--fee-stop-amount", default="80")
     run_agent.add_argument("--allow-repository-network", action="store_true")
@@ -191,6 +195,7 @@ def _run_agent(arguments: argparse.Namespace) -> dict[str, object]:
     plan = read_preregistration_plan(Path(arguments.plan))
     source_root = Path(arguments.source_root).resolve(strict=True)
     git_executable = Path(arguments.git).resolve(strict=True)
+    container_engine = Path(arguments.container_engine).resolve(strict=True)
     work_root = Path(arguments.work_root).resolve(strict=False)
     cache_root = Path(arguments.cache_root).resolve(strict=False)
     ensure_private_directory(
@@ -207,17 +212,29 @@ def _run_agent(arguments: argparse.Namespace) -> dict[str, object]:
             or config.work_root != str(work_root)
             or config.cache_root != str(cache_root)
             or config.git_executable != str(git_executable)
+            or any(
+                binding.profile.container_engine != str(container_engine)
+                for binding in config.case_process_profiles
+            )
             or config.provider_config.api_key_env != arguments.api_key_env
             or config.fee_stop_amount != arguments.fee_stop_amount
         ):
             raise KernelError("swebench_run_config_invalid", "SWE-bench既有执行配置与参数不一致")
+        try:
+            config.require_plan(plan)
+        except ValueError:
+            raise KernelError(
+                "swebench_run_config_invalid", "SWE-bench既有执行配置与计划不一致"
+            ) from None
     else:
+        case_process_profiles = discover_swebench_case_process_profiles(plan, container_engine)
         config = build_swebench_agent_run_config(
             plan,
             source_root=source_root,
             work_root=work_root,
             cache_root=cache_root,
             git_executable=git_executable,
+            case_process_profiles=case_process_profiles,
             fee_stop_amount=arguments.fee_stop_amount,
             api_key_env=arguments.api_key_env,
         )

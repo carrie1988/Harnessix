@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Literal
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Literal, cast
 from uuid import uuid4
 
 import pytest
@@ -23,10 +25,14 @@ from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.evals.swebench.agent_execution import (
     _approval_decision,
     _request_turn,
+    _require_agent_action_gateway,
     _turn_budget,
     build_swebench_agent_prompt,
 )
+from harnessix.evals.swebench.public_test_profile import build_swebench_case_process_profile
 from harnessix.evals.swebench.selection import project_swebench_public_cases
+from harnessix.product_config.process_action import process_profile_descriptor
+from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 from tests.evals.swebench.test_predictions import build_test_plan
 
 SHA256 = "a" * 64
@@ -60,14 +66,15 @@ def _thread(*turns: Turn) -> Thread:
 def _approval_fixture(
     *,
     tool: str = WORKSPACE_PATCH_TOOL,
-    presentation: Literal["tool", "patch_batch"] = "patch_batch",
+    tool_version: str = "harnessix.workspace-patch/v2",
+    presentation: Literal["tool", "patch_batch", "process"] = "patch_batch",
     arguments: dict[str, object],
 ) -> tuple[Turn, TrustedActionApprovalRequestContent]:
     call = ToolCallContent(
         call_id=uuid4(),
         provider_call_id="swebench-patch-call",
         tool=tool,
-        tool_version="harnessix.workspace-patch/v2",
+        tool_version=tool_version,
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         arguments=arguments,
         requires_approval=True,
@@ -117,6 +124,17 @@ def _valid_patch_arguments() -> dict[str, object]:
     }
 
 
+def _process_profile(tmp_path: Path):
+    engine = tmp_path / "docker"
+    engine.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    engine.chmod(0o700)
+    return build_swebench_case_process_profile(
+        "owner__repo-42",
+        container_engine=engine,
+        image_id="sha256:" + "a" * 64,
+    ).profile
+
+
 def test_prompt_uses_only_projected_public_case_material() -> None:
     hidden_materials = {
         "patch": "SECRET_GOLD_PATCH",
@@ -143,9 +161,12 @@ def test_prompt_uses_only_projected_public_case_material() -> None:
         "the named symbols and files; use focused grep/read calls rather than broad exploration. "
         "After at most four source-inspection calls, either submit the best justified "
         "patch or stop with a precise blocker. For existing files use exact edit operations with "
-        "unique old_text/new_text anchors; never replace an entire file with an excerpt. Review "
-        "the final git status and diff. Do not ask questions or use network access, hidden tests, "
-        "reference patches, hints, or evaluator artifacts.\n\n"
+        "unique old_text/new_text anchors; never replace an entire file with an excerpt. After "
+        "patching, select focused relative pytest targets that exist in the public repository and "
+        "run the public-tests profile. If a test fails, diagnose the failure, repair the patch, "
+        "and rerun the public-tests profile; the latest patched state must be retested before "
+        "finishing. Review the final git status and diff. Do not ask questions or use network "
+        "access, hidden tests, reference patches, hints, or evaluator artifacts.\n\n"
         "Instance: owner__repo-42\n"
         "Repository: owner/repo\n"
         f"Base commit: {'b' * 40}\n\n"
@@ -163,14 +184,32 @@ def test_turn_budget_exactly_matches_preregistered_task_budget() -> None:
     assert runtime_budget.model_dump(mode="python") == plan.task_budget.model_dump(mode="python")
 
 
-def test_valid_workspace_patch_batch_is_approved() -> None:
+def test_valid_workspace_patch_batch_is_approved(tmp_path: Path) -> None:
     turn, approval = _approval_fixture(arguments=_valid_patch_arguments())
 
-    decision = _approval_decision(turn, approval)
+    decision = _approval_decision(turn, approval, _process_profile(tmp_path))
 
     assert decision.outcome is ApprovalOutcome.APPROVED
     assert decision.actor == "harnessix-swebench-runner"
-    assert decision.reason == "SWE-bench隔离Workspace内的受控Patch"
+    assert decision.reason == "SWE-bench隔离Workspace内的受控Patch或公开测试Profile"
+
+
+def test_current_public_test_profile_with_bounded_selector_is_approved(tmp_path: Path) -> None:
+    profile = _process_profile(tmp_path)
+    descriptor = process_profile_descriptor(profile)
+    turn, approval = _approval_fixture(
+        tool=descriptor.name,
+        tool_version=descriptor.version,
+        presentation="process",
+        arguments={
+            "profile": "public-tests",
+            "selectors": ["tests/test_regression.py::test_public_behavior"],
+        },
+    )
+
+    decision = _approval_decision(turn, approval, profile)
+
+    assert decision.outcome is ApprovalOutcome.APPROVED
 
 
 @pytest.mark.parametrize(
@@ -198,8 +237,9 @@ def test_valid_workspace_patch_batch_is_approved() -> None:
 )
 def test_approval_rejects_everything_outside_the_exact_patch_contract(
     tool: str,
-    presentation: Literal["tool", "patch_batch"],
+    presentation: Literal["tool", "patch_batch", "process"],
     arguments: dict[str, object],
+    tmp_path: Path,
 ) -> None:
     turn, approval = _approval_fixture(
         tool=tool,
@@ -207,11 +247,117 @@ def test_approval_rejects_everything_outside_the_exact_patch_contract(
         arguments=arguments,
     )
 
-    decision = _approval_decision(turn, approval)
+    decision = _approval_decision(turn, approval, _process_profile(tmp_path))
 
     assert decision.outcome is ApprovalOutcome.REJECTED
     assert decision.actor == "harnessix-swebench-runner"
-    assert decision.reason == "SWE-bench只批准正式Workspace Patch"
+    assert decision.reason == "SWE-bench只批准正式Workspace Patch或当前公开测试Profile"
+
+
+@pytest.mark.parametrize(
+    ("tool_version", "arguments"),
+    [
+        pytest.param(
+            "harnessix.product-process/v1:wrong",
+            {"profile": "public-tests", "selectors": ["tests/test_public.py"]},
+            id="wrong-profile-version",
+        ),
+        pytest.param(
+            None,
+            {"profile": "public-tests", "selectors": ["../hidden/test_secret.py"]},
+            id="unsafe-selector",
+        ),
+        pytest.param(
+            None,
+            {"profile": "other", "selectors": ["tests/test_public.py"]},
+            id="wrong-profile-id",
+        ),
+    ],
+)
+def test_profile_approval_rejects_nonexact_or_invalid_calls(
+    tmp_path: Path,
+    tool_version: str | None,
+    arguments: dict[str, object],
+) -> None:
+    profile = _process_profile(tmp_path)
+    descriptor = process_profile_descriptor(profile)
+    turn, approval = _approval_fixture(
+        tool=descriptor.name,
+        tool_version=tool_version or descriptor.version,
+        presentation="process",
+        arguments=arguments,
+    )
+
+    decision = _approval_decision(turn, approval, profile)
+
+    assert decision.outcome is ApprovalOutcome.REJECTED
+
+
+def test_workspace_patch_approval_rejects_nonexact_tool_version(tmp_path: Path) -> None:
+    turn, approval = _approval_fixture(
+        tool_version="harnessix.workspace-patch/v999",
+        arguments=_valid_patch_arguments(),
+    )
+
+    decision = _approval_decision(turn, approval, _process_profile(tmp_path))
+
+    assert decision.outcome is ApprovalOutcome.REJECTED
+
+
+@pytest.mark.parametrize(
+    "names",
+    [
+        pytest.param((WORKSPACE_PATCH_TOOL,), id="profile-omitted"),
+        pytest.param(("run_profile.public-tests",), id="patch-omitted"),
+        pytest.param(
+            (WORKSPACE_PATCH_TOOL, "run_profile.public-tests", "run_profile.other"),
+            id="extra-profile",
+        ),
+    ],
+)
+def test_agent_action_capability_omission_fails_closed_before_model_use(
+    tmp_path: Path,
+    names: tuple[str, ...],
+) -> None:
+    profile = _process_profile(tmp_path)
+    profile_descriptor = process_profile_descriptor(profile)
+
+    class Gateway:
+        def definitions(self):
+            return tuple(
+                SimpleNamespace(
+                    name=name,
+                    version=(
+                        profile_descriptor.version
+                        if name == profile_descriptor.name
+                        else "harnessix.workspace-patch/v2"
+                    ),
+                )
+                for name in names
+            )
+
+    gateway = cast(RouterBackedAgentActionGateway, Gateway())
+
+    with pytest.raises(KernelError) as caught:
+        _require_agent_action_gateway(gateway, profile)
+
+    assert caught.value.code == "swebench_action_unavailable"
+
+
+def test_agent_action_gateway_accepts_patch_and_current_exact_profile(tmp_path: Path) -> None:
+    profile = _process_profile(tmp_path)
+    descriptor = process_profile_descriptor(profile)
+
+    class Gateway:
+        def definitions(self):
+            return (
+                SimpleNamespace(name=WORKSPACE_PATCH_TOOL, version="harnessix.workspace-patch/v2"),
+                SimpleNamespace(name=descriptor.name, version=descriptor.version),
+            )
+
+    gateway = cast(RouterBackedAgentActionGateway, Gateway())
+
+    assert _require_agent_action_gateway(gateway, profile) is gateway
 
 
 @pytest.mark.parametrize(

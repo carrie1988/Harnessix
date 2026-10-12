@@ -16,6 +16,9 @@ from harnessix.evals.swebench.contracts import (
 )
 from harnessix.evals.swebench.execution_io import read_suite_execution_state
 from harnessix.evals.swebench.predictions import read_predictions
+from harnessix.evals.swebench.public_test_profile import (
+    build_swebench_case_process_profile,
+)
 from harnessix.evals.swebench.run_config import build_swebench_agent_run_config
 
 NOW = datetime(2026, 10, 12, 2, tzinfo=UTC)
@@ -61,12 +64,24 @@ def _plan():
 def _config(tmp_path: Path, plan):
     source = tmp_path / "source"
     source.mkdir()
+    engine = tmp_path / "docker"
+    engine.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    engine.chmod(0o700)
+    profiles = tuple(
+        build_swebench_case_process_profile(
+            case.instance_id,
+            container_engine=engine,
+            image_id=f"sha256:{index + 1:064x}",
+        )
+        for index, case in enumerate(sorted(plan.cases, key=lambda item: item.instance_id))
+    )
     return build_swebench_agent_run_config(
         plan,
         source_root=source,
         work_root=tmp_path / "work",
         cache_root=tmp_path / "cache",
         git_executable=Path("/usr/bin/git"),
+        case_process_profiles=profiles,
         fee_stop_amount="80",
         observed_at=NOW,
     )
@@ -93,7 +108,7 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
     plan = _plan()
     config = _config(tmp_path, plan)
     turns = {case.instance_id: _turn(index) for index, case in enumerate(plan.cases)}
-    calls: list[str] = []
+    calls: list[tuple[str, str]] = []
 
     monkeypatch.setattr(execution, "require_harnessix_execution_revision", lambda *_: None)
 
@@ -102,8 +117,17 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
         workspace.mkdir(mode=0o700, parents=True, exist_ok=True)
         return workspace
 
-    async def open_turn(_plan, _config, case, *_args):
-        calls.append(case.instance_id)
+    async def open_turn(
+        _plan,
+        _config,
+        case,
+        _case_root,
+        _workspace,
+        process_profile,
+        _api_key,
+        _cancel,
+    ):
+        calls.append((case.instance_id, process_profile.image))
         index = plan.cases.index(case)
         return UUID(int=500 + index), turns[case.instance_id]
 
@@ -138,4 +162,8 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
     assert first["reserved_cost_amount"] == second["reserved_cost_amount"] == "3.147456"
     assert len(predictions) == 25 and all(item.model_patch == "" for item in predictions)
     assert suite.status == "completed"
-    assert calls == [case.instance_id for case in plan.cases] * 2
+    expected_routes = [
+        (case.instance_id, config.process_profile_for(case.instance_id).image)
+        for case in plan.cases
+    ]
+    assert calls == expected_routes * 2

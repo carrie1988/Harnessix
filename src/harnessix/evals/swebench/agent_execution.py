@@ -22,7 +22,7 @@ from harnessix.agent.models import (
     TurnStatus,
 )
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
+from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL, workspace_patch_descriptor
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.evals.swebench.contracts import (
     SweBenchPreRegistrationPlan,
@@ -38,15 +38,24 @@ from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelProvider
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.observability import NoOpObservability, Observability
-from harnessix.product_config.action_contracts import build_product_action_config
+from harnessix.product_config.action_contracts import (
+    ProductProcessProfile,
+    build_product_action_config,
+)
 from harnessix.product_config.action_runtime import open_default_product_action_runtime
 from harnessix.product_config.agent_context import build_product_agent_context
 from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
+from harnessix.product_config.process_action import (
+    decode_run_profile,
+    process_profile_descriptor,
+)
+from harnessix.product_config.process_profile import process_tool_name
 from harnessix.product_config.workspace_patch_review import decode_workspace_patch_input
 from harnessix.tools.runtime import CodingToolRuntime
+from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 
 _AUTOMATED_APPROVAL_ACTOR = "harnessix-swebench-runner"
-_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v2"
+_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v3"
 
 
 class _NoSecrets:
@@ -65,9 +74,12 @@ def build_swebench_agent_prompt(case: SweBenchPublicCase) -> str:
         "the named symbols and files; use focused grep/read calls rather than broad exploration. "
         "After at most four source-inspection calls, either submit the best justified "
         "patch or stop with a precise blocker. For existing files use exact edit operations with "
-        "unique old_text/new_text anchors; never replace an entire file with an excerpt. Review "
-        "the final git status and diff. Do not ask questions or use network access, hidden tests, "
-        "reference patches, hints, or evaluator artifacts.\n\n"
+        "unique old_text/new_text anchors; never replace an entire file with an excerpt. After "
+        "patching, select focused relative pytest targets that exist in the public repository and "
+        "run the public-tests profile. If a test fails, diagnose the failure, repair the patch, "
+        "and rerun the public-tests profile; the latest patched state must be retested before "
+        "finishing. Review the final git status and diff. Do not ask questions or use network "
+        "access, hidden tests, reference patches, hints, or evaluator artifacts.\n\n"
         f"Instance: {case.instance_id}\n"
         f"Repository: {case.repo}\n"
         f"Base commit: {case.base_commit}\n\n"
@@ -111,24 +123,51 @@ def _approval_call(turn: Turn, approval: TrustedActionApprovalRequestContent) ->
 
 
 def _approval_decision(
-    turn: Turn, approval: TrustedActionApprovalRequestContent
+    turn: Turn,
+    approval: TrustedActionApprovalRequestContent,
+    process_profile: ProductProcessProfile,
 ) -> ApprovalDecision:
-    """只批准隔离 Workspace 内由正式合同解析成功的 Patch。"""
+    """只批准正式 Patch 或当前 Case 唯一公开测试 Profile。"""
 
     call = _approval_call(turn, approval)
-    approved = call.tool == WORKSPACE_PATCH_TOOL and approval.presentation == "patch_batch"
+    patch_descriptor = workspace_patch_descriptor()
+    approved = (
+        call.tool == patch_descriptor.name
+        and call.tool_version == patch_descriptor.version
+        and call.effect_class == patch_descriptor.effect_class
+        and call.requires_approval
+        and approval.presentation == "patch_batch"
+    )
     if approved:
         try:
             decode_workspace_patch_input(call.arguments)
         except KernelError:
             approved = False
+    descriptor = process_profile_descriptor(process_profile)
+    if (
+        call.tool == descriptor.name
+        and call.tool_version == descriptor.version
+        and call.effect_class == descriptor.effect_class
+        and call.requires_approval
+        and approval.presentation == "process"
+    ):
+        try:
+            decode_run_profile(
+                process_profile.profile_id,
+                process_profile.selector_policy,
+                call.arguments,
+            )
+        except ValueError:
+            approved = False
+        else:
+            approved = True
     return ApprovalDecision(
         outcome=ApprovalOutcome.APPROVED if approved else ApprovalOutcome.REJECTED,
         actor=_AUTOMATED_APPROVAL_ACTOR,
         reason=(
-            "SWE-bench隔离Workspace内的受控Patch"
+            "SWE-bench隔离Workspace内的受控Patch或公开测试Profile"
             if approved
-            else "SWE-bench只批准正式Workspace Patch"
+            else "SWE-bench只批准正式Workspace Patch或当前公开测试Profile"
         ),
     )
 
@@ -148,6 +187,30 @@ def _turn_budget(plan: SweBenchPreRegistrationPlan) -> Budget:
     )
 
 
+def _require_agent_action_gateway(
+    gateway: RouterBackedAgentActionGateway | None,
+    process_profile: ProductProcessProfile,
+) -> RouterBackedAgentActionGateway:
+    """模型调用前确认 Patch 与当前唯一 Profile 均已通过能力探测。"""
+
+    if gateway is None:
+        raise KernelError("swebench_action_unavailable", "SWE-bench Patch或公开测试Profile不可用")
+    definitions = gateway.definitions()
+    patch = workspace_patch_descriptor()
+    profile = process_profile_descriptor(process_profile)
+    patches = tuple(item for item in definitions if item.name == WORKSPACE_PATCH_TOOL)
+    profiles = tuple(item for item in definitions if item.name.startswith("run_profile."))
+    if (
+        len(patches) != 1
+        or patches[0].version != patch.version
+        or len(profiles) != 1
+        or profiles[0].name != process_tool_name(process_profile.profile_id)
+        or profiles[0].version != profile.version
+    ):
+        raise KernelError("swebench_action_unavailable", "SWE-bench Patch或公开测试Profile不可用")
+    return gateway
+
+
 async def _drive_turn(
     runtime: AgentRuntime,
     owner: TaskPackPublicationOwner,
@@ -155,6 +218,7 @@ async def _drive_turn(
     case: SweBenchPublicCase,
     workspace: Path,
     execution_fingerprint: str,
+    process_profile: ProductProcessProfile,
     cancel: CancelToken,
 ) -> tuple[UUID, Turn]:
     history = TaskPackHistoryReadControl.begin(cancel)
@@ -201,7 +265,7 @@ async def _drive_turn(
                     turn.turn_id,
                     approval.approval_id,
                     fingerprint=approval.request_fingerprint,
-                    decision=_approval_decision(turn, approval),
+                    decision=_approval_decision(turn, approval, process_profile),
                 ),
                 cancel,
             )
@@ -231,6 +295,7 @@ async def run_swebench_agent_case(
     git_executable: Path,
     provider_config: OpenAIChatConfig,
     execution_fingerprint: str,
+    process_profile: ProductProcessProfile,
     api_key: str,
     cancel: CancelToken | None = None,
     observability: Observability | None = None,
@@ -260,35 +325,29 @@ async def run_swebench_agent_case(
                         workspace,
                         owner.artifacts,
                         _NoSecrets(),
-                        build_product_action_config(),
+                        build_product_action_config(process_profiles=(process_profile,)),
                         artifact_workspace_scope=tools.workspace_scope,
                         output_redaction=owner.scope,
                         root_owner=owner.root_owner,
                     ) as actions:
-                        if actions.gateway is None or not any(
-                            item.name == WORKSPACE_PATCH_TOOL
-                            for item in actions.gateway.definitions()
-                        ):
-                            raise KernelError(
-                                "swebench_patch_unavailable",
-                                "SWE-bench Workspace Patch能力不可用",
-                            )
+                        gateway = _require_agent_action_gateway(actions.gateway, process_profile)
                         context = build_product_agent_context(
                             tools.workspace_root,
                             max_output_tokens=provider_config.max_output_tokens,
+                            require_pre_edit_profile=False,
                         )
                         async with AgentRuntime(
                             owner.sessions,
                             provider,
                             scoped_tools=tools,
-                            trusted_actions=actions.gateway,
+                            trusted_actions=gateway,
                             artifacts=owner.artifacts,
                             public_output_protection=owner.scope,
                             observability=observability or NoOpObservability(),
                             async_context=context.context,
                             compaction=context.compaction,
                             summary_provider=provider,
-                            model_tool_view=CodingWorkflowToolView(),
+                            model_tool_view=CodingWorkflowToolView(require_pre_edit_profile=False),
                         ) as runtime:
                             return await _drive_turn(
                                 runtime,
@@ -297,5 +356,6 @@ async def run_swebench_agent_case(
                                 case,
                                 workspace,
                                 execution_fingerprint,
+                                process_profile,
                                 token,
                             )
