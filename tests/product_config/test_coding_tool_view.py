@@ -11,6 +11,7 @@ from harnessix.agent.models import (
     Item,
     ItemStatus,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     Turn,
 )
@@ -115,6 +116,29 @@ def _selection_for(
     return CodingWorkflowToolView(require_pre_edit_profile=require_pre_edit_profile).select(
         turn,
         _definitions(second_profile=second_profile),
+    )
+
+
+def _with_rejected_tool(turn: Turn, *, model_step: int = 5) -> Turn:
+    call_id = uuid4()
+    rejection = ToolCallRejectionContent(
+        call_id=call_id,
+        provider_call_id=f"provider-{call_id}",
+        model_step=model_step,
+    )
+    result = ToolResultContent(
+        call_id=call_id,
+        outcome="failed",
+        error=AgentFailure(code="unknown_tool", message="rejected"),
+    )
+    return turn.model_copy(
+        update={
+            "items": (
+                *turn.items,
+                Item(item_id=uuid4(), status=ItemStatus.COMPLETED, content=rejection),
+                Item(item_id=uuid4(), status=ItemStatus.COMPLETED, content=result),
+            )
+        }
     )
 
 
@@ -224,6 +248,21 @@ def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review(
     )
     assert {item.name for item in at_limit.tools} == {_PATCH}
     assert at_limit.choice == "auto" and at_limit.forced_tool is None
+
+    rejected_at_limit = _selection_for(
+        _with_rejected_tool(
+            _turn(
+                ("grep", "succeeded", None),
+                ("read_file", "succeeded", None),
+                ("glob", "succeeded", None),
+                ("read_file", "succeeded", None),
+            )
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in rejected_at_limit.tools} == {_PATCH}
+    assert rejected_at_limit.choice == "required"
+    assert rejected_at_limit.forced_tool == _PATCH
 
     patched = _selection_for(
         _turn((_PATCH, "succeeded", None)),
@@ -362,6 +401,18 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
     assert {item.name for item in bounded.tools} == {_PATCH}
     assert bounded.choice == "auto"
     assert bounded.forced_tool is None
+
+    bounded_turn = _turn(
+        ("grep", "succeeded", None),
+        ("read_file", "succeeded", None),
+        ("glob", "failed", "result_limit"),
+        ("read_file", "succeeded", None),
+        ("grep", "succeeded", None),
+    )
+    rejected_bounded = view.select(_with_rejected_tool(bounded_turn), definitions)
+    assert {item.name for item in rejected_bounded.tools} == {_PATCH}
+    assert rejected_bounded.choice == "required"
+    assert rejected_bounded.forced_tool == _PATCH
 
     patched = view.select(_turn((_PATCH, "succeeded", None)), definitions)
     assert {item.name for item in patched.tools} == {"git_status", "git_diff"}
