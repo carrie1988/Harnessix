@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 1
-code_revision: b43509750c579275a1b8cc808776d010a82ed11b
+code_revision: ff3d25c83f445430ff3c87f258b8cd5122ea7855
 owners:
   - core
 modules:
@@ -45,7 +45,7 @@ supersedes: []
 | Parquet SHA-256 | `030cfd7f2a704c4c0226e7f104c725a3b41230b1d3517f9c915ad7ea5be3fa25` |
 | 官方 SWE-bench | `5.0.2`，Revision `02e7a74ffd0b707aab73d203fe87bdc7c76afc8e` |
 | Task Repo | Revision `3d07b464b7b311a0cbfb5ed5b2d8a3b96f84a33d` |
-| Harnessix Agent执行实现 | Revision `b43509750c579275a1b8cc808776d010a82ed11b` |
+| Harnessix Agent执行实现 | Revision `ff3d25c83f445430ff3c87f258b8cd5122ea7855` |
 | 模型身份 | `harnessix-qwen3.8-max`，`openai_chat`，thinking disabled |
 | 单 Case 预算 | 16 step、50K token、900 秒、每 step 最多 8 次工具调用 |
 | 试验语义 | pass@1、Agent 禁网、无模型自动重试 |
