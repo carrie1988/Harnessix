@@ -135,6 +135,26 @@ def test_django_profile_uses_repository_native_runner_and_workspace_imports(
     assert "PYTHONPATH=/workspace" in profile.arguments
 
 
+def test_sympy_profile_uses_repository_native_runner_and_workspace_imports(
+    tmp_path: Path,
+) -> None:
+    engine = _docker(tmp_path)
+
+    profile = build_swebench_case_process_profile(
+        "sympy__sympy-20801",
+        repo="sympy/sympy",
+        container_engine=engine,
+        image_id="sha256:" + "b" * 64,
+    ).profile
+
+    assert profile.arguments[-3:] == (
+        "/opt/miniconda3/envs/testbed/bin/python",
+        "-B",
+        "bin/test",
+    )
+    assert "PYTHONPATH=/workspace" in profile.arguments
+
+
 def test_discovery_rejects_missing_exact_repository_and_tag(tmp_path: Path) -> None:
     plan = build_test_plan()
     engine = _docker(tmp_path)

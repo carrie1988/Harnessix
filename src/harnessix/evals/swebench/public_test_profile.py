@@ -27,7 +27,7 @@ from harnessix.product_config.action_contracts import (
 ImageListRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[str]]
 
 PUBLIC_TEST_PROFILE_ID = "public-tests"
-_PROFILE_VERSION = "swebench-public-tests-v2"
+_PROFILE_VERSION = "swebench-public-tests-v3"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -64,6 +64,12 @@ _DJANGO_TEST_ARGUMENTS = (
     "/opt/miniconda3/envs/testbed/bin/python",
     "-B",
     "tests/runtests.py",
+)
+_SYMPY_TEST_ARGUMENTS = (
+    *_COMMON_ENVIRONMENT_ARGUMENTS,
+    "/opt/miniconda3/envs/testbed/bin/python",
+    "-B",
+    "bin/test",
 )
 _TIMEOUT_SECONDS = 300
 _MAX_OUTPUT_BYTES = 1024 * 1024
@@ -118,7 +124,11 @@ class SweBenchCaseProcessProfile(ContractModel):
 def _profile_arguments(repo: str) -> tuple[str, ...]:
     """按公开仓库家族选择固定测试入口，不按单个 Case 定制。"""
 
-    return _DJANGO_TEST_ARGUMENTS if repo == "django/django" else _PYTEST_ARGUMENTS
+    native_runners = {
+        "django/django": _DJANGO_TEST_ARGUMENTS,
+        "sympy/sympy": _SYMPY_TEST_ARGUMENTS,
+    }
+    return native_runners.get(repo, _PYTEST_ARGUMENTS)
 
 
 def _run_image_list(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
