@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 1
-code_revision: 76d643a1affe295e76a6824a7e69a15a87435275
+code_revision: b43509750c579275a1b8cc808776d010a82ed11b
 owners:
   - core
 modules:
@@ -16,6 +16,8 @@ related_tests:
   - tests/evals/swebench/test_predictions.py
   - tests/evals/swebench/test_official.py
   - tests/evals/swebench/test_cli.py
+  - tests/evals/swebench/test_execution.py
+  - tests/evals/swebench/test_workspace.py
 supersedes: []
 ---
 
@@ -43,7 +45,7 @@ supersedes: []
 | Parquet SHA-256 | `030cfd7f2a704c4c0226e7f104c725a3b41230b1d3517f9c915ad7ea5be3fa25` |
 | 官方 SWE-bench | `5.0.2`，Revision `02e7a74ffd0b707aab73d203fe87bdc7c76afc8e` |
 | Task Repo | Revision `3d07b464b7b311a0cbfb5ed5b2d8a3b96f84a33d` |
-| Harnessix Adapter | Revision `76d643a1affe295e76a6824a7e69a15a87435275` |
+| Harnessix Agent执行实现 | Revision `b43509750c579275a1b8cc808776d010a82ed11b` |
 | 模型身份 | `harnessix-qwen3.8-max`，`openai_chat`，thinking disabled |
 | 单 Case 预算 | 16 step、50K token、900 秒、每 step 最多 8 次工具调用 |
 | 试验语义 | pass@1、Agent 禁网、无模型自动重试 |
@@ -77,6 +79,8 @@ Agent Workspace，不允许依据评分结果换题或启动第二次模型修�
 | `SweBenchPreRegistrationPlan` | [`contracts.py`](../../src/harnessix/evals/swebench/contracts.py) | 固定总体、版本、模型、预算、25 Case和计划摘要 |
 | `select_swebench_cases` | [`selection.py`](../../src/harnessix/evals/swebench/selection.py) | 仅按公开身份字段分层选样 |
 | `SweBenchPrediction` | [`predictions.py`](../../src/harnessix/evals/swebench/predictions.py) | 官方三字段格式；空补丁仍合法并计入分母 |
+| `run_swebench_agent_suite` | [`execution.py`](../../src/harnessix/evals/swebench/execution.py) | 按预注册顺序恢复同一 pass@1 Turn、冻结 Patch 与 Prediction |
+| `materialize_swebench_workspace` | [`workspace.py`](../../src/harnessix/evals/swebench/workspace.py) | 物化公开仓库精确 base commit，隔离缓存、Agent 工作区与官方 Task Repo |
 | `collect_workspace_patch` | [`predictions.py`](../../src/harnessix/evals/swebench/predictions.py) | 临时 Index 捕获修改、新增、删除和二进制 Diff，不改真实 Index |
 | `build_official_evaluation_command` | [`official.py`](../../src/harnessix/evals/swebench/official.py) | 无 Shell 拼接；核对 Evaluator 与 Task Repo Revision |
 | `import_official_result` | [`official.py`](../../src/harnessix/evals/swebench/official.py) | 核对 25 Case 范围、计数、patch 和原生日志摘要 |
@@ -120,6 +124,7 @@ CLI只输出有界状态、数量和摘要。问题正文、Diff、测试输出�
 ```text
 harnessix coding-eval-swebench preregister ...
 harnessix coding-eval-swebench validate --plan plan.json
+harnessix coding-eval-swebench run-agent --allow-repository-network --allow-provider-network ...
 harnessix coding-eval-swebench export-predictions --plan plan.json --workspaces ...
 harnessix coding-eval-swebench evaluate --allow-network --plan ... --predictions ...
 harnessix coding-eval-swebench verify-results --plan ... --predictions ...
@@ -139,9 +144,9 @@ harnessix coding-eval-swebench verify-results --plan ... --predictions ...
 
 当前未完成：
 
-- 尚未为25个Case执行真实模型 Turn，`predictions.jsonl`尚未生成；
+- 已实现并验证25 Case真实 Agent 执行、恢复、费用边界与Prediction冻结宿主；
+- 尚未完成本计划的25次真实模型 Turn，`predictions.jsonl`尚未生成；
 - 尚未运行官方 Docker 评分，因此当前没有`resolved/25`质量结论；
-- Agent批量执行仍应复用正式 `AgentRuntime`/Provider/审批链，不能在本适配层复制第二套 Agent；
 - 25 Case完成后仍只能发布 Pilot 结果，完整排行榜需要独立的完整数据集评测。
 
 首轮只支持macOS上的计划、导出和CLI合同验证；正式官方评分使用Docker，执行环境必须另行保存环境证据。
