@@ -49,6 +49,13 @@ from tests.agent.test_trusted_action_runtime import action_step, approval
 from tests.deadlines import capture_deadlines
 from tests.trusted_actions.test_agent_gateway import FakeExecutor, build_gateway
 
+TURN_TOKEN_LIMIT = 50_000
+REQUEST_OUTPUT_LIMIT = 1_024
+
+
+def sampled_budget() -> Budget:
+    return Budget(max_tokens=TURN_TOKEN_LIMIT, max_output_chars=REQUEST_OUTPUT_LIMIT)
+
 
 @dataclass
 class ActionHarness:
@@ -103,9 +110,82 @@ def assert_not_dispatched(harness: ActionHarness, turn: Turn) -> None:
     assert_settled(turn)
 
 
+async def test_request_preflight_reserves_estimated_input_and_maximum_output(
+    tmp_path: Path,
+) -> None:
+    provider = ScriptedProvider([answer()])
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    budget = Budget(max_tokens=TURN_TOKEN_LIMIT, max_output_chars=4_096)
+    async with AgentRuntime(store, provider) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id, "offline preflight", request_id="preflight", budget=budget
+        )
+
+    assert turn.status is TurnStatus.COMPLETED
+    request = provider.requests[0]
+    estimated_input = runtime_module._estimated_model_input_tokens(
+        request.history, request.tools, request.instructions
+    )
+    assert request.remaining_tokens == 4_096
+    assert estimated_input + request.remaining_tokens <= TURN_TOKEN_LIMIT
+
+
+async def test_oversized_input_is_rejected_before_provider_entry(tmp_path: Path) -> None:
+    provider = ScriptedProvider([answer()])
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id,
+            "x" * TURN_TOKEN_LIMIT,
+            request_id="oversized-input",
+            budget=sampled_budget(),
+        )
+
+    assert turn.status is TurnStatus.FAILED
+    assert turn.error is not None and turn.error.code == "budget_exceeded"
+    assert turn.usage == Usage()
+    assert provider.requests == [] and provider.closed_streams == 0
+
+
+async def test_missing_usage_reserves_attempt_before_retry(tmp_path: Path) -> None:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    sent: list[int] = []
+    first, second = attempt_start(), attempt_start(index=2)
+
+    class MissingUsageProvider:
+        async def stream(self, request: ModelRequest, cancel: CancelToken):
+            yield first
+            sent.append(1)
+            yield observed(first, completeness="unknown")
+            yield ModelAttemptFinished(
+                attempt_id=first.attempt_id,
+                outcome="failed",
+                error=AgentFailure(code="provider_transport", message="离线失败", retryable=True),
+            )
+            yield second
+            sent.append(2)
+
+    async with AgentRuntime(store, MissingUsageProvider()) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id,
+            "offline missing usage",
+            request_id="missing-usage",
+            budget=Budget(max_tokens=TURN_TOKEN_LIMIT, max_output_chars=30_000),
+        )
+
+    assert sent == [1]
+    assert len(turn.model_attempts) == 1
+    assert turn.model_attempts[0].usage.completeness == "unknown"
+    assert turn.status is TurnStatus.FAILED
+    assert turn.error is not None and turn.error.code == "budget_exceeded"
+
+
 @pytest.mark.parametrize(
     ("input_tokens", "include_rejection"),
-    [(101, False), (100, False), (100, True)],
+    [(TURN_TOKEN_LIMIT + 1, False), (TURN_TOKEN_LIMIT, False), (TURN_TOKEN_LIMIT, True)],
     ids=["over-limit", "at-limit", "mixed-at-limit"],
 )
 async def test_registered_write_proposal_at_token_boundary(
@@ -122,7 +202,7 @@ async def test_registered_write_proposal_at_token_boundary(
             thread.thread_id,
             "offline token boundary",
             request_id="boundary",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
 
     record_property("turn_status", turn.status.value)
@@ -147,7 +227,7 @@ async def test_registered_write_proposal_at_token_boundary(
     )
 
 
-@pytest.mark.parametrize("last_input_tokens", [40, 41], ids=["at-limit", "over-limit"])
+@pytest.mark.parametrize("last_input_tokens", [20_000, 20_001], ids=["at-limit", "over-limit"])
 async def test_cumulative_retry_usage_blocks_registered_write(
     action_harness: ActionHarness, last_input_tokens: int
 ) -> None:
@@ -157,7 +237,7 @@ async def test_cumulative_retry_usage_blocks_registered_write(
     step[0] = ResponseStarted(response_id="response-2")
     events = [
         first,
-        observed(first, completeness="complete", input_tokens=60, output_tokens=0),
+        observed(first, completeness="complete", input_tokens=30_000, output_tokens=0),
         ModelAttemptFinished(
             attempt_id=first.attempt_id,
             outcome="failed",
@@ -176,10 +256,10 @@ async def test_cumulative_retry_usage_blocks_registered_write(
             thread.thread_id,
             "offline retry accounting",
             request_id="attempts",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
 
-    assert turn.usage == Usage(input_tokens=60 + last_input_tokens)
+    assert turn.usage == Usage(input_tokens=30_000 + last_input_tokens)
     assert turn.usage_is_complete and turn.usage_step == 1
     assert [attempt.status for attempt in turn.model_attempts] == ["failed", "completed"]
     assert turn.model_attempts[-1].usage.input_tokens == last_input_tokens
@@ -203,7 +283,7 @@ async def test_below_boundary_keeps_original_action_approval(
             thread.thread_id,
             "offline approval",
             request_id="below-boundary",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
         request = approval(waiting)
         assert waiting.status is TurnStatus.WAITING_APPROVAL
@@ -231,7 +311,7 @@ async def test_exact_budget_text_only_response_still_completes(
 ) -> None:
     harness = action_harness
     events = answer()
-    events[-1] = ResponseCompleted(usage=Usage(input_tokens=100))
+    events[-1] = ResponseCompleted(usage=Usage(input_tokens=TURN_TOKEN_LIMIT))
     provider = ScriptedProvider([events])
     async with AgentRuntime(harness.store, provider, trusted_actions=harness.gateway) as runtime:
         thread = await runtime.create_thread(str(harness.root))
@@ -239,11 +319,11 @@ async def test_exact_budget_text_only_response_still_completes(
             thread.thread_id,
             "offline final text",
             request_id="text-only",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
 
     assert turn.status is TurnStatus.COMPLETED and turn.error is None
-    assert turn.usage == Usage(input_tokens=100)
+    assert turn.usage == Usage(input_tokens=TURN_TOKEN_LIMIT)
     assert_not_dispatched(harness, turn)
     assert provider.closed_streams == len(provider.requests) == 1
 
@@ -263,7 +343,9 @@ async def test_rejection_only_exact_budget_preserves_audit(
             [
                 ResponseStarted(response_id="rejection-response"),
                 proposal,
-                ResponseCompleted(finish_reason="tool_calls", usage=Usage(input_tokens=100)),
+                ResponseCompleted(
+                    finish_reason="tool_calls", usage=Usage(input_tokens=TURN_TOKEN_LIMIT)
+                ),
             ]
         ]
     )
@@ -273,7 +355,7 @@ async def test_rejection_only_exact_budget_preserves_audit(
             thread.thread_id,
             "offline rejection audit",
             request_id="rejection-only",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
 
     rejections = [
@@ -287,7 +369,7 @@ async def test_rejection_only_exact_budget_preserves_audit(
     assert results[0].error is not None and results[0].error.code == "unknown_tool"
     assert turn.status is TurnStatus.FAILED
     assert turn.error is not None and turn.error.code == "budget_exceeded"
-    assert turn.usage == Usage(input_tokens=100)
+    assert turn.usage == Usage(input_tokens=TURN_TOKEN_LIMIT)
     assert_not_dispatched(harness, turn)
     snapshot = await harness.store.get_thread(thread.thread_id)
     require_closed_rejections(snapshot)
@@ -306,7 +388,7 @@ async def test_actually_dispatched_unknown_remains_conservative(
             thread.thread_id,
             "offline actual unknown",
             request_id="executed-unknown",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
         request = approval(waiting)
         await runtime.reply_approval(
@@ -351,7 +433,7 @@ async def test_prepare_crash_before_session_approval_keeps_uncertain_write(
             thread.thread_id,
             "offline prepare crash",
             request_id="prepare-crash",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
 
     assert harness.prepare.await_count == 1
@@ -377,12 +459,17 @@ async def test_prepare_crash_before_session_approval_keeps_uncertain_write(
 
 def unfinished_attempt_write() -> list[ProviderEvent]:
     start = attempt_start()
-    step = write_step(Usage(input_tokens=101))
+    step = write_step(Usage(input_tokens=TURN_TOKEN_LIMIT + 1))
     step[0] = ResponseStarted(response_id="response-1")
     return [
         start,
         *step[:-1],
-        observed(start, completeness="complete", input_tokens=101, output_tokens=0),
+        observed(
+            start,
+            completeness="complete",
+            input_tokens=TURN_TOKEN_LIMIT + 1,
+            output_tokens=0,
+        ),
     ]
 
 
@@ -397,12 +484,12 @@ async def test_incomplete_stream_keeps_provider_failure_and_known_usage(
             thread.thread_id,
             "offline incomplete stream",
             request_id="incomplete",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
 
     assert turn.status is TurnStatus.FAILED
     assert turn.error is not None and turn.error.code == "provider_stream_incomplete"
-    assert turn.usage == Usage(input_tokens=101)
+    assert turn.usage == Usage(input_tokens=TURN_TOKEN_LIMIT + 1)
     assert turn.model_attempts[0].status == "failed"
     assert_not_dispatched(harness, turn)
     assert len(provider.requests) == provider.closed_streams == 1
@@ -412,7 +499,7 @@ async def test_malformed_tail_takes_priority_over_sampled_token_budget(
     action_harness: ActionHarness,
 ) -> None:
     harness = action_harness
-    events = write_step(Usage(input_tokens=101))
+    events = write_step(Usage(input_tokens=TURN_TOKEN_LIMIT + 1))
     events.append(ResponseStarted(response_id="invalid-after-terminal"))
     provider = ScriptedProvider([events])
     async with AgentRuntime(harness.store, provider, trusted_actions=harness.gateway) as runtime:
@@ -421,12 +508,12 @@ async def test_malformed_tail_takes_priority_over_sampled_token_budget(
             thread.thread_id,
             "offline malformed tail",
             request_id="malformed-tail",
-            budget=Budget(max_tokens=100),
+            budget=sampled_budget(),
         )
 
     assert turn.status is TurnStatus.FAILED
     assert turn.error is not None and turn.error.code == "invalid_provider_output"
-    assert turn.usage == Usage(input_tokens=101)
+    assert turn.usage == Usage(input_tokens=TURN_TOKEN_LIMIT + 1)
     assert_not_dispatched(harness, turn)
     assert len(provider.requests) == provider.closed_streams == 1
 
@@ -462,7 +549,7 @@ async def test_stop_before_stream_close_preserves_known_usage_and_no_dispatch(
                 thread.thread_id,
                 "offline stop conservation",
                 request_id="stopped-stream",
-                budget=Budget(max_tokens=100),
+                budget=sampled_budget(),
             )
         )
         await asyncio.wait_for(provider.waiting.wait(), 5)
@@ -477,7 +564,7 @@ async def test_stop_before_stream_close_preserves_known_usage_and_no_dispatch(
     assert turn.status is (TurnStatus.CANCELLED if stop == "cancel" else TurnStatus.FAILED)
     assert turn.error is not None
     assert turn.error.code == ("cancelled" if stop == "cancel" else "time_budget_exceeded")
-    assert turn.usage == Usage(input_tokens=101)
+    assert turn.usage == Usage(input_tokens=TURN_TOKEN_LIMIT + 1)
     assert all(attempt.status != "running" for attempt in turn.model_attempts)
     assert_not_dispatched(harness, turn)
     assert len(provider.requests) == provider.closed_streams == 1

@@ -230,24 +230,27 @@ async def test_step_budget(tmp_path: Path, max_steps: int) -> None:
 
 async def test_token_budget_prevents_tool_dispatch(tmp_path: Path) -> None:
     steps = tool_step("test.read")
-    steps[-1] = ResponseCompleted(finish_reason="tool_calls", usage=Usage(input_tokens=100))
+    steps[-1] = ResponseCompleted(finish_reason="tool_calls", usage=Usage(input_tokens=50_000))
     provider = ScriptedProvider([steps])
     tools = RecordingTools()
     store = SQLiteSessionStore(tmp_path / "session.db")
     async with AgentRuntime(store, provider, tools) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         turn = await runtime.run_turn(
-            thread.thread_id, "任务", request_id="r", budget=Budget(max_tokens=100)
+            thread.thread_id,
+            "任务",
+            request_id="r",
+            budget=Budget(max_tokens=50_000, max_output_chars=1_024),
         )
     assert tools.calls == []
-    assert turn.usage.input_tokens == 100
+    assert turn.usage.input_tokens == 50_000
     assert turn.error is not None and turn.error.code == "budget_exceeded"
     assert_settled(turn)
 
 
 @pytest.mark.parametrize(
     ("reported_tokens", "expected_status"),
-    [(100, TurnStatus.COMPLETED), (101, TurnStatus.FAILED)],
+    [(50_000, TurnStatus.COMPLETED), (50_001, TurnStatus.FAILED)],
 )
 async def test_final_response_token_budget_boundary_keeps_reported_usage(
     tmp_path: Path,
@@ -261,7 +264,10 @@ async def test_final_response_token_budget_boundary_keeps_reported_usage(
     async with AgentRuntime(store, provider) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         turn = await runtime.run_turn(
-            thread.thread_id, "任务", request_id="r", budget=Budget(max_tokens=100)
+            thread.thread_id,
+            "任务",
+            request_id="r",
+            budget=Budget(max_tokens=50_000, max_output_chars=1_024),
         )
     assert turn.status == expected_status
     assert turn.usage.total_tokens == reported_tokens

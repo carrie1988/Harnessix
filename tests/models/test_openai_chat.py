@@ -300,9 +300,7 @@ async def test_model_availability_probe_is_read_only_and_exact(available: bool) 
             },
         )
 
-    async with OpenAIChatProvider(
-        config(), transport=httpx.MockTransport(handle)
-    ) as provider:
+    async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
         result = await provider.probe_model_availability(CancelToken())
 
     assert result is available
@@ -320,9 +318,7 @@ async def test_model_availability_probe_honors_pre_cancel() -> None:
         requests += 1
         pytest.fail("取消后的目录预检不应发网")
 
-    async with OpenAIChatProvider(
-        config(), transport=httpx.MockTransport(handle)
-    ) as provider:
+    async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
         cancel = CancelToken()
         cancel.cancel()
         with pytest.raises(TurnCancelled):
@@ -433,7 +429,10 @@ async def test_kernel_tool_loop_pairing_usage_and_replay(tmp_path: Path) -> None
         async with AgentRuntime(store, provider, tools) as runtime:
             thread = await runtime.create_thread(str(tmp_path))
             turn = await runtime.run_turn(
-                thread.thread_id, "读取测试值", request_id="r", budget=Budget(max_tokens=100)
+                thread.thread_id,
+                "读取测试值",
+                request_id="r",
+                budget=Budget(max_tokens=50_000, max_output_chars=1_024),
             )
     assert turn.status == TurnStatus.COMPLETED
     assert turn.usage == Usage(input_tokens=30, output_tokens=6)
@@ -449,7 +448,7 @@ async def test_kernel_tool_loop_pairing_usage_and_replay(tmp_path: Path) -> None
     calls = [m["tool_calls"][0]["id"] for m in messages if "tool_calls" in m]
     results = [m["tool_call_id"] for m in messages if m["role"] == "tool"]
     assert len(set(calls)) == 2 and calls == results
-    assert [r["max_completion_tokens"] for r in requests] == [100, 88, 76]
+    assert [r["max_completion_tokens"] for r in requests] == [1_024, 1_024, 1_024]
     assert all(w.closed for w in wires)
     events = await store.events(thread.thread_id)
     assert replay(events) == await store.get_thread(thread.thread_id)

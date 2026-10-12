@@ -71,15 +71,15 @@ async def test_retry_keeps_every_attempt_and_known_usage(tmp_path: Path, complet
         *accounted_answer(start=second),
     ]
     turn, _ = await execute(tmp_path, events)
-    assert turn.status == "completed"
-    assert [a.status for a in turn.model_attempts] == ["failed", "completed"]
-    assert turn.usage == Usage(
-        input_tokens=10 + counts.get("input_tokens", 0),
-        output_tokens=3 + counts.get("output_tokens", 0),
-    )
-    assert turn.usage_is_complete == (completeness == "complete")
-    if completeness == "unknown":
-        assert turn.model_attempts[0].usage.input_tokens is None
+    if completeness == "complete":
+        assert turn.status == "completed"
+        assert [a.status for a in turn.model_attempts] == ["failed", "completed"]
+        assert turn.usage == Usage(input_tokens=17, output_tokens=5)
+        assert turn.usage_is_complete
+    else:
+        assert turn.status == "failed" and turn.error.code == "budget_exceeded"
+        assert len(turn.model_attempts) == 1
+        assert not turn.usage_is_complete
 
 
 async def test_known_retry_budget_is_checked_before_resuming_provider(tmp_path: Path) -> None:
@@ -94,7 +94,7 @@ async def test_known_retry_budget_is_checked_before_resuming_provider(tmp_path: 
                 0
             ].attempt_id == first.attempt_id
             sent.append(1)
-            yield observed(first, completeness="partial", input_tokens=8, output_tokens=2)
+            yield observed(first, completeness="complete", input_tokens=49_000, output_tokens=0)
             yield failed(first)
             yield second
             sent.append(2)
@@ -103,7 +103,10 @@ async def test_known_retry_budget_is_checked_before_resuming_provider(tmp_path: 
     async with AgentRuntime(store, Provider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         turn = await runtime.run_turn(
-            thread.thread_id, "预算", request_id="r", budget=Budget(max_tokens=10)
+            thread.thread_id,
+            "预算",
+            request_id="r",
+            budget=Budget(max_tokens=50_000, max_output_chars=1_024),
         )
     assert sent == [1]
     assert len(turn.model_attempts) == 1
@@ -254,10 +257,13 @@ async def test_mixed_steps_use_one_budget_without_injecting_receipts_into_histor
     async with AgentRuntime(store, provider, tools) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         turn = await runtime.run_turn(
-            thread.thread_id, "混合 Provider", request_id="r", budget=Budget(max_tokens=100)
+            thread.thread_id,
+            "混合 Provider",
+            request_id="r",
+            budget=Budget(max_tokens=50_000, max_output_chars=1_024),
         )
     assert turn.usage == Usage(input_tokens=15, output_tokens=4)
-    assert provider.requests[1].remaining_tokens == 94
+    assert provider.requests[1].remaining_tokens == 1_024
     assert len(tools.calls) == 1 and turn.usage_step == 2
     assert not turn.usage_is_complete
     assert all(
@@ -336,10 +342,13 @@ async def test_accounted_tool_loop_checks_known_budget_on_next_step(tmp_path: Pa
     async with AgentRuntime(store, provider, tools) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         turn = await runtime.run_turn(
-            thread.thread_id, "工具闭环", request_id="r", budget=Budget(max_tokens=100)
+            thread.thread_id,
+            "工具闭环",
+            request_id="r",
+            budget=Budget(max_tokens=50_000, max_output_chars=1_024),
         )
     assert turn.status == "completed" and turn.usage_is_complete
     assert turn.usage == Usage(input_tokens=20, output_tokens=6)
-    assert provider.requests[1].remaining_tokens == 87
+    assert provider.requests[1].remaining_tokens == 1_024
     assert len(tools.calls) == 1
     assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)

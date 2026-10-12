@@ -484,7 +484,10 @@ async def test_kernel_cross_provider_resume_pairing_and_replay(
         async with AgentRuntime(store, provider, tools) as runtime:
             thread = await runtime.create_thread(str(tmp_path))
             turn = await runtime.run_turn(
-                thread.thread_id, "读取", request_id="r", budget=Budget(max_tokens=100)
+                thread.thread_id,
+                "读取",
+                request_id="r",
+                budget=Budget(max_tokens=50_000, max_output_chars=1_024),
             )
     if approval:
         assert turn.status == TurnStatus.WAITING_APPROVAL and tools.calls == []
@@ -503,7 +506,7 @@ async def test_kernel_cross_provider_resume_pairing_and_replay(
                 turn = await runtime.resume_turn(thread.thread_id, turn.turn_id)
     assert turn.status == TurnStatus.COMPLETED and len(tools.calls) == 1
     assert turn.usage == Usage(input_tokens=20, output_tokens=4)
-    assert [request["max_tokens"] for request in requests] == [100, 88]
+    assert [request["max_tokens"] for request in requests] == [1_024, 1_024]
     history = requests[-1]["messages"]
     assert history[-2]["content"][0]["id"] == history[-1]["content"][0]["tool_use_id"]
     seen_openai: list[dict[str, Any]] = []

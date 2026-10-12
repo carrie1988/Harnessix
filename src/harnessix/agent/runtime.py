@@ -146,7 +146,7 @@ from harnessix.context.compaction_ledger_contracts import (
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.compaction_window import build_compaction_window
 from harnessix.context.contracts import ContextBuildInput, ContextInspectionRecord, ContextPrepared
-from harnessix.context.engine import ContextPreparationError
+from harnessix.context.engine import ContextPreparationError, estimate_tokens
 from harnessix.context.ports import AsyncContextPlanner, ContextPlanner
 from harnessix.context.sources import ContextSourceError
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
@@ -189,6 +189,28 @@ SUMMARY_INSTRUCTIONS = (
 RETRY_INSTRUCTIONS = (
     "继续完成上一轮未完成的请求。不要重复已完成的副作用；先核对当前Workspace与持久效果事实。"
 )
+
+
+def _estimated_model_input_tokens(
+    history: Sequence[Item],
+    tools: Sequence[ToolDescriptor],
+    instructions: str | None,
+) -> int:
+    """复用Context的UTF-8上界，覆盖历史、工具目录和运行指令。"""
+
+    history_tokens = sum(estimate_tokens(history_document(item)) for item in history)
+    tool_tokens = sum(
+        estimate_tokens(
+            json.dumps(
+                definition.model_dump(mode="json"),
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        for definition in tools
+    )
+    return history_tokens + tool_tokens + estimate_tokens(instructions or "")
 
 
 class AgentRuntime:
@@ -1751,6 +1773,18 @@ class AgentRuntime:
                     status=ItemStatus.COMPLETED,
                     content=TextContent(kind="user_message", text=planned.summary_source),
                 )
+                estimated_input_tokens = _estimated_model_input_tokens(
+                    (source_item,), (), SUMMARY_INSTRUCTIONS
+                )
+                allowed_output_tokens = min(
+                    remaining - estimated_input_tokens,
+                    self._compaction.max_summary_output_tokens,
+                )
+                if allowed_output_tokens <= 0:
+                    raise KernelError(
+                        "budget_exceeded",
+                        "摘要请求的保守输入与最小输出超过剩余Token预算",
+                    )
                 request = ModelRequest(
                     thread_id=thread.thread_id,
                     turn_id=turn.turn_id,
@@ -1759,7 +1793,7 @@ class AgentRuntime:
                     tools=(),
                     instructions=SUMMARY_INSTRUCTIONS,
                     budget=current.budget,
-                    remaining_tokens=min(remaining, self._compaction.max_summary_output_tokens),
+                    remaining_tokens=allowed_output_tokens,
                 )
                 summary_text = await self._summary_text(
                     request,
@@ -1961,6 +1995,8 @@ class AgentRuntime:
                 tool_selection = self._select_model_tools(turn, available_tools)
                 tools = tool_selection.tools
                 instructions: str | None = None
+                output_token_limit = turn.budget.max_output_chars
+                context_estimated_input_tokens = 0
                 if self._context is not None or self._async_context is not None:
                     with self._telemetry.operation(
                         "context",
@@ -2007,7 +2043,33 @@ class AgentRuntime:
                         self._telemetry.context(prepared.inspection)
                         operation.finish("ok")
                         instructions = prepared.instructions
+                        context_estimated_input_tokens = prepared.inspection.estimated_input_tokens
+                        output_token_limit = min(
+                            output_token_limit,
+                            prepared.inspection.limits.reserved_output_tokens,
+                        )
                         turn = get_turn(thread, turn_id)
+                if any(
+                    attempt.status != "running" and attempt.usage.completeness != "complete"
+                    for attempt in turn.accounted_attempts
+                ):
+                    raise KernelError(
+                        "budget_exceeded",
+                        "已有模型尝试未完整上报用量，禁止发起下一付费请求",
+                    )
+                estimated_input_tokens = max(
+                    context_estimated_input_tokens,
+                    _estimated_model_input_tokens(history, tools, instructions),
+                )
+                allowed_output_tokens = min(
+                    output_token_limit,
+                    turn.budget.max_tokens - turn.usage.total_tokens - estimated_input_tokens,
+                )
+                if allowed_output_tokens <= 0:
+                    raise KernelError(
+                        "budget_exceeded",
+                        "模型请求的保守输入与最小输出超过剩余Token预算",
+                    )
                 thread = await self._state(thread_id, turn_id, TurnStatus.CALLING_MODEL)
                 turn = get_turn(thread, turn_id)
                 request = ModelRequest(
@@ -2018,12 +2080,12 @@ class AgentRuntime:
                     tools=tools,
                     instructions=instructions,
                     budget=turn.budget,
-                    remaining_tokens=turn.budget.max_tokens - turn.usage.total_tokens,
+                    remaining_tokens=allowed_output_tokens,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
                 )
                 try:
-                    await self._sample(request, token)
+                    await self._sample(request, token, estimated_input_tokens)
                 except KernelError as error:
                     if error.code != "provider_context_overflow" or self._compaction is None:
                         raise
@@ -2510,7 +2572,9 @@ class AgentRuntime:
         self._fault("runtime.after_tool")
         return result
 
-    async def _sample(self, request: ModelRequest, token: CancelToken) -> None:
+    async def _sample(
+        self, request: ModelRequest, token: CancelToken, estimated_input_tokens: int
+    ) -> None:
         with self._telemetry.operation(
             "model",
             thread_id=request.thread_id,
@@ -2521,13 +2585,17 @@ class AgentRuntime:
             protection = await begin_text_step(self._public_output_protection, token)
             failed = True
             try:
-                await self._sample_events(request, token, protection)
+                await self._sample_events(request, token, protection, estimated_input_tokens)
                 failed = False
             finally:
                 close_text_step(protection, failed=failed)
 
     async def _sample_events(
-        self, request: ModelRequest, token: CancelToken, protection: PublicTextStep | None
+        self,
+        request: ModelRequest,
+        token: CancelToken,
+        protection: PublicTextStep | None,
+        estimated_input_tokens: int,
     ) -> None:
         """验证Provider事件顺序和预算并持久投影；开放尝试在异常或取消时保守结算。"""
         started = False
@@ -2541,6 +2609,9 @@ class AgentRuntime:
         attempt_response_id: str | None = None
         response_id: str | None = None
         accounted = get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage
+        unreported_reservations = 0
+        assert request.remaining_tokens is not None
+        request_reservation = estimated_input_tokens + request.remaining_tokens
 
         def record_usage(thread: Thread) -> None:
             nonlocal accounted
@@ -2573,8 +2644,14 @@ class AgentRuntime:
                             raise KernelError(
                                 "invalid_provider_output", "响应开始后不得重试模型请求"
                             )
-                        if accounted.total_tokens >= request.budget.max_tokens:
-                            raise KernelError("budget_exceeded", "模型尝试的已知 Token 预算耗尽")
+                        if (
+                            accounted.total_tokens + unreported_reservations + request_reservation
+                            > request.budget.max_tokens
+                        ):
+                            raise KernelError(
+                                "budget_exceeded",
+                                "下一模型尝试的保守输入与最大输出超过剩余Token预算",
+                            )
                     if isinstance(event, ModelUsageObserved) and (
                         response_id is not None
                         and event.response_id is not None
@@ -2601,6 +2678,16 @@ class AgentRuntime:
                         self._fault("runtime.after_model_usage_observed")
                     else:
                         open_attempt = None
+                        attempt = next(
+                            attempt
+                            for attempt in get_turn(snapshot, request.turn_id).model_attempts
+                            if attempt.attempt_id == event.attempt_id
+                        )
+                        if attempt.usage.completeness != "complete":
+                            known_tokens = (attempt.usage.input_tokens or 0) + (
+                                attempt.usage.output_tokens or 0
+                            )
+                            unreported_reservations += max(0, request_reservation - known_tokens)
                         self._fault("runtime.after_model_attempt_finished")
                     continue
                 if isinstance(event, ResponseFailed):
