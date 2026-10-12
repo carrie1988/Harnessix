@@ -70,7 +70,7 @@
           "type": "string"
         },
         "image": {
-          "pattern": "^[a-z0-9][a-z0-9._/-]{0,255}@sha256:[0-9a-f]{64}$",
+          "pattern": "^(?:sha256:[0-9a-f]{64}|[a-z0-9][a-z0-9._/-]{0,255}@sha256:[0-9a-f]{64})$",
           "title": "Image",
           "type": "string"
         },
