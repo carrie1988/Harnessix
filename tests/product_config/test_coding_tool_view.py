@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import pytest
+
 from harnessix.agent.models import (
     AgentFailure,
     Budget,
@@ -104,10 +106,28 @@ def _turn(*results: _Result) -> Turn:
     )
 
 
-def _names(turn: Turn, *, second_profile: bool = False) -> set[str]:
-    selected = CodingWorkflowToolView().select(
+def _selection_for(
+    turn: Turn,
+    *,
+    require_pre_edit_profile: bool = True,
+    second_profile: bool = False,
+):
+    return CodingWorkflowToolView(require_pre_edit_profile=require_pre_edit_profile).select(
         turn,
         _definitions(second_profile=second_profile),
+    )
+
+
+def _names(
+    turn: Turn,
+    *,
+    require_pre_edit_profile: bool = True,
+    second_profile: bool = False,
+) -> set[str]:
+    selected = _selection_for(
+        turn,
+        require_pre_edit_profile=require_pre_edit_profile,
+        second_profile=second_profile,
     )
     return {item.name for item in selected.tools}
 
@@ -117,6 +137,7 @@ def _definitions_without_profile() -> tuple[ToolDescriptor, ...]:
 
 
 def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
+    assert CodingWorkflowToolView().require_pre_edit_profile is True
     initial = _names(_turn())
     assert _PROFILE in initial and _PATCH not in initial
     assert not {"git_status", "git_diff"} & initial
@@ -172,6 +193,133 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
         ("git_diff", "succeeded", None),
     )
     assert _names(closed) == set()
+
+
+def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review() -> None:
+    initial = _selection_for(_turn(), require_pre_edit_profile=False)
+    assert {item.name for item in initial.tools} == {"read_file", "grep", "glob", _PATCH}
+    assert _PROFILE not in {item.name for item in initial.tools}
+    assert initial.choice == "required" and initial.forced_tool is None
+
+    before_limit = _selection_for(
+        _turn(
+            ("grep", "succeeded", None),
+            ("read_file", "succeeded", None),
+            ("glob", "succeeded", None),
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert _PATCH in {item.name for item in before_limit.tools}
+    assert _PROFILE not in {item.name for item in before_limit.tools}
+    assert before_limit.forced_tool is None
+
+    at_limit = _selection_for(
+        _turn(
+            ("grep", "succeeded", None),
+            ("read_file", "succeeded", None),
+            ("glob", "succeeded", None),
+            ("read_file", "succeeded", None),
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in at_limit.tools} == {_PATCH}
+    assert at_limit.choice == "required" and at_limit.forced_tool == _PATCH
+
+    patched = _selection_for(
+        _turn((_PATCH, "succeeded", None)),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in patched.tools} == {_PROFILE}
+    assert patched.choice == "required" and patched.forced_tool == _PROFILE
+
+    failed_validation = _turn(
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "failed", "process_nonzero_exit"),
+    )
+    diagnosis = _selection_for(failed_validation, require_pre_edit_profile=False)
+    assert {item.name for item in diagnosis.tools} == {"read_file", "read_artifact"}
+    assert _PATCH not in {item.name for item in diagnosis.tools}
+
+    correction = _selection_for(
+        _turn(
+            (_PATCH, "succeeded", None),
+            (_PROFILE, "failed", "process_nonzero_exit"),
+            ("read_file", "succeeded", None),
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in correction.tools} == {"read_file", "read_artifact", _PATCH}
+    assert _PROFILE not in {item.name for item in correction.tools}
+
+    retest = _selection_for(
+        _turn(
+            (_PATCH, "succeeded", None),
+            (_PROFILE, "failed", "process_nonzero_exit"),
+            ("read_file", "succeeded", None),
+            (_PATCH, "succeeded", None),
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in retest.tools} == {_PROFILE}
+    assert retest.choice == "required" and retest.forced_tool == _PROFILE
+
+    validated = _selection_for(
+        _turn(
+            (_PATCH, "succeeded", None),
+            (_PROFILE, "failed", "process_nonzero_exit"),
+            ("read_file", "succeeded", None),
+            (_PATCH, "succeeded", None),
+            (_PROFILE, "succeeded", None),
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in validated.tools} == {"git_status", "git_diff"}
+    assert validated.choice == "required" and validated.forced_tool == "git_status"
+
+    reviewed = _selection_for(
+        _turn(
+            (_PATCH, "succeeded", None),
+            (_PROFILE, "succeeded", None),
+            ("git_status", "succeeded", None),
+            ("git_diff", "succeeded", None),
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert reviewed.tools == ()
+    assert reviewed.choice == "auto" and reviewed.forced_tool is None
+
+
+def test_post_patch_only_failed_patch_never_exposes_profile() -> None:
+    failed = _selection_for(
+        _turn(
+            (
+                _PATCH,
+                "failed",
+                "patch_ambiguous_context",
+                None,
+                {"files": [{"operation": "edit", "path": "src/example.py"}]},
+            )
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in failed.tools} == {"read_file"}
+    assert failed.forced_tool == "read_file"
+
+    reread = _selection_for(
+        _turn(
+            (
+                _PATCH,
+                "failed",
+                "patch_ambiguous_context",
+                None,
+                {"files": [{"operation": "edit", "path": "src/example.py"}]},
+            ),
+            ("read_file", "succeeded", None),
+        ),
+        require_pre_edit_profile=False,
+    )
+    assert {item.name for item in reread.tools} == {_PATCH}
+    assert reread.forced_tool == _PATCH
 
 
 def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> None:
@@ -277,12 +425,68 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
     assert failed_create.choice == "required" and failed_create.forced_tool == _PATCH
 
 
-def test_ambiguous_or_infrastructure_workflow_keeps_full_catalog() -> None:
+def test_ambiguous_workflow_keeps_full_catalog() -> None:
     definitions = _definitions(second_profile=True)
     assert CodingWorkflowToolView().select(_turn(), definitions).tools == definitions
 
-    unavailable = _turn((_PROFILE, "failed", "process_timeout"))
-    assert CodingWorkflowToolView().select(unavailable, _definitions()).tools == _definitions()
+
+def test_infrastructure_failure_closes_ambiguous_catalog() -> None:
+    selected = _selection_for(
+        _turn((_PROFILE, "failed", "process_timeout")),
+        second_profile=True,
+    )
+
+    assert selected.tools == ()
+    assert selected.choice == "auto" and selected.forced_tool is None
+
+
+@pytest.mark.parametrize("require_pre_edit_profile", (True, False))
+@pytest.mark.parametrize(
+    ("outcome", "error_code"),
+    (
+        ("failed", "process_timeout"),
+        ("failed", "process_launch_failed"),
+        ("unknown", "process_state_unknown"),
+        ("failed", "process_output_unavailable"),
+        ("cancelled", None),
+        ("failed", "unexpected_profile_failure"),
+    ),
+)
+def test_profile_infrastructure_failure_closes_catalog(
+    require_pre_edit_profile: bool,
+    outcome: str,
+    error_code: str | None,
+) -> None:
+    results: tuple[_Result, ...]
+    if require_pre_edit_profile:
+        results = ((_PROFILE, outcome, error_code),)
+    else:
+        results = ((_PATCH, "succeeded", None), (_PROFILE, outcome, error_code))
+
+    selected = _selection_for(
+        _turn(*results),
+        require_pre_edit_profile=require_pre_edit_profile,
+    )
+
+    assert selected.tools == ()
+    assert selected.choice == "auto" and selected.forced_tool is None
+
+
+@pytest.mark.parametrize(
+    ("outcome", "error_code"),
+    (("unknown", "process_state_unknown"), ("failed", "process_output_unavailable")),
+)
+def test_post_patch_only_infrastructure_patch_failure_closes_catalog(
+    outcome: str,
+    error_code: str,
+) -> None:
+    selected = _selection_for(
+        _turn((_PATCH, outcome, error_code)),
+        require_pre_edit_profile=False,
+    )
+
+    assert selected.tools == ()
+    assert selected.choice == "auto" and selected.forced_tool is None
 
 
 def test_recognized_workflow_requires_tools_and_forces_post_patch_profile() -> None:

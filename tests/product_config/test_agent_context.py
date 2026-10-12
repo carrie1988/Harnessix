@@ -66,6 +66,22 @@ async def test_shared_context_preserves_trust_sources_budget_and_does_not_captur
         )
 
 
+async def test_post_patch_only_context_matches_forced_validation_workflow(tmp_path: Path) -> None:
+    policy = build_product_agent_context(tmp_path, require_pre_edit_profile=False)
+    prepared = await policy.context.prepare(_request(tmp_path), CancelToken())
+    fragments = json.loads(prepared.instructions or "")["fragments"]
+    runtime = next(item for item in fragments if item["kind"] == "runtime_instruction")
+    instructions = " ".join(runtime["content"].split())
+
+    assert "post-patch-only validation" in instructions
+    assert "run_profile stays hidden before the first patch" in instructions
+    assert "at most four source inspections" in instructions
+    assert "After every successful patch, call the forced run_profile" in instructions
+    assert "Only process_nonzero_exit opens diagnosis and correction" in instructions
+    assert "unknown state, or unavailable output fails closed" in instructions
+    assert "pre-edit baseline" not in instructions
+
+
 async def test_project_instruction_refresh_changes_persistable_fingerprint(tmp_path: Path) -> None:
     path = tmp_path / "AGENTS.md"
     path.write_text("原项目规则", encoding="utf-8")

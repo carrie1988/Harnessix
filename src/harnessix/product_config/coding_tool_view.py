@@ -113,14 +113,100 @@ def _selection(
     )
 
 
+def _is_code_test_failure(result: ToolResultContent) -> bool:
+    return (
+        result.outcome == "failed"
+        and result.error is not None
+        and result.error.code == "process_nonzero_exit"
+    )
+
+
+def _is_infrastructure_failure(result: ToolResultContent) -> bool:
+    return result.outcome in {"cancelled", "unknown"} or (
+        result.error is not None
+        and result.error.code.startswith("process_")
+        and result.error.code != "process_nonzero_exit"
+    )
+
+
+def _failed_patch_selection(
+    definitions: tuple[ToolDescriptor, ...],
+    observations: tuple[_Observation, ...],
+    failed_patch: _Observation,
+) -> ModelToolSelection:
+    if (
+        _is_infrastructure_failure(failed_patch.result)
+        or failed_patch.result.outcome != "failed"
+        or failed_patch.result.error is None
+    ):
+        return ModelToolSelection(())
+    patch = failed_patch.tool
+    patched_paths = _patched_paths_requiring_reread(
+        observations,
+        failed_patch.index,
+        include_created=False,
+    )
+    if (
+        failed_patch.result.error.code == "tool_invalid_arguments"
+        or patched_paths <= _successful_reads_after(observations, failed_patch.index)
+    ):
+        return _selection(definitions, {patch}, forced_tool=patch)
+    return _selection(definitions, {"read_file"}, forced_tool="read_file")
+
+
+def _pre_patch_selection(
+    definitions: tuple[ToolDescriptor, ...],
+    observations: tuple[_Observation, ...],
+    patch: str,
+    patch_results: tuple[_Observation, ...],
+) -> ModelToolSelection:
+    if patch_results:
+        return _failed_patch_selection(definitions, observations, patch_results[-1])
+    inspections = sum(item.tool in _SOURCE_INSPECTION_TOOLS for item in observations)
+    if inspections >= _MAX_NO_PROFILE_INSPECTIONS:
+        return _selection(definitions, {patch}, forced_tool=patch)
+    return _selection(definitions, {*_SOURCE_INSPECTION_TOOLS, patch})
+
+
+def _git_review_selection(
+    definitions: tuple[ToolDescriptor, ...],
+    observations: tuple[_Observation, ...],
+    after_index: int,
+) -> ModelToolSelection:
+    reviewed = {
+        item.tool
+        for item in observations
+        if item.index > after_index
+        and item.tool in _GIT_REVIEW_TOOLS
+        and item.result.outcome == "succeeded"
+    }
+    missing_review = set(_GIT_REVIEW_TOOLS) - reviewed
+    forced_review = None
+    if missing_review:
+        forced_review = "git_status" if "git_status" in missing_review else "git_diff"
+    return _selection(definitions, missing_review, forced_tool=forced_review)
+
+
+@dataclass(frozen=True, slots=True)
 class CodingWorkflowToolView:
     """Expose only the tools valid for the current single-profile coding phase."""
+
+    require_pre_edit_profile: bool = True
 
     def select(
         self,
         turn: Turn,
         definitions: tuple[ToolDescriptor, ...],
     ) -> ModelToolSelection:
+        observations = _observations(turn)
+        if any(_is_infrastructure_failure(item.result) for item in observations) or any(
+            item.tool.startswith("run_profile.")
+            and item.result.outcome != "succeeded"
+            and not _is_code_test_failure(item.result)
+            for item in observations
+        ):
+            return ModelToolSelection(())
+
         by_name = {definition.name: definition for definition in definitions}
         profiles = tuple(name for name in by_name if name.startswith("run_profile."))
         patches = tuple(name for name in by_name if name in _PATCH_TOOLS)
@@ -138,7 +224,6 @@ class CodingWorkflowToolView:
 
         profile = profiles[0] if profiles else None
         patch = patches[0]
-        observations = _observations(turn)
         patch_results = tuple(item for item in observations if item.tool == patch)
         successful_patches = tuple(
             item.index for item in patch_results if item.result.outcome == "succeeded"
@@ -146,37 +231,10 @@ class CodingWorkflowToolView:
         last_patch = successful_patches[-1] if successful_patches else -1
         if profile is None:
             if last_patch < 0:
-                if patch_results:
-                    failed_patch = patch_results[-1]
-                    patched_paths = _patched_paths_requiring_reread(
-                        observations,
-                        failed_patch.index,
-                        include_created=False,
-                    )
-                    if (
-                        failed_patch.result.error is not None
-                        and failed_patch.result.error.code == "tool_invalid_arguments"
-                    ) or patched_paths <= _successful_reads_after(
-                        observations, failed_patch.index
-                    ):
-                        return _selection(definitions, {patch}, forced_tool=patch)
-                    return _selection(definitions, {"read_file"}, forced_tool="read_file")
-                inspections = sum(item.tool in _SOURCE_INSPECTION_TOOLS for item in observations)
-                if inspections >= _MAX_NO_PROFILE_INSPECTIONS:
-                    return _selection(definitions, {patch}, forced_tool=patch)
-                names = {*_SOURCE_INSPECTION_TOOLS, patch}
-                return _selection(definitions, names)
-            reviewed = {
-                item.tool
-                for item in observations
-                if item.index > last_patch
-                and item.tool in _GIT_REVIEW_TOOLS
-                and item.result.outcome == "succeeded"
-            }
-            missing_review = set(_GIT_REVIEW_TOOLS) - reviewed
-            if missing_review:
-                forced_review = "git_status" if "git_status" in missing_review else "git_diff"
-                return _selection(definitions, missing_review, forced_tool=forced_review)
+                return _pre_patch_selection(definitions, observations, patch, patch_results)
+            review = _git_review_selection(definitions, observations, last_patch)
+            if review.tools:
+                return review
             review_index = max(
                 item.index
                 for item in observations
@@ -189,6 +247,20 @@ class CodingWorkflowToolView:
             if patched_paths <= _successful_reads_after(observations, review_index):
                 names.add(patch)
             return ModelToolSelection(tuple(item for item in definitions if item.name in names))
+
+        unsuccessful_patch_results = tuple(
+            item
+            for item in patch_results
+            if item.index > last_patch and item.result.outcome != "succeeded"
+        )
+        if unsuccessful_patch_results:
+            return _failed_patch_selection(
+                definitions,
+                observations,
+                unsuccessful_patch_results[-1],
+            )
+        if not self.require_pre_edit_profile and last_patch < 0:
+            return _pre_patch_selection(definitions, observations, patch, patch_results)
 
         profile_results = tuple(
             item for item in observations if item.tool == profile and item.index > last_patch
@@ -208,22 +280,11 @@ class CodingWorkflowToolView:
 
         validation = profile_results[-1]
         if validation.result.outcome == "succeeded" and last_patch >= 0:
-            reviewed = {
-                item.tool
-                for item in observations
-                if item.index > validation.index
-                and item.tool in _GIT_REVIEW_TOOLS
-                and item.result.outcome == "succeeded"
-            }
-            names = set(_GIT_REVIEW_TOOLS) - reviewed
-            forced_review = "git_status" if "git_status" in names else "git_diff"
-            return _selection(definitions, names, forced_tool=forced_review)
+            return _git_review_selection(definitions, observations, validation.index)
 
-        if (
-            validation.result.outcome == "failed"
-            and validation.result.error is not None
-            and validation.result.error.code == "process_nonzero_exit"
-        ) or (validation.result.outcome == "succeeded" and last_patch < 0):
+        if _is_code_test_failure(validation.result) or (
+            validation.result.outcome == "succeeded" and last_patch < 0
+        ):
             if last_patch >= 0:
                 names = {"read_file"}
                 if not _diagnostic_is_complete(validation.result):
@@ -242,4 +303,4 @@ class CodingWorkflowToolView:
             names.add(patch)
             return _selection(definitions, names)
 
-        return ModelToolSelection(definitions)
+        return ModelToolSelection(())
