@@ -145,8 +145,7 @@ def test_discovery_rejects_duplicate_case_matches(tmp_path: Path) -> None:
     engine = _docker(tmp_path)
     duplicate = plan.cases[0]
     rows = [
-        _row(case.instance_id, f"sha256:{index + 1:064x}")
-        for index, case in enumerate(plan.cases)
+        _row(case.instance_id, f"sha256:{index + 1:064x}") for index, case in enumerate(plan.cases)
     ]
     rows.append(_row(duplicate.instance_id, "sha256:" + "f" * 64, platform="arm64"))
 

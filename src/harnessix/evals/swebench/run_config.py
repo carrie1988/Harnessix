@@ -154,10 +154,9 @@ class SweBenchAgentRunConfig(ContractModel):
             * plan.task_budget.max_tokens
             * max(rate_units(_INPUT_PRICE), rate_units(_OUTPUT_PRICE))
         )
-        unknown = (
-            self.provider_config.max_request_bytes * rate_units(_INPUT_PRICE)
-            + self.provider_config.max_output_tokens * rate_units(_OUTPUT_PRICE)
-        )
+        unknown = self.provider_config.max_request_bytes * rate_units(
+            _INPUT_PRICE
+        ) + self.provider_config.max_output_tokens * rate_units(_OUTPUT_PRICE)
         return format_amount(known + unknown)
 
 

@@ -96,11 +96,9 @@ def _input_rate(config: SweBenchAgentRunConfig) -> int:
 
 
 def _unknown_request_reserve(config: SweBenchAgentRunConfig) -> int:
-    return (
-        config.provider_config.max_request_bytes * _input_rate(config)
-        + config.provider_config.max_output_tokens
-        * rate_units(config.price.output_per_million)
-    )
+    return config.provider_config.max_request_bytes * _input_rate(
+        config
+    ) + config.provider_config.max_output_tokens * rate_units(config.price.output_per_million)
 
 
 def _next_case_reserve(
@@ -315,9 +313,7 @@ async def run_swebench_agent_suite(
             ):
                 raise KernelError("swebench_price_expired", "SWE-bench固定价格快照已过期")
             if state.status != "completed" and (
-                known_cost_units
-                + reserved_cost_units
-                + _next_case_reserve(plan, config)
+                known_cost_units + reserved_cost_units + _next_case_reserve(plan, config)
                 > amount_units(config.fee_stop_amount)
             ):
                 raise KernelError("swebench_fee_limit_reached", "SWE-bench费用达到停止线")
@@ -343,10 +339,7 @@ async def run_swebench_agent_suite(
             if not cost_complete:
                 reserved_cost_units += _unknown_request_reserve(config)
                 unaccounted_cases += 1
-            if (
-                known_cost_units + reserved_cost_units
-                > amount_units(config.fee_stop_amount)
-            ):
+            if known_cost_units + reserved_cost_units > amount_units(config.fee_stop_amount):
                 raise KernelError("swebench_fee_limit_reached", "SWE-bench费用达到停止线")
 
             if state.status == "completed":
