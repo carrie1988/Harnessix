@@ -15,6 +15,7 @@ from harnessix.agent.approvals import trusted_action_invocation_id
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import AgentFailure
 from harnessix.agent.models import (
+    ApprovalRequestContent,
     Budget,
     ToolCallContent,
     ToolCallRejectionContent,
@@ -42,8 +43,8 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome
 from harnessix.trusted_actions.router import TrustedActionRouter
-from tests.agent.attempt_helpers import attempt_start, observed
-from tests.agent.helpers import answer
+from tests.agent.attempt_helpers import accounted_answer, attempt_start, observed
+from tests.agent.helpers import RecordingTools, answer
 from tests.agent.test_runtime import assert_settled
 from tests.agent.test_trusted_action_runtime import action_step, approval
 from tests.deadlines import capture_deadlines
@@ -100,6 +101,26 @@ def write_step(usage: Usage) -> list[ProviderEvent]:
     return events
 
 
+def accounted_read_step(*, input_tokens: int, output_tokens: int = 50) -> list[ProviderEvent]:
+    start = attempt_start(step=1)
+    return [
+        start,
+        ResponseStarted(response_id="response-1"),
+        ToolCallCompleted(call_id="read", tool="test.read", arguments={}),
+        observed(
+            start,
+            completeness="complete",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        ),
+        ModelAttemptFinished(attempt_id=start.attempt_id, outcome="completed"),
+        ResponseCompleted(
+            finish_reason="tool_calls",
+            usage=Usage(input_tokens=input_tokens, output_tokens=output_tokens),
+        ),
+    ]
+
+
 def assert_not_dispatched(harness: ActionHarness, turn: Turn) -> None:
     assert harness.prepare.await_count == harness.execute.await_count == 0
     assert harness.executor.calls == 0
@@ -147,6 +168,87 @@ async def test_oversized_input_is_rejected_before_provider_entry(tmp_path: Path)
     assert turn.error is not None and turn.error.code == "budget_exceeded"
     assert turn.usage == Usage()
     assert provider.requests == [] and provider.closed_streams == 0
+
+
+async def test_incremental_preflight_uses_persisted_usage_after_restart(tmp_path: Path) -> None:
+    database = tmp_path / "session.db"
+    first_provider = ScriptedProvider([accounted_read_step(input_tokens=22_000)])
+    first_store = SQLiteSessionStore(database)
+    async with AgentRuntime(
+        first_store,
+        first_provider,
+        RecordingTools(approval=True),
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        waiting = await runtime.run_turn(
+            thread.thread_id,
+            "x" * 28_000,
+            request_id="incremental-restart",
+            budget=sampled_budget(),
+        )
+        approval = next(
+            item.content
+            for item in waiting.items
+            if isinstance(item.content, ApprovalRequestContent)
+        )
+        await runtime.reply_approval(
+            thread.thread_id,
+            waiting.turn_id,
+            approval.approval_id,
+            fingerprint=approval.request_fingerprint,
+            decision=ApprovalDecision(
+                outcome=ApprovalOutcome.APPROVED,
+                actor="offline-reviewer",
+            ),
+        )
+
+    second_start = attempt_start(step=2)
+    second_provider = ScriptedProvider([(), accounted_answer(start=second_start)])
+    second_store = SQLiteSessionStore(database)
+    async with AgentRuntime(
+        second_store,
+        second_provider,
+        RecordingTools(approval=True),
+    ) as runtime:
+        completed = await runtime.resume_turn(thread.thread_id, waiting.turn_id)
+
+    assert completed.status is TurnStatus.COMPLETED
+    assert completed.error is None
+    assert completed.usage.input_tokens == 22_010
+    assert len(second_provider.requests) == 1
+    request = second_provider.requests[0]
+    full_estimate = runtime_module._estimated_model_input_tokens(
+        request.history,
+        request.tools,
+        request.instructions,
+    )
+    assert 22_050 + full_estimate > TURN_TOKEN_LIMIT
+    assert request.remaining_tokens is not None and request.remaining_tokens > 0
+
+
+async def test_incremental_preflight_rejects_large_new_tool_result(tmp_path: Path) -> None:
+    class LargeResultTools(RecordingTools):
+        async def execute(self, call, cancel):
+            result = await super().execute(call, cancel)
+            return result.model_copy(update={"output": {"value": "x" * 28_000}})
+
+    provider = ScriptedProvider(
+        [accounted_read_step(input_tokens=12_000, output_tokens=10), answer()]
+    )
+    store = SQLiteSessionStore(tmp_path / "large-result.db")
+    async with AgentRuntime(store, provider, LargeResultTools()) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id,
+            "inspect",
+            request_id="large-increment",
+            budget=Budget(max_tokens=TURN_TOKEN_LIMIT, max_output_chars=30_000),
+        )
+
+    assert turn.status is TurnStatus.FAILED
+    assert turn.error is not None and turn.error.code == "budget_exceeded"
+    assert turn.usage == Usage(input_tokens=12_000, output_tokens=10)
+    assert len(provider.requests) == provider.closed_streams == 1
 
 
 async def test_missing_usage_reserves_attempt_before_retry(tmp_path: Path) -> None:

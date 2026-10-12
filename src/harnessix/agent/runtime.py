@@ -32,6 +32,7 @@ from harnessix.agent.ids import new_id
 from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
 from harnessix.agent.model_history_runtime import prepare_and_commit_model_history
+from harnessix.agent.model_input_budget import estimate_model_input_tokens
 from harnessix.agent.model_text import ModelTextPublication, protect_request
 from harnessix.agent.models import (
     TERMINAL_TURNS,
@@ -146,7 +147,7 @@ from harnessix.context.compaction_ledger_contracts import (
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.compaction_window import build_compaction_window
 from harnessix.context.contracts import ContextBuildInput, ContextInspectionRecord, ContextPrepared
-from harnessix.context.engine import ContextPreparationError, estimate_tokens
+from harnessix.context.engine import ContextPreparationError
 from harnessix.context.ports import AsyncContextPlanner, ContextPlanner
 from harnessix.context.sources import ContextSourceError
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
@@ -195,22 +196,19 @@ def _estimated_model_input_tokens(
     history: Sequence[Item],
     tools: Sequence[ToolDescriptor],
     instructions: str | None,
+    *,
+    turn: Turn | None = None,
+    model_step: int | None = None,
 ) -> int:
-    """复用Context的UTF-8上界，覆盖历史、工具目录和运行指令。"""
+    """兼容旧调用点，并把持久 Turn 事实交给增量估算器。"""
 
-    history_tokens = sum(estimate_tokens(history_document(item)) for item in history)
-    tool_tokens = sum(
-        estimate_tokens(
-            json.dumps(
-                definition.model_dump(mode="json"),
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-        )
-        for definition in tools
+    return estimate_model_input_tokens(
+        history,
+        tools,
+        instructions,
+        turn=turn,
+        model_step=model_step,
     )
-    return history_tokens + tool_tokens + estimate_tokens(instructions or "")
 
 
 class AgentRuntime:
@@ -1996,7 +1994,6 @@ class AgentRuntime:
                 tools = tool_selection.tools
                 instructions: str | None = None
                 output_token_limit = turn.budget.max_output_chars
-                context_estimated_input_tokens = 0
                 if self._context is not None or self._async_context is not None:
                     with self._telemetry.operation(
                         "context",
@@ -2043,7 +2040,6 @@ class AgentRuntime:
                         self._telemetry.context(prepared.inspection)
                         operation.finish("ok")
                         instructions = prepared.instructions
-                        context_estimated_input_tokens = prepared.inspection.estimated_input_tokens
                         output_token_limit = min(
                             output_token_limit,
                             prepared.inspection.limits.reserved_output_tokens,
@@ -2057,9 +2053,12 @@ class AgentRuntime:
                         "budget_exceeded",
                         "已有模型尝试未完整上报用量，禁止发起下一付费请求",
                     )
-                estimated_input_tokens = max(
-                    context_estimated_input_tokens,
-                    _estimated_model_input_tokens(history, tools, instructions),
+                estimated_input_tokens = _estimated_model_input_tokens(
+                    history,
+                    tools,
+                    instructions,
+                    turn=turn,
+                    model_step=model_step,
                 )
                 allowed_output_tokens = min(
                     output_token_limit,
