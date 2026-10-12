@@ -162,10 +162,18 @@ def _pre_patch_selection(
 ) -> ModelToolSelection:
     if patch_results:
         return _failed_patch_selection(definitions, observations, patch_results[-1])
-    inspections = sum(item.tool in _SOURCE_INSPECTION_TOOLS for item in observations)
-    if inspections >= _MAX_NO_PROFILE_INSPECTIONS:
-        return _selection(definitions, {patch}, forced_tool=patch)
-    return _selection(definitions, {*_SOURCE_INSPECTION_TOOLS, patch})
+    source_inspections = tuple(
+        item for item in observations if item.tool in _SOURCE_INSPECTION_TOOLS
+    )
+    successful_inspections = sum(item.result.outcome == "succeeded" for item in source_inspections)
+    if successful_inspections >= _MAX_NO_PROFILE_INSPECTIONS:
+        return ModelToolSelection(
+            tuple(item for item in definitions if item.name == patch),
+        )
+    tools = tuple(item for item in definitions if item.name in {*_SOURCE_INSPECTION_TOOLS, patch})
+    if any(item.result.outcome != "succeeded" for item in source_inspections):
+        return ModelToolSelection(tools)
+    return ModelToolSelection(tools, "required")
 
 
 def _git_review_selection(

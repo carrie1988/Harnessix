@@ -223,7 +223,7 @@ def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review(
         require_pre_edit_profile=False,
     )
     assert {item.name for item in at_limit.tools} == {_PATCH}
-    assert at_limit.choice == "required" and at_limit.forced_tool == _PATCH
+    assert at_limit.choice == "auto" and at_limit.forced_tool is None
 
     patched = _selection_for(
         _turn((_PATCH, "succeeded", None)),
@@ -331,7 +331,7 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
     assert not {"git_status", "git_diff"} & {item.name for item in initial.tools}
     assert initial.choice == "required"
 
-    bounded = view.select(
+    failed_inspection = view.select(
         _turn(
             ("grep", "succeeded", None),
             ("read_file", "succeeded", None),
@@ -340,9 +340,28 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
         ),
         definitions,
     )
+    assert {item.name for item in failed_inspection.tools} == {
+        "read_file",
+        "grep",
+        "glob",
+        _PATCH,
+    }
+    assert failed_inspection.choice == "auto"
+    assert failed_inspection.forced_tool is None
+
+    bounded = view.select(
+        _turn(
+            ("grep", "succeeded", None),
+            ("read_file", "succeeded", None),
+            ("glob", "failed", "result_limit"),
+            ("read_file", "succeeded", None),
+            ("grep", "succeeded", None),
+        ),
+        definitions,
+    )
     assert {item.name for item in bounded.tools} == {_PATCH}
-    assert bounded.choice == "required"
-    assert bounded.forced_tool == _PATCH
+    assert bounded.choice == "auto"
+    assert bounded.forced_tool is None
 
     patched = view.select(_turn((_PATCH, "succeeded", None)), definitions)
     assert {item.name for item in patched.tools} == {"git_status", "git_diff"}
@@ -446,6 +465,7 @@ def test_infrastructure_failure_closes_ambiguous_catalog() -> None:
     (
         ("failed", "process_timeout"),
         ("failed", "process_launch_failed"),
+        ("failed", "tool_invalid_arguments"),
         ("unknown", "process_state_unknown"),
         ("failed", "process_output_unavailable"),
         ("cancelled", None),

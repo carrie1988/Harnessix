@@ -136,6 +136,7 @@ def test_case_state_binds_plan_runtime_result_and_digest() -> None:
         {"workspace_head": "f" * 40},
         {"turn_id": UUID(int=999), "thread_id": None},
         {"turn_status": None},
+        {"patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
     ],
 )
 def test_case_state_rejects_invalid_lifecycle_even_with_recomputed_digest(
@@ -196,27 +197,43 @@ def test_suite_completed_state_requires_the_entire_registered_prefix() -> None:
     assert suite.input_tokens == sum(range(1, len(plan.cases) + 1))
 
 
-def test_failed_agent_turn_can_freeze_an_empty_prediction_and_continue() -> None:
+def test_failed_agent_turn_cannot_be_recorded_as_completed_case() -> None:
     plan = _plan()
-    state = build_swebench_case_execution_state(
+    with pytest.raises(ValidationError, match="成功 Turn"):
+        build_swebench_case_execution_state(
+            plan,
+            plan.cases[0].instance_id,
+            _run_id(0),
+            status="completed",
+            thread_id=UUID(int=100),
+            turn_id=UUID(int=200),
+            turn_status=TurnStatusV18.FAILED,
+            error_code="provider_failed",
+            started_at=NOW,
+            updated_at=NOW + timedelta(minutes=1),
+        )
+
+
+def test_completed_turn_with_open_evidence_can_be_recorded_as_failed_case() -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = build_swebench_case_execution_state(
         plan,
         plan.cases[0].instance_id,
         _run_id(0),
-        status="completed",
+        status="failed",
         thread_id=UUID(int=100),
         turn_id=UUID(int=200),
-        turn_status=TurnStatusV18.FAILED,
-        error_code="provider_failed",
+        turn_status=TurnStatusV18.COMPLETED,
+        error_code="swebench_git_review_incomplete",
         started_at=NOW,
         updated_at=NOW + timedelta(minutes=1),
     )
 
-    states = _ready_states(plan)
-    states[0] = state
     suite = build_swebench_suite_execution_state(plan, states)
 
-    assert suite.status == "running"
-    assert suite.completed_case_ids == (plan.cases[0].instance_id,)
+    assert suite.status == "failed"
+    assert suite.completed_case_ids == ()
 
 
 def test_contracts_are_strict_frozen_and_forbid_extra_fields() -> None:

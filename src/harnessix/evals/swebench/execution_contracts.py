@@ -93,21 +93,20 @@ class SweBenchCaseExecutionState(_SweBenchExecutionContract):
             if (
                 self.thread_id is None
                 or self.turn_id is None
-                or self.turn_status
-                not in {
-                    TurnStatusV18.COMPLETED,
-                    TurnStatusV18.FAILED,
-                    TurnStatusV18.CANCELLED,
-                    TurnStatusV18.INTERRUPTED,
-                }
-                or (self.turn_status == TurnStatusV18.COMPLETED) != (self.error_code is None)
+                or self.turn_status != TurnStatusV18.COMPLETED
+                or self.error_code is not None
+                or self.patch_sha256 == _EMPTY_PATCH_SHA256
             ):
-                raise ValueError("SWE-bench completed Case 必须冻结一个完整终态 Turn")
+                raise ValueError("SWE-bench completed Case 必须冻结成功 Turn 与非空 Patch")
         elif self.status == "failed":
-            if self.error_code is None:
+            if self.error_code is None or self.turn_status not in {
+                None,
+                TurnStatusV18.COMPLETED,
+                TurnStatusV18.FAILED,
+                TurnStatusV18.CANCELLED,
+                TurnStatusV18.INTERRUPTED,
+            }:
                 raise ValueError("SWE-bench failed Case 必须携带稳定错误码")
-            if self.turn_status not in {None, TurnStatusV18.FAILED, TurnStatusV18.INTERRUPTED}:
-                raise ValueError("SWE-bench failed Case 的 Turn 状态不一致")
         elif self.turn_status not in {None, TurnStatusV18.CANCELLED}:
             raise ValueError("SWE-bench cancelled Case 的 Turn 状态不一致")
 

@@ -5,13 +5,23 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import re
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID, uuid5
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import TERMINAL_TURNS, Turn, TurnStatusV18
+from harnessix.agent.models import (
+    TERMINAL_TURNS,
+    ItemStatus,
+    ToolCallContent,
+    ToolResultContent,
+    Turn,
+    TurnStatus,
+    TurnStatusV18,
+)
+from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import utc_now
 from harnessix.evals.execution_fs import (
     ensure_private_directory,
@@ -46,6 +56,7 @@ from harnessix.evals.swebench.workspace import materialize_swebench_workspace
 from harnessix.models.costs import bind_price, build_cost_report
 from harnessix.models.pricing import FlatInputPrice, amount_units, format_amount, rate_units
 from harnessix.product_config.action_contracts import ProductProcessProfile
+from harnessix.product_config.process_profile import process_tool_name
 
 _RUN_NAMESPACE = UUID("be7c86aa-71bb-5fdc-9bb4-47612c041d40")
 _CASES_DIRECTORY = "cases"
@@ -56,6 +67,19 @@ _PREDICTIONS_FILE = "predictions.jsonl"
 _LOCK_FILE = ".agent-suite.lock"
 _SESSION_FILE = "session.sqlite"
 _ERROR_CODE = re.compile(r"^[a-z][a-z0-9_]{0,127}$")
+_PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
+_GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
+
+
+@dataclass(frozen=True, slots=True)
+class _ToolObservation:
+    index: int
+    call: ToolCallContent
+    result: ToolResultContent
+
+    @property
+    def tool(self) -> str:
+        return self.call.tool
 
 
 def _case_root(root: Path, index: int) -> Path:
@@ -71,6 +95,78 @@ def _stable_error_code(turn: Turn) -> str | None:
         return None
     code = turn.error.code if turn.error is not None else f"turn_{turn.status.value}"
     return code if _ERROR_CODE.fullmatch(code) else "turn_failed"
+
+
+def _tool_observations(turn: Turn) -> tuple[_ToolObservation, ...]:
+    calls: dict[UUID, ToolCallContent] = {}
+    observations: list[_ToolObservation] = []
+    for index, item in enumerate(turn.items):
+        if item.status is not ItemStatus.COMPLETED:
+            continue
+        if isinstance(item.content, ToolCallContent):
+            calls[item.content.call_id] = item.content
+        elif isinstance(item.content, ToolResultContent):
+            call = calls.get(item.content.call_id)
+            if call is not None:
+                observations.append(_ToolObservation(index, call, item.content))
+    return tuple(observations)
+
+
+def _is_code_test_failure(observation: _ToolObservation) -> bool:
+    return (
+        observation.result.outcome == "failed"
+        and observation.result.error is not None
+        and observation.result.error.code == "process_nonzero_exit"
+    )
+
+
+def _case_evidence_failure(
+    turn: Turn,
+    patch: str,
+    public_test_tool: str,
+) -> tuple[str, str] | None:
+    if turn.status is not TurnStatus.COMPLETED:
+        return (
+            _stable_error_code(turn) or "swebench_turn_failed",
+            "SWE-bench Case Turn未成功完成",
+        )
+
+    observations = _tool_observations(turn)
+    public_tests = tuple(item for item in observations if item.tool == public_test_tool)
+    if any(
+        item.result.outcome != "succeeded" and not _is_code_test_failure(item)
+        for item in public_tests
+    ):
+        return (
+            "swebench_public_tests_unavailable",
+            "SWE-bench公开测试发生非代码执行失败",
+        )
+
+    patch_results = tuple(item for item in observations if item.tool in _PATCH_TOOLS)
+    if not patch_results:
+        return "swebench_patch_missing", "SWE-bench Case未产生成功 Patch"
+    final_patch = patch_results[-1]
+    if final_patch.result.outcome != "succeeded":
+        return "swebench_patch_failed", "SWE-bench Case最终 Patch未成功"
+    if not patch.strip():
+        return "swebench_patch_missing", "SWE-bench Case最终 Git Patch为空"
+
+    final_public_tests = tuple(item for item in public_tests if item.index > final_patch.index)
+    if not final_public_tests:
+        return "swebench_public_tests_missing", "SWE-bench最终 Patch后缺少公开测试"
+    if any(item.result.outcome != "succeeded" for item in final_public_tests):
+        return "swebench_public_tests_failed", "SWE-bench最终 Patch后的公开测试未通过"
+    final_test_index = final_public_tests[-1].index
+
+    final_reviews: dict[str, _ToolObservation] = {}
+    for item in observations:
+        if item.index > final_test_index and item.tool in _GIT_REVIEW_TOOLS:
+            final_reviews[item.tool] = item
+    if set(final_reviews) != _GIT_REVIEW_TOOLS or any(
+        item.result.outcome != "succeeded" for item in final_reviews.values()
+    ):
+        return "swebench_git_review_incomplete", "SWE-bench公开测试后缺少完整 Git 复核"
+    return None
 
 
 def _turn_cost(turn: Turn, config: SweBenchAgentRunConfig) -> tuple[int, bool]:
@@ -303,10 +399,11 @@ async def run_swebench_agent_suite(
         reserved_cost_units = 0
         unaccounted_cases = 0
         completed_count = 0
+        completed_patches: list[str] = []
         for index, (case, workspace) in enumerate(zip(plan.cases, workspaces, strict=True)):
             token.checkpoint()
             state = states[index]
-            if state.status == "failed":
+            if state.status in {"failed", "cancelled"}:
                 raise KernelError("swebench_execution_stopped", "SWE-bench Suite此前已停止")
             if state.status != "completed" and not (
                 config.price.valid_from <= utc_now() < config.price.valid_until
@@ -317,13 +414,14 @@ async def run_swebench_agent_suite(
                 > amount_units(config.fee_stop_amount)
             ):
                 raise KernelError("swebench_fee_limit_reached", "SWE-bench费用达到停止线")
+            process_profile = config.process_profile_for(case.instance_id)
             thread_id, turn = await _open_case_turn(
                 plan,
                 config,
                 case,
                 _case_root(root, index),
                 workspace,
-                config.process_profile_for(case.instance_id),
+                process_profile,
                 api_key,
                 token,
             )
@@ -342,21 +440,30 @@ async def run_swebench_agent_suite(
             if known_cost_units + reserved_cost_units > amount_units(config.fee_stop_amount):
                 raise KernelError("swebench_fee_limit_reached", "SWE-bench费用达到停止线")
 
+            evidence_failure = _case_evidence_failure(
+                turn,
+                patch,
+                process_tool_name(process_profile.profile_id),
+            )
             if state.status == "completed":
                 _require_case_evidence(state, thread_id, turn, patch)
+                if evidence_failure is not None:
+                    code, message = evidence_failure
+                    raise KernelError(code, message)
             else:
+                failure_code = evidence_failure[0] if evidence_failure is not None else None
                 state = build_swebench_case_execution_state(
                     plan,
                     case.instance_id,
                     state.run_id,
-                    status="completed",
+                    status="failed" if evidence_failure is not None else "completed",
                     thread_id=thread_id,
                     turn_id=turn.turn_id,
                     turn_status=TurnStatusV18(turn.status),
                     patch_sha256=hashlib.sha256(patch.encode("utf-8")).hexdigest(),
                     input_tokens=turn.usage.input_tokens,
                     output_tokens=turn.usage.output_tokens,
-                    error_code=_stable_error_code(turn),
+                    error_code=failure_code,
                     started_at=state.started_at,
                     updated_at=turn.completed_at or state.updated_at,
                 )
@@ -367,26 +474,28 @@ async def run_swebench_agent_suite(
                     state,
                 )
                 _reconcile_suite_state(root, plan, states)
+            if evidence_failure is not None:
+                code, message = evidence_failure
+                raise KernelError(code, message)
+            completed_patches.append(patch)
             completed_count += 1
 
+        suite = _reconcile_suite_state(root, plan, states)
+        if suite.status != "completed":
+            raise KernelError("swebench_execution_incomplete", "SWE-bench Suite证据未完整闭环")
         predictions = tuple(
             SweBenchPrediction(
                 instance_id=case.instance_id,
                 model_name_or_path=plan.model_name,
-                model_patch=collect_workspace_patch(
-                    workspace,
-                    Path(config.git_executable),
-                    case.base_commit,
-                ),
+                model_patch=patch,
             )
-            for case, workspace in zip(plan.cases, workspaces, strict=True)
+            for case, patch in zip(plan.cases, completed_patches, strict=True)
         )
         predictions_sha256 = write_predictions(
             root / _PREDICTIONS_FILE,
             plan,
             predictions,
         )
-        suite = _reconcile_suite_state(root, plan, states)
         return {
             "reason": "completed",
             "plan_sha256": plan.plan_sha256,
