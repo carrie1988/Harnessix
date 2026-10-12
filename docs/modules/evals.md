@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 39
-code_revision: 8a8d38819b6162a11a93a8786f7bd084ef4cbfcd
+version: 40
+code_revision: 76d643a1affe295e76a6824a7e69a15a87435275
 owners:
   - core
 modules:
@@ -59,6 +59,11 @@ related_tests:
   - tests/evals/test_provider_source_checkout_failures.py
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
+  - tests/evals/swebench/test_contracts.py
+  - tests/evals/swebench/test_selection.py
+  - tests/evals/swebench/test_predictions.py
+  - tests/evals/swebench/test_official.py
+  - tests/evals/swebench/test_cli.py
 supersedes: []
 ---
 
@@ -75,9 +80,9 @@ supersedes: []
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/evals`](../../src/harnessix/evals/) |
-| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；确定性组合Task Pack的10 Case/20 Trial Suite身份与执行配置；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case；为完整Suite提供默认禁网、私有Provider配置、宿主恢复绑定及低敏证据发布；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
-| 非职责 | 不提供通用Benchmark平台、运行时动态第三方数据集、LLM Judge、分布式调度、供应商账单、账户级硬费用上限、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行；Recorded Provider只证明产品执行链，单一真实Provider基线也不构成通用模型质量结论 |
-| 产品入口 | `harnessix coding-eval-campaign`是显式单任务真实Campaign CLI；`harnessix coding-eval-suite`是默认禁网的完整Task Pack真实Provider Suite CLI；单次运行、评分、Compaction评测和Eval专用交付仅由库调用 |
+| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；确定性组合Task Pack的10 Case/20 Trial Suite身份与执行配置；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case；为完整Suite提供默认禁网、私有Provider配置、宿主恢复绑定及低敏证据发布；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库；为SWE-bench提供公开字段预注册、完整Diff导出、官方评测调用和结果证据导入边界 |
+| 非职责 | 不提供通用Benchmark平台、运行时动态任意第三方数据集、LLM Judge、分布式调度、供应商账单、账户级硬费用上限、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行；Recorded Provider只证明产品执行链，单一真实Provider或25 Case Pilot均不构成完整榜单质量结论 |
+| 产品入口 | `harnessix coding-eval-campaign`是显式单任务真实Campaign CLI；`harnessix coding-eval-suite`是默认禁网的完整Task Pack真实Provider Suite CLI；`harnessix coding-eval-swebench`负责外部基准预注册、prediction导出、官方评分和结果复核；单次内部运行、Compaction评测和Eval专用交付仍仅由库调用 |
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 执行实现仍有POSIX专用边界；包入口已把九个执行导出改为按需加载，合同导入与执行能力分离，真实Windows治理验收仍待修复版CI |
@@ -105,6 +110,10 @@ supersedes: []
 [`provider_suite_execution.py`](../../src/harnessix/evals/provider_suite_execution.py)、
 [`provider_suite_evidence.py`](../../src/harnessix/evals/provider_suite_evidence.py)、
 [`provider_suite_cli.py`](../../src/harnessix/evals/provider_suite_cli.py)、
+[`swebench/contracts.py`](../../src/harnessix/evals/swebench/contracts.py)、
+[`swebench/selection.py`](../../src/harnessix/evals/swebench/selection.py)、
+[`swebench/predictions.py`](../../src/harnessix/evals/swebench/predictions.py)、
+[`swebench/official.py`](../../src/harnessix/evals/swebench/official.py)、
 [`compaction.py`](../../src/harnessix/evals/compaction.py)和
 [`delivery.py`](../../src/harnessix/evals/delivery.py)的当前事实源。测试原则和历史验收数字保留在
 [测试与Eval规范](../testing-and-evals.md)，通用工程交付以[Delivery模块设计](delivery.md)为事实源。
@@ -171,7 +180,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 
 - 不接受用户动态提供的任意Git URL、测试命令或隐藏检查脚本；
 - 不在运行时下载第三方仓库；v1只发布权利链已审查的内置Archive，不提供远端对象存储或动态导入；
-- 不提供SWE-bench、HumanEval等通用Benchmark适配；
+- SWE-bench仅提供固定Revision、预注册范围内的专用适配，不扩展为任意Benchmark平台；
 - 不在评分器中执行模型、测试、Patch、Git写入或发布；
 - 不使用LLM Judge，不评价代码风格、可维护性或唯一实现文本；
 - 不提供请求内硬费用上限；费用停止只发生在完整试验之间；
