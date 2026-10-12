@@ -50,7 +50,7 @@ class SweBenchAgentRunConfig(ContractModel):
     price: PriceSnapshot
     billing_context: BillingContext
     fee_stop_amount: Amount
-    stop_after_unaccounted_requests: Literal[1] = 1
+    reserve_unaccounted_requests: Literal[True] = True
 
     @field_validator("source_root", "work_root", "cache_root")
     @classmethod
@@ -120,7 +120,7 @@ class SweBenchAgentRunConfig(ContractModel):
             raise ValueError("SWE-bench费用停止线无法覆盖固定最坏情况")
 
     def worst_case_amount(self, plan: SweBenchPreRegistrationPlan) -> Amount:
-        """覆盖全部已结算 Token，外加首个费用未知请求后立即停机的预留。"""
+        """覆盖全部已结算预算，外加单个未结算请求的最大预留。"""
 
         known = (
             len(plan.cases)

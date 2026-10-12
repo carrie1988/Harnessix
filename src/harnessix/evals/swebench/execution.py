@@ -44,7 +44,7 @@ from harnessix.evals.swebench.run_config import SweBenchAgentRunConfig
 from harnessix.evals.swebench.source_revision import require_harnessix_execution_revision
 from harnessix.evals.swebench.workspace import materialize_swebench_workspace
 from harnessix.models.costs import bind_price, build_cost_report
-from harnessix.models.pricing import amount_units, format_amount
+from harnessix.models.pricing import FlatInputPrice, amount_units, format_amount, rate_units
 
 _RUN_NAMESPACE = UUID("be7c86aa-71bb-5fdc-9bb4-47612c041d40")
 _CASES_DIRECTORY = "cases"
@@ -85,6 +85,32 @@ def _turn_cost(turn: Turn, config: SweBenchAgentRunConfig) -> tuple[int, bool]:
         raise KernelError("swebench_cost_invalid", "SWE-bench模型费用币种无效")
     units = amount_units(totals[0].known_amount) if totals else 0
     return units, report.summary.completeness == "complete"
+
+
+def _input_rate(config: SweBenchAgentRunConfig) -> int:
+    price = config.price.input_price
+    if not isinstance(price, FlatInputPrice):
+        raise KernelError("swebench_cost_invalid", "SWE-bench输入价格合同无效")
+    return rate_units(price.per_million)
+
+
+def _unknown_request_reserve(config: SweBenchAgentRunConfig) -> int:
+    return (
+        config.provider_config.max_request_bytes * _input_rate(config)
+        + config.provider_config.max_output_tokens
+        * rate_units(config.price.output_per_million)
+    )
+
+
+def _next_case_reserve(
+    plan: SweBenchPreRegistrationPlan,
+    config: SweBenchAgentRunConfig,
+) -> int:
+    known = plan.task_budget.max_tokens * max(
+        _input_rate(config),
+        rate_units(config.price.output_per_million),
+    )
+    return known + _unknown_request_reserve(config)
 
 
 def _require_case_evidence(
@@ -273,6 +299,8 @@ async def run_swebench_agent_suite(
         )
 
         known_cost_units = 0
+        reserved_cost_units = 0
+        unaccounted_cases = 0
         completed_count = 0
         for index, (case, workspace) in enumerate(zip(plan.cases, workspaces, strict=True)):
             token.checkpoint()
@@ -283,6 +311,13 @@ async def run_swebench_agent_suite(
                 config.price.valid_from <= utc_now() < config.price.valid_until
             ):
                 raise KernelError("swebench_price_expired", "SWE-bench固定价格快照已过期")
+            if state.status != "completed" and (
+                known_cost_units
+                + reserved_cost_units
+                + _next_case_reserve(plan, config)
+                > amount_units(config.fee_stop_amount)
+            ):
+                raise KernelError("swebench_fee_limit_reached", "SWE-bench费用达到停止线")
             thread_id, turn = await _open_case_turn(
                 plan,
                 config,
@@ -300,32 +335,14 @@ async def run_swebench_agent_suite(
                 case.base_commit,
             )
             case_cost, cost_complete = _turn_cost(turn, config)
-            if not cost_complete:
-                stopped = build_swebench_case_execution_state(
-                    plan,
-                    case.instance_id,
-                    state.run_id,
-                    status="failed",
-                    thread_id=thread_id,
-                    turn_id=turn.turn_id,
-                    turn_status=TurnStatusV18(turn.status),
-                    patch_sha256=hashlib.sha256(patch.encode("utf-8")).hexdigest(),
-                    input_tokens=turn.usage.input_tokens,
-                    output_tokens=turn.usage.output_tokens,
-                    error_code="cost_unknown",
-                    started_at=state.started_at,
-                    updated_at=turn.completed_at or state.updated_at,
-                )
-                states[index] = stopped
-                write_case_execution_state(
-                    _case_root(root, index) / _CASE_STATE_FILE,
-                    plan,
-                    stopped,
-                )
-                _reconcile_suite_state(root, plan, states)
-                raise KernelError("swebench_cost_unknown", "SWE-bench模型费用无法完整结算")
             known_cost_units += case_cost
-            if known_cost_units > amount_units(config.fee_stop_amount):
+            if not cost_complete:
+                reserved_cost_units += _unknown_request_reserve(config)
+                unaccounted_cases += 1
+            if (
+                known_cost_units + reserved_cost_units
+                > amount_units(config.fee_stop_amount)
+            ):
                 raise KernelError("swebench_fee_limit_reached", "SWE-bench费用达到停止线")
 
             if state.status == "completed":
@@ -381,5 +398,7 @@ async def run_swebench_agent_suite(
             "output_tokens": suite.output_tokens,
             "known_cost_currency": config.price.currency,
             "known_cost_amount": format_amount(known_cost_units),
+            "reserved_cost_amount": format_amount(reserved_cost_units),
+            "unaccounted_cost_cases": unaccounted_cases,
             "predictions_sha256": predictions_sha256,
         }

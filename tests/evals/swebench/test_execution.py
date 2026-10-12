@@ -109,7 +109,11 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
 
     monkeypatch.setattr(execution, "materialize_swebench_workspace", materialize)
     monkeypatch.setattr(execution, "_open_case_turn", open_turn)
-    monkeypatch.setattr(execution, "_turn_cost", lambda *_: (1, True))
+    monkeypatch.setattr(
+        execution,
+        "_turn_cost",
+        lambda turn, _config: (1, turn.turn_id != UUID(int=1003)),
+    )
     monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_: "")
 
     first = await execution.run_swebench_agent_suite(
@@ -130,6 +134,8 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
     predictions = read_predictions(Path(config.work_root) / "predictions.jsonl", plan)
     suite = read_suite_execution_state(Path(config.work_root) / "suite-state.json", plan)
     assert first["completed_cases"] == second["completed_cases"] == 25
+    assert first["unaccounted_cost_cases"] == second["unaccounted_cost_cases"] == 1
+    assert first["reserved_cost_amount"] == second["reserved_cost_amount"] == "3.147456"
     assert len(predictions) == 25 and all(item.model_patch == "" for item in predictions)
     assert suite.status == "completed"
     assert calls == [case.instance_id for case in plan.cases] * 2
