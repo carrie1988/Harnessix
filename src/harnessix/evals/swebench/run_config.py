@@ -90,7 +90,7 @@ class SweBenchAgentRunConfig(ContractModel):
             or provider.enable_thinking is not False
             or provider.output_token_parameter != "max_tokens"
             or not provider.capabilities.tool_calls
-            or provider.capabilities.parallel_tool_calls
+            or not provider.capabilities.parallel_tool_calls
         ):
             raise ValueError("SWE-bench Provider不符合固定无重试串行工具边界")
         if (
@@ -185,7 +185,7 @@ def build_swebench_agent_run_config(
             base_url=_BASE_URL,
             model=_MODEL,
             api_key_env=api_key_env,
-            capabilities=ChatCapabilities(tool_calls=True, parallel_tool_calls=False),
+            capabilities=ChatCapabilities(tool_calls=True, parallel_tool_calls=True),
             max_output_tokens=4096,
             timeout_seconds=plan.task_budget.timeout_seconds,
             io_timeout_seconds=180,

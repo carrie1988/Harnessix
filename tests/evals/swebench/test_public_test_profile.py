@@ -169,6 +169,65 @@ def test_pytest_bootstrap_uses_workspace_source_and_image_generated_fallback(
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
+def test_pytest_bootstrap_replaces_missing_selector_with_changed_file_tests(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    image_workspace = tmp_path / "image"
+    (workspace / "src" / "example").mkdir(parents=True)
+    (workspace / "tests").mkdir()
+    (image_workspace / "src" / "example").mkdir(parents=True)
+    (workspace / "src" / "example" / "__init__.py").write_text("", encoding="utf-8")
+    feature = workspace / "src" / "example" / "feature.py"
+    feature.write_text("VALUE = 'before'\n", encoding="utf-8")
+    (workspace / "tests" / "test_feature.py").write_text(
+        "from example.feature import VALUE\n\ndef test_feature():\n    assert VALUE == 'after'\n",
+        encoding="utf-8",
+    )
+    (image_workspace / "src" / "example" / "__init__.py").write_text("", encoding="utf-8")
+    subprocess.run(("/usr/bin/git", "init", "-q", str(workspace)), check=True)
+    subprocess.run(("/usr/bin/git", "-C", str(workspace), "add", "."), check=True)
+    subprocess.run(
+        (
+            "/usr/bin/git",
+            "-C",
+            str(workspace),
+            "-c",
+            "user.name=Harnessix Tests",
+            "-c",
+            "user.email=tests@harnessix.invalid",
+            "commit",
+            "-qm",
+            "baseline",
+        ),
+        check=True,
+    )
+    feature.write_text("VALUE = 'after'\n", encoding="utf-8")
+
+    completed = subprocess.run(
+        (
+            sys.executable,
+            "-B",
+            "-c",
+            _PYTEST_BOOTSTRAP_ARGUMENT,
+            str(workspace),
+            str(image_workspace),
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "--",
+            "tests/test_missing.py::test_guessed_node",
+        ),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "1 passed" in completed.stdout
+
+
 def test_django_profile_uses_repository_native_runner_and_workspace_imports(
     tmp_path: Path,
 ) -> None:

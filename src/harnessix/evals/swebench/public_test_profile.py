@@ -27,7 +27,7 @@ from harnessix.product_config.action_contracts import (
 ImageListRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[str]]
 
 PUBLIC_TEST_PROFILE_ID = "public-tests"
-_PROFILE_VERSION = "swebench-public-tests-v4"
+_PROFILE_VERSION = "swebench-public-tests-v5"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -95,19 +95,57 @@ class ImageBuildFallback(importlib.abc.MetaPathFinder):
         return None
 
 
-def workspace_selector(value):
-    path, separator, node = value.partition("::")
-    absolute = str(workspace / path)
-    return absolute + (separator + node if separator else "")
+def changed_test_files():
+    def source_changed(candidate):
+        relative = candidate.relative_to(workspace)
+        if candidate.is_symlink() or any(
+            part.startswith(".") or part in {"build", "dist"} for part in relative.parts
+        ):
+            return False
+        original = image_workspace / relative
+        return (
+            not original.is_file()
+            or original.is_symlink()
+            or candidate.read_bytes() != original.read_bytes()
+        )
+
+    stems = {
+        candidate.stem
+        for candidate in workspace.rglob("*.py")
+        if not candidate.name.startswith("test_") and source_changed(candidate)
+    }
+    found = {
+        candidate
+        for stem in stems
+        for candidate in workspace.rglob("test_" + stem + ".py")
+        if candidate.is_file()
+        and not candidate.is_symlink()
+        and not any(
+            part.startswith(".") or part in {"build", "dist"}
+            for part in candidate.relative_to(workspace).parts
+        )
+    }
+    return [str(candidate) for candidate in sorted(found)[:32]]
+
+
+def existing_test_files(values):
+    found = []
+    for value in values:
+        path = workspace / value.partition("::")[0]
+        if path.exists():
+            found.append(str(path))
+    return found
 
 
 sys.meta_path.insert(0, ImageBuildFallback())
 sys.path[:0] = [str(workspace_root) for workspace_root, _ in source_pairs]
 os.chdir("/tmp")
 if not selectors:
-    selectors = [str(workspace)]
+    selectors = changed_test_files()
 else:
-    selectors = [workspace_selector(value) for value in selectors]
+    selectors = existing_test_files(selectors) or changed_test_files()
+if not selectors:
+    raise SystemExit("Harnessix found no existing public test target for the changed Python files")
 import pytest
 raise SystemExit(pytest.main([*fixed_arguments, *selectors]))
 """

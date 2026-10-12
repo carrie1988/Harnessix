@@ -99,6 +99,6 @@ async def test_runtime_drives_patch_test_and_git_review_to_completion(tmp_path: 
     assert provider.requests[4].tools[0].name == "apply_patch"
     assert provider.requests[4].forced_tool == "apply_patch"
     assert provider.requests[5].forced_tool == "run_profile.public-tests"
-    assert provider.requests[6].forced_tool == "git_status"
+    assert provider.requests[6].forced_tool is None
     assert provider.requests[7].forced_tool == "git_diff"
     assert provider.requests[8].tools == ()

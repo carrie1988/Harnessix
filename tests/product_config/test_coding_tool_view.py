@@ -313,7 +313,7 @@ def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review(
         require_pre_edit_profile=False,
     )
     assert {item.name for item in validated.tools} == {"git_status", "git_diff"}
-    assert validated.choice == "required" and validated.forced_tool == "git_status"
+    assert validated.choice == "required" and validated.forced_tool is None
 
     reviewed = _selection_for(
         _turn(
@@ -416,7 +416,7 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
 
     patched = view.select(_turn((_PATCH, "succeeded", None)), definitions)
     assert {item.name for item in patched.tools} == {"git_status", "git_diff"}
-    assert patched.choice == "required" and patched.forced_tool == "git_status"
+    assert patched.choice == "required" and patched.forced_tool is None
 
     reviewed = view.select(
         _turn((_PATCH, "succeeded", None), ("git_status", "succeeded", None)),

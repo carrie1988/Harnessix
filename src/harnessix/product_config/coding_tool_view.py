@@ -188,8 +188,8 @@ def _git_review_selection(
     }
     missing_review = set(_GIT_REVIEW_TOOLS) - reviewed
     forced_review = None
-    if missing_review:
-        forced_review = "git_status" if "git_status" in missing_review else "git_diff"
+    if len(missing_review) == 1:
+        forced_review = next(iter(missing_review))
     return _selection(definitions, missing_review, forced_tool=forced_review)
 
 
