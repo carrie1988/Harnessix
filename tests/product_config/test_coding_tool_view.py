@@ -193,7 +193,8 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
         definitions,
     )
     assert {item.name for item in bounded.tools} == {_PATCH}
-    assert bounded.choice == "auto"
+    assert bounded.choice == "required"
+    assert bounded.forced_tool == _PATCH
 
     patched = view.select(_turn((_PATCH, "succeeded", None)), definitions)
     assert {item.name for item in patched.tools} == {"git_status", "git_diff"}

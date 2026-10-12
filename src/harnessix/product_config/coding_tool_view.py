@@ -159,7 +159,7 @@ class CodingWorkflowToolView:
                     return _selection(definitions, names)
                 inspections = sum(item.tool in _SOURCE_INSPECTION_TOOLS for item in observations)
                 if inspections >= _MAX_NO_PROFILE_INSPECTIONS:
-                    return ModelToolSelection((by_name[patch],))
+                    return _selection(definitions, {patch}, forced_tool=patch)
                 names = {*_SOURCE_INSPECTION_TOOLS, patch}
                 return _selection(definitions, names)
             reviewed = {
