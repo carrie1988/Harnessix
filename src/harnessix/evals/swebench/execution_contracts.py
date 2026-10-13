@@ -140,15 +140,28 @@ def is_swebench_quality_failure(state: SweBenchCaseExecutionState) -> bool:
     )
 
 
+def is_swebench_isolated_provider_failure(state: SweBenchCaseExecutionState) -> bool:
+    """只有原生执行器已冻结的传输失败可推进v3前缀；不是质量成功。"""
+    return (
+        state.status == "failed"
+        and state.error_code == "swebench_provider_transport_isolated"
+        and state.thread_id is not None
+        and state.turn_id is not None
+        and state.turn_status is TurnStatusV18.FAILED
+    )
+
+
 def _attempted_case_prefix(
     case_states: tuple[SweBenchCaseExecutionState, ...],
     *,
     continue_quality_failures: bool,
+    continue_provider_failures: bool = False,
 ) -> tuple[SweBenchCaseExecutionState, ...]:
     attempted_count = 0
     for state in case_states:
         if state.status != "completed" and not (
-            continue_quality_failures and is_swebench_quality_failure(state)
+            (continue_quality_failures and is_swebench_quality_failure(state))
+            or (continue_provider_failures and is_swebench_isolated_provider_failure(state))
         ):
             break
         attempted_count += 1
@@ -161,6 +174,7 @@ class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
     spec_version: Literal[
         "harnessix.swebench-suite-execution-state/v1",
         "harnessix.swebench-suite-execution-state/v2",
+        "harnessix.swebench-suite-execution-state/v3",
     ] = "harnessix.swebench-suite-execution-state/v1"
     plan_sha256: str = Field(pattern=_SHA256)
     model_name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}$")
@@ -189,7 +203,10 @@ class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
             for state in _attempted_case_prefix(
                 self.case_states,
                 continue_quality_failures=(
-                    self.spec_version == "harnessix.swebench-suite-execution-state/v2"
+                    self.spec_version != "harnessix.swebench-suite-execution-state/v1"
+                ),
+                continue_provider_failures=(
+                    self.spec_version == "harnessix.swebench-suite-execution-state/v3"
                 ),
             )
         )
@@ -210,12 +227,16 @@ class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
             raise ValueError("SWE-bench Suite 时间范围未覆盖 Case 状态")
 
         continue_quality_failures = (
-            self.spec_version == "harnessix.swebench-suite-execution-state/v2"
+            self.spec_version != "harnessix.swebench-suite-execution-state/v1"
+        )
+        continue_provider_failures = (
+            self.spec_version == "harnessix.swebench-suite-execution-state/v3"
         )
         prefix_label = "尝试" if continue_quality_failures else "完成"
         attempted = _attempted_case_prefix(
             self.case_states,
             continue_quality_failures=continue_quality_failures,
+            continue_provider_failures=continue_provider_failures,
         )
         completed = tuple(state for state in attempted if state.status == "completed")
         pending = self.case_states[len(attempted) :]
@@ -223,6 +244,7 @@ class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
         if any(
             state.status == "completed"
             or (continue_quality_failures and is_swebench_quality_failure(state))
+            or (continue_provider_failures and is_swebench_isolated_provider_failure(state))
             for state in pending
         ):
             raise ValueError(f"SWE-bench Suite 只能确认连续{prefix_label}前缀")
@@ -376,10 +398,13 @@ def build_swebench_suite_execution_state(
     case_states: Sequence[SweBenchCaseExecutionState],
     *,
     continue_quality_failures: bool = False,
+    continue_provider_failures: bool = False,
 ) -> SweBenchSuiteExecutionState:
     """默认保持 v1；显式启用 v2 时，质量失败仅计入尝试前缀。"""
 
     states = tuple(case_states)
+    if continue_provider_failures and not continue_quality_failures:
+        raise ValueError("SWE-bench v3必须明确继承v2质量失败前缀")
     expected_cases = tuple((case.instance_id, case.base_commit) for case in plan.cases)
     observed_cases = tuple(
         (case_state.instance_id, case_state.base_commit) for case_state in states
@@ -393,6 +418,7 @@ def build_swebench_suite_execution_state(
     attempted = _attempted_case_prefix(
         checked_states,
         continue_quality_failures=continue_quality_failures,
+        continue_provider_failures=continue_provider_failures,
     )
     completed = tuple(state for state in attempted if state.status == "completed")
     active = tuple(state for state in checked_states[len(attempted) :] if state.status != "ready")
@@ -407,7 +433,9 @@ def build_swebench_suite_execution_state(
 
     candidate = SweBenchSuiteExecutionState.model_construct(
         spec_version=(
-            "harnessix.swebench-suite-execution-state/v2"
+            "harnessix.swebench-suite-execution-state/v3"
+            if continue_provider_failures
+            else "harnessix.swebench-suite-execution-state/v2"
             if continue_quality_failures
             else "harnessix.swebench-suite-execution-state/v1"
         ),

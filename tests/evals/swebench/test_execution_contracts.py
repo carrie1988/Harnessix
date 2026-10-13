@@ -771,7 +771,7 @@ def test_v2_rejects_forged_progress_even_with_recomputed_digest(changes: dict[st
         ({"spec_version": "harnessix.swebench-suite-execution-state/v1"}, False),
         ({"spec_version": "harnessix.swebench-suite-execution-state/v3"}, False),
         ({"spec_version": "harnessix.swebench-suite-execution-state/v1"}, True),
-        ({"spec_version": "harnessix.swebench-suite-execution-state/v3"}, True),
+        ({"spec_version": "harnessix.swebench-suite-execution-state/v4"}, True),
     ],
 )
 def test_suite_io_rejects_digest_or_version_tampering(

@@ -95,6 +95,7 @@ def _parser() -> argparse.ArgumentParser:
     run_agent.add_argument("--container-engine", required=True)
     run_agent.add_argument("--api-key-env", default="DASHSCOPE_API_KEY")
     run_agent.add_argument("--fee-stop-amount", default="80")
+    run_agent.add_argument("--continue-isolated-provider-failures", action="store_true")
     run_agent.add_argument("--allow-repository-network", action="store_true")
     run_agent.add_argument("--allow-provider-network", action="store_true")
 
@@ -218,6 +219,7 @@ def _run_agent(arguments: argparse.Namespace) -> dict[str, object]:
             )
             or config.provider_config.api_key_env != arguments.api_key_env
             or config.fee_stop_amount != arguments.fee_stop_amount
+            or config.isolate_provider_failures != arguments.continue_isolated_provider_failures
         ):
             raise KernelError("swebench_run_config_invalid", "SWE-bench既有执行配置与参数不一致")
         try:
@@ -237,6 +239,7 @@ def _run_agent(arguments: argparse.Namespace) -> dict[str, object]:
             case_process_profiles=case_process_profiles,
             fee_stop_amount=arguments.fee_stop_amount,
             api_key_env=arguments.api_key_env,
+            isolate_provider_failures=arguments.continue_isolated_provider_failures,
         )
         write_swebench_agent_run_config(config_path, config)
     api_key = os.environ.get(config.provider_config.api_key_env, "")

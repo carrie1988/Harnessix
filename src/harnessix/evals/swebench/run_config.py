@@ -35,14 +35,11 @@ _OUTPUT_PRICE = "36"
 _CURRENCY: Literal["CNY"] = "CNY"
 
 
-class SweBenchAgentRunConfig(ContractModel):
-    """不含 Secret 值的单次 25 Case 真实执行配置。"""
+class _SweBenchAgentRunSettings(ContractModel):
+    """版本共享的固定模型、价格和隔离宿主设置，不含Secret。"""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v2"] = (
-        "harnessix.swebench-agent-run-config/v2"
-    )
     plan_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_root: str = Field(min_length=1, max_length=4096)
     work_root: str = Field(min_length=1, max_length=4096)
@@ -117,6 +114,10 @@ class SweBenchAgentRunConfig(ContractModel):
     def fingerprint(self) -> str:
         return content_digest(self)
 
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return False
+
     def require_plan(self, plan: SweBenchPreRegistrationPlan) -> None:
         parameters = {item.name: item.value for item in plan.model_settings.parameters}
         expected_cases = tuple(sorted((case.instance_id, case.repo) for case in plan.cases))
@@ -136,7 +137,10 @@ class SweBenchAgentRunConfig(ContractModel):
             != expected_cases
         ):
             raise ValueError("SWE-bench运行配置与预注册计划不一致")
-        if amount_units(self.worst_case_amount(plan)) > amount_units(self.fee_stop_amount):
+        minimum = self.worst_case_amount(plan)
+        if self.isolate_provider_failures:
+            minimum = format_amount(amount_units(minimum) // len(plan.cases))
+        if amount_units(minimum) > amount_units(self.fee_stop_amount):
             raise ValueError("SWE-bench费用停止线无法覆盖固定最坏情况")
 
     def process_profile_for(self, instance_id: str) -> ProductProcessProfile:
@@ -152,7 +156,7 @@ class SweBenchAgentRunConfig(ContractModel):
         return matches[0]
 
     def worst_case_amount(self, plan: SweBenchPreRegistrationPlan) -> Amount:
-        """覆盖全部已结算预算，外加单个未结算请求的最大预留。"""
+        """v2覆盖整轮及一次未决；v3按每个隔离Case各可能一次未决计算。"""
 
         known = (
             len(plan.cases)
@@ -162,7 +166,36 @@ class SweBenchAgentRunConfig(ContractModel):
         unknown = self.provider_config.max_request_bytes * rate_units(
             _INPUT_PRICE
         ) + self.provider_config.max_output_tokens * rate_units(_OUTPUT_PRICE)
-        return format_amount(known + unknown)
+        return format_amount(
+            known + unknown * (len(plan.cases) if self.isolate_provider_failures else 1)
+        )
+
+
+class SweBenchAgentRunConfig(_SweBenchAgentRunSettings):
+    """v2保持未知费用停止整轮及原完整轮次准入语义。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v2"] = (
+        "harnessix.swebench-agent-run-config/v2"
+    )
+
+
+class SweBenchIsolatedAgentRunConfig(_SweBenchAgentRunSettings):
+    """显式v3：只隔离已闭合的传输故障，逐Case预付、失败不重试。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v3"] = (
+        "harnessix.swebench-agent-run-config/v3"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+
+SweBenchRunConfig = SweBenchAgentRunConfig | SweBenchIsolatedAgentRunConfig
 
 
 def build_swebench_agent_run_config(
@@ -176,12 +209,18 @@ def build_swebench_agent_run_config(
     fee_stop_amount: Amount,
     api_key_env: str = "DASHSCOPE_API_KEY",
     observed_at: datetime | None = None,
-) -> SweBenchAgentRunConfig:
+    isolate_provider_failures: bool = False,
+) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
     now = observed_at or datetime.now(UTC)
     parameters = {item.name: item.value for item in plan.model_settings.parameters}
-    config = SweBenchAgentRunConfig(
+    if type(isolate_provider_failures) is not bool:
+        raise ValueError("SWE-bench故障隔离必须显式使用布尔开关")
+    config_model = (
+        SweBenchIsolatedAgentRunConfig if isolate_provider_failures else SweBenchAgentRunConfig
+    )
+    config = config_model(
         plan_sha256=plan.plan_sha256,
         source_root=str(source_root),
         work_root=str(work_root),

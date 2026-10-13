@@ -42,6 +42,7 @@ from harnessix.evals.swebench.execution_contracts import (
     SweBenchSuiteExecutionState,
     build_swebench_case_execution_state,
     build_swebench_suite_execution_state,
+    is_swebench_isolated_provider_failure,
     is_swebench_quality_failure,
 )
 from harnessix.evals.swebench.execution_io import (
@@ -55,10 +56,10 @@ from harnessix.evals.swebench.predictions import (
     collect_workspace_patch,
     write_predictions,
 )
-from harnessix.evals.swebench.run_config import SweBenchAgentRunConfig
+from harnessix.evals.swebench.run_config import SweBenchRunConfig as SweBenchAgentRunConfig
 from harnessix.evals.swebench.source_revision import require_harnessix_execution_revision
 from harnessix.evals.swebench.workspace import materialize_swebench_workspace
-from harnessix.models.costs import bind_price, build_cost_report
+from harnessix.models.costs import bind_price, build_cost_report, estimate_attempt
 from harnessix.models.pricing import FlatInputPrice, amount_units, format_amount, rate_units
 from harnessix.product_config.action_contracts import ProductProcessProfile
 from harnessix.product_config.process_profile import process_tool_name
@@ -144,6 +145,7 @@ def _case_evidence_failure(
     public_test_tool: str,
     *,
     cost_complete: bool,
+    transport_failure_isolatable: bool = False,
 ) -> tuple[str, str] | None:
     try:
         observations = _tool_observations(turn)
@@ -164,6 +166,8 @@ def _case_evidence_failure(
             "SWE-bench公开测试发生非代码执行失败",
         )
 
+    if transport_failure_isolatable:
+        return "swebench_provider_transport_isolated", "SWE-bench传输故障已冻结，失败不重试"
     if not cost_complete:
         return "swebench_cost_incomplete", "SWE-bench模型费用未完整结算"
     if turn.status is not TurnStatus.COMPLETED:
@@ -221,6 +225,50 @@ def _case_evidence_failure(
     ):
         return "swebench_git_review_incomplete", "SWE-bench公开测试后缺少完整 Git 复核"
     return None
+
+
+def _can_isolate_transport_failure(turn: Turn, config: SweBenchAgentRunConfig) -> bool:
+    """费用可预留，但未闭合尝试、未知摘要和缺失原生请求证明不能据此继续。"""
+    attempts = turn.accounted_attempts
+    if (
+        turn.status is not TurnStatus.FAILED
+        or turn.error is None
+        or turn.error.code != "provider_transport"
+        or not attempts
+        or not turn.model_attempts
+        or any(attempt.status not in {"completed", "failed"} for attempt in attempts)
+        or any(record.unaccounted_request_possible for record in turn.compactions)
+        or len(turn.model_attempts) != turn.model_steps
+        or any(attempt.index != 1 for attempt in attempts)
+        or {attempt.step for attempt in turn.model_attempts} != set(range(1, turn.model_steps + 1))
+    ):
+        return False
+    last = turn.model_attempts[-1]
+    if last.status != "failed" or last.error is None or last.error.code != "provider_transport":
+        return False
+    if not all(
+        attempt.requested_model == config.provider_config.model
+        and attempt.provider == "openai_chat"
+        and attempt.actual_model in {None, attempt.requested_model}
+        and config.price.valid_from <= attempt.started_at < config.price.valid_until
+        and attempt.finished_at is not None
+        and attempt.finished_at < config.price.valid_until
+        and (
+            attempt.usage.completeness != "complete"
+            or (attempt.actual_model == config.price.model and attempt.response_id is not None)
+        )
+        for attempt in attempts
+    ):
+        return False
+    for attempt in attempts:
+        result = estimate_attempt(
+            attempt, bind_price(attempt, config.price, config.billing_context)
+        ).result
+        if result.status != "estimated" and not (
+            attempt.attempt_id == last.attempt_id and result.reason == "usage_incomplete"
+        ):
+            return False
+    return True
 
 
 def _turn_cost(turn: Turn, config: SweBenchAgentRunConfig) -> tuple[int, bool]:
@@ -318,16 +366,26 @@ def _reconcile_suite_state(
     root: Path,
     plan: SweBenchPreRegistrationPlan,
     states: list[SweBenchCaseExecutionState],
+    *,
+    isolate_provider_failures: bool = False,
 ) -> SweBenchSuiteExecutionState:
     path = root / _SUITE_STATE_FILE
     previous = read_suite_execution_state(path, plan) if path_present(path) else None
+    if previous is not None and (
+        (previous.spec_version == "harnessix.swebench-suite-execution-state/v3")
+        != isolate_provider_failures
+    ):
+        raise KernelError(
+            "swebench_suite_execution_state_invalid", "SWE-bench冻结的故障隔离规则发生漂移"
+        )
     rebuilt = build_swebench_suite_execution_state(
         plan,
         states,
         continue_quality_failures=(
             previous is None
-            or previous.spec_version == "harnessix.swebench-suite-execution-state/v2"
+            or previous.spec_version != "harnessix.swebench-suite-execution-state/v1"
         ),
+        continue_provider_failures=isolate_provider_failures,
     )
     if previous is not None:
         previous_count = len(previous.attempted_case_ids)
@@ -391,6 +449,12 @@ async def _open_case_turn(
     cancel: CancelToken,
 ) -> tuple[UUID, Turn]:
     run_root = case_root / _RUN_DIRECTORY
+    state = read_case_execution_state(case_root / _CASE_STATE_FILE, plan)
+    expected_terminal_turn = None
+    if state.status in {"completed", "failed", "cancelled"}:
+        if state.thread_id is None or state.turn_id is None:
+            raise KernelError("swebench_case_evidence_mismatch", "SWE-bench终态缺少原生身份")
+        expected_terminal_turn = (state.thread_id, state.turn_id)
     ensure_private_directory(
         run_root,
         error_code="swebench_execution_root_invalid",
@@ -407,6 +471,7 @@ async def _open_case_turn(
         process_profile=process_profile,
         api_key=api_key,
         cancel=cancel,
+        expected_terminal_turn=expected_terminal_turn,
     )
 
 
@@ -450,9 +515,11 @@ async def run_swebench_agent_suite(
             plan.harnessix_revision,
         )
         states = _load_or_initialize_case_states(root, plan, config.price.valid_from)
-        suite = _reconcile_suite_state(root, plan, states)
+        suite = _reconcile_suite_state(
+            root, plan, states, isolate_provider_failures=config.isolate_provider_failures
+        )
         continue_quality_failures = (
-            suite.spec_version == "harnessix.swebench-suite-execution-state/v2"
+            suite.spec_version != "harnessix.swebench-suite-execution-state/v1"
         )
         workspaces = await _materialize_all(
             plan,
@@ -472,8 +539,13 @@ async def run_swebench_agent_suite(
             terminal_quality_failure = continue_quality_failures and is_swebench_quality_failure(
                 state
             )
-            terminal_attempt = state.status == "completed" or terminal_quality_failure
-            if state.status in {"failed", "cancelled"} and not terminal_quality_failure:
+            terminal_provider_failure = (
+                config.isolate_provider_failures and is_swebench_isolated_provider_failure(state)
+            )
+            terminal_attempt = (
+                state.status == "completed" or terminal_quality_failure or terminal_provider_failure
+            )
+            if state.status in {"failed", "cancelled"} and not terminal_attempt:
                 raise KernelError("swebench_execution_stopped", "SWE-bench Suite此前已停止")
             if not terminal_attempt and not (
                 config.price.valid_from <= utc_now() < config.price.valid_until
@@ -517,6 +589,10 @@ async def run_swebench_agent_suite(
                 patch,
                 process_tool_name(process_profile.profile_id),
                 cost_complete=cost_complete,
+                transport_failure_isolatable=(
+                    config.isolate_provider_failures
+                    and _can_isolate_transport_failure(turn, config)
+                ),
             )
             if terminal_attempt:
                 _require_case_evidence(state, thread_id, turn, patch)
@@ -548,9 +624,14 @@ async def run_swebench_agent_suite(
                     plan,
                     state,
                 )
-                _reconcile_suite_state(root, plan, states)
+                _reconcile_suite_state(
+                    root, plan, states, isolate_provider_failures=config.isolate_provider_failures
+                )
             if evidence_failure is not None and not (
-                continue_quality_failures and is_swebench_quality_failure(state)
+                continue_quality_failures
+                and is_swebench_quality_failure(state)
+                or config.isolate_provider_failures
+                and is_swebench_isolated_provider_failure(state)
             ):
                 code, message = evidence_failure
                 if not cost_complete:
@@ -562,7 +643,9 @@ async def run_swebench_agent_suite(
             attempted_patches.append(patch)
             completed_count += state.status == "completed"
 
-        suite = _reconcile_suite_state(root, plan, states)
+        suite = _reconcile_suite_state(
+            root, plan, states, isolate_provider_failures=config.isolate_provider_failures
+        )
         if suite.status != "completed":
             raise KernelError("swebench_execution_incomplete", "SWE-bench Suite证据未完整闭环")
         predictions = tuple(
@@ -583,7 +666,10 @@ async def run_swebench_agent_suite(
             "plan_sha256": plan.plan_sha256,
             "attempted_cases": len(attempted_patches),
             "completed_cases": completed_count,
-            "quality_failed_cases": len(attempted_patches) - completed_count,
+            "quality_failed_cases": sum(is_swebench_quality_failure(state) for state in states),
+            "provider_failed_cases": sum(
+                is_swebench_isolated_provider_failure(state) for state in states
+            ),
             "input_tokens": suite.input_tokens,
             "output_tokens": suite.output_tokens,
             "known_cost_currency": config.price.currency,

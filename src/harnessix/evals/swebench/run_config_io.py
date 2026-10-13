@@ -5,15 +5,21 @@ from __future__ import annotations
 import os
 import stat
 from pathlib import Path
+from typing import Annotated
+
+from pydantic import Field, TypeAdapter
 
 from harnessix.agent.errors import KernelError
 from harnessix.evals.swebench.files import write_atomic
-from harnessix.evals.swebench.run_config import SweBenchAgentRunConfig
+from harnessix.evals.swebench.run_config import SweBenchRunConfig
 
 _MAX_CONFIG_BYTES = 1024 * 1024
+_CONFIG: TypeAdapter[SweBenchRunConfig] = TypeAdapter(
+    Annotated[SweBenchRunConfig, Field(discriminator="spec_version")]
+)
 
 
-def write_swebench_agent_run_config(path: Path, config: SweBenchAgentRunConfig) -> None:
+def write_swebench_agent_run_config(path: Path, config: SweBenchRunConfig) -> None:
     if path.exists() or path.is_symlink():
         raise KernelError("swebench_run_config_exists", "SWE-bench执行配置已经发布")
     body = (config.model_dump_json(indent=2) + "\n").encode("utf-8")
@@ -25,7 +31,7 @@ def write_swebench_agent_run_config(path: Path, config: SweBenchAgentRunConfig) 
     )
 
 
-def read_swebench_agent_run_config(path: Path) -> SweBenchAgentRunConfig:
+def read_swebench_agent_run_config(path: Path) -> SweBenchRunConfig:
     descriptor: int | None = None
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
@@ -48,6 +54,6 @@ def read_swebench_agent_run_config(path: Path) -> SweBenchAgentRunConfig:
         if descriptor is not None:
             os.close(descriptor)
     try:
-        return SweBenchAgentRunConfig.model_validate_json(body, strict=True)
+        return _CONFIG.validate_json(body, strict=True)
     except ValueError:
         raise KernelError("swebench_run_config_invalid", "SWE-bench执行配置无效") from None

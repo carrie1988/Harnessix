@@ -239,9 +239,14 @@ async def _drive_turn(
     execution_fingerprint: str,
     process_profile: ProductProcessProfile,
     cancel: CancelToken,
+    expected_terminal_turn: tuple[UUID, UUID] | None = None,
 ) -> tuple[UUID, Turn]:
     history = TaskPackHistoryReadControl.begin(cancel)
     thread = await owner.authenticated_single_thread(history)
+    if expected_terminal_turn is not None and (
+        thread is None or thread.thread_id != expected_terminal_turn[0]
+    ):
+        raise KernelError("swebench_case_evidence_mismatch", "SWE-bench冻结的Thread证明缺失或漂移")
     if thread is None:
         thread = await runtime.create_thread(str(workspace))
     elif thread.workspace != str(workspace):
@@ -251,6 +256,17 @@ async def _drive_turn(
         f"swebench:{plan.plan_sha256}:{execution_fingerprint}:{case.instance_id}:{_PROMPT_VERSION}"
     )
     turn = _request_turn(thread, request_id)
+    if expected_terminal_turn is not None:
+        if (
+            turn is None
+            or turn.turn_id != expected_terminal_turn[1]
+            or turn.status not in TERMINAL_TURNS
+        ):
+            raise KernelError(
+                "swebench_case_evidence_mismatch", "SWE-bench冻结的Turn证明缺失或漂移"
+            )
+        # 终态恢复只能读取原事实；不能因证据缺失创建第二次付费尝试。
+        return thread.thread_id, turn
     if turn is None:
         budget = _turn_budget(plan)
         turn = await _await_cancel(
@@ -319,6 +335,7 @@ async def run_swebench_agent_case(
     api_key: str,
     cancel: CancelToken | None = None,
     observability: Observability | None = None,
+    expected_terminal_turn: tuple[UUID, UUID] | None = None,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -327,6 +344,8 @@ async def run_swebench_agent_case(
     ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench执行配置摘要无效")
     token = cancel or CancelToken()
+    if expected_terminal_turn is not None and not (run_root / "session.sqlite").is_file():
+        raise KernelError("swebench_case_evidence_mismatch", "SWE-bench冻结的Session证明缺失")
     with provider_publication_scope(provider_config.api_key_env, api_key) as scope:
         history = TaskPackHistoryReadControl.begin(token)
         async with open_task_pack_publication(run_root, scope, history_read=history) as owner:
@@ -378,4 +397,5 @@ async def run_swebench_agent_case(
                                 execution_fingerprint,
                                 process_profile,
                                 token,
+                                expected_terminal_turn,
                             )

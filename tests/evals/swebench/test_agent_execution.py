@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import pytest
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     Budget,
@@ -23,11 +24,14 @@ from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.evals.swebench.agent_execution import (
+    _PROMPT_VERSION,
     _approval_decision,
+    _drive_turn,
     _request_turn,
     _require_agent_action_gateway,
     _turn_budget,
     build_swebench_agent_prompt,
+    run_swebench_agent_case,
 )
 from harnessix.evals.swebench.public_test_profile import build_swebench_case_process_profile
 from harnessix.evals.swebench.selection import project_swebench_public_cases
@@ -399,3 +403,90 @@ def test_request_projection_fails_closed_for_duplicate_or_unplanned_turns(
         _request_turn(thread, "planned")
 
     assert caught.value.code == "swebench_run_projection_invalid"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "defect",
+    ["none", "thread_missing", "thread_drift", "turn_missing", "turn_drift", "nonterminal"],
+)
+async def test_frozen_terminal_replay_never_creates_or_resumes_an_attempt(tmp_path, defect):
+    plan = build_test_plan()
+    case = plan.cases[0]
+    request = f"swebench:{plan.plan_sha256}:{SHA256}:{case.instance_id}:{_PROMPT_VERSION}"
+    turn = _turn(request)
+    thread = _thread(turn)
+    expected = (thread.thread_id, turn.turn_id)
+    if defect == "thread_missing":
+        thread = None
+    elif defect == "thread_drift":
+        thread = thread.model_copy(update={"thread_id": uuid4()})
+    elif defect == "turn_missing":
+        thread = thread.model_copy(update={"turns": ()})
+    elif defect == "turn_drift":
+        thread = thread.model_copy(
+            update={"turns": (turn.model_copy(update={"turn_id": uuid4()}),)}
+        )
+    elif defect == "nonterminal":
+        thread = thread.model_copy(
+            update={"turns": (turn.model_copy(update={"status": TurnStatus.ACCEPTED}),)}
+        )
+
+    class Owner:
+        async def authenticated_single_thread(self, _history):
+            return thread
+
+    class Runtime:
+        def __getattr__(self, name):
+            pytest.fail(f"终态重放不得调用运行时操作: {name}")
+
+    async def replay():
+        return await _drive_turn(
+            Runtime(),
+            Owner(),
+            plan,
+            case,
+            Path("/workspace"),
+            SHA256,
+            _process_profile(tmp_path),
+            CancelToken(),
+            expected,
+        )
+
+    if defect == "none":
+        assert await replay() == (expected[0], turn)
+    else:
+        with pytest.raises(KernelError) as caught:
+            await replay()
+        assert caught.value.code == "swebench_case_evidence_mismatch"
+
+
+@pytest.mark.asyncio
+async def test_missing_frozen_session_stops_before_opening_provider_or_publication(
+    tmp_path, monkeypatch
+):
+    from harnessix.evals.swebench import agent_execution
+    from harnessix.models.config import OpenAIChatConfig
+
+    def forbidden(*_args, **_kwargs):
+        pytest.fail("缺失冻结Session不得打开Provider或重建发布状态")
+
+    monkeypatch.setattr(agent_execution, "_provider", forbidden)
+    monkeypatch.setattr(agent_execution, "open_task_pack_publication", forbidden)
+    plan = build_test_plan()
+    root = tmp_path / "missing-run"
+    with pytest.raises(KernelError) as caught:
+        await run_swebench_agent_case(
+            plan=plan,
+            case=plan.cases[0],
+            run_root=root,
+            workspace=tmp_path,
+            git_executable=Path("/usr/bin/git"),
+            provider_config=OpenAIChatConfig(model="fixture"),
+            execution_fingerprint=SHA256,
+            process_profile=_process_profile(tmp_path),
+            api_key="offline",
+            expected_terminal_turn=(uuid4(), uuid4()),
+        )
+    assert caught.value.code == "swebench_case_evidence_mismatch"
+    assert not root.exists()
