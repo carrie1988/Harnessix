@@ -1,0 +1,111 @@
+{
+  "schema": "harnessix.swebench-bounded-thinking-preregistration/v1",
+  "frozen_at": "2026-10-13T17:38:23.963712+00:00",
+  "runner_sha256": "232e3eff52958bb050882e6f4b994e95e51fb61281e024b6043feaf6cd8a9111",
+  "source_revision": "a3a4ed00c30f201d7282d749b9f74051323e5a24",
+  "source_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "scope": "development_set_bounded_thinking_paired_prefix3_not_official_score",
+  "selected_case_ids": [
+    "matplotlib__matplotlib-25960",
+    "pydata__xarray-4695",
+    "pytest-dev__pytest-10051"
+  ],
+  "selected_case_count": 3,
+  "executions": 6,
+  "execution_order": [
+    [
+      "nonthinking",
+      0
+    ],
+    [
+      "thinking",
+      0
+    ],
+    [
+      "nonthinking",
+      1
+    ],
+    [
+      "thinking",
+      1
+    ],
+    [
+      "nonthinking",
+      2
+    ],
+    [
+      "thinking",
+      2
+    ]
+  ],
+  "changed_task_fields": [],
+  "source_changes_between_arms": [],
+  "changed_model_configuration_fields": [
+    "enable_thinking",
+    "thinking_budget",
+    "output_token_parameter",
+    "price.inference_mode",
+    "price.input_tokens_max",
+    "billing_context.inference_mode",
+    "explicit_v5_config_and_api_output_cost_margin"
+  ],
+  "separate_identity_fields": [
+    "plan_sha256",
+    "work_root",
+    "execution_fingerprint"
+  ],
+  "accounting_only_fields": [
+    "fee_stop_amount"
+  ],
+  "unchanged": [
+    "prompt_template",
+    "problem_statements",
+    "base_commits",
+    "process_profiles",
+    "timeout_seconds",
+    "no_retry",
+    "all_safety_controls"
+  ],
+  "maximum_cost_amount": "36",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "primary_gate": {
+    "max_tokens": 50000,
+    "max_steps": 16,
+    "resolved_target": "22/25"
+  },
+  "outcomes": [
+    "native_terminal_status",
+    "patch_produced",
+    "model_token_usage",
+    "public_test_observation",
+    "patch_review_observation",
+    "compaction_usage",
+    "provider_failures"
+  ],
+  "official_score": null,
+  "limitations": "同源固定前三项配对pass@1新尝试；比较有界思考配置整体而非单一参数，原50K/16次含全部推理与摘要，主评测非思考条件不变；非统计显著性或官方成绩。",
+  "arms": [
+    {
+      "name": "nonthinking",
+      "plan_sha256": "0065eb0fb79c20d56fd34b50912517c232751ae9c700984598706447d4703bd7",
+      "plan_file_sha256": "b71c8e70a50cf973cf0bbe36a67adde56e1b85f681044caab1855df3c0e3ff80",
+      "config_file_sha256": "641ea637a17b26ce1fdb6bdbaa56877323e3a7704b9ac3da07dbabb66c62f2fa",
+      "execution_fingerprint": "3eaf9b4f20b827833948ac0b6460799ea3737322c4207eabd2d0900c55354304",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.947456"
+    },
+    {
+      "name": "thinking",
+      "plan_sha256": "fa83152a4e25f5832caeb70502d096e4ed386143c8c49da0dfd9a709eeab2d31",
+      "plan_file_sha256": "79e1c4817b5b9751c781015654764ab73d17e4070fca6c4af8b8832a1b35516f",
+      "config_file_sha256": "1258ab50b0544d14f265cc881e5455ef4978cd6e65df374d3a45125244fca84c",
+      "execution_fingerprint": "87a9e1b25f0df019624e8ff59b8589ff6ef639ca978842150f7ece1e7cd03efa",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.948176"
+    }
+  ]
+}

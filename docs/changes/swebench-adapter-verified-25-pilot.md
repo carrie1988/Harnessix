@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 21
-code_revision: e92c038e2fb8e82095441840a2a04659d9ea4067
+version: 22
+code_revision: a3a4ed00c30f201d7282d749b9f74051323e5a24
 owners:
   - core
 modules:
@@ -811,3 +811,27 @@ base commit、工具和镜像；900秒、摘要计费、隔离／审批和无重
 554源文件Mypy、冻结Schema与Ruff通过；全局可读性旧基线FAIL保留，未改基线为通过。
 下一步聚焦模型规划与有效调查进展，不重复全25项盲跑；任何模型模式诊断都独立预注册，
 不得静默修改主评测的非思考条件、累计Token或费用边界。
+
+### 独立有界思考配置配对诊断（非正式成绩）
+
+v29真实调用仍反复调查及提交已知非法参数；不能据此直接归因模型缺少思考能力。新增**独立v5**
+以检验有界思考配置整体，不修改原主评测的非思考模型条件。
+[`SweBenchThinkingAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py)保留原隔离、
+逐Case预付与压力压缩，显式思考上限1024、整体输出4096，使用`max_completion_tokens`。
+配置、模式参数、价格模式及执行指纹必须一致；旧三版序列化字节回归不变，CLI默认仍非思考。
+
+[`_next_case_reserve`](../../src/harnessix/evals/swebench/execution.py)和完整轮次费用上界同时覆盖
+官方10 Token输出容差：v5下一Case4.948176元（已知1.800360＋未决3.147816），
+25项全轮123.704400元。只覆盖最后请求的计价尾差，不扩大任务50K硬预算；原版本容差0、费用公式不变。
+公开字段、原Problem全文、审批、工具、Profile、模型地域和无重试仍沿原流程。
+
+[预注册](../../benchmarks/swebench/verified-25-thinking-sensitivity-v30/preregistration.json)
+在同一源码`a3a4ed00`固定前三项、原顺序、相同任务与50K/16次，交错执行非思考与有界思考两组，
+共6次pass@1；各Case全新目录，不恢复终态。900秒、推理与摘要全计费、10 GiB保护线不变。
+只改变预注册声明的模式配置及必要价格/容差身份；不是纯单参数消融，不证明统计显著性。
+200元周期先预付36元、旧31.474560元未决保留；新未决立即停止该诊断，不自动重试。
+预检必须核对脚本、源码、计划和配置哈希及费用负控，未执行的22项保持ready，不能写完整predictions。
+
+配置及SDK聚焦回归通过；扩大回归1738通过／4项既有重试预期失败，在修改前独立快照同样失败，
+未豁免为全绿。Mypy 554源文件、Schema与Ruff通过。首次真实诊断结果仍待原生认证，
+最新正式成绩保留3/25，不将离线接线、模式切换或诊断结果换算成25项成绩。

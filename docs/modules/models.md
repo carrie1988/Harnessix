@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
+version: 18
+code_revision: a3a4ed00c30f201d7282d749b9f74051323e5a24
 owners:
   - core
 modules:
@@ -798,3 +798,35 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 | 3 | `35e9e889f78534fd8866f76cfe24d936b08d345d` | 2026-09-13 | 明确Scripted Provider延时遵循协作取消合同，为App Server关闭和Product UI Cancel提供确定性测试端口 |
 | 2 | `ac803fca1dcfc8edf76c41c8c0e474b9533282f1` | 2026-09-12 | 链接DOC-1.4 Product Config现行设计 |
 | 1 | `00e2b816078f52c10849a65efddb36e84a538eef` | 2026-09-12 | DOC-1.3 Wave A Model Runtime模块设计初版 |
+
+## 25. 有界思考配置：输出上限包含推理，不发布推理正文
+
+官方[Chat参数与用量定义](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/)
+说明：Qwen的`max_tokens`只限制回答，`max_completion_tokens`限制推理加回答；
+`completion_tokens`已包含`reasoning_tokens`，后者只是子集。不能只开启思考而保留回答专用上限。
+
+| 字段／端口 | 正式约束与源码 |
+|---|---|
+| `thinking_budget` | [`OpenAIChatConfig`](../../src/harnessix/models/config.py)新增可选上限1～262144；要求显式开启思考、整体输出参数，且低于配置输出上限 |
+| 未设置思考预算 | 不发送、不序列化新字段；原配置、指纹与默认模式保持。三个关联Schema只新增可选字段 |
+| 出站预算 | [`build_request`](../../src/harnessix/models/_chat_mapping.py)复用原整体输出收缩；思考上限取配置与本请求输出减1的较小值；不足2 Token在I/O前拒绝，不扩大任务预算 |
+| 用量账目 | 原[`ChatStream`](../../src/harnessix/models/_chat_stream.py)保留完整`completion_tokens`及推理子项，原Attempt与累计预算不重复相加 |
+| 推理正文 | 不转为Text Item，不进入Session或回传历史；不是新增公共Reasoning Item或原生推理接口 |
+| 截断与超额 | `length`仍失败，完整usage仍入账；累计Token达到上限后不调度工具，不按预算截断真实费用 |
+
+```text
+严格配置 → 原出站映射与字节估算 → SDK合并扩展字段 → 原SSE解析
+→ 完整usage与推理子项入账 → 原累计预算检查 → 才能执行工具
+推理正文不发布；失败／取消仍走原资源关闭、Attempt及Replay链
+```
+
+[正式SDK回归](../../tests/models/test_openai_chat.py)覆盖1024思考／4096整体输出、隐藏推理正文、
+正常与length终态、SQLite及Replay；完整工具提案在49999／50000／50010累计Token分别执行1／0／0次，
+4106输出全额计入、不增加50K硬上限。[映射负控](../../tests/models/test_chat_mapping.py)覆盖错型、
+不兼容参数、回答余量及逐请求收缩；[输入估算](../../tests/models/test_provider_input_budget.py)覆盖SDK实际出站字节。
+扩大回归1738通过／4失败／0跳过；四项旧重试预期在修改前独立源码快照同样失败，原FAIL保留，
+未放宽未知费用停止规则。Mypy 554源文件、Schema及Ruff通过；这不是全量发布门禁通过。
+
+独立SWE配置v5显式启用有界思考，旧v2/v3/v4仍非思考。API最多10 Token容差仅进入费用尾差
+和未决请求预留；不放宽50K/16次，也不重新分类原失败。完整配置与实验边界见
+[SWE-bench诊断设计](../changes/swebench-adapter-verified-25-pilot.md#独立有界思考配置配对诊断非正式成绩)。
