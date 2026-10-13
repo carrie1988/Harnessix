@@ -46,9 +46,18 @@
   "remaining_upper_budget_amount": "30.368584",
   "maximum_run_allocation_amount": "30.368584",
   "model_retry_policy": "none",
-  "official_score": null,
+  "official_score": {
+    "resolved_cases": 4,
+    "submitted_cases": 25,
+    "empty_patch_cases": 18,
+    "patch_apply_failures": 0,
+    "error_cases": 0,
+    "infrastructure_classifier": 0,
+    "ambiguous_failures": 2,
+    "infrastructure_acceptance": "OPEN"
+  },
   "execution_run_directory": "runs/agent-52525e62ad7d-v21",
-  "execution_status": "FROZEN_NOT_STARTED",
+  "execution_status": "COMPLETED_OFFICIAL_GRADED",
   "evidence_log_sha256": {
     "v21-range-final-r2.log": "797572e08701de78310c94d4e8291ca1ac50ed99b5c6947f0e213856de9a5844",
     "v21-range-final-r2.xml": "b7f31ace1808eeea21cdaae103ce5538d5e873eb2295632647a877064fabfaac",
@@ -66,5 +75,11 @@
   "provider_failure_policy": "freeze_transport_with_full_reserve",
   "fee_admission_policy": "next_isolated_case",
   "price_source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
-  "price_observed_at": "2026-10-13T09:18:58+00:00"
+  "price_observed_at": "2026-10-13T09:18:58+00:00",
+  "post_execution_budget": {
+    "known_cost_upper_amount": "71.92662",
+    "unaccounted_reserved_amount": "15.73728",
+    "remaining_upper_budget_amount": "12.3361"
+  },
+  "quality_decision": "NO_GO: 4/25 does not meet 22/25; no improvement claim"
 }
