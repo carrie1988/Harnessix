@@ -1,0 +1,184 @@
+{
+  "schema": "harnessix.swebench-budget-sensitivity-summary/v1",
+  "checked_at": "2026-10-13T16:27:20.865515+00:00",
+  "scope": "development_set_paired_prefix_diagnostic_not_official_score",
+  "source_revision": "e82c69f2eb8624f306f40ffbfe7277611277e042",
+  "preregistration_sha256": "3981dca81114af63513bbe447c1407c91f371af12398bb88e2ff3b7b6a24ed8d",
+  "raw_result_sha256": "348b4e6c3fdb32245bb217970b3ee35a28ef258145af8f0b21a79083d7c706d6",
+  "runner_sha256": "274e00e39a2219de8d75203cb3b4a17d8cc2db57ef078087fb89eb2d0645efc3",
+  "independent_native_verification": {
+    "authenticated_turns": 6,
+    "native_files_verified": 12,
+    "native_files_unchanged": true,
+    "request_identity_and_task_budget_verified": true,
+    "pending_22_cases_per_arm_untouched": true,
+    "complete_25_predictions_created": false,
+    "verification_model_requests": 0
+  },
+  "arms": {
+    "baseline": {
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "attempted_cases": 3,
+      "not_attempted_cases": 22,
+      "autonomous_closed_cases": 0,
+      "nonempty_patch_cases": 0,
+      "known_cost_upper_amount": "1.514772",
+      "reserved_cost_amount": "0",
+      "input_tokens": 121659,
+      "output_tokens": 1524,
+      "tool_counts": {
+        "read_file": 10,
+        "grep": 10
+      },
+      "cases": [
+        {
+          "instance_id": "matplotlib__matplotlib-25960",
+          "native_status": "failed",
+          "native_error_code": "budget_exceeded",
+          "input_tokens": 38977,
+          "output_tokens": 531,
+          "model_steps": 6,
+          "known_cost_upper_amount": "0.48684",
+          "reserved_cost_amount": "0",
+          "patch_nonempty": false,
+          "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_error_code": "budget_exceeded",
+          "tool_counts": {
+            "read_file": 4,
+            "grep": 2
+          },
+          "tool_failure_counts": {},
+          "compaction_requests": 1
+        },
+        {
+          "instance_id": "pydata__xarray-4695",
+          "native_status": "failed",
+          "native_error_code": "budget_exceeded",
+          "input_tokens": 37558,
+          "output_tokens": 289,
+          "model_steps": 6,
+          "known_cost_upper_amount": "0.4611",
+          "reserved_cost_amount": "0",
+          "patch_nonempty": false,
+          "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_error_code": "budget_exceeded",
+          "tool_counts": {
+            "grep": 5,
+            "read_file": 1
+          },
+          "tool_failure_counts": {},
+          "compaction_requests": 0
+        },
+        {
+          "instance_id": "pytest-dev__pytest-10051",
+          "native_status": "failed",
+          "native_error_code": "budget_exceeded",
+          "input_tokens": 45124,
+          "output_tokens": 704,
+          "model_steps": 8,
+          "known_cost_upper_amount": "0.566832",
+          "reserved_cost_amount": "0",
+          "patch_nonempty": false,
+          "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_error_code": "budget_exceeded",
+          "tool_counts": {
+            "read_file": 5,
+            "grep": 3
+          },
+          "tool_failure_counts": {
+            "tool_invalid_arguments": 4
+          },
+          "compaction_requests": 1
+        }
+      ]
+    },
+    "larger": {
+      "max_tokens": 100000,
+      "max_steps": 24,
+      "attempted_cases": 3,
+      "not_attempted_cases": 22,
+      "autonomous_closed_cases": 0,
+      "nonempty_patch_cases": 0,
+      "known_cost_upper_amount": "3.558252",
+      "reserved_cost_amount": "0",
+      "input_tokens": 279601,
+      "output_tokens": 5640,
+      "tool_counts": {
+        "grep": 17,
+        "read_file": 22
+      },
+      "cases": [
+        {
+          "instance_id": "matplotlib__matplotlib-25960",
+          "native_status": "failed",
+          "native_error_code": "budget_exceeded",
+          "input_tokens": 93855,
+          "output_tokens": 1994,
+          "model_steps": 13,
+          "known_cost_upper_amount": "1.198044",
+          "reserved_cost_amount": "0",
+          "patch_nonempty": false,
+          "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_error_code": "budget_exceeded",
+          "tool_counts": {
+            "grep": 6,
+            "read_file": 7
+          },
+          "tool_failure_counts": {},
+          "compaction_requests": 4
+        },
+        {
+          "instance_id": "pydata__xarray-4695",
+          "native_status": "failed",
+          "native_error_code": "budget_exceeded",
+          "input_tokens": 91299,
+          "output_tokens": 1278,
+          "model_steps": 12,
+          "known_cost_upper_amount": "1.141596",
+          "reserved_cost_amount": "0",
+          "patch_nonempty": false,
+          "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_error_code": "budget_exceeded",
+          "tool_counts": {
+            "grep": 7,
+            "read_file": 5
+          },
+          "tool_failure_counts": {},
+          "compaction_requests": 2
+        },
+        {
+          "instance_id": "pytest-dev__pytest-10051",
+          "native_status": "failed",
+          "native_error_code": "budget_exceeded",
+          "input_tokens": 94447,
+          "output_tokens": 2368,
+          "model_steps": 14,
+          "known_cost_upper_amount": "1.218612",
+          "reserved_cost_amount": "0",
+          "patch_nonempty": false,
+          "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "evidence_error_code": "budget_exceeded",
+          "tool_counts": {
+            "read_file": 10,
+            "grep": 4
+          },
+          "tool_failure_counts": {
+            "tool_invalid_arguments": 1,
+            "tool_anchor_not_found": 1
+          },
+          "compaction_requests": 5
+        }
+      ]
+    }
+  },
+  "official_score": null,
+  "latest_official_score": "3/25 (v27)",
+  "primary_task_budget_unchanged": {
+    "max_tokens": 50000,
+    "max_steps": 16,
+    "resolved_target": "22/25"
+  },
+  "interpretation": "本次三组配对两档均0/3闭环、空补丁3/3。提高任务预算只延长了源码调查，未观察到质量收益；不证明全部任务与预算无关，也不是显著性或正式评分。",
+  "native_proof_manifest_sha256": "afc587c2864516791033d1c40f3594c61894a6665c76c380aefb9b51142219f8"
+}

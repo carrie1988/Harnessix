@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 49
+version: 50
 code_revision: 4c5afc1642ab4037f6bbfe616fa546e1d20eab22
 owners:
   - core
@@ -2477,3 +2477,9 @@ Agent prompt v7复用正式read_file唯一锚点能力。
 全部模型配置、50K/16次含摘要及900秒；新Root／pass@1，无旧Case恢复或拼分。
 [预检](../../benchmarks/swebench/verified-25-v27/preflight.json)与
 [依据及结果边界](../changes/swebench-adapter-verified-25-pilot.md#v27候选已知文件的唯一锚点源码页)分开记录。
+
+提示v8仅去除与共享Runtime重复的任务包装；字节减少不代表质量收益。
+[三组同源预算对照](../../benchmarks/swebench/verified-25-budget-sensitivity-v28/result-summary.json)
+使用新目录，50K/16次和100K/24次两组均0/3闭环、空Patch 3/3；较大预算只延长调查，
+没有模型传输故障。它不是正式25项评分或显著性证明，不改变原22/25目标和预算口径；
+约束、资金及下一步整改边界见[集中详设](../changes/swebench-adapter-verified-25-pilot.md#独立三项配对预算诊断非正式成绩)。
