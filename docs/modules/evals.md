@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 41
-code_revision: e031eaa6c5681d70b5680ec713e675f2ce3ce886
+version: 42
+code_revision: 30201490ae1ab4338bd14f519e67a685dd63c8e2
 owners:
   - core
 modules:
@@ -2431,3 +2431,12 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 ### 当前增量：固定审批策略的拒绝也须正式结算
 
 `_require_allowed_approval`的允许集合、文件／选择器校验不变；`_approval_decision`将其确定`eval_approval_denied`转为原Runtime的指纹绑定REJECTED，持久回复后继续原预算内Turn。异常身份、损坏投影、取消与持久化失败仍中止，不批准回滚或扩大Task Pack；详见[第14节调用顺序与恢复负控](../changes/m09-r3-coding-workflow-instructions.md#14-固定审批拒绝不得扩大成suite宿主崩溃)。
+
+
+### SWE-bench v3：独立传输故障隔离与终态只读恢复
+
+正式执行配置和Suite状态新增显式v3；旧v1/v2不自动升级。终态传输失败、单次未决请求且
+全部工具已闭合时，Case保留失败与原Patch，逐笔足额预留后可推进下一隔离Case。
+工具效果未知、原生证据损坏、计费来源/价格不符或下一Case最坏额度不足仍停止；
+冻结终态重放缺失原Session/Thread/Turn时禁止新请求，全部25项尝试完毕才导出完整prediction。
+字段、资金公式、原生恢复、负控及真实评分边界集中见[SWE-bench详设](../changes/swebench-adapter-verified-25-pilot.md#v3独立case故障隔离保留失败不把网络恢复等同于质量恢复)。

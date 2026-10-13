@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 7
-code_revision: 5a76886d0e3ffaec08d7fdddf57276bbdb56697f
+version: 8
+code_revision: 30201490ae1ab4338bd14f519e67a685dd63c8e2
 owners:
   - core
 modules:
@@ -17,6 +17,7 @@ related_tests:
   - tests/evals/swebench/test_official.py
   - tests/evals/swebench/test_cli.py
   - tests/evals/swebench/test_execution.py
+  - tests/evals/swebench/test_failure_isolation.py
   - tests/evals/swebench/test_workspace.py
 supersedes: []
 ---
@@ -352,3 +353,64 @@ Chat每轮实际发送累计剩余额度和步骤，提示成本由原mapper/估
 可用43.088836元；预留不是实扣费用。现行完整新轮最坏情况准入为48.147456元，
 可用额度低于该准入值，不等于100元已消费完。下一轮前须明确资金准入与独立Case失败边界，
 不能暗中删除预留、放宽预算或改写旧轮结果。磁盘余量约55 GiB，未触发10 GiB停止门槛。
+
+### 后续共性优化：有界搜索前后文与失败隔离
+
+共享grep新增可选0～3行前后文，减少符号搜索后额外宽窗口读取的往返；默认0，扫描和24 KiB输出
+硬门不变，不能替代Patch摘要或失败后重读。实现、字段及失败边界见[Tools](../modules/tools.md#当前搜索前后文减少调查往返不放宽写入前置条件)。
+新v2合同与旧v1分开冻结，Agent公共协议不变，没有Case专用逻辑、参考答案或评分输入。
+相关专项529项通过；扩大回归曾出现24项失败，其中23项在未改动v19源码上复现，
+新增一项是旧测例要求所有非read_file工具为1.x，现按grep正式2.x更新版本断言，仍验证旧授权拒绝。
+扩大集包含旧迁移版本断言和本机Git不支持`--object-format`的问题，原日志保留，不能宣称全仓库全绿。
+这些是离线接线及边界证据，不是新25 Case质量分数。
+
+用户已对齐后续规则：冻结传输故障Case、足额保留未决费用，允许继续后续隔离Case；不自动重试、
+不改失败评分，全部已知费用与预留仍受原100元总额约束。工具效果未知或状态损坏仍停止。
+此规则已实现独立版本的执行契约、原生费用重算和负控，不追改v17～v19的冻结停止状态。
+
+
+#### v3独立Case故障隔离：保留失败，不把网络恢复等同于质量恢复
+
+**需求与边界。** 传输故障导致未决Usage时，v2停止整轮，连续三轮无法形成完整25项评分。
+用户明确允许新轮隔离这种失败，但禁止重试、删失败、释放预留或超过原100元周期。
+因此新增显式`run-config/v3`和`suite-state/v3`；v1/v2继续按原规则读取与停止，
+CLI只有`--continue-isolated-provider-failures`可创建v3，既有配置与该开关不一致立即拒绝。
+Agent、模型、工具权限、评分、50K/16-step/900s限制均不改变。
+
+**执行流程与数据事实。**
+
+```text
+固定配置/源码/目录身份 → 以累计已知费用+全部未决预留+下一Case最坏预留准入
+→ 原产品Runtime运行一个Turn → 认证原生终态与工具闭合 → 采集原Git Patch
+→ 原生Attempt逐笔计价 → 持久Case失败/成功与Suite连续尝试前缀
+→ 满足隔离条件才允许下一Case → 全25项尝试完毕才导出predictions并官方评测
+```
+
+[费用与主循环](../../src/harnessix/evals/swebench/execution.py)以原生模型尝试为唯一用量来源。
+只允许终态`provider_transport`，普通步骤完整覆盖且每步一次尝试；全部尝试已关闭，
+普通末次是传输失败，所有其他请求必须可按冻结模型、计费上下文与有效价格快照计价。
+最多普通末次Usage可未知/不完整，按`max_request_bytes × 输入上界 + max_output_tokens × 输出价`
+足额预留3.147456元。每个未知Case分别累加，不共用一笔预留。价格、请求来源、响应身份
+不符，未知摘要请求、未配对工具、未知效果、取消或测试执行基础设施失败仍停止。
+失败Case始终`failed`，错误码`swebench_provider_transport_isolated`，不计入质量成功；
+`attempted_case_ids`可包含失败，`completed_case_ids`只包含成功，不能把尝试完成当Resolved。
+
+[版本化配置](../../src/harnessix/evals/swebench/run_config.py)声明v3整轮理论上界123.6864元，
+但不要求一次预付整轮；每个下一Case必须先覆盖1.8元已知最坏额加3.147456元未知预留，
+合计4.947456元。新轮最多占用本周期尚可用43.088836元，历史9.442368元预留不变；
+资金不足在打开下一Case前停止，不生成缺项或补零的完整评分。
+
+**恢复与失败顺序。**
+[Case终态重放](../../src/harnessix/evals/swebench/agent_execution.py)必须找到原Session、
+原Thread和原终态Turn，才返回历史；缺失或漂移不得创建Thread、发新请求、审批或恢复执行。
+主循环再核对Patch摘要、Turn身份、用量和错误分类。原状态前缀不可改写，v2不能静默升级v3。
+最终完整predictions包含每项原Patch（包括失败项），不删除故障Case，也不拼接旧轮答案。
+
+**验证范围。** 搜索、工具视图、原生契约与SWE-bench联合562项通过，554个源码文件Mypy通过，合同与改动范围Ruff通过；不覆盖已保留的扩大集历史失败。
+
+[隔离回归](../../tests/evals/swebench/test_failure_isolation.py)覆盖多次传输失败
+分别预留、完整失败prediction、逐Case额度不足的请求前停止、重放状态字节不变、错误模型/Provider/
+响应身份/价格周期/开放尝试/步骤缺失/额外尝试/旧契约拒绝，以及工具未知优先停止。
+[终态负控](../../tests/evals/swebench/test_agent_execution.py)验证缺失或漂移的Session、Thread、
+Turn与非终态不能触发新请求。离线通过只证明运行边界；真实长流稳定性、Resolved和基础设施目标
+必须由新冻结轮次的完整原生证据和官方Docker评分另行验收。

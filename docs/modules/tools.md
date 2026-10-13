@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: f84583e5560998683cf07d6b4c138c4f7ff3ad1a
+version: 13
+code_revision: 56dcefaf42a856e7d3cf8dbef267830596897773
 owners:
   - core
 modules:
@@ -63,6 +63,28 @@ supersedes: []
 
 Coding Tool Runtime不是Shell、写文件接口或OS Sandbox。它只实现宿主预先授予的窄只读能力；Patch、
 Process、测试执行和事务性交付由各自的可信执行模块负责，不能通过本模块的`READ_ONLY`声明旁路。
+
+### 当前搜索前后文：减少调查往返，不放宽写入前置条件
+
+真实开发集的大部分失败来自累计输入预算：搜索符号后再串行读取宽窗口，历史与目录随下一请求
+重新计数。`grep` 2.x新增可选`context_lines`，默认0，合法范围0～3；模型可在一次符号定位中
+观察附近分支，再决定是否需要额外读取。它不是强制提前修改，也不保证实际模型成绩提升。
+
+- [输入及输出](../../src/harnessix/tools/search_contracts.py)：每个命中保留原path、line、revision、
+  text与text_truncated，另可携带`context.start_line`及最多7个顺序行片段。每行最多384 UTF-8字节，
+  长行截断显式标记，中心片段必须与原命中一致；范围错误、越界或多行伪装由合同拒绝。
+- [搜索实现](../../src/harnessix/tools/search.py)：已验证的单份文件内容 → 有界前后滚动窗口 →
+  命中及上下文 → 原24 KiB记录上限 → 预览或原完整Artifact。原生文件端复用同一行投影，
+  不复制搜索算法；路径授权、扫描上限、取消/超时、长行缺口与Artifact完整性仍使用原边界。
+- 搜索revision仍不是文件内容SHA-256；Patch必须经`read_file`取得完整摘要，失败后的必要重读
+  也不能由grep上下文代替。没有扩大文件权限、返回完整文件或放宽原50K/16次任务预算。
+- 新增[Grep输入v2](../../spec/grep-input-v2.schema.json)、[输出v2](../../spec/grep-output-v2.schema.json)
+  及[归档v2](../../spec/archived-grep-output-v2.schema.json)。原v1文件与摘要原样保留；缺context的旧
+  历史仍可读。新版工具合同与指纹拒绝旧执行授权，不静默恢复旧待执行调用；公共Agent协议不变。
+
+[专项测例](../../tests/tools/test_search_context.py)覆盖真实读取、旧结果、版本拒绝、UTF-8/CRLF、
+双侧范围、最大转义记录、输出上限、取消/超时、原生端一致性及归档重放；真实SDK映射与FD回收
+复用[内核测试](../../tests/tools/test_search_kernel.py)和[边界测试](../../tests/tools/test_search_boundaries.py)。
 
 ## 2. 需求背景
 
