@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 44
-code_revision: f2fde8fd0c55de2ce023047b35aea88456d8476e
+version: 45
+code_revision: d57f5818100778d952efbf1142e9660d9523cdce
 owners:
   - core
 modules:
@@ -2452,3 +2452,12 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 动机、接口调用顺序、兼容、负控和宿主56项失败测试的证据边界见
 [SWE-bench详设](../changes/swebench-adapter-verified-25-pilot.md#原生测试入口v6仓库家族适配而非case专用修补)。
 它只整改公开测试启动，不是Agent自主验收或新官方质量评分；缺失依赖和22/25目标仍未完成。
+
+### 当前v25候选：容量准入与pytest原生执行上下文
+
+新Profile v7保持仓库根cwd并原样传递pytest节点后缀；v5/v6的原字节仍可读取，不静默升级。
+公开依赖准备与Agent执行隔离，派生镜像单独按完整image ID冻结，不覆盖官方镜像或放宽执行网络。
+有界摘要容量、失败顺序、原预算、测试与宿主诊断边界集中见
+[v25详设](../changes/swebench-adapter-verified-25-pilot.md#v25候选有界摘要容量与原生pytest上下文)。
+[新计划](../../benchmarks/swebench/verified-25-v25/plan.json)保留原25项及50K/16次限制；
+截至冻结没有新官方评分，不能把宿主239项通过和838项回归当成Resolved提升或基础设施清零。

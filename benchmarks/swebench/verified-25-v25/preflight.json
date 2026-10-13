@@ -1,0 +1,74 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T13:14:53.777183+00:00",
+  "plan_sha256": "59d870229fbb9572eb0683ec221f54a997dc0f0b5e974f44d97dbec30c9e036f",
+  "source_revision": "d57f5818100778d952efbf1142e9660d9523cdce",
+  "evaluation_scope": "development_set",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "runtime_changes": [
+    "bounded pure summary capacity alternatives; identical pins and complete recent groups; full prepayment and amortization",
+    "native repository cwd and exact pytest node propagation; v5/v6 byte compatibility",
+    "public dependency-only derived image bound by complete digest, original images retained"
+  ],
+  "profiles_count": 25,
+  "profile_version": "swebench-public-tests-v7",
+  "execution_config_version": "harnessix.swebench-agent-run-config/v4",
+  "execution_fingerprint": "7e28265695743561858b3c11191b1d9e67d7b12eba90765b0512419db6b8bfe4",
+  "budget_pressure_compaction": true,
+  "production_default_budget_pressure_compaction": false,
+  "final_focused_pytest": {
+    "passed": 838,
+    "failed": 0,
+    "errors": 0
+  },
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "ruff_changed_files": "PASS",
+  "contracts": "PASS",
+  "native_dependency_diagnostic": {
+    "passed": 239,
+    "failed": 1,
+    "xfailed": 1,
+    "scope": "host-directed original full public module; not autonomous evidence or official score",
+    "remaining_failure": "outbound tarpit timeout test incompatible with network=none; preserved, not removed or counted passed"
+  },
+  "original_infrastructure_acceptance": "OPEN: outbound-dependent tests and complete official scoring still required",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "period_limit_amount": "200",
+  "maximum_run_allocation_amount": "124",
+  "worst_case_amount": "123.6864",
+  "execution_run_directory": "runs/agent-59d870229fbb-v25",
+  "execution_status": "FROZEN_BEFORE_REQUEST",
+  "disk_guard": {
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 35818811392
+  },
+  "official_score": null,
+  "price_source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+  "price_observed_at": "2026-10-13T09:18:58+00:00",
+  "model_retry_policy": "none",
+  "evidence_sha256": {
+    "v25-final-consumers.xml": "28c49d3003610c7c3062fc909414b91ab80a93a2c476f42e01da149c898215bd",
+    "v25-final-mypy-r2.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
+    "public-deps-v25-requests-5414/manifest.json": "09984118a9a42887dd9324bb7e523ae9647729ecf3e9e6410954499787e9d664",
+    "public-deps-v25-requests-5414/runtime-verification-v7.json": "ec97ebd6d7636d8748017f57237026fc7c7fdadb04ff7a403378eedaf541c2e6",
+    "v25-pressure-capacity-probe.json": "aadf95af9ba236b31dde7e9636eb455c7d9d6ac8c78c2f637592627954b6db82",
+    "v25-host-preflight.json": "404a229e497b76dbce312bebbc8748b8ed5243853bc154227a4fa95589cddb64",
+    "v25-documentation-final.json": "b71d341e376137b708071a621fc0280adce942fc3a28c596368afaff1a8dcc53"
+  },
+  "transport_probe": {
+    "checked_at": "2026-10-13T13:17:02.689423+00:00",
+    "inference_requests": 0,
+    "models_endpoint_status": 200,
+    "source_revision_match": true,
+    "price_still_valid": true
+  },
+  "documentation_check": {
+    "document_count": 651,
+    "link_count": 14653,
+    "mermaid_count": 1173,
+    "findings": []
+  }
+}

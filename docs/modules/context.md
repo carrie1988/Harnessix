@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 1a0c8bd536c3254c862a847071cda016f4e0d93c
+version: 10
+code_revision: d57f5818100778d952efbf1142e9660d9523cdce
 owners:
   - core
 modules:
@@ -69,6 +69,11 @@ Windows Handle只读后端。POSIX目录revision算法不变；Windows不回退�
 Provider生命周期，仍经过取消、deadline、凭据出站保护及完整尝试用量记账。
 
 ### 1.2 实验性预算压力窗口：完整保留边界与摘要容量
+
+[`pressure_policies`](../../src/harnessix/agent/turn_budget_compaction.py)先试原容量，
+再以512/256输出Token上限生成去重的较小候选（最多三个纯Plan）；不增加配置原输出上限。
+每个候选仍经过原完整组保留、摊销及摘要/下一输入/收尾预付。容量选择不是请求重试，
+取消、非法历史和来源漂移仍失败关闭；小摘要的真实质量必须另行评测。
 
 [`plan_compaction`](../../src/harnessix/context/compaction.py)新增可选的内部规划参数
 `preferred_history_tokens`。规划器先计算用户锚点、显式锚点所属完整组和近期完整工具组的最小保留量，
