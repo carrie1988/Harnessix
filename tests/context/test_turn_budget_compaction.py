@@ -11,6 +11,7 @@ from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.model_history_runtime import _budget_plan
 from harnessix.agent.model_input_budget import estimate_model_input_tokens
 from harnessix.agent.models import Budget, Thread, TurnStatus, Usage
+from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
 from harnessix.agent.turn_budget_compaction import (
     closing_reserve,
@@ -105,7 +106,7 @@ async def pressure_plan(source: Thread, config: CompactionRuntimeConfig | None =
     )
 
 
-def preflight_host(tmp_path: Path, *, config=None, tools=None, context=None):
+def preflight_host(tmp_path: Path, *, config=None, tools=None, context=None, tool_view=None):
     main, summary = ScriptedProvider([]), ScriptedProvider([])
     engine = context or ContextEngine(
         ContextLimits(context_window_tokens=262_144, reserved_output_tokens=2048),
@@ -124,6 +125,7 @@ def preflight_host(tmp_path: Path, *, config=None, tools=None, context=None):
         context=engine,
         compaction=config or budget_config(),
         summary_provider=summary,
+        model_tool_view=tool_view,
     )
     return host, main, summary
 
@@ -131,9 +133,10 @@ def preflight_host(tmp_path: Path, *, config=None, tools=None, context=None):
 async def preflight(host: AgentRuntime, source: Thread, *, token=None):
     turn = source.turns[0]
     history = prepare_active_model_history(source, turn.model_steps + 1, ToolResultViewPolicy())
-    return await _budget_plan(
+    planned, context, _ = await _budget_plan(
         host, source, turn, history, token or CancelToken(), SUMMARY_INSTRUCTIONS
     )
+    return planned, context
 
 
 async def test_pressure_trigger_does_not_force_three_request_allocation_as_target():
@@ -173,6 +176,61 @@ async def test_unchanged_history_does_not_need_fabricated_summary(tmp_path: Path
     planned, _ = await preflight(host, source)
     assert planned is not None
     assert source.model_dump_json() == original
+    assert not main.requests and not summary.requests
+
+
+async def test_pressure_prepays_only_the_same_visible_catalog_as_the_main_request(tmp_path: Path):
+    class ExtraRegisteredTools(RecordingTools):
+        def definitions(self):
+            primary = super().definitions()[0]
+            hidden = tuple(
+                primary.model_copy(
+                    update={
+                        "name": f"unused-{index}",
+                        "input_schema": {
+                            "type": "object",
+                            "properties": {"large": {"const": "x" * 30000}},
+                        },
+                    }
+                )
+                for index in range(2)
+            )
+            return primary, *hidden
+
+    class CurrentPhaseView:
+        def select(self, turn, definitions):
+            return ModelToolSelection(tuple(d for d in definitions if d.name == "test.read"))
+
+    host, main, summary = preflight_host(
+        tmp_path, tools=ExtraRegisteredTools(), tool_view=CurrentPhaseView()
+    )
+    source = pressure_thread()
+    history = prepare_active_model_history(source, 1, ToolResultViewPolicy())
+    planned, context, selection = await _budget_plan(
+        host, source, source.turns[0], history, CancelToken(), SUMMARY_INSTRUCTIONS
+    )
+    assert planned is not None and context is not None and selection is not None
+    assert [d.name for d in selection.tools] == ["test.read"]
+    assert selection == host._model_tools_for_turn(source.turns[0])
+    assert context.inspection.tool_tokens == estimate_model_input_tokens((), selection.tools, None)
+    assert (
+        estimate_model_input_tokens((), tuple(host._definitions.values()), context.instructions)
+        > source.turns[0].budget.max_tokens
+    )
+    assert set(host._definitions) == {"test.read", "unused-0", "unused-1"}
+    assert not main.requests and not summary.requests
+
+
+@pytest.mark.parametrize("choice", [True, None, "invalid"])
+async def test_invalid_catalog_selection_is_rejected_before_summary_payment(tmp_path: Path, choice):
+    class InvalidChoiceView:
+        def select(self, turn, definitions):
+            return ModelToolSelection(definitions, choice)
+
+    host, main, summary = preflight_host(tmp_path, tool_view=InvalidChoiceView())
+    with pytest.raises(KernelError) as caught:
+        await preflight(host, pressure_thread())
+    assert caught.value.code == "model_tool_view_invalid"
     assert not main.requests and not summary.requests
 
 

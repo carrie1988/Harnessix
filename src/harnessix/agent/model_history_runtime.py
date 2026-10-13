@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
@@ -19,6 +20,7 @@ from harnessix.agent.models import (
     Turn,
     TurnStatus,
 )
+from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import get_turn
 from harnessix.agent.turn_budget_compaction import (
     closing_reserve,
@@ -36,7 +38,6 @@ from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.context.tool_result_view import PreparedModelHistory, history_document
-from harnessix.domain.models import ToolDescriptor
 from harnessix.session.ports import SessionStore
 
 
@@ -46,6 +47,7 @@ class PreparedHistoryStep:
     prepared: PreparedModelHistory
     reactive_compaction_required: bool
     budget_context: PreparedContext | None = None
+    budget_tool_selection: ModelToolSelection | None = None
 
 
 class ModelHistoryHost(Protocol):
@@ -55,7 +57,8 @@ class ModelHistoryHost(Protocol):
     _compaction: CompactionRuntimeConfig | None
     _budget_pressure_compaction: bool
     _fault: Callable[[str], None]
-    _definitions: dict[str, ToolDescriptor]
+
+    def _model_tools_for_turn(self, turn: Turn) -> ModelToolSelection: ...
 
     def _lock(self, thread_id: UUID) -> AbstractAsyncContextManager[None]: ...
 
@@ -69,7 +72,11 @@ class ModelHistoryHost(Protocol):
     ) -> Thread: ...
 
     async def _prepare_budget_context(
-        self, thread: Thread, prepared: PreparedModelHistory, token: CancelToken
+        self,
+        thread: Thread,
+        prepared: PreparedModelHistory,
+        token: CancelToken,
+        selection: ModelToolSelection,
     ) -> PreparedContext | None: ...
 
     async def _verify_history_artifacts(
@@ -101,17 +108,18 @@ async def _budget_plan(
     prepared: PreparedModelHistory,
     token: CancelToken,
     summary_instructions: str,
-) -> tuple[PreparedCompaction | None, PreparedContext | None]:
+) -> tuple[PreparedCompaction | None, PreparedContext | None, ModelToolSelection | None]:
     assert host._compaction is not None
-    context = await host._prepare_budget_context(thread, prepared, token)
+    selection = deepcopy(host._model_tools_for_turn(turn))
+    context = await host._prepare_budget_context(thread, prepared, token, selection)
     fixed = estimate_model_input_tokens(
-        (), tuple(host._definitions.values()), context.instructions if context else None
+        (), selection.tools, context.instructions if context else None
     )
     policy = pressure_policy(
         turn, host._compaction, fixed, estimate_model_input_tokens(prepared.history, (), None)
     )
     if policy is None:
-        return None, None
+        return None, None, None
     try:
         planned = await plan_compaction(
             thread,
@@ -132,7 +140,7 @@ async def _budget_plan(
             "context_compaction_source_overflow",
         }:
             raise
-        return None, None
+        return None, None, None
     instructions = pressure_summary_instructions(summary_instructions, host._compaction, planned)
     summary_cost = estimate_model_input_tokens((summary_request_item(planned),), (), instructions)
     summary_cost += summary_output_limit(host._compaction, planned)
@@ -144,7 +152,7 @@ async def _budget_plan(
     # 同一保守估算尺度判断摊销价值，不把微小窗口缩减当成值得额外付费的压缩。
     future_requests = min(3, require_request_slots(turn)) - 1
     if summary_cost > savings * future_requests:
-        return None, None
+        return None, None, None
     cost = summary_cost
     cost += (
         planned.plan.retained_history_tokens + planned.plan.policy.summary_reserve_tokens + fixed
@@ -155,8 +163,8 @@ async def _budget_plan(
         or summary_output_limit(host._compaction, planned) == 0
         or len(planned.summary_source) > 1_000_000
     ):
-        return None, None
-    return planned, context
+        return None, None, None
+    return planned, context, selection
 
 
 async def _commit_if_current(
@@ -209,10 +217,11 @@ async def prepare_and_commit_model_history(
         turn = get_turn(thread, turn_id)
         prepared = prepare_active_model_history(thread, model_step, host._tool_result_view_policy)
         budget_context = None
+        budget_selection = None
         planned = None
         required = _requires_compaction(host, prepared, reactive_compaction_required)
         if not required and host._compaction is not None and host._budget_pressure_compaction:
-            planned, budget_context = await _budget_plan(
+            planned, budget_context, budget_selection = await _budget_plan(
                 host, thread, turn, prepared, token, summary_instructions
             )
         if required or planned is not None:
@@ -231,4 +240,5 @@ async def prepare_and_commit_model_history(
                 prepared,
                 reactive_compaction_required,
                 budget_context,
+                budget_selection,
             )

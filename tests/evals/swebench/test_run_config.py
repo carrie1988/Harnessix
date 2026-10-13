@@ -20,6 +20,8 @@ from harnessix.evals.swebench.public_test_profile import (
 )
 from harnessix.evals.swebench.run_config import (
     SweBenchAgentRunConfig,
+    SweBenchBudgetWindowAgentRunConfig,
+    SweBenchIsolatedAgentRunConfig,
     build_swebench_agent_run_config,
 )
 from harnessix.evals.swebench.run_config_io import (
@@ -86,7 +88,14 @@ def _profiles(tmp_path: Path, plan, *, image_offset: int = 0):
     )
 
 
-def _config(tmp_path: Path, *, amount: str = "80", image_offset: int = 0):
+def _config(
+    tmp_path: Path,
+    *,
+    amount: str = "80",
+    image_offset: int = 0,
+    isolate_provider_failures: bool = False,
+    budget_pressure_compaction: bool = False,
+):
     tmp_path.mkdir(parents=True, exist_ok=True)
     root = tmp_path / "source"
     root.mkdir()
@@ -100,6 +109,8 @@ def _config(tmp_path: Path, *, amount: str = "80", image_offset: int = 0):
         case_process_profiles=_profiles(tmp_path, plan, image_offset=image_offset),
         fee_stop_amount=amount,
         observed_at=datetime(2026, 10, 12, tzinfo=UTC),
+        isolate_provider_failures=isolate_provider_failures,
+        budget_pressure_compaction=budget_pressure_compaction,
     )
 
 
@@ -216,6 +227,48 @@ def test_run_config_is_published_once_as_private_file(tmp_path: Path) -> None:
     os.chmod(path, 0o644)
     with pytest.raises(KernelError, match="权限错误"):
         read_swebench_agent_run_config(path)
+
+
+@pytest.mark.parametrize(
+    "isolated,pressure,model",
+    [
+        (False, False, SweBenchAgentRunConfig),
+        (True, False, SweBenchIsolatedAgentRunConfig),
+        (True, True, SweBenchBudgetWindowAgentRunConfig),
+    ],
+)
+def test_budget_window_is_explicit_versioned_and_roundtrips(tmp_path, isolated, pressure, model):
+    config = _config(
+        tmp_path,
+        amount="10" if isolated else "80",
+        isolate_provider_failures=isolated,
+        budget_pressure_compaction=pressure,
+    )
+    assert type(config) is model
+    assert config.budget_pressure_compaction is pressure
+    assert config.isolate_provider_failures is isolated
+    config.require_plan(build_agent_test_plan())
+    path = tmp_path / "config.json"
+    write_swebench_agent_run_config(path, config)
+    restored = read_swebench_agent_run_config(path)
+    assert restored == config and restored.fingerprint == config.fingerprint
+    if pressure:
+        assert config.context_budget_policy == "amortized_pressure_window"
+        payload = config.model_dump(mode="python")
+        payload.update(spec_version="harnessix.swebench-agent-run-config/v3")
+        with pytest.raises(ValueError):
+            SweBenchIsolatedAgentRunConfig.model_validate(payload)
+
+
+@pytest.mark.parametrize("pressure", [1, None, "true"])
+def test_budget_window_rejects_non_boolean_activation(tmp_path, pressure):
+    with pytest.raises(ValueError, match="布尔"):
+        _config(tmp_path, isolate_provider_failures=True, budget_pressure_compaction=pressure)
+
+
+def test_budget_window_cannot_silently_change_old_fee_policy(tmp_path):
+    with pytest.raises(ValueError, match="逐Case预付"):
+        _config(tmp_path, budget_pressure_compaction=True)
 
 
 def test_parallel_model_tool_calls_require_explicit_preregistration(tmp_path: Path) -> None:

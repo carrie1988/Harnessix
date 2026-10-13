@@ -139,12 +139,16 @@ def test_run_agent_requires_container_engine_argument(tmp_path: Path, capsys) ->
     assert "参数无效" in output.err
 
 
-@pytest.mark.parametrize("isolate_provider_failures", [False, True])
+@pytest.mark.parametrize(
+    "isolate_provider_failures,budget_pressure_compaction",
+    [(False, False), (True, False), (True, True)],
+)
 def test_run_agent_resume_reuses_frozen_profiles_without_rediscovery(
     tmp_path: Path,
     capsys,
     monkeypatch: pytest.MonkeyPatch,
     isolate_provider_failures: bool,
+    budget_pressure_compaction: bool,
 ) -> None:
     plan = build_agent_test_plan()
     plan_path = tmp_path / "plan.json"
@@ -180,6 +184,7 @@ def test_run_agent_resume_reuses_frozen_profiles_without_rediscovery(
         executions += 1
         assert config.case_process_profiles == profiles
         assert config.isolate_provider_failures == isolate_provider_failures
+        assert config.budget_pressure_compaction == budget_pressure_compaction
         return {"reason": "completed", "completed_cases": 25}
 
     monkeypatch.setattr(cli, "discover_swebench_case_process_profiles", discover)
@@ -204,6 +209,8 @@ def test_run_agent_resume_reuses_frozen_profiles_without_rediscovery(
     ]
     if isolate_provider_failures:
         arguments.extend(["--continue-isolated-provider-failures", "--fee-stop-amount", "10"])
+    if budget_pressure_compaction:
+        arguments.append("--budget-pressure-compaction")
 
     main(arguments)
     first_output = json.loads(capsys.readouterr().out)
@@ -219,6 +226,17 @@ def test_run_agent_resume_reuses_frozen_profiles_without_rediscovery(
     second_output = json.loads(capsys.readouterr().out)
     assert second_output["reason"] == "completed"
     assert discoveries == 1
+    assert executions == 2
+
+    changed_context = list(arguments)
+    if budget_pressure_compaction:
+        changed_context.remove("--budget-pressure-compaction")
+    else:
+        changed_context.append("--budget-pressure-compaction")
+    with pytest.raises(SystemExit) as caught:
+        main(changed_context)
+    assert caught.value.code == 1
+    assert json.loads(capsys.readouterr().out) == {"reason": "failed"}
     assert executions == 2
 
     changed_policy = list(arguments)

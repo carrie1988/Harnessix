@@ -9,6 +9,7 @@ import httpx
 import pytest
 
 from harnessix.agent.models import Budget, Usage
+from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.context.compaction_contracts import CompactionPolicy
@@ -186,3 +187,99 @@ async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
     restored = await store.get_thread(thread.thread_id)
     assert restored == replay(await store.events(thread.thread_id))
     assert (restored.active_compaction_window_id is not None) == (finish == "stop")
+
+
+@pytest.mark.parametrize("drift", ["tools", "choice", "forced_tool", "schema", "cancel"])
+async def test_catalog_drift_after_summary_cannot_open_next_paid_main_request(
+    tmp_path: Path, drift
+):
+    class AlternateReadTools(RecordingTools):
+        def definitions(self):
+            primary = super().definitions()[0]
+            return primary, primary.model_copy(update={"name": "test.other"})
+
+    class DriftingView:
+        def select(self, turn, definitions):
+            if drift == "cancel" and turn.compactions:
+                pytest.fail("取消检查应早于摘要后的工具目录重新选择")
+            tools = tuple(d for d in definitions if d.name == "test.read")
+            if not turn.compactions or drift == "schema":
+                return ModelToolSelection(tools)
+            if drift == "tools":
+                return ModelToolSelection(tuple(d for d in definitions if d.name == "test.other"))
+            return ModelToolSelection(
+                tools, "required", "test.read" if drift == "forced_tool" else None
+            )
+
+    tools = AlternateReadTools()
+    main = SequenceProvider(investigation_responses(9))
+
+    class ChangingSummary(BudgetSummaryProvider):
+        async def stream(self, request, cancel):
+            if drift == "schema":
+                # 改动嵌套Schema，证明预付快照不能与可变注册项共享引用。
+                runtime._definitions["test.read"].input_schema["properties"] = {
+                    "changed": {"type": "string"}
+                }
+            async with aclosing(super().stream(request, cancel)) as stream:
+                async for event in stream:
+                    yield event
+
+    summary = ChangingSummary([])
+
+    def cancel_after_history(stage):
+        if (
+            drift == "cancel"
+            and stage == "runtime.after_model_history_prepared"
+            and summary.requests
+        ):
+            for _, token, _ in runtime._active.values():
+                token.cancel()
+
+    store = SQLiteSessionStore(tmp_path / "drift.sqlite")
+    config = CompactionRuntimeConfig(
+        policy=CompactionPolicy(
+            target_history_tokens=65536,
+            summary_reserve_tokens=12288,
+            max_summary_input_tokens=262144,
+            retain_recent_groups=2,
+        ),
+        trigger_history_tokens=131072,
+        max_summary_output_tokens=2048,
+    )
+    async with AgentRuntime(
+        store,
+        main,
+        tools,
+        compaction=config,
+        summary_provider=summary,
+        budget_pressure_compaction=True,
+        model_tool_view=DriftingView(),
+        fault=cancel_after_history,
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id,
+            "调查、修复并验证",
+            request_id="catalog-drift",
+            budget=Budget(max_tokens=50000, max_steps=16),
+        )
+    if drift == "cancel":
+        assert turn.status == "cancelled" and turn.error.code == "cancelled"
+    else:
+        assert turn.status == "failed" and turn.error.code == "context_compaction_source_changed"
+        assert "目录或选择约束" in turn.error.message
+    assert len(summary.requests) == 1 and len(turn.compactions) == 1
+    record = turn.compactions[0]
+    assert record.status == "summarized"
+    assert record.plan.model_step == len(main.requests) + 1
+    assert len(tools.calls) == len(main.requests)
+    assert all(call.tool == "test.read" for call in tools.calls)
+    assert len(turn.model_attempts) == len(main.requests)
+    restored = await store.get_thread(thread.thread_id)
+    assert replay(await store.events(thread.thread_id)) == restored
+    before = await store.events(thread.thread_id)
+    async with AgentRuntime(store, main, tools):
+        assert await store.get_thread(thread.thread_id) == restored
+    assert await store.events(thread.thread_id) == before
+    assert len(summary.requests) == 1

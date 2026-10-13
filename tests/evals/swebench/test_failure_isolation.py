@@ -22,7 +22,10 @@ from harnessix.evals.swebench.execution_io import (
     read_suite_execution_state,
 )
 from harnessix.evals.swebench.predictions import read_predictions
-from harnessix.evals.swebench.run_config import SweBenchIsolatedAgentRunConfig
+from harnessix.evals.swebench.run_config import (
+    SweBenchBudgetWindowAgentRunConfig,
+    SweBenchIsolatedAgentRunConfig,
+)
 from harnessix.evals.swebench.run_config_io import (
     read_swebench_agent_run_config,
     write_swebench_agent_run_config,
@@ -105,6 +108,42 @@ def test_explicit_v3_admission_and_io_preserve_v2_without_upgrade(tmp_path):
         assert actual == value and actual.fingerprint == value.fingerprint
         assert actual.isolate_provider_failures == (name == "new")
     assert old.model_dump_json() == encoded
+
+
+@pytest.mark.parametrize("version", [2, 3, 4])
+async def test_frozen_window_policy_reaches_case_entrypoint(tmp_path, monkeypatch, version):
+    plan = _plan()
+    config = _config(tmp_path, plan)
+    if version == 3:
+        config = _isolated(config)
+    elif version == 4:
+        payload = _isolated(config).model_dump(mode="python")
+        payload.update(spec_version="harnessix.swebench-agent-run-config/v4")
+        config = SweBenchBudgetWindowAgentRunConfig.model_validate(payload)
+    case = plan.cases[0]
+    root = tmp_path / "case"
+    workspace = tmp_path / "workspace"
+    profile = config.process_profile_for(case.instance_id)
+    monkeypatch.setattr(
+        execution, "read_case_execution_state", lambda *_: SimpleNamespace(status="ready")
+    )
+    calls = []
+
+    async def run_case(**arguments):
+        calls.append(arguments)
+        return _turn(0).turn_id, _turn(0)
+
+    monkeypatch.setattr(execution, "run_swebench_agent_case", run_case)
+    from harnessix.agent.cancellation import CancelToken
+
+    await execution._open_case_turn(
+        plan, config, case, root, workspace, profile, "offline", CancelToken()
+    )
+    assert len(calls) == 1
+    assert calls[0]["budget_pressure_compaction"] is (version == 4)
+    assert calls[0]["execution_fingerprint"] == config.fingerprint
+    assert calls[0]["process_profile"] == profile
+    assert calls[0]["expected_terminal_turn"] is None
 
 
 @pytest.mark.parametrize("completeness", ["unknown", "partial", "complete"])

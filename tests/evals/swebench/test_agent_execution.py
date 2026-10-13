@@ -490,3 +490,32 @@ async def test_missing_frozen_session_stops_before_opening_provider_or_publicati
         )
     assert caught.value.code == "swebench_case_evidence_mismatch"
     assert not root.exists()
+
+
+@pytest.mark.parametrize("enabled", [None, 1, "true"])
+async def test_invalid_budget_window_stops_before_opening_provider(tmp_path, monkeypatch, enabled):
+    from harnessix.evals.swebench import agent_execution
+    from harnessix.models.config import OpenAIChatConfig
+
+    def forbidden(*_args, **_kwargs):
+        pytest.fail("非法预算窗口开关不得打开Provider或发布目录")
+
+    monkeypatch.setattr(agent_execution, "_provider", forbidden)
+    monkeypatch.setattr(agent_execution, "open_task_pack_publication", forbidden)
+    plan = build_test_plan()
+    root = tmp_path / "invalid-run"
+    with pytest.raises(KernelError) as caught:
+        await run_swebench_agent_case(
+            plan=plan,
+            case=plan.cases[0],
+            run_root=root,
+            workspace=tmp_path,
+            git_executable=Path("/usr/bin/git"),
+            provider_config=OpenAIChatConfig(model="fixture"),
+            execution_fingerprint=SHA256,
+            process_profile=_process_profile(tmp_path),
+            api_key="offline",
+            budget_pressure_compaction=enabled,
+        )
+    assert caught.value.code == "swebench_execution_config_invalid"
+    assert not root.exists()

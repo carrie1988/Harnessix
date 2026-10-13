@@ -118,6 +118,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def isolate_provider_failures(self) -> bool:
         return False
 
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return False
+
     def require_plan(self, plan: SweBenchPreRegistrationPlan) -> None:
         parameters = {item.name: item.value for item in plan.model_settings.parameters}
         expected_cases = tuple(sorted((case.instance_id, case.repo) for case in plan.cases))
@@ -195,7 +199,30 @@ class SweBenchIsolatedAgentRunConfig(_SweBenchAgentRunSettings):
         return True
 
 
-SweBenchRunConfig = SweBenchAgentRunConfig | SweBenchIsolatedAgentRunConfig
+class SweBenchBudgetWindowAgentRunConfig(_SweBenchAgentRunSettings):
+    """显式v4候选：保留v3隔离及逐Case预付，启用有摊销价值的预算窗口。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v4"] = (
+        "harnessix.swebench-agent-run-config/v4"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+    context_budget_policy: Literal["amortized_pressure_window"] = "amortized_pressure_window"
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return True
+
+
+SweBenchRunConfig = (
+    SweBenchAgentRunConfig | SweBenchIsolatedAgentRunConfig | SweBenchBudgetWindowAgentRunConfig
+)
 
 
 def build_swebench_agent_run_config(
@@ -210,6 +237,7 @@ def build_swebench_agent_run_config(
     api_key_env: str = "DASHSCOPE_API_KEY",
     observed_at: datetime | None = None,
     isolate_provider_failures: bool = False,
+    budget_pressure_compaction: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -217,9 +245,17 @@ def build_swebench_agent_run_config(
     parameters = {item.name: item.value for item in plan.model_settings.parameters}
     if type(isolate_provider_failures) is not bool:
         raise ValueError("SWE-bench故障隔离必须显式使用布尔开关")
-    config_model = (
-        SweBenchIsolatedAgentRunConfig if isolate_provider_failures else SweBenchAgentRunConfig
-    )
+    if type(budget_pressure_compaction) is not bool:
+        raise ValueError("SWE-bench预算窗口必须显式使用布尔开关")
+    if budget_pressure_compaction and not isolate_provider_failures:
+        raise ValueError("SWE-bench预算窗口候选必须显式保留故障隔离与逐Case预付")
+    config_model: type[SweBenchRunConfig]
+    if budget_pressure_compaction:
+        config_model = SweBenchBudgetWindowAgentRunConfig
+    elif isolate_provider_failures:
+        config_model = SweBenchIsolatedAgentRunConfig
+    else:
+        config_model = SweBenchAgentRunConfig
     config = config_model(
         plan_sha256=plan.plan_sha256,
         source_root=str(source_root),

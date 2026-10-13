@@ -336,9 +336,12 @@ async def run_swebench_agent_case(
     cancel: CancelToken | None = None,
     observability: Observability | None = None,
     expected_terminal_turn: tuple[UUID, UUID] | None = None,
+    budget_pressure_compaction: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
+    if type(budget_pressure_compaction) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench预算窗口开关无效")
     if len(execution_fingerprint) != 64 or any(
         character not in "0123456789abcdef" for character in execution_fingerprint
     ):
@@ -386,6 +389,7 @@ async def run_swebench_agent_case(
                             async_context=context.context,
                             compaction=context.compaction,
                             summary_provider=provider,
+                            budget_pressure_compaction=budget_pressure_compaction,
                             model_tool_view=CodingWorkflowToolView(require_pre_edit_profile=False),
                         ) as runtime:
                             return await _drive_turn(

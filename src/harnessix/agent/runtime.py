@@ -1750,7 +1750,11 @@ class AgentRuntime:
             return updated
 
     async def _prepare_budget_context(
-        self, thread: Thread, prepared: PreparedModelHistory, token: CancelToken
+        self,
+        thread: Thread,
+        prepared: PreparedModelHistory,
+        token: CancelToken,
+        selection: ModelToolSelection,
     ) -> PreparedContext | None:
         if self._context is None and self._async_context is None:
             return None
@@ -1761,7 +1765,15 @@ class AgentRuntime:
             model_step=prepared.inspection.model_step,
             workspace=thread.workspace,
             history_documents=tuple(history_document(item) for item in prepared.history),
-            tool_documents=tuple(d.model_dump_json() for d in self._definitions.values()),
+            tool_documents=tuple(
+                json.dumps(
+                    definition.model_dump(mode="json"),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                for definition in selection.tools
+            ),
         )
         try:
             if self._async_context is not None:
@@ -1967,6 +1979,18 @@ class AgentRuntime:
             )
             return get_turn(updated, request.turn_id).status
 
+    def _model_tools_for_turn(self, turn: Turn) -> ModelToolSelection:
+        """预付规划和实际请求共用执行端口过滤及当前阶段目录，不为摘要另选工具。"""
+        available = tuple(
+            definition
+            for definition in self._definitions.values()
+            if definition.effect_class == EffectClass.READ_ONLY
+            or action_name_owned(self._trusted_actions, definition.name)
+            or (self._patches is not None and definition.name == "apply_patch")
+            or (self._patch_batches is not None and definition.name == "apply_patch_batch")
+        )
+        return self._select_model_tools(turn, available)
+
     def _select_model_tools(
         self,
         turn: Turn,
@@ -1986,6 +2010,8 @@ class AgentRuntime:
             selection = selected_view
         else:
             raise KernelError("model_tool_view_invalid", "模型工具视图必须返回选择契约")
+        if type(selection.choice) is not str or selection.choice not in {"auto", "required"}:
+            raise KernelError("model_tool_view_invalid", "模型工具选择模式无效")
         selected = selection.tools
         selected_by_name = {definition.name: definition for definition in selected}
         available_by_name = {definition.name: definition for definition in available}
@@ -2049,15 +2075,16 @@ class AgentRuntime:
                     operation.finish("ok")
                     history = prepared_history.history
                     turn = get_turn(thread, turn_id)
-                available_tools = tuple(
-                    d
-                    for d in self._definitions.values()
-                    if d.effect_class == EffectClass.READ_ONLY
-                    or action_name_owned(self._trusted_actions, d.name)
-                    or (self._patches is not None and d.name == "apply_patch")
-                    or (self._patch_batches is not None and d.name == "apply_patch_batch")
-                )
-                tool_selection = self._select_model_tools(turn, available_tools)
+                token.checkpoint()
+                tool_selection = self._model_tools_for_turn(turn)
+                if (
+                    prepared_step.budget_tool_selection is not None
+                    and prepared_step.budget_tool_selection != tool_selection
+                ):
+                    raise KernelError(
+                        "context_compaction_source_changed",
+                        "摘要前后模型工具目录或选择约束发生漂移",
+                    )
                 tools = tool_selection.tools
                 instructions: str | None = None
                 output_token_limit = turn.budget.max_output_chars

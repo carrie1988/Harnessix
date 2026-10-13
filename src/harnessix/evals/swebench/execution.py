@@ -472,6 +472,7 @@ async def _open_case_turn(
         api_key=api_key,
         cancel=cancel,
         expected_terminal_turn=expected_terminal_turn,
+        budget_pressure_compaction=config.budget_pressure_compaction,
     )
 
 
