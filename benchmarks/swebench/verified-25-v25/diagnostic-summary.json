@@ -1,0 +1,33 @@
+{
+  "schema": "harnessix.swebench-development-diagnostic-summary/v1",
+  "plan_sha256": "59d870229fbb9572eb0683ec221f54a997dc0f0b5e974f44d97dbec30c9e036f",
+  "source_revision": "d57f5818100778d952efbf1142e9660d9523cdce",
+  "evaluation_scope": "development_set",
+  "inference_requests": 0,
+  "native_database_and_case_state_unchanged": true,
+  "scope": "authenticated terminal event facts and same-source history projection only; no gold tests or model/tool requests",
+  "authenticated_terminal_cases": 25,
+  "accounted_model_requests": 157,
+  "completed_autonomous_coding_cases": 3,
+  "summary_requests": 9,
+  "summary_failures": 0,
+  "budget_admission_failures": 22,
+  "persistent_unchanged_prefix_cases_among_budget_failures": 22,
+  "minimum_remaining_known_tokens_on_failure": 6302,
+  "maximum_remaining_known_tokens_on_failure": 17073,
+  "failure_messages": {
+    "模型请求的保守输入与最小输出超过剩余Token预算": 22
+  },
+  "patch_calls": 12,
+  "test_calls": 7,
+  "source_inspection_calls": 138,
+  "patch_application_failures": 0,
+  "official_ambiguous_failure_reasons": {
+    "missing_module": 2,
+    "no_tests_collected": 1
+  },
+  "decision": "NO_GO: no resolved improvement; native summary admission exists but the workflow input budget cliff remains",
+  "next_investigation": "same-source request wrapper proof, generic incremental read/search output sizing and phase budget forecast; do not weaken 50K or force an ungrounded patch",
+  "diagnostic_original_sha256": "5643b4853092522c4e7ccdef29f0f458e57ceb009a26cc1e231d911044ec1fbb",
+  "official_evidence_sha256": "44cf138b6b1fb7fbb5421ba7f22d1e212adaf177e5bf9d86431eb73e31365ce0"
+}

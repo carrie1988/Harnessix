@@ -34,18 +34,25 @@
     "scope": "host-directed original full public module; not autonomous evidence or official score",
     "remaining_failure": "outbound tarpit timeout test incompatible with network=none; preserved, not removed or counted passed"
   },
-  "original_infrastructure_acceptance": "OPEN: outbound-dependent tests and complete official scoring still required",
+  "original_infrastructure_acceptance": "OPEN: three ambiguous official failures; classified zero is not infrastructure acceptance",
   "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
   "period_limit_amount": "200",
   "maximum_run_allocation_amount": "124",
   "worst_case_amount": "123.6864",
   "execution_run_directory": "runs/agent-59d870229fbb-v25",
-  "execution_status": "FROZEN_BEFORE_REQUEST",
+  "execution_status": "COMPLETED_TARGET_NOT_MET",
   "disk_guard": {
     "minimum_free_bytes": 10737418240,
     "free_bytes_observed": 35818811392
   },
-  "official_score": null,
+  "official_score": {
+    "resolved_cases": 4,
+    "submitted_cases": 25,
+    "empty_patch_cases": 16,
+    "error_cases": 0,
+    "infrastructure_failures": 0,
+    "ambiguous_failures": 3
+  },
   "price_source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
   "price_observed_at": "2026-10-13T09:18:58+00:00",
   "model_retry_policy": "none",
@@ -70,5 +77,12 @@
     "link_count": 14653,
     "mermaid_count": 1173,
     "findings": []
-  }
+  },
+  "attempted_cases": 25,
+  "not_attempted_cases": 0,
+  "complete_predictions": true,
+  "actual_summary_attempts": 9,
+  "known_cost_upper_amount": "12.014808",
+  "reserved_cost_amount": "0",
+  "execution_summary_sha256": "3b30b4318db6a4b257ef0359ef85d0e3803d0f68785a4e8568d94560db2f33fd"
 }

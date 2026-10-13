@@ -1,0 +1,18 @@
+{
+  "reason": "completed",
+  "spec_version": "harnessix.swebench-evaluation-summary/v1",
+  "run_id": "harnessix-59d870229fbb-9f9c0fae963a",
+  "plan_sha256": "59d870229fbb9572eb0683ec221f54a997dc0f0b5e974f44d97dbec30c9e036f",
+  "predictions_sha256": "9f9c0fae963a37bd460b7f0d8662132f5a538230db1583c80d120701ce00707e",
+  "official_results_sha256": "4ed666e2d63b5a237122141893289bb13b85a3c530bdf460e606a5762de981d6",
+  "artifacts_sha256": "44cf138b6b1fb7fbb5421ba7f22d1e212adaf177e5bf9d86431eb73e31365ce0",
+  "artifact_files": 45,
+  "submitted_cases": 25,
+  "completed_cases": 9,
+  "resolved_cases": 4,
+  "unresolved_cases": 5,
+  "infrastructure_failures": 0,
+  "ambiguous_failures": 3,
+  "error_cases": 0,
+  "empty_patch_cases": 16
+}

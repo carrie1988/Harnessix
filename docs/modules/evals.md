@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 45
+version: 46
 code_revision: d57f5818100778d952efbf1142e9660d9523cdce
 owners:
   - core
@@ -2460,4 +2460,5 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 有界摘要容量、失败顺序、原预算、测试与宿主诊断边界集中见
 [v25详设](../changes/swebench-adapter-verified-25-pilot.md#v25候选有界摘要容量与原生pytest上下文)。
 [新计划](../../benchmarks/swebench/verified-25-v25/plan.json)保留原25项及50K/16次限制；
-截至冻结没有新官方评分，不能把宿主239项通过和838项回归当成Resolved提升或基础设施清零。
+本轮完整官方评分4/25，空补丁16，补丁应用失败0；3项模糊失败使基础设施验收仍开放。
+不能把宿主239项通过、838项回归或9次有效摘要当成Resolved提升；新轮结论NO_GO。

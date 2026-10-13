@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 14
+version: 15
 code_revision: d57f5818100778d952efbf1142e9660d9523cdce
 owners:
   - core
@@ -647,3 +647,19 @@ v5/v6精确字节兼容，旧配置不重签，派生依赖镜像不覆盖官方
 及[前置检查](../../benchmarks/swebench/verified-25-v25/preflight.json)冻结全新根和pass@1；
 200元新周期内先分配124元最坏额度，旧费用/预留保留但不计入新周期，不恢复旧v22或拼接旧成功。
 新轮真实Agent与官方评分完成前，Resolved仍以既有完整轮次为准，22/25目标未达标。
+
+**完整实跑结论：NO_GO。** [原生执行摘要](../../benchmarks/swebench/verified-25-v25/execution-summary.json)
+记录25项尝试、157次已结算模型请求（含9次成功摘要）、9项非空补丁、3项自主测试/交付闭环，
+22项在保守输入准入处停止。[官方结果](../../benchmarks/swebench/verified-25-v25/official-summary.json)
+为 **4/25（16%）**，空补丁16，9项补丁均成功应用，评测器错误0；3项模糊失败分别为
+2项`missing_module`和1项`no_tests_collected`，不能用分类基础设施失败0宣告验收清零。
+45件官方原件已核验，与完整prediction和新计划绑定，不拼接历史成功。
+
+[认证终态诊断](../../benchmarks/swebench/verified-25-v25/diagnostic-summary.json)显示，22项失败均有
+6302～17073个已知剩余Token，而且持久历史前缀全部保持一致；不能把主因笼统归为丢失前缀
+或预算实耗已满。下一步求证实际出站封装锚点、通用增量读取/检索结果尺寸和阶段预算预告，
+先负控和同源离线重建再冻结新轮，不降低50K、不以强迫过早修改制造非空补丁。
+摘要容量准入确已进入真实链路，但Resolved没有提升，因此仍默认关闭，不重跑本轮终态。
+
+本200元周期费用估算上界 **12.014808元**、未决预留0，结算后可用 **187.985192元**；
+这是定价上界而非账单实扣。原124元运行预留已按原生用量结算，旧周期仍排除。
