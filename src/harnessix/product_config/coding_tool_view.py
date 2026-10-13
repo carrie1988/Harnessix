@@ -10,6 +10,7 @@ from harnessix.agent.models import (
     ToolResultContent,
     Turn,
 )
+from harnessix.agent.planning import UPDATE_PLAN_TOOL
 from harnessix.agent.ports import ModelToolSelection
 from harnessix.delivery.rollback_action import WORKSPACE_ROLLBACK_TOOL
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
@@ -209,13 +210,67 @@ def _git_review_selection(
     return _selection(definitions, missing_review, forced_tool=forced_review)
 
 
+def _workflow_is_supported(
+    definitions: tuple[ToolDescriptor, ...],
+    profiles: tuple[str, ...],
+    patches: tuple[str, ...],
+) -> bool:
+    """原单Profile契约；无法收敛的目录沿既有完整目录回退。"""
+    names = {definition.name for definition in definitions}
+    if len(profiles) > 1 or len(patches) != 1:
+        return False
+    if not (_GIT_REVIEW_TOOL in names or _GIT_REVIEW_TOOLS <= names):
+        return False
+    allowed_writes = {*profiles, *patches, *_HIDDEN_WORKFLOW_ACTIONS}
+    return not any(
+        definition.effect_class != EffectClass.READ_ONLY and definition.name not in allowed_writes
+        for definition in definitions
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class CodingWorkflowToolView:
     """Expose only the tools valid for the current single-profile coding phase."""
 
     require_pre_edit_profile: bool = True
+    enable_planning: bool = False
+
+    def __post_init__(self) -> None:
+        if type(self.enable_planning) is not bool:
+            raise ValueError("规划工具目录开关必须是布尔值")
 
     def select(
+        self,
+        turn: Turn,
+        definitions: tuple[ToolDescriptor, ...],
+    ) -> ModelToolSelection:
+        workflow_definitions = (
+            tuple(tool for tool in definitions if tool.name != UPDATE_PLAN_TOOL)
+            if self.enable_planning
+            else definitions
+        )
+        selection = self._select_workflow(turn, workflow_definitions)
+        baseline_pending = (
+            self.require_pre_edit_profile
+            and any(tool.name.startswith("run_profile.") for tool in selection.tools)
+            and not any(
+                observation.tool.startswith("run_profile.") for observation in _observations(turn)
+            )
+        )
+        # 只开放调查/修复窗口，不绕过强制测试、Review或失败后的空目录。
+        if (
+            self.enable_planning
+            and not baseline_pending
+            and selection.forced_tool is None
+            and any(tool.name in _SOURCE_INSPECTION_TOOLS for tool in selection.tools)
+        ):
+            names = {tool.name for tool in selection.tools} | {UPDATE_PLAN_TOOL}
+            return ModelToolSelection(
+                tuple(tool for tool in definitions if tool.name in names), selection.choice
+            )
+        return selection
+
+    def _select_workflow(
         self,
         turn: Turn,
         definitions: tuple[ToolDescriptor, ...],
@@ -232,16 +287,7 @@ class CodingWorkflowToolView:
         by_name = {definition.name: definition for definition in definitions}
         profiles = tuple(name for name in by_name if name.startswith("run_profile."))
         patches = tuple(name for name in by_name if name in _PATCH_TOOLS)
-        if (
-            len(profiles) > 1
-            or len(patches) != 1
-            or not (_GIT_REVIEW_TOOL in by_name or _GIT_REVIEW_TOOLS <= by_name.keys())
-            or any(
-                definition.effect_class != EffectClass.READ_ONLY
-                and definition.name not in {*profiles, *patches, *_HIDDEN_WORKFLOW_ACTIONS}
-                for definition in definitions
-            )
-        ):
+        if not _workflow_is_supported(definitions, profiles, patches):
             return ModelToolSelection(definitions)
 
         profile = profiles[0] if profiles else None
@@ -252,98 +298,144 @@ class CodingWorkflowToolView:
         )
         last_patch = successful_patches[-1] if successful_patches else -1
         if profile is None:
-            if last_patch < 0:
-                return _pre_patch_selection(
-                    definitions,
-                    observations,
-                    patch,
-                    patch_results,
-                )
-            review = _git_review_selection(definitions, observations, last_patch)
-            if review.tools:
-                return review
-            if any(
-                item.index > last_patch
-                and item.tool in _ALL_GIT_REVIEW_TOOLS
-                and item.result.outcome != "succeeded"
-                for item in observations
-            ):
-                return ModelToolSelection(())
-            review_index = max(
-                item.index
-                for item in observations
-                if item.index > last_patch
-                and item.tool in _ALL_GIT_REVIEW_TOOLS
-                and item.result.outcome == "succeeded"
+            return _without_profile_selection(
+                definitions, observations, patch, patch_results, last_patch
             )
-            names = {"read_file"}
-            patched_paths = _patched_paths_requiring_reread(observations, last_patch)
-            if patched_paths <= _successful_reads_after(observations, review_index):
-                names.add(patch)
-            return ModelToolSelection(tuple(item for item in definitions if item.name in names))
-
-        unsuccessful_patch_results = tuple(
-            item
-            for item in patch_results
-            if item.index > last_patch and item.result.outcome != "succeeded"
-        )
-        if unsuccessful_patch_results:
-            return _failed_patch_selection(
-                definitions,
-                observations,
-                unsuccessful_patch_results[-1],
-            )
-        if not self.require_pre_edit_profile and last_patch < 0:
-            return _pre_patch_selection(
-                definitions,
-                observations,
-                patch,
-                patch_results,
-                bound_no_profile_reads=False,
-            )
-
-        profile_results = tuple(
-            item for item in observations if item.tool == profile and item.index > last_patch
+        return _with_profile_selection(
+            definitions,
+            observations,
+            profile,
+            patch,
+            patch_results,
+            last_patch,
+            require_pre_edit_profile=self.require_pre_edit_profile,
         )
 
-        if not profile_results:
-            if last_patch >= 0:
-                return _selection(definitions, {profile}, forced_tool=profile)
-            names = (
-                set(by_name)
-                - _ALL_GIT_REVIEW_TOOLS
-                - _HIDDEN_WORKFLOW_ACTIONS
-                - set(patches)
-                - {"read_artifact"}
-            )
-            return _selection(definitions, names)
 
-        validation = profile_results[-1]
-        if validation.result.outcome == "succeeded" and last_patch >= 0:
-            return _git_review_selection(definitions, observations, validation.index)
-
-        if _is_code_test_failure(validation.result) or (
-            validation.result.outcome == "succeeded" and last_patch < 0
-        ):
-            if last_patch >= 0:
-                # 非零退出可能来自代码，也可能来自测试目标；诊断不能被限制为已改文件。
-                # 仍只开放原只读工具和同一受控 Profile，不把失败当成测试通过。
-                names = {*_SOURCE_INSPECTION_TOOLS, profile}
-                if not _diagnostic_is_complete(validation.result):
-                    names.add("read_artifact")
-                patched_paths = _patched_paths_requiring_reread(observations, last_patch)
-                if patched_paths <= _successful_reads_after(observations, validation.index):
-                    names.add(patch)
-                return _selection(definitions, names)
-            names = {
-                item.name
-                for item in definitions
-                if item.effect_class == EffectClass.READ_ONLY
-                and item.name not in _ALL_GIT_REVIEW_TOOLS
-            }
-            if _diagnostic_is_complete(validation.result):
-                names.discard("read_artifact")
-            names.add(patch)
-            return _selection(definitions, names)
-
+def _without_profile_selection(
+    definitions: tuple[ToolDescriptor, ...],
+    observations: tuple[_Observation, ...],
+    patch: str,
+    patch_results: tuple[_Observation, ...],
+    last_patch: int,
+) -> ModelToolSelection:
+    """无Profile流程只使用原读取、Patch与Review事实。"""
+    if last_patch < 0:
+        return _pre_patch_selection(
+            definitions,
+            observations,
+            patch,
+            patch_results,
+        )
+    review = _git_review_selection(definitions, observations, last_patch)
+    if review.tools:
+        return review
+    if any(
+        item.index > last_patch
+        and item.tool in _ALL_GIT_REVIEW_TOOLS
+        and item.result.outcome != "succeeded"
+        for item in observations
+    ):
         return ModelToolSelection(())
+    review_index = max(
+        item.index
+        for item in observations
+        if item.index > last_patch
+        and item.tool in _ALL_GIT_REVIEW_TOOLS
+        and item.result.outcome == "succeeded"
+    )
+    names = {"read_file"}
+    patched_paths = _patched_paths_requiring_reread(observations, last_patch)
+    if patched_paths <= _successful_reads_after(observations, review_index):
+        names.add(patch)
+    return ModelToolSelection(tuple(item for item in definitions if item.name in names))
+
+
+def _with_profile_selection(
+    definitions: tuple[ToolDescriptor, ...],
+    observations: tuple[_Observation, ...],
+    profile: str,
+    patch: str,
+    patch_results: tuple[_Observation, ...],
+    last_patch: int,
+    *,
+    require_pre_edit_profile: bool,
+) -> ModelToolSelection:
+    """有Profile流程强制测试；只有确定代码失败才能进入修复。"""
+    unsuccessful_patch_results = tuple(
+        item
+        for item in patch_results
+        if item.index > last_patch and item.result.outcome != "succeeded"
+    )
+    if unsuccessful_patch_results:
+        return _failed_patch_selection(
+            definitions,
+            observations,
+            unsuccessful_patch_results[-1],
+        )
+    if not require_pre_edit_profile and last_patch < 0:
+        return _pre_patch_selection(
+            definitions,
+            observations,
+            patch,
+            patch_results,
+            bound_no_profile_reads=False,
+        )
+
+    profile_results = tuple(
+        item for item in observations if item.tool == profile and item.index > last_patch
+    )
+
+    if not profile_results:
+        if last_patch >= 0:
+            return _selection(definitions, {profile}, forced_tool=profile)
+        names = (
+            {tool.name for tool in definitions}
+            - _ALL_GIT_REVIEW_TOOLS
+            - _HIDDEN_WORKFLOW_ACTIONS
+            - {patch}
+            - {"read_artifact"}
+        )
+        return _selection(definitions, names)
+
+    validation = profile_results[-1]
+    if validation.result.outcome == "succeeded" and last_patch >= 0:
+        return _git_review_selection(definitions, observations, validation.index)
+
+    if _is_code_test_failure(validation.result) or (
+        validation.result.outcome == "succeeded" and last_patch < 0
+    ):
+        return _validation_diagnosis_selection(
+            definitions, observations, validation, profile, patch, last_patch
+        )
+
+    return ModelToolSelection(())
+
+
+def _validation_diagnosis_selection(
+    definitions: tuple[ToolDescriptor, ...],
+    observations: tuple[_Observation, ...],
+    validation: _Observation,
+    profile: str,
+    patch: str,
+    last_patch: int,
+) -> ModelToolSelection:
+    """非零退出不等于测试通过；读取故障证据后才重新开放Patch。"""
+    if last_patch >= 0:
+        # 故障可能来自代码或测试目标；保留原只读工具和同一受控Profile。
+        names = {*_SOURCE_INSPECTION_TOOLS, profile}
+        if not _diagnostic_is_complete(validation.result):
+            names.add("read_artifact")
+        patched_paths = _patched_paths_requiring_reread(observations, last_patch)
+        if patched_paths <= _successful_reads_after(observations, validation.index):
+            names.add(patch)
+        return _selection(definitions, names)
+    names = {
+        item.name
+        for item in definitions
+        if item.effect_class == EffectClass.READ_ONLY and item.name not in _ALL_GIT_REVIEW_TOOLS
+    }
+    if _diagnostic_is_complete(validation.result):
+        names.discard("read_artifact")
+    names.add(patch)
+    return _selection(definitions, names)

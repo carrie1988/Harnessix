@@ -18,6 +18,13 @@ from harnessix.context.sources import (
 
 CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
+_PLANNING_INSTRUCTIONS = (
+    "For multi-step coding work, use update_plan to track investigation, implementation, "
+    "tests and review. Keep it short and place it after other tools in the same response; "
+    "do not spend a request merely restating a plan. Update observed progress or blockers, "
+    "not guesses. Plan status is self-reported and grants no execution authority; "
+    "actual patch, Profile and Review results remain authoritative."
+)
 
 _CODING_INSTRUCTIONS_PREFIX = """Reply in the user's language.
 
@@ -109,10 +116,13 @@ def build_product_agent_context(
     *,
     max_output_tokens: int = 65_536,
     require_pre_edit_profile: bool = True,
+    enable_planning: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
         raise ValueError("产品Context输出预留必须为1到1000000 Token")
+    if type(enable_planning) is not bool:
+        raise ValueError("产品规划指令开关必须是布尔值")
     limits = ContextLimits(
         context_window_tokens=PRODUCT_CONTEXT_INPUT_LIMIT + max_output_tokens + 1536,
         reserved_output_tokens=max_output_tokens,
@@ -124,6 +134,17 @@ def build_product_agent_context(
                 kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
                 source=CODING_INSTRUCTIONS_VERSION,
                 content=_coding_instructions(require_pre_edit_profile),
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.coding-planning/v1",
+                        content=_PLANNING_INSTRUCTIONS,
+                    ),
+                )
+                if enable_planning
+                else ()
             ),
         ),
     )

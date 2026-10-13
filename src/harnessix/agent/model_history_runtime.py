@@ -20,6 +20,7 @@ from harnessix.agent.models import (
     Turn,
     TurnStatus,
 )
+from harnessix.agent.planning import planning_history_anchors
 from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import get_turn
 from harnessix.agent.turn_budget_compaction import (
@@ -147,6 +148,7 @@ async def _prepaid_pressure_plan(
             policy,
             token,
             compaction_id=new_id(),
+            anchors=planning_history_anchors(thread),
             preferred_history_tokens=min(
                 policy.target_history_tokens,
                 max(512, pressure_history_allocation(turn, fixed)),

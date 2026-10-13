@@ -135,6 +135,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def planning_enabled(self) -> bool:
+        return False
+
+    @property
     def output_token_limit_margin(self) -> int:
         return 0
 
@@ -179,7 +183,7 @@ class _SweBenchAgentRunSettings(ContractModel):
         return matches[0]
 
     def worst_case_amount(self, plan: SweBenchPreRegistrationPlan) -> Amount:
-        """隔离版本逐Case预留；v5包含整体输出及API容差，不放宽任务硬预算。"""
+        """隔离版本逐Case预留；v5/v6包含API容差，不放宽任务硬预算。"""
 
         known = (
             len(plan.cases)
@@ -268,12 +272,79 @@ class SweBenchThinkingAgentRunConfig(_SweBenchAgentRunSettings):
         return 10
 
 
+class SweBenchPlanningAgentRunConfig(_SweBenchAgentRunSettings):
+    """独立v6：非思考模型原生规划，保留v4隔离、逐Case预付及压力压缩。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v6"] = (
+        "harnessix.swebench-agent-run-config/v6"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+    context_budget_policy: Literal["amortized_pressure_window"] = "amortized_pressure_window"
+    planning_policy: Literal["native-model-plan"] = "native-model-plan"
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return True
+
+    @property
+    def planning_enabled(self) -> bool:
+        return True
+
+    @property
+    def output_token_limit_margin(self) -> int:
+        return 10
+
+
 SweBenchRunConfig = (
     SweBenchAgentRunConfig
     | SweBenchIsolatedAgentRunConfig
     | SweBenchBudgetWindowAgentRunConfig
     | SweBenchThinkingAgentRunConfig
+    | SweBenchPlanningAgentRunConfig
 )
+
+
+def _run_config_type(
+    *,
+    isolate_provider_failures: bool,
+    budget_pressure_compaction: bool,
+    enable_thinking: bool,
+    enable_planning: bool,
+) -> type[SweBenchRunConfig]:
+    """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
+    flags = (
+        (isolate_provider_failures, "故障隔离"),
+        (budget_pressure_compaction, "预算窗口"),
+        (enable_thinking, "思考诊断"),
+        (enable_planning, "规划诊断"),
+    )
+    for value, name in flags:
+        if type(value) is not bool:
+            raise ValueError(f"SWE-bench{name}必须显式使用布尔开关")
+    if enable_planning and (
+        enable_thinking or not (isolate_provider_failures and budget_pressure_compaction)
+    ):
+        raise ValueError("SWE-bench规划诊断必须显式启用故障隔离与预算窗口并关闭思考")
+    if enable_thinking and not (isolate_provider_failures and budget_pressure_compaction):
+        raise ValueError("SWE-bench思考诊断必须显式启用故障隔离与预算窗口")
+    if budget_pressure_compaction and not isolate_provider_failures:
+        raise ValueError("SWE-bench预算窗口候选必须显式保留故障隔离与逐Case预付")
+    if enable_planning:
+        return SweBenchPlanningAgentRunConfig
+    if enable_thinking:
+        return SweBenchThinkingAgentRunConfig
+    if budget_pressure_compaction:
+        return SweBenchBudgetWindowAgentRunConfig
+    if isolate_provider_failures:
+        return SweBenchIsolatedAgentRunConfig
+    return SweBenchAgentRunConfig
 
 
 def build_swebench_agent_run_config(
@@ -290,30 +361,18 @@ def build_swebench_agent_run_config(
     isolate_provider_failures: bool = False,
     budget_pressure_compaction: bool = False,
     enable_thinking: bool = False,
+    enable_planning: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
     now = observed_at or datetime.now(UTC)
     parameters = {item.name: item.value for item in plan.model_settings.parameters}
-    if type(isolate_provider_failures) is not bool:
-        raise ValueError("SWE-bench故障隔离必须显式使用布尔开关")
-    if type(budget_pressure_compaction) is not bool:
-        raise ValueError("SWE-bench预算窗口必须显式使用布尔开关")
-    if type(enable_thinking) is not bool:
-        raise ValueError("SWE-bench思考诊断必须显式使用布尔开关")
-    if enable_thinking and not (isolate_provider_failures and budget_pressure_compaction):
-        raise ValueError("SWE-bench思考诊断必须显式启用故障隔离与预算窗口")
-    if budget_pressure_compaction and not isolate_provider_failures:
-        raise ValueError("SWE-bench预算窗口候选必须显式保留故障隔离与逐Case预付")
-    config_model: type[SweBenchRunConfig]
-    if enable_thinking:
-        config_model = SweBenchThinkingAgentRunConfig
-    elif budget_pressure_compaction:
-        config_model = SweBenchBudgetWindowAgentRunConfig
-    elif isolate_provider_failures:
-        config_model = SweBenchIsolatedAgentRunConfig
-    else:
-        config_model = SweBenchAgentRunConfig
+    config_model = _run_config_type(
+        isolate_provider_failures=isolate_provider_failures,
+        budget_pressure_compaction=budget_pressure_compaction,
+        enable_thinking=enable_thinking,
+        enable_planning=enable_planning,
+    )
     config = config_model(
         plan_sha256=plan.plan_sha256,
         source_root=str(source_root),

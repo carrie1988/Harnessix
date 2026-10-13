@@ -74,6 +74,12 @@ from harnessix.agent.models import (
     UsageRecorded,
 )
 from harnessix.agent.patching import execution_approval, inspection_scope, result_content
+from harnessix.agent.planning import (
+    UPDATE_PLAN_TOOL,
+    execute_plan_update,
+    planning_history_anchors,
+    planning_tool_descriptor,
+)
 from harnessix.agent.ports import (
     ModelToolSelection,
     ModelToolView,
@@ -248,6 +254,7 @@ class AgentRuntime:
         batch_diffs: BatchDiffPublisher | None = None,
         on_delta: Callable[[ItemDelta], None] | None = None,
         enable_questions: bool = False,
+        enable_planning: bool = False,
         observability: Observability | None = None,
         fault: Callable[[str], None] | None = None,
         max_parallel_tools: int = 4,
@@ -266,6 +273,8 @@ class AgentRuntime:
             (context, async_context),
             (compaction, summary_provider),
         )
+        if type(enable_planning) is not bool:
+            raise KernelError("invalid_runtime_configuration", "计划能力开关必须是布尔值")
         if type(budget_pressure_compaction) is not bool or (
             budget_pressure_compaction and compaction is None
         ):
@@ -326,6 +335,9 @@ class AgentRuntime:
                 )
             definitions = (*definitions, definition)
         self._questions_enabled = enable_questions
+        self._planning_enabled = enable_planning
+        if enable_planning:
+            definitions = (*definitions, planning_tool_descriptor())
         if enable_questions:
             definitions = (
                 *definitions,
@@ -1816,6 +1828,7 @@ class AgentRuntime:
                     self._compaction.policy,
                     token,
                     compaction_id=compaction_id,
+                    anchors=planning_history_anchors(thread),
                 )
                 if len(planned.summary_source) > 1_000_000:
                     raise KernelError(
@@ -2285,6 +2298,12 @@ class AgentRuntime:
             return await self._execute_calls(thread_id, turn_id, token)
         for call in calls:
             token.checkpoint()
+            if self._planning_enabled and call.tool == UPDATE_PLAN_TOOL:
+                self._validate_tool_contract(call)
+                await execute_plan_update(self, thread_id, turn_id, call, token)
+                thread = await self.store.get_thread(thread_id)
+                turn = get_turn(thread, turn_id)
+                continue
             rejected = False
             early_result: ToolResultContent | None = None
             if self._questions_enabled and call.tool == "ask_user":
