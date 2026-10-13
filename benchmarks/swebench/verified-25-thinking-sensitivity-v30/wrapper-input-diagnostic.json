@@ -1,0 +1,205 @@
+{
+  "schema": "harnessix.swebench-wrapper-density-summary/v1",
+  "checked_at": "2026-10-13T18:14:49.935833+00:00",
+  "historical_source_revision": "a3a4ed00c30f201d7282d749b9f74051323e5a24",
+  "analysis_source_revision": "bd9a2c1f",
+  "scope": "authenticated_same_source_prefix_reconstruction_not_new_agent_trial",
+  "authenticated_turns": 6,
+  "native_files_verified": 12,
+  "native_files_unchanged": true,
+  "request_positions": 38,
+  "history_and_context_fingerprints_matched": 38,
+  "accounted_main_requests": 32,
+  "consecutive_unchanged_catalog_positions": 31,
+  "consecutive_unchanged_instruction_positions": 32,
+  "catalog_wire_bytes_range": [
+    1059,
+    6318
+  ],
+  "terminal_positions": [
+    {
+      "arm": "nonthinking",
+      "case_index": 0,
+      "step": 7,
+      "actual_input_tokens": null,
+      "actual_output_tokens": null,
+      "remaining_task_tokens": 6508,
+      "estimated_input_upper": 16258,
+      "allowed_output_upper": 0,
+      "instruction_fingerprint_matches": true,
+      "history_fingerprint_matches": true,
+      "tool_names": [
+        "read_file",
+        "glob",
+        "grep",
+        "apply_patch_batch"
+      ],
+      "tool_catalog_wire_bytes": 6318,
+      "message_wire_bytes_by_role": {
+        "system": 6861,
+        "user": 1662,
+        "assistant": 2357,
+        "tool": 26508
+      },
+      "unchanged_tool_catalog": true,
+      "unchanged_instructions": true,
+      "accounted_model_attempt": false
+    },
+    {
+      "arm": "nonthinking",
+      "case_index": 1,
+      "step": 7,
+      "actual_input_tokens": null,
+      "actual_output_tokens": null,
+      "remaining_task_tokens": 10561,
+      "estimated_input_upper": 12768,
+      "allowed_output_upper": 0,
+      "instruction_fingerprint_matches": true,
+      "history_fingerprint_matches": true,
+      "tool_names": [
+        "read_file",
+        "glob",
+        "grep",
+        "apply_patch_batch"
+      ],
+      "tool_catalog_wire_bytes": 6318,
+      "message_wire_bytes_by_role": {
+        "system": 6113,
+        "user": 4634,
+        "assistant": 2126,
+        "tool": 11233
+      },
+      "unchanged_tool_catalog": true,
+      "unchanged_instructions": true,
+      "accounted_model_attempt": false
+    },
+    {
+      "arm": "nonthinking",
+      "case_index": 2,
+      "step": 8,
+      "actual_input_tokens": null,
+      "actual_output_tokens": null,
+      "remaining_task_tokens": 6491,
+      "estimated_input_upper": 11389,
+      "allowed_output_upper": 0,
+      "instruction_fingerprint_matches": true,
+      "history_fingerprint_matches": true,
+      "tool_names": [
+        "read_file",
+        "glob",
+        "grep",
+        "apply_patch_batch"
+      ],
+      "tool_catalog_wire_bytes": 6318,
+      "message_wire_bytes_by_role": {
+        "system": 6335,
+        "user": 2262,
+        "assistant": 3136,
+        "tool": 13836
+      },
+      "unchanged_tool_catalog": true,
+      "unchanged_instructions": true,
+      "accounted_model_attempt": false
+    },
+    {
+      "arm": "thinking",
+      "case_index": 0,
+      "step": 6,
+      "actual_input_tokens": null,
+      "actual_output_tokens": null,
+      "remaining_task_tokens": 7161,
+      "estimated_input_upper": 18741,
+      "allowed_output_upper": 0,
+      "instruction_fingerprint_matches": true,
+      "history_fingerprint_matches": true,
+      "tool_names": [
+        "read_file",
+        "glob",
+        "grep",
+        "apply_patch_batch"
+      ],
+      "tool_catalog_wire_bytes": 6318,
+      "message_wire_bytes_by_role": {
+        "system": 6861,
+        "user": 1662,
+        "assistant": 1915,
+        "tool": 28544
+      },
+      "unchanged_tool_catalog": true,
+      "unchanged_instructions": true,
+      "accounted_model_attempt": false
+    },
+    {
+      "arm": "thinking",
+      "case_index": 1,
+      "step": 4,
+      "actual_input_tokens": null,
+      "actual_output_tokens": null,
+      "remaining_task_tokens": 19188,
+      "estimated_input_upper": 19209,
+      "allowed_output_upper": 0,
+      "instruction_fingerprint_matches": true,
+      "history_fingerprint_matches": true,
+      "tool_names": [
+        "read_file",
+        "glob",
+        "grep",
+        "apply_patch_batch"
+      ],
+      "tool_catalog_wire_bytes": 6318,
+      "message_wire_bytes_by_role": {
+        "system": 6113,
+        "user": 4634,
+        "assistant": 877,
+        "tool": 29436
+      },
+      "unchanged_tool_catalog": true,
+      "unchanged_instructions": true,
+      "accounted_model_attempt": false
+    },
+    {
+      "arm": "thinking",
+      "case_index": 2,
+      "step": 6,
+      "actual_input_tokens": null,
+      "actual_output_tokens": null,
+      "remaining_task_tokens": 9508,
+      "estimated_input_upper": 15061,
+      "allowed_output_upper": 0,
+      "instruction_fingerprint_matches": true,
+      "history_fingerprint_matches": true,
+      "tool_names": [
+        "run_profile.public-tests"
+      ],
+      "tool_catalog_wire_bytes": 1059,
+      "message_wire_bytes_by_role": {
+        "system": 6336,
+        "user": 2262,
+        "assistant": 2467,
+        "tool": 20614
+      },
+      "unchanged_tool_catalog": false,
+      "unchanged_instructions": true,
+      "accounted_model_attempt": false
+    }
+  ],
+  "model_requests": 0,
+  "tool_requests": 0,
+  "private_evidence_sha256": "fa47d754247efe233daf14cdebed1407f3a397c1d172434adb3a9f2018887b2a",
+  "original_official_score_unchanged": "3/25",
+  "decision": "NO_GO_for_removing_fixed_wrapper_charges_without_source_proof",
+  "limits": "Existing completed-input wrapper proof already avoids recharging unchanged tools/instructions in admission estimates; bytes are not observed input tokens. Changed catalog/summary/failed or restarted input requires conservative fallback. No budget or gate was relaxed.",
+  "focused_existing_contract_regression": {
+    "passed": 101,
+    "failed": 0,
+    "skipped": 0,
+    "scope": [
+      "ToolResult frozen model view",
+      "OpenAI completed-input wrapper proof",
+      "Runtime prepaid input/actual hard token cap"
+    ],
+    "junit_sha256": "9e6032a9a3cc9de7a9368fa0b1040f091da12af79ab7dd54536fa7b9b43ae7a3",
+    "product_source_modified": false,
+    "not_complete_quality_or_release_acceptance": true
+  }
+}

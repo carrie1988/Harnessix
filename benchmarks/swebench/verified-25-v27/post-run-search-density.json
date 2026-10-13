@@ -1,0 +1,61 @@
+{
+  "schema": "harnessix.swebench-search-density-summary/v1",
+  "checked_at": "2026-10-13T18:04:37.635313+00:00",
+  "historical_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "historical_source_revision": "32e3dca8a213e75301c441159e4386f0fe6c8b6e",
+  "analysis_source_revision": "bd9a2c1f",
+  "scope": "authenticated_readonly_development_set_structure_counterfactual_not_token_measurement_or_score",
+  "aggregate": {
+    "cases": 25,
+    "model_requests": 0,
+    "native_files_verified": 50,
+    "native_files_unchanged": true,
+    "all_tool_wire_bytes": 356374,
+    "tool_wire_bytes": {
+      "read_file": 178052,
+      "grep": 164662,
+      "apply_patch_batch": 5358,
+      "run_profile.public-tests": 7090,
+      "git_review": 1212
+    },
+    "tool_result_counts": {
+      "read_file": 69,
+      "grep": 88,
+      "apply_patch_batch": 12,
+      "run_profile.public-tests": 4,
+      "git_review": 1
+    },
+    "successful_grep_results": 78,
+    "grep_source_wire_bytes": 160592,
+    "hypothetical_grouped_wire_bytes": 151508,
+    "positive_grouping_savings_bytes": 14787,
+    "results_grouping_larger": 60,
+    "results_above_64k": 0,
+    "duplicate_context_text_bytes": 781,
+    "max_results_distribution": {
+      "5": 19,
+      "10": 39,
+      "100": 2,
+      "20": 12,
+      "3": 3,
+      "30": 2,
+      "15": 1
+    },
+    "context_lines_distribution": {
+      "0": 35,
+      "2": 21,
+      "3": 16,
+      "1": 6
+    },
+    "warning": "UTF-8字节节省仅为离线结构反事实，不是实测Token节省、不改变准入或正式成绩。未计重复发送倍率及模型理解影响。"
+  },
+  "grouping_net_savings_bytes": 9084,
+  "grouping_net_savings_percent": 5.657,
+  "private_evidence_sha256": "5a735dc13b579de408cda10cdc793311afc03511fa2c5976d437ab3169e37b98",
+  "decision": "NO_GO_for_grep_grouping_contract_upgrade",
+  "production_source_modified": false,
+  "original_official_score_unchanged": "3/25",
+  "next_action": "Investigate useful investigation progress and total workflow closure cost; no global inline-cap reduction or per-case patch hints.",
+  "grouping_roundtrip_verified": true,
+  "independent_roundtrip_evidence_sha256": "e9a9ec596b46d5d44a83bbf885270183d81df43623bef66bc0cd1916888a9c27"
+}
