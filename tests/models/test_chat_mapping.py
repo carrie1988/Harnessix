@@ -160,6 +160,45 @@ def test_unspecified_thinking_mode_preserves_legacy_serialized_config() -> None:
 
     assert "enable_thinking" not in legacy
     assert explicit["enable_thinking"] is False
+    assert "thinking_budget" not in legacy
+    assert "thinking_budget" not in explicit
+
+
+def test_bounded_thinking_uses_total_completion_limit() -> None:
+    config = OpenAIChatConfig(
+        model="test", enable_thinking=True, thinking_budget=1024, max_output_tokens=4096
+    )
+    body, _ = build_request(model_request(), config)
+
+    assert body["extra_body"] == {"enable_thinking": True, "thinking_budget": 1024}
+    assert body["max_completion_tokens"] == 4096
+    assert "max_tokens" not in body
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"thinking_budget": 0},
+        {"thinking_budget": True},
+        {"thinking_budget": 262145},
+        {"thinking_budget": 4096},
+        {"enable_thinking": False},
+        {"enable_thinking": None},
+        {"output_token_parameter": "max_tokens"},
+    ],
+)
+def test_explicit_thinking_budget_rejects_unbounded_or_answerless_configuration(updates) -> None:
+    with pytest.raises(ValidationError):
+        OpenAIChatConfig.model_validate(
+            {
+                "model": "test",
+                "enable_thinking": True,
+                "thinking_budget": 1024,
+                "max_output_tokens": 4096,
+                **updates,
+            },
+            strict=True,
+        )
 
 
 @pytest.mark.parametrize(

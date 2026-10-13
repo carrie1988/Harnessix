@@ -79,19 +79,27 @@ class _SweBenchAgentRunSettings(ContractModel):
         if work == cache or work.is_relative_to(cache) or cache.is_relative_to(work):
             raise ValueError("SWE-bench运行目录与仓库缓存必须相互隔离")
         provider = self.provider_config
+        output_token_parameter = "max_completion_tokens" if self.thinking_enabled else "max_tokens"
         if (
             provider.base_url != _BASE_URL
             or provider.model != _MODEL
             or provider.max_attempts != 1
             or provider.retry_delay_seconds != 0
-            or provider.enable_thinking is not False
-            or provider.output_token_parameter != "max_tokens"
+            or provider.enable_thinking is not self.thinking_enabled
+            or provider.output_token_parameter != output_token_parameter
+            or provider.thinking_budget != (1024 if self.thinking_enabled else None)
             or not provider.capabilities.tool_calls
         ):
             raise ValueError("SWE-bench Provider不符合固定无重试工具边界")
         if (
             self.price.model != provider.model
             or self.price.currency != _CURRENCY
+            or self.price.inference_mode
+            != ("thinking" if self.thinking_enabled else "non-thinking")
+            or (
+                self.thinking_enabled
+                and (self.price.input_tokens_min != 0 or self.price.input_tokens_max != 983_616)
+            )
             or self.price.input_price != FlatInputPrice(per_million=_INPUT_PRICE)
             or self.price.output_per_million != _OUTPUT_PRICE
             or self.billing_context.billing_provider != self.price.billing_provider
@@ -122,8 +130,19 @@ class _SweBenchAgentRunSettings(ContractModel):
     def budget_pressure_compaction(self) -> bool:
         return False
 
+    @property
+    def thinking_enabled(self) -> bool:
+        return False
+
+    @property
+    def output_token_limit_margin(self) -> int:
+        return 0
+
     def require_plan(self, plan: SweBenchPreRegistrationPlan) -> None:
         parameters = {item.name: item.value for item in plan.model_settings.parameters}
+        expected_parameters: dict[str, str | int | bool] = {"thinking": "disabled"}
+        if self.thinking_enabled:
+            expected_parameters = {"thinking": "enabled", "thinking_budget": 1024}
         expected_cases = tuple(sorted((case.instance_id, case.repo) for case in plan.cases))
         if (
             self.plan_sha256 != plan.plan_sha256
@@ -131,8 +150,8 @@ class _SweBenchAgentRunSettings(ContractModel):
             or plan.model_settings.provider != _PROVIDER
             or parameters
             not in (
-                {"thinking": "disabled"},
-                {"thinking": "disabled", "parallel_tool_calls": True},
+                expected_parameters,
+                {**expected_parameters, "parallel_tool_calls": True},
             )
             or self.provider_config.capabilities.parallel_tool_calls
             is not parameters.get("parallel_tool_calls", False)
@@ -160,16 +179,16 @@ class _SweBenchAgentRunSettings(ContractModel):
         return matches[0]
 
     def worst_case_amount(self, plan: SweBenchPreRegistrationPlan) -> Amount:
-        """v2覆盖整轮及一次未决；v3按每个隔离Case各可能一次未决计算。"""
+        """隔离版本逐Case预留；v5包含整体输出及API容差，不放宽任务硬预算。"""
 
         known = (
             len(plan.cases)
-            * plan.task_budget.max_tokens
+            * (plan.task_budget.max_tokens + self.output_token_limit_margin)
             * max(rate_units(_INPUT_PRICE), rate_units(_OUTPUT_PRICE))
         )
-        unknown = self.provider_config.max_request_bytes * rate_units(
-            _INPUT_PRICE
-        ) + self.provider_config.max_output_tokens * rate_units(_OUTPUT_PRICE)
+        unknown = self.provider_config.max_request_bytes * rate_units(_INPUT_PRICE) + (
+            self.provider_config.max_output_tokens + self.output_token_limit_margin
+        ) * rate_units(_OUTPUT_PRICE)
         return format_amount(
             known + unknown * (len(plan.cases) if self.isolate_provider_failures else 1)
         )
@@ -220,8 +239,40 @@ class SweBenchBudgetWindowAgentRunConfig(_SweBenchAgentRunSettings):
         return True
 
 
+class SweBenchThinkingAgentRunConfig(_SweBenchAgentRunSettings):
+    """独立v5诊断：保留v4隔离、逐Case预付及压力压缩，显式启用有界思考。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v5"] = (
+        "harnessix.swebench-agent-run-config/v5"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+    context_budget_policy: Literal["amortized_pressure_window"] = "amortized_pressure_window"
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return True
+
+    @property
+    def thinking_enabled(self) -> bool:
+        return True
+
+    @property
+    def output_token_limit_margin(self) -> int:
+        return 10
+
+
 SweBenchRunConfig = (
-    SweBenchAgentRunConfig | SweBenchIsolatedAgentRunConfig | SweBenchBudgetWindowAgentRunConfig
+    SweBenchAgentRunConfig
+    | SweBenchIsolatedAgentRunConfig
+    | SweBenchBudgetWindowAgentRunConfig
+    | SweBenchThinkingAgentRunConfig
 )
 
 
@@ -238,6 +289,7 @@ def build_swebench_agent_run_config(
     observed_at: datetime | None = None,
     isolate_provider_failures: bool = False,
     budget_pressure_compaction: bool = False,
+    enable_thinking: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -247,10 +299,16 @@ def build_swebench_agent_run_config(
         raise ValueError("SWE-bench故障隔离必须显式使用布尔开关")
     if type(budget_pressure_compaction) is not bool:
         raise ValueError("SWE-bench预算窗口必须显式使用布尔开关")
+    if type(enable_thinking) is not bool:
+        raise ValueError("SWE-bench思考诊断必须显式使用布尔开关")
+    if enable_thinking and not (isolate_provider_failures and budget_pressure_compaction):
+        raise ValueError("SWE-bench思考诊断必须显式启用故障隔离与预算窗口")
     if budget_pressure_compaction and not isolate_provider_failures:
         raise ValueError("SWE-bench预算窗口候选必须显式保留故障隔离与逐Case预付")
     config_model: type[SweBenchRunConfig]
-    if budget_pressure_compaction:
+    if enable_thinking:
+        config_model = SweBenchThinkingAgentRunConfig
+    elif budget_pressure_compaction:
         config_model = SweBenchBudgetWindowAgentRunConfig
     elif isolate_provider_failures:
         config_model = SweBenchIsolatedAgentRunConfig
@@ -277,8 +335,9 @@ def build_swebench_agent_run_config(
             retry_delay_seconds=0,
             max_request_bytes=250_000,
             max_response_bytes=4 * 1024 * 1024,
-            output_token_parameter="max_tokens",
-            enable_thinking=False,
+            output_token_parameter="max_completion_tokens" if enable_thinking else "max_tokens",
+            enable_thinking=enable_thinking,
+            thinking_budget=1024 if enable_thinking else None,
         ),
         price=PriceSnapshot(
             version=f"aliyun-bailian-{now.date().isoformat()}-qwen3-8-max",
@@ -287,12 +346,12 @@ def build_swebench_agent_run_config(
             model=_MODEL,
             region="cn-beijing",
             service_tier="payg",
-            inference_mode="non-thinking",
+            inference_mode="thinking" if enable_thinking else "non-thinking",
             currency=_CURRENCY,
             valid_from=now,
             valid_until=now + _PRICE_VALIDITY,
             input_tokens_min=0,
-            input_tokens_max=991_808,
+            input_tokens_max=983_616 if enable_thinking else 991_808,
             input_price=FlatInputPrice(per_million=_INPUT_PRICE),
             output_per_million=_OUTPUT_PRICE,
         ),
@@ -300,7 +359,7 @@ def build_swebench_agent_run_config(
             billing_provider="aliyun-bailian",
             region="cn-beijing",
             service_tier="payg",
-            inference_mode="non-thinking",
+            inference_mode="thinking" if enable_thinking else "non-thinking",
         ),
         fee_stop_amount=fee_stop_amount,
         case_process_profiles=case_process_profiles,

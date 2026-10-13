@@ -77,6 +77,8 @@ def build_request(
     if config.enable_thinking is not None:
         # OpenAI SDK 将 extra_body 合并到最终请求顶层，供兼容端点接收扩展参数。
         body["extra_body"] = {"enable_thinking": config.enable_thinking}
+        if config.thinking_budget is not None:
+            body["extra_body"]["thinking_budget"] = config.thinking_budget
     if len(encode_json(body).encode()) > config.max_request_bytes:
         raise InvalidModelRequest("模型请求超过大小上限")
     return body, names

@@ -281,6 +281,56 @@ async def test_explicit_thinking_mode_reaches_openai_compatible_wire() -> None:
     assert "extra_body" not in requests[0]
 
 
+@pytest.mark.parametrize("finish", ["stop", "length"])
+async def test_bounded_thinking_accounts_full_usage_without_publishing_reasoning(
+    tmp_path: Path, finish: str
+) -> None:
+    usage = chunk(usage=True)
+    usage["usage"] = {
+        "prompt_tokens": 10,
+        "completion_tokens": 1002,
+        "total_tokens": 1012,
+        "completion_tokens_details": {"reasoning_tokens": 1000, "text_tokens": 1002},
+    }
+    private_reasoning = "PRIVATE-REASONING-CANARY"
+    wire = WireStream(
+        [
+            frame(chunk({"role": "assistant", "reasoning_content": private_reasoning})),
+            frame(chunk({"content": "OK"})),
+            frame(chunk(finish=finish)),
+            frame(usage),
+            b"data: [DONE]\n\n",
+        ]
+    )
+    sent: list[dict[str, Any]] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        sent.append(json.loads(request.content))
+        return response(wire)
+
+    store = SQLiteSessionStore(tmp_path / "thinking.db")
+    tools = RecordingTools()
+    async with OpenAIChatProvider(
+        config(enable_thinking=True, thinking_budget=1024, max_output_tokens=4096, max_attempts=1),
+        transport=httpx.MockTransport(handle),
+    ) as provider:
+        async with AgentRuntime(store, provider, tools) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(thread.thread_id, "任务", request_id="bounded-thinking")
+
+    assert len(sent) == 1
+    assert sent[0]["enable_thinking"] is True and sent[0]["thinking_budget"] == 1024
+    assert sent[0]["max_completion_tokens"] == 4096
+    assert "max_tokens" not in sent[0] and "extra_body" not in sent[0]
+    assert turn.status == (TurnStatus.COMPLETED if finish == "stop" else TurnStatus.FAILED)
+    assert turn.usage == Usage(input_tokens=10, output_tokens=1002)
+    assert turn.model_attempts[0].usage.reasoning_output_tokens == 1000
+    assert turn.usage_is_complete and tools.calls == [] and wire.closed
+    events = await store.events(thread.thread_id)
+    assert private_reasoning not in "".join(event.model_dump_json() for event in events)
+    assert replay(events) == await store.get_thread(thread.thread_id)
+
+
 @pytest.mark.parametrize("available", [True, False])
 async def test_model_availability_probe_is_read_only_and_exact(available: bool) -> None:
     requests: list[httpx.Request] = []

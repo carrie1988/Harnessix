@@ -132,6 +132,21 @@
       ],
       "default": null,
       "title": "Enable Thinking"
+    },
+    "thinking_budget": {
+      "anyOf": [
+        {
+          "maximum": 262144,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
+      "title": "Thinking Budget"
     }
   },
   "required": [

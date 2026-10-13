@@ -294,16 +294,16 @@ def _input_rate(config: SweBenchAgentRunConfig) -> int:
 
 
 def _unknown_request_reserve(config: SweBenchAgentRunConfig) -> int:
-    return config.provider_config.max_request_bytes * _input_rate(
-        config
-    ) + config.provider_config.max_output_tokens * rate_units(config.price.output_per_million)
+    return config.provider_config.max_request_bytes * _input_rate(config) + (
+        config.provider_config.max_output_tokens + config.output_token_limit_margin
+    ) * rate_units(config.price.output_per_million)
 
 
 def _next_case_reserve(
     plan: SweBenchPreRegistrationPlan,
     config: SweBenchAgentRunConfig,
 ) -> int:
-    known = plan.task_budget.max_tokens * max(
+    known = (plan.task_budget.max_tokens + config.output_token_limit_margin) * max(
         _input_rate(config),
         rate_units(config.price.output_per_million),
     )

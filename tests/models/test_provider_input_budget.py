@@ -277,8 +277,10 @@ def test_unclosed_prefix_cannot_be_subtracted():
         provider.estimate_input_tokens(request, prefix_items=2)
 
 
-@pytest.mark.parametrize("thinking", [None, True, False])
-async def test_bound_covers_actual_sdk_body_with_extra_body_merge(thinking):
+@pytest.mark.parametrize(
+    "thinking, thinking_budget", [(None, None), (True, None), (False, None), (True, 512)]
+)
+async def test_bound_covers_actual_sdk_body_with_extra_body_merge(thinking, thinking_budget):
     sent = []
 
     def handle(request):
@@ -286,7 +288,9 @@ async def test_bound_covers_actual_sdk_body_with_extra_body_merge(thinking):
         return response(WireStream(text_frames()))
 
     async with OpenAIChatProvider(
-        OpenAIChatConfig(model="test-model", enable_thinking=thinking),
+        OpenAIChatConfig(
+            model="test-model", enable_thinking=thinking, thinking_budget=thinking_budget
+        ),
         api_key="offline-fixture",
         transport=httpx.MockTransport(handle),
     ) as provider:

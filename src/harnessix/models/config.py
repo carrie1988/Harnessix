@@ -67,6 +67,23 @@ class OpenAIChatConfig(ModelHTTPConfig):
         default=None,
         exclude_if=lambda value: value is None,
     )
+    thinking_budget: int | None = Field(
+        default=None,
+        ge=1,
+        le=262_144,
+        exclude_if=lambda value: value is None,
+        description="显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
+    )
+
+    @model_validator(mode="after")
+    def validate_thinking_budget(self) -> Self:
+        if self.thinking_budget is not None and (
+            self.enable_thinking is not True
+            or self.output_token_parameter != "max_completion_tokens"
+            or self.thinking_budget >= self.max_output_tokens
+        ):
+            raise ValueError("思考预算要求显式开启思考、整体输出上限及非空回答余量")
+        return self
 
 
 class AnthropicConfig(ModelHTTPConfig):
