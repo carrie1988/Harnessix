@@ -131,6 +131,7 @@ class OpenAIChatProvider:
                     "history": request.history[:prefix_items],
                     "tools": (),
                     "instructions": None,
+                    "consumed_usage": None,
                     "tool_choice": "auto",
                     "forced_tool": None,
                 }

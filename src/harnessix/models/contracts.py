@@ -22,6 +22,7 @@ class ModelRequest(ContractModel):
     tools: tuple[ToolDescriptor, ...]
     instructions: str | None = Field(default=None, min_length=1, max_length=1_000_000)
     budget: Budget
+    consumed_usage: Usage | None = None
     remaining_tokens: int | None = Field(default=None, ge=1)
     tool_choice: Literal["auto", "required"] = "auto"
     forced_tool: str | None = Field(default=None, min_length=1, max_length=256)

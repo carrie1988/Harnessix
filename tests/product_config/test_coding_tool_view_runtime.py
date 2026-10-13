@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from harnessix.agent.cancellation import CancelToken
-from harnessix.agent.models import ToolCallContent, ToolResultContent, TurnStatus
+from harnessix.agent.models import AgentFailure, ToolCallContent, ToolResultContent, TurnStatus
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
@@ -95,8 +95,91 @@ async def test_runtime_drives_patch_test_and_git_review_to_completion(tmp_path: 
         "run_profile.public-tests",
         "git_review",
     ]
-    assert provider.requests[4].tools[0].name == "apply_patch"
-    assert provider.requests[4].forced_tool == "apply_patch"
+    assert {tool.name for tool in provider.requests[4].tools} == {
+        "read_file",
+        "grep",
+        "glob",
+        "apply_patch",
+    }
+    assert provider.requests[4].forced_tool is None
     assert provider.requests[5].forced_tool == "run_profile.public-tests"
     assert provider.requests[6].forced_tool == "git_review"
     assert provider.requests[7].tools == ()
+
+
+async def test_failed_validation_supports_search_reselection_repair_and_durable_review(
+    tmp_path: Path,
+) -> None:
+    class FailedValidationTools(_SuccessfulCodingTools):
+        def __init__(self):
+            super().__init__()
+            self.validations = 0
+
+        async def execute(self, call, cancel):
+            result = await super().execute(call, cancel)
+            if call.tool == "run_profile.public-tests":
+                self.validations += 1
+                if self.validations <= 2:
+                    return result.model_copy(
+                        update={
+                            "outcome": "failed",
+                            "error": AgentFailure(
+                                code="process_nonzero_exit", message="check failed"
+                            ),
+                        }
+                    )
+            return result
+
+    tools = FailedValidationTools()
+    steps = [
+        _tool_step(0, "apply_patch", {"path": "src/model.py"}),
+        _tool_step(1, "run_profile.public-tests", {"profile": "public-tests"}),
+        _tool_step(2, "grep", {"path": "tests", "query": "test_model"}),
+        _tool_step(3, "glob", {"path": "tests", "pattern": "*model*"}),
+        _tool_step(4, "run_profile.public-tests", {"profile": "public-tests"}),
+        _tool_step(5, "read_file", {"path": "src/model.py"}),
+        _tool_step(6, "apply_patch", {"path": "src/model.py"}),
+        _tool_step(7, "run_profile.public-tests", {"profile": "public-tests"}),
+        _tool_step(8, "git_review", {}),
+        answer("完成"),
+    ]
+    provider = ScriptedProvider(steps)
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(
+        store,
+        provider,
+        tools,
+        model_tool_view=CodingWorkflowToolView(require_pre_edit_profile=False),
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "修复并重测", request_id="repair")
+    assert turn.status is TurnStatus.COMPLETED
+    assert tools.calls == [
+        "apply_patch",
+        "run_profile.public-tests",
+        "grep",
+        "glob",
+        "run_profile.public-tests",
+        "read_file",
+        "apply_patch",
+        "run_profile.public-tests",
+        "git_review",
+    ]
+    for index in (2, 3, 4, 5):
+        names = {tool.name for tool in provider.requests[index].tools}
+        assert {"read_file", "grep", "glob", "run_profile.public-tests"} <= names
+        assert "apply_patch" not in names and "git_review" not in names
+    assert "apply_patch" in {tool.name for tool in provider.requests[6].tools}
+    assert provider.requests[7].forced_tool == "run_profile.public-tests"
+    assert provider.requests[8].forced_tool == "git_review"
+    assert provider.requests[9].tools == ()
+    restored = (
+        await SQLiteSessionStore(tmp_path / "session.db").get_thread(thread.thread_id)
+    ).turns[0]
+    assert restored == turn
+    assert (
+        CodingWorkflowToolView(require_pre_edit_profile=False)
+        .select(restored, tools.definitions())
+        .tools
+        == ()
+    )

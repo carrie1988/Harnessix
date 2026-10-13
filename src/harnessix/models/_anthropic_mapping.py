@@ -5,7 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, ToolResultContent
-from harnessix.models._history import InvalidModelRequest, encode_json, messages_for, tool_alias
+from harnessix.models._history import (
+    InvalidModelRequest,
+    budget_instruction,
+    encode_json,
+    messages_for,
+    tool_alias,
+)
 from harnessix.models._json import strict_json
 from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import AnthropicConfig
@@ -87,8 +93,9 @@ def build_request(
         "stream": True,
         "thinking": {"type": "disabled"},
     }
-    if request.instructions is not None:
-        body["system"] = request.instructions
+    system = tuple(note for note in (request.instructions, budget_instruction(request)) if note)
+    if system:
+        body["system"] = "\n\n".join(system)
     if tools:
         body["tools"] = tools
         body["tool_choice"] = {

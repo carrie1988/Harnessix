@@ -184,14 +184,21 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
         (_PATCH, "succeeded", None),
         (_PROFILE, "failed", "process_nonzero_exit"),
     )
-    assert _names(correction) == {"read_file", "read_artifact"}
+    assert _names(correction) == {"read_file", "grep", "glob", "read_artifact", _PROFILE}
     correction_read = _turn(
         (_PROFILE, "failed", "process_nonzero_exit"),
         (_PATCH, "succeeded", None),
         (_PROFILE, "failed", "process_nonzero_exit"),
         ("read_file", "succeeded", None),
     )
-    assert _names(correction_read) == {_PATCH, "read_file", "read_artifact"}
+    assert _names(correction_read) == {
+        _PATCH,
+        "read_file",
+        "grep",
+        "glob",
+        "read_artifact",
+        _PROFILE,
+    }
 
     validated = _turn(
         (_PROFILE, "failed", "process_nonzero_exit"),
@@ -281,7 +288,13 @@ def test_post_patch_only_workflow_allows_investigation_and_forces_retest_and_rev
         (_PROFILE, "failed", "process_nonzero_exit"),
     )
     diagnosis = _selection_for(failed_validation, require_pre_edit_profile=False)
-    assert {item.name for item in diagnosis.tools} == {"read_file", "read_artifact"}
+    assert {item.name for item in diagnosis.tools} == {
+        "read_file",
+        "grep",
+        "glob",
+        "read_artifact",
+        _PROFILE,
+    }
     assert _PATCH not in {item.name for item in diagnosis.tools}
 
     correction = _selection_for(
@@ -292,8 +305,15 @@ def test_post_patch_only_workflow_allows_investigation_and_forces_retest_and_rev
         ),
         require_pre_edit_profile=False,
     )
-    assert {item.name for item in correction.tools} == {"read_file", "read_artifact", _PATCH}
-    assert _PROFILE not in {item.name for item in correction.tools}
+    assert {item.name for item in correction.tools} == {
+        "read_file",
+        "grep",
+        "glob",
+        "read_artifact",
+        _PATCH,
+        _PROFILE,
+    }
+    assert _PROFILE in {item.name for item in correction.tools}
 
     retest = _selection_for(
         _turn(
@@ -591,7 +611,7 @@ def test_complete_profile_diagnostic_does_not_advertise_artifact_read() -> None:
         ),
         _definitions(),
     )
-    assert {tool.name for tool in correction.tools} == {"read_file"}
+    assert {tool.name for tool in correction.tools} == {"read_file", "grep", "glob", _PROFILE}
     assert correction.choice == "required" and correction.forced_tool is None
 
 

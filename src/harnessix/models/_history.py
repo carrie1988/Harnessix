@@ -39,6 +39,20 @@ def encode_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
 
 
+def budget_instruction(request: ModelRequest) -> str | None:
+    """宿主账本的当前事实，不替代 Runtime 的预算准入或实际用量核验。"""
+    if request.consumed_usage is None:
+        return None
+    remaining = max(0, request.budget.max_tokens - request.consumed_usage.total_tokens)
+    steps = max(0, request.budget.max_steps - request.step + 1)
+    return (
+        f"Runtime budget: {remaining} cumulative input+output tokens and {steps} model calls "
+        "remain, including this request and repeated history. Use the current catalog only. "
+        "Budget investigation, patch, validation, possible repair and review together; batch "
+        "independent reads and avoid repeated no-match searches."
+    )
+
+
 def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
     """私有规范化视图：完成消息、工具组及配对；不包含任何 SDK 对象。"""
     messages: list[dict[str, Any]] = []

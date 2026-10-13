@@ -323,7 +323,9 @@ class CodingWorkflowToolView:
             validation.result.outcome == "succeeded" and last_patch < 0
         ):
             if last_patch >= 0:
-                names = {"read_file"}
+                # 非零退出可能来自代码，也可能来自测试目标；诊断不能被限制为已改文件。
+                # 仍只开放原只读工具和同一受控 Profile，不把失败当成测试通过。
+                names = {*_SOURCE_INSPECTION_TOOLS, profile}
                 if not _diagnostic_is_complete(validation.result):
                     names.add("read_artifact")
                 patched_paths = _patched_paths_requiring_reread(observations, last_patch)

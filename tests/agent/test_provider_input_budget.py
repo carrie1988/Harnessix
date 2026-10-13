@@ -14,6 +14,7 @@ from harnessix.agent.models import Budget, TurnStatus, Usage
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptStarted, ModelUsageObserved
 from harnessix.context.tool_result_view import history_document
+from harnessix.models._history import budget_instruction
 from harnessix.models.anthropic import AnthropicProvider
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelInputTokenEstimator
@@ -45,7 +46,7 @@ async def test_real_adapter_wrapper_proof_unlocks_next_step_without_raising_budg
 
     tools = HeavyTools()
     sample = model_request().model_copy(
-        update={"tools": tools.definitions(), "remaining_tokens": 900}
+        update={"tools": tools.definitions(), "remaining_tokens": 900, "consumed_usage": Usage()}
     )
     maximum = pure_provider().estimate_input_tokens(sample) + 100
     sent = []
@@ -96,6 +97,21 @@ async def run(tmp_path, provider, *, text="test", budget=None, tools=None):
     ) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         return await runtime.run_turn(thread.thread_id, text, request_id="budget", budget=budget)
+
+
+async def test_runtime_feedback_uses_accounted_cumulative_usage_not_output_allowance(tmp_path):
+    provider = WireProvider([accounted_read_step(input_tokens=10), answer()])
+    turn = await run(tmp_path, provider, tools=RecordingTools())
+    assert turn.status is TurnStatus.COMPLETED and len(provider.requests) == 2
+    first, second = provider.requests
+    assert first.consumed_usage == Usage()
+    assert second.consumed_usage == Usage(input_tokens=10, output_tokens=50)
+    assert second.remaining_tokens != second.budget.max_tokens - second.consumed_usage.total_tokens
+    assert f"{second.budget.max_tokens - 60} cumulative" in budget_instruction(second)
+    restored = (
+        await SQLiteSessionStore(tmp_path / "session.db").get_thread(first.thread_id)
+    ).turns[0]
+    assert restored.model_attempts[0].usage.input_tokens == second.consumed_usage.input_tokens
 
 
 @pytest.mark.parametrize("value", [True, False, 0, -1, None, 1.5, "100", RuntimeError("failed")])
@@ -156,6 +172,7 @@ async def test_third_party_fallback_unchanged(tmp_path):
     turn = await run(tmp_path, provider, budget=Budget(max_tokens=2_000, max_output_chars=900))
     request = provider.requests[0]
     legacy = estimate_model_input_tokens(request.history, request.tools, request.instructions)
+    assert request.consumed_usage is None
     assert estimate_request_input_tokens(provider, request, turn, legacy) == legacy
     assert not isinstance(provider, ModelInputTokenEstimator)
     assert not isinstance(object.__new__(AnthropicProvider), ModelInputTokenEstimator)

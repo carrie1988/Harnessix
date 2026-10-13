@@ -35,7 +35,13 @@ class CompletedChatInput:
         cls, request: ModelRequest, body: dict[str, Any], config: OpenAIChatConfig
     ) -> CompletedChatInput:
         prefix = request.model_copy(
-            update={"tools": (), "instructions": None, "tool_choice": "auto", "forced_tool": None}
+            update={
+                "tools": (),
+                "instructions": None,
+                "consumed_usage": None,
+                "tool_choice": "auto",
+                "forced_tool": None,
+            }
         )
         prefix_body, _ = build_request(prefix, config)
         return cls(

@@ -5,7 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, ToolResultContent
-from harnessix.models._history import InvalidModelRequest, encode_json, messages_for, tool_alias
+from harnessix.models._history import (
+    InvalidModelRequest,
+    budget_instruction,
+    encode_json,
+    messages_for,
+    tool_alias,
+)
 from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelRequest
@@ -46,6 +52,9 @@ def build_request(
         )
     remaining = request.remaining_tokens or request.budget.max_tokens
     messages = messages_for(request)
+    budget_note = budget_instruction(request)
+    if budget_note is not None:
+        messages.insert(0, {"role": "system", "content": budget_note})
     if request.instructions is not None:
         messages.insert(0, {"role": "system", "content": request.instructions})
     body: dict[str, Any] = {

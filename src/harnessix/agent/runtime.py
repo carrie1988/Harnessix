@@ -181,6 +181,7 @@ from harnessix.domain.models import (
     utc_now,
 )
 from harnessix.models.contracts import (
+    ModelInputTokenEstimator,
     ModelProvider,
     ModelRequest,
     ResponseCompleted,
@@ -2125,6 +2126,9 @@ class AgentRuntime:
                     tools=tools,
                     instructions=instructions,
                     budget=turn.budget,
+                    consumed_usage=(
+                        turn.usage if isinstance(self.provider, ModelInputTokenEstimator) else None
+                    ),
                     remaining_tokens=output_token_limit,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
@@ -2151,6 +2155,7 @@ class AgentRuntime:
                     tools=tools,
                     instructions=instructions,
                     budget=turn.budget,
+                    consumed_usage=candidate.consumed_usage,
                     remaining_tokens=allowed_output_tokens,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
