@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 3
-code_revision: f01cd5ca364fe784ecd3b3a48b71102efee9f261
+version: 4
+code_revision: 823fa9f56fc3c95e1825d6f9cf37659628c57d15
 owners:
   - core
 modules:
@@ -220,3 +220,24 @@ Resolved 3/25、空Patch 15/25、8个完成评分、2个错误，未达标。
 这不能解释为环境无故障。保留原失败，以同一份冻结prediction在新目录串行重建及评分，
 不增加模型请求、不替换Patch、不挑选最优Case结果。
 本周期累计计价上界12.518928元，全部请求已计量，无未决预留；不是账单实扣金额。
+
+v15在相同开发集、模型及任务硬预算下引入两项共性修复：
+
+- [预算感知压缩](../../src/harnessix/agent/turn_budget_compaction.py)在冻结下一模型历史前，
+  按剩余Token与重复输入压力派生候选窗口，复用原压缩计划、摘要账本与活动窗口。
+  保留原用户消息和至少两个近期闭合工具组；窗口目标必须能够容纳这些固定项，不能直接
+  用未来三次请求的均摊额度强制缩小。先核算完整摘要请求、摘要输出、下一历史的完整摘要Item、
+  工具目录、Context和收尾余量。无可压前缀、无缩减、固定项溢出或不可支付时不调用摘要模型。
+  主请求、摘要与重试尝试共用原16次请求上限，摘要用量计入原50K预算，不额外增加额度。
+- [历史准备](../../src/harnessix/agent/model_history_runtime.py)及Runtime在摘要后正常重新观测Context，
+  对比指令指纹、来源、权限片段与一致性事实；来源漂移失败关闭，不复用未经复核的指令缓存。
+  取消、未知费用、历史损坏及恢复继续沿用原账本语义。
+- [目录拒绝反馈](../../src/harnessix/agent/runtime.py)不再把全部结构完整的目录外工具提案误判为
+  “没有工具调用”。拒绝仍只形成闭合反馈、零执行，模型只能在原预算内纠正；纯文本、空响应、
+  畸形、重复及强制工具已接受违规调用仍失败。既有冻结失败不改判成功。
+
+新增专项测试覆盖预付成本、完整摘要封装、请求计数、来源漂移与拒绝纠正；同一Turn的真实Runtime
+测试验证提前激活、用量结算及事件重放。相关回归1592项通过、1项跳过、4项因本机Git能力未选择；
+Ruff及552个源码文件Mypy通过。这是机制验证，不是Resolved成绩。
+[v15计划](../../benchmarks/swebench/verified-25-v15/plan.json)与[预检](../../benchmarks/swebench/verified-25-v15/preflight.json)
+已经冻结，须在新Workspace执行及官方评分后判断质量收益，不提前宣布达标。
