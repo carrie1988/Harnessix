@@ -10,11 +10,15 @@ import pytest
 
 from harnessix.agent.errors import KernelError
 from harnessix.evals.swebench.public_test_profile import (
+    _DJANGO_BOOTSTRAP_ARGUMENT,
+    _LEGACY_DJANGO_TEST_ARGUMENTS,
     _PYTEST_BOOTSTRAP_ARGUMENT,
     PUBLIC_TEST_PROFILE_ID,
+    SweBenchCaseProcessProfile,
     build_swebench_case_process_profile,
     discover_swebench_case_process_profiles,
 )
+from harnessix.product_config.action_contracts import build_product_process_profile
 from tests.evals.swebench.test_predictions import build_test_plan
 
 
@@ -23,6 +27,15 @@ def _docker(tmp_path: Path) -> Path:
     engine.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     engine.chmod(0o700)
     return engine
+
+
+def _reseal_profile(binding: dict) -> None:
+    fields = binding["profile"].copy()
+    fields.pop("spec_version")
+    fields.pop("profile_sha256")
+    fields["arguments"] = tuple(fields["arguments"])
+    fields["secret_refs"] = tuple(fields["secret_refs"])
+    binding["profile"] = build_product_process_profile(**fields).model_dump(mode="json")
 
 
 def _repository(instance_id: str, *, platform: str = "x86_64") -> str:
@@ -240,12 +253,112 @@ def test_django_profile_uses_repository_native_runner_and_workspace_imports(
         image_id="sha256:" + "a" * 64,
     ).profile
 
-    assert profile.arguments[-3:] == (
+    assert profile.arguments[-5:] == (
         "/opt/miniconda3/envs/testbed/bin/python",
         "-B",
-        "tests/runtests.py",
+        "-c",
+        _DJANGO_BOOTSTRAP_ARGUMENT,
+        "/workspace",
     )
     assert "PYTHONPATH=/workspace" in profile.arguments
+    assert profile.version == "swebench-public-tests-v6"
+
+
+@pytest.mark.parametrize(
+    "selector,expected",
+    [
+        ("tests/feature", "feature"),
+        ("tests/feature/tests.py", "feature.tests"),
+        ("tests/feature/tests.py::Tests::test_case", "feature.tests.Tests.test_case"),
+        ("feature.tests.Tests.test_case", "feature.tests.Tests.test_case"),
+    ],
+)
+def test_django_bootstrap_converts_generic_selectors_and_preserves_runner_exit(
+    tmp_path: Path, selector: str, expected: str
+) -> None:
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "runtests.py").write_text(
+        "import json,sys\n"
+        "print(json.dumps(sys.argv[1:]))\n"
+        "assert sys.path[0] == __file__.rsplit('/', 1)[0]\n"
+        "raise SystemExit(7)\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        (sys.executable, "-B", "-c", _DJANGO_BOOTSTRAP_ARGUMENT, str(tmp_path), selector),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 7, completed.stderr
+    assert json.loads(completed.stdout) == ["--parallel=1", expected]
+
+
+@pytest.mark.parametrize("selector", ["../feature", "--parallel=2", "tests/", "feature::"])
+def test_django_bootstrap_rejects_invalid_label_before_native_runner(
+    tmp_path: Path, selector: str
+) -> None:
+    completed = subprocess.run(
+        (sys.executable, "-B", "-c", _DJANGO_BOOTSTRAP_ARGUMENT, str(tmp_path), selector),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode != 0
+    assert "not a native test label" in completed.stderr
+    assert "FileNotFoundError" not in completed.stderr
+
+
+@pytest.mark.parametrize("repo", ["django/django", "example/example"])
+def test_frozen_v5_profile_is_read_without_silent_upgrade(tmp_path: Path, repo: str) -> None:
+    binding = build_swebench_case_process_profile(
+        "example__example-1",
+        repo=repo,
+        container_engine=_docker(tmp_path),
+        image_id="sha256:" + "a" * 64,
+    ).model_dump(mode="json")
+    binding["profile"]["version"] = "swebench-public-tests-v5"
+    if repo == "django/django":
+        binding["profile"]["arguments"] = list(_LEGACY_DJANGO_TEST_ARGUMENTS)
+    _reseal_profile(binding)
+    frozen_bytes = json.dumps(binding)
+
+    restored = SweBenchCaseProcessProfile.model_validate_json(frozen_bytes)
+
+    assert restored.model_dump(mode="json") == binding
+    assert restored.profile.version == "swebench-public-tests-v5"
+
+
+@pytest.mark.parametrize(
+    "version,legacy_runner",
+    [
+        ("swebench-public-tests-v5", False),
+        ("swebench-public-tests-v6", True),
+        ("swebench-public-tests-v7", False),
+    ],
+)
+def test_django_profile_rejects_version_and_fixed_runner_argument_drift(
+    tmp_path: Path, version: str, legacy_runner: bool
+) -> None:
+    binding = build_swebench_case_process_profile(
+        "example__example-1",
+        repo="django/django",
+        container_engine=_docker(tmp_path),
+        image_id="sha256:" + "a" * 64,
+    ).model_dump(mode="json")
+    binding["profile"]["version"] = version
+    if legacy_runner:
+        binding["profile"]["arguments"] = list(_LEGACY_DJANGO_TEST_ARGUMENTS)
+    _reseal_profile(binding)
+
+    with pytest.raises(ValueError, match="固定执行边界"):
+        SweBenchCaseProcessProfile.model_validate_json(json.dumps(binding))
 
 
 def test_sympy_profile_uses_repository_native_runner_and_workspace_imports(

@@ -27,7 +27,8 @@ from harnessix.product_config.action_contracts import (
 ImageListRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[str]]
 
 PUBLIC_TEST_PROFILE_ID = "public-tests"
-_PROFILE_VERSION = "swebench-public-tests-v5"
+_LEGACY_PROFILE_VERSION = "swebench-public-tests-v5"
+_PROFILE_VERSION = "swebench-public-tests-v6"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -166,11 +167,50 @@ _PYTEST_ARGUMENTS = (
     "--maxfail=1",
     "--",
 )
-_DJANGO_TEST_ARGUMENTS = (
+_LEGACY_DJANGO_TEST_ARGUMENTS = (
     *_COMMON_ENVIRONMENT_ARGUMENTS,
     "/opt/miniconda3/envs/testbed/bin/python",
     "-B",
     "tests/runtests.py",
+)
+_DJANGO_BOOTSTRAP_SOURCE = """
+from pathlib import Path
+import re
+import runpy
+import sys
+
+
+def native_label(selector):
+    path, separator, node = selector.partition("::")
+    if path.startswith("tests/"):
+        path = path[len("tests/"):]
+    if path.endswith(".py"):
+        path = path[:-3]
+    label = path.replace("/", ".")
+    if separator:
+        label += "." + node.replace("::", ".")
+    if not all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) for part in label.split(".")):
+        raise SystemExit("Harnessix Django selector is not a native test label")
+    return label
+
+
+workspace = Path(sys.argv[1])
+labels = [native_label(selector) for selector in sys.argv[2:]]
+runner = workspace / "tests" / "runtests.py"
+sys.path.insert(0, str(runner.parent))
+sys.argv = [str(runner), "--parallel=1", *labels]
+runpy.run_path(str(runner), run_name="__main__")
+"""
+_DJANGO_BOOTSTRAP_ARGUMENT = f"exec({_DJANGO_BOOTSTRAP_SOURCE!r})"
+# 原生入口需要模块标签而非 pytest 路径；串行运行还避免依赖禁用 IPC 的信号量。
+# 不开放网络/IPC，不给模型提供任意命令或用 Case ID 选择特殊测试。
+_DJANGO_TEST_ARGUMENTS = (
+    *_COMMON_ENVIRONMENT_ARGUMENTS,
+    "/opt/miniconda3/envs/testbed/bin/python",
+    "-B",
+    "-c",
+    _DJANGO_BOOTSTRAP_ARGUMENT,
+    "/workspace",
 )
 _SYMPY_TEST_ARGUMENTS = (
     *_COMMON_ENVIRONMENT_ARGUMENTS,
@@ -210,10 +250,10 @@ class SweBenchCaseProcessProfile(ContractModel):
         profile = self.profile
         if (
             profile.profile_id != PUBLIC_TEST_PROFILE_ID
-            or profile.version != _PROFILE_VERSION
+            or profile.version not in {_LEGACY_PROFILE_VERSION, _PROFILE_VERSION}
             or profile.description != _PROFILE_DESCRIPTION
             or profile.program != _PROGRAM
-            or profile.arguments != _profile_arguments(self.repo)
+            or profile.arguments != _profile_arguments(self.repo, version=profile.version)
             or profile.selector_policy != "bounded_test_selector"
             or profile.timeout_seconds != _TIMEOUT_SECONDS
             or profile.max_output_bytes != _MAX_OUTPUT_BYTES
@@ -228,11 +268,15 @@ class SweBenchCaseProcessProfile(ContractModel):
         return self
 
 
-def _profile_arguments(repo: str) -> tuple[str, ...]:
+def _profile_arguments(repo: str, *, version: str = _PROFILE_VERSION) -> tuple[str, ...]:
     """按公开仓库家族选择固定测试入口，不按单个 Case 定制。"""
 
     native_runners = {
-        "django/django": _DJANGO_TEST_ARGUMENTS,
+        "django/django": (
+            _LEGACY_DJANGO_TEST_ARGUMENTS
+            if version == _LEGACY_PROFILE_VERSION
+            else _DJANGO_TEST_ARGUMENTS
+        ),
         "sympy/sympy": _SYMPY_TEST_ARGUMENTS,
     }
     return native_runners.get(repo, _PYTEST_ARGUMENTS)
