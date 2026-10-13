@@ -1,0 +1,66 @@
+{
+  "schema": "harnessix.swebench-development-diagnostic-summary/v1",
+  "generated_at": "2026-10-13T15:04:08.439052+00:00",
+  "plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "source_revision": "32e3dca8a213e75301c441159e4386f0fe6c8b6e",
+  "evaluation_scope": "development_set",
+  "inference_requests": 0,
+  "authenticated_terminal_cases": 25,
+  "native_database_and_case_state_unchanged": true,
+  "budget_admission_failures": 24,
+  "provider_transport_failures": 0,
+  "provider_contract_failures": 0,
+  "tool_calls": {
+    "read_file": 69,
+    "grep": 88,
+    "apply_patch_batch": 12,
+    "run_profile.public-tests": 4,
+    "git_review": 1
+  },
+  "read_pages": 69,
+  "anchored_reads": 35,
+  "successful_anchored_reads": 29,
+  "completed_summaries": 6,
+  "tool_failure_codes": {
+    "tool_invalid_arguments": 17,
+    "process_nonzero_exit": 3,
+    "unknown_tool": 2,
+    "tool_limit_exceeded": 1,
+    "tool_anchor_ambiguous": 1,
+    "tool_anchor_not_found": 3
+  },
+  "completed_autonomous_coding_cases": 1,
+  "patch_application_failures": 0,
+  "patch_reports": [
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "patch_successfully_applied": true
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7205",
+      "patch_successfully_applied": true
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "patch_successfully_applied": true
+    },
+    {
+      "instance_id": "psf__requests-5414",
+      "patch_successfully_applied": true
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-13439",
+      "patch_successfully_applied": true
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "patch_successfully_applied": true
+    }
+  ],
+  "official_ambiguous_failures": 3,
+  "decision": "NO_GO：Resolved 3/25、空补丁19，未达目标。v26含传输故障，2→3不能归因于质量提升；v25仍为4/25。唯一锚点确已进入真实链路，但尚未证明质量收益。",
+  "next_investigation": "重复输入开销及自主闭环余量、持续违反参数类型／范围约束；不强制转换参数，不设置Case专用分支，不放宽任务预算。",
+  "diagnostic_original_sha256": "c8de31d5a6819032551023cd2241458f1ebbead409b5523095715720656a3632",
+  "invalid_argument_diagnostic_sha256": "3251fde09445c3081772d1eb5d834d9752aef9b0fb8cada9bdf1304082b2e19d",
+  "official_evidence_sha256": "b493c0a98dc721e8e1dc873e011f12f0c1292b5dfe03f8c764c3a97180995e32"
+}

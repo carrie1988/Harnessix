@@ -8,8 +8,8 @@
   "case_order_unchanged": true,
   "model_settings_unchanged": true,
   "runtime_changes": [
-    "single owned-FD unique literal anchor read with original snapshot SHA",
-    "explicit ambiguity, absence and invisible-anchor failures; legacy input v1/v2 unchanged"
+    "同一已拥有FD中执行唯一字面锚点定位、整行分页及原始全文件SHA",
+    "歧义、未找到及页未覆盖锚点明确失败；旧输入v1/v2逐字保持"
   ],
   "profile_version": "swebench-public-tests-v7",
   "profiles_count": 25,
@@ -29,7 +29,7 @@
     "errors": 0,
     "skipped": 0
   },
-  "failure_boundary": "four unchanged Apple Git 2.24.3 init --object-format failures; earlier retry and official infrastructure gates remain open",
+  "failure_boundary": "4项原有Apple Git 2.24.3不支持init --object-format的失败；历史retry及官方基础设施门禁仍未关闭。",
   "mypy_source_files": 554,
   "mypy": "PASS",
   "contracts": "PASS",
@@ -40,7 +40,7 @@
   "maximum_run_allocation_amount": "124",
   "worst_case_amount": "123.6864",
   "execution_run_directory": "runs/agent-8b93c41d6c44-v27",
-  "execution_status": "FROZEN_NOT_STARTED",
+  "execution_status": "COMPLETED_TARGET_NOT_MET",
   "model_retry_policy": "none",
   "disk_guard": {
     "minimum_free_bytes": 10737418240,
@@ -54,6 +54,33 @@
     "v27-mypy-final.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
     "v27-anchor-counterfactual.json": "0c9b9c7b4a83945e81ed63e53fed820b763fdeaee9522417a5838becc07c7951",
     "v26-search-observation.json": "c29163feabbb63d4cdeb2c117d7bcd8ff01c9c765525318e3ae224f9e2090c73",
-    "v26-scan-limit-observation.json": "085ab3a8db3b6036bd497a8e798227f26e298014b70d6d513133fb666ed5d456"
-  }
+    "v26-scan-limit-observation.json": "085ab3a8db3b6036bd497a8e798227f26e298014b70d6d513133fb666ed5d456",
+    "v27-documentation-final.json": "a2e73acd3fe23946c639cb2edd401e59d8d14697fb3feec7f2a2465f84bc5a8b",
+    "v27-repository-secret-scan.log": "1f7f8247ddcbe312840e36922b04b668cb3028ca775cb286cfe36891eb0f06ce",
+    "v27-host-preflight.json": "313b9d4ea5528f978cdadb9d2d7c10a2a635ce4d212edeedb6b891cdda4e0802",
+    "v27-behavior-observation.json": "c8de31d5a6819032551023cd2241458f1ebbead409b5523095715720656a3632",
+    "v27-invalid-arguments-observation.json": "3251fde09445c3081772d1eb5d834d9752aef9b0fb8cada9bdf1304082b2e19d",
+    "v27-official-verified.json": "b493c0a98dc721e8e1dc873e011f12f0c1292b5dfe03f8c764c3a97180995e32"
+  },
+  "transport_probe": {
+    "checked_at": "2026-10-13T14:46:15.872391+00:00",
+    "inference_requests": 0,
+    "production_direct_provider": true,
+    "model_available": true,
+    "price_still_valid": true,
+    "not_inference_stability_evidence": true
+  },
+  "official_score": {
+    "resolved_cases": 3,
+    "submitted_cases": 25,
+    "empty_patch_cases": 19,
+    "error_cases": 0,
+    "infrastructure_failures": 0,
+    "ambiguous_failures": 3
+  },
+  "execution_failure_counts": {
+    "budget_exceeded": 24
+  },
+  "known_cost_upper_amount": "12.994656",
+  "reserved_cost_amount": "0"
 }
