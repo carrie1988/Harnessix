@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 30
-code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
+version: 31
+code_revision: 5a76886d0e3ffaec08d7fdddf57276bbdb56697f
 owners:
   - core
 modules:
@@ -268,6 +268,9 @@ stateDiagram-v2
 关键不变量由[`turn_reducer.py`](../../src/harnessix/agent/turn_reducer.py)执行：
 
 1. `CALLING_MODEL`前检查步数和Token预算并记录Model Attempt；
+   普通请求仅对声明wire输入估算端口的Provider填入`ModelRequest.consumed_usage`，来自当前Turn累计
+   Usage，未声明端口仍为`None`并保留旧输入/估算。反馈从已验证投影重建，不新建持久状态，
+   不替代实际用量硬门；字段、出站消息及负控见[Models累计预算反馈](models.md#累计预算反馈)。
 2. `WAITING_APPROVAL`必须存在已开始的Approval Item及对应待处理Tool Call；
 3. `WAITING_INPUT`只接受Event v19及以上，且必须绑定`ask_user` Call和已完成Question Request；
 4. `WAITING_ACTION`只允许旧Event重放；当前命令不得创建、决定或恢复该历史Process等待状态；

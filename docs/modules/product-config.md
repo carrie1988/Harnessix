@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 115
-code_revision: d0b3253ba60d922fdf7423aa4b87ccbb7139e45e
+version: 116
+code_revision: 5a76886d0e3ffaec08d7fdddf57276bbdb56697f
 owners:
   - core
 modules:
@@ -113,6 +113,22 @@ supersedes: []
 仍须闭合，不将该关联验证当作 R4 或商业发布验收。
 
 # Product Config模块设计
+
+## 当前编码工作流：非零测试退出后的诊断
+
+[`CodingWorkflowToolView.select`](../../src/harnessix/product_config/coding_tool_view.py)在修改后的
+受控Profile以`process_nonzero_exit`结束时，开放原目录中的`read_file/grep/glob`及同一个Profile。
+测试失败可能需要调查未改动的调用者，也可能需要纠正已观察的公开测试目标；不再限定为反复读取已改文件。
+这不是自动重试：是否重测仍由Agent提案，并经过原Profile参数校验、审批、隔离和Turn资源门。
+
+修复Patch仍需在最后一次验证后成功重读已修改的非删除文件；`grep/glob`不能代替该事实。
+重新Patch后立即强制同一Profile验证，成功后才开放Git复核；非零失败不会授予Git复核或完成证据。
+Artifact只在诊断被截断时广告。超时、启动失败、取消、未知效果、输出不可得和未识别错误仍关闭工具视图，
+不开放Shell、网络、安装、Rollback或第二个Profile。
+该选择完全从原持久调用/结果重建，没有新增状态、迁移或隐式恢复执行。
+正负控见[选择规则](../../tests/product_config/test_coding_tool_view.py)；
+离线Runtime覆盖搜索、重新选择验证、重读、修复、强制重测、Git复核及Session重放，见
+[完整闭环测试](../../tests/product_config/test_coding_tool_view_runtime.py)。测试通过不等于SWE-bench质量验收。
 
 原准备／审批证明的 Route 回读共用[父闭包进度接线](../changes/m09-r4-git-checkpoint-preparation.md#110-业务证明的原-route-父闭包进度接线)。只补显式计算工厂，真实 CAS、原 Store 观察、终端内部 Full、原首末复核及未知／foreign 调用身份保持；不启用默认 Writer 或据此关闭 R4。
 

@@ -1,0 +1,62 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T07:59:46.106381+00:00",
+  "plan_sha256": "af44f9d5831c900a66fd757676e0ea2231fbf42f6cde96d5987aa883b82e6212",
+  "source_revision": "5a76886d0e3ffaec08d7fdddf57276bbdb56697f",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "prompt_version": "harnessix.swebench-agent-prompt/v5",
+  "runtime_changes": [
+    "accounted budget feedback only with wire input estimator",
+    "nonzero-exit diagnosis allows original grep/glob/read and same controlled profile; reread, forced retest, review gates retained"
+  ],
+  "budget_pressure_compaction": false,
+  "final_focused_pytest": {
+    "passed": 415,
+    "failed": 0
+  },
+  "broad_regression": {
+    "passed": 4151,
+    "failed": 4,
+    "skipped": 1,
+    "note": "Known baseline retry failures retained; no full-green claim."
+  },
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "ruff_changed_files": "PASS",
+  "contracts": "PASS",
+  "disk_guard": {
+    "status": "PASS",
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 60562137088
+  },
+  "profiles_count": 25,
+  "profile_drift": false,
+  "profiles_sha256": "91ea4be942585e60eab6f534a27dc8783c851e0e66188bea31432c3ee42a62a4",
+  "transport_probe": {
+    "direct_catalog_get": 20,
+    "direct_success": 20,
+    "explicit_proxy_catalog_get": 20,
+    "proxy_success": 20,
+    "inference_requests": 0,
+    "route_unchanged": true
+  },
+  "original_infrastructure_acceptance": "OPEN: pristine trustme/appdirs missing and a zero-test-collection failure",
+  "budget_period_id": "d13d33cb-8093-4e94-9253-5b78b2e201ad",
+  "period_limit_amount": "100",
+  "known_cost_upper_amount": "37.349580",
+  "prior_unaccounted_reserved_amount": "6.294912",
+  "remaining_upper_budget_amount": "56.355508",
+  "maximum_run_allocation_amount": "48.147456",
+  "model_retry_policy": "none",
+  "official_score": null,
+  "execution_run_directory": "runs/agent-af44f9d5831c-v19",
+  "execution_status": "READY",
+  "evidence_log_sha256": {
+    "v19-final-r2.log": "b244918bef60edd87853957112374588eed52e4c6725471f0596cc3800f03140",
+    "v19-expanded-final.log": "458ac3a4dbe00837d42610b508683a5595ddd9565913db8da47fe3538290ef21",
+    "v19-mypy-final.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
+    "transport-catalog-probe-v19.json": "da623050a1c1caabafa6e4c90b26854683b86fdb16851fc3e44af35d2be494dd"
+  }
+}

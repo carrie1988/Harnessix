@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: e031eaa6c5681d70b5680ec713e675f2ce3ce886
+version: 16
+code_revision: 5a76886d0e3ffaec08d7fdddf57276bbdb56697f
 owners:
   - core
 modules:
@@ -78,6 +78,21 @@ Runtime只在同Provider、同请求/实际模型、完整Usage及持久前缀�
 对应[实现](../../src/harnessix/agent/model_input_budget.py)、
 [SDK映射正负控](../../tests/models/test_provider_input_budget.py)及
 [Runtime预算正负控](../../tests/agent/test_provider_input_budget.py)。
+
+### 累计预算反馈
+
+`ModelRequest.consumed_usage`为可选的宿主累计事实。普通Runtime仅在Provider实现现有wire输入估算端口时
+填入当前Turn的`usage`；未声明能力的Provider得到`None`，旧输入与旧估算行为不变。
+[`budget_instruction`](../../src/harnessix/models/_history.py)计算
+`max_tokens - consumed_usage.total_tokens`和`max_steps - step + 1`，明确包含当前请求及重复历史。
+Chat作为独立system消息发送；Anthropic mapper可映射显式提供的事实，但当前默认Runtime不对其启用反馈。
+这是规划提示，不是输出Token上限，更不是新的预算权威；准入、取消和实际Usage硬门仍由Runtime执行。
+
+动态提示全部计入Chat实际wire上界。`CompletedChatInput`的历史摘要排除临时提示，避免把新余额误认作
+旧前缀；当前提示不参与不变封装扣减，因此不能通过余额变化逃避输入预留。它不写入业务Item、
+Context指令指纹或新的Session Schema，重启后从已验证Turn投影重新生成。
+对应[实际mapper及字节负控](../../tests/models/test_budget_feedback.py)和
+[Runtime累计账本与重放测试](../../tests/agent/test_provider_input_budget.py)。
 
 ## 1. 文档摘要
 
@@ -214,6 +229,7 @@ Context准备后的同一历史同时用于预算和Provider请求。具体Adapt
 | `tools` | `ToolDescriptor`元组 | Runtime注册表 | 使用稳定别名发送，返回时映射回内部工具名 |
 | `instructions` | 可空字符串，1～1000000字符 | Context Engine | OpenAI放首个System消息；Anthropic放`system`字段 |
 | `budget` | `Budget` | Turn创建事实 | 约束总Token、输出字符和每步Tool Call |
+| `consumed_usage` | 可空`Usage` | 当前Turn累计投影 | 仅宿主预算反馈；`None`兼容旧Provider，不代替Usage账本或输出配额 |
 | `remaining_tokens` | 可空正整数 | Runtime预算 | 输出Token取其与Provider配置上限的较小值 |
 
 ### 7.2 Provider语义事件
