@@ -1,0 +1,83 @@
+{
+  "schema": "harnessix.swebench-source-candidate-prefix-preregistration/v1",
+  "frozen_at": "2026-10-13T17:00:50.716954+00:00",
+  "runner_sha256": "a6d9a59c08db2ac04a02d4c70398f2d6c0711c9c55811bdb7dbbbfe32fbbc836",
+  "source_revision": "e92c038e2fb8e82095441840a2a04659d9ea4067",
+  "source_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "scope": "development_set_source_candidate_prefix3_not_official_score",
+  "selected_case_ids": [
+    "matplotlib__matplotlib-25960",
+    "pydata__xarray-4695",
+    "pytest-dev__pytest-10051"
+  ],
+  "selected_case_count": 3,
+  "executions": 3,
+  "execution_order": [
+    [
+      "candidate",
+      0
+    ],
+    [
+      "candidate",
+      1
+    ],
+    [
+      "candidate",
+      2
+    ]
+  ],
+  "changed_task_fields": [],
+  "source_changes": [
+    "static_registered_constraint_feedback",
+    "auto_pre_patch_investigation"
+  ],
+  "separate_identity_fields": [
+    "plan_sha256",
+    "work_root",
+    "execution_fingerprint"
+  ],
+  "accounting_only_fields": [
+    "fee_stop_amount"
+  ],
+  "unchanged": [
+    "prompt_template",
+    "problem_statements",
+    "base_commits",
+    "provider_config",
+    "process_profiles",
+    "timeout_seconds",
+    "no_retry",
+    "all_safety_controls"
+  ],
+  "maximum_cost_amount": "18",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "primary_gate": {
+    "max_tokens": 50000,
+    "max_steps": 16,
+    "resolved_target": "22/25"
+  },
+  "outcomes": [
+    "native_terminal_status",
+    "patch_produced",
+    "model_token_usage",
+    "public_test_observation",
+    "patch_review_observation",
+    "compaction_usage",
+    "provider_failures"
+  ],
+  "official_score": null,
+  "limitations": "固定前三项pass@1新尝试；两个源码修复同时启用，不作单因素归因，不替代25项官方评分。",
+  "arms": [
+    {
+      "name": "candidate",
+      "plan_sha256": "76a12c08428b2d7fd84899f8a95f95c51001e2d3fd983446c44ad0d6bfff961d",
+      "plan_file_sha256": "3fe93479d4af7ccc529ab2c5d374fe61506335047ec14920283e24f50cc2e492",
+      "config_file_sha256": "f292744bdfdb48e8a7f05a2657e0b7c5b0100685e36a238a1ad809324546f8c7",
+      "execution_fingerprint": "ba83d8cb2f9d8c7ace2edb202eb08fc8df34d35d79365c59d751c14c270668fb",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.947456"
+    }
+  ]
+}

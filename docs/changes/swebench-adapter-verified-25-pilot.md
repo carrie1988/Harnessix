@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 20
-code_revision: 4c5afc1642ab4037f6bbfe616fa546e1d20eab22
+version: 21
+code_revision: e92c038e2fb8e82095441840a2a04659d9ea4067
 owners:
   - core
 modules:
@@ -791,3 +791,23 @@ base commit、工具和镜像；900秒、摘要计费、隔离／审批和无重
 后又重复两次；错误反馈只给字段清单，未指出单行约束。100K组另有一次超范围grep及
 一次错误字面锚点。下一步优先核对Schema与实际约束一致性、可安全修正的反馈及有效
 调查进展，而不是继续加预算／整轮盲跑；任何改动仍须新源码和新目录验证，不改写本实验。
+
+### v29三项原预算源码候选：NO_GO
+
+共享源码`e92c038e`补齐[注册约束反馈](m09-r3-safe-tool-argument-feedback.md#9-注册跨字段约束反馈唯一锚点输入)
+并允许有Profile的post-patch-only调查阶段诚实结束，修改后强制测试与Review不变；没有补丁的
+正常Turn结束仍判未解决。它不自动修正参数，不以调查次数逼迫Patch，不增加任务预算。
+
+[预注册](../../benchmarks/swebench/verified-25-prefix3-v29/preregistration.json)只执行原顺序前三项：
+50K/16次、900秒、提示v8、原模型/工具/Profile、无重试及10 GiB磁盘硬门不变。
+[独立原生复核结果](../../benchmarks/swebench/verified-25-prefix3-v29/result-summary.json)
+认证三份原Turn，并核对六份Session/Case状态前后摘要、请求身份、预算、费用和补丁。
+3/3仍`budget_exceeded`、空补丁3、自主闭环0；未调用公开测试或Review。
+22项未执行、原Suite仍running，没有生成完整25项predictions或官方评分，不拼接旧成功。
+两项源码修复同时启用，不能作单因素归因或宣称统计显著性；最新正式成绩仍v27的3/25。
+
+本候选费用估算上界1.608180元、新增未决0。200元周期累计已知上界39.581724元、旧未决
+31.474560元、可用128.943716元，均非实扣账单。最终关联扩大回归1092通过／35跳过，
+554源文件Mypy、冻结Schema与Ruff通过；全局可读性旧基线FAIL保留，未改基线为通过。
+下一步聚焦模型规划与有效调查进展，不重复全25项盲跑；任何模型模式诊断都独立预注册，
+不得静默修改主评测的非思考条件、累计Token或费用边界。

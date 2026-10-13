@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 118
-code_revision: 32e3dca8a213e75301c441159e4386f0fe6c8b6e
+version: 119
+code_revision: e92c038e2fb8e82095441840a2a04659d9ea4067
 owners:
   - core
 modules:
@@ -2945,3 +2945,17 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 共享post-patch-only指令建议用唯一字面锚点取得源码页和完整摘要；歧义仍回退到更具体的
 锚点或窄范围grep，不增加调查次数限制、不强迫提前Patch、不跳过Profile或Review。
 [契约与失败边界](tools.md#唯一锚点源码页输入v3)，[冻结验证](../../benchmarks/swebench/verified-25-v27/preflight.json)。
+
+### 调查阶段的诚实结束：不以强制调用代替解题进展
+
+[`CodingWorkflowToolView._pre_patch_selection`](../../src/harnessix/product_config/coding_tool_view.py)
+在**有验证Profile且为post-patch-only**的只读调查阶段使用`auto`：模型可以继续观察、提出Patch，
+也可以诚实说明尚未解决。之前的持续`required`会把纯文本结束拒绝为`invalid_provider_output`。
+没有Patch的正常Turn结束仍被SWE-bench证据门判为未解决，不能获得分数。
+
+修改后必须运行适用Profile，再读取源码及Review的原阶段机不变；修改后仅文本声明通过仍拒绝。
+没有Profile的旧四次调查上限行为本次未改，不能宣称所有编码入口都已取消强制Patch。
+[运行时回归](../../tests/product_config/test_coding_tool_view_runtime.py)覆盖0/4/12次只读后结束、
+修改后纯文本拒绝，以及原Patch→验证→修复→Review链；纯脚本回复不是自主质量证明。
+[真实三项复验](../../benchmarks/swebench/verified-25-prefix3-v29/result-summary.json)仍0/3，
+两个修复同时启用且无单因素归因；尚未实现跨模型轮次的调查进展策略。

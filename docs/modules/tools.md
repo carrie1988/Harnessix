@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 32e3dca8a213e75301c441159e4386f0fe6c8b6e
+version: 17
+code_revision: e92c038e2fb8e82095441840a2a04659d9ea4067
 owners:
   - core
 modules:
@@ -635,7 +635,8 @@ sequenceDiagram
 采用固定失败代码和安全消息，不包含OS错误正文、绝对路径、查询值或栈。
 `tool_invalid_arguments`通过共享纯函数
 [`invalid_argument_message`](../../src/harnessix/tools/argument_feedback.py)从正式输入模型Schema生成必填、缺少及允许字段列表；只检查已注册
-必填键是否存在，不回显未知键、任何值、第三方ValidationError或其错误位置。`null`和错型仍拒绝，
+必填键是否存在，不回显未知键、任何值或第三方ValidationError正文及位置。唯一锚点的跨字段
+拒绝仅提取正式校验器的类型码并映射到四条不可变白名单说明；未知码、错误input/context不公开。`null`和错型仍拒绝，
 但不误称为缺少。专用`tool_expected_revision_required`保持优先级和原消息。
 失败结果与成功结果一样持久化，模型可据稳定code发起新的调用，Runtime不会自动补值或重试。
 完整字段合同、失败语义、数据流及双Provider实际链路验证见

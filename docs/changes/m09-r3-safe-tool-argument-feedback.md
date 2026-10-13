@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: 49ad2d74f0794ac37926d115d99ec7e6399dc6a8
+version: 3
+code_revision: e92c038e2fb8e82095441840a2a04659d9ea4067
 owners: [core]
 modules: [tools, artifacts, models, agent]
 related_adrs:
@@ -205,3 +205,43 @@ Scope、读前写约束和Session迁移不变。Trusted Tool复用同一纯函�
 测试中的脚本回复只证明接线，不是云端模型自主纠错证据。
 相关工具、视图、SWE-bench和Trusted Action联合1568项通过，554个源码文件Mypy与合同门禁通过。
 真实纠错率及Resolved提升只由后继全25项冻结轮次验证；v20历史5/25和17个空补丁不改写。
+
+## 9. 注册跨字段约束反馈：唯一锚点输入
+
+### 9.1 根因与最小正式设计
+
+独立三项预算对照中出现同一多行`read_file.anchor`被拒绝后重复调用。该约束由输入模型的
+跨字段校验执行，不能只靠直接JSON Schema字段范围推导。保持原校验条件，改用四个固定
+`PydanticCustomError`类型：单行无控制字符、UTF-8最多256字节、锚点模式省略`start_line`
+（显式默认1仍合法）、`lines_before`只能随非空锚点使用。不放宽输入，不自动拆行或补值。
+
+调用链：[`ReadFileInputV3.validate_anchor`](../../src/harnessix/tools/contracts.py)
+→ [`CodingToolRuntime._argument_failure`](../../src/harnessix/tools/runtime.py)
+→ [`invalid_argument_message`](../../src/harnessix/tools/argument_feedback.py)
+→ 原`tool_invalid_arguments`事件与后继模型历史。
+Runtime仅提取校验器的类型码，显式排除`input/context`；反馈仅接受不可变白名单映射，未知
+类型不输出，最多八码、排序去重并沿用2000字符硬上限。第三方错误的正文、位置、上下文、
+私有查询及输入值均不转发。旧v1/v2/v3 Schema字节不变，公共失败code、批准、I/O顺序及历史
+事件不迁移；四个内部类型码不是新增公共错误码。
+
+```text
+正式校验失败 → 提取类型码，不读取错误值/正文/位置
+属于注册白名单 → 添加该正式约束的固定说明
+未知或消息超限 → 复用原字段反馈与原通用回退
+提交原失败事件 → 模型自行提出下一次新调用；Runtime不自动重试
+```
+
+### 9.2 失败与验证
+
+[锚点负控](../../tests/tools/test_read_anchor.py)覆盖全部ASCII控制字符、UTF-8边界及原跨字段
+拒绝，无效调用不触发Workspace读取。
+[反馈负控](../../tests/tools/test_schema_argument_feedback.py)覆盖不可变映射、未知码、排序、
+去重及消息上限；[实际SDK链](../../tests/tools/test_argument_feedback.py)覆盖私有异常信息不泄露、
+修正后读取、原SQLite关闭重开和Reducer回放。脚本回复不是云端自主能力证明。
+本候选最终关联扩大回归1092通过／35跳过，Mypy 554源文件、Schema与Ruff通过。全局可读性
+门禁仍因既有基线漂移失败；同基线对比未新增依赖环或超大符号，不据此豁免旧FAIL。
+
+[原预算三项真实复验](../../benchmarks/swebench/verified-25-prefix3-v29/result-summary.json)
+均未产出补丁，仍为`budget_exceeded`。原生轨迹有一次多行锚点被拒绝后改为合法单行，但
+新调用因锚点歧义失败；另一任务收到明确范围提示后仍三次提交超范围grep。反馈接线正确不等于
+能够解决调查循环或提升Resolved，不推广到整轮质量重跑。
