@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: 49ad2d74f0794ac37926d115d99ec7e6399dc6a8
+version: 15
+code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
 owners:
   - core
 modules:
@@ -46,6 +46,18 @@ supersedes: []
 ---
 
 # Coding Tool Runtime模块设计
+
+### 当前源码读取：显式UTF-8分页，不截断证据
+
+[`ReadFileInputV2`](../../src/harnessix/tools/contracts.py)新增可选`max_utf8_bytes`，
+范围4096～24576，默认仍为24576；[旧v1](../../spec/read-file-input-v1.schema.json)逐字不变，
+[新v2](../../spec/read-file-input-v2.schema.json)单独冻结。默认`read_file`广告新输入，
+合同摘要随之改变，旧Tool版本不能获得新权限；输出与原快照v1不变。
+POSIX和原Windows适配器均按完整行分页，`byte_limit/next_line/revision`明确表述续页；
+最小容量覆盖最大合法单行，避免空页不前进。全文`content_sha256`仍覆盖原始文件，不是页摘要。
+取消、超时、路径/链接、2 MiB扫描、4096字节单行、UTF-8和变更核验全部保留。
+见[分页/负控](../../tests/tools/test_files.py)、[旧Schema冻结](../../tests/tools/test_kernel.py)及
+[真实SDK到持久结果](../../tests/agent/test_provider_input_budget.py)；这些不是真实解题质量评分。
 
 ## 1. 文档摘要
 

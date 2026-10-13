@@ -1,0 +1,78 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T14:06:12.226091+00:00",
+  "plan_sha256": "8353a3e0619c7b5da59b92c6080eb82993d0c714806fd0fbfe77d18996a460d7",
+  "source_revision": "432a6988eca02f6317aa6296e4f169ee08d39a01",
+  "evaluation_scope": "development_set",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "runtime_changes": [
+    "prepaid conservative input feedback and durable compaction request count",
+    "optional UTF-8 source page budget with exact legacy v1 schema preservation",
+    "generic focused read/search advice, no forced premature patch"
+  ],
+  "profile_version": "swebench-public-tests-v7",
+  "profiles_count": 25,
+  "execution_config_version": "harnessix.swebench-agent-run-config/v4",
+  "execution_fingerprint": "ee837363b62ecec95111f21f96c810edabc1bca58e4061efe64b04118894237a",
+  "budget_pressure_compaction": true,
+  "production_default_budget_pressure_compaction": false,
+  "regression": {
+    "passed": 1721,
+    "failed": 4,
+    "errors": 0,
+    "scope": "expanded associated consumers; four retry failures all independently reproduced in unmodified f817e1c0; not repository-wide green"
+  },
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "contracts": "PASS",
+  "ruff_changed_files": "PASS",
+  "tools_expanded_regression": {
+    "passed": 666,
+    "failed": 4,
+    "skipped": 35,
+    "failure_boundary": "Apple Git 2.24.3 init --object-format unsupported; original log retained"
+  },
+  "original_infrastructure_acceptance": "OPEN: three ambiguous official failures, native requests network-none test still fails",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "period_limit_amount": "200",
+  "maximum_run_allocation_amount": "124",
+  "worst_case_amount": "123.6864",
+  "execution_run_directory": "runs/agent-8353a3e0619c-v26",
+  "execution_status": "FROZEN_NOT_STARTED",
+  "model_retry_policy": "none",
+  "disk_guard": {
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 28635844608
+  },
+  "price_source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+  "price_observed_at": "2026-10-13T09:18:58+00:00",
+  "evidence_sha256": {
+    "v26-final-consumers-r3.xml": "12af8ef4471b46bd1bd2f150a036445e5549b2014af8a2b06a22a22be5208b9d",
+    "v26-parent-retry.xml": "d1f90e21669440b62ae4872be16a273650b8bfae834594f500785b163b45417e",
+    "v26-parent-retry-provenance.log": "395a4b15628a4d5e045b7a0fb272c1b6744d5a10c79baed68e35815a10a802c2",
+    "v26-input-feedback-r2.xml": "c7f0a53743d15ec1ce8465a6b46078d2560df407a484ef4b4f21c9688e7eb31a",
+    "v26-final-runtime-r4.xml": "ef26793986d75df94983a6826e82750bc91c65fe23583d593e54d5a4e7ca96d4",
+    "v26-final-mypy-r3.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
+    "v26-wrapper-probe.json": "99d858183c0274ac623fabb588769d4f6c53bffdee969700d3d99343111f518c",
+    "v26-secret-scan.log": "0a0e2665592d7cf0cee2d2dd14944f050fb3c84d64c6b9054454c60f9844695e",
+    "v26-documentation-r2.json": "766aed00a71f537deea49d0d79a2de52272a397a0d9985fdd57591adb9c5ebac",
+    "v26-host-preflight.json": "e349d1c97606f3392a6fd03b44f823e59265fcffcb7b2a9826799c82c88d99bb"
+  },
+  "official_score": null,
+  "transport_probe": {
+    "checked_at": "2026-10-13T14:06:27.952354+00:00",
+    "inference_requests": 0,
+    "models_endpoint_status": 200,
+    "model_available": true,
+    "source_revision_match": true,
+    "price_still_valid": true
+  },
+  "documentation_check": {
+    "document_count": 651,
+    "link_count": 14667,
+    "mermaid_count": 1173,
+    "findings": []
+  }
+}

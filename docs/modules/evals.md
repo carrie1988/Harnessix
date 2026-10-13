@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 46
-code_revision: d57f5818100778d952efbf1142e9660d9523cdce
+version: 47
+code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
 owners:
   - core
 modules:
@@ -68,6 +68,11 @@ supersedes: []
 ---
 
 # Evals模块设计
+
+当前v26候选保持原25项开发集及50K/16次限制，SWE-bench提示v6与共享指令v21统一聚焦读取及
+输入成本预告；旧终态不重跑，成绩不拼接。契约、失败与保留的回归问题见
+[v26增量设计](../changes/swebench-adapter-verified-25-pilot.md#v26候选输入成本反馈与聚焦源码分页)。
+
 
 验证宿主的复验计划采用封闭版本：原 v1 保留 70／40，v2 固定 60／38；
 必须显式登记同一原周期、冻结整个旧前缀并保留原未知预留。

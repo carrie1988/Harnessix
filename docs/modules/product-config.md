@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 116
-code_revision: 5a76886d0e3ffaec08d7fdddf57276bbdb56697f
+version: 117
+code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
 owners:
   - core
 modules:
@@ -113,6 +113,11 @@ supersedes: []
 仍须闭合，不将该关联验证当作 R4 或商业发布验收。
 
 # Product Config模块设计
+
+共享Coding指令当前v21：post-patch-only路径建议40～60行/4096字节、字面量和窄检索，
+缺证据允许扩读，不按Case分支、不强迫修改。其他产品装配、默认压缩开关及权限不变；
+详见[v26增量设计](../changes/swebench-adapter-verified-25-pilot.md#v26候选输入成本反馈与聚焦源码分页)。
+
 
 ## 当前编码工作流：非零测试退出后的诊断
 

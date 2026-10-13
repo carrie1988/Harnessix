@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 34
-code_revision: d57f5818100778d952efbf1142e9660d9523cdce
+version: 35
+code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
 owners:
   - core
 modules:
@@ -55,6 +55,10 @@ supersedes: []
 释放后即使同 Task 重新获取也不能恢复旧观察函数。
 Git 消费者接线见[原 Runtime Thread 绑定](../changes/m09-r4-git-runtime-thread-scope.md)。
 该原语不是完整 Git dispatch、SQLite FD 或 R4 验收；通用执行及取消顺序未改变。
+
+当前普通请求会向支持输入估算的Provider提供已预付的输入成本说明；配置Compaction时剩余请求数
+按原摘要/尝试账本生成，未声明能力的Provider不改旧线协议。字段与负控见
+[Models累计预算反馈](models.md#累计预算反馈)。这不扩大50K/16-step，也不替代实际Usage、取消或准入门。
 
 ## 当前增量：实验性预算压力窗口
 

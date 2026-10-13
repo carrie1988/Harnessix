@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 5a76886d0e3ffaec08d7fdddf57276bbdb56697f
+version: 17
+code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
 owners:
   - core
 modules:
@@ -81,10 +81,15 @@ Runtime只在同Provider、同请求/实际模型、完整Usage及持久前缀�
 
 ### 累计预算反馈
 
+`ModelRequest.input_tokens_upper_bound`是当前请求的保守输入准入上界，不是已消费量或资金预留。
+Runtime先用总预算数值预付说明的最长合法数字，估算后才填写实际准入上界；正式数字及输出上限更短，
+不会形成未计费提示或循环估算。该提示建议为测试、修复、审阅留量，但不强迫缺少证据时修改。
+
 `ModelRequest.consumed_usage`为可选的宿主累计事实。普通Runtime仅在Provider实现现有wire输入估算端口时
 填入当前Turn的`usage`；未声明能力的Provider得到`None`，旧输入与旧估算行为不变。
 [`budget_instruction`](../../src/harnessix/models/_history.py)计算
-`max_tokens - consumed_usage.total_tokens`和`max_steps - step + 1`，明确包含当前请求及重复历史。
+`max_tokens - consumed_usage.total_tokens`；配置Compaction时，`remaining_calls`来自原
+`require_request_slots`账本，包含已消耗的摘要/重试；其他路径保持原主步骤计数。明确包含当前请求及重复历史。
 Chat作为独立system消息发送；Anthropic mapper可映射显式提供的事实，但当前默认Runtime不对其启用反馈。
 这是规划提示，不是输出Token上限，更不是新的预算权威；准入、取消和实际Usage硬门仍由Runtime执行。
 
