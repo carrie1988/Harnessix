@@ -9,6 +9,9 @@ from typing import Protocol
 from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.errors import KernelError
+from harnessix.agent.ids import new_id
+from harnessix.agent.model_input_budget import estimate_model_input_tokens
 from harnessix.agent.models import (
     EventDraft,
     ModelHistoryPrepared,
@@ -17,11 +20,20 @@ from harnessix.agent.models import (
     TurnStatus,
 )
 from harnessix.agent.reducer import get_turn
+from harnessix.agent.turn_budget_compaction import (
+    closing_reserve,
+    pressure_policy,
+    summary_output_limit,
+    summary_request_item,
+)
 from harnessix.artifacts.ports import BatchDiffPublisher
+from harnessix.context.compaction import PreparedCompaction, plan_compaction
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.compaction_window import prepare_active_model_history
+from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.context.tool_result_view import PreparedModelHistory, history_document
+from harnessix.domain.models import ToolDescriptor
 from harnessix.session.ports import SessionStore
 
 
@@ -30,6 +42,7 @@ class PreparedHistoryStep:
     thread: Thread
     prepared: PreparedModelHistory
     reactive_compaction_required: bool
+    budget_context: PreparedContext | None = None
 
 
 class ModelHistoryHost(Protocol):
@@ -38,6 +51,7 @@ class ModelHistoryHost(Protocol):
     _tool_result_view_policy: ToolResultViewPolicy
     _compaction: CompactionRuntimeConfig | None
     _fault: Callable[[str], None]
+    _definitions: dict[str, ToolDescriptor]
 
     def _lock(self, thread_id: UUID) -> AbstractAsyncContextManager[None]: ...
 
@@ -47,7 +61,12 @@ class ModelHistoryHost(Protocol):
         turn: Turn,
         prepared: PreparedModelHistory,
         token: CancelToken,
+        planned: PreparedCompaction | None = None,
     ) -> Thread: ...
+
+    async def _prepare_budget_context(
+        self, thread: Thread, prepared: PreparedModelHistory, token: CancelToken
+    ) -> PreparedContext | None: ...
 
     async def _verify_history_artifacts(
         self,
@@ -69,6 +88,54 @@ def _requires_compaction(
         or sum(len(history_document(item).encode()) for item in prepared.history)
         > host._compaction.trigger_history_tokens
     )
+
+
+async def _budget_plan(
+    host: ModelHistoryHost,
+    thread: Thread,
+    turn: Turn,
+    prepared: PreparedModelHistory,
+    token: CancelToken,
+    summary_instructions: str,
+) -> tuple[PreparedCompaction | None, PreparedContext | None]:
+    assert host._compaction is not None
+    context = await host._prepare_budget_context(thread, prepared, token)
+    fixed = estimate_model_input_tokens(
+        (), tuple(host._definitions.values()), context.instructions if context else None
+    )
+    policy = pressure_policy(
+        turn, host._compaction, fixed, estimate_model_input_tokens(prepared.history, (), None)
+    )
+    if policy is None:
+        return None, None
+    try:
+        planned = await plan_compaction(
+            thread,
+            turn.model_steps + 1,
+            host._tool_result_view_policy,
+            policy,
+            token,
+            compaction_id=new_id(),
+        )
+    except KernelError as error:
+        if error.code not in {
+            "context_compaction_retained_overflow",
+            "context_compaction_no_progress",
+            "context_compaction_source_overflow",
+        }:
+            raise
+        return None, None
+    cost = estimate_model_input_tokens((summary_request_item(planned),), (), summary_instructions)
+    cost += summary_output_limit(host._compaction, planned)
+    cost += planned.plan.retained_history_tokens + policy.summary_reserve_tokens + fixed
+    cost += closing_reserve(turn)
+    if (
+        cost > turn.budget.max_tokens - turn.usage.total_tokens
+        or summary_output_limit(host._compaction, planned) == 0
+        or len(planned.summary_source) > 1_000_000
+    ):
+        return None, None
+    return planned, context
 
 
 async def _commit_if_current(
@@ -111,6 +178,7 @@ async def prepare_and_commit_model_history(
     token: CancelToken,
     *,
     reactive_compaction_required: bool,
+    summary_instructions: str,
 ) -> PreparedHistoryStep:
     """验证后若Session发生变化则重备，直到同一快照完成原子提交。"""
 
@@ -119,8 +187,15 @@ async def prepare_and_commit_model_history(
         thread = await host.store.get_thread(thread_id)
         turn = get_turn(thread, turn_id)
         prepared = prepare_active_model_history(thread, model_step, host._tool_result_view_policy)
-        if _requires_compaction(host, prepared, reactive_compaction_required):
-            thread = await host._run_compaction(thread, turn, prepared, token)
+        budget_context = None
+        planned = None
+        required = _requires_compaction(host, prepared, reactive_compaction_required)
+        if not required and host._compaction is not None:
+            planned, budget_context = await _budget_plan(
+                host, thread, turn, prepared, token, summary_instructions
+            )
+        if required or planned is not None:
+            thread = await host._run_compaction(thread, turn, prepared, token, planned)
             reactive_compaction_required = False
             prepared = prepare_active_model_history(
                 thread, model_step, host._tool_result_view_policy
@@ -134,4 +209,5 @@ async def prepare_and_commit_model_history(
                 committed,
                 prepared,
                 reactive_compaction_required,
+                budget_context,
             )

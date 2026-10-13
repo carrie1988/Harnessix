@@ -119,6 +119,12 @@ from harnessix.agent.trusted_action_runtime import (
     resume_trusted_action,
     synchronize_waiting_action,
 )
+from harnessix.agent.turn_budget_compaction import (
+    require_context_unchanged,
+    require_request_slots,
+    summary_output_limit,
+    summary_request_item,
+)
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.artifacts.batch_verify import verify_history_references
 from harnessix.artifacts.contracts import ArtifactToolResult
@@ -132,6 +138,7 @@ from harnessix.context.compaction import (
     PreparedCompaction,
     plan_compaction,
     replay_compaction_candidate,
+    replay_compaction_plan,
     validate_compaction,
 )
 from harnessix.context.compaction_contracts import CompactionSummary
@@ -146,7 +153,12 @@ from harnessix.context.compaction_ledger_contracts import (
 )
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.compaction_window import build_compaction_window
-from harnessix.context.contracts import ContextBuildInput, ContextInspectionRecord, ContextPrepared
+from harnessix.context.contracts import (
+    ContextBuildInput,
+    ContextInspectionRecord,
+    ContextPrepared,
+    PreparedContext,
+)
 from harnessix.context.engine import ContextPreparationError
 from harnessix.context.ports import AsyncContextPlanner, ContextPlanner
 from harnessix.context.sources import ContextSourceError
@@ -1718,18 +1730,46 @@ class AgentRuntime:
             self._fault("runtime.after_compaction_window_activated")
             return updated
 
+    async def _prepare_budget_context(
+        self, thread: Thread, prepared: PreparedModelHistory, token: CancelToken
+    ) -> PreparedContext | None:
+        if self._context is None and self._async_context is None:
+            return None
+        assert thread.active_turn_id is not None
+        request = ContextBuildInput(
+            thread_id=thread.thread_id,
+            turn_id=thread.active_turn_id,
+            model_step=prepared.inspection.model_step,
+            workspace=thread.workspace,
+            history_documents=tuple(history_document(item) for item in prepared.history),
+            tool_documents=tuple(d.model_dump_json() for d in self._definitions.values()),
+        )
+        try:
+            if self._async_context is not None:
+                return await self._async_context.prepare(request, token)
+            assert self._context is not None
+            return self._context.prepare(request)
+        except ContextPreparationError as error:
+            raise KernelError(error.code, error.message) from None
+        except ContextSourceError as error:
+            raise KernelError(error.code, error.message, retryable=error.retryable) from None
+
     async def _run_compaction(
         self,
         thread: Thread,
         turn: Turn,
         prepared_history: PreparedModelHistory,
         token: CancelToken,
+        planned: PreparedCompaction | None = None,
     ) -> Thread:
         """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。"""
         assert self._compaction is not None and self._summary_provider is not None
+        budget_planned = planned is not None
+        require_request_slots(turn, 2)
+        if planned is not None:
+            planned = replay_compaction_plan(thread, planned.plan)
         model_step = turn.model_steps + 1
-        compaction_id = new_id()
-        planned: PreparedCompaction | None = None
+        compaction_id = planned.plan.compaction_id if planned is not None else new_id()
         with self._telemetry.operation(
             "compaction",
             thread_id=thread.thread_id,
@@ -1738,7 +1778,7 @@ class AgentRuntime:
         ) as operation:
             try:
                 await self._verify_history_artifacts(thread, prepared_history, token)
-                planned = await plan_compaction(
+                planned = planned or await plan_compaction(
                     thread,
                     model_step,
                     self._tool_result_view_policy,
@@ -1766,17 +1806,17 @@ class AgentRuntime:
                 remaining = current.budget.max_tokens - current.usage.total_tokens
                 if remaining <= 0:
                     raise KernelError("budget_exceeded", "摘要请求的已知Token预算耗尽")
-                source_item = Item(
-                    item_id=uuid5(compaction_id, "harnessix.compaction-request/v1"),
-                    status=ItemStatus.COMPLETED,
-                    content=TextContent(kind="user_message", text=planned.summary_source),
-                )
+                source_item = summary_request_item(planned)
                 estimated_input_tokens = _estimated_model_input_tokens(
                     (source_item,), (), SUMMARY_INSTRUCTIONS
                 )
                 allowed_output_tokens = min(
                     remaining - estimated_input_tokens,
-                    self._compaction.max_summary_output_tokens,
+                    (
+                        summary_output_limit(self._compaction, planned)
+                        if budget_planned
+                        else self._compaction.max_summary_output_tokens
+                    ),
                 )
                 if allowed_output_tokens <= 0:
                     raise KernelError(
@@ -1796,7 +1836,7 @@ class AgentRuntime:
                 summary_text = await self._summary_text(
                     request,
                     compaction_id,
-                    self._compaction.policy.summary_reserve_tokens,
+                    planned.plan.policy.summary_reserve_tokens,
                     token,
                 )
                 latest = get_turn(await self.store.get_thread(thread.thread_id), turn.turn_id)
@@ -1960,6 +2000,8 @@ class AgentRuntime:
                     or turn.usage.total_tokens >= turn.budget.max_tokens
                 ):
                     raise KernelError("budget_exceeded", "模型步骤或 Token 预算耗尽")
+                if self._compaction is not None:
+                    require_request_slots(turn)
                 model_step = turn.model_steps + 1
                 with self._telemetry.operation(
                     "history",
@@ -1974,6 +2016,7 @@ class AgentRuntime:
                         model_step,
                         token,
                         reactive_compaction_required=reactive_compaction_required,
+                        summary_instructions=SUMMARY_INSTRUCTIONS,
                     )
                     thread = prepared_step.thread
                     prepared_history = prepared_step.prepared
@@ -2024,6 +2067,8 @@ class AgentRuntime:
                             else:
                                 assert self._context is not None
                                 prepared = self._context.prepare(context_request)
+                            if prepared_step.budget_context is not None:
+                                require_context_unchanged(prepared_step.budget_context, prepared)
                         except ContextPreparationError as error:
                             raise KernelError(error.code, error.message) from None
                         except ContextSourceError as error:
@@ -2639,6 +2684,11 @@ class AgentRuntime:
                     event, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished
                 ):
                     if isinstance(event, ModelAttemptStarted):
+                        if self._compaction is not None:
+                            current = get_turn(
+                                await self.store.get_thread(request.thread_id), request.turn_id
+                            )
+                            require_request_slots(current)
                         if started:
                             raise KernelError(
                                 "invalid_provider_output", "响应开始后不得重试模型请求"
@@ -2748,7 +2798,8 @@ class AgentRuntime:
         completed_calls = tuple(
             proposal for proposal in proposals if isinstance(proposal, ToolCallCompleted)
         )
-        if request.tool_choice == "required" and not completed_calls:
+        # 结构完整的目录拒绝也是调用提案；仅进入无执行权反馈和原预算内纠正。
+        if request.tool_choice == "required" and not proposals:
             raise KernelError("invalid_provider_output", "Provider 未返回要求的工具调用")
         if request.forced_tool is not None and any(
             proposal.tool != request.forced_tool for proposal in completed_calls
