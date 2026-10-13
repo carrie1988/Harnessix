@@ -12,6 +12,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.evals.swebench.public_test_profile import (
     _DJANGO_BOOTSTRAP_ARGUMENT,
     _LEGACY_DJANGO_TEST_ARGUMENTS,
+    _LEGACY_PYTEST_ARGUMENTS,
     _PYTEST_BOOTSTRAP_ARGUMENT,
     PUBLIC_TEST_PROFILE_ID,
     SweBenchCaseProcessProfile,
@@ -155,7 +156,7 @@ def test_pytest_bootstrap_uses_workspace_source_and_image_generated_fallback(
         "from example import VALUE\n\n"
         "def test_workspace_with_generated_fallback():\n"
         "    assert VALUE == 'from-image-build'\n"
-        "    assert Path.cwd().resolve() == Path('/tmp').resolve()\n",
+        "    assert Path.cwd().resolve() == Path(__file__).parent.parent.resolve()\n",
         encoding="utf-8",
     )
 
@@ -180,6 +181,47 @@ def test_pytest_bootstrap_uses_workspace_source_and_image_generated_fallback(
     )
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_pytest_bootstrap_preserves_explicit_node_and_relative_repository_fixtures(tmp_path):
+    workspace, image_workspace = tmp_path / "workspace", tmp_path / "image"
+    (workspace / "tests").mkdir(parents=True)
+    image_workspace.mkdir()
+    (workspace / "requirements-dev.txt").write_text("public fixture", encoding="utf-8")
+    target = workspace / "tests" / "test_feature.py"
+    target.write_text(
+        "from pathlib import Path\n"
+        "def test_selected():\n"
+        "    assert Path('requirements-dev.txt').read_text() == 'public fixture'\n"
+        "def test_unselected():\n"
+        "    raise AssertionError('selector node was lost')\n",
+        encoding="utf-8",
+    )
+    before = {str(path): path.read_bytes() for path in workspace.rglob("*") if path.is_file()}
+    completed = subprocess.run(
+        (
+            sys.executable,
+            "-B",
+            "-c",
+            _PYTEST_BOOTSTRAP_ARGUMENT,
+            str(workspace),
+            str(image_workspace),
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "--",
+            "tests/test_feature.py::test_selected",
+        ),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "1 passed" in completed.stdout
+    assert before == {
+        str(path): path.read_bytes() for path in workspace.rglob("*") if path.is_file()
+    }
 
 
 def test_pytest_bootstrap_replaces_missing_selector_with_changed_file_tests(
@@ -261,7 +303,7 @@ def test_django_profile_uses_repository_native_runner_and_workspace_imports(
         "/workspace",
     )
     assert "PYTHONPATH=/workspace" in profile.arguments
-    assert profile.version == "swebench-public-tests-v6"
+    assert profile.version == "swebench-public-tests-v7"
 
 
 @pytest.mark.parametrize(
@@ -316,23 +358,26 @@ def test_django_bootstrap_rejects_invalid_label_before_native_runner(
 
 
 @pytest.mark.parametrize("repo", ["django/django", "example/example"])
-def test_frozen_v5_profile_is_read_without_silent_upgrade(tmp_path: Path, repo: str) -> None:
+@pytest.mark.parametrize("version", ["swebench-public-tests-v5", "swebench-public-tests-v6"])
+def test_frozen_profile_is_read_without_silent_upgrade(tmp_path: Path, repo: str, version) -> None:
     binding = build_swebench_case_process_profile(
         "example__example-1",
         repo=repo,
         container_engine=_docker(tmp_path),
         image_id="sha256:" + "a" * 64,
     ).model_dump(mode="json")
-    binding["profile"]["version"] = "swebench-public-tests-v5"
-    if repo == "django/django":
+    binding["profile"]["version"] = version
+    if repo == "django/django" and version == "swebench-public-tests-v5":
         binding["profile"]["arguments"] = list(_LEGACY_DJANGO_TEST_ARGUMENTS)
+    elif repo != "django/django":
+        binding["profile"]["arguments"] = list(_LEGACY_PYTEST_ARGUMENTS)
     _reseal_profile(binding)
     frozen_bytes = json.dumps(binding)
 
     restored = SweBenchCaseProcessProfile.model_validate_json(frozen_bytes)
 
     assert restored.model_dump(mode="json") == binding
-    assert restored.profile.version == "swebench-public-tests-v5"
+    assert restored.profile.version == version
 
 
 @pytest.mark.parametrize(
@@ -340,7 +385,8 @@ def test_frozen_v5_profile_is_read_without_silent_upgrade(tmp_path: Path, repo: 
     [
         ("swebench-public-tests-v5", False),
         ("swebench-public-tests-v6", True),
-        ("swebench-public-tests-v7", False),
+        ("swebench-public-tests-v7", True),
+        ("swebench-public-tests-v8", False),
     ],
 )
 def test_django_profile_rejects_version_and_fixed_runner_argument_drift(
@@ -357,6 +403,20 @@ def test_django_profile_rejects_version_and_fixed_runner_argument_drift(
         binding["profile"]["arguments"] = list(_LEGACY_DJANGO_TEST_ARGUMENTS)
     _reseal_profile(binding)
 
+    with pytest.raises(ValueError, match="固定执行边界"):
+        SweBenchCaseProcessProfile.model_validate_json(json.dumps(binding))
+
+
+@pytest.mark.parametrize("version", ["swebench-public-tests-v5", "swebench-public-tests-v6"])
+def test_legacy_pytest_profile_does_not_silently_take_new_cwd_and_node_semantics(tmp_path, version):
+    binding = build_swebench_case_process_profile(
+        "example__example-1",
+        repo="example/example",
+        container_engine=_docker(tmp_path),
+        image_id="sha256:" + "a" * 64,
+    ).model_dump(mode="json")
+    binding["profile"]["version"] = version
+    _reseal_profile(binding)
     with pytest.raises(ValueError, match="固定执行边界"):
         SweBenchCaseProcessProfile.model_validate_json(json.dumps(binding))
 

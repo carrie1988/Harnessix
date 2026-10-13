@@ -8,13 +8,14 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import AgentFailure, KernelError
-from harnessix.agent.model_history_runtime import _budget_plan
+from harnessix.agent.model_history_runtime import _budget_plan, _prepaid_pressure_plan
 from harnessix.agent.model_input_budget import estimate_model_input_tokens
 from harnessix.agent.models import Budget, Thread, TurnStatus, Usage
 from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
 from harnessix.agent.turn_budget_compaction import (
     closing_reserve,
+    pressure_policies,
     pressure_policy,
     pressure_summary_instructions,
     require_context_unchanged,
@@ -167,6 +168,44 @@ async def test_pressure_trigger_does_not_force_three_request_allocation_as_targe
 def test_no_pressure_keeps_original_window_trigger():
     turn = pressure_thread(remaining=50_000).turns[0]
     assert pressure_policy(turn, budget_config(), 100, 1000) is None
+    assert pressure_policies(turn, budget_config(), 100, 1000) == ()
+
+
+@pytest.mark.parametrize("maximum", [128, 256, 300, 512, 2048])
+def test_capacity_candidates_are_bounded_unique_and_preserve_original_retention(maximum):
+    source = pressure_thread()
+    config = budget_config().model_copy(update={"max_summary_output_tokens": maximum})
+    turn = source.turns[0]
+    initial = pressure_policy(turn, config, 12_000, 12_000)
+    candidates = pressure_policies(turn, config, 12_000, 12_000)
+    assert initial is not None and candidates[0] == initial
+    reserves = [candidate.summary_reserve_tokens for candidate in candidates]
+    assert reserves == sorted(set(reserves), reverse=True)
+    assert 1 <= len(candidates) <= 3
+    if maximum < 256:
+        assert candidates == (initial,)
+    wrapper = (
+        len(
+            history_document(
+                compaction_summary_item(CompactionSummary(compaction_id=uuid4(), text="x"))
+            ).encode()
+        )
+        - 1
+    )
+    for candidate in candidates:
+        assert candidate.model_dump(exclude={"summary_reserve_tokens"}) == initial.model_dump(
+            exclude={"summary_reserve_tokens"}
+        )
+    for candidate in candidates[1:]:
+        capacity = (candidate.summary_reserve_tokens - wrapper) // 4
+        assert capacity in {min(maximum, 512), min(maximum, 256)}
+
+
+def test_small_original_reserve_does_not_gain_an_unrequested_capacity():
+    turn = pressure_thread().turns[0]
+    config = budget_config(summary_reserve_tokens=256)
+    initial = pressure_policy(turn, config, 12_000, 12_000)
+    assert pressure_policies(turn, config, 12_000, 12_000) == (initial,)
 
 
 async def test_unchanged_history_does_not_need_fabricated_summary(tmp_path: Path):
@@ -175,6 +214,21 @@ async def test_unchanged_history_does_not_need_fabricated_summary(tmp_path: Path
     host, main, summary = preflight_host(tmp_path)
     planned, _ = await preflight(host, source)
     assert planned is not None
+    prepared = prepare_active_model_history(source, 1, ToolResultViewPolicy())
+    context = await host._prepare_budget_context(
+        source, prepared, CancelToken(), host._model_tools_for_turn(source.turns[0])
+    )
+    assert context is not None
+    fixed = estimate_model_input_tokens((), tuple(host._definitions.values()), context.instructions)
+    assert (
+        planned.plan.policy.summary_reserve_tokens
+        == pressure_policies(
+            source.turns[0],
+            host._compaction,
+            fixed,
+            estimate_model_input_tokens(prepared.history, (), None),
+        )[0].summary_reserve_tokens
+    )
     assert source.model_dump_json() == original
     assert not main.requests and not summary.requests
 
@@ -451,8 +505,94 @@ async def test_prepaid_cost_reserves_summary_next_catalog_context_and_close(
     cost += fixed + closing_reserve(source.turns[0])
     assert 0 < cost < 40_000
 
-    planned, _ = await preflight(host, pressure_thread(remaining=cost - shortfall))
+    # 验证同一容量的精确预付边界；较小容量的合法候选另行验收，不把它当越界。
+    limited = pressure_thread(remaining=cost - shortfall)
+    planned = await _prepaid_pressure_plan(
+        host,
+        limited,
+        limited.turns[0],
+        CancelToken(),
+        prepared.plan.policy,
+        fixed,
+        SUMMARY_INSTRUCTIONS,
+    )
     assert (planned is not None) == (shortfall == 0)
+    assert not main.requests and not summary.requests
+
+
+async def test_lower_capacity_is_selected_only_if_original_cannot_be_fully_prepaid(tmp_path: Path):
+    host, main, summary = preflight_host(tmp_path)
+    source = pressure_thread()
+    original, context = await preflight(host, source)
+    assert original is not None and context is not None
+    fixed = estimate_model_input_tokens((), tuple(host._definitions.values()), context.instructions)
+
+    def complete_cost(planned):
+        return (
+            estimate_model_input_tokens(
+                (summary_request_item(planned),),
+                (),
+                pressure_summary_instructions(SUMMARY_INSTRUCTIONS, host._compaction, planned),
+            )
+            + summary_output_limit(host._compaction, planned)
+            + planned.plan.retained_history_tokens
+            + planned.plan.policy.summary_reserve_tokens
+            + fixed
+            + closing_reserve(source.turns[0])
+        )
+
+    remaining = complete_cost(original) - 1
+    limited = pressure_thread(remaining=remaining)
+    before = limited.model_dump_json()
+    selected, _ = await preflight(host, limited)
+    assert selected is not None
+    assert selected.plan.policy.summary_reserve_tokens < original.plan.policy.summary_reserve_tokens
+    assert summary_output_limit(host._compaction, selected) in {256, 512}
+    assert complete_cost(selected) <= remaining < complete_cost(original)
+    assert selected.plan.pinned_item_ids == (limited.turns[0].items[0].item_id,)
+    assert set(item.item_id for item in limited.turns[0].items[-6:]) <= set(
+        selected.plan.retained_item_ids
+    )
+    assert_paired_partition(selected)
+    assert replay_compaction_plan(limited, selected.plan) == selected
+    assert limited.model_dump_json() == before
+    assert not main.requests and not summary.requests
+
+
+async def test_cancel_between_capacity_candidates_does_not_reach_any_provider(
+    tmp_path, monkeypatch
+):
+    host, main, summary = preflight_host(tmp_path)
+    token = CancelToken()
+    calls = []
+
+    async def observe(*args, **kwargs):
+        calls.append(args[3])
+        if len(calls) == 1:
+            token.cancel()
+            raise KernelError("context_compaction_retained_overflow", "首容量不满足保留边界")
+        return await plan_compaction(*args, **kwargs)
+
+    monkeypatch.setattr("harnessix.agent.model_history_runtime.plan_compaction", observe)
+    with pytest.raises(TurnCancelled):
+        await preflight(host, pressure_thread(), token=token)
+    assert len(calls) == 2
+    assert not main.requests and not summary.requests
+
+
+async def test_unsafe_history_is_not_retried_with_a_different_capacity(tmp_path, monkeypatch):
+    host, main, summary = preflight_host(tmp_path)
+    calls = []
+
+    async def unsafe(*args, **kwargs):
+        calls.append(args[3])
+        raise KernelError("context_compaction_invalid_history", "开放调用组")
+
+    monkeypatch.setattr("harnessix.agent.model_history_runtime.plan_compaction", unsafe)
+    with pytest.raises(KernelError) as caught:
+        await preflight(host, pressure_thread())
+    assert caught.value.code == "context_compaction_invalid_history"
+    assert len(calls) == 1
     assert not main.requests and not summary.requests
 
 

@@ -1,6 +1,6 @@
 """Turn 剩余额度派生窗口策略；不调用模型或改变原预算。"""
 
-from uuid import uuid5
+from uuid import UUID, uuid5
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Item, ItemStatus, TextContent, Turn, TurnStatus
@@ -62,6 +62,41 @@ def pressure_policy(
     )
 
 
+def pressure_policies(
+    turn: Turn, config: CompactionRuntimeConfig, fixed_input: int, history_input: int
+) -> tuple[CompactionPolicy, ...]:
+    """只读选择有界摘要容量；不因大段保留历史而预留不必要的大摘要。
+
+    优先原容量；只有规划、摊销或完整预付不成立才尝试较小容量。最多三个
+    纯规划候选，不是模型请求重试，也不缩减原用户锚点和近期完整组。
+    """
+    initial = pressure_policy(turn, config, fixed_input, history_input)
+    if initial is None:
+        return ()
+    if config.max_summary_output_tokens < 256:
+        return (initial,)
+    # UUID 文本及稳定摘要 Item 的封装长度固定；正式Plan仍使用其原真实身份。
+    wrapper = _summary_wrapper_bytes(UUID(int=0))
+    reserves = tuple(
+        dict.fromkeys(
+            (
+                initial.summary_reserve_tokens,
+                *(
+                    min(
+                        initial.summary_reserve_tokens,
+                        wrapper + 4 * min(config.max_summary_output_tokens, capacity),
+                    )
+                    for capacity in (512, 256)
+                ),
+            )
+        )
+    )
+    return tuple(
+        CompactionPolicy.model_validate({**initial.model_dump(), "summary_reserve_tokens": reserve})
+        for reserve in reserves
+    )
+
+
 def summary_request_item(planned: PreparedCompaction) -> Item:
     return Item(
         item_id=uuid5(planned.plan.compaction_id, "harnessix.compaction-request/v1"),
@@ -70,11 +105,13 @@ def summary_request_item(planned: PreparedCompaction) -> Item:
     )
 
 
+def _summary_wrapper_bytes(compaction_id: UUID) -> int:
+    wrapper = compaction_summary_item(CompactionSummary(compaction_id=compaction_id, text="x"))
+    return len(history_document(wrapper).encode()) - 1
+
+
 def summary_output_limit(config: CompactionRuntimeConfig, planned: PreparedCompaction) -> int:
-    wrapper = compaction_summary_item(
-        CompactionSummary(compaction_id=planned.plan.compaction_id, text="x")
-    )
-    wrapper_bytes = len(history_document(wrapper).encode()) - 1
+    wrapper_bytes = _summary_wrapper_bytes(planned.plan.compaction_id)
     return min(
         config.max_summary_output_tokens,
         max(0, (planned.plan.policy.summary_reserve_tokens - wrapper_bytes) // 4),

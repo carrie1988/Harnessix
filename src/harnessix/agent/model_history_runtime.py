@@ -25,7 +25,7 @@ from harnessix.agent.reducer import get_turn
 from harnessix.agent.turn_budget_compaction import (
     closing_reserve,
     pressure_history_allocation,
-    pressure_policy,
+    pressure_policies,
     pressure_summary_instructions,
     require_request_slots,
     summary_output_limit,
@@ -33,6 +33,7 @@ from harnessix.agent.turn_budget_compaction import (
 )
 from harnessix.artifacts.ports import BatchDiffPublisher
 from harnessix.context.compaction import PreparedCompaction, plan_compaction
+from harnessix.context.compaction_contracts import CompactionPolicy
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.contracts import PreparedContext
@@ -115,11 +116,29 @@ async def _budget_plan(
     fixed = estimate_model_input_tokens(
         (), selection.tools, context.instructions if context else None
     )
-    policy = pressure_policy(
+    policies = pressure_policies(
         turn, host._compaction, fixed, estimate_model_input_tokens(prepared.history, (), None)
     )
-    if policy is None:
-        return None, None, None
+    for policy in policies:
+        planned = await _prepaid_pressure_plan(
+            host, thread, turn, token, policy, fixed, summary_instructions
+        )
+        if planned is not None:
+            return planned, context, selection
+    return None, None, None
+
+
+async def _prepaid_pressure_plan(
+    host: ModelHistoryHost,
+    thread: Thread,
+    turn: Turn,
+    token: CancelToken,
+    policy: CompactionPolicy,
+    fixed: int,
+    summary_instructions: str,
+) -> PreparedCompaction | None:
+    """每个纯候选都必须满足原完整组、摊销和摘要/下一请求/收尾预付边界。"""
+    assert host._compaction is not None
     try:
         planned = await plan_compaction(
             thread,
@@ -140,7 +159,7 @@ async def _budget_plan(
             "context_compaction_source_overflow",
         }:
             raise
-        return None, None, None
+        return None
     instructions = pressure_summary_instructions(summary_instructions, host._compaction, planned)
     summary_cost = estimate_model_input_tokens((summary_request_item(planned),), (), instructions)
     summary_cost += summary_output_limit(host._compaction, planned)
@@ -152,7 +171,7 @@ async def _budget_plan(
     # 同一保守估算尺度判断摊销价值，不把微小窗口缩减当成值得额外付费的压缩。
     future_requests = min(3, require_request_slots(turn)) - 1
     if summary_cost > savings * future_requests:
-        return None, None, None
+        return None
     cost = summary_cost
     cost += (
         planned.plan.retained_history_tokens + planned.plan.policy.summary_reserve_tokens + fixed
@@ -163,8 +182,8 @@ async def _budget_plan(
         or summary_output_limit(host._compaction, planned) == 0
         or len(planned.summary_source) > 1_000_000
     ):
-        return None, None, None
-    return planned, context, selection
+        return None
+    return planned
 
 
 async def _commit_if_current(

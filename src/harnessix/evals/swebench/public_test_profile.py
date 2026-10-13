@@ -28,7 +28,8 @@ ImageListRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[s
 
 PUBLIC_TEST_PROFILE_ID = "public-tests"
 _LEGACY_PROFILE_VERSION = "swebench-public-tests-v5"
-_PROFILE_VERSION = "swebench-public-tests-v6"
+_DJANGO_LABEL_PROFILE_VERSION = "swebench-public-tests-v6"
+_PROFILE_VERSION = "swebench-public-tests-v7"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -49,9 +50,9 @@ _COMMON_ENVIRONMENT_ARGUMENTS = (
 )
 
 # 测试源码来自只读 /workspace，编译扩展与构建期生成模块只允许从同一
-# SWE-bench 官方镜像的 /testbed 回退加载。测试进程在 /tmp 运行，避免
-# pytest、图片比较等工具把临时结果写回待交付 Workspace。
-_PYTEST_BOOTSTRAP_SOURCE = """\
+# SWE-bench 官方镜像的 /testbed 回退加载。v5/v6原字节保留供冻结配置重放；
+# 当前入口在只读仓库根运行，缓存/临时目录仍固定/tmp，不开放工作区写入。
+_LEGACY_PYTEST_BOOTSTRAP_SOURCE = """\
 import importlib.abc
 import importlib.machinery
 import os
@@ -150,13 +151,13 @@ if not selectors:
 import pytest
 raise SystemExit(pytest.main([*fixed_arguments, *selectors]))
 """
-_PYTEST_BOOTSTRAP_ARGUMENT = f"exec({_PYTEST_BOOTSTRAP_SOURCE!r})"
-_PYTEST_ARGUMENTS = (
+_LEGACY_PYTEST_BOOTSTRAP_ARGUMENT = f"exec({_LEGACY_PYTEST_BOOTSTRAP_SOURCE!r})"
+_LEGACY_PYTEST_ARGUMENTS = (
     *_COMMON_ENVIRONMENT_ARGUMENTS,
     "/opt/miniconda3/envs/testbed/bin/python",
     "-B",
     "-c",
-    _PYTEST_BOOTSTRAP_ARGUMENT,
+    _LEGACY_PYTEST_BOOTSTRAP_ARGUMENT,
     "/workspace",
     "/testbed",
     "-q",
@@ -166,6 +167,20 @@ _PYTEST_ARGUMENTS = (
     "--tb=short",
     "--maxfail=1",
     "--",
+)
+# 只修正执行上下文与选择器传递，避免复制整个历史入口或改变扩展回退策略。
+_PYTEST_BOOTSTRAP_SOURCE = (
+    _LEGACY_PYTEST_BOOTSTRAP_SOURCE.replace('os.chdir("/tmp")', "os.chdir(workspace)")
+    .replace(
+        'path = workspace / value.partition("::")[0]',
+        'path_text, separator, node = value.partition("::")\n        path = workspace / path_text',
+    )
+    .replace("found.append(str(path))", "found.append(str(path) + separator + node)")
+)
+_PYTEST_BOOTSTRAP_ARGUMENT = f"exec({_PYTEST_BOOTSTRAP_SOURCE!r})"
+_PYTEST_ARGUMENTS = tuple(
+    _PYTEST_BOOTSTRAP_ARGUMENT if value == _LEGACY_PYTEST_BOOTSTRAP_ARGUMENT else value
+    for value in _LEGACY_PYTEST_ARGUMENTS
 )
 _LEGACY_DJANGO_TEST_ARGUMENTS = (
     *_COMMON_ENVIRONMENT_ARGUMENTS,
@@ -250,7 +265,8 @@ class SweBenchCaseProcessProfile(ContractModel):
         profile = self.profile
         if (
             profile.profile_id != PUBLIC_TEST_PROFILE_ID
-            or profile.version not in {_LEGACY_PROFILE_VERSION, _PROFILE_VERSION}
+            or profile.version
+            not in {_LEGACY_PROFILE_VERSION, _DJANGO_LABEL_PROFILE_VERSION, _PROFILE_VERSION}
             or profile.description != _PROFILE_DESCRIPTION
             or profile.program != _PROGRAM
             or profile.arguments != _profile_arguments(self.repo, version=profile.version)
@@ -279,7 +295,10 @@ def _profile_arguments(repo: str, *, version: str = _PROFILE_VERSION) -> tuple[s
         ),
         "sympy/sympy": _SYMPY_TEST_ARGUMENTS,
     }
-    return native_runners.get(repo, _PYTEST_ARGUMENTS)
+    pytest_arguments = (
+        _PYTEST_ARGUMENTS if version == _PROFILE_VERSION else _LEGACY_PYTEST_ARGUMENTS
+    )
+    return native_runners.get(repo, pytest_arguments)
 
 
 def _run_image_list(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:

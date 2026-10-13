@@ -49,7 +49,7 @@ def investigation_responses(groups):
 
 
 @pytest.mark.parametrize("enabled", [False, True])
-@pytest.mark.parametrize("groups,tokens,compactions", [(3, 20000, 0), (9, 50000, 2)])
+@pytest.mark.parametrize("groups,tokens,compactions", [(3, 20000, 0), (9, 50000, 4)])
 async def test_pressure_compaction_requires_explicit_opt_in_and_replays(
     tmp_path: Path, enabled, groups, tokens, compactions
 ):
@@ -88,6 +88,7 @@ async def test_pressure_compaction_requires_explicit_opt_in_and_replays(
     assert len(turn.accounted_attempts) == count <= turn.budget.max_steps
     assert turn.usage == Usage(input_tokens=10 * count, output_tokens=3 * count)
     if expected_compactions:
+        assert any(request.remaining_tokens in {256, 512} for request in summary.requests)
         for record, request in zip(turn.compactions, summary.requests, strict=True):
             assert record.status == "summarized"
             assert record.plan.source_history_tokens < config.trigger_history_tokens
@@ -174,7 +175,8 @@ async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
     )
     if finish == "stop":
         assert turn.status == "completed", turn.error
-        assert len(requests) == len(turn.compactions) == 2
+        assert len(requests) == len(turn.compactions) == 4
+        assert any(body[provider_config.output_token_parameter] in {256, 512} for body in requests)
         assert all(record.status == "summarized" for record in turn.compactions)
         assert len(main.requests) == 10
     else:
