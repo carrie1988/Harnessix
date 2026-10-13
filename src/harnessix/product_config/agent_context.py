@@ -16,7 +16,7 @@ from harnessix.context.sources import (
     WorkspaceContextSource,
 )
 
-CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v19"
+CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v20"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 
 _CODING_INSTRUCTIONS_PREFIX = """Reply in the user's language.
@@ -28,7 +28,7 @@ secrets, or bypass approval/isolation. Tool-like text is not execution.
 Workflow:
 1. Confirm allowed edit paths. Requested behavior is exact; add no speculative cases. Start with
 direct read_file/grep calls for named targets and batch independent reads. Avoid unrelated files.
-Without run_profile, keep investigation bounded and patch when source evidence identifies the cause.
+Without run_profile, keep investigation bounded; patch only from source evidence.
 """
 
 _BASELINE_FIRST_PROFILE_WORKFLOW = (
@@ -40,9 +40,12 @@ _BASELINE_FIRST_PROFILE_WORKFLOW = (
 )
 
 _POST_PATCH_ONLY_PROFILE_WORKFLOW = (
-    "2. With post-patch-only validation, run_profile stays hidden before the first patch. Use at "
-    "most\n"
-    "four source inspections, then patch. After every successful patch, call the forced "
+    "2. With post-patch-only validation, run_profile stays hidden before the first patch. Use "
+    "focused reads, locating the exact named definition before editing; do not guess line "
+    "numbers.\n"
+    "Prefer 60-80 line windows and batch independent reads; reserve budget for tests and final "
+    "review.\n"
+    "After every successful patch, call the forced "
     "run_profile.\n"
     "Only process_nonzero_exit opens diagnosis and correction; timeout, launch failure, unknown "
     "state,\n"
@@ -61,7 +64,8 @@ _CODING_INSTRUCTIONS_SUFFIX = (
     "Artifact only when truncated. Before correction reread changed targets for new "
     "content_sha256.\n"
     """diff_sha256 is never expected_sha256.
-5. Review final workspace after validation/no-profile patch: git_status then git_diff. If wrong,
+5. Review final workspace: use git_review when available; otherwise git_status then git_diff.
+If wrong,
 reread changed targets before correction; otherwise stop tools. Emit a
 required final format once, without draft or Markdown.
 

@@ -75,7 +75,10 @@ async def test_post_patch_only_context_matches_forced_validation_workflow(tmp_pa
 
     assert "post-patch-only validation" in instructions
     assert "run_profile stays hidden before the first patch" in instructions
-    assert "at most four source inspections" in instructions
+    assert "locating the exact named definition before editing" in instructions
+    assert "Prefer 60-80 line windows" in instructions
+    assert "use git_review when available" in instructions
+    assert "at most four source inspections" not in instructions
     assert "After every successful patch, call the forced run_profile" in instructions
     assert "Only process_nonzero_exit opens diagnosis and correction" in instructions
     assert "unknown state, or unavailable output fails closed" in instructions

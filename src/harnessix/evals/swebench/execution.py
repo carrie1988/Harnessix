@@ -17,11 +17,13 @@ from harnessix.agent.models import (
     TERMINAL_TURNS,
     ItemStatus,
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     Turn,
     TurnStatus,
     TurnStatusV18,
 )
+from harnessix.agent.tool_rejections import require_closed_rejection_items
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import utc_now
 from harnessix.evals.execution_fs import (
@@ -101,17 +103,29 @@ def _stable_error_code(turn: Turn) -> str | None:
 
 
 def _tool_observations(turn: Turn) -> tuple[_ToolObservation, ...]:
-    calls: dict[UUID, ToolCallContent] = {}
+    require_closed_rejection_items(turn.items)
+    calls: dict[UUID, ToolCallContent | ToolCallRejectionContent] = {}
+    settled: set[UUID] = set()
     observations: list[_ToolObservation] = []
     for index, item in enumerate(turn.items):
-        if item.status is not ItemStatus.COMPLETED:
+        content = item.content
+        if not isinstance(content, (ToolCallContent, ToolCallRejectionContent, ToolResultContent)):
             continue
-        if isinstance(item.content, ToolCallContent):
-            calls[item.content.call_id] = item.content
-        elif isinstance(item.content, ToolResultContent):
-            call = calls.get(item.content.call_id)
-            if call is not None:
-                observations.append(_ToolObservation(index, call, item.content))
+        if item.status is not ItemStatus.COMPLETED or item.error is not None:
+            raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具事实未完整结算")
+        if isinstance(content, (ToolCallContent, ToolCallRejectionContent)):
+            if content.call_id in calls:
+                raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具调用身份重复")
+            calls[content.call_id] = content
+        else:
+            call = calls.get(content.call_id)
+            if call is None or content.call_id in settled:
+                raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具结果配对无效")
+            settled.add(content.call_id)
+            if isinstance(call, ToolCallContent):
+                observations.append(_ToolObservation(index, call, content))
+    if calls.keys() != settled:
+        raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具调用缺少结算结果")
     return tuple(observations)
 
 
@@ -127,19 +141,18 @@ def _case_evidence_failure(
     turn: Turn,
     patch: str,
     public_test_tool: str,
+    *,
+    cost_complete: bool,
 ) -> tuple[str, str] | None:
-    observations = _tool_observations(turn)
+    try:
+        observations = _tool_observations(turn)
+    except KernelError:
+        return "swebench_tool_state_unavailable", "SWE-bench工具事实未完整闭合"
     if any(
         item.tool != public_test_tool and item.result.outcome in {"unknown", "cancelled"}
         for item in observations
     ):
         return "swebench_tool_state_unavailable", "SWE-bench工具状态未知或已取消"
-    if turn.status is not TurnStatus.COMPLETED:
-        return (
-            _stable_error_code(turn) or "swebench_turn_failed",
-            "SWE-bench Case Turn未成功完成",
-        )
-
     public_tests = tuple(item for item in observations if item.tool == public_test_tool)
     if any(
         item.result.outcome != "succeeded" and not _is_code_test_failure(item)
@@ -149,6 +162,23 @@ def _case_evidence_failure(
             "swebench_public_tests_unavailable",
             "SWE-bench公开测试发生非代码执行失败",
         )
+
+    if not cost_complete:
+        return "swebench_cost_incomplete", "SWE-bench模型费用未完整结算"
+    if turn.status is not TurnStatus.COMPLETED:
+        code = _stable_error_code(turn) or "swebench_turn_failed"
+        # 仅映射已计费、响应身份已知的契约失败；原 Turn 和请求账本保持不变。
+        if (
+            turn.status is TurnStatus.FAILED
+            and code == "invalid_provider_output"
+            and turn.accounted_attempts
+            and all(
+                attempt.response_id is not None and attempt.status in {"completed", "failed"}
+                for attempt in turn.accounted_attempts
+            )
+        ):
+            code = "swebench_model_response_invalid"
+        return code, "SWE-bench Case Turn未成功完成"
 
     patch_results = tuple(item for item in observations if item.tool in _PATCH_TOOLS)
     if not patch_results:
@@ -288,10 +318,17 @@ def _reconcile_suite_state(
     plan: SweBenchPreRegistrationPlan,
     states: list[SweBenchCaseExecutionState],
 ) -> SweBenchSuiteExecutionState:
-    rebuilt = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
     path = root / _SUITE_STATE_FILE
-    if path_present(path):
-        previous = read_suite_execution_state(path, plan)
+    previous = read_suite_execution_state(path, plan) if path_present(path) else None
+    rebuilt = build_swebench_suite_execution_state(
+        plan,
+        states,
+        continue_quality_failures=(
+            previous is None
+            or previous.spec_version == "harnessix.swebench-suite-execution-state/v2"
+        ),
+    )
+    if previous is not None:
         previous_count = len(previous.attempted_case_ids)
         if previous == rebuilt:
             return previous
@@ -410,7 +447,10 @@ async def run_swebench_agent_suite(
             plan.harnessix_revision,
         )
         states = _load_or_initialize_case_states(root, plan, config.price.valid_from)
-        _reconcile_suite_state(root, plan, states)
+        suite = _reconcile_suite_state(root, plan, states)
+        continue_quality_failures = (
+            suite.spec_version == "harnessix.swebench-suite-execution-state/v2"
+        )
         workspaces = await _materialize_all(
             plan,
             config,
@@ -426,7 +466,9 @@ async def run_swebench_agent_suite(
         for index, (case, workspace) in enumerate(zip(plan.cases, workspaces, strict=True)):
             token.checkpoint()
             state = states[index]
-            terminal_quality_failure = is_swebench_quality_failure(state)
+            terminal_quality_failure = continue_quality_failures and is_swebench_quality_failure(
+                state
+            )
             terminal_attempt = state.status == "completed" or terminal_quality_failure
             if state.status in {"failed", "cancelled"} and not terminal_quality_failure:
                 raise KernelError("swebench_execution_stopped", "SWE-bench Suite此前已停止")
@@ -469,6 +511,7 @@ async def run_swebench_agent_suite(
                 turn,
                 patch,
                 process_tool_name(process_profile.profile_id),
+                cost_complete=cost_complete,
             )
             if terminal_attempt:
                 _require_case_evidence(state, thread_id, turn, patch)
@@ -501,8 +544,15 @@ async def run_swebench_agent_suite(
                     state,
                 )
                 _reconcile_suite_state(root, plan, states)
-            if evidence_failure is not None and not is_swebench_quality_failure(state):
+            if evidence_failure is not None and not (
+                continue_quality_failures and is_swebench_quality_failure(state)
+            ):
                 code, message = evidence_failure
+                if not cost_complete:
+                    message += (
+                        f"；未决费用保留全额预留 {config.price.currency} "
+                        f"{format_amount(reserved_cost_units)}"
+                    )
                 raise KernelError(code, message)
             attempted_patches.append(patch)
             completed_count += state.status == "completed"

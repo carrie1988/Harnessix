@@ -208,7 +208,23 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
     assert _names(closed) == set()
 
 
-def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review() -> None:
+@pytest.mark.parametrize("read_count", (4, 6, 12))
+def test_public_validation_does_not_force_a_patch_before_source_is_understood(
+    read_count: int,
+) -> None:
+    turn = _turn(*(("read_file", "succeeded", None) for _ in range(read_count)))
+    selected = _selection_for(turn, require_pre_edit_profile=False)
+    assert {item.name for item in selected.tools} == {"read_file", "grep", "glob", _PATCH}
+    assert selected.choice == "required" and selected.forced_tool is None
+
+    no_profile = CodingWorkflowToolView(require_pre_edit_profile=False).select(
+        turn, _definitions_without_profile()
+    )
+    assert {item.name for item in no_profile.tools} == {_PATCH}
+    assert no_profile.forced_tool == _PATCH
+
+
+def test_post_patch_only_workflow_allows_investigation_and_forces_retest_and_review() -> None:
     initial = _selection_for(_turn(), require_pre_edit_profile=False)
     assert {item.name for item in initial.tools} == {"read_file", "grep", "glob", _PATCH}
     assert _PROFILE not in {item.name for item in initial.tools}
@@ -235,8 +251,8 @@ def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review(
         ),
         require_pre_edit_profile=False,
     )
-    assert {item.name for item in at_limit.tools} == {_PATCH}
-    assert at_limit.choice == "required" and at_limit.forced_tool == _PATCH
+    assert {item.name for item in at_limit.tools} == {"read_file", "grep", "glob", _PATCH}
+    assert at_limit.choice == "required" and at_limit.forced_tool is None
 
     rejected_at_limit = _selection_for(
         _with_rejected_tool(
@@ -249,9 +265,9 @@ def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review(
         ),
         require_pre_edit_profile=False,
     )
-    assert {item.name for item in rejected_at_limit.tools} == {_PATCH}
+    assert {item.name for item in rejected_at_limit.tools} == {"read_file", "grep", "glob", _PATCH}
     assert rejected_at_limit.choice == "required"
-    assert rejected_at_limit.forced_tool == _PATCH
+    assert rejected_at_limit.forced_tool is None
 
     patched = _selection_for(
         _turn((_PATCH, "succeeded", None)),

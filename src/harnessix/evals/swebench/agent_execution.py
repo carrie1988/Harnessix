@@ -55,7 +55,7 @@ from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 
 _AUTOMATED_APPROVAL_ACTOR = "harnessix-swebench-runner"
-_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v3"
+_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v4"
 
 
 class _NoSecrets:
@@ -73,8 +73,9 @@ def build_swebench_agent_prompt(case: SweBenchPublicCase) -> str:
         "Work autonomously and leave the working tree with the smallest correct patch. Start from "
         "the named symbols and files; use focused grep/read calls rather than broad exploration. "
         "Batch independent source reads in one response when supported; write and test in order. "
-        "After at most four source-inspection calls, either submit the best justified "
-        "patch or stop with a precise blocker. For existing files use exact edit operations with "
+        "Locate the exact named definition before editing, rather than a similarly named method. "
+        "Use narrow 60-80 line read windows and reserve budget for validation and final review. "
+        "For existing files use exact edit operations with "
         "unique old_text/new_text anchors; never replace an entire file with an excerpt. After "
         "patching, select focused relative test targets or repository-native test labels that "
         "you have actually observed in the public repository. Never guess an exact test node; "

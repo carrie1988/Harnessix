@@ -1,0 +1,172 @@
+{
+  "run": "v13",
+  "status": "stopped_model_contract_failure",
+  "attempted_cases": 3,
+  "unattempted_cases": 22,
+  "input_tokens": 126369,
+  "output_tokens": 2505,
+  "known_list_price_upper_amount": "1.606608",
+  "unaccounted_requests": 0,
+  "reserved_cost_amount": "0",
+  "official_score": null,
+  "reason": "第3个Case模型未返回要求的工具调用；保留失败记录，不重试。",
+  "schema": "harnessix.swebench-development-execution-summary/v1",
+  "plan_sha256": "a8432034ed95bb060587b7acb4dd6e7f03d79fc640b9e5a6727eb514bddbe88c",
+  "harnessix_revision": "cd628938aa463bacd46e050fdf247fd43de80bce",
+  "evaluation_scope": "development_set",
+  "case_results": [
+    {
+      "instance_id": "matplotlib__matplotlib-25960",
+      "turn_status": "failed",
+      "error_code": "budget_exceeded",
+      "model_steps": 7,
+      "input_tokens": 44483,
+      "output_tokens": 817,
+      "patch_sha256": "deff1609713be1b58fbd5a95d7d992419590fe2379bfb5a7b8bae441fdb4102a",
+      "session_sha256": "d347ccb5b8f80af8aadf6ce09b0ce52b9db1495a5b71f5aec0ec771f98796a14",
+      "tools": [
+        {
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "apply_patch_batch",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "run_profile.public-tests",
+          "outcome": "succeeded",
+          "returncode": 0
+        },
+        {
+          "tool": "git_review",
+          "outcome": "succeeded",
+          "returncode": null
+        }
+      ]
+    },
+    {
+      "instance_id": "pydata__xarray-4695",
+      "turn_status": "failed",
+      "error_code": "budget_exceeded",
+      "model_steps": 7,
+      "input_tokens": 40471,
+      "output_tokens": 1215,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "session_sha256": "09b65218ded6596ac2b191b54a1efbb3f20fd8bc1da39d71e6a8f193cc9179c7",
+      "tools": [
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "apply_patch_batch",
+          "outcome": "failed",
+          "returncode": null
+        },
+        {
+          "tool": "apply_patch_batch",
+          "outcome": "failed",
+          "returncode": null
+        },
+        {
+          "tool": "apply_patch_batch",
+          "outcome": "failed",
+          "returncode": null
+        },
+        {
+          "tool": "apply_patch_batch",
+          "outcome": "failed",
+          "returncode": null
+        },
+        {
+          "tool": "apply_patch_batch",
+          "outcome": "failed",
+          "returncode": null
+        }
+      ]
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "turn_status": "failed",
+      "error_code": "invalid_provider_output",
+      "model_steps": 8,
+      "input_tokens": 41415,
+      "output_tokens": 473,
+      "patch_sha256": "deeb6198d79b2b39ddfd05b7527b8c9434bcd94a1190e586e4c884149ad72156",
+      "session_sha256": "339b1b4d207f70a8e066511966e24b097c9895ca23b7914f87e5b2ee2d6cb17b",
+      "tools": [
+        {
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "grep",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "apply_patch_batch",
+          "outcome": "succeeded",
+          "returncode": null
+        },
+        {
+          "tool": "run_profile.public-tests",
+          "outcome": "failed",
+          "returncode": 1
+        },
+        {
+          "tool": "read_file",
+          "outcome": "succeeded",
+          "returncode": null
+        }
+      ]
+    }
+  ],
+  "evidence_directory": "/Users/zhangjinhui/Library/Application Support/Harnessix/swebench/runs/agent-a8432034ed95-v13",
+  "interpretation": "执行失败与官方Resolved不同。该轮仅尝试3个Case，22个未尝试，未运行官方评分。"
+}

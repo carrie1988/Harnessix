@@ -161,6 +161,8 @@ def _pre_patch_selection(
     observations: tuple[_Observation, ...],
     patch: str,
     patch_results: tuple[_Observation, ...],
+    *,
+    bound_no_profile_reads: bool = True,
 ) -> ModelToolSelection:
     if patch_results:
         return _failed_patch_selection(definitions, observations, patch_results[-1])
@@ -168,7 +170,7 @@ def _pre_patch_selection(
         item for item in observations if item.tool in _SOURCE_INSPECTION_TOOLS
     )
     successful_inspections = sum(item.result.outcome == "succeeded" for item in source_inspections)
-    if successful_inspections >= _MAX_NO_PROFILE_INSPECTIONS:
+    if bound_no_profile_reads and successful_inspections >= _MAX_NO_PROFILE_INSPECTIONS:
         return _selection(definitions, {patch}, forced_tool=patch)
     tools = tuple(item for item in definitions if item.name in {*_SOURCE_INSPECTION_TOOLS, patch})
     if any(item.result.outcome != "succeeded" for item in source_inspections):
@@ -294,6 +296,7 @@ class CodingWorkflowToolView:
                 observations,
                 patch,
                 patch_results,
+                bound_no_profile_reads=False,
             )
 
         profile_results = tuple(

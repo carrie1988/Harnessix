@@ -38,6 +38,7 @@ from harnessix.evals.swebench.execution_io import (
 NOW = datetime(2026, 10, 12, 1, 2, 3, tzinfo=UTC)
 QUALITY_FAILURE_CODES = (
     "budget_exceeded",
+    "swebench_model_response_invalid",
     "swebench_patch_missing",
     "swebench_patch_failed",
     "swebench_public_tests_missing",
@@ -555,7 +556,10 @@ def test_v2_can_resume_after_quality_failure_without_rewriting_failed_evidence(
         "provider_cancelled",
         "unknown_tool",
         "provider_failed",
+        "invalid_provider_output",
         "swebench_public_tests_unavailable",
+        "swebench_tool_state_unavailable",
+        "swebench_cost_incomplete",
         "swebench_cost_invalid",
         "swebench_fee_limit_reached",
         "swebench_price_expired",
@@ -711,11 +715,12 @@ def test_v2_rejects_multiple_active_cases(second_active: SweBenchExecutionStatus
         build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
 
 
-def test_v1_still_stops_at_quality_failure_and_rejects_later_success() -> None:
+@pytest.mark.parametrize("error_code", QUALITY_FAILURE_CODES)
+def test_v1_still_stops_at_quality_failure_and_rejects_later_success(error_code: str) -> None:
     plan = _plan()
     states = _ready_states(plan)
     states[0] = _completed_state(plan, 0, input_tokens=100, output_tokens=10)
-    states[1] = _failed_state(plan, 1)
+    states[1] = _failed_state(plan, 1, error_code=error_code)
 
     suite = build_swebench_suite_execution_state(plan, states)
     assert suite.spec_version == "harnessix.swebench-suite-execution-state/v1"
