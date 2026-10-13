@@ -331,6 +331,50 @@ async def test_bounded_thinking_accounts_full_usage_without_publishing_reasoning
     assert replay(events) == await store.get_thread(thread.thread_id)
 
 
+@pytest.mark.parametrize("total,executed_calls", [(49999, 1), (50000, 0), (50010, 0)])
+async def test_thinking_tool_proposal_keeps_full_usage_before_hard_budget_dispatch(
+    tmp_path: Path, total: int, executed_calls: int
+) -> None:
+    usage = chunk(usage=True)
+    usage["usage"] = {
+        "prompt_tokens": total - 4106,
+        "completion_tokens": 4106,
+        "total_tokens": total,
+        "completion_tokens_details": {"reasoning_tokens": 1000},
+    }
+    parts = tool_frames()
+    parts[2] = frame(usage)
+    wire = WireStream(parts)
+    requests: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return response(wire)
+
+    tools = RecordingTools()
+    store = SQLiteSessionStore(tmp_path / "tool-budget.db")
+    async with OpenAIChatProvider(
+        config(enable_thinking=True, thinking_budget=1024, max_output_tokens=4096, max_attempts=1),
+        transport=httpx.MockTransport(handle),
+    ) as provider:
+        async with AgentRuntime(store, provider, tools) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(
+                thread.thread_id,
+                "任务",
+                request_id="thinking-tool-budget",
+                budget=Budget(max_tokens=50000),
+            )
+
+    assert len(requests) == 1 and wire.closed
+    assert turn.status == TurnStatus.FAILED and turn.error.code == "budget_exceeded"
+    assert turn.usage.total_tokens == total and turn.usage.output_tokens == 4106
+    assert turn.budget.max_tokens == 50000 and len(tools.calls) == executed_calls
+    assert turn.model_attempts[0].usage.reasoning_output_tokens == 1000
+    assert turn.usage_is_complete
+    assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
+
+
 @pytest.mark.parametrize("available", [True, False])
 async def test_model_availability_probe_is_read_only_and_exact(available: bool) -> None:
     requests: list[httpx.Request] = []

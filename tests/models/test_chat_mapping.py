@@ -175,6 +175,27 @@ def test_bounded_thinking_uses_total_completion_limit() -> None:
     assert "max_tokens" not in body
 
 
+@pytest.mark.parametrize("remaining", [2, 1024, 1025, 4096])
+def test_thinking_ceiling_shrinks_with_remaining_total_output(remaining: int) -> None:
+    request = model_request().model_copy(update={"remaining_tokens": remaining})
+    config = OpenAIChatConfig(
+        model="test", enable_thinking=True, thinking_budget=1024, max_output_tokens=4096
+    )
+
+    body, _ = build_request(request, config)
+
+    assert body["max_completion_tokens"] == remaining
+    assert body["extra_body"]["thinking_budget"] == min(1024, remaining - 1)
+
+
+def test_thinking_without_room_for_an_answer_is_rejected_before_request() -> None:
+    request = model_request().model_copy(update={"remaining_tokens": 1})
+    config = OpenAIChatConfig(model="test", enable_thinking=True, thinking_budget=512)
+
+    with pytest.raises(InvalidModelRequest):
+        build_request(request, config)
+
+
 @pytest.mark.parametrize(
     "updates",
     [

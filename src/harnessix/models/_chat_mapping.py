@@ -57,12 +57,13 @@ def build_request(
         messages.insert(0, {"role": "system", "content": budget_note})
     if request.instructions is not None:
         messages.insert(0, {"role": "system", "content": request.instructions})
+    output_tokens = min(config.max_output_tokens, remaining)
     body: dict[str, Any] = {
         "model": config.model,
         "messages": messages,
         "stream": True,
         "stream_options": {"include_usage": True},
-        config.output_token_parameter: min(config.max_output_tokens, remaining),
+        config.output_token_parameter: output_tokens,
     }
     if tools:
         body["tools"] = tools
@@ -78,7 +79,10 @@ def build_request(
         # OpenAI SDK 将 extra_body 合并到最终请求顶层，供兼容端点接收扩展参数。
         body["extra_body"] = {"enable_thinking": config.enable_thinking}
         if config.thinking_budget is not None:
-            body["extra_body"]["thinking_budget"] = config.thinking_budget
+            if output_tokens < 2:
+                raise InvalidModelRequest("整体输出预算不足以同时容纳思考与回答")
+            # 配置是上限；输出收缩时仍为可见回答留出余量，不扩张任务预算。
+            body["extra_body"]["thinking_budget"] = min(config.thinking_budget, output_tokens - 1)
     if len(encode_json(body).encode()) > config.max_request_bytes:
         raise InvalidModelRequest("模型请求超过大小上限")
     return body, names
