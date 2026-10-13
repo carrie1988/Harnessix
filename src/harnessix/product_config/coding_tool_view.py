@@ -173,7 +173,10 @@ def _pre_patch_selection(
     if bound_no_profile_reads and successful_inspections >= _MAX_NO_PROFILE_INSPECTIONS:
         return _selection(definitions, {patch}, forced_tool=patch)
     tools = tuple(item for item in definitions if item.name in {*_SOURCE_INSPECTION_TOOLS, patch})
-    if any(item.result.outcome != "succeeded" for item in source_inspections):
+    # 有验证Profile的调查阶段允许诚实结束；工具成功次数不代表已找到安全修改依据。
+    if not bound_no_profile_reads or any(
+        item.result.outcome != "succeeded" for item in source_inspections
+    ):
         return ModelToolSelection(tools)
     return ModelToolSelection(tools, "required")
 

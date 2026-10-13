@@ -90,6 +90,45 @@ async def test_invalid_anchor_contract_fails_before_io(tmp_path, monkeypatch, ar
     assert result.error.code == "tool_invalid_arguments" and result.output is None
 
 
+@pytest.mark.parametrize("control", [chr(i) for i in range(32)] + [chr(127)])
+async def test_anchor_control_feedback_identifies_rule_without_echoing_values(
+    tmp_path, monkeypatch, control
+):
+    monkeypatch.setattr(files, "read_file_snapshot", lambda *a: pytest.fail("不得读取文件"))
+    private_anchor = "PRIVATE_ANCHOR" + control + "PRIVATE_SUFFIX"
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await execute(tools, path="PRIVATE_PATH", anchor=private_anchor)
+    assert result.error.code == "tool_invalid_arguments" and result.output is None
+    assert "anchor必须是不含换行或控制字符的单行字面量" in result.error.message
+    assert "PRIVATE" not in result.error.model_dump_json()
+    assert len(result.error.message) <= 2000
+
+
+@pytest.mark.parametrize(
+    ("arguments", "hint"),
+    [
+        ({"anchor": "中" * 86}, "anchor的UTF-8编码不得超过256字节"),
+        ({"anchor": "target", "start_line": 2}, "启用anchor时请省略start_line"),
+        ({"lines_before": 1}, "lines_before仅可在anchor非空时使用"),
+    ],
+)
+async def test_anchor_cross_field_feedback_is_specific_without_io(
+    tmp_path, monkeypatch, arguments, hint
+):
+    monkeypatch.setattr(files, "read_file_snapshot", lambda *a: pytest.fail("不得读取文件"))
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await execute(tools, path="PRIVATE_PATH", **arguments)
+    assert result.error.code == "tool_invalid_arguments" and result.output is None
+    assert hint in result.error.message and "PRIVATE" not in result.error.model_dump_json()
+
+
+def test_anchor_utf8_boundary_and_omitted_defaults_keep_old_acceptance():
+    assert ReadFileInputV3(path="file.py", anchor="中" * 85 + "x").anchor
+    assert ReadFileInputV3(path="file.py", anchor="target", start_line=1).anchor == "target"
+    assert ReadFileInputV3(path="file.py", anchor=None, lines_before=0).anchor is None
+    assert ReadFileInputV3(path="file.py", start_line=100).start_line == 100
+
+
 @pytest.mark.parametrize(
     "body,anchor,error",
     [

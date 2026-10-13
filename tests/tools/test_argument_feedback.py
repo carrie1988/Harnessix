@@ -9,6 +9,8 @@ from uuid import uuid4
 import httpx
 import httpx2
 import pytest
+from pydantic import ValidationError
+from pydantic_core import PydanticCustomError
 
 from harnessix.agent.approvals import execution_fingerprint
 from harnessix.agent.cancellation import CancelToken
@@ -22,6 +24,7 @@ from harnessix.models.anthropic import AnthropicProvider
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.session.sqlite import SQLiteSessionStore
+from harnessix.tools.contracts import ReadFileInputV3
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.models import anthropic_wire
 from tests.models import wire as openai_wire
@@ -100,6 +103,39 @@ async def test_present_invalid_fields_are_not_missing_and_values_are_not_echoed(
     assert "PRIVATE_VALUE_NEVER_IN_FEEDBACK" not in result.error.model_dump_json()
     assert "x" * 32 not in result.error.message
     assert "input_schema" in result.error.message
+
+
+async def test_validator_code_does_not_expose_error_message_location_or_context(
+    tmp_path, monkeypatch
+):
+    failure = ValidationError.from_exception_data(
+        "PRIVATE_MODEL_NAME",
+        [
+            {
+                "type": PydanticCustomError(
+                    "PRIVATE_ERROR_TYPE",
+                    "PRIVATE_MESSAGE {private}",
+                    {"private": "PRIVATE_CONTEXT"},
+                ),
+                "loc": ("PRIVATE_ERROR_LOCATION",),
+                "input": "PRIVATE_ERROR_INPUT",
+            }
+        ],
+    )
+
+    def reject(*args, **kwargs):
+        raise failure
+
+    monkeypatch.setattr(ReadFileInputV3, "model_validate", reject)
+    async with CodingToolRuntime(tmp_path) as tools:
+
+        async def forbidden(*args, **kwargs):
+            pytest.fail("校验失败不得进入I/O")
+
+        monkeypatch.setattr(tools, "_execute_read", forbidden)
+        result = await tools.execute(call(tools, path="PRIVATE_PATH"), CancelToken())
+    assert result.error.code == "tool_invalid_arguments" and result.output is None
+    assert "PRIVATE" not in result.error.model_dump_json()
 
 
 def _tool_frames(provider_name, step, tool, arguments):
@@ -257,7 +293,26 @@ async def test_sdk_artifact_feedback_new_call_actual_read_and_replay(
     assert replay(await reopened.events(thread.thread_id)) == restored
 
 
-async def test_numeric_feedback_reaches_real_sdk_and_corrected_call_replays(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("tool", "invalid", "corrected", "hint"),
+    [
+        (
+            "grep",
+            {"query": "needle", "context_lines": 10},
+            {"query": "needle", "context_lines": 3},
+            "context_lines 应满足 ≥ 0、≤ 3",
+        ),
+        (
+            "read_file",
+            {"path": "example.py", "anchor": "PRIVATE_SOURCE_TEXT\nneedle"},
+            {"path": "example.py", "anchor": "needle"},
+            "anchor必须是不含换行或控制字符的单行字面量",
+        ),
+    ],
+)
+async def test_constraint_feedback_reaches_real_sdk_and_corrected_call_replays(
+    tmp_path, monkeypatch, tool, invalid, corrected, hint
+):
     monkeypatch.setenv("HARNESSIX_FEEDBACK_FIXTURE_KEY", "offline-key")
     root = tmp_path / "workspace"
     root.mkdir()
@@ -270,21 +325,28 @@ async def test_numeric_feedback_reaches_real_sdk_and_corrected_call_replays(tmp_
         results = _result_payloads("openai", body)
         step = len(requests)
         if step == 1:
-            definition = next(
-                d for d in body["tools"] if d["function"]["name"] == tool_alias("grep")
-            )
-            assert (
-                definition["function"]["parameters"]["properties"]["context_lines"]["maximum"] == 3
-            )
-            parts = _tool_frames("openai", step, "grep", {"query": "needle", "context_lines": 10})
+            definition = next(d for d in body["tools"] if d["function"]["name"] == tool_alias(tool))
+            properties = definition["function"]["parameters"]["properties"]
+            if tool == "grep":
+                assert properties["context_lines"]["maximum"] == 3
+            else:
+                assert "单行字面量" in properties["anchor"]["description"]
+            parts = _tool_frames("openai", step, tool, invalid)
         elif step == 2:
             error = results[-1]["error"]
             assert error["code"] == "tool_invalid_arguments"
-            assert "context_lines 应满足 ≥ 0、≤ 3" in error["message"]
-            parts = _tool_frames("openai", step, "grep", {"query": "needle", "context_lines": 3})
+            assert hint in error["message"]
+            if tool == "read_file":
+                assert "PRIVATE_SOURCE_TEXT" not in error["message"]
+                assert "needle" not in error["message"]
+            parts = _tool_frames("openai", step, tool, corrected)
         else:
             assert step == 3 and results[-1]["outcome"] == "succeeded"
-            assert results[-1]["output"]["preview"]["matches"][0]["context"]["start_line"] == 1
+            if tool == "grep":
+                assert results[-1]["output"]["preview"]["matches"][0]["context"]["start_line"] == 1
+            else:
+                assert results[-1]["output"]["start_line"] == 2
+                assert results[-1]["output"]["text"].startswith("needle\n")
             parts = openai_wire.text_frames()
         stream = openai_wire.WireStream(parts)
         wires.append(stream)
@@ -309,6 +371,7 @@ async def test_numeric_feedback_reaches_real_sdk_and_corrected_call_replays(tmp_
     assert turn.status is TurnStatus.COMPLETED
     results = [i.content for i in turn.items if isinstance(i.content, ToolResultContent)]
     assert [r.outcome for r in results] == ["failed", "succeeded"]
+    assert len({r.call_id for r in results}) == 2
     assert len(requests) == 3 and all(stream.closed for stream in wires)
     reopened = SQLiteSessionStore(session.path)
     restored = await reopened.get_thread(thread.thread_id)

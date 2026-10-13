@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import AgentFailure, ToolCallContent, ToolResultContent, TurnStatus
+from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
+from harnessix.evals.swebench.execution import _case_evidence_failure
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
@@ -105,6 +109,56 @@ async def test_runtime_drives_patch_test_and_git_review_to_completion(tmp_path: 
     assert provider.requests[5].forced_tool == "run_profile.public-tests"
     assert provider.requests[6].forced_tool == "git_review"
     assert provider.requests[7].tools == ()
+
+
+@pytest.mark.parametrize("read_count", (0, 4, 12))
+async def test_investigation_can_finish_honestly_but_no_patch_remains_unresolved(
+    tmp_path: Path, read_count: int
+) -> None:
+    tools = _SuccessfulCodingTools()
+    steps = [
+        *(
+            _tool_step(index, "read_file", {"path": "src/example.py"})
+            for index in range(read_count)
+        ),
+        answer("证据不足，未修改源码，也未完成验证。"),
+    ]
+    provider = ScriptedProvider(steps)
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(
+        store,
+        provider,
+        tools,
+        model_tool_view=CodingWorkflowToolView(require_pre_edit_profile=False),
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "修复回归", request_id="honest-stop")
+    assert turn.status is TurnStatus.COMPLETED and turn.error is None
+    assert tools.calls == ["read_file"] * read_count
+    assert all(request.tool_choice == "auto" for request in provider.requests)
+    failure = _case_evidence_failure(turn, "", "run_profile.public-tests", cost_complete=True)
+    assert failure is not None and failure[0] == "swebench_patch_missing"
+    restored = await SQLiteSessionStore(store.path).get_thread(thread.thread_id)
+    assert restored.turns[0] == turn and replay(await store.events(thread.thread_id)) == restored
+
+
+async def test_text_cannot_skip_required_validation_after_successful_patch(tmp_path: Path) -> None:
+    tools = _SuccessfulCodingTools()
+    provider = ScriptedProvider(
+        [_tool_step(0, "apply_patch", {"path": "src/example.py"}), answer("已经完成")]
+    )
+    async with AgentRuntime(
+        SQLiteSessionStore(tmp_path / "session.db"),
+        provider,
+        tools,
+        model_tool_view=CodingWorkflowToolView(require_pre_edit_profile=False),
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "修复回归", request_id="cannot-skip")
+    assert turn.status is TurnStatus.FAILED and turn.error.code == "invalid_provider_output"
+    assert tools.calls == ["apply_patch"]
+    assert provider.requests[1].tool_choice == "required"
+    assert provider.requests[1].forced_tool == "run_profile.public-tests"
 
 
 async def test_failed_validation_supports_search_reselection_repair_and_durable_review(

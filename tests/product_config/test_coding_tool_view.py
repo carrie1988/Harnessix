@@ -222,7 +222,7 @@ def test_public_validation_does_not_force_a_patch_before_source_is_understood(
     turn = _turn(*(("read_file", "succeeded", None) for _ in range(read_count)))
     selected = _selection_for(turn, require_pre_edit_profile=False)
     assert {item.name for item in selected.tools} == {"read_file", "grep", "glob", _PATCH}
-    assert selected.choice == "required" and selected.forced_tool is None
+    assert selected.choice == "auto" and selected.forced_tool is None
 
     no_profile = CodingWorkflowToolView(require_pre_edit_profile=False).select(
         turn, _definitions_without_profile()
@@ -235,7 +235,7 @@ def test_post_patch_only_workflow_allows_investigation_and_forces_retest_and_rev
     initial = _selection_for(_turn(), require_pre_edit_profile=False)
     assert {item.name for item in initial.tools} == {"read_file", "grep", "glob", _PATCH}
     assert _PROFILE not in {item.name for item in initial.tools}
-    assert initial.choice == "required" and initial.forced_tool is None
+    assert initial.choice == "auto" and initial.forced_tool is None
 
     before_limit = _selection_for(
         _turn(
@@ -259,7 +259,7 @@ def test_post_patch_only_workflow_allows_investigation_and_forces_retest_and_rev
         require_pre_edit_profile=False,
     )
     assert {item.name for item in at_limit.tools} == {"read_file", "grep", "glob", _PATCH}
-    assert at_limit.choice == "required" and at_limit.forced_tool is None
+    assert at_limit.choice == "auto" and at_limit.forced_tool is None
 
     rejected_at_limit = _selection_for(
         _with_rejected_tool(
@@ -273,7 +273,7 @@ def test_post_patch_only_workflow_allows_investigation_and_forces_retest_and_rev
         require_pre_edit_profile=False,
     )
     assert {item.name for item in rejected_at_limit.tools} == {"read_file", "grep", "glob", _PATCH}
-    assert rejected_at_limit.choice == "required"
+    assert rejected_at_limit.choice == "auto"
     assert rejected_at_limit.forced_tool is None
 
     patched = _selection_for(

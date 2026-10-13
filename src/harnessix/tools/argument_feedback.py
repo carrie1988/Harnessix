@@ -9,6 +9,8 @@ from typing import Literal, cast
 
 from pydantic import JsonValue
 
+from harnessix.tools.contracts import READ_ARGUMENT_CONSTRAINT_HINTS
+
 _FIELD_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}", re.ASCII)
 _COMPOSED_KEYS = frozenset(
     {"$ref", "allOf", "anyOf", "oneOf", "not", "if", "then", "else", "dependentRequired"}
@@ -204,8 +206,9 @@ def invalid_argument_message(
     arguments: Mapping[str, JsonValue],
     *,
     trusted_action: bool = False,
+    constraint_codes: tuple[str, ...] = (),
 ) -> str:
-    """只公开正式字段、类型和声明范围；参数值及异常不能进入消息。"""
+    """只公开Schema事实及正式校验器的白名单规则；参数值及异常不能进入消息。"""
     label = "Action参数不符合Trusted Tool契约" if trusted_action else "工具参数不符合契约"
     fallback = f"{label}；{_INSTRUCTION}"
     fields = _field_facts(schema)
@@ -230,6 +233,15 @@ def invalid_argument_message(
         details.append(f"类型不匹配：{'；'.join(mismatches)}。")
     if ranges:
         details.append(f"范围不匹配：{'；'.join(ranges)}。")
+    constraints = sorted(
+        {
+            READ_ARGUMENT_CONSTRAINT_HINTS[code]
+            for code in constraint_codes[:_MAX_TYPE_MISMATCHES]
+            if code in READ_ARGUMENT_CONSTRAINT_HINTS
+        }
+    )
+    if constraints:
+        details.append(f"约束不匹配：{'；'.join(constraints)}。")
     message = f"{field_feedback}{''.join(details)}{instruction}" if details else previous_message
     if len(message) <= 2000:
         return message

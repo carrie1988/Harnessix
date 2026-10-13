@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from types import MappingProxyType
 from typing import Annotated, Literal, Self
 
 from pydantic import ConfigDict, Field, model_validator
+from pydantic_core import PydanticCustomError
 
 from harnessix.domain.models import ContractModel
 
@@ -15,6 +17,16 @@ MAX_DIRECTORY_ENTRIES = 10000
 MAX_RESULT_BYTES = 60000
 READ_TIMEOUT_SECONDS = 5
 Revision = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+
+# 仅向模型公开正式合同的固定规则，不转发ValidationError正文或调用值。
+READ_ARGUMENT_CONSTRAINT_HINTS = MappingProxyType(
+    {
+        "harnessix_read_anchor_single_line": "anchor必须是不含换行或控制字符的单行字面量",
+        "harnessix_read_anchor_utf8_limit": "anchor的UTF-8编码不得超过256字节",
+        "harnessix_read_anchor_page_mode": "启用anchor时请省略start_line（默认值为1）",
+        "harnessix_read_anchor_required": "lines_before仅可在anchor非空时使用",
+    }
+)
 
 
 class ReadContract(ContractModel):
@@ -67,13 +79,18 @@ class ReadFileInputV3(ReadFileInputV2):
     def validate_anchor(self) -> Self:
         if self.anchor is None:
             if self.lines_before:
-                raise ValueError("lines_before只可与anchor同时使用")
-        elif (
-            self.start_line != 1
-            or len(self.anchor.encode("utf-8")) > 256
-            or any(ord(char) < 32 or ord(char) == 127 for char in self.anchor)
-        ):
-            raise ValueError("anchor必须是有界单行字面量，且不能同时指定start_line")
+                code = "harnessix_read_anchor_required"
+                raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
+            return self
+        if any(ord(char) < 32 or ord(char) == 127 for char in self.anchor):
+            code = "harnessix_read_anchor_single_line"
+            raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
+        if len(self.anchor.encode("utf-8")) > 256:
+            code = "harnessix_read_anchor_utf8_limit"
+            raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
+        if self.start_line != 1:
+            code = "harnessix_read_anchor_page_mode"
+            raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
         return self
 
 

@@ -154,16 +154,24 @@ _GIT_BINDINGS = (
 
 
 def _invalid_arguments(
-    input_model: type[ContractModel], arguments: dict[str, JsonValue]
+    input_model: type[ContractModel],
+    arguments: dict[str, JsonValue],
+    constraint_codes: tuple[str, ...] = (),
 ) -> tuple[str, str]:
-    """只公开注册模型字段与缺失事实，不回显参数或第三方校验错误。"""
+    """只投影正式字段和白名单规则，不回显参数值或第三方校验异常。"""
     return "tool_invalid_arguments", invalid_argument_message(
-        input_model.model_json_schema(), arguments
+        input_model.model_json_schema(), arguments, constraint_codes=constraint_codes
     )
 
 
-def _argument_failure(binding: _ReadBinding, arguments: dict[str, JsonValue]) -> tuple[str, str]:
-    invalid = _invalid_arguments(binding.input_model, arguments)
+def _argument_failure(
+    binding: _ReadBinding, arguments: dict[str, JsonValue], error: ValidationError
+) -> tuple[str, str]:
+    codes = tuple(
+        detail["type"]
+        for detail in error.errors(include_url=False, include_input=False, include_context=False)
+    )
+    invalid = _invalid_arguments(binding.input_model, arguments, codes)
     if binding.input_model is ListFilesInput:
         position = arguments.get("offset", 0)
         first_position = 0
@@ -480,8 +488,8 @@ class CodingToolRuntime:
         )
         try:
             args = binding.input_model.model_validate(call.arguments)
-        except ValidationError:
-            code, message = _argument_failure(binding, call.arguments)
+        except ValidationError as error:
+            code, message = _argument_failure(binding, call.arguments, error)
             return self._failure(call, code, message)
         try:
             if isinstance(args, GitStatusInput | GitDiffInput | GitReviewInput):

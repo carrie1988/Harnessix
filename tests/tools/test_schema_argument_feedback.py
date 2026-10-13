@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from harnessix.delivery.trusted_action import workspace_patch_descriptor
 from harnessix.delivery.trusted_action_contracts import WorkspacePatchInput
 from harnessix.tools.argument_feedback import invalid_argument_message
+from harnessix.tools.contracts import READ_ARGUMENT_CONSTRAINT_HINTS
 
 
 def schema() -> dict:
@@ -100,6 +101,42 @@ def test_schema_and_arguments_are_not_mutated() -> None:
     invalid_argument_message(value, arguments)
     assert value == schema()
     assert arguments == {"selectors": ["PRIVATE_VALUE"]}
+
+
+def test_constraint_feedback_only_uses_deduplicated_static_whitelist():
+    known = "harnessix_read_anchor_single_line"
+    codes = ("PRIVATE_UNREGISTERED_CODE", known, known)
+    message = invalid_argument_message(
+        schema(), {"profile": "PRIVATE_INPUT_VALUE"}, constraint_codes=codes
+    )
+    assert message.count(READ_ARGUMENT_CONSTRAINT_HINTS[known]) == 1
+    assert "PRIVATE" not in message and len(message) <= 2000
+    assert codes == ("PRIVATE_UNREGISTERED_CODE", known, known)
+
+
+def test_unknown_validation_codes_preserve_original_feedback():
+    arguments = {"profile": "PRIVATE_VALUE"}
+    assert invalid_argument_message(
+        schema(), arguments, constraint_codes=("value_error", "PRIVATE_ERROR_CODE")
+    ) == invalid_argument_message(schema(), arguments)
+
+
+def test_unprojectable_schema_does_not_publish_constraint_hints():
+    composed = {**schema(), "allOf": []}
+    assert invalid_argument_message(
+        composed, {}, constraint_codes=tuple(READ_ARGUMENT_CONSTRAINT_HINTS)
+    ) == invalid_argument_message(composed, {})
+
+
+def test_constraint_feedback_preserves_message_cap_and_immutable_rules():
+    properties = {f"f{i:02}" + "a" * 60: {} for i in range(64)}
+    long_schema = {"type": "object", "properties": properties, "required": list(properties)}
+    message = invalid_argument_message(
+        long_schema, {}, constraint_codes=tuple(READ_ARGUMENT_CONSTRAINT_HINTS)
+    )
+    assert len(message) <= 2000 and "允许字段：" not in message
+    with pytest.raises(TypeError):
+        READ_ARGUMENT_CONSTRAINT_HINTS["PRIVATE_NEW_RULE"] = "PRIVATE_TEXT"  # type: ignore[index]
 
 
 @pytest.mark.parametrize(
