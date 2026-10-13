@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 8
+version: 9
 code_revision: 30201490ae1ab4338bd14f519e67a685dd63c8e2
 owners:
   - core
@@ -414,3 +414,19 @@ Agent、模型、工具权限、评分、50K/16-step/900s限制均不改变。
 [终态负控](../../tests/evals/swebench/test_agent_execution.py)验证缺失或漂移的Session、Thread、
 Turn与非终态不能触发新请求。离线通过只证明运行边界；真实长流稳定性、Resolved和基础设施目标
 必须由新冻结轮次的完整原生证据和官方Docker评分另行验收。
+
+
+### v20完整执行与官方结果：传输恢复不代表质量达标
+
+[执行摘要](../../benchmarks/swebench/verified-25-v20/execution-summary.json)记录25项全部尝试、
+无传输故障、23项预算失败、1项已计费模型输出契约失败、1项自主工具闭环。
+[官方摘要](../../benchmarks/swebench/verified-25-v20/official-summary.json)独立核验40件原生日志：
+Resolved **5/25**、空补丁**17/25**、8个非空补丁均成功应用；未达到22/25与空补丁≤2目标。
+分类器基础设施失败为0，但2项missing_module被标为ambiguous，旧零测试收集问题也未独立复验，
+故基础设施门槛仍OPEN，不能把分类器0等同于全部环境已验收。
+新增已知费用上界12.720252元、未决预留0；原周期累计已知60.189048元、历史预留9.442368元，
+剩余30.368584元。上述为计价上界/预留，不是实际账单；没有重试或删除故障/空补丁Case。
+
+下一增量针对共性的错误输入反馈：不改变正式范围、Case或预算，只补充注册数值上下限，
+避免模型重复提交已拒绝参数；实现与负控集中见[安全反馈详设第8节](m09-r3-safe-tool-argument-feedback.md#8-直接数值范围反馈防止同类拒绝消耗调查预算)。
+源代码与验证仍不等于新质量分数；后续模型预算按原v3逐Case准入，不追加100元周期。

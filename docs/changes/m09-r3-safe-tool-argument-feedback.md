@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 007839e7648b6fc1b94a5acede8dd0285092249b
+version: 2
+code_revision: 49ad2d74f0794ac37926d115d99ec7e6399dc6a8
 owners: [core]
 modules: [tools, artifacts, models, agent]
 related_adrs:
@@ -164,3 +164,44 @@ flowchart TD
 [完整验证交付](../validation/tool-argument-feedback-2026-09-30-v1/README.md)保留原Session低敏诊断、
 固定原实现RED、最终源码关联测试、治理回归、实际Wheel、原生候选独立状态、Manifest与Review Packet。
 6条双Provider离线SDK链实际读取Artifact并跨Session重开回放，不调用真实模型；真实质量改善仍未验证。
+
+
+## 8. 直接数值范围反馈：防止同类拒绝消耗调查预算
+
+### 8.1 来源与设计目标
+
+SWE-bench v20完整25项执行中23项因原累计预算到期，部分已认证轨迹反复提交超范围整数参数，
+但反馈只给字段列表和类型，不能具体指出已声明的允许范围。Provider临时Schema经源码及SDK求证
+仍携带minimum/maximum，不能归因于Schema被删，也不据此认定反馈修复能解决全部预算失败。
+新增共享范围反馈，而不是扩大grep限制、调整某个Case提示、自动钳制参数或增加重试和任务预算。
+
+### 8.2 结构、字段与核心逻辑
+
+[共享反馈源码](../../src/harnessix/tools/argument_feedback.py)不改变调用链：原严格Pydantic拒绝
+→ 从注册Schema提取类型/声明边界 → 原Tool Result持久化 → 原模型历史 → 模型自行决定新调用。
+`_declared_numeric_bounds`只读取直接integer/number字段的minimum、maximum、exclusiveMinimum、
+exclusiveMaximum；返回关键字、比较符、注册数值，不读取description、示例或第三方错误原文。
+`_range_mismatches`仅对同型、有限的调用值比较，不输出实际值；最多8项，按正式字段名排序。
+
+```text
+字段合同非直接数值/有引用或组合 → 保留原反馈
+任一声明边界错型、非有限、绝对值超过10^18或上下界矛盾 → 保留原反馈
+调用值错型或非有限 → 不作数值推断，保留原类型/一般错误
+比较越界 → 仅报告字段名和已声明的允许范围
+消息超过2000字符 → 原完整字段反馈；仍超限 → 原通用反馈
+```
+
+数值边界来自已注册合同，不是模型参数值。工具输入和执行版本、Schema、批准Fingerprint、
+Scope、读前写约束和Session迁移不变。Trusted Tool复用同一纯函数，不复制校验逻辑；
+失败不进入I/O，已有失败事件继续按原消息回放，不重新分类或重写。
+
+### 8.3 验证与真实验收边界
+
+[字段/范围负控](../../tests/tools/test_schema_argument_feedback.py)覆盖四种含界/不含界约束、
+合法边界原消息不变、错误类型、布尔不等于整数、非有限值、恶意范围、复合Schema、保密、
+排序、数量和消息上限。实际只读Runtime验证拒绝发生在I/O前。
+[正式OpenAI SDK链](../../tests/tools/test_argument_feedback.py)经过真实解析器和MockTransport，
+观察Provider发送的上界3、失败消息、模型新调用值3、实际归档结果、流关闭和Session/Reducer重放。
+测试中的脚本回复只证明接线，不是云端模型自主纠错证据。
+相关工具、视图、SWE-bench和Trusted Action联合1568项通过，554个源码文件Mypy与合同门禁通过。
+真实纠错率及Resolved提升只由后继全25项冻结轮次验证；v20历史5/25和17个空补丁不改写。

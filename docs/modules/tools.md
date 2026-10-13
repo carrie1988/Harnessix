@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 56dcefaf42a856e7d3cf8dbef267830596897773
+version: 14
+code_revision: 49ad2d74f0794ac37926d115d99ec7e6399dc6a8
 owners:
   - core
 modules:
@@ -629,7 +629,8 @@ sequenceDiagram
 完整字段合同、失败语义、数据流及双Provider实际链路验证见
 [安全字段反馈详设](../changes/m09-r3-safe-tool-argument-feedback.md)及
 [Trusted输入反馈详设](../changes/m09-r3-trusted-input-feedback.md)。共享函数只投影直接object合同，
-引用、组合、条件及不完整元数据使用通用反馈；字段64项/单项64字符，消息2000字符硬上限，
+直接数值字段可补充正式Schema声明的含界/不含界上下限，但不回显越界实际值；各类细节最多8项。
+引用、组合、条件、非有限值及不完整元数据使用原反馈；字段64项/单项64字符，消息2000字符硬上限，
 不截断为误导性的部分字段列表。既有只读工具Schema、版本、批准Fingerprint
 和Session迁移不变，旧失败消息不会被重写。
 
