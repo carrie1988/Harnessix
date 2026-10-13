@@ -55,7 +55,7 @@ from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 
 _AUTOMATED_APPROVAL_ACTOR = "harnessix-swebench-runner"
-_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v7"
+_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v8"
 
 
 class _NoSecrets:
@@ -66,7 +66,7 @@ class _NoSecrets:
 
 
 def build_swebench_agent_prompt(case: SweBenchPublicCase, budget: Budget | None = None) -> str:
-    """只向 Agent 提供预注册公开问题，不暴露 Task Repo 或评分信息。"""
+    """只提供任务和评测边界；通用编码工作流由共享 Runtime Context 持有。"""
 
     budget_note = (
         ""
@@ -74,34 +74,16 @@ def build_swebench_agent_prompt(case: SweBenchPublicCase, budget: Budget | None 
         else (
             f"Hard task limits: {budget.max_tokens} cumulative input-plus-output tokens across "
             f"all requests, {budget.max_steps} model steps, {budget.timeout_seconds:g} seconds. "
-            "Repeated history and tool catalogs count again on every request; this is not a "
-            "per-request token allowance. Plan investigation, patching, tests, possible repair "
-            "and final review within that same total. Avoid repeated equivalent no-match searches; "
-            "follow the public call chain or named symbols instead.\n"
+            "This is not a per-request token allowance; summaries and repeated input count.\n"
         )
     )
     return (
         "You are solving one SWE-bench task in the current repository.\n"
         f"{budget_note}"
-        "Work autonomously and leave the working tree with the smallest correct patch. Start from "
-        "the named symbols and files; use focused grep/read calls rather than broad exploration. "
-        "Batch independent source reads in one response when supported; write and test in order. "
-        "Locate the exact named definition before editing, rather than a similarly named method. "
-        "For a known file prefer read_file with a unique literal anchor and max_lines=60; this "
-        "returns nearby source and full content_sha256 without separate grep/read steps. "
-        "Use focused 40-60 line windows with max_utf8_bytes=4096; expand only for missing "
-        "evidence. Use exact literal grep queries, narrow include/path and max_results=10. "
-        "Reserve repeated input for validation, repair and final review. "
-        "For existing files use exact edit operations with "
-        "unique old_text/new_text anchors; never replace an entire file with an excerpt. After "
-        "patching, select focused relative test targets or repository-native test labels that "
-        "you have actually observed in the public repository. Never guess an exact test node; "
-        "when only the file is known, run that file. Then run the public-tests profile. If a test "
-        "fails, "
-        "diagnose the failure, repair the patch, "
-        "and rerun the public-tests profile; the latest patched state must be retested before "
-        "finishing. After the final test succeeds, inspect the forced git_review status and diff "
-        "evidence. Do not ask questions or use network "
+        "Work autonomously under the runtime coding workflow; leave the smallest correct patch. "
+        "For public-tests, use relative test targets or repository-native labels actually observed "
+        "in this repository. Never guess an exact test node; when only the file is known, run "
+        "that file. Do not ask questions or use network "
         "access, hidden tests, reference patches, hints, or evaluator artifacts.\n\n"
         f"Instance: {case.instance_id}\n"
         f"Repository: {case.repo}\n"

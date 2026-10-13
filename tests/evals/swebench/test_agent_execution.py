@@ -162,25 +162,10 @@ def test_prompt_uses_only_projected_public_case_material() -> None:
 
     assert prompt == (
         "You are solving one SWE-bench task in the current repository.\n"
-        "Work autonomously and leave the working tree with the smallest correct patch. Start from "
-        "the named symbols and files; use focused grep/read calls rather than broad exploration. "
-        "Batch independent source reads in one response when supported; write and test in order. "
-        "Locate the exact named definition before editing, rather than a similarly named method. "
-        "For a known file prefer read_file with a unique literal anchor and max_lines=60; this "
-        "returns nearby source and full content_sha256 without separate grep/read steps. "
-        "Use focused 40-60 line windows with max_utf8_bytes=4096; expand only for missing "
-        "evidence. Use exact literal grep queries, narrow include/path and max_results=10. "
-        "Reserve repeated input for validation, repair and final review. "
-        "For existing files use exact edit operations with "
-        "unique old_text/new_text anchors; never replace an entire file with an excerpt. After "
-        "patching, select focused relative test targets or repository-native test labels that "
-        "you have actually observed in the public repository. Never guess an exact test node; "
-        "when only the file is known, run that file. Then run the public-tests profile. If a test "
-        "fails, "
-        "diagnose the failure, repair the patch, "
-        "and rerun the public-tests profile; the latest patched state must be retested before "
-        "finishing. After the final test succeeds, inspect the forced git_review status and diff "
-        "evidence. Do not ask questions or use network "
+        "Work autonomously under the runtime coding workflow; leave the smallest correct patch. "
+        "For public-tests, use relative test targets or repository-native labels actually observed "
+        "in this repository. Never guess an exact test node; when only the file is known, run "
+        "that file. Do not ask questions or use network "
         "access, hidden tests, reference patches, hints, or evaluator artifacts.\n\n"
         "Instance: owner__repo-42\n"
         "Repository: owner/repo\n"
@@ -212,6 +197,61 @@ def test_prompt_exposes_exact_budget_without_changing_problem_or_task_limits(
     assert "not a per-request token allowance" in prompt
     assert prompt.endswith("Problem statement:\n" + case.problem_statement)
     assert budget.model_dump_json() == frozen
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "Fix the public regression.",
+        "修复跨文件边界。\r\n保留原接口与完整测试。🙂",
+        "Problem statement:\nInstance: literal text\n" + "x" * 10_000,
+    ],
+)
+def test_task_wrapper_is_bounded_without_truncating_or_normalizing_problem(problem: str) -> None:
+    case = build_test_plan().cases[0].model_copy(update={"problem_statement": problem})
+    before = case.model_dump_json()
+    budget = Budget(max_tokens=50_000, max_steps=16, timeout_seconds=900)
+    prompt = build_swebench_agent_prompt(case, budget)
+    prefix, statement = prompt.split("Problem statement:\n", 1)
+
+    assert statement == problem
+    assert case.model_dump_json() == before
+    assert len(prefix.split("Instance: ", 1)[0].encode("utf-8")) <= 800
+    assert f"Instance: {case.instance_id}\nRepository: {case.repo}\n" in prefix
+    assert f"Base commit: {case.base_commit}\n" in prefix
+    assert "summaries and repeated input count" in prefix
+    assert "runtime coding workflow" in prefix
+    assert "actually observed" in prefix and "Never guess an exact test node" in prefix
+    assert (
+        "network access, hidden tests, reference patches, hints, or evaluator artifacts" in prefix
+    )
+    assert not any(field in prefix for field in ("max_lines=", "old_text/new_text", "git_review"))
+
+
+async def test_compact_task_composes_with_unchanged_authoritative_coding_context(tmp_path: Path):
+    from harnessix.context.contracts import ContextBuildInput
+    from harnessix.product_config.agent_context import build_product_agent_context
+
+    policy = build_product_agent_context(tmp_path, require_pre_edit_profile=False)
+    prepared = await policy.context.prepare(
+        ContextBuildInput(
+            thread_id=uuid4(), turn_id=uuid4(), model_step=1, workspace=str(tmp_path)
+        ),
+        CancelToken(),
+    )
+    assert prepared.instructions is not None
+    assert all(
+        rule in prepared.instructions
+        for rule in (
+            "runtime_instruction outranks project instructions",
+            "max_utf8_bytes=4096",
+            "After every successful patch, call the forced",
+            "Only process_nonzero_exit opens diagnosis and correction",
+            "expected_sha256 is read_file",
+            "use git_review when available",
+            "uncertain effects, do not replay effects or fake completion",
+        )
+    )
 
 
 def test_valid_workspace_patch_batch_is_approved(tmp_path: Path) -> None:
@@ -412,7 +452,15 @@ def test_request_projection_fails_closed_for_duplicate_or_unplanned_turns(
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "defect",
-    ["none", "thread_missing", "thread_drift", "turn_missing", "turn_drift", "nonterminal"],
+    [
+        "none",
+        "thread_missing",
+        "thread_drift",
+        "turn_missing",
+        "turn_drift",
+        "nonterminal",
+        "prompt_revision",
+    ],
 )
 async def test_frozen_terminal_replay_never_creates_or_resumes_an_attempt(tmp_path, defect):
     plan = build_test_plan()
@@ -434,6 +482,16 @@ async def test_frozen_terminal_replay_never_creates_or_resumes_an_attempt(tmp_pa
     elif defect == "nonterminal":
         thread = thread.model_copy(
             update={"turns": (turn.model_copy(update={"status": TurnStatus.ACCEPTED}),)}
+        )
+    elif defect == "prompt_revision":
+        thread = thread.model_copy(
+            update={
+                "turns": (
+                    turn.model_copy(
+                        update={"request_id": request.replace(_PROMPT_VERSION, "old-prompt")}
+                    ),
+                )
+            }
         )
 
     class Owner:
@@ -462,7 +520,11 @@ async def test_frozen_terminal_replay_never_creates_or_resumes_an_attempt(tmp_pa
     else:
         with pytest.raises(KernelError) as caught:
             await replay()
-        assert caught.value.code == "swebench_case_evidence_mismatch"
+        assert caught.value.code == (
+            "swebench_run_projection_invalid"
+            if defect == "prompt_revision"
+            else "swebench_case_evidence_mismatch"
+        )
 
 
 @pytest.mark.asyncio
