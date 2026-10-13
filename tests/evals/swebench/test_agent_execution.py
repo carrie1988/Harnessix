@@ -166,6 +166,8 @@ def test_prompt_uses_only_projected_public_case_material() -> None:
         "the named symbols and files; use focused grep/read calls rather than broad exploration. "
         "Batch independent source reads in one response when supported; write and test in order. "
         "Locate the exact named definition before editing, rather than a similarly named method. "
+        "For a known file prefer read_file with a unique literal anchor and max_lines=60; this "
+        "returns nearby source and full content_sha256 without separate grep/read steps. "
         "Use focused 40-60 line windows with max_utf8_bytes=4096; expand only for missing "
         "evidence. Use exact literal grep queries, narrow include/path and max_results=10. "
         "Reserve repeated input for validation, repair and final review. "

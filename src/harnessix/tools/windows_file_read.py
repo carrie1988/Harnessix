@@ -20,7 +20,12 @@ from harnessix.tools.contracts import (
     ReadFileSnapshotOutput,
     ReadToolError,
 )
-from harnessix.tools.files import _check_revision, _decode
+from harnessix.tools.files import (
+    _check_revision,
+    _decode,
+    _require_visible_anchor,
+    _resolve_read_anchor,
+)
 from harnessix.tools.windows_read_port import (
     Observation,
     WindowsReadPort,
@@ -142,10 +147,12 @@ def _read_file_page(
         raise ReadToolError("io_failed")
     revision = file_revision(port, path, observed)
     _check_revision(args.expected_revision, revision)
+    with io.BytesIO(observed.content) as stream:
+        args, anchor_line = _resolve_read_anchor(stream, args, operation)
     lines, returned, line_number, reason = _read_lines(observed.content, args, operation)
     if not lines and (args.start_line > 1 or line_number > 0):
         raise ReadToolError("offset_out_of_range")
-    return ReadFileOutput(
+    page = ReadFileOutput(
         path=args.path,
         text="".join(lines),
         start_line=args.start_line,
@@ -156,6 +163,8 @@ def _read_file_page(
         truncation_reason=reason,
         next_line=args.start_line + len(lines) if reason else None,
     )
+    _require_visible_anchor(page, anchor_line)
+    return page
 
 
 def read_file_snapshot(

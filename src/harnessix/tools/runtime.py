@@ -33,7 +33,7 @@ from harnessix.tools.contracts import (
     ListFilesOutput,
     ReadContract,
     ReadFileInput,
-    ReadFileInputV2,
+    ReadFileInputV3,
     ReadFileOutput,
     ReadFileSnapshotOutput,
     ReadToolError,
@@ -108,10 +108,12 @@ _BINDINGS = (
     ),
     _ReadBinding(
         "read_file",
-        "读取UTF-8文本范围；可直接指定start_line，若需与先前观察保持同一版本则传revision。"
+        "读取UTF-8文本范围；已知文件可用唯一字面anchor及lines_before定位并取得完整摘要，"
+        "无需先grep猜行号；不唯一时明确失败。也可直接指定start_line；"
+        "expected_revision绑定先前观察。"
         "digest_status=complete时，content_sha256是完整"
         "文件摘要，可作Patch expected_sha256；max_utf8_bytes限制本页文本，整行分页；不跟随链接",
-        ReadFileInputV2,
+        ReadFileInputV3,
         ReadFileSnapshotOutput,
     ),
     _ReadBinding(
@@ -487,7 +489,12 @@ class CodingToolRuntime:
             else:
                 output = await cancel.run(self._execute_read(args, capture=capture))
         except ReadToolError as error:
-            return self._failure(call, f"tool_{error.code}", "工作区读取未完成")
+            message = {
+                "anchor_not_found": "文件中没有该字面锚点；核对文件或改用窄范围grep定位",
+                "anchor_ambiguous": "字面锚点不唯一；使用更具体的锚点或grep返回的行号",
+                "anchor_outside_page": "文本页未覆盖锚点；减小lines_before或增大页容量",
+            }.get(error.code, "工作区读取未完成")
+            return self._failure(call, f"tool_{error.code}", message)
         except OSError as error:
             code = {
                 errno.ENOENT: "not_found",

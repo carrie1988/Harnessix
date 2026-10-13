@@ -53,7 +53,7 @@ async def test_shared_instructions_define_observed_failure_recovery(
     assert len(runtime) == 1
     assert runtime[0]["content"] == CODING_INSTRUCTIONS
     assert required in " ".join(runtime[0]["content"].split())
-    assert runtime[0]["source"] == "harnessix.coding-instructions/v21"
+    assert runtime[0]["source"] == "harnessix.coding-instructions/v22"
 
 
 def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_path: Path) -> None:
@@ -128,7 +128,7 @@ async def test_new_and_reopened_turns_publish_same_versioned_instructions(
         fragments = json.loads(sent_instructions)["fragments"]
         fragment = next(part for part in fragments if part["kind"] == "runtime_instruction")
         assert fragment["source"] == CODING_INSTRUCTIONS_VERSION
-        assert fragment["source"] == "harnessix.coding-instructions/v21"
+        assert fragment["source"] == "harnessix.coding-instructions/v22"
         assert fragment["trust"] == "runtime" and fragment["content"] == CODING_INSTRUCTIONS
         fingerprint = hashlib.sha256(sent_instructions.encode()).hexdigest()
         assert turn.context_inspections[0].instruction_fingerprint == fingerprint

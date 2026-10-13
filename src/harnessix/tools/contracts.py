@@ -52,6 +52,31 @@ class ReadFileInputV2(ReadFileInput):
     )
 
 
+class ReadFileInputV3(ReadFileInputV2):
+    """可从唯一字面锚点定位文本页；未指定时仍是原有按行读取。"""
+
+    anchor: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=256,
+        description="已知文件中的唯一、大小写敏感单行字面量；不是正则，不猜行号",
+    )
+    lines_before: int = Field(default=0, ge=0, le=40)
+
+    @model_validator(mode="after")
+    def validate_anchor(self) -> Self:
+        if self.anchor is None:
+            if self.lines_before:
+                raise ValueError("lines_before只可与anchor同时使用")
+        elif (
+            self.start_line != 1
+            or len(self.anchor.encode("utf-8")) > 256
+            or any(ord(char) < 32 or ord(char) == 127 for char in self.anchor)
+        ):
+            raise ValueError("anchor必须是有界单行字面量，且不能同时指定start_line")
+        return self
+
+
 class DirectoryEntry(ReadContract):
     name: str = Field(min_length=1, max_length=255)
     kind: Literal["file", "directory", "symlink", "special"]
@@ -133,6 +158,9 @@ ReadErrorCode = Literal[
     "workspace_changed",
     "page_changed",
     "offset_out_of_range",
+    "anchor_not_found",
+    "anchor_ambiguous",
+    "anchor_outside_page",
     "io_failed",
     "timeout",
 ]

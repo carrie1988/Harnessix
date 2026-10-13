@@ -16,7 +16,7 @@ from harnessix.context.sources import (
     WorkspaceContextSource,
 )
 
-CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v21"
+CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 
 _CODING_INSTRUCTIONS_PREFIX = """Reply in the user's language.
@@ -43,7 +43,10 @@ _POST_PATCH_ONLY_PROFILE_WORKFLOW = (
     "2. With post-patch-only validation, run_profile stays hidden before the first patch. Use "
     "focused reads, locating the exact named definition before editing; do not guess line "
     "numbers.\n"
-    "Start with 40-60 line windows and max_utf8_bytes=4096; expand only for missing evidence. "
+    "For a known file, use read_file anchor with a unique literal definition, lines_before=0 "
+    "and max_lines=60 to get source plus full content_sha256 in one call; on ambiguous anchor "
+    "use grep or a more specific literal. Start with 40-60 line windows and max_utf8_bytes=4096; "
+    "expand only for missing evidence. "
     "For grep use an exact literal symbol, narrow include/path and max_results=10; glob "
     "locates filenames, grep is not regex. Batch independent focused reads, not whole files. "
     "Reserve repeated input for patch, tests, repair and final review.\n"

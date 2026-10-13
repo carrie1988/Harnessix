@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import httpx
@@ -21,8 +22,9 @@ from tests.patches.test_kernel_patch import approval_of, decide, results
 
 
 @pytest.mark.parametrize("vendor", ["openai", "anthropic"])
+@pytest.mark.parametrize("anchored", [False, True])
 async def test_sdk_read_patch_approval_reopen_readback_and_wire_privacy(
-    case, tmp_path, monkeypatch, vendor
+    case, tmp_path, monkeypatch, vendor, anchored
 ):
     source, factory, copy = case
     monkeypatch.setenv("HARNESSIX_PATCH_FIXTURE_KEY", "offline-fixture-not-a-credential")
@@ -48,6 +50,8 @@ async def test_sdk_read_patch_approval_reopen_readback_and_wire_privacy(
         output = tool_outputs(body)
         if index in (1, 3):
             name, args = "read_file", {"path": "main.py"}
+            if index == 1 and anchored:
+                args["anchor"] = "before"
             if index == 3:
                 assert (
                     output[-1]["outcome"] == "succeeded"
@@ -55,6 +59,9 @@ async def test_sdk_read_patch_approval_reopen_readback_and_wire_privacy(
                 )
         elif index == 2:
             assert output[-1]["output"]["text"] == "before\r\n"
+            assert (
+                output[-1]["output"]["content_sha256"] == hashlib.sha256(b"before\r\n").hexdigest()
+            )
             name, args = (
                 "apply_patch",
                 {

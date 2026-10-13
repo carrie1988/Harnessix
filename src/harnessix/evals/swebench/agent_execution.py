@@ -55,7 +55,7 @@ from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 
 _AUTOMATED_APPROVAL_ACTOR = "harnessix-swebench-runner"
-_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v6"
+_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v7"
 
 
 class _NoSecrets:
@@ -87,6 +87,8 @@ def build_swebench_agent_prompt(case: SweBenchPublicCase, budget: Budget | None 
         "the named symbols and files; use focused grep/read calls rather than broad exploration. "
         "Batch independent source reads in one response when supported; write and test in order. "
         "Locate the exact named definition before editing, rather than a similarly named method. "
+        "For a known file prefer read_file with a unique literal anchor and max_lines=60; this "
+        "returns nearby source and full content_sha256 without separate grep/read steps. "
         "Use focused 40-60 line windows with max_utf8_bytes=4096; expand only for missing "
         "evidence. Use exact literal grep queries, narrow include/path and max_results=10. "
         "Reserve repeated input for validation, repair and final review. "

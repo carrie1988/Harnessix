@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
-from typing import Literal
+from typing import BinaryIO, Literal
 
 from harnessix.tools.contracts import (
     MAX_DIRECTORY_ENTRIES,
@@ -17,6 +17,7 @@ from harnessix.tools.contracts import (
     ListFilesOutput,
     ReadFileInput,
     ReadFileInputV2,
+    ReadFileInputV3,
     ReadFileOutput,
     ReadFileSnapshotOutput,
     ReadToolError,
@@ -100,8 +101,58 @@ def read_file(
     with workspace.open(args.path, operation, directory=False) as fd:
         revision = digest((workspace.scope, args.path, revision_state(os.fstat(fd))))
         _check_revision(args.expected_revision, revision)
+        args, anchor_line = _resolve_fd_anchor(fd, args, operation)
         result = _read_file_page(fd, args, revision, operation)
+        _require_visible_anchor(result, anchor_line)
     return result
+
+
+def _resolve_read_anchor(
+    stream: BinaryIO, args: ReadFileInput, operation: ReadOperation
+) -> tuple[ReadFileInput, int | None]:
+    """完整有界扫描才能证明唯一；重复、非法尾部和取消都不返回部分成功。"""
+    if not isinstance(args, ReadFileInputV3) or args.anchor is None:
+        return args, None
+    found = None
+    scanned = number = 0
+    while True:
+        operation.checkpoint()
+        raw = stream.readline(min(MAX_LINE_BYTES + 1, MAX_SCAN_BYTES - scanned + 1))
+        scanned += len(raw)
+        if scanned > MAX_SCAN_BYTES or len(raw) > MAX_LINE_BYTES:
+            raise ReadToolError("limit_exceeded")
+        if not raw:
+            break
+        number += 1
+        text = _decode(raw)
+        offset = text.find(args.anchor)
+        if offset >= 0:
+            if found is not None or text.find(args.anchor, offset + 1) >= 0:
+                raise ReadToolError("anchor_ambiguous")
+            found = number
+    if found is None:
+        raise ReadToolError("anchor_not_found")
+    return args.model_copy(
+        update={"start_line": max(1, found - args.lines_before), "anchor": None, "lines_before": 0}
+    ), found
+
+
+def _resolve_fd_anchor(
+    fd: int, args: ReadFileInput, operation: ReadOperation
+) -> tuple[ReadFileInput, int | None]:
+    if not isinstance(args, ReadFileInputV3) or args.anchor is None:
+        return args, None
+    with os.fdopen(fd, "rb", buffering=8192, closefd=False) as stream:
+        resolved = _resolve_read_anchor(stream, args, operation)
+    os.lseek(fd, 0, os.SEEK_SET)
+    return resolved
+
+
+def _require_visible_anchor(page: ReadFileOutput, anchor_line: int | None) -> None:
+    if anchor_line is not None and not (
+        page.end_line is not None and page.start_line <= anchor_line <= page.end_line
+    ):
+        raise ReadToolError("anchor_outside_page")
 
 
 def _read_file_page(
@@ -183,7 +234,11 @@ def read_file_snapshot(
         if observed.st_size <= MAX_SCAN_BYTES:
             content_sha256 = _complete_content_digest(fd, observed.st_size, operation)
             os.lseek(fd, 0, os.SEEK_SET)
+        args, anchor_line = _resolve_fd_anchor(fd, args, operation)
         page = _read_file_page(fd, args, revision, operation)
+        _require_visible_anchor(page, anchor_line)
+        if revision_state(observed) != revision_state(os.fstat(fd)):
+            raise ReadToolError("workspace_changed")
         result = ReadFileSnapshotOutput(
             **page.model_dump(),
             file_bytes=observed.st_size,
