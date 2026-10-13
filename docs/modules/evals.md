@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 47
-code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
+version: 48
+code_revision: 32e3dca8a213e75301c441159e4386f0fe6c8b6e
 owners:
   - core
 modules:
@@ -2467,3 +2467,11 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 [新计划](../../benchmarks/swebench/verified-25-v25/plan.json)保留原25项及50K/16次限制；
 本轮完整官方评分4/25，空补丁16，补丁应用失败0；3项模糊失败使基础设施验收仍开放。
 不能把宿主239项通过、838项回归或9次有效摘要当成Resolved提升；新轮结论NO_GO。
+
+### v27定位与读取合并候选
+
+Agent prompt v7复用正式read_file唯一锚点能力。
+[新计划](../../benchmarks/swebench/verified-25-v27/plan.json)仅更新源码身份，保留Case顺序、
+全部模型配置、50K/16次含摘要及900秒；新Root／pass@1，无旧Case恢复或拼分。
+[预检](../../benchmarks/swebench/verified-25-v27/preflight.json)与
+[依据及结果边界](../changes/swebench-adapter-verified-25-pilot.md#v27候选已知文件的唯一锚点源码页)分开记录。

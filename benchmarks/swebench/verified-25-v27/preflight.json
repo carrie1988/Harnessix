@@ -1,0 +1,59 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T14:45:18.097151+00:00",
+  "plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "source_revision": "32e3dca8a213e75301c441159e4386f0fe6c8b6e",
+  "evaluation_scope": "development_set",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "runtime_changes": [
+    "single owned-FD unique literal anchor read with original snapshot SHA",
+    "explicit ambiguity, absence and invisible-anchor failures; legacy input v1/v2 unchanged"
+  ],
+  "profile_version": "swebench-public-tests-v7",
+  "profiles_count": 25,
+  "execution_config_version": "harnessix.swebench-agent-run-config/v4",
+  "execution_fingerprint": "badaedefa53e73b16e1246d127fa229af14fa4cfb1efa4979b888cce8d4edcaa",
+  "budget_pressure_compaction": true,
+  "production_default_budget_pressure_compaction": false,
+  "regression": {
+    "tests": 677,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 35
+  },
+  "focused_regression": {
+    "tests": 46,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failure_boundary": "four unchanged Apple Git 2.24.3 init --object-format failures; earlier retry and official infrastructure gates remain open",
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "contracts": "PASS",
+  "ruff_changed_files": "PASS",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "period_limit_amount": "200",
+  "available_before_allocation_amount": "148.619576",
+  "maximum_run_allocation_amount": "124",
+  "worst_case_amount": "123.6864",
+  "execution_run_directory": "runs/agent-8b93c41d6c44-v27",
+  "execution_status": "FROZEN_NOT_STARTED",
+  "model_retry_policy": "none",
+  "disk_guard": {
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 24152682496
+  },
+  "price_source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+  "price_observed_at": "2026-10-13T09:18:58+00:00",
+  "evidence_sha256": {
+    "v27-tools-consumers-final.xml": "51cf9fed0fa036d33b30fee34ea553e7f50c7434292f09281d34fc05ff89dfe7",
+    "v27-anchor-final-r2.xml": "5709f5eb852812f3cff0a0e7e63c119bb75083e6525c66e4ba1001ec1b1af848",
+    "v27-mypy-final.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
+    "v27-anchor-counterfactual.json": "0c9b9c7b4a83945e81ed63e53fed820b763fdeaee9522417a5838becc07c7951",
+    "v26-search-observation.json": "c29163feabbb63d4cdeb2c117d7bcd8ff01c9c765525318e3ae224f9e2090c73",
+    "v26-scan-limit-observation.json": "085ab3a8db3b6036bd497a8e798227f26e298014b70d6d513133fb666ed5d456"
+  }
+}

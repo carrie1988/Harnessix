@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 117
-code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
+version: 118
+code_revision: 32e3dca8a213e75301c441159e4386f0fe6c8b6e
 owners:
   - core
 modules:
@@ -2939,3 +2939,9 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 ### 当前增量：v9通用顺序与确定准备拒绝
 
 共享编码指令v9先确认路径并观察适用Profile的修改前基线，再直接定位给定路径；保留原Context、累计预算、审批、安全和最终验证约束。内置Patch Review仅给原Planner证明的no-op绑定Plan，并复核replace／SHA／正文摘要／mode；它不是任意同码回调降级，也不绕过完整差异审批。设计、实际旧失败及安装证据见[第14节](../changes/m09-r3-coding-workflow-instructions.md#14-固定审批拒绝不得扩大成suite宿主崩溃)。R4文件探针只纠正无I/O checkpoint的测量归类，[真实I/O负控](../changes/m09-r4-git-checkpoint-preparation.md)不改变生产权限。
+
+### v22已知文件唯一锚点读取
+
+共享post-patch-only指令建议用唯一字面锚点取得源码页和完整摘要；歧义仍回退到更具体的
+锚点或窄范围grep，不增加调查次数限制、不强迫提前Patch、不跳过Profile或Review。
+[契约与失败边界](tools.md#唯一锚点源码页输入v3)，[冻结验证](../../benchmarks/swebench/verified-25-v27/preflight.json)。

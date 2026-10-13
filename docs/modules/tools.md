@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
+version: 16
+code_revision: 32e3dca8a213e75301c441159e4386f0fe6c8b6e
 owners:
   - core
 modules:
@@ -1099,3 +1099,18 @@ Windows pipe 的 raw 数量、SHA 和 EOF 来自同次原 Owner v2 回执；
 [详细设计](../changes/m09-r4-authenticated-raw-git-observation.md)。
 本机模拟通过只证明相应合同；Windows 原生 CRT/Job/Git、完整备份恢复和消费者安装须分别取得证据。
 EOF、安全文件完整性或 macOS 通过均不能单独证明 Windows 原始 Git 基准成功。
+
+### 唯一锚点源码页（输入v3）
+
+已知文件可用`read_file(anchor="def target(", max_lines=60, max_utf8_bytes=4096)`一次取得
+定位后的代码页与完整`content_sha256`，不必先grep再读。`anchor`是唯一、大小写敏感的单行字面量
+（UTF-8最多256字节）；`lines_before`为0～40，不能与非默认`start_line`混用。
+同一FD／原生稳定观察内完整扫描最多2 MiB，再沿用原分页与摘要合同；不猜测重名定义。
+未找到、重复（含同一行重叠出现）、页容量未覆盖锚点，分别为`tool_anchor_not_found`、
+`tool_anchor_ambiguous`、`tool_anchor_outside_page`。非法尾部、超长行、变化、取消和期限仍失败。
+原输入v1/v2及输出快照v1保持，新输入[Schema](../../spec/read-file-input-v3.schema.json)
+改变Tool指纹；不复用旧批准，不改持久事件。实现见
+[`_resolve_read_anchor`](../../src/harnessix/tools/files.py)、
+[`ReadFileInputV3`](../../src/harnessix/tools/contracts.py)，
+[边界测试](../../tests/tools/test_read_anchor.py)及
+[双SDK审批与重放](../../tests/patches/test_kernel_patch_sdk.py)。
