@@ -1,0 +1,30 @@
+{
+  "schema": "harnessix.swebench-development-diagnostic-summary/v1",
+  "plan_sha256": "8353a3e0619c7b5da59b92c6080eb82993d0c714806fd0fbfe77d18996a460d7",
+  "source_revision": "432a6988eca02f6317aa6296e4f169ee08d39a01",
+  "evaluation_scope": "development_set",
+  "inference_requests": 0,
+  "authenticated_terminal_cases": 25,
+  "native_database_and_case_state_unchanged": true,
+  "budget_admission_failures": 14,
+  "provider_transport_failures": 10,
+  "provider_contract_failures": 1,
+  "transport_diagnostic_code": "httpx_connect_failure",
+  "read_pages": 41,
+  "explicitly_bounded_4096_byte_reads": 39,
+  "search_calls": 65,
+  "explicit_10_result_searches": 27,
+  "tool_calls": {
+    "grep": 65,
+    "read_file": 41,
+    "apply_patch_batch": 3,
+    "run_profile.public-tests": 1
+  },
+  "completed_autonomous_coding_cases": 0,
+  "patch_application_failures": 0,
+  "official_ambiguous_failures": 1,
+  "decision": "NO_GO: target not met; connectivity faults retained, and surviving cases still exhaust input budget. Bounded reads entered the real chain but there is no demonstrated quality benefit.",
+  "next_investigation": "source-locating efficiency and repeated input cost; no ungrounded patch forcing, no empirical token division, no case-specific rules; connection health is not inference stability",
+  "diagnostic_original_sha256": "bc60e736094212a407f6b16b994c6feddb18ea93d60c7644c586bed7100c7e17",
+  "official_evidence_sha256": "d43803cd535d48eaa622ed19a87ff63b47e8019bcc055042b9f6473387002d21"
+}

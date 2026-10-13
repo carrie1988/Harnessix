@@ -40,7 +40,7 @@
   "maximum_run_allocation_amount": "124",
   "worst_case_amount": "123.6864",
   "execution_run_directory": "runs/agent-8353a3e0619c-v26",
-  "execution_status": "FROZEN_NOT_STARTED",
+  "execution_status": "COMPLETED_TARGET_NOT_MET",
   "model_retry_policy": "none",
   "disk_guard": {
     "minimum_free_bytes": 10737418240,
@@ -58,9 +58,21 @@
     "v26-wrapper-probe.json": "99d858183c0274ac623fabb588769d4f6c53bffdee969700d3d99343111f518c",
     "v26-secret-scan.log": "0a0e2665592d7cf0cee2d2dd14944f050fb3c84d64c6b9054454c60f9844695e",
     "v26-documentation-r2.json": "766aed00a71f537deea49d0d79a2de52272a397a0d9985fdd57591adb9c5ebac",
-    "v26-host-preflight.json": "e349d1c97606f3392a6fd03b44f823e59265fcffcb7b2a9826799c82c88d99bb"
+    "v26-host-preflight.json": "e349d1c97606f3392a6fd03b44f823e59265fcffcb7b2a9826799c82c88d99bb",
+    "v26-behavior-observation.json": "bc60e736094212a407f6b16b994c6feddb18ea93d60c7644c586bed7100c7e17",
+    "v26-models-connectivity-check.json": "c08d78dfd12e035b56c4e58405fef72ca7bf68d80e35b736616455cd55925118",
+    "v26-official-verified.json": "9dbb1c90d8fd29a5318f2d74f7dbde9dd328259b6b95588c16aa064182c1175c",
+    "v26-results-documentation.json": "204afce66451123a9b1b40a6d0dd56ea1ad6f31ce3cd56002bdc7e28cb1803aa",
+    "v26-results-secret-scan.log": "29865b566065bd52d319727cdf9ee8fb510571a77b6bd876bcdb4dca9e2e2702"
   },
-  "official_score": null,
+  "official_score": {
+    "resolved_cases": 2,
+    "submitted_cases": 25,
+    "empty_patch_cases": 22,
+    "error_cases": 0,
+    "infrastructure_failures": 0,
+    "ambiguous_failures": 1
+  },
   "transport_probe": {
     "checked_at": "2026-10-13T14:06:27.952354+00:00",
     "inference_requests": 0,
@@ -71,8 +83,12 @@
   },
   "documentation_check": {
     "document_count": 651,
-    "link_count": 14667,
+    "link_count": 14670,
     "mermaid_count": 1173,
     "findings": []
-  }
+  },
+  "patch_application_failures": 0,
+  "known_cost_upper_amount": "7.891056",
+  "reserved_cost_amount": "31.47456",
+  "settlement": "complete authenticated native usage retained; unknown requests fully reserved, not billed cost"
 }
