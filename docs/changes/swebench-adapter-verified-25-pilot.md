@@ -213,5 +213,10 @@ Token阻断的根因还包含重复发送完整历史：v13首个Case实际累�
 本轮范围是失败隔离和调查流程，不将离线回归或预算结算当作Resolved。
 v14完整执行结果见[执行摘要](../../benchmarks/swebench/verified-25-v14/execution-summary.json)：
 25个Case全部尝试，3个Turn完整闭环，10个非空Patch、15个空Patch；17个预算失败、5个已结算模型契约失败。
-这些失败未触发同Case重试，也没有被计入成功。官方评分正在重建固定Task Repo的10个非空Patch镜像，
-Resolved及基础设施失败数尚未发布。本周期累计计价上界12.518928元，全部请求已计量，无未决预留。
+这些失败未触发同Case重试，也没有被计入成功。
+[官方首轮摘要](../../benchmarks/swebench/verified-25-v14/official-summary-initial.json)经独立导入校验：
+Resolved 3/25、空Patch 15/25、8个完成评分、2个错误，未达标。
+两项错误来自Docker并行构建期间Conda内存不足；虽然官方“likely infrastructure”字段为0，
+这不能解释为环境无故障。保留原失败，以同一份冻结prediction在新目录串行重建及评分，
+不增加模型请求、不替换Patch、不挑选最优Case结果。
+本周期累计计价上界12.518928元，全部请求已计量，无未决预留；不是账单实扣金额。

@@ -1,0 +1,28 @@
+{
+  "ambiguous_failures": 3,
+  "artifact_files": 42,
+  "artifacts_sha256": "f07a5367a3988b071f985717adffaff49b888b0d14db9c1f4ac44223fe1f669f",
+  "completed_cases": 8,
+  "empty_patch_cases": 15,
+  "error_cases": 2,
+  "infrastructure_failures": 0,
+  "official_results_sha256": "7ed6963f5bbf43e75d96c7512262b80fa05d01ed071976041d601aaa403066e7",
+  "plan_sha256": "5f5d723707c4cded215bf1d865618decd96c2d281d7817524f82bf8c860a52d7",
+  "predictions_sha256": "e6849541e35a09586c59f8538fe1832ffd973aeb1a11efd5867e890301eec615",
+  "reason": "completed",
+  "resolved_cases": 3,
+  "run_id": "harnessix-5f5d723707c4-e6849541e35a",
+  "spec_version": "harnessix.swebench-evaluation-summary/v1",
+  "submitted_cases": 25,
+  "unresolved_cases": 5,
+  "evaluation_scope": "development_set",
+  "gate_status": "FAIL",
+  "build_failures": 2,
+  "build_failure_cause": "Docker BuildKit/Conda out of memory; missing images, original failure retained",
+  "quality_target": {
+    "resolved_minimum": 22,
+    "empty_patch_maximum": 2,
+    "patch_application_failures_maximum": 0,
+    "infrastructure_failures_maximum": 0
+  }
+}
