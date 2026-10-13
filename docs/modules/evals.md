@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 42
-code_revision: 30201490ae1ab4338bd14f519e67a685dd63c8e2
+version: 43
+code_revision: 1a0c8bd536c3254c862a847071cda016f4e0d93c
 owners:
   - core
 modules:
@@ -137,8 +137,11 @@ Patch网关非空不足以证明容器执行能力；缺失时以`eval_task_pack
 
 [`agent_execution`](../../src/harnessix/evals/swebench/agent_execution.py)使用冻结Budget生成任务提示，
 装配只读公开测试Profile和正式Runtime；不读取隐藏测试或参考Patch。
-[`execution`](../../src/harnessix/evals/swebench/execution.py)只隔离已完整计费、带响应身份的
-模型协议质量失败；未知费用、传输故障或未结算工具仍停止整轮，失败Case不重试。
+[`execution`](../../src/harnessix/evals/swebench/execution.py)保留已完整计费、带响应身份的
+模型协议质量失败。v2仍在未知费用/传输故障时停止；显式v3/v4仅隔离可证明闭合的终态传输故障，
+每项未知请求足额预留，未知工具效果等仍停止，失败Case不重试。
+[`run_config`](../../src/harnessix/evals/swebench/run_config.py)的v4候选显式启用预算压力窗口，
+v2/v3原字节与默认关闭不变；CLI恢复时拒绝激活策略漂移，不静默升级旧轮。
 每次源码改变重新冻结计划并使用新副本，未尝试Case不计成功；部分运行不生成完整官方分数。
 初始化、物化和下一新Case前的磁盘门禁保留10 GiB余量，运行宿主另做监控，不删除原始证据。
 当前结果和专项/扩大回归的完整边界见[SWE-bench变更设计](../changes/swebench-adapter-verified-25-pilot.md)。

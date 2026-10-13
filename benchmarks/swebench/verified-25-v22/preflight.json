@@ -1,0 +1,85 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T12:08:45.252061+00:00",
+  "plan_sha256": "9029e3ed9f516bdd5f2c95db07bd06f3439ed3779a45ad6cc48efab0a20e48ec",
+  "source_revision": "1a0c8bd536c3254c862a847071cda016f4e0d93c",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "evaluation_scope": "development_set",
+  "prompt_version": "harnessix.swebench-agent-prompt/v5",
+  "runtime_changes": [
+    "generic amortized budget window and explicit summary capacity",
+    "phase catalog and context prepayment equality; cancel and drift before next main request"
+  ],
+  "execution_config_version": "harnessix.swebench-agent-run-config/v4",
+  "context_budget_policy": "amortized_pressure_window",
+  "budget_pressure_compaction": true,
+  "production_default_budget_pressure_compaction": false,
+  "execution_fingerprint": "6a76f3288f5e5e05ddddcbb15757ec5df5951a8535e7be704a8e2f0c6caba749",
+  "final_focused_pytest": {
+    "passed": 400,
+    "failed": 0
+  },
+  "broad_regression": {
+    "tests": 2768,
+    "passed": 2763,
+    "skipped": 1,
+    "failed": 4,
+    "status": "OPEN: four original retry failures independently reproduced",
+    "baseline_revision": "fbf2bd820b131acadbd0340f214d4af8d268fcaa"
+  },
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "ruff_changed_files": "PASS",
+  "contracts": "PASS",
+  "disk_guard": {
+    "status": "PASS",
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 41686401024
+  },
+  "profiles_count": 25,
+  "profile_drift": false,
+  "profiles_sha256": "cda7c69d724c7ef5f436f78d65267045872c199771d6afbb2fc4afea669443fb",
+  "profiles_digest_encoding": "sorted compact JSON list of complete profile bindings",
+  "transport_probe": {
+    "checked_at": "2026-10-13T12:05:57.613829+00:00",
+    "inference_requests": 0,
+    "profile_count": 25,
+    "profile_drift": false,
+    "requests": [
+      {
+        "status": 200
+      },
+      {
+        "status": 200
+      },
+      {
+        "status": 200
+      }
+    ]
+  },
+  "original_infrastructure_acceptance": "OPEN: missing dependency ambiguity and old zero collection failure",
+  "budget_period_id": "d13d33cb-8093-4e94-9253-5b78b2e201ad",
+  "period_limit_amount": "100",
+  "known_cost_upper_amount": "71.92662",
+  "prior_unaccounted_reserved_amount": "15.73728",
+  "maximum_run_allocation_amount": "12.3361",
+  "next_case_admission_amount": "4.947456",
+  "model_retry_policy": "none",
+  "official_score": null,
+  "execution_run_directory": "runs/agent-9029e3ed9f51-v22",
+  "execution_status": "FROZEN_NOT_STARTED",
+  "price_source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+  "price_observed_at": "2026-10-13T09:18:58+00:00",
+  "evidence_log_sha256": {
+    "v23-final-focused-r2.xml": "1fda57e9391c52b834db36172eac51944b5713468b1118566fa72fb2b682b351",
+    "v23-final-expanded-r2.xml": "2c998aea450860621406bf7c227cb363318de2848272732b2ddae03678375e56",
+    "v23-final-mypy-r2.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
+    "v23-final-contracts.log": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+    "v23-host-preflight.json": "8b6b797b786049a6966e8cd5e2489dbc4440fe460cfffaa940d77d4db3804aef",
+    "v23-documentation-final.json": "4c2775ce72166b6f7cf22753c9da910df6eb007d702b3aa2a152cad8fc25ec38",
+    "v23-before-change-retry.xml": "d8c3cb817bf6a825eceeee829302d13c8be870d80ab10b0334cdab5ad437ee95",
+    "v23-before-change-retry.log": "1b7016162ed51e2b1de1ec8f59b5976232004bc75f96d5ed183b1b97ecfca56d"
+  }
+}

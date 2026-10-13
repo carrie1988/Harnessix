@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: e27473af9b2c773ae2970d2e5cb31373ffaa9d97
+version: 9
+code_revision: 1a0c8bd536c3254c862a847071cda016f4e0d93c
 owners:
   - core
 modules:
@@ -80,7 +80,11 @@ Provider生命周期，仍经过取消、deadline、凭据出站保护及完整�
 不是实际Token或账单节省保证。不再固定将摘要预留压到1024；实际输出容量进入摘要指令和SDK请求。
 截断响应先核验尝试与用量，再拒绝窗口激活；不接受半截摘要、不重试，不改变原Turn上限。
 
-预算压力路径仍需`budget_pressure_compaction=True`，没有默认进入产品或SWE-bench执行。
+预付Context和实际Context使用相同的阶段工具目录及规范JSON编码，不把不可见注册项计入本步骤。
+`PreparedHistoryStep.budget_tool_selection`是深拷贝的单步临时快照，不新增持久字段；摘要后目录、
+Schema或选择约束漂移在下一付费主请求前失败。
+预算压力路径仍需`budget_pressure_compaction=True`；产品和旧SWE-bench v2/v3默认关闭，
+仅新冻结的v4执行配置可显式启用候选，真实质量仍待验收。
 设计、失败顺序、验证及当前质量边界集中见[SWE-bench增量详设](../changes/swebench-adapter-verified-25-pilot.md)。
 SDK MockTransport与离线回归不能证明云模型摘要质量或Resolved提升。
 

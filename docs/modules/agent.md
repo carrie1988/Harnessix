@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 32
-code_revision: e27473af9b2c773ae2970d2e5cb31373ffaa9d97
+version: 33
+code_revision: 1a0c8bd536c3254c862a847071cda016f4e0d93c
 owners:
   - core
 modules:
@@ -63,6 +63,8 @@ Git 消费者接线见[原 Runtime Thread 绑定](../changes/m09-r4-git-runtime-
 下限保护的紧凑目标，检查保守摊销与完整预付，再发摘要；实际输出容量同时进入可信指令及SDK请求。
 [`_summary_text`](../../src/harnessix/agent/runtime.py)先核验原尝试、响应身份及Usage，再拒绝达到输出上限
 的摘要，不发布半截窗口，也不重试。Plan持久契约不变，临时优选目标已落实到可重放的有效Policy。
+预付与实际请求复用`_model_tools_for_turn`，只计本步骤可见目录。摘要前深拷贝工具及选择约束，
+摘要后先检查取消，再重新验证目录；漂移在下一主请求前失败，不重新摘要、不授权新效果。
 完整设计与验证集中见[SWE-bench增量详设](../changes/swebench-adapter-verified-25-pilot.md)，
 不把MockTransport/离线通过当作Resolved提升，默认开启仍须真实质量验收。
 

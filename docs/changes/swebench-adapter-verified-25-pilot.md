@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 11
-code_revision: e27473af9b2c773ae2970d2e5cb31373ffaa9d97
+version: 12
+code_revision: 1a0c8bd536c3254c862a847071cda016f4e0d93c
 owners:
   - core
 modules:
@@ -506,3 +506,47 @@ savings = original_history - retained_history - summary_reserve
 原失败与原日志保留，不宣称全套通过。554个源码文件Mypy、改动范围Ruff及契约生成检查通过。
 本轮真实模型请求0、新增费用0。实际Resolved仍为v21 **4/25**，最佳完整轮次5/25，22/25目标和
 基础设施门槛未完成；不把离线机制测试记入质量评分或泛化验证。
+
+
+### 阶段目录预付对齐与显式v4候选
+
+**根因与目标。** 摘要预付原先计入全部注册目录，主请求却经过执行端口和阶段过滤；
+这会把不可见工具计入固定输入，导致原本可预付的压缩被拒绝。此次修复共用正式选择入口，
+不删除注册项、不放宽工具权限，不为单个Case选择特殊目录或提示。
+
+```text
+原生Turn → 执行端口过滤 → 阶段目录严格验证 → 深拷贝单步快照
+        → 同一目录准备Context/估算预付 → 摊销与完整预算准入 → 已结算摘要/合法窗口
+        → 取消检查 → 重选当前目录并比对快照 → 来源复核 → 下一主请求
+```
+
+| 源码接口 | 约束与失败语义 |
+|---|---|
+| [`AgentRuntime._model_tools_for_turn`](../../src/harnessix/agent/runtime.py) | 预付与主请求共用端口及阶段过滤；`choice`只接受严格字符串`auto`或`required`，非法视图在付费前拒绝 |
+| [`_budget_plan`](../../src/harnessix/agent/model_history_runtime.py) | 按选择后的Schema和同一规范JSON准备Context与计量；不计不可见工具。工具描述的嵌套Schema深拷贝，避免后续原地改动污染快照 |
+| `PreparedHistoryStep.budget_tool_selection` | 仅保存已准入压力摘要对应的单步临时快照，不新增Session/Event字段。恢复沿原生事实重新规划，不是新的持久权限票据 |
+| 摘要后复核 | 先检查取消；工具集合、Schema、`choice`或`forced_tool`漂移以`context_compaction_source_changed`停止下一主请求。合法窗口及已知费用仍保留，不回滚或重试 |
+| [`SweBenchBudgetWindowAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 显式v4及`context_budget_policy=amortized_pressure_window`进入完整执行指纹；保留v3故障隔离、逐Case预付和未知费用规则 |
+| [`CLI与Case装配`](../../src/harnessix/evals/swebench/cli.py) | 新轮须同时显式选择故障隔离和`--budget-pressure-compaction`；恢复拒绝策略漂移，v2/v3不会自动升级。Case入口传入同一Runtime选项，非布尔值在打开Provider前拒绝 |
+
+**验收及回退。** 纯规划负控证明隐藏大目录不误占本步骤额度，全部注册项仍存在；
+Runtime负控覆盖工具/选择/强制工具/嵌套Schema漂移、取消优先、零下一主请求、结算与重放；
+版本测试覆盖v2/v3/v4私有读写、非法激活、指纹及CLI恢复拒绝漂移。
+对应测试见[预算规划](../../tests/context/test_turn_budget_compaction.py)、
+[实际Runtime与SDK](../../tests/agent/test_pressure_compaction_loop.py)、
+[执行配置](../../tests/evals/swebench/test_run_config.py)、
+[Case传递](../../tests/evals/swebench/test_failure_isolation.py)和
+[CLI恢复](../../tests/evals/swebench/test_cli.py)。默认产品不启用，回退使用新v3轮次；不得改写已冻结v4配置。
+固定25项顺序、50K累计Token、16次含摘要请求、900秒、原模型与隐藏答案边界不变。
+新候选的离线通过不等于质量提升；没有新完整官方评分前，实际最新结果仍为v21的4/25。
+
+本增量最终专项400项通过；扩大2768项为2763通过、1跳过、4项原有重试失败，
+不宣称全套通过。554个源码文件Mypy、改动范围Ruff、原契约生成检查和文档门禁通过。
+初始取消负控误将正式`cancelled`错误期望为空，已按既有取消契约修正并复验；原失败日志保留。
+宿主3次直连认证目录查询均200（推理请求0），25个Profile与原冻结映射相同；
+这不证明长流稳定、容器业务健康或编码质量提高。
+
+新[开发集v22计划](../../benchmarks/swebench/verified-25-v22/plan.json)及
+[前置检查](../../benchmarks/swebench/verified-25-v22/preflight.json)冻结上述v4候选，
+最多分配原100元周期剩余额度12.3361元，每个下一Case仍先覆盖4.947456元最坏情况。
+资金不足在下一请求前停止，未尝试项不补零、不拼接历史补丁；部分运行不能产生完整25项官方成绩。
