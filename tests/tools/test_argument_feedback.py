@@ -36,6 +36,7 @@ from tests.tools.test_paging_feedback import _result_payloads
         ("list_files", {"limit": True}, "无"),
         ("glob", {"pattern": None}, "无"),
         ("grep", {}, "query"),
+        ("grep", {"query": "PRIVATE_QUERY", "context_lines": 987654321}, "query"),
         ("read_artifact", {}, "artifact_id"),
     ],
 )
@@ -70,6 +71,9 @@ async def test_invalid_arguments_use_registered_fields_without_io(
     assert f"必填字段：{required}" in result.error.message
     assert f"允许字段：{fields}" in result.error.message
     assert len(result.error.message) <= 2000
+    if tool == "grep" and "context_lines" in arguments:
+        assert "context_lines 应满足 ≥ 0、≤ 3" in result.error.message
+        assert "987654321" not in result.error.message and "PRIVATE" not in result.error.message
 
 
 @pytest.mark.parametrize(
@@ -247,6 +251,65 @@ async def test_sdk_artifact_feedback_new_call_actual_read_and_replay(
     assert [result.outcome for result in results] == ["succeeded", "failed", "succeeded"]
     assert len({result.call_id for result in results}) == 3
     assert len(requests) == 4 and all(stream.closed for stream in wires)
+    reopened = SQLiteSessionStore(session.path)
+    restored = await reopened.get_thread(thread.thread_id)
+    assert restored.turns[-1] == turn
+    assert replay(await reopened.events(thread.thread_id)) == restored
+
+
+async def test_numeric_feedback_reaches_real_sdk_and_corrected_call_replays(tmp_path, monkeypatch):
+    monkeypatch.setenv("HARNESSIX_FEEDBACK_FIXTURE_KEY", "offline-key")
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "example.py").write_text("before\nneedle\nafter\n")
+    requests, wires = [], []
+
+    def handle(request):
+        body = json.loads(request.content)
+        requests.append(body)
+        results = _result_payloads("openai", body)
+        step = len(requests)
+        if step == 1:
+            definition = next(
+                d for d in body["tools"] if d["function"]["name"] == tool_alias("grep")
+            )
+            assert (
+                definition["function"]["parameters"]["properties"]["context_lines"]["maximum"] == 3
+            )
+            parts = _tool_frames("openai", step, "grep", {"query": "needle", "context_lines": 10})
+        elif step == 2:
+            error = results[-1]["error"]
+            assert error["code"] == "tool_invalid_arguments"
+            assert "context_lines 应满足 ≥ 0、≤ 3" in error["message"]
+            parts = _tool_frames("openai", step, "grep", {"query": "needle", "context_lines": 3})
+        else:
+            assert step == 3 and results[-1]["outcome"] == "succeeded"
+            assert results[-1]["output"]["preview"]["matches"][0]["context"]["start_line"] == 1
+            parts = openai_wire.text_frames()
+        stream = openai_wire.WireStream(parts)
+        wires.append(stream)
+        return openai_wire.response(stream)
+
+    session = SQLiteSessionStore(tmp_path / "session.db")
+    artifacts = SQLiteArtifactStore(session)
+    async with OpenAIChatProvider(
+        OpenAIChatConfig(
+            model="test-model", api_key_env="HARNESSIX_FEEDBACK_FIXTURE_KEY", max_attempts=1
+        ),
+        transport=httpx.MockTransport(handle),
+    ) as provider:
+        async with CodingToolRuntime(root, artifacts=artifacts) as tools:
+            async with AgentRuntime(
+                session, provider, scoped_tools=tools, artifacts=artifacts
+            ) as runtime:
+                thread = await runtime.create_thread(str(tools.workspace_root))
+                turn = await runtime.run_turn(
+                    thread.thread_id, "查找needle", request_id="range-feedback"
+                )
+    assert turn.status is TurnStatus.COMPLETED
+    results = [i.content for i in turn.items if isinstance(i.content, ToolResultContent)]
+    assert [r.outcome for r in results] == ["failed", "succeeded"]
+    assert len(requests) == 3 and all(stream.closed for stream in wires)
     reopened = SQLiteSessionStore(session.path)
     restored = await reopened.get_thread(thread.thread_id)
     assert restored.turns[-1] == turn

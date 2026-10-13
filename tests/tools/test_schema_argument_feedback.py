@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 import pytest
 from pydantic import ValidationError
 
@@ -208,3 +210,96 @@ def test_workspace_patch_files_string_is_rejected_with_concrete_safe_feedback() 
     assert "files 应为 array，实际为 string" in message
     assert "PRIVATE_PATCH_CONTENT" not in message
     assert len(message) <= 2000
+
+
+@pytest.mark.parametrize("trusted", [False, True])
+@pytest.mark.parametrize(
+    "bound,symbol,value",
+    [
+        ("minimum", "≥", -987654321),
+        ("maximum", "≤", 987654321),
+        ("exclusiveMinimum", ">", 0),
+        ("exclusiveMaximum", "<", 0),
+    ],
+)
+def test_direct_numeric_range_reports_only_registered_limit(trusted, bound, symbol, value):
+    registered = {
+        "type": "object",
+        "properties": {"count": {"type": "integer", bound: 0}},
+        "required": ["count"],
+    }
+    arguments = {"count": value, "PRIVATE_FIELD": "PRIVATE_VALUE"}
+    frozen = deepcopy((registered, arguments))
+    message = invalid_argument_message(registered, arguments, trusted_action=trusted)
+    assert f"范围不匹配：count 应满足 {symbol} 0。" in message
+    assert "987654321" not in message and "PRIVATE" not in message
+    assert (registered, arguments) == frozen
+
+
+@pytest.mark.parametrize("value", [0, 1, 2, 3])
+def test_grep_range_boundaries_preserve_original_message_when_valid(value):
+    from harnessix.tools.search_contracts import GrepInput
+
+    registered = GrepInput.model_json_schema()
+    message = invalid_argument_message(
+        registered, {"query": "PRIVATE_VALUE", "context_lines": value}
+    )
+    assert "范围不匹配" not in message and "PRIVATE" not in message
+
+
+def test_grep_invalid_context_has_concrete_repair_bounds_without_input_value():
+    from harnessix.tools.search_contracts import GrepInput
+
+    arguments = {"query": "PRIVATE_QUERY", "context_lines": 987654321}
+    with pytest.raises(ValidationError):
+        GrepInput.model_validate(arguments)
+    message = invalid_argument_message(GrepInput.model_json_schema(), arguments)
+    assert "context_lines 应满足 ≥ 0、≤ 3" in message
+    assert "987654321" not in message and "PRIVATE" not in message
+
+
+@pytest.mark.parametrize(
+    "property_schema",
+    [
+        {"type": "integer", "maximum": "PRIVATE_LIMIT"},
+        {"type": "integer", "maximum": True},
+        {"type": "integer", "maximum": float("nan")},
+        {"type": "integer", "maximum": float("inf")},
+        {"type": "integer", "maximum": 10**100},
+        {"type": "integer", "minimum": 4, "maximum": 3},
+        {"type": "integer", "maximum": 3, "$ref": "PRIVATE_REF"},
+        {"type": ["integer", "null"], "maximum": 3},
+        {"anyOf": [{"type": "integer", "maximum": 3}, {"type": "null"}]},
+    ],
+)
+def test_ambiguous_or_unsafe_ranges_keep_safe_fallback(property_schema):
+    message = invalid_argument_message(
+        {"type": "object", "properties": {"count": property_schema}}, {"count": 987654321}
+    )
+    assert "范围不匹配" not in message and "PRIVATE" not in message
+    assert "987654321" not in message
+
+
+@pytest.mark.parametrize("value", [True, "PRIVATE_VALUE", [], None, float("nan"), float("inf")])
+def test_wrong_or_nonfinite_value_is_not_coerced_into_numeric_feedback(value):
+    message = invalid_argument_message(
+        {"type": "object", "properties": {"count": {"type": "integer", "maximum": 3}}},
+        {"count": value},
+    )
+    assert "范围不匹配" not in message and "PRIVATE" not in message
+
+
+def test_number_range_and_detail_limit_remain_bounded():
+    registered = {
+        "type": "object",
+        "properties": {
+            f"count_{i:02}": {"type": "number", "exclusiveMaximum": 0.5}
+            for i in reversed(range(12))
+        },
+    }
+    message = invalid_argument_message(
+        registered, {f"count_{i:02}": 987654321.5 for i in range(12)}
+    )
+    details = message.split("范围不匹配：", 1)[1].split("。", 1)[0]
+    assert details.split("；") == [f"count_{i:02} 应满足 < 0.5" for i in range(8)]
+    assert len(message) <= 2000 and "987654321" not in message

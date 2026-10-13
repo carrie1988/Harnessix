@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Mapping
 from typing import Literal, cast
@@ -14,6 +15,12 @@ _COMPOSED_KEYS = frozenset(
 )
 _INSTRUCTION = "请按已公布的input_schema修正类型、范围及必填字段。"
 _MAX_TYPE_MISMATCHES = 8
+_NUMERIC_BOUNDS = (
+    ("minimum", "≥"),
+    ("exclusiveMinimum", ">"),
+    ("maximum", "≤"),
+    ("exclusiveMaximum", "<"),
+)
 
 _JsonType = Literal["string", "array", "object", "boolean", "integer", "number", "null"]
 _JSON_TYPE_ORDER: tuple[_JsonType, ...] = (
@@ -132,13 +139,73 @@ def _type_mismatches(
     return mismatches
 
 
+def _declared_numeric_bounds(
+    schema: Mapping[str, JsonValue],
+) -> list[tuple[str, str, int | float]] | None:
+    bounds: list[tuple[str, str, int | float]] = []
+    for key, symbol in _NUMERIC_BOUNDS:
+        if key not in schema:
+            continue
+        bound = schema[key]
+        if (
+            not isinstance(bound, (int, float))
+            or type(bound) not in {int, float}
+            or abs(bound) > 10**18
+            or (type(bound) is float and not math.isfinite(bound))
+        ):
+            return None
+        bounds.append((key, symbol, bound))
+    lower = [bound for key, _, bound in bounds if key in {"minimum", "exclusiveMinimum"}]
+    upper = [bound for key, _, bound in bounds if key in {"maximum", "exclusiveMaximum"}]
+    if lower and upper and max(lower) > min(upper):
+        return None
+    return bounds
+
+
+def _range_mismatches(
+    properties: Mapping[str, JsonValue], arguments: Mapping[str, JsonValue]
+) -> list[str]:
+    """只投影直接数值合同的声明范围；不泄露实际值，不猜测复合规则。"""
+    mismatches: list[str] = []
+    for name in sorted(properties):
+        schema = properties[name]
+        value = arguments.get(name)
+        if (
+            type(schema) is not dict
+            or type(schema.get("type")) is not str
+            or schema.get("type") not in {"integer", "number"}
+            or any(key in schema for key in _COMPOSED_KEYS)
+            or not isinstance(value, (int, float))
+            or type(value) not in {int, float}
+            or (type(value) is float and not math.isfinite(value))
+            or (schema.get("type") == "integer" and type(value) is not int)
+        ):
+            continue
+        bounds = _declared_numeric_bounds(schema)
+        if not bounds:
+            continue
+        outside = any(
+            (key == "minimum" and value < bound)
+            or (key == "exclusiveMinimum" and value <= bound)
+            or (key == "maximum" and value > bound)
+            or (key == "exclusiveMaximum" and value >= bound)
+            for key, _, bound in bounds
+        )
+        if outside:
+            declared = "、".join(f"{symbol} {bound}" for _, symbol, bound in bounds)
+            mismatches.append(f"{name} 应满足 {declared}")
+            if len(mismatches) == _MAX_TYPE_MISMATCHES:
+                break
+    return mismatches
+
+
 def invalid_argument_message(
     schema: Mapping[str, JsonValue],
     arguments: Mapping[str, JsonValue],
     *,
     trusted_action: bool = False,
 ) -> str:
-    """只公开正式字段、缺失事实和JSON类型；参数值及异常不能进入消息。"""
+    """只公开正式字段、类型和声明范围；参数值及异常不能进入消息。"""
     label = "Action参数不符合Trusted Tool契约" if trusted_action else "工具参数不符合契约"
     fallback = f"{label}；{_INSTRUCTION}"
     fields = _field_facts(schema)
@@ -157,11 +224,13 @@ def invalid_argument_message(
     )
     previous_message = f"{field_feedback}{instruction}"
     mismatches = _type_mismatches(properties, arguments)
-    message = (
-        f"{field_feedback}类型不匹配：{'；'.join(mismatches)}。{instruction}"
-        if mismatches
-        else previous_message
-    )
+    ranges = _range_mismatches(properties, arguments)
+    details = []
+    if mismatches:
+        details.append(f"类型不匹配：{'；'.join(mismatches)}。")
+    if ranges:
+        details.append(f"范围不匹配：{'；'.join(ranges)}。")
+    message = f"{field_feedback}{''.join(details)}{instruction}" if details else previous_message
     if len(message) <= 2000:
         return message
     return previous_message if len(previous_message) <= 2000 else fallback
