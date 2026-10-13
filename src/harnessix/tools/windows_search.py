@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import io
 import json
 from dataclasses import dataclass
 from typing import Literal
 
 from harnessix.tools import search
-from harnessix.tools.contracts import MAX_LINE_BYTES, ReadToolError
+from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.files import _decode
 from harnessix.tools.patterns import PathPattern
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
-    MAX_MATCH_BYTES,
     MAX_SEARCH_DEPTH,
     MAX_SEARCH_ENTRIES,
     MAX_SEARCH_FILE_BYTES,
@@ -303,12 +301,6 @@ def _load_text(
     return None if text is None else (observed, text)
 
 
-def _preview(text: str, index: int) -> tuple[str, bool]:
-    start = max(0, index - 16)
-    snippet = text[start:].encode("utf-8")[:MAX_MATCH_BYTES].decode("utf-8", errors="ignore")
-    return snippet, start > 0 or len(snippet) < len(text)
-
-
 def _append_matches(
     port: WindowsReadPort,
     candidate: _Candidate,
@@ -322,31 +314,14 @@ def _append_matches(
     capture: search.SearchCapture | None,
 ) -> None:
     revision = file_revision(port, candidate.path, observed)
-    with io.StringIO(text, newline="\n") as lines:
-        for number, line in enumerate(lines, start=1):
-            operation.checkpoint()
-            if len(line.encode("utf-8")) > MAX_LINE_BYTES:
-                scan.long_lines += 1
-                continue
-            line = line[:-1].removesuffix("\r") if line.endswith("\n") else line
-            index = line.find(args.query)
-            if index < 0:
-                continue
-            snippet, truncated = _preview(line, index)
-            hit = GrepMatch(
-                path=candidate.path,
-                line=number,
-                text=snippet,
-                text_truncated=truncated,
-                revision=revision,
-            )
-            encoded = hit.model_dump_json()
-            if capture is not None:
-                capture.append(encoded)
-            if records.accept(encoded):
-                matches.append(hit)
-            elif capture is None:
-                break
+    for hit in search.grep_line_matches(candidate.path, revision, text, args, operation, scan):
+        encoded = hit.model_dump_json()
+        if capture is not None:
+            capture.append(encoded)
+        if records.accept(encoded):
+            matches.append(hit)
+        elif capture is None:
+            break
 
 
 def grep_files(

@@ -40,7 +40,8 @@ def tool_step(tool):
 
 
 @pytest.mark.parametrize("scoped", [False, True])
-async def test_sdk_glob_grep_revision_read_and_replay(tmp_path, monkeypatch, scoped):
+@pytest.mark.parametrize("context_lines", [0, 3])
+async def test_sdk_glob_grep_revision_read_and_replay(tmp_path, monkeypatch, scoped, context_lines):
     monkeypatch.setenv("HARNESSIX_SEARCH_FIXTURE_KEY", "not-a-real-credential")
     monkeypatch.delenv("OPENAI_CUSTOM_HEADERS", raising=False)
     root = tmp_path / "repo"
@@ -59,9 +60,21 @@ async def test_sdk_glob_grep_revision_read_and_replay(tmp_path, monkeypatch, sco
             tool, args = "glob", {"pattern": "**/*.py"}
         elif len(requests) == 2:
             assert outputs[-1]["output"]["paths"] == ["main.py"]
-            tool, args = "grep", {"query": "def target", "include": "**/*.py"}
+            tool, args = (
+                "grep",
+                {
+                    "query": "def target",
+                    "include": "**/*.py",
+                    "context_lines": context_lines,
+                },
+            )
         elif len(requests) == 3:
             hit = outputs[-1]["output"]["matches"][0]
+            if context_lines:
+                assert hit["context"]["start_line"] == 1
+                assert hit["context"]["lines"][-1]["text"] == "    return 42"
+            else:
+                assert hit["context"] is None
             tool, args = (
                 "read_file",
                 {
@@ -216,5 +229,6 @@ async def test_reopened_search_approval_and_old_contract_compatibility(
 )
 def test_frozen_search_schema(name, model, frozen):
     path = Path(__file__).parents[2] / "spec" / f"{name}-v1.schema.json"
-    assert json.loads(path.read_text()) == model.model_json_schema()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == frozen
+    active_path = path.with_name(f"{name}-v2.schema.json") if name.startswith("grep-") else path
+    assert json.loads(active_path.read_text()) == model.model_json_schema()

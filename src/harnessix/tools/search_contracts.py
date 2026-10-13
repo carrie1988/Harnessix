@@ -16,6 +16,7 @@ MAX_SEARCH_FILE_BYTES = 2 * 1024 * 1024
 MAX_SEARCH_TOTAL_BYTES = 16 * 1024 * 1024
 MAX_SEARCH_RECORD_BYTES = 24 * 1024
 MAX_MATCH_BYTES = 384
+MAX_GREP_CONTEXT_LINES = 3
 IGNORED_DIRECTORIES = (
     ".mypy_cache",
     ".pytest_cache",
@@ -65,6 +66,12 @@ class GlobInput(SearchInput):
 class GrepInput(SearchInput):
     query: str = Field(min_length=1, max_length=256)
     include: str = Field(default="**/*", min_length=1, max_length=256)
+    context_lines: int = Field(
+        default=0,
+        ge=0,
+        le=MAX_GREP_CONTEXT_LINES,
+        description="命中行前后各返回少量有界片段；不替代read_file的完整文件摘要",
+    )
 
     @field_validator("include")
     @classmethod
@@ -127,12 +134,32 @@ class GlobOutput(SearchOutput):
         return self
 
 
+class GrepContextLine(ReadContract):
+    text: str
+    text_truncated: bool
+
+    @field_validator("text")
+    @classmethod
+    def validate_bytes(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > MAX_MATCH_BYTES or "\n" in value:
+            raise ValueError("上下文必须是单行有界UTF-8片段")
+        return value
+
+
+class GrepContext(ReadContract):
+    start_line: int = Field(ge=1)
+    lines: tuple[GrepContextLine, ...] = Field(
+        min_length=1, max_length=2 * MAX_GREP_CONTEXT_LINES + 1
+    )
+
+
 class GrepMatch(ReadContract):
     path: str = Field(min_length=1, max_length=1024)
     line: int = Field(ge=1)
     text: str
     text_truncated: bool
     revision: Revision
+    context: GrepContext | None = None
 
     @field_validator("text")
     @classmethod
@@ -140,6 +167,22 @@ class GrepMatch(ReadContract):
         if len(value.encode("utf-8")) > MAX_MATCH_BYTES:
             raise ValueError("命中片段超过 UTF-8 上限")
         return value
+
+    @model_validator(mode="after")
+    def context_contains_same_match(self) -> Self:
+        if self.context is None:
+            return self
+        offset = self.line - self.context.start_line
+        if (
+            not 0 <= offset < len(self.context.lines)
+            or offset > MAX_GREP_CONTEXT_LINES
+            or len(self.context.lines) - offset - 1 > MAX_GREP_CONTEXT_LINES
+        ):
+            raise ValueError("上下文必须包含命中行且两侧均未超过上限")
+        center = self.context.lines[offset]
+        if (center.text, center.text_truncated) != (self.text, self.text_truncated):
+            raise ValueError("上下文中的命中片段与原命中不一致")
+        return self
 
 
 class GrepOutput(SearchOutput):

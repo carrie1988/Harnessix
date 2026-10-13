@@ -608,7 +608,17 @@ def generate_specs(output: Path) -> None:
         ("config-audit-event", ConfigAuditEvent),
         ("provider-fallback-decision", ProviderFallbackDecision),
     ):
-        version = 2 if name == "coding-eval-provider-suite-run-config" else 1
+        version = (
+            2
+            if name
+            in {
+                "coding-eval-provider-suite-run-config",
+                "grep-input",
+                "grep-output",
+                "archived-grep-output",
+            }
+            else 1
+        )
         write_json(output / f"{name}-v{version}.schema.json", model.model_json_schema())
     write_json(
         output / "process-owner-start-v2.schema.json", ProcessOwnerStartV2.model_json_schema()

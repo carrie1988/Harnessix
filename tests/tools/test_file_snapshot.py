@@ -226,7 +226,11 @@ async def test_previous_major_tool_contract_cannot_execute_new_snapshot(
     async with CodingToolRuntime(tmp_path) as tools:
         trusted = call(tools, path="app.py")
         assert trusted.tool_version.startswith("2.")
-        assert all(d.version.startswith("1.") for d in tools.definitions() if d.name != "read_file")
+        assert all(
+            d.version.startswith("2." if d.name == "grep" else "1.")
+            for d in tools.definitions()
+            if d.name != "read_file"
+        )
         stale = trusted.model_copy(update={"tool_version": "1." + trusted.tool_version[2:]})
         with pytest.raises(KernelError) as failed:
             await tools.execute(stale, CancelToken())

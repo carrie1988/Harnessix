@@ -55,8 +55,11 @@ from harnessix.tools.search_contracts import ArchivedGlobOutput, ArchivedGrepOut
 )
 def test_frozen_artifact_schema(name, model, frozen):
     path = Path(__file__).parents[2] / "spec" / f"{name}-v1.schema.json"
-    assert json.loads(path.read_text()) == model.model_json_schema()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == frozen
+    active_path = (
+        path.with_name(f"{name}-v2.schema.json") if name == "archived-grep-output" else path
+    )
+    assert json.loads(active_path.read_text()) == model.model_json_schema()
 
 
 @pytest.mark.parametrize(

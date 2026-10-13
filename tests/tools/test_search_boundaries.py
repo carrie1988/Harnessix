@@ -14,7 +14,12 @@ from tests.tools.test_files import call, execute
 
 
 @pytest.mark.parametrize(
-    "tool,args,field", [("glob", {}, "paths"), ("grep", {"query": "needle"}, "matches")]
+    "tool,args,field",
+    [
+        ("glob", {}, "paths"),
+        ("grep", {"query": "needle"}, "matches"),
+        ("grep", {"query": "needle", "context_lines": 3}, "matches"),
+    ],
 )
 async def test_ignore_is_not_permission_and_links_never_escape(tmp_path, tool, args, field):
     root = tmp_path / "repo"
@@ -227,7 +232,10 @@ async def test_permission_gap_and_io_failure_are_not_hidden(tmp_path, monkeypatc
 
 
 @pytest.mark.parametrize("kind", ["task", "token"])
-async def test_search_cancel_waits_for_file_descriptor_cleanup(tmp_path, monkeypatch, kind):
+@pytest.mark.parametrize("context_lines", [0, 3])
+async def test_search_cancel_waits_for_file_descriptor_cleanup(
+    tmp_path, monkeypatch, kind, context_lines
+):
     (tmp_path / "x").write_text("needle")
     entered, stopped = asyncio.Event(), asyncio.Event()
     release = Event()
@@ -252,7 +260,9 @@ async def test_search_cancel_waits_for_file_descriptor_cleanup(tmp_path, monkeyp
     monkeypatch.setattr(search, "_read", block)
     async with CodingToolRuntime(tmp_path) as tools:
         token = CancelToken()
-        task = asyncio.create_task(tools.execute(call(tools, "grep", query="needle"), token))
+        task = asyncio.create_task(
+            tools.execute(call(tools, "grep", query="needle", context_lines=context_lines), token)
+        )
         try:
             await asyncio.wait_for(entered.wait(), 10)
             if kind == "task":

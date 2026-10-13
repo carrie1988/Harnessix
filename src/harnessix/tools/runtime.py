@@ -121,7 +121,8 @@ _BINDINGS = (
     ),
     _ReadBinding(
         "grep",
-        "在文件或目录起点按大小写敏感字面量查找行，不支持正则；返回片段和revision",
+        "在文件或目录起点按大小写敏感字面量查找行，不支持正则；返回片段和revision。"
+        "可用context_lines=1～3同时观察符号附近代码，减少搜索后宽窗口读取；默认0",
         GrepInput,
         GrepOutput,
     ),
@@ -193,9 +194,10 @@ def _descriptor(
     *,
     require_approval: bool,
 ) -> ToolDescriptor:
+    major = 2 if binding.output_model in {ReadFileSnapshotOutput, GrepOutput} else 1
     return ToolDescriptor(
         name=binding.name,
-        version=f"{2 if binding.output_model is ReadFileSnapshotOutput else 1}.{contract}",
+        version=f"{major}.{contract}",
         description=binding.description,
         input_schema=binding.input_model.model_json_schema(),
         effect_class=EffectClass.READ_ONLY,

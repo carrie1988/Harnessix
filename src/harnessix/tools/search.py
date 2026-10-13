@@ -6,10 +6,11 @@ import io
 import json
 import os
 import stat
+from collections import deque
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Protocol
 
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, MAX_ARTIFACT_RECORDS
 from harnessix.tools.contracts import MAX_LINE_BYTES, ReadToolError
@@ -17,6 +18,7 @@ from harnessix.tools.files import _decode
 from harnessix.tools.patterns import PathPattern
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
+    MAX_GREP_CONTEXT_LINES,
     MAX_MATCH_BYTES,
     MAX_SEARCH_DEPTH,
     MAX_SEARCH_ENTRIES,
@@ -26,6 +28,8 @@ from harnessix.tools.search_contracts import (
     MAX_SEARCH_TOTAL_BYTES,
     GlobInput,
     GlobOutput,
+    GrepContext,
+    GrepContextLine,
     GrepInput,
     GrepMatch,
     GrepOutput,
@@ -37,7 +41,7 @@ from harnessix.tools.workspace import ReadOperation, Workspace, digest, identity
 
 def execution_contract() -> dict[str, object]:
     return {
-        "version": "bounded-search/v2",
+        "version": "bounded-search/v3",
         "start_path": "regular-file-or-directory",
         "pattern": "case-sensitive-segments-and-globstar",
         "grep": "case-sensitive-literal-lines",
@@ -49,6 +53,7 @@ def execution_contract() -> dict[str, object]:
         "max_total_bytes": MAX_SEARCH_TOTAL_BYTES,
         "max_record_bytes": MAX_SEARCH_RECORD_BYTES,
         "max_match_bytes": MAX_MATCH_BYTES,
+        "max_grep_context_lines": MAX_GREP_CONTEXT_LINES,
     }
 
 
@@ -278,6 +283,72 @@ def _preview(text: str, index: int) -> tuple[str, bool]:
     return snippet, start > 0 or len(snippet) < len(text)
 
 
+class _LineStats(Protocol):
+    long_lines: int
+
+
+def _line_text(raw: str) -> str:
+    return raw[:-1].removesuffix("\r") if raw.endswith("\n") else raw
+
+
+def grep_line_matches(
+    path: str,
+    revision: str,
+    text: str,
+    args: GrepInput,
+    operation: ReadOperation,
+    scan: _LineStats,
+) -> Iterator[GrepMatch]:
+    """单一内容观察内用有界滚动窗口生成命中；POSIX与原生读取端复用。"""
+    before: deque[str] = deque(maxlen=args.context_lines)
+    ahead: deque[str] = deque()
+    with io.StringIO(text, newline="\n") as lines:
+        for _ in range(args.context_lines + 1):
+            operation.checkpoint()
+            raw = lines.readline()
+            if not raw:
+                break
+            ahead.append(raw)
+        number = 0
+        while ahead:
+            operation.checkpoint()
+            raw = ahead.popleft()
+            number += 1
+            if len(raw.encode("utf-8")) > MAX_LINE_BYTES:
+                scan.long_lines += 1
+            else:
+                line = _line_text(raw)
+                index = line.find(args.query)
+                if index >= 0:
+                    snippet, truncated = _preview(line, index)
+                    context = None
+                    if args.context_lines:
+                        views = []
+                        for position, neighbor in enumerate((*before, raw, *ahead)):
+                            preview = (
+                                (snippet, truncated)
+                                if position == len(before)
+                                else _preview(_line_text(neighbor), 0)
+                            )
+                            views.append(
+                                GrepContextLine(text=preview[0], text_truncated=preview[1])
+                            )
+                        context = GrepContext(start_line=number - len(before), lines=tuple(views))
+                    yield GrepMatch(
+                        path=path,
+                        line=number,
+                        text=snippet,
+                        text_truncated=truncated,
+                        revision=revision,
+                        context=context,
+                    )
+            before.append(raw)
+            operation.checkpoint()
+            following = lines.readline()
+            if following:
+                ahead.append(following)
+
+
 def grep(
     workspace: Workspace,
     args: GrepInput,
@@ -297,32 +368,14 @@ def grep(
                 text = _read(fd, operation, scan)
                 if text is None:
                     continue
-                with io.StringIO(text, newline="\n") as lines:
-                    for number, line in enumerate(lines, start=1):
-                        operation.checkpoint()
-                        if len(line.encode("utf-8")) > MAX_LINE_BYTES:
-                            scan.long_lines += 1
-                            continue
-                        if line.endswith("\n"):
-                            line = line[:-1].removesuffix("\r")
-                        index = line.find(args.query)
-                        if index < 0:
-                            continue
-                        snippet, truncated = _preview(line, index)
-                        hit = GrepMatch(
-                            path=node.path,
-                            line=number,
-                            text=snippet,
-                            text_truncated=truncated,
-                            revision=revision,
-                        )
-                        encoded = hit.model_dump_json()
-                        if capture is not None:
-                            capture.append(encoded)
-                        if records.accept(encoded):
-                            matches.append(hit)
-                        elif capture is None:
-                            break
+                for hit in grep_line_matches(node.path, revision, text, args, operation, scan):
+                    encoded = hit.model_dump_json()
+                    if capture is not None:
+                        capture.append(encoded)
+                    if records.accept(encoded):
+                        matches.append(hit)
+                    elif capture is None:
+                        break
         except PermissionError:
             scan.unreadable_entries += 1
         if records.reason is not None and capture is None:
