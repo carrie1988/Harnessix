@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 2
-code_revision: cd628938aa463bacd46e050fdf247fd43de80bce
+version: 3
+code_revision: f01cd5ca364fe784ecd3b3a48b71102efee9f261
 owners:
   - core
 modules:
@@ -208,3 +208,6 @@ v13真实执行在第3个Case停止：前2个达到Token预算，第3个模型�
 Token阻断的根因还包含重复发送完整历史：v13首个Case实际累计用量为45300，
 下一请求输入保守估算11520，而剩余预算仅4700；默认压缩尚未触发。
 预算感知压缩本轮不引入，避免把新的摘要费用和调查策略同时混入一次实验。
+
+下一轮v14已按相同Case、模型参数与硬预算冻结：[计划](../../benchmarks/swebench/verified-25-v14/plan.json)、[预检](../../benchmarks/swebench/verified-25-v14/preflight.json)。
+本轮范围是失败隔离和调查流程，不将离线回归或预算结算当作Resolved。

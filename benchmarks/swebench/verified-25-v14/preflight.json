@@ -1,0 +1,20 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "plan_sha256": "5f5d723707c4cded215bf1d865618decd96c2d281d7817524f82bf8c860a52d7",
+  "source_revision": "f01cd5ca364fe784ecd3b3a48b71102efee9f261",
+  "pytest": {
+    "passed": 353,
+    "deselected": 4,
+    "deselection_reason": "本机/usr/bin/git不支持--object-format；保留原测试，未降低验收要求。"
+  },
+  "ruff": "PASS",
+  "mypy_source_files": 551,
+  "mypy": "PASS",
+  "task_budget_unchanged": true,
+  "development_case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "budget_period_id": "d13d33cb-8093-4e94-9253-5b78b2e201ad",
+  "period_limit_amount": "100",
+  "run_reserved_upper_amount": "48.147456",
+  "verified_code_quality_is_not_resolved": true
+}
