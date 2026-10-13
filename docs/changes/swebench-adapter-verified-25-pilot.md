@@ -211,3 +211,7 @@ Token阻断的根因还包含重复发送完整历史：v13首个Case实际累�
 
 下一轮v14已按相同Case、模型参数与硬预算冻结：[计划](../../benchmarks/swebench/verified-25-v14/plan.json)、[预检](../../benchmarks/swebench/verified-25-v14/preflight.json)。
 本轮范围是失败隔离和调查流程，不将离线回归或预算结算当作Resolved。
+v14完整执行结果见[执行摘要](../../benchmarks/swebench/verified-25-v14/execution-summary.json)：
+25个Case全部尝试，3个Turn完整闭环，10个非空Patch、15个空Patch；17个预算失败、5个已结算模型契约失败。
+这些失败未触发同Case重试，也没有被计入成功。官方评分正在重建固定Task Repo的10个非空Patch镜像，
+Resolved及基础设施失败数尚未发布。本周期累计计价上界12.518928元，全部请求已计量，无未决预留。
