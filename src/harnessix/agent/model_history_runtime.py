@@ -50,6 +50,7 @@ class ModelHistoryHost(Protocol):
     _batch_diffs: BatchDiffPublisher | None
     _tool_result_view_policy: ToolResultViewPolicy
     _compaction: CompactionRuntimeConfig | None
+    _budget_pressure_compaction: bool
     _fault: Callable[[str], None]
     _definitions: dict[str, ToolDescriptor]
 
@@ -190,7 +191,7 @@ async def prepare_and_commit_model_history(
         budget_context = None
         planned = None
         required = _requires_compaction(host, prepared, reactive_compaction_required)
-        if not required and host._compaction is not None:
+        if not required and host._compaction is not None and host._budget_pressure_compaction:
             planned, budget_context = await _budget_plan(
                 host, thread, turn, prepared, token, summary_instructions
             )

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
-from typing import Annotated, Literal, Protocol, Self
+from typing import Annotated, Literal, Protocol, Self, runtime_checkable
 from uuid import UUID
 
 from pydantic import Field, JsonValue, model_validator
@@ -122,3 +122,13 @@ class ModelProvider(Protocol):
     def stream(
         self, request: ModelRequest, cancel: CancelToken
     ) -> AsyncGenerator[ProviderEvent, None]: ...
+
+
+@runtime_checkable
+class ModelInputTokenEstimator(Protocol):
+    """可选纯能力：完整输入或已证明不变的前缀之外的输入上界，零 I/O。"""
+
+    @property
+    def input_token_identity(self) -> tuple[str, str]: ...
+
+    def estimate_input_tokens(self, request: ModelRequest, *, prefix_items: int = 0) -> int: ...

@@ -70,6 +70,8 @@ SUCCESSFUL_EVIDENCE: tuple[ToolResult, ...] = (
 @pytest.fixture(autouse=True)
 def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(execution, "utc_now", lambda: NOW)
+    # 单元测试不依赖宿主剩余空间；真实空间门禁另有独立正负控。
+    monkeypatch.setattr(execution, "require_evaluation_disk_space", lambda *_: None)
 
 
 def _plan():

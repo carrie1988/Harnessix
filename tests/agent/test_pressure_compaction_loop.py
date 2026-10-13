@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from harnessix.agent.models import Budget, Usage
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
@@ -13,7 +15,8 @@ from tests.agent.helpers import RecordingTools
 from tests.context.test_compaction_runtime import SequenceProvider, accounted_text
 
 
-async def test_pressure_compacts_one_turn_before_window_threshold_and_replays(tmp_path: Path):
+@pytest.mark.parametrize("enabled", [False, True])
+async def test_pressure_compaction_requires_explicit_opt_in_and_replays(tmp_path: Path, enabled):
     responses = []
     for step in range(1, 4):
         events = accounted_text("a" * 2500, step=step)
@@ -37,7 +40,12 @@ async def test_pressure_compacts_one_turn_before_window_threshold_and_replays(tm
         max_summary_output_tokens=2048,
     )
     async with AgentRuntime(
-        store, main, RecordingTools(), compaction=config, summary_provider=summary
+        store,
+        main,
+        RecordingTools(),
+        compaction=config,
+        summary_provider=summary,
+        **({"budget_pressure_compaction": True} if enabled else {}),
     ) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         turn = await runtime.run_turn(
@@ -47,14 +55,17 @@ async def test_pressure_compacts_one_turn_before_window_threshold_and_replays(tm
             budget=Budget(max_tokens=20000, max_steps=16),
         )
     assert turn.status == "completed"
-    assert len(summary.requests) == 1 and len(main.requests) == 4
-    assert len(turn.accounted_attempts) == 5 <= turn.budget.max_steps
-    assert turn.usage == Usage(input_tokens=50, output_tokens=15)
-    record = turn.compactions[0]
-    assert record.status == "summarized"
-    assert record.plan.source_history_tokens < config.trigger_history_tokens
-    assert record.plan.policy.retain_recent_groups >= 2
-    assert record.plan.policy.target_history_tokens < config.policy.target_history_tokens
+    assert len(summary.requests) == int(enabled) and len(main.requests) == 4
+    assert len(turn.accounted_attempts) == 4 + int(enabled) <= turn.budget.max_steps
+    assert turn.usage == Usage(input_tokens=40 + 10 * enabled, output_tokens=12 + 3 * enabled)
+    if enabled:
+        record = turn.compactions[0]
+        assert record.status == "summarized"
+        assert record.plan.source_history_tokens < config.trigger_history_tokens
+        assert record.plan.policy.retain_recent_groups >= 2
+        assert record.plan.policy.target_history_tokens < config.policy.target_history_tokens
+    else:
+        assert not turn.compactions
     restored = await store.get_thread(thread.thread_id)
     assert replay(await store.events(thread.thread_id)) == restored
-    assert restored.active_compaction_window_id is not None
+    assert (restored.active_compaction_window_id is not None) == enabled

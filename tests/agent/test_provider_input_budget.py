@@ -1,0 +1,235 @@
+"""正常主请求独立预算门：不依赖 pressure summary，也不支付网络调用。"""
+
+from __future__ import annotations
+
+import pytest
+
+from harnessix.agent.model_input_budget import (
+    _history_digest,
+    estimate_model_input_tokens,
+    estimate_request_input_tokens,
+)
+from harnessix.agent.models import Budget, TurnStatus, Usage
+from harnessix.agent.runtime import AgentRuntime
+from harnessix.agent.usage import ModelAttemptStarted, ModelUsageObserved
+from harnessix.context.tool_result_view import history_document
+from harnessix.models.anthropic import AnthropicProvider
+from harnessix.models.contracts import ModelInputTokenEstimator
+from harnessix.models.scripted import ScriptedProvider
+from harnessix.session.sqlite import SQLiteSessionStore
+from tests.agent.helpers import RecordingTools, answer
+from tests.agent.test_runtime_sampled_token_budget import accounted_read_step
+from tests.models.test_provider_input_budget import pure_provider
+
+
+class WireProvider(ScriptedProvider):
+    def __init__(self, steps):
+        super().__init__(steps)
+        self.adapter = pure_provider()
+        self.estimates = []
+
+    @property
+    def input_token_identity(self):
+        return self.adapter.input_token_identity
+
+    def estimate_input_tokens(self, request, *, prefix_items=0):
+        self.estimates.append(request)
+        return self.adapter.estimate_input_tokens(request, prefix_items=prefix_items)
+
+
+async def run(tmp_path, provider, *, text="test", budget=None, tools=None):
+    async with AgentRuntime(
+        SQLiteSessionStore(tmp_path / "session.db"), provider, tools
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        return await runtime.run_turn(thread.thread_id, text, request_id="budget", budget=budget)
+
+
+@pytest.mark.parametrize("value", [True, False, 0, -1, None, 1.5, "100", RuntimeError("failed")])
+async def test_invalid_capability_failclosed_zero_request(tmp_path, value):
+    class InvalidProvider(WireProvider):
+        def estimate_input_tokens(self, request, *, prefix_items=0):
+            if isinstance(value, Exception):
+                raise value
+            return value
+
+    provider = InvalidProvider([answer()])
+    turn = await run(tmp_path, provider)
+    assert turn.error.code == "invalid_provider_output"
+    assert turn.model_steps == 0 and turn.usage == Usage()
+    assert provider.requests == []
+
+
+async def test_full_wire_over_budget_zero_request(tmp_path):
+    provider = WireProvider([answer()])
+    turn = await run(
+        tmp_path, provider, text="x" * 500, budget=Budget(max_tokens=800, max_output_chars=900)
+    )
+    assert turn.error.code == "budget_exceeded"
+    assert turn.model_steps == 0 and provider.requests == []
+
+
+async def test_large_unsent_title_admitted_candidate_before_step_transition(tmp_path):
+    class TitleTools(RecordingTools):
+        def definitions(self):
+            return tuple(
+                tool.model_copy(
+                    update={
+                        "input_schema": {
+                            "type": "object",
+                            "title": "not-sent" * 10_000,
+                        }
+                    }
+                )
+                for tool in super().definitions()
+            )
+
+    provider = WireProvider([answer()])
+    turn = await run(
+        tmp_path,
+        provider,
+        tools=TitleTools(),
+        budget=Budget(max_tokens=2_000, max_output_chars=900),
+    )
+    assert turn.status is TurnStatus.COMPLETED
+    candidate, request = provider.estimates[0], provider.requests[0]
+    assert candidate.step == request.step == 1
+    assert candidate.remaining_tokens == 900
+    assert provider.adapter.estimate_input_tokens(request) + request.remaining_tokens <= 2_000
+
+
+async def test_third_party_fallback_unchanged(tmp_path):
+    provider = ScriptedProvider([answer()])
+    turn = await run(tmp_path, provider, budget=Budget(max_tokens=2_000, max_output_chars=900))
+    request = provider.requests[0]
+    legacy = estimate_model_input_tokens(request.history, request.tools, request.instructions)
+    assert estimate_request_input_tokens(provider, request, turn, legacy) == legacy
+    assert not isinstance(provider, ModelInputTokenEstimator)
+    assert not isinstance(object.__new__(AnthropicProvider), ModelInputTokenEstimator)
+    assert request.remaining_tokens == min(900, 2_000 - legacy)
+
+
+async def test_rewritten_history_does_not_use_old_actual_anchor(tmp_path):
+    provider = WireProvider([wire_read_step(input_tokens=10), answer()])
+    turn = await run(tmp_path, provider, tools=RecordingTools())
+    request = provider.requests[1]
+    first = request.history[0]
+    rewritten = (
+        first.model_copy(
+            update={"content": first.content.model_copy(update={"text": '重写"\\' * 1000})}
+        ),
+        *request.history[1:],
+    )
+    request = request.model_copy(update={"history": rewritten})
+    digest = _history_digest(tuple(history_document(item) for item in rewritten))
+    inspections = tuple(
+        inspection.model_copy(update={"view_history_sha256": digest})
+        if inspection.model_step == 2
+        else inspection
+        for inspection in turn.model_history_inspections
+    )
+    turn = turn.model_copy(update={"model_history_inspections": inspections})
+    legacy = estimate_model_input_tokens(rewritten, request.tools, None, turn=turn, model_step=2)
+    full = estimate_model_input_tokens(rewritten, request.tools, None)
+    assert legacy == full and legacy > 10
+    expected = provider.adapter.estimate_input_tokens(request)
+    assert estimate_request_input_tokens(provider, request, turn, legacy) == expected
+
+
+async def test_quote_result_cannot_turn_descriptor_underestimate_into_wire_bound(tmp_path):
+    class QuoteTools(RecordingTools):
+        async def execute(self, call, cancel):
+            result = await super().execute(call, cancel)
+            return result.model_copy(update={"output": '"\\' * 4000})
+
+    provider = WireProvider([wire_read_step(input_tokens=10), answer()])
+    turn = await run(tmp_path, provider, tools=QuoteTools())
+    request = provider.requests[1]
+    legacy = estimate_model_input_tokens(
+        request.history, request.tools, None, turn=turn, model_step=2
+    )
+    wire = provider.adapter.estimate_input_tokens(request)
+    assert wire > legacy
+    prefix = turn.model_history_inspections[0].history_items
+    incremental = provider.adapter.estimate_input_tokens(request, prefix_items=prefix)
+    assert estimate_request_input_tokens(provider, request, turn, legacy) == min(
+        wire, 10 + incremental
+    )
+    assert incremental > legacy
+
+
+async def test_provider_actual_usage_still_hard_stops_tool_dispatch(tmp_path):
+    tools = RecordingTools()
+    provider = WireProvider([accounted_read_step(input_tokens=50_001), answer()])
+    turn = await run(
+        tmp_path,
+        provider,
+        tools=tools,
+        budget=Budget(max_tokens=50_000, max_steps=16, max_output_chars=900),
+    )
+    assert turn.error.code == "budget_exceeded"
+    assert turn.usage.input_tokens == 50_001 and turn.usage.output_tokens == 50
+    assert len(provider.requests) == 1 and tools.calls == []
+
+
+def wire_read_step(*, input_tokens):
+    events = accounted_read_step(input_tokens=input_tokens)
+    return [
+        event.model_copy(update={"provider": "openai_chat", "requested_model": "test-model"})
+        if isinstance(event, ModelAttemptStarted)
+        else event.model_copy(update={"actual_model": "test-model"})
+        if isinstance(event, ModelUsageObserved)
+        else event
+        for event in events
+    ]
+
+
+async def test_proven_anchor_uses_only_added_wire_and_full_current_catalog(tmp_path):
+    provider = WireProvider([wire_read_step(input_tokens=10), answer()])
+    turn = await run(tmp_path, provider, text="initial text " * 500, tools=RecordingTools())
+    request = provider.requests[1]
+    previous = turn.model_history_inspections[0]
+    full = provider.adapter.estimate_input_tokens(request)
+    added = provider.adapter.estimate_input_tokens(request, prefix_items=previous.history_items)
+    legacy = estimate_model_input_tokens(
+        request.history, request.tools, None, turn=turn, model_step=2
+    )
+    assert full > 10 + added
+    assert estimate_request_input_tokens(provider, request, turn, legacy) == 10 + added
+    assert added >= 512
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [("provider", "other"), ("requested_model", "other-model"), ("actual_model", "alias-version")],
+)
+async def test_changed_model_or_provider_cannot_reuse_actual_anchor(tmp_path, field, value):
+    provider = WireProvider([wire_read_step(input_tokens=10), answer()])
+    turn = await run(tmp_path, provider, tools=RecordingTools())
+    request = provider.requests[1]
+    turn = turn.model_copy(
+        update={
+            "model_attempts": (
+                turn.model_attempts[0].model_copy(update={field: value}),
+                *turn.model_attempts[1:],
+            )
+        }
+    )
+    assert estimate_request_input_tokens(
+        provider, request, turn, 1
+    ) == provider.adapter.estimate_input_tokens(request)
+
+
+@pytest.mark.parametrize(
+    "identity", [None, ("", "model"), ["openai_chat", "test-model"], (True, "model")]
+)
+async def test_invalid_identity_failclosed_zero_request(tmp_path, identity):
+    class InvalidIdentityProvider(WireProvider):
+        @property
+        def input_token_identity(self):
+            return identity
+
+    provider = InvalidIdentityProvider([answer()])
+    turn = await run(tmp_path, provider)
+    assert turn.error.code == "invalid_provider_output"
+    assert not provider.requests

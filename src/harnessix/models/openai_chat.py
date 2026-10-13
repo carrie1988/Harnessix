@@ -15,12 +15,13 @@ from openai.types.chat.completion_create_params import CompletionCreateParamsStr
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.ids import new_id
+from harnessix.agent.model_input_budget import INCREMENTAL_REQUEST_OVERHEAD_TOKENS
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._bounded_http import BoundedStream, BoundedTransport, InvalidWireData
 from harnessix.models._chat_errors import diagnostic_failure
 from harnessix.models._chat_mapping import build_request
 from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_frame
-from harnessix.models._history import InvalidModelRequest
+from harnessix.models._history import InvalidModelRequest, encode_json
 from harnessix.models._provider_io import finish_attempt, read_key, validate_key, wait_for_io
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
@@ -105,6 +106,31 @@ class OpenAIChatProvider:
             default_headers={"Accept-Encoding": "identity"},
         )
         self._closed = False
+
+    @property
+    def input_token_identity(self) -> tuple[str, str]:
+        return "openai_chat", self.config.model
+
+    def estimate_input_tokens(self, request: ModelRequest, *, prefix_items: int = 0) -> int:
+        """复用出站映射；extra_body 的额外 wrapper 也计入上界，不访问认证或 HTTP。"""
+        if type(prefix_items) is not int or not 0 <= prefix_items <= len(request.history):
+            raise InvalidModelRequest("输入预算前缀长度无效")
+        body, _ = build_request(request, self.config)
+        byte_count = len(encode_json(body).encode("utf-8"))
+        if prefix_items:
+            # 仅扣除相同 mapper 的闭合历史前缀；当前工具和全部指令仍重新计入。
+            prefix = request.model_copy(
+                update={
+                    "history": request.history[:prefix_items],
+                    "tools": (),
+                    "instructions": None,
+                    "tool_choice": "auto",
+                    "forced_tool": None,
+                }
+            )
+            prefix_body, _ = build_request(prefix, self.config)
+            byte_count = max(0, byte_count - len(encode_json(prefix_body).encode("utf-8")))
+        return byte_count + INCREMENTAL_REQUEST_OVERHEAD_TOKENS
 
     async def __aenter__(self) -> Self:
         if self._closed:

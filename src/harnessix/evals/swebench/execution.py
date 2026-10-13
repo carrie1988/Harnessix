@@ -36,6 +36,7 @@ from harnessix.evals.swebench.contracts import (
     SweBenchPreRegistrationPlan,
     SweBenchPublicCase,
 )
+from harnessix.evals.swebench.disk_space import require_evaluation_disk_space
 from harnessix.evals.swebench.execution_contracts import (
     SweBenchCaseExecutionState,
     SweBenchSuiteExecutionState,
@@ -363,6 +364,7 @@ async def _materialize_all(
             run_root / _SESSION_FILE
         )
         async with semaphore, repository_locks[case.repo]:
+            require_evaluation_disk_space(workspaces_root, cache_root)
             return await asyncio.to_thread(
                 materialize_swebench_workspace,
                 case,
@@ -428,6 +430,7 @@ async def run_swebench_agent_suite(
     except ValueError:
         raise KernelError("swebench_run_config_invalid", "SWE-bench执行配置与计划不一致") from None
     root = Path(config.work_root)
+    require_evaluation_disk_space(root, Path(config.cache_root), Path(config.source_root))
     ensure_private_directory(
         root,
         error_code="swebench_execution_root_invalid",
@@ -482,6 +485,8 @@ async def run_swebench_agent_suite(
             ):
                 raise KernelError("swebench_fee_limit_reached", "SWE-bench费用达到停止线")
             process_profile = config.process_profile_for(case.instance_id)
+            if not terminal_attempt:
+                require_evaluation_disk_space(root, Path(config.cache_root))
             thread_id, turn = await _open_case_turn(
                 plan,
                 config,

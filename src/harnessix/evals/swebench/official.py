@@ -15,6 +15,7 @@ from pydantic import ConfigDict, Field, field_validator, model_validator
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
+from harnessix.evals.swebench.disk_space import require_evaluation_disk_space
 from harnessix.evals.swebench.files import hash_regular, read_regular
 from harnessix.evals.swebench.predictions import (
     SweBenchPrediction,
@@ -110,8 +111,7 @@ class SweBenchOfficialResult(ContractModel):
             and errors <= submitted
             and submitted == completed | errors | empty
             and set(self.infra_failure_ids) <= unresolved | errors
-            and set(self.ambiguous_failure_ids)
-            <= unresolved | errors
+            and set(self.ambiguous_failure_ids) <= unresolved | errors
         ):
             raise ValueError("SWE-bench 结果集合关系无效")
         return self
@@ -208,6 +208,7 @@ def run_official_evaluation(
     if not allow_network:
         raise KernelError("swebench_network_not_enabled", "SWE-bench 官方评测未显式允许联网")
     root = _resolved_directory(work_root)
+    require_evaluation_disk_space(root)
     try:
         result = subprocess.run(
             command,
@@ -233,9 +234,7 @@ def import_official_result(
 
     checked = validate_predictions(plan, predictions)
     run_id = evaluation_run_id(plan, checked)
-    result_path = (
-        _resolved_directory(work_root) / "logs" / "evaluation" / run_id / "results.json"
-    )
+    result_path = _resolved_directory(work_root) / "logs" / "evaluation" / run_id / "results.json"
     body = read_regular(
         result_path,
         _MAX_RESULT_BYTES,

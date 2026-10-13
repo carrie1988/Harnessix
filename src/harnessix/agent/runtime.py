@@ -32,7 +32,10 @@ from harnessix.agent.ids import new_id
 from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
 from harnessix.agent.model_history_runtime import prepare_and_commit_model_history
-from harnessix.agent.model_input_budget import estimate_model_input_tokens
+from harnessix.agent.model_input_budget import (
+    estimate_model_input_tokens,
+    estimate_request_input_tokens,
+)
 from harnessix.agent.model_text import ModelTextPublication, protect_request
 from harnessix.agent.models import (
     TERMINAL_TURNS,
@@ -252,6 +255,7 @@ class AgentRuntime:
         model_tool_view: ModelToolView | None = None,
         compaction: CompactionRuntimeConfig | None = None,
         summary_provider: ModelProvider | None = None,
+        budget_pressure_compaction: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -260,6 +264,14 @@ class AgentRuntime:
             (context, async_context),
             (compaction, summary_provider),
         )
+        if type(budget_pressure_compaction) is not bool or (
+            budget_pressure_compaction and compaction is None
+        ):
+            raise KernelError(
+                "invalid_runtime_configuration", "预算压力压缩需显式启用并配置摘要端口"
+            )
+        # 未通过真实质量验收的提前压缩不进入默认产品路径；窗口及溢出恢复压缩不受影响。
+        self._budget_pressure_compaction = budget_pressure_compaction
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -2104,6 +2116,21 @@ class AgentRuntime:
                     instructions,
                     turn=turn,
                     model_step=model_step,
+                )
+                candidate = ModelRequest(
+                    thread_id=thread_id,
+                    turn_id=turn_id,
+                    step=model_step,
+                    history=history,
+                    tools=tools,
+                    instructions=instructions,
+                    budget=turn.budget,
+                    remaining_tokens=output_token_limit,
+                    tool_choice=tool_selection.choice,
+                    forced_tool=tool_selection.forced_tool,
+                )
+                estimated_input_tokens = estimate_request_input_tokens(
+                    self.provider, candidate, turn, estimated_input_tokens
                 )
                 allowed_output_tokens = min(
                     output_token_limit,
