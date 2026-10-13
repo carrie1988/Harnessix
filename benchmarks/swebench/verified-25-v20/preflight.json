@@ -47,9 +47,17 @@
   "remaining_upper_budget_amount": "43.088836",
   "maximum_run_allocation_amount": "43.088836",
   "model_retry_policy": "none",
-  "official_score": null,
+  "official_score": {
+    "resolved_cases": 5,
+    "submitted_cases": 25,
+    "empty_patch_cases": 17,
+    "error_cases": 0,
+    "infrastructure_classifier": 0,
+    "ambiguous_failures": 2,
+    "infrastructure_acceptance": "OPEN"
+  },
   "execution_run_directory": "runs/agent-6c3951d500e8-v20",
-  "execution_status": "FROZEN_NOT_STARTED",
+  "execution_status": "COMPLETED_OFFICIAL_GRADED",
   "evidence_log_sha256": {
     "v20-final-isolation-r3-tests.log": "35399bad174cd2d864ac2ac53247a01d365f2ed2f147f51c1615de1ac7413297",
     "v20-final-isolation-r3.xml": "2ebf3a571af89df06bd94745076c0131494b3060cfadd3a32b4f4a8334dc0232",
