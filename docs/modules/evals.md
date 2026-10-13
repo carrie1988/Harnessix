@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 48
-code_revision: 32e3dca8a213e75301c441159e4386f0fe6c8b6e
+version: 49
+code_revision: 4c5afc1642ab4037f6bbfe616fa546e1d20eab22
 owners:
   - core
 modules:
@@ -64,14 +64,16 @@ related_tests:
   - tests/evals/swebench/test_predictions.py
   - tests/evals/swebench/test_official.py
   - tests/evals/swebench/test_cli.py
+  - tests/evals/swebench/test_agent_execution.py
 supersedes: []
 ---
 
 # Evals模块设计
 
-当前v26候选保持原25项开发集及50K/16次限制，SWE-bench提示v6与共享指令v21统一聚焦读取及
-输入成本预告；旧终态不重跑，成绩不拼接。契约、失败与保留的回归问题见
-[v26增量设计](../changes/swebench-adapter-verified-25-pilot.md#v26候选输入成本反馈与聚焦源码分页)。
+最新完整v27为3/25、空补丁19，仍未达质量目标。提示v8已删除任务包装中重复的通用编码规则，
+保留完整公开问题及评测边界；共享Runtime指令v22、工具和50K/16次均不变，尚未付费实跑。
+180个认证请求位置的只读计量、预算假设反证及兼容／失败边界见
+[后续输入收敛设计](../changes/swebench-adapter-verified-25-pilot.md#后续只读求证与任务包装收敛)。
 
 
 验证宿主的复验计划采用封闭版本：原 v1 保留 70／40，v2 固定 60／38；

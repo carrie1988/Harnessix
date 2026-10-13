@@ -1,0 +1,55 @@
+{
+  "schema": "harnessix.swebench-post-run-input-diagnostic/v1",
+  "historical_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "historical_source_revision": "32e3dca8a213e75301c441159e4386f0fe6c8b6e",
+  "analysis_revision": "4c5afc1642ab4037f6bbfe616fa546e1d20eab22",
+  "scope": "历史180个请求位置的认证只读重建与候选字节计量；不是新自主轨迹、Token测量、准入收益或官方成绩。",
+  "model_requests": 0,
+  "tool_requests": 0,
+  "native_database_and_case_state_unchanged": true,
+  "original_score_unchanged": "3/25",
+  "budget_projection_hypothesis": {
+    "context_fingerprints_matched": 180,
+    "legacy_option_rejections": {
+      "context_compaction_retained_overflow": 187,
+      "not_amortized": 89,
+      "not_affordable": 168
+    },
+    "outgoing_fixed_bytes_plus_overhead_minus_legacy_min": 257,
+    "outgoing_fixed_bytes_plus_overhead_minus_legacy_max": 1916,
+    "summary_candidates_cheaper_by_wire_bound": 0,
+    "terminal_candidate_fits": 0,
+    "decision": "否定：不能通过将规划估算替换为出站字节上界解锁这些终态。保持原预算及压缩安全边界。",
+    "budget_failed_terminal_positions": 24,
+    "unblocked_budget_failed_positions": 0
+  },
+  "candidate_prompt": {
+    "version": "harnessix.swebench-agent-prompt/v8",
+    "old_preamble_utf8_bytes": 1954,
+    "new_preamble_utf8_bytes": 633,
+    "removed_wire_utf8_bytes_per_request": 1321,
+    "measured_request_positions": 180,
+    "problem_statements_unchanged": true,
+    "runtime_workflow_unchanged": true,
+    "status": "已实现并离线验证；必须冻结新轮次后验证真实质量，不能改写旧成绩。"
+  },
+  "regression": {
+    "focused": {
+      "passed": 46,
+      "failures": 0,
+      "errors": 0,
+      "junit_sha256": "b5aa32b895bbd791b60acce1607e61702fef43c572b0cda3e13cce3d26a8ffd5"
+    },
+    "expanded": {
+      "passed": 588,
+      "failures": 0,
+      "errors": 0,
+      "junit_sha256": "79dd15237c83796cebbded6b03f055bb0b8037a3da6cada3c37112ccb70d668a"
+    }
+  },
+  "private_original_sha256": {
+    "budget_projection": "86035ea4397f6c486b33e4b529a521bf07df9cc9063bed17c7044adf4d978adb",
+    "prompt_input": "a2a9d012dd2b5e0447932b78890660e6cf4703ea5d5fadce7028c9c813c4ba2a"
+  },
+  "next_action": "检查阶段式工具接口与模型调用编排的端到端成本；不盲目重跑整轮，不放宽50K/16次，不设置Case专用修补。"
+}

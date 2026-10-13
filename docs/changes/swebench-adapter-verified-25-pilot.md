@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 17
-code_revision: 32e3dca8a213e75301c441159e4386f0fe6c8b6e
+version: 18
+code_revision: 4c5afc1642ab4037f6bbfe616fa546e1d20eab22
 owners:
   - core
 modules:
@@ -19,6 +19,7 @@ related_tests:
   - tests/evals/swebench/test_official.py
   - tests/evals/swebench/test_cli.py
   - tests/evals/swebench/test_execution.py
+  - tests/evals/swebench/test_agent_execution.py
   - tests/evals/swebench/test_failure_isolation.py
   - tests/evals/swebench/test_workspace.py
   - tests/context/test_turn_budget_compaction.py
@@ -746,3 +747,21 @@ Case后继续独立Case，不伪造实扣、不合并旧成功。当前仍须完
 旧未决预留31.474560元、可用135.624920元，均非实扣账单。磁盘仍约22 GiB、未停止或删除业务容器。
 接下来先整改重复输入开销／闭环余量与通用参数约束问题；不盲目重复本候选、不扩大50K/16次、
 不重试终态Case，不合并旧成功。22/25目标及全新泛化集验收未完成。
+
+### 后续只读求证与任务包装收敛
+
+[只读输入诊断](../../benchmarks/swebench/verified-25-v27/post-run-input-diagnostic.json)
+重建180个请求位置，历史及Context指纹均匹配，原数据库和Case状态摘要不变，模型／工具请求0。
+规划改用出站字节上界的假设被否定：固定保守估算反而增加257～1916，摘要候选无一更便宜，
+24个预算失败末次位置仍无解锁候选。这不是实际Token测量；不更改原预算、保留组、摘要预付或摊销准入。
+
+已实施提示v8：[`build_swebench_agent_prompt`](../../src/harnessix/evals/swebench/agent_execution.py)
+只持有公开任务、完整问题原文、测试目标选择及评测隔离约束；通用读取、Patch、验证、
+修复和Review规则继续由原[共享Runtime Context](../../src/harnessix/product_config/agent_context.py)
+持有，动态预算事实仍来自Provider的`budget_instruction`。固定前言1954→633字节；上述180个
+出站映射每次减少1321字节。这是UTF-8字节，不是实际Token、闭环收益或成绩。
+
+原公开字段投影、审批、取消／超时、未知效果、模型／工具、50K/16次均不变；v8进入Turn请求
+身份，旧提示终态不得被新版本恢复或重跑。聚焦46项及扩大588项离线回归均通过，含问题原文
+不截断／不规范化、隐藏字段隔离、真实Context装配、旧提示恢复负控及原预算／压缩／工具视图。
+没有新付费请求，原3/25仍是最新成绩；后续需冻结新计划及新目录，不复用旧评分。
