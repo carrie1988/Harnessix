@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 12
-code_revision: 1a0c8bd536c3254c862a847071cda016f4e0d93c
+version: 13
+code_revision: f2fde8fd0c55de2ce023047b35aea88456d8476e
 owners:
   - core
 modules:
@@ -571,3 +571,43 @@ WAL从缺失变成空文件，其余空WAL不变，不将主文件不变夸大�
 用户随后明确重置为200元新周期，旧费用与全部未决预留仍保留，不计入新周期。新增付费请求
 从新周期逐笔预留、结算，不修改本轮冻结费用上限或宣称原v22已经恢复/完成。
 产品默认仍关闭压力提前摘要；先整改共性预算与工具交互根因，再冻结新候选验证。
+
+### 原生测试入口v6：仓库家族适配，而非Case专用修补
+
+**背景。** v22的7次公开测试调用中，3次是实际源码断言失败、1次通过，另3次不能作为代码失败
+使用：Requests出现递归httpbin fixture依赖，2次Django在禁用IPC的容器中初始化共享内存信号量
+失败。[诊断摘要](../../benchmarks/swebench/verified-25-v22/diagnostic-summary.json)保留原件摘要；
+独立只读镜像导入确认pytest_httpbin、httpbin、werkzeug均不存在，未下载、安装或修改原镜像。
+因此原基础设施门槛仍OPEN，不能因process_nonzero_exit就将所有失败归给模型补丁。
+
+**目标与实现。** [`public_test_profile.py`](../../src/harnessix/evals/swebench/public_test_profile.py)
+新增`swebench-public-tests-v6`：Django家族通过固定Python入口把通用测试路径/节点转换为原生模块
+标签，插入原tests导入根，始终`--parallel=1`调用原runtests.py，并保留原退出码。首次仅增加串行
+参数的诊断仍因路径标签未安装测试App而失败；该失败保留，整改覆盖入口语义而不是隐藏错误。
+
+```text
+固定Profile与完整摘要 → 原有有界选择器校验 → Django路径/节点转换为模块标签
+→ 标签逐段标识符校验 → 固定原生串行入口 → 原退出码/双流归档 → Agent按原预算观察结果
+```
+
+例：`tests/feature/tests.py::Tests::test_case`转换为`feature.tests.Tests.test_case`；已有原生点分标签
+保持不变。非法或空标签在加载runner前拒绝，不猜测测试、不替换为成功、不排除失败测试。
+没有Case ID分支、隐藏测试或答案；pytest和SymPy参数未修改。断网、只读工作区、非root、禁用IPC、
+CPU/内存/进程/期限限制保持不变，不为并行测试开放权限。
+
+**兼容及证据。** 版本化校验按原Profile.version选择精确参数；既有v5配置、摘要和执行指纹不变，
+不静默升级或重跑旧Case，新生成Profile为v6并进入新执行配置指纹。
+[测试入口回归](../../tests/evals/swebench/test_public_test_profile.py)覆盖路径/节点/原生标签、非法标签、
+原退出码、原导入路径、旧v5不升级、跨版本参数与未知版本拒绝。SWE-bench专项352项通过，
+554个源码文件Mypy及公共Schema检查通过；这不覆盖已保留的全仓库历史重试失败。
+
+宿主只读诊断在原镜像和原公开选择器上完成56个实际测试，2项跳过、11项源码运行错误，
+原共享内存和测试App导入失败消失。**该诊断不是Agent自主复验或官方评分，也不是测试通过**；
+保留原退出码1和全部失败，原Session、CaseState和目标源码摘要核验不变。
+Requests的缺失测试依赖尚未整改，摘要零准入和编码质量差距也未解决，不能据此启动无差别付费重跑
+或标记22/25、基础设施0或生产质量达标。
+
+额外扩大集因选入大量不相关Git/平台测试而受控中止：已观察2835项，其中2692通过、143失败，
+并非完整结果或全绿。最先两项失败在原8f09f83b源码上独立复现，均是本机Git不接受`--object-format`；其余141项失败未据此批量归因，
+原日志保留。针对本增量的Process Profile/目录/Codec消费者34项另行通过，不以缩小范围掩盖扩大集
+失败。后续验证先界定关联范围与规模，避免用无关大集反复阻塞编码质量整改。

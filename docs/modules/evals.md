@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 43
-code_revision: 1a0c8bd536c3254c862a847071cda016f4e0d93c
+version: 44
+code_revision: f2fde8fd0c55de2ce023047b35aea88456d8476e
 owners:
   - core
 modules:
@@ -2443,3 +2443,12 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 工具效果未知、原生证据损坏、计费来源/价格不符或下一Case最坏额度不足仍停止；
 冻结终态重放缺失原Session/Thread/Turn时禁止新请求，全部25项尝试完毕才导出完整prediction。
 字段、资金公式、原生恢复、负控及真实评分边界集中见[SWE-bench详设](../changes/swebench-adapter-verified-25-pilot.md#v3独立case故障隔离保留失败不把网络恢复等同于质量恢复)。
+
+### SWE-bench公开测试入口v6：原生标签和串行边界
+
+当前生成的Profile使用v6，Django家族将通用测试路径/节点转换为原生模块标签，并用固定
+`--parallel=1`运行原runtests.py；保留原退出码，非法标签在runner前拒绝。既有v5精确参数和
+摘要仍可读取，不静默升级；pytest/SymPy、网络/IPC/挂载及资源限制未放宽。
+动机、接口调用顺序、兼容、负控和宿主56项失败测试的证据边界见
+[SWE-bench详设](../changes/swebench-adapter-verified-25-pilot.md#原生测试入口v6仓库家族适配而非case专用修补)。
+它只整改公开测试启动，不是Agent自主验收或新官方质量评分；缺失依赖和22/25目标仍未完成。

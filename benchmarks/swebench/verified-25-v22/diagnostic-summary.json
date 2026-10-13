@@ -15,5 +15,60 @@
   "admitted_prefixes": 0,
   "diagnostic_sha256": "f99636743c5bc2777a025efdcc2a1dba47304c8a08b3559701f06b1adc2576db",
   "optional_wal_lifecycle": "Case 0 absent -> empty WAL; others empty -> empty; formal owner discovery can manage optional sidecars; main database and CaseState bytes verified unchanged",
-  "initial_probe_status": "FAILED: optional WAL disappeared after legacy events() read; original failure retained; not a claim that all files were unchanged"
+  "initial_probe_status": "FAILED: optional WAL disappeared after legacy events() read; original failure retained; not a claim that all files were unchanged",
+  "public_test_observations": {
+    "calls": 7,
+    "succeeded": 1,
+    "source_assertion_failures": 3,
+    "missing_external_fixture": 1,
+    "django_shared_memory_launch_failures": 2,
+    "inference_requests": 0,
+    "native_database_and_case_state_unchanged": true,
+    "complete_output_sha256": "3faeaf886f7c9a749274bfd93af0d5fb508048ef8c9a9ba5163af2dc5184e6dd",
+    "module_probe_sha256": "bd1b391f8a193a89a2f42ad07f38f783736b7da3c152d1afe12020e6c70a8594",
+    "scope": "authenticated existing native artifacts plus separate isolated image import probe; not new official scoring",
+    "infrastructure_acceptance": "OPEN"
+  },
+  "native_launcher_candidate_verification": {
+    "source_revision": "f2fde8fd0c55de2ce023047b35aea88456d8476e",
+    "profile_version": "swebench-public-tests-v6",
+    "scope": "host-directed public launcher diagnostic; not autonomous completion or official evaluation",
+    "tests_run": 56,
+    "source_runtime_errors": 11,
+    "skipped": 2,
+    "returncode": 1,
+    "inference_requests": 0,
+    "native_database_case_state_and_target_unchanged": true,
+    "evidence_sha256": "c7ff320376062bc2caff119db60e3f3481ad7f4004a3ebe15d3589c3b2394a7c",
+    "swebench_regression": {
+      "passed": 352,
+      "failed": 0
+    },
+    "profile_consumer_regression": {
+      "passed": 34,
+      "failed": 0
+    },
+    "overbroad_regression": {
+      "status": "INCOMPLETE_CONTROLLED_STOP",
+      "observed_tests": 2835,
+      "passed": 2692,
+      "failed": 143,
+      "baseline_reproduced_count": 2,
+      "baseline_revision": "8f09f83b",
+      "remaining_failures_not_independently_reproduced": 141
+    },
+    "mypy_source_files": 554,
+    "contracts": "PASS",
+    "official_score": null,
+    "quality_acceptance": "NO_GO",
+    "logs_sha256": {
+      "v24-native-profile-swebench-r3.xml": "ab62f9219a6d2d8823e5eb6df14fc8e6d13431a5e3c40bceb07254495e58baee",
+      "v24-native-profile-consumer.xml": "e649b718550381aba9ec5e533a97bd4c921513bc5c12f0f0019f507053d95822",
+      "v24-native-profile-integration.xml": "88c857f8f4a815733113b389861e662670dfd41d5312ec62a1b91cc54c224498",
+      "v24-native-profile-mypy-r2.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
+      "v24-native-profile-contracts.log": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+      "v24-parent-git-negative.xml": "ff8b484591411571b2098a315ed4e1882dd18f9c5ce6cc15280917a136c81a78",
+      "v24-parent-git-negative.log": "c95f40a452e7c1dbed882819fba596d9a8569ba1d122b906f3bb5ff41b4cf13b"
+    }
+  }
 }
