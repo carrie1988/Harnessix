@@ -222,7 +222,9 @@ Resolved 3/25、空Patch 15/25、8个完成评分、2个错误，未达标。
 [串行复验摘要](../../benchmarks/swebench/verified-25-v14/official-summary-serial.json)已独立校验：
 所需10个镜像全部由固定Task Repo本地构建，无拉取回退；Resolved **5/25（20%）**，
 空Patch 15/25、评测错误0、官方基础设施失败0。10个非空Patch均完成评分，仍未达到质量目标。
-本周期累计计价上界12.518928元，全部请求已计量，无未决预留；不是账单实扣金额。
+官方基础设施分类字段为0不代表环境达标：[原始镜像探测](../../benchmarks/swebench/verified-25-v14/infrastructure-probes.json)
+确认requests/pylint测试依赖trustme/appdirs缺失；另一个零测试收集问题尚未闭环。
+保留原评分，不通过修改隐藏测试或临时安装依赖抬高成绩。环境门槛仍未验收。
 
 v15在相同开发集、模型及任务硬预算下引入两项共性修复：
 
@@ -243,4 +245,10 @@ v15在相同开发集、模型及任务硬预算下引入两项共性修复：
 测试验证提前激活、用量结算及事件重放。相关回归1592项通过、1项跳过、4项因本机Git能力未选择；
 Ruff及552个源码文件Mypy通过。这是机制验证，不是Resolved成绩。
 [v15计划](../../benchmarks/swebench/verified-25-v15/plan.json)与[预检](../../benchmarks/swebench/verified-25-v15/preflight.json)
-已经冻结，须在新Workspace执行及官方评分后判断质量收益，不提前宣布达标。
+已经冻结并完成25 Case：[执行摘要](../../benchmarks/swebench/verified-25-v15/execution-summary.json)、
+[官方摘要](../../benchmarks/swebench/verified-25-v15/official-summary.json)及独立导入校验。
+结果为Resolved **4/25（16%）**、空Patch **18/25**，0个Turn完整闭环；20个预算失败、
+5个摘要契约失败。相比v14未获得质量收益，结论为 **NO_GO**，不把提前压缩默认发布；
+既有窗口阈值压缩和溢出恢复机制保留。评分错误0，环境缺依赖的风险仍未验收。
+当前100元周期累计保守计价上界 **22.290948元**，无未决预留，剩余额度 **77.709052元**；
+这是按完整用量计算的计价上界，不是实扣账单。

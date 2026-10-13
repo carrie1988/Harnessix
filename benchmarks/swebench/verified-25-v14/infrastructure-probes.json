@@ -1,0 +1,35 @@
+{
+  "schema": "harnessix.swebench-infrastructure-probes/v1",
+  "generated_at": "2026-10-13T05:28:02.132589+00:00",
+  "task_repo_revision": "3d07b464b7b311a0cbfb5ed5b2d8a3b96f84a33d",
+  "scope": "dependency imports only; no gold patch, test.patch, eval.sh, or hidden assertions read",
+  "confirmed_environment_failures": 2,
+  "probes": [
+    {
+      "instance_id": "psf__requests-5414",
+      "module": "trustme",
+      "image": "swebench/sweb.eval.x86_64.psf_1776_requests-5414:latest",
+      "image_id": "sha256:c130b756507a0cff61eef1583120edca28ef6ae0e93f21515c6666a5b93f1a21",
+      "exit_code": 0,
+      "module_present": false,
+      "stdout": "False",
+      "dockerfile_sha256": "d966cfbde6bf81dcdbd2ce12834174d2b96a2fadd630abf1cf5a599c65cc87e9",
+      "pristine_image": true,
+      "agent_patch_applied": false,
+      "network": "none"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "module": "appdirs",
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4661:latest",
+      "image_id": "sha256:227bff0a60af505dfa5efe18fd9995e666ad2e5be8a516e092840513b60953b3",
+      "exit_code": 0,
+      "module_present": false,
+      "stdout": "False",
+      "dockerfile_sha256": "d9db82b1c553bc2f0da6743cf4ec75d49c0bd04617be7ab4ad00afad585f8f32",
+      "pristine_image": true,
+      "agent_patch_applied": false,
+      "network": "none"
+    }
+  ]
+}

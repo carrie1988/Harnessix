@@ -21,5 +21,9 @@
   "build_workers": 1,
   "all_required_images_built_locally": true,
   "previous_failure_artifact": "official-summary-initial.json",
-  "replay_policy": "full identical predictions; no Agent/model rerun; no per-case best-of selection"
+  "replay_policy": "full identical predictions; no Agent/model rerun; no per-case best-of selection",
+  "infrastructure_acceptance": "NOT_ACCEPTED",
+  "confirmed_pristine_image_dependency_failures": 2,
+  "infrastructure_probe_artifact": "../verified-25-v14/infrastructure-probes.json",
+  "infrastructure_failure_note": "Official classifier count 0 is not environment acceptance; pristine requests/pylint images lack trustme/appdirs. No original score changed."
 }
