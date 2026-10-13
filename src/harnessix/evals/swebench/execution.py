@@ -171,7 +171,7 @@ def _case_evidence_failure(
         # 仅映射已计费、响应身份已知的契约失败；原 Turn 和请求账本保持不变。
         if (
             turn.status is TurnStatus.FAILED
-            and code == "invalid_provider_output"
+            and code in {"invalid_provider_output", "provider_invalid_provider_output"}
             and turn.accounted_attempts
             and all(
                 attempt.response_id is not None and attempt.status in {"completed", "failed"}

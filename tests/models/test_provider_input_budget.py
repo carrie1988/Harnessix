@@ -9,8 +9,9 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.model_input_budget import INCREMENTAL_REQUEST_OVERHEAD_TOKENS
-from harnessix.agent.models import ToolResultContent
+from harnessix.agent.models import TextContent, ToolResultContent
 from harnessix.models import openai_chat
+from harnessix.models._chat_input_anchor import CompletedChatInput
 from harnessix.models._chat_mapping import build_request
 from harnessix.models._history import InvalidModelRequest, encode_json, tool_alias
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
@@ -19,6 +20,125 @@ from harnessix.models.openai_chat import OpenAIChatProvider
 from tests.contracts.provider import model_request
 from tests.models.test_chat_mapping import call, item
 from tests.models.wire import WireStream, response, text_frames
+
+
+def appended_request(request):
+    return request.model_copy(
+        update={
+            "step": request.step + 1,
+            "history": (
+                *request.history,
+                item(TextContent(kind="assistant_message", text='已读"\\\n🙂' * 30)),
+            ),
+        }
+    )
+
+
+def anchor_fixture():
+    provider = pure_provider()
+    request = model_request(with_tools=True).model_copy(update={"instructions": "约束" * 1000})
+    body, _ = build_request(request, provider.config)
+    provider._completed_input = CompletedChatInput.capture(request, body, provider.config)
+    return provider, request, appended_request(request)
+
+
+async def test_completed_stream_reuses_exact_wrapper_and_close_clears_proof():
+    async with OpenAIChatProvider(
+        OpenAIChatConfig(model="test-model"),
+        api_key="offline-fixture",
+        transport=httpx.MockTransport(lambda _: response(WireStream(text_frames()))),
+    ) as provider:
+        previous = model_request(with_tools=True).model_copy(update={"instructions": "约束" * 1000})
+        current = appended_request(previous)
+        before = provider.estimate_input_tokens(current, prefix_items=len(previous.history))
+        assert [event async for event in provider.stream(previous, CancelToken())]
+        after = provider.estimate_input_tokens(current, prefix_items=len(previous.history))
+        assert provider._completed_input is not None
+        assert 512 <= after < before - 6000
+        # 未给出已验证历史前缀时，仍必须使用完整 wire 上界。
+        full_body, _ = build_request(current, provider.config)
+        assert provider.estimate_input_tokens(current) == len(encode_json(full_body).encode()) + 512
+    assert provider._completed_input is None
+
+
+@pytest.mark.parametrize("drift", ["thread", "turn", "step", "prefix", "config"])
+def test_wrapper_proof_mismatch_falls_back_without_io(drift):
+    from uuid import uuid4
+
+    provider, previous, current = anchor_fixture()
+    if drift == "thread":
+        current = current.model_copy(update={"thread_id": uuid4()})
+    elif drift == "turn":
+        current = current.model_copy(update={"turn_id": uuid4()})
+    elif drift == "step":
+        current = current.model_copy(update={"step": 3})
+    elif drift == "prefix":
+        current = current.model_copy(
+            update={
+                "history": (
+                    item(TextContent(kind="user_message", text="改写")),
+                    *current.history[1:],
+                )
+            }
+        )
+    else:
+        provider.config = provider.config.model_copy(update={"enable_thinking": False})
+    guarded = provider.estimate_input_tokens(current, prefix_items=len(previous.history))
+    provider._completed_input = None
+    assert guarded == provider.estimate_input_tokens(current, prefix_items=len(previous.history))
+
+
+@pytest.mark.parametrize("drift", ["instructions", "tools", "both"])
+def test_changed_wrappers_are_charged_in_full(drift):
+    provider, previous, current = anchor_fixture()
+    instructions = current.instructions
+    tools = current.tools
+    if drift in {"instructions", "both"}:
+        instructions = "新约束" * 1000
+    if drift in {"tools", "both"}:
+        tools = (tools[0].model_copy(update={"description": "新的工具约束" * 1000}),)
+    current = current.model_copy(update={"instructions": instructions, "tools": tools})
+    guarded = provider.estimate_input_tokens(current, prefix_items=len(previous.history))
+    if drift == "both":
+        provider._completed_input = None
+        assert guarded == provider.estimate_input_tokens(
+            current, prefix_items=len(previous.history)
+        )
+    elif drift == "instructions":
+        assert (
+            guarded >= len(encode_json({"role": "system", "content": instructions}).encode()) + 512
+        )
+    else:
+        body, _ = build_request(current, provider.config)
+        assert guarded >= len(encode_json(body["tools"]).encode()) + 512
+
+
+def test_anchor_stores_only_hashes_and_is_independent_of_mutable_request_fields():
+    provider, previous, current = anchor_fixture()
+    assert previous.instructions not in repr(provider._completed_input)
+    current.tools[0].input_schema["description"] = "mutable drift" * 1000
+    guarded = provider.estimate_input_tokens(current, prefix_items=len(previous.history))
+    body, _ = build_request(current, provider.config)
+    assert guarded >= len(encode_json(body["tools"]).encode()) + 512
+
+
+@pytest.mark.parametrize("terminal", ["length", "content_filter", "malformed"])
+async def test_non_success_stream_cannot_publish_wrapper_proof(terminal):
+    from tests.models.wire import chunk, frame
+
+    frames = text_frames()
+    if terminal == "malformed":
+        frames = [b"data: invalid-json\n\n"]
+    else:
+        frames[2] = frame(chunk(finish=terminal))
+    async with OpenAIChatProvider(
+        OpenAIChatConfig(model="test-model"),
+        api_key="offline-fixture",
+        transport=httpx.MockTransport(lambda _: response(WireStream(frames))),
+    ) as provider:
+        request = model_request()
+        assert [event async for event in provider.stream(request, CancelToken())]
+        assert provider._completed_input is None
 
 
 def pure_provider(**config):

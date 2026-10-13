@@ -19,12 +19,18 @@ from harnessix.agent.model_input_budget import INCREMENTAL_REQUEST_OVERHEAD_TOKE
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._bounded_http import BoundedStream, BoundedTransport, InvalidWireData
 from harnessix.models._chat_errors import diagnostic_failure
+from harnessix.models._chat_input_anchor import CompletedChatInput
 from harnessix.models._chat_mapping import build_request
 from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_frame
 from harnessix.models._history import InvalidModelRequest, encode_json
 from harnessix.models._provider_io import finish_attempt, read_key, validate_key, wait_for_io
 from harnessix.models.config import OpenAIChatConfig
-from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
+from harnessix.models.contracts import (
+    ModelRequest,
+    ProviderEvent,
+    ResponseCompleted,
+    ResponseFailed,
+)
 
 
 def _failure(error: Exception) -> ResponseFailed:
@@ -106,6 +112,7 @@ class OpenAIChatProvider:
             default_headers={"Accept-Encoding": "identity"},
         )
         self._closed = False
+        self._completed_input: CompletedChatInput | None = None
 
     @property
     def input_token_identity(self) -> tuple[str, str]:
@@ -118,7 +125,7 @@ class OpenAIChatProvider:
         body, _ = build_request(request, self.config)
         byte_count = len(encode_json(body).encode("utf-8"))
         if prefix_items:
-            # 仅扣除相同 mapper 的闭合历史前缀；当前工具和全部指令仍重新计入。
+            # 重启、改写、跨 Turn 或失败请求没有封装证明，仍全额计入当前工具和指令。
             prefix = request.model_copy(
                 update={
                     "history": request.history[:prefix_items],
@@ -130,6 +137,12 @@ class OpenAIChatProvider:
             )
             prefix_body, _ = build_request(prefix, self.config)
             byte_count = max(0, byte_count - len(encode_json(prefix_body).encode("utf-8")))
+            anchor = getattr(self, "_completed_input", None)
+            if anchor is not None:
+                redundant = anchor.unchanged_wrapper_bytes(
+                    request, body, prefix_body, self.config, prefix_items
+                )
+                byte_count = max(0, byte_count - redundant)
         return byte_count + INCREMENTAL_REQUEST_OVERHEAD_TOKENS
 
     async def __aenter__(self) -> Self:
@@ -147,6 +160,7 @@ class OpenAIChatProvider:
 
     async def aclose(self) -> None:
         self._closed = True
+        self._completed_input = None
         await self._client.close()
 
     async def probe_model_availability(self, cancel: CancelToken) -> bool:
@@ -168,8 +182,10 @@ class OpenAIChatProvider:
         if self._closed:
             yield ResponseFailed(code="invalid_request")
             return
+        self._completed_input = None
         try:
             body, names = build_request(request, self.config)
+            input_candidate = CompletedChatInput.capture(request, body, self.config)
         except (ValueError, TypeError, OverflowError):
             yield ResponseFailed(code="invalid_request")
             return
@@ -218,6 +234,12 @@ class OpenAIChatProvider:
                 if not isinstance(bounded, BoundedStream):
                     raise InvalidWireData("响应缺少传输预算")
                 completed = state.finish(seen_done=bounded.seen_done)
+                if any(
+                    isinstance(event, ResponseCompleted)
+                    and event.finish_reason in {"completed", "tool_calls"}
+                    for event in completed
+                ):
+                    self._completed_input = input_candidate
                 yield finish_attempt(attempt_id)
                 for event in completed:
                     cancel.checkpoint()

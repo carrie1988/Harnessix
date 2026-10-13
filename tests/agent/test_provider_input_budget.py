@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 
 from harnessix.agent.model_input_budget import (
@@ -14,12 +15,64 @@ from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptStarted, ModelUsageObserved
 from harnessix.context.tool_result_view import history_document
 from harnessix.models.anthropic import AnthropicProvider
+from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelInputTokenEstimator
+from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools, answer
 from tests.agent.test_runtime_sampled_token_budget import accounted_read_step
+from tests.contracts.provider import model_request
 from tests.models.test_provider_input_budget import pure_provider
+from tests.models.wire import WireStream, response, text_frames, tool_frames
+
+
+@pytest.mark.parametrize("reuse_wrapper", [True, False])
+async def test_real_adapter_wrapper_proof_unlocks_next_step_without_raising_budget(
+    tmp_path, reuse_wrapper
+):
+    class HeavyTools(RecordingTools):
+        def definitions(self):
+            return tuple(
+                tool.model_copy(update={"description": "unchanged contract " * 300})
+                for tool in super().definitions()
+            )
+
+    class UncachedProvider(OpenAIChatProvider):
+        def estimate_input_tokens(self, request, *, prefix_items=0):
+            self._completed_input = None
+            return super().estimate_input_tokens(request, prefix_items=prefix_items)
+
+    tools = HeavyTools()
+    sample = model_request().model_copy(
+        update={"tools": tools.definitions(), "remaining_tokens": 900}
+    )
+    maximum = pure_provider().estimate_input_tokens(sample) + 100
+    sent = []
+
+    def handle(request):
+        sent.append(request)
+        frames = tool_frames() if len(sent) == 1 else text_frames()
+        return response(WireStream(frames))
+
+    adapter = OpenAIChatProvider if reuse_wrapper else UncachedProvider
+    async with adapter(
+        OpenAIChatConfig(model="test-model"),
+        api_key="offline-fixture",
+        transport=httpx.MockTransport(handle),
+    ) as provider:
+        turn = await run(
+            tmp_path,
+            provider,
+            text="测试任务",
+            tools=tools,
+            budget=Budget(max_tokens=maximum, max_output_chars=900),
+        )
+    assert turn.budget.max_tokens == maximum and turn.usage.total_tokens <= maximum
+    if reuse_wrapper:
+        assert len(sent) == 2 and turn.status is TurnStatus.COMPLETED
+    else:
+        assert len(sent) == 1 and turn.error.code == "budget_exceeded"
 
 
 class WireProvider(ScriptedProvider):

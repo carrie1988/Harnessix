@@ -611,8 +611,11 @@ async def _run_offline_suite(plan, config):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("last_status", ["completed", "failed"])
+@pytest.mark.parametrize(
+    "turn_error", ["invalid_provider_output", "provider_invalid_provider_output"]
+)
 async def test_known_invalid_response_continues_without_retry_and_preserves_resume_hashes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, last_status: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, last_status: str, turn_error: str
 ) -> None:
     plan = _plan()
     config = _config(tmp_path, plan)
@@ -620,11 +623,11 @@ async def test_known_invalid_response_continues_without_retry_and_preserves_resu
     turns[2] = _accounted_turn(
         2,
         config,
-        turn_error="invalid_provider_output",
+        turn_error=turn_error,
         last_attempt_changes=(
             {
                 "status": "failed",
-                "error": AgentFailure(code="invalid_provider_output", message="fixture"),
+                "error": AgentFailure(code=turn_error, message="fixture"),
             }
             if last_status == "failed"
             else {}
@@ -665,7 +668,9 @@ async def test_known_invalid_response_continues_without_retry_and_preserves_resu
 @pytest.mark.parametrize(
     "scenario", ["partial", "unknown", "uncovered_step", "wrong_model", "legacy"]
 )
-@pytest.mark.parametrize("turn_error", ["invalid_provider_output", "budget_exceeded"])
+@pytest.mark.parametrize(
+    "turn_error", ["invalid_provider_output", "provider_invalid_provider_output", "budget_exceeded"]
+)
 @pytest.mark.asyncio
 async def test_unresolved_cost_stops_immediately_keeps_full_reserve_and_cannot_resume(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str, turn_error: str
