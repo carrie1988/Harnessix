@@ -103,6 +103,66 @@ async def test_pressure_compaction_requires_explicit_opt_in_and_replays(
     assert (restored.active_compaction_window_id is not None) == bool(expected_compactions)
 
 
+async def test_remaining_request_feedback_counts_durable_summary_attempts(tmp_path):
+    from tests.models.test_provider_input_budget import pure_provider
+
+    store = SQLiteSessionStore(tmp_path / "feedback.sqlite")
+    observed = []
+
+    class EstimatingMain(SequenceProvider):
+        adapter = pure_provider()
+
+        @property
+        def input_token_identity(self):
+            return self.adapter.input_token_identity
+
+        def estimate_input_tokens(self, request, *, prefix_items=0):
+            return self.adapter.estimate_input_tokens(request, prefix_items=prefix_items)
+
+        async def stream(self, request, cancel):
+            current = (await store.get_thread(request.thread_id)).turns[0]
+            assert request.remaining_calls == 16 - len(current.accounted_attempts)
+            assert request.input_tokens_upper_bound > 0
+            assert request.consumed_usage == current.usage
+            observed.append((request.step, request.remaining_calls, len(current.compactions)))
+            async with aclosing(super().stream(request, cancel)) as stream:
+                async for event in stream:
+                    yield event
+
+    main = EstimatingMain(investigation_responses(9))
+    summary = BudgetSummaryProvider([])
+    config = CompactionRuntimeConfig(
+        policy=CompactionPolicy(
+            target_history_tokens=65536,
+            summary_reserve_tokens=12288,
+            max_summary_input_tokens=262144,
+            retain_recent_groups=2,
+        ),
+        trigger_history_tokens=131072,
+        max_summary_output_tokens=2048,
+    )
+    async with AgentRuntime(
+        store,
+        main,
+        RecordingTools(),
+        compaction=config,
+        summary_provider=summary,
+        budget_pressure_compaction=True,
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id,
+            "调查并验证",
+            request_id="feedback",
+            budget=Budget(max_tokens=50000, max_steps=16),
+        )
+    assert turn.status == "completed", turn.error
+    assert len(summary.requests) == 4 and len(observed) == 10
+    assert any(calls < 16 - step + 1 for step, calls, _ in observed)
+    assert observed[-1][1] == 3 and len(turn.accounted_attempts) == 14
+    assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
+
+
 @pytest.mark.parametrize("finish", ["stop", "length"])
 async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
     tmp_path: Path, monkeypatch, finish

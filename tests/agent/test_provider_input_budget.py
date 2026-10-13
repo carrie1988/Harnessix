@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 
@@ -46,7 +48,12 @@ async def test_real_adapter_wrapper_proof_unlocks_next_step_without_raising_budg
 
     tools = HeavyTools()
     sample = model_request().model_copy(
-        update={"tools": tools.definitions(), "remaining_tokens": 900, "consumed_usage": Usage()}
+        update={
+            "tools": tools.definitions(),
+            "remaining_tokens": 900,
+            "consumed_usage": Usage(),
+            "input_tokens_upper_bound": 100_000,
+        }
     )
     maximum = pure_provider().estimate_input_tokens(sample) + 100
     sent = []
@@ -163,6 +170,8 @@ async def test_large_unsent_title_admitted_candidate_before_step_transition(tmp_
     assert turn.status is TurnStatus.COMPLETED
     candidate, request = provider.estimates[0], provider.requests[0]
     assert candidate.step == request.step == 1
+    assert candidate.input_tokens_upper_bound == 2_000
+    assert request.input_tokens_upper_bound == provider.adapter.estimate_input_tokens(candidate)
     assert candidate.remaining_tokens == 900
     assert provider.adapter.estimate_input_tokens(request) + request.remaining_tokens <= 2_000
 
@@ -173,10 +182,74 @@ async def test_third_party_fallback_unchanged(tmp_path):
     request = provider.requests[0]
     legacy = estimate_model_input_tokens(request.history, request.tools, request.instructions)
     assert request.consumed_usage is None
+    assert request.input_tokens_upper_bound is None
     assert estimate_request_input_tokens(provider, request, turn, legacy) == legacy
     assert not isinstance(provider, ModelInputTokenEstimator)
     assert not isinstance(object.__new__(AnthropicProvider), ModelInputTokenEstimator)
     assert request.remaining_tokens == min(900, 2_000 - legacy)
+
+
+async def test_real_sdk_bounded_source_pages_have_prepaid_feedback_and_durable_evidence(tmp_path):
+    from harnessix.agent.models import ToolResultContent
+    from harnessix.tools.runtime import CodingToolRuntime
+    from tests.models.wire import call as wire_call
+    from tests.models.wire import chunk, frame
+
+    body = ("print('focused source evidence')\n" * 200).encode()
+    (tmp_path / "source.py").write_bytes(body)
+    sent = []
+
+    def handle(request):
+        payload = json.loads(request.content)
+        sent.append(payload)
+        assert any(
+            "conservative input bound" in m.get("content", "")
+            for m in payload["messages"]
+            if m["role"] == "system"
+        )
+        if len(sent) == 3:
+            return response(WireStream(text_frames()))
+        arguments = {"path": "source.py", "max_lines": 2000, "max_utf8_bytes": 4096}
+        if len(sent) == 2:
+            observed = json.loads(
+                next(m["content"] for m in reversed(payload["messages"]) if m["role"] == "tool")
+            )["output"]
+            assert observed["utf8_bytes"] <= 4096 and observed["truncated"]
+            arguments.update(
+                start_line=observed["next_line"], expected_revision=observed["revision"]
+            )
+        tool = wire_call(arguments=json.dumps(arguments))
+        tool["function"]["name"] = "read_file"
+        frames = [
+            frame(chunk({"tool_calls": [tool]})),
+            frame(chunk(finish="tool_calls")),
+            frame(chunk(usage=True)),
+            b"data: [DONE]\n\n",
+        ]
+        return response(WireStream(frames))
+
+    async with (
+        CodingToolRuntime(tmp_path) as tools,
+        OpenAIChatProvider(
+            OpenAIChatConfig(model="test-model"),
+            api_key="offline-fixture",
+            transport=httpx.MockTransport(handle),
+        ) as provider,
+    ):
+        turn = await run(
+            tmp_path, provider, tools=tools, budget=Budget(max_tokens=50_000, max_steps=16)
+        )
+    assert turn.status == TurnStatus.COMPLETED and len(sent) == 3
+    outputs = [
+        item.content.output for item in turn.items if isinstance(item.content, ToolResultContent)
+    ]
+    assert len(outputs) == 2 and all(o["utf8_bytes"] <= 4096 for o in outputs)
+    assert (outputs[0]["text"] + outputs[1]["text"]).encode() == body
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    thread_ids = await store.thread_ids()
+    assert len(thread_ids) == 1
+    assert (await store.get_thread(thread_ids[0])).turns[0] == turn
+    assert (tmp_path / "source.py").read_bytes() == body
 
 
 async def test_rewritten_history_does_not_use_old_actual_anchor(tmp_path):

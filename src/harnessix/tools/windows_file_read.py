@@ -15,6 +15,7 @@ from harnessix.tools.contracts import (
     ListFilesInput,
     ListFilesOutput,
     ReadFileInput,
+    ReadFileInputV2,
     ReadFileOutput,
     ReadFileSnapshotOutput,
     ReadToolError,
@@ -88,6 +89,7 @@ def _read_lines(
     operation: ReadOperation,
 ) -> tuple[list[str], int, int, Literal["line_limit", "byte_limit"] | None]:
     lines: list[str] = []
+    text_limit = args.max_utf8_bytes if isinstance(args, ReadFileInputV2) else MAX_TEXT_BYTES
     scanned = returned = line_number = 0
     reason: Literal["line_limit", "byte_limit"] | None = None
     with io.BytesIO(content) as stream:
@@ -108,7 +110,7 @@ def _read_lines(
             text = _decode(raw)
             if line_number < args.start_line:
                 continue
-            if returned + len(raw) > MAX_TEXT_BYTES:
+            if returned + len(raw) > text_limit:
                 reason = "byte_limit"
                 break
             returned += len(raw)

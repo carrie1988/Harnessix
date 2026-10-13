@@ -23,6 +23,8 @@ class ModelRequest(ContractModel):
     instructions: str | None = Field(default=None, min_length=1, max_length=1_000_000)
     budget: Budget
     consumed_usage: Usage | None = None
+    input_tokens_upper_bound: int | None = Field(default=None, ge=1, strict=True)
+    remaining_calls: int | None = Field(default=None, ge=1, le=1000, strict=True)
     remaining_tokens: int | None = Field(default=None, ge=1)
     tool_choice: Literal["auto", "required"] = "auto"
     forced_tool: str | None = Field(default=None, min_length=1, max_length=256)

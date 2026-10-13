@@ -33,6 +33,7 @@ from harnessix.tools.contracts import (
     ListFilesOutput,
     ReadContract,
     ReadFileInput,
+    ReadFileInputV2,
     ReadFileOutput,
     ReadFileSnapshotOutput,
     ReadToolError,
@@ -109,8 +110,8 @@ _BINDINGS = (
         "read_file",
         "读取UTF-8文本范围；可直接指定start_line，若需与先前观察保持同一版本则传revision。"
         "digest_status=complete时，content_sha256是完整"
-        "文件摘要，可作Patch expected_sha256；不跟随链接",
-        ReadFileInput,
+        "文件摘要，可作Patch expected_sha256；max_utf8_bytes限制本页文本，整行分页；不跟随链接",
+        ReadFileInputV2,
         ReadFileSnapshotOutput,
     ),
     _ReadBinding(

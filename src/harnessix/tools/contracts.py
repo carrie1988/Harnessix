@@ -41,6 +41,17 @@ class ReadFileInput(ReadContract):
     expected_revision: Revision | None = None
 
 
+class ReadFileInputV2(ReadFileInput):
+    """显式限制文本页字节数；旧v1输入及其24 KiB默认值保持不变。"""
+
+    max_utf8_bytes: int = Field(
+        default=MAX_TEXT_BYTES,
+        ge=MAX_LINE_BYTES,
+        le=MAX_TEXT_BYTES,
+        description="本页文本UTF-8字节上限，不是Token数；整行分页，可用next_line继续",
+    )
+
+
 class DirectoryEntry(ReadContract):
     name: str = Field(min_length=1, max_length=255)
     kind: Literal["file", "directory", "symlink", "special"]

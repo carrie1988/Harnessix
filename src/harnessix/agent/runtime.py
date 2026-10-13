@@ -2156,6 +2156,7 @@ class AgentRuntime:
                     turn=turn,
                     model_step=model_step,
                 )
+                input_budget_aware = isinstance(self.provider, ModelInputTokenEstimator)
                 candidate = ModelRequest(
                     thread_id=thread_id,
                     turn_id=turn_id,
@@ -2164,8 +2165,15 @@ class AgentRuntime:
                     tools=tools,
                     instructions=instructions,
                     budget=turn.budget,
-                    consumed_usage=(
-                        turn.usage if isinstance(self.provider, ModelInputTokenEstimator) else None
+                    consumed_usage=(turn.usage if input_budget_aware else None),
+                    # 先为预算说明预付最长合法数字；正式请求换成较短的实际上界。
+                    input_tokens_upper_bound=(
+                        turn.budget.max_tokens if input_budget_aware else None
+                    ),
+                    remaining_calls=(
+                        require_request_slots(turn)
+                        if input_budget_aware and self._compaction is not None
+                        else None
                     ),
                     remaining_tokens=output_token_limit,
                     tool_choice=tool_selection.choice,
@@ -2194,6 +2202,12 @@ class AgentRuntime:
                     instructions=instructions,
                     budget=turn.budget,
                     consumed_usage=candidate.consumed_usage,
+                    input_tokens_upper_bound=(
+                        estimated_input_tokens
+                        if candidate.input_tokens_upper_bound is not None
+                        else None
+                    ),
+                    remaining_calls=candidate.remaining_calls,
                     remaining_tokens=allowed_output_tokens,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,

@@ -15,6 +15,7 @@ from harnessix.tools.contracts import (
     MAX_SCAN_BYTES,
     ListFilesInput,
     ReadFileInput,
+    ReadFileInputV2,
     ReadFileSnapshotOutput,
     ReadToolError,
 )
@@ -136,6 +137,27 @@ def test_windows_snapshot_preserves_native_observation_size_limit(
     with pytest.raises(ReadToolError) as failed:
         runtime.read_file_snapshot(ReadFileInput(path="app.py", max_lines=1), ReadOperation())
     assert failed.value.code == "limit_exceeded"
+
+
+def test_windows_adapter_honors_explicit_utf8_page_budget(tmp_path, runtime):
+    body = ("行🙂e\u0301\r\n" * 800).encode()
+    (tmp_path / "page.py").write_bytes(body)
+    page = runtime.read_file_snapshot(
+        ReadFileInputV2(path="page.py", max_lines=2000, max_utf8_bytes=4096), ReadOperation()
+    )
+    assert 0 < page.utf8_bytes <= 4096 and page.truncation_reason == "byte_limit"
+    assert page.content_sha256 == hashlib.sha256(body).hexdigest()
+    tail = runtime.read_file_snapshot(
+        ReadFileInputV2(
+            path="page.py",
+            start_line=page.next_line,
+            expected_revision=page.revision,
+            max_lines=2000,
+        ),
+        ReadOperation(),
+    )
+    assert (page.text + tail.text).encode() == body and not tail.truncated
+    assert tail.content_sha256 == page.content_sha256
 
 
 def test_list_and_read_preserve_public_contract_and_revision(

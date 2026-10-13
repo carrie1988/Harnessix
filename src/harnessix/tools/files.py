@@ -16,6 +16,7 @@ from harnessix.tools.contracts import (
     ListFilesInput,
     ListFilesOutput,
     ReadFileInput,
+    ReadFileInputV2,
     ReadFileOutput,
     ReadFileSnapshotOutput,
     ReadToolError,
@@ -109,6 +110,7 @@ def _read_file_page(
     """复用旧文本分页规则；FD仍由外层Workspace观察统一拥有和复核。"""
 
     lines: list[str] = []
+    text_limit = args.max_utf8_bytes if isinstance(args, ReadFileInputV2) else MAX_TEXT_BYTES
     scanned = returned = line_number = 0
     reason: Literal["line_limit", "byte_limit"] | None = None
     # 有界预读最多额外8 KiB；closefd=False，不转移FD所有权。
@@ -130,7 +132,7 @@ def _read_file_page(
             text = _decode(raw)
             if line_number < args.start_line:
                 continue
-            if returned + len(raw) > MAX_TEXT_BYTES:
+            if returned + len(raw) > text_limit:
                 reason = "byte_limit"
                 break
             returned += len(raw)

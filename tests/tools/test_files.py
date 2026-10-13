@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import errno
+import hashlib
 import os
 
 import pytest
@@ -230,6 +231,72 @@ async def test_scan_limit_cannot_be_evaded_by_line_offset(tmp_path):
             expected_revision=first.output["revision"],
         )
         assert result.error.code == "tool_limit_exceeded"
+
+
+@pytest.mark.parametrize("line", ["源代码🙂e\u0301\r\n" * 100, "a" * 4095 + "\n"])
+async def test_explicit_utf8_page_budget_preserves_lines_digest_and_continuation(tmp_path, line):
+    body = (line * 3).encode()
+    (tmp_path / "bounded.py").write_bytes(body)
+    async with CodingToolRuntime(tmp_path) as tools:
+        page = await execute(tools, path="bounded.py", max_lines=2000, max_utf8_bytes=4096)
+        assert page.outcome == "succeeded"
+        output = page.output
+        assert 0 < output["utf8_bytes"] <= 4096
+        assert output["truncation_reason"] == "byte_limit"
+        assert output["digest_status"] == "complete"
+        assert output["content_sha256"] == hashlib.sha256(body).hexdigest()
+        pages = [output["text"]]
+        while output["truncated"]:
+            page = await execute(
+                tools,
+                path="bounded.py",
+                start_line=output["next_line"],
+                expected_revision=output["revision"],
+                max_lines=2000,
+                max_utf8_bytes=4096,
+            )
+            assert page.outcome == "succeeded"
+            output = page.output
+            assert 0 < output["utf8_bytes"] <= 4096
+            assert output["content_sha256"] == hashlib.sha256(body).hexdigest()
+            pages.append(output["text"])
+        assert "".join(pages).encode() == body
+        assert (tmp_path / "bounded.py").read_bytes() == body
+
+
+@pytest.mark.parametrize("limit", [True, False, 4095, 24577, "4096", 4096.0, None])
+async def test_invalid_utf8_page_budget_is_rejected_before_read(tmp_path, monkeypatch, limit):
+    def denied(*args, **kwargs):
+        pytest.fail("无效参数不得触达文件读取")
+
+    monkeypatch.setattr(files, "read_file_snapshot", denied)
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await execute(tools, path="not-read.py", max_utf8_bytes=limit)
+        assert result.error.code == "tool_invalid_arguments"
+
+
+async def test_page_budget_does_not_relax_revision_line_or_scan_limits(tmp_path):
+    file = tmp_path / "code.py"
+    file.write_bytes(b"x" * 4095 + b"\n" + b"end\n")
+    async with CodingToolRuntime(tmp_path) as tools:
+        exact = await execute(tools, path="code.py", max_lines=2000, max_utf8_bytes=4096)
+        assert exact.output["utf8_bytes"] == 4096 and exact.output["next_line"] == 2
+        file.write_text("changed\n")
+        stale = await execute(
+            tools,
+            path="code.py",
+            start_line=2,
+            expected_revision=exact.output["revision"],
+            max_utf8_bytes=4096,
+        )
+        assert stale.error.code == "tool_page_changed"
+        file.write_bytes(b"x" * 4096 + b"\n")
+        long_line = await execute(tools, path="code.py", max_utf8_bytes=4096)
+        assert long_line.error.code == "tool_limit_exceeded"
+        empty = tmp_path / "empty-page.py"
+        empty.touch()
+        result = await execute(tools, path=empty.name, max_utf8_bytes=4096)
+        assert result.output["text"] == "" and not result.output["truncated"]
 
 
 async def test_directory_scan_limit_and_final_json_limit(tmp_path, monkeypatch):

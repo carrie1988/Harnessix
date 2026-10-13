@@ -44,13 +44,25 @@ def budget_instruction(request: ModelRequest) -> str | None:
     if request.consumed_usage is None:
         return None
     remaining = max(0, request.budget.max_tokens - request.consumed_usage.total_tokens)
-    steps = max(0, request.budget.max_steps - request.step + 1)
-    return (
+    steps = (
+        request.remaining_calls
+        if request.remaining_calls is not None
+        else max(0, request.budget.max_steps - request.step + 1)
+    )
+    note = (
         f"Runtime budget: {remaining} cumulative input+output tokens and {steps} model calls "
         "remain, including this request and repeated history. Use the current catalog only. "
         "Budget investigation, patch, validation, possible repair and review together; batch "
         "independent reads and avoid repeated no-match searches."
     )
+    if request.input_tokens_upper_bound is not None:
+        note += (
+            f" This request's conservative input bound is {request.input_tokens_upper_bound} "
+            "tokens, not observed usage. Repeated input can exhaust the turn before the call "
+            "limit; reserve input and output for validation, repair and final review. "
+            "Narrow investigation when needed; never patch without source evidence."
+        )
+    return note
 
 
 def messages_for(request: ModelRequest) -> list[dict[str, Any]]:

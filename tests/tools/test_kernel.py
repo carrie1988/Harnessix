@@ -238,6 +238,18 @@ def test_input_output_schemas_match_frozen_files():
         )
 
 
+def test_read_file_v2_schema_keeps_v1_defaults_and_adds_bounded_optional_page_size():
+    from harnessix.tools.contracts import ReadFileInput, ReadFileInputV2
+
+    root = Path(__file__).parents[2] / "spec"
+    schema = json.loads((root / "read-file-input-v2.schema.json").read_text())
+    assert schema == ReadFileInputV2.model_json_schema()
+    limit = schema["properties"]["max_utf8_bytes"]
+    assert limit["minimum"] == 4096 and limit["maximum"] == limit["default"] == 24576
+    assert schema["required"] == ["path"]
+    assert "max_utf8_bytes" not in ReadFileInput.model_json_schema()["properties"]
+
+
 @pytest.mark.parametrize("kind", ["user", "task"])
 @pytest.mark.parametrize("scoped", [False, True])
 async def test_kernel_cancel_during_file_read_is_durable(tmp_path, monkeypatch, kind, scoped):

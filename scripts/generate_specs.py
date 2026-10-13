@@ -293,6 +293,7 @@ from harnessix.tools.contracts import (
     ListFilesInput,
     ListFilesOutput,
     ReadFileInput,
+    ReadFileInputV2,
     ReadFileOutput,
     ReadFileSnapshotOutput,
 )
@@ -630,6 +631,7 @@ def generate_specs(output: Path) -> None:
         output / "model-history-inspection-v2.schema.json",
         ModelHistoryInspectionV2.model_json_schema(),
     )
+    write_json(output / "read-file-input-v2.schema.json", ReadFileInputV2.model_json_schema())
     write_json(
         output / "execution-capability-evidence-v2.schema.json",
         ExecutionCapabilityEvidenceV2.model_json_schema(),
