@@ -219,6 +219,9 @@ Resolved 3/25、空Patch 15/25、8个完成评分、2个错误，未达标。
 两项错误来自Docker并行构建期间Conda内存不足；虽然官方“likely infrastructure”字段为0，
 这不能解释为环境无故障。保留原失败，以同一份冻结prediction在新目录串行重建及评分，
 不增加模型请求、不替换Patch、不挑选最优Case结果。
+[串行复验摘要](../../benchmarks/swebench/verified-25-v14/official-summary-serial.json)已独立校验：
+所需10个镜像全部由固定Task Repo本地构建，无拉取回退；Resolved **5/25（20%）**，
+空Patch 15/25、评测错误0、官方基础设施失败0。10个非空Patch均完成评分，仍未达到质量目标。
 本周期累计计价上界12.518928元，全部请求已计量，无未决预留；不是账单实扣金额。
 
 v15在相同开发集、模型及任务硬预算下引入两项共性修复：
