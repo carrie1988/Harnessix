@@ -51,6 +51,7 @@ def _definitions(*, second_profile: bool = False) -> tuple[ToolDescriptor, ...]:
         _descriptor("read_artifact"),
         _descriptor("git_status"),
         _descriptor("git_diff"),
+        _descriptor("git_review"),
         _descriptor(_PROFILE, EffectClass.NON_IDEMPOTENT_WRITE),
         _descriptor(_PATCH, EffectClass.NON_IDEMPOTENT_WRITE),
         _descriptor(_ROLLBACK, EffectClass.NON_IDEMPOTENT_WRITE),
@@ -197,24 +198,12 @@ def test_single_profile_workflow_exposes_only_current_phase_tools() -> None:
         (_PATCH, "succeeded", None),
         (_PROFILE, "succeeded", None),
     )
-    assert _names(validated) == {"git_status", "git_diff"}
-    status_only = validated.model_copy(
-        update={
-            "items": _turn(
-                (_PROFILE, "failed", "process_nonzero_exit"),
-                (_PATCH, "succeeded", None),
-                (_PROFILE, "succeeded", None),
-                ("git_status", "succeeded", None),
-            ).items
-        }
-    )
-    assert _names(status_only) == {"git_diff"}
+    assert _names(validated) == {"git_review"}
     closed = _turn(
         (_PROFILE, "failed", "process_nonzero_exit"),
         (_PATCH, "succeeded", None),
         (_PROFILE, "succeeded", None),
-        ("git_status", "succeeded", None),
-        ("git_diff", "succeeded", None),
+        ("git_review", "succeeded", None),
     )
     assert _names(closed) == set()
 
@@ -312,15 +301,14 @@ def test_post_patch_only_workflow_forces_patch_profile_repair_retest_and_review(
         ),
         require_pre_edit_profile=False,
     )
-    assert {item.name for item in validated.tools} == {"git_status", "git_diff"}
-    assert validated.choice == "required" and validated.forced_tool is None
+    assert {item.name for item in validated.tools} == {"git_review"}
+    assert validated.choice == "required" and validated.forced_tool == "git_review"
 
     reviewed = _selection_for(
         _turn(
             (_PATCH, "succeeded", None),
             (_PROFILE, "succeeded", None),
-            ("git_status", "succeeded", None),
-            ("git_diff", "succeeded", None),
+            ("git_review", "succeeded", None),
         ),
         require_pre_edit_profile=False,
     )
@@ -415,21 +403,19 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
     assert rejected_bounded.forced_tool == _PATCH
 
     patched = view.select(_turn((_PATCH, "succeeded", None)), definitions)
-    assert {item.name for item in patched.tools} == {"git_status", "git_diff"}
-    assert patched.choice == "required" and patched.forced_tool is None
+    assert {item.name for item in patched.tools} == {"git_review"}
+    assert patched.choice == "required" and patched.forced_tool == "git_review"
 
     reviewed = view.select(
-        _turn((_PATCH, "succeeded", None), ("git_status", "succeeded", None)),
+        _turn((_PATCH, "succeeded", None), ("git_review", "succeeded", None)),
         definitions,
     )
-    assert {item.name for item in reviewed.tools} == {"git_diff"}
-    assert reviewed.choice == "required" and reviewed.forced_tool == "git_diff"
+    assert {item.name for item in reviewed.tools} == {"read_file"}
 
     correction_or_finish = view.select(
         _turn(
             (_PATCH, "succeeded", None),
-            ("git_status", "succeeded", None),
-            ("git_diff", "succeeded", None),
+            ("git_review", "succeeded", None),
         ),
         definitions,
     )
@@ -439,8 +425,7 @@ def test_no_profile_workflow_allows_bounded_edit_then_forces_git_review() -> Non
     correction_ready = view.select(
         _turn(
             (_PATCH, "succeeded", None),
-            ("git_status", "succeeded", None),
-            ("git_diff", "succeeded", None),
+            ("git_review", "succeeded", None),
             ("read_file", "succeeded", None),
         ),
         definitions,
@@ -608,3 +593,21 @@ def test_failed_validation_after_delete_can_propose_corrective_patch() -> None:
     )
 
     assert _PATCH in _names(correction)
+
+
+def test_git_review_is_hidden_until_post_patch_test_succeeds() -> None:
+    for turn in (_turn(), _turn((_PROFILE, "failed", "process_nonzero_exit"))):
+        assert "git_review" not in _names(turn)
+
+
+def test_failed_aggregate_without_profile_stops_without_missing_review_crash() -> None:
+    definitions = tuple(item for item in _definitions() if not item.name.startswith("run_profile."))
+    turn = _turn((_PATCH, "succeeded", None), ("git_review", "failed", "git_observation_failed"))
+    assert CodingWorkflowToolView().select(turn, definitions).tools == ()
+
+
+def test_legacy_two_git_tools_remain_available_when_aggregate_is_absent() -> None:
+    definitions = tuple(item for item in _definitions() if item.name != "git_review")
+    turn = _turn((_PATCH, "succeeded", None), (_PROFILE, "succeeded", None))
+    selection = CodingWorkflowToolView().select(turn, definitions)
+    assert {item.name for item in selection.tools} == {"git_status", "git_diff"}

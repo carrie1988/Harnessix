@@ -24,6 +24,16 @@ _EMPTY_PATCH_SHA256 = hashlib.sha256(b"").hexdigest()
 _GIT_REVISION = r"^[0-9a-f]{40,64}$"
 _SHA256 = r"^[0-9a-f]{64}$"
 _ERROR_CODE = r"^[a-z][a-z0-9_]{0,127}$"
+_QUALITY_FAILURE_CODES = frozenset(
+    {
+        "budget_exceeded",
+        "swebench_patch_missing",
+        "swebench_patch_failed",
+        "swebench_public_tests_missing",
+        "swebench_public_tests_failed",
+        "swebench_git_review_incomplete",
+    }
+)
 
 
 class _SweBenchExecutionContract(ContractModel):
@@ -115,12 +125,42 @@ class SweBenchCaseExecutionState(_SweBenchExecutionContract):
         return self
 
 
-class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
-    """按预注册顺序保存全部 Case，并冗余可重算的恢复游标与 token 汇总。"""
+def is_swebench_quality_failure(state: SweBenchCaseExecutionState) -> bool:
+    """已校验 Case 只有绑定真实执行的普通质量失败才可继续；取消和中断仍停止。"""
 
-    spec_version: Literal["harnessix.swebench-suite-execution-state/v1"] = (
-        "harnessix.swebench-suite-execution-state/v1"
+    # Case 合同已要求 Patch SHA；空 Patch 的 SHA 也是 patch_missing 的真实证据。
+    return (
+        state.status == "failed"
+        and state.error_code in _QUALITY_FAILURE_CODES
+        and state.thread_id is not None
+        and state.turn_id is not None
+        and state.turn_status in {TurnStatusV18.COMPLETED, TurnStatusV18.FAILED}
+        and state.input_tokens + state.output_tokens > 0
     )
+
+
+def _attempted_case_prefix(
+    case_states: tuple[SweBenchCaseExecutionState, ...],
+    *,
+    continue_quality_failures: bool,
+) -> tuple[SweBenchCaseExecutionState, ...]:
+    attempted_count = 0
+    for state in case_states:
+        if state.status != "completed" and not (
+            continue_quality_failures and is_swebench_quality_failure(state)
+        ):
+            break
+        attempted_count += 1
+    return case_states[:attempted_count]
+
+
+class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
+    """v1 仅推进成功前缀；v2 还可推进有执行证据的质量失败，但不把失败记为成功。"""
+
+    spec_version: Literal[
+        "harnessix.swebench-suite-execution-state/v1",
+        "harnessix.swebench-suite-execution-state/v2",
+    ] = "harnessix.swebench-suite-execution-state/v1"
     plan_sha256: str = Field(pattern=_SHA256)
     model_name: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}$")
     status: SweBenchExecutionStatus
@@ -139,6 +179,20 @@ class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
     updated_at: AwareDatetime
     state_sha256: str = Field(pattern=_SHA256)
 
+    @property
+    def attempted_case_ids(self) -> tuple[str, ...]:
+        """从版本对应的连续前缀重算，不新增持久化字段或改变 v1 摘要。"""
+
+        return tuple(
+            state.instance_id
+            for state in _attempted_case_prefix(
+                self.case_states,
+                continue_quality_failures=(
+                    self.spec_version == "harnessix.swebench-suite-execution-state/v2"
+                ),
+            )
+        )
+
     @model_validator(mode="after")
     def progress_is_recomputable(self) -> Self:
         if self.updated_at < self.started_at:
@@ -154,18 +208,25 @@ class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
         ):
             raise ValueError("SWE-bench Suite 时间范围未覆盖 Case 状态")
 
-        completed_count = 0
-        for state in self.case_states:
-            if state.status != "completed":
-                break
-            completed_count += 1
-        completed = self.case_states[:completed_count]
-        pending = self.case_states[completed_count:]
+        continue_quality_failures = (
+            self.spec_version == "harnessix.swebench-suite-execution-state/v2"
+        )
+        prefix_label = "尝试" if continue_quality_failures else "完成"
+        attempted = _attempted_case_prefix(
+            self.case_states,
+            continue_quality_failures=continue_quality_failures,
+        )
+        completed = tuple(state for state in attempted if state.status == "completed")
+        pending = self.case_states[len(attempted) :]
         active = tuple(state for state in pending if state.status != "ready")
-        if any(state.status == "completed" for state in pending):
-            raise ValueError("SWE-bench Suite 只能确认连续完成前缀")
+        if any(
+            state.status == "completed"
+            or (continue_quality_failures and is_swebench_quality_failure(state))
+            for state in pending
+        ):
+            raise ValueError(f"SWE-bench Suite 只能确认连续{prefix_label}前缀")
         if len(active) > 1 or (active and active[0].instance_id != pending[0].instance_id):
-            raise ValueError("SWE-bench Suite 只能执行完成前缀后的当前 Case")
+            raise ValueError(f"SWE-bench Suite 只能执行{prefix_label}前缀后的当前 Case")
 
         expected_completed = tuple(state.instance_id for state in completed)
         expected_current = active[0].instance_id if active else None
@@ -179,16 +240,16 @@ class SweBenchSuiteExecutionState(_SweBenchExecutionContract):
             raise ValueError("SWE-bench Suite 累计 token 不可重算")
 
         if self.status == "ready":
-            if completed or active:
+            if attempted or active:
                 raise ValueError("SWE-bench ready Suite 不能已有执行进度")
         elif self.status == "running":
-            if not completed and not active:
+            if not attempted and not active:
                 raise ValueError("SWE-bench running Suite 缺少执行进度")
             if active and active[0].status != "running":
                 raise ValueError("SWE-bench running Suite 的当前 Case 状态不一致")
         elif self.status == "completed":
-            if len(completed) != SWE_BENCH_CASE_COUNT or active:
-                raise ValueError("SWE-bench completed Suite 必须完成全部预注册 Case")
+            if len(attempted) != SWE_BENCH_CASE_COUNT or active:
+                raise ValueError(f"SWE-bench completed Suite 必须{prefix_label}全部预注册 Case")
         elif self.status in {"failed", "cancelled"}:
             if not active or active[0].status != self.status:
                 raise ValueError("SWE-bench Suite 终态与当前 Case 状态不一致")
@@ -312,8 +373,10 @@ def build_swebench_case_execution_state(
 def build_swebench_suite_execution_state(
     plan: SweBenchPreRegistrationPlan,
     case_states: Sequence[SweBenchCaseExecutionState],
+    *,
+    continue_quality_failures: bool = False,
 ) -> SweBenchSuiteExecutionState:
-    """汇总有序 Case 状态，生成可重算的 Suite 恢复游标。"""
+    """默认保持 v1；显式启用 v2 时，质量失败仅计入尝试前缀。"""
 
     states = tuple(case_states)
     expected_cases = tuple((case.instance_id, case.base_commit) for case in plan.cases)
@@ -326,24 +389,27 @@ def build_swebench_suite_execution_state(
         validate_swebench_case_execution_state(plan, case_state) for case_state in states
     )
 
-    completed_count = 0
-    for case_state in checked_states:
-        if case_state.status != "completed":
-            break
-        completed_count += 1
-    completed = checked_states[:completed_count]
-    active = tuple(state for state in checked_states[completed_count:] if state.status != "ready")
-    if len(completed) == SWE_BENCH_CASE_COUNT:
+    attempted = _attempted_case_prefix(
+        checked_states,
+        continue_quality_failures=continue_quality_failures,
+    )
+    completed = tuple(state for state in attempted if state.status == "completed")
+    active = tuple(state for state in checked_states[len(attempted) :] if state.status != "ready")
+    if len(attempted) == SWE_BENCH_CASE_COUNT:
         status: SweBenchExecutionStatus = "completed"
     elif active:
         status = active[0].status
-    elif completed:
+    elif attempted:
         status = "running"
     else:
         status = "ready"
 
     candidate = SweBenchSuiteExecutionState.model_construct(
-        spec_version="harnessix.swebench-suite-execution-state/v1",
+        spec_version=(
+            "harnessix.swebench-suite-execution-state/v2"
+            if continue_quality_failures
+            else "harnessix.swebench-suite-execution-state/v1"
+        ),
         plan_sha256=plan.plan_sha256,
         model_name=plan.model_name,
         status=status,

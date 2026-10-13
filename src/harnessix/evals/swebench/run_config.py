@@ -90,9 +90,8 @@ class SweBenchAgentRunConfig(ContractModel):
             or provider.enable_thinking is not False
             or provider.output_token_parameter != "max_tokens"
             or not provider.capabilities.tool_calls
-            or not provider.capabilities.parallel_tool_calls
         ):
-            raise ValueError("SWE-bench Provider不符合固定无重试串行工具边界")
+            raise ValueError("SWE-bench Provider不符合固定无重试工具边界")
         if (
             self.price.model != provider.model
             or self.price.currency != _CURRENCY
@@ -125,7 +124,13 @@ class SweBenchAgentRunConfig(ContractModel):
             self.plan_sha256 != plan.plan_sha256
             or plan.model_name != _PUBLIC_MODEL
             or plan.model_settings.provider != _PROVIDER
-            or parameters != {"thinking": "disabled"}
+            or parameters
+            not in (
+                {"thinking": "disabled"},
+                {"thinking": "disabled", "parallel_tool_calls": True},
+            )
+            or self.provider_config.capabilities.parallel_tool_calls
+            is not parameters.get("parallel_tool_calls", False)
             or self.provider_config.timeout_seconds != plan.task_budget.timeout_seconds
             or tuple((binding.instance_id, binding.repo) for binding in self.case_process_profiles)
             != expected_cases
@@ -175,6 +180,7 @@ def build_swebench_agent_run_config(
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
     now = observed_at or datetime.now(UTC)
+    parameters = {item.name: item.value for item in plan.model_settings.parameters}
     config = SweBenchAgentRunConfig(
         plan_sha256=plan.plan_sha256,
         source_root=str(source_root),
@@ -185,7 +191,10 @@ def build_swebench_agent_run_config(
             base_url=_BASE_URL,
             model=_MODEL,
             api_key_env=api_key_env,
-            capabilities=ChatCapabilities(tool_calls=True, parallel_tool_calls=True),
+            capabilities=ChatCapabilities(
+                tool_calls=True,
+                parallel_tool_calls=parameters.get("parallel_tool_calls") is True,
+            ),
             max_output_tokens=4096,
             timeout_seconds=plan.task_budget.timeout_seconds,
             io_timeout_seconds=180,

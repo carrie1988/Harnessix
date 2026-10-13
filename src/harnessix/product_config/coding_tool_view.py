@@ -17,6 +17,8 @@ from harnessix.domain.models import EffectClass, ToolDescriptor
 
 _PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
+_GIT_REVIEW_TOOL = "git_review"
+_ALL_GIT_REVIEW_TOOLS = _GIT_REVIEW_TOOLS | {_GIT_REVIEW_TOOL}
 _SOURCE_INSPECTION_TOOLS = frozenset({"read_file", "grep", "glob"})
 _HIDDEN_WORKFLOW_ACTIONS = frozenset({WORKSPACE_ROLLBACK_TOOL})
 _MAX_NO_PROFILE_INSPECTIONS = 4
@@ -179,6 +181,15 @@ def _git_review_selection(
     observations: tuple[_Observation, ...],
     after_index: int,
 ) -> ModelToolSelection:
+    if any(item.name == _GIT_REVIEW_TOOL for item in definitions):
+        aggregate_observed = any(
+            item.index > after_index and item.tool == _GIT_REVIEW_TOOL for item in observations
+        )
+        return (
+            ModelToolSelection(())
+            if aggregate_observed
+            else _selection(definitions, {_GIT_REVIEW_TOOL}, forced_tool=_GIT_REVIEW_TOOL)
+        )
     reviewed = {
         item.tool
         for item in observations
@@ -219,7 +230,7 @@ class CodingWorkflowToolView:
         if (
             len(profiles) > 1
             or len(patches) != 1
-            or not _GIT_REVIEW_TOOLS <= by_name.keys()
+            or not (_GIT_REVIEW_TOOL in by_name or _GIT_REVIEW_TOOLS <= by_name.keys())
             or any(
                 definition.effect_class != EffectClass.READ_ONLY
                 and definition.name not in {*profiles, *patches, *_HIDDEN_WORKFLOW_ACTIONS}
@@ -246,11 +257,18 @@ class CodingWorkflowToolView:
             review = _git_review_selection(definitions, observations, last_patch)
             if review.tools:
                 return review
+            if any(
+                item.index > last_patch
+                and item.tool in _ALL_GIT_REVIEW_TOOLS
+                and item.result.outcome != "succeeded"
+                for item in observations
+            ):
+                return ModelToolSelection(())
             review_index = max(
                 item.index
                 for item in observations
                 if item.index > last_patch
-                and item.tool in _GIT_REVIEW_TOOLS
+                and item.tool in _ALL_GIT_REVIEW_TOOLS
                 and item.result.outcome == "succeeded"
             )
             names = {"read_file"}
@@ -287,7 +305,7 @@ class CodingWorkflowToolView:
                 return _selection(definitions, {profile}, forced_tool=profile)
             names = (
                 set(by_name)
-                - _GIT_REVIEW_TOOLS
+                - _ALL_GIT_REVIEW_TOOLS
                 - _HIDDEN_WORKFLOW_ACTIONS
                 - set(patches)
                 - {"read_artifact"}
@@ -312,7 +330,8 @@ class CodingWorkflowToolView:
             names = {
                 item.name
                 for item in definitions
-                if item.effect_class == EffectClass.READ_ONLY and item.name not in _GIT_REVIEW_TOOLS
+                if item.effect_class == EffectClass.READ_ONLY
+                and item.name not in _ALL_GIT_REVIEW_TOOLS
             }
             if _diagnostic_is_complete(validation.result):
                 names.discard("read_artifact")

@@ -76,3 +76,23 @@ class GitDiffOutput(ReadContract):
         ):
             raise ValueError("Git差异文本、观察字节数与截断标记不一致")
         return self
+
+
+class GitReviewInput(ReadContract):
+    limit: int = Field(default=100, ge=1, le=MAX_GIT_STATUS_ENTRIES)
+    context_lines: int = Field(default=3, ge=0, le=20)
+
+
+class GitReviewOutput(ReadContract):
+    """两次顺序Git观察的版本化聚合，不表示原子仓库快照。"""
+
+    spec_version: Literal["harnessix.git-review/v1"] = "harnessix.git-review/v1"
+    observation_mode: Literal["sequential_non_atomic"] = "sequential_non_atomic"
+    status: GitStatusOutput
+    diff: GitDiffOutput
+
+    @model_validator(mode="after")
+    def worktree_diff_only(self) -> Self:
+        if self.diff.target != "worktree":
+            raise ValueError("Git评审仅聚合工作区差异")
+        return self

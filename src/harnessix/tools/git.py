@@ -27,6 +27,8 @@ from harnessix.tools.git_contracts import (
     MAX_GIT_DIFF_TEXT_BYTES,
     GitDiffInput,
     GitDiffOutput,
+    GitReviewInput,
+    GitReviewOutput,
     GitStatusEntry,
     GitStatusInput,
     GitStatusOutput,
@@ -141,7 +143,7 @@ class GitReadRuntime:
         )
 
     async def execute(
-        self, args: GitStatusInput | GitDiffInput, cancel: CancelToken
+        self, args: GitStatusInput | GitDiffInput | GitReviewInput, cancel: CancelToken
     ) -> ReadContract:
         return await _execute_git_read(self, args, cancel)
 
@@ -176,9 +178,13 @@ class GitReadRuntime:
 
 
 async def _execute_git_read(
-    runtime: GitReadRuntime, args: GitStatusInput | GitDiffInput, cancel: CancelToken
+    runtime: GitReadRuntime,
+    args: GitStatusInput | GitDiffInput | GitReviewInput,
+    cancel: CancelToken,
 ) -> ReadContract:
     """普通工具沿原根/配置守卫执行固定只读查询，仍仅返回安全结果。"""
+    if isinstance(args, GitReviewInput):
+        return await _review(runtime, args, cancel)
     await runtime._require_repository_root(cancel)
     await _reject_git_helpers(runtime, cancel)
     if isinstance(args, GitStatusInput):
@@ -210,6 +216,39 @@ async def _execute_git_read(
     diff_args.append("--")
     result = await runtime._run(tuple(diff_args), cancel)
     return _diff(result, args.target)
+
+
+async def _review(
+    runtime: GitReadRuntime, args: GitReviewInput, cancel: CancelToken
+) -> GitReviewOutput:
+    """复用两个原读取路径；顺序观察不宣称跨命令原子性。"""
+    cancel.checkpoint()
+    status = await _execute_git_read(runtime, GitStatusInput(limit=args.limit), cancel)
+    if not isinstance(status, GitStatusOutput):
+        raise KernelError("tool_output_invalid", "Git状态输出不符合聚合契约")
+    try:
+        checked_status = GitStatusOutput.model_validate_json(status.model_dump_json())
+    except (ValueError, TypeError, AttributeError):
+        raise KernelError("tool_output_invalid", "Git状态输出不符合聚合契约") from None
+
+    cancel.checkpoint()
+    diff = await _execute_git_read(
+        runtime,
+        GitDiffInput(target="worktree", context_lines=args.context_lines),
+        cancel,
+    )
+    if not isinstance(diff, GitDiffOutput):
+        raise KernelError("tool_output_invalid", "Git差异输出不符合聚合契约")
+    try:
+        checked_diff = GitDiffOutput.model_validate_json(diff.model_dump_json())
+    except (ValueError, TypeError, AttributeError):
+        raise KernelError("tool_output_invalid", "Git差异输出不符合聚合契约") from None
+
+    cancel.checkpoint()
+    output = GitReviewOutput(status=checked_status, diff=checked_diff)
+    if len(output.model_dump_json().encode()) > MAX_RESULT_BYTES:
+        raise ReadToolError("limit_exceeded")
+    return output
 
 
 async def _require_git_repository_root(runtime: GitReadRuntime, cancel: CancelToken) -> None:

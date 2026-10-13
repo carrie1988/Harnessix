@@ -12,6 +12,7 @@ from harnessix.evals.swebench.contracts import (
     SweBenchModelParameter,
     SweBenchTaskBudget,
     build_swebench_preregistration_plan,
+    swebench_preregistration_plan_digest,
 )
 from harnessix.evals.swebench.public_test_profile import (
     SweBenchCaseProcessProfile,
@@ -215,3 +216,34 @@ def test_run_config_is_published_once_as_private_file(tmp_path: Path) -> None:
     os.chmod(path, 0o644)
     with pytest.raises(KernelError, match="权限错误"):
         read_swebench_agent_run_config(path)
+
+
+def test_parallel_model_tool_calls_require_explicit_preregistration(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    assert config.provider_config.capabilities.parallel_tool_calls is False
+    plan = build_agent_test_plan()
+    settings = plan.model_settings.model_copy(
+        update={
+            "parameters": (
+                SweBenchModelParameter(name="parallel_tool_calls", value=True),
+                SweBenchModelParameter(name="thinking", value="disabled"),
+            )
+        }
+    )
+    candidate = plan.model_copy(update={"model_settings": settings, "plan_sha256": "0" * 64})
+    plan = candidate.model_copy(
+        update={"plan_sha256": swebench_preregistration_plan_digest(candidate)}
+    )
+    parallel = build_swebench_agent_run_config(
+        plan,
+        source_root=Path(config.source_root),
+        work_root=Path(config.work_root),
+        cache_root=Path(config.cache_root),
+        git_executable=Path(config.git_executable),
+        case_process_profiles=config.case_process_profiles,
+        fee_stop_amount="80",
+    )
+    assert parallel.provider_config.capabilities.parallel_tool_calls is True
+    drifted = parallel.model_copy(update={"provider_config": config.provider_config})
+    with pytest.raises(ValueError, match="预注册"):
+        drifted.require_plan(plan)

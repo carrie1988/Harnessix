@@ -21,8 +21,10 @@ from harnessix.evals.swebench.contracts import (
 from harnessix.evals.swebench.execution_contracts import (
     SweBenchCaseExecutionState,
     SweBenchExecutionStatus,
+    SweBenchSuiteExecutionState,
     build_swebench_case_execution_state,
     build_swebench_suite_execution_state,
+    is_swebench_quality_failure,
     swebench_case_execution_state_digest,
     swebench_suite_execution_state_digest,
 )
@@ -34,6 +36,14 @@ from harnessix.evals.swebench.execution_io import (
 )
 
 NOW = datetime(2026, 10, 12, 1, 2, 3, tzinfo=UTC)
+QUALITY_FAILURE_CODES = (
+    "budget_exceeded",
+    "swebench_patch_missing",
+    "swebench_patch_failed",
+    "swebench_public_tests_missing",
+    "swebench_public_tests_failed",
+    "swebench_git_review_incomplete",
+)
 
 
 def _plan(*, model_name: str = "example/model-v1") -> SweBenchPreRegistrationPlan:
@@ -109,6 +119,42 @@ def _completed_state(
         output_tokens=output_tokens,
         started_at=NOW,
         updated_at=NOW + timedelta(minutes=index + 1),
+    )
+
+
+def _case_with_changes(
+    state: SweBenchCaseExecutionState, **changes: object
+) -> SweBenchCaseExecutionState:
+    candidate = state.model_copy(update=changes)
+    return SweBenchCaseExecutionState.model_validate(
+        {
+            **candidate.model_dump(mode="python"),
+            "state_sha256": swebench_case_execution_state_digest(candidate),
+        },
+        strict=True,
+    )
+
+
+def _failed_state(
+    plan: SweBenchPreRegistrationPlan,
+    index: int,
+    *,
+    error_code: str = "swebench_public_tests_failed",
+    turn_status: TurnStatusV18 = TurnStatusV18.FAILED,
+) -> SweBenchCaseExecutionState:
+    return _case_with_changes(
+        _completed_state(plan, index, input_tokens=100, output_tokens=10),
+        status="failed",
+        turn_status=turn_status,
+        error_code=error_code,
+    )
+
+
+def _running_state(plan: SweBenchPreRegistrationPlan, index: int) -> SweBenchCaseExecutionState:
+    return _case_with_changes(
+        _completed_state(plan, index, input_tokens=25, output_tokens=5),
+        status="running",
+        turn_status=TurnStatusV18.CALLING_MODEL,
     )
 
 
@@ -353,6 +399,396 @@ def test_suite_io_rejects_a_different_plan_even_when_case_order_matches(tmp_path
         read_suite_execution_state(path, _plan(model_name="example/model-v2"))
 
     assert drift.value.code == "swebench_suite_execution_state_invalid"
+
+
+def test_suite_builder_defaults_to_v1_without_changing_legacy_digest(tmp_path: Path) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    suite = build_swebench_suite_execution_state(plan, states)
+    explicit_v1 = build_swebench_suite_execution_state(
+        plan, states, continue_quality_failures=False
+    )
+
+    assert suite == explicit_v1
+    assert suite.spec_version == "harnessix.swebench-suite-execution-state/v1"
+    # Frozen from the pre-v2 implementation, including the exact serialized field set.
+    assert suite.state_sha256 == "3ec8a97f421559048905470681fb80dcb23f57f243442be71b3088524b7a6944"
+    assert tuple(suite.model_dump()) == (
+        "spec_version",
+        "plan_sha256",
+        "model_name",
+        "status",
+        "case_states",
+        "completed_case_ids",
+        "current_case_id",
+        "input_tokens",
+        "output_tokens",
+        "started_at",
+        "updated_at",
+        "state_sha256",
+    )
+    assert suite.attempted_case_ids == ()
+    path = tmp_path / "legacy-suite.json"
+    write_suite_execution_state(path, plan, suite)
+    assert read_suite_execution_state(path, plan) == suite
+
+
+@pytest.mark.parametrize("error_code", QUALITY_FAILURE_CODES)
+@pytest.mark.parametrize("turn_status", [TurnStatusV18.COMPLETED, TurnStatusV18.FAILED])
+def test_quality_failure_allowlist_requires_failed_case_and_preserves_original_turn(
+    error_code: str, turn_status: TurnStatusV18
+) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    failed = _failed_state(plan, 0, error_code=error_code, turn_status=turn_status)
+    states[0] = failed
+
+    assert is_swebench_quality_failure(failed)
+    assert not is_swebench_quality_failure(states[1])
+    assert not is_swebench_quality_failure(_running_state(plan, 1))
+    assert not is_swebench_quality_failure(
+        _completed_state(plan, 1, input_tokens=100, output_tokens=10)
+    )
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert suite.status == "running"
+    assert suite.attempted_case_ids == (failed.instance_id,)
+    assert suite.completed_case_ids == ()
+    assert suite.current_case_id is None
+    assert suite.case_states[0] == failed
+    assert suite.case_states[0].status == "failed"
+    assert suite.case_states[0].turn_status == turn_status
+    assert suite.case_states[0].error_code == error_code
+
+
+@pytest.mark.parametrize(
+    ("success_indexes", "success_count"),
+    [(tuple(range(0, 25, 2)), 13), ((), 0)],
+    ids=["13_successes_12_failures", "25_quality_failures"],
+)
+def test_v2_completes_all_25_attempts_without_counting_failures_as_success(
+    tmp_path: Path, success_indexes: tuple[int, ...], success_count: int
+) -> None:
+    plan = _plan()
+    assert len(plan.cases) == 25
+    states = [
+        _completed_state(plan, index, input_tokens=index + 1, output_tokens=1)
+        if index in success_indexes
+        else _failed_state(
+            plan,
+            index,
+            error_code=QUALITY_FAILURE_CODES[(index // 2) % len(QUALITY_FAILURE_CODES)],
+            turn_status=TurnStatusV18.COMPLETED if index % 4 == 1 else TurnStatusV18.FAILED,
+        )
+        for index in range(25)
+    ]
+
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+
+    assert suite.spec_version == "harnessix.swebench-suite-execution-state/v2"
+    assert suite.status == "completed"
+    assert suite.attempted_case_ids == tuple(case.instance_id for case in plan.cases)
+    assert suite.completed_case_ids == tuple(
+        plan.cases[index].instance_id for index in success_indexes
+    )
+    assert len(suite.completed_case_ids) == success_count
+    failure_count = 25 - success_count
+    assert sum(state.status == "failed" for state in suite.case_states) == failure_count
+    assert suite.current_case_id is None
+    assert (suite.input_tokens, suite.output_tokens) == (
+        sum(index + 1 for index in success_indexes) + failure_count * 100,
+        success_count + failure_count * 10,
+    )
+    assert suite.case_states == tuple(states)
+    assert suite.state_sha256 == swebench_suite_execution_state_digest(suite)
+    assert "attempted_case_ids" not in suite.model_dump()
+
+    path = tmp_path / "mixed-suite.json"
+    write_suite_execution_state(path, plan, suite)
+    restored = read_suite_execution_state(path, plan)
+    assert restored == suite
+    assert restored.attempted_case_ids == suite.attempted_case_ids
+    assert stat_mode(path) == 0o600
+
+
+def test_v2_can_resume_after_quality_failure_without_rewriting_failed_evidence(
+    tmp_path: Path,
+) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _completed_state(plan, 0, input_tokens=100, output_tokens=10)
+    states[1] = _failed_state(plan, 1, error_code="swebench_git_review_incomplete")
+    between_cases = build_swebench_suite_execution_state(
+        plan, states, continue_quality_failures=True
+    )
+    assert between_cases.status == "running"
+    assert between_cases.attempted_case_ids == tuple(case.instance_id for case in plan.cases[:2])
+    assert between_cases.completed_case_ids == (plan.cases[0].instance_id,)
+    assert between_cases.current_case_id is None
+
+    path = tmp_path / "suite.json"
+    write_suite_execution_state(path, plan, between_cases)
+    restored = read_suite_execution_state(path, plan)
+    states = list(restored.case_states)
+    states[2] = _running_state(plan, 2)
+    running = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert running.status == "running"
+    assert running.current_case_id == plan.cases[2].instance_id
+    assert running.attempted_case_ids == between_cases.attempted_case_ids
+
+    states[2] = _completed_state(plan, 2, input_tokens=125, output_tokens=15)
+    continued = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert continued.status == "running"
+    assert continued.attempted_case_ids == tuple(case.instance_id for case in plan.cases[:3])
+    assert continued.completed_case_ids == (plan.cases[0].instance_id, plan.cases[2].instance_id)
+    assert continued.current_case_id is None
+    assert continued.case_states[1] == restored.case_states[1]
+    assert (continued.input_tokens, continued.output_tokens) == (325, 35)
+
+
+@pytest.mark.parametrize(
+    "error_code",
+    [
+        "timeout",
+        "provider_timeout",
+        "public_input_timeout",
+        "cancelled",
+        "provider_cancelled",
+        "unknown_tool",
+        "provider_failed",
+        "swebench_public_tests_unavailable",
+        "swebench_cost_invalid",
+        "swebench_fee_limit_reached",
+        "swebench_price_expired",
+        "swebench_case_evidence_mismatch",
+        "protocol_invalid",
+        "unknown_error",
+        "budget_exceeded_unknown",
+    ],
+)
+def test_v2_fatal_error_stops_after_mixed_attempts_and_cannot_continue(error_code: str) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _failed_state(plan, 0)
+    states[1] = _completed_state(plan, 1, input_tokens=100, output_tokens=10)
+    states[2] = _failed_state(plan, 2, error_code=error_code)
+    assert not is_swebench_quality_failure(states[2])
+
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert suite.status == "failed"
+    assert suite.attempted_case_ids == tuple(case.instance_id for case in plan.cases[:2])
+    assert suite.completed_case_ids == (plan.cases[1].instance_id,)
+    assert suite.current_case_id == plan.cases[2].instance_id
+    assert suite.case_states[2].error_code == error_code
+
+    states[3] = _completed_state(plan, 3, input_tokens=1, output_tokens=1)
+    with pytest.raises(ValidationError, match="前缀"):
+        build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+
+
+@pytest.mark.parametrize("error_code", QUALITY_FAILURE_CODES)
+@pytest.mark.parametrize("turn_status", [TurnStatusV18.CANCELLED, TurnStatusV18.INTERRUPTED])
+def test_v2_cancelled_or_interrupted_turn_stops_even_with_allowlisted_error(
+    error_code: str,
+    turn_status: TurnStatusV18,
+) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _failed_state(plan, 0, error_code=error_code, turn_status=turn_status)
+    assert not is_swebench_quality_failure(states[0])
+
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert suite.status == "failed"
+    assert suite.attempted_case_ids == ()
+    assert suite.current_case_id == plan.cases[0].instance_id
+
+
+def test_v2_cancelled_case_is_unique_active_after_attempted_prefix() -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _failed_state(plan, 0)
+    states[1] = _case_with_changes(
+        _completed_state(plan, 1, input_tokens=0, output_tokens=0),
+        status="cancelled",
+        turn_status=TurnStatusV18.CANCELLED,
+    )
+    assert not is_swebench_quality_failure(states[1])
+
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert suite.status == "cancelled"
+    assert suite.attempted_case_ids == (plan.cases[0].instance_id,)
+    assert suite.completed_case_ids == ()
+    assert suite.current_case_id == plan.cases[1].instance_id
+
+
+@pytest.mark.parametrize(
+    "missing_bindings",
+    [
+        {"thread_id": None, "turn_id": None, "turn_status": None},
+        {"turn_id": None, "turn_status": None},
+        {"input_tokens": 0, "output_tokens": 0},
+    ],
+)
+def test_v2_allowlisted_error_without_runtime_binding_is_fatal(
+    missing_bindings: dict[str, object],
+) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _case_with_changes(_failed_state(plan, 0), **missing_bindings)
+    assert not is_swebench_quality_failure(states[0])
+
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert suite.status == "failed"
+    assert suite.attempted_case_ids == ()
+    assert suite.completed_case_ids == ()
+    assert suite.current_case_id == plan.cases[0].instance_id
+
+    states[1] = _completed_state(plan, 1, input_tokens=1, output_tokens=1)
+    with pytest.raises(ValidationError, match="前缀"):
+        build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+
+
+@pytest.mark.parametrize("missing_field", ["patch_sha256", "input_tokens", "output_tokens"])
+def test_quality_failure_cannot_omit_patch_or_token_evidence(missing_field: str) -> None:
+    payload = _failed_state(_plan(), 0).model_dump(mode="python")
+    del payload[missing_field]
+
+    with pytest.raises(ValidationError, match=missing_field):
+        SweBenchCaseExecutionState.model_validate(payload, strict=True)
+
+
+def test_v2_missing_patch_failure_can_bind_the_real_empty_patch_digest() -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _case_with_changes(
+        _failed_state(plan, 0, error_code="swebench_patch_missing"),
+        patch_sha256="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    )
+    assert is_swebench_quality_failure(states[0])
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    assert suite.status == "running"
+    assert suite.attempted_case_ids == (plan.cases[0].instance_id,)
+    assert suite.completed_case_ids == ()
+
+
+@pytest.mark.parametrize("later_status", ["completed", "quality_failed", "running", "fatal_failed"])
+def test_v2_cannot_skip_ready_case_even_after_quality_failure(later_status: str) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _failed_state(plan, 0)
+    if later_status == "completed":
+        states[2] = _completed_state(plan, 2, input_tokens=100, output_tokens=10)
+    elif later_status == "running":
+        states[2] = _running_state(plan, 2)
+    else:
+        states[2] = _failed_state(
+            plan,
+            2,
+            error_code="provider_failed"
+            if later_status == "fatal_failed"
+            else QUALITY_FAILURE_CODES[0],
+        )
+
+    with pytest.raises(ValidationError, match="前缀"):
+        build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+
+
+@pytest.mark.parametrize("second_active", ["running", "failed", "cancelled"])
+def test_v2_rejects_multiple_active_cases(second_active: SweBenchExecutionStatus) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _failed_state(plan, 0)
+    states[1] = _running_state(plan, 1)
+    if second_active == "running":
+        states[2] = _running_state(plan, 2)
+    elif second_active == "failed":
+        states[2] = _failed_state(plan, 2, error_code="provider_failed")
+    else:
+        states[2] = build_swebench_case_execution_state(
+            plan, plan.cases[2].instance_id, _run_id(2), status="cancelled", started_at=NOW
+        )
+
+    with pytest.raises(ValidationError, match="当前 Case"):
+        build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+
+
+def test_v1_still_stops_at_quality_failure_and_rejects_later_success() -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _completed_state(plan, 0, input_tokens=100, output_tokens=10)
+    states[1] = _failed_state(plan, 1)
+
+    suite = build_swebench_suite_execution_state(plan, states)
+    assert suite.spec_version == "harnessix.swebench-suite-execution-state/v1"
+    assert suite.status == "failed"
+    assert suite.attempted_case_ids == suite.completed_case_ids == (plan.cases[0].instance_id,)
+    assert suite.current_case_id == plan.cases[1].instance_id
+
+    states[2] = _completed_state(plan, 2, input_tokens=100, output_tokens=10)
+    with pytest.raises(ValidationError, match="前缀"):
+        build_swebench_suite_execution_state(plan, states)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"completed_case_ids": ()},
+        {"completed_case_ids": ("include_failure",)},
+        {"current_case_id": None},
+        {"current_case_id": "owner0__repo0-0"},
+        {"input_tokens": 0},
+        {"output_tokens": 0},
+        {"status": "ready"},
+        {"status": "completed"},
+        {"status": "failed"},
+    ],
+)
+def test_v2_rejects_forged_progress_even_with_recomputed_digest(changes: dict[str, object]) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _failed_state(plan, 0)
+    states[1] = _completed_state(plan, 1, input_tokens=100, output_tokens=10)
+    states[2] = _running_state(plan, 2)
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    if changes.get("completed_case_ids") == ("include_failure",):
+        changes = {"completed_case_ids": (states[0].instance_id, states[1].instance_id)}
+    candidate = suite.model_copy(update=changes)
+    payload = candidate.model_dump(mode="python")
+    payload["state_sha256"] = swebench_suite_execution_state_digest(candidate)
+
+    with pytest.raises(ValidationError):
+        SweBenchSuiteExecutionState.model_validate(payload, strict=True)
+
+
+@pytest.mark.parametrize(
+    ("changes", "recompute_digest"),
+    [
+        ({"state_sha256": "f" * 64}, False),
+        ({"spec_version": "harnessix.swebench-suite-execution-state/v1"}, False),
+        ({"spec_version": "harnessix.swebench-suite-execution-state/v3"}, False),
+        ({"spec_version": "harnessix.swebench-suite-execution-state/v1"}, True),
+        ({"spec_version": "harnessix.swebench-suite-execution-state/v3"}, True),
+    ],
+)
+def test_suite_io_rejects_digest_or_version_tampering(
+    tmp_path: Path, changes: dict[str, object], recompute_digest: bool
+) -> None:
+    plan = _plan()
+    states = _ready_states(plan)
+    states[0] = _failed_state(plan, 0)
+    states[1] = _completed_state(plan, 1, input_tokens=100, output_tokens=10)
+    suite = build_swebench_suite_execution_state(plan, states, continue_quality_failures=True)
+    path = tmp_path / "suite.json"
+    write_suite_execution_state(path, plan, suite)
+    candidate = suite.model_copy(update=changes)
+    if recompute_digest:
+        candidate = candidate.model_copy(
+            update={"state_sha256": swebench_suite_execution_state_digest(candidate)}
+        )
+    path.write_text(candidate.model_dump_json(), encoding="utf-8")
+
+    with pytest.raises(KernelError) as tampered:
+        read_suite_execution_state(path, plan)
+    assert tampered.value.code == "swebench_suite_execution_state_invalid"
 
 
 def stat_mode(path: Path) -> int:

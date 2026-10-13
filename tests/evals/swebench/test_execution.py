@@ -48,13 +48,18 @@ PATCH = (
     "-old\n"
     "+new\n"
 )
-ToolResult = tuple[str, str, str | None]
+ToolResult = tuple[str, str, str | None] | tuple[str, str, str | None, object]
 SUCCESSFUL_EVIDENCE: tuple[ToolResult, ...] = (
     (WORKSPACE_PATCH_TOOL, "succeeded", None),
     (PUBLIC_TEST_TOOL, "succeeded", None),
     ("git_status", "succeeded", None),
     ("git_diff", "succeeded", None),
 )
+
+
+@pytest.fixture(autouse=True)
+def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(execution, "utc_now", lambda: NOW)
 
 
 def _plan():
@@ -126,9 +131,11 @@ def _turn(
     results: tuple[ToolResult, ...] = SUCCESSFUL_EVIDENCE,
     *,
     status: TurnStatus = TurnStatus.COMPLETED,
+    turn_error: str | None = None,
 ) -> Turn:
     items: list[Item] = []
-    for offset, (tool, outcome, error_code) in enumerate(results):
+    for offset, result_spec in enumerate(results):
+        tool, outcome, error_code = result_spec[:3]
         call_id = UUID(int=10_000 + index * 100 + offset)
         effect_class = (
             EffectClass.NON_IDEMPOTENT_WRITE
@@ -156,6 +163,7 @@ def _turn(
                     content=ToolResultContent(
                         call_id=call_id,
                         outcome=outcome,
+                        output=result_spec[3] if len(result_spec) == 4 else None,
                         error=(
                             AgentFailure(code=error_code, message="failed")
                             if error_code is not None
@@ -170,6 +178,7 @@ def _turn(
         request_id=f"request-{index}",
         request_fingerprint="a" * 64,
         status=status,
+        error=AgentFailure(code=turn_error, message="failed") if turn_error else None,
         budget=Budget(),
         usage=Usage(input_tokens=100 + index, output_tokens=10),
         items=tuple(items),
@@ -179,8 +188,10 @@ def _turn(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("first_fails", [False, True])
 async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
     tmp_path: Path,
+    first_fails: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plan = _plan()
@@ -198,6 +209,10 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
             ("git_diff", "succeeded", None),
         ),
     )
+    if first_fails:
+        turns[plan.cases[0].instance_id] = _turn(
+            0, (), status=TurnStatus.FAILED, turn_error="budget_exceeded"
+        )
     calls: list[tuple[str, str]] = []
 
     monkeypatch.setattr(execution, "require_harnessix_execution_revision", lambda *_: None)
@@ -247,7 +262,9 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
 
     predictions = read_predictions(Path(config.work_root) / "predictions.jsonl", plan)
     suite = read_suite_execution_state(Path(config.work_root) / "suite-state.json", plan)
-    assert first["completed_cases"] == second["completed_cases"] == 25
+    assert first["attempted_cases"] == second["attempted_cases"] == 25
+    assert first["completed_cases"] == second["completed_cases"] == 25 - first_fails
+    assert first["quality_failed_cases"] == second["quality_failed_cases"] == int(first_fails)
     assert first["unaccounted_cost_cases"] == second["unaccounted_cost_cases"] == 1
     assert first["reserved_cost_amount"] == second["reserved_cost_amount"] == "3.147456"
     assert len(predictions) == 25 and all(item.model_patch == PATCH for item in predictions)
@@ -375,7 +392,7 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
     ),
 )
 @pytest.mark.asyncio
-async def test_suite_records_failure_instead_of_exporting_unclosed_prediction(
+async def test_suite_preserves_failure_and_only_continues_quality_cases(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     results: tuple[ToolResult, ...],
@@ -401,8 +418,10 @@ async def test_suite_records_failure_instead_of_exporting_unclosed_prediction(
     monkeypatch.setattr(execution, "_turn_cost", lambda *_: (0, True))
     monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_: patch)
 
-    with pytest.raises(KernelError) as caught:
-        await execution.run_swebench_agent_suite(
+    fatal = expected_code == "swebench_public_tests_unavailable"
+    caught_code = None
+    try:
+        result = await execution.run_swebench_agent_suite(
             plan,
             config,
             api_key="secret",
@@ -410,13 +429,99 @@ async def test_suite_records_failure_instead_of_exporting_unclosed_prediction(
             allow_provider_network=True,
         )
 
+    except KernelError as error:
+        caught_code = error.code
+
     state = read_case_execution_state(
         Path(config.work_root) / "cases" / "case-000" / "case-state.json",
         plan,
     )
     suite = read_suite_execution_state(Path(config.work_root) / "suite-state.json", plan)
-    assert caught.value.code == expected_code
-    assert state.status == suite.status == "failed"
+    assert state.status == "failed"
+    if fatal:
+        assert caught_code == expected_code
+        assert suite.status == "failed"
+        assert not (Path(config.work_root) / "predictions.jsonl").exists()
+    else:
+        assert caught_code is None
+        assert suite.status == "completed"
+        assert result["attempted_cases"] == result["quality_failed_cases"] == 25
+        assert result["completed_cases"] == 0
+        assert len(read_predictions(Path(config.work_root) / "predictions.jsonl", plan)) == 25
     assert state.turn_status.value == "completed"
     assert state.error_code == expected_code
-    assert not (Path(config.work_root) / "predictions.jsonl").exists()
+
+
+def _git_review_output() -> dict[str, object]:
+    return {
+        "spec_version": "harnessix.git-review/v1",
+        "observation_mode": "sequential_non_atomic",
+        "status": {"entries": [], "total_entries": 0, "truncated": False, "revision": "a" * 64},
+        "diff": {
+            "target": "worktree",
+            "text": PATCH,
+            "utf8_bytes": len(PATCH.encode()),
+            "observed_bytes": len(PATCH.encode()),
+            "observed_sha256": "b" * 64,
+            "truncated": False,
+        },
+    }
+
+
+def test_evidence_accepts_typed_aggregate_after_final_public_test() -> None:
+    turn = _turn(
+        0, (*SUCCESSFUL_EVIDENCE[:2], ("git_review", "succeeded", None, _git_review_output()))
+    )
+    assert execution._case_evidence_failure(turn, PATCH, PUBLIC_TEST_TOOL) is None
+
+
+@pytest.mark.parametrize("output", [None, {}, {"status": {}}, {"diff": {}}])
+def test_evidence_rejects_incomplete_aggregate_even_after_legacy_review(output: object) -> None:
+    turn = _turn(0, (*SUCCESSFUL_EVIDENCE, ("git_review", "succeeded", None, output)))
+    assert (
+        execution._case_evidence_failure(turn, PATCH, PUBLIC_TEST_TOOL)[0]
+        == "swebench_git_review_incomplete"
+    )
+
+
+@pytest.mark.parametrize("target,truncated", [("staged", False), ("worktree", True)])
+def test_evidence_rejects_wrong_diff_or_truncated_aggregate(target: str, truncated: bool) -> None:
+    output = _git_review_output()
+    output["diff"]["target"] = target
+    output["diff"]["truncated"] = truncated
+    if truncated:
+        output["diff"]["observed_bytes"] += 1
+    turn = _turn(0, (*SUCCESSFUL_EVIDENCE[:2], ("git_review", "succeeded", None, output)))
+    assert (
+        execution._case_evidence_failure(turn, PATCH, PUBLIC_TEST_TOOL)[0]
+        == "swebench_git_review_incomplete"
+    )
+
+
+def test_evidence_requires_aggregate_after_test_and_rejects_latest_failure() -> None:
+    review = ("git_review", "succeeded", None, _git_review_output())
+    for results in (
+        (SUCCESSFUL_EVIDENCE[0], review, SUCCESSFUL_EVIDENCE[1]),
+        (*SUCCESSFUL_EVIDENCE[:2], review, ("git_review", "failed", "git_observation_failed")),
+    ):
+        assert (
+            execution._case_evidence_failure(_turn(0, results), PATCH, PUBLIC_TEST_TOOL)[0]
+            == "swebench_git_review_incomplete"
+        )
+
+
+@pytest.mark.parametrize("tool", [WORKSPACE_PATCH_TOOL, "git_review"])
+@pytest.mark.parametrize("outcome", ["unknown", "cancelled"])
+def test_unknown_or_cancelled_tool_cannot_become_continuable_quality_failure(
+    tool: str, outcome: str
+) -> None:
+    turn = _turn(
+        0,
+        (*SUCCESSFUL_EVIDENCE, (tool, outcome, "tool_state_unknown")),
+        status=TurnStatus.FAILED,
+        turn_error="budget_exceeded",
+    )
+    assert (
+        execution._case_evidence_failure(turn, PATCH, PUBLIC_TEST_TOOL)[0]
+        == "swebench_tool_state_unavailable"
+    )

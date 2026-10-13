@@ -43,6 +43,7 @@ class _SuccessfulCodingTools:
                 "run_profile.public-tests",
                 "git_status",
                 "git_diff",
+                "git_review",
             )
         )
 
@@ -71,8 +72,7 @@ async def test_runtime_drives_patch_test_and_git_review_to_completion(tmp_path: 
         *(_tool_step(index, "read_file", {"path": f"src/file_{index}.py"}) for index in range(4)),
         _tool_step(4, "apply_patch", {"path": "src/file_0.py"}),
         _tool_step(5, "run_profile.public-tests", {"profile": "public-tests"}),
-        _tool_step(6, "git_status", {}),
-        _tool_step(7, "git_diff", {}),
+        _tool_step(6, "git_review", {}),
         answer("完成"),
     ]
     provider = ScriptedProvider(steps)
@@ -93,12 +93,10 @@ async def test_runtime_drives_patch_test_and_git_review_to_completion(tmp_path: 
         "read_file",
         "apply_patch",
         "run_profile.public-tests",
-        "git_status",
-        "git_diff",
+        "git_review",
     ]
     assert provider.requests[4].tools[0].name == "apply_patch"
     assert provider.requests[4].forced_tool == "apply_patch"
     assert provider.requests[5].forced_tool == "run_profile.public-tests"
-    assert provider.requests[6].forced_tool is None
-    assert provider.requests[7].forced_tool == "git_diff"
-    assert provider.requests[8].tools == ()
+    assert provider.requests[6].forced_tool == "git_review"
+    assert provider.requests[7].tools == ()

@@ -40,6 +40,8 @@ from harnessix.tools.contracts import (
 from harnessix.tools.git_contracts import (
     GitDiffInput,
     GitDiffOutput,
+    GitReviewInput,
+    GitReviewOutput,
     GitStatusInput,
     GitStatusOutput,
 )
@@ -83,6 +85,7 @@ class _ReadBinding:
         | type[GrepInput]
         | type[GitStatusInput]
         | type[GitDiffInput]
+        | type[GitReviewInput]
     )
     output_model: (
         type[ListFilesOutput]
@@ -91,6 +94,7 @@ class _ReadBinding:
         | type[GrepOutput]
         | type[GitStatusOutput]
         | type[GitDiffOutput]
+        | type[GitReviewOutput]
     )
 
 
@@ -135,6 +139,12 @@ _GIT_BINDINGS = (
         "读取有界工作区或暂存区差异；禁用外部Diff和textconv",
         GitDiffInput,
         GitDiffOutput,
+    ),
+    _ReadBinding(
+        "git_review",
+        "顺序聚合结构化Git状态与有界工作区差异；两次只读观察不保证原子一致",
+        GitReviewInput,
+        GitReviewOutput,
     ),
 )
 
@@ -469,7 +479,7 @@ class CodingToolRuntime:
             code, message = _argument_failure(binding, call.arguments)
             return self._failure(call, code, message)
         try:
-            if isinstance(args, GitStatusInput | GitDiffInput):
+            if isinstance(args, GitStatusInput | GitDiffInput | GitReviewInput):
                 output = await cancel.run(self._execute_git(args, cancel))
             else:
                 output = await cancel.run(self._execute_read(args, capture=capture))
@@ -518,7 +528,7 @@ class CodingToolRuntime:
             return await run_read_operation(read)
 
     async def _execute_git(
-        self, args: GitStatusInput | GitDiffInput, cancel: CancelToken
+        self, args: GitStatusInput | GitDiffInput | GitReviewInput, cancel: CancelToken
     ) -> ReadContract:
         async with self._lock:
             if self._closed:
