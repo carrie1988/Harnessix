@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-10-13T12:29:51.056594+00:00",
+  "scope": "historical terminal prefix counterfactual planning; current project sources, same production schemas and version lengths; not exact original request authority",
+  "source_revision": "1a0c8bd536c3254c862a847071cda016f4e0d93c",
+  "plan_sha256": "9029e3ed9f516bdd5f2c95db07bd06f3439ed3779a45ad6cc48efab0a20e48ec",
+  "inference_requests": 0,
+  "rejections": {
+    "context_compaction_retained_overflow": 61,
+    "not_amortized": 33,
+    "not_affordable": 15,
+    "no_pressure_candidate": 1
+  },
+  "native_database_and_case_state_unchanged": true,
+  "prefixes_checked": 110,
+  "admitted_prefixes": 0,
+  "diagnostic_sha256": "f99636743c5bc2777a025efdcc2a1dba47304c8a08b3559701f06b1adc2576db",
+  "optional_wal_lifecycle": "Case 0 absent -> empty WAL; others empty -> empty; formal owner discovery can manage optional sidecars; main database and CaseState bytes verified unchanged",
+  "initial_probe_status": "FAILED: optional WAL disappeared after legacy events() read; original failure retained; not a claim that all files were unchanged"
+}
