@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: ff3d25c83f445430ff3c87f258b8cd5122ea7855
+version: 2
+code_revision: cd628938aa463bacd46e050fdf247fd43de80bce
 owners:
   - core
 modules:
@@ -163,3 +163,38 @@ Session或Agent Runtime合同；已冻结计划仍作为历史证据保留，不
 - [SWE-bench Evaluation Guide](https://github.com/SWE-bench/SWE-bench/blob/02e7a74ffd0b707aab73d203fe87bdc7c76afc8e/docs/guides/evaluation.md)
 - [SWE-bench Dataset Guide](https://github.com/SWE-bench/SWE-bench/blob/02e7a74ffd0b707aab73d203fe87bdc7c76afc8e/docs/guides/datasets.md)
 - [SWE-bench results.json 实现](https://github.com/SWE-bench/SWE-bench/blob/02e7a74ffd0b707aab73d203fe87bdc7c76afc8e/swebench/harness/reporting.py)
+
+## 11. 25 Case 开发集优化与后续泛化评测
+
+首轮25个Case经过多轮失败分析后，现作为开发集。目标为Resolved至少22/25、空补丁至多2/25、
+补丁应用失败及基础设施失败均为0。目标仍需官方评分确认，局部回归通过不能计为Resolved。
+每轮保留独立计划、固定实现提交、同样的Case顺序及50K token / 16 step / 900秒预算。
+
+本轮修改的通用机制及边界：
+
+- [公开测试Profile](../../src/harnessix/evals/swebench/public_test_profile.py)：
+  优先从只读Workspace导入被修改的Python源码；缺少的构建生成模块及编译扩展从该Case绑定的
+  官方基础镜像读取，运行目录为临时目录。pytest使用实际存在的公开测试文件，忽略猜测的node后缀；
+  目标文件缺失时，只按修改源码与基础镜像的字节差异匹配公开`test_<module>.py`。
+  无测试匹配仍报错，不把未运行测试当作成功。
+- [工具目录](../../src/harnessix/product_config/coding_tool_view.py)：
+  按持久化事实暴露调查、修改、测试、诊断和复核工具。`git_review`仅在最新修改经测试成功后开放；
+  测试失败需诊断和重测。预注册显式声明`parallel_tool_calls=true`的轮次允许一次响应带多个
+  独立读取调用，写入和测试继续遵循Runtime的权限及顺序边界。
+- [Git复核](../../src/harnessix/tools/git.py)：`git_review`复用既有`git_status`和工作区`git_diff`，
+  返回[严格聚合契约](../../src/harnessix/tools/git_contracts.py)。两次观察顺序执行、并非原子快照；
+  任一步失败、取消、输出无效或合并输出越界，都不返回部分成功。评测还独立核验类型与截断标志。
+- [Suite状态v2](../../src/harnessix/evals/swebench/execution_contracts.py)：
+  已尝试Case与证据成功Case分别统计。预算耗尽、空补丁、代码测试失败、缺少复核等质量失败
+  保存原终态与Patch并继续后面的Case，官方分母始终为25。取消、未知状态、环境或身份错误
+  停止；恢复重用原Turn，不创建同Case第二次尝试。v1历史状态及结果保留原语义。
+
+调用链：公开计划 → 隔离Workspace → Agent调查/修改 → 公开测试 → Git复核 → Case终态 →
+完整25条prediction → 官方Docker评分。Case证据失败与官方Resolved是不同指标，均须如实报告。
+
+下一步在实现及参数冻结后，使用排除全部开发集Case、未向Agent或开发者展示答案的新数据集，
+先冻结选择规则、seed、数据版本、完整manifest与评分门槛，再做一次正式执行。
+正式集结果不反馈给Agent追加修补，不选择性删除失败，不与开发集结果合并发布。
+
+本轮v13计划见[plan.json](../../benchmarks/swebench/verified-25-v13/plan.json)，实现提交`cd628938aa463bacd46e050fdf247fd43de80bce`。
+当前仅完成机制回归与计划冻结，真实25 Case复验及官方评分尚未执行。
