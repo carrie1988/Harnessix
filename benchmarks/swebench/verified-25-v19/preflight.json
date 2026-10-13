@@ -52,11 +52,12 @@
   "model_retry_policy": "none",
   "official_score": null,
   "execution_run_directory": "runs/agent-af44f9d5831c-v19",
-  "execution_status": "READY",
+  "execution_status": "STOPPED_UNACCOUNTED_PROVIDER_READ_TIMEOUT",
   "evidence_log_sha256": {
     "v19-final-r2.log": "b244918bef60edd87853957112374588eed52e4c6725471f0596cc3800f03140",
     "v19-expanded-final.log": "458ac3a4dbe00837d42610b508683a5595ddd9565913db8da47fe3538290ef21",
     "v19-mypy-final.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
     "transport-catalog-probe-v19.json": "da623050a1c1caabafa6e4c90b26854683b86fdb16851fc3e44af35d2be494dd"
-  }
+  },
+  "execution_summary_sha256": "ab6c060f20f7b6ae99bbac69438106d7df71a77f51488c354cee9e0baa9a94fd"
 }

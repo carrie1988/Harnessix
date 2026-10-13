@@ -1,0 +1,255 @@
+{
+  "schema": "harnessix.swebench-development-partial-execution-summary/v1",
+  "plan_sha256": "af44f9d5831c900a66fd757676e0ea2231fbf42f6cde96d5987aa883b82e6212",
+  "source_revision": "5a76886d0e3ffaec08d7fdddf57276bbdb56697f",
+  "evaluation_scope": "development_set",
+  "suite_status": "failed",
+  "attempted_cases": 20,
+  "not_attempted_cases": 5,
+  "completed_cases": 1,
+  "nonempty_patch_cases": 8,
+  "input_tokens": 813067,
+  "output_tokens": 10067,
+  "known_cost_upper_amount": "10.119216",
+  "reserved_cost_amount": "3.147456",
+  "unaccounted_attempts": [
+    {
+      "instance_id": "mwaskom__seaborn-3187",
+      "step": 5,
+      "status": "failed",
+      "response_id_present": true,
+      "usage_completeness": "unknown",
+      "diagnostic": "Provider 返回结构化失败；chat_transport/v1:httpx_read_timeout"
+    }
+  ],
+  "failure_counts": {
+    "budget_exceeded": 18,
+    "provider_transport": 1
+  },
+  "rejected_tool_calls": 0,
+  "official_score": null,
+  "predictions_sha256": null,
+  "note": "Stopped on unaccounted read timeout. No retries or cherry-picked full score. Native turn/session and failed cases preserved.",
+  "cases": [
+    {
+      "instance_id": "matplotlib__matplotlib-25960",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 44815,
+      "output_tokens": 336,
+      "known_cost_upper_amount": "0.549876",
+      "cost_complete": true,
+      "model_steps": 7,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "pydata__xarray-4695",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 44945,
+      "output_tokens": 284,
+      "known_cost_upper_amount": "0.549564",
+      "cost_complete": true,
+      "model_steps": 7,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 46821,
+      "output_tokens": 485,
+      "known_cost_upper_amount": "0.579312",
+      "cost_complete": true,
+      "model_steps": 8,
+      "patch_sha256": "deeb6198d79b2b39ddfd05b7527b8c9434bcd94a1190e586e4c884149ad72156"
+    },
+    {
+      "instance_id": "django__django-11734",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 47040,
+      "output_tokens": 390,
+      "known_cost_upper_amount": "0.57852",
+      "cost_complete": true,
+      "model_steps": 6,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-25973",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 38966,
+      "output_tokens": 294,
+      "known_cost_upper_amount": "0.478176",
+      "cost_complete": true,
+      "model_steps": 6,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 38695,
+      "output_tokens": 1305,
+      "known_cost_upper_amount": "0.51132",
+      "cost_complete": true,
+      "model_steps": 7,
+      "patch_sha256": "ee7ecb7116f2a351eed9718fe666f612f99acd89f06566e53e5102292ea09992"
+    },
+    {
+      "instance_id": "sympy__sympy-20801",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 38317,
+      "output_tokens": 437,
+      "known_cost_upper_amount": "0.475536",
+      "cost_complete": true,
+      "model_steps": 7,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3069",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 38616,
+      "output_tokens": 429,
+      "known_cost_upper_amount": "0.478836",
+      "cost_complete": true,
+      "model_steps": 5,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "status": "completed",
+      "error_code": null,
+      "input_tokens": 26659,
+      "output_tokens": 489,
+      "known_cost_upper_amount": "0.337512",
+      "cost_complete": true,
+      "model_steps": 6,
+      "patch_sha256": "b916b53329a250d699949b5d9e2fb9d45fffb57891c957d7e301f7da81d26dac"
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8035",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 38182,
+      "output_tokens": 451,
+      "known_cost_upper_amount": "0.47442",
+      "cost_complete": true,
+      "model_steps": 5,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "psf__requests-5414",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 45971,
+      "output_tokens": 545,
+      "known_cost_upper_amount": "0.571272",
+      "cost_complete": true,
+      "model_steps": 8,
+      "patch_sha256": "82bebc310e162d4e1e0f5eb9d5ae4f2a5edfbab8024c72691814275c0d4cc041"
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 42309,
+      "output_tokens": 377,
+      "known_cost_upper_amount": "0.52128",
+      "cost_complete": true,
+      "model_steps": 6,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-24026",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 40059,
+      "output_tokens": 301,
+      "known_cost_upper_amount": "0.491544",
+      "cost_complete": true,
+      "model_steps": 6,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 40125,
+      "output_tokens": 376,
+      "known_cost_upper_amount": "0.495036",
+      "cost_complete": true,
+      "model_steps": 6,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7205",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 46575,
+      "output_tokens": 451,
+      "known_cost_upper_amount": "0.575136",
+      "cost_complete": true,
+      "model_steps": 7,
+      "patch_sha256": "5f2289675bbb259eccda497c699f5221a6ed1c237dd8cc485757c9febfce9560"
+    },
+    {
+      "instance_id": "django__django-13590",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 42981,
+      "output_tokens": 866,
+      "known_cost_upper_amount": "0.546948",
+      "cost_complete": true,
+      "model_steps": 8,
+      "patch_sha256": "4a0b0c1232b3cd3fe1b47e48bbefcd0a89f8ac9371ed28c1c60f416b6dabc7ed"
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-13439",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 45664,
+      "output_tokens": 966,
+      "known_cost_upper_amount": "0.582744",
+      "cost_complete": true,
+      "model_steps": 8,
+      "patch_sha256": "d51627d910382a40fc66f1092aa636442efc512a6a25974d6e5c692469317db9"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6528",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 45957,
+      "output_tokens": 315,
+      "known_cost_upper_amount": "0.562824",
+      "cost_complete": true,
+      "model_steps": 6,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "sympy__sympy-21596",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "input_tokens": 42086,
+      "output_tokens": 512,
+      "known_cost_upper_amount": "0.523464",
+      "cost_complete": true,
+      "model_steps": 7,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3187",
+      "status": "failed",
+      "error_code": "provider_transport",
+      "input_tokens": 18284,
+      "output_tokens": 458,
+      "known_cost_upper_amount": "0.235896",
+      "cost_complete": false,
+      "model_steps": 5,
+      "patch_sha256": "6c5d5b340737b71676f659eca5364a1b6dfefb350ad518eac61e66cffcbb1b13"
+    }
+  ]
+}
