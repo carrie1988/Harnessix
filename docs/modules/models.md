@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: 56772487bf9d4e9e9be191309e61f46cb80a86d7
+version: 15
+code_revision: e031eaa6c5681d70b5680ec713e675f2ce3ce886
 owners:
   - core
 modules:
@@ -64,9 +64,16 @@ Provider Event v4新增 `ToolCallRejected`。两个Adapter先验证全组结构�
 
 `ModelInputTokenEstimator.input_token_identity`与`estimate_input_tokens(request, prefix_items=0)`
 是可选能力，`ModelProvider.stream`合同不变。Chat Provider复用出站mapper计算UTF-8上界与512余量，
-不执行I/O；非零前缀必须是闭合历史，扣除前缀后仍全额计入当前工具目录及指令。
+不执行I/O；非零前缀必须是闭合历史，无额外证明时仍全额计入当前工具目录及指令。
 Runtime只在同Provider、同请求/实际模型、完整Usage及持久前缀摘要一致时使用实际输入锚点；
 否则采用完整出站上界。非法能力值失败关闭，未声明能力的Provider保持旧预算路径。
+[`CompletedChatInput`](../../src/harnessix/models/_chat_input_anchor.py)只在同一Provider实例内保存
+上一成功请求的Thread、Turn、Step、历史条数，以及实际映射消息、工具、指令、配置的摘要，
+不持久化请求正文。Runtime先核验完整Usage与历史前缀；Provider再核验连续Step和映射摘要，
+只扣除相同工具/指令的重复预留，变化部分继续全额计入。失败、关闭、重启、跨Turn、历史改写或
+配置变化不复用此证明；恢复时保守回退，不修改旧事件、用量、预算或成本记录。
+真实SDK的离线对照验证：同一小预算下，有证明可继续下一请求；禁用证明则预算拒绝。
+这不等于编码质量验收通过，真实25 Case的失败仍需单独计入。
 原取消、请求/用量账本、费用预留与实际用量停止条件不变，不改变模型收到的Schema。
 对应[实现](../../src/harnessix/agent/model_input_budget.py)、
 [SDK映射正负控](../../tests/models/test_provider_input_budget.py)及

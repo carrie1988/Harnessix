@@ -1,0 +1,58 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T06:27:24.394681+00:00",
+  "plan_sha256": "7f1a2d8a17f459c5b12e991a4e4bd888a5fd0660106dddd0461f46ad44e3705e",
+  "source_revision": "5d86b58a14801262beb40e758e0ec555941d8441",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "budget_pressure_compaction": false,
+  "input_budget_strategy": "v16 wire bound + proven unchanged projected wrapper deduction in same Provider instance; hashes only; restart/drift/failure fallback",
+  "final_focused_pytest": {
+    "passed": 345,
+    "failed": 0
+  },
+  "broad_candidate_regression": {
+    "passed": 3720,
+    "failed": 5,
+    "note": "4 retry failures reproduced on v15; fifth was expected environment-drift rejection after a source commit changed HEAD during the test (8779c187 to e90385f1). Final stable-HEAD rerun pending; no green claim."
+  },
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "ruff_changed_files": "PASS",
+  "disk_guard": {
+    "status": "PASS",
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 67894796288
+  },
+  "case_profile_count": 25,
+  "profile_drift": false,
+  "profiles_sha256": "91ea4be942585e60eab6f534a27dc8783c851e0e66188bea31432c3ee42a62a4",
+  "read_only_mount_preflight": "25/25 PASS v16; exact same image/profile hashes retained",
+  "known_environment_dependencies": "trustme/appdirs absent in original images; infrastructure acceptance remains open, no hidden tests changed",
+  "budget_period_id": "d13d33cb-8093-4e94-9253-5b78b2e201ad",
+  "period_limit_amount": "100",
+  "known_cost_upper_amount": "27.657396",
+  "remaining_upper_budget_amount": "72.342604",
+  "maximum_run_allocation_amount": "48.147456",
+  "official_score": null,
+  "evidence_log_sha256": {
+    "v17-final-focused.log": "63aad056f05030ad919b602eeb8100fa851fe4e35f0e5fc1a5f34159ae51e0f1",
+    "v17-anchor-runtime.log": "fd3fff45b89957c886db633d98cb1bc30e3d273475b20ec9bc5baefa2e638c95",
+    "v17-broad.log": "9dde65d553c244db4aece313e6579ca9f48e179c3cf9c5d4d5d4f5cc5dc160b8",
+    "v16-resumed-regression.log": "0e668081c69ba1076e8f47439ad969bf6997894bbe79fec081cc39125f0d5a74",
+    "v17-broad-final.log": "7bb37141464d160a4c80722879a839eceb0e16b6c68e6520658ef52a79dc68c6"
+  },
+  "environment_drift_isolated_rerun": {
+    "passed": 1,
+    "failed": 0,
+    "log_sha256": "24d7a328cd61144014b481cfcb29584b69ed963b7e78c90b59262b37d3454921"
+  },
+  "execution_status": "STOPPED_UNACCOUNTED_PROVIDER_TRANSPORT",
+  "execution_run_directory": "runs/agent-7f1a2d8a17f4-v17",
+  "final_stable_head_broad_regression": {
+    "passed": 3721,
+    "failed": 4,
+    "note": "Original four retry failures retained; additional environment-drift failure absent with stable HEAD. Full regression not green."
+  }
+}

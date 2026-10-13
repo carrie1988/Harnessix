@@ -1,0 +1,114 @@
+{
+  "schema": "harnessix.swebench-partial-execution-summary/v1",
+  "plan_sha256": "7f1a2d8a17f459c5b12e991a4e4bd888a5fd0660106dddd0461f46ad44e3705e",
+  "execution_status": "STOPPED",
+  "attempted_cases": 9,
+  "not_attempted_cases": 16,
+  "completed_cases": 0,
+  "known_cost_amount": "4.277328",
+  "reserved_cost_amount": "3.147456",
+  "cost_complete": false,
+  "cases": [
+    {
+      "instance_id": "matplotlib__matplotlib-25960",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 41965,
+      "output_tokens": 322,
+      "model_attempts": 7,
+      "nonempty_patch": false
+    },
+    {
+      "instance_id": "pydata__xarray-4695",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 42150,
+      "output_tokens": 288,
+      "model_attempts": 7,
+      "nonempty_patch": false
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 40985,
+      "output_tokens": 545,
+      "model_attempts": 7,
+      "nonempty_patch": true
+    },
+    {
+      "instance_id": "django__django-11734",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 44932,
+      "output_tokens": 490,
+      "model_attempts": 6,
+      "nonempty_patch": false
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-25973",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 44884,
+      "output_tokens": 350,
+      "model_attempts": 7,
+      "nonempty_patch": false
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 39064,
+      "output_tokens": 982,
+      "model_attempts": 6,
+      "nonempty_patch": true
+    },
+    {
+      "instance_id": "sympy__sympy-20801",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 46935,
+      "output_tokens": 481,
+      "model_attempts": 8,
+      "nonempty_patch": false
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3069",
+      "status": "failed",
+      "error_code": "budget_exceeded",
+      "turn_error_code": "budget_exceeded",
+      "cost_complete": true,
+      "input_tokens": 43751,
+      "output_tokens": 468,
+      "model_attempts": 6,
+      "nonempty_patch": false
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "status": "failed",
+      "error_code": "swebench_cost_incomplete",
+      "turn_error_code": "provider_transport",
+      "cost_complete": false,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "model_attempts": 1,
+      "nonempty_patch": false
+    }
+  ],
+  "official_score": null,
+  "reported_at": "2026-10-13T06:35:58.856743+00:00"
+}

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: 56772487bf9d4e9e9be191309e61f46cb80a86d7
+version: 6
+code_revision: e031eaa6c5681d70b5680ec713e675f2ce3ce886
 owners:
   - core
 modules:
@@ -250,10 +250,10 @@ Ruff及552个源码文件Mypy通过。这是机制验证，不是Resolved成绩�
 结果为Resolved **4/25（16%）**、空Patch **18/25**，0个Turn完整闭环；20个预算失败、
 5个摘要契约失败。相比v14未获得质量收益，结论为 **NO_GO**，不把提前压缩默认发布；
 既有窗口阈值压缩和溢出恢复机制保留。评分错误0，环境缺依赖的风险仍未验收。
-当前100元周期累计保守计价上界 **22.290948元**，无未决预留，剩余额度 **77.709052元**；
+v15结束时，该100元周期累计保守计价上界 **22.290948元**，无未决预留，剩余额度 **77.709052元**；
 这是按完整用量计算的计价上界，不是实扣账单。
 
-### v16：出站输入预算与磁盘余量门禁（尚未付费执行）
+### v16：出站输入预算与磁盘余量门禁
 
 - [可选预算端口](../../src/harnessix/models/contracts.py)不改变`ModelProvider.stream`。
   [Chat实现](../../src/harnessix/models/openai_chat.py)复用正式请求mapper，计入UTF-8字节和512边界余量；
@@ -273,5 +273,40 @@ Ruff及552个源码文件Mypy通过。这是机制验证，不是Resolved成绩�
 没有删除或跳过来制造全绿；最终扩大回归因磁盘余量跌破768 MiB而自动终止，不能宣称全量通过。
 日志摘要及当前阻断见[v16预检](../../benchmarks/swebench/verified-25-v16/preflight.json)。
 [v16计划](../../benchmarks/swebench/verified-25-v16/plan.json)只更新源码身份，25 Case、顺序、模型及
-50K/16次/900秒预算不变；磁盘不足10 GiB，不创建新Workspace批次、不增加付费请求。
+50K/16次/900秒预算不变；首次预检因磁盘不足10 GiB，没有创建新Workspace或增加付费请求。
 当前正式可报告结果仍是v14串行5/25、v15为4/25，目标22/25和环境零失败均未验收。
+
+用户释放磁盘空间后，源码绑定、25个冻结镜像及只读挂载均重新验证通过，磁盘余量恢复到60 GiB以上。
+[v16部分执行记录](../../benchmarks/swebench/verified-25-v16/execution-partial-summary.json)
+保留13项已尝试、12项未尝试、1项自主闭环、3个非空Patch；第13项已结算协议失败的
+`provider_invalid_provider_output`未被旧分类器隔离，整轮停止，未生成正式25 Case分数。
+
+### v17～v18：重复封装证明、协议失败隔离与预算告知
+
+- v17增加[进程内封装证明](../../src/harnessix/models/_chat_input_anchor.py)，避免在实际输入锚点
+  已包含同一工具/指令时再次全额预留；仅保存摘要，重启和漂移保守回退。没有扩大50K/16步预算。
+- [执行器](../../src/harnessix/evals/swebench/execution.py)对两种已结算协议错误码统一映射为单项
+  质量失败；必须有完整价格覆盖、响应身份和终态尝试。未知费用、传输失败及工具状态未知仍停止，
+  原失败Case不重试、不改判成功；负控和重放摘要检查继续保留。
+- v18的[任务提示](../../src/harnessix/evals/swebench/agent_execution.py)从冻结Budget生成明确的累计
+  Token、步骤和期限说明，指出历史与目录每次重发都会计数。只提供资源事实和通用调查建议，
+  不引入仓库/Case专用规则、隐藏断言或答案，原Problem Statement不变。
+
+v17最终专项345项通过，稳定HEAD的扩大回归3721项通过、4项原重试失败；554个源码文件Mypy通过。
+一次回归中途提交导致历史Eval的环境身份变化，`eval_run_mismatch`正确拒绝恢复；固定HEAD后
+单项及扩大回归均不再出现此额外失败，原日志保留，没有删除测例。v18最终专项347项通过。
+
+[v17部分记录](../../benchmarks/swebench/verified-25-v17/execution-partial-summary.json)为9项尝试、
+16项未尝试、0项自主闭环、2个非空Patch；第9项传输失败且缺响应身份和Usage，保留3.147456元预留。
+[v18部分记录](../../benchmarks/swebench/verified-25-v18/execution-partial-summary.json)为11项尝试、
+14项未尝试、1项自主闭环、3个非空Patch，同样没有正式全量分数；
+其已持久化诊断为`httpx_connect_failure`，不能据此推断供应商已扣款或本机具体网络根因。
+两条路线的`/models`只读查询当前可用，不证明原失败请求成功，也不替代真实推理验证。
+原预注册计划、Case失败、未尝试状态及费用预留全部保留；这些部分执行不与历史Case挑选组合成25/25。
+该100元周期已知保守费用上界为37.349580元，另保留两笔未决请求共6.294912元，
+可用余额56.355508元；预留不是实扣费用，预算和磁盘目前都不是阻塞点。
+
+目前没有建立新的完整25 Case编码质量收益，仍不得宣布达到22/25或发布质量达标。
+下一步应先完成推理连接稳定性排查，再验证调查、修改、测试、修复和复核的完整收尾能力；
+原镜像缺依赖和零测试收集问题仍属于开放验收项。只清理已结束的合成测试目录，
+源码、业务数据、真实Session/Workspace及官方证据均保留；10 GiB准入门禁和运行监控继续有效。

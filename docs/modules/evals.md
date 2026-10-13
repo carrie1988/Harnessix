@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 40
-code_revision: 76d643a1affe295e76a6824a7e69a15a87435275
+version: 41
+code_revision: e031eaa6c5681d70b5680ec713e675f2ce3ce886
 owners:
   - core
 modules:
@@ -133,6 +133,16 @@ Patch网关非空不足以证明容器执行能力；缺失时以`eval_task_pack
 不进入模型驱动循环、不降级宿主命令。Provider构造和清理保留，认证Owner、Scope及缺证评分不变。
 需求、流程、接口、失败语义与负控见[固定Profile准入详设](../changes/m09-r3-required-profile-preflight.md)。
 
+### 1.2 SWE-bench的执行边界
+
+[`agent_execution`](../../src/harnessix/evals/swebench/agent_execution.py)使用冻结Budget生成任务提示，
+装配只读公开测试Profile和正式Runtime；不读取隐藏测试或参考Patch。
+[`execution`](../../src/harnessix/evals/swebench/execution.py)只隔离已完整计费、带响应身份的
+模型协议质量失败；未知费用、传输故障或未结算工具仍停止整轮，失败Case不重试。
+每次源码改变重新冻结计划并使用新副本，未尝试Case不计成功；部分运行不生成完整官方分数。
+初始化、物化和下一新Case前的磁盘门禁保留10 GiB余量，运行宿主另做监控，不删除原始证据。
+当前结果和专项/扩大回归的完整边界见[SWE-bench变更设计](../changes/swebench-adapter-verified-25-pilot.md)。
+
 ## 2. 需求背景
 
 Coding Agent的质量不能只由“模型给出了答案”“一次测试通过”或“生成了某个Golden Patch”证明。生产评测至少
@@ -181,7 +191,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 - 不接受用户动态提供的任意Git URL、测试命令或隐藏检查脚本；
 - 不在运行时下载第三方仓库；v1只发布权利链已审查的内置Archive，不提供远端对象存储或动态导入；
 - SWE-bench仅提供固定Revision、预注册范围内的专用适配，不扩展为任意Benchmark平台；
-- 当前SWE-bench Agent侧没有受控测试Profile；无Profile工作流只暴露文件读搜与Workspace Patch，最多四次源码观察后收敛到Patch或明确阻塞，并在成功Patch后强制Git状态与Diff复核。官方隐藏测试仍只在隔离Evaluator侧运行；这不等同于Agent自主测试能力已验收；
+- SWE-bench Agent侧已装配固定、断网、只读挂载的公开测试Profile，成功Patch后要求公开测试和Git复核；官方隐藏测试仍只在隔离Evaluator侧运行。机制具备不等于自主测试或质量目标已经验收；
 - 不在评分器中执行模型、测试、Patch、Git写入或发布；
 - 不使用LLM Judge，不评价代码风格、可维护性或唯一实现文本；
 - 不提供请求内硬费用上限；费用停止只发生在完整试验之间；

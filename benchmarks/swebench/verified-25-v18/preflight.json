@@ -1,0 +1,46 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T06:47:21.748633+00:00",
+  "plan_sha256": "f2b39a0ccee096f3c7e0b7a0d19fc16878b7cf6864ed7361651b8cb4043653aa",
+  "source_revision": "e031eaa6c5681d70b5680ec713e675f2ce3ce886",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "prompt_version": "harnessix.swebench-agent-prompt/v5",
+  "prompt_change": "Expose exact frozen cumulative task limits; no case-specific rules, hints, hidden tests or additional tokens.",
+  "budget_pressure_compaction": false,
+  "final_focused_pytest": {
+    "passed": 347,
+    "failed": 0
+  },
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "ruff_changed_files": "PASS",
+  "prior_stable_head_broad_regression": {
+    "passed": 3721,
+    "failed": 4,
+    "note": "Known baseline retry failures retained; no full-green claim."
+  },
+  "disk_guard": {
+    "status": "PASS",
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 64907726848
+  },
+  "profiles_count": 25,
+  "profile_drift": false,
+  "profiles_sha256": "91ea4be942585e60eab6f534a27dc8783c851e0e66188bea31432c3ee42a62a4",
+  "original_infrastructure_acceptance": "OPEN: pristine trustme/appdirs missing and a zero-test-collection failure",
+  "budget_period_id": "d13d33cb-8093-4e94-9253-5b78b2e201ad",
+  "period_limit_amount": "100",
+  "known_cost_upper_amount": "31.934724",
+  "prior_unaccounted_reserved_amount": "3.147456",
+  "remaining_upper_budget_amount": "64.917820",
+  "maximum_run_allocation_amount": "48.147456",
+  "model_retry_policy": "none",
+  "official_score": null,
+  "evidence_log_sha256": {
+    "v18-final.log": "60f47242221f3f60641ef9d0f69749428b5022e83d13b3cbb24c9f7b5b602f0f"
+  },
+  "execution_status": "STOPPED_UNACCOUNTED_PROVIDER_CONNECT_FAILURE",
+  "execution_run_directory": "runs/agent-f2b39a0ccee0-v18"
+}
