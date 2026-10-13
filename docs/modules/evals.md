@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 51
-code_revision: a3a4ed00c30f201d7282d749b9f74051323e5a24
+version: 52
+code_revision: dae92e8d971874db144af0d18362249e715255ad
 owners:
   - core
 modules:
@@ -25,6 +25,8 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
+  - tests/evals/swebench/test_planning_run_config.py
+  - tests/evals/swebench/test_planning_agent_execution.py
   - tests/evals/test_provider_suite_parallel_config.py
   - tests/evals/test_grader.py
   - tests/evals/test_grader_final_feedback.py
@@ -69,6 +71,14 @@ supersedes: []
 ---
 
 # Evals模块设计
+
+## 可选原生规划SWE配置
+
+[`SweBenchPlanningAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py)是独立v6，
+只显式启用非思考规划并保留隔离／压力压缩；原v2～v5、50K/16次及无重试不变。
+它不代表质量通过。源码接线、输入及费用边界、后续配对范围见[统一设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)，
+旧字节及真实产品装配回归见[配置测试](../../tests/evals/swebench/test_planning_run_config.py)和
+[接线测试](../../tests/evals/swebench/test_planning_agent_execution.py)。
 
 最新完整v27为3/25、空补丁19，仍未达质量目标。提示v8已删除任务包装中重复的通用编码规则，
 保留完整公开问题及评测边界；共享Runtime指令v22、工具和50K/16次均不变，尚未付费实跑。

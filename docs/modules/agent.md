@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 35
-code_revision: 432a6988eca02f6317aa6296e4f169ee08d39a01
+version: 36
+code_revision: dae92e8d971874db144af0d18362249e715255ad
 owners:
   - core
 modules:
@@ -21,6 +21,8 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/agent/test_planning_tool.py
+  - tests/agent/test_planning_tool_recovery.py
   - tests/agent/test_runtime_sampled_token_budget.py
   - tests/agent/test_publication_scheduling.py
   - tests/agent/test_publication_scheduling_cancellation.py
@@ -43,6 +45,13 @@ supersedes: []
 ---
 
 # Agent Runtime模块设计
+
+## 可选原生规划控制（默认关闭）
+
+[`planning.py`](../../src/harnessix/agent/planning.py)复用Plan契约，一次受保护CAS发布短结果、
+准备状态和模型自报计划；末尾规则、取消／期限、输出上限和崩溃恢复不授予Workspace权限。
+完整契约及源码／测试映射统一见[规划候选设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)。
+[`test_planning_tool.py`](../../tests/agent/test_planning_tool.py)的离线绿灯不构成真实编码验收。
 
 固定Profile新输出的有界诊断与共享指令v6见[Process当前设计](processes.md#当前增量经审计的有界诊断预览)。
 只减少不必要的日志往返，不改变调用发布前Token门控、恢复、审批或完整评测要求。

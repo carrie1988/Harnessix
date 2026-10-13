@@ -1,0 +1,57 @@
+{
+  "schema": "harnessix.swebench-planning-offline-validation/v1",
+  "source_revision": "dae92e8d971874db144af0d18362249e715255ad",
+  "scope": "opt_in_candidate_offline_only_not_official_score",
+  "acceptance": "NOT_ACCEPTED_REAL_CODING_QUALITY",
+  "feature_default_enabled": false,
+  "paid_model_requests": 0,
+  "real_cases_executed": 0,
+  "docker_changes": 0,
+  "primary_task_budget_unchanged": {
+    "max_tokens": 50000,
+    "max_steps": 16,
+    "timeout_seconds": 900,
+    "resolved_target": "22/25"
+  },
+  "focused": {
+    "tests": 107,
+    "passed": 107,
+    "failed": 0,
+    "skipped": 0
+  },
+  "expanded": {
+    "tests": 3000,
+    "passed": 2995,
+    "failed": 4,
+    "errors": 0,
+    "skipped": 1,
+    "known_preexisting_failure_ids": [
+      "tests.models.test_attempt_usage::test_retry_receipts_do_not_disable_retry_or_double_count[openai]",
+      "tests.models.test_attempt_usage::test_retry_receipts_do_not_disable_retry_or_double_count[anthropic]",
+      "tests.models.test_cost_integration::test_real_sdk_to_durable_cost_report_replay[retry-openai]",
+      "tests.models.test_cost_integration::test_real_sdk_to_durable_cost_report_replay[retry-anthropic]"
+    ],
+    "all_green": false
+  },
+  "mypy_source_files": 555,
+  "ruff": "PASS",
+  "frozen_schema_check": "PASS",
+  "secret_scan": "PASS",
+  "readability": {
+    "gate": "FAIL",
+    "baseline_reset": false,
+    "existing_runtime_hotspots_grew_by_integration": true,
+    "new_planning_view_factory_oversized_symbols": false
+  },
+  "latest_official_score": "3/25 (v27)",
+  "score_changed": false,
+  "next_real_execution_blocker": "host_free_space_below_10_GiB",
+  "private_evidence": {
+    "v32-planning-focused-final.xml": "9402906ea1a783d36f286c60b9f5d6190c342749d0f14fca69a48f3470c82b58",
+    "v32-planning-expanded-final.xml": "db306ab5676b9f5a58deb12341ef603c754ef532bcebf8e0fcce6a6bdcf189c2",
+    "v32-planning-mypy-final.log": "df8e1c2ae54828a68830f7db5f0cda70884d3e71bedd187bd1667b06e4c29acf",
+    "v32-planning-readability-change-final.json": "6541b8c34f8a76239063ba12a812bf9cf416b9d3c731d281aebeb003e2016b19",
+    "v32-planning-specs.log": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2",
+    "v32-planning-secrets.log": "58612e7f6a1c8d3069a9b97badd17513df05ee4d7f3526ad13185a395aacbb76"
+  }
+}

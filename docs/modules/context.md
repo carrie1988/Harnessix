@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: d57f5818100778d952efbf1142e9660d9523cdce
+version: 11
+code_revision: dae92e8d971874db144af0d18362249e715255ad
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md
   - docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md
 related_tests:
+  - tests/context/test_planning_anchors.py
+  - tests/context/test_planning_compaction_runtime.py
   - tests/context/test_engine.py
   - tests/context/test_sources.py
   - tests/context/test_tool_result_view.py
@@ -31,6 +33,13 @@ supersedes: []
 ---
 
 # Context模块设计
+
+## 原生规划的可验证保留
+
+[`planning_history_anchors`](../../src/harnessix/agent/planning.py)核对最新计划与原调用／短结果，
+仅固定完整配对组；正常、反应式及压力压缩都不删Pin或扩大预算，旧窗口沿持久事实重放。
+接口、费用取舍与失败流程见[统一设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)，
+真实Runtime连续窗口回归见[测试](../../tests/context/test_planning_compaction_runtime.py)。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 

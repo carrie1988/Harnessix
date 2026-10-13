@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 119
-code_revision: e92c038e2fb8e82095441840a2a04659d9ea4067
+version: 120
+code_revision: dae92e8d971874db144af0d18362249e715255ad
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_planning_workflow.py
   - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
   - tests/product_config/test_git_review_layered_native.py
@@ -113,6 +114,14 @@ supersedes: []
 仍须闭合，不将该关联验证当作 R4 或商业发布验收。
 
 # Product Config模块设计
+
+## 可选规划装配（不改变默认产品入口）
+
+[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)通过显式布尔开关新增独立
+规划片段；[`coding_tool_view.py`](../../src/harnessix/product_config/coding_tool_view.py)只在
+有效调查／修复阶段开放，baseline及强制测试／Review顺序不变。原单Profile选择按职责拆分。
+契约、恢复与真实质量边界见[统一设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)，
+默认字节兼容和阶段负控见[测试](../../tests/product_config/test_planning_workflow.py)。
 
 共享Coding指令当前v21：post-patch-only路径建议40～60行/4096字节、字面量和窄检索，
 缺证据允许扩读，不按Case分支、不强迫修改。其他产品装配、默认压缩开关及权限不变；

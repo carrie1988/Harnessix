@@ -1,18 +1,27 @@
 ---
 doc_type: change-design
 status: current
-version: 23
-code_revision: a3a4ed00c30f201d7282d749b9f74051323e5a24
+version: 24
+code_revision: dae92e8d971874db144af0d18362249e715255ad
 owners:
   - core
 modules:
   - evals
   - agent
   - context
+  - product_config
 related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
+  - tests/agent/test_planning_tool.py
+  - tests/agent/test_planning_tool_recovery.py
+  - tests/context/test_planning_anchors.py
+  - tests/context/test_planning_compaction_runtime.py
+  - tests/models/test_planning_sdk.py
+  - tests/product_config/test_planning_workflow.py
+  - tests/evals/swebench/test_planning_run_config.py
+  - tests/evals/swebench/test_planning_agent_execution.py
   - tests/evals/swebench/test_contracts.py
   - tests/evals/swebench/test_selection.py
   - tests/evals/swebench/test_predictions.py
@@ -887,3 +896,79 @@ v29真实调用仍反复调查及提交已知非法参数；不能据此直接�
 2026-10-13本轮只读核查时，磁盘从约5.9降至3.5 GiB，付费与大容量评测暂停；明确可再生旧缓存
 仅约64 MiB，不足以补齐10 GiB保护线。业务容器、源码和评测证据均未删除。200元周期可用
 125.951864元、旧未决31.474560元保留，本轮新增付费0；当前资源问题是磁盘，不是资金。
+
+### 原生规划控制候选：默认关闭，真实质量未验收
+
+**背景与取舍。** 三项配对诊断中，预算增加仅延长了调查，没有产生Patch；已有
+`PlanContent`/`PlanStep`和UI投影却没有模型可调用的Runtime生产者。本增量复用这些契约，
+增加短计划控制，不新增调度框架，不按调查次数强迫盲写，也不把模型自报当作任务完成。
+本机Codex源码`a0dcfe2a`的`codex-rs/core/src/tools/handlers/plan.rs`展示了内置清单工具、
+独立计划事件和短确认的分工；这里借鉴该边界，自行补齐Harnessix的原子持久化及恢复。
+
+**当前范围。** `AgentRuntime(enable_planning=False)`与共享产品Context默认关闭；仅显式
+启用的Runtime及SWE私有v6配置可以使用。没有改默认CLI/SDK产品入口，没有生产质量通过
+声明；正式50K/16次/900秒、原模型、公开测试、审批、取消、无重试和22/25目标不变。
+
+| 源码／数据 | 职责及关键边界 |
+| --- | --- |
+| [`UpdatePlanInput`、`planning_tool_descriptor`](../../src/harnessix/agent/planning.py) | `update_plan` v1：1～8个唯一`step_id`，最多一个`in_progress`；沿用`PlanStep`三种状态。整个参数JSON最多4096 UTF-8字节，禁止额外身份字段、NUL、非有限数及错误编码 |
+| [`execute_plan_update`](../../src/harnessix/agent/planning.py) | 最后一个待结算调用才可发布Plan；无效参数／非末尾调用只产生安全配对失败。Plan与结果的UUID由原`call_id`确定，`supersedes`由宿主取最新已完成计划，不由模型指定 |
+| [`AgentRuntime._execute_calls`](../../src/harnessix/agent/runtime.py) | 原工具契约核验后执行控制工具。它不进入Workspace执行器、不授予文件权限、不并行；仍占原模型步骤和每步工具数量额度 |
+| [`CodingWorkflowToolView`](../../src/harnessix/product_config/coding_tool_view.py) | 只在调查／确定测试失败后的修复窗口开放。pre-edit baseline首次调用仍最后；强制Patch／Profile／Review及失败空目录不开放计划。已有单Profile分支按阶段拆分，保持原默认选择结果 |
+| [`build_product_agent_context`](../../src/harnessix/product_config/agent_context.py) | 可选独立`harnessix.coding-planning/v1`片段；原指令v22正文不变。要求记录事实、简短、同响应末尾更新，不能仅为重述计划花请求 |
+| [`planning_history_anchors`](../../src/harnessix/agent/planning.py) | 最新Plan必须与原调用的版本、fingerprint、确定身份、步骤和完整确认输出一致。只固定原调用所属完整工具组，不向模型重复注入Plan正文；人工旧Plan不追补规则 |
+| [`SweBenchPlanningAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 独立v6配置含`planning_policy=native-model-plan`，固定非思考、故障隔离和压力压缩；旧v2～v5序列化及默认行为不变。10 Token容差只进入费用上界，不增加任务额度 |
+
+```mermaid
+sequenceDiagram
+    participant M as 模型
+    participant R as Agent Runtime
+    participant P as 公开保护
+    participant S as Session
+    M->>R: 其他工具 + 末尾update_plan
+    R->>R: 先结算其他工具；解析计划并取Thread锁
+    R->>R: 核对原pending、取消、期限、Token及规范化输出尺寸
+    R->>P: 扫描实际Result/State/Plan完整批次
+    P-->>R: 允许或固定安全失败
+    R->>R: 提交前再次检查取消、期限及Token
+    R->>S: 一次CAS追加Result、PREPARING_CONTEXT及Plan
+    S-->>R: 原子提交后的状态
+    R-->>M: 原调用参数和短确认，继续原工作流
+```
+
+**核心流程与失败语义。**
+
+```text
+解析有限且有界的steps
+在原Thread锁内验证当前待结算调用
+若无效或非末尾：构造固定tool_invalid_arguments结果，不产生Plan
+否则：构造短确认和宿主拥有身份／版本链的Plan；核对两种正文输出上限
+扫描将实际发布的全部事件；再次核对取消／期限／Token
+一次CAS追加结果、状态和计划；提交后故障不得重复发布计划
+```
+
+规范化Plan可能比省略默认字段的输入更长，因此输入4096字节不替代原
+`max_output_chars`。公开保护拒绝、超时、Token耗尽或提交前崩溃均不产生新Plan；
+Runtime沿原失败结算配对调用。SQLite提交后崩溃保留同一批事实，重开不重执行。
+确认只含`plan_item_id`、`step_count`、`self_reported=true`，不复述步骤正文。
+`completed`只表达模型意见，不能代替Patch、Profile成功、Review或官方Resolved。
+
+正常、Provider已记账的context overflow及压力压缩均传入原生计划Anchor；
+压缩必须保留配对完整组，无法在原预算内保留时拒绝候选，不删Pin或扩预算。
+连续窗口及重放使用已持久化的Anchor与原事实；旧窗口不被新规则静默改写。
+固定整个调用组可能增加保留成本，原生规划是否有效须真实对照，不能从回放绿灯推断。
+
+**测试及当前结论。** 新增聚焦107项通过，包含输入／输出／公开保护负控、末尾规则、
+SQLite真实进程崩溃、取消／期限、SDK线协议、正式SWE装配、旧配置字节兼容、正常／反应式／
+压力压缩与连续窗口重放。SWE装配测试只替代模型网络与容器环境探测，不执行真实Profile，
+不能当作Docker或编码质量验收。相关扩大回归仍保留四项既有未知用量重试失败，未放开重试
+或隐藏失败；完整结果见本地`v32-planning-expanded-final.xml`。
+
+Ruff、555源文件Mypy、冻结Schema和Secret扫描通过。全局可读性旧门禁仍FAIL，
+Runtime既有热点有本增量接线增长，未重设基线为通过；新规划模块及拆分后的视图／工厂没有
+新增超大或高复杂度符号。没有新增ADR，设计与证据统一维护本节。
+
+本轮无付费请求、无容器变更；磁盘不足10 GiB时禁止新的付费Case。空间恢复后才冻结同源、
+新目录、小范围配对验证：仅改变规划策略及其工具／Context，保持原模型和50K/16次边界，
+不选成功项、不拼接历史、不注入隐藏测试。候选无收益或多占预算则回退，不继续盲跑25项。
+最新完整官方成绩仍v27的3/25；本增量没有新正式分数或泛化结论。
