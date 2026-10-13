@@ -123,6 +123,7 @@ from harnessix.agent.trusted_action_runtime import (
     synchronize_waiting_action,
 )
 from harnessix.agent.turn_budget_compaction import (
+    pressure_summary_instructions,
     require_context_unchanged,
     require_request_slots,
     summary_output_limit,
@@ -1676,8 +1677,7 @@ class AgentRuntime:
                         else None
                     )
                     if (
-                        event.finish_reason != "completed"
-                        or not text_finished
+                        not text_finished
                         or not text.strip()
                         or attempt is None
                         or attempt.status != "completed"
@@ -1687,6 +1687,12 @@ class AgentRuntime:
                         raise KernelError(
                             "invalid_provider_output", "摘要响应终态、用量或正文不一致"
                         )
+                    if event.finish_reason == "max_output_tokens":
+                        raise KernelError(
+                            "invalid_provider_output", "摘要输出达到Token上限，拒绝激活截断窗口"
+                        )
+                    if event.finish_reason != "completed":
+                        raise KernelError("invalid_provider_output", "摘要响应未正常结束")
                     completed = True
                 else:
                     raise KernelError("invalid_provider_output", "不支持的摘要Provider事件")
@@ -1820,8 +1826,13 @@ class AgentRuntime:
                 if remaining <= 0:
                     raise KernelError("budget_exceeded", "摘要请求的已知Token预算耗尽")
                 source_item = summary_request_item(planned)
+                summary_instructions = (
+                    pressure_summary_instructions(SUMMARY_INSTRUCTIONS, self._compaction, planned)
+                    if budget_planned
+                    else SUMMARY_INSTRUCTIONS
+                )
                 estimated_input_tokens = _estimated_model_input_tokens(
-                    (source_item,), (), SUMMARY_INSTRUCTIONS
+                    (source_item,), (), summary_instructions
                 )
                 allowed_output_tokens = min(
                     remaining - estimated_input_tokens,
@@ -1842,7 +1853,7 @@ class AgentRuntime:
                     step=model_step,
                     history=(source_item,),
                     tools=(),
-                    instructions=SUMMARY_INSTRUCTIONS,
+                    instructions=summary_instructions,
                     budget=current.budget,
                     remaining_tokens=allowed_output_tokens,
                 )

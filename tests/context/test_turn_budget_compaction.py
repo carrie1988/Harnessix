@@ -15,13 +15,18 @@ from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
 from harnessix.agent.turn_budget_compaction import (
     closing_reserve,
     pressure_policy,
+    pressure_summary_instructions,
     require_context_unchanged,
     require_request_slots,
     summary_output_limit,
     summary_request_item,
 )
 from harnessix.agent.usage import ModelAttempt, UsageObservation
-from harnessix.context.compaction import plan_compaction, validate_compaction
+from harnessix.context.compaction import (
+    plan_compaction,
+    replay_compaction_plan,
+    validate_compaction,
+)
 from harnessix.context.compaction_contracts import CompactionSummary
 from harnessix.context.compaction_ledger_contracts import CompactionRecord
 from harnessix.context.compaction_projection import compaction_summary_item
@@ -43,6 +48,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import attempt_start
 from tests.agent.helpers import RecordingTools
 from tests.context.test_compaction import (
+    anchor,
     assert_paired_partition,
     change_turn,
     policy,
@@ -139,7 +145,7 @@ async def test_pressure_trigger_does_not_force_three_request_allocation_as_targe
 
     assert selected.target_history_tokens == prepared.plan.source_history_tokens - 256
     assert selected.target_history_tokens > allocation
-    assert selected.summary_reserve_tokens == 1024
+    assert selected.summary_reserve_tokens == min(12288, selected.target_history_tokens // 4)
     assert selected.retain_recent_groups == 2
     assert prepared.plan.covered_item_ids
     assert prepared.plan.source_history_tokens < budget_config().trigger_history_tokens
@@ -168,6 +174,106 @@ async def test_unchanged_history_does_not_need_fabricated_summary(tmp_path: Path
     assert planned is not None
     assert source.model_dump_json() == original
     assert not main.requests and not summary.requests
+
+
+async def test_pressure_target_stops_at_pins_and_two_complete_recent_groups():
+    source = pressure_thread(groups=12)
+    before = source.model_dump_json()
+    ordinary = await pressure_plan(source)
+    compact = await plan_compaction(
+        source,
+        source.turns[0].model_steps + 1,
+        ToolResultViewPolicy(),
+        ordinary.plan.policy,
+        CancelToken(),
+        compaction_id=ordinary.plan.compaction_id,
+        preferred_history_tokens=512,
+    )
+    required = (source.turns[0].items[0], *source.turns[0].items[-6:])
+    floor = sum(len(history_document(item).encode()) for item in required)
+    assert compact.retained_history == required
+    assert (
+        compact.plan.policy.target_history_tokens
+        == floor + compact.plan.policy.summary_reserve_tokens
+    )
+    assert len(compact.plan.covered_item_ids) > len(ordinary.plan.covered_item_ids)
+    assert compact.plan.policy.target_history_tokens < ordinary.plan.policy.target_history_tokens
+    assert replay_compaction_plan(source, compact.plan) == compact
+    candidate = await validate_compaction(
+        source,
+        compact.plan,
+        CompactionSummary(
+            compaction_id=compact.plan.compaction_id, text="调查事实；尚未修改或测试。"
+        ),
+        CancelToken(),
+    )
+    assert candidate.history_tokens <= compact.plan.policy.target_history_tokens
+    assert source.model_dump_json() == before
+    assert_paired_partition(compact)
+
+
+async def test_preferred_target_at_ceiling_preserves_existing_plan_bytes():
+    source = pressure_thread()
+    ordinary = await pressure_plan(source)
+    compact = await plan_compaction(
+        source,
+        source.turns[0].model_steps + 1,
+        ToolResultViewPolicy(),
+        ordinary.plan.policy,
+        CancelToken(),
+        compaction_id=ordinary.plan.compaction_id,
+        preferred_history_tokens=ordinary.plan.policy.target_history_tokens,
+    )
+    assert compact == ordinary
+    assert compact.plan.model_dump_json() == ordinary.plan.model_dump_json()
+
+
+@pytest.mark.parametrize("target", [True, False, 0, 511, -1, 100_000, 512.0])
+async def test_invalid_preferred_target_is_not_silently_clamped(target):
+    source = pressure_thread()
+    ordinary = await pressure_plan(source)
+    with pytest.raises(KernelError) as caught:
+        await plan_compaction(
+            source,
+            source.turns[0].model_steps + 1,
+            ToolResultViewPolicy(),
+            ordinary.plan.policy,
+            CancelToken(),
+            compaction_id=uuid4(),
+            preferred_history_tokens=target,
+        )
+    assert caught.value.code == "context_compaction_invalid_policy"
+
+
+async def test_tight_target_preserves_entire_explicit_anchor_group():
+    source = pressure_thread(groups=12)
+    ordinary = await pressure_plan(source)
+    compact = await plan_compaction(
+        source,
+        source.turns[0].model_steps + 1,
+        ToolResultViewPolicy(),
+        ordinary.plan.policy,
+        CancelToken(),
+        compaction_id=uuid4(),
+        anchors=(anchor(source.turns[0].items[5]),),
+        preferred_history_tokens=512,
+    )
+    assert {item.item_id for item in source.turns[0].items[4:7]} <= set(
+        compact.plan.pinned_item_ids
+    )
+    assert_paired_partition(compact)
+    assert replay_compaction_plan(source, compact.plan) == compact
+
+
+async def test_pressure_summary_prompt_uses_actual_cap_not_low_trust_source():
+    config = budget_config()
+    prepared = await pressure_plan(pressure_thread(), config)
+    instructions = pressure_summary_instructions(SUMMARY_INSTRUCTIONS, config, prepared)
+    assert instructions.startswith(SUMMARY_INSTRUCTIONS)
+    assert f"at most {summary_output_limit(config, prepared)} tokens" in instructions
+    assert "Finish normally well before" in instructions
+    assert "uncertain effects" in instructions
+    assert prepared.summary_source not in instructions
 
 
 @pytest.mark.parametrize("remaining", [0, 1, 2000])
@@ -278,7 +384,9 @@ async def test_prepaid_cost_reserves_summary_next_catalog_context_and_close(
     assert prepared is not None and context is not None
     fixed = estimate_model_input_tokens((), tuple(host._definitions.values()), context.instructions)
     summary_input = estimate_model_input_tokens(
-        (summary_request_item(prepared),), (), SUMMARY_INSTRUCTIONS
+        (summary_request_item(prepared),),
+        (),
+        pressure_summary_instructions(SUMMARY_INSTRUCTIONS, host._compaction, prepared),
     )
     cost = summary_input + summary_output_limit(host._compaction, prepared)
     cost += prepared.plan.retained_history_tokens + prepared.plan.policy.summary_reserve_tokens

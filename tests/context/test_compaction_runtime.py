@@ -11,6 +11,7 @@ import pytest
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import Budget, TextContent, Usage
+from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
@@ -295,6 +296,39 @@ async def test_summary_response_usage_must_match_settled_attempt(tmp_path: Path)
     assert turn.compactions[0].status == "failed"
     assert turn.compactions[0].attempt.status == "completed"
     assert turn.usage == Usage(input_tokens=10, output_tokens=3)
+
+
+@pytest.mark.parametrize("valid_usage", [True, False])
+async def test_truncated_summary_is_settled_without_window_activation_or_retry(
+    tmp_path: Path, valid_usage: bool
+):
+    events = accounted_text("尚未闭合的摘要")
+    events[-1] = ResponseCompleted(
+        finish_reason="max_output_tokens",
+        usage=Usage(input_tokens=10 if valid_usage else 9, output_tokens=3),
+    )
+    summary = ScriptedProvider([events])
+    store, normal, turn = await run_seeded(tmp_path, summary)
+    record = turn.compactions[0]
+    assert turn.status == "failed" and turn.error.code == "invalid_provider_output"
+    assert ("达到Token上限" in turn.error.message) == valid_usage
+    assert record.failure == turn.error
+    assert record.status == "failed" and record.attempt.status == "completed"
+    assert not record.unaccounted_request_possible
+    assert record.attempt.usage.completeness == "complete"
+    assert turn.usage == Usage(input_tokens=10, output_tokens=3)
+    assert len(summary.requests) == summary.closed_streams == 1
+    assert len(normal.requests) == 1
+    thread = await store.get_thread(record.plan.thread_id)
+    assert not thread.compaction_windows and thread.active_compaction_window_id is None
+    assert replay(await store.events(thread.thread_id)) == thread
+    before = await store.events(thread.thread_id)
+    async with AgentRuntime(
+        store, normal, compaction=config(), summary_provider=summary
+    ) as reopened:
+        assert await reopened.resume_thread(thread.thread_id) == thread
+    assert await store.events(thread.thread_id) == before
+    assert len(summary.requests) == 1
 
 
 async def test_cancel_during_summary_closes_stream_and_ledger(tmp_path: Path):

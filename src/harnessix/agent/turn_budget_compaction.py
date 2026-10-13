@@ -33,17 +33,23 @@ def closing_reserve(turn: Turn) -> int:
     return min(turn.budget.max_output_chars, per_step)
 
 
+def pressure_history_allocation(turn: Turn, fixed_input: int) -> int:
+    """剩余累计额度的重复输入目标；只是规划偏好，不是丢弃固定历史的授权。"""
+    remaining = turn.budget.max_tokens - turn.usage.total_tokens
+    horizon = min(3, require_request_slots(turn))
+    return remaining // horizon - fixed_input - closing_reserve(turn)
+
+
 def pressure_policy(
     turn: Turn, config: CompactionRuntimeConfig, fixed_input: int, history_input: int
 ) -> CompactionPolicy | None:
-    remaining = turn.budget.max_tokens - turn.usage.total_tokens
     horizon = min(3, require_request_slots(turn))
-    allocation = remaining // horizon - fixed_input - closing_reserve(turn)
-    # 均摊预算只判断压力；窗口仍须容纳原用户和近期闭合组，不能强压成不可规划的目标。
+    allocation = pressure_history_allocation(turn, fixed_input)
+    # 先判断均摊压力；规划器再在用户锚点和近期完整组的保留边界上选择紧凑目标。
     target = min(
         config.policy.target_history_tokens, history_input - config.policy.min_savings_tokens
     )
-    reserve = min(config.policy.summary_reserve_tokens, 1024, max(256, target // 4))
+    reserve = min(config.policy.summary_reserve_tokens, max(256, target // 4))
     if horizon < 2 or target < 512 or target <= reserve or history_input <= allocation:
         return None
     return CompactionPolicy.model_validate(
@@ -72,6 +78,20 @@ def summary_output_limit(config: CompactionRuntimeConfig, planned: PreparedCompa
     return min(
         config.max_summary_output_tokens,
         max(0, (planned.plan.policy.summary_reserve_tokens - wrapper_bytes) // 4),
+    )
+
+
+def pressure_summary_instructions(
+    instructions: str, config: CompactionRuntimeConfig, planned: PreparedCompaction
+) -> str:
+    """把实际输出容量明确交给摘要模型；精确UTF-8与完整投影验证仍由Runtime执行。"""
+    limit = summary_output_limit(config, planned)
+    return (
+        instructions
+        + f"\nOutput capacity: at most {limit} tokens. Finish normally well before that limit. "
+        "Use one compact paragraph of factual phrases, not headings or a narrative. "
+        "Keep exact identifiers, observed outcomes, unresolved work and uncertain effects. "
+        "Omit copied source code, repeated logs and speculation; do not invent absent facts."
     )
 
 

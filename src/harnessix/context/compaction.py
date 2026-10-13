@@ -202,10 +202,16 @@ def _plan_steps(
     *,
     compaction_id: UUID,
     anchors: tuple[CompactionAnchor, ...] = (),
+    preferred_history_tokens: int | None = None,
 ) -> Generator[None, None, PreparedCompaction]:
     """规划首个压缩窗口；不调用Provider、读取Artifact或修改Session。"""
     yield None
     policy = CompactionPolicy.model_validate_json(policy.model_dump_json())
+    if preferred_history_tokens is not None and (
+        type(preferred_history_tokens) is not int
+        or not 512 <= preferred_history_tokens <= policy.target_history_tokens
+    ):
+        raise KernelError("context_compaction_invalid_policy", "优选历史预算不属于原策略边界")
     view_policy = ToolResultViewPolicy.model_validate_json(view_policy.model_dump_json())
     current_user_id = _current_user(thread, model_step)
     if len(anchors) > 64 or len({anchor.item_id for anchor in anchors}) != len(anchors):
@@ -237,6 +243,16 @@ def _plan_steps(
     tail = max(0, len(groups) - policy.retain_recent_groups)
     selected = set(range(tail, len(groups))) | pinned_groups
     retained_tokens = sum(sizes[index] for index in selected)
+    if preferred_history_tokens is not None:
+        # 均摊目标不能拆开近期工具组或删除用户锚点；最终有效目标进入原Plan并可重放。
+        target = max(preferred_history_tokens, retained_tokens + policy.summary_reserve_tokens)
+        if target > policy.target_history_tokens:
+            raise KernelError(
+                "context_compaction_retained_overflow", "固定项和近期完整组超过保留预算"
+            )
+        policy = CompactionPolicy.model_validate(
+            {**policy.model_dump(), "target_history_tokens": target}
+        )
     available = policy.target_history_tokens - policy.summary_reserve_tokens
     if retained_tokens > available:
         raise KernelError("context_compaction_retained_overflow", "固定项和近期完整组超过保留预算")
@@ -416,8 +432,9 @@ async def plan_compaction(
     *,
     compaction_id: UUID,
     anchors: tuple[CompactionAnchor, ...] = (),
+    preferred_history_tokens: int | None = None,
 ) -> PreparedCompaction:
-    """可取消规划与同步Replay共用有界纯计算，不执行I/O。"""
+    """可取消纯规划；可选紧凑目标不突破原上限及完整组保留边界。"""
     return await _iterate(
         _plan_steps(
             thread,
@@ -426,6 +443,7 @@ async def plan_compaction(
             policy,
             compaction_id=compaction_id,
             anchors=anchors,
+            preferred_history_tokens=preferred_history_tokens,
         ),
         cancel,
     )

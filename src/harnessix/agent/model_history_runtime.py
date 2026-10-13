@@ -22,7 +22,10 @@ from harnessix.agent.models import (
 from harnessix.agent.reducer import get_turn
 from harnessix.agent.turn_budget_compaction import (
     closing_reserve,
+    pressure_history_allocation,
     pressure_policy,
+    pressure_summary_instructions,
+    require_request_slots,
     summary_output_limit,
     summary_request_item,
 )
@@ -117,6 +120,10 @@ async def _budget_plan(
             policy,
             token,
             compaction_id=new_id(),
+            preferred_history_tokens=min(
+                policy.target_history_tokens,
+                max(512, pressure_history_allocation(turn, fixed)),
+            ),
         )
     except KernelError as error:
         if error.code not in {
@@ -126,9 +133,22 @@ async def _budget_plan(
         }:
             raise
         return None, None
-    cost = estimate_model_input_tokens((summary_request_item(planned),), (), summary_instructions)
-    cost += summary_output_limit(host._compaction, planned)
-    cost += planned.plan.retained_history_tokens + policy.summary_reserve_tokens + fixed
+    instructions = pressure_summary_instructions(summary_instructions, host._compaction, planned)
+    summary_cost = estimate_model_input_tokens((summary_request_item(planned),), (), instructions)
+    summary_cost += summary_output_limit(host._compaction, planned)
+    savings = (
+        planned.plan.source_history_tokens
+        - planned.plan.retained_history_tokens
+        - planned.plan.policy.summary_reserve_tokens
+    )
+    # 同一保守估算尺度判断摊销价值，不把微小窗口缩减当成值得额外付费的压缩。
+    future_requests = min(3, require_request_slots(turn)) - 1
+    if summary_cost > savings * future_requests:
+        return None, None
+    cost = summary_cost
+    cost += (
+        planned.plan.retained_history_tokens + planned.plan.policy.summary_reserve_tokens + fixed
+    )
     cost += closing_reserve(turn)
     if (
         cost > turn.budget.max_tokens - turn.usage.total_tokens
