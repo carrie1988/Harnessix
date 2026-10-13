@@ -1,0 +1,72 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T09:18:58+00:00",
+  "plan_sha256": "6c3951d500e8417de2c845301cc6062fb7c089fc1d94395d4998363be90d1636",
+  "source_revision": "30201490ae1ab4338bd14f519e67a685dd63c8e2",
+  "task_budget_unchanged": true,
+  "case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "prompt_version": "harnessix.swebench-agent-prompt/v5",
+  "runtime_changes": [
+    "bounded grep context 0-3 lines, versioned v2 contracts; budgets and write prerequisites retained",
+    "explicit v3 isolated terminal provider transport failures; per-case fee admission and replay-only proof"
+  ],
+  "budget_pressure_compaction": false,
+  "final_focused_pytest": {
+    "passed": 562,
+    "failed": 0
+  },
+  "broad_regression": {
+    "status": "OPEN",
+    "expanded_baseline_failures": 23,
+    "note": "23 expanded failures reproduced on v19 source; previous retry failures retained"
+  },
+  "mypy_source_files": 554,
+  "mypy": "PASS",
+  "ruff_changed_files": "PASS",
+  "contracts": "PASS",
+  "disk_guard": {
+    "status": "PASS",
+    "minimum_free_bytes": 10737418240,
+    "free_bytes_observed": 55115530240
+  },
+  "profiles_count": 25,
+  "profile_drift": false,
+  "profiles_sha256": "cda7c69d724c7ef5f436f78d65267045872c199771d6afbb2fc4afea669443fb",
+  "transport_probe": {
+    "direct_catalog_get": 3,
+    "direct_success": 3,
+    "inference_requests": 0,
+    "route_unchanged": true
+  },
+  "original_infrastructure_acceptance": "OPEN: pristine trustme/appdirs missing and a zero-test-collection failure",
+  "budget_period_id": "d13d33cb-8093-4e94-9253-5b78b2e201ad",
+  "period_limit_amount": "100",
+  "known_cost_upper_amount": "47.468796",
+  "prior_unaccounted_reserved_amount": "9.442368",
+  "remaining_upper_budget_amount": "43.088836",
+  "maximum_run_allocation_amount": "43.088836",
+  "model_retry_policy": "none",
+  "official_score": null,
+  "execution_run_directory": "runs/agent-6c3951d500e8-v20",
+  "execution_status": "FROZEN_NOT_STARTED",
+  "evidence_log_sha256": {
+    "v20-final-isolation-r3-tests.log": "35399bad174cd2d864ac2ac53247a01d365f2ed2f147f51c1615de1ac7413297",
+    "v20-final-isolation-r3.xml": "2ebf3a571af89df06bd94745076c0131494b3060cfadd3a32b4f4a8334dc0232",
+    "v20-mypy-final.log": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909",
+    "v20-documentation-final.json": "9bfca9299c0fbd26487124a855c50ea4f69f220c24cd982e02f0f504dec9332a",
+    "mount-preflight-v20.json": "5b6158ebc6828f760fd8e6ff45bb46c9fcc9b3cb46b8203652a4acde2e56792a",
+    "transport-catalog-probe-v20.json": "b815c281d646e318dd8e3ee787ce3c7a8ad269f693c3008dae52f1562e6cc38c"
+  },
+  "execution_fingerprint": "512a139e11c22e414159b6abb2ac2e2f30c054e5a48586cbcd03769da645c3cd",
+  "mount_preflight": {
+    "readonly_identity_passed": 25,
+    "paid_calls": 0
+  },
+  "v3_theoretical_all_failures_amount": "123.6864",
+  "next_case_admission_amount": "4.947456",
+  "provider_failure_policy": "freeze_transport_with_full_reserve",
+  "fee_admission_policy": "next_isolated_case",
+  "price_source_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+  "price_observed_at": "2026-10-13T09:18:58+00:00"
+}
