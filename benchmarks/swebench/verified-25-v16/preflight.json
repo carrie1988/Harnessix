@@ -1,0 +1,60 @@
+{
+  "schema": "harnessix.swebench-development-preflight/v1",
+  "generated_at": "2026-10-13T05:52:36.225770+00:00",
+  "plan_sha256": "28e490fd9ed43565e832150ae753c5b10b3b2ce0f33df44b7b4af24d3fecdd15",
+  "source_revision": "56772487bf9d4e9e9be191309e61f46cb80a86d7",
+  "validation_status": "PARTIAL_VALIDATION",
+  "final_changed_scope_pytest": {
+    "passed": 368,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "SWE-bench, provider input bounds, sampled budget, pressure opt-in, compaction and recovery"
+  },
+  "broader_input_candidate_regression": {
+    "passed": 2689,
+    "failed": 4,
+    "skipped": 1,
+    "deselected": 4,
+    "note": "Before disk gate; four retry failures also reproduced on unchanged v15 baseline. Not a green full regression."
+  },
+  "final_broader_regression": {
+    "status": "STOPPED_DISK_RESERVE",
+    "completed": false,
+    "process_return_code": -15,
+    "monitor_floor_bytes": 805306368,
+    "note": "No complete pass count claimed; stopped by SIGTERM, finished temporary fixtures removed."
+  },
+  "ruff_changed_files": "PASS",
+  "ruff_format_changed_files": "PASS",
+  "mypy": "PASS",
+  "mypy_source_files": 553,
+  "task_budget_unchanged": true,
+  "development_case_order_unchanged": true,
+  "model_settings_unchanged": true,
+  "budget_pressure_compaction": false,
+  "input_budget_strategy": "provider mapped UTF-8 bound + 512; same-model unchanged-prefix actual anchor; undeclared providers legacy fallback",
+  "disk_guard": {
+    "status": "BLOCKED",
+    "error_code": "swebench_disk_space_low",
+    "free_bytes_observed": 650645504,
+    "minimum_free_bytes": 10737418240,
+    "scope": "before workspace materialization, each new case, official evaluator launch; not a running Docker daemon quota"
+  },
+  "budget_period_id": "d13d33cb-8093-4e94-9253-5b78b2e201ad",
+  "period_limit_amount": "100",
+  "known_cost_upper_amount": "22.290948",
+  "reserved_amount": "0",
+  "remaining_upper_budget_amount": "77.709052",
+  "paid_requests_this_iteration": 0,
+  "new_workspace_batches_this_iteration": 0,
+  "execution_status": "NOT_STARTED_DISK_SPACE_LOW",
+  "official_score": null,
+  "evidence_log_sha256": {
+    "v16-budget-regression.log": "c8b597944b8967fbe6375dd5707be48135e8c2d1c157ef06549510f4b961017a",
+    "v16-final-small-regression.log": "9737805c9cf6c52dba6e7a1830e5946df7ab38a4a2f8fed008fc963e97534ad5",
+    "v16-offline-regression.log": "87e417ebd9c6442c14a9c417c6a58671dcc8828ae71a0c36e8270764f6e1cd3e",
+    "v16-final-regression.log": "147d86978a992c698bcdac685c6fcca019db92fae8f0a2efa9a529eb683a9652",
+    "v15-retry-baseline.log": "d7b6a2c3d80c473defb1537a126845c31de3c6dd6df4ff30279a55c03f950d63"
+  },
+  "evidence_preservation": "original raw runs/predictions/session state/official artifacts retained; only ended generated test fixtures and local type-check caches removed"
+}

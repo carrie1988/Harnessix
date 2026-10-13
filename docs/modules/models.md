@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 1793af58f969979f8418736dd3698c7788f7bc8f
+version: 14
+code_revision: 56772487bf9d4e9e9be191309e61f46cb80a86d7
 owners:
   - core
 modules:
@@ -59,6 +59,18 @@ Provider Event v4新增 `ToolCallRejected`。两个Adapter先验证全组结构�
 完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
 对应回归见[验证用例](../../tests/models/test_tool_rejection.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。
 以下历史版本小节用于解释演进；新写版本与新连接行为以此节及现行摘要为准。
+
+## 当前增量：可选的纯出站输入预算
+
+`ModelInputTokenEstimator.input_token_identity`与`estimate_input_tokens(request, prefix_items=0)`
+是可选能力，`ModelProvider.stream`合同不变。Chat Provider复用出站mapper计算UTF-8上界与512余量，
+不执行I/O；非零前缀必须是闭合历史，扣除前缀后仍全额计入当前工具目录及指令。
+Runtime只在同Provider、同请求/实际模型、完整Usage及持久前缀摘要一致时使用实际输入锚点；
+否则采用完整出站上界。非法能力值失败关闭，未声明能力的Provider保持旧预算路径。
+原取消、请求/用量账本、费用预留与实际用量停止条件不变，不改变模型收到的Schema。
+对应[实现](../../src/harnessix/agent/model_input_budget.py)、
+[SDK映射正负控](../../tests/models/test_provider_input_budget.py)及
+[Runtime预算正负控](../../tests/agent/test_provider_input_budget.py)。
 
 ## 1. 文档摘要
 

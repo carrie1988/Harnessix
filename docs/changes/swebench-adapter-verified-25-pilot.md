@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 823fa9f56fc3c95e1825d6f9cf37659628c57d15
+version: 5
+code_revision: 56772487bf9d4e9e9be191309e61f46cb80a86d7
 owners:
   - core
 modules:
@@ -252,3 +252,26 @@ Ruff及552个源码文件Mypy通过。这是机制验证，不是Resolved成绩�
 既有窗口阈值压缩和溢出恢复机制保留。评分错误0，环境缺依赖的风险仍未验收。
 当前100元周期累计保守计价上界 **22.290948元**，无未决预留，剩余额度 **77.709052元**；
 这是按完整用量计算的计价上界，不是实扣账单。
+
+### v16：出站输入预算与磁盘余量门禁（尚未付费执行）
+
+- [可选预算端口](../../src/harnessix/models/contracts.py)不改变`ModelProvider.stream`。
+  [Chat实现](../../src/harnessix/models/openai_chat.py)复用正式请求mapper，计入UTF-8字节和512边界余量；
+  不读取Key、不发送HTTP，不把未发送的输出Schema或执行元数据计入模型输入。
+- [Runtime预算](../../src/harnessix/agent/model_input_budget.py)仅在Provider、请求模型、实际模型
+  与持久历史前缀全部匹配时复用上一完整实际输入，重新计入新增出站内容、全部当前工具与指令。
+  历史改写、模型别名、来源不匹配回到完整输入上界；未声明能力的Provider保持旧算法。
+  能力返回非法值或抛异常在请求前失败关闭。实际用量硬门、未知费用及原任务预算不变。
+- v15提前压缩没有质量收益，现改为显式实验选项、默认关闭；原窗口阈值压缩和溢出恢复不变。
+- [磁盘门禁](../../src/harnessix/evals/swebench/disk_space.py)在初始化、克隆、下一新Case及
+  官方评测启动前保留10 GiB余量；不足或无法读取余量则停止新写入/付费调用。
+  已完成Case及原费用记录保留，不把未尝试Case计作成功。此门禁是阶段准入，不是运行中Docker
+  守护进程或其他本机程序的磁盘配额，也不自动删除镜像、容器、Volume或原始评测证据。
+
+最终改动范围368项测试通过，553个源码文件Mypy及改动文件Ruff通过。
+扩大输入候选回归曾出现4项重试测试失败，已在未改动v15基线上复现，原测例保留，
+没有删除或跳过来制造全绿；最终扩大回归因磁盘余量跌破768 MiB而自动终止，不能宣称全量通过。
+日志摘要及当前阻断见[v16预检](../../benchmarks/swebench/verified-25-v16/preflight.json)。
+[v16计划](../../benchmarks/swebench/verified-25-v16/plan.json)只更新源码身份，25 Case、顺序、模型及
+50K/16次/900秒预算不变；磁盘不足10 GiB，不创建新Workspace批次、不增加付费请求。
+当前正式可报告结果仍是v14串行5/25、v15为4/25，目标22/25和环境零失败均未验收。
