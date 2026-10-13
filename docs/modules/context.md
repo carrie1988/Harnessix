@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 7
-code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
+version: 8
+code_revision: e27473af9b2c773ae2970d2e5cb31373ffaa9d97
 owners:
   - core
 modules:
@@ -21,6 +21,8 @@ related_tests:
   - tests/context/test_compaction_ledger.py
   - tests/context/test_compaction_runtime.py
   - tests/context/test_compaction_runtime_recovery.py
+  - tests/context/test_turn_budget_compaction.py
+  - tests/agent/test_pressure_compaction_loop.py
   - tests/context/test_compaction_window.py
   - tests/context/test_long_session_recovery.py
   - tests/context/test_windows_sources.py
@@ -46,8 +48,8 @@ supersedes: []
 |---|---|
 | 当前能力 | 固定与动态Context规划、显式优先级/信任、输入预算、Project/Workspace/Git/Environment Source、Tool Result模型视图、Compaction计划/账本/活动窗口 |
 | 本文状态 | 当前实现；`context`包现行实现的事实源 |
-| 代码版本 | `812ae7cfa1978acd53a278637b19f936ebac4a14` |
-| 默认产品装配 | 默认stdio产品及正式Task Pack统一装配中文Coding指令、Project/Workspace/Environment三Source及自动Compaction；Git Source仍由宿主显式接入 |
+| 代码版本 | `e27473af9b2c773ae2970d2e5cb31373ffaa9d97` |
+| 默认产品装配 | 默认stdio产品及正式Task Pack统一装配版本化Coding指令、Project/Workspace/Environment三Source及阈值/溢出Compaction；预算压力提前压缩默认关闭，Git Source仍由宿主显式接入 |
 | 稳定版本 | Context Inspection v1/v2/v3、Source Snapshot v1、Tool Result Model View v1、Compaction Policy/Plan/Summary/Window/Runtime v1 |
 | 持久事实 | 无动态来源正文的Inspection/Snapshot、模型历史决定、Compaction账本和活动窗口；原始Session历史不被删除 |
 
@@ -57,7 +59,7 @@ Context不是“把尽可能多的文本拼进Prompt”。它在每个Model Step
 
 ### 1.1 默认产品与正式评测装配
 
-[`build_product_agent_context`](../../src/harnessix/product_config/agent_context.py)固定生成版本化中文Coding
+[`build_product_agent_context`](../../src/harnessix/product_config/agent_context.py)固定生成版本化Coding
 指令、Project/Workspace/Environment三Source和Compaction配置。默认stdio组合根与正式Task Pack复用该函数，
 每模型步骤双观察后保存无正文Inspection；不枚举进程环境，不插入任务答案。输入估算上限262,144，
 历史触发131,072、目标65,536；这些是宿主`utf8-bytes/v1`策略，不是Provider真实Tokenizer或窗口认证。
@@ -65,6 +67,22 @@ Context不是“把尽可能多的文本拼进Prompt”。它在每个Model Step
 [`ContextReadWorkspace`](../../src/harnessix/context/read_workspace.py)让项目、目录及环境绑定复用POSIX FD或
 Windows Handle只读后端。POSIX目录revision算法不变；Windows不回退普通Path读取。摘要与主模型复用同一
 Provider生命周期，仍经过取消、deadline、凭据出站保护及完整尝试用量记账。
+
+### 1.2 实验性预算压力窗口：完整保留边界与摘要容量
+
+[`plan_compaction`](../../src/harnessix/context/compaction.py)新增可选的内部规划参数
+`preferred_history_tokens`。规划器先计算用户锚点、显式锚点所属完整组和近期完整工具组的最小保留量，
+再在原策略上限内选择紧凑目标；最终有效Policy进入原Plan，既有v1重放不依赖这个临时参数。
+省略参数时原窗口选择不变，不能通过优选目标拆开工具组或删除原需求。
+
+[`_budget_plan`](../../src/harnessix/agent/model_history_runtime.py)除完整预付检查外，
+还用同一保守估算尺度检查摘要成本能否在下一至两次重复输入中摊销；这是规划启发式，
+不是实际Token或账单节省保证。不再固定将摘要预留压到1024；实际输出容量进入摘要指令和SDK请求。
+截断响应先核验尝试与用量，再拒绝窗口激活；不接受半截摘要、不重试，不改变原Turn上限。
+
+预算压力路径仍需`budget_pressure_compaction=True`，没有默认进入产品或SWE-bench执行。
+设计、失败顺序、验证及当前质量边界集中见[SWE-bench增量详设](../changes/swebench-adapter-verified-25-pilot.md)。
+SDK MockTransport与离线回归不能证明云模型摘要质量或Resolved提升。
 
 完整接口、流程图、时序图、字段、恢复语义和测试追踪见[R3共享装配详细设计](../changes/m09-r3-product-context-composition.md)。
 

@@ -1,12 +1,14 @@
 ---
 doc_type: change-design
 status: current
-version: 10
-code_revision: 49ad2d74f0794ac37926d115d99ec7e6399dc6a8
+version: 11
+code_revision: e27473af9b2c773ae2970d2e5cb31373ffaa9d97
 owners:
   - core
 modules:
   - evals
+  - agent
+  - context
 related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
@@ -19,6 +21,9 @@ related_tests:
   - tests/evals/swebench/test_execution.py
   - tests/evals/swebench/test_failure_isolation.py
   - tests/evals/swebench/test_workspace.py
+  - tests/context/test_turn_budget_compaction.py
+  - tests/context/test_compaction_runtime.py
+  - tests/agent/test_pressure_compaction_loop.py
 supersedes: []
 ---
 
@@ -448,3 +453,56 @@ Resolved **4/25**、空补丁**18/25**，7个非空补丁均成功应用；基�
 逐Case最坏准入，不为用完额度而盲目重复评测，也不先以费用问题解释当前质量差距。
 后续重点应从重复历史、调查预算与收尾预算的整体分配查明根因；默认仍不启用已记录NO_GO的
 压力压缩，必须先建立明确失败诊断、输出与历史预算契约及回归证据。
+
+### v22候选：预算窗口与摘要容量整改，尚无新真实评分
+
+**背景与源码求证。** 对v15、v21各25个原Session只读认证，读取前后核对Case状态、SQLite原件及
+WAL摘要，未改写证据、未调用云模型。v15有12次摘要，其中5次契约失败均报告178个输出Token；
+旧Plan预留固定1024，窗口常仅覆盖很小一段前缀。没有持久化精确finish reason，故不能反推
+这5次全部必然截断。v21仍有20项预算失败，138次grep/read调用反复进入后续输入，说明需要
+治理整条重复输入链，而非为单个Case更改提示、路径或答案。
+
+**设计目标与调用流程。** 仍使用既有Planner、尝试账本、窗口CAS和来源复核；不新增摘要执行通道。
+[压力策略](../../src/harnessix/agent/turn_budget_compaction.py)派生均摊目标与有界摘要容量，
+[模型历史准备](../../src/harnessix/agent/model_history_runtime.py)调用
+[同一Planner](../../src/harnessix/context/compaction.py)后先判断摊销与完整预付，满足才发摘要请求；
+[Runtime](../../src/harnessix/agent/runtime.py)完成用量核验、候选验证、发布和Context复核后才继续主循环。
+
+```text
+allocation = remaining / min(3, remaining_request_slots) - fixed_input - closing_reserve
+floor = bytes(user_pins + explicit_pinned_groups + recent_complete_groups)
+target = max(clamp(allocation, 512, original_ceiling), floor + summary_reserve)
+拒绝 target > original_ceiling
+savings = original_history - retained_history - summary_reserve
+拒绝 summary_request_upper > savings * (horizon - 1)
+拒绝 summary + next_history + catalog + context + closing > remaining
+满足后才调用摘要；正常终态且完整投影合法才发布窗口
+```
+
+这里历史/来源大小延续`utf8-bytes/v1`保守估算，Provider输出上限仍为Token。
+摊销比较只是避免明显不划算的小幅压缩，不保证真实Tokenizer上的节约，也不预测模型解题成功。
+50K累计输入/输出、16次含摘要的总请求上限及900秒期限均不变。
+
+**接口、持久化与失败语义。**
+
+| 位置 | 变化与约束 |
+|---|---|
+| `plan_compaction.preferred_history_tokens` | 内部可选参数，必须是512至原上限的严格整数；省略保持原规划。近期完整组和全部Pin的保留下限优先 |
+| `CompactionPlan.policy` | 保存最终有效目标；不新增持久字段、不升级旧v1，重放仍由原历史重算同一计划 |
+| `pressure_policy` | 不再固定1024，预留至多原配置及候选历史上限的四分之一；完整摘要Item封装仍计入预算 |
+| `pressure_summary_instructions` | 只拼接可信基础指令及真实输出上限；明确简短事实段落、正常结束，不把低信任来源复制成指令 |
+| 摘要终态 | 先核验文本、原尝试、响应身份与Usage。账本一致但`max_output_tokens`时仍用`invalid_provider_output`失败，消息明确说明截断；不激活、不重试 |
+| 取消/未知用量/来源漂移 | 沿原失败、结算及恢复边界处理；不得借本增量继续未知效果或未知计费请求 |
+
+**兼容、回退及验收。** 默认`budget_pressure_compaction=False`不变；窗口阈值及溢出恢复仍用原策略。
+本增量没有默认开启SWE-bench或产品提前压缩，没有改动Case、模型、隐藏测试或历史评分。
+[纯规划负控](../../tests/context/test_turn_budget_compaction.py)覆盖原Plan字节兼容、完整组/Pin下限、
+非法目标拒绝、完整预付边界及容量指令；[Runtime/SDK链路](../../tests/agent/test_pressure_compaction_loop.py)
+覆盖无摊销价值时零摘要请求，以及原50K/16次内两次窗口发布、实际SDK出站容量和事件重放。
+[截断与恢复负控](../../tests/context/test_compaction_runtime.py)验证Usage不一致优先、已结算截断拒绝、
+零窗口、关闭流、重新附着不补发摘要。SDK使用MockTransport，不是云模型质量验证。
+
+扩大回归1852项：**1847通过、1跳过、4失败**；4项重试失败在未改动的`54888848`源码上逐项复现，
+原失败与原日志保留，不宣称全套通过。554个源码文件Mypy、改动范围Ruff及契约生成检查通过。
+本轮真实模型请求0、新增费用0。实际Resolved仍为v21 **4/25**，最佳完整轮次5/25，22/25目标和
+基础设施门槛未完成；不把离线机制测试记入质量评分或泛化验证。

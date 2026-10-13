@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 31
-code_revision: 5a76886d0e3ffaec08d7fdddf57276bbdb56697f
+version: 32
+code_revision: e27473af9b2c773ae2970d2e5cb31373ffaa9d97
 owners:
   - core
 modules:
@@ -36,6 +36,9 @@ related_tests:
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_trusted_action_locked_sync.py
   - tests/agent/test_legacy_process_compatibility.py
+  - tests/agent/test_pressure_compaction_loop.py
+  - tests/context/test_turn_budget_compaction.py
+  - tests/context/test_compaction_runtime.py
 supersedes: []
 ---
 
@@ -52,6 +55,16 @@ supersedes: []
 释放后即使同 Task 重新获取也不能恢复旧观察函数。
 Git 消费者接线见[原 Runtime Thread 绑定](../changes/m09-r4-git-runtime-thread-scope.md)。
 该原语不是完整 Git dispatch、SQLite FD 或 R4 验收；通用执行及取消顺序未改变。
+
+## 当前增量：实验性预算压力窗口
+
+预算压力提前压缩仍默认关闭，阈值/溢出压缩及原预算、取消、恢复边界不变。
+[`_budget_plan`](../../src/harnessix/agent/model_history_runtime.py)现在在原Planner中选择受完整组/Pin
+下限保护的紧凑目标，检查保守摊销与完整预付，再发摘要；实际输出容量同时进入可信指令及SDK请求。
+[`_summary_text`](../../src/harnessix/agent/runtime.py)先核验原尝试、响应身份及Usage，再拒绝达到输出上限
+的摘要，不发布半截窗口，也不重试。Plan持久契约不变，临时优选目标已落实到可重放的有效Policy。
+完整设计与验证集中见[SWE-bench增量详设](../changes/swebench-adapter-verified-25-pilot.md)，
+不把MockTransport/离线通过当作Resolved提升，默认开启仍须真实质量验收。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
