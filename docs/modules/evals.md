@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 50
-code_revision: 4c5afc1642ab4037f6bbfe616fa546e1d20eab22
+version: 51
+code_revision: a3a4ed00c30f201d7282d749b9f74051323e5a24
 owners:
   - core
 modules:
@@ -2483,3 +2483,11 @@ Agent prompt v7复用正式read_file唯一锚点能力。
 使用新目录，50K/16次和100K/24次两组均0/3闭环、空Patch 3/3；较大预算只延长调查，
 没有模型传输故障。它不是正式25项评分或显著性证明，不改变原22/25目标和预算口径；
 约束、资金及下一步整改边界见[集中详设](../changes/swebench-adapter-verified-25-pilot.md#独立三项配对预算诊断非正式成绩)。
+
+### 独立思考模式诊断，不替换主评测条件
+
+SWE运行配置新增显式v5，旧v2/v3/v4默认、模式和序列化不变；v5约束思考1024、整体输出4096，
+全量推理与摘要进入原累计50K/16次。官方10 Token容差仅进费用预留，不进执行预算。
+同源前三项配对诊断、字段与失败语义统一见[专项设计](../changes/swebench-adapter-verified-25-pilot.md#独立有界思考配置配对诊断非正式成绩)，
+Provider原计账、正文隔离及临界调度负控见[Models合同](models.md#25-有界思考配置输出上限包含推理不发布推理正文)。
+不将6次诊断、脚本SDK回归或正常Turn结束填充25项Resolved，原22/25门槛及新泛化集仍OPEN。
