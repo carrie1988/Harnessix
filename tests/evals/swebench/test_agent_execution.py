@@ -191,6 +191,21 @@ def test_turn_budget_exactly_matches_preregistered_task_budget() -> None:
     assert runtime_budget.model_dump(mode="python") == plan.task_budget.model_dump(mode="python")
 
 
+@pytest.mark.parametrize("tokens,steps,seconds", [(50_000, 16, 900), (12_345, 7, 321)])
+def test_prompt_exposes_exact_budget_without_changing_problem_or_task_limits(
+    tokens: int, steps: int, seconds: int
+) -> None:
+    case = build_test_plan().cases[0]
+    budget = Budget(max_tokens=tokens, max_steps=steps, timeout_seconds=seconds)
+    frozen = budget.model_dump_json()
+    prompt = build_swebench_agent_prompt(case, budget)
+    assert f"{tokens} cumulative input-plus-output tokens" in prompt
+    assert f"{steps} model steps, {seconds} seconds" in prompt
+    assert "not a per-request token allowance" in prompt
+    assert prompt.endswith("Problem statement:\n" + case.problem_statement)
+    assert budget.model_dump_json() == frozen
+
+
 def test_valid_workspace_patch_batch_is_approved(tmp_path: Path) -> None:
     turn, approval = _approval_fixture(arguments=_valid_patch_arguments())
 

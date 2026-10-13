@@ -55,7 +55,7 @@ from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 
 _AUTOMATED_APPROVAL_ACTOR = "harnessix-swebench-runner"
-_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v4"
+_PROMPT_VERSION = "harnessix.swebench-agent-prompt/v5"
 
 
 class _NoSecrets:
@@ -65,11 +65,24 @@ class _NoSecrets:
         raise KernelError("swebench_tool_secret_denied", f"SWE-bench 工具禁止Secret：{name}")
 
 
-def build_swebench_agent_prompt(case: SweBenchPublicCase) -> str:
+def build_swebench_agent_prompt(case: SweBenchPublicCase, budget: Budget | None = None) -> str:
     """只向 Agent 提供预注册公开问题，不暴露 Task Repo 或评分信息。"""
 
+    budget_note = (
+        ""
+        if budget is None
+        else (
+            f"Hard task limits: {budget.max_tokens} cumulative input-plus-output tokens across "
+            f"all requests, {budget.max_steps} model steps, {budget.timeout_seconds:g} seconds. "
+            "Repeated history and tool catalogs count again on every request; this is not a "
+            "per-request token allowance. Plan investigation, patching, tests, possible repair "
+            "and final review within that same total. Avoid repeated equivalent no-match searches; "
+            "follow the public call chain or named symbols instead.\n"
+        )
+    )
     return (
         "You are solving one SWE-bench task in the current repository.\n"
+        f"{budget_note}"
         "Work autonomously and leave the working tree with the smallest correct patch. Start from "
         "the named symbols and files; use focused grep/read calls rather than broad exploration. "
         "Batch independent source reads in one response when supported; write and test in order. "
@@ -239,12 +252,13 @@ async def _drive_turn(
     )
     turn = _request_turn(thread, request_id)
     if turn is None:
+        budget = _turn_budget(plan)
         turn = await _await_cancel(
             runtime.run_turn(
                 thread.thread_id,
-                build_swebench_agent_prompt(case),
+                build_swebench_agent_prompt(case, budget),
                 request_id=request_id,
-                budget=_turn_budget(plan),
+                budget=budget,
             ),
             cancel,
         )
