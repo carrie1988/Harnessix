@@ -1,0 +1,106 @@
+{
+  "schema": "harnessix.swebench-budget-sensitivity-preregistration/v1",
+  "frozen_at": "2026-10-13T16:18:30.465590+00:00",
+  "runner_sha256": "274e00e39a2219de8d75203cb3b4a17d8cc2db57ef078087fb89eb2d0645efc3",
+  "source_revision": "e82c69f2eb8624f306f40ffbfe7277611277e042",
+  "source_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "scope": "development_set_paired_prefix_diagnostic_not_official_score",
+  "selected_case_ids": [
+    "matplotlib__matplotlib-25960",
+    "pydata__xarray-4695",
+    "pytest-dev__pytest-10051"
+  ],
+  "pairs": 3,
+  "executions": 6,
+  "execution_order": [
+    [
+      "baseline",
+      0
+    ],
+    [
+      "larger",
+      0
+    ],
+    [
+      "baseline",
+      1
+    ],
+    [
+      "larger",
+      1
+    ],
+    [
+      "baseline",
+      2
+    ],
+    [
+      "larger",
+      2
+    ]
+  ],
+  "changed_task_fields": [
+    "max_tokens",
+    "max_steps"
+  ],
+  "separate_identity_fields": [
+    "plan_sha256",
+    "work_root",
+    "execution_fingerprint"
+  ],
+  "accounting_only_fields": [
+    "fee_stop_amount"
+  ],
+  "unchanged": [
+    "source_revision",
+    "prompt_template",
+    "problem_statements",
+    "base_commits",
+    "provider_config",
+    "process_profiles",
+    "timeout_seconds",
+    "no_retry",
+    "all_safety_controls"
+  ],
+  "maximum_cost_amount": "42",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "primary_gate": {
+    "max_tokens": 50000,
+    "max_steps": 16,
+    "resolved_target": "22/25"
+  },
+  "outcomes": [
+    "native_terminal_status",
+    "patch_produced",
+    "model_token_usage",
+    "public_test_observation",
+    "patch_review_observation",
+    "compaction_usage",
+    "provider_failures"
+  ],
+  "official_score": null,
+  "limitations": "3组pass@1随机输出；非显著性证明、非正式25项成绩，不回写旧结果。",
+  "arms": [
+    {
+      "name": "baseline",
+      "plan_sha256": "9c0c19c266d1c82b0da7a0852e6ac6569e71a976fcd295d581a276ea495421fe",
+      "plan_file_sha256": "26f2e72a8a03933d5cb5235a04864746934beac43304fa81ff1eb1bbebf8c6fa",
+      "config_file_sha256": "1fb745152ea6fe83aeeea7b02fb9002e76a751d72dbafea6231f024ecca83446",
+      "execution_fingerprint": "e4aea26888f090c334677a46a043305ba25349374c9459d1f28309217040bd09",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.947456"
+    },
+    {
+      "name": "larger",
+      "plan_sha256": "441c0d91358a4ed5e9063dee36f1b47bb0eed97c813a65a5f90f80de4e81fb90",
+      "plan_file_sha256": "85b83c4ba5cc81f9f0a8e6d9b23f0ae2713186bcc66386045ce561654dc132b5",
+      "config_file_sha256": "36c40eb77a2a935bc4fa22a27993cd91a57301f79a94d6b12ac556a881065ea5",
+      "execution_fingerprint": "0f328ad4f4dc40c9b1934084fa65fa44d43046d2d3ad5e8da7843d2390e20dd9",
+      "max_tokens": 100000,
+      "max_steps": 24,
+      "maximum_cost_amount": "24",
+      "next_case_reserve_amount": "6.747456"
+    }
+  ]
+}
