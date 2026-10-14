@@ -8,6 +8,7 @@ from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, To
 from harnessix.models._history import (
     InvalidModelRequest,
     budget_instruction,
+    current_tool_catalog_instruction,
     encode_json,
     messages_for,
     tool_alias,
@@ -18,7 +19,7 @@ from harnessix.models.contracts import ModelRequest
 
 
 def build_request(
-    request: ModelRequest, config: OpenAIChatConfig
+    request: ModelRequest, config: OpenAIChatConfig, *, include_catalog_note: bool = True
 ) -> tuple[dict[str, Any], dict[str, str]]:
     names: dict[str, str] = {}
     tools: list[dict[str, Any]] = []
@@ -52,6 +53,10 @@ def build_request(
         )
     remaining = request.remaining_tokens or request.budget.max_tokens
     messages = messages_for(request)
+    if include_catalog_note:
+        catalog_note = current_tool_catalog_instruction(request, names)
+        if catalog_note is not None:
+            messages.insert(0, {"role": "system", "content": catalog_note})
     budget_note = budget_instruction(request)
     if budget_note is not None:
         messages.insert(0, {"role": "system", "content": budget_note})

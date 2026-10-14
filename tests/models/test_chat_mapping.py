@@ -56,7 +56,9 @@ def test_parallel_history_and_stable_aliases() -> None:
     body, names = build_request(
         request, OpenAIChatConfig(model="test", output_token_parameter="max_tokens")
     )
-    messages = body["messages"]
+    assert body["messages"][0]["role"] == "system"
+    assert body["messages"][0]["content"].startswith("Current request tool catalog")
+    messages = body["messages"][1:]
     assert [m["role"] for m in messages] == ["user", "assistant", "tool", "tool", "assistant"]
     assert messages[1]["content"] == "读取"
     assert len(messages[1]["tool_calls"]) == 2

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Iterable
 from typing import Any
 from uuid import UUID
 
@@ -37,6 +38,38 @@ def tool_alias(name: str) -> str:
 
 def encode_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+
+
+def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[str]) -> str | None:
+    """仅用本次广告别名澄清历史边界，不复制历史名称、参数或执行权限。"""
+    if not any(
+        isinstance(item.content, ToolCallContent | ToolCallRejectionContent)
+        for item in request.history
+    ):
+        return None
+    current = tuple(aliases)
+    note = (
+        f"Current request tool catalog (wire aliases): {encode_json(current)}\n"
+        "Only these aliases are callable in this request; historical tool calls do not grant "
+        "current permission. harnessix_rejected_tool_v1 is a history-only rejection sentinel, "
+        "not a callable tool. "
+    )
+    if not current:
+        note += "No tools are callable. "
+    if request.forced_tool is not None:
+        return note + (
+            f"Tool choice: forced ({encode_json(tool_alias(request.forced_tool))}). You must "
+            "call this tool; a text-only completion does not satisfy forced tool choice."
+        )
+    if request.tool_choice == "required":
+        return note + (
+            "Tool choice: required. You must call at least one tool from this catalog; "
+            "a text-only completion does not satisfy required tool choice."
+        )
+    return note + (
+        "Tool choice: auto. Tool use is optional; if available tools cannot provide enough "
+        "evidence, end honestly with the limitation rather than inventing tools or results."
+    )
 
 
 def budget_instruction(request: ModelRequest) -> str | None:

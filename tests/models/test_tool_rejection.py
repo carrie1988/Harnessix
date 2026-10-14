@@ -781,13 +781,15 @@ def test_rejection_history_uses_fixed_marker_and_original_uuid_pairing(
     assert names == {} and "tools" not in body
     assert "reused-provider-id" not in json.dumps(body)
     if provider == "chat":
-        uses = body["messages"][1]["tool_calls"]
+        assert body["messages"][0]["role"] == "system"
+        assert "No tools are callable" in body["messages"][0]["content"]
+        uses = body["messages"][2]["tool_calls"]
         assert [call["function"] for call in uses] == [
             {"name": MARKER, "arguments": "{}"},
             {"name": MARKER, "arguments": "{}"},
         ]
         use_ids = [call["id"] for call in uses]
-        results = body["messages"][2:]
+        results = body["messages"][3:]
         result_ids = [result["tool_call_id"] for result in results]
     else:
         uses = body["messages"][1]["content"]
@@ -837,11 +839,14 @@ def test_mixed_history_preserves_known_alias_and_advertises_only_current_tools(
     body, names = _build(provider, request)
     assert names == {tool_alias("test.read"): "test.read"}
     assert MARKER not in names and MARKER not in json.dumps(body["tools"])
-    uses = body["messages"][1]["tool_calls" if provider == "chat" else "content"]
     if provider == "chat":
+        assert body["messages"][0]["role"] == "system"
+        assert body["messages"][0]["content"].startswith("Current request tool catalog")
+        uses = body["messages"][2]["tool_calls"]
         assert [call["function"]["name"] for call in uses] == [tool_alias("test.read"), MARKER]
         assert json.loads(uses[0]["function"]["arguments"]) == known.arguments
     else:
+        uses = body["messages"][1]["content"]
         assert [call["name"] for call in uses] == [tool_alias("test.read"), MARKER]
         assert uses[0]["input"] == known.arguments
 

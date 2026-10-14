@@ -53,12 +53,13 @@ def select(turn, enabled=True, **flags):
     ).select(turn, _definitions())
 
 
-def test_low_remaining_prefers_patch_or_honest_end_without_forcing_write():
+def test_low_remaining_keeps_focused_read_and_patch_or_honest_end():
     turn = observed_turn(("read_file", "succeeded", None, SNAPSHOT))
     selected = select(turn)
-    assert [t.name for t in selected.tools] == [PATCH]
+    assert [t.name for t in selected.tools] == ["read_file", PATCH]
     assert selected.choice == "auto" and selected.forced_tool is None
     assert selected.forced_tool is None  # 未授权强迫写入，也未更改预算。
+    assert "grep" not in {tool.name for tool in selected.tools}
     assert {"read_file", "grep", "glob", PATCH} == {
         t.name for t in select(turn, enabled=False).tools
     }
@@ -187,4 +188,25 @@ async def test_summary_settlement_does_not_change_frozen_main_catalog(
     settled = after.model_copy(
         update={"model_steps": calls + 1, "model_attempts": (*before.model_attempts, next_attempt)}
     )
-    assert [tool.name for tool in select(settled).tools] == [PATCH]
+    assert [tool.name for tool in select(settled).tools] == ["read_file", PATCH]
+
+
+def test_complete_digest_does_not_claim_complete_editing_context():
+    source = observed_turn(
+        ("read_file", "succeeded", None, {**SNAPSHOT, "text": "def outer(...):", "truncated": True})
+    )
+    original = source.model_dump_json()
+    selected = select(source)
+    assert {tool.name for tool in selected.tools} == {"read_file", PATCH}
+    assert selected.choice == "auto" and selected.forced_tool is None
+    assert source.model_dump_json() == original
+
+
+def test_focused_read_does_not_register_absent_reader_or_change_tool_contracts():
+    source = observed_turn(("read_file", "succeeded", None, SNAPSHOT))
+    view = CodingWorkflowToolView(require_pre_edit_profile=False, reserve_closing_phase=True)
+    definitions = tuple(tool for tool in _definitions() if tool.name != "read_file")
+    selected = view.select(source, definitions)
+    assert [tool.name for tool in selected.tools] == [PATCH]
+    assert selected.tools[0] == next(tool for tool in definitions if tool.name == PATCH)
+    assert selected.choice == "auto" and selected.forced_tool is None

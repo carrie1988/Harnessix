@@ -361,8 +361,12 @@ class CodingWorkflowToolView:
             or not prefer_closing_over_investigation(turn)
         ):
             return selection
-        # auto保留诚实结束的选择；绝不因为预算偏好要求无证据修改。
-        return ModelToolSelection(tuple(tool for tool in selection.tools if tool.name in patches))
+        # 完整SHA不代表编辑上下文充分；保留定点读取补齐相关实现，避免强迫猜测。
+        # 只收敛广泛搜索，不强迫写入；预算和Patch新鲜度仍由原执行层核验。
+        focused_tools = patches | {"read_file"}
+        return ModelToolSelection(
+            tuple(tool for tool in selection.tools if tool.name in focused_tools)
+        )
 
     def _select_workflow(
         self,

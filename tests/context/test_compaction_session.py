@@ -152,4 +152,9 @@ async def test_retained_tool_group_and_summary_fit_existing_adapters(mapping, co
     wire = json.dumps(body, ensure_ascii=False)
     assert "still_pending" in wire
     assert "derived_history" in wire
-    assert body["messages"][0]["role"] == "user"
+    if isinstance(config, OpenAIChatConfig):
+        assert body["messages"][0]["role"] == "system"
+        assert "No tools are callable" in body["messages"][0]["content"]
+        assert body["messages"][1]["role"] == "user"
+    else:
+        assert body["messages"][0]["role"] == "user"

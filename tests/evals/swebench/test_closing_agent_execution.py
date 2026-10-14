@@ -61,8 +61,9 @@ async def test_frozen_closing_phase_policy_reaches_case_entrypoint(tmp_path, mon
 
 
 @pytest.mark.parametrize("tight_ledger", [False, True])
+@pytest.mark.parametrize("focused_followup", [False, True])
 async def test_real_product_owner_context_catalog_and_sdk_publish_closing_phase(
-    tmp_path, monkeypatch, tight_ledger
+    tmp_path, monkeypatch, tight_ledger, focused_followup
 ):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -84,7 +85,23 @@ async def test_real_product_owner_context_catalog_and_sdk_publish_closing_phase(
 
     def handler(request):
         requests.append(json.loads(request.content))
-        return response(WireStream(frames if len(requests) == 1 else text_frames()))
+        if len(requests) == 1:
+            output_frames = frames
+        elif len(requests) == 2 and focused_followup:
+            # 读取同文件相关定义，不因为首次已有完整SHA就认定语义上下文足够。
+            followup = call(
+                0, json.dumps({"path": "source.py", "anchor": "def choose", "max_lines": 1})
+            )
+            followup["function"]["name"] = "read_file"
+            output_frames = [
+                frame(chunk({"tool_calls": [followup]})),
+                frame(chunk(finish="tool_calls")),
+                frame(first_usage),
+                b"data: [DONE]\n\n",
+            ]
+        else:
+            output_frames = text_frames()
+        return response(WireStream(output_frames))
 
     monkeypatch.setenv("CLOSING_PHASE_OFFLINE_KEY", "offline-placeholder")
     config = OpenAIChatConfig(
@@ -120,9 +137,13 @@ async def test_real_product_owner_context_catalog_and_sdk_publish_closing_phase(
         reserve_closing_phase=True,
     )
     assert turn.status == TurnStatus.COMPLETED and thread_id is not None
-    assert len(requests) == 2 and turn.model_steps == 2
+    expected_calls = 3 if focused_followup else 2
+    assert len(requests) == expected_calls and turn.model_steps == expected_calls
     if tight_ledger:
-        assert [t["function"]["name"] for t in requests[1]["tools"]] == ["apply_patch_batch"]
+        assert [t["function"]["name"] for t in requests[1]["tools"]] == [
+            "read_file",
+            "apply_patch_batch",
+        ]
         assert "tool_choice" not in requests[1]  # auto:模型可诚实结束而不是被强迫修改。
         assert (
             workspace / "source.py"
@@ -135,11 +156,18 @@ async def test_real_product_owner_context_catalog_and_sdk_publish_closing_phase(
     assert grep["parameters"]["properties"]["context_lines"]["default"] == 0
     assert "match_mode" not in grep["parameters"]["properties"]
     assert "grep is not regex" in json.dumps(requests[0]["messages"])
-    assert "harnessix.coding-closing-preference/v1" in json.dumps(requests[0]["messages"])
+    assert "harnessix.coding-closing-preference/v2" in json.dumps(requests[0]["messages"])
     result = next(message for message in requests[1]["messages"] if message["role"] == "tool")
     output = json.loads(result["content"])["output"]
     assert output["digest_status"] == "complete" and len(output["content_sha256"]) == 64
-    assert "harnessix.coding-closing-preference/v1" in json.dumps(requests[0]["messages"])
+    if focused_followup:
+        results = [message for message in requests[-1]["messages"] if message["role"] == "tool"]
+        assert len(results) == 2
+        reread = json.loads(results[-1]["content"])["output"]
+        assert reread["text"] == "def choose(value): return value\n"
+        assert reread["content_sha256"] == output["content_sha256"]
+        if tight_ledger:
+            assert "grep" not in {t["function"]["name"] for t in requests[-1]["tools"]}
     assert turn.budget == agent_execution._turn_budget(plan)
     assert (tmp_path / "run" / "session.sqlite").is_file()
 

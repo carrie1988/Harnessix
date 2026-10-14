@@ -140,7 +140,7 @@ class OpenAIChatProvider:
                     "forced_tool": None,
                 }
             )
-            prefix_body, _ = build_request(prefix, self.config)
+            prefix_body, _ = build_request(prefix, self.config, include_catalog_note=False)
             byte_count = max(0, byte_count - len(encode_json(prefix_body).encode("utf-8")))
             anchor = getattr(self, "_completed_input", None)
             if anchor is not None:

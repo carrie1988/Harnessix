@@ -8,6 +8,7 @@ from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, To
 from harnessix.models._history import (
     InvalidModelRequest,
     budget_instruction,
+    current_tool_catalog_instruction,
     encode_json,
     messages_for,
     tool_alias,
@@ -93,7 +94,15 @@ def build_request(
         "stream": True,
         "thinking": {"type": "disabled"},
     }
-    system = tuple(note for note in (request.instructions, budget_instruction(request)) if note)
+    system = tuple(
+        note
+        for note in (
+            request.instructions,
+            budget_instruction(request),
+            current_tool_catalog_instruction(request, names),
+        )
+        if note
+    )
     if system:
         body["system"] = "\n\n".join(system)
     if tools:

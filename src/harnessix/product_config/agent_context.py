@@ -31,9 +31,10 @@ _CLOSING_PHASE_INSTRUCTIONS = (
     "The host may close free source investigation when its observed request ledger suggests "
     "the remaining turn should be reserved for patch, validation, review and final response. "
     "This is a scheduling preference, not a guarantee of enough tokens or source evidence. "
-    "When only the patch tool is offered with auto choice, make the smallest exact change only "
-    "if current observations are sufficient; otherwise honestly finish with the missing evidence "
-    "and blocker. Never guess a change, claim tests ran, or fake completion. All patch approval, "
+    "Focused read_file remains available with patch auto choice. A complete content SHA proves "
+    "file identity, not sufficient editing context: use an exact anchor to read only missing "
+    "related implementation. Edit only from sufficient observations; otherwise honestly finish "
+    "with the missing evidence and blocker. Never guess changes or fake tests. All patch approval, "
     "freshness checks and required post-edit testing/review remain unchanged."
 )
 
@@ -229,7 +230,7 @@ def build_product_agent_context(
                 (
                     ContextFragment(
                         kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
-                        source="harnessix.coding-closing-preference/v1",
+                        source="harnessix.coding-closing-preference/v2",
                         content=_CLOSING_PHASE_INSTRUCTIONS,
                     ),
                 )

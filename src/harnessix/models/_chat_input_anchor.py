@@ -43,7 +43,7 @@ class CompletedChatInput:
                 "forced_tool": None,
             }
         )
-        prefix_body, _ = build_request(prefix, config)
+        prefix_body, _ = build_request(prefix, config, include_catalog_note=False)
         return cls(
             request.thread_id,
             request.turn_id,

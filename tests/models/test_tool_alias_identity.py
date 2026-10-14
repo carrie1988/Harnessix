@@ -173,7 +173,9 @@ def test_tool_directory_and_history_share_alias_without_mutating_contracts(kind:
     assert reverse_names == dict(zip(expected, names, strict=True))
     if kind == "openai":
         definitions = [entry["function"] for entry in body["tools"]]
-        projected = [entry["function"]["name"] for entry in body["messages"][1]["tool_calls"]]
+        assert body["messages"][0]["role"] == "system"
+        assert body["messages"][0]["content"].startswith("Current request tool catalog")
+        projected = [entry["function"]["name"] for entry in body["messages"][2]["tool_calls"]]
         schema_key = "parameters"
     else:
         definitions = body["tools"]
