@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import os
 import stat
 from typing import BinaryIO, Literal
@@ -18,10 +19,13 @@ from harnessix.tools.contracts import (
     ReadFileInput,
     ReadFileInputV2,
     ReadFileInputV3,
+    ReadFileInputV4,
     ReadFileOutput,
     ReadFileSnapshotOutput,
+    ReadFileViewOutput,
     ReadToolError,
 )
+from harnessix.tools.definition_view import definition_page
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, revision_state
 
 
@@ -226,6 +230,8 @@ def read_file_snapshot(
 ) -> ReadFileSnapshotOutput:
     """在同一FD观察中取得分页与完整前镜像摘要，不改变旧读取API。"""
 
+    if isinstance(args, ReadFileInputV4) and args.view == "definition":
+        return _read_definition_snapshot(workspace, args, operation)
     with workspace.open(args.path, operation, directory=False) as fd:
         observed = os.fstat(fd)
         revision = digest((workspace.scope, args.path, revision_state(observed)))
@@ -245,4 +251,45 @@ def read_file_snapshot(
             content_sha256=content_sha256,
             digest_status="complete" if content_sha256 is not None else "omitted_limit",
         )
+    return result
+
+
+def _capture_definition_content(
+    fd: int, observed: os.stat_result, operation: ReadOperation
+) -> bytes:
+    """同一Workspace FD只捕获一次完整原始字节，投影与摘要不再重读路径。"""
+
+    if observed.st_size > MAX_SCAN_BYTES:
+        raise ReadToolError("limit_exceeded")
+    chunks: list[bytes] = []
+    scanned = 0
+    while True:
+        operation.checkpoint()
+        chunk = os.read(fd, min(65536, observed.st_size - scanned + 1))
+        scanned += len(chunk)
+        if scanned > observed.st_size or (not chunk and scanned != observed.st_size):
+            raise ReadToolError("workspace_changed")
+        if not chunk:
+            operation.checkpoint()
+            if revision_state(observed) != revision_state(os.fstat(fd)):
+                raise ReadToolError("workspace_changed")
+            return b"".join(chunks)
+        chunks.append(chunk)
+
+
+def _read_definition_snapshot(
+    workspace: Workspace, args: ReadFileInputV4, operation: ReadOperation
+) -> ReadFileViewOutput:
+    with workspace.open(args.path, operation, directory=False) as fd:
+        observed = os.fstat(fd)
+        revision = digest((workspace.scope, args.path, revision_state(observed)))
+        _check_revision(args.expected_revision, revision)
+        if not args.path.endswith((".py", ".pyi")):
+            raise ReadToolError("definition_unavailable")
+        content = _capture_definition_content(fd, observed, operation)
+        with io.BytesIO(content) as stream:
+            _, anchor_line = _resolve_read_anchor(stream, args, operation)
+        if anchor_line is None:
+            raise ReadToolError("definition_unavailable")
+        result = definition_page(content, args, anchor_line, revision, operation, _decode)
     return result

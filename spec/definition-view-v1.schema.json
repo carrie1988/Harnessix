@@ -1,0 +1,109 @@
+{
+  "$defs": {
+    "DefinitionHeader": {
+      "additionalProperties": false,
+      "properties": {
+        "start_line": {
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "end_line": {
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_line",
+        "end_line",
+        "text"
+      ],
+      "title": "DefinitionHeader",
+      "type": "object"
+    },
+    "SourceLineRange": {
+      "additionalProperties": false,
+      "description": "原始文件中的闭区间；不是执行许可或内容完整性声明。",
+      "properties": {
+        "start_line": {
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "end_line": {
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start_line",
+        "end_line"
+      ],
+      "title": "SourceLineRange",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "词法定位的Python定义；正文不拼接声明头或被省略文档。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.definition-view/v1",
+      "default": "harnessix.definition-view/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "language": {
+      "const": "python",
+      "default": "python",
+      "title": "Language",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "function",
+        "class"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "header": {
+      "$ref": "#/$defs/DefinitionHeader"
+    },
+    "body_start_line": {
+      "minimum": 1,
+      "title": "Body Start Line",
+      "type": "integer"
+    },
+    "body_end_line": {
+      "minimum": 1,
+      "title": "Body End Line",
+      "type": "integer"
+    },
+    "omitted_docstring": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceLineRange"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "kind",
+    "header",
+    "body_start_line",
+    "body_end_line"
+  ],
+  "title": "DefinitionView",
+  "type": "object"
+}

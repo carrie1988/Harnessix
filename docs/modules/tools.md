@@ -1135,3 +1135,25 @@ EOF、安全文件完整性或 macOS 通过均不能单独证明 Windows 原始 
 [`ReadFileInputV3`](../../src/harnessix/tools/contracts.py)，
 [边界测试](../../tests/tools/test_read_anchor.py)及
 [双SDK审批与重放](../../tests/patches/test_kernel_patch_sdk.py)。
+
+### 显式定义视图（候选，默认关闭）
+
+背景：Python声明后的长文档可能占满原文窗口，模型仍需再次定位实现。此候选减少无关正文重复读取，
+不增加任务预算，不认定文档无用。开启`enable_definition_views`后，`read_file`使用输入v4和3.x工具指纹；
+默认目录、输入v1～v3与快照v1不变。调用需`view="definition"`、唯一实际声明`anchor`及`lines_before=0`。
+
+[`DefinitionView`](../../src/harnessix/tools/contracts.py)把真实完整声明头放入`header`，`text`仍是单段连续原文，
+`body_start_line/body_end_line`限定词法实现范围；`omitted_docstring`明确省略的行区间，不拼接成伪原文。
+只有单独的前导普通字符串可省略；不确定的字符串表达式保留。需要文档或续页时用`view="text"`，
+携带`next_line/expected_revision`；Patch不得把跨省略区间的头与正文合成为`old_text`。
+完整SHA始终针对原始字节，不是投影文本，也不保证全部源码已被模型阅读。
+
+调用链：`Runtime输入校验 → Workspace授权观察 → 有界tokenize定位 → 连续正文分页 → 对象身份复核 → 输出校验`。
+[`definition_view`](../../src/harnessix/tools/definition_view.py)只做词法导航，不导入、编译或执行源码。
+最多2 MiB、100000源码行、单行和声明头各4096字节；逐行/Token取消及期限检查，原5秒读取期限不变。
+POSIX沿同一FD，Windows沿同一稳定观察；其他语言、伪声明或无法安全定位返回`tool_definition_unavailable`，
+不静默切换。超限、漂移和权限拒绝仍失败关闭。
+
+接线及兼容见[`runtime测试`](../../tests/tools/test_definition_view_runtime.py)，
+词法和快照边界见[`工具测试`](../../tests/tools/test_definition_view.py)。
+该候选可测不等于真实编码质量改善；正式产品默认不启用，SWE-bench须单独冻结比较。

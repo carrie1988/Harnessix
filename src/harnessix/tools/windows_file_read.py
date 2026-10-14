@@ -16,10 +16,13 @@ from harnessix.tools.contracts import (
     ListFilesOutput,
     ReadFileInput,
     ReadFileInputV2,
+    ReadFileInputV4,
     ReadFileOutput,
     ReadFileSnapshotOutput,
+    ReadFileViewOutput,
     ReadToolError,
 )
+from harnessix.tools.definition_view import definition_page
 from harnessix.tools.files import (
     _check_revision,
     _decode,
@@ -176,6 +179,8 @@ def read_file_snapshot(
 
     path = port.path(args.path)
     observed = port.observe(path, operation, max_bytes=MAX_SCAN_BYTES)
+    if isinstance(args, ReadFileInputV4) and args.view == "definition":
+        return _read_definition_snapshot(port, path, args, observed, operation)
     page = _read_file_page(port, path, args, observed, operation)
     assert observed.content is not None
     operation.checkpoint()
@@ -187,3 +192,24 @@ def read_file_snapshot(
         content_sha256=content_sha256,
         digest_status="complete",
     )
+
+
+def _read_definition_snapshot(
+    port: WindowsReadPort,
+    path: str,
+    args: ReadFileInputV4,
+    observed: Observation,
+    operation: ReadOperation,
+) -> ReadFileViewOutput:
+    require_kind(observed, "file")
+    if observed.content is None or len(observed.content) != observed.size:
+        raise ReadToolError("io_failed")
+    revision = file_revision(port, path, observed)
+    _check_revision(args.expected_revision, revision)
+    if not args.path.endswith((".py", ".pyi")):
+        raise ReadToolError("definition_unavailable")
+    with io.BytesIO(observed.content) as stream:
+        _, anchor_line = _resolve_read_anchor(stream, args, operation)
+    if anchor_line is None:
+        raise ReadToolError("definition_unavailable")
+    return definition_page(observed.content, args, anchor_line, revision, operation, _decode)

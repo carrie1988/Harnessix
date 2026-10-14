@@ -19,6 +19,7 @@ from harnessix.context.sources import (
 CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
 _OPTIONAL_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v23"
 _REGEX_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v24"
+_DEFINITION_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v25"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 _PLANNING_INSTRUCTIONS = (
     "For multi-step coding work, use update_plan to track investigation, implementation, "
@@ -36,6 +37,18 @@ _CLOSING_PHASE_INSTRUCTIONS = (
     "related implementation. Edit only from sufficient observations; otherwise honestly finish "
     "with the missing evidence and blocker. Never guess changes or fake tests. All patch approval, "
     "freshness checks and required post-edit testing/review remain unchanged."
+)
+
+_DEFINITION_VIEW_INSTRUCTIONS = (
+    "For a known Python definition, prefer read_file view=definition with an exact unique "
+    "def/class header anchor, lines_before=0, max_lines=60 and max_utf8_bytes=4096. "
+    "It returns the real header and a separate continuous implementation page; leading "
+    "literal documentation may be omitted with exact source ranges. Read view=text when "
+    "documentation matters, for other languages, or when definition parsing is unavailable. "
+    "Continue in view=text with next_line and expected_revision. Never concatenate header and body "
+    "across an omitted range into patch old_text, and never replace a file with an excerpt. "
+    "Use exact contiguous observed text and the full raw content_sha256; complete SHA does "
+    "not imply complete code or documentation."
 )
 
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (
@@ -188,12 +201,15 @@ def build_product_agent_context(
     allow_optional_pre_edit_profile: bool = False,
     enable_regex_search: bool = False,
     reserve_closing_phase: bool = False,
+    enable_definition_views: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
         raise ValueError("产品Context输出预留必须为1到1000000 Token")
     if type(reserve_closing_phase) is not bool:
         raise ValueError("产品调查收尾开关必须是布尔值")
+    if type(enable_definition_views) is not bool:
+        raise ValueError("产品定义视图开关必须是布尔值")
     if type(enable_planning) is not bool:
         raise ValueError("产品规划指令开关必须是布尔值")
     if type(enable_regex_search) is not bool:
@@ -214,7 +230,9 @@ def build_product_agent_context(
             ContextFragment(
                 kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
                 source=(
-                    _REGEX_CODING_INSTRUCTIONS_VERSION
+                    _DEFINITION_CODING_INSTRUCTIONS_VERSION
+                    if enable_definition_views
+                    else _REGEX_CODING_INSTRUCTIONS_VERSION
                     if enable_regex_search
                     else _OPTIONAL_CODING_INSTRUCTIONS_VERSION
                     if allow_optional_pre_edit_profile
@@ -225,6 +243,17 @@ def build_product_agent_context(
                     allow_optional_pre_edit_profile,
                     enable_regex_search=enable_regex_search,
                 ),
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.definition-view-guidance/v1",
+                        content=_DEFINITION_VIEW_INSTRUCTIONS,
+                    ),
+                )
+                if enable_definition_views
+                else ()
             ),
             *(
                 (

@@ -26,6 +26,7 @@ from harnessix.tools.contracts import (
     ListFilesInput,
     ReadContract,
     ReadFileInput,
+    ReadFileViewOutput,
     ReadToolError,
 )
 from harnessix.tools.git_contracts import (
@@ -49,6 +50,31 @@ from harnessix.tools.workspace import ReadOperation, run_read_operation
 
 if TYPE_CHECKING:
     from harnessix.processes.owner_protocol import OutputRedactionSource
+
+
+_READ_ERROR_MESSAGES = {
+    "anchor_not_found": "文件中没有该字面锚点；核对文件或改用窄范围grep定位",
+    "anchor_ambiguous": "字面锚点不唯一；使用更具体的锚点或grep返回的行号",
+    "anchor_outside_page": "文本页未覆盖锚点；减小lines_before或增大页容量",
+    "definition_unavailable": ("定义视图仅支持有界Python实际声明；请用text查看原文或核对anchor"),
+}
+
+
+def _read_output_payload(
+    binding: _ReadBinding, output: ReadContract
+) -> dict[str, JsonValue] | None:
+    """严格核验并序列化绑定输出；text视图不增加空元数据，超限不发布。"""
+    try:
+        checked = binding.output_model.model_validate_json(output.model_dump_json())
+    except (ValueError, TypeError, AttributeError):
+        raise KernelError("tool_output_invalid", "只读工具输出不符合绑定契约") from None
+    if len(checked.model_dump_json().encode()) > MAX_RESULT_BYTES:
+        return None
+    payload: JsonValue = checked.model_dump(mode="json")
+    assert isinstance(payload, dict)
+    if isinstance(checked, ReadFileViewOutput) and checked.definition is None:
+        payload.pop("definition", None)
+    return payload
 
 
 async def _drain[T](task: asyncio.Task[T]) -> None:
@@ -126,8 +152,11 @@ class CodingToolRuntime:
         max_concurrent_reads: int = 4,
         enable_grep_snapshots: bool = False,
         enable_regex_search: bool = False,
+        enable_definition_views: bool = False,
     ) -> None:
-        self._read_bindings = _read_bindings(enable_grep_snapshots, enable_regex_search)
+        self._read_bindings = _read_bindings(
+            enable_grep_snapshots, enable_regex_search, enable_definition_views
+        )
         self._lock = _read_semaphore(max_concurrent_reads)
         backend = build_read_backend(
             root, denied_paths, git_executable, git_state_directory, git_output_redaction
@@ -279,11 +308,7 @@ class CodingToolRuntime:
         except RegexSearchError as error:
             return self._failure(call, error.code, error.message)
         except ReadToolError as error:
-            message = {
-                "anchor_not_found": "文件中没有该字面锚点；核对文件或改用窄范围grep定位",
-                "anchor_ambiguous": "字面锚点不唯一；使用更具体的锚点或grep返回的行号",
-                "anchor_outside_page": "文本页未覆盖锚点；减小lines_before或增大页容量",
-            }.get(error.code, "工作区读取未完成")
+            message = _READ_ERROR_MESSAGES.get(error.code, "工作区读取未完成")
             return self._failure(call, f"tool_{error.code}", message)
         except OSError as error:
             code = {
@@ -294,13 +319,9 @@ class CodingToolRuntime:
             }.get(error.errno or 0, "io_failed")
             return self._failure(call, f"tool_{code}", "工作区读取未完成")
         cancel.checkpoint()
-        try:
-            checked = binding.output_model.model_validate_json(output.model_dump_json())
-        except (ValueError, TypeError, AttributeError):
-            raise KernelError("tool_output_invalid", "只读工具输出不符合绑定契约") from None
-        if len(checked.model_dump_json().encode()) > MAX_RESULT_BYTES:
+        payload = _read_output_payload(binding, output)
+        if payload is None:
             return self._failure(call, "tool_limit_exceeded", "工具结果超过输出上限")
-        payload: JsonValue = checked.model_dump(mode="json")
         return ToolResultContent(call_id=call.call_id, outcome="succeeded", output=payload)
 
     async def _execute_read(

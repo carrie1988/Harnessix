@@ -21,8 +21,10 @@ from harnessix.tools.contracts import (
     ReadContract,
     ReadFileInput,
     ReadFileInputV3,
+    ReadFileInputV4,
     ReadFileOutput,
     ReadFileSnapshotOutput,
+    ReadFileViewOutput,
 )
 from harnessix.tools.git_contracts import (
     GitDiffInput,
@@ -126,20 +128,37 @@ _REGEX_GREP_BINDING = _ReadBinding(
     GrepSnapshotOutput,
 )
 
+_DEFINITION_READ_BINDING = _ReadBinding(
+    "read_file",
+    "读取原始文本页及完整SHA。已知Python(.py/.pyi)定义可显式view=definition、唯一def/class头anchor，"
+    "同时取得真实声明头和连续实现页；省略前导文档的行范围会明确标记，需文档或其他语言用view=text。"
+    "声明头与正文不可拼成原文件，也不可把片段当全文件。分页及expected_revision边界不变",
+    ReadFileInputV4,
+    ReadFileViewOutput,
+)
+
 
 def _read_bindings(
-    enable_grep_snapshots: bool = False, enable_regex_search: bool = False
+    enable_grep_snapshots: bool = False,
+    enable_regex_search: bool = False,
+    enable_definition_views: bool = False,
 ) -> tuple[_ReadBinding, ...]:
-    """显式候选只替换搜索绑定，原只读工具和默认合同保持不变。"""
+    """显式候选只替换所选绑定，其他只读工具和默认合同保持不变。"""
     if type(enable_grep_snapshots) is not bool:
         raise KernelError("tool_snapshot_policy_invalid", "搜索快照开关必须显式为布尔值")
     if type(enable_regex_search) is not bool:
         raise KernelError("tool_regex_policy_invalid", "正则搜索开关必须显式为布尔值")
+    if type(enable_definition_views) is not bool:
+        raise KernelError("tool_definition_policy_invalid", "定义视图开关必须显式为布尔值")
     if enable_grep_snapshots and enable_regex_search:
         raise KernelError("tool_search_policy_conflict", "搜索快照与正则搜索开关不能同时启用")
     grep_binding = _REGEX_GREP_BINDING if enable_regex_search else _SNAPSHOT_GREP_BINDING
     return tuple(
-        grep_binding if (enable_grep_snapshots or enable_regex_search) and b.name == "grep" else b
+        _DEFINITION_READ_BINDING
+        if enable_definition_views and b.name == "read_file"
+        else grep_binding
+        if (enable_grep_snapshots or enable_regex_search) and b.name == "grep"
+        else b
         for b in _BINDINGS
     )
 
@@ -173,7 +192,9 @@ def _descriptor(
     require_approval: bool,
 ) -> ToolDescriptor:
     major = 1
-    if binding.input_model is RegexGrepInput:
+    if binding.input_model is ReadFileInputV4:
+        major = 3
+    elif binding.input_model is RegexGrepInput:
         major = 4
     elif binding.output_model is GrepSnapshotOutput:
         major = 3
@@ -216,7 +237,7 @@ def _binding_rules(
         "max_result_bytes": MAX_RESULT_BYTES,
         "timeout": READ_TIMEOUT_SECONDS,
     }
-    if binding.output_model is ReadFileSnapshotOutput:
+    if issubclass(binding.output_model, ReadFileSnapshotOutput):
         rules["random_access"] = "start_line_without_revision_is_a_fresh_observation"
         rules["snapshot"] = {
             "spec_version": "harnessix.read-file-snapshot/v1",
@@ -225,6 +246,16 @@ def _binding_rules(
             "max_digest_bytes": MAX_SCAN_BYTES,
             "oversize": "omitted_limit_or_platform_limit_exceeded",
         }
+        if binding.output_model is ReadFileViewOutput:
+            rules["definition_view"] = {
+                "spec_version": "harnessix.definition-view/v1",
+                "parser": "python-tokenize/v1",
+                "max_source_bytes": MAX_SCAN_BYTES,
+                "max_header_bytes": MAX_LINE_BYTES,
+                "max_source_lines": 100_000,
+                "source_execution": False,
+                "omission": "explicit_leading_literal_docstring_range",
+            }
     if issubclass(binding.input_model, SearchInput):
         rules["search"] = (
             search.execution_contract(enable_regex_search=True)

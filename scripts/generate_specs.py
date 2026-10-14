@@ -290,13 +290,16 @@ from harnessix.skills.contracts import (
 )
 from harnessix.smoke.contracts import SmokeConfig, SmokeReport
 from harnessix.tools.contracts import (
+    DefinitionView,
     ListFilesInput,
     ListFilesOutput,
     ReadFileInput,
     ReadFileInputV2,
     ReadFileInputV3,
+    ReadFileInputV4,
     ReadFileOutput,
     ReadFileSnapshotOutput,
+    ReadFileViewOutput,
 )
 from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
@@ -641,6 +644,9 @@ def generate_specs(output: Path) -> None:
     )
     write_json(output / "read-file-input-v2.schema.json", ReadFileInputV2.model_json_schema())
     write_json(output / "read-file-input-v3.schema.json", ReadFileInputV3.model_json_schema())
+    write_json(output / "read-file-input-v4.schema.json", ReadFileInputV4.model_json_schema())
+    write_json(output / "read-file-view-output.schema.json", ReadFileViewOutput.model_json_schema())
+    write_json(output / "definition-view-v1.schema.json", DefinitionView.model_json_schema())
     write_json(output / "grep-regex-input-v1.schema.json", RegexGrepInput.model_json_schema())
     write_json(
         output / "execution-capability-evidence-v2.schema.json",

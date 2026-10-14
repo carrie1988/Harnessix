@@ -1,0 +1,279 @@
+{
+  "scope": "public_base_commit_read_projection_only_not_quality_score",
+  "model_requests": 0,
+  "workspace_materializations": 0,
+  "hidden_answers_read": false,
+  "native_unchanged": true,
+  "reads": [
+    {
+      "arm": "baseline",
+      "index": 0,
+      "path": "lib/matplotlib/figure.py",
+      "anchor": "def subfigures",
+      "original_window_bytes": 5700,
+      "definition_visible_bytes": 954,
+      "header_range": [
+        1545,
+        1548
+      ],
+      "body_range": [
+        1584,
+        1601
+      ],
+      "omitted_docstring": {
+        "start_line": 1549,
+        "end_line": 1583
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "baseline",
+      "index": 0,
+      "path": "lib/matplotlib/gridspec.py",
+      "anchor": "def get_grid_positions",
+      "original_window_bytes": 4111,
+      "definition_visible_bytes": 1615,
+      "header_range": [
+        145,
+        145
+      ],
+      "body_range": [
+        166,
+        205
+      ],
+      "omitted_docstring": {
+        "start_line": 146,
+        "end_line": 165
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "baseline",
+      "index": 1,
+      "path": "xarray/core/dataarray.py",
+      "anchor": "class _LocIndexer:",
+      "original_window_bytes": 3401,
+      "definition_visible_bytes": 972,
+      "header_range": [
+        188,
+        188
+      ],
+      "body_range": [
+        189,
+        212
+      ],
+      "omitted_docstring": null,
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "baseline",
+      "index": 1,
+      "path": "xarray/core/dataarray.py",
+      "anchor": "    def sel(",
+      "original_window_bytes": 2673,
+      "definition_visible_bytes": 451,
+      "header_range": [
+        1118,
+        1125
+      ],
+      "body_range": [
+        1199,
+        1207
+      ],
+      "omitted_docstring": {
+        "start_line": 1126,
+        "end_line": 1198
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "baseline",
+      "index": 2,
+      "path": "src/_pytest/logging.py",
+      "anchor": "def get_records",
+      "original_window_bytes": 2199,
+      "definition_visible_bytes": 132,
+      "header_range": [
+        388,
+        388
+      ],
+      "body_range": [
+        399,
+        400
+      ],
+      "omitted_docstring": {
+        "start_line": 389,
+        "end_line": 398
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "baseline",
+      "index": 2,
+      "path": "src/_pytest/logging.py",
+      "anchor": "class LogCaptureHandler",
+      "original_window_bytes": 2809,
+      "definition_visible_bytes": 896,
+      "header_range": [
+        331,
+        331
+      ],
+      "body_range": [
+        333,
+        356
+      ],
+      "omitted_docstring": {
+        "start_line": 332,
+        "end_line": 332
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "closing",
+      "index": 0,
+      "path": "lib/matplotlib/figure.py",
+      "anchor": "def subfigures",
+      "original_window_bytes": 3047,
+      "definition_visible_bytes": 954,
+      "header_range": [
+        1545,
+        1548
+      ],
+      "body_range": [
+        1584,
+        1601
+      ],
+      "omitted_docstring": {
+        "start_line": 1549,
+        "end_line": 1583
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "closing",
+      "index": 0,
+      "path": "lib/matplotlib/figure.py",
+      "anchor": "class SubFigure(FigureBase):",
+      "original_window_bytes": 3931,
+      "definition_visible_bytes": 2034,
+      "header_range": [
+        2142,
+        2142
+      ],
+      "body_range": [
+        2162,
+        2221
+      ],
+      "omitted_docstring": {
+        "start_line": 2143,
+        "end_line": 2161
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": true
+    },
+    {
+      "arm": "closing",
+      "index": 0,
+      "path": "lib/matplotlib/figure.py",
+      "anchor": "def _redo_transform_rel_fig(self, bbox=None):",
+      "original_window_bytes": 1494,
+      "definition_visible_bytes": 862,
+      "header_range": [
+        2261,
+        2261
+      ],
+      "body_range": [
+        2271,
+        2288
+      ],
+      "omitted_docstring": {
+        "start_line": 2262,
+        "end_line": 2270
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "closing",
+      "index": 1,
+      "path": "xarray/core/dataarray.py",
+      "anchor": "class _LocIndexer:",
+      "original_window_bytes": 3401,
+      "definition_visible_bytes": 972,
+      "header_range": [
+        188,
+        188
+      ],
+      "body_range": [
+        189,
+        212
+      ],
+      "omitted_docstring": null,
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "closing",
+      "index": 2,
+      "path": "src/_pytest/logging.py",
+      "anchor": "def clear(self) -> None:",
+      "original_window_bytes": 1159,
+      "definition_visible_bytes": 59,
+      "header_range": [
+        441,
+        441
+      ],
+      "body_range": [
+        443,
+        444
+      ],
+      "omitted_docstring": {
+        "start_line": 442,
+        "end_line": 442
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    },
+    {
+      "arm": "closing",
+      "index": 2,
+      "path": "src/_pytest/logging.py",
+      "anchor": "def get_records(self, when: str) -> List[logging.LogRecord]:",
+      "original_window_bytes": 1006,
+      "definition_visible_bytes": 132,
+      "header_range": [
+        388,
+        388
+      ],
+      "body_range": [
+        399,
+        400
+      ],
+      "omitted_docstring": {
+        "start_line": 389,
+        "end_line": 398
+      },
+      "raw_sha_preserved": true,
+      "continuous_body": true,
+      "truncated": false
+    }
+  ]
+}

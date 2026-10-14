@@ -25,6 +25,12 @@ READ_ARGUMENT_CONSTRAINT_HINTS = MappingProxyType(
         "harnessix_read_anchor_utf8_limit": "anchor的UTF-8编码不得超过256字节",
         "harnessix_read_anchor_page_mode": "启用anchor时请省略start_line（默认值为1）",
         "harnessix_read_anchor_required": "lines_before仅可在anchor非空时使用",
+        "harnessix_definition_anchor_required": (
+            "definition视图必须使用实际def/class声明的唯一anchor"
+        ),
+        "harnessix_definition_header_only": (
+            "definition视图请使用lines_before=0，原文范围请用text视图"
+        ),
     }
 )
 
@@ -91,6 +97,29 @@ class ReadFileInputV3(ReadFileInputV2):
         if self.start_line != 1:
             code = "harnessix_read_anchor_page_mode"
             raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
+        return self
+
+
+class ReadFileInputV4(ReadFileInputV3):
+    """显式Python定义视图；text默认保持原有分页，不猜测语言或执行源码。"""
+
+    view: Literal["text", "definition"] = Field(
+        default="text",
+        description="definition用于有界Python文件：返回真实声明头和实现页，显式标注省略的前导文档",
+    )
+
+    @model_validator(mode="after")
+    def validate_definition_view(self) -> Self:
+        if self.view == "definition":
+            code = (
+                "harnessix_definition_anchor_required"
+                if self.anchor is None
+                else "harnessix_definition_header_only"
+                if self.lines_before
+                else None
+            )
+            if code is not None:
+                raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
         return self
 
 
@@ -165,6 +194,76 @@ class ReadFileSnapshotOutput(ReadFileOutput):
         return self
 
 
+class SourceLineRange(ReadContract):
+    """原始文件中的闭区间；不是执行许可或内容完整性声明。"""
+
+    start_line: int = Field(ge=1)
+    end_line: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_range(self) -> Self:
+        if self.end_line < self.start_line:
+            raise ValueError("源码行范围倒置")
+        return self
+
+
+class DefinitionHeader(SourceLineRange):
+    text: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_header(self) -> Self:
+        if len(self.text.encode()) > MAX_LINE_BYTES:
+            raise ValueError("声明头超过有界文本容量")
+        lines = self.text.count("\n") + int(not self.text.endswith("\n"))
+        if lines != self.end_line - self.start_line + 1:
+            raise ValueError("声明头文本与源码范围不一致")
+        return self
+
+
+class DefinitionView(ReadContract):
+    """词法定位的Python定义；正文不拼接声明头或被省略文档。"""
+
+    spec_version: Literal["harnessix.definition-view/v1"] = "harnessix.definition-view/v1"
+    language: Literal["python"] = "python"
+    kind: Literal["function", "class"]
+    header: DefinitionHeader
+    body_start_line: int = Field(ge=1)
+    body_end_line: int = Field(ge=1)
+    omitted_docstring: SourceLineRange | None = None
+
+    @model_validator(mode="after")
+    def validate_definition(self) -> Self:
+        if self.body_start_line < self.header.end_line:
+            raise ValueError("实现页不能位于声明头之前")
+        if self.body_end_line < self.body_start_line - 1:
+            raise ValueError("实现范围不一致")
+        if self.omitted_docstring is not None and not (
+            self.header.end_line
+            < self.omitted_docstring.start_line
+            <= self.omitted_docstring.end_line
+            < self.body_start_line
+        ):
+            raise ValueError("省略范围必须在声明头与实现页之间")
+        return self
+
+
+class ReadFileViewOutput(ReadFileSnapshotOutput):
+    """保持连续原文页与原始SHA，新增定义视图元数据；不伪造完整源码。"""
+
+    definition: DefinitionView | None = None
+
+    @model_validator(mode="after")
+    def validate_view(self) -> Self:
+        if self.definition is not None:
+            if self.digest_status != "complete":
+                raise ValueError("定义视图必须绑定完整原始文件摘要")
+            if self.start_line < self.definition.body_start_line or (
+                self.end_line is not None and self.end_line > self.definition.body_end_line
+            ):
+                raise ValueError("文本页不属于定义实现范围")
+        return self
+
+
 ReadErrorCode = Literal[
     "path_denied",
     "not_found",
@@ -178,6 +277,7 @@ ReadErrorCode = Literal[
     "anchor_not_found",
     "anchor_ambiguous",
     "anchor_outside_page",
+    "definition_unavailable",
     "io_failed",
     "timeout",
 ]

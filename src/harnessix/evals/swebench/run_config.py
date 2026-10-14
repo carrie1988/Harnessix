@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
+from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRunConfig
 from harnessix.evals.swebench.public_test_profile import SweBenchCaseProcessProfile
 from harnessix.evals.swebench.run_settings import (
     _BASE_URL,
@@ -292,6 +293,7 @@ SweBenchRunConfig = (
     | SweBenchRecyclingAgentRunConfig
     | SweBenchRegexAgentRunConfig
     | SweBenchClosingAgentRunConfig
+    | SweBenchDefinitionAgentRunConfig
 )
 
 
@@ -314,6 +316,7 @@ def _run_config_type(
     recycle_workspaces: bool,
     enable_regex_search: bool,
     reserve_closing_phase: bool,
+    enable_definition_views: bool,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -326,6 +329,7 @@ def _run_config_type(
         (recycle_workspaces, "工作区回收"),
         (enable_regex_search, "正则搜索"),
         (reserve_closing_phase, "调查收尾"),
+        (enable_definition_views, "定义视图"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -335,7 +339,8 @@ def _run_config_type(
         or allow_optional_pre_edit_profile
         or recycle_workspaces
         or enable_regex_search
-        or reserve_closing_phase,
+        or reserve_closing_phase
+        or enable_definition_views,
         isolated=isolate_provider_failures,
         pressure_window=budget_pressure_compaction,
         planning=enable_planning,
@@ -343,6 +348,16 @@ def _run_config_type(
     )
     if enable_grep_snapshots and allow_optional_pre_edit_profile:
         raise ValueError("SWE-bench可选预测试与搜索快照必须独立冻结，不隐式组合候选")
+    if enable_definition_views:
+        if (
+            enable_grep_snapshots
+            or enable_regex_search
+            or allow_optional_pre_edit_profile
+            or reserve_closing_phase
+            or not recycle_workspaces
+        ):
+            raise ValueError("SWE-bench定义视图需认证回收，不混入其他工具候选")
+        return SweBenchDefinitionAgentRunConfig
     if reserve_closing_phase:
         if (
             enable_grep_snapshots
@@ -401,6 +416,7 @@ def build_swebench_agent_run_config(
     recycle_workspaces: bool = False,
     enable_regex_search: bool = False,
     reserve_closing_phase: bool = False,
+    enable_definition_views: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -416,6 +432,7 @@ def build_swebench_agent_run_config(
         recycle_workspaces=recycle_workspaces,
         enable_regex_search=enable_regex_search,
         reserve_closing_phase=reserve_closing_phase,
+        enable_definition_views=enable_definition_views,
     )
     config = config_model(
         plan_sha256=plan.plan_sha256,

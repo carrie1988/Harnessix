@@ -1521,3 +1521,23 @@ v38[真实执行与独立认证](../../benchmarks/swebench/verified-25-focused-c
 
 本轮关联回归593通过、1 Windows原生环境跳过、0失败，包含45项新增候选用例；
 566源文件Mypy、Schema、Ruff与文档链接门禁通过。无新增云请求，不因此宣称质量达标。
+
+## v40：显式定义读取的纵向验证
+
+本轮针对v39公共基线源码审计发现的实现读取效率问题，不扩展预算、不给Case专用提示或参考Patch。
+需求及工具详设收敛在[定义视图](../modules/tools.md#显式定义视图候选默认关闭)。
+[`definition_config`](../../src/harnessix/evals/swebench/definition_config.py)显式v12保留故障隔离、原压力压缩及认证回收，
+独立开启定义视图，禁止混入正则、收尾限制、可选预测试、规划或思考；旧v2～v11读取与序列化保持。
+
+数据流：`冻结配置 → Case执行端口 → Runtime v4工具目录 + v25定义指令 → 正式Session工具结果 → 终态证据`。
+原50K累计Token（含摘要）、16次模型请求、900秒、固定Profile、Patch审批、修改后测试与Git核对不变。
+工具边界、Mock SDK和负控只证明接入及安全语义；质量需同源、同Case顺序、同预算的真实执行比较。
+不得拼接旧轮成功，也不得把前三项诊断计为完整25项或全新泛化分数。
+
+[离线验证](../../benchmarks/swebench/verified-25-definition-view-v40/offline-summary.json)：扩大回归1725通过、
+35平台环境跳过；4项未改动Git夹具在Harnessix调用前因Apple Git 2.24.3不支持`--object-format`失败，
+不写为全绿。194项新增用例通过，568文件Mypy、改动文件Ruff/格式、Schema和文档链接通过。
+可读性旧总体快照仍漂移，未豁免或改阈值；新增解析器无超限热点，Runtime类269→264行。
+[公共读取审计](../../benchmarks/swebench/verified-25-definition-view-v40/public-read-audit.json)验证12处投影，
+原观察窗口34931字节，对应头及实现页10033字节；只读取既有冻结公共base，未读取答案或重建旧工作区。
+读取效率不是解决率，仍须真实比较，正式完整官方成绩保持v27的3/25。

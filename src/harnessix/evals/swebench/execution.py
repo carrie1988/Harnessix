@@ -230,6 +230,7 @@ async def _open_case_turn(
         allow_optional_pre_edit_profile=config.optional_pre_edit_profile_enabled,
         enable_regex_search=config.regex_search_enabled,
         reserve_closing_phase=config.closing_phase_enabled,
+        enable_definition_views=config.definition_views_enabled,
     )
 
 

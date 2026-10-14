@@ -355,6 +355,7 @@ async def run_swebench_agent_case(
     allow_optional_pre_edit_profile: bool = False,
     enable_regex_search: bool = False,
     reserve_closing_phase: bool = False,
+    enable_definition_views: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -366,6 +367,8 @@ async def run_swebench_agent_case(
         raise KernelError("swebench_execution_config_invalid", "SWE-bench搜索快照开关无效")
     if type(reserve_closing_phase) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench调查收尾开关无效")
+    if type(enable_definition_views) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench定义视图开关无效")
     if type(enable_regex_search) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench正则搜索开关无效")
     if type(allow_optional_pre_edit_profile) is not bool:
@@ -403,6 +406,7 @@ async def run_swebench_agent_case(
                     git_output_redaction=owner.scope,
                     enable_grep_snapshots=enable_grep_snapshots,
                     enable_regex_search=enable_regex_search,
+                    enable_definition_views=enable_definition_views,
                 ) as tools:
                     async with open_default_product_action_runtime(
                         run_root,
@@ -424,6 +428,7 @@ async def run_swebench_agent_case(
                             allow_optional_pre_edit_profile=allow_optional_pre_edit_profile,
                             enable_regex_search=enable_regex_search,
                             reserve_closing_phase=reserve_closing_phase,
+                            enable_definition_views=enable_definition_views,
                         )
                         async with AgentRuntime(
                             owner.sessions,

@@ -1,0 +1,55 @@
+{
+  "scope": "offline_contract_and_public_source_projection_not_coding_quality",
+  "model_requests": 0,
+  "product_default": "definition_views_disabled",
+  "formal_score_unchanged": "3/25_from_v27",
+  "fixed_gate": {
+    "resolved": ">=22/25",
+    "empty_patches": "<=2/25",
+    "patch_application_failures": 0,
+    "infrastructure_failures": 0,
+    "fresh_generalization_required": true
+  },
+  "task_budget_unchanged": {
+    "max_tokens_including_summaries": 50000,
+    "max_model_requests": 16,
+    "timeout_seconds": 900
+  },
+  "regression": {
+    "collected": 1764,
+    "passed": 1725,
+    "failed": 4,
+    "environment_skipped": 35,
+    "log_sha256": "a6e6c46b665cd44303700d77f24fcf1d315df9e360fed91e4498dff250143152",
+    "failures": [
+      "test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha1-worktree]",
+      "test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha1-staged]",
+      "test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha256-worktree]",
+      "test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha256-staged]"
+    ],
+    "failure_boundary": "4 tests fail before Harnessix invocation: unchanged fixture requests --object-format from Apple Git 2.24.3",
+    "all_new_tests_passed": 194
+  },
+  "mypy": {
+    "source_files": 568,
+    "status": "passed"
+  },
+  "changed_python_ruff": "passed",
+  "changed_python_format": "passed",
+  "schema": "passed",
+  "documentation_links": "passed",
+  "readability": {
+    "new_definition_hotspots": [],
+    "CodingToolRuntime_lines_before": 269,
+    "CodingToolRuntime_lines_after": 264,
+    "global_0_9_snapshot_gate": "failed_due_existing_drift_not_waived"
+  },
+  "repository_format_gate": "17 preexisting unchanged files unformatted; changed-file gate passed",
+  "public_projection": {
+    "definitions": 12,
+    "prior_observed_window_bytes": 34931,
+    "definition_header_plus_body_bytes": 10033,
+    "quality_claim": null
+  },
+  "next_step": "freeze same-source paired prefix3 under original gates; not official25 or unseen generalization"
+}
