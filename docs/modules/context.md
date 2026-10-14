@@ -59,6 +59,18 @@ supersedes: []
 接口、费用取舍与失败流程见[统一设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)，
 真实Runtime连续窗口回归见[测试](../../tests/context/test_planning_compaction_runtime.py)。
 
+## 当前增量：工作集模型视图（默认关闭）
+
+显式设置保留组数N后，[`working_set_view.py`](../../src/harnessix/context/working_set_view.py)在已冻结的
+Tool Result决定之上再做一次确定性投影：只保留最近N个工具调用组的结果正文，更早结果的`output`
+换成`harnessix.stale-tool-result/v1`占位（原字节数及路径、行号、revision、摘要等短标量）。
+Native Item、决定、Artifact和压缩规划均不变；拒绝结果、无更小占位的结果保持原样；活动摘要窗口内不叠加。
+实际发送视图记为`ModelHistoryInspectionV3`（v1字段＋保留组数＋遮蔽计数，view摘要绑定遮蔽后历史），
+需Agent Event/Thread v22；Reducer回放按记录重算并逐字节核对。上一步实际视图可由
+`previous_model_view`从持久事实重算，供[改写视图锚定上界](models.md#改写视图的锚定输入上界)使用。
+动机与离线依据见[累计预算重放](../../benchmarks/swebench/verified-25-budget-replay-p0/README.md)；
+回归见[视图与Runtime](../../tests/context/test_working_set_view.py)。离线通过不代表真实质量改善。
+
 ## 当前增量：类型化工具拒绝与配套协议升级
 
 模型历史及摘要包含独立拒绝事实，拒绝结果保持固定无效果视图。压缩不可拆散拒绝/结果；Fork v2继承闭合只读历史及原Artifact所有者，不转换为待执行调用。

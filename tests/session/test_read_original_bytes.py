@@ -199,7 +199,7 @@ async def test_second_validator_preserves_error_order_with_or_without_original_b
         db.execute(
             "UPDATE agent_threads SET snapshot_json=?, snapshot_sha256=?, "
             "projection_version=?, sequence=2",
-            (body, digest, 22 if fault in ("gap", "version") else 21),
+            (body, digest, 23 if fault in ("gap", "version") else 22),
         )
         row = db.execute("SELECT * FROM agent_threads").fetchone()
     kwargs = {"snapshot_bytes": body.encode()} if supplied_bytes else {}

@@ -41,7 +41,7 @@ from harnessix.session.sqlite_publication import authenticated_events
 from harnessix.session.store_publication import SessionPublicationBinding
 from harnessix.sqlite_readonly import readonly_database
 
-# 冻结已发布的完整v30/v31迁移集合，不能用当前资源或任意旧前缀替代原合同。
+# 冻结已发布的完整v30/v31/v32迁移集合，不能用当前资源或任意旧前缀替代原合同。
 _SESSION_MIGRATION_CHECKSUMS = (
     "f511dc6c2c86db4995b8a68b7812d8e6072aa82a1f19b0a559e0975a9e7d2c95",
     "043a8da8a557c8eaf18562d0e1679eb7fb56d1203b54cf866fb4d6684e6a0a33",
@@ -74,7 +74,10 @@ _SESSION_MIGRATION_CHECKSUMS = (
     "4aab60066b1bde339ac5964f51b21a5bfa56469f57d2fff99dadf665b193fe2e",
     "49cfb3045930284211e88d1f3210ecf6a54d686d8bae43e822c8d7375d5075eb",
     "0c4203f385ceb42ceb191e0f847cd5fa3525e7ac5c33eb99870fd3defd72d380",
+    "9712cb65d1a1e3c0fce3c601b3ca8e12cd50d6e38eca286bab49266624239846",
 )
+# 每个已发布迁移集合可容纳的最高事件/投影版本；旧迁移集合不得夹带新语义。
+_MAX_VERSION_BY_MIGRATIONS = {30: 20, 31: 21, 32: 22}
 
 
 def invalid_state() -> KernelError:
@@ -158,7 +161,7 @@ def _session_schema(database: sqlite3.Connection) -> None:
     if database.execute("PRAGMA application_id").fetchone() != (0x4858534B,):
         raise invalid_state()
     rows = database.execute("SELECT version,checksum FROM agent_migrations").fetchall()
-    if len(rows) not in (30, 31) or any(
+    if len(rows) not in _MAX_VERSION_BY_MIGRATIONS or any(
         type(version) is not int or type(checksum) is not str for version, checksum in rows
     ):
         raise invalid_state()
@@ -167,14 +170,16 @@ def _session_schema(database: sqlite3.Connection) -> None:
         enumerate(_SESSION_MIGRATION_CHECKSUMS[: len(rows)], 1)
     ):
         raise invalid_state()
-    if len(applied) == 30 and (
+    maximum = _MAX_VERSION_BY_MIGRATIONS[len(applied)]
+    if (
         database.execute(
-            "SELECT 1 FROM agent_threads WHERE projection_version > 20 LIMIT 1"
+            "SELECT 1 FROM agent_threads WHERE projection_version > ? LIMIT 1", (maximum,)
         ).fetchone()
         is not None
         or database.execute(
             "SELECT 1 FROM agent_events "
-            "WHERE json_extract(event_json,'$.schema_version') > 20 LIMIT 1"
+            "WHERE json_extract(event_json,'$.schema_version') > ? LIMIT 1",
+            (maximum,),
         ).fetchone()
         is not None
     ):

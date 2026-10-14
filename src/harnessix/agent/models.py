@@ -847,8 +847,8 @@ EventPayload = Annotated[
 
 class EventDraft(ContractModel):
     schema_version: Literal[
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
-    ] = 21
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+    ] = 22
     event_id: UUID = Field(default_factory=new_id)
     turn_id: UUID | None = None
     occurred_at: AwareDatetime = Field(default_factory=utc_now)

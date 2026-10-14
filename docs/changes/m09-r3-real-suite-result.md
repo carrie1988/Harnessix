@@ -261,7 +261,7 @@ Turn/工具 `budget_exceeded` 属于Agent或工具执行边界，不能据此宣
 - `profile_observations(turn, case) -> tuple[tuple[EvalTestObservation, …], tuple[EvalTestObservation, …]]`：只认实际完成工具调用及可信Profile终态。
 - `expected_classification(outcome, failures, agent_failure_category, provider_failure) -> CampaignClassification`：依据现行优先级给出单一主分类。
 - `summarize_suite_cases(cases) -> CodingEvalSuiteSummary`：纯统计，不执行模型或工具。
-- `build_product_agent_context(workspace, *, max_output_tokens=65536) -> ProductAgentContext`：共享Context v3与压缩策略，见[67–107行](../../src/harnessix/product_config/agent_context.py#L67)。
+- `build_product_agent_context(workspace, *, max_output_tokens=65536) -> ProductAgentContext`：共享Context v3与压缩策略，见[67–107行](../../src/harnessix/product_config/agent_context.py#L75)。
 - `tool_alias(name) -> str` 与 `build_request(request, config) -> tuple[dict, dict]`：工具wire别名及Chat映射；见[别名18–19行](../../src/harnessix/models/_history.py#L18)、[映射13–59行](../../src/harnessix/models/_chat_mapping.py#L13)。
 
 ### 6.2 只读核验伪代码

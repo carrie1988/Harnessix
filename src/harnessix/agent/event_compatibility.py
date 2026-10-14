@@ -40,12 +40,21 @@ from harnessix.context.contracts import (
     ContextInspectionV3,
     ContextPrepared,
 )
-from harnessix.context.tool_result_contracts import ModelHistoryInspectionV2
+from harnessix.context.tool_result_contracts import (
+    ModelHistoryInspectionV2,
+    ModelHistoryInspectionV3,
+)
 
 
 def validate_event_boundary(event: EventDraft) -> None:
     """拒绝把新语义伪装成旧版本事件。"""
 
+    if (
+        event.schema_version < 22
+        and isinstance(event.payload, ModelHistoryPrepared)
+        and isinstance(event.payload.inspection, ModelHistoryInspectionV3)
+    ):
+        raise ValueError("工作集模型视图需要Agent Event v22")
     if event.schema_version < 21 and (
         (
             isinstance(event.payload, ItemStarted | ItemFinished)

@@ -47,7 +47,7 @@ modules: [context, agent, artifacts, session]
 | 摘要调用可能收费，进程可能崩溃 | 先落计划和 Attempt，再生成候选，最后激活窗口 | 重开后无条件重发摘要 |
 | Steering 可能改变历史 | 验证 Artifact 后加锁重算，匹配才提交 | 用验证前的旧快照直接发布 |
 
-实现依据：[`ContextEngine`](../../src/harnessix/context/engine.py#L94)、[`SourcedContextEngine`](../../src/harnessix/context/sources.py#L94)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L328)、[`_closed_group_steps`](../../src/harnessix/context/compaction.py#L84)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L74)。
+实现依据：[`ContextEngine`](../../src/harnessix/context/engine.py#L94)、[`SourcedContextEngine`](../../src/harnessix/context/sources.py#L94)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L338)、[`_closed_group_steps`](../../src/harnessix/context/compaction.py#L84)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L75)。
 
 ## 3. 设计目标、不变量与取舍
 
@@ -60,7 +60,7 @@ modules: [context, agent, artifacts, session]
 5. **失败不得悄悄丢弃语义。** 必选指令、固定组或摘要输入超限时失败，不截断当前用户内容后继续。
 6. **恢复不隐式重复收费。** 不确定是否已付费的摘要请求记录为风险，不通过自动重放消除不确定性。
 
-源码：[`compaction_summary_item`](../../src/harnessix/context/compaction_projection.py#L12)、[`_validation_steps`](../../src/harnessix/context/compaction.py#L298)、[`CompactionRecord`](../../src/harnessix/context/compaction_ledger_contracts.py#L26)、[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1890)。
+源码：[`compaction_summary_item`](../../src/harnessix/context/compaction_projection.py#L12)、[`_validation_steps`](../../src/harnessix/context/compaction.py#L298)、[`CompactionRecord`](../../src/harnessix/context/compaction_ledger_contracts.py#L26)、[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1900)。
 
 ### 3.2 重要取舍
 
@@ -167,7 +167,7 @@ sequenceDiagram
 6. 保存 inspection 后才开始模型调用。`instructions` 正文留在本次请求，`ContextPrepared` 只保存检查记录。
 7. Provider 输出工具调用则进入工具调度；无调用则结算或接收后续 Steering。每个新模型步骤重新走上下文准备，不把动态源永久缓存为首轮内容。
 
-源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2105)、[`prepare_and_commit_model_history`](../../src/harnessix/agent/model_history_runtime.py#L106)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L74)。
+源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2128)、[`prepare_and_commit_model_history`](../../src/harnessix/agent/model_history_runtime.py#L107)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L75)。
 
 ## 6. 静态 Context：从输入到预算决定
 
@@ -322,7 +322,7 @@ allowlist 最多 32 项、必须唯一、名称符合大写变量命名规则，
 
 视图准备限制最多 8192 项、8 MiB；空历史报 `empty_transcript`。扫描时维护 calls 和 settled，拒绝重复 call_id、结果无前置调用、同一调用重复结果。
 
-源码：[`history_items`](../../src/harnessix/context/tool_result_view.py#L72)、[`history_document`](../../src/harnessix/context/tool_result_view.py#L84)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L328)。
+源码：[`history_items`](../../src/harnessix/context/tool_result_view.py#L82)、[`history_document`](../../src/harnessix/context/tool_result_view.py#L94)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L338)。
 
 ### 8.2 内联与替换流程
 
@@ -353,7 +353,7 @@ flowchart TD
 6. 替换后的完整公开结果再次测量，引用和元数据本身超限也失败。
 7. 之后每次重放核对原始内容哈希、引用、Item/call 身份和冻结视图哈希。修改预算不能把已冻结 inline 历史重新压成另一种前缀；旧视图超过当前更小预算时失败。
 
-源码：[`_new_decision`](../../src/harnessix/context/tool_result_view.py#L213)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L166)、[`_apply_decision`](../../src/harnessix/context/tool_result_view.py#L256)。
+源码：[`_new_decision`](../../src/harnessix/context/tool_result_view.py#L223)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L176)、[`_apply_decision`](../../src/harnessix/context/tool_result_view.py#L266)。
 
 ### 8.3 Artifact purpose 与运行时验证
 
@@ -368,7 +368,7 @@ flowchart TD
 
 纯视图函数仅产生 `references`。Runtime 需要 verifier 与 artifact access 能力，获得当前 workspace_scope 后，逐引用传入 owner_thread_id（fork 继承时可能为原线程）、call_id、purpose 和 omitted_field。没有验证器、缺少 scope 或超时都不能继续把引用发给模型。
 
-源码：[`_bindings`](../../src/harnessix/context/tool_result_view.py#L110)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L452)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1571)。
+源码：[`_bindings`](../../src/harnessix/context/tool_result_view.py#L120)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L462)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1581)。
 
 ## 9. Compaction 纯规划：按闭合组选择历史
 
@@ -459,7 +459,7 @@ sequenceDiagram
 
 摘要完成后，在原始计划快照进行纯验证，再保存 CompactionSummarized；激活由独立 task 执行并用 `asyncio.shield` 保护。若外层 task 在候选提交后取消，仍等待激活任务完成/结算，避免留下不明确的发布边界。
 
-源码：[`AgentRuntime._run_compaction`](../../src/harnessix/agent/runtime.py#L1939)、[`AgentRuntime._summary_text`](../../src/harnessix/agent/runtime.py#L1659)。
+源码：[`AgentRuntime._run_compaction`](../../src/harnessix/agent/runtime.py#L1949)、[`AgentRuntime._summary_text`](../../src/harnessix/agent/runtime.py#L1669)。
 
 ### 10.2 状态机
 
@@ -485,7 +485,7 @@ stateDiagram-v2
 
 `unaccounted_request_possible=true` 只允许无 Attempt 的 failed/interrupted，表示 Provider 可能已收到请求但没有可靠意图记录，不是“用量为零”的证明。摘要账本与正常模型步骤分开，但 usage 仍影响 Turn 累计预算。
 
-源码：[`CompactionRecord.coherent_state`](../../src/harnessix/context/compaction_ledger_contracts.py#L43)、[`AgentRuntime._close_compaction`](../../src/harnessix/agent/runtime.py#L1606)。
+源码：[`CompactionRecord.coherent_state`](../../src/harnessix/context/compaction_ledger_contracts.py#L43)、[`AgentRuntime._close_compaction`](../../src/harnessix/agent/runtime.py#L1616)。
 
 ### 10.3 持久化 Reducer：为什么运行时检查后还要再验证
 
@@ -525,7 +525,7 @@ flowchart LR
 
 `CompactionWindow` 保存候选 Item ID、候选 history hash/tokens、前驱 window_id，以及激活时原始历史项数、最后 Item ID、原始 ID 列表摘要。它是模型视图的发布索引，不是原始消息删除清单。
 
-源码：[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1890)、[`build_compaction_window`](../../src/harnessix/context/compaction_window.py#L67)。
+源码：[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1900)、[`build_compaction_window`](../../src/harnessix/context/compaction_window.py#L67)。
 
 ### 11.2 下一步如何重建
 
@@ -578,7 +578,7 @@ flowchart TD
 
 候选是否可恢复由 `recoverable_compaction` 检查“summarized 且 finished_event_sequence==当前序号”，不是查到任意历史成功摘要就再次激活。取消路径必须关闭流并结算账本；协作取消纯规划则不修改源 Thread。
 
-源码：[`recoverable_compaction`](../../src/harnessix/agent/runtime_recovery.py#L34)、[`AgentRuntime._finish`](../../src/harnessix/agent/runtime.py#L2951)。行为测试：[`test_runtime_compaction_crash_never_reissues_paid_summary`](../../tests/context/test_compaction_runtime_recovery.py#L47)、[`test_window_activation_transaction_crash_recovers_exactly_once`](../../tests/context/test_compaction_runtime_recovery.py#L120)。
+源码：[`recoverable_compaction`](../../src/harnessix/agent/runtime_recovery.py#L34)、[`AgentRuntime._finish`](../../src/harnessix/agent/runtime.py#L2983)。行为测试：[`test_runtime_compaction_crash_never_reissues_paid_summary`](../../tests/context/test_compaction_runtime_recovery.py#L47)、[`test_window_activation_transaction_crash_recovers_exactly_once`](../../tests/context/test_compaction_runtime_recovery.py#L120)。
 
 ### 12.2 Provider overflow 的反应式压缩
 
@@ -586,13 +586,13 @@ flowchart TD
 
 这不是无成本重试：原请求 Attempt/usage 已按流结算，下一步受原 Turn 限制。若摘要后仍无可压缩空间，no_progress 会阻止再次无意义付费。发生语义输出后的 overflow 也不能作为任意回滚历史的理由，相关协议路径有专门测试。
 
-源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2105)、[`_requires_compaction`](../../src/harnessix/agent/model_history_runtime.py#L60)；测试：[`test_second_context_overflow_stops_at_no_progress_without_another_paid_summary`](../../tests/context/test_compaction_runtime.py#L434)、[`test_context_overflow_after_semantic_output_cannot_rewrite_history`](../../tests/context/test_compaction_runtime.py#L463)。
+源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2128)、[`_requires_compaction`](../../src/harnessix/agent/model_history_runtime.py#L60)；测试：[`test_second_context_overflow_stops_at_no_progress_without_another_paid_summary`](../../tests/context/test_compaction_runtime.py#L434)、[`test_context_overflow_after_semantic_output_cannot_rewrite_history`](../../tests/context/test_compaction_runtime.py#L463)。
 
 ### 12.3 Fork 与原始归属
 
 Fork 继承的语义历史位于 fork_snapshot；`active_model_history_source` 提供当前窗口背后的有效来源，而不是复制父线程所有私有 Turn 状态。引用验证通过 artifact_owners 保留原归档 owner，不能将继承 Artifact 假定为子线程新建。Fork/Retry/Provider 切换不等于重跑旧工具副作用。
 
-源码：[`active_model_history_source`](../../src/harnessix/context/compaction_window.py#L172)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L452)；测试：[`test_long_session_compaction_recovery_retry_switch_fork_archive`](../../tests/context/test_long_session_recovery.py#L121)。
+源码：[`active_model_history_source`](../../src/harnessix/context/compaction_window.py#L172)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L462)；测试：[`test_long_session_compaction_recovery_retry_switch_fork_archive`](../../tests/context/test_long_session_recovery.py#L121)。
 
 ## 13. 关键接口、字段语义与集成方式
 
@@ -690,7 +690,7 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 | context_compaction_window_conflict | 候选与当前发布边界不相邻 | 核对并发事件顺序 |
 | context_compaction_window_invalid | 链尾、引用、哈希或决定失配 | 从 Session/reducer 和原账本排查 |
 
-抛错位置集中于 [`ContextEngine._prepare`](../../src/harnessix/context/engine.py#L126)、[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L113)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L166)、[`_plan_steps`](../../src/harnessix/context/compaction.py#L192)、[`_window_source`](../../src/harnessix/context/compaction_window.py#L96)。`retryable` 是上层策略输入，不意味着纯 Engine 自动重试。
+抛错位置集中于 [`ContextEngine._prepare`](../../src/harnessix/context/engine.py#L126)、[`SourcedContextEngine.prepare`](../../src/harnessix/context/sources.py#L113)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L176)、[`_plan_steps`](../../src/harnessix/context/compaction.py#L192)、[`_window_source`](../../src/harnessix/context/compaction_window.py#L96)。`retryable` 是上层策略输入，不意味着纯 Engine 自动重试。
 
 ## 15. 安全、资源与部署边界
 
@@ -701,7 +701,7 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 - **显式装配**：配置 CompactionPolicy 不启动付费请求；RuntimeConfig 与对应 Provider 才构成运行能力。本文不假定任意 CLI 或产品启动入口已经启用这些端口。
 - **审计与隐私**：来源快照无正文但 source 路径、大小、指纹仍可能有敏感性；日志应复用检查记录和错误代码，不输出完整动态 instructions。摘要正文与原始消息是另一类持久数据，应按 Session 数据管理。
 
-源码：[`ContextBuildInput`](../../src/harnessix/context/contracts.py#L195)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L204)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1571)、[`CompactionRuntimeConfig`](../../src/harnessix/context/compaction_runtime_contracts.py#L13)。
+源码：[`ContextBuildInput`](../../src/harnessix/context/contracts.py#L195)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L204)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1581)、[`CompactionRuntimeConfig`](../../src/harnessix/context/compaction_runtime_contracts.py#L13)。
 
 ## 16. 测试地图与维护检查表
 
@@ -1047,94 +1047,94 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 
 ### ToolResultViewPolicy
 
-源码：[`ToolResultViewPolicy`](../../src/harnessix/context/tool_result_contracts.py#L27)。
+源码：[`ToolResultViewPolicy`](../../src/harnessix/context/tool_result_contracts.py#L33)。
 
 | 字段 | 类型 | 默认值 / 局部约束 |
 |---|---|---|
-| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L28) | `Literal['harnessix.tool-result-model-view/v1']` | `TOOL_RESULT_VIEW_VERSION` |
-| [max_inline_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L29) | `int` | `Field(default=64 * 1024, ge=1024, le=1000000, strict=True)` |
+| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L34) | `Literal['harnessix.tool-result-model-view/v1']` | `TOOL_RESULT_VIEW_VERSION` |
+| [max_inline_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L35) | `int` | `Field(default=64 * 1024, ge=1024, le=1000000, strict=True)` |
 
 ### ToolResultArtifactBinding
 
-源码：[`ToolResultArtifactBinding`](../../src/harnessix/context/tool_result_contracts.py#L32)。
+源码：[`ToolResultArtifactBinding`](../../src/harnessix/context/tool_result_contracts.py#L38)。
 
 | 字段 | 类型 | 默认值 / 局部约束 |
 |---|---|---|
-| [purpose](../../src/harnessix/context/tool_result_contracts.py#L33) | `Literal['tool_result', 'process_output', 'batch_effect', 'action_review', 'action_output', 'artifact_page']` | `必填` |
-| [artifact](../../src/harnessix/context/tool_result_contracts.py#L41) | `ArtifactRef` | `必填` |
+| [purpose](../../src/harnessix/context/tool_result_contracts.py#L39) | `Literal['tool_result', 'process_output', 'batch_effect', 'action_review', 'action_output', 'artifact_page']` | `必填` |
+| [artifact](../../src/harnessix/context/tool_result_contracts.py#L47) | `ArtifactRef` | `必填` |
 
 ### ToolResultViewDecision
 
-源码：[`ToolResultViewDecision`](../../src/harnessix/context/tool_result_contracts.py#L44)。
+源码：[`ToolResultViewDecision`](../../src/harnessix/context/tool_result_contracts.py#L50)。
 
 | 字段 | 类型 | 默认值 / 局部约束 |
 |---|---|---|
-| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L45) | `Literal['harnessix.tool-result-model-view/v1']` | `TOOL_RESULT_VIEW_VERSION` |
-| [item_id](../../src/harnessix/context/tool_result_contracts.py#L46) | `UUID` | `必填` |
-| [call_id](../../src/harnessix/context/tool_result_contracts.py#L47) | `UUID` | `必填` |
-| [strategy](../../src/harnessix/context/tool_result_contracts.py#L48) | `Literal['inline', 'artifact_reference']` | `必填` |
-| [limit_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L49) | `int` | `Field(ge=1024, le=1000000, strict=True)` |
-| [source_sha256](../../src/harnessix/context/tool_result_contracts.py#L50) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [source_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L51) | `int` | `Field(ge=1, le=8388608)` |
-| [view_sha256](../../src/harnessix/context/tool_result_contracts.py#L52) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [view_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L53) | `int` | `Field(ge=1, le=1000000)` |
-| [references](../../src/harnessix/context/tool_result_contracts.py#L54) | `tuple[ToolResultArtifactBinding, ...]` | `Field(default_factory=tuple, max_length=2)` |
-| [replacement_output](../../src/harnessix/context/tool_result_contracts.py#L55) | `JsonValue` | `None` |
+| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L51) | `Literal['harnessix.tool-result-model-view/v1']` | `TOOL_RESULT_VIEW_VERSION` |
+| [item_id](../../src/harnessix/context/tool_result_contracts.py#L52) | `UUID` | `必填` |
+| [call_id](../../src/harnessix/context/tool_result_contracts.py#L53) | `UUID` | `必填` |
+| [strategy](../../src/harnessix/context/tool_result_contracts.py#L54) | `Literal['inline', 'artifact_reference']` | `必填` |
+| [limit_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L55) | `int` | `Field(ge=1024, le=1000000, strict=True)` |
+| [source_sha256](../../src/harnessix/context/tool_result_contracts.py#L56) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [source_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L57) | `int` | `Field(ge=1, le=8388608)` |
+| [view_sha256](../../src/harnessix/context/tool_result_contracts.py#L58) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [view_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L59) | `int` | `Field(ge=1, le=1000000)` |
+| [references](../../src/harnessix/context/tool_result_contracts.py#L60) | `tuple[ToolResultArtifactBinding, ...]` | `Field(default_factory=tuple, max_length=2)` |
+| [replacement_output](../../src/harnessix/context/tool_result_contracts.py#L61) | `JsonValue` | `None` |
 
 验证/派生方法：
 
-- [`ToolResultViewDecision.strategy_is_consistent`](../../src/harnessix/context/tool_result_contracts.py#L58)：Tool Result Artifact绑定重复；Tool Result模型视图超过冻结上限；Artifact Tool Result替换缺少完整引用或未超过上限；Tool Result替换正文与冻结决定不一致；Tool Result替换正文与冻结决定不一致；Inline Tool Result不得包含替换且摘要必须一致
+- [`ToolResultViewDecision.strategy_is_consistent`](../../src/harnessix/context/tool_result_contracts.py#L64)：Tool Result Artifact绑定重复；Tool Result模型视图超过冻结上限；Artifact Tool Result替换缺少完整引用或未超过上限；Tool Result替换正文与冻结决定不一致；Tool Result替换正文与冻结决定不一致；Inline Tool Result不得包含替换且摘要必须一致
 
 ### ModelHistoryInspection
 
-源码：[`ModelHistoryInspection`](../../src/harnessix/context/tool_result_contracts.py#L110)。
+源码：[`ModelHistoryInspection`](../../src/harnessix/context/tool_result_contracts.py#L116)。
 
 | 字段 | 类型 | 默认值 / 局部约束 |
 |---|---|---|
-| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L111) | `Literal['harnessix.model-history-inspection/v1']` | `MODEL_HISTORY_INSPECTION_VERSION` |
-| [model_step](../../src/harnessix/context/tool_result_contracts.py#L114) | `int` | `Field(ge=1, le=1000)` |
-| [policy](../../src/harnessix/context/tool_result_contracts.py#L115) | `ToolResultViewPolicy` | `必填` |
-| [history_items](../../src/harnessix/context/tool_result_contracts.py#L116) | `int` | `Field(ge=1, le=8192)` |
-| [tool_results](../../src/harnessix/context/tool_result_contracts.py#L117) | `int` | `Field(ge=0, le=8192)` |
-| [inline_results](../../src/harnessix/context/tool_result_contracts.py#L118) | `int` | `Field(ge=0, le=8192)` |
-| [artifact_reference_results](../../src/harnessix/context/tool_result_contracts.py#L119) | `int` | `Field(ge=0, le=8192)` |
-| [artifact_bindings](../../src/harnessix/context/tool_result_contracts.py#L120) | `int` | `Field(ge=0, le=16384)` |
-| [source_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L121) | `int` | `Field(ge=0, le=8388608)` |
-| [view_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L122) | `int` | `Field(ge=0, le=8388608)` |
-| [source_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L123) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [view_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L124) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [decisions_sha256](../../src/harnessix/context/tool_result_contracts.py#L125) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L117) | `Literal['harnessix.model-history-inspection/v1']` | `MODEL_HISTORY_INSPECTION_VERSION` |
+| [model_step](../../src/harnessix/context/tool_result_contracts.py#L120) | `int` | `Field(ge=1, le=1000)` |
+| [policy](../../src/harnessix/context/tool_result_contracts.py#L121) | `ToolResultViewPolicy` | `必填` |
+| [history_items](../../src/harnessix/context/tool_result_contracts.py#L122) | `int` | `Field(ge=1, le=8192)` |
+| [tool_results](../../src/harnessix/context/tool_result_contracts.py#L123) | `int` | `Field(ge=0, le=8192)` |
+| [inline_results](../../src/harnessix/context/tool_result_contracts.py#L124) | `int` | `Field(ge=0, le=8192)` |
+| [artifact_reference_results](../../src/harnessix/context/tool_result_contracts.py#L125) | `int` | `Field(ge=0, le=8192)` |
+| [artifact_bindings](../../src/harnessix/context/tool_result_contracts.py#L126) | `int` | `Field(ge=0, le=16384)` |
+| [source_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L127) | `int` | `Field(ge=0, le=8388608)` |
+| [view_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L128) | `int` | `Field(ge=0, le=8388608)` |
+| [source_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L129) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [view_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L130) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [decisions_sha256](../../src/harnessix/context/tool_result_contracts.py#L131) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
 
 验证/派生方法：
 
-- [`ModelHistoryInspection.counts_are_consistent`](../../src/harnessix/context/tool_result_contracts.py#L128)：Tool Result模型视图策略计数不一致；Tool Result数量超过历史Item数量；Tool Result模型视图不得扩大正文
+- [`ModelHistoryInspection.counts_are_consistent`](../../src/harnessix/context/tool_result_contracts.py#L134)：Tool Result模型视图策略计数不一致；Tool Result数量超过历史Item数量；Tool Result模型视图不得扩大正文
 
 ### ModelHistoryInspectionV2
 
-源码：[`ModelHistoryInspectionV2`](../../src/harnessix/context/tool_result_contracts.py#L138)。 绑定已发布活动窗口；原v1字段继续描述本次实际模型历史。
+源码：[`ModelHistoryInspectionV2`](../../src/harnessix/context/tool_result_contracts.py#L144)。 绑定已发布活动窗口；原v1字段继续描述本次实际模型历史。
 
 | 字段 | 类型 | 默认值 / 局部约束 |
 |---|---|---|
-| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L141) | `Literal['harnessix.model-history-inspection/v2']` | `MODEL_HISTORY_INSPECTION_V2_VERSION` |
-| [model_step](../../src/harnessix/context/tool_result_contracts.py#L144) | `int` | `Field(ge=1, le=1000)` |
-| [policy](../../src/harnessix/context/tool_result_contracts.py#L145) | `ToolResultViewPolicy` | `必填` |
-| [history_items](../../src/harnessix/context/tool_result_contracts.py#L146) | `int` | `Field(ge=1, le=8192)` |
-| [tool_results](../../src/harnessix/context/tool_result_contracts.py#L147) | `int` | `Field(ge=0, le=8192)` |
-| [inline_results](../../src/harnessix/context/tool_result_contracts.py#L148) | `int` | `Field(ge=0, le=8192)` |
-| [artifact_reference_results](../../src/harnessix/context/tool_result_contracts.py#L149) | `int` | `Field(ge=0, le=8192)` |
-| [artifact_bindings](../../src/harnessix/context/tool_result_contracts.py#L150) | `int` | `Field(ge=0, le=16384)` |
-| [source_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L151) | `int` | `Field(ge=0, le=8388608)` |
-| [view_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L152) | `int` | `Field(ge=0, le=8388608)` |
-| [source_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L153) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [view_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L154) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [decisions_sha256](../../src/harnessix/context/tool_result_contracts.py#L155) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [window_id](../../src/harnessix/context/tool_result_contracts.py#L156) | `UUID` | `必填` |
-| [window_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L157) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
-| [raw_history_items](../../src/harnessix/context/tool_result_contracts.py#L158) | `int` | `Field(ge=1, le=8388608, strict=True)` |
+| [spec_version](../../src/harnessix/context/tool_result_contracts.py#L147) | `Literal['harnessix.model-history-inspection/v2']` | `MODEL_HISTORY_INSPECTION_V2_VERSION` |
+| [model_step](../../src/harnessix/context/tool_result_contracts.py#L150) | `int` | `Field(ge=1, le=1000)` |
+| [policy](../../src/harnessix/context/tool_result_contracts.py#L151) | `ToolResultViewPolicy` | `必填` |
+| [history_items](../../src/harnessix/context/tool_result_contracts.py#L152) | `int` | `Field(ge=1, le=8192)` |
+| [tool_results](../../src/harnessix/context/tool_result_contracts.py#L153) | `int` | `Field(ge=0, le=8192)` |
+| [inline_results](../../src/harnessix/context/tool_result_contracts.py#L154) | `int` | `Field(ge=0, le=8192)` |
+| [artifact_reference_results](../../src/harnessix/context/tool_result_contracts.py#L155) | `int` | `Field(ge=0, le=8192)` |
+| [artifact_bindings](../../src/harnessix/context/tool_result_contracts.py#L156) | `int` | `Field(ge=0, le=16384)` |
+| [source_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L157) | `int` | `Field(ge=0, le=8388608)` |
+| [view_tool_result_utf8_bytes](../../src/harnessix/context/tool_result_contracts.py#L158) | `int` | `Field(ge=0, le=8388608)` |
+| [source_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L159) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [view_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L160) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [decisions_sha256](../../src/harnessix/context/tool_result_contracts.py#L161) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [window_id](../../src/harnessix/context/tool_result_contracts.py#L162) | `UUID` | `必填` |
+| [window_history_sha256](../../src/harnessix/context/tool_result_contracts.py#L163) | `str` | `Field(pattern='^[0-9a-f]{64}$')` |
+| [raw_history_items](../../src/harnessix/context/tool_result_contracts.py#L164) | `int` | `Field(ge=1, le=8388608, strict=True)` |
 
 验证/派生方法：
 
-- [`ModelHistoryInspectionV2.counts_are_consistent`](../../src/harnessix/context/tool_result_contracts.py#L161)：Tool Result模型视图策略计数不一致；Tool Result数量超过历史Item数量；Tool Result模型视图不得扩大正文
+- [`ModelHistoryInspectionV2.counts_are_consistent`](../../src/harnessix/context/tool_result_contracts.py#L167)：Tool Result模型视图策略计数不一致；Tool Result数量超过历史Item数量；Tool Result模型视图不得扩大正文
 
 ### CompactionPolicy
 
@@ -1383,8 +1383,8 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 | [engine.py](../../src/harnessix/context/engine.py#L1) | [`ContextPreparationError`](../../src/harnessix/context/engine.py#L37)、[`estimate_tokens`](../../src/harnessix/context/engine.py#L46)、[`_render`](../../src/harnessix/context/engine.py#L51)、[`_copy_and_order`](../../src/harnessix/context/engine.py#L74)、[`ContextEngine`](../../src/harnessix/context/engine.py#L94) |
 | [ports.py](../../src/harnessix/context/ports.py#L1) | [`ContextPlanner`](../../src/harnessix/context/ports.py#L9)、[`AsyncContextPlanner`](../../src/harnessix/context/ports.py#L15) |
 | [sources.py](../../src/harnessix/context/sources.py#L1) | [`ContextSourceError`](../../src/harnessix/context/sources.py#L70)、[`ContextSource`](../../src/harnessix/context/sources.py#L80)、[`SourcedContextEngine`](../../src/harnessix/context/sources.py#L94)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L204)、[`WorkspaceContextSource`](../../src/harnessix/context/sources.py#L355)、[`GitContextSource`](../../src/harnessix/context/sources.py#L442)、[`EnvironmentContextSource`](../../src/harnessix/context/sources.py#L549)、[`_canonical_json`](../../src/harnessix/context/sources.py#L664)、[`_content_revision`](../../src/harnessix/context/sources.py#L670)、[`_require_bound_root`](../../src/harnessix/context/sources.py#L674)、[`_workspace_binding`](../../src/harnessix/context/sources.py#L685)、[`_workspace_binding_sync`](../../src/harnessix/context/sources.py#L705)、[`_workspace_content`](../../src/harnessix/context/sources.py#L720)、[`_git_content`](../../src/harnessix/context/sources.py#L753)、[`_visible_git_status`](../../src/harnessix/context/sources.py#L782)、[`_validated_environment_value`](../../src/harnessix/context/sources.py#L807)、[`_mapped_read_error`](../../src/harnessix/context/sources.py#L823)、[`_mapped_os_error`](../../src/harnessix/context/sources.py#L833) |
-| [tool_result_contracts.py](../../src/harnessix/context/tool_result_contracts.py#L1) | [`ToolResultViewPolicy`](../../src/harnessix/context/tool_result_contracts.py#L27)、[`ToolResultArtifactBinding`](../../src/harnessix/context/tool_result_contracts.py#L32)、[`ToolResultViewDecision`](../../src/harnessix/context/tool_result_contracts.py#L44)、[`ModelHistoryInspection`](../../src/harnessix/context/tool_result_contracts.py#L110)、[`ModelHistoryInspectionV2`](../../src/harnessix/context/tool_result_contracts.py#L138) |
-| [tool_result_view.py](../../src/harnessix/context/tool_result_view.py#L1) | [`ModelHistoryArtifactReference`](../../src/harnessix/context/tool_result_view.py#L38)、[`PreparedModelHistory`](../../src/harnessix/context/tool_result_view.py#L46)、[`_canonical`](../../src/harnessix/context/tool_result_view.py#L53)、[`_digest`](../../src/harnessix/context/tool_result_view.py#L68)、[`history_items`](../../src/harnessix/context/tool_result_view.py#L72)、[`history_document`](../../src/harnessix/context/tool_result_view.py#L84)、[`_public_result`](../../src/harnessix/context/tool_result_view.py#L93)、[`_artifact`](../../src/harnessix/context/tool_result_view.py#L100)、[`_bindings`](../../src/harnessix/context/tool_result_view.py#L110)、[`_preview_metadata`](../../src/harnessix/context/tool_result_view.py#L150)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L166)、[`_new_decision`](../../src/harnessix/context/tool_result_view.py#L213)、[`_apply_decision`](../../src/harnessix/context/tool_result_view.py#L256)、[`prepare_model_history`](../../src/harnessix/context/tool_result_view.py#L311)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L328)、[`_omitted_field`](../../src/harnessix/context/tool_result_view.py#L444)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L452) |
+| [tool_result_contracts.py](../../src/harnessix/context/tool_result_contracts.py#L1) | [`ToolResultViewPolicy`](../../src/harnessix/context/tool_result_contracts.py#L33)、[`ToolResultArtifactBinding`](../../src/harnessix/context/tool_result_contracts.py#L38)、[`ToolResultViewDecision`](../../src/harnessix/context/tool_result_contracts.py#L50)、[`ModelHistoryInspection`](../../src/harnessix/context/tool_result_contracts.py#L116)、[`ModelHistoryInspectionV2`](../../src/harnessix/context/tool_result_contracts.py#L144) |
+| [tool_result_view.py](../../src/harnessix/context/tool_result_view.py#L1) | [`ModelHistoryArtifactReference`](../../src/harnessix/context/tool_result_view.py#L38)、[`PreparedModelHistory`](../../src/harnessix/context/tool_result_view.py#L46)、[`_canonical`](../../src/harnessix/context/tool_result_view.py#L53)、[`_digest`](../../src/harnessix/context/tool_result_view.py#L68)、[`history_items`](../../src/harnessix/context/tool_result_view.py#L82)、[`history_document`](../../src/harnessix/context/tool_result_view.py#L94)、[`_public_result`](../../src/harnessix/context/tool_result_view.py#L103)、[`_artifact`](../../src/harnessix/context/tool_result_view.py#L110)、[`_bindings`](../../src/harnessix/context/tool_result_view.py#L120)、[`_preview_metadata`](../../src/harnessix/context/tool_result_view.py#L160)、[`_replacement`](../../src/harnessix/context/tool_result_view.py#L176)、[`_new_decision`](../../src/harnessix/context/tool_result_view.py#L223)、[`_apply_decision`](../../src/harnessix/context/tool_result_view.py#L266)、[`prepare_model_history`](../../src/harnessix/context/tool_result_view.py#L321)、[`prepare_model_history_items`](../../src/harnessix/context/tool_result_view.py#L338)、[`_omitted_field`](../../src/harnessix/context/tool_result_view.py#L454)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L462) |
 
 ### 跨模块实现
 

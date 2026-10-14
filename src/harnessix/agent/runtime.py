@@ -35,6 +35,8 @@ from harnessix.agent.model_history_runtime import prepare_and_commit_model_histo
 from harnessix.agent.model_input_budget import (
     estimate_model_input_tokens,
     estimate_request_input_tokens,
+    estimate_rewritten_request_input_tokens,
+    require_input_within_bound,
 )
 from harnessix.agent.model_text import ModelTextPublication, protect_request
 from harnessix.agent.models import (
@@ -181,6 +183,7 @@ from harnessix.context.tool_result_view import (
     PreparedModelHistory,
     history_document,
 )
+from harnessix.context.working_set_view import previous_model_view
 from harnessix.domain.models import (
     ApprovalDecision,
     ApprovalOutcome,
@@ -269,6 +272,7 @@ class AgentRuntime:
         compaction: CompactionRuntimeConfig | None = None,
         summary_provider: ModelProvider | None = None,
         budget_pressure_compaction: bool = False,
+        working_set_result_groups: int | None = None,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -287,6 +291,12 @@ class AgentRuntime:
             )
         # 未通过真实质量验收的提前压缩不进入默认产品路径；窗口及溢出恢复压缩不受影响。
         self._budget_pressure_compaction = budget_pressure_compaction
+        if working_set_result_groups is not None and (
+            type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
+        ):
+            raise KernelError("invalid_runtime_configuration", "工作集保留组数必须是1到64")
+        # 显式开启时较旧工具结果正文只在模型视图中省略；默认保持完整历史视图。
+        self._working_set_result_groups = working_set_result_groups
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -1996,6 +2006,19 @@ class AgentRuntime:
             )
             return get_turn(updated, request.turn_id).status
 
+    def _working_set_input_bound(
+        self, thread: Thread, turn: Turn, request: ModelRequest
+    ) -> int | None:
+        """工作集视图逐步改写旧结果；以重算的上一实际视图锚定，未启用或无证据时不参与。"""
+        if self._working_set_result_groups is None:
+            return None
+        return estimate_rewritten_request_input_tokens(
+            self.provider,
+            request,
+            turn,
+            lambda inspection: previous_model_view(thread, inspection),
+        )
+
     def _model_tools_for_turn(self, turn: Turn) -> ModelToolSelection:
         """预付规划和实际请求共用执行端口过滤及当前阶段目录，不为摘要另选工具。"""
         available = tuple(
@@ -2200,6 +2223,13 @@ class AgentRuntime:
                 estimated_input_tokens = estimate_request_input_tokens(
                     self.provider, candidate, turn, estimated_input_tokens
                 )
+                rewritten_bound = self._working_set_input_bound(thread, turn, candidate)
+                # 只有改写视图锚点更紧时才采用，并在实际用量返回后对账其假设。
+                anchored_on_rewrite = (
+                    rewritten_bound is not None and rewritten_bound < estimated_input_tokens
+                )
+                if rewritten_bound is not None and anchored_on_rewrite:
+                    estimated_input_tokens = rewritten_bound
                 allowed_output_tokens = min(
                     output_token_limit,
                     turn.budget.max_tokens - turn.usage.total_tokens - estimated_input_tokens,
@@ -2258,6 +2288,8 @@ class AgentRuntime:
                     reactive_compaction_required = True
                     continue
                 turn = get_turn(await self.store.get_thread(thread_id), turn_id)
+                if anchored_on_rewrite:
+                    require_input_within_bound(turn, request.step, estimated_input_tokens)
                 calls = pending_calls(turn)
                 if turn.usage.total_tokens > turn.budget.max_tokens:
                     raise KernelError("budget_exceeded", "Provider 报告的 Token 用量超过预算")

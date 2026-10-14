@@ -40,10 +40,10 @@ from harnessix.artifacts.ports import BatchDiffPublisher
 from harnessix.context.compaction import PreparedCompaction, plan_compaction
 from harnessix.context.compaction_contracts import CompactionPolicy
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
-from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.context.tool_result_view import PreparedModelHistory, history_document
+from harnessix.context.working_set_view import prepare_model_view
 from harnessix.models.contracts import ModelProvider
 from harnessix.session.ports import SessionStore
 
@@ -63,6 +63,7 @@ class ModelHistoryHost(Protocol):
     _summary_provider: ModelProvider | None
     _batch_diffs: BatchDiffPublisher | None
     _tool_result_view_policy: ToolResultViewPolicy
+    _working_set_result_groups: int | None
     _compaction: CompactionRuntimeConfig | None
     _budget_pressure_compaction: bool
     _fault: Callable[[str], None]
@@ -238,6 +239,12 @@ async def _prepaid_pressure_plan(
     return planned
 
 
+def _model_view(host: ModelHistoryHost, thread: Thread, model_step: int) -> PreparedModelHistory:
+    return prepare_model_view(
+        thread, model_step, host._tool_result_view_policy, host._working_set_result_groups
+    )
+
+
 async def _commit_if_current(
     host: ModelHistoryHost,
     thread_id: UUID,
@@ -252,7 +259,7 @@ async def _commit_if_current(
         turn = get_turn(thread, turn_id)
         if turn.status in {TurnStatus.CANCELLING, TurnStatus.CANCELLED}:
             raise TurnCancelled
-        current = prepare_active_model_history(thread, model_step, host._tool_result_view_policy)
+        current = _model_view(host, thread, model_step)
         if current != prepared:
             return None
         return await (host._batch_diffs or host.store).append(
@@ -286,7 +293,7 @@ async def prepare_and_commit_model_history(
         token.checkpoint()
         thread = await host.store.get_thread(thread_id)
         turn = get_turn(thread, turn_id)
-        prepared = prepare_active_model_history(thread, model_step, host._tool_result_view_policy)
+        prepared = _model_view(host, thread, model_step)
         budget_context = None
         budget_selection = None
         planned = None
@@ -298,9 +305,7 @@ async def prepare_and_commit_model_history(
         if required or planned is not None:
             thread = await host._run_compaction(thread, turn, prepared, token, planned)
             reactive_compaction_required = False
-            prepared = prepare_active_model_history(
-                thread, model_step, host._tool_result_view_policy
-            )
+            prepared = _model_view(host, thread, model_step)
         await host._verify_history_artifacts(thread, prepared, token)
         host._fault("runtime.after_history_artifacts_verified")
         committed = await _commit_if_current(host, thread_id, turn_id, model_step, prepared, token)

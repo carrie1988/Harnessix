@@ -267,7 +267,7 @@ R3以及R1～R6不因离线修复、宿主前置或停止记录发布而关闭�
 | 当前调用链 | 源码与职责 | 本次事实 |
 |---|---|---|
 | 完整工具组校验 | [`_complete_calls`](../../src/harnessix/models/_chat_stream.py#L38) 只接受当前 wire 名称表中的名称，组内任一错误都不释放部分工具 | 第二次尝试记录未知工具名类别，不执行该未登记工具 |
-| Provider 失败终态 | [`OpenAIChatProvider.stream`](../../src/harnessix/models/openai_chat.py#L178) 在 `state.finish` 失败后走原失败终态与流关闭 | 已观察完整 Usage，仍是失败尝试，不能改记成功 |
+| Provider 失败终态 | [`OpenAIChatProvider.stream`](../../src/harnessix/models/openai_chat.py#L209) 在 `state.finish` 失败后走原失败终态与流关闭 | 已观察完整 Usage，仍是失败尝试，不能改记成功 |
 | 费用保守结算 | [`GuardedVerificationProvider.stream`](../../scripts/provider_verification_guard.py#L191) 在 `finally` 要求完整成功链，否则保留预留并取消 Suite | 当前完整 Token 不满足成功终态条件，未知预留保持 |
 | 原历史认证回读 | [`authenticated_thread_history`](../../src/harnessix/evals/task_pack_publication.py#L173) 使用原 Owner、取消令牌和绝对期限 | 一次认证读取通过，Session 字节前后相同，无模型或工具重放 |
 

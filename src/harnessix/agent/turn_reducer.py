@@ -42,10 +42,13 @@ from harnessix.agent.usage import (
     ModelUsageObserved,
 )
 from harnessix.context.compaction_ledger_contracts import COMPACTION_OPEN
-from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.contracts import ContextPrepared
-from harnessix.context.tool_result_contracts import ModelHistoryInspectionV2
+from harnessix.context.tool_result_contracts import (
+    ModelHistoryInspectionV2,
+    ModelHistoryInspectionV3,
+)
 from harnessix.context.tool_result_view import history_items
+from harnessix.context.working_set_view import prepare_model_view
 
 
 def _change_state(thread: Thread, turn: Turn, event: AgentEvent, payload: TurnStateChanged) -> Turn:
@@ -355,8 +358,16 @@ def _prepare_model_history(thread: Thread, turn: Turn, payload: ModelHistoryPrep
         "同一模型步骤只能记录一份模型历史检查",
     )
     try:
-        prepared = prepare_active_model_history(
-            thread, inspection.model_step, inspection.policy, decisions=payload.decisions
+        prepared = prepare_model_view(
+            thread,
+            inspection.model_step,
+            inspection.policy,
+            (
+                inspection.retain_recent_result_groups
+                if isinstance(inspection, ModelHistoryInspectionV3)
+                else None
+            ),
+            decisions=payload.decisions,
         )
     except (KernelError, ValueError):
         raise KernelError("invalid_event", "模型历史决定无法由Session事实验证") from None

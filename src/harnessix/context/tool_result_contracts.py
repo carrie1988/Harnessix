@@ -22,6 +22,12 @@ MODEL_HISTORY_INSPECTION_VERSION: Literal["harnessix.model-history-inspection/v1
 MODEL_HISTORY_INSPECTION_V2_VERSION: Literal["harnessix.model-history-inspection/v2"] = (
     "harnessix.model-history-inspection/v2"
 )
+MODEL_HISTORY_INSPECTION_V3_VERSION: Literal["harnessix.model-history-inspection/v3"] = (
+    "harnessix.model-history-inspection/v3"
+)
+STALE_TOOL_RESULT_VERSION: Literal["harnessix.stale-tool-result/v1"] = (
+    "harnessix.stale-tool-result/v1"
+)
 
 
 class ToolResultViewPolicy(ContractModel):
@@ -168,4 +174,41 @@ class ModelHistoryInspectionV2(ContractModel):
         return self
 
 
-ModelHistoryInspectionRecord = ModelHistoryInspection | ModelHistoryInspectionV2
+class ModelHistoryInspectionV3(ContractModel):
+    """工作集视图：v1字段描述按决定准备的基础视图，view摘要绑定遮蔽后实际模型历史。
+
+    只保留最近若干工具调用组的结果正文；更早结果的输出换成固定占位，Native事实不变。
+    """
+
+    spec_version: Literal["harnessix.model-history-inspection/v3"] = (
+        MODEL_HISTORY_INSPECTION_V3_VERSION
+    )
+    model_step: int = Field(ge=1, le=1000)
+    policy: ToolResultViewPolicy
+    history_items: int = Field(ge=1, le=8192)
+    tool_results: int = Field(ge=0, le=8192)
+    inline_results: int = Field(ge=0, le=8192)
+    artifact_reference_results: int = Field(ge=0, le=8192)
+    artifact_bindings: int = Field(ge=0, le=16384)
+    source_tool_result_utf8_bytes: int = Field(ge=0, le=8_388_608)
+    view_tool_result_utf8_bytes: int = Field(ge=0, le=8_388_608)
+    source_history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    view_history_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    decisions_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    retain_recent_result_groups: int = Field(ge=1, le=64, strict=True)
+    stale_results: int = Field(ge=0, le=8192, strict=True)
+
+    @model_validator(mode="after")
+    def counts_are_consistent(self) -> Self:
+        if self.tool_results != self.inline_results + self.artifact_reference_results:
+            raise ValueError("Tool Result模型视图策略计数不一致")
+        if self.tool_results > self.history_items or self.stale_results > self.tool_results:
+            raise ValueError("Tool Result数量超过历史Item数量")
+        if self.view_tool_result_utf8_bytes > self.source_tool_result_utf8_bytes:
+            raise ValueError("Tool Result模型视图不得扩大正文")
+        return self
+
+
+ModelHistoryInspectionRecord = (
+    ModelHistoryInspection | ModelHistoryInspectionV2 | ModelHistoryInspectionV3
+)

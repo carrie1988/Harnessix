@@ -45,8 +45,8 @@ class EventPublicationSeal(BaseModel):
     thread_id: UUID
     event_id: UUID
     sequence: Annotated[int, Field(ge=1)]
-    # 原声明的缺省版本保持20；新签发必须显式绑定正文的21。
-    event_schema_version: Annotated[int, Field(ge=20, le=21)] = 20
+    # 原声明的缺省版本保持20；新签发必须显式绑定正文的当前版本22。
+    event_schema_version: Annotated[int, Field(ge=20, le=22)] = 20
     scope_sha256: Digest
     body_sha256: Digest
     tag: Digest
@@ -175,7 +175,7 @@ class EventPublicationAuthority:
         if (
             type(store_id) is not UUID
             or type(event) is not AgentEvent
-            or event.schema_version != 21
+            or event.schema_version != 22
         ):
             raise _failure("publication_event_invalid")
         try:

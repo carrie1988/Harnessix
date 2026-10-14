@@ -53,24 +53,20 @@ def schema_fixture(database, version):
     )
 
 
-def test_resource_checksums_equal_frozen_complete_v31_contract():
+def test_resource_checksums_equal_frozen_complete_v32_contract():
     assert resource_checksums() == dict(enumerate(_SESSION_MIGRATION_CHECKSUMS, 1))
-    assert len(_SESSION_MIGRATION_CHECKSUMS) == 31
-    sql = (
-        files("harnessix.session.migrations")
-        .joinpath("0031_unknown_tool_rejection.sql")
-        .read_text()
-    )
-    assert "\n".join(line for line in sql.splitlines() if not line.startswith("--")).strip() == (
-        "SELECT 1;"
-    )
+    assert len(_SESSION_MIGRATION_CHECKSUMS) == 32
+    for name in ("0031_unknown_tool_rejection.sql", "0032_tool_result_working_set.sql"):
+        sql = files("harnessix.session.migrations").joinpath(name).read_text()
+        body = "\n".join(line for line in sql.splitlines() if not line.startswith("--"))
+        assert body.strip() == "SELECT 1;"
 
 
-@pytest.mark.parametrize("version", range(33))
-def test_backup_only_accepts_complete_v30_or_v31_not_arbitrary_prefix(version):
+@pytest.mark.parametrize("version", range(34))
+def test_backup_only_accepts_complete_published_sets_not_arbitrary_prefix(version):
     with closing(sqlite3.connect(":memory:")) as database:
         schema_fixture(database, version)
-        if version in (30, 31):
+        if version in (30, 31, 32):
             _session_schema(database)
         else:
             with raises_code("product_backup_state_invalid"):
@@ -79,7 +75,7 @@ def test_backup_only_accepts_complete_v30_or_v31_not_arbitrary_prefix(version):
 
 @pytest.mark.parametrize(
     ("version", "changed"),
-    [(version, changed) for version in (30, 31) for changed in range(1, version + 1)],
+    [(version, changed) for version in (30, 31, 32) for changed in range(1, version + 1)],
 )
 def test_every_applied_checksum_is_frozen(version, changed):
     with closing(sqlite3.connect(":memory:")) as database:
@@ -91,7 +87,7 @@ def test_every_applied_checksum_is_frozen(version, changed):
             _session_schema(database)
 
 
-@pytest.mark.parametrize("version", [30, 31])
+@pytest.mark.parametrize("version", [30, 31, 32])
 @pytest.mark.parametrize("missing", [1, 15, 30])
 @pytest.mark.parametrize("replace", [False, True])
 def test_gap_or_unknown_version_rejects_even_with_supported_row_count(version, missing, replace):
@@ -99,12 +95,12 @@ def test_gap_or_unknown_version_rejects_even_with_supported_row_count(version, m
         schema_fixture(database, version)
         database.execute("DELETE FROM agent_migrations WHERE version=?", (missing,))
         if replace:
-            database.execute("INSERT INTO agent_migrations VALUES (32,?)", ("0" * 64,))
+            database.execute("INSERT INTO agent_migrations VALUES (33,?)", ("0" * 64,))
         with raises_code("product_backup_state_invalid"):
             _session_schema(database)
 
 
-@pytest.mark.parametrize("version", [30, 31])
+@pytest.mark.parametrize("version", [30, 31, 32])
 @pytest.mark.parametrize("application_id", [0, 42])
 def test_backup_database_identity_is_not_relaxed(version, application_id):
     with closing(sqlite3.connect(":memory:")) as database:
@@ -114,7 +110,7 @@ def test_backup_database_identity_is_not_relaxed(version, application_id):
             _session_schema(database)
 
 
-@pytest.mark.parametrize("version", [30, 31])
+@pytest.mark.parametrize("version", [30, 31, 32])
 def test_duplicate_migration_rows_cannot_be_collapsed_into_supported_collection(version):
     with closing(sqlite3.connect(":memory:")) as database:
         schema_fixture(database, version)
@@ -129,15 +125,16 @@ def test_duplicate_migration_rows_cannot_be_collapsed_into_supported_collection(
 
 
 @pytest.mark.parametrize("fact", ["event", "projection"])
-def test_v30_backup_cannot_hide_v21_facts_without_minimum_reader_marker(fact):
+@pytest.mark.parametrize(("migrations", "hidden"), [(30, 21), (30, 22), (31, 22)])
+def test_old_backup_cannot_hide_newer_facts_without_minimum_reader_marker(fact, migrations, hidden):
     with closing(sqlite3.connect(":memory:")) as database:
-        schema_fixture(database, 30)
+        schema_fixture(database, migrations)
         if fact == "event":
             database.execute(
-                "INSERT INTO agent_events VALUES (?)", (json.dumps({"schema_version": 21}),)
+                "INSERT INTO agent_events VALUES (?)", (json.dumps({"schema_version": hidden}),)
             )
         else:
-            database.execute("INSERT INTO agent_threads VALUES (21)")
+            database.execute("INSERT INTO agent_threads VALUES (?)", (hidden,))
         with raises_code("product_backup_state_invalid"):
             _session_schema(database)
 
@@ -171,7 +168,7 @@ async def empty_product_state(tmp_path, config, monkeypatch):
     return root
 
 
-@pytest.mark.parametrize("version", [30, 31])
+@pytest.mark.parametrize("version", [30, 32])
 async def test_full_backup_restore_keeps_original_bytes_then_formal_initialize_upgrades(
     empty_product_state, tmp_path, version
 ):
@@ -181,7 +178,7 @@ async def test_full_backup_restore_keeps_original_bytes_then_formal_initialize_u
             store, tid, original = await original_v20_store(
                 root / "sessions.db", proof, workspace=root.parent / "workspace"
             )
-            if version == 31:
+            if version == 32:
                 await store.initialize()
                 turn_id, sequence = await calling_model(store, tid, 1)
                 original = await store.append(
@@ -206,6 +203,6 @@ async def test_full_backup_restore_keeps_original_bytes_then_formal_initialize_u
             assert (await read(store, tid)).thread == original
             await store.initialize()
             after = business_rows(store.path)
-            assert after["agent_migrations"][-1][0] == 31
+            assert after["agent_migrations"][-1][0] == 32
             for name in before.keys() - {"agent_migrations"}:
                 assert after[name] == before[name]

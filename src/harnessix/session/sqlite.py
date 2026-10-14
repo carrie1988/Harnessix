@@ -135,7 +135,7 @@ def _validated_snapshot(
             raise KernelError("projection_missing", "投影缺失，请从事件日志重建")
         return None
     encoded: str = row["snapshot_json"]
-    if row["projection_version"] not in range(1, 22):
+    if row["projection_version"] not in range(1, 23):
         raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
     body = snapshot_bytes if snapshot_bytes is not None else encoded.encode()
     if hashlib.sha256(body).hexdigest() != row["snapshot_sha256"]:

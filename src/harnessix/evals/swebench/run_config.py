@@ -19,6 +19,7 @@ from harnessix.evals.swebench.run_settings import (
     _PRICE_VALIDITY,
     _SweBenchAgentRunSettings,
 )
+from harnessix.evals.swebench.working_set_config import SweBenchWorkingSetAgentRunConfig
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
 from harnessix.models.pricing import Amount, BillingContext, FlatInputPrice, PriceSnapshot
 
@@ -294,6 +295,7 @@ SweBenchRunConfig = (
     | SweBenchRegexAgentRunConfig
     | SweBenchClosingAgentRunConfig
     | SweBenchDefinitionAgentRunConfig
+    | SweBenchWorkingSetAgentRunConfig
 )
 
 
@@ -317,6 +319,7 @@ def _run_config_type(
     enable_regex_search: bool,
     reserve_closing_phase: bool,
     enable_definition_views: bool,
+    working_set: bool,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -330,6 +333,7 @@ def _run_config_type(
         (enable_regex_search, "正则搜索"),
         (reserve_closing_phase, "调查收尾"),
         (enable_definition_views, "定义视图"),
+        (working_set, "工作集视图"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -340,7 +344,8 @@ def _run_config_type(
         or recycle_workspaces
         or enable_regex_search
         or reserve_closing_phase
-        or enable_definition_views,
+        or enable_definition_views
+        or working_set,
         isolated=isolate_provider_failures,
         pressure_window=budget_pressure_compaction,
         planning=enable_planning,
@@ -348,6 +353,17 @@ def _run_config_type(
     )
     if enable_grep_snapshots and allow_optional_pre_edit_profile:
         raise ValueError("SWE-bench可选预测试与搜索快照必须独立冻结，不隐式组合候选")
+    if working_set:
+        if (
+            enable_grep_snapshots
+            or enable_regex_search
+            or allow_optional_pre_edit_profile
+            or reserve_closing_phase
+            or enable_definition_views
+            or not recycle_workspaces
+        ):
+            raise ValueError("SWE-bench工作集视图需认证回收，不混入其他工具候选")
+        return SweBenchWorkingSetAgentRunConfig
     if enable_definition_views:
         if (
             enable_grep_snapshots
@@ -417,6 +433,7 @@ def build_swebench_agent_run_config(
     enable_regex_search: bool = False,
     reserve_closing_phase: bool = False,
     enable_definition_views: bool = False,
+    working_set_result_groups: int | None = None,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -433,8 +450,14 @@ def build_swebench_agent_run_config(
         enable_regex_search=enable_regex_search,
         reserve_closing_phase=reserve_closing_phase,
         enable_definition_views=enable_definition_views,
+        working_set=working_set_result_groups is not None,
     )
-    config = config_model(
+    extra: dict[str, object] = (
+        {}
+        if working_set_result_groups is None
+        else {"retain_recent_result_groups": working_set_result_groups}
+    )
+    fields: dict[str, object] = dict(
         plan_sha256=plan.plan_sha256,
         source_root=str(source_root),
         work_root=str(work_root),
@@ -484,6 +507,7 @@ def build_swebench_agent_run_config(
         fee_stop_amount=fee_stop_amount,
         case_process_profiles=case_process_profiles,
     )
+    config = config_model.model_validate({**fields, **extra})
     if isinstance(config, SweBenchRecyclingAgentRunConfig):
         strategy: Literal["standard", "search_snapshot", "optional_pre_edit"] = "standard"
         if enable_grep_snapshots:

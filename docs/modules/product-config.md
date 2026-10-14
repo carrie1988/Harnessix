@@ -178,7 +178,7 @@ Source 末轮 Snapshot 捕获显式接入[原生读取与纯编码进度](../cha
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
-产品备份只接受冻结完整Session v30或v31 checksum集合；拒绝任意旧前缀、重复/混合集合和v30隐藏v21事实。恢复原字节后沿正式初始化升级，不重签历史；配套Protocol 2.0不改变原Provider预算或价格。
+产品备份只接受冻结完整Session v30、v31或v32 checksum集合；拒绝任意旧前缀、重复/混合集合，以及旧迁移集合隐藏更新版本（v30→v21+、v31→v22+）事实。恢复原字节后沿正式初始化升级，不重签历史；配套Protocol 2.0不改变原Provider预算或价格。
 
 完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
 对应回归见[验证用例](../../tests/product_config/test_rejection_backup_versions.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。

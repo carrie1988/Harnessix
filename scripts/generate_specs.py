@@ -41,6 +41,7 @@ from harnessix.context.contracts import (
 from harnessix.context.tool_result_contracts import (
     ModelHistoryInspection,
     ModelHistoryInspectionV2,
+    ModelHistoryInspectionV3,
     ToolResultViewDecision,
     ToolResultViewPolicy,
 )
@@ -365,8 +366,8 @@ def generate_specs(output: Path) -> None:
         ("product-git-action-review-document-v1", ProductGitActionReviewDocument),
     ):
         write_json(output / f"{name}.schema.json", model.model_json_schema())
-    write_json(output / "agent-event-v21.schema.json", AgentEvent.model_json_schema())
-    write_json(output / "agent-thread-v21.schema.json", Thread.model_json_schema())
+    write_json(output / "agent-event-v22.schema.json", AgentEvent.model_json_schema())
+    write_json(output / "agent-thread-v22.schema.json", Thread.model_json_schema())
     write_json(output / "thread-fork-v2.schema.json", ThreadForkSnapshotV2.model_json_schema())
     write_json(
         output / "context-inspection-v3.schema.json", ContextInspectionV3.model_json_schema()
@@ -641,6 +642,10 @@ def generate_specs(output: Path) -> None:
     write_json(
         output / "model-history-inspection-v2.schema.json",
         ModelHistoryInspectionV2.model_json_schema(),
+    )
+    write_json(
+        output / "model-history-inspection-v3.schema.json",
+        ModelHistoryInspectionV3.model_json_schema(),
     )
     write_json(output / "read-file-input-v2.schema.json", ReadFileInputV2.model_json_schema())
     write_json(output / "read-file-input-v3.schema.json", ReadFileInputV3.model_json_schema())

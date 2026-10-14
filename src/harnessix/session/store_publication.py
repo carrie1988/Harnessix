@@ -16,6 +16,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread, ToolCallRejectionContent
 from harnessix.agent.publication import PublicOutputProtection, protect_json
 from harnessix.agent.tool_rejections import require_closed_rejections
+from harnessix.context.tool_result_contracts import ModelHistoryInspectionV3
 from harnessix.session.git_prefix_contracts import GitStorePrefixAnchorClaims
 from harnessix.session.git_publication_contracts import (
     GitDeliveryRecordClaims,
@@ -52,8 +53,10 @@ def original_bytes(value: object, maximum: int) -> bytes:
 
 
 def require_projection_content_version(thread: Thread, version: int) -> None:
-    """投影没有内嵌版本；旧声明不得容纳v21拒绝事实，包括继承历史。"""
-    if type(version) is not int or not 1 <= version <= 21:
+    """投影没有内嵌版本；旧声明不得容纳v21拒绝事实或v22工作集视图，包括继承历史。"""
+    if type(version) is not int or not 1 <= version <= 22:
+        raise unproven()
+    if version < 22 and _uses_working_set_view(thread):
         raise unproven()
     if version < 21:
         if (
@@ -72,6 +75,14 @@ def require_projection_content_version(thread: Thread, version: int) -> None:
             )
         ):
             raise unproven()
+
+
+def _uses_working_set_view(thread: Thread) -> bool:
+    return any(
+        isinstance(inspection, ModelHistoryInspectionV3)
+        for turn in thread.turns
+        for inspection in turn.model_history_inspections
+    )
 
 
 def extend_prefix(previous: str, encoded_event_seal: bytes) -> str:
@@ -103,8 +114,8 @@ class ProjectionPublicationSeal(_Identity):
     thread_id: UUID
     sequence: Annotated[int, Field(ge=1, le=MAX_HISTORY_EVENTS)]
     history_bytes: Annotated[int, Field(ge=1, le=MAX_HISTORY_BYTES)]
-    # 原声明的缺省版本保持20，新投影签发显式使用21。
-    projection_version: Annotated[int, Field(ge=20, le=21)] = 20
+    # 原声明的缺省版本保持20，新投影签发显式使用当前22。
+    projection_version: Annotated[int, Field(ge=20, le=22)] = 20
     prefix_sha256: Digest
     snapshot_sha256: Digest
 
@@ -404,7 +415,7 @@ class SessionPublicationBinding:
                 sequence=thread.sequence,
                 prefix_sha256=prefix,
                 history_bytes=history_bytes,
-                projection_version=21,
+                projection_version=22,
                 snapshot_sha256=hashlib.sha256(
                     original_bytes(encoded, MAX_PROJECTION_BYTES)
                 ).hexdigest(),

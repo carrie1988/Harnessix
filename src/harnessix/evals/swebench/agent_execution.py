@@ -356,6 +356,7 @@ async def run_swebench_agent_case(
     enable_regex_search: bool = False,
     reserve_closing_phase: bool = False,
     enable_definition_views: bool = False,
+    working_set_result_groups: int | None = None,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -373,6 +374,10 @@ async def run_swebench_agent_case(
         raise KernelError("swebench_execution_config_invalid", "SWE-bench正则搜索开关无效")
     if type(allow_optional_pre_edit_profile) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench可选预测试开关无效")
+    if working_set_result_groups is not None and (
+        type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
+    ):
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench工作集保留组数无效")
     if len(execution_fingerprint) != 64 or any(
         character not in "0123456789abcdef" for character in execution_fingerprint
     ):
@@ -429,6 +434,7 @@ async def run_swebench_agent_case(
                             enable_regex_search=enable_regex_search,
                             reserve_closing_phase=reserve_closing_phase,
                             enable_definition_views=enable_definition_views,
+                            working_set_result_groups=working_set_result_groups,
                         )
                         async with AgentRuntime(
                             owner.sessions,
@@ -442,6 +448,7 @@ async def run_swebench_agent_case(
                             compaction=context.compaction,
                             summary_provider=provider,
                             budget_pressure_compaction=budget_pressure_compaction,
+                            working_set_result_groups=working_set_result_groups,
                             enable_planning=enable_planning,
                             model_tool_view=CodingWorkflowToolView(
                                 require_pre_edit_profile=False,

@@ -290,7 +290,7 @@ async def save_projection(
     await database.execute(
         "INSERT INTO agent_threads "
         "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-        "VALUES (?, ?, ?, ?, 21) "
+        "VALUES (?, ?, ?, ?, 22) "
         "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
         "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
         "projection_version = excluded.projection_version",

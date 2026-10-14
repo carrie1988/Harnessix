@@ -119,13 +119,14 @@ def estimate_rewritten_request_input_tokens(
     provider: ModelProvider,
     request: ModelRequest,
     turn: Turn,
-    previous_history: tuple[Item, ...],
+    previous_view: Callable[[ModelHistoryInspectionRecord], tuple[Item, ...] | None],
 ) -> int | None:
     """上一视图被逐条改写（如旧工具结果换成占位）时的锚定输入上界。
 
-    上一视图须与持久检查记录逐字节一致，锚点须是同模型完整用量；否则返回 None，
-    由调用方使用完整出站上界。依赖各条消息独立分词：未变消息已含在上一请求实际用量中，
-    被缩短的消息不抵扣，变化与新增消息按字节全额计入。
+    previous_view 按锚点步骤的持久检查记录重算当时实际发送的历史；重算结果须与记录逐字节
+    一致，锚点须是同模型完整用量，否则返回 None，由调用方使用完整出站上界。依赖各条消息
+    独立分词：未变消息已含在上一请求实际用量中，被缩短的消息不抵扣，变化与新增消息按字节
+    全额计入。
     """
     if not isinstance(provider, ModelInputTokenEstimator) or not isinstance(
         provider, RewrittenInputTokenEstimator
@@ -133,9 +134,11 @@ def estimate_rewritten_request_input_tokens(
         return None
     anchor = _anchored_attempt(turn, request.step, _provider_identity(provider))
     previous = _history_inspection(turn, anchor.step) if anchor is not None else None
+    previous_history = previous_view(previous) if previous is not None else None
     if (
         anchor is None
         or previous is None
+        or not previous_history
         or not _view_matches(previous, tuple(history_document(i) for i in previous_history))
         or not _view_matches(
             _history_inspection(turn, request.step),
@@ -147,6 +150,18 @@ def estimate_rewritten_request_input_tokens(
         lambda: provider.estimate_rewritten_input_tokens(request, previous_history)
     )
     return anchor.input_tokens + added
+
+
+def require_input_within_bound(turn: Turn, model_step: int, bound: int) -> None:
+    """改写视图上界依赖消息独立分词；实际输入超出即失败关闭，不再继续信任该假设。"""
+    exceeded = any(
+        attempt.step == model_step
+        and attempt.usage.input_tokens is not None
+        and attempt.usage.input_tokens > bound
+        for attempt in turn.model_attempts
+    )
+    if exceeded:
+        raise KernelError("model_input_bound_violated", "Provider 实际输入超过改写视图锚定上界")
 
 
 @dataclass(frozen=True, slots=True)

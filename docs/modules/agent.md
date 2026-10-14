@@ -96,7 +96,7 @@ Git 消费者接线见[原 Runtime Thread 绑定](../changes/m09-r4-git-runtime-
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
-拒绝事实属于独立 `ToolCallRejectionContent`，不进入 `pending_calls`、审批或执行。新写Agent Event/Thread v21，migration31；旧事件只读兼容。全拒绝步骤按有证据的 `tool_rejection` 沿原预算重入。Fork新建v2，旧v1快照重建与确定性请求身份不变。
+拒绝事实属于独立 `ToolCallRejectionContent`，不进入 `pending_calls`、审批或执行。v21由migration31引入；当前新写Agent Event/Thread v22（migration32，承载工作集视图`ModelHistoryInspectionV3`），旧事件只读兼容且v22以下不得携带该视图。全拒绝步骤按有证据的 `tool_rejection` 沿原预算重入。Fork新建v2，旧v1快照重建与确定性请求身份不变。
 
 完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
 对应回归见[验证用例](../../tests/agent/test_tool_rejection_runtime.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。

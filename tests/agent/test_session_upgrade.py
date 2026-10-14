@@ -188,13 +188,14 @@ async def test_old_transcript_migrates_without_rewriting_history(
             (29,),
             (30,),
             (31,),
+            (32,),
         ]
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 21
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 22
         stored = database.execute(
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         assert [row[0] for row in stored[: len(originals)]] == originals
-        assert all(json.loads(row[0])["schema_version"] == 21 for row in stored[len(originals) :])
+        assert all(json.loads(row[0])["schema_version"] == 22 for row in stored[len(originals) :])
     assert await store.rebuild(thread_id) == await store.get_thread(thread_id)
 
 
@@ -203,15 +204,15 @@ async def test_unknown_projection_version_fails_closed(tmp_path: Path) -> None:
     async with AgentRuntime(store, FakeProvider()) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
     with sqlite3.connect(store.path) as database:
-        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 21
-        database.execute("UPDATE agent_threads SET projection_version = 22")
+        assert database.execute("SELECT projection_version FROM agent_threads").fetchone()[0] == 22
+        database.execute("UPDATE agent_threads SET projection_version = 23")
     with pytest.raises(KernelError) as error:
         await store.get_thread(thread.thread_id)
     assert error.value.code == "projection_too_new"
 
 
 async def test_v19_session_appends_v20_without_rewriting_old_event(tmp_path: Path) -> None:
-    """保留原回归标识与v19原事件，当前新事件及投影必须准确写为v21。"""
+    """保留原回归标识与v19原事件，当前新事件及投影必须准确写为当前v22。"""
     store = SQLiteSessionStore(tmp_path / "v19.db")
     await store.initialize()
     thread_id = UUID("aebf4df1-c012-4c5e-a252-5344a29c8a3f")
@@ -241,24 +242,24 @@ async def test_v19_session_appends_v20_without_rewriting_old_event(tmp_path: Pat
         ).fetchall()
         assert rows[0][0] == original
         assert json.loads(rows[0][0])["schema_version"] == 19
-        assert all(json.loads(row[0])["schema_version"] == 21 for row in rows[1:])
+        assert all(json.loads(row[0])["schema_version"] == 22 for row in rows[1:])
         assert (
             database.execute(
                 "SELECT projection_version FROM agent_threads WHERE thread_id = ?",
                 (str(thread_id),),
             ).fetchone()[0]
-            == 21
+            == 22
         )
 
 
-async def test_unknown_migration_v32_fails_closed_without_rewriting_history(tmp_path: Path) -> None:
+async def test_unknown_migration_v33_fails_closed_without_rewriting_history(tmp_path: Path) -> None:
     store = SQLiteSessionStore(tmp_path / "future-schema.db")
     await store.initialize()
     with closing(sqlite3.connect(store.path)) as database, database:
         assert database.execute(
             "SELECT version FROM agent_migrations ORDER BY version"
-        ).fetchall() == [(version,) for version in range(1, 32)]
-        database.execute("INSERT INTO agent_migrations VALUES (32, ?)", ("0" * 64,))
+        ).fetchall() == [(version,) for version in range(1, 33)]
+        database.execute("INSERT INTO agent_migrations VALUES (33, ?)", ("0" * 64,))
         before = database.execute(
             "SELECT version, checksum FROM agent_migrations ORDER BY version"
         ).fetchall()

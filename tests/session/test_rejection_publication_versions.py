@@ -1,4 +1,4 @@
-"""原v20认证、新v21声明及拒绝批次原子性；仅使用离线固定材料。"""
+"""原v20认证、v21/v22声明及拒绝批次原子性；仅使用离线固定材料。"""
 
 from __future__ import annotations
 
@@ -122,7 +122,7 @@ async def original_v20_store(path, proof, workspace=None):
         proof._key,
     )
     with closing(sqlite3.connect(path)) as database, database:
-        database.execute("DELETE FROM agent_migrations WHERE version=31")
+        database.execute("DELETE FROM agent_migrations WHERE version>30")
         database.execute(
             "INSERT INTO agent_events VALUES (?,?,?,?)",
             (str(event.thread_id), 1, str(event.event_id), body.decode()),
@@ -214,7 +214,7 @@ async def test_original_v20_authentication_reads_and_upgrades_without_resigning(
         assert business_rows(store.path) == before
         await store.initialize()
         upgraded = business_rows(store.path)
-        assert upgraded["agent_migrations"][-1][0] == 31
+        assert upgraded["agent_migrations"][-1][0] == 32
         for name in before.keys() - {"agent_migrations"}:
             assert upgraded[name] == before[name]
         await calling_model(store, tid, 1)
@@ -223,16 +223,16 @@ async def test_original_v20_authentication_reads_and_upgrades_without_resigning(
         assert before["agent_event_publications"][0] in after["agent_event_publications"]
         events = await store.events(tid)
         assert events[0].schema_version == 20
-        assert all(event.schema_version == 21 for event in events[1:])
+        assert all(event.schema_version == 22 for event in events[1:])
         version, seal = projection_rows(store.path)
         assert (
-            version == ProjectionPublicationSeal.model_validate_json(seal).projection_version == 21
+            version == ProjectionPublicationSeal.model_validate_json(seal).projection_version == 22
         )
         assert (await read(store, tid)).thread == replay(events)
 
 
-@pytest.mark.parametrize("body_version", [20, 21])
-@pytest.mark.parametrize("claim_version", [19, 20, 21, 22])
+@pytest.mark.parametrize("body_version", [20, 21, 22])
+@pytest.mark.parametrize("claim_version", [19, 20, 21, 22, 23])
 def test_authenticated_event_version_must_match_original_body(
     body_version, claim_version, tmp_path
 ):
@@ -333,11 +333,11 @@ async def test_v2_nested_history_authenticates_writes_reads_rebuild_and_retry(
         before = business_rows(store.path)
         frame = await read(store, child.thread_id)
         assert frame.thread == await store.get_thread(child.thread_id) == child
-        assert len(frame.events) == 1 and frame.events[0].schema_version == 21
+        assert len(frame.events) == 1 and frame.events[0].schema_version == 22
         assert isinstance(frame.events[0].payload.snapshot, ThreadForkSnapshotV2)
         version, seal = projection_rows(store.path, child.thread_id)
         assert (
-            version == ProjectionPublicationSeal.model_validate_json(seal).projection_version == 21
+            version == ProjectionPublicationSeal.model_validate_json(seal).projection_version == 22
         )
         assert await store.rebuild(child.thread_id) == child
         assert (
@@ -395,17 +395,20 @@ async def test_original_event_seal20_cannot_hide_even_empty_real_v2_history(tmp_
             proof.verify_event(seal, body, event.event_id, child.thread_id, event.sequence)
 
 
-async def test_new_event_writer_only_issues_v21_and_preserves_original_mac_domain(tmp_path):
+async def test_new_event_writer_only_issues_current_v22_and_preserves_original_mac_domain(
+    tmp_path,
+):
     with binding() as proof:
         event = AgentEvent(
             thread_id=uuid4(), sequence=1, payload=ThreadCreated(workspace=tmp_path.as_posix())
         )
         body, seal = await proof._events.issue_new_event(proof._store_id, event, CancelToken())
-        assert seal.event_schema_version == json.loads(body)["schema_version"] == 21
-        claims = json.loads(fixture_event_seal(proof, event, body, 21))
+        assert seal.event_schema_version == json.loads(body)["schema_version"] == 22
+        claims = json.loads(fixture_event_seal(proof, event, body, 22))
         assert claims == seal.model_dump(mode="json")
-        with raises_code("publication_event_invalid"):
-            await proof.issue_event(event.model_copy(update={"schema_version": 20}))
+        for historical in (20, 21):
+            with raises_code("publication_event_invalid"):
+                await proof.issue_event(event.model_copy(update={"schema_version": historical}))
 
 
 def test_v20_declaration_cannot_hide_rejection_content_or_reentry(tmp_path):
@@ -426,8 +429,8 @@ def test_v20_declaration_cannot_hide_rejection_content_or_reentry(tmp_path):
                 proof.verify_event(seal, body, event.event_id, event.thread_id, 1)
 
 
-@pytest.mark.parametrize("row_version", [19, 20, 21, 22])
-@pytest.mark.parametrize("claim_version", [20, 21])
+@pytest.mark.parametrize("row_version", [19, 20, 21, 22, 23])
+@pytest.mark.parametrize("claim_version", [20, 21, 22])
 async def test_projection_row_and_authenticated_claim_must_match(
     tmp_path, row_version, claim_version
 ):
@@ -471,13 +474,13 @@ async def test_nonadjacent_rejection_pairs_commit_atomically_and_idempotently(
         assert await store.append(tid, batch, expected_sequence=sequence) == thread
         assert business_rows(store.path) == before
         assert await store.get_thread(tid) == replay(await store.events(tid)) == thread
-        assert all(event.schema_version == 21 for event in await store.events(tid))
-        assert before["agent_threads"][0][-1] == 21
+        assert all(event.schema_version == 22 for event in await store.events(tid))
+        assert before["agent_threads"][0][-1] == 22
         if authenticated:
             version, seal = projection_rows(store.path)
             assert version == ProjectionPublicationSeal.model_validate_json(seal).projection_version
             assert all(
-                EventPublicationSeal.model_validate_json(row[2]).event_schema_version == 21
+                EventPublicationSeal.model_validate_json(row[2]).event_schema_version == 22
                 for row in before["agent_event_publications"]
             )
         with closing(sqlite3.connect(store.path)) as database, database:
@@ -587,7 +590,7 @@ async def test_frozen_v30_reader_fails_closed_on_v31_marker_without_writes(tmp_p
             for resource in frozen_v30
         } == dict(enumerate(_SESSION_MIGRATION_CHECKSUMS[:30], 1))
         assert before["agent_migrations"] == list(enumerate(_SESSION_MIGRATION_CHECKSUMS, 1))
-        assert json.loads(before["agent_events"][0][3])["schema_version"] == 21
+        assert json.loads(before["agent_events"][0][3])["schema_version"] == 22
 
         class V30Resources:
             def iterdir(self):
@@ -608,6 +611,6 @@ async def test_future_projection_version_still_fails_closed_without_publication(
         tid, [EventDraft(payload=ThreadCreated(workspace=tmp_path.as_posix()))], expected_sequence=0
     )
     with closing(sqlite3.connect(store.path)) as database, database:
-        database.execute("UPDATE agent_threads SET projection_version=22")
+        database.execute("UPDATE agent_threads SET projection_version=23")
     with raises_code("projection_too_new"):
         await store.get_thread(tid)

@@ -155,6 +155,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def working_set_result_groups(self) -> int | None:
+        return None
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 

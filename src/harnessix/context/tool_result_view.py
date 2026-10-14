@@ -71,6 +71,16 @@ def _digest(value: object) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
+def canonical_json_bytes(value: object) -> bytes:
+    """模型视图统一使用的有限值规范 JSON 字节。"""
+    return _canonical(value)
+
+
+def view_history_sha256(history: tuple[Item, ...]) -> str:
+    """实际模型历史的检查摘要；所有视图版本共用同一算法。"""
+    return _digest([item.model_dump(mode="json") for item in history])
+
+
 def history_items(thread: Thread) -> tuple[Item, ...]:
     inherited = thread.fork_snapshot.items if thread.fork_snapshot is not None else ()
     local = tuple(
@@ -446,7 +456,7 @@ def prepare_model_history_items(
         source_tool_result_utf8_bytes=source_result_bytes,
         view_tool_result_utf8_bytes=view_result_bytes,
         source_history_sha256=_digest([item.model_dump(mode="json") for item in source_history]),
-        view_history_sha256=_digest([item.model_dump(mode="json") for item in prepared_history]),
+        view_history_sha256=view_history_sha256(prepared_history),
         decisions_sha256=_digest([decision.model_dump(mode="json") for decision in used]),
     )
     return PreparedModelHistory(

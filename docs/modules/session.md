@@ -538,7 +538,7 @@ rebuild(thread):
 
 ## 21. Trusted Action投影升级（0.9.1e2）
 
-migration23不新增业务表或列，只声明当前Reader能够验证Agent Event/Thread v20并阻止旧Reader接管新语义。该阶段SQLite写入在`_save`中把Event批次和Projection v20放入同一事务；当前migration31新写v21；旧v1～v19 Event JSON保持原字节。
+migration23不新增业务表或列，只声明当前Reader能够验证Agent Event/Thread v20并阻止旧Reader接管新语义。该阶段SQLite写入在`_save`中把Event批次和Projection v20放入同一事务；migration31新写v21，当前migration32新写v22；旧v1～v21 Event JSON保持原字节。
 
 ```mermaid
 sequenceDiagram
@@ -560,7 +560,7 @@ sequenceDiagram
 1. migration资源序号必须连续到26，旧25数据库只追加新的Migration记录；
 2. `_snapshot`接受Projection 1～20，未知21及以上失败关闭；
 3. `_parse_event`接受Event 1～20，v19及更早若出现统一Action字段由模型版本守卫拒绝；
-4. migration23阶段新写v20；当前migration31新写v21，旧事件序列和摘要不重写；
+4. migration23阶段新写v20；migration31新写v21；当前migration32新写v22，旧事件序列和摘要不重写；
 5. Snapshot重建继续复用同一Reducer，因此在线追加与离线重放对统一Action具有相同校验。
 
 专项证据位于[`test_session_upgrade.py`](../../tests/agent/test_session_upgrade.py)、[`test_schemas.py`](../../tests/agent/test_schemas.py)和[`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py)。

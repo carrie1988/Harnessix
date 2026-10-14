@@ -51,6 +51,14 @@ _DEFINITION_VIEW_INSTRUCTIONS = (
     "not imply complete code or documentation."
 )
 
+_WORKING_SET_INSTRUCTIONS = (
+    "Only recent tool results keep full output. Older results may show "
+    "harnessix.stale-tool-result/v1 with short retained fields such as path, lines, revision "
+    "or content_sha256. Briefly note in your reply the facts you will still need (file, lines, "
+    "key code). Repeat a focused call only for content you still need, and never take patch "
+    "old_text from an omitted result."
+)
+
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (
     "Search snapshot mode: the read_file rule for Patch expected_sha256 also permits grep "
     "content_sha256, the full file SHA from the same read that produced the match, not revision. "
@@ -202,6 +210,7 @@ def build_product_agent_context(
     enable_regex_search: bool = False,
     reserve_closing_phase: bool = False,
     enable_definition_views: bool = False,
+    working_set_result_groups: int | None = None,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
@@ -210,6 +219,10 @@ def build_product_agent_context(
         raise ValueError("产品调查收尾开关必须是布尔值")
     if type(enable_definition_views) is not bool:
         raise ValueError("产品定义视图开关必须是布尔值")
+    if working_set_result_groups is not None and (
+        type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
+    ):
+        raise ValueError("产品工作集保留组数必须是1到64")
     if type(enable_planning) is not bool:
         raise ValueError("产品规划指令开关必须是布尔值")
     if type(enable_regex_search) is not bool:
@@ -275,6 +288,17 @@ def build_product_agent_context(
                     ),
                 )
                 if enable_planning
+                else ()
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.coding-working-set/v1",
+                        content=_WORKING_SET_INSTRUCTIONS,
+                    ),
+                )
+                if working_set_result_groups is not None
                 else ()
             ),
             *(

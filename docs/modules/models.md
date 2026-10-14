@@ -91,8 +91,8 @@ Provider私有分词器。Chat Provider逐位置比较本次与上一视图的�
 [`estimate_rewritten_request_input_tokens`](../../src/harnessix/agent/model_input_budget.py)
 要求上一视图与当前视图都和持久检查记录逐字节一致、锚点是同Provider同模型的完整用量，
 否则返回`None`由调用方采用完整出站上界；非法能力值失败关闭。该上界依赖“各消息由模板分隔、
-独立分词”的假设，接入改写视图时须以实际用量对账，超出即停止。当前Runtime尚未接线，
-由后续工作集视图启用。P0离线依据见
+独立分词”的假设：Runtime仅在[工作集视图](context.md#当前增量工作集模型视图默认关闭)启用且该上界
+更紧时采用，并在实际用量返回后对账，超出即以`model_input_bound_violated`失败关闭。P0离线依据见
 [累计预算重放](../../benchmarks/swebench/verified-25-budget-replay-p0/README.md)；对应
 [SDK映射正负控](../../tests/models/test_rewritten_input_budget.py)及
 [Runtime证据正负控](../../tests/agent/test_rewritten_input_budget.py)。

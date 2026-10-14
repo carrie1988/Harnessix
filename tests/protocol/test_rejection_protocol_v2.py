@@ -149,7 +149,7 @@ def test_internal_v21_events_project_to_public_v2_without_private_fields(finishe
     internal = AgentEvent(thread_id=thread_id, turn_id=turn_id, sequence=3, payload=payload)
     public = project_event(thread_id, internal)
     assert public is not None
-    assert internal.schema_version == 21
+    assert internal.schema_version == 22
     assert public.spec_version == "harnessix.agent-protocol-event/v2"
     assert public.event_id == internal.event_id
     assert public.turn_id == turn_id

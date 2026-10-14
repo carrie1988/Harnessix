@@ -65,7 +65,7 @@ async def test_rejection_then_new_registered_call_is_persistent_and_non_executab
     restored = await reopened.get_thread(thread.thread_id)
     assert replay(await reopened.events(thread.thread_id)) == restored
     require_closed_rejections(restored)
-    assert all(event.schema_version == 21 for event in await reopened.events(thread.thread_id))
+    assert all(event.schema_version == 22 for event in await reopened.events(thread.thread_id))
 
 
 @pytest.mark.parametrize("unknown_first", [False, True])

@@ -18,6 +18,7 @@ from harnessix.agent.usage import (
     UsageObservation,
 )
 from harnessix.context.tool_result_view import history_document
+from harnessix.context.working_set_view import previous_model_view
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools, answer
@@ -94,6 +95,10 @@ def with_view(turn, step, history):
     )
 
 
+def anchored(provider, current, turn, previous):
+    return estimate_rewritten_request_input_tokens(provider, current, turn, lambda _: previous)
+
+
 async def masked_run(tmp_path, provider_type=RewritingProvider):
     provider = provider_type([read_step(1, 10), read_step(2, 20), answer()])
     turn = await run(tmp_path, provider, text="任务", tools=LargeReadTools())
@@ -104,7 +109,7 @@ async def masked_run(tmp_path, provider_type=RewritingProvider):
 
 async def test_proven_masked_view_adds_only_changed_wire_to_actual_anchor(tmp_path):
     provider, turn, previous, current = await masked_run(tmp_path)
-    bound = estimate_rewritten_request_input_tokens(provider, current, turn, previous)
+    bound = estimate_rewritten_request_input_tokens(provider, current, turn, lambda _: previous)
     added = provider.adapter.estimate_rewritten_input_tokens(current, previous)
     assert bound == 20 + added
     assert bound < provider.adapter.estimate_input_tokens(current)
@@ -114,9 +119,13 @@ async def test_persisted_evidence_alone_proves_anchor_after_restart(tmp_path):
     provider, turn, previous, current = await masked_run(tmp_path)
     restored = await SQLiteSessionStore(tmp_path / "session.db").get_thread(current.thread_id)
     restored_turn = with_view(restored.turns[0], 3, current.history)
+    # 重启后只凭持久事实重算上一视图，不依赖进程内请求副本。
     assert estimate_rewritten_request_input_tokens(
-        provider, current, restored_turn, previous
-    ) == estimate_rewritten_request_input_tokens(provider, current, turn, previous)
+        provider,
+        current,
+        restored_turn,
+        lambda inspection: previous_model_view(restored, inspection),
+    ) == estimate_rewritten_request_input_tokens(provider, current, turn, lambda _: previous)
 
 
 async def test_unrecorded_current_view_falls_back(tmp_path):
@@ -124,15 +133,17 @@ async def test_unrecorded_current_view_falls_back(tmp_path):
     unpatched = (
         await SQLiteSessionStore(tmp_path / "session.db").get_thread(current.thread_id)
     ).turns[0]
-    assert estimate_rewritten_request_input_tokens(provider, current, unpatched, previous) is None
+    assert (
+        estimate_rewritten_request_input_tokens(provider, current, unpatched, lambda _: previous)
+        is None
+    )
 
 
 async def test_unproven_previous_view_falls_back(tmp_path):
     provider, turn, previous, current = await masked_run(tmp_path)
-    assert (
-        estimate_rewritten_request_input_tokens(provider, current, turn, masked(previous)) is None
-    )
-    assert estimate_rewritten_request_input_tokens(provider, current, turn, previous[:-1]) is None
+    for unproven in (masked(previous), previous[:-1], None):
+        resolver = lambda _, view=unproven: view  # noqa: E731
+        assert estimate_rewritten_request_input_tokens(provider, current, turn, resolver) is None
 
 
 @pytest.mark.parametrize(
@@ -146,7 +157,9 @@ async def test_changed_model_identity_cannot_anchor(tmp_path, field, value):
         for attempt in turn.model_attempts
     )
     turn = turn.model_copy(update={"model_attempts": attempts})
-    assert estimate_rewritten_request_input_tokens(provider, current, turn, previous) is None
+    assert (
+        estimate_rewritten_request_input_tokens(provider, current, turn, lambda _: previous) is None
+    )
 
 
 async def test_incomplete_latest_usage_cannot_anchor_older_view(tmp_path):
@@ -161,12 +174,16 @@ async def test_incomplete_latest_usage_cannot_anchor_older_view(tmp_path):
     )
     turn = turn.model_copy(update={"model_attempts": attempts})
     # 最近完整锚点退回第1步，其视图不是给定的上一视图，因此不得复用。
-    assert estimate_rewritten_request_input_tokens(provider, current, turn, previous) is None
+    assert (
+        estimate_rewritten_request_input_tokens(provider, current, turn, lambda _: previous) is None
+    )
 
 
 async def test_provider_without_rewritten_capability_falls_back(tmp_path):
     provider, turn, previous, current = await masked_run(tmp_path, WireProvider)
-    assert estimate_rewritten_request_input_tokens(provider, current, turn, previous) is None
+    assert (
+        estimate_rewritten_request_input_tokens(provider, current, turn, lambda _: previous) is None
+    )
 
 
 @pytest.mark.parametrize("value", [0, -1, None, 1.5, True, RuntimeError("failed")])
@@ -180,5 +197,5 @@ async def test_invalid_rewritten_estimate_fails_closed(tmp_path, value):
     provider, turn, previous, current = await masked_run(tmp_path)
     invalid = InvalidProvider([])
     with pytest.raises(KernelError) as error:
-        estimate_rewritten_request_input_tokens(invalid, current, turn, previous)
+        estimate_rewritten_request_input_tokens(invalid, current, turn, lambda _: previous)
     assert error.value.code == "invalid_provider_output"
