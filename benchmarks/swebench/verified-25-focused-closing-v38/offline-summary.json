@@ -1,0 +1,39 @@
+{
+  "scope": "当前目录边界与定点读取的契约/关联回归/宿主负控，非自主编码质量",
+  "source_revision": "6231c4e249a45fb51a1f2d8584102e037572bf34",
+  "related_regression": {
+    "errors": 0,
+    "failures": 4,
+    "skipped": 1,
+    "tests": 2447
+  },
+  "passed": 2442,
+  "baseline_reproduction": {
+    "errors": 0,
+    "failures": 4,
+    "skipped": 0,
+    "tests": 4
+  },
+  "baseline_revision": "3efdbbe9abf9f0bd3d537cd38722f8a0e77f571a",
+  "baseline_failures_not_waived": true,
+  "host_negative_controls": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 159
+  },
+  "host_runner_sha256": "ef05ff27c7e6b50bfb64c5cfac82c0470398c94bfce54569356a5d03fb6b333e",
+  "host_source_imports_bound": true,
+  "mypy_source_files": 566,
+  "mypy": "PASS",
+  "schema": "PASS",
+  "ruff": "PASS",
+  "secret_self_check": "PASS",
+  "inference_requests": 0,
+  "default_closing_enabled": false,
+  "autonomous_quality_accepted": false,
+  "related_xml_sha256": "fac27ba32a1e970013ebb780e52a6c79d1e8ae3838d167eaf511a8b63eebf54d",
+  "baseline_xml_sha256": "55a58b7aca7b47168e226391c646278366e8d082753a6bcfdaa4b399c6ec2a48",
+  "host_xml_sha256": "acb8fcf3c9a4edef20d07c69f57b1c0c7369b36c90fdfea9b667d9d0239c4e73",
+  "limitation": "4份原retry/成本FAIL保留；真实6次配对未执行，旧完整官方成绩3/25不变"
+}

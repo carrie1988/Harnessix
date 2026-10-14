@@ -1,0 +1,27 @@
+{
+  "native_unchanged": true,
+  "inference_requests": 0,
+  "tool_executions": 0,
+  "total_rejections": 11,
+  "cases": [
+    {
+      "index": 0,
+      "rejected_count": 5,
+      "native_sha256": "fd3e104ab7f9f050a4fd5900efb69f789fa87019c4107565b1f63fa7d7b8a56b",
+      "state_sha256": "29f16709c4315abf808d1438c7852172b6310fa6a414dee8f30d704bbc0cad41"
+    },
+    {
+      "index": 1,
+      "rejected_count": 2,
+      "native_sha256": "24548ad5da609b95275d6472f9217790d6011b66e5c7b3ccab4c065c0fd00850",
+      "state_sha256": "64e7ff76ebabf17668de03b3ebc71c2ccc50cfee98bba8bc801941474dc5e51b"
+    },
+    {
+      "index": 2,
+      "rejected_count": 4,
+      "native_sha256": "6850a3c315bb59718f84cf5f01e01cdb6417de105c195e34a00c229ba2a2a904",
+      "state_sha256": "0ba31c8ddd29f89acb5a0b6d4401a8b61c562fed5621ab90594d6d3a8a17db65"
+    }
+  ],
+  "observed": "完整SHA后仍请求相关实现，reader下架后出现固定无效果拒绝；不保存旧拒绝名称和参数"
+}

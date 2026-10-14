@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 124
-code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
+version: 125
+code_revision: 6231c4e249a45fb51a1f2d8584102e037572bf34
 owners:
   - core
 modules:
@@ -3006,3 +3006,8 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 不扩张权限、不保证剩余费用、不强迫编辑，失败重读、Profile、Review和诚实结束不变。
 详见[设计与真实对照](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)，
 测试[`test_closing_phase_budget`](../../tests/product_config/test_closing_phase_budget.py)。
+
+## v38 定点读取收尾
+
+完整SHA不等于编辑上下文；收尾保留read_file+Patch AUTO，原失败重读/测试/Review/UNKNOWN门禁不变，fragment v2。
+详见[实现与验证](../changes/swebench-adapter-verified-25-pilot.md#v38保留定点读取及当前目录边界)。

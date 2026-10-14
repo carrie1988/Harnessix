@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
+version: 20
+code_revision: 6231c4e249a45fb51a1f2d8584102e037572bf34
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
 related_tests:
+  - tests/models/test_current_tool_catalog.py
   - tests/context/test_compaction_wire_prepay.py
   - tests/contracts/provider.py
   - tests/models/test_openai_chat.py
@@ -840,3 +841,8 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 完整wire估算复用现有Provider mapper，未声明者保留旧路径；ASCII预留证明wire覆盖，不是实际Token节省。
 对应[详细设计](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)及
 [`test_compaction_wire_prepay`](../../tests/context/test_compaction_wire_prepay.py)。
+
+## v38 当前目录反馈
+
+有工具历史时广告当前wire alias及choice，历史与拒绝哨兵不恢复权限；纯历史前缀不生成虚构空目录说明，真实反馈完整收费。
+详见[实现与验证](../changes/swebench-adapter-verified-25-pilot.md#v38保留定点读取及当前目录边界)。

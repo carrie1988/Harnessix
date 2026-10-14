@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 27
-code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
+version: 28
+code_revision: 6231c4e249a45fb51a1f2d8584102e037572bf34
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
+  - tests/models/test_current_tool_catalog.py
   - tests/product_config/test_closing_phase_budget.py
   - tests/evals/swebench/test_workspace_retirement.py
   - tests/evals/swebench/test_authenticated_workspace_retirement.py
@@ -1430,3 +1431,59 @@ closing 0/3闭环、0/3非空Patch；baseline 0/3，含两次传输故障，另�
 12份Native/Case文件SHA认证未变，四份完整费用工作区回收，两份未决原工作区保留。
 费用估算上界2.67024元、未决预留6.294912元均覆盖于原36元组预付；组预付仍全额持有，未释放为可用费用。
 同源对照未证明收尾候选改善，保持默认关闭；旧完整官方成绩仍3/25，不推广全25项重跑。
+
+## v38：保留定点读取及当前目录边界
+
+### 需求、根因与目标
+
+只读认证v37三个closing原Session确认11份`tool_call_rejection`：完整SHA被调度当作收尾就绪信号后，
+read_file被下架，模型尚需相关实现却反复请求目录外工具。原文件SHA及费用未变；这不是越权执行，
+也不只是充值或磁盘问题。**完整字节身份≠充分编辑上下文**；不能靠强迫Patch修饰解决率。
+本轮保持原50K累计Token、16次总请求、900秒、同模型/非思考、审批及新鲜测试→Review，不读隐藏答案。
+
+### 实现与数据流
+
+- [`CodingWorkflowToolView`](../../src/harnessix/product_config/coding_tool_view.py)：首次修改前收尾保留原
+  `read_file + Patch AUTO`，只收敛广泛grep/glob；没有注册的reader不会凭空加入。
+  read仍走原Owner/path/取消/期限控制，Patch仍要求准确旧SHA及唯一锚点；无证据可诚实结束。
+- [`agent_context`](../../src/harnessix/product_config/agent_context.py)：独立收尾fragment升级v2，明确完整SHA
+  只证身份，定点anchor读补齐实现；旧常规/搜索指令不重写，候选仍默认关闭。
+- [`current_tool_catalog_instruction`](../../src/harnessix/models/_history.py)：已有工具历史时，根据本次
+  正式`request.tools`生成精确wire alias及auto/required/forced边界，不从历史恢复权限。
+  历史原调用/参数/配对不改写，固定拒绝哨兵不可调用，未知名称及参数不进入新反馈。
+  [Chat](../../src/harnessix/models/_chat_mapping.py)/[Anthropic](../../src/harnessix/models/_anthropic_mapping.py)
+  共用反馈；无工具历史的旧首请求wire不变。提示只降低误导，不保证模型遵守或质量改善。
+- [Chat输入估算](../../src/harnessix/models/openai_chat.py)与
+  [`CompletedChatInput`](../../src/harnessix/models/_chat_input_anchor.py)：真实出站及完整摘要预付计入新反馈；
+  纯历史前缀投影显式不生成catalog说明，避免从完整请求多扣一个虚构的“空目录”提示。
+  新反馈不享受已付封装折扣。Anthropic尚无同等输入估算端口，未在本轮虚构保证。
+
+```mermaid
+flowchart LR
+  A[同模型完整主请求事实与已有观察] --> B[原收尾偏好]
+  B --> C[定点read_file及Patch AUTO]
+  C --> D[当前alias及choice反馈]
+  D --> E[真实wire预算准入]
+  E --> F[原I/O及Patch审批]
+  F --> G[新鲜测试与Review]
+```
+
+核心顺序：`完整SHA只作身份观察 → 如上下文不足则定点读 → 当前目录作为唯一选择 →
+原逐请求准入 → 原读取/修改/审批/测试/Review`。失败Patch重读、UNKNOWN闭锁、steering新观察、
+压缩期间目录稳定及固定无效果拒绝合同不变；不用动态文字污染持久拒绝结果。
+v11配置形状不变，新行为绑定新source revision→planSHA→execution fingerprint，并且宿主核对实际
+关键模块import路径与冻结源码根，旧计划不能静默用新代码续跑。
+
+### 验证与真实对照
+
+离线覆盖两mapper精确目录/空目录/哨兵/alias、auto与required区别、首请求字节不变、完整wire及
+工具历史前缀收费、完整SHA但片段不足、未注册reader、摘要跨阈值、失败重读、测试及Review。
+正式SDK Mock覆盖定点跟进读取+SQLite持久化，不能充当模型自主质量证据。
+新两组仍取原顺序前三项，各3次独立pass@1；共有改动仅Provider目录反馈，组间只启用/关闭
+定点读取收尾候选，总预付36元在现有200元周期内，不追加预算。沿已对齐政策：认证可隔离传输失败
+保留全部未决预留、原失败及工作区，继续下一独立Case；未知工具效果/不明来源仍整轮停止、不重试。
+完整费用的终态才认证回收源码副本。此6次是开发集诊断，不是25项官方成绩或全新泛化证明。
+
+本轮关联回归2442通过、1跳过、4项既有FAIL；四项在修改前3efdbbe9独立源码副本相同复现，
+未改重试/成本测试或把失败当全绿，13.4MB旧源码临时副本已回收。566份源码Mypy、Schema及Ruff通过；
+新宿主159项离线控制通过，最终执行SHA还须再次认证；这些均不证明Resolved改善。
