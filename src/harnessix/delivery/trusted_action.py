@@ -8,7 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, JsonValue
 
 from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
@@ -26,6 +26,13 @@ from harnessix.delivery.transaction_action_executor import WorkspaceTransactionA
 from harnessix.delivery.trusted_action_contracts import (
     WorkspacePatchFile,
     WorkspacePatchInput,
+)
+from harnessix.delivery.workspace_patch_compact import (
+    COMPACT_WORKSPACE_PATCH_DESCRIPTION,
+    WORKSPACE_PATCH_COMPACT_VERSION,
+    WorkspacePatchContract,
+    compact_workspace_patch_schema,
+    decode_compact_workspace_patch,
 )
 from harnessix.delivery.workspace_patch_errors import (
     _sha_mismatch_error,
@@ -67,13 +74,18 @@ WORKSPACE_PATCH_LEASE_SECONDS = 300.0
 WorkspaceRootResolver = Callable[[str], Path]
 
 
-def workspace_patch_descriptor() -> ToolDescriptor:
+def workspace_patch_descriptor(contract: WorkspacePatchContract = "standard") -> ToolDescriptor:
     """返回模型可见合同；执行、租约和恢复字段均由宿主持有。"""
 
-    return ToolDescriptor(
-        name=WORKSPACE_PATCH_TOOL,
-        version=WORKSPACE_PATCH_VERSION,
-        description=(
+    if contract == "compact":
+        return _workspace_patch_descriptor(
+            WORKSPACE_PATCH_COMPACT_VERSION,
+            COMPACT_WORKSPACE_PATCH_DESCRIPTION,
+            compact_workspace_patch_schema(),
+        )
+    return _workspace_patch_descriptor(
+        WORKSPACE_PATCH_VERSION,
+        (
             "以需审批、可恢复的事务创建、精确编辑、完整替换或删除最多16个Workspace文本文件；"
             "create必填完整content及mode，expected_sha256省略或null；"
             "edit是修改已有文件的首选操作：必填可信读取的完整expected_sha256和唯一锚定的edits，"
@@ -83,7 +95,18 @@ def workspace_patch_descriptor() -> ToolDescriptor:
             "同一路径在files中只能出现一次，多处精确修改必须合并到该文件的edits数组；"
             "mode是JSON十进制420或493，Windows只支持420。"
         ),
-        input_schema=WorkspacePatchInput.model_json_schema(),
+        WorkspacePatchInput.model_json_schema(),
+    )
+
+
+def _workspace_patch_descriptor(
+    version: str, description: str, input_schema: dict[str, JsonValue]
+) -> ToolDescriptor:
+    return ToolDescriptor(
+        name=WORKSPACE_PATCH_TOOL,
+        version=version,
+        description=description,
+        input_schema=input_schema,
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         risk_level=RiskLevel.HIGH,
         requires_idempotency=True,
@@ -123,10 +146,10 @@ def workspace_patch_executor_evidence() -> str:
     )
 
 
-def workspace_patch_binding() -> TrustedToolBinding:
+def workspace_patch_binding(contract: WorkspacePatchContract = "standard") -> TrustedToolBinding:
     """从公开Descriptor构造稳定Binding，供运行时和无状态Doctor共同复用。"""
 
-    descriptor = workspace_patch_descriptor()
+    descriptor = workspace_patch_descriptor(contract)
     return build_trusted_tool_binding(
         source="builtin",
         source_id=PRODUCT_ACTION_SOURCE,
@@ -145,10 +168,12 @@ def build_workspace_patch_definition(
     transactions: SQLiteWorkspaceTransactionStore,
     leases: WorkspaceLeaseStore,
     workspace_root: WorkspaceRootResolver,
+    *,
+    contract: WorkspacePatchContract = "standard",
 ) -> TrustedActionDefinition:
     """从同一Descriptor构造Router Binding、资源解析器和Delivery Executor。"""
 
-    binding = workspace_patch_binding()
+    binding = workspace_patch_binding(contract)
 
     def resolve(arguments: BaseModel, context: ActionPlanningContext) -> ResolvedAction:
         checked = _arguments(arguments)
@@ -160,6 +185,7 @@ def build_workspace_patch_definition(
             parent_closure=context.snapshot_ports is not None,
         )
 
+    compact = contract == "compact"
     return TrustedActionDefinition(
         binding=binding,
         input_model=WorkspacePatchInput,
@@ -169,6 +195,9 @@ def build_workspace_patch_definition(
             leases,
             workspace_root,
         ),
+        # 紧凑合同显式公布较短Schema，解码仍是同一严格模型。
+        input_schema=compact_workspace_patch_schema() if compact else None,
+        decode_arguments=decode_compact_workspace_patch if compact else None,
     )
 
 

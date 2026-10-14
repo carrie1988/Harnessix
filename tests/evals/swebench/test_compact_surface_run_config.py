@@ -1,0 +1,102 @@
+"""工作集＋紧凑模型表面独立冻结为v14；任务、模型、费用边界不变，只与工作集组合。"""
+
+import json
+
+import pytest
+from pydantic import ValidationError
+
+from harnessix.agent.cancellation import CancelToken
+from harnessix.evals.swebench.run_config import (
+    SweBenchCompactSurfaceAgentRunConfig,
+    SweBenchWorkingSetAgentRunConfig,
+)
+from harnessix.evals.swebench.run_config_io import (
+    read_swebench_agent_run_config,
+    write_swebench_agent_run_config,
+)
+from harnessix.product_config.agent_context import build_product_agent_context
+from tests.evals.swebench.test_run_config import build_agent_test_plan
+from tests.evals.swebench.test_working_set_run_config import working_set_config
+from tests.product_config.test_agent_context import _request
+
+
+def compact_config(tmp_path, **changes):
+    return working_set_config(tmp_path, **{"compact_model_surface": True, **changes})
+
+
+def test_compact_surface_v14_roundtrips_without_changing_task_model_or_fee_budget(tmp_path):
+    config = compact_config(tmp_path, working_set_result_groups=1)
+    working_set = working_set_config(tmp_path, working_set_result_groups=1)
+    assert type(config) is SweBenchCompactSurfaceAgentRunConfig
+    assert type(working_set) is SweBenchWorkingSetAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v14"
+    assert config.compact_model_surface and not working_set.compact_model_surface
+    assert config.working_set_result_groups == 1
+    assert config.isolate_provider_failures and config.budget_pressure_compaction
+    assert config.workspace_retirement_enabled
+    assert config.provider_config == working_set.provider_config
+    assert (
+        config.price == working_set.price and config.fee_stop_amount == working_set.fee_stop_amount
+    )
+    plan = build_agent_test_plan()
+    assert config.worst_case_amount(plan) == working_set.worst_case_amount(plan)
+    assert config.fingerprint != working_set.fingerprint
+    path = tmp_path / "compact.json"
+    write_swebench_agent_run_config(path, config)
+    restored = read_swebench_agent_run_config(path)
+    assert type(restored) is SweBenchCompactSurfaceAgentRunConfig and restored == config
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"working_set_result_groups": None},
+        {"compact_model_surface": 1},
+        {"compact_model_surface": None},
+        {"enable_definition_views": True},
+        {"enable_regex_search": True},
+        {"reserve_closing_phase": True},
+        {"enable_planning": True},
+        {"enable_thinking": True},
+        {"recycle_workspaces": False},
+    ],
+)
+def test_compact_surface_rejects_standalone_or_mixed_candidates(tmp_path, changes):
+    with pytest.raises((ValueError, ValidationError)):
+        compact_config(tmp_path, **changes)
+
+
+async def test_compact_instructions_replace_only_the_post_patch_coding_fragment(tmp_path):
+    async def prepare(**settings):
+        return await build_product_agent_context(
+            tmp_path, require_pre_edit_profile=False, **settings
+        ).context.prepare(_request(tmp_path), CancelToken())
+
+    standard = await prepare()
+    assert standard == await prepare(compact_instructions=False)
+    compact = await prepare(compact_instructions=True)
+    fragments = json.loads(compact.instructions)["fragments"]
+    runtime = [f for f in fragments if f["kind"] == "runtime_instruction"]
+    assert [f["source"] for f in runtime] == ["harnessix.coding-instructions/v26"]
+    for rule in ("run_profile", "process_nonzero_exit", "weaken tests", "git_review", "secrets"):
+        assert rule in runtime[0]["content"]
+    assert len(compact.instructions) < len(standard.instructions)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"require_pre_edit_profile": True},
+        {"allow_optional_pre_edit_profile": True},
+        {"enable_regex_search": True},
+        {"enable_definition_views": True},
+        {"enable_grep_snapshots": True},
+        {"reserve_closing_phase": True},
+        {"enable_planning": True},
+        {"compact_instructions": 1},
+    ],
+)
+def test_compact_instructions_reject_other_instruction_variants(tmp_path, changes):
+    arguments = {"require_pre_edit_profile": False, "compact_instructions": True, **changes}
+    with pytest.raises(ValueError):
+        build_product_agent_context(tmp_path, **arguments)

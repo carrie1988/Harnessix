@@ -1574,5 +1574,10 @@ v38[真实执行与独立认证](../../benchmarks/swebench/verified-25-focused-c
 - [`working_set_config`](../../src/harnessix/evals/swebench/working_set_config.py)显式v13（保留组数入指纹），
   保留故障隔离、原压力压缩及认证回收，禁止混入定义视图、正则、收尾、可选预测试、规划或思考。
 
+- **紧凑模型表面**（P3，[product-config](../modules/product-config.md#紧凑模型表面候选默认关闭)）：紧凑编码指令v26与
+  独立版本紧凑Patch合同（同一严格解码），首请求固定输入离线测得3466→2524 Token；
+  [`compact_surface_config`](../../src/harnessix/evals/swebench/compact_surface_config.py)显式v14只与工作集组合冻结。
+- P4（收尾调度）暂不叠加：v37/v38收尾目录在约第3次请求即触发并导致已下架工具被调用，先以v14真实配对测量请求数与行为再决定。
+
 原50K累计Token（含摘要）、16次请求、900秒、固定Profile、Patch审批、修改后测试与Git核对不变；不含Case专用逻辑。
 离线测试只证明契约与安全语义，质量须同源、同Case、同预算真实配对；完整官方成绩仍为v27的3/25。

@@ -26,6 +26,7 @@ from harnessix.delivery.trusted_action import (
     workspace_patch_executor_evidence,
     workspace_patch_supported,
 )
+from harnessix.delivery.workspace_patch_compact import WorkspacePatchContract
 from harnessix.execution.contracts import (
     ExecutionCapabilityEvidenceV2,
     SandboxBindingV2,
@@ -153,6 +154,7 @@ def _workspace_patch_component(
     environment: FixedProductActionEnvironment,
     transactions: SQLiteWorkspaceTransactionStore,
     leases: WorkspaceLeaseStore,
+    patch_contract: WorkspacePatchContract,
 ) -> tuple[ProductActionCapabilityEvidence, ProductActionCatalogEntry | None]:
     reason = (
         "disabled"
@@ -177,6 +179,7 @@ def _workspace_patch_component(
         transactions,
         leases,
         environment.workspace_root,
+        contract=patch_contract,
     )
     evidence = build_product_action_capability(
         capability_id=definition.binding.tool,
@@ -190,7 +193,7 @@ def _workspace_patch_component(
     return (
         evidence,
         ProductActionCatalogEntry(
-            description=workspace_patch_descriptor().description,
+            description=workspace_patch_descriptor(patch_contract).description,
             definition=definition,
             evidence=evidence,
         ),
@@ -354,6 +357,7 @@ def _compose_product_actions(
     process_probes: tuple[ProductProcessProfileProbeResult, ...] = (),
     secrets: SecretProvider | None = None,
     secret_scope: SecretPublicationScope | None = None,
+    patch_contract: WorkspacePatchContract = "standard",
 ) -> ProductActionComposition:
     """从统一配置和探测结果原子安装Patch及固定Container Process能力。"""
 
@@ -362,6 +366,7 @@ def _compose_product_actions(
         environment,
         transactions,
         leases,
+        patch_contract,
     )
     rollback_evidence, rollback_entry = _rollback_component(
         patch_evidence, environment, transactions, leases
@@ -439,6 +444,7 @@ def build_product_action_composition(
     artifact_workspace_scope: str,
     process_probes: tuple[ProductProcessProfileProbeResult, ...] = (),
     secrets: SecretProvider | None = None,
+    patch_contract: WorkspacePatchContract = "standard",
 ) -> ProductActionComposition:
     """已验证Profile的执行与公开共用原版本快照；失败和Gateway关闭均释放材料。"""
     bindings = tuple(
@@ -460,6 +466,7 @@ def build_product_action_composition(
             process_probes=process_probes,
             secrets=scope if scope is not None else secrets,
             secret_scope=scope,
+            patch_contract=patch_contract,
         )
         if result.gateway is None and scope is not None:
             scope.close()

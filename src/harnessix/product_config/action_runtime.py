@@ -12,6 +12,7 @@ from pathlib import Path
 from harnessix.agent.errors import KernelError
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.delivery.workspace_patch_compact import WorkspacePatchContract
 from harnessix.domain.models import utc_now
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.processes.owner_protocol import OutputRedactionSource
@@ -217,6 +218,7 @@ async def open_default_product_action_runtime(
     recovery_config: ProductActionConfigV1 | None = None,
     output_redaction: OutputRedactionSource | None = None,
     root_owner: ProductStateOwner | None = None,
+    patch_contract: WorkspacePatchContract = "standard",
 ) -> AsyncIterator[ProductActionRuntimeOwner]:
     """持有全部Action资源，先初始化Session并结算旧Route，再发布候选目录。"""
 
@@ -250,6 +252,7 @@ async def open_default_product_action_runtime(
                 artifact_workspace_scope=artifact_workspace_scope,
                 process_probes=_select_probes(checked_recovery, dependencies.probe_cache),
                 secrets=secrets,
+                patch_contract=patch_contract,
             )
             protection.callback(_close_composition, recovery_composition)
             recovery_scan = await scan_product_action_recovery(
@@ -289,6 +292,7 @@ async def open_default_product_action_runtime(
                     artifact_workspace_scope=artifact_workspace_scope,
                     process_probes=_select_probes(checked_config, dependencies.probe_cache),
                     secrets=secrets,
+                    patch_contract=patch_contract,
                 )
                 protection.callback(_close_composition, composition)
                 _verify_active_product_bindings(candidate_router, audit)

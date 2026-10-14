@@ -232,6 +232,7 @@ async def _open_case_turn(
         reserve_closing_phase=config.closing_phase_enabled,
         enable_definition_views=config.definition_views_enabled,
         working_set_result_groups=config.working_set_result_groups,
+        compact_model_surface=config.compact_model_surface,
     )
 
 

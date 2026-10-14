@@ -14,8 +14,13 @@ from harnessix.context.tool_result_contracts import (
     STALE_TOOL_RESULT_VERSION,
     ModelHistoryInspectionV3,
 )
+from harnessix.delivery.trusted_action import workspace_patch_descriptor
 from harnessix.evals.swebench import agent_execution, execution
-from harnessix.evals.swebench.run_config import SweBenchWorkingSetAgentRunConfig
+from harnessix.evals.swebench.run_config import (
+    SweBenchCompactSurfaceAgentRunConfig,
+    SweBenchWorkingSetAgentRunConfig,
+)
+from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.product_config import action_runtime
@@ -175,3 +180,98 @@ async def test_invalid_working_set_count_fails_before_provider_or_publication(
         )
     assert error.value.code == "swebench_execution_config_invalid"
     assert not (tmp_path / "run").exists()
+
+
+async def test_frozen_compact_surface_reaches_case_entrypoint(tmp_path, monkeypatch):
+    plan = _plan()
+    original = _config(tmp_path, plan)
+    config = SweBenchCompactSurfaceAgentRunConfig.model_validate(
+        {
+            **original.model_dump(),
+            "spec_version": "harnessix.swebench-agent-run-config/v14",
+            "retain_recent_result_groups": 1,
+        }
+    )
+    calls = []
+
+    async def run_case(**arguments):
+        calls.append(arguments)
+        turn = _turn(0)
+        return turn.turn_id, turn
+
+    monkeypatch.setattr(
+        execution, "read_case_execution_state", lambda *_: SimpleNamespace(status="ready")
+    )
+    monkeypatch.setattr(execution, "run_swebench_agent_case", run_case)
+    await execution._open_case_turn(
+        plan,
+        config,
+        plan.cases[0],
+        tmp_path / "case",
+        tmp_path / "workspace",
+        config.process_profile_for(plan.cases[0].instance_id),
+        "offline",
+        CancelToken(),
+    )
+    assert calls[0]["compact_model_surface"] is True
+    assert calls[0]["working_set_result_groups"] == 1
+
+
+@pytest.mark.parametrize("compact", [False, True])
+async def test_real_agent_request_surface_follows_compact_flag(tmp_path, monkeypatch, compact):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (tmp_path / "run").mkdir(mode=0o700)
+    requests = []
+
+    def handler(request):
+        requests.append(json.loads(request.content))
+        return response(WireStream(text_frames()))
+
+    monkeypatch.setenv("WORKING_SET_OFFLINE_KEY", "offline-placeholder")
+    monkeypatch.setattr(
+        action_runtime,
+        "probe_product_process_profile",
+        lambda profile, supervisor, secrets: probe_product_process_profile(
+            profile, supervisor, secrets, probe_runner=_probe_runner
+        ),
+    )
+    monkeypatch.setattr(
+        agent_execution,
+        "_provider",
+        lambda provider_config, _key: OpenAIChatProvider(
+            provider_config, transport=httpx.MockTransport(handler)
+        ),
+    )
+    plan = _plan()
+    _, turn = await agent_execution.run_swebench_agent_case(
+        plan=plan,
+        case=plan.cases[0],
+        run_root=tmp_path / "run",
+        workspace=workspace,
+        git_executable=Path("/usr/bin/git"),
+        provider_config=OpenAIChatConfig(
+            model="test-model",
+            api_key_env="WORKING_SET_OFFLINE_KEY",
+            max_attempts=1,
+            capabilities=ChatCapabilities(tool_calls=True),
+        ),
+        execution_fingerprint="a" * 64,
+        process_profile=_process_profile(tmp_path),
+        api_key="offline-placeholder",
+        budget_pressure_compaction=True,
+        working_set_result_groups=1,
+        compact_model_surface=compact,
+    )
+    assert turn.status == TurnStatus.COMPLETED
+    patch = next(
+        tool["function"]
+        for tool in requests[0]["tools"]
+        if tool["function"]["name"] == "apply_patch_batch"
+    )
+    contract = "compact" if compact else "standard"
+    descriptor = workspace_patch_descriptor(contract)
+    assert patch["parameters"] == provider_tool_schema(descriptor.input_schema)
+    messages = json.dumps(requests[0]["messages"])
+    assert ("harnessix.coding-instructions/v26" in messages) is compact
+    assert ("harnessix.coding-instructions/v22" in messages) is not compact

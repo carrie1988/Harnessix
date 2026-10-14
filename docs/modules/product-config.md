@@ -176,6 +176,17 @@ Artifact只在诊断被截断时广告。超时、启动失败、取消、未知
 
 Source 末轮 Snapshot 捕获显式接入[原生读取与纯编码进度](../changes/m09-r4-git-checkpoint-preparation.md#111-原-snapshot-捕获的分层控制)。仅准确 Git 控制的原 Task 可进入局部段；所有 CAS 写入、独立回读与最终成员读取仍执行完整检查。未知回调、子类和 foreign Task/线程保持原轨迹，不延长期限，不据此宣布深目录、默认 Writer 或 R4 验收完成。
 
+## 紧凑模型表面候选（默认关闭）
+
+`compact_instructions=True`把修改后验证路径的编码片段换成`harnessix.coding-instructions/v26`，保留安全、
+最小改动、修改后强制测试、非零退出诊断、不弱化测试、Review与终态规则，SHA等细节交给Patch描述。
+`patch_contract="compact"`经[`workspace_patch_compact`](../../src/harnessix/delivery/workspace_patch_compact.py)
+以独立版本`harnessix.workspace-patch-compact/v1`公布较短英文描述与Schema；Router显式Schema与解码器机制保证
+Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`WorkspacePatchInput`严格解码，非法组合照旧以
+`tool_invalid_arguments`失败且无审批或效果。离线测量首请求固定输入由3466降至2524 Token（含工作集指引）。
+只在SWE显式v14与工作集组合冻结；回归见[紧凑Patch](../../tests/product_config/test_compact_workspace_patch.py)
+与[v14配置](../../tests/evals/swebench/test_compact_surface_run_config.py)。离线通过不代表质量改善。
+
 ## 当前增量：类型化工具拒绝与配套协议升级
 
 产品备份只接受冻结完整Session v30、v31或v32 checksum集合；拒绝任意旧前缀、重复/混合集合，以及旧迁移集合隐藏更新版本（v30→v21+、v31→v22+）事实。恢复原字节后沿正式初始化升级，不重签历史；配套Protocol 2.0不改变原Provider预算或价格。

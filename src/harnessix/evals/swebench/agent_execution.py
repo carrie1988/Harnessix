@@ -23,6 +23,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL, workspace_patch_descriptor
+from harnessix.delivery.workspace_patch_compact import WorkspacePatchContract
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.evals.swebench.contracts import (
     SweBenchPreRegistrationPlan,
@@ -131,11 +132,12 @@ def _approval_decision(
     turn: Turn,
     approval: TrustedActionApprovalRequestContent,
     process_profile: ProductProcessProfile,
+    patch_contract: WorkspacePatchContract = "standard",
 ) -> ApprovalDecision:
     """只批准正式 Patch 或当前 Case 唯一公开测试 Profile。"""
 
     call = _approval_call(turn, approval)
-    patch_descriptor = workspace_patch_descriptor()
+    patch_descriptor = workspace_patch_descriptor(patch_contract)
     approved = (
         call.tool == patch_descriptor.name
         and call.tool_version == patch_descriptor.version
@@ -195,13 +197,14 @@ def _turn_budget(plan: SweBenchPreRegistrationPlan) -> Budget:
 def _require_agent_action_gateway(
     gateway: RouterBackedAgentActionGateway | None,
     process_profile: ProductProcessProfile,
+    patch_contract: WorkspacePatchContract = "standard",
 ) -> RouterBackedAgentActionGateway:
     """模型调用前确认 Patch 与当前唯一 Profile 均已通过能力探测。"""
 
     if gateway is None:
         raise KernelError("swebench_action_unavailable", "SWE-bench Patch或公开测试Profile不可用")
     definitions = gateway.definitions()
-    patch = workspace_patch_descriptor()
+    patch = workspace_patch_descriptor(patch_contract)
     profile = process_profile_descriptor(process_profile)
     patches = tuple(item for item in definitions if item.name == WORKSPACE_PATCH_TOOL)
     profiles = tuple(item for item in definitions if item.name.startswith("run_profile."))
@@ -226,6 +229,8 @@ async def _drive_turn(
     process_profile: ProductProcessProfile,
     cancel: CancelToken,
     expected_terminal_turn: tuple[UUID, UUID] | None = None,
+    *,
+    patch_contract: WorkspacePatchContract = "standard",
 ) -> tuple[UUID, Turn]:
     history = TaskPackHistoryReadControl.begin(cancel)
     thread = await owner.authenticated_single_thread(history)
@@ -287,7 +292,7 @@ async def _drive_turn(
                     turn.turn_id,
                     approval.approval_id,
                     fingerprint=approval.request_fingerprint,
-                    decision=_approval_decision(turn, approval, process_profile),
+                    decision=_approval_decision(turn, approval, process_profile, patch_contract),
                 ),
                 cancel,
             )
@@ -357,6 +362,7 @@ async def run_swebench_agent_case(
     reserve_closing_phase: bool = False,
     enable_definition_views: bool = False,
     working_set_result_groups: int | None = None,
+    compact_model_surface: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -374,6 +380,9 @@ async def run_swebench_agent_case(
         raise KernelError("swebench_execution_config_invalid", "SWE-bench正则搜索开关无效")
     if type(allow_optional_pre_edit_profile) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench可选预测试开关无效")
+    if type(compact_model_surface) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench紧凑模型表面开关无效")
+    patch_contract: WorkspacePatchContract = "compact" if compact_model_surface else "standard"
     if working_set_result_groups is not None and (
         type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
     ):
@@ -422,8 +431,11 @@ async def run_swebench_agent_case(
                         artifact_workspace_scope=tools.workspace_scope,
                         output_redaction=owner.scope,
                         root_owner=owner.root_owner,
+                        patch_contract=patch_contract,
                     ) as actions:
-                        gateway = _require_agent_action_gateway(actions.gateway, process_profile)
+                        gateway = _require_agent_action_gateway(
+                            actions.gateway, process_profile, patch_contract
+                        )
                         context = build_product_agent_context(
                             tools.workspace_root,
                             max_output_tokens=provider_config.max_output_tokens,
@@ -435,6 +447,7 @@ async def run_swebench_agent_case(
                             reserve_closing_phase=reserve_closing_phase,
                             enable_definition_views=enable_definition_views,
                             working_set_result_groups=working_set_result_groups,
+                            compact_instructions=compact_model_surface,
                         )
                         async with AgentRuntime(
                             owner.sessions,
@@ -467,4 +480,5 @@ async def run_swebench_agent_case(
                                 process_profile,
                                 token,
                                 expected_terminal_turn,
+                                patch_contract=patch_contract,
                             )

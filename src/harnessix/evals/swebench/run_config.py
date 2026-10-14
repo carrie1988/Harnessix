@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
+from harnessix.evals.swebench.compact_surface_config import SweBenchCompactSurfaceAgentRunConfig
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRunConfig
 from harnessix.evals.swebench.public_test_profile import SweBenchCaseProcessProfile
@@ -296,6 +297,7 @@ SweBenchRunConfig = (
     | SweBenchClosingAgentRunConfig
     | SweBenchDefinitionAgentRunConfig
     | SweBenchWorkingSetAgentRunConfig
+    | SweBenchCompactSurfaceAgentRunConfig
 )
 
 
@@ -320,6 +322,7 @@ def _run_config_type(
     reserve_closing_phase: bool,
     enable_definition_views: bool,
     working_set: bool,
+    compact_model_surface: bool,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -334,6 +337,7 @@ def _run_config_type(
         (reserve_closing_phase, "调查收尾"),
         (enable_definition_views, "定义视图"),
         (working_set, "工作集视图"),
+        (compact_model_surface, "紧凑模型表面"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -345,7 +349,8 @@ def _run_config_type(
         or enable_regex_search
         or reserve_closing_phase
         or enable_definition_views
-        or working_set,
+        or working_set
+        or compact_model_surface,
         isolated=isolate_provider_failures,
         pressure_window=budget_pressure_compaction,
         planning=enable_planning,
@@ -363,7 +368,11 @@ def _run_config_type(
             or not recycle_workspaces
         ):
             raise ValueError("SWE-bench工作集视图需认证回收，不混入其他工具候选")
+        if compact_model_surface:
+            return SweBenchCompactSurfaceAgentRunConfig
         return SweBenchWorkingSetAgentRunConfig
+    if compact_model_surface:
+        raise ValueError("SWE-bench紧凑模型表面只与工作集视图组合冻结")
     if enable_definition_views:
         if (
             enable_grep_snapshots
@@ -434,6 +443,7 @@ def build_swebench_agent_run_config(
     reserve_closing_phase: bool = False,
     enable_definition_views: bool = False,
     working_set_result_groups: int | None = None,
+    compact_model_surface: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -451,6 +461,7 @@ def build_swebench_agent_run_config(
         reserve_closing_phase=reserve_closing_phase,
         enable_definition_views=enable_definition_views,
         working_set=working_set_result_groups is not None,
+        compact_model_surface=compact_model_surface,
     )
     extra: dict[str, object] = (
         {}

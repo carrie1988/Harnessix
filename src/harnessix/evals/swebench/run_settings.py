@@ -159,6 +159,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return None
 
     @property
+    def compact_model_surface(self) -> bool:
+        return False
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 
