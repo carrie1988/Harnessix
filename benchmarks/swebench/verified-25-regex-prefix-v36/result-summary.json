@@ -1,0 +1,152 @@
+{
+  "scope": "development_prefix3_not_official_score",
+  "candidate_source_revision": "eecf8d1ca90d6b51547386fbc1171f513830646d",
+  "decision": "NO_GO_AS_QUALITY_REMEDY",
+  "autonomous_closed": 0,
+  "nonempty_patches": 0,
+  "executions": 3,
+  "cases": [
+    {
+      "instance_id": "matplotlib__matplotlib-25960",
+      "native_status": "failed",
+      "native_error_code": "budget_exceeded",
+      "model_steps": 6,
+      "input_tokens": 40022,
+      "output_tokens": 573,
+      "patch_nonempty": false,
+      "cost_complete": true,
+      "known_cost_upper_amount": "0.500892",
+      "native_sha256": "738a7561ec99cc587b85b6b7349b83fa101fd17458461796378573aa666319bd",
+      "state_sha256": "c91e5b2a3c90db20bd5e398c937438d20ad9cb569ab5b5bc444a3435aa5b0a32",
+      "tool_counts": {
+        "grep": 3,
+        "read_file": 3
+      },
+      "regex_contract_failures": 0,
+      "context_utf8_estimate_first": {
+        "model_step": 1,
+        "history_tokens": 1762,
+        "tool_tokens": 8394,
+        "instruction_tokens": 6429,
+        "estimated_input_tokens": 16585
+      },
+      "context_utf8_estimate_last": {
+        "model_step": 7,
+        "history_tokens": 22048,
+        "tool_tokens": 8394,
+        "instruction_tokens": 6429,
+        "estimated_input_tokens": 36871
+      },
+      "request_input_tokens": [
+        4498,
+        5181,
+        6250,
+        6904,
+        8220,
+        8969
+      ]
+    },
+    {
+      "instance_id": "pydata__xarray-4695",
+      "native_status": "failed",
+      "native_error_code": "budget_exceeded",
+      "model_steps": 5,
+      "input_tokens": 37057,
+      "output_tokens": 731,
+      "patch_nonempty": false,
+      "cost_complete": true,
+      "known_cost_upper_amount": "0.471",
+      "native_sha256": "1400e63e3ef9d38a2b3785aa94a714eadb3eea75a2d4cd991c27a5a1bad3d2ff",
+      "state_sha256": "52ca5fb1417d84a334c771db0145ff4791756c9414818b92ea1ae8708b1c4572",
+      "tool_counts": {
+        "grep": 2,
+        "read_file": 3
+      },
+      "regex_contract_failures": 0,
+      "context_utf8_estimate_first": {
+        "model_step": 1,
+        "history_tokens": 4734,
+        "tool_tokens": 8394,
+        "instruction_tokens": 5872,
+        "estimated_input_tokens": 19000
+      },
+      "context_utf8_estimate_last": {
+        "model_step": 6,
+        "history_tokens": 23108,
+        "tool_tokens": 8394,
+        "instruction_tokens": 5872,
+        "estimated_input_tokens": 37374
+      },
+      "request_input_tokens": [
+        5439,
+        6430,
+        7603,
+        8284,
+        9301
+      ]
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "native_status": "failed",
+      "native_error_code": "budget_exceeded",
+      "model_steps": 7,
+      "input_tokens": 45030,
+      "output_tokens": 560,
+      "patch_nonempty": false,
+      "cost_complete": true,
+      "known_cost_upper_amount": "0.56052",
+      "native_sha256": "817271122fda2bb0b9f24c345b2e5b94b6ed24d71e2ece9592f0ae55ec2efd13",
+      "state_sha256": "f52faebfe155a249d4d0b28f341931294a92f7142513d82f98f6cdf68f7b4b68",
+      "tool_counts": {
+        "grep": 5,
+        "read_file": 2
+      },
+      "regex_contract_failures": 0,
+      "context_utf8_estimate_first": {
+        "model_step": 1,
+        "history_tokens": 2362,
+        "tool_tokens": 8394,
+        "instruction_tokens": 6032,
+        "estimated_input_tokens": 16788
+      },
+      "context_utf8_estimate_last": {
+        "model_step": 8,
+        "history_tokens": 22234,
+        "tool_tokens": 8394,
+        "instruction_tokens": 6032,
+        "estimated_input_tokens": 36660
+      },
+      "request_input_tokens": [
+        4641,
+        5275,
+        5775,
+        5963,
+        7140,
+        7824,
+        8412
+      ]
+    }
+  ],
+  "independent_verification": {
+    "verification": "PASS",
+    "inference_requests": 0,
+    "tool_executions": 0,
+    "authentic_terminal_turns": 3,
+    "native_and_state_files_verified": 6,
+    "native_and_state_files_unchanged": true,
+    "ledger_unchanged": true,
+    "retired_workspaces": 3,
+    "new_unknown_cost_reserve_amount": "0",
+    "known_cost_upper_amount": "1.532412",
+    "current_period_available_amount": "116.2508",
+    "currency": "CNY",
+    "official_score": null,
+    "complete_25_case_suite": false
+  },
+  "interpretation": "正则调用未发生语法/版本失败，但三个Case仍在修改前预算准入停止，未进行公开测试/Review；搜索语义缺口不是调查耗尽的充分根因，不据此推广或盲跑25项。Context数字是UTF8保守估算，不能当作实际Token分解。",
+  "next_focus": "求证压力压缩对固定输入/历史的实际估算路径和收尾预留；复用已持久的出站锚点与模型视图，不重复增加查询提示或改变原任务硬预算。",
+  "latest_complete_official_score": "3/25",
+  "official_score": null,
+  "complete_25_case_suite": false,
+  "fresh_generalization_gate": "OPEN"
+}
