@@ -1,0 +1,185 @@
+{
+  "scope": "same_source_pass_at_1_paired_development_prefix3_not_official_or_generalization_score",
+  "source_revision": "dda08f44130045fc35791533443d1202499ea80d",
+  "runner_sha256": "3e9a8bce5017622cabeaad82317161c2b69ae7f18dac24d82abf08303ea62250",
+  "preregistration_file_sha256": "1fa5bfaf8e9e1d22d04807b3f87cd6af88a13da08e4da39390912e6b9a6ca7a7",
+  "decision": "NO_GO_no_quality_gain_do_not_expand_paid_suite_or_enable_default",
+  "arms": {
+    "baseline": {
+      "cases": 3,
+      "agent_closed": 0,
+      "patches": 0,
+      "definition_read_results": 0
+    },
+    "definition": {
+      "cases": 3,
+      "agent_closed": 0,
+      "patches": 0,
+      "definition_read_results": 4
+    }
+  },
+  "failures": "all_6_budget_admission_failures_before_patch",
+  "cloud_model_requests": 36,
+  "known_cost_upper_amount": "3.106668",
+  "new_unknown_cost_reserve_amount": "0",
+  "current_period_available_amount": "74.0321",
+  "currency": "CNY",
+  "independent_authentication": {
+    "verification": "PASS",
+    "authentic_terminal_turns": 6,
+    "native_and_state_files_verified": 12,
+    "native_and_state_files_unchanged": true,
+    "ledger_unchanged": true,
+    "retired_workspaces": 6
+  },
+  "model_identity_audit": {
+    "requested_equals_actual_for_all_attempts": true,
+    "runtime_instruction_fingerprint_stable_in_each_case": true
+  },
+  "official_score": null,
+  "official_docker_evaluation": "not_invoked_no_qualified_patch",
+  "latest_complete_official_score": "v27:3/25",
+  "full_25_case_suite": false,
+  "fresh_generalization": false,
+  "next_action": "audit repeated_request_input_admission_and_investigation_to_patch_workflow_from_authenticated_records_not_hint_only_blind_rerun",
+  "cases": [
+    {
+      "arm": "baseline",
+      "index": 0,
+      "instance_id": "matplotlib__matplotlib-25960",
+      "native_sha256": "87838ee139533c0ae583ccdb98f3875cea4649b090037f105bd9af3ce0b51a05",
+      "state_sha256": "0481beed6f1bc45280154aaced4934dd3e7c7b9d108c3e7cbf6e696082179a0b",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "tool_rejections": 0,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.530412",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        4100,
+        5672,
+        6233,
+        7885,
+        8496,
+        9835
+      ]
+    },
+    {
+      "arm": "baseline",
+      "index": 1,
+      "instance_id": "pydata__xarray-4695",
+      "native_sha256": "7c9142743f9e92e4d7754fe12e264004c76db568ff6a731cf41ee32acee72e11",
+      "state_sha256": "fdd9be3ef569b5c5c7f4462fcf8a521ea2991288139f8246b33aac56f8472f14",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "tool_rejections": 0,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.525972",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        5041,
+        6009,
+        7193,
+        7444,
+        7787,
+        8326
+      ]
+    },
+    {
+      "arm": "baseline",
+      "index": 2,
+      "instance_id": "pytest-dev__pytest-10051",
+      "native_sha256": "6c0b2fad9f844446f931af3da02120803163b491261543b46d89b5dba175a08a",
+      "state_sha256": "0d7974310dd3180c4622008a5c70254624b0087f2a7214ef9de2f090083ed645",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "tool_rejections": 0,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.519684",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        4243,
+        4944,
+        5297,
+        5492,
+        6450,
+        7231,
+        7823
+      ]
+    },
+    {
+      "arm": "definition",
+      "index": 0,
+      "instance_id": "matplotlib__matplotlib-25960",
+      "native_sha256": "5bbd391fa0e2ec445153512c96e7571ff7a231387ebb6210af2156c74919bcc8",
+      "state_sha256": "5e3907183579520ce0cff95e00688cc05edfa3b7dd3037d36ae099e990cbb4b9",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "tool_rejections": 0,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.509736",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        4374,
+        5586,
+        6909,
+        7103,
+        7513,
+        9160
+      ]
+    },
+    {
+      "arm": "definition",
+      "index": 1,
+      "instance_id": "pydata__xarray-4695",
+      "native_sha256": "541ed34f7bcc8ba8271fa0fcc1899eff8e45845ed63e22f438ddb18fc121bd84",
+      "state_sha256": "53079d070007ec4599949df8cada7c57410ffab147353bd808e10f94836b6e3a",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "tool_rejections": 0,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.562488",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        5315,
+        6301,
+        6992,
+        7637,
+        8297,
+        8927
+      ]
+    },
+    {
+      "arm": "definition",
+      "index": 2,
+      "instance_id": "pytest-dev__pytest-10051",
+      "native_sha256": "bb12d238d30064efe1d2a4b6e7f0c4501c7033dfbad94430ebb44ccad717c168",
+      "state_sha256": "07b85409b9aa185048f38658153aacababf593fca135075131d04a06f8da7ea2",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "tool_rejections": 0,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.458376",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        4517,
+        5613,
+        7516,
+        8454,
+        9428
+      ]
+    }
+  ]
+}
