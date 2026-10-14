@@ -1,0 +1,62 @@
+{
+  "scope": "same_source_pass_at_1_paired_development_prefix3_not_official_or_generalization_score",
+  "source_revision": "a93015874dcc32c4864c1f3c28c72f1b1453fe9e",
+  "runner_sha256": "8fad79c7d968556cff0c86828db13977b207541874da7cecd1b9b26429dd8dbf",
+  "preregistration_file_sha256": "3eb8568286110d25ec37cc7ae7fccc4b4d315d7a58bbed26d8b7aef583018ca0",
+  "arms": {
+    "compact": {
+      "config": "v14",
+      "agent_closed": 0,
+      "patches": 0,
+      "model_steps": [
+        8,
+        8,
+        7
+      ],
+      "tool_calls": [
+        8,
+        10,
+        9
+      ],
+      "invalid_argument_results": 4
+    },
+    "converge": {
+      "config": "v15 = v14 + convergence guidance + affordable hint",
+      "agent_closed": 0,
+      "patches": 0,
+      "model_steps": [
+        8,
+        6,
+        7
+      ],
+      "tool_calls": [
+        8,
+        8,
+        12
+      ],
+      "invalid_argument_results": 5
+    }
+  },
+  "observations": {
+    "converge_batched_calls_per_response": "up_to_2_in_2_of_3",
+    "cause_stated_before_budget_end": "3_of_3_converge",
+    "patch_attempted": "0_of_6"
+  },
+  "decision": "NO_GO: prompt-level convergence guidance and affordable hint did not make the model submit a patch; next lever is a scheduling deadline that forces the first patch when only patch+test+review remain affordable",
+  "independent_verification": {
+    "verification": "PASS",
+    "authentic_terminal_turns": 6,
+    "native_and_state_files_unchanged": true,
+    "ledger_unchanged": true,
+    "retired_workspaces": 6,
+    "new_unknown_cost_reserve_amount": "0",
+    "known_cost_upper_amount": "3.129708",
+    "current_period_available_amount": "67.813484"
+  },
+  "cloud_model_requests": 44,
+  "official_score": null,
+  "official_docker_evaluation": "not_invoked_no_qualified_patch",
+  "latest_complete_official_score": "v27:3/25",
+  "full_25_case_suite": false,
+  "fresh_generalization": false
+}

@@ -234,6 +234,7 @@ async def _open_case_turn(
         working_set_result_groups=config.working_set_result_groups,
         compact_model_surface=config.compact_model_surface,
         convergence_guidance=config.convergence_guidance,
+        patch_deadline_requests=config.patch_deadline,
     )
 
 

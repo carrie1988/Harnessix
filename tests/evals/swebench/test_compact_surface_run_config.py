@@ -146,3 +146,36 @@ async def test_convergence_fragment_requires_compact_instructions(tmp_path):
     ).context.prepare(_request(tmp_path), CancelToken())
     sources = [f["source"] for f in json.loads(prepared.instructions)["fragments"]]
     assert "harnessix.coding-convergence/v1" in sources
+
+
+def test_patch_deadline_v16_adds_only_deadline_policy_to_v15(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchPatchDeadlineAgentRunConfig
+
+    config = compact_config(tmp_path, convergence_guidance=True, patch_deadline_requests=4)
+    converge = compact_config(tmp_path, convergence_guidance=True)
+    assert type(config) is SweBenchPatchDeadlineAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v16"
+    assert config.patch_deadline == 4 and converge.patch_deadline is None
+    excluded = {"spec_version", "patch_deadline_requests"}
+    assert config.model_dump(mode="json", exclude=excluded) == converge.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v16.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"convergence_guidance": False},
+        {"patch_deadline_requests": 0},
+        {"patch_deadline_requests": 17},
+        {"patch_deadline_requests": True},
+    ],
+)
+def test_patch_deadline_requires_convergence_stack_and_valid_count(tmp_path, changes):
+    with pytest.raises((ValueError, ValidationError)):
+        compact_config(
+            tmp_path, **{"convergence_guidance": True, "patch_deadline_requests": 4, **changes}
+        )

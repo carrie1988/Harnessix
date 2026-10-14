@@ -9,6 +9,7 @@ from typing import Literal
 from harnessix.evals.swebench.compact_surface_config import (
     SweBenchCompactSurfaceAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
+    SweBenchPatchDeadlineAgentRunConfig,
 )
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRunConfig
@@ -302,6 +303,7 @@ SweBenchRunConfig = (
     | SweBenchWorkingSetAgentRunConfig
     | SweBenchCompactSurfaceAgentRunConfig
     | SweBenchConvergenceAgentRunConfig
+    | SweBenchPatchDeadlineAgentRunConfig
 )
 
 
@@ -328,6 +330,7 @@ def _run_config_type(
     working_set: bool,
     compact_model_surface: bool,
     convergence_guidance: bool,
+    patch_deadline: bool,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -344,6 +347,7 @@ def _run_config_type(
         (working_set, "工作集视图"),
         (compact_model_surface, "紧凑模型表面"),
         (convergence_guidance, "收敛指引"),
+        (patch_deadline, "Patch截止"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -376,12 +380,16 @@ def _run_config_type(
             raise ValueError("SWE-bench工作集视图需认证回收，不混入其他工具候选")
         if convergence_guidance and not compact_model_surface:
             raise ValueError("SWE-bench收敛指引只与工作集和紧凑模型表面组合冻结")
+        if patch_deadline and not convergence_guidance:
+            raise ValueError("SWE-bench Patch截止只在收敛指引组合之上冻结")
+        if patch_deadline:
+            return SweBenchPatchDeadlineAgentRunConfig
         if convergence_guidance:
             return SweBenchConvergenceAgentRunConfig
         if compact_model_surface:
             return SweBenchCompactSurfaceAgentRunConfig
         return SweBenchWorkingSetAgentRunConfig
-    if compact_model_surface or convergence_guidance:
+    if compact_model_surface or convergence_guidance or patch_deadline:
         raise ValueError("SWE-bench紧凑模型表面或收敛指引只与工作集视图组合冻结")
     if enable_definition_views:
         if (
@@ -455,6 +463,7 @@ def build_swebench_agent_run_config(
     working_set_result_groups: int | None = None,
     compact_model_surface: bool = False,
     convergence_guidance: bool = False,
+    patch_deadline_requests: int | None = None,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -474,12 +483,15 @@ def build_swebench_agent_run_config(
         working_set=working_set_result_groups is not None,
         compact_model_surface=compact_model_surface,
         convergence_guidance=convergence_guidance,
+        patch_deadline=patch_deadline_requests is not None,
     )
     extra: dict[str, object] = (
         {}
         if working_set_result_groups is None
         else {"retain_recent_result_groups": working_set_result_groups}
     )
+    if patch_deadline_requests is not None:
+        extra["patch_deadline_requests"] = patch_deadline_requests
     fields: dict[str, object] = dict(
         plan_sha256=plan.plan_sha256,
         source_root=str(source_root),

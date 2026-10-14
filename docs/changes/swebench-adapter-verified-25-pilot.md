@@ -1594,3 +1594,14 @@ P4据此新增两项通用、默认关闭的能力（不含Case信息）：预�
 （[`turn_budget_hint`](../../src/harnessix/agent/turn_budget_hint.py)，只是提示，准入按最长文本预付）；
 `harnessix.coding-convergence/v1`指引“观察到原因即在下一响应提交补丁，由补丁后run_profile验证，独立读取同批发出”。
 二者由显式v15（v14之上）冻结，需同源配对验证。
+
+### 收敛指引配对（v42）与首次Patch截止（P4b）
+
+[同源真实配对](../../benchmarks/swebench/verified-25-convergence-v42/result-summary.json)（前三项，v14对照v15，44次请求，
+费用上界3.129708元，独立认证PASS）：两组均0/3闭环、0补丁，**NO_GO**。v15使部分响应同批发出两个读取，但模型
+仍在说出原因后继续确认；两组各有4～5次参数越界（如context_lines>3）浪费请求。提示层收敛不足以改变决策。
+
+P4b在[`coding_tool_view`](../../src/harnessix/product_config/coding_tool_view.py)新增默认关闭的首次Patch截止：
+账本推算可负担请求数≤阈值（只够修改、测试、Review与少量余量）、本轮已有完整内容SHA观察、尚无任何Patch且不在
+测试/强制阶段时，下一请求强制`apply_patch_batch`；Patch失败沿原修补流程重新开放读取，修改后测试、Review、
+审批与执行层新鲜度校验不变；无完整源码观察时绝不强迫盲写。显式v16（v15之上，阈值入指纹）冻结，需同源配对验证。

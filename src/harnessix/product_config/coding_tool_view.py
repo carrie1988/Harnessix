@@ -13,6 +13,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.planning import UPDATE_PLAN_TOOL
 from harnessix.agent.ports import ModelToolSelection
+from harnessix.agent.turn_budget_hint import affordable_request_hint
 from harnessix.delivery.rollback_action import WORKSPACE_ROLLBACK_TOOL
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import EffectClass, ToolDescriptor
@@ -261,6 +262,36 @@ def _has_edit_snapshot(observations: tuple[_Observation, ...]) -> bool:
     return False
 
 
+def _enforce_patch_deadline(
+    turn: Turn,
+    selection: ModelToolSelection,
+    definitions: tuple[ToolDescriptor, ...],
+    deadline: int,
+) -> ModelToolSelection:
+    """剩余预算只够修改、测试与Review时，结束首次修改前的自由调查并强制提交Patch。
+
+    仅在已有本轮完整内容SHA观察、尚无任何Patch且未处于强制或测试阶段时生效；
+    Patch失败后由原修补流程重新开放读取，测试、Review与执行层校验均不改变。
+    """
+    names = {tool.name for tool in selection.tools}
+    patches = names & _PATCH_TOOLS
+    observations = _observations(turn)
+    affordable = affordable_request_hint(turn)
+    if (
+        selection.forced_tool is not None
+        or selection.choice != "auto"
+        or len(patches) != 1
+        or any(name.startswith("run_profile.") for name in names)
+        or any(item.tool in _PATCH_TOOLS for item in observations)
+        or not _has_edit_snapshot(observations)
+        or affordable is None
+        or affordable > deadline
+    ):
+        return selection
+    (patch,) = patches
+    return _selection(definitions, {patch}, forced_tool=patch)
+
+
 def _workflow_failed(observations: tuple[_Observation, ...]) -> bool:
     """只接受确定的测试非零退出；基础设施或未闭合Profile不能进入修复。"""
     return any(_is_infrastructure_failure(item.result) for item in observations) or any(
@@ -288,8 +319,15 @@ class CodingWorkflowToolView:
     enable_planning: bool = False
     allow_optional_pre_edit_profile: bool = False
     reserve_closing_phase: bool = False
+    # 账本推算的可负担请求数降到该值时，首次修改前的下一请求强制提交Patch。
+    patch_deadline_requests: int | None = None
 
     def __post_init__(self) -> None:
+        if self.patch_deadline_requests is not None and (
+            type(self.patch_deadline_requests) is not int
+            or not 1 <= self.patch_deadline_requests <= 16
+        ):
+            raise ValueError("Patch截止请求数必须是1到16")
         if type(self.reserve_closing_phase) is not bool:
             raise ValueError("调查收尾工具目录开关必须是布尔值")
         if type(self.enable_planning) is not bool:
@@ -310,6 +348,10 @@ class CodingWorkflowToolView:
             else definitions
         )
         selection = self._select_workflow(turn, workflow_definitions)
+        if self.patch_deadline_requests is not None:
+            selection = _enforce_patch_deadline(
+                turn, selection, workflow_definitions, self.patch_deadline_requests
+            )
         if self.reserve_closing_phase:
             selection = self._prefer_closing(turn, selection)
         baseline_pending = (
