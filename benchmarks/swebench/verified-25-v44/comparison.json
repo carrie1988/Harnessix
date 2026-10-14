@@ -1,0 +1,40 @@
+{
+  "v27": {
+    "resolved": 3,
+    "empty_patches": 19,
+    "nonempty_patches": 6,
+    "autonomous_closure": 1,
+    "known_cost_upper_amount": "12.994656"
+  },
+  "v44": {
+    "resolved": 6,
+    "empty_patches": 10,
+    "nonempty_patches": 15,
+    "autonomous_closure": 2,
+    "known_cost_upper_amount": "13.022976"
+  },
+  "resolved_ids": [
+    "astropy__astropy-14995",
+    "astropy__astropy-8872",
+    "pallets__flask-5014",
+    "psf__requests-1142",
+    "pytest-dev__pytest-7205",
+    "scikit-learn__scikit-learn-13439"
+  ],
+  "newly_resolved_vs_v27": [
+    "astropy__astropy-14995",
+    "astropy__astropy-8872",
+    "psf__requests-1142"
+  ],
+  "lost_vs_v27": [],
+  "error_ids": [
+    "scikit-learn__scikit-learn-25973"
+  ],
+  "error_cause": "evaluator image build for scikit-learn__scikit-learn-25973 failed: conda repodata SSL UNEXPECTED_EOF during docker build (evaluator network); patch not evaluated, counted as error, no re-evaluation merged",
+  "staged_target": {
+    "empty_patches_max": 5,
+    "resolved_min": 10,
+    "met": false
+  },
+  "scope": "development_set_full_25_pass_at_1; not generalization; not merged with other rounds"
+}

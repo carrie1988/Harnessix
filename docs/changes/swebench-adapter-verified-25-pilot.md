@@ -1613,3 +1613,12 @@ P4b在[`coding_tool_view`](../../src/harnessix/product_config/coding_tool_view.p
 测试并在诊断中耗尽预算，仍0闭环；其中一项强制补丁缺乏已观察原因支撑，另一项与两组模型自述原因一致。
 据此冻结[v44完整25项开发集预注册](../../benchmarks/swebench/verified-25-v44/preregistration.json)：v27同计划只换源码
 修订，v16候选，费用停止线60元，完成后统一官方评测；不与历史成功拼接，不作泛化声明。
+
+### v44完整25项开发集官方结果
+
+[官方汇总](../../benchmarks/swebench/verified-25-v44/official-summary.json)与[对照](../../benchmarks/swebench/verified-25-v44/comparison.json)：
+v16候选（工作集保留2组＋紧凑表面＋收敛指引＋首次Patch截止）在v27同计划、同50K/16/900秒、同模型下，
+**Resolved 6/25**（v27为3/25，历史最高v20为5/25），空补丁10（v27为19），非空补丁15，自主闭环2，
+费用上界13.022976元，无未决费用，基础设施失败0，ambiguous 2。v27的3项全部保留，新增解决astropy-14995、
+astropy-8872、requests-1142。1项error：scikit-learn-25973评测镜像构建时conda repodata SSL中断（评测侧网络），
+补丁未被评测，未重评、未补记。阶段目标（空补丁≤5、Resolved≥10）尚未达到；开发集已多轮暴露，不代表泛化成绩。
