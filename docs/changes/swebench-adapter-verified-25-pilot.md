@@ -1605,3 +1605,11 @@ P4b在[`coding_tool_view`](../../src/harnessix/product_config/coding_tool_view.p
 账本推算可负担请求数≤阈值（只够修改、测试、Review与少量余量）、本轮已有完整内容SHA观察、尚无任何Patch且不在
 测试/强制阶段时，下一请求强制`apply_patch_batch`；Patch失败沿原修补流程重新开放读取，修改后测试、Review、
 审批与执行层新鲜度校验不变；无完整源码观察时绝不强迫盲写。显式v16（v15之上，阈值入指纹）冻结，需同源配对验证。
+
+### 首次Patch截止配对（v43）与完整25项预注册（v44）
+
+[同源真实配对](../../benchmarks/swebench/verified-25-patch-deadline-v43/result-summary.json)（前三项，v15对照v16，
+费用上界3.109116元，独立认证PASS）：v16产出2/3非空补丁（对照1/3，属pass@1波动），截止触发后均进入修改后
+测试并在诊断中耗尽预算，仍0闭环；其中一项强制补丁缺乏已观察原因支撑，另一项与两组模型自述原因一致。
+据此冻结[v44完整25项开发集预注册](../../benchmarks/swebench/verified-25-v44/preregistration.json)：v27同计划只换源码
+修订，v16候选，费用停止线60元，完成后统一官方评测；不与历史成功拼接，不作泛化声明。
