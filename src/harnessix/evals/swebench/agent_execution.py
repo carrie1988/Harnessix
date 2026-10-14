@@ -324,6 +324,7 @@ async def run_swebench_agent_case(
     expected_terminal_turn: tuple[UUID, UUID] | None = None,
     budget_pressure_compaction: bool = False,
     enable_planning: bool = False,
+    enable_grep_snapshots: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -331,6 +332,8 @@ async def run_swebench_agent_case(
         raise KernelError("swebench_execution_config_invalid", "SWE-bench预算窗口开关无效")
     if type(enable_planning) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench规划开关无效")
+    if type(enable_grep_snapshots) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench搜索快照开关无效")
     if len(execution_fingerprint) != 64 or any(
         character not in "0123456789abcdef" for character in execution_fingerprint
     ):
@@ -350,6 +353,7 @@ async def run_swebench_agent_case(
                     git_executable=git_executable,
                     git_state_directory=run_root,
                     git_output_redaction=owner.scope,
+                    enable_grep_snapshots=enable_grep_snapshots,
                 ) as tools:
                     async with open_default_product_action_runtime(
                         run_root,
@@ -367,6 +371,7 @@ async def run_swebench_agent_case(
                             max_output_tokens=provider_config.max_output_tokens,
                             require_pre_edit_profile=False,
                             enable_planning=enable_planning,
+                            enable_grep_snapshots=enable_grep_snapshots,
                         )
                         async with AgentRuntime(
                             owner.sessions,

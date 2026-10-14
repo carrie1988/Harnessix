@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -33,6 +34,9 @@ from harnessix.tools.search_contracts import (
     GrepInput,
     GrepMatch,
     GrepOutput,
+    GrepSnapshotInput,
+    GrepSnapshotMatch,
+    GrepSnapshotOutput,
     SearchInput,
     SearchStats,
 )
@@ -298,8 +302,23 @@ def grep_line_matches(
     args: GrepInput,
     operation: ReadOperation,
     scan: _LineStats,
+    *,
+    content: bytes | None = None,
 ) -> Iterator[GrepMatch]:
     """单一内容观察内用有界滚动窗口生成命中；POSIX与原生读取端复用。"""
+    match_type: type[GrepMatch] = GrepMatch
+    snapshot_fields: dict[str, str | int] = {}
+    if isinstance(args, GrepSnapshotInput):
+        operation.checkpoint()
+        # 严格_decode不去BOM、不转换CRLF、不归一化Unicode；编码可还原同次读取字节。
+        # 原生端直接复用Observation.content；摘要与下面的显示片段截断无关。
+        raw_content = text.encode("utf-8") if content is None else content
+        snapshot_fields = {
+            "content_sha256": hashlib.sha256(raw_content).hexdigest(),
+            "file_bytes": len(raw_content),
+        }
+        operation.checkpoint()
+        match_type = GrepSnapshotMatch
     before: deque[str] = deque(maxlen=args.context_lines)
     ahead: deque[str] = deque()
     with io.StringIO(text, newline="\n") as lines:
@@ -334,13 +353,16 @@ def grep_line_matches(
                                 GrepContextLine(text=preview[0], text_truncated=preview[1])
                             )
                         context = GrepContext(start_line=number - len(before), lines=tuple(views))
-                    yield GrepMatch(
-                        path=path,
-                        line=number,
-                        text=snippet,
-                        text_truncated=truncated,
-                        revision=revision,
-                        context=context,
+                    yield match_type.model_validate(
+                        {
+                            "path": path,
+                            "line": number,
+                            "text": snippet,
+                            "text_truncated": truncated,
+                            "revision": revision,
+                            "context": context,
+                            **snapshot_fields,
+                        }
                     )
             before.append(raw)
             operation.checkpoint()
@@ -364,8 +386,11 @@ def grep(
             continue
         try:
             with _open_candidate(workspace, node, operation, directory=False) as fd:
-                revision = digest((workspace.scope, node.path, revision_state(os.fstat(fd))))
+                state = revision_state(os.fstat(fd))
+                revision = digest((workspace.scope, node.path, state))
                 text = _read(fd, operation, scan)
+                if isinstance(args, GrepSnapshotInput) and state != revision_state(os.fstat(fd)):
+                    raise ReadToolError("workspace_changed")
                 if text is None:
                     continue
                 for hit in grep_line_matches(node.path, revision, text, args, operation, scan):
@@ -383,11 +408,14 @@ def grep(
     stats = scan.snapshot()
     if capture is not None:
         capture.complete = not stats.has_gaps
-    return GrepOutput(
-        path=args.path,
-        matches=tuple(matches),
-        stats=stats,
-        scan_complete=records.reason is None and not stats.has_gaps,
-        truncated=records.reason is not None,
-        truncation_reason=records.reason,
+    output_type = GrepSnapshotOutput if isinstance(args, GrepSnapshotInput) else GrepOutput
+    return output_type.model_validate(
+        {
+            "path": args.path,
+            "matches": tuple(matches),
+            "stats": stats,
+            "scan_complete": records.reason is None and not stats.has_gaps,
+            "truncated": records.reason is not None,
+            "truncation_reason": records.reason,
+        }
     )

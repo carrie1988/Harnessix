@@ -301,10 +301,13 @@ from harnessix.tools.contracts import (
 from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
     ArchivedGrepOutput,
+    ArchivedGrepSnapshotOutput,
     GlobInput,
     GlobOutput,
     GrepInput,
     GrepOutput,
+    GrepSnapshotInput,
+    GrepSnapshotOutput,
 )
 from harnessix.trusted_actions.contracts import (
     ActionAuditEvent,
@@ -486,6 +489,9 @@ def generate_specs(output: Path) -> None:
         ("read-artifact-output", ArtifactPage),
         ("archived-glob-output", ArchivedGlobOutput),
         ("archived-grep-output", ArchivedGrepOutput),
+        ("grep-snapshot-input", GrepSnapshotInput),
+        ("grep-snapshot-output", GrepSnapshotOutput),
+        ("archived-grep-snapshot-output", ArchivedGrepSnapshotOutput),
         ("patch-proposal", PatchProposal),
         ("patch-manifest", PatchManifest),
         ("managed-copy-manifest", CopyManifest),

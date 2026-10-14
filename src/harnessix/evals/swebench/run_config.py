@@ -139,6 +139,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def grep_snapshots_enabled(self) -> bool:
+        return False
+
+    @property
     def output_token_limit_margin(self) -> int:
         return 0
 
@@ -302,13 +306,48 @@ class SweBenchPlanningAgentRunConfig(_SweBenchAgentRunSettings):
         return 10
 
 
+class SweBenchSearchSnapshotAgentRunConfig(_SweBenchAgentRunSettings):
+    """独立v7候选：搜索同次原始读取摘要，不启用规划或改变模型条件。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v7"] = (
+        "harnessix.swebench-agent-run-config/v7"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+    context_budget_policy: Literal["amortized_pressure_window"] = "amortized_pressure_window"
+    search_snapshot_policy: Literal["same_observation_file_sha256"] = "same_observation_file_sha256"
+
+    @property
+    def grep_snapshots_enabled(self) -> bool:
+        return True
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return True
+
+
 SweBenchRunConfig = (
     SweBenchAgentRunConfig
     | SweBenchIsolatedAgentRunConfig
     | SweBenchBudgetWindowAgentRunConfig
     | SweBenchThinkingAgentRunConfig
     | SweBenchPlanningAgentRunConfig
+    | SweBenchSearchSnapshotAgentRunConfig
 )
+
+
+def _validate_search_snapshot_mode(
+    enabled: bool, *, isolated: bool, pressure_window: bool, planning: bool, thinking: bool
+) -> None:
+    """单因素候选不能静默混入其他策略或失去原费用隔离边界。"""
+    if enabled and (planning or thinking or not (isolated and pressure_window)):
+        raise ValueError("SWE-bench搜索快照必须保留故障隔离、预算窗口并关闭规划和思考")
 
 
 def _run_config_type(
@@ -317,6 +356,7 @@ def _run_config_type(
     budget_pressure_compaction: bool,
     enable_thinking: bool,
     enable_planning: bool,
+    enable_grep_snapshots: bool,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -324,10 +364,18 @@ def _run_config_type(
         (budget_pressure_compaction, "预算窗口"),
         (enable_thinking, "思考诊断"),
         (enable_planning, "规划诊断"),
+        (enable_grep_snapshots, "搜索快照"),
     )
     for value, name in flags:
         if type(value) is not bool:
             raise ValueError(f"SWE-bench{name}必须显式使用布尔开关")
+    _validate_search_snapshot_mode(
+        enable_grep_snapshots,
+        isolated=isolate_provider_failures,
+        pressure_window=budget_pressure_compaction,
+        planning=enable_planning,
+        thinking=enable_thinking,
+    )
     if enable_planning and (
         enable_thinking or not (isolate_provider_failures and budget_pressure_compaction)
     ):
@@ -338,6 +386,8 @@ def _run_config_type(
         raise ValueError("SWE-bench预算窗口候选必须显式保留故障隔离与逐Case预付")
     if enable_planning:
         return SweBenchPlanningAgentRunConfig
+    if enable_grep_snapshots:
+        return SweBenchSearchSnapshotAgentRunConfig
     if enable_thinking:
         return SweBenchThinkingAgentRunConfig
     if budget_pressure_compaction:
@@ -362,6 +412,7 @@ def build_swebench_agent_run_config(
     budget_pressure_compaction: bool = False,
     enable_thinking: bool = False,
     enable_planning: bool = False,
+    enable_grep_snapshots: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -372,6 +423,7 @@ def build_swebench_agent_run_config(
         budget_pressure_compaction=budget_pressure_compaction,
         enable_thinking=enable_thinking,
         enable_planning=enable_planning,
+        enable_grep_snapshots=enable_grep_snapshots,
     )
     config = config_model(
         plan_sha256=plan.plan_sha256,

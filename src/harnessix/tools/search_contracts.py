@@ -84,6 +84,16 @@ class GrepInput(SearchInput):
         return _bounded_text(value)
 
 
+class GrepSnapshotInput(GrepInput):
+    max_results: int = Field(default=10, ge=1, le=200)
+    context_lines: int = Field(
+        default=2,
+        ge=0,
+        le=MAX_GREP_CONTEXT_LINES,
+        description="命中行前后各返回少量有界片段；不替代read_file的完整文件摘要",
+    )
+
+
 class SearchStats(ReadContract):
     entries_scanned: int = Field(ge=0, le=MAX_SEARCH_ENTRIES)
     files_read: int = Field(ge=0, le=MAX_SEARCH_ENTRIES)
@@ -185,6 +195,11 @@ class GrepMatch(ReadContract):
         return self
 
 
+class GrepSnapshotMatch(GrepMatch):
+    content_sha256: Revision
+    file_bytes: int = Field(ge=0, le=MAX_SEARCH_FILE_BYTES)
+
+
 class GrepOutput(SearchOutput):
     matches: tuple[GrepMatch, ...] = Field(max_length=200)
 
@@ -196,6 +211,20 @@ class GrepOutput(SearchOutput):
         return self
 
 
+class GrepSnapshotOutput(GrepOutput):
+    spec_version: Literal["harnessix.grep-snapshot/v1"] = "harnessix.grep-snapshot/v1"
+    matches: tuple[GrepSnapshotMatch, ...] = Field(max_length=200)
+
+    @model_validator(mode="after")
+    def same_file_observation_is_consistent(self) -> Self:
+        observations: dict[str, tuple[str, str, int]] = {}
+        for hit in self.matches:
+            snapshot = (hit.revision, hit.content_sha256, hit.file_bytes)
+            if observations.setdefault(hit.path, snapshot) != snapshot:
+                raise ValueError("同一搜索结果中同文件的观察身份、摘要和字节数必须一致")
+        return self
+
+
 class ArchivedGlobOutput(ReadContract):
     preview: GlobOutput
     artifact: ArtifactRef
@@ -203,4 +232,9 @@ class ArchivedGlobOutput(ReadContract):
 
 class ArchivedGrepOutput(ReadContract):
     preview: GrepOutput
+    artifact: ArtifactRef
+
+
+class ArchivedGrepSnapshotOutput(ReadContract):
+    preview: GrepSnapshotOutput
     artifact: ArtifactRef

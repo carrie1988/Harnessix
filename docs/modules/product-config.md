@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 120
-code_revision: dae92e8d971874db144af0d18362249e715255ad
+version: 121
+code_revision: 6090f8c30cc99de5b86f6ee9bb95e16c89d52329
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_grep_snapshot_patch.py
+  - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/product_config/test_planning_workflow.py
   - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
@@ -99,6 +101,14 @@ related_tests:
   - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
+
+## 显式搜索快照候选（默认关闭）
+
+`grep` 3.x可返回同次原始文件观察的完整SHA，供已有Patch前置条件使用；旧2.x、
+默认装配、权限、任务预算及Session历史不变。上下文只增加独立提示片段，归档省略保留
+快照版本及完整性元数据。正式契约、失败边界、调用链、源码及测试映射统一见
+[搜索快照设计](../changes/swebench-adapter-verified-25-pilot.md#搜索快照候选同次观察摘要默认关闭)。
+离线通过不代表真实质量改善，配对前不得推广。
 
 ## 完整 Git 产品执行意图边界
 

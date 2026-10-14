@@ -1,0 +1,84 @@
+{
+  "schema": "harnessix.swebench-search-snapshot-offline-summary/v1",
+  "checked_at": "2026-10-14T01:44:12.706176+00:00",
+  "scope": "offline_candidate_not_coding_quality",
+  "baseline_revision": "6090f8c30cc99de5b86f6ee9bb95e16c89d52329",
+  "focused_tests": {
+    "passed": 212,
+    "failed": 0
+  },
+  "expanded_regression": {
+    "passed": 2002,
+    "failed": 24,
+    "skipped": 36
+  },
+  "baseline_failures_authenticated": 24,
+  "new_failures_observed": 0,
+  "baseline_git_archive_note": "One migration fixture was rerun against the frozen source with only git archive explicitly bound to the original readonly object database; its original 31-versus-30 failure was reproduced. No Git mutation calls redirected.",
+  "model_requests": 0,
+  "official_score_unchanged": "3/25",
+  "full_repository_gates_passed": false,
+  "limitations": [
+    "Existing artifact migration/rollback/Git fixture failures remain open.",
+    "Full readability policy retains prior debt, three additional CodingToolRuntime class lines and one execution entrypoint line; directory extraction removes the new oversized runtime file, without policy relaxation.",
+    "Five pre-existing source formatting violations remain unchanged.",
+    "No real Agent quality benefit has been measured."
+  ],
+  "raw_artifacts": {
+    "v33-snapshot-final-focus.xml": "3aad409b4ddc39cefa01b6ce60787cc3852a9b45475b676216db344ec3facd8e",
+    "v33-snapshot-regression.xml": "6ef74b924a044d232de2f503a30ec8e711c6d356d6d1caa40d119aad48f8e433",
+    "v33-baseline-failures.xml": "f51dff9f4adc78b3986ecc97b96823f4a4dc24d96e3996a86748540697904012",
+    "v33-baseline-git-reader.xml": "3622cf8a4ddc43d307d9d63fd7e65f5bf485d29096358bc217f7f7e9baa71f29",
+    "v33-catalog-regression.xml": "c50035a4528e3c529e91b304a579a520dcc081fce61e4e34b4a478ba1065da6d",
+    "v33-default-catalog-compatibility.json": "67a24149576bebca7a0b7baba65acafeb3b3dd4c43f0fba255ec70891b1f3ffb",
+    "v33-documentation-catalog.json": "11fe2b66c1ada1129f633f07be68eb1e33da8a807801c25e812b5f51d5c287df",
+    "v33-mypy-catalog.log": "64078d8034a4cdad592072133b8946d0ac5298976bdc85f17fcba0077c6c00ad",
+    "v33-specs-final.log": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+  },
+  "catalog_regression": {
+    "passed": 461,
+    "failed": 0
+  },
+  "default_catalog_compatibility": {
+    "baseline_revision": "6090f8c30cc99de5b86f6ee9bb95e16c89d52329",
+    "default_descriptors_bytes_unchanged": true,
+    "descriptor_count": 4,
+    "sha256": "b0fbe2aad3b4b804cdca4b39724f13b3166fafb0847b92d66c9bf5c44421b6ae",
+    "model_requests": 0
+  },
+  "baseline_failure_nodes": [
+    "tests/tools/test_git.py::test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha1-worktree]",
+    "tests/tools/test_git.py::test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha1-staged]",
+    "tests/tools/test_git.py::test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha256-worktree]",
+    "tests/tools/test_git.py::test_git_diff_full_object_identity_does_not_depend_on_abbreviation[sha256-staged]",
+    "tests/artifacts/test_authenticated_body.py::test_migration30_does_not_resign_existing_keyed_artifact",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[plan-1]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[plan-2]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[plan-3]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[plan-4]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[plan-5]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[plan-6]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[plan-7]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[effect-1]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[effect-2]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[effect-3]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[effect-4]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[effect-5]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[effect-6]",
+    "tests/artifacts/test_batch_diff.py::test_old_events_cannot_carry_new_refs[effect-7]",
+    "tests/artifacts/test_batch_diff_upgrade.py::test_real_migration9_exit_preserves_original_artifact_and_events[after_commit]",
+    "tests/artifacts/test_process_output_upgrade.py::test_migration11_exit_is_atomic_and_preserves_existing_artifact[after_commit]",
+    "tests/artifacts/test_publication_upgrade.py::test_real_old_artifact_migration28_is_atomic_and_not_authorized[after_commit]",
+    "tests/product_config/test_product_patch_rollback.py::test_rollback_restores_original_large_or_binary_bytes_without_model_body[large-text]",
+    "tests/product_config/test_product_patch_rollback.py::test_rollback_restores_original_large_or_binary_bytes_without_model_body[binary]"
+  ],
+  "source_typecheck": {
+    "passed": true,
+    "source_files": 556
+  },
+  "documentation_gate": {
+    "passed": true,
+    "changed_paths": 27,
+    "findings": 0
+  }
+}

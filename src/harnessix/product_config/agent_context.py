@@ -25,6 +25,13 @@ _PLANNING_INSTRUCTIONS = (
     "not guesses. Plan status is self-reported and grants no execution authority; "
     "actual patch, Profile and Review results remain authoritative."
 )
+_SEARCH_SNAPSHOT_INSTRUCTIONS = (
+    "Search snapshot mode: the read_file rule for Patch expected_sha256 also permits grep "
+    "content_sha256, the full file SHA from the same read that produced the match, not revision. "
+    "Use exact observed code and that SHA when sufficient; read_file remains available for "
+    "missing context. Do not treat text_truncated or "
+    "truncated context as complete source. Do not reread solely to get an already complete SHA."
+)
 
 _CODING_INSTRUCTIONS_PREFIX = """Reply in the user's language.
 
@@ -117,12 +124,15 @@ def build_product_agent_context(
     max_output_tokens: int = 65_536,
     require_pre_edit_profile: bool = True,
     enable_planning: bool = False,
+    enable_grep_snapshots: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
         raise ValueError("产品Context输出预留必须为1到1000000 Token")
     if type(enable_planning) is not bool:
         raise ValueError("产品规划指令开关必须是布尔值")
+    if type(enable_grep_snapshots) is not bool:
+        raise ValueError("产品搜索快照开关必须是布尔值")
     limits = ContextLimits(
         context_window_tokens=PRODUCT_CONTEXT_INPUT_LIMIT + max_output_tokens + 1536,
         reserved_output_tokens=max_output_tokens,
@@ -144,6 +154,17 @@ def build_product_agent_context(
                     ),
                 )
                 if enable_planning
+                else ()
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.coding-search-snapshots/v1",
+                        content=_SEARCH_SNAPSHOT_INSTRUCTIONS,
+                    ),
+                )
+                if enable_grep_snapshots
                 else ()
             ),
         ),

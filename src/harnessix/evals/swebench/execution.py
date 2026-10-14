@@ -474,6 +474,7 @@ async def _open_case_turn(
         expected_terminal_turn=expected_terminal_turn,
         budget_pressure_compaction=config.budget_pressure_compaction,
         enable_planning=config.planning_enabled,
+        enable_grep_snapshots=config.grep_snapshots_enabled,
     )
 
 

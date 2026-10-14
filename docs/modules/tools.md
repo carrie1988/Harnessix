@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: e92c038e2fb8e82095441840a2a04659d9ea4067
+version: 18
+code_revision: 6090f8c30cc99de5b86f6ee9bb95e16c89d52329
 owners:
   - core
 modules:
@@ -23,6 +23,10 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/tools/test_grep_snapshots.py
+  - tests/tools/test_windows_grep_snapshots.py
+  - tests/tools/test_grep_snapshot_runtime.py
+  - tests/product_config/test_grep_snapshot_patch.py
   - tests/tools/test_files.py
   - tests/tools/test_workspace.py
   - tests/tools/test_search.py
@@ -44,6 +48,14 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
+
+## 显式搜索快照候选（默认关闭）
+
+`grep` 3.x可返回同次原始文件观察的完整SHA，供已有Patch前置条件使用；旧2.x、
+默认装配、权限、任务预算及Session历史不变。上下文只增加独立提示片段，归档省略保留
+快照版本及完整性元数据。正式契约、失败边界、调用链、源码及测试映射统一见
+[搜索快照设计](../changes/swebench-adapter-verified-25-pilot.md#搜索快照候选同次观察摘要默认关闭)。
+离线通过不代表真实质量改善，配对前不得推广。
 
 # Coding Tool Runtime模块设计
 

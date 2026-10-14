@@ -23,6 +23,8 @@ from harnessix.tools.search_contracts import (
     GrepInput,
     GrepMatch,
     GrepOutput,
+    GrepSnapshotInput,
+    GrepSnapshotOutput,
     SearchInput,
     SearchStats,
 )
@@ -313,8 +315,14 @@ def _append_matches(
     matches: list[GrepMatch],
     capture: search.SearchCapture | None,
 ) -> None:
+    if isinstance(args, GrepSnapshotInput):
+        operation.checkpoint()
     revision = file_revision(port, candidate.path, observed)
-    for hit in search.grep_line_matches(candidate.path, revision, text, args, operation, scan):
+    if isinstance(args, GrepSnapshotInput):
+        operation.checkpoint()
+    for hit in search.grep_line_matches(
+        candidate.path, revision, text, args, operation, scan, content=observed.content
+    ):
         encoded = hit.model_dump_json()
         if capture is not None:
             capture.append(encoded)
@@ -349,11 +357,14 @@ def grep_files(
         if records.reason is not None and capture is None:
             break
     stats, complete = _capture_status(capture, scan, records)
-    return GrepOutput(
-        path=args.path,
-        matches=tuple(matches),
-        stats=stats,
-        scan_complete=complete,
-        truncated=records.reason is not None,
-        truncation_reason=records.reason,
+    output_type = GrepSnapshotOutput if isinstance(args, GrepSnapshotInput) else GrepOutput
+    return output_type.model_validate(
+        {
+            "path": args.path,
+            "matches": tuple(matches),
+            "stats": stats,
+            "scan_complete": complete,
+            "truncated": records.reason is not None,
+            "truncation_reason": records.reason,
+        }
     )

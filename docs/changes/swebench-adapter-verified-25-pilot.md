@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 24
-code_revision: dae92e8d971874db144af0d18362249e715255ad
+version: 25
+code_revision: 6090f8c30cc99de5b86f6ee9bb95e16c89d52329
 owners:
   - core
 modules:
@@ -10,10 +10,19 @@ modules:
   - agent
   - context
   - product_config
+  - tools
+  - artifacts
 related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
+  - tests/tools/test_grep_snapshots.py
+  - tests/tools/test_windows_grep_snapshots.py
+  - tests/tools/test_grep_snapshot_runtime.py
+  - tests/product_config/test_grep_snapshot_patch.py
+  - tests/evals/swebench/test_search_snapshot_run_config.py
+  - tests/evals/swebench/test_search_snapshot_agent_execution.py
+  - tests/artifacts/test_model_history.py
   - tests/agent/test_planning_tool.py
   - tests/agent/test_planning_tool_recovery.py
   - tests/context/test_planning_anchors.py
@@ -1018,3 +1027,75 @@ predictions或官方评分，不拼接旧成功。保持规划默认关闭，不
 旧入口拒绝静默重建；费用、状态、报告及已执行证据保留。本次只准备实际诊断的6个工作区，
 没有预建两组其余44项。正式Suite仍整批预建、尚无自动回收机制，不能声称已完成自动GC。
 10 GiB运行前／运行中保护保留，已执行工作区归档解耦前不自动删除。最新官方成绩仍3/25。
+
+## 搜索快照候选：同次观察摘要，默认关闭
+
+### 问题与决策
+
+v27原生只读复核认证50份Session／Case文件，SHA前后不变：69次读取中47次前置搜索命中
+同文件，47次revision一致、39次读取包含命中行、31次紧接搜索。它证明存在可组合的观察链，
+不证明全部读取冗余，更不证明补齐SHA就能解决任务。原搜索已经完整读取合法UTF-8文件，
+但只返回片段和revision，模型即使源码证据足够仍不能直接满足Patch完整SHA前置条件。
+因此复用同次观察，显式增加摘要；不鼓励跳过必要阅读、不猜SHA、不强迫模型提前修改。
+
+### 契约与调用链
+
+`SweBenchSearchSnapshotAgentRunConfig(v7) → _open_case_turn → run_swebench_agent_case →
+CodingToolRuntime(enable_grep_snapshots=True) → GrepSnapshotInput → grep_line_matches →
+GrepSnapshotOutput → Scoped Artifact/Session → SDK → 原Patch Gateway`。
+
+| 字段/对象 | 语义与边界 |
+|---|---|
+| `GrepSnapshotInput` | 默认10项、双侧2行；显式值仍遵守1～200项、0～3行 |
+| `content_sha256` | 同次完整原始文件字节的SHA-256，不是片段、页、revision或归档正文SHA |
+| `file_bytes` | 该文件原始字节数，原2 MiB单文件上限不变 |
+| `revision` | 原观察身份；不得作为Patch内容前置摘要 |
+| `spec_version` | 独立`harnessix.grep-snapshot/v1`，同文件多命中必须具有一致身份/SHA/字节数 |
+| `scan_complete/truncated/stats` | 搜索结果完整性；片段截断不使合法文件的完整SHA失效，缺口仍显式报告 |
+| `ArtifactRef.complete/sha256` | 完整命中记录流及其JSONL SHA，不能冒充完整源码或文件SHA |
+
+源码：[合同](../../src/harnessix/tools/search_contracts.py)、
+[POSIX搜索](../../src/harnessix/tools/search.py)、[原生端复用](../../src/harnessix/tools/windows_search.py)、
+[宿主绑定](../../src/harnessix/tools/runtime.py)、[纯合同目录](../../src/harnessix/tools/read_catalog.py)、[历史省略](../../src/harnessix/context/tool_result_view.py)、
+[独立Context片段](../../src/harnessix/product_config/agent_context.py)、
+[封闭SWE配置](../../src/harnessix/evals/swebench/run_config.py)及
+[正式装配](../../src/harnessix/evals/swebench/agent_execution.py)。
+
+核心流程伪代码：打开已授权文件 → 同FD读取前后身份核验 → 严格解码 → 从同份原始内容计算SHA
+→ 生成有界片段和摘要记录 → 原上限控制预览／完整归档 → 原事务发布 → 下一模型请求。
+POSIX严格UTF-8重新编码不改变BOM、CRLF或Unicode；原生端直接使用原Observation.content，
+均不为摘要再次读取。模型证据充分时可把SHA用于既有replace/delete前置条件；证据不足仍扩读。
+
+### 失败、恢复、兼容与验收
+
+取消与期限在读取、摘要和行生成边界核验；文件漂移明确失败，不输出混合快照。权限、链接、
+二进制、非法UTF-8、长行缺口、16 MiB累计扫描、24 KiB预览和归档上限保持原边界。
+观察后文件改变仍由Patch前置条件拒绝，快照不是锁或授权。Scoped Artifact归属及原Session
+事务重放不变；省略matches只保留元数据和可认证Artifact，不改原事实，旧冻结决定不重新裁剪。
+
+默认`grep`2.x和三个旧Schema原样保留；显式3.x拥有独立合同指纹，旧待执行调用不能静默升级。
+新增快照Schema单独导出。v7只启用隔离／压力压缩与快照，拒绝叠加规划／思考；模型、50K/16次、
+900秒、费用算法、Profile和无重试均不变，默认产品入口不启用。
+
+[真实字节/负控](../../tests/tools/test_grep_snapshots.py)、
+[原生适配一致性](../../tests/tools/test_windows_grep_snapshots.py)、
+[归档归属/省略/重放](../../tests/tools/test_grep_snapshot_runtime.py)、
+[原Gateway审批与漂移拒绝](../../tests/product_config/test_grep_snapshot_patch.py)、
+[配置兼容](../../tests/evals/swebench/test_search_snapshot_run_config.py)及
+[真实SDK/认证Owner装配](../../tests/evals/swebench/test_search_snapshot_agent_execution.py)
+构成离线门禁，不是自主编码能力证据。扩展归档回归同时纠正已落后于原生规划v21的旧版本断言，
+未改变事件生成或重放格式。
+
+真实验证预注册采用同源码、同模型、原顺序前三项、独立新目录的baseline／snapshot配对，
+只改变搜索策略及独立提示片段；不读隐藏测试或Gold、不按Case定制代码，不拼接历史成功。
+先检查正式Profile、容器直接读取、至少10 GiB余量和200元周期足额预付。任一新未决或非质量
+失败停止本诊断且保留费用证据；只有原生闭环/补丁/公开测试/Review改善才考虑完整25项复验。
+当前仍为候选，官方成绩保持3/25；全新泛化集尚未执行。
+
+离线最终目录接线回归461项通过；扩展回归2002项通过、36项平台跳过、24项失败。
+24项已在提交前6090f8c3源码独立复现：4项Apple Git不支持object-format、14项旧事件版本断言、
+4项旧Artifact迁移夹具、2项全文替换被安全规则拒绝。失败记录保留，不冒充全仓绿灯。
+目录/合同组装从640行Runtime移入295行纯目录模块，Runtime降为377行；旧默认四工具描述符
+逐字一致，无重复实现。全仓可读性策略仍有历史债务及Runtime类增加3行、执行入口增加1行，
+未放宽策略。源码类型检查、变更Ruff、Schema及文档门禁和仓库Secret扫描分别记录。
+本机余量降至约6 GiB，低于10 GiB保护线，真实配对尚未准备或计费，不能报质量收益。
