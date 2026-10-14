@@ -1,0 +1,5588 @@
+[
+ {
+  "instance_id": "matplotlib__matplotlib-25960",
+  "status": "failed",
+  "native_sha256": "2f6d8b9ca1cb9ca776401e2a7609d6bd2c19e1445cc41f6029ec5000cc8ae30e",
+  "view_mismatch": 0,
+  "compactions": 1,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 748,
+    "history_bytes": 2983,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1934,
+    "history_bytes": 7095,
+    "append_only": true,
+    "remaining_task_tokens": 45563
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2418,
+    "history_bytes": 8291,
+    "append_only": true,
+    "remaining_task_tokens": 40086
+   },
+   {
+    "step": 4,
+    "history_messages": 5,
+    "history_tokens": 2585,
+    "history_bytes": 8605,
+    "append_only": false,
+    "remaining_task_tokens": 32694
+   },
+   {
+    "step": 5,
+    "history_messages": 7,
+    "history_tokens": 3530,
+    "history_bytes": 11615,
+    "append_only": true,
+    "remaining_task_tokens": 26608
+   },
+   {
+    "step": 6,
+    "history_messages": 9,
+    "history_tokens": 4458,
+    "history_bytes": 14496,
+    "append_only": true,
+    "remaining_task_tokens": 19691
+   },
+   {
+    "step": 7,
+    "history_messages": 11,
+    "history_tokens": 4950,
+    "history_bytes": 15719,
+    "append_only": true,
+    "remaining_task_tokens": 11982
+   },
+   {
+    "step": 8,
+    "history_messages": 13,
+    "history_tokens": 6144,
+    "history_bytes": 19821,
+    "append_only": true,
+    "remaining_task_tokens": 3817
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2983,
+    "tokens": 748,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 834,
+    "tokens": 284,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 951,
+    "tokens": 405,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 260,
+    "tokens": 92,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 3577,
+    "tokens": 1056,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 260,
+    "tokens": 90,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2750,
+    "tokens": 855,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 260,
+    "tokens": 93,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2621,
+    "tokens": 835,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 244,
+    "tokens": 78,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 979,
+    "tokens": 414,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 260,
+    "tokens": 95,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 3842,
+    "tokens": 1099,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4367,
+    "output_tokens": 70,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5425,
+    "output_tokens": 52,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5853,
+    "output_tokens": 71,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 6015,
+    "output_tokens": 71,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 6846,
+    "output_tokens": 71,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 7657,
+    "output_tokens": 52,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 8094,
+    "output_tokens": 71,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 0
+ },
+ {
+  "instance_id": "pydata__xarray-4695",
+  "status": "failed",
+  "native_sha256": "7ad7aa818f9fdc829bc003263108761ec9de16e1108ea7d5b5693433df82fc89",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 2011,
+    "history_bytes": 5955,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 2388,
+    "history_bytes": 6923,
+    "append_only": true,
+    "remaining_task_tokens": 44644
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2766,
+    "history_bytes": 7882,
+    "append_only": true,
+    "remaining_task_tokens": 38963
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 3918,
+    "history_bytes": 11181,
+    "append_only": true,
+    "remaining_task_tokens": 32949
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 4646,
+    "history_bytes": 13157,
+    "append_only": true,
+    "remaining_task_tokens": 25882
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 5914,
+    "history_bytes": 17603,
+    "append_only": true,
+    "remaining_task_tokens": 18166
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 6492,
+    "history_bytes": 19182,
+    "append_only": true,
+    "remaining_task_tokens": 9308
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 5955,
+    "tokens": 2011,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 229,
+    "tokens": 74,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 739,
+    "tokens": 303,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 224,
+    "tokens": 76,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 735,
+    "tokens": 302,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 237,
+    "tokens": 80,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 3062,
+    "tokens": 1072,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 247,
+    "tokens": 80,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1729,
+    "tokens": 648,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 250,
+    "tokens": 87,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 4196,
+    "tokens": 1181,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 255,
+    "tokens": 84,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1324,
+    "tokens": 494,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 5308,
+    "output_tokens": 48,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5634,
+    "output_tokens": 47,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5955,
+    "output_tokens": 59,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7005,
+    "output_tokens": 62,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 7660,
+    "output_tokens": 56,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8795,
+    "output_tokens": 63,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 1
+ },
+ {
+  "instance_id": "pytest-dev__pytest-10051",
+  "status": "failed",
+  "native_sha256": "e70b35d10dac4fe2484df58824c495bbd45f4368f44316f2dc591fae7f0d1763",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 996,
+    "history_bytes": 3583,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 4,
+    "history_tokens": 2433,
+    "history_bytes": 8048,
+    "append_only": true,
+    "remaining_task_tokens": 45305
+   },
+   {
+    "step": 3,
+    "history_messages": 7,
+    "history_tokens": 4889,
+    "history_bytes": 15359,
+    "append_only": true,
+    "remaining_task_tokens": 39400
+   },
+   {
+    "step": 4,
+    "history_messages": 9,
+    "history_tokens": 5143,
+    "history_bytes": 16225,
+    "append_only": true,
+    "remaining_task_tokens": 31282
+   },
+   {
+    "step": 5,
+    "history_messages": 11,
+    "history_tokens": 5646,
+    "history_bytes": 17757,
+    "append_only": true,
+    "remaining_task_tokens": 22988
+   },
+   {
+    "step": 6,
+    "history_messages": 13,
+    "history_tokens": 6174,
+    "history_bytes": 18947,
+    "append_only": true,
+    "remaining_task_tokens": 14155
+   },
+   {
+    "step": 7,
+    "history_messages": 15,
+    "history_tokens": 6893,
+    "history_bytes": 20848,
+    "append_only": true,
+    "remaining_task_tokens": 6605
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3583,
+    "tokens": 996,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 582,
+    "tokens": 193,
+    "tool_calls": [
+     "read_file",
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1857,
+    "tokens": 584,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 2026,
+    "tokens": 660,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 476,
+    "tokens": 161,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 3891,
+    "tokens": 1316,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 2944,
+    "tokens": 979,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 365,
+    "tokens": 117,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 501,
+    "tokens": 137,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 257,
+    "tokens": 87,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1275,
+    "tokens": 416,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 566,
+    "tokens": 198,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 624,
+    "tokens": 330,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 285,
+    "tokens": 109,
+    "tool_calls": [
+     "hx_run_profile_public-tests_3e77e994a20eea6c2411e9ea7b0226d7"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1616,
+    "tokens": 610,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4510,
+    "output_tokens": 185,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5774,
+    "output_tokens": 131,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 8017,
+    "output_tokens": 101,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 8222,
+    "output_tokens": 72,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 8666,
+    "output_tokens": 167,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 7513,
+    "output_tokens": 37,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 2
+ },
+ {
+  "instance_id": "django__django-11734",
+  "status": "failed",
+  "native_sha256": "eea7eef69f0ba3aabfacd52a8ee0beb8bef5f5de981d8f0b8dd1b731a50cd5ed",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 729,
+    "history_bytes": 3016,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1127,
+    "history_bytes": 4052,
+    "append_only": true,
+    "remaining_task_tokens": 45713
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 1718,
+    "history_bytes": 5600,
+    "append_only": true,
+    "remaining_task_tokens": 41093
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 2647,
+    "history_bytes": 8600,
+    "append_only": true,
+    "remaining_task_tokens": 35904
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 3125,
+    "history_bytes": 9797,
+    "append_only": true,
+    "remaining_task_tokens": 29942
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 3375,
+    "history_bytes": 10663,
+    "append_only": true,
+    "remaining_task_tokens": 23521
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 4268,
+    "history_bytes": 13607,
+    "append_only": true,
+    "remaining_task_tokens": 16888
+   },
+   {
+    "step": 8,
+    "history_messages": 15,
+    "history_tokens": 4839,
+    "history_bytes": 15031,
+    "append_only": true,
+    "remaining_task_tokens": 9484
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3016,
+    "tokens": 729,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 301,
+    "tokens": 92,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 735,
+    "tokens": 306,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 266,
+    "tokens": 83,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1282,
+    "tokens": 508,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 343,
+    "tokens": 104,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 2657,
+    "tokens": 825,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 243,
+    "tokens": 78,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 954,
+    "tokens": 400,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 307,
+    "tokens": 99,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 559,
+    "tokens": 151,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 306,
+    "tokens": 101,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 2638,
+    "tokens": 792,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 245,
+    "tokens": 80,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 1179,
+    "tokens": 491,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4222,
+    "output_tokens": 65,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4564,
+    "output_tokens": 56,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5096,
+    "output_tokens": 93,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 5911,
+    "output_tokens": 51,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 6333,
+    "output_tokens": 88,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 6543,
+    "output_tokens": 90,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 7349,
+    "output_tokens": 55,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 3
+ },
+ {
+  "instance_id": "scikit-learn__scikit-learn-25973",
+  "status": "failed",
+  "native_sha256": "01a75bb1ff73937937a59aa49a06edb4f91e4f3288a90c8359e45c91a62d132e",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1056,
+    "history_bytes": 4227,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 2095,
+    "history_bytes": 7783,
+    "append_only": true,
+    "remaining_task_tokens": 45401
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2694,
+    "history_bytes": 9503,
+    "append_only": true,
+    "remaining_task_tokens": 39894
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 4412,
+    "history_bytes": 15875,
+    "append_only": true,
+    "remaining_task_tokens": 33852
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 4946,
+    "history_bytes": 17524,
+    "append_only": true,
+    "remaining_task_tokens": 26295
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 5486,
+    "history_bytes": 19048,
+    "append_only": true,
+    "remaining_task_tokens": 18278
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 6646,
+    "history_bytes": 22980,
+    "append_only": true,
+    "remaining_task_tokens": 9787
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 4227,
+    "tokens": 1056,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 279,
+    "tokens": 83,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 3277,
+    "tokens": 956,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 252,
+    "tokens": 79,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1468,
+    "tokens": 520,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 252,
+    "tokens": 86,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 6120,
+    "tokens": 1632,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 251,
+    "tokens": 81,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1398,
+    "tokens": 453,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 262,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 1262,
+    "tokens": 459,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 249,
+    "tokens": 83,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 3683,
+    "tokens": 1077,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4543,
+    "output_tokens": 56,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5455,
+    "output_tokens": 52,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5986,
+    "output_tokens": 56,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7502,
+    "output_tokens": 55,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 7964,
+    "output_tokens": 53,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8437,
+    "output_tokens": 54,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 4
+ },
+ {
+  "instance_id": "pylint-dev__pylint-4661",
+  "status": "failed",
+  "native_sha256": "f59c9a68574ba4d6cb9821ba5517017efde16c96029723ba538d8e6911419dbe",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 702,
+    "history_bytes": 3134,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1915,
+    "history_bytes": 5931,
+    "append_only": true,
+    "remaining_task_tokens": 45728
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2960,
+    "history_bytes": 9064,
+    "append_only": true,
+    "remaining_task_tokens": 40289
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 3792,
+    "history_bytes": 11519,
+    "append_only": true,
+    "remaining_task_tokens": 33952
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 4689,
+    "history_bytes": 13850,
+    "append_only": true,
+    "remaining_task_tokens": 26464
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 5570,
+    "history_bytes": 16463,
+    "append_only": true,
+    "remaining_task_tokens": 20258
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 5708,
+    "history_bytes": 16877,
+    "append_only": true,
+    "remaining_task_tokens": 11910
+   },
+   {
+    "step": 8,
+    "history_messages": 15,
+    "history_tokens": 5848,
+    "history_bytes": 17291,
+    "append_only": true,
+    "remaining_task_tokens": 3497
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3134,
+    "tokens": 702,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 199,
+    "tokens": 69,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 2598,
+    "tokens": 1144,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 259,
+    "tokens": 94,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 2874,
+    "tokens": 951,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 262,
+    "tokens": 92,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 2193,
+    "tokens": 740,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 1707,
+    "tokens": 574,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 624,
+    "tokens": 323,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 307,
+    "tokens": 120,
+    "tool_calls": [
+     "hx_run_profile_public-tests_3e77e994a20eea6c2411e9ea7b0226d7"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2306,
+    "tokens": 761,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 179,
+    "tokens": 64,
+    "tool_calls": [
+     "harnessix_rejected_tool_v1"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 235,
+    "tokens": 74,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 179,
+    "tokens": 65,
+    "tool_calls": [
+     "harnessix_rejected_tool_v1"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 235,
+    "tokens": 75,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4236,
+    "output_tokens": 36,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5369,
+    "output_tokens": 70,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6265,
+    "output_tokens": 72,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 6991,
+    "output_tokens": 497,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 6159,
+    "output_tokens": 47,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 7822,
+    "output_tokens": 526,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 7889,
+    "output_tokens": 524,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 5
+ },
+ {
+  "instance_id": "sympy__sympy-20801",
+  "status": "failed",
+  "native_sha256": "46a3940c3f83a76c6450d2e9f46c4fa33e5efb57f80f8fb5c995c648779374c1",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 669,
+    "history_bytes": 2667,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 4,
+    "history_tokens": 1282,
+    "history_bytes": 4284,
+    "append_only": true,
+    "remaining_task_tokens": 45660
+   },
+   {
+    "step": 3,
+    "history_messages": 7,
+    "history_tokens": 2798,
+    "history_bytes": 8024,
+    "append_only": true,
+    "remaining_task_tokens": 40792
+   },
+   {
+    "step": 4,
+    "history_messages": 9,
+    "history_tokens": 3597,
+    "history_bytes": 10366,
+    "append_only": true,
+    "remaining_task_tokens": 34618
+   },
+   {
+    "step": 5,
+    "history_messages": 12,
+    "history_tokens": 4448,
+    "history_bytes": 12497,
+    "append_only": true,
+    "remaining_task_tokens": 27704
+   },
+   {
+    "step": 6,
+    "history_messages": 14,
+    "history_tokens": 5346,
+    "history_bytes": 15096,
+    "append_only": true,
+    "remaining_task_tokens": 20099
+   },
+   {
+    "step": 7,
+    "history_messages": 17,
+    "history_tokens": 5797,
+    "history_bytes": 16641,
+    "append_only": true,
+    "remaining_task_tokens": 11644
+   },
+   {
+    "step": 8,
+    "history_messages": 20,
+    "history_tokens": 7038,
+    "history_bytes": 20108,
+    "append_only": true,
+    "remaining_task_tokens": 2830
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2667,
+    "tokens": 669,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 427,
+    "tokens": 145,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 251,
+    "tokens": 80,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 939,
+    "tokens": 388,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 454,
+    "tokens": 161,
+    "tool_calls": [
+     "grep",
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 972,
+    "tokens": 398,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 2314,
+    "tokens": 957,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 257,
+    "tokens": 94,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 2085,
+    "tokens": 705,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 456,
+    "tokens": 161,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 729,
+    "tokens": 298,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 946,
+    "tokens": 392,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 257,
+    "tokens": 96,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2342,
+    "tokens": 802,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 463,
+    "tokens": 160,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 145,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 146,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 463,
+    "tokens": 161,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 1521,
+    "tokens": 542,
+    "tool_calls": [],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 1483,
+    "tokens": 538,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4233,
+    "output_tokens": 107,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4735,
+    "output_tokens": 133,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6098,
+    "output_tokens": 76,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 6783,
+    "output_tokens": 131,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 7529,
+    "output_tokens": 76,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8315,
+    "output_tokens": 140,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 8674,
+    "output_tokens": 140,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 6
+ },
+ {
+  "instance_id": "mwaskom__seaborn-3069",
+  "status": "failed",
+  "native_sha256": "3af23493e3f08dfa45fb08e3503b3e5a8dd73de719a2ee742274b99479a94e21",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 758,
+    "history_bytes": 3339,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1237,
+    "history_bytes": 4510,
+    "append_only": true,
+    "remaining_task_tokens": 45824
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2495,
+    "history_bytes": 8896,
+    "append_only": true,
+    "remaining_task_tokens": 41216
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 3086,
+    "history_bytes": 10322,
+    "append_only": true,
+    "remaining_task_tokens": 35491
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 3711,
+    "history_bytes": 12197,
+    "append_only": true,
+    "remaining_task_tokens": 29222
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 5089,
+    "history_bytes": 15554,
+    "append_only": true,
+    "remaining_task_tokens": 22429
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 5472,
+    "history_bytes": 16535,
+    "append_only": true,
+    "remaining_task_tokens": 14325
+   },
+   {
+    "step": 8,
+    "history_messages": 15,
+    "history_tokens": 5856,
+    "history_bytes": 17506,
+    "append_only": true,
+    "remaining_task_tokens": 5891
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3339,
+    "tokens": 758,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 227,
+    "tokens": 76,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 944,
+    "tokens": 403,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 252,
+    "tokens": 88,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 4134,
+    "tokens": 1170,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 230,
+    "tokens": 78,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1196,
+    "tokens": 513,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 274,
+    "tokens": 97,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1601,
+    "tokens": 528,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 226,
+    "tokens": 78,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 3131,
+    "tokens": 1300,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 249,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 732,
+    "tokens": 302,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 239,
+    "tokens": 80,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 732,
+    "tokens": 304,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4126,
+    "output_tokens": 50,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4550,
+    "output_tokens": 58,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5676,
+    "output_tokens": 49,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 6203,
+    "output_tokens": 66,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 6744,
+    "output_tokens": 49,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8048,
+    "output_tokens": 56,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 8380,
+    "output_tokens": 54,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 7
+ },
+ {
+  "instance_id": "pallets__flask-5014",
+  "status": "completed",
+  "native_sha256": "e890a7e366df176cbefb5f2b5f33cc06bff0f6a16466d4aa902f4780e9d17578",
+  "view_mismatch": 0,
+  "compactions": 2,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 527,
+    "history_bytes": 2320,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1437,
+    "history_bytes": 5016,
+    "append_only": true,
+    "remaining_task_tokens": 45965
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2494,
+    "history_bytes": 8798,
+    "append_only": true,
+    "remaining_task_tokens": 41076
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 3293,
+    "history_bytes": 11399,
+    "append_only": true,
+    "remaining_task_tokens": 35244
+   },
+   {
+    "step": 5,
+    "history_messages": 5,
+    "history_tokens": 2113,
+    "history_bytes": 7095,
+    "append_only": false,
+    "remaining_task_tokens": 26266
+   },
+   {
+    "step": 6,
+    "history_messages": 5,
+    "history_tokens": 2090,
+    "history_bytes": 6417,
+    "append_only": false,
+    "remaining_task_tokens": 20955
+   },
+   {
+    "step": 7,
+    "history_messages": 7,
+    "history_tokens": 2731,
+    "history_bytes": 8015,
+    "append_only": true,
+    "remaining_task_tokens": 17337
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2320,
+    "tokens": 527,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 1789,
+    "tokens": 568,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 624,
+    "tokens": 321,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 286,
+    "tokens": 109,
+    "tool_calls": [
+     "hx_run_profile_public-tests_3e77e994a20eea6c2411e9ea7b0226d7"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 1398,
+    "tokens": 565,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 195,
+    "tokens": 68,
+    "tool_calls": [
+     "git_review"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1403,
+    "tokens": 573,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 3975,
+    "output_tokens": 60,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4804,
+    "output_tokens": 85,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5762,
+    "output_tokens": 70,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 6470,
+    "output_tokens": 216,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 3781,
+    "output_tokens": 38,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 3586,
+    "output_tokens": 32,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 3821,
+    "output_tokens": 94,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 8
+ },
+ {
+  "instance_id": "sphinx-doc__sphinx-8035",
+  "status": "failed",
+  "native_sha256": "6fc6ddd3a487a8bfb665ef024444f9ca79bc8aca82a905f99a04cd2a98224305",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 660,
+    "history_bytes": 2878,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 4482,
+    "history_bytes": 14888,
+    "append_only": true,
+    "remaining_task_tokens": 45780
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 4684,
+    "history_bytes": 15535,
+    "append_only": true,
+    "remaining_task_tokens": 37946
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 5702,
+    "history_bytes": 18998,
+    "append_only": true,
+    "remaining_task_tokens": 29970
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 6741,
+    "history_bytes": 22488,
+    "append_only": true,
+    "remaining_task_tokens": 21074
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 6972,
+    "history_bytes": 23304,
+    "append_only": true,
+    "remaining_task_tokens": 11251
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2878,
+    "tokens": 660,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 249,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 11761,
+    "tokens": 3741,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 348,
+    "tokens": 111,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 299,
+    "tokens": 91,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 265,
+    "tokens": 98,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 3198,
+    "tokens": 920,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 266,
+    "tokens": 98,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 3224,
+    "tokens": 941,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 275,
+    "tokens": 87,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 144,
+    "tool_calls": [],
+    "first_step": 6
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4159,
+    "output_tokens": 61,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 7734,
+    "output_tokens": 100,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 7898,
+    "output_tokens": 78,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 8817,
+    "output_tokens": 79,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 9750,
+    "output_tokens": 73,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 9
+ },
+ {
+  "instance_id": "psf__requests-5414",
+  "status": "failed",
+  "native_sha256": "ab345cb17bafef1bd9357d788909589a644c07d4c1f2f39082605ac4dd31317a",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1042,
+    "history_bytes": 3733,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1225,
+    "history_bytes": 4307,
+    "append_only": true,
+    "remaining_task_tokens": 45549
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 1995,
+    "history_bytes": 6540,
+    "append_only": true,
+    "remaining_task_tokens": 40973
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 3154,
+    "history_bytes": 10605,
+    "append_only": true,
+    "remaining_task_tokens": 35700
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 3378,
+    "history_bytes": 11410,
+    "append_only": true,
+    "remaining_task_tokens": 29371
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 4225,
+    "history_bytes": 13958,
+    "append_only": true,
+    "remaining_task_tokens": 22862
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 4778,
+    "history_bytes": 15542,
+    "append_only": true,
+    "remaining_task_tokens": 15581
+   },
+   {
+    "step": 8,
+    "history_messages": 15,
+    "history_tokens": 5408,
+    "history_bytes": 17194,
+    "append_only": true,
+    "remaining_task_tokens": 7621
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3733,
+    "tokens": 1042,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 272,
+    "tokens": 88,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 302,
+    "tokens": 95,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 253,
+    "tokens": 80,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1980,
+    "tokens": 690,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 253,
+    "tokens": 85,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 3812,
+    "tokens": 1074,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 264,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 143,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 263,
+    "tokens": 85,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2285,
+    "tokens": 762,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 253,
+    "tokens": 87,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1331,
+    "tokens": 466,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 1028,
+    "tokens": 297,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 624,
+    "tokens": 333,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4384,
+    "output_tokens": 67,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4513,
+    "output_tokens": 63,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5203,
+    "output_tokens": 70,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 6263,
+    "output_tokens": 66,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 6444,
+    "output_tokens": 65,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 7211,
+    "output_tokens": 70,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 7697,
+    "output_tokens": 263,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 10
+ },
+ {
+  "instance_id": "astropy__astropy-14995",
+  "status": "failed",
+  "native_sha256": "9f507b95a035e05ebb3516da09cff52fdbc63fd8a6e282db527775dab73227b4",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1324,
+    "history_bytes": 4709,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 3722,
+    "history_bytes": 10489,
+    "append_only": true,
+    "remaining_task_tokens": 45116
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 3931,
+    "history_bytes": 11147,
+    "append_only": true,
+    "remaining_task_tokens": 37874
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 5038,
+    "history_bytes": 15111,
+    "append_only": true,
+    "remaining_task_tokens": 30490
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 5972,
+    "history_bytes": 18255,
+    "append_only": true,
+    "remaining_task_tokens": 22124
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 6466,
+    "history_bytes": 19501,
+    "append_only": true,
+    "remaining_task_tokens": 12963
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 7672,
+    "history_bytes": 23745,
+    "append_only": true,
+    "remaining_task_tokens": 3345
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 4709,
+    "tokens": 1324,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 240,
+    "tokens": 79,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 5540,
+    "tokens": 2319,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 356,
+    "tokens": 117,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 302,
+    "tokens": 92,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 272,
+    "tokens": 97,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 3692,
+    "tokens": 1010,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 272,
+    "tokens": 98,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2872,
+    "tokens": 836,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 255,
+    "tokens": 85,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 991,
+    "tokens": 409,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 272,
+    "tokens": 97,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 3972,
+    "tokens": 1109,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4831,
+    "output_tokens": 53,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 7136,
+    "output_tokens": 106,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 7304,
+    "output_tokens": 80,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 8286,
+    "output_tokens": 80,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 9100,
+    "output_tokens": 61,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 9538,
+    "output_tokens": 80,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 11
+ },
+ {
+  "instance_id": "matplotlib__matplotlib-24026",
+  "status": "failed",
+  "native_sha256": "fea4974f94dd3c7ea276a35f32b203f9efb6027c3ebbf5605da3427ed0728b75",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1179,
+    "history_bytes": 4367,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 2706,
+    "history_bytes": 9333,
+    "append_only": true,
+    "remaining_task_tokens": 45155
+   },
+   {
+    "step": 3,
+    "history_messages": 6,
+    "history_tokens": 3165,
+    "history_bytes": 10916,
+    "append_only": true,
+    "remaining_task_tokens": 38842
+   },
+   {
+    "step": 4,
+    "history_messages": 9,
+    "history_tokens": 4373,
+    "history_bytes": 14426,
+    "append_only": true,
+    "remaining_task_tokens": 32170
+   },
+   {
+    "step": 5,
+    "history_messages": 11,
+    "history_tokens": 4976,
+    "history_bytes": 16275,
+    "append_only": true,
+    "remaining_task_tokens": 24492
+   },
+   {
+    "step": 6,
+    "history_messages": 14,
+    "history_tokens": 5786,
+    "history_bytes": 18353,
+    "append_only": true,
+    "remaining_task_tokens": 16240
+   },
+   {
+    "step": 7,
+    "history_messages": 17,
+    "history_tokens": 6750,
+    "history_bytes": 20976,
+    "append_only": true,
+    "remaining_task_tokens": 7286
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 4367,
+    "tokens": 1179,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 249,
+    "tokens": 84,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 4717,
+    "tokens": 1443,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 501,
+    "tokens": 166,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 145,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 148,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 500,
+    "tokens": 158,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1567,
+    "tokens": 545,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1443,
+    "tokens": 505,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 239,
+    "tokens": 84,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1610,
+    "tokens": 519,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 436,
+    "tokens": 147,
+    "tool_calls": [
+     "grep",
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 751,
+    "tokens": 297,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 891,
+    "tokens": 366,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 473,
+    "tokens": 152,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1399,
+    "tokens": 513,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 751,
+    "tokens": 299,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4790,
+    "output_tokens": 55,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 6174,
+    "output_tokens": 139,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6531,
+    "output_tokens": 141,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7620,
+    "output_tokens": 58,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 8140,
+    "output_tokens": 112,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8831,
+    "output_tokens": 123,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 12
+ },
+ {
+  "instance_id": "pydata__xarray-6938",
+  "status": "failed",
+  "native_sha256": "3d7e70216ae1e75383c76827f38fc85acb29194c55370eaa4793c212c0f9685c",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1642,
+    "history_bytes": 5370,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 2213,
+    "history_bytes": 6748,
+    "append_only": true,
+    "remaining_task_tokens": 44912
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 3885,
+    "history_bytes": 12324,
+    "append_only": true,
+    "remaining_task_tokens": 39292
+   },
+   {
+    "step": 4,
+    "history_messages": 8,
+    "history_tokens": 4920,
+    "history_bytes": 14877,
+    "append_only": true,
+    "remaining_task_tokens": 32142
+   },
+   {
+    "step": 5,
+    "history_messages": 10,
+    "history_tokens": 5643,
+    "history_bytes": 17091,
+    "append_only": true,
+    "remaining_task_tokens": 24110
+   },
+   {
+    "step": 6,
+    "history_messages": 12,
+    "history_tokens": 6027,
+    "history_bytes": 18072,
+    "append_only": true,
+    "remaining_task_tokens": 15478
+   },
+   {
+    "step": 7,
+    "history_messages": 14,
+    "history_tokens": 6412,
+    "history_bytes": 19052,
+    "append_only": true,
+    "remaining_task_tokens": 6517
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 5370,
+    "tokens": 1642,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 227,
+    "tokens": 77,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1151,
+    "tokens": 494,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 273,
+    "tokens": 94,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 5303,
+    "tokens": 1578,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 421,
+    "tokens": 149,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1178,
+    "tokens": 494,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 954,
+    "tokens": 392,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 286,
+    "tokens": 94,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1928,
+    "tokens": 629,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 252,
+    "tokens": 83,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 729,
+    "tokens": 301,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 251,
+    "tokens": 85,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 729,
+    "tokens": 300,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 5038,
+    "output_tokens": 50,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5547,
+    "output_tokens": 73,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 7044,
+    "output_tokens": 106,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7958,
+    "output_tokens": 74,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 8576,
+    "output_tokens": 56,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8905,
+    "output_tokens": 56,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 13
+ },
+ {
+  "instance_id": "pytest-dev__pytest-7205",
+  "status": "failed",
+  "native_sha256": "2d4b6bcafa996318b0570c4f42a0117fa4eb83cae7e270cdee2e053d940b2770",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1851,
+    "history_bytes": 6634,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 2711,
+    "history_bytes": 9398,
+    "append_only": true,
+    "remaining_task_tokens": 44642
+   },
+   {
+    "step": 3,
+    "history_messages": 6,
+    "history_tokens": 3973,
+    "history_bytes": 12493,
+    "append_only": true,
+    "remaining_task_tokens": 38504
+   },
+   {
+    "step": 4,
+    "history_messages": 8,
+    "history_tokens": 4476,
+    "history_bytes": 13886,
+    "append_only": true,
+    "remaining_task_tokens": 31265
+   },
+   {
+    "step": 5,
+    "history_messages": 10,
+    "history_tokens": 5052,
+    "history_bytes": 15251,
+    "append_only": true,
+    "remaining_task_tokens": 23451
+   },
+   {
+    "step": 6,
+    "history_messages": 12,
+    "history_tokens": 6083,
+    "history_bytes": 18148,
+    "append_only": true,
+    "remaining_task_tokens": 16932
+   },
+   {
+    "step": 7,
+    "history_messages": 14,
+    "history_tokens": 7128,
+    "history_bytes": 21329,
+    "append_only": true,
+    "remaining_task_tokens": 8413
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 6634,
+    "tokens": 1851,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 330,
+    "tokens": 111,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 2434,
+    "tokens": 749,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 443,
+    "tokens": 157,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 748,
+    "tokens": 302,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1904,
+    "tokens": 803,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 257,
+    "tokens": 87,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1136,
+    "tokens": 416,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 741,
+    "tokens": 261,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 624,
+    "tokens": 315,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 287,
+    "tokens": 112,
+    "tool_calls": [
+     "hx_run_profile_public-tests_3e77e994a20eea6c2411e9ea7b0226d7"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2610,
+    "tokens": 919,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 310,
+    "tokens": 99,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 2871,
+    "tokens": 946,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 5265,
+    "output_tokens": 93,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 6024,
+    "output_tokens": 114,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 7171,
+    "output_tokens": 68,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7595,
+    "output_tokens": 219,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 6481,
+    "output_tokens": 38,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8434,
+    "output_tokens": 85,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 14
+ },
+ {
+  "instance_id": "django__django-13590",
+  "status": "failed",
+  "native_sha256": "4c1df66eea707d8790c466afbce1f325ca2118a0c5e02c704a124b74b5e29ebc",
+  "view_mismatch": 0,
+  "compactions": 1,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 672,
+    "history_bytes": 2991,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1701,
+    "history_bytes": 6060,
+    "append_only": true,
+    "remaining_task_tokens": 45771
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2553,
+    "history_bytes": 8942,
+    "append_only": true,
+    "remaining_task_tokens": 40565
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 2961,
+    "history_bytes": 10298,
+    "append_only": true,
+    "remaining_task_tokens": 34492
+   },
+   {
+    "step": 5,
+    "history_messages": 5,
+    "history_tokens": 1759,
+    "history_bytes": 6615,
+    "append_only": false,
+    "remaining_task_tokens": 26713
+   },
+   {
+    "step": 6,
+    "history_messages": 7,
+    "history_tokens": 2173,
+    "history_bytes": 7977,
+    "append_only": true,
+    "remaining_task_tokens": 22365
+   },
+   {
+    "step": 7,
+    "history_messages": 9,
+    "history_tokens": 2589,
+    "history_bytes": 9345,
+    "append_only": true,
+    "remaining_task_tokens": 17714
+   },
+   {
+    "step": 8,
+    "history_messages": 11,
+    "history_tokens": 2999,
+    "history_bytes": 10707,
+    "append_only": true,
+    "remaining_task_tokens": 12760
+   },
+   {
+    "step": 9,
+    "history_messages": 13,
+    "history_tokens": 3411,
+    "history_bytes": 12075,
+    "append_only": true,
+    "remaining_task_tokens": 7502
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2991,
+    "tokens": 672,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 1755,
+    "tokens": 546,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 507,
+    "tokens": 137,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 855,
+    "tokens": 271,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 507,
+    "tokens": 133,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 855,
+    "tokens": 276,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 507,
+    "tokens": 138,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 861,
+    "tokens": 279,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 507,
+    "tokens": 137,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 855,
+    "tokens": 274,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 507,
+    "tokens": 136,
+    "tool_calls": [],
+    "first_step": 8
+   },
+   {
+    "role": "assistant",
+    "bytes": 861,
+    "tokens": 277,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 9
+   },
+   {
+    "role": "tool",
+    "bytes": 507,
+    "tokens": 135,
+    "tool_calls": [],
+    "first_step": 9
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4167,
+    "output_tokens": 62,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5109,
+    "output_tokens": 97,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5876,
+    "output_tokens": 197,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 5290,
+    "output_tokens": 192,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 4156,
+    "output_tokens": 192,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 4459,
+    "output_tokens": 192,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 4762,
+    "output_tokens": 192,
+    "completeness": "complete"
+   },
+   {
+    "step": 8,
+    "status": "completed",
+    "input_tokens": 5066,
+    "output_tokens": 192,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 15
+ },
+ {
+  "instance_id": "scikit-learn__scikit-learn-13439",
+  "status": "failed",
+  "native_sha256": "0b3a20bebf68671a28b41b282062daed613e7c2d6909bc690866bda497b86ba1",
+  "view_mismatch": 0,
+  "compactions": 1,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 951,
+    "history_bytes": 3472,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1948,
+    "history_bytes": 7174,
+    "append_only": true,
+    "remaining_task_tokens": 45490
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2174,
+    "history_bytes": 7973,
+    "append_only": true,
+    "remaining_task_tokens": 40094
+   },
+   {
+    "step": 4,
+    "history_messages": 5,
+    "history_tokens": 1974,
+    "history_bytes": 6594,
+    "append_only": false,
+    "remaining_task_tokens": 33250
+   },
+   {
+    "step": 5,
+    "history_messages": 7,
+    "history_tokens": 2721,
+    "history_bytes": 9016,
+    "append_only": true,
+    "remaining_task_tokens": 27840
+   },
+   {
+    "step": 6,
+    "history_messages": 9,
+    "history_tokens": 3260,
+    "history_bytes": 10472,
+    "append_only": true,
+    "remaining_task_tokens": 21734
+   },
+   {
+    "step": 7,
+    "history_messages": 11,
+    "history_tokens": 3990,
+    "history_bytes": 12712,
+    "append_only": true,
+    "remaining_task_tokens": 15193
+   },
+   {
+    "step": 8,
+    "history_messages": 13,
+    "history_tokens": 4640,
+    "history_bytes": 14282,
+    "append_only": true,
+    "remaining_task_tokens": 7801
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3472,
+    "tokens": 951,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 766,
+    "tokens": 254,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 144,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 257,
+    "tokens": 86,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1558,
+    "tokens": 539,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 277,
+    "tokens": 94,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2145,
+    "tokens": 653,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 491,
+    "tokens": 143,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 965,
+    "tokens": 396,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 283,
+    "tokens": 88,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1957,
+    "tokens": 642,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 946,
+    "tokens": 316,
+    "tool_calls": [
+     "apply_patch_batch"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 624,
+    "tokens": 334,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4428,
+    "output_tokens": 82,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5332,
+    "output_tokens": 64,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5512,
+    "output_tokens": 66,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 5336,
+    "output_tokens": 74,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 5992,
+    "output_tokens": 114,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 6470,
+    "output_tokens": 71,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 7131,
+    "output_tokens": 261,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 16
+ },
+ {
+  "instance_id": "pylint-dev__pylint-6528",
+  "status": "failed",
+  "native_sha256": "dd893117d4aa61fd219c9fcbac3626035df0977468171329038eb1d7619d99c2",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1175,
+    "history_bytes": 4651,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 4712,
+    "history_bytes": 15568,
+    "append_only": true,
+    "remaining_task_tokens": 45310
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 5300,
+    "history_bytes": 16981,
+    "append_only": true,
+    "remaining_task_tokens": 37331
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 6012,
+    "history_bytes": 18937,
+    "append_only": true,
+    "remaining_task_tokens": 28814
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 6829,
+    "history_bytes": 21298,
+    "append_only": true,
+    "remaining_task_tokens": 19645
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 7819,
+    "history_bytes": 25023,
+    "append_only": true,
+    "remaining_task_tokens": 9730
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 4651,
+    "tokens": 1175,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 243,
+    "tokens": 80,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 10674,
+    "tokens": 3457,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 225,
+    "tokens": 76,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1188,
+    "tokens": 512,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 252,
+    "tokens": 82,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1704,
+    "tokens": 630,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 258,
+    "tokens": 86,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2103,
+    "tokens": 731,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 305,
+    "tokens": 99,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 3420,
+    "tokens": 891,
+    "tool_calls": [],
+    "first_step": 6
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4630,
+    "output_tokens": 60,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 7930,
+    "output_tokens": 49,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 8454,
+    "output_tokens": 63,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 9104,
+    "output_tokens": 65,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 9847,
+    "output_tokens": 68,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 17
+ },
+ {
+  "instance_id": "sympy__sympy-21596",
+  "status": "failed",
+  "native_sha256": "4f21b7e2e9e5100e626a76bad532e1111e8ef135a4775404e68542078d8500e4",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 794,
+    "history_bytes": 2774,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 2202,
+    "history_bytes": 5994,
+    "append_only": true,
+    "remaining_task_tokens": 45599
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2685,
+    "history_bytes": 7177,
+    "append_only": true,
+    "remaining_task_tokens": 39858
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 5002,
+    "history_bytes": 15156,
+    "append_only": true,
+    "remaining_task_tokens": 33671
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 7362,
+    "history_bytes": 23120,
+    "append_only": true,
+    "remaining_task_tokens": 25386
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 7601,
+    "history_bytes": 23930,
+    "append_only": true,
+    "remaining_task_tokens": 14943
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 8699,
+    "history_bytes": 27219,
+    "append_only": true,
+    "remaining_task_tokens": 4311
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2774,
+    "tokens": 794,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 231,
+    "tokens": 78,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 2989,
+    "tokens": 1330,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 243,
+    "tokens": 82,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 940,
+    "tokens": 401,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 259,
+    "tokens": 98,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 7720,
+    "tokens": 2219,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 259,
+    "tokens": 96,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 7705,
+    "tokens": 2264,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 269,
+    "tokens": 91,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 148,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 269,
+    "tokens": 85,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 3020,
+    "tokens": 1013,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4348,
+    "output_tokens": 53,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5686,
+    "output_tokens": 55,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6113,
+    "output_tokens": 74,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 8211,
+    "output_tokens": 74,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 10373,
+    "output_tokens": 70,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 10559,
+    "output_tokens": 73,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 18
+ },
+ {
+  "instance_id": "mwaskom__seaborn-3187",
+  "status": "failed",
+  "native_sha256": "7d0fa975f1283a980380f15f13e52176b70e3e4a2abed38130256f7cb255945b",
+  "view_mismatch": 0,
+  "compactions": 1,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 943,
+    "history_bytes": 3631,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1122,
+    "history_bytes": 4187,
+    "append_only": true,
+    "remaining_task_tokens": 45652
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 1920,
+    "history_bytes": 6516,
+    "append_only": true,
+    "remaining_task_tokens": 41174
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 2683,
+    "history_bytes": 8928,
+    "append_only": true,
+    "remaining_task_tokens": 35964
+   },
+   {
+    "step": 5,
+    "history_messages": 5,
+    "history_tokens": 2513,
+    "history_bytes": 8650,
+    "append_only": false,
+    "remaining_task_tokens": 28748
+   },
+   {
+    "step": 6,
+    "history_messages": 7,
+    "history_tokens": 3933,
+    "history_bytes": 12940,
+    "append_only": true,
+    "remaining_task_tokens": 22932
+   },
+   {
+    "step": 7,
+    "history_messages": 9,
+    "history_tokens": 8326,
+    "history_bytes": 25937,
+    "append_only": true,
+    "remaining_task_tokens": 15788
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3631,
+    "tokens": 943,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 958,
+    "tokens": 271,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2154,
+    "tokens": 667,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 258,
+    "tokens": 92,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1649,
+    "tokens": 540,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 567,
+    "tokens": 160,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 3723,
+    "tokens": 1260,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 613,
+    "tokens": 168,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 12384,
+    "tokens": 4225,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4291,
+    "output_tokens": 57,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4410,
+    "output_tokens": 68,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5135,
+    "output_tokens": 75,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 5800,
+    "output_tokens": 75,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 5678,
+    "output_tokens": 138,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 6998,
+    "output_tokens": 146,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 19
+ },
+ {
+  "instance_id": "sphinx-doc__sphinx-9591",
+  "status": "failed",
+  "native_sha256": "1eb48e2116623107817fa2c145c172169fb9f3e714c0c4ed7814a0fe3ae8d248",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1147,
+    "history_bytes": 4338,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 3196,
+    "history_bytes": 9937,
+    "append_only": true,
+    "remaining_task_tokens": 45424
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 4864,
+    "history_bytes": 15986,
+    "append_only": true,
+    "remaining_task_tokens": 38909
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 5798,
+    "history_bytes": 18245,
+    "append_only": true,
+    "remaining_task_tokens": 30914
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 6379,
+    "history_bytes": 19845,
+    "append_only": true,
+    "remaining_task_tokens": 22040
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 7621,
+    "history_bytes": 24271,
+    "append_only": true,
+    "remaining_task_tokens": 12641
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 4338,
+    "tokens": 1147,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 258,
+    "tokens": 87,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 5341,
+    "tokens": 1962,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 287,
+    "tokens": 103,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 5762,
+    "tokens": 1565,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 259,
+    "tokens": 84,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 2000,
+    "tokens": 850,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 261,
+    "tokens": 85,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1339,
+    "tokens": 496,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 291,
+    "tokens": 98,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 4135,
+    "tokens": 1144,
+    "tool_calls": [],
+    "first_step": 6
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4510,
+    "output_tokens": 66,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 6435,
+    "output_tokens": 80,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 7931,
+    "output_tokens": 64,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 8810,
+    "output_tokens": 64,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 9323,
+    "output_tokens": 76,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 20
+ },
+ {
+  "instance_id": "psf__requests-1142",
+  "status": "failed",
+  "native_sha256": "7000ca72f611f59aea93ef1330f9079b32943a181a46c6f4c6e4cbeb30034b04",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 565,
+    "history_bytes": 2512,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 950,
+    "history_bytes": 3490,
+    "append_only": true,
+    "remaining_task_tokens": 45996
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2765,
+    "history_bytes": 9231,
+    "append_only": true,
+    "remaining_task_tokens": 41660
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 3400,
+    "history_bytes": 11221,
+    "append_only": true,
+    "remaining_task_tokens": 35652
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 4349,
+    "history_bytes": 14073,
+    "append_only": true,
+    "remaining_task_tokens": 29091
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 5088,
+    "history_bytes": 16625,
+    "append_only": true,
+    "remaining_task_tokens": 21659
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 5879,
+    "history_bytes": 18939,
+    "append_only": true,
+    "remaining_task_tokens": 13579
+   },
+   {
+    "step": 8,
+    "history_messages": 15,
+    "history_tokens": 6680,
+    "history_bytes": 21724,
+    "append_only": true,
+    "remaining_task_tokens": 4780
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2512,
+    "tokens": 565,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 248,
+    "tokens": 83,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 730,
+    "tokens": 302,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 248,
+    "tokens": 79,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 5493,
+    "tokens": 1736,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 288,
+    "tokens": 88,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1702,
+    "tokens": 547,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 256,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2596,
+    "tokens": 868,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 285,
+    "tokens": 88,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2267,
+    "tokens": 651,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 246,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 2068,
+    "tokens": 710,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 285,
+    "tokens": 92,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 2500,
+    "tokens": 709,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 3943,
+    "output_tokens": 61,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4275,
+    "output_tokens": 61,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5939,
+    "output_tokens": 69,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 6499,
+    "output_tokens": 62,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 7362,
+    "output_tokens": 70,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8019,
+    "output_tokens": 61,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 8729,
+    "output_tokens": 70,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 21
+ },
+ {
+  "instance_id": "astropy__astropy-8872",
+  "status": "failed",
+  "native_sha256": "b26acd55d5d6b4fd71d64d548af1288f3db81fd94a669386fb9e8dd6c51102fa",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 860,
+    "history_bytes": 3078,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1246,
+    "history_bytes": 4043,
+    "append_only": true,
+    "remaining_task_tokens": 45584
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2777,
+    "history_bytes": 7581,
+    "append_only": true,
+    "remaining_task_tokens": 40843
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 4432,
+    "history_bytes": 14041,
+    "append_only": true,
+    "remaining_task_tokens": 34622
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 4671,
+    "history_bytes": 14853,
+    "append_only": true,
+    "remaining_task_tokens": 26899
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 5537,
+    "history_bytes": 17510,
+    "append_only": true,
+    "remaining_task_tokens": 18989
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 6321,
+    "history_bytes": 19731,
+    "append_only": true,
+    "remaining_task_tokens": 10276
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 3078,
+    "tokens": 860,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 224,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 741,
+    "tokens": 305,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 224,
+    "tokens": 76,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 3314,
+    "tokens": 1455,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 261,
+    "tokens": 94,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 6199,
+    "tokens": 1561,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 271,
+    "tokens": 91,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 148,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 271,
+    "tokens": 91,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2386,
+    "tokens": 775,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 311,
+    "tokens": 99,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1910,
+    "tokens": 685,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4366,
+    "output_tokens": 50,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4691,
+    "output_tokens": 50,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6149,
+    "output_tokens": 72,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7654,
+    "output_tokens": 69,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 7838,
+    "output_tokens": 72,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8622,
+    "output_tokens": 91,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 22
+ },
+ {
+  "instance_id": "matplotlib__matplotlib-25775",
+  "status": "failed",
+  "native_sha256": "a786ed77569299afa67226028195f6cb077fb35f074ef45291731e47381e3528",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 639,
+    "history_bytes": 2872,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 5,
+    "history_tokens": 3056,
+    "history_bytes": 9688,
+    "append_only": true,
+    "remaining_task_tokens": 45532
+   },
+   {
+    "step": 3,
+    "history_messages": 10,
+    "history_tokens": 6594,
+    "history_bytes": 20796,
+    "append_only": true,
+    "remaining_task_tokens": 38783
+   },
+   {
+    "step": 4,
+    "history_messages": 14,
+    "history_tokens": 8563,
+    "history_bytes": 26302,
+    "append_only": true,
+    "remaining_task_tokens": 28984
+   },
+   {
+    "step": 5,
+    "history_messages": 17,
+    "history_tokens": 10058,
+    "history_bytes": 30749,
+    "append_only": true,
+    "remaining_task_tokens": 17468
+   },
+   {
+    "step": 6,
+    "history_messages": 19,
+    "history_tokens": 11158,
+    "history_bytes": 34708,
+    "append_only": true,
+    "remaining_task_tokens": 4721
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2872,
+    "tokens": 639,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 670,
+    "tokens": 234,
+    "tool_calls": [
+     "grep",
+     "grep",
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 4057,
+    "tokens": 1382,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 747,
+    "tokens": 301,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1342,
+    "tokens": 500,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 939,
+    "tokens": 351,
+    "tool_calls": [
+     "read_file",
+     "read_file",
+     "read_file",
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 3495,
+    "tokens": 997,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 2312,
+    "tokens": 782,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 2064,
+    "tokens": 661,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 2298,
+    "tokens": 747,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 670,
+    "tokens": 233,
+    "tool_calls": [
+     "grep",
+     "grep",
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 747,
+    "tokens": 306,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1448,
+    "tokens": 528,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 2641,
+    "tokens": 902,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 514,
+    "tokens": 174,
+    "tool_calls": [
+     "grep",
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1863,
+    "tokens": 660,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2070,
+    "tokens": 661,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 257,
+    "tokens": 91,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 3702,
+    "tokens": 1009,
+    "tool_calls": [],
+    "first_step": 6
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4272,
+    "output_tokens": 196,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 6449,
+    "output_tokens": 300,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 9601,
+    "output_tokens": 198,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 11363,
+    "output_tokens": 153,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 12678,
+    "output_tokens": 69,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 23
+ },
+ {
+  "instance_id": "pydata__xarray-7229",
+  "status": "failed",
+  "native_sha256": "3fa289a1df7d40f87ef3f3f16e25942550026e4dbf7435a848e134f831478a8d",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1586,
+    "history_bytes": 5138,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 3385,
+    "history_bytes": 10267,
+    "append_only": true,
+    "remaining_task_tokens": 44914
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 4829,
+    "history_bytes": 13931,
+    "append_only": true,
+    "remaining_task_tokens": 38161
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 5645,
+    "history_bytes": 16288,
+    "append_only": true,
+    "remaining_task_tokens": 30086
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 6183,
+    "history_bytes": 17679,
+    "append_only": true,
+    "remaining_task_tokens": 21322
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 11392,
+    "history_bytes": 32557,
+    "append_only": true,
+    "remaining_task_tokens": 12078
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 5138,
+    "tokens": 1586,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 243,
+    "tokens": 81,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 4886,
+    "tokens": 1718,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 297,
+    "tokens": 100,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 3367,
+    "tokens": 1344,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 262,
+    "tokens": 93,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 2095,
+    "tokens": 723,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 267,
+    "tokens": 85,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1124,
+    "tokens": 453,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 263,
+    "tokens": 86,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 14615,
+    "tokens": 5123,
+    "tool_calls": [],
+    "first_step": 6
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 5025,
+    "output_tokens": 61,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 6674,
+    "output_tokens": 79,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 8004,
+    "output_tokens": 71,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 8698,
+    "output_tokens": 66,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 9180,
+    "output_tokens": 64,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "",
+  "index": 24
+ }
+]

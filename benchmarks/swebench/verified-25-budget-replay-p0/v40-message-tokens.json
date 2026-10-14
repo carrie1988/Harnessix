@@ -1,0 +1,1338 @@
+[
+ {
+  "instance_id": "matplotlib__matplotlib-25960",
+  "status": "failed",
+  "native_sha256": "87838ee139533c0ae583ccdb98f3875cea4649b090037f105bd9af3ce0b51a05",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 484,
+    "history_bytes": 1662,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 2160,
+    "history_bytes": 7571,
+    "append_only": true,
+    "remaining_task_tokens": 45793
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 2785,
+    "history_bytes": 9388,
+    "append_only": true,
+    "remaining_task_tokens": 40005
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 4650,
+    "history_bytes": 15822,
+    "append_only": true,
+    "remaining_task_tokens": 33698
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 5340,
+    "history_bytes": 17819,
+    "append_only": true,
+    "remaining_task_tokens": 25670
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 6824,
+    "history_bytes": 23092,
+    "append_only": true,
+    "remaining_task_tokens": 17095
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 7473,
+    "history_bytes": 25021,
+    "append_only": true,
+    "remaining_task_tokens": 7119
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 1662,
+    "tokens": 484,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 425,
+    "tokens": 129,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 5484,
+    "tokens": 1547,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 495,
+    "tokens": 140,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1322,
+    "tokens": 485,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 280,
+    "tokens": 91,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 6154,
+    "tokens": 1774,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 580,
+    "tokens": 173,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1417,
+    "tokens": 517,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 299,
+    "tokens": 95,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 4974,
+    "tokens": 1389,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 653,
+    "tokens": 168,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1276,
+    "tokens": 481,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4100,
+    "output_tokens": 107,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5672,
+    "output_tokens": 116,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6233,
+    "output_tokens": 74,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7885,
+    "output_tokens": 143,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 8496,
+    "output_tokens": 79,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 9835,
+    "output_tokens": 141,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "baseline",
+  "index": 0
+ },
+ {
+  "instance_id": "pydata__xarray-4695",
+  "status": "failed",
+  "native_sha256": "7c9142743f9e92e4d7754fe12e264004c76db568ff6a731cf41ee32acee72e11",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1747,
+    "history_bytes": 4634,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 4,
+    "history_tokens": 2742,
+    "history_bytes": 7198,
+    "append_only": true,
+    "remaining_task_tokens": 44799
+   },
+   {
+    "step": 3,
+    "history_messages": 6,
+    "history_tokens": 4046,
+    "history_bytes": 11818,
+    "append_only": true,
+    "remaining_task_tokens": 38682
+   },
+   {
+    "step": 4,
+    "history_messages": 8,
+    "history_tokens": 4350,
+    "history_bytes": 12889,
+    "append_only": true,
+    "remaining_task_tokens": 31353
+   },
+   {
+    "step": 5,
+    "history_messages": 10,
+    "history_tokens": 4743,
+    "history_bytes": 13898,
+    "append_only": true,
+    "remaining_task_tokens": 23843
+   },
+   {
+    "step": 6,
+    "history_messages": 12,
+    "history_tokens": 5343,
+    "history_bytes": 15586,
+    "append_only": true,
+    "remaining_task_tokens": 15990
+   },
+   {
+    "step": 7,
+    "history_messages": 14,
+    "history_tokens": 6461,
+    "history_bytes": 19553,
+    "append_only": true,
+    "remaining_task_tokens": 7523
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 4634,
+    "tokens": 1747,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 683,
+    "tokens": 198,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1149,
+    "tokens": 494,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 732,
+    "tokens": 303,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 424,
+    "tokens": 127,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 4196,
+    "tokens": 1177,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 530,
+    "tokens": 157,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 147,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 259,
+    "tokens": 86,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 750,
+    "tokens": 307,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 255,
+    "tokens": 83,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 1433,
+    "tokens": 517,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 530,
+    "tokens": 161,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 3437,
+    "tokens": 957,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 5041,
+    "output_tokens": 160,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 6009,
+    "output_tokens": 108,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 7193,
+    "output_tokens": 136,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7444,
+    "output_tokens": 66,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 7787,
+    "output_tokens": 66,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8326,
+    "output_tokens": 141,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "baseline",
+  "index": 1
+ },
+ {
+  "instance_id": "pytest-dev__pytest-10051",
+  "status": "failed",
+  "native_sha256": "6c0b2fad9f844446f931af3da02120803163b491261543b46d89b5dba175a08a",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 732,
+    "history_bytes": 2262,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1427,
+    "history_bytes": 4481,
+    "append_only": true,
+    "remaining_task_tokens": 45664
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 1834,
+    "history_bytes": 5613,
+    "append_only": true,
+    "remaining_task_tokens": 40636
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 2078,
+    "history_bytes": 6470,
+    "append_only": true,
+    "remaining_task_tokens": 35260
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 3144,
+    "history_bytes": 9669,
+    "append_only": true,
+    "remaining_task_tokens": 29703
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 4051,
+    "history_bytes": 12672,
+    "append_only": true,
+    "remaining_task_tokens": 23152
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 4706,
+    "history_bytes": 14583,
+    "append_only": true,
+    "remaining_task_tokens": 15833
+   },
+   {
+    "step": 8,
+    "history_messages": 15,
+    "history_tokens": 5516,
+    "history_bytes": 17137,
+    "append_only": true,
+    "remaining_task_tokens": 7911
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2262,
+    "tokens": 732,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 362,
+    "tokens": 110,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1857,
+    "tokens": 585,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 385,
+    "tokens": 110,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 747,
+    "tokens": 297,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 316,
+    "tokens": 98,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 146,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 255,
+    "tokens": 84,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2944,
+    "tokens": 982,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 428,
+    "tokens": 130,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2575,
+    "tokens": 777,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 356,
+    "tokens": 105,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1555,
+    "tokens": 550,
+    "tool_calls": [],
+    "first_step": 7
+   },
+   {
+    "role": "assistant",
+    "bytes": 386,
+    "tokens": 119,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 8
+   },
+   {
+    "role": "tool",
+    "bytes": 2168,
+    "tokens": 691,
+    "tool_calls": [],
+    "first_step": 8
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4243,
+    "output_tokens": 93,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 4944,
+    "output_tokens": 84,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 5297,
+    "output_tokens": 79,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 5492,
+    "output_tokens": 65,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 6450,
+    "output_tokens": 101,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 7231,
+    "output_tokens": 88,
+    "completeness": "complete"
+   },
+   {
+    "step": 7,
+    "status": "completed",
+    "input_tokens": 7823,
+    "output_tokens": 99,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "baseline",
+  "index": 2
+ },
+ {
+  "instance_id": "matplotlib__matplotlib-25960",
+  "status": "failed",
+  "native_sha256": "5bbd391fa0e2ec445153512c96e7571ff7a231387ebb6210af2156c74919bcc8",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 484,
+    "history_bytes": 1662,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 3,
+    "history_tokens": 1741,
+    "history_bytes": 6022,
+    "append_only": true,
+    "remaining_task_tokens": 45516
+   },
+   {
+    "step": 3,
+    "history_messages": 5,
+    "history_tokens": 3234,
+    "history_bytes": 11439,
+    "append_only": true,
+    "remaining_task_tokens": 39761
+   },
+   {
+    "step": 4,
+    "history_messages": 7,
+    "history_tokens": 3491,
+    "history_bytes": 12329,
+    "append_only": true,
+    "remaining_task_tokens": 32773
+   },
+   {
+    "step": 5,
+    "history_messages": 9,
+    "history_tokens": 3966,
+    "history_bytes": 13524,
+    "append_only": true,
+    "remaining_task_tokens": 25628
+   },
+   {
+    "step": 6,
+    "history_messages": 11,
+    "history_tokens": 5829,
+    "history_bytes": 19933,
+    "append_only": true,
+    "remaining_task_tokens": 18046
+   },
+   {
+    "step": 7,
+    "history_messages": 13,
+    "history_tokens": 6410,
+    "history_bytes": 21508,
+    "append_only": true,
+    "remaining_task_tokens": 8744
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 1662,
+    "tokens": 484,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 433,
+    "tokens": 135,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 3927,
+    "tokens": 1122,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 654,
+    "tokens": 194,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 4763,
+    "tokens": 1299,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 349,
+    "tokens": 108,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 149,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 224,
+    "tokens": 76,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 971,
+    "tokens": 399,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 255,
+    "tokens": 89,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 6154,
+    "tokens": 1774,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 595,
+    "tokens": 178,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 980,
+    "tokens": 403,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4374,
+    "output_tokens": 110,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5586,
+    "output_tokens": 169,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6909,
+    "output_tokens": 79,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7103,
+    "output_tokens": 42,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 7513,
+    "output_tokens": 69,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 9160,
+    "output_tokens": 142,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "definition",
+  "index": 0
+ },
+ {
+  "instance_id": "pydata__xarray-4695",
+  "status": "failed",
+  "native_sha256": "541ed34f7bcc8ba8271fa0fcc1899eff8e45845ed63e22f438ddb18fc121bd84",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 1747,
+    "history_bytes": 4634,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 4,
+    "history_tokens": 2761,
+    "history_bytes": 7254,
+    "append_only": true,
+    "remaining_task_tokens": 44508
+   },
+   {
+    "step": 3,
+    "history_messages": 6,
+    "history_tokens": 3508,
+    "history_bytes": 9646,
+    "append_only": true,
+    "remaining_task_tokens": 38061
+   },
+   {
+    "step": 4,
+    "history_messages": 8,
+    "history_tokens": 4224,
+    "history_bytes": 11701,
+    "append_only": true,
+    "remaining_task_tokens": 30898
+   },
+   {
+    "step": 5,
+    "history_messages": 10,
+    "history_tokens": 4935,
+    "history_bytes": 13838,
+    "append_only": true,
+    "remaining_task_tokens": 23039
+   },
+   {
+    "step": 6,
+    "history_messages": 12,
+    "history_tokens": 5617,
+    "history_bytes": 15902,
+    "append_only": true,
+    "remaining_task_tokens": 14505
+   },
+   {
+    "step": 7,
+    "history_messages": 14,
+    "history_tokens": 6357,
+    "history_bytes": 18239,
+    "append_only": true,
+    "remaining_task_tokens": 5396
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 4634,
+    "tokens": 1747,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 739,
+    "tokens": 216,
+    "tool_calls": [
+     "grep",
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1149,
+    "tokens": 494,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 732,
+    "tokens": 304,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 519,
+    "tokens": 151,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1873,
+    "tokens": 596,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 643,
+    "tokens": 193,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 1412,
+    "tokens": 523,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 769,
+    "tokens": 228,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 1368,
+    "tokens": 483,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 835,
+    "tokens": 246,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 1229,
+    "tokens": 436,
+    "tool_calls": [],
+    "first_step": 6
+   },
+   {
+    "role": "assistant",
+    "bytes": 702,
+    "tokens": 205,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 7
+   },
+   {
+    "role": "tool",
+    "bytes": 1635,
+    "tokens": 535,
+    "tool_calls": [],
+    "first_step": 7
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 5315,
+    "output_tokens": 177,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 6301,
+    "output_tokens": 146,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 6992,
+    "output_tokens": 171,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 7637,
+    "output_tokens": 222,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 8297,
+    "output_tokens": 237,
+    "completeness": "complete"
+   },
+   {
+    "step": 6,
+    "status": "completed",
+    "input_tokens": 8927,
+    "output_tokens": 182,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "definition",
+  "index": 1
+ },
+ {
+  "instance_id": "pytest-dev__pytest-10051",
+  "status": "failed",
+  "native_sha256": "bb12d238d30064efe1d2a4b6e7f0c4501c7033dfbad94430ebb44ccad717c168",
+  "view_mismatch": 0,
+  "compactions": 0,
+  "steps": [
+   {
+    "step": 1,
+    "history_messages": 1,
+    "history_tokens": 732,
+    "history_bytes": 2262,
+    "append_only": true,
+    "remaining_task_tokens": 50000
+   },
+   {
+    "step": 2,
+    "history_messages": 4,
+    "history_tokens": 1836,
+    "history_bytes": 5425,
+    "append_only": true,
+    "remaining_task_tokens": 45290
+   },
+   {
+    "step": 3,
+    "history_messages": 7,
+    "history_tokens": 3913,
+    "history_bytes": 11481,
+    "append_only": true,
+    "remaining_task_tokens": 39451
+   },
+   {
+    "step": 4,
+    "history_messages": 10,
+    "history_tokens": 4980,
+    "history_bytes": 14806,
+    "append_only": true,
+    "remaining_task_tokens": 31710
+   },
+   {
+    "step": 5,
+    "history_messages": 12,
+    "history_tokens": 6059,
+    "history_bytes": 18061,
+    "append_only": true,
+    "remaining_task_tokens": 23177
+   },
+   {
+    "step": 6,
+    "history_messages": 14,
+    "history_tokens": 7016,
+    "history_bytes": 21092,
+    "append_only": true,
+    "remaining_task_tokens": 13582
+   }
+  ],
+  "messages": [
+   {
+    "role": "user",
+    "bytes": 2262,
+    "tokens": 732,
+    "tool_calls": [],
+    "first_step": 1
+   },
+   {
+    "role": "assistant",
+    "bytes": 663,
+    "tokens": 200,
+    "tool_calls": [
+     "read_file",
+     "grep"
+    ],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1003,
+    "tokens": 371,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "tool",
+    "bytes": 1497,
+    "tokens": 533,
+    "tool_calls": [],
+    "first_step": 2
+   },
+   {
+    "role": "assistant",
+    "bytes": 647,
+    "tokens": 245,
+    "tool_calls": [
+     "read_file",
+     "grep"
+    ],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 1518,
+    "tokens": 502,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "tool",
+    "bytes": 3891,
+    "tokens": 1330,
+    "tool_calls": [],
+    "first_step": 3
+   },
+   {
+    "role": "assistant",
+    "bytes": 634,
+    "tokens": 241,
+    "tool_calls": [
+     "grep",
+     "read_file"
+    ],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 541,
+    "tokens": 145,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "tool",
+    "bytes": 2150,
+    "tokens": 681,
+    "tool_calls": [],
+    "first_step": 4
+   },
+   {
+    "role": "assistant",
+    "bytes": 311,
+    "tokens": 97,
+    "tool_calls": [
+     "grep"
+    ],
+    "first_step": 5
+   },
+   {
+    "role": "tool",
+    "bytes": 2944,
+    "tokens": 982,
+    "tool_calls": [],
+    "first_step": 5
+   },
+   {
+    "role": "assistant",
+    "bytes": 456,
+    "tokens": 180,
+    "tool_calls": [
+     "read_file"
+    ],
+    "first_step": 6
+   },
+   {
+    "role": "tool",
+    "bytes": 2575,
+    "tokens": 777,
+    "tool_calls": [],
+    "first_step": 6
+   }
+  ],
+  "attempts": [
+   {
+    "step": 1,
+    "status": "completed",
+    "input_tokens": 4517,
+    "output_tokens": 193,
+    "completeness": "complete"
+   },
+   {
+    "step": 2,
+    "status": "completed",
+    "input_tokens": 5613,
+    "output_tokens": 226,
+    "completeness": "complete"
+   },
+   {
+    "step": 3,
+    "status": "completed",
+    "input_tokens": 7516,
+    "output_tokens": 225,
+    "completeness": "complete"
+   },
+   {
+    "step": 4,
+    "status": "completed",
+    "input_tokens": 8454,
+    "output_tokens": 79,
+    "completeness": "complete"
+   },
+   {
+    "step": 5,
+    "status": "completed",
+    "input_tokens": 9428,
+    "output_tokens": 167,
+    "completeness": "complete"
+   }
+  ],
+  "arm": "definition",
+  "index": 2
+ }
+]
