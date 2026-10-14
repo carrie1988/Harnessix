@@ -1,0 +1,17 @@
+{
+  "scope": "只读故障认证与未执行槽承接宿主负控，非编码质量",
+  "source_revision": "5b65a074b802eebe3bf7dab9ab8e454c6910d15f",
+  "runner_sha256": "acf0c0e835cd8982241607181d07f308e88775efa316e2ddb5ea26c1d885751d",
+  "tests": {
+    "tests": 102,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "b20a968900e1beaf025980ea9d801366a705b5e9969f6853a827d1dc2b2caa82",
+  "previous_failure_retained": true,
+  "old_native_case_immutable": true,
+  "original_failed_case_retried": false,
+  "inference_requests_in_preflight": 0,
+  "original_group_reserve_held_amount": "36"
+}
