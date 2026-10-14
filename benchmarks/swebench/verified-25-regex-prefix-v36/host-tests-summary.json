@@ -1,0 +1,18 @@
+{
+  "tests": {
+    "tests": 46,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "runner_sha256": "c2d2bfaaf47565025ce7fb850578e8a11f8e4f8b6f7e925ef6f7d72ca0194ab0",
+  "helper_sha256": "57a5c71d581904f00a45e6aff8d141f475b847d3f8aaa81fbc78a53301cc7d67",
+  "test_source_sha256": "b80394f7be0232bc209bb59a8ee4f6dfecf260462e1635c9d43cf40b527020cd",
+  "xml_sha256": "2d70f102bc311f96e288b9e0b97e5facc43549d3a52b53405eed2ad92acb8d77",
+  "log_sha256": "ef784c7699d7f63a338d711b51428bcdd5a80b15cfacd1463ca4d296d89fa8f9",
+  "inference_requests": 0,
+  "docker_operations": 0,
+  "ready_case_metadata_allowed": true,
+  "future_workspaces_native_and_effects_forbidden": true,
+  "limitations": "离线宿主负控，不代表真实模型质量"
+}

@@ -1,0 +1,52 @@
+{
+  "schema": "harnessix.swebench-regex-prefix-diagnostic/v1",
+  "frozen_at": "2026-10-14T05:16:11.222082+00:00",
+  "runner_sha256": "c2d2bfaaf47565025ce7fb850578e8a11f8e4f8b6f7e925ef6f7d72ca0194ab0",
+  "helper_sha256": "57a5c71d581904f00a45e6aff8d141f475b847d3f8aaa81fbc78a53301cc7d67",
+  "source_revision": "eecf8d1ca90d6b51547386fbc1171f513830646d",
+  "source_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "selected_case_ids": [
+    "matplotlib__matplotlib-25960",
+    "pydata__xarray-4695",
+    "pytest-dev__pytest-10051"
+  ],
+  "executions": 3,
+  "execution_order": [
+    0,
+    1,
+    2
+  ],
+  "maximum_cost_amount": "18",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "profile_preflight_sha256": "0b21431eda72f987b1bbf732549fa45cadbc4bc50263dc509ffe521c4460cbf9",
+  "arms": [
+    {
+      "name": "regex",
+      "plan_sha256": "8b4fd7acdd6f06a60eeb51972630b29f0deb40eb1c384d602b302803943a804a",
+      "execution_fingerprint": "32ca580cb63776f80e694453f82d1bb9be89aec87149b9552165b1d099a36b97",
+      "maximum_cost_amount": "18",
+      "plan_file_sha256": "b92892cda6283893124231cddae40870c9f4d2fa577788d7bc6ffeddba9b3877",
+      "config_file_sha256": "0e826ac35846c978da2bf65a29c9cf08bc7c6f0c5f9ff77ea39bfc46d4f32fc9"
+    }
+  ],
+  "changed_fields": [
+    "bounded_regex_or_explicit_literal_search",
+    "matching_runtime_context",
+    "source_revision_and_execution_identity"
+  ],
+  "unchanged": [
+    "case_order",
+    "problem_statements",
+    "model",
+    "nonthinking",
+    "50K_cumulative_tokens",
+    "16_total_requests",
+    "900s",
+    "public_test_profiles",
+    "no_retry",
+    "all_security_controls"
+  ],
+  "official_score": null,
+  "complete_25_case_suite": false,
+  "limitations": "开发集原顺序前三项新尝试；不是25项官方成绩或全新泛化证据。库和同次SHA属于搜索配置整体，不能作单因素统计因果声明。"
+}
