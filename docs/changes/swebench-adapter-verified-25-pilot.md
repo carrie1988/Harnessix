@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 25
-code_revision: 6090f8c30cc99de5b86f6ee9bb95e16c89d52329
+code_revision: 6a2afdf146d7ad63f25980319524643db1d0d6a5
 owners:
   - core
 modules:
@@ -1099,3 +1099,16 @@ POSIX严格UTF-8重新编码不改变BOM、CRLF或Unicode；原生端直接使�
 逐字一致，无重复实现。全仓可读性策略仍有历史债务及Runtime类增加3行、执行入口增加1行，
 未放宽策略。源码类型检查、变更Ruff、Schema及文档门禁和仓库Secret扫描分别记录。
 本机余量降至约6 GiB，低于10 GiB保护线，真实配对尚未准备或计费，不能报质量收益。
+
+### 后续闭环整改：可选预测试，不恢复强制首轮baseline
+
+源码研究确认，首补丁前隐藏Profile来自`CodingWorkflowToolView`，不是执行器要求已有修改。
+现有固定公开Profile支持显式存在的公开测试路径或原生label；空selectors依赖变化推断，
+未修改时不保证有目标。下一候选应允许模型先复现，但不强制首轮测试、修改或安装。
+预测试成功不能抵扣补丁后强制测试，预测试非零也不能直接认定业务缺陷已复现。
+
+仅加回工具目录不够：`supports_parallel_calls=False`只控制串并行，不拒绝同响应Test/Patch。
+必须先建立通用调用组互斥合同，在发布可执行调用前拒绝两种顺序的混合组，且所有执行器
+调用数为零；Read+Test仍合法，默认无约束时旧行为不变。再开放可选预测试，仍使用原镜像、
+只读Workspace、无网络、资源限制、审批和取消/超时/未知状态闭锁。不新增任意Shell，
+不按Case分支，不修改最终质量判定。上述为下一实施边界，尚未实现或真实验收。

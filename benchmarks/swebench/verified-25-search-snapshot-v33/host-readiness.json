@@ -1,0 +1,15 @@
+{
+  "schema": "harnessix.swebench-search-snapshot-readiness/v1",
+  "checked_at": "2026-10-14T01:49:49.871308+00:00",
+  "source_revision": "6a2afdf146d7ad63f25980319524643db1d0d6a5",
+  "runner_sha256": "1a64fba4c6dabdcc81543d7e6603454795b87ec12a93aa2250a0747ecf46c6d1",
+  "experiment_prepared": false,
+  "paid_model_requests": 0,
+  "free_gib": 6.008,
+  "minimum_free_gib": 10,
+  "decision": "NO_GO",
+  "reason_code": "swebench_disk_space_low",
+  "ledger_sha256": "073c9f8b8c5fb97e8c09b21b65b577b5468d3c0ad507b033939d30361a272b9a",
+  "budget_unchanged": true,
+  "latest_official_score": "3/25"
+}
