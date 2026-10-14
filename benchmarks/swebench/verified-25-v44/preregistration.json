@@ -7,7 +7,7 @@
   "source_revision": "f28621fc2c37f58b146c455ef9ac3e701e1e2464",
   "run_config_spec": "harnessix.swebench-agent-run-config/v16",
   "run_config_file_sha256": "d98088fbf01d84e6a6abfd2d30f978804e1427dd5b956ca8c71097bd884d41b0",
-  "execute_host_sha256": "e1ba1a3354d72fa9b607eaa0de0938bf2494f26832d81ffc8df7e0f82ecc99fb",
+  "execute_host_sha256": "9fd79b3edc594b056018418e11e2f61811c11c9b6834059b0429b5e8623b2d89",
   "evaluate_host_sha256": "33b612ffa70695d7508f60f1e8d0ee493fc223eaa6d2d97f0cead3e1adece04a",
   "candidate": {
     "working_set_result_groups": 2,
@@ -43,5 +43,12 @@
   },
   "official_evaluation": "after complete 25 predictions, frozen evaluator workers=1",
   "prior_results_not_mixed": "v27 3/25 remains the previous complete official score; prefix diagnostics v41-v43 are not merged",
-  "generalization_claim": false
+  "generalization_claim": false,
+  "amendments": [
+    {
+      "before_any_model_request": true,
+      "previous_execute_host_sha256": "e1ba1a3354d72fa9b607eaa0de0938bf2494f26832d81ffc8df7e0f82ecc99fb",
+      "reason": "ledger allocation matched by plan_sha256 only collided with the same-plan v43 prefix diagnostic; now matched by plan_sha256 and execution_fingerprint; first attempt stopped at the ledger assertion with no reservation, no model request and no case state"
+    }
+  ]
 }
