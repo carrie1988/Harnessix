@@ -1,0 +1,182 @@
+{
+  "scope": "development_prefix3_workflow_diagnostic_not_official_score",
+  "candidate_source_revision": "b0f03b63893b9c038512a17e143477313c0f7ae7",
+  "runner_sha256": "57a5c71d581904f00a45e6aff8d141f475b847d3f8aaa81fbc78a53301cc7d67",
+  "preregistration_sha256": "be49f05e7532a8fbf288e7af5fcfac79a56c3668b15c7ccefed7d46ab5f1f899",
+  "decision": "NO_GO",
+  "executions": 9,
+  "arms": [
+    {
+      "name": "baseline",
+      "executions": 3,
+      "autonomous_closed": 0,
+      "nonempty_patches": 0,
+      "budget_failures": 3,
+      "model_steps": [
+        7,
+        5,
+        7
+      ],
+      "input_tokens": 128799,
+      "output_tokens": 1994,
+      "cost_complete": true,
+      "known_cost_upper_amount": "1.617372"
+    },
+    {
+      "name": "snapshot",
+      "executions": 3,
+      "autonomous_closed": 0,
+      "nonempty_patches": 0,
+      "budget_failures": 3,
+      "model_steps": [
+        6,
+        6,
+        7
+      ],
+      "input_tokens": 129376,
+      "output_tokens": 2031,
+      "cost_complete": true,
+      "known_cost_upper_amount": "1.625628"
+    },
+    {
+      "name": "optional",
+      "executions": 3,
+      "autonomous_closed": 0,
+      "nonempty_patches": 0,
+      "budget_failures": 3,
+      "model_steps": [
+        7,
+        6,
+        6
+      ],
+      "input_tokens": 132705,
+      "output_tokens": 2114,
+      "cost_complete": true,
+      "known_cost_upper_amount": "1.668564"
+    }
+  ],
+  "independent_verification": {
+    "verification": "PASS",
+    "inference_requests": 0,
+    "tool_executions": 0,
+    "authentic_terminal_turns": 9,
+    "native_and_state_files_verified": 18,
+    "native_and_state_files_unchanged": true,
+    "ledger_unchanged": true,
+    "retired_workspaces": 9,
+    "new_unknown_cost_reserve_amount": "0",
+    "known_cost_upper_amount": "4.911564",
+    "current_period_available_amount": "117.783212",
+    "currency": "CNY",
+    "cases": [
+      {
+        "arm": "baseline",
+        "index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "native_sha256": "2784f8d046fa64e5a5c4497a0dc2ffd65070207e31f780297a2f61a4f35d62af",
+        "state_sha256": "2694701e706bf82ee9de682ee146e75539b9d7fdda86891f2ba061366c1902fd",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.5724",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "baseline",
+        "index": 1,
+        "instance_id": "pydata__xarray-4695",
+        "native_sha256": "843241d38e24104983ea30760d9ef3ef8eaefe14743b6c4afb8fec231c8cb6cc",
+        "state_sha256": "b9c3d2ec440eb06e3d63e32385daa099e399d9b1a59694d1e50ef9ebe6b2643d",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.504156",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "baseline",
+        "index": 2,
+        "instance_id": "pytest-dev__pytest-10051",
+        "native_sha256": "a6c04991c80f7c912651fa0e6a73cf4ecc22536eebc35f49b31ebb07c5bd94c4",
+        "state_sha256": "66f786b4a8c1bafdfbb12871851d5c5d113f35a3cb944d4f0587a22e138bc147",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.540816",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "snapshot",
+        "index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "native_sha256": "c525d2957972962536d22266bfc4dedec997c6768874415e49e37897b33fe58c",
+        "state_sha256": "e35d3e07e4a65ff845764b46143042f1c86ab4463eeee291fa08972e40fd95ab",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.508656",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "snapshot",
+        "index": 1,
+        "instance_id": "pydata__xarray-4695",
+        "native_sha256": "c3ac728a3ba68a6dfeeafe64518ffb019d70f672aae61ac8b4408b30828e1aa6",
+        "state_sha256": "53528dc40681fe8960d6730f9d7aa38ac962b478d2b62cf9786cda0cc8785ac5",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.560292",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "snapshot",
+        "index": 2,
+        "instance_id": "pytest-dev__pytest-10051",
+        "native_sha256": "48f1dcbe277148fc5126c48f45e6d51e5f0db324cf378e81059cf878212856fc",
+        "state_sha256": "5138b24ee14f3288f254bcd2102ea1d7451a87c876619b1f83dca3668f74d7af",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.55668",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "optional",
+        "index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "native_sha256": "55d1d93eca9b05fa45b8cf773d905eaaf123094c2a5baa22d981432da6693d51",
+        "state_sha256": "a9be94b981c0edd4c1aba490c3836b23f65144fe621b72d92bc6d0581d195d66",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.569436",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "optional",
+        "index": 1,
+        "instance_id": "pydata__xarray-4695",
+        "native_sha256": "b85a14fafca4af000f37f1d35b3ba0f3e02eda477660e76f621de5b58489da1e",
+        "state_sha256": "1bb7f0f8eec92c3f5839bf5e39221ff339b7004437b85673ca9a513ba05578aa",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.544032",
+        "patch_nonempty": false
+      },
+      {
+        "arm": "optional",
+        "index": 2,
+        "instance_id": "pytest-dev__pytest-10051",
+        "native_sha256": "c201f4b339b7aa9614f832d054b9a62c385e025ffb9d050e9774ccae4549e941",
+        "state_sha256": "05c0a2802e2412b1b87d34b97ddee7ffd28e63e0f090604f45ba12161a677bc3",
+        "failed_boundary": "budget_exceeded",
+        "known_cost_upper_amount": "0.555096",
+        "patch_nonempty": false
+      }
+    ],
+    "official_score": null,
+    "complete_25_case_suite": false
+  },
+  "observations": [
+    "三组九次均预算准入失败及空补丁，未执行修改后测试或Review",
+    "调查请求5至7步；历史重复输入持续增加",
+    "轨迹出现正则转义用于字面grep及越界参数，不能只归因摘要或模型模式",
+    "搜索SHA与可选预测试未在本样本证明闭环改善，不推广"
+  ],
+  "next_focus": [
+    "测量固定工具/指令与增长历史在实际出站中的开销，复用现有投影，不重复标题清理或放松准入",
+    "求证工具语义、有效调查与修改/验证阶段控制的组合缺口；不增加原50K/16次预算、不做Case专用修复"
+  ],
+  "reconciliation_entrypoint_used": false,
+  "reconciliation_review_debt": "私有宿主reconcile尚需增加重算原生失败码与Case状态完全一致负控；本轮未调用，后续宿主须修复后才能使用。正式Suite原比较不变。",
+  "latest_complete_official_score": "3/25",
+  "official_score": null,
+  "complete_25_case_suite": false,
+  "fresh_generalization_gate": "OPEN"
+}
