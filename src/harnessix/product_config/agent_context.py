@@ -27,6 +27,16 @@ _PLANNING_INSTRUCTIONS = (
     "not guesses. Plan status is self-reported and grants no execution authority; "
     "actual patch, Profile and Review results remain authoritative."
 )
+_CLOSING_PHASE_INSTRUCTIONS = (
+    "The host may close free source investigation when its observed request ledger suggests "
+    "the remaining turn should be reserved for patch, validation, review and final response. "
+    "This is a scheduling preference, not a guarantee of enough tokens or source evidence. "
+    "When only the patch tool is offered with auto choice, make the smallest exact change only "
+    "if current observations are sufficient; otherwise honestly finish with the missing evidence "
+    "and blocker. Never guess a change, claim tests ran, or fake completion. All patch approval, "
+    "freshness checks and required post-edit testing/review remain unchanged."
+)
+
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (
     "Search snapshot mode: the read_file rule for Patch expected_sha256 also permits grep "
     "content_sha256, the full file SHA from the same read that produced the match, not revision. "
@@ -176,10 +186,13 @@ def build_product_agent_context(
     enable_grep_snapshots: bool = False,
     allow_optional_pre_edit_profile: bool = False,
     enable_regex_search: bool = False,
+    reserve_closing_phase: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
         raise ValueError("产品Context输出预留必须为1到1000000 Token")
+    if type(reserve_closing_phase) is not bool:
+        raise ValueError("产品调查收尾开关必须是布尔值")
     if type(enable_planning) is not bool:
         raise ValueError("产品规划指令开关必须是布尔值")
     if type(enable_regex_search) is not bool:
@@ -211,6 +224,17 @@ def build_product_agent_context(
                     allow_optional_pre_edit_profile,
                     enable_regex_search=enable_regex_search,
                 ),
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.coding-closing-preference/v1",
+                        content=_CLOSING_PHASE_INSTRUCTIONS,
+                    ),
+                )
+                if reserve_closing_phase
+                else ()
             ),
             *(
                 (

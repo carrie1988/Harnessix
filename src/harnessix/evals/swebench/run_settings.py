@@ -143,6 +143,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def closing_phase_enabled(self) -> bool:
+        return False
+
+    @property
     def regex_search_enabled(self) -> bool:
         return False
 

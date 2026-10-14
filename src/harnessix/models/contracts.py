@@ -135,3 +135,11 @@ class ModelInputTokenEstimator(Protocol):
     def input_token_identity(self) -> tuple[str, str]: ...
 
     def estimate_input_tokens(self, request: ModelRequest, *, prefix_items: int = 0) -> int: ...
+
+
+@runtime_checkable
+class CompactionSummaryProjection(Protocol):
+    """可选纯承诺：Native 摘要投影以 JSON string 入 wire，占满预留的 ASCII 支配合法摘要。"""
+
+    @property
+    def compaction_summary_projection(self) -> Literal["native-document-json-string/v1"]: ...

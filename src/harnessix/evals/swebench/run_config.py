@@ -248,6 +248,39 @@ class SweBenchRegexAgentRunConfig(_SweBenchAgentRunSettings):
         return True
 
 
+class SweBenchClosingAgentRunConfig(_SweBenchAgentRunSettings):
+    """独立v11：从持久请求事实派生调查收尾偏好，不扩张任务预算。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v11"] = (
+        "harnessix.swebench-agent-run-config/v11"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+    context_budget_policy: Literal["amortized_pressure_window"] = "amortized_pressure_window"
+    workspace_policy: Literal["sealed_terminal_retirement"] = "sealed_terminal_retirement"
+    closing_policy: Literal["observed_input_four_call_closing_preference"] = (
+        "observed_input_four_call_closing_preference"
+    )
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return True
+
+    @property
+    def workspace_retirement_enabled(self) -> bool:
+        return True
+
+    @property
+    def closing_phase_enabled(self) -> bool:
+        return True
+
+
 SweBenchRunConfig = (
     SweBenchAgentRunConfig
     | SweBenchIsolatedAgentRunConfig
@@ -258,6 +291,7 @@ SweBenchRunConfig = (
     | SweBenchOptionalPreEditAgentRunConfig
     | SweBenchRecyclingAgentRunConfig
     | SweBenchRegexAgentRunConfig
+    | SweBenchClosingAgentRunConfig
 )
 
 
@@ -279,6 +313,7 @@ def _run_config_type(
     allow_optional_pre_edit_profile: bool,
     recycle_workspaces: bool,
     enable_regex_search: bool,
+    reserve_closing_phase: bool,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -290,6 +325,7 @@ def _run_config_type(
         (allow_optional_pre_edit_profile, "可选预测试"),
         (recycle_workspaces, "工作区回收"),
         (enable_regex_search, "正则搜索"),
+        (reserve_closing_phase, "调查收尾"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -298,7 +334,8 @@ def _run_config_type(
         enable_grep_snapshots
         or allow_optional_pre_edit_profile
         or recycle_workspaces
-        or enable_regex_search,
+        or enable_regex_search
+        or reserve_closing_phase,
         isolated=isolate_provider_failures,
         pressure_window=budget_pressure_compaction,
         planning=enable_planning,
@@ -306,6 +343,15 @@ def _run_config_type(
     )
     if enable_grep_snapshots and allow_optional_pre_edit_profile:
         raise ValueError("SWE-bench可选预测试与搜索快照必须独立冻结，不隐式组合候选")
+    if reserve_closing_phase:
+        if (
+            enable_grep_snapshots
+            or enable_regex_search
+            or allow_optional_pre_edit_profile
+            or not recycle_workspaces
+        ):
+            raise ValueError("SWE-bench调查收尾候选需认证回收，不混入其他工具候选")
+        return SweBenchClosingAgentRunConfig
     if enable_regex_search:
         if enable_grep_snapshots or allow_optional_pre_edit_profile or not recycle_workspaces:
             raise ValueError("SWE-bench正则搜索需保留认证回收，不隐式混入其他工具候选")
@@ -354,6 +400,7 @@ def build_swebench_agent_run_config(
     allow_optional_pre_edit_profile: bool = False,
     recycle_workspaces: bool = False,
     enable_regex_search: bool = False,
+    reserve_closing_phase: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -368,6 +415,7 @@ def build_swebench_agent_run_config(
         allow_optional_pre_edit_profile=allow_optional_pre_edit_profile,
         recycle_workspaces=recycle_workspaces,
         enable_regex_search=enable_regex_search,
+        reserve_closing_phase=reserve_closing_phase,
     )
     config = config_model(
         plan_sha256=plan.plan_sha256,

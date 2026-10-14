@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 
 from harnessix.agent.models import (
     ItemStatus,
+    TextContent,
     ToolCallContent,
     ToolResultContent,
     Turn,
@@ -15,6 +16,7 @@ from harnessix.agent.ports import ModelToolSelection
 from harnessix.delivery.rollback_action import WORKSPACE_ROLLBACK_TOOL
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import EffectClass, ToolDescriptor
+from harnessix.product_config.coding_closure_budget import prefer_closing_over_investigation
 
 _PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
@@ -228,6 +230,37 @@ def _workflow_is_supported(
     )
 
 
+def _complete_content_sha(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value)
+    )
+
+
+def _has_edit_snapshot(observations: tuple[_Observation, ...]) -> bool:
+    """只检查已发布完整内容SHA；这是调度就绪信号，不替代Patch端的新鲜度检查。"""
+    for observation in observations:
+        if observation.result.outcome != "succeeded" or not isinstance(
+            observation.result.output, dict
+        ):
+            continue
+        output = observation.result.output
+        if observation.tool == "read_file" and output.get("digest_status") == "complete":
+            if _complete_content_sha(output.get("content_sha256")):
+                return True
+        if observation.tool == "grep":
+            preview = output.get("preview", output)
+            matches = preview.get("matches") if isinstance(preview, dict) else None
+            if isinstance(matches, list):
+                if any(
+                    isinstance(hit, dict) and _complete_content_sha(hit.get("content_sha256"))
+                    for hit in matches
+                ):
+                    return True
+    return False
+
+
 def _workflow_failed(observations: tuple[_Observation, ...]) -> bool:
     """只接受确定的测试非零退出；基础设施或未闭合Profile不能进入修复。"""
     return any(_is_infrastructure_failure(item.result) for item in observations) or any(
@@ -254,8 +287,11 @@ class CodingWorkflowToolView:
     require_pre_edit_profile: bool = True
     enable_planning: bool = False
     allow_optional_pre_edit_profile: bool = False
+    reserve_closing_phase: bool = False
 
     def __post_init__(self) -> None:
+        if type(self.reserve_closing_phase) is not bool:
+            raise ValueError("调查收尾工具目录开关必须是布尔值")
         if type(self.enable_planning) is not bool:
             raise ValueError("规划工具目录开关必须是布尔值")
         if type(self.allow_optional_pre_edit_profile) is not bool:
@@ -274,6 +310,8 @@ class CodingWorkflowToolView:
             else definitions
         )
         selection = self._select_workflow(turn, workflow_definitions)
+        if self.reserve_closing_phase:
+            selection = self._prefer_closing(turn, selection)
         baseline_pending = (
             self.require_pre_edit_profile
             and any(tool.name.startswith("run_profile.") for tool in selection.tools)
@@ -297,6 +335,34 @@ class CodingWorkflowToolView:
             if self.allow_optional_pre_edit_profile
             else selection
         )
+
+    def _prefer_closing(self, turn: Turn, selection: ModelToolSelection) -> ModelToolSelection:
+        """只结束首次修改前的自由调查；失败重读、测试和Review门禁不受影响。"""
+        names = {tool.name for tool in selection.tools}
+        patches = names & _PATCH_TOOLS
+        observations = _observations(turn)
+        latest_user_index = max(
+            (
+                index
+                for index, item in enumerate(turn.items)
+                if isinstance(item.content, TextContent) and item.content.kind == "user_message"
+            ),
+            default=-1,
+        )
+        current_source = tuple(item for item in observations if item.index > latest_user_index)
+        if (
+            selection.forced_tool is not None
+            or selection.choice != "auto"
+            or len(patches) != 1
+            or not names & _SOURCE_INSPECTION_TOOLS
+            or any(item.tool in _PATCH_TOOLS for item in observations)
+            or any(name.startswith("run_profile.") for name in names)
+            or not _has_edit_snapshot(current_source)
+            or not prefer_closing_over_investigation(turn)
+        ):
+            return selection
+        # auto保留诚实结束的选择；绝不因为预算偏好要求无证据修改。
+        return ModelToolSelection(tuple(tool for tool in selection.tools if tool.name in patches))
 
     def _select_workflow(
         self,

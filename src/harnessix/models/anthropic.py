@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from types import TracebackType
-from typing import Self, cast
+from typing import Literal, Self, cast
 
 import httpx2
 from anthropic import APIConnectionError, APIError, APIStatusError, AsyncAnthropic, AsyncStream
@@ -56,6 +56,10 @@ def _failure(error: Exception) -> ResponseFailed:
 
 class AnthropicProvider:
     """仅支持非 Thinking 的 Messages 配置；拥有独立 SDK 和 HTTPX2 Client。"""
+
+    compaction_summary_projection: Literal["native-document-json-string/v1"] = (
+        "native-document-json-string/v1"
+    )
 
     def __init__(
         self,

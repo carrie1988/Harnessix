@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from types import TracebackType
-from typing import Self, cast
+from typing import Literal, Self, cast
 from uuid import UUID
 
 import httpx
@@ -75,6 +75,10 @@ def _failed_response(
 
 class OpenAIChatProvider:
     """拥有HTTP Client的Chat Completions Adapter；支持宿主注入短生命周期认证。"""
+
+    compaction_summary_projection: Literal["native-document-json-string/v1"] = (
+        "native-document-json-string/v1"
+    )
 
     def __init__(
         self,

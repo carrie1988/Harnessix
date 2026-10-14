@@ -10,6 +10,10 @@ from typing import Protocol
 from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.compaction_input_budget import (
+    CompactionInputBudget,
+    prepare_compaction_input_budget,
+)
 from harnessix.agent.errors import KernelError
 from harnessix.agent.ids import new_id
 from harnessix.agent.model_input_budget import estimate_model_input_tokens
@@ -40,6 +44,7 @@ from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.context.tool_result_view import PreparedModelHistory, history_document
+from harnessix.models.contracts import ModelProvider
 from harnessix.session.ports import SessionStore
 
 
@@ -54,6 +59,8 @@ class PreparedHistoryStep:
 
 class ModelHistoryHost(Protocol):
     store: SessionStore
+    provider: ModelProvider
+    _summary_provider: ModelProvider | None
     _batch_diffs: BatchDiffPublisher | None
     _tool_result_view_policy: ToolResultViewPolicy
     _compaction: CompactionRuntimeConfig | None
@@ -120,9 +127,27 @@ async def _budget_plan(
     policies = pressure_policies(
         turn, host._compaction, fixed, estimate_model_input_tokens(prepared.history, (), None)
     )
+    if not policies:
+        return None, None, None
+    wire_budget = prepare_compaction_input_budget(
+        getattr(host, "provider", None),
+        getattr(host, "_summary_provider", None),
+        thread,
+        turn,
+        prepared,
+        selection,
+        context,
+    )
     for policy in policies:
         planned = await _prepaid_pressure_plan(
-            host, thread, turn, token, policy, fixed, summary_instructions
+            host,
+            thread,
+            turn,
+            token,
+            policy,
+            fixed,
+            summary_instructions,
+            wire_budget=wire_budget,
         )
         if planned is not None:
             return planned, context, selection
@@ -137,6 +162,8 @@ async def _prepaid_pressure_plan(
     policy: CompactionPolicy,
     fixed: int,
     summary_instructions: str,
+    *,
+    wire_budget: CompactionInputBudget | None = None,
 ) -> PreparedCompaction | None:
     """每个纯候选都必须满足原完整组、摊销和摘要/下一请求/收尾预付边界。"""
     assert host._compaction is not None
@@ -162,28 +189,41 @@ async def _prepaid_pressure_plan(
         }:
             raise
         return None
-    instructions = pressure_summary_instructions(summary_instructions, host._compaction, planned)
-    summary_cost = estimate_model_input_tokens((summary_request_item(planned),), (), instructions)
-    summary_cost += summary_output_limit(host._compaction, planned)
-    savings = (
-        planned.plan.source_history_tokens
-        - planned.plan.retained_history_tokens
-        - planned.plan.policy.summary_reserve_tokens
-    )
+    if (
+        summary_output_limit(host._compaction, planned) == 0
+        or len(planned.summary_source) > 1_000_000
+    ):
+        return None
+    if wire_budget is not None:
+        costs = wire_budget.estimate_costs(planned, host._compaction, summary_instructions)
+        if costs is None:
+            return None
+        summary_cost, source_input, successor_input = costs
+        savings = source_input - successor_input
+    else:
+        instructions = pressure_summary_instructions(
+            summary_instructions, host._compaction, planned
+        )
+        summary_cost = estimate_model_input_tokens(
+            (summary_request_item(planned),), (), instructions
+        )
+        summary_cost += summary_output_limit(host._compaction, planned)
+        savings = (
+            planned.plan.source_history_tokens
+            - planned.plan.retained_history_tokens
+            - planned.plan.policy.summary_reserve_tokens
+        )
+        successor_input = (
+            planned.plan.retained_history_tokens
+            + planned.plan.policy.summary_reserve_tokens
+            + fixed
+        )
     # 同一保守估算尺度判断摊销价值，不把微小窗口缩减当成值得额外付费的压缩。
     future_requests = min(3, require_request_slots(turn)) - 1
     if summary_cost > savings * future_requests:
         return None
-    cost = summary_cost
-    cost += (
-        planned.plan.retained_history_tokens + planned.plan.policy.summary_reserve_tokens + fixed
-    )
-    cost += closing_reserve(turn)
-    if (
-        cost > turn.budget.max_tokens - turn.usage.total_tokens
-        or summary_output_limit(host._compaction, planned) == 0
-        or len(planned.summary_source) > 1_000_000
-    ):
+    cost = summary_cost + successor_input + closing_reserve(turn)
+    if cost > turn.budget.max_tokens - turn.usage.total_tokens:
         return None
     return planned
 

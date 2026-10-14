@@ -229,6 +229,7 @@ async def _open_case_turn(
         enable_grep_snapshots=config.grep_snapshots_enabled,
         allow_optional_pre_edit_profile=config.optional_pre_edit_profile_enabled,
         enable_regex_search=config.regex_search_enabled,
+        reserve_closing_phase=config.closing_phase_enabled,
     )
 
 
