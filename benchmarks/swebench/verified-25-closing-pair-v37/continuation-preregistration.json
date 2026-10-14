@@ -1,0 +1,47 @@
+{
+  "schema": "harnessix.swebench-independent-continuation/v1",
+  "frozen_at": "2026-10-14T06:34:29.798140+00:00",
+  "runner_sha256": "7c3696708e9d129412979cbf248f4260f82cbc8ff88c308bb0623d1ded7bf444",
+  "source_revision": "5b65a074b802eebe3bf7dab9ab8e454c6910d15f",
+  "original_runner_sha256": "98857efe5c48d8e498045ee656217d8739ddf24e103f77d661bd60e68f472c98",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "carry_sha256": {
+    "preregistration.json": "555235e5bf45d64065cd69cff6d2ec5ebd4a05b7be4186c535ff0c6e536ca299",
+    "stop.json": "00706c4cfce26f40c4f9e2f9ecbaab2297a7a6a1d317d8610ab99c9b777f43e5",
+    "progress.json": "1e5366bba6eb0af8c2ad836332632f0d6ac553c6cb49d87f8859b79b6afdc246",
+    "baseline/cases/case-000/case-state.json": "62562c1c7494356e2e34e331ec39645a7e2d81274aa139a7aac88deb28b7c804",
+    "baseline/cases/case-000/run/session.sqlite": "1f00bb247c9fee820c52675cbbd20bbb3b6c428b86352cf2a84350f24ef84269",
+    "baseline/cases/case-000/diagnostic-observation.json": "6ea66d8c367d19f20d43352335ff55ed466b2011c7c8b9b1a8d5383d156a0ae8",
+    "baseline/cases/case-000/diagnostic.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "remaining_execution_order": [
+    [
+      "closing",
+      0
+    ],
+    [
+      "baseline",
+      1
+    ],
+    [
+      "closing",
+      1
+    ],
+    [
+      "baseline",
+      2
+    ],
+    [
+      "closing",
+      2
+    ]
+  ],
+  "total_original_executions": 6,
+  "original_case_retried": false,
+  "original_group_reserve_amount": "36",
+  "additional_reserved_amount": "0",
+  "release_reserved_funds": false,
+  "failure_policy": "freeze_native_transport_with_full_reserve_continue_independent",
+  "unknown_tool_effects_policy": "stop_all",
+  "official_score": null
+}

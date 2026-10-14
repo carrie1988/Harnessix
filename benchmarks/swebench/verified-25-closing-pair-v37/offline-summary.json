@@ -20,5 +20,13 @@
   "native_budget_unchanged": true,
   "wire_probe_result": "合成探针未证明收益；ASCII支配wire字节不等于实际tokenizer计数",
   "regression_xml_sha256": "b6a0dfc5bf82916e3fc598079294b954cd5b9978a34fe3b4a222b5a13778ebfd",
-  "limitations": "历史完整官方结果仍3/25；新6次对照尚未执行，不能拼接或作为全新泛化成绩"
+  "limitations": "关联回归非自主质量证据；真实原第一项传输失败并保留完整预付，五个未执行槽承接另行冻结；旧完整官方结果仍3/25。",
+  "private_host_negative_controls": {
+    "tests": 55,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "host_runner_sha256": "98857efe5c48d8e498045ee656217d8739ddf24e103f77d661bd60e68f472c98",
+  "host_negative_control_xml_sha256": "8b3ea88c3217d4404f834790fc20b78411295e5b9a21e0abb8fa44d90c4dcae8"
 }
