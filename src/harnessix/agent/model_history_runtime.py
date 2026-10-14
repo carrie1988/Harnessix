@@ -138,19 +138,24 @@ async def _budget_plan(
         selection,
         context,
     )
-    for policy in policies:
-        planned = await _prepaid_pressure_plan(
-            host,
-            thread,
-            turn,
-            token,
-            policy,
-            fixed,
-            summary_instructions,
-            wire_budget=wire_budget,
-        )
-        if planned is not None:
-            return planned, context, selection
+    # 缩小摘要容量可能让贪心窗口回填旧组，反而失去wire摊销收益。先保留全部
+    # 原候选的选择顺序；只有它们均不成立，再试最紧合法窗口，固定组仍完整保留。
+    preferences = (None, 512) if pressure_history_allocation(turn, fixed) > 512 else (None,)
+    for preference in preferences:
+        for policy in policies:
+            planned = await _prepaid_pressure_plan(
+                host,
+                thread,
+                turn,
+                token,
+                policy,
+                fixed,
+                summary_instructions,
+                wire_budget=wire_budget,
+                preferred_history_tokens=preference,
+            )
+            if planned is not None:
+                return planned, context, selection
     return None, None, None
 
 
@@ -164,6 +169,7 @@ async def _prepaid_pressure_plan(
     summary_instructions: str,
     *,
     wire_budget: CompactionInputBudget | None = None,
+    preferred_history_tokens: int | None = None,
 ) -> PreparedCompaction | None:
     """每个纯候选都必须满足原完整组、摊销和摘要/下一请求/收尾预付边界。"""
     assert host._compaction is not None
@@ -176,9 +182,13 @@ async def _prepaid_pressure_plan(
             token,
             compaction_id=new_id(),
             anchors=planning_history_anchors(thread),
-            preferred_history_tokens=min(
-                policy.target_history_tokens,
-                max(512, pressure_history_allocation(turn, fixed)),
+            preferred_history_tokens=(
+                preferred_history_tokens
+                if preferred_history_tokens is not None
+                else min(
+                    policy.target_history_tokens,
+                    max(512, pressure_history_allocation(turn, fixed)),
+                )
             ),
         )
     except KernelError as error:
