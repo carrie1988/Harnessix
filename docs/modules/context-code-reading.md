@@ -60,7 +60,7 @@ modules: [context, agent, artifacts, session]
 5. **失败不得悄悄丢弃语义。** 必选指令、固定组或摘要输入超限时失败，不截断当前用户内容后继续。
 6. **恢复不隐式重复收费。** 不确定是否已付费的摘要请求记录为风险，不通过自动重放消除不确定性。
 
-源码：[`compaction_summary_item`](../../src/harnessix/context/compaction_projection.py#L12)、[`_validation_steps`](../../src/harnessix/context/compaction.py#L298)、[`CompactionRecord`](../../src/harnessix/context/compaction_ledger_contracts.py#L26)、[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1900)。
+源码：[`compaction_summary_item`](../../src/harnessix/context/compaction_projection.py#L12)、[`_validation_steps`](../../src/harnessix/context/compaction.py#L298)、[`CompactionRecord`](../../src/harnessix/context/compaction_ledger_contracts.py#L26)、[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1905)。
 
 ### 3.2 重要取舍
 
@@ -167,7 +167,7 @@ sequenceDiagram
 6. 保存 inspection 后才开始模型调用。`instructions` 正文留在本次请求，`ContextPrepared` 只保存检查记录。
 7. Provider 输出工具调用则进入工具调度；无调用则结算或接收后续 Steering。每个新模型步骤重新走上下文准备，不把动态源永久缓存为首轮内容。
 
-源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2128)、[`prepare_and_commit_model_history`](../../src/harnessix/agent/model_history_runtime.py#L107)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L75)。
+源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2133)、[`prepare_and_commit_model_history`](../../src/harnessix/agent/model_history_runtime.py#L107)、[`_commit_if_current`](../../src/harnessix/agent/model_history_runtime.py#L75)。
 
 ## 6. 静态 Context：从输入到预算决定
 
@@ -368,7 +368,7 @@ flowchart TD
 
 纯视图函数仅产生 `references`。Runtime 需要 verifier 与 artifact access 能力，获得当前 workspace_scope 后，逐引用传入 owner_thread_id（fork 继承时可能为原线程）、call_id、purpose 和 omitted_field。没有验证器、缺少 scope 或超时都不能继续把引用发给模型。
 
-源码：[`_bindings`](../../src/harnessix/context/tool_result_view.py#L120)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L462)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1581)。
+源码：[`_bindings`](../../src/harnessix/context/tool_result_view.py#L120)、[`_artifact_owner`](../../src/harnessix/context/tool_result_view.py#L462)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1586)。
 
 ## 9. Compaction 纯规划：按闭合组选择历史
 
@@ -459,7 +459,7 @@ sequenceDiagram
 
 摘要完成后，在原始计划快照进行纯验证，再保存 CompactionSummarized；激活由独立 task 执行并用 `asyncio.shield` 保护。若外层 task 在候选提交后取消，仍等待激活任务完成/结算，避免留下不明确的发布边界。
 
-源码：[`AgentRuntime._run_compaction`](../../src/harnessix/agent/runtime.py#L1949)、[`AgentRuntime._summary_text`](../../src/harnessix/agent/runtime.py#L1669)。
+源码：[`AgentRuntime._run_compaction`](../../src/harnessix/agent/runtime.py#L1954)、[`AgentRuntime._summary_text`](../../src/harnessix/agent/runtime.py#L1674)。
 
 ### 10.2 状态机
 
@@ -485,7 +485,7 @@ stateDiagram-v2
 
 `unaccounted_request_possible=true` 只允许无 Attempt 的 failed/interrupted，表示 Provider 可能已收到请求但没有可靠意图记录，不是“用量为零”的证明。摘要账本与正常模型步骤分开，但 usage 仍影响 Turn 累计预算。
 
-源码：[`CompactionRecord.coherent_state`](../../src/harnessix/context/compaction_ledger_contracts.py#L43)、[`AgentRuntime._close_compaction`](../../src/harnessix/agent/runtime.py#L1616)。
+源码：[`CompactionRecord.coherent_state`](../../src/harnessix/context/compaction_ledger_contracts.py#L43)、[`AgentRuntime._close_compaction`](../../src/harnessix/agent/runtime.py#L1621)。
 
 ### 10.3 持久化 Reducer：为什么运行时检查后还要再验证
 
@@ -525,7 +525,7 @@ flowchart LR
 
 `CompactionWindow` 保存候选 Item ID、候选 history hash/tokens、前驱 window_id，以及激活时原始历史项数、最后 Item ID、原始 ID 列表摘要。它是模型视图的发布索引，不是原始消息删除清单。
 
-源码：[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1900)、[`build_compaction_window`](../../src/harnessix/context/compaction_window.py#L67)。
+源码：[`AgentRuntime._activate_compaction_window`](../../src/harnessix/agent/runtime.py#L1905)、[`build_compaction_window`](../../src/harnessix/context/compaction_window.py#L67)。
 
 ### 11.2 下一步如何重建
 
@@ -578,7 +578,7 @@ flowchart TD
 
 候选是否可恢复由 `recoverable_compaction` 检查“summarized 且 finished_event_sequence==当前序号”，不是查到任意历史成功摘要就再次激活。取消路径必须关闭流并结算账本；协作取消纯规划则不修改源 Thread。
 
-源码：[`recoverable_compaction`](../../src/harnessix/agent/runtime_recovery.py#L34)、[`AgentRuntime._finish`](../../src/harnessix/agent/runtime.py#L2983)。行为测试：[`test_runtime_compaction_crash_never_reissues_paid_summary`](../../tests/context/test_compaction_runtime_recovery.py#L47)、[`test_window_activation_transaction_crash_recovers_exactly_once`](../../tests/context/test_compaction_runtime_recovery.py#L120)。
+源码：[`recoverable_compaction`](../../src/harnessix/agent/runtime_recovery.py#L34)、[`AgentRuntime._finish`](../../src/harnessix/agent/runtime.py#L2995)。行为测试：[`test_runtime_compaction_crash_never_reissues_paid_summary`](../../tests/context/test_compaction_runtime_recovery.py#L47)、[`test_window_activation_transaction_crash_recovers_exactly_once`](../../tests/context/test_compaction_runtime_recovery.py#L120)。
 
 ### 12.2 Provider overflow 的反应式压缩
 
@@ -586,7 +586,7 @@ flowchart TD
 
 这不是无成本重试：原请求 Attempt/usage 已按流结算，下一步受原 Turn 限制。若摘要后仍无可压缩空间，no_progress 会阻止再次无意义付费。发生语义输出后的 overflow 也不能作为任意回滚历史的理由，相关协议路径有专门测试。
 
-源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2128)、[`_requires_compaction`](../../src/harnessix/agent/model_history_runtime.py#L60)；测试：[`test_second_context_overflow_stops_at_no_progress_without_another_paid_summary`](../../tests/context/test_compaction_runtime.py#L434)、[`test_context_overflow_after_semantic_output_cannot_rewrite_history`](../../tests/context/test_compaction_runtime.py#L463)。
+源码：[`AgentRuntime._drive`](../../src/harnessix/agent/runtime.py#L2133)、[`_requires_compaction`](../../src/harnessix/agent/model_history_runtime.py#L60)；测试：[`test_second_context_overflow_stops_at_no_progress_without_another_paid_summary`](../../tests/context/test_compaction_runtime.py#L434)、[`test_context_overflow_after_semantic_output_cannot_rewrite_history`](../../tests/context/test_compaction_runtime.py#L463)。
 
 ### 12.3 Fork 与原始归属
 
@@ -701,7 +701,7 @@ assert prepared.inspection.estimated_input_tokens <= prepared.inspection.availab
 - **显式装配**：配置 CompactionPolicy 不启动付费请求；RuntimeConfig 与对应 Provider 才构成运行能力。本文不假定任意 CLI 或产品启动入口已经启用这些端口。
 - **审计与隐私**：来源快照无正文但 source 路径、大小、指纹仍可能有敏感性；日志应复用检查记录和错误代码，不输出完整动态 instructions。摘要正文与原始消息是另一类持久数据，应按 Session 数据管理。
 
-源码：[`ContextBuildInput`](../../src/harnessix/context/contracts.py#L195)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L204)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1581)、[`CompactionRuntimeConfig`](../../src/harnessix/context/compaction_runtime_contracts.py#L13)。
+源码：[`ContextBuildInput`](../../src/harnessix/context/contracts.py#L195)、[`ProjectInstructionSource`](../../src/harnessix/context/sources.py#L204)、[`AgentRuntime._verify_history_artifacts`](../../src/harnessix/agent/runtime.py#L1586)、[`CompactionRuntimeConfig`](../../src/harnessix/context/compaction_runtime_contracts.py#L13)。
 
 ## 16. 测试地图与维护检查表
 

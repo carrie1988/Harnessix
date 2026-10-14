@@ -25,6 +25,8 @@ class ModelRequest(ContractModel):
     consumed_usage: Usage | None = None
     input_tokens_upper_bound: int | None = Field(default=None, ge=1, strict=True)
     remaining_calls: int | None = Field(default=None, ge=1, le=1000, strict=True)
+    # 按上一请求实际用量推算的可负担请求数，只是调度提示，不是准入或预付证明。
+    affordable_requests: int | None = Field(default=None, ge=0, le=1000, strict=True)
     remaining_tokens: int | None = Field(default=None, ge=1)
     tool_choice: Literal["auto", "required"] = "auto"
     forced_tool: str | None = Field(default=None, min_length=1, max_length=256)

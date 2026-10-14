@@ -163,6 +163,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def convergence_guidance(self) -> bool:
+        return False
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 

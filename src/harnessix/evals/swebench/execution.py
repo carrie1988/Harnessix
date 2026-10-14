@@ -233,6 +233,7 @@ async def _open_case_turn(
         enable_definition_views=config.definition_views_enabled,
         working_set_result_groups=config.working_set_result_groups,
         compact_model_surface=config.compact_model_surface,
+        convergence_guidance=config.convergence_guidance,
     )
 
 

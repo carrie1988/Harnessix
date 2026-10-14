@@ -215,6 +215,7 @@ async def test_frozen_compact_surface_reaches_case_entrypoint(tmp_path, monkeypa
     )
     assert calls[0]["compact_model_surface"] is True
     assert calls[0]["working_set_result_groups"] == 1
+    assert calls[0]["convergence_guidance"] is False
 
 
 @pytest.mark.parametrize("compact", [False, True])

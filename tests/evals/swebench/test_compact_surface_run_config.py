@@ -100,3 +100,49 @@ def test_compact_instructions_reject_other_instruction_variants(tmp_path, change
     arguments = {"require_pre_edit_profile": False, "compact_instructions": True, **changes}
     with pytest.raises(ValueError):
         build_product_agent_context(tmp_path, **arguments)
+
+
+def test_convergence_v15_adds_only_guidance_policy_to_v14(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchConvergenceAgentRunConfig
+
+    config = compact_config(tmp_path, convergence_guidance=True)
+    compact = compact_config(tmp_path)
+    assert type(config) is SweBenchConvergenceAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v15"
+    assert config.convergence_guidance and not compact.convergence_guidance
+    assert config.compact_model_surface and config.working_set_result_groups == 2
+    excluded = {"spec_version", "convergence_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == compact.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v15.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"compact_model_surface": False},
+        {"working_set_result_groups": None},
+        {"convergence_guidance": 1},
+    ],
+)
+def test_convergence_requires_the_full_compact_working_set_stack(tmp_path, changes):
+    with pytest.raises((ValueError, ValidationError)):
+        compact_config(tmp_path, **{"convergence_guidance": True, **changes})
+
+
+async def test_convergence_fragment_requires_compact_instructions(tmp_path):
+    with pytest.raises(ValueError):
+        build_product_agent_context(
+            tmp_path, require_pre_edit_profile=False, convergence_guidance=True
+        )
+    prepared = await build_product_agent_context(
+        tmp_path,
+        require_pre_edit_profile=False,
+        compact_instructions=True,
+        convergence_guidance=True,
+    ).context.prepare(_request(tmp_path), CancelToken())
+    sources = [f["source"] for f in json.loads(prepared.instructions)["fragments"]]
+    assert "harnessix.coding-convergence/v1" in sources

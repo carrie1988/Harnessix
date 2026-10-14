@@ -1,0 +1,193 @@
+{
+  "scope": "same_source_pass_at_1_paired_development_prefix3_not_official_or_generalization_score",
+  "source_revision": "ce1f6f773c1d5e4a16aee569aea1f33e9ccbd69d",
+  "runner_sha256": "a8e0fc3cc22cfd19ecbe17a60e77607c63176b6e8fdab22b2aa8e5514ca6ea1f",
+  "preregistration_file_sha256": "c64312e758cfef5ef1f6ad9a03b54b2ac30c4b129d3016e2d54746374752b018",
+  "arms": {
+    "baseline": {
+      "config": "v9",
+      "cases": 3,
+      "agent_closed": 0,
+      "patches": 0,
+      "model_steps": [
+        7,
+        5,
+        6
+      ]
+    },
+    "compact": {
+      "config": "v14 working_set=2 + compact surface",
+      "cases": 3,
+      "agent_closed": 0,
+      "patches": 0,
+      "model_steps": [
+        8,
+        8,
+        8
+      ]
+    }
+  },
+  "observations": {
+    "per_request_input_tokens_flat_under_working_set": true,
+    "compact_arm_requests_per_case": 8,
+    "baseline_requests_per_case": [
+      5,
+      7
+    ],
+    "tool_calls_per_model_step": 1,
+    "cause_stated_in_assistant_text_before_budget_end": "6_of_6",
+    "patch_attempted": "0_of_6",
+    "unused_budget_at_stop_compact_tokens_approx": [
+      8852,
+      7079,
+      8520
+    ],
+    "unused_budget_reason": "anchored_rewritten_bound_charges_new_messages_by_bytes_and_gives_no_credit_for_masked_content"
+  },
+  "decision": "CAPACITY_GO_QUALITY_NO_GO: working set + compact surface add ~1-3 requests as simulated, but the model keeps investigating after stating the cause; next lever is convergence, not capacity",
+  "independent_verification": {
+    "verification": "PASS",
+    "authentic_terminal_turns": 6,
+    "native_and_state_files_unchanged": true,
+    "ledger_unchanged": true,
+    "retired_workspaces": 6,
+    "new_unknown_cost_reserve_amount": "0",
+    "known_cost_upper_amount": "3.088908",
+    "current_period_available_amount": "70.943192"
+  },
+  "cloud_model_requests": 42,
+  "official_score": null,
+  "official_docker_evaluation": "not_invoked_no_qualified_patch",
+  "latest_complete_official_score": "v27:3/25",
+  "full_25_case_suite": false,
+  "fresh_generalization": false,
+  "cases": [
+    {
+      "arm": "baseline",
+      "index": 0,
+      "instance_id": "matplotlib__matplotlib-25960",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.565164",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        4100,
+        5937,
+        6196,
+        5225,
+        6401,
+        6967,
+        7599,
+        2071
+      ]
+    },
+    {
+      "arm": "baseline",
+      "index": 1,
+      "instance_id": "pydata__xarray-4695",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.497304",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        5041,
+        7635,
+        8576,
+        8969,
+        9493
+      ]
+    },
+    {
+      "arm": "baseline",
+      "index": 2,
+      "instance_id": "pytest-dev__pytest-10051",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.47646",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        4243,
+        5222,
+        5408,
+        6350,
+        7860,
+        8789
+      ]
+    },
+    {
+      "arm": "compact",
+      "index": 0,
+      "instance_id": "matplotlib__matplotlib-25960",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.511512",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        3231,
+        3912,
+        4948,
+        5269,
+        5108,
+        5920,
+        6108,
+        5913
+      ]
+    },
+    {
+      "arm": "compact",
+      "index": 1,
+      "instance_id": "pydata__xarray-4695",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.527604",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        4172,
+        4611,
+        4919,
+        5245,
+        6195,
+        6036,
+        5405,
+        5815
+      ]
+    },
+    {
+      "arm": "compact",
+      "index": 2,
+      "instance_id": "pytest-dev__pytest-10051",
+      "native_status": "failed",
+      "failed_boundary": "budget_exceeded",
+      "agent_closed": false,
+      "patch_nonempty": false,
+      "known_cost_upper_amount": "0.510864",
+      "reserved_cost_amount": "0",
+      "workspace_retired": true,
+      "request_input_tokens": [
+        3374,
+        5670,
+        5858,
+        4549,
+        5027,
+        5153,
+        5382,
+        5921
+      ]
+    }
+  ]
+}

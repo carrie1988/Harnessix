@@ -60,6 +60,12 @@ _WORKING_SET_INSTRUCTIONS = (
     "old_text from an omitted result."
 )
 
+_CONVERGENCE_INSTRUCTIONS = (
+    "Converge: once observed source shows the cause, send the patch in your next response; do not "
+    "spend requests re-confirming code you already saw, because the post-patch run_profile is the "
+    "verification. Put independent reads in one response."
+)
+
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (
     "Search snapshot mode: the read_file rule for Patch expected_sha256 also permits grep "
     "content_sha256, the full file SHA from the same read that produced the match, not revision. "
@@ -230,6 +236,7 @@ def build_product_agent_context(
     enable_definition_views: bool = False,
     working_set_result_groups: int | None = None,
     compact_instructions: bool = False,
+    convergence_guidance: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
@@ -251,6 +258,10 @@ def build_product_agent_context(
         )
     ):
         raise ValueError("紧凑编码指令只用于独立的修改后验证路径")
+    if type(convergence_guidance) is not bool or (
+        convergence_guidance and not compact_instructions
+    ):
+        raise ValueError("收敛指引只与紧凑编码指令组合")
     if working_set_result_groups is not None and (
         type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
     ):
@@ -326,6 +337,17 @@ def build_product_agent_context(
                     ),
                 )
                 if enable_planning
+                else ()
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.coding-convergence/v1",
+                        content=_CONVERGENCE_INSTRUCTIONS,
+                    ),
+                )
+                if convergence_guidance
                 else ()
             ),
             *(

@@ -363,6 +363,7 @@ async def run_swebench_agent_case(
     enable_definition_views: bool = False,
     working_set_result_groups: int | None = None,
     compact_model_surface: bool = False,
+    convergence_guidance: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -380,6 +381,8 @@ async def run_swebench_agent_case(
         raise KernelError("swebench_execution_config_invalid", "SWE-bench正则搜索开关无效")
     if type(allow_optional_pre_edit_profile) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench可选预测试开关无效")
+    if type(convergence_guidance) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench收敛指引开关无效")
     if type(compact_model_surface) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench紧凑模型表面开关无效")
     patch_contract: WorkspacePatchContract = "compact" if compact_model_surface else "standard"
@@ -448,6 +451,7 @@ async def run_swebench_agent_case(
                             enable_definition_views=enable_definition_views,
                             working_set_result_groups=working_set_result_groups,
                             compact_instructions=compact_model_surface,
+                            convergence_guidance=convergence_guidance,
                         )
                         async with AgentRuntime(
                             owner.sessions,
@@ -462,6 +466,7 @@ async def run_swebench_agent_case(
                             summary_provider=provider,
                             budget_pressure_compaction=budget_pressure_compaction,
                             working_set_result_groups=working_set_result_groups,
+                            report_affordable_requests=convergence_guidance,
                             enable_planning=enable_planning,
                             model_tool_view=CodingWorkflowToolView(
                                 require_pre_edit_profile=False,

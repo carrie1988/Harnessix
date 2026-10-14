@@ -97,6 +97,12 @@ Provider私有分词器。Chat Provider逐位置比较本次与上一视图的�
 [SDK映射正负控](../../tests/models/test_rewritten_input_budget.py)及
 [Runtime证据正负控](../../tests/agent/test_rewritten_input_budget.py)。
 
+### 可负担请求提示（默认关闭）
+
+`ModelRequest.affordable_requests`由Runtime在显式开启时按上一完整成功请求的实际输入＋输出推算（见
+[`turn_budget_hint`](../../src/harnessix/agent/turn_budget_hint.py)），只进入预算说明文本；准入候选按最大值预付
+最长说明，不作为准入、预付或费用证明。回归见[提示测试](../../tests/agent/test_affordable_request_hint.py)。
+
 ### 累计预算反馈
 
 `ModelRequest.input_tokens_upper_bound`是当前请求的保守输入准入上界，不是已消费量或资金预留。

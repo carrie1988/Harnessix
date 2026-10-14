@@ -95,6 +95,12 @@ def budget_instruction(request: ModelRequest) -> str | None:
             "limit; reserve input and output for validation, repair and final review. "
             "Narrow investigation when needed; never patch without source evidence."
         )
+    if request.affordable_requests is not None:
+        note += (
+            f" At the size of the last request about {request.affordable_requests} requests fit, "
+            "including this one; patch, run_profile and review need at least three, so patch as "
+            "soon as observed source shows the cause."
+        )
     return note
 
 

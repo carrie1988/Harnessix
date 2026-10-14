@@ -141,6 +141,7 @@ from harnessix.agent.turn_budget_compaction import (
     summary_output_limit,
     summary_request_item,
 )
+from harnessix.agent.turn_budget_hint import MAX_AFFORDABLE_REQUESTS, affordable_request_hint
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.artifacts.batch_verify import verify_history_references
 from harnessix.artifacts.contracts import ArtifactToolResult
@@ -273,6 +274,7 @@ class AgentRuntime:
         summary_provider: ModelProvider | None = None,
         budget_pressure_compaction: bool = False,
         working_set_result_groups: int | None = None,
+        report_affordable_requests: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -297,6 +299,9 @@ class AgentRuntime:
             raise KernelError("invalid_runtime_configuration", "工作集保留组数必须是1到64")
         # 显式开启时较旧工具结果正文只在模型视图中省略；默认保持完整历史视图。
         self._working_set_result_groups = working_set_result_groups
+        if type(report_affordable_requests) is not bool:
+            raise KernelError("invalid_runtime_configuration", "可负担请求提示开关必须是布尔值")
+        self._report_affordable_requests = report_affordable_requests
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -2198,6 +2203,11 @@ class AgentRuntime:
                     model_step=model_step,
                 )
                 input_budget_aware = isinstance(self.provider, ModelInputTokenEstimator)
+                affordable = (
+                    affordable_request_hint(turn)
+                    if input_budget_aware and self._report_affordable_requests
+                    else None
+                )
                 candidate = ModelRequest(
                     thread_id=thread_id,
                     turn_id=turn_id,
@@ -2216,6 +2226,7 @@ class AgentRuntime:
                         if input_budget_aware and self._compaction is not None
                         else None
                     ),
+                    affordable_requests=None if affordable is None else MAX_AFFORDABLE_REQUESTS,
                     remaining_tokens=output_token_limit,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
@@ -2256,6 +2267,7 @@ class AgentRuntime:
                         else None
                     ),
                     remaining_calls=candidate.remaining_calls,
+                    affordable_requests=affordable,
                     remaining_tokens=allowed_output_tokens,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
