@@ -308,6 +308,33 @@ def _provider(config: OpenAIChatConfig, api_key: str) -> AbstractAsyncContextMan
     return OpenAIChatProvider(config, api_key=api_key)
 
 
+async def _read_terminal_case_turn(
+    owner: TaskPackPublicationOwner,
+    history: TaskPackHistoryReadControl,
+    plan: SweBenchPreRegistrationPlan,
+    case: SweBenchPublicCase,
+    workspace: Path,
+    execution_fingerprint: str,
+    expected: tuple[UUID, UUID],
+) -> tuple[UUID, Turn]:
+    """终态仅认证原历史；不重开模型、工作区或执行器，也不产生第二次尝试。"""
+    thread = await owner.authenticated_single_thread(history)
+    request_id = (
+        f"swebench:{plan.plan_sha256}:{execution_fingerprint}:{case.instance_id}:{_PROMPT_VERSION}"
+    )
+    if thread is None or thread.thread_id != expected[0] or thread.workspace != str(workspace):
+        raise KernelError("swebench_case_evidence_mismatch", "SWE-bench原终态Thread身份不一致")
+    turn = _request_turn(thread, request_id)
+    if (
+        turn is None
+        or turn.turn_id != expected[1]
+        or turn.status not in TERMINAL_TURNS
+        or turn.budget != _turn_budget(plan)
+    ):
+        raise KernelError("swebench_case_evidence_mismatch", "SWE-bench原终态Turn或任务预算不一致")
+    return thread.thread_id, turn
+
+
 async def run_swebench_agent_case(
     *,
     plan: SweBenchPreRegistrationPlan,
@@ -325,6 +352,7 @@ async def run_swebench_agent_case(
     budget_pressure_compaction: bool = False,
     enable_planning: bool = False,
     enable_grep_snapshots: bool = False,
+    allow_optional_pre_edit_profile: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -334,6 +362,8 @@ async def run_swebench_agent_case(
         raise KernelError("swebench_execution_config_invalid", "SWE-bench规划开关无效")
     if type(enable_grep_snapshots) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench搜索快照开关无效")
+    if type(allow_optional_pre_edit_profile) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench可选预测试开关无效")
     if len(execution_fingerprint) != 64 or any(
         character not in "0123456789abcdef" for character in execution_fingerprint
     ):
@@ -343,7 +373,19 @@ async def run_swebench_agent_case(
         raise KernelError("swebench_case_evidence_mismatch", "SWE-bench冻结的Session证明缺失")
     with provider_publication_scope(provider_config.api_key_env, api_key) as scope:
         history = TaskPackHistoryReadControl.begin(token)
-        async with open_task_pack_publication(run_root, scope, history_read=history) as owner:
+        async with open_task_pack_publication(
+            run_root, scope, history_read=history, existing_only=expected_terminal_turn is not None
+        ) as owner:
+            if expected_terminal_turn is not None:
+                return await _read_terminal_case_turn(
+                    owner,
+                    history,
+                    plan,
+                    case,
+                    workspace,
+                    execution_fingerprint,
+                    expected_terminal_turn,
+                )
             # Provider 打开前先认证已有完整历史，禁止用新凭据掩盖损坏状态。
             await owner.authenticated_single_thread(history)
             async with _provider(provider_config, api_key) as provider:
@@ -372,6 +414,7 @@ async def run_swebench_agent_case(
                             require_pre_edit_profile=False,
                             enable_planning=enable_planning,
                             enable_grep_snapshots=enable_grep_snapshots,
+                            allow_optional_pre_edit_profile=allow_optional_pre_edit_profile,
                         )
                         async with AgentRuntime(
                             owner.sessions,
@@ -389,6 +432,7 @@ async def run_swebench_agent_case(
                             model_tool_view=CodingWorkflowToolView(
                                 require_pre_edit_profile=False,
                                 enable_planning=enable_planning,
+                                allow_optional_pre_edit_profile=allow_optional_pre_edit_profile,
                             ),
                         ) as runtime:
                             return await _drive_turn(

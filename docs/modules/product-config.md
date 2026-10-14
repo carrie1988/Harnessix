@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 121
-code_revision: 6a2afdf146d7ad63f25980319524643db1d0d6a5
+version: 122
+code_revision: 6a3362945f9a657e108ba32caa81c4ebfce8d117
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_optional_pre_edit_profile.py
+  - tests/product_config/test_optional_pre_edit_runtime.py
   - tests/product_config/test_grep_snapshot_patch.py
   - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/product_config/test_planning_workflow.py
@@ -101,6 +103,14 @@ related_tests:
   - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
+
+## 可选修改前测试候选（默认关闭）
+
+`allow_optional_pre_edit_profile=True`只能与非强制首轮baseline共同使用，要求唯一受控
+Profile、Patch和完整Review目录。模型可先调查、复现或修改，但同响应不能Test+Patch；
+预测试成功不能抵扣补丁后测试。启动/期限/取消/未知状态失败闭锁；只对确定非零退出开放
+调查窗口。默认产品仍遵循既有契约，候选由SWE v8/v9显式装配。调用链与状态表见
+[闭环整改详设](../changes/swebench-adapter-verified-25-pilot.md#工具闭环与工作区生命周期整改)。
 
 ## 显式搜索快照候选（默认关闭）
 

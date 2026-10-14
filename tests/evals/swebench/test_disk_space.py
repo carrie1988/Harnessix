@@ -61,7 +61,7 @@ async def test_low_space_stops_before_workspace_or_provider(monkeypatch, tmp_pat
     config = _config(tmp_path, plan)
     monkeypatch.setattr(disk_space.shutil, "disk_usage", lambda _: SimpleNamespace(free=1))
     materialize, provider = AsyncMock(), AsyncMock()
-    monkeypatch.setattr(execution, "_materialize_all", materialize)
+    monkeypatch.setattr(execution, "_materialize_case", materialize)
     monkeypatch.setattr(execution, "_open_case_turn", provider)
     with pytest.raises(KernelError) as failure:
         await execution.run_swebench_agent_suite(

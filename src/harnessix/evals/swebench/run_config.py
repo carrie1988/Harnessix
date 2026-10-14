@@ -143,6 +143,14 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def optional_pre_edit_profile_enabled(self) -> bool:
+        return False
+
+    @property
+    def workspace_retirement_enabled(self) -> bool:
+        return False
+
+    @property
     def output_token_limit_margin(self) -> int:
         return 0
 
@@ -332,6 +340,69 @@ class SweBenchSearchSnapshotAgentRunConfig(_SweBenchAgentRunSettings):
         return True
 
 
+class SweBenchOptionalPreEditAgentRunConfig(_SweBenchAgentRunSettings):
+    """独立v8：修改前可选原受控Profile，补丁后验证仍为必需。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v8"] = (
+        "harnessix.swebench-agent-run-config/v8"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+    context_budget_policy: Literal["amortized_pressure_window"] = "amortized_pressure_window"
+    pre_edit_profile_policy: Literal["optional_explicit_public_targets"] = (
+        "optional_explicit_public_targets"
+    )
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return True
+
+    @property
+    def optional_pre_edit_profile_enabled(self) -> bool:
+        return True
+
+
+class SweBenchRecyclingAgentRunConfig(_SweBenchAgentRunSettings):
+    """显式v9宿主生命周期；策略和回收均进入冻结指纹，旧版本不自动删除。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v9"] = (
+        "harnessix.swebench-agent-run-config/v9"
+    )
+    provider_failure_policy: Literal["freeze_transport_with_full_reserve"] = (
+        "freeze_transport_with_full_reserve"
+    )
+    fee_admission_policy: Literal["next_isolated_case"] = "next_isolated_case"
+    context_budget_policy: Literal["amortized_pressure_window"] = "amortized_pressure_window"
+    workspace_policy: Literal["sealed_terminal_retirement"] = "sealed_terminal_retirement"
+    agent_strategy: Literal["standard", "search_snapshot", "optional_pre_edit"] = "standard"
+
+    @property
+    def isolate_provider_failures(self) -> bool:
+        return True
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return True
+
+    @property
+    def workspace_retirement_enabled(self) -> bool:
+        return True
+
+    @property
+    def grep_snapshots_enabled(self) -> bool:
+        return self.agent_strategy == "search_snapshot"
+
+    @property
+    def optional_pre_edit_profile_enabled(self) -> bool:
+        return self.agent_strategy == "optional_pre_edit"
+
+
 SweBenchRunConfig = (
     SweBenchAgentRunConfig
     | SweBenchIsolatedAgentRunConfig
@@ -339,15 +410,17 @@ SweBenchRunConfig = (
     | SweBenchThinkingAgentRunConfig
     | SweBenchPlanningAgentRunConfig
     | SweBenchSearchSnapshotAgentRunConfig
+    | SweBenchOptionalPreEditAgentRunConfig
+    | SweBenchRecyclingAgentRunConfig
 )
 
 
-def _validate_search_snapshot_mode(
+def _validate_isolated_coding_candidate(
     enabled: bool, *, isolated: bool, pressure_window: bool, planning: bool, thinking: bool
 ) -> None:
     """单因素候选不能静默混入其他策略或失去原费用隔离边界。"""
     if enabled and (planning or thinking or not (isolated and pressure_window)):
-        raise ValueError("SWE-bench搜索快照必须保留故障隔离、预算窗口并关闭规划和思考")
+        raise ValueError("SWE-bench工具闭环候选必须保留故障隔离、预算窗口并关闭规划和思考")
 
 
 def _run_config_type(
@@ -357,6 +430,8 @@ def _run_config_type(
     enable_thinking: bool,
     enable_planning: bool,
     enable_grep_snapshots: bool,
+    allow_optional_pre_edit_profile: bool,
+    recycle_workspaces: bool,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -365,17 +440,23 @@ def _run_config_type(
         (enable_thinking, "思考诊断"),
         (enable_planning, "规划诊断"),
         (enable_grep_snapshots, "搜索快照"),
+        (allow_optional_pre_edit_profile, "可选预测试"),
+        (recycle_workspaces, "工作区回收"),
     )
     for value, name in flags:
         if type(value) is not bool:
             raise ValueError(f"SWE-bench{name}必须显式使用布尔开关")
-    _validate_search_snapshot_mode(
-        enable_grep_snapshots,
+    _validate_isolated_coding_candidate(
+        enable_grep_snapshots or allow_optional_pre_edit_profile or recycle_workspaces,
         isolated=isolate_provider_failures,
         pressure_window=budget_pressure_compaction,
         planning=enable_planning,
         thinking=enable_thinking,
     )
+    if enable_grep_snapshots and allow_optional_pre_edit_profile:
+        raise ValueError("SWE-bench可选预测试与搜索快照必须独立冻结，不隐式组合候选")
+    if recycle_workspaces:
+        return SweBenchRecyclingAgentRunConfig
     if enable_planning and (
         enable_thinking or not (isolate_provider_failures and budget_pressure_compaction)
     ):
@@ -386,6 +467,8 @@ def _run_config_type(
         raise ValueError("SWE-bench预算窗口候选必须显式保留故障隔离与逐Case预付")
     if enable_planning:
         return SweBenchPlanningAgentRunConfig
+    if allow_optional_pre_edit_profile:
+        return SweBenchOptionalPreEditAgentRunConfig
     if enable_grep_snapshots:
         return SweBenchSearchSnapshotAgentRunConfig
     if enable_thinking:
@@ -413,6 +496,8 @@ def build_swebench_agent_run_config(
     enable_thinking: bool = False,
     enable_planning: bool = False,
     enable_grep_snapshots: bool = False,
+    allow_optional_pre_edit_profile: bool = False,
+    recycle_workspaces: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -424,6 +509,8 @@ def build_swebench_agent_run_config(
         enable_thinking=enable_thinking,
         enable_planning=enable_planning,
         enable_grep_snapshots=enable_grep_snapshots,
+        allow_optional_pre_edit_profile=allow_optional_pre_edit_profile,
+        recycle_workspaces=recycle_workspaces,
     )
     config = config_model(
         plan_sha256=plan.plan_sha256,
@@ -475,5 +562,14 @@ def build_swebench_agent_run_config(
         fee_stop_amount=fee_stop_amount,
         case_process_profiles=case_process_profiles,
     )
+    if isinstance(config, SweBenchRecyclingAgentRunConfig):
+        strategy: Literal["standard", "search_snapshot", "optional_pre_edit"] = "standard"
+        if enable_grep_snapshots:
+            strategy = "search_snapshot"
+        elif allow_optional_pre_edit_profile:
+            strategy = "optional_pre_edit"
+        config = SweBenchRecyclingAgentRunConfig.model_validate(
+            {**config.model_dump(), "agent_strategy": strategy}
+        )
     config.require_plan(plan)
     return config

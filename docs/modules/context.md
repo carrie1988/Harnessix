@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 12
-code_revision: 6a2afdf146d7ad63f25980319524643db1d0d6a5
+version: 13
+code_revision: 6a3362945f9a657e108ba32caa81c4ebfce8d117
 owners:
   - core
 modules:
@@ -14,6 +14,8 @@ related_adrs:
   - docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md
   - docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md
 related_tests:
+  - tests/product_config/test_optional_pre_edit_profile.py
+  - tests/evals/swebench/test_optional_pre_edit_agent_execution.py
   - tests/tools/test_grep_snapshot_runtime.py
   - tests/context/test_planning_anchors.py
   - tests/context/test_planning_compaction_runtime.py
@@ -32,6 +34,13 @@ related_tests:
   - tests/product_config/test_agent_context.py
 supersedes: []
 ---
+
+## 可选预测试Context装配
+
+显式候选替换编码工作流片段为`harnessix.coding-instructions/v23`，说明公开目标必须来自
+当前仓库观察、非零退出不等于业务复现、Test/Patch不能同响应，以及补丁后测试/Review仍必需。
+默认v22内容及搜索快照的独立片段不变；不从提示词推导执行授权。详见
+[策略与正式SDK接线](../changes/swebench-adapter-verified-25-pilot.md#工具闭环与工作区生命周期整改)。
 
 ## 显式搜索快照候选（默认关闭）
 

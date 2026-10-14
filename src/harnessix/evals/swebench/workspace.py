@@ -527,14 +527,18 @@ def materialize_swebench_workspace(
         error_code="swebench_workspace_root_invalid",
         create=True,
     )
+    workspace = workspace_parent / instance_id
+    expected_url = _repository_url(repository)
+
+    if _path_exists(workspace / ".harnessix-retired.json"):
+        raise KernelError(
+            "swebench_workspace_retired", "SWE-bench工作区已封存退役，禁止静默重建或重放效果"
+        )
     cache_parent = _private_directory(
         cache_root,
         error_code="swebench_workspace_cache_root_invalid",
         create=True,
     )
-    workspace = workspace_parent / instance_id
-    expected_url = _repository_url(repository)
-
     if _path_exists(workspace):
         cache = _validate_cache(
             executable,

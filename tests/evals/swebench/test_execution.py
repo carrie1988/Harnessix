@@ -44,7 +44,10 @@ from harnessix.evals.swebench.predictions import read_predictions
 from harnessix.evals.swebench.public_test_profile import (
     build_swebench_case_process_profile,
 )
-from harnessix.evals.swebench.run_config import build_swebench_agent_run_config
+from harnessix.evals.swebench.run_config import (
+    SweBenchRecyclingAgentRunConfig,
+    build_swebench_agent_run_config,
+)
 from harnessix.models.pricing import amount_units, format_amount
 from harnessix.product_config.process_profile import process_tool_name
 
@@ -201,13 +204,19 @@ def _turn(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("first_fails", [False, True])
+@pytest.mark.parametrize("recycle", [False, True])
 async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
     tmp_path: Path,
     first_fails: bool,
+    recycle: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plan = _plan()
     config = _config(tmp_path, plan)
+    if recycle:
+        config = SweBenchRecyclingAgentRunConfig.model_validate(
+            {**config.model_dump(), "spec_version": "harnessix.swebench-agent-run-config/v9"}
+        )
     turns = {case.instance_id: _turn(index) for index, case in enumerate(plan.cases)}
     turns[plan.cases[0].instance_id] = _turn(
         0,
@@ -226,13 +235,29 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
             0, (), status=TurnStatus.FAILED, turn_error="budget_exceeded"
         )
     calls: list[tuple[str, str]] = []
+    materialized = []
+    sealed = {}
+    collected = []
 
     monkeypatch.setattr(execution, "require_harnessix_execution_revision", lambda *_: None)
 
     def materialize(case, **_kwargs):
+        # 入口必须逐项创建；v9上一项封存后才允许创建下一项。
+        if recycle:
+            assert len(materialized) == len(sealed)
+        materialized.append(case.instance_id)
         workspace = Path(config.work_root) / "workspaces" / case.instance_id
         workspace.mkdir(mode=0o700, parents=True, exist_ok=True)
         return workspace
+
+    def seal(_plan, _config, index, state, patch, **_kwargs):
+        assert state.thread_id is not None and state.turn_id is not None
+        assert state.patch_sha256 == hashlib.sha256(patch.encode()).hexdigest()
+        sealed[index] = patch
+
+    def collect(workspace, *_args):
+        collected.append(workspace)
+        return PATCH
 
     async def open_turn(
         _plan,
@@ -255,7 +280,10 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
         "_turn_cost",
         lambda *_: (1, True),
     )
-    monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_: PATCH)
+    monkeypatch.setattr(execution, "collect_workspace_patch", collect)
+    # 本组只验证Suite编排；签名、文件回收及原生认证由独立真实Session测试覆盖。
+    monkeypatch.setattr(execution, "seal_and_retire_workspace", seal)
+    monkeypatch.setattr(execution, "read_retired_patch", lambda _p, _c, i, **_: sealed.get(i))
 
     first = await execution.run_swebench_agent_suite(
         plan,
@@ -286,6 +314,8 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
         for case in plan.cases
     ]
     assert calls == expected_routes * 2
+    assert len(materialized) == len(collected) == (25 if recycle else 50)
+    assert len(sealed) == (25 if recycle else 0)
 
 
 @pytest.mark.parametrize(

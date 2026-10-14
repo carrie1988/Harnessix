@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 25
-code_revision: 6a2afdf146d7ad63f25980319524643db1d0d6a5
+version: 26
+code_revision: 6a3362945f9a657e108ba32caa81c4ebfce8d117
 owners:
   - core
 modules:
@@ -16,6 +16,15 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
+  - tests/evals/swebench/test_workspace_retirement.py
+  - tests/evals/swebench/test_authenticated_workspace_retirement.py
+  - tests/evals/swebench/test_workspace_retirement_cancellation.py
+  - tests/evals/swebench/test_recycling_run_config.py
+  - tests/evals/swebench/test_optional_pre_edit_agent_execution.py
+  - tests/product_config/test_optional_pre_edit_profile.py
+  - tests/product_config/test_optional_pre_edit_runtime.py
+  - tests/agent/test_tool_call_groups.py
+  - tests/evals/swebench/test_optional_pre_edit_run_config.py
   - tests/tools/test_grep_snapshots.py
   - tests/tools/test_windows_grep_snapshots.py
   - tests/tools/test_grep_snapshot_runtime.py
@@ -1025,7 +1034,7 @@ predictions或官方评分，不拼接旧成功。保持规划默认关闭，不
 
 空间治理已按用户授权回收约3.22 GiB对象，其中78个旧计划未执行工作区永久退役，并验证
 旧入口拒绝静默重建；费用、状态、报告及已执行证据保留。本次只准备实际诊断的6个工作区，
-没有预建两组其余44项。正式Suite仍整批预建、尚无自动回收机制，不能声称已完成自动GC。
+没有预建两组其余44项。当时正式Suite仍整批预建且无自动回收机制；下文生命周期整改已补齐实现，尚未实际退役历史运行。
 10 GiB运行前／运行中保护保留，已执行工作区归档解耦前不自动删除。最新官方成绩仍3/25。
 
 ## 搜索快照候选：同次观察摘要，默认关闭
@@ -1111,4 +1120,116 @@ POSIX严格UTF-8重新编码不改变BOM、CRLF或Unicode；原生端直接使�
 必须先建立通用调用组互斥合同，在发布可执行调用前拒绝两种顺序的混合组，且所有执行器
 调用数为零；Read+Test仍合法，默认无约束时旧行为不变。再开放可选预测试，仍使用原镜像、
 只读Workspace、无网络、资源限制、审批和取消/超时/未知状态闭锁。不新增任意Shell，
-不按Case分支，不修改最终质量判定。上述为下一实施边界，尚未实现或真实验收。
+不按Case分支，不修改最终质量判定。上述候选已按下文完成实现；尚未进行真实模型质量复验。
+
+## 工具闭环与工作区生命周期整改
+
+### 范围、架构决策与源码位置
+
+本轮只修复已经观察到的通用边界，不添加Case专用提示、修改答案、增加任务额度或用规划工具
+数量证明质量。搜索快照和可选预测试是独立候选，默认均关闭；工作区生命周期是宿主存储策略，
+配对时两组必须采用相同策略，避免把存储变化混入编码策略效果。
+
+| 职责 | 入口/合同与关键字段 | 源码 |
+| --- | --- | --- |
+| 工具组约束 | `ModelToolSelection.exclusive_tool_groups`：本次请求中不能共存的工具名组，默认空 | [ports](../../src/harnessix/agent/ports.py)、[校验](../../src/harnessix/agent/tool_call_groups.py)、[Kernel](../../src/harnessix/agent/runtime.py) |
+| 可选预测试 | `CodingWorkflowToolView.allow_optional_pre_edit_profile`；单Profile/Patch/Review，不允许隐式回退完整写目录 | [Tool View](../../src/harnessix/product_config/coding_tool_view.py)、[Context](../../src/harnessix/product_config/agent_context.py) |
+| 策略冻结 | v8仅可选预测试；v9的`agent_strategy`为standard/search_snapshot/optional_pre_edit，`workspace_policy`固定sealed_terminal_retirement | [run_config](../../src/harnessix/evals/swebench/run_config.py)、[IO](../../src/harnessix/evals/swebench/run_config_io.py) |
+| 顺序编排 | 逐项物化、认证原Turn、按原结算事实复核、封存回收 | [execution](../../src/harnessix/evals/swebench/execution.py)、[费用解释](../../src/harnessix/evals/swebench/execution_costs.py)、[质量解释](../../src/harnessix/evals/swebench/execution_evidence.py) |
+| 原终态认证 | `_read_terminal_case_turn`核对Thread、Workspace、请求ID、Turn和原预算；在Provider/Action装配之前返回 | [agent_execution](../../src/harnessix/evals/swebench/agent_execution.py) |
+| 封存与回收 | `seal_and_retire_workspace`、`read_retired_patch`；仅可信宿主可调用，不是模型工具 | [退役入口](../../src/harnessix/evals/swebench/workspace_retirement.py)、[合同](../../src/harnessix/evals/swebench/workspace_retirement_contracts.py)、[FS](../../src/harnessix/evals/swebench/workspace_retirement_fs.py) |
+
+### 模型工具状态与失败顺序
+
+| 已持久事实 | 可见/强制工具 | 不得推导的结论 |
+| --- | --- | --- |
+| 首次调查 | 读取、Patch、受控Profile，AUTO | 不因读取次数强制修改，不强制首轮测试 |
+| 预测试成功或确定非零 | 继续调查、复现或Patch；诊断截断时可读Artifact | 成功不能抵扣修改后测试；非零可能是目标、收集或导入故障 |
+| Profile超时、启动失败、取消、UNKNOWN、无效参数 | 空工具目录，原失败保持 | 不执行下一次修改或掩盖环境失败 |
+| Patch前置失败 | 原读取/修补门禁 | 不绕过摘要检查，也不和Profile混发 |
+| Patch成功 | 强制同一公开Profile | 必须检查当前修改，不接受旧预测试 |
+| 修改后测试成功 | 强制完整Git Review | 不接受截断或缺失Review |
+
+互斥规则不进入模型请求或公共事件Schema。选择目录时校验宿主规则只能引用已公开工具；
+Provider完整流关闭、用量落账和预算核验后，Kernel再检查整个提案组。Test+Patch不论顺序
+均产生稳定`invalid_provider_output`，任何调用、审批、效果均未发布。流/用量/预算失败
+优先于互斥失败，已知费用不能因为拒绝调用而丢失。模型多调用能力仍由原Provider配置控制，
+该规则不隐式开启并发或重试。
+
+### 工作区数据流与恢复时序
+
+```mermaid
+flowchart TD
+    C[冻结Plan和v9配置] --> N[只准备下一Case]
+    N --> A[正式Agent执行或认证原终态]
+    A --> E[原Patch 费用及质量边界复核]
+    E --> S[封存完整Patch及原证据摘要]
+    S --> M[持久化退役Marker]
+    M --> R[全树预检后只回收工作区内容]
+    R --> N
+    S --> F[原Native Session 状态 Artifact和账本保留]
+```
+
+```mermaid
+sequenceDiagram
+    participant H as Suite宿主
+    participant O as 原生认证Owner
+    participant F as 封存与FS
+    H->>F: 读取并认证已有封存（合法空Patch仍返回空串）
+    H->>O: 仅认证原Thread/Turn/请求/预算
+    O-->>H: 原终态，不开启Provider或执行器
+    H->>H: 复核原质量失败、Patch和费用，不创建新Turn
+    H->>F: 原封存恢复半清理或完成幂等回收
+    F-->>H: 同一目录身份、完整Patch、原证据不变
+    H->>H: 按原顺序生成全部25项Prediction
+```
+
+宿主核心伪代码：
+
+```text
+for case in frozen_order:
+    核验取消、磁盘、原状态以及新请求的足额费用准入
+    if 显式回收策略且有认证封存:
+        patch = 原封存全文
+        turn = 只读认证原终态
+    else:
+        仅物化此Case → 执行或认证同一Turn → 导出完整Patch
+    核验费用及原质量/未知状态边界，不重试失败Case
+    持久化原Case结果
+    if 允许继续且显式回收:
+        认证Native和状态 → fsync封存 → fsync Marker → 全树预检 → 回收内容
+    保留原分母、原失败和空Patch，继续下一Case
+```
+
+`sealed-workspace.json`放在Case根，包含完整Patch而非只存摘要。关键字段：
+
+| 字段 | 解释 |
+| --- | --- |
+| plan_sha256/config_fingerprint/case_index/instance_id/base_commit | 绑定冻结方案和唯一Case，禁止跨轮/跨题复制 |
+| work_root/case_root/workspace_path/directory_identities | 绑定宿主所有权、设备、inode与权限，保留工作区根inode |
+| case_state_file_sha256/session_sha256及对应identity | 绑定原Case状态和原始SQLite文件；不压缩/删除/重写原Native |
+| state_sha256/run_id/thread_id/turn_id | 绑定原运行及终态身份，仍必须由调用方认证原生Turn |
+| patch/patch_sha256/patch_bytes | 完整UTF-8补丁及有界字节数；合法空串不能当作“封存缺失” |
+| hmac_sha256 | 内存凭据域隔离派生HMAC；密钥不写入封存、Marker或日志 |
+
+FS逐级以不跟随链接的目录FD固定私有身份，回收只遍历owned工作区。外部目标的子符号链接
+仅unlink自身；祖先/根链接、跨设备、其他owner、危险权限或硬链接失败闭锁。Marker保留根
+目录身份；物化入口看见Marker立即拒绝，不静默重建。Native、Artifact、费用、原Case状态、
+官方日志及源码/缓存/其他Case均不在删除范围。封存不是活跃工具效果恢复的替代品。
+
+父Task取消时，宿主传递CancelToken并等待不可强杀的回收线程结算后才释放Suite锁；重复
+取消也不得遗留后台删除。封存/Marker/清理阶段故障可凭同一原证据恢复，文件身份或正文
+漂移拒绝。发布窗口只允许认证同inode的固定暂存别名；未知残留、其他硬链接或不完整暂存
+不能自动删除。凭据轮换、原证据改写或目录迁移都需显式处理，不尝试猜测或重新执行模型。
+
+### 测试证据与未完成门禁
+
+真实SDK离线响应经过正式产品装配、SQLite和认证Owner，验证可选目录/Context接线、已计费
+互斥失败及原终态封存恢复；恢复后请求数、原Native/状态字节不变，禁止开启Provider、Git或
+Action执行器。Suite回归验证逐项创建和原25项Prediction一致。故障负控覆盖取消、重复取消、
+中途发布故障、签名/身份/Native漂移、空Patch及链接边界。
+
+以上证明实现和失败边界，不证明真实自主修复成功。当前候选默认关闭；未调用新付费模型，
+未变更已冻结的任务、预算、镜像或旧费用，未实际回收历史已执行工作区。
+最新完整官方结果仍为3/25，22/25和全新泛化集门禁仍OPEN。必须恢复至少10 GiB磁盘余量，
+完成同源同预算小范围配对并观察Patch→测试→Review实际改善后，才推进完整25项评分。

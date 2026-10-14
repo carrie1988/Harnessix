@@ -17,6 +17,7 @@ from harnessix.context.sources import (
 )
 
 CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
+_OPTIONAL_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v23"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 _PLANNING_INSTRUCTIONS = (
     "For multi-step coding work, use update_plan to track investigation, implementation, "
@@ -71,6 +72,19 @@ _POST_PATCH_ONLY_PROFILE_WORKFLOW = (
     "or unavailable output fails closed.\n"
 )
 
+_OPTIONAL_PRE_EDIT_PROFILE_WORKFLOW = (
+    "2. Before the first patch, run_profile is available but optional. When a relevant public "
+    "test can reduce uncertainty, use explicit existing targets observed in the repository. "
+    "An empty selector is not a reliable baseline; a nonzero exit may be an assertion, "
+    "collection, import or target error, not proof that the requested defect was reproduced. "
+    "Never put run_profile and apply_patch_batch in the same response, in either order. "
+    "Do not wait for a failed baseline before editing when source evidence is sufficient. "
+    "Use focused read_file/grep windows and expand only for missing evidence. "
+    "After every successful patch, call the forced run_profile anew; pre-edit success cannot "
+    "substitute for post-edit validation. Only process_nonzero_exit opens diagnosis and "
+    "correction; timeout, launch failure, unknown state or unavailable output fails closed.\n"
+)
+
 _CODING_INSTRUCTIONS_SUFFIX = (
     "3. For existing files prefer apply_patch_batch operation edit with unique "
     "old_text/new_text anchors;\n"
@@ -101,12 +115,16 @@ CODING_INSTRUCTIONS = (
 )
 
 
-def _coding_instructions(require_pre_edit_profile: bool) -> str:
+def _coding_instructions(
+    require_pre_edit_profile: bool, allow_optional_pre_edit_profile: bool = False
+) -> str:
     profile_workflow = (
         _BASELINE_FIRST_PROFILE_WORKFLOW
         if require_pre_edit_profile
         else _POST_PATCH_ONLY_PROFILE_WORKFLOW
     )
+    if allow_optional_pre_edit_profile:
+        profile_workflow = _OPTIONAL_PRE_EDIT_PROFILE_WORKFLOW
     return _CODING_INSTRUCTIONS_PREFIX + profile_workflow + _CODING_INSTRUCTIONS_SUFFIX
 
 
@@ -125,6 +143,7 @@ def build_product_agent_context(
     require_pre_edit_profile: bool = True,
     enable_planning: bool = False,
     enable_grep_snapshots: bool = False,
+    allow_optional_pre_edit_profile: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
@@ -133,6 +152,10 @@ def build_product_agent_context(
         raise ValueError("产品规划指令开关必须是布尔值")
     if type(enable_grep_snapshots) is not bool:
         raise ValueError("产品搜索快照开关必须是布尔值")
+    if type(allow_optional_pre_edit_profile) is not bool:
+        raise ValueError("产品可选预测试开关必须是布尔值")
+    if allow_optional_pre_edit_profile and require_pre_edit_profile is not False:
+        raise ValueError("可选预测试不能同时启用强制修改前基线")
     limits = ContextLimits(
         context_window_tokens=PRODUCT_CONTEXT_INPUT_LIMIT + max_output_tokens + 1536,
         reserved_output_tokens=max_output_tokens,
@@ -142,8 +165,14 @@ def build_product_agent_context(
         (
             ContextFragment(
                 kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
-                source=CODING_INSTRUCTIONS_VERSION,
-                content=_coding_instructions(require_pre_edit_profile),
+                source=(
+                    _OPTIONAL_CODING_INSTRUCTIONS_VERSION
+                    if allow_optional_pre_edit_profile
+                    else CODING_INSTRUCTIONS_VERSION
+                ),
+                content=_coding_instructions(
+                    require_pre_edit_profile, allow_optional_pre_edit_profile
+                ),
             ),
             *(
                 (

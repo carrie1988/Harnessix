@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
-import re
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID, uuid5
@@ -15,16 +12,9 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     TERMINAL_TURNS,
-    ItemStatus,
-    ToolCallContent,
-    ToolCallRejectionContent,
-    ToolResultContent,
     Turn,
-    TurnStatus,
     TurnStatusV18,
 )
-from harnessix.agent.tool_rejections import require_closed_rejection_items
-from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import utc_now
 from harnessix.evals.execution_fs import (
     ensure_private_directory,
@@ -45,6 +35,16 @@ from harnessix.evals.swebench.execution_contracts import (
     is_swebench_isolated_provider_failure,
     is_swebench_quality_failure,
 )
+from harnessix.evals.swebench.execution_costs import (
+    _can_isolate_transport_failure,
+    _next_case_reserve,
+    _turn_cost,
+    _unknown_request_reserve,
+)
+from harnessix.evals.swebench.execution_evidence import (
+    _case_evidence_failure,
+    _require_case_evidence,
+)
 from harnessix.evals.swebench.execution_io import (
     read_case_execution_state,
     read_suite_execution_state,
@@ -59,11 +59,14 @@ from harnessix.evals.swebench.predictions import (
 from harnessix.evals.swebench.run_config import SweBenchRunConfig as SweBenchAgentRunConfig
 from harnessix.evals.swebench.source_revision import require_harnessix_execution_revision
 from harnessix.evals.swebench.workspace import materialize_swebench_workspace
-from harnessix.models.costs import bind_price, build_cost_report, estimate_attempt
-from harnessix.models.pricing import FlatInputPrice, amount_units, format_amount, rate_units
+from harnessix.evals.swebench.workspace_retirement import (
+    read_retired_patch,
+    seal_and_retire_workspace,
+)
+from harnessix.models.pricing import amount_units, format_amount
 from harnessix.product_config.action_contracts import ProductProcessProfile
 from harnessix.product_config.process_profile import process_tool_name
-from harnessix.tools.git_contracts import GitReviewOutput
+from harnessix.tools.runtime import _drain
 
 _RUN_NAMESPACE = UUID("be7c86aa-71bb-5fdc-9bb4-47612c041d40")
 _CASES_DIRECTORY = "cases"
@@ -73,20 +76,6 @@ _SUITE_STATE_FILE = "suite-state.json"
 _PREDICTIONS_FILE = "predictions.jsonl"
 _LOCK_FILE = ".agent-suite.lock"
 _SESSION_FILE = "session.sqlite"
-_ERROR_CODE = re.compile(r"^[a-z][a-z0-9_]{0,127}$")
-_PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
-_GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
-
-
-@dataclass(frozen=True, slots=True)
-class _ToolObservation:
-    index: int
-    call: ToolCallContent
-    result: ToolResultContent
-
-    @property
-    def tool(self) -> str:
-        return self.call.tool
 
 
 def _case_root(root: Path, index: int) -> Path:
@@ -95,236 +84,6 @@ def _case_root(root: Path, index: int) -> Path:
 
 def _run_id(plan: SweBenchPreRegistrationPlan, case: SweBenchPublicCase) -> UUID:
     return uuid5(_RUN_NAMESPACE, f"{plan.plan_sha256}:{case.instance_id}")
-
-
-def _stable_error_code(turn: Turn) -> str | None:
-    if turn.status.value == "completed":
-        return None
-    code = turn.error.code if turn.error is not None else f"turn_{turn.status.value}"
-    return code if _ERROR_CODE.fullmatch(code) else "turn_failed"
-
-
-def _tool_observations(turn: Turn) -> tuple[_ToolObservation, ...]:
-    require_closed_rejection_items(turn.items)
-    calls: dict[UUID, ToolCallContent | ToolCallRejectionContent] = {}
-    settled: set[UUID] = set()
-    observations: list[_ToolObservation] = []
-    for index, item in enumerate(turn.items):
-        content = item.content
-        if not isinstance(content, (ToolCallContent, ToolCallRejectionContent, ToolResultContent)):
-            continue
-        if item.status is not ItemStatus.COMPLETED or item.error is not None:
-            raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具事实未完整结算")
-        if isinstance(content, (ToolCallContent, ToolCallRejectionContent)):
-            if content.call_id in calls:
-                raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具调用身份重复")
-            calls[content.call_id] = content
-        else:
-            call = calls.get(content.call_id)
-            if call is None or content.call_id in settled:
-                raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具结果配对无效")
-            settled.add(content.call_id)
-            if isinstance(call, ToolCallContent):
-                observations.append(_ToolObservation(index, call, content))
-    if calls.keys() != settled:
-        raise KernelError("swebench_tool_state_unavailable", "SWE-bench工具调用缺少结算结果")
-    return tuple(observations)
-
-
-def _is_code_test_failure(observation: _ToolObservation) -> bool:
-    return (
-        observation.result.outcome == "failed"
-        and observation.result.error is not None
-        and observation.result.error.code == "process_nonzero_exit"
-    )
-
-
-def _case_evidence_failure(
-    turn: Turn,
-    patch: str,
-    public_test_tool: str,
-    *,
-    cost_complete: bool,
-    transport_failure_isolatable: bool = False,
-) -> tuple[str, str] | None:
-    try:
-        observations = _tool_observations(turn)
-    except KernelError:
-        return "swebench_tool_state_unavailable", "SWE-bench工具事实未完整闭合"
-    if any(
-        item.tool != public_test_tool and item.result.outcome in {"unknown", "cancelled"}
-        for item in observations
-    ):
-        return "swebench_tool_state_unavailable", "SWE-bench工具状态未知或已取消"
-    public_tests = tuple(item for item in observations if item.tool == public_test_tool)
-    if any(
-        item.result.outcome != "succeeded" and not _is_code_test_failure(item)
-        for item in public_tests
-    ):
-        return (
-            "swebench_public_tests_unavailable",
-            "SWE-bench公开测试发生非代码执行失败",
-        )
-
-    if transport_failure_isolatable:
-        return "swebench_provider_transport_isolated", "SWE-bench传输故障已冻结，失败不重试"
-    if not cost_complete:
-        return "swebench_cost_incomplete", "SWE-bench模型费用未完整结算"
-    if turn.status is not TurnStatus.COMPLETED:
-        code = _stable_error_code(turn) or "swebench_turn_failed"
-        # 仅映射已计费、响应身份已知的契约失败；原 Turn 和请求账本保持不变。
-        if (
-            turn.status is TurnStatus.FAILED
-            and code in {"invalid_provider_output", "provider_invalid_provider_output"}
-            and turn.accounted_attempts
-            and all(
-                attempt.response_id is not None and attempt.status in {"completed", "failed"}
-                for attempt in turn.accounted_attempts
-            )
-        ):
-            code = "swebench_model_response_invalid"
-        return code, "SWE-bench Case Turn未成功完成"
-
-    patch_results = tuple(item for item in observations if item.tool in _PATCH_TOOLS)
-    if not patch_results:
-        return "swebench_patch_missing", "SWE-bench Case未产生成功 Patch"
-    final_patch = patch_results[-1]
-    if final_patch.result.outcome != "succeeded":
-        return "swebench_patch_failed", "SWE-bench Case最终 Patch未成功"
-    if not patch.strip():
-        return "swebench_patch_missing", "SWE-bench Case最终 Git Patch为空"
-
-    final_public_tests = tuple(item for item in public_tests if item.index > final_patch.index)
-    if not final_public_tests:
-        return "swebench_public_tests_missing", "SWE-bench最终 Patch后缺少公开测试"
-    if any(item.result.outcome != "succeeded" for item in final_public_tests):
-        return "swebench_public_tests_failed", "SWE-bench最终 Patch后的公开测试未通过"
-    final_test_index = final_public_tests[-1].index
-
-    reviews = tuple(
-        item for item in observations if item.index > final_test_index and item.tool == "git_review"
-    )
-    if reviews:
-        review = reviews[-1].result
-        if review.outcome == "succeeded":
-            try:
-                output = GitReviewOutput.model_validate_json(json.dumps(review.output))
-            except (ValueError, TypeError):
-                pass
-            else:
-                if not output.status.truncated and not output.diff.truncated:
-                    return None
-        return "swebench_git_review_incomplete", "SWE-bench Git复核输出失败、无效或被截断"
-
-    final_reviews: dict[str, _ToolObservation] = {}
-    for item in observations:
-        if item.index > final_test_index and item.tool in _GIT_REVIEW_TOOLS:
-            final_reviews[item.tool] = item
-    if set(final_reviews) != _GIT_REVIEW_TOOLS or any(
-        item.result.outcome != "succeeded" for item in final_reviews.values()
-    ):
-        return "swebench_git_review_incomplete", "SWE-bench公开测试后缺少完整 Git 复核"
-    return None
-
-
-def _can_isolate_transport_failure(turn: Turn, config: SweBenchAgentRunConfig) -> bool:
-    """费用可预留，但未闭合尝试、未知摘要和缺失原生请求证明不能据此继续。"""
-    attempts = turn.accounted_attempts
-    if (
-        turn.status is not TurnStatus.FAILED
-        or turn.error is None
-        or turn.error.code != "provider_transport"
-        or not attempts
-        or not turn.model_attempts
-        or any(attempt.status not in {"completed", "failed"} for attempt in attempts)
-        or any(record.unaccounted_request_possible for record in turn.compactions)
-        or len(turn.model_attempts) != turn.model_steps
-        or any(attempt.index != 1 for attempt in attempts)
-        or {attempt.step for attempt in turn.model_attempts} != set(range(1, turn.model_steps + 1))
-    ):
-        return False
-    last = turn.model_attempts[-1]
-    if last.status != "failed" or last.error is None or last.error.code != "provider_transport":
-        return False
-    if not all(
-        attempt.requested_model == config.provider_config.model
-        and attempt.provider == "openai_chat"
-        and attempt.actual_model in {None, attempt.requested_model}
-        and config.price.valid_from <= attempt.started_at < config.price.valid_until
-        and attempt.finished_at is not None
-        and attempt.finished_at < config.price.valid_until
-        and (
-            attempt.usage.completeness != "complete"
-            or (attempt.actual_model == config.price.model and attempt.response_id is not None)
-        )
-        for attempt in attempts
-    ):
-        return False
-    for attempt in attempts:
-        result = estimate_attempt(
-            attempt, bind_price(attempt, config.price, config.billing_context)
-        ).result
-        if result.status != "estimated" and not (
-            attempt.attempt_id == last.attempt_id and result.reason == "usage_incomplete"
-        ):
-            return False
-    return True
-
-
-def _turn_cost(turn: Turn, config: SweBenchAgentRunConfig) -> tuple[int, bool]:
-    if not turn.accounted_attempts:
-        return 0, False
-    bindings = tuple(
-        bind_price(attempt, config.price, config.billing_context)
-        for attempt in turn.accounted_attempts
-    )
-    report = build_cost_report(turn, bindings)
-    totals = report.summary.totals
-    if len(totals) > 1 or (totals and totals[0].currency != config.price.currency):
-        raise KernelError("swebench_cost_invalid", "SWE-bench模型费用币种无效")
-    units = amount_units(totals[0].known_amount) if totals else 0
-    return units, report.summary.completeness == "complete"
-
-
-def _input_rate(config: SweBenchAgentRunConfig) -> int:
-    price = config.price.input_price
-    if not isinstance(price, FlatInputPrice):
-        raise KernelError("swebench_cost_invalid", "SWE-bench输入价格合同无效")
-    return rate_units(price.per_million)
-
-
-def _unknown_request_reserve(config: SweBenchAgentRunConfig) -> int:
-    return config.provider_config.max_request_bytes * _input_rate(config) + (
-        config.provider_config.max_output_tokens + config.output_token_limit_margin
-    ) * rate_units(config.price.output_per_million)
-
-
-def _next_case_reserve(
-    plan: SweBenchPreRegistrationPlan,
-    config: SweBenchAgentRunConfig,
-) -> int:
-    known = (plan.task_budget.max_tokens + config.output_token_limit_margin) * max(
-        _input_rate(config),
-        rate_units(config.price.output_per_million),
-    )
-    return known + _unknown_request_reserve(config)
-
-
-def _require_case_evidence(
-    state: SweBenchCaseExecutionState,
-    thread_id: UUID,
-    turn: Turn,
-    patch: str,
-) -> None:
-    if (
-        state.thread_id != thread_id
-        or state.turn_id != turn.turn_id
-        or state.turn_status != TurnStatusV18(turn.status)
-        or state.input_tokens != turn.usage.input_tokens
-        or state.output_tokens != turn.usage.output_tokens
-        or state.patch_sha256 != hashlib.sha256(patch.encode("utf-8")).hexdigest()
-    ):
-        raise KernelError("swebench_case_evidence_mismatch", "SWE-bench Case证据与状态不一致")
 
 
 def _load_or_initialize_case_states(
@@ -404,37 +163,30 @@ def _reconcile_suite_state(
     return rebuilt
 
 
-async def _materialize_all(
-    plan: SweBenchPreRegistrationPlan,
+async def _materialize_case(
     config: SweBenchAgentRunConfig,
-    states: list[SweBenchCaseExecutionState],
+    case: SweBenchPublicCase,
+    state: SweBenchCaseExecutionState,
+    index: int,
     *,
     allow_network: bool,
-) -> tuple[Path, ...]:
+) -> Path:
+    """只为即将执行/核验的一项准备工作区，失败不预建剩余24项。"""
     workspaces_root = Path(config.work_root) / "workspaces"
     cache_root = Path(config.cache_root)
-    semaphore = asyncio.Semaphore(4)
-    repository_locks = {case.repo: asyncio.Lock() for case in plan.cases}
-
-    async def materialize(index: int, case: SweBenchPublicCase) -> Path:
-        run_root = _case_root(Path(config.work_root), index) / _RUN_DIRECTORY
-        may_contain_agent_changes = states[index].status == "completed" or path_present(
-            run_root / _SESSION_FILE
-        )
-        async with semaphore, repository_locks[case.repo]:
-            require_evaluation_disk_space(workspaces_root, cache_root)
-            return await asyncio.to_thread(
-                materialize_swebench_workspace,
-                case,
-                workspaces_root=workspaces_root,
-                cache_root=cache_root,
-                git_executable=Path(config.git_executable),
-                allow_network=allow_network,
-                require_clean=not may_contain_agent_changes,
-            )
-
-    return tuple(
-        await asyncio.gather(*(materialize(index, case) for index, case in enumerate(plan.cases)))
+    run_root = _case_root(Path(config.work_root), index) / _RUN_DIRECTORY
+    may_contain_agent_changes = state.status == "completed" or path_present(
+        run_root / _SESSION_FILE
+    )
+    require_evaluation_disk_space(workspaces_root, cache_root)
+    return await asyncio.to_thread(
+        materialize_swebench_workspace,
+        case,
+        workspaces_root=workspaces_root,
+        cache_root=cache_root,
+        git_executable=Path(config.git_executable),
+        allow_network=allow_network,
+        require_clean=not may_contain_agent_changes,
     )
 
 
@@ -475,7 +227,39 @@ async def _open_case_turn(
         budget_pressure_compaction=config.budget_pressure_compaction,
         enable_planning=config.planning_enabled,
         enable_grep_snapshots=config.grep_snapshots_enabled,
+        allow_optional_pre_edit_profile=config.optional_pre_edit_profile_enabled,
     )
+
+
+async def _retire_case_workspace(
+    plan: SweBenchPreRegistrationPlan,
+    config: SweBenchAgentRunConfig,
+    index: int,
+    state: SweBenchCaseExecutionState,
+    patch: str,
+    api_key: str,
+    cancel: CancelToken,
+) -> None:
+    """持有Suite锁直到清理线程结算；父Task取消也传播至每个删除检查点。"""
+    cancel.checkpoint()
+    worker = asyncio.create_task(
+        asyncio.to_thread(
+            seal_and_retire_workspace,
+            plan,
+            config,
+            index,
+            state,
+            patch,
+            api_key=api_key,
+            cancel=cancel,
+        )
+    )
+    try:
+        await asyncio.shield(worker)
+    except asyncio.CancelledError:
+        cancel.cancel()
+        await _drain(worker)
+        raise
 
 
 async def run_swebench_agent_suite(
@@ -524,19 +308,12 @@ async def run_swebench_agent_suite(
         continue_quality_failures = (
             suite.spec_version != "harnessix.swebench-suite-execution-state/v1"
         )
-        workspaces = await _materialize_all(
-            plan,
-            config,
-            states,
-            allow_network=allow_repository_network,
-        )
-
         known_cost_units = 0
         reserved_cost_units = 0
         unaccounted_cases = 0
         completed_count = 0
         attempted_patches: list[str] = []
-        for index, (case, workspace) in enumerate(zip(plan.cases, workspaces, strict=True)):
+        for index, case in enumerate(plan.cases):
             token.checkpoint()
             state = states[index]
             terminal_quality_failure = continue_quality_failures and is_swebench_quality_failure(
@@ -562,6 +339,17 @@ async def run_swebench_agent_suite(
             process_profile = config.process_profile_for(case.instance_id)
             if not terminal_attempt:
                 require_evaluation_disk_space(root, Path(config.cache_root))
+            retired_patch = (
+                read_retired_patch(plan, config, index, api_key=api_key)
+                if config.workspace_retirement_enabled and terminal_attempt
+                else None
+            )
+            if retired_patch is not None:
+                workspace = Path(config.work_root) / "workspaces" / case.instance_id
+            else:
+                workspace = await _materialize_case(
+                    config, case, state, index, allow_network=allow_repository_network
+                )
             thread_id, turn = await _open_case_turn(
                 plan,
                 config,
@@ -574,10 +362,12 @@ async def run_swebench_agent_suite(
             )
             if turn.status not in TERMINAL_TURNS:
                 raise KernelError("swebench_turn_incomplete", "SWE-bench Turn未进入终态")
-            patch = collect_workspace_patch(
-                workspace,
-                Path(config.git_executable),
-                case.base_commit,
+            patch = (
+                retired_patch
+                if retired_patch is not None
+                else collect_workspace_patch(
+                    workspace, Path(config.git_executable), case.base_commit
+                )
             )
             case_cost, cost_complete = _turn_cost(turn, config)
             known_cost_units += case_cost
@@ -645,6 +435,9 @@ async def run_swebench_agent_suite(
                 raise KernelError(code, message)
             attempted_patches.append(patch)
             completed_count += state.status == "completed"
+            if config.workspace_retirement_enabled:
+                _require_case_evidence(state, thread_id, turn, patch)
+                await _retire_case_workspace(plan, config, index, state, patch, api_key, token)
 
         suite = _reconcile_suite_state(
             root, plan, states, isolate_provider_failures=config.isolate_provider_failures

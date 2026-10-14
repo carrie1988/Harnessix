@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 53
-code_revision: 6a2afdf146d7ad63f25980319524643db1d0d6a5
+version: 54
+code_revision: 6a3362945f9a657e108ba32caa81c4ebfce8d117
 owners:
   - core
 modules:
@@ -25,6 +25,11 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
+  - tests/evals/swebench/test_workspace_retirement.py
+  - tests/evals/swebench/test_authenticated_workspace_retirement.py
+  - tests/evals/swebench/test_workspace_retirement_cancellation.py
+  - tests/evals/swebench/test_recycling_run_config.py
+  - tests/evals/swebench/test_optional_pre_edit_agent_execution.py
   - tests/evals/swebench/test_search_snapshot_run_config.py
   - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/evals/swebench/test_planning_run_config.py
@@ -71,6 +76,16 @@ related_tests:
   - tests/evals/swebench/test_agent_execution.py
 supersedes: []
 ---
+
+## SWE-bench按需工作区与显式终态退役
+
+Suite只物化即将执行或核验的一项；v2～v8不自动删除。显式v9将Agent策略和
+`sealed_terminal_retirement`一并冻结进执行指纹：原生终态认证→Patch/费用/质量边界复核
+→认证封存→Marker→描述符级回收。只回收owned工作区内容，Native、Artifact、Case状态、
+账本和结果不变；恢复从原封存读取完整Patch，不重新运行模型或执行器。单写者锁必须持有
+至清理线程结算，父Task取消会传递到删除检查点。纯费用与质量解释分别位于
+`execution_costs.py`和`execution_evidence.py`，主编排不再混杂这些职责。详见
+[统一详设与失败语义](../changes/swebench-adapter-verified-25-pilot.md#工具闭环与工作区生命周期整改)。
 
 ## 显式搜索快照候选（默认关闭）
 

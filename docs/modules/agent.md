@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 36
-code_revision: dae92e8d971874db144af0d18362249e715255ad
+version: 37
+code_revision: 6a3362945f9a657e108ba32caa81c4ebfce8d117
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/agent/test_tool_call_groups.py
   - tests/agent/test_planning_tool.py
   - tests/agent/test_planning_tool_recovery.py
   - tests/agent/test_runtime_sampled_token_budget.py
@@ -43,6 +44,14 @@ related_tests:
   - tests/context/test_compaction_runtime.py
 supersedes: []
 ---
+
+## 单响应工具互斥约束
+
+`ModelToolSelection.exclusive_tool_groups`仅约束本次宿主选择，默认空组；不进入
+ModelRequest、Provider Wire或Session公共合同。Kernel验证规则只能引用当前已公开工具，
+完整流关闭及费用结算后、任何ToolCall持久化前校验互斥组。冲突整体失败且执行/审批为零；
+同名重复调用及Read+Test不冲突。既有取消、预算和流错误优先。实现及测试见
+[闭环整改详设](../changes/swebench-adapter-verified-25-pilot.md#工具闭环与工作区生命周期整改)。
 
 # Agent Runtime模块设计
 

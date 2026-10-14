@@ -114,6 +114,10 @@ from harnessix.agent.runtime_recovery import (
 )
 from harnessix.agent.runtime_thread_lock import RuntimeThreadLock
 from harnessix.agent.telemetry import KernelTelemetry
+from harnessix.agent.tool_call_groups import (
+    require_exclusive_tool_calls,
+    validate_exclusive_tool_groups,
+)
 from harnessix.agent.tool_rejections import rejection_result
 from harnessix.agent.trusted_action_runtime import (
     action_definitions,
@@ -2042,10 +2046,11 @@ class AgentRuntime:
             and (selection.choice != "required" or selection.forced_tool not in selected_by_name)
         ):
             raise KernelError("model_tool_view_invalid", "模型工具选择模式与可见目录不一致")
+        validate_exclusive_tool_groups(selection.exclusive_tool_groups, selected_by_name)
         ordered = tuple(
             definition for definition in available if definition.name in selected_by_name
         )
-        return ModelToolSelection(ordered, selection.choice, selection.forced_tool)
+        return replace(selection, tools=ordered)
 
     async def _drive(self, thread_id: UUID, turn_id: UUID, token: CancelToken) -> Turn:
         """推进单个Turn的Context、模型与Tool循环，直到等待外部输入或进入终态。"""
@@ -2226,7 +2231,12 @@ class AgentRuntime:
                     forced_tool=tool_selection.forced_tool,
                 )
                 try:
-                    await self._sample(request, token, estimated_input_tokens)
+                    await self._sample(
+                        request,
+                        token,
+                        estimated_input_tokens,
+                        exclusive_tool_groups=tool_selection.exclusive_tool_groups,
+                    )
                 except KernelError as error:
                     if error.code != "provider_context_overflow" or self._compaction is None:
                         raise
@@ -2720,7 +2730,12 @@ class AgentRuntime:
         return result
 
     async def _sample(
-        self, request: ModelRequest, token: CancelToken, estimated_input_tokens: int
+        self,
+        request: ModelRequest,
+        token: CancelToken,
+        estimated_input_tokens: int,
+        *,
+        exclusive_tool_groups: tuple[tuple[str, ...], ...] = (),
     ) -> None:
         with self._telemetry.operation(
             "model",
@@ -2732,7 +2747,13 @@ class AgentRuntime:
             protection = await begin_text_step(self._public_output_protection, token)
             failed = True
             try:
-                await self._sample_events(request, token, protection, estimated_input_tokens)
+                await self._sample_events(
+                    request,
+                    token,
+                    protection,
+                    estimated_input_tokens,
+                    exclusive_tool_groups=exclusive_tool_groups,
+                )
                 failed = False
             finally:
                 close_text_step(protection, failed=failed)
@@ -2743,6 +2764,8 @@ class AgentRuntime:
         token: CancelToken,
         protection: PublicTextStep | None,
         estimated_input_tokens: int,
+        *,
+        exclusive_tool_groups: tuple[tuple[str, ...], ...] = (),
     ) -> None:
         """验证Provider事件顺序和预算并持久投影；开放尝试在异常或取消时保守结算。"""
         started = False
@@ -2919,6 +2942,10 @@ class AgentRuntime:
         if has_registered_call and accounted.total_tokens >= request.budget.max_tokens:
             # 已知用量已落账；未调度提案不得成为可恢复的写入调用。
             raise KernelError("budget_exceeded", "Token 预算耗尽，未发布本步工具调用")
+        # 规则属于本次请求的宿主选择；已知用量保留，冲突不得形成可恢复调用。
+        require_exclusive_tool_calls(
+            (proposal.tool for proposal in completed_calls), exclusive_tool_groups
+        )
         # 原用量路径独立保留；调用组仅在流正常关闭后原子形成，拒绝无执行权。
         payloads: list[EventPayload] = []
         rejected_results: list[ToolResultContent] = []

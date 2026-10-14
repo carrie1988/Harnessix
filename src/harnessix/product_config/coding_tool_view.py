@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from harnessix.agent.models import (
     ItemStatus,
@@ -228,16 +228,40 @@ def _workflow_is_supported(
     )
 
 
+def _workflow_failed(observations: tuple[_Observation, ...]) -> bool:
+    """只接受确定的测试非零退出；基础设施或未闭合Profile不能进入修复。"""
+    return any(_is_infrastructure_failure(item.result) for item in observations) or any(
+        item.tool.startswith("run_profile.")
+        and item.result.outcome != "succeeded"
+        and not _is_code_test_failure(item.result)
+        for item in observations
+    )
+
+
+def _with_exclusive_profile_patch(selection: ModelToolSelection) -> ModelToolSelection:
+    """同响应不得同时测试和修改；只在两个工具均合法可见时附加宿主约束。"""
+    profiles = tuple(t.name for t in selection.tools if t.name.startswith("run_profile."))
+    patches = tuple(t.name for t in selection.tools if t.name in _PATCH_TOOLS)
+    if len(profiles) == len(patches) == 1:
+        return replace(selection, exclusive_tool_groups=((profiles[0], patches[0]),))
+    return selection
+
+
 @dataclass(frozen=True, slots=True)
 class CodingWorkflowToolView:
     """Expose only the tools valid for the current single-profile coding phase."""
 
     require_pre_edit_profile: bool = True
     enable_planning: bool = False
+    allow_optional_pre_edit_profile: bool = False
 
     def __post_init__(self) -> None:
         if type(self.enable_planning) is not bool:
             raise ValueError("规划工具目录开关必须是布尔值")
+        if type(self.allow_optional_pre_edit_profile) is not bool:
+            raise ValueError("可选预测试工具目录开关必须是布尔值")
+        if self.allow_optional_pre_edit_profile and self.require_pre_edit_profile is not False:
+            raise ValueError("可选预测试不能同时启用强制修改前基线")
 
     def select(
         self,
@@ -265,10 +289,14 @@ class CodingWorkflowToolView:
             and any(tool.name in _SOURCE_INSPECTION_TOOLS for tool in selection.tools)
         ):
             names = {tool.name for tool in selection.tools} | {UPDATE_PLAN_TOOL}
-            return ModelToolSelection(
-                tuple(tool for tool in definitions if tool.name in names), selection.choice
+            selection = replace(
+                selection, tools=tuple(tool for tool in definitions if tool.name in names)
             )
-        return selection
+        return (
+            _with_exclusive_profile_patch(selection)
+            if self.allow_optional_pre_edit_profile
+            else selection
+        )
 
     def _select_workflow(
         self,
@@ -276,21 +304,18 @@ class CodingWorkflowToolView:
         definitions: tuple[ToolDescriptor, ...],
     ) -> ModelToolSelection:
         observations = _observations(turn)
-        if any(_is_infrastructure_failure(item.result) for item in observations) or any(
-            item.tool.startswith("run_profile.")
-            and item.result.outcome != "succeeded"
-            and not _is_code_test_failure(item.result)
-            for item in observations
-        ):
+        if _workflow_failed(observations):
             return ModelToolSelection(())
 
         by_name = {definition.name: definition for definition in definitions}
         profiles = tuple(name for name in by_name if name.startswith("run_profile."))
         patches = tuple(name for name in by_name if name in _PATCH_TOOLS)
         if not _workflow_is_supported(definitions, profiles, patches):
-            return ModelToolSelection(definitions)
+            return ModelToolSelection(() if self.allow_optional_pre_edit_profile else definitions)
 
         profile = profiles[0] if profiles else None
+        if self.allow_optional_pre_edit_profile and profile is None:
+            return ModelToolSelection(())
         patch = patches[0]
         patch_results = tuple(item for item in observations if item.tool == patch)
         successful_patches = tuple(
@@ -309,6 +334,7 @@ class CodingWorkflowToolView:
             patch_results,
             last_patch,
             require_pre_edit_profile=self.require_pre_edit_profile,
+            allow_optional_pre_edit_profile=self.allow_optional_pre_edit_profile,
         )
 
 
@@ -360,6 +386,7 @@ def _with_profile_selection(
     last_patch: int,
     *,
     require_pre_edit_profile: bool,
+    allow_optional_pre_edit_profile: bool = False,
 ) -> ModelToolSelection:
     """有Profile流程强制测试；只有确定代码失败才能进入修复。"""
     unsuccessful_patch_results = tuple(
@@ -374,6 +401,8 @@ def _with_profile_selection(
             unsuccessful_patch_results[-1],
         )
     if not require_pre_edit_profile and last_patch < 0:
+        if allow_optional_pre_edit_profile:
+            return _optional_pre_edit_selection(definitions, observations, profile, patch)
         return _pre_patch_selection(
             definitions,
             observations,
@@ -410,6 +439,20 @@ def _with_profile_selection(
         )
 
     return ModelToolSelection(())
+
+
+def _optional_pre_edit_selection(
+    definitions: tuple[ToolDescriptor, ...],
+    observations: tuple[_Observation, ...],
+    profile: str,
+    patch: str,
+) -> ModelToolSelection:
+    """预测试只提供观察；不强迫测试/修改，也不能抵扣修改后验证。"""
+    names = {*_SOURCE_INSPECTION_TOOLS, profile, patch}
+    validations = tuple(item for item in observations if item.tool == profile)
+    if validations and not _diagnostic_is_complete(validations[-1].result):
+        names.add("read_artifact")
+    return ModelToolSelection(tuple(item for item in definitions if item.name in names))
 
 
 def _validation_diagnosis_selection(

@@ -47,6 +47,7 @@ class ModelToolSelection:
     tools: tuple[ToolDescriptor, ...]
     choice: Literal["auto", "required"] = "auto"
     forced_tool: str | None = None
+    exclusive_tool_groups: tuple[tuple[str, ...], ...] = ()
 
 
 class ModelToolView(Protocol):
