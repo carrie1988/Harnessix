@@ -1,0 +1,49 @@
+{
+  "spec_version": "harnessix.swebench-remediation-offline/v1",
+  "source_revision": "b0f03b63893b9c038512a17e143477313c0f7ae7",
+  "implemented": [
+    "host_only_exclusive_tool_groups",
+    "opt_in_optional_pre_edit_profile",
+    "lazy_case_materialization",
+    "authenticated_terminal_read_without_executors",
+    "opt_in_sealed_workspace_retirement",
+    "settled_parent_cancellation",
+    "authenticated_publication_alias_recovery"
+  ],
+  "tests": {
+    "passed": 1378,
+    "failed": 0,
+    "skipped": 0
+  },
+  "typecheck": {
+    "source_files": 562,
+    "passed": true
+  },
+  "evidence": {
+    "v34-final.xml": {
+      "sha256": "1ac375dd22109c9286c088a6940d6fcd5a5454ebc21b7699e7d28f644c03ff3e"
+    },
+    "v34-mypy-final.log": {
+      "sha256": "074e3565bc1cc469d75e305b3b68ff30e0c60689960961c4a409d89bbe85b768"
+    },
+    "v34-documentation-final.json": {
+      "sha256": "1a72504c77664bde3538b37964394e88f47198b63e5779c8596565d0142c7f44"
+    },
+    "v34-spec-final.log": {
+      "sha256": "cd79c66ecf7d14853e50e2267768a9305077f4130f80117448d6fec03ccfffa2"
+    },
+    "v34-repository-secrets.log": {
+      "sha256": "d8b8aa3e29fe689a88ca665cea1fef05b2ec8c0991a02262e3cd79db56b298e7"
+    }
+  },
+  "live_model_requests": 0,
+  "official_evaluation_reruns": 0,
+  "latest_official_resolved": 3,
+  "latest_official_denominator": 25,
+  "quality_gate": "OPEN",
+  "readability": {
+    "global_policy": "FAIL_legacy_debt_and_existing_hotspot_growth_not_relaxed",
+    "new_retirement_functions": "split_into_named_boundaries",
+    "suite_orchestrator_lines": 476
+  }
+}

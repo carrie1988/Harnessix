@@ -1,0 +1,19 @@
+{
+  "spec_version": "harnessix.swebench-host-readiness/v1",
+  "source_revision": "b0f03b63893b9c038512a17e143477313c0f7ae7",
+  "free_bytes": 9926758400,
+  "minimum_free_bytes": 10737418240,
+  "ready": false,
+  "paid_execution": "NOT_STARTED",
+  "retirement_authorized_versions": [
+    14,
+    15,
+    20,
+    21,
+    25,
+    26,
+    27
+  ],
+  "original_evidence_retained": true,
+  "retired_workspaces": 175
+}

@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 26
-code_revision: 6a3362945f9a657e108ba32caa81c4ebfce8d117
+code_revision: b0f03b63893b9c038512a17e143477313c0f7ae7
 owners:
   - core
 modules:
@@ -1034,7 +1034,7 @@ predictions或官方评分，不拼接旧成功。保持规划默认关闭，不
 
 空间治理已按用户授权回收约3.22 GiB对象，其中78个旧计划未执行工作区永久退役，并验证
 旧入口拒绝静默重建；费用、状态、报告及已执行证据保留。本次只准备实际诊断的6个工作区，
-没有预建两组其余44项。当时正式Suite仍整批预建且无自动回收机制；下文生命周期整改已补齐实现，尚未实际退役历史运行。
+没有预建两组其余44项。当时正式Suite仍整批预建且无自动回收机制；下文生命周期整改已补齐实现，并按授权退役七轮已闭合工作区。
 10 GiB运行前／运行中保护保留，已执行工作区归档解耦前不自动删除。最新官方成绩仍3/25。
 
 ## 搜索快照候选：同次观察摘要，默认关闭
@@ -1230,6 +1230,15 @@ Action执行器。Suite回归验证逐项创建和原25项Prediction一致。故
 中途发布故障、签名/身份/Native漂移、空Patch及链接边界。
 
 以上证明实现和失败边界，不证明真实自主修复成功。当前候选默认关闭；未调用新付费模型，
-未变更已冻结的任务、预算、镜像或旧费用，未实际回收历史已执行工作区。
+未变更已冻结的任务、预算、镜像或旧费用，历史已执行工作区仅按用户对七轮175项的明确授权回收，原证据不变。
 最新完整官方结果仍为3/25，22/25和全新泛化集门禁仍OPEN。必须恢复至少10 GiB磁盘余量，
 完成同源同预算小范围配对并观察Patch→测试→Review实际改善后，才推进完整25项评分。
+
+本轮最终[离线回归汇总](../../benchmarks/swebench/verified-25-workflow-lifecycle-v34/offline-summary.json)：
+1378项通过、零失败；562份源码类型检查通过。变更Ruff、Schema、文档和仓库Secret扫描分别通过。
+可读性全仓门禁仍FAIL，包含历史债务及已有Kernel/执行热点增长，未放宽策略；本轮新增退役、费用及质量解释热点已按职责拆分。
+[宿主余量记录](../../benchmarks/swebench/verified-25-workflow-lifecycle-v34/host-readiness.json)不代表编码质量或商业发布通过。
+
+175个旧工作区已按授权完成原终态认证、补丁封存、回收及[独立复核](../../benchmarks/swebench/verified-25-workflow-lifecycle-v34/retirement-summary.json)，
+回收约4.29 GiB源码副本占用。原Native/Case状态/根文件/费用账本SHA均不变，无新模型请求或Docker操作。
+宿主余量仍低于10 GiB；其他进程的同时用量变化不能算入或归咎于本次回收，真实质量复验仍未启动。

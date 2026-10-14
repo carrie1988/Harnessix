@@ -1,0 +1,16 @@
+{
+  "source_revision": "b0f03b63893b9c038512a17e143477313c0f7ae7",
+  "retired_workspaces": 175,
+  "original_native_and_state_hashes_unchanged": true,
+  "original_root_files_unchanged": true,
+  "budget_ledger_unchanged": true,
+  "ledger_sha256": "073c9f8b8c5fb97e8c09b21b65b577b5468d3c0ad507b033939d30361a272b9a",
+  "working_copy_allocated_before_bytes": 4609110016,
+  "working_copy_allocated_after_bytes": 716800,
+  "working_copy_allocated_reclaimed_bytes": 4608393216,
+  "host_free_bytes": 9926758400,
+  "minimum_free_bytes": 10737418240,
+  "live_model_requests": 0,
+  "docker_operations": 0,
+  "verification_result": "PASS"
+}
