@@ -138,6 +138,19 @@ class ModelInputTokenEstimator(Protocol):
 
 
 @runtime_checkable
+class RewrittenInputTokenEstimator(Protocol):
+    """可选纯能力：上一请求视图被逐条改写后，本次超出上一请求已计入部分的输入上界，零 I/O。
+
+    同位置出站消息与上一请求完全相同才视为已计入；被缩短或删除的内容不抵扣，
+    其余消息与封装全额按 UTF-8 字节计入。调用方必须先以持久证据证明上一视图。
+    """
+
+    def estimate_rewritten_input_tokens(
+        self, request: ModelRequest, previous_history: tuple[Item, ...]
+    ) -> int: ...
+
+
+@runtime_checkable
 class CompactionSummaryProjection(Protocol):
     """可选纯承诺：Native 摘要投影以 JSON string 入 wire，占满预留的 ASCII 支配合法摘要。"""
 

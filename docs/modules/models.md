@@ -81,6 +81,22 @@ Runtime只在同Provider、同请求/实际模型、完整Usage及持久前缀�
 [SDK映射正负控](../../tests/models/test_provider_input_budget.py)及
 [Runtime预算正负控](../../tests/agent/test_provider_input_budget.py)。
 
+### 改写视图的锚定输入上界
+
+`RewrittenInputTokenEstimator.estimate_rewritten_input_tokens(request, previous_history)`是另一项
+可选纯能力，供模型视图逐条改写（如旧工具结果换成占位）后继续使用实际输入锚点，不依赖任何
+Provider私有分词器。Chat Provider逐位置比较本次与上一视图的历史出站消息：完全相同的消息视为
+已含在上一请求实际用量中；被缩短或删除的内容不抵扣，变化、新增消息及动态说明按UTF-8字节全额
+计入；工具/指令仍只在`CompletedChatInput`证明不变时免计，另加512余量。
+[`estimate_rewritten_request_input_tokens`](../../src/harnessix/agent/model_input_budget.py)
+要求上一视图与当前视图都和持久检查记录逐字节一致、锚点是同Provider同模型的完整用量，
+否则返回`None`由调用方采用完整出站上界；非法能力值失败关闭。该上界依赖“各消息由模板分隔、
+独立分词”的假设，接入改写视图时须以实际用量对账，超出即停止。当前Runtime尚未接线，
+由后续工作集视图启用。P0离线依据见
+[累计预算重放](../../benchmarks/swebench/verified-25-budget-replay-p0/README.md)；对应
+[SDK映射正负控](../../tests/models/test_rewritten_input_budget.py)及
+[Runtime证据正负控](../../tests/agent/test_rewritten_input_budget.py)。
+
 ### 累计预算反馈
 
 `ModelRequest.input_tokens_upper_bound`是当前请求的保守输入准入上界，不是已消费量或资金预留。

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from types import TracebackType
-from typing import Literal, Self, cast
+from typing import Any, Literal, Self, cast
 from uuid import UUID
 
 import httpx
@@ -16,6 +16,7 @@ from openai.types.chat.completion_create_params import CompletionCreateParamsStr
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.ids import new_id
 from harnessix.agent.model_input_budget import INCREMENTAL_REQUEST_OVERHEAD_TOKENS
+from harnessix.agent.models import Item
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._bounded_http import BoundedStream, BoundedTransport, InvalidWireData
 from harnessix.models._chat_errors import diagnostic_failure
@@ -130,17 +131,7 @@ class OpenAIChatProvider:
         byte_count = len(encode_json(body).encode("utf-8"))
         if prefix_items:
             # 重启、改写、跨 Turn 或失败请求没有封装证明，仍全额计入当前工具和指令。
-            prefix = request.model_copy(
-                update={
-                    "history": request.history[:prefix_items],
-                    "tools": (),
-                    "instructions": None,
-                    "consumed_usage": None,
-                    "tool_choice": "auto",
-                    "forced_tool": None,
-                }
-            )
-            prefix_body, _ = build_request(prefix, self.config, include_catalog_note=False)
+            prefix_body = self._history_body(request.history[:prefix_items], request)
             byte_count = max(0, byte_count - len(encode_json(prefix_body).encode("utf-8")))
             anchor = getattr(self, "_completed_input", None)
             if anchor is not None:
@@ -149,6 +140,46 @@ class OpenAIChatProvider:
                 )
                 byte_count = max(0, byte_count - redundant)
         return byte_count + INCREMENTAL_REQUEST_OVERHEAD_TOKENS
+
+    def estimate_rewritten_input_tokens(
+        self, request: ModelRequest, previous_history: tuple[Item, ...]
+    ) -> int:
+        """同位置未变的历史消息已含在上一请求实际用量中；其余仍按出站字节全额计入。"""
+        if not previous_history:
+            raise InvalidModelRequest("改写前视图不能为空")
+        body, _ = build_request(request, self.config)
+        previous_body = self._history_body(previous_history, request)
+        reused_bytes = sum(
+            len(encode_json(current).encode("utf-8"))
+            for current, previous in zip(
+                self._history_body(request.history, request)["messages"],
+                previous_body["messages"],
+                strict=False,
+            )
+            if current == previous
+        )
+        byte_count = len(encode_json(body).encode("utf-8")) - reused_bytes
+        anchor = getattr(self, "_completed_input", None)
+        if anchor is not None:
+            byte_count -= anchor.unchanged_wrapper_bytes(
+                request, body, previous_body, self.config, len(previous_history)
+            )
+        return max(0, byte_count) + INCREMENTAL_REQUEST_OVERHEAD_TOKENS
+
+    def _history_body(self, history: tuple[Item, ...], request: ModelRequest) -> dict[str, Any]:
+        """只含历史消息的出站映射；工具、指令与动态说明不属于可复用历史。"""
+        only_history = request.model_copy(
+            update={
+                "history": history,
+                "tools": (),
+                "instructions": None,
+                "consumed_usage": None,
+                "tool_choice": "auto",
+                "forced_tool": None,
+            }
+        )
+        body, _ = build_request(only_history, self.config, include_catalog_note=False)
+        return body
 
     async def __aenter__(self) -> Self:
         if self._closed:

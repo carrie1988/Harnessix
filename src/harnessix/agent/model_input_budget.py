@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Item, Turn
@@ -14,7 +15,12 @@ from harnessix.context.engine import estimate_tokens
 from harnessix.context.tool_result_contracts import ModelHistoryInspectionRecord
 from harnessix.context.tool_result_view import history_document
 from harnessix.domain.models import ToolDescriptor
-from harnessix.models.contracts import ModelInputTokenEstimator, ModelProvider, ModelRequest
+from harnessix.models.contracts import (
+    ModelInputTokenEstimator,
+    ModelProvider,
+    ModelRequest,
+    RewrittenInputTokenEstimator,
+)
 
 # 上一轮 Provider 用量已包含旧请求封装；为新增消息边界保留固定余量，
 # 避免预算安全依赖某个 Provider 的私有 Tokenizer。
@@ -86,6 +92,70 @@ def estimate_request_input_tokens(
     """旧 Provider 原样回退；新端口按出站输入估算，持久锚点必须同模型且前缀不变。"""
     if not isinstance(provider, ModelInputTokenEstimator):
         return legacy_estimate
+    identity = _provider_identity(provider)
+
+    def wire_bound(*, prefix_items: int = 0) -> int:
+        return _provider_bound(
+            lambda: provider.estimate_input_tokens(request, prefix_items=prefix_items)
+        )
+
+    wire = wire_bound()
+    anchor = _anchored_attempt(turn, request.step, identity)
+    previous = _history_inspection(turn, anchor.step) if anchor is not None else None
+    documents = tuple(history_document(item) for item in request.history)
+    if (
+        anchor is None
+        or previous is None
+        or not _view_matches(_history_inspection(turn, request.step), documents)
+        or previous.history_items > len(documents)
+        or not _view_matches(previous, documents[: previous.history_items])
+    ):
+        return wire
+    # 由 Provider 证明新增封装上界，不在 Runtime 中相减任意第三方的两个估算值。
+    return min(wire, anchor.input_tokens + wire_bound(prefix_items=previous.history_items))
+
+
+def estimate_rewritten_request_input_tokens(
+    provider: ModelProvider,
+    request: ModelRequest,
+    turn: Turn,
+    previous_history: tuple[Item, ...],
+) -> int | None:
+    """上一视图被逐条改写（如旧工具结果换成占位）时的锚定输入上界。
+
+    上一视图须与持久检查记录逐字节一致，锚点须是同模型完整用量；否则返回 None，
+    由调用方使用完整出站上界。依赖各条消息独立分词：未变消息已含在上一请求实际用量中，
+    被缩短的消息不抵扣，变化与新增消息按字节全额计入。
+    """
+    if not isinstance(provider, ModelInputTokenEstimator) or not isinstance(
+        provider, RewrittenInputTokenEstimator
+    ):
+        return None
+    anchor = _anchored_attempt(turn, request.step, _provider_identity(provider))
+    previous = _history_inspection(turn, anchor.step) if anchor is not None else None
+    if (
+        anchor is None
+        or previous is None
+        or not _view_matches(previous, tuple(history_document(i) for i in previous_history))
+        or not _view_matches(
+            _history_inspection(turn, request.step),
+            tuple(history_document(item) for item in request.history),
+        )
+    ):
+        return None
+    added = _provider_bound(
+        lambda: provider.estimate_rewritten_input_tokens(request, previous_history)
+    )
+    return anchor.input_tokens + added
+
+
+@dataclass(frozen=True, slots=True)
+class _InputAnchor:
+    step: int
+    input_tokens: int
+
+
+def _provider_identity(provider: ModelInputTokenEstimator) -> tuple[str, str]:
     try:
         identity = provider.input_token_identity
         if (
@@ -96,36 +166,42 @@ def estimate_request_input_tokens(
             raise ValueError("输入估算身份无效")
     except Exception:
         raise KernelError("invalid_provider_output", "Provider 输入预算身份无效") from None
+    return identity
 
-    def wire_bound(*, prefix_items: int = 0) -> int:
-        try:
-            value = provider.estimate_input_tokens(request, prefix_items=prefix_items)
-            if type(value) is not int or value <= 0:
-                raise ValueError("输入估算必须是正整数")
-            return value
-        except Exception:
-            raise KernelError("invalid_provider_output", "Provider 输入预算估算失败") from None
 
-    wire = wire_bound()
-    anchor = _previous_completed_attempt(turn, request.step)
-    previous = _history_inspection(turn, anchor.step) if anchor is not None else None
-    current = _history_inspection(turn, request.step)
-    documents = tuple(history_document(item) for item in request.history)
+def _provider_bound(estimate: Callable[[], int]) -> int:
+    try:
+        value = estimate()
+        if type(value) is not int or value <= 0:
+            raise ValueError("输入估算必须是正整数")
+        return value
+    except Exception:
+        raise KernelError("invalid_provider_output", "Provider 输入预算估算失败") from None
+
+
+def _anchored_attempt(
+    turn: Turn, model_step: int, identity: tuple[str, str]
+) -> _InputAnchor | None:
+    """上一完整成功请求，且请求与实际模型都与当前估算身份一致。"""
+    anchor = _previous_completed_attempt(turn, model_step)
     if (
         anchor is None
         or anchor.usage.input_tokens is None
         or identity != (anchor.provider, anchor.requested_model)
         or anchor.actual_model != anchor.requested_model
-        or previous is None
-        or current is None
-        or current.history_items != len(documents)
-        or _history_digest(documents) != current.view_history_sha256
-        or previous.history_items > len(documents)
-        or _history_digest(documents[: previous.history_items]) != previous.view_history_sha256
     ):
-        return wire
-    # 由 Provider 证明新增封装上界，不在 Runtime 中相减任意第三方的两个估算值。
-    return min(wire, anchor.usage.input_tokens + wire_bound(prefix_items=previous.history_items))
+        return None
+    return _InputAnchor(anchor.step, anchor.usage.input_tokens)
+
+
+def _view_matches(
+    inspection: ModelHistoryInspectionRecord | None, documents: Sequence[str]
+) -> bool:
+    return (
+        inspection is not None
+        and inspection.history_items == len(documents)
+        and _history_digest(documents) == inspection.view_history_sha256
+    )
 
 
 def _tool_document(tool: ToolDescriptor) -> str:
