@@ -42,6 +42,7 @@ from harnessix.tools.search_contracts import (
     GrepOutput,
     GrepSnapshotInput,
     GrepSnapshotOutput,
+    RegexGrepInput,
     SearchInput,
 )
 from harnessix.tools.workspace import digest
@@ -113,12 +114,32 @@ _SNAPSHOT_GREP_BINDING = _ReadBinding(
 )
 
 
-def _read_bindings(enable_grep_snapshots: bool) -> tuple[_ReadBinding, ...]:
+_REGEX_GREP_BINDING = _ReadBinding(
+    "grep",
+    "逐行搜索，match_mode默认regex：query是原样RE2表达式，不隐式修正；"
+    "可显式用literal查找大小写敏感字面量。支持交替、可选空白、转义元字符和Unicode，"
+    "不支持反向引用或前后查找断言；无效模式会明确失败。"
+    "默认前后各2行、最多10项；每行仅返回首个命中片段，不跨行、不归一化文本。"
+    "每项content_sha256来自同次完整原始读取，可作Patch expected_sha256；"
+    "revision不是内容SHA，证据不足仍用read_file扩读",
+    RegexGrepInput,
+    GrepSnapshotOutput,
+)
+
+
+def _read_bindings(
+    enable_grep_snapshots: bool = False, enable_regex_search: bool = False
+) -> tuple[_ReadBinding, ...]:
     """显式候选只替换搜索绑定，原只读工具和默认合同保持不变。"""
     if type(enable_grep_snapshots) is not bool:
         raise KernelError("tool_snapshot_policy_invalid", "搜索快照开关必须显式为布尔值")
+    if type(enable_regex_search) is not bool:
+        raise KernelError("tool_regex_policy_invalid", "正则搜索开关必须显式为布尔值")
+    if enable_grep_snapshots and enable_regex_search:
+        raise KernelError("tool_search_policy_conflict", "搜索快照与正则搜索开关不能同时启用")
+    grep_binding = _REGEX_GREP_BINDING if enable_regex_search else _SNAPSHOT_GREP_BINDING
     return tuple(
-        _SNAPSHOT_GREP_BINDING if enable_grep_snapshots and b.name == "grep" else b
+        grep_binding if (enable_grep_snapshots or enable_regex_search) and b.name == "grep" else b
         for b in _BINDINGS
     )
 
@@ -152,7 +173,9 @@ def _descriptor(
     require_approval: bool,
 ) -> ToolDescriptor:
     major = 1
-    if binding.output_model is GrepSnapshotOutput:
+    if binding.input_model is RegexGrepInput:
+        major = 4
+    elif binding.output_model is GrepSnapshotOutput:
         major = 3
     elif binding.output_model in {ReadFileSnapshotOutput, GrepOutput}:
         major = 2
@@ -203,7 +226,11 @@ def _binding_rules(
             "oversize": "omitted_limit_or_platform_limit_exceeded",
         }
     if issubclass(binding.input_model, SearchInput):
-        rules["search"] = search.execution_contract()
+        rules["search"] = (
+            search.execution_contract(enable_regex_search=True)
+            if binding.input_model is RegexGrepInput
+            else search.execution_contract()
+        )
         if binding.output_model is GrepSnapshotOutput:
             rules["snapshot"] = {
                 "spec_version": "harnessix.grep-snapshot/v1",

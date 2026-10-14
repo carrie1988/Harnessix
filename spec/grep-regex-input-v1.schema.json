@@ -1,0 +1,61 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "default": ".",
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "max_results": {
+      "default": 10,
+      "maximum": 200,
+      "minimum": 1,
+      "title": "Max Results",
+      "type": "integer"
+    },
+    "include_ignored": {
+      "default": false,
+      "title": "Include Ignored",
+      "type": "boolean"
+    },
+    "query": {
+      "description": "match_mode=regex时是原样RE2表达式；literal时是字面量，不隐式修正或转义",
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Query",
+      "type": "string"
+    },
+    "include": {
+      "default": "**/*",
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Include",
+      "type": "string"
+    },
+    "context_lines": {
+      "default": 2,
+      "description": "命中行前后各返回少量有界片段；不替代read_file的完整文件摘要",
+      "maximum": 3,
+      "minimum": 0,
+      "title": "Context Lines",
+      "type": "integer"
+    },
+    "match_mode": {
+      "default": "regex",
+      "description": "逐行查找首个命中；RE2不支持反向引用或前后查找断言",
+      "enum": [
+        "regex",
+        "literal"
+      ],
+      "title": "Match Mode",
+      "type": "string"
+    }
+  },
+  "required": [
+    "query"
+  ],
+  "title": "RegexGrepInput",
+  "type": "object"
+}

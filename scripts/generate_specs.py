@@ -308,6 +308,7 @@ from harnessix.tools.search_contracts import (
     GrepOutput,
     GrepSnapshotInput,
     GrepSnapshotOutput,
+    RegexGrepInput,
 )
 from harnessix.trusted_actions.contracts import (
     ActionAuditEvent,
@@ -640,6 +641,7 @@ def generate_specs(output: Path) -> None:
     )
     write_json(output / "read-file-input-v2.schema.json", ReadFileInputV2.model_json_schema())
     write_json(output / "read-file-input-v3.schema.json", ReadFileInputV3.model_json_schema())
+    write_json(output / "grep-regex-input-v1.schema.json", RegexGrepInput.model_json_schema())
     write_json(
         output / "execution-capability-evidence-v2.schema.json",
         ExecutionCapabilityEvidenceV2.model_json_schema(),

@@ -1,0 +1,25 @@
+{
+  "scope": "regex-search-formal-contract-sdk-and-related-regressions-not-real-quality",
+  "associated_regression": {
+    "tests": 1626,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 35
+  },
+  "passed": 1587,
+  "baseline_revision": "f7efe328",
+  "baseline_reproduction": {
+    "tests": 4,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 0
+  },
+  "baseline_failure_reason": "Apple Git 2.24.3不支持git init --object-format；相同4失败在未修改源码快照复现，未豁免为全绿",
+  "mypy_source_files": 564,
+  "mypy_result": "PASS",
+  "schema": "PASS",
+  "legacy_descriptor_and_instruction_bytes_unchanged": true,
+  "inference_requests": 0,
+  "negative_controls": "regex/literal/非法模式/版本漂移/原始SHA/取消/Owner/Artifact/配置混用/真实SDK持久化接线",
+  "limitations": "源码、合成输入及Mock SDK通过不是真实编码Resolved证据"
+}

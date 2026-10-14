@@ -16,6 +16,8 @@ from typing import Literal, Protocol
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, MAX_ARTIFACT_RECORDS
 from harnessix.tools.contracts import MAX_LINE_BYTES, ReadToolError
 from harnessix.tools.files import _decode
+from harnessix.tools.grep_matcher import LineMatcher, build_line_matcher
+from harnessix.tools.grep_matcher import execution_contract as regex_execution_contract
 from harnessix.tools.patterns import PathPattern
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
@@ -43,8 +45,8 @@ from harnessix.tools.search_contracts import (
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, identity, revision_state
 
 
-def execution_contract() -> dict[str, object]:
-    return {
+def execution_contract(*, enable_regex_search: bool = False) -> dict[str, object]:
+    rules: dict[str, object] = {
         "version": "bounded-search/v3",
         "start_path": "regular-file-or-directory",
         "pattern": "case-sensitive-segments-and-globstar",
@@ -59,6 +61,13 @@ def execution_contract() -> dict[str, object]:
         "max_match_bytes": MAX_MATCH_BYTES,
         "max_grep_context_lines": MAX_GREP_CONTEXT_LINES,
     }
+    if enable_regex_search:
+        rules.update(
+            version="bounded-search/v4",
+            grep="case-sensitive-re2-or-explicit-literal-lines",
+            regex=regex_execution_contract(),
+        )
+    return rules
 
 
 class SearchCapture:
@@ -304,8 +313,11 @@ def grep_line_matches(
     scan: _LineStats,
     *,
     content: bytes | None = None,
+    matcher: LineMatcher | None = None,
 ) -> Iterator[GrepMatch]:
     """单一内容观察内用有界滚动窗口生成命中；POSIX与原生读取端复用。"""
+    if matcher is None:
+        matcher = build_line_matcher(args, operation)
     match_type: type[GrepMatch] = GrepMatch
     snapshot_fields: dict[str, str | int] = {}
     if isinstance(args, GrepSnapshotInput):
@@ -337,7 +349,8 @@ def grep_line_matches(
                 scan.long_lines += 1
             else:
                 line = _line_text(raw)
-                index = line.find(args.query)
+                index = matcher(line)
+                operation.checkpoint()
                 if index >= 0:
                     snippet, truncated = _preview(line, index)
                     context = None
@@ -378,6 +391,7 @@ def grep(
     *,
     capture: SearchCapture | None = None,
 ) -> GrepOutput:
+    matcher = build_line_matcher(args, operation)
     scan, pattern, records = _Scan(), PathPattern(args.include), _Records(args.max_results)
     matches: list[GrepMatch] = []
     for node in _collect(workspace, args, operation, scan):
@@ -393,7 +407,9 @@ def grep(
                     raise ReadToolError("workspace_changed")
                 if text is None:
                     continue
-                for hit in grep_line_matches(node.path, revision, text, args, operation, scan):
+                for hit in grep_line_matches(
+                    node.path, revision, text, args, operation, scan, matcher=matcher
+                ):
                     encoded = hit.model_dump_json()
                     if capture is not None:
                         capture.append(encoded)

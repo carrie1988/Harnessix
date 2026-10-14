@@ -1279,3 +1279,72 @@ v35的[真实结果及独立复核](../../benchmarks/swebench/verified-25-workfl
 下一步求证实际出站固定开销、历史增长、工具语义及调查到修改/验证的阶段控制，
 不重复已否决的模式/预算/提示词单项重跑，不增加原任务预算，不使用Case专用规则。
 私有宿主的未使用reconcile路径另须补原生失败码与状态一致负控，修复前不调用；本轮证据不依赖它。
+
+
+## v36：有界正则搜索候选（默认关闭）
+
+### 需求与设计决策
+
+v35九次真实执行均在调查阶段预算准入失败，出现正则转义用于字面grep、已定位原因后继续调查等轨迹。
+这不是磁盘或充值不足，也不能仅归因缺少思考/摘要。当前闭环没有改善；本切片先纠正通用搜索能力与
+模型工具使用习惯之间的语义落差，其他阶段控制与输入增长问题仍未闭合。
+本地源码求证：OpenCode `packages/opencode/src/tool/grep.ts`使用正则；Codex
+`codex-rs/core/src/tools/handlers/shell_spec.rs`通过自由命令聚合调查；二者所核验的Patch入口
+不要求调用方完整文件SHA。本项目保留已有事务前置条件，不直接照搬自由Shell或取消安全检查。
+
+采用[官方RE2](https://github.com/google/re2)与Python公开API，固定`google-re2==1.1.20251105`，
+已验证macOS预编译wheel，不编译第三方源码。拒绝回溯/不支持表达式及缺库漂移，不用标准库`re`回退，
+不把模型错误查询自动改为另一种查询。主模型、预算、工具审批/隔离及修改后测试/Review仍沿原契约。
+
+### 合同、类与数据流
+
+| 合同/字段 | 含义与边界 |
+|---|---|
+| [`RegexGrepInput`](../../src/harnessix/tools/search_contracts.py) / [冻结Schema](../../spec/grep-regex-input-v1.schema.json) | 继承同观察快照输入；`match_mode=regex`默认，显式`literal`维持字面搜索 |
+| `query` | 原样RE2表达式或字面量，256 UTF-8字节上限；逐行首个命中，不跨行/归一化 |
+| `path/include/max_results/context_lines` | 路径隔离和通配不变；默认10项及前后2行，最多3行上下文 |
+| [`grep_matcher`](../../src/harnessix/tools/grep_matcher.py) | 每次调用编译一次；1 MiB RE2预算、不记录模式错误正文；官方128项缓存上界另计 |
+| [`CodingToolRuntime`](../../src/harnessix/tools/runtime.py) / [`read_catalog`](../../src/harnessix/tools/read_catalog.py) | 宿主显式开关；只替换grep为major4，引擎/version/options加入新执行指纹；旧默认及snapshot字节不变 |
+| [`SweBenchRegexAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 独立v10，固定模型/费用/认证回收；拒绝与其他搜索、预测试、思考或规划候选混合 |
+| [`run_settings`](../../src/harnessix/evals/swebench/run_settings.py) | 各版本共享设置独立成214行文件，配置工厂不扩成新热点；旧v9指纹与序列化不变 |
+| [`agent_context`](../../src/harnessix/product_config/agent_context.py) | 正则模式用v24指令，不与旧literal-only指导冲突；三种旧工作流指令SHA逐字不变 |
+
+```mermaid
+flowchart LR
+  C[冻结v10配置] --> A[正式SWE Agent入口]
+  A --> R[Scoped CodingToolRuntime与v24 Context]
+  R --> V[输入/版本/Owner核验]
+  V --> M[一次RE2编译及逐行checkpoint]
+  M --> S[同次原始内容SHA与有界片段]
+  S --> P[持久结果及必要Artifact分页]
+  P --> N[下一模型请求或原失败闭锁]
+```
+
+[`search.grep`](../../src/harnessix/tools/search.py)和[`windows_search`](../../src/harnessix/tools/windows_search.py)
+复用同一matcher和滚动上下文；取消和5秒协作式期限、2 MiB单文件、16 MiB累计读取、4 KiB单行、
+路径/链接/Owner与归档上限不变。CRLF处理只作用于显示/匹配；完整SHA仍覆盖原始BOM/CRLF字节，
+不是返回页或匹配行摘要。Windows内存Observation回归不是Windows发行验收。
+
+核心伪代码：`校验模式 → 编译一次（literal不编译）→ 受控读取 → 每行检查取消/期限 →
+查询首个匹配 → 原有完整性/归档发布 → 持久结果`。失败不部分改写查询或公开第三方异常。
+
+| 失败 | 正式语义 |
+|---|---|
+| `tool_regex_invalid` | 非法/不支持表达式或编译预算不成立；固定修正建议，不回显模式 |
+| `tool_regex_unavailable` | 缺库或版本漂移；失败关闭，不隐式选其他引擎 |
+| 取消/期限/路径/内容漂移 | 沿原读取与Scoped Artifact取消/回收机制，不放宽原边界 |
+| 模型费用未决/工具未知效果 | 仍保留原预付并停止付费诊断，禁止自动重试或清理不明状态 |
+
+### 验证与质量门禁
+
+新增合成用例覆盖类名/可选空白/交替/转义元字符/Unicode、非法表达式、BOM/CRLF、
+同次SHA、取消、版本漂移、Artifact分页和旧descriptor一致性；包含容易令回溯引擎耗时的反例。
+正式SDK Mock流证明v10开关、major4参数、v24 Context和SQLite/认证Owner接线；这些不是真实编码质量证据。
+源码与配置冻结后，仅先执行原顺序前三项50K/16次/900秒新pass@1，最多18元原周期内预付；
+不创建剩余22份工作区，不复用旧终态，不输出25项官方成绩。需要真实Patch→测试→Review改善后才能推广。
+
+本轮[关联回归](../../benchmarks/swebench/verified-25-regex-prefix-v36/offline-summary.json)1587通过、35跳过、
+4项已有环境失败；Apple Git 2.24.3不支持`init --object-format`，修改前`f7efe328`独立源码快照
+相同4项复现，未改测试或将其标记为通过。564份源码Mypy、冻结Schema及变更Ruff通过。
+本轮正式SDK的6项接线与99项新增搜索用例在关联回归中覆盖，不重复累计为更多测试数量。
+真实候选评分仍待新源码冻结与付费执行，最新完整官方结果仍3/25。

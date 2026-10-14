@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/evals/swebench/test_regex_agent_execution.py
   - tests/product_config/test_optional_pre_edit_profile.py
   - tests/product_config/test_optional_pre_edit_runtime.py
   - tests/product_config/test_grep_snapshot_patch.py
@@ -103,6 +104,12 @@ related_tests:
   - tests/product_config/test_action_recovery.py
 supersedes: []
 ---
+
+## v24搜索语义Context（候选默认关闭）
+
+正式合同、接线、失败边界与测试统一见[有界正则搜索设计](../changes/swebench-adapter-verified-25-pilot.md#v36有界正则搜索候选默认关闭)。
+未将源码或离线接线通过视为真实质量改善；旧默认合同和指令不变。
+
 
 ## 可选修改前测试候选（默认关闭）
 

@@ -25,6 +25,8 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
+  - tests/evals/swebench/test_regex_run_config.py
+  - tests/evals/swebench/test_regex_agent_execution.py
   - tests/evals/swebench/test_workspace_retirement.py
   - tests/evals/swebench/test_authenticated_workspace_retirement.py
   - tests/evals/swebench/test_workspace_retirement_cancellation.py
@@ -76,6 +78,12 @@ related_tests:
   - tests/evals/swebench/test_agent_execution.py
 supersedes: []
 ---
+
+## 独立v10正则搜索诊断（候选默认关闭）
+
+正式合同、接线、失败边界与测试统一见[有界正则搜索设计](../changes/swebench-adapter-verified-25-pilot.md#v36有界正则搜索候选默认关闭)。
+未将源码或离线接线通过视为真实质量改善；旧默认合同和指令不变。
+
 
 ## SWE-bench按需工作区与显式终态退役
 

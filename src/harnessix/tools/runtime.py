@@ -33,6 +33,7 @@ from harnessix.tools.git_contracts import (
     GitReviewInput,
     GitStatusInput,
 )
+from harnessix.tools.grep_matcher import RegexSearchError
 from harnessix.tools.read_backend import build_read_backend
 from harnessix.tools.read_catalog import (
     _GIT_BINDINGS,
@@ -124,8 +125,9 @@ class CodingToolRuntime:
         git_output_redaction: OutputRedactionSource | None = None,
         max_concurrent_reads: int = 4,
         enable_grep_snapshots: bool = False,
+        enable_regex_search: bool = False,
     ) -> None:
-        self._read_bindings = _read_bindings(enable_grep_snapshots)
+        self._read_bindings = _read_bindings(enable_grep_snapshots, enable_regex_search)
         self._lock = _read_semaphore(max_concurrent_reads)
         backend = build_read_backend(
             root, denied_paths, git_executable, git_state_directory, git_output_redaction
@@ -274,6 +276,8 @@ class CodingToolRuntime:
                 output = await cancel.run(self._execute_git(args, cancel))
             else:
                 output = await cancel.run(self._execute_read(args, capture=capture))
+        except RegexSearchError as error:
+            return self._failure(call, error.code, error.message)
         except ReadToolError as error:
             message = {
                 "anchor_not_found": "文件中没有该字面锚点；核对文件或改用窄范围grep定位",

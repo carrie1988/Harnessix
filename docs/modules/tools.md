@@ -23,6 +23,8 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/tools/test_regex_grep.py
+  - tests/tools/test_regex_grep_runtime.py
   - tests/tools/test_grep_snapshots.py
   - tests/tools/test_windows_grep_snapshots.py
   - tests/tools/test_grep_snapshot_runtime.py
@@ -48,6 +50,12 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
+
+## 显式有界正则搜索（候选默认关闭）
+
+正式合同、接线、失败边界与测试统一见[有界正则搜索设计](../changes/swebench-adapter-verified-25-pilot.md#v36有界正则搜索候选默认关闭)。
+未将源码或离线接线通过视为真实质量改善；旧默认合同和指令不变。
+
 
 ## 显式搜索快照候选（默认关闭）
 

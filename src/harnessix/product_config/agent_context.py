@@ -18,6 +18,7 @@ from harnessix.context.sources import (
 
 CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
 _OPTIONAL_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v23"
+_REGEX_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v24"
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 _PLANNING_INSTRUCTIONS = (
     "For multi-step coding work, use update_plan to track investigation, implementation, "
@@ -54,7 +55,7 @@ _BASELINE_FIRST_PROFILE_WORKFLOW = (
     "a check failure.\n"
 )
 
-_POST_PATCH_ONLY_PROFILE_WORKFLOW = (
+_POST_PATCH_WORKFLOW_START = (
     "2. With post-patch-only validation, run_profile stays hidden before the first patch. Use "
     "focused reads, locating the exact named definition before editing; do not guess line "
     "numbers.\n"
@@ -62,8 +63,14 @@ _POST_PATCH_ONLY_PROFILE_WORKFLOW = (
     "and max_lines=60 to get source plus full content_sha256 in one call; on ambiguous anchor "
     "use grep or a more specific literal. Start with 40-60 line windows and max_utf8_bytes=4096; "
     "expand only for missing evidence. "
+)
+
+_LITERAL_SEARCH_GUIDANCE = (
     "For grep use an exact literal symbol, narrow include/path and max_results=10; glob "
     "locates filenames, grep is not regex. Batch independent focused reads, not whole files. "
+)
+
+_POST_PATCH_WORKFLOW_END = (
     "Reserve repeated input for patch, tests, repair and final review.\n"
     "After every successful patch, call the forced "
     "run_profile.\n"
@@ -71,6 +78,20 @@ _POST_PATCH_ONLY_PROFILE_WORKFLOW = (
     "state,\n"
     "or unavailable output fails closed.\n"
 )
+
+_REGEX_SEARCH_GUIDANCE = (
+    "grep uses bounded, case-sensitive RE2 regular expressions by default. Use match_mode=literal "
+    "for exact text. For regex, escape literal metacharacters; alternatives and character classes "
+    "can locate related symbols in one narrow search. Backreferences and lookaround are not "
+    "supported; invalid expressions fail without searching. "
+    "Narrow include/path and max_results=10; "
+    "context_lines is at most 3. Use the returned same-read content_sha256 only with complete "
+    "observed code; expand read_file for missing context, not solely for another SHA. "
+)
+_POST_PATCH_ONLY_PROFILE_WORKFLOW = (
+    _POST_PATCH_WORKFLOW_START + _LITERAL_SEARCH_GUIDANCE + _POST_PATCH_WORKFLOW_END
+)
+
 
 _OPTIONAL_PRE_EDIT_PROFILE_WORKFLOW = (
     "2. Before the first patch, run_profile is available but optional. When a relevant public "
@@ -116,7 +137,10 @@ CODING_INSTRUCTIONS = (
 
 
 def _coding_instructions(
-    require_pre_edit_profile: bool, allow_optional_pre_edit_profile: bool = False
+    require_pre_edit_profile: bool,
+    allow_optional_pre_edit_profile: bool = False,
+    *,
+    enable_regex_search: bool = False,
 ) -> str:
     profile_workflow = (
         _BASELINE_FIRST_PROFILE_WORKFLOW
@@ -125,6 +149,13 @@ def _coding_instructions(
     )
     if allow_optional_pre_edit_profile:
         profile_workflow = _OPTIONAL_PRE_EDIT_PROFILE_WORKFLOW
+    if enable_regex_search:
+        if require_pre_edit_profile or allow_optional_pre_edit_profile:
+            profile_workflow += _REGEX_SEARCH_GUIDANCE
+        else:
+            profile_workflow = (
+                _POST_PATCH_WORKFLOW_START + _REGEX_SEARCH_GUIDANCE + _POST_PATCH_WORKFLOW_END
+            )
     return _CODING_INSTRUCTIONS_PREFIX + profile_workflow + _CODING_INSTRUCTIONS_SUFFIX
 
 
@@ -144,12 +175,15 @@ def build_product_agent_context(
     enable_planning: bool = False,
     enable_grep_snapshots: bool = False,
     allow_optional_pre_edit_profile: bool = False,
+    enable_regex_search: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
         raise ValueError("产品Context输出预留必须为1到1000000 Token")
     if type(enable_planning) is not bool:
         raise ValueError("产品规划指令开关必须是布尔值")
+    if type(enable_regex_search) is not bool:
+        raise ValueError("产品正则搜索开关必须是布尔值")
     if type(enable_grep_snapshots) is not bool:
         raise ValueError("产品搜索快照开关必须是布尔值")
     if type(allow_optional_pre_edit_profile) is not bool:
@@ -166,12 +200,16 @@ def build_product_agent_context(
             ContextFragment(
                 kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
                 source=(
-                    _OPTIONAL_CODING_INSTRUCTIONS_VERSION
+                    _REGEX_CODING_INSTRUCTIONS_VERSION
+                    if enable_regex_search
+                    else _OPTIONAL_CODING_INSTRUCTIONS_VERSION
                     if allow_optional_pre_edit_profile
                     else CODING_INSTRUCTIONS_VERSION
                 ),
                 content=_coding_instructions(
-                    require_pre_edit_profile, allow_optional_pre_edit_profile
+                    require_pre_edit_profile,
+                    allow_optional_pre_edit_profile,
+                    enable_regex_search=enable_regex_search,
                 ),
             ),
             *(
@@ -193,7 +231,7 @@ def build_product_agent_context(
                         content=_SEARCH_SNAPSHOT_INSTRUCTIONS,
                     ),
                 )
-                if enable_grep_snapshots
+                if enable_grep_snapshots or enable_regex_search
                 else ()
             ),
         ),

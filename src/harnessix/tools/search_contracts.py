@@ -94,6 +94,17 @@ class GrepSnapshotInput(GrepInput):
     )
 
 
+class RegexGrepInput(GrepSnapshotInput):
+    query: str = Field(
+        min_length=1,
+        max_length=256,
+        description="match_mode=regex时是原样RE2表达式；literal时是字面量，不隐式修正或转义",
+    )
+    match_mode: Literal["regex", "literal"] = Field(
+        default="regex", description="逐行查找首个命中；RE2不支持反向引用或前后查找断言"
+    )
+
+
 class SearchStats(ReadContract):
     entries_scanned: int = Field(ge=0, le=MAX_SEARCH_ENTRIES)
     files_read: int = Field(ge=0, le=MAX_SEARCH_ENTRIES)

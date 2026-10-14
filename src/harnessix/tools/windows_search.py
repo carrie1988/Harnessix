@@ -9,6 +9,7 @@ from typing import Literal
 from harnessix.tools import search
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.files import _decode
+from harnessix.tools.grep_matcher import LineMatcher, build_line_matcher
 from harnessix.tools.patterns import PathPattern
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
@@ -314,6 +315,7 @@ def _append_matches(
     records: _Records,
     matches: list[GrepMatch],
     capture: search.SearchCapture | None,
+    matcher: LineMatcher,
 ) -> None:
     if isinstance(args, GrepSnapshotInput):
         operation.checkpoint()
@@ -321,7 +323,14 @@ def _append_matches(
     if isinstance(args, GrepSnapshotInput):
         operation.checkpoint()
     for hit in search.grep_line_matches(
-        candidate.path, revision, text, args, operation, scan, content=observed.content
+        candidate.path,
+        revision,
+        text,
+        args,
+        operation,
+        scan,
+        content=observed.content,
+        matcher=matcher,
     ):
         encoded = hit.model_dump_json()
         if capture is not None:
@@ -339,8 +348,9 @@ def grep_files(
     *,
     capture: search.SearchCapture | None,
 ) -> GrepOutput:
-    """按字面量查找文本行，逐文件执行元数据—内容双重观察。"""
+    """共享匹配器查找文本行，逐文件执行元数据—内容双重观察。"""
 
+    matcher = build_line_matcher(args, operation)
     scan, pattern, records = _Scan(), PathPattern(args.include), _Records(args.max_results)
     matches: list[GrepMatch] = []
     root = port.path(args.path)
@@ -352,7 +362,17 @@ def grep_files(
         if loaded is not None:
             observed, text = loaded
             _append_matches(
-                port, candidate, observed, text, args, operation, scan, records, matches, capture
+                port,
+                candidate,
+                observed,
+                text,
+                args,
+                operation,
+                scan,
+                records,
+                matches,
+                capture,
+                matcher,
             )
         if records.reason is not None and capture is None:
             break
