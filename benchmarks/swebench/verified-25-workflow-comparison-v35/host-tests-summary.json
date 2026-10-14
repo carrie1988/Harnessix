@@ -1,0 +1,24 @@
+{
+  "source_revision": "b0f03b63893b9c038512a17e143477313c0f7ae7",
+  "runner_sha256": "57a5c71d581904f00a45e6aff8d141f475b847d3f8aaa81fbc78a53301cc7d67",
+  "tests": {
+    "tests": 51,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "cd8760cbb98307c59fa970d88062c943b572bdfe6c8a4912f3bef035a02f642b",
+  "log_sha256": "023166921ea2b5105d43e8cdee2ffba7b9094463969358c3d8f65792ad957a0e",
+  "test_source_sha256": "ab325fb819301c4a9c4e428ac5d0b175d2f5cf82de84f300b274588375af4d18",
+  "inference_requests": 0,
+  "docker_operations": 0,
+  "negative_controls": [
+    "预算重复/不足/漂移拒绝",
+    "冻结模型/顺序/配置/宿主漂移拒绝",
+    "物化后低磁盘不开启Turn",
+    "取消/未知费用/半交付不继续或释预付",
+    "原终态认证收尾不新增尝试",
+    "最终结算失败保持费用pending"
+  ],
+  "limitations": "仅离线宿主控制流证据，不代表真实模型效果或官方成绩"
+}

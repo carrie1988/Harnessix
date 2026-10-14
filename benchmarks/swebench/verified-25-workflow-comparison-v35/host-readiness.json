@@ -1,0 +1,39 @@
+{
+  "checked_at": "2026-10-14T04:14:13.564076+00:00",
+  "result": "PASS",
+  "inference_requests": 0,
+  "no_image_pull": true,
+  "no_build": true,
+  "no_business_container_changes": true,
+  "free_bytes": 11453026304,
+  "rows": [
+    {
+      "instance_id": "matplotlib__matplotlib-25960",
+      "image": "sha256:b9b19393d221ba33ce0f13402fb3de1b34d8555db58f2020c9058c2ff800138e",
+      "profile_sha256": "8b7e98e0deb91a882f8e3d7a7406b01420967d52707281aa785ef2e01143f31a",
+      "attestation": "verified",
+      "atomic_replace_direct_read_pass": true,
+      "sentinel_sha256": "3021654bfe9d2a6d4505734466ff25a2c85ef89ce6c1569da153926baded8e0f",
+      "returncode": 0
+    },
+    {
+      "instance_id": "pydata__xarray-4695",
+      "image": "sha256:48d2117063167885508af8dc3068d8e33214435c40869fdc680a8e257e3cb7e0",
+      "profile_sha256": "2bc1785406131c7633936e0c8b6efc57c1f9afaa3c2dc2db2be1c8556cd5f295",
+      "attestation": "verified",
+      "atomic_replace_direct_read_pass": true,
+      "sentinel_sha256": "3021654bfe9d2a6d4505734466ff25a2c85ef89ce6c1569da153926baded8e0f",
+      "returncode": 0
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "image": "sha256:d32f01a8edf424766be171cb6fc53e4cf4966dc6cff8c678622cd95f33b581b6",
+      "profile_sha256": "14dec946f643c2fed58852693a2159f0efd8eb7044836358dbc1b104489bf8a4",
+      "attestation": "verified",
+      "atomic_replace_direct_read_pass": true,
+      "sentinel_sha256": "3021654bfe9d2a6d4505734466ff25a2c85ef89ce6c1569da153926baded8e0f",
+      "returncode": 0
+    }
+  ],
+  "limitations": "能力与挂载探测不是模型稳定性、编码质量或官方Resolved证据"
+}

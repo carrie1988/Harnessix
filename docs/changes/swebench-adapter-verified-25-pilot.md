@@ -1242,3 +1242,30 @@ Action执行器。Suite回归验证逐项创建和原25项Prediction一致。故
 175个旧工作区已按授权完成原终态认证、补丁封存、回收及[独立复核](../../benchmarks/swebench/verified-25-workflow-lifecycle-v34/retirement-summary.json)，
 回收约4.29 GiB源码副本占用。原Native/Case状态/根文件/费用账本SHA均不变，无新模型请求或Docker操作。
 宿主余量仍低于10 GiB；其他进程的同时用量变化不能算入或归咎于本次回收，真实质量复验仍未启动。
+
+
+### v35：同预算工作流配对复验与增量回收
+
+[预注册](../../benchmarks/swebench/verified-25-workflow-comparison-v35/preregistration.json)冻结同一源码
+`b0f03b63893b9c038512a17e143477313c0f7ae7`、原开发集顺序前三项；每项依次比较原工作流、
+同观察搜索快照、可选修改前测试三组，共9次独立pass@1。模型、非思考模式、50K累计Token、
+16次模型请求、900秒、原固定测试Profile和无重试规则不变；三组均逐项创建/封存回收。
+仅工具目录及对应Context是实验变量，不扩大预算，不采用案例专用提示或隐藏测试信息。
+最多预付54元，计入既有200元周期；预付不是实际消费。前三项是诊断样本，不是25项官方成绩或泛化证据。
+
+[宿主预检](../../benchmarks/swebench/verified-25-workflow-comparison-v35/host-readiness.json)证明三个固定镜像能力及
+原子替换后直接读通过，不证明模型稳定性。真实执行前还须通过宿主预算/冻结/失败停止负控；
+执行时逐Case及每5秒检查10 GiB保护线，未知效果或费用不完整停止，不自动重试。
+
+另按授权认证回收67个旧候选中的61个；6个新增`.DS_Store`导致补丁与冻结SHA不一致，
+保持原目录，不过滤补丁或篡改原评分。
+[独立复核](../../benchmarks/swebench/verified-25-workflow-comparison-v35/retirement-summary.json)记录回收约1.34 GiB，
+原Session、Case状态、根文件和费用账本均未变。9个旧测试夹具另回收约287 MiB，其日志/XML/JSON保留。
+磁盘余量恢复约10.7 GiB；后续仍只物化下一Case，不能预创建全25份。
+最新完整官方结果仍3/25，22/25目标及新泛化集评测未完成，不因宿主或离线测试通过而上调。
+
+[宿主负控](../../benchmarks/swebench/verified-25-workflow-comparison-v35/host-tests-summary.json)51项通过、零失败，
+确认物化后低磁盘不开启Turn；取消、未决费用、半交付及结算失败不释放完整预付。
+认证收尾只读取原终态并幂等回收，不新建尝试；仅完整9项费用闭合后结算。
+所有临时测试夹具均回收，最大约0.81 MiB。诊断宿主已在零请求、零预付条件下完成重新冻结，
+任务和配置身份未变；候选默认关闭，等待真实工作流对照结果。

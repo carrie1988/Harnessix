@@ -1,0 +1,49 @@
+{
+  "retired_workspaces": 61,
+  "skipped": [
+    {
+      "version": 17,
+      "case_index": 3,
+      "code": "swebench_case_evidence_mismatch"
+    },
+    {
+      "version": 18,
+      "case_index": 3,
+      "code": "swebench_case_evidence_mismatch"
+    },
+    {
+      "version": 19,
+      "case_index": 3,
+      "code": "swebench_case_evidence_mismatch"
+    },
+    {
+      "version": 19,
+      "case_index": 15,
+      "code": "swebench_case_evidence_mismatch"
+    },
+    {
+      "version": 22,
+      "case_index": 3,
+      "code": "swebench_case_evidence_mismatch"
+    },
+    {
+      "version": 22,
+      "case_index": 15,
+      "code": "swebench_case_evidence_mismatch"
+    }
+  ],
+  "original_native_and_state_hashes_unchanged": true,
+  "original_root_files_unchanged": true,
+  "budget_ledger_unchanged": true,
+  "ledger_sha256": "073c9f8b8c5fb97e8c09b21b65b577b5468d3c0ad507b033939d30361a272b9a",
+  "candidate_allocated_before_bytes": 1759625216,
+  "retired_roots_allocated_after_bytes": 249856,
+  "host_free_bytes": 11432923136,
+  "minimum_free_bytes": 10737418240,
+  "live_model_requests": 0,
+  "docker_operations": 0,
+  "verification_result": "PASS_WITH_PRESERVED_SKIPS",
+  "candidate_allocated_after_bytes": 319586304,
+  "candidate_allocated_reclaimed_bytes": 1440038912,
+  "skip_reason": "六份工作区新增.DS_Store导致原补丁SHA不一致，源码副本和原证据保留；未过滤补丁或改写历史"
+}

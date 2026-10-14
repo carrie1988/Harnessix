@@ -1,0 +1,150 @@
+{
+  "schema": "harnessix.swebench-workflow-comparison-preregistration/v1",
+  "frozen_at": "2026-10-14T04:16:10.046496+00:00",
+  "runner_sha256": "57a5c71d581904f00a45e6aff8d141f475b847d3f8aaa81fbc78a53301cc7d67",
+  "source_revision": "b0f03b63893b9c038512a17e143477313c0f7ae7",
+  "source_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "scope": "development_set_workflow_comparison_prefix3_not_official_score",
+  "selected_case_ids": [
+    "matplotlib__matplotlib-25960",
+    "pydata__xarray-4695",
+    "pytest-dev__pytest-10051"
+  ],
+  "selected_case_count": 3,
+  "executions": 9,
+  "execution_order": [
+    [
+      "baseline",
+      0
+    ],
+    [
+      "snapshot",
+      0
+    ],
+    [
+      "optional",
+      0
+    ],
+    [
+      "baseline",
+      1
+    ],
+    [
+      "snapshot",
+      1
+    ],
+    [
+      "optional",
+      1
+    ],
+    [
+      "baseline",
+      2
+    ],
+    [
+      "snapshot",
+      2
+    ],
+    [
+      "optional",
+      2
+    ]
+  ],
+  "changed_task_fields": [],
+  "source_changes_between_arms": [],
+  "changed_model_configuration_fields": [],
+  "changed_agent_configuration_fields": [
+    "same_observation_grep_file_sha256",
+    "default_context_lines_2",
+    "default_max_results_10",
+    "optional_search_snapshot_context_fragment",
+    "optional_explicit_pre_edit_profile",
+    "host_exclusive_test_patch_group",
+    "matching_optional_pre_edit_workflow_context"
+  ],
+  "accounting_margin_difference": {
+    "baseline_output_tokens": 0,
+    "snapshot_output_tokens": 0,
+    "optional_output_tokens": 0,
+    "changes_task_budget": false
+  },
+  "separate_identity_fields": [
+    "work_root",
+    "execution_fingerprint"
+  ],
+  "accounting_only_fields": [
+    "fee_stop_amount"
+  ],
+  "unchanged": [
+    "task_prompt_template",
+    "sealed_terminal_workspace_policy",
+    "problem_statements",
+    "base_commits",
+    "process_profiles",
+    "timeout_seconds",
+    "no_retry",
+    "all_safety_controls"
+  ],
+  "maximum_cost_amount": "54",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "primary_gate": {
+    "max_tokens": 50000,
+    "max_steps": 16,
+    "resolved_target": "22/25"
+  },
+  "outcomes": [
+    "native_terminal_status",
+    "patch_produced",
+    "model_token_usage",
+    "public_test_observation",
+    "patch_review_observation",
+    "compaction_usage",
+    "provider_failures"
+  ],
+  "official_score": null,
+  "price_verified_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+  "price_verified_rates": {
+    "input_per_million": "12",
+    "output_per_million": "36",
+    "currency": "CNY"
+  },
+  "lazy_workspace_creation": true,
+  "matching_retirement_policy_all_arms": true,
+  "limitations": "同源固定前三项三组pass@1新尝试，分别比较搜索快照与可选预测试；相同计划摘要由独立execution_fingerprint区分；原50K/16次含全部摘要，非思考主评测不变，不作统计显著性或官方成绩声明。",
+  "arms": [
+    {
+      "name": "baseline",
+      "plan_sha256": "4cd747b27ba785a620a45ec6b39f25f2a4204a795f0cf8c2d61bdb557f740d02",
+      "plan_file_sha256": "5af38ea8deb0e89da684149b44715ea1f7ea37e5deba6a809faa398dc4091a65",
+      "config_file_sha256": "7ec08252ed682692adcf54079cfa43c951dfcfdb2f985e5ff3462f3ce01ddbd2",
+      "execution_fingerprint": "f80dfe5a0c1a9b2f3965f7ca1e1f00978af69edb75342623e9cc35de12b409c3",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.947456"
+    },
+    {
+      "name": "snapshot",
+      "plan_sha256": "4cd747b27ba785a620a45ec6b39f25f2a4204a795f0cf8c2d61bdb557f740d02",
+      "plan_file_sha256": "5af38ea8deb0e89da684149b44715ea1f7ea37e5deba6a809faa398dc4091a65",
+      "config_file_sha256": "1acf3e52a97a2e47190e66fb049c0b9c3bdf2bfe7c6fc25f0bd809149197e39b",
+      "execution_fingerprint": "a9243e904783d576feb1714ee613ae517e345b4d65f7619f30c2c8cf8606813e",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.947456"
+    },
+    {
+      "name": "optional",
+      "plan_sha256": "4cd747b27ba785a620a45ec6b39f25f2a4204a795f0cf8c2d61bdb557f740d02",
+      "plan_file_sha256": "5af38ea8deb0e89da684149b44715ea1f7ea37e5deba6a809faa398dc4091a65",
+      "config_file_sha256": "2f1c224ab48873dd68ff1842e29b28b3d0268e7da80f0b9710ad718e2596fa92",
+      "execution_fingerprint": "55e7f746f046c1ba581115822a0c7c3a7dde44158a52f161bef189add5b3bce7",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.947456"
+    }
+  ],
+  "freeze_refinement_before_any_execution": "修复物化后磁盘准入、取消/费用收尾及只认证恢复；全部任务、模型、配置、执行身份不变，未预付未执行"
+}
