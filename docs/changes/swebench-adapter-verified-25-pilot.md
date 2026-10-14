@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 28
-code_revision: 6231c4e249a45fb51a1f2d8584102e037572bf34
+version: 29
+code_revision: 898eab8711af74be417466164b998746b80f40d5
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
+  - tests/context/test_pressure_window_candidates.py
   - tests/models/test_current_tool_catalog.py
   - tests/product_config/test_closing_phase_budget.py
   - tests/evals/swebench/test_workspace_retirement.py
@@ -1494,3 +1495,29 @@ v38[真实执行与独立认证](../../benchmarks/swebench/verified-25-focused-c
 12份Native/Case SHA认证未变、六份完整费用工作区已回收；费用估算上界3.112032元、新未决0，
 36元预付按原用量闭合，当前周期可用77.138768元（包括旧全部预留；非实扣账单）。
 旧完整官方成绩仍3/25，不开展同一候选全25项盲跑；下一步求证源码定位/有效读取与调查到修改的转换。
+
+## v39：压缩候选漏选回归与实际适用性审计
+
+需求：v38六次仍预算失败、未产出Patch；不增加任务预算，不把离线通过当解决率提升。
+合成反例确认：缩小摘要容量时，Native贪心窗口可能回填一整组旧历史，令wire摊销不成立；
+相同容量的紧窗口仍保留用户锚点和近期两完整组，且可完整预付、满足原min3摊销。
+
+[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)先按原顺序试最多三容量，
+仅全部拒绝后才试各容量的最紧合法窗口偏好；有效目标仍由原planner提高到固定组及摘要容量下界，
+不是删除锚点、拆组或强制512 Token。均摊偏好已≤512时不重复尝试。最多六次纯规划，不增加模型请求；
+原wire摘要输入/输出/后继/收尾预付、摊销、未知费用、取消、来源重放及目录漂移规则不变。
+
+核心顺序：`原容量候选 → 原门禁 → 全部拒绝才紧窗口候选 → 同一门禁 → 首个可行Plan`。
+原已有可行Plan直接返回，失败不换模型、不自动重试、不修改源Session。测试
+[`test_pressure_window_candidates`](../../tests/context/test_pressure_window_candidates.py)覆盖顺序、去重、
+最大纯候选数、锚点/近期两整组/分区/replay和取消/费用/估算漂移/预付边界。
+
+[实际只读审计](../../benchmarks/swebench/verified-25-pressure-window-v39/read-and-pressure-audit.json)
+认证六份Native/Case SHA未变、只读取模型已观察路径的公共base commit，无答案/隐藏测试/工作区复建。
+当前各次首主请求之后的均摊偏好均≤512，因此本修复不会新增该轨迹的紧窗口选择；**不付费盲跑**。
+另见一次60行窗口中92.1%字节为文档字符串；这不等于文档无用，但说明定义/实现级导航存在改进空间。
+下一质量主线应提供可选择的签名与实现读取，并保留原文/文档查看、原始SHA和显式省略边界。
+本轮无新增付费请求，原完整官方成绩仍3/25，22/25与全新泛化集目标未完成。
+
+本轮关联回归593通过、1 Windows原生环境跳过、0失败，包含45项新增候选用例；
+566源文件Mypy、Schema、Ruff与文档链接门禁通过。无新增云请求，不因此宣称质量达标。

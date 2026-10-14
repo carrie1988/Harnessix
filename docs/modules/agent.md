@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
+version: 39
+code_revision: 898eab8711af74be417466164b998746b80f40d5
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
   - tests/agent/test_tool_call_groups.py
   - tests/agent/test_planning_tool.py
@@ -1003,3 +1004,8 @@ Chunk边界也必须拒绝。未知旧通用审阅只沿原JSONL保护，不猜�
 Native完整组、用户锚点、未知费用、Context及目录漂移守卫不变，逐请求准入仍是最终控制。
 详见[本轮设计与诊断边界](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)；
 回归[`test_compaction_wire_prepay`](../../tests/context/test_compaction_wire_prepay.py)不是性能证明。
+
+## v39 压缩候选完备性
+
+先保留原容量候选顺序，再有限尝试紧窗口偏好，完整保留与支付门禁不变；不是新付费重试。
+见[实现和实际适用性](../changes/swebench-adapter-verified-25-pilot.md#v39压缩候选漏选回归与实际适用性审计)。

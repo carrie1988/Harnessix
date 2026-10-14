@@ -1,0 +1,22 @@
+{
+  "scope": "压缩候选漏选通用回归与既有上下文安全门禁，非SWE质量证据",
+  "source_revision": "898eab8711af74be417466164b998746b80f40d5",
+  "regression": {
+    "tests": 594,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "passed": 593,
+  "new_pressure_tests": 45,
+  "mypy_source_files": 566,
+  "mypy": "PASS",
+  "schema": "PASS",
+  "ruff": "PASS",
+  "inference_requests": 0,
+  "paid_rerun": false,
+  "paid_rerun_decision": "六条实际轨迹首请求之后allocation均≤512；不得据小固定开销合成反例盲跑真实评测",
+  "xml_sha256": "31173261a09bd1bda048ba200691d8eddff0ee28a19750aa3a5ae62f2fdba46f",
+  "actual_quality_score_unchanged": "3/25",
+  "generalization_evaluation_complete": false
+}
