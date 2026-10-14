@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 55
-code_revision: eecf8d1ca90d6b51547386fbc1171f513830646d
+version: 56
+code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
 owners:
   - core
 modules:
@@ -25,6 +25,7 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
+  - tests/evals/swebench/test_closing_run_config.py
   - tests/evals/swebench/test_regex_run_config.py
   - tests/evals/swebench/test_regex_agent_execution.py
   - tests/evals/swebench/test_workspace_retirement.py
@@ -2534,3 +2535,11 @@ SWE运行配置新增显式v5，旧v2/v3/v4默认、模式和序列化不变；v
 同源前三项配对诊断、字段与失败语义统一见[专项设计](../changes/swebench-adapter-verified-25-pilot.md#独立有界思考配置配对诊断非正式成绩)，
 Provider原计账、正文隔离及临界调度负控见[Models合同](models.md#25-有界思考配置输出上限包含推理不发布推理正文)。
 不将6次诊断、脚本SDK回归或正常Turn结束填充25项Resolved，原22/25门槛及新泛化集仍OPEN。
+
+
+## v37 固定预算两组诊断
+
+[`SweBenchClosingAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py)采用独立v11、默认关闭的收尾候选，
+[`agent_execution`](../../src/harnessix/evals/swebench/agent_execution.py)绑定正式Runtime/Context/工具视图。
+同源baseline/closing各前三项新执行，总预付36元；原50K/16次/900秒、模型及任务不变。
+诊断不能充当25项官方成绩或新泛化集证明，完整设计见[本轮切片](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)。

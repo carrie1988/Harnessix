@@ -1,0 +1,24 @@
+{
+  "scope": "关联回归与完整wire预付/收尾偏好负控；不是自主编码质量证据",
+  "source_revision": "5b65a074b802eebe3bf7dab9ab8e454c6910d15f",
+  "related_regression": {
+    "tests": 957,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "passed": 957,
+  "mypy_source_files": 566,
+  "mypy_result": "PASS",
+  "schema": "PASS",
+  "documentation": "PASS",
+  "ruff": "PASS",
+  "secret_self_check": "PASS",
+  "inference_requests": 0,
+  "closing_default_enabled": false,
+  "summary_drift_guard_retained": true,
+  "native_budget_unchanged": true,
+  "wire_probe_result": "合成探针未证明收益；ASCII支配wire字节不等于实际tokenizer计数",
+  "regression_xml_sha256": "b6a0dfc5bf82916e3fc598079294b954cd5b9978a34fe3b4a222b5a13778ebfd",
+  "limitations": "历史完整官方结果仍3/25；新6次对照尚未执行，不能拼接或作为全新泛化成绩"
+}

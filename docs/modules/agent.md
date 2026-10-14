@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 37
-code_revision: b0f03b63893b9c038512a17e143477313c0f7ae7
+version: 38
+code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/context/test_compaction_wire_prepay.py
   - tests/agent/test_tool_call_groups.py
   - tests/agent/test_planning_tool.py
   - tests/agent/test_planning_tool_recovery.py
@@ -992,3 +993,13 @@ Chunk边界也必须拒绝。未知旧通用审阅只沿原JSONL保护，不猜�
 重新传播非取消子任务异常的原对象。实际Checkpoint准备器和原Agent可信预规划入口使用True，
 正常取消依旧传播，成功但已取消的结果不发布，共享Owner不由准备器关闭。
 该标志不授权重放，不改变持久事件或Schema，不把模拟结算测试当作原生Owner故障验收。
+
+
+## v37 完整摘要预付
+
+[`compaction_input_budget`](../../src/harnessix/agent/compaction_input_budget.py)与
+[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)在内置mapper显式承诺下，
+以完整wire覆盖摘要输入、输出和后继请求；不能复用已付前缀折扣。
+Native完整组、用户锚点、未知费用、Context及目录漂移守卫不变，逐请求准入仍是最终控制。
+详见[本轮设计与诊断边界](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)；
+回归[`test_compaction_wire_prepay`](../../tests/context/test_compaction_wire_prepay.py)不是性能证明。

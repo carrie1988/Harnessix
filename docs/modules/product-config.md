@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 123
-code_revision: eecf8d1ca90d6b51547386fbc1171f513830646d
+version: 124
+code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
 owners:
   - core
 modules:
@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
 related_tests:
+  - tests/product_config/test_closing_phase_budget.py
   - tests/evals/swebench/test_regex_agent_execution.py
   - tests/product_config/test_optional_pre_edit_profile.py
   - tests/product_config/test_optional_pre_edit_runtime.py
@@ -2995,3 +2996,13 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 修改后纯文本拒绝，以及原Patch→验证→修复→Review链；纯脚本回复不是自主质量证明。
 [真实三项复验](../../benchmarks/swebench/verified-25-prefix3-v29/result-summary.json)仍0/3，
 两个修复同时启用且无单因素归因；尚未实现跨模型轮次的调查进展策略。
+
+
+## v37 调查收尾偏好（默认关闭）
+
+[`coding_closure_budget`](../../src/harnessix/product_config/coding_closure_budget.py)从完整持久请求事实派生四次收尾偏好；
+[`CodingWorkflowToolView`](../../src/harnessix/product_config/coding_tool_view.py)只在首次修改前、最新User之后有完整SHA时
+缩到Patch AUTO。摘要计费立即入账，调度偏好在下一主请求结算才刷新，避免目录漂移。
+不扩张权限、不保证剩余费用、不强迫编辑，失败重读、Profile、Review和诚实结束不变。
+详见[设计与真实对照](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)，
+测试[`test_closing_phase_budget`](../../tests/product_config/test_closing_phase_budget.py)。

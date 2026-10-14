@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: a3a4ed00c30f201d7282d749b9f74051323e5a24
+version: 19
+code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
 owners:
   - core
 modules:
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
 related_tests:
+  - tests/context/test_compaction_wire_prepay.py
   - tests/contracts/provider.py
   - tests/models/test_openai_chat.py
   - tests/models/test_chat_terminal_diagnostics.py
@@ -830,3 +831,12 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 独立SWE配置v5显式启用有界思考，旧v2/v3/v4仍非思考。API最多10 Token容差仅进入费用尾差
 和未决请求预留；不放宽50K/16次，也不重新分类原失败。完整配置与实验边界见
 [SWE-bench诊断设计](../changes/swebench-adapter-verified-25-pilot.md#独立有界思考配置配对诊断非正式成绩)。
+
+
+## v37 摘要投影声明
+
+[`CompactionSummaryProjection`](../../src/harnessix/models/contracts.py)是可选内部纯能力合同，
+Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Event或旧SDK协议。
+完整wire估算复用现有Provider mapper，未声明者保留旧路径；ASCII预留证明wire覆盖，不是实际Token节省。
+对应[详细设计](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)及
+[`test_compaction_wire_prepay`](../../tests/context/test_compaction_wire_prepay.py)。

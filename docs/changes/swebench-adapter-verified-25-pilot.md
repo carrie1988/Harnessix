@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 26
-code_revision: b0f03b63893b9c038512a17e143477313c0f7ae7
+version: 27
+code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0085-versioned-third-party-eval-dataset-and-golden-boundary.md
 related_tests:
+  - tests/product_config/test_closing_phase_budget.py
   - tests/evals/swebench/test_workspace_retirement.py
   - tests/evals/swebench/test_authenticated_workspace_retirement.py
   - tests/evals/swebench/test_workspace_retirement_cancellation.py
@@ -1358,3 +1359,59 @@ v36[真实执行与独立认证结果](../../benchmarks/swebench/verified-25-reg
 候选默认关闭，原25项正式成绩仍3/25，不推进该候选的全25项盲跑。
 下一步求证实际请求锚点、压力压缩及收尾预留的估算路径；UTF-8保守Context估算不等于实际Token分解，
 不把旧“最老锚点”假设复活为唯一根因，也不将剩余额度简单等同于下一请求可安全准入。
+
+
+## v37：完整 wire 预付与调查收尾对照（默认关闭）
+
+### 背景、目标与边界
+
+v35、v36真实执行仍在首次修改前耗尽累计额度；正则可用、回归通过均未证明编码质量。
+本轮只处理两个共性机制：摘要预付和真实出站使用不同估算口径，以及调查没有为修改、测试、Review留下调度空间。
+模型、原任务顺序、50K累计Token、16次总请求、900秒、审批、测试Profile和pass@1不变。
+不读取参考补丁/隐藏测试，不新增Case专用规则，不把旧开发集当全新泛化集。
+
+### 核心设计与源码
+
+| 合同/模块 | 设计与失败边界 |
+|---|---|
+| [`CompactionSummaryProjection`](../../src/harnessix/models/contracts.py) | 内置Chat/Anthropic显式承诺Native摘要JSON string投影；未声明的第三方保持旧路径，不猜测mapper |
+| [`CompactionInputBudget`](../../src/harnessix/agent/compaction_input_budget.py) | 完整摘要请求输入+原输出上限、占满Native摘要预留的完整后继wire输入+原收尾量；不折扣已付前缀，不调用模型 |
+| [`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py) | 原窗口/保留完整组仍用Native尺度；wire用于预付与摊销偏好，拒绝负值、能力漂移或无可用摘要容量 |
+| [`coding_closure_budget`](../../src/harnessix/product_config/coding_closure_budget.py) | 最近完整、同模型主请求的输入用量×4加原收尾量形成调度偏好，或剩余槽≤4；不是未来费用上界或Token准入证明 |
+| [`CodingWorkflowToolView`](../../src/harnessix/product_config/coding_tool_view.py) | 仅首次修改前自由调查、最新User之后已有完整文件SHA时允许仅Patch AUTO；允许诚实结束，不强迫写入 |
+| [`agent_context`](../../src/harnessix/product_config/agent_context.py) | 独立固定指令明确偏好非授权、不保证足够预算；旧指令字节不变 |
+| [`SweBenchClosingAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 独立v11及指纹，拒绝与regex/snapshot/可选预测试/思考/规划混合；产品默认关闭 |
+
+```mermaid
+flowchart LR
+  A[持久主请求结算事实] --> B[当前阶段与完整SHA]
+  B --> C[调查目录或Patch AUTO]
+  C --> D[完整wire压缩预付]
+  D --> E[摘要结算及来源复核]
+  E --> F[原逐请求Token与费用准入]
+  F --> G[原Patch审批及事务]
+  G --> H[原新鲜测试Profile与Review]
+```
+
+核心伪代码：`账目已知且模型身份一致 → 取最近主请求及完整观察 → 派生调查偏好 →
+冻结工具目录 → 完整摘要/后继预付 → 原Context与目录漂移检查 → 原逐请求准入`。
+摘要计划目标step晚于最近主请求的费用/请求槽只在**调度偏好**中延后更新，直至下一主请求结算；
+真实账本、总Token、总请求槽及费用立即计入，避免一次压缩跨阈值改变已冻结目录。
+旧`context_compaction_source_changed`守卫保留，不用删除漂移校验掩盖错误。
+
+没有完整SHA时仍允许读取；失败Patch仍要求原重读，修改后仍强制新鲜Profile→Review；
+基础设施/未知效果/未决费用仍停止，不跳过验证或自动重试。摘要投影ASCII支配的是当前mapper的wire长度，
+不是实际tokenizer计数；完整wire路径可能增加或减少预付，合成探针没有证明性能收益。
+
+### 验证与真实试验门禁
+
+新增用例涵盖完整转义/Unicode摘要投影、两种内置mapper、第三方回退、无容量、估算漂移、
+有/无完整SHA、User steering、失败Patch、新鲜测试与Review、摘要跨请求槽/Token阈值目录不漂移。
+SDK Mock证明开关和SQLite接线、不强迫写入；它不是自主编码质量证明。
+两组使用同一新源码、同一价格时刻：baseline与closing，各取原顺序前三项，新鲜独立执行，共6次；
+唯一组间变化为收尾偏好和对应固定Context片段。总预付36元纳入现有200元周期，逐项创建/认证回收工作区。
+有新未决费用即停止、不自动重试；不拼接旧成绩，不报告6次诊断为25项官方得分。
+
+本轮关联回归957通过、0失败、0跳过，566份源码Mypy、冻结Schema、Ruff与Secret自检通过；
+上述仅证明实现/失败边界，真实六次对照仍待执行，不改变3/25官方成绩。
+价格沿[官方模型页](https://help.aliyun.com/zh/model-studio/qwen3-8-max)公开原价冻结，未采用缓存优惠。
