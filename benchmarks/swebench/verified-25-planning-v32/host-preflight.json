@@ -1,0 +1,29 @@
+{
+  "schema": "harnessix.swebench-planning-host-preflight/v1",
+  "checked_at": "2026-10-14T00:40:25.595086+00:00",
+  "source_revision": "ed6c0e4df39e6ac3691999b99ad8b4d377d96cdb",
+  "preregistration_sha256": "b05a939eac5acec2d55274dde367ba31eb65175036cb2afa83e8a5623bc86ad4",
+  "profiles": [
+    {
+      "instance_id": "matplotlib__matplotlib-25960",
+      "profile_sha256": "8b7e98e0deb91a882f8e3d7a7406b01420967d52707281aa785ef2e01143f31a",
+      "reason_code": "verified",
+      "image": "sha256:b9b19393d221ba33ce0f13402fb3de1b34d8555db58f2020c9058c2ff800138e"
+    },
+    {
+      "instance_id": "pydata__xarray-4695",
+      "profile_sha256": "2bc1785406131c7633936e0c8b6efc57c1f9afaa3c2dc2db2be1c8556cd5f295",
+      "reason_code": "verified",
+      "image": "sha256:48d2117063167885508af8dc3068d8e33214435c40869fdc680a8e257e3cb7e0"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "profile_sha256": "14dec946f643c2fed58852693a2159f0efd8eb7044836358dbc1b104489bf8a4",
+      "reason_code": "verified",
+      "image": "sha256:d32f01a8edf424766be171cb6fc53e4cf4966dc6cff8c678622cd95f33b581b6"
+    }
+  ],
+  "paid_model_requests": 0,
+  "same_task_and_model_verified": true,
+  "decision": "GO"
+}

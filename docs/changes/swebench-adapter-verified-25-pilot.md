@@ -972,3 +972,49 @@ Runtime既有热点有本增量接线增长，未重设基线为通过；新规�
 新目录、小范围配对验证：仅改变规划策略及其工具／Context，保持原模型和50K/16次边界，
 不选成功项、不拼接历史、不注入隐藏测试。候选无收益或多占预算则回退，不继续盲跑25项。
 最新完整官方成绩仍v27的3/25；本增量没有新正式分数或泛化结论。
+
+### v32原生规划同源配对实跑：NO_GO，不推广
+
+[预注册](../../benchmarks/swebench/verified-25-planning-v32/preregistration.json)固定原顺序前三项，
+在源码`ed6c0e4d`上交错执行baseline／planning两组，共6个新Turn。两组问题、模型、
+非思考配置、50K/16次/900秒、公开Profile与无重试规则相同；只改变原生规划策略及其工具／
+Context。任务Plan摘要相同，Session请求和费用记录按独立`execution_fingerprint`区分，
+不修改选择Salt制造身份。v6的10 Token费用容差不增加任务额度。
+
+Docker原VM停止后残留Backend不能响应，官方CLI启动／重启未能恢复；在核验VM进程不存在
+后回收残留Backend并冷启动。三个正式Profile的[能力预检](../../benchmarks/swebench/verified-25-planning-v32/host-preflight.json)
+通过，6个新工作区的[只读容器直接读取](../../benchmarks/swebench/verified-25-planning-v32/workspace-visibility-preflight.json)
+与宿主SHA匹配。这不是公开测试或编码质量通过。另有4个既有业务容器进入重启循环，
+不得把Engine恢复写成业务恢复；本轮未修改其配置或删除镜像、卷、数据库。
+
+[独立原生复核](../../benchmarks/swebench/verified-25-planning-v32/result-summary.json)
+认证6个原Turn及12份Session／Case状态，验证原请求身份、预算、补丁、费用及文件前后SHA：
+
+| 组 | 自主闭环 | 非空Patch | 输入Token | 输出Token | 原生Plan／update_plan调用 | 估算费用上界 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline | 0/3 | 0/3 | 133348 | 2403 | 0／0 | 1.686684元 |
+| planning | 0/3 | 0/3 | 127477 | 1130 | 0／0 | 1.570404元 |
+
+baseline两项预算耗尽、一项已计费响应契约失败；planning三项预算耗尽。两组均未调用测试
+或Review。[只读请求重建](../../benchmarks/swebench/verified-25-planning-v32/input-summary.json)
+核对44个历史／指令指纹匹配位置、39次已计费请求；planning的22个位置（19次实际请求）
+均有规划工具，但模型没有采用，不能据此称规划算法已被真实检验或有泛化收益。
+baseline末次输出124 Token与保守准入上限相同，存在输出裁断风险；未持久原finish_reason，
+不据此认定响应失败唯一根因。UTF-8结构字节与未发送请求上界不冒充实测Token。
+
+后续无损Schema核查：正式调查目录已由既有Provider投影从7001降到6318 UTF-8字节；
+可额外删除的纯注解为0，不新增收益仅42字节的名称前缀微优化。官方DashScope SDK源码
+[`get_tokenizer`](https://github.com/dashscope/dashscope-sdk-python/blob/main/dashscope/tokenizers/tokenizer.py)
+将所有`qwen*`映射到同一词表，编码还有NFC归一化；尚无固定模型快照及Chat工具封装的
+精确性证明，不用该近似结果降低硬输入上界，也未安装或据其发起新请求。
+
+本轮估算费用上界3.257088元、新未决0；36元预付按原生证据结算。同Plan／不同执行指纹的
+重复费用预付负控已拒绝，账本SHA不变。200元周期已知上界45.830664元、旧未决预留
+31.474560元、可用122.694776元，均非实扣账单。每组其余22项未执行，没有完整25项
+predictions或官方评分，不拼接旧成功。保持规划默认关闭，不继续同候选全25项盲跑；
+下一步聚焦调查到修改／测试闭环的有效进展与整条请求预算，不用更多功能代替质量证据。
+
+空间治理已按用户授权回收约3.22 GiB对象，其中78个旧计划未执行工作区永久退役，并验证
+旧入口拒绝静默重建；费用、状态、报告及已执行证据保留。本次只准备实际诊断的6个工作区，
+没有预建两组其余44项。正式Suite仍整批预建、尚无自动回收机制，不能声称已完成自动GC。
+10 GiB运行前／运行中保护保留，已执行工作区归档解耦前不自动删除。最新官方成绩仍3/25。

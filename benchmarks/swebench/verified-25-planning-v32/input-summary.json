@@ -1,0 +1,266 @@
+{
+  "schema": "harnessix.swebench-planning-input-summary/v1",
+  "checked_at": "2026-10-14T00:50:48.171116+00:00",
+  "source_revision": "ed6c0e4df39e6ac3691999b99ad8b4d377d96cdb",
+  "private_diagnostic_sha256": "d194f93087e0eac96c438b4f784801d4bb3a67581ae26e728e5fb3a33b514ba3",
+  "native_files_unchanged": true,
+  "history_and_instruction_fingerprints_verified": true,
+  "model_requests": 0,
+  "tool_requests": 0,
+  "prepared_request_positions": 44,
+  "accounted_model_requests": 39,
+  "arms": {
+    "baseline": {
+      "prepared_positions": 22,
+      "accounted_requests": 20,
+      "planning_tool_advertised_positions": 0,
+      "planning_tool_advertised_accounted_requests": 0,
+      "tool_catalog_wire_bytes": [
+        6318
+      ],
+      "terminal_positions": [
+        {
+          "arm": "baseline",
+          "case_index": 0,
+          "step": 7,
+          "actual_input_tokens": 9272,
+          "actual_output_tokens": 124,
+          "attempt_status": "failed",
+          "attempt_error_code": "provider_invalid_provider_output",
+          "remaining_task_tokens": 12702,
+          "estimated_input_upper": 12578,
+          "allowed_output_upper": 124,
+          "instruction_fingerprint_matches": true,
+          "history_fingerprint_matches": true,
+          "tool_names": [
+            "read_file",
+            "glob",
+            "grep",
+            "apply_patch_batch"
+          ],
+          "tool_catalog_wire_bytes": 6318,
+          "message_wire_bytes_by_role": {
+            "system": 6862,
+            "user": 1662,
+            "assistant": 2464,
+            "tool": 16549
+          },
+          "instructions_utf8_bytes": 5470,
+          "planning_tool_advertised": false,
+          "unchanged_tool_catalog": true,
+          "unchanged_instructions": true,
+          "accounted_model_attempt": true
+        },
+        {
+          "arm": "baseline",
+          "case_index": 1,
+          "step": 7,
+          "actual_input_tokens": null,
+          "actual_output_tokens": null,
+          "attempt_status": null,
+          "attempt_error_code": null,
+          "remaining_task_tokens": 4368,
+          "estimated_input_upper": 13684,
+          "allowed_output_upper": 0,
+          "instruction_fingerprint_matches": true,
+          "history_fingerprint_matches": true,
+          "tool_names": [
+            "read_file",
+            "glob",
+            "grep",
+            "apply_patch_batch"
+          ],
+          "tool_catalog_wire_bytes": 6318,
+          "message_wire_bytes_by_role": {
+            "system": 6112,
+            "user": 4634,
+            "assistant": 3676,
+            "tool": 15471
+          },
+          "instructions_utf8_bytes": 4913,
+          "planning_tool_advertised": false,
+          "unchanged_tool_catalog": true,
+          "unchanged_instructions": true,
+          "accounted_model_attempt": false
+        },
+        {
+          "arm": "baseline",
+          "case_index": 2,
+          "step": 8,
+          "actual_input_tokens": null,
+          "actual_output_tokens": null,
+          "attempt_status": null,
+          "attempt_error_code": null,
+          "remaining_task_tokens": 6575,
+          "estimated_input_upper": 11337,
+          "allowed_output_upper": 0,
+          "instruction_fingerprint_matches": true,
+          "history_fingerprint_matches": true,
+          "tool_names": [
+            "read_file",
+            "glob",
+            "grep",
+            "apply_patch_batch"
+          ],
+          "tool_catalog_wire_bytes": 6318,
+          "message_wire_bytes_by_role": {
+            "system": 6335,
+            "user": 2262,
+            "assistant": 3006,
+            "tool": 13836
+          },
+          "instructions_utf8_bytes": 5073,
+          "planning_tool_advertised": false,
+          "unchanged_tool_catalog": true,
+          "unchanged_instructions": true,
+          "accounted_model_attempt": false
+        }
+      ]
+    },
+    "planning": {
+      "prepared_positions": 22,
+      "accounted_requests": 19,
+      "planning_tool_advertised_positions": 22,
+      "planning_tool_advertised_accounted_requests": 19,
+      "tool_catalog_wire_bytes": [
+        7240
+      ],
+      "terminal_positions": [
+        {
+          "arm": "planning",
+          "case_index": 0,
+          "step": 7,
+          "actual_input_tokens": null,
+          "actual_output_tokens": null,
+          "attempt_status": null,
+          "attempt_error_code": null,
+          "remaining_task_tokens": 6475,
+          "estimated_input_upper": 19128,
+          "allowed_output_upper": 0,
+          "instruction_fingerprint_matches": true,
+          "history_fingerprint_matches": true,
+          "tool_names": [
+            "read_file",
+            "glob",
+            "grep",
+            "apply_patch_batch",
+            "update_plan"
+          ],
+          "tool_catalog_wire_bytes": 7240,
+          "message_wire_bytes_by_role": {
+            "system": 7458,
+            "user": 1662,
+            "assistant": 1465,
+            "tool": 25722
+          },
+          "instructions_utf8_bytes": 6047,
+          "planning_tool_advertised": true,
+          "unchanged_tool_catalog": true,
+          "unchanged_instructions": true,
+          "accounted_model_attempt": false
+        },
+        {
+          "arm": "planning",
+          "case_index": 1,
+          "step": 7,
+          "actual_input_tokens": null,
+          "actual_output_tokens": null,
+          "attempt_status": null,
+          "attempt_error_code": null,
+          "remaining_task_tokens": 8354,
+          "estimated_input_upper": 11667,
+          "allowed_output_upper": 0,
+          "instruction_fingerprint_matches": true,
+          "history_fingerprint_matches": true,
+          "tool_names": [
+            "read_file",
+            "glob",
+            "grep",
+            "apply_patch_batch",
+            "update_plan"
+          ],
+          "tool_catalog_wire_bytes": 7240,
+          "message_wire_bytes_by_role": {
+            "system": 6709,
+            "user": 4634,
+            "assistant": 1456,
+            "tool": 11789
+          },
+          "instructions_utf8_bytes": 5490,
+          "planning_tool_advertised": true,
+          "unchanged_tool_catalog": true,
+          "unchanged_instructions": true,
+          "accounted_model_attempt": false
+        },
+        {
+          "arm": "planning",
+          "case_index": 2,
+          "step": 8,
+          "actual_input_tokens": null,
+          "actual_output_tokens": null,
+          "attempt_status": null,
+          "attempt_error_code": null,
+          "remaining_task_tokens": 6564,
+          "estimated_input_upper": 10776,
+          "allowed_output_upper": 0,
+          "instruction_fingerprint_matches": true,
+          "history_fingerprint_matches": true,
+          "tool_names": [
+            "read_file",
+            "glob",
+            "grep",
+            "apply_patch_batch",
+            "update_plan"
+          ],
+          "tool_catalog_wire_bytes": 7240,
+          "message_wire_bytes_by_role": {
+            "system": 6932,
+            "user": 2262,
+            "assistant": 1746,
+            "tool": 10742
+          },
+          "instructions_utf8_bytes": 5650,
+          "planning_tool_advertised": true,
+          "unchanged_tool_catalog": true,
+          "unchanged_instructions": true,
+          "accounted_model_attempt": false
+        }
+      ]
+    }
+  },
+  "official_score": null,
+  "limitations": "长度是UTF8结构字节，不是Token；未发送位置没有真实用量。重建模型工具目录使用生产Schema及固定长度版本占位，不证明未知版本的原始目录字节身份。末次124输出Token与上限相同，只支持输出裁断风险，未持久finish_reason，不能认定唯一错误原因。",
+  "followup_schema_audit": {
+    "scope": "production investigation catalog, planning disabled",
+    "current_catalog_utf8_bytes": 6318,
+    "before_existing_title_projection_utf8_bytes": 7001,
+    "already_removed_title_annotations": 33,
+    "already_saved_utf8_bytes": 683,
+    "additional_pure_annotation_utf8_bytes": 0,
+    "duplicate_name_prefix_utf8_bytes": 42,
+    "new_implementation": "REJECTED_NO_MATERIAL_LOSSLESS_SAVING",
+    "source_paths": [
+      "src/harnessix/models/_tool_schema.py",
+      "src/harnessix/models/_chat_mapping.py"
+    ],
+    "model_requests": 0
+  },
+  "tokenizer_source_review": {
+    "scope": "read_only_official_SDK_source_not_installed_or_used_for_admission",
+    "repository": "https://github.com/dashscope/dashscope-sdk-python",
+    "git_tree_sha": "2cd356a499e7d70dc28035b34fd9ee1ad2d12572",
+    "source_paths": [
+      "dashscope/tokenizers/tokenizer.py",
+      "dashscope/tokenizers/qwen_tokenizer.py",
+      "dashscope/tokenizers/tokenization.py"
+    ],
+    "observations": [
+      "local_get_tokenizer_routes_all_qwen_prefix_models_to_same_qwen_tiktoken_resource",
+      "local_encode_normalizes_text_to_NFC",
+      "source_review_does_not_prove_exact_tokenization_for_frozen_qwen3_8_max_snapshot_or_chat_tool_packaging"
+    ],
+    "decision": "NOT_ACCEPTED_AS_LOWER_HARD_INPUT_BOUND",
+    "new_paid_calls": 0,
+    "provider_admission_changed": false
+  }
+}

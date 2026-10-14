@@ -1,0 +1,113 @@
+{
+  "schema": "harnessix.swebench-native-planning-preregistration/v1",
+  "frozen_at": "2026-10-14T00:37:03.291991+00:00",
+  "runner_sha256": "3f8954e6149087d39c7ba027dce370ec35adb3fac103f680cc820808ece40dfc",
+  "source_revision": "ed6c0e4df39e6ac3691999b99ad8b4d377d96cdb",
+  "source_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "scope": "development_set_native_planning_paired_prefix3_not_official_score",
+  "selected_case_ids": [
+    "matplotlib__matplotlib-25960",
+    "pydata__xarray-4695",
+    "pytest-dev__pytest-10051"
+  ],
+  "selected_case_count": 3,
+  "executions": 6,
+  "execution_order": [
+    [
+      "baseline",
+      0
+    ],
+    [
+      "planning",
+      0
+    ],
+    [
+      "baseline",
+      1
+    ],
+    [
+      "planning",
+      1
+    ],
+    [
+      "baseline",
+      2
+    ],
+    [
+      "planning",
+      2
+    ]
+  ],
+  "changed_task_fields": [],
+  "source_changes_between_arms": [],
+  "changed_model_configuration_fields": [],
+  "changed_agent_configuration_fields": [
+    "native_update_plan_tool",
+    "optional_planning_context_fragment",
+    "atomic_plan_publication",
+    "latest_plan_history_anchor"
+  ],
+  "accounting_margin_difference": {
+    "baseline_output_tokens": 0,
+    "planning_output_tokens": 10,
+    "changes_task_budget": false
+  },
+  "separate_identity_fields": [
+    "work_root",
+    "execution_fingerprint"
+  ],
+  "accounting_only_fields": [
+    "fee_stop_amount"
+  ],
+  "unchanged": [
+    "prompt_template",
+    "problem_statements",
+    "base_commits",
+    "process_profiles",
+    "timeout_seconds",
+    "no_retry",
+    "all_safety_controls"
+  ],
+  "maximum_cost_amount": "36",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "primary_gate": {
+    "max_tokens": 50000,
+    "max_steps": 16,
+    "resolved_target": "22/25"
+  },
+  "outcomes": [
+    "native_terminal_status",
+    "patch_produced",
+    "model_token_usage",
+    "public_test_observation",
+    "patch_review_observation",
+    "compaction_usage",
+    "provider_failures"
+  ],
+  "official_score": null,
+  "limitations": "同源固定前三项配对pass@1新尝试，只比较原生规划策略整体；相同计划摘要由独立execution_fingerprint区分；原50K/16次含全部摘要，非思考主评测不变，不作统计显著性或官方成绩声明。",
+  "arms": [
+    {
+      "name": "baseline",
+      "plan_sha256": "29a3a408ce826b83724b7a3eac7419822b334b061597c1f5eafe79001508ef1a",
+      "plan_file_sha256": "f432f9d8d63e5ab4513aba4e8362981d07da8d56489e549be9295f6938e948e2",
+      "config_file_sha256": "211da9f72309a7ca70f54b41e85faf41c635b2a3934f279fa80100acdd234c49",
+      "execution_fingerprint": "6966a1e89bc30579f0e42d97a6d8f0f38c48b84ba4715997b8ba1e34b2cb5e2c",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.947456"
+    },
+    {
+      "name": "planning",
+      "plan_sha256": "29a3a408ce826b83724b7a3eac7419822b334b061597c1f5eafe79001508ef1a",
+      "plan_file_sha256": "f432f9d8d63e5ab4513aba4e8362981d07da8d56489e549be9295f6938e948e2",
+      "config_file_sha256": "94d220941f22691a5edb55137a75fd0778e43148c29225b6068426b3b17681f7",
+      "execution_fingerprint": "ac85f957644da8342933ecd2ed1e0f69ad1f28deec6e152a5f68f67e7ee37732",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "18",
+      "next_case_reserve_amount": "4.948176"
+    }
+  ]
+}

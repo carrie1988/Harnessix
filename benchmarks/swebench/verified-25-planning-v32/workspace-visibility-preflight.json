@@ -1,0 +1,59 @@
+{
+  "schema": "harnessix.swebench-planning-workspace-visibility/v1",
+  "checked_at": "2026-10-14T00:41:50.647982+00:00",
+  "source_revision": "ed6c0e4df39e6ac3691999b99ad8b4d377d96cdb",
+  "preregistration_sha256": "b05a939eac5acec2d55274dde367ba31eb65175036cb2afa83e8a5623bc86ad4",
+  "rows": [
+    {
+      "arm": "baseline",
+      "instance_id": "matplotlib__matplotlib-25960",
+      "relative_file": ".appveyor.yml",
+      "expected_sha256": "0eb775cf8752b390aa7f4c51847215e8167e8f6cba99a6e7706846ba4cc95e81",
+      "container_exit_code": 0,
+      "direct_read_matches": true
+    },
+    {
+      "arm": "baseline",
+      "instance_id": "pydata__xarray-4695",
+      "relative_file": ".binder/environment.yml",
+      "expected_sha256": "0b370b5e51bc2b63a315046a9a6547059cabc9b524c10e1c438fa6075e196c9d",
+      "container_exit_code": 0,
+      "direct_read_matches": true
+    },
+    {
+      "arm": "baseline",
+      "instance_id": "pytest-dev__pytest-10051",
+      "relative_file": ".coveragerc",
+      "expected_sha256": "f271d7384e298681bc2c864dcb0e4f0a3f245d85671da96ac37a1a2ca2501574",
+      "container_exit_code": 0,
+      "direct_read_matches": true
+    },
+    {
+      "arm": "planning",
+      "instance_id": "matplotlib__matplotlib-25960",
+      "relative_file": ".appveyor.yml",
+      "expected_sha256": "0eb775cf8752b390aa7f4c51847215e8167e8f6cba99a6e7706846ba4cc95e81",
+      "container_exit_code": 0,
+      "direct_read_matches": true
+    },
+    {
+      "arm": "planning",
+      "instance_id": "pydata__xarray-4695",
+      "relative_file": ".binder/environment.yml",
+      "expected_sha256": "0b370b5e51bc2b63a315046a9a6547059cabc9b524c10e1c438fa6075e196c9d",
+      "container_exit_code": 0,
+      "direct_read_matches": true
+    },
+    {
+      "arm": "planning",
+      "instance_id": "pytest-dev__pytest-10051",
+      "relative_file": ".coveragerc",
+      "expected_sha256": "f271d7384e298681bc2c864dcb0e4f0a3f245d85671da96ac37a1a2ca2501574",
+      "container_exit_code": 0,
+      "direct_read_matches": true
+    }
+  ],
+  "paid_model_requests": 0,
+  "decision": "GO",
+  "scope": "direct_read_only_bind_visibility_not_public_tests_or_quality_acceptance"
+}
