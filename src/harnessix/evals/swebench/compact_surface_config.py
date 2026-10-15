@@ -139,3 +139,18 @@ class SweBenchPatchDeadlineAgentRunConfig(_SweBenchAgentRunSettings):
     @property
     def patch_deadline(self) -> int | None:
         return self.patch_deadline_requests
+
+
+class SweBenchBudgetTruncationAgentRunConfig(SweBenchPatchDeadlineAgentRunConfig):
+    """v16之上显式把剩余预算压低上限造成的截断归为预算耗尽；其他边界与v16一致。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v17"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v17"
+    )
+    truncation_policy: Literal["budget_capped_truncation_is_budget_exhaustion"] = (
+        "budget_capped_truncation_is_budget_exhaustion"
+    )
+
+    @property
+    def budget_capped_truncation(self) -> bool:
+        return True

@@ -1622,3 +1622,18 @@ v16候选（工作集保留2组＋紧凑表面＋收敛指引＋首次Patch截�
 费用上界13.022976元，无未决费用，基础设施失败0，ambiguous 2。v27的3项全部保留，新增解决astropy-14995、
 astropy-8872、requests-1142。1项error：scikit-learn-25973评测镜像构建时conda repodata SSL中断（评测侧网络），
 补丁未被评测，未重评、未补记。阶段目标（空补丁≤5、Resolved≥10）尚未达到；开发集已多轮暴露，不代表泛化成绩。
+
+### 新鲜泛化集v45（停止于16/25）与预算截断归类（v17）
+
+[v45预注册](../../benchmarks/swebench/generalization-25-v45/preregistration.json)：与v44同源码修订、同v16策略、
+同预算/模型/价格费率，只换与开发集不相交的25项（新盐`repo_round_robin_sha256_v1`）。评测镜像须以官方构建器
+`-n swebench`命名（`swebench/sweb.eval.x86_64.<owner>_1776_<case>`），Profile与评测器均按此名查找。
+执行在第16项（requests-1921）因`provider_max_output_tokens`整轮停止：该码既非质量失败也非可隔离传输失败。
+已尝试16项：非空补丁10、自主闭环3、1项传输失败；已知费用7.538472元并保留3.147456元未决预留，账本记
+`settled_execution_stopped`。不续跑、不补跑、不与其他结果拼接；另对已尝试16项做一次只读官方评测，标注为部分结果、
+非预注册指标。
+
+根因：截断发生在最后一步，单次输出上限已被剩余预算压到几百Token（该Case全程仅824输出Token），模型正常作答即被
+截断，本质是预算耗尽；截断响应在调用组发布前失败，无工具效果。据此新增默认关闭的
+[预算截断归类](../modules/agent.md)，由显式v17（v16之上，`truncation_policy`入指纹）冻结；v44/v45配置与结果不变。
+

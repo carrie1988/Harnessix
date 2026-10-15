@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from harnessix.evals.swebench.compact_surface_config import (
+    SweBenchBudgetTruncationAgentRunConfig,
     SweBenchCompactSurfaceAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
@@ -304,6 +305,7 @@ SweBenchRunConfig = (
     | SweBenchCompactSurfaceAgentRunConfig
     | SweBenchConvergenceAgentRunConfig
     | SweBenchPatchDeadlineAgentRunConfig
+    | SweBenchBudgetTruncationAgentRunConfig
 )
 
 
@@ -331,6 +333,7 @@ def _run_config_type(
     compact_model_surface: bool,
     convergence_guidance: bool,
     patch_deadline: bool,
+    budget_capped_truncation: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -348,6 +351,7 @@ def _run_config_type(
         (compact_model_surface, "紧凑模型表面"),
         (convergence_guidance, "收敛指引"),
         (patch_deadline, "Patch截止"),
+        (budget_capped_truncation, "预算截断归类"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -382,6 +386,10 @@ def _run_config_type(
             raise ValueError("SWE-bench收敛指引只与工作集和紧凑模型表面组合冻结")
         if patch_deadline and not convergence_guidance:
             raise ValueError("SWE-bench Patch截止只在收敛指引组合之上冻结")
+        if budget_capped_truncation and not patch_deadline:
+            raise ValueError("SWE-bench预算截断归类只在Patch截止组合之上冻结")
+        if budget_capped_truncation:
+            return SweBenchBudgetTruncationAgentRunConfig
         if patch_deadline:
             return SweBenchPatchDeadlineAgentRunConfig
         if convergence_guidance:
@@ -389,7 +397,7 @@ def _run_config_type(
         if compact_model_surface:
             return SweBenchCompactSurfaceAgentRunConfig
         return SweBenchWorkingSetAgentRunConfig
-    if compact_model_surface or convergence_guidance or patch_deadline:
+    if compact_model_surface or convergence_guidance or patch_deadline or budget_capped_truncation:
         raise ValueError("SWE-bench紧凑模型表面或收敛指引只与工作集视图组合冻结")
     if enable_definition_views:
         if (
@@ -464,6 +472,7 @@ def build_swebench_agent_run_config(
     compact_model_surface: bool = False,
     convergence_guidance: bool = False,
     patch_deadline_requests: int | None = None,
+    budget_capped_truncation: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -484,6 +493,7 @@ def build_swebench_agent_run_config(
         compact_model_surface=compact_model_surface,
         convergence_guidance=convergence_guidance,
         patch_deadline=patch_deadline_requests is not None,
+        budget_capped_truncation=budget_capped_truncation,
     )
     extra: dict[str, object] = (
         {}

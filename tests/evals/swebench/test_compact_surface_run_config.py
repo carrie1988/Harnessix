@@ -179,3 +179,38 @@ def test_patch_deadline_requires_convergence_stack_and_valid_count(tmp_path, cha
         compact_config(
             tmp_path, **{"convergence_guidance": True, "patch_deadline_requests": 4, **changes}
         )
+
+
+def test_budget_truncation_v17_adds_only_truncation_policy_to_v16(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchBudgetTruncationAgentRunConfig
+
+    deadline = {"convergence_guidance": True, "patch_deadline_requests": 4}
+    config = compact_config(tmp_path, **deadline, budget_capped_truncation=True)
+    v16 = compact_config(tmp_path, **deadline)
+    assert type(config) is SweBenchBudgetTruncationAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v17"
+    assert config.budget_capped_truncation and not v16.budget_capped_truncation
+    excluded = {"spec_version", "truncation_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v16.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v17.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [{"patch_deadline_requests": None}, {"budget_capped_truncation": 1}],
+)
+def test_budget_truncation_requires_the_patch_deadline_stack(tmp_path, changes):
+    with pytest.raises((ValueError, ValidationError)):
+        compact_config(
+            tmp_path,
+            **{
+                "convergence_guidance": True,
+                "patch_deadline_requests": 4,
+                "budget_capped_truncation": True,
+                **changes,
+            },
+        )

@@ -275,6 +275,7 @@ class AgentRuntime:
         budget_pressure_compaction: bool = False,
         working_set_result_groups: int | None = None,
         report_affordable_requests: bool = False,
+        budget_capped_truncation: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -302,6 +303,10 @@ class AgentRuntime:
         if type(report_affordable_requests) is not bool:
             raise KernelError("invalid_runtime_configuration", "可负担请求提示开关必须是布尔值")
         self._report_affordable_requests = report_affordable_requests
+        if type(budget_capped_truncation) is not bool:
+            raise KernelError("invalid_runtime_configuration", "预算截断归类开关必须是布尔值")
+        # 显式开启时预算压低上限导致的截断归为预算耗尽；默认仍按Provider截断失败。
+        self._budget_capped_truncation = budget_capped_truncation
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -2280,6 +2285,20 @@ class AgentRuntime:
                         exclusive_tool_groups=tool_selection.exclusive_tool_groups,
                     )
                 except KernelError as error:
+                    if (
+                        error.code == "provider_max_output_tokens"
+                        and self._budget_capped_truncation
+                        and allowed_output_tokens < output_token_limit
+                    ):
+                        failed = get_turn(await self.store.get_thread(thread_id), turn_id)
+                        # 本步输出用满被预算压低的上限才算预算耗尽；截断提案从未执行。
+                        if (
+                            failed.usage.output_tokens - turn.usage.output_tokens
+                            >= allowed_output_tokens
+                        ):
+                            raise KernelError(
+                                "budget_exceeded", "剩余Token预算压低的输出上限截断了模型响应"
+                            ) from None
                     if error.code != "provider_context_overflow" or self._compaction is None:
                         raise
                     failed = get_turn(await self.store.get_thread(thread_id), turn_id)

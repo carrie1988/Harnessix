@@ -365,6 +365,7 @@ async def run_swebench_agent_case(
     compact_model_surface: bool = False,
     convergence_guidance: bool = False,
     patch_deadline_requests: int | None = None,
+    budget_capped_truncation: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -386,6 +387,8 @@ async def run_swebench_agent_case(
         type(patch_deadline_requests) is not int or not 1 <= patch_deadline_requests <= 16
     ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench Patch截止请求数无效")
+    if type(budget_capped_truncation) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench预算截断归类开关无效")
     if type(convergence_guidance) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench收敛指引开关无效")
     if type(compact_model_surface) is not bool:
@@ -473,6 +476,7 @@ async def run_swebench_agent_case(
                             working_set_result_groups=working_set_result_groups,
                             report_affordable_requests=convergence_guidance
                             or patch_deadline_requests is not None,
+                            budget_capped_truncation=budget_capped_truncation,
                             enable_planning=enable_planning,
                             model_tool_view=CodingWorkflowToolView(
                                 require_pre_edit_profile=False,
