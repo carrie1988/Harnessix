@@ -1,0 +1,51 @@
+{
+  "schema": "harnessix.swebench-fresh-generalization-preregistration/v1",
+  "frozen_at": "2026-10-15T07:44:03.606293+00:00",
+  "scope": "fresh_generalization_25_pass_at_1_disjoint_from_development_and_v45",
+  "plan_sha256": "6132960ad8dc0443b4d9a6baa554ec2297d35e5198c9da2eb4744c4d7b45ccab",
+  "plan_file_sha256": "2be0875a0b0e978c90a3ccfe4d9e319c282c12f6ab0736a5910a7f392cca762c",
+  "plan_amendment": "plan-amendment.json (source revision only, before any model request)",
+  "source_revision": "6fa560e9d0df7e548c11a3f999b29c70654795ab",
+  "model": "qwen3.8-max",
+  "run_config_spec": "harnessix.swebench-agent-run-config/v17",
+  "run_config_file_sha256": "18211bc7b31f590dc77f71a5279b7bbbbee8ec0d95092f397d72716cab934cd4",
+  "prepare_host_sha256": "76266f3496e3ae04c153276df6eeac27ca047f1a4fab8c9c9a7481e1d7689007",
+  "execute_host_sha256": "a41cb5402e9dff6b724dac28392c2131e4091c3db659b9a05e9764fc29a8e1fa",
+  "evaluate_host_sha256": "b308d80c216e9398f986396ba5e41cc33382148d0ae0d37cca4147d32dc2f1a3",
+  "candidate": {
+    "working_set_result_groups": 2,
+    "compact_model_surface": true,
+    "convergence_guidance": true,
+    "patch_deadline_requests": 4,
+    "budget_capped_truncation": true
+  },
+  "identical_to_v45": [
+    "model_qwen3.8-max_non_thinking",
+    "model_settings",
+    "task_budget_50000_tokens_16_requests_900s",
+    "price_rates",
+    "v16_policies",
+    "no_retry",
+    "approval_and_safety_controls"
+  ],
+  "differs_from_v45": [
+    "case_set (new salt, 450 candidates excluding the 25 development and 25 v45 cases)",
+    "run-config v17 (budget-capped truncation classified as budget exhaustion)",
+    "fee_stop_amount 30"
+  ],
+  "fee_stop_amount": "30",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "failure_policy": "freeze_transport_with_full_reserve_continue_independent; unknown tool effect stops all; no automatic retry",
+  "metrics": [
+    "resolved_official",
+    "empty_patches",
+    "infrastructure_failures",
+    "ambiguous_failures",
+    "autonomous_closure",
+    "known_cost"
+  ],
+  "comparison": "reported separately from v44 development 6/25 and v45 partial 7/16; no tuning on these cases before the result",
+  "official_evaluation": "after complete 25 predictions, frozen evaluator workers=1",
+  "evaluation_images": "official image builder, namespace swebench, all 25 built before execution",
+  "generalization_claim": true
+}
