@@ -1,0 +1,25 @@
+{
+  "scope": "v54_partial_17_of_25_not_preregistered_metric",
+  "predictions_sha256": "2343e0eb40792354e50638d77ff1e223153d911607bf1d6b3ef2e5777e76db73",
+  "results_sha256": "70bd635dde4d10372f771db30f1d9efc71c554bc73b83ccc32441ac5b6297660",
+  "submitted_instances": 17,
+  "completed_instances": 16,
+  "resolved_instances": 9,
+  "unresolved_instances": 7,
+  "empty_patch_instances": 1,
+  "error_instances": 0,
+  "infra_failure_instances": 0,
+  "ambiguous_failure_instances": 0,
+  "resolved_ids": [
+    "astropy__astropy-14309",
+    "django__django-13343",
+    "django__django-13809",
+    "pydata__xarray-3151",
+    "pydata__xarray-4629",
+    "pytest-dev__pytest-7521",
+    "pytest-dev__pytest-7982",
+    "scikit-learn__scikit-learn-25931",
+    "scikit-learn__scikit-learn-9288"
+  ],
+  "error_ids": []
+}

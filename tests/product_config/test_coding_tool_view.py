@@ -771,3 +771,26 @@ def test_scratch_only_patch_is_not_a_first_source_change() -> None:
     assert not _delivers_change(observation)
     (original,) = _observations(turn)
     assert _delivers_change(original)
+
+
+def test_successful_scratch_patch_still_forces_running_the_reproduction() -> None:
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None, None, _SCRATCH_PATCH),
+    )
+    selection = _scratch_view(True).select(turn, _definitions())
+    assert selection.forced_tool == _PROFILE
+
+
+def test_failed_scratch_patch_does_not_lock_the_view_to_patch_retries() -> None:
+    """v54 xarray-4629：草稿SHA错误后强制Patch且禁读，模型连续7次失败。"""
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None, None, _SOURCE_PATCH),
+        (_PROFILE, "failed", "process_nonzero_exit"),
+        ("read_file", "succeeded", None),
+        (_PATCH, "failed", "workspace_patch_precondition_failed", None, _SCRATCH_PATCH),
+    )
+    selection = _scratch_view(True).select(turn, _definitions())
+    assert selection.forced_tool is None
+    assert "read_file" in {tool.name for tool in selection.tools}

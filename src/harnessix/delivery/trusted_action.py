@@ -44,7 +44,7 @@ from harnessix.patches.contracts import ExactEdit
 from harnessix.patches.planner import apply_exact_edits
 from harnessix.tools.contracts import MAX_SCAN_BYTES, ReadToolError
 from harnessix.tools.files import _decode
-from harnessix.tools.workspace import ReadOperation
+from harnessix.tools.workspace import ReadOperation, Workspace
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     CanonicalActionResource,
@@ -361,6 +361,7 @@ def _desired_files(
 
     for path, item in _normalized_files(proposal, platform):
         check()
+        _require_target_presence_before_planning(root, path, platform, item.operation)
         if item.operation == "delete":
             desired[path] = DesiredWorkspaceFile(None)
             continue
@@ -381,6 +382,41 @@ def _desired_files(
             mode,
         )
     return desired
+
+
+def _require_target_presence_before_planning(
+    root: Path, path: str, platform: PlatformKind, operation: str
+) -> None:
+    """先于无变化判定确认目标存在性与操作相符；其余观察异常仍交严格规划器分类。"""
+
+    if platform != "posix" or os.name != "posix":
+        return
+    try:
+        with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+            with workspace.open(path, ReadOperation(), directory=False):
+                exists = True
+    except FileNotFoundError:
+        exists = False
+    except (OSError, ReadToolError):
+        return
+    if operation == "create" and exists:
+        raise _target_exists_error()
+    if operation != "create" and not exists:
+        raise _target_missing_error(operation)
+
+
+def _target_exists_error() -> KernelError:
+    return workspace_patch_preparation_error(
+        "workspace_patch_target_exists",
+        "create目标已存在；请read_file后用edit或replace，或先delete",
+    )
+
+
+def _target_missing_error(operation: str) -> KernelError:
+    return workspace_patch_preparation_error(
+        "workspace_patch_target_missing",
+        f"{operation}目标不是现有普通文件；新文件请用create",
+    )
 
 
 def _apply_workspace_exact_edits(
@@ -490,12 +526,9 @@ def _validate_mutation(
     mutation: WorkspaceMutation,
     read_blob: Callable[[str], bytes] | None = None,
 ) -> None:
-    if item.operation == "create":
-        before_valid = mutation.before.presence == "absent"
-    else:
-        before_valid = mutation.before.presence == "file"
-        if before_valid and mutation.before.sha256 != item.expected_sha256:
-            raise _sha_mismatch_error()
+    _require_target_presence(item, mutation)
+    if item.operation != "create" and mutation.before.sha256 != item.expected_sha256:
+        raise _sha_mismatch_error()
     if item.operation == "delete":
         after_valid = mutation.after.presence == "absent"
     elif item.operation == "edit":
@@ -523,8 +556,18 @@ def _validate_mutation(
             and mutation.after.size == len(expected_body)
             and mutation.after.mode == item.mode
         )
-    if not before_valid or not after_valid:
+    if not after_valid:
         raise KernelError("workspace_patch_precondition_failed", "Workspace Patch前置条件不成立")
+
+
+def _require_target_presence(item: WorkspacePatchFile, mutation: WorkspaceMutation) -> None:
+    """目标现状与操作不符是模型可改正的确定拒绝；后像不符仍属规划完整性故障。"""
+
+    if item.operation == "create":
+        if mutation.before.presence != "absent":
+            raise _target_exists_error()
+    elif mutation.before.presence != "file":
+        raise _target_missing_error(item.operation)
 
 
 def _request_id(plan_id: UUID) -> str:

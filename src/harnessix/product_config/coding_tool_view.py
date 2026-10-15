@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from uuid import UUID
 
 from harnessix.agent.models import (
     ItemStatus,
@@ -302,10 +303,22 @@ def _delivers_change(observation: _Observation) -> bool:
 
 
 def _without_scratch_edits(turn: Turn) -> Turn:
-    """视图专用投影：Patch调用只保留非复现草稿文件，草稿不触发重读门禁或首次修改判断。"""
+    """视图专用投影：Patch调用只保留非复现草稿文件，草稿不触发重读门禁或首次修改判断。
+
+    失败且只改草稿的调用无任何效果，连同结果整体移出视图；否则它以空路径集
+    退化为强制重试Patch，模型无法再读取草稿取得正确SHA。
+    """
+    results = {
+        item.content.call_id: item.content
+        for item in turn.items
+        if isinstance(item.content, ToolResultContent)
+    }
     items = []
+    dropped: set[UUID] = set()
     for item in turn.items:
         content = item.content
+        if isinstance(content, ToolResultContent) and content.call_id in dropped:
+            continue
         files = (
             content.arguments.get("files")
             if isinstance(content, ToolCallContent) and content.tool in _PATCH_TOOLS
@@ -321,6 +334,10 @@ def _without_scratch_edits(turn: Turn) -> Turn:
                     and is_scratch_path(entry["path"])
                 )
             ]
+            result = results.get(content.call_id)
+            if files and not kept and result is not None and result.outcome == "failed":
+                dropped.add(content.call_id)
+                continue
             if len(kept) != len(files):
                 content = content.model_copy(
                     update={"arguments": {**content.arguments, "files": kept}}

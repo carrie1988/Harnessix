@@ -1764,3 +1764,22 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 - [复现指引](../../src/harnessix/product_config/agent_context.py)升级为`harnessix.coding-reproduction/v2`：覆盖问题隐含的边界，修复通过草稿后运行覆盖改动代码的
   完整既有测试文件（而非单个测试id）并修复失败。
 
+
+### v54新鲜泛化集（停止于17/25）与两处确定性拒绝误判
+
+[v54](../../benchmarks/swebench/generalization-25-v54/preregistration.json)（v22＋Profile v8，400K/40/1800秒，费用停止线46元）执行17项后停止
+（[执行摘要](../../benchmarks/swebench/generalization-25-v54/execution-summary.json)），已知费用13.54842元、无保留。
+[前17项官方评测](../../benchmarks/swebench/generalization-25-v54/partial17-official-summary.json)（只读、非预注册指标）：**Resolved 9/17**，空补丁1，error 0。
+正常完成的10项解决8项；`budget_exceeded`的6项仅解决1项。
+
+停止根因：pytest-10081对已存在的复现草稿发出`create`，[Patch校验](../../src/harnessix/delivery/trusted_action.py)以通用`KernelError`拒绝
+“目标存在性与操作不符”，不在可回传的准备期拒绝集合内，被记为`uncertain_effect`中断Turn并停止整轮。同类还有`delete`/`edit`缺失目标
+（规划器分别抛出`delivery_no_change`、`delivery_source_changed`）。修复：规划前先确认目标存在性与操作相符，不符时给出确定的
+`workspace_patch_target_exists`/`workspace_patch_target_missing`准备期拒绝；后像不符仍属规划完整性故障、保持失败关闭。准备期拒绝
+只有在Review绑定原计划且Route仍待批准时才报告为`failed`，批准后的执行期错误仍为未知。
+
+轨迹统计（308次请求）：51次请求的工具调用因不在当前阶段可调用集合内被拒（`unknown_tool`），9次为草稿SHA不符的重复Patch。
+后者为v21草稿投影缺陷：失败的仅草稿Patch被投影为空路径集，重读门禁退化为强制重试Patch，模型无法读取草稿取得正确SHA
+（xarray-4629连续7次）。修复：[工作流视图](../../src/harnessix/product_config/coding_tool_view.py)把失败且只改草稿的调用（无任何效果）
+连同结果移出视图；成功的仅草稿Patch仍触发强制运行复现。预算耗尽的6项峰值上下文仅20K～28K、缓存命中91%～93%，累计原始Token
+却已达400K上限。

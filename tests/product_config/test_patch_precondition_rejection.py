@@ -27,7 +27,9 @@ from harnessix.delivery.trusted_action import (
 from harnessix.delivery.workspace_patch_errors import (
     WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
+    WorkspacePatchPreparationError,
     is_workspace_patch_no_change,
+    is_workspace_patch_preparation_error,
     is_workspace_patch_sha_mismatch,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
@@ -266,9 +268,19 @@ async def test_equal_images_do_not_bypass_operation_or_sha_checks(tmp_path, inva
         )
         thread, turn, call = await patch_turn(runtime, provider, root, proposal)
         plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
-        assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
-        assert router.status(plan_id).state == "pending_approval"
-        assert router.approval(plan_id) is None
+        if invalid == "wrong-sha":
+            assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
+            assert router.status(plan_id).state == "pending_approval"
+            assert router.approval(plan_id) is None
+        else:
+            # 存在性与操作不符先于无变化判定拒绝：可改正反馈，从未批准或执行。
+            state = "exists" if invalid == "create-existing" else "missing"
+            code = f"workspace_patch_target_{state}"
+            assert turn.status is TurnStatus.COMPLETED
+            assert result(turn).outcome == "failed" and result(turn).error.code == code
+            assert router.status(plan_id).state == "denied"
+            assert router.approval(plan_id).decision.outcome is ApprovalOutcome.REJECTED
+            assert all(event.executor_id is None for event in router.events(plan_id))
         assert_unchanged(root)
 
 
@@ -333,6 +345,10 @@ async def test_bad_sha_fails_without_executor_or_transaction_and_cannot_be_appro
     [
         ("missing-anchor", "patch_context_not_found"),
         ("unsafe-replace", "workspace_patch_unsafe_full_replace"),
+        ("create-existing", "workspace_patch_target_exists"),
+        ("delete-missing", "workspace_patch_target_missing"),
+        ("edit-missing", "workspace_patch_target_missing"),
+        ("replace-missing", "workspace_patch_target_missing"),
     ],
 )
 async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
@@ -340,7 +356,23 @@ async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
 ):
     async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
         original = _proposal().files[0]
-        if kind == "missing-anchor":
+        if kind == "create-existing":
+            item = original.model_copy(update={"operation": "create", "expected_sha256": None})
+        elif kind == "delete-missing":
+            item = _proposal().files[2].model_copy(update={"path": "tests/absent.txt"})
+        elif kind == "edit-missing":
+            item = original.model_copy(
+                update={
+                    "operation": "edit",
+                    "path": "src/absent_edit.py",
+                    "content": None,
+                    "edits": (ExactEdit(old_text="old", new_text="new"),),
+                    "mode": None,
+                }
+            )
+        elif kind == "replace-missing":
+            item = original.model_copy(update={"path": "src/absent.py"})
+        elif kind == "missing-anchor":
             item = original.model_copy(
                 update={
                     "operation": "edit",
@@ -845,16 +877,23 @@ async def test_only_original_before_sha_check_uses_dedicated_type(tmp_path):
             _validate_mutation(item.model_copy(update={"expected_sha256": "0" * 64}), mutation)
         assert mismatch.value.review_plan_id is None
         assert is_workspace_patch_sha_mismatch(mismatch.value)
-        for invalid in (
-            mutation.model_copy(update={"before": WorkspaceFileVersion(presence="absent", size=0)}),
-            mutation.model_copy(
-                update={"after": mutation.after.model_copy(update={"sha256": "0" * 64})}
-            ),
-        ):
-            with pytest.raises(KernelError) as generic:
-                _validate_mutation(item, invalid)
-            assert type(generic.value) is KernelError and generic.value.code == CODE
-            assert generic.value.message == "Workspace Patch前置条件不成立"
+        # 目标现状与操作不符：确定的准备期拒绝，仍需Review绑定原计划才可报告failed。
+        absent = mutation.model_copy(
+            update={"before": WorkspaceFileVersion(presence="absent", size=0)}
+        )
+        with pytest.raises(WorkspacePatchPreparationError) as missing:
+            _validate_mutation(item, absent)
+        assert is_workspace_patch_preparation_error(missing.value)
+        assert missing.value.code == "workspace_patch_target_missing"
+        assert missing.value.review_plan_id is None
+        # 后像不符是规划完整性故障，保持通用失败关闭。
+        corrupted = mutation.model_copy(
+            update={"after": mutation.after.model_copy(update={"sha256": "0" * 64})}
+        )
+        with pytest.raises(KernelError) as generic:
+            _validate_mutation(item, corrupted)
+        assert type(generic.value) is KernelError and generic.value.code == CODE
+        assert generic.value.message == "Workspace Patch前置条件不成立"
 
 
 @pytest.mark.parametrize("no_change", [False, True])
