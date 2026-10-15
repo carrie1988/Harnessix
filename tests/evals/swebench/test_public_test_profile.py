@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -500,3 +501,86 @@ def test_discovery_rejects_noncanonical_local_image_id(tmp_path: Path) -> None:
         discover_swebench_case_process_profiles(plan, engine, runner=_runner(rows))
 
     assert caught.value.code == "swebench_public_test_image_invalid"
+
+
+def test_snapshot_bootstrap_runs_on_a_writable_copy_and_leaves_workspace_untouched(
+    tmp_path, monkeypatch
+):
+    from harnessix.evals.swebench.public_test_profile import _SNAPSHOT_PYTEST_ARGUMENTS
+
+    workspace = tmp_path / "workspace"
+    image_workspace = tmp_path / "image"
+    (workspace / "src" / "example").mkdir(parents=True)
+    (workspace / "tests").mkdir()
+    (image_workspace / "src" / "example").mkdir(parents=True)
+    (workspace / "src" / "example" / "__init__.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (workspace / "tests" / "test_example.py").write_text(
+        "from pathlib import Path\n"
+        "import example\n\n"
+        "def test_writes_next_to_itself_and_imports_the_copy():\n"
+        "    (Path(__file__).parent / 'result_images').mkdir()\n"
+        "    (Path.cwd() / 'written.txt').write_text('x')\n"
+        "    assert Path(example.__file__).resolve().is_relative_to(Path.cwd().resolve())\n"
+        "    assert Path.cwd().resolve() == Path(__file__).parent.parent.resolve()\n",
+        encoding="utf-8",
+    )
+    for path in sorted(workspace.rglob("*"), reverse=True):
+        path.chmod(0o555 if path.is_dir() else 0o444)
+    workspace.chmod(0o555)
+    bootstrap = next(a for a in _SNAPSHOT_PYTEST_ARGUMENTS if a.startswith("exec("))
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    (tmp_path / "tmp").mkdir()
+    try:
+        completed = subprocess.run(
+            (
+                sys.executable,
+                "-B",
+                "-c",
+                bootstrap,
+                str(workspace),
+                str(image_workspace),
+                "-q",
+                "-p",
+                "no:cacheprovider",
+                "--",
+                "tests/test_example.py",
+            ),
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=60,
+            env={**os.environ, "PYTHONPATH": str(workspace)},
+        )
+    finally:
+        for path in [workspace, *workspace.rglob("*")]:
+            path.chmod(0o755 if path.is_dir() else 0o644)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert not (workspace / "tests" / "result_images").exists()
+    assert not (workspace / "written.txt").exists()
+
+
+def test_snapshot_profile_is_a_distinct_version_with_a_larger_tmpfs(tmp_path):
+    default = build_swebench_case_process_profile(
+        "example__example-1",
+        repo="example/example",
+        container_engine=_docker(tmp_path),
+        image_id="sha256:" + "a" * 64,
+    )
+    snapshot = build_swebench_case_process_profile(
+        "example__example-1",
+        repo="example/example",
+        container_engine=_docker(tmp_path),
+        image_id="sha256:" + "a" * 64,
+        writable_snapshot=True,
+    )
+    assert default.profile.version == "swebench-public-tests-v7"
+    assert default.profile.tmpfs_bytes is None
+    assert "tmpfs_bytes" not in default.profile.model_dump(mode="json")
+    assert snapshot.profile.version == "swebench-public-tests-v8"
+    assert snapshot.profile.tmpfs_bytes == 1024**3
+    assert SweBenchCaseProcessProfile.model_validate_json(snapshot.model_dump_json()) == snapshot
+    binding = snapshot.model_dump(mode="json")
+    binding["profile"].pop("tmpfs_bytes")
+    _reseal_profile(binding)
+    with pytest.raises(ValueError, match="固定执行边界"):
+        SweBenchCaseProcessProfile.model_validate_json(json.dumps(binding))

@@ -204,7 +204,7 @@ def _attested_product_process_profile(
         cpus=profile.cpu_limit,
         memory_bytes=profile.memory_bytes,
         pids=profile.process_limit,
-        tmpfs_bytes=64 * 1024 * 1024,
+        tmpfs_bytes=profile.tmpfs_bytes or 64 * 1024 * 1024,
     )
     network = resolve_network_policy(NetworkPolicy(mode="none"))
     sandbox_profile = build_container_sandbox_profile(

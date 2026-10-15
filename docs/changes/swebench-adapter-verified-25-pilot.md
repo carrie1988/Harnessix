@@ -1683,3 +1683,21 @@ sphinx-9711。对照开发集v44的6/25（空补丁10），新题上解决率与
 保留3.897456元未决预留）。修复后前缀内文本恒为块形态，真实探针确认每请求读取上一前缀全部缓存、仅创建新增部分；
 以同设计在修复修订上重跑[v49](../../benchmarks/swebench/verified-5-standard-tier-v49/preregistration.json)。
 
+### v49配对诊断、可写测试副本（Profile v8）与完整缓存历史（v19）
+
+[v49](../../benchmarks/swebench/verified-5-standard-tier-v49/preregistration.json)在执行7/10后因运行期间源码出现未提交变更被
+修订门停止（操作失误，守卫按设计生效），按只读重放结算：v17四项2.10162元、v18三项11.343219元，无未决预留。
+v18在matplotlib-25960第17步已提交补丁，随后公开测试三次报`Errno 30 只读文件系统`（matplotlib测试在仓库内写`result_images`，
+而工作区与容器根均只读），模型误判补丁错误，余下23步反复重读同一两处源码直至预算耗尽；pytest-10051同样出现对同一行段的约10次
+重读——工作集只保留最近2组结果，已读内容被遮蔽，且每步改写一组旧结果使其后前缀按创建价重建（命中约61%，单项约5元）。
+
+据此（用户确认）：
+- [公开测试Profile v8](../../src/harnessix/evals/swebench/public_test_profile.py)：只读`/workspace`仍是唯一真源；pytest入口先把
+  工作区（不含`.git`/缓存）复制到容器内临时目录并赋予属主写权限，`sys.path`与cwd指向副本，以仓库根为cwd运行；写入随容器销毁，
+  不回流补丁。为容纳副本，v8 Profile设`tmpfs_bytes=1GiB`（仍noexec）；Django/sympy原生入口不变。真实matplotlib镜像中验证。
+- [v19](../../src/harnessix/evals/swebench/compact_surface_config.py)：v18之上关闭工作集遮蔽，历史只追加、整段命中前缀缓存，
+  已读源码保持可见。
+
+另查明官方评测器在评测前对每个实例`force_rebuild`：先删除既有镜像再构建，构建遇网络瞬断即镜像缺失并记为error
+（v44的scikit-learn-25973、v47的matplotlib-24026即此因），同时使冻结Profile绑定的镜像ID失效。经用户确认，[评测入口](../../src/harnessix/evals/swebench/official.py)新增`rebuild_images=False`（默认仍为True）：不传`--task-repo`，直接使用执行前已从同一固定Task Repo修订构建的本地镜像；Task Repo修订仍逐字核验，评分规则与评测器不变。
+

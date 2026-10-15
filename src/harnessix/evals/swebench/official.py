@@ -158,8 +158,14 @@ def build_official_evaluation_command(
     workers: int,
     timeout_seconds: int,
     task_repo: Path,
+    rebuild_images: bool = True,
 ) -> tuple[str, ...]:
-    """构造 argv 而非 shell 字符串；run id 绑定计划和补丁以隔离官方缓存。"""
+    """构造 argv 而非 shell 字符串；run id 绑定计划和补丁以隔离官方缓存。
+
+    rebuild_images=False 时不传--task-repo：评测器直接使用执行前已从同一固定Task Repo修订
+    构建的本地镜像，而不是先删除再强制重建（重建遇网络瞬断会丢失镜像并记为error）。
+    Task Repo修订仍逐字核验。
+    """
 
     binary = _resolved_executable(executable)
     source = _resolved_directory(swebench_source)
@@ -193,7 +199,10 @@ def build_official_evaluation_command(
     ]
     for case in plan.cases:
         command.extend(("--instance", case.instance_id))
-    command.extend(("--task-repo", str(tasks)))
+    if type(rebuild_images) is not bool:
+        raise KernelError("swebench_evaluator_config_invalid", "SWE-bench 镜像重建开关无效")
+    if rebuild_images:
+        command.extend(("--task-repo", str(tasks)))
     return tuple(command)
 
 

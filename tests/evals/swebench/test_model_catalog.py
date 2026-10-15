@@ -10,7 +10,10 @@ from harnessix.evals.swebench.contracts import (
     SweBenchPreRegistrationPlan,
     swebench_preregistration_plan_digest,
 )
-from harnessix.evals.swebench.run_config_io import read_swebench_agent_run_config
+from harnessix.evals.swebench.run_config_io import (
+    read_swebench_agent_run_config,
+    write_swebench_agent_run_config,
+)
 from harnessix.evals.swebench.run_settings import BAILIAN_MODELS
 from harnessix.models.pricing import FlatInputPrice
 from tests.evals.swebench.test_compact_surface_run_config import compact_config
@@ -138,3 +141,26 @@ def test_prompt_cache_requires_the_v17_stack(tmp_path):
         compact_config(
             tmp_path, convergence_guidance=True, patch_deadline_requests=4, prompt_cache=True
         )
+
+
+def test_full_cached_history_v19_drops_the_working_set_only(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchFullCachedHistoryAgentRunConfig
+
+    config = compact_config(tmp_path, **V17, prompt_cache=True, working_set_result_groups=None)
+    v18 = compact_config(tmp_path, **V17, prompt_cache=True)
+    assert type(config) is SweBenchFullCachedHistoryAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v19"
+    assert config.working_set_result_groups is None and v18.working_set_result_groups == 2
+    assert config.prompt_cache and config.normalize_stringified_arguments
+    excluded = {"spec_version", "history_view_policy", "retain_recent_result_groups"}
+    assert config.model_dump(mode="json", exclude=excluded) == v18.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v19.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+
+
+def test_without_prompt_cache_the_working_set_is_still_required(tmp_path):
+    with pytest.raises(ValueError):
+        compact_config(tmp_path, **V17, working_set_result_groups=None)

@@ -369,3 +369,42 @@ def test_import_official_result_rejects_submitted_scope_drift(tmp_path: Path) ->
         )
 
     assert caught.value.code == "swebench_results_scope_mismatch"
+
+
+@pytest.mark.parametrize(("rebuild", "expected"), [(True, True), (False, False)])
+def test_prebuilt_images_skip_the_force_rebuild_but_keep_task_repo_revision_checked(
+    tmp_path: Path, rebuild: bool, expected: bool
+) -> None:
+    plan, executable, source, task_repo = _official_environment(tmp_path)
+    predictions = build_test_predictions(plan)
+    predictions_path = tmp_path / "predictions.jsonl"
+    write_predictions(predictions_path, plan, predictions)
+    command = build_official_evaluation_command(
+        executable=executable,
+        swebench_source=source,
+        git_executable=GIT,
+        plan=plan,
+        predictions_path=predictions_path,
+        predictions=predictions,
+        workers=1,
+        timeout_seconds=1_800,
+        task_repo=task_repo,
+        rebuild_images=rebuild,
+    )
+    assert ("--task-repo" in command) is expected
+    assert (str(task_repo.resolve()) in command) is expected
+    # 修订核验不随开关关闭：错误修订的Task Repo仍在构造命令前失败。
+    wrong = plan.model_copy(update={"task_repo_revision": "f" * 40})
+    with pytest.raises(KernelError):
+        build_official_evaluation_command(
+            executable=executable,
+            swebench_source=source,
+            git_executable=GIT,
+            plan=wrong,
+            predictions_path=predictions_path,
+            predictions=predictions,
+            workers=1,
+            timeout_seconds=1_800,
+            task_repo=task_repo,
+            rebuild_images=rebuild,
+        )

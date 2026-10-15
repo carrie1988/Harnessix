@@ -64,6 +64,14 @@ class ProductProcessProfile(ProductConfigContract):
     )
     process_limit: int = Field(default=128, ge=1, le=4096, strict=True)
     secret_refs: tuple[SecretReference, ...] = Field(default=(), max_length=16)
+    # 显式更大的/tmp tmpfs（仍noexec、计入内存上限）；未配置时不序列化，旧Profile摘要不变。
+    tmpfs_bytes: int | None = Field(
+        default=None,
+        ge=64 * 1024 * 1024,
+        le=8 * 1024 * 1024 * 1024,
+        strict=True,
+        exclude_if=lambda value: value is None,
+    )
     profile_sha256: Revision
 
     @field_validator("version", "description", "container_engine")
@@ -107,6 +115,8 @@ class ProductProcessProfile(ProductConfigContract):
     def valid_profile(self) -> Self:
         if self.network_mode != "none":
             raise ValueError("Product Action v1只允许无网络Process Profile")
+        if self.tmpfs_bytes is not None and self.tmpfs_bytes >= self.memory_bytes:
+            raise ValueError("Process Profile tmpfs必须小于内存上限")
         if self.profile_sha256 != product_process_profile_digest(self):
             raise ValueError("Process Profile摘要不一致")
         return self
@@ -135,6 +145,7 @@ def build_product_process_profile(
     memory_bytes: int = 512 * 1024 * 1024,
     process_limit: int = 128,
     secret_refs: tuple[SecretReference, ...] = (),
+    tmpfs_bytes: int | None = None,
 ) -> ProductProcessProfile:
     candidate = ProductProcessProfile.model_construct(
         _fields_set=None,
@@ -153,6 +164,7 @@ def build_product_process_profile(
         memory_bytes=memory_bytes,
         process_limit=process_limit,
         secret_refs=secret_refs,
+        tmpfs_bytes=tmpfs_bytes,
         profile_sha256="0" * 64,
     )
     return ProductProcessProfile(

@@ -30,6 +30,7 @@ PUBLIC_TEST_PROFILE_ID = "public-tests"
 _LEGACY_PROFILE_VERSION = "swebench-public-tests-v5"
 _DJANGO_LABEL_PROFILE_VERSION = "swebench-public-tests-v6"
 _PROFILE_VERSION = "swebench-public-tests-v7"
+_SNAPSHOT_PROFILE_VERSION = "swebench-public-tests-v8"
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -178,8 +179,31 @@ _PYTEST_BOOTSTRAP_SOURCE = (
     .replace("found.append(str(path))", "found.append(str(path) + separator + node)")
 )
 _PYTEST_BOOTSTRAP_ARGUMENT = f"exec({_PYTEST_BOOTSTRAP_SOURCE!r})"
+# v8：只读/workspace仍是唯一真源；测试在容器内可写副本上以仓库根为cwd运行，测试写入随容器销毁。
+_SNAPSHOT_SETUP = """\
+import shutil,tempfile
+snapshot=Path(tempfile.mkdtemp(prefix="workspace-"))/"repo"
+shutil.copytree(workspace,snapshot,symlinks=True,ignore=shutil.ignore_patterns(".git","__pycache__","*.pyc"))
+for d,_,n in os.walk(snapshot):
+    for q in [d,*(os.path.join(d,x) for x in n)]:
+        os.path.islink(q) or os.chmod(q,os.stat(q).st_mode|128)
+sys.path[:]=[str(snapshot) if e and Path(e).resolve()==workspace.resolve() else e for e in sys.path]
+workspace=snapshot
+"""
+_SNAPSHOT_PYTEST_BOOTSTRAP_SOURCE = _PYTEST_BOOTSTRAP_SOURCE.replace(
+    "image_workspace = Path(sys.argv[2])\n",
+    "image_workspace = Path(sys.argv[2])\n" + _SNAPSHOT_SETUP,
+    1,
+)
+_SNAPSHOT_TMPFS_BYTES = 1024 * 1024 * 1024
 _PYTEST_ARGUMENTS = tuple(
     _PYTEST_BOOTSTRAP_ARGUMENT if value == _LEGACY_PYTEST_BOOTSTRAP_ARGUMENT else value
+    for value in _LEGACY_PYTEST_ARGUMENTS
+)
+_SNAPSHOT_PYTEST_ARGUMENTS = tuple(
+    f"exec({_SNAPSHOT_PYTEST_BOOTSTRAP_SOURCE!r})"
+    if value == _LEGACY_PYTEST_BOOTSTRAP_ARGUMENT
+    else value
     for value in _LEGACY_PYTEST_ARGUMENTS
 )
 _LEGACY_DJANGO_TEST_ARGUMENTS = (
@@ -266,7 +290,12 @@ class SweBenchCaseProcessProfile(ContractModel):
         if (
             profile.profile_id != PUBLIC_TEST_PROFILE_ID
             or profile.version
-            not in {_LEGACY_PROFILE_VERSION, _DJANGO_LABEL_PROFILE_VERSION, _PROFILE_VERSION}
+            not in {
+                _LEGACY_PROFILE_VERSION,
+                _DJANGO_LABEL_PROFILE_VERSION,
+                _PROFILE_VERSION,
+                _SNAPSHOT_PROFILE_VERSION,
+            }
             or profile.description != _PROFILE_DESCRIPTION
             or profile.program != _PROGRAM
             or profile.arguments != _profile_arguments(self.repo, version=profile.version)
@@ -278,6 +307,8 @@ class SweBenchCaseProcessProfile(ContractModel):
             or profile.memory_bytes != _MEMORY_BYTES
             or profile.process_limit != _PROCESS_LIMIT
             or profile.secret_refs
+            or profile.tmpfs_bytes
+            != (_SNAPSHOT_TMPFS_BYTES if profile.version == _SNAPSHOT_PROFILE_VERSION else None)
             or _IMAGE_ID.fullmatch(profile.image) is None
         ):
             raise ValueError("SWE-bench公开测试Profile不符合固定执行边界")
@@ -295,9 +326,10 @@ def _profile_arguments(repo: str, *, version: str = _PROFILE_VERSION) -> tuple[s
         ),
         "sympy/sympy": _SYMPY_TEST_ARGUMENTS,
     }
-    pytest_arguments = (
-        _PYTEST_ARGUMENTS if version == _PROFILE_VERSION else _LEGACY_PYTEST_ARGUMENTS
-    )
+    pytest_arguments = {
+        _PROFILE_VERSION: _PYTEST_ARGUMENTS,
+        _SNAPSHOT_PROFILE_VERSION: _SNAPSHOT_PYTEST_ARGUMENTS,
+    }.get(version, _LEGACY_PYTEST_ARGUMENTS)
     return native_runners.get(repo, pytest_arguments)
 
 
@@ -398,6 +430,7 @@ def build_swebench_case_process_profile(
     repo: str,
     container_engine: Path,
     image_id: str,
+    writable_snapshot: bool = False,
 ) -> SweBenchCaseProcessProfile:
     """从已唯一发现的本地 image ID 构造固定公开测试 Profile。"""
 
@@ -409,12 +442,14 @@ def build_swebench_case_process_profile(
         )
     profile = build_product_process_profile(
         profile_id=PUBLIC_TEST_PROFILE_ID,
-        version=_PROFILE_VERSION,
+        version=_SNAPSHOT_PROFILE_VERSION if writable_snapshot else _PROFILE_VERSION,
         description=_PROFILE_DESCRIPTION,
         container_engine=str(engine),
         image=image_id,
         program=_PROGRAM,
-        arguments=_profile_arguments(repo),
+        arguments=_profile_arguments(
+            repo, version=_SNAPSHOT_PROFILE_VERSION if writable_snapshot else _PROFILE_VERSION
+        ),
         selector_policy="bounded_test_selector",
         timeout_seconds=_TIMEOUT_SECONDS,
         max_output_bytes=_MAX_OUTPUT_BYTES,
@@ -422,6 +457,7 @@ def build_swebench_case_process_profile(
         cpu_limit=_CPU_LIMIT,
         memory_bytes=_MEMORY_BYTES,
         process_limit=_PROCESS_LIMIT,
+        tmpfs_bytes=_SNAPSHOT_TMPFS_BYTES if writable_snapshot else None,
     )
     return SweBenchCaseProcessProfile(instance_id=instance_id, repo=repo, profile=profile)
 
@@ -431,6 +467,7 @@ def discover_swebench_case_process_profiles(
     container_engine: Path,
     *,
     runner: ImageListRunner = _run_image_list,
+    writable_snapshot: bool = False,
 ) -> tuple[SweBenchCaseProcessProfile, ...]:
     """只读一次 Docker 镜像清单，并为计划内每个 Case 严格唯一冻结 Profile。"""
 
@@ -460,6 +497,7 @@ def discover_swebench_case_process_profiles(
                 repo=case.repo,
                 container_engine=engine,
                 image_id=matches[0],
+                writable_snapshot=writable_snapshot,
             )
         )
     if len(bindings) != SWE_BENCH_CASE_COUNT:

@@ -3022,3 +3022,9 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 
 完整SHA不等于编辑上下文；收尾保留read_file+Patch AUTO，原失败重读/测试/Review/UNKNOWN门禁不变，fragment v2。
 详见[实现与验证](../changes/swebench-adapter-verified-25-pilot.md#v38保留定点读取及当前目录边界)。
+
+### Process Profile可选tmpfs容量
+
+`ProductProcessProfile.tmpfs_bytes`（64MiB～8GiB，须小于`memory_bytes`）显式设定容器`/tmp`的tmpfs容量；仍为
+`noexec,nosuid,nodev`并计入内存上限。未配置时字段不序列化、沿用64MiB，旧Profile摘要不变。
+

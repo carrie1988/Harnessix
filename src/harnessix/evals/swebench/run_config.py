@@ -10,6 +10,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchBudgetTruncationAgentRunConfig,
     SweBenchCompactSurfaceAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
+    SweBenchFullCachedHistoryAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
 )
@@ -311,6 +312,7 @@ SweBenchRunConfig = (
     | SweBenchPatchDeadlineAgentRunConfig
     | SweBenchBudgetTruncationAgentRunConfig
     | SweBenchPromptCacheAgentRunConfig
+    | SweBenchFullCachedHistoryAgentRunConfig
 )
 
 
@@ -408,6 +410,23 @@ def _run_config_type(
         if compact_model_surface:
             return SweBenchCompactSurfaceAgentRunConfig
         return SweBenchWorkingSetAgentRunConfig
+    if (
+        prompt_cache
+        and compact_model_surface
+        and convergence_guidance
+        and patch_deadline
+        and budget_capped_truncation
+        and recycle_workspaces
+        and not (
+            enable_grep_snapshots
+            or enable_regex_search
+            or allow_optional_pre_edit_profile
+            or reserve_closing_phase
+            or enable_definition_views
+        )
+    ):
+        # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        return SweBenchFullCachedHistoryAgentRunConfig
     if (
         compact_model_surface
         or convergence_guidance

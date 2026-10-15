@@ -176,3 +176,16 @@ class SweBenchPromptCacheAgentRunConfig(SweBenchBudgetTruncationAgentRunConfig):
     @property
     def normalize_stringified_arguments(self) -> bool:
         return True
+
+
+class SweBenchFullCachedHistoryAgentRunConfig(SweBenchPromptCacheAgentRunConfig):
+    """v18之上关闭工作集遮蔽：历史只追加，已读内容保持可见且整段命中前缀缓存。
+
+    遮蔽每步改写一组旧结果会使其后全部前缀按创建价重建，并迫使模型重读已读源码。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v19"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v19"
+    )
+    history_view_policy: Literal["full_cached_history"] = "full_cached_history"  # type: ignore[assignment]
+    retain_recent_result_groups: None = None  # type: ignore[assignment]

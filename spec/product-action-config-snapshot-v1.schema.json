@@ -152,6 +152,20 @@
           "title": "Secret Refs",
           "type": "array"
         },
+        "tmpfs_bytes": {
+          "anyOf": [
+            {
+              "maximum": 8589934592,
+              "minimum": 67108864,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tmpfs Bytes"
+        },
         "profile_sha256": {
           "pattern": "^[0-9a-f]{64}$",
           "title": "Profile Sha256",
