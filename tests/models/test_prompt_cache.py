@@ -57,6 +57,16 @@ def plain(message):
     return message
 
 
+def unmarked(message):
+    content = message.get("content")
+    if isinstance(content, list):
+        return {
+            **message,
+            "content": [{k: v for k, v in b.items() if k != "cache_control"} for b in content],
+        }
+    return message
+
+
 def test_default_layout_and_serialization_are_unchanged():
     one, _ = growing_requests()
     body, _ = build_request(one, config())
@@ -76,14 +86,16 @@ def test_explicit_tail_marks_the_stable_prefix_and_moves_volatile_notes_last():
     assert messages[0]["content"][0]["text"] == one.instructions
     notes = [m for m in default["messages"][1:] if m["role"] == "system"]
     assert notes and messages[-len(notes) :] == notes
-    marked = [i for i, m in enumerate(messages) if isinstance(m.get("content"), list)]
+    marked = [i for i, m in enumerate(messages) if "cache_control" in str(m.get("content"))]
     assert len(marked) == 2 and marked[-1] < len(messages) - len(notes)
     # 只改变块形态与顺序，不改变任何文本。
     assert sorted(map(str, map(plain, messages))) == sorted(map(str, default["messages"]))
-    # 下一请求的前缀与本请求标记处之前逐条一致（标记之外），使Provider可命中已建缓存。
+    # 下一请求的前缀与本请求逐条字节一致（只去掉移动的cache_control），使Provider可命中已建缓存。
     after, _ = build_request(two, cached)
     stable = len(messages) - len(notes)
-    assert [plain(m) for m in after["messages"][:stable]] == [plain(m) for m in messages[:stable]]
+    assert [unmarked(m) for m in after["messages"][:stable]] == [
+        unmarked(m) for m in messages[:stable]
+    ]
 
 
 @pytest.mark.parametrize("adapter", ["openai"], indirect=True)

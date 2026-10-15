@@ -107,20 +107,33 @@ def _explicit_tail_cache(
 ) -> list[dict[str, Any]]:
     """指令与历史构成跨请求不变的前缀并在末端打缓存标记；易变说明放在标记之后。
 
-    标记只改变消息内容的块形态，不改变文本；最多两个标记，低于Provider的上限。
+    前缀内所有文本消息恒用同一块形态，标记移动后上一请求的消息仍逐字节一致（Provider
+    前缀匹配不比较cache_control）；只改变形态与顺序，不改变文本；最多两个标记。
     """
     messages: list[dict[str, Any]] = []
     if instructions is not None:
-        messages.append({"role": "system", "content": _marked(instructions)})
-    messages.extend(history)
-    for index in range(len(messages) - 1, -1, -1):
+        messages.append({"role": "system", "content": _blocks(instructions, marked=True)})
+    for message in history:
+        content = message.get("content")
+        messages.append(
+            {**message, "content": _blocks(content)}
+            if isinstance(content, str) and content
+            else message
+        )
+    for index in range(len(messages) - 1, 0, -1):
         content = messages[index].get("content")
-        if isinstance(content, str) and content and index != 0:
-            messages[index] = {**messages[index], "content": _marked(content)}
+        if isinstance(content, list):
+            messages[index] = {
+                **messages[index],
+                "content": _blocks(content[0]["text"], marked=True),
+            }
             break
     messages.extend({"role": "system", "content": note} for note in notes)
     return messages
 
 
-def _marked(text: str) -> list[dict[str, Any]]:
-    return [{"type": "text", "text": text, "cache_control": dict(_CACHE_MARKER)}]
+def _blocks(text: str, *, marked: bool = False) -> list[dict[str, Any]]:
+    block: dict[str, Any] = {"type": "text", "text": text}
+    if marked:
+        block["cache_control"] = dict(_CACHE_MARKER)
+    return [block]
