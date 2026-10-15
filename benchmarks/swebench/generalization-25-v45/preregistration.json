@@ -1,0 +1,50 @@
+{
+  "schema": "harnessix.swebench-fresh-generalization-preregistration/v1",
+  "frozen_at": "2026-10-15T03:17:32.756092+00:00",
+  "scope": "fresh_generalization_25_pass_at_1_disjoint_from_development_set",
+  "plan_sha256": "2e2b9958b119a55a93bf3b67235217f7472f335f4cd5f366e8b4c32a0c6b8388",
+  "plan_file_sha256": "1b59dfa7a79fafbd255721c765f2e3f6845c93d3eee7a0f88c6e3b70bb019ab6",
+  "source_revision": "f28621fc2c37f58b146c455ef9ac3e701e1e2464",
+  "run_config_spec": "harnessix.swebench-agent-run-config/v16",
+  "run_config_file_sha256": "ebd387b4ed3244cabc9f9c3144034cf2e81b17c93c434ccdacc87606bbb7c82d",
+  "prepare_host_sha256": "dbd462f76383305df51307df8dfa721c7f5fb8f7bc8cf26d1a6e7d2574783c7a",
+  "execute_host_sha256": "d79fe9eabb38d0ad509784ec37d2f54d5f8c005243da084f25be214c1d0a990e",
+  "evaluate_host_sha256": "fc30a34e86044c5c863f5f597188c0a86beeaa94e928eae6b71e2be37e46024e",
+  "candidate": {
+    "working_set_result_groups": 2,
+    "compact_model_surface": true,
+    "convergence_guidance": true,
+    "patch_deadline_requests": 4
+  },
+  "identical_to_v44": [
+    "source_revision",
+    "run_config_spec_and_policies",
+    "task_budget_50000_tokens_16_requests_900s",
+    "model_qwen3.8-max_non_thinking",
+    "model_settings",
+    "price_rates",
+    "no_retry",
+    "approval_and_safety_controls"
+  ],
+  "differs_from_v44": [
+    "case_set (repo_round_robin_sha256_v1, new salt, 475 candidates excluding the 25 development cases)",
+    "public_test_profiles discovered for the new cases",
+    "repository cache root",
+    "fee_stop_amount 45 (v44: 60)"
+  ],
+  "fee_stop_amount": "45",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "failure_policy": "freeze_transport_with_full_reserve_continue_independent; unknown tool effect stops all; no automatic retry",
+  "metrics": [
+    "resolved_official",
+    "empty_patches",
+    "infrastructure_failures",
+    "ambiguous_failures",
+    "autonomous_closure",
+    "known_cost"
+  ],
+  "comparison": "report against v44 development 6/25 separately; no tuning on these cases before the result",
+  "official_evaluation": "after complete 25 predictions, frozen evaluator workers=1",
+  "evaluation_images": "official image builder, namespace swebench, all 25 built before execution",
+  "generalization_claim": true
+}
