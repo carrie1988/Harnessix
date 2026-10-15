@@ -1,0 +1,20 @@
+{
+  "scope": "v53_partial_8_of_25_not_preregistered_metric",
+  "predictions_sha256": "b18f967c5e73b7872badf6433b570e6853a466a6516aa2ba4f69fbc7823b37c5",
+  "results_sha256": "4b74a167881e4cefa2a50d284d317b92ae0a1412de48704958ce19614d29bcf5",
+  "submitted_instances": 8,
+  "completed_instances": 7,
+  "resolved_instances": 4,
+  "unresolved_instances": 3,
+  "empty_patch_instances": 1,
+  "error_instances": 0,
+  "infra_failure_instances": 0,
+  "ambiguous_failure_instances": 2,
+  "resolved_ids": [
+    "psf__requests-1766",
+    "pydata__xarray-3677",
+    "scikit-learn__scikit-learn-13135",
+    "sphinx-doc__sphinx-9230"
+  ],
+  "error_ids": []
+}

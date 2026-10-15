@@ -1,8 +1,9 @@
 """按已公布input_schema还原被模型字符串化的JSON容器参数；不放宽任何校验。
 
-部分模型会把数组/对象参数序列化为JSON字符串（如``"files": "[...]"``）。仅当Schema
-在该位置明确声明为array或object、且字符串可严格解析为同类型容器时才还原；其余值原样
-保留，由工具原有的严格校验照旧拒绝。还原后的规范参数才进入审批、审计与执行。
+部分模型会把数组/对象参数序列化为JSON字符串（如``"files": "[...]"``），偶尔还遗漏末尾的
+闭合括号。仅当Schema在该位置明确声明为array或object、且字符串可严格解析（必要时仅补齐末尾
+缺失的闭合括号）为同类型容器时才还原；其余值原样保留，由工具原有的严格校验照旧拒绝。
+还原后的规范参数才进入审批、审计与执行。
 """
 
 from __future__ import annotations
@@ -79,8 +80,44 @@ def _container_type(node: Mapping[str, Any]) -> type | None:
 
 
 def _decoded(text: str, expected: type) -> JsonValue:
-    try:
-        parsed = strict_json(text.strip())
-    except ValueError:
-        return text
-    return parsed if isinstance(parsed, expected) else text
+    candidate = text.strip()
+    for attempt in (candidate, _with_missing_closers(candidate)):
+        if attempt is None:
+            continue
+        try:
+            parsed = strict_json(attempt)
+        except ValueError:
+            continue
+        if isinstance(parsed, expected):
+            return parsed
+    return text
+
+
+def _with_missing_closers(text: str) -> str | None:
+    """只补齐末尾缺失的外层闭合括号：文本须以已闭合的内层容器结尾（`]`或`}`）。
+
+    不改写任何已有字符；值中途截断、未闭合字符串、多余闭合或其他语法错误一律放弃，
+    交由严格校验拒绝。
+    """
+    if not text.endswith(("]", "}")):
+        return None
+    stack: list[str] = []
+    in_string = escaped = False
+    for character in text:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+        elif character == '"':
+            in_string = True
+        elif character in "[{":
+            stack.append("]" if character == "[" else "}")
+        elif character in "]}":
+            if not stack or stack.pop() != character:
+                return None
+    if in_string or not stack:
+        return None
+    return text + "".join(reversed(stack))

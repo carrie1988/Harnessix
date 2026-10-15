@@ -70,9 +70,11 @@ _REPRODUCTION_INSTRUCTIONS = (
     "Reproduce first: before editing source, create a minimal test for the reported behavior as a "
     "new file named test_harnessix_scratch.py in an existing test directory next to the most "
     "relevant tests (for Django, inside the existing tests/<app>/ package). Use only public APIs "
-    "named in the issue. Run it with run_profile selecting only that file and confirm it fails for "
-    "the reported reason, then fix the source and rerun it together with the closest existing "
-    "tests. test_harnessix_scratch files are never submitted; do not edit existing test files."
+    "named in the issue, and cover the edge cases the issue implies. Run it with run_profile "
+    "selecting only that file and confirm it fails for the reported reason. After the fix passes "
+    "it, run the whole existing test files that cover the changed code (complete files, not single "
+    "test ids) and fix any failure. test_harnessix_scratch files are never submitted; do not edit "
+    "existing test files."
 )
 
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (
@@ -373,7 +375,7 @@ def build_product_agent_context(
                 (
                     ContextFragment(
                         kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
-                        source="harnessix.coding-reproduction/v1",
+                        source="harnessix.coding-reproduction/v2",
                         content=_REPRODUCTION_INSTRUCTIONS,
                     ),
                 )

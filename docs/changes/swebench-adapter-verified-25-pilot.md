@@ -1752,3 +1752,15 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 - [失败隔离](../../src/harnessix/evals/swebench/execution_costs.py)在显式开启时将调用组发布前失败的`provider_invalid_provider_output`
   （无任何工具效果）与传输失败同样按足额预留隔离，Case记失败但不停整轮；其余条件（尝试闭合、无未知摘要、已结算尝试可估价）不变。
 
+### v53前8项部分官方评测与两项改进
+
+[v53前8项官方评测](../../benchmarks/swebench/generalization-25-v53/partial8-official-summary.json)（只读、非预注册指标，预构建镜像）：
+**Resolved 4/8**（requests-1766、xarray-3677、scikit-learn-13135、sphinx-9230），空补丁1（即触发调用上限的sympy-13878），error 0。
+3项未解决中两项为近失：pylint-8898仅2/20隐藏用例（正则边界）失败、pytest-6197仅1/148失败；评测器`missing_module`标记为误导，
+实为真实断言失败。二者均只运行了复现草稿或单个测试id，从未运行覆盖改动代码的完整既有测试文件。pylint-8898另有4次Patch因
+`files`被字符串化且缺少末尾`}]`而被拒（内容完整、调用正常结束）。据此：
+- [参数还原](../../src/harnessix/agent/argument_normalization.py)在严格解析失败、且文本以已闭合的内层容器结尾时，仅补齐末尾缺失的外层闭合符再严格解析；
+  值中途截断、未闭合字符串、多余闭合仍原样交给严格校验拒绝。
+- [复现指引](../../src/harnessix/product_config/agent_context.py)升级为`harnessix.coding-reproduction/v2`：覆盖问题隐含的边界，修复通过草稿后运行覆盖改动代码的
+  完整既有测试文件（而非单个测试id）并修复失败。
+

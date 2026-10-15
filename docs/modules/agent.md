@@ -131,7 +131,7 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 部分模型把数组/对象参数序列化为JSON字符串（实测qwen3.8-max常把`apply_patch_batch.files`发成`"[...]"`，
 被严格合同拒绝后原样重发直至预算耗尽）。`AgentRuntime(normalize_stringified_arguments=True)`时，
 [参数还原](../../src/harnessix/agent/argument_normalization.py)仅在工具`input_schema`于该位置声明array/object
-（含本地`$defs`引用与嵌套items/properties）且字符串可严格解析为同类型容器时还原；其余值原样交给工具原有严格校验。
+（含本地`$defs`引用与嵌套items/properties）且字符串可严格解析为同类型容器时还原（文本以已闭合内层容器结尾而仅缺外层闭合符时，补齐后再严格解析）；其余值原样交给工具原有严格校验。
 还原发生在调用组发布前，审批、审计与执行看到的都是规范参数。回归见[参数还原测试](../../tests/agent/test_argument_normalization.py)。
 
 ## 当前增量：稳定线上工具目录（默认关闭）

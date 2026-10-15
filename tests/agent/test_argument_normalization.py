@@ -114,3 +114,33 @@ def test_switch_requires_literal_boolean(tmp_path, value):
             RecordingTools(),
             normalize_stringified_arguments=value,
         )
+
+
+def test_stringified_array_missing_only_its_final_closers_is_restored():
+    edit = {
+        "operation": "edit",
+        "path": "a.py",
+        "expected_sha256": "0" * 64,
+        "edits": [{"old_text": "x = [1]", "new_text": "x = [1, 2]  # keep ] in text"}],
+    }
+    complete = json.dumps([edit])
+    assert complete.endswith("}]}]")
+    truncated = "\n" + complete[: -len("}]")]  # 模型关闭了edits却遗漏文件对象与外层数组
+    restored = normalize_stringified_containers(
+        {"files": truncated}, compact_workspace_patch_schema()
+    )
+    assert restored == {"files": [edit]}
+    WorkspacePatchInput.model_validate_json(json.dumps(restored))
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        '[{"operation": "edit", "path": "a.py", "edits": [{"old_text": "unterminated',
+        '[{"operation": "delete"}]]',
+        '[{"operation": "delete"} {"operation": "delete"}',
+    ],
+)
+def test_unrepairable_text_is_left_for_strict_validation(text):
+    schema = compact_workspace_patch_schema()
+    assert normalize_stringified_containers({"files": text}, schema) == {"files": text}
