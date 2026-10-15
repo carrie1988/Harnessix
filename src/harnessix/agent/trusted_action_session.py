@@ -34,7 +34,16 @@ type FaultInjector = Callable[[str], None]
 type PendingCallExecutor = Callable[[UUID, UUID, CancelToken], Awaitable[Turn | None]]
 
 _PREPARE_FAILURES = frozenset(
-    {"tool_invalid_arguments", "action_resource_invalid", "raw_secret_rejected"}
+    {
+        "tool_invalid_arguments",
+        "action_resource_invalid",
+        "raw_secret_rejected",
+        # 规划期只读观察模型所请求路径得出的确定结果，尚无路由计划或效果，可交给模型改正；
+        # 宿主绑定、平台或观察故障仍失败关闭。
+        "workspace_parent_missing",
+        "workspace_path_denied",
+        "workspace_snapshot_limit",
+    }
 )
 
 

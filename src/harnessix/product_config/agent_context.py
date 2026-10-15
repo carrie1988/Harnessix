@@ -67,15 +67,12 @@ _CONVERGENCE_INSTRUCTIONS = (
 )
 
 _REPRODUCTION_INSTRUCTIONS = (
-    "Reproduce first: before editing source, add a minimal test for the reported behavior in a "
-    "harnessix_scratch directory inside the repository's main test directory (for example "
-    "tests/harnessix_scratch/test_repro.py; for Django tests/harnessix_scratch/tests.py plus an "
-    "empty __init__.py; harnessix_scratch/test_repro.py at the root if there is no test "
-    "directory). Use "
-    "only public APIs named in the issue. Run it with run_profile selecting only that file and "
-    "confirm it fails for the reported reason, then fix the source and rerun it together with the "
-    "closest existing tests. harnessix_scratch files are never submitted; do not edit existing "
-    "test files."
+    "Reproduce first: before editing source, create a minimal test for the reported behavior as a "
+    "new file named test_harnessix_scratch.py in an existing test directory next to the most "
+    "relevant tests (for Django, inside the existing tests/<app>/ package). Use only public APIs "
+    "named in the issue. Run it with run_profile selecting only that file and confirm it fails for "
+    "the reported reason, then fix the source and rerun it together with the closest existing "
+    "tests. test_harnessix_scratch files are never submitted; do not edit existing test files."
 )
 
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (

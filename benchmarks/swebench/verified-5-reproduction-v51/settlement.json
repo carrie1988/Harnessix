@@ -1,0 +1,17 @@
+{
+  "v21": {
+    "known": "0.5479725",
+    "reserved": "3.897456",
+    "cases": [
+      {
+        "case_index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "turn_status": "interrupted",
+        "model_steps": 13,
+        "known": "0.5479725",
+        "reserved": "3.897456",
+        "cost_complete": true
+      }
+    ]
+  }
+}

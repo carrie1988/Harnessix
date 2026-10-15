@@ -264,9 +264,11 @@ def test_scratch_reproduction_files_never_enter_the_delivered_patch(
         (repository / scratch).mkdir(parents=True)
         (repository / scratch / "test_repro.py").write_text("def test_x(): pass\n")
     (repository / "harnessix_scratchy.txt").write_text("not scratch\n", encoding="utf-8")
+    (repository / "test_harnessix_scratch.py").write_text("def test_y(): pass\n")
 
     patch = collect_workspace_patch(repository, GIT, base_commit, exclude_scratch=exclude)
 
     assert "+tracked after" in patch
     assert "harnessix_scratchy.txt" in patch
     assert ("harnessix_scratch/test_repro.py" in patch) is not exclude
+    assert ("b/test_harnessix_scratch.py" in patch) is not exclude

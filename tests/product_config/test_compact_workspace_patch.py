@@ -221,3 +221,18 @@ async def test_invalid_combination_fails_without_approval_or_effect(tmp_path):
         assert results[0].outcome == "failed"
         assert results[0].error.code == "tool_invalid_arguments"
         assert (root / "src/modified.py").read_text() == OLD
+
+
+async def test_create_under_a_missing_parent_is_a_correctable_failure(tmp_path):
+    async with compact_product(tmp_path) as (root, runtime, provider, _):
+        missing = {
+            "files": [
+                {"operation": "create", "path": "src/new_dir/a.py", "content": "x\n", "mode": 420}
+            ]
+        }
+        _, turn = await run_patch(runtime, provider, root, missing)
+        results = [i.content for i in turn.items if isinstance(i.content, ToolResultContent)]
+        assert turn.status is TurnStatus.COMPLETED
+        assert results[0].outcome == "failed"
+        assert results[0].error.code == "workspace_parent_missing"
+        assert not (root / "src/new_dir").exists()

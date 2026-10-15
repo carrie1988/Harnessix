@@ -708,7 +708,7 @@ _SCRATCH_ONLY_REVIEW = {
     "status": {
         "total_entries": 1,
         "truncated": False,
-        "entries": [{"path": "tests/harnessix_scratch/", "kind": "untracked"}],
+        "entries": [{"path": "lib/pkg/tests/test_harnessix_scratch.py", "kind": "untracked"}],
     },
     "diff": {"text": "", "utf8_bytes": 0},
 }
