@@ -876,7 +876,9 @@ async def test_mapped_quality_failure_resume_rejects_prefix_or_runtime_evidence_
         assert drift.value.code == "swebench_suite_execution_state_invalid"
     elif tamper != "none":
         if tamper == "patch":
-            monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_, **__: PATCH + "drift")
+            monkeypatch.setattr(
+                execution, "collect_workspace_patch", lambda *_, **__: PATCH + "drift"
+            )
         else:
             monkeypatch.setattr(execution, "_turn_cost", lambda *_: (0, False))
         with pytest.raises(KernelError) as drift:

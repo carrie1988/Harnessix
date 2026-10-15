@@ -11,6 +11,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchCachedClosureAgentRunConfig,
     SweBenchCompactSurfaceAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
+    SweBenchExplainedGatesAgentRunConfig,
     SweBenchFullCachedHistoryAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
@@ -319,6 +320,7 @@ SweBenchRunConfig = (
     | SweBenchCachedClosureAgentRunConfig
     | SweBenchScratchReproductionAgentRunConfig
     | SweBenchProtocolRobustAgentRunConfig
+    | SweBenchExplainedGatesAgentRunConfig
 )
 
 
@@ -351,6 +353,7 @@ def _run_config_type(
     cached_closure_workflow: bool = False,
     scratch_reproduction: bool = False,
     protocol_robust: bool = False,
+    explained_gates: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -373,6 +376,7 @@ def _run_config_type(
         (cached_closure_workflow, "缓存收尾工作流"),
         (scratch_reproduction, "复现草稿"),
         (protocol_robust, "协议失败隔离"),
+        (explained_gates, "工具门禁说明"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -394,6 +398,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if explained_gates and not protocol_robust:
+        raise ValueError("SWE-bench工具门禁说明只在协议失败隔离组合之上冻结")
     if protocol_robust and not scratch_reproduction:
         raise ValueError("SWE-bench协议失败隔离只在复现草稿组合之上冻结")
     if scratch_reproduction and not cached_closure_workflow:
@@ -445,6 +451,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if explained_gates:
+            return SweBenchExplainedGatesAgentRunConfig
         if protocol_robust:
             return SweBenchProtocolRobustAgentRunConfig
         if scratch_reproduction:
@@ -539,6 +547,7 @@ def build_swebench_agent_run_config(
     cached_closure_workflow: bool = False,
     scratch_reproduction: bool = False,
     protocol_robust: bool = False,
+    explained_gates: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -565,6 +574,7 @@ def build_swebench_agent_run_config(
         cached_closure_workflow=cached_closure_workflow,
         scratch_reproduction=scratch_reproduction,
         protocol_robust=protocol_robust,
+        explained_gates=explained_gates,
     )
     extra: dict[str, object] = (
         {}

@@ -261,3 +261,31 @@ def test_protocol_robust_v22_adds_only_isolation_and_call_cap(tmp_path):
     assert read_swebench_agent_run_config(path) == config
     with pytest.raises(ValueError):
         compact_config(tmp_path, **{**common, "scratch_reproduction": False}, protocol_robust=True)
+
+
+def test_explained_gates_v23_adds_only_the_tool_gate_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchExplainedGatesAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+    }
+    config = compact_config(tmp_path, **common, explained_gates=True)
+    v22 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchExplainedGatesAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v23"
+    assert config.explain_tool_gates and not v22.explain_tool_gates
+    excluded = {"spec_version", "tool_gate_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v22.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v23.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(tmp_path, **{**common, "protocol_robust": False}, explained_gates=True)

@@ -48,6 +48,8 @@ class ModelToolSelection:
     choice: Literal["auto", "required"] = "auto"
     forced_tool: str | None = None
     exclusive_tool_groups: tuple[tuple[str, ...], ...] = ()
+    # 视图对本步工具受限原因及解锁条件的说明；只是模型提示，不授予执行权限。
+    notice: str | None = None
 
 
 class ModelToolView(Protocol):

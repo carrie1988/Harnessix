@@ -2094,6 +2094,10 @@ class AgentRuntime:
         ):
             raise KernelError("model_tool_view_invalid", "模型工具选择模式与可见目录不一致")
         validate_exclusive_tool_groups(selection.exclusive_tool_groups, selected_by_name)
+        if selection.notice is not None and (
+            type(selection.notice) is not str or not 1 <= len(selection.notice) <= 1024
+        ):
+            raise KernelError("model_tool_view_invalid", "模型工具视图说明必须是1到1024字符")
         ordered = tuple(
             definition for definition in available if definition.name in selected_by_name
         )
@@ -2252,6 +2256,7 @@ class AgentRuntime:
                     remaining_tokens=output_token_limit,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
+                    tool_notice=tool_selection.notice,
                 )
                 estimated_input_tokens = estimate_request_input_tokens(
                     self.provider, candidate, turn, estimated_input_tokens
@@ -2296,6 +2301,7 @@ class AgentRuntime:
                     remaining_tokens=allowed_output_tokens,
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
+                    tool_notice=tool_selection.notice,
                 )
                 try:
                     await self._sample(

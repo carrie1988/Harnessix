@@ -1783,3 +1783,9 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 （xarray-4629连续7次）。修复：[工作流视图](../../src/harnessix/product_config/coding_tool_view.py)把失败且只改草稿的调用（无任何效果）
 连同结果移出视图；成功的仅草稿Patch仍触发强制运行复现。预算耗尽的6项峰值上下文仅20K～28K、缓存命中91%～93%，累计原始Token
 却已达400K上限。
+
+### v23：工具门禁说明
+
+[v23](../../src/harnessix/evals/swebench/compact_surface_config.py)（v22之上）只开启工作流视图的门禁说明：v54在308次请求中有51次调用了
+当前阶段不可调用的工具，模型只收到“工具未注册”，不知道应先重读上次Patch改动的文件（xarray-4629连续10次）。说明经
+`ModelRequest.tool_notice`追加到本次目录说明（尾部系统消息，不改变缓存前缀）；可执行集合、门禁与拒绝事实不变。

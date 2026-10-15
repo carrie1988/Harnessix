@@ -56,6 +56,8 @@ def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[st
     )
     if not current:
         note += "No tools are callable. "
+    if request.tool_notice is not None:
+        note += f"Why the catalog is restricted now: {request.tool_notice} "
     if request.forced_tool is not None:
         return note + (
             f"Tool choice: forced ({encode_json(tool_alias(request.forced_tool))}). You must "

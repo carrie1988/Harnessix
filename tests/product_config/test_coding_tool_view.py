@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -794,3 +795,56 @@ def test_failed_scratch_patch_does_not_lock_the_view_to_patch_retries() -> None:
     selection = _scratch_view(True).select(turn, _definitions())
     assert selection.forced_tool is None
     assert "read_file" in {tool.name for tool in selection.tools}
+
+
+def _gate_view(explain: bool) -> CodingWorkflowToolView:
+    return CodingWorkflowToolView(require_pre_edit_profile=False, explain_tool_gates=explain)
+
+
+@pytest.mark.parametrize("explain", [True, False])
+def test_hidden_patch_after_failed_test_is_explained_only_when_enabled(explain: bool) -> None:
+    """v54：测试失败后Patch隐藏待重读，模型只收到“工具未注册”，连续10次被拒。"""
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None, None, {"files": [{"path": "pkg/core.py"}]}),
+        (_PROFILE, "failed", "process_nonzero_exit"),
+    )
+    selection = _gate_view(explain).select(turn, _definitions())
+    assert _PATCH not in {tool.name for tool in selection.tools}
+    if explain:
+        assert selection.notice is not None and "pkg/core.py" in selection.notice
+        assert _PATCH in selection.notice
+    else:
+        assert selection.notice is None
+
+
+def test_gates_explanation_never_changes_the_callable_selection() -> None:
+    turns = (
+        _turn(("read_file", "succeeded", None)),
+        _turn(
+            ("read_file", "succeeded", None),
+            (_PATCH, "succeeded", None, None, {"files": [{"path": "pkg/core.py"}]}),
+            (_PROFILE, "failed", "process_nonzero_exit"),
+        ),
+        _turn(
+            ("read_file", "succeeded", None),
+            (_PATCH, "failed", "workspace_patch_precondition_failed", None, _SOURCE_PATCH),
+        ),
+    )
+    for turn in turns:
+        plain = _gate_view(False).select(turn, _definitions())
+        explained = _gate_view(True).select(turn, _definitions())
+        assert replace(explained, notice=None) == plain
+
+
+def test_failed_patch_reread_and_closed_catalog_are_explained() -> None:
+    failed = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "failed", "workspace_patch_precondition_failed", None, _SOURCE_PATCH),
+    )
+    selection = _gate_view(True).select(failed, _definitions())
+    assert selection.forced_tool == "read_file"
+    assert selection.notice is not None and "src/example.py" in selection.notice
+    closed = _turn((_PROFILE, "cancelled", None))
+    selection = _gate_view(True).select(closed, _definitions())
+    assert selection.tools == () and selection.notice is not None

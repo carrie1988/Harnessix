@@ -32,6 +32,8 @@ class ModelRequest(ContractModel):
     remaining_tokens: int | None = Field(default=None, ge=1)
     tool_choice: Literal["auto", "required"] = "auto"
     forced_tool: str | None = Field(default=None, min_length=1, max_length=256)
+    # 工具视图给出的受限原因与解锁条件；只追加到本次目录说明，不改变可执行集合。
+    tool_notice: str | None = Field(default=None, min_length=1, max_length=1024)
 
     @property
     def wire_tools(self) -> tuple[ToolDescriptor, ...]:

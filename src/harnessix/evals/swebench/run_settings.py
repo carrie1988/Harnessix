@@ -285,6 +285,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def explain_tool_gates(self) -> bool:
+        return False
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 

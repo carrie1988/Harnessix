@@ -253,3 +253,19 @@ class SweBenchProtocolRobustAgentRunConfig(SweBenchScratchReproductionAgentRunCo
     @property
     def state_tool_call_cap(self) -> bool:
         return True
+
+
+class SweBenchExplainedGatesAgentRunConfig(SweBenchProtocolRobustAgentRunConfig):
+    """v22之上：工作流视图向模型说明本步工具受限原因与解锁条件；可执行集合与门禁不变。
+
+    v54中17%的请求调用了当前阶段不可调用的工具，只收到“工具未注册”，不知应先重读改动文件。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v23"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v23"
+    )
+    tool_gate_policy: Literal["explain_restricted_tools"] = "explain_restricted_tools"
+
+    @property
+    def explain_tool_gates(self) -> bool:
+        return True

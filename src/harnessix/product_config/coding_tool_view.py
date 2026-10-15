@@ -121,6 +121,22 @@ def _selection(
     )
 
 
+def _reread_notice(patch: str, unread: frozenset[str]) -> str:
+    paths = ", ".join(sorted(unread))
+    if len(paths) > 600:
+        paths = paths[:600] + "..."
+    return (
+        f"{patch} is callable again only after read_file of each file the last patch "
+        f"changed: {paths}. Re-read them first; then patch with the fresh content_sha256."
+    )
+
+
+_NO_TOOLS_NOTICE = (
+    "No tool is callable in this request. Reply in text with your final answer, "
+    "or state the limitation that prevents finishing."
+)
+
+
 def _is_code_test_failure(result: ToolResultContent) -> bool:
     return (
         result.outcome == "failed"
@@ -159,7 +175,11 @@ def _failed_patch_selection(
         or patched_paths <= _successful_reads_after(observations, failed_patch.index)
     ):
         return _selection(definitions, {patch}, forced_tool=patch)
-    return _selection(definitions, {"read_file"}, forced_tool="read_file")
+    unread = patched_paths - _successful_reads_after(observations, failed_patch.index)
+    return replace(
+        _selection(definitions, {"read_file"}, forced_tool="read_file"),
+        notice=_reread_notice(patch, unread),
+    )
 
 
 def _pre_patch_selection(
@@ -425,6 +445,8 @@ class CodingWorkflowToolView:
     reopen_after_clean_review: bool = False
     # 复现草稿目录中的改动不算可交付改动（草稿永不进入补丁）。
     scratch_reproduction: bool = False
+    # 向模型说明本步工具受限的原因与解锁条件；关闭时选择结果逐字不变。
+    explain_tool_gates: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -434,6 +456,8 @@ class CodingWorkflowToolView:
             raise ValueError("Patch截止请求数必须是1到16")
         if type(self.scratch_reproduction) is not bool:
             raise ValueError("复现草稿开关必须是布尔值")
+        if type(self.explain_tool_gates) is not bool:
+            raise ValueError("工具门禁说明开关必须是布尔值")
         if type(self.reopen_after_clean_review) is not bool:
             raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
@@ -490,11 +514,13 @@ class CodingWorkflowToolView:
             selection = replace(
                 selection, tools=tuple(tool for tool in definitions if tool.name in names)
             )
-        return (
-            _with_exclusive_profile_patch(selection)
-            if self.allow_optional_pre_edit_profile
-            else selection
-        )
+        if self.allow_optional_pre_edit_profile:
+            selection = _with_exclusive_profile_patch(selection)
+        if not self.explain_tool_gates:
+            return replace(selection, notice=None)
+        if not selection.tools:
+            return replace(selection, notice=_NO_TOOLS_NOTICE)
+        return selection
 
     def _prefer_closing(self, turn: Turn, selection: ModelToolSelection) -> ModelToolSelection:
         """只结束首次修改前的自由调查；失败重读、测试和Review门禁不受影响。"""
@@ -700,9 +726,11 @@ def _validation_diagnosis_selection(
         if not _diagnostic_is_complete(validation.result):
             names.add("read_artifact")
         patched_paths = _patched_paths_requiring_reread(observations, last_patch)
-        if patched_paths <= _successful_reads_after(observations, validation.index):
+        unread = patched_paths - _successful_reads_after(observations, validation.index)
+        if not unread:
             names.add(patch)
-        return _selection(definitions, names)
+            return _selection(definitions, names)
+        return replace(_selection(definitions, names), notice=_reread_notice(patch, unread))
     names = {
         item.name
         for item in definitions
