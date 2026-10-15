@@ -1,0 +1,50 @@
+{
+  "v17": {
+    "known": "0.96648",
+    "reserved": "0",
+    "cases": [
+      {
+        "case_index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "turn_status": "failed",
+        "model_steps": 8,
+        "known": "0.498108",
+        "reserved": "0",
+        "cost_complete": true
+      },
+      {
+        "case_index": 1,
+        "instance_id": "pydata__xarray-4695",
+        "turn_status": "failed",
+        "model_steps": 6,
+        "known": "0.468372",
+        "reserved": "0",
+        "cost_complete": true
+      }
+    ]
+  },
+  "v18": {
+    "known": "5.7432855",
+    "reserved": "3.897456",
+    "cases": [
+      {
+        "case_index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "turn_status": "failed",
+        "model_steps": 40,
+        "known": "5.6479965",
+        "reserved": "0",
+        "cost_complete": true
+      },
+      {
+        "case_index": 1,
+        "instance_id": "pydata__xarray-4695",
+        "turn_status": "cancelled",
+        "model_steps": 3,
+        "known": "0.095289",
+        "reserved": "3.897456",
+        "cost_complete": false
+      }
+    ]
+  }
+}

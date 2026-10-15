@@ -1,0 +1,151 @@
+{
+  "schema": "harnessix.swebench-workflow-comparison-preregistration/v1",
+  "frozen_at": "2026-10-15T09:11:18.140096+00:00",
+  "runner_sha256": "9384b47b4ee40df1d52188d44f5e92a563b325ed665a38c8ec8b32264888d6e0",
+  "source_revision": "a92fe468df5fd2e436e384e64f4a9206e544608e",
+  "source_plan_sha256": "8b93c41d6c44e004f1c7bd5abcb1d054134097eba01eaf45ee87514357782aba",
+  "scope": "development_set_standard_tier_comparison_prefix5_not_official_score",
+  "selected_case_ids": [
+    "matplotlib__matplotlib-25960",
+    "pydata__xarray-4695",
+    "pytest-dev__pytest-10051",
+    "django__django-11734",
+    "scikit-learn__scikit-learn-25973"
+  ],
+  "selected_case_count": 5,
+  "executions": 10,
+  "execution_order": [
+    [
+      "v17",
+      0
+    ],
+    [
+      "v18",
+      0
+    ],
+    [
+      "v17",
+      1
+    ],
+    [
+      "v18",
+      1
+    ],
+    [
+      "v17",
+      2
+    ],
+    [
+      "v18",
+      2
+    ],
+    [
+      "v17",
+      3
+    ],
+    [
+      "v18",
+      3
+    ],
+    [
+      "v17",
+      4
+    ],
+    [
+      "v18",
+      4
+    ]
+  ],
+  "changed_task_fields": [
+    "max_tokens",
+    "max_steps",
+    "timeout_seconds"
+  ],
+  "source_changes_between_arms": [],
+  "changed_model_configuration_fields": [],
+  "changed_agent_configuration_fields": [
+    "spec_version",
+    "cache_policy",
+    "argument_policy",
+    "provider_config.prompt_cache",
+    "price.input_price"
+  ],
+  "shared_source_changes": [
+    "default_off_explicit_tail_prompt_cache_and_partitioned_price",
+    "default_off_stringified_container_argument_restoration",
+    "actionable_tool_limit_feedback_messages"
+  ],
+  "separate_identity_fields": [
+    "work_root",
+    "execution_fingerprint"
+  ],
+  "accounting_only_fields": [
+    "fee_stop_amount"
+  ],
+  "unchanged": [
+    "task_prompt_template",
+    "sealed_terminal_workspace_policy",
+    "problem_statements",
+    "base_commits",
+    "process_profiles",
+    "timeout_seconds",
+    "no_retry",
+    "all_safety_controls"
+  ],
+  "maximum_cost_amount": "55",
+  "budget_period_id": "065dece9-5159-4307-aee7-35ca25e5ed7d",
+  "primary_gate": {
+    "standard_tier": {
+      "max_tokens": 500000,
+      "max_steps": 40
+    },
+    "resolved_target": "pass@1 >= 50%"
+  },
+  "outcomes": [
+    "native_terminal_status",
+    "patch_produced",
+    "model_token_usage",
+    "public_test_observation",
+    "patch_review_observation",
+    "compaction_usage",
+    "provider_failures"
+  ],
+  "official_score": null,
+  "price_verified_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+  "price_verified_rates": {
+    "input_per_million": "12",
+    "cache_read_per_million_conservative": "1.5",
+    "cache_creation_per_million": "15",
+    "output_per_million": "36",
+    "currency": "CNY"
+  },
+  "lazy_workspace_creation": true,
+  "matching_retirement_policy_all_arms": true,
+  "provider_failure_policy": "freeze_transport_with_full_reserve_continue_independent",
+  "unknown_tool_effects_policy": "stop_all",
+  "limitations": "开发集固定前五项两组pass@1新尝试：v17（v16＋预算截断归类，原50K/16/900秒）对照v18标准档（500K/40/1800秒，显式前缀缓存与分区计价、字符串化容器参数还原）；预算档与能力同时改变，比较的是端到端系统而非单因素；不作统计显著性或官方成绩声明。",
+  "arms": [
+    {
+      "name": "v17",
+      "plan_sha256": "2fb655bac6821e20ce0654bf11fee89acc1bbb57bde7eacf1b7046e60814ee3f",
+      "plan_file_sha256": "aeb440db2d0e2176e703841fbdf8fdd92f9454511bef84f90d75bfc06929429e",
+      "config_file_sha256": "a70f2d9e51a1236171222953e175207913b395f5110d06a895b1a4d43c4910a5",
+      "execution_fingerprint": "018a9868d3fdcc61968c56b410fe0840ba51e3dae04b708a2a239b16b2451ff5",
+      "max_tokens": 50000,
+      "max_steps": 16,
+      "maximum_cost_amount": "10",
+      "next_case_reserve_amount": "4.947456"
+    },
+    {
+      "name": "v18",
+      "plan_sha256": "561433ef74111c07c7ff4d9e6283a9fc1d27b2475bed5cbf365f0fb93714e090",
+      "plan_file_sha256": "c1f6095a1fb8c14d420eea595a45e8d2a4ea78a766b0fb4929002562c922e03d",
+      "config_file_sha256": "bc8361d7f992c3b84d31ec572be513ba33e4619f842bcf93f81b892e81417c7b",
+      "execution_fingerprint": "71aab6ac98ef4d9945beefcc3c2251c6f8dbc87d3f464eab7ca8e28c61814a7a",
+      "max_tokens": 500000,
+      "max_steps": 40,
+      "maximum_cost_amount": "45",
+      "next_case_reserve_amount": "21.897456"
+    }
+  ]
+}
