@@ -1,0 +1,77 @@
+{
+  "v17": {
+    "known": "2.10162",
+    "reserved": "0",
+    "cases": [
+      {
+        "case_index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "turn_status": "failed",
+        "model_steps": 7,
+        "known": "0.438048",
+        "reserved": "0",
+        "cost_complete": true
+      },
+      {
+        "case_index": 1,
+        "instance_id": "pydata__xarray-4695",
+        "turn_status": "completed",
+        "model_steps": 7,
+        "known": "0.535536",
+        "reserved": "0",
+        "cost_complete": true
+      },
+      {
+        "case_index": 2,
+        "instance_id": "pytest-dev__pytest-10051",
+        "turn_status": "failed",
+        "model_steps": 8,
+        "known": "0.544272",
+        "reserved": "0",
+        "cost_complete": true
+      },
+      {
+        "case_index": 3,
+        "instance_id": "django__django-11734",
+        "turn_status": "failed",
+        "model_steps": 7,
+        "known": "0.583764",
+        "reserved": "0",
+        "cost_complete": true
+      }
+    ]
+  },
+  "v18": {
+    "known": "11.343219",
+    "reserved": "0",
+    "cases": [
+      {
+        "case_index": 0,
+        "instance_id": "matplotlib__matplotlib-25960",
+        "turn_status": "failed",
+        "model_steps": 40,
+        "known": "4.991775",
+        "reserved": "0",
+        "cost_complete": true
+      },
+      {
+        "case_index": 1,
+        "instance_id": "pydata__xarray-4695",
+        "turn_status": "completed",
+        "model_steps": 18,
+        "known": "1.524453",
+        "reserved": "0",
+        "cost_complete": true
+      },
+      {
+        "case_index": 2,
+        "instance_id": "pytest-dev__pytest-10051",
+        "turn_status": "failed",
+        "model_steps": 40,
+        "known": "4.826991",
+        "reserved": "0",
+        "cost_complete": true
+      }
+    ]
+  }
+}
