@@ -1660,3 +1660,12 @@ qwen3.7-plus。[官方结果](../../benchmarks/swebench/verified-25-plus-v47/off
 按用户选择回到qwen3.8-max执行v46。模型目录提交改变了`run_settings.py`，执行修订门要求源码逐字一致，故v46在任何模型请求前
 只把源码修订移至当前提交（[修订记录](../../benchmarks/swebench/generalization-25-v46/plan-amendment.json)），Case、预算、模型名与参数不变。
 
+### v46新鲜泛化集官方结果（qwen3.8-max，v17）
+
+[官方汇总](../../benchmarks/swebench/generalization-25-v46/official-summary.json)与[逐Case结果](../../benchmarks/swebench/generalization-25-v46/official-case-ids.json)：
+与开发集及v45均不相交的25项，完整执行无停止，**Resolved 5/25**，非空补丁16，空补丁9，unresolved 11，ambiguous 1，error 0，
+基础设施失败0；已知费用12.582468元，无未决预留。解决：matplotlib-20859、matplotlib-25287、requests-1724、scikit-learn-13124、
+sphinx-9711。对照开发集v44的6/25（空补丁10），新题上解决率与空补丁率基本一致，未见开发集过拟合；v45前16项部分结果7/16
+为非预注册指标，不与本结果合并。仍缺同批新题上的优化前基线（v27配置），故“提升幅度在新题上同样成立”尚未被直接证明。
+1项`tool_arguments_invalid`（模型输出非法JSON参数）直接结束Turn而非回传纠正，是下一阶段的通用稳健性项。
+

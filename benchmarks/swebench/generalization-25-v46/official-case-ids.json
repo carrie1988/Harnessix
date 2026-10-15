@@ -1,0 +1,37 @@
+{
+  "resolved_ids": [
+    "matplotlib__matplotlib-20859",
+    "matplotlib__matplotlib-25287",
+    "psf__requests-1724",
+    "scikit-learn__scikit-learn-13124",
+    "sphinx-doc__sphinx-9711"
+  ],
+  "unresolved_ids": [
+    "astropy__astropy-13033",
+    "astropy__astropy-14369",
+    "django__django-10999",
+    "django__django-16315",
+    "psf__requests-2931",
+    "psf__requests-6028",
+    "pydata__xarray-7393",
+    "pylint-dev__pylint-6386",
+    "pytest-dev__pytest-7432",
+    "sphinx-doc__sphinx-11510",
+    "sympy__sympy-12419"
+  ],
+  "empty_patch_ids": [
+    "astropy__astropy-13398",
+    "django__django-14434",
+    "pydata__xarray-4687",
+    "pydata__xarray-6461",
+    "pylint-dev__pylint-7080",
+    "pytest-dev__pytest-7236",
+    "scikit-learn__scikit-learn-14894",
+    "sympy__sympy-13974",
+    "sympy__sympy-21379"
+  ],
+  "ambiguous_failure_ids": [
+    "pytest-dev__pytest-7432"
+  ],
+  "error_ids": []
+}
