@@ -1,0 +1,41 @@
+{
+  "schema": "harnessix.swebench-fresh-generalization-preregistration/v1",
+  "frozen_at": "2026-10-15T14:26:23.700361+00:00",
+  "scope": "fresh_generalization_25_pass_at_1_disjoint_from_dev_v45_v46",
+  "plan_sha256": "8fe68608792f1cdc48b77111c073f3f319331ccd7a4efdf9787d6efa91a032e0",
+  "plan_file_sha256": "5484d5f6eacd6d65b3cf385218696143818912e6f7f7b7a97320508f8c2ec83d",
+  "source_revision": "34872b6d8390d580dd20afafdbe07cb881e96629",
+  "model": "qwen3.8-max",
+  "run_config_spec": "harnessix.swebench-agent-run-config/v21",
+  "run_config_file_sha256": "4640d9c7a5043e940289ff48f76ca7d1702e05b50ce746851232220dad20a149",
+  "prepare_host_sha256": "6f5c406d66d9da338f80e2001f3a662543e51906c46569192f365b413dedaeb0",
+  "execute_host_sha256": "1dff6a4c855abbebffb295e5296f6c16ffbe3d35501c348f2b25a72aa2a23743",
+  "evaluate_host_sha256": "64366fcc94a764a362b74f61e778710f0281c82a9614240f6b524b21e6badebf",
+  "system": [
+    "prompt_cache_explicit_tail_partitioned_price",
+    "append_only_history",
+    "stable_tool_catalog",
+    "reopen_after_clean_review",
+    "no_budget_pressure_compaction",
+    "scratch_reproduction",
+    "stringified_argument_restoration",
+    "budget_capped_truncation",
+    "compact_surface_convergence_patch_deadline",
+    "public_test_profile_v8_writable_copy"
+  ],
+  "task_budget": "600000 tokens / 40 requests / 1800 s (standard tier)",
+  "fee_stop_amount": "55",
+  "budget_period_id": "065dece9-5159-4307-aee7-35ca25e5ed7d",
+  "failure_policy": "freeze_transport_with_full_reserve_continue_independent; unknown tool effect stops all; no automatic retry",
+  "metrics": [
+    "resolved_official",
+    "empty_patches",
+    "infrastructure_failures",
+    "ambiguous_failures",
+    "autonomous_closure",
+    "known_cost"
+  ],
+  "official_evaluation": "after complete 25 predictions, frozen evaluator workers=1, prebuilt images (no --task-repo)",
+  "comparison": "reported as the current system's held-out pass@1; earlier fresh results (v46 5/25 at 50K tier) are a different system and budget",
+  "generalization_claim": true
+}
