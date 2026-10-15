@@ -24,6 +24,7 @@ from harnessix.agent.approvals import (
     request_fingerprint,
     tool_fingerprint,
 )
+from harnessix.agent.argument_normalization import normalize_stringified_containers
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.errors import KernelError
@@ -276,6 +277,7 @@ class AgentRuntime:
         working_set_result_groups: int | None = None,
         report_affordable_requests: bool = False,
         budget_capped_truncation: bool = False,
+        normalize_stringified_arguments: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -307,6 +309,10 @@ class AgentRuntime:
             raise KernelError("invalid_runtime_configuration", "预算截断归类开关必须是布尔值")
         # 显式开启时预算压低上限导致的截断归为预算耗尽；默认仍按Provider截断失败。
         self._budget_capped_truncation = budget_capped_truncation
+        if type(normalize_stringified_arguments) is not bool:
+            raise KernelError("invalid_runtime_configuration", "参数字符串化还原开关必须是布尔值")
+        # 显式开启时按工具Schema还原被字符串化的数组/对象参数；默认保持Provider原样参数。
+        self._normalize_stringified_arguments = normalize_stringified_arguments
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -3032,7 +3038,13 @@ class AgentRuntime:
                     tool=proposal.tool,
                     tool_version=definition.version,
                     effect_class=definition.effect_class,
-                    arguments=proposal.arguments,
+                    arguments=(
+                        normalize_stringified_containers(
+                            proposal.arguments, definition.input_schema
+                        )
+                        if self._normalize_stringified_arguments
+                        else proposal.arguments
+                    ),
                     requires_approval=definition.requires_approval,
                     tool_fingerprint=tool_fingerprint(definition),
                 )

@@ -121,3 +121,16 @@ async def test_output_contract_rejects_inconsistent_search_results(
         output[field] = []
     with pytest.raises(ValidationError):
         model.model_validate_json(json.dumps(output))
+
+
+async def test_scan_limit_failure_tells_the_model_how_to_narrow(tmp_path, monkeypatch):
+    from harnessix.tools import search
+
+    for index in range(5):
+        (tmp_path / f"f{index}.py").write_text("x\n")
+    monkeypatch.setattr(search, "MAX_SEARCH_ENTRIES", 2)
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await execute(tools, "grep", query="x")
+    assert result.outcome == "failed" and result.error.code == "tool_limit_exceeded"
+    assert "path" in result.error.message and "glob" in result.error.message
+    assert "不要原样重试" in result.error.message

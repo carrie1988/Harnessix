@@ -8,7 +8,13 @@ from harnessix.agent.usage import ModelAttempt
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.run_config import SweBenchRunConfig as SweBenchAgentRunConfig
 from harnessix.models.costs import bind_price, build_cost_report, estimate_attempt
-from harnessix.models.pricing import FlatInputPrice, amount_units, rate_units
+from harnessix.models.pricing import (
+    FlatInputPrice,
+    PartitionedInputPrice,
+    amount_units,
+    max_input_rate,
+    rate_units,
+)
 
 
 def _closed_single_attempt_history(turn: Turn) -> bool:
@@ -85,9 +91,9 @@ def _turn_cost(turn: Turn, config: SweBenchAgentRunConfig) -> tuple[int, bool]:
 
 def _input_rate(config: SweBenchAgentRunConfig) -> int:
     price = config.price.input_price
-    if not isinstance(price, FlatInputPrice):
+    if not isinstance(price, FlatInputPrice | PartitionedInputPrice):
         raise KernelError("swebench_cost_invalid", "SWE-bench输入价格合同无效")
-    return rate_units(price.per_million)
+    return max_input_rate(price)
 
 
 def _unknown_request_reserve(config: SweBenchAgentRunConfig) -> int:

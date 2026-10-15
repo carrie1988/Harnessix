@@ -86,3 +86,55 @@ def test_tampered_model_or_price_is_rejected(tmp_path, update):
     path.chmod(0o600)
     with pytest.raises((ValueError, ValidationError, KernelError)):
         read_swebench_agent_run_config(path)
+
+
+def test_prompt_cache_v18_binds_cache_layout_and_partitioned_price(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchPromptCacheAgentRunConfig
+    from harnessix.models.pricing import PartitionedInputPrice
+
+    config = compact_config(tmp_path, **V17, prompt_cache=True)
+    v17 = compact_config(tmp_path, **V17)
+    assert type(config) is SweBenchPromptCacheAgentRunConfig and config.prompt_cache
+    assert config.provider_config.prompt_cache == "explicit_tail"
+    assert config.price.input_price == PartitionedInputPrice(
+        uncached_per_million="12",
+        cache_read_per_million="1.5",
+        cache_creation_per_million="15",
+        cache_write_ttl=None,
+    )
+    assert config.normalize_stringified_arguments and not v17.normalize_stringified_arguments
+    excluded = {"spec_version", "cache_policy", "argument_policy", "provider_config", "price"}
+    assert config.model_dump(mode="json", exclude=excluded) == v17.model_dump(
+        mode="json", exclude=excluded
+    )
+    # 缓存创建价高于未缓存价，最坏费用随之上调，绝不因缓存而放宽。
+    plan = build_agent_test_plan()
+    assert float(config.worst_case_amount(plan)) > float(v17.worst_case_amount(plan))
+
+
+@pytest.mark.parametrize(
+    "update",
+    [
+        {"provider_config": {"prompt_cache": None}},
+        {"price": {"input_price": {"kind": "flat", "per_million": "12"}}},
+    ],
+)
+def test_prompt_cache_requires_both_layout_and_price(tmp_path, update):
+    config = compact_config(tmp_path, **V17, prompt_cache=True)
+    data = config.model_dump(mode="json")
+    for key, fields in update.items():
+        data[key] = {**data[key], **fields}
+        if data[key].get("prompt_cache") is None:
+            data[key].pop("prompt_cache", None)
+    path = tmp_path / "tampered.json"
+    path.write_text(json.dumps(data))
+    path.chmod(0o600)
+    with pytest.raises((ValueError, ValidationError, KernelError)):
+        read_swebench_agent_run_config(path)
+
+
+def test_prompt_cache_requires_the_v17_stack(tmp_path):
+    with pytest.raises(ValueError):
+        compact_config(
+            tmp_path, convergence_guidance=True, patch_deadline_requests=4, prompt_cache=True
+        )

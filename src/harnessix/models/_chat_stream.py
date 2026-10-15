@@ -91,6 +91,10 @@ def _complete_usage_observation(usage: CompletionUsage) -> UsageObservation:
     inputs, outputs = usage.prompt_tokens_details, usage.completion_tokens_details
     cached = inputs.cached_tokens if inputs else None
     written = inputs.cache_write_tokens if inputs else None
+    if inputs is not None and written is None:
+        # DashScope兼容端点以cache_creation_input_tokens报告显式缓存创建；只接受非负整数。
+        extra = (inputs.model_extra or {}).get("cache_creation_input_tokens")
+        written = extra if type(extra) is int and extra >= 0 else None
     try:
         return UsageObservation(
             completeness="complete",

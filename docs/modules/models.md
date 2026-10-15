@@ -103,6 +103,14 @@ Provider私有分词器。Chat Provider逐位置比较本次与上一视图的�
 [`turn_budget_hint`](../../src/harnessix/agent/turn_budget_hint.py)），只进入预算说明文本；准入候选按最大值预付
 最长说明，不作为准入、预付或费用证明。回归见[提示测试](../../tests/agent/test_affordable_request_hint.py)。
 
+### 显式前缀缓存（默认关闭）
+
+`OpenAIChatConfig.prompt_cache="explicit_tail"`时，[请求映射](../../src/harnessix/models/_chat_mapping.py)把指令与历史作为
+跨请求不变的前缀放在前面，并在指令及最后一条文本历史消息上加`cache_control: {"type": "ephemeral"}`；逐请求变化的
+目录与预算说明移到标记之后。只改变内容块形态与顺序，不改变文本；未配置时字段不序列化，旧配置指纹不变。
+DashScope兼容端点以`prompt_tokens_details.cache_creation_input_tokens`报告显式缓存创建，[流解析](../../src/harnessix/models/_chat_stream.py)
+仅在OpenAI字段缺失时接受该非负整数，使分区价格可计。回归见[前缀缓存测试](../../tests/models/test_prompt_cache.py)。
+
 ### 累计预算反馈
 
 `ModelRequest.input_tokens_upper_bound`是当前请求的保守输入准入上界，不是已消费量或资金预留。

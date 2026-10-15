@@ -57,7 +57,15 @@ _READ_ERROR_MESSAGES = {
     "anchor_ambiguous": "字面锚点不唯一；使用更具体的锚点或grep返回的行号",
     "anchor_outside_page": "文本页未覆盖锚点；减小lines_before或增大页容量",
     "definition_unavailable": ("定义视图仅支持有界Python实际声明；请用text查看原文或核对anchor"),
+    "limit_exceeded": (
+        "扫描超过工具上限（条目、字节或深度），未返回结果；不要原样重试，请把path缩小到更具体的"
+        "子目录，或先用glob定位候选文件再grep"
+    ),
 }
+_OUTPUT_LIMIT_MESSAGE = (
+    "工具结果超过输出上限，未返回结果；不要原样重试，请缩小path、减少context_lines或max_results，"
+    "读取文件时改用start_line分页"
+)
 
 
 def _read_output_payload(
@@ -321,7 +329,7 @@ class CodingToolRuntime:
         cancel.checkpoint()
         payload = _read_output_payload(binding, output)
         if payload is None:
-            return self._failure(call, "tool_limit_exceeded", "工具结果超过输出上限")
+            return self._failure(call, "tool_limit_exceeded", _OUTPUT_LIMIT_MESSAGE)
         return ToolResultContent(call_id=call.call_id, outcome="succeeded", output=payload)
 
     async def _execute_read(

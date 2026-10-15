@@ -154,3 +154,25 @@ class SweBenchBudgetTruncationAgentRunConfig(SweBenchPatchDeadlineAgentRunConfig
     @property
     def budget_capped_truncation(self) -> bool:
         return True
+
+
+class SweBenchPromptCacheAgentRunConfig(SweBenchBudgetTruncationAgentRunConfig):
+    """v17之上显式开启前缀缓存布局、分区缓存计价与字符串化容器参数还原；其他边界与v17一致。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v18"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v18"
+    )
+    cache_policy: Literal["explicit_tail_prefix_partitioned_price"] = (
+        "explicit_tail_prefix_partitioned_price"
+    )
+    argument_policy: Literal["restore_stringified_schema_containers"] = (
+        "restore_stringified_schema_containers"
+    )
+
+    @property
+    def prompt_cache(self) -> bool:
+        return True
+
+    @property
+    def normalize_stringified_arguments(self) -> bool:
+        return True

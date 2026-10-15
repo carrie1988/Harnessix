@@ -126,6 +126,14 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 391 个唯一关联节点通过；原复现失败及夹具修正前结果保留。这只闭环预算发布顺序缺陷，
 不降低已发生模型输入用量，不构成 R3 完整真实质量或 R4 商用验收。
 
+## 当前增量：字符串化容器参数还原（默认关闭）
+
+部分模型把数组/对象参数序列化为JSON字符串（实测qwen3.8-max常把`apply_patch_batch.files`发成`"[...]"`，
+被严格合同拒绝后原样重发直至预算耗尽）。`AgentRuntime(normalize_stringified_arguments=True)`时，
+[参数还原](../../src/harnessix/agent/argument_normalization.py)仅在工具`input_schema`于该位置声明array/object
+（含本地`$defs`引用与嵌套items/properties）且字符串可严格解析为同类型容器时还原；其余值原样交给工具原有严格校验。
+还原发生在调用组发布前，审批、审计与执行看到的都是规范参数。回归见[参数还原测试](../../tests/agent/test_argument_normalization.py)。
+
 ## 当前增量：预算压低上限的截断归类（默认关闭）
 
 单次输出上限取`min(输出上限, 剩余预算 − 保守输入)`。临近预算耗尽时上限被压到很小，模型正常回答也会以

@@ -16,10 +16,12 @@ from harnessix.models.pricing import (
     Amount,
     BillingContext,
     FlatInputPrice,
+    PartitionedInputPrice,
     PriceSnapshot,
     amount_units,
     content_digest,
     format_amount,
+    max_input_rate,
     rate_units,
 )
 from harnessix.product_config.action_contracts import ProductProcessProfile
@@ -39,6 +41,9 @@ class BailianModel(NamedTuple):
     input_price: str
     output_price: str
     input_tokens_max: int
+    # 显式前缀缓存的读取/创建单价；None表示未求证，不得开启缓存计价。
+    cache_read_price: str | None = None
+    cache_creation_price: str | None = None
 
 
 SweBenchModel = Literal["qwen3.8-max", "qwen3.7-plus", "qwen3.8-flash"]
@@ -50,6 +55,9 @@ BAILIAN_MODELS: dict[str, BailianModel] = {
         "12",
         "36",
         991_808,
+        # 官方：输入缓存命中1.5、显式缓存命中1、显式创建15；读取取两者较高者以保守计费。
+        "1.5",
+        "15",
     ),
     # 输入超过256K进入更高阶梯；单价只覆盖首阶梯，超出即无法估价并失败关闭。
     "qwen3.7-plus": BailianModel(
@@ -69,6 +77,24 @@ BAILIAN_MODELS: dict[str, BailianModel] = {
         991_808,
     ),
 }
+
+
+def catalog_input_price(
+    model: BailianModel, *, prompt_cache: bool
+) -> FlatInputPrice | PartitionedInputPrice:
+    """目录单价构成的输入价格：开启前缀缓存时按命中/创建/未缓存分区计价。"""
+    if not prompt_cache:
+        return FlatInputPrice(per_million=model.input_price)
+    if model.cache_read_price is None or model.cache_creation_price is None:
+        raise ValueError("SWE-bench模型缺少已求证的缓存单价")
+    return PartitionedInputPrice(
+        uncached_per_million=model.input_price,
+        cache_read_per_million=model.cache_read_price,
+        cache_creation_per_million=model.cache_creation_price,
+        cache_write_ttl=None,
+    )
+
+
 # 思考诊断只对已求证思考价格的模型开放。
 _THINKING_MODEL = "qwen3.8-max"
 
@@ -129,6 +155,7 @@ class _SweBenchAgentRunSettings(ContractModel):
             or provider.output_token_parameter != output_token_parameter
             or provider.thinking_budget != (1024 if self.thinking_enabled else None)
             or not provider.capabilities.tool_calls
+            or provider.prompt_cache != ("explicit_tail" if self.prompt_cache else None)
         ):
             raise ValueError("SWE-bench Provider不符合固定无重试工具边界")
         if (
@@ -147,7 +174,7 @@ class _SweBenchAgentRunSettings(ContractModel):
                     or self.price.input_tokens_max != model.input_tokens_max
                 )
             )
-            or self.price.input_price != FlatInputPrice(per_million=model.input_price)
+            or self.price.input_price != self.expected_input_price
             or self.price.output_per_million != model.output_price
             or self.billing_context.billing_provider != self.price.billing_provider
             or self.billing_context.region != self.price.region
@@ -168,6 +195,14 @@ class _SweBenchAgentRunSettings(ContractModel):
     @property
     def model(self) -> BailianModel:
         return BAILIAN_MODELS[self.provider_config.model]
+
+    @property
+    def prompt_cache(self) -> bool:
+        return False
+
+    @property
+    def expected_input_price(self) -> FlatInputPrice | PartitionedInputPrice:
+        return catalog_input_price(self.model, prompt_cache=self.prompt_cache)
 
     @property
     def fingerprint(self) -> str:
@@ -226,6 +261,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def normalize_stringified_arguments(self) -> bool:
+        return False
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 
@@ -280,7 +319,7 @@ class _SweBenchAgentRunSettings(ContractModel):
     def worst_case_amount(self, plan: SweBenchPreRegistrationPlan) -> Amount:
         """隔离版本逐Case预留；v5/v6包含API容差，不放宽任务硬预算。"""
 
-        input_rate = rate_units(self.model.input_price)
+        input_rate = max_input_rate(self.expected_input_price)
         output_rate = rate_units(self.model.output_price)
         known = (
             len(plan.cases)

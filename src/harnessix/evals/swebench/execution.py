@@ -236,6 +236,7 @@ async def _open_case_turn(
         convergence_guidance=config.convergence_guidance,
         patch_deadline_requests=config.patch_deadline,
         budget_capped_truncation=config.budget_capped_truncation,
+        normalize_stringified_arguments=config.normalize_stringified_arguments,
     )
 
 

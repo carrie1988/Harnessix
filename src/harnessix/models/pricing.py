@@ -67,6 +67,17 @@ class BillingContext(ContractModel):
     cache_write_ttl: CacheTTL | None = None
 
 
+def max_input_rate(price: FlatInputPrice | PartitionedInputPrice) -> int:
+    """保守输入单价：分区价格取未缓存、缓存读取与缓存创建中的最高者。"""
+    if isinstance(price, FlatInputPrice):
+        return rate_units(price.per_million)
+    return max(
+        rate_units(price.uncached_per_million),
+        rate_units(price.cache_read_per_million),
+        rate_units(price.cache_creation_per_million),
+    )
+
+
 class PriceSnapshot(ContractModel):
     spec_version: Literal["harnessix.price/v1"] = "harnessix.price/v1"
     version: Identifier

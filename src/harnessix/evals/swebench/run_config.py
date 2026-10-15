@@ -11,6 +11,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchCompactSurfaceAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
+    SweBenchPromptCacheAgentRunConfig,
 )
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRunConfig
@@ -22,10 +23,15 @@ from harnessix.evals.swebench.run_settings import (
     BAILIAN_MODELS,
     SweBenchModel,
     _SweBenchAgentRunSettings,
+    catalog_input_price,
 )
 from harnessix.evals.swebench.working_set_config import SweBenchWorkingSetAgentRunConfig
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
-from harnessix.models.pricing import Amount, BillingContext, FlatInputPrice, PriceSnapshot
+from harnessix.models.pricing import (
+    Amount,
+    BillingContext,
+    PriceSnapshot,
+)
 
 
 class SweBenchAgentRunConfig(_SweBenchAgentRunSettings):
@@ -304,6 +310,7 @@ SweBenchRunConfig = (
     | SweBenchConvergenceAgentRunConfig
     | SweBenchPatchDeadlineAgentRunConfig
     | SweBenchBudgetTruncationAgentRunConfig
+    | SweBenchPromptCacheAgentRunConfig
 )
 
 
@@ -332,6 +339,7 @@ def _run_config_type(
     convergence_guidance: bool,
     patch_deadline: bool,
     budget_capped_truncation: bool = False,
+    prompt_cache: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -350,6 +358,7 @@ def _run_config_type(
         (convergence_guidance, "收敛指引"),
         (patch_deadline, "Patch截止"),
         (budget_capped_truncation, "预算截断归类"),
+        (prompt_cache, "前缀缓存"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -386,6 +395,10 @@ def _run_config_type(
             raise ValueError("SWE-bench Patch截止只在收敛指引组合之上冻结")
         if budget_capped_truncation and not patch_deadline:
             raise ValueError("SWE-bench预算截断归类只在Patch截止组合之上冻结")
+        if prompt_cache and not budget_capped_truncation:
+            raise ValueError("SWE-bench前缀缓存只在预算截断归类组合之上冻结")
+        if prompt_cache:
+            return SweBenchPromptCacheAgentRunConfig
         if budget_capped_truncation:
             return SweBenchBudgetTruncationAgentRunConfig
         if patch_deadline:
@@ -395,7 +408,13 @@ def _run_config_type(
         if compact_model_surface:
             return SweBenchCompactSurfaceAgentRunConfig
         return SweBenchWorkingSetAgentRunConfig
-    if compact_model_surface or convergence_guidance or patch_deadline or budget_capped_truncation:
+    if (
+        compact_model_surface
+        or convergence_guidance
+        or patch_deadline
+        or budget_capped_truncation
+        or prompt_cache
+    ):
         raise ValueError("SWE-bench紧凑模型表面或收敛指引只与工作集视图组合冻结")
     if enable_definition_views:
         if (
@@ -472,6 +491,7 @@ def build_swebench_agent_run_config(
     patch_deadline_requests: int | None = None,
     budget_capped_truncation: bool = False,
     model: SweBenchModel = "qwen3.8-max",
+    prompt_cache: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -494,6 +514,7 @@ def build_swebench_agent_run_config(
         convergence_guidance=convergence_guidance,
         patch_deadline=patch_deadline_requests is not None,
         budget_capped_truncation=budget_capped_truncation,
+        prompt_cache=prompt_cache,
     )
     extra: dict[str, object] = (
         {}
@@ -526,6 +547,7 @@ def build_swebench_agent_run_config(
             output_token_parameter="max_completion_tokens" if enable_thinking else "max_tokens",
             enable_thinking=enable_thinking,
             thinking_budget=1024 if enable_thinking else None,
+            prompt_cache="explicit_tail" if prompt_cache else None,
         ),
         price=PriceSnapshot(
             version=f"aliyun-bailian-{now.date().isoformat()}-{catalog.price_slug}",
@@ -540,7 +562,7 @@ def build_swebench_agent_run_config(
             valid_until=now + _PRICE_VALIDITY,
             input_tokens_min=0,
             input_tokens_max=983_616 if enable_thinking else catalog.input_tokens_max,
-            input_price=FlatInputPrice(per_million=catalog.input_price),
+            input_price=catalog_input_price(catalog, prompt_cache=prompt_cache),
             output_per_million=catalog.output_price,
         ),
         billing_context=BillingContext(

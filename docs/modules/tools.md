@@ -1157,3 +1157,10 @@ POSIX沿同一FD，Windows沿同一稳定观察；其他语言、伪声明或无
 接线及兼容见[`runtime测试`](../../tests/tools/test_definition_view_runtime.py)，
 词法和快照边界见[`工具测试`](../../tests/tools/test_definition_view.py)。
 该候选可测不等于真实编码质量改善；正式产品默认不启用，SWE-bench须单独冻结比较。
+
+### 上限失败的可操作反馈
+
+搜索扫描超过条目、字节或深度上限（`tool_limit_exceeded`）与结果超过输出上限时，失败消息明确说明未返回结果、
+不要原样重试，并给出缩小`path`、先`glob`定位、减少`context_lines`/`max_results`或分页读取等调整方式；错误码不变。
+实测模型在旧的笼统消息下会原样重发同一调用直至预算耗尽。回归见[扫描上限反馈测试](../../tests/tools/test_search.py)。
+

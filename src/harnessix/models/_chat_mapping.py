@@ -53,15 +53,21 @@ def build_request(
         )
     remaining = request.remaining_tokens or request.budget.max_tokens
     messages = messages_for(request)
+    notes: list[str] = []
     if include_catalog_note:
         catalog_note = current_tool_catalog_instruction(request, names)
         if catalog_note is not None:
-            messages.insert(0, {"role": "system", "content": catalog_note})
+            notes.append(catalog_note)
     budget_note = budget_instruction(request)
     if budget_note is not None:
-        messages.insert(0, {"role": "system", "content": budget_note})
-    if request.instructions is not None:
-        messages.insert(0, {"role": "system", "content": request.instructions})
+        notes.append(budget_note)
+    if config.prompt_cache == "explicit_tail":
+        messages = _explicit_tail_cache(request.instructions, messages, notes)
+    else:
+        for note in notes:
+            messages.insert(0, {"role": "system", "content": note})
+        if request.instructions is not None:
+            messages.insert(0, {"role": "system", "content": request.instructions})
     output_tokens = min(config.max_output_tokens, remaining)
     body: dict[str, Any] = {
         "model": config.model,
@@ -91,3 +97,30 @@ def build_request(
     if len(encode_json(body).encode()) > config.max_request_bytes:
         raise InvalidModelRequest("模型请求超过大小上限")
     return body, names
+
+
+_CACHE_MARKER: dict[str, str] = {"type": "ephemeral"}
+
+
+def _explicit_tail_cache(
+    instructions: str | None, history: list[dict[str, Any]], notes: list[str]
+) -> list[dict[str, Any]]:
+    """指令与历史构成跨请求不变的前缀并在末端打缓存标记；易变说明放在标记之后。
+
+    标记只改变消息内容的块形态，不改变文本；最多两个标记，低于Provider的上限。
+    """
+    messages: list[dict[str, Any]] = []
+    if instructions is not None:
+        messages.append({"role": "system", "content": _marked(instructions)})
+    messages.extend(history)
+    for index in range(len(messages) - 1, -1, -1):
+        content = messages[index].get("content")
+        if isinstance(content, str) and content and index != 0:
+            messages[index] = {**messages[index], "content": _marked(content)}
+            break
+    messages.extend({"role": "system", "content": note} for note in notes)
+    return messages
+
+
+def _marked(text: str) -> list[dict[str, Any]]:
+    return [{"type": "text", "text": text, "cache_control": dict(_CACHE_MARKER)}]
