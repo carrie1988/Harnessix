@@ -1701,3 +1701,18 @@ v18在matplotlib-25960第17步已提交补丁，随后公开测试三次报`Errn
 另查明官方评测器在评测前对每个实例`force_rebuild`：先删除既有镜像再构建，构建遇网络瞬断即镜像缺失并记为error
 （v44的scikit-learn-25973、v47的matplotlib-24026即此因），同时使冻结Profile绑定的镜像ID失效。经用户确认，[评测入口](../../src/harnessix/evals/swebench/official.py)新增`rebuild_images=False`（默认仍为True）：不传`--task-repo`，直接使用执行前已从同一固定Task Repo修订构建的本地镜像；Task Repo修订仍逐字核验，评分规则与评测器不变。
 
+### v50（v19＋Profile v8）与v20缓存收尾工作流
+
+[v50](../../benchmarks/swebench/verified-5-full-history-v50/preregistration.json)执行4/5项后因django-11734预算压力摘要溢出
+（`context_compaction_summary_overflow`，非质量失败）被宿主停止，只读重放[结算](../../benchmarks/swebench/verified-5-full-history-v50/settlement.json)
+6.9124125元；[官方部分评测](../../benchmarks/swebench/verified-5-full-history-v50/official-partial.json)（使用预构建镜像）1/4解决、0 error。
+matplotlib-25960在可写副本上公开测试137项通过（不再报只读），19步自主完成（v18为40步、4.99元）；xarray-4695 13步0.96元。
+仍暴露三个通用缺陷：
+- 补丁后工作流按阶段收窄工具目录，而工具定义位于缓存前缀之首，目录每变一次整段前缀失效（该项后4步重建约76K Token，占费用约60%）；
+- pytest-10051第二个补丁撤销了第一个，Review显示工作区无改动仍关闭全部工具，模型13次调用被拒后放弃；
+- 无工作集时历史增长触发预算压力摘要，摘要溢出直接终止Case。
+
+据此冻结[v20](../../src/harnessix/evals/swebench/compact_surface_config.py)：Runtime`stable_tool_catalog`令线上目录整轮不变（只有阶段视图所选
+工具可执行，越权调用照原路径拒绝且不执行，末尾说明只列可执行别名）；工作流`reopen_after_clean_review`在最近Review显示无改动时
+重新开放调查与修改（新Patch后测试与Review门禁照旧）；关闭预算压力摘要（仍保留上下文溢出时的被动摘要）。
+

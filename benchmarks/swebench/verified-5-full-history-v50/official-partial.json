@@ -1,0 +1,12 @@
+{
+  "v19": {
+    "submitted_instances": 4,
+    "resolved_instances": 1,
+    "empty_patch_instances": 2,
+    "error_instances": 0,
+    "resolved_ids": [
+      "pydata__xarray-4695"
+    ],
+    "error_ids": []
+  }
+}

@@ -68,7 +68,7 @@ def build_request(
         raise InvalidModelRequest("Anthropic History 必须以 user 开始和结束，不支持 prefill")
     names: dict[str, str] = {}
     tools: list[dict[str, Any]] = []
-    for definition in request.tools:
+    for definition in request.wire_tools:
         alias = tool_alias(definition.name)
         if (
             not definition.name
@@ -99,7 +99,10 @@ def build_request(
         for note in (
             request.instructions,
             budget_instruction(request),
-            current_tool_catalog_instruction(request, names),
+            current_tool_catalog_instruction(
+                request,
+                [alias for alias, name in names.items() if name in {t.name for t in request.tools}],
+            ),
         )
         if note
     )

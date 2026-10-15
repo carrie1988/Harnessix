@@ -31,7 +31,7 @@ def build_request(
         )
     ):
         raise InvalidModelRequest("当前 Provider 不支持工具调用")
-    for definition in request.tools:
+    for definition in request.wire_tools:
         alias = tool_alias(definition.name)
         if (
             not definition.name
@@ -55,7 +55,7 @@ def build_request(
     messages = messages_for(request)
     notes: list[str] = []
     if include_catalog_note:
-        catalog_note = current_tool_catalog_instruction(request, names)
+        catalog_note = current_tool_catalog_instruction(request, _callable_aliases(request, names))
         if catalog_note is not None:
             notes.append(catalog_note)
     budget_note = budget_instruction(request)
@@ -137,3 +137,9 @@ def _blocks(text: str, *, marked: bool = False) -> list[dict[str, Any]]:
     if marked:
         block["cache_control"] = dict(_CACHE_MARKER)
     return [block]
+
+
+def _callable_aliases(request: ModelRequest, names: dict[str, str]) -> list[str]:
+    """稳定目录下说明只列出本步可执行的别名；未设目录时与线上目录相同。"""
+    callable_names = {definition.name for definition in request.tools}
+    return [alias for alias, name in names.items() if name in callable_names]

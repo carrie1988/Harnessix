@@ -265,6 +265,14 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def stable_tool_catalog(self) -> bool:
+        return False
+
+    @property
+    def reopen_after_clean_review(self) -> bool:
+        return False
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 

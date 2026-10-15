@@ -20,6 +20,8 @@ class ModelRequest(ContractModel):
     step: int = Field(ge=1)
     history: tuple[Item, ...]
     tools: tuple[ToolDescriptor, ...]
+    # 可选的稳定线上目录：整轮不变以保持前缀缓存；只有 tools 内的工具本步可执行。
+    catalog_tools: tuple[ToolDescriptor, ...] | None = None
     instructions: str | None = Field(default=None, min_length=1, max_length=1_000_000)
     budget: Budget
     consumed_usage: Usage | None = None
@@ -31,8 +33,18 @@ class ModelRequest(ContractModel):
     tool_choice: Literal["auto", "required"] = "auto"
     forced_tool: str | None = Field(default=None, min_length=1, max_length=256)
 
+    @property
+    def wire_tools(self) -> tuple[ToolDescriptor, ...]:
+        return self.tools if self.catalog_tools is None else self.catalog_tools
+
     @model_validator(mode="after")
     def validate_tool_choice(self) -> Self:
+        if self.catalog_tools is not None:
+            catalog = {tool.name: tool for tool in self.catalog_tools}
+            if len(catalog) != len(self.catalog_tools) or any(
+                catalog.get(tool.name) != tool for tool in self.tools
+            ):
+                raise ValueError("可执行工具必须逐字属于稳定线上目录")
         names = {tool.name for tool in self.tools}
         if self.tool_choice == "required" and not names:
             raise ValueError("required工具选择至少需要一个可见工具")

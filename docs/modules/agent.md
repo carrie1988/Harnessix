@@ -134,6 +134,12 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 （含本地`$defs`引用与嵌套items/properties）且字符串可严格解析为同类型容器时还原；其余值原样交给工具原有严格校验。
 还原发生在调用组发布前，审批、审计与执行看到的都是规范参数。回归见[参数还原测试](../../tests/agent/test_argument_normalization.py)。
 
+## 当前增量：稳定线上工具目录（默认关闭）
+
+`AgentRuntime(stable_tool_catalog=True)`时，`ModelRequest.catalog_tools`携带本轮全部可向模型广告的已注册工具，`tools`仍是阶段视图
+选出的本步可执行子集（须逐字属于目录）。Provider按目录发送定义以保持前缀缓存，目录说明只列可执行别名；目录内但本步不可执行的调用
+沿原路径成为拒绝事实，不准备、不执行。回归见[稳定目录测试](../../tests/agent/test_stable_tool_catalog.py)。
+
 ## 当前增量：预算压低上限的截断归类（默认关闭）
 
 单次输出上限取`min(输出上限, 剩余预算 − 保守输入)`。临近预算耗尽时上限被压到很小，模型正常回答也会以

@@ -164,3 +164,46 @@ def test_full_cached_history_v19_drops_the_working_set_only(tmp_path):
 def test_without_prompt_cache_the_working_set_is_still_required(tmp_path):
     with pytest.raises(ValueError):
         compact_config(tmp_path, **V17, working_set_result_groups=None)
+
+
+def test_cached_closure_v20_adds_catalog_reopen_and_drops_pressure_window(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchCachedClosureAgentRunConfig
+
+    common = {**V17, "prompt_cache": True, "working_set_result_groups": None}
+    config = compact_config(
+        tmp_path, **common, cached_closure_workflow=True, budget_pressure_compaction=False
+    )
+    v19 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchCachedClosureAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v20"
+    assert config.stable_tool_catalog and config.reopen_after_clean_review
+    assert not config.budget_pressure_compaction and v19.budget_pressure_compaction
+    assert not v19.stable_tool_catalog and not v19.reopen_after_clean_review
+    excluded = {"spec_version", "context_budget_policy", "catalog_policy", "workflow_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v19.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v20.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"budget_pressure_compaction": True},
+        {"working_set_result_groups": 2},
+        {"prompt_cache": False, "working_set_result_groups": 2},
+    ],
+)
+def test_cached_closure_requires_cache_without_working_set_or_pressure(tmp_path, changes):
+    settings = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        **changes,
+    }
+    with pytest.raises(ValueError):
+        compact_config(tmp_path, **settings)

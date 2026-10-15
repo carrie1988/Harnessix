@@ -367,6 +367,8 @@ async def run_swebench_agent_case(
     patch_deadline_requests: int | None = None,
     budget_capped_truncation: bool = False,
     normalize_stringified_arguments: bool = False,
+    stable_tool_catalog: bool = False,
+    reopen_after_clean_review: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -388,6 +390,8 @@ async def run_swebench_agent_case(
         type(patch_deadline_requests) is not int or not 1 <= patch_deadline_requests <= 16
     ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench Patch截止请求数无效")
+    if type(stable_tool_catalog) is not bool or type(reopen_after_clean_review) is not bool:
+        raise KernelError("swebench_execution_config_invalid", "SWE-bench缓存收尾工作流开关无效")
     if type(normalize_stringified_arguments) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench参数还原开关无效")
     if type(budget_capped_truncation) is not bool:
@@ -481,6 +485,7 @@ async def run_swebench_agent_case(
                             or patch_deadline_requests is not None,
                             budget_capped_truncation=budget_capped_truncation,
                             normalize_stringified_arguments=normalize_stringified_arguments,
+                            stable_tool_catalog=stable_tool_catalog,
                             enable_planning=enable_planning,
                             model_tool_view=CodingWorkflowToolView(
                                 require_pre_edit_profile=False,
@@ -488,6 +493,7 @@ async def run_swebench_agent_case(
                                 allow_optional_pre_edit_profile=allow_optional_pre_edit_profile,
                                 reserve_closing_phase=reserve_closing_phase,
                                 patch_deadline_requests=patch_deadline_requests,
+                                reopen_after_clean_review=reopen_after_clean_review,
                             ),
                         ) as runtime:
                             return await _drive_turn(

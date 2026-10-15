@@ -311,6 +311,39 @@ def _with_exclusive_profile_patch(selection: ModelToolSelection) -> ModelToolSel
     return selection
 
 
+def _latest_review_is_clean(observations: tuple[_Observation, ...]) -> bool:
+    """最近一次成功的git_review在最近一次成功Patch之后，且报告工作区无任何改动。"""
+    patches = [
+        o.index for o in observations if o.tool in _PATCH_TOOLS and o.result.outcome == "succeeded"
+    ]
+    reviews = [
+        o for o in observations if o.tool == _GIT_REVIEW_TOOL and o.result.outcome == "succeeded"
+    ]
+    if not patches or not reviews or reviews[-1].index < patches[-1]:
+        return False
+    output = reviews[-1].result.output
+    status = output.get("status") if isinstance(output, dict) else None
+    diff = output.get("diff") if isinstance(output, dict) else None
+    return (
+        isinstance(status, dict)
+        and status.get("total_entries") == 0
+        and isinstance(diff, dict)
+        and diff.get("utf8_bytes") == 0
+    )
+
+
+def _reopened_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToolSelection:
+    """无可交付改动：恢复首次修改前的调查与修改工具，测试与Review门禁随新Patch照旧生效。"""
+    hidden = _ALL_GIT_REVIEW_TOOLS | _HIDDEN_WORKFLOW_ACTIONS | {"read_artifact"}
+    return ModelToolSelection(
+        tuple(
+            tool
+            for tool in definitions
+            if tool.name not in hidden and not tool.name.startswith("run_profile.")
+        )
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class CodingWorkflowToolView:
     """Expose only the tools valid for the current single-profile coding phase."""
@@ -321,6 +354,8 @@ class CodingWorkflowToolView:
     reserve_closing_phase: bool = False
     # 账本推算的可负担请求数降到该值时，首次修改前的下一请求强制提交Patch。
     patch_deadline_requests: int | None = None
+    # Review显示工作区净改动为空（如后续Patch撤销了修复）时重新开放调查与修改，而不是关闭目录。
+    reopen_after_clean_review: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -328,6 +363,8 @@ class CodingWorkflowToolView:
             or not 1 <= self.patch_deadline_requests <= 16
         ):
             raise ValueError("Patch截止请求数必须是1到16")
+        if type(self.reopen_after_clean_review) is not bool:
+            raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
             raise ValueError("调查收尾工具目录开关必须是布尔值")
         if type(self.enable_planning) is not bool:
@@ -348,6 +385,12 @@ class CodingWorkflowToolView:
             else definitions
         )
         selection = self._select_workflow(turn, workflow_definitions)
+        if (
+            self.reopen_after_clean_review
+            and not selection.tools
+            and _latest_review_is_clean(_observations(turn))
+        ):
+            selection = _reopened_selection(workflow_definitions)
         if self.patch_deadline_requests is not None:
             selection = _enforce_patch_deadline(
                 turn, selection, workflow_definitions, self.patch_deadline_requests

@@ -8,6 +8,7 @@ from typing import Literal
 
 from harnessix.evals.swebench.compact_surface_config import (
     SweBenchBudgetTruncationAgentRunConfig,
+    SweBenchCachedClosureAgentRunConfig,
     SweBenchCompactSurfaceAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
     SweBenchFullCachedHistoryAgentRunConfig,
@@ -313,6 +314,7 @@ SweBenchRunConfig = (
     | SweBenchBudgetTruncationAgentRunConfig
     | SweBenchPromptCacheAgentRunConfig
     | SweBenchFullCachedHistoryAgentRunConfig
+    | SweBenchCachedClosureAgentRunConfig
 )
 
 
@@ -342,6 +344,7 @@ def _run_config_type(
     patch_deadline: bool,
     budget_capped_truncation: bool = False,
     prompt_cache: bool = False,
+    cached_closure_workflow: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -361,6 +364,7 @@ def _run_config_type(
         (patch_deadline, "Patch截止"),
         (budget_capped_truncation, "预算截断归类"),
         (prompt_cache, "前缀缓存"),
+        (cached_closure_workflow, "缓存收尾工作流"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -375,10 +379,13 @@ def _run_config_type(
         or working_set
         or compact_model_surface,
         isolated=isolate_provider_failures,
-        pressure_window=budget_pressure_compaction,
+        # v20以稳定缓存历史替代压力窗口；其余候选仍须保留预算窗口。
+        pressure_window=budget_pressure_compaction or cached_closure_workflow,
         planning=enable_planning,
         thinking=enable_thinking,
     )
+    if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
+        raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
     if enable_grep_snapshots and allow_optional_pre_edit_profile:
         raise ValueError("SWE-bench可选预测试与搜索快照必须独立冻结，不隐式组合候选")
     if working_set:
@@ -426,6 +433,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if cached_closure_workflow:
+            return SweBenchCachedClosureAgentRunConfig
         return SweBenchFullCachedHistoryAgentRunConfig
     if (
         compact_model_surface
@@ -511,6 +520,7 @@ def build_swebench_agent_run_config(
     budget_capped_truncation: bool = False,
     model: SweBenchModel = "qwen3.8-max",
     prompt_cache: bool = False,
+    cached_closure_workflow: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -534,6 +544,7 @@ def build_swebench_agent_run_config(
         patch_deadline=patch_deadline_requests is not None,
         budget_capped_truncation=budget_capped_truncation,
         prompt_cache=prompt_cache,
+        cached_closure_workflow=cached_closure_workflow,
     )
     extra: dict[str, object] = (
         {}

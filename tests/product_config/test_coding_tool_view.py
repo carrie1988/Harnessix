@@ -647,3 +647,58 @@ def test_legacy_two_git_tools_remain_available_when_aggregate_is_absent() -> Non
     turn = _turn((_PATCH, "succeeded", None), (_PROFILE, "succeeded", None))
     selection = CodingWorkflowToolView().select(turn, definitions)
     assert {item.name for item in selection.tools} == {"git_status", "git_diff"}
+
+
+def _reopen_select(turn: Turn, enabled: bool):
+    return CodingWorkflowToolView(
+        require_pre_edit_profile=False, reopen_after_clean_review=enabled
+    ).select(turn, _definitions())
+
+
+_CLEAN_REVIEW = {
+    "status": {"total_entries": 0, "entries": []},
+    "diff": {"text": "", "utf8_bytes": 0},
+}
+_DIRTY_REVIEW = {
+    "status": {"total_entries": 1, "entries": [{"path": "src/example.py"}]},
+    "diff": {"text": "-a\n+b\n", "utf8_bytes": 6},
+}
+
+
+def _reviewed(review_output):
+    return _turn(
+        (_PROFILE, "failed", "process_nonzero_exit"),
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "succeeded", None),
+        ("git_review", "succeeded", None, review_output),
+    )
+
+
+def test_clean_review_reopens_investigation_and_patch_when_enabled() -> None:
+    reopened = _reopen_select(_reviewed(_CLEAN_REVIEW), True)
+    names = {item.name for item in reopened.tools}
+    assert _PATCH in names and "read_file" in names
+    assert not names & {"git_review", "git_status", "git_diff", _PROFILE}
+    assert reopened.forced_tool is None
+
+
+@pytest.mark.parametrize(
+    ("review_output", "enabled"),
+    [(_DIRTY_REVIEW, True), (_CLEAN_REVIEW, False), (None, True)],
+)
+def test_real_changes_or_default_view_still_close_after_review(review_output, enabled) -> None:
+    closed = _reopen_select(_reviewed(review_output), enabled)
+    assert closed.tools == ()
+
+
+def test_a_new_patch_after_reopening_returns_to_the_forced_test_gate() -> None:
+    turn = _turn(
+        (_PROFILE, "failed", "process_nonzero_exit"),
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "succeeded", None),
+        ("git_review", "succeeded", None, _CLEAN_REVIEW),
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None),
+    )
+    selected = _reopen_select(turn, True)
+    assert selected.forced_tool == _PROFILE

@@ -278,6 +278,7 @@ class AgentRuntime:
         report_affordable_requests: bool = False,
         budget_capped_truncation: bool = False,
         normalize_stringified_arguments: bool = False,
+        stable_tool_catalog: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -313,6 +314,10 @@ class AgentRuntime:
             raise KernelError("invalid_runtime_configuration", "参数字符串化还原开关必须是布尔值")
         # 显式开启时按工具Schema还原被字符串化的数组/对象参数；默认保持Provider原样参数。
         self._normalize_stringified_arguments = normalize_stringified_arguments
+        if type(stable_tool_catalog) is not bool:
+            raise KernelError("invalid_runtime_configuration", "稳定工具目录开关必须是布尔值")
+        # 显式开启时整轮线上目录不变（前缀缓存不因阶段收窄而失效），本步可执行集仍由视图决定。
+        self._stable_tool_catalog = stable_tool_catalog
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -2037,7 +2042,11 @@ class AgentRuntime:
 
     def _model_tools_for_turn(self, turn: Turn) -> ModelToolSelection:
         """预付规划和实际请求共用执行端口过滤及当前阶段目录，不为摘要另选工具。"""
-        available = tuple(
+        return self._select_model_tools(turn, self._model_facing_definitions())
+
+    def _model_facing_definitions(self) -> tuple[ToolDescriptor, ...]:
+        """本轮可向模型广告的全部已注册工具；阶段视图只从中选择本步可执行子集。"""
+        return tuple(
             definition
             for definition in self._definitions.values()
             if definition.effect_class == EffectClass.READ_ONLY
@@ -2045,7 +2054,6 @@ class AgentRuntime:
             or (self._patches is not None and definition.name == "apply_patch")
             or (self._patch_batches is not None and definition.name == "apply_patch_batch")
         )
-        return self._select_model_tools(turn, available)
 
     def _select_model_tools(
         self,
@@ -2225,6 +2233,9 @@ class AgentRuntime:
                     step=model_step,
                     history=history,
                     tools=tools,
+                    catalog_tools=(
+                        self._model_facing_definitions() if self._stable_tool_catalog else None
+                    ),
                     instructions=instructions,
                     budget=turn.budget,
                     consumed_usage=(turn.usage if input_budget_aware else None),
@@ -2269,6 +2280,9 @@ class AgentRuntime:
                     step=turn.model_steps,
                     history=history,
                     tools=tools,
+                    catalog_tools=(
+                        self._model_facing_definitions() if self._stable_tool_catalog else None
+                    ),
                     instructions=instructions,
                     budget=turn.budget,
                     consumed_usage=candidate.consumed_usage,

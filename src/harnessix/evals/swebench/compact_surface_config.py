@@ -189,3 +189,31 @@ class SweBenchFullCachedHistoryAgentRunConfig(SweBenchPromptCacheAgentRunConfig)
     )
     history_view_policy: Literal["full_cached_history"] = "full_cached_history"  # type: ignore[assignment]
     retain_recent_result_groups: None = None  # type: ignore[assignment]
+
+
+class SweBenchCachedClosureAgentRunConfig(SweBenchFullCachedHistoryAgentRunConfig):
+    """v19之上：整轮稳定工具目录、净改动为空时重新开放修改、关闭预算压力摘要。
+
+    阶段收窄目录会使整段前缀缓存失效；压力摘要改写只追加历史且其溢出会终止Case。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v20"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v20"
+    )
+    context_budget_policy: Literal["cached_history_without_pressure_window"] = (  # type: ignore[assignment]
+        "cached_history_without_pressure_window"
+    )
+    catalog_policy: Literal["stable_turn_catalog"] = "stable_turn_catalog"
+    workflow_policy: Literal["reopen_after_clean_review"] = "reopen_after_clean_review"
+
+    @property
+    def budget_pressure_compaction(self) -> bool:
+        return False
+
+    @property
+    def stable_tool_catalog(self) -> bool:
+        return True
+
+    @property
+    def reopen_after_clean_review(self) -> bool:
+        return True
