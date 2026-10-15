@@ -231,3 +231,24 @@ async def test_reproduction_fragment_is_explicit_and_compact_only(tmp_path, enab
         build_product_agent_context(
             tmp_path, require_pre_edit_profile=False, reproduction_guidance=True
         )
+
+
+async def test_tool_call_cap_fragment_states_the_plan_limit(tmp_path):
+    prepared = await build_product_agent_context(
+        tmp_path,
+        require_pre_edit_profile=False,
+        compact_instructions=True,
+        convergence_guidance=True,
+        tool_call_cap=8,
+    ).context.prepare(_request(tmp_path), CancelToken())
+    fragments = json.loads(prepared.instructions)["fragments"]
+    (cap,) = [f for f in fragments if f["source"] == "harnessix.coding-tool-call-cap/v1"]
+    assert "at most 8 tool calls" in cap["content"]
+    for invalid in (0, 129, True):
+        with pytest.raises(ValueError):
+            build_product_agent_context(
+                tmp_path,
+                require_pre_edit_profile=False,
+                compact_instructions=True,
+                tool_call_cap=invalid,
+            )

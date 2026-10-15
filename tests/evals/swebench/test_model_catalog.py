@@ -233,3 +233,31 @@ def test_scratch_reproduction_v21_adds_only_the_reproduction_policy(tmp_path):
     assert read_swebench_agent_run_config(path) == config
     with pytest.raises(ValueError):
         compact_config(tmp_path, **V17, prompt_cache=True, scratch_reproduction=True)
+
+
+def test_protocol_robust_v22_adds_only_isolation_and_call_cap(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchProtocolRobustAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+    }
+    config = compact_config(tmp_path, **common, protocol_robust=True)
+    v21 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchProtocolRobustAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v22"
+    assert config.isolate_protocol_failures and config.state_tool_call_cap
+    assert not v21.isolate_protocol_failures and not v21.state_tool_call_cap
+    excluded = {"spec_version", "provider_failure_policy", "tool_call_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v21.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v22.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(tmp_path, **{**common, "scratch_reproduction": False}, protocol_robust=True)

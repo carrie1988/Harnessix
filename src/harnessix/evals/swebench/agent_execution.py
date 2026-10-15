@@ -370,6 +370,7 @@ async def run_swebench_agent_case(
     stable_tool_catalog: bool = False,
     reopen_after_clean_review: bool = False,
     scratch_reproduction: bool = False,
+    state_tool_call_cap: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -395,6 +396,7 @@ async def run_swebench_agent_case(
         type(stable_tool_catalog) is not bool
         or type(reopen_after_clean_review) is not bool
         or type(scratch_reproduction) is not bool
+        or type(state_tool_call_cap) is not bool
     ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench缓存收尾工作流开关无效")
     if type(normalize_stringified_arguments) is not bool:
@@ -473,6 +475,11 @@ async def run_swebench_agent_case(
                             compact_instructions=compact_model_surface,
                             convergence_guidance=convergence_guidance,
                             reproduction_guidance=scratch_reproduction,
+                            tool_call_cap=(
+                                plan.task_budget.max_tool_calls_per_step
+                                if state_tool_call_cap
+                                else None
+                            ),
                         )
                         async with AgentRuntime(
                             owner.sessions,

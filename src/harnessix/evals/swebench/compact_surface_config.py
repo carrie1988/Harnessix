@@ -230,3 +230,26 @@ class SweBenchScratchReproductionAgentRunConfig(SweBenchCachedClosureAgentRunCon
     @property
     def scratch_reproduction(self) -> bool:
         return True
+
+
+class SweBenchProtocolRobustAgentRunConfig(SweBenchScratchReproductionAgentRunConfig):
+    """v21之上：说明单响应工具调用上限；调用组发布前失败的协议输出按足额预留隔离，不停整轮。
+
+    v53因一次响应发出超过上限的并行调用，流在用量前中止、费用未知而整轮停止。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v22"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v22"
+    )
+    provider_failure_policy: Literal["freeze_transport_and_protocol_with_full_reserve"] = (  # type: ignore[assignment]
+        "freeze_transport_and_protocol_with_full_reserve"
+    )
+    tool_call_policy: Literal["state_per_response_cap"] = "state_per_response_cap"
+
+    @property
+    def isolate_protocol_failures(self) -> bool:
+        return True
+
+    @property
+    def state_tool_call_cap(self) -> bool:
+        return True

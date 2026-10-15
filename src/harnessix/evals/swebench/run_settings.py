@@ -277,6 +277,14 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def isolate_protocol_failures(self) -> bool:
+        return False
+
+    @property
+    def state_tool_call_cap(self) -> bool:
+        return False
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 

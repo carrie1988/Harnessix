@@ -247,6 +247,7 @@ def build_product_agent_context(
     compact_instructions: bool = False,
     convergence_guidance: bool = False,
     reproduction_guidance: bool = False,
+    tool_call_cap: int | None = None,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
@@ -276,6 +277,10 @@ def build_product_agent_context(
         reproduction_guidance and not compact_instructions
     ):
         raise ValueError("复现指引只与紧凑编码指令组合")
+    if tool_call_cap is not None and (
+        type(tool_call_cap) is not int or not 1 <= tool_call_cap <= 128 or not compact_instructions
+    ):
+        raise ValueError("单响应工具调用上限说明只与紧凑编码指令组合且为1到128")
     if working_set_result_groups is not None and (
         type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
     ):
@@ -373,6 +378,20 @@ def build_product_agent_context(
                     ),
                 )
                 if reproduction_guidance
+                else ()
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.coding-tool-call-cap/v1",
+                        content=(
+                            f"Send at most {tool_call_cap} tool calls in one response; a response "
+                            "with more fails without running any of them, so split larger batches."
+                        ),
+                    ),
+                )
+                if tool_call_cap is not None
                 else ()
             ),
             *(

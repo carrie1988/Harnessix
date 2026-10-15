@@ -48,18 +48,26 @@ def _isolatable_attempt(attempt: ModelAttempt, config: SweBenchAgentRunConfig) -
     )
 
 
+def _isolatable_provider_failures(config: SweBenchAgentRunConfig) -> frozenset[str]:
+    """传输失败恒可隔离；显式开启时，调用组发布前失败的协议输出（无任何工具效果）同样可隔离。"""
+    if config.isolate_protocol_failures:
+        return frozenset({"provider_transport", "provider_invalid_provider_output"})
+    return frozenset({"provider_transport"})
+
+
 def _can_isolate_transport_failure(turn: Turn, config: SweBenchAgentRunConfig) -> bool:
     """费用可预留，但未闭合尝试、未知摘要和缺失原生请求证明不能据此继续。"""
     attempts = turn.accounted_attempts
+    codes = _isolatable_provider_failures(config)
     if (
         turn.status is not TurnStatus.FAILED
         or turn.error is None
-        or turn.error.code != "provider_transport"
+        or turn.error.code not in codes
         or not _closed_single_attempt_history(turn)
     ):
         return False
     last = turn.model_attempts[-1]
-    if last.status != "failed" or last.error is None or last.error.code != "provider_transport":
+    if last.status != "failed" or last.error is None or last.error.code not in codes:
         return False
     if not all(_isolatable_attempt(attempt, config) for attempt in attempts):
         return False

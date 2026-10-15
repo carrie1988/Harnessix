@@ -308,3 +308,32 @@ def test_first_request_timeout_isolates_with_zero_usage_but_unknown_compaction_s
         update={"compactions": (SimpleNamespace(attempt=None, unaccounted_request_possible=True),)}
     )
     assert not execution._can_isolate_transport_failure(uncertain, config)
+
+
+class _ProtocolIsolation:
+    """以v22语义包裹既有隔离配置：只打开协议失败隔离开关。"""
+
+    isolate_protocol_failures = True
+
+    def __init__(self, config):
+        self._config = config
+
+    def __getattr__(self, name):
+        return getattr(self._config, name)
+
+
+def _protocol(index, config):
+    turn = _transport(index, config)
+    failure = AgentFailure(code="provider_invalid_provider_output", message="fixture")
+    last = turn.model_attempts[-1].model_copy(update={"error": failure})
+    return turn.model_copy(
+        update={"model_attempts": (*turn.model_attempts[:-1], last), "error": failure}
+    )
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_protocol_failure_isolation_is_explicit(tmp_path, enabled):
+    config = _isolated(_config(tmp_path, _plan()))
+    view = _ProtocolIsolation(config) if enabled else config
+    assert execution._can_isolate_transport_failure(_protocol(0, config), view) is enabled
+    assert execution._can_isolate_transport_failure(_transport(0, config), view)

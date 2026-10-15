@@ -240,6 +240,7 @@ async def _open_case_turn(
         stable_tool_catalog=config.stable_tool_catalog,
         reopen_after_clean_review=config.reopen_after_clean_review,
         scratch_reproduction=config.scratch_reproduction,
+        state_tool_call_cap=config.state_tool_call_cap,
     )
 
 

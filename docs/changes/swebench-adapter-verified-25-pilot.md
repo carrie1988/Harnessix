@@ -1741,3 +1741,14 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 据此在[工作流视图](../../src/harnessix/product_config/coding_tool_view.py)的草稿模式下以视图专用投影剔除Patch调用中的草稿文件：仅含草稿的Patch仍触发
 强制测试（运行复现），但重读集合为空、失败后可立即修改源码；首次Patch截止只计入触及可交付文件的Patch。默认模式下行为不变。
 
+### v53新鲜泛化集（停止于8/25）与v22协议稳健性
+
+[v53](../../benchmarks/swebench/generalization-25-v53/preregistration.json)（v21＋Profile v8，600K/40/1800秒）执行8项后停止
+（[执行摘要](../../benchmarks/swebench/generalization-25-v53/execution-summary.json)）：已尝试8项中7项非空补丁、4项自主闭环，已知费用7.026663元、
+保留3.897456元。第8项模型单次响应发出超过`max_tool_calls_per_step=8`的并行调用，流解析以`tool_index_limit_exceeded`中止于用量帧之前，
+费用未知且非传输失败，按冻结策略整轮停止；不续跑、不拼接。收敛指引鼓励“同批发出独立读取”，却从未告知单响应上限。
+据此冻结[v22](../../src/harnessix/evals/swebench/compact_surface_config.py)：
+- [指令片段](../../src/harnessix/product_config/agent_context.py)`harnessix.coding-tool-call-cap/v1`按计划预算明确单响应工具调用上限；
+- [失败隔离](../../src/harnessix/evals/swebench/execution_costs.py)在显式开启时将调用组发布前失败的`provider_invalid_provider_output`
+  （无任何工具效果）与传输失败同样按足额预留隔离，Case记失败但不停整轮；其余条件（尝试闭合、无未知摘要、已结算尝试可估价）不变。
+
