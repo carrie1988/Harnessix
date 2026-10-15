@@ -1,0 +1,88 @@
+"""已求证模型目录：模型名、价格、阶梯上界与计划公开名一一绑定；默认qwen3.8-max不变。"""
+
+import json
+
+import pytest
+from pydantic import ValidationError
+
+from harnessix.agent.errors import KernelError
+from harnessix.evals.swebench.contracts import (
+    SweBenchPreRegistrationPlan,
+    swebench_preregistration_plan_digest,
+)
+from harnessix.evals.swebench.run_config_io import read_swebench_agent_run_config
+from harnessix.evals.swebench.run_settings import BAILIAN_MODELS
+from harnessix.models.pricing import FlatInputPrice
+from tests.evals.swebench.test_compact_surface_run_config import compact_config
+from tests.evals.swebench.test_run_config import build_agent_test_plan
+
+V17 = {"convergence_guidance": True, "patch_deadline_requests": 4, "budget_capped_truncation": True}
+
+
+def plan_for(model: str) -> SweBenchPreRegistrationPlan:
+    plan = build_agent_test_plan().model_copy(
+        update={"model_name": BAILIAN_MODELS[model].public_name}
+    )
+    return SweBenchPreRegistrationPlan.model_validate(
+        {
+            **plan.model_dump(mode="python"),
+            "plan_sha256": swebench_preregistration_plan_digest(plan),
+        }
+    )
+
+
+@pytest.mark.parametrize("model", sorted(BAILIAN_MODELS))
+def test_each_model_binds_its_verified_price_and_public_name(tmp_path, model):
+    plan = plan_for(model)
+    config = compact_config(tmp_path, **V17, model=model, plan=plan)
+    entry = BAILIAN_MODELS[model]
+    assert config.provider_config.model == config.price.model == model
+    assert config.price.input_price == FlatInputPrice(per_million=entry.input_price)
+    assert config.price.output_per_million == entry.output_price
+    assert config.price.input_tokens_max == entry.input_tokens_max
+    assert config.price.source_url == entry.price_url
+    config.require_plan(plan)
+
+
+def test_default_model_is_unchanged(tmp_path):
+    config = compact_config(tmp_path, **V17)
+    assert config.provider_config.model == "qwen3.8-max"
+    assert config.model.public_name == "harnessix-qwen3.8-max"
+
+
+def test_plan_public_name_must_match_the_selected_model(tmp_path):
+    config = compact_config(tmp_path, **V17, model="qwen3.7-plus", plan=plan_for("qwen3.7-plus"))
+    with pytest.raises(ValueError):
+        config.require_plan(plan_for("qwen3.8-max"))
+
+
+def test_cheaper_model_lowers_the_frozen_worst_case(tmp_path):
+    plus = compact_config(tmp_path, **V17, model="qwen3.7-plus", plan=plan_for("qwen3.7-plus"))
+    max_ = compact_config(tmp_path, **V17)
+    assert float(plus.worst_case_amount(plan_for("qwen3.7-plus"))) < float(
+        max_.worst_case_amount(build_agent_test_plan())
+    )
+
+
+@pytest.mark.parametrize(
+    "update",
+    [
+        {"provider_config": {"model": "qwen-unknown"}, "price": {"model": "qwen-unknown"}},
+        {"price": {"output_per_million": "36"}},
+        {"price": {"input_tokens_max": 991_808}},
+    ],
+)
+def test_tampered_model_or_price_is_rejected(tmp_path, update):
+    config = compact_config(tmp_path, **V17, model="qwen3.7-plus", plan=plan_for("qwen3.7-plus"))
+    data = config.model_dump(mode="json")
+    control = tmp_path / "control.json"
+    control.write_text(json.dumps(data))
+    control.chmod(0o600)
+    assert read_swebench_agent_run_config(control) == config
+    for key, fields in update.items():
+        data[key] = {**data[key], **fields}
+    path = tmp_path / "tampered.json"
+    path.write_text(json.dumps(data))
+    path.chmod(0o600)
+    with pytest.raises((ValueError, ValidationError, KernelError)):
+        read_swebench_agent_run_config(path)

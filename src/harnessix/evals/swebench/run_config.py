@@ -18,11 +18,9 @@ from harnessix.evals.swebench.public_test_profile import SweBenchCaseProcessProf
 from harnessix.evals.swebench.run_settings import (
     _BASE_URL,
     _CURRENCY,
-    _INPUT_PRICE,
-    _MODEL,
-    _OUTPUT_PRICE,
-    _PRICE_URL,
     _PRICE_VALIDITY,
+    BAILIAN_MODELS,
+    SweBenchModel,
     _SweBenchAgentRunSettings,
 )
 from harnessix.evals.swebench.working_set_config import SweBenchWorkingSetAgentRunConfig
@@ -473,10 +471,12 @@ def build_swebench_agent_run_config(
     convergence_guidance: bool = False,
     patch_deadline_requests: int | None = None,
     budget_capped_truncation: bool = False,
+    model: SweBenchModel = "qwen3.8-max",
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
     now = observed_at or datetime.now(UTC)
+    catalog = BAILIAN_MODELS[model]
     parameters = {item.name: item.value for item in plan.model_settings.parameters}
     config_model = _run_config_type(
         isolate_provider_failures=isolate_provider_failures,
@@ -510,7 +510,7 @@ def build_swebench_agent_run_config(
         git_executable=str(git_executable),
         provider_config=OpenAIChatConfig(
             base_url=_BASE_URL,
-            model=_MODEL,
+            model=model,
             api_key_env=api_key_env,
             capabilities=ChatCapabilities(
                 tool_calls=True,
@@ -528,10 +528,10 @@ def build_swebench_agent_run_config(
             thinking_budget=1024 if enable_thinking else None,
         ),
         price=PriceSnapshot(
-            version=f"aliyun-bailian-{now.date().isoformat()}-qwen3-8-max",
-            source_url=_PRICE_URL,
+            version=f"aliyun-bailian-{now.date().isoformat()}-{catalog.price_slug}",
+            source_url=catalog.price_url,
             billing_provider="aliyun-bailian",
-            model=_MODEL,
+            model=model,
             region="cn-beijing",
             service_tier="payg",
             inference_mode="thinking" if enable_thinking else "non-thinking",
@@ -539,9 +539,9 @@ def build_swebench_agent_run_config(
             valid_from=now,
             valid_until=now + _PRICE_VALIDITY,
             input_tokens_min=0,
-            input_tokens_max=983_616 if enable_thinking else 991_808,
-            input_price=FlatInputPrice(per_million=_INPUT_PRICE),
-            output_per_million=_OUTPUT_PRICE,
+            input_tokens_max=983_616 if enable_thinking else catalog.input_tokens_max,
+            input_price=FlatInputPrice(per_million=catalog.input_price),
+            output_per_million=catalog.output_price,
         ),
         billing_context=BillingContext(
             billing_provider="aliyun-bailian",

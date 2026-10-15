@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal, NamedTuple, Self
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
@@ -24,15 +24,53 @@ from harnessix.models.pricing import (
 )
 from harnessix.product_config.action_contracts import ProductProcessProfile
 
-_MODEL = "qwen3.8-max"
-_PUBLIC_MODEL = "harnessix-qwen3.8-max"
 _PROVIDER = "openai_chat"
 _BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-_PRICE_URL = "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
 _PRICE_VALIDITY = timedelta(hours=24)
-_INPUT_PRICE = "12"
-_OUTPUT_PRICE = "36"
 _CURRENCY: Literal["CNY"] = "CNY"
+
+
+class BailianModel(NamedTuple):
+    """北京PAYG非思考单价：只收录已按官方页面求证的模型，单价只在input_tokens_max内有效。"""
+
+    public_name: str
+    price_url: str
+    price_slug: str
+    input_price: str
+    output_price: str
+    input_tokens_max: int
+
+
+SweBenchModel = Literal["qwen3.8-max", "qwen3.7-plus", "qwen3.8-flash"]
+BAILIAN_MODELS: dict[str, BailianModel] = {
+    "qwen3.8-max": BailianModel(
+        "harnessix-qwen3.8-max",
+        "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+        "qwen3-8-max",
+        "12",
+        "36",
+        991_808,
+    ),
+    # 输入超过256K进入更高阶梯；单价只覆盖首阶梯，超出即无法估价并失败关闭。
+    "qwen3.7-plus": BailianModel(
+        "harnessix-qwen3.7-plus",
+        "https://help.aliyun.com/zh/model-studio/qwen3-7-plus",
+        "qwen3-7-plus",
+        "2",
+        "8",
+        256_000,
+    ),
+    "qwen3.8-flash": BailianModel(
+        "harnessix-qwen3.8-flash",
+        "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+        "qwen3-8-flash",
+        "0.8",
+        "2.7",
+        991_808,
+    ),
+}
+# 思考诊断只对已求证思考价格的模型开放。
+_THINKING_MODEL = "qwen3.8-max"
 
 
 class _SweBenchAgentRunSettings(ContractModel):
@@ -79,10 +117,12 @@ class _SweBenchAgentRunSettings(ContractModel):
         if work == cache or work.is_relative_to(cache) or cache.is_relative_to(work):
             raise ValueError("SWE-bench运行目录与仓库缓存必须相互隔离")
         provider = self.provider_config
+        model = BAILIAN_MODELS.get(provider.model)
+        if model is None or (self.thinking_enabled and provider.model != _THINKING_MODEL):
+            raise ValueError("SWE-bench模型不在已求证价格目录内")
         output_token_parameter = "max_completion_tokens" if self.thinking_enabled else "max_tokens"
         if (
             provider.base_url != _BASE_URL
-            or provider.model != _MODEL
             or provider.max_attempts != 1
             or provider.retry_delay_seconds != 0
             or provider.enable_thinking is not self.thinking_enabled
@@ -100,8 +140,15 @@ class _SweBenchAgentRunSettings(ContractModel):
                 self.thinking_enabled
                 and (self.price.input_tokens_min != 0 or self.price.input_tokens_max != 983_616)
             )
-            or self.price.input_price != FlatInputPrice(per_million=_INPUT_PRICE)
-            or self.price.output_per_million != _OUTPUT_PRICE
+            or (
+                not self.thinking_enabled
+                and (
+                    self.price.input_tokens_min != 0
+                    or self.price.input_tokens_max != model.input_tokens_max
+                )
+            )
+            or self.price.input_price != FlatInputPrice(per_million=model.input_price)
+            or self.price.output_per_million != model.output_price
             or self.billing_context.billing_provider != self.price.billing_provider
             or self.billing_context.region != self.price.region
             or self.billing_context.service_tier != self.price.service_tier
@@ -117,6 +164,10 @@ class _SweBenchAgentRunSettings(ContractModel):
         if len(engines) != 1:
             raise ValueError("SWE-bench Case Profile必须绑定同一个Container Engine")
         return self
+
+    @property
+    def model(self) -> BailianModel:
+        return BAILIAN_MODELS[self.provider_config.model]
 
     @property
     def fingerprint(self) -> str:
@@ -194,7 +245,7 @@ class _SweBenchAgentRunSettings(ContractModel):
         expected_cases = tuple(sorted((case.instance_id, case.repo) for case in plan.cases))
         if (
             self.plan_sha256 != plan.plan_sha256
-            or plan.model_name != _PUBLIC_MODEL
+            or plan.model_name != self.model.public_name
             or plan.model_settings.provider != _PROVIDER
             or parameters
             not in (
@@ -229,14 +280,18 @@ class _SweBenchAgentRunSettings(ContractModel):
     def worst_case_amount(self, plan: SweBenchPreRegistrationPlan) -> Amount:
         """隔离版本逐Case预留；v5/v6包含API容差，不放宽任务硬预算。"""
 
+        input_rate = rate_units(self.model.input_price)
+        output_rate = rate_units(self.model.output_price)
         known = (
             len(plan.cases)
             * (plan.task_budget.max_tokens + self.output_token_limit_margin)
-            * max(rate_units(_INPUT_PRICE), rate_units(_OUTPUT_PRICE))
+            * max(input_rate, output_rate)
         )
-        unknown = self.provider_config.max_request_bytes * rate_units(_INPUT_PRICE) + (
-            self.provider_config.max_output_tokens + self.output_token_limit_margin
-        ) * rate_units(_OUTPUT_PRICE)
+        unknown = (
+            self.provider_config.max_request_bytes * input_rate
+            + (self.provider_config.max_output_tokens + self.output_token_limit_margin)
+            * output_rate
+        )
         return format_amount(
             known + unknown * (len(plan.cases) if self.isolate_provider_failures else 1)
         )

@@ -1637,3 +1637,15 @@ astropy-8872、requests-1142。1项error：scikit-learn-25973评测镜像构建�
 截断，本质是预算耗尽；截断响应在调用组发布前失败，无工具效果。据此新增默认关闭的
 [预算截断归类](../modules/agent.md)，由显式v17（v16之上，`truncation_policy`入指纹）冻结；v44/v45配置与结果不变。
 
+### 部分官方评测（v45前16项）与低价模型目录
+
+[v45前16项官方评测](../../benchmarks/swebench/generalization-25-v45/partial16-official-summary.json)（只读、非预注册指标）：
+Resolved 7/16，空补丁6，error 0，ambiguous 1；补丁取自HMAC封存的回收记录并逐项核对Case状态SHA。
+
+因预算约束，[运行设置](../../src/harnessix/evals/swebench/run_settings.py)新增已求证北京PAYG非思考单价的模型目录：
+qwen3.8-max（12/36元每百万Token，默认不变）、qwen3.7-plus（输入≤256K时2/8元，单价只覆盖首阶梯，超出无法估价即失败关闭）、
+qwen3.8-flash（0.8/2.7元）。模型、价格、阶梯上界与计划公开名（`harnessix-<model>`）一一校验，思考诊断仅限qwen3.8-max；
+旧配置字段与指纹不变。qwen3.7-plus单请求连通探针（0.000852元，已入账）确认非思考、并行工具调用与流式用量可用。
+为v46按qwen3.8-max冻结的计划在执行前作废，未发出任何模型请求；后续以qwen3.7-plus分别重跑开发集与v46同一批新题，
+换模型后的成绩不与qwen3.8-max结果直接比较。
+
