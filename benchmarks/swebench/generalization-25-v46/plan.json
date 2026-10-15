@@ -6,7 +6,7 @@
   "candidate_count": 450,
   "candidate_manifest_sha256": "369df5b496118a60563b0f46fee01f7dd44b6e3ead99b2d196576b04b4562b33",
   "split": "test",
-  "harnessix_revision": "a5256d201a85a6326a84c8d95b33a98536e86d2e",
+  "harnessix_revision": "6fa560e9d0df7e548c11a3f999b29c70654795ab",
   "swebench_revision": "02e7a74ffd0b707aab73d203fe87bdc7c76afc8e",
   "swebench_package_version": "5.0.2",
   "task_repo_revision": "3d07b464b7b311a0cbfb5ed5b2d8a3b96f84a33d",
@@ -313,5 +313,5 @@
       "created_at": "2018-01-20T18:25:59Z"
     }
   ],
-  "plan_sha256": "d52c6cad038312984efd10b08e3ea9318ea7386bc63f25b28cb8b5e38dda6991"
+  "plan_sha256": "6132960ad8dc0443b4d9a6baa554ec2297d35e5198c9da2eb4744c4d7b45ccab"
 }

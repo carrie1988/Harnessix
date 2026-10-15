@@ -1649,3 +1649,14 @@ qwen3.8-flash（0.8/2.7元）。模型、价格、阶梯上界与计划公开名
 为v46按qwen3.8-max冻结的计划在执行前作废，未发出任何模型请求；后续以qwen3.7-plus分别重跑开发集与v46同一批新题，
 换模型后的成绩不与qwen3.8-max结果直接比较。
 
+### qwen3.7-plus开发集（v47）与回到qwen3.8-max的v46
+
+[v47预注册](../../benchmarks/swebench/verified-25-plus-v47/preregistration.json)：v27同25项、同50K/16/900秒、v17候选，只换为
+qwen3.7-plus。[官方结果](../../benchmarks/swebench/verified-25-plus-v47/official-summary.json)：**Resolved 0/25**，空补丁24，1项error；
+已知费用1.45389元，另保留4.794912元未决预留。9项在首个请求即`httpx_connect_failure`（本机网络/代理同期不稳，同时段apt源亦不可达，
+未到达Provider），其余16项中15项预算耗尽仍无补丁，仅1项非空。结论：同预算档下qwen3.7-plus远不能提交修改，换低价模型不可行；
+据此不执行同批新题的[v48](../../benchmarks/swebench/generalization-25-plus-v48/plan.json)。
+
+按用户选择回到qwen3.8-max执行v46。模型目录提交改变了`run_settings.py`，执行修订门要求源码逐字一致，故v46在任何模型请求前
+只把源码修订移至当前提交（[修订记录](../../benchmarks/swebench/generalization-25-v46/plan-amendment.json)），Case、预算、模型名与参数不变。
+

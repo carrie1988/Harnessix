@@ -1,0 +1,8 @@
+{
+  "amended_before_any_model_request": true,
+  "previous_plan_sha256": "d52c6cad038312984efd10b08e3ea9318ea7386bc63f25b28cb8b5e38dda6991",
+  "previous_harnessix_revision": "a5256d201a85a6326a84c8d95b33a98536e86d2e",
+  "plan_sha256": "6132960ad8dc0443b4d9a6baa554ec2297d35e5198c9da2eb4744c4d7b45ccab",
+  "harnessix_revision": "6fa560e9d0df7e548c11a3f999b29c70654795ab",
+  "reason": "model catalog commit changed run_settings.py after the v46 freeze; the execution revision gate requires byte-identical source, so only the source revision moved; cases, budget, model name and settings unchanged"
+}
