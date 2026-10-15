@@ -3028,3 +3028,8 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 `ProductProcessProfile.tmpfs_bytes`（64MiB～8GiB，须小于`memory_bytes`）显式设定容器`/tmp`的tmpfs容量；仍为
 `noexec,nosuid,nodev`并计入内存上限。未配置时字段不序列化、沿用64MiB，旧Profile摘要不变。
 
+### 复现草稿目录
+
+[`coding_scratch`](../../src/harnessix/product_config/coding_scratch.py)定义保留目录名`harnessix_scratch`：显式开启时编码工作流视图在判断
+Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Git `:(exclude,glob)**/harnessix_scratch/**`排除任意深度的草稿。
+

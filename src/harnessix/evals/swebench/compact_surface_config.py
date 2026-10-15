@@ -217,3 +217,16 @@ class SweBenchCachedClosureAgentRunConfig(SweBenchFullCachedHistoryAgentRunConfi
     @property
     def reopen_after_clean_review(self) -> bool:
         return True
+
+
+class SweBenchScratchReproductionAgentRunConfig(SweBenchCachedClosureAgentRunConfig):
+    """v20之上：先在复现草稿目录写失败测试再修复；草稿永不进入交付补丁或完成判断。"""
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v21"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v21"
+    )
+    reproduction_policy: Literal["scratch_reproduction_test"] = "scratch_reproduction_test"
+
+    @property
+    def scratch_reproduction(self) -> bool:
+        return True

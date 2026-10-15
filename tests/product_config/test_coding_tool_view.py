@@ -702,3 +702,21 @@ def test_a_new_patch_after_reopening_returns_to_the_forced_test_gate() -> None:
     )
     selected = _reopen_select(turn, True)
     assert selected.forced_tool == _PROFILE
+
+
+_SCRATCH_ONLY_REVIEW = {
+    "status": {
+        "total_entries": 1,
+        "truncated": False,
+        "entries": [{"path": "tests/harnessix_scratch/", "kind": "untracked"}],
+    },
+    "diff": {"text": "", "utf8_bytes": 0},
+}
+
+
+@pytest.mark.parametrize(("scratch", "reopened"), [(True, True), (False, False)])
+def test_scratch_only_changes_are_not_a_deliverable_review(scratch: bool, reopened: bool) -> None:
+    selected = CodingWorkflowToolView(
+        require_pre_edit_profile=False, reopen_after_clean_review=True, scratch_reproduction=scratch
+    ).select(_reviewed(_SCRATCH_ONLY_REVIEW), _definitions())
+    assert bool(selected.tools) is reopened

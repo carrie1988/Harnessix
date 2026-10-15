@@ -255,7 +255,7 @@ async def test_suite_freezes_all_25_cases_and_reopens_same_turns(
         assert state.patch_sha256 == hashlib.sha256(patch.encode()).hexdigest()
         sealed[index] = patch
 
-    def collect(workspace, *_args):
+    def collect(workspace, *_args, **_kwargs):
         collected.append(workspace)
         return PATCH
 
@@ -458,7 +458,7 @@ async def test_suite_preserves_failure_and_only_continues_quality_cases(
     monkeypatch.setattr(execution, "materialize_swebench_workspace", materialize)
     monkeypatch.setattr(execution, "_open_case_turn", open_turn)
     monkeypatch.setattr(execution, "_turn_cost", lambda *_: (0, True))
-    monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_: patch)
+    monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_, **__: patch)
 
     fatal = expected_code == "swebench_public_tests_unavailable"
     caught_code = None
@@ -625,7 +625,7 @@ def _offline_suite(monkeypatch, plan, config, turns):
 
     monkeypatch.setattr(execution, "materialize_swebench_workspace", materialize)
     monkeypatch.setattr(execution, "_open_case_turn", open_turn)
-    monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_: PATCH)
+    monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_, **__: PATCH)
     return calls
 
 
@@ -876,7 +876,7 @@ async def test_mapped_quality_failure_resume_rejects_prefix_or_runtime_evidence_
         assert drift.value.code == "swebench_suite_execution_state_invalid"
     elif tamper != "none":
         if tamper == "patch":
-            monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_: PATCH + "drift")
+            monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_, **__: PATCH + "drift")
         else:
             monkeypatch.setattr(execution, "_turn_cost", lambda *_: (0, False))
         with pytest.raises(KernelError) as drift:

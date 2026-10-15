@@ -369,6 +369,7 @@ async def run_swebench_agent_case(
     normalize_stringified_arguments: bool = False,
     stable_tool_catalog: bool = False,
     reopen_after_clean_review: bool = False,
+    scratch_reproduction: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -390,7 +391,11 @@ async def run_swebench_agent_case(
         type(patch_deadline_requests) is not int or not 1 <= patch_deadline_requests <= 16
     ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench Patch截止请求数无效")
-    if type(stable_tool_catalog) is not bool or type(reopen_after_clean_review) is not bool:
+    if (
+        type(stable_tool_catalog) is not bool
+        or type(reopen_after_clean_review) is not bool
+        or type(scratch_reproduction) is not bool
+    ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench缓存收尾工作流开关无效")
     if type(normalize_stringified_arguments) is not bool:
         raise KernelError("swebench_execution_config_invalid", "SWE-bench参数还原开关无效")
@@ -467,6 +472,7 @@ async def run_swebench_agent_case(
                             working_set_result_groups=working_set_result_groups,
                             compact_instructions=compact_model_surface,
                             convergence_guidance=convergence_guidance,
+                            reproduction_guidance=scratch_reproduction,
                         )
                         async with AgentRuntime(
                             owner.sessions,
@@ -494,6 +500,7 @@ async def run_swebench_agent_case(
                                 reserve_closing_phase=reserve_closing_phase,
                                 patch_deadline_requests=patch_deadline_requests,
                                 reopen_after_clean_review=reopen_after_clean_review,
+                                scratch_reproduction=scratch_reproduction,
                             ),
                         ) as runtime:
                             return await _drive_turn(

@@ -207,3 +207,29 @@ def test_cached_closure_requires_cache_without_working_set_or_pressure(tmp_path,
     }
     with pytest.raises(ValueError):
         compact_config(tmp_path, **settings)
+
+
+def test_scratch_reproduction_v21_adds_only_the_reproduction_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchScratchReproductionAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+    }
+    config = compact_config(tmp_path, **common, scratch_reproduction=True)
+    v20 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchScratchReproductionAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v21"
+    assert config.scratch_reproduction and not v20.scratch_reproduction
+    excluded = {"spec_version", "reproduction_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v20.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v21.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(tmp_path, **V17, prompt_cache=True, scratch_reproduction=True)

@@ -14,6 +14,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchFullCachedHistoryAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
+    SweBenchScratchReproductionAgentRunConfig,
 )
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRunConfig
@@ -315,6 +316,7 @@ SweBenchRunConfig = (
     | SweBenchPromptCacheAgentRunConfig
     | SweBenchFullCachedHistoryAgentRunConfig
     | SweBenchCachedClosureAgentRunConfig
+    | SweBenchScratchReproductionAgentRunConfig
 )
 
 
@@ -345,6 +347,7 @@ def _run_config_type(
     budget_capped_truncation: bool = False,
     prompt_cache: bool = False,
     cached_closure_workflow: bool = False,
+    scratch_reproduction: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -365,6 +368,7 @@ def _run_config_type(
         (budget_capped_truncation, "预算截断归类"),
         (prompt_cache, "前缀缓存"),
         (cached_closure_workflow, "缓存收尾工作流"),
+        (scratch_reproduction, "复现草稿"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -386,6 +390,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if scratch_reproduction and not cached_closure_workflow:
+        raise ValueError("SWE-bench复现草稿只在缓存收尾工作流之上冻结")
     if enable_grep_snapshots and allow_optional_pre_edit_profile:
         raise ValueError("SWE-bench可选预测试与搜索快照必须独立冻结，不隐式组合候选")
     if working_set:
@@ -433,6 +439,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if scratch_reproduction:
+            return SweBenchScratchReproductionAgentRunConfig
         if cached_closure_workflow:
             return SweBenchCachedClosureAgentRunConfig
         return SweBenchFullCachedHistoryAgentRunConfig
@@ -521,6 +529,7 @@ def build_swebench_agent_run_config(
     model: SweBenchModel = "qwen3.8-max",
     prompt_cache: bool = False,
     cached_closure_workflow: bool = False,
+    scratch_reproduction: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -545,6 +554,7 @@ def build_swebench_agent_run_config(
         budget_capped_truncation=budget_capped_truncation,
         prompt_cache=prompt_cache,
         cached_closure_workflow=cached_closure_workflow,
+        scratch_reproduction=scratch_reproduction,
     )
     extra: dict[str, object] = (
         {}

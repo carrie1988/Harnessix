@@ -214,3 +214,20 @@ def test_budget_truncation_requires_the_patch_deadline_stack(tmp_path, changes):
                 **changes,
             },
         )
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_reproduction_fragment_is_explicit_and_compact_only(tmp_path, enabled):
+    prepared = await build_product_agent_context(
+        tmp_path,
+        require_pre_edit_profile=False,
+        compact_instructions=True,
+        convergence_guidance=True,
+        reproduction_guidance=enabled,
+    ).context.prepare(_request(tmp_path), CancelToken())
+    sources = [f["source"] for f in json.loads(prepared.instructions)["fragments"]]
+    assert ("harnessix.coding-reproduction/v1" in sources) is enabled
+    with pytest.raises(ValueError):
+        build_product_agent_context(
+            tmp_path, require_pre_edit_profile=False, reproduction_guidance=True
+        )

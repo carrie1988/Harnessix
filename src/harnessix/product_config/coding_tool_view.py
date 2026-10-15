@@ -18,6 +18,7 @@ from harnessix.delivery.rollback_action import WORKSPACE_ROLLBACK_TOOL
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import EffectClass, ToolDescriptor
 from harnessix.product_config.coding_closure_budget import prefer_closing_over_investigation
+from harnessix.product_config.coding_scratch import is_scratch_path
 
 _PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
@@ -311,8 +312,10 @@ def _with_exclusive_profile_patch(selection: ModelToolSelection) -> ModelToolSel
     return selection
 
 
-def _latest_review_is_clean(observations: tuple[_Observation, ...]) -> bool:
-    """最近一次成功的git_review在最近一次成功Patch之后，且报告工作区无任何改动。"""
+def _latest_review_is_clean(
+    observations: tuple[_Observation, ...], *, ignore_scratch: bool = False
+) -> bool:
+    """最近一次成功的git_review在最近一次成功Patch之后，且无可交付改动（可忽略复现草稿）。"""
     patches = [
         o.index for o in observations if o.tool in _PATCH_TOOLS and o.result.outcome == "succeeded"
     ]
@@ -324,12 +327,22 @@ def _latest_review_is_clean(observations: tuple[_Observation, ...]) -> bool:
     output = reviews[-1].result.output
     status = output.get("status") if isinstance(output, dict) else None
     diff = output.get("diff") if isinstance(output, dict) else None
-    return (
-        isinstance(status, dict)
-        and status.get("total_entries") == 0
-        and isinstance(diff, dict)
-        and diff.get("utf8_bytes") == 0
-    )
+    if not isinstance(status, dict) or not isinstance(diff, dict) or status.get("truncated"):
+        return False
+    entries = status.get("entries")
+    if not isinstance(entries, list) or len(entries) != status.get("total_entries"):
+        return False
+    deliverable = [
+        entry
+        for entry in entries
+        if not (
+            ignore_scratch
+            and isinstance(entry, dict)
+            and isinstance(entry.get("path"), str)
+            and is_scratch_path(entry["path"])
+        )
+    ]
+    return not deliverable and diff.get("utf8_bytes") == 0
 
 
 def _reopened_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToolSelection:
@@ -356,6 +369,8 @@ class CodingWorkflowToolView:
     patch_deadline_requests: int | None = None
     # Review显示工作区净改动为空（如后续Patch撤销了修复）时重新开放调查与修改，而不是关闭目录。
     reopen_after_clean_review: bool = False
+    # 复现草稿目录中的改动不算可交付改动（草稿永不进入补丁）。
+    scratch_reproduction: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -363,6 +378,8 @@ class CodingWorkflowToolView:
             or not 1 <= self.patch_deadline_requests <= 16
         ):
             raise ValueError("Patch截止请求数必须是1到16")
+        if type(self.scratch_reproduction) is not bool:
+            raise ValueError("复现草稿开关必须是布尔值")
         if type(self.reopen_after_clean_review) is not bool:
             raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
@@ -388,7 +405,9 @@ class CodingWorkflowToolView:
         if (
             self.reopen_after_clean_review
             and not selection.tools
-            and _latest_review_is_clean(_observations(turn))
+            and _latest_review_is_clean(
+                _observations(turn), ignore_scratch=self.scratch_reproduction
+            )
         ):
             selection = _reopened_selection(workflow_definitions)
         if self.patch_deadline_requests is not None:

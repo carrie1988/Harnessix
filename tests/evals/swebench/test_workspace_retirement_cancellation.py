@@ -74,7 +74,7 @@ async def test_parent_cancel_waits_for_retirement_before_releasing_suite_lock(
     monkeypatch.setattr(execution, "materialize_swebench_workspace", materialize)
     monkeypatch.setattr(execution, "_open_case_turn", open_turn)
     monkeypatch.setattr(execution, "_turn_cost", lambda *_: (0, True))
-    monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_: PATCH)
+    monkeypatch.setattr(execution, "collect_workspace_patch", lambda *_, **__: PATCH)
     monkeypatch.setattr(execution, "seal_and_retire_workspace", blocked_retirement)
     task = asyncio.create_task(
         execution.run_swebench_agent_suite(

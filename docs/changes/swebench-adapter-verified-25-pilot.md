@@ -1716,3 +1716,13 @@ matplotlib-25960在可写副本上公开测试137项通过（不再报只读）�
 工具可执行，越权调用照原路径拒绝且不执行，末尾说明只列可执行别名）；工作流`reopen_after_clean_review`在最近Review显示无改动时
 重新开放调查与修改（新Patch后测试与Review门禁照旧）；关闭预算压力摘要（仍保留上下文溢出时的被动摘要）。
 
+### v21：先复现再修复（复现草稿目录）
+
+v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过官方针对问题本身的测试——模型只验证了“没改坏”，没验证
+“修好了”。高分Agent的通用做法是先写出能复现所报问题的失败用例，再修复至其通过。据此冻结[v21](../../src/harnessix/evals/swebench/compact_surface_config.py)：
+- [复现指引](../../src/harnessix/product_config/agent_context.py)`harnessix.coding-reproduction/v1`：修改源码前在主测试目录的
+  `harnessix_scratch/`下写最小失败用例（Django为`tests/harnessix_scratch/tests.py`加空`__init__.py`），用公开测试Profile只选该文件
+  确认按所报原因失败，修复后与最相关既有测试一起重跑；不得修改既有测试文件。
+- [草稿目录](../../src/harnessix/product_config/coding_scratch.py)任意深度的`harnessix_scratch/`由[补丁收集](../../src/harnessix/evals/swebench/predictions.py)
+  排除，永不进入交付补丁，因而不会与官方测试补丁冲突；Review“净改动为空”的判断同样忽略草稿。
+

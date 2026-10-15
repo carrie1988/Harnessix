@@ -239,6 +239,7 @@ async def _open_case_turn(
         normalize_stringified_arguments=config.normalize_stringified_arguments,
         stable_tool_catalog=config.stable_tool_catalog,
         reopen_after_clean_review=config.reopen_after_clean_review,
+        scratch_reproduction=config.scratch_reproduction,
     )
 
 
@@ -377,7 +378,10 @@ async def run_swebench_agent_suite(
                 retired_patch
                 if retired_patch is not None
                 else collect_workspace_patch(
-                    workspace, Path(config.git_executable), case.base_commit
+                    workspace,
+                    Path(config.git_executable),
+                    case.base_commit,
+                    exclude_scratch=config.scratch_reproduction,
                 )
             )
             case_cost, cost_complete = _turn_cost(turn, config)

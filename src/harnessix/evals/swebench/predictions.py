@@ -16,6 +16,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.files import read_regular, write_atomic
+from harnessix.product_config.coding_scratch import SCRATCH_EXCLUDE_PATHSPEC
 
 _MAX_PATCH_BYTES = 8 * 1024 * 1024
 _MAX_PREDICTIONS_BYTES = 64 * 1024 * 1024
@@ -143,8 +144,13 @@ def collect_workspace_patch(
     workspace: Path,
     git_executable: Path,
     base_commit: str,
+    *,
+    exclude_scratch: bool = False,
 ) -> str:
-    """用临时 index 收集 tracked、untracked 与删除项，不修改真实 Git index。"""
+    """用临时 index 收集 tracked、untracked 与删除项，不修改真实 Git index。
+
+    exclude_scratch 时排除任意深度的复现草稿目录，草稿测试不进入交付补丁。
+    """
 
     root = _resolved_directory(workspace)
     git = _resolved_executable(git_executable)
@@ -157,7 +163,8 @@ def collect_workspace_patch(
         index = Path(directory) / "index"
         environment = {**_GIT_ENVIRONMENT, "GIT_INDEX_FILE": str(index)}
         _run_git(git, root, ("read-tree", base_commit), environment=environment)
-        _run_git(git, root, ("add", "--all", "--", "."), environment=environment)
+        pathspecs = (".", SCRATCH_EXCLUDE_PATHSPEC) if exclude_scratch else (".",)
+        _run_git(git, root, ("add", "--all", "--", *pathspecs), environment=environment)
         body = _run_git(
             git,
             root,

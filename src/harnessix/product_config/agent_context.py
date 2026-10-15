@@ -66,6 +66,18 @@ _CONVERGENCE_INSTRUCTIONS = (
     "verification. Put independent reads in one response."
 )
 
+_REPRODUCTION_INSTRUCTIONS = (
+    "Reproduce first: before editing source, add a minimal test for the reported behavior in a "
+    "harnessix_scratch directory inside the repository's main test directory (for example "
+    "tests/harnessix_scratch/test_repro.py; for Django tests/harnessix_scratch/tests.py plus an "
+    "empty __init__.py; harnessix_scratch/test_repro.py at the root if there is no test "
+    "directory). Use "
+    "only public APIs named in the issue. Run it with run_profile selecting only that file and "
+    "confirm it fails for the reported reason, then fix the source and rerun it together with the "
+    "closest existing tests. harnessix_scratch files are never submitted; do not edit existing "
+    "test files."
+)
+
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (
     "Search snapshot mode: the read_file rule for Patch expected_sha256 also permits grep "
     "content_sha256, the full file SHA from the same read that produced the match, not revision. "
@@ -237,6 +249,7 @@ def build_product_agent_context(
     working_set_result_groups: int | None = None,
     compact_instructions: bool = False,
     convergence_guidance: bool = False,
+    reproduction_guidance: bool = False,
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
@@ -262,6 +275,10 @@ def build_product_agent_context(
         convergence_guidance and not compact_instructions
     ):
         raise ValueError("收敛指引只与紧凑编码指令组合")
+    if type(reproduction_guidance) is not bool or (
+        reproduction_guidance and not compact_instructions
+    ):
+        raise ValueError("复现指引只与紧凑编码指令组合")
     if working_set_result_groups is not None and (
         type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
     ):
@@ -348,6 +365,17 @@ def build_product_agent_context(
                     ),
                 )
                 if convergence_guidance
+                else ()
+            ),
+            *(
+                (
+                    ContextFragment(
+                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
+                        source="harnessix.coding-reproduction/v1",
+                        content=_REPRODUCTION_INSTRUCTIONS,
+                    ),
+                )
+                if reproduction_guidance
                 else ()
             ),
             *(
