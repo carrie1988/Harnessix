@@ -1,0 +1,42 @@
+{
+  "schema": "harnessix.swebench-model-switch-preregistration/v1",
+  "frozen_at": "2026-10-15T04:32:47.538420+00:00",
+  "scope": "development_set_25_pass_at_1",
+  "plan_sha256": "c3e77f055cac7705d0e61fb67b965d1a4d95adbd6f9943f542d3912e80abcf16",
+  "plan_file_sha256": "e679e33438e13cd0a693c158f3f018519260d4376d81e699f9f31eeb9a6e7b8c",
+  "source_revision": "3cb2bc45cdcab241d2106979377c2568706255af",
+  "model": "qwen3.7-plus",
+  "price_cny_per_million": {
+    "input": "2",
+    "output": "8",
+    "input_tokens_max": 256000
+  },
+  "run_config_spec": "harnessix.swebench-agent-run-config/v17",
+  "run_config_file_sha256": "4ac61a3e0c7e8d91a8b3dcf5897ebaaeb391c4bc40a79628f5dab96ab6cf5c11",
+  "prepare_host_sha256": "d94199b0649f0a95ad5e0208404a5999061c04570ceaa7a87675824de33ade4d",
+  "execute_host_sha256": "a663d38caa8fe1aa6bf30e29b2b35b838e92a749e7ece8313a07c667f43ebd64",
+  "evaluate_host_sha256": "a929dd019cdf2dd578c91b3b3240351b736944e57cc1cfb75342f6fc91907f6e",
+  "candidate": {
+    "working_set_result_groups": 2,
+    "compact_model_surface": true,
+    "convergence_guidance": true,
+    "patch_deadline_requests": 4,
+    "budget_capped_truncation": true
+  },
+  "cases_identical_to": "verified-25-v27 (v44)",
+  "task_budget": "50000 tokens / 16 requests / 900 s (unchanged)",
+  "fee_stop_amount": "8",
+  "budget_period_id": "fef836e6-20de-46e8-8df1-7eee892f9a79",
+  "failure_policy": "freeze_transport_with_full_reserve_continue_independent; unknown tool effect stops all; no automatic retry",
+  "metrics": [
+    "resolved_official",
+    "empty_patches",
+    "infrastructure_failures",
+    "ambiguous_failures",
+    "autonomous_closure",
+    "known_cost"
+  ],
+  "comparison": "model switch: not directly comparable with qwen3.8-max results; v47 and v48 are compared with each other",
+  "official_evaluation": "after complete 25 predictions, frozen evaluator workers=1",
+  "generalization_claim": false
+}
