@@ -720,3 +720,54 @@ def test_scratch_only_changes_are_not_a_deliverable_review(scratch: bool, reopen
         require_pre_edit_profile=False, reopen_after_clean_review=True, scratch_reproduction=scratch
     ).select(_reviewed(_SCRATCH_ONLY_REVIEW), _definitions())
     assert bool(selected.tools) is reopened
+
+
+_SCRATCH_PATCH = {"files": [{"path": "pkg/tests/test_harnessix_scratch.py", "operation": "create"}]}
+_SOURCE_PATCH = {"files": [{"path": "src/example.py", "operation": "edit"}]}
+
+
+def _scratch_view(enabled: bool):
+    return CodingWorkflowToolView(require_pre_edit_profile=False, scratch_reproduction=enabled)
+
+
+@pytest.mark.parametrize(("enabled", "patch_offered"), [(True, True), (False, False)])
+def test_failing_reproduction_test_reopens_patch_without_rereading_the_scratch(
+    enabled: bool, patch_offered: bool
+) -> None:
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None, None, _SCRATCH_PATCH),
+        (_PROFILE, "failed", "process_nonzero_exit"),
+    )
+    names = {tool.name for tool in _scratch_view(enabled).select(turn, _definitions()).tools}
+    assert (_PATCH in names) is patch_offered
+
+
+def test_source_patches_keep_the_reread_gate_in_scratch_mode() -> None:
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (
+            _PATCH,
+            "succeeded",
+            None,
+            None,
+            {"files": [*_SCRATCH_PATCH["files"], *_SOURCE_PATCH["files"]]},
+        ),
+        (_PROFILE, "failed", "process_nonzero_exit"),
+    )
+    names = {tool.name for tool in _scratch_view(True).select(turn, _definitions()).tools}
+    assert _PATCH not in names
+
+
+def test_scratch_only_patch_is_not_a_first_source_change() -> None:
+    from harnessix.product_config.coding_tool_view import (
+        _delivers_change,
+        _observations,
+        _without_scratch_edits,
+    )
+
+    turn = _turn((_PATCH, "succeeded", None, None, _SCRATCH_PATCH))
+    (observation,) = _observations(_without_scratch_edits(turn))
+    assert not _delivers_change(observation)
+    (original,) = _observations(turn)
+    assert _delivers_change(original)

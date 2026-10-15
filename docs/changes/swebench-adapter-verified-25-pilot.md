@@ -1732,3 +1732,12 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 尚无路由计划与效果，故[准备期白名单](../../src/harnessix/agent/trusted_action_session.py)纳入`workspace_parent_missing`、`workspace_path_denied`、
 `workspace_snapshot_limit`，作为失败结果回传模型改正；宿主绑定、平台与观察故障仍失败关闭。草稿约定同时改为无需新建目录的文件形态。
 
+### v52（v21修复后重跑）与草稿感知的工作流状态
+
+[v52](../../benchmarks/swebench/verified-5-reproduction-v52/preregistration.json)完整执行5项，费用5.547864元（单项约1.1元，稳定目录下缓存命中87%～93%），
+[官方评测](../../benchmarks/swebench/verified-5-reproduction-v52/official-partial.json)1/5（xarray-4695），空补丁3。三个空补丁同根：模型先写复现草稿并运行，
+测试失败后工作流进入诊断阶段，而重新开放Patch要求先重读“上次Patch触及的全部文件”——此时即草稿测试；模型只重读源码，Patch始终不可见，
+反复读取直至预算耗尽。重读门禁本为防止基于过期内容修改已改文件，对只运行不再修改的草稿无意义。
+据此在[工作流视图](../../src/harnessix/product_config/coding_tool_view.py)的草稿模式下以视图专用投影剔除Patch调用中的草稿文件：仅含草稿的Patch仍触发
+强制测试（运行复现），但重读集合为空、失败后可立即修改源码；首次Patch截止只计入触及可交付文件的Patch。默认模式下行为不变。
+

@@ -283,7 +283,7 @@ def _enforce_patch_deadline(
         or selection.choice != "auto"
         or len(patches) != 1
         or any(name.startswith("run_profile.") for name in names)
-        or any(item.tool in _PATCH_TOOLS for item in observations)
+        or any(_delivers_change(item) for item in observations)
         or not _has_edit_snapshot(observations)
         or affordable is None
         or affordable > deadline
@@ -291,6 +291,43 @@ def _enforce_patch_deadline(
         return selection
     (patch,) = patches
     return _selection(definitions, {patch}, forced_tool=patch)
+
+
+def _delivers_change(observation: _Observation) -> bool:
+    """Patch调用是否触及可交付文件；复现草稿被剔除后为空的调用不算首次修改。"""
+    if observation.tool not in _PATCH_TOOLS:
+        return False
+    files = observation.call.arguments.get("files")
+    return bool(files) if isinstance(files, list) else True
+
+
+def _without_scratch_edits(turn: Turn) -> Turn:
+    """视图专用投影：Patch调用只保留非复现草稿文件，草稿不触发重读门禁或首次修改判断。"""
+    items = []
+    for item in turn.items:
+        content = item.content
+        files = (
+            content.arguments.get("files")
+            if isinstance(content, ToolCallContent) and content.tool in _PATCH_TOOLS
+            else None
+        )
+        if isinstance(files, list):
+            kept = [
+                entry
+                for entry in files
+                if not (
+                    isinstance(entry, dict)
+                    and isinstance(entry.get("path"), str)
+                    and is_scratch_path(entry["path"])
+                )
+            ]
+            if len(kept) != len(files):
+                content = content.model_copy(
+                    update={"arguments": {**content.arguments, "files": kept}}
+                )
+                item = item.model_copy(update={"content": content})
+        items.append(item)
+    return turn.model_copy(update={"items": tuple(items)})
 
 
 def _workflow_failed(observations: tuple[_Observation, ...]) -> bool:
@@ -401,6 +438,8 @@ class CodingWorkflowToolView:
             if self.enable_planning
             else definitions
         )
+        if self.scratch_reproduction:
+            turn = _without_scratch_edits(turn)
         selection = self._select_workflow(turn, workflow_definitions)
         if (
             self.reopen_after_clean_review
