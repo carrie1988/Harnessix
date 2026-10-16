@@ -1,0 +1,22 @@
+{
+  "schema": "harnessix.swebench-development-preregistration/v1",
+  "frozen_at": "2026-10-16T21:59:13.686070+00:00",
+  "scope": "development_ab_native_thinking_vs_v55r4_same_cases_not_a_generalization_claim",
+  "plan_sha256": "e9dc663ec8df8ca7200b7216129032aa2c2881c7d35512ed5b6620239db17a82",
+  "plan_file_sha256": "9e35681db9788c64148c8e83a0b4da7e8242ce53c7a128e2f85426383573604e",
+  "source_revision": "9c758c2f5e15dd879b111970a4a1b1d0c043faff",
+  "model": "deepseek-flash (native thinking enabled, no reasoning passback)",
+  "run_config_spec": "harnessix.swebench-agent-run-config/v30",
+  "run_config_file_sha256": "562f926a33699b7d031e574234468b2af336e2774c068cc02836d0d7cb8f0da9",
+  "prepare_host_sha256": "34891c04832cff1cbc2f55b47c2460ca3f353ed3d62f94e9b3d72ab1aed120fb",
+  "execute_host_sha256": "1432b2098edb4d73b1e741073437af0ecce5adb21784b62ed8b28e19ab8b805c",
+  "evaluate_host_sha256": "2210e1675f800eb6a7be80e8a8052033c35800ad886b4d5026360b5b08c07f56",
+  "task_budget": "3000000 tokens / 100 steps / 2700 s / 8 tool calls per step",
+  "fee_stop_amount": "30",
+  "budget_period_id": "5f7fae0b-d4d2-4851-bea1-c25c3ef88dc0",
+  "budget_role": "development",
+  "reference": "v55r4 (v29, thinking disabled): 13/25 on the same cases and budget",
+  "generalization_claim": false,
+  "docker_file_sharing": "VirtioFS",
+  "supersedes": "v55t/v55t2 (DeepSeek thinking-mode 400s: reasoning_content, tool_choice); never stitched"
+}
