@@ -1825,3 +1825,10 @@ d5（v26）首项0.06元：参数位置反馈生效（`files[1]：create需要�
 已知费用4.68元；[官方评测](../../benchmarks/swebench/deepseek-dev-25-d7/official-summary.json)**Resolved 16/25（64%）**，基础设施失败0。
 开发集，非泛化结论（同题v54 qwen3.8-max为9/17部分结果）。空补丁3项中2项为修复后仍畸形的参数JSON使整Turn失败，据此把该情形改为
 单次调用的固定拒绝（`invalid_arguments_json`），模型重发；拒绝结果按原因逐字配对校验。
+
+### v55新鲜泛化集（DeepSeek-V4.1-Flash，v27＋逐次JSON拒绝）
+
+[v55](../../benchmarks/swebench/generalization-25-v55/preregistration.json)完整执行25项（与此前125项全部不相交，执行前冻结），
+非空补丁23项，已知费用5.72元；[官方评测](../../benchmarks/swebench/generalization-25-v55/official-summary.json)**Resolved 12/25（48%）**，
+基础设施失败0、空补丁2、模糊失败1。这是当前系统在未见题上的真实pass@1；开发集d7为16/25（64%）。分析v55坏例后v55转为开发用途，
+下一次泛化测量须使用另一组新题。
