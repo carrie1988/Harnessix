@@ -1,0 +1,8 @@
+{
+  "amended_before_any_model_request": true,
+  "previous_plan_sha256": "1f7cedbfcb128162631f830b8fd691b979e64ae2636cca9908e595c7206c9362",
+  "previous_harnessix_revision": "eb9c456d119f027c2555c3ffee7d48a93271d4ee",
+  "plan_sha256": "9f9f5f98f20a9639a114dcedf3a974a4f8511bd762ae678d9e2aa327478385b6",
+  "harnessix_revision": "8b14b4ff4d8710c3c38ca0975100fa97d0bd09d5",
+  "reason": "DeepSeek integration and robustness fixes (run-config v24-v27, per-call JSON rejection) landed after the v55 freeze while only the development set ran; only the source revision moved, cases/budget/model unchanged; v55 has never been executed or inspected beyond its plan"
+}
