@@ -1,0 +1,22 @@
+{
+  "schema": "harnessix.swebench-development-preregistration/v1",
+  "frozen_at": "2026-10-16T20:14:37.296753+00:00",
+  "scope": "development_rerun_of_v55_cases_after_bad_case_analysis_not_a_generalization_claim",
+  "plan_sha256": "5629d1edbefd9d4a4b0aefab6dec0d02d331cc8ba5daaac503051cfdb3f69a82",
+  "plan_file_sha256": "3ae1b38228a8c97f8707100370c519bf589c0d217152eee1d6370f0839b30a71",
+  "source_revision": "38c7f14ce74a086a1824ed8f793d8a3a57145122",
+  "model": "deepseek-flash (thinking disabled)",
+  "run_config_spec": "harnessix.swebench-agent-run-config/v29",
+  "run_config_file_sha256": "d4f2f28175abf54c4ab5ffacc58cc90ea1b8c04a6f1a55f78c3c1029c1c4f4b7",
+  "prepare_host_sha256": "29f2e380f1bf3915a9bf9f64963ae4d3a0fe28598a202a370a00dcfe3ef1d187",
+  "execute_host_sha256": "cd7f36439cfc998e09f70c84d47539b74589a1899885c67c3cead19262cff7fe",
+  "evaluate_host_sha256": "745c90b540df972e245823831fe53141f1cf7b9b7fe0135d807ea68cae1183be",
+  "task_budget": "3000000 tokens / 100 steps / 2700 s / 8 tool calls per step",
+  "fee_stop_amount": "20",
+  "budget_period_id": "5f7fae0b-d4d2-4851-bea1-c25c3ef88dc0",
+  "budget_role": "development",
+  "reference": "v55 fresh run 12/25 at 60 steps / 1.5M on v27",
+  "generalization_claim": false,
+  "supersedes": "v55r (truncation stop) and v55r2 (Docker gRPC FUSE mount outage); never stitched",
+  "docker_file_sharing": "VirtioFS"
+}
