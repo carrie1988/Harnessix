@@ -365,6 +365,11 @@ def _desired_files(
         if item.operation == "delete":
             desired[path] = DesiredWorkspaceFile(None)
             continue
+        if item.operation == "replace":
+            # 先于无变化判定核对SHA：内容相同但SHA过期是可纠正的SHA不符，而非未绑定的无变化。
+            current, _mode = _read_existing(root, path, platform, checkpoint=check)
+            if hashlib.sha256(current).hexdigest() != item.expected_sha256:
+                raise _sha_mismatch_error()
         if item.operation != "edit":
             desired[path] = DesiredWorkspaceFile((item.content or "").encode("utf-8"), item.mode)
             continue

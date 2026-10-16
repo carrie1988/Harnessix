@@ -268,19 +268,18 @@ async def test_equal_images_do_not_bypass_operation_or_sha_checks(tmp_path, inva
         )
         thread, turn, call = await patch_turn(runtime, provider, root, proposal)
         plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
-        if invalid == "wrong-sha":
-            assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
-            assert router.status(plan_id).state == "pending_approval"
-            assert router.approval(plan_id) is None
-        else:
-            # 存在性与操作不符先于无变化判定拒绝：可改正反馈，从未批准或执行。
-            state = "exists" if invalid == "create-existing" else "missing"
-            code = f"workspace_patch_target_{state}"
-            assert turn.status is TurnStatus.COMPLETED
-            assert result(turn).outcome == "failed" and result(turn).error.code == code
-            assert router.status(plan_id).state == "denied"
-            assert router.approval(plan_id).decision.outcome is ApprovalOutcome.REJECTED
-            assert all(event.executor_id is None for event in router.events(plan_id))
+        # 存在性与SHA均先于无变化判定拒绝：可改正反馈，从未批准或执行。
+        # v55r3 astropy-14096：内容相同但SHA过期的replace曾被记为未知效果并停整轮。
+        code = {
+            "wrong-sha": "workspace_patch_precondition_failed",
+            "create-existing": "workspace_patch_target_exists",
+            "delete-missing": "workspace_patch_target_missing",
+        }[invalid]
+        assert turn.status is TurnStatus.COMPLETED
+        assert result(turn).outcome == "failed" and result(turn).error.code == code
+        assert router.status(plan_id).state == "denied"
+        assert router.approval(plan_id).decision.outcome is ApprovalOutcome.REJECTED
+        assert all(event.executor_id is None for event in router.events(plan_id))
         assert_unchanged(root)
 
 

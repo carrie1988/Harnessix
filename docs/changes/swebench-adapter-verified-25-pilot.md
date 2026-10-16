@@ -1841,3 +1841,7 @@ v55r（v28，100次请求／3M）前6项全部自主闭环（含v55中预算耗�
 退化为4096个输出Token被截断，`provider_max_output_tokens`不在质量失败集合而停整轮（已知费用1.43元）。由此冻结
 [v29](../../src/harnessix/evals/swebench/compact_surface_config.py)：所有尝试响应身份与用量已知时，输出上限截断计为该Case的
 `swebench_model_output_truncated`质量失败，独立Case继续；响应未知时仍失败关闭。
+
+v55r3（v29）前15项中14项闭环，第16项astropy-14096以与现有内容相同、但SHA过期的`replace`改写复现草稿：规划器先报“无变化”，
+Review只在SHA也一致时绑定无变化拒绝，未绑定即为`uncertain_effect`并停整轮。修复：[`_desired_files`](../../src/harnessix/delivery/trusted_action.py)
+对`replace`与`edit`一样在规划前核对SHA，SHA不符先于无变化判定成为可纠正拒绝。
