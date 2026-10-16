@@ -354,6 +354,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def stable_cache_tail(self) -> bool:
         return False
 
+    @property
+    def test_timeouts_are_failures(self) -> bool:
+        return False
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:

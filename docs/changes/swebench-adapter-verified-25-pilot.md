@@ -1815,3 +1815,6 @@ d4（v25）停止于3项：pytest-7982中DeepSeek的`create`缺`mode`，反馈�
 django-13343的参数JSON畸形使整Turn失败；三项缓存命中仅10%～38%（目录/预算说明插在指令与历史之间，前缀只覆盖指令3712个Token）。
 已知费用按完整用量分区价2.644920元、1次未知按完整预留结算。修复：参数校验位置反馈（全局）、[v26](../../src/harnessix/evals/swebench/compact_surface_config.py)
 工具参数有界修复与自动缓存`stable_tail`布局。
+
+d5（v26）首项0.06元：参数位置反馈生效（`files[1]：create需要…mode`后下一次即修正），但修复后测试挂起超时，被判为公开测试
+不可用而停止整轮。由此冻结[v27](../../src/harnessix/evals/swebench/compact_surface_config.py)：Profile超时按代码级测试失败进入诊断修复。

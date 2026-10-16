@@ -848,3 +848,21 @@ def test_failed_patch_reread_and_closed_catalog_are_explained() -> None:
     closed = _turn((_PROFILE, "cancelled", None))
     selection = _gate_view(True).select(closed, _definitions())
     assert selection.tools == () and selection.notice is not None
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_public_test_timeout_enters_diagnosis_only_when_enabled(enabled: bool) -> None:
+    """d5：修复后测试挂起超时被当作基础设施故障，目录关闭并停止整轮。"""
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None, None, _SOURCE_PATCH),
+        (_PROFILE, "failed", "process_timeout"),
+    )
+    view = CodingWorkflowToolView(
+        require_pre_edit_profile=False, test_timeouts_are_failures=enabled
+    )
+    names = {tool.name for tool in view.select(turn, _definitions()).tools}
+    if enabled:
+        assert {"read_file", _PROFILE} <= names
+    else:
+        assert names == set()

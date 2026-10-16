@@ -474,3 +474,33 @@ def test_deepseek_v26_uses_the_stable_tail_layout(tmp_path):
     # 显式缓存模型不受影响。
     qwen = compact_config(tmp_path, **common, argument_repair=True)
     assert qwen.provider_config.prompt_cache == "explicit_tail"
+
+
+def test_test_timeout_v27_adds_only_the_timeout_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchTestTimeoutAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+    }
+    config = compact_config(tmp_path, **common, test_timeout_failures=True)
+    v26 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchTestTimeoutAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v27"
+    assert config.test_timeouts_are_failures and not v26.test_timeouts_are_failures
+    excluded = {"spec_version", "test_timeout_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v26.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v27.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config

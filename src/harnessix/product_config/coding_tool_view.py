@@ -20,6 +20,7 @@ from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import EffectClass, ToolDescriptor
 from harnessix.product_config.coding_closure_budget import prefer_closing_over_investigation
 from harnessix.product_config.coding_scratch import is_scratch_path
+from harnessix.product_config.coding_test_outcomes import with_test_timeouts_as_failures
 
 _PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
@@ -447,6 +448,8 @@ class CodingWorkflowToolView:
     scratch_reproduction: bool = False
     # 向模型说明本步工具受限的原因与解锁条件；关闭时选择结果逐字不变。
     explain_tool_gates: bool = False
+    # 公开测试Profile超时（被测代码或测试挂起）按代码级失败进入诊断修复，而非关闭目录。
+    test_timeouts_are_failures: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -458,6 +461,8 @@ class CodingWorkflowToolView:
             raise ValueError("复现草稿开关必须是布尔值")
         if type(self.explain_tool_gates) is not bool:
             raise ValueError("工具门禁说明开关必须是布尔值")
+        if type(self.test_timeouts_are_failures) is not bool:
+            raise ValueError("测试超时判定开关必须是布尔值")
         if type(self.reopen_after_clean_review) is not bool:
             raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
@@ -481,6 +486,8 @@ class CodingWorkflowToolView:
         )
         if self.scratch_reproduction:
             turn = _without_scratch_edits(turn)
+        if self.test_timeouts_are_failures:
+            turn = with_test_timeouts_as_failures(turn)
         selection = self._select_workflow(turn, workflow_definitions)
         if (
             self.reopen_after_clean_review

@@ -243,6 +243,7 @@ async def _open_case_turn(
         state_tool_call_cap=config.state_tool_call_cap,
         explain_tool_gates=config.explain_tool_gates,
         reject_forced_choice_violations=config.reject_forced_choice_violations,
+        test_timeouts_are_failures=config.test_timeouts_are_failures,
     )
 
 
@@ -404,6 +405,7 @@ async def run_swebench_agent_suite(
                     config.isolate_provider_failures
                     and _can_isolate_transport_failure(turn, config)
                 ),
+                test_timeouts_are_failures=config.test_timeouts_are_failures,
             )
             if terminal_attempt:
                 _require_case_evidence(state, thread_id, turn, patch)

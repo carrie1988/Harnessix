@@ -334,3 +334,19 @@ class SweBenchArgumentRepairAgentRunConfig(SweBenchForcedChoiceTolerantAgentRunC
     @property
     def stable_cache_tail(self) -> bool:
         return True
+
+
+class SweBenchTestTimeoutAgentRunConfig(SweBenchArgumentRepairAgentRunConfig):
+    """v26之上：公开测试Profile超时（被测代码或测试挂起）按代码级失败进入诊断修复，不作为基础设施故障停整轮。
+
+    d5首项修复了符号链接递归后测试挂起超时，被判为公开测试不可用而停止整轮。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v27"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v27"
+    )
+    test_timeout_policy: Literal["timeout_is_code_test_failure"] = "timeout_is_code_test_failure"
+
+    @property
+    def test_timeouts_are_failures(self) -> bool:
+        return True

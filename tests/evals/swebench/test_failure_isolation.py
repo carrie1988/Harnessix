@@ -337,3 +337,20 @@ def test_protocol_failure_isolation_is_explicit(tmp_path, enabled):
     view = _ProtocolIsolation(config) if enabled else config
     assert execution._can_isolate_transport_failure(_protocol(0, config), view) is enabled
     assert execution._can_isolate_transport_failure(_transport(0, config), view)
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_public_test_timeout_is_a_quality_failure_only_when_enabled(enabled):
+    """d5：测试挂起超时被判为公开测试不可用并停止整轮；开启后按代码级测试失败计。"""
+    turn = _turn(
+        0,
+        (
+            SUCCESSFUL_EVIDENCE[0],
+            (PUBLIC_TEST_TOOL, "failed", "process_timeout"),
+        ),
+    )
+    failure = execution._case_evidence_failure(
+        turn, PATCH, PUBLIC_TEST_TOOL, cost_complete=True, test_timeouts_are_failures=enabled
+    )
+    expected = "swebench_public_tests_failed" if enabled else "swebench_public_tests_unavailable"
+    assert failure[0] == expected

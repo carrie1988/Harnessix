@@ -21,6 +21,7 @@ from harnessix.agent.models import (
 from harnessix.agent.tool_rejections import require_closed_rejection_items
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.evals.swebench.execution_contracts import SweBenchCaseExecutionState
+from harnessix.product_config.coding_test_outcomes import with_test_timeouts_as_failures
 from harnessix.tools.git_contracts import GitReviewOutput
 
 _ERROR_CODE = re.compile(r"^[a-z][a-z0-9_]{0,127}$")
@@ -160,7 +161,10 @@ def _case_evidence_failure(
     *,
     cost_complete: bool,
     transport_failure_isolatable: bool = False,
+    test_timeouts_are_failures: bool = False,
 ) -> tuple[str, str] | None:
+    if test_timeouts_are_failures:
+        turn = with_test_timeouts_as_failures(turn)
     try:
         observations = _tool_observations(turn)
     except KernelError:

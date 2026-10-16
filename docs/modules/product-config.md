@@ -3040,3 +3040,9 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 测试失败后Patch因改动文件未重读而隐藏（列出待重读路径）、失败Patch后强制重读、目录为空（应以文本给出最终答复）。
 关闭时说明被清空，选择结果与此前逐字一致；开启只附加说明，可执行集合不变。失败且只改复现草稿的Patch（无任何效果）
 连同结果移出视图投影，避免空路径集把重读门禁退化为强制重试Patch；成功的仅草稿Patch仍触发强制运行复现。
+
+## 当前增量：测试超时判定（`test_timeouts_are_failures`，默认关闭）
+
+[`coding_test_outcomes`](../../src/harnessix/product_config/coding_test_outcomes.py)提供工作流视图与SWE-bench证据共用的判定投影：
+公开测试Profile的`process_timeout`（被测代码或测试挂起）按确定的代码级测试失败处理，进入诊断与修复；模型可见结果不变。
+启动失败、宿主丢失、取消等其他非零状态仍属基础设施故障。
