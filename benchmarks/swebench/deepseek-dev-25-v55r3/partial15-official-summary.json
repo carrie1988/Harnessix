@@ -1,0 +1,23 @@
+{
+  "scope": "v55r3_first_15_of_25_development_case16_interrupted_counts_unresolved_not_preregistered_metric",
+  "predictions_sha256": "113d1208e131d6c6df455ac6bc142908f33c85155cb7b26f249cdce33b7a45eb",
+  "results_sha256": "064692a3d938da5feae9c60e45e23380a4f00cd24ac1bda23b2fd785d7d069fb",
+  "submitted_instances": 15,
+  "completed_instances": 15,
+  "resolved_instances": 7,
+  "unresolved_instances": 8,
+  "empty_patch_instances": 0,
+  "error_instances": 0,
+  "infra_failure_instances": 0,
+  "ambiguous_failure_instances": 1,
+  "resolved_ids": [
+    "astropy__astropy-7336",
+    "django__django-11490",
+    "pydata__xarray-4075",
+    "pytest-dev__pytest-7571",
+    "scikit-learn__scikit-learn-13142",
+    "scikit-learn__scikit-learn-14496",
+    "sympy__sympy-23824"
+  ],
+  "error_ids": []
+}
