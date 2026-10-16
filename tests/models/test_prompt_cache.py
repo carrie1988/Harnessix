@@ -200,8 +200,25 @@ def test_stable_tail_keeps_the_history_prefix_and_moves_notes_to_the_end():
     roles = [m["role"] for m in first["messages"]]
     assert first["messages"][0] == {"role": "system", "content": "rules"}
     assert roles[1] == "user"
-    stable = len(first["messages"]) - sum(
-        1 for m in first["messages"][1:] if m["role"] == "system"
-    )
+    stable = len(first["messages"]) - sum(1 for m in first["messages"][1:] if m["role"] == "system")
     assert first["messages"][:stable] == second["messages"][:stable]
     assert all("cache_control" not in json.dumps(m) for m in first["messages"])
+
+
+@pytest.mark.parametrize("thinking", [True, False])
+def test_thinking_type_history_assistants_carry_reasoning_content(thinking):
+    """v55t：思考模式带工具时历史助手消息缺reasoning_content，DeepSeek返回400。"""
+    request = model_request(with_tools=True)
+    tool_call = call()
+    history = (
+        *request.history,
+        item(tool_call),
+        item(ToolResultContent(call_id=tool_call.call_id, outcome="succeeded", output="x")),
+    )
+    config = OpenAIChatConfig(model="m", enable_thinking=thinking, thinking_format="thinking_type")
+    body, _ = build_request(request.model_copy(update={"history": history}), config)
+    assistants = [m for m in body["messages"] if m["role"] == "assistant"]
+    assert assistants
+    assert all(("reasoning_content" in m) is thinking for m in assistants)
+    if thinking:
+        assert all(m["reasoning_content"] == "" for m in assistants)

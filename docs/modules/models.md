@@ -896,3 +896,5 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - 开启`repair_tool_arguments`后，修复后仍不是JSON对象的调用不再使整个响应以协议失败结束，而是产生
   `ToolCallRejected(reason="invalid_arguments_json")`：与未注册工具相同的无名称、无参数、无执行能力拒绝，配对固定结果
   `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”），模型在原预算内重发。
+- `thinking_format="thinking_type"`且开启思考时，每条历史助手消息带`reasoning_content`（未存储推理内容时为空串）：DeepSeek思考模式
+  要求带工具历史中的助手消息携带该字段，否则400；空串即满足协议。

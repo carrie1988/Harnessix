@@ -72,6 +72,14 @@ def build_request(
             messages.insert(0, {"role": "system", "content": note})
         if request.instructions is not None:
             messages.insert(0, {"role": "system", "content": request.instructions})
+    if config.thinking_format == "thinking_type" and config.enable_thinking:
+        # 思考模式下带工具的历史助手消息须携带reasoning_content；不回传推理内容时以空串满足协议。
+        messages = [
+            {**message, "reasoning_content": message.get("reasoning_content", "")}
+            if message.get("role") == "assistant"
+            else message
+            for message in messages
+        ]
     output_tokens = min(config.max_output_tokens, remaining)
     body: dict[str, Any] = {
         "model": config.model,
