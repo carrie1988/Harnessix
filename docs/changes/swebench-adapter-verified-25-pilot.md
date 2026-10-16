@@ -1818,3 +1818,10 @@ django-13343的参数JSON畸形使整Turn失败；三项缓存命中仅10%～38%
 
 d5（v26）首项0.06元：参数位置反馈生效（`files[1]：create需要…mode`后下一次即修正），但修复后测试挂起超时，被判为公开测试
 不可用而停止整轮。由此冻结[v27](../../src/harnessix/evals/swebench/compact_surface_config.py)：Profile超时按代码级测试失败进入诊断修复。
+
+### d7开发集完整结果（DeepSeek-V4.1-Flash，v27）
+
+[d7](../../benchmarks/swebench/deepseek-dev-25-d7/preregistration.json)完整执行25项（Docker重启后），自主闭环20项、非空补丁22项，
+已知费用4.68元；[官方评测](../../benchmarks/swebench/deepseek-dev-25-d7/official-summary.json)**Resolved 16/25（64%）**，基础设施失败0。
+开发集，非泛化结论（同题v54 qwen3.8-max为9/17部分结果）。空补丁3项中2项为修复后仍畸形的参数JSON使整Turn失败，据此把该情形改为
+单次调用的固定拒绝（`invalid_arguments_json`），模型重发；拒绝结果按原因逐字配对校验。

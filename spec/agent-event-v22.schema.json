@@ -3961,8 +3961,11 @@
           "type": "integer"
         },
         "reason": {
-          "const": "unregistered_tool",
           "default": "unregistered_tool",
+          "enum": [
+            "unregistered_tool",
+            "invalid_arguments_json"
+          ],
           "title": "Reason",
           "type": "string"
         }

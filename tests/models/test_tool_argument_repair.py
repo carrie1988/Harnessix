@@ -7,6 +7,7 @@ import pytest
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason
 from harnessix.models._chat_stream import CallParts, _complete_calls
 from harnessix.models._json import repaired_json_object
+from harnessix.models.contracts import ToolCallRejected
 
 
 @pytest.mark.parametrize(
@@ -45,5 +46,29 @@ def test_stream_repairs_only_when_enabled():
         _calls(broken), {"read_file": "read_file"}, repair_arguments=True
     )
     assert completed.arguments == {"path": "src\\x.py"}
-    with pytest.raises(ChatProtocolError):
-        _complete_calls(_calls('{"path": "a"'), {"read_file": "read_file"}, repair_arguments=True)
+    # 修复后仍非JSON对象：只拒绝本次调用，不再使整个响应失败。
+    for unrepairable in ('{"path": "a"', '["a"]'):
+        (rejected,) = _complete_calls(
+            _calls(unrepairable), {"read_file": "read_file"}, repair_arguments=True
+        )
+        assert isinstance(rejected, ToolCallRejected)
+        assert rejected.reason == "invalid_arguments_json"
+    with pytest.raises(ChatProtocolError) as not_object:
+        _complete_calls(_calls('["a"]'), {"read_file": "read_file"})
+    assert not_object.value.reason is ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT
+
+
+def test_rejection_results_are_paired_by_reason():
+    from uuid import uuid4
+
+    from harnessix.agent.errors import KernelError
+    from harnessix.agent.tool_rejections import rejection_result, require_rejection_result
+
+    call_id = uuid4()
+    json_result = rejection_result(call_id, "invalid_arguments_json")
+    assert json_result.error.code == "tool_arguments_invalid_json"
+    require_rejection_result(json_result)
+    require_rejection_result(json_result, "invalid_arguments_json")
+    require_rejection_result(rejection_result(call_id))
+    with pytest.raises(KernelError):
+        require_rejection_result(json_result, "unregistered_tool")

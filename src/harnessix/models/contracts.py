@@ -91,7 +91,8 @@ class ToolCallRejected(ContractModel):
 
     type: Literal["tool_call_rejected"] = "tool_call_rejected"
     call_id: str = Field(min_length=1, max_length=256, strict=True)
-    reason: Literal["unregistered_tool"] = "unregistered_tool"
+    # invalid_arguments_json：开启参数修复后仍不是JSON对象的调用，同样无名称、参数或执行能力。
+    reason: Literal["unregistered_tool", "invalid_arguments_json"] = "unregistered_tool"
     argument_chars: int = Field(ge=0, le=1_000_000, strict=True)
 
 

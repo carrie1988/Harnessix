@@ -174,7 +174,7 @@ class ToolCallRejectionContent(ContractModel):
     call_id: UUID
     provider_call_id: str = Field(min_length=1, max_length=256, strict=True)
     model_step: int = Field(ge=1, le=1000, strict=True)
-    reason: Literal["unregistered_tool"] = "unregistered_tool"
+    reason: Literal["unregistered_tool", "invalid_arguments_json"] = "unregistered_tool"
 
 
 class AskUserInput(ContractModel):

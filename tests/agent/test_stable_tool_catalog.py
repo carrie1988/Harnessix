@@ -169,3 +169,25 @@ async def test_forced_choice_violation_is_rejected_without_execution(tmp_path, e
         assert tools.calls == []
         assert turn.status is TurnStatus.FAILED
         assert turn.error is not None and turn.error.code == "invalid_provider_output"
+
+
+async def test_malformed_argument_rejection_lets_the_model_resend(tmp_path):
+    """d7：参数JSON畸形使整Turn失败（2/25空补丁）；改为只拒绝本次调用，模型重发后继续。"""
+    from harnessix.models.contracts import ToolCallRejected
+
+    malformed = [
+        ResponseStarted(response_id="r0"),
+        ToolCallRejected(call_id="bad", reason="invalid_arguments_json", argument_chars=12),
+        ResponseCompleted(finish_reason="tool_calls"),
+    ]
+    tools = RecordingTools()
+    provider = RecordingProvider([malformed, call("test.read"), answer()])
+    async with AgentRuntime(SQLiteSessionStore(tmp_path / "s.db"), provider, tools) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "任务", request_id="m")
+    assert turn.status is TurnStatus.COMPLETED
+    (rejection,) = [
+        i.content for i in turn.items if isinstance(i.content, ToolCallRejectionContent)
+    ]
+    assert rejection.reason == "invalid_arguments_json"
+    assert [c.tool for c in tools.calls] == ["test.read"]

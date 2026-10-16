@@ -42,7 +42,7 @@ def _complete_calls(
     """先校验整组结构，再按本次精确目录分类；畸形组不释放任何提案。"""
     if sorted(calls) != list(range(len(calls))):
         raise ChatProtocolError(ChatProtocolReason.TOOL_INDEX_GAP)
-    validated: list[tuple[str, str, dict[str, JsonValue], int]] = []
+    validated: list[tuple[str, str, dict[str, JsonValue] | None, int]] = []
     ids: set[str] = set()
     for index in sorted(calls):
         call = calls[index]
@@ -58,21 +58,42 @@ def _complete_calls(
             raise ChatProtocolError(ChatProtocolReason.TOOL_TYPE_INVALID)
         ids.add(call.call_id)
         try:
-            arguments = strict_json(call.arguments)
+            arguments: JsonValue = strict_json(call.arguments)
         except ValueError:
-            repaired = repaired_json_object(call.arguments) if repair_arguments else None
-            if repaired is None:
+            if not repair_arguments:
                 raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_INVALID) from None
-            arguments = repaired
-        if not isinstance(arguments, dict):
+            # 修复后仍非JSON对象：只拒绝本次调用（无效果），模型在原预算内重发，不使整Turn失败。
+            arguments = repaired_json_object(call.arguments)
+        if not isinstance(arguments, dict) and not repair_arguments:
             raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT)
-        validated.append((call.call_id, call.name, arguments, len(call.arguments)))
+        validated.append(
+            (
+                call.call_id,
+                call.name,
+                arguments if isinstance(arguments, dict) else None,
+                len(call.arguments),
+            )
+        )
     return [
-        ToolCallCompleted(call_id=call_id, tool=names[name], arguments=arguments)
-        if name in names
-        else ToolCallRejected(call_id=call_id, argument_chars=argument_chars)
-        for call_id, name, arguments, argument_chars in validated
+        _proposal(call_id, name, arguments, chars, names)
+        for call_id, name, arguments, chars in validated
     ]
+
+
+def _proposal(
+    call_id: str,
+    name: str,
+    arguments: dict[str, JsonValue] | None,
+    argument_chars: int,
+    names: dict[str, str],
+) -> ToolCallCompleted | ToolCallRejected:
+    if name not in names:
+        return ToolCallRejected(call_id=call_id, argument_chars=argument_chars)
+    if arguments is None:
+        return ToolCallRejected(
+            call_id=call_id, reason="invalid_arguments_json", argument_chars=argument_chars
+        )
+    return ToolCallCompleted(call_id=call_id, tool=names[name], arguments=arguments)
 
 
 def validate_frame(name: bytes, data: bytes) -> None:

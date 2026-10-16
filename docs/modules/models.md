@@ -893,3 +893,6 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   仍为`tool_arguments_invalid`。
 - `prompt_cache="stable_tail"`：指令与历史在前且逐字节不变，逐请求的目录/预算说明移到末尾，不打缓存标记，供服务端自动前缀缓存
   （DeepSeek）；`explicit_tail`另在前缀末端打标记。
+- 开启`repair_tool_arguments`后，修复后仍不是JSON对象的调用不再使整个响应以协议失败结束，而是产生
+  `ToolCallRejected(reason="invalid_arguments_json")`：与未注册工具相同的无名称、无参数、无执行能力拒绝，配对固定结果
+  `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”），模型在原预算内重发。

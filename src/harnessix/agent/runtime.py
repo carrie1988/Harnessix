@@ -3062,9 +3062,16 @@ class AgentRuntime:
             content: ToolCallContent | ToolCallRejectionContent
             if isinstance(proposal, ToolCallRejected) or definition is None:
                 content = ToolCallRejectionContent(
-                    call_id=new_id(), provider_call_id=proposal.call_id, model_step=request.step
+                    call_id=new_id(),
+                    provider_call_id=proposal.call_id,
+                    model_step=request.step,
+                    reason=(
+                        proposal.reason
+                        if isinstance(proposal, ToolCallRejected)
+                        else "unregistered_tool"
+                    ),
                 )
-                rejected_results.append(rejection_result(content.call_id))
+                rejected_results.append(rejection_result(content.call_id, content.reason))
             else:
                 assert isinstance(proposal, ToolCallCompleted)
                 content = ToolCallContent(
