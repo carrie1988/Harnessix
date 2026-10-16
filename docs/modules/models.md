@@ -886,3 +886,5 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   `cached_tokens`时，视为自动前缀缓存的完整拆分：缓存创建记0、未缓存为未命中数；任一条件不成立仍为未知并失败关闭。
 - 部分兼容端点（如DeepSeek）把`usage`放在携带`finish_reason`的末个分片中，而非独立的空`choices`分片。流解析先处理该分片的
   choice、确认其已结束，再接受用量；用量出现在未结束分片、或结束之后的分片仍为`usage_shape_or_order_invalid`。
+- `OpenAIChatConfig.connect_retries`（0～5，默认0且不序列化）传给`httpx.AsyncHTTPTransport(retries=…)`：只在TCP连接或TLS握手失败时
+  重连，HTTP请求尚未发出，不产生新的模型尝试、计费或重采样；请求发出后的任何失败仍按原无重试策略处理。

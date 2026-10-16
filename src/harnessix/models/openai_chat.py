@@ -96,7 +96,8 @@ class OpenAIChatProvider:
         )
         client = httpx.AsyncClient(
             transport=BoundedTransport(
-                transport or httpx.AsyncHTTPTransport(trust_env=False),
+                transport
+                or httpx.AsyncHTTPTransport(trust_env=False, retries=self.config.connect_retries),
                 self.config,
                 validate_frame=validate_frame,
             ),

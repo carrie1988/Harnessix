@@ -184,6 +184,7 @@ class _SweBenchAgentRunSettings(ContractModel):
         if (
             provider.base_url != model.base_url
             or provider.thinking_format != model.thinking_format
+            or provider.connect_retries != self.connect_retries
             or provider.max_attempts != 1
             or provider.retry_delay_seconds != 0
             or provider.enable_thinking is not self.thinking_enabled
@@ -328,6 +329,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     @property
     def bounded_output_reserve(self) -> bool:
         return False
+
+    @property
+    def connect_retries(self) -> int:
+        return 0
 
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int

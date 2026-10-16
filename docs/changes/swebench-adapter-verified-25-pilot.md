@@ -1804,3 +1804,5 @@ d1开发运行（[预注册](../../benchmarks/swebench/deepseek-dev-25-d1/prereg
 DeepSeek把用量放在`finish_reason`分片内，旧解析只接受独立用量分片；v22协议失败隔离按设计跳过而不停整轮，操作者因此手动停止。
 6次尝试的用量未知，按每次完整未知请求预留0.532768元结算（共3.196608元，实际账单约每项0.01～0.02元）。修复[流解析](../../src/harnessix/models/_chat_stream.py)
 后d1作废、开发集以新计划d2整体重跑（不与d1拼接；开发集不作泛化结论）。
+d2开发运行前2项因本机代理瞬时连接失败（`httpx_connect_failure`，与v47丢失9项同因）被隔离，操作者停止。由此冻结
+[v24](../../src/harnessix/evals/swebench/compact_surface_config.py)：v23之上仅把连接建立重试固定为3次（请求未发出，不违反无重试/无重采样）。

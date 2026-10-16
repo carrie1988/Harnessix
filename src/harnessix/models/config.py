@@ -74,6 +74,8 @@ class OpenAIChatConfig(ModelHTTPConfig):
         exclude_if=lambda value: value is None,
         description="显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
     )
+    # 仅在TCP连接或TLS握手失败时重连（请求字节尚未发出，不产生计费或新的模型尝试）。
+    connect_retries: int = Field(default=0, ge=0, le=5, exclude_if=lambda value: value == 0)
     # 思考开关线上格式：默认DashScope的enable_thinking；thinking_type发送thinking.type。
     thinking_format: Literal["thinking_type"] | None = Field(
         default=None,

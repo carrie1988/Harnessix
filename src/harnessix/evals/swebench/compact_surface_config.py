@@ -274,3 +274,19 @@ class SweBenchExplainedGatesAgentRunConfig(SweBenchProtocolRobustAgentRunConfig)
     @property
     def bounded_output_reserve(self) -> bool:
         return True
+
+
+class SweBenchConnectRetryAgentRunConfig(SweBenchExplainedGatesAgentRunConfig):
+    """v23之上：TCP连接或TLS握手失败时重连至多3次；请求尚未发出，不重采样、不重复计费。
+
+    v47与d2各因本机代理的瞬时连接失败丢失整题（httpx_connect_failure）。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v24"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v24"
+    )
+    connection_policy: Literal["retry_connection_establishment"] = "retry_connection_establishment"
+
+    @property
+    def connect_retries(self) -> int:
+        return 3

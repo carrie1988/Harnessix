@@ -148,6 +148,13 @@
       "description": "显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
       "title": "Thinking Budget"
     },
+    "connect_retries": {
+      "default": 0,
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Connect Retries",
+      "type": "integer"
+    },
     "thinking_format": {
       "anyOf": [
         {

@@ -739,3 +739,14 @@ async def test_concurrent_requests_have_independent_stream_state() -> None:
     assert [e async for e in provider.stream(model_request(), CancelToken())] == [
         ResponseFailed(code="invalid_request")
     ]
+
+
+@pytest.mark.parametrize("retries", [0, 3])
+async def test_connect_retries_reach_the_connection_pool(credentials, retries):
+    """只在建立连接阶段重连；默认0保持原序列化与行为。"""
+    from harnessix.models.openai_chat import OpenAIChatProvider
+
+    async with OpenAIChatProvider(config(connect_retries=retries)) as provider:
+        transport = provider._client._client._transport._inner
+        assert transport._pool._retries == retries
+    assert "connect_retries" not in config().model_dump()

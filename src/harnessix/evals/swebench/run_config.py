@@ -10,6 +10,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchBudgetTruncationAgentRunConfig,
     SweBenchCachedClosureAgentRunConfig,
     SweBenchCompactSurfaceAgentRunConfig,
+    SweBenchConnectRetryAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
     SweBenchExplainedGatesAgentRunConfig,
     SweBenchFullCachedHistoryAgentRunConfig,
@@ -321,6 +322,7 @@ SweBenchRunConfig = (
     | SweBenchScratchReproductionAgentRunConfig
     | SweBenchProtocolRobustAgentRunConfig
     | SweBenchExplainedGatesAgentRunConfig
+    | SweBenchConnectRetryAgentRunConfig
 )
 
 
@@ -354,6 +356,7 @@ def _run_config_type(
     scratch_reproduction: bool = False,
     protocol_robust: bool = False,
     explained_gates: bool = False,
+    connect_retry: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -377,6 +380,7 @@ def _run_config_type(
         (scratch_reproduction, "复现草稿"),
         (protocol_robust, "协议失败隔离"),
         (explained_gates, "工具门禁说明"),
+        (connect_retry, "连接重试"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -398,6 +402,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if connect_retry and not explained_gates:
+        raise ValueError("SWE-bench连接重试只在工具门禁说明组合之上冻结")
     if explained_gates and not protocol_robust:
         raise ValueError("SWE-bench工具门禁说明只在协议失败隔离组合之上冻结")
     if protocol_robust and not scratch_reproduction:
@@ -451,6 +457,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if connect_retry:
+            return SweBenchConnectRetryAgentRunConfig
         if explained_gates:
             return SweBenchExplainedGatesAgentRunConfig
         if protocol_robust:
@@ -548,6 +556,7 @@ def build_swebench_agent_run_config(
     scratch_reproduction: bool = False,
     protocol_robust: bool = False,
     explained_gates: bool = False,
+    connect_retry: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -575,6 +584,7 @@ def build_swebench_agent_run_config(
         scratch_reproduction=scratch_reproduction,
         protocol_robust=protocol_robust,
         explained_gates=explained_gates,
+        connect_retry=connect_retry,
     )
     extra: dict[str, object] = (
         {}
@@ -608,6 +618,7 @@ def build_swebench_agent_run_config(
             enable_thinking=enable_thinking,
             thinking_budget=1024 if enable_thinking else None,
             thinking_format=catalog.thinking_format,
+            connect_retries=3 if connect_retry else 0,
             prompt_cache=_wire_prompt_cache(catalog, prompt_cache=prompt_cache),
         ),
         price=PriceSnapshot(
