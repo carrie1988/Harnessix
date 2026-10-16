@@ -257,6 +257,7 @@ class OpenAIChatProvider:
                     names,
                     parallel=self.config.capabilities.parallel_tool_calls,
                     attempt_id=attempt_id,
+                    repair_arguments=self.config.repair_tool_arguments,
                 )
                 while True:
                     try:

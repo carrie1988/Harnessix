@@ -1810,3 +1810,8 @@ d3（v24）前2项补丁均已完成并通过公开测试（pytest-7982补丁与
 工具而整Turn失败（`swebench_model_response_invalid`）；独立探测中DeepSeek均遵守强制选择，长上下文实跑中偶发违约。由此冻结
 [v25](../../src/harnessix/evals/swebench/compact_surface_config.py)：违约调用沿原拒绝路径无效果记录并在原预算内纠正。d3已知费用按全未命中上界
 0.375634元、在途1次按完整预留结算。
+
+d4（v25）停止于3项：pytest-7982中DeepSeek的`create`缺`mode`，反馈只列顶层字段（“缺少必填字段：无”），模型连续50次盲目重试至预算耗尽；
+django-13343的参数JSON畸形使整Turn失败；三项缓存命中仅10%～38%（目录/预算说明插在指令与历史之间，前缀只覆盖指令3712个Token）。
+已知费用按完整用量分区价2.644920元、1次未知按完整预留结算。修复：参数校验位置反馈（全局）、[v26](../../src/harnessix/evals/swebench/compact_surface_config.py)
+工具参数有界修复与自动缓存`stable_tail`布局。

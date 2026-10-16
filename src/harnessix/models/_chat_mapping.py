@@ -63,6 +63,10 @@ def build_request(
         notes.append(budget_note)
     if config.prompt_cache == "explicit_tail":
         messages = _explicit_tail_cache(request.instructions, messages, notes)
+    elif config.prompt_cache == "stable_tail":
+        if request.instructions is not None:
+            messages.insert(0, {"role": "system", "content": request.instructions})
+        messages.extend({"role": "system", "content": note} for note in notes)
     else:
         for note in notes:
             messages.insert(0, {"role": "system", "content": note})

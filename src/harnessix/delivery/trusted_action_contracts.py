@@ -7,6 +7,7 @@ from typing import Annotated, Literal, Self
 from uuid import UUID
 
 from pydantic import ConfigDict, Field, TypeAdapter, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 
 from harnessix.delivery.contracts import (
     FileMode,
@@ -26,6 +27,15 @@ from harnessix.tools.contracts import Revision
 MAX_WORKSPACE_PATCH_INPUT_BYTES = 512 * 1024
 MAX_WORKSPACE_ACTION_REVIEW_BYTES = 1024 * 1024
 MAX_REVIEW_CHUNK_CHARACTERS = 3000
+
+
+# 每种操作的固定字段要求；只陈述合同，不含调用值，可直接作为模型反馈。
+_OPERATION_SHAPES = {
+    "create": "create需要path、content、mode（420或493），不得提供expected_sha256、edits",
+    "replace": "replace需要path、expected_sha256、content、mode（420或493），不得提供edits",
+    "edit": "edit需要path、expected_sha256、edits，不得提供content、mode",
+    "delete": "delete需要path、expected_sha256，不得提供content、edits、mode",
+}
 
 
 class WorkspacePatchFile(ContractModel):
@@ -148,7 +158,10 @@ class WorkspacePatchFile(ContractModel):
                 and self.mode is None
             )
         if not valid:
-            raise ValueError("Workspace Patch操作字段组合无效")
+            raise PydanticCustomError(
+                "harnessix_workspace_patch_operation_shape",
+                _OPERATION_SHAPES[self.operation],
+            )
         return self
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -186,3 +187,21 @@ async def test_usage_on_an_unfinished_chunk_is_still_rejected(adapter, tmp_path:
     attempt = turn.model_attempts[0]
     assert attempt.status == "failed"
     assert "usage_shape_or_order_invalid" in attempt.error.message
+
+
+def test_stable_tail_keeps_the_history_prefix_and_moves_notes_to_the_end():
+    """d4：说明插在指令与历史之间，DeepSeek自动缓存只命中指令前缀（10%～38%）。"""
+    config = OpenAIChatConfig(model="m", prompt_cache="stable_tail")
+    request = model_request(with_tools=True).model_copy(
+        update={"instructions": "rules", "affordable_requests": 5}
+    )
+    first, _ = build_request(request, config)
+    second, _ = build_request(request.model_copy(update={"affordable_requests": 4}), config)
+    roles = [m["role"] for m in first["messages"]]
+    assert first["messages"][0] == {"role": "system", "content": "rules"}
+    assert roles[1] == "user"
+    stable = len(first["messages"]) - sum(
+        1 for m in first["messages"][1:] if m["role"] == "system"
+    )
+    assert first["messages"][:stable] == second["messages"][:stable]
+    assert all("cache_control" not in json.dumps(m) for m in first["messages"])

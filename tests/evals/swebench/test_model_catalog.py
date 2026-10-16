@@ -412,3 +412,65 @@ def test_forced_choice_tolerant_v25_adds_only_the_forced_choice_policy(tmp_path)
     assert read_swebench_agent_run_config(path) == config
     with pytest.raises(ValueError):
         compact_config(tmp_path, **{**common, "connect_retry": False}, forced_choice_tolerant=True)
+
+
+def test_argument_repair_v26_adds_only_the_argument_wire_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchArgumentRepairAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+    }
+    config = compact_config(tmp_path, **common, argument_repair=True)
+    v25 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchArgumentRepairAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v26"
+    assert config.provider_config.repair_tool_arguments
+    assert not v25.provider_config.repair_tool_arguments
+    excluded = {"spec_version", "argument_wire_policy", "cache_layout_policy", "provider_config"}
+    assert config.model_dump(mode="json", exclude=excluded) == v25.model_dump(
+        mode="json", exclude=excluded
+    )
+    assert (
+        config.provider_config.model_copy(update={"repair_tool_arguments": False})
+        == v25.provider_config
+    )
+    path = tmp_path / "v26.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(
+            tmp_path, **{**common, "forced_choice_tolerant": False}, argument_repair=True
+        )
+
+
+def test_deepseek_v26_uses_the_stable_tail_layout(tmp_path):
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+    }
+    plan = plan_for("deepseek-flash")
+    deepseek = {"model": "deepseek-flash", "plan": plan}
+    v26 = compact_config(tmp_path, **common, argument_repair=True, **deepseek)
+    v25 = compact_config(tmp_path, **common, **deepseek)
+    assert v26.provider_config.prompt_cache == "stable_tail"
+    assert v25.provider_config.prompt_cache is None
+    # 显式缓存模型不受影响。
+    qwen = compact_config(tmp_path, **common, argument_repair=True)
+    assert qwen.provider_config.prompt_cache == "explicit_tail"

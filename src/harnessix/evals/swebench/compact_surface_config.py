@@ -306,3 +306,31 @@ class SweBenchForcedChoiceTolerantAgentRunConfig(SweBenchConnectRetryAgentRunCon
     @property
     def reject_forced_choice_violations(self) -> bool:
         return True
+
+
+class SweBenchArgumentRepairAgentRunConfig(SweBenchForcedChoiceTolerantAgentRunConfig):
+    """v25之上：工具参数严格解析失败时只修复原始控制字符与非法反斜杠转义，其余畸形仍为协议失败；
+    自动前缀缓存模型改用stable_tail布局（逐请求说明移到末尾）。
+
+    d4中DeepSeek的畸形参数JSON以tool_arguments_invalid使整Turn失败；说明插在指令与历史之间，
+    前缀只命中指令部分（缓存命中10%～38%）。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v26"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v26"
+    )
+    argument_wire_policy: Literal["repair_escapes_and_control_characters"] = (
+        "repair_escapes_and_control_characters"
+    )
+
+    cache_layout_policy: Literal["stable_tail_for_automatic_cache"] = (
+        "stable_tail_for_automatic_cache"
+    )
+
+    @property
+    def repair_tool_arguments(self) -> bool:
+        return True
+
+    @property
+    def stable_cache_tail(self) -> bool:
+        return True

@@ -76,13 +76,16 @@ class OpenAIChatConfig(ModelHTTPConfig):
     )
     # 仅在TCP连接或TLS握手失败时重连（请求字节尚未发出，不产生计费或新的模型尝试）。
     connect_retries: int = Field(default=0, ge=0, le=5, exclude_if=lambda value: value == 0)
+    # 工具参数严格解析失败时只修复字符串内原始控制字符与非法反斜杠转义；其他畸形仍为协议失败。
+    repair_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
     # 思考开关线上格式：默认DashScope的enable_thinking；thinking_type发送thinking.type。
     thinking_format: Literal["thinking_type"] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
-    # 显式前缀缓存：稳定前缀（指令＋历史）在前并打标记，逐请求变化的预算/目录说明移到末尾。
-    prompt_cache: Literal["explicit_tail"] | None = Field(
+    # 前缀缓存布局：稳定前缀（指令＋历史）在前，逐请求变化的预算/目录说明移到末尾；
+    # explicit_tail另在前缀末端打缓存标记，stable_tail供服务端自动前缀缓存、不打标记。
+    prompt_cache: Literal["explicit_tail", "stable_tail"] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )

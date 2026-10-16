@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 import errno
 import json
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import TracebackType
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import JsonValue, ValidationError
 
@@ -102,21 +103,23 @@ def _invalid_arguments(
     input_model: type[ContractModel],
     arguments: dict[str, JsonValue],
     constraint_codes: tuple[str, ...] = (),
+    validation_errors: Sequence[Mapping[str, Any]] = (),
 ) -> tuple[str, str]:
     """只投影正式字段和白名单规则，不回显参数值或第三方校验异常。"""
     return "tool_invalid_arguments", invalid_argument_message(
-        input_model.model_json_schema(), arguments, constraint_codes=constraint_codes
+        input_model.model_json_schema(),
+        arguments,
+        constraint_codes=constraint_codes,
+        validation_errors=validation_errors,
     )
 
 
 def _argument_failure(
     binding: _ReadBinding, arguments: dict[str, JsonValue], error: ValidationError
 ) -> tuple[str, str]:
-    codes = tuple(
-        detail["type"]
-        for detail in error.errors(include_url=False, include_input=False, include_context=False)
-    )
-    invalid = _invalid_arguments(binding.input_model, arguments, codes)
+    details = error.errors(include_url=False, include_input=False, include_context=False)
+    codes = tuple(detail["type"] for detail in details)
+    invalid = _invalid_arguments(binding.input_model, arguments, codes, details)
     if binding.input_model is ListFilesInput:
         position = arguments.get("offset", 0)
         first_position = 0

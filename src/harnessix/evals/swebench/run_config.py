@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from harnessix.evals.swebench.compact_surface_config import (
+    SweBenchArgumentRepairAgentRunConfig,
     SweBenchBudgetTruncationAgentRunConfig,
     SweBenchCachedClosureAgentRunConfig,
     SweBenchCompactSurfaceAgentRunConfig,
@@ -325,6 +326,7 @@ SweBenchRunConfig = (
     | SweBenchExplainedGatesAgentRunConfig
     | SweBenchConnectRetryAgentRunConfig
     | SweBenchForcedChoiceTolerantAgentRunConfig
+    | SweBenchArgumentRepairAgentRunConfig
 )
 
 
@@ -360,6 +362,7 @@ def _run_config_type(
     explained_gates: bool = False,
     connect_retry: bool = False,
     forced_choice_tolerant: bool = False,
+    argument_repair: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -385,6 +388,7 @@ def _run_config_type(
         (explained_gates, "工具门禁说明"),
         (connect_retry, "连接重试"),
         (forced_choice_tolerant, "强制选择违约拒绝"),
+        (argument_repair, "工具参数修复"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -406,6 +410,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if argument_repair and not forced_choice_tolerant:
+        raise ValueError("SWE-bench工具参数修复只在强制选择违约拒绝组合之上冻结")
     if forced_choice_tolerant and not connect_retry:
         raise ValueError("SWE-bench强制选择违约拒绝只在连接重试组合之上冻结")
     if connect_retry and not explained_gates:
@@ -463,6 +469,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if argument_repair:
+            return SweBenchArgumentRepairAgentRunConfig
         if forced_choice_tolerant:
             return SweBenchForcedChoiceTolerantAgentRunConfig
         if connect_retry:
@@ -566,6 +574,7 @@ def build_swebench_agent_run_config(
     explained_gates: bool = False,
     connect_retry: bool = False,
     forced_choice_tolerant: bool = False,
+    argument_repair: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -595,6 +604,7 @@ def build_swebench_agent_run_config(
         explained_gates=explained_gates,
         connect_retry=connect_retry,
         forced_choice_tolerant=forced_choice_tolerant,
+        argument_repair=argument_repair,
     )
     extra: dict[str, object] = (
         {}
@@ -629,7 +639,10 @@ def build_swebench_agent_run_config(
             thinking_budget=1024 if enable_thinking else None,
             thinking_format=catalog.thinking_format,
             connect_retries=3 if connect_retry else 0,
-            prompt_cache=_wire_prompt_cache(catalog, prompt_cache=prompt_cache),
+            repair_tool_arguments=argument_repair,
+            prompt_cache=_wire_prompt_cache(
+                catalog, prompt_cache=prompt_cache, stable_tail=argument_repair
+            ),
         ),
         price=PriceSnapshot(
             version=f"{catalog.billing_provider}-{now.date().isoformat()}-{catalog.price_slug}",

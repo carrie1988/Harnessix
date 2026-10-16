@@ -888,3 +888,8 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   choice、确认其已结束，再接受用量；用量出现在未结束分片、或结束之后的分片仍为`usage_shape_or_order_invalid`。
 - `OpenAIChatConfig.connect_retries`（0～5，默认0且不序列化）传给`httpx.AsyncHTTPTransport(retries=…)`：只在TCP连接或TLS握手失败时
   重连，HTTP请求尚未发出，不产生新的模型尝试、计费或重采样；请求发出后的任何失败仍按原无重试策略处理。
+- `OpenAIChatConfig.repair_tool_arguments`（默认关闭、不序列化）：工具参数严格解析失败时只尝试两类唯一、保意图的修复——
+  字符串内原始控制字符（`json.loads(strict=False)`）与非法反斜杠转义（按字面量转义）；截断、括号不配、重复键、非有限数值不修复，
+  仍为`tool_arguments_invalid`。
+- `prompt_cache="stable_tail"`：指令与历史在前且逐字节不变，逐请求的目录/预算说明移到末尾，不打缓存标记，供服务端自动前缀缓存
+  （DeepSeek）；`explicit_tail`另在前缀末端打标记。

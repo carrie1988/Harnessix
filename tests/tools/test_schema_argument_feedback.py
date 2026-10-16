@@ -340,3 +340,45 @@ def test_number_range_and_detail_limit_remain_bounded():
     details = message.split("范围不匹配：", 1)[1].split("。", 1)[0]
     assert details.split("；") == [f"count_{i:02} 应满足 < 0.5" for i in range(8)]
     assert len(message) <= 2000 and "987654321" not in message
+
+
+def test_nested_patch_errors_name_the_location_and_contract_without_values():
+    """d4：create缺mode时只报“缺少必填字段：无”，DeepSeek连续50次盲目重试。"""
+    from pydantic import ValidationError
+
+    from harnessix.delivery.trusted_action_contracts import WorkspacePatchInput
+    from harnessix.delivery.workspace_patch_compact import compact_workspace_patch_schema
+
+    arguments = {"files": [{"operation": "create", "path": "a.py", "content": "SECRET_BODY"}]}
+    try:
+        WorkspacePatchInput.model_validate(arguments)
+    except ValidationError as error:
+        errors = error.errors(include_url=False, include_input=False, include_context=False)
+    message = invalid_argument_message(
+        compact_workspace_patch_schema(),
+        arguments,
+        trusted_action=True,
+        validation_errors=errors,
+    )
+    assert "files[0]：create需要path、content、mode" in message
+    assert "too_short" not in message and "Tuple should have" not in message
+    assert "SECRET_BODY" not in message
+
+
+def test_unlisted_error_text_and_unsafe_keys_are_not_projected():
+    errors = [
+        {"loc": ("files", 0, "path"), "type": "value_error", "msg": "Value error, leaked VALUE"},
+        {"loc": ("files", "bad key!"), "type": "missing", "msg": "Field required"},
+        {"loc": ("PRIVATE_FIELD",), "type": "missing", "msg": "Field required"},
+    ]
+    item = {"type": "object", "properties": {"path": {"type": "string"}}}
+    schema = {
+        "type": "object",
+        "properties": {"files": {"type": "array", "items": item}},
+        "required": ["files"],
+    }
+    message = invalid_argument_message(schema, {"files": []}, validation_errors=errors)
+    assert "files[0].path：取值不符合合同" in message
+    assert "leaked VALUE" not in message and "bad key!" not in message
+    # 位置不在公开Schema内（如校验器内部字段）时整条不报告。
+    assert "PRIVATE_FIELD" not in message

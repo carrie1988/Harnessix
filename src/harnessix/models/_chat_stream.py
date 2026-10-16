@@ -14,7 +14,7 @@ from harnessix.agent.models import Usage
 from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._billing import merge_billing
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason
-from harnessix.models._json import strict_json
+from harnessix.models._json import repaired_json_object, strict_json
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -37,7 +37,7 @@ class CallParts:
 
 
 def _complete_calls(
-    calls: dict[int, CallParts], names: dict[str, str]
+    calls: dict[int, CallParts], names: dict[str, str], *, repair_arguments: bool = False
 ) -> list[ToolCallCompleted | ToolCallRejected]:
     """先校验整组结构，再按本次精确目录分类；畸形组不释放任何提案。"""
     if sorted(calls) != list(range(len(calls))):
@@ -60,7 +60,10 @@ def _complete_calls(
         try:
             arguments = strict_json(call.arguments)
         except ValueError:
-            raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_INVALID) from None
+            repaired = repaired_json_object(call.arguments) if repair_arguments else None
+            if repaired is None:
+                raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_INVALID) from None
+            arguments = repaired
         if not isinstance(arguments, dict):
             raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT)
         validated.append((call.call_id, call.name, arguments, len(call.arguments)))
@@ -130,9 +133,16 @@ def _complete_usage_observation(usage: CompletionUsage) -> UsageObservation:
 
 class ChatStream:
     def __init__(
-        self, request: ModelRequest, names: dict[str, str], *, parallel: bool, attempt_id: UUID
+        self,
+        request: ModelRequest,
+        names: dict[str, str],
+        *,
+        parallel: bool,
+        attempt_id: UUID,
+        repair_arguments: bool = False,
     ) -> None:
         self._request = request
+        self._repair_arguments = repair_arguments
         self._names = names
         self._parallel = parallel
         self._response_id: str | None = None
@@ -272,7 +282,9 @@ class ChatStream:
                 raise ChatProtocolError(ChatProtocolReason.FINISH_TOOL_MISMATCH)
             if not self._calls and not self._text:
                 raise ChatProtocolError(ChatProtocolReason.SEMANTIC_OUTPUT_MISSING)
-            events.extend(_complete_calls(self._calls, self._names))
+            events.extend(
+                _complete_calls(self._calls, self._names, repair_arguments=self._repair_arguments)
+            )
         events.append(reasons[finish])
         return events
 

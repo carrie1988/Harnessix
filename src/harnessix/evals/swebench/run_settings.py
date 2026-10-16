@@ -123,10 +123,14 @@ def catalog_input_price(
 
 
 def _wire_prompt_cache(
-    model: CatalogModel, *, prompt_cache: bool
-) -> Literal["explicit_tail"] | None:
-    """自动缓存模型不在请求中打标记；只有显式缓存模型开启时才使用explicit_tail布局。"""
-    return "explicit_tail" if prompt_cache and model.prompt_cache_mode == "explicit_tail" else None
+    model: CatalogModel, *, prompt_cache: bool, stable_tail: bool = False
+) -> Literal["explicit_tail", "stable_tail"] | None:
+    """显式缓存模型用explicit_tail；自动缓存模型不打标记，冻结版本开启时用stable_tail保持前缀不变。"""
+    if not prompt_cache:
+        return None
+    if model.prompt_cache_mode == "explicit_tail":
+        return "explicit_tail"
+    return "stable_tail" if stable_tail else None
 
 
 # 思考诊断只对已求证思考价格的模型开放。
@@ -185,13 +189,17 @@ class _SweBenchAgentRunSettings(ContractModel):
             provider.base_url != model.base_url
             or provider.thinking_format != model.thinking_format
             or provider.connect_retries != self.connect_retries
+            or provider.repair_tool_arguments is not self.repair_tool_arguments
             or provider.max_attempts != 1
             or provider.retry_delay_seconds != 0
             or provider.enable_thinking is not self.thinking_enabled
             or provider.output_token_parameter != output_token_parameter
             or provider.thinking_budget != (1024 if self.thinking_enabled else None)
             or not provider.capabilities.tool_calls
-            or provider.prompt_cache != _wire_prompt_cache(model, prompt_cache=self.prompt_cache)
+            or provider.prompt_cache
+            != _wire_prompt_cache(
+                model, prompt_cache=self.prompt_cache, stable_tail=self.stable_cache_tail
+            )
         ):
             raise ValueError("SWE-bench Provider不符合固定无重试工具边界")
         if (
@@ -336,6 +344,14 @@ class _SweBenchAgentRunSettings(ContractModel):
 
     @property
     def reject_forced_choice_violations(self) -> bool:
+        return False
+
+    @property
+    def repair_tool_arguments(self) -> bool:
+        return False
+
+    @property
+    def stable_cache_tail(self) -> bool:
         return False
 
     def known_case_reserve_units(

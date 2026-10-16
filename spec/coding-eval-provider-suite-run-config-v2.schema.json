@@ -564,6 +564,11 @@
           "title": "Connect Retries",
           "type": "integer"
         },
+        "repair_tool_arguments": {
+          "default": false,
+          "title": "Repair Tool Arguments",
+          "type": "boolean"
+        },
         "thinking_format": {
           "anyOf": [
             {
@@ -580,7 +585,10 @@
         "prompt_cache": {
           "anyOf": [
             {
-              "const": "explicit_tail",
+              "enum": [
+                "explicit_tail",
+                "stable_tail"
+              ],
               "type": "string"
             },
             {

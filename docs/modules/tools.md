@@ -1164,3 +1164,10 @@ POSIX沿同一FD，Windows沿同一稳定观察；其他语言、伪声明或无
 不要原样重试，并给出缩小`path`、先`glob`定位、减少`context_lines`/`max_results`或分页读取等调整方式；错误码不变。
 实测模型在旧的笼统消息下会原样重发同一调用直至预算耗尽。回归见[扫描上限反馈测试](../../tests/tools/test_search.py)。
 
+
+## 当前增量：参数校验位置反馈
+
+`invalid_argument_message(..., validation_errors=...)`在字段反馈后追加“校验位置”：位置须沿已公布`input_schema`逐级解析（对象属性、
+数组元素、本地`$defs`引用），不在公开合同内的位置整条不报告；文本只取内置结构错误（缺失、多余字段、字面量、类型、长度、范围）
+及`harnessix_`前缀的固定措辞自定义错误，其余只报“取值不符合合同”；被子位置覆盖的父级汇总错误不重复，最多8条，不含调用值。
+Workspace Patch按操作给出固定字段要求（如“create需要path、content、mode（420或493），不得提供expected_sha256、edits”）。

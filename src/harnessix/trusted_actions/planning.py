@@ -236,7 +236,7 @@ def _normalize_invocation(
         if type(dumped) is not dict:
             raise ValueError
         normalized = cast(dict[str, JsonValue], dumped)
-    except (ValidationError, ValueError, TypeError):
+    except (ValidationError, ValueError, TypeError) as error:
         schema = (
             definition.input_schema
             if definition.input_schema is not None
@@ -244,7 +244,16 @@ def _normalize_invocation(
         )
         raise KernelError(
             "tool_invalid_arguments",
-            invalid_argument_message(schema, invocation.arguments, trusted_action=True),
+            invalid_argument_message(
+                schema,
+                invocation.arguments,
+                trusted_action=True,
+                validation_errors=(
+                    error.errors(include_url=False, include_input=False, include_context=False)
+                    if isinstance(error, ValidationError)
+                    else ()
+                ),
+            ),
         ) from None
     except Exception as error:
         # 显式Decoder同样是回调边界，不能凭KernelError类型公开内部正文。

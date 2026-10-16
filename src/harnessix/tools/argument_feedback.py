@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 import re
-from collections.abc import Mapping
-from typing import Literal, cast
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal, cast
 
 from pydantic import JsonValue
 
@@ -201,12 +201,113 @@ def _range_mismatches(
     return mismatches
 
 
+# 内置结构错误的文本只含合同约束、不含输入值；harnessix_前缀为本项目固定措辞的自定义错误。
+_STRUCTURAL_ERROR_TYPES = frozenset(
+    {
+        "missing",
+        "extra_forbidden",
+        "literal_error",
+        "enum",
+        "string_type",
+        "int_type",
+        "int_parsing",
+        "bool_type",
+        "float_type",
+        "list_type",
+        "tuple_type",
+        "dict_type",
+        "model_type",
+        "too_short",
+        "too_long",
+        "string_too_short",
+        "string_too_long",
+        "greater_than",
+        "greater_than_equal",
+        "less_than",
+        "less_than_equal",
+    }
+)
+
+
+def _resolve(schema: JsonValue, root: Mapping[str, JsonValue]) -> Mapping[str, JsonValue] | None:
+    """只解析本地#/$defs引用；其他引用或组合不猜测。"""
+    for _ in range(8):
+        if type(schema) is not dict:
+            return None
+        reference = schema.get("$ref")
+        if reference is None:
+            return schema
+        if type(reference) is not str or not reference.startswith("#/$defs/"):
+            return None
+        definitions = root.get("$defs")
+        if type(definitions) is not dict:
+            return None
+        schema = definitions.get(reference[len("#/$defs/") :])
+    return None
+
+
+def _schema_location(loc: Sequence[Any], root: Mapping[str, JsonValue]) -> str | None:
+    """位置须沿已公布input_schema逐级解析（对象属性、数组元素），确保只来自公开合同。"""
+    node: Mapping[str, JsonValue] | None = root
+    parts: list[str] = []
+    for part in loc:
+        if node is None:
+            return None
+        if type(part) is int and 0 <= part < 10_000:
+            if node.get("type") != "array":
+                return None
+            node = _resolve(node.get("items"), root)
+            parts.append(f"[{part}]")
+        elif type(part) is str and _FIELD_NAME.fullmatch(part):
+            properties = node.get("properties")
+            if type(properties) is not dict or part not in properties:
+                return None
+            node = _resolve(properties[part], root)
+            parts.append(f".{part}" if parts else part)
+        else:
+            return None
+    return "".join(parts) or None
+
+
+def _validation_details(
+    errors: Sequence[Mapping[str, Any]], schema: Mapping[str, JsonValue]
+) -> list[str]:
+    """按白名单投影校验错误位置与固定文本；被子位置错误覆盖的父级汇总错误不重复报告。"""
+    located: list[tuple[tuple[Any, ...], str, str]] = []
+    for error in errors:
+        loc = tuple(error.get("loc", ()))
+        where = _schema_location(loc, schema)
+        if where is None:
+            continue
+        kind = error.get("type")
+        message = error.get("msg")
+        if (
+            type(kind) is str
+            and type(message) is str
+            and (kind in _STRUCTURAL_ERROR_TYPES or kind.startswith("harnessix_"))
+        ):
+            located.append((loc, where, message[:200]))
+        else:
+            located.append((loc, where, "取值不符合合同"))
+    details: list[str] = []
+    for loc, where, message in located:
+        if any(other != loc and other[: len(loc)] == loc for other, _, _ in located):
+            continue
+        line = f"{where}：{message}"
+        if line not in details:
+            details.append(line)
+        if len(details) == _MAX_TYPE_MISMATCHES:
+            break
+    return details
+
+
 def invalid_argument_message(
     schema: Mapping[str, JsonValue],
     arguments: Mapping[str, JsonValue],
     *,
     trusted_action: bool = False,
     constraint_codes: tuple[str, ...] = (),
+    validation_errors: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """只公开Schema事实及正式校验器的白名单规则；参数值及异常不能进入消息。"""
     label = "Action参数不符合Trusted Tool契约" if trusted_action else "工具参数不符合契约"
@@ -242,6 +343,9 @@ def invalid_argument_message(
     )
     if constraints:
         details.append(f"约束不匹配：{'；'.join(constraints)}。")
+    located = _validation_details(validation_errors, schema)
+    if located:
+        details.append(f"校验位置：{'；'.join(located)}。")
     message = f"{field_feedback}{''.join(details)}{instruction}" if details else previous_message
     if len(message) <= 2000:
         return message
