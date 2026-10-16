@@ -898,3 +898,4 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”），模型在原预算内重发。
 - `thinking_format="thinking_type"`且开启思考时，每条历史助手消息带`reasoning_content`（未存储推理内容时为空串）：DeepSeek思考模式
   要求带工具历史中的助手消息携带该字段，否则400；空串即满足协议。
+- 同一思考模式只支持`tool_choice: auto`：映射不发送`tool_choice`，强制/required由可执行集收窄与目录说明约束。

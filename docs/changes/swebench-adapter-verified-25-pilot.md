@@ -1853,3 +1853,5 @@ v55r3前15项官方评测7/15，与v55同组15项（7/15）持平：稳健性修
 v55t首项第二次请求被DeepSeek以400拒绝：思考模式下带工具调用的历史助手消息必须携带`reasoning_content`（此前探测为假阴性）。
 实测该字段为空串即被接受，故[映射](../../src/harnessix/models/_chat_mapping.py)在`thinking_type`且开启思考时为每条历史助手消息补
 `reasoning_content`（不存储也不回传推理内容；每次请求补法一致，缓存前缀稳定）。v55t作废，以v55t2重跑。
+v55t2首项第9次请求再遇400：DeepSeek思考模式只支持`tool_choice: auto`（`required`与指定函数均拒绝）。修复：思考模式下不发送
+`tool_choice`，强制与required改由视图收窄的可执行集与目录说明约束，调用其他工具沿v25拒绝路径。v55t2作废，以v55t3重跑。

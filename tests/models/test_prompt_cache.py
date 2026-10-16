@@ -222,3 +222,16 @@ def test_thinking_type_history_assistants_carry_reasoning_content(thinking):
     assert all(("reasoning_content" in m) is thinking for m in assistants)
     if thinking:
         assert all(m["reasoning_content"] == "" for m in assistants)
+
+
+@pytest.mark.parametrize("thinking", [True, False])
+def test_native_thinking_omits_unsupported_tool_choice(thinking):
+    """v55t2：DeepSeek思考模式对required与指定函数的tool_choice返回400。"""
+    base = model_request(with_tools=True)
+    (tool,) = base.tools
+    config = OpenAIChatConfig(model="m", enable_thinking=thinking, thinking_format="thinking_type")
+    forced = base.model_copy(update={"tool_choice": "required", "forced_tool": tool.name})
+    required = base.model_copy(update={"tool_choice": "required"})
+    for request in (forced, required):
+        body, _ = build_request(request, config)
+        assert ("tool_choice" in body) is not thinking
