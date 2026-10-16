@@ -19,6 +19,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
     SweBenchProtocolRobustAgentRunConfig,
+    SweBenchReadAfterFailedPatchAgentRunConfig,
     SweBenchScratchReproductionAgentRunConfig,
     SweBenchTestTimeoutAgentRunConfig,
 )
@@ -329,6 +330,7 @@ SweBenchRunConfig = (
     | SweBenchForcedChoiceTolerantAgentRunConfig
     | SweBenchArgumentRepairAgentRunConfig
     | SweBenchTestTimeoutAgentRunConfig
+    | SweBenchReadAfterFailedPatchAgentRunConfig
 )
 
 
@@ -366,6 +368,7 @@ def _run_config_type(
     forced_choice_tolerant: bool = False,
     argument_repair: bool = False,
     test_timeout_failures: bool = False,
+    reads_after_failed_patch: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -393,6 +396,7 @@ def _run_config_type(
         (forced_choice_tolerant, "强制选择违约拒绝"),
         (argument_repair, "工具参数修复"),
         (test_timeout_failures, "测试超时判定"),
+        (reads_after_failed_patch, "失败Patch后保留读取"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -414,6 +418,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if reads_after_failed_patch and not test_timeout_failures:
+        raise ValueError("SWE-bench失败Patch后保留读取只在测试超时判定组合之上冻结")
     if test_timeout_failures and not argument_repair:
         raise ValueError("SWE-bench测试超时判定只在工具参数修复组合之上冻结")
     if argument_repair and not forced_choice_tolerant:
@@ -475,6 +481,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if reads_after_failed_patch:
+            return SweBenchReadAfterFailedPatchAgentRunConfig
         if test_timeout_failures:
             return SweBenchTestTimeoutAgentRunConfig
         if argument_repair:
@@ -584,6 +592,7 @@ def build_swebench_agent_run_config(
     forced_choice_tolerant: bool = False,
     argument_repair: bool = False,
     test_timeout_failures: bool = False,
+    reads_after_failed_patch: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -615,6 +624,7 @@ def build_swebench_agent_run_config(
         forced_choice_tolerant=forced_choice_tolerant,
         argument_repair=argument_repair,
         test_timeout_failures=test_timeout_failures,
+        reads_after_failed_patch=reads_after_failed_patch,
     )
     extra: dict[str, object] = (
         {}

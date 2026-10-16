@@ -866,3 +866,31 @@ def test_public_test_timeout_enters_diagnosis_only_when_enabled(enabled: bool) -
         assert {"read_file", _PROFILE} <= names
     else:
         assert names == set()
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_failed_patch_keeps_reads_instead_of_forcing_patch_only(enabled: bool) -> None:
+    """v55 sphinx-11445：参数错误后只剩强制Patch，模型无法重读取得SHA，连续被拒至步数耗尽。"""
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "failed", "tool_invalid_arguments", None, _SOURCE_PATCH),
+    )
+    view = CodingWorkflowToolView(
+        require_pre_edit_profile=False, keep_reads_after_failed_patch=enabled
+    )
+    selection = view.select(turn, _definitions())
+    names = {tool.name for tool in selection.tools}
+    if enabled:
+        assert selection.forced_tool is None and selection.choice == "required"
+        assert names == {_PATCH, "read_file"}
+    else:
+        assert selection.forced_tool == _PATCH and names == {_PATCH}
+
+
+def test_patch_deadline_before_any_patch_is_not_relaxed() -> None:
+    turn = _turn(("read_file", "succeeded", None))
+    view = CodingWorkflowToolView(
+        require_pre_edit_profile=False, keep_reads_after_failed_patch=True
+    )
+    plain = CodingWorkflowToolView(require_pre_edit_profile=False)
+    assert view.select(turn, _definitions()) == plain.select(turn, _definitions())

@@ -358,6 +358,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def test_timeouts_are_failures(self) -> bool:
         return False
 
+    @property
+    def keep_reads_after_failed_patch(self) -> bool:
+        return False
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:

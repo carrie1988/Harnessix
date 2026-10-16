@@ -504,3 +504,34 @@ def test_test_timeout_v27_adds_only_the_timeout_policy(tmp_path):
     path = tmp_path / "v27.json"
     write_swebench_agent_run_config(path, config)
     assert read_swebench_agent_run_config(path) == config
+
+
+def test_reads_after_failed_patch_v28_adds_only_the_failed_patch_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchReadAfterFailedPatchAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+    }
+    config = compact_config(tmp_path, **common, reads_after_failed_patch=True)
+    v27 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchReadAfterFailedPatchAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v28"
+    assert config.keep_reads_after_failed_patch and not v27.keep_reads_after_failed_patch
+    excluded = {"spec_version", "failed_patch_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v27.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v28.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config

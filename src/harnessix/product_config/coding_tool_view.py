@@ -315,6 +315,25 @@ def _enforce_patch_deadline(
     return _selection(definitions, {patch}, forced_tool=patch)
 
 
+def _with_reads_after_failed_patch(
+    turn: Turn, selection: ModelToolSelection, definitions: tuple[ToolDescriptor, ...]
+) -> ModelToolSelection:
+    """仅当最近一次Patch失败且当前只强制Patch时，补开read_file（仍须调用工具，但不再强制Patch）。"""
+    forced = selection.forced_tool
+    if forced not in _PATCH_TOOLS or not any(d.name == "read_file" for d in definitions):
+        return selection
+    patches = [item for item in _observations(turn) if item.tool in _PATCH_TOOLS]
+    if not patches or patches[-1].result.outcome != "failed":
+        return selection
+    return replace(
+        _selection(definitions, {forced, "read_file"}),
+        notice=(
+            f"The last {forced} call failed. Re-read the target files with read_file if you need "
+            f"their current content_sha256 or exact anchor text, then retry {forced}."
+        ),
+    )
+
+
 def _delivers_change(observation: _Observation) -> bool:
     """Patch调用是否触及可交付文件；复现草稿被剔除后为空的调用不算首次修改。"""
     if observation.tool not in _PATCH_TOOLS:
@@ -450,6 +469,8 @@ class CodingWorkflowToolView:
     explain_tool_gates: bool = False
     # 公开测试Profile超时（被测代码或测试挂起）按代码级失败进入诊断修复，而非关闭目录。
     test_timeouts_are_failures: bool = False
+    # 最近一次Patch失败后的强制重试保留read_file：参数错误常需重读以取得正确SHA或锚点。
+    keep_reads_after_failed_patch: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -463,6 +484,8 @@ class CodingWorkflowToolView:
             raise ValueError("工具门禁说明开关必须是布尔值")
         if type(self.test_timeouts_are_failures) is not bool:
             raise ValueError("测试超时判定开关必须是布尔值")
+        if type(self.keep_reads_after_failed_patch) is not bool:
+            raise ValueError("失败Patch后保留读取开关必须是布尔值")
         if type(self.reopen_after_clean_review) is not bool:
             raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
@@ -497,6 +520,8 @@ class CodingWorkflowToolView:
             )
         ):
             selection = _reopened_selection(workflow_definitions)
+        if self.keep_reads_after_failed_patch:
+            selection = _with_reads_after_failed_patch(turn, selection, workflow_definitions)
         if self.patch_deadline_requests is not None:
             selection = _enforce_patch_deadline(
                 turn, selection, workflow_definitions, self.patch_deadline_requests

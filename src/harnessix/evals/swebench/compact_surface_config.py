@@ -350,3 +350,19 @@ class SweBenchTestTimeoutAgentRunConfig(SweBenchArgumentRepairAgentRunConfig):
     @property
     def test_timeouts_are_failures(self) -> bool:
         return True
+
+
+class SweBenchReadAfterFailedPatchAgentRunConfig(SweBenchTestTimeoutAgentRunConfig):
+    """v27之上：最近一次Patch失败后的强制重试同时开放read_file（仍须调用工具）。
+
+    v55 sphinx-11445在参数错误后只剩强制Patch，无法重读取得SHA，连续被拒至请求上限。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v28"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v28"
+    )
+    failed_patch_policy: Literal["keep_reads_after_failed_patch"] = "keep_reads_after_failed_patch"
+
+    @property
+    def keep_reads_after_failed_patch(self) -> bool:
+        return True

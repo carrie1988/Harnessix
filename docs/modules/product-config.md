@@ -3046,3 +3046,8 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 [`coding_test_outcomes`](../../src/harnessix/product_config/coding_test_outcomes.py)提供工作流视图与SWE-bench证据共用的判定投影：
 公开测试Profile的`process_timeout`（被测代码或测试挂起）按确定的代码级测试失败处理，进入诊断与修复；模型可见结果不变。
 启动失败、宿主丢失、取消等其他非零状态仍属基础设施故障。
+
+## 当前增量：失败Patch后保留读取（`keep_reads_after_failed_patch`，默认关闭）
+
+最近一次Patch失败、且当前选择只强制Patch时，视图改为`{Patch, read_file}`（仍为`required`、不再强制Patch）并给出原因说明：
+参数错误、SHA不符或锚点缺失常需重读目标文件。首次修改前的截止强制与其他阶段不变；读取为只读，不放宽任何执行门禁。
