@@ -152,3 +152,37 @@ def test_thinking_type_format_sends_the_deepseek_switch(enabled):
 def test_thinking_type_format_requires_an_explicit_switch():
     with pytest.raises(ValueError):
         OpenAIChatConfig(model="m", thinking_format="thinking_type")
+
+
+def _usage_on(frame_value, wire):
+    value = dict(frame_value)
+    value["usage"] = wire.chunk(usage=True)["usage"]
+    return wire.frame(value)
+
+
+@pytest.mark.parametrize("adapter", ["openai"], indirect=True)
+async def test_usage_on_the_finishing_chunk_is_accepted(adapter, tmp_path: Path):
+    """DeepSeek把用量放在携带finish_reason的末个分片中，而非独立的空choices分片。"""
+    wire = adapter.wire
+    parts = [
+        wire.frame(wire.chunk({"role": "assistant", "content": "你"})),
+        _usage_on(wire.chunk({"content": "好"}, finish="stop"), wire),
+        b"data: [DONE]\n\n",
+    ]
+    turn, _, _ = await execute(adapter, tmp_path, parts)
+    attempt = turn.model_attempts[0]
+    assert attempt.status == "completed" and attempt.usage.completeness == "complete"
+
+
+@pytest.mark.parametrize("adapter", ["openai"], indirect=True)
+async def test_usage_on_an_unfinished_chunk_is_still_rejected(adapter, tmp_path: Path):
+    wire = adapter.wire
+    parts = [
+        _usage_on(wire.chunk({"role": "assistant", "content": "你"}), wire),
+        wire.frame(wire.chunk(finish="stop")),
+        b"data: [DONE]\n\n",
+    ]
+    turn, _, _ = await execute(adapter, tmp_path, parts)
+    attempt = turn.model_attempts[0]
+    assert attempt.status == "failed"
+    assert "usage_shape_or_order_invalid" in attempt.error.message

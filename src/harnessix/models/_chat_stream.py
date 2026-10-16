@@ -166,22 +166,10 @@ class ChatStream:
             )
         except ValueError:
             raise ChatProtocolError(ChatProtocolReason.BILLING_METADATA_INVALID) from None
-        if chunk.usage is not None:
-            usage = chunk.usage
-            if (
-                self._finish is None
-                or chunk.choices
-                or usage.prompt_tokens < 0
-                or usage.completion_tokens < 0
-                or usage.total_tokens != usage.prompt_tokens + usage.completion_tokens
-            ):
-                raise ChatProtocolError(ChatProtocolReason.USAGE_SHAPE_OR_ORDER_INVALID)
-            observation = _complete_usage_observation(usage)
-            self._usage = Usage(
-                input_tokens=usage.prompt_tokens, output_tokens=usage.completion_tokens
-            )
-            self._observation = observation
-            return [*events, *self._observe()]
+        if chunk.usage is not None and not chunk.choices:
+            return [*events, *self._accept_usage(chunk.usage)]
+        if chunk.usage is not None and self._finish is not None:
+            raise ChatProtocolError(ChatProtocolReason.USAGE_SHAPE_OR_ORDER_INVALID)
         events.extend(self._observe())
         if self._finish is not None or len(chunk.choices) != 1 or chunk.choices[0].index != 0:
             raise ChatProtocolError(ChatProtocolReason.CHOICE_SHAPE_OR_ORDER_INVALID)
@@ -228,7 +216,24 @@ class ChatStream:
             raise ChatProtocolError(ChatProtocolReason.OUTPUT_CHAR_LIMIT_EXCEEDED)
         if choice.finish_reason is not None:
             self._finish = choice.finish_reason
+        if chunk.usage is not None:
+            # 部分兼容端点（如DeepSeek）把用量放在携带finish_reason的末个分片中。
+            if choice.finish_reason is None:
+                raise ChatProtocolError(ChatProtocolReason.USAGE_SHAPE_OR_ORDER_INVALID)
+            events.extend(self._accept_usage(chunk.usage))
         return events
+
+    def _accept_usage(self, usage: CompletionUsage) -> list[ProviderEvent]:
+        if (
+            self._finish is None
+            or usage.prompt_tokens < 0
+            or usage.completion_tokens < 0
+            or usage.total_tokens != usage.prompt_tokens + usage.completion_tokens
+        ):
+            raise ChatProtocolError(ChatProtocolReason.USAGE_SHAPE_OR_ORDER_INVALID)
+        self._observation = _complete_usage_observation(usage)
+        self._usage = Usage(input_tokens=usage.prompt_tokens, output_tokens=usage.completion_tokens)
+        return self._observe()
 
     def _observe(self) -> list[ProviderEvent]:
         snapshot = (self._observation, self._billing)

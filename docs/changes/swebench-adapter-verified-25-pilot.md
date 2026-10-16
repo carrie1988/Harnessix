@@ -1799,3 +1799,8 @@ v23同时启用有界输出预留：单Case最坏已知费用原把全部Token�
 （`explicit_tail`打标记／`automatic`服务端自动前缀缓存）与思考开关格式；原qwen条目取值不变。新增`deepseek-flash`：
 [官方价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)按高峰时段计价（未命中2、命中0.04、输出8元/百万Token；
 空闲时段减半，账本因此偏保守），自动缓存无创建附加费、创建按未命中价；上下文1M；思考固定关闭。
+
+d1开发运行（[预注册](../../benchmarks/swebench/deepseek-dev-25-d1/preregistration.json)）前6项全部以`usage_shape_or_order_invalid`失败：
+DeepSeek把用量放在`finish_reason`分片内，旧解析只接受独立用量分片；v22协议失败隔离按设计跳过而不停整轮，操作者因此手动停止。
+6次尝试的用量未知，按每次完整未知请求预留0.532768元结算（共3.196608元，实际账单约每项0.01～0.02元）。修复[流解析](../../src/harnessix/models/_chat_stream.py)
+后d1作废、开发集以新计划d2整体重跑（不与d1拼接；开发集不作泛化结论）。

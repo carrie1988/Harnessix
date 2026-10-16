@@ -884,3 +884,5 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   `reasoning_content`，当前历史不保存该字段，故评测固定关闭思考。
 - 用量帧同时含`prompt_cache_hit_tokens`与`prompt_cache_miss_tokens`、二者为非负整数、合计等于`prompt_tokens`且命中等于
   `cached_tokens`时，视为自动前缀缓存的完整拆分：缓存创建记0、未缓存为未命中数；任一条件不成立仍为未知并失败关闭。
+- 部分兼容端点（如DeepSeek）把`usage`放在携带`finish_reason`的末个分片中，而非独立的空`choices`分片。流解析先处理该分片的
+  choice、确认其已结束，再接受用量；用量出现在未结束分片、或结束之后的分片仍为`usage_shape_or_order_invalid`。
