@@ -9,7 +9,11 @@ from typing import Literal, NamedTuple, Self
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from harnessix.domain.models import ContractModel
-from harnessix.evals.swebench.contracts import SWE_BENCH_CASE_COUNT, SweBenchPreRegistrationPlan
+from harnessix.evals.swebench.contracts import (
+    SWE_BENCH_CASE_COUNT,
+    SweBenchPreRegistrationPlan,
+    SweBenchTaskBudget,
+)
 from harnessix.evals.swebench.public_test_profile import SweBenchCaseProcessProfile
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.pricing import (
@@ -289,6 +293,28 @@ class _SweBenchAgentRunSettings(ContractModel):
         return False
 
     @property
+    def bounded_output_reserve(self) -> bool:
+        return False
+
+    def known_case_reserve_units(
+        self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
+    ) -> int:
+        """单Case已知用量的最坏费用：Token硬预算内输入与输出合计不超过上限。
+
+        有界版本另用“每请求输出不超过provider上限、请求数（含摘要与重试）不超过max_steps”
+        约束输出部分，其余Token只能是输入；默认版本把全部Token按较高费率计价。
+        """
+        total = budget.max_tokens + self.output_token_limit_margin
+        if not self.bounded_output_reserve:
+            return total * max(input_rate, output_rate)
+        output = min(
+            total,
+            budget.max_steps
+            * (self.provider_config.max_output_tokens + self.output_token_limit_margin),
+        )
+        return output * max(input_rate, output_rate) + (total - output) * input_rate
+
+    @property
     def optional_pre_edit_profile_enabled(self) -> bool:
         return False
 
@@ -345,10 +371,8 @@ class _SweBenchAgentRunSettings(ContractModel):
 
         input_rate = max_input_rate(self.expected_input_price)
         output_rate = rate_units(self.model.output_price)
-        known = (
-            len(plan.cases)
-            * (plan.task_budget.max_tokens + self.output_token_limit_margin)
-            * max(input_rate, output_rate)
+        known = len(plan.cases) * self.known_case_reserve_units(
+            plan.task_budget, input_rate=input_rate, output_rate=output_rate
         )
         unknown = (
             self.provider_config.max_request_bytes * input_rate

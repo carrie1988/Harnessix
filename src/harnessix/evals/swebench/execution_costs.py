@@ -114,8 +114,9 @@ def _next_case_reserve(
     plan: SweBenchPreRegistrationPlan,
     config: SweBenchAgentRunConfig,
 ) -> int:
-    known = (plan.task_budget.max_tokens + config.output_token_limit_margin) * max(
-        _input_rate(config),
-        rate_units(config.price.output_per_million),
+    known = config.known_case_reserve_units(
+        plan.task_budget,
+        input_rate=_input_rate(config),
+        output_rate=rate_units(config.price.output_per_million),
     )
     return known + _unknown_request_reserve(config)

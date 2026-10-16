@@ -265,7 +265,12 @@ class SweBenchExplainedGatesAgentRunConfig(SweBenchProtocolRobustAgentRunConfig)
         "harnessix.swebench-agent-run-config/v23"
     )
     tool_gate_policy: Literal["explain_restricted_tools"] = "explain_restricted_tools"
+    reserve_policy: Literal["bounded_output_reserve"] = "bounded_output_reserve"
 
     @property
     def explain_tool_gates(self) -> bool:
+        return True
+
+    @property
+    def bounded_output_reserve(self) -> bool:
         return True

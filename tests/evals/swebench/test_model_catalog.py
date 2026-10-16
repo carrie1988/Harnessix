@@ -280,7 +280,7 @@ def test_explained_gates_v23_adds_only_the_tool_gate_policy(tmp_path):
     assert type(config) is SweBenchExplainedGatesAgentRunConfig
     assert config.spec_version == "harnessix.swebench-agent-run-config/v23"
     assert config.explain_tool_gates and not v22.explain_tool_gates
-    excluded = {"spec_version", "tool_gate_policy"}
+    excluded = {"spec_version", "tool_gate_policy", "reserve_policy"}
     assert config.model_dump(mode="json", exclude=excluded) == v22.model_dump(
         mode="json", exclude=excluded
     )
@@ -289,3 +289,33 @@ def test_explained_gates_v23_adds_only_the_tool_gate_policy(tmp_path):
     assert read_swebench_agent_run_config(path) == config
     with pytest.raises(ValueError):
         compact_config(tmp_path, **{**common, "protocol_robust": False}, explained_gates=True)
+
+
+def test_v23_bounds_the_output_share_of_the_case_reserve(tmp_path):
+    from harnessix.models.pricing import max_input_rate, rate_units
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+    }
+    v23 = compact_config(tmp_path, **common, explained_gates=True)
+    v22 = compact_config(tmp_path, **common)
+    budget = build_agent_test_plan().task_budget
+    rates = {
+        "input_rate": max_input_rate(v23.price.input_price),
+        "output_rate": rate_units(v23.price.output_per_million),
+    }
+    total = budget.max_tokens
+    assert v22.known_case_reserve_units(budget, **rates) == total * rates["output_rate"]
+    output = min(total, budget.max_steps * v23.provider_config.max_output_tokens)
+    assert v23.known_case_reserve_units(budget, **rates) == (
+        output * rates["output_rate"] + (total - output) * rates["input_rate"]
+    )
+    assert v23.known_case_reserve_units(budget, **rates) <= v22.known_case_reserve_units(
+        budget, **rates
+    )
