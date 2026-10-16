@@ -366,3 +366,21 @@ class SweBenchReadAfterFailedPatchAgentRunConfig(SweBenchTestTimeoutAgentRunConf
     @property
     def keep_reads_after_failed_patch(self) -> bool:
         return True
+
+
+class SweBenchTruncationQualityAgentRunConfig(SweBenchReadAfterFailedPatchAgentRunConfig):
+    """v28之上：已知费用的输出上限截断计为该Case的模型质量失败，独立Case继续，不停整轮。
+
+    v55r第7项一次响应退化为4096个输出Token被截断，整轮停止。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v29"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v29"
+    )
+    truncation_policy: Literal["known_cost_truncation_is_case_failure"] = (
+        "known_cost_truncation_is_case_failure"
+    )
+
+    @property
+    def truncation_is_quality_failure(self) -> bool:
+        return True

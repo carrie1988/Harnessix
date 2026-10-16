@@ -354,3 +354,35 @@ def test_public_test_timeout_is_a_quality_failure_only_when_enabled(enabled):
     )
     expected = "swebench_public_tests_failed" if enabled else "swebench_public_tests_unavailable"
     assert failure[0] == expected
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_known_cost_truncation_is_a_case_failure_only_when_enabled(tmp_path, enabled):
+    """v55r：一次响应退化为输出上限被截断，整轮停止；开启后只记该Case失败。"""
+    config = _config(tmp_path, _plan())
+    turn = _accounted_turn(0, config, turn_error="provider_max_output_tokens")
+    failure = execution._case_evidence_failure(
+        turn, PATCH, PUBLIC_TEST_TOOL, cost_complete=True, truncation_is_quality=enabled
+    )
+    expected = "swebench_model_output_truncated" if enabled else "provider_max_output_tokens"
+    assert failure[0] == expected
+
+
+def test_truncation_with_unknown_response_stays_fail_closed(tmp_path):
+    config = _config(tmp_path, _plan())
+    turn = _accounted_turn(
+        0,
+        config,
+        turn_error="provider_max_output_tokens",
+        last_attempt_changes={
+            "status": "failed",
+            "error": AgentFailure(code="provider_max_output_tokens", message="fixture"),
+            "actual_model": None,
+            "response_id": None,
+            "usage": UsageObservation(),
+        },
+    )
+    failure = execution._case_evidence_failure(
+        turn, PATCH, PUBLIC_TEST_TOOL, cost_complete=True, truncation_is_quality=True
+    )
+    assert failure[0] == "provider_max_output_tokens"

@@ -82,21 +82,31 @@ def _is_code_test_failure(observation: _ToolObservation) -> bool:
     )
 
 
-def _turn_evidence_failure(turn: Turn) -> tuple[str, str] | None:
+def _turn_evidence_failure(
+    turn: Turn, *, truncation_is_quality: bool = False
+) -> tuple[str, str] | None:
     """仅已计费且响应已知的模型契约失败可按原规则计入质量失败。"""
     if turn.status is not TurnStatus.COMPLETED:
         code = _stable_error_code(turn) or "swebench_turn_failed"
+        responses_known = bool(turn.accounted_attempts) and all(
+            attempt.response_id is not None and attempt.status in {"completed", "failed"}
+            for attempt in turn.accounted_attempts
+        )
         # 仅映射已计费、响应身份已知的契约失败；原 Turn 和请求账本保持不变。
         if (
             turn.status is TurnStatus.FAILED
             and code in {"invalid_provider_output", "provider_invalid_provider_output"}
-            and turn.accounted_attempts
-            and all(
-                attempt.response_id is not None and attempt.status in {"completed", "failed"}
-                for attempt in turn.accounted_attempts
-            )
+            and responses_known
         ):
             code = "swebench_model_response_invalid"
+        # 输出达到上限被截断（如退化重复）同为已知费用、无工具效果的单Case模型失败。
+        if (
+            truncation_is_quality
+            and turn.status is TurnStatus.FAILED
+            and code == "provider_max_output_tokens"
+            and responses_known
+        ):
+            code = "swebench_model_output_truncated"
         return code, "SWE-bench Case Turn未成功完成"
 
     return None
@@ -162,6 +172,7 @@ def _case_evidence_failure(
     cost_complete: bool,
     transport_failure_isolatable: bool = False,
     test_timeouts_are_failures: bool = False,
+    truncation_is_quality: bool = False,
 ) -> tuple[str, str] | None:
     if test_timeouts_are_failures:
         turn = with_test_timeouts_as_failures(turn)
@@ -178,7 +189,7 @@ def _case_evidence_failure(
         return "swebench_provider_transport_isolated", "SWE-bench传输故障已冻结，失败不重试"
     if not cost_complete:
         return "swebench_cost_incomplete", "SWE-bench模型费用未完整结算"
-    turn_failure = _turn_evidence_failure(turn)
+    turn_failure = _turn_evidence_failure(turn, truncation_is_quality=truncation_is_quality)
     if turn_failure is not None:
         return turn_failure
 

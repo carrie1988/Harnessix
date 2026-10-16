@@ -362,6 +362,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def keep_reads_after_failed_patch(self) -> bool:
         return False
 
+    @property
+    def truncation_is_quality_failure(self) -> bool:
+        return False
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:

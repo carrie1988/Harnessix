@@ -535,3 +535,35 @@ def test_reads_after_failed_patch_v28_adds_only_the_failed_patch_policy(tmp_path
     path = tmp_path / "v28.json"
     write_swebench_agent_run_config(path, config)
     assert read_swebench_agent_run_config(path) == config
+
+
+def test_truncation_quality_v29_adds_only_the_truncation_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchTruncationQualityAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+        "reads_after_failed_patch": True,
+    }
+    config = compact_config(tmp_path, **common, truncation_quality=True)
+    v28 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchTruncationQualityAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v29"
+    assert config.truncation_is_quality_failure and not v28.truncation_is_quality_failure
+    excluded = {"spec_version", "truncation_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v28.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v29.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config

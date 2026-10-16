@@ -39,6 +39,7 @@ NOW = datetime(2026, 10, 12, 1, 2, 3, tzinfo=UTC)
 QUALITY_FAILURE_CODES = (
     "budget_exceeded",
     "swebench_model_response_invalid",
+    "swebench_model_output_truncated",
     "swebench_patch_missing",
     "swebench_patch_failed",
     "swebench_public_tests_missing",

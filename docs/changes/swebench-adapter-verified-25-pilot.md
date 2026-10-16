@@ -1836,3 +1836,8 @@ d5（v26）首项0.06元：参数位置反馈生效（`files[1]：create需要�
 v55坏例归因（13项）：6项在57～59次请求处触及60次上限（其中sphinx-11445在参数错误后只剩强制Patch、无法重读取得SHA而连续被拒）；
 其余多为公开测试通过但隐藏测试未过的错误修复。由此：[v28](../../src/harnessix/evals/swebench/compact_surface_config.py)失败Patch后保留读取；
 下一轮计划预算提高到100次请求／3M Token／2700秒（[v56](../../benchmarks/swebench/generalization-25-v56/plan.json)执行前冻结）。
+
+v55r（v28，100次请求／3M）前6项全部自主闭环（含v55中预算耗尽的sphinx-11445与xarray-6992），第7项matplotlib-24177一次响应
+退化为4096个输出Token被截断，`provider_max_output_tokens`不在质量失败集合而停整轮（已知费用1.43元）。由此冻结
+[v29](../../src/harnessix/evals/swebench/compact_surface_config.py)：所有尝试响应身份与用量已知时，输出上限截断计为该Case的
+`swebench_model_output_truncated`质量失败，独立Case继续；响应未知时仍失败关闭。

@@ -28,6 +28,7 @@ _QUALITY_FAILURE_CODES = frozenset(
     {
         "budget_exceeded",
         "swebench_model_response_invalid",
+        "swebench_model_output_truncated",
         "swebench_patch_missing",
         "swebench_patch_failed",
         "swebench_public_tests_missing",

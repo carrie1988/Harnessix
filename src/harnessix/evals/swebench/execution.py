@@ -407,6 +407,7 @@ async def run_swebench_agent_suite(
                     and _can_isolate_transport_failure(turn, config)
                 ),
                 test_timeouts_are_failures=config.test_timeouts_are_failures,
+                truncation_is_quality=config.truncation_is_quality_failure,
             )
             if terminal_attempt:
                 _require_case_evidence(state, thread_id, turn, patch)
