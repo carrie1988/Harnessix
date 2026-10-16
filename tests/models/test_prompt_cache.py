@@ -115,3 +115,40 @@ async def test_dashscope_cache_creation_field_is_parsed_only_as_an_integer(
     assert usage.cache_read_input_tokens == 4
     assert usage.cache_creation_input_tokens == expected
     assert usage.uncached_input_tokens == (10 - 4 - 3 if expected is not None else None)
+
+
+@pytest.mark.parametrize("adapter", ["openai"], indirect=True)
+@pytest.mark.parametrize(
+    ("hit", "miss", "complete"),
+    [(4, 6, True), (4, 5, False), (3, 7, False), (True, 6, False), (4, None, False)],
+)
+async def test_deepseek_hit_miss_split_prices_input_without_creation(
+    adapter, tmp_path: Path, hit, miss, complete
+):
+    """DeepSeek自动缓存只报告命中/未命中；完整一致时创建为0，否则仍失败关闭为未知。"""
+    parts = adapter.wire.text_frames()
+    value = adapter.wire.chunk(usage=True)
+    value["usage"]["prompt_tokens_details"] = {"cached_tokens": 4}
+    value["usage"]["prompt_cache_hit_tokens"] = hit
+    if miss is not None:
+        value["usage"]["prompt_cache_miss_tokens"] = miss
+    parts[-2] = adapter.wire.frame(value)
+    turn, _, _ = await execute(adapter, tmp_path, parts)
+    usage = turn.model_attempts[0].usage
+    assert usage.cache_read_input_tokens == 4
+    assert usage.cache_creation_input_tokens == (0 if complete else None)
+    assert usage.uncached_input_tokens == (6 if complete else None)
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_thinking_type_format_sends_the_deepseek_switch(enabled):
+    config = OpenAIChatConfig(model="m", enable_thinking=enabled, thinking_format="thinking_type")
+    body, _ = build_request(model_request(), config)
+    assert body["extra_body"] == {"thinking": {"type": "enabled" if enabled else "disabled"}}
+    default, _ = build_request(model_request(), OpenAIChatConfig(model="m", enable_thinking=False))
+    assert default["extra_body"] == {"enable_thinking": False}
+
+
+def test_thinking_type_format_requires_an_explicit_switch():
+    with pytest.raises(ValueError):
+        OpenAIChatConfig(model="m", thinking_format="thinking_type")

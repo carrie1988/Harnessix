@@ -74,6 +74,11 @@ class OpenAIChatConfig(ModelHTTPConfig):
         exclude_if=lambda value: value is None,
         description="显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
     )
+    # 思考开关线上格式：默认DashScope的enable_thinking；thinking_type发送thinking.type。
+    thinking_format: Literal["thinking_type"] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     # 显式前缀缓存：稳定前缀（指令＋历史）在前并打标记，逐请求变化的预算/目录说明移到末尾。
     prompt_cache: Literal["explicit_tail"] | None = Field(
         default=None,
@@ -88,6 +93,10 @@ class OpenAIChatConfig(ModelHTTPConfig):
             or self.thinking_budget >= self.max_output_tokens
         ):
             raise ValueError("思考预算要求显式开启思考、整体输出上限及非空回答余量")
+        if self.thinking_format is not None and (
+            self.enable_thinking is None or self.thinking_budget is not None
+        ):
+            raise ValueError("thinking_type格式要求显式思考开关且不支持思考预算")
         return self
 
 

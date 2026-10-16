@@ -366,6 +366,19 @@
           "description": "显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
           "title": "Thinking Budget"
         },
+        "thinking_format": {
+          "anyOf": [
+            {
+              "const": "thinking_type",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thinking Format"
+        },
         "prompt_cache": {
           "anyOf": [
             {

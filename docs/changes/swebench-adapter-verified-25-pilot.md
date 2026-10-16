@@ -1792,3 +1792,10 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 v23同时启用有界输出预留：单Case最坏已知费用原把全部Token按较高的输出费率计价；有界版本以“每请求输出不超过provider
 上限、请求数（含摘要与重试，见`require_request_slots`）不超过`max_steps`”约束输出部分，其余Token只能是输入，按最高输入费率计价。
 40步×4096输出、400K预算下单Case预留由18.30元降至约13.30元（仍覆盖未知请求预留），使剩余预算能完整承接25项；旧版本公式不变。
+
+### DeepSeek-V4.1-Flash接入（2026-10-16）
+
+[模型目录](../../src/harnessix/evals/swebench/run_settings.py)由百炼专用推广为`CatalogModel`：每项绑定端点、计费方、区域、缓存模式
+（`explicit_tail`打标记／`automatic`服务端自动前缀缓存）与思考开关格式；原qwen条目取值不变。新增`deepseek-flash`：
+[官方价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)按高峰时段计价（未命中2、命中0.04、输出8元/百万Token；
+空闲时段减半，账本因此偏保守），自动缓存无创建附加费、创建按未命中价；上下文1M；思考固定关闭。

@@ -876,3 +876,11 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 
 有工具历史时广告当前wire alias及choice，历史与拒绝哨兵不恢复权限；纯历史前缀不生成虚构空目录说明，真实反馈完整收费。
 详见[实现与验证](../changes/swebench-adapter-verified-25-pilot.md#v38保留定点读取及当前目录边界)。
+
+## 当前增量：DeepSeek兼容端点
+
+- `OpenAIChatConfig.thinking_format="thinking_type"`时思考开关以`extra_body={"thinking": {"type": "enabled"|"disabled"}}`发送
+  （默认仍为DashScope的`enable_thinking`）；该格式要求显式开关且不支持思考预算。DeepSeek思考模式带工具时须完整回传
+  `reasoning_content`，当前历史不保存该字段，故评测固定关闭思考。
+- 用量帧同时含`prompt_cache_hit_tokens`与`prompt_cache_miss_tokens`、二者为非负整数、合计等于`prompt_tokens`且命中等于
+  `cached_tokens`时，视为自动前缀缓存的完整拆分：缓存创建记0、未缓存为未命中数；任一条件不成立仍为未知并失败关闭。

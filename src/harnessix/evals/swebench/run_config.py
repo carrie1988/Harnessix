@@ -22,12 +22,12 @@ from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRunConfig
 from harnessix.evals.swebench.public_test_profile import SweBenchCaseProcessProfile
 from harnessix.evals.swebench.run_settings import (
-    _BASE_URL,
     _CURRENCY,
     _PRICE_VALIDITY,
-    BAILIAN_MODELS,
+    MODEL_CATALOG,
     SweBenchModel,
     _SweBenchAgentRunSettings,
+    _wire_prompt_cache,
     catalog_input_price,
 )
 from harnessix.evals.swebench.working_set_config import SweBenchWorkingSetAgentRunConfig
@@ -552,7 +552,7 @@ def build_swebench_agent_run_config(
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
     now = observed_at or datetime.now(UTC)
-    catalog = BAILIAN_MODELS[model]
+    catalog = MODEL_CATALOG[model]
     parameters = {item.name: item.value for item in plan.model_settings.parameters}
     config_model = _run_config_type(
         isolate_provider_failures=isolate_provider_failures,
@@ -590,7 +590,7 @@ def build_swebench_agent_run_config(
         cache_root=str(cache_root),
         git_executable=str(git_executable),
         provider_config=OpenAIChatConfig(
-            base_url=_BASE_URL,
+            base_url=catalog.base_url,
             model=model,
             api_key_env=api_key_env,
             capabilities=ChatCapabilities(
@@ -607,14 +607,15 @@ def build_swebench_agent_run_config(
             output_token_parameter="max_completion_tokens" if enable_thinking else "max_tokens",
             enable_thinking=enable_thinking,
             thinking_budget=1024 if enable_thinking else None,
-            prompt_cache="explicit_tail" if prompt_cache else None,
+            thinking_format=catalog.thinking_format,
+            prompt_cache=_wire_prompt_cache(catalog, prompt_cache=prompt_cache),
         ),
         price=PriceSnapshot(
-            version=f"aliyun-bailian-{now.date().isoformat()}-{catalog.price_slug}",
+            version=f"{catalog.billing_provider}-{now.date().isoformat()}-{catalog.price_slug}",
             source_url=catalog.price_url,
-            billing_provider="aliyun-bailian",
+            billing_provider=catalog.billing_provider,
             model=model,
-            region="cn-beijing",
+            region=catalog.region,
             service_tier="payg",
             inference_mode="thinking" if enable_thinking else "non-thinking",
             currency=_CURRENCY,
@@ -626,8 +627,8 @@ def build_swebench_agent_run_config(
             output_per_million=catalog.output_price,
         ),
         billing_context=BillingContext(
-            billing_provider="aliyun-bailian",
-            region="cn-beijing",
+            billing_provider=catalog.billing_provider,
+            region=catalog.region,
             service_tier="payg",
             inference_mode="thinking" if enable_thinking else "non-thinking",
         ),

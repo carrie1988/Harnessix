@@ -14,7 +14,7 @@ from harnessix.evals.swebench.run_config_io import (
     read_swebench_agent_run_config,
     write_swebench_agent_run_config,
 )
-from harnessix.evals.swebench.run_settings import BAILIAN_MODELS
+from harnessix.evals.swebench.run_settings import MODEL_CATALOG
 from harnessix.models.pricing import FlatInputPrice
 from tests.evals.swebench.test_compact_surface_run_config import compact_config
 from tests.evals.swebench.test_run_config import build_agent_test_plan
@@ -24,7 +24,7 @@ V17 = {"convergence_guidance": True, "patch_deadline_requests": 4, "budget_cappe
 
 def plan_for(model: str) -> SweBenchPreRegistrationPlan:
     plan = build_agent_test_plan().model_copy(
-        update={"model_name": BAILIAN_MODELS[model].public_name}
+        update={"model_name": MODEL_CATALOG[model].public_name}
     )
     return SweBenchPreRegistrationPlan.model_validate(
         {
@@ -34,11 +34,11 @@ def plan_for(model: str) -> SweBenchPreRegistrationPlan:
     )
 
 
-@pytest.mark.parametrize("model", sorted(BAILIAN_MODELS))
+@pytest.mark.parametrize("model", sorted(MODEL_CATALOG))
 def test_each_model_binds_its_verified_price_and_public_name(tmp_path, model):
     plan = plan_for(model)
     config = compact_config(tmp_path, **V17, model=model, plan=plan)
-    entry = BAILIAN_MODELS[model]
+    entry = MODEL_CATALOG[model]
     assert config.provider_config.model == config.price.model == model
     assert config.price.input_price == FlatInputPrice(per_million=entry.input_price)
     assert config.price.output_per_million == entry.output_price
@@ -319,3 +319,35 @@ def test_v23_bounds_the_output_share_of_the_case_reserve(tmp_path):
     assert v23.known_case_reserve_units(budget, **rates) <= v22.known_case_reserve_units(
         budget, **rates
     )
+
+
+def test_deepseek_v23_uses_automatic_cache_and_its_own_endpoint(tmp_path):
+    from harnessix.models.pricing import PartitionedInputPrice
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+    }
+    plan = plan_for("deepseek-flash")
+    config = compact_config(tmp_path, **common, model="deepseek-flash", plan=plan)
+    provider = config.provider_config
+    assert provider.base_url == "https://api.deepseek.com"
+    assert provider.prompt_cache is None and config.prompt_cache
+    assert provider.thinking_format == "thinking_type" and provider.enable_thinking is False
+    assert config.price.billing_provider == config.billing_context.billing_provider == "deepseek"
+    assert config.price.input_price == PartitionedInputPrice(
+        uncached_per_million="2",
+        cache_read_per_million="0.04",
+        cache_creation_per_million="2",
+        cache_write_ttl=None,
+    )
+    config.require_plan(plan)
+    path = tmp_path / "deepseek.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config

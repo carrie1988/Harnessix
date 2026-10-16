@@ -31,13 +31,13 @@ from harnessix.models.pricing import (
 from harnessix.product_config.action_contracts import ProductProcessProfile
 
 _PROVIDER = "openai_chat"
-_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 _PRICE_VALIDITY = timedelta(hours=24)
 _CURRENCY: Literal["CNY"] = "CNY"
+_BAILIAN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
-class BailianModel(NamedTuple):
-    """北京PAYG非思考单价：只收录已按官方页面求证的模型，单价只在input_tokens_max内有效。"""
+class CatalogModel(NamedTuple):
+    """非思考单价：只收录已按官方页面求证的模型，单价只在input_tokens_max内有效。"""
 
     public_name: str
     price_url: str
@@ -45,14 +45,20 @@ class BailianModel(NamedTuple):
     input_price: str
     output_price: str
     input_tokens_max: int
-    # 显式前缀缓存的读取/创建单价；None表示未求证，不得开启缓存计价。
+    # 前缀缓存的读取/创建单价；None表示未求证，不得开启缓存计价。
     cache_read_price: str | None = None
     cache_creation_price: str | None = None
+    base_url: str = _BAILIAN_URL
+    billing_provider: str = "aliyun-bailian"
+    region: str = "cn-beijing"
+    # explicit_tail需在请求中打缓存标记；automatic由服务端自动缓存前缀，请求不变。
+    prompt_cache_mode: Literal["explicit_tail", "automatic"] = "explicit_tail"
+    thinking_format: Literal["thinking_type"] | None = None
 
 
-SweBenchModel = Literal["qwen3.8-max", "qwen3.7-plus", "qwen3.8-flash"]
-BAILIAN_MODELS: dict[str, BailianModel] = {
-    "qwen3.8-max": BailianModel(
+SweBenchModel = Literal["qwen3.8-max", "qwen3.7-plus", "qwen3.8-flash", "deepseek-flash"]
+MODEL_CATALOG: dict[str, CatalogModel] = {
+    "qwen3.8-max": CatalogModel(
         "harnessix-qwen3.8-max",
         "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
         "qwen3-8-max",
@@ -64,7 +70,7 @@ BAILIAN_MODELS: dict[str, BailianModel] = {
         "15",
     ),
     # 输入超过256K进入更高阶梯；单价只覆盖首阶梯，超出即无法估价并失败关闭。
-    "qwen3.7-plus": BailianModel(
+    "qwen3.7-plus": CatalogModel(
         "harnessix-qwen3.7-plus",
         "https://help.aliyun.com/zh/model-studio/qwen3-7-plus",
         "qwen3-7-plus",
@@ -72,7 +78,7 @@ BAILIAN_MODELS: dict[str, BailianModel] = {
         "8",
         256_000,
     ),
-    "qwen3.8-flash": BailianModel(
+    "qwen3.8-flash": CatalogModel(
         "harnessix-qwen3.8-flash",
         "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
         "qwen3-8-flash",
@@ -80,11 +86,28 @@ BAILIAN_MODELS: dict[str, BailianModel] = {
         "2.7",
         991_808,
     ),
+    # DeepSeek-V4.1-Flash：按高峰时段单价（空闲时段为一半）保守计价；自动前缀缓存无创建附加费，
+    # 创建按未命中单价。上下文1M。
+    "deepseek-flash": CatalogModel(
+        "harnessix-deepseek-flash",
+        "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
+        "deepseek-flash-peak",
+        "2",
+        "8",
+        1_048_576,
+        "0.04",
+        "2",
+        base_url="https://api.deepseek.com",
+        billing_provider="deepseek",
+        region="cn",
+        prompt_cache_mode="automatic",
+        thinking_format="thinking_type",
+    ),
 }
 
 
 def catalog_input_price(
-    model: BailianModel, *, prompt_cache: bool
+    model: CatalogModel, *, prompt_cache: bool
 ) -> FlatInputPrice | PartitionedInputPrice:
     """目录单价构成的输入价格：开启前缀缓存时按命中/创建/未缓存分区计价。"""
     if not prompt_cache:
@@ -97,6 +120,13 @@ def catalog_input_price(
         cache_creation_per_million=model.cache_creation_price,
         cache_write_ttl=None,
     )
+
+
+def _wire_prompt_cache(
+    model: CatalogModel, *, prompt_cache: bool
+) -> Literal["explicit_tail"] | None:
+    """自动缓存模型不在请求中打标记；只有显式缓存模型开启时才使用explicit_tail布局。"""
+    return "explicit_tail" if prompt_cache and model.prompt_cache_mode == "explicit_tail" else None
 
 
 # 思考诊断只对已求证思考价格的模型开放。
@@ -147,24 +177,27 @@ class _SweBenchAgentRunSettings(ContractModel):
         if work == cache or work.is_relative_to(cache) or cache.is_relative_to(work):
             raise ValueError("SWE-bench运行目录与仓库缓存必须相互隔离")
         provider = self.provider_config
-        model = BAILIAN_MODELS.get(provider.model)
+        model = MODEL_CATALOG.get(provider.model)
         if model is None or (self.thinking_enabled and provider.model != _THINKING_MODEL):
             raise ValueError("SWE-bench模型不在已求证价格目录内")
         output_token_parameter = "max_completion_tokens" if self.thinking_enabled else "max_tokens"
         if (
-            provider.base_url != _BASE_URL
+            provider.base_url != model.base_url
+            or provider.thinking_format != model.thinking_format
             or provider.max_attempts != 1
             or provider.retry_delay_seconds != 0
             or provider.enable_thinking is not self.thinking_enabled
             or provider.output_token_parameter != output_token_parameter
             or provider.thinking_budget != (1024 if self.thinking_enabled else None)
             or not provider.capabilities.tool_calls
-            or provider.prompt_cache != ("explicit_tail" if self.prompt_cache else None)
+            or provider.prompt_cache != _wire_prompt_cache(model, prompt_cache=self.prompt_cache)
         ):
             raise ValueError("SWE-bench Provider不符合固定无重试工具边界")
         if (
             self.price.model != provider.model
             or self.price.currency != _CURRENCY
+            or self.price.billing_provider != model.billing_provider
+            or self.price.region != model.region
             or self.price.inference_mode
             != ("thinking" if self.thinking_enabled else "non-thinking")
             or (
@@ -197,8 +230,8 @@ class _SweBenchAgentRunSettings(ContractModel):
         return self
 
     @property
-    def model(self) -> BailianModel:
-        return BAILIAN_MODELS[self.provider_config.model]
+    def model(self) -> CatalogModel:
+        return MODEL_CATALOG[self.provider_config.model]
 
     @property
     def prompt_cache(self) -> bool:

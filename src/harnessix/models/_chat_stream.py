@@ -86,6 +86,20 @@ def validate_frame(name: bytes, data: bytes) -> None:
         raise ChatProtocolError(ChatProtocolReason.FRAME_SCHEMA_INVALID) from None
 
 
+def _complete_hit_miss_split(usage: CompletionUsage, cached: int | None) -> bool:
+    """仅当命中与未命中均为非负整数、合计等于输入且命中与cached_tokens一致时成立。"""
+    extra = usage.model_extra or {}
+    hit, miss = extra.get("prompt_cache_hit_tokens"), extra.get("prompt_cache_miss_tokens")
+    return (
+        type(hit) is int
+        and type(miss) is int
+        and hit >= 0
+        and miss >= 0
+        and hit + miss == usage.prompt_tokens
+        and hit == cached
+    )
+
+
 def _complete_usage_observation(usage: CompletionUsage) -> UsageObservation:
     """使用原领域合同验证明细；原始计数和验证异常不进入诊断消息。"""
     inputs, outputs = usage.prompt_tokens_details, usage.completion_tokens_details
@@ -95,6 +109,9 @@ def _complete_usage_observation(usage: CompletionUsage) -> UsageObservation:
         # DashScope兼容端点以cache_creation_input_tokens报告显式缓存创建；只接受非负整数。
         extra = (inputs.model_extra or {}).get("cache_creation_input_tokens")
         written = extra if type(extra) is int and extra >= 0 else None
+    if written is None and _complete_hit_miss_split(usage, cached):
+        # DeepSeek自动前缀缓存按命中/未命中完整拆分输入，无缓存创建计费项。
+        written = 0
     try:
         return UsageObservation(
             completeness="complete",
