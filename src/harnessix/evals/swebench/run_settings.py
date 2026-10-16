@@ -334,6 +334,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def connect_retries(self) -> int:
         return 0
 
+    @property
+    def reject_forced_choice_violations(self) -> bool:
+        return False
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:

@@ -13,6 +13,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchConnectRetryAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
     SweBenchExplainedGatesAgentRunConfig,
+    SweBenchForcedChoiceTolerantAgentRunConfig,
     SweBenchFullCachedHistoryAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
@@ -323,6 +324,7 @@ SweBenchRunConfig = (
     | SweBenchProtocolRobustAgentRunConfig
     | SweBenchExplainedGatesAgentRunConfig
     | SweBenchConnectRetryAgentRunConfig
+    | SweBenchForcedChoiceTolerantAgentRunConfig
 )
 
 
@@ -357,6 +359,7 @@ def _run_config_type(
     protocol_robust: bool = False,
     explained_gates: bool = False,
     connect_retry: bool = False,
+    forced_choice_tolerant: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -381,6 +384,7 @@ def _run_config_type(
         (protocol_robust, "协议失败隔离"),
         (explained_gates, "工具门禁说明"),
         (connect_retry, "连接重试"),
+        (forced_choice_tolerant, "强制选择违约拒绝"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -402,6 +406,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if forced_choice_tolerant and not connect_retry:
+        raise ValueError("SWE-bench强制选择违约拒绝只在连接重试组合之上冻结")
     if connect_retry and not explained_gates:
         raise ValueError("SWE-bench连接重试只在工具门禁说明组合之上冻结")
     if explained_gates and not protocol_robust:
@@ -457,6 +463,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if forced_choice_tolerant:
+            return SweBenchForcedChoiceTolerantAgentRunConfig
         if connect_retry:
             return SweBenchConnectRetryAgentRunConfig
         if explained_gates:
@@ -557,6 +565,7 @@ def build_swebench_agent_run_config(
     protocol_robust: bool = False,
     explained_gates: bool = False,
     connect_retry: bool = False,
+    forced_choice_tolerant: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -585,6 +594,7 @@ def build_swebench_agent_run_config(
         protocol_robust=protocol_robust,
         explained_gates=explained_gates,
         connect_retry=connect_retry,
+        forced_choice_tolerant=forced_choice_tolerant,
     )
     extra: dict[str, object] = (
         {}

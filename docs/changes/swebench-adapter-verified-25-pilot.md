@@ -1806,3 +1806,7 @@ DeepSeek把用量放在`finish_reason`分片内，旧解析只接受独立用量
 后d1作废、开发集以新计划d2整体重跑（不与d1拼接；开发集不作泛化结论）。
 d2开发运行前2项因本机代理瞬时连接失败（`httpx_connect_failure`，与v47丢失9项同因）被隔离，操作者停止。由此冻结
 [v24](../../src/harnessix/evals/swebench/compact_surface_config.py)：v23之上仅把连接建立重试固定为3次（请求未发出，不违反无重试/无重采样）。
+d3（v24）前2项补丁均已完成并通过公开测试（pytest-7982补丁与v54已解决的补丁逐字相同），却在强制`git_review`时被DeepSeek调用其他
+工具而整Turn失败（`swebench_model_response_invalid`）；独立探测中DeepSeek均遵守强制选择，长上下文实跑中偶发违约。由此冻结
+[v25](../../src/harnessix/evals/swebench/compact_surface_config.py)：违约调用沿原拒绝路径无效果记录并在原预算内纠正。d3已知费用按全未命中上界
+0.375634元、在途1次按完整预留结算。

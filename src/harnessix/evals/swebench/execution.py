@@ -242,6 +242,7 @@ async def _open_case_turn(
         scratch_reproduction=config.scratch_reproduction,
         state_tool_call_cap=config.state_tool_call_cap,
         explain_tool_gates=config.explain_tool_gates,
+        reject_forced_choice_violations=config.reject_forced_choice_violations,
     )
 
 

@@ -290,3 +290,19 @@ class SweBenchConnectRetryAgentRunConfig(SweBenchExplainedGatesAgentRunConfig):
     @property
     def connect_retries(self) -> int:
         return 3
+
+
+class SweBenchForcedChoiceTolerantAgentRunConfig(SweBenchConnectRetryAgentRunConfig):
+    """v24之上：强制工具选择下调用其他工具时，违约调用沿目录拒绝路径记为无效果失败并在原预算内纠正。
+
+    d3中DeepSeek在强制git_review时调用了其他工具，前两项均因此整Turn失败（补丁已完成）。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v25"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v25"
+    )
+    forced_choice_policy: Literal["reject_violating_calls"] = "reject_violating_calls"
+
+    @property
+    def reject_forced_choice_violations(self) -> bool:
+        return True

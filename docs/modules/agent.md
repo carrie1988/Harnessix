@@ -1037,3 +1037,9 @@ Native完整组、用户锚点、未知费用、Context及目录漂移守卫不�
 
 先保留原容量候选顺序，再有限尝试紧窗口偏好，完整保留与支付门禁不变；不是新付费重试。
 见[实现和实际适用性](../changes/swebench-adapter-verified-25-pilot.md#v39压缩候选漏选回归与实际适用性审计)。
+
+## 当前增量：强制选择违约拒绝（默认关闭）
+
+`AgentRuntime(reject_forced_choice_violations=True)`且视图把本步可执行集收窄为唯一强制工具时，模型调用其他工具不再使Turn以
+`invalid_provider_output`失败：这些调用本就不在可执行集，沿原目录拒绝路径记为固定无效果失败结果，强制工具调用照常执行，
+模型在原预算内纠正。关闭或可执行集不止强制工具时行为不变。回归见[稳定目录测试](../../tests/agent/test_stable_tool_catalog.py)。

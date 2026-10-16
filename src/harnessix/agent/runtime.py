@@ -279,6 +279,7 @@ class AgentRuntime:
         budget_capped_truncation: bool = False,
         normalize_stringified_arguments: bool = False,
         stable_tool_catalog: bool = False,
+        reject_forced_choice_violations: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -318,6 +319,11 @@ class AgentRuntime:
             raise KernelError("invalid_runtime_configuration", "稳定工具目录开关必须是布尔值")
         # 显式开启时整轮线上目录不变（前缀缓存不因阶段收窄而失效），本步可执行集仍由视图决定。
         self._stable_tool_catalog = stable_tool_catalog
+        if type(reject_forced_choice_violations) is not bool:
+            raise KernelError("invalid_runtime_configuration", "强制工具违约拒绝开关必须是布尔值")
+        # 显式开启时，强制选择下调用其他工具不再使Turn失败：这些调用不在本步可执行集，
+        # 沿原目录拒绝路径记为无效果失败结果，模型在原预算内纠正；强制工具调用照常执行。
+        self._reject_forced_choice_violations = reject_forced_choice_violations
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -3019,7 +3025,16 @@ class AgentRuntime:
         if request.forced_tool is not None and any(
             proposal.tool != request.forced_tool for proposal in completed_calls
         ):
-            raise KernelError("invalid_provider_output", "Provider 未遵守强制工具选择")
+            # 强制选择时本步可执行集只有该工具，其他调用必然走下方拒绝路径、不执行。
+            if not (
+                self._reject_forced_choice_violations
+                and self._model_tool_view is not None
+                and {definition.name for definition in request.tools} == {request.forced_tool}
+            ):
+                raise KernelError("invalid_provider_output", "Provider 未遵守强制工具选择")
+            completed_calls = tuple(
+                proposal for proposal in completed_calls if proposal.tool == request.forced_tool
+            )
         advertised = {definition.name: definition for definition in request.tools}
         proposal_definitions = (
             advertised if self._model_tool_view is not None else self._definitions

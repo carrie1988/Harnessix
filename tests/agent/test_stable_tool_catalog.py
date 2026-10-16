@@ -130,3 +130,42 @@ def test_catalog_note_lists_only_the_callable_aliases():
     _, names = build_request(request, OpenAIChatConfig(model="m"))
     callable_aliases = _callable_aliases(request, names)
     assert [names[a] for a in callable_aliases] == [tool.name]
+
+
+class ForcedFirst:
+    """模拟强制阶段：调用test.read之前本步只允许且必须调用它，之后开放目录。"""
+
+    def select(self, turn, definitions):
+        if any(
+            isinstance(i.content, ToolCallContent) and i.content.tool == "test.read"
+            for i in turn.items
+        ):
+            return ModelToolSelection(definitions)
+        tools = tuple(d for d in definitions if d.name == "test.read")
+        return ModelToolSelection(tools, "required", "test.read")
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_forced_choice_violation_is_rejected_without_execution(tmp_path, enabled):
+    """d3：DeepSeek在强制git_review时调用了其他工具，整Turn失败；开启后改走无效果拒绝并在原预算内纠正。"""
+    tools = TwoTools()
+    provider = RecordingProvider([call("test.other"), call("test.read"), answer()])
+    async with AgentRuntime(
+        SQLiteSessionStore(tmp_path / "s.db"),
+        provider,
+        tools,
+        model_tool_view=ForcedFirst(),
+        stable_tool_catalog=True,
+        reject_forced_choice_violations=enabled,
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "任务", request_id="f")
+    if enabled:
+        assert turn.status is TurnStatus.COMPLETED
+        assert any(isinstance(i.content, ToolCallRejectionContent) for i in turn.items)
+        # 违约的test.other从未执行；纠正后的强制调用照常执行。
+        assert [c.tool for c in tools.calls] == ["test.read"]
+    else:
+        assert tools.calls == []
+        assert turn.status is TurnStatus.FAILED
+        assert turn.error is not None and turn.error.code == "invalid_provider_output"

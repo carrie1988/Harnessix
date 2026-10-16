@@ -382,3 +382,33 @@ def test_connect_retry_v24_adds_only_the_connection_policy(tmp_path):
     assert read_swebench_agent_run_config(path) == config
     with pytest.raises(ValueError):
         compact_config(tmp_path, **{**common, "explained_gates": False}, connect_retry=True)
+
+
+def test_forced_choice_tolerant_v25_adds_only_the_forced_choice_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchForcedChoiceTolerantAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+    }
+    config = compact_config(tmp_path, **common, forced_choice_tolerant=True)
+    v24 = compact_config(tmp_path, **common)
+    assert type(config) is SweBenchForcedChoiceTolerantAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v25"
+    assert config.reject_forced_choice_violations and not v24.reject_forced_choice_violations
+    excluded = {"spec_version", "forced_choice_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v24.model_dump(
+        mode="json", exclude=excluded
+    )
+    path = tmp_path / "v25.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(tmp_path, **{**common, "connect_retry": False}, forced_choice_tolerant=True)
