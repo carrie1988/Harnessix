@@ -1,0 +1,8 @@
+{
+  "amended_before_any_model_request": true,
+  "previous_plan_sha256": "6c281aa6864e3026f45d7fcd35c9bd5f90752e478712ef28ed7427f791b4be20",
+  "previous_harnessix_revision": "2e2996c4ca0c9e23f28328d53d6891f73ac0a4bd",
+  "plan_sha256": "37fd64a5113c5fad2f97b47978c0e179dcbb6a2b05b1efc1d8a87f1a93a30114",
+  "harnessix_revision": "2e27885352aa0e5887b1cb669501fa73403f5c76",
+  "reason": "run-config v28/v29 and DeepSeek fixes landed while only development runs used v55; only the source revision moved, cases/budget/model (thinking disabled) unchanged; v56 never executed or inspected beyond its plan"
+}
