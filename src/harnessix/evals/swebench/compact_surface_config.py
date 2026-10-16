@@ -384,3 +384,21 @@ class SweBenchTruncationQualityAgentRunConfig(SweBenchReadAfterFailedPatchAgentR
     @property
     def truncation_is_quality_failure(self) -> bool:
         return True
+
+
+class SweBenchNativeThinkingAgentRunConfig(SweBenchTruncationQualityAgentRunConfig):
+    """v29之上：开启模型原生思考（thinking_type格式，不回传推理内容），输出上限8192。
+
+    v55r3前15项与v55同为7/15：稳健性修复让预算耗尽题闭环，但补丁仍错，瓶颈在修复质量。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v30"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v30"
+    )
+    reasoning_policy: Literal["native_thinking_without_passback"] = (
+        "native_thinking_without_passback"
+    )
+
+    @property
+    def native_thinking(self) -> bool:
+        return True

@@ -16,6 +16,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchExplainedGatesAgentRunConfig,
     SweBenchForcedChoiceTolerantAgentRunConfig,
     SweBenchFullCachedHistoryAgentRunConfig,
+    SweBenchNativeThinkingAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
     SweBenchProtocolRobustAgentRunConfig,
@@ -29,6 +30,7 @@ from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRu
 from harnessix.evals.swebench.public_test_profile import SweBenchCaseProcessProfile
 from harnessix.evals.swebench.run_settings import (
     _CURRENCY,
+    _NATIVE_THINKING_OUTPUT,
     _PRICE_VALIDITY,
     MODEL_CATALOG,
     SweBenchModel,
@@ -333,6 +335,7 @@ SweBenchRunConfig = (
     | SweBenchTestTimeoutAgentRunConfig
     | SweBenchReadAfterFailedPatchAgentRunConfig
     | SweBenchTruncationQualityAgentRunConfig
+    | SweBenchNativeThinkingAgentRunConfig
 )
 
 
@@ -372,6 +375,7 @@ def _run_config_type(
     test_timeout_failures: bool = False,
     reads_after_failed_patch: bool = False,
     truncation_quality: bool = False,
+    native_thinking: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -401,6 +405,7 @@ def _run_config_type(
         (test_timeout_failures, "测试超时判定"),
         (reads_after_failed_patch, "失败Patch后保留读取"),
         (truncation_quality, "截断计质量失败"),
+        (native_thinking, "原生思考"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -422,6 +427,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if native_thinking and not truncation_quality:
+        raise ValueError("SWE-bench原生思考只在截断计质量失败组合之上冻结")
     if truncation_quality and not reads_after_failed_patch:
         raise ValueError("SWE-bench截断计质量失败只在失败Patch后保留读取组合之上冻结")
     if reads_after_failed_patch and not test_timeout_failures:
@@ -487,6 +494,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if native_thinking:
+            return SweBenchNativeThinkingAgentRunConfig
         if truncation_quality:
             return SweBenchTruncationQualityAgentRunConfig
         if reads_after_failed_patch:
@@ -602,6 +611,7 @@ def build_swebench_agent_run_config(
     test_timeout_failures: bool = False,
     reads_after_failed_patch: bool = False,
     truncation_quality: bool = False,
+    native_thinking: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -635,6 +645,7 @@ def build_swebench_agent_run_config(
         test_timeout_failures=test_timeout_failures,
         reads_after_failed_patch=reads_after_failed_patch,
         truncation_quality=truncation_quality,
+        native_thinking=native_thinking,
     )
     extra: dict[str, object] = (
         {}
@@ -657,7 +668,7 @@ def build_swebench_agent_run_config(
                 tool_calls=True,
                 parallel_tool_calls=parameters.get("parallel_tool_calls") is True,
             ),
-            max_output_tokens=4096,
+            max_output_tokens=_NATIVE_THINKING_OUTPUT if native_thinking else 4096,
             timeout_seconds=plan.task_budget.timeout_seconds,
             io_timeout_seconds=180,
             max_attempts=1,
@@ -665,7 +676,7 @@ def build_swebench_agent_run_config(
             max_request_bytes=250_000,
             max_response_bytes=4 * 1024 * 1024,
             output_token_parameter="max_completion_tokens" if enable_thinking else "max_tokens",
-            enable_thinking=enable_thinking,
+            enable_thinking=enable_thinking or native_thinking,
             thinking_budget=1024 if enable_thinking else None,
             thinking_format=catalog.thinking_format,
             connect_retries=3 if connect_retry else 0,
@@ -681,7 +692,7 @@ def build_swebench_agent_run_config(
             model=model,
             region=catalog.region,
             service_tier="payg",
-            inference_mode="thinking" if enable_thinking else "non-thinking",
+            inference_mode="thinking" if enable_thinking or native_thinking else "non-thinking",
             currency=_CURRENCY,
             valid_from=now,
             valid_until=now + _PRICE_VALIDITY,
@@ -694,7 +705,7 @@ def build_swebench_agent_run_config(
             billing_provider=catalog.billing_provider,
             region=catalog.region,
             service_tier="payg",
-            inference_mode="thinking" if enable_thinking else "non-thinking",
+            inference_mode="thinking" if enable_thinking or native_thinking else "non-thinking",
         ),
         fee_stop_amount=fee_stop_amount,
         case_process_profiles=case_process_profiles,

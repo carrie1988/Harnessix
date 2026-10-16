@@ -567,3 +567,57 @@ def test_truncation_quality_v29_adds_only_the_truncation_policy(tmp_path):
     path = tmp_path / "v29.json"
     write_swebench_agent_run_config(path, config)
     assert read_swebench_agent_run_config(path) == config
+
+
+def _thinking_plan(model: str, value: str) -> SweBenchPreRegistrationPlan:
+    base = plan_for(model)
+    parameters = tuple(
+        item.model_copy(update={"value": value}) if item.name == "thinking" else item
+        for item in base.model_settings.parameters
+    )
+    settings = base.model_settings.model_copy(update={"parameters": parameters})
+    plan = base.model_copy(update={"model_settings": settings})
+    digest = swebench_preregistration_plan_digest(plan)
+    return SweBenchPreRegistrationPlan.model_validate(
+        {**plan.model_dump(mode="python"), "plan_sha256": digest}
+    )
+
+
+def test_native_thinking_v30_enables_deepseek_thinking_with_a_larger_output_cap(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchNativeThinkingAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+        "reads_after_failed_patch": True,
+        "truncation_quality": True,
+    }
+    plan = _thinking_plan("deepseek-flash", "enabled")
+    config = compact_config(
+        tmp_path, **common, native_thinking=True, model="deepseek-flash", plan=plan
+    )
+    assert type(config) is SweBenchNativeThinkingAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v30"
+    provider = config.provider_config
+    assert provider.enable_thinking is True and provider.thinking_format == "thinking_type"
+    assert provider.thinking_budget is None and provider.output_token_parameter == "max_tokens"
+    assert provider.max_output_tokens == 8192
+    assert config.price.inference_mode == "thinking"
+    config.require_plan(plan)
+    with pytest.raises(ValueError):
+        config.require_plan(_thinking_plan("deepseek-flash", "disabled"))
+    path = tmp_path / "v30.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises((ValueError, ValidationError)):
+        compact_config(tmp_path, **common, native_thinking=True)

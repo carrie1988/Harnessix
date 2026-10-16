@@ -32,6 +32,8 @@ from harnessix.product_config.action_contracts import ProductProcessProfile
 
 _PROVIDER = "openai_chat"
 _PRICE_VALIDITY = timedelta(hours=24)
+# 原生思考的推理Token计入max_tokens，输出上限放宽一倍以免推理挤占回答而截断。
+_NATIVE_THINKING_OUTPUT = 8192
 _CURRENCY: Literal["CNY"] = "CNY"
 _BAILIAN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
@@ -185,6 +187,11 @@ class _SweBenchAgentRunSettings(ContractModel):
         if model is None or (self.thinking_enabled and provider.model != _THINKING_MODEL):
             raise ValueError("SWE-bench模型不在已求证价格目录内")
         output_token_parameter = "max_completion_tokens" if self.thinking_enabled else "max_tokens"
+        model_thinking = self.thinking_enabled or self.native_thinking
+        if self.native_thinking and (
+            model.thinking_format is None or provider.max_output_tokens != _NATIVE_THINKING_OUTPUT
+        ):
+            raise ValueError("SWE-bench原生思考只用于已求证thinking_type格式的模型与固定输出上限")
         if (
             provider.base_url != model.base_url
             or provider.thinking_format != model.thinking_format
@@ -192,7 +199,7 @@ class _SweBenchAgentRunSettings(ContractModel):
             or provider.repair_tool_arguments is not self.repair_tool_arguments
             or provider.max_attempts != 1
             or provider.retry_delay_seconds != 0
-            or provider.enable_thinking is not self.thinking_enabled
+            or provider.enable_thinking is not model_thinking
             or provider.output_token_parameter != output_token_parameter
             or provider.thinking_budget != (1024 if self.thinking_enabled else None)
             or not provider.capabilities.tool_calls
@@ -207,8 +214,7 @@ class _SweBenchAgentRunSettings(ContractModel):
             or self.price.currency != _CURRENCY
             or self.price.billing_provider != model.billing_provider
             or self.price.region != model.region
-            or self.price.inference_mode
-            != ("thinking" if self.thinking_enabled else "non-thinking")
+            or self.price.inference_mode != ("thinking" if model_thinking else "non-thinking")
             or (
                 self.thinking_enabled
                 and (self.price.input_tokens_min != 0 or self.price.input_tokens_max != 983_616)
@@ -366,6 +372,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def truncation_is_quality_failure(self) -> bool:
         return False
 
+    @property
+    def native_thinking(self) -> bool:
+        return False
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:
@@ -401,6 +411,8 @@ class _SweBenchAgentRunSettings(ContractModel):
         expected_parameters: dict[str, str | int | bool] = {"thinking": "disabled"}
         if self.thinking_enabled:
             expected_parameters = {"thinking": "enabled", "thinking_budget": 1024}
+        if self.native_thinking:
+            expected_parameters = {"thinking": "enabled"}
         expected_cases = tuple(sorted((case.instance_id, case.repo) for case in plan.cases))
         if (
             self.plan_sha256 != plan.plan_sha256

@@ -1845,3 +1845,7 @@ v55r（v28，100次请求／3M）前6项全部自主闭环（含v55中预算耗�
 v55r3（v29）前15项中14项闭环，第16项astropy-14096以与现有内容相同、但SHA过期的`replace`改写复现草稿：规划器先报“无变化”，
 Review只在SHA也一致时绑定无变化拒绝，未绑定即为`uncertain_effect`并停整轮。修复：[`_desired_files`](../../src/harnessix/delivery/trusted_action.py)
 对`replace`与`edit`一样在规划前核对SHA，SHA不符先于无变化判定成为可纠正拒绝。
+
+v55r3前15项官方评测7/15，与v55同组15项（7/15）持平：稳健性修复使预算耗尽题闭环，但补丁仍错，瓶颈转为修复质量。由此冻结
+[v30](../../src/harnessix/evals/swebench/compact_surface_config.py)：对已求证`thinking_type`格式的模型开启原生思考，不回传推理内容
+（实测deepseek-flash在带工具多轮中不强制回传），输出上限放宽到8192以免推理挤占回答；计划参数须声明`thinking: enabled`。
