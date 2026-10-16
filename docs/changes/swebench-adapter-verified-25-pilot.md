@@ -1855,3 +1855,13 @@ v55t首项第二次请求被DeepSeek以400拒绝：思考模式下带工具调�
 `reasoning_content`（不存储也不回传推理内容；每次请求补法一致，缓存前缀稳定）。v55t作废，以v55t2重跑。
 v55t2首项第9次请求再遇400：DeepSeek思考模式只支持`tool_choice: auto`（`required`与指定函数均拒绝）。修复：思考模式下不发送
 `tool_choice`，强制与required改由视图收窄的可执行集与目录说明约束，调用其他工具沿v25拒绝路径。v55t2作废，以v55t3重跑。
+
+v55t3（v30高强度思考）首项单步推理增至5K～8K Token、第12次请求整段被8192上限截断，单项约2元，超出预算承受范围，操作者停止；
+思考模式暂不采用。
+
+### v56新鲜泛化集：13/25（52%）
+
+[v56](../../benchmarks/swebench/generalization-25-v56/preregistration.json)与此前150项全部不相交，执行前冻结计划、配置与宿主；配置仅依据
+开发集证据选定（v29，v55r4同题13/25对v55的12/25），不重试、不拼接。完整执行25项，非空补丁25项，已知费用8.78元；
+[官方评测](../../benchmarks/swebench/generalization-25-v56/official-summary.json)**Resolved 13/25（52%）**，空补丁0、基础设施失败0、错误0。
+这是当前系统（deepseek-flash，非思考）在未见题上的真实pass@1；上一组新鲜集v55（v27）为12/25（48%）。
