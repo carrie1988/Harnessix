@@ -1879,3 +1879,9 @@ p1（Pro＋v31，v56同题）前3项闭环、费用1.17／0.50／0.35元，但�
 p2（Pro＋v31＋缓存布局修复，v56同题）缓存命中升至约78%，单项约0.73元；费用停止线于第11项后触发（8.02元）。
 [前11项官方评测](../../benchmarks/swebench/deepseek-pro-dev-p2/partial11-official-summary.json)**9/11**（Flash v56同11项为6/11）；
 2项触及1.2M Token上限。开发集信号，非泛化结论。据此v57p终测在执行前把单Case Token预算提高到2M。
+
+**v57p终测（新鲜25项，deepseek-v4-pro＋v31，2M Token/题）**：[官方结果](../../benchmarks/swebench/generalization-25-v57p/official-summary.json)
+**14/25 = 56%**（目标65%未达成）；已知费用29.90元＋预留2.36元，25项全部执行、24项非空补丁。官方评测器写出results.json后
+因超时实例（sphinx-8269，linkcheck挂起1800 s）的线程在解释器退出时阻塞约6小时，终止后以[导入脚本](../../benchmarks/swebench/generalization-25-v57p/import-host.py)
+只读核验原官方产物。11项未解决中7项以budget_exceeded结束，均为“修改→测试失败”或“锚点缺失Patch”循环耗尽2M Token：
+原流程测试失败后永远无法进入Review，锚点缺失时模型不知改动已应用。据此v32开放有界修复循环后的Review并给出锚点定位事实。
