@@ -1,0 +1,146 @@
+{
+  "schema": "harnessix.swebench-development-execution-summary/v1",
+  "generated_at": "2026-10-17T15:34:52.755736+00:00",
+  "plan_sha256": "e84920f32882ccd7a943a33330bc1e6438d1428bbd10c57f9daf0209595a54bc",
+  "source_revision": "b0e7a221a657f6fecb303b5f1efbc7a1f80af800",
+  "evaluation_scope": "fresh_generalization_set",
+  "attempted_cases": 4,
+  "not_attempted_cases": 21,
+  "nonempty_patch_cases": 3,
+  "known_cost_upper_amount": "8.1906336",
+  "reserved_cost_amount": "7.081776",
+  "complete_predictions": false,
+  "predictions_sha256": null,
+  "official_score": null,
+  "stop_reason": "TurnCancelled",
+  "failure_counts": {
+    "budget_exceeded": 1,
+    "provider_transport": 2,
+    "cancelled": 1
+  },
+  "runtime_summary": null,
+  "cases": [
+    {
+      "instance_id": "django__django-15382",
+      "status": "failed",
+      "case_state_status": "failed",
+      "error_code": "budget_exceeded",
+      "case_error_code": "budget_exceeded",
+      "input_tokens": 1953021,
+      "output_tokens": 14593,
+      "model_steps": 73,
+      "accounted_attempts": 75,
+      "compaction_attempts": [
+        {
+          "status": "summarized",
+          "error_code": null,
+          "summary_reserve_tokens": 12288,
+          "target_history_tokens": 65536,
+          "source_history_tokens": 133399,
+          "retained_history_tokens": 47054,
+          "input_tokens": 23565,
+          "output_tokens": 359,
+          "usage_completeness": "complete"
+        },
+        {
+          "status": "summarized",
+          "error_code": null,
+          "summary_reserve_tokens": 12288,
+          "target_history_tokens": 65536,
+          "source_history_tokens": 133579,
+          "retained_history_tokens": 52541,
+          "input_tokens": 21888,
+          "output_tokens": 405,
+          "usage_completeness": "complete"
+        }
+      ],
+      "known_cost_upper_amount": "3.1525248",
+      "cost_complete": true,
+      "unaccounted_attempts": 0,
+      "patch_sha256": "c27531367e34cef017fd9460d8b1bfd7491692bb187760882fdc5c43d79b6d49"
+    },
+    {
+      "instance_id": "sympy__sympy-24443",
+      "status": "failed",
+      "case_state_status": "failed",
+      "error_code": "provider_transport",
+      "case_error_code": "swebench_provider_transport_isolated",
+      "input_tokens": 1840553,
+      "output_tokens": 9434,
+      "model_steps": 58,
+      "accounted_attempts": 60,
+      "compaction_attempts": [
+        {
+          "status": "summarized",
+          "error_code": null,
+          "summary_reserve_tokens": 12288,
+          "target_history_tokens": 65536,
+          "source_history_tokens": 132463,
+          "retained_history_tokens": 52972,
+          "input_tokens": 25396,
+          "output_tokens": 179,
+          "usage_completeness": "complete"
+        },
+        {
+          "status": "summarized",
+          "error_code": null,
+          "summary_reserve_tokens": 12288,
+          "target_history_tokens": 65536,
+          "source_history_tokens": 131446,
+          "retained_history_tokens": 52972,
+          "input_tokens": 28614,
+          "output_tokens": 846,
+          "usage_completeness": "complete"
+        }
+      ],
+      "known_cost_upper_amount": "3.1357782",
+      "cost_complete": false,
+      "unaccounted_attempts": 1,
+      "patch_sha256": "3733c3567ac082bf0136504f1a6466773a707fd1e241e9cec8c08520c4b78bbb"
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-7590",
+      "status": "failed",
+      "case_state_status": "failed",
+      "error_code": "provider_transport",
+      "case_error_code": "swebench_provider_transport_isolated",
+      "input_tokens": 1267609,
+      "output_tokens": 8768,
+      "model_steps": 60,
+      "accounted_attempts": 61,
+      "compaction_attempts": [
+        {
+          "status": "summarized",
+          "error_code": null,
+          "summary_reserve_tokens": 12288,
+          "target_history_tokens": 65536,
+          "source_history_tokens": 132468,
+          "retained_history_tokens": 53145,
+          "input_tokens": 21582,
+          "output_tokens": 384,
+          "usage_completeness": "complete"
+        }
+      ],
+      "known_cost_upper_amount": "1.9023306",
+      "cost_complete": false,
+      "unaccounted_attempts": 1,
+      "patch_sha256": "541afd3751089f634067661be67457049623edd546fbda5a7762320d4272323d"
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-20826",
+      "status": "cancelled",
+      "case_state_status": "ready",
+      "error_code": "cancelled",
+      "case_error_code": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "model_steps": 1,
+      "accounted_attempts": 1,
+      "compaction_attempts": [],
+      "known_cost_upper_amount": "0",
+      "cost_complete": false,
+      "unaccounted_attempts": 1,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

@@ -76,6 +76,12 @@ class OpenAIChatConfig(ModelHTTPConfig):
     )
     # 仅在TCP连接或TLS握手失败时重连（请求字节尚未发出，不产生计费或新的模型尝试）。
     connect_retries: int = Field(default=0, ge=0, le=5, exclude_if=lambda value: value == 0)
+    # 显式本机HTTP代理（如http://127.0.0.1:7890）；仍不读取环境代理变量，不允许凭据或远程代理。
+    proxy_url: str | None = Field(
+        default=None,
+        pattern=r"^http://(127\.0\.0\.1|localhost|\[::1\]):[1-9][0-9]{0,4}$",
+        exclude_if=lambda value: value is None,
+    )
     # 工具参数严格解析失败时只修复字符串内原始控制字符与非法反斜杠转义；其他畸形仍为协议失败。
     repair_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
     # 思考开关线上格式：默认DashScope的enable_thinking；thinking_type发送thinking.type。

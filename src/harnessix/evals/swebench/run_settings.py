@@ -214,6 +214,7 @@ class _SweBenchAgentRunSettings(ContractModel):
             provider.base_url != model.base_url
             or provider.thinking_format != model.thinking_format
             or provider.connect_retries != self.connect_retries
+            or (provider.proxy_url is not None and not self.provider_proxy_allowed)
             or provider.repair_tool_arguments is not self.repair_tool_arguments
             or provider.max_attempts != 1
             or provider.retry_delay_seconds != 0
@@ -404,6 +405,10 @@ class _SweBenchAgentRunSettings(ContractModel):
 
     @property
     def explain_clean_review(self) -> bool:
+        return False
+
+    @property
+    def provider_proxy_allowed(self) -> bool:
         return False
 
     def known_case_reserve_units(

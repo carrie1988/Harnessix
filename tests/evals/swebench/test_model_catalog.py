@@ -745,3 +745,48 @@ def test_clean_review_notice_v33_adds_only_the_clean_review_policy(tmp_path):
         compact_config(
             tmp_path, **{**common, "bounded_repair": False}, clean_review_notice=True, **pro
         )
+
+
+def test_provider_proxy_v34_adds_only_the_loopback_proxy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchProxiedProviderAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+        "reads_after_failed_patch": True,
+        "truncation_quality": True,
+        "self_verification": True,
+        "bounded_repair": True,
+        "clean_review_notice": True,
+    }
+    plan = plan_for("deepseek-v4-pro")
+    pro = {"model": "deepseek-v4-pro", "plan": plan}
+    proxy = "http://127.0.0.1:7890"
+    config = compact_config(tmp_path, **common, provider_proxy_url=proxy, **pro)
+    v33 = compact_config(tmp_path, **common, **pro)
+    assert type(config) is SweBenchProxiedProviderAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v34"
+    assert config.provider_config.proxy_url == proxy and v33.provider_config.proxy_url is None
+    excluded = {"spec_version", "network_policy", "provider_config"}
+    assert config.model_dump(mode="json", exclude=excluded) == v33.model_dump(
+        mode="json", exclude=excluded
+    )
+    assert config.provider_config.model_copy(update={"proxy_url": None}) == v33.provider_config
+    config.require_plan(plan)
+    path = tmp_path / "v34.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(
+            tmp_path, **{**common, "clean_review_notice": False}, provider_proxy_url=proxy, **pro
+        )

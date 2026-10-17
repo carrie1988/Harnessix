@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 import pytest
+from pydantic import ValidationError
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.models import ApprovalRequestContent, Budget, TurnStatus, Usage
@@ -750,3 +751,30 @@ async def test_connect_retries_reach_the_connection_pool(credentials, retries):
         transport = provider._client._client._transport._inner
         assert transport._pool._retries == retries
     assert "connect_retries" not in config().model_dump()
+
+
+async def test_explicit_loopback_proxy_reaches_the_transport(credentials):
+    """显式本机代理进入连接池；默认None保持原序列化且不读取环境代理。"""
+    from harnessix.models.openai_chat import OpenAIChatProvider
+
+    async with OpenAIChatProvider(config(proxy_url="http://127.0.0.1:7890")) as provider:
+        pool = provider._client._client._transport._inner._pool
+        assert type(pool).__name__ == "AsyncHTTPProxy"
+    async with OpenAIChatProvider(config()) as provider:
+        pool = provider._client._client._transport._inner._pool
+        assert type(pool).__name__ == "AsyncConnectionPool"
+    assert "proxy_url" not in config().model_dump()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://user:pw@127.0.0.1:7890",
+        "http://10.0.0.1:7890",
+        "socks5://127.0.0.1:7890",
+        "http://127.0.0.1",
+    ],
+)
+def test_proxy_url_accepts_only_credential_free_loopback_http(url):
+    with pytest.raises(ValidationError):
+        config(proxy_url=url)

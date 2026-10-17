@@ -456,3 +456,20 @@ class SweBenchCleanReviewNoticeAgentRunConfig(SweBenchBoundedRepairAgentRunConfi
     @property
     def explain_clean_review(self) -> bool:
         return True
+
+
+class SweBenchProxiedProviderAgentRunConfig(SweBenchCleanReviewNoticeAgentRunConfig):
+    """v33之上：Provider经显式本机HTTP代理连接（仍不读取环境代理变量）；工作流与预算不变。
+
+    v57p与v59中模型流式回复多次被对端中途断开（httpx_protocol_failure），v59因此触发系统性故障保护；
+    用户要求经本机代理连接DeepSeek。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v34"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v34"
+    )
+    network_policy: Literal["explicit_loopback_http_proxy"] = "explicit_loopback_http_proxy"
+
+    @property
+    def provider_proxy_allowed(self) -> bool:
+        return True

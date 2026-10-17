@@ -22,6 +22,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
     SweBenchProtocolRobustAgentRunConfig,
+    SweBenchProxiedProviderAgentRunConfig,
     SweBenchReadAfterFailedPatchAgentRunConfig,
     SweBenchScratchReproductionAgentRunConfig,
     SweBenchSelfVerificationAgentRunConfig,
@@ -342,6 +343,7 @@ SweBenchRunConfig = (
     | SweBenchSelfVerificationAgentRunConfig
     | SweBenchBoundedRepairAgentRunConfig
     | SweBenchCleanReviewNoticeAgentRunConfig
+    | SweBenchProxiedProviderAgentRunConfig
 )
 
 
@@ -385,6 +387,7 @@ def _run_config_type(
     self_verification: bool = False,
     bounded_repair: bool = False,
     clean_review_notice: bool = False,
+    provider_proxy: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -418,6 +421,7 @@ def _run_config_type(
         (self_verification, "自我校验"),
         (bounded_repair, "修复循环上限"),
         (clean_review_notice, "空改动说明"),
+        (provider_proxy, "Provider代理"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -439,6 +443,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if provider_proxy and not clean_review_notice:
+        raise ValueError("SWE-bench Provider代理只在空改动说明组合之上冻结")
     if clean_review_notice and not bounded_repair:
         raise ValueError("SWE-bench空改动说明只在修复循环上限组合之上冻结")
     if bounded_repair and not self_verification:
@@ -512,6 +518,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if provider_proxy:
+            return SweBenchProxiedProviderAgentRunConfig
         if clean_review_notice:
             return SweBenchCleanReviewNoticeAgentRunConfig
         if bounded_repair:
@@ -639,6 +647,7 @@ def build_swebench_agent_run_config(
     self_verification: bool = False,
     bounded_repair: bool = False,
     clean_review_notice: bool = False,
+    provider_proxy_url: str | None = None,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -676,6 +685,7 @@ def build_swebench_agent_run_config(
         self_verification=self_verification,
         bounded_repair=bounded_repair,
         clean_review_notice=clean_review_notice,
+        provider_proxy=provider_proxy_url is not None,
     )
     extra: dict[str, object] = (
         {}
@@ -710,6 +720,7 @@ def build_swebench_agent_run_config(
             thinking_budget=1024 if enable_thinking else None,
             thinking_format=catalog.thinking_format,
             connect_retries=3 if connect_retry else 0,
+            proxy_url=provider_proxy_url,
             repair_tool_arguments=argument_repair,
             prompt_cache=_wire_prompt_cache(
                 catalog, prompt_cache=prompt_cache, stable_tail=argument_repair
