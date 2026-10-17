@@ -1,0 +1,13 @@
+{
+  "rerun_of": "generalization-25-v61",
+  "previous_plan_sha256": "eab2354048fef1bba9fc5b76119828c816532595b041370f48fcb021d9ddfab9",
+  "previous_harnessix_revision": "f357450bd21099dc3703de6f3f580b1c501dcadd",
+  "plan_sha256": "6c2036bce49c7f34538550e0119fc8ccc8458d8d8a58e59efaf7a862fa3834c2",
+  "harnessix_revision": "fa2eefe1e0fbdbfe178594723718b9c630e956d1",
+  "reason": "v61 was stopped after 2 cases because the public-test profile v9 SymPy entry point could not import bin/get_sympy (test infrastructure defect, fixed in fa2eefe1 and verified in real images). No agent logic changed between v61 and v61r; cases, model and budget identical.",
+  "previously_executed_cases": [
+    "sympy__sympy-15599",
+    "django__django-13109"
+  ],
+  "reporting": "pass@1 over all 25 is the preregistered metric; the 23 cases never executed before are also reported separately"
+}
