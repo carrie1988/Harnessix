@@ -377,6 +377,7 @@ async def run_swebench_agent_case(
     keep_reads_after_failed_patch: bool = False,
     self_verification: bool = False,
     bounded_repair_cycles: bool = False,
+    explain_clean_review: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -409,6 +410,7 @@ async def run_swebench_agent_case(
         or type(keep_reads_after_failed_patch) is not bool
         or type(self_verification) is not bool
         or type(bounded_repair_cycles) is not bool
+        or type(explain_clean_review) is not bool
     ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench缓存收尾工作流开关无效")
     if type(normalize_stringified_arguments) is not bool:
@@ -526,6 +528,7 @@ async def run_swebench_agent_case(
                                 keep_reads_after_failed_patch=keep_reads_after_failed_patch,
                                 self_verification=self_verification,
                                 bounded_repair_cycles=bounded_repair_cycles,
+                                explain_clean_review=explain_clean_review,
                             ),
                         ) as runtime:
                             return await _drive_turn(

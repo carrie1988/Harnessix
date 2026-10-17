@@ -382,3 +382,28 @@ def test_unlisted_error_text_and_unsafe_keys_are_not_projected():
     assert "leaked VALUE" not in message and "bad key!" not in message
     # 位置不在公开Schema内（如校验器内部字段）时整条不报告。
     assert "PRIVATE_FIELD" not in message
+
+
+def test_workspace_patch_no_change_edit_reports_the_fixed_reason_without_text() -> None:
+    arguments = {
+        "files": [
+            {
+                "operation": "edit",
+                "path": "src/example.py",
+                "expected_sha256": "a" * 64,
+                "edits": [{"old_text": "PRIVATE_SAME", "new_text": "PRIVATE_SAME"}],
+            }
+        ]
+    }
+    with pytest.raises(ValidationError) as error:
+        WorkspacePatchInput.model_validate(arguments)
+    message = invalid_argument_message(
+        workspace_patch_descriptor("compact").input_schema,
+        arguments,
+        trusted_action=True,
+        validation_errors=error.value.errors(
+            include_url=False, include_input=False, include_context=False
+        ),
+    )
+    assert "files[0].edits[0]：编辑必须改变内容：old_text与new_text完全相同" in message
+    assert "PRIVATE_SAME" not in message

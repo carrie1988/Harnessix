@@ -247,6 +247,7 @@ async def _open_case_turn(
         keep_reads_after_failed_patch=config.keep_reads_after_failed_patch,
         self_verification=config.self_verification,
         bounded_repair_cycles=config.bounded_repair_cycles,
+        explain_clean_review=config.explain_clean_review,
     )
 
 

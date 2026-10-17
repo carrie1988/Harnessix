@@ -3065,3 +3065,10 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 诊断选择额外开放`git_review`并说明：先对照问题判断剩余失败是否与本改动无关，若diff已实现问题则Review收尾，否则继续修复。
 该Review之后目录关闭（自我校验开启时仍照常开放一轮校验）；一次成功验证即清零计数。修改后强制测试的请求附带说明，
 指出此时只能调用该Profile。依赖工具门禁说明（`explain_tool_gates`）；关闭时选择结果逐字不变。
+
+## 当前增量：空改动重新开放说明（`explain_clean_review`，默认关闭）
+
+`reopen_after_clean_review`在Review显示无可交付改动时重新开放调查与修改，但原先不附说明：后续Patch恢复了原代码时，
+模型不知修复已被撤销，会反复调用已关闭的Review工具并宣称完成，最终交付空补丁。开启后，重新开放的选择附带说明：
+工作区已等于原始代码、提交将为空，需重读目标文件、重新应用修复并测试；Review工具在新Patch之前保持关闭。
+依赖`reopen_after_clean_review`与`explain_tool_gates`；关闭时选择结果逐字不变。

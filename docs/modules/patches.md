@@ -352,6 +352,7 @@ flowchart TD
 3. 每个锚点必须只出现一次，缺失为`patch_context_not_found`，重复为
    `patch_ambiguous_context`；缺失消息附带可行动的定位事实（不含文件内容）：`new_text`已原样存在
    （编辑可能已应用）、`old_text`首个非空行所在行号（其后内容不一致），或首行不在文件中；
+   `ExactEdit`的无变化编辑与单编辑超限以固定措辞的`harnessix_exact_edit_*`错误报告，可经参数反馈原样告知模型（不含输入值）；
 4. 编辑按原始字节起点排序，任意交叠为`patch_overlapping_edits`；
 5. `_target`拼接未编辑切片和replacement，不做链式查找，因此前一个`new_text`不会成为后一个锚点；
 6. 完整after超过1 MiB或最终字节未变化均失败；

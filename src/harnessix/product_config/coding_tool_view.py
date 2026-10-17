@@ -535,6 +535,14 @@ def _verification_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToo
     )
 
 
+_CLEAN_REVIEW_NOTICE = (
+    "git_review shows no deliverable change: the workspace now equals the original code, so a "
+    "later patch undid your fix and nothing would be submitted. Review tools stay closed until "
+    "a new patch; re-read the target file, re-apply the intended fix with {patch}, then run "
+    "the tests."
+)
+
+
 def _reopened_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToolSelection:
     """无可交付改动：恢复首次修改前的调查与修改工具，测试与Review门禁随新Patch照旧生效。"""
     hidden = _ALL_GIT_REVIEW_TOOLS | _HIDDEN_WORKFLOW_ACTIONS | {"read_artifact"}
@@ -571,6 +579,8 @@ class CodingWorkflowToolView:
     self_verification: bool = False
     # 连续多次修改后测试仍失败时开放Review收尾（剩余失败可能早已存在或断言旧行为）。
     bounded_repair_cycles: bool = False
+    # 净改动为空而重新开放修改时说明原因（后续Patch撤销了修复，提交将为空）。
+    explain_clean_review: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -594,6 +604,12 @@ class CodingWorkflowToolView:
             raise ValueError("修复循环上限开关必须是布尔值")
         if self.bounded_repair_cycles and not self.explain_tool_gates:
             raise ValueError("修复循环上限依赖工具门禁说明传达收尾条件")
+        if type(self.explain_clean_review) is not bool:
+            raise ValueError("空改动说明开关必须是布尔值")
+        if self.explain_clean_review and not (
+            self.reopen_after_clean_review and self.explain_tool_gates
+        ):
+            raise ValueError("空改动说明依赖净改动为空时重新开放及工具门禁说明")
         if type(self.reopen_after_clean_review) is not bool:
             raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
@@ -638,6 +654,9 @@ class CodingWorkflowToolView:
             )
         ):
             selection = _reopened_selection(workflow_definitions)
+            patches = [tool.name for tool in selection.tools if tool.name in _PATCH_TOOLS]
+            if self.explain_clean_review and patches:
+                selection = replace(selection, notice=_CLEAN_REVIEW_NOTICE.format(patch=patches[0]))
         if self.keep_reads_after_failed_patch:
             selection = _with_reads_after_failed_patch(turn, selection, workflow_definitions)
         if self.patch_deadline_requests is not None:

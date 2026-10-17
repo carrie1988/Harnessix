@@ -1016,3 +1016,42 @@ def test_forced_validation_after_a_patch_is_explained() -> None:
 def test_repair_limit_requires_gate_explanations() -> None:
     with pytest.raises(ValueError):
         CodingWorkflowToolView(require_pre_edit_profile=False, bounded_repair_cycles=True)
+
+
+def _clean_review_view(enabled: bool) -> CodingWorkflowToolView:
+    return CodingWorkflowToolView(
+        require_pre_edit_profile=False,
+        reopen_after_clean_review=True,
+        explain_tool_gates=True,
+        explain_clean_review=enabled,
+    )
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_clean_review_reopen_explains_that_the_fix_was_undone(enabled: bool) -> None:
+    selection = _clean_review_view(enabled).select(_reviewed(_CLEAN_REVIEW), _definitions())
+    names = {tool.name for tool in selection.tools}
+    assert _PATCH in names and "git_review" not in names
+    if enabled:
+        assert selection.notice is not None and "undid your fix" in selection.notice
+        assert _PATCH in selection.notice
+    else:
+        assert selection.notice is None
+
+
+def test_dirty_review_is_not_explained_as_undone() -> None:
+    selection = _clean_review_view(True).select(_reviewed(_DIRTY_REVIEW), _definitions())
+    assert selection.notice is None or "undid" not in selection.notice
+
+
+def test_clean_review_explanation_requires_reopen_and_gate_explanations() -> None:
+    with pytest.raises(ValueError):
+        CodingWorkflowToolView(
+            require_pre_edit_profile=False, explain_tool_gates=True, explain_clean_review=True
+        )
+    with pytest.raises(ValueError):
+        CodingWorkflowToolView(
+            require_pre_edit_profile=False,
+            reopen_after_clean_review=True,
+            explain_clean_review=True,
+        )

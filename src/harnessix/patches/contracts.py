@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Literal, Self
 
 from pydantic import Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 
 from harnessix.tools.contracts import ReadContract, ReadToolError, Revision
 from harnessix.tools.workspace import _parts, digest
@@ -41,10 +42,16 @@ class ExactEdit(ReadContract):
 
     @model_validator(mode="after")
     def valid_edit(self) -> Self:
+        # 固定措辞的harnessix_错误可原样反馈给模型（参数反馈白名单），不含输入值。
         if self.old_text == self.new_text:
-            raise ValueError("编辑必须改变内容")
+            raise PydanticCustomError(
+                "harnessix_exact_edit_no_change",
+                "编辑必须改变内容：old_text与new_text完全相同；若当前文本已是期望内容则无需再改该处",
+            )
         if len(text_bytes(self.old_text)) + len(text_bytes(self.new_text)) > MAX_EDIT_BYTES:
-            raise ValueError("单编辑 UTF-8 大小超限")
+            raise PydanticCustomError(
+                "harnessix_exact_edit_too_large", "单编辑 UTF-8 大小超限；请拆成更小的编辑"
+            )
         return self
 
 

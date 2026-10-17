@@ -1,0 +1,29 @@
+{
+  "scope": "v58_first_21_of_25_fee_guard_stop_diagnostic_not_preregistered_metric",
+  "predictions_sha256": "00d8dbdfd1308e1be9e43af9bd794b00d1955b93e5a6f6cba5f081ebddc29dfe",
+  "results_sha256": "2a174929170c84caed9709b2f4aab42f650c74d465817b81f99a49865268db25",
+  "submitted_instances": 21,
+  "completed_instances": 19,
+  "resolved_instances": 13,
+  "unresolved_instances": 6,
+  "empty_patch_instances": 2,
+  "error_instances": 0,
+  "infra_failure_instances": 0,
+  "ambiguous_failure_instances": 0,
+  "resolved_ids": [
+    "django__django-14238",
+    "django__django-14373",
+    "django__django-16100",
+    "matplotlib__matplotlib-14623",
+    "matplotlib__matplotlib-25122",
+    "matplotlib__matplotlib-26342",
+    "scikit-learn__scikit-learn-10844",
+    "scikit-learn__scikit-learn-13496",
+    "scikit-learn__scikit-learn-15100",
+    "scikit-learn__scikit-learn-25102",
+    "sphinx-doc__sphinx-10466",
+    "sphinx-doc__sphinx-8595",
+    "sympy__sympy-16766"
+  ],
+  "error_ids": []
+}

@@ -702,3 +702,46 @@ def test_bounded_repair_v32_adds_only_the_repair_policy(tmp_path):
         compact_config(
             tmp_path, **{**common, "self_verification": False}, bounded_repair=True, **pro
         )
+
+
+def test_clean_review_notice_v33_adds_only_the_clean_review_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchCleanReviewNoticeAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+        "reads_after_failed_patch": True,
+        "truncation_quality": True,
+        "self_verification": True,
+        "bounded_repair": True,
+    }
+    plan = plan_for("deepseek-v4-pro")
+    pro = {"model": "deepseek-v4-pro", "plan": plan}
+    config = compact_config(tmp_path, **common, clean_review_notice=True, **pro)
+    v32 = compact_config(tmp_path, **common, **pro)
+    assert type(config) is SweBenchCleanReviewNoticeAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v33"
+    assert config.explain_clean_review and not v32.explain_clean_review
+    assert config.bounded_repair_cycles and config.reopen_after_clean_review
+    excluded = {"spec_version", "clean_review_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v32.model_dump(
+        mode="json", exclude=excluded
+    )
+    config.require_plan(plan)
+    path = tmp_path / "v33.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(
+            tmp_path, **{**common, "bounded_repair": False}, clean_review_notice=True, **pro
+        )

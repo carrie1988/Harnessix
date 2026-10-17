@@ -11,6 +11,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchBoundedRepairAgentRunConfig,
     SweBenchBudgetTruncationAgentRunConfig,
     SweBenchCachedClosureAgentRunConfig,
+    SweBenchCleanReviewNoticeAgentRunConfig,
     SweBenchCompactSurfaceAgentRunConfig,
     SweBenchConnectRetryAgentRunConfig,
     SweBenchConvergenceAgentRunConfig,
@@ -340,6 +341,7 @@ SweBenchRunConfig = (
     | SweBenchNativeThinkingAgentRunConfig
     | SweBenchSelfVerificationAgentRunConfig
     | SweBenchBoundedRepairAgentRunConfig
+    | SweBenchCleanReviewNoticeAgentRunConfig
 )
 
 
@@ -382,6 +384,7 @@ def _run_config_type(
     native_thinking: bool = False,
     self_verification: bool = False,
     bounded_repair: bool = False,
+    clean_review_notice: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -414,6 +417,7 @@ def _run_config_type(
         (native_thinking, "原生思考"),
         (self_verification, "自我校验"),
         (bounded_repair, "修复循环上限"),
+        (clean_review_notice, "空改动说明"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -435,6 +439,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if clean_review_notice and not bounded_repair:
+        raise ValueError("SWE-bench空改动说明只在修复循环上限组合之上冻结")
     if bounded_repair and not self_verification:
         raise ValueError("SWE-bench修复循环上限只在自我校验组合之上冻结")
     if self_verification and (native_thinking or not truncation_quality):
@@ -506,6 +512,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if clean_review_notice:
+            return SweBenchCleanReviewNoticeAgentRunConfig
         if bounded_repair:
             return SweBenchBoundedRepairAgentRunConfig
         if self_verification:
@@ -630,6 +638,7 @@ def build_swebench_agent_run_config(
     native_thinking: bool = False,
     self_verification: bool = False,
     bounded_repair: bool = False,
+    clean_review_notice: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -666,6 +675,7 @@ def build_swebench_agent_run_config(
         native_thinking=native_thinking,
         self_verification=self_verification,
         bounded_repair=bounded_repair,
+        clean_review_notice=clean_review_notice,
     )
     extra: dict[str, object] = (
         {}

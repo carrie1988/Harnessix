@@ -402,6 +402,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def bounded_repair_cycles(self) -> bool:
         return False
 
+    @property
+    def explain_clean_review(self) -> bool:
+        return False
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:

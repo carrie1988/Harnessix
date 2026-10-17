@@ -439,3 +439,20 @@ class SweBenchBoundedRepairAgentRunConfig(SweBenchSelfVerificationAgentRunConfig
     @property
     def bounded_repair_cycles(self) -> bool:
         return True
+
+
+class SweBenchCleanReviewNoticeAgentRunConfig(SweBenchBoundedRepairAgentRunConfig):
+    """v32之上：净改动为空而重新开放修改时说明后续Patch撤销了修复（提交将为空）。
+
+    v58中2项（sphinx-8265、sympy-16597）最后一次Patch恢复了原代码，git_review显示无改动；
+    重新开放的目录未说明原因，模型反复调用已关闭的Review工具后宣称完成，交付空补丁。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v33"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v33"
+    )
+    clean_review_policy: Literal["explain_undone_fix_on_reopen"] = "explain_undone_fix_on_reopen"
+
+    @property
+    def explain_clean_review(self) -> bool:
+        return True
