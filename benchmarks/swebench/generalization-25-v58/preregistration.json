@@ -1,0 +1,20 @@
+{
+  "schema": "harnessix.swebench-generalization-preregistration/v1",
+  "frozen_at": "2026-10-17T12:26:19.624520+00:00",
+  "scope": "fresh_generalization_set_never_executed_disjoint_from_200_used_cases",
+  "plan_sha256": "3f683c0344e8fda5c4cb6f021c2c6d970e6c6da55476b9b6487a3e04df307ced",
+  "plan_file_sha256": "48982883756d14d454ac1ffcd2a54399d99c4de8b1d375a61a6b2f3bafe13a77",
+  "source_revision": "583faebea6fc83351dbe3f30d4352743b50e288a",
+  "model": "deepseek-v4-pro (thinking disabled)",
+  "run_config_spec": "harnessix.swebench-agent-run-config/v32",
+  "run_config_file_sha256": "835cc84ae3e8fdcbb37ae42b2a3050c3d961e2a805266abd32dd01878b75ccef",
+  "prepare_host_sha256": "3ee69c7455d29440a9925ab0bc1860f2587287d9128aedf0bf816a2bfc41474c",
+  "execute_host_sha256": "0a57f6d18d66ae20a29dbf7e4cef8135db950c8397af39a10f373eca4990517c",
+  "evaluate_host_sha256": "4fdedc1e4ff7350283d3189bfa642021560410bc7b82167593e4a9e9cfde266a",
+  "task_budget": "2000000 tokens / 100 steps / 2700 s / 8 tool calls per step",
+  "fee_stop_amount": "45",
+  "budget_period_id": "2abc4334-1606-42ed-9371-a91c8e520b5a",
+  "attempt_policy": "single attempt per case; no retry, no best-of-N, no stitching",
+  "success_criterion": "official pass@1 over all 25 cases >= 65% (17/25)",
+  "generalization_claim": true
+}
