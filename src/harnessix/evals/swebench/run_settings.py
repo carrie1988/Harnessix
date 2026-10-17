@@ -432,6 +432,10 @@ class _SweBenchAgentRunSettings(ContractModel):
     def native_selectors_required(self) -> bool:
         return False
 
+    @property
+    def sibling_scope_check(self) -> bool:
+        return False
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:

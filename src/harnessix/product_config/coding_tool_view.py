@@ -530,6 +530,13 @@ def _with_bounded_repair_cycles(
     return replace(_selection(definitions, names), notice=_REPAIR_EXIT_NOTICE.format(streak=streak))
 
 
+_SIBLING_SCOPE_CHECK = (
+    " Also search for other implementations of the same behaviour (sibling classes or "
+    "subclasses, other backends, printers or formats, duplicated helpers) and apply the fix "
+    "consistently wherever the issue's behaviour applies."
+)
+
+
 def _first_closure_with_changes(
     observations: tuple[_Observation, ...], *, ignore_scratch: bool
 ) -> bool:
@@ -544,12 +551,15 @@ def _first_closure_with_changes(
     )
 
 
-def _verification_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToolSelection:
+def _verification_selection(
+    definitions: tuple[ToolDescriptor, ...], *, sibling_scope: bool = False
+) -> ModelToolSelection:
     """自我校验轮：开放调查、修改与测试（auto，可直接总结收尾）；Review门禁随新改动照旧生效。"""
     hidden = _ALL_GIT_REVIEW_TOOLS | _HIDDEN_WORKFLOW_ACTIONS | {"read_artifact"}
+    notice = _VERIFICATION_NOTICE + (_SIBLING_SCOPE_CHECK if sibling_scope else "")
     return ModelToolSelection(
         tuple(tool for tool in definitions if tool.name not in hidden),
-        notice=_VERIFICATION_NOTICE,
+        notice=notice,
     )
 
 
@@ -603,6 +613,8 @@ class CodingWorkflowToolView:
     profile_argument_errors_recoverable: bool = False
     # 修复循环硬上限：连续8次验证失败后只开放Review收尾（需bounded_repair_cycles）。
     force_review_after_repairs: bool = False
+    # 自我校验另要求检查同一行为的其他实现（同类/子类、其他后端或打印器、重复辅助函数）。
+    sibling_scope_check: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -628,6 +640,10 @@ class CodingWorkflowToolView:
             raise ValueError("修复循环上限依赖工具门禁说明传达收尾条件")
         if type(self.profile_argument_errors_recoverable) is not bool:
             raise ValueError("Profile参数错误可恢复开关必须是布尔值")
+        if type(self.sibling_scope_check) is not bool:
+            raise ValueError("同类实现检查开关必须是布尔值")
+        if self.sibling_scope_check and not self.self_verification:
+            raise ValueError("同类实现检查依赖自我校验")
         if type(self.force_review_after_repairs) is not bool:
             raise ValueError("修复循环硬上限开关必须是布尔值")
         if self.force_review_after_repairs and not self.bounded_repair_cycles:
@@ -680,7 +696,9 @@ class CodingWorkflowToolView:
                 _observations(turn), ignore_scratch=self.scratch_reproduction
             )
         ):
-            selection = _verification_selection(workflow_definitions)
+            selection = _verification_selection(
+                workflow_definitions, sibling_scope=self.sibling_scope_check
+            )
         if (
             self.reopen_after_clean_review
             and not selection.tools

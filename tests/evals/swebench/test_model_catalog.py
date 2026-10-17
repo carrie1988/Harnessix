@@ -860,3 +860,50 @@ def test_repair_closure_v35_requires_native_selector_profiles(tmp_path):
                 | {"spec_version": "harnessix.swebench-agent-run-config/v34"}
             )
         )
+
+
+def test_sibling_scope_v36_is_built_only_over_v35():
+    from harnessix.evals.swebench.run_config import (
+        SweBenchSiblingScopeAgentRunConfig,
+        _run_config_type,
+    )
+
+    flags = dict(
+        isolate_provider_failures=True,
+        budget_pressure_compaction=False,
+        enable_thinking=False,
+        enable_planning=False,
+        enable_grep_snapshots=False,
+        allow_optional_pre_edit_profile=False,
+        recycle_workspaces=True,
+        enable_regex_search=False,
+        reserve_closing_phase=False,
+        enable_definition_views=False,
+        working_set=False,
+        compact_model_surface=True,
+        convergence_guidance=True,
+        patch_deadline=True,
+        budget_capped_truncation=True,
+        prompt_cache=True,
+        cached_closure_workflow=True,
+        scratch_reproduction=True,
+        protocol_robust=True,
+        explained_gates=True,
+        connect_retry=True,
+        forced_choice_tolerant=True,
+        argument_repair=True,
+        test_timeout_failures=True,
+        reads_after_failed_patch=True,
+        truncation_quality=True,
+        self_verification=True,
+        bounded_repair=True,
+        clean_review_notice=True,
+        provider_proxy=True,
+    )
+    assert (
+        _run_config_type(**flags, repair_closure=True, sibling_scope=True)
+        is SweBenchSiblingScopeAgentRunConfig
+    )
+    assert SweBenchSiblingScopeAgentRunConfig.model_fields["spec_version"].default.endswith("/v36")
+    with pytest.raises(ValueError):
+        _run_config_type(**flags, repair_closure=False, sibling_scope=True)

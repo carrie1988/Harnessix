@@ -500,3 +500,21 @@ class SweBenchRepairClosureAgentRunConfig(SweBenchProxiedProviderAgentRunConfig)
     @property
     def native_selectors_required(self) -> bool:
         return True
+
+
+class SweBenchSiblingScopeAgentRunConfig(SweBenchRepairClosureAgentRunConfig):
+    """v35之上：自我校验另要求检查同一行为的其他实现并一致修复。
+
+    v57p/v58/v60的27项未解决中16项公开测试通过但隐藏测试未过；8项参考修复同时改动了模型未改的同类实现。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v36"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v36"
+    )
+    scope_policy: Literal["self_check_sibling_implementations"] = (
+        "self_check_sibling_implementations"
+    )
+
+    @property
+    def sibling_scope_check(self) -> bool:
+        return True

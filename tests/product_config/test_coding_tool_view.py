@@ -1104,3 +1104,21 @@ def test_rejected_profile_arguments_do_not_close_the_workflow() -> None:
     recovered = _argument_view(True).select(turn, _definitions())
     assert recovered.forced_tool == _PROFILE
     assert _argument_view(False).select(turn, _definitions()).tools == ()
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_self_check_can_ask_for_sibling_implementations(enabled: bool) -> None:
+    view = CodingWorkflowToolView(
+        require_pre_edit_profile=False,
+        explain_tool_gates=True,
+        self_verification=True,
+        sibling_scope_check=enabled,
+    )
+    selection = view.select(_reviewed(_DIRTY_REVIEW), _definitions())
+    assert selection.notice is not None and "Self-check" in selection.notice
+    assert ("other implementations of the same behaviour" in selection.notice) is enabled
+
+
+def test_sibling_scope_check_requires_self_verification() -> None:
+    with pytest.raises(ValueError):
+        CodingWorkflowToolView(require_pre_edit_profile=False, sibling_scope_check=True)

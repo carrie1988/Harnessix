@@ -250,6 +250,7 @@ async def _open_case_turn(
         explain_clean_review=config.explain_clean_review,
         profile_argument_errors_recoverable=config.profile_argument_errors_recoverable,
         force_review_after_repairs=config.force_review_after_repairs,
+        sibling_scope_check=config.sibling_scope_check,
     )
 
 
