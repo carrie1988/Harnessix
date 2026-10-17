@@ -66,7 +66,8 @@ def build_request(
     elif config.prompt_cache == "stable_tail":
         if request.instructions is not None:
             messages.insert(0, {"role": "system", "content": request.instructions})
-        messages.extend({"role": "system", "content": note} for note in notes)
+        # 自动缓存端点会把所有system消息合并到开头；逐请求说明须以末尾user消息呈现，前缀才保持不变。
+        messages.extend({"role": "user", "content": _HARNESS_NOTE + note} for note in notes)
     else:
         for note in notes:
             messages.insert(0, {"role": "system", "content": note})
@@ -93,7 +94,11 @@ def build_request(
         body["tools"] = tools
         body["parallel_tool_calls"] = config.capabilities.parallel_tool_calls
         # 思考模式只支持auto：强制与required改由可执行集收窄与目录说明约束，违约调用沿拒绝路径。
-        tool_choice = None if native_thinking else _wire_tool_choice(request)
+        tool_choice = (
+            None
+            if native_thinking
+            else _wire_tool_choice(request, function_choice=config.prompt_cache != "stable_tail")
+        )
         if tool_choice is not None:
             body["tool_choice"] = tool_choice
     if config.thinking_format == "thinking_type":
@@ -116,8 +121,14 @@ def build_request(
 _CACHE_MARKER: dict[str, str] = {"type": "ephemeral"}
 
 
-def _wire_tool_choice(request: ModelRequest) -> str | dict[str, Any] | None:
-    if request.forced_tool is not None:
+_HARNESS_NOTE = "[Harness note] "
+
+
+def _wire_tool_choice(
+    request: ModelRequest, *, function_choice: bool = True
+) -> str | dict[str, Any] | None:
+    """自动缓存端点的指定函数选择会改写提示渲染、使缓存失效，改为required并由可执行集收窄约束。"""
+    if request.forced_tool is not None and function_choice:
         return {"type": "function", "function": {"name": tool_alias(request.forced_tool)}}
     return "required" if request.tool_choice == "required" else None
 

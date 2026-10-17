@@ -235,3 +235,40 @@ def test_native_thinking_omits_unsupported_tool_choice(thinking):
     for request in (forced, required):
         body, _ = build_request(request, config)
         assert ("tool_choice" in body) is not thinking
+
+
+def _tool_history_request():
+    request = model_request(with_tools=True)
+    tool_call = call()
+    history = (
+        *request.history,
+        item(tool_call),
+        item(ToolResultContent(call_id=tool_call.call_id, outcome="succeeded", output="x")),
+    )
+    return request.model_copy(update={"history": history, "instructions": "rules"})
+
+
+def test_stable_tail_notes_are_trailing_user_messages_and_keep_the_prefix():
+    """p1：DeepSeek把末尾system说明并入开头，Pro缓存命中仅13%～22%；改为末尾user消息后接近100%。"""
+    config = OpenAIChatConfig(model="m", prompt_cache="stable_tail")
+    request = _tool_history_request()
+    first, _ = build_request(request.model_copy(update={"affordable_requests": 5}), config)
+    second, _ = build_request(request.model_copy(update={"affordable_requests": 4}), config)
+    roles = [m["role"] for m in first["messages"]]
+    assert roles[0] == "system" and roles.count("system") == 1
+    notes = [m for m in first["messages"] if str(m["content"]).startswith("[Harness note] ")]
+    assert notes and all(m["role"] == "user" for m in notes)
+    assert first["messages"][-len(notes) :] == notes
+    stable = len(first["messages"]) - len(notes)
+    assert first["messages"][:stable] == second["messages"][:stable]
+
+
+@pytest.mark.parametrize(("layout", "expected"), [("stable_tail", "required"), (None, "function")])
+def test_forced_choice_is_sent_as_required_under_the_stable_tail(layout, expected):
+    """指定函数的tool_choice改写DeepSeek提示渲染（Pro命中归零），stable_tail下改发required。"""
+    base = model_request(with_tools=True)
+    (tool,) = base.tools
+    forced = base.model_copy(update={"tool_choice": "required", "forced_tool": tool.name})
+    body, _ = build_request(forced, OpenAIChatConfig(model="m", prompt_cache=layout))
+    choice = body["tool_choice"]
+    assert (choice == "required") if expected == "required" else (choice["type"] == "function")

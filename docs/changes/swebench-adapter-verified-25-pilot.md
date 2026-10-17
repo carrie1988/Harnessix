@@ -1871,3 +1871,7 @@ v55t3（v30高强度思考）首项单步推理增至5K～8K Token、第12次请
 用户同意改用[deepseek-v4-pro](../../src/harnessix/evals/swebench/run_settings.py)（同一价格页高峰单价：未命中9、命中0.3、输出27元/百万Token；
 协议与Flash相同，实测用量随结束分片、自动缓存命中96%）并加入[v31](../../src/harnessix/evals/swebench/compact_surface_config.py)收尾前自我校验。
 v57（Flash复现）在执行任何Case前停止，其25项保持未见，留作Pro配置的新鲜终测集。
+
+p1（Pro＋v31，v56同题）前3项闭环、费用1.17／0.50／0.35元，但缓存命中仅13%～22%且固定约1400 Token；首项在强制`git_review`阶段
+连续8次`unregistered_tool`。探测定位两个系统性原因：DeepSeek把末尾system说明并入开头（前缀在指令后分叉），指定函数`tool_choice`
+改写提示渲染。修复后同构多步探测命中升至70%并随历史增长。p1在第4项中停止并按账本结算（3.96元＋预留2.36元）。

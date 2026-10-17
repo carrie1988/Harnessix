@@ -899,3 +899,6 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - `thinking_format="thinking_type"`且开启思考时，每条历史助手消息带`reasoning_content`（未存储推理内容时为空串）：DeepSeek思考模式
   要求带工具历史中的助手消息携带该字段，否则400；空串即满足协议。
 - 同一思考模式只支持`tool_choice: auto`：映射不发送`tool_choice`，强制/required由可执行集收窄与目录说明约束。
+- `stable_tail`布局下逐请求说明以末尾`user`消息（`[Harness note] `前缀）呈现：DeepSeek会把所有system消息并入开头，末尾system说明使
+  前缀在指令后即分叉（实测命中0%～22%，改为user后接近100%）；指定函数的`tool_choice`会改写其提示渲染（Pro命中归零），
+  该布局下改发`required`，由可执行集收窄与目录说明约束。
