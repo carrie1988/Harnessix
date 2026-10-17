@@ -6,7 +6,7 @@
   "candidate_count": 325,
   "candidate_manifest_sha256": "e5ab230e26a67fae5b5f67f078dcaadeb5d13a0a48c4b7d8f5b5a42256733325",
   "split": "test",
-  "harnessix_revision": "fe21ae65327311c81989d2c53f65d52e6da4dcb7",
+  "harnessix_revision": "3e5e28389a311eb13aa3a815629acee805da2df5",
   "swebench_revision": "02e7a74ffd0b707aab73d203fe87bdc7c76afc8e",
   "swebench_package_version": "5.0.2",
   "task_repo_revision": "3d07b464b7b311a0cbfb5ed5b2d8a3b96f84a33d",
@@ -26,7 +26,7 @@
   },
   "task_budget": {
     "max_steps": 100,
-    "max_tokens": 1200000,
+    "max_tokens": 2000000,
     "timeout_seconds": 2700.0,
     "max_output_chars": 65536,
     "max_tool_calls_per_step": 8
@@ -313,5 +313,5 @@
       "created_at": "2020-12-17T21:10:10Z"
     }
   ],
-  "plan_sha256": "9982b8cffa3a6f363d13931826c6e9e52519b1a65407d609b4c3c576cc1a8aed"
+  "plan_sha256": "9059bcbc22095c88793c6733e86a20ea6949ae7e9920b6d766638259c80ca327"
 }

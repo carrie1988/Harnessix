@@ -1,0 +1,25 @@
+{
+  "scope": "p2_first_11_of_25_development_fee_guard_stop_not_preregistered_metric",
+  "predictions_sha256": "e67f4fa5d1ff9abd66396bf123df591e513dae33683a394a8fe97279b260daf9",
+  "results_sha256": "764eb0175739ba1b46cb034d8a475296a9ae67735c53d721db6bb0f161bda5bb",
+  "submitted_instances": 11,
+  "completed_instances": 11,
+  "resolved_instances": 9,
+  "unresolved_instances": 2,
+  "empty_patch_instances": 0,
+  "error_instances": 0,
+  "infra_failure_instances": 0,
+  "ambiguous_failure_instances": 0,
+  "resolved_ids": [
+    "astropy__astropy-8707",
+    "django__django-13121",
+    "matplotlib__matplotlib-22865",
+    "pydata__xarray-3095",
+    "pytest-dev__pytest-5631",
+    "pytest-dev__pytest-6202",
+    "scikit-learn__scikit-learn-26323",
+    "sphinx-doc__sphinx-9320",
+    "sympy__sympy-15809"
+  ],
+  "error_ids": []
+}

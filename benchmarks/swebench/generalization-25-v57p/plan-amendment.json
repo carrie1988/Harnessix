@@ -1,0 +1,10 @@
+{
+  "amended_before_any_model_request": true,
+  "previous_plan_sha256": "9982b8cffa3a6f363d13931826c6e9e52519b1a65407d609b4c3c576cc1a8aed",
+  "previous_harnessix_revision": "fe21ae65327311c81989d2c53f65d52e6da4dcb7",
+  "previous_max_tokens": 1200000,
+  "plan_sha256": "9059bcbc22095c88793c6733e86a20ea6949ae7e9920b6d766638259c80ca327",
+  "harnessix_revision": "3e5e28389a311eb13aa3a815629acee805da2df5",
+  "max_tokens": 2000000,
+  "reason": "development sanity p2 (v56 cases) hit the 1.2M token cap in 2 of 11 cases; cache-layout fix landed after the freeze. Cases, model and other budget fields unchanged; v57 cases never executed or inspected"
+}
