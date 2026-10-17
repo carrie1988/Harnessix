@@ -30,6 +30,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchSiblingScopeAgentRunConfig,
     SweBenchTestTimeoutAgentRunConfig,
     SweBenchTruncationQualityAgentRunConfig,
+    SweBenchWideOutputAgentRunConfig,
 )
 from harnessix.evals.swebench.contracts import SweBenchPreRegistrationPlan
 from harnessix.evals.swebench.definition_config import SweBenchDefinitionAgentRunConfig
@@ -348,6 +349,7 @@ SweBenchRunConfig = (
     | SweBenchProxiedProviderAgentRunConfig
     | SweBenchRepairClosureAgentRunConfig
     | SweBenchSiblingScopeAgentRunConfig
+    | SweBenchWideOutputAgentRunConfig
 )
 
 
@@ -394,6 +396,7 @@ def _run_config_type(
     provider_proxy: bool = False,
     repair_closure: bool = False,
     sibling_scope: bool = False,
+    wide_output: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -430,6 +433,7 @@ def _run_config_type(
         (provider_proxy, "Provider代理"),
         (repair_closure, "修复收尾"),
         (sibling_scope, "同类实现检查"),
+        (wide_output, "宽输出上限"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -451,6 +455,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if wide_output and not sibling_scope:
+        raise ValueError("SWE-bench宽输出上限只在同类实现检查组合之上冻结")
     if sibling_scope and not repair_closure:
         raise ValueError("SWE-bench同类实现检查只在修复收尾组合之上冻结")
     if repair_closure and not provider_proxy:
@@ -530,6 +536,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if wide_output:
+            return SweBenchWideOutputAgentRunConfig
         if sibling_scope:
             return SweBenchSiblingScopeAgentRunConfig
         if repair_closure:
@@ -666,6 +674,7 @@ def build_swebench_agent_run_config(
     provider_proxy_url: str | None = None,
     repair_closure: bool = False,
     sibling_scope: bool = False,
+    wide_output: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -706,6 +715,7 @@ def build_swebench_agent_run_config(
         provider_proxy=provider_proxy_url is not None,
         repair_closure=repair_closure,
         sibling_scope=sibling_scope,
+        wide_output=wide_output,
     )
     extra: dict[str, object] = (
         {}
@@ -728,7 +738,7 @@ def build_swebench_agent_run_config(
                 tool_calls=True,
                 parallel_tool_calls=parameters.get("parallel_tool_calls") is True,
             ),
-            max_output_tokens=_NATIVE_THINKING_OUTPUT if native_thinking else 4096,
+            max_output_tokens=_NATIVE_THINKING_OUTPUT if native_thinking or wide_output else 4096,
             timeout_seconds=plan.task_budget.timeout_seconds,
             io_timeout_seconds=180,
             max_attempts=1,

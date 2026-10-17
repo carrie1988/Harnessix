@@ -213,6 +213,8 @@ class _SweBenchAgentRunSettings(ContractModel):
             model.thinking_format is None or provider.max_output_tokens != _NATIVE_THINKING_OUTPUT
         ):
             raise ValueError("SWE-bench原生思考只用于已求证thinking_type格式的模型与固定输出上限")
+        if self.wide_output and provider.max_output_tokens != _NATIVE_THINKING_OUTPUT:
+            raise ValueError("SWE-bench宽输出上限固定为8192")
         if (
             provider.base_url != model.base_url
             or provider.thinking_format != model.thinking_format
@@ -434,6 +436,10 @@ class _SweBenchAgentRunSettings(ContractModel):
 
     @property
     def sibling_scope_check(self) -> bool:
+        return False
+
+    @property
+    def wide_output(self) -> bool:
         return False
 
     def known_case_reserve_units(

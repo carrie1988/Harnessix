@@ -518,3 +518,19 @@ class SweBenchSiblingScopeAgentRunConfig(SweBenchRepairClosureAgentRunConfig):
     @property
     def sibling_scope_check(self) -> bool:
         return True
+
+
+class SweBenchWideOutputAgentRunConfig(SweBenchSiblingScopeAgentRunConfig):
+    """v36之上：单次响应输出上限由4096提高到8192（非思考模式）；工作流不变。
+
+    v61r的13项未解决中2项因单次响应用满4096输出Token被截断而结束整题（其一为纯文本长推理）。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v37"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v37"
+    )
+    output_policy: Literal["wide_8192_output"] = "wide_8192_output"
+
+    @property
+    def wide_output(self) -> bool:
+        return True
