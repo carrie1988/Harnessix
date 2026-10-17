@@ -448,6 +448,70 @@ _VERIFICATION_NOTICE = (
 )
 
 
+_REPAIR_EXIT_STREAK = 4
+_REPAIR_EXIT_NOTICE = (
+    "The public tests have failed {streak} times in a row after your patches. Compare the "
+    "failures with the issue: failures that also occur without your change, or assertions that "
+    "encode the old behaviour the issue asks to change, need no further edits. If your diff "
+    "already implements the issue, call git_review to finish; otherwise fix the remaining "
+    "cause shown in the failure output."
+)
+_VALIDATE_PATCH_NOTICE = (
+    "Your patch was applied. Run {profile} now to validate it; it is the only callable tool "
+    "in this request."
+)
+
+
+def _failed_validation_streak(observations: tuple[_Observation, ...]) -> int:
+    """最近连续的代码级测试失败次数（遇到一次成功验证即中断）。"""
+    streak = 0
+    for item in reversed(observations):
+        if not item.tool.startswith("run_profile."):
+            continue
+        if not _is_code_test_failure(item.result):
+            break
+        streak += 1
+    return streak
+
+
+def _with_bounded_repair_cycles(
+    turn: Turn, selection: ModelToolSelection, definitions: tuple[ToolDescriptor, ...]
+) -> ModelToolSelection:
+    """修复循环有界：连续多次测试失败后开放Review收尾，模型可判定剩余失败与本改动无关。
+
+    只在最近一次验证晚于最近一次成功Patch且为代码级失败时生效；收尾后的Review照旧
+    关闭目录。修改后强制测试的请求附带说明，避免模型调用当前不可用的工具。
+    """
+    observations = _observations(turn)
+    patches = [
+        item.index
+        for item in observations
+        if item.tool in _PATCH_TOOLS and item.result.outcome == "succeeded"
+    ]
+    profiles = [item for item in observations if item.tool.startswith("run_profile.")]
+    forced = selection.forced_tool
+    if forced is not None and forced.startswith("run_profile.") and patches:
+        if not profiles or profiles[-1].index < patches[-1]:
+            return replace(selection, notice=_VALIDATE_PATCH_NOTICE.format(profile=forced))
+    if not patches or not profiles or profiles[-1].index < patches[-1]:
+        return selection
+    latest = profiles[-1]
+    streak = _failed_validation_streak(observations)
+    if streak < _REPAIR_EXIT_STREAK:
+        return selection
+    if any(
+        item.index > latest.index and item.tool in _ALL_GIT_REVIEW_TOOLS for item in observations
+    ):
+        return ModelToolSelection(())
+    review = (
+        {_GIT_REVIEW_TOOL}
+        if any(item.name == _GIT_REVIEW_TOOL for item in definitions)
+        else set(_GIT_REVIEW_TOOLS)
+    )
+    names = {tool.name for tool in selection.tools} | review
+    return replace(_selection(definitions, names), notice=_REPAIR_EXIT_NOTICE.format(streak=streak))
+
+
 def _first_closure_with_changes(
     observations: tuple[_Observation, ...], *, ignore_scratch: bool
 ) -> bool:
@@ -505,6 +569,8 @@ class CodingWorkflowToolView:
     keep_reads_after_failed_patch: bool = False
     # 首次以可交付改动收尾时重新开放一轮自我校验（覆盖问题隐含的边界并回归既有测试）。
     self_verification: bool = False
+    # 连续多次修改后测试仍失败时开放Review收尾（剩余失败可能早已存在或断言旧行为）。
+    bounded_repair_cycles: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -524,6 +590,10 @@ class CodingWorkflowToolView:
             raise ValueError("自我校验开关必须是布尔值")
         if self.self_verification and not self.explain_tool_gates:
             raise ValueError("自我校验依赖工具门禁说明传达校验要求")
+        if type(self.bounded_repair_cycles) is not bool:
+            raise ValueError("修复循环上限开关必须是布尔值")
+        if self.bounded_repair_cycles and not self.explain_tool_gates:
+            raise ValueError("修复循环上限依赖工具门禁说明传达收尾条件")
         if type(self.reopen_after_clean_review) is not bool:
             raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
@@ -550,6 +620,8 @@ class CodingWorkflowToolView:
         if self.test_timeouts_are_failures:
             turn = with_test_timeouts_as_failures(turn)
         selection = self._select_workflow(turn, workflow_definitions)
+        if self.bounded_repair_cycles:
+            selection = _with_bounded_repair_cycles(turn, selection, workflow_definitions)
         if (
             self.self_verification
             and not selection.tools

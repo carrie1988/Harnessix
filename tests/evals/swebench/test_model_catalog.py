@@ -660,3 +660,45 @@ def test_self_verification_v31_adds_only_the_verification_policy(tmp_path):
     assert read_swebench_agent_run_config(path) == config
     with pytest.raises(ValueError):
         compact_config(tmp_path, **common, self_verification=True, native_thinking=True, **pro)
+
+
+def test_bounded_repair_v32_adds_only_the_repair_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchBoundedRepairAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+        "reads_after_failed_patch": True,
+        "truncation_quality": True,
+        "self_verification": True,
+    }
+    plan = plan_for("deepseek-v4-pro")
+    pro = {"model": "deepseek-v4-pro", "plan": plan}
+    config = compact_config(tmp_path, **common, bounded_repair=True, **pro)
+    v31 = compact_config(tmp_path, **common, **pro)
+    assert type(config) is SweBenchBoundedRepairAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v32"
+    assert config.bounded_repair_cycles and not v31.bounded_repair_cycles
+    assert config.self_verification
+    excluded = {"spec_version", "repair_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v31.model_dump(
+        mode="json", exclude=excluded
+    )
+    config.require_plan(plan)
+    path = tmp_path / "v32.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(
+            tmp_path, **{**common, "self_verification": False}, bounded_repair=True, **pro
+        )

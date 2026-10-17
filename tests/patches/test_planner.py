@@ -201,3 +201,32 @@ def test_operation_stopped_before_io(tmp_path, monkeypatch, kind):
             prepare_patch(workspace, args, operation)
         if kind == "timeout":
             assert error.value.code == "patch_timeout"
+
+
+@pytest.mark.parametrize(
+    "source,old,new,hint",
+    [
+        (
+            "class A:\n    flag = True\n    x = 1\n",
+            "class A:\n    x = 1\n",
+            "    flag = True\n",
+            "可能已经应用",
+        ),
+        ("class A:\n    y = 2\n", "class A:\n    x = 1\n", "class A:\n    x = 3\n", "第1行"),
+        (
+            "class A:\n    y = 2\n",
+            "class B:\n    x = 1\n",
+            "class B:\n    x = 3\n",
+            "不在当前文件中",
+        ),
+    ],
+)
+def test_missing_anchor_reports_where_the_current_text_differs(tmp_path, source, old, new, hint):
+    path = tmp_path / "main.py"
+    path.write_text(source)
+    with Workspace(tmp_path) as workspace:
+        args = proposal(workspace, edits=(ExactEdit(old_text=old, new_text=new),))
+        with pytest.raises(KernelError) as error:
+            prepare_patch(workspace, args, ReadOperation())
+    assert error.value.code == "patch_context_not_found"
+    assert hint in error.value.message and path.read_text() == source

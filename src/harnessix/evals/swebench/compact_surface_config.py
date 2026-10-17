@@ -420,3 +420,22 @@ class SweBenchSelfVerificationAgentRunConfig(SweBenchTruncationQualityAgentRunCo
     @property
     def self_verification(self) -> bool:
         return True
+
+
+class SweBenchBoundedRepairAgentRunConfig(SweBenchSelfVerificationAgentRunConfig):
+    """v31之上：连续4次修改后测试仍失败时开放Review收尾；修改后强制测试附带说明。
+
+    v57p前10项中2项在“修改→测试失败”循环中耗尽2M Token（失败早已存在或测试断言旧行为），
+    p2中2项同样以budget_exceeded结束；原流程测试失败后永远无法进入Review。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v32"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v32"
+    )
+    repair_policy: Literal["review_after_four_failed_validations"] = (
+        "review_after_four_failed_validations"
+    )
+
+    @property
+    def bounded_repair_cycles(self) -> bool:
+        return True

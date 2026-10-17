@@ -937,3 +937,82 @@ def test_clean_review_does_not_trigger_a_self_check() -> None:
 def test_self_check_requires_gate_explanations() -> None:
     with pytest.raises(ValueError):
         CodingWorkflowToolView(require_pre_edit_profile=False, self_verification=True)
+
+
+def _repair_view(enabled: bool, *, verify: bool = False) -> CodingWorkflowToolView:
+    return CodingWorkflowToolView(
+        require_pre_edit_profile=False,
+        explain_tool_gates=True,
+        self_verification=verify,
+        bounded_repair_cycles=enabled,
+    )
+
+
+def _repair_cycles(failures: int, *tail: _Result) -> Turn:
+    cycles: list[_Result] = []
+    for _ in range(failures):
+        cycles.extend(
+            (
+                (_PATCH, "succeeded", None),
+                (_PROFILE, "failed", "process_nonzero_exit"),
+                ("read_file", "succeeded", None),
+            )
+        )
+    return _turn(*cycles, *tail)
+
+
+@pytest.mark.parametrize("failures", [1, 3])
+def test_short_repair_loops_keep_review_closed(failures: int) -> None:
+    turn = _repair_cycles(failures)
+    selection = _repair_view(True).select(turn, _definitions())
+    assert selection == _repair_view(False).select(turn, _definitions())
+    assert "git_review" not in {tool.name for tool in selection.tools}
+
+
+def test_repeated_failed_validations_open_review_with_an_explanation() -> None:
+    turn = _repair_cycles(4)
+    selection = _repair_view(True).select(turn, _definitions())
+    names = {tool.name for tool in selection.tools}
+    assert {"git_review", _PATCH, _PROFILE, "read_file"} <= names
+    assert selection.forced_tool is None
+    assert selection.notice is not None and "4 times in a row" in selection.notice
+    plain = _repair_view(False).select(turn, _definitions())
+    assert "git_review" not in {tool.name for tool in plain.tools}
+
+
+def test_review_after_the_repair_limit_closes_the_catalog() -> None:
+    turn = _repair_cycles(4, ("git_review", "succeeded", None, _DIRTY_REVIEW))
+    assert _repair_view(True).select(turn, _definitions()).tools == ()
+
+
+def test_review_after_the_repair_limit_still_allows_one_self_check() -> None:
+    turn = _repair_cycles(4, ("git_review", "succeeded", None, _DIRTY_REVIEW))
+    selection = _repair_view(True, verify=True).select(turn, _definitions())
+    assert selection.notice is not None and "Self-check" in selection.notice
+
+
+def test_a_passing_validation_resets_the_failure_streak() -> None:
+    turn = _repair_cycles(
+        3,
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "succeeded", None),
+        ("git_review", "succeeded", None, _DIRTY_REVIEW),
+        ("read_file", "succeeded", None),
+    )
+    cycles = _repair_cycles(1)
+    combined = turn.model_copy(update={"items": turn.items + cycles.items})
+    selection = _repair_view(True, verify=False).select(combined, _definitions())
+    assert "git_review" not in {tool.name for tool in selection.tools}
+
+
+def test_forced_validation_after_a_patch_is_explained() -> None:
+    turn = _repair_cycles(1, (_PATCH, "succeeded", None))
+    selection = _repair_view(True).select(turn, _definitions())
+    assert selection.forced_tool == _PROFILE
+    assert selection.notice is not None and _PROFILE in selection.notice
+    assert _repair_view(False).select(turn, _definitions()).notice is None
+
+
+def test_repair_limit_requires_gate_explanations() -> None:
+    with pytest.raises(ValueError):
+        CodingWorkflowToolView(require_pre_edit_profile=False, bounded_repair_cycles=True)

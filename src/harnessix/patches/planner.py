@@ -65,6 +65,23 @@ def _read_image(
         raise KernelError(f"patch_{code}", "Patch 前镜像读取未完成") from None
 
 
+def _missing_anchor_message(before: bytes, old: bytes, new: bytes) -> str:
+    """锚点缺失时给出可行动的定位事实：改动是否已在文件中、首个锚点行是否仍存在及其行号。"""
+    message = "精确编辑锚点不存在"
+    if new.strip() and before.find(new) >= 0:
+        return f"{message}；new_text已原样存在于当前文件，此编辑可能已经应用，请先read_file核对"
+    first = next((line.strip() for line in old.splitlines() if line.strip()), b"")
+    lines = [line.strip() for line in before.splitlines()]
+    numbers = [index + 1 for index, line in enumerate(lines) if first and line == first]
+    if not numbers:
+        return f"{message}；old_text首个非空行不在当前文件中，请先read_file取得当前内容"
+    shown = ", ".join(str(number) for number in numbers[:5])
+    return (
+        f"{message}；old_text首个非空行出现在当前文件第{shown}行，但其后内容不一致"
+        "（可能已被此前的Patch修改），请read_file该区域后按当前文本重写old_text"
+    )
+
+
 def _edit_ranges(
     before: bytes,
     edits: tuple[ExactEdit, ...],
@@ -77,7 +94,7 @@ def _edit_ranges(
         old, new = edit.old_text.encode(), edit.new_text.encode()
         start = before.find(old)
         if start < 0:
-            raise KernelError("patch_context_not_found", "精确编辑锚点不存在")
+            raise KernelError("patch_context_not_found", _missing_anchor_message(before, old, new))
         if before.find(old, start + 1) >= 0:
             raise KernelError("patch_ambiguous_context", "编辑锚点不唯一，请提供更完整上下文")
         ranges.append((start, start + len(old), new))

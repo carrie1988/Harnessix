@@ -350,7 +350,8 @@ flowchart TD
 1. `_read_image`使用Workspace逐段安全打开，拒绝超大文件、特殊权限、非法UTF-8和revision漂移；
 2. `_edit_ranges`始终在**同一原始before字节串**中查找全部`old_text`；
 3. 每个锚点必须只出现一次，缺失为`patch_context_not_found`，重复为
-   `patch_ambiguous_context`；
+   `patch_ambiguous_context`；缺失消息附带可行动的定位事实（不含文件内容）：`new_text`已原样存在
+   （编辑可能已应用）、`old_text`首个非空行所在行号（其后内容不一致），或首行不在文件中；
 4. 编辑按原始字节起点排序，任意交叠为`patch_overlapping_edits`；
 5. `_target`拼接未编辑切片和replacement，不做链式查找，因此前一个`new_text`不会成为后一个锚点；
 6. 完整after超过1 MiB或最终字节未变化均失败；
