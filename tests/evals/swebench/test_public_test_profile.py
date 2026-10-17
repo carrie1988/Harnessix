@@ -621,8 +621,12 @@ def test_v9_django_bootstrap_rejects_empty_selectors_with_an_explicit_reason(
 
 def test_v9_sympy_bootstrap_rejects_empty_selectors_and_runs_bin_test(tmp_path: Path) -> None:
     (tmp_path / "bin").mkdir()
+    # 真实bin/test导入同目录的get_sympy（v61中缺少脚本目录导致所有SymPy测试启动失败）。
+    (tmp_path / "bin" / "get_sympy.py").write_text("path_hack = None\n", encoding="utf-8")
     (tmp_path / "bin" / "test").write_text(
-        "import json,sys\nprint(json.dumps(sys.argv))\nraise SystemExit(5)\n", encoding="utf-8"
+        "import json,sys\nfrom get_sympy import path_hack\n"
+        "print(json.dumps(sys.argv))\nraise SystemExit(5)\n",
+        encoding="utf-8",
     )
     argument = _native_selector_argument("sympy/sympy")
     empty = subprocess.run(

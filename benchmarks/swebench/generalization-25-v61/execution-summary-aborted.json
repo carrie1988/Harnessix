@@ -1,0 +1,70 @@
+{
+  "schema": "harnessix.swebench-development-execution-summary/v1",
+  "generated_at": "2026-10-17T18:31:35.708395+00:00",
+  "plan_sha256": "eab2354048fef1bba9fc5b76119828c816532595b041370f48fcb021d9ddfab9",
+  "source_revision": "f357450bd21099dc3703de6f3f580b1c501dcadd",
+  "evaluation_scope": "fresh_generalization_set",
+  "attempted_cases": 3,
+  "not_attempted_cases": 22,
+  "nonempty_patch_cases": 2,
+  "known_cost_upper_amount": "1.4036796",
+  "reserved_cost_amount": "0",
+  "complete_predictions": false,
+  "predictions_sha256": null,
+  "official_score": null,
+  "stop_reason": null,
+  "failure_counts": {
+    "cancelled": 1
+  },
+  "runtime_summary": null,
+  "cases": [
+    {
+      "instance_id": "sympy__sympy-15599",
+      "status": "completed",
+      "case_state_status": "failed",
+      "error_code": null,
+      "case_error_code": "swebench_public_tests_failed",
+      "input_tokens": 753616,
+      "output_tokens": 3783,
+      "model_steps": 49,
+      "accounted_attempts": 49,
+      "compaction_attempts": [],
+      "known_cost_upper_amount": "0.8189058",
+      "cost_complete": true,
+      "unaccounted_attempts": 0,
+      "patch_sha256": "531c388c24290a86289451851951441f2e37ffbae7bf456a14f8b510bce8bb3e"
+    },
+    {
+      "instance_id": "django__django-13109",
+      "status": "completed",
+      "case_state_status": "completed",
+      "error_code": null,
+      "case_error_code": null,
+      "input_tokens": 56135,
+      "output_tokens": 1248,
+      "model_steps": 8,
+      "accounted_attempts": 8,
+      "compaction_attempts": [],
+      "known_cost_upper_amount": "0.1803318",
+      "cost_complete": true,
+      "unaccounted_attempts": 0,
+      "patch_sha256": "3a547b8c06887f86b8eae77820677e16ac43289c499e55a61a727415e381208b"
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8551",
+      "status": "cancelled",
+      "case_state_status": "ready",
+      "error_code": "cancelled",
+      "case_error_code": null,
+      "input_tokens": 146706,
+      "output_tokens": 1960,
+      "model_steps": 10,
+      "accounted_attempts": 10,
+      "compaction_attempts": [],
+      "known_cost_upper_amount": "0.404442",
+      "cost_complete": true,
+      "unaccounted_attempts": 0,
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

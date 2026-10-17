@@ -282,12 +282,15 @@ _SYMPY_TEST_ARGUMENTS = (
     "bin/test",
 )
 _NATIVE_SELECTOR_SYMPY_BOOTSTRAP_SOURCE = f"""
+import os
 import runpy
 import sys
 
 selectors = sys.argv[1:]
 if not selectors:
     raise SystemExit({_NATIVE_SELECTOR_REQUIRED!r})
+# 与直接执行bin/test一致：脚本目录位于sys.path首位（bin/test导入同目录的get_sympy）。
+sys.path.insert(0, os.path.abspath("bin"))
 sys.argv = ["bin/test", *selectors]
 runpy.run_path("bin/test", run_name="__main__")
 """
