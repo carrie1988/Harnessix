@@ -402,3 +402,21 @@ class SweBenchNativeThinkingAgentRunConfig(SweBenchTruncationQualityAgentRunConf
     @property
     def native_thinking(self) -> bool:
         return True
+
+
+class SweBenchSelfVerificationAgentRunConfig(SweBenchTruncationQualityAgentRunConfig):
+    """v29之上：首次以可交付改动收尾时重新开放一轮自我校验（覆盖问题隐含边界并回归既有测试）。
+
+    v55r3/v55r4与v56的未解决项多为“公开测试通过但隐藏测试未过”的错误修复。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v31"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v31"
+    )
+    verification_policy: Literal["one_self_check_round_before_closing"] = (
+        "one_self_check_round_before_closing"
+    )
+
+    @property
+    def self_verification(self) -> bool:
+        return True

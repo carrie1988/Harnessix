@@ -621,3 +621,42 @@ def test_native_thinking_v30_enables_deepseek_thinking_with_a_larger_output_cap(
     assert read_swebench_agent_run_config(path) == config
     with pytest.raises((ValueError, ValidationError)):
         compact_config(tmp_path, **common, native_thinking=True)
+
+
+def test_self_verification_v31_adds_only_the_verification_policy(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchSelfVerificationAgentRunConfig
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+        "reads_after_failed_patch": True,
+        "truncation_quality": True,
+    }
+    plan = plan_for("deepseek-v4-pro")
+    pro = {"model": "deepseek-v4-pro", "plan": plan}
+    config = compact_config(tmp_path, **common, self_verification=True, **pro)
+    v29 = compact_config(tmp_path, **common, **pro)
+    assert type(config) is SweBenchSelfVerificationAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v31"
+    assert config.self_verification and not v29.self_verification
+    assert config.provider_config.model == "deepseek-v4-pro"
+    excluded = {"spec_version", "verification_policy"}
+    assert config.model_dump(mode="json", exclude=excluded) == v29.model_dump(
+        mode="json", exclude=excluded
+    )
+    config.require_plan(plan)
+    path = tmp_path / "v31.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    with pytest.raises(ValueError):
+        compact_config(tmp_path, **common, self_verification=True, native_thinking=True, **pro)

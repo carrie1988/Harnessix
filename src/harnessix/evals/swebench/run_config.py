@@ -22,6 +22,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchProtocolRobustAgentRunConfig,
     SweBenchReadAfterFailedPatchAgentRunConfig,
     SweBenchScratchReproductionAgentRunConfig,
+    SweBenchSelfVerificationAgentRunConfig,
     SweBenchTestTimeoutAgentRunConfig,
     SweBenchTruncationQualityAgentRunConfig,
 )
@@ -336,6 +337,7 @@ SweBenchRunConfig = (
     | SweBenchReadAfterFailedPatchAgentRunConfig
     | SweBenchTruncationQualityAgentRunConfig
     | SweBenchNativeThinkingAgentRunConfig
+    | SweBenchSelfVerificationAgentRunConfig
 )
 
 
@@ -376,6 +378,7 @@ def _run_config_type(
     reads_after_failed_patch: bool = False,
     truncation_quality: bool = False,
     native_thinking: bool = False,
+    self_verification: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -406,6 +409,7 @@ def _run_config_type(
         (reads_after_failed_patch, "失败Patch后保留读取"),
         (truncation_quality, "截断计质量失败"),
         (native_thinking, "原生思考"),
+        (self_verification, "自我校验"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -427,6 +431,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if self_verification and (native_thinking or not truncation_quality):
+        raise ValueError("SWE-bench自我校验只在截断计质量失败组合之上冻结，暂不与原生思考组合")
     if native_thinking and not truncation_quality:
         raise ValueError("SWE-bench原生思考只在截断计质量失败组合之上冻结")
     if truncation_quality and not reads_after_failed_patch:
@@ -494,6 +500,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if self_verification:
+            return SweBenchSelfVerificationAgentRunConfig
         if native_thinking:
             return SweBenchNativeThinkingAgentRunConfig
         if truncation_quality:
@@ -612,6 +620,7 @@ def build_swebench_agent_run_config(
     reads_after_failed_patch: bool = False,
     truncation_quality: bool = False,
     native_thinking: bool = False,
+    self_verification: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -646,6 +655,7 @@ def build_swebench_agent_run_config(
         reads_after_failed_patch=reads_after_failed_patch,
         truncation_quality=truncation_quality,
         native_thinking=native_thinking,
+        self_verification=self_verification,
     )
     extra: dict[str, object] = (
         {}

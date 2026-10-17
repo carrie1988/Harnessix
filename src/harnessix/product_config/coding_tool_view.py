@@ -439,6 +439,38 @@ def _latest_review_is_clean(
     return not deliverable and diff.get("utf8_bytes") == 0
 
 
+_VERIFICATION_NOTICE = (
+    "Self-check before finishing: re-read the issue and your diff; list every behaviour the "
+    "issue requires, including edge cases and the exact output or error it describes; extend "
+    "the scratch test to cover them and run it together with the existing test files of each "
+    "module you changed. If anything fails or is missing, fix it (the usual test and review "
+    "steps follow). If everything is covered, reply with a short final summary."
+)
+
+
+def _first_closure_with_changes(
+    observations: tuple[_Observation, ...], *, ignore_scratch: bool
+) -> bool:
+    """恰有一次成功的git_review，且它在最近一次成功Patch之后并显示可交付改动。"""
+    reviews = [
+        o for o in observations if o.tool == _GIT_REVIEW_TOOL and o.result.outcome == "succeeded"
+    ]
+    return (
+        len(reviews) == 1
+        and not _latest_review_is_clean(observations, ignore_scratch=ignore_scratch)
+        and any(o.tool in _PATCH_TOOLS and o.result.outcome == "succeeded" for o in observations)
+    )
+
+
+def _verification_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToolSelection:
+    """自我校验轮：开放调查、修改与测试（auto，可直接总结收尾）；Review门禁随新改动照旧生效。"""
+    hidden = _ALL_GIT_REVIEW_TOOLS | _HIDDEN_WORKFLOW_ACTIONS | {"read_artifact"}
+    return ModelToolSelection(
+        tuple(tool for tool in definitions if tool.name not in hidden),
+        notice=_VERIFICATION_NOTICE,
+    )
+
+
 def _reopened_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToolSelection:
     """无可交付改动：恢复首次修改前的调查与修改工具，测试与Review门禁随新Patch照旧生效。"""
     hidden = _ALL_GIT_REVIEW_TOOLS | _HIDDEN_WORKFLOW_ACTIONS | {"read_artifact"}
@@ -471,6 +503,8 @@ class CodingWorkflowToolView:
     test_timeouts_are_failures: bool = False
     # 最近一次Patch失败后的强制重试保留read_file：参数错误常需重读以取得正确SHA或锚点。
     keep_reads_after_failed_patch: bool = False
+    # 首次以可交付改动收尾时重新开放一轮自我校验（覆盖问题隐含的边界并回归既有测试）。
+    self_verification: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -486,6 +520,10 @@ class CodingWorkflowToolView:
             raise ValueError("测试超时判定开关必须是布尔值")
         if type(self.keep_reads_after_failed_patch) is not bool:
             raise ValueError("失败Patch后保留读取开关必须是布尔值")
+        if type(self.self_verification) is not bool:
+            raise ValueError("自我校验开关必须是布尔值")
+        if self.self_verification and not self.explain_tool_gates:
+            raise ValueError("自我校验依赖工具门禁说明传达校验要求")
         if type(self.reopen_after_clean_review) is not bool:
             raise ValueError("净改动为空时重新开放的开关必须是布尔值")
         if type(self.reserve_closing_phase) is not bool:
@@ -512,6 +550,14 @@ class CodingWorkflowToolView:
         if self.test_timeouts_are_failures:
             turn = with_test_timeouts_as_failures(turn)
         selection = self._select_workflow(turn, workflow_definitions)
+        if (
+            self.self_verification
+            and not selection.tools
+            and _first_closure_with_changes(
+                _observations(turn), ignore_scratch=self.scratch_reproduction
+            )
+        ):
+            selection = _verification_selection(workflow_definitions)
         if (
             self.reopen_after_clean_review
             and not selection.tools

@@ -894,3 +894,46 @@ def test_patch_deadline_before_any_patch_is_not_relaxed() -> None:
     )
     plain = CodingWorkflowToolView(require_pre_edit_profile=False)
     assert view.select(turn, _definitions()) == plain.select(turn, _definitions())
+
+
+def _verify_view(enabled: bool) -> CodingWorkflowToolView:
+    return CodingWorkflowToolView(
+        require_pre_edit_profile=False, explain_tool_gates=True, self_verification=enabled
+    )
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_first_closure_with_changes_reopens_one_self_check_round(enabled: bool) -> None:
+    selection = _verify_view(enabled).select(_reviewed(_DIRTY_REVIEW), _definitions())
+    names = {tool.name for tool in selection.tools}
+    if not enabled:
+        assert names == set()
+        return
+    assert {"read_file", "grep", _PATCH, _PROFILE} <= names
+    assert not {"git_review", "git_status", "git_diff", "read_artifact"} & names
+    assert selection.choice == "auto" and selection.forced_tool is None
+    assert selection.notice is not None and "Self-check" in selection.notice
+
+
+def test_second_review_after_the_self_check_closes() -> None:
+    turn = _turn(
+        (_PROFILE, "failed", "process_nonzero_exit"),
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "succeeded", None),
+        ("git_review", "succeeded", None, _DIRTY_REVIEW),
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "succeeded", None),
+        ("git_review", "succeeded", None, _DIRTY_REVIEW),
+    )
+    assert _verify_view(True).select(turn, _definitions()).tools == ()
+
+
+def test_clean_review_does_not_trigger_a_self_check() -> None:
+    selection = _verify_view(True).select(_reviewed(_CLEAN_REVIEW), _definitions())
+    assert selection.notice is None or "Self-check" not in selection.notice
+
+
+def test_self_check_requires_gate_explanations() -> None:
+    with pytest.raises(ValueError):
+        CodingWorkflowToolView(require_pre_edit_profile=False, self_verification=True)

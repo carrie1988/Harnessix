@@ -1865,3 +1865,9 @@ v55t3（v30高强度思考）首项单步推理增至5K～8K Token、第12次请
 开发集证据选定（v29，v55r4同题13/25对v55的12/25），不重试、不拼接。完整执行25项，非空补丁25项，已知费用8.78元；
 [官方评测](../../benchmarks/swebench/generalization-25-v56/official-summary.json)**Resolved 13/25（52%）**，空补丁0、基础设施失败0、错误0。
 这是当前系统（deepseek-flash，非思考）在未见题上的真实pass@1；上一组新鲜集v55（v27）为12/25（48%）。
+
+### 目标提高到pass@1≥65%：A（deepseek-v4-pro）＋C（自我校验），100元新周期
+
+用户同意改用[deepseek-v4-pro](../../src/harnessix/evals/swebench/run_settings.py)（同一价格页高峰单价：未命中9、命中0.3、输出27元/百万Token；
+协议与Flash相同，实测用量随结束分片、自动缓存命中96%）并加入[v31](../../src/harnessix/evals/swebench/compact_surface_config.py)收尾前自我校验。
+v57（Flash复现）在执行任何Case前停止，其25项保持未见，留作Pro配置的新鲜终测集。

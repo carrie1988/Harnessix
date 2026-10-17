@@ -58,7 +58,9 @@ class CatalogModel(NamedTuple):
     thinking_format: Literal["thinking_type"] | None = None
 
 
-SweBenchModel = Literal["qwen3.8-max", "qwen3.7-plus", "qwen3.8-flash", "deepseek-flash"]
+SweBenchModel = Literal[
+    "qwen3.8-max", "qwen3.7-plus", "qwen3.8-flash", "deepseek-flash", "deepseek-v4-pro"
+]
 MODEL_CATALOG: dict[str, CatalogModel] = {
     "qwen3.8-max": CatalogModel(
         "harnessix-qwen3.8-max",
@@ -99,6 +101,22 @@ MODEL_CATALOG: dict[str, CatalogModel] = {
         1_048_576,
         "0.04",
         "2",
+        base_url="https://api.deepseek.com",
+        billing_provider="deepseek",
+        region="cn",
+        prompt_cache_mode="automatic",
+        thinking_format="thinking_type",
+    ),
+    # DeepSeek-V4-Pro：同一价格页高峰单价（未命中9、命中0.3、输出27元/百万Token），协议同Flash。
+    "deepseek-v4-pro": CatalogModel(
+        "harnessix-deepseek-v4-pro",
+        "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
+        "deepseek-v4-pro-peak",
+        "9.0",
+        "27.0",
+        1_048_576,
+        "0.30",
+        "9.0",
         base_url="https://api.deepseek.com",
         billing_provider="deepseek",
         region="cn",
@@ -374,6 +392,10 @@ class _SweBenchAgentRunSettings(ContractModel):
 
     @property
     def native_thinking(self) -> bool:
+        return False
+
+    @property
+    def self_verification(self) -> bool:
         return False
 
     def known_case_reserve_units(
