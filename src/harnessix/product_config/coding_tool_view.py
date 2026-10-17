@@ -20,7 +20,10 @@ from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import EffectClass, ToolDescriptor
 from harnessix.product_config.coding_closure_budget import prefer_closing_over_investigation
 from harnessix.product_config.coding_scratch import is_scratch_path
-from harnessix.product_config.coding_test_outcomes import with_test_timeouts_as_failures
+from harnessix.product_config.coding_test_outcomes import (
+    with_test_timeouts_as_failures,
+    without_rejected_profile_arguments,
+)
 
 _PATCH_TOOLS = frozenset({"apply_patch", WORKSPACE_PATCH_TOOL})
 _GIT_REVIEW_TOOLS = frozenset({"git_status", "git_diff"})
@@ -449,6 +452,11 @@ _VERIFICATION_NOTICE = (
 
 
 _REPAIR_EXIT_STREAK = 4
+_REPAIR_FORCE_STREAK = 8
+_REPAIR_FORCE_NOTICE = (
+    "The public tests have failed {streak} times in a row after your patches; further edits are "
+    "closed. Call git_review now to finish with the current diff."
+)
 _REPAIR_EXIT_NOTICE = (
     "The public tests have failed {streak} times in a row after your patches. Compare the "
     "failures with the issue: failures that also occur without your change, or assertions that "
@@ -475,7 +483,11 @@ def _failed_validation_streak(observations: tuple[_Observation, ...]) -> int:
 
 
 def _with_bounded_repair_cycles(
-    turn: Turn, selection: ModelToolSelection, definitions: tuple[ToolDescriptor, ...]
+    turn: Turn,
+    selection: ModelToolSelection,
+    definitions: tuple[ToolDescriptor, ...],
+    *,
+    force_review: bool = False,
 ) -> ModelToolSelection:
     """修复循环有界：连续多次测试失败后开放Review收尾，模型可判定剩余失败与本改动无关。
 
@@ -508,6 +520,12 @@ def _with_bounded_repair_cycles(
         if any(item.name == _GIT_REVIEW_TOOL for item in definitions)
         else set(_GIT_REVIEW_TOOLS)
     )
+    if force_review and streak >= _REPAIR_FORCE_STREAK:
+        forced = _GIT_REVIEW_TOOL if review == {_GIT_REVIEW_TOOL} else None
+        return replace(
+            _selection(definitions, review, forced_tool=forced),
+            notice=_REPAIR_FORCE_NOTICE.format(streak=streak),
+        )
     names = {tool.name for tool in selection.tools} | review
     return replace(_selection(definitions, names), notice=_REPAIR_EXIT_NOTICE.format(streak=streak))
 
@@ -581,6 +599,10 @@ class CodingWorkflowToolView:
     bounded_repair_cycles: bool = False
     # 净改动为空而重新开放修改时说明原因（后续Patch撤销了修复，提交将为空）。
     explain_clean_review: bool = False
+    # 参数校验拒绝的Profile调用（从未运行）不视为测试失败或基础设施故障。
+    profile_argument_errors_recoverable: bool = False
+    # 修复循环硬上限：连续8次验证失败后只开放Review收尾（需bounded_repair_cycles）。
+    force_review_after_repairs: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -604,6 +626,12 @@ class CodingWorkflowToolView:
             raise ValueError("修复循环上限开关必须是布尔值")
         if self.bounded_repair_cycles and not self.explain_tool_gates:
             raise ValueError("修复循环上限依赖工具门禁说明传达收尾条件")
+        if type(self.profile_argument_errors_recoverable) is not bool:
+            raise ValueError("Profile参数错误可恢复开关必须是布尔值")
+        if type(self.force_review_after_repairs) is not bool:
+            raise ValueError("修复循环硬上限开关必须是布尔值")
+        if self.force_review_after_repairs and not self.bounded_repair_cycles:
+            raise ValueError("修复循环硬上限依赖修复循环上限")
         if type(self.explain_clean_review) is not bool:
             raise ValueError("空改动说明开关必须是布尔值")
         if self.explain_clean_review and not (
@@ -635,9 +663,16 @@ class CodingWorkflowToolView:
             turn = _without_scratch_edits(turn)
         if self.test_timeouts_are_failures:
             turn = with_test_timeouts_as_failures(turn)
+        if self.profile_argument_errors_recoverable:
+            turn = without_rejected_profile_arguments(turn)
         selection = self._select_workflow(turn, workflow_definitions)
         if self.bounded_repair_cycles:
-            selection = _with_bounded_repair_cycles(turn, selection, workflow_definitions)
+            selection = _with_bounded_repair_cycles(
+                turn,
+                selection,
+                workflow_definitions,
+                force_review=self.force_review_after_repairs,
+            )
         if (
             self.self_verification
             and not selection.tools

@@ -31,6 +31,16 @@ _LEGACY_PROFILE_VERSION = "swebench-public-tests-v5"
 _DJANGO_LABEL_PROFILE_VERSION = "swebench-public-tests-v6"
 _PROFILE_VERSION = "swebench-public-tests-v7"
 _SNAPSHOT_PROFILE_VERSION = "swebench-public-tests-v8"
+# v8之上：Django/SymPy原生入口无选择器时不运行全量套件（必超300 s），以明确原因快速失败。
+_NATIVE_SELECTOR_PROFILE_VERSION = "swebench-public-tests-v9"
+_SNAPSHOT_PROFILE_VERSIONS = frozenset(
+    {_SNAPSHOT_PROFILE_VERSION, _NATIVE_SELECTOR_PROFILE_VERSION}
+)
+_NATIVE_SELECTOR_REQUIRED = (
+    "Harnessix: this repository's native test runner needs explicit selectors; without them it "
+    "runs the whole suite and exceeds the 300 s limit. Pass the test files that cover your "
+    "change, e.g. tests/<app>/tests.py (Django) or sympy/<package>/tests/test_<module>.py (SymPy)."
+)
 _PROFILE_DESCRIPTION = "Run focused public repository tests for this SWE-bench case"
 _IMAGE_REPOSITORY_PREFIX = "swebench/sweb.eval."
 _IMAGE_REPOSITORY_PLATFORM = "x86_64"
@@ -235,12 +245,18 @@ def native_label(selector):
 
 workspace = Path(sys.argv[1])
 labels = [native_label(selector) for selector in sys.argv[2:]]
-runner = workspace / "tests" / "runtests.py"
+REQUIRE_LABELSrunner = workspace / "tests" / "runtests.py"
 sys.path.insert(0, str(runner.parent))
 sys.argv = [str(runner), "--parallel=1", *labels]
 runpy.run_path(str(runner), run_name="__main__")
 """
-_DJANGO_BOOTSTRAP_ARGUMENT = f"exec({_DJANGO_BOOTSTRAP_SOURCE!r})"
+_DJANGO_BOOTSTRAP_ARGUMENT = f"exec({_DJANGO_BOOTSTRAP_SOURCE.replace('REQUIRE_LABELS', '')!r})"
+_NATIVE_SELECTOR_DJANGO_BOOTSTRAP_ARGUMENT = "exec({!r})".format(
+    _DJANGO_BOOTSTRAP_SOURCE.replace(
+        "REQUIRE_LABELS",
+        f"if not labels:\n    raise SystemExit({_NATIVE_SELECTOR_REQUIRED!r})\n",
+    )
+)
 # 原生入口需要模块标签而非 pytest 路径；串行运行还避免依赖禁用 IPC 的信号量。
 # 不开放网络/IPC，不给模型提供任意命令或用 Case ID 选择特殊测试。
 _DJANGO_TEST_ARGUMENTS = (
@@ -251,11 +267,36 @@ _DJANGO_TEST_ARGUMENTS = (
     _DJANGO_BOOTSTRAP_ARGUMENT,
     "/workspace",
 )
+_NATIVE_SELECTOR_DJANGO_TEST_ARGUMENTS = (
+    *_COMMON_ENVIRONMENT_ARGUMENTS,
+    "/opt/miniconda3/envs/testbed/bin/python",
+    "-B",
+    "-c",
+    _NATIVE_SELECTOR_DJANGO_BOOTSTRAP_ARGUMENT,
+    "/workspace",
+)
 _SYMPY_TEST_ARGUMENTS = (
     *_COMMON_ENVIRONMENT_ARGUMENTS,
     "/opt/miniconda3/envs/testbed/bin/python",
     "-B",
     "bin/test",
+)
+_NATIVE_SELECTOR_SYMPY_BOOTSTRAP_SOURCE = f"""
+import runpy
+import sys
+
+selectors = sys.argv[1:]
+if not selectors:
+    raise SystemExit({_NATIVE_SELECTOR_REQUIRED!r})
+sys.argv = ["bin/test", *selectors]
+runpy.run_path("bin/test", run_name="__main__")
+"""
+_NATIVE_SELECTOR_SYMPY_ARGUMENTS = (
+    *_COMMON_ENVIRONMENT_ARGUMENTS,
+    "/opt/miniconda3/envs/testbed/bin/python",
+    "-B",
+    "-c",
+    f"exec({_NATIVE_SELECTOR_SYMPY_BOOTSTRAP_SOURCE!r})",
 )
 _TIMEOUT_SECONDS = 300
 _MAX_OUTPUT_BYTES = 1024 * 1024
@@ -295,6 +336,7 @@ class SweBenchCaseProcessProfile(ContractModel):
                 _DJANGO_LABEL_PROFILE_VERSION,
                 _PROFILE_VERSION,
                 _SNAPSHOT_PROFILE_VERSION,
+                _NATIVE_SELECTOR_PROFILE_VERSION,
             }
             or profile.description != _PROFILE_DESCRIPTION
             or profile.program != _PROGRAM
@@ -308,7 +350,7 @@ class SweBenchCaseProcessProfile(ContractModel):
             or profile.process_limit != _PROCESS_LIMIT
             or profile.secret_refs
             or profile.tmpfs_bytes
-            != (_SNAPSHOT_TMPFS_BYTES if profile.version == _SNAPSHOT_PROFILE_VERSION else None)
+            != (_SNAPSHOT_TMPFS_BYTES if profile.version in _SNAPSHOT_PROFILE_VERSIONS else None)
             or _IMAGE_ID.fullmatch(profile.image) is None
         ):
             raise ValueError("SWE-bench公开测试Profile不符合固定执行边界")
@@ -322,13 +364,20 @@ def _profile_arguments(repo: str, *, version: str = _PROFILE_VERSION) -> tuple[s
         "django/django": (
             _LEGACY_DJANGO_TEST_ARGUMENTS
             if version == _LEGACY_PROFILE_VERSION
+            else _NATIVE_SELECTOR_DJANGO_TEST_ARGUMENTS
+            if version == _NATIVE_SELECTOR_PROFILE_VERSION
             else _DJANGO_TEST_ARGUMENTS
         ),
-        "sympy/sympy": _SYMPY_TEST_ARGUMENTS,
+        "sympy/sympy": (
+            _NATIVE_SELECTOR_SYMPY_ARGUMENTS
+            if version == _NATIVE_SELECTOR_PROFILE_VERSION
+            else _SYMPY_TEST_ARGUMENTS
+        ),
     }
     pytest_arguments = {
         _PROFILE_VERSION: _PYTEST_ARGUMENTS,
         _SNAPSHOT_PROFILE_VERSION: _SNAPSHOT_PYTEST_ARGUMENTS,
+        _NATIVE_SELECTOR_PROFILE_VERSION: _SNAPSHOT_PYTEST_ARGUMENTS,
     }.get(version, _LEGACY_PYTEST_ARGUMENTS)
     return native_runners.get(repo, pytest_arguments)
 
@@ -431,8 +480,19 @@ def build_swebench_case_process_profile(
     container_engine: Path,
     image_id: str,
     writable_snapshot: bool = False,
+    require_native_selectors: bool = False,
 ) -> SweBenchCaseProcessProfile:
     """从已唯一发现的本地 image ID 构造固定公开测试 Profile。"""
+
+    if require_native_selectors and not writable_snapshot:
+        raise ValueError("原生入口选择器要求只在可写快照Profile之上冻结")
+    version = (
+        _NATIVE_SELECTOR_PROFILE_VERSION
+        if require_native_selectors
+        else _SNAPSHOT_PROFILE_VERSION
+        if writable_snapshot
+        else _PROFILE_VERSION
+    )
 
     engine = _docker_engine(container_engine)
     if _IMAGE_ID.fullmatch(image_id) is None:
@@ -442,14 +502,12 @@ def build_swebench_case_process_profile(
         )
     profile = build_product_process_profile(
         profile_id=PUBLIC_TEST_PROFILE_ID,
-        version=_SNAPSHOT_PROFILE_VERSION if writable_snapshot else _PROFILE_VERSION,
+        version=version,
         description=_PROFILE_DESCRIPTION,
         container_engine=str(engine),
         image=image_id,
         program=_PROGRAM,
-        arguments=_profile_arguments(
-            repo, version=_SNAPSHOT_PROFILE_VERSION if writable_snapshot else _PROFILE_VERSION
-        ),
+        arguments=_profile_arguments(repo, version=version),
         selector_policy="bounded_test_selector",
         timeout_seconds=_TIMEOUT_SECONDS,
         max_output_bytes=_MAX_OUTPUT_BYTES,
@@ -468,6 +526,7 @@ def discover_swebench_case_process_profiles(
     *,
     runner: ImageListRunner = _run_image_list,
     writable_snapshot: bool = False,
+    require_native_selectors: bool = False,
 ) -> tuple[SweBenchCaseProcessProfile, ...]:
     """只读一次 Docker 镜像清单，并为计划内每个 Case 严格唯一冻结 Profile。"""
 
@@ -498,6 +557,7 @@ def discover_swebench_case_process_profiles(
                 container_engine=engine,
                 image_id=matches[0],
                 writable_snapshot=writable_snapshot,
+                require_native_selectors=require_native_selectors,
             )
         )
     if len(bindings) != SWE_BENCH_CASE_COUNT:

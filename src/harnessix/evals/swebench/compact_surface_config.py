@@ -473,3 +473,30 @@ class SweBenchProxiedProviderAgentRunConfig(SweBenchCleanReviewNoticeAgentRunCon
     @property
     def provider_proxy_allowed(self) -> bool:
         return True
+
+
+class SweBenchRepairClosureAgentRunConfig(SweBenchProxiedProviderAgentRunConfig):
+    """v34之上：参数被拒的Profile调用可恢复、修复循环硬上限、原生入口须带选择器（Profile v9）。
+
+    v60中：模型把pytest选项当作选择器被拒，旧判为公开测试不可用并停止整轮；1项在开放Review后仍持续
+    修改直至耗尽2M；Django/SymPy无选择器调用跑全量套件、每次超时（v57p/v58/v60共5次）。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v35"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v35"
+    )
+    repair_closure_policy: Literal["recoverable_profile_arguments_and_forced_review"] = (
+        "recoverable_profile_arguments_and_forced_review"
+    )
+
+    @property
+    def profile_argument_errors_recoverable(self) -> bool:
+        return True
+
+    @property
+    def force_review_after_repairs(self) -> bool:
+        return True
+
+    @property
+    def native_selectors_required(self) -> bool:
+        return True

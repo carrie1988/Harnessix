@@ -1055,3 +1055,52 @@ def test_clean_review_explanation_requires_reopen_and_gate_explanations() -> Non
             reopen_after_clean_review=True,
             explain_clean_review=True,
         )
+
+
+def _hard_cap_view(enabled: bool) -> CodingWorkflowToolView:
+    return CodingWorkflowToolView(
+        require_pre_edit_profile=False,
+        explain_tool_gates=True,
+        bounded_repair_cycles=True,
+        force_review_after_repairs=enabled,
+    )
+
+
+def test_eight_failed_validations_force_the_review() -> None:
+    turn = _repair_cycles(8)
+    selection = _hard_cap_view(True).select(turn, _definitions())
+    assert {tool.name for tool in selection.tools} == {"git_review"}
+    assert selection.forced_tool == "git_review"
+    assert selection.notice is not None and "8 times in a row" in selection.notice
+    plain = _hard_cap_view(False).select(turn, _definitions())
+    assert _PATCH in {tool.name for tool in plain.tools}
+
+
+def test_seven_failed_validations_still_allow_repairs() -> None:
+    selection = _hard_cap_view(True).select(_repair_cycles(7), _definitions())
+    assert {"git_review", _PATCH} <= {tool.name for tool in selection.tools}
+    assert selection.forced_tool is None
+
+
+def test_hard_cap_requires_bounded_repair_cycles() -> None:
+    with pytest.raises(ValueError):
+        CodingWorkflowToolView(
+            require_pre_edit_profile=False, explain_tool_gates=True, force_review_after_repairs=True
+        )
+
+
+def _argument_view(enabled: bool) -> CodingWorkflowToolView:
+    return CodingWorkflowToolView(
+        require_pre_edit_profile=False, profile_argument_errors_recoverable=enabled
+    )
+
+
+def test_rejected_profile_arguments_do_not_close_the_workflow() -> None:
+    turn = _turn(
+        ("read_file", "succeeded", None),
+        (_PATCH, "succeeded", None),
+        (_PROFILE, "failed", "tool_invalid_arguments"),
+    )
+    recovered = _argument_view(True).select(turn, _definitions())
+    assert recovered.forced_tool == _PROFILE
+    assert _argument_view(False).select(turn, _definitions()).tools == ()

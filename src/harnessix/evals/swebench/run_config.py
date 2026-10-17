@@ -24,6 +24,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchProtocolRobustAgentRunConfig,
     SweBenchProxiedProviderAgentRunConfig,
     SweBenchReadAfterFailedPatchAgentRunConfig,
+    SweBenchRepairClosureAgentRunConfig,
     SweBenchScratchReproductionAgentRunConfig,
     SweBenchSelfVerificationAgentRunConfig,
     SweBenchTestTimeoutAgentRunConfig,
@@ -344,6 +345,7 @@ SweBenchRunConfig = (
     | SweBenchBoundedRepairAgentRunConfig
     | SweBenchCleanReviewNoticeAgentRunConfig
     | SweBenchProxiedProviderAgentRunConfig
+    | SweBenchRepairClosureAgentRunConfig
 )
 
 
@@ -388,6 +390,7 @@ def _run_config_type(
     bounded_repair: bool = False,
     clean_review_notice: bool = False,
     provider_proxy: bool = False,
+    repair_closure: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -422,6 +425,7 @@ def _run_config_type(
         (bounded_repair, "修复循环上限"),
         (clean_review_notice, "空改动说明"),
         (provider_proxy, "Provider代理"),
+        (repair_closure, "修复收尾"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -443,6 +447,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if repair_closure and not provider_proxy:
+        raise ValueError("SWE-bench修复收尾只在Provider代理组合之上冻结")
     if provider_proxy and not clean_review_notice:
         raise ValueError("SWE-bench Provider代理只在空改动说明组合之上冻结")
     if clean_review_notice and not bounded_repair:
@@ -518,6 +524,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if repair_closure:
+            return SweBenchRepairClosureAgentRunConfig
         if provider_proxy:
             return SweBenchProxiedProviderAgentRunConfig
         if clean_review_notice:
@@ -648,6 +656,7 @@ def build_swebench_agent_run_config(
     bounded_repair: bool = False,
     clean_review_notice: bool = False,
     provider_proxy_url: str | None = None,
+    repair_closure: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -686,6 +695,7 @@ def build_swebench_agent_run_config(
         bounded_repair=bounded_repair,
         clean_review_notice=clean_review_notice,
         provider_proxy=provider_proxy_url is not None,
+        repair_closure=repair_closure,
     )
     extra: dict[str, object] = (
         {}

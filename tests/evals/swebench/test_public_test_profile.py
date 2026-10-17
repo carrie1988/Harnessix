@@ -584,3 +584,85 @@ def test_snapshot_profile_is_a_distinct_version_with_a_larger_tmpfs(tmp_path):
     _reseal_profile(binding)
     with pytest.raises(ValueError, match="固定执行边界"):
         SweBenchCaseProcessProfile.model_validate_json(json.dumps(binding))
+
+
+def _native_selector_argument(repo: str) -> str:
+    from harnessix.evals.swebench.public_test_profile import _profile_arguments
+
+    return _profile_arguments(repo, version="swebench-public-tests-v9")[
+        -2 if repo == "django/django" else -1
+    ]
+
+
+def test_v9_django_bootstrap_rejects_empty_selectors_with_an_explicit_reason(
+    tmp_path: Path,
+) -> None:
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "runtests.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+    argument = _native_selector_argument("django/django")
+    empty = subprocess.run(
+        (sys.executable, "-B", "-c", argument, str(tmp_path)),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+    assert empty.returncode != 0 and "needs explicit selectors" in empty.stderr
+    labelled = subprocess.run(
+        (sys.executable, "-B", "-c", argument, str(tmp_path), "tests/feature/tests.py"),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+    assert labelled.returncode == 0, labelled.stderr
+
+
+def test_v9_sympy_bootstrap_rejects_empty_selectors_and_runs_bin_test(tmp_path: Path) -> None:
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin" / "test").write_text(
+        "import json,sys\nprint(json.dumps(sys.argv))\nraise SystemExit(5)\n", encoding="utf-8"
+    )
+    argument = _native_selector_argument("sympy/sympy")
+    empty = subprocess.run(
+        (sys.executable, "-B", "-c", argument),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+        cwd=tmp_path,
+    )
+    assert empty.returncode != 0 and "needs explicit selectors" in empty.stderr
+    selected = subprocess.run(
+        (sys.executable, "-B", "-c", argument, "sympy/core/tests/test_basic.py"),
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+        cwd=tmp_path,
+    )
+    assert selected.returncode == 5
+    assert json.loads(selected.stdout) == ["bin/test", "sympy/core/tests/test_basic.py"]
+
+
+def test_v9_profile_is_frozen_only_over_the_writable_snapshot(tmp_path: Path) -> None:
+    v9 = build_swebench_case_process_profile(
+        "django__django-1",
+        repo="django/django",
+        container_engine=_docker(tmp_path),
+        image_id="sha256:" + "a" * 64,
+        writable_snapshot=True,
+        require_native_selectors=True,
+    )
+    assert v9.profile.version == "swebench-public-tests-v9"
+    assert v9.profile.tmpfs_bytes == 1024**3
+    assert SweBenchCaseProcessProfile.model_validate_json(v9.model_dump_json()) == v9
+    with pytest.raises(ValueError):
+        build_swebench_case_process_profile(
+            "django__django-1",
+            repo="django/django",
+            container_engine=_docker(tmp_path),
+            image_id="sha256:" + "a" * 64,
+            require_native_selectors=True,
+        )

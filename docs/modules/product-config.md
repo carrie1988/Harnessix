@@ -3072,3 +3072,11 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 模型不知修复已被撤销，会反复调用已关闭的Review工具并宣称完成，最终交付空补丁。开启后，重新开放的选择附带说明：
 工作区已等于原始代码、提交将为空，需重读目标文件、重新应用修复并测试；Review工具在新Patch之前保持关闭。
 依赖`reopen_after_clean_review`与`explain_tool_gates`；关闭时选择结果逐字不变。
+
+## 当前增量：Profile参数错误可恢复与修复循环硬上限（默认关闭）
+
+- `profile_argument_errors_recoverable`：参数校验拒绝的Profile调用（如把`--tb=short`当作选择器）从未运行，
+  [`without_rejected_profile_arguments`](../../src/harnessix/product_config/coding_test_outcomes.py)把它连同结果移出工作流
+  与证据投影：视图按“尚未测试”继续（不再因非代码失败关闭目录），SWE-bench证据不记为公开测试不可用；模型可见结果不变。
+- `force_review_after_repairs`（需`bounded_repair_cycles`）：连续8次验证失败后只开放并强制`git_review`收尾；
+  第4～7次仍为开放Review＋可继续修复。

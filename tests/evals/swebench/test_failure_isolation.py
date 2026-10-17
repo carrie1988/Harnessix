@@ -386,3 +386,26 @@ def test_truncation_with_unknown_response_stays_fail_closed(tmp_path):
         turn, PATCH, PUBLIC_TEST_TOOL, cost_complete=True, truncation_is_quality=True
     )
     assert failure[0] == "provider_max_output_tokens"
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_rejected_profile_arguments_are_not_public_test_unavailability(enabled):
+    """v60：模型把pytest选项当作选择器被参数校验拒绝（未运行），原判为公开测试不可用并停止整轮。"""
+    turn = _turn(
+        0,
+        (
+            *SUCCESSFUL_EVIDENCE,
+            (PUBLIC_TEST_TOOL, "failed", "tool_invalid_arguments"),
+        ),
+    )
+    failure = execution._case_evidence_failure(
+        turn,
+        PATCH,
+        PUBLIC_TEST_TOOL,
+        cost_complete=True,
+        profile_argument_errors_recoverable=enabled,
+    )
+    if enabled:
+        assert failure is None or failure[0] != "swebench_public_tests_unavailable"
+    else:
+        assert failure[0] == "swebench_public_tests_unavailable"

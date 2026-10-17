@@ -155,6 +155,19 @@
       "title": "Connect Retries",
       "type": "integer"
     },
+    "proxy_url": {
+      "anyOf": [
+        {
+          "pattern": "^http://(127\\.0\\.0\\.1|localhost|\\[::1\\]):[1-9][0-9]{0,4}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Proxy Url"
+    },
     "repair_tool_arguments": {
       "default": false,
       "title": "Repair Tool Arguments",

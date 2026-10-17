@@ -38,6 +38,9 @@ _CURRENCY: Literal["CNY"] = "CNY"
 _BAILIAN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
+_NATIVE_SELECTOR_PROFILE = "swebench-public-tests-v9"
+
+
 class CatalogModel(NamedTuple):
     """非思考单价：只收录已按官方页面求证的模型，单价只在input_tokens_max内有效。"""
 
@@ -261,6 +264,12 @@ class _SweBenchAgentRunSettings(ContractModel):
         engines = {binding.profile.container_engine for binding in self.case_process_profiles}
         if len(engines) != 1:
             raise ValueError("SWE-bench Case Profile必须绑定同一个Container Engine")
+        native_selector_profiles = {
+            binding.profile.version == _NATIVE_SELECTOR_PROFILE
+            for binding in self.case_process_profiles
+        }
+        if native_selector_profiles - {self.native_selectors_required}:
+            raise ValueError("SWE-bench原生入口选择器要求与Case Profile版本不一致")
         return self
 
     @property
@@ -409,6 +418,18 @@ class _SweBenchAgentRunSettings(ContractModel):
 
     @property
     def provider_proxy_allowed(self) -> bool:
+        return False
+
+    @property
+    def profile_argument_errors_recoverable(self) -> bool:
+        return False
+
+    @property
+    def force_review_after_repairs(self) -> bool:
+        return False
+
+    @property
+    def native_selectors_required(self) -> bool:
         return False
 
     def known_case_reserve_units(

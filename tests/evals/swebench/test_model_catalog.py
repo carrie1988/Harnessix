@@ -1,6 +1,7 @@
 """已求证模型目录：模型名、价格、阶梯上界与计划公开名一一绑定；默认qwen3.8-max不变。"""
 
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -789,4 +790,73 @@ def test_provider_proxy_v34_adds_only_the_loopback_proxy(tmp_path):
     with pytest.raises(ValueError):
         compact_config(
             tmp_path, **{**common, "clean_review_notice": False}, provider_proxy_url=proxy, **pro
+        )
+
+
+def test_repair_closure_v35_requires_native_selector_profiles(tmp_path):
+    from harnessix.evals.swebench.public_test_profile import build_swebench_case_process_profile
+    from harnessix.evals.swebench.run_config import (
+        SweBenchProxiedProviderAgentRunConfig,
+        SweBenchRepairClosureAgentRunConfig,
+    )
+
+    common = {
+        **V17,
+        "prompt_cache": True,
+        "working_set_result_groups": None,
+        "cached_closure_workflow": True,
+        "budget_pressure_compaction": False,
+        "scratch_reproduction": True,
+        "protocol_robust": True,
+        "explained_gates": True,
+        "connect_retry": True,
+        "forced_choice_tolerant": True,
+        "argument_repair": True,
+        "test_timeout_failures": True,
+        "reads_after_failed_patch": True,
+        "truncation_quality": True,
+        "self_verification": True,
+        "bounded_repair": True,
+        "clean_review_notice": True,
+        "provider_proxy_url": "http://127.0.0.1:7890",
+    }
+    plan = plan_for("deepseek-v4-pro")
+    pro = {"model": "deepseek-v4-pro", "plan": plan}
+    v34 = compact_config(tmp_path, **common, **pro)
+    assert type(v34) is SweBenchProxiedProviderAgentRunConfig
+    with pytest.raises((ValueError, ValidationError)):
+        compact_config(tmp_path, **common, repair_closure=True, **pro)
+    profiles = tuple(
+        build_swebench_case_process_profile(
+            binding.instance_id,
+            repo=binding.repo,
+            container_engine=Path(binding.profile.container_engine),
+            image_id=binding.profile.image,
+            writable_snapshot=True,
+            require_native_selectors=True,
+        )
+        for binding in v34.case_process_profiles
+    )
+    data = v34.model_dump(mode="json")
+    data.update(
+        spec_version="harnessix.swebench-agent-run-config/v35",
+        repair_closure_policy="recoverable_profile_arguments_and_forced_review",
+        case_process_profiles=[item.model_dump(mode="json") for item in profiles],
+    )
+    v35 = SweBenchRepairClosureAgentRunConfig.model_validate_json(json.dumps(data))
+    assert v35.native_selectors_required and v35.force_review_after_repairs
+    assert v35.profile_argument_errors_recoverable and not v34.force_review_after_repairs
+    path = tmp_path / "v35.json"
+    write_swebench_agent_run_config(path, v35)
+    assert read_swebench_agent_run_config(path) == v35
+    with pytest.raises((ValueError, ValidationError)):
+        SweBenchProxiedProviderAgentRunConfig.model_validate_json(
+            json.dumps(
+                {
+                    key: value
+                    for key, value in data.items()
+                    if key not in {"spec_version", "repair_closure_policy"}
+                }
+                | {"spec_version": "harnessix.swebench-agent-run-config/v34"}
+            )
         )

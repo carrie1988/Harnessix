@@ -1,0 +1,27 @@
+{
+  "scope": "v60_first_17_of_25_evidence_stop_diagnostic_not_preregistered_metric",
+  "predictions_sha256": "410efaa3ed3943db230d7a450470fd02f79ab81090bbb094757f81f8f8137b57",
+  "results_sha256": "4805a9a43a542091d68319b41ab97370cad1ea45fe213e7a9fb00b4575f373f8",
+  "submitted_instances": 16,
+  "completed_instances": 15,
+  "resolved_instances": 8,
+  "unresolved_instances": 7,
+  "empty_patch_instances": 1,
+  "error_instances": 0,
+  "infra_failure_instances": 0,
+  "ambiguous_failure_instances": 0,
+  "resolved_ids": [
+    "django__django-16333",
+    "sphinx-doc__sphinx-10323",
+    "sphinx-doc__sphinx-10449",
+    "sphinx-doc__sphinx-8475",
+    "sphinx-doc__sphinx-9258",
+    "sympy__sympy-13551",
+    "sympy__sympy-18211",
+    "sympy__sympy-19954"
+  ],
+  "error_ids": [],
+  "excluded_unsealed_ids": [
+    "sympy__sympy-15345"
+  ]
+}
