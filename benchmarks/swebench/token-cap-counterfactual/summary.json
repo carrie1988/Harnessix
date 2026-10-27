@@ -1,0 +1,45 @@
+{
+  "baseline": {
+    "resolved": 44,
+    "cost": 95.22
+  },
+  "1000000": {
+    "resolved": 45,
+    "delta": 1,
+    "cost": 67.08,
+    "lost": [
+      "matplotlib__matplotlib-22871",
+      "sympy__sympy-14976",
+      "sympy__sympy-13031"
+    ],
+    "gained": [
+      "matplotlib__matplotlib-25311",
+      "sphinx-doc__sphinx-8269",
+      "sympy__sympy-18763",
+      "django__django-11433"
+    ],
+    "kept_resolved": [
+      "sympy__sympy-12481",
+      "sympy__sympy-20590",
+      "sympy__sympy-22456",
+      "sympy__sympy-14531"
+    ]
+  },
+  "1500000": {
+    "resolved": 45,
+    "delta": 1,
+    "cost": 83.7,
+    "lost": [
+      "sympy__sympy-14976"
+    ],
+    "gained": [
+      "sphinx-doc__sphinx-8269",
+      "django__django-11433"
+    ],
+    "kept_resolved": [
+      "sympy__sympy-13031",
+      "sympy__sympy-22456",
+      "sympy__sympy-14531"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "cap": 1000000,
+  "predictions_sha256": "6c9b6ffd2ba86aabe395044298dbf1a98092aaf9786acc7037fce867bcf2e04d",
+  "run_id": "harnessix-cap-1000000-6c9b6ffd2ba8",
+  "results_sha256": "6db293ac9974cba97f74d8390aa080a091f2602206fdb8ff45a84bdc071292d1",
+  "submitted_instances": 19,
+  "completed_instances": 19,
+  "resolved_instances": 8,
+  "error_instances": 0,
+  "resolved_ids": [
+    "django__django-11433",
+    "matplotlib__matplotlib-25311",
+    "sphinx-doc__sphinx-8269",
+    "sympy__sympy-12481",
+    "sympy__sympy-14531",
+    "sympy__sympy-18763",
+    "sympy__sympy-20590",
+    "sympy__sympy-22456"
+  ],
+  "error_ids": []
+}

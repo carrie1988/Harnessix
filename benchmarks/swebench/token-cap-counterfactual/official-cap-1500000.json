@@ -1,0 +1,18 @@
+{
+  "cap": 1500000,
+  "predictions_sha256": "ef7ff461442d5c2aad28ac35a825f16fa62df621298f7b737aa4625d018d6ac8",
+  "run_id": "harnessix-cap-1500000-ef7ff461442d",
+  "results_sha256": "4819b52aa9e9ad60822021fa2eac25beda2b0e2d22a3d3208fa765858049bd6c",
+  "submitted_instances": 14,
+  "completed_instances": 14,
+  "resolved_instances": 5,
+  "error_instances": 0,
+  "resolved_ids": [
+    "django__django-11433",
+    "sphinx-doc__sphinx-8269",
+    "sympy__sympy-13031",
+    "sympy__sympy-14531",
+    "sympy__sympy-22456"
+  ],
+  "error_ids": []
+}

@@ -1,0 +1,745 @@
+{
+ "cases": [
+  {
+   "run": "v57p",
+   "id": "django__django-14017",
+   "total_tokens": 43468,
+   "replayed_tokens": 43468,
+   "cost": 0.1852524,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "sphinx-doc__sphinx-7454",
+   "total_tokens": 801806,
+   "replayed_tokens": 801806,
+   "cost": 1.6666104,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "astropy__astropy-13453",
+   "total_tokens": 562266,
+   "replayed_tokens": 562266,
+   "cost": 0.8626572,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "sympy__sympy-13852",
+   "total_tokens": 1993251,
+   "replayed_tokens": 1993251,
+   "cost": 3.731703,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "matplotlib__matplotlib-21568",
+   "total_tokens": 1987069,
+   "replayed_tokens": 1987069,
+   "cost": 2.3930634,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "scikit-learn__scikit-learn-12973",
+   "total_tokens": 39141,
+   "replayed_tokens": 39141,
+   "cost": 0.1642086,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "django__django-13346",
+   "total_tokens": 636152,
+   "replayed_tokens": 636152,
+   "cost": 0.9702168,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "sphinx-doc__sphinx-9673",
+   "total_tokens": 135725,
+   "replayed_tokens": 135725,
+   "cost": 0.3543594,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "astropy__astropy-13977",
+   "total_tokens": 1340324,
+   "replayed_tokens": 1340324,
+   "cost": 2.516154,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "sympy__sympy-17655",
+   "total_tokens": 74893,
+   "replayed_tokens": 74893,
+   "cost": 0.2494506,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "matplotlib__matplotlib-25311",
+   "total_tokens": 1988110,
+   "replayed_tokens": 1988110,
+   "cost": 2.8079736,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "scikit-learn__scikit-learn-14710",
+   "total_tokens": 197669,
+   "replayed_tokens": 197669,
+   "cost": 0.4775706,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "django__django-14053",
+   "total_tokens": 138847,
+   "replayed_tokens": 138847,
+   "cost": 0.4327206,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "sphinx-doc__sphinx-8056",
+   "total_tokens": 343443,
+   "replayed_tokens": 343443,
+   "cost": 0.7118826,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "astropy__astropy-13579",
+   "total_tokens": 219576,
+   "replayed_tokens": 219576,
+   "cost": 0.6638784,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "sympy__sympy-19637",
+   "total_tokens": 503216,
+   "replayed_tokens": 503216,
+   "cost": 0.807834,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "matplotlib__matplotlib-22871",
+   "total_tokens": 1183764,
+   "replayed_tokens": 1183764,
+   "cost": 1.7658972,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "scikit-learn__scikit-learn-14053",
+   "total_tokens": 100732,
+   "replayed_tokens": 100732,
+   "cost": 0.2645088,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "django__django-12304",
+   "total_tokens": 1970665,
+   "replayed_tokens": 1970665,
+   "cost": 2.3030058,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "sphinx-doc__sphinx-8269",
+   "total_tokens": 1990635,
+   "replayed_tokens": 1990635,
+   "cost": 2.4395922,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "astropy__astropy-7166",
+   "total_tokens": 63193,
+   "replayed_tokens": 63193,
+   "cost": 0.238251,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "sympy__sympy-14248",
+   "total_tokens": 1998977,
+   "replayed_tokens": 1998977,
+   "cost": 2.878419,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v57p",
+   "id": "matplotlib__matplotlib-24149",
+   "total_tokens": 258431,
+   "replayed_tokens": 258431,
+   "cost": 0.4956006,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "scikit-learn__scikit-learn-13779",
+   "total_tokens": 61758,
+   "replayed_tokens": 61758,
+   "cost": 0.1931736,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v57p",
+   "id": "django__django-13786",
+   "total_tokens": 98918,
+   "replayed_tokens": 98918,
+   "cost": 0.330318,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-15599",
+   "total_tokens": 666084,
+   "replayed_tokens": 666084,
+   "cost": 1.0442808,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-13109",
+   "total_tokens": 38172,
+   "replayed_tokens": 38172,
+   "cost": 0.0957324,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sphinx-doc__sphinx-8551",
+   "total_tokens": 456115,
+   "replayed_tokens": 456115,
+   "cost": 0.7578726,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-24539",
+   "total_tokens": 82421,
+   "replayed_tokens": 82421,
+   "cost": 0.2223822,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-16493",
+   "total_tokens": 151430,
+   "replayed_tokens": 151430,
+   "cost": 0.3923364,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sphinx-doc__sphinx-9461",
+   "total_tokens": 1973041,
+   "replayed_tokens": 1973041,
+   "cost": 2.9777178,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-21847",
+   "total_tokens": 238975,
+   "replayed_tokens": 238975,
+   "cost": 0.489543,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-15563",
+   "total_tokens": 1997876,
+   "replayed_tokens": 1997876,
+   "cost": 3.1430772,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-18763",
+   "total_tokens": 1183155,
+   "replayed_tokens": 1183155,
+   "cost": 1.970151,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-13315",
+   "total_tokens": 235507,
+   "replayed_tokens": 235507,
+   "cost": 0.4671006,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-12481",
+   "total_tokens": 1064440,
+   "replayed_tokens": 1064440,
+   "cost": 1.9440912,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-13516",
+   "total_tokens": 331223,
+   "replayed_tokens": 331223,
+   "cost": 0.5706294,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-19783",
+   "total_tokens": 362870,
+   "replayed_tokens": 362870,
+   "cost": 0.6380928,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-11477",
+   "total_tokens": 667448,
+   "replayed_tokens": 667448,
+   "cost": 0.9892656,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-15976",
+   "total_tokens": 125625,
+   "replayed_tokens": 125625,
+   "cost": 0.3901134,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-13821",
+   "total_tokens": 92890,
+   "replayed_tokens": 92890,
+   "cost": 0.2394228,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-17630",
+   "total_tokens": 1374411,
+   "replayed_tokens": 1374411,
+   "cost": 1.928751,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-11149",
+   "total_tokens": 614306,
+   "replayed_tokens": 614306,
+   "cost": 1.492416,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-12489",
+   "total_tokens": 174814,
+   "replayed_tokens": 174814,
+   "cost": 0.4373484,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-15731",
+   "total_tokens": 331803,
+   "replayed_tokens": 331803,
+   "cost": 0.5665818,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-14976",
+   "total_tokens": 1629164,
+   "replayed_tokens": 1629164,
+   "cost": 3.9716136,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-15503",
+   "total_tokens": 193785,
+   "replayed_tokens": 193785,
+   "cost": 0.6462714,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-19040",
+   "total_tokens": 1988385,
+   "replayed_tokens": 1988385,
+   "cost": 3.5477922,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "django__django-13112",
+   "total_tokens": 1987647,
+   "replayed_tokens": 1987647,
+   "cost": 3.5451534,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v61r",
+   "id": "sympy__sympy-18698",
+   "total_tokens": 1458594,
+   "replayed_tokens": 1458594,
+   "cost": 2.5517028,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "django__django-11433",
+   "total_tokens": 1998944,
+   "replayed_tokens": 1998944,
+   "cost": 3.0425952,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-20590",
+   "total_tokens": 1393025,
+   "replayed_tokens": 1393025,
+   "cost": 2.2381194,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "django__django-15916",
+   "total_tokens": 271872,
+   "replayed_tokens": 271872,
+   "cost": 0.532992,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-13031",
+   "total_tokens": 1987796,
+   "replayed_tokens": 1987796,
+   "cost": 4.135218,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "django__django-16899",
+   "total_tokens": 302205,
+   "replayed_tokens": 302205,
+   "cost": 0.541893,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-21930",
+   "total_tokens": 420247,
+   "replayed_tokens": 420247,
+   "cost": 0.7544406,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "django__django-11880",
+   "total_tokens": 690010,
+   "replayed_tokens": 690010,
+   "cost": 0.9213504,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-23262",
+   "total_tokens": 1288354,
+   "replayed_tokens": 1288354,
+   "cost": 2.16189,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "django__django-10097",
+   "total_tokens": 401869,
+   "replayed_tokens": 401869,
+   "cost": 0.6633618,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-22456",
+   "total_tokens": 1999834,
+   "replayed_tokens": 1999834,
+   "cost": 2.9843028,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "django__django-10880",
+   "total_tokens": 139852,
+   "replayed_tokens": 139852,
+   "cost": 0.3003612,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-22914",
+   "total_tokens": 209123,
+   "replayed_tokens": 209123,
+   "cost": 0.4501494,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "django__django-12858",
+   "total_tokens": 277963,
+   "replayed_tokens": 277963,
+   "cost": 0.5004774,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-14531",
+   "total_tokens": 1995724,
+   "replayed_tokens": 1995724,
+   "cost": 3.1771524,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "django__django-15315",
+   "total_tokens": 565197,
+   "replayed_tokens": 565197,
+   "cost": 1.4531538,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-23534",
+   "total_tokens": 117528,
+   "replayed_tokens": 117528,
+   "cost": 0.37776,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "django__django-11087",
+   "total_tokens": 1867172,
+   "replayed_tokens": 1867172,
+   "cost": 2.9751024,
+   "final_matches_delivered": true,
+   "capped_at": [
+    "1000000",
+    "1500000"
+   ]
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-13372",
+   "total_tokens": 72843,
+   "replayed_tokens": 72843,
+   "cost": 0.2548386,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "django__django-11133",
+   "total_tokens": 38159,
+   "replayed_tokens": 38159,
+   "cost": 0.1017234,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-15017",
+   "total_tokens": 428033,
+   "replayed_tokens": 428033,
+   "cost": 0.674853,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "django__django-13569",
+   "total_tokens": 235069,
+   "replayed_tokens": 235069,
+   "cost": 0.4488078,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-11618",
+   "total_tokens": 167909,
+   "replayed_tokens": 167909,
+   "cost": 0.4434486,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "django__django-12262",
+   "total_tokens": 197912,
+   "replayed_tokens": 197912,
+   "cost": 0.4132836,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "sympy__sympy-16886",
+   "total_tokens": 79576,
+   "replayed_tokens": 79576,
+   "cost": 0.2421888,
+   "final_matches_delivered": true,
+   "capped_at": []
+  },
+  {
+   "run": "v62",
+   "id": "django__django-11999",
+   "total_tokens": 280357,
+   "replayed_tokens": 280357,
+   "cost": 0.5058486,
+   "final_matches_delivered": true,
+   "capped_at": []
+  }
+ ],
+ "replay_equals_delivered": 75,
+ "token_totals_reconciled": 75
+}
