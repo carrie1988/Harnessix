@@ -1,0 +1,20 @@
+{
+  "scope": "d38_development_paired_check_diagnostic_not_preregistered_metric",
+  "predictions_sha256": "7c801c0a22aead08b4c70902538824e1a3668f74d11d5882d39c39fc4fb9e50b",
+  "results_sha256": "6888cf37bdec2edbef9565097d79ade22f84b4ac59c649dbac1ec6c6348e8cce",
+  "submitted_instances": 11,
+  "completed_instances": 10,
+  "resolved_instances": 3,
+  "unresolved_instances": 7,
+  "empty_patch_instances": 1,
+  "error_instances": 0,
+  "infra_failure_instances": 0,
+  "ambiguous_failure_instances": 0,
+  "resolved_ids": [
+    "django__django-11433",
+    "django__django-16899",
+    "sympy__sympy-20590"
+  ],
+  "error_ids": [],
+  "excluded_unsealed_ids": []
+}
