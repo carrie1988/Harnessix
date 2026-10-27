@@ -1,0 +1,23 @@
+{
+  "schema": "harnessix.swebench-development-preregistration/v1",
+  "frozen_at": "2026-10-27T15:31:26.762402+00:00",
+  "plan_sha256": "501c3c0f955a5a6c3a2f86f9ed315d0c406f08feafa8a0935dd9cfc000307f7a",
+  "plan_file_sha256": "d666d1a6aea6d73e6879f2774fd5ed2bdfa5385f3c92cd544c286c25c94966c4",
+  "source_revision": "0825c13ec490368f0051b4f31ecfaf1c292cb317",
+  "model": "deepseek-v4-pro-0813 on Aliyun Bailian (DeepSeek official deepseek-v4-pro is the same version), via local proxy 127.0.0.1:7890",
+  "run_config_spec": "harnessix.swebench-agent-run-config/v39",
+  "run_config_file_sha256": "61cf17028a7b00bfce80e20e328626a5eb0a1fc491775b0982ee72af1f934e9d",
+  "fee_stop_amount": "35",
+  "price": "Bailian Beijing idle prices (miss 4.5, implicit-cache hit 0.9, output 13.5 CNY per million); every case starts only inside the 22:00-08:00 Beijing window with its whole 2700 s budget + 10 min left",
+  "prepare_host_sha256": "d9db68b679a7f3a39db878f96db8e9859bd6374aa04334c35a6a48bbdc2794f8",
+  "execute_host_sha256": "1ad4d8a395bb0c15a9dd2fc8ede3233b680427a38122046ae1a750f0c6774bfe",
+  "evaluate_host_sha256": "930a59525476efbf9b2ef11fc3233935a0ab0c17318a1574c71be61653bd4520",
+  "task_budget": "2000000 tokens / 100 steps / 2700 s / 8 tool calls per step",
+  "budget_period_id": "d7a14312-1a8e-445a-8adb-2e171e336dcb",
+  "attempt_policy": "single attempt per case; no retry, no best-of-N, no stitching",
+  "scope": "development_mechanics_smoke_of_run_config_v39_first_3_cases_not_a_generalization_claim",
+  "cases_executed": "first 3 cases of the d39 plan order (stop-after-3 by the host)",
+  "gate_for_v63": "all executed cases end without infrastructure, transport, protocol or cost-incomplete failures; each case <= 40 min wall time and <= 4 CNY at idle prices; at most 1 case ends on an output-limit truncation",
+  "outcome_reporting": "official result of the attempted cases is reported as a diagnostic, not used as a gate",
+  "generalization_claim": false
+}
