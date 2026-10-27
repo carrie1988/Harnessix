@@ -100,11 +100,17 @@ class OpenAIChatConfig(ModelHTTPConfig):
     # 端点的强制工具选择不可靠（如百炼DeepSeek的约束解码语法编译间歇超时并返回400）时
     # 不发送tool_choice；required与指定工具仍由可执行集收窄、目录说明与Runtime校验约束。
     omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
+    # 只在提供工具的步骤开启思考：摘要与收尾回复等无工具请求的输出预算小，推理会耗尽而无正文。
+    thinking_tool_steps_only: bool = Field(default=False, exclude_if=lambda value: value is False)
 
     @model_validator(mode="after")
     def validate_implicit_cache_usage(self) -> Self:
         if self.implicit_cache_usage and self.prompt_cache != "stable_tail":
             raise ValueError("隐式缓存用量口径只用于不打缓存标记的自动前缀缓存")
+        if self.thinking_tool_steps_only and (
+            self.enable_thinking is not True or self.thinking_format is not None
+        ):
+            raise ValueError("按工具步骤开启思考只用于显式开启的DashScope思考开关")
         return self
 
     @model_validator(mode="after")

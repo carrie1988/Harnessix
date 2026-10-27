@@ -620,6 +620,11 @@
           "default": false,
           "title": "Omit Tool Choice",
           "type": "boolean"
+        },
+        "thinking_tool_steps_only": {
+          "default": false,
+          "title": "Thinking Tool Steps Only",
+          "type": "boolean"
         }
       },
       "required": [

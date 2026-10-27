@@ -108,8 +108,9 @@ def build_request(
         }
     elif config.enable_thinking is not None:
         # OpenAI SDK 将 extra_body 合并到最终请求顶层，供兼容端点接收扩展参数。
-        body["extra_body"] = {"enable_thinking": config.enable_thinking}
-        if config.thinking_budget is not None:
+        thinking = config.enable_thinking and not (config.thinking_tool_steps_only and not tools)
+        body["extra_body"] = {"enable_thinking": thinking}
+        if thinking and config.thinking_budget is not None:
             if output_tokens < 2:
                 raise InvalidModelRequest("整体输出预算不足以同时容纳思考与回答")
             # 配置是上限；输出收缩时仍为可见回答留出余量，不扩张任务预算。

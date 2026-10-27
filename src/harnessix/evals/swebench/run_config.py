@@ -31,6 +31,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchSelfVerificationAgentRunConfig,
     SweBenchSiblingScopeAgentRunConfig,
     SweBenchTestTimeoutAgentRunConfig,
+    SweBenchToolStepThinkingAgentRunConfig,
     SweBenchTruncationQualityAgentRunConfig,
     SweBenchWideOutputAgentRunConfig,
 )
@@ -45,6 +46,8 @@ from harnessix.evals.swebench.run_settings import (
     FULL_THINKING_OUTPUT,
     FULL_THINKING_RESPONSE_BYTES,
     MODEL_CATALOG,
+    TOOL_STEP_THINKING_MAX_CHUNKS,
+    TOOL_STEP_THINKING_OUTPUT,
     SweBenchModel,
     _SweBenchAgentRunSettings,
     _wire_prompt_cache,
@@ -357,6 +360,7 @@ SweBenchRunConfig = (
     | SweBenchWideOutputAgentRunConfig
     | SweBenchReproductionGateAgentRunConfig
     | SweBenchFullThinkingAgentRunConfig
+    | SweBenchToolStepThinkingAgentRunConfig
 )
 
 
@@ -406,6 +410,7 @@ def _run_config_type(
     wide_output: bool = False,
     reproduction_gate: bool = False,
     full_thinking: bool = False,
+    tool_step_thinking: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -445,6 +450,7 @@ def _run_config_type(
         (wide_output, "宽输出上限"),
         (reproduction_gate, "复现门禁"),
         (full_thinking, "全程思考"),
+        (tool_step_thinking, "工具步骤思考"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -468,6 +474,8 @@ def _run_config_type(
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
     if reproduction_gate and not wide_output:
         raise ValueError("SWE-bench复现门禁只在宽输出上限组合之上冻结")
+    if tool_step_thinking and not full_thinking:
+        raise ValueError("SWE-bench工具步骤思考只在全程思考组合之上冻结")
     if full_thinking and (reproduction_gate or native_thinking or not wide_output):
         raise ValueError("SWE-bench全程思考只在宽输出上限组合之上冻结，不与复现门禁或原生思考组合")
     if wide_output and not sibling_scope:
@@ -551,6 +559,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if tool_step_thinking:
+            return SweBenchToolStepThinkingAgentRunConfig
         if full_thinking:
             return SweBenchFullThinkingAgentRunConfig
         if reproduction_gate:
@@ -696,6 +706,7 @@ def build_swebench_agent_run_config(
     wide_output: bool = False,
     reproduction_gate: bool = False,
     full_thinking: bool = False,
+    tool_step_thinking: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -739,11 +750,16 @@ def build_swebench_agent_run_config(
         wide_output=wide_output,
         reproduction_gate=reproduction_gate,
         full_thinking=full_thinking,
+        tool_step_thinking=tool_step_thinking,
     )
     thinking = enable_thinking or native_thinking or full_thinking
     max_output_tokens = 4096
     if native_thinking or wide_output:
-        max_output_tokens = FULL_THINKING_OUTPUT if full_thinking else _NATIVE_THINKING_OUTPUT
+        max_output_tokens = _NATIVE_THINKING_OUTPUT
+        if full_thinking:
+            max_output_tokens = (
+                TOOL_STEP_THINKING_OUTPUT if tool_step_thinking else FULL_THINKING_OUTPUT
+            )
     wire_prompt_cache = _wire_prompt_cache(
         catalog, prompt_cache=prompt_cache, stable_tail=argument_repair
     )
@@ -775,7 +791,11 @@ def build_swebench_agent_run_config(
             retry_delay_seconds=0,
             max_request_bytes=250_000,
             max_response_bytes=FULL_THINKING_RESPONSE_BYTES if full_thinking else 4 * 1024 * 1024,
-            max_chunks=FULL_THINKING_MAX_CHUNKS if full_thinking else 10_000,
+            max_chunks=(
+                (TOOL_STEP_THINKING_MAX_CHUNKS if tool_step_thinking else FULL_THINKING_MAX_CHUNKS)
+                if full_thinking
+                else 10_000
+            ),
             output_token_parameter="max_completion_tokens" if enable_thinking else "max_tokens",
             enable_thinking=thinking,
             thinking_budget=1024 if enable_thinking else None,
@@ -788,6 +808,7 @@ def build_swebench_agent_run_config(
                 catalog.implicit_cache_usage and wire_prompt_cache == "stable_tail"
             ),
             omit_tool_choice=catalog.omit_tool_choice,
+            thinking_tool_steps_only=tool_step_thinking,
         ),
         price=PriceSnapshot(
             version=f"{catalog.billing_provider}-{now.date().isoformat()}-{catalog.price_slug}",

@@ -919,3 +919,6 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   可执行集收窄、目录说明与Runtime“必须返回工具调用”校验约束（与`thinking_type`思考模式相同的路径）。百炼`deepseek-v4-pro-0813`的
   `required`经约束解码语法编译，长历史下间歇返回`400 InternalError.Algo: grammar validation or compilation failed: sandbox grammar compile
   timed out`（约30秒后；d39第12步，同一状态重放约1/3）；同一状态不发送`tool_choice`时6次采样（思考与非思考各3次）全部返回工具调用。
+- `OpenAIChatConfig.thinking_tool_steps_only`（默认关闭、不序列化，只与显式开启的DashScope思考开关同用）：只在提供工具的请求发送
+  `enable_thinking=true`，无工具请求（压缩摘要、收尾回复）发送`false`。摘要请求的输出上限仅2048 Token，开启思考时推理会用满而无正文
+  （d39b两项因此失败）；`thinking_budget`同样只随开启思考的请求发送。

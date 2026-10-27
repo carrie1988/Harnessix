@@ -214,3 +214,35 @@ def test_a_case_starts_only_when_its_whole_wall_clock_fits_the_window(tmp_path):
     assert not _case_fits_billing_window(plan, config, datetime(2026, 10, 27, 6, tzinfo=UTC))
     direct = _config(tmp_path, model="deepseek-v4-pro", plan=plan_for("deepseek-v4-pro"))
     assert _case_fits_billing_window(plan, direct, datetime(2026, 10, 27, 6, tzinfo=UTC))
+
+
+def test_tool_step_thinking_v40_only_scopes_thinking_and_widens_output(tmp_path):
+    from harnessix.evals.swebench.run_config import SweBenchToolStepThinkingAgentRunConfig
+
+    plan = _thinking_plan(MODEL, "enabled")
+    config = _config(tmp_path, full_thinking=True, tool_step_thinking=True, plan=plan)
+    v39 = _config(tmp_path, full_thinking=True, plan=plan)
+    provider = config.provider_config
+    assert type(config) is SweBenchToolStepThinkingAgentRunConfig
+    assert config.spec_version == "harnessix.swebench-agent-run-config/v40"
+    assert config.thinking_tool_steps_only and not v39.thinking_tool_steps_only
+    assert provider.thinking_tool_steps_only and provider.max_output_tokens == 32_768
+    assert provider.max_chunks == 80_000 and provider.max_response_bytes == 12 * 1024 * 1024
+    restored = provider.model_copy(
+        update={
+            "thinking_tool_steps_only": False,
+            "max_output_tokens": 16_384,
+            "max_chunks": 40_000,
+        }
+    )
+    assert restored == v39.provider_config
+    config.require_plan(plan)
+    path = tmp_path / "v40.json"
+    write_swebench_agent_run_config(path, config)
+    assert read_swebench_agent_run_config(path) == config
+    data = config.model_dump(mode="python")
+    data["provider_config"] = {**data["provider_config"], "max_output_tokens": 16_384}
+    with pytest.raises(ValidationError):
+        SweBenchToolStepThinkingAgentRunConfig.model_validate(data)
+    with pytest.raises((ValueError, ValidationError)):
+        _config(tmp_path, tool_step_thinking=True, plan=plan_for(MODEL))

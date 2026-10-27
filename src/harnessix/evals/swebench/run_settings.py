@@ -40,6 +40,10 @@ _NATIVE_THINKING_OUTPUT = 8192
 FULL_THINKING_OUTPUT = 16_384
 FULL_THINKING_MAX_CHUNKS = 40_000
 FULL_THINKING_RESPONSE_BYTES = 12 * 1024 * 1024
+# v40只在工具步骤思考：d39b中3项有2项单步推理达到或接近16384，输出上限再放宽一倍；
+# 百炼流式约60字节/Token，字节上限不变，帧数上限随Token放宽。
+TOOL_STEP_THINKING_OUTPUT = 32_768
+TOOL_STEP_THINKING_MAX_CHUNKS = 80_000
 _CURRENCY: Literal["CNY"] = "CNY"
 _BAILIAN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
@@ -270,15 +274,21 @@ class _SweBenchAgentRunSettings(ContractModel):
             model.thinking_format is None or provider.max_output_tokens != _NATIVE_THINKING_OUTPUT
         ):
             raise ValueError("SWE-bench原生思考只用于已求证thinking_type格式的模型与固定输出上限")
+        tool_steps = self.thinking_tool_steps_only
         if self.full_thinking and (
             provider.model not in _FULL_THINKING_MODELS
-            or provider.max_chunks != FULL_THINKING_MAX_CHUNKS
+            or provider.max_chunks
+            != (TOOL_STEP_THINKING_MAX_CHUNKS if tool_steps else FULL_THINKING_MAX_CHUNKS)
             or provider.max_response_bytes != FULL_THINKING_RESPONSE_BYTES
         ):
-            raise ValueError("SWE-bench全程思考只用于已求证强制工具选择的端点与固定传输上限")
-        wide_output_tokens = FULL_THINKING_OUTPUT if self.full_thinking else _NATIVE_THINKING_OUTPUT
+            raise ValueError("SWE-bench全程思考只用于已求证思考协议的端点与固定传输上限")
+        wide_output_tokens = _NATIVE_THINKING_OUTPUT
+        if self.full_thinking:
+            wide_output_tokens = TOOL_STEP_THINKING_OUTPUT if tool_steps else FULL_THINKING_OUTPUT
         if self.wide_output and provider.max_output_tokens != wide_output_tokens:
-            raise ValueError("SWE-bench宽输出上限固定为8192，全程思考另加8192推理余量")
+            raise ValueError("SWE-bench宽输出上限固定为8192，全程思考另加推理余量")
+        if provider.thinking_tool_steps_only is not tool_steps:
+            raise ValueError("SWE-bench按工具步骤思考须与运行配置版本一致")
         if (
             provider.base_url != model.base_url
             or provider.thinking_format != model.thinking_format
@@ -515,6 +525,10 @@ class _SweBenchAgentRunSettings(ContractModel):
 
     @property
     def full_thinking(self) -> bool:
+        return False
+
+    @property
+    def thinking_tool_steps_only(self) -> bool:
         return False
 
     @property

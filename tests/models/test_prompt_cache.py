@@ -318,3 +318,27 @@ def test_forced_choice_is_sent_as_required_under_the_stable_tail(layout, expecte
     body, _ = build_request(forced, OpenAIChatConfig(model="m", prompt_cache=layout))
     choice = body["tool_choice"]
     assert (choice == "required") if expected == "required" else (choice["type"] == "function")
+
+
+@pytest.mark.parametrize("with_tools", [False, True])
+def test_tool_step_thinking_disables_thinking_for_requests_without_tools(with_tools):
+    """摘要与收尾回复不提供工具，其输出预算不足以容纳推理；只在工具步骤开启思考。"""
+    request = model_request(with_tools=with_tools)
+    scoped = config(
+        enable_thinking=True, output_token_parameter="max_tokens", thinking_tool_steps_only=True
+    )
+    body, _ = build_request(request, scoped)
+    assert body["extra_body"] == {"enable_thinking": with_tools}
+    plain, _ = build_request(
+        request, config(enable_thinking=True, output_token_parameter="max_tokens")
+    )
+    assert plain["extra_body"] == {"enable_thinking": True}
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [{"enable_thinking": False}, {"enable_thinking": True, "thinking_format": "thinking_type"}],
+)
+def test_tool_step_thinking_requires_an_explicit_dashscope_switch(changes):
+    with pytest.raises(ValueError):
+        config(thinking_tool_steps_only=True, **changes)

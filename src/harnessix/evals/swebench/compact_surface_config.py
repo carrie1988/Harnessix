@@ -569,3 +569,19 @@ class SweBenchFullThinkingAgentRunConfig(SweBenchWideOutputAgentRunConfig):
     @property
     def full_thinking(self) -> bool:
         return True
+
+
+class SweBenchToolStepThinkingAgentRunConfig(SweBenchFullThinkingAgentRunConfig):
+    """v39之上：只在提供工具的步骤思考，单次输出上限放宽到32768；工作流不变。
+
+    d39b（v39，3项开发集）2项因压缩摘要请求的2048输出被推理耗尽而无正文失败，1项单步推理用满16384被截断。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v40"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v40"
+    )
+    thinking_scope: Literal["tool_steps_only_32k_output"] = "tool_steps_only_32k_output"
+
+    @property
+    def thinking_tool_steps_only(self) -> bool:
+        return True

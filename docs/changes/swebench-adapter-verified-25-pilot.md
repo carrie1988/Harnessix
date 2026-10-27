@@ -2008,3 +2008,10 @@ sphinx-8269、sympy-18763）。局限：真实1M预算会更早触发预算压�
 无纯文本回复。修复（通用、按端点绑定）：目录为百炼DeepSeek设`omit_tool_choice`，Provider不发送`tool_choice`，`required`/指定工具
 由可执行集收窄、目录说明与Runtime校验约束（同DeepSeek思考模式路径）。v37/v39在百炼上均受影响，故v63两臂在修复后重新冻结，
 并先以d39b重跑冒烟（同开发集，同门槛）。
+
+**d39b（v39，修复tool_choice后重跑同一冒烟）未通过门槛**：3项均跑完（11～13分钟/项，共3.41元，成本完整、无传输与语法超时故障），
+但全部以失败结束、官方0/3：2项在历史超过约6.5万Token触发压缩时，摘要请求（无工具、输出上限2048）开启了思考，2048 Token全被推理
+用尽而无摘要正文（`invalid_provider_output`）；1项单步推理用满16384被截断（另1项单步达16134）。修复为[v40](../../src/harnessix/evals/swebench/compact_surface_config.py)：
+只在提供工具的步骤开启思考（`thinking_tool_steps_only`，摘要与收尾回复不思考），单次输出上限放宽到32768（百炼流式约60字节/Token，
+字节上限不变、帧数上限80000）；1M单题预算下单Case最坏预留仍约15元。v39保持冻结语义（d39/d39b记录可复核，宿主副本见
+`benchmarks/swebench/deepseek-dev-d39b/hosts/`）。v63思考臂改用v40，并先以d39c重跑同一冒烟。
