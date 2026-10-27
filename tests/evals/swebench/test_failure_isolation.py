@@ -11,6 +11,7 @@ import pytest
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentFailure, TurnStatus, TurnStatusV18
 from harnessix.agent.usage import UsageObservation
+from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.evals.swebench import execution
 from harnessix.evals.swebench.execution_contracts import (
     build_swebench_suite_execution_state,
@@ -409,3 +410,22 @@ def test_rejected_profile_arguments_are_not_public_test_unavailability(enabled):
         assert failure is None or failure[0] != "swebench_public_tests_unavailable"
     else:
         assert failure[0] == "swebench_public_tests_unavailable"
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_gate_rejected_patch_is_not_the_final_patch_result(enabled):
+    """门禁拒绝的Patch从未准备或执行；开启时证据按此前成功的Patch判定。"""
+    turn = _turn(
+        0,
+        (
+            *SUCCESSFUL_EVIDENCE,
+            (WORKSPACE_PATCH_TOOL, "failed", "workspace_patch_reproduction_required"),
+        ),
+    )
+    failure = execution._case_evidence_failure(
+        turn, PATCH, PUBLIC_TEST_TOOL, cost_complete=True, reproduction_gate=enabled
+    )
+    if enabled:
+        assert failure is None
+    else:
+        assert failure[0] == "swebench_patch_failed"

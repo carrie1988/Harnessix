@@ -84,6 +84,7 @@ from harnessix.agent.planning import (
     planning_tool_descriptor,
 )
 from harnessix.agent.ports import (
+    ModelToolCallAdmission,
     ModelToolSelection,
     ModelToolView,
     NoTools,
@@ -1429,6 +1430,20 @@ class AgentRuntime:
             self._fault("runtime.after_approval_decision")
             return get_turn(updated, turn_id)
 
+    def _call_admission_failure(
+        self, turn: Turn, call: ToolCallContent
+    ) -> ToolResultContent | None:
+        """视图拒绝的调用以可纠正的失败结果结束：不请求审批、不准备计划、不执行。"""
+        view = self._model_tool_view
+        if not isinstance(view, ModelToolCallAdmission):
+            return None
+        failure = view.admit_call(turn, call)
+        if failure is None:
+            return None
+        if not isinstance(failure, AgentFailure):
+            raise KernelError("model_tool_view_invalid", "模型工具视图的调用准入结果无效")
+        return ToolResultContent(call_id=call.call_id, outcome="failed", error=failure)
+
     def _validate_tool_contract(self, call: ToolCallContent) -> None:
         definition = self._definitions.get(call.tool)
         if (
@@ -2494,7 +2509,10 @@ class AgentRuntime:
                 item = approval_for(turn, call)
                 if item is None:
                     content: ApprovalContent | None = None
-                    if is_trusted_action:
+                    admission_failure = self._call_admission_failure(turn, call)
+                    if admission_failure is not None:
+                        early_result = admission_failure
+                    elif is_trusted_action:
                         early_result, content = await prepare_trusted_action(
                             self._trusted_actions, thread, turn, call, token
                         )

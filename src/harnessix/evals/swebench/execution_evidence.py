@@ -21,6 +21,7 @@ from harnessix.agent.models import (
 from harnessix.agent.tool_rejections import require_closed_rejection_items
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.evals.swebench.execution_contracts import SweBenchCaseExecutionState
+from harnessix.product_config.coding_reproduction_gate import without_reproduction_rejections
 from harnessix.product_config.coding_test_outcomes import (
     with_test_timeouts_as_failures,
     without_rejected_profile_arguments,
@@ -177,11 +178,14 @@ def _case_evidence_failure(
     test_timeouts_are_failures: bool = False,
     truncation_is_quality: bool = False,
     profile_argument_errors_recoverable: bool = False,
+    reproduction_gate: bool = False,
 ) -> tuple[str, str] | None:
     if test_timeouts_are_failures:
         turn = with_test_timeouts_as_failures(turn)
     if profile_argument_errors_recoverable:
         turn = without_rejected_profile_arguments(turn)
+    if reproduction_gate:
+        turn = without_reproduction_rejections(turn)
     try:
         observations = _tool_observations(turn)
     except KernelError:

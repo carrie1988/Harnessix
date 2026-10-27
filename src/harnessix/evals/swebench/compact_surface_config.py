@@ -534,3 +534,21 @@ class SweBenchWideOutputAgentRunConfig(SweBenchSiblingScopeAgentRunConfig):
     @property
     def wide_output(self) -> bool:
         return True
+
+
+class SweBenchReproductionGateAgentRunConfig(SweBenchWideOutputAgentRunConfig):
+    """v37之上：首次修改源码前须有复现草稿测试以代码级失败结束（有界自动解锁），自我校验原样运行问题示例。
+
+    v57p/v61r/v62中“问题示例本可抓到错误补丁”的9项里，8项未复现就改源码，2项复现未原样使用问题示例。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v38"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v38"
+    )
+    reproduction_policy: Literal["failing_reproduction_before_source_edit"] = (
+        "failing_reproduction_before_source_edit"
+    )
+
+    @property
+    def reproduction_gate(self) -> bool:
+        return True

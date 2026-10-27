@@ -25,6 +25,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchProxiedProviderAgentRunConfig,
     SweBenchReadAfterFailedPatchAgentRunConfig,
     SweBenchRepairClosureAgentRunConfig,
+    SweBenchReproductionGateAgentRunConfig,
     SweBenchScratchReproductionAgentRunConfig,
     SweBenchSelfVerificationAgentRunConfig,
     SweBenchSiblingScopeAgentRunConfig,
@@ -350,6 +351,7 @@ SweBenchRunConfig = (
     | SweBenchRepairClosureAgentRunConfig
     | SweBenchSiblingScopeAgentRunConfig
     | SweBenchWideOutputAgentRunConfig
+    | SweBenchReproductionGateAgentRunConfig
 )
 
 
@@ -397,6 +399,7 @@ def _run_config_type(
     repair_closure: bool = False,
     sibling_scope: bool = False,
     wide_output: bool = False,
+    reproduction_gate: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -434,6 +437,7 @@ def _run_config_type(
         (repair_closure, "修复收尾"),
         (sibling_scope, "同类实现检查"),
         (wide_output, "宽输出上限"),
+        (reproduction_gate, "复现门禁"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -455,6 +459,8 @@ def _run_config_type(
     )
     if cached_closure_workflow and (budget_pressure_compaction or working_set or not prompt_cache):
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
+    if reproduction_gate and not wide_output:
+        raise ValueError("SWE-bench复现门禁只在宽输出上限组合之上冻结")
     if wide_output and not sibling_scope:
         raise ValueError("SWE-bench宽输出上限只在同类实现检查组合之上冻结")
     if sibling_scope and not repair_closure:
@@ -536,6 +542,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if reproduction_gate:
+            return SweBenchReproductionGateAgentRunConfig
         if wide_output:
             return SweBenchWideOutputAgentRunConfig
         if sibling_scope:
@@ -675,6 +683,7 @@ def build_swebench_agent_run_config(
     repair_closure: bool = False,
     sibling_scope: bool = False,
     wide_output: bool = False,
+    reproduction_gate: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -716,6 +725,7 @@ def build_swebench_agent_run_config(
         repair_closure=repair_closure,
         sibling_scope=sibling_scope,
         wide_output=wide_output,
+        reproduction_gate=reproduction_gate,
     )
     extra: dict[str, object] = (
         {}

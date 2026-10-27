@@ -146,6 +146,10 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 Runtime原样写入`ModelRequest.tool_notice`；目录说明在列出可执行别名后追加该原因。它只是模型提示：不改变可执行集合、
 不授予权限，拒绝事实仍为固定无效果结果。回归见[门禁说明测试](../../tests/agent/test_tool_gate_notice.py)。
 
+视图可另实现`ModelToolCallAdmission.admit_call(turn, call)`：Runtime在需审批调用首次准备前调用它，返回`AgentFailure`时
+该调用以可纠正的失败结果结束（不请求审批、不准备计划、不执行），返回`None`时沿原审批路径继续。判定只依赖持久Turn事实，
+恢复重放结论相同；返回值类型无效时按写入类工具阶段的既有规则中断为`uncertain_effect`。未实现该方法的视图行为不变。
+
 ## 当前增量：预算压低上限的截断归类（默认关闭）
 
 单次输出上限取`min(输出上限, 剩余预算 − 保守输入)`。临近预算耗尽时上限被压到很小，模型正常回答也会以

@@ -381,6 +381,7 @@ async def run_swebench_agent_case(
     profile_argument_errors_recoverable: bool = False,
     force_review_after_repairs: bool = False,
     sibling_scope_check: bool = False,
+    reproduction_gate: bool = False,
 ) -> tuple[UUID, Turn]:
     """执行或恢复一个 Case；Session、审批与 Patch 均走正式产品端口。"""
 
@@ -417,6 +418,7 @@ async def run_swebench_agent_case(
         or type(profile_argument_errors_recoverable) is not bool
         or type(force_review_after_repairs) is not bool
         or type(sibling_scope_check) is not bool
+        or type(reproduction_gate) is not bool
     ):
         raise KernelError("swebench_execution_config_invalid", "SWE-bench缓存收尾工作流开关无效")
     if type(normalize_stringified_arguments) is not bool:
@@ -540,6 +542,7 @@ async def run_swebench_agent_case(
                                 ),
                                 force_review_after_repairs=force_review_after_repairs,
                                 sibling_scope_check=sibling_scope_check,
+                                require_failing_reproduction=reproduction_gate,
                             ),
                         ) as runtime:
                             return await _drive_turn(

@@ -3085,3 +3085,12 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 
 依赖`self_verification`：校验轮说明另要求搜索同一行为的其他实现（同类/子类、其他后端或打印器、重复辅助函数）并一致修复。
 依据为新鲜集未解决项中“公开测试通过但修复范围不全”（参考修复同时改动模型未改的同类实现）的通用类别。
+
+## 当前增量：复现门禁（`require_failing_reproduction`，默认关闭）
+
+[`coding_reproduction_gate`](../../src/harnessix/product_config/coding_reproduction_gate.py)经`admit_call`实现：首次修改源码前，
+须有一次选择了复现草稿（`test_harnessix_scratch*.py`或`harnessix_scratch/`，含Django原生标签形态）的公开测试以代码级失败
+（`process_nonzero_exit`/`process_timeout`）结束；此前触及源码的Patch以`workspace_patch_reproduction_required`拒绝，只改草稿的Patch放行。
+门禁有界：复现测试两次未失败（本环境难以复现）或源码修改已被拒绝三次即自动解锁；已有源码改动后不再锁定。锁定期间视图说明解锁条件，
+复现测试通过时不进入Review而重新开放编辑并要求原样使用问题示例；被拒调用从工作流与证据投影中移除（从未准备或执行）。
+开启时自我校验说明另要求原样运行问题示例代码。依赖`scratch_reproduction`与`explain_tool_gates`。

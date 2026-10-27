@@ -955,3 +955,57 @@ def test_wide_output_v37_raises_only_the_output_limit_over_v36():
     assert SweBenchWideOutputAgentRunConfig.model_fields["spec_version"].default.endswith("/v37")
     with pytest.raises(ValueError):
         _run_config_type(**flags, sibling_scope=False, wide_output=True)
+
+
+def test_reproduction_gate_v38_is_built_only_over_v37():
+    from harnessix.evals.swebench.run_config import (
+        SweBenchReproductionGateAgentRunConfig,
+        _run_config_type,
+    )
+
+    flags = dict(
+        isolate_provider_failures=True,
+        budget_pressure_compaction=False,
+        enable_thinking=False,
+        enable_planning=False,
+        enable_grep_snapshots=False,
+        allow_optional_pre_edit_profile=False,
+        recycle_workspaces=True,
+        enable_regex_search=False,
+        reserve_closing_phase=False,
+        enable_definition_views=False,
+        working_set=False,
+        compact_model_surface=True,
+        convergence_guidance=True,
+        patch_deadline=True,
+        budget_capped_truncation=True,
+        prompt_cache=True,
+        cached_closure_workflow=True,
+        scratch_reproduction=True,
+        protocol_robust=True,
+        explained_gates=True,
+        connect_retry=True,
+        forced_choice_tolerant=True,
+        argument_repair=True,
+        test_timeout_failures=True,
+        reads_after_failed_patch=True,
+        truncation_quality=True,
+        self_verification=True,
+        bounded_repair=True,
+        clean_review_notice=True,
+        provider_proxy=True,
+        repair_closure=True,
+        sibling_scope=True,
+    )
+    assert (
+        _run_config_type(**flags, wide_output=True, reproduction_gate=True)
+        is SweBenchReproductionGateAgentRunConfig
+    )
+    spec = SweBenchReproductionGateAgentRunConfig.model_fields["spec_version"].default
+    assert (
+        spec.endswith("/v38")
+        and SweBenchReproductionGateAgentRunConfig.model_fields["reproduction_policy"].default
+        == "failing_reproduction_before_source_edit"
+    )
+    with pytest.raises(ValueError):
+        _run_config_type(**flags, wide_output=False, reproduction_gate=True)

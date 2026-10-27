@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.errors import AgentFailure
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import (
     Thread,
@@ -60,6 +61,16 @@ class ModelToolView(Protocol):
         turn: Turn,
         definitions: tuple[ToolDescriptor, ...],
     ) -> ModelToolSelection | tuple[ToolDescriptor, ...]: ...
+
+
+@runtime_checkable
+class ModelToolCallAdmission(Protocol):
+    """视图对已提出调用的准入判定：只能拒绝为可纠正的失败结果，不授予任何执行权限。
+
+    判定只依赖持久Turn事实，恢复重放得到相同结论；拒绝的调用不请求审批、不执行。
+    """
+
+    def admit_call(self, turn: Turn, call: ToolCallContent) -> AgentFailure | None: ...
 
 
 class NoTools:

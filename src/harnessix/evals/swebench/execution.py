@@ -251,6 +251,7 @@ async def _open_case_turn(
         profile_argument_errors_recoverable=config.profile_argument_errors_recoverable,
         force_review_after_repairs=config.force_review_after_repairs,
         sibling_scope_check=config.sibling_scope_check,
+        reproduction_gate=config.reproduction_gate,
     )
 
 
@@ -415,6 +416,7 @@ async def run_swebench_agent_suite(
                 test_timeouts_are_failures=config.test_timeouts_are_failures,
                 truncation_is_quality=config.truncation_is_quality_failure,
                 profile_argument_errors_recoverable=config.profile_argument_errors_recoverable,
+                reproduction_gate=config.reproduction_gate,
             )
             if terminal_attempt:
                 _require_case_evidence(state, thread_id, turn, patch)
