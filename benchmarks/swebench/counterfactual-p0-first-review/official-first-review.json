@@ -1,0 +1,32 @@
+{
+  "scope": "p0_counterfactual_first_review_patches_diagnostic",
+  "predictions_sha256": "6f881bac3abfaef74574b4a435254a7b42a4596bbd656630ae6d2507fdb88169",
+  "run_id": "harnessix-cf-first-review-6f881bac3abf",
+  "results_sha256": "f8581d07701157d23af4f6f70cbfa7d01149aaca6996008e98e1e0363cdfbe38",
+  "submitted_instances": 16,
+  "completed_instances": 16,
+  "resolved_instances": 9,
+  "unresolved_instances": 7,
+  "error_instances": 0,
+  "resolved_ids": [
+    "django__django-11433",
+    "django__django-12262",
+    "django__django-13346",
+    "django__django-13569",
+    "django__django-13821",
+    "django__django-14053",
+    "matplotlib__matplotlib-25311",
+    "sympy__sympy-12481",
+    "sympy__sympy-18763"
+  ],
+  "unresolved_ids": [
+    "django__django-15315",
+    "sympy__sympy-13852",
+    "sympy__sympy-14976",
+    "sympy__sympy-15017",
+    "sympy__sympy-18698",
+    "sympy__sympy-19783",
+    "sympy__sympy-21930"
+  ],
+  "error_ids": []
+}

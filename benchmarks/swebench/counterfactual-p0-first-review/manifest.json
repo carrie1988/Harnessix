@@ -1,0 +1,10 @@
+{
+  "sha256": "6f881bac3abfaef74574b4a435254a7b42a4596bbd656630ae6d2507fdb88169",
+  "count": 16,
+  "empty_first_review": [
+    "matplotlib__matplotlib-22871",
+    "sympy__sympy-13031",
+    "django__django-11087"
+  ],
+  "source": "replay of successful apply_patch_batch calls up to the first successful git_review; replay of all calls equals the delivered patch for 75/75 cases"
+}
