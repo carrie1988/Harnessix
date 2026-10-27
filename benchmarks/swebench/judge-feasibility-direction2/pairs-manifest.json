@@ -1,0 +1,97 @@
+[
+ {
+  "instance_id": "astropy__astropy-8872",
+  "resolved_source": "v15",
+  "unresolved_source": "v14"
+ },
+ {
+  "instance_id": "django__django-11433",
+  "resolved_source": "d38",
+  "unresolved_source": "v62"
+ },
+ {
+  "instance_id": "django__django-11490",
+  "resolved_source": "v55r3",
+  "unresolved_source": "v55"
+ },
+ {
+  "instance_id": "django__django-13121",
+  "resolved_source": "p2",
+  "unresolved_source": "v56"
+ },
+ {
+  "instance_id": "django__django-13590",
+  "resolved_source": "v20",
+  "unresolved_source": "v15"
+ },
+ {
+  "instance_id": "django__django-15315",
+  "resolved_source": "v62",
+  "unresolved_source": "first-review"
+ },
+ {
+  "instance_id": "matplotlib__matplotlib-22865",
+  "resolved_source": "p2",
+  "unresolved_source": "v56"
+ },
+ {
+  "instance_id": "matplotlib__matplotlib-25311",
+  "resolved_source": "first-review",
+  "unresolved_source": "v57p"
+ },
+ {
+  "instance_id": "matplotlib__matplotlib-25332",
+  "resolved_source": "v55r4",
+  "unresolved_source": "v55r3"
+ },
+ {
+  "instance_id": "matplotlib__matplotlib-26291",
+  "resolved_source": "d7",
+  "unresolved_source": "v54"
+ },
+ {
+  "instance_id": "pytest-dev__pytest-7205",
+  "resolved_source": "v15",
+  "unresolved_source": "v25"
+ },
+ {
+  "instance_id": "sphinx-doc__sphinx-7889",
+  "resolved_source": "v55",
+  "unresolved_source": "v55r4"
+ },
+ {
+  "instance_id": "sphinx-doc__sphinx-8593",
+  "resolved_source": "d7",
+  "unresolved_source": "v54"
+ },
+ {
+  "instance_id": "sphinx-doc__sphinx-9698",
+  "resolved_source": "d7",
+  "unresolved_source": "v54"
+ },
+ {
+  "instance_id": "sympy__sympy-14976",
+  "resolved_source": "v61r",
+  "unresolved_source": "first-review"
+ },
+ {
+  "instance_id": "sympy__sympy-15809",
+  "resolved_source": "p2",
+  "unresolved_source": "v56"
+ },
+ {
+  "instance_id": "sympy__sympy-17139",
+  "resolved_source": "v55",
+  "unresolved_source": "v55r3"
+ },
+ {
+  "instance_id": "sympy__sympy-18763",
+  "resolved_source": "first-review",
+  "unresolved_source": "v61r"
+ },
+ {
+  "instance_id": "sympy__sympy-19783",
+  "resolved_source": "v61r",
+  "unresolved_source": "first-review"
+ }
+]

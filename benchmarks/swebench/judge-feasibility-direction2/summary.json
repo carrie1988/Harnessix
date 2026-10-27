@@ -1,0 +1,35 @@
+{
+ "question": "can the agent model pick the officially resolved patch of a decisive pair from the issue text and the two diffs only",
+ "pairs": 19,
+ "presentation": "each pair twice with A/B order swapped",
+ "plain_r1": {
+  "consistent_right": 11,
+  "consistent_wrong": 2,
+  "order_dependent": 6,
+  "expected_selection_accuracy": 0.74,
+  "cost_cny": 0.7398,
+  "note": "first session run; per-call log lost with the session scratch directory, counts from its console output"
+ },
+ "plain_r2": {
+  "consistent_right": 11,
+  "consistent_wrong": 1,
+  "order_dependent": 7,
+  "expected_selection_accuracy": 0.76,
+  "cost_cny": 0.3807,
+  "picks": {
+   "A": 24,
+   "B": 14
+  }
+ },
+ "thinking_r2": {
+  "calls": 9,
+  "no_answer_at_16384_output_tokens": 5,
+  "cost_cny": 3.2434,
+  "verdict": "stopped early: unreliable and about 0.36 CNY per call"
+ },
+ "first_trajectory_signals": {
+  "clean_closure": "26/37 resolved",
+  "normal_but_struggled": "15/19 resolved",
+  "abnormal_end": "3/19 resolved"
+ }
+}
