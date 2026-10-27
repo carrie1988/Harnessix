@@ -1,0 +1,15 @@
+{
+  "scope": "d39b_attempted_cases_diagnostic_not_preregistered_metric",
+  "returncode": 0,
+  "predictions_sha256": "db8a645f726feb16f2b5a42dc47dbe2f655807e4fe06be91c86f423181ecbe2d",
+  "results_sha256": "890dda4c34a3eb855f0ae8bb7bcc41b94708505fff469e509177b8d97a32b519",
+  "submitted_instances": 3,
+  "completed_instances": 3,
+  "resolved_instances": 0,
+  "unresolved_instances": 3,
+  "empty_patch_instances": 0,
+  "error_instances": 0,
+  "resolved_ids": [],
+  "error_ids": [],
+  "excluded_unsealed_ids": []
+}

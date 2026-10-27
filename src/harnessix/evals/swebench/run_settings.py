@@ -33,6 +33,8 @@ from harnessix.product_config.action_contracts import ProductProcessProfile
 
 _PROVIDER = "openai_chat"
 _PRICE_VALIDITY = timedelta(hours=24)
+# 按时段计价的单价只在每晚窗口内可用：思考配置单轮约需两个窗口，有效期覆盖三个夜间窗口。
+_WINDOWED_PRICE_VALIDITY = timedelta(hours=72)
 # 原生思考的推理Token计入max_tokens，输出上限放宽一倍以免推理挤占回答而截断。
 _NATIVE_THINKING_OUTPUT = 8192
 # 全程思考：推理与回答共用max_tokens（thinking_budget实测不约束推理），

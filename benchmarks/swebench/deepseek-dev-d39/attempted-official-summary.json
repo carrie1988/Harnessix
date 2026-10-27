@@ -1,0 +1,17 @@
+{
+  "scope": "d39_attempted_cases_diagnostic_not_preregistered_metric",
+  "returncode": 0,
+  "predictions_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "results_sha256": "b09ec7a4af28ea5c8e7d549dc30d25c70d6b0a1495293f6a2455248907993faa",
+  "submitted_instances": 0,
+  "completed_instances": 0,
+  "resolved_instances": 0,
+  "unresolved_instances": 0,
+  "empty_patch_instances": 0,
+  "error_instances": 0,
+  "resolved_ids": [],
+  "error_ids": [],
+  "excluded_unsealed_ids": [
+    "django__django-14017"
+  ]
+}

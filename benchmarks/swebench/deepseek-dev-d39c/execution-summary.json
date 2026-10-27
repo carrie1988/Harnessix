@@ -1,0 +1,86 @@
+{
+  "schema": "harnessix.swebench-development-execution-summary/v1",
+  "generated_at": "2026-10-27T17:36:34.849138+00:00",
+  "plan_sha256": "2e800c10161cb8dc0d7dcf272d6651198a25a8875d02dbd6b69a4ae37f70a8dd",
+  "source_revision": "dfe5d76815d4243733678be8add50953602af271",
+  "evaluation_scope": "development_smoke_first_3_cases",
+  "attempted_cases": 2,
+  "not_attempted_cases": 23,
+  "nonempty_patch_cases": 2,
+  "known_cost_upper_amount": "6.6991257",
+  "reserved_cost_amount": "0",
+  "complete_predictions": false,
+  "predictions_sha256": null,
+  "official_score": null,
+  "stop_reason": "swebench_fee_limit_reached",
+  "failure_counts": {},
+  "runtime_summary": null,
+  "cases": [
+    {
+      "instance_id": "django__django-14017",
+      "status": "completed",
+      "case_state_status": "completed",
+      "error_code": null,
+      "case_error_code": null,
+      "input_tokens": 903118,
+      "output_tokens": 100298,
+      "reasoning_output_tokens": 94256,
+      "model_steps": 34,
+      "accounted_attempts": 35,
+      "compaction_attempts": [
+        {
+          "status": "summarized",
+          "error_code": null,
+          "input_tokens": 23017,
+          "output_tokens": 484,
+          "usage_completeness": "complete"
+        }
+      ],
+      "started_at": "2026-10-27T16:38:51.961807+00:00",
+      "known_cost_upper_amount": "2.5905852",
+      "cost_complete": true,
+      "unaccounted_attempts": 0,
+      "patch_sha256": "0831d087ffcac9cbecc820e6751ece7fa63ca3f17b998b73be53789b4503f679"
+    },
+    {
+      "instance_id": "astropy__astropy-13977",
+      "status": "completed",
+      "case_state_status": "completed",
+      "error_code": null,
+      "case_error_code": null,
+      "input_tokens": 1823587,
+      "output_tokens": 118362,
+      "reasoning_output_tokens": 105723,
+      "model_steps": 64,
+      "accounted_attempts": 67,
+      "compaction_attempts": [
+        {
+          "status": "summarized",
+          "error_code": null,
+          "input_tokens": 22438,
+          "output_tokens": 692,
+          "usage_completeness": "complete"
+        },
+        {
+          "status": "summarized",
+          "error_code": null,
+          "input_tokens": 23017,
+          "output_tokens": 847,
+          "usage_completeness": "complete"
+        },
+        {
+          "status": "summarized",
+          "error_code": null,
+          "input_tokens": 25292,
+          "output_tokens": 883,
+          "usage_completeness": "complete"
+        }
+      ],
+      "started_at": "2026-10-27T17:04:02.236848+00:00",
+      "known_cost_upper_amount": "4.1085405",
+      "cost_complete": true,
+      "unaccounted_attempts": 0,
+      "patch_sha256": "cbf8c7087da15bd6ea0677d3fc999873db09c62949c55c807f16abf1487d779d"
+    }
+  ]
+}

@@ -89,6 +89,7 @@ def test_bailian_v37_binds_idle_prices_and_the_implicit_cache_usage(tmp_path):
     assert config.price.output_per_million == "13.5"
     assert config.price.billing_provider == "aliyun-bailian"
     assert config.billing_window == MODEL_CATALOG[MODEL].billing_window
+    assert config.price.valid_until - config.price.valid_from == timedelta(hours=72)
     path = tmp_path / "bailian-v37.json"
     write_swebench_agent_run_config(path, config)
     assert read_swebench_agent_run_config(path) == config
@@ -99,6 +100,7 @@ def test_direct_deepseek_keeps_its_reported_split_and_has_no_billing_window(tmp_
     provider = config.provider_config
     assert not provider.implicit_cache_usage and not provider.omit_tool_choice
     assert config.billing_window is None
+    assert config.price.valid_until - config.price.valid_from == timedelta(hours=24)
     assert not {"implicit_cache_usage", "omit_tool_choice"} & set(provider.model_dump(mode="json"))
 
 

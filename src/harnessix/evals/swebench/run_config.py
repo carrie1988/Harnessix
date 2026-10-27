@@ -42,6 +42,7 @@ from harnessix.evals.swebench.run_settings import (
     _CURRENCY,
     _NATIVE_THINKING_OUTPUT,
     _PRICE_VALIDITY,
+    _WINDOWED_PRICE_VALIDITY,
     FULL_THINKING_MAX_CHUNKS,
     FULL_THINKING_OUTPUT,
     FULL_THINKING_RESPONSE_BYTES,
@@ -820,7 +821,8 @@ def build_swebench_agent_run_config(
             inference_mode="thinking" if thinking else "non-thinking",
             currency=_CURRENCY,
             valid_from=now,
-            valid_until=now + _PRICE_VALIDITY,
+            valid_until=now
+            + (_WINDOWED_PRICE_VALIDITY if catalog.billing_window else _PRICE_VALIDITY),
             input_tokens_min=0,
             input_tokens_max=983_616 if enable_thinking else catalog.input_tokens_max,
             input_price=catalog_input_price(catalog, prompt_cache=prompt_cache),

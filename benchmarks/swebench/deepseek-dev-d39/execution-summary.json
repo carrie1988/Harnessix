@@ -1,0 +1,40 @@
+{
+  "schema": "harnessix.swebench-development-execution-summary/v1",
+  "generated_at": "2026-10-27T15:35:16.671892+00:00",
+  "plan_sha256": "501c3c0f955a5a6c3a2f86f9ed315d0c406f08feafa8a0935dd9cfc000307f7a",
+  "source_revision": "0825c13ec490368f0051b4f31ecfaf1c292cb317",
+  "evaluation_scope": "development_smoke_first_3_cases",
+  "attempted_cases": 1,
+  "not_attempted_cases": 24,
+  "nonempty_patch_cases": 1,
+  "known_cost_upper_amount": "0.4091976",
+  "reserved_cost_amount": "1.346184",
+  "complete_predictions": false,
+  "predictions_sha256": null,
+  "official_score": null,
+  "stop_reason": "swebench_cost_incomplete",
+  "failure_counts": {
+    "provider_invalid_request": 1
+  },
+  "runtime_summary": null,
+  "cases": [
+    {
+      "instance_id": "django__django-14017",
+      "status": "failed",
+      "case_state_status": "failed",
+      "error_code": "provider_invalid_request",
+      "case_error_code": "swebench_cost_incomplete",
+      "input_tokens": 164374,
+      "output_tokens": 9926,
+      "reasoning_output_tokens": 8442,
+      "model_steps": 12,
+      "accounted_attempts": 12,
+      "compaction_attempts": [],
+      "started_at": "2026-10-27T15:31:30.813585+00:00",
+      "known_cost_upper_amount": "0.4091976",
+      "cost_complete": false,
+      "unaccounted_attempts": 1,
+      "patch_sha256": "fbebcede04b602f8e1f1a943f08ee14dbc906f4c2ec6120f7a27e4795f1faa76"
+    }
+  ]
+}
