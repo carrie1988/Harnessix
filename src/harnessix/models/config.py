@@ -97,6 +97,9 @@ class OpenAIChatConfig(ModelHTTPConfig):
     )
     # 自动前缀缓存只报告命中数（如DashScope隐式缓存）：缓存创建无附加费，未命中输入全部按未缓存计。
     implicit_cache_usage: bool = Field(default=False, exclude_if=lambda value: value is False)
+    # 端点的强制工具选择不可靠（如百炼DeepSeek的约束解码语法编译间歇超时并返回400）时
+    # 不发送tool_choice；required与指定工具仍由可执行集收窄、目录说明与Runtime校验约束。
+    omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
 
     @model_validator(mode="after")
     def validate_implicit_cache_usage(self) -> Self:

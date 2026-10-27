@@ -181,18 +181,24 @@ def test_implicit_cache_usage_requires_the_unmarked_automatic_layout(prompt_cach
     assert "implicit_cache_usage" not in config(prompt_cache="stable_tail").model_dump(mode="json")
 
 
-def test_dashscope_thinking_keeps_the_forced_tool_choice():
-    """百炼思考模式接受required与指定函数：与thinking_type格式不同，强制选择照常发送。"""
+@pytest.mark.parametrize("omit", [False, True])
+def test_omitted_tool_choice_leaves_required_to_the_narrowed_catalog(omit):
+    """端点强制选择不可靠时不发送tool_choice；DashScope思考开关与历史形态不变。"""
     request = model_request(with_tools=True)
     request = request.model_copy(
         update={"tool_choice": "required", "forced_tool": request.tools[0].name}
     )
     thinking = config(
-        enable_thinking=True, output_token_parameter="max_tokens", prompt_cache="stable_tail"
+        enable_thinking=True,
+        output_token_parameter="max_tokens",
+        prompt_cache="stable_tail",
+        omit_tool_choice=omit,
     )
     body, _ = build_request(request, thinking)
-    assert body["tool_choice"] == "required" and body["extra_body"] == {"enable_thinking": True}
+    assert body.get("tool_choice") == (None if omit else "required")
+    assert body["extra_body"] == {"enable_thinking": True} and body["tools"]
     assert all("reasoning_content" not in message for message in body["messages"])
+    assert "omit_tool_choice" not in config().model_dump(mode="json")
 
 
 def _usage_on(frame_value, wire):

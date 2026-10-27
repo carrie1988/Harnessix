@@ -915,3 +915,7 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   `deepseek-v4-pro-0813`：思考时仍接受`tool_choice="required"`与指定函数，历史助手消息无需`reasoning_content`；`max_tokens`包含推理
   （推理可用满上限并以`length`结束），`thinking_budget`不约束推理长度（预算200时推理1122 Token），故思考配置以`max_tokens`为唯一上限；
   思考与非思考的前缀缓存互不共享（切换后整段未命中，切回后原缓存仍在）。
+- `OpenAIChatConfig.omit_tool_choice`（默认关闭、不序列化）：端点的强制工具选择不可靠时不发送`tool_choice`，`required`与指定工具仍由
+  可执行集收窄、目录说明与Runtime“必须返回工具调用”校验约束（与`thinking_type`思考模式相同的路径）。百炼`deepseek-v4-pro-0813`的
+  `required`经约束解码语法编译，长历史下间歇返回`400 InternalError.Algo: grammar validation or compilation failed: sandbox grammar compile
+  timed out`（约30秒后；d39第12步，同一状态重放约1/3）；同一状态不发送`tool_choice`时6次采样（思考与非思考各3次）全部返回工具调用。

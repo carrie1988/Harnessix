@@ -615,6 +615,11 @@
           "default": false,
           "title": "Implicit Cache Usage",
           "type": "boolean"
+        },
+        "omit_tool_choice": {
+          "default": false,
+          "title": "Omit Tool Choice",
+          "type": "boolean"
         }
       },
       "required": [

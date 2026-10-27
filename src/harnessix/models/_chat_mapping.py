@@ -93,10 +93,11 @@ def build_request(
     if tools:
         body["tools"] = tools
         body["parallel_tool_calls"] = config.capabilities.parallel_tool_calls
-        # 思考模式只支持auto：强制与required改由可执行集收窄与目录说明约束，违约调用沿拒绝路径。
+        # 思考模式只支持auto、或端点强制选择不可靠：强制与required改由可执行集收窄与目录说明约束，
+        # 违约调用沿拒绝路径。
         tool_choice = (
             None
-            if native_thinking
+            if native_thinking or config.omit_tool_choice
             else _wire_tool_choice(request, function_choice=config.prompt_cache != "stable_tail")
         )
         if tool_choice is not None:

@@ -89,6 +89,8 @@ class CatalogModel(NamedTuple):
     implicit_cache_usage: bool = False
     # 非None时单价只在该时段内成立，执行宿主逐Case按窗口准入。
     billing_window: BillingWindow | None = None
+    # 端点的强制工具选择不可靠时不发送tool_choice（见OpenAIChatConfig.omit_tool_choice）。
+    omit_tool_choice: bool = False
 
 
 SweBenchModel = Literal[
@@ -163,8 +165,8 @@ MODEL_CATALOG: dict[str, CatalogModel] = {
     ),
     # 百炼部署的DeepSeek-V4-Pro-0813（DeepSeek官方deepseek-v4-pro即此版本）：
     # 北京闲时（22:00至次日08:00）未命中4.5、输出（思维链＋回答）13.5元/百万Token，无阶梯；
-    # 隐式缓存命中按输入单价20%计0.9，创建无附加费。默认开启思考，非思考须显式关闭；
-    # 思考时仍接受required与指定函数的tool_choice。
+    # 隐式缓存命中按输入单价20%计0.9，创建无附加费。默认开启思考，非思考须显式关闭。
+    # 强制tool_choice经约束解码语法编译，长历史下间歇超时并返回400（同一状态约1/3），故不发送。
     "deepseek-v4-pro-0813": CatalogModel(
         "harnessix-deepseek-v4-pro-0813-bailian",
         "https://help.aliyun.com/zh/model-studio/model-pricing",
@@ -177,9 +179,10 @@ MODEL_CATALOG: dict[str, CatalogModel] = {
         prompt_cache_mode="automatic",
         implicit_cache_usage=True,
         billing_window=BillingWindow("Asia/Shanghai", time(22, 0), time(8, 0)),
+        omit_tool_choice=True,
     ),
 }
-# 全程思考只开放给实测思考时仍接受强制tool_choice的端点。
+# 全程思考只开放给已求证思考协议（DashScope enable_thinking、无需回传推理）与传输上限的端点。
 _FULL_THINKING_MODELS = frozenset({"deepseek-v4-pro-0813"})
 
 
@@ -294,6 +297,7 @@ class _SweBenchAgentRunSettings(ContractModel):
             )
             or provider.implicit_cache_usage
             is not (model.implicit_cache_usage and provider.prompt_cache == "stable_tail")
+            or provider.omit_tool_choice is not model.omit_tool_choice
         ):
             raise ValueError("SWE-bench Provider不符合固定无重试工具边界")
         if (

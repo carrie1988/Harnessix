@@ -2000,3 +2000,11 @@ Patch调用，重建“累计Token最后一次不超过上限时”的补丁快�
 超过1M的24项占总费用71%而只贡献7项通过；其中4项在1M时的补丁正确、此后继续修改反而改坏（django-11433、matplotlib-25311、
 sphinx-8269、sympy-18763）。局限：真实1M预算会更早触发预算压力收尾，轨迹与“截断快照”不完全相同；样本内比较，非新鲜测量。
 据此v63两臂的单题上限取1M（两臂相同，配对不受影响），d39冒烟保持已冻结的2M。
+
+**d39冒烟（v39，百炼，开发集前3项）未通过门槛**：首项第12步（首次修改源码后、只开放验证工具的强制步骤）被百炼以HTTP 400拒绝，
+无用量，`swebench_cost_incomplete`停止整轮（已知0.41元＋预留1.35元）。按会话Item以生产历史映射重放得到原始错误：
+`InternalError.Algo: grammar validation or compilation failed: sandbox grammar compile timed out`——百炼对`tool_choice="required"`
+编译约束解码语法间歇超时（同一状态思考/非思考共9次中3次），与思考与否无关；同一状态不发送`tool_choice`的6次采样（思考与非思考各3次）全部返回工具调用、
+无纯文本回复。修复（通用、按端点绑定）：目录为百炼DeepSeek设`omit_tool_choice`，Provider不发送`tool_choice`，`required`/指定工具
+由可执行集收窄、目录说明与Runtime校验约束（同DeepSeek思考模式路径）。v37/v39在百炼上均受影响，故v63两臂在修复后重新冻结，
+并先以d39b重跑冒烟（同开发集，同门槛）。

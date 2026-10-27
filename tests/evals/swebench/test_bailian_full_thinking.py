@@ -79,7 +79,7 @@ def test_bailian_v37_binds_idle_prices_and_the_implicit_cache_usage(tmp_path):
     assert provider.base_url == "https://dashscope.aliyuncs.com/compatible-mode/v1"
     assert provider.enable_thinking is False and provider.thinking_format is None
     assert provider.prompt_cache == "stable_tail" and provider.implicit_cache_usage
-    assert provider.proxy_url == "http://127.0.0.1:7890"
+    assert provider.omit_tool_choice and provider.proxy_url == "http://127.0.0.1:7890"
     assert config.price.input_price == PartitionedInputPrice(
         uncached_per_million="4.5",
         cache_read_per_million="0.9",
@@ -96,8 +96,10 @@ def test_bailian_v37_binds_idle_prices_and_the_implicit_cache_usage(tmp_path):
 
 def test_direct_deepseek_keeps_its_reported_split_and_has_no_billing_window(tmp_path):
     config = _config(tmp_path, model="deepseek-v4-pro", plan=plan_for("deepseek-v4-pro"))
-    assert not config.provider_config.implicit_cache_usage and config.billing_window is None
-    assert "implicit_cache_usage" not in config.provider_config.model_dump(mode="json")
+    provider = config.provider_config
+    assert not provider.implicit_cache_usage and not provider.omit_tool_choice
+    assert config.billing_window is None
+    assert not {"implicit_cache_usage", "omit_tool_choice"} & set(provider.model_dump(mode="json"))
 
 
 def test_full_thinking_v39_changes_only_thinking_and_output_limits(tmp_path):
@@ -144,7 +146,12 @@ def test_full_thinking_v39_changes_only_thinking_and_output_limits(tmp_path):
 
 @pytest.mark.parametrize(
     "provider_update",
-    [{"max_output_tokens": 8192}, {"max_chunks": 10_000}, {"enable_thinking": False}],
+    [
+        {"max_output_tokens": 8192},
+        {"max_chunks": 10_000},
+        {"enable_thinking": False},
+        {"omit_tool_choice": False},
+    ],
 )
 def test_full_thinking_rejects_tampered_wire_limits(tmp_path, provider_update):
     config = _config(tmp_path, full_thinking=True, plan=_thinking_plan(MODEL, "enabled"))

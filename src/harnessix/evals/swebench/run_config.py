@@ -787,6 +787,7 @@ def build_swebench_agent_run_config(
             implicit_cache_usage=(
                 catalog.implicit_cache_usage and wire_prompt_cache == "stable_tail"
             ),
+            omit_tool_choice=catalog.omit_tool_choice,
         ),
         price=PriceSnapshot(
             version=f"{catalog.billing_provider}-{now.date().isoformat()}-{catalog.price_slug}",
