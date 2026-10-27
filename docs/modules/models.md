@@ -904,3 +904,14 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - `stable_tail`布局下逐请求说明以末尾`user`消息（`[Harness note] `前缀）呈现：DeepSeek会把所有system消息并入开头，末尾system说明使
   前缀在指令后即分叉（实测命中0%～22%，改为user后接近100%）；指定函数的`tool_choice`会改写其提示渲染（Pro命中归零），
   该布局下改发`required`，由可执行集收窄与目录说明约束。
+
+## 当前增量：百炼部署的DeepSeek（隐式缓存用量口径）
+
+- `OpenAIChatConfig.implicit_cache_usage`（默认关闭、不序列化，只允许与`prompt_cache="stable_tail"`同用）：DashScope隐式缓存的用量只报告
+  `prompt_tokens_details.cached_tokens`，既无`cache_creation_input_tokens`也无命中/未命中拆分。开启后，[流解析](../../src/harnessix/models/_chat_stream.py)
+  在命中数为非负整数时把缓存创建记0、未缓存记为`prompt_tokens - cached_tokens`（官方：隐式缓存创建按输入单价100%计、命中按20%计）；
+  关闭时同一用量仍为未知并失败关闭，显式缓存与DeepSeek直连的口径不变。
+- 百炼DeepSeek的思考开关沿用DashScope格式`enable_thinking`（该端点默认开启思考，非思考须显式发送`false`）。2026-10-27实测
+  `deepseek-v4-pro-0813`：思考时仍接受`tool_choice="required"`与指定函数，历史助手消息无需`reasoning_content`；`max_tokens`包含推理
+  （推理可用满上限并以`length`结束），`thinking_budget`不约束推理长度（预算200时推理1122 Token），故思考配置以`max_tokens`为唯一上限；
+  思考与非思考的前缀缓存互不共享（切换后整段未命中，切回后原缓存仍在）。

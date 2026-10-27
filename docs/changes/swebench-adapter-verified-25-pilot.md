@@ -1951,3 +1951,38 @@ v61中已执行的2项在报告中单独标注。
 预期选择准确率约75%（随机50%），每次比较约0.01元；存在明显首位偏好（A被选24/38），双顺序一致性可抵消。思考模式在9次调用中5次
 用满16384输出Token仍未给出答案、每次约0.36元，判为不适用并提前停止。首条轨迹信号：异常结束（预算耗尽/截断/传输）的题仅3/19通过，
 是补采第二候选的首选对象。
+
+### 百炼部署的DeepSeek与v39全程思考（2026-10-27，100元新周期）
+
+用户决定：以阿里云百炼连接DeepSeek，预算重置为100元新周期（此前费用不计入），目标为提升新鲜泛化集上的任务完成率（完成率优先、成本次之）。
+DeepSeek官方价格页写明`deepseek-v4-pro`即`DeepSeek-V4-Pro-0813`，与百炼`deepseek-v4-pro-0813`为同一模型版本；同一前缀两端Token数逐一相同
+（非思考7235、思考7316）。百炼与直连的未命中输入与输出单价相同，差异在缓存命中：直连0.30、百炼隐式缓存按输入单价20%（忙时1.8）；
+按v57p/v61r/v62共75项实际用量（命中86%）折算，同时段百炼贵约75%。百炼忙时为北京08:00～22:00、闲时22:00～次日08:00（全部单价减半），
+DeepSeek直连高峰只在工作日9:00～12:00、14:00～18:00。
+
+经本机代理的协议探测（合计约0.5元，诊断性）：
+
+| 事实 | 结果 |
+|---|---|
+| 切换思考对前缀缓存 | 直连与百炼相同：开启思考后整段未命中，切回非思考原缓存仍在；思考/非思考各维护一份缓存 |
+| 百炼思考与强制工具选择 | `tool_choice="required"`与指定函数均被接受（直连思考只支持`auto`）；历史助手消息无需`reasoning_content` |
+| 推理长度上限 | `max_tokens`包含推理（推理用满300并以`length`结束）；`thinking_budget`不约束（预算200时推理1122） |
+| 百炼流式用量 | 只有`prompt_tokens_details.cached_tokens`，无缓存创建字段、无命中/未命中拆分 |
+| 推理长度样例 | 简单步骤50～300 Token，需要分析的步骤约1200 Token |
+
+实现（通用规则，无逐题逻辑）：
+
+- [模型目录](../../src/harnessix/evals/swebench/run_settings.py)新增`deepseek-v4-pro-0813`（公开名`harnessix-deepseek-v4-pro-0813-bailian`）：按百炼闲时单价冻结
+  （未命中4.5、命中0.9、创建4.5、输出13.5元/百万Token），并绑定计价时段`BillingWindow(Asia/Shanghai, 22:00, 08:00)`；
+  [执行循环](../../src/harnessix/evals/swebench/execution.py)在每个未终态Case开始前要求“当前处于窗口内且剩余时长≥Case墙钟预算＋10分钟”，
+  否则以`swebench_billing_window_closed`停在Case之间，已完成Case保持终态，下一窗口内原样恢复。由此每个请求都按冻结的闲时单价发生。
+- `OpenAIChatConfig.implicit_cache_usage`：百炼隐式缓存只报告命中数时，创建记0、未缓存为输入减命中，使成本口径完整；其他端点不变。
+- [v39全程思考](../../src/harnessix/evals/swebench/compact_surface_config.py)只建立在v37之上（不与v38复现门禁或v30原生思考组合）：每个模型步骤开启思考，
+  工作流与强制工具选择不变；输出上限16384（在宽输出8192之上再留8192推理余量），SSE帧上限40000、响应字节上限12 MiB；推理内容不回传历史，
+  不混用思考与非思考，缓存只维护一份。只开放给实测思考时仍接受强制`tool_choice`的端点（当前仅百炼`deepseek-v4-pro-0813`）。
+- 单Case最坏预留（2M Token、100步、Case外未知请求各一）随输出上限上升：v39按闲时单价25.09元，v37同端点17.61元。
+
+验证：新增[百炼与v39测试](../../tests/evals/swebench/test_bailian_full_thinking.py)、隐式缓存用量与思考保留强制选择的
+[映射/流测试](../../tests/models/test_prompt_cache.py)、计价窗口停于Case之间并可恢复的[执行测试](../../tests/evals/swebench/test_failure_isolation.py)；
+`tests/models`与`tests/evals/swebench`全部通过，仅4项重试相关用例失败，与改动前HEAD完全相同（既有问题）；`tests/product_config`中的git用例
+因本机`/usr/bin/git` 2.24不支持`--object-format`在HEAD上同样失败，与本改动无关。

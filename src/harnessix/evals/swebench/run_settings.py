@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from pathlib import Path
 from typing import Literal, NamedTuple, Self
+from zoneinfo import ZoneInfo
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
@@ -34,11 +35,36 @@ _PROVIDER = "openai_chat"
 _PRICE_VALIDITY = timedelta(hours=24)
 # 原生思考的推理Token计入max_tokens，输出上限放宽一倍以免推理挤占回答而截断。
 _NATIVE_THINKING_OUTPUT = 8192
+# 全程思考：推理与回答共用max_tokens（thinking_budget实测不约束推理），
+# 在宽输出8192之上再留8192推理余量；每个推理Token约一个SSE帧，帧数与响应字节上限随之放宽。
+FULL_THINKING_OUTPUT = 16_384
+FULL_THINKING_MAX_CHUNKS = 40_000
+FULL_THINKING_RESPONSE_BYTES = 12 * 1024 * 1024
 _CURRENCY: Literal["CNY"] = "CNY"
 _BAILIAN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
 _NATIVE_SELECTOR_PROFILE = "swebench-public-tests-v9"
+
+
+class BillingWindow(NamedTuple):
+    """按时段计价的单价只在该本地时段内成立；跨午夜的窗口以start>end表示。"""
+
+    timezone: str
+    start: time
+    end: time
+
+    def remaining(self, now: datetime) -> timedelta | None:
+        """now位于窗口内时返回距窗口结束的时长，否则返回None。"""
+        local = now.astimezone(ZoneInfo(self.timezone))
+        day = local.replace(second=0, microsecond=0)
+        start = day.replace(hour=self.start.hour, minute=self.start.minute)
+        end = day.replace(hour=self.end.hour, minute=self.end.minute)
+        if self.start < self.end:
+            return end - local if start <= local < end else None
+        if local >= start:
+            return end + timedelta(days=1) - local
+        return end - local if local < end else None
 
 
 class CatalogModel(NamedTuple):
@@ -59,10 +85,19 @@ class CatalogModel(NamedTuple):
     # explicit_tail需在请求中打缓存标记；automatic由服务端自动缓存前缀，请求不变。
     prompt_cache_mode: Literal["explicit_tail", "automatic"] = "explicit_tail"
     thinking_format: Literal["thinking_type"] | None = None
+    # 自动缓存只报告命中数、创建无附加费（DashScope隐式缓存）。
+    implicit_cache_usage: bool = False
+    # 非None时单价只在该时段内成立，执行宿主逐Case按窗口准入。
+    billing_window: BillingWindow | None = None
 
 
 SweBenchModel = Literal[
-    "qwen3.8-max", "qwen3.7-plus", "qwen3.8-flash", "deepseek-flash", "deepseek-v4-pro"
+    "qwen3.8-max",
+    "qwen3.7-plus",
+    "qwen3.8-flash",
+    "deepseek-flash",
+    "deepseek-v4-pro",
+    "deepseek-v4-pro-0813",
 ]
 MODEL_CATALOG: dict[str, CatalogModel] = {
     "qwen3.8-max": CatalogModel(
@@ -126,7 +161,26 @@ MODEL_CATALOG: dict[str, CatalogModel] = {
         prompt_cache_mode="automatic",
         thinking_format="thinking_type",
     ),
+    # 百炼部署的DeepSeek-V4-Pro-0813（DeepSeek官方deepseek-v4-pro即此版本）：
+    # 北京闲时（22:00至次日08:00）未命中4.5、输出（思维链＋回答）13.5元/百万Token，无阶梯；
+    # 隐式缓存命中按输入单价20%计0.9，创建无附加费。默认开启思考，非思考须显式关闭；
+    # 思考时仍接受required与指定函数的tool_choice。
+    "deepseek-v4-pro-0813": CatalogModel(
+        "harnessix-deepseek-v4-pro-0813-bailian",
+        "https://help.aliyun.com/zh/model-studio/model-pricing",
+        "deepseek-v4-pro-0813-idle",
+        "4.5",
+        "13.5",
+        1_048_576,
+        "0.9",
+        "4.5",
+        prompt_cache_mode="automatic",
+        implicit_cache_usage=True,
+        billing_window=BillingWindow("Asia/Shanghai", time(22, 0), time(8, 0)),
+    ),
 }
+# 全程思考只开放给实测思考时仍接受强制tool_choice的端点。
+_FULL_THINKING_MODELS = frozenset({"deepseek-v4-pro-0813"})
 
 
 def catalog_input_price(
@@ -208,13 +262,20 @@ class _SweBenchAgentRunSettings(ContractModel):
         if model is None or (self.thinking_enabled and provider.model != _THINKING_MODEL):
             raise ValueError("SWE-bench模型不在已求证价格目录内")
         output_token_parameter = "max_completion_tokens" if self.thinking_enabled else "max_tokens"
-        model_thinking = self.thinking_enabled or self.native_thinking
+        model_thinking = self.thinking_enabled or self.native_thinking or self.full_thinking
         if self.native_thinking and (
             model.thinking_format is None or provider.max_output_tokens != _NATIVE_THINKING_OUTPUT
         ):
             raise ValueError("SWE-bench原生思考只用于已求证thinking_type格式的模型与固定输出上限")
-        if self.wide_output and provider.max_output_tokens != _NATIVE_THINKING_OUTPUT:
-            raise ValueError("SWE-bench宽输出上限固定为8192")
+        if self.full_thinking and (
+            provider.model not in _FULL_THINKING_MODELS
+            or provider.max_chunks != FULL_THINKING_MAX_CHUNKS
+            or provider.max_response_bytes != FULL_THINKING_RESPONSE_BYTES
+        ):
+            raise ValueError("SWE-bench全程思考只用于已求证强制工具选择的端点与固定传输上限")
+        wide_output_tokens = FULL_THINKING_OUTPUT if self.full_thinking else _NATIVE_THINKING_OUTPUT
+        if self.wide_output and provider.max_output_tokens != wide_output_tokens:
+            raise ValueError("SWE-bench宽输出上限固定为8192，全程思考另加8192推理余量")
         if (
             provider.base_url != model.base_url
             or provider.thinking_format != model.thinking_format
@@ -231,6 +292,8 @@ class _SweBenchAgentRunSettings(ContractModel):
             != _wire_prompt_cache(
                 model, prompt_cache=self.prompt_cache, stable_tail=self.stable_cache_tail
             )
+            or provider.implicit_cache_usage
+            is not (model.implicit_cache_usage and provider.prompt_cache == "stable_tail")
         ):
             raise ValueError("SWE-bench Provider不符合固定无重试工具边界")
         if (
@@ -446,6 +509,14 @@ class _SweBenchAgentRunSettings(ContractModel):
     def reproduction_gate(self) -> bool:
         return False
 
+    @property
+    def full_thinking(self) -> bool:
+        return False
+
+    @property
+    def billing_window(self) -> BillingWindow | None:
+        return self.model.billing_window
+
     def known_case_reserve_units(
         self, budget: SweBenchTaskBudget, *, input_rate: int, output_rate: int
     ) -> int:
@@ -481,7 +552,7 @@ class _SweBenchAgentRunSettings(ContractModel):
         expected_parameters: dict[str, str | int | bool] = {"thinking": "disabled"}
         if self.thinking_enabled:
             expected_parameters = {"thinking": "enabled", "thinking_budget": 1024}
-        if self.native_thinking:
+        if self.native_thinking or self.full_thinking:
             expected_parameters = {"thinking": "enabled"}
         expected_cases = tuple(sorted((case.instance_id, case.repo) for case in plan.cases))
         if (

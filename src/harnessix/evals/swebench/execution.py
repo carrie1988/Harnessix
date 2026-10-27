@@ -37,6 +37,7 @@ from harnessix.evals.swebench.execution_contracts import (
 )
 from harnessix.evals.swebench.execution_costs import (
     _can_isolate_transport_failure,
+    _case_fits_billing_window,
     _next_case_reserve,
     _turn_cost,
     _unknown_request_reserve,
@@ -355,6 +356,11 @@ async def run_swebench_agent_suite(
                 config.price.valid_from <= utc_now() < config.price.valid_until
             ):
                 raise KernelError("swebench_price_expired", "SWE-bench固定价格快照已过期")
+            if not terminal_attempt and not _case_fits_billing_window(plan, config, utc_now()):
+                # 停在Case之间：已完成Case保持终态，下一计价窗口内可原样恢复。
+                raise KernelError(
+                    "swebench_billing_window_closed", "SWE-bench计价时段不足以容纳下一Case"
+                )
             if not terminal_attempt and (
                 known_cost_units + reserved_cost_units + _next_case_reserve(plan, config)
                 > amount_units(config.fee_stop_amount)

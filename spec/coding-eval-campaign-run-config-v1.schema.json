@@ -419,6 +419,11 @@
           ],
           "default": null,
           "title": "Prompt Cache"
+        },
+        "implicit_cache_usage": {
+          "default": false,
+          "title": "Implicit Cache Usage",
+          "type": "boolean"
         }
       },
       "required": [

@@ -18,6 +18,7 @@ from harnessix.evals.swebench.compact_surface_config import (
     SweBenchExplainedGatesAgentRunConfig,
     SweBenchForcedChoiceTolerantAgentRunConfig,
     SweBenchFullCachedHistoryAgentRunConfig,
+    SweBenchFullThinkingAgentRunConfig,
     SweBenchNativeThinkingAgentRunConfig,
     SweBenchPatchDeadlineAgentRunConfig,
     SweBenchPromptCacheAgentRunConfig,
@@ -40,6 +41,9 @@ from harnessix.evals.swebench.run_settings import (
     _CURRENCY,
     _NATIVE_THINKING_OUTPUT,
     _PRICE_VALIDITY,
+    FULL_THINKING_MAX_CHUNKS,
+    FULL_THINKING_OUTPUT,
+    FULL_THINKING_RESPONSE_BYTES,
     MODEL_CATALOG,
     SweBenchModel,
     _SweBenchAgentRunSettings,
@@ -352,6 +356,7 @@ SweBenchRunConfig = (
     | SweBenchSiblingScopeAgentRunConfig
     | SweBenchWideOutputAgentRunConfig
     | SweBenchReproductionGateAgentRunConfig
+    | SweBenchFullThinkingAgentRunConfig
 )
 
 
@@ -400,6 +405,7 @@ def _run_config_type(
     sibling_scope: bool = False,
     wide_output: bool = False,
     reproduction_gate: bool = False,
+    full_thinking: bool = False,
 ) -> type[SweBenchRunConfig]:
     """拒绝隐式模式组合，版本选择不改变旧配置序列化。"""
     flags = (
@@ -438,6 +444,7 @@ def _run_config_type(
         (sibling_scope, "同类实现检查"),
         (wide_output, "宽输出上限"),
         (reproduction_gate, "复现门禁"),
+        (full_thinking, "全程思考"),
     )
     for value, name in flags:
         if type(value) is not bool:
@@ -461,6 +468,8 @@ def _run_config_type(
         raise ValueError("SWE-bench缓存收尾工作流只在前缀缓存且无工作集、无压力窗口时冻结")
     if reproduction_gate and not wide_output:
         raise ValueError("SWE-bench复现门禁只在宽输出上限组合之上冻结")
+    if full_thinking and (reproduction_gate or native_thinking or not wide_output):
+        raise ValueError("SWE-bench全程思考只在宽输出上限组合之上冻结，不与复现门禁或原生思考组合")
     if wide_output and not sibling_scope:
         raise ValueError("SWE-bench宽输出上限只在同类实现检查组合之上冻结")
     if sibling_scope and not repair_closure:
@@ -542,6 +551,8 @@ def _run_config_type(
         )
     ):
         # 前缀缓存下关闭工作集：历史只追加，避免遮蔽改写前缀与重复读取。
+        if full_thinking:
+            return SweBenchFullThinkingAgentRunConfig
         if reproduction_gate:
             return SweBenchReproductionGateAgentRunConfig
         if wide_output:
@@ -684,6 +695,7 @@ def build_swebench_agent_run_config(
     sibling_scope: bool = False,
     wide_output: bool = False,
     reproduction_gate: bool = False,
+    full_thinking: bool = False,
 ) -> SweBenchRunConfig:
     """按已求证的北京 PAYG 价格创建可持久化执行绑定。"""
 
@@ -726,6 +738,14 @@ def build_swebench_agent_run_config(
         sibling_scope=sibling_scope,
         wide_output=wide_output,
         reproduction_gate=reproduction_gate,
+        full_thinking=full_thinking,
+    )
+    thinking = enable_thinking or native_thinking or full_thinking
+    max_output_tokens = 4096
+    if native_thinking or wide_output:
+        max_output_tokens = FULL_THINKING_OUTPUT if full_thinking else _NATIVE_THINKING_OUTPUT
+    wire_prompt_cache = _wire_prompt_cache(
+        catalog, prompt_cache=prompt_cache, stable_tail=argument_repair
     )
     extra: dict[str, object] = (
         {}
@@ -748,22 +768,24 @@ def build_swebench_agent_run_config(
                 tool_calls=True,
                 parallel_tool_calls=parameters.get("parallel_tool_calls") is True,
             ),
-            max_output_tokens=_NATIVE_THINKING_OUTPUT if native_thinking or wide_output else 4096,
+            max_output_tokens=max_output_tokens,
             timeout_seconds=plan.task_budget.timeout_seconds,
             io_timeout_seconds=180,
             max_attempts=1,
             retry_delay_seconds=0,
             max_request_bytes=250_000,
-            max_response_bytes=4 * 1024 * 1024,
+            max_response_bytes=FULL_THINKING_RESPONSE_BYTES if full_thinking else 4 * 1024 * 1024,
+            max_chunks=FULL_THINKING_MAX_CHUNKS if full_thinking else 10_000,
             output_token_parameter="max_completion_tokens" if enable_thinking else "max_tokens",
-            enable_thinking=enable_thinking or native_thinking,
+            enable_thinking=thinking,
             thinking_budget=1024 if enable_thinking else None,
             thinking_format=catalog.thinking_format,
             connect_retries=3 if connect_retry else 0,
             proxy_url=provider_proxy_url,
             repair_tool_arguments=argument_repair,
-            prompt_cache=_wire_prompt_cache(
-                catalog, prompt_cache=prompt_cache, stable_tail=argument_repair
+            prompt_cache=wire_prompt_cache,
+            implicit_cache_usage=(
+                catalog.implicit_cache_usage and wire_prompt_cache == "stable_tail"
             ),
         ),
         price=PriceSnapshot(
@@ -773,7 +795,7 @@ def build_swebench_agent_run_config(
             model=model,
             region=catalog.region,
             service_tier="payg",
-            inference_mode="thinking" if enable_thinking or native_thinking else "non-thinking",
+            inference_mode="thinking" if thinking else "non-thinking",
             currency=_CURRENCY,
             valid_from=now,
             valid_until=now + _PRICE_VALIDITY,
@@ -786,7 +808,7 @@ def build_swebench_agent_run_config(
             billing_provider=catalog.billing_provider,
             region=catalog.region,
             service_tier="payg",
-            inference_mode="thinking" if enable_thinking or native_thinking else "non-thinking",
+            inference_mode="thinking" if thinking else "non-thinking",
         ),
         fee_stop_amount=fee_stop_amount,
         case_process_profiles=case_process_profiles,

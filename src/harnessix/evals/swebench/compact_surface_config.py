@@ -552,3 +552,20 @@ class SweBenchReproductionGateAgentRunConfig(SweBenchWideOutputAgentRunConfig):
     @property
     def reproduction_gate(self) -> bool:
         return True
+
+
+class SweBenchFullThinkingAgentRunConfig(SweBenchWideOutputAgentRunConfig):
+    """v37之上：每个模型步骤开启思考，工作流与强制工具选择不变；输出上限另加8192推理余量。
+
+    v57p/v58/v60的27项未解决中16项正常收尾而修复逻辑错误；同一模型的非思考配置已用尽工作流层面的收尾杠杆。
+    推理内容不回传历史，思考与非思考不混用，前缀缓存只维护一份。
+    """
+
+    spec_version: Literal["harnessix.swebench-agent-run-config/v39"] = (  # type: ignore[assignment]
+        "harnessix.swebench-agent-run-config/v39"
+    )
+    thinking_policy: Literal["every_step_thinking"] = "every_step_thinking"
+
+    @property
+    def full_thinking(self) -> bool:
+        return True

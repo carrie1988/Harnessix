@@ -124,7 +124,9 @@ def _complete_hit_miss_split(usage: CompletionUsage, cached: int | None) -> bool
     )
 
 
-def _complete_usage_observation(usage: CompletionUsage) -> UsageObservation:
+def _complete_usage_observation(
+    usage: CompletionUsage, *, implicit_cache: bool = False
+) -> UsageObservation:
     """使用原领域合同验证明细；原始计数和验证异常不进入诊断消息。"""
     inputs, outputs = usage.prompt_tokens_details, usage.completion_tokens_details
     cached = inputs.cached_tokens if inputs else None
@@ -135,6 +137,9 @@ def _complete_usage_observation(usage: CompletionUsage) -> UsageObservation:
         written = extra if type(extra) is int and extra >= 0 else None
     if written is None and _complete_hit_miss_split(usage, cached):
         # DeepSeek自动前缀缓存按命中/未命中完整拆分输入，无缓存创建计费项。
+        written = 0
+    if written is None and implicit_cache and type(cached) is int and cached >= 0:
+        # 隐式缓存只报告命中数；创建按未缓存单价计，不存在单独的创建计费项。
         written = 0
     try:
         return UsageObservation(
@@ -161,9 +166,11 @@ class ChatStream:
         parallel: bool,
         attempt_id: UUID,
         repair_arguments: bool = False,
+        implicit_cache: bool = False,
     ) -> None:
         self._request = request
         self._repair_arguments = repair_arguments
+        self._implicit_cache = implicit_cache
         self._names = names
         self._parallel = parallel
         self._response_id: str | None = None
@@ -262,7 +269,7 @@ class ChatStream:
             or usage.total_tokens != usage.prompt_tokens + usage.completion_tokens
         ):
             raise ChatProtocolError(ChatProtocolReason.USAGE_SHAPE_OR_ORDER_INVALID)
-        self._observation = _complete_usage_observation(usage)
+        self._observation = _complete_usage_observation(usage, implicit_cache=self._implicit_cache)
         self._usage = Usage(input_tokens=usage.prompt_tokens, output_tokens=usage.completion_tokens)
         return self._observe()
 

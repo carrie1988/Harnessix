@@ -201,6 +201,34 @@ async def test_insufficient_next_case_funds_stop_before_next_request(tmp_path, m
     assert not (root / "predictions.jsonl").exists()
 
 
+@pytest.mark.asyncio
+async def test_closed_billing_window_stops_between_cases_and_resumes_later(tmp_path, monkeypatch):
+    from harnessix.evals.swebench import run_settings
+    from tests.evals.swebench.test_execution import NOW
+
+    plan = _plan()
+    config = _config(tmp_path, plan)
+    model = config.provider_config.model
+    entry = run_settings.MODEL_CATALOG[model]
+    needed = timedelta(seconds=plan.task_budget.timeout_seconds) + timedelta(minutes=10)
+    opens = (NOW - timedelta(hours=1)).time()
+
+    def window(closes):
+        return entry._replace(billing_window=run_settings.BillingWindow("UTC", opens, closes))
+
+    monkeypatch.setitem(run_settings.MODEL_CATALOG, model, window((NOW + needed / 2).time()))
+    turns = {index: _accounted_turn(index, config) for index in range(25)}
+    calls = _offline_suite(monkeypatch, plan, config, turns)
+    with pytest.raises(KernelError) as caught:
+        await _run_offline_suite(plan, config)
+    assert caught.value.code == "swebench_billing_window_closed" and calls == []
+    suite = read_suite_execution_state(Path(config.work_root) / "suite-state.json", plan)
+    assert suite.attempted_case_ids == () and suite.case_states[0].status == "ready"
+    monkeypatch.setitem(run_settings.MODEL_CATALOG, model, window((NOW + needed).time()))
+    summary = await _run_offline_suite(plan, config)
+    assert summary["completed_cases"] == 25 and calls == [c.instance_id for c in plan.cases]
+
+
 @pytest.mark.parametrize(
     "defect",
     [

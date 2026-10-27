@@ -155,6 +155,46 @@ def test_thinking_type_format_requires_an_explicit_switch():
         OpenAIChatConfig(model="m", thinking_format="thinking_type")
 
 
+@pytest.mark.parametrize("adapter", ["openai"], indirect=True)
+@pytest.mark.parametrize("implicit", [False, True])
+async def test_implicit_cache_usage_prices_unreported_creation_as_zero(
+    adapter, tmp_path: Path, implicit
+):
+    """DashScope隐式缓存只报告命中数：声明隐式口径时创建计0，否则仍失败关闭为未知。"""
+    parts = adapter.wire.text_frames()
+    value = adapter.wire.chunk(usage=True)
+    value["usage"]["prompt_tokens_details"] = {"cached_tokens": 4}
+    parts[-2] = adapter.wire.frame(value)
+    turn, _, _ = await execute(
+        adapter, tmp_path, parts, prompt_cache="stable_tail", implicit_cache_usage=implicit
+    )
+    usage = turn.model_attempts[0].usage
+    assert usage.cache_read_input_tokens == 4
+    assert usage.cache_creation_input_tokens == (0 if implicit else None)
+    assert usage.uncached_input_tokens == (6 if implicit else None)
+
+
+@pytest.mark.parametrize("prompt_cache", [None, "explicit_tail"])
+def test_implicit_cache_usage_requires_the_unmarked_automatic_layout(prompt_cache):
+    with pytest.raises(ValueError):
+        config(prompt_cache=prompt_cache, implicit_cache_usage=True)
+    assert "implicit_cache_usage" not in config(prompt_cache="stable_tail").model_dump(mode="json")
+
+
+def test_dashscope_thinking_keeps_the_forced_tool_choice():
+    """百炼思考模式接受required与指定函数：与thinking_type格式不同，强制选择照常发送。"""
+    request = model_request(with_tools=True)
+    request = request.model_copy(
+        update={"tool_choice": "required", "forced_tool": request.tools[0].name}
+    )
+    thinking = config(
+        enable_thinking=True, output_token_parameter="max_tokens", prompt_cache="stable_tail"
+    )
+    body, _ = build_request(request, thinking)
+    assert body["tool_choice"] == "required" and body["extra_body"] == {"enable_thinking": True}
+    assert all("reasoning_content" not in message for message in body["messages"])
+
+
 def _usage_on(frame_value, wire):
     value = dict(frame_value)
     value["usage"] = wire.chunk(usage=True)["usage"]

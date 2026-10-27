@@ -95,6 +95,14 @@ class OpenAIChatConfig(ModelHTTPConfig):
         default=None,
         exclude_if=lambda value: value is None,
     )
+    # 自动前缀缓存只报告命中数（如DashScope隐式缓存）：缓存创建无附加费，未命中输入全部按未缓存计。
+    implicit_cache_usage: bool = Field(default=False, exclude_if=lambda value: value is False)
+
+    @model_validator(mode="after")
+    def validate_implicit_cache_usage(self) -> Self:
+        if self.implicit_cache_usage and self.prompt_cache != "stable_tail":
+            raise ValueError("隐式缓存用量口径只用于不打缓存标记的自动前缀缓存")
+        return self
 
     @model_validator(mode="after")
     def validate_thinking_budget(self) -> Self:

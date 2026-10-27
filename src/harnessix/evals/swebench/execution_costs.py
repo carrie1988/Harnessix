@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Turn, TurnStatus
 from harnessix.agent.usage import ModelAttempt
@@ -120,3 +122,19 @@ def _next_case_reserve(
         output_rate=rate_units(config.price.output_per_million),
     )
     return known + _unknown_request_reserve(config)
+
+
+# 工作区物化与Turn恢复先于Turn计时，窗口准入另留余量。
+_BILLING_WINDOW_MARGIN = timedelta(minutes=10)
+
+
+def _case_fits_billing_window(
+    plan: SweBenchPreRegistrationPlan, config: SweBenchAgentRunConfig, now: datetime
+) -> bool:
+    """按时段计价时，下一Case须在窗口内开始，且墙钟预算加余量在窗口结束前耗尽。"""
+    window = config.billing_window
+    if window is None:
+        return True
+    remaining = window.remaining(now)
+    budget = timedelta(seconds=plan.task_budget.timeout_seconds) + _BILLING_WINDOW_MARGIN
+    return remaining is not None and remaining >= budget

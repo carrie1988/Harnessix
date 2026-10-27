@@ -262,6 +262,7 @@ class OpenAIChatProvider:
                     parallel=self.config.capabilities.parallel_tool_calls,
                     attempt_id=attempt_id,
                     repair_arguments=self.config.repair_tool_arguments,
+                    implicit_cache=self.config.implicit_cache_usage,
                 )
                 while True:
                     try:
