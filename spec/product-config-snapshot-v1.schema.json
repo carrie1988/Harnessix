@@ -139,6 +139,23 @@
           "minimum": 1,
           "title": "Max Chunks",
           "type": "integer"
+        },
+        "thinking": {
+          "anyOf": [
+            {
+              "enum": [
+                "tool_steps",
+                "every_step",
+                "off"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thinking"
         }
       },
       "required": [
@@ -239,6 +256,27 @@
           ],
           "default": null,
           "title": "Output Token Parameter"
+        },
+        "thinking_protocol": {
+          "anyOf": [
+            {
+              "enum": [
+                "dashscope_enable_thinking",
+                "deepseek_thinking_type"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thinking Protocol"
+        },
+        "omit_tool_choice": {
+          "default": false,
+          "title": "Omit Tool Choice",
+          "type": "boolean"
         }
       },
       "required": [

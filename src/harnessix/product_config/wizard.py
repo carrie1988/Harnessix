@@ -9,6 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Never
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from harnessix.agent.errors import KernelError
@@ -26,6 +27,7 @@ from harnessix.product_config.contracts import (
     ProductConfigV2,
     ProviderDefinition,
     SecretReference,
+    ThinkingProtocol,
     product_config_digest,
 )
 from harnessix.product_config.product_contracts import (
@@ -62,11 +64,39 @@ class _CommitState:
     previous_source_sha256: str | None = None
 
 
+# 思考Profile的传输上限沿用SWE-bench v40实测值：推理与回答共用32768输出，约一个SSE帧/Token、
+# 约60字节/Token；单步生成32768 Token约需十余分钟，请求与流间隔超时随之放宽。
+_THINKING_LIMITS: dict[str, object] = {
+    "max_output_tokens": 32_768,
+    "max_chunks": 80_000,
+    "max_response_bytes": 12 * 1024 * 1024,
+    "timeout_seconds": 900.0,
+    "io_timeout_seconds": 180.0,
+}
+
+
+def thinking_preset(base_url: str, model: str) -> tuple[ThinkingProtocol, bool] | None:
+    """已求证端点与模型族的思考预设：（思考协议，是否不发送tool_choice）；其余端点不预设。"""
+
+    host = urlsplit(base_url).hostname
+    if host == "dashscope.aliyuncs.com" and model.startswith("deepseek-v4"):
+        # 百炼DeepSeek的required/指定函数tool_choice经约束解码语法编译，间歇超时并返回400。
+        return "dashscope_enable_thinking", True
+    if host == "api.deepseek.com" and model.startswith(("deepseek-v4", "deepseek-flash")):
+        return "deepseek_thinking_type", False
+    return None
+
+
 def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
-    """使用现有安全默认值生成单Provider、单Profile配置。"""
+    """使用现有安全默认值生成单Provider、单Profile配置；声明思考协议时默认只在工具步骤思考。"""
 
     checked = ConfigurationDraft.model_validate_json(draft.model_dump_json(), strict=True)
     secret = SecretReference(name=checked.secret_name, version=checked.secret_version)
+    protocol = checked.thinking_protocol
+    thinking = protocol is not None and checked.thinking != "off"
+    output_token_parameter = checked.output_token_parameter or (
+        "max_tokens" if protocol is not None else None
+    )
     return ProductConfigV2(
         active_profile=checked.profile_id,
         secret_sources=(
@@ -81,14 +111,20 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 kind=checked.provider_kind,
                 base_url=checked.base_url,
                 credential=secret,
-                output_token_parameter=checked.output_token_parameter,
+                output_token_parameter=output_token_parameter,
+                thinking_protocol=protocol,
+                omit_tool_choice=checked.omit_tool_choice,
             ),
         ),
         profiles=(
-            ModelProfile(
-                profile_id=checked.profile_id,
-                provider_id=checked.provider_id,
-                model=checked.model,
+            ModelProfile.model_validate(
+                {
+                    "profile_id": checked.profile_id,
+                    "provider_id": checked.provider_id,
+                    "model": checked.model,
+                    "thinking": checked.thinking,
+                    **(_THINKING_LIMITS if thinking else {}),
+                }
             ),
         ),
     )

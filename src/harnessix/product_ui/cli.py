@@ -21,7 +21,11 @@ from harnessix.product_config.product_contracts import (
     PreflightMode,
     ProductPreflightReport,
 )
-from harnessix.product_config.wizard import ConfigurationWriteRequest, write_product_config
+from harnessix.product_config.wizard import (
+    ConfigurationWriteRequest,
+    thinking_preset,
+    write_product_config,
+)
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
 from harnessix.product_ui.errors import ProductUIError
@@ -69,10 +73,34 @@ def _configure_parser() -> argparse.ArgumentParser:
         "--output-token-parameter",
         choices=("max_completion_tokens", "max_tokens"),
     )
+    # auto：已求证端点与模型族默认开启思考（只在工具步骤）；none：不发送任何思考参数。
+    parser.add_argument(
+        "--thinking-protocol",
+        choices=("auto", "none", "dashscope_enable_thinking", "deepseek_thinking_type"),
+        default="auto",
+    )
+    parser.add_argument("--thinking", choices=("tool_steps", "every_step", "off"))
+    parser.add_argument("--tool-choice", choices=("auto", "send", "omit"), default="auto")
     parser.add_argument("--replace", action="store_true")
     parser.add_argument("--expected-source-sha256")
     parser.add_argument("--non-interactive", action="store_true")
     return parser
+
+
+def _thinking_options(
+    arguments: argparse.Namespace, provider_kind: str, base_url: str, model: str
+) -> dict[str, object]:
+    """把思考相关参数解析为草案字段：auto只对已求证端点预设，显式值优先。"""
+    preset = thinking_preset(base_url, model) if provider_kind == "openai_chat" else None
+    protocol = arguments.thinking_protocol
+    if protocol == "auto":
+        protocol = preset[0] if preset is not None else None
+    elif protocol == "none":
+        protocol = None
+    omit = arguments.tool_choice == "omit" or (
+        arguments.tool_choice == "auto" and preset is not None and preset[1]
+    )
+    return {"thinking_protocol": protocol, "omit_tool_choice": omit, "thinking": arguments.thinking}
 
 
 def _doctor_parser() -> argparse.ArgumentParser:
@@ -223,31 +251,33 @@ def _prompt(value: str | None, label: str, *, non_interactive: bool) -> str:
 def _configure(argv: Sequence[str]) -> None:
     arguments = _configure_parser().parse_args(argv)
     try:
-        draft = ConfigurationDraft(
-            provider_kind=cast(
-                ProviderKind,
-                _prompt(
-                    arguments.provider_kind,
-                    "Provider类型(openai_chat/anthropic)",
-                    non_interactive=arguments.non_interactive,
-                ),
-            ),
-            provider_id=arguments.provider_id,
-            profile_id=arguments.profile_id,
-            base_url=_prompt(
-                arguments.base_url,
-                "Provider Base URL",
+        provider_kind = cast(
+            ProviderKind,
+            _prompt(
+                arguments.provider_kind,
+                "Provider类型(openai_chat/anthropic)",
                 non_interactive=arguments.non_interactive,
             ),
-            model=_prompt(
-                arguments.model,
-                "模型标识",
-                non_interactive=arguments.non_interactive,
-            ),
-            secret_name=arguments.secret_name,
-            secret_version=arguments.secret_version,
-            environment_variable=arguments.api_key_env,
-            output_token_parameter=arguments.output_token_parameter,
+        )
+        base_url = _prompt(
+            arguments.base_url,
+            "Provider Base URL",
+            non_interactive=arguments.non_interactive,
+        )
+        model = _prompt(arguments.model, "模型标识", non_interactive=arguments.non_interactive)
+        draft = ConfigurationDraft.model_validate(
+            {
+                "provider_kind": provider_kind,
+                "provider_id": arguments.provider_id,
+                "profile_id": arguments.profile_id,
+                "base_url": base_url,
+                "model": model,
+                "secret_name": arguments.secret_name,
+                "secret_version": arguments.secret_version,
+                "environment_variable": arguments.api_key_env,
+                "output_token_parameter": arguments.output_token_parameter,
+                **_thinking_options(arguments, provider_kind, base_url, model),
+            }
         )
         receipt = write_product_config(
             ConfigurationWriteRequest(

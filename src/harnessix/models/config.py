@@ -107,10 +107,8 @@ class OpenAIChatConfig(ModelHTTPConfig):
     def validate_implicit_cache_usage(self) -> Self:
         if self.implicit_cache_usage and self.prompt_cache != "stable_tail":
             raise ValueError("隐式缓存用量口径只用于不打缓存标记的自动前缀缓存")
-        if self.thinking_tool_steps_only and (
-            self.enable_thinking is not True or self.thinking_format is not None
-        ):
-            raise ValueError("按工具步骤开启思考只用于显式开启的DashScope思考开关")
+        if self.thinking_tool_steps_only and self.enable_thinking is not True:
+            raise ValueError("按工具步骤开启思考要求显式开启思考")
         return self
 
     @model_validator(mode="after")

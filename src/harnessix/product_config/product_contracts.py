@@ -13,6 +13,8 @@ from harnessix.product_config.contracts import (
     ConfigurationDiagnosticReport,
     ProductConfigContract,
     ProviderKind,
+    ThinkingMode,
+    ThinkingProtocol,
 )
 from harnessix.tools.contracts import Revision
 
@@ -56,6 +58,12 @@ class ConfigurationDraft(ProductConfigContract):
     secret_version: str = Field(default="environment-v1", min_length=1, max_length=128)
     environment_variable: str = Field(default="MODEL_API_KEY", pattern=r"^[A-Z_][A-Z0-9_]{0,127}$")
     output_token_parameter: Literal["max_completion_tokens", "max_tokens"] | None = None
+    # 思考协议与工具选择由向导按已求证端点预设或显式传入；未声明协议时不思考。
+    thinking_protocol: ThinkingProtocol | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
+    thinking: ThinkingMode | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("base_url")
     @classmethod
@@ -69,8 +77,14 @@ class ConfigurationDraft(ProductConfigContract):
 
     @model_validator(mode="after")
     def valid_provider_options(self) -> Self:
-        if self.provider_kind == "anthropic" and self.output_token_parameter is not None:
-            raise ValueError("Anthropic配置草案不能包含OpenAI输出Token参数")
+        if self.provider_kind == "anthropic" and (
+            self.output_token_parameter is not None
+            or self.thinking_protocol is not None
+            or self.omit_tool_choice
+        ):
+            raise ValueError("Anthropic配置草案不能包含OpenAI输出Token、思考协议或工具选择参数")
+        if self.thinking not in (None, "off") and self.thinking_protocol is None:
+            raise ValueError("配置草案的思考模式要求声明思考协议")
         return self
 
 

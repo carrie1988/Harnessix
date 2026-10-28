@@ -335,10 +335,26 @@ def test_tool_step_thinking_disables_thinking_for_requests_without_tools(with_to
     assert plain["extra_body"] == {"enable_thinking": True}
 
 
-@pytest.mark.parametrize(
-    "changes",
-    [{"enable_thinking": False}, {"enable_thinking": True, "thinking_format": "thinking_type"}],
-)
-def test_tool_step_thinking_requires_an_explicit_dashscope_switch(changes):
+@pytest.mark.parametrize("changes", [{}, {"enable_thinking": False}])
+def test_tool_step_thinking_requires_thinking_to_be_enabled(changes):
     with pytest.raises(ValueError):
         config(thinking_tool_steps_only=True, **changes)
+
+
+@pytest.mark.parametrize("with_tools", [False, True])
+def test_tool_step_thinking_with_the_deepseek_switch_drops_reasoning_fields_without_tools(
+    with_tools,
+):
+    """DeepSeek thinking.type：无工具请求关闭思考且不附reasoning_content，工具步骤沿原思考路径。"""
+    request = model_request(with_tools=with_tools)
+    scoped = config(
+        enable_thinking=True,
+        output_token_parameter="max_tokens",
+        thinking_format="thinking_type",
+        thinking_tool_steps_only=True,
+    )
+    body, _ = build_request(request, scoped)
+    assert body["extra_body"] == {"thinking": {"type": "enabled" if with_tools else "disabled"}}
+    assistants = [m for m in body["messages"] if m.get("role") == "assistant"]
+    assert all(("reasoning_content" in m) is with_tools for m in assistants)
+    assert "tool_choice" not in body

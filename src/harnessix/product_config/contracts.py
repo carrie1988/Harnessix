@@ -14,6 +14,12 @@ from harnessix.models.config import ModelHTTPConfig
 from harnessix.tools.contracts import Revision
 
 ProviderKind = Literal["openai_chat", "anthropic"]
+# 端点已求证的思考开关格式：DashScope发送enable_thinking，DeepSeek发送thinking.type。
+ThinkingProtocol = Literal["dashscope_enable_thinking", "deepseek_thinking_type"]
+# tool_steps只在提供工具的请求思考（摘要与收尾回复不思考）；every_step每个请求都思考。
+ThinkingMode = Literal["tool_steps", "every_step", "off"]
+# 推理计入输出上限：SWE-bench v40实测单步推理可达1.35万Token，低于该值时推理易用满输出而截断。
+THINKING_MIN_OUTPUT_TOKENS = 16_384
 ConfigAuditOperation = Literal["loaded", "activated", "migrated"]
 DiagnosticStatus = Literal["passed", "failed"]
 DiagnosticScope = Literal["config", "profile", "provider", "secret", "dependency"]
@@ -53,6 +59,12 @@ class ProviderDefinition(ProductConfigContract):
     base_url: str = Field(max_length=2048)
     credential: SecretReference
     output_token_parameter: Literal["max_completion_tokens", "max_tokens"] | None = None
+    # 未声明时不发送任何思考参数（沿用端点默认）；声明后Profile默认只在工具步骤思考。
+    thinking_protocol: ThinkingProtocol | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    # 端点的强制工具选择不可靠时不发送tool_choice（如百炼DeepSeek约束解码语法编译间歇超时）。
+    omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
 
     @field_validator("base_url")
     @classmethod
@@ -61,8 +73,15 @@ class ProviderDefinition(ProductConfigContract):
 
     @model_validator(mode="after")
     def provider_options(self) -> Self:
-        if self.kind == "anthropic" and self.output_token_parameter is not None:
-            raise ValueError("Anthropic不能配置OpenAI输出Token参数")
+        if self.kind == "anthropic" and (
+            self.output_token_parameter is not None
+            or self.thinking_protocol is not None
+            or self.omit_tool_choice
+        ):
+            raise ValueError("Anthropic不能配置OpenAI输出Token、思考协议或工具选择参数")
+        if self.thinking_protocol is not None and self.output_token_parameter != "max_tokens":
+            # 两个已求证端点的推理与回答共用max_tokens。
+            raise ValueError("思考协议要求输出Token参数为max_tokens")
         return self
 
 
@@ -106,6 +125,8 @@ class ModelProfile(ProductConfigContract):
     max_response_bytes: int = Field(default=2_097_152, ge=1024, le=16_777_216)
     max_frame_bytes: int = Field(default=262_144, ge=128, le=1_048_576)
     max_chunks: int = Field(default=10_000, ge=1, le=100_000)
+    # None随Provider：声明思考协议时为tool_steps，否则不思考。
+    thinking: ThinkingMode | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @field_validator("fallback_profiles")
     @classmethod
@@ -121,6 +142,13 @@ class ModelProfile(ProductConfigContract):
         if not self.capabilities.satisfies(self.required_capabilities):
             raise ValueError("Profile声明能力不能满足自身要求")
         return self
+
+
+def effective_thinking(profile: ModelProfile, provider: ProviderDefinition) -> ThinkingMode:
+    """Profile实际思考模式：Provider声明思考协议时默认只在工具步骤思考。"""
+    if provider.thinking_protocol is None:
+        return "off"
+    return profile.thinking or "tool_steps"
 
 
 class ProductConfigV2(ProductConfigContract):
@@ -155,6 +183,19 @@ class ProductConfigV2(ProductConfigContract):
         for profile in self.profiles:
             if profile.provider_id not in providers:
                 raise ValueError("Profile Provider引用不存在")
+            provider = providers[profile.provider_id]
+            if profile.thinking not in (None, "off") and provider.thinking_protocol is None:
+                raise ValueError("Profile思考模式要求Provider声明已求证的思考协议")
+            if effective_thinking(profile, provider) != "off":
+                if profile.max_output_tokens < THINKING_MIN_OUTPUT_TOKENS:
+                    raise ValueError("思考模式的推理计入输出上限，Profile输出上限至少16384")
+                # 推理约一个SSE帧、约60字节/Token：传输上限须容纳用满的输出，
+                # 否则中途误判为传输失败；字节下限按128字节/Token留余量。
+                if (
+                    profile.max_chunks < profile.max_output_tokens
+                    or profile.max_response_bytes < 128 * profile.max_output_tokens
+                ):
+                    raise ValueError("思考模式的SSE帧数与响应字节上限不足以容纳输出上限")
             if any(item not in profiles for item in profile.fallback_profiles):
                 raise ValueError("Fallback Profile引用不存在")
             chain = self.profile_chain(profile.profile_id)

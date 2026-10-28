@@ -32,6 +32,7 @@ from harnessix.product_config.contracts import (
     SecretReference,
     build_profile_selection,
     diagnostic_report_digest,
+    effective_thinking,
 )
 from harnessix.product_config.store import SQLiteProductConfigStore
 from harnessix.secrets.provider import (
@@ -194,6 +195,8 @@ def default_provider_factory(
     if definition.kind == "openai_chat":
         from harnessix.models.openai_chat import OpenAIChatProvider
 
+        protocol = definition.thinking_protocol
+        thinking = effective_thinking(profile, definition)
         return OpenAIChatProvider(
             OpenAIChatConfig(
                 base_url=definition.base_url,
@@ -212,6 +215,11 @@ def default_provider_factory(
                 output_token_parameter=(
                     definition.output_token_parameter or "max_completion_tokens"
                 ),
+                # 声明思考协议的端点显式发送开关（如百炼DeepSeek默认开启思考，关闭须显式false）。
+                enable_thinking=None if protocol is None else thinking != "off",
+                thinking_format="thinking_type" if protocol == "deepseek_thinking_type" else None,
+                thinking_tool_steps_only=thinking == "tool_steps",
+                omit_tool_choice=definition.omit_tool_choice,
             ),
             api_key=api_key,
         )

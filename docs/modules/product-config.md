@@ -567,8 +567,10 @@ classDiagram
 | `base_url` | 最多2048字符，经`ModelHTTPConfig.validate_url`验证 | 精确Provider端点 |
 | `credential` | `SecretReference` | API Key引用 |
 | `output_token_parameter` | `max_completion_tokens`、`max_tokens`或空 | OpenAI-compatible输出参数差异 |
+| `thinking_protocol` | `dashscope_enable_thinking`、`deepseek_thinking_type`或空（默认空、不序列化） | 端点已求证的思考开关格式；空表示不发送任何思考参数，声明后要求`output_token_parameter=max_tokens` |
+| `omit_tool_choice` | 布尔，默认`false`、不序列化 | 端点强制工具选择不可靠时不发送`tool_choice`，由可执行集收窄、目录说明与Runtime校验约束 |
 
-Anthropic定义禁止配置OpenAI输出Token参数。端点验证复用Model模块，不在Product Config复制网络规则。
+Anthropic定义禁止配置OpenAI输出Token参数、思考协议与工具选择参数。端点验证复用Model模块，不在Product Config复制网络规则。
 
 ### 9.4 `ModelCapabilities`
 
@@ -599,6 +601,9 @@ Anthropic定义禁止配置OpenAI输出Token参数。端点验证复用Model模�
 | `max_response_bytes` | 1 KiB～16 MiB；默认2 MiB | 累计响应上限 |
 | `max_frame_bytes` | 128 B～1 MiB；默认256 KiB | 单流Frame上限 |
 | `max_chunks` | 1～100,000；默认10,000 | 流Chunk数量上限 |
+| `thinking` | `tool_steps`、`every_step`、`off`或空（默认空、不序列化） | 空随Provider：声明思考协议时为`tool_steps`（只在提供工具的请求思考，摘要与收尾回复不思考），否则不思考 |
+
+实际思考模式非`off`时，`max_output_tokens`至少16384，且`max_chunks`不低于输出上限、`max_response_bytes`不低于128字节×输出上限（推理计入输出且约一个SSE帧/Token）；Profile声明思考模式而Provider未声明协议时失败关闭。新字段取默认值时不进入序列化，既有配置的Config SHA与运行行为不变。
 
 Profile既是模型选择，也是Provider I/O和重试预算。改变任一字段都会改变Config SHA。
 
@@ -3094,3 +3099,11 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 门禁有界：复现测试两次未失败（本环境难以复现）或源码修改已被拒绝三次即自动解锁；已有源码改动后不再锁定。锁定期间视图说明解锁条件，
 复现测试通过时不进入Review而重新开放编辑并要求原样使用问题示例；被拒调用从工作流与证据投影中移除（从未准备或执行）。
 开启时自我校验说明另要求原样运行问题示例代码。依赖`scratch_reproduction`与`explain_tool_gates`。
+
+## 当前增量：Provider思考协议与Profile思考模式（已求证端点默认开启）
+
+产品默认采用SWE-bench v40验证的思考方式：Provider声明`thinking_protocol`后，Profile默认`tool_steps`——只在提供工具的请求开启思考，
+压缩摘要与收尾回复（无工具、输出预算小）不思考，避免推理耗尽输出而无正文。[运行时装配](../../src/harnessix/product_config/runtime.py)
+据此为OpenAI-compatible Provider显式发送开关（百炼DeepSeek默认开启思考，关闭也须显式`false`）、选择`thinking_type`格式并传递
+`omit_tool_choice`。[配置向导](../../src/harnessix/product_config/wizard.py)的`thinking_preset`只对已求证端点与模型族预设，其余端点
+保持不发送思考参数；预设Profile带v40实测的传输上限。验证见[思考配置测试](../../tests/product_config/test_thinking_config.py)。

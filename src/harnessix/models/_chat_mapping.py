@@ -73,7 +73,9 @@ def build_request(
             messages.insert(0, {"role": "system", "content": note})
         if request.instructions is not None:
             messages.insert(0, {"role": "system", "content": request.instructions})
-    native_thinking = config.thinking_format == "thinking_type" and config.enable_thinking
+    # 按工具步骤思考时，无工具请求（摘要、收尾回复）不思考。
+    thinking = bool(config.enable_thinking) and not (config.thinking_tool_steps_only and not tools)
+    native_thinking = config.thinking_format == "thinking_type" and thinking
     if native_thinking:
         # 思考模式下带工具的历史助手消息须携带reasoning_content；不回传推理内容时以空串满足协议。
         messages = [
@@ -103,12 +105,9 @@ def build_request(
         if tool_choice is not None:
             body["tool_choice"] = tool_choice
     if config.thinking_format == "thinking_type":
-        body["extra_body"] = {
-            "thinking": {"type": "enabled" if config.enable_thinking else "disabled"}
-        }
+        body["extra_body"] = {"thinking": {"type": "enabled" if thinking else "disabled"}}
     elif config.enable_thinking is not None:
         # OpenAI SDK 将 extra_body 合并到最终请求顶层，供兼容端点接收扩展参数。
-        thinking = config.enable_thinking and not (config.thinking_tool_steps_only and not tools)
         body["extra_body"] = {"enable_thinking": thinking}
         if thinking and config.thinking_budget is not None:
             if output_tokens < 2:
