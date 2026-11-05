@@ -3043,6 +3043,15 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 `/tmp`、`/harnessix`、`/proc`、`/sys`、`/dev`之下。未配置时不序列化、仍挂载到`/workspace`，旧Profile与容器
 Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新计划与审批。
 
+### 显式在线端点探测
+
+[`endpoint_probe.py`](../../src/harnessix/product_config/endpoint_probe.py)的`probe_chat_endpoint`只在
+`harnessix code doctor --probe-model`时运行，启动预检仍离线：先请求`/models`确认活动Profile的模型存在，
+再发一次带单个数组参数工具的补全（按思考协议关闭思考），检查是否发起工具调用、参数是否为合法JSON且数组未被
+编码成字符串（后者报告warning，提示开启`normalize_tool_arguments`）。回环端点不经代理；API Key只放请求头，
+结果不含密钥；任一项failed时doctor退出码为2。验证见
+[`test_endpoint_probe.py`](../../tests/product_config/test_endpoint_probe.py)。
+
 ### Process Profile快照工作区与环境预设
 
 `ProductProcessProfile.workspace_mode="snapshot"`让每次命令在工作区的一次性可写副本中运行：执行身份确定后、

@@ -7,6 +7,7 @@ import json
 import os
 import sys
 from collections.abc import Sequence
+from dataclasses import asdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
@@ -16,6 +17,7 @@ from pydantic import ValidationError
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProviderKind
+from harnessix.product_config.endpoint_probe import EndpointProbe, probe_chat_endpoint
 from harnessix.product_config.errors import ProductConfigError
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import (
@@ -118,6 +120,11 @@ def _doctor_parser() -> argparse.ArgumentParser:
     parser.add_argument("--git-executable")
     parser.add_argument("--no-tui", action="store_true")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--probe-model",
+        action="store_true",
+        help="额外在线探测活动Profile的端点：模型是否存在、工具调用参数能否解析",
+    )
     return parser
 
 
@@ -157,6 +164,47 @@ def _chain_pricing(config: Path, profile: str | None) -> Literal["free", "unknow
         return snapshot.config.chain_pricing(profile)
     except (KeyError, ValueError):
         return "unknown"
+
+
+_PROBE_THINKING_OFF: dict[str, dict[str, object]] = {
+    "vllm_chat_template": {"chat_template_kwargs": {"enable_thinking": False}},
+    "dashscope_enable_thinking": {"enable_thinking": False},
+    "deepseek_thinking_type": {"thinking": {"type": "disabled"}},
+}
+
+
+def _probe_model(arguments: argparse.Namespace) -> list[EndpointProbe]:
+    """按产品配置探测活动Profile的OpenAI兼容端点；配置不可读时报告失败而不抛出。"""
+
+    config_path = Path(arguments.config).absolute() if arguments.config else _default_config()
+    try:
+        snapshot = load_product_config(config_path)
+        if not isinstance(snapshot, ProductConfigSnapshot):
+            raise ValueError
+        config = snapshot.config
+        profile = config.profile_chain(arguments.profile)[0]
+        provider = next(
+            item for item in config.providers if item.provider_id == profile.provider_id
+        )
+        variable = next(
+            source.environment_variable
+            for source in config.secret_sources
+            if source.secret == provider.credential
+        )
+    except (OSError, ValueError, KernelError, StopIteration, KeyError):
+        return [EndpointProbe("config", "failed", "产品配置不可读或缺少活动Profile", 0.0)]
+    if provider.kind != "openai_chat":
+        return [EndpointProbe("endpoint", "warning", "仅支持探测OpenAI兼容端点", 0.0)]
+    api_key = os.environ.get(variable)
+    if not api_key:
+        return [EndpointProbe("credential", "failed", f"环境变量{variable}未设置", 0.0)]
+    protocol = provider.thinking_protocol
+    return probe_chat_endpoint(
+        provider.base_url,
+        profile.model,
+        api_key,
+        extra_body=_PROBE_THINKING_OFF.get(protocol) if protocol else None,
+    )
 
 
 def _action_config(value: str | None) -> Path | None:
@@ -366,8 +414,20 @@ def _doctor(argv: Sequence[str]) -> None:
                 require_tui=not arguments.no_tui,
             )
         )
-        print(_report_json(report) if arguments.json else _render_preflight(report))
-        raise SystemExit(0 if report.ready else 2)
+        probes = _probe_model(arguments) if arguments.probe_model else []
+        if arguments.json:
+            document = json.loads(_report_json(report))
+            if arguments.probe_model:
+                document["model_probe"] = [asdict(item) for item in probes]
+            print(json.dumps(document, ensure_ascii=False, sort_keys=True))
+        else:
+            print(_render_preflight(report))
+            for item in probes:
+                print(
+                    f"- 端点探测 {item.check}：{item.status}（{item.detail}，{item.seconds:.1f}s）"
+                )
+        healthy = all(item.status != "failed" for item in probes)
+        raise SystemExit(0 if report.ready and healthy else 2)
     except SystemExit:
         raise
     except ProductConfigError as error:

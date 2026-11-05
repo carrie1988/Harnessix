@@ -62,6 +62,8 @@ MTP_DRAFT_TOKENS=0 bash deploy/local-model/run-flash-replicas.sh b   # 关闭MTP
 | `pricing` | `free` | 状态栏显示“本地 0 元”，默认累计token上限200万 |
 | Profile时限 | 首包300 s、单请求1800 s | 本地prefill慢且多会话共享副本 |
 
+接入前可在线确认端点与工具调用：`harnessix code doctor <工作区> --config <配置> --no-tui --probe-model`（K100副本上实测：模型已列出，数组参数工具调用解析正确）。
+
 无头运行：`harnessix exec --prompt-file task.md --config <配置> --action-config <执行配置>
 --approval-mode auto --summary-file summary.json --events-file events.jsonl`。本地端点仍需`MODEL_API_KEY`
 环境变量存在（值任意）。
