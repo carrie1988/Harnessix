@@ -172,6 +172,18 @@
           "default": null,
           "title": "Tmpfs Bytes"
         },
+        "workspace_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Path"
+        },
         "profile_sha256": {
           "pattern": "^[0-9a-f]{64}$",
           "title": "Profile Sha256",

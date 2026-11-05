@@ -28,6 +28,7 @@ from harnessix.sandbox.capabilities import (
 )
 from harnessix.sandbox.container import ContainerCommandBuilder, InspectRunner
 from harnessix.sandbox.contracts import (
+    DEFAULT_CONTAINER_WORKSPACE,
     ContainerSandboxProfile,
     NetworkPolicy,
     SandboxResourceLimits,
@@ -223,6 +224,7 @@ def _attested_product_process_profile(
         network=network,
         limits=limits,
         task_dependencies=profile.persistent_dependencies,
+        workspace_path=profile.workspace_path or DEFAULT_CONTAINER_WORKSPACE,
     )
     capabilities = build_capability_evidence_v2(
         platform=engine.platform,

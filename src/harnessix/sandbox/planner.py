@@ -8,6 +8,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.execution.contracts import canonical_digest
 from harnessix.processes.supervision_contracts import ProcessSpec
 from harnessix.sandbox.contracts import (
+    DEFAULT_CONTAINER_WORKSPACE,
     ContainerCommandSpec,
     ContainerExecutionSpec,
     ContainerSandboxProfile,
@@ -65,6 +66,7 @@ def build_container_sandbox_profile(
     run_as: str = "65532:65532",
     egress_gateway_digest: str | None = None,
     task_dependencies: bool = False,
+    workspace_path: str = DEFAULT_CONTAINER_WORKSPACE,
 ) -> ContainerSandboxProfile:
     selected_limits = limits or SandboxResourceLimits()
     payload: dict[str, object] = {
@@ -78,6 +80,8 @@ def build_container_sandbox_profile(
     }
     if task_dependencies:
         payload["task_dependencies"] = task_dependencies
+    if workspace_path != DEFAULT_CONTAINER_WORKSPACE:
+        payload["workspace_path"] = workspace_path
     try:
         return ContainerSandboxProfile(
             image=image,
@@ -87,6 +91,7 @@ def build_container_sandbox_profile(
             network=network,
             egress_gateway_digest=egress_gateway_digest,
             task_dependencies=task_dependencies,
+            workspace_path=workspace_path,
             digest=canonical_digest(payload),
         )
     except (ValidationError, ValueError, TypeError):

@@ -226,6 +226,11 @@
       "title": "Task Dependencies",
       "type": "boolean"
     },
+    "workspace_path": {
+      "default": "/workspace",
+      "title": "Workspace Path",
+      "type": "string"
+    },
     "run_as": {
       "default": "65532:65532",
       "pattern": "^[1-9][0-9]{0,9}:[1-9][0-9]{0,9}$",

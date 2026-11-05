@@ -18,6 +18,31 @@ DestinationKind = Literal["domain", "cidr"]
 DestinationProtocol = Literal["https", "tcp"]
 WorkspaceMountMode = Literal["read_only", "read_write"]
 
+DEFAULT_CONTAINER_WORKSPACE = "/workspace"
+_CONTAINER_PATH_SEGMENT = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+# 宿主受管挂载与内核伪文件系统；工作区不能覆盖或嵌套在它们之下。
+_RESERVED_CONTAINER_ROOTS = ("/tmp", "/harnessix", "/proc", "/sys", "/dev")
+
+
+def container_workspace_path_problem(path: str) -> str | None:
+    """返回容器内工作区路径的违规原因；合法时返回None。"""
+
+    segments = path.split("/")[1:]
+    if (
+        not path.startswith("/")
+        or len(path) > 256
+        or not segments
+        or any(
+            segment in {".", ".."} or _CONTAINER_PATH_SEGMENT.fullmatch(segment) is None
+            for segment in segments
+        )
+    ):
+        return "容器工作区路径必须是规范的绝对路径"
+    if any(path == root or path.startswith(root + "/") for root in _RESERVED_CONTAINER_ROOTS):
+        return "容器工作区路径不能位于受管或系统保留目录"
+    return None
+
+
 _DOMAIN_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 
 
@@ -165,6 +190,11 @@ class ContainerSandboxProfile(SandboxContract):
     image: str = Field(min_length=71, max_length=512)
     workspace_mode: WorkspaceMountMode
     task_dependencies: bool = Field(default=False, exclude_if=lambda value: not value)
+    # 默认/workspace时不序列化，旧Profile摘要不变；镜像约定其他源码路径时由宿主显式设置。
+    workspace_path: str = Field(
+        default=DEFAULT_CONTAINER_WORKSPACE,
+        exclude_if=lambda value: value == DEFAULT_CONTAINER_WORKSPACE,
+    )
     run_as: str = Field(default="65532:65532", pattern=r"^[1-9][0-9]{0,9}:[1-9][0-9]{0,9}$")
     limits: SandboxResourceLimits = Field(default_factory=SandboxResourceLimits)
     network: NetworkPolicySnapshot
@@ -181,6 +211,9 @@ class ContainerSandboxProfile(SandboxContract):
             raise ValueError("选择性网络必须绑定出口网关实现")
         if self.task_dependencies and self.workspace_mode != "read_only":
             raise ValueError("任务依赖挂载必须使用只读Workspace")
+        problem = container_workspace_path_problem(self.workspace_path)
+        if problem is not None:
+            raise ValueError(problem)
         if self.digest != container_sandbox_profile_digest(self):
             raise ValueError("容器Sandbox Profile摘要不一致")
         return self

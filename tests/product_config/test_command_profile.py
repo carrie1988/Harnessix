@@ -10,6 +10,7 @@ from typing import Any, cast
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
@@ -418,3 +419,30 @@ async def test_cancelled_command_reconciles_without_replaying_command(tmp_path: 
         assert result.outcome == "failed" and result.error.code == "process_cancelled"
         assert isinstance(result.output, dict) and "artifact" in result.output
         assert case.runtime.run_calls == 1 and case.runtime.reconcile_calls == 1
+
+
+def test_command_profile_workspace_path_is_opt_in_and_advertised(tmp_path: Path) -> None:
+    engine = _fake_engine(tmp_path)
+    legacy = _command_profile(engine)
+    assert "workspace_path" not in legacy.model_dump(mode="json")
+    assert "挂载在容器内" not in process_profile_descriptor(legacy).description
+    profile = _command_profile(engine, workspace_path="/testbed")
+    assert profile.model_dump(mode="json")["workspace_path"] == "/testbed"
+    assert profile.profile_sha256 != legacy.profile_sha256
+    assert (
+        "工作区源码挂载在容器内/testbed（只读）" in process_profile_descriptor(profile).description
+    )
+    for unsafe in ("relative", "/tmp/work", "/harnessix", "/a/../b"):
+        with pytest.raises(ValidationError):
+            _command_profile(engine, workspace_path=unsafe)
+
+
+async def test_command_profile_workspace_path_reaches_the_sandbox_profile(tmp_path: Path) -> None:
+    profile = _command_profile(_fake_engine(tmp_path), workspace_path="/testbed")
+    async with PosixProcessSupervisor(tmp_path / "probe-owner") as supervisor:
+        probe = probe_product_process_profile(
+            profile, supervisor, _NoSecrets(), probe_runner=_probe_runner
+        )
+    assert probe.verified is not None
+    assert probe.verified.sandbox_profile.workspace_path == "/testbed"
+    assert probe.verified.sandbox.profile_digest == probe.verified.sandbox_profile.digest

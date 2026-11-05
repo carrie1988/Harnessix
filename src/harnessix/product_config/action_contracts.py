@@ -12,6 +12,7 @@ from pydantic import AwareDatetime, Field, field_validator, model_validator
 from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import NetworkMode, canonical_digest
 from harnessix.product_config.contracts import ProductConfigContract, SecretReference
+from harnessix.sandbox.contracts import container_workspace_path_problem
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import PlatformKind
 
@@ -73,6 +74,8 @@ class ProductProcessProfile(ProductConfigContract):
         strict=True,
         exclude_if=lambda value: value is None,
     )
+    # 镜像约定的源码路径（如可编辑安装指向的目录）；未配置时挂载到/workspace且不序列化。
+    workspace_path: str | None = Field(default=None, exclude_if=lambda value: value is None)
     profile_sha256: Revision
 
     @field_validator("version", "description", "container_engine")
@@ -127,6 +130,10 @@ class ProductProcessProfile(ProductConfigContract):
             raise ValueError("Command Profile必须固定POSIX Shell及-c或-lc参数")
         if self.tmpfs_bytes is not None and self.tmpfs_bytes >= self.memory_bytes:
             raise ValueError("Process Profile tmpfs必须小于内存上限")
+        if self.workspace_path is not None:
+            problem = container_workspace_path_problem(self.workspace_path)
+            if problem is not None:
+                raise ValueError(problem)
         if self.profile_sha256 != product_process_profile_digest(self):
             raise ValueError("Process Profile摘要不一致")
         return self
@@ -157,6 +164,7 @@ def build_product_process_profile(
     process_limit: int = 128,
     secret_refs: tuple[SecretReference, ...] = (),
     tmpfs_bytes: int | None = None,
+    workspace_path: str | None = None,
 ) -> ProductProcessProfile:
     candidate = ProductProcessProfile.model_construct(
         _fields_set=None,
@@ -177,6 +185,7 @@ def build_product_process_profile(
         process_limit=process_limit,
         secret_refs=secret_refs,
         tmpfs_bytes=tmpfs_bytes,
+        workspace_path=workspace_path,
         profile_sha256="0" * 64,
     )
     return ProductProcessProfile(

@@ -338,7 +338,7 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
         mount = _csv_fields(
             "type=bind",
             f"src={root}",
-            "dst=/workspace",
+            f"dst={profile.workspace_path}",
             *("readonly",) if profile.workspace_mode == "read_only" else (),
         )
         arguments = [
@@ -370,7 +370,11 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
             "--user",
             profile.run_as,
             "--workdir",
-            "/workspace" if plan.workspace.cwd == "." else "/workspace/" + plan.workspace.cwd,
+            (
+                profile.workspace_path
+                if plan.workspace.cwd == "."
+                else f"{profile.workspace_path}/{plan.workspace.cwd}"
+            ),
             "--mount",
             mount,
             *(("--mount", dependency_mount) if dependency_mount is not None else ()),

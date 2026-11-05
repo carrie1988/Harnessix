@@ -3033,6 +3033,13 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 `ProductProcessProfile.tmpfs_bytes`（64MiB～8GiB，须小于`memory_bytes`）显式设定容器`/tmp`的tmpfs容量；仍为
 `noexec,nosuid,nodev`并计入内存上限。未配置时字段不序列化、沿用64MiB，旧Profile摘要不变。
 
+### Process Profile可选容器工作区路径
+
+`ProductProcessProfile.workspace_path`把工作区只读挂载到镜像约定的源码路径（如SWE-bench实例镜像以可编辑安装
+指向的`/testbed`），并作为命令起始目录；工具描述向模型公开该路径。路径须为规范绝对路径，不能是`/`或位于
+`/tmp`、`/harnessix`、`/proc`、`/sys`、`/dev`之下。未配置时不序列化、仍挂载到`/workspace`，旧Profile与容器
+Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新计划与审批。
+
 ### 复现草稿目录
 
 [`coding_scratch`](../../src/harnessix/product_config/coding_scratch.py)定义保留目录名`harnessix_scratch`：显式开启时编码工作流视图在判断

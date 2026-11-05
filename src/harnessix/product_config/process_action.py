@@ -172,6 +172,11 @@ def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor
                     if profile.persistent_dependencies
                     else ""
                 )
+                + (
+                    f"工作区源码挂载在容器内{profile.workspace_path}（只读），命令从该目录开始。"
+                    if profile.workspace_path is not None
+                    else ""
+                )
                 + "失败先看diagnostic_preview；完整时不重读日志Artifact。"
             ),
             input_schema=run_command_schema(profile.profile_id),
