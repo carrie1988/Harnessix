@@ -1,0 +1,309 @@
+{
+ "spec": "harnessix.week1-local.task-list/v1",
+ "dataset": "princeton-nlp/SWE-bench_Verified",
+ "split": "holdout",
+ "source": [
+  "benchmarks/swebench/generalization-25-v57p/plan.json",
+  "benchmarks/swebench/generalization-25-v61r/plan.json"
+ ],
+ "excluded": {
+  "scikit-learn__scikit-learn-14710": "Excluded per SWE-bench/SWE-bench#669 (problem statement links or embeds the gold patch)."
+ },
+ "note": "Run only once, after the week-1 preregistration is committed.",
+ "tasks": [
+  {
+   "instance_id": "astropy__astropy-13453",
+   "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13453:latest",
+   "digest": "sha256:466329fbdcabb164b2fd24ae50a32f456366e53d29bee24899a604d0cab272d3",
+   "full_size_gb": 1.13
+  },
+  {
+   "instance_id": "astropy__astropy-13579",
+   "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13579:latest",
+   "digest": "sha256:f3dc11a37649430d6a7a3aac4858477db8f19d9a941f056f875e8e566066ffe3",
+   "full_size_gb": 1.13
+  },
+  {
+   "instance_id": "astropy__astropy-13977",
+   "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13977:latest",
+   "digest": "sha256:ec43fcbcea2c26b6f74796a177fbbaceb754a1152b0ce47ecbe4fab2e04caca7",
+   "full_size_gb": 1.14
+  },
+  {
+   "instance_id": "astropy__astropy-7166",
+   "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-7166:latest",
+   "digest": "sha256:4b46c92697326df9440868e8990289755954dd739a1ff27a4ad1371da6a63ce2",
+   "full_size_gb": 1.11
+  },
+  {
+   "instance_id": "django__django-11149",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-11149:latest",
+   "digest": "sha256:275c2ed9e322b52aea53ce7045403c7bf0f851a6455c5747b224f6f4040340f2",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-11477",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-11477:latest",
+   "digest": "sha256:2a11b9c6bd131e3af00119e975a04f00ed4d9e6c41f8606bc0792459fd538293",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-12304",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-12304:latest",
+   "digest": "sha256:46ad662e0ab1ab9417a26ceae392395f255634a054c25faf0fcfcd43aa52702c",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-13109",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13109:latest",
+   "digest": "sha256:99485703b09250cf48812b5f24e4449c3f179b5bf7673b96cd398aa7f1179295",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-13112",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13112:latest",
+   "digest": "sha256:a5e22b373f35ce538ae14aa9b2eb2c6552379ff97a560128270e45e18984eaf1",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-13315",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13315:latest",
+   "digest": "sha256:eee8a0db006bce8a160fd6bda1ac181edd1dedcd95c6a4e040e7aea0aed30bd8",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-13346",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13346:latest",
+   "digest": "sha256:a58c4f201531ac127ef08636fccc8c0849dc747e6874cf53a3c83da8d851bb3b",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-13516",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13516:latest",
+   "digest": "sha256:26bdad1af7291dfaa292f82a6c607fcc056886de161d96df643d97164bbccfec",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-13786",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13786:latest",
+   "digest": "sha256:7e99e4c610bb4f49f4d90cbeab257ed16a340fa425d8359650a4f142a68207dd",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-13821",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13821:latest",
+   "digest": "sha256:3d4a6aee4a1b55a9610794dde388865bac8128f057c2432b573cb81505516f46",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-14017",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-14017:latest",
+   "digest": "sha256:ab40fe86d24dbe0296a4ea9a82969b0c86824274242b208764d2aee227ce9ee6",
+   "full_size_gb": 1.19
+  },
+  {
+   "instance_id": "django__django-14053",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-14053:latest",
+   "digest": "sha256:018c0d5a91c443e47942f6e775052316828c042a4dda2d9a8bbb448f5e66f762",
+   "full_size_gb": 1.19
+  },
+  {
+   "instance_id": "django__django-15503",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-15503:latest",
+   "digest": "sha256:4438a1d7e5551ebb084426bd286735e51a05d498684a5cb7eec337d259d02a13",
+   "full_size_gb": 1.21
+  },
+  {
+   "instance_id": "django__django-15563",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-15563:latest",
+   "digest": "sha256:8ad1a52cd8c746541f87d77df6e56e3ad1fe17742494153ec4215c86108a641a",
+   "full_size_gb": 1.21
+  },
+  {
+   "instance_id": "django__django-15731",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-15731:latest",
+   "digest": "sha256:00aa4ebb72a1a53853bd2ff2998b69f04a18a3d49da2d322e98d29f1b2e07641",
+   "full_size_gb": 1.21
+  },
+  {
+   "instance_id": "django__django-16493",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-16493:latest",
+   "digest": "sha256:57174cd41cfccf7e81367fb9a024b4ccd5b1c1590313914f9e18ec004a383571",
+   "full_size_gb": 1.24
+  },
+  {
+   "instance_id": "matplotlib__matplotlib-21568",
+   "image": "swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-21568:latest",
+   "digest": "sha256:406c7217f36ff5e27539fe1bb6f3bebd44473ca4deced319216896a63a6c2476",
+   "full_size_gb": 2.27
+  },
+  {
+   "instance_id": "matplotlib__matplotlib-22871",
+   "image": "swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-22871:latest",
+   "digest": "sha256:8db2e8a94d2543644a7885b195e1cf3f102925d5c296ae25c0e6c1e40a059842",
+   "full_size_gb": 3.07
+  },
+  {
+   "instance_id": "matplotlib__matplotlib-24149",
+   "image": "swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-24149:latest",
+   "digest": "sha256:e80913d242481321c20b8ed0b5bd1513e89fcaff6eb84b5f6d39e748128b7c19",
+   "full_size_gb": 3.14
+  },
+  {
+   "instance_id": "matplotlib__matplotlib-25311",
+   "image": "swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-25311:latest",
+   "digest": "sha256:3e08e93c4788b52c21ed959dc401e62e5dd6d95f52b92a389018a36b8f1e3142",
+   "full_size_gb": 3.15
+  },
+  {
+   "instance_id": "scikit-learn__scikit-learn-12973",
+   "image": "swebench/sweb.eval.x86_64.scikit-learn_1776_scikit-learn-12973:latest",
+   "digest": "sha256:0ded1c3401a3e88cc39a5bc976b572d4f08c570bcbf599bf822814440aa45767",
+   "full_size_gb": 1.48
+  },
+  {
+   "instance_id": "scikit-learn__scikit-learn-13779",
+   "image": "swebench/sweb.eval.x86_64.scikit-learn_1776_scikit-learn-13779:latest",
+   "digest": "sha256:f7188477fd1e48e0e9bb1efa8a47068979127e1995fbab4c9eb3b04eaadf0618",
+   "full_size_gb": 1.5
+  },
+  {
+   "instance_id": "scikit-learn__scikit-learn-14053",
+   "image": "swebench/sweb.eval.x86_64.scikit-learn_1776_scikit-learn-14053:latest",
+   "digest": "sha256:40cedc799d11ccfe146a36c217b112a3cf0836c87ea24656152b0dd46cbeccdd",
+   "full_size_gb": 1.5
+  },
+  {
+   "instance_id": "sphinx-doc__sphinx-7454",
+   "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7454:latest",
+   "digest": "sha256:97b2228926083de964b14f90e8a9a900be814cfd44f7961fac3dcec3013d1d3f",
+   "full_size_gb": 1.1
+  },
+  {
+   "instance_id": "sphinx-doc__sphinx-8056",
+   "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8056:latest",
+   "digest": "sha256:c5d72616211c546700776a1d7c2aceac6cb602518faa5f9d46b87a2701d71111",
+   "full_size_gb": 1.1
+  },
+  {
+   "instance_id": "sphinx-doc__sphinx-8269",
+   "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8269:latest",
+   "digest": "sha256:463ca25b904e464131cad1b7cb3f9e5f1db830967fd1d9aa1526fd44c7bfc997",
+   "full_size_gb": 1.1
+  },
+  {
+   "instance_id": "sphinx-doc__sphinx-8551",
+   "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8551:latest",
+   "digest": "sha256:7ef3c26b1f402bcae518faddbdea62e12496a29b8d49b582a752874df1a5cd57",
+   "full_size_gb": 1.1
+  },
+  {
+   "instance_id": "sphinx-doc__sphinx-9461",
+   "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-9461:latest",
+   "digest": "sha256:5927ba1f035f87117341343035f83150ab5a57fbdbaf49db13a36b809baaa8c7",
+   "full_size_gb": 1.1
+  },
+  {
+   "instance_id": "sphinx-doc__sphinx-9673",
+   "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-9673:latest",
+   "digest": "sha256:2fb8bf6cb7fb970785e7e79480a754bc1a4be25cfe1edeb8b74514b5d232553a",
+   "full_size_gb": 1.1
+  },
+  {
+   "instance_id": "sympy__sympy-12481",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-12481:latest",
+   "digest": "sha256:bb526b7d1c4a160d96d3ab925a6b382194a19bf77a72df71e220ce19fe924e7f",
+   "full_size_gb": 1.06
+  },
+  {
+   "instance_id": "sympy__sympy-12489",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-12489:latest",
+   "digest": "sha256:da745b29eda94f68cb55a6648fb5767ea6709c242d7cc1c93caee41256ca02c6",
+   "full_size_gb": 1.06
+  },
+  {
+   "instance_id": "sympy__sympy-13852",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-13852:latest",
+   "digest": "sha256:88a5fc577b1ba9346dd74198c357fb917b58324e40bf7c8e19135e321a4cd31b",
+   "full_size_gb": 1.07
+  },
+  {
+   "instance_id": "sympy__sympy-14248",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-14248:latest",
+   "digest": "sha256:eb3a63364062801d29fbdf423d80ac39157f00ec4f30a0ded10c332ecb1090fd",
+   "full_size_gb": 1.07
+  },
+  {
+   "instance_id": "sympy__sympy-14976",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-14976:latest",
+   "digest": "sha256:860f68a98698df242fe71bb13d1396513ce148d765c87c41435fe4ad84f7d7a6",
+   "full_size_gb": 1.07
+  },
+  {
+   "instance_id": "sympy__sympy-15599",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-15599:latest",
+   "digest": "sha256:b7e6e69c4defe6eb7fe5c57ff3c946d94f7a2048523de41516d209a9b9d00016",
+   "full_size_gb": 1.07
+  },
+  {
+   "instance_id": "sympy__sympy-15976",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-15976:latest",
+   "digest": "sha256:699f53232f0f802fc71c98162e9edbf1b072c335f6aa58f0f677c2d3c3ca70c6",
+   "full_size_gb": 1.08
+  },
+  {
+   "instance_id": "sympy__sympy-17630",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-17630:latest",
+   "digest": "sha256:9b839af473048e347a0f435e920bfa5206e588b59a5187bef826352ac05ae73a",
+   "full_size_gb": 1.08
+  },
+  {
+   "instance_id": "sympy__sympy-17655",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-17655:latest",
+   "digest": "sha256:2c0112dbc185b0d0da1030ceffdb92b7730208caadb2cfbaac8af6ed9fcbddcf",
+   "full_size_gb": 1.08
+  },
+  {
+   "instance_id": "sympy__sympy-18698",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-18698:latest",
+   "digest": "sha256:9b8ce19f9470ecbe3390699d06db56a5bf92b49cd41e687a468156fd5d3e947f",
+   "full_size_gb": 1.08
+  },
+  {
+   "instance_id": "sympy__sympy-18763",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-18763:latest",
+   "digest": "sha256:4e7342e9dd20eff70d136658fdf6202216ba9c2b155180f511ac338738cce9cc",
+   "full_size_gb": 1.08
+  },
+  {
+   "instance_id": "sympy__sympy-19040",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-19040:latest",
+   "digest": "sha256:2238ea21e03d1548e7f3e5345fb924aba8459c99f8697270f8e04aa3661136b4",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-19637",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-19637:latest",
+   "digest": "sha256:956f0b8b048011ead5ff6d46007527a4cb4e1007e4f74fd1c935df6420730d8f",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-19783",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-19783:latest",
+   "digest": "sha256:f479dc5ad70891339f836122f10dcbf3e2fb24c7ffc7cf0eb0a682595e7c1db3",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-21847",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-21847:latest",
+   "digest": "sha256:9a45ffe20cac4243930e8c5b2b065adbc08f476c880d7465ca0fbfb9f98c6456",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-24539",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-24539:latest",
+   "digest": "sha256:b6303273066473c21cbf7b97d26f6bb214a5a24ebe6c65b8f26234e3315f7a4b",
+   "full_size_gb": 1.11
+  }
+ ]
+}

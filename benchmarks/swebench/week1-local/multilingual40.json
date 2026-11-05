@@ -1,0 +1,344 @@
+{
+ "spec": "harnessix.week1-local.task-list/v1",
+ "dataset": "SWE-bench/SWE-bench_Multilingual",
+ "source_parquet": "data/test-00000-of-00001.parquet",
+ "source_parquet_sha256": "92abca7cb527b41a9f66d03a26ce441ff7319e3a49f985998fd56be4bb9b08b2",
+ "selection": {
+  "script": "scripts/select_swebench_multilingual_subset.py",
+  "seed": 20261105,
+  "dev_per_language": {
+   "java": 2,
+   "typescript/javascript": 2,
+   "go": 2,
+   "rust": 1,
+   "c/c++": 1,
+   "php": 1,
+   "ruby": 1
+  },
+  "holdout_per_language": "3 x dev quota",
+  "leak_filter": "own-PR link or embedded diff in problem statement",
+  "image_filter": "official swebench/sweb.eval.x86_64.* image present on Docker Hub"
+ },
+ "tasks": [
+  {
+   "instance_id": "projectlombok__lombok-2792",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-2792:latest",
+   "digest": "sha256:fe8e2cd45d90a306da5a22f60380cf68e729f70db0aac3cbacfeea6edc6ee562"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3486",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3486:latest",
+   "digest": "sha256:7ea6ca0e8d238df0b850472ebf36d58c10837b791aca3244399262733e018159"
+  },
+  {
+   "instance_id": "google__gson-1014",
+   "repo": "google/gson",
+   "language": "java",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.google_1776_gson-1014:latest",
+   "digest": "sha256:82e3083379322ce9f13e662f9c951897f37f53d4799ee2f72caf8cfabb087f76"
+  },
+  {
+   "instance_id": "javaparser__javaparser-4538",
+   "repo": "javaparser/javaparser",
+   "language": "java",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.javaparser_1776_javaparser-4538:latest",
+   "digest": "sha256:b4aee648ef37a0570ac0f0d9ef812f5dd7814b85f180de95df7ca9234ccf9985"
+  },
+  {
+   "instance_id": "google__gson-2061",
+   "repo": "google/gson",
+   "language": "java",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.google_1776_gson-2061:latest",
+   "digest": "sha256:0d795b21fd31d2b3188c5ef8af79d7e424a19f112ded58b04b9138e9268a4f41"
+  },
+  {
+   "instance_id": "apache__lucene-13494",
+   "repo": "apache/lucene",
+   "language": "java",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.apache_1776_lucene-13494:latest",
+   "digest": "sha256:64142ada5c76fba4e427d11decb73e6c11a3ddb99746493870c7e517e86396c3"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3350",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3350:latest",
+   "digest": "sha256:726863241cd7e4eb8190cc082288b45c2c7d5770e704691c6aee76d8d8cce5b3"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3009",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3009:latest",
+   "digest": "sha256:215648a37cb40082c73be2fb165d4bfe1c21dd6d07fcc69b98df25e5c32412ee"
+  },
+  {
+   "instance_id": "axios__axios-6539",
+   "repo": "axios/axios",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.axios_1776_axios-6539:latest",
+   "digest": "sha256:a0bfe8bcd541c85cce28fc1f21c58b26d53a1cf1ea482b9b253ee80f3440d5cb"
+  },
+  {
+   "instance_id": "facebook__docusaurus-10130",
+   "repo": "facebook/docusaurus",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.facebook_1776_docusaurus-10130:latest",
+   "digest": "sha256:e48084f281e6363e77c1cbde079d6f54ee26e94250e79370eef4ac92cb616542"
+  },
+  {
+   "instance_id": "babel__babel-14532",
+   "repo": "babel/babel",
+   "language": "typescript/javascript",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.babel_1776_babel-14532:latest",
+   "digest": "sha256:4aa10d9cb6f98926f2571dda5c153f31f1fc0799f85e60f2b78e60eedf212914"
+  },
+  {
+   "instance_id": "preactjs__preact-4245",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-4245:latest",
+   "digest": "sha256:61f760a2db683681ea6fb514b581b79d1bb2c2e7856c6c8fd79ccfd27ce1f138"
+  },
+  {
+   "instance_id": "preactjs__preact-3454",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-3454:latest",
+   "digest": "sha256:76750a54c17dcc292e7b129af32b70578f2c3b2e48dab82065489e994ba0b03b"
+  },
+  {
+   "instance_id": "babel__babel-15649",
+   "repo": "babel/babel",
+   "language": "typescript/javascript",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.babel_1776_babel-15649:latest",
+   "digest": "sha256:b1feeee058fedfc67e7a12519819e540dd9e2e22fdb90220b43eac4770905dd1"
+  },
+  {
+   "instance_id": "preactjs__preact-2927",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-2927:latest",
+   "digest": "sha256:351126e9fc2d80d463faf409cc7fd9e007deef44c9246cd52b95d1096626308c"
+  },
+  {
+   "instance_id": "preactjs__preact-3567",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-3567:latest",
+   "digest": "sha256:f72773f4981392fcacacd9bb69081592afd5dd7223caf84677f12aa6bd79fe1a"
+  },
+  {
+   "instance_id": "gin-gonic__gin-1805",
+   "repo": "gin-gonic/gin",
+   "language": "go",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.gin-gonic_1776_gin-1805:latest",
+   "digest": "sha256:a473041934092bc0e4578aac00375175f780676f3f84f6ee0ca7927808dfbc5a"
+  },
+  {
+   "instance_id": "gin-gonic__gin-3741",
+   "repo": "gin-gonic/gin",
+   "language": "go",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.gin-gonic_1776_gin-3741:latest",
+   "digest": "sha256:97f695249048d35cb099e7f853402e2c1282507a26429383b7da9f44b1bacef8"
+  },
+  {
+   "instance_id": "prometheus__prometheus-10720",
+   "repo": "prometheus/prometheus",
+   "language": "go",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.prometheus_1776_prometheus-10720:latest",
+   "digest": "sha256:1ccb15130cc5e8cbfc9b31cd1a3edf7bd2fc67aacbd49c6ae264370e268d55e9"
+  },
+  {
+   "instance_id": "prometheus__prometheus-11859",
+   "repo": "prometheus/prometheus",
+   "language": "go",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.prometheus_1776_prometheus-11859:latest",
+   "digest": "sha256:74006f3d6f8c112fce7512356562f81bc77e205c4f4baf14ce721288245d4d5f"
+  },
+  {
+   "instance_id": "hashicorp__terraform-35611",
+   "repo": "hashicorp/terraform",
+   "language": "go",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.hashicorp_1776_terraform-35611:latest",
+   "digest": "sha256:30ed3851577dd9e5b2b6c9ddb672827ef7194ec452587e29a2b265e7d4b76031"
+  },
+  {
+   "instance_id": "gohugoio__hugo-12204",
+   "repo": "gohugoio/hugo",
+   "language": "go",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.gohugoio_1776_hugo-12204:latest",
+   "digest": "sha256:44b5ceafef1f137d2b0245b46efbc30450abcc2b90c4f981d12b69054a7404d6"
+  },
+  {
+   "instance_id": "gin-gonic__gin-4003",
+   "repo": "gin-gonic/gin",
+   "language": "go",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.gin-gonic_1776_gin-4003:latest",
+   "digest": "sha256:7caafee46872c95970ebd53781e6bd7313d2781f25645becd43b0f726f4b562b"
+  },
+  {
+   "instance_id": "prometheus__prometheus-15142",
+   "repo": "prometheus/prometheus",
+   "language": "go",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.prometheus_1776_prometheus-15142:latest",
+   "digest": "sha256:992b16b325faae75954508bf4fe1c2ade41a9ba49386897ff075169821b10842"
+  },
+  {
+   "instance_id": "tokio-rs__tokio-6724",
+   "repo": "tokio-rs/tokio",
+   "language": "rust",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.tokio-rs_1776_tokio-6724:latest",
+   "digest": "sha256:b54c1f7e51f01e853ab052e72f78dd1739473771dbda908d47218f94e1f608e6"
+  },
+  {
+   "instance_id": "uutils__coreutils-6690",
+   "repo": "uutils/coreutils",
+   "language": "rust",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.uutils_1776_coreutils-6690:latest",
+   "digest": "sha256:a5fbd1d8b22816625f7ea6f150df1f77c645d22e6ac2b25804848b48c5e4aa41"
+  },
+  {
+   "instance_id": "nushell__nushell-13831",
+   "repo": "nushell/nushell",
+   "language": "rust",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.nushell_1776_nushell-13831:latest",
+   "digest": "sha256:b052ac6297653b9dc5055436ac5215d4923b13677887034fc74d282c7bdb74b0"
+  },
+  {
+   "instance_id": "nushell__nushell-13605",
+   "repo": "nushell/nushell",
+   "language": "rust",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.nushell_1776_nushell-13605:latest",
+   "digest": "sha256:845bc2b80290610cc40209f274375aded183da56661871274c0de81dbb798b8c"
+  },
+  {
+   "instance_id": "fmtlib__fmt-1683",
+   "repo": "fmtlib/fmt",
+   "language": "c/c++",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.fmtlib_1776_fmt-1683:latest",
+   "digest": "sha256:7308abbea932b26f5d97901ddc751a598d0ff8ca483ce294caf2c7a779b06b31"
+  },
+  {
+   "instance_id": "fmtlib__fmt-3729",
+   "repo": "fmtlib/fmt",
+   "language": "c/c++",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.fmtlib_1776_fmt-3729:latest",
+   "digest": "sha256:9ec7f2692ae17ecacf815f94f90198e535ec63b4f8912af6486f7ccadf4986bc"
+  },
+  {
+   "instance_id": "fmtlib__fmt-3901",
+   "repo": "fmtlib/fmt",
+   "language": "c/c++",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.fmtlib_1776_fmt-3901:latest",
+   "digest": "sha256:2d5b5cc81b66a252f4c8c5a2f0a374d7b0544b52fae7adb58e49e708d6f58d9f"
+  },
+  {
+   "instance_id": "fmtlib__fmt-2457",
+   "repo": "fmtlib/fmt",
+   "language": "c/c++",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.fmtlib_1776_fmt-2457:latest",
+   "digest": "sha256:c0fb52f871dad9a8834f71c37fcb9700ded1a0f34da817c24847e05c57add2d7"
+  },
+  {
+   "instance_id": "laravel__framework-53914",
+   "repo": "laravel/framework",
+   "language": "php",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.laravel_1776_framework-53914:latest",
+   "digest": "sha256:a2600f3ac7219e983f18e6ae292daea5ced7052457f3e9bdb817441e401ac8b5"
+  },
+  {
+   "instance_id": "laravel__framework-53949",
+   "repo": "laravel/framework",
+   "language": "php",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.laravel_1776_framework-53949:latest",
+   "digest": "sha256:2267064be85c79bc18af8ceb4c5753c8abc0efce7ead2bc596b4970ca59edd07"
+  },
+  {
+   "instance_id": "laravel__framework-52684",
+   "repo": "laravel/framework",
+   "language": "php",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.laravel_1776_framework-52684:latest",
+   "digest": "sha256:906cc03d71f519abae176c51bdcd3143e73e27c4a181bc806a32c29a62983776"
+  },
+  {
+   "instance_id": "laravel__framework-48573",
+   "repo": "laravel/framework",
+   "language": "php",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.laravel_1776_framework-48573:latest",
+   "digest": "sha256:d4897e4e3918265d91d09c0c6293c7245d5ed5539240d42cae33aeaaf04645cc"
+  },
+  {
+   "instance_id": "rubocop__rubocop-13687",
+   "repo": "rubocop/rubocop",
+   "language": "ruby",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.rubocop_1776_rubocop-13687:latest",
+   "digest": "sha256:c87fc86c9b436cfcab79197e6da066e0483b6661993bc881414a4ae29490dcca"
+  },
+  {
+   "instance_id": "fluent__fluentd-3466",
+   "repo": "fluent/fluentd",
+   "language": "ruby",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.fluent_1776_fluentd-3466:latest",
+   "digest": "sha256:472abf5215581ef26cc4c6d3e1a9abf1377204532ff5a415481e3463633ecc24"
+  },
+  {
+   "instance_id": "rubocop__rubocop-13705",
+   "repo": "rubocop/rubocop",
+   "language": "ruby",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.rubocop_1776_rubocop-13705:latest",
+   "digest": "sha256:810e3574ea1ec36a2b325d8b3cd6a173536ef9a2fdf0c90a21e8423802c34776"
+  },
+  {
+   "instance_id": "faker-ruby__faker-2705",
+   "repo": "faker-ruby/faker",
+   "language": "ruby",
+   "split": "holdout",
+   "image": "swebench/sweb.eval.x86_64.faker-ruby_1776_faker-2705:latest",
+   "digest": "sha256:6cd5d7ac35e937686e8aad30defa34bc2a5810d79482f642beba34685491b33b"
+  }
+ ]
+}

@@ -1,0 +1,156 @@
+{
+ "spec": "harnessix.week1-local.task-list/v1",
+ "dataset": "princeton-nlp/SWE-bench_Verified",
+ "split": "dev",
+ "source": "benchmarks/swebench/generalization-25-v62/plan.json",
+ "excluded": {
+  "django__django-10097": "Excluded per SWE-bench/SWE-bench#669 (problem statement links or embeds the gold patch)."
+ },
+ "note": "Failures on these tasks were analysed before; treat as development material, not fresh generalisation.",
+ "tasks": [
+  {
+   "instance_id": "django__django-10880",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-10880:latest",
+   "digest": "sha256:94e6ba5d96b1a1db8bc6fd117c03728d6a7453ddb723dc4484f48bd22efc968d",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-11087",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-11087:latest",
+   "digest": "sha256:978680ec9fef5526ee919404380e983928cbeaa4079731ff133e1a53daf5f6b5",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-11133",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-11133:latest",
+   "digest": "sha256:914093363dbe12def92c5d36e9bdc5270cce5ed0aa6f3daad8bc4ef0389c29bf",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-11433",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-11433:latest",
+   "digest": "sha256:81293f20095c8b9d78ae951f21c3dbf813e7b0fd2950773651c7666e5c3bd113",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-11880",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-11880:latest",
+   "digest": "sha256:ce0c7fd75b0fe8d24632c627359c5e2bc1a4922843d889870931f80f2f98c311",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-11999",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-11999:latest",
+   "digest": "sha256:3c7e7f035f611b17f2093ee6409364bc28cce8b9bac266b9590db762d197607e",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-12262",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-12262:latest",
+   "digest": "sha256:23c0777e08a37bd0643f7638eaca9c57d1ee16fca79b6312b8d6de7fd1b5e7da",
+   "full_size_gb": 1.15
+  },
+  {
+   "instance_id": "django__django-12858",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-12858:latest",
+   "digest": "sha256:c9865ad6e7a0907fa9a449b6f7541a72904777036515d539b38186fe01e09f2b",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-13569",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-13569:latest",
+   "digest": "sha256:e0270aab510cb2153b21d66a58f8d772b64fd3cf0cb702ae880bf4154221d826",
+   "full_size_gb": 1.16
+  },
+  {
+   "instance_id": "django__django-15315",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-15315:latest",
+   "digest": "sha256:1060f830aa3331b052eee3a54b8793625d9f2731959b4b1fc57755afb338ee71",
+   "full_size_gb": 1.21
+  },
+  {
+   "instance_id": "django__django-15916",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-15916:latest",
+   "digest": "sha256:cb20d42e6a13a051b62294efcbba022068d2635ed84cfa8b5298b0403bf5d729",
+   "full_size_gb": 1.21
+  },
+  {
+   "instance_id": "django__django-16899",
+   "image": "swebench/sweb.eval.x86_64.django_1776_django-16899:latest",
+   "digest": "sha256:1830dd6cc4c0e0d22b0e1a937c397d7d94c2b7854fe15aefdac28df8548e19f0",
+   "full_size_gb": 1.24
+  },
+  {
+   "instance_id": "sympy__sympy-11618",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-11618:latest",
+   "digest": "sha256:744c19afa2b657ef131aea81a85d1c9cf86fe934b50db44443a5fdcdc9ac9649",
+   "full_size_gb": 1.06
+  },
+  {
+   "instance_id": "sympy__sympy-13031",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-13031:latest",
+   "digest": "sha256:067e63442eb90f260defbdd2ecb27bb8389449ba889cc7f98fbb1c7585e37b49",
+   "full_size_gb": 1.06
+  },
+  {
+   "instance_id": "sympy__sympy-13372",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-13372:latest",
+   "digest": "sha256:afc436645be2d3bc40184b51f04e9a0cecad3945746e9bcfeaf6733b1d7cf436",
+   "full_size_gb": 1.07
+  },
+  {
+   "instance_id": "sympy__sympy-14531",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-14531:latest",
+   "digest": "sha256:cf141443a85d16108fd94f025f15996cc89a1ace20afdf41d77edc20603030a7",
+   "full_size_gb": 1.07
+  },
+  {
+   "instance_id": "sympy__sympy-15017",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-15017:latest",
+   "digest": "sha256:6bf2b82cdba92ff0030985067ef0dc74880be2cde224ec10e6da443a21925cfb",
+   "full_size_gb": 1.07
+  },
+  {
+   "instance_id": "sympy__sympy-16886",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-16886:latest",
+   "digest": "sha256:8e68941a90d2b34aaedf409876a2353e3ffc7cb8b70c90bb543bea626c5da085",
+   "full_size_gb": 1.08
+  },
+  {
+   "instance_id": "sympy__sympy-20590",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-20590:latest",
+   "digest": "sha256:3a282752833ce34730ee0621e22033501c993f45742775ca57f04c9ff27178a0",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-21930",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-21930:latest",
+   "digest": "sha256:ac9b1c65d632e5a3d1af240db144ff27ed9a70b5507705d50480ede6899125d1",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-22456",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-22456:latest",
+   "digest": "sha256:ffa413d994c2217162a352c8bd711b6ece23b0f0a3941b4f5071b52fdcc9bc64",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-22914",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-22914:latest",
+   "digest": "sha256:aa5f1cf12ce166511d03eed6ac0de0f76b27777ac2c6ddb4a9b11f67f000941f",
+   "full_size_gb": 1.09
+  },
+  {
+   "instance_id": "sympy__sympy-23262",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-23262:latest",
+   "digest": "sha256:c29e2fbcef442fa9833021bc492ea4c39bc71a0fb606e61fc5521a841ae88b2e",
+   "full_size_gb": 1.1
+  },
+  {
+   "instance_id": "sympy__sympy-23534",
+   "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-23534:latest",
+   "digest": "sha256:8a18511507a128964f0a001f54354370b84f4598d59b43d8df24163ba560a516",
+   "full_size_gb": 1.1
+  }
+ ]
+}
