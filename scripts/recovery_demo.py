@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -129,7 +130,8 @@ def main() -> None:
         "auto",
         "--quiet",
     ]
-    environment = {**os.environ, "MODEL_API_KEY": "demo"}
+    # 本地端点不校验密钥，但产品仍要求设置；值会作为Secret参与公开输出泄露检测，须足够独特。
+    environment = {**os.environ, "MODEL_API_KEY": f"sk-local-{uuid.uuid4().hex}"}
 
     first = subprocess.Popen(
         [arguments.harnessix, "exec", "--prompt", "Run the long command.", *common],
