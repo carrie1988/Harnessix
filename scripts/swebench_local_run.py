@@ -20,6 +20,7 @@ import json
 import os
 import queue
 import shutil
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -115,8 +116,9 @@ ARMS = {
 
 BAILIAN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 BAILIAN_MODEL = "qwen3.8-flash"
-# CNY per million tokens (Bailian, mainland, 2026-11): input 0.8, output 2.7. The spend guard
-# ignores the 0.1 cache-hit price, so it overestimates and stops early rather than late.
+# CNY per million tokens (Bailian, mainland, 2026-11): input 0.8 (cache hit 0.1), output 2.7.
+# The guard prices each finished run from the provider-reported, cache-aware usage events and
+# falls back to the uncached price when those are unavailable.
 BAILIAN_PRICE = (0.8, 2.7)
 
 SHELL_ENVIRONMENT_NOTE = """
@@ -643,6 +645,30 @@ def _cost_cny(usage: dict[str, Any] | None) -> float:
     return (inputs * input_price + outputs * output_price) / 1e6
 
 
+def _observed_cost_cny(sessions: Path) -> float | None:
+    """Cache-aware cost from the provider-reported usage events of a finished run."""
+
+    query = (
+        "SELECT sum(json_extract(event_json, '$.payload.usage.input_tokens')), "
+        "sum(json_extract(event_json, '$.payload.usage.cache_read_input_tokens')), "
+        "sum(json_extract(event_json, '$.payload.usage.output_tokens')) FROM agent_events "
+        "WHERE json_extract(event_json, '$.payload.type') = 'model_usage_observed' "
+        "AND json_extract(event_json, '$.payload.usage.completeness') = 'complete'"
+    )
+    try:
+        database = sqlite3.connect(f"file:{sessions}?mode=ro", uri=True)
+        inputs, cached, outputs = database.execute(query).fetchone()
+        database.close()
+    except sqlite3.Error:
+        return None
+    if inputs is None:
+        return None
+    input_price, output_price = BAILIAN_PRICE
+    cached = cached or 0
+    total = (inputs - cached) * input_price + cached * 0.1 + (outputs or 0) * output_price
+    return float(total) / 1e6
+
+
 def _recorded_spend(run_root: Path) -> float:
     path = run_root / "spend.json"
     return float(json.loads(path.read_text())["estimated_cny"]) if path.exists() else 0.0
@@ -749,8 +775,9 @@ def main() -> None:
         finally:
             slots.put(port)
         if arm.endpoint == "bailian":
+            cost = _observed_cost_cny(root / "state" / "runtime" / "sessions.db")
             with lock:
-                spend["cny"] += _cost_cny(outcome.usage)
+                spend["cny"] += _cost_cny(outcome.usage) if cost is None else cost
                 (run_root / "spend.json").write_text(json.dumps({"estimated_cny": spend["cny"]}))
         print(
             f"{task.instance_id}{f' c{index}' if arm.candidates > 1 else ''}: {outcome.status} "
