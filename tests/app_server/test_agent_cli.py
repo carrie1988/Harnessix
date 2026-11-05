@@ -89,6 +89,43 @@ async def test_thin_cli_uses_negotiated_event_page_limit() -> None:
     assert client.replay_events.await_args.kwargs["limit"] == 4
 
 
+async def test_thin_cli_halves_event_pages_rejected_by_public_output_limits() -> None:
+    limits_seen: list[int] = []
+
+    async def replay_events(thread_id, *, after_cursor, limit):  # type: ignore[no-untyped-def]
+        limits_seen.append(limit)
+        if limit > 64:
+            raise AgentSDKError("public_output_limit", "公开结果未通过保护校验")
+        more = after_cursor == 0
+        return SimpleNamespace(events=(), scanned_through=after_cursor + limit, has_more=more)
+
+    client = SimpleNamespace(
+        initialized=SimpleNamespace(limits=SimpleNamespace(max_replay_events=256)),
+        replay_events=replay_events,
+    )
+    cli = ThinAgentCLI(client)  # type: ignore[arg-type]
+
+    assert await cli._load_replay(uuid4(), display_after=0) == 128
+    # 256与128被拒后降到64，后续页沿用缩小后的页长，不再重复试探。
+    assert limits_seen == [256, 128, 64, 64]
+
+
+async def test_thin_cli_does_not_retry_other_errors_or_single_event_pages() -> None:
+    client = SimpleNamespace(
+        initialized=SimpleNamespace(limits=SimpleNamespace(max_replay_events=1)),
+        replay_events=AsyncMock(side_effect=AgentSDKError("public_output_limit", "超限")),
+    )
+    with pytest.raises(AgentSDKError, match="超限"):
+        await ThinAgentCLI(client)._load_replay(uuid4(), display_after=0)  # type: ignore[arg-type]
+    assert client.replay_events.await_count == 1
+
+    client.initialized = SimpleNamespace(limits=SimpleNamespace(max_replay_events=8))
+    client.replay_events = AsyncMock(side_effect=AgentSDKError("transport_closed", "断开"))
+    with pytest.raises(AgentSDKError, match="断开"):
+        await ThinAgentCLI(client)._load_replay(uuid4(), display_after=0)  # type: ignore[arg-type]
+    assert client.replay_events.await_count == 1
+
+
 async def test_thin_cli_drives_question_and_preserves_model_transcript(tmp_path: Path) -> None:
     provider = ScriptedProvider(
         [

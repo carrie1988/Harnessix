@@ -6,7 +6,7 @@ import argparse
 import asyncio
 import json
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Literal, Protocol
 from uuid import UUID
 
@@ -81,6 +81,8 @@ class ThinAgentCLI:
         self._completed_text: set[UUID] = set()
         self._submitted_approvals: set[UUID] = set()
         self._submitted_questions: set[UUID] = set()
+        # 事件页因公开投影超限被拒后缩小的页长；None表示用协议协商的页长。
+        self._page_limit: int | None = None
 
     async def _render_artifact(self, thread_id: UUID, item: PublicItem) -> None:
         content = item.content
@@ -148,10 +150,24 @@ class ThinAgentCLI:
         elif render and isinstance(data, TurnStatePublicEvent):
             self.console.write(f"Turn状态：{data.status}")
 
-    async def _load_replay(self, thread_id: UUID, *, display_after: int) -> int:
-        cursor, limit = 0, _event_page_limit(self.client)
+    async def _paged[PageT](
+        self, fetch: Callable[..., Awaitable[PageT]], /, *args: object, **kwargs: object
+    ) -> PageT:
+        """服务端拒绝公开投影超限的事件页时减半页长重读；页长随后保持缩小。"""
+
         while True:
-            page = await self.client.replay_events(thread_id, after_cursor=cursor, limit=limit)
+            limit = self._page_limit or _event_page_limit(self.client)
+            try:
+                return await fetch(*args, **kwargs, limit=limit)
+            except AgentSDKError as error:
+                if error.code != "public_output_limit" or limit == 1:
+                    raise
+                self._page_limit = limit // 2
+
+    async def _load_replay(self, thread_id: UUID, *, display_after: int) -> int:
+        cursor = 0
+        while True:
+            page = await self._paged(self.client.replay_events, thread_id, after_cursor=cursor)
             for event in page.events:
                 self._record_event(event, render=event.cursor > display_after)
             cursor = page.scanned_through
@@ -267,11 +283,8 @@ class ThinAgentCLI:
                 return await self.client.get_thread(thread_id)
             if await self._answer_pending(thread):
                 continue
-            page = await self.client.next_events(
-                thread_id,
-                after_cursor=cursor,
-                wait_ms=30_000,
-                limit=_event_page_limit(self.client),
+            page = await self._paged(
+                self.client.next_events, thread_id, after_cursor=cursor, wait_ms=30_000
             )
             for event in page.replay.events:
                 self._record_event(event, render=True)
