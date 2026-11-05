@@ -8,12 +8,14 @@ import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
 from pydantic import ValidationError
 
-from harnessix.product_config.contracts import ProviderKind
+from harnessix.agent.errors import KernelError
+from harnessix.product_config.codec import load_product_config
+from harnessix.product_config.contracts import ProductConfigSnapshot, ProviderKind
 from harnessix.product_config.errors import ProductConfigError
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import (
@@ -140,6 +142,21 @@ def _default_state_directory(workspace: Path) -> Path:
         return Path(configured).absolute()
     fingerprint = workspace_identity_fingerprint(str(workspace))
     return Path.home() / ".harnessix" / "workspaces" / fingerprint
+
+
+def _chain_pricing(config: Path, profile: str | None) -> Literal["free", "unknown"]:
+    """读取产品配置判断活动Profile链是否全为免费本地端点；读不到时按费用未知处理。"""
+
+    try:
+        snapshot = load_product_config(config)
+    except (OSError, ValueError, KernelError):
+        return "unknown"
+    if not isinstance(snapshot, ProductConfigSnapshot):
+        return "unknown"
+    try:
+        return snapshot.config.chain_pricing(profile)
+    except (KeyError, ValueError):
+        return "unknown"
 
 
 def _action_config(value: str | None) -> Path | None:
@@ -405,7 +422,9 @@ def code_main(argv: Sequence[str] | None = None) -> None:
                 store,
                 lambda: SubprocessAgentTransport(command),
             )
-            controller = ProductController(session)
+            controller = ProductController(
+                session, pricing=_chain_pricing(config, arguments.profile)
+            )
             report = app_type(
                 controller,
                 StartRequest(

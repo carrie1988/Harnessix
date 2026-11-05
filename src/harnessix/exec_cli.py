@@ -23,6 +23,7 @@ from harnessix.agent_cli import ApprovalOutcome, ApprovalPolicy, ThinAgentCLI
 from harnessix.product_config.preflight import run_product_preflight
 from harnessix.product_ui.cli import (
     _action_config,
+    _chain_pricing,
     _default_config,
     _default_state_directory,
     _preflight_request,
@@ -30,7 +31,7 @@ from harnessix.product_ui.cli import (
     _server_command,
     _workspace,
 )
-from harnessix.product_ui.turn_budget import PRODUCT_TURN_BUDGET
+from harnessix.product_ui.turn_budget import turn_budget_for
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
     PublicBudget,
@@ -106,14 +107,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--approval-mode", choices=("manual", "auto-edit", "auto"), default="manual"
     )
-    defaults = PRODUCT_TURN_BUDGET
-    parser.add_argument("--max-steps", type=int, default=defaults.max_steps)
-    parser.add_argument("--max-tokens", type=int, default=defaults.max_tokens)
-    parser.add_argument("--timeout-seconds", type=float, default=defaults.timeout_seconds)
-    parser.add_argument("--max-output-chars", type=int, default=defaults.max_output_chars)
-    parser.add_argument(
-        "--max-tool-calls-per-step", type=int, default=defaults.max_tool_calls_per_step
-    )
+    # 未指定的预算项取产品默认；活动Profile链全为本地免费端点时累计token上限更高。
+    parser.add_argument("--max-steps", type=int)
+    parser.add_argument("--max-tokens", type=int)
+    parser.add_argument("--timeout-seconds", type=float)
+    parser.add_argument("--max-output-chars", type=int)
+    parser.add_argument("--max-tool-calls-per-step", type=int)
     parser.add_argument("--summary-file", help="把JSON摘要写入该文件（默认写到stdout）")
     parser.add_argument("--quiet", action="store_true", help="不输出过程文本")
     return parser
@@ -176,6 +175,7 @@ def _summary(
     needs_input: bool,
     elapsed: float,
     changed: list[str] | None,
+    pricing: Literal["free", "unknown"] = "unknown",
 ) -> dict[str, Any]:
     turn = thread.latest_turn
     items = cli.recorded_items()
@@ -201,6 +201,8 @@ def _summary(
         "error": None if turn is None or turn.error is None else turn.error.model_dump(),
         "model_steps": None if turn is None else turn.model_steps,
         "usage": None if turn is None else turn.usage.model_dump(),
+        # 本地自托管端点计0元；其他端点不公开价格，费用未知。
+        "cost": {"pricing": pricing, "amount_cny": 0 if pricing == "free" else None},
         "approval_mode": mode,
         "approvals": approvals,
         "final_answer": answers[-1] if answers else None,
@@ -218,6 +220,11 @@ class _Launch:
     budget: PublicBudget
     mode: ApprovalMode
     quiet: bool
+    pricing: Literal["free", "unknown"] = "unknown"
+
+
+def _or[T](value: T | None, default: T) -> T:
+    return default if value is None else value
 
 
 def _prepare(arguments: argparse.Namespace) -> _Launch | None:
@@ -244,12 +251,16 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         runtime_state=state_root / "runtime",
         git_executable=arguments.git_executable,
     )
+    pricing = _chain_pricing(config, arguments.profile)
+    defaults = turn_budget_for(pricing)
     budget = PublicBudget(
-        max_steps=arguments.max_steps,
-        max_tokens=arguments.max_tokens,
-        timeout_seconds=arguments.timeout_seconds,
-        max_output_chars=arguments.max_output_chars,
-        max_tool_calls_per_step=arguments.max_tool_calls_per_step,
+        max_steps=_or(arguments.max_steps, defaults.max_steps),
+        max_tokens=_or(arguments.max_tokens, defaults.max_tokens),
+        timeout_seconds=_or(arguments.timeout_seconds, defaults.timeout_seconds),
+        max_output_chars=_or(arguments.max_output_chars, defaults.max_output_chars),
+        max_tool_calls_per_step=_or(
+            arguments.max_tool_calls_per_step, defaults.max_tool_calls_per_step
+        ),
     )
     return _Launch(
         command=command,
@@ -258,6 +269,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         budget=budget,
         mode=arguments.approval_mode,
         quiet=arguments.quiet,
+        pricing=pricing,
     )
 
 
@@ -308,6 +320,7 @@ def exec_main(argv: Sequence[str] | None = None) -> None:
             needs_input=needs_input,
             elapsed=time.monotonic() - started,
             changed=_changed_paths(launch.workspace, arguments.git_executable),
+            pricing=launch.pricing,
         )
         completed = thread.latest_turn is not None and thread.latest_turn.status == "completed"
         code = (

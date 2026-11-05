@@ -223,6 +223,13 @@ class ProductConfigV2(ProductConfigContract):
                 raise ValueError("Fallback候选不能满足首选Profile要求能力")
         return self
 
+    def chain_pricing(self, profile_id: str | None = None) -> ProviderPricing:
+        """整条Profile链（含回退）都是免费本地端点时为free，否则费用未知。"""
+
+        pricing = {provider.provider_id: provider.pricing for provider in self.providers}
+        chain = self.profile_chain(profile_id)
+        return "free" if all(pricing[item.provider_id] == "free" for item in chain) else "unknown"
+
     def profile_chain(self, profile_id: str | None = None) -> tuple[ModelProfile, ...]:
         profiles = {item.profile_id: item for item in self.profiles}
         selected = profile_id or self.active_profile

@@ -6,7 +6,7 @@ import asyncio
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Final, cast
+from typing import Any, Final, Literal, cast
 from uuid import UUID
 
 from harnessix.product_ui.errors import ProductUIError
@@ -28,7 +28,7 @@ from harnessix.product_ui.session import (
     PreparedClientCommand,
     RecoverableAgentSession,
 )
-from harnessix.product_ui.turn_budget import PRODUCT_TURN_BUDGET
+from harnessix.product_ui.turn_budget import turn_budget_for
 from harnessix.protocol.contracts import MAX_PROTOCOL_TEXT_CHARS, ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError
 
@@ -67,6 +67,8 @@ class ProductControllerState:
     approval_evidence: ApprovalEvidence | None = None
     last_notice: ProductNotice | None = None
     revision: int = 0
+    # 活动Profile链的计价：free表示全部为本地自托管端点，界面显示本地0元。
+    pricing: Literal["free", "unknown"] = "unknown"
 
 
 @dataclass(frozen=True, slots=True)
@@ -234,10 +236,15 @@ def _poll_interval(state: ProductControllerState) -> float:
 class ProductController:
     """串行执行UI Intent，并作为协议I/O与产品状态的唯一任务所有者。"""
 
-    def __init__(self, session: RecoverableAgentSession) -> None:
+    def __init__(
+        self,
+        session: RecoverableAgentSession,
+        *,
+        pricing: Literal["free", "unknown"] = "unknown",
+    ) -> None:
         self._session = session
         self._interactions = InteractionService(session)
-        self._state = ProductControllerState()
+        self._state = ProductControllerState(pricing=pricing)
         self._intents: asyncio.Queue[_QueuedIntent | _Stop] = asyncio.Queue(
             maxsize=MAX_PENDING_INTENTS
         )
@@ -457,7 +464,10 @@ class ProductController:
 
         async def submit(client: AgentClient, prepared: PreparedClientCommand) -> None:
             await client.start_turn(
-                thread_id, prompt, request_id=prepared.request_id, budget=PRODUCT_TURN_BUDGET
+                thread_id,
+                prompt,
+                request_id=prepared.request_id,
+                budget=turn_budget_for(self._state.pricing),
             )
 
         await self._session.execute_prepared(command, submit)

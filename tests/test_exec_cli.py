@@ -54,7 +54,8 @@ def test_exec_requires_exactly_one_task_source():
         _parser().parse_args(["--prompt", "a", "--prompt-file", "b"])
     arguments = _parser().parse_args(["--prompt", "fix the bug"])
     assert arguments.approval_mode == "manual"
-    assert (arguments.max_steps, arguments.max_tokens) == (100, 1_000_000)
+    # 未指定时由活动Profile链的计价决定默认预算。
+    assert (arguments.max_steps, arguments.max_tokens) == (None, None)
 
 
 def _item(content: dict[str, object]) -> PublicItem:
@@ -110,3 +111,27 @@ def test_summary_lists_sandbox_commands_with_their_results_in_call_order():
             "returncode": None,
         },
     ]
+
+
+def test_local_free_chains_get_a_larger_token_budget(tmp_path):
+    from harnessix.product_config.codec import canonical_product_config_bytes
+    from harnessix.product_config.product_contracts import ConfigurationDraft
+    from harnessix.product_config.wizard import build_product_config
+    from harnessix.product_ui.cli import _chain_pricing
+    from harnessix.product_ui.turn_budget import turn_budget_for
+
+    def config(base_url: str):
+        return build_product_config(
+            ConfigurationDraft(provider_kind="openai_chat", base_url=base_url, model="m")
+        )
+
+    local, remote = config("http://127.0.0.1:18002/v1"), config("https://api.example.com/v1")
+    assert local.chain_pricing() == "free" and remote.chain_pricing() == "unknown"
+    path = tmp_path / "config.json"
+    path.write_bytes(canonical_product_config_bytes(local))
+    path.chmod(0o600)  # 产品配置必须是私有文件
+    assert _chain_pricing(path, None) == "free"
+    assert _chain_pricing(tmp_path / "missing.json", None) == "unknown"
+    assert turn_budget_for("free").max_tokens == 2_000_000
+    assert turn_budget_for("unknown").max_tokens == 1_000_000
+    assert turn_budget_for("free").max_steps == turn_budget_for("unknown").max_steps == 100

@@ -904,7 +904,7 @@ Controller为整个关闭序列提供大于0且不超过30秒的绝对时限，�
 | Session普通Request无统一外层Deadline | Actor操作可能直到整体关闭时限才转为未知 | 0.9.3 |
 | 当前没有产品层Telemetry适配 | 只能通过Connection/Controller状态和错误码诊断 | 0.9.3 |
 | Windows只读以外能力尚未装配 | 当前证据不覆盖Windows写入、Process、Delivery与发行物 | 0.9.1e、0.9.5 |
-| 协议没有价格适用性和金额 | UI只能显示Token与费用未知，不能提供精确成本 | 0.9.6发布证据 |
+| 协议没有价格适用性和金额 | 远端端点只能显示Token与费用未知，不能提供精确成本；活动Profile链全为回环自托管端点（`pricing=free`）时启动时读取产品配置，状态栏显示“本地 0 元”，Turn默认累计token上限为200万（步数与时限不变），`harnessix exec`摘要同样给出`cost`与对应默认预算 | 0.9.6发布证据 |
 | Approval Evidence不持久化 | 重启后必须重新读取Artifact，不能离线沿用旧Diff | 安全设计，不计划放宽 |
 
 `ProductController`和`ProductApp`分别超过默认类行数阈值，因此本切片对

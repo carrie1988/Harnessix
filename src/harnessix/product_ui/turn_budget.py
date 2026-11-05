@@ -13,3 +13,10 @@ PRODUCT_TURN_BUDGET = PublicBudget(
     max_output_chars=65_536,
     max_tool_calls_per_step=32,
 )
+
+# 本地自托管端点没有价格，前缀缓存使累计输入多为重复读取：累计token上限放宽到200万，步数与时限不变。
+LOCAL_TURN_BUDGET = PRODUCT_TURN_BUDGET.model_copy(update={"max_tokens": 2_000_000})
+
+
+def turn_budget_for(pricing: str) -> PublicBudget:
+    return LOCAL_TURN_BUDGET if pricing == "free" else PRODUCT_TURN_BUDGET

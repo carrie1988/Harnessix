@@ -36,7 +36,8 @@ def _status_text(state: ProductControllerState) -> str:
     usage_text = ""
     if usage is not None:
         limit = "?" if usage.max_tokens is None else str(usage.max_tokens)
-        usage_text = f" · Tokens {usage.total_tokens}/{limit} · 费用未知（{usage.cost_reason}）"
+        cost = "本地 0 元" if state.pricing == "free" else f"费用未知（{usage.cost_reason}）"
+        usage_text = f" · Tokens {usage.total_tokens}/{limit} · {cost}"
     notice = (
         ""
         if state.last_notice is None
