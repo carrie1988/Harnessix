@@ -77,20 +77,25 @@ class Arm:
     candidates: int = 1
 
 
+LOCAL_TOKENS = 2_000_000
+
 ARMS = {
     # Product defaults before week 1: 16 steps, 100K tokens, 120 s, no command execution.
     "A0": Arm("A0", shell=False, max_steps=16, max_tokens=100_000, timeout_seconds=120),
     # New product turn budget, still without command execution.
-    "A1": Arm("A1", shell=False, max_steps=100, max_tokens=1_000_000, timeout_seconds=3_600),
+    # New product turn budget, still without command execution. Local inference has no price,
+    # and with prefix caching most cumulative input tokens are re-reads, so local arms allow 2M
+    # cumulative tokens; at 1M, a third of dev tasks stopped before writing any patch.
+    "A1": Arm("A1", shell=False, max_steps=100, max_tokens=LOCAL_TOKENS, timeout_seconds=3_600),
     # New budget plus the generic container command in the instance image.
-    "A2": Arm("A2", shell=True, max_steps=100, max_tokens=1_000_000, timeout_seconds=3_600),
+    "A2": Arm("A2", shell=True, max_steps=100, max_tokens=LOCAL_TOKENS, timeout_seconds=3_600),
     # A2 four times per task, then one patch chosen by cross-running the candidates' own checks.
     # Candidate c0 alone is an ordinary A2 sample.
     "A2x4": Arm(
         "A2x4",
         shell=True,
         max_steps=100,
-        max_tokens=1_000_000,
+        max_tokens=LOCAL_TOKENS,
         timeout_seconds=3_600,
         candidates=4,
     ),
