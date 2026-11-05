@@ -5,7 +5,14 @@ from uuid import uuid4
 
 import pytest
 
-from harnessix.exec_cli import HeadlessConsole, NeedsHumanInput, _commands, _parser, approval_policy
+from harnessix.exec_cli import (
+    HeadlessConsole,
+    NeedsHumanInput,
+    _commands,
+    _parser,
+    _verification,
+    approval_policy,
+)
 from harnessix.protocol.contracts import PublicApprovalRequestContent, PublicItem
 
 
@@ -135,3 +142,54 @@ def test_local_free_chains_get_a_larger_token_budget(tmp_path):
     assert turn_budget_for("free").max_tokens == 2_000_000
     assert turn_budget_for("unknown").max_tokens == 1_000_000
     assert turn_budget_for("free").max_steps == turn_budget_for("unknown").max_steps == 100
+
+
+def _call(call_id, tool, arguments=None):
+    return _item(
+        {
+            "kind": "tool_call",
+            "call_id": call_id,
+            "tool": tool,
+            "tool_version": "v1",
+            "effect_class": "non_idempotent_write",
+            "requires_approval": True,
+            "arguments": arguments or {},
+        }
+    )
+
+
+def _result(call_id, outcome):
+    return _item({"kind": "tool_result", "call_id": call_id, "outcome": outcome})
+
+
+def test_verification_counts_only_checks_after_the_last_successful_edit():
+    patch, check, later_patch, failed_patch = uuid4(), uuid4(), uuid4(), uuid4()
+    run = ("exec_command.testbed", {"profile": "testbed", "cmd": "pytest -q"})
+    assert _verification([]) == {"status": "no_changes"}
+    tested = [
+        _call(patch, "apply_patch_batch"),
+        _result(patch, "succeeded"),
+        _call(check, *run),
+        _result(check, "succeeded"),
+    ]
+    assert _verification(tested) == {"status": "passed_after_last_edit", "last_check": "pytest -q"}
+    edited_again = [
+        *tested,
+        _call(later_patch, "apply_patch_batch"),
+        _result(later_patch, "succeeded"),
+    ]
+    assert _verification(edited_again) == {"status": "unverified"}
+    # 失败的补丁不算改动；失败的检查如实报告。
+    rejected = [
+        *edited_again[:4],
+        _call(failed_patch, "apply_patch_batch"),
+        _result(failed_patch, "failed"),
+    ]
+    assert _verification(rejected)["status"] == "passed_after_last_edit"
+    failing = [
+        _call(patch, "apply_patch_batch"),
+        _result(patch, "succeeded"),
+        _call(check, *run),
+        _result(check, "failed"),
+    ]
+    assert _verification(failing)["status"] == "failed_after_last_edit"
