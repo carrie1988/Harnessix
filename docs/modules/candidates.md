@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 1
+version: 2
 code_revision: 022bb9c0d061aabe669c7716fbdbdbaceddec2ea
 owners:
   - core
@@ -13,6 +13,7 @@ related_adrs:
 related_tests:
   - tests/candidates/test_selection.py
   - tests/candidates/test_verification.py
+  - tests/candidates/test_judge.py
 supersedes: []
 ---
 
@@ -39,13 +40,14 @@ supersedes: []
 - 每次选择都留下可审计记录：检查命令、逐格结果、排序与理由；
 - 选择逻辑是纯函数，可脱离容器单测。
 
-非目标：多Agent协作或分工；模型评审（平局目前按确定性规则处理）；把选中补丁写回用户工作区。
+非目标：多Agent协作或分工；把选中补丁写回用户工作区。
 
 ## 4. 模块上下文与总体架构
 
 | 文件 | 职责 |
 |---|---|
 | `candidates/selection.py` | `Candidate`、`Check`、`select_checks`（选检查命令）、`rank`（排序与理由），纯逻辑 |
+| `candidates/judge.py` | `judge_pair`（双顺序评审）、`tied_leaders`（并列且补丁不同的领先者）、`break_tie`（循环赛） |
 | `candidates/verification.py` | `container_argv`（与Profile一致的容器命令）、`overlay_workspace`（叠加他人草稿）、`cross_check`（矩阵执行） |
 
 输入来自`harnessix exec`摘要中的`commands`字段（每条`exec_command`的命令、结果与返回码）与各候选工作区的补丁；
@@ -88,6 +90,9 @@ selection = rank(candidates, checks, matrix)            # 纯函数
 ```
 
 排序键依次为：通过检查数多、相同补丁出现次数多、候选正常结束、补丁更小。空补丁不参与。
+若领先者在通过数与相同补丁数上与其他不同补丁并列，`break_tie`对它们做循环赛两两评审：同一对补丁按两种顺序
+各问一次模型（只给题面与两个diff），两次结论一致才记一票；最高票唯一时改选它，否则保持原排序。评审记录
+（每对的正反顺序回答与胜者）写入`selection.json`。
 
 ## 8. 失败、恢复、取消与超时
 
@@ -121,17 +126,20 @@ Product Process Profile保持同一边界：只读根文件系统、工作区只
 
 1. [selection.py](../../src/harnessix/candidates/selection.py)；
 2. [verification.py](../../src/harnessix/candidates/verification.py)；
-3. 编排：[swebench_local_run.py](../../scripts/swebench_local_run.py)中的`select_candidate`与任务调度；
-4. 测试：[test_selection.py](../../tests/candidates/test_selection.py)、
-   [test_verification.py](../../tests/candidates/test_verification.py)。
+3. [judge.py](../../src/harnessix/candidates/judge.py)；
+4. 编排：[swebench_local_run.py](../../scripts/swebench_local_run.py)中的`select_candidate`与任务调度；
+5. 测试：[test_selection.py](../../tests/candidates/test_selection.py)、
+   [test_verification.py](../../tests/candidates/test_verification.py)、
+   [test_judge.py](../../tests/candidates/test_judge.py)。
 
 ## 13. 限制、风险与后续差距
 
 - 交叉重放由宿主直接启动容器，不进入Trusted Action账本与Process Owner对账；后续应提供宿主发起的Action入口；
 - 容器参数与`sandbox/container.py`各自维护，两处需同步；
-- 平局不调用模型评审；候选都没写有效检查时退化为“相同补丁最多者”；
+- 评审模型与生成模型相同时可能偏向自身风格；双顺序一致只抵消位置偏差；候选都没写有效检查时主要依赖评审；
 - 尚未作为产品命令提供（如`harnessix exec --candidates N`），也不写回用户工作区。
 
 ## 14. 变更记录
 
 - v1（2026-11-06）：首版，选择逻辑、交叉检查与SWE-bench本地评测编排。
+- v2（2026-11-06）：并列时双顺序两两评审；交叉检查遵循快照模式与环境预设，在私有写时复制副本上执行。

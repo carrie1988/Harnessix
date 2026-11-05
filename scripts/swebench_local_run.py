@@ -25,11 +25,13 @@ import sys
 import threading
 import time
 import urllib.request
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from harnessix.candidates.judge import break_tie, tied_leaders
 from harnessix.candidates.selection import (
     Candidate,
     CheckResult,
@@ -477,10 +479,21 @@ def select_candidate(
     for run in runs:
         matrix.setdefault(run.candidate_id, {})[run.check_index] = run.result
     selection = rank(candidates, checks, matrix)
+    selected, reason, judgements = selection.selected, selection.reason, []
+    leaders = tied_leaders(selection.ranking, candidates)
+    if len(leaders) > 1:
+        port = int(options.ports.split(",")[0])
+        winner, judgements = break_tie(task.problem_statement, leaders, judge_model(port))
+        if winner is not None:
+            selected = winner
+            reason += f"；与{len(leaders) - 1}个并列补丁两两评审，双顺序一致选择{winner}"
+        else:
+            reason += "；两两评审未形成一致结论，保持原排序"
     record = {
         "instance_id": task.instance_id,
-        "selected": selection.selected,
-        "reason": selection.reason,
+        "selected": selected,
+        "reason": reason,
+        "judgements": [asdict(item) for item in judgements],
         "checks": [asdict(check) for check in selection.checks],
         "runs": [asdict(run) for run in runs],
         "ranking": [asdict(item) for item in selection.ranking],
@@ -496,8 +509,34 @@ def select_candidate(
         ],
     }
     (task_root / "selection.json").write_text(json.dumps(record, indent=2) + "\n")
-    chosen = next((c.patch for c in candidates if c.candidate_id == selection.selected), "")
+    chosen = next((c.patch for c in candidates if c.candidate_id == selected), "")
     return chosen, record
+
+
+def judge_model(port: int) -> Callable[[str], str]:
+    """Pairwise judge on the same local model: one short, deterministic, thinking-off answer."""
+
+    def ask(prompt: str) -> str:
+        body = {
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 8,
+            "temperature": 0,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{port}/v1/chat/completions",
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=900) as response:
+                answer = json.loads(response.read())["choices"][0]["message"]["content"]
+        except (OSError, ValueError, KeyError, IndexError):
+            return ""
+        return str(answer or "")
+
+    return ask
 
 
 def _turn_error(summary: dict[str, Any]) -> str | None:
