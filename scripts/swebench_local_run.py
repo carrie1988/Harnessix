@@ -138,12 +138,14 @@ def materialize_workspace(task: Task, directory: Path) -> tuple[str, str]:
             f"image HEAD {original_head} is neither base {task.base_commit} nor its child"
         )
     tracked = subprocess.run([*git, "ls-files", "-z"], capture_output=True, check=True).stdout
+    upstream_modes = _tracked_modes(git, task.base_commit)
     for nested in sorted(directory.rglob(".git"), key=lambda path: len(path.parts), reverse=True):
         if nested.is_dir() and not nested.is_symlink():
             shutil.rmtree(nested)
         else:
             nested.unlink()
 
+    normalize_modes(directory, upstream_modes)
     environment = {**os.environ, **_GIT_IDENTITY}
     _run([*git, "init", "-q", "-b", "main"], env=environment)
     _run(
@@ -154,9 +156,44 @@ def materialize_workspace(task: Task, directory: Path) -> tuple[str, str]:
     _run([*git, "commit", "-q", "--no-verify", "-m", "SWE-bench base snapshot"], env=environment)
     if _run([*git, "rev-list", "--all", "--count"]) != "1":
         raise RunError("workspace exposes more than one commit")
-    # The sandbox runs as an unprivileged user; it needs read and traverse access only.
-    _run(["chmod", "-R", "a+rX", str(directory)])
     return image_id, _run([*git, "rev-parse", "HEAD"])
+
+
+def _tracked_modes(git: list[str], commit: str) -> dict[str, int]:
+    """Upstream file modes at the base commit (Git records only 100644 and 100755)."""
+
+    listing = subprocess.run(
+        [*git, "ls-tree", "-r", "-z", commit], capture_output=True, check=True
+    ).stdout
+    modes = {}
+    for entry in listing.split(b"\0"):
+        if entry:
+            metadata, path = entry.split(b"\t", 1)
+            modes[path.decode("utf-8", "surrogateescape")] = int(metadata.split(b" ", 1)[0], 8)
+    return modes
+
+
+def normalize_modes(directory: Path, upstream_modes: dict[str, int]) -> None:
+    """Restore Git-style 0644/0755 modes; the images make every file 0777.
+
+    Harnessix workspace transactions edit only 0644/0755 files, and the sandbox user needs
+    world read and traverse access. Untracked build outputs keep their owner execute bit.
+    """
+
+    for root, directories, files in os.walk(directory):
+        for name in directories:
+            path = Path(root, name)
+            if not path.is_symlink():
+                path.chmod(0o755)
+        for name in files:
+            path = Path(root, name)
+            if path.is_symlink():
+                continue
+            relative = path.relative_to(directory).as_posix()
+            mode = upstream_modes.get(relative)
+            executable = mode == 0o100755 if mode is not None else path.stat().st_mode & 0o100
+            path.chmod(0o755 if executable else 0o644)
+    directory.chmod(0o755)
 
 
 # ---------------------------------------------------------------- configuration
@@ -350,6 +387,15 @@ def load_tasks(task_list: Path, rows: Path, split: str | None) -> list[Task]:
     return tasks
 
 
+def source_revision() -> dict[str, object]:
+    """The Harnessix revision under evaluation; a dirty tree is recorded, not hidden."""
+
+    repository = Path(__file__).resolve().parent.parent
+    git = ["git", "-c", "safe.directory=*", "-C", str(repository)]
+    status = _run([*git, "status", "--porcelain", "--untracked-files=no"])
+    return {"harnessix_revision": _run([*git, "rev-parse", "HEAD"]), "dirty": bool(status)}
+
+
 def finished_instances(results: Path) -> set[str]:
     if not results.exists():
         return set()
@@ -384,7 +430,9 @@ def main() -> None:
         if t.instance_id not in done and (not options.only or t.instance_id in options.only)
     ]
     tasks = tasks[: options.limit] if options.limit else tasks
-    (run_root / "arm.json").write_text(json.dumps(asdict(arm), indent=2) + "\n")
+    (run_root / "arm.json").write_text(
+        json.dumps({**asdict(arm), **source_revision()}, indent=2) + "\n"
+    )
 
     slots: queue.Queue[int] = queue.Queue()
     for port in [int(p) for p in options.ports.split(",")]:
