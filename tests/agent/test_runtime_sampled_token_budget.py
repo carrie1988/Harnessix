@@ -542,6 +542,7 @@ async def test_prepare_crash_before_session_approval_keeps_uncertain_write(
     assert harness.execute.await_count == harness.executor.calls == 0
     assert turn.status is TurnStatus.INTERRUPTED
     assert turn.error is not None and turn.error.code == "uncertain_effect"
+    assert turn.error.message.endswith("触发原因：runtime_error")
     assert turn.usage == Usage(input_tokens=1)
     calls = [item.content for item in turn.items if isinstance(item.content, ToolCallContent)]
     results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]

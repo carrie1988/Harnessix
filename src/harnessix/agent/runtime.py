@@ -3160,8 +3160,16 @@ class AgentRuntime:
                 and (c.call_id not in recovered or recovered[c.call_id].outcome == "unknown")
                 for c in pending_calls(turn)
             ):
+                # 保留触发收尾的原失败码（枚举码，不含异常正文），便于区分崩溃、超时与执行未知。
+                trigger = (
+                    ""
+                    if error is None or error.code == "uncertain_effect"
+                    else f"；触发原因：{error.code}"
+                )
                 status = TurnStatus.INTERRUPTED
-                error = AgentFailure(code="uncertain_effect", message="存在未知效果，禁止自动重放")
+                error = AgentFailure(
+                    code="uncertain_effect", message="存在未知效果，禁止自动重放" + trigger
+                )
             payloads: list[EventPayload] = []
             for compaction in turn.compactions:
                 if compaction.status not in COMPACTION_OPEN:
