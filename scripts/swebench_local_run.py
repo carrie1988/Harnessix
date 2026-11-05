@@ -32,6 +32,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from harnessix.agent.errors import KernelError
 from harnessix.candidates.judge import break_tie, tied_leaders
 from harnessix.candidates.selection import (
     Candidate,
@@ -241,6 +242,9 @@ def materialize_workspace(task: Task, directory: Path) -> tuple[str, str]:
         env=environment,
         stdin=tracked,
     )
+    # Images may carry untracked, unignored files (e.g. a prebuilt Go test binary); they are part
+    # of the environment, so they belong to the base and never show up as the agent's patch.
+    _run([*git, "add", "-A"], env=environment)
     _run([*git, "commit", "-q", "--no-verify", "-m", "SWE-bench base snapshot"], env=environment)
     if _run([*git, "rev-list", "--all", "--count"]) != "1":
         raise RunError("workspace exposes more than one commit")
@@ -469,7 +473,7 @@ def run_task(
             workspace, Path(shutil.which("git") or "git"), base_commit, exclude_scratch=True
         )
         error = None
-    except (RunError, subprocess.TimeoutExpired, OSError) as failure:
+    except (RunError, KernelError, subprocess.TimeoutExpired, OSError) as failure:
         error = f"{type(failure).__name__}: {failure}"[:1000]
     if not keep_workspace and workspace.exists():
         shutil.rmtree(workspace, ignore_errors=True)
