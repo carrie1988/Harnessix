@@ -6,7 +6,7 @@ import argparse
 import asyncio
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Literal, Protocol
 from uuid import UUID
 
@@ -15,6 +15,7 @@ from harnessix.protocol.contracts import (
     ItemPublicEvent,
     PublicApprovalDecision,
     PublicApprovalRequestContent,
+    PublicBudget,
     PublicEvent,
     PublicItem,
     PublicItemDelta,
@@ -31,6 +32,10 @@ from harnessix.protocol.contracts import (
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, SubprocessAgentTransport
 
 _TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
+
+ApprovalOutcome = Literal["approved", "rejected"]
+# 按审批内容与对应工具名给出决定；返回None表示交给人工交互确认。
+ApprovalPolicy = Callable[[PublicApprovalRequestContent, str | None], ApprovalOutcome | None]
 
 
 def _event_page_limit(client: AgentClient) -> int:
@@ -61,12 +66,14 @@ class ThinAgentCLI:
         *,
         console: AgentConsole | None = None,
         actor: str = "local-user",
+        approval_policy: ApprovalPolicy | None = None,
     ) -> None:
         if not actor or len(actor) > 256:
             raise ValueError("CLI actor长度必须为1到256")
         self.client = client
         self.console = console or StandardAgentConsole()
         self.actor = actor
+        self.approval_policy = approval_policy
         self._items: dict[UUID, PublicItem] = {}
         self._rendered: set[UUID] = set()
         self._streamed_text: set[UUID] = set()
@@ -168,13 +175,13 @@ class ThinAgentCLI:
             )
             if approval_item is None:
                 return False
-            await self._render_artifact(thread.thread_id, approval_item)
             content = approval_item.content
             assert isinstance(content, PublicApprovalRequestContent)
-            reply = (await self.console.prompt("批准该操作？[y/N] ")).strip().lower()
-            outcome: Literal["approved", "rejected"] = (
-                "approved" if reply in {"y", "yes"} else "rejected"
-            )
+            outcome = self._policy_decision(content)
+            if outcome is None:
+                await self._render_artifact(thread.thread_id, approval_item)
+                reply = (await self.console.prompt("批准该操作？[y/N] ")).strip().lower()
+                outcome = "approved" if reply in {"y", "yes"} else "rejected"
             await self.client.respond_approval(
                 ApprovalRespondParams(
                     request_id=f"cli-approval-{content.approval_id}",
@@ -229,6 +236,24 @@ class ThinAgentCLI:
             return True
         return False
 
+    def recorded_items(self) -> tuple[PublicItem, ...]:
+        """按记录顺序返回已接收的公开Item（供无头调用方汇总结果）。"""
+        return tuple(self._items.values())
+
+    def _policy_decision(self, content: PublicApprovalRequestContent) -> ApprovalOutcome | None:
+        if self.approval_policy is None:
+            return None
+        tool = next(
+            (
+                item.content.tool
+                for item in self._items.values()
+                if isinstance(item.content, PublicToolCallContent)
+                and item.content.call_id == content.call_id
+            ),
+            None,
+        )
+        return self.approval_policy(content, tool)
+
     async def follow(self, thread_id: UUID, *, display_after: int = 0) -> ThreadView:
         await self.client.resume_thread(thread_id)
         cursor = await self._load_replay(thread_id, display_after=display_after)
@@ -269,9 +294,10 @@ class ThinAgentCLI:
         prompt: str,
         *,
         request_id: str,
+        budget: PublicBudget | None = None,
     ) -> ThreadView:
         before = await self.client.get_thread(thread_id)
-        await self.client.start_turn(thread_id, prompt, request_id=request_id)
+        await self.client.start_turn(thread_id, prompt, request_id=request_id, budget=budget)
         return await self.follow(thread_id, display_after=before.cursor)
 
     async def retry_turn(
