@@ -67,6 +67,7 @@ class ThinAgentCLI:
         console: AgentConsole | None = None,
         actor: str = "local-user",
         approval_policy: ApprovalPolicy | None = None,
+        on_event: Callable[[PublicEvent], None] | None = None,
     ) -> None:
         if not actor or len(actor) > 256:
             raise ValueError("CLI actor长度必须为1到256")
@@ -74,6 +75,9 @@ class ThinAgentCLI:
         self.console = console or StandardAgentConsole()
         self.actor = actor
         self.approval_policy = approval_policy
+        # 回放会从头重读事件；按游标去重后每个持久事件只交给回调一次。
+        self._on_event = on_event
+        self._emitted_cursor = -1
         self._items: dict[UUID, PublicItem] = {}
         self._rendered: set[UUID] = set()
         self._streamed_text: set[UUID] = set()
@@ -111,6 +115,9 @@ class ThinAgentCLI:
             offset = page.next_offset
 
     def _record_event(self, event: PublicEvent, *, render: bool) -> None:
+        if self._on_event is not None and event.cursor > self._emitted_cursor:
+            self._emitted_cursor = event.cursor
+            self._on_event(event)
         data = event.data
         if isinstance(data, ItemPublicEvent):
             self._items[data.item.item_id] = data.item

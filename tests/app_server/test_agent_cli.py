@@ -202,6 +202,26 @@ async def test_thin_cli_replays_final_text_when_turn_completed_before_follow(
         await client.close()
 
 
+async def test_thin_cli_hands_each_persisted_event_to_the_callback_once(tmp_path: Path) -> None:
+    provider = ScriptedProvider([answer("完成")])
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider) as runtime:
+        service = AgentApplicationService(runtime, store, SQLiteProtocolRequestStore(store.path))
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        await client.initialize()
+        thread = await client.create_thread(str(tmp_path), request_id="create-events")
+        seen: list[int] = []
+        cli = ThinAgentCLI(
+            client, console=ScriptedConsole([]), on_event=lambda event: seen.append(event.cursor)
+        )
+        result = await cli.run_turn(thread.thread_id, "任务", request_id="turn-events")
+        replay = await client.replay_events(thread.thread_id, after_cursor=0, limit=256)
+        await client.close()
+    assert result.latest_turn is not None and result.latest_turn.status == "completed"
+    # follow在开始和终态各回放一次；回调仍按游标严格递增、每个事件一次。
+    assert seen == sorted(set(seen)) and seen == [event.cursor for event in replay.events]
+
+
 async def test_thin_cli_reads_diff_before_batch_approval(group_case, tmp_path: Path) -> None:
     _, _, copy, _, prepared = group_case
     store = SQLiteSessionStore(tmp_path / "session.db")

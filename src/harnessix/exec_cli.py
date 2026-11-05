@@ -35,6 +35,7 @@ from harnessix.product_ui.turn_budget import turn_budget_for
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
     PublicBudget,
+    PublicEvent,
     PublicItem,
     PublicTextContent,
     PublicToolCallContent,
@@ -114,6 +115,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-output-chars", type=int)
     parser.add_argument("--max-tool-calls-per-step", type=int)
     parser.add_argument("--summary-file", help="把JSON摘要写入该文件（默认写到stdout）")
+    parser.add_argument("--events-file", help="按发生顺序把公开事件逐行写成JSONL")
     parser.add_argument("--quiet", action="store_true", help="不输出过程文本")
     return parser
 
@@ -257,6 +259,7 @@ class _Launch:
     mode: ApprovalMode
     quiet: bool
     pricing: Literal["free", "unknown"] = "unknown"
+    events: Path | None = None
 
 
 def _or[T](value: T | None, default: T) -> T:
@@ -306,6 +309,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         mode=arguments.approval_mode,
         quiet=arguments.quiet,
         pricing=pricing,
+        events=Path(arguments.events_file).absolute() if arguments.events_file else None,
     )
 
 
@@ -314,6 +318,13 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
 
     console = HeadlessConsole(quiet=launch.quiet, interactive=sys.stdin.isatty())
     client = AgentClient(SubprocessAgentTransport(launch.command), client_name="harnessix-exec")
+    events = None if launch.events is None else launch.events.open("w", encoding="utf-8")
+
+    def emit(event: PublicEvent) -> None:
+        assert events is not None
+        events.write(event.model_dump_json(by_alias=True) + "\n")
+        events.flush()
+
     try:
         await client.initialize()
         created = await client.create_thread(str(launch.workspace), request_id=f"exec-{uuid4()}")
@@ -322,6 +333,7 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
             console=console,
             actor=f"harnessix-exec:{launch.mode}",
             approval_policy=approval_policy(launch.mode),
+            on_event=None if events is None else emit,
         )
         try:
             thread = await cli.run_turn(
@@ -338,6 +350,8 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
             return cli, thread, True
     finally:
         await client.close()
+        if events is not None:
+            events.close()
 
 
 def exec_main(argv: Sequence[str] | None = None) -> None:
