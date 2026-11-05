@@ -429,9 +429,7 @@ def test_command_profile_workspace_path_is_opt_in_and_advertised(tmp_path: Path)
     profile = _command_profile(engine, workspace_path="/testbed")
     assert profile.model_dump(mode="json")["workspace_path"] == "/testbed"
     assert profile.profile_sha256 != legacy.profile_sha256
-    assert (
-        "工作区源码挂载在容器内/testbed（只读）" in process_profile_descriptor(profile).description
-    )
+    assert "工作区源码挂载在容器内/testbed" in process_profile_descriptor(profile).description
     for unsafe in ("relative", "/tmp/work", "/harnessix", "/a/../b"):
         with pytest.raises(ValidationError):
             _command_profile(engine, workspace_path=unsafe)
@@ -446,3 +444,40 @@ async def test_command_profile_workspace_path_reaches_the_sandbox_profile(tmp_pa
     assert probe.verified is not None
     assert probe.verified.sandbox_profile.workspace_path == "/testbed"
     assert probe.verified.sandbox.profile_digest == probe.verified.sandbox_profile.digest
+
+
+async def test_snapshot_profile_with_presets_reaches_the_sandbox_and_needs_a_root(
+    tmp_path: Path,
+) -> None:
+    presets = (("HOME", "/tmp"), ("GOFLAGS", "-mod=mod"))
+    profile = _command_profile(
+        _fake_engine(tmp_path), workspace_mode="snapshot", environment=presets
+    )
+    assert profile.environment == (("GOFLAGS", "-mod=mod"), ("HOME", "/tmp"))  # 规范排序
+    description = process_profile_descriptor(profile).description
+    assert "一次性可写快照" in description and "预设环境变量：GOFLAGS、HOME" in description
+    legacy = _command_profile(_fake_engine(tmp_path))
+    assert "workspace_mode" not in legacy.model_dump(mode="json")
+    assert "environment" not in legacy.model_dump(mode="json")
+
+    async with PosixProcessSupervisor(tmp_path / "probe-owner") as supervisor:
+        missing = probe_product_process_profile(
+            profile, supervisor, _NoSecrets(), probe_runner=_probe_runner
+        )
+        probe = probe_product_process_profile(
+            profile,
+            supervisor,
+            _NoSecrets(),
+            probe_runner=_probe_runner,
+            snapshot_root=tmp_path / "snapshots",
+        )
+    assert missing.verified is None and missing.reason_code == "snapshot_root_unavailable"
+    assert probe.verified is not None
+    sandbox = probe.verified.sandbox_profile
+    assert sandbox.workspace_mode == "snapshot" and sandbox.environment == profile.environment
+
+
+def test_profile_environment_presets_are_validated(tmp_path: Path) -> None:
+    for presets in ((("HTTPS_PROXY", "x"),), (("HOME", "a\nb"),), (("bad name", "x"),)):
+        with pytest.raises(ValidationError):
+            _command_profile(_fake_engine(tmp_path), environment=presets)

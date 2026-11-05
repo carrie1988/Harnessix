@@ -67,6 +67,7 @@ def build_container_sandbox_profile(
     egress_gateway_digest: str | None = None,
     task_dependencies: bool = False,
     workspace_path: str = DEFAULT_CONTAINER_WORKSPACE,
+    environment: tuple[tuple[str, str], ...] = (),
 ) -> ContainerSandboxProfile:
     selected_limits = limits or SandboxResourceLimits()
     payload: dict[str, object] = {
@@ -82,6 +83,8 @@ def build_container_sandbox_profile(
         payload["task_dependencies"] = task_dependencies
     if workspace_path != DEFAULT_CONTAINER_WORKSPACE:
         payload["workspace_path"] = workspace_path
+    if environment:
+        payload["environment"] = [list(item) for item in environment]
     try:
         return ContainerSandboxProfile(
             image=image,
@@ -92,6 +95,7 @@ def build_container_sandbox_profile(
             egress_gateway_digest=egress_gateway_digest,
             task_dependencies=task_dependencies,
             workspace_path=workspace_path,
+            environment=environment,
             digest=canonical_digest(payload),
         )
     except (ValidationError, ValueError, TypeError):

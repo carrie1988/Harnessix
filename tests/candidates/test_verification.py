@@ -102,3 +102,24 @@ def test_container_engine_errors_are_not_counted_as_test_failures(tmp_path: Path
         runner=runner,
     )
     assert [run.result for run in runs] == ["error"]
+
+
+def test_snapshot_profiles_check_on_private_writable_copies(tmp_path: Path) -> None:
+    profile = _profile(workspace_mode="snapshot", environment=(("HOME", "/tmp"),))
+    argv = container_argv(profile, tmp_path, "make test")
+    assert f"type=bind,src={tmp_path},dst=/testbed" in argv
+    assert "noexec" not in argv[argv.index("--tmpfs") + 1]
+    assert argv[argv.index("--env") + 1] == "HOME=/tmp"
+
+    workspaces = {"a": _workspace(tmp_path, "a")}
+
+    def runner(argv: list[str], **_: object) -> subprocess.CompletedProcess[bytes]:
+        mount = argv[argv.index("--mount") + 1]
+        source = Path(mount.split(",")[1].removeprefix("src="))
+        assert source != workspaces["a"]  # 写入落在副本上
+        (source / "pkg" / "mod.py").write_text("overwritten\n")
+        return subprocess.CompletedProcess(argv, 0, b"", b"")
+
+    runs = cross_check(profile, workspaces, (Check("make", "a"),), tmp_path / "s", runner=runner)
+    assert [run.result for run in runs] == ["passed"]
+    assert (workspaces["a"] / "pkg" / "mod.py").read_text() == "VALUE = 'a'\n"

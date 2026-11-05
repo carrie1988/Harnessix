@@ -97,8 +97,8 @@ async def test_authenticated_terminal_seal_recovery_never_reexecutes_or_recreate
     monkeypatch.setattr(
         action_runtime,
         "probe_product_process_profile",
-        lambda profile, supervisor, secrets: probe_product_process_profile(
-            profile, supervisor, secrets, probe_runner=_probe_runner
+        lambda profile, supervisor, secrets, **options: probe_product_process_profile(
+            profile, supervisor, secrets, probe_runner=_probe_runner, **options
         ),
     )
     monkeypatch.setattr(

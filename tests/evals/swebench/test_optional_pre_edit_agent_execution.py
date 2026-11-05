@@ -95,8 +95,8 @@ async def test_real_product_owner_context_catalog_and_sdk_publish_optional_pre_e
     monkeypatch.setattr(
         action_runtime,
         "probe_product_process_profile",
-        lambda profile, supervisor, secrets: probe_product_process_profile(
-            profile, supervisor, secrets, probe_runner=_probe_runner
+        lambda profile, supervisor, secrets, **options: probe_product_process_profile(
+            profile, supervisor, secrets, probe_runner=_probe_runner, **options
         ),
     )
     monkeypatch.setattr(

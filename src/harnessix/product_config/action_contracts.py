@@ -12,7 +12,10 @@ from pydantic import AwareDatetime, Field, field_validator, model_validator
 from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import NetworkMode, canonical_digest
 from harnessix.product_config.contracts import ProductConfigContract, SecretReference
-from harnessix.sandbox.contracts import container_workspace_path_problem
+from harnessix.sandbox.contracts import (
+    container_environment_problem,
+    container_workspace_path_problem,
+)
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import PlatformKind
 
@@ -76,6 +79,12 @@ class ProductProcessProfile(ProductConfigContract):
     )
     # 镜像约定的源码路径（如可编辑安装指向的目录）；未配置时挂载到/workspace且不序列化。
     workspace_path: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    # snapshot：每次命令在工作区的一次性可写写时复制副本中运行，结束即丢弃；源码仍只经补丁修改。
+    workspace_mode: Literal["read_only", "snapshot"] = Field(
+        default="read_only", exclude_if=lambda value: value == "read_only"
+    )
+    # 宿主固定的非Secret环境预设，按名称排序；进入Profile摘要，模型不能改写。
+    environment: tuple[tuple[str, str], ...] = Field(default=(), exclude_if=lambda value: not value)
     profile_sha256: Revision
 
     @field_validator("version", "description", "container_engine")
@@ -134,6 +143,9 @@ class ProductProcessProfile(ProductConfigContract):
             problem = container_workspace_path_problem(self.workspace_path)
             if problem is not None:
                 raise ValueError(problem)
+        problem = container_environment_problem(self.environment)
+        if problem is not None:
+            raise ValueError(problem)
         if self.profile_sha256 != product_process_profile_digest(self):
             raise ValueError("Process Profile摘要不一致")
         return self
@@ -165,6 +177,8 @@ def build_product_process_profile(
     secret_refs: tuple[SecretReference, ...] = (),
     tmpfs_bytes: int | None = None,
     workspace_path: str | None = None,
+    workspace_mode: Literal["read_only", "snapshot"] = "read_only",
+    environment: tuple[tuple[str, str], ...] = (),
 ) -> ProductProcessProfile:
     candidate = ProductProcessProfile.model_construct(
         _fields_set=None,
@@ -186,6 +200,8 @@ def build_product_process_profile(
         secret_refs=secret_refs,
         tmpfs_bytes=tmpfs_bytes,
         workspace_path=workspace_path,
+        workspace_mode=workspace_mode,
+        environment=tuple(sorted(environment)),
         profile_sha256="0" * 64,
     )
     return ProductProcessProfile(

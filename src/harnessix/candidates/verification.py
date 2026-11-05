@@ -21,6 +21,7 @@ from harnessix.candidates.selection import Check, CheckResult
 from harnessix.product_config.action_contracts import ProductProcessProfile
 from harnessix.product_config.coding_scratch import is_scratch_path
 from harnessix.sandbox.contracts import DEFAULT_CONTAINER_WORKSPACE
+from harnessix.sandbox.workspace_snapshot import copy_tree, grant_sandbox_write
 
 _SANDBOX_USER = "65532:65532"
 _DEFAULT_TMPFS_BYTES = 64 * 1024 * 1024
@@ -41,6 +42,8 @@ def container_argv(profile: ProductProcessProfile, workspace: Path, cmd: str) ->
     """与Product Process Profile一致的一次性容器命令；工作区只读挂载在Profile声明的路径。"""
 
     target = profile.workspace_path or DEFAULT_CONTAINER_WORKSPACE
+    snapshot = profile.workspace_mode == "snapshot"
+    environment = [f"{name}={value}" for name, value in profile.environment]
     return [
         profile.container_engine,
         "run",
@@ -68,9 +71,11 @@ def container_argv(profile: ProductProcessProfile, workspace: Path, cmd: str) ->
         "--workdir",
         target,
         "--mount",
-        f"type=bind,src={workspace},dst={target},readonly",
+        f"type=bind,src={workspace},dst={target}" + ("" if snapshot else ",readonly"),
         "--tmpfs",
-        f"/tmp:rw,noexec,nosuid,nodev,size={profile.tmpfs_bytes or _DEFAULT_TMPFS_BYTES}",
+        f"/tmp:rw,{'' if snapshot else 'noexec,'}nosuid,nodev,"
+        f"size={profile.tmpfs_bytes or _DEFAULT_TMPFS_BYTES}",
+        *(item for value in environment for item in ("--env", value)),
         "--ulimit",
         "nofile=1024:1024",
         "--label",
@@ -97,22 +102,38 @@ def scratch_files(workspace: Path) -> list[Path]:
 
 
 @contextmanager
-def overlay_workspace(target: Path, scratch_source: Path | None, copy: Path) -> Iterator[Path]:
-    """硬链接复制被测工作区到copy，并以替换而非原地写入的方式叠加另一候选的草稿文件。"""
+def overlay_workspace(
+    target: Path,
+    scratch_source: Path | None,
+    copy: Path,
+    *,
+    writable_for: str | None = None,
+) -> Iterator[Path]:
+    """为一次检查准备工作区：叠加另一候选的草稿文件，或为快照模式准备可写副本。
 
-    if scratch_source is None:
+    只读挂载时用硬链接复制并以替换方式叠加草稿；可写快照必须写时复制，
+    否则命令原地写入会改动被测候选的工作区。
+    """
+
+    if scratch_source is None and writable_for is None:
         yield target
         return
     shutil.rmtree(copy, ignore_errors=True)
-    shutil.copytree(target, copy, copy_function=os.link, symlinks=True)
+    if writable_for is None:
+        shutil.copytree(target, copy, copy_function=os.link, symlinks=True)
+    else:
+        copy_tree(target, copy)
     try:
-        for relative in scratch_files(scratch_source):
-            destination = copy / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            if destination.exists() or destination.is_symlink():
-                destination.unlink()  # 断开硬链接，不能改写被测工作区原文件
-            shutil.copy2(scratch_source / relative, destination)
-            destination.chmod(0o644)
+        if scratch_source is not None:
+            for relative in scratch_files(scratch_source):
+                destination = copy / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                if destination.exists() or destination.is_symlink():
+                    destination.unlink()  # 断开硬链接，不能改写被测工作区原文件
+                shutil.copy2(scratch_source / relative, destination)
+                destination.chmod(0o644)
+        if writable_for is not None:
+            grant_sandbox_write(copy, writable_for)
         yield copy
     finally:
         shutil.rmtree(copy, ignore_errors=True)
@@ -168,7 +189,10 @@ def cross_check(
         check = checks[index]
         source = None if check.origin == candidate_id else workspaces.get(check.origin)
         copy = scratch_root / f"{candidate_id}-check{index}"
-        with overlay_workspace(workspaces[candidate_id], source, copy) as workspace:
+        writable_for = _SANDBOX_USER if profile.workspace_mode == "snapshot" else None
+        with overlay_workspace(
+            workspaces[candidate_id], source, copy, writable_for=writable_for
+        ) as workspace:
             return run_check(
                 profile,
                 workspace,

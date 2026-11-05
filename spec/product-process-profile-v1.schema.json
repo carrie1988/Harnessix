@@ -170,6 +170,33 @@
       "default": null,
       "title": "Workspace Path"
     },
+    "workspace_mode": {
+      "default": "read_only",
+      "enum": [
+        "read_only",
+        "snapshot"
+      ],
+      "title": "Workspace Mode",
+      "type": "string"
+    },
+    "environment": {
+      "default": [],
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Environment",
+      "type": "array"
+    },
     "profile_sha256": {
       "pattern": "^[0-9a-f]{64}$",
       "title": "Profile Sha256",

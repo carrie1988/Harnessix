@@ -235,6 +235,14 @@ class ContainerProcessRuntime(_ContainerProcessObservation):
             egress=egress,
         )
         try:
+            if profile.workspace_mode == "snapshot":
+                # 先完成计划与工作区校验（prepare），再复制已校验的工作区。
+                await asyncio.to_thread(
+                    self._builder.create_workspace_snapshot,
+                    execution,
+                    Path(workspace),
+                    profile.run_as,
+                )
             process = await self._supervisor.start_prepared(
                 plan,
                 prepared.process,

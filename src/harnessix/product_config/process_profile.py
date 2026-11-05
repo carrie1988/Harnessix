@@ -220,11 +220,12 @@ def _attested_product_process_profile(
     network = resolve_network_policy(NetworkPolicy(mode="none"))
     sandbox_profile = build_container_sandbox_profile(
         image=profile.image,
-        workspace_mode="read_only",
+        workspace_mode=profile.workspace_mode,
         network=network,
         limits=limits,
         task_dependencies=profile.persistent_dependencies,
         workspace_path=profile.workspace_path or DEFAULT_CONTAINER_WORKSPACE,
+        environment=profile.environment,
     )
     capabilities = build_capability_evidence_v2(
         platform=engine.platform,
@@ -331,8 +332,12 @@ def probe_product_process_profile(
     *,
     probe_runner: ProfileProbeRunner | None = None,
     inspect_runner: InspectRunner | None = None,
+    snapshot_root: Path | None = None,
 ) -> ProductProcessProfileProbeResult:
-    """只有全部强能力证明成立才返回可执行Owner；失败不创建Host降级路径。"""
+    """只有全部强能力证明成立才返回可执行Owner；失败不创建Host降级路径。
+
+    快照模式Profile需要宿主快照目录；未提供时该Profile不可执行。
+    """
 
     attestation = probe_product_process_profile_attestation(
         profile,
@@ -346,11 +351,17 @@ def probe_product_process_profile(
             reason_code=attestation.reason_code,
         )
     attested = attestation.attested
+    if profile.workspace_mode == "snapshot" and snapshot_root is None:
+        return ProductProcessProfileProbeResult(
+            profile=profile, reason_code="snapshot_root_unavailable"
+        )
     path = Path(profile.container_engine)
     builder = (
-        ContainerCommandBuilder(path, attested.engine)
+        ContainerCommandBuilder(path, attested.engine, snapshot_root=snapshot_root)
         if inspect_runner is None
-        else ContainerCommandBuilder(path, attested.engine, inspect_runner=inspect_runner)
+        else ContainerCommandBuilder(
+            path, attested.engine, inspect_runner=inspect_runner, snapshot_root=snapshot_root
+        )
     )
     verified = VerifiedProductProcessProfile(
         profile=attested.profile,

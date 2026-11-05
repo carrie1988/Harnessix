@@ -16,7 +16,8 @@ from harnessix.tools.contracts import Revision
 
 DestinationKind = Literal["domain", "cidr"]
 DestinationProtocol = Literal["https", "tcp"]
-WorkspaceMountMode = Literal["read_only", "read_write"]
+# snapshot：每次执行把工作区写时复制为一次性可写副本挂入容器，结束即丢弃；真实工作区只读取。
+WorkspaceMountMode = Literal["read_only", "read_write", "snapshot"]
 
 DEFAULT_CONTAINER_WORKSPACE = "/workspace"
 _CONTAINER_PATH_SEGMENT = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
@@ -40,6 +41,31 @@ def container_workspace_path_problem(path: str) -> str | None:
         return "容器工作区路径必须是规范的绝对路径"
     if any(path == root or path.startswith(root + "/") for root in _RESERVED_CONTAINER_ROOTS):
         return "容器工作区路径不能位于受管或系统保留目录"
+    return None
+
+
+_ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
+# 受管网络、凭据与平台身份变量不能由环境预设覆盖。
+_RESERVED_ENVIRONMENT = frozenset(
+    {"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY", "FTP_PROXY"}
+)
+
+
+def container_environment_problem(environment: tuple[tuple[str, str], ...]) -> str | None:
+    """容器环境预设须按名称排序且唯一、名称合法、值为有界单行文本；返回违规原因。"""
+
+    names = [name for name, _ in environment]
+    if len(environment) > 32 or names != sorted(names) or len(set(names)) != len(names):
+        return "容器环境预设必须按名称排序、唯一且不超过32项"
+    for name, value in environment:
+        if (
+            _ENVIRONMENT_NAME.fullmatch(name) is None
+            or name.upper() in _RESERVED_ENVIRONMENT
+            or name.upper().startswith("HARNESSIX_")
+        ):
+            return "容器环境预设名称无效或为受管保留名称"
+        if len(value.encode("utf-8")) > 1024 or any(char in value for char in "\0\r\n"):
+            return "容器环境预设值必须是不超过1024字节的单行文本"
     return None
 
 
@@ -196,6 +222,8 @@ class ContainerSandboxProfile(SandboxContract):
         exclude_if=lambda value: value == DEFAULT_CONTAINER_WORKSPACE,
     )
     run_as: str = Field(default="65532:65532", pattern=r"^[1-9][0-9]{0,9}:[1-9][0-9]{0,9}$")
+    # 宿主固定的容器环境预设（非Secret）；为空时不序列化，旧Profile摘要不变。
+    environment: tuple[tuple[str, str], ...] = Field(default=(), exclude_if=lambda value: not value)
     limits: SandboxResourceLimits = Field(default_factory=SandboxResourceLimits)
     network: NetworkPolicySnapshot
     egress_gateway_digest: Revision | None = None
@@ -209,8 +237,11 @@ class ContainerSandboxProfile(SandboxContract):
         selective = self.network.policy.mode in {"limited", "restricted"}
         if selective != (self.egress_gateway_digest is not None):
             raise ValueError("选择性网络必须绑定出口网关实现")
-        if self.task_dependencies and self.workspace_mode != "read_only":
-            raise ValueError("任务依赖挂载必须使用只读Workspace")
+        if self.task_dependencies and self.workspace_mode == "read_write":
+            raise ValueError("任务依赖挂载必须使用只读或快照Workspace")
+        problem = container_environment_problem(self.environment)
+        if problem is not None:
+            raise ValueError(problem)
         problem = container_workspace_path_problem(self.workspace_path)
         if problem is not None:
             raise ValueError(problem)

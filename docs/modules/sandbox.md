@@ -1144,6 +1144,8 @@ Profile的完整交互。实际产品启用必须进入0.9.1/0.9.5正式设计�
 | `image` | String/是 | 受信配置 | 必须固定SHA-256 | Profile Store | 中供应链 | Digest变化需新Plan |
 | `workspace_mode` | Read Only/Write | Permission | 必须与根资源Access一致 | Profile Store | 低 | 变化需新Approval |
 | `run_as` | UID:GID | 配置 | 两者均非零数字 | Profile Store | 低 | 变化进入Digest |
+| `workspace_mode` | `read_only`、`read_write`或`snapshot` | Permission/配置 | `snapshot`挂载执行身份对应的一次性写时复制副本，真实工作区只读取；任务依赖挂载要求非`read_write` | Profile Store | 低 | 新增枚举值，旧值不变 |
+| `environment` | 有序`(名, 值)`对，默认空 | 受信配置 | 最多32项、名称合法、单行≤1KB，不得为代理或`HARNESSIX_*`，不得与计划环境或Secret重名 | Profile Store | 低（非Secret） | 默认空不序列化 |
 | `workspace_path` | 绝对路径，默认`/workspace` | 受信配置 | 规范路径，不在`/tmp`、`/harnessix`、`/proc`、`/sys`、`/dev`下；挂载目标与起始目录 | Profile Store | 低 | 默认值不序列化，旧Digest不变 |
 | `limits.cpus` | Float | 配置 | >0且≤32 | Profile Store | 低 | 变化进入Digest |
 | `limits.memory_bytes` | Int | 配置 | 64 MiB～64 GiB | Profile Store | 低 | 同左 |

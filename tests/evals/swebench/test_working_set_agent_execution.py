@@ -112,8 +112,8 @@ async def test_real_agent_sends_stale_placeholders_only_when_enabled(tmp_path, m
     monkeypatch.setattr(
         action_runtime,
         "probe_product_process_profile",
-        lambda profile, supervisor, secrets: probe_product_process_profile(
-            profile, supervisor, secrets, probe_runner=_probe_runner
+        lambda profile, supervisor, secrets, **options: probe_product_process_profile(
+            profile, supervisor, secrets, probe_runner=_probe_runner, **options
         ),
     )
     monkeypatch.setattr(
@@ -234,8 +234,8 @@ async def test_real_agent_request_surface_follows_compact_flag(tmp_path, monkeyp
     monkeypatch.setattr(
         action_runtime,
         "probe_product_process_profile",
-        lambda profile, supervisor, secrets: probe_product_process_profile(
-            profile, supervisor, secrets, probe_runner=_probe_runner
+        lambda profile, supervisor, secrets, **options: probe_product_process_profile(
+            profile, supervisor, secrets, probe_runner=_probe_runner, **options
         ),
     )
     monkeypatch.setattr(

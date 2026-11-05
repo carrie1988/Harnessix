@@ -173,8 +173,19 @@ def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor
                     else ""
                 )
                 + (
-                    f"工作区源码挂载在容器内{profile.workspace_path}（只读），命令从该目录开始。"
+                    f"工作区源码挂载在容器内{profile.workspace_path}，命令从该目录开始。"
                     if profile.workspace_path is not None
+                    else ""
+                )
+                + (
+                    "每次命令使用工作区的一次性可写快照：可写入构建产物和临时文件，"
+                    "命令结束后全部丢弃，修改源码仍须用补丁工具。"
+                    if profile.workspace_mode == "snapshot"
+                    else ""
+                )
+                + (
+                    "预设环境变量：" + "、".join(name for name, _ in profile.environment) + "。"
+                    if profile.environment
                     else ""
                 )
                 + "失败先看diagnostic_preview；完整时不重读日志Artifact。"

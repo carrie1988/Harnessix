@@ -123,8 +123,8 @@ async def test_real_agent_publishes_opt_in_definition_header_body_raw_sha_and_co
     monkeypatch.setattr(
         action_runtime,
         "probe_product_process_profile",
-        lambda profile, supervisor, secrets: probe_product_process_profile(
-            profile, supervisor, secrets, probe_runner=_probe_runner
+        lambda profile, supervisor, secrets, **options: probe_product_process_profile(
+            profile, supervisor, secrets, probe_runner=_probe_runner, **options
         ),
     )
     monkeypatch.setattr(

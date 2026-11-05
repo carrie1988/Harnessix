@@ -3043,6 +3043,18 @@ CAS 和完整边界保持原认证。材料只在同创建 Task／线程借原�
 `/tmp`、`/harnessix`、`/proc`、`/sys`、`/dev`之下。未配置时不序列化、仍挂载到`/workspace`，旧Profile与容器
 Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新计划与审批。
 
+### Process Profile快照工作区与环境预设
+
+`ProductProcessProfile.workspace_mode="snapshot"`让每次命令在工作区的一次性可写副本中运行：执行身份确定后、
+启动前，宿主在`<state_root>/workspace-snapshots/<process_id>`以写时复制（XFS/Btrfs reflink、APFS clonefile，
+否则普通复制）复制已校验的工作区，交给沙箱用户后可写挂载；容器清理时删除副本，同身份残留在下次启动前清除。
+真实工作区只被读取，执行计划仍申请`read`权限，源码修改仍只经受管补丁。构建产物、测试二进制与工具缓存可以写在
+副本里，命令结束即丢弃；副本本身可执行，因此快照模式的`/tmp`不再加`noexec`。宿主以root运行时副本`chown`给沙箱用户，否则只能放宽副本自身权限（父目录`0711`不可列举）。
+
+`ProductProcessProfile.environment`是按名称排序的非Secret环境预设（最多32项、单行、不超过1KB），以`--env 名=值`
+进入容器；不能覆盖受管网络代理、`HARNESSIX_*`、执行计划环境与Secret变量。两者默认值都不序列化，旧摘要不变；
+工具描述向模型公开快照语义与预设变量名。
+
 ### 复现草稿目录
 
 [`coding_scratch`](../../src/harnessix/product_config/coding_scratch.py)定义保留目录名`harnessix_scratch`：显式开启时编码工作流视图在判断

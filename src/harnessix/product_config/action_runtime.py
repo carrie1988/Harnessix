@@ -108,9 +108,11 @@ def _probe_process_profiles(
     profiles: tuple[ProductProcessProfile, ...],
     supervisor: ProcessSupervisor,
     secrets: SecretProvider,
+    snapshot_root: Path,
 ) -> tuple[ProductProcessProfileProbeResult, ...]:
     return tuple(
-        probe_product_process_profile(profile, supervisor, secrets) for profile in profiles
+        probe_product_process_profile(profile, supervisor, secrets, snapshot_root=snapshot_root)
+        for profile in profiles
     )
 
 
@@ -175,6 +177,7 @@ async def _open_action_dependencies(
                 profiles,
                 supervisor,
                 secrets,
+                state_root / "workspace-snapshots",
             )
             probe_cache = dict(zip(process_profiles, results, strict=True))
         yield _ProductActionDependencies(

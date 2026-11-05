@@ -6,6 +6,7 @@ import csv
 import io
 import os
 import re
+import shutil
 import stat
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
@@ -37,6 +38,7 @@ from harnessix.sandbox.contracts import (
     NetworkPolicySnapshot,
 )
 from harnessix.sandbox.network_isolation import attest_internal_network
+from harnessix.sandbox.workspace_snapshot import copy_tree, grant_sandbox_write
 from harnessix.secrets.provider import ResolvedSecretEnvironment
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import ResourceAccess
@@ -255,7 +257,54 @@ class _ContainerEngineAccess:
 
 
 class ContainerCommandBuilder(_ContainerEngineAccess):
-    """只生成固定Docker兼容argv；启动和回收由Process Supervisor拥有。"""
+    """只生成固定Docker兼容argv；启动和回收由Process Supervisor拥有。
+
+    快照模式的工作区副本位于宿主`snapshot_root/<process_id>`，与容器执行身份同生命周期：
+    启动前创建，容器清理时删除。
+    """
+
+    def __init__(
+        self,
+        executable: str | Path,
+        probe: ContainerEngineProbe,
+        *,
+        inspect_runner: InspectRunner = _run_inspect,
+        snapshot_root: Path | None = None,
+    ) -> None:
+        super().__init__(executable, probe, inspect_runner=inspect_runner)
+        self._snapshot_root = None if snapshot_root is None else Path(snapshot_root)
+
+    def snapshot_path(self, execution: ContainerExecutionSpec) -> Path:
+        if self._snapshot_root is None:
+            raise KernelError("sandbox_capability_mismatch", "快照Workspace需要宿主快照目录")
+        return self._snapshot_root / str(execution.process.process_id)
+
+    def create_workspace_snapshot(
+        self, execution: ContainerExecutionSpec, workspace: Path, run_as: str
+    ) -> Path:
+        """写时复制工作区并只授予沙箱用户写权限；失败时不留下半成品。"""
+
+        target = self.snapshot_path(execution)
+        assert self._snapshot_root is not None
+        self._snapshot_root.mkdir(parents=True, exist_ok=True)
+        self._snapshot_root.chmod(0o711)  # 沙箱用户可穿越，不可列举
+        self.remove_workspace_snapshot(execution)
+        try:
+            copy_tree(workspace, target)
+            grant_sandbox_write(target, run_as)
+        except (OSError, subprocess.SubprocessError):
+            self.remove_workspace_snapshot(execution)
+            raise KernelError("sandbox_workspace_invalid", "无法创建Workspace快照") from None
+        return target
+
+    def remove_workspace_snapshot(self, execution: ContainerExecutionSpec) -> None:
+        if self._snapshot_root is None:
+            return
+        target = self.snapshot_path(execution)
+        if target.is_symlink():
+            target.unlink()
+        elif target.exists():
+            shutil.rmtree(target)
 
     def prepare(
         self,
@@ -319,7 +368,8 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
             raise KernelError("sandbox_workspace_invalid", "容器Workspace必须是绝对路径")
         dependency_mount = _task_dependency_mount(plan, profile, root, external_roots)
         verify_workspace_snapshot(plan.workspace, root, external_roots=external_roots)
-        required_access = "read" if profile.workspace_mode == "read_only" else "write"
+        # 快照模式只读取真实工作区；写入落在一次性副本上。
+        required_access = "write" if profile.workspace_mode == "read_write" else "read"
         if not any(
             item.location == "workspace"
             and item.path == "."
@@ -335,9 +385,18 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
         if overlap:
             raise KernelError("sandbox_environment_invalid", "容器环境覆盖了受管网络配置")
         checked_environment.update(proxy_environment)
+        managed_names = set(checked_environment) | set(secret_environment)
+        if any(name in managed_names for name, _ in profile.environment):
+            raise KernelError("sandbox_environment_invalid", "容器环境预设覆盖了受管变量")
+        if profile.workspace_mode == "snapshot":
+            if execution is None:
+                raise KernelError("sandbox_capability_mismatch", "快照Workspace需要执行身份")
+            mount_source = self.snapshot_path(execution)
+        else:
+            mount_source = root
         mount = _csv_fields(
             "type=bind",
-            f"src={root}",
+            f"src={mount_source}",
             f"dst={profile.workspace_path}",
             *("readonly",) if profile.workspace_mode == "read_only" else (),
         )
@@ -379,7 +438,12 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
             mount,
             *(("--mount", dependency_mount) if dependency_mount is not None else ()),
             "--tmpfs",
-            f"/tmp:rw,noexec,nosuid,nodev,size={profile.limits.tmpfs_bytes}",
+            # 快照副本本身可写可执行，/tmp再禁执行不增加隔离，却让编译型语言的测试二进制无处运行。
+            (
+                f"/tmp:rw,nosuid,nodev,size={profile.limits.tmpfs_bytes}"
+                if profile.workspace_mode == "snapshot"
+                else f"/tmp:rw,noexec,nosuid,nodev,size={profile.limits.tmpfs_bytes}"
+            ),
             "--ulimit",
             "nofile=1024:1024",
             "--stop-timeout",
@@ -388,6 +452,8 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
         ]
         for name in sorted(set(checked_environment) | set(secret_environment)):
             arguments.extend(("--env", name))
+        for name, value in profile.environment:
+            arguments.extend(("--env", f"{name}={value}"))
         arguments.extend(
             (
                 "--entrypoint",
@@ -422,10 +488,12 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
     def ensure_container_absent(self, execution: ContainerExecutionSpec) -> None:
         if self._container_rows(execution):
             raise KernelError("process_already_exists", "Container执行身份已经存在")
+        self.remove_workspace_snapshot(execution)  # 上次崩溃遗留的同身份副本
 
     def cleanup_container(self, execution: ContainerExecutionSpec) -> Literal["absent", "removed"]:
         rows = self._container_rows(execution)
         if not rows:
+            self.remove_workspace_snapshot(execution)
             return "absent"
         container_id = rows[0]
         completed = self._run_control(
@@ -433,6 +501,7 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
         )
         if completed.returncode != 0 or self._container_rows(execution):
             raise KernelError("process_cleanup_failed", "Container执行实例无法证明已清理")
+        self.remove_workspace_snapshot(execution)
         return "removed"
 
     def _container_rows(self, execution: ContainerExecutionSpec) -> tuple[str, ...]:
