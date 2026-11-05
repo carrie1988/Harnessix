@@ -23,6 +23,7 @@ start_replica() {
     --device /dev/kfd --device /dev/dri --device /dev/mkfd --group-add 44 --group-add 109 \
     --security-opt seccomp=unconfined --cap-add SYS_NICE --cap-add SYS_PTRACE \
     -e HIP_VISIBLE_DEVICES="$cards" -e PORT="$port" -e MODEL_DIRECTORY="$MODEL" \
+    -e MTP_DRAFT_TOKENS="${MTP_DRAFT_TOKENS:-1}" -e PROFILER_CONFIG="${PROFILER_CONFIG:-}" \
     -e VLLM_NUMA_BIND=1 -e VLLM_TORCH_RESHAPE_CACHE=1 \
     -e VLLM_ENABLE_FLA_PACKED_RECURRENT_DECODE=0 -e VLLM_TUNED_CONFIG_FOLDER=/moe_configs \
     -e VLLM_SKIP_WARMUP=1 -e OMP_NUM_THREADS=8 -e PYTHONFAULTHANDLER=1 \
@@ -49,5 +50,13 @@ start_replica() {
 
 test -f "$LEGACY/evidence/$MODEL.verified.json"
 test -f "$SERVING/patches/topk_topp_sampler.py" || { echo "run patch-topk-topp-sampler.sh first" >&2; exit 1; }
-start_replica harnessix-flash-a 0,1,2,3 18002
-start_replica harnessix-flash-b 4,5,6,7 18001
+# 可只启动一个副本：run-flash-replicas.sh a|b（默认两个）。
+case "${1:-all}" in
+  a) start_replica harnessix-flash-a 0,1,2,3 18002 ;;
+  b) start_replica harnessix-flash-b 4,5,6,7 18001 ;;
+  all)
+    start_replica harnessix-flash-a 0,1,2,3 18002
+    start_replica harnessix-flash-b 4,5,6,7 18001
+    ;;
+  *) echo "usage: $0 [a|b|all]" >&2; exit 2 ;;
+esac
