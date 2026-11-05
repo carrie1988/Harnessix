@@ -24,13 +24,23 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from harnessix.candidates.selection import (
+    Candidate,
+    CheckResult,
+    CommandRecord,
+    rank,
+    select_checks,
+)
+from harnessix.candidates.verification import cross_check
 from harnessix.evals.swebench.predictions import collect_workspace_patch
 from harnessix.product_config.action_contracts import (
+    ProductActionConfigV1,
     build_product_action_config,
     build_product_process_profile,
 )
@@ -61,6 +71,8 @@ class Arm:
     timeout_seconds: int
     # Thinking stays off for every local arm: K100 decode is ~33 tok/s and stalls under prefill.
     thinking: str = "off"
+    # Independent runs per task; more than one adds cross-checked selection of a single patch.
+    candidates: int = 1
 
 
 ARMS = {
@@ -70,6 +82,16 @@ ARMS = {
     "A1": Arm("A1", shell=False, max_steps=100, max_tokens=1_000_000, timeout_seconds=3_600),
     # New budget plus the generic container command in the instance image.
     "A2": Arm("A2", shell=True, max_steps=100, max_tokens=1_000_000, timeout_seconds=3_600),
+    # A2 four times per task, then one patch chosen by cross-running the candidates' own checks.
+    # Candidate c0 alone is an ordinary A2 sample.
+    "A2x4": Arm(
+        "A2x4",
+        shell=True,
+        max_steps=100,
+        max_tokens=1_000_000,
+        timeout_seconds=3_600,
+        candidates=4,
+    ),
 }
 
 SHELL_ENVIRONMENT_NOTE = """
@@ -273,13 +295,22 @@ class Outcome:
 
 
 def run_task(
-    task: Task, arm: Arm, port: int, run_root: Path, options: argparse.Namespace
+    task: Task,
+    arm: Arm,
+    port: int,
+    task_root: Path,
+    options: argparse.Namespace,
+    *,
+    keep_workspace: bool,
 ) -> tuple[Outcome, str]:
-    task_root = run_root / "tasks" / task.instance_id
     if task_root.exists():
         shutil.rmtree(task_root)  # a previous attempt died before recording a result
     task_root.mkdir(parents=True)
-    task_root.chmod(0o755)
+    # The sandbox user must traverse every directory below the run root.
+    for directory in (task_root, *task_root.parents):
+        if directory == options.run_root or not directory.is_relative_to(options.run_root):
+            break
+        directory.chmod(0o755)
     workspace = task_root / "workspace"
     started = time.monotonic()
     summary: dict[str, Any] = {}
@@ -338,7 +369,7 @@ def run_task(
         error = None
     except (RunError, subprocess.TimeoutExpired, OSError) as failure:
         error = f"{type(failure).__name__}: {failure}"[:1000]
-    if not options.keep_workspaces and workspace.exists():
+    if not keep_workspace and workspace.exists():
         shutil.rmtree(workspace, ignore_errors=True)
     outcome = Outcome(
         instance_id=task.instance_id,
@@ -353,7 +384,62 @@ def run_task(
         changed_paths=summary.get("changed_paths"),
         error=error or _turn_error(summary),
     )
+    (task_root / "patch.diff").write_text(patch, encoding="utf-8")
+    (task_root / "outcome.json").write_text(json.dumps(asdict(outcome)) + "\n", encoding="utf-8")
     return outcome, patch
+
+
+def select_candidate(
+    task: Task, task_root: Path, outcomes: list[Outcome], options: argparse.Namespace
+) -> tuple[str, dict[str, Any]]:
+    """Cross-run the candidates' own successful checks on every candidate and pick one patch."""
+
+    candidates, workspaces = [], {}
+    for index, outcome in enumerate(outcomes):
+        root = task_root / f"c{index}"
+        summary_path = root / "summary.json"
+        summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
+        commands = tuple(
+            CommandRecord(item["cmd"], item.get("outcome"), item.get("returncode"))
+            for item in summary.get("commands", [])
+            if isinstance(item.get("cmd"), str)
+        )
+        patch = (root / "patch.diff").read_text(encoding="utf-8")
+        candidates.append(Candidate(f"c{index}", patch, outcome.status, commands))
+        if patch and (root / "workspace").is_dir():
+            workspaces[f"c{index}"] = root / "workspace"
+    checks = select_checks(candidates)
+    runs = []
+    if checks and len({c.patch_sha256 for c in candidates if c.patch}) > 1:
+        config = ProductActionConfigV1.model_validate_json(
+            (task_root / "c0" / "action-config.json").read_text(encoding="utf-8")
+        )
+        runs = cross_check(config.process_profiles[0], workspaces, checks, task_root / "verify")
+    matrix: dict[str, dict[int, CheckResult]] = {}
+    for run in runs:
+        matrix.setdefault(run.candidate_id, {})[run.check_index] = run.result
+    selection = rank(candidates, checks, matrix)
+    record = {
+        "instance_id": task.instance_id,
+        "selected": selection.selected,
+        "reason": selection.reason,
+        "checks": [asdict(check) for check in selection.checks],
+        "runs": [asdict(run) for run in runs],
+        "ranking": [asdict(item) for item in selection.ranking],
+        "candidates": [
+            {
+                "candidate_id": c.candidate_id,
+                "status": c.status,
+                "patch_sha256": c.patch_sha256,
+                "patch_bytes": len(c.patch.encode()),
+                "commands": len(c.commands),
+            }
+            for c in candidates
+        ],
+    }
+    (task_root / "selection.json").write_text(json.dumps(record, indent=2) + "\n")
+    chosen = next((c.patch for c in candidates if c.candidate_id == selection.selected), "")
+    return chosen, record
 
 
 def _turn_error(summary: dict[str, Any]) -> str | None:
@@ -396,6 +482,18 @@ def source_revision() -> dict[str, object]:
     return {"harnessix_revision": _run([*git, "rev-parse", "HEAD"]), "dirty": bool(status)}
 
 
+def wait_until_healthy(port: int) -> None:
+    """Do not start a task on a dead replica; it would only record an infrastructure failure."""
+
+    while True:
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=10):
+                return
+        except OSError:
+            print(f"replica :{port} unhealthy; retrying in 30 s", flush=True)
+            time.sleep(30)
+
+
 def finished_instances(results: Path) -> set[str]:
     if not results.exists():
         return set()
@@ -419,7 +517,7 @@ def main() -> None:
     options = parser.parse_args()
 
     arm = ARMS[options.arm]
-    run_root = options.run_root.absolute()
+    run_root = options.run_root = options.run_root.absolute()
     run_root.mkdir(parents=True, exist_ok=True)
     run_root.chmod(0o755)
     results, predictions = run_root / "results.jsonl", run_root / "predictions.jsonl"
@@ -439,33 +537,87 @@ def main() -> None:
         for _ in range(options.per_replica):
             slots.put(port)
     lock = threading.Lock()
+    pending: dict[str, dict[int, Outcome]] = {}
 
-    def worker(task: Task) -> None:
+    def append(path: Path, record: dict[str, Any]) -> None:
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record) + "\n")
+
+    def prediction(task: Task, patch: str) -> dict[str, str]:
+        name = f"harnessix-{arm.name}-{MODEL}"
+        return {"instance_id": task.instance_id, "model_name_or_path": name, "model_patch": patch}
+
+    def run_candidate(task: Task, index: int) -> Outcome:
+        root = run_root / "tasks" / task.instance_id
+        root = root / f"c{index}" if arm.candidates > 1 else root
+        if arm.candidates > 1 and (root / "outcome.json").exists():
+            return Outcome(**json.loads((root / "outcome.json").read_text()))  # resumed
         port = slots.get()
+        wait_until_healthy(port)
         try:
-            outcome, patch = run_task(task, arm, port, run_root, options)
+            outcome, _ = run_task(
+                task,
+                arm,
+                port,
+                root,
+                options,
+                keep_workspace=options.keep_workspaces or arm.candidates > 1,
+            )
         finally:
             slots.put(port)
-        prediction = {
-            "instance_id": task.instance_id,
-            "model_name_or_path": f"harnessix-{arm.name}-{MODEL}",
-            "model_patch": patch,
-        }
-        with lock:
-            with open(predictions, "a", encoding="utf-8") as handle:
-                handle.write(json.dumps(prediction) + "\n")
-            with open(results, "a", encoding="utf-8") as handle:
-                handle.write(json.dumps(asdict(outcome)) + "\n")
         print(
-            f"{outcome.instance_id}: {outcome.status} steps={outcome.model_steps} "
-            f"patch={outcome.patch_bytes}B {outcome.elapsed_seconds:.0f}s "
-            f"{outcome.error or ''}",
+            f"{task.instance_id}{f' c{index}' if arm.candidates > 1 else ''}: {outcome.status} "
+            f"steps={outcome.model_steps} patch={outcome.patch_bytes}B "
+            f"{outcome.elapsed_seconds:.0f}s {outcome.error or ''}",
             flush=True,
         )
+        return outcome
 
-    print(f"arm {arm.name}: {len(tasks)} tasks ({len(done)} already finished)", flush=True)
-    with ThreadPoolExecutor(max_workers=slots.qsize()) as pool:
-        list(pool.map(worker, tasks))
+    def finish(task: Task, outcomes: list[Outcome]) -> None:
+        """Record one prediction per task; with candidates, also every candidate's own patch."""
+
+        task_root = run_root / "tasks" / task.instance_id
+        if arm.candidates == 1:
+            patch = (task_root / "patch.diff").read_text(encoding="utf-8")
+            record: dict[str, Any] = asdict(outcomes[0])
+        else:
+            patch, selection = select_candidate(task, task_root, outcomes, options)
+            record = {
+                "instance_id": task.instance_id,
+                "arm": arm.name,
+                "selected": selection["selected"],
+                "reason": selection["reason"],
+                "candidates": [asdict(outcome) for outcome in outcomes],
+            }
+            if not options.keep_workspaces:
+                for index in range(arm.candidates):
+                    shutil.rmtree(task_root / f"c{index}" / "workspace", ignore_errors=True)
+            print(f"{task.instance_id}: selected {selection['selected']} ({selection['reason']})")
+        with lock:
+            for index, _ in enumerate(outcomes if arm.candidates > 1 else []):
+                candidate_patch = (task_root / f"c{index}" / "patch.diff").read_text()
+                append(run_root / f"predictions-c{index}.jsonl", prediction(task, candidate_patch))
+            append(predictions, prediction(task, patch))
+            append(results, record)
+
+    def job(item: tuple[Task, int]) -> None:
+        task, index = item
+        outcome = run_candidate(task, index)
+        with lock:
+            collected = pending.setdefault(task.instance_id, {})
+            collected[index] = outcome
+            complete = len(collected) == arm.candidates
+        if complete:
+            finish(task, [collected[i] for i in range(arm.candidates)])
+
+    jobs = [(task, index) for task in tasks for index in range(arm.candidates)]
+    print(
+        f"arm {arm.name}: {len(tasks)} tasks x {arm.candidates} ({len(done)} already finished)",
+        flush=True,
+    )
+    # Extra workers let candidate selection (CPU-only containers) overlap with model slots.
+    with ThreadPoolExecutor(max_workers=slots.qsize() + 2) as pool:
+        list(pool.map(job, jobs))
 
 
 if __name__ == "__main__":
