@@ -96,12 +96,50 @@ ARMS = {
 
 SHELL_ENVIRONMENT_NOTE = """
 Command environment: every exec_command call starts a fresh container from this task's own
-image, network disabled, with the repository mounted read-only at /testbed (the working
-directory). Edit files only with the patch tools; the container sees your edits immediately.
-For Python start commands with:
-  export HOME=/tmp && source /opt/miniconda3/bin/activate testbed && cd /testbed &&
-Only /tmp is writable (cleared after each call, not executable); use it for scratch files.
+image with network disabled. The working directory /testbed is a disposable writable copy of
+the repository that includes your patches: builds, caches and scratch files may be written
+there or in /tmp, and are discarded when the command ends. Edit source only with the patch
+tools. The project's toolchain and dependencies are already installed; work offline.
 """
+
+# Per-language notes and fixed environment presets for the instance images (no secrets).
+_COMMON_ENVIRONMENT = (("HOME", "/tmp"), ("XDG_CACHE_HOME", "/tmp/.cache"))
+LANGUAGE_ENVIRONMENT: dict[str, tuple[tuple[str, str], ...]] = {
+    "python": (
+        (
+            "PATH",
+            "/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/bin:/usr/local/sbin:"
+            "/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        ),
+    ),
+    "go": (
+        ("GOCACHE", "/tmp/go-build"),
+        ("GOFLAGS", "-mod=mod"),
+        ("GOMODCACHE", "/root/go/pkg/mod"),
+        ("GOPROXY", "off"),
+        ("GOSUMDB", "off"),
+        ("GOTOOLCHAIN", "local"),
+    ),
+    "rust": (("CARGO_NET_OFFLINE", "true"),),
+    "typescript/javascript": (
+        ("COREPACK_HOME", "/root/.cache/node/corepack"),
+        ("YARN_CACHE_FOLDER", "/tmp/.yarn-cache"),
+        ("npm_config_cache", "/tmp/.npm"),
+    ),
+    "java": (
+        ("GRADLE_RO_DEP_CACHE", "/root/.gradle/caches"),
+        ("GRADLE_USER_HOME", "/tmp/.gradle"),
+    ),
+}
+LANGUAGE_NOTES = {
+    "python": "python, pip and pytest resolve to the project's testbed environment.",
+    "go": "Go modules resolve offline from the image's module cache.",
+    "rust": "cargo runs offline; the image's target directory already holds a build.",
+}
+
+
+def environment_presets(language: str) -> tuple[tuple[str, str], ...]:
+    return tuple(sorted(_COMMON_ENVIRONMENT + LANGUAGE_ENVIRONMENT.get(language, ())))
 
 
 @dataclass(frozen=True)
@@ -111,6 +149,7 @@ class Task:
     repo: str
     base_commit: str
     problem_statement: str
+    language: str = "python"
 
 
 class RunError(Exception):
@@ -243,11 +282,11 @@ def product_config_json(port: int, thinking: str) -> str:
     return config
 
 
-def action_config_json(image_id: str, docker: str) -> str:
+def action_config_json(image_id: str, docker: str, language: str) -> str:
     profile = build_product_process_profile(
         profile_id="testbed",
-        version="swebench-instance-image-v1",
-        description="在本任务的SWE-bench实例镜像中运行命令（源码只读挂载于/testbed）",
+        version="swebench-instance-image-v2",
+        description="在本任务的SWE-bench实例镜像中运行命令（/testbed为工作区一次性可写快照）",
         container_engine=docker,
         image=image_id,
         program="/bin/bash",
@@ -259,6 +298,8 @@ def action_config_json(image_id: str, docker: str) -> str:
         process_limit=1024,
         tmpfs_bytes=2 * 1024**3,
         workspace_path=CONTAINER_WORKSPACE,
+        workspace_mode="snapshot",
+        environment=environment_presets(language),
     )
     config: str = build_product_action_config(process_profiles=(profile,)).model_dump_json(indent=2)
     return config
@@ -272,8 +313,22 @@ def task_prompt(task: Task, arm: Arm) -> str:
         "Work autonomously; leave the smallest correct patch to non-test source files. Do not ask "
         "questions or use network access, hidden tests, reference patches or evaluator artifacts.\n"
         + (SHELL_ENVIRONMENT_NOTE if arm.shell else "")
+        + (LANGUAGE_NOTES.get(task.language, "") + "\n" if arm.shell else "")
         + f"\nRepository: {task.repo}\n\nProblem statement:\n{task.problem_statement}"
     )
+
+
+def sandbox_image(task: Task, image_id: str) -> str:
+    """Use the derived image whose /root caches the sandbox user can read, when one exists."""
+
+    derived = task.image.rsplit(":", 1)[0] + ":nonroot"
+    completed = subprocess.run(
+        ["docker", "image", "inspect", "--format", "{{.Id}}", derived],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return completed.stdout.strip() if completed.returncode == 0 else image_id
 
 
 # ---------------------------------------------------------------- one task
@@ -345,8 +400,11 @@ def run_task(
             str(arm.timeout_seconds),
         ]
         if arm.shell:
+            command_image = sandbox_image(task, image_id)
+            (task_root / "command-image.txt").write_text(command_image + "\n")
             write_private_json(
-                task_root / "action-config.json", action_config_json(image_id, options.docker)
+                task_root / "action-config.json",
+                action_config_json(command_image, options.docker, task.language),
             )
             command += ["--action-config", str(task_root / "action-config.json")]
         (task_root / "prompt.txt").write_text(task_prompt(task, arm), encoding="utf-8")
@@ -468,6 +526,7 @@ def load_tasks(task_list: Path, rows: Path, split: str | None) -> list[Task]:
                 row["repo"],
                 row["base_commit"],
                 row["problem_statement"],
+                entry.get("language", "python"),
             )
         )
     return tasks
