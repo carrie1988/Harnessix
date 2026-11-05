@@ -73,6 +73,9 @@ class ProviderDefinition(ProductConfigContract):
     omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
     # 端点可能把数组/对象参数编码成JSON字符串（如vLLM上的Qwen系）：按工具Schema还原后再校验。
     normalize_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
+    # 自动前缀缓存端点：开头只放固定指令，逐请求说明放到末尾user消息，前缀跨请求保持不变；
+    # 也满足只接受开头一条system消息的对话模板（如vLLM上的Qwen系）。
+    stable_prompt_prefix: bool = Field(default=False, exclude_if=lambda value: value is False)
     pricing: ProviderPricing = Field(default="unknown", exclude_if=lambda value: value == "unknown")
 
     @field_validator("base_url")

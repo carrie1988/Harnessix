@@ -567,8 +567,11 @@ classDiagram
 | `base_url` | 最多2048字符，经`ModelHTTPConfig.validate_url`验证 | 精确Provider端点 |
 | `credential` | `SecretReference` | API Key引用 |
 | `output_token_parameter` | `max_completion_tokens`、`max_tokens`或空 | OpenAI-compatible输出参数差异 |
-| `thinking_protocol` | `dashscope_enable_thinking`、`deepseek_thinking_type`或空（默认空、不序列化） | 端点已求证的思考开关格式；空表示不发送任何思考参数，声明后要求`output_token_parameter=max_tokens` |
+| `thinking_protocol` | `dashscope_enable_thinking`、`deepseek_thinking_type`、`vllm_chat_template`或空（默认空、不序列化） | 端点已求证的思考开关格式；空表示不发送任何思考参数，声明后要求`output_token_parameter=max_tokens`；`vllm_chat_template`经`chat_template_kwargs.enable_thinking`交给模型对话模板 |
 | `omit_tool_choice` | 布尔，默认`false`、不序列化 | 端点强制工具选择不可靠时不发送`tool_choice`，由可执行集收窄、目录说明与Runtime校验约束 |
+| `normalize_tool_arguments` | 布尔，默认`false`、不序列化 | 端点把数组/对象工具参数编码成JSON字符串时（如vLLM上的Qwen系），按工具Schema还原后再校验 |
+| `stable_prompt_prefix` | 布尔，默认`false`、不序列化 | 开头只放固定指令，逐请求说明（预算、工具目录）以`[Harness note]`末尾user消息发送：前缀跨请求不变以命中自动前缀缓存，也满足只接受开头一条system消息的模板 |
+| `pricing` | `unknown`或`free`（默认`unknown`、不序列化） | `free`只允许回环地址端点，用于本机自托管模型按0元计价 |
 
 Anthropic定义禁止配置OpenAI输出Token参数、思考协议与工具选择参数。端点验证复用Model模块，不在Product Config复制网络规则。
 
@@ -3114,3 +3117,7 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 据此为OpenAI-compatible Provider显式发送开关（百炼DeepSeek默认开启思考，关闭也须显式`false`）、选择`thinking_type`格式并传递
 `omit_tool_choice`。[配置向导](../../src/harnessix/product_config/wizard.py)的`thinking_preset`只对已求证端点与模型族预设，其余端点
 保持不发送思考参数；预设Profile带v40实测的传输上限。验证见[思考配置测试](../../tests/product_config/test_thinking_config.py)。
+
+回环地址端点（同机vLLM自托管）预设`vllm_chat_template`，并开启`normalize_tool_arguments`、`stable_prompt_prefix`与
+`pricing=free`。`stable_prompt_prefix`映射为Model层`prompt_cache=stable_tail`：未开启时逐请求说明作为system消息插在开头，
+Qwen系模板以“System message must be at the beginning”拒绝，且开头每步变化使自动前缀缓存无法命中。其余端点行为不变。

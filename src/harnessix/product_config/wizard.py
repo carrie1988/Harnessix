@@ -121,6 +121,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 thinking_protocol=protocol,
                 omit_tool_choice=checked.omit_tool_choice,
                 normalize_tool_arguments=self_hosted,
+                stable_prompt_prefix=self_hosted,
                 pricing="free" if self_hosted else "unknown",
             ),
         ),

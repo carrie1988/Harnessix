@@ -169,9 +169,12 @@ def test_self_hosted_loopback_endpoint_gets_the_local_preset():
     provider = config.providers[0]
     assert provider.thinking_protocol == "vllm_chat_template"
     assert provider.normalize_tool_arguments and provider.pricing == "free"
+    assert provider.stable_prompt_prefix
     wire = _provider_config(config)
     assert wire.thinking_format == "chat_template_kwargs" and wire.enable_thinking is True
     assert wire.base_url == LOCAL_VLLM
+    # 只有开头一条system消息：逐请求说明在末尾user消息，前缀跨请求不变。
+    assert wire.prompt_cache == "stable_tail"
 
 
 def test_only_loopback_endpoints_may_declare_free_pricing():
@@ -179,6 +182,8 @@ def test_only_loopback_endpoints_may_declare_free_pricing():
     with pytest.raises(ValidationError):
         ProviderDefinition.model_validate({**remote, "pricing": "free"})
     assert "pricing" not in remote and "normalize_tool_arguments" not in remote
+    assert "stable_prompt_prefix" not in remote
+    assert _provider_config(build_product_config(_draft())).prompt_cache is None
 
 
 def _configure_to(tmp_path: Path, *extra: str) -> ProductConfigV2:

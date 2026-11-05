@@ -233,6 +233,11 @@
           "title": "Normalize Tool Arguments",
           "type": "boolean"
         },
+        "stable_prompt_prefix": {
+          "default": false,
+          "title": "Stable Prompt Prefix",
+          "type": "boolean"
+        },
         "pricing": {
           "default": "unknown",
           "enum": [

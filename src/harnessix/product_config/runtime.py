@@ -227,6 +227,7 @@ def default_provider_factory(
                 thinking_format=_WIRE_THINKING_FORMAT.get(protocol) if protocol else None,
                 thinking_tool_steps_only=thinking == "tool_steps",
                 omit_tool_choice=definition.omit_tool_choice,
+                prompt_cache="stable_tail" if definition.stable_prompt_prefix else None,
             ),
             api_key=api_key,
         )
