@@ -175,6 +175,9 @@ def test_self_hosted_loopback_endpoint_gets_the_local_preset():
     assert wire.base_url == LOCAL_VLLM
     # 只有开头一条system消息：逐请求说明在末尾user消息，前缀跨请求不变。
     assert wire.prompt_cache == "stable_tail"
+    # 本地prefill慢且多会话共享副本：首包与单请求时限放宽到Profile上限内。
+    profile = config.profiles[0]
+    assert (profile.timeout_seconds, profile.io_timeout_seconds) == (1800.0, 300.0)
 
 
 def test_only_loopback_endpoints_may_declare_free_pricing():
@@ -184,6 +187,8 @@ def test_only_loopback_endpoints_may_declare_free_pricing():
     assert "pricing" not in remote and "normalize_tool_arguments" not in remote
     assert "stable_prompt_prefix" not in remote
     assert _provider_config(build_product_config(_draft())).prompt_cache is None
+    remote_profile = build_product_config(_draft()).profiles[0]
+    assert (remote_profile.timeout_seconds, remote_profile.io_timeout_seconds) == (120, 30)
 
 
 def _configure_to(tmp_path: Path, *extra: str) -> ProductConfigV2:

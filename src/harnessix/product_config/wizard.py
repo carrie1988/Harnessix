@@ -75,6 +75,13 @@ _THINKING_LIMITS: dict[str, object] = {
     "io_timeout_seconds": 180.0,
 }
 
+# 同机自托管端点：本地加速卡prefill慢且多会话共享副本，首字节在prefill完成后才到达，
+# 默认30秒首包/120秒单请求时限会把排队中的正常请求判为传输失败。
+_SELF_HOSTED_LIMITS: dict[str, object] = {
+    "timeout_seconds": 1800.0,
+    "io_timeout_seconds": 300.0,
+}
+
 
 def thinking_preset(base_url: str, model: str) -> tuple[ThinkingProtocol, bool] | None:
     """已求证端点与模型族的思考预设：（思考协议，是否不发送tool_choice）；其余端点不预设。"""
@@ -133,6 +140,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     "model": checked.model,
                     "thinking": checked.thinking,
                     **(_THINKING_LIMITS if thinking else {}),
+                    **(_SELF_HOSTED_LIMITS if self_hosted else {}),
                 }
             ),
         ),
