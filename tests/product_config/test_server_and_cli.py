@@ -37,7 +37,11 @@ from harnessix.product_config.action_contracts import (
     build_product_process_profile,
 )
 from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStore
-from harnessix.product_config.agent_context import CODING_INSTRUCTIONS, CODING_INSTRUCTIONS_VERSION
+from harnessix.product_config.agent_context import (
+    _PLANNING_INSTRUCTIONS,
+    _REGEX_CODING_INSTRUCTIONS_VERSION,
+    _coding_instructions,
+)
 from harnessix.product_config.cli import config_main
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProductConfigV2
@@ -421,13 +425,16 @@ async def test_product_server_model_catalog_reflects_verified_workspace_patch(
     runtime_fragment = next(
         item for item in instructions["fragments"] if item["kind"] == "runtime_instruction"
     )
-    assert runtime_fragment["source"] == CODING_INSTRUCTIONS_VERSION
-    assert runtime_fragment["content"] == CODING_INSTRUCTIONS
+    # 产品默认开启正则检索与计划工具：指令为正则版本，计划说明是独立片段。
+    assert runtime_fragment["source"] == _REGEX_CODING_INSTRUCTIONS_VERSION
+    assert runtime_fragment["content"] == _coding_instructions(True, enable_regex_search=True)
+    assert any(item["content"] == _PLANNING_INSTRUCTIONS for item in instructions["fragments"])
     assert any(
         item["source"] == "AGENTS.md" and item["content"] == "遵守公开接口与失败恢复约束。"
         for item in instructions["fragments"]
     )
     tool_names = {tool.name for tool in bundle.requests[0].tools}
+    assert "update_plan" in tool_names
     if workspace_patch_supported(workspace):
         assert "apply_patch_batch" in tool_names
     else:

@@ -106,6 +106,9 @@ def build_request(
             body["tool_choice"] = tool_choice
     if config.thinking_format == "thinking_type":
         body["extra_body"] = {"thinking": {"type": "enabled" if thinking else "disabled"}}
+    elif config.thinking_format == "chat_template_kwargs":
+        # vLLM把chat_template_kwargs交给模型对话模板（如Qwen3系的enable_thinking）。
+        body["extra_body"] = {"chat_template_kwargs": {"enable_thinking": thinking}}
     elif config.enable_thinking is not None:
         # OpenAI SDK 将 extra_body 合并到最终请求顶层，供兼容端点接收扩展参数。
         body["extra_body"] = {"enable_thinking": thinking}

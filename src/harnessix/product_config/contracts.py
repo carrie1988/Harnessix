@@ -4,18 +4,24 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Literal, Self
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from pydantic import AwareDatetime, ConfigDict, Field, field_validator, model_validator
 
 from harnessix.domain.models import ContractModel
 from harnessix.execution.contracts import canonical_digest
-from harnessix.models.config import ModelHTTPConfig
+from harnessix.models.config import LOOPBACK_HOSTS, ModelHTTPConfig
 from harnessix.tools.contracts import Revision
 
 ProviderKind = Literal["openai_chat", "anthropic"]
-# 端点已求证的思考开关格式：DashScope发送enable_thinking，DeepSeek发送thinking.type。
-ThinkingProtocol = Literal["dashscope_enable_thinking", "deepseek_thinking_type"]
+# 端点已求证的思考开关格式：DashScope发送enable_thinking，DeepSeek发送thinking.type，
+# vLLM发送chat_template_kwargs.enable_thinking（交给Qwen3系对话模板）。
+ThinkingProtocol = Literal[
+    "dashscope_enable_thinking", "deepseek_thinking_type", "vllm_chat_template"
+]
+# unknown：不宣称费用；free：本机自托管端点，按0元计（仅限回环地址）。
+ProviderPricing = Literal["unknown", "free"]
 # tool_steps只在提供工具的请求思考（摘要与收尾回复不思考）；every_step每个请求都思考。
 ThinkingMode = Literal["tool_steps", "every_step", "off"]
 # 推理计入输出上限：SWE-bench v40实测单步推理可达1.35万Token，低于该值时推理易用满输出而截断。
@@ -65,6 +71,9 @@ class ProviderDefinition(ProductConfigContract):
     )
     # 端点的强制工具选择不可靠时不发送tool_choice（如百炼DeepSeek约束解码语法编译间歇超时）。
     omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
+    # 端点可能把数组/对象参数编码成JSON字符串（如vLLM上的Qwen系）：按工具Schema还原后再校验。
+    normalize_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
+    pricing: ProviderPricing = Field(default="unknown", exclude_if=lambda value: value == "unknown")
 
     @field_validator("base_url")
     @classmethod
@@ -80,8 +89,11 @@ class ProviderDefinition(ProductConfigContract):
         ):
             raise ValueError("Anthropic不能配置OpenAI输出Token、思考协议或工具选择参数")
         if self.thinking_protocol is not None and self.output_token_parameter != "max_tokens":
-            # 两个已求证端点的推理与回答共用max_tokens。
+            # 已求证端点的推理与回答共用max_tokens。
             raise ValueError("思考协议要求输出Token参数为max_tokens")
+        if self.pricing == "free" and urlsplit(self.base_url).hostname not in LOOPBACK_HOSTS:
+            # 防止把付费云端误标为免费：只有同机自托管端点可声明0元。
+            raise ValueError("只有本机回环端点可以声明免费计价")
         return self
 
 

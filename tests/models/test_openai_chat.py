@@ -600,6 +600,8 @@ def test_configuration_fails_without_exposing_credentials(
     "url",
     [
         "http://api.example.com/v1",
+        "http://192.168.130.247:18002/v1",
+        "http://127.0.0.2:18002/v1",
         "https://a:b@example.com/v1",
         "https://example.com/?key=x",
         "https://example.com/#key",
@@ -610,6 +612,13 @@ def test_configuration_fails_without_exposing_credentials(
 def test_endpoint_constraints(url: str) -> None:
     with pytest.raises(ValueError):
         config(base_url=url)
+
+
+@pytest.mark.parametrize(
+    "url", ["http://127.0.0.1:18002/v1", "http://localhost:8000/v1", "http://[::1]:9000/v1"]
+)
+def test_plain_http_is_allowed_only_for_loopback_endpoints(url: str) -> None:
+    assert config(base_url=url).base_url == url
 
 
 @pytest.mark.parametrize("cancel_body", [False, True])

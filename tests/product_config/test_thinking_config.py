@@ -24,6 +24,7 @@ from harnessix.product_ui.cli import _configure
 
 BAILIAN = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 DEEPSEEK = "https://api.deepseek.com"
+LOCAL_VLLM = "http://127.0.0.1:18002/v1"
 
 
 def _draft(**changes) -> ConfigurationDraft:
@@ -147,11 +148,37 @@ def test_thinking_requires_a_declared_protocol_and_max_tokens():
         (DEEPSEEK, "deepseek-v4-pro", ("deepseek_thinking_type", False)),
         (DEEPSEEK, "deepseek-flash", ("deepseek_thinking_type", False)),
         (BAILIAN, "qwen3.8-max", None),
+        (LOCAL_VLLM, "qwen3.8-flash-next", ("vllm_chat_template", False)),
         ("https://api.openai.test/v1", "gpt-test", None),
     ],
 )
 def test_presets_cover_only_verified_endpoints_and_model_families(base_url, model, expected):
     assert thinking_preset(base_url, model) == expected
+
+
+def test_self_hosted_loopback_endpoint_gets_the_local_preset():
+    protocol, omit = thinking_preset(LOCAL_VLLM, "qwen3.8-flash-next") or (None, False)
+    config = build_product_config(
+        _draft(
+            base_url=LOCAL_VLLM,
+            model="qwen3.8-flash-next",
+            thinking_protocol=protocol,
+            omit_tool_choice=omit,
+        )
+    )
+    provider = config.providers[0]
+    assert provider.thinking_protocol == "vllm_chat_template"
+    assert provider.normalize_tool_arguments and provider.pricing == "free"
+    wire = _provider_config(config)
+    assert wire.thinking_format == "chat_template_kwargs" and wire.enable_thinking is True
+    assert wire.base_url == LOCAL_VLLM
+
+
+def test_only_loopback_endpoints_may_declare_free_pricing():
+    remote = build_product_config(_draft()).providers[0].model_dump()
+    with pytest.raises(ValidationError):
+        ProviderDefinition.model_validate({**remote, "pricing": "free"})
+    assert "pricing" not in remote and "normalize_tool_arguments" not in remote
 
 
 def _configure_to(tmp_path: Path, *extra: str) -> ProductConfigV2:

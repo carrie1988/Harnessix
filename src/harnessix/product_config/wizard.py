@@ -15,6 +15,7 @@ from uuid import uuid4
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import utc_now
 from harnessix.file_lock import acquire_exclusive_file_lock
+from harnessix.models.config import LOOPBACK_HOSTS
 from harnessix.product_config.codec import (
     canonical_product_config_bytes,
     load_product_config,
@@ -79,6 +80,9 @@ def thinking_preset(base_url: str, model: str) -> tuple[ThinkingProtocol, bool] 
     """已求证端点与模型族的思考预设：（思考协议，是否不发送tool_choice）；其余端点不预设。"""
 
     host = urlsplit(base_url).hostname
+    if host in LOOPBACK_HOSTS:
+        # 同机自托管vLLM：思考开关经chat_template_kwargs交给模型对话模板。
+        return "vllm_chat_template", False
     if host == "dashscope.aliyuncs.com" and model.startswith("deepseek-v4"):
         # 百炼DeepSeek的required/指定函数tool_choice经约束解码语法编译，间歇超时并返回400。
         return "dashscope_enable_thinking", True
@@ -97,6 +101,8 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     output_token_parameter = checked.output_token_parameter or (
         "max_tokens" if protocol is not None else None
     )
+    # 同机自托管端点（如vLLM上的Qwen系）：还原被字符串化的工具参数，并按0元计价。
+    self_hosted = urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
     return ProductConfigV2(
         active_profile=checked.profile_id,
         secret_sources=(
@@ -114,6 +120,8 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 output_token_parameter=output_token_parameter,
                 thinking_protocol=protocol,
                 omit_tool_choice=checked.omit_tool_choice,
+                normalize_tool_arguments=self_hosted,
+                pricing="free" if self_hosted else "unknown",
             ),
         ),
         profiles=(

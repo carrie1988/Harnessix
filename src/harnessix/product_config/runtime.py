@@ -186,6 +186,13 @@ def diagnose_configuration(
     )
 
 
+# 产品思考协议到线上格式；DashScope沿用顶层enable_thinking（格式为None）。
+_WIRE_THINKING_FORMAT: dict[str, Literal["thinking_type", "chat_template_kwargs"]] = {
+    "deepseek_thinking_type": "thinking_type",
+    "vllm_chat_template": "chat_template_kwargs",
+}
+
+
 def default_provider_factory(
     definition: ProviderDefinition,
     profile: ModelProfile,
@@ -217,7 +224,7 @@ def default_provider_factory(
                 ),
                 # 声明思考协议的端点显式发送开关（如百炼DeepSeek默认开启思考，关闭须显式false）。
                 enable_thinking=None if protocol is None else thinking != "off",
-                thinking_format="thinking_type" if protocol == "deepseek_thinking_type" else None,
+                thinking_format=_WIRE_THINKING_FORMAT.get(protocol) if protocol else None,
                 thinking_tool_steps_only=thinking == "tool_steps",
                 omit_tool_choice=definition.omit_tool_choice,
             ),

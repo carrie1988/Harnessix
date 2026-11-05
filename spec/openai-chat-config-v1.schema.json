@@ -176,7 +176,10 @@
     "thinking_format": {
       "anyOf": [
         {
-          "const": "thinking_type",
+          "enum": [
+            "thinking_type",
+            "chat_template_kwargs"
+          ],
           "type": "string"
         },
         {

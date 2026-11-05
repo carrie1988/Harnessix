@@ -150,6 +150,15 @@ def test_thinking_type_format_sends_the_deepseek_switch(enabled):
     assert default["extra_body"] == {"enable_thinking": False}
 
 
+@pytest.mark.parametrize("enabled", [False, True])
+def test_chat_template_kwargs_format_sends_the_vllm_template_switch(enabled):
+    config = OpenAIChatConfig(
+        model="m", enable_thinking=enabled, thinking_format="chat_template_kwargs"
+    )
+    body, _ = build_request(model_request(), config)
+    assert body["extra_body"] == {"chat_template_kwargs": {"enable_thinking": enabled}}
+
+
 def test_thinking_type_format_requires_an_explicit_switch():
     with pytest.raises(ValueError):
         OpenAIChatConfig(model="m", thinking_format="thinking_type")

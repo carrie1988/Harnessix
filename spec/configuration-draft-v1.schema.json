@@ -80,7 +80,8 @@
         {
           "enum": [
             "dashscope_enable_thinking",
-            "deepseek_thinking_type"
+            "deepseek_thinking_type",
+            "vllm_chat_template"
           ],
           "type": "string"
         },

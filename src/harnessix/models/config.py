@@ -24,6 +24,10 @@ class ChatCapabilities(ContractModel):
         return self
 
 
+# 允许明文HTTP的本机回环主机名（urlsplit去掉IPv6方括号后的形式）。
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
 class ModelHTTPConfig(ContractModel):
     base_url: str = Field(max_length=2048)
     model: str = Field(min_length=1, max_length=256, pattern=r"^[A-Za-z0-9_.:/-]+$")
@@ -45,8 +49,10 @@ class ModelHTTPConfig(ContractModel):
         url = urlsplit(value)
         # 访问 port 触发标准库对非数字和越界端口的验证。
         _ = url.port
+        # 明文HTTP只允许本机回环端点（如同机部署的vLLM），远程端点必须使用HTTPS。
+        secure = url.scheme == "https" or (url.scheme == "http" and url.hostname in LOOPBACK_HOSTS)
         if (
-            url.scheme != "https"
+            not secure
             or not url.hostname
             or url.username is not None
             or url.password is not None
@@ -54,7 +60,9 @@ class ModelHTTPConfig(ContractModel):
             or url.fragment
             or any(character.isspace() for character in value)
         ):
-            raise ValueError("端点必须是无用户信息、查询串或 fragment 的 HTTPS URL")
+            raise ValueError(
+                "端点必须是无用户信息、查询串或 fragment 的 HTTPS（或本机回环 HTTP）URL"
+            )
         return value.rstrip("/")
 
 
@@ -85,7 +93,7 @@ class OpenAIChatConfig(ModelHTTPConfig):
     # 工具参数严格解析失败时只修复字符串内原始控制字符与非法反斜杠转义；其他畸形仍为协议失败。
     repair_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
     # 思考开关线上格式：默认DashScope的enable_thinking；thinking_type发送thinking.type。
-    thinking_format: Literal["thinking_type"] | None = Field(
+    thinking_format: Literal["thinking_type", "chat_template_kwargs"] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
     )
@@ -122,7 +130,7 @@ class OpenAIChatConfig(ModelHTTPConfig):
         if self.thinking_format is not None and (
             self.enable_thinking is None or self.thinking_budget is not None
         ):
-            raise ValueError("thinking_type格式要求显式思考开关且不支持思考预算")
+            raise ValueError("显式思考格式要求显式思考开关且不支持思考预算")
         return self
 
 

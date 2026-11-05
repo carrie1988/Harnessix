@@ -29,7 +29,11 @@ from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStor
 from harnessix.product_config.agent_context import build_product_agent_context
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
-from harnessix.product_config.contracts import ProductConfigSnapshot, ProfileSelection
+from harnessix.product_config.contracts import (
+    ProductConfigSnapshot,
+    ProfileSelection,
+    ProviderDefinition,
+)
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import ProductPreflightReport
 from harnessix.product_config.runtime import (
@@ -273,6 +277,7 @@ async def _serve_product_stdio(
                     git_executable=startup.git_path,
                     git_state_directory=startup.state_root,
                     git_output_redaction=public_scope,
+                    enable_regex_search=True,
                 ) as tools:
                     async with open_default_product_action_runtime(
                         startup.state_root,
@@ -307,6 +312,8 @@ async def _serve_product_stdio(
                                 if profile.profile_id in startup.profile.profile_chain
                             ),
                             generic_execution=generic_execution,
+                            enable_planning=True,
+                            enable_regex_search=True,
                         )
                         async with AgentRuntime(
                             sessions,
@@ -319,6 +326,11 @@ async def _serve_product_stdio(
                             compaction=context.compaction,
                             summary_provider=bundle,
                             model_tool_view=None if generic_execution else CodingWorkflowToolView(),
+                            enable_planning=True,
+                            normalize_stringified_arguments=any(
+                                provider.normalize_tool_arguments
+                                for provider in _active_providers(startup)
+                            ),
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(
@@ -339,6 +351,19 @@ async def _serve_product_stdio(
                             await run_stdio(
                                 AgentProtocolServer(service), input_stream, output_stream
                             )
+
+
+def _active_providers(startup: _ProductRuntimeStartup) -> tuple[ProviderDefinition, ...]:
+    """当前Profile链（含Fallback）实际使用的Provider定义。"""
+    chain = set(startup.profile.profile_chain)
+    used = {
+        profile.provider_id
+        for profile in startup.config.config.profiles
+        if profile.profile_id in chain
+    }
+    return tuple(
+        provider for provider in startup.config.config.providers if provider.provider_id in used
+    )
 
 
 async def run_product_stdio(

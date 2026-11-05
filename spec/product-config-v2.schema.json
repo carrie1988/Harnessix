@@ -211,7 +211,8 @@
             {
               "enum": [
                 "dashscope_enable_thinking",
-                "deepseek_thinking_type"
+                "deepseek_thinking_type",
+                "vllm_chat_template"
               ],
               "type": "string"
             },
@@ -226,6 +227,20 @@
           "default": false,
           "title": "Omit Tool Choice",
           "type": "boolean"
+        },
+        "normalize_tool_arguments": {
+          "default": false,
+          "title": "Normalize Tool Arguments",
+          "type": "boolean"
+        },
+        "pricing": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "free"
+          ],
+          "title": "Pricing",
+          "type": "string"
         }
       },
       "required": [

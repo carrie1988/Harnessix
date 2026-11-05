@@ -28,6 +28,7 @@ from harnessix.product_ui.session import (
     PreparedClientCommand,
     RecoverableAgentSession,
 )
+from harnessix.product_ui.turn_budget import PRODUCT_TURN_BUDGET
 from harnessix.protocol.contracts import MAX_PROTOCOL_TEXT_CHARS, ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError
 
@@ -455,7 +456,9 @@ class ProductController:
         command = self._session.prepare_command()
 
         async def submit(client: AgentClient, prepared: PreparedClientCommand) -> None:
-            await client.start_turn(thread_id, prompt, request_id=prepared.request_id)
+            await client.start_turn(
+                thread_id, prompt, request_id=prepared.request_id, budget=PRODUCT_TURN_BUDGET
+            )
 
         await self._session.execute_prepared(command, submit)
         hydrated = await self._session.hydrate_thread(thread_id)
