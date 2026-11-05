@@ -45,12 +45,19 @@ def evaluate(run_dir: Path, dataset: Path, swebench: str, workers: int) -> None:
 
 
 def resolved_ids(report_dir: Path) -> set[str]:
-    """Resolved instance IDs from the single official report in report_dir."""
+    """Resolved instance IDs from the official report(s) in report_dir.
 
-    reports = list(report_dir.glob("*.json"))
-    if len(reports) != 1:
-        raise SystemExit(f"expected one official report in {report_dir}, found {len(reports)}")
-    return set(json.loads(reports[0].read_text())["resolved_ids"])
+    A resumed run may score the same predictions again under a new run ID; such reports must
+    agree, otherwise the directory is ambiguous and the report stops.
+    """
+
+    reports = sorted(report_dir.glob("*.json"))
+    if not reports:
+        raise SystemExit(f"no official report in {report_dir}")
+    resolved = [frozenset(json.loads(path.read_text())["resolved_ids"]) for path in reports]
+    if len(set(resolved)) != 1:
+        raise SystemExit(f"official reports in {report_dir} disagree")
+    return set(resolved[0])
 
 
 def predicted_ids(predictions: Path) -> set[str]:
