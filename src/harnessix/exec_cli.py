@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from harnessix.agent_cli import ApprovalOutcome, ApprovalPolicy, ThinAgentCLI
 from harnessix.product_config.preflight import run_product_preflight
@@ -99,6 +99,11 @@ def _parser() -> argparse.ArgumentParser:
     task = parser.add_mutually_exclusive_group(required=True)
     task.add_argument("--prompt", help="任务描述")
     task.add_argument("--prompt-file", help="从UTF-8文件读取任务描述")
+    task.add_argument(
+        "--resume-thread",
+        type=UUID,
+        help="宿主或进程中断后，用同一--state-directory恢复该Thread并跟随其Turn到终态",
+    )
     parser.add_argument("--workspace", default=".", help="工作区目录")
     parser.add_argument("--config", help="产品配置路径")
     parser.add_argument("--profile", help="模型Profile")
@@ -120,10 +125,12 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _prompt(arguments: argparse.Namespace) -> str:
+def _prompt(arguments: argparse.Namespace) -> str | None:
     if arguments.prompt is not None:
         return str(arguments.prompt)
-    return Path(arguments.prompt_file).read_text(encoding="utf-8")
+    if arguments.prompt_file is not None:
+        return Path(arguments.prompt_file).read_text(encoding="utf-8")
+    return None
 
 
 def _changed_paths(workspace: Path, git_executable: str | None) -> list[str] | None:
@@ -254,12 +261,13 @@ def _summary(
 class _Launch:
     command: tuple[str, ...]
     workspace: Path
-    prompt: str
+    prompt: str | None
     budget: PublicBudget
     mode: ApprovalMode
     quiet: bool
     pricing: Literal["free", "unknown"] = "unknown"
     events: Path | None = None
+    resume_thread: UUID | None = None
 
 
 def _or[T](value: T | None, default: T) -> T:
@@ -310,6 +318,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         quiet=arguments.quiet,
         pricing=pricing,
         events=Path(arguments.events_file).absolute() if arguments.events_file else None,
+        resume_thread=arguments.resume_thread,
     )
 
 
@@ -327,7 +336,6 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
 
     try:
         await client.initialize()
-        created = await client.create_thread(str(launch.workspace), request_id=f"exec-{uuid4()}")
         cli = ThinAgentCLI(
             client,
             console=console,
@@ -335,18 +343,28 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
             approval_policy=approval_policy(launch.mode),
             on_event=None if events is None else emit,
         )
+        if launch.resume_thread is not None:
+            thread_id = launch.resume_thread
+        else:
+            created = await client.create_thread(
+                str(launch.workspace), request_id=f"exec-{uuid4()}"
+            )
+            thread_id = created.thread_id
         try:
+            if launch.prompt is None:
+                # 恢复：App Server启动时先对账未决效果，再跟随原Turn到终态，不重放未知效果。
+                return cli, await cli.follow(thread_id), False
             thread = await cli.run_turn(
-                created.thread_id, launch.prompt, request_id=f"exec-{uuid4()}", budget=launch.budget
+                thread_id, launch.prompt, request_id=f"exec-{uuid4()}", budget=launch.budget
             )
             return cli, thread, False
         except NeedsHumanInput:
-            thread = await client.get_thread(created.thread_id)
+            thread = await client.get_thread(thread_id)
             if thread.active_turn_id is not None:
                 await client.cancel_turn(
-                    created.thread_id, thread.active_turn_id, request_id=f"exec-{uuid4()}"
+                    thread_id, thread.active_turn_id, request_id=f"exec-{uuid4()}"
                 )
-                thread = await client.get_thread(created.thread_id)
+                thread = await client.get_thread(thread_id)
             return cli, thread, True
     finally:
         await client.close()

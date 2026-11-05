@@ -21,11 +21,11 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
-import threading
 import uuid
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+
+from scripted_openai_server import start_scripted_model
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.action_contracts import (
@@ -88,74 +88,6 @@ ATTACKS: list[tuple[str, str, dict[str, Any], str]] = [
     ("read-outside", "read_file", {"path": "../outside-secret.txt"}, "read outside rejected"),
     ("read-absolute", "read_file", {"path": "/etc/passwd"}, "absolute path rejected"),
 ]
-
-
-class ScriptedModel(BaseHTTPRequestHandler):
-    """Answers each request with the next attack as a tool call, then a final message."""
-
-    def log_message(self, *args: object) -> None:  # quiet
-        return
-
-    def do_GET(self) -> None:  # /v1/models
-        self._send(200, {"data": [{"id": "scripted", "object": "model"}]})
-
-    def do_POST(self) -> None:
-        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        step = sum(1 for message in body["messages"] if message.get("role") == "assistant")
-        aliases = {
-            tool["function"]["description"].split(": ", 1)[0]: tool["function"]["name"]
-            for tool in body.get("tools", [])
-        }
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        self.end_headers()
-        chunk: dict[str, Any] = {
-            "id": f"c{step}",
-            "object": "chat.completion.chunk",
-            "created": 0,
-            "model": "scripted",
-        }
-        if step < len(ATTACKS) and ATTACKS[step][1] in aliases:
-            _, tool, arguments, _ = ATTACKS[step]
-            if "cmd" in arguments:
-                arguments = {
-                    "profile": "sandbox",
-                    "cmd": arguments["cmd"].format(outside=self.server.outside_secret),
-                }  # type: ignore[attr-defined]
-            delta = {
-                "role": "assistant",
-                "tool_calls": [
-                    {
-                        "index": 0,
-                        "id": f"call_{step}",
-                        "type": "function",
-                        "function": {"name": aliases[tool], "arguments": json.dumps(arguments)},
-                    }
-                ],
-            }
-            finish = "tool_calls"
-        else:
-            delta = {"role": "assistant", "content": "Security probe finished."}
-            finish = "stop"
-        for payload in (
-            {**chunk, "choices": [{"index": 0, "delta": delta, "finish_reason": None}]},
-            {**chunk, "choices": [{"index": 0, "delta": {}, "finish_reason": finish}]},
-            {
-                **chunk,
-                "choices": [],
-                "usage": {"prompt_tokens": 100, "completion_tokens": 10, "total_tokens": 110},
-            },
-        ):
-            self.wfile.write(f"data: {json.dumps(payload)}\n\n".encode())
-        self.wfile.write(b"data: [DONE]\n\n")
-
-    def _send(self, code: int, payload: dict[str, Any]) -> None:
-        data = json.dumps(payload).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
 
 
 def _private(path: Path, text: str) -> None:
@@ -227,10 +159,16 @@ def main() -> None:
     outside = scratch / "outside-secret.txt"
     outside.write_text(OUTSIDE_SECRET + "\n", encoding="utf-8")
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), ScriptedModel)
-    server.outside_secret = str(outside)  # type: ignore[attr-defined]
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    base_url = f"http://127.0.0.1:{server.server_address[1]}/v1"
+    steps = [
+        (
+            tool,
+            {"profile": "sandbox", "cmd": arguments["cmd"].format(outside=outside)}
+            if "cmd" in arguments
+            else arguments,
+        )
+        for _, tool, arguments, _ in ATTACKS
+    ]
+    server, base_url = start_scripted_model(steps, final="Security probe finished.")
 
     config_dir = scratch / "config"
     config_dir.mkdir(mode=0o700)
