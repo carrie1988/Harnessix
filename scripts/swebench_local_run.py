@@ -46,6 +46,7 @@ from harnessix.product_config.action_contracts import (
     build_product_action_config,
     build_product_process_profile,
 )
+from harnessix.product_config.contracts import ProductConfigV2
 from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.wizard import build_product_config, thinking_preset
 
@@ -75,6 +76,8 @@ class Arm:
     thinking: str = "off"
     # Independent runs per task; more than one adds cross-checked selection of a single patch.
     candidates: int = 1
+    # "local" = the K100 replicas; "bailian" = the cloud reference (same harness and sandbox).
+    endpoint: str = "local"
 
 
 LOCAL_TOKENS = 2_000_000
@@ -99,7 +102,22 @@ ARMS = {
         timeout_seconds=3_600,
         candidates=4,
     ),
+    # Cloud reference: A2 with Bailian qwen3.8-flash (same Qwen3.8 family as the local model).
+    "C2": Arm(
+        "C2",
+        shell=True,
+        max_steps=100,
+        max_tokens=LOCAL_TOKENS,
+        timeout_seconds=3_600,
+        endpoint="bailian",
+    ),
 }
+
+BAILIAN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+BAILIAN_MODEL = "qwen3.8-flash"
+# CNY per million tokens (Bailian, mainland, 2026-11): input 0.8, output 2.7. The spend guard
+# ignores the 0.1 cache-hit price, so it overestimates and stops early rather than late.
+BAILIAN_PRICE = (0.8, 2.7)
 
 SHELL_ENVIRONMENT_NOTE = """
 Command environment: every exec_command call starts a fresh container from this task's own
@@ -272,7 +290,26 @@ def write_private_json(path: Path, body: str) -> None:
     path.chmod(0o600)
 
 
-def product_config_json(port: int, thinking: str) -> str:
+def product_config_json(port: int, arm: Arm) -> str:
+    if arm.endpoint == "bailian":
+        draft = ConfigurationDraft(
+            provider_kind="openai_chat",
+            base_url=BAILIAN_URL,
+            model=BAILIAN_MODEL,
+            environment_variable=API_KEY_VARIABLE,
+            thinking_protocol="dashscope_enable_thinking",
+            thinking=arm.thinking,
+        )
+        built = build_product_config(draft)
+        # Bailian caches prefixes implicitly; a stable prefix earns the cache-hit price.
+        provider = built.providers[0].model_copy(update={"stable_prompt_prefix": True})
+        config = ProductConfigV2.model_validate_json(
+            json.dumps(
+                {**built.model_dump(mode="json"), "providers": [provider.model_dump(mode="json")]}
+            )
+        )
+        cloud: str = config.model_dump_json(indent=2)
+        return cloud
     base_url = f"http://127.0.0.1:{port}/v1"
     preset = thinking_preset(base_url, MODEL)
     assert preset is not None, "loopback endpoints always have a preset"
@@ -283,10 +320,10 @@ def product_config_json(port: int, thinking: str) -> str:
         environment_variable=API_KEY_VARIABLE,
         thinking_protocol=preset[0],
         omit_tool_choice=preset[1],
-        thinking=thinking,
+        thinking=arm.thinking,
     )
-    config: str = build_product_config(draft).model_dump_json(indent=2)
-    return config
+    local: str = build_product_config(draft).model_dump_json(indent=2)
+    return local
 
 
 def action_config_json(image_id: str, docker: str, language: str) -> str:
@@ -380,9 +417,7 @@ def run_task(
     patch = ""
     try:
         image_id, base_commit = materialize_workspace(task, workspace)
-        write_private_json(
-            task_root / "product-config.json", product_config_json(port, arm.thinking)
-        )
+        write_private_json(task_root / "product-config.json", product_config_json(port, arm))
         command = [
             options.harnessix,
             "exec",
@@ -415,7 +450,7 @@ def run_task(
             )
             command += ["--action-config", str(task_root / "action-config.json")]
         (task_root / "prompt.txt").write_text(task_prompt(task, arm), encoding="utf-8")
-        environment = {**os.environ, API_KEY_VARIABLE: "local-replica-no-key"}
+        environment = {**os.environ, API_KEY_VARIABLE: options.api_key}
         with open(task_root / "exec.log", "wb") as log:
             exit_code = subprocess.run(
                 command,
@@ -597,6 +632,22 @@ def wait_until_healthy(port: int) -> None:
             time.sleep(30)
 
 
+def _cost_cny(usage: dict[str, Any] | None) -> float:
+    """Conservative Bailian cost: every input token at the uncached price."""
+
+    if not usage:
+        return 0.0
+    input_price, output_price = BAILIAN_PRICE
+    inputs = float(usage.get("inputTokens", 0))
+    outputs = float(usage.get("outputTokens", 0))
+    return (inputs * input_price + outputs * output_price) / 1e6
+
+
+def _recorded_spend(run_root: Path) -> float:
+    path = run_root / "spend.json"
+    return float(json.loads(path.read_text())["estimated_cny"]) if path.exists() else 0.0
+
+
 def finished_instances(results: Path) -> set[str]:
     if not results.exists():
         return set()
@@ -617,9 +668,19 @@ def main() -> None:
     parser.add_argument("--harnessix", default=str(Path(sys.executable).with_name("harnessix")))
     parser.add_argument("--docker", default=shutil.which("docker") or "/usr/bin/docker")
     parser.add_argument("--keep-workspaces", action="store_true")
+    parser.add_argument("--api-key-file", type=Path, help="provider key for cloud arms (0600)")
+    parser.add_argument("--spend-limit-cny", type=float, default=45.0)
     options = parser.parse_args()
 
     arm = ARMS[options.arm]
+    if arm.endpoint == "bailian":
+        if options.api_key_file is None:
+            parser.error("cloud arms need --api-key-file")
+        options.api_key = options.api_key_file.read_text(encoding="utf-8").strip()
+    else:
+        # Local replicas ignore the key, but the product requires one and treats it as a secret
+        # in leak detection, so it must be distinctive.
+        options.api_key = "local-replica-no-key"
     run_root = options.run_root = options.run_root.absolute()
     run_root.mkdir(parents=True, exist_ok=True)
     run_root.chmod(0o755)
@@ -650,13 +711,32 @@ def main() -> None:
         name = f"harnessix-{arm.name}-{MODEL}"
         return {"instance_id": task.instance_id, "model_name_or_path": name, "model_patch": patch}
 
+    spend = {"cny": _recorded_spend(run_root)}
+
     def run_candidate(task: Task, index: int) -> Outcome:
         root = run_root / "tasks" / task.instance_id
         root = root / f"c{index}" if arm.candidates > 1 else root
         if arm.candidates > 1 and (root / "outcome.json").exists():
             return Outcome(**json.loads((root / "outcome.json").read_text()))  # resumed
         port = slots.get()
-        wait_until_healthy(port)
+        if arm.endpoint == "local":
+            wait_until_healthy(port)
+        elif spend["cny"] >= options.spend_limit_cny:
+            slots.put(port)
+            print(f"{task.instance_id}: skipped, spend limit reached", flush=True)
+            return Outcome(
+                task.instance_id,
+                arm.name,
+                port,
+                "skipped_spend_limit",
+                None,
+                0.0,
+                None,
+                None,
+                0,
+                None,
+                "spend_limit",
+            )
         try:
             outcome, _ = run_task(
                 task,
@@ -668,6 +748,10 @@ def main() -> None:
             )
         finally:
             slots.put(port)
+        if arm.endpoint == "bailian":
+            with lock:
+                spend["cny"] += _cost_cny(outcome.usage)
+                (run_root / "spend.json").write_text(json.dumps({"estimated_cny": spend["cny"]}))
         print(
             f"{task.instance_id}{f' c{index}' if arm.candidates > 1 else ''}: {outcome.status} "
             f"steps={outcome.model_steps} patch={outcome.patch_bytes}B "
