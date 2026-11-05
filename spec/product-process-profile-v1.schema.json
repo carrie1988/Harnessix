@@ -78,10 +78,16 @@
       "default": "none",
       "enum": [
         "none",
-        "bounded_test_selector"
+        "bounded_test_selector",
+        "shell_command"
       ],
       "title": "Selector Policy",
       "type": "string"
+    },
+    "persistent_dependencies": {
+      "default": false,
+      "title": "Persistent Dependencies",
+      "type": "boolean"
     },
     "timeout_seconds": {
       "default": 300,

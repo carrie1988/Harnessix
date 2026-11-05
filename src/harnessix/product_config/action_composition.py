@@ -53,6 +53,7 @@ from harnessix.product_config.process_profile import (
     VerifiedProductProcessProfile,
     process_tool_name,
 )
+from harnessix.product_config.task_dependencies import TaskDependencyEnvironments
 from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
 from harnessix.product_config.workspace_rollback import (
     WorkspaceRollbackReviewProvider,
@@ -209,6 +210,7 @@ def _process_components(
     artifacts: SQLiteArtifactStore,
     *,
     artifact_workspace_scope: str,
+    dependency_environments: TaskDependencyEnvironments | None = None,
 ) -> tuple[
     tuple[ProductActionCapabilityEvidence, ...],
     tuple[ProductActionCatalogEntry, ...],
@@ -224,7 +226,7 @@ def _process_components(
     owners: dict[str, VerifiedProductProcessProfile] = {}
     outputs: dict[str, ProductProcessOutputProvider] = {}
     for probe in probes:
-        tool = process_tool_name(probe.profile.profile_id)
+        tool = process_tool_name(probe.profile.profile_id, probe.profile.selector_policy)
         if probe.verified is None:
             evidence.append(
                 build_product_action_capability(
@@ -245,6 +247,7 @@ def _process_components(
             router,
             environment.workspace_root,
             secrets,
+            dependency_environments=dependency_environments,
         )
         capability = build_product_action_capability(
             capability_id=tool,
@@ -298,9 +301,18 @@ def _product_call_context(
     call: ToolCallContent,
     router: TrustedActionRouter,
     transactions: SQLiteWorkspaceTransactionStore,
+    dependency_environments: TaskDependencyEnvironments | None = None,
 ) -> ActionPlanningContext:
     """只在正式产品入口验证回滚原会话归属，先于资源解析与私有Blob读取。"""
     base = _planning_context(environment, process_owners, thread.workspace, call.tool)
+    owner = process_owners.get(call.tool)
+    if owner is not None and owner.profile.persistent_dependencies:
+        if dependency_environments is None:
+            raise KernelError("task_dependencies_unavailable", "任务依赖目录尚未绑定宿主Registry")
+        base = replace(
+            base,
+            external_roots=dependency_environments.for_thread(thread.thread_id, owner.profile),
+        )
     if (
         call.tool in {WORKSPACE_PATCH_TOOL, WORKSPACE_ROLLBACK_TOOL}
         and router._snapshot_ports is not None
@@ -358,6 +370,7 @@ def _compose_product_actions(
     secrets: SecretProvider | None = None,
     secret_scope: SecretPublicationScope | None = None,
     patch_contract: WorkspacePatchContract = "standard",
+    dependency_environments: TaskDependencyEnvironments | None = None,
 ) -> ProductActionComposition:
     """从统一配置和探测结果原子安装Patch及固定Container Process能力。"""
 
@@ -379,6 +392,7 @@ def _compose_product_actions(
         secrets,
         artifacts,
         artifact_workspace_scope=artifact_workspace_scope,
+        dependency_environments=dependency_environments,
     )
     evidence = tuple(
         sorted(
@@ -422,7 +436,13 @@ def _compose_product_actions(
         router,
         catalog.definitions(),
         lambda thread, _turn, call: _product_call_context(
-            environment, process_owners, thread, call, router, transactions
+            environment,
+            process_owners,
+            thread,
+            call,
+            router,
+            transactions,
+            dependency_environments,
         ),
         presentations=presentations,
         reviews=reviews,
@@ -445,6 +465,7 @@ def build_product_action_composition(
     process_probes: tuple[ProductProcessProfileProbeResult, ...] = (),
     secrets: SecretProvider | None = None,
     patch_contract: WorkspacePatchContract = "standard",
+    dependency_environments: TaskDependencyEnvironments | None = None,
 ) -> ProductActionComposition:
     """已验证Profile的执行与公开共用原版本快照；失败和Gateway关闭均释放材料。"""
     bindings = tuple(
@@ -467,6 +488,7 @@ def build_product_action_composition(
             secrets=scope if scope is not None else secrets,
             secret_scope=scope,
             patch_contract=patch_contract,
+            dependency_environments=dependency_environments,
         )
         if result.gateway is None and scope is not None:
             scope.close()

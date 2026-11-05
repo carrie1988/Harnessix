@@ -221,6 +221,11 @@
       "title": "Workspace Mode",
       "type": "string"
     },
+    "task_dependencies": {
+      "default": false,
+      "title": "Task Dependencies",
+      "type": "boolean"
+    },
     "run_as": {
       "default": "65532:65532",
       "pattern": "^[1-9][0-9]{0,9}:[1-9][0-9]{0,9}$",

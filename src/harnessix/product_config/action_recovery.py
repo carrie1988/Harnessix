@@ -84,7 +84,9 @@ async def scan_product_action_recovery(
         process_routes = {
             route.plan.execution.plan_id: route
             for route in routes
-            if route.plan.binding.executor_id.startswith("product.process-profile.")
+            if route.plan.binding.executor_id.startswith(
+                ("product.process-profile.", "product.command-profile.")
+            )
         }
         for lease in supervisor.active_leases():
             process_route = process_routes.get(lease.plan_id)

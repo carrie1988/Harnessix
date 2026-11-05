@@ -6,7 +6,7 @@ import asyncio
 import hashlib
 import json
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Literal, cast
 from uuid import UUID, uuid5
@@ -46,10 +46,21 @@ from harnessix.trusted_actions.router import (
     TrustedActionRouter,
     canonical_action_resource,
 )
-from harnessix.workspace.contracts import WorkspaceResourceRequest
+from harnessix.workspace.contracts import ResourceAccess, WorkspaceResourceRequest
 
 from .action_contracts import ProductProcessProfile
-from .process_profile import VerifiedProductProcessProfile, process_tool_name
+from .process_command import (
+    PRODUCT_COMMAND_VERSION,
+    RunCommandInput,
+    decode_run_command,
+    run_command_schema,
+)
+from .process_profile import (
+    VerifiedProductProcessProfile,
+    process_executor_id,
+    process_tool_name,
+)
+from .task_dependencies import TaskDependencyEnvironments
 
 PRODUCT_PROCESS_VERSION = "harnessix.product-process/v1"
 _ACTION_OUTPUT_NAMESPACE = UUID("ee9ec0c4-2584-41d2-a82d-7679d687b20c")
@@ -132,6 +143,8 @@ def decode_run_profile(
     selector_policy: Literal["none", "bounded_test_selector"],
     arguments: dict[str, JsonValue],
 ) -> RunProfileInput:
+    if selector_policy not in {"none", "bounded_test_selector"}:
+        raise ValueError("Process Profile选择器策略无效")
     try:
         checked = RunProfileInput.model_validate_json(
             json.dumps(arguments, ensure_ascii=False, allow_nan=False)
@@ -144,6 +157,31 @@ def decode_run_profile(
 
 
 def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor:
+    if profile.selector_policy == "shell_command":
+        return ToolDescriptor(
+            name=process_tool_name(profile.profile_id, profile.selector_policy),
+            version=f"{PRODUCT_COMMAND_VERSION}:{profile.profile_sha256[:24]}",
+            description=(
+                f"在固定无网络只读容器中执行Shell命令“{profile.description}”（{profile.profile_id} "
+                f'{profile.version}）；必填"profile": "{profile.profile_id}"和"cmd"，'
+                "工具名不能替代字段。cmd必须非空白，允许管道、重定向和多行，"
+                "不含NUL且最多16384 UTF-8字节。"
+                "宿主冻结Shell、镜像、工作目录、资源、环境和Secret。"
+                + (
+                    "任务依赖目录/harnessix/deps可读写并跨命令保留；源码仍只读。"
+                    if profile.persistent_dependencies
+                    else ""
+                )
+                + "失败先看diagnostic_preview；完整时不重读日志Artifact。"
+            ),
+            input_schema=run_command_schema(profile.profile_id),
+            effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
+            risk_level=RiskLevel.HIGH,
+            requires_idempotency=True,
+            requires_approval=True,
+            supports_reconciliation=True,
+            supports_parallel_calls=False,
+        )
     return ToolDescriptor(
         name=process_tool_name(profile.profile_id),
         version=f"{PRODUCT_PROCESS_VERSION}:{profile.profile_sha256[:24]}",
@@ -183,18 +221,26 @@ def product_process_binding(profile: ProductProcessProfile) -> TrustedToolBindin
         effect_class=descriptor.effect_class,
         risk_level=descriptor.risk_level,
         recovery_mode="durable_ledger",
-        executor_id=f"product.process-profile.{profile.profile_id}",
+        executor_id=process_executor_id(profile),
     )
 
 
-def _arguments(value: BaseModel, owner: VerifiedProductProcessProfile) -> RunProfileInput:
+def _decode_arguments(
+    profile: ProductProcessProfile,
+    arguments: dict[str, JsonValue],
+) -> RunProfileInput | RunCommandInput:
+    if profile.selector_policy == "shell_command":
+        return decode_run_command(profile.profile_id, arguments)
+    return decode_run_profile(profile.profile_id, profile.selector_policy, arguments)
+
+
+def _arguments(
+    value: BaseModel,
+    owner: VerifiedProductProcessProfile,
+) -> RunProfileInput | RunCommandInput:
     try:
         dumped = cast(dict[str, JsonValue], value.model_dump(mode="json"))
-        return decode_run_profile(
-            owner.profile.profile_id,
-            owner.profile.selector_policy,
-            dumped,
-        )
+        return _decode_arguments(owner.profile, dumped)
     except (ValidationError, ValueError, TypeError):
         raise KernelError(
             "process_profile_arguments_invalid", "Process Profile参数类型不一致"
@@ -203,20 +249,41 @@ def _arguments(value: BaseModel, owner: VerifiedProductProcessProfile) -> RunPro
 
 def resolve_run_profile(
     owner: VerifiedProductProcessProfile,
-    arguments: RunProfileInput,
+    arguments: RunProfileInput | RunCommandInput,
     context: ActionPlanningContext,
+    *,
+    dependency_environments: TaskDependencyEnvironments | None = None,
+    allow_quarantined: bool = False,
 ) -> ResolvedAction:
     """绑定固定Profile、只读Workspace、Owner能力和Secret版本资源。"""
 
+    arguments = _arguments(arguments, owner)
     if (
         context.cwd != "."
         or context.capabilities != owner.capabilities
         or context.sandbox != owner.sandbox
         or dict(context.environment) != dict(owner.environment)
         or context.secrets != owner.secret_bindings
-        or context.external_roots is not None
     ):
         raise KernelError("process_profile_context_mismatch", "Process Profile规划上下文不匹配")
+    if owner.profile.persistent_dependencies:
+        if dependency_environments is None:
+            raise KernelError("task_dependencies_unavailable", "任务依赖目录尚未绑定宿主Registry")
+        dependency_environments.validate(
+            cast(
+                Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]],
+                context.external_roots,
+            ),
+            owner.profile,
+            allow_quarantined=allow_quarantined,
+        )
+    elif context.external_roots is not None:
+        raise KernelError("process_profile_context_mismatch", "Process Profile规划上下文不匹配")
+    argument_attributes: dict[str, object] = (
+        {"cmd": arguments.cmd}
+        if isinstance(arguments, RunCommandInput)
+        else {"selectors": arguments.selectors}
+    )
     resources: list[CanonicalActionResource] = [
         canonical_action_resource(
             kind="process",
@@ -226,7 +293,7 @@ def resolve_run_profile(
                 "profile_sha256": owner.profile.profile_sha256,
                 "image_attestation_sha256": owner.image_attestation_sha256,
                 "owner_capability_sha256": owner.runtime.capability.digest,
-                "selectors": arguments.selectors,
+                **argument_attributes,
             },
         ),
         canonical_action_resource(
@@ -245,21 +312,39 @@ def resolve_run_profile(
         )
         for binding in owner.secret_bindings
     )
+    workspace_resources = [WorkspaceResourceRequest(path=".", access="read")]
+    for location in context.external_roots or {}:
+        resources.extend(
+            canonical_action_resource(
+                kind="external",
+                access=cast(Literal["read", "write"], access),
+                identifier={"location": location, "path": "."},
+                attributes={"target": "/harnessix/deps"},
+            )
+            for access in ("read", "write")
+        )
+        workspace_resources.extend(
+            WorkspaceResourceRequest(
+                location=location, path=".", access=cast(ResourceAccess, access)
+            )
+            for access in ("read", "write", "execute")
+        )
     return ResolvedAction(
         resources=tuple(resources),
-        workspace_resources=(WorkspaceResourceRequest(path=".", access="read"),),
+        workspace_resources=tuple(workspace_resources),
     )
 
 
 def _process_execution(
     owner: VerifiedProductProcessProfile,
     route: ActionRoutePlan,
-    arguments: RunProfileInput,
+    arguments: RunProfileInput | RunCommandInput,
 ) -> ContainerExecutionSpec:
     """由固定Profile和批准参数确定性派生Container执行合同。"""
 
     profile = owner.profile
-    argv = (profile.program, *profile.arguments, *arguments.selectors)
+    supplied = (arguments.cmd,) if isinstance(arguments, RunCommandInput) else arguments.selectors
+    argv = (profile.program, *profile.arguments, *supplied)
     command = build_container_command(argv, profile_digest=owner.sandbox_profile.digest)
     process = build_process_spec(
         invocation="argv",
@@ -283,10 +368,20 @@ def _validate_process_route(
     owner: VerifiedProductProcessProfile,
     workspace_root: WorkspaceRootResolver,
     route: ActionRoutePlan,
-    arguments: RunProfileInput,
-) -> None:
+    arguments: RunProfileInput | RunCommandInput,
+    dependency_environments: TaskDependencyEnvironments | None,
+    *,
+    allow_quarantined: bool = False,
+) -> Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None:
     """重新解析公共参数并核对Action Route所有安全绑定。"""
 
+    external_roots = None
+    if owner.profile.persistent_dependencies:
+        if dependency_environments is None:
+            raise KernelError("task_dependencies_unavailable", "任务依赖目录尚未绑定宿主Registry")
+        external_roots = dependency_environments.for_route(
+            route, owner.profile, allow_quarantined=allow_quarantined
+        )
     resolved = resolve_run_profile(
         owner,
         arguments,
@@ -296,7 +391,10 @@ def _validate_process_route(
             capabilities=owner.capabilities,
             environment=owner.environment,
             secrets=owner.secret_bindings,
+            external_roots=external_roots,
         ),
+        dependency_environments=dependency_environments,
+        allow_quarantined=allow_quarantined,
     )
     expected = tuple(
         sorted(
@@ -312,7 +410,7 @@ def _validate_process_route(
     descriptor = process_profile_descriptor(owner.profile)
     if (
         route.binding.tool != descriptor.name
-        or route.binding.executor_id != f"product.process-profile.{owner.profile.profile_id}"
+        or route.binding.executor_id != process_executor_id(owner.profile)
         or route.invocation.arguments != arguments.model_dump(mode="json")
         or route.resources != expected
         or route.execution.capabilities != owner.capabilities
@@ -322,6 +420,7 @@ def _validate_process_route(
         or route.execution.secrets != owner.secret_bindings
     ):
         raise KernelError("process_profile_plan_mismatch", "Process Profile与Action Route不匹配")
+    return external_roots
 
 
 async def _process_output_document(
@@ -439,11 +538,36 @@ class ProductProcessActionExecutor:
         router: TrustedActionRouter,
         workspace_root: WorkspaceRootResolver,
         secrets: SecretProvider,
+        *,
+        dependency_environments: TaskDependencyEnvironments | None = None,
     ) -> None:
+        if owner.profile.persistent_dependencies and dependency_environments is None:
+            raise KernelError("task_dependencies_unavailable", "任务依赖目录尚未绑定宿主Registry")
         self.owner = owner
         self._router = router
         self._workspace_root = workspace_root
         self._secrets = secrets
+        self._dependency_environments = dependency_environments
+
+    def _quarantine_dependencies(self, route: ActionRoutePlan) -> None:
+        if self.owner.profile.persistent_dependencies and self._dependency_environments is not None:
+            self._dependency_environments.quarantine(route, self.owner.profile)
+
+    def _protect_dependency_outcome(
+        self,
+        route: ActionRoutePlan,
+        outcome: ActionExecutionOutcome,
+        *,
+        stop_reason: str | None = None,
+    ) -> ActionExecutionOutcome:
+        if outcome.kind in {"unknown", "manual_intervention"} or stop_reason in {
+            "cancelled",
+            "cleanup_failed",
+            "host_lost",
+            "unknown",
+        }:
+            self._quarantine_dependencies(route)
+        return outcome
 
     async def execute(
         self,
@@ -451,7 +575,9 @@ class ProductProcessActionExecutor:
         arguments: BaseModel,
     ) -> ActionExecutionOutcome:
         checked = _arguments(arguments, self.owner)
-        _validate_process_route(self.owner, self._workspace_root, route, checked)
+        external_roots = _validate_process_route(
+            self.owner, self._workspace_root, route, checked, self._dependency_environments
+        )
         execution = _process_execution(self.owner, route, checked)
         checkpoint = self._router.approval(route.execution.plan_id)
         workspace = self._workspace_root(route.execution.workspace.workspace_id)
@@ -470,12 +596,21 @@ class ProductProcessActionExecutor:
                     environment=self.owner.environment,
                     intent_arguments=route.invocation.arguments,
                     secrets=secrets,
+                    external_roots=external_roots,
                 )
+            outcome = await _process_lease_outcome(self.owner, lease, origin="execution")
         except asyncio.CancelledError:
+            self._quarantine_dependencies(route)
             raise
         except KernelError as error:
-            return await _process_execution_failure(self.owner, route.execution.plan_id, error)
-        return await _process_lease_outcome(self.owner, lease, origin="execution")
+            if error.code == "process_cleanup_failed":
+                self._quarantine_dependencies(route)
+            outcome = await _process_execution_failure(self.owner, route.execution.plan_id, error)
+            return self._protect_dependency_outcome(route, outcome)
+        except Exception:
+            self._quarantine_dependencies(route)
+            raise
+        return self._protect_dependency_outcome(route, outcome, stop_reason=lease.stop_reason)
 
     async def reconcile(
         self,
@@ -483,18 +618,33 @@ class ProductProcessActionExecutor:
         arguments: BaseModel,
     ) -> ActionExecutionOutcome:
         checked = _arguments(arguments, self.owner)
-        _validate_process_route(self.owner, self._workspace_root, route, checked)
+        _validate_process_route(
+            self.owner,
+            self._workspace_root,
+            route,
+            checked,
+            self._dependency_environments,
+            allow_quarantined=True,
+        )
         execution = _process_execution(self.owner, route, checked)
         try:
             lease = await self.owner.runtime.reconcile(execution)
+            outcome = await _process_lease_outcome(self.owner, lease, origin="recovery")
+        except asyncio.CancelledError:
+            self._quarantine_dependencies(route)
+            raise
         except KernelError as error:
             if error.code == "process_lease_not_found":
                 return ActionExecutionOutcome(kind="failed", error_code="process_not_started")
+            self._quarantine_dependencies(route)
             return ActionExecutionOutcome(
                 kind="manual_intervention",
                 error_code="process_reconciliation_failed",
             )
-        return await _process_lease_outcome(self.owner, lease, origin="recovery")
+        except Exception:
+            self._quarantine_dependencies(route)
+            raise
+        return self._protect_dependency_outcome(route, outcome, stop_reason=lease.stop_reason)
 
     async def output_document(self, plan_id: UUID) -> TrustedProcessOutputDocument:
         return await _process_output_document(self.owner, plan_id)
@@ -554,29 +704,46 @@ def build_product_process_definition(
     router: TrustedActionRouter,
     workspace_root: WorkspaceRootResolver,
     secrets: SecretProvider,
+    *,
+    dependency_environments: TaskDependencyEnvironments | None = None,
 ) -> tuple[TrustedActionDefinition, ProductProcessActionExecutor, ToolDescriptor]:
     """从同一动态Schema构造Descriptor、Router Binding与执行器。"""
 
     descriptor = process_profile_descriptor(owner.profile)
     binding = product_process_binding(owner.profile)
-    executor = ProductProcessActionExecutor(owner, router, workspace_root, secrets)
+    executor = ProductProcessActionExecutor(
+        owner, router, workspace_root, secrets, dependency_environments=dependency_environments
+    )
+
+    def execution_external_roots(
+        route: ActionRoutePlan,
+    ) -> Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]]:
+        if dependency_environments is None:
+            raise KernelError("task_dependencies_unavailable", "任务依赖目录尚未绑定宿主Registry")
+        return dependency_environments.for_route(route, owner.profile)
 
     def decode(arguments: dict[str, JsonValue]) -> BaseModel:
-        return decode_run_profile(
-            owner.profile.profile_id,
-            owner.profile.selector_policy,
-            arguments,
-        )
+        return _decode_arguments(owner.profile, arguments)
 
     def resolve(arguments: BaseModel, context: ActionPlanningContext) -> ResolvedAction:
-        return resolve_run_profile(owner, _arguments(arguments, owner), context)
+        return resolve_run_profile(
+            owner,
+            _arguments(arguments, owner),
+            context,
+            dependency_environments=dependency_environments,
+        )
 
+    input_model = cast(
+        type[BaseModel],
+        RunCommandInput if owner.profile.selector_policy == "shell_command" else RunProfileInput,
+    )
     definition = TrustedActionDefinition(
         binding=binding,
-        input_model=RunProfileInput,
+        input_model=input_model,
         resolve=resolve,
         executor=executor,
         input_schema=descriptor.input_schema,
         decode_arguments=decode,
+        external_roots=execution_external_roots if owner.profile.persistent_dependencies else None,
     )
     return definition, executor, descriptor

@@ -244,6 +244,7 @@ class ContainerProcessRuntime(_ContainerProcessObservation):
                 environment=prepared.launch.base_environment,
                 secrets=secrets,
                 checkpoint=checkpoint,
+                external_roots=external_roots,
             )
         except BaseException:
             await asyncio.to_thread(self._builder.cleanup_container, execution)

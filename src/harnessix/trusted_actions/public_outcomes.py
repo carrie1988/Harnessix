@@ -222,13 +222,18 @@ def failure_family(plan: ActionRoutePlan) -> FailureFamily:
             return "git"
         if identity == ("run_tests", "eval.run-tests"):
             return "eval"
-        profile = binding.executor_id.removeprefix("product.process-profile.")
-        if (
-            binding.executor_id == f"product.process-profile.{profile}"
-            and re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", profile)
-            and binding.tool == f"run_profile.{profile}"
+        # 通用命令有独立身份；仅扩大精确的产品配对，不让任意同前缀工具借用输出合同。
+        for executor_prefix, tool_prefix in (
+            ("product.process-profile.", "run_profile."),
+            ("product.command-profile.", "exec_command."),
         ):
-            return "process"
+            profile = binding.executor_id.removeprefix(executor_prefix)
+            if (
+                binding.executor_id == f"{executor_prefix}{profile}"
+                and re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", profile)
+                and binding.tool == f"{tool_prefix}{profile}"
+            ):
+                return "process"
     if binding.source == "mcp" and re.fullmatch(r"mcp\.[0-9a-f]{32}", binding.executor_id):
         return "mcp"
     if binding.source == "skill" and (binding.tool, binding.executor_id) in {
@@ -434,7 +439,7 @@ def _process_summary(
     """成功与失败共用正式DTO及计划身份检查，不重写用于摘要的原JSON。"""
 
     family = failure_family(plan)
-    model = (
+    model: type[PublicProcessOutputSummary] | type[PublicProcessOutputSummaryV2] = (
         PublicEvalOutputSummary
         if family == "eval"
         else PublicProcessOutputSummaryV2
@@ -447,7 +452,11 @@ def _process_summary(
         or summary.process_id != str(plan.execution.plan_id)
         or (
             family == "process"
-            and plan.binding.executor_id != f"product.process-profile.{summary.profile}"
+            and (plan.binding.tool, plan.binding.executor_id)
+            not in {
+                (f"run_profile.{summary.profile}", f"product.process-profile.{summary.profile}"),
+                (f"exec_command.{summary.profile}", f"product.command-profile.{summary.profile}"),
+            }
         )
     ):
         raise ValueError("Process摘要与计划身份不匹配")

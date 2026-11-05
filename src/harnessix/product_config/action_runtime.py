@@ -39,6 +39,7 @@ from harnessix.product_config.process_profile import (
     probe_product_process_profile,
 )
 from harnessix.product_config.state_owner import ProductStateOwner
+from harnessix.product_config.task_dependencies import TaskDependencyEnvironments
 from harnessix.sandbox.process_runtime import ProcessSupervisor
 from harnessix.secrets.provider import SecretProvider
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
@@ -226,6 +227,15 @@ async def open_default_product_action_runtime(
         # 独立宿主的Session可能尚未初始化；必须在全状态Owner内准备恢复所需索引。
         await artifacts.session.initialize()
         checked_config, checked_recovery = _validated_action_configs(action_config, recovery_config)
+        dependency_environments = (
+            TaskDependencyEnvironments(state_root, workspace_root)
+            if any(
+                profile.persistent_dependencies
+                for config in (checked_config, checked_recovery)
+                for profile in config.process_profiles
+            )
+            else None
+        )
         environment = build_fixed_product_action_environment(workspace_root)
         async with (
             _open_action_dependencies(
@@ -253,6 +263,7 @@ async def open_default_product_action_runtime(
                 process_probes=_select_probes(checked_recovery, dependencies.probe_cache),
                 secrets=secrets,
                 patch_contract=patch_contract,
+                dependency_environments=dependency_environments,
             )
             protection.callback(_close_composition, recovery_composition)
             recovery_scan = await scan_product_action_recovery(
@@ -293,6 +304,7 @@ async def open_default_product_action_runtime(
                     process_probes=_select_probes(checked_config, dependencies.probe_cache),
                     secrets=secrets,
                     patch_contract=patch_contract,
+                    dependency_environments=dependency_environments,
                 )
                 protection.callback(_close_composition, composition)
                 _verify_active_product_bindings(candidate_router, audit)

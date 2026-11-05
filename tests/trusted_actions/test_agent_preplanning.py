@@ -33,8 +33,19 @@ _PRIVATE_CANARY = "private-preparation-canary-/sensitive/tenant/repository"
 
 
 def test_new_fields_preserve_old_positional_contracts_and_async_entrypoint() -> None:
-    assert [item.name for item in fields(TrustedActionDefinition)][-1] == "agent_prepare"
-    assert fields(TrustedActionDefinition)[-1].default is None
+    definition_fields = fields(TrustedActionDefinition)
+    assert [item.name for item in definition_fields] == [
+        "binding",
+        "input_model",
+        "resolve",
+        "executor",
+        "input_schema",
+        "decode_arguments",
+        "agent_prepare",
+        "external_roots",
+    ]
+    assert definition_fields[-2].default is None
+    assert definition_fields[-1].default is None
     assert [item.name for item in fields(ResolvedAction)][-1] == "expected_workspace"
     assert fields(ResolvedAction)[-1].default is None
     assert inspect.iscoroutinefunction(plan_agent_action)

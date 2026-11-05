@@ -293,6 +293,12 @@ async def _serve_product_stdio(
                             )
 
                             await reconcile_windows_git_reads(startup.state_root)
+                        # 只有实际探测通过的通用执行能力才切换指令/工具视图；配置本身不授予权限。
+                        generic_execution = any(
+                            capability.status == "verified"
+                            and capability.capability_id.startswith("exec_command.")
+                            for capability in action_owner.report.capabilities
+                        )
                         context = build_product_agent_context(
                             tools.workspace_root,
                             max_output_tokens=max(
@@ -300,6 +306,7 @@ async def _serve_product_stdio(
                                 for profile in startup.config.config.profiles
                                 if profile.profile_id in startup.profile.profile_chain
                             ),
+                            generic_execution=generic_execution,
                         )
                         async with AgentRuntime(
                             sessions,
@@ -311,7 +318,7 @@ async def _serve_product_stdio(
                             async_context=context.context,
                             compaction=context.compaction,
                             summary_provider=bundle,
-                            model_tool_view=CodingWorkflowToolView(),
+                            model_tool_view=None if generic_execution else CodingWorkflowToolView(),
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(

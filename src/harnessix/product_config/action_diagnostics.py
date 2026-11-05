@@ -66,7 +66,7 @@ def diagnose_product_actions(
         except KernelError:
             owner_capability = None
     for profile in config.process_profiles:
-        tool = process_tool_name(profile.profile_id)
+        tool = process_tool_name(profile.profile_id, profile.selector_policy)
         if owner_capability is None:
             evidence.append(
                 build_product_action_capability(

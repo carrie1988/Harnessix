@@ -57,6 +57,7 @@ from harnessix.processes.supervisor_capabilities import (
     probe_windows_process_capability,
 )
 from harnessix.secrets.provider import ResolvedSecretEnvironment
+from harnessix.workspace.contracts import ResourceAccess
 from harnessix.workspace.snapshot import verify_workspace_snapshot
 
 _TERMINAL_STATES = frozenset({"exited", "failed", "unknown"})
@@ -400,6 +401,7 @@ class PosixProcessSupervisor(_ProcessObservation):
         environment: Mapping[str, str],
         secrets: ResolvedSecretEnvironment | None = None,
         checkpoint: ExecutionApprovalCheckpoint | None = None,
+        external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
     ) -> SupervisedProcess:
         if binding.kind != "container":
             raise KernelError("process_binding_invalid", "预物化Process必须来自Container绑定")
@@ -412,6 +414,7 @@ class PosixProcessSupervisor(_ProcessObservation):
             environment=environment,
             secrets=secrets,
             checkpoint=checkpoint,
+            external_roots=external_roots,
         )
 
     async def _start_bound(
@@ -425,6 +428,7 @@ class PosixProcessSupervisor(_ProcessObservation):
         environment: Mapping[str, str],
         secrets: ResolvedSecretEnvironment | None,
         checkpoint: ExecutionApprovalCheckpoint | None,
+        external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
     ) -> SupervisedProcess:
         if self._closed:
             raise KernelError("process_closed", "Process Supervisor已经关闭")
@@ -447,7 +451,7 @@ class PosixProcessSupervisor(_ProcessObservation):
             ):
                 raise KernelError("process_lease_conflict", "Process ID已绑定其他执行计划")
             raise KernelError("process_already_exists", "Process已经创建；禁止自动重放")
-        verify_workspace_snapshot(plan.workspace, workspace)
+        verify_workspace_snapshot(plan.workspace, workspace, external_roots=external_roots)
         checked_environment, secret_names = materialize_owner_environment(
             plan, binding, environment, secrets, self._platform
         )

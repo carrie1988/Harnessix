@@ -128,6 +128,10 @@ class TrustedActionDefinition:
     input_schema: dict[str, JsonValue] | None = None
     decode_arguments: ArgumentDecoder | None = None
     agent_prepare: AgentActionPreparer | None = None
+    external_roots: (
+        Callable[[ActionRoutePlan], Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]]]
+        | None
+    ) = None
 
 
 _ReadCheckpoint = Callable[[], None] | None
@@ -354,9 +358,18 @@ class TrustedActionRouter(_ActionReadRouter):
         if persisted != plan.execution:
             raise KernelError("action_plan_mismatch", "Action Route与Execution Plan不一致")
         definition = self._matching_definition(plan)
-        verify_host_workspace_snapshot(
-            plan.execution.workspace, self._workspace_root, self._snapshot_ports
-        )
+        if definition.external_roots is None:
+            verify_host_workspace_snapshot(
+                plan.execution.workspace, self._workspace_root, self._snapshot_ports
+            )
+        else:
+            # 外部根只能由已匹配的受信定义重建；模型参数不能直接指定宿主路径。
+            verify_host_workspace_snapshot(
+                plan.execution.workspace,
+                self._workspace_root,
+                self._snapshot_ports,
+                external_roots=definition.external_roots(plan),
+            )
         approval = self._plans.load_approval(plan_id)
         if not execution_is_approved(plan.execution, approval):
             raise KernelError("action_not_approved", "Action Execution Plan尚未获得有效批准")
@@ -479,4 +492,5 @@ def _validated_definition(definition: TrustedActionDefinition) -> TrustedActionD
         input_schema=schema if definition.input_schema is not None else None,
         decode_arguments=definition.decode_arguments,
         agent_prepare=definition.agent_prepare,
+        external_roots=definition.external_roots,
     )

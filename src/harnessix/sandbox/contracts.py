@@ -164,6 +164,7 @@ class ContainerSandboxProfile(SandboxContract):
     )
     image: str = Field(min_length=71, max_length=512)
     workspace_mode: WorkspaceMountMode
+    task_dependencies: bool = Field(default=False, exclude_if=lambda value: not value)
     run_as: str = Field(default="65532:65532", pattern=r"^[1-9][0-9]{0,9}:[1-9][0-9]{0,9}$")
     limits: SandboxResourceLimits = Field(default_factory=SandboxResourceLimits)
     network: NetworkPolicySnapshot
@@ -178,6 +179,8 @@ class ContainerSandboxProfile(SandboxContract):
         selective = self.network.policy.mode in {"limited", "restricted"}
         if selective != (self.egress_gateway_digest is not None):
             raise ValueError("选择性网络必须绑定出口网关实现")
+        if self.task_dependencies and self.workspace_mode != "read_only":
+            raise ValueError("任务依赖挂载必须使用只读Workspace")
         if self.digest != container_sandbox_profile_digest(self):
             raise ValueError("容器Sandbox Profile摘要不一致")
         return self

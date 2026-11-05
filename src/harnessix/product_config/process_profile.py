@@ -37,7 +37,11 @@ from harnessix.sandbox.planner import build_container_sandbox_profile
 from harnessix.sandbox.process_runtime import ContainerProcessRuntime, ProcessSupervisor
 from harnessix.secrets.provider import SecretProvider
 
-from .action_contracts import ProductProcessProfile, product_process_image_reference_type
+from .action_contracts import (
+    ProductProcessProfile,
+    SelectorPolicy,
+    product_process_image_reference_type,
+)
 
 ProfileProbeRunner = Callable[[Sequence[str], float], subprocess.CompletedProcess[str]]
 _ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
@@ -45,8 +49,14 @@ _IMAGE_PROBE_TIMEOUT_SECONDS = 15.0
 _IMAGE_INSPECT_FORMAT = "[{{json .Id}},{{json .RepoDigests}}]"
 
 
-def process_tool_name(profile_id: str) -> str:
-    return f"run_profile.{profile_id}"
+def process_tool_name(profile_id: str, selector_policy: SelectorPolicy = "none") -> str:
+    prefix = "exec_command" if selector_policy == "shell_command" else "run_profile"
+    return f"{prefix}.{profile_id}"
+
+
+def process_executor_id(profile: ProductProcessProfile) -> str:
+    prefix = "command-profile" if profile.selector_policy == "shell_command" else "process-profile"
+    return f"product.{prefix}.{profile.profile_id}"
 
 
 def _run_probe(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
@@ -212,6 +222,7 @@ def _attested_product_process_profile(
         workspace_mode="read_only",
         network=network,
         limits=limits,
+        task_dependencies=profile.persistent_dependencies,
     )
     capabilities = build_capability_evidence_v2(
         platform=engine.platform,
@@ -237,6 +248,8 @@ def _attested_product_process_profile(
         for reference in profile.secret_refs
     )
     environment = {"LANG": "C", "LC_ALL": "C"}
+    if profile.persistent_dependencies:
+        environment["HARNESSIX_DEPENDENCIES"] = "/harnessix/deps"
     evidence = canonical_digest(
         {
             "spec_version": "harnessix.product-process-executor-evidence/v1",

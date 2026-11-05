@@ -47,6 +47,8 @@ _CONTAINER_ROW = re.compile(
     rb"^(?P<id>[0-9a-f]{12,64})\|(?P<name>harnessix-process-[0-9a-f]{32})"
     rb"\|(?P<process>[0-9a-f-]{36})\|(?P<execution>[0-9a-f]{64})$"
 )
+_TASK_DEPENDENCY_LOCATION = re.compile(r"deps_[0-9a-f]{32}")
+_TASK_DEPENDENCY_ACCESS: tuple[ResourceAccess, ...] = ("read", "write", "execute")
 
 
 def _run_inspect(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[bytes]:
@@ -140,6 +142,50 @@ def _verify_file_identity(path: Path, expected: tuple[int, ...]) -> None:
             raise ValueError
     except (OSError, ValueError):
         raise KernelError("sandbox_binding_changed", "容器引擎绑定已经变化") from None
+
+
+def _task_dependency_mount(
+    plan: ExecutionPlanV2,
+    profile: ContainerSandboxProfile,
+    workspace: Path,
+    external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None,
+) -> str | None:
+    """只允许宿主绑定的单一任务依赖根，容器目标不能来自执行意图。"""
+
+    declared = plan.workspace.external_roots
+    actual = external_roots or {}
+    if not profile.task_dependencies:
+        if declared or actual:
+            raise KernelError("sandbox_capability_mismatch", "容器Profile未声明任务依赖挂载")
+        return None
+    if profile.workspace_mode != "read_only" or len(declared) != 1 or len(actual) != 1:
+        raise KernelError("sandbox_capability_mismatch", "任务依赖必须绑定单一根和只读Workspace")
+    dependency = declared[0]
+    if (
+        _TASK_DEPENDENCY_LOCATION.fullmatch(dependency.location) is None
+        or dependency.access != _TASK_DEPENDENCY_ACCESS
+        or set(actual) != {dependency.location}
+        or actual[dependency.location][1] != _TASK_DEPENDENCY_ACCESS
+    ):
+        raise KernelError("sandbox_capability_mismatch", "任务依赖根或访问授权不匹配")
+    resources = tuple(item for item in plan.workspace.resources if item.location != "workspace")
+    if len(resources) != 3 or {
+        (item.location, item.path, item.access, item.kind) for item in resources
+    } != {(dependency.location, ".", access, "directory") for access in _TASK_DEPENDENCY_ACCESS}:
+        raise KernelError("sandbox_capability_mismatch", "任务依赖根缺少完整目录Permission")
+    source = Path(actual[dependency.location][0])
+    try:
+        if not source.is_absolute() or source.is_symlink():
+            raise ValueError
+        source = source.resolve(strict=True)
+        root = workspace.resolve(strict=True)
+        if not source.is_dir() or source.is_relative_to(root) or root.is_relative_to(source):
+            raise ValueError
+    except (OSError, ValueError):
+        raise KernelError(
+            "sandbox_workspace_invalid", "任务依赖根必须独立于源码且不能是符号链接"
+        ) from None
+    return _csv_fields("type=bind", f"src={source}", "dst=/harnessix/deps")
 
 
 class _ContainerEngineAccess:
@@ -269,11 +315,10 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
         if normalized_actual != normalized_expected:
             raise KernelError("secret_binding_mismatch", "Secret注入目标与Execution Plan不一致")
         root = Path(workspace)
-        verify_workspace_snapshot(plan.workspace, root, external_roots=external_roots)
         if not root.is_absolute():
             raise KernelError("sandbox_workspace_invalid", "容器Workspace必须是绝对路径")
-        if plan.workspace.external_roots:
-            raise KernelError("sandbox_capability_mismatch", "容器后端尚未声明外部根挂载能力")
+        dependency_mount = _task_dependency_mount(plan, profile, root, external_roots)
+        verify_workspace_snapshot(plan.workspace, root, external_roots=external_roots)
         required_access = "read" if profile.workspace_mode == "read_only" else "write"
         if not any(
             item.location == "workspace"
@@ -328,6 +373,7 @@ class ContainerCommandBuilder(_ContainerEngineAccess):
             "/workspace" if plan.workspace.cwd == "." else "/workspace/" + plan.workspace.cwd,
             "--mount",
             mount,
+            *(("--mount", dependency_mount) if dependency_mount is not None else ()),
             "--tmpfs",
             f"/tmp:rw,noexec,nosuid,nodev,size={profile.limits.tmpfs_bytes}",
             "--ulimit",

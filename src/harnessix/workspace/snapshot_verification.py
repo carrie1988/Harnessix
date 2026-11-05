@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
 from harnessix.tools.workspace import ReadOperation
-from harnessix.workspace.contracts import WorkspaceSnapshot
+from harnessix.workspace.contracts import ResourceAccess, WorkspaceSnapshot
 from harnessix.workspace.snapshot import verify_workspace_snapshot
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
 from harnessix.workspace.snapshot_ports import WorkspaceSnapshotPorts
@@ -18,14 +18,28 @@ def verify_host_workspace_snapshot(
     expected: WorkspaceSnapshot | WorkspaceSnapshotV2,
     workspace_root: Callable[[str], Path],
     ports: WorkspaceSnapshotPorts | None,
+    *,
+    external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
 ) -> None:
     """一次复核共用原读取期限；端口只读验证，不捕获写入或修复历史。"""
     root = workspace_root(expected.workspace_id)
     if isinstance(expected, WorkspaceSnapshotV2):
         if ports is None:
             raise KernelError("workspace_closure_unavailable", "完整Workspace历史端口不可用")
-        verify_workspace_snapshot_v2(
-            expected, root, checkpoint=ReadOperation().checkpoint, read_blob=ports.read_blob
-        )
+        if external_roots is None:
+            verify_workspace_snapshot_v2(
+                expected, root, checkpoint=ReadOperation().checkpoint, read_blob=ports.read_blob
+            )
+        else:
+            verify_workspace_snapshot_v2(
+                expected,
+                root,
+                checkpoint=ReadOperation().checkpoint,
+                read_blob=ports.read_blob,
+                external_roots=external_roots,
+            )
     else:
-        verify_workspace_snapshot(expected, root)
+        if external_roots is None:
+            verify_workspace_snapshot(expected, root)
+        else:
+            verify_workspace_snapshot(expected, root, external_roots=external_roots)

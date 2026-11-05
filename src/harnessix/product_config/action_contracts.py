@@ -17,7 +17,7 @@ from harnessix.workspace.contracts import PlatformKind
 
 ActionCapabilityKind = Literal["artifact", "workspace_patch", "process_profile"]
 ActionCapabilityStatus = Literal["verified", "omitted"]
-SelectorPolicy = Literal["none", "bounded_test_selector"]
+SelectorPolicy = Literal["none", "bounded_test_selector", "shell_command"]
 ProductActionConfigSource = Literal["builtin", "file"]
 ProductActionConfigOperation = Literal["loaded", "activated"]
 ProductProcessImageReferenceType = Literal["local_image_id", "repo_digest"]
@@ -52,6 +52,7 @@ class ProductProcessProfile(ProductConfigContract):
     program: str = Field(pattern=_CONTAINER_PROGRAM)
     arguments: tuple[str, ...] = Field(default=(), max_length=128)
     selector_policy: SelectorPolicy = "none"
+    persistent_dependencies: bool = Field(default=False, exclude_if=lambda value: value is False)
     timeout_seconds: int = Field(default=300, ge=1, le=3600, strict=True)
     max_output_bytes: int = Field(default=1_048_576, ge=1024, le=8_388_608, strict=True)
     network_mode: NetworkMode = "none"
@@ -115,6 +116,15 @@ class ProductProcessProfile(ProductConfigContract):
     def valid_profile(self) -> Self:
         if self.network_mode != "none":
             raise ValueError("Product Action v1只允许无网络Process Profile")
+        if self.persistent_dependencies and self.selector_policy != "shell_command":
+            raise ValueError("持久依赖目录仅允许通用命令Profile")
+        if self.persistent_dependencies and self.secret_refs:
+            raise ValueError("持久依赖目录不能与显式Secret注入组合")
+        if self.selector_policy == "shell_command" and (
+            Path(self.program).name not in {"sh", "bash", "dash", "zsh"}
+            or self.arguments not in {("-c",), ("-lc",)}
+        ):
+            raise ValueError("Command Profile必须固定POSIX Shell及-c或-lc参数")
         if self.tmpfs_bytes is not None and self.tmpfs_bytes >= self.memory_bytes:
             raise ValueError("Process Profile tmpfs必须小于内存上限")
         if self.profile_sha256 != product_process_profile_digest(self):
@@ -138,6 +148,7 @@ def build_product_process_profile(
     program: str,
     arguments: tuple[str, ...] = (),
     selector_policy: SelectorPolicy = "none",
+    persistent_dependencies: bool = False,
     timeout_seconds: int = 300,
     max_output_bytes: int = 1_048_576,
     network_mode: NetworkMode = "none",
@@ -157,6 +168,7 @@ def build_product_process_profile(
         program=program,
         arguments=arguments,
         selector_policy=selector_policy,
+        persistent_dependencies=persistent_dependencies,
         timeout_seconds=timeout_seconds,
         max_output_bytes=max_output_bytes,
         network_mode=network_mode,

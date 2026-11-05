@@ -64,9 +64,10 @@ def build_container_sandbox_profile(
     limits: SandboxResourceLimits | None = None,
     run_as: str = "65532:65532",
     egress_gateway_digest: str | None = None,
+    task_dependencies: bool = False,
 ) -> ContainerSandboxProfile:
     selected_limits = limits or SandboxResourceLimits()
-    payload = {
+    payload: dict[str, object] = {
         "spec_version": "harnessix.container-sandbox-profile/v1",
         "image": image,
         "workspace_mode": workspace_mode,
@@ -75,6 +76,8 @@ def build_container_sandbox_profile(
         "network": network.model_dump(mode="json", warnings="error"),
         "egress_gateway_digest": egress_gateway_digest,
     }
+    if task_dependencies:
+        payload["task_dependencies"] = task_dependencies
     try:
         return ContainerSandboxProfile(
             image=image,
@@ -83,6 +86,7 @@ def build_container_sandbox_profile(
             limits=selected_limits,
             network=network,
             egress_gateway_digest=egress_gateway_digest,
+            task_dependencies=task_dependencies,
             digest=canonical_digest(payload),
         )
     except (ValidationError, ValueError, TypeError):
