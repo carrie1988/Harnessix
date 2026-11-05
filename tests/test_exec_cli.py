@@ -5,8 +5,8 @@ from uuid import uuid4
 
 import pytest
 
-from harnessix.exec_cli import HeadlessConsole, NeedsHumanInput, _parser, approval_policy
-from harnessix.protocol.contracts import PublicApprovalRequestContent
+from harnessix.exec_cli import HeadlessConsole, NeedsHumanInput, _commands, _parser, approval_policy
+from harnessix.protocol.contracts import PublicApprovalRequestContent, PublicItem
 
 
 def _request(approval_type: str) -> PublicApprovalRequestContent:
@@ -55,3 +55,58 @@ def test_exec_requires_exactly_one_task_source():
     arguments = _parser().parse_args(["--prompt", "fix the bug"])
     assert arguments.approval_mode == "manual"
     assert (arguments.max_steps, arguments.max_tokens) == (100, 1_000_000)
+
+
+def _item(content: dict[str, object]) -> PublicItem:
+    return PublicItem.model_validate(
+        {"item_id": uuid4(), "status": "completed", "content": content}
+    )
+
+
+def test_summary_lists_sandbox_commands_with_their_results_in_call_order():
+    first, second, read = uuid4(), uuid4(), uuid4()
+    call = {"kind": "tool_call", "tool_version": "v1", "requires_approval": True}
+    items = [
+        _item({**call, "call_id": read, "tool": "read_file", "effect_class": "read_only"}),
+        _item(
+            {
+                **call,
+                "call_id": first,
+                "tool": "exec_command.testbed",
+                "effect_class": "non_idempotent_write",
+                "arguments": {"profile": "testbed", "cmd": "python -m pytest tests/a.py"},
+            }
+        ),
+        _item(
+            {
+                **call,
+                "call_id": second,
+                "tool": "exec_command.testbed",
+                "effect_class": "non_idempotent_write",
+                "arguments": {"profile": "testbed", "cmd": "python repro.py"},
+            }
+        ),
+        _item(
+            {
+                "kind": "tool_result",
+                "call_id": first,
+                "outcome": "failed",
+                "output": {"returncode": 1},
+            }
+        ),
+    ]
+
+    assert _commands(items) == [
+        {
+            "tool": "exec_command.testbed",
+            "cmd": "python -m pytest tests/a.py",
+            "outcome": "failed",
+            "returncode": 1,
+        },
+        {
+            "tool": "exec_command.testbed",
+            "cmd": "python repro.py",
+            "outcome": None,
+            "returncode": None,
+        },
+    ]

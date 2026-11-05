@@ -34,7 +34,10 @@ from harnessix.product_ui.turn_budget import PRODUCT_TURN_BUDGET
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
     PublicBudget,
+    PublicItem,
     PublicTextContent,
+    PublicToolCallContent,
+    PublicToolResultContent,
     ThreadView,
 )
 from harnessix.sdk import AgentClient, AgentSDKError, SubprocessAgentTransport
@@ -139,6 +142,32 @@ def _changed_paths(workspace: Path, git_executable: str | None) -> list[str] | N
     return sorted({entry[3:] for entry in entries if len(entry) > 3})
 
 
+def _commands(items: Sequence[PublicItem]) -> list[dict[str, Any]]:
+    """按调用顺序列出沙箱命令及其结果，供外层编排复用候选自己的检查命令。"""
+
+    results = {
+        item.content.call_id: item.content
+        for item in items
+        if isinstance(item.content, PublicToolResultContent)
+    }
+    commands = []
+    for item in items:
+        call = item.content
+        if not isinstance(call, PublicToolCallContent) or not call.tool.startswith("exec_command."):
+            continue
+        result = results.get(call.call_id)
+        output = result.output if result is not None else None
+        commands.append(
+            {
+                "tool": call.tool,
+                "cmd": call.arguments.get("cmd"),
+                "outcome": None if result is None else result.outcome,
+                "returncode": output.get("returncode") if isinstance(output, dict) else None,
+            }
+        )
+    return commands
+
+
 def _summary(
     cli: ThinAgentCLI,
     thread: ThreadView,
@@ -176,6 +205,7 @@ def _summary(
         "approvals": approvals,
         "final_answer": answers[-1] if answers else None,
         "changed_paths": changed,
+        "commands": _commands(items),
         "elapsed_seconds": round(elapsed, 3),
     }
 
