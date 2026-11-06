@@ -5,33 +5,81 @@
   "images": {
     "postgres": {
       "registry_digest": "postgres@sha256:748a18a54d3842d43bc156f0840d78029b8d349e0feca98c12b9c4ce3404a6b3",
-      "image_id": "sha256:e9cb23f1e827802e1572cd11fa56f707b625753078cc291170c624dbc6eb247c",
-      "architecture": "arm64"
+      "platforms": {
+        "linux/amd64": {
+          "manifest_digest": "sha256:996e9dc583ba9f0265a2c75547a9c95fb22c251e394749cab205a0a00e1856a1",
+          "image_id": "sha256:eb0fb2377534e65aad04f37838956b3dfb888e1a3dd3c1acf957bc6557eb6c7d"
+        },
+        "linux/arm64": {
+          "manifest_digest": "sha256:f998bd5067cabb2b023800c6fbf04f24bd22fbb7f8430cfd8c8503a6c3834777",
+          "image_id": "sha256:e9cb23f1e827802e1572cd11fa56f707b625753078cc291170c624dbc6eb247c"
+        }
+      }
     },
     "redis": {
       "registry_digest": "redis@sha256:2e3eb11462c4e3759e6972678dd051d150ff54b1e60714b3c33b701260172a90",
-      "image_id": "sha256:28c7304286f16a13334ed11d78cf47ee9ae0dbe7e57ed52b505ca61bf8232cbc",
-      "architecture": "arm64"
+      "platforms": {
+        "linux/amd64": {
+          "manifest_digest": "sha256:a6dd428750118c2c2c67d3f555faef0aa15a2b71198b40e1cb3b9229b1cf3094",
+          "image_id": "sha256:3a17a97bb6c7d9a7ee1bd3d5ecf7c6d02adf4bfd9fe73a974b3767b442dfbfaa"
+        },
+        "linux/arm64": {
+          "manifest_digest": "sha256:dbd05155efb852010d576fc1f09b6ade858944f84d333bb7a2efb1c1c8074a22",
+          "image_id": "sha256:28c7304286f16a13334ed11d78cf47ee9ae0dbe7e57ed52b505ca61bf8232cbc"
+        }
+      }
     },
     "clickhouse": {
       "registry_digest": "clickhouse/clickhouse-server@sha256:de3e47c64078aa196dae2349e048fc98ba81947f651f5c20e06e46baea8ae40a",
-      "image_id": "sha256:16af23b0656d3d8b0243ad3a45b47063deaf8099bdd9054c628a0194951ab60b",
-      "architecture": "arm64"
+      "platforms": {
+        "linux/amd64": {
+          "manifest_digest": "sha256:6eb24df16477b65c87b772a56eb341a9624529491856c103e74c537db59669f1",
+          "image_id": "sha256:b8f16712a8012a59005e27fe5cebf3874ca5d810ac049c5e147783b1de153e47"
+        },
+        "linux/arm64": {
+          "manifest_digest": "sha256:e96970f8bb4b1e4742e296a1bbf54e14d3259c85f5dc8c3bb81957ed1ed339c0",
+          "image_id": "sha256:16af23b0656d3d8b0243ad3a45b47063deaf8099bdd9054c628a0194951ab60b"
+        }
+      }
     },
     "minio": {
       "registry_digest": "cgr.dev/chainguard/minio@sha256:cee9a8e35885e93f14b3cb32960e5017aff74e2adfb52ba87c65003b0163886b",
-      "image_id": "sha256:5c56224966d7d41685192b45f3bb039a737e6221bcd793b721cbd55d94128b49",
-      "architecture": "arm64"
+      "platforms": {
+        "linux/amd64": {
+          "manifest_digest": "sha256:053a21cc9dcf3db9f997b5f77f5b5b2973a754631e5369d27aea6341e151d790",
+          "image_id": "sha256:27b26f1a032a625b537a25c527ac8464edc02b76ff9381d517221404b28d5b4d"
+        },
+        "linux/arm64": {
+          "manifest_digest": "sha256:63f76cb277c8fcebea8031880832159b251d3a728b61c6597b4117084e10c90b",
+          "image_id": "sha256:5c56224966d7d41685192b45f3bb039a737e6221bcd793b721cbd55d94128b49"
+        }
+      }
     },
     "langfuse-worker": {
       "registry_digest": "docker.langfuse.com/langfuse/langfuse-worker@sha256:27e8b49d619a013bca38ed9b0853456e19f5667a23e8e26e3a10d4e28485f49c",
-      "image_id": "sha256:d7091d6cbf04f5ab662006719b34ce67236d4e633e86eaf931261962496f7c62",
-      "architecture": "arm64"
+      "platforms": {
+        "linux/amd64": {
+          "manifest_digest": "sha256:1405bb683bd916247bf48b1aba7954139f8abc459cf64e3850fdbf4ff4fd9cc9",
+          "image_id": "sha256:5373a85c7dc9f5f75403c50a8acc1c2d667d2487779f7de2e2df0ddfb6e9445f"
+        },
+        "linux/arm64": {
+          "manifest_digest": "sha256:1219bfe847c06a92c1f4f1476a6bc6b2f1b9a9941fedfab8c75b07279a05818f",
+          "image_id": "sha256:d7091d6cbf04f5ab662006719b34ce67236d4e633e86eaf931261962496f7c62"
+        }
+      }
     },
     "langfuse-web": {
       "registry_digest": "docker.langfuse.com/langfuse/langfuse@sha256:59abb54faacf45b63d09f4076d45683dae26a6661974d497836543d350b16575",
-      "image_id": "sha256:7ef95d6e6d5ad32b54da639fbe3e9ef3710f3969d4ee913f562190ee5d856681",
-      "architecture": "arm64"
+      "platforms": {
+        "linux/amd64": {
+          "manifest_digest": "sha256:ba55f5337897e4230458ca7af2d060d5f9dd2e9826b6f811669c58d1d649b1e8",
+          "image_id": "sha256:e21a515f2d39d43a15eee553cfc3e0ccb85dc40fc00a62c405b7b6ef6f622d61"
+        },
+        "linux/arm64": {
+          "manifest_digest": "sha256:defbbcf2bd7cbb28231dfcec498f3146c777c3f9d50fd87ad6eecf2a34da50e9",
+          "image_id": "sha256:7ef95d6e6d5ad32b54da639fbe3e9ef3710f3969d4ee913f562190ee5d856681"
+        }
+      }
     }
   }
 }

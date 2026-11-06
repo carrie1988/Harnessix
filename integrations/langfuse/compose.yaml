@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres@sha256:748a18a54d3842d43bc156f0840d78029b8d349e0feca98c12b9c4ce3404a6b3
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?required}
@@ -14,6 +15,7 @@ services:
     mem_limit: 384m
   redis:
     image: redis@sha256:2e3eb11462c4e3759e6972678dd051d150ff54b1e60714b3c33b701260172a90
+    restart: unless-stopped
     command: [redis-server, --requirepass, "${REDIS_AUTH:?required}", --maxmemory-policy, noeviction]
     healthcheck:
       test: [CMD, redis-cli, ping]
@@ -23,6 +25,7 @@ services:
     mem_limit: 128m
   clickhouse:
     image: clickhouse/clickhouse-server@sha256:de3e47c64078aa196dae2349e048fc98ba81947f651f5c20e06e46baea8ae40a
+    restart: unless-stopped
     user: "101:101"
     environment:
       CLICKHOUSE_USER: clickhouse
@@ -36,6 +39,7 @@ services:
     mem_limit: 2g
   minio:
     image: cgr.dev/chainguard/minio@sha256:cee9a8e35885e93f14b3cb32960e5017aff74e2adfb52ba87c65003b0163886b
+    restart: unless-stopped
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" /data'
     environment:
@@ -50,6 +54,7 @@ services:
     mem_limit: 384m
   langfuse-worker:
     image: docker.langfuse.com/langfuse/langfuse-worker@sha256:27e8b49d619a013bca38ed9b0853456e19f5667a23e8e26e3a10d4e28485f49c
+    restart: unless-stopped
     depends_on: &dependencies
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -87,6 +92,7 @@ services:
     mem_limit: 768m
   langfuse-web:
     image: docker.langfuse.com/langfuse/langfuse@sha256:59abb54faacf45b63d09f4076d45683dae26a6661974d497836543d350b16575
+    restart: unless-stopped
     depends_on: *dependencies
     ports: ["127.0.0.1:${LANGFUSE_PORT:-3300}:3000"]
     environment:

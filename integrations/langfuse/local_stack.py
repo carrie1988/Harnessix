@@ -1,16 +1,89 @@
-"""启动独立的本机Langfuse验收栈；私有凭据留在指定目录，不启动模型或删除卷。"""
+"""启动独立的Langfuse栈；私有凭据留在指定目录，不启动模型或删除卷。
+
+无法访问镜像仓库的主机先在可访问的机器上export-images，传输后docker load，
+再以--image-source local启动：逐个核对本地镜像ID与锁中该平台的配置摘要，不从网络拉取。
+"""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import platform
 import secrets
 import stat
 import subprocess
 from pathlib import Path
 
 _PROJECT = "harnessix-langfuse-acceptance"
+_LOCK = Path(__file__).with_name("images.lock.json")
+_PLATFORMS = {"x86_64": "linux/amd64", "amd64": "linux/amd64", "arm64": "linux/arm64"}
+_PLATFORMS["aarch64"] = "linux/arm64"
+
+
+def _locked(target_platform: str) -> dict[str, tuple[str, str, str]]:
+    """服务名 → (仓库, 该平台清单摘要, 该平台镜像ID)；均来自锁定的多架构索引。"""
+    images = json.loads(_LOCK.read_text())["images"]
+    result = {}
+    for name, entry in images.items():
+        locked = entry["platforms"][target_platform]
+        repository = entry["registry_digest"].split("@", 1)[0]
+        result[name] = (repository, locked["manifest_digest"], locked["image_id"])
+    return result
+
+
+def _local_tag(name: str, image_id: str) -> str:
+    return f"harnessix-langfuse/{name}:{image_id.removeprefix('sha256:')[:12]}"
+
+
+def _image_id(reference: str) -> str | None:
+    result = subprocess.run(
+        ["docker", "image", "inspect", "--format", "{{.Id}}", reference],
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def export_images(target_platform: str, output: Path) -> str:
+    """按平台清单摘要拉取并核对镜像ID，打本地标签后保存为0600归档；返回归档摘要。"""
+    tags = []
+    for name, (repository, manifest, image_id) in _locked(target_platform).items():
+        reference = f"{repository}@{manifest}"
+        subprocess.run(
+            ["docker", "pull", "--quiet", "--platform", target_platform, reference], check=True
+        )
+        if _image_id(reference) != image_id:
+            raise SystemExit(f"{name}镜像ID与锁不一致，停止导出")
+        tag = _local_tag(name, image_id)
+        subprocess.run(["docker", "tag", image_id, tag], check=True)
+        tags.append(tag)
+    descriptor = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "wb") as archive:
+        subprocess.run(["docker", "save", *tags], stdout=archive, check=True)
+    digest = hashlib.sha256()
+    with output.open("rb") as archive:
+        for chunk in iter(lambda: archive.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def local_image_override(directory: Path) -> Path:
+    """核对本机已加载的锁定镜像，生成只用本地镜像、禁止拉取的Compose覆盖文件。"""
+    host = _PLATFORMS[platform.machine().lower()]
+    lines = ["services:"]
+    for name, (_, _, image_id) in _locked(host).items():
+        tag = _local_tag(name, image_id)
+        if _image_id(tag) != image_id:
+            raise SystemExit(f"本机缺少锁定的{name}镜像或镜像ID不一致；不从网络拉取")
+        lines += [f"  {name}:", f"    image: {tag}", "    pull_policy: never"]
+    path = directory / "compose.local-images.yaml"
+    path.unlink(missing_ok=True)
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+        output.write("\n".join(lines) + "\n")
+    return path
 
 
 def prepare_credentials(directory: Path, port: int) -> Path:
@@ -54,10 +127,21 @@ def prepare_credentials(directory: Path, port: int) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("up", "stop"))
-    parser.add_argument("--state-directory", type=Path, required=True)
+    parser.add_argument("action", choices=("up", "stop", "export-images"))
+    parser.add_argument("--state-directory", type=Path)
     parser.add_argument("--port", type=int, default=3300)
+    parser.add_argument("--image-source", choices=("registry", "local"), default="registry")
+    parser.add_argument("--platform", choices=sorted(set(_PLATFORMS.values())))
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    if args.action == "export-images":
+        if not args.platform or not args.output:
+            parser.error("export-images需要--platform与--output")
+        digest = export_images(args.platform, args.output)
+        print(json.dumps({"action": "export-images", "archive_sha256": digest}))
+        return
+    if args.state_directory is None:
+        parser.error("up/stop需要--state-directory")
     if not 1024 <= args.port <= 65535:
         parser.error("端口必须为1024到65535")
     if not (args.state_directory / "credentials.env").exists():
@@ -85,6 +169,8 @@ def main() -> None:
         "--file",
         str(Path(__file__).with_name("compose.yaml")),
     ]
+    if args.image_source == "local":
+        command.extend(["--file", str(local_image_override(args.state_directory))])
     command.extend(["up", "-d"] if args.action == "up" else ["stop"])
     subprocess.run(command, check=True)
     print(json.dumps({"action": args.action, "credentials_file": str(credentials)}))

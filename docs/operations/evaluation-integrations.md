@@ -171,11 +171,12 @@ Harbor的Job时间可能不带时区；此时--source-timezone必须由运行配
 观测Token记为partial，reported_cost_usd只作执行引用，成本完整性保持unknown，不补零、不重新估价。
 缺失试次的投影使用标明time_source的报告时间窗口，不计入单次耗时评分。
 
-## 5. 真实本机Langfuse
+## 5. 真实Langfuse服务
 
 [Compose](../../integrations/langfuse/compose.yaml)基于官方v4.76.0部署，
-[镜像锁](../../integrations/langfuse/images.lock.json)固定六个镜像摘要。
-只有Web绑定127.0.0.1:3300，数据库和对象存储不发布宿主端口。
+[镜像锁](../../integrations/langfuse/images.lock.json)固定六个多架构索引摘要，
+并按平台记录清单摘要和镜像ID。只有Web绑定127.0.0.1:3300，数据库和对象存储不发布宿主端口；
+各服务使用unless-stopped，Docker重启后自动恢复，数据卷保留。
 
 ```bash
 uv run --frozen python integrations/langfuse/local_stack.py up \
@@ -187,6 +188,25 @@ uv run --frozen python integrations/langfuse/local_stack.py up \
 API使用同一文件中的LANGFUSE_PUBLIC_KEY与LANGFUSE_SECRET_KEY，由操作者只注入执行进程。
 重启复用原状态；已有数据卷而凭据文件丢失时失败关闭，不生成替代密钥。
 `local_stack.py stop`配合同一--state-directory停止服务并保留数据卷。
+
+无法访问镜像仓库的评测主机不修改Docker守护进程配置，改为离线传输：
+
+```bash
+# 在可访问镜像仓库的机器上：按目标平台清单摘要拉取、核对镜像ID并打包（0600）
+python3 integrations/langfuse/local_stack.py export-images \
+  --platform linux/amd64 --output /path/to/langfuse-images-amd64.tar
+
+# 在评测主机上：加载后只用本地镜像启动，逐个核对镜像ID，禁止拉取
+docker load -i /path/to/langfuse-images-amd64.tar
+python3 integrations/langfuse/local_stack.py up --image-source local \
+  --state-directory /data/harnessix/langfuse/state
+```
+
+本机通过SSH隧道访问评测主机上的服务，地址仍为http://127.0.0.1:3300：
+
+```bash
+ssh -N -L 127.0.0.1:3300:127.0.0.1:3300 root@evaluation-host
+```
 
 ## 6. 可重复的完整容器验收
 
