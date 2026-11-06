@@ -61,7 +61,9 @@ services:
       clickhouse: {condition: service_healthy}
       minio: {condition: service_healthy}
     environment: &common
-      DATABASE_URL: postgresql://postgres:${DATABASE_PASSWORD:?required}@postgres:5432/langfuse
+      # Prisma默认连接池为CPU核数×2+1；多核主机上web与worker会耗尽Postgres默认的100个连接，
+      # 导致部分Observation写入失败被丢弃（247实测）。固定连接池上限并放宽排队等待。
+      DATABASE_URL: postgresql://postgres:${DATABASE_PASSWORD:?required}@postgres:5432/langfuse?connection_limit=20&pool_timeout=60
       NEXTAUTH_URL: http://127.0.0.1:${LANGFUSE_PORT:-3300}
       SALT: ${SALT:?required}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
