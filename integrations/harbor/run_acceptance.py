@@ -103,7 +103,13 @@ def _monitor(process: subprocess.Popen, image: str, image_id: str) -> dict[str, 
     return observed
 
 
-def _plan(root: Path, harbor_python: Path, tasks: Path, config_digest: str) -> RunPlan:
+def _git_head(root: Path) -> str:
+    return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+
+
+def _plan(
+    root: Path, harbor_python: Path, tasks: Path, config_digest: str, revision: str | None
+) -> RunPlan:
     """执行前冻结计划；任务摘要用Harbor自己的内容哈希计算，导入时与Job锁逐条核对。"""
     digests = json.loads(
         subprocess.check_output(
@@ -134,9 +140,7 @@ def _plan(root: Path, harbor_python: Path, tasks: Path, config_digest: str) -> R
             ArmSpec(
                 arm_id="harnessix",
                 system="harnessix",
-                system_version=subprocess.check_output(
-                    ["git", "rev-parse", "HEAD"], cwd=root, text=True
-                ).strip(),
+                system_version=revision or _git_head(root),
                 config_digest=config_digest,
                 executor="harbor",
             ),
@@ -190,6 +194,7 @@ def main() -> None:
         type=Path,
         help="Harbor独立环境的python（默认integrations/harbor/.venv/bin/python）",
     )
+    parser.add_argument("--code-revision", help="代码目录不是Git检出时显式给出版本")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     harbor_python = args.harbor_python or root / "integrations/harbor/.venv/bin/python"
@@ -239,6 +244,7 @@ def main() -> None:
         harbor_python,
         output / "tasks",
         bytes_digest((output / "job-config.json").read_bytes()),
+        args.code_revision,
     )
     write_model(plan_path, plan, 1024 * 1024)
     environment = {**os.environ, "HARBOR_TELEMETRY": "0", "TZ": "UTC", "PYTHONPATH": str(root)}
