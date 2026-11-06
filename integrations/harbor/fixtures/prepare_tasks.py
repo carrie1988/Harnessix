@@ -12,6 +12,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image-receipt", type=Path, required=True)
     parser.add_argument("--output-directory", type=Path, required=True)
+    # Harbor的no-network依赖Docker Hub上按摘要引用的探测镜像与gost边车；无法访问Docker Hub的主机
+    # 改用public策略，断网仍由任务Compose的network_mode: none在内核层保证，并由验收逐容器核对。
+    parser.add_argument(
+        "--harbor-network-mode", choices=("no-network", "public"), default="no-network"
+    )
     args = parser.parse_args()
     receipt = json.loads(args.image_receipt.read_text())
     for index, mode in enumerate(("pass", "task-fail", "approval", "deadline", "provider-fail"), 1):
@@ -29,7 +34,7 @@ artifacts = ["/logs/agent/harnessix-summary.json", "/app"]
 purpose = "native-product-protocol-acceptance"
 [environment]
 docker_image = {json.dumps(receipt["image"])}
-network_mode = "no-network"
+network_mode = "{args.harbor_network_mode}"
 workdir = "/app"
 cpus = 1
 memory_mb = 512
@@ -38,7 +43,7 @@ timeout_sec = 90
 [verifier]
 timeout_sec = 30
 environment_mode = "separate"
-network_mode = "no-network"
+network_mode = "{args.harbor_network_mode}"
 """
         (task / "task.toml").write_text(config)
         (task / "image-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")

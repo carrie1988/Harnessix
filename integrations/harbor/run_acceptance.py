@@ -195,6 +195,12 @@ def main() -> None:
         help="Harbor独立环境的python（默认integrations/harbor/.venv/bin/python）",
     )
     parser.add_argument("--code-revision", help="代码目录不是Git检出时显式给出版本")
+    parser.add_argument(
+        "--harbor-network-mode",
+        choices=("no-network", "public"),
+        default="no-network",
+        help="Harbor策略层网络模式；断网始终由Compose的network_mode: none保证并逐容器核对",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     harbor_python = args.harbor_python or root / "integrations/harbor/.venv/bin/python"
@@ -214,6 +220,8 @@ def main() -> None:
             str(args.image_receipt.resolve()),
             "--output-directory",
             str(output / "tasks"),
+            "--harbor-network-mode",
+            args.harbor_network_mode,
         ],
         check=True,
     )
