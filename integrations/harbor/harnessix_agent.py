@@ -16,6 +16,11 @@ from harbor.agents.installed.base import BaseInstalledAgent, with_prompt_templat
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
+try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
+    from integrations.harbor.patch_export import head_command, parse_head, patch_command
+except ImportError:  # pragma: no cover - 与本文件同目录直接运行
+    from patch_export import head_command, parse_head, patch_command
+
 _RUNNER = "/installed-agent/harnessix_protocol_runner.py"
 _RELAY = "/installed-agent/model_relay.py"
 _BUNDLE = "/installed-agent/harnessix-bundle.tar.gz"
@@ -193,34 +198,26 @@ class HarnessixAgent(BaseInstalledAgent):
         """记录运行前的基线提交；工作区不是Git仓库时不导出补丁。"""
         try:
             result = await self.exec_as_agent(
-                environment,
-                command=shlex.join(["git", "-C", self.workspace, "rev-parse", "HEAD"]),
-                timeout_sec=30,
+                environment, command=head_command(self.workspace), timeout_sec=30
             )
         except RuntimeError:
             return None
-        stdout = getattr(result, "stdout", None)
-        head = stdout.strip() if isinstance(stdout, str) else ""
-        return (
-            head if len(head) in (40, 64) and all(c in "0123456789abcdef" for c in head) else None
-        )
+        return parse_head(getattr(result, "stdout", None))
 
     async def _export_evidence(
         self, environment: BaseEnvironment, base: str | None, trial_id: UUID
     ) -> None:
-        """以临时索引导出相对基线的完整补丁（含新文件），并归档本次产品状态；失败不改变结果。"""
-        logs = shlex.quote(str(self.environment_logs_dir))
-        workspace = shlex.quote(self.workspace)
+        """导出相对基线的完整补丁并归档本次产品状态；失败不改变结果。"""
         if base is not None:
-            patch = (
-                f'index=$(mktemp) && GIT_INDEX_FILE="$index" git -C {workspace} add -A && '
-                f'GIT_INDEX_FILE="$index" git -C {workspace} diff --cached --binary {base} '
-                f'> {logs}/patch.diff; status=$?; rm -f "$index"; exit $status'
-            )
             try:
-                await self.exec_as_agent(environment, command=patch, timeout_sec=120)
+                await self.exec_as_agent(
+                    environment,
+                    command=patch_command(self.workspace, base, self.environment_logs_dir),
+                    timeout_sec=120,
+                )
             except RuntimeError:
                 pass
+        logs = shlex.quote(str(self.environment_logs_dir))
         state = shlex.quote(self.state_directory)
         try:
             await self.exec_as_agent(

@@ -1,0 +1,10 @@
+{
+  "spec_version": "harnessix.harbor-task-environment/v1",
+  "pypi_mirror": "https://mirrors.huaweicloud.com/repository/pypi/simple",
+  "python_mirror": "https://registry.npmmirror.com/-/binary/python-build-standalone",
+  "managed_python": "3.12",
+  "uv_wheel": {
+    "filename": "uv-0.7.13-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "sha256": "5786a29e286f2cc3cbda13a357fd9a4dd5bf1d7448a9d3d842b26b4f784a3a86"
+  }
+}
