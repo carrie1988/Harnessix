@@ -19,9 +19,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from evalkit.contracts import ArmSpec, DatasetItem, DatasetManifest, GraderSpec, RunPlan
-from evalkit.files import write_model
+from evalkit.cli import _load
+from evalkit.contracts import (
+    ArmSpec,
+    ArmTrials,
+    DatasetItem,
+    DatasetManifest,
+    GraderSpec,
+    RunPlan,
+)
+from evalkit.files import read_model, write_model
+from evalkit.grading import build_report, consistency
+from evalkit.harbor import import_harbor_job
 from harbor.publisher.packager import Packager
+
+from integrations.swebench.official_grader import grade as official_grade
 
 _JOB_FILE = "job-configs"
 
@@ -138,6 +150,62 @@ def run(run_dir: Path, arm: str, code_root: Path) -> int:
         ).returncode
 
 
+def finish(run_dir: Path, parsers: dict[str, str], args: argparse.Namespace) -> dict:
+    """导入全部组别、官方判分、奖励判分汇入报告、双判分一致性；每一步都落0600文件。"""
+    plan = read_model(run_dir / "plan.json", RunPlan, 8 * 1024 * 1024)
+    trials_dir = run_dir / "trials"
+    trials_dir.mkdir(mode=0o700)
+    groups = []
+    for arm in plan.arms:
+        parser = _load(parsers[arm.arm_id])()
+        jobs = run_dir / "jobs" / arm.arm_id
+        trials = import_harbor_job(
+            jobs, plan, arm.arm_id, {parser.agent_name: parser}, run_dir, source_timezone="UTC"
+        )
+        group = ArmTrials(plan_digest=plan.digest, arm_id=arm.arm_id, trials=trials)
+        write_model(trials_dir / f"{arm.arm_id}.json", group, 64 * 1024 * 1024)
+        groups.append(group)
+    official = next(g for g in plan.graders if g.grader_id == args.official_grader)
+    graded = official_grade(
+        plan,
+        groups,
+        official,
+        evidence_root=run_dir,
+        work=run_dir / "official",
+        dataset=args.dataset,
+        swebench=args.swebench,
+        workers=args.workers,
+    )
+    reward = next(g for g in plan.graders if g.grader_id == args.reward_grader)
+    report = build_report(
+        plan,
+        tuple(trial for group in graded for trial in group.trials),
+        (_load(args.reward_grader_class)(reward),),
+        run_dir,
+        datetime.now(UTC),
+    )
+    write_model(run_dir / "run-report.json", report, 64 * 1024 * 1024)
+    agreement = consistency(report, official.grader_id, reward.grader_id)
+    write_model(run_dir / "consistency.json", agreement, 8 * 1024 * 1024)
+    _private_json(
+        run_dir / "finish-receipt.json",
+        {
+            "finish_code_revision": args.code_revision,
+            "dataset": str(args.dataset),
+            "dataset_sha256": hashlib.sha256(args.dataset.read_bytes()).hexdigest(),
+            "swebench": args.swebench,
+            "parsers": parsers,
+            "reward_grader_class": args.reward_grader_class,
+        },
+    )
+    return {
+        "summary": [s.model_dump() for s in report.summary],
+        "compared": agreement.compared,
+        "agreed": agreement.agreed,
+        "disagreements": [d.model_dump() for d in agreement.disagreements],
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
@@ -151,12 +219,28 @@ def main() -> None:
     runner.add_argument("--run-dir", type=Path, required=True)
     runner.add_argument("--arm", required=True)
     runner.add_argument("--code-root", type=Path, required=True)
+    finisher = commands.add_parser("finish")
+    finisher.add_argument("--run-dir", type=Path, required=True)
+    finisher.add_argument("--parser", action="append", required=True, help="组别=模块:类")
+    finisher.add_argument("--official-grader", default="swebench-official")
+    finisher.add_argument("--reward-grader", default="harbor-reward")
+    finisher.add_argument(
+        "--reward-grader-class",
+        default="integrations.harbor.swebench_reward:SwebenchRewardGrader",
+    )
+    finisher.add_argument("--dataset", type=Path, required=True)
+    finisher.add_argument("--swebench", required=True)
+    finisher.add_argument("--workers", type=int, default=4)
+    finisher.add_argument("--code-revision", required=True)
     args = parser.parse_args()
     if args.command == "freeze":
         plan = freeze(args.spec, args.tasks, args.run_dir, args.code_root, args.code_revision)
         print(
             json.dumps({"reason": "frozen", "plan_digest": plan.digest, "slots": len(plan.slots())})
         )
+    elif args.command == "finish":
+        parsers = dict(spec.split("=", 1) for spec in args.parser)
+        print(json.dumps(finish(args.run_dir, parsers, args), ensure_ascii=False))
     else:
         code = run(args.run_dir, args.arm, args.code_root)
         print(json.dumps({"reason": "harbor_finished", "arm": args.arm, "exit_code": code}))
