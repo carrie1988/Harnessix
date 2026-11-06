@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 3
+version: 4
 code_revision: de1ab2722f91d6109e807617aa1e07c8a502c9e5
 owners: [core]
 modules: [evals, observability, sdk]
@@ -15,6 +15,12 @@ related_tests:
   - tests/integrations/test_harnessix_eval.py
   - tests/integrations/test_harbor_protocol.py
   - tests/integrations/test_harbor_adapter.py
+  - tests/integrations/test_official_grader.py
+  - tests/integrations/test_swebench_tasks.py
+  - tests/integrations/test_swebench_reward.py
+  - tests/integrations/test_patch_export.py
+  - tests/integrations/test_mini_steps.py
+  - tests/integrations/test_harnessix_steps.py
 supersedes: []
 ---
 
@@ -246,7 +252,35 @@ Harbor默认no-network通过sidecar控制TCP出口，存在其实现定义的DNS
 5个场景验收通过与任务通过率1/5是不同口径；公开基准、真实模型质量、真实编码修改和测试执行
 仍需独立冻结任务、权限、模型及预算验收。本矩阵未调用付费模型。
 
-## 7. 官方接口依据
+## 7. 在Harbor中运行SWE-bench（评测主机）
+
+E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 → 收尾”进行，每一步都落0600文件；
+发现问题时不改动已冻结的运行，新建计划重跑，并在`runs/DEVIATIONS.md`记录原因。
+
+1. 固定任务：在能访问GitHub的机器上按Harbor注册表引用检出任务，
+   `integrations/harbor/swebench_tasks.py lock`记录harbor-datasets提交与逐文件摘要；任务正文不入库。
+2. 准备任务：在评测主机上`prepare`核对上游文件，要求本机已有原始sweb.eval镜像，
+   构建派生镜像（同版本uv、PyPI与Python下载镜像、预装Python、离线镜像CA），任务配置写入派生镜像名。
+3. 离线GitHub原始文件：Harbor的SWE-bench判分用swebench 4.0.3计算测试规格时会下载部分仓库的依赖清单。
+   `raw_mirror.py collect`在能访问GitHub的机器上按同版本记录并锁定这些文件；运行时
+   `compose/raw-github-mirror.yaml`在每个试次网络内以别名提供只读镜像，不占用宿主机端口。
+4. 模型访问：宿主机上`model_relay.py`只监听Docker网桥地址并转发到回环vLLM；
+   `compose/host-gateway.yaml`让任务容器经host.docker.internal访问。容器内的Harnessix
+   通过协议驱动的`--model-relay`监听回环端口，产品只允许回环地址使用明文HTTP。
+5. 冻结与运行：`pipeline.py freeze`以Harbor内容哈希作为条目摘要，组别配置摘要覆盖智能体配置、
+   环境配置、任务准备收据与代码版本；`pipeline.py run`每个组别一个零重试Job。
+6. 收尾：`pipeline.py finish`导入全部组别、运行官方判分（swebench 5.0.2，离线，本地镜像）、
+   以严格奖励判分器生成报告（判分报告缺失或与奖励不一致时不给判定），并写一致性报告。
+7. 逐步记录：mini-swe-agent轨迹用`mini_steps.py`、Harnessix会话库用
+   `integrations/harnessix_eval/steps.py`转为逐步记录，`python -m evalkit export --steps ...`
+   导出为根Observation下的子Observation；读回经`/api/public/v2/observations`逐项核对。
+   默认只导出元数据，正文仅在计划声明完整内容时导出。
+
+内置智能体使用`evidence_agents.py`中的同名增强版：结束时导出相对运行前HEAD的补丁供官方判分，
+mini-swe-agent离线安装并锁定随附依赖。Harbor运行mini-swe-agent使用其内置mini.yaml模板与公网模式，
+与第一阶段宿主机上的SWE-bench模板、断网运行不可直接比较。
+
+## 8. 官方接口依据
 
 - [Langfuse OTel](https://langfuse.com/integrations/native/opentelemetry)
 - [Langfuse实验身份](https://langfuse.com/integrations/native/opentelemetry/experiments)
