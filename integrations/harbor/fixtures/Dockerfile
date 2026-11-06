@@ -1,4 +1,8 @@
-FROM python@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+# 默认锁定多架构索引；无法访问Docker Hub的主机以构建参数传入已核对ID的本地标签。
+ARG BASE_IMAGE=python@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+FROM ${BASE_IMAGE}
+# pip依赖带哈希校验，可经镜像源安装而不影响内容。
+ARG PIP_INDEX_URL=https://pypi.org/simple
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt /fixture/requirements.txt
 RUN pip install --no-cache-dir --require-hashes -r /fixture/requirements.txt

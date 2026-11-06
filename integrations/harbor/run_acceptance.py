@@ -103,12 +103,12 @@ def _monitor(process: subprocess.Popen, image: str, image_id: str) -> dict[str, 
     return observed
 
 
-def _plan(root: Path, tasks: Path, config_digest: str) -> RunPlan:
+def _plan(root: Path, harbor_python: Path, tasks: Path, config_digest: str) -> RunPlan:
     """执行前冻结计划；任务摘要用Harbor自己的内容哈希计算，导入时与Job锁逐条核对。"""
     digests = json.loads(
         subprocess.check_output(
             [
-                str(root / "integrations/harbor/.venv/bin/python"),
+                str(harbor_python),
                 "-c",
                 "import json, sys\n"
                 "from pathlib import Path\n"
@@ -185,8 +185,14 @@ def main() -> None:
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--langfuse-base-url", required=True)
     parser.add_argument("--allow-network", action="store_true", required=True)
+    parser.add_argument(
+        "--harbor-python",
+        type=Path,
+        help="Harbor独立环境的python（默认integrations/harbor/.venv/bin/python）",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
+    harbor_python = args.harbor_python or root / "integrations/harbor/.venv/bin/python"
     output = args.output_directory.resolve()
     output.mkdir(parents=True, mode=0o700, exist_ok=False)
     image = json.loads(args.image_receipt.read_text())
@@ -228,13 +234,18 @@ def main() -> None:
     }
     _private_json(output / "job-config.json", config)
     plan_path = output / "plan.json"
-    plan = _plan(root, output / "tasks", bytes_digest((output / "job-config.json").read_bytes()))
+    plan = _plan(
+        root,
+        harbor_python,
+        output / "tasks",
+        bytes_digest((output / "job-config.json").read_bytes()),
+    )
     write_model(plan_path, plan, 1024 * 1024)
     environment = {**os.environ, "HARBOR_TELEMETRY": "0", "TZ": "UTC", "PYTHONPATH": str(root)}
     with (output / "harbor.log").open("x") as log:
         process = subprocess.Popen(
             [
-                str(root / "integrations/harbor/.venv/bin/harbor"),
+                str(harbor_python.with_name("harbor")),
                 "run",
                 "--config",
                 str(output / "job-config.json"),
