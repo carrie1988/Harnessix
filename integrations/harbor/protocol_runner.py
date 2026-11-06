@@ -1,4 +1,9 @@
-"""Harbor侧Agent Protocol客户端；不实现模型循环、自动审批或费用结算。"""
+"""Harbor侧Agent Protocol客户端；不实现模型循环或费用结算。
+
+审批只按产品无头执行的同一策略（harnessix.exec_cli.approval_policy）自动回应：默认manual
+全部转为人工介入并取消；auto-edit批准工作区补丁；auto再批准沙箱内进程调用。
+容器内只能经本机回环HTTP访问模型，--model-relay在本进程内把回环端口转发到宿主机地址。
+"""
 
 from __future__ import annotations
 
@@ -12,10 +17,80 @@ import sys
 from pathlib import Path
 from uuid import UUID
 
-from harnessix.protocol.contracts import PublicBudget, ThreadView, TurnView
+from harnessix.agent_cli import ApprovalPolicy
+from harnessix.exec_cli import ApprovalMode, approval_policy
+from harnessix.protocol.contracts import (
+    ApprovalRespondParams,
+    ItemPublicEvent,
+    PublicApprovalDecision,
+    PublicApprovalRequestContent,
+    PublicBudget,
+    PublicEvent,
+    PublicItem,
+    PublicToolCallContent,
+    ThreadView,
+    TurnView,
+)
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, SubprocessAgentTransport
 
+try:  # 任务容器内：与本脚本一同上传到同一目录
+    import model_relay
+except ImportError:  # 仓库内以包方式导入（测试）
+    from integrations.harbor import model_relay
+
 _TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
+_LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
+def _record(events: tuple[PublicEvent, ...], items: dict[UUID, PublicItem]) -> None:
+    for event in events:
+        if isinstance(event.data, ItemPublicEvent):
+            items[event.data.item.item_id] = event.data.item
+
+
+async def _catch_up(
+    client: AgentClient, thread_id: UUID, cursor: int, items: dict[UUID, PublicItem]
+) -> int:
+    """读到当前末尾，保证审批请求及其工具调用都已记录。"""
+    while True:
+        page = await client.replay_events(
+            thread_id,
+            after_cursor=cursor,
+            limit=min(64, client.initialized.limits.max_replay_events),
+        )
+        _record(page.events, items)
+        if not page.has_more:
+            return max(cursor, page.scanned_through)
+        if page.scanned_through <= cursor:
+            raise AgentSDKError("replay_stalled", "协议重放未推进")
+        cursor = page.scanned_through
+
+
+def _pending_approval(
+    items: dict[UUID, PublicItem], submitted: set[UUID]
+) -> tuple[PublicApprovalRequestContent, str | None] | None:
+    content = next(
+        (
+            item.content
+            for item in reversed(tuple(items.values()))
+            if isinstance(item.content, PublicApprovalRequestContent)
+            and item.content.decision is None
+            and item.content.approval_id not in submitted
+        ),
+        None,
+    )
+    if content is None:
+        return None
+    tool = next(
+        (
+            item.content.tool
+            for item in items.values()
+            if isinstance(item.content, PublicToolCallContent)
+            and item.content.call_id == content.call_id
+        ),
+        None,
+    )
+    return content, tool
 
 
 async def _completed_evidence(client: AgentClient, thread_id: UUID, turn_id: UUID) -> dict:
@@ -61,14 +136,19 @@ async def drive_protocol_trial(
     instruction: str,
     budget: PublicBudget,
     trial_id: UUID,
+    approval_mode: ApprovalMode = "manual",
+    policy: ApprovalPolicy | None = None,
 ) -> dict:
-    """驱动一次显式试次；遇到人工交互即取消，超时清理有界且不重试任务。"""
+    """驱动一次显式试次；策略不能回应的审批或提问即取消，超时清理有界且不重试任务。"""
 
     thread: ThreadView | None = None
     turn: TurnView | None = None
     reason = "protocol_error"
     turn_terminal_confirmed = False
     cancelled = False
+    decide = policy or approval_policy(approval_mode)
+    items: dict[UUID, PublicItem] = {}
+    submitted: set[UUID] = set()
     try:
         async with asyncio.timeout(budget.timeout_seconds):
             await client.initialize()
@@ -89,13 +169,37 @@ async def drive_protocol_trial(
                     reason = turn.status
                     turn_terminal_confirmed = True
                     break
-                if turn.status in {"waiting_approval", "waiting_input"}:
+                awaiting_decided = False
+                if turn.status == "waiting_approval":
+                    cursor = await _catch_up(client, thread.thread_id, cursor, items)
+                    pending = _pending_approval(items, submitted)
+                    outcome = decide(*pending) if pending else None
+                    if pending and outcome:
+                        content = pending[0]
+                        await client.respond_approval(
+                            ApprovalRespondParams(
+                                request_id=f"harbor-{trial_id}-approval-{content.approval_id}",
+                                thread_id=thread.thread_id,
+                                turn_id=turn.turn_id,
+                                approval_id=content.approval_id,
+                                fingerprint=content.request_fingerprint,
+                                decision=PublicApprovalDecision(
+                                    outcome=outcome, actor=f"harnessix-harbor:{approval_mode}"
+                                ),
+                            )
+                        )
+                        submitted.add(content.approval_id)
+                        continue
+                    # 已回应的审批在Turn推进前仍显示waiting_approval，此时等待事件而不是放弃。
+                    awaiting_decided = pending is None and bool(submitted)
+                if turn.status in {"waiting_approval", "waiting_input"} and not awaiting_decided:
                     reason = "intervention_required"
                     break
                 limit = min(64, client.initialized.limits.max_replay_events)
                 page = await client.next_events(
                     thread.thread_id, after_cursor=cursor, wait_ms=1000, limit=limit
                 )
+                _record(page.replay.events, items)
                 cursor = max(cursor, page.replay.scanned_through)
     except TimeoutError:
         reason = "deadline_exceeded"
@@ -144,6 +248,8 @@ async def drive_protocol_trial(
         "usage_completeness": "unknown",
         "cost_completeness": "unknown",
         "turn_terminal_confirmed": turn_terminal_confirmed,
+        "approval_mode": approval_mode,
+        "auto_approvals": len(submitted),
         **evidence,
     }
 
@@ -156,7 +262,27 @@ def _read_instruction(path: Path) -> str:
     return body.decode("utf-8")
 
 
+async def _start_relays(specs: list[str]) -> list[asyncio.Server]:
+    """容器内只允许监听本机回环端口，产品据此以明文HTTP访问模型。"""
+    relays = []
+    for spec in specs:
+        listen, target = model_relay.parse(spec)
+        if listen[0] not in _LOOPBACK:
+            raise ValueError("容器内转发只能监听本机回环地址")
+        relays.append(await model_relay.start(listen, target))
+    return relays
+
+
 async def _run(arguments: argparse.Namespace, instruction: str) -> dict:
+    relays = await _start_relays(arguments.model_relay)
+    try:
+        return await _drive(arguments, instruction)
+    finally:
+        for relay in relays:
+            relay.close()
+
+
+async def _drive(arguments: argparse.Namespace, instruction: str) -> dict:
     budget = PublicBudget(
         max_steps=arguments.max_steps,
         max_tokens=arguments.max_tokens,
@@ -188,6 +314,7 @@ async def _run(arguments: argparse.Namespace, instruction: str) -> dict:
             instruction=instruction,
             budget=budget,
             trial_id=UUID(arguments.trial_id),
+            approval_mode=arguments.approval_mode,
         )
 
 
@@ -203,6 +330,10 @@ def main() -> None:
     parser.add_argument("--max-steps", type=int, default=16)
     parser.add_argument("--max-tokens", type=int, default=50_000)
     parser.add_argument("--timeout-seconds", type=float, default=300.0)
+    parser.add_argument(
+        "--approval-mode", choices=("manual", "auto-edit", "auto"), default="manual"
+    )
+    parser.add_argument("--model-relay", action="append", default=[], help="回环端口=宿主机:端口")
     arguments = parser.parse_args()
     previous_logging = logging.root.manager.disable
     logging.disable(logging.CRITICAL)

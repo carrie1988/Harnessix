@@ -1,4 +1,8 @@
-"""Harbor 0.25适配器；只安装协议客户端并启动现有Harnessix App Server。"""
+"""Harbor 0.25适配器；只安装协议客户端并启动现有Harnessix App Server。
+
+镜像可预装Harnessix，也可在安装阶段上传离线安装包（自带Python的目录归档）和原生配置模板；
+运行结束后把补丁与产品状态库导出到/logs/agent，供官方判分与逐步记录使用。
+"""
 
 from __future__ import annotations
 
@@ -13,6 +17,16 @@ from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
 _RUNNER = "/installed-agent/harnessix_protocol_runner.py"
+_RELAY = "/installed-agent/model_relay.py"
+_BUNDLE = "/installed-agent/harnessix-bundle.tar.gz"
+_APPROVAL_MODES = {"manual", "auto-edit", "auto"}
+
+
+def _relay_specs(value: str | list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    specs = tuple(value.split(",")) if isinstance(value, str) else tuple(value)
+    return tuple(spec.strip() for spec in specs if spec.strip())
 
 
 class HarnessixAgent(BaseInstalledAgent):
@@ -29,6 +43,12 @@ class HarnessixAgent(BaseInstalledAgent):
         max_steps: int = 16,
         max_tokens: int = 50_000,
         timeout_seconds: float = 300.0,
+        approval_mode: str = "manual",
+        model_relays: str | list[str] | None = None,
+        install_bundle: str | None = None,
+        bundle_root: str = "/opt",
+        server_config_template: str | None = None,
+        action_config_template: str | None = None,
         **kwargs,
     ):
         if kwargs.get("model_name") is not None or kwargs.get("config") is not None:
@@ -53,6 +73,15 @@ class HarnessixAgent(BaseInstalledAgent):
                 raise ValueError("Action配置必须位于任务工作区外的固定绝对路径")
         if not (1 <= max_steps <= 1000 and max_tokens > 0 and 0 < timeout_seconds <= 86_400):
             raise ValueError("评测预算无效")
+        if approval_mode not in _APPROVAL_MODES:
+            raise ValueError("审批模式必须是manual、auto-edit或auto")
+        for template in (install_bundle, server_config_template, action_config_template):
+            if template is not None and not Path(template).is_file():
+                raise ValueError("安装包或配置模板必须是宿主机上已存在的文件")
+        if action_config_template is not None and action_config is None:
+            raise ValueError("Action配置模板需要同时指定容器内的action_config路径")
+        if not PurePosixPath(bundle_root).is_absolute():
+            raise ValueError("安装包解压目录必须是绝对路径")
         super().__init__(*args, **kwargs)
         self.server_config = server_config
         self.action_config = action_config
@@ -62,6 +91,12 @@ class HarnessixAgent(BaseInstalledAgent):
         self.max_steps = max_steps
         self.max_tokens = max_tokens
         self.timeout_seconds = timeout_seconds
+        self.approval_mode = approval_mode
+        self.model_relays = _relay_specs(model_relays)
+        self.install_bundle = install_bundle
+        self.bundle_root = bundle_root
+        self.server_config_template = server_config_template
+        self.action_config_template = action_config_template
 
     @staticmethod
     def name() -> str:
@@ -77,12 +112,29 @@ class HarnessixAgent(BaseInstalledAgent):
         )
 
     async def install(self, environment: BaseEnvironment) -> None:
+        if self.install_bundle is not None:
+            await environment.upload_file(Path(self.install_bundle), _BUNDLE)
+            root = shlex.quote(self.bundle_root)
+            await self.exec_as_root(
+                environment,
+                command=f"mkdir -p {root} && tar -xzf {_BUNDLE} -C {root} && rm -f {_BUNDLE}",
+                timeout_sec=300,
+            )
+        for template, target in (
+            (self.server_config_template, self.server_config),
+            (self.action_config_template, self.action_config),
+        ):
+            if template is not None and target is not None:
+                parent = shlex.quote(str(PurePosixPath(target).parent))
+                await self.exec_as_root(environment, command=f"mkdir -p {parent}", timeout_sec=30)
+                await environment.upload_file(Path(template), target)
         await self.exec_as_agent(
             environment,
             command=shlex.join([self.python_executable, "-c", "import harnessix.sdk.agent_client"]),
             timeout_sec=30,
         )
         await environment.upload_file(Path(__file__).with_name("protocol_runner.py"), _RUNNER)
+        await environment.upload_file(Path(__file__).with_name("model_relay.py"), _RELAY)
 
     @with_prompt_template
     async def run(
@@ -119,6 +171,10 @@ class HarnessixAgent(BaseInstalledAgent):
         ]
         if self.action_config is not None:
             command.extend(["--action-config", self.action_config])
+        command.extend(["--approval-mode", self.approval_mode])
+        for spec in self.model_relays:
+            command.extend(["--model-relay", spec])
+        base = await self._head(environment)
         try:
             await self.exec_as_agent(
                 environment,
@@ -131,6 +187,49 @@ class HarnessixAgent(BaseInstalledAgent):
             await self.exec_as_agent(
                 environment, command=f"rm -f -- {shlex.quote(temporary_input)}", timeout_sec=5
             )
+            await self._export_evidence(environment, base, trial_id)
+
+    async def _head(self, environment: BaseEnvironment) -> str | None:
+        """记录运行前的基线提交；工作区不是Git仓库时不导出补丁。"""
+        try:
+            result = await self.exec_as_agent(
+                environment,
+                command=shlex.join(["git", "-C", self.workspace, "rev-parse", "HEAD"]),
+                timeout_sec=30,
+            )
+        except RuntimeError:
+            return None
+        stdout = getattr(result, "stdout", None)
+        head = stdout.strip() if isinstance(stdout, str) else ""
+        return (
+            head if len(head) in (40, 64) and all(c in "0123456789abcdef" for c in head) else None
+        )
+
+    async def _export_evidence(
+        self, environment: BaseEnvironment, base: str | None, trial_id: UUID
+    ) -> None:
+        """以临时索引导出相对基线的完整补丁（含新文件），并归档本次产品状态；失败不改变结果。"""
+        logs = shlex.quote(str(self.environment_logs_dir))
+        workspace = shlex.quote(self.workspace)
+        if base is not None:
+            patch = (
+                f'index=$(mktemp) && GIT_INDEX_FILE="$index" git -C {workspace} add -A && '
+                f'GIT_INDEX_FILE="$index" git -C {workspace} diff --cached --binary {base} '
+                f'> {logs}/patch.diff; status=$?; rm -f "$index"; exit $status'
+            )
+            try:
+                await self.exec_as_agent(environment, command=patch, timeout_sec=120)
+            except RuntimeError:
+                pass
+        state = shlex.quote(self.state_directory)
+        try:
+            await self.exec_as_agent(
+                environment,
+                command=f"tar -czf {logs}/harnessix-state.tar.gz -C {state} {trial_id}",
+                timeout_sec=120,
+            )
+        except RuntimeError:
+            pass
 
     def populate_context_post_run(self, context: AgentContext) -> None:
         """回填观测元数据；没有全量Attempt证据时保留Harbor总用量与费用未知。"""
@@ -169,5 +268,9 @@ class HarnessixAgent(BaseInstalledAgent):
                 "protocol_evidence_complete": result.get("protocol_evidence_complete"),
                 "tool_results_succeeded": result.get("tool_results_succeeded"),
                 "final_assistant_sha256": result.get("final_assistant_sha256"),
+                "approval_mode": result.get("approval_mode"),
+                "auto_approvals": result.get("auto_approvals"),
+                "patch_exported": (self.logs_dir / "patch.diff").is_file(),
+                "state_exported": (self.logs_dir / "harnessix-state.tar.gz").is_file(),
             },
         }
