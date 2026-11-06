@@ -225,13 +225,16 @@ def _step_matches(remote: dict[str, Any], span: dict[str, Any]) -> None:
 def _steps_complete(
     remote: list[dict[str, Any]], root_id: str, expected: dict[str, dict[str, Any]]
 ) -> bool:
-    """一个Trace内只能有根Observation和投影的步骤；缺少的步骤视为尚未可见。"""
+    """一个Trace内只能有根Observation和投影的步骤；缺少的步骤视为尚未可见。
+
+    v4事件存储在后台合并前，同身份重发会读到多行；每一行都必须与投影一致，只计一次。
+    """
     seen = set()
     for observation in remote:
         identity = observation["id"]
         if identity == root_id:
             continue
-        if identity not in expected or identity in seen:
+        if identity not in expected:
             raise _mismatch()
         _step_matches(observation, expected[identity])
         seen.add(identity)

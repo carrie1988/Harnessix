@@ -646,7 +646,9 @@ def remote_steps(export: LangfuseExport) -> dict[str, list[dict]]:
     return by_trace
 
 
-@pytest.mark.parametrize("mode", ["complete", "pending", "wrong_parent", "extra"])
+@pytest.mark.parametrize(
+    "mode", ["complete", "pending", "wrong_parent", "extra", "resent", "resent_conflict"]
+)
 def test_readback_verifies_step_observations(mode: str) -> None:
     source = report()
     export = build_export(source, (step_trace(source),))
@@ -659,6 +661,10 @@ def test_readback_verifies_step_observations(mode: str) -> None:
         observations[trace][-1]["parentObservationId"] = "0" * 16
     elif mode == "extra":
         observations[trace].append({**observations[trace][-1], "id": "f" * 16})
+    elif mode == "resent":
+        observations[trace] += [dict(row) for row in observations[trace]]
+    elif mode == "resent_conflict":
+        observations[trace].append({**observations[trace][-1], "name": "other"})
     base = serve(experiments, items)
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -668,7 +674,7 @@ def test_readback_verifies_step_observations(mode: str) -> None:
             return httpx.Response(200, json={"data": data, "meta": {}})
         return base(request)
 
-    if mode == "complete":
+    if mode in ("complete", "resent"):
         result = verify(export, handler)
         assert (result.verified_trials, result.verified_steps) == (4, 2)
         return
