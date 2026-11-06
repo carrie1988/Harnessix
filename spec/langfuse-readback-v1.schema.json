@@ -1,0 +1,54 @@
+{
+  "additionalProperties": false,
+  "description": "公开API实际读回的实验与评分核验收据；绑定源摘要且不携带服务凭据。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.langfuse-readback/v1",
+      "default": "harnessix.langfuse-readback/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "source_report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Report Sha256",
+      "type": "string"
+    },
+    "experiment_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Experiment Id",
+      "type": "string"
+    },
+    "dataset_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "verified_trials": {
+      "maximum": 1000,
+      "minimum": 1,
+      "title": "Verified Trials",
+      "type": "integer"
+    },
+    "verified_scores": {
+      "maximum": 12000,
+      "minimum": 1,
+      "title": "Verified Scores",
+      "type": "integer"
+    },
+    "verified_at": {
+      "format": "date-time",
+      "title": "Verified At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_report_sha256",
+    "experiment_id",
+    "dataset_id",
+    "verified_trials",
+    "verified_scores",
+    "verified_at"
+  ],
+  "title": "LangfuseReadbackReport",
+  "type": "object"
+}

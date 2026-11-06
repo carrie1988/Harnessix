@@ -1,0 +1,122 @@
+{
+  "status": "passed",
+  "scenario_assertions_passed": 5,
+  "task_passed": 1,
+  "task_denominator": 5,
+  "paid_model_calls": 0,
+  "image": {
+    "image": "harnessix-harbor-protocol:04fa70160bf69bdb",
+    "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+    "wheel_sha256": "a8fc3c16d84eb5c8d82bb932b561804bf975f8d8c1cea4900e938968e6fbd8d3",
+    "build_inputs_sha256": "04fa70160bf69bdbc906d4c9d48b149264e0bbde058078c43dd99c93bf912daa"
+  },
+  "observed_containers": {
+    "497fea43740c": {
+      "name": "/01-protocol-pass__94q42ox__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "019ad02a2cad": {
+      "name": "/01-protocol-pass__94q42ox__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "6928afaa2e72": {
+      "name": "/02-protocol-task-fail__73gdsgp__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "cde58d1d7e97": {
+      "name": "/02-protocol-task-fail__73gdsgp__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "69fa8ad5ad11": {
+      "name": "/03-protocol-approval__kfepwva__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "579b604cacc1": {
+      "name": "/03-protocol-approval__kfepwva__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "f094b46d1deb": {
+      "name": "/04-protocol-deadline__wvfenvq__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "12db0d9496e9": {
+      "name": "/04-protocol-deadline__wvfenvq__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "3a4f34fb80de": {
+      "name": "/05-protocol-provider-fail__zpqyj26__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "2aaf4f5c4b68": {
+      "name": "/05-protocol-provider-fail__zpqyj26__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    }
+  },
+  "container_cleanup_verified": true,
+  "readbacks": [
+    {
+      "spec_version": "harnessix.langfuse-readback/v1",
+      "source_report_sha256": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f",
+      "experiment_id": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a",
+      "dataset_id": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891",
+      "verified_trials": 5,
+      "verified_scores": 25,
+      "verified_at": "2026-11-06T06:24:28.736567Z"
+    },
+    {
+      "spec_version": "harnessix.langfuse-readback/v1",
+      "source_report_sha256": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f",
+      "experiment_id": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a",
+      "dataset_id": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891",
+      "verified_trials": 5,
+      "verified_scores": 25,
+      "verified_at": "2026-11-06T06:24:32.351091Z"
+    }
+  ],
+  "source_files_unchanged_after_resend": true,
+  "source_file_sha256": {
+    "lock.json": "06189bbbc79106d09f534c2bcad3a2307a5927c1e6ea00e9a6c552ddc28cac04",
+    "result.json": "966b8ebae76b5c441016cf7d2802d804080e6e2079272369fc46a680b8ba6d53",
+    "config.json": "ea9c4d911ca844983c182bc9f8efd6bafbc122ae5fffa964d651bb6d9554917e",
+    "03-protocol-approval__kfEpwva/lock.json": "8d22c01dd636c4b0e1cf6b923f8baf4a0e0aef2f548919269dc1e89d18614420",
+    "03-protocol-approval__kfEpwva/result.json": "a79a61c520915738f4452819cde18a1417eb832444fbe63f5a4c00bb8b6f7454",
+    "03-protocol-approval__kfEpwva/config.json": "686ad3dbb8265dc263ae3948b8c09656a8d0dd7fd2ca59d0c8ace12622a1f650",
+    "04-protocol-deadline__WvfEnVq/lock.json": "9447213036c0dcd6e4cd5282551eba66e2b74dddb820c1e25593a882d4f1668b",
+    "04-protocol-deadline__WvfEnVq/result.json": "709f02ceea7a345d6a0fc9c0c3fafbe52110256ea455c67e93e67d1d3b3cc907",
+    "04-protocol-deadline__WvfEnVq/config.json": "746ecd80a701bbb1d315cfcdbd8bce48f4e02bef998dfa022677b469c5099c7d",
+    "01-protocol-pass__94Q42oX/lock.json": "1c2c14f5a9df7c48e3fb04d6d5a63e2aa67f440ac60de20a11dca784fde5b993",
+    "01-protocol-pass__94Q42oX/result.json": "9860811046064a778c3954497118ac3d75995adf126d802f3eea6037e1f25e7d",
+    "01-protocol-pass__94Q42oX/config.json": "a3d4f9d32eccb6e6a9a9a5b66614d4ab15e484000f67f8a4c6598191371ebe42",
+    "02-protocol-task-fail__73gDsGP/lock.json": "7cd2f3c26aa408ce74b3897801ff2f8a0ec5a728e73c8a466e7d6cc852ab172e",
+    "02-protocol-task-fail__73gDsGP/result.json": "df203bb55ad665723f7f7fca824993c045d377450f4f6559da1cd6bd509fced2",
+    "02-protocol-task-fail__73gDsGP/config.json": "a94ca0b30765dd3cd8655bf244b386c5a1d2ab67120e44f68cb7330578662607",
+    "05-protocol-provider-fail__ZpqYj26/lock.json": "b00adc73b4fbf1ed1e35cff4295bcc8543749c6be4a5e3f4327b7724ad9a72ae",
+    "05-protocol-provider-fail__ZpqYj26/result.json": "048f2a94feaf87f3173b220ee35f70f50f87d9f44046173b2f707cf6784e6580",
+    "05-protocol-provider-fail__ZpqYj26/config.json": "0e16074e448aacbbaf99d5b54fe5a8c840ea665bdc52bb62cc87d5e5ffe7fa87",
+    "03-protocol-approval__kfEpwva/artifacts/manifest.json": "8851d3aa7462d6fcb0912bca2f5ef7a587dac63ecd54f63feb562c906fc28927",
+    "03-protocol-approval__kfEpwva/agent/harnessix-summary.json": "ca6f9f6479560d92b3b2ddbb7b45cdcd42cc8847076d6998bdaa834f966ded01",
+    "03-protocol-approval__kfEpwva/artifacts/logs/agent/harnessix-summary.json": "ca6f9f6479560d92b3b2ddbb7b45cdcd42cc8847076d6998bdaa834f966ded01",
+    "04-protocol-deadline__WvfEnVq/artifacts/manifest.json": "8851d3aa7462d6fcb0912bca2f5ef7a587dac63ecd54f63feb562c906fc28927",
+    "04-protocol-deadline__WvfEnVq/agent/harnessix-summary.json": "c65ff474ed66242025551a829dc533cd3ace08e1a8a9db16e7ca3857c6578fef",
+    "04-protocol-deadline__WvfEnVq/artifacts/logs/agent/harnessix-summary.json": "c65ff474ed66242025551a829dc533cd3ace08e1a8a9db16e7ca3857c6578fef",
+    "01-protocol-pass__94Q42oX/artifacts/manifest.json": "8851d3aa7462d6fcb0912bca2f5ef7a587dac63ecd54f63feb562c906fc28927",
+    "01-protocol-pass__94Q42oX/agent/harnessix-summary.json": "12d134a38ded97d830dd5b249ee9b5fadf155bbb96abfd83ef72defdcb295216",
+    "01-protocol-pass__94Q42oX/artifacts/logs/agent/harnessix-summary.json": "12d134a38ded97d830dd5b249ee9b5fadf155bbb96abfd83ef72defdcb295216",
+    "02-protocol-task-fail__73gDsGP/artifacts/manifest.json": "8851d3aa7462d6fcb0912bca2f5ef7a587dac63ecd54f63feb562c906fc28927",
+    "02-protocol-task-fail__73gDsGP/agent/harnessix-summary.json": "09a7b60d56711284c355888e3e97dc911dcd4dff6a65944cecfe417141c4dcfd",
+    "02-protocol-task-fail__73gDsGP/artifacts/logs/agent/harnessix-summary.json": "09a7b60d56711284c355888e3e97dc911dcd4dff6a65944cecfe417141c4dcfd",
+    "05-protocol-provider-fail__ZpqYj26/artifacts/manifest.json": "8851d3aa7462d6fcb0912bca2f5ef7a587dac63ecd54f63feb562c906fc28927",
+    "05-protocol-provider-fail__ZpqYj26/agent/harnessix-summary.json": "ddb0f239b194c647e8c88946deec23a7b8b7d7839068824b3b0e9fd7d14397d9",
+    "05-protocol-provider-fail__ZpqYj26/artifacts/logs/agent/harnessix-summary.json": "ddb0f239b194c647e8c88946deec23a7b8b7d7839068824b3b0e9fd7d14397d9"
+  }
+}

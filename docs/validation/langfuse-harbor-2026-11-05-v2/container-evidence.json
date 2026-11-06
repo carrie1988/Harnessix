@@ -1,0 +1,55 @@
+{
+  "observed_containers": {
+    "497fea43740c": {
+      "name": "/01-protocol-pass__94q42ox__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "019ad02a2cad": {
+      "name": "/01-protocol-pass__94q42ox__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "6928afaa2e72": {
+      "name": "/02-protocol-task-fail__73gdsgp__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "cde58d1d7e97": {
+      "name": "/02-protocol-task-fail__73gdsgp__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "69fa8ad5ad11": {
+      "name": "/03-protocol-approval__kfepwva__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "579b604cacc1": {
+      "name": "/03-protocol-approval__kfepwva__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "f094b46d1deb": {
+      "name": "/04-protocol-deadline__wvfenvq__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "12db0d9496e9": {
+      "name": "/04-protocol-deadline__wvfenvq__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "3a4f34fb80de": {
+      "name": "/05-protocol-provider-fail__zpqyj26__env-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    },
+    "2aaf4f5c4b68": {
+      "name": "/05-protocol-provider-fail__zpqyj26__verifier__trial-main-1",
+      "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+      "network_mode": "none"
+    }
+  },
+  "container_cleanup_verified": true
+}

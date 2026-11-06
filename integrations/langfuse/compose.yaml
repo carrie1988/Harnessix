@@ -1,0 +1,108 @@
+services:
+  postgres:
+    image: postgres@sha256:748a18a54d3842d43bc156f0840d78029b8d349e0feca98c12b9c4ce3404a6b3
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?required}
+      POSTGRES_DB: langfuse
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    mem_limit: 384m
+  redis:
+    image: redis@sha256:2e3eb11462c4e3759e6972678dd051d150ff54b1e60714b3c33b701260172a90
+    command: [redis-server, --requirepass, "${REDIS_AUTH:?required}", --maxmemory-policy, noeviction]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    mem_limit: 128m
+  clickhouse:
+    image: clickhouse/clickhouse-server@sha256:de3e47c64078aa196dae2349e048fc98ba81947f651f5c20e06e46baea8ae40a
+    user: "101:101"
+    environment:
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?required}
+    volumes: [clickhouse_data:/var/lib/clickhouse]
+    healthcheck:
+      test: [CMD, wget, --no-verbose, --tries=1, --spider, http://localhost:8123/ping]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    mem_limit: 2g
+  minio:
+    image: cgr.dev/chainguard/minio@sha256:cee9a8e35885e93f14b3cb32960e5017aff74e2adfb52ba87c65003b0163886b
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?required}
+    volumes: [minio_data:/data]
+    healthcheck:
+      test: [CMD, mc, ready, local]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    mem_limit: 384m
+  langfuse-worker:
+    image: docker.langfuse.com/langfuse/langfuse-worker@sha256:27e8b49d619a013bca38ed9b0853456e19f5667a23e8e26e3a10d4e28485f49c
+    depends_on: &dependencies
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      clickhouse: {condition: service_healthy}
+      minio: {condition: service_healthy}
+    environment: &common
+      DATABASE_URL: postgresql://postgres:${DATABASE_PASSWORD:?required}@postgres:5432/langfuse
+      NEXTAUTH_URL: http://127.0.0.1:${LANGFUSE_PORT:-3300}
+      SALT: ${SALT:?required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      TELEMETRY_ENABLED: "false"
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?required}
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: ${REDIS_AUTH:?required}
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_PASSWORD:?required}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_PASSWORD:?required}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_INGESTION_QUEUE_DELAY_MS: "500"
+      LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS: "1000"
+    mem_limit: 768m
+  langfuse-web:
+    image: docker.langfuse.com/langfuse/langfuse@sha256:59abb54faacf45b63d09f4076d45683dae26a6661974d497836543d350b16575
+    depends_on: *dependencies
+    ports: ["127.0.0.1:${LANGFUSE_PORT:-3300}:3000"]
+    environment:
+      <<: *common
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?required}
+      LANGFUSE_INIT_ORG_ID: harnessix-local
+      LANGFUSE_INIT_ORG_NAME: Harnessix local acceptance
+      LANGFUSE_INIT_PROJECT_ID: harnessix-acceptance
+      LANGFUSE_INIT_PROJECT_NAME: Harnessix acceptance
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:?required}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:?required}
+      LANGFUSE_INIT_USER_EMAIL: acceptance@harnessix.invalid
+      LANGFUSE_INIT_USER_NAME: Local acceptance
+      LANGFUSE_INIT_USER_PASSWORD: ${INIT_USER_PASSWORD:?required}
+    mem_limit: 1536m
+volumes:
+  postgres_data:
+  clickhouse_data:
+  minio_data:

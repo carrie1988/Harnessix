@@ -1,0 +1,24 @@
+{
+  "readability_same_as_main": true,
+  "readability_errors": 28,
+  "new_readability_errors": [],
+  "global_format_same_files_as_main": true,
+  "format_problem_files": [
+    "scripts/provider_verification_guard.py",
+    "src/harnessix/product_config/git_business_associations.py",
+    "src/harnessix/product_config/state_backup_v2_validation.py",
+    "tests/evals/test_beta_instruct_bounds.py",
+    "tests/evals/test_beta_qwen38_max_bounds.py",
+    "tests/evals/test_task_pack_approval_denial.py",
+    "tests/integration/test_task_pack_execution.py",
+    "tests/models/test_openai_chat.py",
+    "tests/product_config/test_product_state_backup_v2_validation.py"
+  ],
+  "format_problem_sources_unchanged": true,
+  "license_same_as_main": true,
+  "wheel": {
+    "name": "harnessix-1.0.0rc1-py3-none-any.whl",
+    "sha256": "a8fc3c16d84eb5c8d82bb932b561804bf975f8d8c1cea4900e938968e6fbd8d3"
+  },
+  "mypy_result": "Success: no issues found in 543 source files"
+}

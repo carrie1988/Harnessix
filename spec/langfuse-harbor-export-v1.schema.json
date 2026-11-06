@@ -1,0 +1,135 @@
+{
+  "$defs": {
+    "CodingEvalRate": {
+      "additionalProperties": false,
+      "description": "以分子、分母和四舍五入基点同时保存可重算比率。",
+      "properties": {
+        "numerator": {
+          "minimum": 0,
+          "title": "Numerator",
+          "type": "integer"
+        },
+        "denominator": {
+          "minimum": 1,
+          "title": "Denominator",
+          "type": "integer"
+        },
+        "basis_points": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Basis Points",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator",
+        "basis_points"
+      ],
+      "title": "CodingEvalRate",
+      "type": "object"
+    },
+    "HarborEvalSummary": {
+      "additionalProperties": false,
+      "description": "覆盖冻结计划全部槽位的可重算汇总；不丢弃异常和缺失结果。",
+      "properties": {
+        "scheduled_trials": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Scheduled Trials",
+          "type": "integer"
+        },
+        "passed_trials": {
+          "minimum": 0,
+          "title": "Passed Trials",
+          "type": "integer"
+        },
+        "failed_trials": {
+          "minimum": 0,
+          "title": "Failed Trials",
+          "type": "integer"
+        },
+        "invalid_trials": {
+          "minimum": 0,
+          "title": "Invalid Trials",
+          "type": "integer"
+        },
+        "pass_rate": {
+          "$ref": "#/$defs/CodingEvalRate"
+        },
+        "cost_completeness": {
+          "const": "unknown",
+          "default": "unknown",
+          "title": "Cost Completeness",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scheduled_trials",
+        "passed_trials",
+        "failed_trials",
+        "invalid_trials",
+        "pass_rate"
+      ],
+      "title": "HarborEvalSummary",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "description": "Harbor原生报告的脱敏投影，保持全部冻结槽位及费用未知状态。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.langfuse-harbor-export/v1",
+      "default": "harnessix.langfuse-harbor-export/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "job_id": {
+      "format": "uuid",
+      "title": "Job Id",
+      "type": "string"
+    },
+    "source_report_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Report Sha256",
+      "type": "string"
+    },
+    "summary": {
+      "$ref": "#/$defs/HarborEvalSummary"
+    },
+    "resource_spans": {
+      "items": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "type": "object"
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "title": "Resource Spans",
+      "type": "array"
+    },
+    "scores": {
+      "items": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "type": "object"
+      },
+      "maxItems": 12000,
+      "minItems": 1,
+      "title": "Scores",
+      "type": "array"
+    }
+  },
+  "required": [
+    "job_id",
+    "source_report_sha256",
+    "summary",
+    "resource_spans",
+    "scores"
+  ],
+  "title": "LangfuseHarborExport",
+  "type": "object"
+}

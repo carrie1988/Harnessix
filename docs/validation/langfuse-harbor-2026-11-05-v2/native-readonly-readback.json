@@ -1,0 +1,9 @@
+{
+  "spec_version": "harnessix.langfuse-readback/v1",
+  "source_report_sha256": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f",
+  "experiment_id": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a",
+  "dataset_id": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891",
+  "verified_trials": 5,
+  "verified_scores": 25,
+  "verified_at": "2026-11-06T06:24:53.351295Z"
+}

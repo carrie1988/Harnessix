@@ -1,0 +1,32 @@
+{
+  "base_commit": "de1ab2722f91d6109e807617aa1e07c8a502c9e5",
+  "files": {
+    "docs/adr/0109-evaluation-integrations.md": "0d527361edb6b0d912dfc916e1ffb17d28a15efb3d962ccf50a713fe203115a5",
+    "docs/adr/README.md": "27fab2191db1fa0bce3166f4a8d9598373567e89cd33b0dc18dc945f293edadc",
+    "docs/modules/evals.md": "25c082d8ab368638fa717b5e1ff53fc0d1e64b9eabb5fdcaac6615f05b7fa476",
+    "docs/operations/evaluation-integrations.md": "dae49a4672a0d77689cd64c5d131a2f8b093e3135db45b5aa9f6e7665d7f6742",
+    "integrations/harbor/README.md": "6a1b707f8afaab3e739823046a1e750724f689e5225890e488247650b627f6e7",
+    "integrations/harbor/harnessix_agent.py": "32fd1c5248238ed1e2ccbef643a2d48e534df5ec3898383749022b9d38ace65a",
+    "integrations/harbor/protocol_runner.py": "24c98a3dcb680a0d31b810a19191ed85b98ec83cfd580add831b4d610504c892",
+    "integrations/harbor/requirements.txt": "254f362e581cdd583525bb691f97e57d965553cde45f9f165db5133fc0c6224d",
+    "integrations/harbor/tasks/file-artifact/environment/Dockerfile": "6c986815f97ceec52e9583af1a0d202ce61c4b7186f8958cd1eb0196d8095940",
+    "integrations/harbor/tasks/file-artifact/instruction.md": "7aa6fe0f2bf280b2a2b945807662bca562e688b0b2293fd45e35e6e537007423",
+    "integrations/harbor/tasks/file-artifact/solution/solve.sh": "45ae739e12216505c8a9ca984d9019a04a200b72efb6754ffe89b906a280e04b",
+    "integrations/harbor/tasks/file-artifact/task.toml": "472ab99fa96724ff2f71db59ebf71727e2dc89cd6c155c0fb6b9b79edac10a97",
+    "integrations/harbor/tasks/file-artifact/tests/test.sh": "2a5549fa9592594ee31f356549e3604debcd7c4a267a080554ee96a1015f49e8",
+    "scripts/generate_specs.py": "2a613ae3d8d881a2e3e7e557424c46a31c102710731b2e60eebbe87706efdcd5",
+    "spec/anthropic-config-v1.schema.json": "8d88776a95d3186409a9e903d28f9cbb407aacb8d1a500cdbc88bb92ba1ad131",
+    "spec/coding-eval-provider-suite-run-config-v2.schema.json": "247115c55b2340699a39ddae80812022172c6945dac1088c9a55365fe0dc6f66",
+    "spec/langfuse-suite-export-v1.schema.json": "dc138f0c8fcb667f0102df1e26b21f29354a9fb0efbb4df5c42d61123727be89",
+    "spec/openai-chat-config-v1.schema.json": "2d085c45cac2c26bea66503fba0832a73e627bfbd7fda827ab2acc18d4064a52",
+    "src/harnessix/cli.py": "fd536a98fdf16a51118afb55c9213d5b7962bd80b3d2145f2cbb249762ab1713",
+    "src/harnessix/evals/export_cli.py": "3ff7cecb7b09f3c78925ea899a035f0c93e11b05f2c86cb81694bd7751de04ab",
+    "src/harnessix/evals/langfuse_contracts.py": "d75fd8289e57dfc60fe1d690382ca25e4b05584c9bcef769df20fbd19431634e",
+    "src/harnessix/evals/langfuse_projection.py": "93887761af26416769d1c997726d6206a304c498d4e0bacc55c7a2e86b8c5169",
+    "src/harnessix/evals/langfuse_transport.py": "d58e6284c3435f1531cf0a00ff425fb284afc9db3f83472909306fcaf8990c1e",
+    "src/harnessix/evals/report.py": "3b81435d1a46b0ab0f29bff32a2b96203498329fd41264434cef856ed4bd7bcc",
+    "tests/evals/test_langfuse_export.py": "b6b2aea0c55149cdeb1bb60c37b9f4a774169a2099aba7fefd3f1350309d1b9b",
+    "tests/integrations/test_harbor_adapter.py": "27c81d2314782980e7fa61375793b86427d5ae9c75d32a6a89ce6f5cf74d6e8b",
+    "tests/integrations/test_harbor_protocol.py": "8e50cd17c15f5ab097f3f086367c4df82b8ff4f60d4d964b5351c56112aff582"
+  }
+}

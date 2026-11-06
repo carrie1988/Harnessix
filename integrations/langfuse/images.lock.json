@@ -1,0 +1,37 @@
+{
+  "langfuse_version": "4.76.0",
+  "upstream_compose_ref": "https://github.com/langfuse/langfuse/blob/v4.76.0/docker-compose.yml",
+  "upstream_compose_sha256": "cf67837af1f69e6a0d82125bd623e63401b1b8876bf467c8c22adb8c384c7ff2",
+  "images": {
+    "postgres": {
+      "registry_digest": "postgres@sha256:748a18a54d3842d43bc156f0840d78029b8d349e0feca98c12b9c4ce3404a6b3",
+      "image_id": "sha256:e9cb23f1e827802e1572cd11fa56f707b625753078cc291170c624dbc6eb247c",
+      "architecture": "arm64"
+    },
+    "redis": {
+      "registry_digest": "redis@sha256:2e3eb11462c4e3759e6972678dd051d150ff54b1e60714b3c33b701260172a90",
+      "image_id": "sha256:28c7304286f16a13334ed11d78cf47ee9ae0dbe7e57ed52b505ca61bf8232cbc",
+      "architecture": "arm64"
+    },
+    "clickhouse": {
+      "registry_digest": "clickhouse/clickhouse-server@sha256:de3e47c64078aa196dae2349e048fc98ba81947f651f5c20e06e46baea8ae40a",
+      "image_id": "sha256:16af23b0656d3d8b0243ad3a45b47063deaf8099bdd9054c628a0194951ab60b",
+      "architecture": "arm64"
+    },
+    "minio": {
+      "registry_digest": "cgr.dev/chainguard/minio@sha256:cee9a8e35885e93f14b3cb32960e5017aff74e2adfb52ba87c65003b0163886b",
+      "image_id": "sha256:5c56224966d7d41685192b45f3bb039a737e6221bcd793b721cbd55d94128b49",
+      "architecture": "arm64"
+    },
+    "langfuse-worker": {
+      "registry_digest": "docker.langfuse.com/langfuse/langfuse-worker@sha256:27e8b49d619a013bca38ed9b0853456e19f5667a23e8e26e3a10d4e28485f49c",
+      "image_id": "sha256:d7091d6cbf04f5ab662006719b34ce67236d4e633e86eaf931261962496f7c62",
+      "architecture": "arm64"
+    },
+    "langfuse-web": {
+      "registry_digest": "docker.langfuse.com/langfuse/langfuse@sha256:59abb54faacf45b63d09f4076d45683dae26a6661974d497836543d350b16575",
+      "image_id": "sha256:7ef95d6e6d5ad32b54da639fbe3e9ef3710f3969d4ee913f562190ee5d856681",
+      "architecture": "arm64"
+    }
+  }
+}

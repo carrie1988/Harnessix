@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 56
+version: 57
 code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
 owners:
   - core
 modules:
   - evals
 related_adrs:
+  - docs/adr/0110-evaluation-integrations.md
   - docs/adr/0044-coding-eval-contract-and-grader.md
   - docs/adr/0045-historical-eval-materialization-and-checks.md
   - docs/adr/0046-historical-eval-runtime-orchestration.md
@@ -37,6 +38,11 @@ related_tests:
   - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/evals/swebench/test_planning_run_config.py
   - tests/evals/swebench/test_planning_agent_execution.py
+  - tests/evals/test_harbor_import.py
+  - tests/evals/test_langfuse_readback.py
+  - tests/evals/test_langfuse_export.py
+  - tests/integrations/test_harbor_protocol.py
+  - tests/integrations/test_harbor_adapter.py
   - tests/evals/test_provider_suite_parallel_config.py
   - tests/evals/test_grader.py
   - tests/evals/test_grader_final_feedback.py
@@ -119,6 +125,17 @@ Suite只物化即将执行或核验的一项；v2～v8不自动删除。显式v9
 180个认证请求位置的只读计量、预算假设反证及兼容／失败边界见
 [后续输入收敛设计](../changes/swebench-adapter-verified-25-pilot.md#后续只读求证与任务包装收敛)。
 
+完整Suite新增[Langfuse只读投影](../../src/harnessix/evals/langfuse_projection.py)、
+[显式传输](../../src/harnessix/evals/langfuse_transport.py)及coding-eval-export命令。
+原Reader、原子私有发布、费用及失败分母继续复用，详见
+[接入操作说明](../operations/evaluation-integrations.md)。Harbor适配器位于产品wheel之外，
+通过公共Agent Protocol驱动产品；独立验收结果与Runtime终态分开记录。
+原生[Harbor外部报告](../../src/harnessix/evals/harbor_contracts.py)以冻结槽位保留完整分母，
+由[导入器](../../src/harnessix/evals/harbor_import.py)验证零自动重试和执行身份，不补造14项原生检查。
+[真实读回](../../src/harnessix/evals/langfuse_readback.py)核对实验、根Observation及评分，
+与传输确认分开；公开API的规范整数和布尔字符串不改变本地原类型及未知费用语义。
+五场景真实容器执行和Langfuse写入、补发、读回证据见
+[完整闭环验收报告](../validation/langfuse-harbor-2026-11-05-v2/README.md)。
 
 验证宿主的复验计划采用封闭版本：原 v1 保留 70／40，v2 固定 60／38；
 必须显式登记同一原周期、冻结整个旧前缀并保留原未知预留。

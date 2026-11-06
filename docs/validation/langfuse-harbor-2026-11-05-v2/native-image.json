@@ -1,0 +1,6 @@
+{
+  "image": "harnessix-harbor-protocol:04fa70160bf69bdb",
+  "image_id": "sha256:c7a77cb0dd3c0b981b1d53b1455c9b7b7c3290fdb7f5c931414d2ad776aab689",
+  "wheel_sha256": "a8fc3c16d84eb5c8d82bb932b561804bf975f8d8c1cea4900e938968e6fbd8d3",
+  "build_inputs_sha256": "04fa70160bf69bdbc906d4c9d48b149264e0bbde058078c43dd99c93bf912daa"
+}

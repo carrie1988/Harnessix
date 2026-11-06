@@ -1,0 +1,121 @@
+unformatted: File would be reformatted
+  --> scripts/provider_verification_guard.py:76:64
+   |
+75 |     # 单位为毫元/百万Token，避免1.5等阶梯单价经过浮点运算。
+   -     price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
+   -         (1_000_000, 12_000, 36_000),
+   -     )
+76 +     price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = ((1_000_000, 12_000, 36_000),)
+77 |
+   |
+
+unformatted: File would be reformatted
+  --> src/harnessix/product_config/git_business_associations.py:61:24
+   |
+60 | def _invalid() -> KernelError:
+   -     return KernelError(
+   -         "git_business_association_invalid", "Git业务快照与原产品事实不一致"
+   -     )
+61 +     return KernelError("git_business_association_invalid", "Git业务快照与原产品事实不一致")
+62 |
+   |
+
+unformatted: File would be reformatted
+  --> src/harnessix/product_config/state_backup_v2_validation.py:57:61
+   |
+56 |     if any(
+   -         os.path.lexists(tree.path / (GIT_DATABASE + suffix))
+   -         for suffix in _SQLITE_SIDECAR_SUFFIXES
+57 +         os.path.lexists(tree.path / (GIT_DATABASE + suffix)) for suffix in _SQLITE_SIDECAR_SUFFIXES
+58 |     ):
+   |
+
+unformatted: File would be reformatted
+   --> tests/evals/test_beta_instruct_bounds.py:310:12
+    |
+309 |     assert r3.model == MODEL == "qwen3.8-max"
+    -     assert (
+    -         r3.price_source
+    -         == PRICE_SOURCE
+    -         == "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
+    -     )
+310 +     assert r3.price_source == PRICE_SOURCE == "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
+311 |     assert r3.guard_version == "harnessix.bailian-verification-request-guard/v3"
+    |
+
+unformatted: File would be reformatted
+   --> tests/evals/test_beta_qwen38_max_bounds.py:96:45
+    |
+95  |     with task_scope(path, plan) as ledger:
+    -         guard = GuardedVerificationProvider(
+    -             provider, ledger, qwen38_bounds(), suite_cancel
+    -         )
+96  +         guard = GuardedVerificationProvider(provider, ledger, qwen38_bounds(), suite_cancel)
+97  |         seen = [event async for event in guard.stream(model_request(), CancelToken())]
+--------------------------------------------------------------------------------
+125 |     with task_scope(path, plan) as ledger:
+    -         guard = GuardedVerificationProvider(
+    -             provider, ledger, qwen38_bounds(), suite_cancel
+    -         )
+126 +         guard = GuardedVerificationProvider(provider, ledger, qwen38_bounds(), suite_cancel)
+127 |         with pytest.raises(KernelError) as failed:
+    |
+
+unformatted: File would be reformatted
+   --> tests/evals/test_task_pack_approval_denial.py:135:43
+    |
+134 | def test_untrusted_profile_terminal_still_aborts_patch_approval() -> None:
+    -     turn, request, case = _patch_approval(
+    -         *_profile_exit_items(returncode=1, trusted=False)
+    -     )
+135 +     turn, request, case = _patch_approval(*_profile_exit_items(returncode=1, trusted=False))
+136 |
+    |
+
+unformatted: File would be reformatted
+   --> tests/integration/test_task_pack_execution.py:369:53
+    |
+368 |         for item in turn.items
+    -         if isinstance(item.content, ToolCallContent)
+    -         and item.content.tool == "apply_patch_batch"
+369 +         if isinstance(item.content, ToolCallContent) and item.content.tool == "apply_patch_batch"
+370 |     )
+    |
+
+unformatted: File would be reformatted
+   --> tests/models/test_openai_chat.py:303:35
+    |
+302 |
+    -     async with OpenAIChatProvider(
+    -         config(), transport=httpx.MockTransport(handle)
+    -     ) as provider:
+303 +     async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
+304 |         result = await provider.probe_model_availability(CancelToken())
+--------------------------------------------------------------------------------
+320 |
+    -     async with OpenAIChatProvider(
+    -         config(), transport=httpx.MockTransport(handle)
+    -     ) as provider:
+321 +     async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
+322 |         cancel = CancelToken()
+    |
+
+unformatted: File would be reformatted
+   --> tests/product_config/test_product_state_backup_v2_validation.py:49:28
+    |
+48  |
+    -     def assert_public_json(
+    -         self, value: JsonValue, *, checkpoint: Callable[[], None]
+    -     ) -> None:
+49  +     def assert_public_json(self, value: JsonValue, *, checkpoint: Callable[[], None]) -> None:
+50  |         checkpoint()
+--------------------------------------------------------------------------------
+120 |             prefix_revision=catalog.revision,
+    -             prefix_anchor_sha256=hashlib.sha256(
+    -                 encode_git_prefix_catalog(catalog)
+    -             ).hexdigest(),
+121 +             prefix_anchor_sha256=hashlib.sha256(encode_git_prefix_catalog(catalog)).hexdigest(),
+122 |             business_snapshot_sha256=hashlib.sha256(snapshot_body).hexdigest(),
+    |
+
+9 files would be reformatted, 2065 files already formatted

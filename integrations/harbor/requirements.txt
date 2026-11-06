@@ -1,0 +1,2 @@
+# 独立评测环境，避免Harbor依赖覆盖产品uv.lock中的Provider SDK。
+harbor==0.25.0

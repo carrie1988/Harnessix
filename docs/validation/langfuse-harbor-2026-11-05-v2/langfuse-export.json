@@ -1,0 +1,1515 @@
+{
+  "spec_version": "harnessix.langfuse-harbor-export/v1",
+  "job_id": "254f28b2-5b4b-4166-a68c-f8d4a29dee4d",
+  "source_report_sha256": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f",
+  "summary": {
+    "scheduled_trials": 5,
+    "passed_trials": 1,
+    "failed_trials": 4,
+    "invalid_trials": 0,
+    "pass_rate": {
+      "numerator": 1,
+      "denominator": 5,
+      "basis_points": 2000
+    },
+    "cost_completeness": "unknown"
+  },
+  "resource_spans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "harnessix.evals"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "harnessix.evals.export"
+          },
+          "spans": [
+            {
+              "traceId": "92082d783da0ec9d1784448d2be0a076",
+              "spanId": "a05ff8ed96b1f986",
+              "name": "harnessix.eval.trial",
+              "kind": 1,
+              "startTimeUnixNano": "1793946174399408000",
+              "endTimeUnixNano": "1793946190406284000",
+              "attributes": [
+                {
+                  "key": "langfuse.observation.type",
+                  "value": {
+                    "stringValue": "agent"
+                  }
+                },
+                {
+                  "key": "langfuse.environment",
+                  "value": {
+                    "stringValue": "evaluation"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.id",
+                  "value": {
+                    "stringValue": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.name",
+                  "value": {
+                    "stringValue": "harnessix-harbor-ada9f574ad15b3ca"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.dataset.id",
+                  "value": {
+                    "stringValue": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.id",
+                  "value": {
+                    "stringValue": "26984a1ae2ee195deeee0d3f0ff99acd9043494e8ab2e2cae0e466f5f582fe7a"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.root_observation_id",
+                  "value": {
+                    "stringValue": "a05ff8ed96b1f986"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.input",
+                  "value": {
+                    "stringValue": "{\"task_name\": \"01-protocol-pass\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.output",
+                  "value": {
+                    "stringValue": "{\"outcome\": \"passed\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_kind",
+                  "value": {
+                    "stringValue": "harbor"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.job_id",
+                  "value": {
+                    "stringValue": "254f28b2-5b4b-4166-a68c-f8d4a29dee4d"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot_id",
+                  "value": {
+                    "stringValue": "4aa3499d-b33f-5840-b971-09d41bf2783b"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.harbor_trial_id",
+                  "value": {
+                    "stringValue": "4d68fc8d-ea13-4687-883a-f301cb5d97f0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_report_sha256",
+                  "value": {
+                    "stringValue": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_lock_sha256",
+                  "value": {
+                    "stringValue": "098533b2b38a1fffa5406af0d5e301688ad3712df878c3f833a0e34aefd38808"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.input_lock_sha256",
+                  "value": {
+                    "stringValue": "3d9b40bdb189aa9fe90bafbf6dfb4abef56ab1d89930445fb75f80c93abd05e7"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.task_digest",
+                  "value": {
+                    "stringValue": "sha256:a487b878e9cd1c1d2962d648f3b30dd19a637f7eeb363cddea111805f06cc363"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.classification",
+                  "value": {
+                    "stringValue": "passed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.reason",
+                  "value": {
+                    "stringValue": "verified"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_name",
+                  "value": {
+                    "stringValue": "harnessix"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_version",
+                  "value": {
+                    "stringValue": "1.0.0rc1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.thread_id",
+                  "value": {
+                    "stringValue": "ccb27b43-58cb-50b1-8b43-159e608721db"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.turn_id",
+                  "value": {
+                    "stringValue": "64fb09cf-9fb4-54fd-a94e-c1e5ff0373e3"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_reason",
+                  "value": {
+                    "stringValue": "completed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_turn_status",
+                  "value": {
+                    "stringValue": "completed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_model_steps",
+                  "value": {
+                    "intValue": "2"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.protocol_evidence_complete",
+                  "value": {
+                    "boolValue": true
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.tool_results_succeeded",
+                  "value": {
+                    "intValue": "1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.final_assistant_sha256",
+                  "value": {
+                    "stringValue": "072f23190df76b9ae3d2fb5a81a077ef06338e34ad6d9e96a213dc2b5029bed8"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_input_tokens",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_output_tokens",
+                  "value": {
+                    "intValue": "40"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.cost_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.usage_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.verifier_mode",
+                  "value": {
+                    "stringValue": "separate"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.time_source",
+                  "value": {
+                    "stringValue": "trial"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.scheduled_trials",
+                  "value": {
+                    "intValue": "5"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.automatic_retries",
+                  "value": {
+                    "intValue": "0"
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "bb41fcfaec2407f6f45885b2cd72fe5e",
+              "spanId": "0945bcedb92ad2f6",
+              "name": "harnessix.eval.trial",
+              "kind": 1,
+              "startTimeUnixNano": "1793946190414997000",
+              "endTimeUnixNano": "1793946205605584000",
+              "attributes": [
+                {
+                  "key": "langfuse.observation.type",
+                  "value": {
+                    "stringValue": "agent"
+                  }
+                },
+                {
+                  "key": "langfuse.environment",
+                  "value": {
+                    "stringValue": "evaluation"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.id",
+                  "value": {
+                    "stringValue": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.name",
+                  "value": {
+                    "stringValue": "harnessix-harbor-ada9f574ad15b3ca"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.dataset.id",
+                  "value": {
+                    "stringValue": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.id",
+                  "value": {
+                    "stringValue": "7ea41384ff41c2adf6ec476f91c89a3036ea563075eb9d4325efd80d9fb331db"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.root_observation_id",
+                  "value": {
+                    "stringValue": "0945bcedb92ad2f6"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.input",
+                  "value": {
+                    "stringValue": "{\"task_name\": \"02-protocol-task-fail\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.output",
+                  "value": {
+                    "stringValue": "{\"outcome\": \"failed\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_kind",
+                  "value": {
+                    "stringValue": "harbor"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.job_id",
+                  "value": {
+                    "stringValue": "254f28b2-5b4b-4166-a68c-f8d4a29dee4d"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot_id",
+                  "value": {
+                    "stringValue": "649ae08a-f3a3-5dcb-ac07-c41dd1e2b9de"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.harbor_trial_id",
+                  "value": {
+                    "stringValue": "53ee3adb-83ef-42a6-9b8f-89b3da87d4c7"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_report_sha256",
+                  "value": {
+                    "stringValue": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_lock_sha256",
+                  "value": {
+                    "stringValue": "098533b2b38a1fffa5406af0d5e301688ad3712df878c3f833a0e34aefd38808"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.input_lock_sha256",
+                  "value": {
+                    "stringValue": "391d3d3980621763a06ac16d508a1cb5210f74da3f6580d5bff8f8a89f2e73c2"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.task_digest",
+                  "value": {
+                    "stringValue": "sha256:b59013e980aaa354bc95a1be5bcc8711613f05b91517ca408e1926b4af2bd897"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot",
+                  "value": {
+                    "intValue": "1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.classification",
+                  "value": {
+                    "stringValue": "task"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.reason",
+                  "value": {
+                    "stringValue": "task_failed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_name",
+                  "value": {
+                    "stringValue": "harnessix"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_version",
+                  "value": {
+                    "stringValue": "1.0.0rc1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.thread_id",
+                  "value": {
+                    "stringValue": "27b32407-e0d7-5a50-bd97-3fafd4d49e13"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.turn_id",
+                  "value": {
+                    "stringValue": "2edd421a-e844-572e-b1e4-802c51b7c0a0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_reason",
+                  "value": {
+                    "stringValue": "completed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_turn_status",
+                  "value": {
+                    "stringValue": "completed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_model_steps",
+                  "value": {
+                    "intValue": "2"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.protocol_evidence_complete",
+                  "value": {
+                    "boolValue": true
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.tool_results_succeeded",
+                  "value": {
+                    "intValue": "1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.final_assistant_sha256",
+                  "value": {
+                    "stringValue": "170b38f9ffb784e97f5a3aba28678fc18f0bf895f1c4f00e2a3f597cddc71d0a"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_input_tokens",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_output_tokens",
+                  "value": {
+                    "intValue": "40"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.cost_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.usage_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.verifier_mode",
+                  "value": {
+                    "stringValue": "separate"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.time_source",
+                  "value": {
+                    "stringValue": "trial"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.scheduled_trials",
+                  "value": {
+                    "intValue": "5"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.automatic_retries",
+                  "value": {
+                    "intValue": "0"
+                  }
+                }
+              ],
+              "status": {
+                "code": 2
+              }
+            },
+            {
+              "traceId": "c86424878e92bb0e2ed57c238312282d",
+              "spanId": "58e8e06956bb4ab3",
+              "name": "harnessix.eval.trial",
+              "kind": 1,
+              "startTimeUnixNano": "1793946205611843000",
+              "endTimeUnixNano": "1793946220876767000",
+              "attributes": [
+                {
+                  "key": "langfuse.observation.type",
+                  "value": {
+                    "stringValue": "agent"
+                  }
+                },
+                {
+                  "key": "langfuse.environment",
+                  "value": {
+                    "stringValue": "evaluation"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.id",
+                  "value": {
+                    "stringValue": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.name",
+                  "value": {
+                    "stringValue": "harnessix-harbor-ada9f574ad15b3ca"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.dataset.id",
+                  "value": {
+                    "stringValue": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.id",
+                  "value": {
+                    "stringValue": "9cd646645aa1cfe9db5cb7b25ceb99c35e7317d334f1892b3c64a0c8b1d2af64"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.root_observation_id",
+                  "value": {
+                    "stringValue": "58e8e06956bb4ab3"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.input",
+                  "value": {
+                    "stringValue": "{\"task_name\": \"03-protocol-approval\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.output",
+                  "value": {
+                    "stringValue": "{\"outcome\": \"failed\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_kind",
+                  "value": {
+                    "stringValue": "harbor"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.job_id",
+                  "value": {
+                    "stringValue": "254f28b2-5b4b-4166-a68c-f8d4a29dee4d"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot_id",
+                  "value": {
+                    "stringValue": "c3b07671-0bac-5fbc-9abe-bbeb1509fcc8"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.harbor_trial_id",
+                  "value": {
+                    "stringValue": "89852356-6a56-46eb-a291-80a559f7f8c7"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_report_sha256",
+                  "value": {
+                    "stringValue": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_lock_sha256",
+                  "value": {
+                    "stringValue": "098533b2b38a1fffa5406af0d5e301688ad3712df878c3f833a0e34aefd38808"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.input_lock_sha256",
+                  "value": {
+                    "stringValue": "1e7ea317a0cefbf148c1eb60dbba0bab801084389492ba33f99d0403e7dce323"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.task_digest",
+                  "value": {
+                    "stringValue": "sha256:6152513f9bf01ac681df7c77f8c9b1c031074fba721d47cffa47b1733f427551"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot",
+                  "value": {
+                    "intValue": "2"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.classification",
+                  "value": {
+                    "stringValue": "runtime"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.reason",
+                  "value": {
+                    "stringValue": "intervention_required"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_name",
+                  "value": {
+                    "stringValue": "harnessix"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_version",
+                  "value": {
+                    "stringValue": "1.0.0rc1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.thread_id",
+                  "value": {
+                    "stringValue": "6ecf0e8a-ae26-58a3-810e-1a0a73a44c65"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.turn_id",
+                  "value": {
+                    "stringValue": "7d76135d-3941-5b69-8b8d-b33aed30523b"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_reason",
+                  "value": {
+                    "stringValue": "intervention_required"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_turn_status",
+                  "value": {
+                    "stringValue": "cancelled"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_failure_category",
+                  "value": {
+                    "stringValue": "cancelled"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_model_steps",
+                  "value": {
+                    "intValue": "1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.protocol_evidence_complete",
+                  "value": {
+                    "boolValue": true
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.tool_results_succeeded",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_input_tokens",
+                  "value": {
+                    "intValue": "100"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_output_tokens",
+                  "value": {
+                    "intValue": "20"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.cost_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.usage_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.verifier_mode",
+                  "value": {
+                    "stringValue": "separate"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.exception_type",
+                  "value": {
+                    "stringValue": "NonZeroAgentExitCodeError"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.time_source",
+                  "value": {
+                    "stringValue": "trial"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.scheduled_trials",
+                  "value": {
+                    "intValue": "5"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.automatic_retries",
+                  "value": {
+                    "intValue": "0"
+                  }
+                }
+              ],
+              "status": {
+                "code": 2
+              }
+            },
+            {
+              "traceId": "bb18f903f5884ca740f4dc1c830ea952",
+              "spanId": "103bfe2434a3616b",
+              "name": "harnessix.eval.trial",
+              "kind": 1,
+              "startTimeUnixNano": "1793946220883483000",
+              "endTimeUnixNano": "1793946250648146000",
+              "attributes": [
+                {
+                  "key": "langfuse.observation.type",
+                  "value": {
+                    "stringValue": "agent"
+                  }
+                },
+                {
+                  "key": "langfuse.environment",
+                  "value": {
+                    "stringValue": "evaluation"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.id",
+                  "value": {
+                    "stringValue": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.name",
+                  "value": {
+                    "stringValue": "harnessix-harbor-ada9f574ad15b3ca"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.dataset.id",
+                  "value": {
+                    "stringValue": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.id",
+                  "value": {
+                    "stringValue": "ef26ebbf9ee74a4a67f31e8137811b23f28fa7e5d901fc0e697b086f7ec8f737"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.root_observation_id",
+                  "value": {
+                    "stringValue": "103bfe2434a3616b"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.input",
+                  "value": {
+                    "stringValue": "{\"task_name\": \"04-protocol-deadline\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.output",
+                  "value": {
+                    "stringValue": "{\"outcome\": \"failed\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_kind",
+                  "value": {
+                    "stringValue": "harbor"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.job_id",
+                  "value": {
+                    "stringValue": "254f28b2-5b4b-4166-a68c-f8d4a29dee4d"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot_id",
+                  "value": {
+                    "stringValue": "bc3929aa-cc7d-5394-bd66-0df66c78c7fa"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.harbor_trial_id",
+                  "value": {
+                    "stringValue": "dd08966a-3f3b-4336-97fb-43117713df7a"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_report_sha256",
+                  "value": {
+                    "stringValue": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_lock_sha256",
+                  "value": {
+                    "stringValue": "098533b2b38a1fffa5406af0d5e301688ad3712df878c3f833a0e34aefd38808"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.input_lock_sha256",
+                  "value": {
+                    "stringValue": "7c99880edbad29b248daaa537c7de15a5dad1944fc4d375329f32e0ede1631cc"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.task_digest",
+                  "value": {
+                    "stringValue": "sha256:4d1dc1572d467ba36fd2d61a5ff073d079606a3edc598ff7af52c4f02eca5699"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot",
+                  "value": {
+                    "intValue": "3"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.classification",
+                  "value": {
+                    "stringValue": "budget"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.reason",
+                  "value": {
+                    "stringValue": "deadline_exceeded"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_name",
+                  "value": {
+                    "stringValue": "harnessix"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_version",
+                  "value": {
+                    "stringValue": "1.0.0rc1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.thread_id",
+                  "value": {
+                    "stringValue": "a706e0d3-2a9e-5881-b731-e354c9ffa8ea"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.turn_id",
+                  "value": {
+                    "stringValue": "717ce589-80f1-56cb-95be-3c817731ea4b"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_reason",
+                  "value": {
+                    "stringValue": "deadline_exceeded"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_turn_status",
+                  "value": {
+                    "stringValue": "failed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_failure_category",
+                  "value": {
+                    "stringValue": "budget"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_model_steps",
+                  "value": {
+                    "intValue": "1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.protocol_evidence_complete",
+                  "value": {
+                    "boolValue": true
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.tool_results_succeeded",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_input_tokens",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_output_tokens",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.cost_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.usage_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.verifier_mode",
+                  "value": {
+                    "stringValue": "separate"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.exception_type",
+                  "value": {
+                    "stringValue": "NonZeroAgentExitCodeError"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.time_source",
+                  "value": {
+                    "stringValue": "trial"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.scheduled_trials",
+                  "value": {
+                    "intValue": "5"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.automatic_retries",
+                  "value": {
+                    "intValue": "0"
+                  }
+                }
+              ],
+              "status": {
+                "code": 2
+              }
+            },
+            {
+              "traceId": "8fb5e31fc7c9948f1a1552bb26da941b",
+              "spanId": "f8d1ce0fc119a7d7",
+              "name": "harnessix.eval.trial",
+              "kind": 1,
+              "startTimeUnixNano": "1793946250655443000",
+              "endTimeUnixNano": "1793946266171498000",
+              "attributes": [
+                {
+                  "key": "langfuse.observation.type",
+                  "value": {
+                    "stringValue": "agent"
+                  }
+                },
+                {
+                  "key": "langfuse.environment",
+                  "value": {
+                    "stringValue": "evaluation"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.id",
+                  "value": {
+                    "stringValue": "271427d7187f0642151af22ef6c6e9cbdd74ac1e4fadd88d5d8e0324a6eaf06a"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.name",
+                  "value": {
+                    "stringValue": "harnessix-harbor-ada9f574ad15b3ca"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.dataset.id",
+                  "value": {
+                    "stringValue": "b90be8f24271ce62fd2994bba97e5b49d718e75a7eacefe1ee307dabce2d9891"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.id",
+                  "value": {
+                    "stringValue": "c26ccd69035bc26de3f5b7a2438ceaa05c496bcbf470f07dcb18edd1ee938ad6"
+                  }
+                },
+                {
+                  "key": "langfuse.experiment.item.root_observation_id",
+                  "value": {
+                    "stringValue": "f8d1ce0fc119a7d7"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.input",
+                  "value": {
+                    "stringValue": "{\"task_name\": \"05-protocol-provider-fail\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.output",
+                  "value": {
+                    "stringValue": "{\"outcome\": \"failed\"}"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_kind",
+                  "value": {
+                    "stringValue": "harbor"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.job_id",
+                  "value": {
+                    "stringValue": "254f28b2-5b4b-4166-a68c-f8d4a29dee4d"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot_id",
+                  "value": {
+                    "stringValue": "6556b40a-5f56-5138-9d67-9e71e49c88ed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.harbor_trial_id",
+                  "value": {
+                    "stringValue": "7f625e86-fbb6-4fc6-b8e1-3414722b27e3"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_report_sha256",
+                  "value": {
+                    "stringValue": "ada9f574ad15b3ca3bfc674f69d6e466910b4f8be40ee31e891af95d84cc3a6f"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.source_lock_sha256",
+                  "value": {
+                    "stringValue": "098533b2b38a1fffa5406af0d5e301688ad3712df878c3f833a0e34aefd38808"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.input_lock_sha256",
+                  "value": {
+                    "stringValue": "44c3d02f5ea7f8af18213944a38c1535a8597bdb1222a7b2fdea993ad566d8b7"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.task_digest",
+                  "value": {
+                    "stringValue": "sha256:a7155dfe5e69823ea03824e64faa54a8100dcf7d972ff6e2f0c1367d6d4152fe"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.slot",
+                  "value": {
+                    "intValue": "4"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.classification",
+                  "value": {
+                    "stringValue": "provider"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.reason",
+                  "value": {
+                    "stringValue": "execution_failed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_name",
+                  "value": {
+                    "stringValue": "harnessix"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.agent_version",
+                  "value": {
+                    "stringValue": "1.0.0rc1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.thread_id",
+                  "value": {
+                    "stringValue": "438c596d-e239-5803-b919-051111077ecd"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.turn_id",
+                  "value": {
+                    "stringValue": "0ebc7aad-690f-50a5-84a5-a794bf2bc76c"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_reason",
+                  "value": {
+                    "stringValue": "failed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_turn_status",
+                  "value": {
+                    "stringValue": "failed"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.native_failure_category",
+                  "value": {
+                    "stringValue": "provider"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_model_steps",
+                  "value": {
+                    "intValue": "1"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.protocol_evidence_complete",
+                  "value": {
+                    "boolValue": true
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.tool_results_succeeded",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_input_tokens",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.observed_output_tokens",
+                  "value": {
+                    "intValue": "0"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.cost_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.usage_completeness",
+                  "value": {
+                    "stringValue": "unknown"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.verifier_mode",
+                  "value": {
+                    "stringValue": "separate"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.exception_type",
+                  "value": {
+                    "stringValue": "NonZeroAgentExitCodeError"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.time_source",
+                  "value": {
+                    "stringValue": "trial"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.scheduled_trials",
+                  "value": {
+                    "intValue": "5"
+                  }
+                },
+                {
+                  "key": "langfuse.observation.metadata.automatic_retries",
+                  "value": {
+                    "intValue": "0"
+                  }
+                }
+              ],
+              "status": {
+                "code": 2
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "id": "91ae6ca4a111e3b2aea4978b1f347e45d0c50b69e2882fb1bb74c81039b86897",
+      "traceId": "92082d783da0ec9d1784448d2be0a076",
+      "observationId": "a05ff8ed96b1f986",
+      "name": "task_passed",
+      "dataType": "NUMERIC",
+      "value": 1.0,
+      "timestamp": "2026-11-06T06:23:10.406284+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "c77b0abb40f155eee0a5718c63b9f6ac6107ce935616b98e6ea08dd9f582618d",
+      "traceId": "92082d783da0ec9d1784448d2be0a076",
+      "observationId": "a05ff8ed96b1f986",
+      "name": "classification",
+      "dataType": "CATEGORICAL",
+      "value": "passed",
+      "timestamp": "2026-11-06T06:23:10.406284+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "6b0d441ab7ad8c199add59d752ab1c914e42c793ab727fd4e3d879de878fc4d9",
+      "traceId": "92082d783da0ec9d1784448d2be0a076",
+      "observationId": "a05ff8ed96b1f986",
+      "name": "cost_completeness",
+      "dataType": "CATEGORICAL",
+      "value": "unknown",
+      "timestamp": "2026-11-06T06:23:10.406284+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "66327bd42cefaf269bd4864e4eaf6cd270aa6c1f88c7caa8982a9bb5aa85bfa5",
+      "traceId": "92082d783da0ec9d1784448d2be0a076",
+      "observationId": "a05ff8ed96b1f986",
+      "name": "verifier_reward",
+      "dataType": "NUMERIC",
+      "value": 1.0,
+      "timestamp": "2026-11-06T06:23:10.406284+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "ae408559cabf231e5887fa6bcd90b7359859e9c34147797b6e0360ac166eae74",
+      "traceId": "92082d783da0ec9d1784448d2be0a076",
+      "observationId": "a05ff8ed96b1f986",
+      "name": "elapsed_seconds",
+      "dataType": "NUMERIC",
+      "value": 16.006876,
+      "timestamp": "2026-11-06T06:23:10.406284+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "bb517f6009d7a8953ad380e3d31e7575b5752f14e6ba91ced85962cf53c23585",
+      "traceId": "bb41fcfaec2407f6f45885b2cd72fe5e",
+      "observationId": "0945bcedb92ad2f6",
+      "name": "task_passed",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:23:25.605584+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "005fc42295768fc987d37abeb3f9d56069826a65ed66f5bca64c55b957af84b8",
+      "traceId": "bb41fcfaec2407f6f45885b2cd72fe5e",
+      "observationId": "0945bcedb92ad2f6",
+      "name": "classification",
+      "dataType": "CATEGORICAL",
+      "value": "task",
+      "timestamp": "2026-11-06T06:23:25.605584+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "8c2c7af3adef4a2ee72adea0e9b2d836ca0760bc1338c22547f5852c2107fa2d",
+      "traceId": "bb41fcfaec2407f6f45885b2cd72fe5e",
+      "observationId": "0945bcedb92ad2f6",
+      "name": "cost_completeness",
+      "dataType": "CATEGORICAL",
+      "value": "unknown",
+      "timestamp": "2026-11-06T06:23:25.605584+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "55f91eafa325492ab3574f3970a66088f6955bb8893124f94fe71e823633ab21",
+      "traceId": "bb41fcfaec2407f6f45885b2cd72fe5e",
+      "observationId": "0945bcedb92ad2f6",
+      "name": "verifier_reward",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:23:25.605584+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "1ea17289e8b7b6f463a799f2af7f6b35c6bcb7ab3fbdb7f2e0105dca579dbcd7",
+      "traceId": "bb41fcfaec2407f6f45885b2cd72fe5e",
+      "observationId": "0945bcedb92ad2f6",
+      "name": "elapsed_seconds",
+      "dataType": "NUMERIC",
+      "value": 15.190587,
+      "timestamp": "2026-11-06T06:23:25.605584+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "78b561569fdeb4f9c0eaf8f823c3dea21f45b73d27a6beaf6b619aa28681d8fb",
+      "traceId": "c86424878e92bb0e2ed57c238312282d",
+      "observationId": "58e8e06956bb4ab3",
+      "name": "task_passed",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:23:40.876767+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "41419efe80e55cf4f9395d43cfb822ea51c35d1b834e2b1d17a0e426f91cfc74",
+      "traceId": "c86424878e92bb0e2ed57c238312282d",
+      "observationId": "58e8e06956bb4ab3",
+      "name": "classification",
+      "dataType": "CATEGORICAL",
+      "value": "runtime",
+      "timestamp": "2026-11-06T06:23:40.876767+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "dcd0e1f9bfb4ab33cd4b6e19c5a6822d422cd428d36298838106201115815f3a",
+      "traceId": "c86424878e92bb0e2ed57c238312282d",
+      "observationId": "58e8e06956bb4ab3",
+      "name": "cost_completeness",
+      "dataType": "CATEGORICAL",
+      "value": "unknown",
+      "timestamp": "2026-11-06T06:23:40.876767+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "38348c30c4c0ce12bdbe5d57bd52e4abe6601bca7d451233c89104bb965953b8",
+      "traceId": "c86424878e92bb0e2ed57c238312282d",
+      "observationId": "58e8e06956bb4ab3",
+      "name": "verifier_reward",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:23:40.876767+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "e19b394e2ed5e27329cf7e5cc32be58ab24ef401b6579a0f7f5499674b431f50",
+      "traceId": "c86424878e92bb0e2ed57c238312282d",
+      "observationId": "58e8e06956bb4ab3",
+      "name": "elapsed_seconds",
+      "dataType": "NUMERIC",
+      "value": 15.264924,
+      "timestamp": "2026-11-06T06:23:40.876767+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "e5df0391f7073b4764900996a2b28aab343599d9222dec5458791de480239793",
+      "traceId": "bb18f903f5884ca740f4dc1c830ea952",
+      "observationId": "103bfe2434a3616b",
+      "name": "task_passed",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:24:10.648146+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "40a6522120c21290222c0ead5e6685f5cb7b1720bee61ef2105e3b832a5d56a7",
+      "traceId": "bb18f903f5884ca740f4dc1c830ea952",
+      "observationId": "103bfe2434a3616b",
+      "name": "classification",
+      "dataType": "CATEGORICAL",
+      "value": "budget",
+      "timestamp": "2026-11-06T06:24:10.648146+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "41e7ec0aa25e67f2efe9cccada9f1ab71e5bb6d75ee0efb47af676f42f4e14d6",
+      "traceId": "bb18f903f5884ca740f4dc1c830ea952",
+      "observationId": "103bfe2434a3616b",
+      "name": "cost_completeness",
+      "dataType": "CATEGORICAL",
+      "value": "unknown",
+      "timestamp": "2026-11-06T06:24:10.648146+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "c67dd366873ecf32391cf53621b42e486f41509fe40f80cb9c4397223e95cf80",
+      "traceId": "bb18f903f5884ca740f4dc1c830ea952",
+      "observationId": "103bfe2434a3616b",
+      "name": "verifier_reward",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:24:10.648146+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "d1e46bbe756dfa41390fdb0cc410b3220b9000536e233116390f8685236a7089",
+      "traceId": "bb18f903f5884ca740f4dc1c830ea952",
+      "observationId": "103bfe2434a3616b",
+      "name": "elapsed_seconds",
+      "dataType": "NUMERIC",
+      "value": 29.764663,
+      "timestamp": "2026-11-06T06:24:10.648146+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "a2bc2297ca9a319396c4bcdd04ec3c8356893933db63d3a81f50dfae56f0943b",
+      "traceId": "8fb5e31fc7c9948f1a1552bb26da941b",
+      "observationId": "f8d1ce0fc119a7d7",
+      "name": "task_passed",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:24:26.171498+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "46ef5abada75f05c256d6d06b055b1484db52fc515fd329aab6220cc3faf4660",
+      "traceId": "8fb5e31fc7c9948f1a1552bb26da941b",
+      "observationId": "f8d1ce0fc119a7d7",
+      "name": "classification",
+      "dataType": "CATEGORICAL",
+      "value": "provider",
+      "timestamp": "2026-11-06T06:24:26.171498+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "46ac4af4f05c09cfcdc5b3c1e4b22c40b7c7154eb96ab6ef99df54af85d0e491",
+      "traceId": "8fb5e31fc7c9948f1a1552bb26da941b",
+      "observationId": "f8d1ce0fc119a7d7",
+      "name": "cost_completeness",
+      "dataType": "CATEGORICAL",
+      "value": "unknown",
+      "timestamp": "2026-11-06T06:24:26.171498+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "041d47ce4284de4e83f4c5405451ebd0a09d52ad0585789fc526cd29d8edf092",
+      "traceId": "8fb5e31fc7c9948f1a1552bb26da941b",
+      "observationId": "f8d1ce0fc119a7d7",
+      "name": "verifier_reward",
+      "dataType": "NUMERIC",
+      "value": 0.0,
+      "timestamp": "2026-11-06T06:24:26.171498+00:00",
+      "environment": "evaluation"
+    },
+    {
+      "id": "6364cc31372bb42eb56c5d6cb7ff6ff1dc1e8f5f1ac1d0a10adb8baa96fea80a",
+      "traceId": "8fb5e31fc7c9948f1a1552bb26da941b",
+      "observationId": "f8d1ce0fc119a7d7",
+      "name": "elapsed_seconds",
+      "dataType": "NUMERIC",
+      "value": 15.516055,
+      "timestamp": "2026-11-06T06:24:26.171498+00:00",
+      "environment": "evaluation"
+    }
+  ]
+}

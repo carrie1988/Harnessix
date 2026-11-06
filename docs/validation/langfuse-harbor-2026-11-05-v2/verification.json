@@ -1,0 +1,119 @@
+{
+  "status": "integration_acceptance_passed",
+  "verified_at": "2026-11-06T06:27:11.530707+00:00",
+  "scope": "Deterministic HTTPS provider, actual installed Harnessix product/runtime/SDK/tools, separate Harbor verifier, real local Langfuse write and public API readback; not a paid-model coding-quality evaluation.",
+  "source": {
+    "base_commit": "de1ab2722f91d6109e807617aa1e07c8a502c9e5",
+    "branch": "codex/langfuse-harbor-integration",
+    "state": "uncommitted_working_tree",
+    "implementation_fingerprint": "f82a82963c2816b7949eed7f95da5f1d46781902edea07791e8c3f3c7427fa85",
+    "frozen_file_count": 963,
+    "all_frozen_hashes_verified": true,
+    "core_dependency_files_unchanged": true,
+    "main_not_merged": true
+  },
+  "versions": {
+    "python": "3.12.7",
+    "harnessix": "1.0.0rc1",
+    "pydantic": "2.13.5",
+    "httpx": "0.28.1",
+    "pytest": "8.4.2",
+    "mypy": "1.20.2",
+    "ruff": "0.16.5",
+    "harbor": "0.25.0",
+    "langfuse": "4.76.0"
+  },
+  "regression": {
+    "command": "uv run --frozen pytest tests/evals tests/integrations/test_harbor_protocol.py tests/app_server tests/agent/test_telemetry.py tests/unit/test_observability_core.py tests/unit/test_cli_license.py tests/governance/test_contract_import_boundary.py",
+    "junit": {
+      "tests": 1721,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time": 123.393
+    },
+    "focused_tests_overlap": true
+  },
+  "isolated_harbor_adapter": {
+    "command": "integrations/harbor/.venv/bin/python -m pytest tests/integrations/test_harbor_adapter.py",
+    "junit": {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time": 0.16
+    }
+  },
+  "live_acceptance": {
+    "scenario_assertions_passed": 5,
+    "task_passed": 1,
+    "task_denominator": 5,
+    "paid_model_calls": 0,
+    "actual_native_containers": 10,
+    "all_observed_native_containers_network_mode": "none",
+    "containers_and_egress_sidecars_removed": true,
+    "remaining_acceptance_service_containers": [
+      "harnessix-langfuse-acceptance-langfuse-web-1",
+      "harnessix-langfuse-acceptance-langfuse-worker-1",
+      "harnessix-langfuse-acceptance-redis-1",
+      "harnessix-langfuse-acceptance-postgres-1",
+      "harnessix-langfuse-acceptance-clickhouse-1",
+      "harnessix-langfuse-acceptance-minio-1"
+    ],
+    "fresh_job_directory": "/private/tmp/harnessix-langfuse-harbor-acceptance-20261105-v4/jobs/native-matrix",
+    "source_json_unchanged_after_resend": true,
+    "write_readback_passes": 2,
+    "additional_get_only_native_readback": "native-readonly-readback.json",
+    "historical_post_restart_get_only_readback": "historical-post-restart-readback.json",
+    "historical_final_get_only_readback": "historical-current-readback.json"
+  },
+  "checks": {
+    "ruff_lint": "passed",
+    "changed_python_format": "passed (28 files)",
+    "mypy": "passed (543 source files)",
+    "generated_schemas": "passed",
+    "taskpack_generation": "passed",
+    "sbom": "passed",
+    "secret_rule_self_check": "passed (6 rules)",
+    "tracked_and_wheel_secret_scan": "passed (5490 inputs)",
+    "new_and_changed_files_secret_scan": {
+      "status": "passed",
+      "files_scanned": 93,
+      "findings": [],
+      "includes_untracked_source_and_validation_evidence": true
+    },
+    "documentation": "文档门禁通过：653份文档、14580条链接、1174幅Mermaid、26个源码包、0个变化路径",
+    "artifact_contracts_revalidated": true,
+    "final_working_tree_diff_check": "passed"
+  },
+  "baseline_limits": {
+    "full_suite": "Not rerun in phase2; phase1 exploratory full-suite negatives all reproduced on untouched main. See v1/verification.json; this does not claim a clean full repository suite.",
+    "format": "9 unchanged main files",
+    "readability": "28 identical main errors, zero additions",
+    "license": "12 Archive violations, reproduced on main",
+    "repository_make_check": "not passing due to pre-existing baseline gates",
+    "release_1_0": "unchanged; not promoted to GO"
+  },
+  "preserved_development_probes": [
+    {
+      "directory": "/private/tmp/harnessix-langfuse-harbor-acceptance-20261105-v2",
+      "status": "failed",
+      "reason": "Monitor expected kernel none but Harbor default uses egress sidecar; stopped, preserved, task Compose now explicitly requests none."
+    },
+    {
+      "directory": "/private/tmp/harnessix-langfuse-harbor-acceptance-20261105-v3",
+      "status": "failed_at_readback",
+      "reason": "Real Langfuse returned canonical boolean metadata strings; exact JSON boolean normalization fixed, existing data then verified GET-only without resending."
+    },
+    {
+      "directory": "/private/tmp/harnessix-langfuse-harbor-acceptance-20261105-v4",
+      "status": "passed",
+      "reason": "Fresh frozen five-scenario job, two complete write/readbacks and extra GET-only verification."
+    }
+  ],
+  "remaining_scope": [
+    "real paid-model coding quality and public benchmark runs",
+    "per-call realtime traces and complete billing",
+    "production unattended permission policies"
+  ]
+}
