@@ -82,15 +82,17 @@ class Arm:
     endpoint: str = "local"
 
 
-LOCAL_TOKENS = 2_000_000
+# Week-1 holdout (frozen) used 2M; from the phase-2 switchover local arms use 6M: about 80% of
+# cumulative input is cached re-reads and 2M ran out at ~75 steps, so the 100-step and 3600 s
+# limits bind instead. The paid cloud arm keeps the 2M it ran with.
+LOCAL_TOKENS = 6_000_000
+CLOUD_TOKENS = 2_000_000
 
 ARMS = {
     # Product defaults before week 1: 16 steps, 100K tokens, 120 s, no command execution.
     "A0": Arm("A0", shell=False, max_steps=16, max_tokens=100_000, timeout_seconds=120),
-    # New product turn budget, still without command execution.
     # New product turn budget, still without command execution. Local inference has no price,
-    # and with prefix caching most cumulative input tokens are re-reads, so local arms allow 2M
-    # cumulative tokens; at 1M, a third of dev tasks stopped before writing any patch.
+    # and with prefix caching most cumulative input tokens are re-reads (see LOCAL_TOKENS).
     "A1": Arm("A1", shell=False, max_steps=100, max_tokens=LOCAL_TOKENS, timeout_seconds=3_600),
     # New budget plus the generic container command in the instance image.
     "A2": Arm("A2", shell=True, max_steps=100, max_tokens=LOCAL_TOKENS, timeout_seconds=3_600),
@@ -109,7 +111,7 @@ ARMS = {
         "C2",
         shell=True,
         max_steps=100,
-        max_tokens=LOCAL_TOKENS,
+        max_tokens=CLOUD_TOKENS,
         timeout_seconds=3_600,
         endpoint="bailian",
     ),

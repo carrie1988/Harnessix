@@ -139,7 +139,7 @@ def test_local_free_chains_get_a_larger_token_budget(tmp_path):
     path.chmod(0o600)  # 产品配置必须是私有文件
     assert _chain_pricing(path, None) == "free"
     assert _chain_pricing(tmp_path / "missing.json", None) == "unknown"
-    assert turn_budget_for("free").max_tokens == 2_000_000
+    assert turn_budget_for("free").max_tokens == 6_000_000
     assert turn_budget_for("unknown").max_tokens == 1_000_000
     assert turn_budget_for("free").max_steps == turn_budget_for("unknown").max_steps == 100
 

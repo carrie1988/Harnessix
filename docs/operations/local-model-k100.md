@@ -59,7 +59,7 @@ MTP_DRAFT_TOKENS=0 bash deploy/local-model/run-flash-replicas.sh b   # 关闭MTP
 | `thinking_protocol` | `vllm_chat_template` | 经`chat_template_kwargs.enable_thinking`开关思考 |
 | `normalize_tool_arguments` | `true` | 还原Qwen把数组/对象参数编码成的JSON字符串 |
 | `stable_prompt_prefix` | `true` | 逐请求说明放到末尾，前缀可被缓存，也满足“system只能在开头”的模板 |
-| `pricing` | `free` | 状态栏显示“本地 0 元”，默认累计token上限200万 |
+| `pricing` | `free` | 状态栏显示“本地 0 元”，默认累计token上限600万 |
 | Profile时限 | 首包300 s、单请求1800 s | 本地prefill慢且多会话共享副本 |
 
 接入前可在线确认端点与工具调用：`harnessix code doctor <工作区> --config <配置> --no-tui --probe-model`（K100副本上实测：模型已列出，数组参数工具调用解析正确）。
