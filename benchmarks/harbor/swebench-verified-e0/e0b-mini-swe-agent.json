@@ -1,0 +1,79 @@
+{
+  "run_name": "e0b-mini-swe-agent-local",
+  "dataset": {
+    "name": "swebench-verified-dev5",
+    "version": "harbor-datasets-86723674"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 2,
+  "content_policy": "metadata",
+  "notes": [
+    "Harbor runs mini-swe-agent inside the task container with its builtin mini.yaml templates; phase-1 arm R used the SWE-bench templates on the host with --network none, so results are not comparable.",
+    "Task containers use Harbor's public network mode; the model is reached through the host relay on the Docker bridge."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/host-gateway.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "mini",
+      "system": "mini-swe-agent",
+      "system_version": "2.4.6",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:MiniSweAgentOffline",
+        "model_name": "openai/qwen3.8-flash-next",
+        "base_url": "http://host.docker.internal:18101/v1",
+        "env": {
+          "OPENAI_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "version": "2.4.6",
+          "config": {
+            "agent": {
+              "step_limit": 100,
+              "cost_limit": 0
+            },
+            "model": {
+              "model_kwargs": {
+                "timeout": 1800,
+                "extra_body": {
+                  "chat_template_kwargs": {
+                    "enable_thinking": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

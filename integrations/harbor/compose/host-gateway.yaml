@@ -1,0 +1,5 @@
+# 让任务容器经host.docker.internal访问宿主机Docker网桥上的模型转发（integrations/harbor/model_relay.py）。
+services:
+  main:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
