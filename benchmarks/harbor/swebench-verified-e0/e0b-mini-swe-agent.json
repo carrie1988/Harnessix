@@ -9,7 +9,8 @@
   "content_policy": "metadata",
   "notes": [
     "Harbor runs mini-swe-agent inside the task container with its builtin mini.yaml templates; phase-1 arm R used the SWE-bench templates on the host with --network none, so results are not comparable.",
-    "Task containers use Harbor's public network mode; the model is reached through the host relay on the Docker bridge."
+    "Task containers use Harbor's public network mode; the model is reached through the host relay on the Docker bridge.",
+    "Harbor rejects base_url for import-path agents, so api_base is set in the mini-swe-agent config."
   ],
   "environment": {
     "extra_docker_compose": [
@@ -50,7 +51,6 @@
       "agent": {
         "import_path": "integrations.harbor.evidence_agents:MiniSweAgentOffline",
         "model_name": "openai/qwen3.8-flash-next",
-        "base_url": "http://host.docker.internal:18101/v1",
         "env": {
           "OPENAI_API_KEY": "local-replica-no-key"
         },
@@ -68,7 +68,8 @@
                   "chat_template_kwargs": {
                     "enable_thinking": false
                   }
-                }
+                },
+                "api_base": "http://host.docker.internal:18101/v1"
               }
             }
           }
