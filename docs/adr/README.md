@@ -258,3 +258,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0109（已改号为0110）：Langfuse只读导出与Harbor协议适配](0109-evaluation-integrations.md)：保留原编号链接，供绑定摘要的历史验收证据使用。
 
 - [ADR 0110：Langfuse只读导出与Harbor协议适配](0110-evaluation-integrations.md)：本地证据保持权威，显式导出及独立验收不改变Runtime与账本。
+
+- [ADR 0120：系统无关的评测平台核心](0120-system-neutral-evaluation-platform.md)：独立evalkit包与四个证据合同，Harbor与HTTP采集两种执行方式，判分与可观测投影对被测系统无感知。

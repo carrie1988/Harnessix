@@ -33,7 +33,7 @@ jobs:
         timeout-minutes: 2
       - run: uv run ruff format --check .
       - run: uv run ruff check .
-      - run: uv run mypy src
+      - run: uv run mypy src packages/evalkit/src
       - run: uv run pytest
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts

@@ -31,7 +31,7 @@ supply-chain:
 	uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
 
 typecheck:
-	uv run mypy src
+	uv run mypy src packages/evalkit/src
 
 test:
 	uv run pytest

@@ -1,0 +1,18 @@
+[project]
+name = "harnessix-evalkit"
+version = "0.1.0"
+description = "系统无关的智能体评测证据合同、判分汇总与Langfuse投影"
+requires-python = ">=3.12"
+license = "AGPL-3.0-only"
+authors = [{ name = "Zhang Jinhui" }]
+dependencies = [
+    "httpx>=0.28,<1",
+    "pydantic>=2.11,<3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/evalkit"]

@@ -66,7 +66,8 @@ exclude = ["benchmarks/taskpacks/*/solutions", "docs/validation/**/artifacts"]
 addopts = "-q"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-pythonpath = ["."]
+# evalkit不进入产品锁文件与SBOM，测试直接从源码目录导入（ADR 0120）。
+pythonpath = [".", "packages/evalkit/src"]
 testpaths = ["tests"]
 
 [tool.ruff]
