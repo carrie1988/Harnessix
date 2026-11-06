@@ -10,7 +10,8 @@
   "notes": [
     "Harbor runs mini-swe-agent inside the task container with its builtin mini.yaml templates; phase-1 arm R used the SWE-bench templates on the host with --network none, so results are not comparable.",
     "Task containers use Harbor's public network mode; the model is reached through the host relay on the Docker bridge.",
-    "Harbor rejects base_url for import-path agents, so api_base is set in the mini-swe-agent config."
+    "Harbor rejects base_url for import-path agents, so api_base is set in the mini-swe-agent config.",
+    "litellm, mcp and openai are pinned to the phase-1 arm R environment; the unpinned upstream install picked litellm 1.108.1, which fails to import without mcp."
   ],
   "environment": {
     "extra_docker_compose": [
@@ -72,7 +73,14 @@
                 "api_base": "http://host.docker.internal:18101/v1"
               }
             }
-          }
+          },
+          "with_packages": [
+            "litellm==1.108.0",
+            "mcp==2.3.0",
+            "openai==3.46.0",
+            "orjson",
+            "fastapi"
+          ]
         }
       }
     }

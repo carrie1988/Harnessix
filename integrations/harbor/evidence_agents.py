@@ -100,6 +100,12 @@ class NopWithPatch(_PatchExport, NopAgent):
 
 
 class MiniSweAgentOffline(_PatchExport, MiniSweAgent):
+    """with_packages锁定随附依赖（上游只写--with litellm，最新版可能缺少导入依赖）。"""
+
+    def __init__(self, *args, with_packages: list[str] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._with_packages = with_packages or ["litellm", "orjson", "fastapi"]
+
     async def install(self, environment: BaseEnvironment) -> None:
         await self.ensure_system_dependencies(environment, ("curl", "bash", "build_tools", "git"))
         version = f"=={self._version}" if self._version else ""
@@ -114,7 +120,8 @@ class MiniSweAgentOffline(_PatchExport, MiniSweAgent):
                 'echo \'export PATH="$HOME/.local/bin:$PATH"\' >> "$HOME/.bashrc"; '
                 "uv python install 3.12 && "
                 f"uv tool install --python 3.12 mini-swe-agent{version} "
-                "--with litellm --with orjson --with fastapi && "
+                + "".join(f"--with {shlex.quote(package)} " for package in self._with_packages)
+                + "&& "
                 "mini-swe-agent --help >/dev/null && "
                 f'uv pip freeze --python "$(uv tool dir)/mini-swe-agent/bin/python" > {freeze}'
             ),
