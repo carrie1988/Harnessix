@@ -310,15 +310,29 @@ async def test_truncated_summary_is_settled_without_window_activation_or_retry(
     summary = ScriptedProvider([events])
     store, normal, turn = await run_seeded(tmp_path, summary)
     record = turn.compactions[0]
-    assert turn.status == "failed" and turn.error.code == "invalid_provider_output"
-    assert ("达到Token上限" in turn.error.message) == valid_usage
-    assert record.failure == turn.error
     assert record.status == "failed" and record.attempt.status == "completed"
     assert not record.unaccounted_request_possible
     assert record.attempt.usage.completeness == "complete"
-    assert turn.usage == Usage(input_tokens=10, output_tokens=3)
     assert len(summary.requests) == summary.closed_streams == 1
-    assert len(normal.requests) == 1
+    if valid_usage:
+        # 主动压缩的摘要被截断：已记账、不激活窗口，本步保留原历史继续完成。
+        assert turn.status == "completed", turn.error
+        assert record.failure.code == "provider_summary_truncated"
+        assert "达到Token上限" in record.failure.message
+        assert turn.usage == Usage(input_tokens=20, output_tokens=6)
+        assert len(normal.requests) == 2
+        projected = "\n".join(
+            item.content.text
+            for item in normal.requests[-1].history
+            if isinstance(item.content, TextContent)
+        )
+        assert "解析器调查事实与失败恢复约束" in projected
+    else:
+        # 用量与尝试事实不一致仍是协议失败。
+        assert turn.status == "failed" and turn.error.code == "invalid_provider_output"
+        assert record.failure == turn.error
+        assert turn.usage == Usage(input_tokens=10, output_tokens=3)
+        assert len(normal.requests) == 1
     thread = await store.get_thread(record.plan.thread_id)
     assert not thread.compaction_windows and thread.active_compaction_window_id is None
     assert replay(await store.events(thread.thread_id)) == thread
@@ -329,6 +343,41 @@ async def test_truncated_summary_is_settled_without_window_activation_or_retry(
         assert await reopened.resume_thread(thread.thread_id) == thread
     assert await store.events(thread.thread_id) == before
     assert len(summary.requests) == 1
+
+
+async def test_truncated_proactive_summary_backs_off_until_history_grows(tmp_path: Path):
+    truncated = accounted_text("尚未闭合的摘要")
+    truncated[-1] = ResponseCompleted(
+        finish_reason="max_output_tokens", usage=Usage(input_tokens=10, output_tokens=3)
+    )
+    # 只脚本化一次摘要：退避失效时第二次摘要请求会耗尽脚本并使回合失败。
+    summary = ScriptedProvider([truncated])
+    read_step = accounted_text("先读取实现")
+    read_step.insert(-1, ToolCallCompleted(call_id="read-1", tool="test.read"))
+    read_step[-1] = ResponseCompleted(
+        finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=3)
+    )
+    normal = SequenceProvider(
+        [
+            accounted_text("解析器调查事实与失败恢复约束。\n" * 600),
+            read_step,
+            accounted_text("已完成后续修复。", step=2),
+        ]
+    )
+    store = SQLiteSessionStore(tmp_path / "session.sqlite")
+    async with AgentRuntime(
+        store, normal, RecordingTools(), compaction=config(), summary_provider=summary
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        seeded = await runtime.run_turn(thread.thread_id, "调查解析器", request_id="seed")
+        assert seeded.status == "completed"
+        turn = await runtime.run_turn(thread.thread_id, "继续修复", request_id="continue")
+
+    assert turn.status == "completed", turn.error
+    assert [record.status for record in turn.compactions] == ["failed"]
+    assert len(summary.requests) == 1 and len(normal.requests) == 3
+    restored = await store.get_thread(thread.thread_id)
+    assert replay(await store.events(thread.thread_id)) == restored
 
 
 async def test_cancel_during_summary_closes_stream_and_ledger(tmp_path: Path):

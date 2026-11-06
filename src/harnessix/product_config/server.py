@@ -46,10 +46,12 @@ from harnessix.product_config.runtime import (
 from harnessix.product_config.session_key import open_product_session_binding
 from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
+from harnessix.sandbox.contracts import DEFAULT_CONTAINER_WORKSPACE
 from harnessix.secrets.provider import SecretProvider
 from harnessix.secrets.publication import SecretPublicationScope
 from harnessix.session.maintenance_io import MaintenanceIOControl, run_maintenance_io
 from harnessix.session.sqlite import SQLiteSessionStore
+from harnessix.tools.contracts import READ_TIMEOUT_SECONDS
 from harnessix.tools.runtime import CodingToolRuntime
 
 
@@ -236,6 +238,18 @@ def _check_state_overlap(state_directory: str | Path, workspace_root: Path) -> N
         raise KernelError("product_state_overlap", "产品状态目录不能与Workspace互相包含")
 
 
+def _container_workspace_paths(actions: ProductActionConfigV1) -> tuple[str, ...]:
+    """命令容器内工作区挂载点：读工具据此换算模型误用的容器绝对路径。"""
+    return tuple(
+        sorted(
+            {
+                profile.workspace_path or DEFAULT_CONTAINER_WORKSPACE
+                for profile in actions.process_profiles
+            }
+        )
+    )
+
+
 async def _serve_product_stdio(
     startup: _ProductRuntimeStartup,
     *,
@@ -278,6 +292,10 @@ async def _serve_product_stdio(
                     git_state_directory=startup.state_root,
                     git_output_redaction=public_scope,
                     enable_regex_search=True,
+                    read_timeout_seconds=(
+                        startup.config.config.workspace_read_timeout_seconds or READ_TIMEOUT_SECONDS
+                    ),
+                    container_workspace_paths=_container_workspace_paths(startup.actions.config),
                 ) as tools:
                     async with open_default_product_action_runtime(
                         startup.state_root,

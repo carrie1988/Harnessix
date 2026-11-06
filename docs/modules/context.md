@@ -123,6 +123,9 @@ Provider生命周期，仍经过取消、deadline、凭据出站保护及完整�
 还用同一保守估算尺度检查摘要成本能否在下一至两次重复输入中摊销；这是规划启发式，
 不是实际Token或账单节省保证。不再固定将摘要预留压到1024；实际输出容量进入摘要指令和SDK请求。
 截断响应先核验尝试与用量，再拒绝窗口激活；不接受半截摘要、不重试，不改变原Turn上限。
+截断以独立代码`provider_summary_truncated`结束压缩记录（[ADR-0109](../adr/0109-recoverable-truncation-and-read-guidance.md)）：
+主动压缩（历史阈值或预算压力触发）遇到它时本步保留原历史继续，并在该Turn历史UTF-8字节再增长1/4前不再规划压缩，
+避免同一步重复规划；Context Overflow触发的被动压缩仍按原错误终止。产品摘要输出上限为`min(max_output_tokens, 4096)`。
 
 预付Context和实际Context使用相同的阶段工具目录及规范JSON编码，不把不可见注册项计入本步骤。
 `PreparedHistoryStep.budget_tool_selection`是深拷贝的单步临时快照，不新增持久字段；摘要后目录、

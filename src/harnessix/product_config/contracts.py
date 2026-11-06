@@ -73,6 +73,9 @@ class ProviderDefinition(ProductConfigContract):
     omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
     # 端点可能把数组/对象参数编码成JSON字符串（如vLLM上的Qwen系）：按工具Schema还原后再校验。
     normalize_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
+    # 工具参数JSON畸形时先修复转义与控制字符；仍非法则只拒绝该次调用（无效果），回合继续，
+    # 而不是整回合以协议失败结束（本地模型偶发输出非法JSON）。
+    repair_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
     # 自动前缀缓存端点：开头只放固定指令，逐请求说明放到末尾user消息，前缀跨请求保持不变；
     # 也满足只接受开头一条system消息的对话模板（如vLLM上的Qwen系）。
     stable_prompt_prefix: bool = Field(default=False, exclude_if=lambda value: value is False)
@@ -172,6 +175,10 @@ class ProductConfigV2(ProductConfigContract):
     secret_sources: tuple[EnvironmentSecretSourceConfig, ...] = Field(min_length=1, max_length=32)
     providers: tuple[ProviderDefinition, ...] = Field(min_length=1, max_length=16)
     profiles: tuple[ModelProfile, ...] = Field(min_length=1, max_length=32)
+    # 读工具（读文件/搜索）单次时限；未设置沿用5秒。大仓库或与推理、构建共用机器时可放宽。
+    workspace_read_timeout_seconds: int | None = Field(
+        default=None, ge=1, le=60, strict=True, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def valid_graph(self) -> Self:

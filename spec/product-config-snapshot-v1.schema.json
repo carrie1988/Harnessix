@@ -206,6 +206,20 @@
           "minItems": 1,
           "title": "Profiles",
           "type": "array"
+        },
+        "workspace_read_timeout_seconds": {
+          "anyOf": [
+            {
+              "maximum": 60,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Read Timeout Seconds"
         }
       },
       "required": [
@@ -282,6 +296,11 @@
         "normalize_tool_arguments": {
           "default": false,
           "title": "Normalize Tool Arguments",
+          "type": "boolean"
+        },
+        "repair_tool_arguments": {
+          "default": false,
+          "title": "Repair Tool Arguments",
           "type": "boolean"
         },
         "stable_prompt_prefix": {

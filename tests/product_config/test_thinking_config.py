@@ -170,7 +170,12 @@ def test_self_hosted_loopback_endpoint_gets_the_local_preset():
     assert provider.thinking_protocol == "vllm_chat_template"
     assert provider.normalize_tool_arguments and provider.pricing == "free"
     assert provider.stable_prompt_prefix
+    # 畸形参数只拒绝该次调用，回合继续（本地模型偶发非法JSON）。
+    assert provider.repair_tool_arguments
     wire = _provider_config(config)
+    assert wire.repair_tool_arguments
+    # 同机自托管与推理、构建共用CPU：读工具时限放宽到20秒。
+    assert config.workspace_read_timeout_seconds == 20
     assert wire.thinking_format == "chat_template_kwargs" and wire.enable_thinking is True
     assert wire.base_url == LOCAL_VLLM
     # 只有开头一条system消息：逐请求说明在末尾user消息，前缀跨请求不变。
@@ -185,8 +190,10 @@ def test_only_loopback_endpoints_may_declare_free_pricing():
     with pytest.raises(ValidationError):
         ProviderDefinition.model_validate({**remote, "pricing": "free"})
     assert "pricing" not in remote and "normalize_tool_arguments" not in remote
-    assert "stable_prompt_prefix" not in remote
+    assert "stable_prompt_prefix" not in remote and "repair_tool_arguments" not in remote
+    assert "workspace_read_timeout_seconds" not in build_product_config(_draft()).model_dump()
     assert _provider_config(build_product_config(_draft())).prompt_cache is None
+    assert not _provider_config(build_product_config(_draft())).repair_tool_arguments
     remote_profile = build_product_config(_draft()).profiles[0]
     assert (remote_profile.timeout_seconds, remote_profile.io_timeout_seconds) == (120, 30)
 

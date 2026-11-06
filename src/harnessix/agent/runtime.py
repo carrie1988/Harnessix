@@ -32,7 +32,10 @@ from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
 from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
-from harnessix.agent.model_history_runtime import prepare_and_commit_model_history
+from harnessix.agent.model_history_runtime import (
+    SUMMARY_TRUNCATED,
+    prepare_and_commit_model_history,
+)
 from harnessix.agent.model_input_budget import (
     estimate_model_input_tokens,
     estimate_request_input_tokens,
@@ -299,6 +302,8 @@ class AgentRuntime:
             )
         # 未通过真实质量验收的提前压缩不进入默认产品路径；窗口及溢出恢复压缩不受影响。
         self._budget_pressure_compaction = budget_pressure_compaction
+        # 主动压缩摘要截断后的退避点（Turn → 当时历史UTF-8字节）；仅调度用，不进入事件。
+        self._compaction_backoff: dict[UUID, int] = {}
         if working_set_result_groups is not None and (
             type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
         ):
@@ -1756,8 +1761,9 @@ class AgentRuntime:
                             "invalid_provider_output", "摘要响应终态、用量或正文不一致"
                         )
                     if event.finish_reason == "max_output_tokens":
+                        # 独立代码：用量已对账、窗口未激活；主动压缩时调用方可不压缩继续。
                         raise KernelError(
-                            "invalid_provider_output", "摘要输出达到Token上限，拒绝激活截断窗口"
+                            SUMMARY_TRUNCATED, "摘要输出达到Token上限，拒绝激活截断窗口"
                         )
                     if event.finish_reason != "completed":
                         raise KernelError("invalid_provider_output", "摘要响应未正常结束")

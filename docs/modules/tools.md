@@ -196,7 +196,7 @@ Session事实，也不把未提交结果当作已经发生。
 | Grep片段 | 384 UTF-8字节 | 字符边界裁剪并标记 |
 | 最终工具JSON | 60000字节 | `tool_limit_exceeded` |
 | Git Diff模型正文 | 48 KiB | 返回UTF-8完整前缀及全流摘要 |
-| 只读协作期限 | 5秒 | `tool_timeout` |
+| 只读协作期限 | 默认5秒；`CodingToolRuntime(read_timeout_seconds=1..60)`可配置，非默认值进入描述符规则与版本 | `tool_timeout` |
 | Runtime并发读取 | 默认4，范围1～16 | 构造非法则`tool_concurrency_invalid` |
 | 搜索Artifact | 1 MiB/10000条 | `tool_limit_exceeded`，不发布伪完整正文 |
 | Artifact分页 | 24 KiB/200条 | 合同拒绝不一致页面 |
@@ -410,6 +410,12 @@ flowchart TD
 空段及`.`/`..`组件；根目录只有`.`这一种表示。策略比较使用`casefold()`，默认拒绝任意层级的Git、
 Harnessix/Codex状态目录、SSH/AWS/GnuPG目录、`.env`变体、常见私钥名及`.pem/.key/.p12/.pfx`。
 宿主`denied_paths`按完整组件前缀匹配，不采用易混淆的字符串前缀。
+
+宿主可声明命令容器内的工作区挂载点（`container_workspace_paths`，产品取自各Process Profile的`workspace_path`，
+未设置时为`/workspace`）。`CodingToolRuntime`在参数校验前只把`path`中等于该挂载点或以“挂载点/”开头的绝对路径
+换算为相对路径（挂载点本身为`.`），其余仍按上述规则校验；换算不改变Call Item原参数，结果路径即换算后的相对路径，
+不扩大可读范围（`/testbed/../x`换算后含`..`仍被拒绝）。`path_denied`、`not_found`、`timeout`失败返回可操作说明，
+`read_file`误用存档编号或`offset`/`limit`时提示改用`read_artifact`；说明不回显参数值（[ADR-0109](../adr/0109-recoverable-truncation-and-read-guidance.md)）。
 
 ### 9.2 打开与竞态检查
 

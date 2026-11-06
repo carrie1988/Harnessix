@@ -240,12 +240,14 @@ async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
         assert all(record.status == "summarized" for record in turn.compactions)
         assert len(main.requests) == 10
     else:
-        assert turn.status == "failed" and turn.error.code == "invalid_provider_output"
-        assert "达到Token上限" in turn.error.message
-        assert len(requests) == len(turn.compactions) == 1
-        assert turn.compactions[0].status == "failed"
-        assert turn.compactions[0].attempt.usage.completeness == "complete"
-        assert len(main.requests) < 10
+        # 摘要被截断：每次已记账、不激活窗口；本步保留原历史继续，历史再增长1/4前不再规划。
+        assert turn.status == "completed", turn.error
+        assert len(requests) == len(turn.compactions) == 3
+        for record in turn.compactions:
+            assert record.status == "failed"
+            assert record.failure.code == "provider_summary_truncated"
+            assert record.attempt.usage.completeness == "complete"
+        assert len(main.requests) == 10
     restored = await store.get_thread(thread.thread_id)
     assert restored == replay(await store.events(thread.thread_id))
     assert (restored.active_compaction_window_id is not None) == (finish == "stop")

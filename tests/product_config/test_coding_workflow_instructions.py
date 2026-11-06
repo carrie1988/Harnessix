@@ -86,7 +86,7 @@ def test_workflow_refinement_keeps_instruction_size_and_original_boundaries(tmp_
     assert policy.compaction.trigger_history_tokens == 131_072
     assert policy.compaction.policy.target_history_tokens == 65_536
     assert policy.compaction.policy.retain_recent_groups == 2
-    assert policy.compaction.max_summary_output_tokens == 2048
+    assert policy.compaction.max_summary_output_tokens == 4096
 
 
 @pytest.mark.parametrize("adapter", ("chat", "anthropic"))

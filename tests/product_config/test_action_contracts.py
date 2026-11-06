@@ -236,3 +236,13 @@ def test_capability_report_is_sorted_unique_and_digest_protected() -> None:
         ProductActionCapabilityReport.model_validate(
             {**report.model_dump(), "config_sha256": "0" * 64}
         )
+
+
+def test_read_tools_learn_every_container_workspace_mount(tmp_path: Path) -> None:
+    from harnessix.product_config.server import _container_workspace_paths
+
+    mounted = process_profile(tmp_path, profile_id="testbed", workspace_path="/testbed")
+    default = process_profile(tmp_path, profile_id="unit-tests")
+    config = build_product_action_config(process_profiles=(mounted, default))
+    assert _container_workspace_paths(config) == ("/testbed", "/workspace")
+    assert _container_workspace_paths(build_product_action_config()) == ()

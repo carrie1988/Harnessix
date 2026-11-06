@@ -12,7 +12,13 @@ import pytest
 from pydantic import ValidationError
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
-from harnessix.agent.models import ApprovalRequestContent, Budget, TurnStatus, Usage
+from harnessix.agent.models import (
+    ApprovalRequestContent,
+    Budget,
+    ToolCallRejectionContent,
+    TurnStatus,
+    Usage,
+)
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
@@ -567,6 +573,32 @@ async def test_failed_finish_records_known_usage_without_executing_tools(
     assert turn.status == TurnStatus.FAILED
     assert turn.usage == Usage(input_tokens=10, output_tokens=2)
     assert tools.calls == []
+
+
+async def test_truncated_tool_call_is_rejected_and_turn_continues_with_repair(
+    tmp_path: Path,
+) -> None:
+    truncated = tool_frames('{"path": "src/very_long')
+    truncated[1] = frame(chunk(finish="length"))
+    wires = [WireStream(truncated), WireStream(text_frames())]
+    tools = RecordingTools()
+    async with OpenAIChatProvider(
+        config(repair_tool_arguments=True),
+        transport=httpx.MockTransport(lambda _: response(wires.pop(0))),
+    ) as provider:
+        async with AgentRuntime(SQLiteSessionStore(tmp_path / "s.db"), provider, tools) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(thread.thread_id, "任务", request_id="r")
+            events = await runtime.store.events(thread.thread_id)
+    # 截断的调用从未执行，只以固定拒绝结果反馈；模型在原预算内重发后正常完成。
+    assert turn.status == TurnStatus.COMPLETED, turn.error
+    assert tools.calls == [] and not wires
+    assert turn.usage == Usage(input_tokens=20, output_tokens=4)
+    rejections = [
+        item.content for item in turn.items if isinstance(item.content, ToolCallRejectionContent)
+    ]
+    assert [rejection.reason for rejection in rejections] == ["invalid_arguments_json"]
+    assert replay(events) == await runtime.store.get_thread(thread.thread_id)
 
 
 async def test_text_only_capability_rejects_tools_without_request() -> None:

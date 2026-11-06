@@ -48,6 +48,12 @@ from harnessix.models.contracts import ModelProvider
 from harnessix.session.ports import SessionStore
 
 
+# 摘要输出被截断：用量已对账、窗口未激活。主动压缩遇到它时本步不压缩继续，
+# 历史再增长 1/4 前不再触发；超窗触发的被动压缩仍按原错误终止。
+SUMMARY_TRUNCATED = "provider_summary_truncated"
+_BACKOFF_GROWTH_NUMERATOR, _BACKOFF_GROWTH_DENOMINATOR = 5, 4
+
+
 @dataclass(frozen=True, slots=True)
 class PreparedHistoryStep:
     thread: Thread
@@ -66,6 +72,7 @@ class ModelHistoryHost(Protocol):
     _working_set_result_groups: int | None
     _compaction: CompactionRuntimeConfig | None
     _budget_pressure_compaction: bool
+    _compaction_backoff: dict[UUID, int]
     _fault: Callable[[str], None]
 
     def _model_tools_for_turn(self, turn: Turn) -> ModelToolSelection: ...
@@ -106,8 +113,23 @@ def _requires_compaction(
         return False
     return (
         reactive_compaction_required
-        or sum(len(history_document(item).encode()) for item in prepared.history)
-        > host._compaction.trigger_history_tokens
+        or _history_utf8_bytes(prepared) > host._compaction.trigger_history_tokens
+    )
+
+
+def _history_utf8_bytes(prepared: PreparedModelHistory) -> int:
+    return sum(len(history_document(item).encode()) for item in prepared.history)
+
+
+def _compaction_backed_off(
+    host: ModelHistoryHost, turn_id: UUID, prepared: PreparedModelHistory
+) -> bool:
+    failed_at = host._compaction_backoff.get(turn_id)
+    if failed_at is None:
+        return False
+    return (
+        _history_utf8_bytes(prepared) * _BACKOFF_GROWTH_DENOMINATOR
+        < failed_at * _BACKOFF_GROWTH_NUMERATOR
     )
 
 
@@ -297,14 +319,33 @@ async def prepare_and_commit_model_history(
         budget_context = None
         budget_selection = None
         planned = None
-        required = _requires_compaction(host, prepared, reactive_compaction_required)
-        if not required and host._compaction is not None and host._budget_pressure_compaction:
+        backed_off = not reactive_compaction_required and _compaction_backed_off(
+            host, turn_id, prepared
+        )
+        required = not backed_off and _requires_compaction(
+            host, prepared, reactive_compaction_required
+        )
+        if (
+            not required
+            and not backed_off
+            and host._compaction is not None
+            and host._budget_pressure_compaction
+        ):
             planned, budget_context, budget_selection = await _budget_plan(
                 host, thread, turn, prepared, token, summary_instructions
             )
         if required or planned is not None:
-            thread = await host._run_compaction(thread, turn, prepared, token, planned)
-            reactive_compaction_required = False
+            try:
+                thread = await host._run_compaction(thread, turn, prepared, token, planned)
+            except KernelError as error:
+                if reactive_compaction_required or error.code != SUMMARY_TRUNCATED:
+                    raise
+                # 压缩记录已按失败关闭且用量已记账；本步保留原历史继续，不重复规划同一步。
+                host._compaction_backoff[turn_id] = _history_utf8_bytes(prepared)
+                thread = await host.store.get_thread(thread_id)
+                budget_context = budget_selection = None
+            else:
+                reactive_compaction_required = False
             prepared = _model_view(host, thread, model_step)
         await host._verify_history_artifacts(thread, prepared, token)
         host._fault("runtime.after_history_artifacts_verified")

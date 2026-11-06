@@ -222,6 +222,7 @@ def _binding_rules(
     max_concurrent_reads: int,
     artifacts: SQLiteArtifactStore | None,
     git_runtime: git.GitReadRuntime | None,
+    read_timeout_seconds: int = READ_TIMEOUT_SECONDS,
 ) -> dict[str, object]:
     rules: dict[str, object] = {
         "implementation": implementation,
@@ -235,7 +236,7 @@ def _binding_rules(
         "max_scan_bytes": MAX_SCAN_BYTES,
         "max_directory_entries": MAX_DIRECTORY_ENTRIES,
         "max_result_bytes": MAX_RESULT_BYTES,
-        "timeout": READ_TIMEOUT_SECONDS,
+        "timeout": read_timeout_seconds,
     }
     if issubclass(binding.output_model, ReadFileSnapshotOutput):
         rules["random_access"] = "start_line_without_revision_is_a_fresh_observation"
@@ -324,6 +325,7 @@ def _build_definitions(
     artifacts: SQLiteArtifactStore | None,
     git_runtime: git.GitReadRuntime | None,
     read_bindings: tuple[_ReadBinding, ...] = _BINDINGS,
+    read_timeout_seconds: int = READ_TIMEOUT_SECONDS,
 ) -> dict[str, ToolDescriptor]:
     bindings = (*read_bindings, *(_GIT_BINDINGS if git_runtime is not None else ()))
     definitions = {
@@ -337,6 +339,7 @@ def _build_definitions(
                     max_concurrent_reads=max_concurrent_reads,
                     artifacts=artifacts,
                     git_runtime=git_runtime,
+                    read_timeout_seconds=read_timeout_seconds,
                 )
             ),
             require_approval=require_approval,

@@ -77,6 +77,7 @@ _THINKING_LIMITS: dict[str, object] = {
 
 # 同机自托管端点：本地加速卡prefill慢且多会话共享副本，首字节在prefill完成后才到达，
 # 默认30秒首包/120秒单请求时限会把排队中的正常请求判为传输失败。
+_SELF_HOSTED_READ_TIMEOUT_SECONDS = 20
 _SELF_HOSTED_LIMITS: dict[str, object] = {
     "timeout_seconds": 1800.0,
     "io_timeout_seconds": 300.0,
@@ -112,6 +113,8 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     self_hosted = urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
     return ProductConfigV2(
         active_profile=checked.profile_id,
+        # 同机自托管通常与推理、构建共用CPU：读工具放宽到20秒，避免大仓库搜索在负载下超时。
+        workspace_read_timeout_seconds=_SELF_HOSTED_READ_TIMEOUT_SECONDS if self_hosted else None,
         secret_sources=(
             EnvironmentSecretSourceConfig(
                 secret=secret,
@@ -128,6 +131,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 thinking_protocol=protocol,
                 omit_tool_choice=checked.omit_tool_choice,
                 normalize_tool_arguments=self_hosted,
+                repair_tool_arguments=self_hosted,
                 stable_prompt_prefix=self_hosted,
                 pricing="free" if self_hosted else "unknown",
             ),

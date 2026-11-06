@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import errno
 import json
+import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import TracebackType
@@ -20,10 +21,12 @@ from harnessix.agent.models import ToolCallContent, ToolResultContent
 from harnessix.artifacts.contracts import ArtifactPage, ArtifactToolResult, ReadArtifactInput
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.domain.models import ContractModel, ToolDescriptor
+from harnessix.sandbox.contracts import container_workspace_path_problem
 from harnessix.tools import files, search
 from harnessix.tools.argument_feedback import invalid_argument_message
 from harnessix.tools.contracts import (
     MAX_RESULT_BYTES,
+    READ_TIMEOUT_SECONDS,
     ListFilesInput,
     ReadContract,
     ReadFileInput,
@@ -62,7 +65,34 @@ _READ_ERROR_MESSAGES = {
         "扫描超过工具上限（条目、字节或深度），未返回结果；不要原样重试，请把path缩小到更具体的"
         "子目录，或先用glob定位候选文件再grep"
     ),
+    # 只说明可操作的下一步，不区分“越界”与“敏感路径拒绝”，不回显路径。
+    "path_denied": (
+        "路径不可读：读工具只接受相对工作区根的路径（如src/app.py）；容器内路径（如/testbed/...）"
+        "只用于exec_command；部分敏感路径始终不可读"
+    ),
+    "not_found": "路径不存在：先用glob或list_files确认相对工作区根的路径",
+    "timeout": (
+        "读取或搜索超时，未返回结果；不要原样重试，请把path缩小到具体子目录、收窄include，"
+        "或先用glob定位候选文件"
+    ),
 }
+# 模型常把命令输出存档编号当作read_file路径，或沿用read_artifact的分页参数。
+_ARTIFACT_ID = re.compile(r"^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$")
+_ARTIFACT_READ_HINT = (
+    "read_file只读取工作区文件，按行分页用start_line与max_lines；"
+    "命令输出等存档请用read_artifact(artifact_id, offset, limit)"
+)
+
+
+def _misrouted_artifact_read(binding: _ReadBinding, arguments: Mapping[str, Any]) -> bool:
+    if not issubclass(binding.input_model, ReadFileInput):
+        return False
+    path = arguments.get("path")
+    return bool({"artifact_id", "offset", "limit"} & arguments.keys()) or (
+        isinstance(path, str) and _ARTIFACT_ID.match(path) is not None
+    )
+
+
 _OUTPUT_LIMIT_MESSAGE = (
     "工具结果超过输出上限，未返回结果；不要原样重试，请缩小path、减少context_lines或max_results，"
     "读取文件时改用start_line分页"
@@ -114,12 +144,36 @@ def _invalid_arguments(
     )
 
 
+def _workspace_relative(
+    arguments: dict[str, JsonValue], container_paths: tuple[str, ...]
+) -> dict[str, JsonValue]:
+    """容器挂载点前缀换算为相对路径；之后仍走原有相对路径校验，不扩大可读范围。"""
+    path = arguments.get("path")
+    if not isinstance(path, str):
+        return arguments
+    for mount in container_paths:
+        if path.rstrip("/") == mount:
+            return {**arguments, "path": "."}
+        if path.startswith(mount + "/"):
+            return {**arguments, "path": path[len(mount) + 1 :].lstrip("/") or "."}
+    return arguments
+
+
+def _read_error_message(binding: _ReadBinding, code: str, call: ToolCallContent) -> str:
+    message = _READ_ERROR_MESSAGES.get(code, "工作区读取未完成")
+    if code in {"not_found", "path_denied"} and _misrouted_artifact_read(binding, call.arguments):
+        return f"{_ARTIFACT_READ_HINT}。{message}"
+    return message
+
+
 def _argument_failure(
     binding: _ReadBinding, arguments: dict[str, JsonValue], error: ValidationError
 ) -> tuple[str, str]:
     details = error.errors(include_url=False, include_input=False, include_context=False)
     codes = tuple(detail["type"] for detail in details)
     invalid = _invalid_arguments(binding.input_model, arguments, codes, details)
+    if _misrouted_artifact_read(binding, arguments):
+        return invalid[0], f"{_ARTIFACT_READ_HINT}。{invalid[1]}"
     if binding.input_model is ListFilesInput:
         position = arguments.get("offset", 0)
         first_position = 0
@@ -164,7 +218,16 @@ class CodingToolRuntime:
         enable_grep_snapshots: bool = False,
         enable_regex_search: bool = False,
         enable_definition_views: bool = False,
+        read_timeout_seconds: int = READ_TIMEOUT_SECONDS,
+        container_workspace_paths: tuple[str, ...] = (),
     ) -> None:
+        if type(read_timeout_seconds) is not int or not 1 <= read_timeout_seconds <= 60:
+            raise KernelError("tool_timeout_invalid", "读工具时限必须是1到60秒的整数")
+        if any(container_workspace_path_problem(path) for path in container_workspace_paths):
+            raise KernelError("tool_path_alias_invalid", "容器工作区路径必须是规范绝对路径")
+        self._read_timeout_seconds = read_timeout_seconds
+        # 命令容器内的工作区挂载点；读工具把以它开头的绝对路径换算为相对工作区根的路径。
+        self._container_workspace_paths = container_workspace_paths
         self._read_bindings = _read_bindings(
             enable_grep_snapshots, enable_regex_search, enable_definition_views
         )
@@ -186,6 +249,7 @@ class CodingToolRuntime:
             artifacts=artifacts,
             git_runtime=self._git,
             read_bindings=self._read_bindings,
+            read_timeout_seconds=read_timeout_seconds,
         )
 
     def definitions(self) -> tuple[ToolDescriptor, ...]:
@@ -221,7 +285,7 @@ class CodingToolRuntime:
             async with self._lock:
                 if self._closed:
                     raise KernelError("tool_runtime_closed", "工具运行时已关闭")
-                return await run_read_operation(inspect)
+                return await run_read_operation(inspect, timeout_seconds=self._read_timeout_seconds)
 
         try:
             return await cancel.run(locked())
@@ -306,10 +370,11 @@ class CodingToolRuntime:
             for b in (*self._read_bindings, *(_GIT_BINDINGS if self._git is not None else ()))
             if b.name == call.tool
         )
+        arguments = _workspace_relative(call.arguments, self._container_workspace_paths)
         try:
-            args = binding.input_model.model_validate(call.arguments)
+            args = binding.input_model.model_validate(arguments)
         except ValidationError as error:
-            code, message = _argument_failure(binding, call.arguments, error)
+            code, message = _argument_failure(binding, arguments, error)
             return self._failure(call, code, message)
         try:
             if isinstance(args, GitStatusInput | GitDiffInput | GitReviewInput):
@@ -319,8 +384,9 @@ class CodingToolRuntime:
         except RegexSearchError as error:
             return self._failure(call, error.code, error.message)
         except ReadToolError as error:
-            message = _READ_ERROR_MESSAGES.get(error.code, "工作区读取未完成")
-            return self._failure(call, f"tool_{error.code}", message)
+            return self._failure(
+                call, f"tool_{error.code}", _read_error_message(binding, error.code, call)
+            )
         except OSError as error:
             code = {
                 errno.ENOENT: "not_found",
@@ -328,7 +394,7 @@ class CodingToolRuntime:
                 errno.EPERM: "path_denied",
                 errno.ENOTDIR: "wrong_file_type",
             }.get(error.errno or 0, "io_failed")
-            return self._failure(call, f"tool_{code}", "工作区读取未完成")
+            return self._failure(call, f"tool_{code}", _read_error_message(binding, code, call))
         cancel.checkpoint()
         payload = _read_output_payload(binding, output)
         if payload is None:
@@ -357,7 +423,7 @@ class CodingToolRuntime:
                     return search.grep(self._workspace, args, operation, capture=capture)
                 return files.read_file_snapshot(self._workspace, args, operation)
 
-            return await run_read_operation(read)
+            return await run_read_operation(read, timeout_seconds=self._read_timeout_seconds)
 
     async def _execute_git(
         self, args: GitStatusInput | GitDiffInput | GitReviewInput, cancel: CancelToken

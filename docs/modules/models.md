@@ -898,6 +898,9 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - 开启`repair_tool_arguments`后，修复后仍不是JSON对象的调用不再使整个响应以协议失败结束，而是产生
   `ToolCallRejected(reason="invalid_arguments_json")`：与未注册工具相同的无名称、无参数、无执行能力拒绝，配对固定结果
   `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”），模型在原预算内重发。
+- 开启`repair_tool_arguments`且以`length`结束时若已有流式工具调用，同样按上述规则形成调用组（截断的调用成为
+  `invalid_arguments_json`拒绝，完整调用照常提交），终态记为`tool_calls`，由目录拒绝重入；无工具调用的纯文本截断仍以
+  `max_output_tokens`失败。本地vLLM在输出用满上限时常把半截调用以`tool_calls`/`stop`结束，两条路径结果一致（ADR-0109）。
 - `thinking_format="thinking_type"`且开启思考时，每条历史助手消息带`reasoning_content`（未存储推理内容时为空串）：DeepSeek思考模式
   要求带工具历史中的助手消息携带该字段，否则400；空串即满足协议。
 - 同一思考模式只支持`tool_choice: auto`：映射不发送`tool_choice`，强制/required由可执行集收窄与目录说明约束。
