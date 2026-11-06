@@ -239,7 +239,9 @@ def main() -> None:
                     "python_executable": "/usr/local/bin/python",
                     "timeout_seconds": 15,
                     "max_steps": 4,
-                    "max_tokens": 2000,
+                    # 产品在首个请求前按保守输入估计检查预算（eb62e9de），2000不够发出首个请求。
+                    # 夹具Provider每次固定100/20 Token，预算放宽不改变各场景含义。
+                    "max_tokens": 50_000,
                 },
             }
         ],
