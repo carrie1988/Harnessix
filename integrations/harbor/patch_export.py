@@ -24,8 +24,9 @@ def parse_head(stdout: object) -> str | None:
 
 def patch_command(workspace: str, base: str, logs_dir: PurePosixPath) -> str:
     quoted, target = shlex.quote(workspace), shlex.quote(str(logs_dir / PATCH_FILE))
+    # 临时索引必须是尚不存在的路径：git把已存在的空文件视为损坏的索引。
     return (
-        f'index=$(mktemp) && GIT_INDEX_FILE="$index" git -C {quoted} add -A && '
-        f'GIT_INDEX_FILE="$index" git -C {quoted} diff --cached --binary {base} '
-        f'> {target}; status=$?; rm -f "$index"; exit $status'
+        f'scratch=$(mktemp -d) && GIT_INDEX_FILE="$scratch/index" git -C {quoted} add -A && '
+        f'GIT_INDEX_FILE="$scratch/index" git -C {quoted} diff --cached --binary {base} '
+        f'> {target}; status=$?; rm -rf "$scratch"; exit $status'
     )

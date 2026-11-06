@@ -53,7 +53,8 @@ async def test_instruction_never_enters_shell_command_or_agent_log(tmp_path: Pat
     assert "--approval-mode auto" in run
     assert "--model-relay 127.0.0.1:18001=172.17.0.1:18101" in run
     assert cleanup.startswith("rm -f -- /tmp/harnessix-input-")
-    assert "GIT_INDEX_FILE" in patch and "diff --cached --binary " + "a" * 40 in patch
+    assert 'GIT_INDEX_FILE="$scratch/index"' in patch and "mktemp -d" in patch
+    assert "diff --cached --binary " + "a" * 40 in patch
     assert patch.endswith("exit $status") and "/patch.diff" in patch
     assert state.startswith("tar -czf ") and "harnessix-state.tar.gz" in state
 

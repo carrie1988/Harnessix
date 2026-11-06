@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import json
 import shlex
 from pathlib import Path
 
@@ -41,11 +42,28 @@ class _PatchExport:
         try:
             await super().run(instruction, environment, context)  # type: ignore[misc]
         finally:
+            exported = None
             if base is not None:
-                await environment.exec(
+                exported = await environment.exec(
                     command=patch_command(self.workspace, base, EnvironmentPaths.agent_dir),
                     timeout_sec=120,
                 )
+            # 导出过程的诊断记录：返回码与截断输出，便于确认补丁缺失的原因。
+            (Path(self.logs_dir) / "patch-export.log").write_text(
+                json.dumps(
+                    {
+                        "head_return_code": head.return_code,
+                        "head_stdout": (head.stdout or "")[-400:],
+                        "head_stderr": (head.stderr or "")[-400:],
+                        "base": base,
+                        "export_return_code": None if exported is None else exported.return_code,
+                        "export_stderr": None
+                        if exported is None
+                        else (exported.stderr or "")[-400:],
+                    },
+                    ensure_ascii=False,
+                )
+            )
 
 
 class OracleWithPatch(_PatchExport, OracleAgent):
