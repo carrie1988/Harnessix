@@ -189,18 +189,21 @@ API使用同一文件中的LANGFUSE_PUBLIC_KEY与LANGFUSE_SECRET_KEY，由操作
 重启复用原状态；已有数据卷而凭据文件丢失时失败关闭，不生成替代密钥。
 `local_stack.py stop`配合同一--state-directory停止服务并保留数据卷。
 
-无法访问镜像仓库的评测主机不修改Docker守护进程配置，改为离线传输：
+无法直连Docker Hub的评测主机不修改Docker守护进程配置，在拉取时显式写镜像源前缀。
+镜像按平台清单摘要寻址，镜像源无法替换内容；拉取后再核对镜像ID并打本地标签。
+镜像源地址（如账号专属加速地址）只作为参数传入，不写入版本库。
 
 ```bash
-# 在可访问镜像仓库的机器上：按目标平台清单摘要拉取、核对镜像ID并打包（0600）
-python3 integrations/langfuse/local_stack.py export-images \
-  --platform linux/amd64 --output /path/to/langfuse-images-amd64.tar
+# 在评测主机上：Docker Hub镜像经镜像源拉取，其他仓库（cgr.dev）直接拉取
+python3 integrations/langfuse/local_stack.py pull-images --mirror <镜像源主机>
 
-# 在评测主机上：加载后只用本地镜像启动，逐个核对镜像ID，禁止拉取
-docker load -i /path/to/langfuse-images-amd64.tar
+# 只用本地镜像启动，逐个核对镜像ID，禁止拉取
 python3 integrations/langfuse/local_stack.py up --image-source local \
   --state-directory /data/harnessix/langfuse/state
 ```
+
+镜像源也不可用时，可在能访问仓库的机器上`export-images --platform linux/amd64 --output 归档`，
+传输后`docker load`，再以同样方式启动。
 
 本机通过SSH隧道访问评测主机上的服务，地址仍为http://127.0.0.1:3300：
 

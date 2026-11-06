@@ -1,7 +1,8 @@
 """启动独立的Langfuse栈；私有凭据留在指定目录，不启动模型或删除卷。
 
-无法访问镜像仓库的主机先在可访问的机器上export-images，传输后docker load，
-再以--image-source local启动：逐个核对本地镜像ID与锁中该平台的配置摘要，不从网络拉取。
+无法直连Docker Hub的主机用pull-images经显式镜像源前缀拉取（不修改Docker全局配置），
+或在可访问的机器上export-images后docker load；之后以--image-source local启动：
+逐个核对本地镜像ID与锁中该平台的配置摘要，不从网络拉取。
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import secrets
 import stat
 import subprocess
@@ -20,6 +22,8 @@ _PROJECT = "harnessix-langfuse-acceptance"
 _LOCK = Path(__file__).with_name("images.lock.json")
 _PLATFORMS = {"x86_64": "linux/amd64", "amd64": "linux/amd64", "arm64": "linux/arm64"}
 _PLATFORMS["aarch64"] = "linux/arm64"
+_DOCKER_HUB_HOSTS = {"docker.io", "docker.langfuse.com"}
+_MIRROR = re.compile(r"[A-Za-z0-9][A-Za-z0-9.-]{0,252}(:[0-9]{1,5})?")
 
 
 def _locked(target_platform: str) -> dict[str, tuple[str, str, str]]:
@@ -46,19 +50,43 @@ def _image_id(reference: str) -> str | None:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def export_images(target_platform: str, output: Path) -> str:
-    """按平台清单摘要拉取并核对镜像ID，打本地标签后保存为0600归档；返回归档摘要。"""
+def _pull_verified(name: str, reference: str, target_platform: str, image_id: str) -> str:
+    """按清单摘要拉取，镜像ID必须等于锁中该平台的配置摘要，再打本地标签。"""
+    subprocess.run(
+        ["docker", "pull", "--quiet", "--platform", target_platform, reference], check=True
+    )
+    if _image_id(reference) != image_id:
+        raise SystemExit(f"{name}镜像ID与锁不一致，停止")
+    tag = _local_tag(name, image_id)
+    subprocess.run(["docker", "tag", image_id, tag], check=True)
+    return tag
+
+
+def _docker_hub_path(repository: str) -> str | None:
+    """Docker Hub上的仓库路径；其他仓库主机（如cgr.dev）返回None，直接拉取。"""
+    first, separator, rest = repository.partition("/")
+    if separator and ("." in first or ":" in first):
+        return rest if first in _DOCKER_HUB_HOSTS else None
+    return repository if separator else f"library/{repository}"
+
+
+def pull_images(target_platform: str, mirror: str | None) -> list[str]:
+    """Docker Hub镜像经显式镜像源前缀拉取；按摘要寻址，镜像源无法替换内容。"""
+    if mirror is not None:
+        mirror = mirror.removeprefix("https://").rstrip("/")
+        if not _MIRROR.fullmatch(mirror):
+            raise SystemExit("镜像源须为主机名或主机名:端口")
     tags = []
     for name, (repository, manifest, image_id) in _locked(target_platform).items():
-        reference = f"{repository}@{manifest}"
-        subprocess.run(
-            ["docker", "pull", "--quiet", "--platform", target_platform, reference], check=True
-        )
-        if _image_id(reference) != image_id:
-            raise SystemExit(f"{name}镜像ID与锁不一致，停止导出")
-        tag = _local_tag(name, image_id)
-        subprocess.run(["docker", "tag", image_id, tag], check=True)
-        tags.append(tag)
+        hub_path = _docker_hub_path(repository)
+        source = f"{mirror}/{hub_path}" if mirror and hub_path else repository
+        tags.append(_pull_verified(name, f"{source}@{manifest}", target_platform, image_id))
+    return tags
+
+
+def export_images(target_platform: str, output: Path) -> str:
+    """按平台清单摘要拉取并核对镜像ID，打本地标签后保存为0600归档；返回归档摘要。"""
+    tags = pull_images(target_platform, None)
     descriptor = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "wb") as archive:
         subprocess.run(["docker", "save", *tags], stdout=archive, check=True)
@@ -127,13 +155,18 @@ def prepare_credentials(directory: Path, port: int) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("up", "stop", "export-images"))
+    parser.add_argument("action", choices=("up", "stop", "pull-images", "export-images"))
     parser.add_argument("--state-directory", type=Path)
     parser.add_argument("--port", type=int, default=3300)
     parser.add_argument("--image-source", choices=("registry", "local"), default="registry")
     parser.add_argument("--platform", choices=sorted(set(_PLATFORMS.values())))
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--mirror", help="显式镜像源主机，只用于Docker Hub镜像；不写入仓库")
     args = parser.parse_args()
+    if args.action == "pull-images":
+        target = args.platform or _PLATFORMS[platform.machine().lower()]
+        print(json.dumps({"action": "pull-images", "tags": pull_images(target, args.mirror)}))
+        return
     if args.action == "export-images":
         if not args.platform or not args.output:
             parser.error("export-images需要--platform与--output")
