@@ -40,7 +40,7 @@ supersedes: []
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
-新PublicToolCallRejectionContent显示正式中文拒绝信息，不生成执行、审批或重试操作。分页、重复页幂等、持久游标及瞬时Delta沿原投影规则，拒绝不落入Compaction分支。
+新PublicToolCallRejectionContent按原因显示正式中文拒绝信息（工具未注册 / 工具参数不是合法JSON），不生成执行、审批或重试操作。分页、重复页幂等、持久游标及瞬时Delta沿原投影规则，拒绝不落入Compaction分支。
 
 完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
 对应回归见[验证用例](../../tests/product_ui/test_rejection_rendering.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。

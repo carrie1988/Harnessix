@@ -380,6 +380,39 @@ async def test_truncated_proactive_summary_backs_off_until_history_grows(tmp_pat
     assert replay(await store.events(thread.thread_id)) == restored
 
 
+@pytest.mark.parametrize("reactive", [False, True])
+async def test_proactive_planning_overflow_continues_but_reactive_still_fails(
+    tmp_path: Path, reactive: bool
+):
+    # 当前用户消息固定保留且超过保留预算：规划失败，尚未写入任何压缩记录。
+    # 主动压缩时本步保留原历史继续；超窗触发的被动压缩仍终止。
+    summary = ScriptedProvider([])
+    second = context_overflow_events(step=1) if reactive else accounted_text("已完成后续修复。")
+    normal = SequenceProvider([accounted_text("解析器调查事实与失败恢复约束。\n" * 600), second])
+    store = SQLiteSessionStore(tmp_path / "planning.sqlite")
+    async with AgentRuntime(
+        store,
+        normal,
+        compaction=config(trigger_history_tokens=50_000 if reactive else 3000),
+        summary_provider=summary,
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        await runtime.run_turn(thread.thread_id, "调查解析器", request_id="seed")
+        turn = await runtime.run_turn(
+            thread.thread_id, "继续修复并保持public接口。\n" * 200, request_id="continue"
+        )
+
+    assert not turn.compactions and summary.requests == []
+    if reactive:
+        assert turn.status == "failed"
+        assert turn.error.code == "context_compaction_retained_overflow"
+    else:
+        assert turn.status == "completed", turn.error
+        assert len(normal.requests) == 2
+    restored = await store.get_thread(thread.thread_id)
+    assert replay(await store.events(thread.thread_id)) == restored
+
+
 async def test_cancel_during_summary_closes_stream_and_ledger(tmp_path: Path):
     entered = asyncio.Event()
     release = asyncio.Event()

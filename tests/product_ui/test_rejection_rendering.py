@@ -94,6 +94,16 @@ def test_rejection_is_formal_chinese_text_without_approval_or_execution(model_st
     assert not isinstance(view.items[0].item.content, PublicToolCallContent)
 
 
+def test_invalid_arguments_rejection_names_its_reason() -> None:
+    content = PublicToolCallRejectionContent(
+        call_id=uuid4(), model_step=7, reason="invalid_arguments_json"
+    )
+    lines = transcript_lines(view_for(content))
+    assert [(line.role, line.text) for line in lines] == [
+        ("工具调用拒绝", "第 7 步：工具参数不是合法JSON，调用已拒绝")
+    ]
+
+
 def test_rejection_never_satisfies_an_approval_tool_call_binding() -> None:
     call_id = uuid4()
     approval = PublicApprovalRequestContent(

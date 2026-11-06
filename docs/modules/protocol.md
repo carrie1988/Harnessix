@@ -30,7 +30,7 @@ supersedes: []
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
-当前连接版本为Agent Protocol 2.0。公共拒绝只含 kind/callId/modelStep/reason，公共Event规格v2。六份受影响Schema新增v2，原14份公共v1保留原字节，不代表双栈。旧客户端在握手返回 unsupported_protocol_version，不隐式降级。
+当前连接版本为Agent Protocol 2.0。公共拒绝只含 kind/callId/modelStep/reason，公共Event规格v2。reason取`unregistered_tool`或`invalid_arguments_json`（开启参数修复后仍不是JSON对象的调用，见[ADR-0109](../adr/0109-recoverable-truncation-and-read-guidance.md)），与内部拒绝原因一一对应。六份受影响Schema新增v2，原14份公共v1保留原字节，不代表双栈。旧客户端在握手返回 unsupported_protocol_version，不隐式降级。
 
 完整契约、流程/时序/数据流、异常、迁移与回退见[专项详细设计](../changes/m09-r3-unknown-tool-recovery.md)。
 对应回归见[验证用例](../../tests/protocol/test_rejection_protocol_v2.py)。此增量不构成R3真实编码质量或R4完整Git交付通过。

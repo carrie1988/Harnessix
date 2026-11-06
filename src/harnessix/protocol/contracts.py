@@ -357,12 +357,15 @@ class PublicToolCallContent(ProtocolModel):
 
 
 class PublicToolCallRejectionContent(ProtocolModel):
-    """仅公开拒绝事实，不携带供应商身份、原参数或执行契约。"""
+    """仅公开拒绝事实，不携带供应商身份、原参数或执行契约。
+
+    reason与内部拒绝原因一一对应：未注册工具，或开启参数修复后仍不是JSON对象的调用。
+    """
 
     kind: Literal["tool_call_rejection"] = "tool_call_rejection"
     call_id: UUID
     model_step: int = Field(ge=1, le=1000, strict=True)
-    reason: Literal["unregistered_tool"] = "unregistered_tool"
+    reason: Literal["unregistered_tool", "invalid_arguments_json"] = "unregistered_tool"
 
 
 class PublicToolResultContent(ProtocolModel):

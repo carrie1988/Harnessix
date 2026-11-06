@@ -870,7 +870,7 @@
     },
     "PublicToolCallRejectionContent": {
       "additionalProperties": false,
-      "description": "仅公开拒绝事实，不携带供应商身份、原参数或执行契约。",
+      "description": "仅公开拒绝事实，不携带供应商身份、原参数或执行契约。\n\nreason与内部拒绝原因一一对应：未注册工具，或开启参数修复后仍不是JSON对象的调用。",
       "properties": {
         "kind": {
           "const": "tool_call_rejection",
@@ -890,8 +890,11 @@
           "type": "integer"
         },
         "reason": {
-          "const": "unregistered_tool",
           "default": "unregistered_tool",
+          "enum": [
+            "unregistered_tool",
+            "invalid_arguments_json"
+          ],
           "title": "Reason",
           "type": "string"
         }

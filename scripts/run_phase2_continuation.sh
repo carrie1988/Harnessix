@@ -5,6 +5,8 @@
 # Tasks the frozen run finished stay in their original run directories; this script never
 # touches them. Recorded as a deviation in <runs root>/DEVIATIONS.md.
 # usage: run_phase2_continuation.sh <code worktree> <runs root> <remaining Verified task list>
+# A later code switch reuses this script with its own Verified run name and revision tag:
+#   VERIFIED_RUN=verified-A2x4-p3 REVISION_TAG=phase3 run_phase2_continuation.sh ...
 set -euo pipefail
 
 CODE=$1
@@ -19,7 +21,8 @@ export PYTHONPATH=$CODE/src
 
 cd "$CODE"
 test -z "$(git status --porcelain --untracked-files=no)" || { echo "code tree is dirty" >&2; exit 2; }
-git rev-parse HEAD > "$RUNS/REVISION.phase2"
+VERIFIED_RUN=${VERIFIED_RUN:-verified-A2x4-p2}
+git rev-parse HEAD > "$RUNS/REVISION.${REVISION_TAG:-phase2}"
 
 score() {  # score <run dir> <full rows>
   (cd "$CODE" && $PY scripts/swebench_local_report.py evaluate "$1" --dataset "$2" \
@@ -55,7 +58,7 @@ EOF
 }
 
 echo "$(date -Is) A2x4 Verified (remaining)" && harnessix_arm A2x4 "$REMAINING" holdout \
-    "$DATA/verified-public.jsonl" "$DATA/verified-full.jsonl" verified-A2x4-p2
+    "$DATA/verified-public.jsonl" "$DATA/verified-full.jsonl" "$VERIFIED_RUN"
 echo "$(date -Is) R Verified" && reference_arm "$DATA/verified-dir" \
     "$LISTS/verified-holdout49.json" verified-R "$DATA/verified-full.jsonl"
 echo "$(date -Is) A2x4 Multilingual" && harnessix_arm A2x4 "$LISTS/multilingual40.json" holdout \

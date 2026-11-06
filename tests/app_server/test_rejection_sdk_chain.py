@@ -124,3 +124,54 @@ async def test_authenticated_adapter_rejection_correction_replay_and_ui(tmp_path
             assert reopened_provider.requests == [] and len(tools.calls) == 1
         finally:
             proof.close()
+
+
+async def test_truncated_tool_call_rejection_crosses_protocol_sdk_and_ui(tmp_path):
+    # 开启参数修复后，截断的工具调用以invalid_arguments_json拒绝：公共投影、SDK与UI必须接受该原因，
+    # 否则服务端投影失败、客户端退出并取消回合（holdout实测）。
+    truncated = tool_frames('{"path": "PRIVATE-TRUNCATED-CANARY')
+    truncated[1] = frame(chunk(finish="length"))
+    streams = [WireStream(truncated), WireStream(text_frames())]
+    tools = RecordingTools()
+    with protected() as scope:
+        proof = SessionPublicationBinding(uuid4(), uuid4(), KEY, scope)
+        try:
+            store = SQLiteSessionStore(tmp_path / "sdk.db", publication=proof)
+            async with (
+                OpenAIChatProvider(
+                    OpenAIChatConfig(
+                        model="test-model", max_attempts=1, repair_tool_arguments=True
+                    ),
+                    api_key="fixture-key",
+                    transport=httpx.MockTransport(lambda _: response(streams.pop(0))),
+                ) as provider,
+                AgentRuntime(store, provider, tools, public_output_protection=scope) as runtime,
+            ):
+                service = AgentApplicationService(
+                    runtime, store, SQLiteProtocolRequestStore(store.path)
+                )
+                client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+                await client.initialize()
+                thread = await client.create_thread(str(tmp_path), request_id="create")
+                await client.start_turn(thread.thread_id, "截断后重发", request_id="turn")
+                await wait_for_turn_status(client, thread.thread_id, "completed")
+                page = await client.replay_events(thread.thread_id)
+                assert (await client.get_thread(thread.thread_id)).latest_turn.status == (
+                    "completed"
+                )
+                reasons = {
+                    e.data.item.content.reason
+                    for e in page.events
+                    if isinstance(e.data, ItemPublicEvent)
+                    and isinstance(e.data.item.content, PublicToolCallRejectionContent)
+                }
+                assert reasons == {"invalid_arguments_json"}
+                view = apply_replay_page(cold_product_view(thread), page)
+                assert ("工具调用拒绝", "第 1 步：工具参数不是合法JSON，调用已拒绝") in [
+                    (line.role, line.text) for line in transcript_lines(view)
+                ]
+                assert "PRIVATE-TRUNCATED-CANARY" not in page.model_dump_json()
+                await client.close()
+            assert tools.calls == [] and not streams
+        finally:
+            proof.close()

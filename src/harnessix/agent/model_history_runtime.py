@@ -47,10 +47,19 @@ from harnessix.context.working_set_view import prepare_model_view
 from harnessix.models.contracts import ModelProvider
 from harnessix.session.ports import SessionStore
 
-
-# 摘要输出被截断：用量已对账、窗口未激活。主动压缩遇到它时本步不压缩继续，
-# 历史再增长 1/4 前不再触发；超窗触发的被动压缩仍按原错误终止。
+# 摘要输出被截断：用量已对账、窗口未激活。
 SUMMARY_TRUNCATED = "provider_summary_truncated"
+# 规划阶段判定本次无法压缩（尚未写入任何压缩记录）。
+_PLANNING_INFEASIBLE = frozenset(
+    {
+        "context_compaction_retained_overflow",
+        "context_compaction_no_progress",
+        "context_compaction_source_overflow",
+    }
+)
+# 主动压缩遇到以下失败时，不压缩的原请求仍在窗口内：本步保留原历史继续，
+# 历史再增长 1/4 前不再触发；超窗触发的被动压缩仍按原错误终止。
+_PROACTIVE_SKIPPABLE = _PLANNING_INFEASIBLE | {SUMMARY_TRUNCATED}
 _BACKOFF_GROWTH_NUMERATOR, _BACKOFF_GROWTH_DENOMINATOR = 5, 4
 
 
@@ -215,11 +224,7 @@ async def _prepaid_pressure_plan(
             ),
         )
     except KernelError as error:
-        if error.code not in {
-            "context_compaction_retained_overflow",
-            "context_compaction_no_progress",
-            "context_compaction_source_overflow",
-        }:
+        if error.code not in _PLANNING_INFEASIBLE:
             raise
         return None
     if (
@@ -338,9 +343,10 @@ async def prepare_and_commit_model_history(
             try:
                 thread = await host._run_compaction(thread, turn, prepared, token, planned)
             except KernelError as error:
-                if reactive_compaction_required or error.code != SUMMARY_TRUNCATED:
+                if reactive_compaction_required or error.code not in _PROACTIVE_SKIPPABLE:
                     raise
-                # 压缩记录已按失败关闭且用量已记账；本步保留原历史继续，不重复规划同一步。
+                # 规划失败不留记录；摘要截断的记录已按失败关闭且用量已记账。
+                # 本步保留原历史继续，不重复规划同一步。
                 host._compaction_backoff[turn_id] = _history_utf8_bytes(prepared)
                 thread = await host.store.get_thread(thread_id)
                 budget_context = budget_selection = None

@@ -481,6 +481,6 @@ def build_product_agent_context(
                 retain_recent_groups=2,
             ),
             trigger_history_tokens=131_072,
-            max_summary_output_tokens=min(max_output_tokens, 4096),
+            max_summary_output_tokens=min(max_output_tokens, 2048),
         ),
     )

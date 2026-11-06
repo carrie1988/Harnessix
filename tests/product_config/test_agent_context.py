@@ -190,8 +190,7 @@ async def test_default_compaction_survives_reopen_and_accounts_summary_attempt(
     assert len(final.compactions) == 1 and final.compactions[0].status == "summarized"
     assert final.usage_is_complete and final.usage.input_tokens == 20
     assert len(summary.requests) == 1 and summary.requests[0].tools == ()
-    # 摘要上限 4096（原 2048），本例另受默认回合预算约束。
-    assert 2048 < summary.requests[0].remaining_tokens <= 4096
+    assert summary.requests[0].remaining_tokens == 2048
     assert len(final.context_inspections) == 1
     assert len((await reopened.get_thread(thread.thread_id)).compaction_windows) == 1
     assert final_provider.requests[0].instructions is not None

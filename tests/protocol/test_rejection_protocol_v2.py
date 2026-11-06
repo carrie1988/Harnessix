@@ -53,7 +53,8 @@ def test_v2_schema_exposes_only_the_four_public_rejection_fields() -> None:
     assert schema["properties"]["modelStep"]["type"] == "integer"
     assert schema["properties"]["modelStep"]["minimum"] == 1
     assert schema["properties"]["modelStep"]["maximum"] == 1000
-    assert schema["properties"]["reason"]["const"] == "unregistered_tool"
+    assert schema["properties"]["reason"]["enum"] == ["unregistered_tool", "invalid_arguments_json"]
+    assert schema["properties"]["reason"]["default"] == "unregistered_tool"
     event_schema = PublicEvent.model_json_schema(by_alias=True)
     assert event_schema["properties"]["specVersion"]["const"] == (
         "harnessix.agent-protocol-event/v2"
@@ -65,11 +66,14 @@ def test_v2_schema_exposes_only_the_four_public_rejection_fields() -> None:
     assert event_schema["$defs"]["PublicToolCallRejectionContent"] == schema
 
 
+@pytest.mark.parametrize("reason", ["unregistered_tool", "invalid_arguments_json"])
 @pytest.mark.parametrize("model_step", [1, 1000])
-def test_item_projection_whitelists_fields_and_removes_provider_secret(model_step: int) -> None:
+def test_item_projection_whitelists_fields_and_removes_provider_secret(
+    model_step: int, reason: str
+) -> None:
     secret = "provider-secret-name-args-chars-Contract"
     content = ToolCallRejectionContent(
-        call_id=uuid4(), provider_call_id=secret, model_step=model_step
+        call_id=uuid4(), provider_call_id=secret, model_step=model_step, reason=reason
     )
     internal = Item(item_id=uuid4(), status=ItemStatus.COMPLETED, content=content)
     public = project_item(internal)
@@ -80,7 +84,7 @@ def test_item_projection_whitelists_fields_and_removes_provider_secret(model_ste
         "kind": "tool_call_rejection",
         "callId": str(content.call_id),
         "modelStep": model_step,
-        "reason": "unregistered_tool",
+        "reason": reason,
     }
     assert wire["itemId"] == str(internal.item_id)
     assert wire["status"] == "completed"

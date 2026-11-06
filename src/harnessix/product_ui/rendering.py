@@ -22,6 +22,11 @@ from harnessix.protocol.contracts import (
     ThreadView,
 )
 
+_REJECTION_REASONS = {
+    "unregistered_tool": "工具未注册",
+    "invalid_arguments_json": "工具参数不是合法JSON",
+}
+
 
 @dataclass(frozen=True, slots=True)
 class TranscriptLine:
@@ -55,7 +60,7 @@ def _item_lines(item: PublicItem) -> tuple[TranscriptLine, ...]:
             TranscriptLine(
                 item_id,
                 "工具调用拒绝",
-                f"第 {content.model_step} 步：工具未注册，调用已拒绝",
+                f"第 {content.model_step} 步：{_REJECTION_REASONS[content.reason]}，调用已拒绝",
             ),
         )
     if isinstance(content, PublicToolCallContent):
