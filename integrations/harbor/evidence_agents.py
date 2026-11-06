@@ -13,13 +13,14 @@ import shlex
 from pathlib import Path
 
 from harbor.agents.base import BaseAgent
-from harbor.agents.installed.mini_swe_agent import MiniSweAgent
+from harbor.agents.installed.mini_swe_agent import MiniSweAgent, MiniSweAgentOptions
 from harbor.agents.nop import NopAgent
 from harbor.agents.oracle import OracleAgent
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 from harbor.models.task.task import Task
 from harbor.models.trial.paths import EnvironmentPaths, TrialPaths
+from pydantic import Field
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
     from integrations.harbor.patch_export import head_command, parse_head, patch_command
@@ -99,12 +100,20 @@ class NopWithPatch(_PatchExport, NopAgent):
     pass
 
 
+class MiniSweAgentOfflineOptions(MiniSweAgentOptions):
+    with_packages: list[str] | None = Field(
+        default=None, description="随mini-swe-agent安装的锁定依赖，默认与上游相同且不锁版本"
+    )
+
+
 class MiniSweAgentOffline(_PatchExport, MiniSweAgent):
     """with_packages锁定随附依赖（上游只写--with litellm，最新版可能缺少导入依赖）。"""
 
-    def __init__(self, *args, with_packages: list[str] | None = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._with_packages = with_packages or ["litellm", "orjson", "fastapi"]
+    options_model = MiniSweAgentOfflineOptions
+
+    @property
+    def _with_packages(self) -> list[str]:
+        return self.options.with_packages or ["litellm", "orjson", "fastapi"]
 
     async def install(self, environment: BaseEnvironment) -> None:
         await self.ensure_system_dependencies(environment, ("curl", "bash", "build_tools", "git"))
