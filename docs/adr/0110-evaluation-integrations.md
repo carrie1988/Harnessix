@@ -1,20 +1,21 @@
 ---
 doc_type: adr
 status: current
-version: 3
+version: 4
 code_revision: de1ab2722f91d6109e807617aa1e07c8a502c9e5
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
+  - docs/adr/0120-system-neutral-evaluation-platform.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0082-multi-repository-eval-suite-and-transcript-evidence.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
-  - tests/evals/test_langfuse_export.py
+  - tests/evalkit/test_langfuse.py
+  - tests/evalkit/test_harbor.py
+  - tests/integrations/test_harnessix_eval.py
   - tests/integrations/test_harbor_protocol.py
   - tests/integrations/test_harbor_adapter.py
-  - tests/evals/test_harbor_import.py
-  - tests/evals/test_langfuse_readback.py
 supersedes:
   - docs/adr/0109-evaluation-integrations.md
 ---
@@ -31,18 +32,22 @@ Harbor通过既有Agent Protocol启动产品App Server。评测、导出和第�
 
 ## 2. 源码与合同边界
 
-- [投影](../../src/harnessix/evals/langfuse_projection.py)只消费严格重算的Suite报告。
-  [导出合同](../../src/harnessix/evals/langfuse_contracts.py)固定原报告摘要与原币种汇总。
-- [文件发布](../../src/harnessix/evals/report.py)复用原子私有写入；源文件继续满足0600要求。
-- [传输](../../src/harnessix/evals/langfuse_transport.py)发送OTLP/HTTP JSON与score-create批次。
+[ADR 0120](0120-system-neutral-evaluation-platform.md)把下列实现迁出产品wheel，报告合同改为
+evalkit的运行报告；本节的边界与第3、4节的约束保持不变。
+
+- [投影](../../packages/evalkit/src/evalkit/langfuse/projection.py)只消费严格重算的运行报告；
+  Suite报告经[回填](../../integrations/harnessix_eval/suite.py)转换，逐试次与原结论一致。
+- [文件读写](../../packages/evalkit/src/evalkit/files.py)采用0600原子私有写入并拒绝符号链接。
+- [传输](../../packages/evalkit/src/evalkit/langfuse/transport.py)发送OTLP/HTTP JSON与score-create批次。
   Trace不使用旧Ingestion API；评分采用其仍受支持的事件形式以保留原事件时间。
 - [Harbor适配器](../../integrations/harbor/harnessix_agent.py)依赖单独锁定的Harbor 0.25.0，
   [协议驱动](../../integrations/harbor/protocol_runner.py)仅消费公共SDK，不实现模型循环。
-- [Harbor原生合同](../../src/harnessix/evals/harbor_contracts.py)保留冻结槽位与未知值；
-  [导入](../../src/harnessix/evals/harbor_import.py)逐个处理原始结果，拒绝身份冲突及隐藏自动重试。
+- [Harbor导入](../../packages/evalkit/src/evalkit/harbor.py)按计划槽位逐个处理原始结果，
+  拒绝身份冲突及隐藏自动重试；Harnessix原生字段由
+  [协议摘要解析器](../../integrations/harnessix_eval/harbor_parser.py)映射，只进入system_refs。
   它不补造原有CodingEvalReport的14项检查，不把单仓库结果转换成完整多仓库Suite。
-- [读回](../../src/harnessix/evals/langfuse_readback.py)采用v4公开Experiments及Experiment Items API，
-  核对根Observation、评分值、归属、原币种和计数，并保存绑定源摘要的私有收据。
+- [读回](../../packages/evalkit/src/evalkit/langfuse/readback.py)采用v4公开Experiments及
+  Experiment Items API，核对根Observation、评分值、归属、原币种和计数，并保存绑定源摘要的私有收据。
 
 ## 3. 适用条件与副作用
 
@@ -50,7 +55,7 @@ Harbor通过既有Agent Protocol启动产品App Server。评测、导出和第�
 默认只写0600文件。只有明确指定联网开关和服务地址后才读取导出凭据并发出HTTP请求。
 Prompt、Diff、错误正文、仓库URL和原始Session不进入投影。
 Harbor v1映射固定标准reward==1，输入锁和观测的Harbor自动重试次数必须明确为0。
-缺失结果保留为invalid；slot_id仅关联计划槽位，物理执行以Harbor试次及原生Turn身份关联。
+缺失结果保留为invalid；槽位只关联计划，物理执行以Harbor试次及原生Turn身份关联。
 Job无时区时间必须显式解释，夏令时歧义拒绝猜测。
 
 Harbor的任务镜像需预装Harnessix、原生配置及运行依赖；配置和状态位于工作区外。

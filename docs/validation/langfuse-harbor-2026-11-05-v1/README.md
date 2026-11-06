@@ -1,14 +1,14 @@
 ---
 doc_type: validation-evidence
-status: current
-version: 1
+status: historical
+version: 2
 code_revision: de1ab2722f91d6109e807617aa1e07c8a502c9e5
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
   - docs/adr/0109-evaluation-integrations.md
 related_tests:
-  - tests/evals/test_langfuse_export.py
+  - tests/evalkit/test_langfuse.py
   - tests/integrations/test_harbor_protocol.py
   - tests/integrations/test_harbor_adapter.py
 supersedes: []
@@ -99,3 +99,9 @@ Harbor及其传递依赖仅安装在独立环境，根项目SBOM检查不代表�
 当前Harbor标准Token及cost_usd保持未知，只展示公共Turn观测值。
 turn_terminal_confirmed仅表示观察到协议终态，不能证明物理进程清理。
 不自动批准、不自动恢复旧试次；这次接入不改变产品发布结论。
+
+## 谱系说明
+
+本证据对应提交de1ab272的实现。[ADR 0120](../../adr/0120-system-neutral-evaluation-platform.md)
+把Langfuse导出与Harbor导入迁出产品包（evalkit与integrations/harnessix_eval），原测试随之迁移，
+本文件因此改为historical，related_tests指向迁移后的测试。迁移后的五场景矩阵须在新代码上重跑并另立证据。

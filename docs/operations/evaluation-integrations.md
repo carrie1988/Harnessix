@@ -1,52 +1,64 @@
 ---
 doc_type: deployment-design
 status: current
-version: 2
+version: 3
 code_revision: de1ab2722f91d6109e807617aa1e07c8a502c9e5
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
   - docs/adr/0110-evaluation-integrations.md
+  - docs/adr/0120-system-neutral-evaluation-platform.md
 related_tests:
-  - tests/evals/test_langfuse_export.py
+  - tests/evalkit/test_langfuse.py
+  - tests/evalkit/test_harbor.py
+  - tests/evalkit/test_grading.py
+  - tests/integrations/test_harnessix_eval.py
   - tests/integrations/test_harbor_protocol.py
   - tests/integrations/test_harbor_adapter.py
-  - tests/evals/test_harbor_import.py
-  - tests/evals/test_langfuse_readback.py
 supersedes: []
 ---
 
 # Langfuse与Harbor评测接入
 
-当前提供完整Suite及原生Harbor报告的Langfuse投影、真实服务读回核验，
-以及通过Agent Protocol驱动现有产品的Harbor容器适配器。
+评测平台核心是独立包[evalkit](../../packages/evalkit/)（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)），
+不进入产品wheel、uv.lock和SBOM。Harnessix一侧的适配位于[integrations/harnessix_eval](../../integrations/harnessix_eval/)。
+所有evalkit证据都绑定执行前冻结的运行计划；由已有报告推出的计划标记为backfilled，不能作为预注册证据引用。
 本地报告及账本保留权威性。逐调用实时Trace、全量费用账单和生产无人值守权限策略仍单独验收。
-真实服务、五场景容器试次、补发幂等与原生报告的冻结验收证据见
-[第二阶段验收报告](../validation/langfuse-harbor-2026-11-05-v2/README.md)。
+迁出产品包前的五场景容器与Langfuse读回证据见
+[第二阶段验收报告](../validation/langfuse-harbor-2026-11-05-v2/README.md)（historical）。
+
+以下命令在仓库根目录执行，先让evalkit与适配器可导入：
+
+```bash
+export PYTHONPATH="$PWD:$PWD/packages/evalkit/src"
+```
 
 ## 1. 离线准备Langfuse投影
 
-输入为现有完整Suite报告，必须满足既有Reader的0600私有文件要求。
-版本库中的历史报告可能为0644；需要时制作私有副本，保留原件及字节摘要。
-父目录需预先存在，输出不能覆盖源报告。
+Suite报告必须满足既有Reader的0600私有文件要求；版本库中的历史报告可能为0644，
+需要时制作私有副本并保留原件摘要。父目录需预先存在，输出不能覆盖源文件。
 
 ```bash
-harnessix coding-eval-export \
+uv run --frozen python -m integrations.harnessix_eval from-suite \
   --suite-report /path/to/private-suite-report.json \
+  --output /path/to/run-report.json
+
+uv run --frozen python -m evalkit export \
+  --report /path/to/run-report.json \
   --output /path/to/langfuse-export.json
 ```
 
-返回prepared_offline表示本地投影生成。不会执行Agent、读取Langfuse凭据或访问服务。
-输入失败或损坏试次保留在原分母中；只接受满足原Suite完整性约束的报告。
-单任务Harbor结果不伪装成多仓库Suite。
+回填逐试次核对evalkit判定与Suite原结论一致，计划时间取Suite计划时间，源报告摘要记入source_refs。
+prepared_offline表示本地投影已生成；不会执行Agent、读取Langfuse凭据或访问服务。
+全部槽位都生成Trace，失败、缺失和无效试次保留在分母中。
 
 ## 2. 显式发送
 
 预先通过本地密钥管理方式注入LANGFUSE_PUBLIC_KEY和LANGFUSE_SECRET_KEY，命令中只使用环境引用。
 
 ```bash
-harnessix coding-eval-export \
-  --suite-report /path/to/private-suite-report.json \
+uv run --frozen python -m evalkit export \
+  --report /path/to/run-report.json \
   --output /path/to/langfuse-export.json \
   --allow-network \
   --langfuse-base-url http://127.0.0.1:3300 \
@@ -64,16 +76,16 @@ Trace发送到api/public/otel/v1/traces；评分以score-create批次发送到ap
 不使用已经移除的旧Trace GET。默认读回预算120秒，可用--verify-timeout-seconds调整，最大600秒。
 API时间精度为毫秒，核验允许不足1毫秒的截断；整数元数据仅接受原整数或规范十进制字符串，
 布尔元数据仅接受布尔值或JSON规范的true/false字符串，不按数字或任意字符串推断真值。
-核验收据以0600原子写入，绑定source_report_sha256；这项验收使用真实API，不依赖浏览器截图。
+核验收据以0600原子写入，绑定source_report_digest；这项验收使用真实API，不依赖浏览器截图。
 
 同一报告重发使用相同实验、Trace、Span、评分ID与时间；不会重跑原任务。
-源证据改变产生新的实验身份；相同任务和重复序号可跨实验对照。
-重复次数改变时使用新的数据集身份。Suite报告未包含预算明细，不能仅凭此投影证明预算公平；
-对照实验仍需核对冻结的原始计划。跨报告重组同一批运行时，费用统计需按run_id去重。
+每个组别是一个实验；报告改变（例如补充判分）产生新的实验身份。
+同一数据集条目的同一重复序号在各组别、各报告间共享条目ID，可直接对照。
+Suite报告未包含预算明细，不能仅凭此投影证明预算公平；对照实验仍需核对冻结的原始计划。
 
 导出只有真实试次的起止时间与结构化摘要。聚合Token不生成伪造的逐调用generation，
-因此不会由平台再次按模型价格推算成本。已知成本以原币种命名的评分和原始金额字符串展示，
-partial/unknown沿用原值；正式结论继续使用原Suite汇总。
+不会由平台再次按模型价格推算成本。已知成本以原币种和原始金额字符串放入元数据，
+partial/unknown沿用原值。评分名称为“判分器/分数”，另有主指标结果outcome与耗时。
 
 ## 3. Harbor独立环境
 
@@ -117,37 +129,47 @@ turn_terminal_confirmed仅说明已观察到协议终态。全量Attempt证据�
 原生进程清理与跨进程恢复仍需独立验证。Harbor标准Token和cost_usd在当前适配器中保持未知；
 公共Turn的观测值仅放入harnessix元数据，不将completed转换成任务通过。
 
-## 4. 原生Harbor报告
+## 4. Harbor运行导入与判分
+
+运行Harbor前先冻结运行计划：数据集条目ID为Harbor任务名，条目摘要为Harbor对任务目录的内容哈希
+（与Job锁中的task.digest相同）。组别的system必须等于Harbor结果中的智能体名称。
 
 ```bash
-harnessix coding-eval-import-harbor \
-  --job-directory /path/to/completed-harbor-job \
+uv run --frozen python -m evalkit import-harbor \
+  --plan /path/to/plan.json --arm harnessix \
+  --job-directory /path/to/evidence/jobs/completed-job \
+  --evidence-root /path/to/evidence \
+  --parser integrations.harnessix_eval.harbor_parser:HarnessixResultParser \
   --source-timezone UTC \
-  --output /path/to/native-harbor-report.json
+  --output /path/to/trials-harnessix.json
 
-harnessix coding-eval-export \
-  --harbor-report /path/to/native-harbor-report.json \
-  --output /path/to/harbor-langfuse-export.json \
-  --allow-network --langfuse-base-url http://127.0.0.1:3300 \
-  --verify --readback-report /path/to/harbor-readback.json
+uv run --frozen python -m evalkit report \
+  --plan /path/to/plan.json \
+  --trials /path/to/trials-harnessix.json \
+  --evidence-root /path/to/evidence \
+  --grader harbor-reward=evalkit.harbor:HarborRewardGrader \
+  --output /path/to/run-report.json
 ```
 
-原始Harbor文件保留不变，输出必须位于源Job目录外。原生报告采用
-[HarborEvalReport](../../src/harnessix/evals/harbor_contracts.py)，不补造原有CodingEvalReport要求的14项检查。
-v1只接收Harbor 0.25.0、Job Lock v3和已结束的运行，固定以标准reward==1判定通过。
+原始Harbor文件保留不变，输出必须位于源Job目录外；试次以证据库相对路径和摘要登记冻结的result.json，
+判分时内容改变即拒绝。导入不判分：奖励由计划声明的harbor-reward判分器读取，不补造14项原生检查。
+两个判分器都在计划内时，`python -m evalkit consistency`逐个列出判定不同或只有一方有判定的试次。
+只接收Harbor 0.25.0、Job Lock v3和已结束的运行，标准reward==1判定通过。
 Harbor级配置及实际自动重试次数必须明确为0；有重试的Job需要另行展开尝试，不能只导入最后一次结果。
 原生Provider内部重试仍按产品配置执行，公共Turn用量不能证明其完整账单。
 
-导入按冻结槽位重算分母。缺失结果保留为invalid；额外结果、重复Harbor身份、重复原生Turn、
-错配Job/任务/执行配置均拒绝发布。任务失败、审批中止、预算超时、Provider和基础设施故障分别归因。
-只选择结构化字段，异常正文、Prompt、响应正文和仓库URL不进入原生报告或投影。
-slot_id是计划槽位关联身份；harbor_trial_id、thread_id及turn_id才是已观测的执行关联身份。
+导入按计划槽位重算分母：Job须恰好覆盖计划的全部条目和重复。缺失结果保留为missing（invalid）；
+额外结果、重复Harbor身份、重复原生Turn、错配Job/任务/执行配置均拒绝发布。
+基础设施异常为infra_error，超时为timeout，审批中止、Provider和预算失败为system_error，
+Harnessix自报未完成却没有智能体异常时判为协议证据不完整（infra_error）。
+只选择结构化字段，异常正文、Prompt、响应正文和仓库URL不进入报告或投影。
+槽位只关联计划；executor_refs中的harbor_trial_id与system_refs中的thread_id、turn_id才是执行身份。
 相同输入锁的重复槽位按结果目录名稳定匹配，不把重复序号解释为随机种子或原始调度顺序。
 
 Harbor的Job时间可能不带时区；此时--source-timezone必须由运行配置明确给出。
 推荐在启动Harbor时设置TZ=UTC并按UTC导入；夏令时歧义拒绝猜测。
-Token和reported_cost_usd保留已观测值与null，完整性保持unknown，不补零、不重新估价。
-缺失试次的投影使用标明来源的Job时间窗口，不计入单次耗时评分。
+观测Token记为partial，reported_cost_usd只作执行引用，成本完整性保持unknown，不补零、不重新估价。
+缺失试次的投影使用标明time_source的报告时间窗口，不计入单次耗时评分。
 
 ## 5. 真实本机Langfuse
 
@@ -181,7 +203,7 @@ Oracle应得到1，Nop应得到0。先使用Harbor TaskConfig校验任务，再�
 uv run --frozen python integrations/harbor/fixtures/prepare_image.py \
   --build-directory /path/to/new-build-directory
 
-# 在本进程注入本机Langfuse凭据后执行；每轮使用新输出目录。
+# 在本进程注入本机Langfuse凭据并设置上文PYTHONPATH后执行；每轮使用新输出目录。
 uv run --frozen python integrations/harbor/run_acceptance.py \
   --image-receipt /path/to/new-build-directory/image.json \
   --output-directory /path/to/new-acceptance-directory \
@@ -196,8 +218,8 @@ Harbor默认no-network通过sidecar控制TCP出口，存在其实现定义的DNS
 独立Verifier通过完成回答的摘要与成功工具证据验收只读review任务，并包含错误答案、审批中止、
 超时和503失败变体。固定100/20 Token的SSE数据只用于字段流转验收，不代表实际分词或计费。
 
-驱动核对五个场景、完整1/5任务分母、容器实际镜像和none网络模式、容器清理，
-随后导入原生报告、真实发送并读回，再以同身份补发并核对源文件没有变化。
+驱动先冻结运行计划，再核对五个场景、完整1/5任务分母、容器实际镜像和none网络模式、容器清理，
+随后导入、判分、真实发送并读回，再以同身份补发并核对源文件没有变化。
 5个场景验收通过与任务通过率1/5是不同口径；公开基准、真实模型质量、真实编码修改和测试执行
 仍需独立冻结任务、权限、模型及预算验收。本矩阵未调用付费模型。
 

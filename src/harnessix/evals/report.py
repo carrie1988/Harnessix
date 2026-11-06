@@ -8,15 +8,13 @@ import stat
 from pathlib import Path
 from uuid import uuid4
 
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ContractModel
 from harnessix.evals.campaign_contracts import CodingEvalCampaignPlan, CodingEvalCampaignReport
 from harnessix.evals.campaign_execution_contracts import CodingEvalCampaignExecutionState
 from harnessix.evals.contracts import CodingEvalReport
-from harnessix.evals.harbor_contracts import HarborEvalReport
-from harnessix.evals.langfuse_contracts import LangfuseExport, LangfuseReadbackReport
 from harnessix.evals.suite_contracts import (
     CodingEvalSuiteCaseReport,
     CodingEvalSuitePlan,
@@ -32,59 +30,6 @@ MAX_EVAL_SUITE_PLAN_BYTES = 512 * 1024
 MAX_EVAL_SUITE_CASE_REPORT_BYTES = 2 * 1024 * 1024
 MAX_EVAL_SUITE_EXECUTION_STATE_BYTES = 512 * 1024
 MAX_EVAL_SUITE_REPORT_BYTES = 8 * 1024 * 1024
-MAX_LANGFUSE_EXPORT_BYTES = 32 * 1024 * 1024
-
-
-def write_langfuse_readback(path: Path, report: LangfuseReadbackReport) -> None:
-    """原子保存0600核验收据；只有完整读回后调用，不改变评测结论。"""
-    _write_report(
-        path,
-        report,
-        65_536,
-        too_large_code="langfuse_readback_too_large",
-        path_denied_code="langfuse_readback_path_denied",
-        write_failed_code="langfuse_readback_write_failed",
-        label="Langfuse核验收据",
-    )
-
-
-def write_harbor_eval_report(path: Path, report: HarborEvalReport) -> None:
-    """复用原子私有发布；失败不修改Harbor源证据，不执行或重试任何任务。"""
-    _write_report(
-        path,
-        report,
-        8 * 1024 * 1024,
-        too_large_code="harbor_report_too_large",
-        path_denied_code="harbor_report_path_denied",
-        write_failed_code="harbor_report_write_failed",
-        label="Harbor原生报告",
-    )
-
-
-def read_harbor_eval_report(path: Path) -> HarborEvalReport:
-    """读取0600原生Harbor报告，严格重算全部槽位与汇总不变量。"""
-    return _read_report(
-        path,
-        HarborEvalReport,
-        8 * 1024 * 1024,
-        invalid_code="harbor_report_invalid",
-        label="Harbor原生报告",
-        require_private_mode=True,
-    )
-
-
-def write_langfuse_suite_export(path: Path, report: LangfuseExport) -> None:
-    """原子发布0600导出文件；不包含凭据，不改变源报告或执行状态。"""
-
-    _write_report(
-        path,
-        report,
-        MAX_LANGFUSE_EXPORT_BYTES,
-        too_large_code="langfuse_export_too_large",
-        path_denied_code="langfuse_export_path_denied",
-        write_failed_code="langfuse_export_write_failed",
-        label="Langfuse导出",
-    )
 
 
 def eval_report_sha256(report: CodingEvalReport) -> str:
@@ -156,7 +101,7 @@ def _write_report(
                 pass
 
 
-def _read_report[T: BaseModel](
+def _read_report[T: ContractModel](
     path: Path,
     model: type[T],
     max_bytes: int,

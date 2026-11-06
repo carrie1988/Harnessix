@@ -102,12 +102,6 @@ from harnessix.evals.delivery_contracts import (
     CodingEvalDeliveryPlan,
     CodingEvalDeliveryRecord,
 )
-from harnessix.evals.harbor_contracts import HarborEvalReport
-from harnessix.evals.langfuse_contracts import (
-    LangfuseHarborExport,
-    LangfuseReadbackReport,
-    LangfuseSuiteExport,
-)
 from harnessix.evals.provider_suite_contracts import (
     CodingEvalProviderSuiteEvidenceManifest,
     CodingEvalProviderSuiteRunConfig,
@@ -533,10 +527,6 @@ def generate_specs(output: Path) -> None:
         ("coding-eval-campaign-run-report", CodingEvalCampaignRunReport),
         ("coding-eval-suite-plan", CodingEvalSuitePlan),
         ("coding-eval-suite-report", CodingEvalSuiteReport),
-        ("langfuse-suite-export", LangfuseSuiteExport),
-        ("langfuse-harbor-export", LangfuseHarborExport),
-        ("langfuse-readback", LangfuseReadbackReport),
-        ("harbor-eval-report", HarborEvalReport),
         ("coding-eval-transcript-evidence", CodingEvalTranscriptEvidence),
         ("coding-eval-suite-run-config", CodingEvalSuiteRunConfig),
         ("coding-eval-suite-case-run-result", CodingEvalSuiteCaseRunResult),

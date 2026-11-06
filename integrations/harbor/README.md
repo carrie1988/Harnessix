@@ -8,7 +8,7 @@ Harbor 0.25.0的独立适配，通过公共SDK驱动产品Agent Protocol。
 验证命令：
 
 ```bash
-uv run --frozen pytest tests/evals/test_langfuse_export.py tests/integrations/test_harbor_protocol.py
+uv run --frozen pytest tests/evalkit tests/integrations/test_harnessix_eval.py tests/integrations/test_harbor_protocol.py
 integrations/harbor/.venv/bin/python -m pytest tests/integrations/test_harbor_adapter.py
 ```
 

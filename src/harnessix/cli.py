@@ -20,8 +20,6 @@ def _parser() -> argparse.ArgumentParser:
         "coding-eval-suite", help="运行显式启用的固定Task Pack真实Provider Suite"
     )
     subcommands.add_parser("coding-eval-swebench", help="预注册并运行官方SWE-bench外部基准评测")
-    subcommands.add_parser("coding-eval-export", help="离线生成或显式发送Langfuse评测投影")
-    subcommands.add_parser("coding-eval-import-harbor", help="离线导入Harbor冻结运行与全部结果")
     subcommands.add_parser("agent", help="通过stdio App Server运行薄Agent CLI")
     subcommands.add_parser("code", help="启动全屏Coding Agent终端产品")
     subcommands.add_parser("exec", help="无头运行一个Coding Agent任务并输出JSON摘要")
@@ -54,16 +52,6 @@ def _delegate_special_command(args: list[str]) -> bool:
         from harnessix.evals.swebench.cli import main as swebench_main
 
         swebench_main(args[1:])
-        return True
-    if args[0] == "coding-eval-export":
-        from harnessix.evals.export_cli import main as export_main
-
-        export_main(args[1:])
-        return True
-    if args[0] == "coding-eval-import-harbor":
-        from harnessix.evals.harbor_cli import main as harbor_import_main
-
-        harbor_import_main(args[1:])
         return True
     if args[0] == "agent":
         from harnessix.agent_cli import main as agent_main

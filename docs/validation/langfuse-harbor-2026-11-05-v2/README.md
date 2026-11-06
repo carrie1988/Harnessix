@@ -1,16 +1,16 @@
 ---
 doc_type: validation-evidence
-status: current
-version: 1
+status: historical
+version: 2
 code_revision: de1ab2722f91d6109e807617aa1e07c8a502c9e5
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
   - docs/adr/0109-evaluation-integrations.md
 related_tests:
-  - tests/evals/test_harbor_import.py
-  - tests/evals/test_langfuse_readback.py
-  - tests/evals/test_langfuse_export.py
+  - tests/evalkit/test_langfuse.py
+  - tests/evalkit/test_harbor.py
+  - tests/integrations/test_harnessix_eval.py
   - tests/integrations/test_harbor_protocol.py
   - tests/integrations/test_harbor_adapter.py
 supersedes: []
@@ -129,3 +129,10 @@ Langfuse为本机真实v4.76.0服务，六个镜像固定注册表摘要，Web�
 真实服务的传输和数据核验与浏览器界面截图分开，本轮以公开API实际结果为准。
 真实付费模型质量、公开基准、逐调用实时Trace、全量账单和生产无人值守权限策略另行验收。
 此次接入不改变1.0发布结论；主干既有格式、可读性及许可证门禁问题仍按原记录保留。
+
+## 谱系说明
+
+本证据对应提交de1ab272的实现。[ADR 0120](../../adr/0120-system-neutral-evaluation-platform.md)
+把Langfuse导出与Harbor导入迁出产品包（evalkit与integrations/harnessix_eval），原测试随之迁移，
+本文件因此改为historical，related_tests指向迁移后的测试。artifact-sha256.json中本文件的摘要对应第1版（见Git历史）。
+迁移后的五场景矩阵须在新代码上重跑并另立证据。

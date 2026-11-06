@@ -1,4 +1,7 @@
-"""重复执行完整本地验收矩阵及真实Langfuse闭环；只允许离线确定性产品夹具。"""
+"""重复执行完整本地验收矩阵及真实Langfuse闭环；只允许离线确定性产品夹具。
+
+运行前设置PYTHONPATH为仓库根目录与packages/evalkit/src，使evalkit与Harnessix适配可导入。
+"""
 
 from __future__ import annotations
 
@@ -9,8 +12,24 @@ import os
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from evalkit.contracts import (
+    ArmSpec,
+    DatasetItem,
+    DatasetManifest,
+    EvalRunReport,
+    GraderSpec,
+    RunPlan,
+    trial_outcome,
+)
+from evalkit.digest import bytes_digest
+from evalkit.files import read_model, write_model
+
+HARBOR_REWARD = GraderSpec(grader_id="harbor-reward", version="0.25.0", pass_score="reward_passed")
+PARSER = "integrations.harnessix_eval.harbor_parser:HarnessixResultParser"
 
 
 def _private_json(path: Path, value: Any) -> None:
@@ -21,8 +40,13 @@ def _private_json(path: Path, value: Any) -> None:
 
 
 def _run_cli(root: Path, arguments: list[str]) -> dict[str, Any]:
+    environment = {**os.environ, "PYTHONPATH": f"{root}{os.pathsep}{root / 'packages/evalkit/src'}"}
     result = subprocess.run(
-        [sys.executable, "-m", "harnessix", *arguments], cwd=root, capture_output=True, text=True
+        [sys.executable, "-m", "evalkit", *arguments],
+        cwd=root,
+        env=environment,
+        capture_output=True,
+        text=True,
     )
     try:
         value = json.loads(result.stdout)
@@ -79,20 +103,67 @@ def _monitor(process: subprocess.Popen, image: str, image_id: str) -> dict[str, 
     return observed
 
 
-def _check_matrix(report: dict[str, Any], job: Path) -> None:
+def _plan(root: Path, tasks: Path, config_digest: str) -> RunPlan:
+    """执行前冻结计划；任务摘要用Harbor自己的内容哈希计算，导入时与Job锁逐条核对。"""
+    digests = json.loads(
+        subprocess.check_output(
+            [
+                str(root / "integrations/harbor/.venv/bin/python"),
+                "-c",
+                "import json, sys\n"
+                "from pathlib import Path\n"
+                "from harbor.publisher.packager import Packager\n"
+                "print(json.dumps({p: Packager.compute_content_hash(Path(p))[0]"
+                " for p in sys.argv[1:]}))",
+                *(str(task) for task in sorted(tasks.iterdir())),
+            ],
+            text=True,
+        )
+    )
+    return RunPlan(
+        run_name="harbor-native-matrix",
+        dataset=DatasetManifest(
+            name="harbor-native-matrix",
+            version="1",
+            items=tuple(
+                DatasetItem(item_id=Path(path).name, item_digest="sha256:" + digest)
+                for path, digest in digests.items()
+            ),
+        ),
+        arms=(
+            ArmSpec(
+                arm_id="harnessix",
+                system="harnessix",
+                system_version=subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=root, text=True
+                ).strip(),
+                config_digest=config_digest,
+                executor="harbor",
+            ),
+        ),
+        attempts_per_item=1,
+        graders=(HARBOR_REWARD,),
+        primary_grader=HARBOR_REWARD.grader_id,
+        created_at=datetime.now(UTC),
+    )
+
+
+def _check_matrix(report: EvalRunReport, job: Path) -> None:
     expected = {
-        "01-protocol-pass": ("passed", "passed"),
-        "02-protocol-task-fail": ("failed", "task"),
-        "03-protocol-approval": ("failed", "runtime"),
-        "04-protocol-deadline": ("failed", "budget"),
-        "05-protocol-provider-fail": ("failed", "provider"),
+        "01-protocol-pass": ("completed", "completed", "passed"),
+        "02-protocol-task-fail": ("completed", "completed", "failed"),
+        "03-protocol-approval": ("system_error", "intervention_required", "failed"),
+        "04-protocol-deadline": ("timeout", "deadline_exceeded", "failed"),
+        "05-protocol-provider-fail": ("system_error", "provider_failed", "failed"),
     }
-    if report["summary"]["scheduled_trials"] != 5 or report["summary"]["passed_trials"] != 1:
+    summary = report.summary[0]
+    if (summary.scheduled, summary.passed) != (5, 1):
         raise RuntimeError("完整分母或任务验收结果不符合冻结矩阵")
-    for trial in report["trials"]:
-        if (trial["outcome"], trial["classification"]) != expected.pop(trial["task_name"]):
+    for trial in report.trials:
+        observed = (trial.status, trial.reason, trial_outcome(trial, HARBOR_REWARD))
+        if observed != expected.pop(trial.item_id):
             raise RuntimeError("原生故障归因与受控场景不一致")
-        if trial["verifier_mode"] != "separate" or trial["cost_completeness"] != "unknown":
+        if trial.executor_refs.get("verifier_mode") != "separate" or trial.cost.amount is not None:
             raise RuntimeError("独立验收或未知费用语义丢失")
     if expected:
         raise RuntimeError("受控场景缺失")
@@ -156,6 +227,9 @@ def main() -> None:
         "tasks": [{"path": str(task)} for task in sorted((output / "tasks").iterdir())],
     }
     _private_json(output / "job-config.json", config)
+    plan_path = output / "plan.json"
+    plan = _plan(root, output / "tasks", bytes_digest((output / "job-config.json").read_bytes()))
+    write_model(plan_path, plan, 1024 * 1024)
     environment = {**os.environ, "HARBOR_TELEMETRY": "0", "TZ": "UTC", "PYTHONPATH": str(root)}
     with (output / "harbor.log").open("x") as log:
         process = subprocess.Popen(
@@ -179,25 +253,49 @@ def main() -> None:
     _run_cli(
         root,
         [
-            "coding-eval-import-harbor",
+            "import-harbor",
+            "--plan",
+            str(plan_path),
+            "--arm",
+            "harnessix",
             "--job-directory",
             str(job),
+            "--evidence-root",
+            str(output),
+            "--parser",
+            PARSER,
             "--source-timezone",
             "UTC",
             "--output",
-            str(output / "native-report.json"),
+            str(output / "trials.json"),
         ],
     )
-    report = json.loads((output / "native-report.json").read_text())
+    _run_cli(
+        root,
+        [
+            "report",
+            "--plan",
+            str(plan_path),
+            "--trials",
+            str(output / "trials.json"),
+            "--evidence-root",
+            str(output),
+            "--grader",
+            "harbor-reward=evalkit.harbor:HarborRewardGrader",
+            "--output",
+            str(output / "run-report.json"),
+        ],
+    )
+    report = read_model(output / "run-report.json", EvalRunReport, 64 * 1024 * 1024)
     _check_matrix(report, job)
     hashes_before = {
         str(path.relative_to(job)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in job.rglob("*.json")
     }
     command = [
-        "coding-eval-export",
-        "--harbor-report",
-        str(output / "native-report.json"),
+        "export",
+        "--report",
+        str(output / "run-report.json"),
         "--output",
         str(output / "langfuse-export.json"),
         "--allow-network",
@@ -215,7 +313,10 @@ def main() -> None:
         str(path.relative_to(job)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in job.rglob("*.json")
     }
-    if hashes_before != after or readbacks[0]["experiment_id"] != readbacks[1]["experiment_id"]:
+    if (
+        hashes_before != after
+        or readbacks[0]["source_report_digest"] != readbacks[1]["source_report_digest"]
+    ):
         raise RuntimeError("补发改变了源证据或实验身份")
     _private_json(
         output / "acceptance.json",

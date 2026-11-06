@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [evals, observability]
@@ -10,6 +10,10 @@ related_adrs:
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
   - tests/evalkit/test_contracts.py
+  - tests/evalkit/test_harbor.py
+  - tests/evalkit/test_grading.py
+  - tests/evalkit/test_langfuse.py
+  - tests/integrations/test_harnessix_eval.py
   - tests/governance/test_evalkit_boundary.py
 supersedes: []
 ---
@@ -18,40 +22,44 @@ supersedes: []
 
 ## 1. 背景
 
-[ADR 0110](0110-evaluation-integrations.md)接通了Langfuse只读导出与Harbor协议适配，但报告合同把
-Harnessix专属字段（原生Turn、失败类别、协议完整性）与通用试次事实混在一起，并依赖Harnessix的
-Suite合同、错误类型和价格表。评测平台需要被其他智能体系统复用，首个候选是TTPs Agentic GraphRAG：
-它是常驻HTTP服务（PostgreSQL、Neo4j、LangGraph），已有“冻结Gold、采集回答、冻结快照、评分”的流程，
-不适合按题启动容器。
+[ADR 0110](0110-evaluation-integrations.md)接通了Langfuse只读导出与Harbor协议适配，但实现位于产品包内，
+报告合同把Harnessix专属字段（原生Turn、失败类别、协议完整性）与通用试次事实混在一起，
+并依赖Harnessix的Suite合同、错误类型和价格表。评测平台需要被其他智能体系统复用，其中包括
+常驻HTTP服务形态的系统：它们已有“冻结Gold、采集回答、冻结快照、评分”的流程，不适合按题启动容器。
 
 ## 2. 决策
 
 1. 新增独立包`packages/evalkit`（发行名`harnessix-evalkit`，导入名`evalkit`），只依赖pydantic与httpx，
    禁止导入`harnessix`，由治理测试强制。它不进入产品wheel、锁文件和SBOM：仓库测试经pytest的
-   `pythonpath`从源码导入，评测环境和其他系统单独安装`packages/evalkit`。
-2. 统一四个证据合同：数据集清单、运行计划（预注册）、试次记录、运行报告。任何执行方式和判分器都只
+   `pythonpath`从源码导入，评测环境和其他系统单独安装或以`PYTHONPATH`引用。
+2. Langfuse导出与Harbor导入整体迁出产品包。通用部分进入evalkit；Harnessix一侧的协议摘要解析器
+   与Suite回填位于`integrations/harnessix_eval`，同样不进入产品wheel。产品CLI不再提供评测导出和
+   Harbor导入命令，统一使用`python -m evalkit`。
+3. 统一四个证据合同：数据集清单、运行计划、试次记录、运行报告。任何执行方式和判分器都只
    产出或消费这四个合同，平台的其余部分（判分汇总、可观测投影、读回核验）对被测系统无感知。
-3. 执行方式分两种，只负责产出试次和冻结制品，不判分：
-   - Harbor：容器类任务，导入Harbor Job目录；
-   - HTTP采集：服务类系统，逐条调用接口并冻结原始响应及清单。
-4. 判分器独立于执行。同一试次可有多个判分器，每个分数携带判分器身份；运行计划声明唯一主指标。
+4. 运行计划区分预注册与事后回填。预注册计划的冻结时间必须早于全部试次的开始时间；
+   由已有运行证据推出的计划标记为`backfilled`，记录源证据身份，Langfuse中同样标明，
+   不能作为预注册证据引用。
+5. 执行方式分两种，只负责产出试次和冻结制品，不判分：
+   - Harbor：容器类任务，按计划槽位导入零自动重试的Job目录，智能体专属字段由按名称选择的解析器给出；
+   - HTTP采集：服务类系统，逐条调用接口并冻结原始响应及清单（待实现）。
+6. 判分器独立于执行。同一试次可有多个判分器，每个分数携带判分器身份；运行计划声明唯一主指标。
    双判分时生成一致性报告，逐个列出不一致的试次，不合并成一个数字。
-5. 逐步记录由系统适配器提供中立的步骤序列（模型调用、工具调用、其他步骤，附用量），evalkit只负责
+7. 逐步记录由系统适配器提供中立的步骤序列（模型调用、工具调用、其他步骤，附用量），evalkit只负责
    编码与关联到试次；Langfuse仍是可重建的只读投影，本地证据保持权威。
-6. 内容级别默认只导出元数据。导出提示词、工具输出和模型回复必须由运行计划显式声明，且只用于公开基准。
-7. 系统适配器留在系统一侧：Harnessix的Harbor智能体、状态库到步骤序列的导出、官方SWE-bench判分和
-   一阶段运行目录导入留在本仓库；TTPs适配器先放在`integrations/ttps_graphrag`做通用性验证，
-   之后可迁回TTPs仓库。
+8. 内容级别默认只导出元数据。导出提示词、工具输出和模型回复必须由运行计划显式声明，且只用于公开基准。
+9. 其他系统的适配器和验收证据保存在该系统自己的仓库，本仓库只提交合成夹具。
 
 ```mermaid
 flowchart LR
-    Dataset[数据集清单] --> Plan[运行计划 预注册]
-    Plan --> Harbor[Harbor执行 容器任务]
+    Dataset[数据集清单] --> Plan[运行计划 预注册或回填]
+    Plan --> Harbor[Harbor导入 容器任务]
     Plan --> Http[HTTP采集 服务类系统]
     Harbor --> Trials[试次记录 加 冻结制品]
     Http --> Trials
     Trials --> Graders[判分器 可多个]
     Graders --> Report[运行报告 完整分母]
+    Report --> Consistency[双判分一致性]
     Adapter[系统适配器 步骤序列] --> Projection
     Report --> Projection[Langfuse投影]
     Projection --> Readback[读回核验收据]
@@ -62,18 +70,20 @@ flowchart LR
 | 合同 | 身份 | 关键约束 |
 |---|---|---|
 | 数据集清单 | 条目ID与条目摘要的有序列表的摘要 | 条目唯一；只存摘要和标签，正文另存 |
-| 运行计划 | 计划全部字段的摘要 | 冻结数据集摘要、组别（系统、版本、配置摘要）、重复次数、判分器、主指标、内容级别 |
+| 运行计划 | 计划全部字段的摘要 | 冻结数据集摘要、组别（系统、版本、配置摘要、执行方式）、重复次数、判分器、主指标、内容级别、来源 |
 | 试次记录 | 计划摘要、条目、组别、重复序号 | 缺失或失败也占位；结果只有通过、失败、无效三类；用量和费用各自带完整性 |
-| 运行报告 | 计划摘要加全部试次 | 汇总可由试次重算；按组别给出完整分母；主指标必须有分数 |
+| 运行报告 | 计划摘要加全部试次 | 汇总可由试次重算；分数只能来自计划内判分器；预注册计划早于全部试次 |
 
-系统专属信息只放在试次记录的`system_refs`中，键和值都是受限字符串，例如Harnessix的Thread和Turn ID。
+系统专属信息只放在试次记录的`executor_refs`和`system_refs`中，键为小写蛇形标识，值为受限字符串，
+例如Harbor试次ID、Harnessix的Thread和Turn ID。冻结制品以证据库相对路径和摘要登记，判分时核对。
 
 ## 4. 与现有代码的关系
 
-- ADR 0110中与系统无关的OTLP编码、传输和读回迁入evalkit，原模块改为复用，不保留两套实现。
-- `HarborEvalReport`的通用字段进入试次记录，原生Turn字段进入`system_refs`；Harbor导入按智能体名称
-  选择结果解析器，Harnessix解析器留在本仓库。
-- 现有Suite报告经转换器生成运行报告，Langfuse导出只保留evalkit一条路径。
+- ADR 0110中的OTLP编码、传输和读回迁入evalkit，原产品模块删除，不保留两套实现。
+  读回按组别逐个核对实验，每个组别是一个Langfuse实验，同一条目的同一重复在组别间共享条目ID。
+- `HarborEvalReport`的通用字段进入试次记录，原生Turn字段进入`system_refs`；
+  原生归因规则（未完成却无智能体异常判为协议证据不完整）由Harnessix解析器保持。
+- 现有Suite报告经回填生成运行报告，逐试次核对与原结论一致；Langfuse导出只保留evalkit一条路径。
 
 ## 5. 不做的事
 
@@ -83,8 +93,10 @@ flowchart LR
 
 ## 6. 验证
 
-- 治理测试：evalkit源码不导入`harnessix`。
-- 合同测试：分母完整、身份唯一、主指标存在、汇总可重算。
-- 通用性：TTPs已冻结的Gold与回答快照导入为运行报告，经判分、Langfuse写入和读回核验；
-  本验证不调用TTPs服务或云模型，实时HTTP采集另行验收。
-- 回归：ADR 0110的五场景矩阵和Langfuse读回在新路径上重跑。
+- 治理测试：evalkit源码不导入`harnessix`，导入evalkit不会加载`harnessix`。
+- 合同测试：分母完整、身份唯一、主指标存在、汇总可重算、预注册时间顺序。
+- 执行与判分：Harbor导入的状态归因、身份绑定、零重试、制品摘要；双判分一致性逐项列出。
+- 投影与读回：全部槽位、稳定身份、白名单字段、原币种、多实验读回与失败不重试。
+- 通用性：一个服务类系统已冻结的Gold与回答快照导入为运行报告，经判分、Langfuse写入和读回核验；
+  不调用该系统服务或云模型，验收在该系统仓库内完成。
+- 回归：ADR 0110的五场景矩阵和Langfuse读回在新路径上重跑并另立证据。

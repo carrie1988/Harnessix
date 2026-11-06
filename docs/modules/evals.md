@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 57
+version: 58
 code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
 owners:
   - core
@@ -38,9 +38,9 @@ related_tests:
   - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/evals/swebench/test_planning_run_config.py
   - tests/evals/swebench/test_planning_agent_execution.py
-  - tests/evals/test_harbor_import.py
-  - tests/evals/test_langfuse_readback.py
-  - tests/evals/test_langfuse_export.py
+  - tests/evalkit/test_langfuse.py
+  - tests/evalkit/test_harbor.py
+  - tests/integrations/test_harnessix_eval.py
   - tests/integrations/test_harbor_protocol.py
   - tests/integrations/test_harbor_adapter.py
   - tests/evals/test_provider_suite_parallel_config.py
@@ -125,17 +125,15 @@ Suite只物化即将执行或核验的一项；v2～v8不自动删除。显式v9
 180个认证请求位置的只读计量、预算假设反证及兼容／失败边界见
 [后续输入收敛设计](../changes/swebench-adapter-verified-25-pilot.md#后续只读求证与任务包装收敛)。
 
-完整Suite新增[Langfuse只读投影](../../src/harnessix/evals/langfuse_projection.py)、
-[显式传输](../../src/harnessix/evals/langfuse_transport.py)及coding-eval-export命令。
-原Reader、原子私有发布、费用及失败分母继续复用，详见
-[接入操作说明](../operations/evaluation-integrations.md)。Harbor适配器位于产品wheel之外，
-通过公共Agent Protocol驱动产品；独立验收结果与Runtime终态分开记录。
-原生[Harbor外部报告](../../src/harnessix/evals/harbor_contracts.py)以冻结槽位保留完整分母，
-由[导入器](../../src/harnessix/evals/harbor_import.py)验证零自动重试和执行身份，不补造14项原生检查。
-[真实读回](../../src/harnessix/evals/langfuse_readback.py)核对实验、根Observation及评分，
-与传输确认分开；公开API的规范整数和布尔字符串不改变本地原类型及未知费用语义。
-五场景真实容器执行和Langfuse写入、补发、读回证据见
-[完整闭环验收报告](../validation/langfuse-harbor-2026-11-05-v2/README.md)。
+Langfuse导出与Harbor导入不在产品wheel内（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）。
+系统无关部分在[evalkit](../../packages/evalkit/src/evalkit/)：Harbor Job导入与奖励判分、
+判分汇入与双判分一致性、Langfuse编码、发送和读回。Harnessix一侧的
+[协议摘要解析器](../../integrations/harnessix_eval/harbor_parser.py)把原生Turn归因映射为通用状态，
+[Suite回填](../../integrations/harnessix_eval/suite.py)把完整Suite报告转为标记backfilled的运行报告，
+逐试次核对与原结论一致。Harbor适配器同样位于产品wheel之外，通过公共Agent Protocol驱动产品；
+独立验收结果与Runtime终态分开记录。用法见[接入操作说明](../operations/evaluation-integrations.md)。
+迁出前的五场景容器执行和Langfuse读回证据见
+[完整闭环验收报告](../validation/langfuse-harbor-2026-11-05-v2/README.md)（historical）。
 
 验证宿主的复验计划采用封闭版本：原 v1 保留 70／40，v2 固定 60／38；
 必须显式登记同一原周期、冻结整个旧前缀并保留原未知预留。
