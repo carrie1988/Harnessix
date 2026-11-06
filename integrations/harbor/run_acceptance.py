@@ -239,9 +239,9 @@ def main() -> None:
                     "python_executable": "/usr/local/bin/python",
                     "timeout_seconds": 15,
                     "max_steps": 4,
-                    # 产品在首个请求前按保守输入估计检查预算（eb62e9de），2000不够发出首个请求。
-                    # 夹具Provider每次固定100/20 Token，预算放宽不改变各场景含义。
-                    "max_tokens": 50_000,
+                    # 产品在每次请求前按保守输入估计预留预算（eb62e9de）：2000发不出首个请求，
+                    # 50k不够503之后的重试（失败被归为budget）。夹具Provider无真实花费。
+                    "max_tokens": 200_000,
                 },
             }
         ],
