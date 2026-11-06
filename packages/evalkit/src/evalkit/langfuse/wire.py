@@ -43,11 +43,14 @@ def span(
     completed_at: datetime,
     ok: bool,
     metadata: Attributes,
+    parent_span_id: str | None = None,
 ) -> dict[str, JsonValue]:
     """一个真实证据窗口的Span，不生成虚构的逐模型调用。"""
+    parent: dict[str, JsonValue] = {"parentSpanId": parent_span_id} if parent_span_id else {}
     return {
         "traceId": trace_id,
         "spanId": span_id,
+        **parent,
         "name": name,
         "kind": 1,
         "startTimeUnixNano": _nanoseconds(started_at),

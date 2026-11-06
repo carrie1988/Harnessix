@@ -28,4 +28,5 @@ class LangfuseReadback(Contract):
     experiments: int = Field(ge=1)
     verified_trials: int = Field(ge=1)
     verified_scores: int = Field(ge=1)
+    verified_steps: int = Field(default=0, ge=0)
     verified_at: AwareDatetime

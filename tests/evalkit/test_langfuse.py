@@ -29,6 +29,7 @@ from evalkit.contracts import (
 from evalkit.errors import EvalkitError
 from evalkit.files import write_model
 from evalkit.langfuse import LangfuseExport, build_export, read_back, send
+from evalkit.steps import Step, StepTrace
 
 from tests.evalkit.builders import CONFIG, PLAN_CREATED, task_digest
 
@@ -268,6 +269,8 @@ def remote_view(export: LangfuseExport) -> tuple[dict[str, dict], dict[str, list
     items: dict[str, list[dict]] = {}
     for span in spans_of(export):
         values = attrs(span)
+        if "langfuse.experiment.id" not in values:
+            continue  # 步骤Observation由v2 observations接口读回
         experiment = values["langfuse.experiment.id"]
         metadata = {
             key.removeprefix(METADATA): value
@@ -551,3 +554,126 @@ def test_cli_network_path_over_real_loopback_http(
     export = json.loads(output.read_text())
     events = [event for _, _, body in requests[1:] for event in body["batch"]]
     assert {event["id"] for event in events} == {score["id"] for score in export["scores"]}
+
+
+# ---------------------------------------------------------------- 逐步记录
+
+
+def step_trace(source: EvalRunReport, slot: int = 0) -> StepTrace:
+    begin = source.trials[slot].started_at
+    assert begin is not None
+    return StepTrace(
+        plan_digest=source.plan_digest,
+        slot=slot,
+        steps=(
+            Step(
+                step_id="call-1",
+                kind="generation",
+                name="model",
+                started_at=begin,
+                completed_at=begin + timedelta(seconds=2),
+                status="ok",
+                model="qwen3.8-flash-next",
+                usage=Usage(completeness="complete", input_tokens=50, output_tokens=5),
+                input_text="PRIVATE-PROMPT",
+                output_text="PRIVATE-REPLY",
+            ),
+            Step(
+                step_id="tool-1",
+                parent_step_id="call-1",
+                kind="tool",
+                name="read_file",
+                started_at=begin + timedelta(seconds=3),
+                completed_at=begin + timedelta(seconds=4),
+                status="error",
+                metadata={"outcome": "failed"},
+            ),
+        ),
+    )
+
+
+def test_steps_become_child_observations_without_content_by_default() -> None:
+    source = report()
+    export = build_export(source, (step_trace(source),))
+    spans = spans_of(export)
+    assert len(spans) == 6
+    root, generation, tool = spans[0], spans[1], spans[2]
+    assert generation["parentSpanId"] == root["spanId"]
+    assert tool["parentSpanId"] == generation["spanId"]
+    values = attrs(generation)
+    assert values["langfuse.observation.type"] == "generation"
+    assert values["langfuse.observation.model.name"] == "qwen3.8-flash-next"
+    assert json.loads(values["langfuse.observation.usage_details"]) == {"input": 50, "output": 5}
+    assert "PRIVATE-" not in export.model_dump_json()
+    assert attrs(tool)[METADATA + "ref_step_outcome"] == "failed"
+    with pytest.raises(ValueError, match="缺失试次"):
+        build_export(source, (step_trace(source).model_copy(update={"slot": 3}),))
+
+
+def test_full_content_policy_exports_step_text() -> None:
+    source = report()
+    plan = RunPlan.model_validate_json(
+        source.plan.model_copy(update={"content_policy": "full"}).model_dump_json()
+    )
+    full = EvalRunReport(
+        plan=plan,
+        plan_digest=plan.digest,
+        trials=source.trials,
+        summary=source.summary,
+        completed_at=source.completed_at,
+    )
+    trace = step_trace(full)
+    body = build_export(full, (trace,)).model_dump_json()
+    assert "PRIVATE-PROMPT" in body and "PRIVATE-REPLY" in body
+
+
+def remote_steps(export: LangfuseExport) -> dict[str, list[dict]]:
+    by_trace: dict[str, list[dict]] = {}
+    for span in spans_of(export):
+        values = attrs(span)
+        remote = {
+            "id": span["spanId"],
+            "traceId": span["traceId"],
+            "type": str(values["langfuse.observation.type"]).upper(),
+            "name": span["name"],
+            "parentObservationId": span.get("parentSpanId"),
+        }
+        if "langfuse.observation.model.name" in values:
+            remote["model"] = values["langfuse.observation.model.name"]
+        if "langfuse.observation.usage_details" in values:
+            remote["usageDetails"] = json.loads(values["langfuse.observation.usage_details"])
+        by_trace.setdefault(span["traceId"], []).append(remote)
+    return by_trace
+
+
+@pytest.mark.parametrize("mode", ["complete", "pending", "wrong_parent", "extra"])
+def test_readback_verifies_step_observations(mode: str) -> None:
+    source = report()
+    export = build_export(source, (step_trace(source),))
+    experiments, items = remote_view(export)
+    observations = remote_steps(export)
+    trace = spans_of(export)[0]["traceId"]
+    if mode == "pending":
+        observations[trace] = observations[trace][:-1]
+    elif mode == "wrong_parent":
+        observations[trace][-1]["parentObservationId"] = "0" * 16
+    elif mode == "extra":
+        observations[trace].append({**observations[trace][-1], "id": "f" * 16})
+    base = serve(experiments, items)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/v2/observations"):
+            assert request.url.params["fields"] == "core,basic,usage,model"
+            data = observations[request.url.params["traceId"]]
+            return httpx.Response(200, json={"data": data, "meta": {}})
+        return base(request)
+
+    if mode == "complete":
+        result = verify(export, handler)
+        assert (result.verified_trials, result.verified_steps) == (4, 2)
+        return
+    with pytest.raises(EvalkitError) as error:
+        verify(export, handler, timeout=0.05)
+    assert error.value.code == (
+        "langfuse_readback_timeout" if mode == "pending" else "langfuse_readback_mismatch"
+    )

@@ -6,7 +6,7 @@ from typing import Literal, Self
 
 from pydantic import AwareDatetime, Field, model_validator
 
-from evalkit.contracts import Contract, Identifier, ShortText, Usage
+from evalkit.contracts import Contract, Identifier, RefKey, ShortText, Usage
 
 
 class Step(Contract):
@@ -23,7 +23,7 @@ class Step(Contract):
     usage: Usage | None = None
     input_text: str | None = Field(default=None, max_length=1_000_000)
     output_text: str | None = Field(default=None, max_length=1_000_000)
-    metadata: dict[Identifier, ShortText] = Field(default_factory=dict, max_length=32)
+    metadata: dict[RefKey, ShortText] = Field(default_factory=dict, max_length=32)
 
     @model_validator(mode="after")
     def window_is_ordered(self) -> Self:

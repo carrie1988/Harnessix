@@ -23,6 +23,7 @@ from evalkit.files import read_model, write_model
 from evalkit.grading import Grader, build_report, consistency
 from evalkit.harbor import HarborResultParser, import_harbor_job
 from evalkit.langfuse import LangfuseExport, build_export, read_back, send
+from evalkit.steps import StepTrace
 
 _MAX_PLAN_BYTES = 8 * 1024 * 1024
 _MAX_REPORT_BYTES = 256 * 1024 * 1024
@@ -146,7 +147,8 @@ def _export(args: argparse.Namespace) -> dict[str, Any]:
     if args.readback_report:
         _outside(args.readback_report, args.report, args.output)
     report = read_model(args.report, EvalRunReport, _MAX_REPORT_BYTES, require_private=True)
-    export = build_export(report)
+    steps = tuple(read_model(path, StepTrace, _MAX_REPORT_BYTES) for path in args.steps)
+    export = build_export(report, steps)
     write_model(output, export, _MAX_REPORT_BYTES)
     readback = _submit(export, args) if args.allow_network else None
     reason = "verified" if readback else "submitted" if args.allow_network else "prepared_offline"
@@ -197,6 +199,7 @@ def _arguments(argv: Sequence[str] | None) -> argparse.Namespace:
     export.add_argument("--verify", action="store_true")
     export.add_argument("--verify-timeout-seconds", type=float, default=120.0)
     export.add_argument("--readback-report", type=Path)
+    export.add_argument("--steps", type=Path, nargs="*", default=[], help="逐步记录文件")
     export.set_defaults(run=_export)
     return parser.parse_args(argv)
 

@@ -201,6 +201,43 @@ def _experiment_complete(
     return complete and experiments[0].get("itemCount") == len(expected)
 
 
+def _step_matches(remote: dict[str, Any], span: dict[str, Any]) -> None:
+    """单个步骤：类型、名称、父节点、模型与用量必须与投影一致。"""
+    attrs = _attributes(span)
+    if (
+        str(remote.get("type", "")).lower() != attrs["langfuse.observation.type"]
+        or remote.get("name") != span["name"]
+        or remote.get("parentObservationId") != span.get("parentSpanId")
+    ):
+        raise _mismatch()
+    model = attrs.get("langfuse.observation.model.name")
+    if model is not None and remote.get("model") != model:
+        raise _mismatch()
+    usage = attrs.get("langfuse.observation.usage_details")
+    if usage is not None:
+        actual = remote.get("usageDetails")
+        if not isinstance(actual, dict) or any(
+            actual.get(key) != value for key, value in json.loads(usage).items()
+        ):
+            raise _mismatch()
+
+
+def _steps_complete(
+    remote: list[dict[str, Any]], root_id: str, expected: dict[str, dict[str, Any]]
+) -> bool:
+    """一个Trace内只能有根Observation和投影的步骤；缺少的步骤视为尚未可见。"""
+    seen = set()
+    for observation in remote:
+        identity = observation["id"]
+        if identity == root_id:
+            continue
+        if identity not in expected or identity in seen:
+            raise _mismatch()
+        _step_matches(observation, expected[identity])
+        seen.add(identity)
+    return len(seen) == len(expected)
+
+
 def read_back(
     export: LangfuseExport,
     *,
@@ -216,8 +253,15 @@ def read_back(
     raw = json.loads(export.model_dump_json())
     spans = raw["resource_spans"][0]["scopeSpans"][0]["spans"]
     by_experiment: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    steps: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
+    roots: dict[str, str] = {}
     for span in spans:
-        by_experiment[_attributes(span)["langfuse.experiment.id"]][span["spanId"]] = span
+        experiment = _attributes(span).get("langfuse.experiment.id")
+        if experiment is None:
+            steps[span["traceId"]][span["spanId"]] = span
+        else:
+            by_experiment[experiment][span["spanId"]] = span
+            roots[span["traceId"]] = span["spanId"]
     scores: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for score in raw["scores"]:
         scores[score["observationId"]].append(score)
@@ -249,11 +293,22 @@ def read_back(
                     deadline,
                 )
                 complete = _experiment_complete(experiments, items, expected, scores) and complete
+            for trace_id, expected_steps in steps.items():
+                observations = _pages(
+                    http,
+                    "api/public/v2/observations",
+                    {"traceId": trace_id, "fields": "core,basic,usage,model"},
+                    deadline,
+                )
+                complete = (
+                    _steps_complete(observations, roots[trace_id], expected_steps) and complete
+                )
             if complete:
                 return LangfuseReadback(
                     source_report_digest=export.source_report_digest,
                     experiments=len(by_experiment),
-                    verified_trials=len(spans),
+                    verified_trials=len(roots),
+                    verified_steps=sum(len(values) for values in steps.values()),
                     verified_scores=len(raw["scores"]),
                     verified_at=datetime.now(UTC),
                 )
