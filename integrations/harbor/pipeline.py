@@ -65,6 +65,7 @@ def freeze(
     )
     shared = {
         "environment": spec.get("environment", {}),
+        "compose_env": spec.get("compose_env", {}),
         "tasks_receipt": hashlib.sha256(receipt.read_bytes()).hexdigest(),
         "code_revision": code_revision,
     }
@@ -113,8 +114,14 @@ def freeze(
 
 def run(run_dir: Path, arm: str, code_root: Path) -> int:
     config = run_dir / _JOB_FILE / f"{arm}.json"
+    spec = json.loads((run_dir / "spec.json").read_text(encoding="utf-8"))
+    compose_env = {
+        key: str(code_root / value) if key.endswith("_CODE") else value
+        for key, value in spec.get("compose_env", {}).items()
+    }
     environment = {
         **os.environ,
+        **compose_env,
         "HARBOR_TELEMETRY": "0",
         "TZ": "UTC",
         "LITELLM_LOCAL_MODEL_COST_MAP": "True",

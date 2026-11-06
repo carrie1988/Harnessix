@@ -16,6 +16,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import urllib.request
 import zipfile
@@ -154,6 +155,7 @@ def prepare(
             subprocess.run(
                 ["docker", "build", "--quiet", "--tag", tag, str(context)],
                 check=True,
+                stdout=sys.stderr,
                 env={**os.environ, "DOCKER_BUILDKIT": "1"},
             )
             target = output / task["name"]

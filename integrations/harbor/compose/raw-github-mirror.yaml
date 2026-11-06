@@ -1,5 +1,28 @@
-# 把GitHub原始文件主机名映射到宿主机网关上的只读离线镜像（integrations/harbor/raw_mirror.py）。
+# 每个试次Compose网络内的GitHub原始文件只读离线镜像（integrations/harbor/raw_mirror.py）。
+# 网络别名让任务容器把raw.githubusercontent.com解析到本服务；不发布宿主机端口。
+# 变量由integrations/harbor/pipeline.py按运行说明中的compose_env设置。
 services:
-  main:
-    extra_hosts:
-      - "raw.githubusercontent.com:host-gateway"
+  raw-github-mirror:
+    image: ${HARNESSIX_RAW_MIRROR_IMAGE:?required}
+    command:
+      - python3
+      - /mirror/raw_mirror.py
+      - serve
+      - --cache
+      - /mirror/data
+      - --lock
+      - /mirror/data/raw-mirror.lock.json
+      - --tls
+      - /mirror/data/tls
+      - --listen
+      - 0.0.0.0
+      - --port
+      - "443"
+      - --container
+    volumes:
+      - ${HARNESSIX_RAW_MIRROR_DIR:?required}:/mirror/data:ro
+      - ${HARNESSIX_RAW_MIRROR_CODE:?required}:/mirror/raw_mirror.py:ro
+    networks:
+      default:
+        aliases:
+          - raw.githubusercontent.com

@@ -6,7 +6,8 @@ Harbor的SWE-bench判分脚本用swebench 4.0.3计算测试规格时，会从raw
   记录实际成功请求的原始文件，写入缓存目录和逐文件摘要锁；
 - ca：在评测主机生成私有CA与该主机名证书，CA只加入派生镜像，供判分脚本信任；
 - serve：只监听显式地址，只提供锁中摘要一致的文件，其余一律404，不转发任何请求。
-任务容器把该主机名映射到宿主机网关，其他网络行为不变。
+评测主机上该主机名的443端口可能已被其他服务占用，因此镜像作为附加服务运行在每个试次自己的
+Compose网络内（compose/raw-github-mirror.yaml），以网络别名提供该主机名，不占用宿主机端口。
 """
 
 from __future__ import annotations
@@ -127,13 +128,16 @@ def main() -> None:
     server.add_argument("--tls", type=Path, required=True)
     server.add_argument("--listen", required=True, help="显式监听地址，如Docker网桥IP")
     server.add_argument("--port", type=int, default=443)
+    server.add_argument(
+        "--container", action="store_true", help="在独立容器网络内运行，允许通配地址"
+    )
     args = parser.parse_args()
     if args.command == "collect":
         print(json.dumps(collect(args.tasks, args.output), indent=2))
     elif args.command == "ca":
         print(certificate_authority(args.directory))
     else:
-        if args.listen in {"0.0.0.0", "::", ""}:
+        if args.listen in {"0.0.0.0", "::", ""} and not args.container:
             raise SystemExit("离线镜像不能监听通配地址")
         serve(load(args.cache, args.lock), args.listen, args.port, args.tls)
 
