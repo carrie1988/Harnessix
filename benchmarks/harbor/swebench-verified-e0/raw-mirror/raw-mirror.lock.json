@@ -1,0 +1,7 @@
+{
+  "spec_version": "harnessix.raw-github-mirror-lock/v1",
+  "host": "raw.githubusercontent.com",
+  "files": {
+    "django/django/419a78300f7cd27611196e1e464d50fd0385ff27/tests/requirements/py3.txt": "1269a16630c3f5b6626aa5376e99b4aa70957b6905f3d80af25de1b7e0149a2d"
+  }
+}

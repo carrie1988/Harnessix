@@ -4,9 +4,10 @@
   "attempts": 1,
   "n_concurrent_trials": 2,
   "content_policy": "metadata",
+  "environment": {"extra_docker_compose": ["integrations/harbor/compose/raw-github-mirror.yaml"]},
   "graders": [
     {"grader_id": "swebench-official", "version": "swebench-5.0.2", "pass_score": "resolved"},
-    {"grader_id": "harbor-reward", "version": "harbor-0.25.0+swebench-4.0.3-parser", "pass_score": "reward_passed"}
+    {"grader_id": "harbor-reward", "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check", "pass_score": "reward_passed"}
   ],
   "primary_grader": "swebench-official",
   "arms": [

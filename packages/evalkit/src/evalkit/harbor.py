@@ -34,6 +34,12 @@ from evalkit.files import artifact_ref, read_artifact, read_json_object
 
 HARBOR_VERSION = "0.25.0"
 RESULT_ARTIFACT = "harbor_result"
+# Harbor验收写在verifier/下的小文件；按存在登记，判分器可按名读取。
+VERIFIER_ARTIFACTS = {
+    "reward.txt": "harbor_verifier_reward_txt",
+    "reward.json": "harbor_verifier_reward_json",
+    "report.json": "harbor_verifier_report",
+}
 _MAX_SOURCE_BYTES = 8 * 1024 * 1024
 _MAX_AGENT_ARTIFACT_BYTES = 32 * 1024 * 1024
 _EXCEPTION_TYPE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,127}")
@@ -284,6 +290,10 @@ def _record(
             RESULT_ARTIFACT, trial_dir / "result.json", context.evidence_root, _MAX_SOURCE_BYTES
         )
     ]
+    for filename, name in VERIFIER_ARTIFACTS.items():
+        path = trial_dir / "verifier" / filename
+        if path.is_file() and not path.is_symlink():
+            artifacts.append(artifact_ref(name, path, context.evidence_root, _MAX_SOURCE_BYTES))
     for name, path in sorted(parsed.artifact_files.items()):
         if not path.resolve(strict=True).is_relative_to(trial_dir.resolve()):
             raise ValueError("智能体制品不在试次目录内")

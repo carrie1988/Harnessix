@@ -1,0 +1,5 @@
+# 把GitHub原始文件主机名映射到宿主机网关上的只读离线镜像（integrations/harbor/raw_mirror.py）。
+services:
+  main:
+    extra_hosts:
+      - "raw.githubusercontent.com:host-gateway"

@@ -9,13 +9,16 @@
 from __future__ import annotations
 
 import shlex
+from pathlib import Path
 
+from harbor.agents.base import BaseAgent
 from harbor.agents.installed.mini_swe_agent import MiniSweAgent
 from harbor.agents.nop import NopAgent
 from harbor.agents.oracle import OracleAgent
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
-from harbor.models.trial.paths import EnvironmentPaths
+from harbor.models.task.task import Task
+from harbor.models.trial.paths import EnvironmentPaths, TrialPaths
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
     from integrations.harbor.patch_export import head_command, parse_head, patch_command
@@ -46,7 +49,32 @@ class _PatchExport:
 
 
 class OracleWithPatch(_PatchExport, OracleAgent):
-    pass
+    """Harbor只对名称为oracle的配置注入任务目录；按模块路径加载时在运行前自行补齐。"""
+
+    def __init__(
+        self,
+        logs_dir: Path,
+        model_name: str | None = None,
+        extra_env: dict[str, str] | None = None,
+        task_dir: Path | None = None,
+        trial_paths: TrialPaths | None = None,
+        agent_timeout_sec: float | None = None,
+        **kwargs,
+    ):
+        BaseAgent.__init__(
+            self, logs_dir=logs_dir, model_name=model_name, extra_env=extra_env, **kwargs
+        )
+        self._task = Task(task_dir) if task_dir is not None else None
+        self._trial_paths = trial_paths or TrialPaths(Path(logs_dir).parent)
+        self._agent_timeout_sec = agent_timeout_sec
+        self._step_index = 0
+
+    async def run(
+        self, instruction: str, environment: BaseEnvironment, context: AgentContext
+    ) -> None:
+        if self._task is None:
+            self._task = Task(Path(environment.environment_dir).parent)
+        await super().run(instruction, environment, context)
 
 
 class NopWithPatch(_PatchExport, NopAgent):

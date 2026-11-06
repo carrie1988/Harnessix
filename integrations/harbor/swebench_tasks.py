@@ -2,8 +2,9 @@
 
 lock：在能访问GitHub的机器上，对按注册表引用检出的上游任务目录逐文件计算摘要。
 prepare：在评测主机上核对上游文件，确认本机已有原始sweb.eval镜像，构建只增加离线条件的派生镜像，
-再把派生镜像名写入任务配置。派生层只做三件事：放入与官方安装脚本相同版本的uv（PyPI wheel，
-摘要核对），设置包与Python下载镜像，预装uv管理的Python；不改变仓库、测试或判分脚本。
+再把派生镜像名写入任务配置。派生层只做四件事：放入与官方安装脚本相同版本的uv（PyPI wheel，
+摘要核对），设置包与Python下载镜像，预装uv管理的Python，信任本机GitHub原始文件离线镜像的CA
+（与系统根证书合并）；不改变仓库、测试或判分脚本。
 """
 
 from __future__ import annotations
@@ -100,11 +101,16 @@ def _uv_binaries(environment: dict[str, Any], workdir: Path) -> None:
 
 
 def _dockerfile(parent: str, environment: dict[str, Any]) -> str:
+    bundle = "/etc/harbor-offline/ca-bundle.pem"
     return "\n".join(
         [
             f"FROM {parent}",
             "WORKDIR /testbed",
             "COPY uv uvx /root/.local/bin/",
+            "COPY raw-mirror-ca.pem /etc/harbor-offline/raw-mirror-ca.pem",
+            "RUN cat /etc/ssl/certs/ca-certificates.crt /etc/harbor-offline/raw-mirror-ca.pem "
+            f"> {bundle}",
+            f"ENV REQUESTS_CA_BUNDLE={bundle}",
             f"ENV UV_INDEX_URL={environment['pypi_mirror']} "
             f"PIP_INDEX_URL={environment['pypi_mirror']} "
             f"UV_PYTHON_INSTALL_MIRROR={environment['python_mirror']}",
@@ -115,7 +121,9 @@ def _dockerfile(parent: str, environment: dict[str, Any]) -> str:
     )
 
 
-def prepare(upstream: Path, lock_path: Path, environment_path: Path, output: Path) -> dict:
+def prepare(
+    upstream: Path, lock_path: Path, environment_path: Path, mirror_ca: Path, output: Path
+) -> dict:
     """生成可直接交给Harbor的任务目录与派生镜像，返回包含全部镜像ID的收据。"""
     task_lock = json.loads(lock_path.read_text(encoding="utf-8"))
     environment = json.loads(environment_path.read_text(encoding="utf-8"))
@@ -123,22 +131,25 @@ def prepare(upstream: Path, lock_path: Path, environment_path: Path, output: Pat
         raise SystemExit("任务锁版本不受支持")
     sources = {task["name"]: _verify(upstream, task) for task in task_lock["tasks"]}
     output.mkdir(parents=True, exist_ok=False)
-    lock_digest = _sha256(lock_path)[:12]
+    recipe = hashlib.sha256(environment_path.read_bytes() + mirror_ca.read_bytes()).hexdigest()
+    image_tag = f"{_sha256(lock_path)[:12]}-{recipe[:8]}"
     receipt: dict[str, Any] = {
         "task_lock_sha256": _sha256(lock_path),
         "environment_sha256": _sha256(environment_path),
+        "raw_mirror_ca_sha256": _sha256(mirror_ca),
         "tasks": {},
     }
     with tempfile.TemporaryDirectory(prefix="harbor-env-") as temporary:
         context = Path(temporary)
         _uv_binaries(environment, context)
+        shutil.copyfile(mirror_ca, context / "raw-mirror-ca.pem")
         for task in task_lock["tasks"]:
             source = sources[task["name"]]
             parent = _parent_image(source / "environment" / "Dockerfile")
             parent_id = _image_id(parent)
             if parent_id is None:
                 raise SystemExit(f"本机缺少{parent}；请经镜像源前缀拉取后再准备")
-            tag = f"harnessix-harbor/{task['name'].lower()}:{lock_digest}"
+            tag = f"harnessix-harbor/{task['name'].lower()}:{image_tag}"
             (context / "Dockerfile").write_text(_dockerfile(parent, environment))
             subprocess.run(
                 ["docker", "build", "--quiet", "--tag", tag, str(context)],
@@ -175,12 +186,16 @@ def main() -> None:
     preparer.add_argument("--upstream", type=Path, required=True)
     preparer.add_argument("--lock", type=Path, required=True)
     preparer.add_argument("--environment", type=Path, required=True)
+    preparer.add_argument("--raw-mirror-ca", type=Path, required=True)
     preparer.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "lock":
         lock(args.upstream, json.loads(args.refs.read_text()), args.output)
     else:
-        print(json.dumps(prepare(args.upstream, args.lock, args.environment, args.output)))
+        receipt = prepare(
+            args.upstream, args.lock, args.environment, args.raw_mirror_ca, args.output
+        )
+        print(json.dumps(receipt))
 
 
 if __name__ == "__main__":

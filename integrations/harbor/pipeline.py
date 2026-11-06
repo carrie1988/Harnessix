@@ -38,8 +38,21 @@ def _private_json(path: Path, value: Any) -> None:
         output.write("\n")
 
 
-def freeze(spec_path: Path, tasks: Path, run_dir: Path) -> RunPlan:
+def _environment(spec: dict[str, Any], code_root: Path) -> dict[str, Any]:
+    """仓库内的Compose覆盖文件按代码目录解析为绝对路径。"""
+    environment = dict(spec.get("environment", {}))
+    if "extra_docker_compose" in environment:
+        environment["extra_docker_compose"] = [
+            str(code_root / path) for path in environment["extra_docker_compose"]
+        ]
+    return environment
+
+
+def freeze(
+    spec_path: Path, tasks: Path, run_dir: Path, code_root: Path, code_revision: str
+) -> RunPlan:
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    environment = _environment(spec, code_root)
     receipt = tasks / "prepare-receipt.json"
     task_dirs = sorted(p for p in tasks.iterdir() if (p / "task.toml").is_file())
     items = tuple(
@@ -53,6 +66,7 @@ def freeze(spec_path: Path, tasks: Path, run_dir: Path) -> RunPlan:
     shared = {
         "environment": spec.get("environment", {}),
         "tasks_receipt": hashlib.sha256(receipt.read_bytes()).hexdigest(),
+        "code_revision": code_revision,
     }
     arms = tuple(
         ArmSpec(
@@ -89,7 +103,7 @@ def freeze(spec_path: Path, tasks: Path, run_dir: Path) -> RunPlan:
                 "n_attempts": spec.get("attempts", 1),
                 "n_concurrent_trials": spec.get("n_concurrent_trials", 1),
                 "retry": {"max_retries": 0},
-                "environment": spec.get("environment", {}),
+                "environment": environment,
                 "agents": [arm["agent"]],
                 "tasks": [{"path": str(task)} for task in task_dirs],
             },
@@ -124,13 +138,15 @@ def main() -> None:
     frozen.add_argument("--spec", type=Path, required=True)
     frozen.add_argument("--tasks", type=Path, required=True)
     frozen.add_argument("--run-dir", type=Path, required=True)
+    frozen.add_argument("--code-root", type=Path, required=True)
+    frozen.add_argument("--code-revision", required=True)
     runner = commands.add_parser("run")
     runner.add_argument("--run-dir", type=Path, required=True)
     runner.add_argument("--arm", required=True)
     runner.add_argument("--code-root", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "freeze":
-        plan = freeze(args.spec, args.tasks, args.run_dir)
+        plan = freeze(args.spec, args.tasks, args.run_dir, args.code_root, args.code_revision)
         print(
             json.dumps({"reason": "frozen", "plan_digest": plan.digest, "slots": len(plan.slots())})
         )
