@@ -18,7 +18,9 @@ from evalkit.digest import content_digest
 Digest = Annotated[str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$")]
 Identifier = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$")]
 ShortText = Annotated[str, StringConstraints(min_length=1, max_length=256)]
+RefKey = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{0,63}$")]
 Completeness = Literal["complete", "partial", "unknown"]
+Provenance = Literal["preregistered", "backfilled"]
 
 
 class Contract(BaseModel):
@@ -75,7 +77,11 @@ class GraderSpec(Contract):
 
 
 class RunPlan(Contract):
-    """预注册内容：执行前冻结，之后的报告必须绑定其摘要。"""
+    """执行前冻结的计划，之后的报告必须绑定其摘要。
+
+    事后回填的计划（provenance=backfilled）由已有运行证据推出，created_at取源计划时间，
+    source_refs记录源证据身份；它不能作为预注册证据引用。
+    """
 
     spec_version: Literal["evalkit.run-plan/v1"] = "evalkit.run-plan/v1"
     run_name: Identifier
@@ -85,6 +91,8 @@ class RunPlan(Contract):
     graders: tuple[GraderSpec, ...] = Field(min_length=1, max_length=8)
     primary_grader: Identifier
     content_policy: Literal["metadata", "full"] = "metadata"
+    provenance: Provenance = "preregistered"
+    source_refs: dict[RefKey, ShortText] = Field(default_factory=dict, max_length=16)
     created_at: AwareDatetime
 
     @model_validator(mode="after")
@@ -137,7 +145,9 @@ class Cost(Contract):
     # 与harnessix同序：typing的Union缓存把顺序不同但相等的Literal视为同一键，
     # 顺序不一致会让同进程内后生成的JSON Schema枚举顺序漂移。
     currency: Literal["USD", "CNY"] | None = None
-    amount: Annotated[str, StringConstraints(pattern=r"^\d{1,9}(\.\d{1,9})?$")] | None = None
+    amount: (
+        Annotated[str, StringConstraints(pattern=r"^(0|[1-9][0-9]{0,14})(\.[0-9]{1,18})?$")] | None
+    ) = None
 
     @model_validator(mode="after")
     def amount_has_currency(self) -> Self:
@@ -174,8 +184,8 @@ class TrialRecord(Contract):
     started_at: AwareDatetime | None = None
     completed_at: AwareDatetime | None = None
     artifacts: tuple[ArtifactRef, ...] = Field(default=(), max_length=64)
-    executor_refs: dict[Identifier, ShortText] = Field(default_factory=dict, max_length=16)
-    system_refs: dict[Identifier, ShortText] = Field(default_factory=dict, max_length=32)
+    executor_refs: dict[RefKey, ShortText] = Field(default_factory=dict, max_length=16)
+    system_refs: dict[RefKey, ShortText] = Field(default_factory=dict, max_length=32)
 
     @model_validator(mode="after")
     def evidence_is_consistent(self) -> Self:
@@ -189,6 +199,24 @@ class TrialRecord(Contract):
 
     def score(self, grader_id: str, name: str) -> Score | None:
         return next((s for s in self.scores if s.grader_id == grader_id and s.name == name), None)
+
+
+class ArmTrials(Contract):
+    """一种执行方式为一个组别产出的全部槽位；判分汇入前落盘的中间证据。"""
+
+    spec_version: Literal["evalkit.arm-trials/v1"] = "evalkit.arm-trials/v1"
+    plan_digest: Digest
+    arm_id: Identifier
+    trials: tuple[TrialRecord, ...] = Field(min_length=1, max_length=100_000)
+
+    @model_validator(mode="after")
+    def trials_belong_to_arm(self) -> Self:
+        if any(trial.arm_id != self.arm_id for trial in self.trials):
+            raise ValueError("试次不属于该组别")
+        slots = [trial.slot for trial in self.trials]
+        if slots != sorted(set(slots)):
+            raise ValueError("槽位重复或未按顺序排列")
+        return self
 
 
 # ---------------------------------------------------------------- 运行报告
@@ -236,11 +264,22 @@ class EvalRunReport(Contract):
             range(len(expected))
         ):
             raise ValueError("试次必须按计划顺序完整覆盖全部槽位")
+        graders = {grader.grader_id for grader in self.plan.graders}
+        if any(score.grader_id not in graders for t in self.trials for score in t.scores):
+            raise ValueError("分数来自计划外的判分器")
         if self.summary != summarize(self.plan, self.trials):
             raise ValueError("汇总与全部试次不一致")
-        if self.completed_at < self.plan.created_at:
-            raise ValueError("运行结束早于计划冻结")
+        if self.plan.provenance == "preregistered":
+            _require_preregistered_timing(self)
         return self
+
+
+def _require_preregistered_timing(report: EvalRunReport) -> None:
+    created = report.plan.created_at
+    if report.completed_at < created:
+        raise ValueError("运行结束早于计划冻结")
+    if any(t.started_at is not None and t.started_at < created for t in report.trials):
+        raise ValueError("试次开始早于计划冻结；事后推出的计划须标记为backfilled")
 
 
 def summarize(plan: RunPlan, trials: tuple[TrialRecord, ...]) -> tuple[ArmSummary, ...]:

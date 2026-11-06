@@ -29,7 +29,11 @@ def test_evalkit_sources_never_import_harnessix() -> None:
 
 
 def test_importing_evalkit_does_not_load_harnessix() -> None:
-    modules = sorted("evalkit." + p.stem for p in EVALKIT.glob("*.py") if p.stem != "__init__")
+    modules = sorted(
+        ".".join(("evalkit", *p.relative_to(EVALKIT).with_suffix("").parts))
+        for p in EVALKIT.rglob("*.py")
+        if p.stem not in {"__init__", "__main__"}
+    )
     code = f"import sys\nsys.path.insert(0, {str(EVALKIT.parent)!r})\n"
     code += "".join(f"import {m}\n" for m in modules)
     code += "assert not [m for m in sys.modules if m.split('.')[0] == 'harnessix'], 'loaded'\n"

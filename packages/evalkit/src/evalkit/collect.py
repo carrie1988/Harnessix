@@ -1,4 +1,9 @@
-"""两种执行方式的入口：只产出试次记录和冻结制品，不判分。"""
+"""HTTP采集执行方式（未实现，见ADR 0120）。
+
+逐条调用服务类系统并冻结原始响应，只产出试次记录，不判分。
+
+Harbor执行方式见evalkit.harbor。
+"""
 
 from __future__ import annotations
 
@@ -10,7 +15,6 @@ from typing import Protocol
 from pydantic import JsonValue
 
 from evalkit.contracts import (
-    ArtifactRef,
     Cost,
     DatasetItem,
     RunPlan,
@@ -18,40 +22,6 @@ from evalkit.contracts import (
     TrialStatus,
     Usage,
 )
-
-# ---------------------------------------------------------------- Harbor
-
-
-@dataclass(frozen=True)
-class AgentResult:
-    """智能体专属解析结果；通用字段进入试次，专属字段只进入system_refs。"""
-
-    status: TrialStatus
-    reason: str
-    usage: Usage
-    cost: Cost
-    artifacts: tuple[ArtifactRef, ...]
-    system_refs: Mapping[str, str]
-
-
-class HarborResultParser(Protocol):
-    """按Harbor智能体名称选择；Harnessix、mini-swe-agent等各自实现。"""
-
-    agent_name: str
-
-    def parse(self, trial_dir: Path, result: Mapping[str, JsonValue]) -> AgentResult: ...
-
-
-def import_harbor_job(
-    job_dir: Path,
-    plan: RunPlan,
-    arm_id: str,
-    parsers: Mapping[str, HarborResultParser],
-    evidence_root: Path,
-) -> tuple[TrialRecord, ...]:
-    """把一个Harbor Job目录导入为该组别的全部槽位；缺失结果占位为missing。"""
-    raise NotImplementedError("迁移自harnessix.evals.harbor_import（ADR 0120 第4节）")
-
 
 # ---------------------------------------------------------------- HTTP采集
 
