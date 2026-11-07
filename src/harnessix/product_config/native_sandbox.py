@@ -163,9 +163,8 @@ def attest_native_sandbox(
         supports_pty=False,
         supports_background=False,
         supports_process_tree=True,
-        provider_evidence_digest=canonical_digest(
-            {"probe_sha256": result.digest, "owner_capability_sha256": owner_capability.digest}
-        ),
+        # 启动绑定要求它等于实际拉起进程的POSIX Owner能力；沙箱探测摘要计入profile_digest。
+        provider_evidence_digest=owner_capability.digest,
     )
     sandbox = SandboxBindingV2(
         level="host_sandboxed",

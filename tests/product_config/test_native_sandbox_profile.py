@@ -271,3 +271,55 @@ def test_backend_identity_drift_is_a_preflight_failure(
     with pytest.raises(Exception) as error:
         prepare_sandboxed_argv(attested.native_sandbox, ("/bin/sh", "-c", "true"))
     assert getattr(error.value, "code", None) == "sandbox_backend_changed"
+
+
+_PASSTHROUGH = {
+    # 只剥掉后端参数后直接运行命令：不提供隔离，用来验证产品链路的计划与启动绑定一致。
+    "macos": "shift; shift\n"
+    'while [ $# -gt 0 ]; do case "$1" in -D*) shift;; *) break;; esac; done\n'
+    'exec "$@"\n',
+    "linux": 'if [ "$1" = "--version" ]; then echo "bubblewrap 0.6.1"; exit 0; fi\n'
+    'while [ $# -gt 0 ]; do if [ "$1" = "--" ]; then shift; break; fi; shift; done\n'
+    # 预检运行/bin/true；macOS上没有该路径。
+    'if [ "$1" = /bin/true ]; then exit 0; fi\n'
+    'exec "$@"\n',
+}
+
+
+@pytest.mark.parametrize("platform", ["macos", "linux"])
+async def test_launch_binding_matches_plan_through_product_chain(
+    tmp_path: Path, sandbox_home: dict[str, Any], platform: str
+) -> None:
+    from tests.product_config.test_native_process_action import _native_case, _result
+
+    executable = tmp_path / "bin" / ("sandbox-exec" if platform == "macos" else "bwrap")
+    executable.parent.mkdir()
+    executable.write_text("#!/bin/sh\n" + _PASSTHROUGH[platform])
+    executable.chmod(0o755)
+
+    def probe() -> HostSandboxProbeV2:
+        def run(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(list(argv), capture_output=True, text=True, timeout=timeout)
+
+        return probe_native_sandbox(
+            platform=platform,  # type: ignore[arg-type]
+            runner=run,
+            nested=lambda: False,
+            bubblewrap_candidates=(executable,),
+            seatbelt_executable=executable,
+        )
+
+    backend = "seatbelt" if platform == "macos" else "bubblewrap"
+    async with _native_case(
+        tmp_path,
+        "echo ran > ran.txt",
+        native_profile(backend=backend),
+        environ=sandbox_home["environ"],
+        site=lambda root: NativeSandboxSite(workspace_root=root),
+        sandbox_probe=probe,
+    ) as case:
+        result = _result(await case.approve_and_resume())
+        assert (result.outcome, result.error) == ("succeeded", None)
+        assert (case.workspace / "ran.txt").read_text() == "ran\n"
+        sandbox = case.router.status(case.approval.plan_id).plan.execution.sandbox
+        assert (sandbox.level, sandbox.backend) == ("host_sandboxed", backend)
