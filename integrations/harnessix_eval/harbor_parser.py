@@ -18,6 +18,7 @@ _REFS = (
     "protocol_reason",
     "turn_status",
     "native_failure_category",
+    "native_failure_code",
     "observed_model_steps",
     "protocol_evidence_complete",
     "turn_terminal_confirmed",

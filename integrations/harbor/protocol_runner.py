@@ -241,6 +241,7 @@ async def drive_protocol_trial(
         "turn_id": str(turn.turn_id) if turn else None,
         "turn_status": turn.status if turn else None,
         "failure_category": turn.error.category if turn and turn.error else None,
+        "failure_code": turn.error.code if turn and turn.error else None,
         "model_steps": turn.model_steps if turn else None,
         "input_tokens": turn.usage.input_tokens if turn else None,
         "output_tokens": turn.usage.output_tokens if turn else None,

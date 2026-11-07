@@ -254,6 +254,7 @@ class HarnessixAgent(BaseInstalledAgent):
                 "turn_id": result.get("turn_id"),
                 "turn_status": result.get("turn_status"),
                 "native_failure_category": result.get("failure_category"),
+                "native_failure_code": result.get("failure_code"),
                 "observed_model_steps": result.get("model_steps"),
                 "protocol_reason": result.get("reason"),
                 "cost_completeness": "unknown",
