@@ -65,6 +65,21 @@ def test_rule_order_lets_protections_override_grants() -> None:
     assert any(item.startswith("-DREAD_ONLY_0=") and item.endswith("/.git") for item in parameters)
 
 
+def test_every_deny_rule_comes_after_every_allow_rule() -> None:
+    """SBPL以最后匹配为准；任何放行规则排在拒绝之后都会覆盖拒绝（macOS实测）。"""
+
+    text, _ = seatbelt_policy(_policy())
+    lines = text.splitlines()
+    allows = [number for number, line in enumerate(lines) if line.startswith("(allow ")]
+    denies = [
+        number
+        for number, line in enumerate(lines)
+        if line.startswith("(deny ") and line != "(deny default)"
+    ]
+    assert denies and max(allows) < min(denies)
+    assert lines[-1] == '(deny network-outbound (remote ip "localhost:7892"))'
+
+
 def test_env_override_and_read_only_mode_change_rules() -> None:
     text, parameters = seatbelt_policy(_policy(allow_workspace_env_files=True))
     assert "vnode-type REGULAR-FILE" not in text

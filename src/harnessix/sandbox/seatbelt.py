@@ -2,7 +2,8 @@
 
 策略文本只由本模块生成的固定片段与参数名组成；所有路径都经`-D`参数传入，不进入策略文本，
 因此路径中的任何字符都不能改变策略结构。端口是经合同校验的整数，直接写入规则。
-SBPL中后出现的规则优先，所以拒绝规则一律放在对应放行规则之后。
+SBPL以最后一条匹配的规则为准（2026-11-07在macOS 27实测：同一端口先拒绝后放行即被放行），
+所以全部放行规则在前、全部拒绝规则在后，任何后续放行都不能覆盖拒绝。
 """
 
 from __future__ import annotations
@@ -70,26 +71,25 @@ def seatbelt_policy(policy: NativeSandboxPolicy) -> tuple[str, tuple[str, ...]]:
             names.append(f'(subpath (param "{name}"))')
         return " ".join(names)
 
+    # 放行：可写目录；宿主回环（用户决策）；私有TMPDIR内的Unix套接字。
     rules.append(f"(allow file-write* {bind('WRITABLE', policy.writable_roots)})")
+    parameters.append(f"-DPRIVATE_TMP={policy.private_tmp}")
+    rules += [
+        '(allow network-bind (local ip "localhost:*"))',
+        '(allow network-inbound (local ip "localhost:*"))',
+        '(allow network-outbound (remote ip "localhost:*"))',
+        '(allow network-bind network-inbound (local unix-socket (subpath (param "PRIVATE_TMP"))))',
+        '(allow network-outbound (remote unix-socket (subpath (param "PRIVATE_TMP"))))',
+    ]
+    # 拒绝：一律在最后。
     if policy.read_only_roots:
         rules.append(f"(deny file-write* {bind('READ_ONLY', policy.read_only_roots)})")
     rules.append(f"(deny file-read* file-write* {bind('DENIED', policy.denied_paths)})")
     if policy.deny_workspace_env_files:
         rules.append(_ENV_FILE_RULE)
-    # 网络：只放行宿主回环（用户决策），再单独拒绝已配置的代理端口；Unix套接字只限私有TMPDIR。
-    rules += [
-        '(allow network-bind (local ip "localhost:*"))',
-        '(allow network-inbound (local ip "localhost:*"))',
-        '(allow network-outbound (remote ip "localhost:*"))',
-    ]
     rules += [
         f'(deny network-outbound (remote ip "localhost:{port}"))'
         for port in policy.blocked_loopback_ports
-    ]
-    parameters.append(f"-DPRIVATE_TMP={policy.private_tmp}")
-    rules += [
-        '(allow network-bind network-inbound (local unix-socket (subpath (param "PRIVATE_TMP"))))',
-        '(allow network-outbound (remote unix-socket (subpath (param "PRIVATE_TMP"))))',
     ]
     return "\n".join(rules) + "\n", tuple(parameters)
 
