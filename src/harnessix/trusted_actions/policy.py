@@ -15,11 +15,23 @@ from harnessix.trusted_actions.contracts import (
     TrustedToolBinding,
 )
 
+# 本机沙箱内的命令自动执行，越出沙箱才询问（ADR 0113第2.1节）。
+# Agent内核要求写调用成功前必有已批准的审批项，所以这类命令仍走审批，但以专门的策略ID标记，
+# 由宿主以系统身份立即批准；其余写调用的人工审批不变。
+_NATIVE_SANDBOX_BACKENDS = frozenset({"seatbelt", "bubblewrap"})
+_SANDBOXED_COMMAND_RESOURCES = frozenset({"process", "workspace", "external", "network"})
+_COMMAND_EXECUTOR_PREFIX = "product.command-profile."
+SANDBOXED_COMMAND_POLICY_ID = "default.approve-sandboxed-command"
+
 
 class DefaultCodingRiskPolicy:
-    """仅基于宿主绑定和规范资源决策，不读取调用方自报风险。"""
+    """仅基于宿主绑定和规范资源决策，不读取调用方自报风险。
 
-    version = "trusted-coding-action/v1"
+    v2只新增“本机沙箱内的命令可由宿主自动批准”一条标记规则，其余判定与v1相同；
+    已记录的v1计划保持原决策。
+    """
+
+    version = "trusted-coding-action/v2"
 
     def evaluate(
         self,
@@ -67,6 +79,12 @@ class DefaultCodingRiskPolicy:
                 "default.deny-secret-mismatch",
                 "secret_resource_mismatch",
             )
+        if _sandboxed_command(binding, resources, sandbox, secrets):
+            return self._decision(
+                PolicyDecisionKind.REQUIRE_APPROVAL,
+                SANDBOXED_COMMAND_POLICY_ID,
+                "sandboxed_command",
+            )
         if (
             binding.effect_class is not EffectClass.READ_ONLY
             or binding.risk_level in {RiskLevel.MEDIUM, RiskLevel.HIGH}
@@ -97,3 +115,21 @@ class DefaultCodingRiskPolicy:
             policy_id=policy_id,
             reason_code=reason_code,
         )
+
+
+def _sandboxed_command(
+    binding: TrustedToolBinding,
+    resources: Sequence[CanonicalActionResource],
+    sandbox: SandboxBindingV2,
+    secrets: Sequence[SecretVersionBinding],
+) -> bool:
+    """命令执行器在已证明的本机沙箱内运行，且只声明沙箱边界内的资源、不注入Secret。"""
+
+    return (
+        sandbox.level == "host_sandboxed"
+        and sandbox.backend in _NATIVE_SANDBOX_BACKENDS
+        and binding.executor_id.startswith(_COMMAND_EXECUTOR_PREFIX)
+        and not secrets
+        and {item.kind for item in resources} <= _SANDBOXED_COMMAND_RESOURCES
+        and all(item.kind != "network" or item.access == "connect" for item in resources)
+    )
