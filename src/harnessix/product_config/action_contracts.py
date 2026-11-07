@@ -25,6 +25,8 @@ SelectorPolicy = Literal["none", "bounded_test_selector", "shell_command"]
 ProductActionConfigSource = Literal["builtin", "file"]
 ProductActionConfigOperation = Literal["loaded", "activated"]
 ProductProcessImageReferenceType = Literal["local_image_id", "repo_digest"]
+# 原生进程后端（ADR 0121）；Seatbelt、bubblewrap等后续加入同一字段。
+NativeProcessBackend = Literal["external_boundary"]
 
 _IDENTIFIER = r"^[a-z][a-z0-9_-]{0,63}$"
 _EXECUTOR_ID = r"^[a-z][a-z0-9_.-]{0,127}$"
@@ -32,6 +34,35 @@ _LOCAL_IMAGE_ID = r"sha256:[0-9a-f]{64}"
 _REPOSITORY_IMAGE_DIGEST = r"[a-z0-9][a-z0-9._/-]{0,255}@sha256:[0-9a-f]{64}"
 _IMAGE_REFERENCE = rf"^(?:{_LOCAL_IMAGE_ID}|{_REPOSITORY_IMAGE_DIGEST})$"
 _CONTAINER_PROGRAM = r"^/[A-Za-z0-9._/+:-]+(?:/[A-Za-z0-9._+:-]+)*$"
+
+
+def _single_line(value: str) -> str:
+    if not value.strip() or "\x00" in value or "\r" in value or "\n" in value:
+        raise ValueError("Process Profile文本必须是非空单行")
+    return value
+
+
+def _bounded_arguments(value: tuple[str, ...]) -> tuple[str, ...]:
+    if any(
+        type(item) is not str
+        or not item
+        or len(item.encode("utf-8")) > 4096
+        or "\x00" in item
+        or "\r" in item
+        or "\n" in item
+        for item in value
+    ):
+        raise ValueError("Process Profile参数不符合边界")
+    return value
+
+
+def _fixed_posix_shell(program: str, arguments: tuple[str, ...]) -> bool:
+    """命令Profile只能固定POSIX Shell加-c或-lc；模型命令作为最后一个参数。"""
+
+    return Path(program).name in {"sh", "bash", "dash", "zsh"} and arguments in {
+        ("-c",),
+        ("-lc",),
+    }
 
 
 def product_process_image_reference_type(image: str) -> ProductProcessImageReferenceType:
@@ -90,9 +121,7 @@ class ProductProcessProfile(ProductConfigContract):
     @field_validator("version", "description", "container_engine")
     @classmethod
     def bounded_single_line(cls, value: str) -> str:
-        if not value.strip() or "\x00" in value or "\r" in value or "\n" in value:
-            raise ValueError("Process Profile文本必须是非空单行")
-        return value
+        return _single_line(value)
 
     @field_validator("container_engine")
     @classmethod
@@ -104,17 +133,7 @@ class ProductProcessProfile(ProductConfigContract):
     @field_validator("arguments")
     @classmethod
     def bounded_arguments(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        if any(
-            type(item) is not str
-            or not item
-            or len(item.encode("utf-8")) > 4096
-            or "\x00" in item
-            or "\r" in item
-            or "\n" in item
-            for item in value
-        ):
-            raise ValueError("Process Profile参数不符合边界")
-        return value
+        return _bounded_arguments(value)
 
     @field_validator("secret_refs")
     @classmethod
@@ -132,9 +151,8 @@ class ProductProcessProfile(ProductConfigContract):
             raise ValueError("持久依赖目录仅允许通用命令Profile")
         if self.persistent_dependencies and self.secret_refs:
             raise ValueError("持久依赖目录不能与显式Secret注入组合")
-        if self.selector_policy == "shell_command" and (
-            Path(self.program).name not in {"sh", "bash", "dash", "zsh"}
-            or self.arguments not in {("-c",), ("-lc",)}
+        if self.selector_policy == "shell_command" and not _fixed_posix_shell(
+            self.program, self.arguments
         ):
             raise ValueError("Command Profile必须固定POSIX Shell及-c或-lc参数")
         if self.tmpfs_bytes is not None and self.tmpfs_bytes >= self.memory_bytes:
@@ -210,6 +228,86 @@ def build_product_process_profile(
     )
 
 
+class ProductNativeProcessProfile(ProductConfigContract):
+    """不经容器直接执行命令的Profile（ADR 0121）；隔离由声明的后端提供，本期只有外部边界。"""
+
+    spec_version: Literal["harnessix.product-native-process-profile/v1"] = (
+        "harnessix.product-native-process-profile/v1"
+    )
+    profile_id: str = Field(pattern=_IDENTIFIER)
+    version: str = Field(min_length=1, max_length=128)
+    description: str = Field(min_length=1, max_length=500)
+    backend: NativeProcessBackend
+    program: str = Field(pattern=_CONTAINER_PROGRAM)
+    arguments: tuple[str, ...] = Field(default=(), max_length=128)
+    # read_write：命令直接读写工作区并保留改动（ADR 0121第2节）。
+    workspace_mode: Literal["read_write"] = "read_write"
+    timeout_seconds: int = Field(default=300, ge=1, le=3600, strict=True)
+    max_output_bytes: int = Field(default=1_048_576, ge=1024, le=8_388_608, strict=True)
+    # 宿主固定的非Secret环境预设，按名称排序；命令只得到这些变量，不继承App Server环境。
+    environment: tuple[tuple[str, str], ...] = Field(default=(), exclude_if=lambda value: not value)
+    profile_sha256: Revision
+
+    @field_validator("version", "description")
+    @classmethod
+    def bounded_single_line(cls, value: str) -> str:
+        return _single_line(value)
+
+    @field_validator("arguments")
+    @classmethod
+    def bounded_arguments(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        return _bounded_arguments(value)
+
+    @model_validator(mode="after")
+    def valid_profile(self) -> Self:
+        if not _fixed_posix_shell(self.program, self.arguments):
+            raise ValueError("Command Profile必须固定POSIX Shell及-c或-lc参数")
+        problem = container_environment_problem(self.environment)
+        if problem is not None:
+            raise ValueError(problem)
+        if self.profile_sha256 != product_native_process_profile_digest(self):
+            raise ValueError("Native Process Profile摘要不一致")
+        return self
+
+
+def product_native_process_profile_digest(profile: ProductNativeProcessProfile) -> str:
+    return canonical_digest(
+        profile.model_dump(mode="json", exclude={"profile_sha256"}, warnings="error")
+    )
+
+
+def build_product_native_process_profile(
+    *,
+    profile_id: str,
+    version: str,
+    description: str,
+    backend: NativeProcessBackend,
+    program: str,
+    arguments: tuple[str, ...],
+    timeout_seconds: int = 300,
+    max_output_bytes: int = 1_048_576,
+    environment: tuple[tuple[str, str], ...] = (),
+) -> ProductNativeProcessProfile:
+    candidate = ProductNativeProcessProfile.model_construct(
+        _fields_set=None,
+        profile_id=profile_id,
+        version=version,
+        description=description,
+        backend=backend,
+        program=program,
+        arguments=arguments,
+        workspace_mode="read_write",
+        timeout_seconds=timeout_seconds,
+        max_output_bytes=max_output_bytes,
+        environment=tuple(sorted(environment)),
+        profile_sha256="0" * 64,
+    )
+    return ProductNativeProcessProfile(
+        **candidate.model_dump(exclude={"profile_sha256"}),
+        profile_sha256=product_native_process_profile_digest(candidate),
+    )
+
+
 class ProductActionConfigV1(ProductConfigContract):
     """独立于Product Config v2的Action功能门与固定Process Profile。"""
 
@@ -218,13 +316,22 @@ class ProductActionConfigV1(ProductConfigContract):
     )
     workspace_patch_enabled: bool = True
     process_profiles: tuple[ProductProcessProfile, ...] = Field(default=(), max_length=32)
+    # 未配置时不序列化，已有Action配置摘要不变。
+    native_process_profiles: tuple[ProductNativeProcessProfile, ...] = Field(
+        default=(), max_length=32, exclude_if=lambda value: not value
+    )
     config_sha256: Revision
 
     @model_validator(mode="after")
     def canonical_config(self) -> Self:
-        identities = [item.profile_id for item in self.process_profiles]
-        if identities != sorted(identities) or len(set(identities)) != len(identities):
-            raise ValueError("Process Profile必须按ID排序且唯一")
+        for profiles in (self.process_profiles, self.native_process_profiles):
+            identities = [item.profile_id for item in profiles]
+            if identities != sorted(identities) or len(set(identities)) != len(identities):
+                raise ValueError("Process Profile必须按ID排序且唯一")
+        if {item.profile_id for item in self.process_profiles} & {
+            item.profile_id for item in self.native_process_profiles
+        }:
+            raise ValueError("原生与容器Process Profile的ID不能重复")
         if self.config_sha256 != product_action_config_digest(self):
             raise ValueError("Product Action配置摘要不一致")
         return self
@@ -240,11 +347,13 @@ def build_product_action_config(
     *,
     workspace_patch_enabled: bool = True,
     process_profiles: tuple[ProductProcessProfile, ...] = (),
+    native_process_profiles: tuple[ProductNativeProcessProfile, ...] = (),
 ) -> ProductActionConfigV1:
     candidate = ProductActionConfigV1.model_construct(
         _fields_set=None,
         workspace_patch_enabled=workspace_patch_enabled,
         process_profiles=process_profiles,
+        native_process_profiles=native_process_profiles,
         config_sha256="0" * 64,
     )
     return ProductActionConfigV1(

@@ -1,5 +1,106 @@
 {
   "$defs": {
+    "ProductNativeProcessProfile": {
+      "additionalProperties": false,
+      "description": "不经容器直接执行命令的Profile（ADR 0121）；隔离由声明的后端提供，本期只有外部边界。",
+      "properties": {
+        "spec_version": {
+          "const": "harnessix.product-native-process-profile/v1",
+          "default": "harnessix.product-native-process-profile/v1",
+          "title": "Spec Version",
+          "type": "string"
+        },
+        "profile_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "backend": {
+          "const": "external_boundary",
+          "title": "Backend",
+          "type": "string"
+        },
+        "program": {
+          "pattern": "^/[A-Za-z0-9._/+:-]+(?:/[A-Za-z0-9._+:-]+)*$",
+          "title": "Program",
+          "type": "string"
+        },
+        "arguments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 128,
+          "title": "Arguments",
+          "type": "array"
+        },
+        "workspace_mode": {
+          "const": "read_write",
+          "default": "read_write",
+          "title": "Workspace Mode",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "default": 300,
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "max_output_bytes": {
+          "default": 1048576,
+          "maximum": 8388608,
+          "minimum": 1024,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        },
+        "environment": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Environment",
+          "type": "array"
+        },
+        "profile_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Profile Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile_id",
+        "version",
+        "description",
+        "backend",
+        "program",
+        "profile_sha256"
+      ],
+      "title": "ProductNativeProcessProfile",
+      "type": "object"
+    },
     "ProductProcessProfile": {
       "additionalProperties": false,
       "description": "宿主持有的固定容器进程Profile；模型只能选择，不能改写执行边界。",
@@ -237,6 +338,15 @@
       },
       "maxItems": 32,
       "title": "Process Profiles",
+      "type": "array"
+    },
+    "native_process_profiles": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ProductNativeProcessProfile"
+      },
+      "maxItems": 32,
+      "title": "Native Process Profiles",
       "type": "array"
     },
     "config_sha256": {

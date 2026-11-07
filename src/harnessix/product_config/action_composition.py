@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
+from types import MappingProxyType
 from typing import Literal
 
 from harnessix.agent.errors import KernelError
@@ -43,6 +45,12 @@ from harnessix.product_config.action_contracts import (
     ProductActionConfigV1,
     build_product_action_capability,
     build_product_action_capability_report,
+)
+from harnessix.product_config.host_process_action import HostProcessOutputProvider
+from harnessix.product_config.native_process import (
+    NativeProcessProfileProbeResult,
+    VerifiedNativeProcessProfile,
+    build_native_process_definition,
 )
 from harnessix.product_config.process_action import (
     ProductProcessOutputProvider,
@@ -275,13 +283,84 @@ def _process_components(
     return tuple(evidence), tuple(entries), owners, outputs
 
 
+def _native_components(
+    config: ProductActionConfigV1,
+    probes: tuple[NativeProcessProfileProbeResult, ...],
+    environment: FixedProductActionEnvironment,
+    router: TrustedActionRouter,
+    artifacts: SQLiteArtifactStore,
+    *,
+    artifact_workspace_scope: str,
+) -> tuple[
+    tuple[ProductActionCapabilityEvidence, ...],
+    tuple[ProductActionCatalogEntry, ...],
+    dict[str, VerifiedNativeProcessProfile],
+    dict[str, HostProcessOutputProvider],
+]:
+    """原生Profile探测结果收敛为省略事实或完整可执行组件（ADR 0121）。"""
+
+    if tuple(item.profile for item in probes) != config.native_process_profiles:
+        raise KernelError("product_process_probe_mismatch", "原生Profile探测集合与配置不一致")
+    evidence: list[ProductActionCapabilityEvidence] = []
+    entries: list[ProductActionCatalogEntry] = []
+    owners: dict[str, VerifiedNativeProcessProfile] = {}
+    outputs: dict[str, HostProcessOutputProvider] = {}
+    for probe in probes:
+        tool = process_tool_name(probe.profile.profile_id, "shell_command")
+        if probe.verified is None:
+            evidence.append(
+                build_product_action_capability(
+                    capability_id=tool,
+                    kind="process_profile",
+                    status="omitted",
+                    reason_code=probe.reason_code,
+                    platform=environment.platform,
+                )
+            )
+            continue
+        definition, executor, descriptor = build_native_process_definition(
+            probe.verified, router, environment.workspace_root
+        )
+        capability = build_product_action_capability(
+            capability_id=tool,
+            kind="process_profile",
+            status="verified",
+            reason_code="verified",
+            platform=environment.platform,
+            binding_digest=definition.binding.binding_digest,
+            executor_evidence_digest=probe.verified.executor_evidence_sha256,
+        )
+        evidence.append(capability)
+        entries.append(
+            ProductActionCatalogEntry(
+                description=descriptor.description,
+                definition=definition,
+                evidence=capability,
+            )
+        )
+        owners[tool] = probe.verified
+        outputs[tool] = HostProcessOutputProvider(
+            executor, artifacts, workspace_scope=artifact_workspace_scope
+        )
+    return tuple(evidence), tuple(entries), owners, outputs
+
+
 def _planning_context(
     environment: FixedProductActionEnvironment,
     process_owners: dict[str, VerifiedProductProcessProfile],
     thread_workspace: str,
     tool: str,
+    native_owners: Mapping[str, VerifiedNativeProcessProfile] = MappingProxyType({}),
 ) -> ActionPlanningContext:
     base = environment.context(thread_workspace)
+    native = native_owners.get(tool)
+    if native is not None:
+        return ActionPlanningContext(
+            workspace_root=base.workspace_root,
+            sandbox=native.sandbox,
+            capabilities=native.capabilities,
+            environment=native.environment,
+        )
     owner = process_owners.get(tool)
     if owner is None:
         return base
@@ -302,9 +381,12 @@ def _product_call_context(
     router: TrustedActionRouter,
     transactions: SQLiteWorkspaceTransactionStore,
     dependency_environments: TaskDependencyEnvironments | None = None,
+    native_owners: Mapping[str, VerifiedNativeProcessProfile] = MappingProxyType({}),
 ) -> ActionPlanningContext:
     """只在正式产品入口验证回滚原会话归属，先于资源解析与私有Blob读取。"""
-    base = _planning_context(environment, process_owners, thread.workspace, call.tool)
+    base = _planning_context(
+        environment, process_owners, thread.workspace, call.tool, native_owners
+    )
     owner = process_owners.get(call.tool)
     if owner is not None and owner.profile.persistent_dependencies:
         if dependency_environments is None:
@@ -371,8 +453,9 @@ def _compose_product_actions(
     secret_scope: SecretPublicationScope | None = None,
     patch_contract: WorkspacePatchContract = "standard",
     dependency_environments: TaskDependencyEnvironments | None = None,
+    native_probes: tuple[NativeProcessProfileProbeResult, ...] = (),
 ) -> ProductActionComposition:
-    """从统一配置和探测结果原子安装Patch及固定Container Process能力。"""
+    """从统一配置和探测结果原子安装Patch、固定Container Process与原生Process能力。"""
 
     patch_evidence, patch_entry = _workspace_patch_component(
         config,
@@ -394,9 +477,17 @@ def _compose_product_actions(
         artifact_workspace_scope=artifact_workspace_scope,
         dependency_environments=dependency_environments,
     )
+    native_evidence, native_entries, native_owners, native_outputs = _native_components(
+        config,
+        native_probes,
+        environment,
+        router,
+        artifacts,
+        artifact_workspace_scope=artifact_workspace_scope,
+    )
     evidence = tuple(
         sorted(
-            (patch_evidence, rollback_evidence, *process_evidence),
+            (patch_evidence, rollback_evidence, *process_evidence, *native_evidence),
             key=lambda item: item.capability_id,
         )
     )
@@ -405,6 +496,7 @@ def _compose_product_actions(
             (
                 *(item for item in (patch_entry, rollback_entry) if item is not None),
                 *process_entries,
+                *native_entries,
             ),
             key=lambda item: item.evidence.capability_id,
         )
@@ -416,7 +508,7 @@ def _compose_product_actions(
         return ProductActionComposition(report, catalog, None)
 
     presentations: dict[str, Literal["patch_batch", "process"]] = {
-        tool: "process" for tool in process_owners
+        tool: "process" for tool in (*process_owners, *native_owners)
     }
     reviews: dict[str, TrustedActionReviewProvider] = {}
     if patch_entry is not None:
@@ -443,10 +535,11 @@ def _compose_product_actions(
             router,
             transactions,
             dependency_environments,
+            native_owners,
         ),
         presentations=presentations,
         reviews=reviews,
-        outputs=outputs,
+        outputs={**outputs, **native_outputs},
         secret_scope=secret_scope,
         owns_secret_scope=True,
     )
@@ -466,6 +559,7 @@ def build_product_action_composition(
     secrets: SecretProvider | None = None,
     patch_contract: WorkspacePatchContract = "standard",
     dependency_environments: TaskDependencyEnvironments | None = None,
+    native_probes: tuple[NativeProcessProfileProbeResult, ...] = (),
 ) -> ProductActionComposition:
     """已验证Profile的执行与公开共用原版本快照；失败和Gateway关闭均释放材料。"""
     bindings = tuple(
@@ -489,6 +583,7 @@ def build_product_action_composition(
             secret_scope=scope,
             patch_contract=patch_contract,
             dependency_environments=dependency_environments,
+            native_probes=native_probes,
         )
         if result.gateway is None and scope is not None:
             scope.close()

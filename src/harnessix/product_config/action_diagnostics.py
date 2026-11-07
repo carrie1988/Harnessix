@@ -24,6 +24,10 @@ from harnessix.product_config.action_contracts import (
     build_product_action_capability,
     build_product_action_capability_report,
 )
+from harnessix.product_config.native_process import (
+    attest_native_process_profile,
+    native_process_binding,
+)
 from harnessix.product_config.process_action import product_process_binding
 from harnessix.product_config.process_profile import (
     probe_product_process_profile_attestation,
@@ -56,7 +60,7 @@ def diagnose_product_actions(
     )
     evidence: list[ProductActionCapabilityEvidence] = [patch, rollback]
     owner_capability = None
-    if config.process_profiles:
+    if config.process_profiles or config.native_process_profiles:
         try:
             owner_capability = (
                 probe_windows_process_capability()
@@ -104,6 +108,25 @@ def diagnose_product_actions(
                 platform=platform,
                 binding_digest=binding.binding_digest,
                 executor_evidence_digest=result.attested.executor_evidence_sha256,
+            )
+        )
+    for native in config.native_process_profiles:
+        reason, attested = attest_native_process_profile(
+            native, owner_capability, environ=os.environ
+        )
+        evidence.append(
+            build_product_action_capability(
+                capability_id=process_tool_name(native.profile_id, "shell_command"),
+                kind="process_profile",
+                status="verified" if attested is not None else "omitted",
+                reason_code=reason,
+                platform=platform,
+                binding_digest=native_process_binding(native).binding_digest
+                if attested is not None
+                else None,
+                executor_evidence_digest=attested.executor_evidence_sha256
+                if attested is not None
+                else None,
             )
         )
     return build_product_action_capability_report(

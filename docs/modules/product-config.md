@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 125
-code_revision: 6231c4e249a45fb51a1f2d8584102e037572bf34
+version: 126
+code_revision: e42e3750a5df79bd0bc59a6c0bf6ebc710db4e01
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
+  - docs/adr/0121-external-boundary-native-process-profile.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
   - tests/evals/swebench/test_regex_agent_execution.py
@@ -103,8 +104,24 @@ related_tests:
   - tests/product_ui/test_cli.py
   - tests/evals/test_runner.py
   - tests/product_config/test_action_recovery.py
+  - tests/product_config/test_native_process_profile.py
+  - tests/product_config/test_native_process_action.py
 supersedes: []
 ---
+
+## 当前增量：外部边界原生命令Profile（ADR 0121）
+
+`ProductActionConfigV1.native_process_profiles`（为空时不序列化，旧配置摘要不变）声明不经容器执行的命令Profile，
+本期后端只有`external_boundary`：隔离由启动Harnessix的一方提供（如Harbor任务容器），Harnessix不另加沙箱。
+- 装配：配置显式声明且App Server环境`HARNESSIX_EXTERNAL_BOUNDARY=1`时才验证；否则能力报告省略并给出
+  `external_boundary_unasserted`或`process_owner_unavailable`，不降级。Doctor与运行时共用同一份无状态证明。
+- 执行：工具名`exec_command.<id>`、执行器`product.command-profile.<id>`，与容器命令Profile共用身份（ID互斥），
+  公开输出合同、审批规则与启动恢复不变。执行计划记为`host_guarded/host/full`，能力提供方`external-boundary`。
+- 语义：命令以工作区根为当前目录直接读写，改动保留；只得到Profile预设环境变量，不继承App Server环境；
+  非零退出码报`process_nonzero_exit`，超时、输出上限、账本对账与Eval测试Profile共用
+  [`host_process_action.py`](../../src/harnessix/product_config/host_process_action.py)宿主执行器。
+- 回归：[合同与证明](../../tests/product_config/test_native_process_profile.py)、
+  [端到端执行](../../tests/product_config/test_native_process_action.py)。
 
 ## v24搜索语义Context（候选默认关闭）
 

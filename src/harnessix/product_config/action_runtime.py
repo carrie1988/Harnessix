@@ -34,6 +34,10 @@ from harnessix.product_config.action_contracts import (
 from harnessix.product_config.action_owner import product_action_runtime_lock
 from harnessix.product_config.action_recovery import scan_product_action_recovery
 from harnessix.product_config.git_review_identity import bind_product_audit_identity
+from harnessix.product_config.native_process import (
+    NativeProcessProfileProbeResult,
+    probe_native_process_profile,
+)
 from harnessix.product_config.process_profile import (
     ProductProcessProfileProbeResult,
     probe_product_process_profile,
@@ -90,6 +94,7 @@ class _ProductActionDependencies:
     leases: WorkspaceLeaseStore
     supervisor: ProcessSupervisor | None
     probe_cache: dict[str, ProductProcessProfileProbeResult]
+    native_probe_cache: dict[str, NativeProcessProfileProbeResult]
 
 
 def _process_supervisor(
@@ -128,6 +133,11 @@ def _route_execute_timeout(*configs: ProductActionConfigV1) -> float:
                     for config in configs
                     for profile in config.process_profiles
                 ),
+                *(
+                    profile.timeout_seconds + 30
+                    for config in configs
+                    for profile in config.native_process_profiles
+                ),
             )
         )
     )
@@ -165,12 +175,19 @@ async def _open_action_dependencies(
             for config in configs
             for profile in config.process_profiles
         }
+        native_profiles = {
+            profile.profile_sha256: profile
+            for config in configs
+            for profile in config.native_process_profiles
+        }
         supervisor: ProcessSupervisor | None = None
         probe_cache: dict[str, ProductProcessProfileProbeResult] = {}
-        if process_profiles:
+        native_probe_cache: dict[str, NativeProcessProfileProbeResult] = {}
+        if process_profiles or native_profiles:
             supervisor = await resources.enter_async_context(
                 _process_supervisor(state_root, output_redaction)
             )
+        if supervisor is not None and process_profiles:
             profiles = tuple(process_profiles.values())
             results = await asyncio.to_thread(
                 _probe_process_profiles,
@@ -180,6 +197,10 @@ async def _open_action_dependencies(
                 state_root / "workspace-snapshots",
             )
             probe_cache = dict(zip(process_profiles, results, strict=True))
+        native_probe_cache = {
+            digest: probe_native_process_profile(profile, supervisor, environ=os.environ)
+            for digest, profile in native_profiles.items()
+        }
         yield _ProductActionDependencies(
             plans,
             audit,
@@ -188,6 +209,7 @@ async def _open_action_dependencies(
             leases,
             supervisor,
             probe_cache,
+            native_probe_cache,
         )
 
 
@@ -264,6 +286,9 @@ async def open_default_product_action_runtime(
                 artifacts,
                 artifact_workspace_scope=artifact_workspace_scope,
                 process_probes=_select_probes(checked_recovery, dependencies.probe_cache),
+                native_probes=_select_native_probes(
+                    checked_recovery, dependencies.native_probe_cache
+                ),
                 secrets=secrets,
                 patch_contract=patch_contract,
                 dependency_environments=dependency_environments,
@@ -305,6 +330,9 @@ async def open_default_product_action_runtime(
                     artifacts,
                     artifact_workspace_scope=artifact_workspace_scope,
                     process_probes=_select_probes(checked_config, dependencies.probe_cache),
+                    native_probes=_select_native_probes(
+                        checked_config, dependencies.native_probe_cache
+                    ),
                     secrets=secrets,
                     patch_contract=patch_contract,
                     dependency_environments=dependency_environments,
@@ -344,6 +372,13 @@ def _select_probes(
     cache: dict[str, ProductProcessProfileProbeResult],
 ) -> tuple[ProductProcessProfileProbeResult, ...]:
     return tuple(cache[profile.profile_sha256] for profile in config.process_profiles)
+
+
+def _select_native_probes(
+    config: ProductActionConfigV1,
+    cache: dict[str, NativeProcessProfileProbeResult],
+) -> tuple[NativeProcessProfileProbeResult, ...]:
+    return tuple(cache[profile.profile_sha256] for profile in config.native_process_profiles)
 
 
 def _product_routes(audit: SQLiteActionAuditStore) -> tuple[ActionRouteSnapshot, ...]:
