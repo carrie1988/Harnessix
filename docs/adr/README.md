@@ -262,3 +262,4 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0120：系统无关的评测平台核心](0120-system-neutral-evaluation-platform.md)：独立evalkit包与四个证据合同，Langfuse导出与Harbor导入迁出产品包，预注册与回填分开，判分与可观测投影对被测系统无感知。
 
 - [ADR 0121：外部边界原生进程Profile](0121-external-boundary-native-process-profile.md)：不经容器在启动方提供的隔离边界内执行命令，须显式配置并由环境断言，执行计划如实记为host_guarded，工作区可写且改动保留。
+- [ADR 0123：服务方故障的如实归因](0123-provider-service-failure-attribution.md)：用量未知时仍停止付费请求，但服务方故障以原Provider错误码结束；评测记为基础设施失败，可重跑。

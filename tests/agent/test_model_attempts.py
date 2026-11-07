@@ -12,7 +12,12 @@ from harnessix.agent.models import Budget, EventDraft, Usage
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished
-from harnessix.models.contracts import ResponseCompleted, ResponseFailed, ResponseStarted
+from harnessix.models.contracts import (
+    ResponseCompleted,
+    ResponseFailed,
+    ResponseStarted,
+    ToolCallCompleted,
+)
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import accounted_answer, attempt_start, observed, prepare_attempt
@@ -77,7 +82,9 @@ async def test_retry_keeps_every_attempt_and_known_usage(tmp_path: Path, complet
         assert turn.usage == Usage(input_tokens=17, output_tokens=5)
         assert turn.usage_is_complete
     else:
-        assert turn.status == "failed" and turn.error.code == "budget_exceeded"
+        # 失败尝试的用量未知，重试被计费安全规则拒绝；原因如实归于服务方故障（ADR 0123）。
+        assert turn.status == "failed" and turn.error.code == "provider_transport"
+        assert turn.error.category == "provider"
         assert len(turn.model_attempts) == 1
         assert not turn.usage_is_complete
 
@@ -111,6 +118,49 @@ async def test_known_retry_budget_is_checked_before_resuming_provider(tmp_path: 
     assert sent == [1]
     assert len(turn.model_attempts) == 1
     assert turn.error.code == "budget_exceeded"
+
+
+def _tool_answer(start):
+    return [
+        start,
+        ResponseStarted(response_id=f"response-{start.index}"),
+        ToolCallCompleted(call_id="call-0", tool="test.read", arguments={}),
+        observed(start, completeness="complete", input_tokens=10, output_tokens=3),
+        ModelAttemptFinished(attempt_id=start.attempt_id, outcome="completed"),
+        ResponseCompleted(
+            finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=3)
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        ("provider_transport", "provider_transport"),
+        ("provider_provider_internal", "provider_provider_internal"),
+        ("provider_rate_limit", "provider_rate_limit"),
+        # 非服务方故障（如输出无效）仍按预算规则停止，不借用服务方归因。
+        ("provider_invalid_provider_output", "budget_exceeded"),
+    ],
+)
+async def test_recovered_failure_with_unknown_usage_stops_next_step_truthfully(
+    tmp_path: Path, code, expected
+) -> None:
+    first, second = attempt_start(), attempt_start(index=2)
+    failure = ModelAttemptFinished(
+        attempt_id=first.attempt_id,
+        outcome="failed",
+        error=AgentFailure(code=code, message="服务失败", retryable=True),
+    )
+    turn, tools = await execute(
+        tmp_path,
+        [first, failure, *_tool_answer(second)],
+        budget=Budget(max_tokens=6_000_000, max_output_chars=1_024),
+    )
+    # 第一步重试成功并执行了工具；下一步发起前因用量未知停止。
+    assert tools.calls and [a.status for a in turn.model_attempts] == ["failed", "completed"]
+    assert turn.status == "failed" and turn.error.code == expected
+    assert turn.error.category == ("budget" if expected == "budget_exceeded" else "provider")
 
 
 @pytest.mark.parametrize("with_observation", [False, True])

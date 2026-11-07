@@ -282,7 +282,8 @@ async def test_missing_usage_reserves_attempt_before_retry(tmp_path: Path) -> No
     assert len(turn.model_attempts) == 1
     assert turn.model_attempts[0].usage.completeness == "unknown"
     assert turn.status is TurnStatus.FAILED
-    assert turn.error is not None and turn.error.code == "budget_exceeded"
+    # 预留仍阻止了第二次请求；停止原因如实归于服务方故障（ADR 0123）。
+    assert turn.error is not None and turn.error.code == "provider_transport"
 
 
 @pytest.mark.parametrize(

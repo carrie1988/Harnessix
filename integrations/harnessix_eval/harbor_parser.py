@@ -12,6 +12,11 @@ from typing import Any
 from evalkit.contracts import TrialStatus, Usage
 from evalkit.harbor import AgentResult
 
+# 服务方故障码，与产品harnessix.agent.runtime.SERVICE_FAILURE_CODES一致（由测试核对）。
+# 解析器在不安装产品的Harbor环境中运行，因此不直接导入产品模块。
+SERVICE_FAILURE_CODES = frozenset(
+    {"provider_provider_internal", "provider_rate_limit", "provider_transport"}
+)
 # 协议运行器导出的本Turn公开事件（逐步记录来源）。
 EVENTS_ARTIFACT = "harnessix_events"
 EVENTS_FILE = "harnessix-events.jsonl"
@@ -58,6 +63,9 @@ def _status(
     if reason == "intervention_required":
         return "system_error", "intervention_required"
     if category == "provider":
+        # 服务方临时故障（5xx、429、连接与超时）是基础设施失败，可重跑（ADR 0123）。
+        if native.get("native_failure_code") in SERVICE_FAILURE_CODES:
+            return "infra_error", "provider_unavailable"
         return "system_error", "provider_failed"
     if category == "budget":
         return "system_error", "budget_exhausted"

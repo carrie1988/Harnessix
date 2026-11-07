@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 5
-code_revision: bbafb003c5580b14b17edfdd20186057099df46b
+version: 6
+code_revision: 25f482e9dee8e1ef4ad7ec715626f4d17f18dbe9
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
@@ -167,7 +167,8 @@ Harbor级配置及实际自动重试次数必须明确为0；有重试的Job需�
 
 导入按计划槽位重算分母：Job须恰好覆盖计划的全部条目和重复。缺失结果保留为missing（invalid）；
 额外结果、重复Harbor身份、重复原生Turn、错配Job/任务/执行配置均拒绝发布。
-基础设施异常为infra_error，超时为timeout，审批中止、Provider和预算失败为system_error，
+基础设施异常为infra_error，超时为timeout，审批中止、预算失败和非服务方的Provider失败为system_error；
+服务方临时故障（5xx、429、连接与超时，见[ADR 0123](../adr/0123-provider-service-failure-attribution.md)）为infra_error，可重跑；
 Harnessix自报未完成却没有智能体异常时判为协议证据不完整（infra_error）。
 只选择结构化字段，异常正文、Prompt、响应正文和仓库URL不进入报告或投影。
 槽位只关联计划；executor_refs中的harbor_trial_id与system_refs中的thread_id、turn_id才是执行身份。

@@ -113,6 +113,25 @@ def test_native_matrix_keeps_attribution_denominator_and_unknown_billing(tmp_pat
             Trial(exception=AGENT_EXIT, metadata=native("server_unavailable")),
             ("infra_error", "server_unavailable"),
         ),
+        # 服务方临时故障判基础设施失败（ADR 0123）；其他Provider失败仍算系统失败。
+        (
+            Trial(
+                exception=AGENT_EXIT,
+                metadata=native(
+                    "failed", "provider", native_failure_code="provider_provider_internal"
+                ),
+            ),
+            ("infra_error", "provider_unavailable"),
+        ),
+        (
+            Trial(
+                exception=AGENT_EXIT,
+                metadata=native(
+                    "failed", "provider", native_failure_code="provider_authentication"
+                ),
+            ),
+            ("system_error", "provider_failed"),
+        ),
     ],
 )
 def test_incomplete_protocol_evidence_is_never_a_pass(
@@ -242,3 +261,10 @@ def test_from_suite_cli_writes_private_report(
     with pytest.raises(SystemExit):
         harnessix_eval_main(["from-suite", "--suite-report", str(source), "--output", str(source)])
     assert source.read_bytes() == before
+
+
+def test_parser_service_failure_codes_match_the_product() -> None:
+    from harnessix.agent.runtime import SERVICE_FAILURE_CODES as PRODUCT_CODES
+    from integrations.harnessix_eval.harbor_parser import SERVICE_FAILURE_CODES
+
+    assert SERVICE_FAILURE_CODES == PRODUCT_CODES
