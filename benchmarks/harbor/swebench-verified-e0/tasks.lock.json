@@ -4,71 +4,71 @@
     {
       "name": "django__django-10880",
       "git_url": "https://github.com/laude-institute/harbor-datasets.git",
-      "git_commit_id": "86723674f04e4209ac479d0fb75d9d9f44b4377e",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
       "path": "datasets/swebench-verified/django__django-10880",
       "files": {
-        "environment/Dockerfile": "6af44fd389a119a5fbe9a1d4c2a959a1fcc2c1c99a1b196d271ebdad0a666f80",
+        "environment/Dockerfile": "d204d9bd18f20c335af7cea7f884a353067c7ab350d6492aabd40221d197fcc5",
         "instruction.md": "b5e7280dd8d361f07bf5e7c6473bd3d942e914dbdd1c3796ae30fd4998f901eb",
-        "solution/solve.sh": "ef5b3760cac410087faa166afd350fca86d8dd1e6e8249c6b2b77e9c37279e30",
+        "solution/solve.sh": "e0e6dc741d5b4056edd12d29d7895e2bb32b491abd27c4b887e981f3926c001e",
         "task.toml": "e9a5d7dd94ed43a89396fc12e7b7b32578c9114806bf017620aa694525dd9cba",
         "tests/config.json": "460f8287bb58ac8d300064be7adfab5db3134c4d79d8c4fb55de0382865339a7",
-        "tests/test.sh": "a2261a07ae4af67ab28d765a8339e6fcb05d1636cbe097c2a092b1844899c755"
+        "tests/test.sh": "fb88738f2ccd27d2768f962401b26874ec5b1de5814740d8920d7856fcae81bd"
       }
     },
     {
       "name": "django__django-11087",
       "git_url": "https://github.com/laude-institute/harbor-datasets.git",
-      "git_commit_id": "86723674f04e4209ac479d0fb75d9d9f44b4377e",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
       "path": "datasets/swebench-verified/django__django-11087",
       "files": {
-        "environment/Dockerfile": "af8ed2c7d7ae5b0d6cda85a614644f07bbda92cad7eb055e28639ac11a3dc6c7",
+        "environment/Dockerfile": "7cf920ac343a4d4a9806eda96ddc74b5f7299399064ecf6e4e1cd2921908bf78",
         "instruction.md": "7f1e75218734ec644d98c43305aacf94ddeb2cf680654582b408b09fce78961c",
-        "solution/solve.sh": "68019cec8ddc84c14dcc1616411d33a09e728ec866cf4a424a6c76954be90861",
+        "solution/solve.sh": "50a2531df0928b6a476bb45db4ed56a0eae992a9ae05f3e888636c4e36cbde28",
         "task.toml": "89760344f93862da427f7f5e9a443cb4cdbc04c75522a8f40e49acff3f0bc1b1",
         "tests/config.json": "44694fa854e9bbb66472eed2b944caabd94261d4f3781f15eac4cc4a31d39c78",
-        "tests/test.sh": "80c89910c16a47825725536d39447d48ab4843509efd514f9b649edcda5e827e"
+        "tests/test.sh": "475b65d36d35975d92a88c586ffa498692e4998527c8026c6da725e6f9c17540"
       }
     },
     {
       "name": "django__django-11133",
       "git_url": "https://github.com/laude-institute/harbor-datasets.git",
-      "git_commit_id": "86723674f04e4209ac479d0fb75d9d9f44b4377e",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
       "path": "datasets/swebench-verified/django__django-11133",
       "files": {
-        "environment/Dockerfile": "8590a49874e0e8a92e5731f0b8de493509e4fc2a13f7395ce0f19384e941eeb4",
+        "environment/Dockerfile": "8c02135b2ea0a61b22181826d5b2a9b3b833f84f8eab66d3342e4575071d8b9a",
         "instruction.md": "deb0f38dd675057fa6e93f10d967ab983c75e972e5ec879fd9e055ef797ea586",
-        "solution/solve.sh": "3fca345ab37459e93a76ec3fc99fc506b34d1f7f7b43f8455bfc32b74a99a266",
+        "solution/solve.sh": "96fb72d8551878838051eb24603abc32821206ed9aacff0a2f367b38af820d47",
         "task.toml": "e9a5d7dd94ed43a89396fc12e7b7b32578c9114806bf017620aa694525dd9cba",
         "tests/config.json": "b1c8b640807c3a601d1242b1df446be6fa4c40542094553866286e3237497af0",
-        "tests/test.sh": "c3dd4bd15b149bb58c2effb05f920e6e792337e538c4f478d194bb6431f4cc9b"
+        "tests/test.sh": "976bb25b8af0391f5972da87d151ff9930b0f61b86b855d21c4039d54dacd4b9"
       }
     },
     {
       "name": "sympy__sympy-11618",
       "git_url": "https://github.com/laude-institute/harbor-datasets.git",
-      "git_commit_id": "86723674f04e4209ac479d0fb75d9d9f44b4377e",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
       "path": "datasets/swebench-verified/sympy__sympy-11618",
       "files": {
-        "environment/Dockerfile": "c5b3e093cce4d6c5de2f34f187ee9d70781fc3c8d6c1277521f872020127605f",
+        "environment/Dockerfile": "4fe95c6ed3ba3657df26a11eae90ae2d930b3e90e6a089885a8ee788b18bb970",
         "instruction.md": "4aaa1e568038ef949229ebbc18d623529757a31b9c69e5633a4b79eb79b729e5",
-        "solution/solve.sh": "85c73b4155c7dea1415a0b35b9db253c3ae1451e534de471001bbc331ab1ad19",
+        "solution/solve.sh": "09051e7f5cce627ae9acccc4a4c315d0b8fb5f81dfca405e0ea03123a3f48416",
         "task.toml": "89760344f93862da427f7f5e9a443cb4cdbc04c75522a8f40e49acff3f0bc1b1",
         "tests/config.json": "89cb074d4725f544eed69a99a1a0419f1945c7b9e480cc378c21961e3c4c559e",
-        "tests/test.sh": "4af2213e3151e2e6d257a1d15cd4a2a276ecad87017d8437e8d16a83fd406107"
+        "tests/test.sh": "188358f4a2a363eb564a3e2b19ac95c8ebaa69ff0f71bfc9e8e45bcad312e557"
       }
     },
     {
       "name": "sympy__sympy-13031",
       "git_url": "https://github.com/laude-institute/harbor-datasets.git",
-      "git_commit_id": "86723674f04e4209ac479d0fb75d9d9f44b4377e",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
       "path": "datasets/swebench-verified/sympy__sympy-13031",
       "files": {
-        "environment/Dockerfile": "385f075d2f017dea81a8c90308a8c9bf4171c9c8473fe1c888202239702f4225",
+        "environment/Dockerfile": "7a4a93dbb0dd83ec2f1dbbca511b90bff3b17a9d2f775ab6c74c18acf10b44b8",
         "instruction.md": "5d95a063a1ada8b9273255940d122605d87ea3ab2aa27f524725442be780b5c6",
-        "solution/solve.sh": "1ee1c747aae700c75f5381b803d94784271c8a6b1c25a6bba3ffd49e44a824c1",
+        "solution/solve.sh": "5596cec86a17f6d5a228200e5a494d8cfef76b2b171ad83620b5213beeedac32",
         "task.toml": "89760344f93862da427f7f5e9a443cb4cdbc04c75522a8f40e49acff3f0bc1b1",
         "tests/config.json": "9d9ba1f8f19a8d92b5963baa24054b02a050e09a02b9b7f33939c599eecd9991",
-        "tests/test.sh": "d3301d99c3d0a80c5f5fd8289d0fd13aee628b9362cdb6a137d06a8bf5a457a9"
+        "tests/test.sh": "db995333fa15b3865f37e7cfd19a6e05150358bf4962589464055441a95616fd"
       }
     }
   ]

@@ -1,8 +1,12 @@
-"""Harnessix会话库 → evalkit逐步记录。
+"""Harnessix → evalkit逐步记录，两个来源：
 
-模型调用来自Turn的ModelAttempt（真实起止时间、实际模型、逐次用量）；工具调用来自事件流中
-tool_call与tool_result两次ItemFinished的发生时间。没有结束时间的调用不生成步骤，不估算。
-工具参数与输出写入步骤正文，是否导出由运行计划的内容级别决定。原库先复制再读取，证据不被改动。
+- 会话库：模型调用来自Turn的ModelAttempt（真实起止时间、实际模型、逐次用量）；工具调用来自事件流中
+  tool_call与tool_result两次ItemFinished的发生时间。原库先复制再读取，证据不被改动。
+- 公开协议事件（Harbor试次由协议运行器导出）：模型调用结束于该步用量记录（响应完成），开始取上一步
+  工具结果全部完成的时刻（首步为Turn开始），与mini-swe-agent相邻消息窗口同一口径；协议不公开请求
+  发出时刻，不另行估算。用量只有输入、输出Token，记为partial。工具调用同上。
+
+没有结束时间的调用不生成步骤。工具参数与输出写入步骤正文，是否导出由运行计划的内容级别决定。
 """
 
 from __future__ import annotations
@@ -10,16 +14,29 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
-from evalkit.contracts import Usage
+from evalkit.contracts import ArmTrials, Usage
+from evalkit.files import read_artifact, read_model, write_model
 from evalkit.steps import Step, StepTrace
 
 from harnessix.agent.models import ItemFinished, ToolCallContent, ToolResultContent, Turn
 from harnessix.agent.usage import ModelAttempt
+from harnessix.protocol.contracts import (
+    ItemPublicEvent,
+    PublicEvent,
+    PublicToolCallContent,
+    PublicToolResultContent,
+    TurnStartedPublicEvent,
+    UsagePublicEvent,
+)
 from harnessix.session.sqlite import SQLiteSessionStore
+from integrations.harnessix_eval.harbor_parser import EVENTS_ARTIFACT
+
+_MAX_EVENTS_BYTES = 32 * 1024 * 1024
 
 
 def _generation(attempt: ModelAttempt) -> Step | None:
@@ -90,3 +107,86 @@ async def step_trace(
             if event.turn_id == turn_id and isinstance(event.payload, ItemFinished)
         ]
     return StepTrace(plan_digest=plan_digest, slot=slot, steps=turn_steps(turn, finished))
+
+
+def protocol_turn_steps(events: Sequence[PublicEvent], *, model: str | None) -> tuple[Step, ...]:
+    """一个Turn的公开协议事件 → 逐步记录（窗口口径见模块说明）。"""
+    steps: list[Step] = []
+    boundary: datetime | None = None
+    calls: dict[UUID, tuple[datetime, PublicToolCallContent]] = {}
+    for event in sorted(events, key=lambda item: item.cursor):
+        data = event.data
+        if isinstance(data, TurnStartedPublicEvent):
+            boundary = event.occurred_at
+        elif isinstance(data, UsagePublicEvent):
+            if boundary is not None and event.occurred_at >= boundary:
+                steps.append(
+                    Step(
+                        step_id=f"model-{event.turn_id}-{data.step}",
+                        kind="generation",
+                        name="model",
+                        started_at=boundary,
+                        completed_at=event.occurred_at,
+                        status="ok",
+                        model=model,
+                        usage=Usage(
+                            completeness="partial",
+                            model_calls=1,
+                            input_tokens=data.usage.input_tokens,
+                            output_tokens=data.usage.output_tokens,
+                        ),
+                        metadata={"step": str(data.step), "window": "protocol_events"},
+                    )
+                )
+            boundary = event.occurred_at
+        elif isinstance(data, ItemPublicEvent) and data.type == "item_finished":
+            content = data.item.content
+            if isinstance(content, PublicToolCallContent):
+                calls[content.call_id] = (event.occurred_at, content)
+            elif isinstance(content, PublicToolResultContent):
+                boundary = event.occurred_at
+                pair = calls.pop(content.call_id, None)
+                if pair is None:
+                    continue
+                started, call = pair
+                steps.append(
+                    Step(
+                        step_id=str(content.call_id),
+                        kind="tool",
+                        name=call.tool,
+                        started_at=started,
+                        completed_at=max(event.occurred_at, started),
+                        status="ok" if content.outcome == "succeeded" else "error",
+                        input_text=json.dumps(call.arguments, ensure_ascii=False),
+                        output_text=json.dumps(content.output, ensure_ascii=False),
+                        metadata={"outcome": content.outcome, "effect": call.effect_class},
+                    )
+                )
+    return tuple(sorted(steps, key=lambda step: step.started_at))
+
+
+def parse_protocol_events(body: bytes) -> tuple[PublicEvent, ...]:
+    return tuple(
+        PublicEvent.model_validate_json(line) for line in body.decode("utf-8").splitlines() if line
+    )
+
+
+def export_protocol_steps(
+    run_dir: Path, trials_path: Path, output: Path, *, model: str | None
+) -> int:
+    """按试次登记的事件制品（核对摘要）生成逐步记录，每个试次一个0600文件。"""
+    group = read_model(trials_path, ArmTrials, 64 * 1024 * 1024, require_private=True)
+    output.mkdir(mode=0o700, parents=True, exist_ok=True)
+    written = 0
+    for trial in group.trials:
+        ref = next((a for a in trial.artifacts if a.name == EVENTS_ARTIFACT), None)
+        if ref is None:
+            continue
+        events = parse_protocol_events(read_artifact(ref, run_dir, _MAX_EVENTS_BYTES))
+        steps = protocol_turn_steps(events, model=model)
+        if not steps:
+            continue
+        trace = StepTrace(plan_digest=group.plan_digest, slot=trial.slot, steps=steps)
+        write_model(output / f"{group.arm_id}-slot{trial.slot}.json", trace, 64 * 1024 * 1024)
+        written += 1
+    return written

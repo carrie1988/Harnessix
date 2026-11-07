@@ -60,6 +60,16 @@ def _environment(spec: dict[str, Any], code_root: Path) -> dict[str, Any]:
     return environment
 
 
+def _file_sha256(path: Path) -> str:
+    if path.is_symlink() or not path.is_file():
+        raise SystemExit(f"组别制品不存在或是链接：{path}")
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def freeze(
     spec_path: Path, tasks: Path, run_dir: Path, code_root: Path, code_revision: str
 ) -> RunPlan:
@@ -81,12 +91,19 @@ def freeze(
         "tasks_receipt": hashlib.sha256(receipt.read_bytes()).hexdigest(),
         "code_revision": code_revision,
     }
+    # 组别登记的宿主制品（安装包、配置模板）按内容计入配置摘要，路径相同而内容变化即不同组别。
+    for arm in spec["arms"]:
+        arm["artifact_sha256"] = {
+            path: _file_sha256(Path(path)) for path in arm.get("artifacts", ())
+        }
     arms = tuple(
         ArmSpec(
             arm_id=arm["arm_id"],
             system=arm["system"],
             system_version=arm["system_version"],
-            config_digest=_canonical({"agent": arm["agent"], **shared}),
+            config_digest=_canonical(
+                {"agent": arm["agent"], "artifacts": arm["artifact_sha256"], **shared}
+            ),
             executor="harbor",
         )
         for arm in spec["arms"]

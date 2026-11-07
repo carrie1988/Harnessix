@@ -12,6 +12,9 @@ from typing import Any
 from evalkit.contracts import TrialStatus, Usage
 from evalkit.harbor import AgentResult
 
+# 协议运行器导出的本Turn公开事件（逐步记录来源）。
+EVENTS_ARTIFACT = "harnessix_events"
+EVENTS_FILE = "harnessix-events.jsonl"
 _REFS = (
     "thread_id",
     "turn_id",
@@ -87,11 +90,14 @@ class HarnessixResultParser:
                 output_tokens=tokens[1],
             )
         )
-        patch = trial_dir / "agent" / "patch.diff"
+        files = {
+            name: trial_dir / "agent" / filename
+            for name, filename in (("patch", "patch.diff"), (EVENTS_ARTIFACT, EVENTS_FILE))
+        }
         return AgentResult(
             status=status,
             reason=reason,
             usage=usage,
-            artifact_files={"patch": patch} if patch.is_file() else {},
+            artifact_files={name: path for name, path in files.items() if path.is_file()},
             system_refs={k: _ref(native[k]) for k in _REFS if native.get(k) is not None},
         )

@@ -25,6 +25,8 @@ _RUNNER = "/installed-agent/harnessix_protocol_runner.py"
 _RELAY = "/installed-agent/model_relay.py"
 _BUNDLE = "/installed-agent/harnessix-bundle.tar.gz"
 _APPROVAL_MODES = {"manual", "auto-edit", "auto"}
+_EVENTS = "harnessix-events.jsonl"
+_EXTERNAL_BOUNDARY = "HARNESSIX_EXTERNAL_BOUNDARY"
 
 
 def _relay_specs(value: str | list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
@@ -54,6 +56,7 @@ class HarnessixAgent(BaseInstalledAgent):
         bundle_root: str = "/opt",
         server_config_template: str | None = None,
         action_config_template: str | None = None,
+        external_boundary: bool = False,
         **kwargs,
     ):
         if kwargs.get("model_name") is not None or kwargs.get("config") is not None:
@@ -87,6 +90,8 @@ class HarnessixAgent(BaseInstalledAgent):
             raise ValueError("Action配置模板需要同时指定容器内的action_config路径")
         if not PurePosixPath(bundle_root).is_absolute():
             raise ValueError("安装包解压目录必须是绝对路径")
+        if type(external_boundary) is not bool:
+            raise ValueError("external_boundary必须是布尔值")
         super().__init__(*args, **kwargs)
         self.server_config = server_config
         self.action_config = action_config
@@ -102,6 +107,8 @@ class HarnessixAgent(BaseInstalledAgent):
         self.bundle_root = bundle_root
         self.server_config_template = server_config_template
         self.action_config_template = action_config_template
+        # 任务容器即隔离边界（ADR 0121）：向App Server断言边界，原生命令Profile才会装配。
+        self.external_boundary = external_boundary
 
     @staticmethod
     def name() -> str:
@@ -148,6 +155,7 @@ class HarnessixAgent(BaseInstalledAgent):
         trial_id = UUID(str(self.context_id))
         temporary_input = f"/tmp/harnessix-input-{trial_id}.txt"
         summary = str(self.environment_logs_dir / "harnessix-summary.json")
+        events = str(self.environment_logs_dir / _EVENTS)
         with TemporaryDirectory(prefix="harnessix-harbor-") as temporary:
             source = Path(temporary) / "instruction.txt"
             source.write_text(instruction, encoding="utf-8")
@@ -173,6 +181,8 @@ class HarnessixAgent(BaseInstalledAgent):
             str(self.max_tokens),
             "--timeout-seconds",
             str(self.timeout_seconds),
+            "--events-output",
+            events,
         ]
         if self.action_config is not None:
             command.extend(["--action-config", self.action_config])
@@ -180,11 +190,14 @@ class HarnessixAgent(BaseInstalledAgent):
         for spec in self.model_relays:
             command.extend(["--model-relay", spec])
         base = await self._head(environment)
+        env = dict(self._extra_env or {})
+        if self.external_boundary:
+            env[_EXTERNAL_BOUNDARY] = "1"
         try:
             await self.exec_as_agent(
                 environment,
                 command=shlex.join(command),
-                env=self._extra_env,
+                env=env or None,
                 cwd=self.workspace,
                 timeout_sec=int(self.timeout_seconds) + 15,
             )
@@ -270,5 +283,7 @@ class HarnessixAgent(BaseInstalledAgent):
                 "auto_approvals": result.get("auto_approvals"),
                 "patch_exported": (self.logs_dir / "patch.diff").is_file(),
                 "state_exported": (self.logs_dir / "harnessix-state.tar.gz").is_file(),
+                "events_exported": (self.logs_dir / _EVENTS).is_file(),
+                "external_boundary": self.external_boundary,
             },
         }

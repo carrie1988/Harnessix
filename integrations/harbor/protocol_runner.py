@@ -39,6 +39,8 @@ except ImportError:  # 仓库内以包方式导入（测试）
     from integrations.harbor import model_relay
 
 _TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
+# 终态后完整重放本Turn的期限；长Turn事件多，3秒不足以读完。
+_EVIDENCE_REPLAY_SECONDS = 30
 _LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 
 
@@ -93,12 +95,17 @@ def _pending_approval(
     return content, tool
 
 
-async def _completed_evidence(client: AgentClient, thread_id: UUID, turn_id: UUID) -> dict:
-    """完整重放本次Turn，仅保留完成回答摘要和成功工具计数，不输出原文或参数。"""
+async def _completed_evidence(
+    client: AgentClient,
+    thread_id: UUID,
+    turn_id: UUID,
+    events: list[PublicEvent] | None = None,
+) -> dict:
+    """完整重放本次Turn：摘要只保留完成回答摘要和成功工具计数；events收集本Turn全部公开事件。"""
     cursor = 0
     succeeded = set()
     answer_digest = None
-    async with asyncio.timeout(3):
+    async with asyncio.timeout(_EVIDENCE_REPLAY_SECONDS):
         while True:
             page = await client.replay_events(
                 thread_id,
@@ -106,6 +113,8 @@ async def _completed_evidence(client: AgentClient, thread_id: UUID, turn_id: UUI
                 limit=min(64, client.initialized.limits.max_replay_events),
             )
             for event in page.events:
+                if event.turn_id == turn_id and events is not None:
+                    events.append(event)
                 if event.turn_id != turn_id or event.data.type != "item_finished":
                     continue
                 item = event.data.item
@@ -138,8 +147,12 @@ async def drive_protocol_trial(
     trial_id: UUID,
     approval_mode: ApprovalMode = "manual",
     policy: ApprovalPolicy | None = None,
+    events: list[PublicEvent] | None = None,
 ) -> dict:
-    """驱动一次显式试次；策略不能回应的审批或提问即取消，超时清理有界且不重试任务。"""
+    """驱动一次显式试次；策略不能回应的审批或提问即取消，超时清理有界且不重试任务。
+
+    events非None时收集本Turn的全部公开事件，供逐步记录使用（只在Turn确认终态后收集）。
+    """
 
     thread: ThreadView | None = None
     turn: TurnView | None = None
@@ -230,7 +243,10 @@ async def drive_protocol_trial(
     }
     if thread is not None and turn is not None and turn_terminal_confirmed:
         try:
-            evidence = await _completed_evidence(client, thread.thread_id, turn.turn_id)
+            collected: list[PublicEvent] = []
+            evidence = await _completed_evidence(client, thread.thread_id, turn.turn_id, collected)
+            if events is not None:
+                events.extend(collected)
         except (AgentSDKError, TimeoutError):
             pass
     return {
@@ -308,15 +324,28 @@ async def _drive(arguments: argparse.Namespace, instruction: str) -> dict:
     transport = SubprocessAgentTransport(
         command, graceful_shutdown_timeout_seconds=2.0, terminate_timeout_seconds=2.0
     )
+    events: list[PublicEvent] = []
     async with AgentClient(transport) as client:
-        return await drive_protocol_trial(
+        result = await drive_protocol_trial(
             client,
             workspace=arguments.workspace,
             instruction=instruction,
             budget=budget,
             trial_id=UUID(arguments.trial_id),
             approval_mode=arguments.approval_mode,
+            events=events,
         )
+    if arguments.events_output is not None and events:
+        _write_events(Path(arguments.events_output), events)
+    return result
+
+
+def _write_events(path: Path, events: list[PublicEvent]) -> None:
+    """本Turn公开事件逐行写入0600文件；已存在即失败，不覆盖。"""
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+        for event in events:
+            output.write(event.model_dump_json() + "\n")
 
 
 def main() -> None:
@@ -335,6 +364,7 @@ def main() -> None:
         "--approval-mode", choices=("manual", "auto-edit", "auto"), default="manual"
     )
     parser.add_argument("--model-relay", action="append", default=[], help="回环端口=宿主机:端口")
+    parser.add_argument("--events-output", help="本Turn公开事件JSONL，供逐步记录使用")
     arguments = parser.parse_args()
     previous_logging = logging.root.manager.disable
     logging.disable(logging.CRITICAL)
