@@ -16,6 +16,7 @@ pytest.importorskip("harbor", minversion="0.25.0")
 from harbor.models.agent.context import AgentContext
 
 from integrations.harbor.harnessix_agent import HarnessixAgent
+from integrations.harbor.workspace_modes import normalize_modes_command
 
 
 def agent(tmp_path: Path, **options) -> HarnessixAgent:
@@ -161,6 +162,22 @@ async def test_install_uploads_bundle_templates_runner_and_relay(tmp_path: Path)
     assert root_commands[1] == "mkdir -p /opt/harnessix"
 
 
+@pytest.mark.parametrize("enabled", [False, True])
+async def test_workspace_mode_normalization_runs_only_when_enabled(
+    tmp_path: Path, enabled: bool
+) -> None:
+    instance = agent(tmp_path, workspace="/testbed", normalize_workspace_modes=enabled)
+    instance.exec_as_agent = AsyncMock()
+    instance.exec_as_root = AsyncMock()
+
+    async def upload(source, target):
+        pass
+
+    await instance.install(SimpleNamespace(upload_file=upload))
+    root_commands = [call.kwargs["command"] for call in instance.exec_as_root.await_args_list]
+    assert (normalize_modes_command("/testbed") in root_commands) is enabled
+
+
 @pytest.mark.parametrize(
     "options",
     [
@@ -169,6 +186,7 @@ async def test_install_uploads_bundle_templates_runner_and_relay(tmp_path: Path)
         {"action_config_template": __file__},
         {"bundle_root": "relative"},
         {"external_boundary": "yes"},
+        {"normalize_workspace_modes": "yes"},
     ],
 )
 def test_invalid_install_or_approval_options_fail_before_any_trial(

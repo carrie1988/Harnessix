@@ -18,8 +18,10 @@ from harbor.models.agent.context import AgentContext
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
     from integrations.harbor.patch_export import head_command, parse_head, patch_command
+    from integrations.harbor.workspace_modes import normalize_modes_command
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
     from patch_export import head_command, parse_head, patch_command
+    from workspace_modes import normalize_modes_command
 
 _RUNNER = "/installed-agent/harnessix_protocol_runner.py"
 _RELAY = "/installed-agent/model_relay.py"
@@ -57,6 +59,7 @@ class HarnessixAgent(BaseInstalledAgent):
         server_config_template: str | None = None,
         action_config_template: str | None = None,
         external_boundary: bool = False,
+        normalize_workspace_modes: bool = False,
         **kwargs,
     ):
         if kwargs.get("model_name") is not None or kwargs.get("config") is not None:
@@ -92,6 +95,8 @@ class HarnessixAgent(BaseInstalledAgent):
             raise ValueError("安装包解压目录必须是绝对路径")
         if type(external_boundary) is not bool:
             raise ValueError("external_boundary必须是布尔值")
+        if type(normalize_workspace_modes) is not bool:
+            raise ValueError("normalize_workspace_modes必须是布尔值")
         super().__init__(*args, **kwargs)
         self.server_config = server_config
         self.action_config = action_config
@@ -109,6 +114,8 @@ class HarnessixAgent(BaseInstalledAgent):
         self.action_config_template = action_config_template
         # 任务容器即隔离边界（ADR 0121）：向App Server断言边界，原生命令Profile才会装配。
         self.external_boundary = external_boundary
+        # 显式开启时，启动前把工作区文件权限规整为Git风格（见workspace_modes）。
+        self.normalize_workspace_modes = normalize_workspace_modes
 
     @staticmethod
     def name() -> str:
@@ -140,6 +147,10 @@ class HarnessixAgent(BaseInstalledAgent):
                 parent = shlex.quote(str(PurePosixPath(target).parent))
                 await self.exec_as_root(environment, command=f"mkdir -p {parent}", timeout_sec=30)
                 await environment.upload_file(Path(template), target)
+        if self.normalize_workspace_modes:
+            await self.exec_as_root(
+                environment, command=normalize_modes_command(self.workspace), timeout_sec=300
+            )
         await self.exec_as_agent(
             environment,
             command=shlex.join([self.python_executable, "-c", "import harnessix.sdk.agent_client"]),
@@ -293,5 +304,6 @@ class HarnessixAgent(BaseInstalledAgent):
                 "state_exported": (self.logs_dir / "harnessix-state.tar.gz").is_file(),
                 "events_exported": (self.logs_dir / _EVENTS).is_file(),
                 "external_boundary": self.external_boundary,
+                "workspace_modes_normalized": self.normalize_workspace_modes,
             },
         }

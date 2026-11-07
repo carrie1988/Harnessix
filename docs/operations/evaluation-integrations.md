@@ -16,6 +16,7 @@ related_tests:
   - tests/integrations/test_harnessix_eval.py
   - tests/integrations/test_harbor_protocol.py
   - tests/integrations/test_harbor_adapter.py
+  - tests/integrations/test_workspace_modes.py
   - tests/integrations/test_official_grader.py
   - tests/integrations/test_swebench_tasks.py
   - tests/integrations/test_swebench_reward.py
@@ -283,6 +284,8 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    `/api/public/v2/observations`逐项核对。默认只导出元数据，正文仅在计划声明完整内容时导出。
 8. Harnessix组别：任务容器即隔离边界，产品使用外部边界原生命令Profile（ADR 0121），
    适配器`external_boundary`只为App Server进程断言`HARNESSIX_EXTERNAL_BOUNDARY=1`，审批模式auto。
+   - 权限规整：`normalize_workspace_modes: true`时，安装阶段以root把工作区普通文件权限规整为Git风格的0644/0755
+     （`integrations/harbor/workspace_modes.py`），Git看不到变化；元数据记录`workspace_modes_normalized`。
    - 安装包：`build_bundle.py --python-dir`在派生任务镜像容器内复制uv托管的Python（uv按其内置摘要核对），
      按带哈希的依赖清单（`uv export --frozen --no-dev --no-emit-project --extra openai`，含所选Provider的可选依赖，
      缺失时App Server启动预检报`product_dependency_missing`）与产品wheel安装，收据记录摘要。

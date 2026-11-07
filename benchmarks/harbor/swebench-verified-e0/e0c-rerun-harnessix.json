@@ -1,0 +1,94 @@
+{
+  "run_name": "e0c-rerun-harnessix-external-boundary",
+  "dataset": {
+    "name": "swebench-verified-dev5",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 2,
+  "content_policy": "metadata",
+  "notes": [
+    "Tasks are re-pinned to harbor-datasets 37db1088: the verifier now removes only untracked files the SWE-bench test patch touches, so new source files added by an agent survive (86723674 ran git clean -fd). The oracle arm re-validates the new task files.",
+    "Harnessix runs inside the task container with the external-boundary native command profile (ADR 0121): the task container is the isolation boundary, commands write /testbed and changes persist. Phase-1 ran commands in disposable snapshots, so results are not directly comparable.",
+    "Model, thinking-off preset, command environment presets and the 900 s command timeout follow the phase-1 local arms; the turn budget is the product local budget (100 steps, 6M tokens, 3600 s).",
+    "Task containers use Harbor's public network mode, like E0b; the model is reached through the in-container loopback relay to the host relay on the Docker bridge.",
+    "Step traces come from the Turn's public protocol events exported by the protocol runner.",
+    "Rerun of E0c after its findings (ADR 0120 §7.3): a patch refused for an unsupported file mode is a correctable failed result instead of an uncertain effect (ca51bd75); provider service failures under the usage-unknown stop rule keep their provider code and are infrastructure failures (ADR 0123).",
+    "Before Harnessix starts, the adapter normalises /testbed file modes to Git style (owner-executable files 0755, others 0644; .git and symlinks untouched). Some official images make every file 0777, which the product's workspace patch cannot edit yet; Git tracks only the owner execute bit, so the normalisation is invisible to Git, the exported patch and both graders. The phase-1 runner prepared workspaces the same way. Lifting the product restriction is scheduled separately."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/host-gateway.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "harnessix",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/e0c-rerun-agent/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/e0c-rerun-agent/product.json",
+        "/data/harnessix/harbor/e0c-rerun-agent/actions.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/e0c-rerun-agent/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/e0c-rerun-agent/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config_template": "/data/harnessix/harbor/e0c-rerun-agent/actions.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18101",
+          "normalize_workspace_modes": true
+        }
+      }
+    }
+  ]
+}
