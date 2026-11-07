@@ -4,6 +4,7 @@ from uuid import UUID, uuid5
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Item, ItemStatus, TextContent, Turn, TurnStatus
+from harnessix.agent.provider_stop import unknown_usage_stop
 from harnessix.context.compaction import PreparedCompaction
 from harnessix.context.compaction_contracts import CompactionPolicy, CompactionSummary
 from harnessix.context.compaction_projection import compaction_summary_item
@@ -17,7 +18,7 @@ def require_request_slots(turn: Turn, slots: int = 1) -> int:
     if any(a.status != "running" and a.usage.completeness != "complete" for a in attempts) or any(
         c.unaccounted_request_possible for c in turn.compactions
     ):
-        raise KernelError("budget_exceeded", "已有未知模型费用，禁止下一付费请求")
+        raise unknown_usage_stop(turn, "已有未知模型费用，禁止下一付费请求")
     used = turn.model_steps + len(attempts) - len({a.step for a in turn.model_attempts})
     if turn.status == TurnStatus.CALLING_MODEL and not any(
         a.step == turn.model_steps for a in turn.model_attempts

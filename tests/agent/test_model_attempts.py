@@ -22,6 +22,7 @@ from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import accounted_answer, attempt_start, observed, prepare_attempt
 from tests.agent.helpers import RecordingTools, answer, tool_step
+from tests.context.test_compaction_runtime import config as compaction_config
 from tests.deadlines import capture_deadlines
 
 
@@ -118,6 +119,32 @@ async def test_known_retry_budget_is_checked_before_resuming_provider(tmp_path: 
     assert sent == [1]
     assert len(turn.model_attempts) == 1
     assert turn.error.code == "budget_exceeded"
+
+
+@pytest.mark.parametrize("compaction", [False, True])
+async def test_refused_retry_after_service_failure_keeps_provider_code(
+    tmp_path: Path, compaction: bool
+) -> None:
+    """矩阵05场景：503后重试被计费安全规则拒绝；开启上下文压缩时由请求额度检查拦截。"""
+    first, second = attempt_start(), attempt_start(index=2)
+    failure = ModelAttemptFinished(
+        attempt_id=first.attempt_id,
+        outcome="failed",
+        error=AgentFailure(code="provider_provider_internal", message="503", retryable=True),
+    )
+    store = SQLiteSessionStore(tmp_path / "s.db")
+    provider = ScriptedProvider([[first, failure, *accounted_answer(start=second)]])
+    options = (
+        {"compaction": compaction_config(), "summary_provider": ScriptedProvider([])}
+        if compaction
+        else {}
+    )
+    async with AgentRuntime(store, provider, RecordingTools(), **options) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "服务失败", request_id="r")
+    assert [a.status for a in turn.model_attempts] == ["failed"]
+    assert turn.status == "failed" and turn.error.code == "provider_provider_internal"
+    assert turn.error.category == "provider"
 
 
 def _tool_answer(start):

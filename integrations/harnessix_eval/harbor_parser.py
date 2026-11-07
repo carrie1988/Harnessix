@@ -12,7 +12,7 @@ from typing import Any
 from evalkit.contracts import TrialStatus, Usage
 from evalkit.harbor import AgentResult
 
-# 服务方故障码，与产品harnessix.agent.runtime.SERVICE_FAILURE_CODES一致（由测试核对）。
+# 服务方故障码，与产品harnessix.agent.provider_stop.SERVICE_FAILURE_CODES一致（由测试核对）。
 # 解析器在不安装产品的Harbor环境中运行，因此不直接导入产品模块。
 SERVICE_FAILURE_CODES = frozenset(
     {"provider_provider_internal", "provider_rate_limit", "provider_transport"}

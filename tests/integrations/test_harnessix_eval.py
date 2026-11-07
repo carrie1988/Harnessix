@@ -264,7 +264,7 @@ def test_from_suite_cli_writes_private_report(
 
 
 def test_parser_service_failure_codes_match_the_product() -> None:
-    from harnessix.agent.runtime import SERVICE_FAILURE_CODES as PRODUCT_CODES
+    from harnessix.agent.provider_stop import SERVICE_FAILURE_CODES as PRODUCT_CODES
     from integrations.harnessix_eval.harbor_parser import SERVICE_FAILURE_CODES
 
     assert SERVICE_FAILURE_CODES == PRODUCT_CODES

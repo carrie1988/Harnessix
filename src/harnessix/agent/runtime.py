@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Sequence
 from contextlib import AbstractAsyncContextManager, aclosing
 from dataclasses import replace
 from types import TracebackType
@@ -97,6 +97,7 @@ from harnessix.agent.ports import (
     ToolRuntime,
     TrustedActionGateway,
 )
+from harnessix.agent.provider_stop import service_failure_stop, unknown_usage_stop
 from harnessix.agent.publication import (
     PublicOutputProtection,
     PublicTextStep,
@@ -231,28 +232,6 @@ SUMMARY_INSTRUCTIONS = (
 RETRY_INSTRUCTIONS = (
     "继续完成上一轮未完成的请求。不要重复已完成的副作用；先核对当前Workspace与持久效果事实。"
 )
-# 服务方故障：适配器标为可重试的服务端失败（5xx、429、连接与超时），见ADR 0123。
-SERVICE_FAILURE_CODES = frozenset(
-    {"provider_provider_internal", "provider_rate_limit", "provider_transport"}
-)
-
-
-def _service_failure_stop(attempts: Iterable[ModelAttempt]) -> KernelError | None:
-    """用量未知的失败尝试源于服务方故障时，按其原故障码停止；计费安全规则本身不变。"""
-    for attempt in reversed(tuple(attempts)):
-        error = attempt.error
-        if (
-            attempt.status == "failed"
-            and attempt.usage.completeness != "complete"
-            and error is not None
-            and error.code in SERVICE_FAILURE_CODES
-        ):
-            return KernelError(
-                error.code,
-                "Provider服务失败且该次请求用量未知；按计费安全规则不再发起付费请求",
-                retryable=error.retryable,
-            )
-    return None
 
 
 def _estimated_model_input_tokens(
@@ -2264,15 +2243,12 @@ class AgentRuntime:
                             prepared.inspection.limits.reserved_output_tokens,
                         )
                         turn = get_turn(thread, turn_id)
-                unreported = [
-                    attempt
+                if any(
+                    attempt.status != "running" and attempt.usage.completeness != "complete"
                     for attempt in turn.accounted_attempts
-                    if attempt.status != "running" and attempt.usage.completeness != "complete"
-                ]
-                if unreported:
-                    raise _service_failure_stop(unreported) or KernelError(
-                        "budget_exceeded",
-                        "已有模型尝试未完整上报用量，禁止发起下一付费请求",
+                ):
+                    raise unknown_usage_stop(
+                        turn, "已有模型尝试未完整上报用量，禁止发起下一付费请求"
                     )
                 estimated_input_tokens = _estimated_model_input_tokens(
                     history,
@@ -2978,7 +2954,7 @@ class AgentRuntime:
                                 <= request.budget.max_tokens
                             )
                             stop = (
-                                _service_failure_stop(unreported_attempts)
+                                service_failure_stop(unreported_attempts)
                                 if only_unreported
                                 else None
                             )
