@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import stat
 from dataclasses import replace
 from uuid import uuid4
 
@@ -348,14 +350,35 @@ async def test_bad_sha_fails_without_executor_or_transaction_and_cannot_be_appro
         ("delete-missing", "workspace_patch_target_missing"),
         ("edit-missing", "workspace_patch_target_missing"),
         ("replace-missing", "workspace_patch_target_missing"),
+        # E0c django-11133/sympy-13031：任务镜像内文件为0777，审批预览曾把拒绝记为未知效果并停整轮。
+        ("edit-mode", "delivery_metadata_unsupported"),
+        ("replace-mode", "delivery_metadata_unsupported"),
+        ("delete-mode", "delivery_metadata_unsupported"),
     ],
 )
 async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
     tmp_path, kind, expected_code
 ):
+    if kind.endswith("-mode") and os.name != "posix":
+        pytest.skip("POSIX文件权限")
     async with product(tmp_path) as (root, runtime, provider, router, transactions, _, _):
         original = _proposal().files[0]
-        if kind == "create-existing":
+        edit = {
+            "operation": "edit",
+            "content": None,
+            "edits": (ExactEdit(old_text="old", new_text="new"),),
+            "mode": None,
+        }
+        if kind.endswith("-mode"):
+            for name in ("src/modified.py", "tests/deleted.txt"):
+                (root / name).chmod(0o777)
+        if kind == "edit-mode":
+            item = original.model_copy(update=edit)
+        elif kind == "replace-mode":
+            item = original
+        elif kind == "delete-mode":
+            item = _proposal().files[2]
+        elif kind == "create-existing":
             item = original.model_copy(update={"operation": "create", "expected_sha256": None})
         elif kind == "delete-missing":
             item = _proposal().files[2].model_copy(update={"path": "tests/absent.txt"})
@@ -396,6 +419,10 @@ async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
             transactions.load(plan_id)
         assert missing.value.code == "delivery_transaction_not_found"
         assert_unchanged(root)
+        if kind.endswith("-mode"):
+            assert output.error.message.endswith("本次Patch未执行，工作区没有变化")
+            for name in ("src/modified.py", "tests/deleted.txt"):
+                assert stat.S_IMODE((root / name).stat().st_mode) == 0o777
 
 
 class DerivedPreconditionError(WorkspacePatchPreconditionError):

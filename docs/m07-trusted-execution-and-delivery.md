@@ -223,6 +223,7 @@ Plan与Approval写入独立私有SQLite存储。相同内容重复提交为幂�
 | `workspace_parent_missing` | 新文件目标的父目录未绑定 | 先显式创建/声明父目录 |
 | `workspace_patch_target_exists` | `create`目标已存在（尚未批准或执行） | `read_file`后改用`edit`/`replace`，或先`delete` |
 | `workspace_patch_target_missing` | `edit`/`replace`/`delete`目标不是现有普通文件（尚未批准或执行） | 新文件改用`create` |
+| `delivery_metadata_unsupported` | 现有目标文件权限不是0644/0755（尚未批准或执行，工作区未变） | Workspace Patch不能修改该文件，不要重试同一Patch |
 | `workspace_busy` | 其他owner持有有效租约 | 等待或由原owner释放 |
 | `workspace_lease_lost` | 租约过期或fencing token落后 | 禁止提交，重新取得租约与计划 |
 | `execution_plan_stale` | 任一执行事实与冻结计划不同 | 丢弃批准并生成新Plan |

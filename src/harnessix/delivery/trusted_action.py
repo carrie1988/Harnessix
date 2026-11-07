@@ -259,15 +259,23 @@ class WorkspacePatchTransactionPlanner:
             _validate_transaction(route, checked, existing.plan, self._transactions.blob)
             return existing
         root = self._workspace_root(route.execution.workspace.workspace_id)
-        desired = _desired_files(
-            checked,
-            route.execution.workspace.platform,
-            root,
-            checkpoint=checkpoint,
-        )
-        prepared = prepare_action_workspace_transaction(
-            route, root, desired, self._transactions, checkpoint=checkpoint
-        )
+        try:
+            desired = _desired_files(
+                checked,
+                route.execution.workspace.platform,
+                root,
+                checkpoint=checkpoint,
+            )
+            prepared = prepare_action_workspace_transaction(
+                route, root, desired, self._transactions, checkpoint=checkpoint
+            )
+        except KernelError as error:
+            if error.code != "delivery_metadata_unsupported":
+                raise
+            # 来源文件权限不是0644/0755是确定性拒绝；此时只读了工作区，未写入任何文件。
+            raise workspace_patch_preparation_error(
+                error.code, f"{error.message}；本次Patch未执行，工作区没有变化"
+            ) from None
         _validate_transaction(route, checked, prepared.plan, prepared.blobs.__getitem__)
         saved = self._transactions.save(prepared)
         _validate_transaction(route, checked, saved.plan, self._transactions.blob)
