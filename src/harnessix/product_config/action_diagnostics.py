@@ -28,6 +28,7 @@ from harnessix.product_config.native_process import (
     attest_native_process_profile,
     native_process_binding,
 )
+from harnessix.product_config.native_sandbox import NativeSandboxSite
 from harnessix.product_config.process_action import product_process_binding
 from harnessix.product_config.process_profile import (
     probe_product_process_profile_attestation,
@@ -112,7 +113,10 @@ def diagnose_product_actions(
         )
     for native in config.native_process_profiles:
         reason, attested = attest_native_process_profile(
-            native, owner_capability, environ=os.environ
+            native,
+            owner_capability,
+            environ=os.environ,
+            site=NativeSandboxSite(workspace_root=workspace) if workspace is not None else None,
         )
         evidence.append(
             build_product_action_capability(

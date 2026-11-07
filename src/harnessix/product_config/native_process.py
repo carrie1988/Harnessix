@@ -1,7 +1,9 @@
-"""原生进程Profile（ADR 0121）：不经容器、在当前环境直接执行Shell命令。
+"""原生进程Profile：不经容器执行Shell命令。
 
-本期只有外部边界后端：隔离由启动Harnessix的一方提供（例如评测任务容器），Harnessix不另加沙箱。
-只有配置显式声明且App Server环境断言`HARNESSIX_EXTERNAL_BOUNDARY=1`时才装配；否则省略工具，不降级。
+- 外部边界（ADR 0121）：隔离由启动Harnessix的一方提供；只有配置显式声明且App Server环境断言
+  `HARNESSIX_EXTERNAL_BOUNDARY=1`时才装配。
+- 本机沙箱（ADR 0111）：bubblewrap在启动时探测并推导策略，计划记为`host_sandboxed`。
+任何条件不成立都省略工具并给出原因码，不降级为其他执行方式。
 """
 
 from __future__ import annotations
@@ -10,7 +12,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import cast
+from typing import Literal, cast
 
 from pydantic import BaseModel, JsonValue
 
@@ -27,6 +29,7 @@ from harnessix.processes.supervision_contracts import ProcessCapabilityProbe, Pr
 from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.processes.supervisor import PosixProcessSupervisor
 from harnessix.processes.trusted_output import trusted_process_public_output
+from harnessix.sandbox.native_probe import probe_native_sandbox
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     TrustedToolBinding,
@@ -43,6 +46,13 @@ from harnessix.workspace.contracts import WorkspaceResourceRequest
 
 from .action_contracts import ProductNativeProcessProfile
 from .host_process_action import HostProcessActionExecutor, HostProcessBinding
+from .native_sandbox import (
+    NativeSandboxBinding,
+    NativeSandboxSite,
+    SandboxProbe,
+    attest_native_sandbox,
+    prepare_sandboxed_argv,
+)
 from .process_command import RunCommandInput, decode_run_command, run_command_schema
 from .process_profile import process_tool_name
 
@@ -53,6 +63,15 @@ _BASE_ENVIRONMENT: Mapping[str, str] = MappingProxyType(
     {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
 )
 WorkspaceRootResolver = Callable[[str], Path]
+# 沙箱启动前即可确定、不会产生副作用的失败（ADR 0111第5节）。
+_SANDBOX_PREFLIGHT_CODES = frozenset(
+    {
+        "sandbox_backend_changed",
+        "sandbox_path_invalid",
+        "sandbox_policy_too_large",
+        "workspace_secret_files_unmaskable",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +83,8 @@ class AttestedNativeProcessProfile:
     sandbox: SandboxBindingV2
     environment: Mapping[str, str]
     executor_evidence_sha256: str
+    # 仅本机沙箱后端；外部边界为None。
+    native_sandbox: NativeSandboxBinding | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,14 +114,28 @@ def attest_native_process_profile(
     owner_capability: ProcessCapabilityProbe | None,
     *,
     environ: Mapping[str, str],
+    site: NativeSandboxSite | None = None,
+    secret_names: tuple[str, ...] = (),
+    sandbox_probe: SandboxProbe = probe_native_sandbox,
 ) -> tuple[str, AttestedNativeProcessProfile | None]:
-    """外部边界只在POSIX Owner可用且启动方显式断言边界时成立；返回原因码与证明。"""
+    """按后端证明执行边界；返回原因码与证明，不成立时不降级。"""
 
-    if profile.backend != "external_boundary":
-        # 沙箱与沙箱外后端（ADR 0111、0113）在接入执行器前一律诚实省略，绝不按外部边界执行。
+    if profile.backend == "host":
+        # 逐条批准的沙箱外命令在实施第4步接入（ADR 0113）。
         return "native_backend_unsupported", None
     if owner_capability is None or owner_capability.platform != "posix":
         return "process_owner_unavailable", None
+    if profile.backend != "external_boundary":
+        if site is None:
+            return "native_sandbox_site_unavailable", None
+        return _attest_sandboxed(
+            profile,
+            owner_capability,
+            environ=environ,
+            site=site,
+            secret_names=secret_names,
+            sandbox_probe=sandbox_probe,
+        )
     if environ.get(EXTERNAL_BOUNDARY_ENVIRONMENT) != "1":
         return "external_boundary_unasserted", None
     environment = MappingProxyType({**_BASE_ENVIRONMENT, **dict(profile.environment)})
@@ -145,6 +180,44 @@ def attest_native_process_profile(
         sandbox=sandbox,
         environment=environment,
         executor_evidence_sha256=evidence,
+        native_sandbox=None,
+    )
+
+
+def _attest_sandboxed(
+    profile: ProductNativeProcessProfile,
+    owner_capability: ProcessCapabilityProbe,
+    *,
+    environ: Mapping[str, str],
+    site: NativeSandboxSite,
+    secret_names: tuple[str, ...],
+    sandbox_probe: SandboxProbe,
+) -> tuple[str, AttestedNativeProcessProfile | None]:
+    reason, attested = attest_native_sandbox(
+        profile,
+        owner_capability,
+        environ=environ,
+        site=site,
+        secret_names=secret_names,
+        probe=sandbox_probe,
+    )
+    if attested is None:
+        return reason, None
+    evidence = canonical_digest(
+        {
+            "spec_version": "harnessix.product-native-executor-evidence/v1",
+            "profile_sha256": profile.profile_sha256,
+            "capability_sha256": attested.capabilities.evidence_digest,
+            "sandbox_sha256": canonical_digest(attested.sandbox.model_dump(mode="json")),
+        }
+    )
+    return "verified", AttestedNativeProcessProfile(
+        profile=profile,
+        capabilities=attested.capabilities,
+        sandbox=attested.sandbox,
+        environment=attested.environment,
+        executor_evidence_sha256=evidence,
+        native_sandbox=attested.binding,
     )
 
 
@@ -153,13 +226,21 @@ def probe_native_process_profile(
     supervisor: object,
     *,
     environ: Mapping[str, str],
+    site: NativeSandboxSite | None = None,
+    secret_names: tuple[str, ...] = (),
+    sandbox_probe: SandboxProbe = probe_native_sandbox,
 ) -> NativeProcessProfileProbeResult:
     """证明成立且Owner为POSIX Process Owner时返回可执行Profile，否则诚实省略。"""
 
     if not isinstance(supervisor, PosixProcessSupervisor):
         return NativeProcessProfileProbeResult(profile, "process_owner_unavailable")
     reason, attested = attest_native_process_profile(
-        profile, supervisor.capability, environ=environ
+        profile,
+        supervisor.capability,
+        environ=environ,
+        site=site,
+        secret_names=secret_names,
+        sandbox_probe=sandbox_probe,
     )
     if attested is None:
         return NativeProcessProfileProbeResult(profile, reason)
@@ -169,6 +250,7 @@ def probe_native_process_profile(
         sandbox=attested.sandbox,
         environment=attested.environment,
         executor_evidence_sha256=attested.executor_evidence_sha256,
+        native_sandbox=attested.native_sandbox,
         supervisor=supervisor,
     )
     return NativeProcessProfileProbeResult(profile, "verified", verified)
@@ -183,8 +265,7 @@ def native_process_descriptor(profile: ProductNativeProcessProfile) -> ToolDescr
             f'{profile.version}）；必填"profile": "{profile.profile_id}"和"cmd"，'
             "工具名不能替代字段。cmd必须非空白，允许管道、重定向和多行，"
             "不含NUL且最多16384 UTF-8字节。"
-            "命令从工作区根目录开始，可直接读写工作区，改动会保留；"
-            "Harnessix不另加沙箱，隔离与网络由外部环境决定。"
+            + _boundary_description(profile)
             + (
                 "预设环境变量：" + "、".join(name for name, _ in profile.environment) + "。"
                 if profile.environment
@@ -199,6 +280,25 @@ def native_process_descriptor(profile: ProductNativeProcessProfile) -> ToolDescr
         requires_approval=True,
         supports_reconciliation=True,
         supports_parallel_calls=False,
+    )
+
+
+def _boundary_description(profile: ProductNativeProcessProfile) -> str:
+    """如实写明边界，模型不必靠试错发现限制；外部边界文本保持原样，已有工具指纹不变。"""
+
+    if profile.backend == "external_boundary":
+        return (
+            "命令从工作区根目录开始，可直接读写工作区，改动会保留；"
+            "Harnessix不另加沙箱，隔离与网络由外部环境决定。"
+        )
+    workspace = (
+        "可直接读写工作区，改动会保留" if profile.workspace_mode == "read_write" else "工作区只读"
+    )
+    return (
+        f"命令在本机沙箱中从工作区根目录开始运行，{workspace}；"
+        "可读整台机器，但凭据、命令历史、Harnessix状态与工作区.env文件不可读；"
+        "只能写工作区、TMPDIR与私有缓存目录，HOME不可写；"
+        ".git只读，提交与暂存由Harnessix交付流程完成；没有网络，联网操作会失败。"
     )
 
 
@@ -235,7 +335,7 @@ def resolve_native_command(
     arguments: RunCommandInput,
     context: ActionPlanningContext,
 ) -> ResolvedAction:
-    """绑定Profile、Owner能力、工作区写权限与由外部边界决定的网络。"""
+    """绑定Profile、Owner能力、工作区访问、额外可写目录与网络（沙箱断网时不声明网络资源）。"""
 
     if (
         context.cwd != "."
@@ -246,32 +346,47 @@ def resolve_native_command(
         or context.external_roots is not None
     ):
         raise KernelError("process_profile_context_mismatch", "Process Profile规划上下文不匹配")
-    return ResolvedAction(
-        resources=(
-            canonical_action_resource(
-                kind="process",
-                access="execute",
-                identifier={"profile": owner.profile.profile_id},
-                attributes={
-                    "profile_sha256": owner.profile.profile_sha256,
-                    "owner_capability_sha256": owner.supervisor.capability.digest,
-                    "cmd": arguments.cmd,
-                },
-            ),
-            canonical_action_resource(
-                kind="workspace",
-                access="write",
-                identifier={"location": "workspace", "path": "."},
-                attributes={"mount": owner.profile.backend},
-            ),
+    profile = owner.profile
+    access: Literal["read", "write"] = "write" if profile.workspace_mode == "read_write" else "read"
+    resources = [
+        canonical_action_resource(
+            kind="process",
+            access="execute",
+            identifier={"profile": profile.profile_id},
+            attributes={
+                "profile_sha256": profile.profile_sha256,
+                "owner_capability_sha256": owner.supervisor.capability.digest,
+                "cmd": arguments.cmd,
+            },
+        ),
+        canonical_action_resource(
+            kind="workspace",
+            access=access,
+            identifier={"location": "workspace", "path": "."},
+            attributes={"mount": profile.backend},
+        ),
+    ]
+    resources.extend(
+        canonical_action_resource(
+            kind="external",
+            access="write",
+            identifier={"location": "native-write-root", "path": root},
+            attributes={"mount": profile.backend},
+        )
+        for root in profile.write_roots
+    )
+    if owner.sandbox.network != "none":
+        resources.append(
             canonical_action_resource(
                 kind="network",
                 access="connect",
-                identifier={"policy": "full"},
-                attributes={"enforcement": owner.profile.backend},
-            ),
-        ),
-        workspace_resources=(WorkspaceResourceRequest(path=".", access="write"),),
+                identifier={"policy": owner.sandbox.network},
+                attributes={"enforcement": profile.backend},
+            )
+        )
+    return ResolvedAction(
+        resources=tuple(resources),
+        workspace_resources=(WorkspaceResourceRequest(path=".", access=access),),
     )
 
 
@@ -322,9 +437,12 @@ def _process_spec(
     owner: VerifiedNativeProcessProfile, route: ActionRoutePlan, arguments: RunCommandInput
 ) -> ProcessSpec:
     profile = owner.profile
+    command = (profile.program, *profile.arguments, arguments.cmd)
+    if owner.native_sandbox is not None:
+        command = prepare_sandboxed_argv(owner.native_sandbox, command)
     return build_process_spec(
         invocation="argv",
-        argv=(profile.program, *profile.arguments, arguments.cmd),
+        argv=command,
         terminal="pipe",
         stdin="closed",
         lifecycle="foreground",
@@ -356,7 +474,10 @@ def _binding(
             document, include_preview=True
         ),
         nonzero_exit_fails=True,
-        preflight_codes=frozenset({"native_process_plan_mismatch", "product_workspace_mismatch"}),
+        preflight_codes=frozenset(
+            {"native_process_plan_mismatch", "product_workspace_mismatch"}
+            | _SANDBOX_PREFLIGHT_CODES
+        ),
     )
 
 

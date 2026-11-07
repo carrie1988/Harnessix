@@ -19,6 +19,10 @@ related_tests:
   - tests/sandbox/test_native_probe.py
   - tests/product_config/test_native_process_profile.py
   - tests/execution/test_plans.py
+  - tests/sandbox/test_bubblewrap.py
+  - tests/sandbox/test_seatbelt.py
+  - tests/product_config/test_native_sandbox_profile.py
+  - tests/product_config/test_native_sandbox_action.py
 supersedes: []
 ---
 
@@ -48,8 +52,8 @@ supersedes: []
 | 步骤 | 内容 | 状态 |
 |---|---|---|
 | 1 | 探测 v2 与合同：Profile 字段、`SandboxBinding` 规则、沙箱策略推导、环境变量白名单、保证清单 | 已完成 |
-| 2 | bubblewrap 参数翻译与执行，247 宿主机验证 | 未开始 |
-| 3 | Seatbelt 参数翻译与执行（含已配置代理端口拦截） | 未开始 |
+| 2 | bubblewrap 参数翻译与执行，247 宿主机验证 | 代码与本机测试完成；247 上真实 bubblewrap 端到端用例待运行（第 12 节） |
+| 3 | Seatbelt 参数翻译与执行（含已配置代理端口拦截） | 代码与本机单元测试完成；真实 Seatbelt 端到端用例需在普通终端运行（第 12 节） |
 | 4 | 审批策略 v2、沙箱外命令、零配置装配、诊断 | 未开始 |
 | 5 | 三环境验收；回写 ADR 0066 第 2 版与模块设计 | 未开始 |
 
@@ -59,8 +63,9 @@ supersedes: []
 |---|---|---|
 | 探测 | 判断本机后端是否可用，给出身份、原因码与保证项 | `sandbox/native_probe.py` |
 | 策略 | 从本机事实推导一个工作区的完整边界与命令环境，平台无关 | `sandbox/native_policy.py`、`sandbox/native_contracts.py` |
-| 翻译（第 2、3 步） | 把策略翻译成 `bwrap` 参数或 Seatbelt 策略加 `-D` 参数 | 待新增 |
-| 装配与执行（第 4 步） | 零配置生成 Profile，绑定执行计划，经现有宿主执行器运行 | `product_config/native_process.py`、`host_process_action.py` |
+| 翻译 | 把策略翻译成 `bwrap` 参数，或 Seatbelt 策略文本加 `-D` 参数 | `sandbox/bubblewrap.py`、`sandbox/seatbelt.py` |
+| 证明与启动准备 | 探测、推导策略、绑定执行计划；启动前复核后端身份、清空私有 TMPDIR、查找 `.env` | `product_config/native_sandbox.py` |
+| 装配与执行 | 显式配置的 bubblewrap Profile 已接入；零配置在第 4 步 | `product_config/native_process.py`、`host_process_action.py` |
 | 审批（第 4 步） | 沙箱内命令由策略直接放行，沙箱外命令逐条批准 | `trusted_actions/policy.py` |
 
 策略层只做确定性推导，不读写文件系统；采集本机事实与执行命令都放在边缘，便于测试和审计。
@@ -70,7 +75,16 @@ supersedes: []
 1. 启动时探测后端，得到 `HostSandboxProbeV2`。
 2. 采集本机事实：HOME、工作区、Git 目录、Harnessix 状态与配置路径、代理端口、私有目录。
 3. 由本机事实推导 `NativeSandboxPolicy`，它的摘要计入执行计划的 `SandboxBindingV2.profile_digest`。
-4. 每条命令按计划翻译成后端参数（第 2、3 步），由 POSIX Process Owner 监管执行。
+4. 每条命令启动前：复核后端可执行文件身份，清空私有 TMPDIR，查找工作区内的 `.env` 文件，生成完整 argv，然后由 POSIX Process Owner 监管执行。
+
+bubblewrap 的挂载顺序决定覆盖关系，后挂载的覆盖先挂载的：
+1. `--ro-bind / /`；
+2. 新的 `/dev`、`/proc`；
+3. 私有 tmpfs 覆盖 `/tmp`、`/run`；
+4. 可写目录 `--bind`；
+5. `.git` 以 `--ro-bind` 覆盖为只读；
+6. 拒读目录用空只读目录覆盖，拒读文件与 `.env` 用 `/dev/null` 覆盖；
+7. `--chdir` 到工作区。
 
 ## 6. 接口设计
 
@@ -82,6 +96,11 @@ supersedes: []
 | `loopback_proxy_ports(urls)`、`environment_proxy_urls`、`macos_system_proxy_urls` | 代理设置 → 本机回环代理端口 |
 | `sandbox_environment(...)`、`host_environment(...)` | 启动环境、私有目录、预设 → 沙箱内或沙箱外命令的环境 |
 | `sandbox_reserved_environment_problem(name)` | 变量名 → 是否由 Harnessix 管理（Profile 预设不得覆盖） |
+| `bubblewrap_argv(policy, executable=…, command=…, masks=…, env_files=…, hidden_roots=…)` | 策略与遮盖对象 → 完整 argv；超出 128 项时报 `sandbox_policy_too_large` 或 `workspace_secret_files_unmaskable` |
+| `workspace_env_files(workspace, git=…)` | 工作区 → 需遮盖的 `.env` 文件 |
+| `seatbelt_policy(policy)`、`seatbelt_argv(policy, command=…)` | 策略 → Seatbelt 策略文本与 `-D` 参数、完整 argv |
+| `configured_proxy_ports(environ, runner)` | App Server 环境与 `scutil --proxy` → 需拦截的本机代理端口 |
+| `attest_native_process_profile(…, site=…, secret_names=…, sandbox_probe=…)` | 原生 Profile 与宿主位置 → 原因码与证明；沙箱后端新增 `site` 参数 |
 
 ## 7. 数据结构与领域契约
 
@@ -97,12 +116,20 @@ supersedes: []
 - 探测中的任何异常都折算为不可用原因码，不抛到启动流程；预检有 10 秒超时。
 - 推导出的策略不合法时报 `sandbox_root_overlaps_denied` 或 `sandbox_path_invalid`，命令工具失败关闭。
 - 新后端接入执行器之前，`attest_native_process_profile` 报 `native_backend_unsupported` 并省略工具，绝不按外部边界执行。
-- 执行期的超时、取消、重启对账沿用 POSIX Process Owner（第 2、3 步接入）。
+- 执行期的超时、取消、重启对账沿用 POSIX Process Owner。
+- 启动准备失败时命令不执行，公开结果为 `failed`、`process_preflight_failed`（沿用现有公开错误码，不扩大公开合同）。这类失败包括：后端身份漂移、私有目录无法准备、参数超限、`.env` 无法完整遮盖。
+  - 为此，共享宿主执行器 `HostProcessActionExecutor` 把派生 `ProcessSpec` 的调用移进与启动相同的失败判定。
+  - 之前这类异常会被记为“效果未知”。
+- Seatbelt 在证明阶段用将要执行的同一份策略运行一次 `/usr/bin/true`。系统拒绝策略时报 `seatbelt_preflight_failed`，整体省略工具，避免每条命令都失败。
+- bubblewrap 在执行命令前失败时，报错进入命令输出，结果记为非零退出。是否用 `--json-status-fd` 区分“后端失败”与“命令失败”，在第 5 步验收时决定。
 
 ## 9. 持久化、事务与数据流程
 
-- 第 1 步不新增持久化。策略摘要进入执行计划后，随现有计划与路由账本持久化。
-- 私有缓存目录（ADR 0111 第 2.3 节）在第 2、3 步创建，位于用户缓存目录，不在 Harnessix 状态库内。
+- 不新增持久化。策略摘要进入执行计划后，随现有计划与路由账本持久化。
+- 私有目录在每条命令启动前按需创建，位于用户缓存目录，不在 Harnessix 状态库内：
+  - Linux 为 `${XDG_CACHE_HOME:-~/.cache}/harnessix/sandbox/<工作区摘要>/`，macOS 为 `~/Library/Caches/harnessix/sandbox/<工作区摘要>/`；
+  - `tmp/` 每条命令前清空，`cache/` 跨会话保留，`cache/.empty` 用作拒读目录的遮盖源。
+- 私有目录路径按工作区固定、不随启动变化，因此重启后旧计划仍能按原绑定对账。产品按状态目录持有单一运行锁，同一工作区不会有两个 App Server 同时使用它。
 
 ## 10. 安全、权限与信任边界
 
@@ -110,6 +137,18 @@ supersedes: []
 - 可写目录与拒读清单冲突时失败关闭。
 - 命令环境只继承白名单内的变量，模型凭据与 `HARNESSIX_*` 永不继承；代理变量只给沙箱外命令。
 - 可执行文件只查固定路径，不受 PATH 劫持。
+- Seatbelt 策略文本只由代码生成的固定片段和参数名组成，路径一律经 `-D` 参数传入，路径中的任何字符都不能改变策略结构。端口是经合同校验的整数。
+- Seatbelt 规则要点：
+  - 默认拒绝；整机可读，拒读清单覆盖；只放行可写目录和 `/dev/null` 等设备。
+  - 信号与进程信息只限同一沙箱。
+  - Mach 服务只放行名字解析、偏好、日志、临时目录查询等最小清单，不含钥匙串与 LaunchServices。
+  - 网络放行宿主回环，再单独拒绝已配置的代理端口；Unix 套接字只限私有 TMPDIR。
+  - `.env` 规则只对普通文件生效。
+- 工作区 `.env` 判定与读工具一致（`.env` 或 `.env.*`，大小写不敏感），但只遮盖文件。名为 `.env` 的虚拟环境目录不遮盖，否则会破坏常见的 Python 项目。
+- 查找 `.env` 时调用宿主 Git：
+  - 固定忽略全局与系统配置，关闭 fsmonitor 与可选锁；
+  - 只运行 `ls-files --cached` 与 `status --ignored=matching --untracked-files=all`，不执行钩子；
+  - 整体被忽略的目录（如 `node_modules/`）只列一项，不深入其内部。
 
 ## 11. 可观测与错误分类
 
@@ -122,7 +161,10 @@ supersedes: []
 | `seatbelt_preflight_failed`、`bubblewrap_preflight_failed` | 预检失败 |
 | `bubblewrap_namespaces_denied` | 系统不允许创建所需命名空间 |
 | `sandbox_root_overlaps_denied`、`sandbox_path_invalid` | 策略推导失败 |
-| `native_backend_unsupported` | 后端尚未接入执行器 |
+| `native_backend_unsupported` | 后端尚未接入执行器（当前：Seatbelt、`host`） |
+| `native_sandbox_site_unavailable` | 调用方没有提供工作区位置（例如诊断时未指定工作区） |
+| `sandbox_backend_changed`、`sandbox_policy_too_large`、`workspace_secret_files_unmaskable` | 启动准备失败；公开结果为 `process_preflight_failed` |
+| `seatbelt_preflight_failed`（证明阶段） | 系统拒绝生成的 Seatbelt 策略；省略工具 |
 
 ## 12. 测试与验证
 
@@ -137,7 +179,17 @@ supersedes: []
 - 本机实测：
   - `sandbox_check` 在本会话中返回 1；
   - 嵌套运行 `sandbox-exec` 退出码为 71，报 `sandbox_apply: Operation not permitted`。
-- 247 实测：以 `setpriv` 降权为 `nobody` 后，bubblewrap 加 `--unshare-all` 运行成功。
+- 247 实测（2026-11-07，以 `setpriv` 降权为 `nobody`，bubblewrap 0.6.1）：
+  - 手工按第 5 节的挂载顺序运行：`~/.ssh` 被遮成空目录，工作区 `.env` 读写都被拒；工作区可写，`.git` 与 `/etc` 只读；`/tmp` 私有可写，`/run` 为空；
+  - 回环可用，外网连接返回 ENETUNREACH；PID 命名空间内只有 4 个进程；Python 多进程锁正常。
+  - 在 `python:3.11-slim` 临时容器中，root 与 `nobody` 运行 bubblewrap 都报 `No permissions to create new namespace…`，分类为 `bubblewrap_namespaces_denied`；容器以 `--rm` 运行，用完已删除。
+- 第 2 步测试：
+  - [`test_bubblewrap.py`](../../tests/sandbox/test_bubblewrap.py)：参数翻译与顺序、超限、遮盖对象、私有目录、`.env` 查找；
+  - [`test_native_sandbox_profile.py`](../../tests/product_config/test_native_sandbox_profile.py)：证明、计划绑定、资源声明、身份漂移；
+  - [`test_seatbelt.py`](../../tests/sandbox/test_seatbelt.py)：策略结构、参数化（路径不进入策略文本）、规则顺序、参数上限；
+  - [`test_native_sandbox_action.py`](../../tests/product_config/test_native_sandbox_action.py)：真实后端端到端，Linux 跑 bubblewrap、macOS 跑 Seatbelt，按后端核对网络边界。另有一项直接运行生成的策略，策略被系统拒绝时给出后端原始报错。
+  - 本会话本身运行在 Seatbelt 中，嵌套被系统拒绝，这些用例自动跳过（原因码 `seatbelt_nested_unavailable`）。需由用户在普通终端运行。
+  - 本机：除需要真实 bubblewrap 的 4 项外全部通过；这 4 项待在 247 以 `nobody` 身份运行（`--basetemp` 设在 `/data/harnessix/sandbox-dev/` 下，避免工作区落在被私有 tmpfs 覆盖的 `/tmp`）。
 
 ## 13. 源码映射
 
@@ -149,6 +201,10 @@ supersedes: []
 | Profile 合同 | [`action_contracts.py`](../../src/harnessix/product_config/action_contracts.py) |
 | 外部边界证明的后端守卫 | [`native_process.py`](../../src/harnessix/product_config/native_process.py) |
 | `SandboxBinding` 规则 | [`execution/contracts.py`](../../src/harnessix/execution/contracts.py) |
+| bubblewrap 翻译、遮盖与 `.env` 查找 | [`bubblewrap.py`](../../src/harnessix/sandbox/bubblewrap.py) |
+| 沙箱证明与启动准备 | [`native_sandbox.py`](../../src/harnessix/product_config/native_sandbox.py) |
+| 启动准备失败的效果判定 | [`host_process_action.py`](../../src/harnessix/product_config/host_process_action.py) |
+| Seatbelt 策略翻译 | [`seatbelt.py`](../../src/harnessix/sandbox/seatbelt.py) |
 
 ## 14. 部署、兼容与回退
 
@@ -160,5 +216,8 @@ supersedes: []
 ## 15. 风险与取舍
 
 - 拒读清单需要持续维护；清单之外的文件可被读取（ADR 0111 第 4 节）。
-- bubblewrap 预检的报错分类依赖报错文本，第 2 步要在命名空间被拒的容器内实测补全。
-- 参数数量受 `ProcessSpec` 128 项上限约束，第 2 步实测常见机器上的余量。
+- bubblewrap 预检的报错分类依赖报错文本；已用真实报错验证。
+- 参数数量受 `ProcessSpec` 128 项上限约束：固定部分约 40 项，每个可写目录、遮盖对象各占 3 项。拒读清单只遮盖实际存在的路径，常见机器余量充足；工作区 `.env` 超过余量时拒绝执行。
+- 工作区位于 `/tmp` 之下时，可写目录在私有 tmpfs 之后挂载，仍然可见。但位于 `/tmp` 之下的 HOME 等其他路径会被私有 tmpfs 遮住。
+- 非 Git 工作区的 `.env` 查找跳过常见依赖与构建目录、只查 8 层以内，更深处的 `.env` 不保证遮盖，如实声明。
+- Seatbelt 的操作名、Mach 服务清单与 Unix 套接字过滤语法尚未在真实系统上验证。若被系统拒绝，证明阶段会失败关闭；之后按普通终端的验收结果调整。

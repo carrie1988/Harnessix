@@ -30,6 +30,8 @@ related_tests:
   - tests/product_config/test_process_action.py
   - tests/sandbox/test_native_policy.py
   - tests/sandbox/test_native_probe.py
+  - tests/sandbox/test_bubblewrap.py
+  - tests/sandbox/test_seatbelt.py
 supersedes: []
 ---
 
@@ -49,7 +51,18 @@ supersedes: []
   - 只查固定路径的 `sandbox-exec`、`bwrap`；
   - 识别 Seatbelt 嵌套；
   - 区分 bubblewrap 命名空间被拒与其他预检失败。
-- 本步不含执行器：Seatbelt 与 bubblewrap 的参数翻译、零配置装配及审批策略在后续步骤落地。进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
+- 新增 [`bubblewrap.py`](../../src/harnessix/sandbox/bubblewrap.py)（第 2 步）：
+  - 按固定挂载顺序把策略翻译成 `bwrap` 参数：只读根 → 新 `/dev`、`/proc` → 私有 `/tmp`、`/run` → 可写目录 → `.git` 只读 → 拒读遮盖；
+  - 只遮盖实际存在的拒读路径，符号链接按真实目标遮盖；
+  - 用 `git ls-files` 与 `git status --ignored=matching` 查找工作区 `.env` 文件，非 Git 工作区有界遍历；
+  - 超出 `ProcessSpec` 的 128 项参数上限时失败关闭。
+- 新增 [`seatbelt.py`](../../src/harnessix/sandbox/seatbelt.py)（第 3 步）：
+  - 生成 Seatbelt 策略文本，路径一律经 `-D` 参数传入；
+  - 默认拒绝，整机可读并由拒读清单覆盖，写入只限可写目录，`.git` 只读；
+  - `.env` 规则只对普通文件生效；
+  - 放行宿主回环，但拒绝已配置的代理端口；
+  - Mach 服务只放行最小清单。
+- 尚未落地：零配置装配与审批策略。进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
 ## 1. 模块摘要
 

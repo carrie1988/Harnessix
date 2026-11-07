@@ -38,6 +38,7 @@ from harnessix.product_config.native_process import (
     NativeProcessProfileProbeResult,
     probe_native_process_profile,
 )
+from harnessix.product_config.native_sandbox import NativeSandboxSite
 from harnessix.product_config.process_profile import (
     ProductProcessProfileProbeResult,
     probe_product_process_profile,
@@ -149,6 +150,7 @@ async def _open_action_dependencies(
     secrets: SecretProvider,
     *configs: ProductActionConfigV1,
     output_redaction: OutputRedactionSource | None = None,
+    workspace_root: Path | None = None,
 ) -> AsyncIterator[_ProductActionDependencies]:
     """在单Owner窗口内打开Store、Process Supervisor并冻结Profile探测。"""
 
@@ -198,7 +200,16 @@ async def _open_action_dependencies(
             )
             probe_cache = dict(zip(process_profiles, results, strict=True))
         native_probe_cache = {
-            digest: probe_native_process_profile(profile, supervisor, environ=os.environ)
+            digest: probe_native_process_profile(
+                profile,
+                supervisor,
+                environ=os.environ,
+                site=(
+                    NativeSandboxSite(workspace_root=workspace_root, state_root=state_root)
+                    if workspace_root is not None
+                    else None
+                ),
+            )
             for digest, profile in native_profiles.items()
         }
         yield _ProductActionDependencies(
@@ -269,6 +280,7 @@ async def open_default_product_action_runtime(
                 checked_recovery,
                 checked_config,
                 output_redaction=output_redaction,
+                workspace_root=workspace_root,
             ) as dependencies,
             AsyncExitStack() as protection,
         ):

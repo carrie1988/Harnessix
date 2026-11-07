@@ -140,6 +140,13 @@ _DEFAULT_PROXY_PORTS = {
 }
 
 
+def is_workspace_env_file(name: str) -> bool:
+    """与读工具同一判定（`.env`或`.env.*`，大小写不敏感）；只用于文件，`.env`虚拟环境目录不受影响。"""
+
+    folded = name.casefold()
+    return folded == ".env" or folded.startswith(".env.")
+
+
 def sandbox_reserved_environment_problem(name: str) -> str | None:
     """沙箱与沙箱外命令的Profile预设不得覆盖由Harnessix设置的变量。"""
 

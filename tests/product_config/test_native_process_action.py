@@ -110,13 +110,17 @@ async def _native_case(
     root: Path,
     cmd: str,
     profile: ProductNativeProcessProfile | None = None,
+    **probe_options: Any,
 ) -> AsyncIterator[_NativeCase]:
     workspace = root / "workspace"
-    workspace.mkdir()
+    workspace.mkdir(exist_ok=True)
     (workspace / "source.txt").write_text("base\n")
     profile = profile or native_profile()
     async with PosixProcessSupervisor(root / "owner") as supervisor:
-        probe = probe_native_process_profile(profile, supervisor, environ=_ASSERTED)
+        options = {"environ": _ASSERTED} | probe_options
+        if callable(options.get("site")):
+            options["site"] = options["site"](workspace)
+        probe = probe_native_process_profile(profile, supervisor, **options)
         assert probe.verified is not None
         with ExitStack() as cleanup:
             sessions = SQLiteSessionStore(root / "sessions.db")

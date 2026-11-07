@@ -167,9 +167,10 @@ class HostProcessActionExecutor:
         binding = self.binding
         checked = binding.check_arguments(arguments)
         binding.validate_route(route, checked)
-        spec = binding.process_spec(route, checked)
         checkpoint = self._router.approval(route.execution.plan_id)
         try:
+            # 派生ProcessSpec可能需要启动前准备（如原生沙箱），其失败同样按Lease是否存在判定效果。
+            spec = binding.process_spec(route, checked)
             lease = await binding.supervisor.run(
                 route.execution,
                 spec,

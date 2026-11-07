@@ -108,6 +108,8 @@ related_tests:
   - tests/product_config/test_action_recovery.py
   - tests/product_config/test_native_process_profile.py
   - tests/product_config/test_native_process_action.py
+  - tests/product_config/test_native_sandbox_profile.py
+  - tests/product_config/test_native_sandbox_action.py
 supersedes: []
 ---
 
@@ -116,7 +118,16 @@ supersedes: []
 - **合同扩展**：`ProductNativeProcessProfile.backend` 增加 `seatbelt`、`bubblewrap`（本机沙箱）与 `host`（逐条批准的沙箱外命令，ADR 0113）；`workspace_mode` 增加 `read_only`；新增 `write_roots` 与 `allow_workspace_env_files`。
   - 新字段取默认值时不序列化，外部边界 Profile 与已有 Action 配置的摘要不变。
   - 沙箱专属字段只允许沙箱后端使用；非外部边界后端的环境预设不得覆盖 `HOME`、临时目录、`XDG_*` 与缓存变量。
-- **尚未接线**：新后端接入执行器之前，`attest_native_process_profile` 一律报 `native_backend_unsupported` 并省略工具，绝不按外部边界执行。
+- **bubblewrap 已接线**（第 2 步）：
+  - [`native_sandbox.py`](../../src/harnessix/product_config/native_sandbox.py) 用启动时的工作区与状态目录（`NativeSandboxSite`）探测后端、推导策略，并把执行计划绑定为 `host_sandboxed/bubblewrap/none`。
+  - 每条命令启动前：复核后端身份，清空私有 TMPDIR，遮盖工作区 `.env`。
+  - 资源声明：工作区读或写、`write_roots` 写；断网时不声明网络资源。
+  - 启动准备失败按 `process_preflight_failed` 记为未执行：共享宿主执行器现在把派生 `ProcessSpec` 纳入与启动相同的失败判定。
+- **Seatbelt 已接线**（第 3 步）：
+  - 证明阶段读取 App Server 环境与 `scutil --proxy` 中指向本机的代理端口，计入策略；
+  - 用将要执行的同一份策略试运行一次，系统拒绝时报 `seatbelt_preflight_failed` 并省略工具；
+  - 放行宿主回环，执行计划如实记为 `host_sandboxed/seatbelt/full`，资源声明包含网络连接。
+- **尚未接线**：`host`（第 4 步）报 `native_backend_unsupported` 并省略工具，绝不按外部边界执行。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
 ## 当前增量：外部边界原生命令Profile（ADR 0121）
