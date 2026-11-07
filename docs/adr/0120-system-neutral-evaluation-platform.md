@@ -136,6 +136,7 @@ flowchart LR
 | E0c Harnessix（外部边界Profile，代码3340926f） | `e0c-3340926f`（`e0c-bbafb003`已作废，见DEVIATIONS） | Oracle 5/5；Harnessix官方判分解决2/5（django-10880、sympy-11618），主指标1/5（10880以预算耗尽结束，按规则记失败）；官方与奖励判分10/10一致；逐步记录5条；读回2个实验、10个试次、70个分数、742步 |
 | E0c后修复回归 | 0d0762e4对3340926f，delivery、trusted_actions、product_config、evalkit、integrations | 失败集合相同，新增4个通过（即新增用例） |
 | 本机回环测试 | 普通终端，代码c1498c0d | Langfuse联网导出与模型端口转发两个回环测试2/2通过 |
+| 推送前全量回归 | 分支d4ce5fc8对GitHub main 01e5e888 | 新增失败仅为上述两个回环测试（会话沙箱限制，普通终端已通过）；修复4个SBOM相关失败；通过数多168 |
 | 矩阵复跑（ADR 0123） | `matrix-7412914f`（`matrix-1e542d7f`未通过，见下） | 5个场景断言通过；Provider失败场景为`infra_error / provider_unavailable`，原生错误码`provider_provider_internal`；读回1个实验、5个试次、20个分数；付费调用0；容器清理已核对 |
 
 ### 7.3 发现与待决事项
