@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -420,6 +421,21 @@ def test_integer_metadata_may_come_back_as_canonical_strings() -> None:
                 for key, value in item["metadata"].items()
             }
     assert verify(export, serve(experiments, items)).verified_trials == 4
+
+
+def test_numeric_scores_tolerate_double_precision_round_trip() -> None:
+    """E0c实测：Langfuse把36.345758读回为36.345758000000004，不能判为证据不符。"""
+    export = build_export(report())
+    experiments, items = remote_view(export)
+    perturbed = 0
+    for values in items.values():
+        for item in values:
+            for score in item["scores"]:
+                if score["dataType"] == "NUMERIC" and score["value"]:
+                    score["value"] = math.nextafter(score["value"], math.inf)
+                    perturbed += 1
+    assert perturbed
+    assert verify(export, serve(experiments, items)).verified_scores == len(export.scores)
 
 
 def test_pending_data_times_out_with_reads_only() -> None:

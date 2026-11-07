@@ -119,11 +119,20 @@ def _verify_metadata(attrs: dict[str, Any], metadata: Any) -> None:
                 raise _mismatch()
 
 
+def _score_value_matches(data_type: str, expected: Any, actual: Any) -> bool:
+    if data_type != "NUMERIC":
+        return bool(actual == expected)
+    # Langfuse以双精度存取数值评分，读回可能有末位舍入差（如36.345758→36.345758000000004）。
+    return type(actual) in (int, float) and math.isclose(
+        actual, expected, rel_tol=1e-9, abs_tol=1e-12
+    )
+
+
 def _verify_score(score: dict[str, Any], source: dict[str, Any]) -> None:
-    for key in ("name", "dataType", "value", "environment"):
+    for key in ("name", "dataType", "environment"):
         if score.get(key) != source[key]:
             raise _mismatch()
-    if source["dataType"] == "NUMERIC" and type(score.get("value")) not in (int, float):
+    if not _score_value_matches(source["dataType"], source["value"], score.get("value")):
         raise _mismatch()
     subject = score.get("subject")
     expected = {"kind": "observation", "id": source["observationId"], "traceId": source["traceId"]}
