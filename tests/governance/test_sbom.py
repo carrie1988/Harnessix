@@ -40,14 +40,15 @@ def test_sbom_graph_and_archive_identity_matches_all_locked_inputs() -> None:
     identities = {sbom["metadata"]["component"]["bom-ref"]} | {
         item["bom-ref"] for item in sbom["components"]
     }
-    assert len(identities) == 74
+    # eecf8d1c加入google-re2（34个分发文件），锁定依赖由74项变为75项。
+    assert len(identities) == 75
     assert identities == {item["ref"] for item in sbom["dependencies"]}
     assert all(set(item["dependsOn"]) <= identities for item in sbom["dependencies"])
     for item in sbom["components"]:
         assert item["purl"] == item["bom-ref"] == f"pkg:pypi/{item['name']}@{item['version']}"
         assert "hashes" not in item and "scope" not in item
         assert item["externalReferences"]
-    assert sum(len(item["externalReferences"]) for item in sbom["components"]) == 777
+    assert sum(len(item["externalReferences"]) for item in sbom["components"]) == 811
 
 
 @pytest.mark.parametrize(
