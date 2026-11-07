@@ -136,12 +136,15 @@ flowchart LR
 | E0c Harnessix（外部边界Profile，代码3340926f） | `e0c-3340926f`（`e0c-bbafb003`已作废，见DEVIATIONS） | Oracle 5/5；Harnessix官方判分解决2/5（django-10880、sympy-11618），主指标1/5（10880以预算耗尽结束，按规则记失败）；官方与奖励判分10/10一致；逐步记录5条；读回2个实验、10个试次、70个分数、742步 |
 | E0c后修复回归 | 0d0762e4对3340926f，delivery、trusted_actions、product_config、evalkit、integrations | 失败集合相同，新增4个通过（即新增用例） |
 | 本机回环测试 | 普通终端，代码c1498c0d | Langfuse联网导出与模型端口转发两个回环测试2/2通过 |
+| 矩阵复跑（ADR 0123） | `matrix-7412914f`（`matrix-1e542d7f`未通过，见下） | 5个场景断言通过；Provider失败场景为`infra_error / provider_unavailable`，原生错误码`provider_provider_internal`；读回1个实验、5个试次、20个分数；付费调用0；容器清理已核对 |
 
 ### 7.3 发现与待决事项
 
 - **服务方故障归类（已决定）。** 一次请求的用量不完整时，产品拒绝再发付费请求，原先以`budget_exceeded`结束，
   服务方503因此呈现为预算类故障。用户决定停止规则不变、原因如实标注，评测记为基础设施失败，
   见[ADR 0123](0123-provider-service-failure-attribution.md)；矩阵预期随之更新。
+  首次在1e542d7f上复跑矩阵仍为`budget_exceeded`：开启上下文压缩时，请求额度检查是第三个停止点，先于另两处触发，
+  而单元测试未开启压缩，没有覆盖到；7412914f把归因抽成共用函数，三处统一调用，并补了开启压缩的测试，复跑通过。
 - **本机回环测试。** 会话沙箱内回环HTTP返回EPERM，两个回环测试改在普通终端运行，2026-11-07通过。
 - **任务镜像文件权限（E0c发现，已修复）。** django-11133、sympy-13031镜像内全部`.py`为0777，
   Workspace Patch只支持0644/0755。审批预览阶段把这一确定性拒绝误记为未知效果，中断整轮，两题因此为空补丁。
