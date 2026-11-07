@@ -158,7 +158,9 @@ def _check_matrix(report: EvalRunReport, job: Path) -> None:
         "02-protocol-task-fail": ("completed", "completed", "failed"),
         "03-protocol-approval": ("system_error", "intervention_required", "failed"),
         "04-protocol-deadline": ("timeout", "deadline_exceeded", "failed"),
-        "05-protocol-provider-fail": ("system_error", "provider_failed", "failed"),
+        # 整合后的产品在上次尝试未完整上报用量时拒绝再发付费请求（runtime.py budget_exceeded），
+        # 503之后不重试，Turn归因为budget；矩阵按产品实际语义核对并要求错误码一致。
+        "05-protocol-provider-fail": ("system_error", "budget_exhausted", "failed"),
     }
     summary = report.summary[0]
     if (summary.scheduled, summary.passed) != (5, 1):
@@ -167,6 +169,10 @@ def _check_matrix(report: EvalRunReport, job: Path) -> None:
         observed = (trial.status, trial.reason, trial_outcome(trial, HARBOR_REWARD))
         if observed != expected.pop(trial.item_id):
             raise RuntimeError("原生故障归因与受控场景不一致")
+        if trial.item_id == "05-protocol-provider-fail" and (
+            trial.system_refs.get("native_failure_code") != "budget_exceeded"
+        ):
+            raise RuntimeError("Provider失败场景的原生错误码与产品语义不一致")
         if trial.executor_refs.get("verifier_mode") != "separate" or trial.cost.amount is not None:
             raise RuntimeError("独立验收或未知费用语义丢失")
     if expected:
