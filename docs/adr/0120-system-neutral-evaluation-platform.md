@@ -1,13 +1,14 @@
 ---
 doc_type: adr
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners: [core]
 modules: [evals, observability]
 related_adrs:
   - docs/adr/0110-evaluation-integrations.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
+  - docs/adr/0121-external-boundary-native-process-profile.md
 related_tests:
   - tests/evalkit/test_contracts.py
   - tests/evalkit/test_harbor.py
@@ -100,3 +101,48 @@ flowchart LR
 - 通用性：一个服务类系统已冻结的Gold与回答快照导入为运行报告，经判分、Langfuse写入和读回核验；
   不调用该系统服务或云模型，验收在该系统仓库内完成。
 - 回归：ADR 0110的五场景矩阵和Langfuse读回在新路径上重跑并另立证据。
+
+## 7. 实施记录与验收（第3版，2026-11-07）
+
+### 7.1 实施中补充的决策
+
+- **逐步记录来源。** mini-swe-agent取轨迹；Harnessix取协议驱动导出的本Turn公开事件（作为试次制品登记摘要），
+  不读会话库：会话库与发布密钥绑定，密钥目录要求属主一致，离开任务容器后无法验真。
+  工具调用取tool_call与tool_result的完成时刻；模型调用结束于该步用量记录，开始取上一步工具结果完成时刻，
+  与mini-swe-agent相邻消息窗口同一口径，验证测试确认这一窗口完整覆盖真实调用。
+- **读回。** Langfuse v4只保留实验与v2 Observation接口；重发后在合并前会返回逐字相同的重复行，
+  读回接受完全相同的重复，内容不同仍判失败。
+- **Harbor SWE-bench离线条件。** 派生镜像只加入固定版本uv、包与Python下载镜像、托管Python和离线
+  GitHub原始文件镜像的CA；原始文件镜像以每个试次网络内的服务别名提供。奖励判分要求判分报告与奖励一致。
+- **任务版本。** E0c起任务锁定harbor-datasets 37db1088：其判分只删除测试补丁涉及的未跟踪文件，
+  保留智能体新增的源文件（86723674执行`git clean -fd`）。新旧版本之间以Oracle复核衔接。
+- **Harnessix组别。** 任务容器即隔离边界，产品使用外部边界原生命令Profile（[ADR 0121](0121-external-boundary-native-process-profile.md)），
+  安装包与配置模板按内容摘要计入组别配置摘要。
+
+### 7.2 验收结果
+
+| 项 | 证据（247 `/data/harnessix/harbor/runs/`） | 结果 |
+|---|---|---|
+| Langfuse重启存续 | `/data/harnessix/langfuse/acceptance/` | 停启与销毁重建后读回一致 |
+| 五场景矩阵（集成代码e42e3750） | `matrix-e42e3750` | 5个场景断言通过；任务通过1/5；10个容器均为none网络；付费调用0；重发后读回摘要一致 |
+| E0a环境对照 | `e0a-b0c7606b` | Oracle 5/5、Nop 0/5；官方与奖励判分10/10一致；读回2个实验、10个试次、70个分数 |
+| E0b mini-swe-agent | `e0b-4b4e23d4` | 3/5；双判分5/5一致；逐步记录573步读回 |
+| 服务类系统通用性 | 在该系统仓库内验收 | 合成集9题4题通过（与其原指标一致）；云端集通过1、失败1、无效1；读回通过 |
+| 全量回归 | 分支e42e3750对基线f36d87f8 | 新增失败仅为两个需在普通终端运行的本机回环测试，其余失败集合与基线相同 |
+| E0c Harnessix（外部边界Profile，代码3340926f） | `e0c-3340926f`（`e0c-bbafb003`已作废，见DEVIATIONS） | Oracle 5/5；Harnessix官方判分解决2/5（django-10880、sympy-11618），主指标1/5（10880以预算耗尽结束，按规则记失败）；官方与奖励判分10/10一致；逐步记录5条；读回2个实验、10个试次、70个分数、742步 |
+| E0c后修复回归 | 0d0762e4对3340926f，delivery、trusted_actions、product_config、evalkit、integrations | 失败集合相同，新增4个通过（即新增用例） |
+
+### 7.3 发现与待决事项
+
+- **服务方故障归类。** 一次请求的用量不完整时，产品拒绝再发付费请求并以`budget_exceeded`结束；
+  因此服务方503在协议中呈现为预算类故障。矩阵预期已按此行为设定；是否单列服务方故障类别留待产品决定。
+- **本机回环测试。** 会话沙箱内回环HTTP返回EPERM，两个回环测试须在普通终端运行后补记结果。
+- **任务镜像文件权限（E0c发现，已修复）。** django-11133、sympy-13031镜像内全部`.py`为0777，
+  Workspace Patch只支持0644/0755。审批预览阶段把这一确定性拒绝误记为未知效果，中断整轮，两题因此为空补丁。
+  ca51bd75起改为可修正的失败结果；在原任务容器内重放当时的调用，Turn正常结束且工作区不变。
+  补丁是否应保留现有文件的其他权限（涉及ADR 0068事务合同），待产品决定。
+- **数值评分读回（E0c发现，已修复）。** Langfuse按双精度存取，36.345758读回为36.345758000000004，
+  严格相等核对误判不符。0d0762e4起数值评分按相对误差1e-9比较；E0c以修正后的代码对已发送数据只读核验，未重发。
+- **主指标与官方解决数。** 系统未正常结束的试次即使补丁通过官方判分也记失败（django-10880），
+  因此E0c主指标1/5低于官方解决数2/5；两个数在报告中都保留。
+

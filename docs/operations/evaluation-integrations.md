@@ -1,13 +1,14 @@
 ---
 doc_type: deployment-design
 status: current
-version: 4
-code_revision: de1ab2722f91d6109e807617aa1e07c8a502c9e5
+version: 5
+code_revision: bbafb003c5580b14b17edfdd20186057099df46b
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
   - docs/adr/0110-evaluation-integrations.md
   - docs/adr/0120-system-neutral-evaluation-platform.md
+  - docs/adr/0121-external-boundary-native-process-profile.md
 related_tests:
   - tests/evalkit/test_langfuse.py
   - tests/evalkit/test_harbor.py
@@ -259,6 +260,8 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
 
 1. 固定任务：在能访问GitHub的机器上按Harbor注册表引用检出任务，
    `integrations/harbor/swebench_tasks.py lock`记录harbor-datasets提交与逐文件摘要；任务正文不入库。
+   E0自E0c起锁定37db1088：该版判分只删除测试补丁涉及的未跟踪文件，智能体新增的源文件得以保留；
+   E0a、E0b使用的86723674在判分前执行`git clean -fd`，会删掉新增源文件，两版之间以Oracle复核衔接。
 2. 准备任务：在评测主机上`prepare`核对上游文件，要求本机已有原始sweb.eval镜像，
    构建派生镜像（同版本uv、PyPI与Python下载镜像、预装Python、离线镜像CA），任务配置写入派生镜像名。
 3. 离线GitHub原始文件：Harbor的SWE-bench判分用swebench 4.0.3计算测试规格时会下载部分仓库的依赖清单。
@@ -271,10 +274,22 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    环境配置、任务准备收据与代码版本；`pipeline.py run`每个组别一个零重试Job。
 6. 收尾：`pipeline.py finish`导入全部组别、运行官方判分（swebench 5.0.2，离线，本地镜像）、
    以严格奖励判分器生成报告（判分报告缺失或与奖励不一致时不给判定），并写一致性报告。
-7. 逐步记录：mini-swe-agent轨迹用`mini_steps.py`、Harnessix会话库用
-   `integrations/harnessix_eval/steps.py`转为逐步记录，`python -m evalkit export --steps ...`
-   导出为根Observation下的子Observation；读回经`/api/public/v2/observations`逐项核对。
-   默认只导出元数据，正文仅在计划声明完整内容时导出。
+7. 逐步记录：mini-swe-agent轨迹用`mini_steps.py`；Harnessix试次由协议驱动导出本Turn的公开事件
+   （`agent/harnessix-events.jsonl`，作为试次制品登记摘要），`python -m integrations.harnessix_eval
+   export-steps`转为逐步记录。工具调用取tool_call与tool_result完成时刻；模型调用结束于该步用量记录，
+   开始取上一步工具结果完成时刻，与mini-swe-agent相邻消息窗口同一口径，用量只有输入、输出Token。
+   `python -m evalkit export --steps ...`导出为根Observation下的子Observation；读回经
+   `/api/public/v2/observations`逐项核对。默认只导出元数据，正文仅在计划声明完整内容时导出。
+8. Harnessix组别：任务容器即隔离边界，产品使用外部边界原生命令Profile（ADR 0121），
+   适配器`external_boundary`只为App Server进程断言`HARNESSIX_EXTERNAL_BOUNDARY=1`，审批模式auto。
+   - 安装包：`build_bundle.py --python-dir`在派生任务镜像容器内复制uv托管的Python（uv按其内置摘要核对），
+     按带哈希的依赖清单（`uv export --frozen --no-dev --no-emit-project --extra openai`，含所选Provider的可选依赖，
+     缺失时App Server启动预检报`product_dependency_missing`）与产品wheel安装，收据记录摘要。
+   - 协议驱动在App Server未能启动时仍写出完整摘要（`server_unavailable`），解析器判为无效试次，不计入智能体失败；
+     适配器遇到缺失或无效的摘要不抛错，避免Harbor中断整个Job。
+   - 配置：`harnessix_configs.py`按第一阶段本地组别生成Provider与命令Profile配置（同一模型、关闭思考、
+     同一环境预设与900秒命令期限），模型经容器回环端口转发。
+   - 组别规格的`artifacts`列出安装包与配置模板，`freeze`按内容摘要计入组别配置摘要。
 
 内置智能体使用`evidence_agents.py`中的同名增强版：结束时导出相对运行前HEAD的补丁供官方判分，
 mini-swe-agent离线安装并锁定随附依赖。Harbor运行mini-swe-agent使用其内置mini.yaml模板与公网模式，
