@@ -2,7 +2,7 @@
   "$defs": {
     "ProductNativeProcessProfile": {
       "additionalProperties": false,
-      "description": "不经容器直接执行命令的Profile（ADR 0121）；隔离由声明的后端提供，本期只有外部边界。",
+      "description": "不经容器直接执行命令的Profile；隔离由声明的后端提供（ADR 0111、0113、0121）。",
       "properties": {
         "spec_version": {
           "const": "harnessix.product-native-process-profile/v1",
@@ -28,7 +28,12 @@
           "type": "string"
         },
         "backend": {
-          "const": "external_boundary",
+          "enum": [
+            "external_boundary",
+            "seatbelt",
+            "bubblewrap",
+            "host"
+          ],
           "title": "Backend",
           "type": "string"
         },
@@ -47,10 +52,27 @@
           "type": "array"
         },
         "workspace_mode": {
-          "const": "read_write",
           "default": "read_write",
+          "enum": [
+            "read_only",
+            "read_write"
+          ],
           "title": "Workspace Mode",
           "type": "string"
+        },
+        "write_roots": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Write Roots",
+          "type": "array"
+        },
+        "allow_workspace_env_files": {
+          "default": false,
+          "title": "Allow Workspace Env Files",
+          "type": "boolean"
         },
         "timeout_seconds": {
           "default": 300,

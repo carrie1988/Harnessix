@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 126
-code_revision: e42e3750a5df79bd0bc59a6c0bf6ebc710db4e01
+version: 127
+code_revision: 4cb9cddd71ebe89e8a996ca3c794b8ac1e102a46
 owners:
   - core
 modules:
@@ -15,6 +15,8 @@ related_adrs:
   - docs/adr/0086-formal-eval-case-adapter-and-recorded-provider-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
   - docs/adr/0121-external-boundary-native-process-profile.md
+  - docs/adr/0111-native-process-sandbox-backends.md
+  - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
   - tests/evals/swebench/test_regex_agent_execution.py
@@ -108,6 +110,14 @@ related_tests:
   - tests/product_config/test_native_process_action.py
 supersedes: []
 ---
+
+## 当前增量：原生 Profile 扩展到本机沙箱（ADR 0111 第 1 步）
+
+- **合同扩展**：`ProductNativeProcessProfile.backend` 增加 `seatbelt`、`bubblewrap`（本机沙箱）与 `host`（逐条批准的沙箱外命令，ADR 0113）；`workspace_mode` 增加 `read_only`；新增 `write_roots` 与 `allow_workspace_env_files`。
+  - 新字段取默认值时不序列化，外部边界 Profile 与已有 Action 配置的摘要不变。
+  - 沙箱专属字段只允许沙箱后端使用；非外部边界后端的环境预设不得覆盖 `HOME`、临时目录、`XDG_*` 与缓存变量。
+- **尚未接线**：新后端接入执行器之前，`attest_native_process_profile` 一律报 `native_backend_unsupported` 并省略工具，绝不按外部边界执行。
+- 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
 ## 当前增量：外部边界原生命令Profile（ADR 0121）
 

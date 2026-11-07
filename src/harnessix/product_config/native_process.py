@@ -96,6 +96,9 @@ def attest_native_process_profile(
 ) -> tuple[str, AttestedNativeProcessProfile | None]:
     """外部边界只在POSIX Owner可用且启动方显式断言边界时成立；返回原因码与证明。"""
 
+    if profile.backend != "external_boundary":
+        # 沙箱与沙箱外后端（ADR 0111、0113）在接入执行器前一律诚实省略，绝不按外部边界执行。
+        return "native_backend_unsupported", None
     if owner_capability is None or owner_capability.platform != "posix":
         return "process_owner_unavailable", None
     if environ.get(EXTERNAL_BOUNDARY_ENVIRONMENT) != "1":

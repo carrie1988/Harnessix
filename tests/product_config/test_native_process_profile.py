@@ -73,7 +73,7 @@ def test_profile_digest_binds_environment_and_sorts_presets() -> None:
         {"arguments": ()},
         {"arguments": ("-c", "echo fixed")},
         {"program": "bin/bash"},
-        {"backend": "seatbelt"},
+        {"backend": "landlock"},
         {"environment": (("HTTPS_PROXY", "http://proxy"),)},
         {"environment": (("HARNESSIX_EXTERNAL_BOUNDARY", "1"),)},
         {"description": "two\nlines"},
@@ -83,6 +83,55 @@ def test_profile_digest_binds_environment_and_sorts_presets() -> None:
 def test_profile_rejects_unbounded_or_unfrozen_execution(overrides: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
         native_profile(**overrides)
+
+
+def test_sandbox_backends_accept_sandbox_fields_without_changing_old_digests() -> None:
+    boundary = native_profile()
+    assert set(boundary.model_dump(mode="json")) >= {"workspace_mode"}
+    assert "write_roots" not in boundary.model_dump(mode="json")
+    assert "allow_workspace_env_files" not in boundary.model_dump(mode="json")
+    sandboxed = native_profile(
+        backend="bubblewrap",
+        workspace_mode="read_only",
+        write_roots=("/srv/cache/b", "/srv/cache/a"),
+        allow_workspace_env_files=True,
+        environment=(("LANG", "C.UTF-8"),),
+    )
+    assert sandboxed.write_roots == ("/srv/cache/a", "/srv/cache/b")
+    assert ProductNativeProcessProfile.model_validate_json(sandboxed.model_dump_json()) == sandboxed
+    assert native_profile(backend="seatbelt").backend == "seatbelt"
+    assert native_profile(backend="host").workspace_mode == "read_write"
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"backend": "external_boundary", "workspace_mode": "read_only"},
+        {"backend": "host", "write_roots": ("/srv/cache",)},
+        {"backend": "external_boundary", "allow_workspace_env_files": True},
+        {"backend": "seatbelt", "write_roots": ("/",)},
+        {"backend": "seatbelt", "write_roots": ("relative/path",)},
+        {"backend": "seatbelt", "write_roots": ("/srv/../etc",)},
+        {"backend": "seatbelt", "environment": (("HOME", "/tmp/h"),)},
+        {"backend": "bubblewrap", "environment": (("TMPDIR", "/tmp"),)},
+        {"backend": "host", "environment": (("XDG_CACHE_HOME", "/tmp"),)},
+    ],
+)
+def test_sandbox_only_fields_and_managed_variables_are_guarded(
+    overrides: dict[str, Any],
+) -> None:
+    with pytest.raises(ValueError):
+        native_profile(**overrides)
+
+
+def test_unwired_backends_are_never_attested_as_external_boundary() -> None:
+    capability = probe_posix_process_capability() if os.name == "posix" else None
+    for backend in ("seatbelt", "bubblewrap", "host"):
+        assert attest_native_process_profile(
+            native_profile(backend=backend),
+            capability,
+            environ={EXTERNAL_BOUNDARY_ENVIRONMENT: "1"},
+        ) == ("native_backend_unsupported", None)
 
 
 def test_native_and_container_ids_share_one_namespace(tmp_path: Path) -> None:

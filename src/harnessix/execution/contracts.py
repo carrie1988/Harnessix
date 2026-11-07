@@ -65,6 +65,8 @@ class SandboxBinding(ExecutionContract):
             raise ValueError("host_guarded必须使用host后端")
         if self.level == "container_strong" and self.backend not in {"docker", "podman"}:
             raise ValueError("container_strong必须使用受支持容器后端")
+        if self.level == "host_sandboxed" and self.backend not in {"seatbelt", "bubblewrap"}:
+            raise ValueError("host_sandboxed必须使用Seatbelt或bubblewrap后端")
         return self
 
 

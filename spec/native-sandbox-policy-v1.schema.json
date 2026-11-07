@@ -1,0 +1,102 @@
+{
+  "additionalProperties": false,
+  "description": "一个工作区、一个后端的完整文件与网络边界；后端只把它翻译成各自的参数。\n\n读：整机可读，denied_paths优先；写：只限writable_roots，read_only_roots优先于写。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.native-sandbox-policy/v1",
+      "default": "harnessix.native-sandbox-policy/v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "backend": {
+      "enum": [
+        "seatbelt",
+        "bubblewrap"
+      ],
+      "title": "Backend",
+      "type": "string"
+    },
+    "home": {
+      "title": "Home",
+      "type": "string"
+    },
+    "workspace": {
+      "title": "Workspace",
+      "type": "string"
+    },
+    "workspace_mode": {
+      "enum": [
+        "read_only",
+        "read_write"
+      ],
+      "title": "Workspace Mode",
+      "type": "string"
+    },
+    "private_tmp": {
+      "title": "Private Tmp",
+      "type": "string"
+    },
+    "private_cache": {
+      "title": "Private Cache",
+      "type": "string"
+    },
+    "writable_roots": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 2,
+      "title": "Writable Roots",
+      "type": "array"
+    },
+    "read_only_roots": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "title": "Read Only Roots",
+      "type": "array"
+    },
+    "denied_paths": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Denied Paths",
+      "type": "array"
+    },
+    "deny_workspace_env_files": {
+      "title": "Deny Workspace Env Files",
+      "type": "boolean"
+    },
+    "blocked_loopback_ports": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "maxItems": 16,
+      "title": "Blocked Loopback Ports",
+      "type": "array"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "backend",
+    "home",
+    "workspace",
+    "workspace_mode",
+    "private_tmp",
+    "private_cache",
+    "writable_roots",
+    "denied_paths",
+    "deny_workspace_env_files",
+    "digest"
+  ],
+  "title": "NativeSandboxPolicy",
+  "type": "object"
+}

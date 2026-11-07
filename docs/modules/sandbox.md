@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
+version: 11
+code_revision: 4cb9cddd71ebe89e8a996ca3c794b8ac1e102a46
 owners:
   - core
 modules:
@@ -13,6 +13,8 @@ related_adrs:
   - docs/adr/0067-process-ownership-and-terminal-lifecycle.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0073-mcp-catalog-binding-and-sandbox.md
+  - docs/adr/0111-native-process-sandbox-backends.md
+  - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
 related_tests:
   - tests/sandbox/test_capabilities.py
   - tests/sandbox/test_container.py
@@ -26,10 +28,28 @@ related_tests:
   - tests/integration/test_container_sandbox.py
   - tests/integration/test_product_process_profile.py
   - tests/product_config/test_process_action.py
+  - tests/sandbox/test_native_policy.py
+  - tests/sandbox/test_native_probe.py
 supersedes: []
 ---
 
 # Sandbox模块设计
+
+## 当前增量：原生进程沙箱合同与探测（ADR 0111 第 1 步）
+
+- 新增 [`native_contracts.py`](../../src/harnessix/sandbox/native_contracts.py)：
+  - `harnessix.host-sandbox-probe/v2`：可用性、身份、原因码与保证清单；v1 不变。
+  - `harnessix.native-sandbox-policy/v1`：一个工作区、一个后端的可写目录、`.git` 只读覆盖、拒读路径、`.env*` 开关与 Seatbelt 拦截端口。
+- 新增 [`native_policy.py`](../../src/harnessix/sandbox/native_policy.py)：
+  - 从本机事实确定性推导策略，可写目录与拒读路径冲突时失败关闭；
+  - 识别 worktree 与子模块的 Git 目录；
+  - 解析本机回环代理端口；
+  - 生成沙箱内与沙箱外命令的环境变量白名单。
+- 新增 [`native_probe.py`](../../src/harnessix/sandbox/native_probe.py)：
+  - 只查固定路径的 `sandbox-exec`、`bwrap`；
+  - 识别 Seatbelt 嵌套；
+  - 区分 bubblewrap 命名空间被拒与其他预检失败。
+- 本步不含执行器：Seatbelt 与 bubblewrap 的参数翻译、零配置装配及审批策略在后续步骤落地。进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
 ## 1. 模块摘要
 

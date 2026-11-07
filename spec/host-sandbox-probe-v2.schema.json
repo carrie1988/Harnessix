@@ -1,0 +1,121 @@
+{
+  "additionalProperties": false,
+  "description": "一次探测的结果：后端是否可用、身份、原因码与实际生效的保证项。",
+  "properties": {
+    "spec_version": {
+      "const": "harnessix.host-sandbox-probe/v2",
+      "default": "harnessix.host-sandbox-probe/v2",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "platform": {
+      "enum": [
+        "macos",
+        "linux",
+        "other"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "backend": {
+      "anyOf": [
+        {
+          "enum": [
+            "seatbelt",
+            "bubblewrap"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Backend"
+    },
+    "available": {
+      "title": "Available",
+      "type": "boolean"
+    },
+    "executable": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Executable"
+    },
+    "executable_identity": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Executable Identity"
+    },
+    "backend_version": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Backend Version"
+    },
+    "reason_code": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "guarantees": {
+      "default": [],
+      "items": {
+        "enum": [
+          "credential_paths_denied",
+          "writes_confined",
+          "git_metadata_read_only",
+          "workspace_env_files_denied",
+          "workspace_env_files_masked_at_start",
+          "external_network_blocked",
+          "host_loopback_isolated",
+          "configured_proxy_ports_blocked",
+          "host_unix_sockets_blocked",
+          "common_host_unix_sockets_hidden",
+          "harnessix_process_isolated",
+          "descendants_terminated",
+          "process_group_terminated"
+        ],
+        "type": "string"
+      },
+      "title": "Guarantees",
+      "type": "array"
+    },
+    "digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "platform",
+    "backend",
+    "available",
+    "reason_code",
+    "digest"
+  ],
+  "title": "HostSandboxProbeV2",
+  "type": "object"
+}

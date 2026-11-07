@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 8
-code_revision: 8a814d3b7a09d484c5037080f4aaedaa5f15932a
+version: 9
+code_revision: 4cb9cddd71ebe89e8a996ca3c794b8ac1e102a46
 owners:
   - core
 modules:
@@ -16,6 +16,7 @@ related_adrs:
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0111-native-process-sandbox-backends.md
 related_tests:
   - tests/execution/test_plans.py
   - tests/execution/test_store.py
@@ -30,6 +31,10 @@ supersedes: []
 ---
 
 # Harnessix Code Execution Plan模块设计
+
+## 当前增量：`host_sandboxed` 绑定后端（ADR 0111）
+
+`SandboxBinding` 新增一致性规则：`host_sandboxed` 只能使用 `seatbelt` 或 `bubblewrap` 后端，与 `host_guarded` 只能用 `host`、`container_strong` 只能用 Docker 或 Podman 并列。此前没有代码产生 `host_sandboxed` 绑定，既有计划不受影响。见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
 ## 1. 模块摘要
 

@@ -226,3 +226,30 @@ def test_plan_rejects_environment_and_secret_target_collision(tmp_path: Path) ->
             capabilities=capabilities,
         )
     assert error.value.code == "execution_plan_invalid"
+
+
+@pytest.mark.parametrize(
+    ("level", "backend", "valid"),
+    [
+        ("host_sandboxed", "seatbelt", True),
+        ("host_sandboxed", "bubblewrap", True),
+        ("host_sandboxed", "host", False),
+        ("host_sandboxed", "landlock", False),
+        ("host_guarded", "seatbelt", False),
+    ],
+)
+def test_sandbox_level_binds_supported_native_backends(
+    level: str, backend: str, valid: bool
+) -> None:
+    values = {
+        "level": level,
+        "backend": backend,
+        "backend_version": "1",
+        "network": "none",
+        "capability_digest": "a" * 64,
+    }
+    if valid:
+        assert SandboxBinding.model_validate(values).backend == backend
+    else:
+        with pytest.raises(ValueError):
+            SandboxBinding.model_validate(values)

@@ -278,6 +278,7 @@ from harnessix.protocol.contracts import (
     TurnView,
 )
 from harnessix.sandbox.capabilities import ContainerEngineProbe, HostSandboxProbe
+from harnessix.sandbox.native_contracts import HostSandboxProbeV2, NativeSandboxPolicy
 from harnessix.sandbox.contracts import (
     ContainerCommandSpec,
     ContainerExecutionSpec,
@@ -673,6 +674,12 @@ def generate_specs(output: Path) -> None:
         ExecutionCapabilityEvidenceV2.model_json_schema(),
     )
     write_json(output / "execution-plan-v2.schema.json", ExecutionPlanV2.model_json_schema())
+    write_json(
+        output / "host-sandbox-probe-v2.schema.json", HostSandboxProbeV2.model_json_schema()
+    )
+    write_json(
+        output / "native-sandbox-policy-v1.schema.json", NativeSandboxPolicy.model_json_schema()
+    )
     write_json(
         output / "workspace-stored-record-v2.schema.json", WorkspaceStoredRecord.model_json_schema()
     )

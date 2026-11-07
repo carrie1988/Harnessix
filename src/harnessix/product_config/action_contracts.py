@@ -16,6 +16,11 @@ from harnessix.sandbox.contracts import (
     container_environment_problem,
     container_workspace_path_problem,
 )
+from harnessix.sandbox.native_contracts import (
+    NativeWorkspaceMode,
+    canonical_absolute_path_problem,
+)
+from harnessix.sandbox.native_policy import sandbox_reserved_environment_problem
 from harnessix.tools.contracts import Revision
 from harnessix.workspace.contracts import PlatformKind
 
@@ -25,8 +30,9 @@ SelectorPolicy = Literal["none", "bounded_test_selector", "shell_command"]
 ProductActionConfigSource = Literal["builtin", "file"]
 ProductActionConfigOperation = Literal["loaded", "activated"]
 ProductProcessImageReferenceType = Literal["local_image_id", "repo_digest"]
-# 原生进程后端（ADR 0121）；Seatbelt、bubblewrap等后续加入同一字段。
-NativeProcessBackend = Literal["external_boundary"]
+# 原生进程后端：外部边界（ADR 0121）、本机沙箱（ADR 0111）与逐条批准的沙箱外命令（ADR 0113）。
+NativeProcessBackend = Literal["external_boundary", "seatbelt", "bubblewrap", "host"]
+NATIVE_SANDBOX_BACKENDS = frozenset({"seatbelt", "bubblewrap"})
 
 _IDENTIFIER = r"^[a-z][a-z0-9_-]{0,63}$"
 _EXECUTOR_ID = r"^[a-z][a-z0-9_.-]{0,127}$"
@@ -229,7 +235,7 @@ def build_product_process_profile(
 
 
 class ProductNativeProcessProfile(ProductConfigContract):
-    """不经容器直接执行命令的Profile（ADR 0121）；隔离由声明的后端提供，本期只有外部边界。"""
+    """不经容器直接执行命令的Profile；隔离由声明的后端提供（ADR 0111、0113、0121）。"""
 
     spec_version: Literal["harnessix.product-native-process-profile/v1"] = (
         "harnessix.product-native-process-profile/v1"
@@ -240,8 +246,13 @@ class ProductNativeProcessProfile(ProductConfigContract):
     backend: NativeProcessBackend
     program: str = Field(pattern=_CONTAINER_PROGRAM)
     arguments: tuple[str, ...] = Field(default=(), max_length=128)
-    # read_write：命令直接读写工作区并保留改动（ADR 0121第2节）。
-    workspace_mode: Literal["read_write"] = "read_write"
+    # read_write：命令直接读写工作区并保留改动；read_only只有沙箱后端能强制（ADR 0112）。
+    workspace_mode: NativeWorkspaceMode = "read_write"
+    # 以下两项仅沙箱后端可用；取默认值时不序列化，已有Profile摘要不变（ADR 0111第2.2节）。
+    write_roots: tuple[str, ...] = Field(
+        default=(), max_length=8, exclude_if=lambda value: not value
+    )
+    allow_workspace_env_files: bool = Field(default=False, exclude_if=lambda value: not value)
     timeout_seconds: int = Field(default=300, ge=1, le=3600, strict=True)
     max_output_bytes: int = Field(default=1_048_576, ge=1024, le=8_388_608, strict=True)
     # 宿主固定的非Secret环境预设，按名称排序；命令只得到这些变量，不继承App Server环境。
@@ -262,12 +273,34 @@ class ProductNativeProcessProfile(ProductConfigContract):
     def valid_profile(self) -> Self:
         if not _fixed_posix_shell(self.program, self.arguments):
             raise ValueError("Command Profile必须固定POSIX Shell及-c或-lc参数")
-        problem = container_environment_problem(self.environment)
+        problem = container_environment_problem(self.environment) or _native_scope_problem(self)
         if problem is not None:
             raise ValueError(problem)
         if self.profile_sha256 != product_native_process_profile_digest(self):
             raise ValueError("Native Process Profile摘要不一致")
         return self
+
+
+def _native_scope_problem(profile: ProductNativeProcessProfile) -> str | None:
+    """沙箱专属字段只给沙箱后端；Harnessix管理的环境变量不得由预设覆盖。"""
+
+    sandboxed = profile.backend in NATIVE_SANDBOX_BACKENDS
+    if not sandboxed and (
+        profile.workspace_mode != "read_write"
+        or profile.write_roots
+        or profile.allow_workspace_env_files
+    ):
+        return "只有沙箱后端支持只读工作区、额外可写目录与.env放行"
+    if profile.write_roots != tuple(sorted(set(profile.write_roots))) or any(
+        canonical_absolute_path_problem(root) or root == "/" for root in profile.write_roots
+    ):
+        return "额外可写目录必须是唯一有序的规范绝对路径，且不能是根目录"
+    if profile.backend != "external_boundary":
+        for name, _ in profile.environment:
+            problem = sandbox_reserved_environment_problem(name)
+            if problem is not None:
+                return problem
+    return None
 
 
 def product_native_process_profile_digest(profile: ProductNativeProcessProfile) -> str:
@@ -287,6 +320,9 @@ def build_product_native_process_profile(
     timeout_seconds: int = 300,
     max_output_bytes: int = 1_048_576,
     environment: tuple[tuple[str, str], ...] = (),
+    workspace_mode: NativeWorkspaceMode = "read_write",
+    write_roots: tuple[str, ...] = (),
+    allow_workspace_env_files: bool = False,
 ) -> ProductNativeProcessProfile:
     candidate = ProductNativeProcessProfile.model_construct(
         _fields_set=None,
@@ -296,7 +332,9 @@ def build_product_native_process_profile(
         backend=backend,
         program=program,
         arguments=arguments,
-        workspace_mode="read_write",
+        workspace_mode=workspace_mode,
+        write_roots=tuple(sorted(set(write_roots))),
+        allow_workspace_env_files=allow_workspace_env_files,
         timeout_seconds=timeout_seconds,
         max_output_bytes=max_output_bytes,
         environment=tuple(sorted(environment)),
