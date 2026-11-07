@@ -6,7 +6,8 @@
   复制为私有副本后移除EXTERNALLY-MANAGED标记，收据记录版本与目录内容摘要。
 
 包内顶层目录为harnessix/，HarnessixAgent在安装阶段解压到/opt，得到/opt/harnessix/bin/python。
-依赖用`uv export --frozen --no-dev --no-emit-project`导出的带哈希清单，经指定包镜像以
+依赖用`uv export --frozen --no-dev --no-emit-project --extra <provider>`导出的带哈希清单（须含所选
+Provider的可选依赖，例如openai），经指定包镜像以
 --require-hashes安装，镜像无法替换内容。构建完成后在包内Python中导入SDK做冒烟检查，并写收据。
 """
 

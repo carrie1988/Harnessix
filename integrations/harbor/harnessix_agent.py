@@ -245,9 +245,16 @@ class HarnessixAgent(BaseInstalledAgent):
         """回填观测元数据；没有全量Attempt证据时保留Harbor总用量与费用未知。"""
 
         source = self.logs_dir / "harnessix-summary.json"
-        if source.is_symlink() or not source.is_file() or source.stat().st_size > 65_536:
-            raise ValueError("Harbor协议摘要缺失或无效")
-        result = json.loads(source.read_text(encoding="utf-8"))
+        try:
+            if source.is_symlink() or not source.is_file() or source.stat().st_size > 65_536:
+                raise ValueError("Harbor协议摘要缺失或过大")
+            result = json.loads(source.read_text(encoding="utf-8"))
+            if not isinstance(result, dict):
+                raise ValueError("Harbor协议摘要不是对象")
+        except (OSError, ValueError):
+            # 摘要缺失或无效时不写原生元数据：解析器判为协议证据缺失（基础设施问题），
+            # 不在此抛错，否则Harbor会中断整个Job、其余试次无法完成。
+            return
         if result.get("spec_version") != "harnessix.harbor-protocol-result/v1" or result.get(
             "trial_id"
         ) != str(self.context_id):
@@ -270,6 +277,7 @@ class HarnessixAgent(BaseInstalledAgent):
                 "native_failure_code": result.get("failure_code"),
                 "observed_model_steps": result.get("model_steps"),
                 "protocol_reason": result.get("reason"),
+                "runner_error": result.get("runner_error"),
                 "cost_completeness": "unknown",
                 "usage_source": "agent_protocol_turn",
                 "usage_completeness": "unknown",

@@ -162,9 +162,11 @@ async def drive_protocol_trial(
     decide = policy or approval_policy(approval_mode)
     items: dict[UUID, PublicItem] = {}
     submitted: set[UUID] = set()
+    initialized = False
     try:
         async with asyncio.timeout(budget.timeout_seconds):
             await client.initialize()
+            initialized = True
             thread = await client.create_thread(workspace, request_id=f"harbor-{trial_id}-thread")
             turn = await client.start_turn(
                 thread.thread_id,
@@ -217,7 +219,8 @@ async def drive_protocol_trial(
     except TimeoutError:
         reason = "deadline_exceeded"
     except AgentSDKError:
-        reason = "protocol_error"
+        # App Server未完成初始化即失败：产品没有运行过任务，属于环境或安装问题。
+        reason = "protocol_error" if initialized else "server_unavailable"
     except asyncio.CancelledError:
         cancelled = True
     finally:
@@ -268,6 +271,34 @@ async def drive_protocol_trial(
         "approval_mode": approval_mode,
         "auto_approvals": len(submitted),
         **evidence,
+    }
+
+
+def unavailable_result(arguments: argparse.Namespace, error: Exception) -> dict:
+    """App Server或转发未能启动时仍写出完整摘要，避免空文件让Harbor整个Job中断。"""
+    code = getattr(error, "code", None)
+    return {
+        "spec_version": "harnessix.harbor-protocol-result/v1",
+        "trial_id": arguments.trial_id,
+        "reason": "server_unavailable",
+        "runner_error": type(error).__name__ + (f":{code}" if isinstance(code, str) else ""),
+        "thread_id": None,
+        "turn_id": None,
+        "turn_status": None,
+        "failure_category": None,
+        "failure_code": None,
+        "model_steps": None,
+        "input_tokens": None,
+        "output_tokens": None,
+        "usage_source": "agent_protocol_turn",
+        "usage_completeness": "unknown",
+        "cost_completeness": "unknown",
+        "turn_terminal_confirmed": False,
+        "approval_mode": arguments.approval_mode,
+        "auto_approvals": 0,
+        "protocol_evidence_complete": False,
+        "tool_results_succeeded": None,
+        "final_assistant_sha256": None,
     }
 
 
@@ -325,16 +356,22 @@ async def _drive(arguments: argparse.Namespace, instruction: str) -> dict:
         command, graceful_shutdown_timeout_seconds=2.0, terminate_timeout_seconds=2.0
     )
     events: list[PublicEvent] = []
-    async with AgentClient(transport) as client:
-        result = await drive_protocol_trial(
-            client,
-            workspace=arguments.workspace,
-            instruction=instruction,
-            budget=budget,
-            trial_id=UUID(arguments.trial_id),
-            approval_mode=arguments.approval_mode,
-            events=events,
-        )
+    result: dict | None = None
+    try:
+        async with AgentClient(transport) as client:
+            result = await drive_protocol_trial(
+                client,
+                workspace=arguments.workspace,
+                instruction=instruction,
+                budget=budget,
+                trial_id=UUID(arguments.trial_id),
+                approval_mode=arguments.approval_mode,
+                events=events,
+            )
+    except AgentSDKError:
+        # 关闭已退出的App Server也会报错；已得到的试次结果不能因此丢失。
+        if result is None:
+            raise
     if arguments.events_output is not None and events:
         _write_events(Path(arguments.events_output), events)
     return result
@@ -376,7 +413,10 @@ def main() -> None:
         # 在启动App Server前独占占位，重入不能先重复调用模型再发现结果文件已存在。
         descriptor = os.open(arguments.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as output:
-            result = asyncio.run(_run(arguments, instruction))
+            try:
+                result = asyncio.run(_run(arguments, instruction))
+            except (AgentSDKError, OSError, ValueError) as error:
+                result = unavailable_result(arguments, error)
             json.dump(result, output)
         raise SystemExit(0 if result["reason"] == "completed" else 1)
     except (AgentSDKError, OSError, ValueError):

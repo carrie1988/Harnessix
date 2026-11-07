@@ -19,6 +19,7 @@ _REFS = (
     "thread_id",
     "turn_id",
     "protocol_reason",
+    "runner_error",
     "turn_status",
     "native_failure_category",
     "native_failure_code",
@@ -50,6 +51,8 @@ def _status(
     category = native.get("native_failure_category")
     if reason == "completed":
         return None, "completed"
+    if reason == "server_unavailable":
+        return "infra_error", "server_unavailable"
     if reason == "deadline_exceeded":
         return "timeout", "deadline_exceeded"
     if reason == "intervention_required":

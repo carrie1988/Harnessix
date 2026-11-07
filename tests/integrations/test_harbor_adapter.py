@@ -73,6 +73,18 @@ async def test_external_boundary_is_asserted_only_for_the_app_server_run(tmp_pat
     assert all("env" not in call.kwargs for call in calls if call is not run)
 
 
+@pytest.mark.parametrize("body", [None, "", "not json", "[]"])
+def test_missing_or_invalid_receipt_leaves_attribution_to_parser(
+    tmp_path: Path, body: str | None
+) -> None:
+    instance = agent(tmp_path)
+    if body is not None:
+        (tmp_path / "harnessix-summary.json").write_text(body)
+    context = AgentContext(metadata={"existing": "preserved"})
+    instance.populate_context_post_run(context)
+    assert context.metadata == {"existing": "preserved"}
+
+
 def test_context_keeps_native_observations_and_unknown_cost(tmp_path: Path) -> None:
     instance = agent(tmp_path)
     receipt = {

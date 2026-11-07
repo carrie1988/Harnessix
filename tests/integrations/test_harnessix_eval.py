@@ -108,6 +108,11 @@ def test_native_matrix_keeps_attribution_denominator_and_unknown_billing(tmp_pat
         ),
         (Trial(exception=AGENT_EXIT, metadata=native()), ("system_error", "agent_failed")),
         (Trial(metadata=native("failed", "budget")), ("system_error", "budget_exhausted")),
+        # 产品未能启动不是智能体失败：环境或安装问题，判无效。
+        (
+            Trial(exception=AGENT_EXIT, metadata=native("server_unavailable")),
+            ("infra_error", "server_unavailable"),
+        ),
     ],
 )
 def test_incomplete_protocol_evidence_is_never_a_pass(

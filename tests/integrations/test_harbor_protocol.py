@@ -18,7 +18,7 @@ from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolC
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.protocol.contracts import PublicBudget
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
-from harnessix.sdk.agent_client import AgentClient, InProcessAgentTransport
+from harnessix.sdk.agent_client import AgentClient, AgentSDKError, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from integrations.harbor import protocol_runner
 from integrations.harbor.protocol_runner import drive_protocol_trial
@@ -137,6 +137,59 @@ async def test_trial_deadline_covers_initialize_without_restarting_agent() -> No
     assert receipt["reason"] == "deadline_exceeded"
     assert receipt["input_tokens"] is None
     assert client.calls == 1
+
+
+async def test_server_that_never_initializes_is_unavailable_not_agent_failure() -> None:
+    class ClosedServer:
+        async def initialize(self):
+            raise AgentSDKError("server_closed", "App Server输出流已经关闭")
+
+    receipt = await drive_protocol_trial(
+        ClosedServer(), workspace="/app", instruction="task", budget=budget(5), trial_id=uuid4()
+    )
+    assert receipt["reason"] == "server_unavailable"
+    assert receipt["turn_terminal_confirmed"] is False
+
+
+def test_startup_failure_still_writes_a_complete_receipt(tmp_path: Path, monkeypatch) -> None:
+    instruction = tmp_path / "instruction.txt"
+    instruction.write_text("task")
+    output = tmp_path / "result.json"
+    trial = uuid4()
+    monkeypatch.setattr(
+        protocol_runner,
+        "_run",
+        AsyncMock(side_effect=AgentSDKError("server_closed", "App Server输出流已经关闭")),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "runner",
+            "--instruction-file",
+            str(instruction),
+            "--server-config",
+            str(tmp_path / "config.json"),
+            "--workspace",
+            "/app",
+            "--state-directory",
+            str(tmp_path / "state"),
+            "--output",
+            str(output),
+            "--trial-id",
+            str(trial),
+            "--approval-mode",
+            "auto",
+        ],
+    )
+    with pytest.raises(SystemExit) as exited:
+        protocol_runner.main()
+    assert exited.value.code == 1
+    receipt = json.loads(output.read_text())
+    assert receipt["spec_version"] == "harnessix.harbor-protocol-result/v1"
+    assert (receipt["trial_id"], receipt["reason"]) == (str(trial), "server_unavailable")
+    assert receipt["runner_error"] == "AgentSDKError:server_closed"
+    assert receipt["approval_mode"] == "auto" and receipt["protocol_evidence_complete"] is False
 
 
 def test_receipt_reservation_prevents_reexecution(tmp_path: Path, monkeypatch) -> None:
