@@ -478,7 +478,7 @@ async def test_oversized_legacy_inline_record_is_not_repaired(complete_state, tm
     _assert_unpublished(root, destination)
 
 
-@pytest.mark.parametrize("version", ["0", "4", "999"])
+@pytest.mark.parametrize("version", ["0", "5", "999"])
 async def test_workspace_unknown_schema_remains_rejected(complete_state, version):
     root, _ = complete_state
     with sqlite3.connect(root / WORKSPACE_DATABASE) as database:

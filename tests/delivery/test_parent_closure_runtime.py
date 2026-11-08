@@ -155,7 +155,8 @@ def test_original_parent_control_survives_file_image_read(tmp_path, monkeypatch)
     desired = _files(root, 1)
     error = TurnCancelled()
     active = False
-    original = planner._read_existing
+    # 规划读取来源的入口自ADR 0068第2版起返回真实权限（_read_existing_file）。
+    original = planner._read_existing_file
 
     def checkpoint():
         if active:
@@ -166,7 +167,7 @@ def test_original_parent_control_survives_file_image_read(tmp_path, monkeypatch)
         active = True
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(planner, "_read_existing", cancel_during_read)
+    monkeypatch.setattr(planner, "_read_existing_file", cancel_during_read)
     with SQLiteWorkspaceTransactionStore(state) as store:
         with pytest.raises(TurnCancelled) as cancelled:
             prepare_workspace_transaction_v2(

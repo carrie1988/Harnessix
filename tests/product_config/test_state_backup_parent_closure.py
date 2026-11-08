@@ -91,6 +91,8 @@ def _schema(root: Path, path: str, version: str) -> None:
         ("workspace-transactions/transactions.db", "1"),
         ("workspace-transactions/transactions.db", "2"),
         ("workspace-transactions/transactions.db", "3"),
+        # Schema4：保留文件权限代际的账本（ADR 0068第2版）。
+        ("workspace-transactions/transactions.db", "4"),
     ],
 )
 def test_exact_schema_admission_is_readonly(schema_root: Path, path: str, version: str) -> None:
@@ -108,7 +110,7 @@ def test_exact_schema_admission_is_readonly(schema_root: Path, path: str, versio
         ("execution-plans.db", "0"),
         ("execution-plans.db", "3"),
         ("workspace-transactions/transactions.db", "0"),
-        ("workspace-transactions/transactions.db", "4"),
+        ("workspace-transactions/transactions.db", "5"),
         ("product-config.db", "2"),
         (PROCESS_DATABASE, "1"),
         (PROCESS_DATABASE, "3"),
