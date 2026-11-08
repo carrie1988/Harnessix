@@ -61,7 +61,8 @@ async def test_default_preserves_match_facts_and_legacy_output_is_readable(tmp_p
     assert "content_sha256" not in enriched and "digest_status" not in enriched
 
 
-@pytest.mark.parametrize("radius", [-1, 4, True, 1.0, "1", None])
+# 超过上限的整数与纯数字字符串由参数修复接受（见test_argument_repair）。
+@pytest.mark.parametrize("radius", [-1, True, 1.0, "one", None])
 async def test_invalid_context_limits_are_rejected_before_read(tmp_path, monkeypatch, radius):
     def forbidden(*args, **kwargs):
         pytest.fail("非法上下文参数不得进入读取端")

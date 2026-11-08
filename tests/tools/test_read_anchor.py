@@ -72,14 +72,10 @@ async def test_exact_anchor_page_has_full_raw_digest_and_continuation(tmp_path, 
     [
         {"anchor": ""},
         {"anchor": True},
-        {"anchor": "line\nline"},
         {"anchor": "tab\there"},
         {"anchor": "中" * 86},
-        {"anchor": "x", "start_line": 2},
-        {"lines_before": 1},
         {"anchor": "x", "lines_before": True},
         {"anchor": "x", "lines_before": 1.0},
-        {"anchor": "x", "lines_before": 41},
         {"anchor": "x", "lines_before": -1},
     ],
 )
@@ -90,7 +86,10 @@ async def test_invalid_anchor_contract_fails_before_io(tmp_path, monkeypatch, ar
     assert result.error.code == "tool_invalid_arguments" and result.output is None
 
 
-@pytest.mark.parametrize("control", [chr(i) for i in range(32)] + [chr(127)])
+# 换行与回车由参数修复取第一行（见test_argument_repair），其余控制字符照常拒绝。
+@pytest.mark.parametrize(
+    "control", [chr(i) for i in range(32) if chr(i) not in "\n\r"] + [chr(127)]
+)
 async def test_anchor_control_feedback_identifies_rule_without_echoing_values(
     tmp_path, monkeypatch, control
 ):
@@ -108,8 +107,6 @@ async def test_anchor_control_feedback_identifies_rule_without_echoing_values(
     ("arguments", "hint"),
     [
         ({"anchor": "中" * 86}, "anchor的UTF-8编码不得超过256字节"),
-        ({"anchor": "target", "start_line": 2}, "启用anchor时请省略start_line"),
-        ({"lines_before": 1}, "lines_before仅可在anchor非空时使用"),
     ],
 )
 async def test_anchor_cross_field_feedback_is_specific_without_io(

@@ -27,7 +27,7 @@ from harnessix.agent.models import (
     TurnStatus,
     Usage,
 )
-from harnessix.agent.planning import _decode_plan
+from harnessix.agent.planning import _decode_plan, planning_history_anchors
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished
@@ -402,7 +402,7 @@ def test_decoder_rejects_non_finite_json_and_invalid_utf8_without_raw_exception(
         effect_class=EffectClass.READ_ONLY,
         arguments={"steps": [{"step_id": "a", "description": value}]},
     )
-    assert _decode_plan(call) is None
+    assert _decode_plan(call)[0] is None
 
 
 @pytest.mark.parametrize("byte_limit", [4096, 4097])
@@ -681,3 +681,83 @@ async def test_normalized_plan_body_obeys_output_bound_and_keeps_call_result_pai
     assert result.outcome == "failed" and result.error.code == "tool_output_too_large"
     assert result.output is None
     assert len(result.model_dump_json()) <= 400
+
+
+@pytest.mark.parametrize(
+    ("steps", "expected_ids"),
+    [
+        # 评测中被拒计划的主因：模型省略step_id（E0c重跑36次全部如此）。
+        (
+            [
+                {"description": "复现问题", "status": "in_progress"},
+                {"description": "修复", "status": "pending"},
+            ],
+            ["1", "2"],
+        ),
+        (
+            [{"description": "复现问题"}, {"step_id": "1", "description": "修复"}],
+            ["step-1", "1"],
+        ),
+    ],
+)
+async def test_missing_step_ids_are_filled_by_position_and_plan_stays_pinned(
+    tmp_path, steps, expected_ids
+):
+    store, provider, turn = await run_script(
+        tmp_path, [proposal_step(plan_call({"steps": steps})), answer()]
+    )
+    assert turn.status is TurnStatus.COMPLETED
+    result = result_for(turn)
+    assert result.outcome == "succeeded" and result.output["step_count"] == len(steps)
+    (plan,) = plan_items(turn)
+    assert [step.step_id for step in plan.content.steps] == expected_ids
+    # 同一补齐规则在回放时得到同样的步骤，压缩仍能固定这份最新计划。
+    thread = await store.get_thread(provider.requests[0].thread_id)
+    assert len(planning_history_anchors(thread)) == 1
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        (
+            {"steps": [{"step_id": str(i), "description": "DO_NOT_ECHO"} for i in range(9)]},
+            "计划需1到8个步骤，当前9个",
+        ),
+        (
+            {"steps": [{"step_id": "a", "description": "DO_NOT_ECHO"}] * 2},
+            "步骤step_id重复",
+        ),
+        (
+            {
+                "steps": [
+                    {"description": "DO_NOT_ECHO", "status": "in_progress"},
+                    {"description": "DO_NOT_ECHO", "status": "in_progress"},
+                ]
+            },
+            "最多一个步骤为in_progress，当前2个",
+        ),
+        ({"steps": [{"description": "DO_NOT_ECHO", "status": "done"}]}, "status（pending"),
+        ({"steps": [{"description": "DO_NOT_ECHO" + "x" * 4100}]}, "超过4096字节上限"),
+        ({"plan": [{"step": "DO_NOT_ECHO"}]}, '参数须为{"steps"'),
+    ],
+)
+async def test_rejected_plans_name_the_violated_rule_without_echoing_values(
+    tmp_path, arguments, message
+):
+    _, _, turn = await run_script(tmp_path, [proposal_step(plan_call(arguments)), answer()])
+    result = result_for(turn)
+    assert result.outcome == "failed" and result.error.code == "tool_invalid_arguments"
+    assert message in result.error.message
+    assert "DO_NOT_ECHO" not in result.model_dump_json()
+
+
+async def test_plan_before_other_calls_says_it_must_be_last(tmp_path):
+    calls = [plan_call(call_id="plan"), ToolCallCompleted(call_id="read", tool="test.read")]
+    _, _, turn = await run_script(
+        tmp_path, [proposal_step(*calls), answer()], tools=RecordingTools(parallel=True)
+    )
+    result = result_for(turn)
+    assert result.outcome == "failed"
+    assert (
+        "update_plan须是本次响应的最后一个工具调用；其前还有1个调用未结算" in result.error.message
+    )

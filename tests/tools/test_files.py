@@ -105,7 +105,7 @@ async def test_denied_paths(tmp_path, path):
     "arguments",
     [
         {"path": "x", "start_line": True},
-        {"path": "x", "max_lines": "2"},
+        {"path": "x", "max_lines": "two"},
         {"path": "x", "unknown": 1},
         {"start_line": 2},
         {"path": "x", "start_line": 2, "unknown": 1},

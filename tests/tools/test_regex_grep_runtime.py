@@ -145,7 +145,7 @@ async def test_installed_version_drift_after_registration_is_a_safe_failure(tmp_
         {"query": "PRIVATE_MARKER" * 25},
         {"query": "PRIVATE_MARKER\n"},
         {"query": "needle", "match_mode": "PRIVATE_MARKER"},
-        {"query": "needle", "context_lines": 4},
+        {"query": "needle", "context_lines": -1},
     ],
 )
 async def test_invalid_input_does_not_read_or_echo_values(tmp_path, monkeypatch, arguments):

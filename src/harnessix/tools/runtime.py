@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import errno
 import json
-import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import TracebackType
@@ -24,6 +23,7 @@ from harnessix.domain.models import ContractModel, ToolDescriptor
 from harnessix.sandbox.contracts import container_workspace_path_problem
 from harnessix.tools import files, search
 from harnessix.tools.argument_feedback import invalid_argument_message
+from harnessix.tools.argument_repair import ARTIFACT_ID, repair_read_arguments
 from harnessix.tools.contracts import (
     MAX_RESULT_BYTES,
     READ_TIMEOUT_SECONDS,
@@ -77,7 +77,6 @@ _READ_ERROR_MESSAGES = {
     ),
 }
 # 模型常把命令输出存档编号当作read_file路径，或沿用read_artifact的分页参数。
-_ARTIFACT_ID = re.compile(r"^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$")
 _ARTIFACT_READ_HINT = (
     "read_file只读取工作区文件，按行分页用start_line与max_lines；"
     "命令输出等存档请用read_artifact(artifact_id, offset, limit)"
@@ -89,7 +88,7 @@ def _misrouted_artifact_read(binding: _ReadBinding, arguments: Mapping[str, Any]
         return False
     path = arguments.get("path")
     return bool({"artifact_id", "offset", "limit"} & arguments.keys()) or (
-        isinstance(path, str) and _ARTIFACT_ID.match(path) is not None
+        isinstance(path, str) and ARTIFACT_ID.match(path) is not None
     )
 
 
@@ -370,7 +369,11 @@ class CodingToolRuntime:
             for b in (*self._read_bindings, *(_GIT_BINDINGS if self._git is not None else ()))
             if b.name == call.tool
         )
-        arguments = _workspace_relative(call.arguments, self._container_workspace_paths)
+        arguments = repair_read_arguments(
+            binding.name,
+            _workspace_relative(call.arguments, self._container_workspace_paths),
+            binding.input_model,
+        )
         try:
             args = binding.input_model.model_validate(arguments)
         except ValidationError as error:

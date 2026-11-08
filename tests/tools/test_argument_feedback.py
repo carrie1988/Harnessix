@@ -39,7 +39,7 @@ from tests.tools.test_paging_feedback import _result_payloads
         ("list_files", {"limit": True}, "无"),
         ("glob", {"pattern": None}, "无"),
         ("grep", {}, "query"),
-        ("grep", {"query": "PRIVATE_QUERY", "context_lines": 987654321}, "query"),
+        ("grep", {"query": "PRIVATE_QUERY", "context_lines": -987654321}, "query"),
         ("read_artifact", {}, "artifact_id"),
     ],
 )
@@ -298,13 +298,13 @@ async def test_sdk_artifact_feedback_new_call_actual_read_and_replay(
     [
         (
             "grep",
-            {"query": "needle", "context_lines": 10},
+            {"query": "needle", "context_lines": -1},
             {"query": "needle", "context_lines": 3},
             "context_lines 应满足 ≥ 0、≤ 3",
         ),
         (
             "read_file",
-            {"path": "example.py", "anchor": "PRIVATE_SOURCE_TEXT\nneedle"},
+            {"path": "example.py", "anchor": "PRIVATE_SOURCE_TEXT\tneedle"},
             {"path": "example.py", "anchor": "needle"},
             "anchor必须是不含换行或控制字符的单行字面量",
         ),

@@ -55,7 +55,6 @@ def test_definition_flag_is_validated_before_opening_workspace(tmp_path, invalid
     [
         {"view": "definition"},
         {"view": "definition", "anchor": "def x", "lines_before": 1},
-        {"view": "definition", "anchor": "def x", "start_line": 2},
         {"view": "auto", "anchor": "def x"},
         {"view": True},
     ],

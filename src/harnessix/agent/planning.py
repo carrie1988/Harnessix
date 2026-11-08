@@ -6,7 +6,7 @@ import hashlib
 import json
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID, uuid5
 
 from pydantic import Field
@@ -80,19 +80,63 @@ class PlanningHost(Protocol):
     ) -> ToolResultContent: ...
 
 
-def _decode_plan(call: ToolCallContent) -> UpdatePlanInput | None:
+def _with_step_ids(arguments: dict[str, Any]) -> dict[str, Any]:
+    """模型常省略step_id（评测中被拒计划的主因）：按位置补齐，不改动已给出的ID、不制造重复。"""
+    steps = arguments.get("steps")
+    if not isinstance(steps, list) or not all(isinstance(step, dict) for step in steps):
+        return arguments
+    taken = {step["step_id"] for step in steps if isinstance(step.get("step_id"), str)}
+    filled = []
+    for index, step in enumerate(steps, start=1):
+        if "step_id" not in step:
+            candidate = str(index)
+            while candidate in taken:
+                candidate = f"step-{candidate}"
+            taken.add(candidate)
+            step = {"step_id": candidate, **step}
+        filled.append(step)
+    return {**arguments, "steps": filled}
+
+
+def _plan_rule_violation(arguments: dict[str, Any], body: bytes) -> str:
+    """说明违反的具体规则，模型据此修正而不是原样重发。"""
+    if len(body) > MAX_PLAN_INPUT_BYTES:
+        return f"参数JSON为{len(body)}字节，超过{MAX_PLAN_INPUT_BYTES}字节上限；请缩短步骤描述"
+    steps = arguments.get("steps")
+    if not isinstance(steps, list):
+        return '参数须为{"steps": [{"step_id", "description", "status"}...]}'
+    if not 1 <= len(steps) <= 8:
+        return f"计划需1到8个步骤，当前{len(steps)}个"
+    ids = [step.get("step_id") for step in steps if isinstance(step, dict)]
+    if len(set(ids)) != len(ids):
+        return "步骤step_id重复；每个步骤使用不同的step_id"
+    active = sum(isinstance(step, dict) and step.get("status") == "in_progress" for step in steps)
+    if active > 1:
+        return f"最多一个步骤为in_progress，当前{active}个"
+    return (
+        "每个步骤只允许step_id、description（非空）与status"
+        "（pending、in_progress或completed）三个字段"
+    )
+
+
+def _decode_plan(call: ToolCallContent) -> tuple[UpdatePlanInput | None, str]:
+    """返回解析结果；失败时附具体原因。"""
+    arguments = _with_step_ids(call.arguments)
     try:
-        body = json.dumps(call.arguments, ensure_ascii=False, allow_nan=False).encode()
-        if len(body) > MAX_PLAN_INPUT_BYTES:
-            return None
+        body = json.dumps(arguments, ensure_ascii=False, allow_nan=False).encode()
+    except (TypeError, ValueError):
+        return None, '参数须为{"steps": [...]}的JSON对象'
+    if len(body) > MAX_PLAN_INPUT_BYTES:
+        return None, _plan_rule_violation(arguments, body)
+    try:
         parsed = UpdatePlanInput.model_validate_json(body)
         # 复用领域校验；客户端不能提供计划身份或绕过版本链。
         PlanContent(steps=parsed.steps)
-        if any("\x00" in step.step_id + step.description for step in parsed.steps):
-            return None
-        return parsed
     except (TypeError, ValueError, UnicodeError):
-        return None
+        return None, _plan_rule_violation(arguments, body)
+    if any("\x00" in step.step_id + step.description for step in parsed.steps):
+        return None, "步骤ID与描述不能包含空字符"
+    return parsed, ""
 
 
 def _require_active_call(turn: Turn, call: ToolCallContent, cancel: CancelToken) -> None:
@@ -130,19 +174,21 @@ async def execute_plan_update(
     host: PlanningHost, thread_id: UUID, turn_id: UUID, call: ToolCallContent, cancel: CancelToken
 ) -> None:
     """同一事务结算调用、进入准备阶段并追加计划；失败反馈不产生计划。"""
-    parsed = _decode_plan(call)
+    parsed, violation = _decode_plan(call)
     async with host._lock(thread_id):
         thread = await host.store.get_thread(thread_id)
         turn = get_turn(thread, turn_id)
         _require_active_call(turn, call, cancel)
         plan_id = uuid5(call.call_id, _PLAN_ITEM_NAMESPACE)
-        if parsed is None or len(pending_calls(turn)) != 1:
+        others = len(pending_calls(turn)) - 1
+        if parsed is None or others:
             result = ToolResultContent(
                 call_id=call.call_id,
                 outcome="failed",
                 error=AgentFailure(
                     code="tool_invalid_arguments",
-                    message="计划需1到8个唯一步骤、最多一个进行中、JSON不超过4096字节且位于工具组末尾",
+                    message=violation
+                    or f"update_plan须是本次响应的最后一个工具调用；其前还有{others}个调用未结算",
                 ),
             )
         else:
@@ -207,7 +253,7 @@ def planning_history_anchors(thread: Thread) -> tuple[CompactionAnchor, ...]:
         if not isinstance(call, ToolCallContent) or call.tool != UPDATE_PLAN_TOOL:
             continue
         result = results.get(call.call_id)
-        parsed = _decode_plan(call)
+        parsed, _ = _decode_plan(call)
         if (
             call.tool_version == UPDATE_PLAN_VERSION
             and call.tool_fingerprint == tool_fingerprint(descriptor)
