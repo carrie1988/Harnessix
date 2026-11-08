@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import stat
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack, contextmanager
 from datetime import UTC, datetime
@@ -13,13 +12,14 @@ from uuid import UUID, uuid4
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.contracts import (
-    FileMode,
     TransactionState,
     WorkspaceFileVersion,
     WorkspaceMutation,
     WorkspaceTransactionRecord,
     transition_transaction_record,
 )
+from harnessix.delivery.file_modes import observed_permission_mode
+from harnessix.delivery.preserved_mode_contracts import WorkspaceFileVersionV2
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.tools.workspace import Workspace, identity, revision_state
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
@@ -112,12 +112,12 @@ class WorkspaceTransactionRuntime:
         after = tuple(
             index
             for index, (fact, item) in enumerate(zip(facts, record.plan.mutations, strict=True))
-            if fact == item.after
+            if same_file_version(fact, item.after)
         )
         before = tuple(
             index
             for index, (fact, item) in enumerate(zip(facts, record.plan.mutations, strict=True))
-            if fact == item.before
+            if same_file_version(fact, item.before)
         )
         if len(after) == len(facts):
             if record.state == "prepared":
@@ -304,11 +304,22 @@ def _observe_members(
     )
 
 
+def same_file_version(observed: WorkspaceFileVersion, recorded: WorkspaceFileVersion) -> bool:
+    """按字段比较观察结果与记录：观察总是给出真实权限，记录可能属于任一代际。"""
+    return (observed.presence, observed.sha256, observed.size, observed.mode) == (
+        recorded.presence,
+        recorded.sha256,
+        recorded.size,
+        recorded.mode,
+    )
+
+
 def _observe_at(parent: int, name: str) -> WorkspaceFileVersion:
+    """观察磁盘上的真实状态（含0644/0755以外的普通权限）；特殊位文件拒绝。"""
     try:
         before = os.stat(name, dir_fd=parent, follow_symlinks=False)
     except FileNotFoundError:
-        return WorkspaceFileVersion(presence="absent", size=0)
+        return WorkspaceFileVersionV2(presence="absent", size=0)
     Workspace._check_type(before, directory=False)
     descriptor = os.open(name, _FILE_FLAGS, dir_fd=parent)
     try:
@@ -326,20 +337,11 @@ def _observe_at(parent: int, name: str) -> WorkspaceFileVersion:
         after = os.fstat(descriptor)
         if revision_state(opened) != revision_state(after) or len(body) != after.st_size:
             raise KernelError("delivery_source_changed", "Workspace事务文件读取期间变化")
-        actual_mode = stat.S_IMODE(after.st_mode)
-        if actual_mode == 0o644:
-            mode: FileMode = 0o644
-        elif actual_mode == 0o755:
-            mode = 0o755
-        else:
-            raise KernelError(
-                "delivery_metadata_unsupported", "Workspace事务只支持0644或0755普通文件"
-            )
-        return WorkspaceFileVersion(
+        return WorkspaceFileVersionV2(
             presence="file",
             sha256=hashlib.sha256(body).hexdigest(),
             size=len(body),
-            mode=mode,
+            mode=observed_permission_mode(after.st_mode),
         )
     finally:
         os.close(descriptor)
@@ -367,7 +369,7 @@ def _apply(
         return
     with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
         with _parent(workspace, mutation.path) as (parent, name):
-            if _observe_at(parent, name) != mutation.before:
+            if not same_file_version(_observe_at(parent, name), mutation.before):
                 raise KernelError("delivery_source_changed", "Workspace事务成员提交前已经漂移")
             if mutation.after.presence == "absent":
                 os.unlink(name, dir_fd=parent)
@@ -397,7 +399,7 @@ def _apply(
                     offset += written
                 os.fchmod(descriptor, mutation.after.mode)
                 os.fsync(descriptor)
-                if _observe_at(parent, name) != mutation.before:
+                if not same_file_version(_observe_at(parent, name), mutation.before):
                     raise KernelError("delivery_source_changed", "Workspace事务成员替换前已经漂移")
                 os.replace(temporary, name, src_dir_fd=parent, dst_dir_fd=parent)
                 os.fsync(parent)
@@ -441,9 +443,9 @@ def _publish_next(
     mutation = record.plan.mutations[index]
     runtime._assert_lease(record, lease)
     current = _observe(Path(root), mutation.path, source=record.plan.source)
-    if current == mutation.after:
+    if same_file_version(current, mutation.after):
         record = runtime._advance(record, "publishing", index + 1)
-    elif current != mutation.before:
+    elif not same_file_version(current, mutation.before):
         diverged = runtime._advance(record, "diverged", index, error_code="delivery_source_changed")
         raise KernelError(
             "delivery_source_changed",
@@ -458,7 +460,8 @@ def _publish_next(
             if reconciled.state == "published":
                 return reconciled
             raise
-        if _observe(Path(root), mutation.path, source=record.plan.source) != mutation.after:
+        observed = _observe(Path(root), mutation.path, source=record.plan.source)
+        if not same_file_version(observed, mutation.after):
             unknown = runtime._advance(
                 record, "unknown", index, error_code="delivery_effect_unknown"
             )

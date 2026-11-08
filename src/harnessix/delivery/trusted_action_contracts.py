@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
@@ -13,6 +14,10 @@ from harnessix.delivery.contracts import (
     FileMode,
     WorkspaceDiffEntry,
     WorkspaceTransactionPlan,
+)
+from harnessix.delivery.preserved_mode_contracts import (
+    WorkspaceDiffEntryV2,
+    preserves_file_modes,
 )
 from harnessix.domain.models import ContractModel
 from harnessix.execution.public_tool_contracts import (
@@ -233,6 +238,27 @@ WorkspaceActionReviewRecord = Annotated[
 _RECORD_ADAPTER: TypeAdapter[WorkspaceActionReviewRecord] = TypeAdapter(WorkspaceActionReviewRecord)
 
 
+class WorkspaceActionReviewSummaryV2(WorkspaceActionReviewSummary):
+    """保留文件权限代际计划的Review首记录（ADR 0068第2版）；其余字段与v1相同。"""
+
+    spec_version: Literal["harnessix.workspace-action-review/v2"] = (
+        "harnessix.workspace-action-review/v2"  # type: ignore[assignment]
+    )
+
+
+class WorkspaceActionReviewEntryV2(WorkspaceActionReviewEntry):
+    entry: WorkspaceDiffEntryV2
+
+
+WorkspaceActionReviewRecordV2 = Annotated[
+    WorkspaceActionReviewSummaryV2 | WorkspaceActionReviewEntryV2 | WorkspaceActionReviewChunk,
+    Field(discriminator="record_type"),
+]
+_RECORD_ADAPTER_V2: TypeAdapter[WorkspaceActionReviewRecordV2] = TypeAdapter(
+    WorkspaceActionReviewRecordV2
+)
+
+
 class WorkspaceActionReviewDocument(ContractModel):
     """可重建原Diff且满足Artifact单记录和总量边界的JSONL文档。"""
 
@@ -265,6 +291,11 @@ class WorkspaceActionReviewDocument(ContractModel):
         )
 
 
+class WorkspaceActionReviewDocumentV2(WorkspaceActionReviewDocument):
+    summary: WorkspaceActionReviewSummaryV2
+    entries: tuple[WorkspaceActionReviewEntryV2, ...]
+
+
 def build_workspace_action_review(
     plan: WorkspaceTransactionPlan,
     entries: tuple[WorkspaceDiffEntry, ...],
@@ -273,7 +304,14 @@ def build_workspace_action_review(
     """把完整Diff确定性转换为摘要、文件元数据和可分页正文。"""
 
     body = text.encode("utf-8", errors="strict")
-    summary = WorkspaceActionReviewSummary(
+    summary_type: type[WorkspaceActionReviewSummary] = WorkspaceActionReviewSummary
+    entry_type: type[WorkspaceActionReviewEntry] = WorkspaceActionReviewEntry
+    document_type: type[WorkspaceActionReviewDocument] = WorkspaceActionReviewDocument
+    if preserves_file_modes(plan):
+        summary_type = WorkspaceActionReviewSummaryV2
+        entry_type = WorkspaceActionReviewEntryV2
+        document_type = WorkspaceActionReviewDocumentV2
+    summary = summary_type(
         transaction_id=plan.transaction_id,
         plan_fingerprint=plan.fingerprint,
         workspace_revision=plan.source.revision,
@@ -281,12 +319,9 @@ def build_workspace_action_review(
         diff_utf8_bytes=len(body),
         diff_sha256=hashlib.sha256(body).hexdigest(),
     )
-    document = WorkspaceActionReviewDocument(
+    document = document_type(
         summary=summary,
-        entries=tuple(
-            WorkspaceActionReviewEntry(index=index, entry=entry)
-            for index, entry in enumerate(entries)
-        ),
+        entries=tuple(entry_type(index=index, entry=entry) for index, entry in enumerate(entries)),
         chunks=tuple(
             WorkspaceActionReviewChunk(sequence=index, text=chunk)
             for index, chunk in enumerate(_chunks(text))
@@ -306,7 +341,17 @@ def parse_workspace_action_review(body: bytes) -> WorkspaceActionReviewDocument:
         text = body.decode("utf-8", errors="strict")
         if not text.endswith("\n"):
             raise ValueError
-        decoded = tuple(_RECORD_ADAPTER.validate_json(line) for line in text.splitlines())
+        lines = text.splitlines()
+        first = json.loads(lines[0]) if lines else None
+        preserved = (
+            isinstance(first, dict)
+            and first.get("spec_version") == "harnessix.workspace-action-review/v2"
+        )
+        adapter = _RECORD_ADAPTER_V2 if preserved else _RECORD_ADAPTER
+        document_type: type[WorkspaceActionReviewDocument] = (
+            WorkspaceActionReviewDocumentV2 if preserved else WorkspaceActionReviewDocument
+        )
+        decoded = tuple(adapter.validate_json(line) for line in lines)
         if not decoded or not isinstance(decoded[0], WorkspaceActionReviewSummary):
             raise ValueError
         entries = tuple(
@@ -315,7 +360,7 @@ def parse_workspace_action_review(body: bytes) -> WorkspaceActionReviewDocument:
         chunks = tuple(item for item in decoded[1:] if isinstance(item, WorkspaceActionReviewChunk))
         if decoded != (decoded[0], *entries, *chunks):
             raise ValueError
-        document = WorkspaceActionReviewDocument(
+        document = document_type(
             summary=decoded[0],
             entries=entries,
             chunks=chunks,

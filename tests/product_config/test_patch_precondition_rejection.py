@@ -92,11 +92,7 @@ def assert_unchanged(root):
 async def test_absolute_patch_path_is_a_failed_result_before_approval_or_effect(tmp_path):
     async with product(tmp_path) as (root, runtime, provider, _router, _transactions, _, _):
         proposal = _proposal().model_copy(
-            update={
-                "files": (
-                    _proposal().files[1].model_copy(update={"path": "/tmp/search.txt"}),
-                )
-            }
+            update={"files": (_proposal().files[1].model_copy(update={"path": "/tmp/search.txt"}),)}
         )
         thread, turn, _call = await patch_turn(runtime, provider, root, proposal)
 
@@ -350,7 +346,9 @@ async def test_bad_sha_fails_without_executor_or_transaction_and_cannot_be_appro
         ("delete-missing", "workspace_patch_target_missing"),
         ("edit-missing", "workspace_patch_target_missing"),
         ("replace-missing", "workspace_patch_target_missing"),
-        # E0c django-11133/sympy-13031：任务镜像内文件为0777，审批预览曾把拒绝记为未知效果并停整轮。
+        # 带setuid位的文件仍不进入事务（0777等普通权限自ADR 0068第2版起保留，见
+        # tests/delivery/test_preserved_file_modes.py）；拒绝必须是可修正的失败结果，
+        # 不能像E0c django-11133/sympy-13031那样被审批预览记为未知效果并停整轮。
         ("edit-mode", "delivery_metadata_unsupported"),
         ("replace-mode", "delivery_metadata_unsupported"),
         ("delete-mode", "delivery_metadata_unsupported"),
@@ -371,7 +369,9 @@ async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
         }
         if kind.endswith("-mode"):
             for name in ("src/modified.py", "tests/deleted.txt"):
-                (root / name).chmod(0o777)
+                (root / name).chmod(0o4755)
+                if not (root / name).stat().st_mode & stat.S_ISUID:
+                    pytest.skip("文件系统不保留setuid位")
         if kind == "edit-mode":
             item = original.model_copy(update=edit)
         elif kind == "replace-mode":
@@ -422,7 +422,7 @@ async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
         if kind.endswith("-mode"):
             assert output.error.message.endswith("本次Patch未执行，工作区没有变化")
             for name in ("src/modified.py", "tests/deleted.txt"):
-                assert stat.S_IMODE((root / name).stat().st_mode) == 0o777
+                assert stat.S_IMODE((root / name).stat().st_mode) == 0o4755
 
 
 class DerivedPreconditionError(WorkspacePatchPreconditionError):
@@ -558,13 +558,14 @@ def test_original_fail_fast_order_does_not_read_later_mutation(
     (tmp_path / file_path).chmod(0o644)
     (tmp_path / directory_path).mkdir()
     reads = []
-    original_read = planner._read_existing
+    original_read = planner._read_existing_file
 
     def read_existing(root, path, platform, **kwargs):
         reads.append(path)
         return original_read(root, path, platform, **kwargs)
 
-    monkeypatch.setattr(planner, "_read_existing", read_existing)
+    # 规划读取来源的入口自ADR 0068第2版起返回真实权限；fail-fast顺序与读取次数不变。
+    monkeypatch.setattr(planner, "_read_existing_file", read_existing)
     desired = {path: DesiredWorkspaceFile(b"old\n", 0o644) for path in ("a.txt", "z.txt")}
     blobs = {}
     kwargs = (

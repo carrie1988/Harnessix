@@ -10,6 +10,11 @@ from io import StringIO
 
 from harnessix.delivery.contracts import MAX_WORKSPACE_DIFF_BYTES as MAX_DIFF_CONTENT_BYTES
 from harnessix.delivery.contracts import DiffKind, WorkspaceDiffEntry, WorkspaceMutation
+from harnessix.delivery.preserved_mode_contracts import (
+    GIT_REPRESENTABLE_MODES,
+    WorkspaceDiffEntryV2,
+    WorkspaceMutationV2,
+)
 
 
 class DiffContentLimitError(ValueError):
@@ -79,7 +84,7 @@ def build_diff_content(
         checkpoint()
         binary = _text(body) is None
         entries.append(
-            WorkspaceDiffEntry(
+            _entry_type(added)(
                 kind="renamed",
                 path=added.path,
                 original_path=deleted.path,
@@ -150,7 +155,7 @@ def _append_change(
         if mutation.after.presence == "absent"
         else "modified"
     )
-    entry = WorkspaceDiffEntry(
+    entry = _entry_type(mutation)(
         kind=kind,
         path=mutation.path,
         before=mutation.before,
@@ -161,6 +166,11 @@ def _append_change(
         checkpoint()
         output.append(chunk)
     return entry
+
+
+def _entry_type(mutation: WorkspaceMutation) -> type[WorkspaceDiffEntry]:
+    """条目与Mutation同代际：保留权限代际的文件版本不能写进原Diff条目合同。"""
+    return WorkspaceDiffEntryV2 if type(mutation) is WorkspaceMutationV2 else WorkspaceDiffEntry
 
 
 def _blob(reader: Callable[[str], bytes], digest: str | None) -> bytes:
@@ -198,6 +208,9 @@ def _section(
             yield f"deleted file mode {mutation.before.mode:o}\n"
         else:
             yield f"old mode {mutation.before.mode:o}\nnew mode {mutation.after.mode:o}\n"
+    elif mutation.before.mode is not None and mutation.before.mode not in GIT_REPRESENTABLE_MODES:
+        # 只有保留权限代际会出现这类权限：审阅时明确告知修改后仍保持原权限。
+        yield f"preserved mode {mutation.before.mode:o}\n"
     if before is None or after is None:
         yield (
             f"Binary files differ: before={mutation.before.sha256 or 'absent'} "

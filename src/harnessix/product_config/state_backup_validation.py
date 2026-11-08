@@ -191,7 +191,7 @@ def _schemas(root: Path, process: bool, control: MaintenanceIOControl) -> None:
         "action-audit.db": ("action_audit_metadata", ("2", "3")),
         "execution-plans.db": ("execution_store_metadata", ("1", "2")),
         "product-config.db": ("product_config_metadata", ("1",)),
-        "workspace-transactions/transactions.db": ("delivery_metadata", ("1", "2", "3")),
+        "workspace-transactions/transactions.db": ("delivery_metadata", ("1", "2", "3", "4")),
         PROCESS_DATABASE: ("process_store_metadata", ("2",)),
     }
     for path in (*DATABASES, *((PROCESS_DATABASE,) if process else ())):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Self
+from typing import ClassVar, Literal, Self
 from uuid import UUID
 
 from pydantic import AwareDatetime, ConfigDict, Field, model_validator
@@ -56,18 +56,23 @@ class WorkspaceFileVersion(DeliveryContract):
 
 
 class WorkspaceMutation(DeliveryContract):
+    # 代际与成员类型严格对应：保留权限代际的文件版本不能夹带进原合同（ADR 0068第2版）。
+    version_type: ClassVar[type[WorkspaceFileVersion]] = WorkspaceFileVersion
     path: str = Field(min_length=1, max_length=4096)
     before: WorkspaceFileVersion
     after: WorkspaceFileVersion
 
     @model_validator(mode="after")
     def has_effect(self) -> Self:
+        if type(self.before) is not self.version_type or type(self.after) is not self.version_type:
+            raise ValueError("Workspace Mutation文件版本代际不一致")
         if self.before == self.after:
             raise ValueError("Workspace Mutation必须产生变化")
         return self
 
 
 class WorkspaceTransactionPlan(DeliveryContract):
+    mutation_type: ClassVar[type[WorkspaceMutation]] = WorkspaceMutation
     spec_version: Literal["harnessix.workspace-transaction-plan/v1"] = (
         "harnessix.workspace-transaction-plan/v1"
     )
@@ -80,6 +85,8 @@ class WorkspaceTransactionPlan(DeliveryContract):
 
     @model_validator(mode="after")
     def complete_plan(self) -> Self:
+        if any(type(item) is not self.mutation_type for item in self.mutations):
+            raise ValueError("Workspace Transaction Plan成员代际不一致")
         normalized = [
             normalize_workspace_path(item.path, self.source.platform) for item in self.mutations
         ]
@@ -158,11 +165,17 @@ def workspace_transaction_record_digest(record: WorkspaceTransactionRecord) -> s
 
 
 def new_transaction_record(plan: WorkspaceTransactionPlan) -> WorkspaceTransactionRecord:
+    from harnessix.delivery.preserved_mode_contracts import (
+        new_preserved_mode_record,
+        preserves_file_modes,
+    )
     from harnessix.delivery.workspace_v2_contracts import (
         WorkspaceTransactionPlanV2,
         new_transaction_record_v2,
     )
 
+    if preserves_file_modes(plan):
+        return new_preserved_mode_record(plan)  # type: ignore[arg-type]
     if isinstance(plan, WorkspaceTransactionPlanV2):
         return new_transaction_record_v2(plan)
     candidate = WorkspaceTransactionRecord.model_construct(
@@ -198,11 +211,23 @@ def transition_transaction_record(
     now: datetime,
     error_code: str | None = None,
 ) -> WorkspaceTransactionRecord:
+    from harnessix.delivery.preserved_mode_contracts import (
+        preserves_file_modes,
+        transition_preserved_mode_record,
+    )
     from harnessix.delivery.workspace_v2_contracts import (
         WorkspaceTransactionRecordV2,
         transition_transaction_record_v2,
     )
 
+    if preserves_file_modes(record.plan):
+        return transition_preserved_mode_record(
+            record,  # type: ignore[arg-type]
+            state=state,
+            cursor=cursor,
+            now=now,
+            error_code=error_code,
+        )
     if isinstance(record, WorkspaceTransactionRecordV2):
         return transition_transaction_record_v2(
             record, state=state, cursor=cursor, now=now, error_code=error_code

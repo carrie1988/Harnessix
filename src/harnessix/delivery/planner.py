@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import stat
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -22,6 +21,13 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionPlan,
     workspace_transaction_plan_fingerprint,
 )
+from harnessix.delivery.file_modes import observed_permission_mode
+from harnessix.delivery.preserved_mode_contracts import (
+    WorkspaceFileVersionV2,
+    WorkspaceMutationV2,
+    WorkspaceTransactionPlanV3,
+    needs_preserved_modes,
+)
 from harnessix.delivery.workspace_patch_errors import _no_change_error
 from harnessix.tools.workspace import ReadOperation, Workspace
 from harnessix.workspace.contracts import (
@@ -37,15 +43,17 @@ from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_work
 
 @dataclass(frozen=True, slots=True)
 class DesiredWorkspaceFile:
+    """目标文件；mode可以是现有文件的真实普通权限（edit保留、回滚恢复），新建由输入合同限定。"""
+
     content: bytes | None = field(repr=False)
-    mode: FileMode | None = None
+    mode: int | None = None
 
     def __post_init__(self) -> None:
         if self.content is None:
             if self.mode is not None:
                 raise ValueError("删除文件不能指定模式")
-        elif type(self.content) is not bytes or self.mode not in {0o644, 0o755}:
-            raise ValueError("目标文件必须是bytes且模式为0644或0755")
+        elif type(self.content) is not bytes or not _permission_mode(self.mode):
+            raise ValueError("目标文件必须是bytes且模式为普通权限位")
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +95,12 @@ def prepare_workspace_transaction(
     }
     mutations, blobs = _prepare_mutations(Path(root), normalized, observations, selected_platform)
     verify_workspace_snapshot(snapshot, root)
-    candidate = WorkspaceTransactionPlan.model_construct(
+    plan_type: type[WorkspaceTransactionPlan] = (
+        WorkspaceTransactionPlanV3
+        if type(mutations[0]) is WorkspaceMutationV2
+        else WorkspaceTransactionPlan
+    )
+    candidate = plan_type.model_construct(
         _fields_set=None,
         transaction_id=transaction_id or uuid4(),
         request_id=request_id,
@@ -96,7 +109,7 @@ def prepare_workspace_transaction(
         created_at=checked_now,
         fingerprint="0" * 64,
     )
-    plan = WorkspaceTransactionPlan(
+    plan = plan_type(
         transaction_id=candidate.transaction_id,
         request_id=request_id,
         source=snapshot,
@@ -115,8 +128,12 @@ def _prepare_mutations(
     *,
     checkpoint: Callable[[], None] | None = None,
 ) -> tuple[tuple[WorkspaceMutation, ...], dict[str, bytes]]:
-    """两代计划复用原前后镜像、单文件上限与来源摘要核验。"""
-    mutations: list[WorkspaceMutation] = []
+    """各代计划复用原前后镜像、单文件上限与来源摘要核验，并保持原逐项fail-fast顺序。
+
+    成员先按真实权限记录；只有涉及0644/0755以外的权限时整笔事务才使用保留权限代际，
+    否则转换为原合同成员，字段与字节同第1版（ADR 0068第2版）。
+    """
+    mutations: list[WorkspaceMutationV2] = []
     blobs: dict[str, bytes] = {}
     for path, target in sorted(
         normalized.items(), key=lambda item: path_comparison_key(item[0], selected_platform)
@@ -128,7 +145,7 @@ def _prepare_mutations(
         if observed.kind == "directory":
             raise KernelError("delivery_path_denied", "Workspace事务目标不能是目录")
         if observed.kind == "file":
-            before_body, before_mode = _read_existing(
+            before_body, before_mode = _read_existing_file(
                 root, path, selected_platform, checkpoint=checkpoint
             )
             before = _file_version(before_body, before_mode)
@@ -138,9 +155,9 @@ def _prepare_mutations(
                 raise KernelError("delivery_source_changed", "Workspace事务来源摘要缺失")
             blobs[before.sha256] = before_body
         else:
-            before = WorkspaceFileVersion(presence="absent", size=0)
+            before = WorkspaceFileVersionV2(presence="absent", size=0)
         if target.content is None:
-            after = WorkspaceFileVersion(presence="absent", size=0)
+            after = WorkspaceFileVersionV2(presence="absent", size=0)
         else:
             after = _file_version(target.content, target.mode)
             if after.sha256 is None:
@@ -155,8 +172,19 @@ def _prepare_mutations(
             ):
                 raise _no_change_error(path, before.sha256, before.mode)
             raise KernelError("delivery_no_change", "Workspace事务包含无变化文件")
-        mutations.append(WorkspaceMutation(path=path, before=before, after=after))
-    return tuple(mutations), blobs
+        mutations.append(WorkspaceMutationV2(path=path, before=before, after=after))
+    if needs_preserved_modes([v.mode for item in mutations for v in (item.before, item.after)]):
+        return tuple(mutations), blobs
+    return tuple(_original_mutation(item) for item in mutations), blobs
+
+
+def _original_mutation(mutation: WorkspaceMutationV2) -> WorkspaceMutation:
+    """权限都能用原合同表示时无损转换为第1版成员。"""
+    return WorkspaceMutation(
+        path=mutation.path,
+        before=WorkspaceFileVersion.model_validate(mutation.before.model_dump()),
+        after=WorkspaceFileVersion.model_validate(mutation.after.model_dump()),
+    )
 
 
 def _normalized_targets(
@@ -167,7 +195,7 @@ def _normalized_targets(
     normalized: dict[str, DesiredWorkspaceFile] = {}
     comparison: set[str] = set()
     for supplied, target in desired.items():
-        if platform == "windows" and target.mode == 0o755:
+        if platform == "windows" and target.mode not in (None, 0o644):
             raise KernelError("delivery_metadata_unsupported", "Windows事务不模拟POSIX可执行模式")
         path = normalize_workspace_path(supplied, platform)
         key = path_comparison_key(path, platform)
@@ -178,28 +206,43 @@ def _normalized_targets(
     return normalized
 
 
-def _file_version(body: bytes, mode: FileMode | None) -> WorkspaceFileVersion:
+def _permission_mode(mode: object) -> bool:
+    return type(mode) is int and 0 <= mode <= 0o777
+
+
+def _file_version(body: bytes, mode: int | None) -> WorkspaceFileVersionV2:
     if (
         type(body) is not bytes
         or len(body) > MAX_TRANSACTION_FILE_BYTES
-        or mode
-        not in {
-            0o644,
-            0o755,
-        }
+        or not _permission_mode(mode)
     ):
         raise KernelError("delivery_plan_limit", "Workspace事务文件镜像无效或超过上限")
-    return WorkspaceFileVersion(
-        presence="file",
-        sha256=hashlib.sha256(body).hexdigest(),
-        size=len(body),
-        mode=mode,
+    return WorkspaceFileVersionV2.model_validate(
+        {
+            "presence": "file",
+            "sha256": hashlib.sha256(body).hexdigest(),
+            "size": len(body),
+            "mode": mode,
+        }
     )
 
 
 def _read_existing(
     root: Path, path: str, platform: PlatformKind, *, checkpoint: Callable[[], None] | None = None
 ) -> tuple[bytes, FileMode]:
+    """Git交付等只认Git可表示权限的调用方：0644/0755以外的普通文件明确拒绝。"""
+    body, mode = _read_existing_file(root, path, platform, checkpoint=checkpoint)
+    if mode == 0o644:
+        return body, 0o644
+    if mode == 0o755:
+        return body, 0o755
+    raise KernelError("delivery_metadata_unsupported", "Workspace事务只支持0644或0755普通文件")
+
+
+def _read_existing_file(
+    root: Path, path: str, platform: PlatformKind, *, checkpoint: Callable[[], None] | None = None
+) -> tuple[bytes, int]:
+    """读取现有普通文件及其真实普通权限位；带setuid、setgid或sticky位的文件拒绝。"""
     if platform == "posix" and os.name == "posix":
         try:
             with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
@@ -212,17 +255,7 @@ def _read_existing(
                         descriptor,
                         checkpoint=operation.checkpoint if checkpoint is not None else None,
                     )
-                    actual_mode = stat.S_IMODE(info.st_mode)
-                    if actual_mode == 0o644:
-                        mode: FileMode = 0o644
-                    elif actual_mode == 0o755:
-                        mode = 0o755
-                    else:
-                        raise KernelError(
-                            "delivery_metadata_unsupported",
-                            "Workspace事务只支持0644或0755普通文件",
-                        )
-                    return body, mode
+                    return body, observed_permission_mode(info.st_mode)
         except UpstreamCheckpointError as error:
             raise error.error from None
         except OSError:

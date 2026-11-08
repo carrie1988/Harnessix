@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "description": "文件版本的完整性规则沿用原合同，只把权限放宽为真实的普通权限位。",
+  "properties": {
+    "presence": {
+      "enum": [
+        "absent",
+        "file"
+      ],
+      "title": "Presence",
+      "type": "string"
+    },
+    "sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sha256"
+    },
+    "size": {
+      "maximum": 8388608,
+      "minimum": 0,
+      "title": "Size",
+      "type": "integer"
+    },
+    "mode": {
+      "anyOf": [
+        {
+          "maximum": 511,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mode"
+    }
+  },
+  "required": [
+    "presence",
+    "size"
+  ],
+  "title": "WorkspaceFileVersionV2",
+  "type": "object"
+}

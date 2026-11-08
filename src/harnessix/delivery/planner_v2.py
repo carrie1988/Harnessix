@@ -17,6 +17,10 @@ from harnessix.delivery.planner import (
     _normalized_targets,
     _prepare_mutations,
 )
+from harnessix.delivery.preserved_mode_contracts import (
+    WorkspaceMutationV2,
+    WorkspaceTransactionPlanV4,
+)
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionPlanV2
 from harnessix.workspace.contracts import PlatformKind, WorkspaceResourceRequest
 from harnessix.workspace.snapshot_v2 import (
@@ -61,7 +65,13 @@ def prepare_workspace_transaction_v2(
         Path(root), normalized, observations, selected, checkpoint=checkpoint
     )
     verify_workspace_snapshot_v2(snapshot, root, checkpoint=checkpoint, read_blob=read_blob)
-    candidate = WorkspaceTransactionPlanV2.model_construct(
+    # 涉及0644/0755以外的权限时才用保留权限代际v4（ADR 0068第2版），否则仍是v2。
+    plan_type: type[WorkspaceTransactionPlanV2] = (
+        WorkspaceTransactionPlanV4
+        if type(mutations[0]) is WorkspaceMutationV2
+        else WorkspaceTransactionPlanV2
+    )
+    candidate = plan_type.model_construct(
         transaction_id=transaction_id or uuid4(),
         request_id=request_id,
         source=snapshot,
@@ -70,7 +80,7 @@ def prepare_workspace_transaction_v2(
         fingerprint="0" * 64,
     )
     # 仅用构造对象计算新代际摘要；对外结果必须再次经过完整领域校验。
-    plan = WorkspaceTransactionPlanV2(
+    plan = plan_type(
         **candidate.model_dump(exclude={"fingerprint"}, warnings="error"),
         fingerprint=workspace_transaction_plan_fingerprint(candidate),
     )

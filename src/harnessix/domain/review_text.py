@@ -10,6 +10,8 @@ from harnessix.domain.artifact_pagination import MAX_ARTIFACT_BYTES
 
 _VERSIONS = {
     "harnessix.workspace-action-review/v1",
+    # 保留文件权限代际（ADR 0068第2版）的Review：记录结构与v1相同，只是条目中的权限范围更宽。
+    "harnessix.workspace-action-review/v2",
     "harnessix.product-git-action-review/v1",
 }
 

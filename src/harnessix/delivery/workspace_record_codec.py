@@ -11,6 +11,13 @@ from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.contracts import WorkspaceTransactionPlan, WorkspaceTransactionRecord
+from harnessix.delivery.preserved_mode_contracts import (
+    WorkspaceStoredRecordV4,
+    WorkspaceTransactionPlanV3,
+    WorkspaceTransactionPlanV4,
+    WorkspaceTransactionRecordV3,
+    WorkspaceTransactionRecordV4,
+)
 from harnessix.delivery.workspace_record_contracts import (
     MAX_STORED_RECORD_BYTES,
     WorkspacePlanReference,
@@ -39,6 +46,31 @@ WorkspaceRecordReference = (
     WorkspacePlanReference | WorkspaceParentClosureReference | WorkspaceParentChunkReference
 )
 _INVALID_DATA = (ValidationError, ValueError, TypeError, UnicodeError, RecursionError)
+# 领域记录版本到精确Plan/Record类型；各代际互不降级解析。
+_DomainTypes = tuple[type[WorkspaceTransactionPlan], type[WorkspaceTransactionRecord]]
+_DOMAIN_TYPES: dict[str, _DomainTypes] = {
+    "harnessix.workspace-transaction-record/v1": (
+        WorkspaceTransactionPlan,
+        WorkspaceTransactionRecord,
+    ),
+    "harnessix.workspace-transaction-record/v2": (
+        WorkspaceTransactionPlanV2,
+        WorkspaceTransactionRecordV2,
+    ),
+    "harnessix.workspace-transaction-record/v3": (
+        WorkspaceTransactionPlanV3,
+        WorkspaceTransactionRecordV3,
+    ),
+    "harnessix.workspace-transaction-record/v4": (
+        WorkspaceTransactionPlanV4,
+        WorkspaceTransactionRecordV4,
+    ),
+}
+_ENVELOPE_TYPES: dict[str, type[WorkspaceStoredRecord]] = {
+    "harnessix.workspace-stored-record/v2": WorkspaceStoredRecord,
+    "harnessix.workspace-stored-record/v3": WorkspaceStoredRecordV3,
+    "harnessix.workspace-stored-record/v4": WorkspaceStoredRecordV4,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,11 +113,9 @@ def _encode(
             fingerprint=checked.plan.fingerprint,
         )
         metadata = checked.model_dump(exclude={"spec_version", "plan"}, warnings="error")
-        envelope_type = (
-            WorkspaceStoredRecordV3
-            if isinstance(checked, WorkspaceTransactionRecordV2)
-            else WorkspaceStoredRecord
-        )
+        envelope_type = _envelope_type(checked)
+        if envelope_type is WorkspaceStoredRecordV4:
+            metadata["domain_spec_version"] = checked.spec_version
         envelope = envelope_type(**metadata, plan_ref=reference)
         payload = envelope.model_dump_json(warnings="error")
         _bounded_payload(payload)
@@ -166,11 +196,7 @@ def _decode(
             return DecodedWorkspaceRecord(
                 WorkspaceTransactionRecord.model_validate_json(payload, strict=True), ()
             )
-        envelope_types: dict[str, type[WorkspaceStoredRecord]] = {
-            "harnessix.workspace-stored-record/v2": WorkspaceStoredRecord,
-            "harnessix.workspace-stored-record/v3": WorkspaceStoredRecordV3,
-        }
-        envelope_type = envelope_types.get(version)
+        envelope_type = _ENVELOPE_TYPES.get(version)
         if envelope_type is None:
             raise ValueError
         envelope = envelope_type.model_validate_json(payload, strict=True)
@@ -192,8 +218,7 @@ def _decode(
             or hashlib.sha256(body).hexdigest() != reference.sha256
         ):
             raise ValueError
-        new_domain = isinstance(envelope, WorkspaceStoredRecordV3)
-        plan_type = WorkspaceTransactionPlanV2 if new_domain else WorkspaceTransactionPlan
+        plan_type, record_type = _DOMAIN_TYPES[envelope.domain_spec_version]
         plan = plan_type.model_validate_json(body, strict=True)
         if plan.fingerprint != reference.fingerprint:
             raise ValueError
@@ -204,7 +229,6 @@ def _decode(
         )
         metadata["spec_version"] = envelope.domain_spec_version
         metadata["plan"] = plan.model_dump(mode="json", warnings="error")
-        record_type = WorkspaceTransactionRecordV2 if new_domain else WorkspaceTransactionRecord
         record = record_type.model_validate_json(
             json.dumps(metadata, ensure_ascii=False, separators=(",", ":"), allow_nan=False),
             strict=True,
@@ -225,15 +249,21 @@ def _decode(
 
 def validate_workspace_record(record: WorkspaceTransactionRecord) -> WorkspaceTransactionRecord:
     """使用实际新旧类型完整验真输入；不经旧 Record 丢弃新父引用。"""
-    model = (
-        WorkspaceTransactionRecordV2
-        if isinstance(record, WorkspaceTransactionRecordV2)
-        else WorkspaceTransactionRecord
-    )
     try:
+        _, model = _DOMAIN_TYPES[record.spec_version]
+        if type(record) is not model:
+            raise ValueError
         return model.model_validate_json(record.model_dump_json(warnings="error"), strict=True)
-    except _INVALID_DATA:
+    except (*_INVALID_DATA, KeyError):
         raise KernelError("delivery_record_invalid", "Workspace事务记录无效") from None
+
+
+def _envelope_type(record: WorkspaceTransactionRecord) -> type[WorkspaceStoredRecord]:
+    if isinstance(record, WorkspaceTransactionRecordV3 | WorkspaceTransactionRecordV4):
+        return WorkspaceStoredRecordV4
+    if isinstance(record, WorkspaceTransactionRecordV2):
+        return WorkspaceStoredRecordV3
+    return WorkspaceStoredRecord
 
 
 def _closure_references(

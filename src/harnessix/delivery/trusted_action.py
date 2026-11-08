@@ -20,7 +20,7 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionPlan,
     WorkspaceTransactionRecord,
 )
-from harnessix.delivery.planner import DesiredWorkspaceFile, _read_existing
+from harnessix.delivery.planner import DesiredWorkspaceFile, _read_existing_file
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
 from harnessix.delivery.trusted_action_contracts import (
@@ -272,7 +272,7 @@ class WorkspacePatchTransactionPlanner:
         except KernelError as error:
             if error.code != "delivery_metadata_unsupported":
                 raise
-            # 来源文件权限不是0644/0755是确定性拒绝；此时只读了工作区，未写入任何文件。
+            # 来源文件带setuid/setgid/sticky位是确定性拒绝；此时只读了工作区，未写入任何文件。
             raise workspace_patch_preparation_error(
                 error.code, f"{error.message}；本次Patch未执行，工作区没有变化"
             ) from None
@@ -375,13 +375,14 @@ def _desired_files(
             continue
         if item.operation == "replace":
             # 先于无变化判定核对SHA：内容相同但SHA过期是可纠正的SHA不符，而非未绑定的无变化。
-            current, _mode = _read_existing(root, path, platform, checkpoint=check)
+            current, _mode = _read_existing_file(root, path, platform, checkpoint=check)
             if hashlib.sha256(current).hexdigest() != item.expected_sha256:
                 raise _sha_mismatch_error()
         if item.operation != "edit":
             desired[path] = DesiredWorkspaceFile((item.content or "").encode("utf-8"), item.mode)
             continue
-        before, mode = _read_existing(
+        # edit保留现有文件的真实权限（含0664、0777等），见ADR 0068第2版。
+        before, mode = _read_existing_file(
             root,
             path,
             platform,

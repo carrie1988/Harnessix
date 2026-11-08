@@ -65,10 +65,21 @@ from harnessix.delivery.git_contracts import (
     ManagedGitWorktreePlan,
     ManagedGitWorktreeRecord,
 )
+from harnessix.delivery.preserved_mode_contracts import (
+    WorkspaceDiffDocumentV2,
+    WorkspaceFileVersionV2,
+    WorkspaceMutationV2,
+    WorkspaceStoredRecordV4,
+    WorkspaceTransactionPlanV3,
+    WorkspaceTransactionPlanV4,
+    WorkspaceTransactionRecordV3,
+    WorkspaceTransactionRecordV4,
+)
 from harnessix.delivery.rollback_action import WorkspaceRollbackInput
 from harnessix.delivery.trusted_action_contracts import (
     PublicWorkspacePatchOutput,
     WorkspaceActionReviewRecord,
+    WorkspaceActionReviewRecordV2,
     WorkspacePatchInput,
 )
 from harnessix.delivery.workspace_record_contracts import WorkspaceStoredRecord
@@ -442,6 +453,10 @@ def generate_specs(output: Path) -> None:
         output / "workspace-action-review-record-v1.schema.json",
         TypeAdapter(WorkspaceActionReviewRecord).json_schema(),
     )
+    write_json(
+        output / "workspace-action-review-record-v2.schema.json",
+        TypeAdapter(WorkspaceActionReviewRecordV2).json_schema(),
+    )
     for name, model in (
         ("git-prefix-catalog", GitPrefixCatalog),
         ("compaction-anchor", CompactionAnchor),
@@ -678,6 +693,14 @@ def generate_specs(output: Path) -> None:
         ("workspace-transaction-plan-v2", WorkspaceTransactionPlanV2),
         ("workspace-transaction-record-v2", WorkspaceTransactionRecordV2),
         ("workspace-stored-record-v3", WorkspaceStoredRecordV3),
+        ("workspace-file-version-v2", WorkspaceFileVersionV2),
+        ("workspace-mutation-v2", WorkspaceMutationV2),
+        ("workspace-transaction-plan-v3", WorkspaceTransactionPlanV3),
+        ("workspace-transaction-plan-v4", WorkspaceTransactionPlanV4),
+        ("workspace-transaction-record-v3", WorkspaceTransactionRecordV3),
+        ("workspace-transaction-record-v4", WorkspaceTransactionRecordV4),
+        ("workspace-stored-record-v4", WorkspaceStoredRecordV4),
+        ("workspace-diff-v2", WorkspaceDiffDocumentV2),
         ("execution-plan-v3", ExecutionPlanV3),
         ("action-route-plan-v2", ActionRoutePlanV2),
         ("action-route-snapshot-v2", ActionRouteSnapshotV2),

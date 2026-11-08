@@ -20,6 +20,7 @@ from harnessix.delivery.contracts import (
     new_transaction_record,
 )
 from harnessix.delivery.planner import PreparedWorkspaceTransaction
+from harnessix.delivery.preserved_mode_contracts import preserves_file_modes
 from harnessix.delivery.workspace_cas_io import confirm_blob_durable, read_blob_body
 from harnessix.delivery.workspace_record_codec import (
     DecodedWorkspaceRecord,
@@ -28,6 +29,7 @@ from harnessix.delivery.workspace_record_codec import (
     validate_workspace_record,
 )
 from harnessix.delivery.workspace_store_schema import (
+    admit_workspace_record_preserved_modes,
     admit_workspace_record_v2,
     check_workspace_store_schema,
     initialize_workspace_store,
@@ -275,7 +277,9 @@ class SQLiteWorkspaceTransactionStore:
         )
 
     def _admit(self, record: WorkspaceTransactionRecord) -> None:
-        if isinstance(record, WorkspaceTransactionRecordV2):
+        if preserves_file_modes(record.plan):
+            admit_workspace_record_preserved_modes(self._db)
+        elif isinstance(record, WorkspaceTransactionRecordV2):
             admit_workspace_record_v2(self._db)
 
     def _check(self) -> None:

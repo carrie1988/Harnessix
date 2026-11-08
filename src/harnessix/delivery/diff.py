@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from harnessix.delivery.contracts import WorkspaceDiffDocument, WorkspaceTransactionPlan
 from harnessix.delivery.diff_content import build_diff_content
+from harnessix.delivery.preserved_mode_contracts import (
+    WorkspaceDiffDocumentV2,
+    preserves_file_modes,
+)
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 
 
@@ -24,7 +28,10 @@ def build_workspace_diff(
         checkpoint=_checkpoint,
         missing_newline_markers=False,
     )
-    return WorkspaceDiffDocument(
+    document_type: type[WorkspaceDiffDocument] = (
+        WorkspaceDiffDocumentV2 if preserves_file_modes(plan) else WorkspaceDiffDocument
+    )
+    return document_type(
         transaction_id=plan.transaction_id,
         plan_fingerprint=plan.fingerprint,
         entries=content.entries,

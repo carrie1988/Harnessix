@@ -7,7 +7,7 @@ import sqlite3
 from harnessix.agent.errors import KernelError
 
 _SCHEMA_VERSION = "2"
-SUPPORTED_SCHEMA_VERSIONS = frozenset({"1", _SCHEMA_VERSION, "3"})
+SUPPORTED_SCHEMA_VERSIONS = frozenset({"1", _SCHEMA_VERSION, "3", "4"})
 
 
 def initialize_workspace_store(database: sqlite3.Connection) -> None:
@@ -71,6 +71,20 @@ def admit_workspace_record_v2(database: sqlite3.Connection) -> None:
     check_workspace_store_schema(database)
     database.execute(
         "UPDATE delivery_metadata SET value='3' WHERE key='schema_version' AND value IN ('1', '2')"
+    )
+
+
+def admit_workspace_record_preserved_modes(database: sqlite3.Connection) -> None:
+    """保留权限代际（ADR 0068第2版）仅在原业务SQL事务内提升至Schema4。
+
+    旧程序只认识Schema1～3，打开含新代际记录的账本时失败关闭，不会把0664等权限误读为0644。
+    """
+    if not database.in_transaction:
+        raise RuntimeError("Workspace保留权限代际准入必须位于原业务事务内")
+    check_workspace_store_schema(database)
+    database.execute(
+        "UPDATE delivery_metadata SET value='4' WHERE key='schema_version' "
+        "AND value IN ('1', '2', '3')"
     )
 
 

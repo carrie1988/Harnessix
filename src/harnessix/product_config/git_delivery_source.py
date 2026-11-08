@@ -23,6 +23,7 @@ from harnessix.delivery.git_authentication_control import (
     same_task_pure_git_authentication,
 )
 from harnessix.delivery.planner import _read_existing
+from harnessix.delivery.preserved_mode_contracts import preserves_file_modes
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
 from harnessix.product_config.git_native_control import (
@@ -96,6 +97,7 @@ def _owned_selection(
                     patch = load_owned_workspace_patch(
                         thread, item.transaction_id, router, transactions, checkpoint=read_control
                     )
+                _require_git_representable_modes(patch)
                 owned.append(patch)
             except KernelError as error:
                 if type(error) is not WorkspacePatchOwnershipError:
@@ -108,6 +110,17 @@ def _owned_selection(
                     raise
                 raise KernelError(codes[error.code], "Git交付原Patch来源不成立") from None
     return tuple(owned)
+
+
+def _require_git_representable_modes(patch: OwnedWorkspacePatch) -> None:
+    """保留文件权限代际的Patch（ADR 0068第2版）暂不进入Git交付：现行Git交付合同只记录
+    0644/0755，这类Patch需等Git交付按属主可执行位映射权限的版本实施后才能提交。"""
+    if preserves_file_modes(patch.record.plan):
+        raise KernelError(
+            "git_delivery_source_mode_unsupported",
+            "该Patch修改了权限为0644/0755以外的文件，当前Git交付不支持；"
+            "可把这些文件的权限改为0644或0755后重新修改，或在Git中手动提交",
+        )
 
 
 def _merge_versions(
