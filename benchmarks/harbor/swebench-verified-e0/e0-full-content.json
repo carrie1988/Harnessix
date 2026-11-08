@@ -11,7 +11,8 @@
   "notes": [
     "User decision 2026-11-08 (Langfuse content, 1A/2C; scheduling A): first run frozen with content_policy full, so Langfuse shows model and tool input and output for both systems. Verification of the step extractors (d5760c8f) on the five E0 dev tasks, not a benchmark result; it runs after the holdout round when the model replicas are idle.",
     "Model steps carry what arrived since the previous call (task, tool results, compaction summary) and the reply with its tool calls; tool steps carry arguments and results; Harnessix compactions appear as their own steps. The full request (system prompt, tool definitions, projected window) is not stored by the product.",
-    "Arms reuse the holdout Harbor settings: mini-swe-agent 2.4.6 with the phase-1 R configuration, Harnessix with the E0c rerun bundle (7412914f) and settings; plan v2, 3900 s Harbor cap, balanced host relay on 172.17.0.1:18100. Concurrency 4 is a scheduling choice for this check only."
+    "Arms reuse the holdout Harbor settings: mini-swe-agent 2.4.6 with the phase-1 R configuration; plan v2, 3900 s Harbor cap, balanced host relay on 172.17.0.1:18100. Concurrency 4 is a scheduling choice for this check only.",
+    "User decision 2026-11-08 (fast integration): evaluations use the newest integrated code. The Harnessix arm runs the integrated bundle 1df75bfd (file modes kept by workspace transactions, native sandbox, tool-call argument leniency) instead of the E0c rerun bundle 7412914f, and the eval-side workspace mode normalisation is dropped as decided for the next bundle (ADR 0120 section 7.1). Its numbers against the E0c rerun (3/5) are the first look at the effect of the integrated changes on these five tasks, not a benchmark result."
   ],
   "environment": {
     "extra_docker_compose": [
@@ -82,9 +83,9 @@
       "system": "harnessix",
       "system_version": "1.0.0rc1",
       "artifacts": [
-        "/data/harnessix/harbor/e0c-rerun-agent/harnessix-bundle.tar.gz",
-        "/data/harnessix/harbor/e0c-rerun-agent/product.json",
-        "/data/harnessix/harbor/e0c-rerun-agent/actions.json"
+        "/data/harnessix/harbor/agent-1df75bfd/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-1df75bfd/product.json",
+        "/data/harnessix/harbor/agent-1df75bfd/actions.json"
       ],
       "agent": {
         "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
@@ -92,12 +93,12 @@
           "MODEL_API_KEY": "local-replica-no-key"
         },
         "kwargs": {
-          "install_bundle": "/data/harnessix/harbor/e0c-rerun-agent/harnessix-bundle.tar.gz",
+          "install_bundle": "/data/harnessix/harbor/agent-1df75bfd/harnessix-bundle.tar.gz",
           "bundle_root": "/opt",
           "python_executable": "/opt/harnessix/bin/python",
-          "server_config_template": "/data/harnessix/harbor/e0c-rerun-agent/product.json",
+          "server_config_template": "/data/harnessix/harbor/agent-1df75bfd/product.json",
           "server_config": "/etc/harnessix-eval/product.json",
-          "action_config_template": "/data/harnessix/harbor/e0c-rerun-agent/actions.json",
+          "action_config_template": "/data/harnessix/harbor/agent-1df75bfd/actions.json",
           "action_config": "/etc/harnessix-eval/actions.json",
           "workspace": "/testbed",
           "state_directory": "/tmp/harnessix-state",
@@ -107,7 +108,7 @@
           "approval_mode": "auto",
           "external_boundary": true,
           "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
-          "normalize_workspace_modes": true
+          "normalize_workspace_modes": false
         },
         "override_timeout_sec": 3900
       }
