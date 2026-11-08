@@ -1,8 +1,8 @@
 ---
 doc_type: adr
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: d5f34d25d125f952624f8f7b1f76de6d6468bb09
 owners: [core]
 modules: [trusted_actions, product_config, sandbox]
 related_adrs:
@@ -19,7 +19,7 @@ supersedes: []
 
 # ADR-0113：沙箱内命令免审批与沙箱外命令
 
-- 状态：评审中。设计已由用户在 2026-11-07 拍板（第 6 节）
+- 状态：已接受（2026-11-08 随实现合入主线）。设计已由用户在 2026-11-07 拍板（第 6 节）
 - 日期：2026-11-07
 
 ## 1. 背景

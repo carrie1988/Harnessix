@@ -1,8 +1,8 @@
 ---
 doc_type: adr
-status: reviewing
+status: current
 version: 1
-code_revision: pending
+code_revision: d5f34d25d125f952624f8f7b1f76de6d6468bb09
 owners: [core]
 modules: [sandbox, processes, execution, product_config]
 related_adrs:
@@ -20,7 +20,7 @@ supersedes: []
 
 # ADR-0111：原生进程沙箱后端（Seatbelt 与 bubblewrap）
 
-- 状态：评审中。设计已由用户在 2026-11-07 全部拍板（第 8 节）
+- 状态：已接受（2026-11-08 随实现合入主线）。设计已由用户在 2026-11-07 全部拍板（第 8 节）
 - 日期：2026-11-07（改写 2026-11-06 草案）
 - 范围：macOS、能创建用户命名空间的 Linux 宿主机；Windows 与容器内环境不在本期
 

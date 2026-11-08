@@ -174,7 +174,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0063 | [Windows纳入Harnessix Code 1.0支持范围](0063-windows-v1-platform-support.md) | 接受 |
 | 0064 | [AGPL社区版与商业许可证双许可](0064-agpl-and-commercial-dual-licensing.md) | 接受 |
 | 0065 | [平台能力端口与不可变执行计划](0065-platform-capability-ports-and-execution-plan.md) | 接受 |
-| 0066 | [Sandbox、网络与 Secret 失败关闭边界](0066-sandbox-network-and-secret-boundaries.md) | 接受 |
+| 0066 | [Sandbox、网络与 Secret 失败关闭边界](0066-sandbox-network-and-secret-boundaries.md)（第2版：Seatbelt与bubblewrap原生沙箱后端） | 接受 |
 | 0067 | [跨平台进程所有权与终端生命周期](0067-process-ownership-and-terminal-lifecycle.md) | 接受 |
 | 0068 | [事务性 Workspace 与 Git 交付](0068-transactional-workspace-and-git-delivery.md)（第2版：保留现有文件的真实权限） | 接受 |
 | 0069 | [统一 Coding Action 风险路由](0069-unified-coding-action-risk-route.md) | 接受 |
@@ -264,8 +264,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0121：外部边界原生进程Profile](0121-external-boundary-native-process-profile.md)：不经容器在启动方提供的隔离边界内执行命令，须显式配置并由环境断言，执行计划如实记为host_guarded，工作区可写且改动保留。
 - [ADR 0123：服务方故障的如实归因](0123-provider-service-failure-attribution.md)：用量未知时仍停止付费请求，但服务方故障以原Provider错误码结束；评测记为基础设施失败，可重跑。
 
-- [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)（评审中）：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
+- [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 
-- [ADR 0112：原生命令的工作区模式](0112-native-workspace-modes.md)（评审中）：`read_only`与`read_write`（默认，改动保留）两种模式；`.git`只读、工作区`.env*`拒读；不做快照、撤销、改动记录与命令前清单，补丁前镜像核对兜底并发改动。
+- [ADR 0112：原生命令的工作区模式](0112-native-workspace-modes.md)：`read_only`与`read_write`（默认，改动保留）两种模式；`.git`只读、工作区`.env*`拒读；不做快照、撤销、改动记录与命令前清单，补丁前镜像核对兜底并发改动。
 
-- [ADR 0113：沙箱内命令免审批与沙箱外命令](0113-sandboxed-command-approval-and-host-escalation.md)（评审中）：策略v2对`host_sandboxed`命令直接放行；联网等越界操作走必须逐条批准的`host_command`；零配置下沙箱不可用时只提供逐条批准且标注未隔离的沙箱外命令。
+- [ADR 0113：沙箱内命令免审批与沙箱外命令](0113-sandboxed-command-approval-and-host-escalation.md)：策略v2把`host_sandboxed`命令标记为由宿主以系统身份自动批准（Agent内核要求写调用先有批准记录）；联网等越界操作走必须逐条批准的`host_command`；零配置下沙箱不可用时只提供逐条批准且标注未隔离的沙箱外命令。
