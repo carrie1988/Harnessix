@@ -27,6 +27,7 @@ from evalkit.contracts import (
     DatasetManifest,
     GraderSpec,
     RunPlan,
+    summarize,
 )
 from evalkit.files import read_model, write_model
 from evalkit.grading import build_report, consistency
@@ -36,6 +37,10 @@ from harbor.publisher.packager import Packager
 from integrations.swebench.official_grader import grade as official_grade
 
 _JOB_FILE = "job-configs"
+_PLAN_VERSIONS = {
+    "grader_and_normal_end": "evalkit.run-plan/v1",
+    "grader": "evalkit.run-plan/v2",
+}
 
 
 def _canonical(value: Any) -> str:
@@ -70,6 +75,23 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _plan_version(spec: dict[str, Any]) -> str:
+    """运行说明的主指标口径对应计划版本；未声明时沿用v1（要求系统正常结束）。"""
+    rule = spec.get("primary_outcome", "grader_and_normal_end")
+    if rule not in _PLAN_VERSIONS:
+        raise SystemExit(f"不支持的主指标口径：{rule}")
+    return _PLAN_VERSIONS[rule]
+
+
+def _resolve_config_file(arm: dict[str, Any], code_root: Path) -> None:
+    """智能体配置文件以仓库相对路径登记：解析到代码目录下，并作为组别制品按内容计入摘要。"""
+    kwargs = arm["agent"].get("kwargs", {})
+    config_file = kwargs.get("config_file")
+    if config_file is not None and not Path(config_file).is_absolute():
+        kwargs["config_file"] = str(code_root / config_file)
+        arm["artifacts"] = [*arm.get("artifacts", ()), kwargs["config_file"]]
+
+
 def freeze(
     spec_path: Path, tasks: Path, run_dir: Path, code_root: Path, code_revision: str
 ) -> RunPlan:
@@ -93,6 +115,7 @@ def freeze(
     }
     # 组别登记的宿主制品（安装包、配置模板）按内容计入配置摘要，路径相同而内容变化即不同组别。
     for arm in spec["arms"]:
+        _resolve_config_file(arm, code_root)
         arm["artifact_sha256"] = {
             path: _file_sha256(Path(path)) for path in arm.get("artifacts", ())
         }
@@ -109,6 +132,7 @@ def freeze(
         for arm in spec["arms"]
     )
     plan = RunPlan(
+        spec_version=_plan_version(spec),
         run_name=spec["run_name"],
         dataset=DatasetManifest(
             name=spec["dataset"]["name"], version=spec["dataset"]["version"], items=items
@@ -215,8 +239,18 @@ def finish(run_dir: Path, parsers: dict[str, str], args: argparse.Namespace) -> 
             "reward_grader_class": args.reward_grader_class,
         },
     )
+    stability = (
+        {}
+        if plan.primary_requires_normal_end
+        else {
+            "normal_end_summary": [
+                s.model_dump() for s in summarize(plan, report.trials, require_normal_end=True)
+            ]
+        }
+    )
     return {
         "summary": [s.model_dump() for s in report.summary],
+        **stability,
         "compared": agreement.compared,
         "agreed": agreement.agreed,
         "disagreements": [d.model_dump() for d in agreement.disagreements],

@@ -1,0 +1,21 @@
+{
+  "spec_version": "harnessix.raw-github-mirror-lock/v1",
+  "host": "raw.githubusercontent.com",
+  "files": {
+    "django/django/0668164b4ac93a5be79f5b87fae83c657124d9ab/tests/requirements/py3.txt": "13d46653a202f77fa38d7010828dfecfe9feba95281a150c55c4c5356f46c5ef",
+    "django/django/0fbdb9784da915fce5dcc1fe82bac9b4785749e5/tests/requirements/py3.txt": "e61305aaf64706a8dc64cbfd2b00270347ab5ec84fdc00d515532a3b4f3f0a4e",
+    "django/django/419a78300f7cd27611196e1e464d50fd0385ff27/tests/requirements/py3.txt": "1269a16630c3f5b6626aa5376e99b4aa70957b6905f3d80af25de1b7e0149a2d",
+    "django/django/475cffd1d64c690cdad16ede4d5e81985738ceb4/tests/requirements/py3.txt": "c6914798d20359debd717f262d16b9d3d68cb544da0c02c6f099f583022e6016",
+    "django/django/4a72da71001f154ea60906a2f74898d32b7322a7/tests/requirements/py3.txt": "a845bbab9646b9f24f2f67990dce9b5e221c595ed61abdb16e6152d0d51b0db4",
+    "django/django/647480166bfe7532e8c471fef0146e3a17e6c0c9/tests/requirements/py3.txt": "7b6bc06f594a8d5fd431e6247fd446d2542f7ef43ba3ea1aed680494b469208e",
+    "django/django/65dfb06a1ab56c238cc80f5e1c31f61210c4577d/tests/requirements/py3.txt": "e32c4946b199fa2953047822c7814fe12859a898438b75ddf51168fdac3d5783",
+    "matplotlib/matplotlib/0849036fd992a2dd133a0cffc3f84f58ccf1840f/environment.yml": "159a5531eba3ce443924e3ef87664d4e015c2cf7d3dfdbf4682e6228ced9d9b0",
+    "matplotlib/matplotlib/73909bcb408886a22e2b84581d6b9e6d9907c813/environment.yml": "35845479d4d37a76c3c0e6fed45780ea9ccae50e6cb02b55e3780d33a4e4ff28",
+    "matplotlib/matplotlib/de98877e3dc45de8dd441d008f23d88738dc015d/environment.yml": "1cf4031db9f3a6f283b1981ee455129c5e19550aecf7fba1fbd1b2fdee8cc338",
+    "matplotlib/matplotlib/f93c0a3dcb82feed0262d758626c90d4002685f3/requirements/dev/dev-requirements.txt": "ef9202083ca8ea6c0297f01b33b49bf2cdbbb5f3d4a4c1e928a8a884531b6a1c",
+    "matplotlib/matplotlib/f93c0a3dcb82feed0262d758626c90d4002685f3/requirements/doc/doc-requirements.txt": "44918dc977acb959d8816ce4bef4ac0ea5c142b48a2a7e54b406228b7f59b3bc",
+    "matplotlib/matplotlib/f93c0a3dcb82feed0262d758626c90d4002685f3/requirements/testing/all.txt": "ee0c3313648ccaad7194f80daa3d5ece5626c8d5defdd5c2388a0c8e06f0c0cc",
+    "matplotlib/matplotlib/f93c0a3dcb82feed0262d758626c90d4002685f3/requirements/testing/extra.txt": "4369eb73ab66569d087481aec7a86ce48e520db4660d2cda3b18d17d4afc710f",
+    "matplotlib/matplotlib/f93c0a3dcb82feed0262d758626c90d4002685f3/requirements/testing/flake8.txt": "fbbecd6748cb65b725f39b925f65590f99678752320576fdcde1515b1736f569"
+  }
+}

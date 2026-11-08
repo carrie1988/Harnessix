@@ -1,0 +1,84 @@
+{
+  "run_name": "holdout-r-verified-harbor",
+  "dataset": {
+    "name": "swebench-verified-holdout49",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 4,
+  "content_policy": "metadata",
+  "primary_outcome": "grader",
+  "notes": [
+    "Holdout gap fill on Harbor (user decisions 2026-11-08): the legacy runner is retired; only the never-run reference arm R moves here, A2x4 is not run. Results come from a different run environment than the legacy-runner arms and are reported as such.",
+    "Primary metric is the official SWE-bench resolve of the exported patch regardless of how the agent ended (plan v2, same as the leaderboard and the legacy runner); 'ended normally and resolved' is reported as a stability metric.",
+    "Arm R follows the phase-1 R configuration: mini-swe-agent 2.4.6 builtin SWE-bench templates, step limit 100, no cost limit, 3600 s wall limit, 900 s per command, thinking off (benchmarks/harbor/mini-swe-agent/arm-r-swebench.yaml). Harbor's agent cap is raised to 3900 s so the agent's own 3600 s limit binds first.",
+    "Differences from phase-1 R: mini runs inside the Harbor task container with Harbor's public network mode (phase-1 used docker --network none), the task text is Harbor's instruction.md, and the graded patch is the workspace diff exported after the agent ends (phase-1 graded the submitted patch.txt).",
+    "Both model replicas are used through the host relay on 172.17.0.1:18100, which pins each trial container to one replica (prefix cache) and gives new trials to the less loaded replica; phase-1 pinned mini workers round-robin.",
+    "The oracle arm validates every task, the offline GitHub raw mirror and both graders before the reference arm runs."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/host-gateway.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-verified-holdout49",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "R",
+      "system": "mini-swe-agent",
+      "system_version": "2.4.6",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:MiniSweAgentOffline",
+        "model_name": "openai/qwen3.8-flash-next",
+        "env": {
+          "OPENAI_API_KEY": "local-replica-no-key"
+        },
+        "override_timeout_sec": 3900,
+        "kwargs": {
+          "version": "2.4.6",
+          "config_file": "benchmarks/harbor/mini-swe-agent/arm-r-swebench.yaml",
+          "with_packages": [
+            "litellm==1.108.0",
+            "mcp==2.3.0",
+            "openai==3.46.0",
+            "orjson",
+            "fastapi"
+          ]
+        }
+      }
+    }
+  ]
+}
