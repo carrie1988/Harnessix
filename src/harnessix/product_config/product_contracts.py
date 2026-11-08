@@ -64,6 +64,9 @@ class ConfigurationDraft(ProductConfigContract):
     )
     omit_tool_choice: bool = Field(default=False, exclude_if=lambda value: value is False)
     thinking: ThinkingMode | None = Field(default=None, exclude_if=lambda value: value is None)
+    context_window_tokens: int | None = Field(
+        default=None, ge=8192, le=2_097_152, exclude_if=lambda value: value is None
+    )
 
     @field_validator("base_url")
     @classmethod

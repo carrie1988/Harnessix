@@ -30,6 +30,7 @@ from harnessix.product_config.agent_context import build_product_agent_context
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
 from harnessix.product_config.contracts import (
+    ModelProfile,
     ProductConfigSnapshot,
     ProfileSelection,
     ProviderDefinition,
@@ -335,13 +336,15 @@ async def _serve_product_stdio(
                             for profile in startup.actions.config.native_process_profiles
                             if profile.backend != "external_boundary"
                         )
+                        chain = [
+                            profile
+                            for profile in startup.config.config.profiles
+                            if profile.profile_id in startup.profile.profile_chain
+                        ]
                         context = build_product_agent_context(
                             tools.workspace_root,
-                            max_output_tokens=max(
-                                profile.max_output_tokens
-                                for profile in startup.config.config.profiles
-                                if profile.profile_id in startup.profile.profile_chain
-                            ),
+                            max_output_tokens=max(profile.max_output_tokens for profile in chain),
+                            context_window_tokens=_chain_context_window(chain),
                             generic_execution=generic_execution,
                             native_execution=native_execution,
                             enable_planning=True,
@@ -397,6 +400,14 @@ def _active_providers(startup: _ProductRuntimeStartup) -> tuple[ProviderDefiniti
     return tuple(
         provider for provider in startup.config.config.providers if provider.provider_id in used
     )
+
+
+def _chain_context_window(chain: list[ModelProfile]) -> int | None:
+    """Profile链共用一个Context策略：任一Profile未声明窗口时沿用固定上限，否则取最小窗口。"""
+    windows = [profile.context_window_tokens for profile in chain]
+    if any(window is None for window in windows):
+        return None
+    return min(window for window in windows if window is not None)
 
 
 async def run_product_stdio(

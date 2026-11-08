@@ -239,3 +239,14 @@ def test_configure_flags_override_the_preset(tmp_path, capsys, extra, protocol, 
     provider, profile = config.providers[0], config.profiles[0]
     assert provider.thinking_protocol == protocol and provider.omit_tool_choice is omit
     assert effective_thinking(profile, provider) == mode
+
+
+def test_declared_context_window_reaches_the_profile_and_stays_optional():
+    windowed = build_product_config(_draft(context_window_tokens=262_144)).profiles[0]
+    assert windowed.context_window_tokens == 262_144
+    plain = build_product_config(_draft()).profiles[0]
+    # 未声明时不序列化，已有配置的摘要不变。
+    assert plain.context_window_tokens is None
+    assert "context_window_tokens" not in plain.model_dump()
+    with pytest.raises(ValidationError):
+        ModelProfile.model_validate({**plain.model_dump(), "context_window_tokens": "262144"})

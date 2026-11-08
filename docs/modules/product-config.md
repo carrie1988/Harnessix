@@ -290,7 +290,7 @@ Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`Wor
 
 默认产品在认证Session、Provider、Tools和Action Owner均就绪后，通过
 [`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source。
-输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留；输入估算由宿主固定策略控制。
+输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），历史达到窗口一半时压缩、压到四分之一，摘要输出至多4096 Token；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
 Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，不创建第二HTTP Client。
 
 正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、
@@ -649,6 +649,7 @@ Anthropic定义禁止配置OpenAI输出Token参数、思考协议与工具选择
 | `required_capabilities` | 默认只要求流式用量 | 首选Profile对整条链的最低要求 |
 | `fallback_profiles` | 最多5个、有序、唯一、不含自身 | 深度优先展开的后继节点 |
 | `max_output_tokens` | 1～1,000,000；默认4096 | Adapter输出上限 |
+| `context_window_tokens` | 8192～2,097,152；默认空、不序列化 | 模型上下文窗口（真实Token）；声明后Context输入上限与压缩阈值按窗口换算，须大于两倍输出上限与1536之和 |
 | `timeout_seconds` | `(0,3600]`；默认120 | 整体请求超时 |
 | `io_timeout_seconds` | `(0,300]`；默认30 | 单次I/O超时 |
 | `max_attempts` | 1～5；默认2 | 当前Provider内部尝试数 |

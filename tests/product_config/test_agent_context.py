@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
-from harnessix.agent.models import TextContent
+from harnessix.agent.models import TextContent, Turn
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.context.contracts import ContextBuildInput, ContextInspectionV3
 from harnessix.context.engine import ContextPreparationError
@@ -200,3 +200,96 @@ async def test_default_compaction_survives_reopen_and_accounts_summary_attempt(
         or item.content.text != "事实" * 8000
         for item in final_provider.requests[0].history[:-3]
     )
+
+
+def test_declared_model_window_scales_context_and_compaction_limits(tmp_path: Path) -> None:
+    fixed = build_product_agent_context(tmp_path, max_output_tokens=4096)
+    windowed = build_product_agent_context(
+        tmp_path, max_output_tokens=4096, context_window_tokens=262_144
+    )
+
+    # 估算器按UTF-8字节计；声明窗口后按每Token 3字节换算，窗口一半触发、压到四分之一。
+    assert windowed.compaction.trigger_history_tokens == 262_144 * 3 // 2
+    assert windowed.compaction.policy.target_history_tokens == 262_144 * 3 // 4
+    assert windowed.compaction.policy.max_summary_input_tokens == (262_144 - 4096 - 1536) * 3
+    assert windowed.compaction.max_summary_output_tokens == 4096
+    assert windowed.compaction.policy.summary_reserve_tokens == 20_480
+    # 未声明窗口时与原固定上限和摘要容量一致。
+    assert fixed.compaction.max_summary_output_tokens == 2048
+    assert fixed.compaction.policy.summary_reserve_tokens == 12_288
+    assert fixed.compaction.trigger_history_tokens == PRODUCT_CONTEXT_INPUT_LIMIT // 2
+    assert fixed.compaction.policy.target_history_tokens == PRODUCT_CONTEXT_INPUT_LIMIT // 4
+    assert fixed.compaction.policy.max_summary_input_tokens == PRODUCT_CONTEXT_INPUT_LIMIT
+
+
+async def test_declared_model_window_raises_the_context_input_limit(tmp_path: Path) -> None:
+    windowed = build_product_agent_context(
+        tmp_path, max_output_tokens=4096, context_window_tokens=262_144
+    )
+    prepared = await windowed.context.prepare(_request(tmp_path), CancelToken())
+
+    assert prepared.inspection.available_input_tokens == (262_144 - 4096 - 1536) * 3
+    assert prepared.inspection.limits.reserved_output_tokens == 4096
+
+
+@pytest.mark.parametrize("window", [2 * (4096 + 1536), 2_097_153, True])
+def test_model_window_must_leave_room_for_output_and_compaction(
+    tmp_path: Path, window: object
+) -> None:
+    with pytest.raises(ValueError, match="上下文窗口"):
+        build_product_agent_context(
+            tmp_path,
+            max_output_tokens=4096,
+            context_window_tokens=window,  # type: ignore[arg-type]
+        )
+
+
+async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    path = tmp_path / "state.db"
+    seeds = SequenceProvider([accounted_text("事实" * 1100) for _ in range(8)])
+    policy = build_product_agent_context(
+        workspace, max_output_tokens=4096, context_window_tokens=32_768
+    )
+    # 小窗口的摘要容量随压缩目标收缩，仍为保留历史留出空间。
+    assert policy.compaction.trigger_history_tokens == 49_152
+    assert policy.compaction.policy.summary_reserve_tokens == 6144
+    assert policy.compaction.max_summary_output_tokens == 1228
+    async with AgentRuntime(
+        SQLiteSessionStore(path),
+        seeds,
+        async_context=policy.context,
+        compaction=policy.compaction,
+        summary_provider=seeds,
+    ) as runtime:
+        thread = await runtime.create_thread(str(workspace))
+        for index in range(8):
+            seeded = await runtime.run_turn(
+                thread.thread_id, "调查实现与测试", request_id=f"seed-{index}"
+            )
+            assert seeded.status == "completed" and not seeded.compactions
+
+    async def continue_turn(window: int | None) -> Turn:
+        final_provider = SequenceProvider([accounted_text("已完成验证。")])
+        summary = SequenceProvider([accounted_text("保留任务、已验证事实和未完成检查。")])
+        fresh = build_product_agent_context(
+            workspace, max_output_tokens=4096, context_window_tokens=window
+        )
+        async with AgentRuntime(
+            SQLiteSessionStore(path),
+            final_provider,
+            async_context=fresh.context,
+            compaction=fresh.compaction,
+            summary_provider=summary,
+        ) as runtime:
+            return await runtime.run_turn(
+                thread.thread_id, "继续修复", request_id=f"continue-{window}"
+            )
+
+    # 同一历史在固定上限下不压缩，声明的小窗口则在其一半处压缩。
+    fixed = await continue_turn(None)
+    assert fixed.status == "completed" and not fixed.compactions
+    windowed = await continue_turn(32_768)
+    assert windowed.status == "completed"
+    assert [compaction.status for compaction in windowed.compactions] == ["summarized"]

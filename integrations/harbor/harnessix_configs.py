@@ -20,6 +20,8 @@ from harnessix.product_config.wizard import build_product_config, thinking_prese
 from scripts.swebench_local_run import API_KEY_VARIABLE, MODEL, environment_presets
 
 COMMAND_TIMEOUT_SECONDS = 900
+# 宿主模型服务的上下文窗口（vLLM --max-model-len）；未列出的模型沿用产品固定上限。
+CONTEXT_WINDOW_TOKENS = {MODEL: 262_144}
 
 
 def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off") -> str:
@@ -35,6 +37,7 @@ def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off"
         thinking_protocol=preset[0],
         omit_tool_choice=preset[1],
         thinking=thinking,
+        context_window_tokens=CONTEXT_WINDOW_TOKENS.get(model),
     )
     return build_product_config(draft).model_dump_json(indent=2)
 

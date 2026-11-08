@@ -988,3 +988,20 @@ def test_config_cli_redacts_unexpected_exception(
         "retryable": False,
     }
     assert CANARY not in captured.err and captured.out == ""
+
+
+def test_profile_chain_shares_the_smallest_declared_context_window() -> None:
+    from harnessix.product_config.contracts import ModelProfile
+    from harnessix.product_config.server import _chain_context_window
+
+    def profile(profile_id: str, window: int | None) -> ModelProfile:
+        return ModelProfile(
+            profile_id=profile_id,
+            provider_id="primary",
+            model="local-model",
+            context_window_tokens=window,
+        )
+
+    assert _chain_context_window([profile("a", 262_144), profile("b", 131_072)]) == 131_072
+    # 任一Fallback未声明窗口时，整条链沿用固定上限，不按较大窗口放宽。
+    assert _chain_context_window([profile("a", 262_144), profile("b", None)]) is None

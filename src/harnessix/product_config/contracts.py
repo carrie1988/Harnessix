@@ -135,6 +135,10 @@ class ModelProfile(ProductConfigContract):
     )
     fallback_profiles: tuple[str, ...] = Field(default=(), max_length=5)
     max_output_tokens: int = Field(default=4096, ge=1, le=1_000_000)
+    # 模型上下文窗口（真实Token）；声明后Context上限与压缩阈值按窗口换算，未声明沿用固定上限。
+    context_window_tokens: int | None = Field(
+        default=None, ge=8192, le=2_097_152, strict=True, exclude_if=lambda value: value is None
+    )
     timeout_seconds: float = Field(default=120, gt=0, le=3600)
     io_timeout_seconds: float = Field(default=30, gt=0, le=300)
     max_attempts: int = Field(default=2, ge=1, le=5)

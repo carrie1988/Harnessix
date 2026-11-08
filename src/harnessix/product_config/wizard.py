@@ -143,6 +143,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     "provider_id": checked.provider_id,
                     "model": checked.model,
                     "thinking": checked.thinking,
+                    "context_window_tokens": checked.context_window_tokens,
                     **(_THINKING_LIMITS if thinking else {}),
                     **(_SELF_HOSTED_LIMITS if self_hosted else {}),
                 }

@@ -88,6 +88,10 @@ Before delivery, review actual changes with git_review (or git_status and git_di
 new untracked files. Report observed checks and any remaining environment or verification gaps.
 """
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
+# 估算器按UTF-8字节计（一个字节至多一个Token）。声明了模型窗口时按每Token 3字节换算：
+# 实测代码与英文约3.5～4字节/Token（第10百分位3.53），偶发超窗由Provider超限后的被动压缩兜底。
+_WINDOW_UTF8_BYTES_PER_TOKEN = 3
+_CONTEXT_OVERHEAD_TOKENS = 1536
 _PLANNING_INSTRUCTIONS = (
     "For multi-step coding work, use update_plan to track investigation, implementation, "
     "tests and review. Keep it short and place it after other tools in the same response; "
@@ -293,6 +297,49 @@ def _coding_instructions(
 
 
 @dataclass(frozen=True, slots=True)
+class _InputBudget:
+    """Context输入上限与压缩阈值；除摘要输出Token外，单位与估算器一致（UTF-8字节）。"""
+
+    input_limit: int
+    compaction_trigger: int
+    compaction_target: int
+    summary_output_tokens: int
+    summary_reserve: int
+
+
+def _input_budget(context_window_tokens: int | None, max_output_tokens: int) -> _InputBudget:
+    """窗口一半时压缩、压到四分之一；未声明窗口时沿用固定输入上限与原摘要容量。
+
+    声明窗口时摘要预留至多占压缩目标的四分之一（上限20480字节），
+    摘要输出按每Token约4字节另加封装换算，至多4096 Token。
+    """
+    if context_window_tokens is None:
+        return _InputBudget(
+            input_limit=PRODUCT_CONTEXT_INPUT_LIMIT,
+            compaction_trigger=PRODUCT_CONTEXT_INPUT_LIMIT // 2,
+            compaction_target=PRODUCT_CONTEXT_INPUT_LIMIT // 4,
+            summary_output_tokens=2048,
+            summary_reserve=12_288,
+        )
+    if (
+        type(context_window_tokens) is not int
+        or context_window_tokens <= 2 * (max_output_tokens + _CONTEXT_OVERHEAD_TOKENS)
+        or context_window_tokens > 2_097_152
+    ):
+        raise ValueError("模型上下文窗口须大于两倍输出上限与1536之和，且不超过2097152 Token")
+    window = context_window_tokens * _WINDOW_UTF8_BYTES_PER_TOKEN
+    summary_reserve = min(20_480, window // 16)
+    return _InputBudget(
+        input_limit=(context_window_tokens - max_output_tokens - _CONTEXT_OVERHEAD_TOKENS)
+        * _WINDOW_UTF8_BYTES_PER_TOKEN,
+        compaction_trigger=window // 2,
+        compaction_target=window // 4,
+        summary_output_tokens=min(4096, summary_reserve // 5),
+        summary_reserve=summary_reserve,
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class ProductAgentContext:
     """保存一个宿主工作区的Context Planner与统一自动压缩策略。"""
 
@@ -318,10 +365,12 @@ def build_product_agent_context(
     tool_call_cap: int | None = None,
     generic_execution: bool = False,
     native_execution: bool = False,
+    context_window_tokens: int | None = None,
 ) -> ProductAgentContext:
-    """产品和正式评测复用同一策略；输入上限是宿主估算边界而非模型容量声明。"""
+    """产品和正式评测复用同一策略；输入上限是宿主估算边界，声明模型窗口时按窗口换算。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
         raise ValueError("产品Context输出预留必须为1到1000000 Token")
+    budget = _input_budget(context_window_tokens, max_output_tokens)
     if type(native_execution) is not bool or (native_execution and not generic_execution):
         raise ValueError("本机命令指令只能与通用执行一起使用")
     if type(generic_execution) is not bool or (
@@ -373,7 +422,7 @@ def build_product_agent_context(
     if allow_optional_pre_edit_profile and require_pre_edit_profile is not False:
         raise ValueError("可选预测试不能同时启用强制修改前基线")
     limits = ContextLimits(
-        context_window_tokens=PRODUCT_CONTEXT_INPUT_LIMIT + max_output_tokens + 1536,
+        context_window_tokens=budget.input_limit + max_output_tokens + _CONTEXT_OVERHEAD_TOKENS,
         reserved_output_tokens=max_output_tokens,
     )
     engine = ContextEngine(
@@ -515,12 +564,12 @@ def build_product_agent_context(
         ),
         compaction=CompactionRuntimeConfig(
             policy=CompactionPolicy(
-                target_history_tokens=65_536,
-                summary_reserve_tokens=12_288,
-                max_summary_input_tokens=PRODUCT_CONTEXT_INPUT_LIMIT,
+                target_history_tokens=budget.compaction_target,
+                summary_reserve_tokens=budget.summary_reserve,
+                max_summary_input_tokens=budget.input_limit,
                 retain_recent_groups=2,
             ),
-            trigger_history_tokens=131_072,
-            max_summary_output_tokens=min(max_output_tokens, 2048),
+            trigger_history_tokens=budget.compaction_trigger,
+            max_summary_output_tokens=min(max_output_tokens, budget.summary_output_tokens),
         ),
     )

@@ -113,6 +113,20 @@
       ],
       "default": null,
       "title": "Thinking"
+    },
+    "context_window_tokens": {
+      "anyOf": [
+        {
+          "maximum": 2097152,
+          "minimum": 8192,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Context Window Tokens"
     }
   },
   "required": [

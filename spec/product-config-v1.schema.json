@@ -117,6 +117,20 @@
           "title": "Max Output Tokens",
           "type": "integer"
         },
+        "context_window_tokens": {
+          "anyOf": [
+            {
+              "maximum": 2097152,
+              "minimum": 8192,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Window Tokens"
+        },
         "timeout_seconds": {
           "default": 120,
           "exclusiveMinimum": 0,
