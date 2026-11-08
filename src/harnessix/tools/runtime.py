@@ -269,6 +269,22 @@ class CodingToolRuntime:
         assert self._windows is not None
         return self._windows.scope
 
+    async def read_workspace_file(self, path: str) -> bytes | None:
+        """完整读取一个不超过扫描上限的工作区文件，供提案修复核对；不可读或不支持时返回None。"""
+        if self._workspace is None:
+            return None
+        workspace = self._workspace
+        async with self._lock:
+            if self._closed:
+                return None
+            try:
+                return await run_read_operation(
+                    lambda operation: files.read_complete_bytes(workspace, path, operation),
+                    timeout_seconds=self._read_timeout_seconds,
+                )
+            except (ReadToolError, OSError, ValueError):
+                return None
+
     async def artifact_workspace_scope(self, workspace: str, cancel: CancelToken) -> str:
         if workspace != str(self.workspace_root):
             raise KernelError("tool_workspace_mismatch", "Artifact访问与已绑定工作区不匹配")

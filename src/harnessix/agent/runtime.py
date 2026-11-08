@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from collections.abc import Callable, Container, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager, aclosing
 from dataclasses import replace
 from types import TracebackType
@@ -25,7 +25,7 @@ from harnessix.agent.approvals import (
     tool_fingerprint,
 )
 from harnessix.agent.argument_normalization import normalize_stringified_containers
-from harnessix.agent.call_repair import repair_proposal
+from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.errors import KernelError
@@ -223,7 +223,7 @@ from harnessix.models.contracts import (
 )
 from harnessix.observability.core import NoOpObservability, Observability
 from harnessix.session.ports import SessionStore
-from harnessix.tools.runtime import _drain
+from harnessix.tools.runtime import CodingToolRuntime, _drain
 
 HISTORY_ARTIFACT_TIMEOUT_SECONDS = 5.0
 SUMMARY_INSTRUCTIONS = (
@@ -3117,15 +3117,17 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
-        # 强制选择时不改写工具名；其余按本步可执行集做确定性修复。
-        offered: Container[str] = (
-            ()
-            if request.forced_tool is not None
-            else {definition.name for definition in request.tools}
+        # 按本步可执行集做确定性修复；强制选择时不改写工具名。
+        offered: Mapping[str, ToolDescriptor] = (
+            {definition.name: definition for definition in request.tools}
             if self._model_tool_view is not None
             else self._definitions
         )
-        proposals = [repair_proposal(proposal, offered) for proposal in proposals]
+        reroute = request.forced_tool is None
+        proposals = [repair_proposal(p, offered, reroute=reroute) for p in proposals]
+        if isinstance(self._scoped_tools, CodingToolRuntime):
+            read = self._scoped_tools.read_workspace_file
+            proposals = [await fill_patch_preconditions(p, offered, read) for p in proposals]
         completed_calls = tuple(
             proposal for proposal in proposals if isinstance(proposal, ToolCallCompleted)
         )

@@ -154,7 +154,14 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 `read_file`只携带存档编号（`artifact_id`或作为`path`）与`offset`/`limit`时改为`read_artifact`，页大小超过200截到200
 （2026-11-08 holdout中占剩余`read_file`参数错误的28/42）。本步未开放`read_artifact`、强制工具选择、`path`另指工作区文件或
 带有其他字段时不改写，交给原有严格校验与`read_artifact`提示。改写后的规范调用才进入审批、审计与执行，存档分页核验按
-`read_artifact`身份进行。回归见[调用修复测试](../../tests/agent/test_call_repair.py)。
+`read_artifact`身份进行。
+
+同一阶段修复Workspace Patch（标准与紧凑Schema解码到同一模型）：外层单文件字段并入`files`，补齐只有edits时的edit操作，
+去掉edit上的默认mode与null content，`content_sha256`并入`expected_sha256`；多文件、字段冲突、edit同时给出content或
+可执行权限等意图不明的写法原样保留。edit的SHA缺失或过期、而每段`old_text`都在当前文件中唯一出现时，经
+`CodingToolRuntime.read_workspace_file`读取当前文件（同一工作区边界与扫描上限）补上SHA-256；replace与delete不补。
+2026-11-08 holdout的65次补丁失败中，结构修复可解8次，另有6次缺SHA与15次SHA过期可由锚定补齐。回归见
+[调用修复测试](../../tests/agent/test_call_repair.py)与[产品路径补丁修复测试](../../tests/product_config/test_patch_call_repair.py)。
 
 ## 当前增量：稳定线上工具目录（默认关闭）
 

@@ -223,6 +223,29 @@ def _complete_content_digest(fd: int, file_bytes: int, operation: ReadOperation)
         hasher.update(chunk)
 
 
+def read_complete_bytes(workspace: Workspace, path: str, operation: ReadOperation) -> bytes | None:
+    """同一FD观察中读取完整原始字节；超过扫描上限返回None，读取期间变化视为失败。"""
+
+    with workspace.open(path, operation, directory=False) as fd:
+        observed = os.fstat(fd)
+        if observed.st_size > MAX_SCAN_BYTES:
+            return None
+        chunks: list[bytes] = []
+        scanned = 0
+        while True:
+            operation.checkpoint()
+            chunk = os.read(fd, min(65536, observed.st_size - scanned + 1))
+            scanned += len(chunk)
+            if scanned > observed.st_size or (not chunk and scanned != observed.st_size):
+                raise ReadToolError("workspace_changed")
+            if not chunk:
+                break
+            chunks.append(chunk)
+        if revision_state(observed) != revision_state(os.fstat(fd)):
+            raise ReadToolError("workspace_changed")
+    return b"".join(chunks)
+
+
 def read_file_snapshot(
     workspace: Workspace,
     args: ReadFileInput,

@@ -1798,6 +1798,12 @@ delete需要expected_sha256，content/mode省略或null。原`operation_shape`�
 Descriptor明确说明完整正文不是Diff；两类Adapter原样发布同一Schema。
 总UTF-8字节、控制字符、重复路径和平台能力仍由运行时检查，不能仅凭Schema合法授予执行权限。
 
+调用组发布前，Agent的[提案阶段调用修复](../../src/harnessix/agent/call_repair.py)只做可唯一确定的改写：
+外层单文件字段并入`files`、只有edits时补`operation=edit`、去掉edit上的默认mode与null content、文本权限`"420"`/`"0644"`
+换算为整数。edit的`expected_sha256`缺失或过期、而每段`old_text`都在当前文件中唯一出现时，宿主读取当前文件补上其
+SHA-256：精确锚定已证明模型看到的是要改的当前内容，规划与执行前仍按该SHA核对（TOCTOU照旧拒绝）。replace与delete
+仍要求模型给出正确SHA，不由宿主补齐。修复后的规范参数才进入审批、审计与执行，对外Schema不变。
+
 [操作Schema详设](../changes/m09-r3-workspace-patch-operation-schema.md)说明原真实失败、
 字段矩阵和身份兼容。Schema/描述改变Tool Fingerprint及Binding，但不改变字段导出、Tool版本或数据表。
 旧Invocation/持久Route由原合同变化错误拒绝，不迁移旧批准或自动重放；重新提案必须使用当前Workspace并再次审批。
