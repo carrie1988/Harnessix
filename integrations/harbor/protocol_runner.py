@@ -314,10 +314,10 @@ async def _start_relays(specs: list[str]) -> list[asyncio.Server]:
     """容器内只允许监听本机回环端口，产品据此以明文HTTP访问模型。"""
     relays = []
     for spec in specs:
-        listen, target = model_relay.parse(spec)
+        listen, targets = model_relay.parse(spec)
         if listen[0] not in _LOOPBACK:
             raise ValueError("容器内转发只能监听本机回环地址")
-        relays.append(await model_relay.start(listen, target))
+        relays.append(await model_relay.start(listen, targets))
     return relays
 
 
