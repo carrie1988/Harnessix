@@ -176,7 +176,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 | 0065 | [平台能力端口与不可变执行计划](0065-platform-capability-ports-and-execution-plan.md) | 接受 |
 | 0066 | [Sandbox、网络与 Secret 失败关闭边界](0066-sandbox-network-and-secret-boundaries.md) | 接受 |
 | 0067 | [跨平台进程所有权与终端生命周期](0067-process-ownership-and-terminal-lifecycle.md) | 接受 |
-| 0068 | [事务性 Workspace 与 Git 交付](0068-transactional-workspace-and-git-delivery.md) | 接受 |
+| 0068 | [事务性 Workspace 与 Git 交付](0068-transactional-workspace-and-git-delivery.md)（第2版：保留现有文件的真实权限） | 接受 |
 | 0069 | [统一 Coding Action 风险路由](0069-unified-coding-action-risk-route.md) | 接受 |
 
 ### 4.8 Agent Protocol、产品运行时与扩展

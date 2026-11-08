@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 55
-code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
+version: 56
+code_revision: 386dd2c30c86865529d9163afa27344c15462ba9
 owners:
   - core
 modules:
@@ -14,6 +14,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
+  - tests/delivery/test_preserved_file_modes.py
   - tests/product_config/test_git_source_native_progress.py
   - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_checkpoint_scope_control.py
@@ -398,7 +399,7 @@ Windows执行语义证明采用`windows-ntfs-v2`并绑定NT同目录Rename、替
 | `presence` | `absent/file` | 只支持缺失或普通文件 |
 | `sha256` | 文件必填 | 完整正文SHA-256 |
 | `size` | 0～8 MiB | 完整正文大小 |
-| `mode` | `0644/0755` | 缺失为空；Windows规划的现存文件统一投影为0644 |
+| `mode` | 原代际`0644/0755`；保留权限代际0～0777 | 缺失为空；Windows规划的现存文件统一投影为0644；带setuid/setgid/sticky位的文件拒绝（ADR 0068第2版） |
 
 `absent`必须同时满足摘要为空、大小为0、模式为空；`file`必须同时提供摘要和模式。
 
@@ -438,7 +439,7 @@ Transaction Fingerprint同时绑定Snapshot、Request ID、Mutation、时间和I
 `DesiredWorkspaceFile`只允许：
 
 - `content=None, mode=None`表示删除；
-- 精确`bytes`与`0644/0755`表示创建或替换。
+- 精确`bytes`与普通权限位表示目标文件：模型新建或替换仍只给0644/0755，`edit`与回滚使用现有文件的真实权限。
 
 路径经过Workspace逻辑路径规范化、平台比较去重和控制面拒绝。Planner不创建父目录，因此目标的所有父
 目录都必须已经存在且可安全观察。
@@ -626,7 +627,7 @@ sequenceDiagram
 
 ### 14.2 创建与替换
 
-新正文从Blob Store读取，在目标同目录创建唯一0600临时普通文件，完整写入、`fchmod`为0644/0755并
+新正文从Blob Store读取，在目标同目录创建唯一0600临时普通文件，完整写入、`fchmod`为记录的权限并
 `fsync`。第二次观察目标仍等于before后，使用`os.replace`提交，再`fsync`父目录。删除在before复核后
 使用`unlink`并`fsync`父目录。
 
@@ -2377,3 +2378,18 @@ Transaction Store／Record Codec 的[可选归属读进度](../changes/m09-r4-gi
 ### 当前增量：原Mutation无变化拒绝的来源证明
 
 原`_prepare_mutations`仍在第一个无变化条目立即拒绝；只有普通文件全文和mode都相同时产生专用来源标记，不继续读后续条目、不删项执行其余文件。类型仍继承KernelError并保持`delivery_no_change`；缺失／删除等未经证明情形保持原错误。完整调用链、字段／失败顺序和负控见[共享整改详设第14.2节](../changes/m09-r3-coding-workflow-instructions.md)。
+
+### 当前增量：保留现有文件的真实权限（ADR 0068第2版）
+
+- 缺陷：原合同只用0644/0755记录文件版本，修改0664（umask 002检出）、0777等已有文件一律被拒。
+- 规划逐项经`file_modes.observed_permission_mode`按真实权限记录成员，原逐项fail-fast顺序与读取次数不变；
+  只有涉及0644/0755以外的权限时，整笔事务才使用`preserved_mode_contracts`中的保留权限代际（Plan v3/v4、
+  Record v3/v4、stored-record v4、Diff v2、Review v2），否则无损转换为原v1/v2成员，字节与指纹不变。
+  原Mutation/Plan拒绝夹带新代际成员。公开保护把Review v2按已知格式重建全文后扫描（`domain/review_text.py`）。
+- `edit`保留原权限，`replace`/`create`沿用模型给出的0644/0755，回滚恢复原权限；发布、复核与崩溃对账
+  按字段比较观察到的真实权限与记录（`filesystem.same_file_version`）。Git交付读取来源仍用只认0644/0755的
+  `planner._read_existing`。
+- 新代际记录在原业务事务内把账本升级为Schema4，旧程序打开时失败关闭；状态备份接受Schema4。
+- Git交付在`git_delivery_source`读入原Patch后以`git_delivery_source_mode_unsupported`拒绝新代际，不进入`git.py`。
+- Diff在保留0644/0755以外的权限时追加`preserved mode`行。
+

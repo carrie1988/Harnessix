@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: f0d366c3071c2e5c134dd2c475d1763ef87360c1
+version: 2
+code_revision: 386dd2c30c86865529d9163afa27344c15462ba9
 owners:
   - core
 modules:
@@ -12,13 +12,15 @@ related_adrs: []
 related_tests:
   - tests/delivery
   - tests/workspace
+  - tests/delivery/test_preserved_file_modes.py
+  - tests/product_config/test_patch_precondition_rejection.py
 supersedes: []
 ---
 
 # ADR 0068：事务性 Workspace 与 Git 交付
 
 - 状态：已接受
-- 日期：2026-09-08
+- 日期：2026-09-08；第2版 2026-11-08（缺陷纠正：保留现有文件的真实权限）
 
 ## 背景
 
@@ -49,3 +51,57 @@ supersedes: []
 - 部分发布：`interrupted`，重开后按 manifest 核对，不盲目继续；
 - Commit对象或ref更新结果丢失：按预期OID、完整对象正文和ref查询，不生成第二个commit；
 - Push 结果丢失：按远端 ref 对账，不自动重推。
+
+## 第2版：保留现有文件的真实权限（缺陷纠正，2026-11-08）
+
+### 缺陷
+
+第1版用Git能表示的两种权限（0644/0755）记录文件版本（`WorkspaceFileVersion.mode`）。原意是让每条记录
+都能一对一变成Git提交，并避免“记录是一个权限、磁盘是另一个权限”。但这把“Git能表示的权限”当成了
+“文件的真实权限”：Git只记录属主可执行位，0664、0777、0600等文件照样能提交；在磁盘上，它们与0644不同。
+结果是只要现有文件不是0644/0755，补丁一律拒绝修改。常见触发场景：
+
+- Linux默认umask为002的用户（如Ubuntu的私有用户组），`git clone`得到的文件都是0664；
+- WSL在`/mnt/c`下、部分Docker挂载目录与官方评测镜像（E0c的django-11133、sympy-13031）中文件为0777。
+
+用户反馈后定性为缺陷，优先修复。评测侧此前的权限规整（ADR 0120第7.1节）是临时绕行，本版是根治。
+
+### 决策
+
+1. 新增保留权限代际：`WorkspaceFileVersionV2`记录任意普通权限位（0～0777）；带setuid、setgid、sticky位的
+   文件仍以`delivery_metadata_unsupported`拒绝，且仍是模型可修正的失败结果、工作区不变。
+   对应`WorkspaceMutationV2`，两条Snapshot路线各一个Plan版本：`workspace-transaction-plan/v3`承接原Snapshot，
+   `/v4`承接Snapshot v2；领域记录`record/v3`、`record/v4`，物理壳`workspace-stored-record/v4`，
+   Diff文档`workspace-diff/v2`，Review首记录`workspace-action-review/v2`（代码见
+   `delivery/preserved_mode_contracts.py`）。
+2. 按需启用：规划时逐项按真实权限记录成员（`delivery/file_modes.py`），原逐项fail-fast顺序不变；只有事务
+   涉及0644/0755以外的权限时才生成新代际，且整笔事务统一为新代际；其余事务无损转换为第1版的v1/v2，
+   字段、字节和指纹都不变，
+   已提交的合同Schema、冻结的Git交付合同和Windows证据绑定的源码都不受影响。
+3. 权限语义：`edit`保留现有文件的真实权限；`replace`、`create`仍使用模型给出的0644/0755（模型可见的输入
+   合同不变）；回滚恢复原权限；发布、复核与崩溃恢复对账都按真实权限比较（观察结果总是真实权限，
+   与任一代际的记录按字段比较）。
+4. 合同守卫：原代际的Mutation与Plan拒绝夹带新代际成员（子类实例也拒绝），避免把0664写进原合同。
+5. 存储与降级：保存新代际记录时，账本在原业务SQL事务内升级为Schema4；只认识Schema1～3的旧程序打开
+   该账本时失败关闭（`delivery_store_version`），不会把0664误读为0644。状态备份接受Schema4。
+6. Git交付暂不接受新代际：`product_config/git_delivery_source.py`在读入原Patch后立即以
+   `git_delivery_source_mode_unsupported`拒绝并说明原因，不进入`delivery/git.py`。Git本身能提交这些文件
+   （按属主可执行位记为100644/100755）；以后为Git交付单独升版时按这一规则映射，需重跑Windows CI。
+7. 审阅：Diff在权限改变时显示`old mode`/`new mode`，在保留0644/0755以外的权限时显示`preserved mode`。
+
+### 被否决的做法
+
+- 就地放宽原类型的取值范围：会改变已冻结的Git交付合同与20个已发布Schema，也要改动Windows证据绑定的源码；
+- 所有新事务都用新代际：改动面最大，并让Git交付对全部新事务失效；
+- 写回时把权限规整为0644/0755：会悄悄改变用户的文件权限，回滚也无法恢复原权限。
+
+### 相关风险：其他把Git语义当成磁盘状态的地方（2026-11-08排查，只记录不修改）
+
+| 位置 | 现象 | 影响 | 是否需要修 |
+|---|---|---|---|
+| 符号链接、硬链接（`tools/workspace.py`的`_check_type`） | 补丁目标是符号链接或硬链接计数大于1时拒绝（`path_denied`） | 失败关闭，不会丢失链接语义 | 否；如需支持另行设计 |
+| Windows可执行位（`planner._normalized_targets`、Windows端口） | Windows只记录逻辑0644，拒绝0755目标 | NTFS无POSIX权限，记录与磁盘一致 | 否 |
+| 原子替换丢失的其他文件属性（`filesystem._apply`的临时文件+`os.replace`） | 新文件的属主为当前进程用户；扩展属性、ACL、macOS标签等不随替换保留；权限已按本版保留 | 以root运行修改他人文件时属主变为root；依赖xattr/ACL的文件会丢失这些属性 | 建议排期：至少在发现属主不同或存在xattr/ACL时明确拒绝或提示 |
+| 大小写不敏感的文件系统（`workspace/paths.py`：POSIX路径按大小写敏感比较） | macOS默认APFS大小写不敏感；实测已有`a.txt`时，补丁写`A.txt`被规划为修改该文件，同一批同时写`a.txt`与`A.txt`会规划成两个成员 | 第二个成员发布时发现文件已变而转为分歧，留下部分效果；路径大小写与Git索引不一致 | 需要修：按卷的大小写敏感性选择比较键，同一物理文件的不同写法在规划时拒绝 |
+| 换行符（Workspace写入原始字节；Git交付使用`core.autocrlf=false`的原始对象） | 不做换行转换 | 与`git add`在启用`text`/`eol`属性时的规范化结果可能不同 | 否（与第1版“禁用attributes外部来源”的决定一致）；Git交付升版时一并说明 |
+
