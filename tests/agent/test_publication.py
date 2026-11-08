@@ -156,7 +156,10 @@ def long_history(items: int) -> dict:
 
 async def test_request_scan_bounds_nodes_by_bytes_but_keeps_depth_bytes_and_secrets():
     with protected() as scope:
-        await protect_request_json(scope, long_history(20_000), CancelToken())  # 约10万节点
+        # 约78万字节、13.5万节点：接近窗口派生输入上限的请求，单个Secret的模式工作量仍在预算内。
+        near_cap = long_history(27_000)
+        assert 750_000 < len(json.dumps(near_cap, separators=(",", ":"))) < 1024 * 1024
+        await protect_request_json(scope, near_cap, CancelToken())
         for value, code in [
             ({"history": ["x" * 600_000, "y" * 600_000]}, "public_output_limit"),
             (json.loads("[" * 80 + "]" * 80), "public_output_limit"),
