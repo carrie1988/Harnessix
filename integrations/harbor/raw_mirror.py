@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import posixpath
 import ssl
 import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -37,7 +38,7 @@ def collect(tasks: Path, output: Path) -> dict[str, str]:
     def recording(url: str, *args, **kwargs):  # type: ignore[no-untyped-def]
         response = original(url, *args, **kwargs)
         if url.startswith(_PREFIX) and response.status_code == 200:
-            fetched[url.removeprefix(_PREFIX)] = response.content
+            fetched[wire_path(url.removeprefix(_PREFIX))] = response.content
         return response
 
     requests.get = recording
@@ -55,17 +56,27 @@ def collect(tasks: Path, output: Path) -> dict[str, str]:
     return files
 
 
+def wire_path(path: str) -> str:
+    """客户端实际发出的路径：requests/urllib3会消去`.`与`..`段，镜像按同一形式记录和查找。"""
+    return posixpath.normpath(path)
+
+
 def load(cache: Path, lock_path: Path) -> dict[str, bytes]:
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
     if lock.get("spec_version") != LOCK_VERSION or lock.get("host") != HOST:
         raise SystemExit("离线镜像锁版本或主机名不受支持")
-    files = {}
+    files: dict[str, bytes] = {}
     for path, digest in lock["files"].items():
         body = (cache / "files" / path).read_bytes()
         if hashlib.sha256(body).hexdigest() != digest:
             raise SystemExit(f"离线镜像文件摘要不一致：{path}")
-        files[path] = body
+        files[wire_path(path)] = body
     return files
+
+
+def lookup(files: dict[str, bytes], request_path: str) -> bytes | None:
+    """按请求行中的路径查找（去掉查询串、解码、规整点段）；锁外路径返回None。"""
+    return files.get(wire_path(unquote(request_path.split("?", 1)[0].lstrip("/"))))
 
 
 def certificate_authority(directory: Path) -> Path:
@@ -97,7 +108,7 @@ def certificate_authority(directory: Path) -> Path:
 def serve(files: dict[str, bytes], host: str, port: int, tls: Path) -> None:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802 - http.server接口
-            body = files.get(unquote(self.path.split("?", 1)[0].lstrip("/")))
+            body = lookup(files, self.path)
             self.send_response(200 if body is not None else 404)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.send_header("Content-Length", str(len(body or b"")))
