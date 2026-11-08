@@ -17,10 +17,14 @@ from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
-    from integrations.harbor.patch_export import head_command, parse_head, patch_command
+    from integrations.harbor.patch_export import (
+        parse_object_id,
+        patch_command,
+        workspace_tree_command,
+    )
     from integrations.harbor.workspace_modes import normalize_modes_command
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
-    from patch_export import head_command, parse_head, patch_command
+    from patch_export import parse_object_id, patch_command, workspace_tree_command
     from workspace_modes import normalize_modes_command
 
 _RUNNER = "/installed-agent/harnessix_protocol_runner.py"
@@ -219,14 +223,14 @@ class HarnessixAgent(BaseInstalledAgent):
             await self._export_evidence(environment, base, trial_id)
 
     async def _head(self, environment: BaseEnvironment) -> str | None:
-        """记录运行前的基线提交；工作区不是Git仓库时不导出补丁。"""
+        """记录运行前的工作区快照（树对象）；工作区不是Git仓库时不导出补丁。"""
         try:
             result = await self.exec_as_agent(
-                environment, command=head_command(self.workspace), timeout_sec=30
+                environment, command=workspace_tree_command(self.workspace), timeout_sec=120
             )
         except RuntimeError:
             return None
-        return parse_head(getattr(result, "stdout", None))
+        return parse_object_id(getattr(result, "stdout", None))
 
     async def _export_evidence(
         self, environment: BaseEnvironment, base: str | None, trial_id: UUID

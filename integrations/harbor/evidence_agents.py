@@ -23,9 +23,13 @@ from harbor.models.trial.paths import EnvironmentPaths, TrialPaths
 from pydantic import Field
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
-    from integrations.harbor.patch_export import head_command, parse_head, patch_command
+    from integrations.harbor.patch_export import (
+        parse_object_id,
+        patch_command,
+        workspace_tree_command,
+    )
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
-    from patch_export import head_command, parse_head, patch_command
+    from patch_export import parse_object_id, patch_command, workspace_tree_command
 
 _WORKSPACE = "/testbed"
 
@@ -38,8 +42,10 @@ class _PatchExport:
     async def run(
         self, instruction: str, environment: BaseEnvironment, context: AgentContext
     ) -> None:
-        head = await environment.exec(command=head_command(self.workspace), timeout_sec=30)
-        base = parse_head(head.stdout) if head.return_code == 0 else None
+        head = await environment.exec(
+            command=workspace_tree_command(self.workspace), timeout_sec=120
+        )
+        base = parse_object_id(head.stdout) if head.return_code == 0 else None
         try:
             await super().run(instruction, environment, context)  # type: ignore[misc]
         finally:
