@@ -7,16 +7,22 @@ from uuid import uuid4
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
-from harnessix.agent.models import TextContent, Turn
+from harnessix.agent.errors import KernelError
+from harnessix.agent.model_text import protect_request
+from harnessix.agent.models import Budget, Item, ItemStatus, TextContent, Turn
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.context.contracts import ContextBuildInput, ContextInspectionV3
 from harnessix.context.engine import ContextPreparationError
 from harnessix.context.sources import ContextSourceError
+from harnessix.context.tool_result_view import history_document
+from harnessix.domain.models import ToolDescriptor
+from harnessix.models.contracts import ModelRequest
 from harnessix.product_config.agent_context import (
     CODING_INSTRUCTIONS_VERSION,
     PRODUCT_CONTEXT_INPUT_LIMIT,
     build_product_agent_context,
 )
+from harnessix.secrets.publication import MAX_SCAN_BYTES
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.agent.test_publication import CANARY, protected
@@ -242,6 +248,70 @@ def test_model_window_must_leave_room_for_output_and_compaction(
             max_output_tokens=4096,
             context_window_tokens=window,  # type: ignore[arg-type]
         )
+
+
+def _request_at(estimated: int, catalog: tuple[ToolDescriptor, ...]) -> ModelRequest:
+    """历史、工具与指令的估算合计为estimated；少量大文本项只考验字节容量，不触及节点数上限。"""
+    remaining = estimated - sum(
+        len(
+            json.dumps(
+                tool.model_dump(mode="json"),
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        )
+        for tool in catalog
+    )
+    history: list[Item] = []
+    while remaining > 0:
+        item = Item(
+            item_id=uuid4(), status=ItemStatus.COMPLETED, content=TextContent(kind="user_message")
+        )
+        text = "a" * min(65_536, max(0, remaining - len(history_document(item).encode())))
+        item = Item(
+            item_id=item.item_id,
+            status=ItemStatus.COMPLETED,
+            content=TextContent(kind="user_message", text=text),
+        )
+        history.append(item)
+        remaining -= len(history_document(item).encode())
+    return ModelRequest(
+        thread_id=uuid4(),
+        turn_id=uuid4(),
+        step=1,
+        history=tuple(history),
+        tools=catalog,
+        catalog_tools=catalog,
+        budget=Budget(),
+    )
+
+
+async def test_window_derived_limits_keep_outbound_requests_within_the_protection_scan(
+    tmp_path: Path,
+) -> None:
+    window = 2_097_152
+    policy = build_product_agent_context(
+        tmp_path, max_output_tokens=4096, context_window_tokens=window
+    )
+    # 最大窗口按每Token 3字节换算远超出站请求的扫描容量；换算结果截到扫描容量的四分之三。
+    input_limit = policy.compaction.policy.max_summary_input_tokens
+    assert input_limit == MAX_SCAN_BYTES * 3 // 4
+    assert policy.compaction.trigger_history_tokens == input_limit // 2
+    assert policy.compaction.policy.target_history_tokens == input_limit // 4
+    prepared = await policy.context.prepare(_request(tmp_path), CancelToken())
+    assert prepared.inspection.available_input_tokens == input_limit
+
+    async with CodingToolRuntime(tmp_path) as tools:
+        catalog = tools.definitions()
+    with protected() as scope:
+        # 估算恰在上限的请求另带完整线上目录，仍能通过出站保护扫描。
+        await protect_request(_request_at(input_limit, catalog), scope, CancelToken())
+        with pytest.raises(KernelError) as caught:
+            await protect_request(
+                _request_at((window - 4096 - 1536) * 3, catalog), scope, CancelToken()
+            )
+    assert caught.value.code == "public_output_limit"
 
 
 async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_path: Path) -> None:

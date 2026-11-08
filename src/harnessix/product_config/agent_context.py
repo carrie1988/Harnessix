@@ -15,6 +15,7 @@ from harnessix.context.sources import (
     SourcedContextEngine,
     WorkspaceContextSource,
 )
+from harnessix.secrets.publication import MAX_SCAN_BYTES
 
 CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
 _OPTIONAL_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v23"
@@ -92,6 +93,9 @@ PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 # 实测代码与英文约3.5～4字节/Token（第10百分位3.53），偶发超窗由Provider超限后的被动压缩兜底。
 _WINDOW_UTF8_BYTES_PER_TOKEN = 3
 _CONTEXT_OVERHEAD_TOKENS = 1536
+# 出站模型请求整体须通过公开输出保护扫描，其规范JSON至多MAX_SCAN_BYTES。估算已含历史、可执行工具
+# 与指令的规范JSON；请求另带稳定线上目录与信封字段，为其保留四分之一扫描容量。
+_REQUEST_INPUT_CAP = MAX_SCAN_BYTES * 3 // 4
 _PLANNING_INSTRUCTIONS = (
     "For multi-step coding work, use update_plan to track investigation, implementation, "
     "tests and review. Keep it short and place it after other tools in the same response; "
@@ -310,6 +314,7 @@ class _InputBudget:
 def _input_budget(context_window_tokens: int | None, max_output_tokens: int) -> _InputBudget:
     """窗口一半时压缩、压到四分之一；未声明窗口时沿用固定输入上限与原摘要容量。
 
+    换算后的窗口与输入上限不超过出站请求扫描容量的四分之三，大窗口不会产生无法发出的请求。
     声明窗口时摘要预留至多占压缩目标的四分之一（上限20480字节），
     摘要输出按每Token约4字节另加封装换算，至多4096 Token。
     """
@@ -327,11 +332,14 @@ def _input_budget(context_window_tokens: int | None, max_output_tokens: int) -> 
         or context_window_tokens > 2_097_152
     ):
         raise ValueError("模型上下文窗口须大于两倍输出上限与1536之和，且不超过2097152 Token")
-    window = context_window_tokens * _WINDOW_UTF8_BYTES_PER_TOKEN
+    window = min(context_window_tokens * _WINDOW_UTF8_BYTES_PER_TOKEN, _REQUEST_INPUT_CAP)
     summary_reserve = min(20_480, window // 16)
     return _InputBudget(
-        input_limit=(context_window_tokens - max_output_tokens - _CONTEXT_OVERHEAD_TOKENS)
-        * _WINDOW_UTF8_BYTES_PER_TOKEN,
+        input_limit=min(
+            (context_window_tokens - max_output_tokens - _CONTEXT_OVERHEAD_TOKENS)
+            * _WINDOW_UTF8_BYTES_PER_TOKEN,
+            _REQUEST_INPUT_CAP,
+        ),
         compaction_trigger=window // 2,
         compaction_target=window // 4,
         summary_output_tokens=min(4096, summary_reserve // 5),
