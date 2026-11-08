@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,6 +28,8 @@ from harnessix.product_config.product_contracts import (
     product_preflight_report_digest,
 )
 from harnessix.product_config.runtime import DependencyFinder
+from harnessix.sandbox.native_contracts import HostSandboxProbeV2
+from harnessix.sandbox.native_probe import probe_native_sandbox
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +56,7 @@ def run_product_preflight(
     workspace_probe: WorkspaceProbe = default_workspace_probe,
     platform_name: str | None = None,
     monotonic_clock: MonotonicClock = time.monotonic,
+    sandbox_probe: Callable[[], HostSandboxProbeV2] = probe_native_sandbox,
 ) -> ProductPreflightReport:
     """执行离线只读检查；预期失败转为稳定Check并继续独立检查。"""
 
@@ -70,6 +73,7 @@ def run_product_preflight(
         request.action_config_path,
         configuration.snapshot,
         zero_config=request.zero_config_actions,
+        sandbox_probe=sandbox_probe,
         platform=platform,
         environment=environment,
         recorder=recorder,

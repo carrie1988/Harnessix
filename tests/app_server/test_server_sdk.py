@@ -1200,6 +1200,62 @@ async def test_sdk_approval_response_drives_decided_turn(tmp_path: Path) -> None
         await client.close()
 
 
+async def test_sdk_approval_rejects_reserved_system_actor(tmp_path: Path) -> None:
+    """客户端不能冒用宿主的系统身份；拒绝后审批仍待决（ADR 0113）。"""
+
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    tools = RecordingTools(approval=True)
+    provider = ScriptedProvider([tool_step("test.read"), answer("不会执行")])
+    async with AgentRuntime(store, provider, tools) as runtime:
+        service = await _service(runtime, store)
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        await client.initialize()
+        thread = await client.create_thread(str(tmp_path), request_id="create-reserved")
+        accepted = await client.start_turn(thread.thread_id, "读取文件", request_id="turn-reserved")
+        await wait_for_turn_status(client, thread.thread_id, "waiting_approval")
+        turn = (await store.get_thread(thread.thread_id)).turns[-1]
+        call = next(
+            item.content
+            for item in turn.items
+            if getattr(item.content, "kind", None) == "tool_call"
+        )
+        approval = approval_for(turn, call)
+        assert approval is not None
+        with pytest.raises(AgentSDKError) as error:
+            await client.respond_approval(
+                ApprovalRespondParams(
+                    request_id="impersonate",
+                    thread_id=thread.thread_id,
+                    turn_id=accepted.turn_id,
+                    approval_id=approval.content.approval_id,
+                    fingerprint=approval.content.request_fingerprint,
+                    decision=PublicApprovalDecision(
+                        outcome="approved", actor="harnessix:sandbox-policy"
+                    ),
+                )
+            )
+        assert error.value.code == "invalid_params"
+        after = (await store.get_thread(thread.thread_id)).turns[-1]
+        assert approval_for(after, call).content.decision is None  # type: ignore[union-attr]
+        assert after.status.value == "waiting_approval"
+        assert tools.calls == []
+        # 只保留冒号前缀本身；Harbor适配器的"harnessix-harbor:<模式>"等连字符前缀照常接受。
+        await client.respond_approval(
+            ApprovalRespondParams(
+                request_id="harbor",
+                thread_id=thread.thread_id,
+                turn_id=accepted.turn_id,
+                approval_id=approval.content.approval_id,
+                fingerprint=approval.content.request_fingerprint,
+                decision=PublicApprovalDecision(outcome="approved", actor="harnessix-harbor:auto"),
+            )
+        )
+        await wait_for_turn_status(client, thread.thread_id, "completed")
+        assert len(tools.calls) == 1
+        await service.close()
+        await client.close()
+
+
 async def test_artifact_read_is_advertised_only_with_scoped_reader(tmp_path: Path) -> None:
     store, artifacts, _, thread, turn = await exercise(tmp_path, count=300)
     reference = results(turn)[0].output["artifact"]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -24,6 +24,8 @@ from harnessix.product_config.codec import (
     read_product_config_bytes,
 )
 from harnessix.product_config.zero_config import zero_config_action_config
+from harnessix.sandbox.native_contracts import HostSandboxProbeV2
+from harnessix.sandbox.native_probe import probe_native_sandbox
 
 
 def decode_product_action_config_bytes(body: bytes) -> ProductActionConfigV1:
@@ -91,6 +93,7 @@ def load_product_action_config(
     *,
     zero_config: bool = False,
     environ: Mapping[str, str] | None = None,
+    sandbox_probe: Callable[[], HostSandboxProbeV2] = probe_native_sandbox,
 ) -> ProductActionConfigSnapshot:
     """安全加载外部Action配置；省略路径时返回版本化内建配置快照。
 
@@ -101,7 +104,8 @@ def load_product_action_config(
     if path is None:
         if zero_config:
             current = os.environ if environ is None else environ
-            return product_action_config_snapshot(zero_config_action_config(current))
+            config = zero_config_action_config(current, probe=sandbox_probe)
+            return product_action_config_snapshot(config)
         return product_action_config_snapshot(build_product_action_config())
     try:
         body = read_product_config_bytes(path)

@@ -69,6 +69,8 @@ class ProductControllerState:
     revision: int = 0
     # 活动Profile链的计价：free表示全部为本地自托管端点，界面显示本地0元。
     pricing: Literal["free", "unknown"] = "unknown"
+    # 零配置时启动预检得出的一行沙箱状态（ADR 0113）；显式Action配置时为None。
+    sandbox: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,10 +243,11 @@ class ProductController:
         session: RecoverableAgentSession,
         *,
         pricing: Literal["free", "unknown"] = "unknown",
+        sandbox: str | None = None,
     ) -> None:
         self._session = session
         self._interactions = InteractionService(session)
-        self._state = ProductControllerState(pricing=pricing)
+        self._state = ProductControllerState(pricing=pricing, sandbox=sandbox)
         self._intents: asyncio.Queue[_QueuedIntent | _Stop] = asyncio.Queue(
             maxsize=MAX_PENDING_INTENTS
         )

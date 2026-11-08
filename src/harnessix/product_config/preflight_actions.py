@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,6 +20,11 @@ from harnessix.product_config.contracts import ProductConfigSnapshot
 from harnessix.product_config.preflight_support import PreflightRecorder
 from harnessix.product_config.product_contracts import PreflightPlatform
 from harnessix.product_config.runtime import environment_secret_provider
+from harnessix.sandbox.native_contracts import HostSandboxProbeV2
+from harnessix.sandbox.native_probe import probe_native_sandbox
+
+# 零配置时记录本机沙箱状态（ADR 0113第2.3节）；启动界面与Doctor据此提示。
+NATIVE_SANDBOX_CHECK_ID = "product_native_sandbox"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,10 +44,11 @@ def inspect_product_actions(
     recorder: PreflightRecorder,
     workspace: Path | None = None,
     zero_config: bool = False,
+    sandbox_probe: Callable[[], HostSandboxProbeV2] = probe_native_sandbox,
 ) -> ActionPreflight:
     """安全加载Action配置并生成脱敏能力报告；不创建State Root。"""
 
-    snapshot = _load(path, recorder, zero_config=zero_config)
+    snapshot = _load(path, recorder, zero_config=zero_config, sandbox_probe=sandbox_probe)
     if snapshot is None:
         _record_catalog_prerequisite(recorder, "product_action_config_prerequisite_failed")
         return ActionPreflight(None, None)
@@ -91,13 +98,17 @@ def inspect_product_actions(
 
 
 def _load(
-    path: Path | None, recorder: PreflightRecorder, *, zero_config: bool = False
+    path: Path | None,
+    recorder: PreflightRecorder,
+    *,
+    zero_config: bool = False,
+    sandbox_probe: Callable[[], HostSandboxProbeV2] = probe_native_sandbox,
 ) -> ProductActionConfigSnapshot | None:
     began = recorder.started()
     try:
         snapshot = (
-            load_product_action_config(path, zero_config=True)
-            if zero_config
+            _load_zero_config(recorder, sandbox_probe)
+            if zero_config and path is None
             else load_product_action_config(path)
         )
         recorder.record(
@@ -137,6 +148,27 @@ def _load(
     return None
 
 
+def _load_zero_config(
+    recorder: PreflightRecorder, sandbox_probe: Callable[[], HostSandboxProbeV2]
+) -> ProductActionConfigSnapshot:
+    """零配置的命令工具与沙箱状态检查来自同一次探测，两者不会互相矛盾。"""
+
+    if os.name != "posix":
+        return load_product_action_config(None, zero_config=True)
+    began = recorder.started()
+    probe = sandbox_probe()
+    recorder.record(
+        NATIVE_SANDBOX_CHECK_ID,
+        "action",
+        "advisory",
+        "passed" if probe.available else "failed",
+        f"native_sandbox_{probe.backend}" if probe.available else probe.reason_code,
+        None if probe.available else _remediation(probe.reason_code),
+        began,
+    )
+    return load_product_action_config(None, zero_config=True, sandbox_probe=lambda: probe)
+
+
 def _record_catalog_prerequisite(recorder: PreflightRecorder, code: str) -> None:
     recorder.record(
         "product_action_capability_catalog",
@@ -155,30 +187,32 @@ def _capability_check_id(capability_id: str) -> str:
     return f"product_action_{readable}_{suffix}"
 
 
+_REMEDIATIONS: Mapping[str, str] = {
+    "disabled": "enable_action_capability",
+    "platform_not_supported": "use_supported_platform",
+    "container_engine_unsupported": "install_supported_container_engine",
+    "container_unavailable": "start_container_engine",
+    "container_image_unavailable": "install_pinned_container_image",
+    "profile_limits_unenforceable": "fix_action_profile_limits",
+    "process_owner_unavailable": "repair_process_owner",
+    "secret_target_invalid": "fix_action_secret_target",
+    "secret_unavailable": "set_environment_secret",
+    "secret_version_changed": "update_action_secret_version",
+    "profile_probe_failed": "inspect_action_profile",
+    # 本机沙箱（ADR 0111第2.8节）。
+    "native_backend_platform_mismatch": "use_supported_platform",
+    "native_sandbox_site_unavailable": "specify_workspace",
+    "seatbelt_not_installed": "use_supported_platform",
+    "seatbelt_nested_unavailable": "run_outside_sandboxed_parent",
+    "seatbelt_preflight_failed": "inspect_seatbelt_policy",
+    "bubblewrap_not_installed": "install_bubblewrap",
+    "bubblewrap_namespaces_denied": "enable_unprivileged_user_namespaces",
+    "bubblewrap_preflight_failed": "inspect_bubblewrap",
+    "sandbox_root_overlaps_denied": "move_workspace_out_of_protected_paths",
+    "sandbox_policy_too_large": "reduce_sandbox_write_roots",
+    "sandbox_path_invalid": "fix_sandbox_paths",
+}
+
+
 def _remediation(reason_code: str) -> str:
-    mappings = {
-        "disabled": "enable_action_capability",
-        "platform_not_supported": "use_supported_platform",
-        "container_engine_unsupported": "install_supported_container_engine",
-        "container_unavailable": "start_container_engine",
-        "container_image_unavailable": "install_pinned_container_image",
-        "profile_limits_unenforceable": "fix_action_profile_limits",
-        "process_owner_unavailable": "repair_process_owner",
-        "secret_target_invalid": "fix_action_secret_target",
-        "secret_unavailable": "set_environment_secret",
-        "secret_version_changed": "update_action_secret_version",
-        "profile_probe_failed": "inspect_action_profile",
-        # 本机沙箱（ADR 0111第2.8节）。
-        "native_backend_platform_mismatch": "use_supported_platform",
-        "native_sandbox_site_unavailable": "specify_workspace",
-        "seatbelt_not_installed": "use_supported_platform",
-        "seatbelt_nested_unavailable": "run_outside_sandboxed_parent",
-        "seatbelt_preflight_failed": "inspect_seatbelt_policy",
-        "bubblewrap_not_installed": "install_bubblewrap",
-        "bubblewrap_namespaces_denied": "enable_unprivileged_user_namespaces",
-        "bubblewrap_preflight_failed": "inspect_bubblewrap",
-        "sandbox_root_overlaps_denied": "move_workspace_out_of_protected_paths",
-        "sandbox_policy_too_large": "reduce_sandbox_write_roots",
-        "sandbox_path_invalid": "fix_sandbox_paths",
-    }
-    return mappings.get(reason_code, "inspect_action_capability")
+    return _REMEDIATIONS.get(reason_code, "inspect_action_capability")

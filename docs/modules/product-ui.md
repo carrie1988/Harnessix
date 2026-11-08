@@ -47,6 +47,10 @@ supersedes: []
   - `_server_command` 给 App Server 加 `--zero-config-actions`。
 - 两处用同一判定 `zero_config_wanted`，不修改进程环境变量。用户设置 `HARNESSIX_ZERO_CONFIG_ACTIONS=0` 可关闭。
 - 程序化与评测启动不经过这里，行为不变。
+- **沙箱状态提示**（ADR 0113 第 6 节第二轮决定）：
+  - [`preflight_text.py`](../../src/harnessix/product_ui/preflight_text.py) 从预检检查 `product_native_sandbox` 生成一行状态，例如“沙箱：已启用（macOS Seatbelt）”，或“沙箱：不可用，命令逐条审批（运行 harnessix code doctor 查看原因）”。没有这条检查（显式 Action 配置）时不显示。
+  - `harnessix code` 把它经 `ProductController(sandbox=...)` 放进 `ProductControllerState.sandbox`，状态栏常驻显示；`harnessix exec` 开始时写到 stderr，`--quiet` 时不写。
+  - Doctor 文本把修复标识翻成可照做的说明，显示为“修复动作：<标识>（<说明>）”；JSON 报告不变，只含稳定标识。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 

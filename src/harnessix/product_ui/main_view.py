@@ -38,6 +38,7 @@ def _status_text(state: ProductControllerState) -> str:
         limit = "?" if usage.max_tokens is None else str(usage.max_tokens)
         cost = "本地 0 元" if state.pricing == "free" else f"费用未知（{usage.cost_reason}）"
         usage_text = f" · Tokens {usage.total_tokens}/{limit} · {cost}"
+    sandbox = "" if state.sandbox is None else f" · {state.sandbox}"
     notice = (
         ""
         if state.last_notice is None
@@ -45,7 +46,7 @@ def _status_text(state: ProductControllerState) -> str:
     )
     return (
         f"{state.phase.value} · 连接代际 {state.connection_generation} · {turn_status}"
-        f"{usage_text}{_interaction_label(state)}{notice}"
+        f"{sandbox}{usage_text}{_interaction_label(state)}{notice}"
     )
 
 

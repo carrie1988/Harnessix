@@ -276,8 +276,15 @@ bubblewrap 的挂载顺序决定覆盖关系，后挂载的覆盖先挂载的：
   - 第二次见提交记录。
 - 247（bubblewrap 0.6.1，以 `nobody` 身份）：第 2 步代码加策略 v2 后，沙箱相关 218 项全部通过，含 4 项真实 bubblewrap 端到端。
 
-### 16.5 待用户对齐
+### 16.5 第二轮决定（用户 2026-11-07）
 
-- 启动时是否在界面上显示“命令在沙箱中运行”或“本机沙箱不可用”的提示，以及 Doctor 修复动作的可读文案。
-- 公开协议是否禁止客户端使用 `harnessix:` 前缀的批准人。
-- 毫秒级可见窗口是否需要彻底消除。这需要请求与决定同一事务落盘，涉及内核与 Router 的提交顺序。
+决定原文见 ADR 0113 第 6 节，本节只记实现。
+
+- **启动提示与诊断说明（已实现）**：
+  - 零配置时，预检用一次探测同时生成命令工具和一条建议性检查 `product_native_sandbox`：可用为 `passed`，原因码为 `native_sandbox_<后端>`；不可用为 `failed`，原因码与修复标识沿用第 2.8 节映射。它不影响能否启动。显式 Action 配置或关闭零配置时不记录、不探测。
+  - 预检报告仍只含稳定标识。`product_ui/preflight_text.py` 在渲染时把修复标识翻成可照做的中文说明，`harnessix code doctor` 显示为“修复动作：<标识>（<说明>）”。预检源码中出现的所有修复标识都有说明，由测试按源码扫描保证。
+  - `harnessix code` 的状态栏多一段沙箱状态：“沙箱：已启用（macOS Seatbelt / bubblewrap）”，或“沙箱：不可用，命令逐条审批（运行 harnessix code doctor 查看原因）”。`harnessix exec` 在开始时把同一行写到 stderr，`--quiet` 时不写。
+- **系统保留前缀（已实现）**：App Server 的 `approval/respond` 拒绝以 `harnessix:` 开头的审批人，返回 `invalid_params`，不记录决定。Harbor 适配器的 `harnessix-harbor:<模式>` 和 `exec` 的 `harnessix-exec:<模式>` 不受影响，有测试覆盖。
+- **毫秒级可见窗口**：维持现状，不改内核与界面。
+- **`exec --approval-mode manual`**：维持现状；需要“每条都问”的严格模式以后另议。
+- **容器 Profile**：本期不自动批准，以后单独立项。

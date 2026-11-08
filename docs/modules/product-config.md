@@ -141,6 +141,7 @@ supersedes: []
   - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
 - **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v1`；外部边界与容器的通用指令不变。
 - **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
+  - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
 ## 当前增量：外部边界原生命令Profile（ADR 0121）

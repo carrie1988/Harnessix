@@ -34,6 +34,7 @@ from harnessix.product_config.zero_config import zero_config_wanted
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
 from harnessix.product_ui.errors import ProductUIError
+from harnessix.product_ui.preflight_text import remediation_text, sandbox_status_line
 from harnessix.product_ui.session import RecoverableAgentSession
 from harnessix.product_ui.state_store import ClientStateStore
 from harnessix.sdk import AgentSDKError, SubprocessAgentTransport
@@ -296,7 +297,7 @@ def _render_preflight(report: ProductPreflightReport) -> str:
         f"模式：{report.mode}；平台：{report.platform}；报告摘要：{report.report_sha256}",
     ]
     for check in report.checks:
-        remediation = f"；修复动作：{check.remediation_id}" if check.remediation_id else ""
+        remediation = _remediation_suffix(check.remediation_id)
         lines.append(
             f"[{labels[check.status]}] {check.category}/{check.check_id}: {check.code}{remediation}"
         )
@@ -444,6 +445,13 @@ def _doctor(argv: Sequence[str]) -> None:
         raise SystemExit(2) from None
 
 
+def _remediation_suffix(remediation_id: str | None) -> str:
+    if remediation_id is None:
+        return ""
+    text = remediation_text(remediation_id)
+    return f"；修复动作：{remediation_id}" + (f"（{text}）" if text else "")
+
+
 def code_main(argv: Sequence[str] | None = None) -> None:
     values = list(sys.argv[1:] if argv is None else argv)
     if values and values[0] == "configure":
@@ -489,7 +497,9 @@ def code_main(argv: Sequence[str] | None = None) -> None:
                 lambda: SubprocessAgentTransport(command),
             )
             controller = ProductController(
-                session, pricing=_chain_pricing(config, arguments.profile)
+                session,
+                pricing=_chain_pricing(config, arguments.profile),
+                sandbox=sandbox_status_line(preflight),
             )
             report = app_type(
                 controller,

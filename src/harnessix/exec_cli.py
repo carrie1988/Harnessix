@@ -31,6 +31,7 @@ from harnessix.product_ui.cli import (
     _server_command,
     _workspace,
 )
+from harnessix.product_ui.preflight_text import sandbox_status_line
 from harnessix.product_ui.turn_budget import turn_budget_for
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
@@ -268,6 +269,7 @@ class _Launch:
     pricing: Literal["free", "unknown"] = "unknown"
     events: Path | None = None
     resume_thread: UUID | None = None
+    sandbox: str | None = None
 
 
 def _or[T](value: T | None, default: T) -> T:
@@ -319,6 +321,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         pricing=pricing,
         events=Path(arguments.events_file).absolute() if arguments.events_file else None,
         resume_thread=arguments.resume_thread,
+        sandbox=sandbox_status_line(preflight),
     )
 
 
@@ -334,6 +337,8 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
         events.write(event.model_dump_json(by_alias=True) + "\n")
         events.flush()
 
+    if launch.sandbox is not None:
+        console.write(launch.sandbox)
     try:
         await client.initialize()
         cli = ThinAgentCLI(

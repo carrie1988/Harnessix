@@ -420,7 +420,7 @@ stateDiagram-v2
 | `turn/resume` | `TurnResumeParams → TurnResult` | 写命令 | 是 | 恢复指定Turn执行 |
 | `turn/cancel` | `TurnCancelParams → TurnResult` | 写命令 | 是 | 请求确定性取消 |
 | `turn/steer` | `TurnSteerParams → TurnResult` | 写命令 | 是 | 给活动Turn增加有界用户指令 |
-| `approval/respond` | `ApprovalRespondParams → TurnResult` | 写命令 | 是 | 绑定Thread、Turn、Approval、指纹和决定 |
+| `approval/respond` | `ApprovalRespondParams → TurnResult` | 写命令 | 是 | 绑定Thread、Turn、Approval、指纹和决定；`decision.actor`不得以系统保留前缀`harnessix:`开头，否则`invalid_params`（ADR 0113）；投影中的已记录决定可以带该前缀 |
 | `question/respond` | `QuestionRespondParams → TurnResult` | 写命令 | 是 | 绑定Thread、Turn和Question提交答案 |
 | `events/replay` | `EventsReplayParams → EventsReplayResult` | 查询 | 否 | 从持久Session事件扫描并投影公开页面 |
 | `events/next` | `EventsNextParams → EventsNextResult` | 长轮询查询 | 否 | 优先返回持久进展，再按协商返回实时Delta |

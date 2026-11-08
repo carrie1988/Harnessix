@@ -114,6 +114,9 @@ async def test_sandboxed_command_writes_workspace_but_not_protected_paths(
             BACKEND,
             expected_network,
         )
+        # 真实后端下同样由宿主以系统身份自动批准，不需要人工（ADR 0113）。
+        decision = case.approval.decision
+        assert decision is not None and decision.actor == "harnessix:sandbox-policy"
 
 
 async def test_network_boundary_matches_backend(tmp_path: Path) -> None:

@@ -535,7 +535,7 @@ uuid5(client_instance_id, "harnessix.protocol-thread/v1:" + request_id)
 | `turn/resume` | `resume_turn` | 当前Request内等待恢复执行，可能长期占用一个pending slot |
 | `turn/cancel` | `cancel` | 返回Runtime提交后的Turn状态 |
 | `turn/steer` | `steer_turn` | 持久化用户输入；不抢占当前Provider调用 |
-| `approval/respond` | `reply_approval` | 公共决定转`ApprovalDecision`；Runtime验证ID、指纹和状态 |
+| `approval/respond` | `reply_approval` | 公共决定转`ApprovalDecision`；Runtime验证ID、指纹和状态；审批人以系统保留前缀`harnessix:`开头时返回`invalid_params`，不记录决定（ADR 0113） |
 | `question/respond` | `reply_question` | Runtime原子提交Answer、Tool Result和状态变化 |
 
 App Server不解析Tool参数、不判断Policy，也不自行验证Approval指纹内容；它只保证公共身份完整传递，最终

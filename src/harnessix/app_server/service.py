@@ -8,6 +8,7 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import UUID, uuid5
 
+from harnessix.agent.approvals import SYSTEM_APPROVAL_ACTOR_PREFIX
 from harnessix.agent.models import Budget, ItemDelta, Thread, Turn, TurnStatus
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
@@ -341,6 +342,10 @@ class AgentApplicationService:
     async def respond_approval(
         self, client_instance_id: UUID, params: ApprovalRespondParams
     ) -> TurnResult:
+        """客户端不能以系统身份作决定，审计中的系统批准只来自宿主（ADR 0113）。"""
+        if params.decision.actor.startswith(SYSTEM_APPROVAL_ACTOR_PREFIX):
+            raise AgentServiceError("invalid_params", "审批人不能使用系统保留前缀")
+
         async def operation() -> TurnResult:
             decision = ApprovalDecision(
                 outcome=ApprovalOutcome(params.decision.outcome),
