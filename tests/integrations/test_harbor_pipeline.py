@@ -39,11 +39,20 @@ def test_relative_config_file_resolves_under_code_root_and_becomes_an_artifact(
     [
         "benchmarks/harbor/swebench-verified-holdout49/r-mini-swe-agent.json",
         "benchmarks/harbor/swebench-multilingual-holdout30/r-mini-swe-agent.json",
+        "benchmarks/harbor/swebench-verified-holdout49/harnessix-single.json",
     ],
 )
-def test_holdout_reference_specs_use_the_grader_only_primary_and_r_config(spec: str) -> None:
+def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec: str) -> None:
+    """holdout在Harbor上的组别：主指标只看判分、上限3900秒、经宿主机均衡转发访问模型。"""
     document = json.loads((ROOT / spec).read_text(encoding="utf-8"))
     assert _plan_version(document) == "evalkit.run-plan/v2"
-    reference = next(arm for arm in document["arms"] if arm["arm_id"] == "R")
-    assert reference["agent"]["override_timeout_sec"] == 3900
-    assert (ROOT / reference["agent"]["kwargs"]["config_file"]).is_file()
+    assert [arm["arm_id"] for arm in document["arms"]][0] == "oracle"
+    for arm in document["arms"][1:]:
+        agent = arm["agent"]
+        assert agent["override_timeout_sec"] == 3900
+        kwargs = agent["kwargs"]
+        if "config_file" in kwargs:
+            assert (ROOT / kwargs["config_file"]).is_file()
+            assert "host.docker.internal:18100/v1" in (ROOT / kwargs["config_file"]).read_text()
+        else:
+            assert kwargs["model_relays"].endswith("=host.docker.internal:18100")
