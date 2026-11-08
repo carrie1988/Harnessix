@@ -148,6 +148,14 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 （含本地`$defs`引用与嵌套items/properties）且字符串可严格解析为同类型容器时还原（文本以已闭合内层容器结尾而仅缺外层闭合符时，补齐后再严格解析）；其余值原样交给工具原有严格校验。
 还原发生在调用组发布前，审批、审计与执行看到的都是规范参数。回归见[参数还原测试](../../tests/agent/test_argument_normalization.py)。
 
+## 当前增量：提案阶段调用修复
+
+[调用修复](../../src/harnessix/agent/call_repair.py)在调用组发布前、按本步可执行集改写模型常见的错误调用：
+`read_file`只携带存档编号（`artifact_id`或作为`path`）与`offset`/`limit`时改为`read_artifact`，页大小超过200截到200
+（2026-11-08 holdout中占剩余`read_file`参数错误的28/42）。本步未开放`read_artifact`、强制工具选择、`path`另指工作区文件或
+带有其他字段时不改写，交给原有严格校验与`read_artifact`提示。改写后的规范调用才进入审批、审计与执行，存档分页核验按
+`read_artifact`身份进行。回归见[调用修复测试](../../tests/agent/test_call_repair.py)。
+
 ## 当前增量：稳定线上工具目录（默认关闭）
 
 `AgentRuntime(stable_tool_catalog=True)`时，`ModelRequest.catalog_tools`携带本轮全部可向模型广告的已注册工具，`tools`仍是阶段视图

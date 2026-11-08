@@ -421,7 +421,8 @@ Harnessix/Codex状态目录、SSH/AWS/GnuPG目录、`.env`变体、常见私钥�
 换成正式参数（依据：2026-11-08评测中1807次`tool_invalid_arguments`的实际分布）：`read_file`的`offset`（从0计）/`limit`/
 `end_line`/`lines_after`/`file_path`，无anchor的`lines_before`换算为起始行，多行anchor取第一个非空行，有anchor时忽略
 `start_line`；`grep`的`regex`与`lines_before`/`lines_after`；`glob`的`limit`。页大小类参数接受纯数字字符串，超过契约上限时
-截到上限；低于下限、浮点、未知字段和发错工具的参数照常拒绝，存档编号路径保留原有`read_artifact`提示。修复只影响返回多少，
+截到上限；低于下限、浮点、未知字段和发错工具的参数照常拒绝。存档编号读取在提案阶段改道`read_artifact`（见Agent模块），
+无法改道时保留原有`read_artifact`提示。修复只影响返回多少，
 不改变路径、工作区边界或权限；Call Item保留模型原始参数，对外公布的input_schema不变。
 
 ### 9.2 打开与竞态检查

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Container, Sequence
 from contextlib import AbstractAsyncContextManager, aclosing
 from dataclasses import replace
 from types import TracebackType
@@ -25,6 +25,7 @@ from harnessix.agent.approvals import (
     tool_fingerprint,
 )
 from harnessix.agent.argument_normalization import normalize_stringified_containers
+from harnessix.agent.call_repair import repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.errors import KernelError
@@ -3116,6 +3117,15 @@ class AgentRuntime:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
         if not started or completed is None:
             raise KernelError("provider_stream_incomplete", "Provider 流缺少完整终态")
+        # 强制选择时不改写工具名；其余按本步可执行集做确定性修复。
+        offered: Container[str] = (
+            ()
+            if request.forced_tool is not None
+            else {definition.name for definition in request.tools}
+            if self._model_tool_view is not None
+            else self._definitions
+        )
+        proposals = [repair_proposal(proposal, offered) for proposal in proposals]
         completed_calls = tuple(
             proposal for proposal in proposals if isinstance(proposal, ToolCallCompleted)
         )

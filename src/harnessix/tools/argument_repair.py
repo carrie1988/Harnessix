@@ -23,8 +23,8 @@ from pydantic import JsonValue
 from harnessix.domain.models import ContractModel
 
 _INTEGER = re.compile(r"^[+-]?\d{1,12}$")
-# 命令输出等存档编号（read_artifact的artifact_id）；read_file收到它时保留原参数，
-# 由原有提示改用read_artifact。
+# 命令输出等存档编号（read_artifact的artifact_id）；read_file收到它时不做行分页修复，
+# 由提案阶段改道read_artifact，或由原有提示改用read_artifact。
 ARTIFACT_ID = re.compile(r"^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$")
 _PAGE_SIZE_FIELDS = frozenset(
     {"max_lines", "lines_before", "context_lines", "max_results", "limit"}
@@ -110,45 +110,72 @@ def _repair_read_file(arguments: Arguments, properties: frozenset[str]) -> Argum
     del properties
     for alias in ("file_path", "filepath", "path_"):
         _rename(arguments, alias, "path")
+    if not is_artifact_read(arguments):  # 存档分页参数留给read_artifact改道或原有提示
+        _offset_to_start_line(arguments)
+        _rename(arguments, "limit", "max_lines")
+    _window_to_max_lines(arguments)
+    _first_anchor_line(arguments)
+    _anchor_or_lines_before(arguments)
+    return arguments
+
+
+def is_artifact_read(arguments: Mapping[str, JsonValue]) -> bool:
+    """read_file收到存档编号（artifact_id字段或作为path）时，调用的其实是read_artifact。"""
     path = arguments.get("path")
-    artifact_read = "artifact_id" in arguments or (
+    return "artifact_id" in arguments or (
         isinstance(path, str) and ARTIFACT_ID.match(path) is not None
     )
-    if not artifact_read:  # 存档分页参数留给原有提示改用read_artifact
-        offset = _as_int(arguments.get("offset"))
-        given = _as_int(arguments.get("start_line"))
-        if "offset" in arguments and offset is not None:
-            if "start_line" not in arguments:
-                del arguments["offset"]
-                arguments["start_line"] = max(1, offset + 1)  # 按从0计（Qwen Code、read_artifact）
-            elif given in (offset, offset + 1):  # 与start_line一致（从0或从1计）时丢弃别名
-                del arguments["offset"]
-        _rename(arguments, "limit", "max_lines")
-    start = _as_int(arguments.get("start_line"))
+
+
+def _offset_to_start_line(arguments: Arguments) -> None:
+    """offset按从0计（Qwen Code、read_artifact）；与start_line一致（从0或从1计）时丢弃别名。"""
+    offset = _as_int(arguments.get("offset"))
+    if "offset" not in arguments or offset is None:
+        return
+    if "start_line" not in arguments:
+        del arguments["offset"]
+        arguments["start_line"] = max(1, offset + 1)
+    elif _as_int(arguments.get("start_line")) in (offset, offset + 1):
+        del arguments["offset"]
+
+
+def _window_to_max_lines(arguments: Arguments) -> None:
+    """end_line与lines_after换算为max_lines；max_lines已给出时不覆盖。"""
+    start = _as_int(arguments.get("start_line")) or 1
     end = _as_int(arguments.get("end_line"))
-    if end is not None and "max_lines" not in arguments and end >= (start or 1):
+    if end is not None and "max_lines" not in arguments and end >= start:
         del arguments["end_line"]
-        arguments["max_lines"] = end - (start or 1) + 1
-    before = _as_int(arguments.get("lines_before")) or 0
+        arguments["max_lines"] = end - start + 1
     after = _as_int(arguments.get("lines_after"))
     if after is not None:
         del arguments["lines_after"]
+        before = _as_int(arguments.get("lines_before")) or 0
         arguments.setdefault("max_lines", before + after + 1)
+
+
+def _first_anchor_line(arguments: Arguments) -> None:
+    """多行anchor取第一个非空行；全为空白时去掉anchor。"""
     anchor = arguments.get("anchor")
-    if isinstance(anchor, str) and ("\n" in anchor or "\r" in anchor):
-        first = next((line for line in re.split(r"\r\n|\r|\n", anchor) if line.strip()), "")
-        if first:
-            arguments["anchor"] = first
-        else:
-            del arguments["anchor"]
-    if arguments.get("anchor") is None:
-        arguments.pop("anchor", None)
-        if before and "lines_before" in arguments:
-            del arguments["lines_before"]
-            arguments["start_line"] = max(1, (start or 1) - before)
+    if not isinstance(anchor, str) or ("\n" not in anchor and "\r" not in anchor):
+        return
+    first = next((line for line in re.split(r"\r\n|\r|\n", anchor) if line.strip()), "")
+    if first:
+        arguments["anchor"] = first
     else:
+        del arguments["anchor"]
+
+
+def _anchor_or_lines_before(arguments: Arguments) -> None:
+    """有anchor时忽略start_line；无anchor时把lines_before换算为起始行。"""
+    if arguments.get("anchor") is not None:
         arguments.pop("start_line", None)
-    return arguments
+        return
+    arguments.pop("anchor", None)
+    before = _as_int(arguments.get("lines_before")) or 0
+    if before and "lines_before" in arguments:
+        start = _as_int(arguments.get("start_line")) or 1
+        del arguments["lines_before"]
+        arguments["start_line"] = max(1, start - before)
 
 
 def _repair_grep(arguments: Arguments, properties: frozenset[str]) -> Arguments:
