@@ -132,6 +132,14 @@ flowchart LR
   本评测平台与Harbor。holdout中旧运行器上的A2x4 Verified补跑在35题完成30题时停止，不判分、不删除，记录见247
   `runs/holdout/DEVIATIONS.md`；holdout其余各组在Harbor上的运行规则另行对齐。旧运行器得到的数与本平台的数属于不同
   运行环境，报告中分开列出，不合并。
+- **有效题口径（用户决定，2026-11-08）。** 主指标的分母只计有效题：Oracle在本环境能通过、且官方判分给出结论的题；
+  全部题数口径的数字同时列出。本环境无效的题：sphinx-8269（linkcheck测试要访问www.google.com）、
+  lucene-13494（测试要从GitHub下载gradle wrapper），247的任务容器都访问不到。
+- **补丁导出基线（2026-11-08发现并修复）。** 导出补丁原为空白临时索引相对HEAD的差异：已跟踪却匹配`.gitignore`的
+  文件被导出成删除，镜像在智能体开始前已有的改动被算作智能体的改动。c466d036起以智能体开始前的工作区快照树为基线
+  （以HEAD为底的临时索引执行`add -A`后写树），导出两次快照之间的差异；受影响的12题以Oracle与官方判分复核通过
+  （247 `validate-export-a961d030`）。修复前冻结的运行按用户决定处理：R Multilingual不重跑，只报Harbor奖励；
+  astropy-7166在两个Verified组别中记无效。Multilingual的验收脚本不写判分报告，harbor-reward判分器在那里不给结论。
 
 ### 7.2 验收结果
 
