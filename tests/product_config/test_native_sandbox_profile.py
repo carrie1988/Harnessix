@@ -14,6 +14,9 @@ from typing import Any
 
 import pytest
 
+from harnessix.agent.errors import KernelError
+from harnessix.agent.models import TrustedActionApprovalRequestContent
+from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.processes.supervisor import PosixProcessSupervisor
 from harnessix.processes.supervisor_capabilities import probe_posix_process_capability
 from harnessix.product_config.native_process import (
@@ -211,15 +214,6 @@ def test_seatbelt_policy_rejected_by_the_system_omits_the_tool(
     ) == ("seatbelt_preflight_failed", None)
 
 
-def test_host_backend_waits_for_step_four(sandbox_home: dict[str, Any]) -> None:
-    assert attest_native_process_profile(
-        native_profile(backend="host"),
-        probe_posix_process_capability(),
-        environ={},
-        site=NativeSandboxSite(workspace_root=sandbox_home["workspace"]),
-    ) == ("native_backend_unsupported", None)
-
-
 async def test_resources_follow_workspace_mode_and_write_roots(
     tmp_path: Path, sandbox_home: dict[str, Any]
 ) -> None:
@@ -323,3 +317,77 @@ async def test_launch_binding_matches_plan_through_product_chain(
         assert (case.workspace / "ran.txt").read_text() == "ran\n"
         sandbox = case.router.status(case.approval.plan_id).plan.execution.sandbox
         assert (sandbox.level, sandbox.backend) == ("host_sandboxed", backend)
+        # 沙箱内命令由宿主以系统身份当场批准，用户不会看到待审批（ADR 0113）。
+        decision = case.approval.decision
+        assert decision is not None and decision.actor == "harnessix:sandbox-policy"
+        assert case.approval.policy_id == "default.approve-sandboxed-command"
+        # 客户端（自动批准模式或人工）晚到的同结论回复幂等成功，审批只记一次；相反结论失败关闭。
+        late = ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="harnessix-exec")
+        again = await case.agent.reply_approval(
+            case.thread_id,
+            case.turn_id,
+            case.approval.approval_id,
+            fingerprint=case.approval.request_fingerprint,
+            decision=late,
+        )
+        approvals = [
+            item.content
+            for item in again.items
+            if isinstance(item.content, TrustedActionApprovalRequestContent)
+        ]
+        assert len(approvals) == 1 and approvals[0].decision == decision
+        with pytest.raises(KernelError) as conflict:
+            await case.agent.reply_approval(
+                case.thread_id,
+                case.turn_id,
+                case.approval.approval_id,
+                fingerprint=case.approval.request_fingerprint,
+                decision=ApprovalDecision(outcome=ApprovalOutcome.REJECTED, actor="human"),
+            )
+        assert conflict.value.code == "approval_conflict"
+
+
+async def test_pending_sandbox_approval_is_filled_in_on_resume(
+    tmp_path: Path, sandbox_home: dict[str, Any]
+) -> None:
+    """崩溃恢复：审批请求已落盘、系统决定未落盘时，重启后resume_turn补批并继续执行。"""
+
+    from harnessix.agent.runtime import AgentRuntime
+    from tests.product_config.test_native_process_action import _native_case, _result
+
+    executable = tmp_path / "bin" / "bwrap"
+    executable.parent.mkdir()
+    executable.write_text("#!/bin/sh\n" + _PASSTHROUGH["linux"])
+    executable.chmod(0o755)
+
+    def probe() -> HostSandboxProbeV2:
+        def run(argv: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(list(argv), capture_output=True, text=True, timeout=timeout)
+
+        return probe_native_sandbox(
+            platform="linux", runner=run, bubblewrap_candidates=(executable,)
+        )
+
+    original = AgentRuntime.__init__
+
+    def without_responder(self: AgentRuntime, *args: Any, **kwargs: Any) -> None:
+        # 模拟进程在系统决定落盘前退出：第一次运行没有应答器。
+        responder = kwargs.pop("approval_responder", None)
+        original(self, *args, **kwargs)
+        self._held_responder = responder  # type: ignore[attr-defined]
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(AgentRuntime, "__init__", without_responder)
+        async with _native_case(
+            tmp_path,
+            "echo resumed > resumed.txt",
+            native_profile(backend="bubblewrap"),
+            environ=sandbox_home["environ"],
+            site=lambda root: NativeSandboxSite(workspace_root=root),
+            sandbox_probe=probe,
+        ) as case:
+            assert case.approval.decision is None
+            case.agent._approval_responder = case.agent._held_responder  # type: ignore[attr-defined]
+            resumed = await case.agent.resume_turn(case.thread_id, case.turn_id)
+            assert _result(resumed).outcome == "succeeded"
+            assert (case.workspace / "resumed.txt").read_text() == "resumed\n"

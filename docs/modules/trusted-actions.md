@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 43
-code_revision: 70c71744cbc2d80fd8b3a36eee60b24386b3a5c3
+version: 44
+code_revision: 21bf2f474f6e29a92c2e8c5737e35b02eb7fce06
 owners:
   - core
 modules:
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
+  - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
 related_tests:
   - tests/product_config/test_git_review_fresh_owner.py
   - tests/product_config/test_git_fresh_owner_reader.py
@@ -46,10 +47,18 @@ related_tests:
   - tests/delivery/test_git_push.py
   - tests/governance/test_product_runtime_convergence.py
   - tests/product_config/test_action_recovery.py
+  - tests/trusted_actions/test_sandboxed_command_policy.py
 supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：策略 v2 与沙箱外命令身份（ADR 0113）
+
+- `DefaultCodingRiskPolicy` 升为 `trusted-coding-action/v2`，只新增一条标记规则：
+  - 本机沙箱（`host_sandboxed`，后端为 `seatbelt` 或 `bubblewrap`）内、只声明沙箱边界内资源、不注入 Secret 的命令执行器，判为“需要审批”，`policy_id` 为 `default.approve-sandboxed-command`；
+  - 由宿主以系统身份自动批准。其余判定与 v1 相同，已记录的 v1 计划不重算。
+- 公开输出合同新增精确配对 `host_command.<id>` ↔ `product.host-command.<id>`，与 `exec_command.<id>` ↔ `product.command-profile.<id>` 并列，按命令类识别。
 
 ## Agent审批前可信准备
 

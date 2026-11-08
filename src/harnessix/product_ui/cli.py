@@ -30,6 +30,7 @@ from harnessix.product_config.wizard import (
     thinking_preset,
     write_product_config,
 )
+from harnessix.product_config.zero_config import zero_config_wanted
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
 from harnessix.product_ui.errors import ProductUIError
@@ -240,6 +241,9 @@ def _server_command(
         command.extend(("--profile", profile))
     if action_config is not None:
         command.extend(("--action-config", str(action_config)))
+    elif zero_config_wanted(action_config, os.environ):
+        # 与预检同一判定；App Server据此生成同一份零配置命令工具。
+        command.append("--zero-config-actions")
     if git_executable is not None:
         command.extend(("--git-executable", git_executable))
     if expected_active_sha256 is not None:
@@ -390,10 +394,12 @@ def _preflight_request(
         if arguments.state_directory
         else _default_state_directory(workspace_identity)
     )
+    action_config = _action_config(arguments.action_config)
     return ProductPreflightRequest(
         mode=mode,
         config_path=Path(arguments.config).absolute() if arguments.config else _default_config(),
-        action_config_path=_action_config(arguments.action_config),
+        action_config_path=action_config,
+        zero_config_actions=zero_config_wanted(action_config, os.environ),
         profile_id=arguments.profile,
         workspace=workspace,
         state_directory=state_root,

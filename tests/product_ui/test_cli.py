@@ -24,7 +24,10 @@ def test_top_level_code_command_delegates_without_loading_runtime(
     assert captured == [["/workspace", "--profile", "primary"]]
 
 
-def test_product_command_builds_current_python_stdio_server_argv(tmp_path: Path) -> None:
+def test_product_command_builds_current_python_stdio_server_argv(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("HARNESSIX_ZERO_CONFIG_ACTIONS", raising=False)
     command = product_cli._server_command(
         config=tmp_path / "config.json",
         profile="primary",
@@ -46,6 +49,8 @@ def test_product_command_builds_current_python_stdio_server_argv(tmp_path: Path)
         str(tmp_path / "state" / "runtime"),
         "--profile",
         "primary",
+        # 未指定Action配置的用户入口请求零配置命令工具（ADR 0111第2.2节）。
+        "--zero-config-actions",
         "--git-executable",
         "/usr/bin/git",
     )

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
+version: 21
+code_revision: 21bf2f474f6e29a92c2e8c5737e35b02eb7fce06
 owners:
   - product
 modules:
@@ -17,6 +17,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
+  - docs/adr/0111-native-process-sandbox-backends.md
 related_tests:
   - tests/product_config/test_product_state_restore.py
   - tests/product_ui/test_state_store.py
@@ -33,10 +34,19 @@ related_tests:
   - tests/product_ui/test_cli.py
   - tests/app_server/test_server_sdk.py
   - tests/evals/test_provider_suite_cli.py
+  - tests/product_config/test_zero_config.py
 supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：零配置命令工具的请求（ADR 0111、0113）
+
+- `harnessix code`、`harnessix code doctor` 和 `harnessix exec` 在没有指定 Action 配置（参数与 `HARNESSIX_PRODUCT_ACTION_CONFIG` 都没有）时：
+  - `_preflight_request` 置 `zero_config_actions`；
+  - `_server_command` 给 App Server 加 `--zero-config-actions`。
+- 两处用同一判定 `zero_config_wanted`，不修改进程环境变量。用户设置 `HARNESSIX_ZERO_CONFIG_ACTIONS=0` 可关闭。
+- 程序化与评测启动不经过这里，行为不变。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+from collections.abc import Mapping
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -21,6 +23,7 @@ from harnessix.product_config.codec import (
     decode_bounded_config_json,
     read_product_config_bytes,
 )
+from harnessix.product_config.zero_config import zero_config_action_config
 
 
 def decode_product_action_config_bytes(body: bytes) -> ProductActionConfigV1:
@@ -83,10 +86,22 @@ def product_action_config_snapshot(
     )
 
 
-def load_product_action_config(path: str | Path | None) -> ProductActionConfigSnapshot:
-    """安全加载外部Action配置；省略路径时返回版本化内建配置快照。"""
+def load_product_action_config(
+    path: str | Path | None,
+    *,
+    zero_config: bool = False,
+    environ: Mapping[str, str] | None = None,
+) -> ProductActionConfigSnapshot:
+    """安全加载外部Action配置；省略路径时返回版本化内建配置快照。
+
+    用户入口显式请求零配置时，内建配置按本机沙箱能力自动包含命令工具（ADR 0111第2.2节）；
+    其余启动（程序化与评测）保持原内建配置。
+    """
 
     if path is None:
+        if zero_config:
+            current = os.environ if environ is None else environ
+            return product_action_config_snapshot(zero_config_action_config(current))
         return product_action_config_snapshot(build_product_action_config())
     try:
         body = read_product_config_bytes(path)

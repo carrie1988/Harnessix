@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 39
-code_revision: 898eab8711af74be417466164b998746b80f40d5
+version: 40
+code_revision: 21bf2f474f6e29a92c2e8c5737e35b02eb7fce06
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0012-durable-approval-checkpoint.md
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
+  - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
 related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
@@ -44,8 +45,19 @@ related_tests:
   - tests/agent/test_pressure_compaction_loop.py
   - tests/context/test_turn_budget_compaction.py
   - tests/context/test_compaction_runtime.py
+  - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：宿主自动批准钩子（ADR 0113）
+
+- **钩子**：`AgentRuntime` 新增可选参数 `approval_responder`，默认 `None`，行为与原来完全相同。
+- **触发**：`run_turn`、`retry_turn`、`resume_turn` 的最外层在执行停在“等待审批”时调用它。应答器返回决定时，经公开的 `reply_approval` 落盘，然后继续执行。
+  - 调用时不持有会话锁。
+  - `resume_turn` 进入时先补批一次，覆盖“审批请求已落盘、决定未落盘”时崩溃后的恢复。
+- **内核约束不变**：写调用成功前必须已有已批准的审批项，这正是不用“策略直接放行”的原因。
+- **幂等规则**：`approval_was_decided` 在已记录的决定来自系统身份（`harnessix:` 前缀）时，结论相同的晚到回复幂等成功、审批只记一次；结论相反仍报 `approval_conflict`。
+- 产品应答器与策略标记见 [ADR 0113](../adr/0113-sandboxed-command-approval-and-host-escalation.md)。
 
 ## 单响应工具互斥约束
 

@@ -37,10 +37,11 @@ def inspect_product_actions(
     environment: Mapping[str, str] | None,
     recorder: PreflightRecorder,
     workspace: Path | None = None,
+    zero_config: bool = False,
 ) -> ActionPreflight:
     """安全加载Action配置并生成脱敏能力报告；不创建State Root。"""
 
-    snapshot = _load(path, recorder)
+    snapshot = _load(path, recorder, zero_config=zero_config)
     if snapshot is None:
         _record_catalog_prerequisite(recorder, "product_action_config_prerequisite_failed")
         return ActionPreflight(None, None)
@@ -89,10 +90,16 @@ def inspect_product_actions(
     return ActionPreflight(snapshot, capabilities)
 
 
-def _load(path: Path | None, recorder: PreflightRecorder) -> ProductActionConfigSnapshot | None:
+def _load(
+    path: Path | None, recorder: PreflightRecorder, *, zero_config: bool = False
+) -> ProductActionConfigSnapshot | None:
     began = recorder.started()
     try:
-        snapshot = load_product_action_config(path)
+        snapshot = (
+            load_product_action_config(path, zero_config=True)
+            if zero_config
+            else load_product_action_config(path)
+        )
         recorder.record(
             "product_action_config_source",
             "action",
@@ -161,5 +168,17 @@ def _remediation(reason_code: str) -> str:
         "secret_unavailable": "set_environment_secret",
         "secret_version_changed": "update_action_secret_version",
         "profile_probe_failed": "inspect_action_profile",
+        # 本机沙箱（ADR 0111第2.8节）。
+        "native_backend_platform_mismatch": "use_supported_platform",
+        "native_sandbox_site_unavailable": "specify_workspace",
+        "seatbelt_not_installed": "use_supported_platform",
+        "seatbelt_nested_unavailable": "run_outside_sandboxed_parent",
+        "seatbelt_preflight_failed": "inspect_seatbelt_policy",
+        "bubblewrap_not_installed": "install_bubblewrap",
+        "bubblewrap_namespaces_denied": "enable_unprivileged_user_namespaces",
+        "bubblewrap_preflight_failed": "inspect_bubblewrap",
+        "sandbox_root_overlaps_denied": "move_workspace_out_of_protected_paths",
+        "sandbox_policy_too_large": "reduce_sandbox_write_roots",
+        "sandbox_path_invalid": "fix_sandbox_paths",
     }
     return mappings.get(reason_code, "inspect_action_capability")

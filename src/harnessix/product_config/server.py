@@ -34,6 +34,7 @@ from harnessix.product_config.contracts import (
     ProfileSelection,
     ProviderDefinition,
 )
+from harnessix.product_config.native_process import native_tool_name
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import ProductPreflightReport
 from harnessix.product_config.runtime import (
@@ -141,6 +142,7 @@ def _preflight_request(
     workspace: str | Path,
     state_directory: str | Path,
     git_executable: str | Path | None,
+    zero_config_actions: bool = False,
 ) -> ProductPreflightRequest:
     return ProductPreflightRequest(
         mode="startup",
@@ -153,6 +155,7 @@ def _preflight_request(
         state_directory=Path(state_directory).absolute(),
         git_executable=Path(git_executable) if git_executable is not None else None,
         require_tui=False,
+        zero_config_actions=zero_config_actions and action_config_path is None,
     )
 
 
@@ -317,10 +320,20 @@ async def _serve_product_stdio(
 
                             await reconcile_windows_git_reads(startup.state_root)
                         # 只有实际探测通过的通用执行能力才切换指令/工具视图；配置本身不授予权限。
-                        generic_execution = any(
-                            capability.status == "verified"
-                            and capability.capability_id.startswith("exec_command.")
+                        verified = {
+                            capability.capability_id
                             for capability in action_owner.report.capabilities
+                            if capability.status == "verified"
+                        }
+                        generic_execution = any(
+                            tool.startswith(("exec_command.", "host_command.")) for tool in verified
+                        )
+                        # 本机沙箱或沙箱外命令（ADR 0111、0113）用本机命令指令；
+                        # 外部边界与容器保持原指令。
+                        native_execution = any(
+                            native_tool_name(profile) in verified
+                            for profile in startup.actions.config.native_process_profiles
+                            if profile.backend != "external_boundary"
                         )
                         context = build_product_agent_context(
                             tools.workspace_root,
@@ -330,6 +343,7 @@ async def _serve_product_stdio(
                                 if profile.profile_id in startup.profile.profile_chain
                             ),
                             generic_execution=generic_execution,
+                            native_execution=native_execution,
                             enable_planning=True,
                             enable_regex_search=True,
                         )
@@ -340,6 +354,7 @@ async def _serve_product_stdio(
                             artifacts=artifacts,
                             public_output_protection=public_scope,
                             trusted_actions=action_owner.gateway,
+                            approval_responder=action_owner.approval_responder,
                             async_context=context.context,
                             compaction=context.compaction,
                             summary_provider=bundle,
@@ -398,6 +413,7 @@ async def run_product_stdio(
     expected_active_action_sha256: str | None = None,
     git_executable: str | Path | None = None,
     action_config: ProductActionConfigV1 | None = None,
+    zero_config_actions: bool = False,
 ) -> None:
     if action_config_path is not None and action_config is not None:
         raise KernelError("product_action_config_conflict", "不能同时传入Action配置文件和内存配置")
@@ -408,6 +424,7 @@ async def run_product_stdio(
         workspace=workspace,
         state_directory=state_directory,
         git_executable=git_executable,
+        zero_config_actions=zero_config_actions and action_config is None,
     )
     preflight = await _require_startup_preflight(request)
 
@@ -426,6 +443,8 @@ async def run_product_stdio(
     action_snapshot = (
         product_action_config_snapshot(action_config)
         if action_config is not None
+        else load_product_action_config(action_config_path, zero_config=True)
+        if request.zero_config_actions
         else load_product_action_config(action_config_path)
     )
     if action_config is None and action_snapshot.config_sha256 != preflight.action_config_sha256:

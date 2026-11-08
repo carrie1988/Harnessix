@@ -74,3 +74,50 @@ def decode_run_command(
     if checked.profile != profile_id:
         raise ValueError("Command Profile不匹配")
     return checked
+
+
+MAX_HOST_REASON_BYTES = 500
+
+
+class HostCommandInput(RunCommandInput):
+    """沙箱外命令另需理由（ADR 0113第2.2节）：说明为什么沙箱内做不到，审批时展示给用户。"""
+
+    reason: str = Field(min_length=1, max_length=MAX_HOST_REASON_BYTES)
+
+    @field_validator("reason")
+    @classmethod
+    def bounded_reason(cls, value: str) -> str:
+        try:
+            size = len(value.encode("utf-8"))
+        except UnicodeError:
+            raise ValueError("理由编码必须是有效UTF-8") from None
+        if not value.strip() or any(char in value for char in "\x00\r\n") or size > 500:
+            raise ValueError("理由必须是非空白单行且最多500 UTF-8字节")
+        return value
+
+
+def host_command_schema(profile_id: str) -> dict[str, JsonValue]:
+    schema = run_command_schema(profile_id)
+    properties = dict(schema["properties"])  # type: ignore[arg-type]
+    properties["reason"] = {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": MAX_HOST_REASON_BYTES,
+        "description": (
+            "必填单行理由：为什么沙箱内的命令做不到（例如需要联网安装依赖），"
+            "会在审批时展示给用户；最多500 UTF-8字节。"
+        ),
+    }
+    return {**schema, "properties": properties, "required": ["profile", "cmd", "reason"]}
+
+
+def decode_host_command(profile_id: str, arguments: dict[str, JsonValue]) -> HostCommandInput:
+    try:
+        checked = HostCommandInput.model_validate_json(
+            json.dumps(arguments, ensure_ascii=False, allow_nan=False)
+        )
+    except (ValidationError, ValueError, TypeError):
+        raise ValueError("沙箱外命令参数无效") from None
+    if checked.profile != profile_id:
+        raise ValueError("Command Profile不匹配")
+    return checked

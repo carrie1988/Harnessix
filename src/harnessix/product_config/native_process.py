@@ -29,6 +29,7 @@ from harnessix.processes.supervision_contracts import ProcessCapabilityProbe, Pr
 from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.processes.supervisor import PosixProcessSupervisor
 from harnessix.processes.trusted_output import trusted_process_public_output
+from harnessix.sandbox.native_policy import host_environment
 from harnessix.sandbox.native_probe import probe_native_sandbox
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
@@ -53,11 +54,20 @@ from .native_sandbox import (
     attest_native_sandbox,
     prepare_sandboxed_argv,
 )
-from .process_command import RunCommandInput, decode_run_command, run_command_schema
+from .process_command import (
+    HostCommandInput,
+    RunCommandInput,
+    decode_host_command,
+    decode_run_command,
+    host_command_schema,
+    run_command_schema,
+)
 from .process_profile import process_tool_name
 
 EXTERNAL_BOUNDARY_ENVIRONMENT = "HARNESSIX_EXTERNAL_BOUNDARY"
 NATIVE_COMMAND_VERSION = "harnessix.native-command/v1"
+HOST_COMMAND_VERSION = "harnessix.host-command/v1"
+HOST_COMMAND_PREFIX = "host_command"
 # 命令的基础环境；Profile预设同名变量时以预设为准。
 _BASE_ENVIRONMENT: Mapping[str, str] = MappingProxyType(
     {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
@@ -104,9 +114,20 @@ class NativeProcessProfileProbeResult:
 
 
 def native_process_executor_id(profile: ProductNativeProcessProfile) -> str:
-    """原生与容器命令Profile同属命令类身份（ID互不重复），公开输出合同与启动恢复按此识别。"""
+    """原生与容器命令Profile同属命令类身份（ID互不重复），公开输出合同与启动恢复按此识别。
 
+    沙箱外命令（ADR 0113）用独立身份，不被`exec_command.`前缀的自动批准规则覆盖。
+    """
+
+    if profile.backend == "host":
+        return f"product.host-command.{profile.profile_id}"
     return f"product.command-profile.{profile.profile_id}"
+
+
+def native_tool_name(profile: ProductNativeProcessProfile) -> str:
+    if profile.backend == "host":
+        return f"{HOST_COMMAND_PREFIX}.{profile.profile_id}"
+    return process_tool_name(profile.profile_id, "shell_command")
 
 
 def attest_native_process_profile(
@@ -120,11 +141,10 @@ def attest_native_process_profile(
 ) -> tuple[str, AttestedNativeProcessProfile | None]:
     """按后端证明执行边界；返回原因码与证明，不成立时不降级。"""
 
-    if profile.backend == "host":
-        # 逐条批准的沙箱外命令在实施第4步接入（ADR 0113）。
-        return "native_backend_unsupported", None
     if owner_capability is None or owner_capability.platform != "posix":
         return "process_owner_unavailable", None
+    if profile.backend == "host":
+        return "verified", _attest_host(profile, owner_capability, environ, secret_names)
     if profile.backend != "external_boundary":
         if site is None:
             return "native_sandbox_site_unavailable", None
@@ -175,6 +195,59 @@ def attest_native_process_profile(
         }
     )
     return "verified", AttestedNativeProcessProfile(
+        profile=profile,
+        capabilities=capabilities,
+        sandbox=sandbox,
+        environment=environment,
+        executor_evidence_sha256=evidence,
+        native_sandbox=None,
+    )
+
+
+def _attest_host(
+    profile: ProductNativeProcessProfile,
+    owner_capability: ProcessCapabilityProbe,
+    environ: Mapping[str, str],
+    secret_names: tuple[str, ...],
+) -> AttestedNativeProcessProfile:
+    """沙箱外命令：如实记为host_guarded/host/full；每条都需用户批准（ADR 0113第2.2节）。"""
+
+    environment = host_environment(environ, presets=profile.environment, secret_names=secret_names)
+    capabilities = build_capability_evidence_v2(
+        platform="posix",
+        provider="host",
+        provider_version="1",
+        sandbox_levels=("host_guarded",),
+        network_modes=("full",),
+        supports_pty=False,
+        supports_background=False,
+        supports_process_tree=True,
+        provider_evidence_digest=owner_capability.digest,
+    )
+    sandbox = SandboxBindingV2(
+        level="host_guarded",
+        backend="host",
+        backend_version="1",
+        network="full",
+        capability_digest=capabilities.evidence_digest,
+        profile_digest=canonical_digest(
+            {
+                "spec_version": "harnessix.native-host-profile/v1",
+                "profile_sha256": profile.profile_sha256,
+                "owner_capability_sha256": owner_capability.digest,
+                "environment": dict(environment),
+            }
+        ),
+    )
+    evidence = canonical_digest(
+        {
+            "spec_version": "harnessix.product-native-executor-evidence/v1",
+            "profile_sha256": profile.profile_sha256,
+            "capability_sha256": capabilities.evidence_digest,
+            "sandbox_sha256": canonical_digest(sandbox.model_dump(mode="json")),
+        }
+    )
+    return AttestedNativeProcessProfile(
         profile=profile,
         capabilities=capabilities,
         sandbox=sandbox,
@@ -257,13 +330,16 @@ def probe_native_process_profile(
 
 
 def native_process_descriptor(profile: ProductNativeProcessProfile) -> ToolDescriptor:
+    host = profile.backend == "host"
     return ToolDescriptor(
-        name=process_tool_name(profile.profile_id, "shell_command"),
-        version=f"{NATIVE_COMMAND_VERSION}:{profile.profile_sha256[:24]}",
+        name=native_tool_name(profile),
+        version=f"{HOST_COMMAND_VERSION if host else NATIVE_COMMAND_VERSION}:"
+        f"{profile.profile_sha256[:24]}",
         description=(
             f"在当前环境中执行Shell命令“{profile.description}”（{profile.profile_id} "
-            f'{profile.version}）；必填"profile": "{profile.profile_id}"和"cmd"，'
-            "工具名不能替代字段。cmd必须非空白，允许管道、重定向和多行，"
+            f'{profile.version}）；必填"profile": "{profile.profile_id}"和"cmd"'
+            + ('以及"reason"，' if host else "，")
+            + "工具名不能替代字段。cmd必须非空白，允许管道、重定向和多行，"
             "不含NUL且最多16384 UTF-8字节。"
             + _boundary_description(profile)
             + (
@@ -273,7 +349,11 @@ def native_process_descriptor(profile: ProductNativeProcessProfile) -> ToolDescr
             )
             + "失败先看diagnostic_preview；完整时不重读日志Artifact。"
         ),
-        input_schema=run_command_schema(profile.profile_id),
+        input_schema=(
+            host_command_schema(profile.profile_id)
+            if host
+            else run_command_schema(profile.profile_id)
+        ),
         effect_class=EffectClass.NON_IDEMPOTENT_WRITE,
         risk_level=RiskLevel.HIGH,
         requires_idempotency=True,
@@ -290,6 +370,12 @@ def _boundary_description(profile: ProductNativeProcessProfile) -> str:
         return (
             "命令从工作区根目录开始，可直接读写工作区，改动会保留；"
             "Harnessix不另加沙箱，隔离与网络由外部环境决定。"
+        )
+    if profile.backend == "host":
+        return (
+            "命令在沙箱外从工作区根目录开始运行：没有隔离，可以联网，可以读写用户目录；"
+            "每条命令都需要用户批准，reason会展示给用户。只在沙箱内的命令因需要联网"
+            "（如安装依赖、下载）或写工作区以外位置而无法完成时使用；其余命令请用沙箱内的命令工具。"
         )
     workspace = (
         "可直接读写工作区，改动会保留" if profile.workspace_mode == "read_write" else "工作区只读"
@@ -320,10 +406,18 @@ def native_process_binding(profile: ProductNativeProcessProfile) -> TrustedToolB
     )
 
 
+def _decode(
+    profile: ProductNativeProcessProfile, arguments: dict[str, JsonValue]
+) -> RunCommandInput:
+    if profile.backend == "host":
+        return decode_host_command(profile.profile_id, arguments)
+    return decode_run_command(profile.profile_id, arguments)
+
+
 def _checked_arguments(value: BaseModel, owner: VerifiedNativeProcessProfile) -> RunCommandInput:
     try:
         dumped = cast(dict[str, JsonValue], value.model_dump(mode="json"))
-        return decode_run_command(owner.profile.profile_id, dumped)
+        return _decode(owner.profile, dumped)
     except (ValueError, TypeError):
         raise KernelError(
             "process_profile_arguments_invalid", "Process Profile参数类型不一致"
@@ -357,6 +451,7 @@ def resolve_native_command(
                 "profile_sha256": profile.profile_sha256,
                 "owner_capability_sha256": owner.supervisor.capability.digest,
                 "cmd": arguments.cmd,
+                **({"reason": arguments.reason} if isinstance(arguments, HostCommandInput) else {}),
             },
         ),
         canonical_action_resource(
@@ -493,14 +588,14 @@ def build_native_process_definition(
     executor = HostProcessActionExecutor(_binding(owner, workspace_root), router)
 
     def decode(arguments: dict[str, JsonValue]) -> BaseModel:
-        return decode_run_command(owner.profile.profile_id, arguments)
+        return _decode(owner.profile, arguments)
 
     def resolve(arguments: BaseModel, context: ActionPlanningContext) -> ResolvedAction:
         return resolve_native_command(owner, _checked_arguments(arguments, owner), context)
 
     definition = TrustedActionDefinition(
         binding=binding,
-        input_model=RunCommandInput,
+        input_model=HostCommandInput if owner.profile.backend == "host" else RunCommandInput,
         resolve=resolve,
         executor=executor,
         input_schema=descriptor.input_schema,

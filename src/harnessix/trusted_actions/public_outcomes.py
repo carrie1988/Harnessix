@@ -226,6 +226,7 @@ def failure_family(plan: ActionRoutePlan) -> FailureFamily:
         for executor_prefix, tool_prefix in (
             ("product.process-profile.", "run_profile."),
             ("product.command-profile.", "exec_command."),
+            ("product.host-command.", "host_command."),
         ):
             profile = binding.executor_id.removeprefix(executor_prefix)
             if (
@@ -456,6 +457,7 @@ def _process_summary(
             not in {
                 (f"run_profile.{summary.profile}", f"product.process-profile.{summary.profile}"),
                 (f"exec_command.{summary.profile}", f"product.command-profile.{summary.profile}"),
+                (f"host_command.{summary.profile}", f"product.host-command.{summary.profile}"),
             }
         )
     ):

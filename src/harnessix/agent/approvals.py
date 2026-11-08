@@ -153,12 +153,24 @@ def approval_action_id(turn: Turn, call: ToolCallContent) -> UUID | None:
     return None
 
 
+# 宿主以系统身份作出的决定（如本机沙箱内命令的自动批准，ADR 0113）使用该前缀。
+SYSTEM_APPROVAL_ACTOR_PREFIX = "harnessix:"
+
+
 def approval_was_decided(content: ApprovalContent, decision: ApprovalDecision) -> bool:
-    """同语义决定幂等返回；冲突重放失败关闭。"""
+    """同语义决定幂等返回；冲突重放失败关闭。
+
+    系统身份已作出决定后，客户端可能在看到审批请求的瞬间再回复一次（自动批准模式或人工）。
+    结论相同时视为同一决定幂等返回；结论相反仍失败关闭。
+    """
 
     recorded = content.decision
     if recorded is None:
         return False
+    if recorded.actor.startswith(SYSTEM_APPROVAL_ACTOR_PREFIX) and (
+        recorded.outcome == decision.outcome
+    ):
+        return True
     if (recorded.outcome, recorded.actor, recorded.reason) != (
         decision.outcome,
         decision.actor,

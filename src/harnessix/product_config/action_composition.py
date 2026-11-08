@@ -11,6 +11,7 @@ from typing import Literal
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread, ToolCallContent
+from harnessix.agent.runtime import ApprovalResponder
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.rollback_action import (
     WORKSPACE_ROLLBACK_TOOL,
@@ -51,6 +52,7 @@ from harnessix.product_config.native_process import (
     NativeProcessProfileProbeResult,
     VerifiedNativeProcessProfile,
     build_native_process_definition,
+    native_tool_name,
 )
 from harnessix.product_config.process_action import (
     ProductProcessOutputProvider,
@@ -61,6 +63,7 @@ from harnessix.product_config.process_profile import (
     VerifiedProductProcessProfile,
     process_tool_name,
 )
+from harnessix.product_config.sandbox_approval import sandboxed_command_responder
 from harnessix.product_config.task_dependencies import TaskDependencyEnvironments
 from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
 from harnessix.product_config.workspace_rollback import (
@@ -115,6 +118,8 @@ class ProductActionComposition:
     report: ProductActionCapabilityReport
     catalog: ProductActionCatalog
     gateway: RouterBackedAgentActionGateway | None
+    # 本机沙箱内命令的系统自动批准；没有沙箱命令时为None（ADR 0113）。
+    approval_responder: ApprovalResponder | None = None
 
 
 def build_fixed_product_action_environment(root: Path) -> FixedProductActionEnvironment:
@@ -306,7 +311,7 @@ def _native_components(
     owners: dict[str, VerifiedNativeProcessProfile] = {}
     outputs: dict[str, HostProcessOutputProvider] = {}
     for probe in probes:
-        tool = process_tool_name(probe.profile.profile_id, "shell_command")
+        tool = native_tool_name(probe.profile)
         if probe.verified is None:
             evidence.append(
                 build_product_action_capability(
@@ -543,7 +548,13 @@ def _compose_product_actions(
         secret_scope=secret_scope,
         owns_secret_scope=True,
     )
-    return ProductActionComposition(report, catalog, gateway)
+    sandboxed = any(owner.native_sandbox is not None for owner in native_owners.values())
+    return ProductActionComposition(
+        report,
+        catalog,
+        gateway,
+        sandboxed_command_responder(router) if sandboxed else None,
+    )
 
 
 def build_product_action_composition(

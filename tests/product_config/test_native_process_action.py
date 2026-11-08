@@ -43,6 +43,7 @@ from harnessix.product_config.native_process import (
     EXTERNAL_BOUNDARY_ENVIRONMENT,
     VerifiedNativeProcessProfile,
     build_native_process_definition,
+    native_tool_name,
     probe_native_process_profile,
 )
 from harnessix.product_config.process_command import RunCommandInput
@@ -70,8 +71,13 @@ class _NativeCase:
     approval: TrustedActionApprovalRequestContent
     owner: VerifiedNativeProcessProfile
     workspace_root: Callable[[str], Path]
+    settled: Turn | None = None
 
     async def approve_and_resume(self) -> Turn:
+        if self.approval.decision is not None:
+            # 宿主已以系统身份自动批准（ADR 0113），轮次已执行完毕。
+            assert self.settled is not None
+            return self.settled
         await self.agent.reply_approval(
             self.thread_id,
             self.turn_id,
@@ -141,8 +147,13 @@ async def _native_case(
                         ResponseStarted(response_id="native-response"),
                         ToolCallCompleted(
                             call_id="native-call",
-                            tool=f"exec_command.{profile.profile_id}",
-                            arguments={"profile": profile.profile_id, "cmd": cmd},
+                            tool=native_tool_name(profile),
+                            arguments={"profile": profile.profile_id, "cmd": cmd}
+                            | (
+                                {"reason": "测试：需要在沙箱外执行"}
+                                if profile.backend == "host"
+                                else {}
+                            ),
                         ),
                         ResponseCompleted(finish_reason="tool_calls"),
                     ],
@@ -169,16 +180,18 @@ async def _native_case(
                     scoped_tools=tools,
                     artifacts=artifacts,
                     trusted_actions=composition.gateway,
+                    approval_responder=composition.approval_responder,
                 ) as agent:
                     thread = await agent.create_thread(str(workspace))
                     waiting = await agent.run_turn(thread.thread_id, "运行命令", request_id="n")
-                    assert waiting.status is TurnStatus.WAITING_APPROVAL
                     approval = next(
                         item.content
                         for item in waiting.items
                         if isinstance(item.content, TrustedActionApprovalRequestContent)
                     )
                     assert approval.presentation == "process"
+                    if approval.decision is None:
+                        assert waiting.status is TurnStatus.WAITING_APPROVAL
                     yield _NativeCase(
                         agent,
                         router,
@@ -190,6 +203,7 @@ async def _native_case(
                         approval,
                         probe.verified,
                         environment.workspace_root,
+                        None if approval.decision is None else waiting,
                     )
 
 

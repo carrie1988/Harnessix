@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
+from harnessix.agent.runtime import ApprovalResponder
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.workspace_patch_compact import WorkspacePatchContract
@@ -82,6 +83,10 @@ class ProductActionRuntimeOwner:
     @property
     def gateway(self) -> RouterBackedAgentActionGateway | None:
         return self.composition.gateway
+
+    @property
+    def approval_responder(self) -> ApprovalResponder | None:
+        return self.composition.approval_responder
 
 
 @dataclass(frozen=True, slots=True)

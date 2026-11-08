@@ -110,6 +110,8 @@ related_tests:
   - tests/product_config/test_native_process_action.py
   - tests/product_config/test_native_sandbox_profile.py
   - tests/product_config/test_native_sandbox_action.py
+  - tests/product_config/test_native_host_command.py
+  - tests/product_config/test_zero_config.py
 supersedes: []
 ---
 
@@ -127,7 +129,18 @@ supersedes: []
   - 证明阶段读取 App Server 环境与 `scutil --proxy` 中指向本机的代理端口，计入策略；
   - 用将要执行的同一份策略试运行一次，系统拒绝时报 `seatbelt_preflight_failed` 并省略工具；
   - 放行宿主回环，执行计划如实记为 `host_sandboxed/seatbelt/full`，资源声明包含网络连接。
-- **尚未接线**：`host`（第 4 步）报 `native_backend_unsupported` 并省略工具，绝不按外部边界执行。
+- **沙箱外命令**（第 4 步，ADR 0113）：
+  - `backend: "host"` 的原生 Profile 提供 `host_command.<id>`（执行器 `product.host-command.<id>`），必填 `reason`；
+  - 计划如实记为 `host_guarded/host/full`，环境继承白名单并额外继承代理变量；
+  - 始终需要人工批准。
+- **宿主自动批准**：
+  - [`sandbox_approval.py`](../../src/harnessix/product_config/sandbox_approval.py) 只批准按 Router 持久计划复核确为本机沙箱命令的审批，批准人为 `harnessix:sandbox-policy`；
+  - 组合根在存在沙箱命令时提供应答器，`server.py` 把它传给 Agent 运行时。
+- **零配置**：
+  - [`zero_config.py`](../../src/harnessix/product_config/zero_config.py) 在用户入口显式请求时（预检请求的 `zero_config_actions`，App Server 的 `--zero-config-actions`），按本机探测生成命令工具：沙箱可用时为 `exec_command.shell` 加 `host_command.host-shell`，不可用时只有后者，并在说明中写明原因；
+  - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
+- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v1`；外部边界与容器的通用指令不变。
+- **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
 ## 当前增量：外部边界原生命令Profile（ADR 0121）

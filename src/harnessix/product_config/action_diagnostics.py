@@ -27,6 +27,7 @@ from harnessix.product_config.action_contracts import (
 from harnessix.product_config.native_process import (
     attest_native_process_profile,
     native_process_binding,
+    native_tool_name,
 )
 from harnessix.product_config.native_sandbox import NativeSandboxSite
 from harnessix.product_config.process_action import product_process_binding
@@ -120,7 +121,7 @@ def diagnose_product_actions(
         )
         evidence.append(
             build_product_action_capability(
-                capability_id=process_tool_name(native.profile_id, "shell_command"),
+                capability_id=native_tool_name(native),
                 kind="process_profile",
                 status="verified" if attested is not None else "omitted",
                 reason_code=reason,

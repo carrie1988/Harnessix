@@ -48,6 +48,8 @@ def _server_parser() -> argparse.ArgumentParser:
     parser.add_argument("--expected-active-profile")
     parser.add_argument("--expected-active-action-sha256")
     parser.add_argument("--git-executable")
+    # 仅由用户入口在未指定Action配置时传入（ADR 0111第2.2节）。
+    parser.add_argument("--zero-config-actions", action="store_true")
     return parser
 
 
@@ -112,6 +114,7 @@ def agent_server_main(argv: Sequence[str] | None = None) -> None:
                 expected_active_profile=args.expected_active_profile,
                 expected_active_action_sha256=args.expected_active_action_sha256,
                 git_executable=args.git_executable,
+                zero_config_actions=args.zero_config_actions,
             )
         )
     except KernelError as error:

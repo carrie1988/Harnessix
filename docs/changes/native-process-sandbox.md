@@ -23,6 +23,9 @@ related_tests:
   - tests/sandbox/test_seatbelt.py
   - tests/product_config/test_native_sandbox_profile.py
   - tests/product_config/test_native_sandbox_action.py
+  - tests/product_config/test_native_host_command.py
+  - tests/product_config/test_zero_config.py
+  - tests/trusted_actions/test_sandboxed_command_policy.py
 supersedes: []
 ---
 
@@ -52,9 +55,9 @@ supersedes: []
 | 步骤 | 内容 | 状态 |
 |---|---|---|
 | 1 | 探测 v2 与合同：Profile 字段、`SandboxBinding` 规则、沙箱策略推导、环境变量白名单、保证清单 | 已完成 |
-| 2 | bubblewrap 参数翻译与执行，247 宿主机验证 | 代码与本机测试完成；247 上真实 bubblewrap 端到端用例待运行（第 12 节） |
+| 2 | bubblewrap 参数翻译与执行，247 宿主机验证 | 已完成；247 以 `nobody` 身份全部通过（第 12 节） |
 | 3 | Seatbelt 参数翻译与执行（含已配置代理端口拦截） | 已完成；真实 Seatbelt 端到端 5 项在用户普通终端全部通过（第 12 节） |
-| 4 | 审批策略 v2、沙箱外命令、零配置装配、诊断 | 未开始 |
+| 4 | 审批策略 v2、沙箱外命令、零配置装配、诊断 | 已完成（第 16 节）；用户可见的启动提示待对齐 |
 | 5 | 三环境验收；回写 ADR 0066 第 2 版与模块设计 | 未开始 |
 
 ## 4. 总体架构
@@ -66,7 +69,7 @@ supersedes: []
 | 翻译 | 把策略翻译成 `bwrap` 参数，或 Seatbelt 策略文本加 `-D` 参数 | `sandbox/bubblewrap.py`、`sandbox/seatbelt.py` |
 | 证明与启动准备 | 探测、推导策略、绑定执行计划；启动前复核后端身份、清空私有 TMPDIR、查找 `.env` | `product_config/native_sandbox.py` |
 | 装配与执行 | 显式配置的 bubblewrap Profile 已接入；零配置在第 4 步 | `product_config/native_process.py`、`host_process_action.py` |
-| 审批（第 4 步） | 沙箱内命令由策略直接放行，沙箱外命令逐条批准 | `trusted_actions/policy.py` |
+| 审批 | 策略把沙箱内命令标记为可由系统批准，宿主以系统身份当场批准；沙箱外命令逐条人工批准 | `trusted_actions/policy.py`、`agent/runtime.py`、`product_config/sandbox_approval.py` |
 
 策略层只做确定性推导，不读写文件系统；采集本机事实与执行命令都放在边缘，便于测试和审计。
 
@@ -229,3 +232,52 @@ bubblewrap 的挂载顺序决定覆盖关系，后挂载的覆盖先挂载的：
 - 非 Git 工作区的 `.env` 查找跳过常见依赖与构建目录、只查 8 层以内，更深处的 `.env` 不保证遮盖，如实声明。
 - Seatbelt 以最后匹配为准：新增任何放行规则都必须排在拒绝规则之前，否则会悄悄覆盖拒绝。单元测试 `test_every_deny_rule_comes_after_every_allow_rule` 守住这一点。
 - Mach 服务清单目前只覆盖已验收的命令（shell、git、python）。其他工具若需要更多系统服务，会表现为命令失败，按反馈补充。
+
+## 16. 第 4 步：审批、沙箱外命令与零配置
+
+### 16.1 沙箱内命令的自动批准
+
+- **策略**：`trusted-coding-action/v2` 只新增一条标记规则：沙箱内命令判为“需要审批”，`policy_id` 为 `default.approve-sandboxed-command`。
+- **为什么不是直接放行**：Agent 内核要求写调用成功前必有已批准的审批项。实测直接放行会让输出发布判为“缺少批准”，整轮中断。
+- **宿主钩子**：`AgentRuntime(approval_responder=…)`。在三个入口的最外层、不持锁时，经公开的 `reply_approval` 落盘系统决定后继续执行；`resume_turn` 进入时先补批。
+- **应答器**：`sandbox_approval.py` 按 Router 持久计划复核策略 ID、`host_sandboxed`、后端、计划指纹和路由状态，批准人为 `harnessix:sandbox-policy`。
+- **客户端晚到的回复**：已由系统身份决定时，结论相同的回复幂等成功、审批只记一次；结论相反仍报 `approval_conflict`。这一点由评测会话提出：Harbor 的协议客户端处于 auto 模式时会遇到。
+- **方案选择**：钩子放在运行时而非 App Server 驱动，与评测会话商定。放在运行时客户端不会长时间看到待审批；评测会话不改运行时的审批段。
+
+### 16.2 沙箱外命令
+
+- **身份**：`host_command.<id>` ↔ `product.host-command.<id>`，公开输出合同与启动恢复都已登记这一配对。
+- **参数**：`cmd` 加必填单行 `reason`（最多 500 字节）。
+- **执行计划**：`host_guarded/host/full`；环境继承白名单并额外继承代理变量，不含模型凭据与 `HARNESSIX_*`。
+- **审批**：策略按 v1 规则要求人工批准，应答器不认可，`exec --approval-mode auto` 的前缀自动批准也不覆盖它。
+
+### 16.3 零配置
+
+- `harnessix code`、`doctor` 和 `exec` 在没有 Action 配置时，在预检请求里置 `zero_config_actions`，并给 App Server 传 `--zero-config-actions`。
+  - 最初的实现是设置进程环境变量。全量回归发现它会在同一进程内的后续测试中残留，导致两项无关测试失败，于是改为显式参数，不修改环境。
+- `zero_config.py` 生成命令工具：
+  - 沙箱可用：`exec_command.shell` 加 `host_command.host-shell`；
+  - 沙箱不可用：只有后者，说明中写明原因；
+  - shell 取登录 shell（zsh 或 bash），否则 `/bin/sh`。
+- 评测与程序化启动不设置这一请求，省略 Action 配置时仍得到原内建配置。测试守护“原内建配置逐字不变”。
+- 存在本机命令工具时，产品使用通用工具视图与新的本机命令系统指令；外部边界与容器的指令不变。
+
+### 16.4 验证
+
+- 本机通过：
+  - 策略 v2（9 项）；
+  - 沙箱外命令（9 项）；
+  - 零配置（6 项）；
+  - 透传后端的全链路自动批准与崩溃恢复补批；
+  - 系统决定后的重复回复幂等。
+- 运行时钩子改动后，`tests/agent`、`tests/app_server`、`tests/test_exec_cli.py`、`tests/trusted_actions`、`tests/product_config` 与干净基线对照，失败集合完全相同。
+- 第 4 步全部改动后，再扩大到 `tests/product_ui`、`tests/execution`、`tests/sandbox`、`tests/governance` 与基线对照。
+  - 第一次发现 2 项新失败，都是零配置请求写入进程环境造成的测试串扰，已改为显式参数。
+  - 第二次见提交记录。
+- 247（bubblewrap 0.6.1，以 `nobody` 身份）：第 2 步代码加策略 v2 后，沙箱相关 218 项全部通过，含 4 项真实 bubblewrap 端到端。
+
+### 16.5 待用户对齐
+
+- 启动时是否在界面上显示“命令在沙箱中运行”或“本机沙箱不可用”的提示，以及 Doctor 修复动作的可读文案。
+- 公开协议是否禁止客户端使用 `harnessix:` 前缀的批准人。
+- 毫秒级可见窗口是否需要彻底消除。这需要请求与决定同一事务落盘，涉及内核与 Router 的提交顺序。

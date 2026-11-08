@@ -127,17 +127,18 @@ def test_sandbox_only_fields_and_managed_variables_are_guarded(
 @pytest.mark.skipif(os.name != "posix", reason="原生后端只支持POSIX Process Owner")
 def test_other_backends_are_never_attested_as_external_boundary() -> None:
     capability = probe_posix_process_capability()
-    expected = {
-        "seatbelt": "native_sandbox_site_unavailable",
-        "bubblewrap": "native_sandbox_site_unavailable",
-        "host": "native_backend_unsupported",
-    }
-    for backend, reason in expected.items():
+    for backend in ("seatbelt", "bubblewrap"):
         assert attest_native_process_profile(
             native_profile(backend=backend),
             capability,
             environ={EXTERNAL_BOUNDARY_ENVIRONMENT: "1"},
-        ) == (reason, None)
+        ) == ("native_sandbox_site_unavailable", None)
+    # 沙箱外命令不需要边界断言，但如实记为host提供方，不冒充外部边界。
+    reason, attested = attest_native_process_profile(
+        native_profile(backend="host"), capability, environ={EXTERNAL_BOUNDARY_ENVIRONMENT: "1"}
+    )
+    assert reason == "verified" and attested is not None
+    assert attested.capabilities.provider == "host"
 
 
 def test_native_and_container_ids_share_one_namespace(tmp_path: Path) -> None:

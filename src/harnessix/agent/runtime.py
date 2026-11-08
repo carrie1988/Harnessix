@@ -72,6 +72,7 @@ from harnessix.agent.models import (
     ToolCallContent,
     ToolCallRejectionContent,
     ToolResultContent,
+    TrustedActionApprovalRequestContent,
     Turn,
     TurnStarted,
     TurnStateChanged,
@@ -253,6 +254,10 @@ def _estimated_model_input_tokens(
     )
 
 
+# 宿主以系统身份当场决定的审批（ADR 0113：本机沙箱内的命令）；返回None表示交给人工。
+ApprovalResponder = Callable[[TrustedActionApprovalRequestContent], ApprovalDecision | None]
+
+
 class AgentRuntime:
     """进程内 Kernel 宿主；不承担 CLI、模型 SDK、Shell 或 Sandbox 职责。"""
 
@@ -290,6 +295,7 @@ class AgentRuntime:
         normalize_stringified_arguments: bool = False,
         stable_tool_catalog: bool = False,
         reject_forced_choice_violations: bool = False,
+        approval_responder: ApprovalResponder | None = None,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -389,6 +395,7 @@ class AgentRuntime:
             definitions = (*definitions, definition)
         self._questions_enabled = enable_questions
         self._planning_enabled = enable_planning
+        self._approval_responder = approval_responder
         if enable_planning:
             definitions = (*definitions, planning_tool_descriptor())
         if enable_questions:
@@ -900,6 +907,7 @@ class AgentRuntime:
                 )
                 operation.bind_turn(turn.turn_id)
                 result = await self._continue(thread_id, turn_id, token) if accepted else turn
+                result = await self._settle_automatic_approvals(thread_id, turn_id, token, result)
                 operation.finish(result.status.value, result.error)
                 return result
         except asyncio.CancelledError:
@@ -970,6 +978,9 @@ class AgentRuntime:
                 )
                 operation.bind_turn(turn.turn_id)
                 result = await self._continue(thread_id, turn.turn_id, token) if accepted else turn
+                result = await self._settle_automatic_approvals(
+                    thread_id, turn.turn_id, token, result
+                )
                 operation.finish(result.status.value, result.error)
                 return result
         except asyncio.CancelledError:
@@ -1064,6 +1075,8 @@ class AgentRuntime:
                 turn_id=turn_id,
                 trace_context=turn.trace_context,
             ) as operation:
+                # 恢复路径：审批请求已落盘、系统决定尚未落盘时崩溃，重启后在这里补批。
+                await self._auto_approve(thread_id, turn_id)
                 result = await resume_after_approval(
                     self._trusted_actions,
                     thread_id,
@@ -1071,10 +1084,56 @@ class AgentRuntime:
                     token,
                     self._continue,
                 )
+                result = await self._settle_automatic_approvals(thread_id, turn_id, token, result)
                 operation.finish(result.status.value, result.error)
                 return result
         finally:
             self._active.pop(turn_id, None)
+
+    async def _settle_automatic_approvals(
+        self, thread_id: UUID, turn_id: UUID, token: CancelToken, result: Turn
+    ) -> Turn:
+        """执行停在可由宿主决定的审批时，当场批准并继续；其余审批照常交给人工。"""
+
+        while result.status == TurnStatus.WAITING_APPROVAL and await self._auto_approve(
+            thread_id, turn_id
+        ):
+            result = await resume_after_approval(
+                self._trusted_actions, thread_id, turn_id, token, self._continue
+            )
+        return result
+
+    async def _auto_approve(self, thread_id: UUID, turn_id: UUID) -> bool:
+        """当前待批审批由宿主应答器认可时，经公开审批入口落盘决定；调用时不得持有Thread锁。"""
+
+        if self._approval_responder is None:
+            return False
+        turn = get_turn(await self.store.get_thread(thread_id), turn_id)
+        calls = pending_calls(turn)
+        item = approval_for(turn, calls[0]) if calls else None
+        if (
+            turn.status != TurnStatus.WAITING_APPROVAL
+            or item is None
+            or item.status != ItemStatus.STARTED
+            or not isinstance(item.content, TrustedActionApprovalRequestContent)
+        ):
+            return False
+        decision = self._approval_responder(item.content)
+        if decision is None:
+            return False
+        try:
+            await self.reply_approval(
+                thread_id,
+                turn_id,
+                item.content.approval_id,
+                fingerprint=item.content.request_fingerprint,
+                decision=decision,
+            )
+        except KernelError as error:
+            # 人工恰好先作出决定时，以已落盘的决定为准继续推进。
+            if error.code not in {"approval_conflict", "approval_closed"}:
+                raise
+        return True
 
     async def _cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
         settling = asyncio.create_task(self._settle_cancel_task(thread_id, turn_id))

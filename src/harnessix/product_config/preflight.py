@@ -42,6 +42,8 @@ class ProductPreflightRequest:
     state_directory: Path
     git_executable: Path | None
     require_tui: bool = True
+    # 用户入口未指定Action配置时请求零配置命令工具（ADR 0111第2.2节）。
+    zero_config_actions: bool = False
 
 
 def run_product_preflight(
@@ -67,6 +69,7 @@ def run_product_preflight(
     actions = inspect_product_actions(
         request.action_config_path,
         configuration.snapshot,
+        zero_config=request.zero_config_actions,
         platform=platform,
         environment=environment,
         recorder=recorder,
