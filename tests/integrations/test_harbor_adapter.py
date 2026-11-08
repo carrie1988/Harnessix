@@ -48,7 +48,7 @@ async def test_instruction_never_enters_shell_command_or_agent_log(tmp_path: Pat
     commands = [call.kwargs["command"] for call in instance.exec_as_agent.await_args_list]
     assert all(instruction not in command for command in commands)
     head, run, cleanup, patch, state = commands
-    assert head.endswith("rev-parse HEAD")
+    assert "read-tree HEAD" in head and head.count("write-tree") == 1
     assert "--trial-id" in run and "--state-directory" in run
     assert "--action-config /opt/harnessix/actions.json" in run
     assert "--approval-mode auto" in run
@@ -58,7 +58,7 @@ async def test_instruction_never_enters_shell_command_or_agent_log(tmp_path: Pat
     assert instance.exec_as_agent.await_args_list[1].kwargs["env"] is None
     assert cleanup.startswith("rm -f -- /tmp/harnessix-input-")
     assert 'GIT_INDEX_FILE="$scratch/index"' in patch and "mktemp -d" in patch
-    assert "diff --cached --binary " + "a" * 40 in patch
+    assert f"diff --binary {'a' * 40} " in patch
     assert patch.endswith("exit $status") and "/patch.diff" in patch
     assert state.startswith("tar -czf ") and "harnessix-state.tar.gz" in state
 
