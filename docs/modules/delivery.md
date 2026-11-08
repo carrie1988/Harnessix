@@ -15,6 +15,7 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/delivery/test_preserved_file_modes.py
+  - tests/delivery/test_path_case_aliases.py
   - tests/product_config/test_git_source_native_progress.py
   - tests/product_config/test_git_user_native_control.py
   - tests/product_config/test_git_checkpoint_scope_control.py
@@ -2392,4 +2393,7 @@ Transaction Store／Record Codec 的[可选归属读进度](../changes/m09-r4-gi
 - 新代际记录在原业务事务内把账本升级为Schema4，旧程序打开时失败关闭；状态备份接受Schema4。
 - Git交付在`git_delivery_source`读入原Patch后以`git_delivery_source_mode_unsupported`拒绝新代际，不进入`git.py`。
 - Diff在保留0644/0755以外的权限时追加`preserved mode`行。
+- 大小写不敏感的文件系统：两个规划入口与补丁规划先经`path_case.reject_case_aliases`按目录的实际语义识别
+  同一文件的不同写法，以`delivery_path_case_conflict`整批拒绝并给出磁盘上的真实路径；区分大小写的
+  文件系统行为不变。
 

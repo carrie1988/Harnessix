@@ -224,6 +224,7 @@ Plan与Approval写入独立私有SQLite存储。相同内容重复提交为幂�
 | `workspace_patch_target_exists` | `create`目标已存在（尚未批准或执行） | `read_file`后改用`edit`/`replace`，或先`delete` |
 | `workspace_patch_target_missing` | `edit`/`replace`/`delete`目标不是现有普通文件（尚未批准或执行） | 新文件改用`create` |
 | `delivery_metadata_unsupported` | 现有目标文件带setuid/setgid/sticky位（尚未批准或执行，工作区未变；0664、0777等普通权限按ADR 0068第2版保留） | Workspace Patch不能修改该文件，不要重试同一Patch |
+| `delivery_path_case_conflict` | 文件系统不区分大小写：路径与磁盘上的已有名称只差大小写，或同批两项指向同一文件（尚未批准或执行，工作区未变） | 按提示改用磁盘上的名称，或把同一文件的多项合并后重新提交 |
 | `workspace_busy` | 其他owner持有有效租约 | 等待或由原owner释放 |
 | `workspace_lease_lost` | 租约过期或fencing token落后 | 禁止提交，重新取得租约与计划 |
 | `execution_plan_stale` | 任一执行事实与冻结计划不同 | 丢弃批准并生成新Plan |

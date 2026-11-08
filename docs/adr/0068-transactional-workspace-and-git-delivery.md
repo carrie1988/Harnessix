@@ -13,6 +13,7 @@ related_tests:
   - tests/delivery
   - tests/workspace
   - tests/delivery/test_preserved_file_modes.py
+  - tests/delivery/test_path_case_aliases.py
   - tests/product_config/test_patch_precondition_rejection.py
 supersedes: []
 ---
@@ -80,10 +81,14 @@ supersedes: []
    已提交的合同Schema、冻结的Git交付合同和Windows证据绑定的源码都不受影响。
 3. 权限语义：`edit`保留现有文件的真实权限；`replace`、`create`仍使用模型给出的0644/0755（模型可见的输入
    合同不变）；回滚恢复原权限；发布、复核与崩溃恢复对账都按真实权限比较（观察结果总是真实权限，
-   与任一代际的记录按字段比较）。
+   与任一代际的记录按字段比较）。由此带来一项行为变化，用户已确认（2026-11-08）：原代际事务发布中途，
+   若文件权限被改成0644/0755以外，此前报`delivery_metadata_unsupported`，现在判为来源漂移
+   （`delivery_source_changed`，记录转为diverged），与内容被改时的处理一致。
 4. 合同守卫：原代际的Mutation与Plan拒绝夹带新代际成员（子类实例也拒绝），避免把0664写进原合同。
 5. 存储与降级：保存新代际记录时，账本在原业务SQL事务内升级为Schema4；只认识Schema1～3的旧程序打开
    该账本时失败关闭（`delivery_store_version`），不会把0664误读为0644。状态备份接受Schema4。
+   用户已决定（2026-11-08）接受这一降级影响：账本一旦含新代际记录，旧版本整本拒绝打开，原有事务也随之
+   不可读，而不是部分读取。
 6. Git交付暂不接受新代际：`product_config/git_delivery_source.py`在读入原Patch后立即以
    `git_delivery_source_mode_unsupported`拒绝并说明原因，不进入`delivery/git.py`。Git本身能提交这些文件
    （按属主可执行位记为100644/100755）；以后为Git交付单独升版时按这一规则映射，需重跑Windows CI。
@@ -101,7 +106,26 @@ supersedes: []
 |---|---|---|---|
 | 符号链接、硬链接（`tools/workspace.py`的`_check_type`） | 补丁目标是符号链接或硬链接计数大于1时拒绝（`path_denied`） | 失败关闭，不会丢失链接语义 | 否；如需支持另行设计 |
 | Windows可执行位（`planner._normalized_targets`、Windows端口） | Windows只记录逻辑0644，拒绝0755目标 | NTFS无POSIX权限，记录与磁盘一致 | 否 |
-| 原子替换丢失的其他文件属性（`filesystem._apply`的临时文件+`os.replace`） | 新文件的属主为当前进程用户；扩展属性、ACL、macOS标签等不随替换保留；权限已按本版保留 | 以root运行修改他人文件时属主变为root；依赖xattr/ACL的文件会丢失这些属性 | 建议排期：至少在发现属主不同或存在xattr/ACL时明确拒绝或提示 |
-| 大小写不敏感的文件系统（`workspace/paths.py`：POSIX路径按大小写敏感比较） | macOS默认APFS大小写不敏感；实测已有`a.txt`时，补丁写`A.txt`被规划为修改该文件，同一批同时写`a.txt`与`A.txt`会规划成两个成员 | 第二个成员发布时发现文件已变而转为分歧，留下部分效果；路径大小写与Git索引不一致 | 需要修：按卷的大小写敏感性选择比较键，同一物理文件的不同写法在规划时拒绝 |
+| 原子替换丢失的其他文件属性（`filesystem._apply`的临时文件+`os.replace`） | 新文件的属主为当前进程用户；扩展属性、ACL、macOS标签等不随替换保留；权限已按本版保留 | 以root运行修改他人文件时属主变为root；依赖xattr/ACL的文件会丢失这些属性 | 已决定：开源后修复（用户2026-11-08） |
+| 大小写不敏感的文件系统（`workspace/paths.py`：POSIX路径按大小写敏感比较） | macOS默认APFS大小写不敏感；实测已有`a.txt`时，补丁写`A.txt`被规划为修改该文件，同一批同时写`a.txt`与`A.txt`会规划成两个成员 | 第二个成员发布时发现文件已变而转为分歧，留下部分效果；路径大小写与Git索引不一致 | 已决定：开源前修复（用户2026-11-08），见下节 |
 | 换行符（Workspace写入原始字节；Git交付使用`core.autocrlf=false`的原始对象） | 不做换行转换 | 与`git add`在启用`text`/`eol`属性时的规范化结果可能不同 | 否（与第1版“禁用attributes外部来源”的决定一致）；Git交付升版时一并说明 |
+
+### 大小写不敏感文件系统上的路径别名（2026-11-08修复）
+
+缺陷：POSIX路径按字节比较，而macOS默认APFS不区分大小写（通常也不区分Unicode规范形式）。已有`a.txt`时，
+写`A.txt`的补丁被规划为修改该文件，Diff、审阅和Git看到的路径都与磁盘不一致；同一批同时写`a.txt`与
+`A.txt`被规划成两个成员，发布到第二项时发现文件已被第一项改变而转为分歧，留下部分效果。
+
+决策（`delivery/path_case.py`）：
+
+1. 规划前按文件系统的实际语义识别别名，只读取目录项与元数据：路径的每一段都必须与磁盘上的目录项
+   完全一致；某段不在目录项中却能打开，说明它是已有名字的别名，整批以`delivery_path_case_conflict`
+   拒绝，并在原因中给出磁盘上的真实路径，已有文件的名称以磁盘为准。
+2. 同一批里两项若在所在目录的语义下是同一名字（不区分大小写的目录按NFC加casefold比较），整批拒绝，
+   提示合并为一项。目录是否区分大小写用该目录中已有名字的大小写变体探测，没有可用名字时用目录自身
+   在父目录中的名字，都无法探测时按平台默认（macOS视为不区分，其他POSIX视为区分）。
+3. 两个原规划入口（原Snapshot与Snapshot v2）都执行该检查；补丁规划在存在性判定之前执行，使模型收到
+   “改用磁盘名称”而不是“目标已存在”。拒绝是可修正的失败结果，工作区与事务账本都不变。
+4. 区分大小写的文件系统（一般的Linux）行为不变：`a.txt`与`A.txt`仍是两个文件。Windows仍按原有的
+   大小写折叠比较键处理，本次未改动；Git交付读取来源的路径不经此检查。
 
