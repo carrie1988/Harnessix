@@ -1,0 +1,116 @@
+{
+  "run_name": "e0-full-content",
+  "dataset": {
+    "name": "swebench-verified-dev5",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 4,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "User decision 2026-11-08 (Langfuse content, 1A/2C; scheduling A): first run frozen with content_policy full, so Langfuse shows model and tool input and output for both systems. Verification of the step extractors (d5760c8f) on the five E0 dev tasks, not a benchmark result; it runs after the holdout round when the model replicas are idle.",
+    "Model steps carry what arrived since the previous call (task, tool results, compaction summary) and the reply with its tool calls; tool steps carry arguments and results; Harnessix compactions appear as their own steps. The full request (system prompt, tool definitions, projected window) is not stored by the product.",
+    "Arms reuse the holdout Harbor settings: mini-swe-agent 2.4.6 with the phase-1 R configuration, Harnessix with the E0c rerun bundle (7412914f) and settings; plan v2, 3900 s Harbor cap, balanced host relay on 172.17.0.1:18100. Concurrency 4 is a scheduling choice for this check only."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/host-gateway.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "mini",
+      "system": "mini-swe-agent",
+      "system_version": "2.4.6",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:MiniSweAgentOffline",
+        "model_name": "openai/qwen3.8-flash-next",
+        "env": {
+          "OPENAI_API_KEY": "local-replica-no-key"
+        },
+        "override_timeout_sec": 3900,
+        "kwargs": {
+          "version": "2.4.6",
+          "config_file": "benchmarks/harbor/mini-swe-agent/arm-r-swebench.yaml",
+          "with_packages": [
+            "litellm==1.108.0",
+            "mcp==2.3.0",
+            "openai==3.46.0",
+            "orjson",
+            "fastapi"
+          ]
+        }
+      }
+    },
+    {
+      "arm_id": "harnessix",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/e0c-rerun-agent/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/e0c-rerun-agent/product.json",
+        "/data/harnessix/harbor/e0c-rerun-agent/actions.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/e0c-rerun-agent/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/e0c-rerun-agent/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config_template": "/data/harnessix/harbor/e0c-rerun-agent/actions.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": true
+        },
+        "override_timeout_sec": 3900
+      }
+    }
+  ]
+}

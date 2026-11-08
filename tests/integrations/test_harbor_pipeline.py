@@ -40,6 +40,7 @@ def test_relative_config_file_resolves_under_code_root_and_becomes_an_artifact(
         "benchmarks/harbor/swebench-verified-holdout49/r-mini-swe-agent.json",
         "benchmarks/harbor/swebench-multilingual-holdout30/r-mini-swe-agent.json",
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-single.json",
+        "benchmarks/harbor/swebench-verified-e0/e0-full-content.json",
     ],
 )
 def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec: str) -> None:
