@@ -22,6 +22,7 @@ from harnessix.delivery.contracts import (
     workspace_transaction_plan_fingerprint,
 )
 from harnessix.delivery.file_modes import observed_permission_mode
+from harnessix.delivery.path_case import reject_case_aliases
 from harnessix.delivery.preserved_mode_contracts import (
     WorkspaceFileVersionV2,
     WorkspaceMutationV2,
@@ -76,6 +77,8 @@ def prepare_workspace_transaction(
     if checked_now.tzinfo is None or not 1 <= len(request_id) <= 128 or not desired:
         raise KernelError("delivery_plan_invalid", "Workspace事务规划参数无效")
     normalized = _normalized_targets(desired, selected_platform)
+    if selected_platform == "posix":
+        reject_case_aliases(root, normalized)
     resources: dict[tuple[str, str], WorkspaceResourceRequest] = {}
     for path in normalized:
         resources[(path, "write")] = WorkspaceResourceRequest(path=path, access="write")

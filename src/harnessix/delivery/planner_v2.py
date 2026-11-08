@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.contracts import workspace_transaction_plan_fingerprint
+from harnessix.delivery.path_case import reject_case_aliases
 from harnessix.delivery.planner import (
     DesiredWorkspaceFile,
     PreparedWorkspaceTransaction,
@@ -48,6 +49,10 @@ def prepare_workspace_transaction_v2(
     if checked_now.tzinfo is None or not 1 <= len(request_id) <= 128 or not desired:
         raise KernelError("delivery_plan_invalid", "Workspace事务规划参数无效")
     normalized = _normalized_targets(desired, selected)
+    if selected == "posix":
+        # 大小写不敏感的文件系统上，同一文件的不同写法在规划前整批拒绝（ADR 0068第2版）。
+        reject_case_aliases(root, normalized)
+        checkpoint()
     snapshot = capture_workspace_snapshot_v2(
         root,
         resources=tuple(WorkspaceResourceRequest(path=path, access="write") for path in normalized),

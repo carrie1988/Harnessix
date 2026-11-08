@@ -20,6 +20,7 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionPlan,
     WorkspaceTransactionRecord,
 )
+from harnessix.delivery.path_case import CASE_CONFLICT, reject_case_aliases
 from harnessix.delivery.planner import DesiredWorkspaceFile, _read_existing_file
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
@@ -270,9 +271,10 @@ class WorkspacePatchTransactionPlanner:
                 route, root, desired, self._transactions, checkpoint=checkpoint
             )
         except KernelError as error:
-            if error.code != "delivery_metadata_unsupported":
+            if error.code not in {"delivery_metadata_unsupported", CASE_CONFLICT}:
                 raise
-            # 来源文件带setuid/setgid/sticky位是确定性拒绝；此时只读了工作区，未写入任何文件。
+            # 来源文件带setuid/setgid/sticky位、路径与磁盘名称只差大小写，都是确定性拒绝；
+            # 此时只读了工作区，未写入任何文件。
             raise workspace_patch_preparation_error(
                 error.code, f"{error.message}；本次Patch未执行，工作区没有变化"
             ) from None
@@ -367,7 +369,11 @@ def _desired_files(
         if checkpoint is not None:
             checkpoint()
 
-    for path, item in _normalized_files(proposal, platform):
+    files = _normalized_files(proposal, platform)
+    if platform == "posix":
+        # 先于存在性判定：A.txt指向已有a.txt时应提示改用磁盘名称，而不是报“目标已存在”。
+        reject_case_aliases(root, [path for path, _ in files])
+    for path, item in files:
         check()
         _require_target_presence_before_planning(root, path, platform, item.operation)
         if item.operation == "delete":
