@@ -282,6 +282,16 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    开始取上一步工具结果完成时刻，与mini-swe-agent相邻消息窗口同一口径，用量只有输入、输出Token。
    `python -m evalkit export --steps ...`导出为根Observation下的子Observation；读回经
    `/api/public/v2/observations`逐项核对。默认只导出元数据，正文仅在计划声明完整内容时导出。
+   - 正文口径两个系统相同（`evalkit.steps.step_text`，每段以“[标签]”起头，单步上限100万字符，超出截断并注明）：
+     模型调用的输入是上次调用之后新增的内容（首次为任务，其后为工具结果），输出是回复文字与发出的工具调用；
+     工具调用的输入是参数或命令，输出是结果。完整请求原文（系统提示、工具定义、压缩后的窗口）产品不保存，不在其中。
+   - Harnessix：适配器打包的试次状态（`agent/harnessix-state.tar.gz`，会话库与独立密钥）登记为制品；
+     逐步记录以只验真Binding只读打开其副本，每次上下文压缩记为一次`compaction`模型调用（摘要，或失败原因），
+     成功的摘要计入其后那次调用的输入。状态包超过32 MiB时不登记，只缺压缩步骤。
+   - mini-swe-agent：命令取自`extra.actions`并按`tool_call_id`对应输出；系统提示与任务没有时间戳，
+     首次调用从Harbor记录的智能体执行开始（`agent_execution.started_at`）起算，与Harnessix从Turn开始同一口径。
+   - 公开基准（SWE-bench等）的运行规格设`content_policy: "full"`（2026-11-08用户决定，对此后冻结的运行生效；
+     此前冻结的运行保持元数据，不回填）。正文写入247上自建的Langfuse。
 8. Harnessix组别：任务容器即隔离边界，产品使用外部边界原生命令Profile（ADR 0121），
    适配器`external_boundary`只为App Server进程断言`HARNESSIX_EXTERNAL_BOUNDARY=1`，审批模式auto。
    - 权限规整：`normalize_workspace_modes: true`时，安装阶段以root把工作区普通文件权限规整为Git风格的0644/0755

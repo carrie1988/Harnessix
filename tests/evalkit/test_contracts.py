@@ -18,7 +18,7 @@ from evalkit.contracts import (
     summarize,
     trial_outcome,
 )
-from evalkit.steps import Step, StepTrace
+from evalkit.steps import STEP_TEXT_LIMIT, Step, StepTrace, step_text
 from pydantic import ValidationError
 
 T0 = datetime(2026, 11, 6, 10, 0, tzinfo=UTC)
@@ -269,3 +269,28 @@ def test_step_trace_order_parents_and_content_stripping() -> None:
         StepTrace(plan_digest="p", slot=0, steps=(step("s1", 0, parent_step_id="nope"),))
     with pytest.raises(ValidationError, match="只有模型调用"):
         step("s3", 2, model="qwen")
+
+
+def test_step_text_labels_blocks_skips_empty_and_stays_within_the_step_limit() -> None:
+    assert step_text([]) is None
+    assert step_text([("assistant", ""), ("user", "")]) is None
+    assert step_text([("user", "fix it"), ("assistant", ""), ("tool_call bash", "ls")]) == (
+        "[user]\nfix it\n\n[tool_call bash]\nls"
+    )
+    body = "x" * (STEP_TEXT_LIMIT + 5000)
+    clipped = step_text([("tool_result bash", body)])
+    assert clipped is not None and len(clipped) <= STEP_TEXT_LIMIT
+    kept = clipped.index("\n…[truncated ")
+    dropped = len("[tool_result bash]\n") + len(body) - kept
+    assert clipped.endswith(f"\n…[truncated {dropped} chars]")
+    Step.model_validate(
+        {
+            "step_id": "big",
+            "kind": "tool",
+            "name": "bash",
+            "started_at": T0,
+            "completed_at": T0,
+            "status": "ok",
+            "output_text": clipped,
+        }
+    )

@@ -20,6 +20,11 @@ SERVICE_FAILURE_CODES = frozenset(
 # 协议运行器导出的本Turn公开事件（逐步记录来源）。
 EVENTS_ARTIFACT = "harnessix_events"
 EVENTS_FILE = "harnessix-events.jsonl"
+# 协议运行器打包的试次状态（会话库与独立密钥），逐步记录从中只读取压缩记录与摘要。
+STATE_ARTIFACT = "harnessix_state"
+STATE_FILE = "harnessix-state.tar.gz"
+# 与evalkit智能体制品上限一致；超限的状态包不登记，导入不因此失败，只缺压缩步骤。
+STATE_ARTIFACT_MAX_BYTES = 32 * 1024 * 1024
 _REFS = (
     "thread_id",
     "turn_id",
@@ -103,12 +108,21 @@ class HarnessixResultParser:
         )
         files = {
             name: trial_dir / "agent" / filename
-            for name, filename in (("patch", "patch.diff"), (EVENTS_ARTIFACT, EVENTS_FILE))
+            for name, filename in (
+                ("patch", "patch.diff"),
+                (EVENTS_ARTIFACT, EVENTS_FILE),
+                (STATE_ARTIFACT, STATE_FILE),
+            )
         }
         return AgentResult(
             status=status,
             reason=reason,
             usage=usage,
-            artifact_files={name: path for name, path in files.items() if path.is_file()},
+            artifact_files={
+                name: path
+                for name, path in files.items()
+                if path.is_file()
+                and (name != STATE_ARTIFACT or path.stat().st_size <= STATE_ARTIFACT_MAX_BYTES)
+            },
             system_refs={k: _ref(native[k]) for k in _REFS if native.get(k) is not None},
         )

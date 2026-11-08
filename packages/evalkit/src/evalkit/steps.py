@@ -2,11 +2,29 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Literal, Self
 
 from pydantic import AwareDatetime, Field, model_validator
 
 from evalkit.contracts import Contract, Identifier, RefKey, ShortText, Usage
+
+STEP_TEXT_LIMIT = 1_000_000
+
+
+def step_text(blocks: Iterable[tuple[str, str]]) -> str | None:
+    """各系统共用的步骤正文格式：每段以“[标签]”起头，段间空行；超过上限截断并注明截掉的字符数。
+
+    模型调用的输入只含上次调用之后新增的内容（首次为任务），输出含回复与发出的工具调用，
+    两个系统按同一口径拼接，Langfuse中同类步骤可直接对照。
+    """
+    text = "\n\n".join(f"[{label}]\n{body}" for label, body in blocks if body)
+    if not text:
+        return None
+    if len(text) <= STEP_TEXT_LIMIT:
+        return text
+    keep = STEP_TEXT_LIMIT - len(f"\n…[truncated {len(text)} chars]")  # 按位数上界预留标注
+    return text[:keep] + f"\n…[truncated {len(text) - keep} chars]"
 
 
 class Step(Contract):
