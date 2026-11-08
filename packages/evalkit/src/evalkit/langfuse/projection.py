@@ -96,8 +96,13 @@ def _metadata(
     return {_METADATA + key: value for key, value in evidence.items() if value is not None}
 
 
-def _score_values(trial: TrialRecord, outcome: Outcome) -> dict[str, float | str]:
+def _score_values(
+    trial: TrialRecord, outcome: Outcome, normal_end_outcome: Outcome | None
+) -> dict[str, float | str]:
+    """normal_end_outcome只在主指标不要求正常结束的计划（v2）中给出，即稳定性指标。"""
     values: dict[str, float | str] = {"outcome": outcome}
+    if normal_end_outcome is not None:
+        values["normal_end_outcome"] = normal_end_outcome
     if trial.started_at is not None and trial.completed_at is not None:
         values["elapsed_seconds"] = (trial.completed_at - trial.started_at).total_seconds()
     for score in trial.scores:
@@ -190,9 +195,11 @@ def build_export(report: EvalRunReport, step_traces: tuple[StepTrace, ...] = ())
     items = {item.item_id: item for item in plan.dataset.items}
     spans: list[JsonValue] = []
     scores: list[dict[str, JsonValue]] = []
+    strict = plan.primary_requires_normal_end
     for trial in report.trials:
         arm, item = arms[trial.arm_id], items[trial.item_id]
-        outcome = _trial_outcome(trial, primary)
+        outcome = _trial_outcome(trial, primary, require_normal_end=strict)
+        normal_end_outcome = None if strict else _trial_outcome(trial, primary)
         trace_id = identifier("evalkit.trace/v1", digest, str(trial.slot))[:32]
         span_id = identifier("evalkit.root/v1", trace_id)[:16]
         start, end = _window(report, trial)
@@ -201,7 +208,8 @@ def build_export(report: EvalRunReport, step_traces: tuple[StepTrace, ...] = ())
         spans.append(
             span(trace_id, span_id, "evalkit.trial", start, end, outcome == "passed", metadata)
         )
-        scores.extend(score_events(trace_id, span_id, _score_values(trial, outcome), end))
+        values = _score_values(trial, outcome, normal_end_outcome)
+        scores.extend(score_events(trace_id, span_id, values, end))
         if trial.slot in steps_by_slot:
             full = plan.content_policy == "full"
             spans.extend(_step_spans(trace_id, span_id, steps_by_slot[trial.slot], full))

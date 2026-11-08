@@ -25,8 +25,13 @@ T0 = datetime(2026, 11, 6, 10, 0, tzinfo=UTC)
 DIGEST = "sha256:" + "a" * 64
 
 
-def plan(attempts: int = 1, primary_grader: str = "swebench-official") -> RunPlan:
+def plan(
+    attempts: int = 1,
+    primary_grader: str = "swebench-official",
+    version: str = "evalkit.run-plan/v1",
+) -> RunPlan:
     return RunPlan(
+        spec_version=version,
         run_name="e0-smoke",
         dataset=DatasetManifest(
             name="verified-dev",
@@ -172,6 +177,45 @@ def test_outcome_comes_only_from_the_primary_grader(
     p = plan()
     primary = next(g for g in p.graders if g.grader_id == p.primary_grader)
     assert trial_outcome(trial(0, "A2", "django__django-1", **changes), primary) == expected
+
+
+@pytest.mark.parametrize("status", ["system_error", "timeout"])
+@pytest.mark.parametrize(
+    ("resolved", "strict", "lenient"),
+    [(True, "failed", "passed"), (False, "failed", "failed"), (None, "failed", "failed")],
+)
+def test_v2_primary_counts_a_resolved_patch_even_without_normal_end(
+    status: str, resolved: bool | None, strict: str, lenient: str
+) -> None:
+    """v1要求系统正常结束；v2只看判分，未判分的系统失败仍记失败而不是invalid。"""
+    scores = (
+        ()
+        if resolved is None
+        else (Score(name="resolved", value=resolved, grader_id="swebench-official"),)
+    )
+    record = trial(0, "A2", "django__django-1", status=status, reason="budget", scores=scores)
+    primary = plan().graders[0]
+    assert trial_outcome(record, primary) == strict
+    assert trial_outcome(record, primary, require_normal_end=False) == lenient
+
+
+def test_v2_report_summarizes_by_grader_and_keeps_stability_strict() -> None:
+    p = plan(version="evalkit.run-plan/v2")
+    trials = full_trials(p)
+    budget = trials[0].model_copy(update={"status": "system_error", "reason": "budget_exceeded"})
+    trials = (TrialRecord.model_validate(budget.model_dump()), *trials[1:])
+    built = report(p, trials)
+    assert not p.primary_requires_normal_end and plan().primary_requires_normal_end
+    assert built.summary[0].passed == 2
+    assert summarize(p, trials, require_normal_end=True)[0].passed == 1
+    assert report(plan(), trials).summary[0].passed == 1
+
+
+def test_plan_versions_share_fields_so_v1_digests_stay_unchanged() -> None:
+    v1, v2 = plan(), plan(version="evalkit.run-plan/v2")
+    assert set(v1.model_dump()) == set(v2.model_dump())
+    assert v1.model_dump()["spec_version"] == "evalkit.run-plan/v1"
+    assert v1.digest != v2.digest
 
 
 def test_plan_rejects_unknown_primary_grader_and_duplicates() -> None:

@@ -81,9 +81,12 @@ class RunPlan(Contract):
 
     事后回填的计划（provenance=backfilled）由已有运行证据推出，created_at取源计划时间，
     source_refs记录源证据身份；它不能作为预注册证据引用。
+
+    两版字段相同，只有主指标口径不同：v1要求系统正常结束（系统失败、超时即记失败）；
+    v2只看主判分器的通过分数，与SWE-bench榜单同口径，“正常结束且通过”另作稳定性指标。
     """
 
-    spec_version: Literal["evalkit.run-plan/v1"] = "evalkit.run-plan/v1"
+    spec_version: Literal["evalkit.run-plan/v1", "evalkit.run-plan/v2"] = "evalkit.run-plan/v1"
     run_name: Identifier
     dataset: DatasetManifest
     arms: tuple[ArmSpec, ...] = Field(min_length=1, max_length=16)
@@ -109,6 +112,10 @@ class RunPlan(Contract):
     @property
     def digest(self) -> str:
         return content_digest(self)
+
+    @property
+    def primary_requires_normal_end(self) -> bool:
+        return self.spec_version == "evalkit.run-plan/v1"
 
     def slots(self) -> tuple[tuple[str, str, int], ...]:
         """计划的完整分母：组别 × 条目 × 重复，顺序固定。"""
@@ -224,16 +231,23 @@ class ArmTrials(Contract):
 Outcome = Literal["passed", "failed", "invalid"]
 
 
-def trial_outcome(trial: TrialRecord, primary: GraderSpec) -> Outcome:
-    """主指标判定：基础设施失败或缺失为invalid；其余由主判分器的布尔通过分数决定。"""
+def trial_outcome(
+    trial: TrialRecord, grader: GraderSpec, *, require_normal_end: bool = True
+) -> Outcome:
+    """按判分器的布尔通过分数判定；基础设施失败或缺失为invalid。
+
+    系统失败或超时的试次：require_normal_end时一律记失败；否则判分通过仍记通过，
+    没有通过判定（如无补丁未判分）记失败而不是invalid，失败的责任在被测系统。
+    """
     if trial.status in ("infra_error", "missing"):
         return "invalid"
+    score = trial.score(grader.grader_id, grader.pass_score)
+    passed = score is not None and score.value is True
     if trial.status in ("system_error", "timeout"):
-        return "failed"
-    score = trial.score(primary.grader_id, primary.pass_score)
+        return "passed" if passed and not require_normal_end else "failed"
     if score is None or not isinstance(score.value, bool):
         return "invalid"
-    return "passed" if score.value else "failed"
+    return "passed" if passed else "failed"
 
 
 class ArmSummary(Contract):
@@ -282,11 +296,19 @@ def _require_preregistered_timing(report: EvalRunReport) -> None:
         raise ValueError("试次开始早于计划冻结；事后推出的计划须标记为backfilled")
 
 
-def summarize(plan: RunPlan, trials: tuple[TrialRecord, ...]) -> tuple[ArmSummary, ...]:
+def summarize(
+    plan: RunPlan, trials: tuple[TrialRecord, ...], *, require_normal_end: bool | None = None
+) -> tuple[ArmSummary, ...]:
+    """按组别汇总主判分器的判定；默认用计划的主指标口径，传True得到稳定性指标。"""
     primary = next(g for g in plan.graders if g.grader_id == plan.primary_grader)
+    strict = plan.primary_requires_normal_end if require_normal_end is None else require_normal_end
     result = []
     for arm in plan.arms:
-        outcomes = [trial_outcome(t, primary) for t in trials if t.arm_id == arm.arm_id]
+        outcomes = [
+            trial_outcome(t, primary, require_normal_end=strict)
+            for t in trials
+            if t.arm_id == arm.arm_id
+        ]
         result.append(
             ArmSummary(
                 arm_id=arm.arm_id,

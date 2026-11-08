@@ -134,6 +134,28 @@ def test_projection_keeps_every_slot_pairs_arms_and_is_stable() -> None:
     assert backfilled[METADATA + "provenance"] == "backfilled"
 
 
+def test_v2_plan_exports_grader_outcome_and_stability_outcome() -> None:
+    """v2主指标只看判分：预算耗尽但判分通过的试次outcome为passed，normal_end_outcome为failed。"""
+    source = report()
+    plan = source.plan.model_copy(update={"spec_version": "evalkit.run-plan/v2"})
+    first = source.trials[0].model_copy(update={"status": "system_error", "reason": "budget"})
+    trials = (TrialRecord.model_validate(first.model_dump()), *source.trials[1:])
+    v2 = EvalRunReport(
+        plan=plan,
+        plan_digest=plan.digest,
+        trials=trials,
+        summary=summarize(plan, trials),
+        completed_at=source.completed_at,
+    )
+    export = build_export(v2)
+    by_name: dict[str, list[Any]] = {}
+    for score in export.scores:
+        by_name.setdefault(score["name"], []).append(score["value"])
+    assert by_name["outcome"] == ["passed", "failed", "failed", "invalid"]
+    assert by_name["normal_end_outcome"] == ["failed", "failed", "failed", "invalid"]
+    assert "normal_end_outcome" not in {s["name"] for s in build_export(source).scores}
+
+
 def test_unknown_cost_stays_missing_and_currency_is_not_converted() -> None:
     spans = [attrs(span) for span in spans_of(build_export(report()))]
     assert spans[0][METADATA + "cost_currency"] == "CNY"
