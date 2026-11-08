@@ -21,7 +21,7 @@ from harnessix.agent.models import (
 from harnessix.agent.publication import (
     PublicOutputProtection,
     PublicTextStep,
-    protect_json,
+    protect_request_json,
     protect_text,
 )
 from harnessix.models.contracts import ModelRequest, TextCompleted, TextDelta, TextStarted
@@ -148,4 +148,4 @@ async def protect_request(
 ) -> None:
     """主模型与摘要模型共用出站检查；无保护宿主不新增序列化工作。"""
     if protection is not None:
-        await protect_json(protection, request.model_dump(mode="json"), token)
+        await protect_request_json(protection, request.model_dump(mode="json"), token)

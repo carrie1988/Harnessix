@@ -307,6 +307,13 @@ class SecretPublicationScope:
         """保护宿主登记的全部值，不增加执行计划的Secret注入权限。"""
         self.assert_safe(value, (), checkpoint=checkpoint)
 
+    def assert_public_request(self, value: JsonValue, *, checkpoint: Callable[[], None]) -> None:
+        """模型请求：节点数随历史与字节同比增长，与JSONL全文同例只由1MiB累计字节约束节点数；
+        深度、工作量与全部模式检查不变。"""
+        self.require(())
+        budget = _ScanBudget(checkpoint, max_nodes=MAX_SCAN_BYTES)
+        _scan_native(value, self._patterns, checkpoint, budget=budget)
+
     def assert_public_jsonl(self, body: bytes, *, checkpoint: Callable[[], None]) -> None:
         """检查全部原始JSONL与解码键值；仅预览不能授权Artifact全文。"""
         self._ensure_open()

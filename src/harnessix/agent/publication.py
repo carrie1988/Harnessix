@@ -65,6 +65,14 @@ class PublicTextOutputProtection(Protocol):
     def begin_public_text_step(self, *, checkpoint: Callable[[], None]) -> PublicTextStep: ...
 
 
+class PublicRequestProtection(Protocol):
+    """可选的模型请求扫描能力：请求随历史增长，节点数只受累计字节上限约束。"""
+
+    def assert_public_request(
+        self, value: JsonValue, *, checkpoint: Callable[[], None]
+    ) -> None: ...
+
+
 async def _protect[T](check: Callable[[Callable[[], None]], T], cancel: CancelToken) -> T:
     # 先交付已有父取消。调度等待不是同步扫描工作，不能消耗尚未开始的扫描期限。
     await asyncio.sleep(0)
@@ -111,6 +119,23 @@ async def protect_json(
         await _protect(
             lambda checkpoint: protection.assert_public_json(value, checkpoint=checkpoint), cancel
         )
+
+
+async def protect_request_json(
+    protection: PublicOutputProtection | None, value: JsonValue, cancel: CancelToken
+) -> None:
+    """模型请求按请求预算扫描；没有该能力的宿主沿用原生JSON预算，只会更严格而不会放宽。"""
+    if protection is None:
+        return
+
+    def check(checkpoint: Callable[[], None]) -> None:
+        method = getattr(protection, "assert_public_request", None)
+        if callable(method):
+            method(value, checkpoint=checkpoint)
+        else:
+            protection.assert_public_json(value, checkpoint=checkpoint)
+
+    await _protect(check, cancel)
 
 
 async def protect_jsonl(

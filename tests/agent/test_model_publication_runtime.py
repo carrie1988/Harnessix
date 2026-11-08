@@ -8,7 +8,7 @@ import hashlib
 
 import pytest
 
-from harnessix.agent.models import TurnStatus, Usage
+from harnessix.agent.models import ToolResultContent, TurnStatus, Usage
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished, ModelUsageObserved, UsageObservation
 from harnessix.app_server.server import AgentProtocolServer
@@ -26,7 +26,7 @@ from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk.agent_client import AgentClient, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import attempt_start
-from tests.agent.helpers import RecordingTools, answer
+from tests.agent.helpers import RecordingTools, answer, tool_step
 from tests.agent.test_publication import CANARY, protected
 from tests.agent.test_telemetry import instrumented
 from tests.context.test_compaction_runtime import SequenceProvider, accounted_text, config
@@ -414,3 +414,56 @@ async def test_host_guard_cannot_rewrite_or_drop_original_text(tmp_path, monkeyp
                 for item in result.items
                 if item.content.kind == "assistant_message"
             )
+
+
+TOOL_STEPS = 6
+
+
+class StructuredTools(RecordingTools):
+    """每次返回约2000个JSON节点、约10KB的结构化结果，形同grep等工具的匹配列表；
+    历史靠多次调用累积，与真实试次一致（单个结果远小于一次提交的节点预算）。"""
+
+    def __init__(self, secret_in_call: int | None = None) -> None:
+        super().__init__()
+        self.secret_in_call = secret_in_call
+
+    async def execute(self, call, cancel):
+        await super().execute(call, cancel)
+        matches = [{"line": n, "text": "x"} for n in range(400)]
+        if len(self.calls) == self.secret_in_call:
+            matches[-1]["text"] = CANARY
+        return ToolResultContent(
+            call_id=call.call_id, outcome="succeeded", output={"matches": matches}
+        )
+
+
+async def test_request_history_grows_past_ten_thousand_nodes_within_the_byte_budget(tmp_path):
+    """同一轮六次结构化结果后历史约1.2万节点、远小于1MiB：下一请求完整扫描后照常发出。"""
+    provider = ScriptedProvider([*[tool_step("test.read")] * TOOL_STEPS, answer("safe")])
+    store = SQLiteSessionStore(tmp_path / "s.db")
+    with protected() as scope:
+        async with AgentRuntime(
+            store, provider, StructuredTools(), public_output_protection=scope
+        ) as agent:
+            thread = await agent.create_thread(str(tmp_path))
+            result = await agent.run_turn(thread.thread_id, "长历史", request_id="long")
+    assert result.status is TurnStatus.COMPLETED, result.error
+    assert len(provider.requests) == TOOL_STEPS + 1
+
+
+async def test_secret_deep_in_a_large_request_history_is_rejected_before_the_provider(tmp_path):
+    """未受保护时写入的长历史（约1.2万节点）：深处的Secret仍在调用Provider前拒绝。"""
+    store = SQLiteSessionStore(tmp_path / "s.db")
+    async with AgentRuntime(
+        store,
+        ScriptedProvider([*[tool_step("test.read")] * TOOL_STEPS, answer()]),
+        StructuredTools(secret_in_call=TOOL_STEPS),
+    ) as seed:
+        thread = await seed.create_thread(str(tmp_path))
+        await seed.run_turn(thread.thread_id, "写入长历史", request_id="seed")
+    provider = ScriptedProvider([answer("safe")])
+    with protected() as scope:
+        async with AgentRuntime(store, provider, public_output_protection=scope) as agent:
+            result = await agent.run_turn(thread.thread_id, "后续请求", request_id="next")
+    assert not provider.requests
+    assert result.error.code == "public_output_secret_leak"
