@@ -5,9 +5,9 @@
 - 宿主机上独立运行，监听Docker网桥地址，转发到只绑定宿主机回环的vLLM。
 监听地址必须显式给出，拒绝0.0.0.0和::等通配地址，避免把模型服务暴露到外部网络。
 
-宿主机规则可以列出多个目标（以`|`分隔），用于在多个模型副本间分摊并发试次：同一来访地址
-（即同一个试次容器）始终转发到同一副本，保留该会话在副本上的前缀缓存；新来访地址分给近期活跃
-来访最少的副本。
+宿主机规则可以列出多个目标（以`|`分隔），用于在多个模型副本间分摊并发试次：活跃的来访地址
+（即一个运行中的试次容器）始终转发到同一副本，保留该会话在副本上的前缀缓存；新来访，或离开后
+再来的来访（容器地址会被新试次复用），分给活跃来访最少的副本，并列时优先原副本。
 """
 
 from __future__ import annotations
@@ -21,8 +21,10 @@ from collections.abc import Callable
 
 Endpoint = tuple[str, int]
 TARGET_SEPARATOR = "|"
-# 来访地址超过该时长没有连接活动即不再计入副本负载；须长于单条命令的最长耗时与模型调用间隔。
-IDLE_SECONDS = 600.0
+# 来访地址没有打开的连接且超过该时长没有连接活动即视为离开：不再计入副本负载，再来时重新分配。
+# 保持长连接的客户端在整个试次内都有打开的连接；不保持连接的客户端在长命令期间离开后再来，
+# 负载相同时仍回到原副本。
+IDLE_SECONDS = 120.0
 
 
 def _endpoint(value: str) -> Endpoint:
@@ -52,7 +54,10 @@ def parse(spec: str) -> tuple[Endpoint, tuple[Endpoint, ...]]:
 
 
 class StickyBalancer:
-    """来访地址到目标的固定分配：首次出现时分给近期活跃来访最少的目标（并列取靠前者）。"""
+    """来访地址到目标的分配：活跃来访留在原目标，新来访与离开后再来的来访分给活跃来访最少的目标。
+
+    活跃指有打开的连接，或最近idle_seconds内开始或结束过连接。并列时优先该来访原来的目标，再取靠前者。
+    """
 
     def __init__(
         self,
@@ -65,23 +70,33 @@ class StickyBalancer:
         self._targets, self._idle, self._clock = targets, idle_seconds, clock
         self._assigned: dict[str, int] = {}
         self._seen: dict[str, float] = {}
+        self._open: Counter[str] = Counter()
 
-    def target_for(self, client: str) -> Endpoint:
+    def _active(self, client: str, now: float) -> bool:
+        return self._open[client] > 0 or now - self._seen[client] <= self._idle
+
+    def acquire(self, client: str) -> Endpoint:
+        """来访开始一条连接：返回它应转发到的目标，并把这条连接计为打开。"""
         now = self._clock()
-        if client not in self._assigned:
-            live = Counter(
+        previous = self._assigned.get(client)
+        if previous is None or not self._active(client, now):
+            load = Counter(
                 index
                 for other, index in self._assigned.items()
-                if now - self._seen[other] <= self._idle
+                if other != client and self._active(other, now)
             )
-            self._assigned[client] = min(range(len(self._targets)), key=lambda i: (live[i], i))
+            self._assigned[client] = min(
+                range(len(self._targets)), key=lambda i: (load[i], i != previous, i)
+            )
+        self._open[client] += 1
         self._seen[client] = now
         return self._targets[self._assigned[client]]
 
-    def touch(self, client: str) -> None:
-        """连接结束也算活动：长时间运行的命令结束前，该来访仍计入其副本负载。"""
-        if client in self._assigned:
-            self._seen[client] = self._clock()
+    def release(self, client: str) -> None:
+        """来访的一条连接结束；结束时刻也算活动。"""
+        if self._open[client] > 0:
+            self._open[client] -= 1
+        self._seen[client] = self._clock()
 
 
 async def _pipe(source: asyncio.StreamReader, sink: asyncio.StreamWriter) -> None:
@@ -104,16 +119,16 @@ async def start(
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         client = str(writer.get_extra_info("peername")[0])
         try:
-            upstream_reader, upstream_writer = await asyncio.open_connection(
-                *chooser.target_for(client)
-            )
-        except OSError:
-            writer.close()
-            return
-        try:
+            try:
+                upstream_reader, upstream_writer = await asyncio.open_connection(
+                    *chooser.acquire(client)
+                )
+            except OSError:
+                writer.close()
+                return
             await asyncio.gather(_pipe(reader, upstream_writer), _pipe(upstream_reader, writer))
         finally:
-            chooser.touch(client)
+            chooser.release(client)
 
     return await asyncio.start_server(handle, *listen)
 
