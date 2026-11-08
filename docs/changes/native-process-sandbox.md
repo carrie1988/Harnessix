@@ -273,8 +273,13 @@ bubblewrap 的挂载顺序决定覆盖关系，后挂载的覆盖先挂载的：
 - 运行时钩子改动后，`tests/agent`、`tests/app_server`、`tests/test_exec_cli.py`、`tests/trusted_actions`、`tests/product_config` 与干净基线对照，失败集合完全相同。
 - 第 4 步全部改动后，再扩大到 `tests/product_ui`、`tests/execution`、`tests/sandbox`、`tests/governance` 与基线对照。
   - 第一次发现 2 项新失败，都是零配置请求写入进程环境造成的测试串扰，已改为显式参数。
-  - 第二次见提交记录。
+  - 第二次全量回归曾卡在 App Server 的 stdio 测试附近；该文件单独运行 42 项全部通过，第三次全量回归也正常结束，判定为偶发，与本变更无关。第三次结果与基线失败集合相同。
 - 247（bubblewrap 0.6.1，以 `nobody` 身份）：第 2 步代码加策略 v2 后，沙箱相关 218 项全部通过，含 4 项真实 bubblewrap 端到端。
+- 第 5 步验收（提交 `6daa8e05`）：
+  - 本机全量回归（`tests/agent`、`tests/app_server`、`tests/product_ui`、`tests/product_config`、`tests/trusted_actions`、`tests/execution`、`tests/sandbox`、`tests/governance`、`tests/test_exec_cli.py`）与干净基线失败集合相同，无新增失败。
+  - 247 以 `nobody` 身份：沙箱相关加 App Server 共 282 项全部通过，无跳过，真实 bubblewrap 端到端断言批准人为 `harnessix:sandbox-policy`；`harnessix code doctor` 显示 `[通过] action/product_native_sandbox: native_sandbox_bubblewrap`。
+  - macOS（用户在系统“终端”中运行，2026-11-07）：沙箱相关 239 项全部通过，无跳过，含 5 项真实 Seatbelt 端到端；`harnessix code doctor` 显示 `[通过] action/product_native_sandbox: native_sandbox_seatbelt`。
+  - 嵌套沙箱（Claude 会话内）：`doctor` 显示 `seatbelt_nested_unavailable` 及可读修复说明，验证了“沙箱不可用”时的提示。
 
 ### 16.5 第二轮决定（用户 2026-11-07）
 
