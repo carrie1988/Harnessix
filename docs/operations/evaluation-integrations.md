@@ -277,6 +277,12 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    它只读调用`GET /containers/json`，列表里其他容器的元数据只用于地址匹配；查询失败时退回按连接
    活动判断（空闲120秒视为离开）。不按容器识别时，刚结束的试次仍计负载120秒，Harbor紧接着启动的
    新试次在负载并列时落到靠前的副本，E0实测两个副本上的进行中请求约为2:1。
+   断网运行（2026-11-10用户决定）：运行说明改用`compose/network-isolation.yaml`（替代host-gateway，
+   与离线镜像同用），各组别开启`network_isolation`。智能体运行期间任务容器只连internal网络sandbox
+   （宿主机网桥无IPv4地址、显式非回环上游DNS），公网、外网DNS与宿主机端口都不可达，只剩同试次的
+   模型转发边车（别名host.docker.internal，转发到宿主机转发）与离线镜像；安装与判分阶段仍可出网
+   （包镜像）。适配器在运行前断开、结束后恢复，经过写入`agent/network-isolation.json`。宿主机转发
+   此时看到的是各试次的模型转发边车容器，按试次固定副本的口径不变。
 5. 冻结与运行：`pipeline.py freeze`以Harbor内容哈希作为条目摘要，组别配置摘要覆盖智能体配置、
    环境配置、任务准备收据与代码版本；`pipeline.py run`每个组别一个零重试Job。
 6. 收尾：`pipeline.py finish`导入全部组别、运行官方判分（swebench 5.0.2，离线，本地镜像）、

@@ -2,12 +2,14 @@
 
 镜像可预装Harnessix，也可在安装阶段上传离线安装包（自带Python的目录归档）和原生配置模板；
 运行结束后把补丁与产品状态库导出到/logs/agent，供官方判分与逐步记录使用。
+network_isolation开启时智能体运行期间断开任务容器公网（network_isolation.py）。
 """
 
 from __future__ import annotations
 
 import json
 import shlex
+from contextlib import nullcontext
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 from uuid import UUID
@@ -17,6 +19,7 @@ from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
+    from integrations.harbor.network_isolation import compose_project, offline_agent_run
     from integrations.harbor.patch_export import (
         parse_object_id,
         patch_command,
@@ -24,6 +27,7 @@ try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
     )
     from integrations.harbor.workspace_modes import normalize_modes_command
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
+    from network_isolation import compose_project, offline_agent_run
     from patch_export import parse_object_id, patch_command, workspace_tree_command
     from workspace_modes import normalize_modes_command
 
@@ -68,6 +72,7 @@ class HarnessixAgent(BaseInstalledAgent):
         action_config_template: str | None = None,
         external_boundary: bool = False,
         normalize_workspace_modes: bool = False,
+        network_isolation: bool = False,
         **kwargs,
     ):
         if kwargs.get("model_name") is not None or kwargs.get("config") is not None:
@@ -105,6 +110,8 @@ class HarnessixAgent(BaseInstalledAgent):
             raise ValueError("external_boundary必须是布尔值")
         if type(normalize_workspace_modes) is not bool:
             raise ValueError("normalize_workspace_modes必须是布尔值")
+        if type(network_isolation) is not bool:
+            raise ValueError("network_isolation必须是布尔值")
         super().__init__(*args, **kwargs)
         self.server_config = server_config
         self.action_config = action_config
@@ -124,6 +131,8 @@ class HarnessixAgent(BaseInstalledAgent):
         self.external_boundary = external_boundary
         # 显式开启时，启动前把工作区文件权限规整为Git风格（见workspace_modes）。
         self.normalize_workspace_modes = normalize_workspace_modes
+        # 显式开启时，智能体运行期间任务容器只连内部网络（需compose/network-isolation.yaml）。
+        self.network_isolation = network_isolation
 
     @staticmethod
     def name() -> str:
@@ -171,6 +180,15 @@ class HarnessixAgent(BaseInstalledAgent):
     async def run(
         self, instruction: str, environment: BaseEnvironment, context: AgentContext
     ) -> None:
+        isolation = (
+            offline_agent_run(compose_project(environment), Path(self.logs_dir))
+            if self.network_isolation
+            else nullcontext()
+        )
+        async with isolation:
+            await self._run_turn(instruction, environment)
+
+    async def _run_turn(self, instruction: str, environment: BaseEnvironment) -> None:
         trial_id = UUID(str(self.context_id))
         temporary_input = f"/tmp/harnessix-input-{trial_id}.txt"
         summary = str(self.environment_logs_dir / "harnessix-summary.json")

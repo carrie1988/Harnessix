@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 pytest.importorskip("harbor", minversion="0.25.0")
 
@@ -65,6 +67,7 @@ def test_harnessix_swebench_template_renders_the_issue_verbatim_with_mini_aligne
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-single.json",
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-guard-retry-part2.json",
         "benchmarks/harbor/swebench-verified-e0/e0-full-content.json",
+        "benchmarks/harbor/swebench-verified-holdout49/network-isolation-smoke.json",
     ],
 )
 def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec: str) -> None:
@@ -84,3 +87,51 @@ def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec
         if "prompt_template_path" in kwargs:
             assert not Path(kwargs["prompt_template_path"]).is_absolute()
             render_prompt_template(ROOT / kwargs["prompt_template_path"], "issue")
+
+
+_COMPOSE = "integrations/harbor/compose/"
+_ISOLATION = _COMPOSE + "network-isolation.yaml"
+
+
+def test_offline_agent_runs_always_come_with_the_isolation_overlay() -> None:
+    """开启断网的组别所在运行说明必须带断网拓扑与离线镜像、不带直连宿主机的host-gateway；反之亦然。"""
+    isolated = []
+    for path in sorted((ROOT / "benchmarks/harbor").glob("*/*.json")):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if "arms" not in document:
+            continue
+        overlays = document.get("environment", {}).get("extra_docker_compose", [])
+        flags = [
+            arm["agent"].get("kwargs", {}).get("network_isolation", False)
+            for arm in document["arms"]
+            if arm["arm_id"] != "oracle"
+        ]
+        if _ISOLATION not in overlays:
+            assert not any(flags), path.name
+            continue
+        isolated.append(path.name)
+        assert flags and all(flag is True for flag in flags), path.name
+        assert _COMPOSE + "raw-github-mirror.yaml" in overlays
+        assert _COMPOSE + "host-gateway.yaml" not in overlays
+        environment = document["compose_env"]
+        assert (ROOT / environment["HARNESSIX_MODEL_GATEWAY_CODE"]).is_file()
+        assert not ipaddress.ip_address(environment["HARNESSIX_TASK_DNS"]).is_loopback
+    assert isolated
+
+
+def test_isolation_overlay_leaves_main_only_the_two_sidecars_once_detached() -> None:
+    compose = yaml.safe_load((ROOT / _ISOLATION).read_text(encoding="utf-8"))
+    sandbox = compose["networks"]["sandbox"]
+    assert sandbox["internal"] is True
+    assert sandbox["driver_opts"]["com.docker.network.bridge.inhibit_ipv4"] == "true"
+    services = compose["services"]
+    assert set(services["main"]["networks"]) == {"default", "sandbox"}
+    assert services["main"]["dns"] == ["${HARNESSIX_TASK_DNS:?required}"]
+    assert "extra_hosts" not in services["main"]
+    gateway = services["model-gateway"]
+    assert gateway["networks"]["sandbox"]["aliases"] == ["host.docker.internal"]
+    assert gateway["extra_hosts"] == ["host.docker.internal:host-gateway"]
+    assert "0.0.0.0:18100=host.docker.internal:18100" in gateway["command"]
+    assert "--container" in gateway["command"] and "ports" not in gateway
+    mirror = services["raw-github-mirror"]["networks"]["sandbox"]["aliases"]
+    assert mirror == ["raw.githubusercontent.com"]
