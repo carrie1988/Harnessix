@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 127
-code_revision: 4cb9cddd71ebe89e8a996ca3c794b8ac1e102a46
+version: 128
+code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
 modules:
@@ -2246,6 +2246,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 128 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `ProviderDefinition.self_hosted`与向导`--self-hosted`：内网自托管端点可用本地预设和免费计价；未声明时维持原严格校验。预检新增`product_self_hosted_key_length`，拒绝短于16字节的本地占位Key |
 | 67 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job实际结果、核心Job可读性失败及Snapshot候选本机回归边界；安装升级治理仅为门禁例证 |
 | 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |
 | 16 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加产品Action最外层Owner、Audit Generation Fence、跨Store恢复扫描、低敏报告持久化与Process期限余量 |

@@ -52,7 +52,7 @@ MTP_DRAFT_TOKENS=0 bash deploy/local-model/run-flash-replicas.sh b   # 关闭MTP
 
 ## 4. 接入Harnessix
 
-配置向导对回环地址端点（`127.0.0.1`/`localhost`/`::1`）自动应用本地预设：
+配置向导对回环地址端点（`127.0.0.1`/`localhost`/`::1`）自动应用本地预设（局域网端点见[接入自托管模型](self-hosted-models.md)）：
 
 | 字段 | 值 | 作用 |
 |---|---|---|
@@ -66,7 +66,7 @@ MTP_DRAFT_TOKENS=0 bash deploy/local-model/run-flash-replicas.sh b   # 关闭MTP
 
 无头运行：`harnessix exec --prompt-file task.md --config <配置> --action-config <执行配置>
 --approval-mode auto --summary-file summary.json --events-file events.jsonl`。本地端点仍需`MODEL_API_KEY`
-环境变量存在（值任意）。
+环境变量存在，且至少16字节（`local`这类短值会被当作机密拦截）。
 
 ## 5. 实测性能（单副本，TP4）
 

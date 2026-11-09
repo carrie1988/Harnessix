@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 58
-code_revision: 5b65a074b802eebe3bf7dab9ab8e454c6910d15f
+version: 59
+code_revision: a65d7ff7ec2697922d17b931e22d109f162624d7
 owners:
   - core
 modules:
@@ -2378,6 +2378,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 59 | `a65d7ff7ec2697922d17b931e22d109f162624d7` | 2026-11-09 | Task Pack评分器把成功的`git_review`同时计为状态与差异核对；录制Provider改走`git_review`；评分器版本不变，历史报告不受影响 |
 | 36 | `e1aad041da7817eb5da20896cf092c296544ae25` | 2026-10-08 | 仅付费验证宿主追加实际脚本根、包入口来源和完整非忽略Git状态准入；原Pack/HEAD拒绝优先、Owner/凭据在后；共享Runner和产品Wheel不变 |
 | 35 | `eea6c8ab650d389023b68c97596dec0f79bb1d6c`基准上的候选 | 2026-10-07 | 固定Profile必须在实际网关注册，缺失时先于AgentRuntime和模型IO拒绝；不更改探测、安全或评分 |
 | 33 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | 2026-10-04 | Git Diff固定使用`--full-index`，完整正文SHA-256跨副本不依赖`core.abbrev`，完整Blob OID不限40位；Eval沿用原严格交付与漂移检查，不修改Schema、评分或容量，旧报告不重签/重评分，不声明历史Run跨候选恢复可用；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |

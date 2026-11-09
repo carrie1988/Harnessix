@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 44
-code_revision: 21bf2f474f6e29a92c2e8c5737e35b02eb7fce06
+version: 45
+code_revision: b35c46217aec51c154158e802bd35c8ccb122ff7
 owners:
   - core
 modules:
@@ -1632,6 +1632,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 45 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅格式化，行为不变 |
 | 22 | `78ab30069ab4f63d58d9bafad903a7bfd660c257` | 2026-09-27 | 计划回调按阶段有限码表重建固定错误，显式Decoder异常收口；补真实五公开面、取消/超时和固定码全量回归，专项等待提交后验收 |
 | 20 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-23 | 澄清独立Action Request/Journal/Worker是已删除的历史实现，当前只保留进程内Trusted Action执行治理 |
 | 19 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 记录Action双层Owner、Operation Deadline与只对账恢复经修复版六实例CI关闭；Router合同不变 |

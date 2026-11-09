@@ -20,6 +20,10 @@ _REMEDIATION_TEXT: Final[Mapping[str, str]] = {
         "安装所选模型服务的依赖，例如 pip install 'harnessix[openai]' 或 'harnessix[anthropic]'"
     ),
     "set_environment_secret": "在环境变量里设置配置文件声明的密钥后重新启动",
+    "use_long_self_hosted_key": (
+        "本地模型的占位Key太短，会被当作机密拦截正常内容；"
+        "改成至少16位的随机值，例如 export MODEL_API_KEY=$(openssl rand -hex 16)"
+    ),
     # 运行环境
     "use_supported_platform": "该能力只支持macOS与Linux",
     "install_tui_extra": "安装终端界面依赖：pip install 'harnessix[tui]'",

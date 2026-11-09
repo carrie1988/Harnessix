@@ -1,7 +1,7 @@
 ---
 doc_type: validation-evidence
 status: current
-version: 3
+version: 4
 code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
 owners: [core]
 modules: [delivery, product_config, processes, governance]
@@ -9,7 +9,6 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
-  - tests/governance/test_windows_native_material_acceptance.py
   - tests/product_config/test_git_material_input.py
   - tests/product_config/test_git_material_cas_integration.py
   - tests/processes/test_windows_raw_receipt.py
@@ -36,7 +35,7 @@ fail-fast=false、不忽略失败、原每个pytest五分钟、固定checkout／
 
 ## 2. 选择器与参数化覆盖证明
 
-[治理测试](../../../tests/governance/test_windows_native_material_acceptance.py)冻结8162953原选择器，
+治理测试（后随Windows CI任务移除）冻结8162953原选择器，
 Counter核对遗漏、重复和替换，逐对象核对其他原生步骤；旧YAML缺少矩阵的RED实际1失败，修复后7项GREEN。
 collect-only分别收集旧27项及新三组，1306个参数化节点的多重集合完全相等：
 

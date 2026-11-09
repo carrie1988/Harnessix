@@ -26,6 +26,9 @@ from harnessix.product_config.runtime import (
     select_profile,
 )
 
+# 本地端点的占位Key同样按机密保护；local这类短值会命中普通提示词，使整个Turn被拒绝。
+_MIN_SELF_HOSTED_KEY_BYTES = 16
+
 
 @dataclass(frozen=True, slots=True)
 class ConfigurationPreflight:
@@ -227,6 +230,65 @@ def _provider_check(
     )
 
 
+def _self_hosted_key_is_short(
+    snapshot: ProductConfigSnapshot,
+    selection: ProfileSelection,
+    environment: Mapping[str, str] | None,
+) -> bool:
+    """活动Provider链中的自托管端点是否使用了过短的占位Key；值只比较长度，用后清零。"""
+
+    config = snapshot.config
+    secrets = environment_secret_provider(config, environment=environment)
+    providers = {item.provider_id: item for item in config.providers}
+    for provider_id in selection.provider_chain:
+        provider = providers[provider_id]
+        if provider.pricing != "free":
+            continue
+        material = secrets.resolve(provider.credential.name)
+        try:
+            if len(material.value) < _MIN_SELF_HOSTED_KEY_BYTES:
+                return True
+        finally:
+            material.clear()
+    return False
+
+
+def _self_hosted_key_check(
+    recorder: PreflightRecorder,
+    snapshot: ProductConfigSnapshot | None,
+    selection: ProfileSelection | None,
+    environment: Mapping[str, str] | None,
+) -> None:
+    check_id = "product_self_hosted_key_length"
+    remediation_id = "use_long_self_hosted_key"
+    began = recorder.started()
+    try:
+        if snapshot is None or selection is None:
+            raise KernelError("product_config_prerequisite_failed", "配置或Profile不可用")
+        short = _self_hosted_key_is_short(snapshot, selection, environment)
+    except KernelError:
+        # 配置或Secret缺失已由各自的检查报告，这里不重复判定。
+        recorder.record(
+            check_id,
+            "secret",
+            "required",
+            "skipped",
+            "product_config_prerequisite_failed",
+            remediation_id,
+            began,
+        )
+        return
+    recorder.record(
+        check_id,
+        "secret",
+        "required",
+        "failed" if short else "passed",
+        "self_hosted_key_too_short" if short else f"{check_id}_ready",
+        remediation_id if short else None,
+        began,
+    )
+
+
 def inspect_configuration(
     path: Path,
     profile_id: str | None,
@@ -271,4 +333,5 @@ def inspect_configuration(
         failure_code="secret_unavailable",
         remediation_id="set_environment_secret",
     )
+    _self_hosted_key_check(recorder, snapshot, selection, environment)
     return ConfigurationPreflight(snapshot=snapshot, diagnostics=diagnostics)

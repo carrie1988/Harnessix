@@ -1,7 +1,7 @@
 ---
 doc_type: test-and-eval-design
 status: current
-version: 48
+version: 49
 code_revision: ec356aa1555d6ad712819f3e02e210493f7d3135
 owners:
   - core
@@ -278,13 +278,15 @@ flowchart LR
 
 | CI Job | 运行环境 | 当前验证重点 | 结论边界 |
 |---|---|---|---|
-| `python` | Ubuntu，Python 3.12/3.13 | 锁定依赖、静态检查、全量Pytest、离线示例 | 主语言与默认后端回归 |
+| `python` | Ubuntu，Python 3.12/3.13 | 锁定依赖、除治理外的全量Pytest、离线示例 | 功能回归，不被治理门禁阻挡 |
+| `lint` | Ubuntu，Python 3.12 | Ruff格式与规则、Mypy严格类型 | 静态检查 |
+| `governance` | Ubuntu，Python 3.12 | 可读性、文档、规格一致性、发行物Secret扫描与治理测试 | 工程治理，各步骤互不阻挡 |
+| `supply-chain` | Ubuntu，Python 3.12 | 许可证扫描与SBOM | 发行门禁，失败关闭 |
 | `coding-tools-macos` | macOS，Python 3.12 | Coding Tools、Artifact、Patch、Process、Eval、Workspace、Sandbox等 | macOS关键纵向切片 |
-| `windows-trusted-execution` | Windows，Python 3.12 | 治理、受信执行、扩展、产品配置和进程相关测试 | 选定契约的Windows兼容性，不等于完整产品支持 |
 | `container-sandbox` | Ubuntu + BusyBox、Node和Python固定Digest镜像 | 容器Sandbox、Product Process、Task Pack双语言检查及10 Case × 2 Trial完整离线Suite | 上传脱敏Suite证据；只证明Recorded执行链，不替代真实Provider质量 |
 | `documentation` | Ubuntu + Node/Mermaid CLI | 元数据、链接、追踪、Schema和变化图真实渲染 | 文档与代码同步，不替代运行时测试 |
 
-新增平台能力时，必须先明确“契约可导入”“选定模块可用”和“产品完整支持”三种不同承诺。CI中存在Windows Job不能单独证明安装器、终端交互、进程树终止、文件权限和恢复路径已达到Windows生产支持标准。
+新增平台能力时，必须先明确“契约可导入”“选定模块可用”和“产品完整支持”三种不同承诺。Windows交付已取消，对应CI任务已移除；保留的跨平台代码和历史测试不构成支持承诺。
 
 ## 12. Coding Eval任务契约
 
