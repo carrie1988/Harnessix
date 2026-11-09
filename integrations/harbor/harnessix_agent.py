@@ -274,10 +274,10 @@ class HarnessixAgent(BaseInstalledAgent):
             "trial_id"
         ) != str(self.context_id):
             raise ValueError("Harbor协议摘要身份不匹配")
-        for field in ("input_tokens", "output_tokens"):
+        for field in ("input_tokens", "output_tokens", "transient_read_errors"):
             value = result.get(field)
             if value is not None and (type(value) is not int or value < 0):
-                raise ValueError("Harbor协议摘要用量无效")
+                raise ValueError("Harbor协议摘要计数无效")
         for field in ("thread_id", "turn_id"):
             if result.get(field) is not None:
                 UUID(result[field])
@@ -293,6 +293,7 @@ class HarnessixAgent(BaseInstalledAgent):
                 "observed_model_steps": result.get("model_steps"),
                 "protocol_reason": result.get("reason"),
                 "runner_error": result.get("runner_error"),
+                "transient_read_errors": result.get("transient_read_errors"),
                 "cost_completeness": "unknown",
                 "usage_source": "agent_protocol_turn",
                 "usage_completeness": "unknown",

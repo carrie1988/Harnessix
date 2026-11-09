@@ -97,6 +97,25 @@ def test_native_matrix_keeps_attribution_denominator_and_unknown_billing(tmp_pat
     assert "generation" not in export.model_dump_json()
 
 
+def test_runner_error_and_absorbed_read_errors_reach_system_refs(tmp_path: Path) -> None:
+    trials = [
+        Trial(
+            reward=0.0,
+            exception=AGENT_EXIT,
+            metadata=native(
+                "protocol_error",
+                runner_error="AgentSDKError:publication_history_timeout",
+                transient_read_errors=3,
+            ),
+        )
+    ]
+    report = harbor_report(harbor_job(tmp_path / "job", trials, agent_name="harnessix"), 1)
+    trial = report.trials[0]
+    assert (trial.status, trial.reason) == ("system_error", "agent_failed")
+    assert trial.system_refs["runner_error"] == "AgentSDKError:publication_history_timeout"
+    assert trial.system_refs["transient_read_errors"] == "3"
+
+
 @pytest.mark.parametrize(
     ("spec", "expected"),
     [

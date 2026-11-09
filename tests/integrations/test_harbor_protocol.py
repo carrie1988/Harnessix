@@ -21,6 +21,7 @@ from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from integrations.harbor import protocol_runner
+from integrations.harbor.harnessix_configs import COMMAND_TIMEOUT_SECONDS
 from integrations.harbor.protocol_runner import drive_protocol_trial
 from tests.agent.helpers import RecordingTools, answer, tool_step
 
@@ -149,6 +150,107 @@ async def test_server_that_never_initializes_is_unavailable_not_agent_failure() 
     )
     assert receipt["reason"] == "server_unavailable"
     assert receipt["turn_terminal_confirmed"] is False
+
+
+HISTORY_TIMEOUT = "publication_history_timeout"
+
+
+class FlakyReads:
+    """前failures次执行中的读取报code错误，其余调用原样转给真实客户端。"""
+
+    def __init__(self, client: AgentClient, failures: int, code: str) -> None:
+        self._client = client
+        self.failures = failures
+        self.code = code
+
+    def __getattr__(self, name: str):
+        return getattr(self._client, name)
+
+    async def _read(self, name: str, *args, **kwargs):
+        if self.failures:
+            self.failures -= 1
+            raise AgentSDKError(self.code, "注入的读取失败")
+        return await getattr(self._client, name)(*args, **kwargs)
+
+    async def get_thread(self, *args, **kwargs):
+        return await self._read("get_thread", *args, **kwargs)
+
+    async def next_events(self, *args, **kwargs):
+        return await self._read("next_events", *args, **kwargs)
+
+
+async def flaky_trial(
+    tmp_path: Path, failures: int, code: str, read_retry: protocol_runner.ReadRetry
+) -> dict:
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, ScriptedProvider([answer("done")])) as runtime:
+        service = AgentApplicationService(runtime, store, SQLiteProtocolRequestStore(store.path))
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        async with client:
+            return await drive_protocol_trial(
+                FlakyReads(client, failures, code),
+                workspace=str(tmp_path),
+                instruction="task",
+                budget=budget(),
+                trial_id=uuid4(),
+                read_retry=read_retry,
+            )
+
+
+async def test_history_timeouts_while_reading_are_retried_and_counted(tmp_path: Path) -> None:
+    retry = protocol_runner.ReadRetry(window_seconds=5, first_delay_seconds=0.001)
+    receipt = await flaky_trial(tmp_path, 3, HISTORY_TIMEOUT, retry)
+    assert receipt["reason"] == "completed"
+    assert receipt["runner_error"] is None
+    assert receipt["transient_read_errors"] == 3
+
+
+async def test_history_timeouts_beyond_the_window_end_with_their_code(tmp_path: Path) -> None:
+    retry = protocol_runner.ReadRetry(
+        window_seconds=0.05, first_delay_seconds=0.001, max_delay_seconds=0.01
+    )
+    receipt = await flaky_trial(tmp_path, 10**6, HISTORY_TIMEOUT, retry)
+    assert receipt["reason"] == "protocol_error"
+    assert receipt["runner_error"] == f"AgentSDKError:{HISTORY_TIMEOUT}"
+    assert receipt["transient_read_errors"] >= 1
+    assert receipt["turn_terminal_confirmed"] is False
+
+
+async def test_other_protocol_errors_are_not_retried(tmp_path: Path) -> None:
+    retry = protocol_runner.ReadRetry(window_seconds=5, first_delay_seconds=0.001)
+    receipt = await flaky_trial(tmp_path, 1, "replay_stalled", retry)
+    assert receipt["reason"] == "protocol_error"
+    assert receipt["runner_error"] == "AgentSDKError:replay_stalled"
+    assert receipt["transient_read_errors"] == 0
+
+
+async def test_read_retry_backs_off_exponentially_up_to_the_cap(monkeypatch) -> None:
+    delays: list[float] = []
+    real_sleep = asyncio.sleep
+
+    async def recording_sleep(seconds: float) -> None:
+        delays.append(seconds)
+        await real_sleep(0)
+
+    monkeypatch.setattr(protocol_runner.asyncio, "sleep", recording_sleep)
+    failures = iter(range(6))
+
+    async def read() -> str:
+        if next(failures, None) is not None:
+            raise AgentSDKError(HISTORY_TIMEOUT, "Session历史认证超时")
+        return "page"
+
+    retry = protocol_runner.ReadRetry(
+        window_seconds=1000, first_delay_seconds=1, max_delay_seconds=8
+    )
+    assert await retry(read) == "page"
+    assert delays == [1, 2, 4, 8, 8, 8]
+    assert retry.absorbed == 6
+
+
+def test_default_read_window_outlasts_one_command() -> None:
+    # CPU争抢来自任务命令本身；窗口短于命令期限会在长测试期间误杀试次。
+    assert protocol_runner.ReadRetry().window_seconds > COMMAND_TIMEOUT_SECONDS
 
 
 def test_startup_failure_still_writes_a_complete_receipt(tmp_path: Path, monkeypatch) -> None:

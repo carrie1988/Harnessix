@@ -30,6 +30,7 @@ _REFS = (
     "turn_id",
     "protocol_reason",
     "runner_error",
+    "transient_read_errors",
     "turn_status",
     "native_failure_category",
     "native_failure_code",

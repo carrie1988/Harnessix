@@ -14,6 +14,9 @@ import json
 import logging
 import os
 import sys
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from uuid import UUID
 
@@ -42,6 +45,43 @@ _TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
 # 终态后完整重放本Turn的期限；长Turn事件多，3秒不足以读完。
 _EVIDENCE_REPLAY_SECONDS = 30
 _LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+# App Server每次读取都在10秒期限内重新认证整段Session历史；任务命令占满容器CPU配额时会超出期限。
+# 这只说明此刻读不到，Turn仍在服务端运行。
+_TRANSIENT_READ_CODES = frozenset({"publication_history_timeout"})
+
+
+@dataclass
+class ReadRetry:
+    """只读查询遇到瞬时认证超时即退避重试；absorbed记录被重试吸收的错误次数。
+
+    默认窗口覆盖一条命令的最长运行时间（评测配置900秒）再加一分钟：CPU争抢来自任务命令本身，
+    不会长于命令期限；超出窗口仍按协议错误结束。整题期限另行约束。
+    """
+
+    window_seconds: float = 960.0
+    first_delay_seconds: float = 1.0
+    max_delay_seconds: float = 30.0
+    absorbed: int = 0
+
+    async def __call__[T](self, read: Callable[[], Awaitable[T]]) -> T:
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self.window_seconds
+        delay = self.first_delay_seconds
+        while True:
+            try:
+                return await read()
+            except AgentSDKError as error:
+                remaining = deadline - loop.time()
+                if error.code not in _TRANSIENT_READ_CODES or remaining <= 0:
+                    raise
+            self.absorbed += 1
+            await asyncio.sleep(min(delay, remaining))
+            delay = min(delay * 2, self.max_delay_seconds)
+
+
+def _runner_error(error: Exception) -> str:
+    code = getattr(error, "code", None)
+    return type(error).__name__ + (f":{code}" if isinstance(code, str) else "")
 
 
 def _record(events: tuple[PublicEvent, ...], items: dict[UUID, PublicItem]) -> None:
@@ -51,14 +91,21 @@ def _record(events: tuple[PublicEvent, ...], items: dict[UUID, PublicItem]) -> N
 
 
 async def _catch_up(
-    client: AgentClient, thread_id: UUID, cursor: int, items: dict[UUID, PublicItem]
+    client: AgentClient,
+    thread_id: UUID,
+    cursor: int,
+    items: dict[UUID, PublicItem],
+    reads: ReadRetry,
 ) -> int:
     """读到当前末尾，保证审批请求及其工具调用都已记录。"""
     while True:
-        page = await client.replay_events(
-            thread_id,
-            after_cursor=cursor,
-            limit=min(64, client.initialized.limits.max_replay_events),
+        page = await reads(
+            partial(
+                client.replay_events,
+                thread_id,
+                after_cursor=cursor,
+                limit=min(64, client.initialized.limits.max_replay_events),
+            )
         )
         _record(page.events, items)
         if not page.has_more:
@@ -148,18 +195,22 @@ async def drive_protocol_trial(
     approval_mode: ApprovalMode = "manual",
     policy: ApprovalPolicy | None = None,
     events: list[PublicEvent] | None = None,
+    read_retry: ReadRetry | None = None,
 ) -> dict:
     """驱动一次显式试次；策略不能回应的审批或提问即取消，超时清理有界且不重试任务。
 
     events非None时收集本Turn的全部公开事件，供逐步记录使用（只在Turn确认终态后收集）。
+    执行中的只读查询按read_retry重试瞬时认证超时；协议失败时记下错误类型与代码。
     """
 
     thread: ThreadView | None = None
     turn: TurnView | None = None
     reason = "protocol_error"
+    runner_error: str | None = None
     turn_terminal_confirmed = False
     cancelled = False
     decide = policy or approval_policy(approval_mode)
+    reads = read_retry or ReadRetry()
     items: dict[UUID, PublicItem] = {}
     submitted: set[UUID] = set()
     initialized = False
@@ -174,9 +225,10 @@ async def drive_protocol_trial(
                 request_id=f"harbor-{trial_id}-turn",
                 budget=budget,
             )
+            thread_id = thread.thread_id
             cursor = 0
             while True:
-                thread = await client.get_thread(thread.thread_id)
+                thread = await reads(partial(client.get_thread, thread_id))
                 turn = thread.latest_turn
                 if turn is None:
                     raise AgentSDKError("missing_turn", "协议未返回本次Turn")
@@ -186,7 +238,7 @@ async def drive_protocol_trial(
                     break
                 awaiting_decided = False
                 if turn.status == "waiting_approval":
-                    cursor = await _catch_up(client, thread.thread_id, cursor, items)
+                    cursor = await _catch_up(client, thread_id, cursor, items, reads)
                     pending = _pending_approval(items, submitted)
                     outcome = decide(*pending) if pending else None
                     if pending and outcome:
@@ -211,16 +263,23 @@ async def drive_protocol_trial(
                     reason = "intervention_required"
                     break
                 limit = min(64, client.initialized.limits.max_replay_events)
-                page = await client.next_events(
-                    thread.thread_id, after_cursor=cursor, wait_ms=1000, limit=limit
+                page = await reads(
+                    partial(
+                        client.next_events,
+                        thread_id,
+                        after_cursor=cursor,
+                        wait_ms=1000,
+                        limit=limit,
+                    )
                 )
                 _record(page.replay.events, items)
                 cursor = max(cursor, page.replay.scanned_through)
     except TimeoutError:
         reason = "deadline_exceeded"
-    except AgentSDKError:
+    except AgentSDKError as error:
         # App Server未完成初始化即失败：产品没有运行过任务，属于环境或安装问题。
         reason = "protocol_error" if initialized else "server_unavailable"
+        runner_error = _runner_error(error)
     except asyncio.CancelledError:
         cancelled = True
     finally:
@@ -256,6 +315,7 @@ async def drive_protocol_trial(
         "spec_version": "harnessix.harbor-protocol-result/v1",
         "trial_id": str(trial_id),
         "reason": reason,
+        "runner_error": runner_error,
         "thread_id": str(thread.thread_id) if thread else None,
         "turn_id": str(turn.turn_id) if turn else None,
         "turn_status": turn.status if turn else None,
@@ -270,18 +330,18 @@ async def drive_protocol_trial(
         "turn_terminal_confirmed": turn_terminal_confirmed,
         "approval_mode": approval_mode,
         "auto_approvals": len(submitted),
+        "transient_read_errors": reads.absorbed,
         **evidence,
     }
 
 
 def unavailable_result(arguments: argparse.Namespace, error: Exception) -> dict:
     """App Server或转发未能启动时仍写出完整摘要，避免空文件让Harbor整个Job中断。"""
-    code = getattr(error, "code", None)
     return {
         "spec_version": "harnessix.harbor-protocol-result/v1",
         "trial_id": arguments.trial_id,
         "reason": "server_unavailable",
-        "runner_error": type(error).__name__ + (f":{code}" if isinstance(code, str) else ""),
+        "runner_error": _runner_error(error),
         "thread_id": None,
         "turn_id": None,
         "turn_status": None,
@@ -296,6 +356,7 @@ def unavailable_result(arguments: argparse.Namespace, error: Exception) -> dict:
         "turn_terminal_confirmed": False,
         "approval_mode": arguments.approval_mode,
         "auto_approvals": 0,
+        "transient_read_errors": 0,
         "protocol_evidence_complete": False,
         "tool_results_succeeded": None,
         "final_assistant_sha256": None,

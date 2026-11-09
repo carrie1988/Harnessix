@@ -306,6 +306,12 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
      缺失时App Server启动预检报`product_dependency_missing`）与产品wheel安装，收据记录摘要。
    - 协议驱动在App Server未能启动时仍写出完整摘要（`server_unavailable`），解析器判为无效试次，不计入智能体失败；
      适配器遇到缺失或无效的摘要不抛错，避免Harbor中断整个Job。
+   - 读取重试（2026-11-09用户决定，评测侧止血）：App Server每次读取在10秒期限内重新认证整段Session历史，
+     任务命令占满容器CPU配额（`cpus = 1`而容器内可见112核，Django测试按核数开约95个进程）时超出期限，
+     报`publication_history_timeout`。协议驱动对执行中的只读查询（读Thread、等待事件、补读审批）只就该错误
+     指数退避重试（1秒起、上限30秒），窗口960秒覆盖一条命令的900秒期限；超出仍为`protocol_error`。
+     摘要记`runner_error`（如`AgentSDKError:publication_history_timeout`）与`transient_read_errors`
+     （被重试吸收的次数），二者进入运行报告的`system_refs`。产品侧只认证新增事件的根治另行决策。
    - 配置：`harnessix_configs.py`按第一阶段本地组别生成Provider与命令Profile配置（同一模型、关闭思考、
      同一环境预设与900秒命令期限），模型经容器回环端口转发。
    - 组别规格的`artifacts`列出安装包与配置模板，`freeze`按内容摘要计入组别配置摘要。
