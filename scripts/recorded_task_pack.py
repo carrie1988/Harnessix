@@ -93,7 +93,7 @@ def prepare_recorded_solution(
 
 
 class RecordedSolutionProvider:
-    """按固定六步事件驱动正式Agent工具链，不直接生成Eval报告。"""
+    """按固定五步事件驱动正式Agent工具链，不直接生成Eval报告。"""
 
     def __init__(self, solution: RecordedSolution, run_id: UUID) -> None:
         self._solution = solution
@@ -163,19 +163,14 @@ class RecordedSolutionProvider:
             )
         if step == 4:
             return (
-                ToolCallCompleted(call_id=f"{response_id}-status", tool="git_status", arguments={}),
-                "tool_calls",
-            )
-        if step == 5:
-            return (
                 ToolCallCompleted(
-                    call_id=f"{response_id}-diff",
-                    tool="git_diff",
-                    arguments={"target": "worktree", "context_lines": 1},
+                    call_id=f"{response_id}-review",
+                    tool="git_review",
+                    arguments={"context_lines": 1},
                 ),
                 "tool_calls",
             )
-        if step != 6:
+        if step != 5:
             raise AssertionError(f"Recorded Provider收到意外步骤：{step}")
         return None, "completed"
 

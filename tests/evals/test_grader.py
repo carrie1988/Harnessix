@@ -281,6 +281,25 @@ def test_success_requires_behavior_regression_git_and_answer_evidence() -> None:
     assert report.metrics == report.metrics.model_copy(update={"tool_calls": 5, "changed_files": 1})
 
 
+def _git_feedback_passed(turn: Turn) -> bool:
+    return {check.code: check.passed for check in grade(turn=turn).checks}["git_feedback_order"]
+
+
+def test_git_review_counts_as_status_and_diff_after_the_final_pass() -> None:
+    current = completed_turn()
+    # 依次为用户消息、失败测试、Patch、通过测试、git_status、git_diff、最终回答。
+    user_failed_patch, final_pass, answer = current.items[:5], current.items[5:7], current.items[-1]
+    review = tool_pair("git_review", output={"status": {}, "diff": {}})
+
+    after = current.model_copy(update={"items": (*user_failed_patch, *final_pass, *review, answer)})
+    before = current.model_copy(
+        update={"items": (*user_failed_patch, *review, *final_pass, answer)}
+    )
+
+    assert _git_feedback_passed(after)
+    assert not _git_feedback_passed(before)
+
+
 def test_product_profile_output_is_graded_from_terminal_process_facts() -> None:
     current = completed_turn()
     rewritten: list[Item] = []
