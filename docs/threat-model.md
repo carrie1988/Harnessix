@@ -310,7 +310,7 @@ Agent Runtime                │
 - 来源、版本、内容/定义摘要与Trust Grant状态；
 - 非Bundled Hook没有精确定义授权时失败关闭；
 - Tool Schema/版本变化使授权失效；
-- Skill只作为不受信内容经渐进读取Action加载，不解释其中的权限或可执行声明；
+- Skill只作为不受信内容经渐进读取Action加载，不解释其中的权限或可执行声明；产品装配见TM-14与ADR 0125；
 - Hook输入只获得Thread/Turn/Action身份及参数/结果摘要；
 - 扩展只通过受限 Context 和 Tool API；
 - 所有效果经过统一 Permission/Sandbox；
@@ -474,6 +474,7 @@ Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访�
 | 沙箱外命令造成不可逆影响 | 每条单独批准，`auto`模式也不自动批准 | `tests/product_config/test_native_host_command.py` | 批准后没有隔离，取决于用户判断 |
 | 本会话自动批准被滥用 | 规则只在内存；修改与命令分开；命令必须完全相同；仍走证据校验 | `tests/product_ui/test_controller_interactions.py` | 用户开启后，修改不再逐个确认 |
 | 内网明文端点泄露API Key和代码 | 必须显式声明自托管；公网地址被拒绝 | `tests/models/test_openai_chat.py`、`tests/product_config/test_wizard.py` | 内网中可被窃听，只应在可信网络使用 |
+| 恶意仓库的Skill诱导Agent越权（ADR 0125） | Skill文本按项目指令优先级进入Context，不能提升权限；两个工具只读；文件修改和沙箱命令不能写`.harnessix`，Agent不能改写Skill；读取时重核内容摘要 | `tests/skills/test_agent_tools.py`、`tests/sandbox/test_native_policy.py` | 信任仓库后，Skill内容仍可能包含提示注入；经用户批准的沙箱外命令可以写入 |
 | 费用未知时继续产生费用 | 确定未计费的失败才自动重试；付费交互模式停止；无人值守按预留额继续，耗尽即停 | `tests/agent/test_model_attempts.py`、`tests/models/test_openai_chat.py` | 预留额是估算，不是账单 |
 
 ## 7. 安全不变量

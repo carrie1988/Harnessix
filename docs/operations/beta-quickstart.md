@@ -91,7 +91,20 @@ harnessix code /path/to/repo
 
 请不要在反馈中附带密钥、客户数据或未公开的源码。诊断文件不含这些内容。遇到数据损坏、越权操作或凭据泄露，请立即停止并告诉我们。
 
-## 6. 回退
+## 6. 常见问题
+
+| 现象 | 处理 |
+|---|---|
+| 配置时提示配置目录权限或身份不安全 | 运行 `chmod 700 ~/.harnessix`，并确认目录属于当前用户 |
+| `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；在代理后面时设置 `HTTPS_PROXY` |
+| 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key，见[接入自托管模型](self-hosted-models.md) |
+| 自托管模型很快报错或回答被截断 | 检查模型的上下文窗口，Ollama 默认只有 4096，见[接入自托管模型](self-hosted-models.md) |
+| Linux 上 `doctor` 提示沙箱不可用 | 安装 bubblewrap 并开启非特权用户命名空间；Ubuntu 24.04 起还要为 bwrap 配置 AppArmor 例外。沙箱不可用时，命令不会自动执行 |
+| `harnessix exec` 提示工作区未被信任 | 确认仓库可信后加 `--trust-workspace` |
+| 任务因费用未知而停止 | 发送新消息即可继续 |
+| 自己写的 Skill 没有生效 | 运行 `harnessix skills list`，会列出未被采用的文件和原因，见[使用 Skills](skills.md) |
+
+## 7. 回退
 
 用 Git 回退工作区改动，用 `uv tool uninstall harnessix` 卸载。卸载不会删除 `~/.harnessix` 中的配置和会话。
 
