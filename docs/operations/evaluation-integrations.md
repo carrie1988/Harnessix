@@ -272,6 +272,11 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
 4. 模型访问：宿主机上`model_relay.py`只监听Docker网桥地址并转发到回环vLLM；
    `compose/host-gateway.yaml`让任务容器经host.docker.internal访问。容器内的Harnessix
    通过协议驱动的`--model-relay`监听回环端口，产品只允许回环地址使用明文HTTP。
+   多副本时宿主机转发以`--docker-socket /var/run/docker.sock`运行，按运行中容器识别试次：
+   容器运行期间固定在同一副本，删除即释放，复用其地址的新容器按新试次分给活跃试次最少的副本。
+   它只读调用`GET /containers/json`，列表里其他容器的元数据只用于地址匹配；查询失败时退回按连接
+   活动判断（空闲120秒视为离开）。不按容器识别时，刚结束的试次仍计负载120秒，Harbor紧接着启动的
+   新试次在负载并列时落到靠前的副本，E0实测两个副本上的进行中请求约为2:1。
 5. 冻结与运行：`pipeline.py freeze`以Harbor内容哈希作为条目摘要，组别配置摘要覆盖智能体配置、
    环境配置、任务准备收据与代码版本；`pipeline.py run`每个组别一个零重试Job。
 6. 收尾：`pipeline.py finish`导入全部组别、运行官方判分（swebench 5.0.2，离线，本地镜像）、
