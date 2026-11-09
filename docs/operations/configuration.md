@@ -158,7 +158,7 @@ export MODEL_API_KEY='<由Secret系统注入>'
 | `required_capabilities` | 只强制Streaming Usage | 首选和所有Fallback必须满足 |
 | `fallback_profiles` | 最多5项 | 展开后无环、无重复，链长最多6 |
 | `max_output_tokens` | 4096，1～1,000,000 | 单响应输出参数 |
-| `context_window_tokens` | 空（不序列化），8192～2,097,152 | 模型上下文窗口；声明后输入上限与压缩阈值按窗口换算（窗口一半时压缩），换算结果不超过出站请求扫描容量的四分之三（约262144 Token），未声明沿用固定上限 |
+| `context_window_tokens` | 空（不序列化），8192～2,097,152 | 模型上下文窗口；声明后输入上限与压缩阈值按窗口换算（窗口三分之一时压缩、压到六分之一），换算结果不超过出站请求扫描容量的四分之三（约262144 Token），未声明沿用固定上限 |
 | `timeout_seconds` | 120，最大3600 | Provider总Timeout |
 | `io_timeout_seconds` | 30，最大300 | 连接/读取Timeout |
 | `max_attempts` | 2，1～5 | 单Profile尝试上限；链总和不超过32 |

@@ -214,9 +214,9 @@ def test_declared_model_window_scales_context_and_compaction_limits(tmp_path: Pa
         tmp_path, max_output_tokens=4096, context_window_tokens=262_144
     )
 
-    # 估算器按UTF-8字节计；声明窗口后按每Token 3字节换算，窗口一半触发、压到四分之一。
-    assert windowed.compaction.trigger_history_tokens == 262_144 * 3 // 2
-    assert windowed.compaction.policy.target_history_tokens == 262_144 * 3 // 4
+    # 估算器按UTF-8字节计；声明窗口后按每Token 3字节换算，窗口三分之一触发、压到六分之一。
+    assert windowed.compaction.trigger_history_tokens == 262_144 * 3 // 3
+    assert windowed.compaction.policy.target_history_tokens == 262_144 * 3 // 6
     assert windowed.compaction.policy.max_summary_input_tokens == (262_144 - 4096 - 1536) * 3
     assert windowed.compaction.max_summary_output_tokens == 4096
     assert windowed.compaction.policy.summary_reserve_tokens == 20_480
@@ -297,8 +297,8 @@ async def test_window_derived_limits_keep_outbound_requests_within_the_protectio
     # 最大窗口按每Token 3字节换算远超出站请求的扫描容量；换算结果截到扫描容量的四分之三。
     input_limit = policy.compaction.policy.max_summary_input_tokens
     assert input_limit == MAX_SCAN_BYTES * 3 // 4
-    assert policy.compaction.trigger_history_tokens == input_limit // 2
-    assert policy.compaction.policy.target_history_tokens == input_limit // 4
+    assert policy.compaction.trigger_history_tokens == input_limit // 3
+    assert policy.compaction.policy.target_history_tokens == input_limit // 6
     prepared = await policy.context.prepare(_request(tmp_path), CancelToken())
     assert prepared.inspection.available_input_tokens == input_limit
 
@@ -318,23 +318,26 @@ async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_pat
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     path = tmp_path / "state.db"
-    seeds = SequenceProvider([accounted_text("事实" * 1100) for _ in range(8)])
+    seeds = SequenceProvider([accounted_text("事实" * 400) for _ in range(14)])
     policy = build_product_agent_context(
         workspace, max_output_tokens=4096, context_window_tokens=32_768
     )
     # 小窗口的摘要容量随压缩目标收缩，仍为保留历史留出空间。
-    assert policy.compaction.trigger_history_tokens == 49_152
-    assert policy.compaction.policy.summary_reserve_tokens == 6144
-    assert policy.compaction.max_summary_output_tokens == 1228
+    assert policy.compaction.trigger_history_tokens == 32_768
+    assert policy.compaction.policy.target_history_tokens == 16_384
+    assert policy.compaction.policy.summary_reserve_tokens == 4096
+    assert policy.compaction.max_summary_output_tokens == 819
+    # 种子历史在固定上限下累积到小窗口触发点与固定触发点之间；单组较小，近期组放得进压缩目标。
+    seeding = build_product_agent_context(workspace, max_output_tokens=4096)
     async with AgentRuntime(
         SQLiteSessionStore(path),
         seeds,
-        async_context=policy.context,
-        compaction=policy.compaction,
+        async_context=seeding.context,
+        compaction=seeding.compaction,
         summary_provider=seeds,
     ) as runtime:
         thread = await runtime.create_thread(str(workspace))
-        for index in range(8):
+        for index in range(14):
             seeded = await runtime.run_turn(
                 thread.thread_id, "调查实现与测试", request_id=f"seed-{index}"
             )
@@ -357,7 +360,7 @@ async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_pat
                 thread.thread_id, "继续修复", request_id=f"continue-{window}"
             )
 
-    # 同一历史在固定上限下不压缩，声明的小窗口则在其一半处压缩。
+    # 同一历史在固定上限下不压缩，声明的小窗口则在其三分之一处压缩。
     fixed = await continue_turn(None)
     assert fixed.status == "completed" and not fixed.compactions
     windowed = await continue_turn(32_768)

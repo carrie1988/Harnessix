@@ -312,8 +312,9 @@ class _InputBudget:
 
 
 def _input_budget(context_window_tokens: int | None, max_output_tokens: int) -> _InputBudget:
-    """窗口一半时压缩、压到四分之一；未声明窗口时沿用固定输入上限与原摘要容量。
+    """声明窗口时在三分之一处压缩、压到六分之一；未声明窗口时沿用固定输入上限与原摘要容量。
 
+    较低的压缩点限制长任务的单次请求规模、累计输入与单次摘要耗时。
     换算后的窗口与输入上限不超过出站请求扫描容量的四分之三，大窗口不会产生无法发出的请求。
     声明窗口时摘要预留至多占压缩目标的四分之一（上限20480字节），
     摘要输出按每Token约4字节另加封装换算，至多4096 Token。
@@ -333,15 +334,16 @@ def _input_budget(context_window_tokens: int | None, max_output_tokens: int) -> 
     ):
         raise ValueError("模型上下文窗口须大于两倍输出上限与1536之和，且不超过2097152 Token")
     window = min(context_window_tokens * _WINDOW_UTF8_BYTES_PER_TOKEN, _REQUEST_INPUT_CAP)
-    summary_reserve = min(20_480, window // 16)
+    compaction_target = window // 6
+    summary_reserve = min(20_480, compaction_target // 4)
     return _InputBudget(
         input_limit=min(
             (context_window_tokens - max_output_tokens - _CONTEXT_OVERHEAD_TOKENS)
             * _WINDOW_UTF8_BYTES_PER_TOKEN,
             _REQUEST_INPUT_CAP,
         ),
-        compaction_trigger=window // 2,
-        compaction_target=window // 4,
+        compaction_trigger=window // 3,
+        compaction_target=compaction_target,
         summary_output_tokens=min(4096, summary_reserve // 5),
         summary_reserve=summary_reserve,
     )
