@@ -8,7 +8,7 @@ import stat
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Never
+from typing import Literal, Never, cast
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -22,6 +22,8 @@ from harnessix.product_config.codec import (
     read_product_config_bytes,
 )
 from harnessix.product_config.contracts import (
+    CONTEXT_OVERHEAD_TOKENS,
+    THINKING_MIN_OUTPUT_TOKENS,
     EnvironmentSecretSourceConfig,
     ModelProfile,
     ProductConfigSnapshot,
@@ -77,6 +79,7 @@ _THINKING_LIMITS: dict[str, object] = {
 
 # 同机自托管端点：本地加速卡prefill慢且多会话共享副本，首字节在prefill完成后才到达，
 # 默认30秒首包/120秒单请求时限会把排队中的正常请求判为传输失败。
+_DEFAULT_MAX_OUTPUT_TOKENS = 4096
 _SELF_HOSTED_READ_TIMEOUT_SECONDS = 20
 _SELF_HOSTED_LIMITS: dict[str, object] = {
     "timeout_seconds": 1800.0,
@@ -99,6 +102,27 @@ def known_context_window(base_url: str, model: str) -> int | None:
         if host == known_host and model.startswith(prefixes):
             return window
     return None
+
+
+def _allowed_output_tokens(window: int) -> int:
+    return (window - 1) // 2 - CONTEXT_OVERHEAD_TOKENS
+
+
+def _window_fits_thinking(window: int | None) -> bool:
+    return window is None or _allowed_output_tokens(window) >= THINKING_MIN_OUTPUT_TOKENS
+
+
+def _output_limits(window: int | None, *, thinking: bool) -> dict[str, object]:
+    """小窗口模型放不下默认输出上限时按窗口收紧，避免生成无法启动的配置。"""
+
+    limits: dict[str, object] = dict(_THINKING_LIMITS) if thinking else {}
+    if window is None:
+        return limits
+    allowed = _allowed_output_tokens(window)
+    current = cast(int, limits.get("max_output_tokens", _DEFAULT_MAX_OUTPUT_TOKENS))
+    if current > allowed:
+        limits["max_output_tokens"] = allowed
+    return limits
 
 
 def thinking_preset(
@@ -125,6 +149,13 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     secret = SecretReference(name=checked.secret_name, version=checked.secret_version)
     protocol = checked.thinking_protocol
     thinking = protocol is not None and checked.thinking != "off"
+    # 小窗口放不下思考所需的输出上限：未显式要求思考时自动关闭，而不是生成无法启动的配置。
+    thinking_auto_off = (
+        thinking
+        and checked.thinking is None
+        and not _window_fits_thinking(checked.context_window_tokens)
+    )
+    thinking = thinking and not thinking_auto_off
     output_token_parameter = checked.output_token_parameter or (
         "max_tokens" if protocol is not None else None
     )
@@ -163,12 +194,12 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     "profile_id": checked.profile_id,
                     "provider_id": checked.provider_id,
                     "model": checked.model,
-                    "thinking": checked.thinking,
+                    "thinking": "off" if thinking_auto_off else checked.thinking,
                     "context_window_tokens": checked.context_window_tokens,
                     # 云端限流和网络抖动很常见，只有确定未计费的失败才会重试到这个次数。
                     "max_attempts": 4,
                     "retry_delay_seconds": 1.0,
-                    **(_THINKING_LIMITS if thinking else {}),
+                    **_output_limits(checked.context_window_tokens, thinking=thinking),
                     **(_SELF_HOSTED_LIMITS if self_hosted else {}),
                 }
             ),

@@ -12,6 +12,7 @@ import pytest
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import (
+    ModelProfile,
     ProductConfigSnapshot,
     product_config_digest,
 )
@@ -63,6 +64,42 @@ def test_known_context_windows_only_cover_verified_models(
     base_url: str, model: str, window: int | None
 ) -> None:
     assert known_context_window(base_url, model) == window
+
+
+@pytest.mark.parametrize(
+    ("window", "thinking", "expected"),
+    [
+        (32_768, True, 4_096),
+        (262_144, True, 32_768),
+        (8_192, False, 2_559),
+        (None, True, 32_768),
+    ],
+)
+def test_small_context_windows_tighten_the_output_limit(
+    window: int | None, thinking: bool, expected: int
+) -> None:
+    draft = ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url="http://127.0.0.1:8000/v1",
+        model="local",
+        context_window_tokens=window,
+        output_token_parameter="max_tokens",
+        thinking_protocol="vllm_chat_template" if thinking else None,
+    )
+
+    profile = build_product_config(draft).profiles[0]
+    assert profile.max_output_tokens == expected
+    if window == 32_768:
+        assert profile.thinking == "off"
+
+
+def test_hand_written_profile_rejects_a_window_too_small_for_its_output() -> None:
+    profile = build_product_config(_draft()).profiles[0].model_dump(mode="json")
+
+    with pytest.raises(ValueError, match="上下文窗口"):
+        ModelProfile.model_validate_json(
+            json.dumps({**profile, "context_window_tokens": 32_768, "max_output_tokens": 32_768})
+        )
 
 
 def _self_hosted_draft(base_url: str) -> ConfigurationDraft:

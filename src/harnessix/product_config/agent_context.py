@@ -15,6 +15,7 @@ from harnessix.context.sources import (
     SourcedContextEngine,
     WorkspaceContextSource,
 )
+from harnessix.product_config.contracts import CONTEXT_OVERHEAD_TOKENS
 from harnessix.secrets.publication import MAX_SCAN_BYTES
 
 CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
@@ -94,7 +95,7 @@ PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
 # 估算器按UTF-8字节计（一个字节至多一个Token）。声明了模型窗口时按每Token 3字节换算：
 # 实测代码与英文约3.5～4字节/Token（第10百分位3.53），偶发超窗由Provider超限后的被动压缩兜底。
 _WINDOW_UTF8_BYTES_PER_TOKEN = 3
-_CONTEXT_OVERHEAD_TOKENS = 1536
+_CONTEXT_OVERHEAD_TOKENS = CONTEXT_OVERHEAD_TOKENS
 # 出站模型请求整体须通过公开输出保护扫描，其规范JSON至多MAX_SCAN_BYTES。估算已含历史、可执行工具
 # 与指令的规范JSON；请求另带稳定线上目录与信封字段，为其保留四分之一扫描容量。
 _REQUEST_INPUT_CAP = MAX_SCAN_BYTES * 3 // 4

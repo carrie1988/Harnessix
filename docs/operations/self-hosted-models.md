@@ -25,7 +25,7 @@ supersedes: []
 
 本页说明如何让Harnessix Code使用你自己部署的模型，包括同一台机器上的端点和局域网里的GPU服务器。
 端点需要兼容OpenAI Chat Completions，支持工具调用，并能在流式响应中返回用量（`stream_options.include_usage`）。
-已实测的服务端是vLLM；Ollama和LM Studio的兼容性尚未验证，见第5节。
+已实测的服务端是vLLM和Ollama（0.14）；LM Studio尚未验证，见第5节。
 
 ## 2. 部署步骤
 
@@ -75,9 +75,11 @@ IPv6 ULA（`fc00::/7`）、单段主机名（如`gpu01`），以及`.local`、`.
 | 费用 | 本地0元 | 状态栏显示“本地 0 元” |
 | 累计Token上限 | 600万 | 缓存命中也计入累计，上限比云模型高 |
 
-建议用`--context-window-tokens`填写模型的上下文窗口，压缩阈值会据此计算；不填时沿用产品固定上限。
+建议用`--context-window-tokens`填写模型的上下文窗口，压缩阈值会据此计算，小窗口模型的输出上限也会自动收紧；不填时沿用产品固定上限。
 
-思考开关经`chat_template_kwargs.enable_thinking`发送。服务端不支持时，用`--thinking-protocol none`关闭。
+思考开关经`chat_template_kwargs.enable_thinking`发送。服务端不支持时，用`--thinking-protocol none`关闭。窗口放不下思考所需的输出上限（16384 Token）时，向导会自动关闭思考。
+
+使用 Ollama 时要先调大上下文：它默认只有 4096 Token，超出的提示会被静默截断，只在服务端日志里有一条警告。启动服务前设置`OLLAMA_CONTEXT_LENGTH`（如 32768），并让`--context-window-tokens`与它一致。
 
 ## 4. 回退与兼容
 
@@ -88,4 +90,4 @@ IPv6 ULA（`fc00::/7`）、单段主机名（如`gpu01`），以及`.local`、`.
 
 - 明文HTTP下，代码和`MODEL_API_KEY`在内网中不加密传输，只应在可信网络上使用。
 - 代码会发送到你配置的端点，Harnessix不验证该地址背后是谁部署的模型。
-- Ollama和LM Studio尚未实测。若工具调用失败，先用`doctor --probe-model`确认，再尝试`--thinking-protocol none`。
+- LM Studio尚未实测。若工具调用失败，先用`doctor --probe-model`确认，再尝试`--thinking-protocol none`。

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Self
+from typing import Final, Literal, Self
 from urllib.parse import urlsplit
 from uuid import UUID
 
@@ -31,6 +31,7 @@ ProviderPricing = Literal["unknown", "free"]
 ThinkingMode = Literal["tool_steps", "every_step", "off"]
 # 推理计入输出上限：SWE-bench v40实测单步推理可达1.35万Token，低于该值时推理易用满输出而截断。
 THINKING_MIN_OUTPUT_TOKENS = 16_384
+CONTEXT_OVERHEAD_TOKENS: Final = 1536  # 请求封装在上下文窗口中的固定预留
 ConfigAuditOperation = Literal["loaded", "activated", "migrated"]
 DiagnosticStatus = Literal["passed", "failed"]
 DiagnosticScope = Literal["config", "profile", "provider", "secret", "dependency"]
@@ -180,6 +181,10 @@ class ModelProfile(ProductConfigContract):
             raise ValueError("Profile不能Fallback到自身")
         if not self.capabilities.satisfies(self.required_capabilities):
             raise ValueError("Profile声明能力不能满足自身要求")
+        if self.context_window_tokens is not None and self.context_window_tokens <= 2 * (
+            self.max_output_tokens + CONTEXT_OVERHEAD_TOKENS
+        ):
+            raise ValueError("模型上下文窗口须大于两倍输出上限与协议开销之和")
         return self
 
 
