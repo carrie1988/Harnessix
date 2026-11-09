@@ -32,7 +32,7 @@ async def test_container_and_missing_paths_explain_the_next_step(tmp_path):
         container = await execute(tools, path="/testbed/src/app.py")
         assert container.error.code == "tool_path_denied"
         assert "相对工作区根" in container.error.message
-        assert "exec_command" in container.error.message
+        assert "命令工具" in container.error.message
         assert "read_artifact" not in container.error.message
         missing = await execute(tools, "grep", path="src/absent", query="x")
         assert missing.error.code == "tool_not_found"
@@ -51,6 +51,24 @@ async def test_container_workspace_prefix_maps_to_workspace_root(tmp_path):
         other = await execute(tools, path="/etc/hosts")
         assert other.error.code == "tool_path_denied"
         escape = await execute(tools, path="/testbed/../etc/hosts")
+        assert escape.outcome == "failed"
+
+
+async def test_absolute_path_inside_the_workspace_root_is_read_as_relative(tmp_path):
+    root = tmp_path / "workspace"
+    (root / "src").mkdir(parents=True)
+    (root / "src" / "app.py").write_text("print(1)\n")
+    (tmp_path / "outside.py").write_text("secret\n")
+    async with CodingToolRuntime(root) as tools:
+        absolute = str(tools.workspace_root / "src" / "app.py")
+        mapped = await execute(tools, path=absolute)
+        assert mapped.outcome == "succeeded" and mapped.output["path"] == "src/app.py"
+        found = await execute(tools, "grep", path=str(tools.workspace_root), query="print")
+        assert found.outcome == "succeeded"
+        # 工作区以外的绝对路径与借..逃逸仍被拒绝。
+        outside = await execute(tools, path=str(tmp_path / "outside.py"))
+        assert outside.error.code == "tool_path_denied"
+        escape = await execute(tools, path=str(tools.workspace_root) + "/../outside.py")
         assert escape.outcome == "failed"
 
 

@@ -67,8 +67,8 @@ _READ_ERROR_MESSAGES = {
     ),
     # 只说明可操作的下一步，不区分“越界”与“敏感路径拒绝”，不回显路径。
     "path_denied": (
-        "路径不可读：读工具只接受相对工作区根的路径（如src/app.py）；容器内路径（如/testbed/...）"
-        "只用于exec_command；部分敏感路径始终不可读"
+        "路径不可读：读工具只读工作区内的文件，路径相对工作区根（如src/app.py）；工作区以外的"
+        "路径（如临时目录）只能用命令工具访问；部分敏感路径始终不可读"
     ),
     "not_found": "路径不存在：先用glob或list_files确认相对工作区根的路径",
     "timeout": (
@@ -254,6 +254,12 @@ class CodingToolRuntime:
     def definitions(self) -> tuple[ToolDescriptor, ...]:
         return tuple(d.model_copy(deep=True) for d in self._definitions.values())
 
+    def _absolute_workspace_paths(self) -> tuple[str, ...]:
+        """可换算为相对路径的绝对前缀：命令容器挂载点与POSIX工作区根本身（命令工具里的绝对路径）。"""
+        if self._workspace is None:
+            return self._container_workspace_paths
+        return (*self._container_workspace_paths, str(self._workspace.root))
+
     @property
     def workspace_root(self) -> Path:
         """宿主创建 Thread 时使用的规范根；访问能力仍由 Workspace 持有。"""
@@ -387,7 +393,7 @@ class CodingToolRuntime:
         )
         arguments = repair_read_arguments(
             binding.name,
-            _workspace_relative(call.arguments, self._container_workspace_paths),
+            _workspace_relative(call.arguments, self._absolute_workspace_paths()),
             binding.input_model,
         )
         try:

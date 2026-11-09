@@ -344,7 +344,9 @@ def _read(fd: int, operation: ReadOperation, scan: _Scan) -> str | None:
 
 
 def _preview(text: str, index: int) -> tuple[str, bool]:
-    start = max(0, index - 16)
+    # 整行放得下就原样返回（含行首缩进），模型可直接复制为精确编辑锚点；超长行才从匹配点前截取。
+    fits = len(text.encode("utf-8")) <= MAX_MATCH_BYTES
+    start = 0 if fits else max(0, index - 16)
     # text 已严格验证 UTF-8；这里只丢弃切片末尾不完整的编码单元，不修复非法源数据。
     snippet = text[start:].encode("utf-8")[:MAX_MATCH_BYTES].decode("utf-8", errors="ignore")
     return snippet, start > 0 or len(snippet) < len(text)

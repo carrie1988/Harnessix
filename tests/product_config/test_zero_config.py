@@ -93,7 +93,7 @@ async def _runtime_instruction(tmp_path: Path, **options: bool) -> dict[str, str
 async def test_native_instructions_are_separate_from_generic_ones(tmp_path: Path) -> None:
     generic = await _runtime_instruction(tmp_path, generic_execution=True)
     native = await _runtime_instruction(tmp_path, generic_execution=True, native_execution=True)
-    assert generic["source"] == "harnessix.generic-execution-instructions/v4"
+    assert generic["source"] == "harnessix.generic-execution-instructions/v5"
     assert native["source"] == "harnessix.native-execution-instructions/v2"
     assert "Inside execution containers" in generic["content"]
     assert "host_command.<profile>" in native["content"]
