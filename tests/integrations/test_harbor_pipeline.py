@@ -98,6 +98,7 @@ def test_template_v2_reviews_failures_against_the_original_code_in_place() -> No
         "benchmarks/harbor/swebench-verified-e0/e0-full-content.json",
         "benchmarks/harbor/swebench-verified-holdout49/network-isolation-smoke.json",
         "benchmarks/harbor/swebench-verified-dev25/oracle.json",
+        "benchmarks/harbor/swebench-verified-dev25/formal-ab.json",
     ],
 )
 def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec: str) -> None:
