@@ -398,6 +398,18 @@ async def test_unknown_cost_blocks_before_any_window_candidate(
     offline_pressure.env.summary.estimate_input_tokens.assert_not_called()
 
 
+async def test_unknown_cost_may_plan_when_the_host_continues_on_reservation(
+    offline_pressure, candidate_trace
+):
+    source = change_turn(
+        offline_pressure.source,
+        model_attempts=(settled_attempt(completeness="unknown", outcome="failed"),),
+    )
+    offline_pressure.env.host._continue_after_unknown_usage = True
+    await run_pressure(offline_pressure, source=source)
+    candidate_trace.prepaid.assert_awaited()
+
+
 @pytest.mark.parametrize("cancel_at", [0, 4, 6], ids=["before-plan", "first-tight", "last-tight"])
 async def test_cancellation_never_advances_to_another_candidate(
     offline_pressure, candidate_trace, cancel_at

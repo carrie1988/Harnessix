@@ -32,6 +32,7 @@ from harnessix.agent.turn_budget_compaction import (
     pressure_history_allocation,
     pressure_policies,
     pressure_summary_instructions,
+    require_request_slots,
     summary_horizon,
     summary_output_limit,
     summary_request_item,
@@ -157,6 +158,9 @@ async def _budget_plan(
     fixed = estimate_model_input_tokens(
         (), selection.tools, context.instructions if context else None
     )
+    # 默认策略下费用未知即停止；无人值守宿主按预留额继续，由摘要槽位检查兜底。
+    if not getattr(host, "_continue_after_unknown_usage", False):
+        require_request_slots(turn)
     policies = pressure_policies(
         turn, host._compaction, fixed, estimate_model_input_tokens(prepared.history, (), None)
     )
