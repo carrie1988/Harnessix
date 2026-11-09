@@ -14,8 +14,6 @@ from harnessix.agent.call_repair import (
 )
 from harnessix.delivery.trusted_action import workspace_patch_descriptor
 from harnessix.models.contracts import ToolCallCompleted, ToolCallRejected
-from harnessix.product_config.action_contracts import build_product_native_process_profile
-from harnessix.product_config.native_process import native_process_descriptor
 
 ARTIFACT = "01a1baa7-30d1-75c3-a388-635e4f1e75c6"
 OFFERED = {"read_file", "read_artifact", "grep"}
@@ -198,30 +196,3 @@ async def test_only_the_workspace_patch_contract_is_filled():
         {"operation": "edit", "path": "a.py", "edits": [EDIT], "expected_sha256": current}
     )
     assert await fill_patch_preconditions(unchanged, DEFINITIONS, read) is unchanged
-
-
-def test_missing_required_const_field_is_filled_from_the_schema():
-    command = native_process_descriptor(
-        build_product_native_process_profile(
-            profile_id="testbed",
-            version="v1",
-            description="run in the task container",
-            backend="external_boundary",
-            program="/bin/bash",
-            arguments=("-c",),
-            timeout_seconds=60,
-        )
-    )
-    definitions = {command.name: command}
-    proposal = ToolCallCompleted(call_id="c", tool=command.name, arguments={"cmd": "ls"})
-    repaired = repair_proposal(proposal, definitions, reroute=True)
-    assert repaired.arguments == {"cmd": "ls", "profile": "testbed"}
-    # 已给出的值（即使错误）与非必填const字段都不改写，由严格校验照旧判定。
-    wrong = proposal.model_copy(update={"arguments": {"cmd": "ls", "profile": "other"}})
-    assert repair_proposal(wrong, definitions, reroute=True) is wrong
-    patch = ToolCallCompleted(
-        call_id="p",
-        tool="apply_patch_batch",
-        arguments={"files": [{"operation": "edit", "path": "a.py", "edits": [EDIT]}]},
-    )
-    assert "spec_version" not in repair_proposal(patch, DEFINITIONS, reroute=True).arguments

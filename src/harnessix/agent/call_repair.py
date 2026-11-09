@@ -8,8 +8,6 @@
 - edit的expected_sha256缺失或过期、而每段old_text都在当前文件中唯一出现时，由宿主读取当前文件
   补上其SHA-256：精确锚定已证明模型看到的是要改的当前内容。规划与执行前仍按该SHA核对，
   replace与delete仍要求模型给出正确SHA。
-- 任一工具缺少顶层必填字段、而Schema只允许该字段取一个固定值（const）时补上该值，
-  例如命令工具的profile：工具名已唯一确定它，补全不改变调用含义。
 """
 
 from __future__ import annotations
@@ -49,31 +47,11 @@ def repair_proposal(
     if rerouted is not None:
         tool, arguments = rerouted
         return proposal.model_copy(update={"tool": tool, "arguments": arguments})
-    repaired = proposal.arguments
     if _is_workspace_patch(proposal.tool, definitions):
-        repaired = repair_patch_arguments(repaired)
-    definition = definitions.get(proposal.tool)
-    if definition is not None:
-        repaired = fill_constant_fields(repaired, definition.input_schema)
-    if repaired != proposal.arguments:
-        return proposal.model_copy(update={"arguments": repaired})
+        repaired = repair_patch_arguments(proposal.arguments)
+        if repaired != proposal.arguments:
+            return proposal.model_copy(update={"arguments": repaired})
     return proposal
-
-
-def fill_constant_fields(arguments: Arguments, schema: Mapping[str, Any]) -> Arguments:
-    """补上缺失的顶层必填const字段；其余字段与已给出的值（含错误值）原样保留。"""
-    properties = schema.get("properties")
-    required = schema.get("required")
-    if not isinstance(properties, Mapping) or not isinstance(required, list):
-        return arguments
-    missing = {
-        name: properties[name]["const"]
-        for name in required
-        if name not in arguments
-        and isinstance(properties.get(name), Mapping)
-        and "const" in properties[name]
-    }
-    return {**arguments, **missing} if missing else arguments
 
 
 async def fill_patch_preconditions(
