@@ -278,7 +278,7 @@ async def run_smoke(
 | `api_key_env` | 字符串 | 大写环境变量标识，最长128 | 凭据引用名，不是凭据值 |
 | `scenario` | 枚举，默认`text` | `text/tool/approval` | 固定验收场景 |
 | `max_output_tokens` | 严格整数，默认128 | 1～512 | 每次Provider请求输出上限 |
-| `max_tokens` | 严格整数，默认2048 | 1～8192 | Turn已知Token预算检查 |
+| `max_tokens` | 严格整数，默认8192 | 1～8192 | Turn已知Token预算检查；发送前按字节保守估算输入，2048放不下工具场景的第二次请求 |
 | `timeout_seconds` | 严格有限数，默认30 | 大于0且不超过60 | Provider总Deadline与Turn预算 |
 | `output_token_parameter` | 可空枚举 | OpenAI协议为两种名称；Anthropic禁止设置 | OpenAI-compatible参数适配 |
 
@@ -656,7 +656,7 @@ replay_verified = replay(await reopened.events(thread.thread_id)) == snapshot
 | Budget字段 | 文本 | 工具/审批 | 含义 |
 |---|---:|---:|---|
 | `max_steps` | 1 | 2 | Agent模型步骤上限 |
-| `max_tokens` | 配置值，默认2048 | 同左 | 已知累计Token检查阈值 |
+| `max_tokens` | 配置值，默认8192 | 同左 | 已知累计Token检查阈值 |
 | `timeout_seconds` | 配置值，默认30 | 同左 | Turn总体预算 |
 | `max_output_chars` | 8192 | 8192 | Agent输出字符上限 |
 | `max_tool_calls_per_step` | 1 | 1 | 单步工具调用上限 |

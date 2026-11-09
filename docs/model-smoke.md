@@ -42,7 +42,7 @@ uv run harnessix model-smoke --config .harnessix/smoke.json
   "api_key_env": "DASHSCOPE_API_KEY",
   "scenario": "text",
   "max_output_tokens": 128,
-  "max_tokens": 2048,
+  "max_tokens": 8192,
   "timeout_seconds": 30,
   "output_token_parameter": "max_tokens"
 }
@@ -72,7 +72,7 @@ uv run --extra openai harnessix model-smoke --config .harnessix/smoke.json --all
 ## 3. 预算与诊断语义
 
 - SDK 和 Adapter 均不重试。单步最多 1 个工具调用；工具拒绝第二次读取。
-- 每请求默认最多 128 输出 Token、可配置上限 512；Turn 默认 30 秒、可配置上限 60 秒；默认 Token 检查阈值 2048、最高 8192。输入 Token 无法精确预扣，不能把检查阈值当作消费/金额硬上限。请求最多 64 KiB，响应最多 512 KiB，单帧最多 64 KiB，最多 2048 块。
+- 每请求默认最多 128 输出 Token、可配置上限 512；Turn 默认 30 秒、可配置上限 60 秒；默认 Token 检查阈值 8192，也是上限（发送前按字节保守估算输入，2048 放不下工具场景的第二次请求）。输入 Token 无法精确预扣，不能把检查阈值当作消费/金额硬上限。请求最多 64 KiB，响应最多 512 KiB，单帧最多 64 KiB，最多 2048 块。
 - `attempts_started` 是持久化的尝试意图，不是已收费请求数；`known_*_tokens` 是已知消费下界，同时看 `usage_complete`。异常无法取得账本时为 null，不补零。
 - `reason=passed` 才表示本场景全部检查通过；Turn 完成但没读工具、返回错误标记、缺少完整账本或 Replay 不一致都不能通过。
 - `execution=sdk_default` 说明使用默认 SDK 工厂，不证明平台已收费；`injected` 说明使用宿主注入工厂，既不能宣称是真实平台验证，也不能仅凭此字段断言离线。测试以 MockTransport 保证离线。

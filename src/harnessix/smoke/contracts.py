@@ -42,7 +42,7 @@ class SmokeConfig(ContractModel):
     api_key_env: str = Field(pattern=r"^[A-Z_][A-Z0-9_]{0,127}$")
     scenario: Scenario = "text"
     max_output_tokens: int = Field(default=128, ge=1, le=512)
-    max_tokens: int = Field(default=2048, ge=1, le=8192)
+    max_tokens: int = Field(default=8192, ge=1, le=8192)
     timeout_seconds: float = Field(default=30, gt=0, le=60, allow_inf_nan=False)
     output_token_parameter: Literal["max_completion_tokens", "max_tokens"] | None = None
 
