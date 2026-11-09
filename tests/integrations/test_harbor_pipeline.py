@@ -63,6 +63,7 @@ def test_harnessix_swebench_template_renders_the_issue_verbatim_with_mini_aligne
         "benchmarks/harbor/swebench-verified-holdout49/r-mini-swe-agent.json",
         "benchmarks/harbor/swebench-multilingual-holdout30/r-mini-swe-agent.json",
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-single.json",
+        "benchmarks/harbor/swebench-verified-holdout49/harnessix-guard-retry-part2.json",
         "benchmarks/harbor/swebench-verified-e0/e0-full-content.json",
     ],
 )
