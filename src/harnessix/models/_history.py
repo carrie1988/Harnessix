@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
@@ -19,6 +18,10 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.tool_rejections import require_rejection_result
 from harnessix.models.contracts import ModelRequest
+
+# encode_json在tool_result_text中定义，此处显式再导出供既有调用方使用。
+from harnessix.models.tool_result_text import encode_json as encode_json
+from harnessix.models.tool_result_text import tool_result_text
 
 
 class InvalidModelRequest(ValueError):
@@ -34,10 +37,6 @@ def tool_alias(name: str) -> str:
         return name
     stem = re.sub(r"[^A-Za-z0-9_-]", "_", name) or "tool"
     return f"hx_{stem[:27]}_{hashlib.sha256(name.encode()).hexdigest()[:32]}"
-
-
-def encode_json(value: object) -> str:
-    return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
 
 
 def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[str]) -> str | None:
@@ -106,8 +105,13 @@ def budget_instruction(request: ModelRequest) -> str | None:
     return note
 
 
-def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
-    """私有规范化视图：完成消息、工具组及配对；不包含任何 SDK 对象。"""
+def messages_for(
+    request: ModelRequest, *, tool_result_format: Literal["json", "text"] = "json"
+) -> list[dict[str, Any]]:
+    """私有规范化视图：完成消息、工具组及配对；不包含任何 SDK 对象。
+
+    工具结果默认为规范JSON；text只改变发给模型的正文，持久结果与回放不变。
+    """
     messages: list[dict[str, Any]] = []
     assistant: dict[str, Any] | None = None
     pending: set[UUID] = set()
@@ -135,7 +139,7 @@ def messages_for(request: ModelRequest) -> list[dict[str, Any]]:
                 {
                     "role": "tool",
                     "tool_call_id": "call_" + content.call_id.hex,
-                    "content": encode_json(
+                    "content": (tool_result_text if tool_result_format == "text" else encode_json)(
                         content.model_dump(
                             mode="json", include={"outcome", "output", "error", "diff_artifact"}
                         )

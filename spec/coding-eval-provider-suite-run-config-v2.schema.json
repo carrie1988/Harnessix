@@ -582,6 +582,15 @@
           "title": "Repair Tool Arguments",
           "type": "boolean"
         },
+        "tool_result_format": {
+          "default": "json",
+          "enum": [
+            "json",
+            "text"
+          ],
+          "title": "Tool Result Format",
+          "type": "string"
+        },
         "thinking_format": {
           "anyOf": [
             {

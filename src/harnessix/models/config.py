@@ -92,6 +92,11 @@ class OpenAIChatConfig(ModelHTTPConfig):
     )
     # 工具参数严格解析失败时只修复字符串内原始控制字符与非法反斜杠转义；其他畸形仍为协议失败。
     repair_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
+    # 工具结果线上正文：json发送规范JSON；text把搜索、读取与命令结果渲染为紧凑文本
+    # （models/tool_result_text.py），其余结果仍为JSON。默认值不进入序列化与恢复指纹。
+    tool_result_format: Literal["json", "text"] = Field(
+        default="json", exclude_if=lambda value: value == "json"
+    )
     # 思考开关线上格式：默认DashScope的enable_thinking；thinking_type发送thinking.type。
     thinking_format: Literal["thinking_type", "chat_template_kwargs"] | None = Field(
         default=None,

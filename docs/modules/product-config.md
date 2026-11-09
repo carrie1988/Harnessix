@@ -623,6 +623,7 @@ classDiagram
 | `omit_tool_choice` | 布尔，默认`false`、不序列化 | 端点强制工具选择不可靠时不发送`tool_choice`，由可执行集收窄、目录说明与Runtime校验约束 |
 | `normalize_tool_arguments` | 布尔，默认`false`、不序列化 | 端点把数组/对象工具参数编码成JSON字符串时（如vLLM上的Qwen系），按工具Schema还原后再校验 |
 | `repair_tool_arguments` | 布尔，默认`false`、不序列化 | 映射Model层同名开关：畸形工具参数先做两类保意图修复，仍非法则只拒绝该次调用、回合继续；回环端点预设开启 |
+| `compact_tool_results` | 布尔，默认`false`、不序列化；仅`openai_chat` | 映射Model层`tool_result_format="text"`：搜索、读取与命令结果以紧凑文本发给模型，其余结果与持久历史不变；向导不预设，Harbor评测组别显式开启 |
 | `stable_prompt_prefix` | 布尔，默认`false`、不序列化 | 开头只放固定指令，逐请求说明（预算、工具目录）以`[Harness note]`末尾user消息发送：前缀跨请求不变以命中自动前缀缓存，也满足只接受开头一条system消息的模板 |
 | `pricing` | `unknown`或`free`（默认`unknown`、不序列化） | `free`只允许回环地址端点，用于本机自托管模型按0元计价 |
 

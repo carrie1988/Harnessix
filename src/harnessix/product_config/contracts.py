@@ -79,6 +79,9 @@ class ProviderDefinition(ProductConfigContract):
     # 自动前缀缓存端点：开头只放固定指令，逐请求说明放到末尾user消息，前缀跨请求保持不变；
     # 也满足只接受开头一条system消息的对话模板（如vLLM上的Qwen系）。
     stable_prompt_prefix: bool = Field(default=False, exclude_if=lambda value: value is False)
+    # 搜索、读取与命令结果以紧凑文本发给模型（行号:内容、每文件一次摘要、原始源码），
+    # 其余结果及持久历史不变；仅OpenAI Chat（Anthropic映射要求JSON结果正文）。
+    compact_tool_results: bool = Field(default=False, exclude_if=lambda value: value is False)
     pricing: ProviderPricing = Field(default="unknown", exclude_if=lambda value: value == "unknown")
 
     @field_validator("base_url")
@@ -92,8 +95,11 @@ class ProviderDefinition(ProductConfigContract):
             self.output_token_parameter is not None
             or self.thinking_protocol is not None
             or self.omit_tool_choice
+            or self.compact_tool_results
         ):
-            raise ValueError("Anthropic不能配置OpenAI输出Token、思考协议或工具选择参数")
+            raise ValueError(
+                "Anthropic不能配置OpenAI输出Token、思考协议、工具选择或紧凑工具结果参数"
+            )
         if self.thinking_protocol is not None and self.output_token_parameter != "max_tokens":
             # 已求证端点的推理与回答共用max_tokens。
             raise ValueError("思考协议要求输出Token参数为max_tokens")

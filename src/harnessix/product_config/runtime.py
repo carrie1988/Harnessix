@@ -229,6 +229,7 @@ def default_provider_factory(
                 omit_tool_choice=definition.omit_tool_choice,
                 repair_tool_arguments=definition.repair_tool_arguments,
                 prompt_cache="stable_tail" if definition.stable_prompt_prefix else None,
+                tool_result_format="text" if definition.compact_tool_results else "json",
             ),
             api_key=api_key,
         )

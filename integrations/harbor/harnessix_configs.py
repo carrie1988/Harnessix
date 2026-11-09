@@ -39,7 +39,13 @@ def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off"
         thinking=thinking,
         context_window_tokens=CONTEXT_WINDOW_TOKENS.get(model),
     )
-    return build_product_config(draft).model_dump_json(indent=2)
+    config = build_product_config(draft)
+    # 评测组别显式开启紧凑工具结果；产品向导的默认值不变。替换后按JSON重新校验整份配置。
+    providers = tuple(
+        provider.model_copy(update={"compact_tool_results": True}) for provider in config.providers
+    )
+    updated = config.model_copy(update={"providers": providers}).model_dump_json()
+    return type(config).model_validate_json(updated).model_dump_json(indent=2)
 
 
 def action_config(language: str = "python") -> str:

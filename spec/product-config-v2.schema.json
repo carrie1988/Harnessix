@@ -257,6 +257,11 @@
           "title": "Stable Prompt Prefix",
           "type": "boolean"
         },
+        "compact_tool_results": {
+          "default": false,
+          "title": "Compact Tool Results",
+          "type": "boolean"
+        },
         "pricing": {
           "default": "unknown",
           "enum": [

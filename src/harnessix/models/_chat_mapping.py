@@ -52,7 +52,7 @@ def build_request(
             }
         )
     remaining = request.remaining_tokens or request.budget.max_tokens
-    messages = messages_for(request)
+    messages = messages_for(request, tool_result_format=config.tool_result_format)
     notes: list[str] = []
     if include_catalog_note:
         catalog_note = current_tool_catalog_instruction(request, _callable_aliases(request, names))

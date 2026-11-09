@@ -13,3 +13,9 @@ def test_harbor_product_config_declares_the_local_model_window() -> None:
     assert profile["context_window_tokens"] == CONTEXT_WINDOW_TOKENS[MODEL] == 262_144
     other = json.loads(product_config(18001, model="other-model"))["profiles"][0]
     assert "context_window_tokens" not in other
+
+
+def test_the_harbor_arm_sends_compact_tool_results():
+    """评测组别显式开启紧凑工具结果；产品向导默认不开启。"""
+    provider = json.loads(product_config(18001))["providers"][0]
+    assert provider["kind"] == "openai_chat" and provider["compact_tool_results"] is True

@@ -893,6 +893,12 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - `OpenAIChatConfig.repair_tool_arguments`（默认关闭、不序列化）：工具参数严格解析失败时只尝试两类唯一、保意图的修复——
   字符串内原始控制字符（`json.loads(strict=False)`）与非法反斜杠转义（按字面量转义）；截断、括号不配、重复键、非有限数值不修复，
   仍为`tool_arguments_invalid`。
+- `OpenAIChatConfig.tool_result_format`（默认`json`、不序列化）：`text`时工具结果的线上正文由
+  [`tool_result_text.py`](../../src/harnessix/models/tool_result_text.py)渲染——Grep为`行号:内容`/`行号-上下文`（同文件
+  命中合并去重、不连续处`--`，每文件一次`content_sha256`与`revision`）、Glob为路径列表、read_file为一行范围与摘要加原始源码
+  （不加行号前缀，避免被抄进补丁原文）、命令为退出状态加stdout/stderr预览；截断与存档以`read_artifact artifact_id=…`说明。
+  失败、拒绝、带diff或形状不符的结果仍发规范JSON；持久历史、Artifact、审计与回放不变，渲染只由结果内容决定。
+  Anthropic映射要求JSON结果正文，不提供该选项。holdout的4题实测线上字符约为原来的58%（Grep约26%，命令约35%）。
 - `prompt_cache="stable_tail"`：指令与历史在前且逐字节不变，逐请求的目录/预算说明移到末尾，不打缓存标记，供服务端自动前缀缓存
   （DeepSeek）；`explicit_tail`另在前缀末端打标记。
 - 开启`repair_tool_arguments`后，修复后仍不是JSON对象的调用不再使整个响应以协议失败结束，而是产生

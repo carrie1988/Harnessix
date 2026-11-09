@@ -250,3 +250,33 @@ def test_declared_context_window_reaches_the_profile_and_stays_optional():
     assert "context_window_tokens" not in plain.model_dump()
     with pytest.raises(ValidationError):
         ModelProfile.model_validate({**plain.model_dump(), "context_window_tokens": "262144"})
+
+
+def test_compact_tool_results_is_explicit_and_maps_to_text_tool_results():
+    """紧凑工具结果默认关闭、不序列化，向导不预设；显式开启时Provider发送文本工具结果。"""
+    protocol, omit = thinking_preset(LOCAL_VLLM, "qwen3.8-flash-next") or (None, False)
+    local = build_product_config(
+        _draft(
+            base_url=LOCAL_VLLM,
+            model="qwen3.8-flash-next",
+            thinking_protocol=protocol,
+            omit_tool_choice=omit,
+        )
+    )
+    assert "compact_tool_results" not in local.providers[0].model_dump()
+    assert _provider_config(local).tool_result_format == "json"
+    compact = local.model_copy(
+        update={
+            "providers": (local.providers[0].model_copy(update={"compact_tool_results": True}),)
+        }
+    )
+    assert _provider_config(compact).tool_result_format == "text"
+    anthropic = {
+        "provider_id": "primary",
+        "kind": "anthropic",
+        "base_url": "https://api.anthropic.test",
+        "credential": local.providers[0].credential.model_dump(),
+        "compact_tool_results": True,
+    }
+    with pytest.raises(ValidationError):
+        ProviderDefinition.model_validate(anthropic)
