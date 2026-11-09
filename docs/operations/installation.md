@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 22
+version: 23
 code_revision: b1f8ec49e9281a23f8092934c61d9206443bbc2b
 owners:
   - core
@@ -33,7 +33,7 @@ supersedes: []
 
 # Harnessix Code安装与制品
 
-单人试用准备、真实小任务、反馈与停止条件见[先导 Beta 操作手册](pilot-beta.md)。
+外部试用者请看[Beta快速上手](beta-quickstart.md)。单人试用准备、真实小任务、反馈与停止条件见[先导 Beta 操作手册](pilot-beta.md)。
 试用必须绑定可信候选及实际安装输入；内部候选或单人试用结果不等于正式发行及多用户验收。
 
 ## 1. 适用范围
