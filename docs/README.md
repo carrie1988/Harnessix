@@ -275,6 +275,7 @@ Git 产品接线已有原成功 Patch 来源、[只读 HEAD 基准](changes/m09-
 | [测试里程碑历史](testing-and-evals-milestone-history.md) | 冻结的历史验收记录 | 否 | 保留阶段数字与失败演进，不作为当前测试策略或发布状态 |
 | [部署与运维](deployment.md) | 运维聚合入口 | 是 | 只维护拓扑、跨组件硬约束和安装/配置/升级/恢复/诊断/平台入口 |
 | [部署里程碑历史](deployment-milestone-history.md) | 冻结的旧版本部署记录 | 否 | 保留0.3～0.8当时命令和升级证据，不作为当前手册 |
+| [README里程碑历史](readme-milestone-history.md) | 2026-11前的项目README | 否 | 保留各里程碑实现记录，不作为当前功能或状态事实源 |
 | `m03`～`m09`里程碑文档 | 历史增量设计 | 否 | 用于解释某阶段交付，不作为当前模块事实的唯一来源 |
 | [ADR索引](adr/README.md) | 决策历史 | 否 | 解释为什么选择，不重复当前实现全文 |
 | [源码研究索引](research/README.md) | 参考源码证据 | 否 | 不能直接成为Harnessix的产品契约 |
