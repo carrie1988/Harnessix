@@ -569,7 +569,12 @@ def test_native18_delta_is_only_git_four_identity_leaves_and_exact_parser_sha(tm
         contract.source_checks(tmp_path, original)
     live = contract.read_contract()
     _assert_live_source_catalog_identity_delta(live)
-    assert len(contract.source_checks(root, live)) == 18
+    # pyproject.toml随依赖持续变化，活动树只核对冻结合同里的Git执行源码。
+    live_execution_sources = {
+        **live,
+        "source_inputs": [row for row in live["source_inputs"] if row["path"] != "pyproject.toml"],
+    }
+    assert len(contract.source_checks(root, live_execution_sources)) == 17
     _evidence(
         "native18-exact-delta",
         changed_leaves=sorted(_metadata_changes(original, current)),

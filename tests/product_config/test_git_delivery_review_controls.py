@@ -179,7 +179,13 @@ async def test_actual_reopened_scope_rejects_prior_review_spanning_chunks(
         (root / first.path).write_bytes(body)
         return WorkspacePatchInput(
             files=(
-                first.model_copy(update={"expected_sha256": hashlib.sha256(body).hexdigest()}),
+                first.model_copy(
+                    update={
+                        "expected_sha256": hashlib.sha256(body).hexdigest(),
+                        # 替换后的文件保留绝大部分内容，避开大幅删除的安全检查。
+                        "content": body.decode().replace(synthetic, "replaced"),
+                    }
+                ),
                 *original.files[1:],
             )
         )

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -309,6 +310,9 @@ def test_same_fd_revision_drift_is_rejected_before_hash_or_capture(tmp_path, mon
             replacement.write_bytes(b"absent\n")
             os.replace(replacement, target)
         else:
+            if mutation == "rewrite":
+                # Linux ctime只有内核tick精度，同尺寸改写要跨过一个tick才可观测。
+                time.sleep(0.02)
             target.write_bytes(
                 {"rewrite": b"absent\n", "grow": b"needle\nextra\n", "shrink": b"n"}[mutation]
             )

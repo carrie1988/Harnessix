@@ -337,7 +337,8 @@ async def test_large_original_blob_uses_complete_observed_digest_not_prefix(tmp_
             provider,
             thread.thread_id,
             before=body,
-            after=b"new\n",
+            # 大幅缩短的完整替换会被安全检查拒绝；删除同样要保存完整的原始字节。
+            after=None,
             request="large-original",
         )
         port = reader(root, tmp_path / "git-state")

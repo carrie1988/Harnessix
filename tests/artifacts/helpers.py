@@ -1,3 +1,5 @@
+from importlib.resources import files
+
 from harnessix.agent.models import ToolResultContent
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
@@ -6,6 +8,12 @@ from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.agent.helpers import answer
+
+
+def latest_migration() -> int:
+    """升级后的迁移数随新Schema增长，不写死具体版本。"""
+    root = files("harnessix.session.migrations")
+    return sum(item.name.endswith(".sql") for item in root.iterdir())
 
 
 def step(tool="grep", **arguments):

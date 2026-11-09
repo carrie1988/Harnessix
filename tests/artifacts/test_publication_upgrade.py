@@ -19,6 +19,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.test_publication import protected
+from tests.artifacts.helpers import latest_migration
 
 OLD_REVISION = "3c5f6e36d9c9ce98709c5c37ae2316709c443001"
 PROGRAM = """
@@ -123,7 +124,7 @@ raise AssertionError('未到达28版迁移退出点')
     with sqlite3.connect(path) as db:
         assert db.execute("PRAGMA quick_check").fetchone()[0] == "ok"
         assert db.execute("SELECT MAX(version) FROM agent_migrations").fetchone()[0] == (
-            27 if point == "before_commit" else 30
+            27 if point == "before_commit" else latest_migration()
         )
     store = SQLiteSessionStore(path)
     await store.initialize()

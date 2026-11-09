@@ -32,17 +32,21 @@ def raises_code(expected):
 
 
 async def edit(runtime, provider, thread_id, *, before, after, request):
-    proposal = WorkspacePatchInput(
-        files=(
-            WorkspacePatchFile(
-                operation="replace",
-                path="src/modified.py",
-                expected_sha256=hashlib.sha256(before).hexdigest(),
-                content=after.decode(),
-                mode=0o644,
-            ),
+    expected_sha256 = hashlib.sha256(before).hexdigest()
+    change = (
+        WorkspacePatchFile(
+            operation="delete", path="src/modified.py", expected_sha256=expected_sha256
+        )
+        if after is None
+        else WorkspacePatchFile(
+            operation="replace",
+            path="src/modified.py",
+            expected_sha256=expected_sha256,
+            content=after.decode(),
+            mode=0o644,
         )
     )
+    proposal = WorkspacePatchInput(files=(change,))
     provider.steps = (_action_step(proposal), answer("修改完成"))
     waiting = await runtime.run_turn(thread_id, "修改文件", request_id=request)
     await approve(runtime, thread_id, waiting)

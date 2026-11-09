@@ -18,12 +18,7 @@ from harnessix.agent.reducer import replay
 from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.session.sqlite import SQLiteSessionStore
-
-
-def _latest_migration() -> int:
-    """升级后的迁移数随新Schema增长，不写死具体版本。"""
-    root = files("harnessix.session.migrations")
-    return sum(item.name.endswith(".sql") for item in root.iterdir())
+from tests.artifacts.helpers import latest_migration
 
 
 def _version10_database(path: Path) -> dict[str, object]:
@@ -103,7 +98,7 @@ raise AssertionError("未到达 migration11 退出点")
     with sqlite3.connect(path) as database:
         assert database.execute("PRAGMA quick_check").fetchone()[0] == "ok"
         assert database.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == (
-            _latest_migration() if point == "after_commit" else 10
+            latest_migration() if point == "after_commit" else 10
         )
         assert (
             list(database.execute("SELECT * FROM agent_threads").fetchone()) == fixture["snapshot"]
