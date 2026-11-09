@@ -1,0 +1,55 @@
+{
+  "spec_version": "harnessix.harbor-oracle-acceptance/v1",
+  "set_name": "swebench-verified-dev25",
+  "run": "247:/data/harnessix/harbor/runs/dev25-oracle-rerun-17a19c39",
+  "plan_digest": "sha256:b4ef8fb2048b17587f895c7e5c5a7c6f8acf029358aac29e1107cec9ac87e3d0",
+  "code": "247:/data/harnessix/harbor/code-17a19c39 (full tree checked against git archive 17a19c39)",
+  "tasks": "247:/data/harnessix/harbor/tasks-verified-dev25-80a4e26ea965",
+  "prepare_receipt_sha256": "dc6c86162c96e4a46e25da54f67aae4a0bfee97a82dac9843e124d82ff73459c",
+  "raw_mirror": "247:/data/harnessix/harbor/raw-mirror-verified-dev25",
+  "official_dataset": {
+    "path": "247:/data/harnessix/harbor/devset25/verified-dev25-full.jsonl",
+    "sha256": "b9332d7d8f57338753c5e6ff04338f7fac7b3afbfb1f4df48117e22ad6c5e779",
+    "source": "SWE-bench/SWE-bench_Verified@78f471bf655a3137b2e8a75af1501690ec009ec3 parquet sha256 030cfd7f2a704c4c0226e7f104c725a3b41230b1d3517f9c915ad7ea5be3fa25 via scripts/export_swebench_rows.py",
+    "note": "/data/harnessix/work/data/verified-full.jsonl holds only the 73 week-1 rows; finish for dev25 must use this file"
+  },
+  "superseded_run": "247:/data/harnessix/harbor/runs/dev25-oracle-17a19c39 (finish used the 73-row dataset, official grading missing; Harbor rewards identical to the rerun); see runs/DEVIATIONS.md",
+  "summary": {
+    "official_resolved": 23,
+    "official_unresolved": 2,
+    "harbor_reward_passed": 22,
+    "grader_agreement": "24/25"
+  },
+  "valid_instance_ids": [
+    "astropy__astropy-14539",
+    "astropy__astropy-7606",
+    "django__django-13807",
+    "django__django-14089",
+    "django__django-17084",
+    "matplotlib__matplotlib-23314",
+    "matplotlib__matplotlib-23476",
+    "matplotlib__matplotlib-24637",
+    "pydata__xarray-2905",
+    "pydata__xarray-4356",
+    "pydata__xarray-7233",
+    "pylint-dev__pylint-4551",
+    "pylint-dev__pylint-4604",
+    "pylint-dev__pylint-7277",
+    "pytest-dev__pytest-5262",
+    "pytest-dev__pytest-5809",
+    "scikit-learn__scikit-learn-12585",
+    "scikit-learn__scikit-learn-12682",
+    "scikit-learn__scikit-learn-14087",
+    "sphinx-doc__sphinx-8721",
+    "sphinx-doc__sphinx-9281",
+    "sympy__sympy-22080",
+    "sympy__sympy-22714"
+  ],
+  "invalid": {
+    "psf__requests-1921": "official unresolved with the reference patch: PASS_TO_PASS tests (test_mixed_case_scheme_acceptable, test_session_pickling) request httpbin.org; TLS verification fails / connection reset from 247, and an offline container cannot reach it either",
+    "psf__requests-2317": "official unresolved with the reference patch: PASS_TO_PASS tests (test_auth_is_stripped_on_redirect_off_host, test_mixed_case_scheme_acceptable) request httpbin.org; same network dependency"
+  },
+  "grader_disagreement": {
+    "astropy__astropy-7606": "official resolved, harbor reward 0: harbor-datasets 37db1088 tests/config.json lists an extra PASS_TO_PASS id test_compose_roundtrip[] that the pinned dataset row does not have (pytest reports it as [unit0]); the reward grader will always fail this task, the primary official grader is unaffected"
+  }
+}
