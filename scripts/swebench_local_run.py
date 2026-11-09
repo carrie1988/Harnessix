@@ -429,6 +429,7 @@ def run_task(
         command = [
             options.harnessix,
             "exec",
+            "--trust-workspace",
             "--prompt-file",
             str(task_root / "prompt.txt"),
             "--workspace",

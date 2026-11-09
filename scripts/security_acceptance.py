@@ -201,6 +201,7 @@ def main() -> None:
         [
             arguments.harnessix,
             "exec",
+            "--trust-workspace",
             "--prompt",
             "Run the security probe.",
             "--workspace",

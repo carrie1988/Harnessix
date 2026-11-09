@@ -34,6 +34,7 @@ from harnessix.product_ui.cli import (
 from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import sandbox_status_line
 from harnessix.product_ui.turn_budget import turn_budget_for
+from harnessix.product_ui.workspace_trust import confirm_workspace_trust
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
     PublicBudget,
@@ -107,6 +108,11 @@ def _parser() -> argparse.ArgumentParser:
         help="宿主或进程中断后，用同一--state-directory恢复该Thread并跟随其Turn到终态",
     )
     parser.add_argument("--workspace", default=".", help="工作区目录")
+    parser.add_argument(
+        "--trust-workspace",
+        action="store_true",
+        help="本次运行信任工作区（不记录）；用于CI等无法交互确认的场景",
+    )
     parser.add_argument("--config", help="产品配置路径")
     parser.add_argument("--profile", help="模型Profile")
     parser.add_argument("--action-config", help="Action配置路径（启用容器命令等）")
@@ -381,6 +387,10 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
 
 def exec_main(argv: Sequence[str] | None = None) -> None:
     arguments = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
+    if not confirm_workspace_trust(
+        Path(arguments.workspace).absolute(), assume_trusted=arguments.trust_workspace
+    ):
+        raise SystemExit(EXIT_NOT_READY)
     arguments.git_executable = detected_git_executable(
         arguments.git_executable, Path(arguments.workspace).absolute()
     )

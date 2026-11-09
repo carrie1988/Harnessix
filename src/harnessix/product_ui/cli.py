@@ -41,6 +41,7 @@ from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import remediation_text, sandbox_status_line
 from harnessix.product_ui.session import RecoverableAgentSession
 from harnessix.product_ui.state_store import ClientStateStore
+from harnessix.product_ui.workspace_trust import confirm_workspace_trust
 from harnessix.sdk import AgentSDKError, SubprocessAgentTransport
 
 if TYPE_CHECKING:
@@ -522,6 +523,8 @@ def code_main(argv: Sequence[str] | None = None) -> None:
         _doctor(values[1:])
         return
     arguments = _start_parser().parse_args(values)
+    if not confirm_workspace_trust(Path(arguments.workspace).absolute()):
+        raise SystemExit(2)
     arguments.git_executable = detected_git_executable(
         arguments.git_executable, Path(arguments.workspace).absolute()
     )
