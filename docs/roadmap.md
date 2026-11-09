@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 263
+version: 264
 code_revision: c6c58b690095bb5be493144a8f9c89f13b4b74f3
 owners:
   - core
@@ -737,7 +737,7 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 ### 发布范围
 
 - [ ] 版本化Agent/Tool/Provider/Context/Session/Protocol；现有CLI/TUI、stdio和Python SDK；
-- [ ] macOS Git仓库中的读取、搜索、多文件修改、受控进程、测试、Diff、本地Commit、Checkpoint和Rollback闭环；
+- [ ] macOS Git仓库中的读取、搜索、多文件修改、受控进程、测试、Diff、本地Commit和Rollback闭环；Commit经用户批准的沙箱外命令执行，内置Commit/Checkpoint移至1.1（用户决定，2026-11-09）；
 - [ ] 持久会话、恢复、取消、审批、压缩、当前状态认证以及同机同用户数据库/Key备份；
 - [ ] 两类Provider Adapter与离线契约；至少一份真实认证配置及明确的Usage/估算边界；
 - [ ] 受控本地stdio MCP、项目指令、Skills/Hooks、Host等级及一种Container后端；
