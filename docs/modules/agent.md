@@ -187,6 +187,10 @@ Runtime原样写入`ModelRequest.tool_notice`；目录说明在列出可执行�
 且本步已记账输出达到该允许值（证明约束来自预算而非更紧的Provider上限）才改记`budget_exceeded`；未压低上限的
 截断、未用满的截断或未知用量均保持原失败。回归见[截断归类测试](../../tests/agent/test_budget_capped_truncation.py)。
 
+## 当前增量：只读Trusted Action走串行路径（ADR 0125）
+
+`_parallel_read_prefix`现在跳过Trusted Action。这类工具必须先经`prepare`建立路由，直接进并行读路径会报`approval_mismatch`。压缩规划在默认策略下遇到费用未知即停止，只有无人值守宿主按预留额继续。
+
 ## 1. 文档摘要
 
 | 项目 | 内容 |

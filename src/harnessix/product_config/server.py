@@ -46,6 +46,10 @@ from harnessix.product_config.runtime import (
     select_profile,
 )
 from harnessix.product_config.session_key import open_product_session_binding
+from harnessix.product_config.skill_composition import (
+    product_skill_sources,
+    skill_context_fragments,
+)
 from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sandbox.contracts import DEFAULT_CONTAINER_WORKSPACE
@@ -313,6 +317,7 @@ async def _serve_product_stdio(
                         recovery_config=recovery_action,
                         output_redaction=public_scope,
                         root_owner=startup.root_owner,
+                        skill_sources=product_skill_sources(startup.workspace_root),
                     ) as action_owner:
                         config_store.save_action_recovery_scan(action_owner.recovery_scan)
                         config_store.save_action_recovery_report(action_owner.recovery)
@@ -351,6 +356,9 @@ async def _serve_product_stdio(
                             native_execution=native_execution,
                             enable_planning=True,
                             enable_regex_search=True,
+                            extra_fragments=skill_context_fragments(
+                                action_owner.skills, tools_visible=generic_execution
+                            ),
                         )
                         async with AgentRuntime(
                             sessions,
@@ -358,7 +366,7 @@ async def _serve_product_stdio(
                             scoped_tools=tools,
                             artifacts=artifacts,
                             public_output_protection=public_scope,
-                            trusted_actions=action_owner.gateway,
+                            trusted_actions=action_owner.agent_gateway,
                             approval_responder=action_owner.approval_responder,
                             async_context=context.context,
                             compaction=context.compaction,

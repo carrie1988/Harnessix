@@ -19,6 +19,16 @@ from harnessix.execution.public_tool_contracts import (
 from harnessix.trusted_actions.contracts import ActionRoutePlan
 
 
+def skill_name_resource_identifier(
+    catalog_sha256: str, name: object, path: object = None
+) -> dict[str, object]:
+    """模型入口只给名称时，规划阶段冻结到资源的目录身份。"""
+    identifier: dict[str, object] = {"catalog": catalog_sha256, "name": name}
+    if path is not None:
+        identifier["path"] = path
+    return identifier
+
+
 def validate_builtin_success(
     plan: ActionRoutePlan,
     family: Literal["patch", "git", "mcp", "skill"],
@@ -63,12 +73,28 @@ def validate_builtin_success(
         name = arguments.get("name")
         qualified = content.qualified_name
         if (
-            content.catalog_sha256 != arguments.get("catalog_sha256")
-            or content.manifest_sha256 != arguments.get("expected_manifest_sha256")
+            not _skill_content_is_planned(plan, content)
             or type(name) is not str
             or (qualified != name if "/" in name else qualified.rsplit("/", 1)[-1] != name)
         ):
             raise ValueError("公开Skill正文不属于当前目录及清单")
+
+
+def _skill_content_is_planned(
+    plan: ActionRoutePlan, content: SkillContent | SkillResourceContent
+) -> bool:
+    """显式调用核对入参摘要；模型入口只给名称，核对规划时冻结到资源的目录。"""
+    arguments = plan.invocation.arguments
+    if "catalog_sha256" in arguments:
+        return content.catalog_sha256 == arguments.get(
+            "catalog_sha256"
+        ) and content.manifest_sha256 == arguments.get("expected_manifest_sha256")
+    planned = canonical_digest(
+        skill_name_resource_identifier(
+            content.catalog_sha256, arguments.get("name"), arguments.get("path")
+        )
+    )
+    return any(item.identifier_sha256 == planned for item in plan.resources)
 
 
 def _validate_patch_summary(plan: ActionRoutePlan, output: JsonValue, encoded: str) -> None:

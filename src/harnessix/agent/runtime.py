@@ -2766,6 +2766,7 @@ class AgentRuntime:
                 or call.effect_class is not EffectClass.READ_ONLY
                 or call.requires_approval
                 or not definition.supports_parallel_calls
+                or action_owned(self._trusted_actions, call)
             ):
                 break
             self._validate_tool_contract(call)

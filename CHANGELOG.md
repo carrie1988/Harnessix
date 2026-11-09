@@ -10,6 +10,7 @@
 - 首次打开目录时确认信任；`harnessix exec` 用 `--trust-workspace`
 - 显示已核对牌价模型的费用上限，`harnessix exec --max-cost` 按金额限制
 - 用户要求时，经批准提交 Git
+- 支持 Skills：把任务说明放进 `~/.harnessix/skills` 或仓库的 `.harnessix/skills`，Agent 按需读取；`harnessix skills list` 查看结果
 - `harnessix data`：列出、导出、删除本机数据，生成不含代码的诊断文件
 - 自动探测 git，自动填写 DeepSeek、百炼模型的上下文窗口
 

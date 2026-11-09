@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 612,
-    "physical_lines": 133648,
-    "logical_lines": 117154,
-    "documented_modules": 612,
-    "classes": 1242,
-    "documented_classes": 644,
-    "functions": 5196,
-    "documented_functions": 1633,
+    "source_files": 617,
+    "physical_lines": 134206,
+    "logical_lines": 117624,
+    "documented_modules": 617,
+    "classes": 1249,
+    "documented_classes": 651,
+    "functions": 5224,
+    "documented_functions": 1644,
     "public_exports": 372,
     "public_contract_types": 166,
     "undocumented_public_behavior": 0,
@@ -209,7 +209,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3444
+      "lines": 3445
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -370,7 +370,7 @@
       "qualname": "AgentRuntime",
       "kind": "class",
       "line": 275,
-      "lines": 3170,
+      "lines": 3171,
       "documented": true
     },
     {
@@ -412,7 +412,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3278,
+      "line": 3279,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -445,7 +445,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 2998,
+      "line": 2999,
       "lines": 279,
       "documented": true,
       "decision_complexity": 85
@@ -1579,8 +1579,8 @@
       "path": "src/harnessix/product_config/action_runtime.py",
       "qualname": "open_default_product_action_runtime",
       "kind": "function",
-      "line": 252,
-      "lines": 113,
+      "line": 267,
+      "lines": 120,
       "documented": true,
       "decision_complexity": 8
     },
@@ -1591,7 +1591,7 @@
       "qualname": "build_product_agent_context",
       "kind": "function",
       "line": 365,
-      "lines": 226,
+      "lines": 228,
       "documented": true,
       "decision_complexity": 59
     },
@@ -1751,8 +1751,8 @@
       "path": "src/harnessix/product_config/server.py",
       "qualname": "_serve_product_stdio",
       "kind": "function",
-      "line": 259,
-      "lines": 135,
+      "line": 263,
+      "lines": 139,
       "documented": true,
       "decision_complexity": 14
     },
@@ -2209,6 +2209,7 @@
     "product_config->sandbox",
     "product_config->secrets",
     "product_config->session",
+    "product_config->skills",
     "product_config->sqlite_readonly",
     "product_config->tools",
     "product_config->trusted_actions",
@@ -2260,7 +2261,6 @@
     "trusted_actions->domain",
     "trusted_actions->execution",
     "trusted_actions->processes",
-    "trusted_actions->product_config",
     "trusted_actions->sqlite_readonly",
     "trusted_actions->tools",
     "trusted_actions->workspace",
@@ -2285,7 +2285,6 @@
     ],
     [
       "delivery",
-      "product_config",
       "trusted_actions"
     ]
   ],

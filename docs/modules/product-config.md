@@ -144,6 +144,10 @@ supersedes: []
   - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
 
+## 当前增量：Skill产品装配（ADR 0125）
+
+`skill_composition.py`在启动时发现`~/.harnessix/skills`和`<工作区>/.harnessix/skills`，把两个只读工具注册到Router，并由`CompositeAgentActionGateway`与内置Action合并。没有可用Skill时不注册工具，也不写提示词。目录快照放在进程私有临时目录，因为状态备份只接受固定文件清单。`skill_diagnostics.py`为`harnessix skills list`生成清单，并反查未被采用的文件。
+
 ## 当前增量：外部边界原生命令Profile（ADR 0121）
 
 `ProductActionConfigV1.native_process_profiles`（为空时不序列化，旧配置摘要不变）声明不经容器执行的命令Profile，

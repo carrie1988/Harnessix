@@ -381,6 +381,7 @@ def build_product_agent_context(
     generic_execution: bool = False,
     native_execution: bool = False,
     context_window_tokens: int | None = None,
+    extra_fragments: tuple[ContextFragment, ...] = (),
 ) -> ProductAgentContext:
     """产品和正式评测复用同一策略；输入上限是宿主估算边界，声明模型窗口时按窗口换算。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
@@ -565,6 +566,7 @@ def build_product_agent_context(
                 if enable_grep_snapshots or enable_regex_search
                 else ()
             ),
+            *extra_fragments,
         ),
     )
     return ProductAgentContext(

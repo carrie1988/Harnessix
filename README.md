@@ -38,10 +38,11 @@ harnessix code /path/to/repo
 | 恢复 | 进程崩溃或断线后可继续，同一副作用不会被盲目重放 |
 | 上下文 | 按模型窗口自动压缩，读取仓库中的 `AGENTS.md` |
 | Git | 查看状态和差异；你要求时，经批准后提交 |
+| Skills | 按需加载个人或仓库里的任务说明，见[使用 Skills](docs/operations/skills.md) |
 | 模型 | OpenAI 兼容接口与 Anthropic 接口；已预设 DeepSeek 和百炼，支持自托管模型 |
 | 集成 | 终端界面、无头模式（JSON 输出）、stdio App Server、Python SDK |
 
-**还没有：** MCP、Skills、Hooks 的产品入口，IDE 插件，Web 搜索，子代理，图片输入，自动更新。
+**还没有：** MCP、Hooks 的产品入口，IDE 插件，Web 搜索，子代理，图片输入，自动更新。
 
 ## 安全边界
 

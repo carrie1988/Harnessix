@@ -11,7 +11,7 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 900,
-    "src/harnessix/agent/runtime.py": 3444,
+    "src/harnessix/agent/runtime.py": 3445,
     "src/harnessix/context/sources.py": 839,
     "src/harnessix/delivery/git.py": 902,
     "src/harnessix/delivery/git_push.py": 609,
@@ -60,7 +60,7 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 3170,
+      "max_lines": 3171,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
@@ -516,11 +516,11 @@
       "max_decision_complexity": 8
     },
     "harnessix.product_config.action_runtime:open_default_product_action_runtime": {
-      "max_lines": 113,
+      "max_lines": 120,
       "max_decision_complexity": 8
     },
     "harnessix.product_config.agent_context:build_product_agent_context": {
-      "max_lines": 226,
+      "max_lines": 228,
       "max_decision_complexity": 59
     },
     "harnessix.product_config.coding_tool_view:CodingWorkflowToolView": {
@@ -580,7 +580,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.product_config.server:_serve_product_stdio": {
-      "max_lines": 135,
+      "max_lines": 139,
       "max_decision_complexity": 14
     },
     "harnessix.product_config.store:SQLiteProductConfigStore": {
@@ -827,6 +827,7 @@
     "product_config->sandbox",
     "product_config->secrets",
     "product_config->session",
+    "product_config->skills",
     "product_config->sqlite_readonly",
     "product_config->tools",
     "product_config->trusted_actions",
@@ -903,7 +904,6 @@
     ],
     [
       "delivery",
-      "product_config",
       "trusted_actions"
     ]
   ],

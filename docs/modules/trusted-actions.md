@@ -167,7 +167,7 @@ Workspace、环境摘要、Secret版本、Sandbox Profile和能力证据，并�
 | Workspace漂移阻断 | 已实现 | Resolver必须声明Workspace资源 | 修改文件后执行失败测试 |
 | 宿主硬退出恢复 | 已实现 | 调用方必须在冷启动显式调用`recover_interrupted` | `os._exit`跨进程测试 |
 | MCP动态Schema | 已实现适配 | `McpActionGateway`显式装配 | MCP目录漂移、调用与Reconcile测试 |
-| Skill只读正文/资源 | 已实现适配 | `SkillActionGateway`显式装配 | Skill目录与Canary测试 |
+| Skill只读正文/资源 | 已实现适配 | 产品经`build_skill_agent_tools`与`CompositeAgentActionGateway`默认装配；`SkillActionGateway`供显式宿主使用 | `tests/skills` |
 | Hook只读处理器 | 已实现消费 | `HookRuntime`要求外部提供Port | Hook授权、超时、取消测试 |
 | Git Push外部写 | 已实现/显式装配 | Definition直接注册Router，不经过旧Action Plane | 真实本地bare remote、响应丢失和硬崩溃测试 |
 | 默认Agent Tool调度接线 | 已实现 | 产品Owner创建Router/Gateway；Patch与固定Process按能力广告 | e3～e5产品组合与启动恢复测试 |

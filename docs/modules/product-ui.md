@@ -40,6 +40,10 @@ supersedes: []
 
 # Product UI终端产品模块设计
 
+## 当前增量：Skill清单命令（ADR 0125）
+
+`harnessix skills list [工作区]`由`skills_cli.py`解析参数，内容来自`product_config/skill_diagnostics.py`，使用与Agent启动相同的来源和解析规则，不读写状态库。
+
 ## 当前增量：零配置命令工具的请求（ADR 0111、0113）
 
 - `harnessix code`、`harnessix code doctor` 和 `harnessix exec` 在没有指定 Action 配置（参数与 `HARNESSIX_PRODUCT_ACTION_CONFIG` 都没有）时：
