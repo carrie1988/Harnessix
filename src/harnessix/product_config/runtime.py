@@ -219,6 +219,7 @@ def default_provider_factory(
                 max_response_bytes=profile.max_response_bytes,
                 max_frame_bytes=profile.max_frame_bytes,
                 max_chunks=profile.max_chunks,
+                private_network_endpoint=definition.self_hosted,
                 output_token_parameter=(
                     definition.output_token_parameter or "max_completion_tokens"
                 ),
@@ -250,6 +251,7 @@ def default_provider_factory(
             max_response_bytes=profile.max_response_bytes,
             max_frame_bytes=profile.max_frame_bytes,
             max_chunks=profile.max_chunks,
+            private_network_endpoint=definition.self_hosted,
         ),
         api_key=api_key,
     )

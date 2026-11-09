@@ -11,7 +11,12 @@ from pydantic import AwareDatetime, ConfigDict, Field, field_validator, model_va
 
 from harnessix.domain.models import ContractModel
 from harnessix.execution.contracts import canonical_digest
-from harnessix.models.config import LOOPBACK_HOSTS, ModelHTTPConfig
+from harnessix.models.config import (
+    LOOPBACK_HOSTS,
+    ModelHTTPConfig,
+    is_private_network_host,
+    with_validated_base_url,
+)
 from harnessix.tools.contracts import Revision
 
 ProviderKind = Literal["openai_chat", "anthropic"]
@@ -83,11 +88,13 @@ class ProviderDefinition(ProductConfigContract):
     # 其余结果及持久历史不变；仅OpenAI Chat（Anthropic映射要求JSON结果正文）。
     compact_tool_results: bool = Field(default=False, exclude_if=lambda value: value is False)
     pricing: ProviderPricing = Field(default="unknown", exclude_if=lambda value: value == "unknown")
+    # 用户显式声明的内网自托管端点（局域网GPU服务器等）；本机回环端点无需声明。
+    self_hosted: bool = Field(default=False, exclude_if=lambda value: value is False)
 
-    @field_validator("base_url")
+    @model_validator(mode="before")
     @classmethod
-    def valid_base_url(cls, value: str) -> str:
-        return ModelHTTPConfig.validate_url(value)
+    def valid_base_url(cls, data: object) -> object:
+        return with_validated_base_url(data, private_network_field="self_hosted")
 
     @model_validator(mode="after")
     def provider_options(self) -> Self:
@@ -103,9 +110,13 @@ class ProviderDefinition(ProductConfigContract):
         if self.thinking_protocol is not None and self.output_token_parameter != "max_tokens":
             # 已求证端点的推理与回答共用max_tokens。
             raise ValueError("思考协议要求输出Token参数为max_tokens")
-        if self.pricing == "free" and urlsplit(self.base_url).hostname not in LOOPBACK_HOSTS:
-            # 防止把付费云端误标为免费：只有同机自托管端点可声明0元。
-            raise ValueError("只有本机回环端点可以声明免费计价")
+        host = urlsplit(self.base_url).hostname
+        declared_private = self.self_hosted and is_private_network_host(host)
+        if self.self_hosted and not (declared_private or host in LOOPBACK_HOSTS):
+            raise ValueError("只有本机回环或内网地址可以声明为自托管端点")
+        if self.pricing == "free" and not (declared_private or host in LOOPBACK_HOSTS):
+            # 防止把付费云端误标为免费：只有本机或已声明的内网自托管端点可声明0元。
+            raise ValueError("只有本机回环或已声明的内网自托管端点可以声明免费计价")
         return self
 
 

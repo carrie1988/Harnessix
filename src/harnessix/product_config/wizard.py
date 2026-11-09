@@ -84,12 +84,14 @@ _SELF_HOSTED_LIMITS: dict[str, object] = {
 }
 
 
-def thinking_preset(base_url: str, model: str) -> tuple[ThinkingProtocol, bool] | None:
+def thinking_preset(
+    base_url: str, model: str, *, self_hosted: bool = False
+) -> tuple[ThinkingProtocol, bool] | None:
     """已求证端点与模型族的思考预设：（思考协议，是否不发送tool_choice）；其余端点不预设。"""
 
     host = urlsplit(base_url).hostname
-    if host in LOOPBACK_HOSTS:
-        # 同机自托管vLLM：思考开关经chat_template_kwargs交给模型对话模板。
+    if host in LOOPBACK_HOSTS or self_hosted:
+        # 自托管vLLM：思考开关经chat_template_kwargs交给模型对话模板。
         return "vllm_chat_template", False
     if host == "dashscope.aliyuncs.com" and model.startswith("deepseek-v4"):
         # 百炼DeepSeek的required/指定函数tool_choice经约束解码语法编译，间歇超时并返回400。
@@ -109,8 +111,8 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     output_token_parameter = checked.output_token_parameter or (
         "max_tokens" if protocol is not None else None
     )
-    # 同机自托管端点（如vLLM上的Qwen系）：还原被字符串化的工具参数，并按0元计价。
-    self_hosted = urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
+    # 自托管端点（本机回环或已声明的内网）：还原被字符串化的工具参数，并按0元计价。
+    self_hosted = checked.self_hosted or urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
     return ProductConfigV2(
         active_profile=checked.profile_id,
         # 同机自托管通常与推理、构建共用CPU：读工具放宽到20秒，避免大仓库搜索在负载下超时。
@@ -134,6 +136,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 repair_tool_arguments=self_hosted,
                 stable_prompt_prefix=self_hosted,
                 pricing="free" if self_hosted else "unknown",
+                self_hosted=checked.self_hosted,
             ),
         ),
         profiles=(

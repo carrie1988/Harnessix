@@ -10,11 +10,13 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
+from harnessix.models.config import is_private_network_host
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProviderKind
 from harnessix.product_config.endpoint_probe import EndpointProbe, probe_chat_endpoint
@@ -87,6 +89,11 @@ def _configure_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--thinking", choices=("tool_steps", "every_step", "off"))
     parser.add_argument("--tool-choice", choices=("auto", "send", "omit"), default="auto")
+    parser.add_argument(
+        "--self-hosted",
+        action="store_true",
+        help="声明这是你自己部署在内网的模型端点：允许明文HTTP，并按本地模型配置",
+    )
     parser.add_argument("--replace", action="store_true")
     parser.add_argument("--expected-source-sha256")
     parser.add_argument("--non-interactive", action="store_true")
@@ -94,10 +101,19 @@ def _configure_parser() -> argparse.ArgumentParser:
 
 
 def _thinking_options(
-    arguments: argparse.Namespace, provider_kind: str, base_url: str, model: str
+    arguments: argparse.Namespace,
+    provider_kind: str,
+    base_url: str,
+    model: str,
+    *,
+    self_hosted: bool,
 ) -> dict[str, object]:
     """把思考相关参数解析为草案字段：auto只对已求证端点预设，显式值优先。"""
-    preset = thinking_preset(base_url, model) if provider_kind == "openai_chat" else None
+    preset = (
+        thinking_preset(base_url, model, self_hosted=self_hosted)
+        if provider_kind == "openai_chat"
+        else None
+    )
     protocol = arguments.thinking_protocol
     if protocol == "auto":
         protocol = preset[0] if preset is not None else None
@@ -318,6 +334,28 @@ def _prompt(value: str | None, label: str, *, non_interactive: bool) -> str:
     return entered
 
 
+def _self_hosted_choice(arguments: argparse.Namespace, base_url: str) -> bool:
+    """内网端点是否按自托管处理：命令行声明优先，交互模式询问，非交互默认否。"""
+
+    url = urlsplit(base_url)
+    if arguments.self_hosted:
+        return True
+    if not is_private_network_host(url.hostname):
+        return False
+    if arguments.non_interactive:
+        if url.scheme == "http":
+            raise ProductUIError(
+                "product_configure_self_hosted_required",
+                "内网HTTP端点需要显式声明自托管：加 --self-hosted",
+            )
+        return False
+    try:
+        answer = input("这是你自己部署的模型吗？选是才允许明文HTTP并按本地模型配置 [y/N]: ")
+    except (EOFError, KeyboardInterrupt):
+        raise ProductUIError("product_configure_interrupted", "配置向导已中断") from None
+    return answer.strip().lower() in {"y", "yes"}
+
+
 def _configure(argv: Sequence[str]) -> None:
     arguments = _configure_parser().parse_args(argv)
     try:
@@ -335,6 +373,7 @@ def _configure(argv: Sequence[str]) -> None:
             non_interactive=arguments.non_interactive,
         )
         model = _prompt(arguments.model, "模型标识", non_interactive=arguments.non_interactive)
+        self_hosted = _self_hosted_choice(arguments, base_url)
         draft = ConfigurationDraft.model_validate(
             {
                 "provider_kind": provider_kind,
@@ -346,7 +385,10 @@ def _configure(argv: Sequence[str]) -> None:
                 "secret_version": arguments.secret_version,
                 "environment_variable": arguments.api_key_env,
                 "output_token_parameter": arguments.output_token_parameter,
-                **_thinking_options(arguments, provider_kind, base_url, model),
+                "self_hosted": self_hosted,
+                **_thinking_options(
+                    arguments, provider_kind, base_url, model, self_hosted=self_hosted
+                ),
             }
         )
         receipt = write_product_config(

@@ -112,6 +112,11 @@
       "title": "Max Chunks",
       "type": "integer"
     },
+    "private_network_endpoint": {
+      "default": false,
+      "title": "Private Network Endpoint",
+      "type": "boolean"
+    },
     "output_token_parameter": {
       "default": "max_completion_tokens",
       "enum": [

@@ -138,6 +138,78 @@ def test_code_configure_creates_non_secret_v2_configuration(
     assert canary not in json.dumps(receipt)
 
 
+def _configure_lan(path: Path, *extra: str) -> None:
+    product_cli.code_main(
+        [
+            "configure",
+            "--config",
+            str(path),
+            "--provider-kind",
+            "openai_chat",
+            "--base-url",
+            "http://192.168.1.20:8000/v1",
+            "--model",
+            "qwen-local",
+            *extra,
+        ]
+    )
+
+
+def test_code_configure_lan_http_requires_explicit_self_hosted(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "private" / "config.json"
+
+    with pytest.raises(SystemExit):
+        _configure_lan(path, "--non-interactive")
+
+    assert json.loads(capsys.readouterr().err)["code"] == "product_configure_self_hosted_required"
+    assert not path.exists()
+
+
+def test_code_configure_self_hosted_writes_local_presets(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "private" / "config.json"
+
+    _configure_lan(path, "--non-interactive", "--self-hosted")
+
+    capsys.readouterr()
+    provider = json.loads(path.read_text(encoding="utf-8"))["providers"][0]
+    assert provider["self_hosted"] is True and provider["pricing"] == "free"
+    assert provider["thinking_protocol"] == "vllm_chat_template"
+
+
+@pytest.mark.parametrize(("answer", "expected"), [("y", True), ("", False)])
+def test_code_configure_asks_about_private_https_endpoints(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    answer: str,
+    expected: bool,
+) -> None:
+    path = tmp_path / "private" / "config.json"
+    monkeypatch.setattr("builtins.input", lambda _prompt: answer)
+
+    product_cli.code_main(
+        [
+            "configure",
+            "--config",
+            str(path),
+            "--provider-kind",
+            "openai_chat",
+            "--base-url",
+            "https://llm.internal/v1",
+            "--model",
+            "qwen-local",
+        ]
+    )
+
+    capsys.readouterr()
+    provider = json.loads(path.read_text(encoding="utf-8"))["providers"][0]
+    assert provider.get("self_hosted", False) is expected
+
+
 def test_code_configure_non_interactive_missing_fields_is_stable(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

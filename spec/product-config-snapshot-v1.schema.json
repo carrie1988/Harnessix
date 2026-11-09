@@ -340,6 +340,11 @@
           ],
           "title": "Pricing",
           "type": "string"
+        },
+        "self_hosted": {
+          "default": false,
+          "title": "Self Hosted",
+          "type": "boolean"
         }
       },
       "required": [

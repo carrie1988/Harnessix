@@ -632,7 +632,7 @@ def test_configuration_fails_without_exposing_credentials(
     "url",
     [
         "http://api.example.com/v1",
-        "http://192.168.130.247:18002/v1",
+        "http://192.168.1.20:18002/v1",
         "http://127.0.0.2:18002/v1",
         "https://a:b@example.com/v1",
         "https://example.com/?key=x",
@@ -651,6 +651,43 @@ def test_endpoint_constraints(url: str) -> None:
 )
 def test_plain_http_is_allowed_only_for_loopback_endpoints(url: str) -> None:
     assert config(base_url=url).base_url == url
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://192.168.1.20:8000/v1",
+        "http://10.0.0.5/v1",
+        "http://172.16.3.4/v1",
+        "http://100.92.0.7:18002/v1",
+        "http://[fd00::1]:8000/v1",
+        "http://gpu01:8000/v1",
+        "http://gpu.lan/v1",
+    ],
+)
+def test_declared_private_endpoint_allows_plain_http(url: str) -> None:
+    assert config(base_url=url, private_network_endpoint=True).base_url == url
+    with pytest.raises(ValueError):
+        config(base_url=url)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://8.8.8.8/v1",
+        "http://api.example.com/v1",
+        "http://127.0.0.2:18002/v1",
+        "http://172.32.0.1/v1",
+        "http://100.128.0.1/v1",
+    ],
+)
+def test_declared_private_endpoint_still_rejects_public_plain_http(url: str) -> None:
+    with pytest.raises(ValueError):
+        config(base_url=url, private_network_endpoint=True)
+
+
+def test_private_endpoint_flag_stays_out_of_default_serialization() -> None:
+    assert "private_network_endpoint" not in config().model_dump()
 
 
 @pytest.mark.parametrize("cancel_body", [False, True])

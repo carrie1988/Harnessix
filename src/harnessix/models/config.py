@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import ipaddress
+from collections.abc import Mapping
 from typing import Literal, Self
 from urllib.parse import urlsplit
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 
 from harnessix.domain.models import ContractModel
 
@@ -26,6 +28,62 @@ class ChatCapabilities(ContractModel):
 
 # 允许明文HTTP的本机回环主机名（urlsplit去掉IPv6方括号后的形式）。
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+# 用户显式声明自托管时可用的内网范围：RFC1918、CGNAT（Tailscale等）与IPv6 ULA。
+_PRIVATE_NETWORKS = tuple(
+    ipaddress.ip_network(network)
+    for network in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10", "fc00::/7")
+)
+_PRIVATE_NAME_SUFFIXES = (".local", ".lan", ".internal", ".intranet", ".home.arpa")
+
+
+def is_private_network_host(hostname: str | None) -> bool:
+    """回环之外的内网主机：私网IP、单段主机名或内网专用后缀；公网IP和公网域名一律为否。"""
+
+    if not hostname or hostname in LOOPBACK_HOSTS:
+        return False
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        name = hostname.lower().rstrip(".")
+        return bool(name) and ("." not in name or name.endswith(_PRIVATE_NAME_SUFFIXES))
+    return any(address in network for network in _PRIVATE_NETWORKS)
+
+
+def validate_endpoint_url(value: str, *, private_network: bool = False) -> str:
+    """校验并规范模型端点；明文HTTP只限本机回环，或已显式声明的内网自托管端点。"""
+
+    url = urlsplit(value)
+    # 访问 port 触发标准库对非数字和越界端口的验证。
+    _ = url.port
+    plain_http_allowed = url.hostname in LOOPBACK_HOSTS or (
+        private_network and is_private_network_host(url.hostname)
+    )
+    if (
+        not (url.scheme == "https" or (url.scheme == "http" and plain_http_allowed))
+        or not url.hostname
+        or url.username is not None
+        or url.password is not None
+        or url.query
+        or url.fragment
+        or any(character.isspace() for character in value)
+    ):
+        raise ValueError(
+            "端点必须是无用户信息、查询串或 fragment 的 HTTPS URL"
+            "（本机回环或已声明的内网自托管端点可用 HTTP）"
+        )
+    return value.rstrip("/")
+
+
+def with_validated_base_url(data: object, *, private_network_field: str) -> object:
+    """供model_validator(mode="before")使用：按同一对象上的显式内网声明校验base_url。"""
+
+    if not isinstance(data, Mapping) or not isinstance(data.get("base_url"), str):
+        return data
+    private_network = data.get(private_network_field) is True
+    return {
+        **data,
+        "base_url": validate_endpoint_url(data["base_url"], private_network=private_network),
+    }
 
 
 class ModelHTTPConfig(ContractModel):
@@ -42,28 +100,19 @@ class ModelHTTPConfig(ContractModel):
     max_response_bytes: int = Field(default=2_097_152, ge=1024, le=16_777_216)
     max_frame_bytes: int = Field(default=262_144, ge=128, le=1_048_576)
     max_chunks: int = Field(default=10_000, ge=1, le=100_000)
+    # 用户显式声明的内网自托管端点才可用明文HTTP；默认值不进入序列化与恢复指纹。
+    private_network_endpoint: bool = Field(default=False, exclude_if=lambda value: value is False)
 
-    @field_validator("base_url")
     @classmethod
     def validate_url(cls, value: str) -> str:
-        url = urlsplit(value)
-        # 访问 port 触发标准库对非数字和越界端口的验证。
-        _ = url.port
-        # 明文HTTP只允许本机回环端点（如同机部署的vLLM），远程端点必须使用HTTPS。
-        secure = url.scheme == "https" or (url.scheme == "http" and url.hostname in LOOPBACK_HOSTS)
-        if (
-            not secure
-            or not url.hostname
-            or url.username is not None
-            or url.password is not None
-            or url.query
-            or url.fragment
-            or any(character.isspace() for character in value)
-        ):
-            raise ValueError(
-                "端点必须是无用户信息、查询串或 fragment 的 HTTPS（或本机回环 HTTP）URL"
-            )
-        return value.rstrip("/")
+        """严格校验：HTTPS或本机回环HTTP，不接受内网明文端点。"""
+
+        return validate_endpoint_url(value)
+
+    @model_validator(mode="before")
+    @classmethod
+    def validated_base_url(cls, data: object) -> object:
+        return with_validated_base_url(data, private_network_field="private_network_endpoint")
 
 
 class OpenAIChatConfig(ModelHTTPConfig):

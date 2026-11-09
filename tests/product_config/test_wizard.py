@@ -48,6 +48,66 @@ def test_builds_one_provider_config_without_reading_secret_value(
     assert canary not in config.model_dump_json()
 
 
+def _self_hosted_draft(base_url: str) -> ConfigurationDraft:
+    return ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url=base_url,
+        model="qwen-local",
+        self_hosted=True,
+    )
+
+
+def test_declared_lan_endpoint_gets_the_local_model_presets() -> None:
+    config = build_product_config(_self_hosted_draft("http://192.168.1.20:8000/v1"))
+
+    provider, profile = config.providers[0], config.profiles[0]
+    assert provider.self_hosted and provider.pricing == "free"
+    assert provider.normalize_tool_arguments and provider.repair_tool_arguments
+    assert provider.stable_prompt_prefix
+    assert profile.timeout_seconds == 1800.0 and profile.io_timeout_seconds == 300.0
+    assert config.chain_pricing() == "free"
+
+
+def test_undeclared_private_https_endpoint_is_not_treated_as_free() -> None:
+    draft = ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url="https://llm-gateway.internal/v1",
+        model="gateway-model",
+    )
+
+    assert build_product_config(draft).providers[0].pricing == "unknown"
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    ["https://api.example.com/v1", "http://api.example.com/v1", "https://8.8.8.8/v1"],
+)
+def test_public_endpoint_cannot_be_declared_self_hosted(base_url: str) -> None:
+    with pytest.raises(ValueError):
+        build_product_config(_self_hosted_draft(base_url))
+
+
+def test_undeclared_lan_http_endpoint_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        ConfigurationDraft(
+            provider_kind="openai_chat",
+            base_url="http://192.168.1.20:8000/v1",
+            model="qwen-local",
+        )
+
+
+def test_loopback_endpoint_needs_no_declaration_and_keeps_its_fingerprint() -> None:
+    draft = ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url="http://127.0.0.1:8000/v1",
+        model="qwen-local",
+    )
+
+    provider = build_product_config(draft).providers[0]
+    assert provider.pricing == "free" and not provider.self_hosted
+    assert "self_hosted" not in provider.model_dump()
+
+
 def test_creates_private_canonical_config_and_self_validating_receipt(
     tmp_path: Path,
 ) -> None:

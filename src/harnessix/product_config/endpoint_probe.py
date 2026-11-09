@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
-from harnessix.models.config import LOOPBACK_HOSTS
+from harnessix.models.config import LOOPBACK_HOSTS, is_private_network_host
 
 ProbeStatus = Literal["passed", "warning", "failed"]
 
@@ -43,11 +43,11 @@ class EndpointProbe:
 
 
 def _request(url: str, api_key: str, body: dict[str, Any] | None, timeout: float) -> Any:
-    # 回环端点不经代理（与产品Provider一致），远端端点沿用环境代理设置。
-    loopback = urlsplit(url).hostname in LOOPBACK_HOSTS
+    # 回环与内网端点不经代理（与产品Provider一致），远端端点沿用环境代理设置。
+    host = urlsplit(url).hostname
     opener = (
         urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        if loopback
+        if host in LOOPBACK_HOSTS or is_private_network_host(host)
         else urllib.request.build_opener()
     )
     request = urllib.request.Request(
