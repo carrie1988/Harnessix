@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
+version: 10
 code_revision: 9e593b739afd63a24a10825f23b9820a4ab7c966
 owners:
   - core
@@ -215,6 +215,6 @@ Workspace绝对路径、文件内容、Tool参数/输出、私有Session和供�
 
 ## 12. 已知限制
 
-统一Agent产品观测装配、数据保留策略、Dashboard、告警规则、SLO、Metric单位修复、高基数硬限制、
-异常正文统一脱敏和Observability失败完全隔离仍未完成。Doctor是离线启动诊断，不等价于运行期Telemetry或支持包。部署时应把这些缺口作为发布阻断项，而不是
+统一Agent产品观测装配、数据保留策略、Dashboard、告警规则、SLO、Metric单位修复和高基数硬限制仍未完成。
+2026-11-09审计确认：产品代码不写异常日志、不输出第三方异常原文，错误统一映射为稳定错误码和预设文案（由治理测试锁定）；OpenTelemetry未接入产品，不存在观测失败影响主流程的路径。Doctor是离线启动诊断，不等价于运行期Telemetry或支持包。部署时应把这些缺口作为发布阻断项，而不是
 通过外部Collector存在来宣称可观测性已经生产完备。
