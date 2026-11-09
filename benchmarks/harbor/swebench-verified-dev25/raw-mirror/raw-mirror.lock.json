@@ -1,0 +1,19 @@
+{
+  "spec_version": "harnessix.raw-github-mirror-lock/v1",
+  "host": "raw.githubusercontent.com",
+  "files": {
+    "django/django/475cffd1d64c690cdad16ede4d5e81985738ceb4/tests/requirements/py3.txt": "c6914798d20359debd717f262d16b9d3d68cb544da0c02c6f099f583022e6016",
+    "django/django/4a72da71001f154ea60906a2f74898d32b7322a7/tests/requirements/py3.txt": "a845bbab9646b9f24f2f67990dce9b5e221c595ed61abdb16e6152d0d51b0db4",
+    "django/django/65dfb06a1ab56c238cc80f5e1c31f61210c4577d/tests/requirements/py3.txt": "e32c4946b199fa2953047822c7814fe12859a898438b75ddf51168fdac3d5783",
+    "matplotlib/matplotlib/73909bcb408886a22e2b84581d6b9e6d9907c813/environment.yml": "35845479d4d37a76c3c0e6fed45780ea9ccae50e6cb02b55e3780d33a4e4ff28",
+    "matplotlib/matplotlib/de98877e3dc45de8dd441d008f23d88738dc015d/environment.yml": "1cf4031db9f3a6f283b1981ee455129c5e19550aecf7fba1fbd1b2fdee8cc338",
+    "pydata/xarray/087ebbb78668bdf5d2d41c3b2553e3f29ce75be1/ci/requirements/environment.yml": "a1e50da7e893e135cc1cf9a25bae175cc259c3a51cf78aa7fcd2b3aca3436db1",
+    "pydata/xarray/1c198a191127c601d091213c4b3292a8bb3054e1/ci/requirements/environment.yml": "3d37256ff3b4c0cc1092371deb7de12c2162883b591a9aecb790c591474befa5",
+    "pylint-dev/pylint/c04f92ef68e5ea779a60bfddb91dc677c5470fd0/requirements_test.txt": "2455645a52483d47b84ec26b47a28b3aa0ce5f482f5e0cb08b24becfab58a7f0",
+    "pylint-dev/pylint/c04f92ef68e5ea779a60bfddb91dc677c5470fd0/requirements_test_min.txt": "e8909b6c67f05b83cfe825ff2b5acabd0b75ec95af46c9a3da8f384cc983c4a9",
+    "pylint-dev/pylint/c04f92ef68e5ea779a60bfddb91dc677c5470fd0/requirements_test_pre_commit.txt": "0023d629611f0ce2e31f5ced1097ffa8f8236cfe0d2a8a66b6f186d3ccfca9d8",
+    "pylint-dev/pylint/e90702074e68e20dc8e5df5013ee3ecf22139c3e/requirements_test.txt": "77f293223fb68a571dd25afa80eabb90b3d91e32ab83440f4836415eaf7cc5ce",
+    "pylint-dev/pylint/e90702074e68e20dc8e5df5013ee3ecf22139c3e/requirements_test_min.txt": "5da2bc0c0ab0dcfac34d8ef5ef991bef8992c93c34a54e89dd7914a510e1ea67",
+    "pylint-dev/pylint/e90702074e68e20dc8e5df5013ee3ecf22139c3e/requirements_test_pre_commit.txt": "4a505d95c2f3d4f290ff67b2b99f64ef29b4490436251806c11a6c2e3c134e54"
+  }
+}

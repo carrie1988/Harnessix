@@ -65,6 +65,7 @@ def test_harnessix_swebench_template_renders_the_issue_verbatim_with_mini_aligne
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-single.json",
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-guard-retry-part2.json",
         "benchmarks/harbor/swebench-verified-e0/e0-full-content.json",
+        "benchmarks/harbor/swebench-verified-dev25/oracle.json",
     ],
 )
 def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec: str) -> None:

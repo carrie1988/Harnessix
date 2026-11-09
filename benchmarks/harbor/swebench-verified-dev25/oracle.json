@@ -1,0 +1,57 @@
+{
+  "run_name": "dev25-oracle",
+  "dataset": {
+    "name": "swebench-verified-dev25",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 4,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "User decision 2026-11-10 D2=A: the before/after/offline-mini comparison runs on a 25-task Verified development set that no tuning step of this round has used. Selection rule and evidence: selection.json (generalization-25-v45, disjoint from holdout49, E0, week-1 dev24 and every task in the 247 Harbor runs).",
+    "Environment acceptance only: the oracle arm applies each task's reference patch, so every task must resolve; a task whose oracle does not resolve is invalid for later arms (holdout rule) and is not replaced.",
+    "Same graders, raw-mirror service image and compose overrides as the holdout49 specs; the raw mirror serves the 13 files recorded in raw-mirror/raw-mirror.lock.json."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/host-gateway.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-verified-dev25",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    }
+  ]
+}
