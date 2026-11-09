@@ -1,0 +1,94 @@
+{
+  "run_name": "holdout-harnessix-integrated-part1",
+  "dataset": {
+    "name": "swebench-verified-holdout49-part1",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 4,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "User decision 2026-11-09: after D1 (model request scans bounded by bytes, window-derived limits capped at 786432 B), D2 (compaction at one third of the declared window, down to one sixth) and D3 (the host relay identifies trials by running container) are integrated, rerun the holdout Harnessix arm on the newest integrated code. First 10 tasks only; the user reviews the result before the remaining 39 run.",
+    "Part 1 tasks: a seeded (20261109) sample of the 47 valid holdout tasks stratified by the a8fa2c0d Harnessix result, 5 resolved and 5 unresolved there (247 runs/holdout-pick10.py). Task directories are byte-identical copies of tasks-verified-holdout49-1b04bdc46795 (same Harbor content hashes and prepare receipt), so part 2 can be frozen the same way and both parts read as one holdout run. The R arm resolved all 10 by chance; the paired comparison is against the a8fa2c0d arm (5/10).",
+    "Product bundle built from f9280d17. On top of the a8fa2c0d arm it adds read-tool and update_plan argument leniency, artifact-shaped read_file rerouting, apply_patch_batch structure repair and anchored preconditions, the native sandbox and file-mode work (not used in the external-boundary profile), limits sized from the declared 262144-token window (compaction trigger 262144 B, target 131072 B) and request scans bounded by bytes. Workspace modes are no longer normalised (user decision, ADR 0120 7.1). Turn budget unchanged: 100 steps / 6M tokens / 3600 s; Harbor agent cap 3900 s.",
+    "Primary metric is the official resolve of the exported patch regardless of how the agent ended (plan v2); 'ended normally and resolved' is the stability metric. Full step content goes to Langfuse (user decision for new runs).",
+    "The in-container relay forwards to the host relay on 172.17.0.1:18100 (code 6378c9e8, --docker-socket), which keeps each running trial container on one of the two model replicas and frees the replica when the container is removed."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/host-gateway.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-verified-holdout49",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "harnessix",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/agent-f9280d17/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-f9280d17/product.json",
+        "/data/harnessix/harbor/agent-f9280d17/actions.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/agent-f9280d17/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/agent-f9280d17/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config_template": "/data/harnessix/harbor/agent-f9280d17/actions.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": false
+        },
+        "override_timeout_sec": 3900
+      }
+    }
+  ]
+}
