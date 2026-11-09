@@ -323,6 +323,8 @@ def test_capture_rejects_size_stat_or_path_changes(
                 target.write_bytes(b"#short\n")
             elif mutation == "rewrite":
                 before = target.stat()
+                # 同长度改写只能靠ctime发现，Linux的ctime精度是内核tick，先等过一个tick。
+                time.sleep(0.02)
                 target.write_bytes(original_content.replace(b"return 1", b"return 2"))
                 os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
             else:
@@ -602,6 +604,8 @@ def test_change_after_projection_is_not_published(tmp_path, monkeypatch, mutatio
     def changing_projection(*arguments):
         result = original(*arguments)
         if mutation == "rewrite":
+            # 同长度改写只能靠ctime发现，Linux的ctime精度是内核tick，先等过一个tick。
+            time.sleep(0.02)
             target.write_bytes(b"def chosen():\n    return 2\n")
         else:
             replacement = tmp_path / "replacement"

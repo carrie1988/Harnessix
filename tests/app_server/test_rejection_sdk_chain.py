@@ -105,7 +105,8 @@ async def test_authenticated_adapter_rejection_correction_replay_and_ui(tmp_path
                 assert private not in page.model_dump_json()
                 assert private not in frame_history.thread.model_dump_json()
             marker = "harnessix_rejected_tool_v1"
-            assert requests[1]["messages"][1]["tool_calls"][0]["function"] == {
+            assistant = next(m for m in requests[1]["messages"] if m.get("tool_calls"))
+            assert assistant["tool_calls"][0]["function"] == {
                 "name": marker,
                 "arguments": "{}",
             }

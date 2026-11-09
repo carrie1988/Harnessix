@@ -153,6 +153,8 @@ def test_change_between_digest_and_text_page_is_not_published(
             replacement.write_bytes(b"new\n")
             os.replace(replacement, target)
         else:
+            # 同长度改写只能靠ctime发现，Linux的ctime精度是内核tick，先等过一个tick。
+            time.sleep(0.02)
             target.write_bytes(b"new\n")
             os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
         return result

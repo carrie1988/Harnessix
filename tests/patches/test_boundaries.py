@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from threading import Event
 
 import pytest
@@ -77,6 +78,8 @@ def test_race_or_failure_during_full_read_releases_fd(tmp_path, monkeypatch, cha
             if not seen:
                 seen.append(fd)
                 if change == "content":
+                    # 同长度改写只能靠ctime发现，Linux的ctime精度是内核tick，先等过一个tick。
+                    time.sleep(0.02)
                     path.write_text("change")
                 elif change == "file":
                     (root / "new").write_text("before")

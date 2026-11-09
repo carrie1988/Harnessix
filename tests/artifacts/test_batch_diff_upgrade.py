@@ -18,6 +18,12 @@ from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.session.sqlite import SQLiteSessionStore
 
 
+def _latest_migration() -> int:
+    """升级后的迁移数随新Schema增长，不写死具体版本。"""
+    root = files("harnessix.session.migrations")
+    return sum(item.name.endswith(".sql") for item in root.iterdir())
+
+
 def old_database(path):
     fixture = json.loads((Path(__file__).parent / "fixtures/session-v7-artifact.json").read_text())
     with sqlite3.connect(path) as db:
@@ -89,7 +95,7 @@ raise AssertionError("未到达退出点")
     assert child.returncode == 83, child.stderr
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == (
-            30 if point == "after_commit" else 8
+            _latest_migration() if point == "after_commit" else 8
         )
         assert list(db.execute("SELECT * FROM agent_threads").fetchone()) == fixture["snapshot"]
         assert [
