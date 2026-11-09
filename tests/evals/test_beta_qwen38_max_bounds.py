@@ -93,9 +93,7 @@ async def test_qwen38_max_reserves_before_send_and_settles_complete_usage(tmp_pa
     suite_cancel = CancelToken()
 
     with task_scope(path, plan) as ledger:
-        guard = GuardedVerificationProvider(
-            provider, ledger, qwen38_bounds(), suite_cancel
-        )
+        guard = GuardedVerificationProvider(provider, ledger, qwen38_bounds(), suite_cancel)
         seen = [event async for event in guard.stream(model_request(), CancelToken())]
         ledger.require_available()
 
@@ -125,9 +123,7 @@ async def test_qwen38_max_unknown_cost_holds_full_reservation_and_stops(
     suite_cancel = CancelToken()
 
     with task_scope(path, plan) as ledger:
-        guard = GuardedVerificationProvider(
-            provider, ledger, qwen38_bounds(), suite_cancel
-        )
+        guard = GuardedVerificationProvider(provider, ledger, qwen38_bounds(), suite_cancel)
         with pytest.raises(KernelError) as failed:
             _ = [event async for event in guard.stream(model_request(), CancelToken())]
         assert failed.value.code == "verification_request_cost_unknown"

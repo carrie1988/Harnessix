@@ -255,4 +255,5 @@ def _patch(output: dict[str, Any]) -> str | None:
         lines.append(f"[diff: first part of {preview['total_bytes']} bytes]")
     else:
         lines.append("[diff]")
-    return "\n".join(lines) + "\n" + preview["text"]
+    text: str = preview["text"]
+    return "\n".join(lines) + "\n" + text

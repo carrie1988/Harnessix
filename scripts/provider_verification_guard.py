@@ -73,9 +73,7 @@ class BailianVerificationBounds:
     maximum_input_tokens: ClassVar[int] = 250_000
     maximum_request_bytes: ClassVar[int | None] = 250_000
     # 单位为毫元/百万Token，避免1.5等阶梯单价经过浮点运算。
-    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = (
-        (1_000_000, 12_000, 36_000),
-    )
+    price_tiers: ClassVar[tuple[tuple[int, int, int], ...]] = ((1_000_000, 12_000, 36_000),)
 
     valid_from: datetime
     valid_until: datetime

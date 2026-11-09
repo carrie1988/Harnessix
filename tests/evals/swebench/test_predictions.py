@@ -152,9 +152,7 @@ def test_predictions_reject_incomplete_duplicate_outside_or_reordered_scope(
     elif mutation == "duplicate":
         changed[-1] = changed[0]
     elif mutation == "outside":
-        changed[-1] = changed[-1].model_copy(
-            update={"instance_id": "outside__scope-999"}
-        )
+        changed[-1] = changed[-1].model_copy(update={"instance_id": "outside__scope-999"})
     else:
         changed[0], changed[1] = changed[1], changed[0]
 
@@ -184,9 +182,7 @@ def test_empty_patch_is_written_and_round_trips(tmp_path: Path) -> None:
     loaded = read_predictions(path, plan)
 
     assert loaded[0].model_patch == ""
-    assert json.loads(path.read_text(encoding="utf-8").splitlines()[0])[
-        "model_patch"
-    ] == ""
+    assert json.loads(path.read_text(encoding="utf-8").splitlines()[0])["model_patch"] == ""
 
 
 def test_predictions_jsonl_round_trip_preserves_order_and_digest(tmp_path: Path) -> None:

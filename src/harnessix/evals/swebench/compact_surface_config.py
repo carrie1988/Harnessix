@@ -144,8 +144,8 @@ class SweBenchPatchDeadlineAgentRunConfig(_SweBenchAgentRunSettings):
 class SweBenchBudgetTruncationAgentRunConfig(SweBenchPatchDeadlineAgentRunConfig):
     """v16之上显式把剩余预算压低上限造成的截断归为预算耗尽；其他边界与v16一致。"""
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v17"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v17"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v17"] = (
+        "harnessix.swebench-agent-run-config/v17"  # type: ignore[assignment]
     )
     truncation_policy: Literal["budget_capped_truncation_is_budget_exhaustion"] = (
         "budget_capped_truncation_is_budget_exhaustion"
@@ -159,8 +159,8 @@ class SweBenchBudgetTruncationAgentRunConfig(SweBenchPatchDeadlineAgentRunConfig
 class SweBenchPromptCacheAgentRunConfig(SweBenchBudgetTruncationAgentRunConfig):
     """v17之上显式开启前缀缓存布局、分区缓存计价与字符串化容器参数还原；其他边界与v17一致。"""
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v18"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v18"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v18"] = (
+        "harnessix.swebench-agent-run-config/v18"  # type: ignore[assignment]
     )
     cache_policy: Literal["explicit_tail_prefix_partitioned_price"] = (
         "explicit_tail_prefix_partitioned_price"
@@ -184,8 +184,8 @@ class SweBenchFullCachedHistoryAgentRunConfig(SweBenchPromptCacheAgentRunConfig)
     遮蔽每步改写一组旧结果会使其后全部前缀按创建价重建，并迫使模型重读已读源码。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v19"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v19"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v19"] = (
+        "harnessix.swebench-agent-run-config/v19"  # type: ignore[assignment]
     )
     history_view_policy: Literal["full_cached_history"] = "full_cached_history"  # type: ignore[assignment]
     retain_recent_result_groups: None = None  # type: ignore[assignment]
@@ -197,11 +197,11 @@ class SweBenchCachedClosureAgentRunConfig(SweBenchFullCachedHistoryAgentRunConfi
     阶段收窄目录会使整段前缀缓存失效；压力摘要改写只追加历史且其溢出会终止Case。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v20"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v20"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v20"] = (
+        "harnessix.swebench-agent-run-config/v20"  # type: ignore[assignment]
     )
-    context_budget_policy: Literal["cached_history_without_pressure_window"] = (  # type: ignore[assignment]
-        "cached_history_without_pressure_window"
+    context_budget_policy: Literal["cached_history_without_pressure_window"] = (
+        "cached_history_without_pressure_window"  # type: ignore[assignment]
     )
     catalog_policy: Literal["stable_turn_catalog"] = "stable_turn_catalog"
     workflow_policy: Literal["reopen_after_clean_review"] = "reopen_after_clean_review"
@@ -222,8 +222,8 @@ class SweBenchCachedClosureAgentRunConfig(SweBenchFullCachedHistoryAgentRunConfi
 class SweBenchScratchReproductionAgentRunConfig(SweBenchCachedClosureAgentRunConfig):
     """v20之上：先在复现草稿目录写失败测试再修复；草稿永不进入交付补丁或完成判断。"""
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v21"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v21"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v21"] = (
+        "harnessix.swebench-agent-run-config/v21"  # type: ignore[assignment]
     )
     reproduction_policy: Literal["scratch_reproduction_test"] = "scratch_reproduction_test"
 
@@ -238,11 +238,11 @@ class SweBenchProtocolRobustAgentRunConfig(SweBenchScratchReproductionAgentRunCo
     v53因一次响应发出超过上限的并行调用，流在用量前中止、费用未知而整轮停止。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v22"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v22"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v22"] = (
+        "harnessix.swebench-agent-run-config/v22"  # type: ignore[assignment]
     )
-    provider_failure_policy: Literal["freeze_transport_and_protocol_with_full_reserve"] = (  # type: ignore[assignment]
-        "freeze_transport_and_protocol_with_full_reserve"
+    provider_failure_policy: Literal["freeze_transport_and_protocol_with_full_reserve"] = (
+        "freeze_transport_and_protocol_with_full_reserve"  # type: ignore[assignment]
     )
     tool_call_policy: Literal["state_per_response_cap"] = "state_per_response_cap"
 
@@ -261,8 +261,8 @@ class SweBenchExplainedGatesAgentRunConfig(SweBenchProtocolRobustAgentRunConfig)
     v54中17%的请求调用了当前阶段不可调用的工具，只收到“工具未注册”，不知应先重读改动文件。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v23"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v23"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v23"] = (
+        "harnessix.swebench-agent-run-config/v23"  # type: ignore[assignment]
     )
     tool_gate_policy: Literal["explain_restricted_tools"] = "explain_restricted_tools"
     reserve_policy: Literal["bounded_output_reserve"] = "bounded_output_reserve"
@@ -282,8 +282,8 @@ class SweBenchConnectRetryAgentRunConfig(SweBenchExplainedGatesAgentRunConfig):
     v47与d2各因本机代理的瞬时连接失败丢失整题（httpx_connect_failure）。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v24"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v24"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v24"] = (
+        "harnessix.swebench-agent-run-config/v24"  # type: ignore[assignment]
     )
     connection_policy: Literal["retry_connection_establishment"] = "retry_connection_establishment"
 
@@ -298,8 +298,8 @@ class SweBenchForcedChoiceTolerantAgentRunConfig(SweBenchConnectRetryAgentRunCon
     d3中DeepSeek在强制git_review时调用了其他工具，前两项均因此整Turn失败（补丁已完成）。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v25"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v25"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v25"] = (
+        "harnessix.swebench-agent-run-config/v25"  # type: ignore[assignment]
     )
     forced_choice_policy: Literal["reject_violating_calls"] = "reject_violating_calls"
 
@@ -316,8 +316,8 @@ class SweBenchArgumentRepairAgentRunConfig(SweBenchForcedChoiceTolerantAgentRunC
     前缀只命中指令部分（缓存命中10%～38%）。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v26"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v26"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v26"] = (
+        "harnessix.swebench-agent-run-config/v26"  # type: ignore[assignment]
     )
     argument_wire_policy: Literal["repair_escapes_and_control_characters"] = (
         "repair_escapes_and_control_characters"
@@ -342,8 +342,8 @@ class SweBenchTestTimeoutAgentRunConfig(SweBenchArgumentRepairAgentRunConfig):
     d5首项修复了符号链接递归后测试挂起超时，被判为公开测试不可用而停止整轮。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v27"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v27"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v27"] = (
+        "harnessix.swebench-agent-run-config/v27"  # type: ignore[assignment]
     )
     test_timeout_policy: Literal["timeout_is_code_test_failure"] = "timeout_is_code_test_failure"
 
@@ -358,8 +358,8 @@ class SweBenchReadAfterFailedPatchAgentRunConfig(SweBenchTestTimeoutAgentRunConf
     v55 sphinx-11445在参数错误后只剩强制Patch，无法重读取得SHA，连续被拒至请求上限。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v28"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v28"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v28"] = (
+        "harnessix.swebench-agent-run-config/v28"  # type: ignore[assignment]
     )
     failed_patch_policy: Literal["keep_reads_after_failed_patch"] = "keep_reads_after_failed_patch"
 
@@ -374,11 +374,11 @@ class SweBenchTruncationQualityAgentRunConfig(SweBenchReadAfterFailedPatchAgentR
     v55r第7项一次响应退化为4096个输出Token被截断，整轮停止。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v29"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v29"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v29"] = (
+        "harnessix.swebench-agent-run-config/v29"  # type: ignore[assignment]
     )
     truncation_policy: Literal["known_cost_truncation_is_case_failure"] = (
-        "known_cost_truncation_is_case_failure"
+        "known_cost_truncation_is_case_failure"  # type: ignore[assignment]
     )
 
     @property
@@ -392,8 +392,8 @@ class SweBenchNativeThinkingAgentRunConfig(SweBenchTruncationQualityAgentRunConf
     v55r3前15项与v55同为7/15：稳健性修复让预算耗尽题闭环，但补丁仍错，瓶颈在修复质量。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v30"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v30"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v30"] = (
+        "harnessix.swebench-agent-run-config/v30"  # type: ignore[assignment]
     )
     reasoning_policy: Literal["native_thinking_without_passback"] = (
         "native_thinking_without_passback"
@@ -410,8 +410,8 @@ class SweBenchSelfVerificationAgentRunConfig(SweBenchTruncationQualityAgentRunCo
     v55r3/v55r4与v56的未解决项多为“公开测试通过但隐藏测试未过”的错误修复。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v31"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v31"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v31"] = (
+        "harnessix.swebench-agent-run-config/v31"  # type: ignore[assignment]
     )
     verification_policy: Literal["one_self_check_round_before_closing"] = (
         "one_self_check_round_before_closing"
@@ -429,8 +429,8 @@ class SweBenchBoundedRepairAgentRunConfig(SweBenchSelfVerificationAgentRunConfig
     p2中2项同样以budget_exceeded结束；原流程测试失败后永远无法进入Review。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v32"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v32"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v32"] = (
+        "harnessix.swebench-agent-run-config/v32"  # type: ignore[assignment]
     )
     repair_policy: Literal["review_after_four_failed_validations"] = (
         "review_after_four_failed_validations"
@@ -448,8 +448,8 @@ class SweBenchCleanReviewNoticeAgentRunConfig(SweBenchBoundedRepairAgentRunConfi
     重新开放的目录未说明原因，模型反复调用已关闭的Review工具后宣称完成，交付空补丁。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v33"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v33"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v33"] = (
+        "harnessix.swebench-agent-run-config/v33"  # type: ignore[assignment]
     )
     clean_review_policy: Literal["explain_undone_fix_on_reopen"] = "explain_undone_fix_on_reopen"
 
@@ -465,8 +465,8 @@ class SweBenchProxiedProviderAgentRunConfig(SweBenchCleanReviewNoticeAgentRunCon
     用户要求经本机代理连接DeepSeek。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v34"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v34"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v34"] = (
+        "harnessix.swebench-agent-run-config/v34"  # type: ignore[assignment]
     )
     network_policy: Literal["explicit_loopback_http_proxy"] = "explicit_loopback_http_proxy"
 
@@ -482,8 +482,8 @@ class SweBenchRepairClosureAgentRunConfig(SweBenchProxiedProviderAgentRunConfig)
     修改直至耗尽2M；Django/SymPy无选择器调用跑全量套件、每次超时（v57p/v58/v60共5次）。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v35"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v35"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v35"] = (
+        "harnessix.swebench-agent-run-config/v35"  # type: ignore[assignment]
     )
     repair_closure_policy: Literal["recoverable_profile_arguments_and_forced_review"] = (
         "recoverable_profile_arguments_and_forced_review"
@@ -508,8 +508,8 @@ class SweBenchSiblingScopeAgentRunConfig(SweBenchRepairClosureAgentRunConfig):
     v57p/v58/v60的27项未解决中16项公开测试通过但隐藏测试未过；8项参考修复同时改动了模型未改的同类实现。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v36"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v36"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v36"] = (
+        "harnessix.swebench-agent-run-config/v36"  # type: ignore[assignment]
     )
     scope_policy: Literal["self_check_sibling_implementations"] = (
         "self_check_sibling_implementations"
@@ -526,8 +526,8 @@ class SweBenchWideOutputAgentRunConfig(SweBenchSiblingScopeAgentRunConfig):
     v61r的13项未解决中2项因单次响应用满4096输出Token被截断而结束整题（其一为纯文本长推理）。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v37"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v37"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v37"] = (
+        "harnessix.swebench-agent-run-config/v37"  # type: ignore[assignment]
     )
     output_policy: Literal["wide_8192_output"] = "wide_8192_output"
 
@@ -542,11 +542,11 @@ class SweBenchReproductionGateAgentRunConfig(SweBenchWideOutputAgentRunConfig):
     v57p/v61r/v62中“问题示例本可抓到错误补丁”的9项里，8项未复现就改源码，2项复现未原样使用问题示例。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v38"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v38"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v38"] = (
+        "harnessix.swebench-agent-run-config/v38"  # type: ignore[assignment]
     )
     reproduction_policy: Literal["failing_reproduction_before_source_edit"] = (
-        "failing_reproduction_before_source_edit"
+        "failing_reproduction_before_source_edit"  # type: ignore[assignment]
     )
 
     @property
@@ -561,8 +561,8 @@ class SweBenchFullThinkingAgentRunConfig(SweBenchWideOutputAgentRunConfig):
     推理内容不回传历史，思考与非思考不混用，前缀缓存只维护一份。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v39"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v39"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v39"] = (
+        "harnessix.swebench-agent-run-config/v39"  # type: ignore[assignment]
     )
     thinking_policy: Literal["every_step_thinking"] = "every_step_thinking"
 
@@ -577,8 +577,8 @@ class SweBenchToolStepThinkingAgentRunConfig(SweBenchFullThinkingAgentRunConfig)
     d39b（v39，3项开发集）2项因压缩摘要请求的2048输出被推理耗尽而无正文失败，1项单步推理用满16384被截断。
     """
 
-    spec_version: Literal["harnessix.swebench-agent-run-config/v40"] = (  # type: ignore[assignment]
-        "harnessix.swebench-agent-run-config/v40"
+    spec_version: Literal["harnessix.swebench-agent-run-config/v40"] = (
+        "harnessix.swebench-agent-run-config/v40"  # type: ignore[assignment]
     )
     thinking_scope: Literal["tool_steps_only_32k_output"] = "tool_steps_only_32k_output"
 

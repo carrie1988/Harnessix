@@ -26,8 +26,10 @@ def normalize_stringified_containers(
     return normalized
 
 
-def _normalize(value: JsonValue, node: Mapping[str, Any], root: Mapping[str, Any], depth: int):
-    node = _resolve(node, root)
+def _normalize(
+    value: JsonValue, schema: Mapping[str, Any], root: Mapping[str, Any], depth: int
+) -> JsonValue:
+    node = _resolve(schema, root)
     if depth > _MAX_DEPTH or node is None:
         return value
     expected = _container_type(node)

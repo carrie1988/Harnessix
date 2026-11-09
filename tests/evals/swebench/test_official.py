@@ -35,9 +35,7 @@ def _executable(path: Path) -> Path:
 def _source_repository(path: Path) -> tuple[Path, str]:
     path.mkdir()
     subprocess.run((str(GIT), "init", "--quiet"), cwd=path, check=True)
-    subprocess.run(
-        (str(GIT), "config", "user.name", "Harnessix Tests"), cwd=path, check=True
-    )
+    subprocess.run((str(GIT), "config", "user.name", "Harnessix Tests"), cwd=path, check=True)
     subprocess.run(
         (str(GIT), "config", "user.email", "tests@harnessix.invalid"),
         cwd=path,
@@ -45,9 +43,7 @@ def _source_repository(path: Path) -> tuple[Path, str]:
     )
     (path / "README.md").write_text("fixture\n", encoding="utf-8")
     subprocess.run((str(GIT), "add", "README.md"), cwd=path, check=True)
-    subprocess.run(
-        (str(GIT), "commit", "--quiet", "-m", "fixture"), cwd=path, check=True
-    )
+    subprocess.run((str(GIT), "commit", "--quiet", "-m", "fixture"), cwd=path, check=True)
     revision = subprocess.run(
         (str(GIT), "rev-parse", "HEAD"),
         cwd=path,
@@ -116,8 +112,7 @@ def _write_official_result(
     directory = work_root / "logs" / "evaluation" / evaluation_run_id(plan, predictions)
     directory.mkdir(parents=True)
     body = (
-        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        + "\n"
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode("utf-8")
     (directory / "results.json").write_bytes(body)
     if write_completed_artifacts:
@@ -146,9 +141,7 @@ def test_run_id_changes_with_plan_digest_and_patch_digest() -> None:
     changed_patch = list(predictions)
     changed_patch[0] = changed_patch[0].model_copy(
         update={
-            "model_patch": changed_patch[0].model_patch.replace(
-                "+after-default", "+after-changed"
-            )
+            "model_patch": changed_patch[0].model_patch.replace("+after-default", "+after-changed")
         }
     )
 
@@ -181,9 +174,7 @@ def test_official_argv_is_shell_free_tuple_for_exactly_25_instances_without_gold
         task_repo=task_repo,
     )
     instances = tuple(
-        command[index + 1]
-        for index, argument in enumerate(command)
-        if argument == "--instance"
+        command[index + 1] for index, argument in enumerate(command) if argument == "--instance"
     )
 
     assert type(command) is tuple

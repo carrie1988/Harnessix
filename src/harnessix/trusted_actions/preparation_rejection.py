@@ -34,11 +34,12 @@ def workspace_patch_planning_rejection(
 ) -> ToolResultContent | None:
     """把内置Patch规划期的确定性边界拒绝投影为可修正Tool Result。"""
 
-    if (
-        (binding.source, binding.source_id, binding.tool, binding.executor_id)
-        != ("builtin", "harnessix.product", "apply_patch_batch", "product.workspace-patch")
-        or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES
-    ):
+    if (binding.source, binding.source_id, binding.tool, binding.executor_id) != (
+        "builtin",
+        "harnessix.product",
+        "apply_patch_batch",
+        "product.workspace-patch",
+    ) or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES:
         return None
     return ToolResultContent(
         call_id=call.call_id,

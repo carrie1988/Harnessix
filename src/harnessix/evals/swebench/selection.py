@@ -27,8 +27,10 @@ def _selection_key(salt: str, kind: str, *identity: str) -> bytes:
 
 
 def _validate_selection_inputs(salt: str, selection_policy: str) -> None:
-    if type(salt) is not str or not 16 <= len(salt) <= 256 or any(
-        ord(character) < 32 or ord(character) == 127 for character in salt
+    if (
+        type(salt) is not str
+        or not 16 <= len(salt) <= 256
+        or any(ord(character) < 32 or ord(character) == 127 for character in salt)
     ):
         raise ValueError("SWE-bench selection salt is invalid")
     if selection_policy != SWE_BENCH_SELECTION_POLICY:

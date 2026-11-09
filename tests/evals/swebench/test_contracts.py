@@ -140,9 +140,7 @@ def test_plan_rejects_summary_tampering() -> None:
 def test_plan_rejects_noncanonical_case_order_even_with_recomputed_summary() -> None:
     current = plan()
     reordered_cases = (current.cases[1], current.cases[0], *current.cases[2:])
-    candidate = current.model_copy(
-        update={"cases": reordered_cases, "plan_sha256": "0" * 64}
-    )
+    candidate = current.model_copy(update={"cases": reordered_cases, "plan_sha256": "0" * 64})
     payload = candidate.model_dump(mode="python")
     payload["plan_sha256"] = swebench_preregistration_plan_digest(candidate)
 

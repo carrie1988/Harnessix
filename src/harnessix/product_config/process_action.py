@@ -49,7 +49,7 @@ from harnessix.trusted_actions.router import (
 )
 from harnessix.workspace.contracts import ResourceAccess, WorkspaceResourceRequest
 
-from .action_contracts import ProductProcessProfile
+from .action_contracts import ProductProcessProfile, SelectorPolicy
 from .process_command import (
     PRODUCT_COMMAND_VERSION,
     RunCommandInput,
@@ -141,7 +141,7 @@ def run_profile_schema(
 
 def decode_run_profile(
     profile_id: str,
-    selector_policy: Literal["none", "bounded_test_selector"],
+    selector_policy: SelectorPolicy,
     arguments: dict[str, JsonValue],
 ) -> RunProfileInput:
     if selector_policy not in {"none", "bounded_test_selector"}:

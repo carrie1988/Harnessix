@@ -75,6 +75,8 @@ line-length = 100
 target-version = "py312"
 # 已冻结的诊断脚本是原始证据，不自动改写；活动源码与Secret扫描仍完整覆盖。
 extend-exclude = [
+    # 已跑完的SWE-bench单次实验脚本随预注册与结果冻结，不再改写。
+    "benchmarks/swebench/**/*.py",
     "docs/validation/**/diagnostics/*.py",
     "docs/validation/**/installation/*.py",
     # 原始验证宿主脚本按固定manifest封存；活动实现与测试不适用此例外。

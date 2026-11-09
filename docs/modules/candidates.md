@@ -83,10 +83,10 @@ flowchart TD
 ## 7. 接口设计与核心伪代码
 
 ```python
-checks = select_checks(candidates)                      # 纯函数
+checks = select_checks(candidates)  # 纯函数
 runs = cross_check(profile, workspaces, checks, scratch_root)
 matrix = {run.candidate_id: {run.check_index: run.result} for run in runs}
-selection = rank(candidates, checks, matrix)            # 纯函数
+selection = rank(candidates, checks, matrix)  # 纯函数
 ```
 
 排序键依次为：通过检查数多、相同补丁出现次数多、候选正常结束、补丁更小。空补丁不参与。

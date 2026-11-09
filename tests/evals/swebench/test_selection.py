@@ -28,9 +28,7 @@ def dataset_rows(count: int = 40) -> list[dict[str, object]]:
 
 
 def test_selection_returns_exactly_25_unique_cases() -> None:
-    selected = select_swebench_cases(
-        dataset_rows(), salt="public-preregistration-salt-v1"
-    )
+    selected = select_swebench_cases(dataset_rows(), salt="public-preregistration-salt-v1")
 
     assert len(selected) == 25
     assert len({case.instance_id for case in selected}) == 25
@@ -80,9 +78,7 @@ def test_evaluator_only_changes_do_not_change_selection() -> None:
 
 def test_selection_fails_when_fewer_than_25_unique_candidates_exist() -> None:
     with pytest.raises(ValueError, match="at least 25"):
-        select_swebench_cases(
-            dataset_rows(24), salt="public-preregistration-salt-v1"
-        )
+        select_swebench_cases(dataset_rows(24), salt="public-preregistration-salt-v1")
 
 
 def test_selection_rejects_duplicate_public_identity() -> None:
