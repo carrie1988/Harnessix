@@ -83,7 +83,7 @@ PREPARING_CONTEXT
   → Context规划及普通模型请求
 ~~~
 
-摘要系统指令由Runtime固定，要求保留目标、约束、未完成事项、决定、文件/revision、测试结果及不确定效果。摘要输入只有带`trust=untrusted_history/authority=none`的结构化来源；不携带工具定义。摘要输出投影为`assistant_message`，封套固定为`trust=derived_history/authority=none`。
+摘要系统指令由Runtime固定（长度不超过原指令），说明输入只是较早历史、其后对话原样保留且更新，要求保留目标、约束、环境事实、文件、修改、测试结果、失败做法及原因、决定与不确定效果，并且不列待办（其后保留的对话可能已经完成）。触发式与被动摘要由宿主在正文前写入覆盖时点`[Summary through step N, written before step K; later messages are newer and override it.]`：N是被覆盖的当前Turn Item经`ItemStarted`事件对应的最晚主步骤，K是压缩发生的主步骤；只覆盖较早Turn时写`[Summary of earlier turns, ...]`。时点字节从摘要正文预留中扣除。预算压力摘要按精确预付的单段容量生成，不加时点。摘要输入只有带`trust=untrusted_history/authority=none`的结构化来源；不携带工具定义。摘要输出投影为`assistant_message`，封套固定为`trust=derived_history/authority=none`。
 
 ## 5. 摘要Provider协议与记账
 
@@ -99,7 +99,7 @@ PREPARING_CONTEXT
 
 第二个`ModelAttemptStarted`会在Provider继续执行第二次HTTP前被拒绝。任何`ToolCallCompleted`均返回`context_compaction_summary_tool_forbidden`，不会进入Coding Tool Runtime。取消、超时、断流、非法UTF-8、正文超限、用量漂移和终态后输出都会关闭异步流并结算已有账目，不发布窗口。
 
-摘要费用纳入`Turn.accounted_attempts`、Turn总Token、Cost Report v2和Campaign全用途汇总。摘要不增加普通`model_steps`；失败的普通上下文溢出请求仍增加步骤并保留用量。
+摘要费用纳入`Turn.accounted_attempts`、Turn总Token、Cost Report v2和Campaign全用途汇总。摘要不增加普通`model_steps`，也不占`max_steps`请求槽位（2026-11-09起；此前与主请求、重试共享槽位）：`require_request_slots`只计主请求及其重试，每个主步骤之前至多一次摘要（`require_summary_slot`，含失败或未知费用的记录），摘要后仍须留有该步骤的主请求槽位，单Turn付费请求因此不超过两倍`max_steps`。任何请求（含摘要）存在未知费用时仍禁止下一付费请求。失败的普通上下文溢出请求仍增加步骤并保留用量。
 
 ## 6. 活动窗口数据模型
 

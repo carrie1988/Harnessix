@@ -28,8 +28,8 @@ def prefer_closing_over_investigation(turn: Turn) -> bool:
         or last.actual_model != last.requested_model
     ):
         return False
-    # 一次主请求的工具目录只能基于该请求结算时的事实。其后的摘要仍真实计费，
-    # 但调度偏好延后到下一主请求结算再更新，避免压缩前后跨阈值导致目录漂移。
+    # 一次主请求的工具目录只能基于该请求结算时的事实。其后的摘要仍真实计费（摘要不占
+    # 主请求槽位），但Token偏好延后到下一主请求结算再更新，避免压缩前后跨阈值导致目录漂移。
     later_summaries = tuple(
         record.attempt
         for record in turn.compactions
@@ -43,6 +43,6 @@ def prefer_closing_over_investigation(turn: Turn) -> bool:
             for attempt in later_summaries
         )
     )
-    request_slots = require_request_slots(turn) + len(later_summaries)
+    request_slots = require_request_slots(turn)
     closing_preference = CLOSING_MODEL_CALLS * (last.usage.input_tokens + closing_reserve(turn))
     return request_slots <= CLOSING_MODEL_CALLS or remaining <= closing_preference

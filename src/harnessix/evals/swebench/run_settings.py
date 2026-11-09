@@ -542,15 +542,17 @@ class _SweBenchAgentRunSettings(ContractModel):
     ) -> int:
         """单Case已知用量的最坏费用：Token硬预算内输入与输出合计不超过上限。
 
-        有界版本另用“每请求输出不超过provider上限、请求数（含摘要与重试）不超过max_steps”
-        约束输出部分，其余Token只能是输入；默认版本把全部Token按较高费率计价。
+        有界版本另用“每请求输出不超过provider上限、主请求（含重试）不超过max_steps、
+        摘要每主步骤至多一次”即请求数不超过两倍max_steps约束输出部分，其余Token只能是输入；
+        默认版本把全部Token按较高费率计价。
         """
         total = budget.max_tokens + self.output_token_limit_margin
         if not self.bounded_output_reserve:
             return total * max(input_rate, output_rate)
         output = min(
             total,
-            budget.max_steps
+            2
+            * budget.max_steps
             * (self.provider_config.max_output_tokens + self.output_token_limit_margin),
         )
         return output * max(input_rate, output_rate) + (total - output) * input_rate

@@ -121,7 +121,7 @@ Runtime先用总预算数值预付说明的最长合法数字，估算后才填�
 填入当前Turn的`usage`；未声明能力的Provider得到`None`，旧输入与旧估算行为不变。
 [`budget_instruction`](../../src/harnessix/models/_history.py)计算
 `max_tokens - consumed_usage.total_tokens`；配置Compaction时，`remaining_calls`来自原
-`require_request_slots`账本，包含已消耗的摘要/重试；其他路径保持原主步骤计数。明确包含当前请求及重复历史。
+`require_request_slots`账本，只计主请求及其重试，摘要不占槽位（每主步骤之前至多一次摘要，见ADR 0058 §2.7）；其他路径保持原主步骤计数。明确包含当前请求及重复历史。
 Chat作为独立system消息发送；Anthropic mapper可映射显式提供的事实，但当前默认Runtime不对其启用反馈。
 这是规划提示，不是输出Token上限，更不是新的预算权威；准入、取消和实际Usage硬门仍由Runtime执行。
 

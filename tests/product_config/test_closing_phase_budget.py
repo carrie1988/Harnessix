@@ -179,9 +179,10 @@ async def test_summary_settlement_does_not_change_frozen_main_catalog(
         }
     )
     assert select(before) == select(after)
-    assert require_request_slots(after) == require_request_slots(before) - 1
+    # 摘要计入真实费用与Token，但不占主请求槽位。
+    assert require_request_slots(after) == require_request_slots(before)
     assert after.usage.total_tokens == before.usage.total_tokens + 1100
-    # 后续主请求结算后才更新偏好；此前摘要仍计入真实费用、Token和总请求槽。
+    # 后续主请求结算后才更新偏好；此前摘要的费用与Token已计入。
     next_attempt = before.model_attempts[-1].model_copy(
         update={"step": calls + 1, "attempt_id": uuid4()}
     )

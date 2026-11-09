@@ -313,7 +313,7 @@ def test_v23_bounds_the_output_share_of_the_case_reserve(tmp_path):
     }
     total = budget.max_tokens
     assert v22.known_case_reserve_units(budget, **rates) == total * rates["output_rate"]
-    output = min(total, budget.max_steps * v23.provider_config.max_output_tokens)
+    output = min(total, 2 * budget.max_steps * v23.provider_config.max_output_tokens)
     assert v23.known_case_reserve_units(budget, **rates) == (
         output * rates["output_rate"] + (total - output) * rates["input_rate"]
     )

@@ -8,10 +8,10 @@ from pathlib import Path
 import httpx
 import pytest
 
-from harnessix.agent.models import Budget, Usage
+from harnessix.agent.models import Budget, TextContent, ToolCallContent, Usage
 from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import replay
-from harnessix.agent.runtime import AgentRuntime
+from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
 from harnessix.context.compaction_contracts import CompactionPolicy
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.models.config import OpenAIChatConfig
@@ -96,6 +96,14 @@ async def test_pressure_compaction_requires_explicit_opt_in_and_replays(
             assert record.plan.policy.target_history_tokens < config.policy.target_history_tokens
             assert f"at most {request.remaining_tokens} tokens" in request.instructions
             assert request.remaining_tokens > 178
+        # 预算压力摘要按精确预付的单段容量生成，不加宿主时点。
+        summaries = [
+            json.loads(item.content.text)["summary"]
+            for request in main.requests
+            for item in request.history
+            if isinstance(item.content, TextContent) and "derived_history" in item.content.text
+        ]
+        assert summaries and not any(text.startswith("[Summary") for text in summaries)
     else:
         assert not turn.compactions
     restored = await store.get_thread(thread.thread_id)
@@ -103,7 +111,7 @@ async def test_pressure_compaction_requires_explicit_opt_in_and_replays(
     assert (restored.active_compaction_window_id is not None) == bool(expected_compactions)
 
 
-async def test_remaining_request_feedback_counts_durable_summary_attempts(tmp_path):
+async def test_remaining_request_feedback_excludes_durable_summary_attempts(tmp_path):
     from tests.models.test_provider_input_budget import pure_provider
 
     store = SQLiteSessionStore(tmp_path / "feedback.sqlite")
@@ -121,7 +129,7 @@ async def test_remaining_request_feedback_counts_durable_summary_attempts(tmp_pa
 
         async def stream(self, request, cancel):
             current = (await store.get_thread(request.thread_id)).turns[0]
-            assert request.remaining_calls == 16 - len(current.accounted_attempts)
+            assert request.remaining_calls == 16 - len(current.model_attempts)
             assert request.input_tokens_upper_bound > 0
             assert request.consumed_usage == current.usage
             observed.append((request.step, request.remaining_calls, len(current.compactions)))
@@ -158,8 +166,11 @@ async def test_remaining_request_feedback_counts_durable_summary_attempts(tmp_pa
         )
     assert turn.status == "completed", turn.error
     assert len(summary.requests) == 4 and len(observed) == 10
-    assert any(calls < 16 - step + 1 for step, calls, _ in observed)
-    assert observed[-1][1] == 3 and len(turn.accounted_attempts) == 14
+    # 摘要真实计费但不占主请求槽位：剩余调用只随主步骤递减，每个主步骤之前至多一次摘要。
+    assert all(calls == 16 - step + 1 for step, calls, _ in observed)
+    steps = [record.plan.model_step for record in turn.compactions]
+    assert len(set(steps)) == len(steps) == 4
+    assert observed[-1][1] == 7 and len(turn.accounted_attempts) == 14
     assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
 
 
@@ -347,3 +358,60 @@ async def test_catalog_drift_after_summary_cannot_open_next_paid_main_request(
         assert await store.get_thread(thread.thread_id) == restored
     assert await store.events(thread.thread_id) == before
     assert len(summary.requests) == 1
+
+
+async def test_trigger_summaries_are_stamped_with_the_covered_main_step(tmp_path: Path):
+    main = SequenceProvider(investigation_responses(9))
+    summary = BudgetSummaryProvider([])
+    store = SQLiteSessionStore(tmp_path / "session.sqlite")
+    config = CompactionRuntimeConfig(
+        policy=CompactionPolicy(
+            target_history_tokens=10000,
+            summary_reserve_tokens=2048,
+            max_summary_input_tokens=262144,
+            retain_recent_groups=2,
+        ),
+        trigger_history_tokens=15000,
+        max_summary_output_tokens=256,
+    )
+    async with AgentRuntime(
+        store, main, RecordingTools(), compaction=config, summary_provider=summary
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(
+            thread.thread_id,
+            "调查、修复并验证",
+            request_id="stamped",
+            budget=Budget(max_tokens=1_000_000, max_steps=16),
+        )
+    assert turn.status == "completed", turn.error
+    assert len(turn.compactions) >= 2
+    # 每个主步骤恰好一次工具调用：第i个调用来自第i步。
+    calls = (item for item in turn.items if isinstance(item.content, ToolCallContent))
+    call_step = {item.item_id: step for step, item in enumerate(calls, 1)}
+    stamps = []
+    for record, request in zip(turn.compactions, summary.requests, strict=True):
+        assert record.status == "summarized"
+        # 摘要写在主步骤K之前、覆盖到第N步：覆盖的最后一个调用来自第N步，第N+1步原样保留。
+        covered_calls = [call_step[i] for i in record.plan.covered_item_ids if i in call_step]
+        retained_calls = [call_step[i] for i in record.plan.retained_item_ids if i in call_step]
+        through, before = max(covered_calls), record.plan.model_step
+        assert min(retained_calls) == through + 1 and before == request.step
+        stamp = (
+            f"[Summary through step {through}, written before step {before}; "
+            "later messages are newer and override it.]\n"
+        )
+        stamps.append((through, before))
+        assert request.instructions == SUMMARY_INSTRUCTIONS
+        projected = [
+            json.loads(item.content.text)["summary"]
+            for item in main.requests[before - 1].history
+            if isinstance(item.content, TextContent) and "derived_history" in item.content.text
+        ]
+        assert projected == [stamp + "已调查旧窗口；保留未完成事项。"]
+    # 第二次摘要覆盖第一次摘要及其后的组，时点随之推进。
+    assert stamps == [(3, 6), (6, 9)]
+    # 摘要不占主请求槽位：十次主请求加摘要仍在16步预算内，每个主步骤之前至多一次摘要。
+    assert len(main.requests) == 10 and len({before for _, before in stamps}) == len(stamps)
+    restored = await store.get_thread(thread.thread_id)
+    assert replay(await store.events(thread.thread_id)) == restored

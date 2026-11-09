@@ -324,7 +324,8 @@ async def test_tight_candidate_keeps_min_three_request_amortization_horizon(
         wire_budget=input_budget(case.env, source, case.context, case.selection),
         preferred_history_tokens=512,
     )
-    assert (accepted is not None) == (slots >= 3)
+    # 摘要不占主请求槽位：剩两个主槽位时摘要后仍有两次主请求，凑满摘要加两次主请求的三请求跨度。
+    assert (accepted is not None) == (slots >= 2)
     if accepted is not None:
         assert_partition(source, accepted)
     assert source.model_dump_json() == before

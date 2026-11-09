@@ -20,8 +20,10 @@ from harnessix.agent.turn_budget_compaction import (
     pressure_summary_instructions,
     require_context_unchanged,
     require_request_slots,
+    require_summary_slot,
     summary_output_limit,
     summary_request_item,
+    summary_requested,
 )
 from harnessix.agent.usage import ModelAttempt, UsageObservation
 from harnessix.context.compaction import (
@@ -633,25 +635,41 @@ async def summary_record():
     )
 
 
-@pytest.mark.parametrize("main_steps", [13, 14, 15])
-def test_summary_and_next_main_share_the_original_sixteen_slots(summary_record, main_steps):
+@pytest.mark.parametrize("main_steps", [13, 14, 15, 16])
+def test_summaries_do_not_consume_the_sixteen_main_request_slots(summary_record, main_steps):
     turn = (
         pressure_thread()
         .turns[0]
         .model_copy(update={"model_steps": main_steps, "compactions": (summary_record,)})
     )
-    if main_steps == 15:
-        with pytest.raises(KernelError) as caught:
-            require_request_slots(turn)
-        assert caught.value.code == "budget_exceeded"
+    assert summary_record.plan.model_step != main_steps + 1
+    if main_steps == 16:
+        for check in (require_request_slots, require_summary_slot):
+            with pytest.raises(KernelError) as caught:
+                check(turn)
+            assert caught.value.code == "budget_exceeded"
         return
-    assert require_request_slots(turn) == 16 - main_steps - 1
-    if main_steps == 13:
-        assert require_request_slots(turn, 2) == 2
-    elif main_steps == 14:
-        with pytest.raises(KernelError) as caught:
-            require_request_slots(turn, 2)
-        assert caught.value.code == "budget_exceeded"
+    # 已结算的摘要不占主请求槽位；新摘要只要求其后仍有一个主请求槽位。
+    assert require_request_slots(turn) == 16 - main_steps
+    require_summary_slot(turn)
+
+
+def test_each_main_step_admits_at_most_one_summary_request(summary_record):
+    step = summary_record.plan.model_step
+    turn = (
+        pressure_thread()
+        .turns[0]
+        .model_copy(update={"model_steps": step - 1, "compactions": (summary_record,)})
+    )
+    # 同一主步骤之前已有摘要记录（含失败）时拒绝第二次摘要，主请求槽位不受影响。
+    assert summary_requested(turn)
+    assert require_request_slots(turn) == 16 - (step - 1)
+    with pytest.raises(KernelError) as caught:
+        require_summary_slot(turn)
+    assert caught.value.code == "budget_exceeded"
+    following = turn.model_copy(update={"model_steps": step})
+    assert not summary_requested(following)
+    require_summary_slot(following)
 
 
 def test_sixteenth_pending_main_intent_is_allowed_but_its_retry_is_not():

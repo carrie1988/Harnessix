@@ -171,6 +171,16 @@ async def test_proactive_compaction_uses_accounted_toolless_request_and_active_w
     )
     assert "derived_history" in projected
     assert "解析器调查事实与失败恢复约束" not in projected
+    # 覆盖的只是上一Turn：宿主时点说明摘要来自较早Turn，其后保留的对话更新。
+    summary_text = next(
+        json.loads(item.content.text)["summary"]
+        for item in normal.requests[-1].history
+        if isinstance(item.content, TextContent) and "derived_history" in item.content.text
+    )
+    assert summary_text == (
+        "[Summary of earlier turns, written before step 1; later messages are newer and "
+        "override it.]\n保留public接口；解析器失败恢复仍需验证。"
+    )
 
     payloads = [
         event.payload.type

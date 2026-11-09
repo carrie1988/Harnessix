@@ -32,9 +32,10 @@ from harnessix.agent.turn_budget_compaction import (
     pressure_history_allocation,
     pressure_policies,
     pressure_summary_instructions,
-    require_request_slots,
+    summary_horizon,
     summary_output_limit,
     summary_request_item,
+    summary_requested,
 )
 from harnessix.artifacts.ports import BatchDiffPublisher
 from harnessix.context.compaction import PreparedCompaction, plan_compaction
@@ -257,7 +258,7 @@ async def _prepaid_pressure_plan(
             + fixed
         )
     # 同一保守估算尺度判断摊销价值，不把微小窗口缩减当成值得额外付费的压缩。
-    future_requests = min(3, require_request_slots(turn)) - 1
+    future_requests = summary_horizon(turn) - 1
     if summary_cost > savings * future_requests:
         return None
     cost = summary_cost + successor_input + closing_reserve(turn)
@@ -335,6 +336,7 @@ async def prepare_and_commit_model_history(
             and not backed_off
             and host._compaction is not None
             and host._budget_pressure_compaction
+            and not summary_requested(turn)
         ):
             planned, budget_context, budget_selection = await _budget_plan(
                 host, thread, turn, prepared, token, summary_instructions
