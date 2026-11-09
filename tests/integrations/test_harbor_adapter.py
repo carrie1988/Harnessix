@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -15,6 +16,7 @@ pytest.importorskip("harbor", minversion="0.25.0")
 
 from harbor.models.agent.context import AgentContext
 
+from integrations.harbor import harnessix_agent
 from integrations.harbor.harnessix_agent import HarnessixAgent
 from integrations.harbor.workspace_modes import normalize_modes_command
 
@@ -72,6 +74,36 @@ async def test_external_boundary_is_asserted_only_for_the_app_server_run(tmp_pat
     run = next(call for call in calls if "--trial-id" in call.kwargs["command"])
     assert run.kwargs["env"] == {"HARNESSIX_EXTERNAL_BOUNDARY": "1"}
     assert all("env" not in call.kwargs for call in calls if call is not run)
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+async def test_network_isolation_wraps_the_whole_turn_only_when_enabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, enabled: bool
+) -> None:
+    """开启时从记录基线到导出补丁都在断网期间；安装不在其中（包镜像）。"""
+    events: list[str] = []
+
+    @asynccontextmanager
+    async def offline(project: str, logs_dir: Path):
+        events.append(f"offline {project} {logs_dir == tmp_path}")
+        yield
+        events.append("online")
+
+    monkeypatch.setattr(harnessix_agent, "offline_agent_run", offline)
+    monkeypatch.setattr(harnessix_agent, "compose_project", lambda environment: "trial-project")
+    instance = agent(tmp_path, approval_mode="auto", network_isolation=enabled)
+
+    async def run(environment, command, **options):
+        events.append(command.split()[0])
+        return SimpleNamespace(stdout="a" * 40 + "\n")
+
+    instance.exec_as_agent = run
+    await instance.run("fix it", SimpleNamespace(upload_file=AsyncMock()), AgentContext())
+    if enabled:
+        assert events[0] == "offline trial-project True" and events[-1] == "online"
+        assert len(events) == 2 + 5
+    else:
+        assert not any(event.startswith(("offline", "online")) for event in events)
 
 
 async def test_runner_keeps_time_to_finish_after_its_own_deadline(tmp_path: Path) -> None:
@@ -199,6 +231,7 @@ async def test_workspace_mode_normalization_runs_only_when_enabled(
         {"bundle_root": "relative"},
         {"external_boundary": "yes"},
         {"normalize_workspace_modes": "yes"},
+        {"network_isolation": "yes"},
     ],
 )
 def test_invalid_install_or_approval_options_fail_before_any_trial(

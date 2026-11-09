@@ -1,9 +1,11 @@
 """模型端点TCP转发：只做字节双向转发，不解析、不记录内容；只依赖标准库。
 
-两处使用：
+三处使用：
 - 任务容器内由协议驱动启动，监听容器本机回环端口（产品只允许回环地址使用明文HTTP）；
-- 宿主机上独立运行，监听Docker网桥地址，转发到只绑定宿主机回环的vLLM。
-监听地址必须显式给出，拒绝0.0.0.0和::等通配地址，避免把模型服务暴露到外部网络。
+- 宿主机上独立运行，监听Docker网桥地址，转发到只绑定宿主机回环的vLLM；
+- 断网试次的模型转发边车（compose/network-isolation.yaml）：在试次自己的容器网络内转发到宿主机转发。
+监听地址必须显式给出，拒绝0.0.0.0和::等通配地址，避免把模型服务暴露到外部网络；只有声明在独立
+容器网络内运行（--container）时才允许通配地址，该容器不发布宿主机端口。
 
 宿主机规则可以列出多个目标（以`|`分隔），用于在多个模型副本间分摊并发试次：活跃来访
 （一个运行中的试次容器）始终转发到同一副本，保留该会话在副本上的前缀缓存；新来访分给活跃来访最少
@@ -52,8 +54,8 @@ def _endpoint(value: str) -> Endpoint:
     return host, int(port)
 
 
-def parse(spec: str) -> tuple[Endpoint, tuple[Endpoint, ...]]:
-    """解析“监听主机:端口=目标主机:端口[|目标主机:端口…]”；监听地址不能是通配地址。"""
+def parse(spec: str, container: bool = False) -> tuple[Endpoint, tuple[Endpoint, ...]]:
+    """解析“监听主机:端口=目标主机:端口[|目标主机:端口…]”；容器网络外监听地址不能是通配地址。"""
     listen, separator, targets = spec.partition("=")
     if not separator:
         raise ValueError("转发规则须为 监听=目标")
@@ -65,7 +67,7 @@ def parse(spec: str) -> tuple[Endpoint, tuple[Endpoint, ...]]:
         wildcard = ipaddress.ip_address(listen_endpoint[0]).is_unspecified
     except ValueError:
         wildcard = False
-    if wildcard:
+    if wildcard and not container:
         raise ValueError("转发不能监听通配地址")
     return listen_endpoint, target_endpoints
 
@@ -241,7 +243,7 @@ async def start(
     return await asyncio.start_server(handle, *listen)
 
 
-async def _serve(specs: list[str], docker_socket: str | None) -> None:
+async def _serve(specs: list[str], docker_socket: str | None, container: bool) -> None:
     containers = None
     if docker_socket is not None:
         path = docker_socket
@@ -249,7 +251,7 @@ async def _serve(specs: list[str], docker_socket: str | None) -> None:
         def containers() -> dict[str, str]:
             return running_containers(path)
 
-    servers = [await start(*parse(spec), containers=containers) for spec in specs]
+    servers = [await start(*parse(spec, container), containers=containers) for spec in specs]
     try:
         await asyncio.gather(*(server.serve_forever() for server in servers))
     finally:
@@ -258,15 +260,18 @@ async def _serve(specs: list[str], docker_socket: str | None) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="宿主机模型端点转发（前台运行）")
+    parser = argparse.ArgumentParser(description="模型端点TCP转发（前台运行）")
     parser.add_argument("--relay", action="append", required=True, help="监听=目标[|目标…]，可重复")
     parser.add_argument(
         "--docker-socket",
         help="宿主机Docker套接字：按运行中容器识别来访（只读调用GET /containers/json）",
     )
+    parser.add_argument(
+        "--container", action="store_true", help="在独立容器网络内运行，允许通配监听地址"
+    )
     arguments = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    asyncio.run(_serve(arguments.relay, arguments.docker_socket))
+    asyncio.run(_serve(arguments.relay, arguments.docker_socket, arguments.container))
 
 
 if __name__ == "__main__":

@@ -3,7 +3,8 @@
 - OracleWithPatch / NopWithPatch：环境与判分的正负对照；
 - MiniSweAgentOffline：安装步骤与上游相同，但不从astral.sh或GitHub下载uv和Python，
   要求任务镜像已提供uv（派生镜像放在/root/.local/bin），包经镜像内配置的PyPI镜像安装，
-  并把安装后的依赖清单写入/logs/agent以便复现。
+  并把安装后的依赖清单写入/logs/agent以便复现；network_isolation开启时智能体运行期间断网
+  （network_isolation.py）。
 """
 
 from __future__ import annotations
@@ -23,12 +24,14 @@ from harbor.models.trial.paths import EnvironmentPaths, TrialPaths
 from pydantic import Field
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
+    from integrations.harbor.network_isolation import compose_project, offline_agent_run
     from integrations.harbor.patch_export import (
         parse_object_id,
         patch_command,
         workspace_tree_command,
     )
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
+    from network_isolation import compose_project, offline_agent_run
     from patch_export import parse_object_id, patch_command, workspace_tree_command
 
 _WORKSPACE = "/testbed"
@@ -110,6 +113,10 @@ class MiniSweAgentOfflineOptions(MiniSweAgentOptions):
     with_packages: list[str] | None = Field(
         default=None, description="随mini-swe-agent安装的锁定依赖，默认与上游相同且不锁版本"
     )
+    network_isolation: bool = Field(
+        default=False,
+        description="智能体运行期间断开任务容器公网，需compose/network-isolation.yaml",
+    )
 
 
 class MiniSweAgentOffline(_PatchExport, MiniSweAgent):
@@ -120,6 +127,15 @@ class MiniSweAgentOffline(_PatchExport, MiniSweAgent):
     @property
     def _with_packages(self) -> list[str]:
         return self.options.with_packages or ["litellm", "orjson", "fastapi"]
+
+    async def run(
+        self, instruction: str, environment: BaseEnvironment, context: AgentContext
+    ) -> None:
+        if not self.options.network_isolation:
+            await super().run(instruction, environment, context)
+            return
+        async with offline_agent_run(compose_project(environment), Path(self.logs_dir)):
+            await super().run(instruction, environment, context)
 
     async def install(self, environment: BaseEnvironment) -> None:
         await self.ensure_system_dependencies(environment, ("curl", "bash", "build_tools", "git"))

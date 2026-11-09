@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 pytest.importorskip("harbor", minversion="0.25.0")
 
 from harbor.utils.templating import render_prompt_template
 
-from integrations.harbor.pipeline import _plan_version, _resolve_repository_files
+from integrations.harbor.pipeline import (
+    NETWORK_ISOLATION,
+    _plan_version,
+    _resolve_repository_files,
+    check_network_isolation,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -89,6 +96,7 @@ def test_template_v2_reviews_failures_against_the_original_code_in_place() -> No
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-single.json",
         "benchmarks/harbor/swebench-verified-holdout49/harnessix-guard-retry-part2.json",
         "benchmarks/harbor/swebench-verified-e0/e0-full-content.json",
+        "benchmarks/harbor/swebench-verified-holdout49/network-isolation-smoke.json",
     ],
 )
 def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec: str) -> None:
@@ -108,3 +116,70 @@ def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec
         if "prompt_template_path" in kwargs:
             assert not Path(kwargs["prompt_template_path"]).is_absolute()
             render_prompt_template(ROOT / kwargs["prompt_template_path"], "issue")
+
+
+def test_every_agent_arm_runs_offline_exactly_when_the_spec_has_the_isolation_overlay() -> None:
+    """正式评测把多个组别放在同一运行说明里：断网覆盖对其中每个智能体组别都生效，对照组除外。"""
+    isolated = []
+    for path in sorted((ROOT / "benchmarks/harbor").glob("*/*.json")):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if "arms" not in document:
+            continue
+        check_network_isolation(document)
+        overlays = document.get("environment", {}).get("extra_docker_compose", [])
+        if NETWORK_ISOLATION in overlays:
+            isolated.append(path.name)
+            assert "integrations/harbor/compose/raw-github-mirror.yaml" in overlays
+            environment = document["compose_env"]
+            assert (ROOT / environment["HARNESSIX_MODEL_GATEWAY_CODE"]).is_file()
+            assert not ipaddress.ip_address(environment["HARNESSIX_TASK_DNS"]).is_loopback
+    assert isolated
+
+
+def _spec(overlays: list[str], **flags: bool) -> dict:
+    systems = {"oracle": "oracle", "new": "harnessix", "old": "harnessix", "R": "mini-swe-agent"}
+    return {
+        "environment": {"extra_docker_compose": overlays},
+        "arms": [
+            {
+                "arm_id": arm,
+                "system": system,
+                "agent": {"kwargs": {"network_isolation": flags[arm]} if arm in flags else {}},
+            }
+            for arm, system in systems.items()
+        ],
+    }
+
+
+def test_a_spec_cannot_leave_one_agent_arm_online_or_reach_the_host_directly() -> None:
+    mirror = "integrations/harbor/compose/raw-github-mirror.yaml"
+    gateway = "integrations/harbor/compose/host-gateway.yaml"
+    offline = [mirror, NETWORK_ISOLATION]
+    check_network_isolation(_spec(offline, new=True, old=True, R=True))
+    check_network_isolation(_spec([mirror, gateway]))
+    for spec in (
+        _spec(offline, new=True, old=True),
+        _spec(offline, new=True, old=True, R=True, oracle=True),
+        _spec([mirror], R=True),
+        _spec([*offline, gateway], new=True, old=True, R=True),
+    ):
+        with pytest.raises(SystemExit):
+            check_network_isolation(spec)
+
+
+def test_isolation_overlay_leaves_main_only_the_two_sidecars_once_detached() -> None:
+    compose = yaml.safe_load((ROOT / NETWORK_ISOLATION).read_text(encoding="utf-8"))
+    sandbox = compose["networks"]["sandbox"]
+    assert sandbox["internal"] is True
+    assert sandbox["driver_opts"]["com.docker.network.bridge.inhibit_ipv4"] == "true"
+    services = compose["services"]
+    assert set(services["main"]["networks"]) == {"default", "sandbox"}
+    assert services["main"]["dns"] == ["${HARNESSIX_TASK_DNS:?required}"]
+    assert "extra_hosts" not in services["main"]
+    gateway = services["model-gateway"]
+    assert gateway["networks"]["sandbox"]["aliases"] == ["host.docker.internal"]
+    assert gateway["extra_hosts"] == ["host.docker.internal:host-gateway"]
+    assert "0.0.0.0:18100=host.docker.internal:18100" in gateway["command"]
+    assert "--container" in gateway["command"] and "ports" not in gateway
+    mirror = services["raw-github-mirror"]["networks"]["sandbox"]["aliases"]
+    assert mirror == ["raw.githubusercontent.com"]
