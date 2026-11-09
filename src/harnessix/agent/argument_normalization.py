@@ -3,7 +3,8 @@
 部分模型会把数组/对象参数序列化为JSON字符串（如``"files": "[...]"``），偶尔还遗漏末尾的
 闭合括号。仅当Schema在该位置明确声明为array或object、且字符串可严格解析（必要时仅补齐末尾
 缺失的闭合括号）为同类型容器时才还原；其余值原样保留，由工具原有的严格校验照旧拒绝。
-还原后的规范参数才进入审批、审计与执行。
+还原后的规范参数才进入审批、审计与执行。还原先于提案阶段的结构修复（call_repair）：
+修复只认真实的数组与对象，字符串化的``files``会让它看不到外层字段与默认mode。
 """
 
 from __future__ import annotations
@@ -13,9 +14,24 @@ from typing import Any
 
 from pydantic import JsonValue
 
+from harnessix.domain.models import ToolDescriptor
 from harnessix.models._json import strict_json
+from harnessix.models.contracts import ToolCallCompleted, ToolCallRejected
 
 _MAX_DEPTH = 16
+
+
+def normalize_proposal(
+    proposal: ToolCallCompleted | ToolCallRejected, definitions: Mapping[str, ToolDescriptor]
+) -> ToolCallCompleted | ToolCallRejected:
+    """按提案所调工具的公布Schema还原参数；未注册工具与拒绝提案原样返回。"""
+    definition = definitions.get(proposal.tool) if isinstance(proposal, ToolCallCompleted) else None
+    if definition is None:
+        return proposal
+    normalized = normalize_stringified_containers(proposal.arguments, definition.input_schema)
+    if normalized == proposal.arguments:
+        return proposal
+    return proposal.model_copy(update={"arguments": normalized})
 
 
 def normalize_stringified_containers(
