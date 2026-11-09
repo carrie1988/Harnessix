@@ -690,7 +690,7 @@ sequenceDiagram
 采用固定失败代码和安全消息，不包含OS错误正文、绝对路径、查询值或栈。
 `tool_invalid_arguments`通过共享纯函数
 [`invalid_argument_message`](../../src/harnessix/tools/argument_feedback.py)从正式输入模型Schema生成必填、缺少及允许字段列表；只检查已注册
-必填键是否存在，不回显未知键、任何值或第三方ValidationError正文及位置。唯一锚点的跨字段
+必填键是否存在，不回显任何值或第三方ValidationError正文；未知键及位置只按下文“参数校验位置反馈”的规则报告。唯一锚点的跨字段
 拒绝仅提取正式校验器的类型码并映射到四条不可变白名单说明；未知码、错误input/context不公开。`null`和错型仍拒绝，
 但不误称为缺少。专用`tool_expected_revision_required`保持优先级和原消息。
 失败结果与成功结果一样持久化，模型可据稳定code发起新的调用，Runtime不会自动补值或重试。
@@ -1206,3 +1206,18 @@ POSIX沿同一FD，Windows沿同一稳定观察；其他语言、伪声明或无
 数组元素、本地`$defs`引用），不在公开合同内的位置整条不报告；文本只取内置结构错误（缺失、多余字段、字面量、类型、长度、范围）
 及`harnessix_`前缀的固定措辞自定义错误，其余只报“取值不符合合同”；被子位置覆盖的父级汇总错误不重复，最多8条，不含调用值。
 Workspace Patch按操作给出固定字段要求（如“create需要path、content、mode（420或493），不得提供expected_sha256、edits”）。
+
+2026-11-09修订（holdout步数分析）：模型在`files[0]`多带`"content_sha256": null`时，旧消息只报
+“files：Tuple should have at least 1 item after validation, not 0”。原因不是联合/判别校验：Pydantic在全部元素无效后
+另报父级`too_short`（有效元素0个），而子位置`files.0.content_sha256`因字段不在公开`properties`内被整条丢弃，
+父级抑制又只看“已能定位”的错误，于是只剩这条派生错误；标准Schema的`edits`是“数组或null”（`anyOf`），
+编辑项内的错误（多余字段、`old_text`与`new_text`相同的固定原因）同样在该包装处被丢弃。现在：
+1. 定位穿过只有一个非null分支的`anyOf`/`oneOf`可空包装，其余组合仍不猜测；
+2. `extra_forbidden`在父对象可沿公开合同解析、字段名符合64字符ASCII标识符规则时，报告
+   `files[0].content_sha256：合同未定义该字段，请删除（此处允许字段：…）`；同一字段集合只列一次。字段值仍不回显，
+   名称不合规则时整条不报告；疑似凭据字段名仍先得到`raw_secret_rejected`；
+3. 父级抑制改看全部原始错误位置：只要存在更深位置的错误，父级汇总（如上面的0项）就不报告，即使子位置不能报告；
+   真正的空`files`仍报告长度错误。
+这改变了先前“不回显未知键”的反馈规则（[Trusted输入反馈详设](../changes/m09-r3-trusted-input-feedback.md)第6节）：
+多余字段名本就是模型自己发出的调用参数的一部分，已随Call Item持久化，反馈与结果一样经过公开输出保护扫描。
+回归见[字段反馈测试](../../tests/tools/test_schema_argument_feedback.py)。

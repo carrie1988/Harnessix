@@ -87,7 +87,7 @@ async def test_invalid_arguments_use_registered_fields_without_io(
         {"path": "PRIVATE_VALUE_NEVER_IN_FEEDBACK", "max_lines": True},
         {"path": "PRIVATE_VALUE_NEVER_IN_FEEDBACK", "max_lines": 0},
         {"path": "x" * 4096},
-        {"PRIVATE_FIELD_NEVER_IN_FEEDBACK": "PRIVATE_VALUE_NEVER_IN_FEEDBACK"},
+        {"PRIVATE_FIELD_NEVER_IN_FEEDBACK!": "PRIVATE_VALUE_NEVER_IN_FEEDBACK"},
         {"path": {"PRIVATE_FIELD_NEVER_IN_FEEDBACK": "PRIVATE_VALUE_NEVER_IN_FEEDBACK"}},
     ],
 )
@@ -99,10 +99,25 @@ async def test_present_invalid_fields_are_not_missing_and_values_are_not_echoed(
     assert result.error.code == "tool_invalid_arguments"
     expected = "无" if "path" in arguments else "path"
     assert f"缺少必填字段：{expected}" in result.error.message
+    # 不符合标识符规则的未知键及嵌套在值里的键都不回显。
     assert "PRIVATE_FIELD_NEVER_IN_FEEDBACK" not in result.error.model_dump_json()
     assert "PRIVATE_VALUE_NEVER_IN_FEEDBACK" not in result.error.model_dump_json()
     assert "x" * 32 not in result.error.message
     assert "input_schema" in result.error.message
+
+
+async def test_unknown_top_level_field_is_named_but_its_value_is_not_echoed(tmp_path):
+    """多余字段名是模型自己发出的参数键：按位置点名以便删除；值仍不回显。"""
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await tools.execute(
+            call(tools, path="a.txt", content_sha256="PRIVATE_VALUE_NEVER_IN_FEEDBACK"),
+            CancelToken(),
+        )
+    assert result.error.code == "tool_invalid_arguments"
+    assert (
+        "校验位置：content_sha256：合同未定义该字段，请删除（此处允许字段：" in result.error.message
+    )
+    assert "PRIVATE_VALUE_NEVER_IN_FEEDBACK" not in result.error.model_dump_json()
 
 
 async def test_validator_code_does_not_expose_error_message_location_or_context(

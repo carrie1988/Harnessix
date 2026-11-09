@@ -16,6 +16,7 @@ _COMPOSED_KEYS = frozenset(
     {"$ref", "allOf", "anyOf", "oneOf", "not", "if", "then", "else", "dependentRequired"}
 )
 _INSTRUCTION = "请按已公布的input_schema修正类型、范围及必填字段。"
+_EXTRA_FIELD_MESSAGE = "合同未定义该字段，请删除"
 _MAX_TYPE_MISMATCHES = 8
 _NUMERIC_BOUNDS = (
     ("minimum", "≥"),
@@ -205,7 +206,6 @@ def _range_mismatches(
 _STRUCTURAL_ERROR_TYPES = frozenset(
     {
         "missing",
-        "extra_forbidden",
         "literal_error",
         "enum",
         "string_type",
@@ -246,13 +246,33 @@ def _resolve(schema: JsonValue, root: Mapping[str, JsonValue]) -> Mapping[str, J
     return None
 
 
-def _schema_location(loc: Sequence[Any], root: Mapping[str, JsonValue]) -> str | None:
-    """位置须沿已公布input_schema逐级解析（对象属性、数组元素），确保只来自公开合同。"""
+def _non_null_branch(
+    node: Mapping[str, JsonValue], root: Mapping[str, JsonValue]
+) -> Mapping[str, JsonValue] | None:
+    """可空字段（X或null）的anyOf/oneOf只有一个非null分支时进入该分支；其他组合不猜测。"""
+    if any(key in node for key in ("type", "properties", "items")):
+        return None
+    keys = [key for key in ("anyOf", "oneOf") if key in node]
+    options = node.get(keys[0]) if len(keys) == 1 else None
+    if type(options) is not list or len(options) != 2:
+        return None
+    branches = [_resolve(option, root) for option in options]
+    if any(branch is None for branch in branches) or {"type": "null"} not in branches:
+        return None
+    concrete = [branch for branch in branches if branch != {"type": "null"}]
+    return concrete[0] if len(concrete) == 1 else None
+
+
+def _schema_node(
+    loc: Sequence[Any], root: Mapping[str, JsonValue]
+) -> tuple[str, Mapping[str, JsonValue]] | None:
+    """位置须沿已公布input_schema逐级解析（对象属性、数组元素、可空包装），确保只来自公开合同。"""
     node: Mapping[str, JsonValue] | None = root
     parts: list[str] = []
     for part in loc:
         if node is None:
             return None
+        node = _non_null_branch(node, root) or node
         if type(part) is int and 0 <= part < 10_000:
             if node.get("type") != "array":
                 return None
@@ -266,34 +286,82 @@ def _schema_location(loc: Sequence[Any], root: Mapping[str, JsonValue]) -> str |
             parts.append(f".{part}" if parts else part)
         else:
             return None
-    return "".join(parts) or None
+    if node is None:
+        return None
+    return "".join(parts), _non_null_branch(node, root) or node
+
+
+def _schema_location(loc: Sequence[Any], root: Mapping[str, JsonValue]) -> str | None:
+    found = _schema_node(loc, root)
+    if found is None or not found[0]:
+        return None
+    return found[0]
+
+
+def _extra_field(loc: Sequence[Any], root: Mapping[str, JsonValue]) -> tuple[str, str] | None:
+    """多余字段的父对象须在公开合同内；只回显符合标识符规则的字段名，不回显值。
+
+    返回位置及该对象的允许字段提示；提示为空表示字段元数据不适合投影。
+    """
+    if not loc or type(loc[-1]) is not str or _FIELD_NAME.fullmatch(loc[-1]) is None:
+        return None
+    parent = _schema_node(loc[:-1], root)
+    if parent is None:
+        return None
+    path, node = parent
+    properties = node.get("properties")
+    if type(properties) is not dict or loc[-1] in properties:
+        return None
+    where = f"{path}.{loc[-1]}" if path else loc[-1]
+    allowed = sorted(properties)
+    if (
+        not allowed
+        or len(allowed) > 64
+        or any(_FIELD_NAME.fullmatch(name) is None for name in allowed)
+    ):
+        return where, ""
+    return where, f"此处允许字段：{', '.join(allowed)}"
 
 
 def _validation_details(
     errors: Sequence[Mapping[str, Any]], schema: Mapping[str, JsonValue]
 ) -> list[str]:
-    """按白名单投影校验错误位置与固定文本；被子位置错误覆盖的父级汇总错误不重复报告。"""
-    located: list[tuple[tuple[Any, ...], str, str]] = []
-    for error in errors:
-        loc = tuple(error.get("loc", ()))
+    """按白名单投影校验错误位置与固定文本。
+
+    父级汇总错误（如全部元素无效后“0个有效元素”的too_short）只是子位置错误的结果：只要存在
+    更深位置的错误就不报告父级，即使子位置因不在公开合同内而不能报告，以免给出误导原因。
+    """
+    locations = [tuple(error.get("loc", ())) for error in errors]
+    # (位置元组, 公开位置, 固定文本, 同一对象只提示一次的允许字段)
+    located: list[tuple[tuple[Any, ...], str, str, str]] = []
+    for loc, error in zip(locations, errors, strict=True):
+        kind = error.get("type")
+        message = error.get("msg")
+        if kind == "extra_forbidden":
+            extra = _extra_field(loc, schema)
+            if extra is not None:
+                located.append((loc, extra[0], _EXTRA_FIELD_MESSAGE, extra[1]))
+            continue
         where = _schema_location(loc, schema)
         if where is None:
             continue
-        kind = error.get("type")
-        message = error.get("msg")
         if (
             type(kind) is str
             and type(message) is str
             and (kind in _STRUCTURAL_ERROR_TYPES or kind.startswith("harnessix_"))
         ):
-            located.append((loc, where, message[:200]))
+            located.append((loc, where, message[:200], ""))
         else:
-            located.append((loc, where, "取值不符合合同"))
+            located.append((loc, where, "取值不符合合同", ""))
     details: list[str] = []
-    for loc, where, message in located:
-        if any(other != loc and other[: len(loc)] == loc for other, _, _ in located):
+    hints: set[str] = set()
+    for loc, where, message, hint in located:
+        if any(len(other) > len(loc) and other[: len(loc)] == loc for other in locations):
             continue
         line = f"{where}：{message}"
+        if hint and hint not in hints:
+            hints.add(hint)
+            line = f"{line}（{hint}）"
         if line not in details:
             details.append(line)
         if len(details) == _MAX_TYPE_MISMATCHES:
