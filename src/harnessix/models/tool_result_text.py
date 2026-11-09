@@ -67,6 +67,7 @@ def _render(public: Mapping[str, Any]) -> str | None:
         _search,
         _read_file,
         _process,
+        _patch,
     )
     for renderer in renderers:
         try:
@@ -214,12 +215,19 @@ def _process(output: dict[str, Any]) -> str | None:
     for stream in ("stdout", "stderr"):
         observed = output[stream]["observed_bytes"]
         head += f"; {stream} {observed} bytes"
-        text = preview[stream]["text"]
+        stream_preview = preview[stream]
+        text = stream_preview["text"]
+        if text is None:
+            if observed:
+                shown.append(f"[{stream}: not shown, binary or control characters]")
+            continue
         if not isinstance(text, str):
             raise TypeError("process stream text")
-        if preview[stream]["truncated"]:
-            size = preview[stream]["size_bytes"]
-            shown.append(f"[{stream}: preview of {size} of {observed} bytes]\n{text}")
+        if stream_preview["truncated"]:
+            # v3预览是流的末尾（带offset），v2是开头。
+            part = "last" if "offset" in stream_preview else "first"
+            size = stream_preview["size_bytes"]
+            shown.append(f"[{stream}: {part} {size} of {observed} bytes]\n{text}")
         elif text:
             shown.append(f"[{stream}]\n{text}")
     artifact = output.get("artifact")
@@ -229,3 +237,22 @@ def _process(output: dict[str, Any]) -> str | None:
     if output.get("complete") is False:
         head += "; output incomplete"
     return "\n".join([head, *shown])
+
+
+def _patch(output: dict[str, Any]) -> str | None:
+    if output.get("spec_version") != "harnessix.workspace-patch-output/v2":
+        return None
+    lines = [
+        f"patch {output['state']}: {_count(output['files'], 'file', 'files')}; "
+        f"transaction_id={output['transaction_id']}"
+    ]
+    for change in output["changes"]:
+        digest = change["content_sha256"]
+        state = "deleted" if digest is None else f"content_sha256={digest}"
+        lines.append(f"{change['path']} {state}")
+    preview = output["diff_preview"]
+    if preview["truncated"]:
+        lines.append(f"[diff: first part of {preview['total_bytes']} bytes]")
+    else:
+        lines.append("[diff]")
+    return "\n".join(lines) + "\n" + preview["text"]

@@ -23,7 +23,7 @@ async def test_generic_context_preserves_task_rules_without_forced_repair_stages
     fragments = json.loads(prepared.instructions or "")["fragments"]
     runtime = [item for item in fragments if item["kind"] == "runtime_instruction"]
     assert len(runtime) == 1
-    assert runtime[0]["source"] == "harnessix.generic-execution-instructions/v3"
+    assert runtime[0]["source"] == "harnessix.generic-execution-instructions/v4"
     instructions = runtime[0]["content"]
     assert "exec_command.<profile>" in instructions
     assert "Exit zero alone does not prove business" in instructions

@@ -155,7 +155,7 @@ def test_process_output_keeps_exit_status_and_stream_text():
         "exit 1; stdout 3 bytes; stderr 9000 bytes; full output: read_artifact "
         f"artifact_id={ARTIFACT['artifact_id']}\n"
         "[stdout]\nok\n\n"
-        "[stderr: preview of 1024 of 9000 bytes]\nError: x\n"
+        "[stderr: first 1024 of 9000 bytes]\nError: x\n"
     )
 
 
@@ -245,3 +245,48 @@ def test_openai_chat_option_is_off_by_default_and_outside_the_fingerprint(tmp_pa
     body, _ = build_request(request, config)
     tool_message = next(m for m in body["messages"] if m["role"] == "tool")
     assert json.loads(tool_message["content"])["output"] == preview
+
+
+def test_patch_v2_and_process_v3_render_digests_diff_and_stream_tails():
+    patch = {
+        "transaction_id": "b4c1ba3e-60b2-58af-9f63-4ee3d6786820",
+        "files": 2,
+        "state": "published",
+        "origin": "execution",
+        "diff_sha256": "2" * 64,
+        "spec_version": "harnessix.workspace-patch-output/v2",
+        "changes": [
+            {"path": "a.py", "content_sha256": "3" * 64},
+            {"path": "b.py", "content_sha256": None},
+        ],
+        "diff_preview": {
+            "text": "--- a/a.py\n+++ b/a.py\n",
+            "total_bytes": 9000,
+            "truncated": True,
+        },
+    }
+    assert tool_result_text(succeeded(patch)) == (
+        "patch published: 2 files; transaction_id=b4c1ba3e-60b2-58af-9f63-4ee3d6786820\n"
+        f"a.py content_sha256={'3' * 64}\n"
+        "b.py deleted\n"
+        "[diff: first part of 9000 bytes]\n"
+        "--- a/a.py\n+++ b/a.py\n"
+    )
+    process = {
+        "version": "trusted-process-output/v3",
+        "state": "exited",
+        "returncode": 1,
+        "stop_reason": "exited",
+        "stdout": {"observed_bytes": 5},
+        "stderr": {"observed_bytes": 20000},
+        "complete": True,
+        "diagnostic_preview": {
+            "stdout": {"text": None, "size_bytes": 0, "truncated": True, "offset": 0},
+            "stderr": {"text": "Error\n", "size_bytes": 6, "truncated": True, "offset": 19994},
+        },
+    }
+    assert tool_result_text(succeeded(process)) == (
+        "exit 1; stdout 5 bytes; stderr 20000 bytes\n"
+        "[stdout: not shown, binary or control characters]\n"
+        "[stderr: last 6 of 20000 bytes]\nError\n"
+    )
