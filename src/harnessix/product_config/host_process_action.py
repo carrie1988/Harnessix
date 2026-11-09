@@ -20,12 +20,12 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread, ToolCallContent, Turn
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
-from harnessix.execution.contracts import canonical_digest
 from harnessix.processes.supervision_contracts import ProcessLease, ProcessSpec
 from harnessix.processes.supervisor import PosixProcessSupervisor
 from harnessix.processes.trusted_output import (
     TrustedProcessOutputDocument,
     build_trusted_process_output,
+    recorded_process_public_output,
 )
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
@@ -236,11 +236,11 @@ class HostProcessOutputProvider:
         cancel.checkpoint()
         document = await self._executor.output_document(route.plan.execution.plan_id)
         body = document.to_jsonl()
-        public = self._executor.binding.public_output(document)
-        if (
-            canonical_digest(public) != expected_output_sha256
-            or hashlib.sha256(body).hexdigest() != expected_artifact_sha256
-        ):
+        # 升级前已审计的终态按原Hash匹配旧预览版本，不追加新预览。
+        public = recorded_process_public_output(
+            document, self._executor.binding.public_output(document), expected_output_sha256
+        )
+        if public is None or hashlib.sha256(body).hexdigest() != expected_artifact_sha256:
             raise KernelError("trusted_action_output_mismatch", "宿主Process输出与Router审计不一致")
         reference = await self._artifacts.publish_action_output(
             thread.thread_id,

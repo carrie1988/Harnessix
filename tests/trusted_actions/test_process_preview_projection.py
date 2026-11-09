@@ -1,4 +1,4 @@
-"""v2诊断正文必须同时满足闭合DTO、原计划身份及原审计Hash。"""
+"""v2/v3诊断正文必须同时满足闭合DTO、原计划身份及原审计Hash。"""
 
 from __future__ import annotations
 
@@ -14,30 +14,46 @@ from tests.trusted_actions.test_process_failure_projection import ProcessExecuto
 from tests.trusted_actions.test_success_projection_boundaries import output_reference
 
 
+def preview_output(output: dict, version: str) -> dict:
+    """按版本构造合法预览；v3每流多一个offset，上限从1 KiB升为8 KiB。"""
+    public = dict(output)
+    public["version"] = f"trusted-process-output/{version}"
+    streams = {
+        "stdout": {"text": "test diagnostic\n", "size_bytes": 16, "truncated": False},
+        "stderr": {"text": "", "size_bytes": 0, "truncated": False},
+    }
+    if version == "v3":
+        for stream in streams.values():
+            stream["offset"] = 0
+    public["diagnostic_preview"] = streams
+    return public
+
+
+LIMITS = {"v2": 1024, "v3": 8192}
+
+
+@pytest.mark.parametrize("version", ["v2", "v3"])
 @pytest.mark.parametrize("delivery", ["owner", "inline"])
 @pytest.mark.parametrize("recovery", [False, True])
 @pytest.mark.parametrize(
-    "case", ["valid", "missing", "size", "limit", "control", "extra", "truncated", "v1"]
+    "case",
+    ["valid", "missing", "size", "limit", "control", "extra", "truncated", "v1", "other-version"],
 )
 async def test_preview_requires_formal_contract_even_with_matching_audit(
-    tmp_path, case, recovery, delivery
+    tmp_path, case, recovery, delivery, version
 ):
     class Returning(ProcessExecutor):
         async def execute(self, plan, arguments):
             raw = await super().execute(plan, arguments)
-            public = dict(raw.output)
-            public["version"] = "trusted-process-output/v2"
-            public["diagnostic_preview"] = {
-                "stdout": {"text": "test diagnostic\n", "size_bytes": 16, "truncated": False},
-                "stderr": {"text": "", "size_bytes": 0, "truncated": False},
-            }
+            public = preview_output(raw.output, version)
             preview = public["diagnostic_preview"]["stdout"]
+            limit = LIMITS[version] + 1
             if case == "missing":
                 del public["diagnostic_preview"]
             elif case == "size":
                 preview["size_bytes"] = 17
             elif case == "limit":
-                preview.update(text="x" * 1025, size_bytes=1025)
+                preview.update(text="x" * limit, size_bytes=limit)
             elif case == "control":
                 preview["text"] = "x" * 15 + "\x00"
             elif case == "extra":
@@ -46,6 +62,8 @@ async def test_preview_requires_formal_contract_even_with_matching_audit(
                 preview["truncated"] = True
             elif case == "v1":
                 public["version"] = "trusted-process-output/v1"
+            elif case == "other-version":
+                public["version"] = "trusted-process-output/" + ("v3" if version == "v2" else "v2")
             return raw.model_copy(update={"output": public})
 
     executor = Returning(False, "exited", "exited", 0)
@@ -100,34 +118,33 @@ async def test_preview_requires_formal_contract_even_with_matching_audit(
         audit.close()
 
 
+@pytest.mark.parametrize("version", ["v2", "v3"])
 @pytest.mark.parametrize("recovery", [False, True])
 @pytest.mark.parametrize("delivery", ["owner", "inline"])
 @pytest.mark.parametrize(
     "case", ["complete", "truncated", "null", "incomplete", "v1", "timeout", "unknown"]
 )
 async def test_nonzero_feedback_only_consumes_verified_visible_preview(
-    tmp_path, recovery, delivery, case
+    tmp_path, recovery, delivery, case, version
 ):
     class Returning(ProcessExecutor):
         async def execute(self, plan, arguments):
             raw = await super().execute(plan, arguments)
             if case == "v1":
                 return raw
-            public = dict(raw.output)
-            public["version"] = "trusted-process-output/v2"
-            public["diagnostic_preview"] = {
-                "stdout": {"text": "test diagnostic\n", "size_bytes": 16, "truncated": False},
-                "stderr": {"text": "", "size_bytes": 0, "truncated": False},
-            }
+            public = preview_output(raw.output, version)
+            offset = {"offset": 0} if version == "v3" else {}
             if case == "truncated":
                 public["diagnostic_preview"]["stdout"] = {
                     "text": "test",
+                    **offset,
                     "size_bytes": 4,
                     "truncated": True,
                 }
             elif case == "null":
                 public["diagnostic_preview"]["stdout"] = {
                     "text": None,
+                    **offset,
                     "size_bytes": 0,
                     "truncated": True,
                 }

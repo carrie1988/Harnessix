@@ -26,6 +26,7 @@ from harnessix.processes.supervision_planner import build_process_spec
 from harnessix.processes.trusted_output import (
     TrustedProcessOutputDocument,
     build_trusted_process_output,
+    recorded_process_public_output,
     trusted_process_public_output,
 )
 from harnessix.sandbox.contracts import ContainerExecutionSpec
@@ -694,14 +695,13 @@ class ProductProcessOutputProvider:
         cancel.checkpoint()
         document = await self._executor.output_document(route.plan.execution.plan_id)
         body = document.to_jsonl()
-        public = trusted_process_public_output(document, include_preview=True)
-        if canonical_digest(public) != expected_output_sha256:
-            # 历史终态只按原Hash恢复v1，不能给旧审计事实追加预览或重放Process。
-            public = trusted_process_public_output(document)
-        if (
-            canonical_digest(public) != expected_output_sha256
-            or hashlib.sha256(body).hexdigest() != expected_artifact_sha256
-        ):
+        # 历史终态只按原Hash恢复v2或v1，不能给旧审计事实追加新预览或重放Process。
+        public = recorded_process_public_output(
+            document,
+            trusted_process_public_output(document, include_preview=True),
+            expected_output_sha256,
+        )
+        if public is None or hashlib.sha256(body).hexdigest() != expected_artifact_sha256:
             raise KernelError("trusted_action_output_mismatch", "Process输出与Router审计摘要不匹配")
         ref = await self._artifacts.publish_action_output(
             thread.thread_id,

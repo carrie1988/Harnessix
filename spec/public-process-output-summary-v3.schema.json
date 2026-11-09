@@ -1,0 +1,185 @@
+{
+  "$defs": {
+    "PublicProcessDiagnosticTail": {
+      "additionalProperties": false,
+      "properties": {
+        "stdout": {
+          "$ref": "#/$defs/PublicProcessStreamTail"
+        },
+        "stderr": {
+          "$ref": "#/$defs/PublicProcessStreamTail"
+        }
+      },
+      "required": [
+        "stdout",
+        "stderr"
+      ],
+      "title": "PublicProcessDiagnosticTail",
+      "type": "object"
+    },
+    "PublicProcessStreamSummary": {
+      "additionalProperties": false,
+      "description": "公开观察摘要；持久流有上限，观察字节数可能因最后一批输出越过上限。",
+      "properties": {
+        "observed_bytes": {
+          "minimum": 0,
+          "title": "Observed Bytes",
+          "type": "integer"
+        },
+        "observed_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Observed Sha256",
+          "type": "string"
+        },
+        "persisted_bytes": {
+          "maximum": 67108864,
+          "minimum": 0,
+          "title": "Persisted Bytes",
+          "type": "integer"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "eof": {
+          "title": "Eof",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "observed_bytes",
+        "observed_sha256",
+        "persisted_bytes",
+        "truncated",
+        "eof"
+      ],
+      "title": "PublicProcessStreamSummary",
+      "type": "object"
+    },
+    "PublicProcessStreamTail": {
+      "additionalProperties": false,
+      "description": "归档流的UTF-8尾部：Traceback与失败摘要在末尾；offset是首字节在该流中的字节偏移。",
+      "properties": {
+        "text": {
+          "anyOf": [
+            {
+              "maxLength": 8192,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Text"
+        },
+        "offset": {
+          "maximum": 67108864,
+          "minimum": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "size_bytes": {
+          "maximum": 8192,
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "offset",
+        "size_bytes",
+        "truncated"
+      ],
+      "title": "PublicProcessStreamTail",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "v2的1 KiB前缀常截去Traceback末尾；v3改为每流最多8 KiB尾部，其余事实与v2相同。",
+  "properties": {
+    "version": {
+      "const": "trusted-process-output/v3",
+      "title": "Version",
+      "type": "string"
+    },
+    "profile": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Profile",
+      "type": "string"
+    },
+    "process_id": {
+      "pattern": "^[0-9a-f-]{36}$",
+      "title": "Process Id",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "exited",
+        "failed",
+        "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "returncode": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Returncode"
+    },
+    "stop_reason": {
+      "enum": [
+        "exited",
+        "timeout",
+        "cancelled",
+        "closed",
+        "output_limit",
+        "input_limit",
+        "io_error",
+        "host_lost",
+        "launch_failed",
+        "cleanup_failed",
+        "unknown"
+      ],
+      "title": "Stop Reason",
+      "type": "string"
+    },
+    "stdout": {
+      "$ref": "#/$defs/PublicProcessStreamSummary"
+    },
+    "stderr": {
+      "$ref": "#/$defs/PublicProcessStreamSummary"
+    },
+    "complete": {
+      "title": "Complete",
+      "type": "boolean"
+    },
+    "diagnostic_preview": {
+      "$ref": "#/$defs/PublicProcessDiagnosticTail"
+    }
+  },
+  "required": [
+    "version",
+    "profile",
+    "process_id",
+    "state",
+    "returncode",
+    "stop_reason",
+    "stdout",
+    "stderr",
+    "complete",
+    "diagnostic_preview"
+  ],
+  "title": "PublicProcessOutputSummaryV3",
+  "type": "object"
+}

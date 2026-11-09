@@ -55,7 +55,35 @@ supersedes: []
 
 # Harnessix Code Process Runtime模块设计
 
+## 当前增量：v3尾部诊断预览（每流8 KiB）
+
+**背景。** 2026-11-09 holdout part 1步数分析：v2每流只给前1024字节，Python Traceback的异常行和pytest
+失败摘要都在流末尾，模型只能另发`read_artifact`读取日志。新结果改为
+[`PublicProcessOutputSummaryV3`](../../src/harnessix/processes/public_output.py)
+（`version=trusted-process-output/v3`，[Schema](../../spec/public-process-output-summary-v3.schema.json)）：
+
+| 字段 | 约束 |
+|---|---|
+| `diagnostic_preview.<流>.text` | 归档流最后至多`MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES`（8192）字节，起点后移到完整UTF-8字符；可见性规则与v2相同：整个归档流须是可显示UTF-8，否则为`null` |
+| `offset` | 新增：预览首字节在该流中的字节偏移，与归档分片`offset`同义；`offset+size_bytes ≤ persisted_bytes`，`text=null`时为0 |
+| `size_bytes`、`truncated` | 同v2：`truncated`按已观察字节判断（`size_bytes < observed_bytes`），大于0的`offset`表示前面另有输出 |
+
+8 KiB的取舍：常见Traceback和pytest失败摘要（short test summary加计数行）在数KB内；两流正文最多16 KiB，
+最坏全部需JSON转义时约32 KiB，仍低于默认64 KiB单结果视图（ADR 0057）、默认`max_output_chars`
+65536及1 MiB公开扫描预算（`secrets/publication.py`的`MAX_SCAN_BYTES`）；Secret扫描仍覆盖整个归档双流。
+若宿主把单结果视图配置得比约34 KiB更小，大输出的命令结果可能超限，需要相应放宽。
+
+兼容：v2与v1只用于已审计历史。`trusted_process_public_output(include_preview=True)`派生v3，
+`legacy_preview=True`只重建v2；Owner重建（容器与宿主命令共用
+[`recorded_process_public_output`](../../src/harnessix/processes/trusted_output.py)）按原审计Hash依次匹配v3、v2、v1，
+不给旧终态追加新预览；Artifact读取按已提交版本重建并精确比较；公开校验按`version`选择v1/v2/v3闭合DTO。
+v2的1024字节常量与Schema不变，原v2用例改用`legacy_preview`继续覆盖。回归见[预览合同](../../tests/processes/test_diagnostic_preview.py)、
+[产品批准链](../../tests/product_config/test_process_diagnostic_preview.py)与
+[投影边界](../../tests/trusted_actions/test_process_preview_projection.py)。
+
 ## 当前增量：经审计的有界诊断预览
+
+> v2（1 KiB前缀）现只用于已审计历史；新结果见上一节v3。
 
 **背景与目标。** R3旧候选四份报告的八次模型调用累计输入约5.4～5.8万Token；
 Profile只返回元数据，模型另发`read_artifact`读取Base64日志。现在直接提供可显示的短诊断，

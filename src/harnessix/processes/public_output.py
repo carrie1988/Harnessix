@@ -10,7 +10,11 @@ from pydantic import Field, model_validator
 from harnessix.processes.supervision_contracts import MAX_PROCESS_OUTPUT_BYTES, ProcessStopReason
 from harnessix.tools.contracts import ReadContract, Revision
 
+# v2历史前缀预览上限；只用于验证和重建已审计的v2结果。
 MAX_PROCESS_PREVIEW_STREAM_BYTES = 1024
+# v3每流尾部预览上限：容纳常见Python Traceback或pytest失败摘要。两流正文最多16 KiB，
+# JSON转义后最坏约32 KiB，仍低于默认64 KiB单结果视图与1 MiB公开扫描预算。
+MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES = 8 * 1024
 
 
 class PublicProcessStreamSummary(ReadContract):
@@ -109,6 +113,49 @@ class PublicProcessOutputSummaryV2(_PublicProcessOutputFields):
             preview = getattr(self.diagnostic_preview, name)
             if preview.size_bytes > stream.persisted_bytes or preview.truncated != (
                 preview.size_bytes < stream.observed_bytes
+            ):
+                raise ValueError("诊断预览与观察摘要不一致")
+        return self
+
+
+class PublicProcessStreamTail(ReadContract):
+    """归档流的UTF-8尾部：Traceback与失败摘要在末尾；offset是首字节在该流中的字节偏移。"""
+
+    text: str | None = Field(max_length=MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES)
+    offset: int = Field(ge=0, le=MAX_PROCESS_OUTPUT_BYTES)
+    size_bytes: int = Field(ge=0, le=MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES)
+    truncated: bool
+
+    @model_validator(mode="after")
+    def truthful_text(self) -> Self:
+        if self.text is None:
+            if self.size_bytes != 0 or self.offset != 0:
+                raise ValueError("不可见预览不能携带正文长度或偏移")
+        elif len(self.text.encode("utf-8")) != self.size_bytes or any(
+            not char.isprintable() and char not in "\t\r\n" for char in self.text
+        ):
+            raise ValueError("诊断预览不是有界可显示UTF-8")
+        return self
+
+
+class PublicProcessDiagnosticTail(ReadContract):
+    stdout: PublicProcessStreamTail
+    stderr: PublicProcessStreamTail
+
+
+class PublicProcessOutputSummaryV3(_PublicProcessOutputFields):
+    """v2的1 KiB前缀常截去Traceback末尾；v3改为每流最多8 KiB尾部，其余事实与v2相同。"""
+
+    version: Literal["trusted-process-output/v3"]
+    diagnostic_preview: PublicProcessDiagnosticTail
+
+    @model_validator(mode="after")
+    def consistent_preview(self) -> Self:
+        for name in ("stdout", "stderr"):
+            stream = getattr(self, name)
+            preview = getattr(self.diagnostic_preview, name)
+            if preview.offset + preview.size_bytes > stream.persisted_bytes or (
+                preview.truncated != (preview.size_bytes < stream.observed_bytes)
             ):
                 raise ValueError("诊断预览与观察摘要不一致")
         return self

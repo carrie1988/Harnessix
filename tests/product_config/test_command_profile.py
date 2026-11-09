@@ -371,7 +371,7 @@ async def test_command_terminal_output_uses_process_contract_and_archives_comple
         if returncode:
             assert result.error is not None and result.error.code == "process_nonzero_exit"
         assert isinstance(result.output, dict)
-        assert result.output["version"] == "trusted-process-output/v2"
+        assert result.output["version"] == "trusted-process-output/v3"
         assert result.output["profile"] == "workspace-command"
         assert result.output["process_id"] == str(case.approval.plan_id)
         reference = cast(dict[str, Any], result.output["artifact"])

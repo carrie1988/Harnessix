@@ -34,8 +34,8 @@ from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.processes.public_output import (
-    MAX_PROCESS_PREVIEW_STREAM_BYTES,
-    PublicProcessOutputSummaryV2,
+    MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES,
+    PublicProcessOutputSummaryV3,
 )
 from harnessix.processes.supervision_contracts import ProcessLease
 from harnessix.processes.supervisor import PosixProcessSupervisor
@@ -312,7 +312,9 @@ async def _read_archive(case: _ApprovedProduct, result: ToolResultContent) -> An
             == expected
         )
     assert public == trusted_process_public_output(
-        document, include_preview=public["version"] == "trusted-process-output/v2"
+        document,
+        include_preview=public["version"] == "trusted-process-output/v3",
+        legacy_preview=public["version"] == "trusted-process-output/v2",
     )
     event = case.router.events(case.plan_id)[-1]
     assert event.output_sha256 == canonical_digest(public)
@@ -338,7 +340,7 @@ async def _assert_no_replay(case: _ApprovedProduct, completed: Any) -> None:
     ],
     ids=["success", "nonzero", "timeout"],
 )
-async def test_approved_product_publishes_v2_and_pages_original_v1_bytes(
+async def test_approved_product_publishes_v3_and_pages_original_v1_bytes(
     tmp_path: Path, returncode: int, stop_reason: str, error_code: str | None
 ) -> None:
     stdout = b"stdout diagnostic\n" + b"x" * (TRUSTED_PROCESS_OUTPUT_CHUNK_BYTES + 17)
@@ -353,13 +355,20 @@ async def test_approved_product_publishes_v2_and_pages_original_v1_bytes(
         assert (result.error.code if result.error is not None else None) == error_code
         assert isinstance(result.output, dict)
         public = {key: value for key, value in result.output.items() if key != "artifact"}
-        checked = PublicProcessOutputSummaryV2.model_validate(public)
+        checked = PublicProcessOutputSummaryV3.model_validate(public)
         assert checked.returncode == returncode and checked.stop_reason == stop_reason
-        for name, body in (("stdout", stdout), ("stderr", stderr)):
-            preview = getattr(checked.diagnostic_preview, name)
-            assert preview.text == body[:MAX_PROCESS_PREVIEW_STREAM_BYTES].decode()
-            assert preview.size_bytes == MAX_PROCESS_PREVIEW_STREAM_BYTES
-            assert preview.truncated is True
+        # stdout超过8 KiB：只给末尾并标出起点；stderr不足8 KiB：完整给出。
+        tail = MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES
+        preview = checked.diagnostic_preview.stdout
+        assert preview.text == stdout[-tail:].decode()
+        assert (preview.offset, preview.size_bytes, preview.truncated) == (
+            len(stdout) - tail,
+            tail,
+            True,
+        )
+        preview = checked.diagnostic_preview.stderr
+        assert preview.text == stderr.decode()
+        assert (preview.offset, preview.size_bytes, preview.truncated) == (0, len(stderr), False)
         await _read_archive(case, result)
         assert case.router.status(case.plan_id).state == result.outcome
         assert case.artifact_count() == 1 and len(case.provider.requests) == 2
@@ -370,14 +379,14 @@ async def test_approved_product_publishes_v2_and_pages_original_v1_bytes(
 @pytest.mark.parametrize(
     ("stdout", "expected_text"),
     [
-        (b"x" * 1023 + "中文\n".encode(), "x" * 1023),
-        (b"x" * 1100 + b"\xff", None),
-        (b"x" * 1100 + b"\x00", None),
+        ("中".encode() + b"x" * (MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES - 1), "x" * 8191),
+        (b"\xff" + b"x" * (MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES + 100), None),
+        (b"\x00" + b"x" * (MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES + 100), None),
         (b"", ""),
     ],
-    ids=["utf8-boundary", "binary-after-preview", "control-after-preview", "empty-stdout"],
+    ids=["utf8-boundary", "binary-before-preview", "control-before-preview", "empty-stdout"],
 )
-async def test_v2_preview_is_byte_bounded_without_rewriting_archived_streams(
+async def test_v3_preview_is_byte_bounded_without_rewriting_archived_streams(
     tmp_path: Path, stdout: bytes, expected_text: str | None
 ) -> None:
     async with _approved_product(tmp_path, stdout=stdout, stderr=b"diagnostic\n") as case:
@@ -386,9 +395,10 @@ async def test_v2_preview_is_byte_bounded_without_rewriting_archived_streams(
         result = _result(completed)
         assert isinstance(result.output, dict)
         public = {key: value for key, value in result.output.items() if key != "artifact"}
-        preview = PublicProcessOutputSummaryV2.model_validate(public).diagnostic_preview.stdout
+        preview = PublicProcessOutputSummaryV3.model_validate(public).diagnostic_preview.stdout
         size = len(expected_text.encode()) if expected_text is not None else 0
         assert preview.text == expected_text and preview.size_bytes == size
+        assert preview.offset == (len(stdout) - size if expected_text is not None else 0)
         assert preview.truncated == (size < len(stdout))
         await _read_archive(case, result)
         await _assert_no_replay(case, completed)
@@ -401,14 +411,16 @@ async def test_v2_preview_is_byte_bounded_without_rewriting_archived_streams(
         (2, "exited", "process_nonzero_exit"),
         (-15, "timeout", "process_timeout"),
     ],
-    ids=["success-v1", "nonzero-v1", "timeout-v1"],
+    ids=["success", "nonzero", "timeout"],
 )
-async def test_historical_v1_terminal_hash_recovers_without_upgrade_or_execution(
+@pytest.mark.parametrize("history", ["v1", "v2"])
+async def test_historical_terminal_hash_recovers_without_upgrade_or_execution(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     returncode: int,
     stop_reason: str,
     error_code: str | None,
+    history: str,
 ) -> None:
     async with _approved_product(tmp_path, returncode=returncode, stop_reason=stop_reason) as case:
         execute = ProductProcessActionExecutor.execute
@@ -416,14 +428,15 @@ async def test_historical_v1_terminal_hash_recovers_without_upgrade_or_execution
         async def historical_execute(self: Any, route: Any, arguments: Any) -> Any:
             outcome = await execute(self, route, arguments)
             document = await self.output_document(route.execution.plan_id)
-            return outcome.model_copy(update={"output": trusted_process_public_output(document)})
+            public = trusted_process_public_output(document, legacy_preview=history == "v2")
+            return outcome.model_copy(update={"output": public})
 
         # 只在真实批准执行的结果生成阶段模拟旧版本；不改审计链或认证。
         with monkeypatch.context() as historical:
             historical.setattr(ProductProcessActionExecutor, "execute", historical_execute)
             original = await case.router.execute(case.plan_id)
         assert isinstance(original.output, dict)
-        assert original.output["version"] == "trusted-process-output/v1"
+        assert original.output["version"] == f"trusted-process-output/{history}"
         events = case.router.events(case.plan_id)
         original_hash = canonical_digest(original.output)
         assert events[-1].output_sha256 == original_hash
@@ -432,8 +445,8 @@ async def test_historical_v1_terminal_hash_recovers_without_upgrade_or_execution
         assert completed.status is TurnStatus.COMPLETED
         result = _result(completed)
         assert isinstance(result.output, dict)
-        assert result.output["version"] == "trusted-process-output/v1"
-        assert "diagnostic_preview" not in result.output
+        assert result.output["version"] == f"trusted-process-output/{history}"
+        assert ("diagnostic_preview" in result.output) == (history == "v2")
         assert (result.error.code if result.error is not None else None) == error_code
         assert result.trusted_action is not None and result.trusted_action.origin == "execution"
         document = await _read_archive(case, result)
@@ -447,7 +460,7 @@ async def test_historical_v1_terminal_hash_recovers_without_upgrade_or_execution
 
 
 @pytest.mark.parametrize("tamper", ["text", "size", "truncated", "extra"])
-async def test_changed_public_preview_cannot_match_v2_audit_or_fall_back_to_v1(
+async def test_changed_public_preview_cannot_match_v3_audit_or_fall_back_to_history(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tamper: str
 ) -> None:
     async with _approved_product(tmp_path) as case:
@@ -491,7 +504,9 @@ async def test_full_body_secret_protection_rejects_canary_beyond_preview(
     tmp_path: Path, stream: str, location: str
 ) -> None:
     prefix = 1100 if location == "outside-preview" else TRUSTED_PROCESS_OUTPUT_CHUNK_BYTES - 8
-    payload = b"x" * prefix + CANARY.encode() + b"\n"
+    # 预览取尾部：Canary之后再写满一个预览窗口，确保它只在预览之外的归档里。
+    suffix = b"y" * (MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES + 16) + b"\n"
+    payload = b"x" * prefix + CANARY.encode() + b"\n" + suffix
     streams = {"stdout": b"safe stdout\n", "stderr": b"safe stderr\n", stream: payload}
     async with _approved_product(tmp_path, **streams) as case:
         completed = await case.resume()
@@ -525,7 +540,7 @@ async def test_full_body_secret_protection_rejects_canary_beyond_preview(
                     assert CANARY.encode() not in path.read_bytes()
 
 
-async def test_cancelled_execution_reconciles_to_v2_without_replay(tmp_path: Path) -> None:
+async def test_cancelled_execution_reconciles_to_v3_without_replay(tmp_path: Path) -> None:
     async with _approved_product(tmp_path, cancellable=True) as case:
         execution = asyncio.create_task(case.router.execute(case.plan_id))
         await asyncio.wait_for(cast(_CancellableRuntime, case.runtime).started.wait(), timeout=1)
@@ -536,13 +551,13 @@ async def test_cancelled_execution_reconciles_to_v2_without_replay(tmp_path: Pat
         reconciled = await case.router.reconcile(case.plan_id)
         assert reconciled.kind == "failed" and reconciled.error_code == "process_cancelled"
         assert isinstance(reconciled.output, dict)
-        assert reconciled.output["version"] == "trusted-process-output/v2"
+        assert reconciled.output["version"] == "trusted-process-output/v3"
         completed = await case.resume()
         assert completed.status is TurnStatus.COMPLETED
         result = _result(completed)
         assert result.outcome == "failed" and result.error.code == "process_cancelled"
         assert isinstance(result.output, dict)
-        assert result.output["version"] == "trusted-process-output/v2"
+        assert result.output["version"] == "trusted-process-output/v3"
         assert case.router.status(case.plan_id).state == "failed"
         assert case.runtime.reconcile_calls == 1
         await _read_archive(case, result)
@@ -589,26 +604,32 @@ async def test_rebuild_failure_preserves_terminal_fact_without_publication_or_re
         await _assert_no_replay(case, completed)
 
 
-async def test_v2_dto_rejects_open_or_untruthful_preview_shapes(tmp_path: Path) -> None:
+async def test_v3_dto_rejects_open_or_untruthful_preview_shapes(tmp_path: Path) -> None:
+    tail = MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES
     async with _approved_product(tmp_path) as case:
         outcome = await case.router.execute(case.plan_id)
         assert isinstance(outcome.output, dict)
-        PublicProcessOutputSummaryV2.model_validate(outcome.output)
+        PublicProcessOutputSummaryV3.model_validate(outcome.output)
+        valid = {"text": "safe output\n", "offset": 0, "size_bytes": 12, "truncated": False}
         invalid_previews = [
-            {"text": "x" * 1025, "size_bytes": 1025, "truncated": False},
-            {"text": None, "size_bytes": 1, "truncated": True},
-            {"text": "\x00", "size_bytes": 1, "truncated": True},
-            {"text": "中", "size_bytes": 1, "truncated": True},
-            {"text": "safe output\n", "size_bytes": True, "truncated": False},
-            {"text": "safe output\n", "size_bytes": "12", "truncated": False},
-            {"text": "safe output\n", "size_bytes": 12, "truncated": True},
-            {"text": "safe output\n", "size_bytes": 12, "truncated": False, "extra": 1},
+            {**valid, "text": "x" * (tail + 1), "size_bytes": tail + 1},
+            {**valid, "text": None, "size_bytes": 1, "truncated": True},
+            {**valid, "text": None, "size_bytes": 0, "offset": 1, "truncated": True},
+            {**valid, "text": "\x00", "size_bytes": 1, "truncated": True},
+            {**valid, "text": "中", "size_bytes": 1, "truncated": True},
+            {**valid, "size_bytes": True},
+            {**valid, "size_bytes": "12"},
+            {**valid, "offset": "0"},
+            {**valid, "offset": 1},
+            {**valid, "truncated": True},
+            {**valid, "extra": 1},
+            {key: value for key, value in valid.items() if key != "offset"},
         ]
         for preview in invalid_previews:
             public = deepcopy(outcome.output)
             public["diagnostic_preview"]["stdout"] = preview
             with pytest.raises(ValidationError):
-                PublicProcessOutputSummaryV2.model_validate(public)
+                PublicProcessOutputSummaryV3.model_validate(public)
         for field in ("diagnostic_preview", "stderr"):
             public = deepcopy(outcome.output)
             if field == "diagnostic_preview":
@@ -616,9 +637,9 @@ async def test_v2_dto_rejects_open_or_untruthful_preview_shapes(tmp_path: Path) 
             else:
                 del public["diagnostic_preview"][field]
             with pytest.raises(ValidationError):
-                PublicProcessOutputSummaryV2.model_validate(public)
+                PublicProcessOutputSummaryV3.model_validate(public)
         public = deepcopy(outcome.output)
         public["extra"] = "not-closed"
         with pytest.raises(ValidationError):
-            PublicProcessOutputSummaryV2.model_validate(public)
+            PublicProcessOutputSummaryV3.model_validate(public)
         assert case.artifact_count() == 0 and case.runtime.run_calls == 1

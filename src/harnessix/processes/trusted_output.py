@@ -11,7 +11,11 @@ from typing import Annotated, Literal, Self, cast
 from pydantic import Field, JsonValue, TypeAdapter, ValidationError, model_validator
 
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, MAX_PAGE_BYTES
-from harnessix.processes.public_output import MAX_PROCESS_PREVIEW_STREAM_BYTES
+from harnessix.execution.contracts import canonical_digest
+from harnessix.processes.public_output import (
+    MAX_PROCESS_PREVIEW_STREAM_BYTES,
+    MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES,
+)
 from harnessix.processes.supervision_contracts import ProcessLease, ProcessOutputObservation
 from harnessix.tools.contracts import ReadContract, Revision
 
@@ -189,13 +193,24 @@ def trusted_process_public_output(
     *,
     include_passed: bool = False,
     include_preview: bool = False,
+    legacy_preview: bool = False,
 ) -> dict[str, JsonValue]:
-    """从同一验真文档派生公开合同；默认精确保留历史v1及Eval摘要。"""
+    """从同一验真文档派生公开合同；默认精确保留历史v1及Eval摘要。
 
-    if include_passed and include_preview:
-        raise ValueError("Eval v1合同不包含Process v2预览")
+    include_preview派生当前v3尾部预览；legacy_preview只用于重建已审计的v2前缀预览。
+    """
+
+    if include_passed and (include_preview or legacy_preview):
+        raise ValueError("Eval v1合同不包含Process诊断预览")
+    if include_preview and legacy_preview:
+        raise ValueError("Process公开输出只能选择一个预览版本")
     public = document.summary.public_output()
     if include_preview:
+        public["version"] = "trusted-process-output/v3"
+        public["diagnostic_preview"] = {
+            name: _stream_tail(document, name) for name in ("stdout", "stderr")
+        }
+    if legacy_preview:
         public["version"] = "trusted-process-output/v2"
         public["diagnostic_preview"] = {
             name: _stream_preview(document, name) for name in ("stdout", "stderr")
@@ -210,24 +225,67 @@ def trusted_process_public_output(
     return public
 
 
-def _stream_preview(document: TrustedProcessOutputDocument, name: str) -> dict[str, JsonValue]:
+def recorded_process_public_output(
+    document: TrustedProcessOutputDocument,
+    current: dict[str, JsonValue],
+    expected_sha256: str,
+) -> dict[str, JsonValue] | None:
+    """按原审计Hash选择同一文档的公开形状：当前合同，或当前预览版之前的v2前缀与v1纯摘要。
+
+    只重建已审计事实，不给旧终态追加新预览；Eval等无预览形状没有历史候选。
+    """
+
+    candidates = [current]
+    if current.get("version") == "trusted-process-output/v3":
+        candidates.append(trusted_process_public_output(document, legacy_preview=True))
+    if current.get("version") in {"trusted-process-output/v2", "trusted-process-output/v3"}:
+        candidates.append(trusted_process_public_output(document))
+    return next(
+        (item for item in candidates if canonical_digest(item) == expected_sha256),
+        None,
+    )
+
+
+def _visible_stream(document: TrustedProcessOutputDocument, name: str) -> bytes | None:
+    """整个归档前缀须是可显示UTF-8；不将后半段含乱码/控制符的流伪装成普通文本。"""
     data = b"".join(chunk.data() for chunk in document.chunks if chunk.stream == name)
     try:
         decoded = data.decode("utf-8")
     except UnicodeError:
-        text = None
-    else:
-        # 先检查整个归档前缀；不将后半段含乱码/控制符的流伪装成普通文本。
-        text = (
-            codecs.getincrementaldecoder("utf-8")().decode(
-                data[:MAX_PROCESS_PREVIEW_STREAM_BYTES], final=False
-            )
-            if all(char.isprintable() or char in "\t\r\n" for char in decoded)
-            else None
+        return None
+    return data if all(char.isprintable() or char in "\t\r\n" for char in decoded) else None
+
+
+def _stream_preview(document: TrustedProcessOutputDocument, name: str) -> dict[str, JsonValue]:
+    data = _visible_stream(document, name)
+    text = (
+        None
+        if data is None
+        else codecs.getincrementaldecoder("utf-8")().decode(
+            data[:MAX_PROCESS_PREVIEW_STREAM_BYTES], final=False
         )
+    )
     size = len(text.encode("utf-8")) if text is not None else 0
     summary = document.summary.stdout if name == "stdout" else document.summary.stderr
     return {"text": text, "size_bytes": size, "truncated": size < summary.observed_bytes}
+
+
+def _stream_tail(document: TrustedProcessOutputDocument, name: str) -> dict[str, JsonValue]:
+    """取归档流最后至多8 KiB，起点后移到完整UTF-8字符；offset为起点在流中的字节偏移。"""
+    summary = document.summary.stdout if name == "stdout" else document.summary.stderr
+    data = _visible_stream(document, name)
+    if data is None:
+        return {"text": None, "offset": 0, "size_bytes": 0, "truncated": True}
+    start = max(0, len(data) - MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES)
+    while start < len(data) and data[start] & 0xC0 == 0x80:
+        start += 1
+    size = len(data) - start
+    return {
+        "text": data[start:].decode("utf-8"),
+        "offset": start,
+        "size_bytes": size,
+        "truncated": size < summary.observed_bytes,
+    }
 
 
 def _archive_lengths(stdout_bytes: int, stderr_bytes: int) -> tuple[int, int]:

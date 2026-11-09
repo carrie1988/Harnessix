@@ -239,7 +239,7 @@ def _process_failure_feedback(
         or error is None
         or error.code != "process_nonzero_exit"
         or not isinstance(output, dict)
-        or output.get("version") != "trusted-process-output/v2"
+        or output.get("version") not in {"trusted-process-output/v2", "trusted-process-output/v3"}
     ):
         return result
     preview = output["diagnostic_preview"]

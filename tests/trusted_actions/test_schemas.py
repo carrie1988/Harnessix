@@ -10,6 +10,7 @@ from harnessix.processes.public_output import (
     PublicEvalOutputSummary,
     PublicProcessOutputSummary,
     PublicProcessOutputSummaryV2,
+    PublicProcessOutputSummaryV3,
     PublicProcessStreamSummary,
 )
 from harnessix.trusted_actions.contracts import (
@@ -47,4 +48,7 @@ def test_action_plane_public_schemas_match_generated_contracts() -> None:
         assert persisted == model.model_json_schema()
     assert json.loads((root / "public-process-output-summary-v2.schema.json").read_text()) == (
         PublicProcessOutputSummaryV2.model_json_schema()
+    )
+    assert json.loads((root / "public-process-output-summary-v3.schema.json").read_text()) == (
+        PublicProcessOutputSummaryV3.model_json_schema()
     )
