@@ -57,6 +57,30 @@ def test_harnessix_swebench_template_renders_the_issue_verbatim_with_mini_aligne
         assert phrase in rendered
 
 
+def test_template_v2_reviews_failures_against_the_original_code_in_place() -> None:
+    """v2：基线在原地用git stash取得，按测试id与失败信息比较，并区分预期的旧行为断言与回归。"""
+    template = ROOT / "benchmarks/harbor/harnessix/swebench-task-v2.j2"
+    issue = "Callable storage {{ not a template }} fails\nwith `default_storage` <b>"
+    rendered = render_prompt_template(template, issue)
+    assert rendered.startswith("<pr_description>\nConsider the following PR description:\n")
+    assert f"\n{issue}\n</pr_description>" in rendered
+    for phrase in (
+        "Change only regular, non-test source files",
+        "git stash && timeout 600 <test command>; git stash pop",
+        "Do not copy the repository\n  elsewhere",
+        "by test id and by failure message",
+        "asserts the old behaviour that the issue explicitly asks to change",
+        "Anything else is a regression",
+        "closely related variants of the reported case",
+        "first state your current hypothesis or next step in one short line",
+    ):
+        assert phrase in rendered
+    # 不点名任何具体仓库、项目或测试。
+    lowered = rendered.lower()
+    for name in ("django", "sympy", "sphinx", "astropy", "matplotlib", "scikit", "pytest"):
+        assert name not in lowered
+
+
 @pytest.mark.parametrize(
     "spec",
     [

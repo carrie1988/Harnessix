@@ -1,0 +1,47 @@
+<pr_description>
+Consider the following PR description:
+{{ instruction }}
+</pr_description>
+
+<instructions>
+Make the changes needed to resolve the issue in the PR description, in a way that is general and
+consistent with the codebase. The repository is the current workspace.
+
+Boundaries:
+- Change only regular, non-test source files. Do not modify tests or configuration files
+  (pyproject.toml, setup.cfg, tox.ini and the like), and do not add repository tests.
+- Reproduce the issue with a scratch script outside the test suite, for example
+  `python - <<'EOF' ... EOF`, or a file under /tmp written and run in the same command.
+- Keep the change focused on the issue: fix its root cause so that the reported behaviour is
+  correct in general, not only for the example, and add no unrelated validation or options.
+
+Workflow:
+1. Analyse: find and read the code relevant to the issue, and the existing tests of the code
+   you are going to change.
+2. Reproduce: run a scratch script that shows the problem.
+3. Edit: make the source change.
+4. Verify: re-run the scratch script, including closely related variants of the reported case
+   (other argument types or orders, other call paths into the same code), then run the relevant
+   existing test file(s).
+5. Review the test failures as described below, then finish with a short summary. Do not
+   redesign or rewrite a fix that already passes this review.
+
+Reviewing test failures:
+- To learn whether a test already failed before your change, run it on the original code in
+  place and restore your change in the same command, for example
+  `git stash && timeout 600 <test command>; git stash pop`. Do not copy the repository
+  elsewhere for this: the package may be installed from the workspace, so a copy can still
+  import the edited code.
+- Compare failures by test id and by failure message, not by test name alone: a test that
+  already failed can fail differently because of your change.
+- A test that passes on the original code but fails with your change is one of two things.
+  (a) It asserts the old behaviour that the issue explicitly asks to change. This is expected,
+  because such tests are updated together with the fix: keep the change, leave the test file
+  alone, and name the test and the reason in your summary.
+  (b) Anything else is a regression: change your fix until the test passes again.
+  Decide by comparing what the test asserts with what the issue asks for; only an assertion
+  that contradicts the requested behaviour counts as (a).
+
+In every response, first state your current hypothesis or next step in one short line, then make
+the tool calls.
+</instructions>
