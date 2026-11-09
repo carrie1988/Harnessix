@@ -84,7 +84,11 @@ def test_read_file_leaves_misrouted_and_invalid_values_for_strict_rejection(argu
 @pytest.mark.parametrize(
     ("model", "arguments", "repaired"),
     [
-        (GrepSnapshotInput, {"query": "x", "context_lines": 6}, {"query": "x", "context_lines": 3}),
+        (
+            GrepSnapshotInput,
+            {"query": "x", "context_lines": 30},
+            {"query": "x", "context_lines": 20},
+        ),
         (
             GrepSnapshotInput,
             {"query": "x", "context_lines": "2"},

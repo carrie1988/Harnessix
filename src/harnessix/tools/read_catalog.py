@@ -108,7 +108,8 @@ _BINDINGS = (
 
 _SNAPSHOT_GREP_BINDING = _ReadBinding(
     "grep",
-    "按大小写敏感字面量搜索，不支持正则；默认前后各2行、最多10项。"
+    "按大小写敏感字面量搜索，不支持正则；默认前后各2行（最多20行）、最多10项。"
+    "include不含“/”时按文件名匹配任意深度（如*.py），含“/”时按起点相对路径匹配。"
     "每项content_sha256来自同次完整原始文件读取，可作Patch expected_sha256；"
     "revision不是内容SHA。片段截断与文件摘要完整性独立，证据不足仍用read_file扩读",
     GrepSnapshotInput,
@@ -121,7 +122,9 @@ _REGEX_GREP_BINDING = _ReadBinding(
     "逐行搜索，match_mode默认regex：query是原样RE2表达式，不隐式修正；"
     "可显式用literal查找大小写敏感字面量。支持交替、可选空白、转义元字符和Unicode，"
     "不支持反向引用或前后查找断言；无效模式会明确失败。"
-    "默认前后各2行、最多10项；每行仅返回首个命中片段，不跨行、不归一化文本。"
+    "正则无命中且查询含元字符时自动按字面量重搜，结果标记literal_fallback。"
+    "默认前后各2行（最多20行）、最多10项；每行仅返回首个命中片段，不跨行、不归一化文本。"
+    "include不含“/”时按文件名匹配任意深度（如*.py），含“/”时按起点相对路径匹配。"
     "每项content_sha256来自同次完整原始读取，可作Patch expected_sha256；"
     "revision不是内容SHA，证据不足仍用read_file扩读",
     RegexGrepInput,
@@ -258,10 +261,9 @@ def _binding_rules(
                 "omission": "explicit_leading_literal_docstring_range",
             }
     if issubclass(binding.input_model, SearchInput):
-        rules["search"] = (
-            search.execution_contract(enable_regex_search=True)
-            if binding.input_model is RegexGrepInput
-            else search.execution_contract()
+        rules["search"] = search.execution_contract(
+            enable_regex_search=binding.input_model is RegexGrepInput,
+            snapshot_grep=binding.input_model is GrepSnapshotInput,
         )
         if binding.output_model is GrepSnapshotOutput:
             rules["snapshot"] = {

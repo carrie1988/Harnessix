@@ -65,6 +65,27 @@ supersedes: []
 [搜索快照设计](../changes/swebench-adapter-verified-25-pilot.md#搜索快照候选同次观察摘要默认关闭)。
 离线通过不代表真实质量改善，配对前不得推广。
 
+## 快照与正则搜索：整仓库搜索与字面量回退（2026-11-09）
+
+holdout逐步对照显示，同一模型下Harnessix的搜索远比mini-swe-agent低效：44%的grep零命中，
+定位后几乎总要再调一次read_file，51%的read_file重读已读范围。快照（`GrepSnapshotInput`）与正则
+（`RegexGrepInput`）两种Grep因此做了向后兼容的放宽；原字面量`GrepInput`、`GrepOutput`、
+Glob及其Schema、描述符摘要与执行合同逐字节不变。
+
+| 项目 | 原字面量Grep | 快照与正则Grep |
+|---|---|---|
+| `include`不含“/” | 从起点逐段匹配，`*.py`只匹配起点下一层 | 按文件名匹配任意深度（与`rg -g`一致）；含“/”仍逐段匹配 |
+| 上下文行数 | 0～3 | 0～20，一次即可看到命中所在定义的主体 |
+| 目录条目/名称字节 | 10000项/2 MiB | 50000项/8 MiB |
+| 总读取 | 16 MiB | 64 MiB（单文件仍2 MiB，仍受读取期限约束） |
+| 预览预算 | 24 KiB | 48 KiB：单个带20行上下文的最长命中也放得下，最终工具JSON仍低于60000字节 |
+| 正则无命中 | — | 查询含元字符时，同一次内容观察内另按字面量收集；正则整次无命中才采用，结果标记`literal_fallback`。不增加文件读取，长行等缺口只计一次；字面量捕获超限即放弃回退 |
+
+快照输出v1只新增默认`false`的`literal_fallback`字段并放宽上下文与统计上限，已有数据在新合同下仍然有效，
+因此原地更新`spec/grep-snapshot-*-v1`与`spec/grep-regex-input-v1`，不另立版本；执行合同版本为
+`bounded-search/v5`（快照）与`bounded-search/v6`（正则）。模型使用的是括号、点号等源码片段时，
+正则解释会静默无命中，回退把这类查询变为可用结果而不改变显式`match_mode=literal`的语义。
+
 # Coding Tool Runtime模块设计
 
 ### 当前源码读取：显式UTF-8分页，不截断证据
@@ -188,11 +209,11 @@ Session事实，也不把未提交结果当作已经发生。
 | 单行读取 | 4 KiB | 文件读取失败；Grep跳过并计数 |
 | 文件扫描 | 2 MiB | `tool_limit_exceeded` |
 | 完整文件摘要 | 额外最多2 MiB；与文本分页共享原5秒Deadline | POSIX大文件摘要省略；Windows保留原快照超限失败 |
-| 目录条目/名称字节 | 10000项/2 MiB | `tool_limit_exceeded` |
+| 目录条目/名称字节 | 10000项/2 MiB（快照与正则Grep：50000项/8 MiB） | `tool_limit_exceeded` |
 | 单页目录/搜索结果 | 200项 | 截断或按输入`limit/max_results`限制 |
 | 搜索深度 | 32级 | `tool_limit_exceeded` |
-| Grep单文件/总读取 | 2 MiB/16 MiB | 单文件跳过或整体失败 |
-| 搜索预览记录预算 | 24 KiB | 成功并标记`output_limit` |
+| Grep单文件/总读取 | 2 MiB/16 MiB（快照与正则：2 MiB/64 MiB） | 单文件跳过或整体失败 |
+| 搜索预览记录预算 | 24 KiB（快照与正则：48 KiB） | 成功并标记`output_limit` |
 | Grep片段 | 384 UTF-8字节 | 字符边界裁剪并标记 |
 | 最终工具JSON | 60000字节 | `tool_limit_exceeded` |
 | Git Diff模型正文 | 48 KiB | 返回UTF-8完整前缀及全流摘要 |

@@ -170,7 +170,7 @@ def test_windows_capture_contains_all_new_match_fields_outside_preview(port, max
     assert all(hit.content_sha256 == hashlib.sha256(body).hexdigest() for hit in hits)
     assert all(hit.file_bytes == len(body) for hit in hits)
     assert sum(len(hit.model_dump_json().encode()) + 1 for hit in output.matches) <= (
-        windows_search.MAX_SEARCH_RECORD_BYTES
+        windows_search.MAX_SNAPSHOT_SEARCH_RECORD_BYTES
     )
     assert port.root_handle.calls.count(("source.py", True, MAX_SEARCH_FILE_BYTES)) == 1
 
@@ -316,7 +316,7 @@ def test_windows_exact_file_limit_and_original_total_budget(port, monkeypatch):
     assert output.matches[0].file_bytes == MAX_SEARCH_FILE_BYTES
     assert output.matches[0].content_sha256 == hashlib.sha256(body).hexdigest()
     port.root_handle.files = {"a.py": b"needle\n" * 2, "b.py": b"needle\n" * 2}
-    monkeypatch.setattr(windows_search, "MAX_SEARCH_TOTAL_BYTES", 20)
+    monkeypatch.setattr(windows_search, "MAX_SNAPSHOT_SEARCH_TOTAL_BYTES", 20)
     capture = search.SearchCapture()
     with pytest.raises(ReadToolError) as failed:
         windows_search.grep_files(

@@ -7,6 +7,23 @@ from fnmatch import fnmatchcase
 from harnessix.tools.search_contracts import validate_pattern
 
 
+def include_pattern(pattern: str) -> PathPattern | BasenamePattern:
+    """grep的include：不含“/”时按文件名匹配任意深度（与rg -g一致），否则按起点相对路径逐段匹配。"""
+    if "/" in pattern:
+        return PathPattern(pattern)
+    return BasenamePattern(pattern)
+
+
+class BasenamePattern:
+    """只匹配相对路径的最后一段，目录深度不限。"""
+
+    def __init__(self, pattern: str) -> None:
+        self._pattern = validate_pattern(pattern)
+
+    def matches(self, path: str) -> bool:
+        return fnmatchcase(path.rsplit("/", 1)[-1], self._pattern)
+
+
 class PathPattern:
     """标准库处理单段通配；有界状态表处理 **，不递归展开文件系统。"""
 

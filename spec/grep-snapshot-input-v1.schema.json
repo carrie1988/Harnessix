@@ -36,7 +36,7 @@
     "context_lines": {
       "default": 2,
       "description": "命中行前后各返回少量有界片段；不替代read_file的完整文件摘要",
-      "maximum": 3,
+      "maximum": 20,
       "minimum": 0,
       "title": "Context Lines",
       "type": "integer"

@@ -17,6 +17,8 @@ from harnessix.tools.contracts import MAX_LINE_BYTES, READ_TIMEOUT_SECONDS, Read
 from harnessix.tools.search_contracts import (
     MAX_SEARCH_FILE_BYTES,
     MAX_SEARCH_TOTAL_BYTES,
+    MAX_SNAPSHOT_SEARCH_RECORD_BYTES,
+    GrepInput,
     GrepSnapshotInput,
     GrepSnapshotMatch,
     GrepSnapshotOutput,
@@ -266,7 +268,7 @@ def test_matching_checkpoint_enforces_scan_deadline():
         {"query": "secret\x00"},
         {"match_mode": "REGEX"},
         {"match_mode": None},
-        {"context_lines": 4},
+        {"context_lines": 21},
         {"context_lines": True},
         {"max_results": 201},
         {"include": "../*"},
@@ -290,7 +292,9 @@ def test_regex_and_literal_inherit_context_preview_and_artifact_limits(run_grep)
         capture=capture,
     )
     assert output.truncated and output.truncation_reason == "output_limit"
-    assert sum(len(hit.model_dump_json().encode()) + 1 for hit in output.matches) <= 24 * 1024
+    assert sum(len(hit.model_dump_json().encode()) + 1 for hit in output.matches) <= (
+        MAX_SNAPSHOT_SEARCH_RECORD_BYTES
+    )
     assert capture.complete and capture.records == 40
     hits = [GrepSnapshotMatch.model_validate_json(line) for line in capture.body.splitlines()]
     assert all(hit.content_sha256 == hashlib.sha256(body).hexdigest() for hit in hits)
@@ -317,8 +321,8 @@ def test_oversize_long_binary_and_invalid_utf8_files_are_gaps(run_grep):
 
 
 def test_total_scan_budget_is_not_bypassed(run_grep, monkeypatch):
-    monkeypatch.setattr(search, "MAX_SEARCH_TOTAL_BYTES", 16)
-    monkeypatch.setattr(windows_search, "MAX_SEARCH_TOTAL_BYTES", 16)
+    monkeypatch.setattr(search, "MAX_SNAPSHOT_SEARCH_TOTAL_BYTES", 16)
+    monkeypatch.setattr(windows_search, "MAX_SNAPSHOT_SEARCH_TOTAL_BYTES", 16)
     with pytest.raises(ReadToolError) as raised:
         run_grep(
             RegexGrepInput(query="needle"),
@@ -330,3 +334,68 @@ def test_total_scan_budget_is_not_bypassed(run_grep, monkeypatch):
 def test_legacy_snapshot_literal_behavior_is_not_regex(run_grep):
     output = run_grep(GrepSnapshotInput(query="a+b"), {"source.py": b"aaab\na+b\n"})
     assert [hit.line for hit in output.matches] == [2]
+
+
+def test_include_without_slash_matches_file_names_at_any_depth(run_grep, tmp_path):
+    """快照与正则Grep：include="*.py"从目录起点匹配各层文件名（与rg -g一致）。"""
+    files = {
+        "pkg/top.py": b"needle\n",
+        "pkg/sub/deep.py": b"needle\n",
+        "pkg/sub/notes.txt": b"needle\n",
+    }
+    output = run_grep(RegexGrepInput(query="needle", path="pkg", include="*.py"), files)
+    assert [hit.path for hit in output.matches] == ["pkg/sub/deep.py", "pkg/top.py"]
+    anchored = run_grep(RegexGrepInput(query="needle", path="pkg", include="sub/*.py"), files)
+    assert [hit.path for hit in anchored.matches] == ["pkg/sub/deep.py"]
+
+
+def test_legacy_literal_grep_keeps_segment_include_semantics(tmp_path):
+    (tmp_path / "pkg/sub").mkdir(parents=True)
+    (tmp_path / "pkg/top.py").write_bytes(b"needle\n")
+    (tmp_path / "pkg/sub/deep.py").write_bytes(b"needle\n")
+    with Workspace(tmp_path) as workspace:
+        output = search.grep(
+            workspace, GrepInput(query="needle", path="pkg", include="*.py"), ReadOperation()
+        )
+    assert [hit.path for hit in output.matches] == ["pkg/top.py"]
+
+
+def test_regex_without_matches_falls_back_to_the_literal_query(run_grep):
+    """括号被当作正则分组而静默无命中时，同一次观察内改用字面量命中并明确标记。"""
+    body = b"class A:\n    def __init__(self, name, fields=None):\n        pass\n"
+    query = "def __init__(self, name, fields=None)"
+    output = run_grep(RegexGrepInput(query=query), {"source.py": body})
+    assert output.literal_fallback and [hit.line for hit in output.matches] == [2]
+    regex_hit = run_grep(RegexGrepInput(query=r"def __init__\(self"), {"source.py": body})
+    assert not regex_hit.literal_fallback and [hit.line for hit in regex_hit.matches] == [2]
+    neither = run_grep(RegexGrepInput(query="missing(x)"), {"source.py": body})
+    assert not neither.literal_fallback and not neither.matches and neither.scan_complete
+    explicit = run_grep(RegexGrepInput(query=query, match_mode="literal"), {"source.py": body})
+    assert not explicit.literal_fallback and [hit.line for hit in explicit.matches] == [2]
+
+
+def test_literal_fallback_archives_only_the_published_matches(run_grep):
+    body = b"x = f(1)\ny = f(1)\n"
+    capture = search.SearchCapture()
+    output = run_grep(
+        RegexGrepInput(query="f(1)", max_results=1), {"source.py": body}, capture=capture
+    )
+    assert output.literal_fallback and output.truncation_reason == "result_limit"
+    hits = [GrepSnapshotMatch.model_validate_json(line) for line in capture.body.splitlines()]
+    assert capture.complete and [hit.line for hit in hits] == [1, 2]
+
+
+def test_snapshot_context_reaches_twenty_lines(run_grep):
+    body = b"".join(b"line %d\n" % n for n in range(1, 61))
+    output = run_grep(RegexGrepInput(query="^line 30$", context_lines=20), {"source.py": body})
+    lines = output.matches[0].context.lines
+    assert output.matches[0].context.start_line == 10 and len(lines) == 41
+    assert lines[0].text == "line 10" and lines[-1].text == "line 50"
+
+
+def test_snapshot_grep_has_its_own_whole_repository_limits(run_grep, monkeypatch):
+    monkeypatch.setattr(search, "MAX_SEARCH_ENTRIES", 2)
+    monkeypatch.setattr(windows_search, "MAX_SEARCH_ENTRIES", 2)
+    files = {f"m{n}.py": b"needle\n" for n in range(5)}
+    output = run_grep(RegexGrepInput(query="needle"), files)
+    assert len(output.matches) == 5 and output.stats.entries_scanned >= 5

@@ -19,15 +19,19 @@ from harnessix.tools.search_contracts import (
     MAX_SEARCH_NAMES_BYTES,
     MAX_SEARCH_RECORD_BYTES,
     MAX_SEARCH_TOTAL_BYTES,
+    MAX_SNAPSHOT_SEARCH_ENTRIES,
+    MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
+    MAX_SNAPSHOT_SEARCH_RECORD_BYTES,
+    MAX_SNAPSHOT_SEARCH_TOTAL_BYTES,
     GlobInput,
     GlobOutput,
     GrepInput,
     GrepMatch,
     GrepOutput,
     GrepSnapshotInput,
-    GrepSnapshotOutput,
     SearchInput,
     SearchStats,
+    SnapshotSearchStats,
 )
 from harnessix.tools.windows_read_port import (
     Observation,
@@ -52,11 +56,31 @@ class _Scan:
     binary_files: int = 0
     long_lines: int = 0
     names_bytes: int = 0
+    max_entries: int = 0
+    max_names_bytes: int = 0
+    max_total_bytes: int = 0
+    stats_type: type[SearchStats] = SearchStats
 
     def snapshot(self) -> SearchStats:
-        return SearchStats.model_validate(
+        return self.stats_type.model_validate(
             {name: getattr(self, name) for name in SearchStats.model_fields}
         )
+
+
+def _scan_for(args: SearchInput) -> _Scan:
+    """快照与正则搜索用整仓库上限，其余沿用原合同上限；运行时读取模块常量。"""
+    if isinstance(args, GrepSnapshotInput):
+        return _Scan(
+            max_entries=MAX_SNAPSHOT_SEARCH_ENTRIES,
+            max_names_bytes=MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
+            max_total_bytes=MAX_SNAPSHOT_SEARCH_TOTAL_BYTES,
+            stats_type=SnapshotSearchStats,
+        )
+    return _Scan(
+        max_entries=MAX_SEARCH_ENTRIES,
+        max_names_bytes=MAX_SEARCH_NAMES_BYTES,
+        max_total_bytes=MAX_SEARCH_TOTAL_BYTES,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,8 +91,13 @@ class _Candidate:
 
 
 class _Records:
-    def __init__(self, maximum: int) -> None:
-        self.maximum = maximum
+    def __init__(self, args: SearchInput) -> None:
+        self.maximum = args.max_results
+        self.max_bytes = (
+            MAX_SNAPSHOT_SEARCH_RECORD_BYTES
+            if isinstance(args, GrepSnapshotInput)
+            else MAX_SEARCH_RECORD_BYTES
+        )
         self.count = 0
         self.bytes = 0
         self.reason: Literal["result_limit", "output_limit"] | None = None
@@ -77,7 +106,7 @@ class _Records:
         size = len(encoded.encode("utf-8")) + 1
         if self.count >= self.maximum:
             self.reason = "result_limit"
-        elif self.bytes + size > MAX_SEARCH_RECORD_BYTES:
+        elif self.bytes + size > self.max_bytes:
             self.reason = "output_limit"
         if self.reason is not None:
             return False
@@ -172,7 +201,7 @@ def _scan_entry(
     operation.checkpoint()
     scan.entries_scanned += 1
     scan.names_bytes += len(name.encode("utf-8"))
-    if scan.entries_scanned > MAX_SEARCH_ENTRIES or scan.names_bytes > MAX_SEARCH_NAMES_BYTES:
+    if scan.entries_scanned > scan.max_entries or scan.names_bytes > scan.max_names_bytes:
         raise ReadToolError("limit_exceeded")
     relative = name if parent == "." else f"{parent}/{name}"
     try:
@@ -225,7 +254,7 @@ def glob_files(
 ) -> GlobOutput:
     """返回模式匹配路径，并在加入结果前复查文件身份。"""
 
-    scan, pattern, records = _Scan(), PathPattern(args.pattern), _Records(args.max_results)
+    scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths: list[str] = []
     root = port.path(args.path)
     for candidate in _collect(port, args, operation, scan):
@@ -281,7 +310,7 @@ def _load_text(
         if metadata.size > MAX_SEARCH_FILE_BYTES:
             scan.oversized_files += 1
             return None
-        if scan.bytes_read + metadata.size > MAX_SEARCH_TOTAL_BYTES:
+        if scan.bytes_read + metadata.size > scan.max_total_bytes:
             raise ReadToolError("limit_exceeded")
         observed = port.observe_candidate(
             candidate.path,
@@ -316,6 +345,7 @@ def _append_matches(
     matches: list[GrepMatch],
     capture: search.SearchCapture | None,
     matcher: LineMatcher,
+    fallback: search.LiteralFallback | None = None,
 ) -> None:
     if isinstance(args, GrepSnapshotInput):
         operation.checkpoint()
@@ -339,6 +369,19 @@ def _append_matches(
             matches.append(hit)
         elif capture is None:
             break
+    if fallback is not None and not matches:
+        fallback.observe(
+            search.grep_line_matches(
+                candidate.path,
+                revision,
+                text,
+                fallback.args,
+                operation,
+                search.LineGaps(),
+                content=observed.content,
+                matcher=fallback.matcher,
+            )
+        )
 
 
 def grep_files(
@@ -348,10 +391,11 @@ def grep_files(
     *,
     capture: search.SearchCapture | None,
 ) -> GrepOutput:
-    """共享匹配器查找文本行，逐文件执行元数据—内容双重观察。"""
+    """共享匹配器查找文本行，逐文件执行元数据—内容双重观察；字面量回退规则与POSIX端相同。"""
 
     matcher = build_line_matcher(args, operation)
-    scan, pattern, records = _Scan(), PathPattern(args.include), _Records(args.max_results)
+    fallback = search.LiteralFallback.start(args, operation, capture)
+    scan, pattern, records = _scan_for(args), search.grep_include(args), _Records(args)
     matches: list[GrepMatch] = []
     root = port.path(args.path)
     for candidate in _collect(port, args, operation, scan):
@@ -373,18 +417,9 @@ def grep_files(
                 matches,
                 capture,
                 matcher,
+                fallback,
             )
         if records.reason is not None and capture is None:
             break
-    stats, complete = _capture_status(capture, scan, records)
-    output_type = GrepSnapshotOutput if isinstance(args, GrepSnapshotInput) else GrepOutput
-    return output_type.model_validate(
-        {
-            "path": args.path,
-            "matches": tuple(matches),
-            "stats": stats,
-            "scan_complete": complete,
-            "truncated": records.reason is not None,
-            "truncation_reason": records.reason,
-        }
-    )
+    stats, _ = _capture_status(capture, scan, records)
+    return search.grep_result(args, stats, matches, records.reason, fallback, capture)

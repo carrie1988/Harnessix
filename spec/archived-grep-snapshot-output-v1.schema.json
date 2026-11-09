@@ -52,31 +52,6 @@
       "title": "ArtifactRef",
       "type": "object"
     },
-    "GrepContext": {
-      "additionalProperties": false,
-      "properties": {
-        "start_line": {
-          "minimum": 1,
-          "title": "Start Line",
-          "type": "integer"
-        },
-        "lines": {
-          "items": {
-            "$ref": "#/$defs/GrepContextLine"
-          },
-          "maxItems": 7,
-          "minItems": 1,
-          "title": "Lines",
-          "type": "array"
-        }
-      },
-      "required": [
-        "start_line",
-        "lines"
-      ],
-      "title": "GrepContext",
-      "type": "object"
-    },
     "GrepContextLine": {
       "additionalProperties": false,
       "properties": {
@@ -94,6 +69,31 @@
         "text_truncated"
       ],
       "title": "GrepContextLine",
+      "type": "object"
+    },
+    "GrepSnapshotContext": {
+      "additionalProperties": false,
+      "properties": {
+        "start_line": {
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/GrepContextLine"
+          },
+          "maxItems": 41,
+          "minItems": 1,
+          "title": "Lines",
+          "type": "array"
+        }
+      },
+      "required": [
+        "start_line",
+        "lines"
+      ],
+      "title": "GrepSnapshotContext",
       "type": "object"
     },
     "GrepSnapshotMatch": {
@@ -126,7 +126,7 @@
         "context": {
           "anyOf": [
             {
-              "$ref": "#/$defs/GrepContext"
+              "$ref": "#/$defs/GrepSnapshotContext"
             },
             {
               "type": "null"
@@ -166,7 +166,7 @@
           "type": "string"
         },
         "stats": {
-          "$ref": "#/$defs/SearchStats"
+          "$ref": "#/$defs/SnapshotSearchStats"
         },
         "scan_complete": {
           "title": "Scan Complete",
@@ -204,6 +204,11 @@
           "default": "harnessix.grep-snapshot/v1",
           "title": "Spec Version",
           "type": "string"
+        },
+        "literal_fallback": {
+          "default": false,
+          "title": "Literal Fallback",
+          "type": "boolean"
         }
       },
       "required": [
@@ -217,23 +222,23 @@
       "title": "GrepSnapshotOutput",
       "type": "object"
     },
-    "SearchStats": {
+    "SnapshotSearchStats": {
       "additionalProperties": false,
       "properties": {
         "entries_scanned": {
-          "maximum": 10000,
+          "maximum": 50000,
           "minimum": 0,
           "title": "Entries Scanned",
           "type": "integer"
         },
         "files_read": {
-          "maximum": 10000,
+          "maximum": 50000,
           "minimum": 0,
           "title": "Files Read",
           "type": "integer"
         },
         "bytes_read": {
-          "maximum": 16777216,
+          "maximum": 67108864,
           "minimum": 0,
           "title": "Bytes Read",
           "type": "integer"
@@ -280,7 +285,7 @@
         "binary_files",
         "long_lines"
       ],
-      "title": "SearchStats",
+      "title": "SnapshotSearchStats",
       "type": "object"
     }
   },

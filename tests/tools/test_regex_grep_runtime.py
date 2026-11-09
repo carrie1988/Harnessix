@@ -48,11 +48,12 @@ def test_legacy_and_snapshot_descriptors_are_byte_identical_to_prechange_sha():
         "5af624c512e44f02f79a16585f5144841cf501b8688cb26dd1350b4146f55acf"
     )
     snapshots = definitions(enable_grep_snapshots=True)
-    expected["grep"] = "9ebc7ceebc2c758c1d022edfdaa66ff1c0d252c2b7cbd3078f3f529d1b6dd1fe"
+    # 快照Grep：文件名include、整仓库上限、20行上下文（向后兼容的放宽）改变描述与合同摘要。
+    expected["grep"] = "0bc8cf8861643e9facbda63a7cf180b08fe4632f2060f8b2488ae5174949418e"
     for name, definition in snapshots.items():
         assert digest(definition.model_dump(mode="json")) == expected[name]
     assert hashlib.sha256(snapshots["grep"].model_dump_json().encode()).hexdigest() == (
-        "b76523c3e9fa84c22bece50bf33cae7cca68a034842c93c0630debef2498b159"
+        "60916f1db027ee5d8a764b6d51ca0757bfd798f8f441249dc17e69a6e7d12df9"
     )
 
 

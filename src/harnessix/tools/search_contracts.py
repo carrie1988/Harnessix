@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Self
+from typing import ClassVar, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -14,9 +14,19 @@ MAX_SEARCH_NAMES_BYTES = 2 * 1024 * 1024
 MAX_SEARCH_DEPTH = 32
 MAX_SEARCH_FILE_BYTES = 2 * 1024 * 1024
 MAX_SEARCH_TOTAL_BYTES = 16 * 1024 * 1024
+# 快照与正则搜索按整仓库设定（Django、SymPy等仓库条目上万、源码数十MiB）；
+# 原字面量合同保持上面的上限。
+MAX_SNAPSHOT_SEARCH_ENTRIES = 50000
+MAX_SNAPSHOT_SEARCH_NAMES_BYTES = 8 * 1024 * 1024
+MAX_SNAPSHOT_SEARCH_TOTAL_BYTES = 64 * 1024 * 1024
 MAX_SEARCH_RECORD_BYTES = 24 * 1024
+# 快照与正则搜索的预览预算：即使每行都是需转义的最长片段，单个带20行上下文的命中
+# （41行×约800字节）也放得下；字节上限同时约束节点数，远低于公开输出扫描的节点预算。
+MAX_SNAPSHOT_SEARCH_RECORD_BYTES = 48 * 1024
 MAX_MATCH_BYTES = 384
 MAX_GREP_CONTEXT_LINES = 3
+# 快照与正则搜索：一次即可看到命中所在定义的主体，不必再按行号读取；原字面量合同保持3行。
+MAX_SNAPSHOT_GREP_CONTEXT_LINES = 20
 IGNORED_DIRECTORIES = (
     ".mypy_cache",
     ".pytest_cache",
@@ -89,7 +99,7 @@ class GrepSnapshotInput(GrepInput):
     context_lines: int = Field(
         default=2,
         ge=0,
-        le=MAX_GREP_CONTEXT_LINES,
+        le=MAX_SNAPSHOT_GREP_CONTEXT_LINES,
         description="命中行前后各返回少量有界片段；不替代read_file的完整文件摘要",
     )
 
@@ -127,6 +137,12 @@ class SearchStats(ReadContract):
                 self.long_lines,
             )
         )
+
+
+class SnapshotSearchStats(SearchStats):
+    entries_scanned: int = Field(ge=0, le=MAX_SNAPSHOT_SEARCH_ENTRIES)
+    files_read: int = Field(ge=0, le=MAX_SNAPSHOT_SEARCH_ENTRIES)
+    bytes_read: int = Field(ge=0, le=MAX_SNAPSHOT_SEARCH_TOTAL_BYTES)
 
 
 class SearchOutput(ReadContract):
@@ -174,7 +190,14 @@ class GrepContext(ReadContract):
     )
 
 
+class GrepSnapshotContext(GrepContext):
+    lines: tuple[GrepContextLine, ...] = Field(
+        min_length=1, max_length=2 * MAX_SNAPSHOT_GREP_CONTEXT_LINES + 1
+    )
+
+
 class GrepMatch(ReadContract):
+    context_radius: ClassVar[int] = MAX_GREP_CONTEXT_LINES
     path: str = Field(min_length=1, max_length=1024)
     line: int = Field(ge=1)
     text: str
@@ -196,8 +219,8 @@ class GrepMatch(ReadContract):
         offset = self.line - self.context.start_line
         if (
             not 0 <= offset < len(self.context.lines)
-            or offset > MAX_GREP_CONTEXT_LINES
-            or len(self.context.lines) - offset - 1 > MAX_GREP_CONTEXT_LINES
+            or offset > self.context_radius
+            or len(self.context.lines) - offset - 1 > self.context_radius
         ):
             raise ValueError("上下文必须包含命中行且两侧均未超过上限")
         center = self.context.lines[offset]
@@ -207,6 +230,8 @@ class GrepMatch(ReadContract):
 
 
 class GrepSnapshotMatch(GrepMatch):
+    context_radius: ClassVar[int] = MAX_SNAPSHOT_GREP_CONTEXT_LINES
+    context: GrepSnapshotContext | None = None
     content_sha256: Revision
     file_bytes: int = Field(ge=0, le=MAX_SEARCH_FILE_BYTES)
 
@@ -225,6 +250,9 @@ class GrepOutput(SearchOutput):
 class GrepSnapshotOutput(GrepOutput):
     spec_version: Literal["harnessix.grep-snapshot/v1"] = "harnessix.grep-snapshot/v1"
     matches: tuple[GrepSnapshotMatch, ...] = Field(max_length=200)
+    stats: SnapshotSearchStats
+    # 正则模式完整扫描无命中、查询含正则元字符时，按同一查询的字面量重搜；命中均为字面量匹配。
+    literal_fallback: bool = False
 
     @model_validator(mode="after")
     def same_file_observation_is_consistent(self) -> Self:

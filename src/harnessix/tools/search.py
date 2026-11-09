@@ -16,9 +16,9 @@ from typing import Literal, Protocol
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, MAX_ARTIFACT_RECORDS
 from harnessix.tools.contracts import MAX_LINE_BYTES, ReadToolError
 from harnessix.tools.files import _decode
-from harnessix.tools.grep_matcher import LineMatcher, build_line_matcher
+from harnessix.tools.grep_matcher import LineMatcher, build_line_matcher, literal_fallback_args
 from harnessix.tools.grep_matcher import execution_contract as regex_execution_contract
-from harnessix.tools.patterns import PathPattern
+from harnessix.tools.patterns import BasenamePattern, PathPattern, include_pattern
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
     MAX_GREP_CONTEXT_LINES,
@@ -29,6 +29,11 @@ from harnessix.tools.search_contracts import (
     MAX_SEARCH_NAMES_BYTES,
     MAX_SEARCH_RECORD_BYTES,
     MAX_SEARCH_TOTAL_BYTES,
+    MAX_SNAPSHOT_GREP_CONTEXT_LINES,
+    MAX_SNAPSHOT_SEARCH_ENTRIES,
+    MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
+    MAX_SNAPSHOT_SEARCH_RECORD_BYTES,
+    MAX_SNAPSHOT_SEARCH_TOTAL_BYTES,
     GlobInput,
     GlobOutput,
     GrepContext,
@@ -36,16 +41,21 @@ from harnessix.tools.search_contracts import (
     GrepInput,
     GrepMatch,
     GrepOutput,
+    GrepSnapshotContext,
     GrepSnapshotInput,
     GrepSnapshotMatch,
     GrepSnapshotOutput,
     SearchInput,
     SearchStats,
+    SnapshotSearchStats,
 )
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, identity, revision_state
 
 
-def execution_contract(*, enable_regex_search: bool = False) -> dict[str, object]:
+def execution_contract(
+    *, enable_regex_search: bool = False, snapshot_grep: bool = False
+) -> dict[str, object]:
+    """原字面量Grep与Glob合同不变；快照与正则Grep另有整仓库上限、文件名include与更宽上下文。"""
     rules: dict[str, object] = {
         "version": "bounded-search/v3",
         "start_path": "regular-file-or-directory",
@@ -61,9 +71,21 @@ def execution_contract(*, enable_regex_search: bool = False) -> dict[str, object
         "max_match_bytes": MAX_MATCH_BYTES,
         "max_grep_context_lines": MAX_GREP_CONTEXT_LINES,
     }
+    if snapshot_grep or enable_regex_search:
+        rules.update(
+            version="bounded-search/v5",
+            snapshot_grep={
+                "include": "basename-at-any-depth-without-slash-else-segments-and-globstar",
+                "max_entries": MAX_SNAPSHOT_SEARCH_ENTRIES,
+                "max_names_bytes": MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
+                "max_total_bytes": MAX_SNAPSHOT_SEARCH_TOTAL_BYTES,
+                "max_record_bytes": MAX_SNAPSHOT_SEARCH_RECORD_BYTES,
+                "max_context_lines": MAX_SNAPSHOT_GREP_CONTEXT_LINES,
+            },
+        )
     if enable_regex_search:
         rules.update(
-            version="bounded-search/v4",
+            version="bounded-search/v6",
             grep="case-sensitive-re2-or-explicit-literal-lines",
             regex=regex_execution_contract(),
         )
@@ -98,11 +120,38 @@ class _Scan:
     binary_files: int = 0
     long_lines: int = 0
     names_bytes: int = 0
+    max_entries: int = 0
+    max_names_bytes: int = 0
+    max_total_bytes: int = 0
+    stats_type: type[SearchStats] = SearchStats
 
     def snapshot(self) -> SearchStats:
-        return SearchStats.model_validate(
+        return self.stats_type.model_validate(
             {name: getattr(self, name) for name in SearchStats.model_fields}
         )
+
+
+def grep_include(args: GrepInput) -> PathPattern | BasenamePattern:
+    """快照与正则Grep的include按文件名匹配任意深度；原字面量合同保持逐段路径语义。"""
+    if isinstance(args, GrepSnapshotInput):
+        return include_pattern(args.include)
+    return PathPattern(args.include)
+
+
+def _scan_for(args: SearchInput) -> _Scan:
+    """快照与正则搜索用整仓库上限，其余沿用原合同上限；运行时读取模块常量。"""
+    if isinstance(args, GrepSnapshotInput):
+        return _Scan(
+            max_entries=MAX_SNAPSHOT_SEARCH_ENTRIES,
+            max_names_bytes=MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
+            max_total_bytes=MAX_SNAPSHOT_SEARCH_TOTAL_BYTES,
+            stats_type=SnapshotSearchStats,
+        )
+    return _Scan(
+        max_entries=MAX_SEARCH_ENTRIES,
+        max_names_bytes=MAX_SEARCH_NAMES_BYTES,
+        max_total_bytes=MAX_SEARCH_TOTAL_BYTES,
+    )
 
 
 @dataclass(frozen=True)
@@ -159,8 +208,8 @@ def _collect(
                 scan.entries_scanned += 1
                 scan.names_bytes += len(os.fsencode(entry.name))
                 if (
-                    scan.entries_scanned > MAX_SEARCH_ENTRIES
-                    or scan.names_bytes > MAX_SEARCH_NAMES_BYTES
+                    scan.entries_scanned > scan.max_entries
+                    or scan.names_bytes > scan.max_names_bytes
                 ):
                     raise ReadToolError("limit_exceeded")
                 relative = entry.name if path == "." else f"{path}/{entry.name}"
@@ -197,15 +246,20 @@ def _collect(
 
 
 class _Records:
-    def __init__(self, maximum: int) -> None:
-        self.maximum = maximum
+    def __init__(self, args: SearchInput) -> None:
+        self.maximum = args.max_results
+        self.max_bytes = (
+            MAX_SNAPSHOT_SEARCH_RECORD_BYTES
+            if isinstance(args, GrepSnapshotInput)
+            else MAX_SEARCH_RECORD_BYTES
+        )
         self.count = self.bytes = 0
         self.reason: Literal["result_limit", "output_limit"] | None = None
 
     def accept(self, encoded: str) -> bool:
         if self.count >= self.maximum:
             self.reason = "result_limit"
-        elif self.bytes + len(encoded.encode("utf-8")) + 1 > MAX_SEARCH_RECORD_BYTES:
+        elif self.bytes + len(encoded.encode("utf-8")) + 1 > self.max_bytes:
             self.reason = "output_limit"
         if self.reason is not None:
             return False
@@ -229,7 +283,7 @@ def glob(
     *,
     capture: SearchCapture | None = None,
 ) -> GlobOutput:
-    scan, pattern, records = _Scan(), PathPattern(args.pattern), _Records(args.max_results)
+    scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths = []
     for node in _collect(workspace, args, operation, scan):
         operation.checkpoint()
@@ -268,11 +322,11 @@ def _read(fd: int, operation: ReadOperation, scan: _Scan) -> str | None:
     data = bytearray()
     while True:
         operation.checkpoint()
-        remaining = min(MAX_SEARCH_FILE_BYTES - len(data), MAX_SEARCH_TOTAL_BYTES - scan.bytes_read)
+        remaining = min(MAX_SEARCH_FILE_BYTES - len(data), scan.max_total_bytes - scan.bytes_read)
         chunk = os.read(fd, min(65536, remaining + 1))
         scan.bytes_read += len(chunk)
         data.extend(chunk)
-        if len(data) > MAX_SEARCH_FILE_BYTES or scan.bytes_read > MAX_SEARCH_TOTAL_BYTES:
+        if len(data) > MAX_SEARCH_FILE_BYTES or scan.bytes_read > scan.max_total_bytes:
             raise ReadToolError("limit_exceeded")
         if not chunk:
             break
@@ -319,6 +373,7 @@ def grep_line_matches(
     if matcher is None:
         matcher = build_line_matcher(args, operation)
     match_type: type[GrepMatch] = GrepMatch
+    context_type: type[GrepContext] = GrepContext
     snapshot_fields: dict[str, str | int] = {}
     if isinstance(args, GrepSnapshotInput):
         operation.checkpoint()
@@ -330,7 +385,7 @@ def grep_line_matches(
             "file_bytes": len(raw_content),
         }
         operation.checkpoint()
-        match_type = GrepSnapshotMatch
+        match_type, context_type = GrepSnapshotMatch, GrepSnapshotContext
     before: deque[str] = deque(maxlen=args.context_lines)
     ahead: deque[str] = deque()
     with io.StringIO(text, newline="\n") as lines:
@@ -365,7 +420,7 @@ def grep_line_matches(
                             views.append(
                                 GrepContextLine(text=preview[0], text_truncated=preview[1])
                             )
-                        context = GrepContext(start_line=number - len(before), lines=tuple(views))
+                        context = context_type(start_line=number - len(before), lines=tuple(views))
                     yield match_type.model_validate(
                         {
                             "path": path,
@@ -384,6 +439,91 @@ def grep_line_matches(
                 ahead.append(following)
 
 
+@dataclass
+class LineGaps:
+    """字面量回退扫描不重复计入长行等缺口；缺口只由正则扫描统计。"""
+
+    long_lines: int = 0
+
+
+class LiteralFallback:
+    """正则查询含元字符时，在同一次内容观察内另按字面量收集命中；正则整次无命中才采用。
+
+    模型常把含括号、点号的源码片段当字面量查找，按正则解释后静默无命中。回退不增加文件读取；
+    字面量捕获超出上限时放弃回退，正则结果不受影响。
+    """
+
+    def __init__(
+        self, args: GrepInput, operation: ReadOperation, capture: SearchCapture | None
+    ) -> None:
+        self.args = args
+        self.matcher = build_line_matcher(args, operation)
+        self.records = _Records(args)
+        self.matches: list[GrepMatch] = []
+        self.capture = None if capture is None else SearchCapture()
+        self.abandoned = False
+
+    @classmethod
+    def start(
+        cls, args: GrepInput, operation: ReadOperation, capture: SearchCapture | None
+    ) -> LiteralFallback | None:
+        literal = literal_fallback_args(args)
+        return None if literal is None else cls(literal, operation, capture)
+
+    def observe(self, hits: Iterator[GrepMatch]) -> None:
+        if self.abandoned:
+            return
+        try:
+            for hit in hits:
+                encoded = hit.model_dump_json()
+                if self.capture is not None:
+                    self.capture.append(encoded)
+                if self.records.accept(encoded):
+                    self.matches.append(hit)
+                elif self.capture is None:
+                    break
+        except ReadToolError as error:
+            if error.code != "limit_exceeded":
+                raise
+            self.abandoned = True
+
+    def replaces(self, regex_matches: list[GrepMatch]) -> bool:
+        return not regex_matches and not self.abandoned and bool(self.matches)
+
+    def publish_to(self, capture: SearchCapture | None) -> None:
+        if capture is not None and self.capture is not None:
+            capture.body.extend(self.capture.body)
+            capture.records += self.capture.records
+
+
+def grep_result(
+    args: GrepInput,
+    stats: SearchStats,
+    matches: list[GrepMatch],
+    reason: Literal["result_limit", "output_limit"] | None,
+    fallback: LiteralFallback | None,
+    capture: SearchCapture | None,
+) -> GrepOutput:
+    """组装搜索结果；正则无命中而字面量有命中时改用字面量结果并标记。"""
+    fields: dict[str, object] = {}
+    if fallback is not None and fallback.replaces(matches):
+        fallback.publish_to(capture)
+        matches, reason = fallback.matches, fallback.records.reason
+        fields["literal_fallback"] = True
+    output_type = GrepSnapshotOutput if isinstance(args, GrepSnapshotInput) else GrepOutput
+    return output_type.model_validate(
+        {
+            "path": args.path,
+            "matches": tuple(matches),
+            "stats": stats,
+            "scan_complete": reason is None and not stats.has_gaps,
+            "truncated": reason is not None,
+            "truncation_reason": reason,
+            **fields,
+        }
+    )
+
+
 def grep(
     workspace: Workspace,
     args: GrepInput,
@@ -392,7 +532,8 @@ def grep(
     capture: SearchCapture | None = None,
 ) -> GrepOutput:
     matcher = build_line_matcher(args, operation)
-    scan, pattern, records = _Scan(), PathPattern(args.include), _Records(args.max_results)
+    fallback = LiteralFallback.start(args, operation, capture)
+    scan, pattern, records = _scan_for(args), grep_include(args), _Records(args)
     matches: list[GrepMatch] = []
     for node in _collect(workspace, args, operation, scan):
         operation.checkpoint()
@@ -417,6 +558,18 @@ def grep(
                         matches.append(hit)
                     elif capture is None:
                         break
+                if fallback is not None and not matches:
+                    fallback.observe(
+                        grep_line_matches(
+                            node.path,
+                            revision,
+                            text,
+                            fallback.args,
+                            operation,
+                            LineGaps(),
+                            matcher=fallback.matcher,
+                        )
+                    )
         except PermissionError:
             scan.unreadable_entries += 1
         if records.reason is not None and capture is None:
@@ -424,14 +577,4 @@ def grep(
     stats = scan.snapshot()
     if capture is not None:
         capture.complete = not stats.has_gaps
-    output_type = GrepSnapshotOutput if isinstance(args, GrepSnapshotInput) else GrepOutput
-    return output_type.model_validate(
-        {
-            "path": args.path,
-            "matches": tuple(matches),
-            "stats": stats,
-            "scan_complete": records.reason is None and not stats.has_gaps,
-            "truncated": records.reason is not None,
-            "truncation_reason": records.reason,
-        }
-    )
+    return grep_result(args, stats, matches, records.reason, fallback, capture)

@@ -30,6 +30,7 @@ def execution_contract() -> dict[str, object]:
             "never_capture": True,
         },
         "match_mode": "explicit-regex-or-literal-default-regex",
+        "literal_fallback": "regex-with-metacharacters-and-no-match-retries-as-literal",
         "semantics": "RE2.search-first-match-per-line-no-pattern-rewriting",
         "text": "UTF-8-no-normalization-CRLF-stripped-for-matching-only",
         "unsupported": "backreferences-and-lookaround-rejected",
@@ -39,6 +40,23 @@ def execution_contract() -> dict[str, object]:
         "engine_cache_entries": 128,
         "engine_cache_max_mem": 128 * RE2_MAX_MEM,
     }
+
+
+_REGEX_METACHARACTERS = frozenset(".^$*+?()[]{}|\\")
+
+
+def literal_fallback_args(args: GrepInput) -> RegexGrepInput | None:
+    """正则模式下查询含元字符时给出同一查询的字面量参数，供完整扫描无命中后重搜；否则为None。
+
+    模型常把含括号、点号的源码片段当字面量查找，按正则解释后静默无命中。
+    """
+    if (
+        isinstance(args, RegexGrepInput)
+        and args.match_mode == "regex"
+        and any(character in _REGEX_METACHARACTERS for character in args.query)
+    ):
+        return args.model_copy(update={"match_mode": "literal"})
+    return None
 
 
 def build_line_matcher(args: GrepInput, operation: ReadOperation) -> LineMatcher:

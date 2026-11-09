@@ -23,6 +23,7 @@ from harnessix.tools.search_contracts import (
     MAX_MATCH_BYTES,
     MAX_SEARCH_FILE_BYTES,
     MAX_SEARCH_TOTAL_BYTES,
+    MAX_SNAPSHOT_SEARCH_TOTAL_BYTES,
     ArchivedGrepOutput,
     ArchivedGrepSnapshotOutput,
     GrepInput,
@@ -108,7 +109,7 @@ def test_snapshot_explicit_input_bounds(maximum, radius):
         {"max_results": 201},
         {"max_results": True},
         {"context_lines": -1},
-        {"context_lines": 4},
+        {"context_lines": 21},
         {"context_lines": True},
         {"context_lines": "0"},
         {"context_lines": 0.0},
@@ -211,7 +212,7 @@ def test_capture_archives_all_snapshot_matches_despite_preview_truncation(
         )
     assert output.truncation_reason == reason and not output.scan_complete
     assert sum(len(hit.model_dump_json().encode()) + 1 for hit in output.matches) <= (
-        search.MAX_SEARCH_RECORD_BYTES
+        search.MAX_SNAPSHOT_SEARCH_RECORD_BYTES
     )
     hits = [GrepSnapshotMatch.model_validate_json(line) for line in capture.body.splitlines()]
     assert capture.complete and capture.records == 40
@@ -394,12 +395,12 @@ def test_original_file_limit_includes_exact_boundary(tmp_path):
 def test_total_scan_and_capture_budgets_never_publish_partial_success(tmp_path, monkeypatch):
     for name in ("a.py", "b.py"):
         (tmp_path / name).write_bytes(b"needle\n" * 2)
-    monkeypatch.setattr(search, "MAX_SEARCH_TOTAL_BYTES", 20)
+    monkeypatch.setattr(search, "MAX_SNAPSHOT_SEARCH_TOTAL_BYTES", 20)
     capture = search.SearchCapture()
     with Workspace(tmp_path) as workspace, pytest.raises(ReadToolError) as failed:
         search.grep(workspace, GrepSnapshotInput(query="needle"), ReadOperation(), capture=capture)
     assert failed.value.code == "limit_exceeded" and not capture.complete
-    monkeypatch.setattr(search, "MAX_SEARCH_TOTAL_BYTES", MAX_SEARCH_TOTAL_BYTES)
+    monkeypatch.setattr(search, "MAX_SNAPSHOT_SEARCH_TOTAL_BYTES", MAX_SNAPSHOT_SEARCH_TOTAL_BYTES)
     monkeypatch.setattr(search, "MAX_ARTIFACT_RECORDS", 1)
     capture = search.SearchCapture()
     with Workspace(tmp_path) as workspace, pytest.raises(ReadToolError) as failed:
