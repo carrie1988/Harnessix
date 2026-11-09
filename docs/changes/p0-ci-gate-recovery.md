@@ -91,6 +91,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 
 恢复门禁后，P0-10又让`ProductController`增加36行、`ProductApp`增加4行，用于本会话审批规则。相关判断已拆到
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
+P1-3又为交互预算增加2行。
 P0-9（ADR 0123第6节）让两个模型适配器的`stream`各增加10行，`AgentRuntime`增加13行，用于区分确定未计费与计费未知；
 计算逻辑放在`_provider_io.py`和`turn_budget_compaction.py`，类内只保留分支和开关。
 

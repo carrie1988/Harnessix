@@ -15,6 +15,7 @@ import sys
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID, uuid4
@@ -31,7 +32,12 @@ from harnessix.product_ui.cli import (
     _server_command,
     _workspace,
 )
-from harnessix.product_ui.cost_estimate import ListPrice, chain_list_price, cost_upper_bound
+from harnessix.product_ui.cost_estimate import (
+    ListPrice,
+    chain_list_price,
+    cost_upper_bound,
+    tokens_for_cost,
+)
 from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import sandbox_status_line
 from harnessix.product_ui.turn_budget import turn_budget_for
@@ -124,6 +130,11 @@ def _parser() -> argparse.ArgumentParser:
         "--approval-mode", choices=("manual", "auto-edit", "auto"), default="manual"
     )
     # 未指定的预算项取产品默认；活动Profile链全为本地免费端点时累计token上限更高。
+    parser.add_argument(
+        "--max-cost",
+        type=_positive_decimal,
+        help="费用上限，单位是模型牌价的货币；只支持已核对牌价的模型，按输入单价折算成Token上限",
+    )
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--max-tokens", type=int)
     parser.add_argument("--timeout-seconds", type=float)
@@ -299,6 +310,16 @@ class _Launch:
     sandbox: str | None = None
 
 
+def _positive_decimal(value: str) -> Decimal:
+    try:
+        amount = Decimal(value)
+    except InvalidOperation:
+        raise argparse.ArgumentTypeError("必须是正数") from None
+    if not amount.is_finite() or amount <= 0:
+        raise argparse.ArgumentTypeError("必须是正数")
+    return amount
+
+
 def _or[T](value: T | None, default: T) -> T:
     return default if value is None else value
 
@@ -330,9 +351,17 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
     )
     pricing = _chain_pricing(config, arguments.profile)
     defaults = turn_budget_for(pricing)
+    list_price = chain_list_price(config, arguments.profile)
+    max_tokens = arguments.max_tokens
+    if arguments.max_cost is not None:
+        if list_price is None:
+            print("--max-cost 只支持已核对牌价的模型，请改用 --max-tokens", file=sys.stderr)
+            return None
+        from_cost = tokens_for_cost(list_price, arguments.max_cost)
+        max_tokens = from_cost if max_tokens is None else min(max_tokens, from_cost)
     budget = PublicBudget(
         max_steps=_or(arguments.max_steps, defaults.max_steps),
-        max_tokens=_or(arguments.max_tokens, defaults.max_tokens),
+        max_tokens=_or(max_tokens, defaults.max_tokens),
         timeout_seconds=_or(arguments.timeout_seconds, defaults.timeout_seconds),
         max_output_chars=_or(arguments.max_output_chars, defaults.max_output_chars),
         max_tool_calls_per_step=_or(
@@ -347,7 +376,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         mode=arguments.approval_mode,
         quiet=arguments.quiet,
         pricing=pricing,
-        list_price=chain_list_price(config, arguments.profile),
+        list_price=list_price,
         events=Path(arguments.events_file).absolute() if arguments.events_file else None,
         resume_thread=arguments.resume_thread,
         sandbox=sandbox_status_line(preflight),

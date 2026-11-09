@@ -18,6 +18,7 @@ from harnessix.product_ui.interactions import (
     usage_cost_view,
 )
 from harnessix.product_ui.rendering import thread_label, transcript_lines
+from harnessix.product_ui.turn_budget import UNCAPPED_TOKENS
 
 
 def _interaction_label(state: ProductControllerState) -> str:
@@ -48,8 +49,13 @@ def _status_text(state: ProductControllerState) -> str:
     usage_text = ""
     if usage is not None:
         limit = "?" if usage.max_tokens is None else str(usage.max_tokens)
+        tokens = (
+            f"Tokens {usage.total_tokens}"
+            if usage.max_tokens is not None and usage.max_tokens >= UNCAPPED_TOKENS
+            else f"Tokens {usage.total_tokens}/{limit}"
+        )
         cost = _cost_text(state, usage)
-        usage_text = f" · Tokens {usage.total_tokens}/{limit} · {cost}"
+        usage_text = f" · {tokens} · {cost}"
     sandbox = "" if state.sandbox is None else f" · {state.sandbox}"
     if state.auto_accept_edits:
         sandbox += " · 自动接受修改"

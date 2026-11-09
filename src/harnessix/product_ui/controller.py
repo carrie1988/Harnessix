@@ -36,7 +36,7 @@ from harnessix.product_ui.thread_selection import (
     _select_optional_thread,
     _select_thread,
 )
-from harnessix.product_ui.turn_budget import turn_budget_for
+from harnessix.product_ui.turn_budget import interactive_turn_budget
 from harnessix.protocol.contracts import MAX_PROTOCOL_TEXT_CHARS, ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError
 
@@ -485,7 +485,9 @@ class ProductController:
                 thread_id,
                 prompt,
                 request_id=prepared.request_id,
-                budget=turn_budget_for(self._state.pricing),
+                budget=interactive_turn_budget(
+                    self._state.pricing, cost_visible=self._state.list_price is not None
+                ),
             )
 
         await self._session.execute_prepared(command, submit)

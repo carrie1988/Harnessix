@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 611,
-    "physical_lines": 133303,
-    "logical_lines": 116867,
+    "physical_lines": 133367,
+    "logical_lines": 116919,
     "documented_modules": 611,
     "classes": 1242,
     "documented_classes": 644,
-    "functions": 5177,
-    "documented_functions": 1626,
+    "functions": 5180,
+    "documented_functions": 1629,
     "public_exports": 372,
     "public_contract_types": 166,
     "undocumented_public_behavior": 0,
@@ -1793,7 +1793,7 @@
       "qualname": "ProductController",
       "kind": "class",
       "line": 215,
-      "lines": 375,
+      "lines": 377,
       "documented": true
     },
     {
