@@ -33,6 +33,10 @@ _BUNDLE = "/installed-agent/harnessix-bundle.tar.gz"
 _APPROVAL_MODES = {"manual", "auto-edit", "auto"}
 _EVENTS = "harnessix-events.jsonl"
 _EXTERNAL_BOUNDARY = "HARNESSIX_EXTERNAL_BOUNDARY"
+# 协议客户端到期后仍要收尾：取消Turn（≤3秒）、完整重放本Turn事件核对证据（≤30秒）、
+# 关闭App Server（≤4秒），再写出逐步记录与结果摘要。Harbor只能在收尾也超时后才杀进程，
+# 否则长Turn到期时摘要与事件全部丢失（sympy-18698在3600+15秒被杀）。
+_RUNNER_FINALIZE_SECONDS = 60
 
 
 def _relay_specs(value: str | list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
@@ -214,7 +218,7 @@ class HarnessixAgent(BaseInstalledAgent):
                 command=shlex.join(command),
                 env=env or None,
                 cwd=self.workspace,
-                timeout_sec=int(self.timeout_seconds) + 15,
+                timeout_sec=int(self.timeout_seconds) + _RUNNER_FINALIZE_SECONDS,
             )
         finally:
             await self.exec_as_agent(

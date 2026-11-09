@@ -74,6 +74,18 @@ async def test_external_boundary_is_asserted_only_for_the_app_server_run(tmp_pat
     assert all("env" not in call.kwargs for call in calls if call is not run)
 
 
+async def test_runner_keeps_time_to_finish_after_its_own_deadline(tmp_path: Path) -> None:
+    """客户端到期后的收尾（取消3秒+证据重放30秒+关停4秒）要在Harbor杀进程之前做完。"""
+    instance = agent(tmp_path, approval_mode="auto", timeout_seconds=3600)
+    instance.exec_as_agent = AsyncMock(return_value=SimpleNamespace(stdout="a" * 40 + "\n"))
+    await instance.run("fix it", SimpleNamespace(upload_file=AsyncMock()), AgentContext())
+    calls = instance.exec_as_agent.await_args_list
+    run = next(call for call in calls if "--trial-id" in call.kwargs["command"])
+    assert "--timeout-seconds 3600" in run.kwargs["command"]
+    assert run.kwargs["timeout_sec"] >= 3600 + 3 + 30 + 4
+    assert run.kwargs["timeout_sec"] < 3900  # 仍在Harbor整段Agent上限之内，补丁导出不被挤掉
+
+
 @pytest.mark.parametrize("body", [None, "", "not json", "[]"])
 def test_missing_or_invalid_receipt_leaves_attribution_to_parser(
     tmp_path: Path, body: str | None
