@@ -89,6 +89,9 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 | `AgentRuntime._sample_events`行数与复杂度 | 211与60 | 279与85 |
 | `product_config/coding_tool_view.py`文件行数 | 新增 | 1024 |
 
+恢复门禁后，P0-10又让`ProductController`增加36行、`ProductApp`增加4行，用于本会话审批规则。相关判断已拆到
+[`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
+
 这些增长发生在门禁失效期间，没有逐项评审，是事实上已经存在的结构债务。本次把预算更新到当前值，让门禁重新生效，
 此后任何继续增长都会失败。偿还计划列入发布清单P2-5：优先拆分`AgentRuntime`和`coding_tool_view.py`，
 并解除`delivery`、`product_config`、`trusted_actions`之间的循环依赖。

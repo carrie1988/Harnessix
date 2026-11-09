@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Final, Literal, cast
 from uuid import UUID
 
+from harnessix.product_ui.approval_automation import ApprovalAutomation, auto_approve_pending
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_service import InteractionService
 from harnessix.product_ui.interactions import (
@@ -20,6 +21,7 @@ from harnessix.product_ui.interactions import (
     RespondApprovalIntent,
     RespondQuestionIntent,
     SteerTurnIntent,
+    pending_approval,
     retained_approval_evidence,
 )
 from harnessix.product_ui.projection import ProductViewState
@@ -28,11 +30,15 @@ from harnessix.product_ui.session import (
     PreparedClientCommand,
     RecoverableAgentSession,
 )
+from harnessix.product_ui.thread_selection import (
+    _read_all_threads,
+    _select_optional_thread,
+    _select_thread,
+)
 from harnessix.product_ui.turn_budget import turn_budget_for
 from harnessix.protocol.contracts import MAX_PROTOCOL_TEXT_CHARS, ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError
 
-MAX_PRODUCT_THREADS: Final = 1000
 MAX_PENDING_INTENTS: Final = 64
 
 
@@ -71,6 +77,8 @@ class ProductControllerState:
     pricing: Literal["free", "unknown"] = "unknown"
     # 零配置时启动预检得出的一行沙箱状态（ADR 0113）；显式Action配置时为None。
     sandbox: str | None = None
+    # 本会话是否自动接受修改；只在内存中，重启后恢复为关闭。
+    auto_accept_edits: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,6 +124,13 @@ class ReconnectIntent:
     pass
 
 
+@dataclass(frozen=True, slots=True)
+class ToggleAutoAcceptIntent:
+    """切换本会话是否自动接受修改。"""
+
+    pass
+
+
 type ProductIntent = (
     CreateThreadIntent
     | SelectThreadIntent
@@ -127,6 +142,7 @@ type ProductIntent = (
     | RespondQuestionIntent
     | CancelTurnIntent
     | SteerTurnIntent
+    | ToggleAutoAcceptIntent
 )
 
 
@@ -159,48 +175,6 @@ def _product_error(error: BaseException) -> ProductUIError:
     if isinstance(error, AgentSDKError):
         return ProductUIError(error.code, error.message, retryable=error.retryable)
     return ProductUIError("controller_internal_failure", "产品控制器发生内部错误")
-
-
-def _ordered_threads(threads: tuple[ThreadView, ...]) -> tuple[ThreadView, ...]:
-    return tuple(
-        sorted(threads, key=lambda item: (item.updated_at, str(item.thread_id)), reverse=True)
-    )
-
-
-async def _read_all_threads(session: RecoverableAgentSession) -> tuple[ThreadView, ...]:
-    cursor: str | None = None
-    seen_cursors: set[str] = set()
-    values: list[ThreadView] = []
-    while True:
-        page = await session.list_threads_page(cursor=cursor, limit=200)
-        values.extend(page.threads)
-        if len(values) > MAX_PRODUCT_THREADS:
-            raise ProductUIError("controller_thread_limit", "Workspace会话数量超过客户端上限")
-        cursor = page.next_cursor
-        if cursor is None:
-            return _ordered_threads(tuple(values))
-        if cursor in seen_cursors:
-            raise ProductUIError("controller_pagination_stalled", "会话列表分页未推进")
-        seen_cursors.add(cursor)
-
-
-async def _select_thread(
-    session: RecoverableAgentSession,
-    available: tuple[ThreadView, ...],
-    thread_id: UUID,
-) -> ProductViewState:
-    if thread_id not in {thread.thread_id for thread in available}:
-        raise ProductUIError("controller_thread_missing", "所选会话不属于当前Workspace")
-    await session.resume_thread(thread_id)
-    return await session.hydrate_thread(thread_id)
-
-
-async def _select_optional_thread(
-    session: RecoverableAgentSession,
-    available: tuple[ThreadView, ...],
-    thread_id: UUID | None,
-) -> ProductViewState | None:
-    return None if thread_id is None else await _select_thread(session, available, thread_id)
 
 
 async def _execute_interaction(
@@ -247,6 +221,7 @@ class ProductController:
     ) -> None:
         self._session = session
         self._interactions = InteractionService(session)
+        self._automation = ApprovalAutomation()
         self._state = ProductControllerState(pricing=pricing, sandbox=sandbox)
         self._intents: asyncio.Queue[_QueuedIntent | _Stop] = asyncio.Queue(
             maxsize=MAX_PENDING_INTENTS
@@ -420,21 +395,55 @@ class ProductController:
             )
             self._publish(approval_evidence=evidence, last_notice=None)
             return
+        if isinstance(intent, ToggleAutoAcceptIntent):
+            self._automation.auto_accept_edits = not self._automation.auto_accept_edits
+            self._publish(auto_accept_edits=self._automation.auto_accept_edits, last_notice=None)
+            return
         if isinstance(intent, InteractionIntent):
+            remembered = (
+                pending_approval(self._state.thread_view)
+                if isinstance(intent, RespondApprovalIntent)
+                and intent.remember_for_session
+                and intent.outcome == "approved"
+                else None
+            )
             updated = await _execute_interaction(
                 self._interactions,
                 self._state.thread_view,
                 self._state.approval_evidence,
                 intent,
             )
+            if remembered is not None:
+                self._automation.remember(remembered)
             self._publish(
                 threads=await _read_all_threads(self._session),
                 thread_view=updated,
                 approval_evidence=None,
                 last_notice=None,
+                auto_accept_edits=self._automation.auto_accept_edits,
             )
             return
         raise ProductUIError("controller_intent_invalid", "产品操作类型无效")
+
+    async def _auto_approve(self) -> None:
+        """按本会话规则处理待决审批；任何失败都退回人工审批，不中断轮询。"""
+
+        try:
+            updated = await auto_approve_pending(
+                self._interactions, self._state.thread_view, self._automation
+            )
+            if updated is None:
+                return
+            threads = await _read_all_threads(self._session)
+        except Exception as error:
+            normalized = _product_error(error)
+            self._publish(
+                last_notice=ProductNotice(normalized.code, normalized.message, normalized.retryable)
+            )
+            return
+        self._publish(
+            threads=threads, thread_view=updated, approval_evidence=None, last_notice=None
+        )
 
     async def _create_thread(self) -> None:
         workspace = self._state.workspace
@@ -512,6 +521,7 @@ class ProductController:
                 else await _read_all_threads(self._session)
             )
             self._publish(threads=threads, thread_view=view, last_notice=None)
+        await self._auto_approve()
 
     async def close(self, *, deadline_seconds: float = 10.0) -> CloseReport:
         """排空已接纳Intent并有界关闭连接；超时不把命令误报为失败。"""

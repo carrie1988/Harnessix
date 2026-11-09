@@ -6,7 +6,7 @@ from typing import Any
 
 from textual.app import App
 
-from harnessix.product_ui.controller import ProductController
+from harnessix.product_ui.controller import ProductController, ToggleAutoAcceptIntent
 from harnessix.product_ui.error_help import product_error_help
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_screens import (
@@ -49,8 +49,12 @@ class InteractionPresenter:
                     review.pending.binding,
                     outcome=result.outcome,
                     reason=result.reason,
+                    remember_for_session=result.remember,
                 )
             )
+
+    async def toggle_auto_accept(self) -> None:
+        await self._controller.dispatch(ToggleAutoAcceptIntent())
 
     async def question(self) -> None:
         pending = pending_question(self._controller.state.thread_view)

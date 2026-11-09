@@ -174,6 +174,8 @@ class RespondApprovalIntent(InteractionIntent):
     binding: ApprovalBinding
     outcome: Literal["approved", "rejected"]
     reason: str | None = None
+    # 批准时同时记住本会话的自动批准规则，见approval_automation。
+    remember_for_session: bool = False
 
 
 @dataclass(frozen=True, slots=True)

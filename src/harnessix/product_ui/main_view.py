@@ -39,6 +39,8 @@ def _status_text(state: ProductControllerState) -> str:
         cost = "本地 0 元" if state.pricing == "free" else f"费用未知（{usage.cost_reason}）"
         usage_text = f" · Tokens {usage.total_tokens}/{limit} · {cost}"
     sandbox = "" if state.sandbox is None else f" · {state.sandbox}"
+    if state.auto_accept_edits:
+        sandbox += " · 自动接受修改"
     notice = (
         ""
         if state.last_notice is None
