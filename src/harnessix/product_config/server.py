@@ -69,6 +69,7 @@ class _ProductRuntimeStartup:
     git_path: Path | None
     secrets: SecretProvider
     root_owner: ProductStateOwner
+    completion_guard: bool = False
 
 
 def _is_link_or_junction(path: Path) -> bool:
@@ -367,7 +368,7 @@ async def _serve_product_stdio(
                                 provider.normalize_tool_arguments
                                 for provider in _active_providers(startup)
                             ),
-                            completion_guard=startup.config.config.completion_guard,
+                            completion_guard=startup.completion_guard,
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(
@@ -426,6 +427,7 @@ async def run_product_stdio(
     git_executable: str | Path | None = None,
     action_config: ProductActionConfigV1 | None = None,
     zero_config_actions: bool = False,
+    completion_guard: bool = False,
 ) -> None:
     if action_config_path is not None and action_config is not None:
         raise KernelError("product_action_config_conflict", "不能同时传入Action配置文件和内存配置")
@@ -483,6 +485,7 @@ async def run_product_stdio(
             git_path=git_path,
             secrets=secrets,
             root_owner=owner,
+            completion_guard=completion_guard or loaded.config.completion_guard,
         )
         await _serve_product_stdio(
             startup,

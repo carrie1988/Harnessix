@@ -31,6 +31,7 @@ from harnessix.product_ui.cli import (
     _server_command,
     _workspace,
 )
+from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import sandbox_status_line
 from harnessix.product_ui.turn_budget import turn_budget_for
 from harnessix.protocol.contracts import (
@@ -293,6 +294,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         else _default_state_directory(workspace)
     )
     command = _server_command(
+        completion_guard=True,
         config=config,
         action_config=_action_config(arguments.action_config),
         profile=arguments.profile,
@@ -379,6 +381,9 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
 
 def exec_main(argv: Sequence[str] | None = None) -> None:
     arguments = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
+    arguments.git_executable = detected_git_executable(
+        arguments.git_executable, Path(arguments.workspace).absolute()
+    )
     summary: dict[str, Any] | None = None
     try:
         launch = _prepare(arguments)

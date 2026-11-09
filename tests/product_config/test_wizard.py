@@ -20,6 +20,7 @@ from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     _open_lock,
     build_product_config,
+    known_context_window,
     write_product_config,
 )
 
@@ -46,6 +47,22 @@ def test_builds_one_provider_config_without_reading_secret_value(
     assert config.providers[0].credential == config.secret_sources[0].secret
     assert config.secret_sources[0].environment_variable == "PRIMARY_API_KEY"
     assert canary not in config.model_dump_json()
+
+
+@pytest.mark.parametrize(
+    ("base_url", "model", "window"),
+    [
+        ("https://api.deepseek.com/v1", "deepseek-v4-pro", 1_000_000),
+        ("https://api.deepseek.com/v1", "deepseek-flash", 1_000_000),
+        ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3.8-max", 1_000_000),
+        ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3.8-27b", None),
+        ("https://api.example.test/v1", "deepseek-v4-pro", None),
+    ],
+)
+def test_known_context_windows_only_cover_verified_models(
+    base_url: str, model: str, window: int | None
+) -> None:
+    assert known_context_window(base_url, model) == window
 
 
 def _self_hosted_draft(base_url: str) -> ConfigurationDraft:

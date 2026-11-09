@@ -9,6 +9,7 @@ import pytest
 
 from harnessix import cli
 from harnessix.product_ui import cli as product_cli
+from harnessix.product_ui import git_detection
 from tests.product_config.conftest import product_config, write_config
 
 
@@ -136,6 +137,38 @@ def test_code_configure_creates_non_secret_v2_configuration(
     assert path.exists()
     assert canary not in path.read_text(encoding="utf-8")
     assert canary not in json.dumps(receipt)
+
+
+def test_git_is_detected_only_inside_a_repository(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository = tmp_path / "repo"
+    (repository / ".git").mkdir(parents=True)
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    monkeypatch.setattr(git_detection.shutil, "which", lambda _name: "/opt/bin/git")
+    monkeypatch.setattr(git_detection, "_git_runs", lambda _path: True)
+
+    assert git_detection.detected_git_executable(None, repository) == "/opt/bin/git"
+    assert git_detection.detected_git_executable(None, repository / "src") == "/opt/bin/git"
+    assert git_detection.detected_git_executable(None, plain) is None
+    assert git_detection.detected_git_executable("/custom/git", plain) == "/custom/git"
+
+    monkeypatch.setattr(git_detection, "_git_runs", lambda _path: False)
+    assert git_detection.detected_git_executable(None, repository) is None
+
+
+def test_exec_only_turns_on_the_completion_guard_for_unattended_runs(tmp_path: Path) -> None:
+    base = {
+        "config": tmp_path / "c.json",
+        "profile": None,
+        "workspace": tmp_path,
+        "runtime_state": tmp_path / "state",
+        "git_executable": None,
+    }
+
+    assert "--completion-guard" not in product_cli._server_command(**base)
+    assert "--completion-guard" in product_cli._server_command(completion_guard=True, **base)
 
 
 def _configure_lan(path: Path, *extra: str) -> None:

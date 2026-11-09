@@ -29,6 +29,7 @@ from harnessix.product_config.product_contracts import (
 )
 from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
+    known_context_window,
     thinking_preset,
     write_product_config,
 )
@@ -36,6 +37,7 @@ from harnessix.product_config.zero_config import zero_config_wanted
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
 from harnessix.product_ui.errors import ProductUIError
+from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import remediation_text, sandbox_status_line
 from harnessix.product_ui.session import RecoverableAgentSession
 from harnessix.product_ui.state_store import ClientStateStore
@@ -89,6 +91,11 @@ def _configure_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--thinking", choices=("tool_steps", "every_step", "off"))
     parser.add_argument("--tool-choice", choices=("auto", "send", "omit"), default="auto")
+    parser.add_argument(
+        "--context-window-tokens",
+        type=int,
+        help="模型的上下文窗口（Token）；已知云模型自动填写，自托管模型建议手动指定",
+    )
     parser.add_argument(
         "--self-hosted",
         action="store_true",
@@ -241,6 +248,7 @@ def _server_command(
     expected_active_sha256: str | None = None,
     expected_active_profile: str | None = None,
     expected_active_action_sha256: str | None = None,
+    completion_guard: bool = False,
 ) -> tuple[str, ...]:
     command = [
         sys.executable,
@@ -263,6 +271,8 @@ def _server_command(
         command.append("--zero-config-actions")
     if git_executable is not None:
         command.extend(("--git-executable", git_executable))
+    if completion_guard:
+        command.append("--completion-guard")
     if expected_active_sha256 is not None:
         command.extend(("--expected-active-sha256", expected_active_sha256))
     if expected_active_profile is not None:
@@ -386,6 +396,12 @@ def _configure(argv: Sequence[str]) -> None:
                 "environment_variable": arguments.api_key_env,
                 "output_token_parameter": arguments.output_token_parameter,
                 "self_hosted": self_hosted,
+                "context_window_tokens": arguments.context_window_tokens
+                or (
+                    known_context_window(base_url, model)
+                    if provider_kind == "openai_chat"
+                    else None
+                ),
                 **_thinking_options(
                     arguments, provider_kind, base_url, model, self_hosted=self_hosted
                 ),
@@ -455,6 +471,9 @@ def _preflight_request(
 
 def _doctor(argv: Sequence[str]) -> None:
     arguments = _doctor_parser().parse_args(argv)
+    arguments.git_executable = detected_git_executable(
+        arguments.git_executable, Path(arguments.workspace).absolute()
+    )
     try:
         report = run_product_preflight(
             _preflight_request(
@@ -503,6 +522,9 @@ def code_main(argv: Sequence[str] | None = None) -> None:
         _doctor(values[1:])
         return
     arguments = _start_parser().parse_args(values)
+    arguments.git_executable = detected_git_executable(
+        arguments.git_executable, Path(arguments.workspace).absolute()
+    )
     try:
         preflight = run_product_preflight(
             _preflight_request(

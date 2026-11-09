@@ -84,6 +84,23 @@ _SELF_HOSTED_LIMITS: dict[str, object] = {
 }
 
 
+# 官方文档核对（2026-11-09）的按量调用上下文长度（Token）；未列出的端点和模型不预设。
+_KNOWN_CONTEXT_WINDOWS: tuple[tuple[str, tuple[str, ...], int], ...] = (
+    ("api.deepseek.com", ("deepseek-v4", "deepseek-flash"), 1_000_000),
+    ("dashscope.aliyuncs.com", ("deepseek-v4", "qwen3.8-max", "qwen3.8-flash"), 1_000_000),
+)
+
+
+def known_context_window(base_url: str, model: str) -> int | None:
+    """已核对端点与模型族的上下文窗口；其余返回None，沿用产品固定压缩上限。"""
+
+    host = urlsplit(base_url).hostname
+    for known_host, prefixes, window in _KNOWN_CONTEXT_WINDOWS:
+        if host == known_host and model.startswith(prefixes):
+            return window
+    return None
+
+
 def thinking_preset(
     base_url: str, model: str, *, self_hosted: bool = False
 ) -> tuple[ThinkingProtocol, bool] | None:
@@ -135,6 +152,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 normalize_tool_arguments=self_hosted,
                 repair_tool_arguments=self_hosted,
                 stable_prompt_prefix=self_hosted,
+                compact_tool_results=checked.provider_kind == "openai_chat",
                 pricing="free" if self_hosted else "unknown",
                 self_hosted=checked.self_hosted,
             ),

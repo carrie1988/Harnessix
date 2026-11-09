@@ -75,6 +75,8 @@ IPv6 ULA（`fc00::/7`）、单段主机名（如`gpu01`），以及`.local`、`.
 | 费用 | 本地0元 | 状态栏显示“本地 0 元” |
 | 累计Token上限 | 600万 | 缓存命中也计入累计，上限比云模型高 |
 
+建议用`--context-window-tokens`填写模型的上下文窗口，压缩阈值会据此计算；不填时沿用产品固定上限。
+
 思考开关经`chat_template_kwargs.enable_thinking`发送。服务端不支持时，用`--thinking-protocol none`关闭。
 
 ## 4. 回退与兼容

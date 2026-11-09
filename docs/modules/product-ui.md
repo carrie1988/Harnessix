@@ -983,7 +983,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 22 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `code configure --self-hosted`及内网地址询问；云模型默认累计Token上限由100万调为300万（过渡值） |
+| 22 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `code configure --self-hosted`、`--context-window-tokens`及内网地址询问；云模型默认累计Token上限由100万调为300万（过渡值）；未指定`--git-executable`时在Git仓库内自动探测git；`exec`默认开启完成守卫 |
 | 17 | `7519a8e69887ad32532bd45845597fd861445193` | 2026-09-28 | 同步顶层停机`state backup/verify`分派及低敏输出；在线TUI/Protocol不变，整体恢复和正式发行仍开放。 |
 | 16 | `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b` | 2026-09-23 | 记录Product App 20秒退出期限经本地全量回归和[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)三次六Job成功验收；旧Revision首次Windows失败的排他根因仍未证实。 |
 | 15 | `823ceac0c7ec250bb36cd0009946949ad8f094d2`后续候选 | 2026-09-23 | 统一Product App Ctrl+Q/卸载的20秒关闭期限，覆盖Transport默认10+5秒收尾预算；记录Windows首次CI失败和独立回归边界，不将单次重跑成功等同根因证明。 |

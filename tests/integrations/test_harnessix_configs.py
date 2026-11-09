@@ -3,8 +3,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
-from integrations.harbor.harnessix_configs import CONTEXT_WINDOW_TOKENS, product_config
+import pytest
+
+from harnessix.product_config.contracts import ProductConfigV2
+from integrations.harbor.harnessix_configs import (
+    CONTEXT_WINDOW_TOKENS,
+    apply_eval_overrides,
+    product_config,
+)
 from scripts.swebench_local_run import MODEL
 
 
@@ -16,12 +24,52 @@ def test_harbor_product_config_declares_the_local_model_window() -> None:
 
 
 def test_the_harbor_arm_sends_compact_tool_results():
-    """评测组别显式开启紧凑工具结果；产品向导默认不开启。"""
+    """评测组别沿用产品向导的默认值：紧凑工具结果开启。"""
     provider = json.loads(product_config(18001))["providers"][0]
     assert provider["kind"] == "openai_chat" and provider["compact_tool_results"] is True
 
 
 def test_the_harbor_arm_turns_on_the_completion_guard():
-    """评测组别是无人值守任务：纯文本提前收工改为补发继续提示；产品向导默认不开启。"""
+    """评测组别是无人值守任务：纯文本提前收工改为补发继续提示；这是唯一允许的覆盖项。"""
     config = json.loads(product_config(18001))
     assert config["completion_guard"] is True
+
+
+def test_eval_overrides_reject_fields_outside_the_whitelist():
+    config = ProductConfigV2.model_validate_json(product_config(18001))
+    assert apply_eval_overrides(config, {"completion_guard": False}).completion_guard is False
+    with pytest.raises(SystemExit, match="workspace_read_timeout_seconds"):
+        apply_eval_overrides(config, {"workspace_read_timeout_seconds": 60})
+
+
+def test_harnessix_arms_only_use_known_agent_options():
+    """新增评测选项必须先在这里登记，避免评测悄悄用上用户拿不到的配置。"""
+    allowed = {
+        "action_config",
+        "action_config_template",
+        "approval_mode",
+        "bundle_root",
+        "external_boundary",
+        "install_bundle",
+        "max_steps",
+        "max_tokens",
+        "model_relays",
+        "normalize_workspace_modes",
+        # 任务模板是已知差异，由不带模板的产品默认组对照。
+        "prompt_template_path",
+        "python_executable",
+        "server_config",
+        "server_config_template",
+        "state_directory",
+        "timeout_seconds",
+        "workspace",
+    }
+    root = Path(__file__).resolve().parents[2] / "benchmarks" / "harbor"
+    seen: set[str] = set()
+    for path in root.rglob("*.json"):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        arms = document.get("arms", []) if isinstance(document, dict) else []
+        for arm in arms:
+            if "harnessix" in str(arm.get("system", "")).lower():
+                seen |= set(arm["agent"].get("kwargs", {}))
+    assert seen and seen <= allowed, sorted(seen - allowed)
