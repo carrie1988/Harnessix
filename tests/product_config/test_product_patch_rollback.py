@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
@@ -205,6 +206,13 @@ async def test_rollback_three_operations_has_new_diff_approval_and_original_unch
         assert output.outcome == "succeeded"
         assert output.output["transaction_id"] == str(request.plan_id)
         assert output.output["files"] == 3
+        # 回滚共用v2结果：恢复后的前镜像摘要可直接作下一次expected_sha256，删除项为null。
+        assert output.output["spec_version"] == "harnessix.workspace-patch-output/v2"
+        assert {item["path"]: item["content_sha256"] for item in output.output["changes"]} == {
+            "src/modified.py": hashlib.sha256(b"old\n").hexdigest(),
+            "src/新增.py": None,
+            "tests/deleted.txt": hashlib.sha256(b"remove\n").hexdigest(),
+        }
         assert router.status(request.plan_id).state == "succeeded"
         assert (root / "src/modified.py").read_bytes() == b"old\n"
         assert (root / "tests/deleted.txt").read_bytes() == b"remove\n"

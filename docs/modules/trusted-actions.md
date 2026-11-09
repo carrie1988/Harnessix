@@ -1781,7 +1781,9 @@ Root缺失不再被当作空Store初始化机会。后续正常启动仍沿既�
 ready、running、reconciling或已知部分效果仍沿原保守UNKNOWN路径；不能把已批准取消判为零效果。
 独立产品Patch和回滚测试均证明等待取消后没有文件变化，原计划不被重放。
 
-公开成功仅将精确`rollback_workspace_patch/product.workspace-patch-rollback`正式来源归入Patch五字段合同。
+公开成功仅将精确`rollback_workspace_patch/product.workspace-patch-rollback`正式来源归入Patch五字段合同
+（2026-11-09起新结果为五字段加各文件发布后摘要与Diff预览的v2，按`spec_version`选择闭合DTO，见
+[Delivery成功结果v2](delivery.md#462-review执行与恢复)）。
 [`builtin_success.py`](../../src/harnessix/trusted_actions/builtin_success.py)检查新事务ID等于冻结新Plan ID，
 文件数等于该Plan规范Workspace写资源数；模型输入原事务ID不能冒充新成功ID。
 恢复仍只观察Transaction成员，部分效果为manual_intervention；Agent继续失败`uncertain_effect`，

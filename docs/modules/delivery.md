@@ -1816,6 +1816,27 @@ Review Provider先物化事务，再调用既有Diff构造并发布确定性`act
 
 取消只在成员之间检查。Router进入`unknown`后，Reconciler只比较before/after镜像：全after证明published，全before且游标为0证明未应用，严格after前缀与before后缀标记interrupted并映射人工处理，第三状态或无法观察保持diverged/unknown。恢复不调用`publish_next`，因此不会自动补写剩余成员。
 
+**成功结果v2（2026-11-09）。** holdout part 1步数分析中，成功结果只有五字段，模型对同一文件的下一次Patch
+只能先重读文件取SHA。现在共享执行器的
+[`_published_output`](../../src/harnessix/delivery/transaction_action_executor.py)
+（apply_patch_batch与rollback_workspace_patch共用）输出
+[`PublicWorkspacePatchOutputV2`](../../src/harnessix/execution/public_tool_contracts.py)
+（[Schema](../../spec/workspace-patch-output-v2.schema.json)）：原五字段不变，另加
+`spec_version=harnessix.workspace-patch-output/v2`、按计划成员顺序的`changes[{path, content_sha256}]`和`diff_preview`。
+
+| 字段 | 来源与约束 |
+|---|---|
+| `changes[].content_sha256` | 成员`after.sha256`；删除为`null`。`published`只在每个成员发布后的磁盘观察（完整字节SHA、大小、权限）等于计划after版本时记录，恢复也只在全部after时才判published，所以它是已发布字节的摘要，不是前镜像，与`read_file`完整读取的`content_sha256`同义，可直接作同一文件下一次`expected_sha256` |
+| `diff_preview.text` | `diff_sha256`所指完整Diff的前缀，含截断标记最多4096 UTF-8字节（`MAX_WORKSPACE_PATCH_DIFF_PREVIEW_BYTES`），优先在行尾截断，无换行时只在完整字符处截断；截断时以固定标记`…[Diff预览已截断]`结尾 |
+| `diff_preview.total_bytes`、`truncated` | 完整Diff字节数；未截断时DTO要求正文字节数等于`total_bytes`且SHA-256等于`diff_sha256` |
+
+公开校验（[`builtin_success.py`](../../src/harnessix/trusted_actions/builtin_success.py)）按`spec_version`选择闭合v1或v2 DTO；
+v2另要求`changes`路径与冻结计划的Workspace写资源逐一对应（`{"location":"workspace","path"}`的规范摘要），
+文件数和事务ID检查不变；历史v1结果仍按原五字段合同验证，v1 Schema不变。预览是审批前已经过`protect_review_jsonl`
+扫描的同一Review正文的前缀，提交Tool Result时又经Session公开输出保护扫描；Diff本身仍可经`diff_artifact`完整读取。
+回归见[执行器结果](../../tests/delivery/test_patch_result_output.py)、[产品链](../../tests/product_config/test_patch_result_feedback.py)
+与[公开合同](../../tests/execution/test_public_tool_contracts.py)。
+
 ### 46.3 平台与验证
 
 该组合按当前能力证据装配：POSIX复核no-follow，Windows使用已交付的原生NTFS端口并拒绝不支持的模式和元数据。

@@ -1218,6 +1218,9 @@ Git批准意图、MCP封套、Skill目录/清单/路径绑定及Process/Eval语�
 [共享DTO](../../src/harnessix/execution/public_tool_contracts.py)只定义字段与值约束，
 Git/MCP/Skill原路径显式重导出同一类，四个既有Schema不变；[Patch新Schema](../../spec/workspace-patch-output-v1.schema.json)
 记录新增正式五字段摘要，不改变生产输出JSON形状。Producer仍负责实际效果、Secret与工件所属域。
+2026-11-09起同一模块另定义`PublicWorkspacePatchOutputV2`（[Schema](../../spec/workspace-patch-output-v2.schema.json)），
+在五字段之外给出各文件发布后的`content_sha256`与有界Diff预览；v1类与Schema不变，新结果使用v2，
+字段语义见[Delivery成功结果v2](delivery.md#462-review执行与恢复)。
 
 [来源校验](../../src/harnessix/trusted_actions/builtin_success.py)使用冻结Plan/Binding，而非正文自报version选择权限；
 [Gateway](../../src/harnessix/trusted_actions/agent_gateway_output.py)为内联正文补齐预算、当前Audit Hash、正式摘要、

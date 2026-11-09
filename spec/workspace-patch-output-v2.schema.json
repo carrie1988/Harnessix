@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "PublicWorkspacePatchDiffPreview": {
+      "additionalProperties": false,
+      "description": "diff_sha256所指完整Diff的有界前缀，优先在行尾截断；截断时以固定标记结尾。",
+      "properties": {
+        "text": {
+          "maxLength": 4096,
+          "title": "Text",
+          "type": "string"
+        },
+        "total_bytes": {
+          "maximum": 67108864,
+          "minimum": 1,
+          "title": "Total Bytes",
+          "type": "integer"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "total_bytes",
+        "truncated"
+      ],
+      "title": "PublicWorkspacePatchDiffPreview",
+      "type": "object"
+    },
+    "PublicWorkspacePatchFileChange": {
+      "additionalProperties": false,
+      "description": "发布后的单文件完整内容SHA-256，与read_file完整读取的content_sha256同义；删除为null。",
+      "properties": {
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "content_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Content Sha256"
+        }
+      },
+      "required": [
+        "path",
+        "content_sha256"
+      ],
+      "title": "PublicWorkspacePatchFileChange",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "五字段之外给出各文件发布后的content_sha256与Diff预览，后续编辑不必只为取SHA重读。",
+  "properties": {
+    "transaction_id": {
+      "format": "uuid",
+      "title": "Transaction Id",
+      "type": "string"
+    },
+    "files": {
+      "maximum": 16,
+      "minimum": 1,
+      "title": "Files",
+      "type": "integer"
+    },
+    "state": {
+      "const": "published",
+      "title": "State",
+      "type": "string"
+    },
+    "origin": {
+      "enum": [
+        "execution",
+        "recovery"
+      ],
+      "title": "Origin",
+      "type": "string"
+    },
+    "diff_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Diff Sha256",
+      "type": "string"
+    },
+    "spec_version": {
+      "const": "harnessix.workspace-patch-output/v2",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "changes": {
+      "items": {
+        "$ref": "#/$defs/PublicWorkspacePatchFileChange"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Changes",
+      "type": "array"
+    },
+    "diff_preview": {
+      "$ref": "#/$defs/PublicWorkspacePatchDiffPreview"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "files",
+    "state",
+    "origin",
+    "diff_sha256",
+    "spec_version",
+    "changes",
+    "diff_preview"
+  ],
+  "title": "PublicWorkspacePatchOutputV2",
+  "type": "object"
+}

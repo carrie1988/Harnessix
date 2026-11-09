@@ -7,10 +7,12 @@ from typing import Literal
 
 from pydantic import JsonValue
 
+from harnessix.execution.contracts import canonical_digest
 from harnessix.execution.public_tool_contracts import (
     GitPushReceipt,
     McpToolCallOutput,
     PublicWorkspacePatchOutput,
+    PublicWorkspacePatchOutputV2,
     SkillContent,
     SkillResourceContent,
 )
@@ -27,16 +29,7 @@ def validate_builtin_success(
     encoded = json.dumps(output, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     arguments = plan.invocation.arguments
     if family == "patch":
-        patch = PublicWorkspacePatchOutput.model_validate_json(encoded)
-        files = arguments.get("files")
-        count = len(files) if type(files) is list else None
-        if plan.binding.tool == "rollback_workspace_patch":
-            count = sum(
-                resource.kind == "workspace" and resource.access == "write"
-                for resource in plan.resources
-            )
-        if patch.transaction_id != plan.execution.plan_id or patch.files != count:
-            raise ValueError("公开Patch摘要不属于当前计划")
+        _validate_patch_summary(plan, output, encoded)
     elif family == "git":
         receipt = GitPushReceipt.model_validate_json(encoded)
         expected = (
@@ -76,3 +69,31 @@ def validate_builtin_success(
             or (qualified != name if "/" in name else qualified.rsplit("/", 1)[-1] != name)
         ):
             raise ValueError("公开Skill正文不属于当前目录及清单")
+
+
+def _validate_patch_summary(plan: ActionRoutePlan, output: JsonValue, encoded: str) -> None:
+    """按spec_version选择闭合v1/v2合同；v2每个文件路径须正好对应计划的一个Workspace写资源。"""
+
+    v2 = isinstance(output, dict) and output.get("spec_version") == (
+        "harnessix.workspace-patch-output/v2"
+    )
+    patch = (
+        PublicWorkspacePatchOutputV2.model_validate_json(encoded)
+        if v2
+        else PublicWorkspacePatchOutput.model_validate_json(encoded)
+    )
+    written = sorted(
+        resource.identifier_sha256
+        for resource in plan.resources
+        if resource.kind == "workspace" and resource.access == "write"
+    )
+    files = plan.invocation.arguments.get("files")
+    count = len(files) if type(files) is list else None
+    if plan.binding.tool == "rollback_workspace_patch":
+        count = len(written)
+    if patch.transaction_id != plan.execution.plan_id or patch.files != count:
+        raise ValueError("公开Patch摘要不属于当前计划")
+    if isinstance(patch, PublicWorkspacePatchOutputV2) and written != sorted(
+        canonical_digest({"location": "workspace", "path": change.path}) for change in patch.changes
+    ):
+        raise ValueError("公开Patch文件不属于当前计划")

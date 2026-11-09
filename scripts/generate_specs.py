@@ -142,6 +142,7 @@ from harnessix.execution.contracts import (
     ExecutionPlan,
     ExecutionPlanV2,
 )
+from harnessix.execution.public_tool_contracts import PublicWorkspacePatchOutputV2
 from harnessix.execution.versioned_contracts import ExecutionPlanV3
 from harnessix.hooks.contracts import (
     HookActionInput,
@@ -450,6 +451,10 @@ def generate_specs(output: Path) -> None:
     write_json(
         output / "workspace-patch-output-v1.schema.json",
         PublicWorkspacePatchOutput.model_json_schema(),
+    )
+    write_json(
+        output / "workspace-patch-output-v2.schema.json",
+        PublicWorkspacePatchOutputV2.model_json_schema(),
     )
     write_json(
         output / "workspace-action-review-record-v1.schema.json",

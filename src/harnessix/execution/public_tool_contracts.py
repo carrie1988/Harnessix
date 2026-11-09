@@ -37,6 +37,60 @@ class PublicWorkspacePatchOutput(ExecutionContract):
     diff_sha256: Revision
 
 
+# v2成功结果中完整Diff预览的UTF-8上限（含截断标记）。
+MAX_WORKSPACE_PATCH_DIFF_PREVIEW_BYTES = 4096
+WORKSPACE_PATCH_DIFF_PREVIEW_MARKER = "…[Diff预览已截断]\n"
+
+
+class PublicWorkspacePatchFileChange(ExecutionContract):
+    """发布后的单文件完整内容SHA-256，与read_file完整读取的content_sha256同义；删除为null。"""
+
+    path: str = Field(min_length=1, max_length=4096)
+    content_sha256: Revision | None
+
+
+class PublicWorkspacePatchDiffPreview(ExecutionContract):
+    """diff_sha256所指完整Diff的有界前缀，优先在行尾截断；截断时以固定标记结尾。"""
+
+    text: str = Field(max_length=MAX_WORKSPACE_PATCH_DIFF_PREVIEW_BYTES)
+    total_bytes: int = Field(ge=1, le=64 * 1024 * 1024)
+    truncated: bool
+
+
+class PublicWorkspacePatchOutputV2(PublicWorkspacePatchOutput):
+    """五字段之外给出各文件发布后的content_sha256与Diff预览，后续编辑不必只为取SHA重读。"""
+
+    spec_version: Literal["harnessix.workspace-patch-output/v2"]
+    changes: tuple[PublicWorkspacePatchFileChange, ...] = Field(
+        min_length=1, max_length=MAX_WORKSPACE_PATCH_FILES
+    )
+    diff_preview: PublicWorkspacePatchDiffPreview
+
+    @model_validator(mode="after")
+    def consistent_changes(self) -> Self:
+        paths = [change.path for change in self.changes]
+        preview = self.diff_preview
+        body = preview.text.encode("utf-8")
+        if (
+            len(paths) != self.files
+            or len(set(paths)) != len(paths)
+            or len(body) > MAX_WORKSPACE_PATCH_DIFF_PREVIEW_BYTES
+        ):
+            raise ValueError("公开Patch文件摘要不一致")
+        if preview.truncated:
+            marker = WORKSPACE_PATCH_DIFF_PREVIEW_MARKER
+            shown = len(body) - len(marker.encode("utf-8"))
+            valid = preview.text.endswith(marker) and shown < preview.total_bytes
+        else:
+            valid = (
+                len(body) == preview.total_bytes
+                and hashlib.sha256(body).hexdigest() == self.diff_sha256
+            )
+        if not valid:
+            raise ValueError("公开Patch Diff预览与完整Diff摘要不一致")
+        return self
+
+
 # Git Push正式观察收据；自身Hash不替代公开边界的批准意图比对。
 class GitPushReceipt(ExecutionContract):
     spec_version: Literal["harnessix.git-push-receipt/v1"] = "harnessix.git-push-receipt/v1"

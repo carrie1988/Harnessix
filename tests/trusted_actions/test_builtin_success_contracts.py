@@ -39,7 +39,8 @@ from tests.trusted_actions.test_public_error_leakage import _assert_no_leak, _pa
 from tests.trusted_actions.test_router import context, router
 from tests.trusted_actions.test_success_projection_boundaries import output_reference
 
-FAMILIES = ["patch", "git", "skill_load", "skill_resource", "mcp"]
+FAMILIES = ["patch", "patch_v2", "git", "skill_load", "skill_resource", "mcp"]
+_DIFF = "diff --harnessix a/file.txt b/file.txt\n--- a/file.txt\n+++ b/file.txt\n"
 
 
 def family_data(family):
@@ -81,6 +82,17 @@ def success_body(family, plan):
             "state": "published",
             "origin": "execution",
             "diff_sha256": "d" * 64,
+        }
+    if family == "patch_v2":
+        return {
+            "spec_version": "harnessix.workspace-patch-output/v2",
+            "transaction_id": str(plan.execution.plan_id),
+            "files": 1,
+            "state": "published",
+            "origin": "execution",
+            "diff_sha256": hashlib.sha256(_DIFF.encode()).hexdigest(),
+            "changes": [{"path": "file.txt", "content_sha256": "c" * 64}],
+            "diff_preview": {"text": _DIFF, "total_bytes": len(_DIFF), "truncated": False},
         }
     if family == "git":
         receipt = {
@@ -131,6 +143,7 @@ def mutate_body(family, body, case):
     if case == "identity":
         field = {
             "patch": "transaction_id",
+            "patch_v2": "changes",
             "git": "remote_oid",
             "mcp": "is_error",
             "skill_load": "manifest_sha256",
@@ -138,6 +151,8 @@ def mutate_body(family, body, case):
         }[family]
         value = {
             "patch": str(uuid4()),
+            # 文件数相同，但路径不是计划冻结的Workspace写资源。
+            "patch_v2": [{"path": "other.txt", "content_sha256": "c" * 64}],
             "git": "b" * 40,
             "mcp": True,
             "skill_load": "d" * 64,
