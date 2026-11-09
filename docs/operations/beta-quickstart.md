@@ -89,8 +89,10 @@ harnessix code /path/to/repo
 | 费用 | 约 0.5 元 |
 | 最糟的一点 | 反复读同一个文件 |
 
-请不要在反馈中附带密钥、客户数据或未公开的源码。遇到数据损坏、越权操作或凭据泄露，请立即停止并告诉我们。
+请不要在反馈中附带密钥、客户数据或未公开的源码。诊断文件不含这些内容。遇到数据损坏、越权操作或凭据泄露，请立即停止并告诉我们。
 
 ## 6. 回退
 
 用 Git 回退工作区改动，用 `uv tool uninstall harnessix` 卸载。卸载不会删除 `~/.harnessix` 中的配置和会话。
+
+管理本机数据：`harnessix data list` 列出各工作区的数据，`harnessix data export` 导出会话，`harnessix data delete --workspace 路径` 按提示确认后删除。遇到问题时，`harnessix data diagnostics <仓库> --output diag.json` 生成不含代码和对话的诊断文件，可以直接发给我们。
