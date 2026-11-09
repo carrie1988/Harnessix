@@ -1,0 +1,98 @@
+{
+  "run_name": "holdout-harnessix-step-efficiency-part1",
+  "dataset": {
+    "name": "swebench-verified-holdout49-part1",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 4,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "User decision 2026-11-09: after the part-1 rerun on 4c527440 resolved 5/10 (the same as a8fa2c0d) with 765 model calls against mini-swe-agent's 337, implement the step-efficiency plan (items 1-5) and rerun the same 10 tasks. These tasks were used for the diagnosis, so the result is optimistic; the remaining 39 holdout tasks stay unseen.",
+    "Item 1: the Harnessix arm renders the task through the eval-side template benchmarks/harbor/harnessix/swebench-task.j2 (mini-like framing: non-test source only, no repository test edits, scratch reproduction, analyse-reproduce-edit-verify-finish, no unrequested behaviour, check failures against the original code, one line of reasoning per response). Product instructions are unchanged apart from item 3's precondition sentence.",
+    "Item 2: snapshot/regex grep matches include without '/' by file name at any depth, searches the whole repository (50000 entries, 64 MiB), returns up to 20 context lines and falls back to literal matches when a regex with metacharacters finds nothing.",
+    "Item 3: apply_patch_batch success returns each file's new content_sha256 and a diff preview, and the instructions accept that digest as the next precondition (generic instructions v4); validation errors name the offending field; command previews keep the last 8 KiB per stream (trusted-process-output/v3).",
+    "Item 4: the provider sends compact text for grep, glob, read_file, command and patch results (compact_tool_results in product.json); stored history and artifacts are unchanged.",
+    "Item 5: compaction summaries no longer count toward the 100-request cap (at most one summary per main step) and carry a 'Summary through step N' stamp; the summary keeps environment facts and failed approaches.",
+    "Product bundle built from 1fe674b0 (third integration plus items 1-5). Turn budget unchanged: 100 main steps / 6M tokens / 3600 s; Harbor agent cap 3900 s; same tasks, model, relay (6378c9e8, --docker-socket), concurrency and full Langfuse content as holdout-harnessix-integrated-part1-4c527440.",
+    "Primary metric is the official resolve of the exported patch (plan v2); django-13516's ambiguous official grade in the previous part-1 run counts as unresolved (user decision 2026-11-09)."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/host-gateway.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-verified-holdout49",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "harnessix",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/agent-1fe674b0/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-1fe674b0/product.json",
+        "/data/harnessix/harbor/agent-1fe674b0/actions.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/agent-1fe674b0/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/agent-1fe674b0/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config_template": "/data/harnessix/harbor/agent-1fe674b0/actions.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": false,
+          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task.j2"
+        },
+        "override_timeout_sec": 3900
+      }
+    }
+  ]
+}
