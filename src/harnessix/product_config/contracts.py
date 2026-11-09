@@ -189,6 +189,11 @@ class ProductConfigV2(ProductConfigContract):
     workspace_read_timeout_seconds: int | None = Field(
         default=None, ge=1, le=60, strict=True, exclude_if=lambda value: value is None
     )
+    # 无人值守任务：不像完成的纯文本回复（空、JSON、照抄摘要，或尚未改过代码）不结束Turn，
+    # 由宿主补发继续提示，每Turn至多两次（agent/completion_guard.py）。交互使用保持关闭。
+    completion_guard: bool = Field(
+        default=False, strict=True, exclude_if=lambda value: value is False
+    )
 
     @model_validator(mode="after")
     def valid_graph(self) -> Self:

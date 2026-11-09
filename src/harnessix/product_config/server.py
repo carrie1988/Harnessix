@@ -367,6 +367,7 @@ async def _serve_product_stdio(
                                 provider.normalize_tool_arguments
                                 for provider in _active_providers(startup)
                             ),
+                            completion_guard=startup.config.config.completion_guard,
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(

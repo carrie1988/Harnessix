@@ -195,6 +195,37 @@ async def test_closed_prefix_preserves_current_user_and_original_facts():
     assert all(message["role"] != "system" for message in messages)
 
 
+async def test_steering_and_host_notices_in_the_current_turn_stay_pinned():
+    first_user = text("修复解析器，保留public接口；不要修改凭据。", "user_message")
+    steering = text("补充约束：只改解析器模块。", "user_message")
+    notice = text("[Harnessix host notice] continue with tool calls.", "user_message")
+    thread = thread_with(
+        (
+            first_user,
+            *tool_group(),
+            text("先看解析器。"),
+            steering,
+            *tool_group(),
+            text("确认问题。"),
+            notice,
+            *tool_group(),
+            *tool_group(),
+            text("继续检查失败恢复路径。"),
+        )
+    )
+    prepared = await plan(thread)
+    pinned = {first_user.item_id, steering.item_id, notice.item_id}
+    assert pinned <= set(prepared.plan.pinned_item_ids)
+    assert pinned <= set(prepared.plan.retained_item_ids)
+    assert pinned.isdisjoint(prepared.plan.covered_item_ids)
+    assert_paired_partition(prepared)
+    candidate = await validate_compaction(thread, prepared.plan, summary(prepared), CancelToken())
+    kept = [entry.item_id for entry in candidate.history]
+    assert (
+        kept.index(first_user.item_id) < kept.index(steering.item_id) < kept.index(notice.item_id)
+    )
+
+
 async def test_plan_and_summary_json_roundtrip_is_deterministic():
     thread = thread_with()
     prepared = await plan(thread)
@@ -324,7 +355,6 @@ async def test_open_work_and_wrong_step_fail_closed(mode):
         "reasoning",
         "duplicate_item",
         "no_user",
-        "two_users",
     ],
 )
 async def test_invalid_transcript_is_never_repaired_by_truncation(mode):
@@ -349,8 +379,6 @@ async def test_invalid_transcript_is_never_repaired_by_truncation(mode):
         entries.append(entries[-1])
     elif mode == "no_user":
         entries.pop(0)
-    else:
-        entries.append(text("第二条", "user_message"))
     with pytest.raises(KernelError) as error:
         await plan(thread_with(entries))
     assert error.value.code in {

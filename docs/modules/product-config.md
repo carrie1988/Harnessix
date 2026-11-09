@@ -676,6 +676,7 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `secret_sources` | 1～32 | 按Secret名称排序，名称唯一，环境变量唯一 |
 | `providers` | 1～16 | 按Provider ID排序且唯一；Secret名称和版本精确存在 |
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
+| `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
 
 每个Profile都独立展开整条Fallback链并验证：
 

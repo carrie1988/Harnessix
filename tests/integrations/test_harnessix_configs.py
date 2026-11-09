@@ -19,3 +19,9 @@ def test_the_harbor_arm_sends_compact_tool_results():
     """评测组别显式开启紧凑工具结果；产品向导默认不开启。"""
     provider = json.loads(product_config(18001))["providers"][0]
     assert provider["kind"] == "openai_chat" and provider["compact_tool_results"] is True
+
+
+def test_the_harbor_arm_turns_on_the_completion_guard():
+    """评测组别是无人值守任务：纯文本提前收工改为补发继续提示；产品向导默认不开启。"""
+    config = json.loads(product_config(18001))
+    assert config["completion_guard"] is True

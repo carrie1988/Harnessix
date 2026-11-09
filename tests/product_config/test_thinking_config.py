@@ -252,6 +252,19 @@ def test_declared_context_window_reaches_the_profile_and_stays_optional():
         ModelProfile.model_validate({**plain.model_dump(), "context_window_tokens": "262144"})
 
 
+def test_completion_guard_is_explicit_and_strict():
+    """完成守卫默认关闭、不序列化（已有配置摘要不变），向导不预设；只接受布尔值。"""
+    plain = build_product_config(_draft())
+    assert plain.completion_guard is False
+    assert "completion_guard" not in plain.model_dump()
+    dumped = plain.model_dump(mode="json")
+    guarded = ProductConfigV2.model_validate_json(json.dumps({**dumped, "completion_guard": True}))
+    assert guarded.completion_guard is True
+    assert guarded.model_dump(mode="json")["completion_guard"] is True
+    with pytest.raises(ValidationError):
+        ProductConfigV2.model_validate_json(json.dumps({**dumped, "completion_guard": "yes"}))
+
+
 def test_compact_tool_results_is_explicit_and_maps_to_text_tool_results():
     """紧凑工具结果默认关闭、不序列化，向导不预设；显式开启时Provider发送文本工具结果。"""
     protocol, omit = thinking_preset(LOCAL_VLLM, "qwen3.8-flash-next") or (None, False)

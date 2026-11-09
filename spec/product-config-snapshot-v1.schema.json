@@ -234,6 +234,11 @@
           ],
           "default": null,
           "title": "Workspace Read Timeout Seconds"
+        },
+        "completion_guard": {
+          "default": false,
+          "title": "Completion Guard",
+          "type": "boolean"
         }
       },
       "required": [

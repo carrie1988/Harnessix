@@ -28,6 +28,11 @@ from harnessix.agent.argument_normalization import normalize_stringified_contain
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.compaction_reducer import compaction_source
+from harnessix.agent.completion_guard import (
+    completion_notice,
+    completion_notice_events,
+    step_reply,
+)
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
@@ -302,6 +307,7 @@ class AgentRuntime:
         normalize_stringified_arguments: bool = False,
         stable_tool_catalog: bool = False,
         reject_forced_choice_violations: bool = False,
+        completion_guard: bool = False,
         approval_responder: ApprovalResponder | None = None,
     ) -> None:
         validate_runtime_switches(
@@ -349,6 +355,10 @@ class AgentRuntime:
         # 显式开启时，强制选择下调用其他工具不再使Turn失败：这些调用不在本步可执行集，
         # 沿原目录拒绝路径记为无效果失败结果，模型在原预算内纠正；强制工具调用照常执行。
         self._reject_forced_choice_violations = reject_forced_choice_violations
+        if type(completion_guard) is not bool:
+            raise KernelError("invalid_runtime_configuration", "完成守卫开关必须是布尔值")
+        # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
+        self._completion_guard = completion_guard
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -2124,6 +2134,13 @@ class AgentRuntime:
                 and item.content.model_step == request.step
                 for item in turn.items
             )
+            notice = (
+                completion_notice(turn, request.step, step_reply(turn.items, history_ids))
+                if self._completion_guard and not steered and not rejected
+                else None
+            )
+            # 宿主补发与用户Steering同为新用户输入，按Steering语义重入下一步。
+            steered = steered or notice is not None
             target = TurnStatus.PREPARING_CONTEXT if steered or rejected else TurnStatus.FINALIZING
             reason: Literal["normal", "steering", "tool_rejection"] = (
                 "steering" if steered else "tool_rejection" if rejected else "normal"
@@ -2131,10 +2148,11 @@ class AgentRuntime:
             updated = await self.store.append(
                 request.thread_id,
                 [
+                    *completion_notice_events(request.turn_id, request.step, notice),
                     EventDraft(
                         turn_id=request.turn_id,
                         payload=TurnStateChanged(status=target, reason=reason),
-                    )
+                    ),
                 ],
                 expected_sequence=thread.sequence,
             )

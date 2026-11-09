@@ -544,6 +544,23 @@ sequenceDiagram
 这不是对`invalid_event`的事后重试：旧准备结果在进入Reducer前就完成确定性比较，因此真实合同损坏仍按
 `invalid_event`失败，只有可证明由并发Session变化造成的快照失效才重新准备。
 
+### 13.4 完成守卫（显式开启）
+
+模型一步没有工具调用即被视为最终答复。无人值守任务里，小模型偶尔只写一句进展、照抄上下文摘要JSON
+或编造错误JSON就停下，任务以空补丁结束。[`completion_guard`](../../src/harnessix/agent/completion_guard.py)
+在`_close_model_step`的同一Thread CAS内判定（仅当本步既无Steering也无目录拒绝）：
+
+| 本步回复 | 处理 |
+|---|---|
+| 空正文、JSON对象或含上下文摘要标记 | 补发“不是答复，继续用工具”提示 |
+| 本Turn尚无成功补丁（Trusted Action `patch_batch`或旧补丁效果），且上一步不是对补发的回应 | 补发“尚未修改代码”提示；模型再次给出纯文本结论即照常完成 |
+| 其他 | 照常完成 |
+
+补发提示以用户消息Item持久化（身份`uuid5(turn_id, "harnessix.completion-guard/v1:<step>")`，正文以
+`[Harnessix host notice]`开头），并以`TurnStateChanged(reason="steering")`重入，沿用§13.3的Event v19
+语义，事件版本不变。每个Turn最多补发两次；步骤或Token预算已用尽时不补发。产品配置`completion_guard`
+默认关闭（ADR 0124）；Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
+
 ## 14. 取消、超时和关闭
 
 ```mermaid

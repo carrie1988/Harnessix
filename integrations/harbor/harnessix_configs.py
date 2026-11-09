@@ -40,11 +40,14 @@ def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off"
         context_window_tokens=CONTEXT_WINDOW_TOKENS.get(model),
     )
     config = build_product_config(draft)
-    # 评测组别显式开启紧凑工具结果；产品向导的默认值不变。替换后按JSON重新校验整份配置。
+    # 评测组别显式开启紧凑工具结果与完成守卫（无人值守，纯文本提前收工改为补发继续提示）；
+    # 产品向导的默认值不变。替换后按JSON重新校验整份配置。
     providers = tuple(
         provider.model_copy(update={"compact_tool_results": True}) for provider in config.providers
     )
-    updated = config.model_copy(update={"providers": providers}).model_dump_json()
+    updated = config.model_copy(
+        update={"providers": providers, "completion_guard": True}
+    ).model_dump_json()
     return type(config).model_validate_json(updated).model_dump_json(indent=2)
 
 

@@ -135,7 +135,8 @@ def _closed_group_steps(
     return tuple(groups)
 
 
-def _current_user(thread: Thread, model_step: int) -> UUID:
+def _current_users(thread: Thread, model_step: int) -> tuple[UUID, ...]:
+    """当前Turn的全部用户消息：初始输入及其后的Steering（含宿主补发）都固定保留，不进摘要。"""
     active = next((turn for turn in thread.turns if turn.turn_id == thread.active_turn_id), None)
     if (
         active is None
@@ -160,9 +161,9 @@ def _current_user(thread: Thread, model_step: int) -> UUID:
         and isinstance(item.content, TextContent)
         and item.content.kind == "user_message"
     ]
-    if len(users) != 1:
-        raise KernelError("context_compaction_invalid_history", "当前Turn缺少唯一用户消息")
-    return users[0]
+    if not users:
+        raise KernelError("context_compaction_invalid_history", "当前Turn缺少用户消息")
+    return tuple(users)
 
 
 def _summary_source(items: tuple[Item, ...]) -> str:
@@ -213,7 +214,7 @@ def _plan_steps(
     ):
         raise KernelError("context_compaction_invalid_policy", "优选历史预算不属于原策略边界")
     view_policy = ToolResultViewPolicy.model_validate_json(view_policy.model_dump_json())
-    current_user_id = _current_user(thread, model_step)
+    current_user_ids = _current_users(thread, model_step)
     if len(anchors) > 64 or len({anchor.item_id for anchor in anchors}) != len(anchors):
         raise KernelError("context_compaction_anchor_mismatch", "固定锚点超过上限或身份重复")
     anchors = tuple(
@@ -225,7 +226,7 @@ def _plan_steps(
         raise KernelError("context_compaction_invalid_history", "历史缺少首条原用户消息")
     original = {item.item_id: item for item in history_items(thread)}
     # 现有Anthropic端口不接受assistant前缀；保留原消息而不伪造用户指令。
-    requested_pins = {first.item_id, current_user_id}
+    requested_pins = {first.item_id, *current_user_ids}
     for anchor in anchors:
         item = original.get(anchor.item_id)
         if item is None or _sha(history_document(item)) != anchor.source_sha256:
