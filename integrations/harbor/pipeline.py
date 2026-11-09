@@ -83,13 +83,18 @@ def _plan_version(spec: dict[str, Any]) -> str:
     return _PLAN_VERSIONS[rule]
 
 
-def _resolve_config_file(arm: dict[str, Any], code_root: Path) -> None:
-    """智能体配置文件以仓库相对路径登记：解析到代码目录下，并作为组别制品按内容计入摘要。"""
+# 以仓库相对路径登记的智能体文件：mini的配置文件，以及Harbor渲染任务说明用的提示模板。
+_REPOSITORY_FILE_KWARGS = ("config_file", "prompt_template_path")
+
+
+def _resolve_repository_files(arm: dict[str, Any], code_root: Path) -> None:
+    """仓库相对的智能体文件解析到代码目录下，并作为组别制品按内容计入配置摘要。"""
     kwargs = arm["agent"].get("kwargs", {})
-    config_file = kwargs.get("config_file")
-    if config_file is not None and not Path(config_file).is_absolute():
-        kwargs["config_file"] = str(code_root / config_file)
-        arm["artifacts"] = [*arm.get("artifacts", ()), kwargs["config_file"]]
+    for key in _REPOSITORY_FILE_KWARGS:
+        path = kwargs.get(key)
+        if path is not None and not Path(path).is_absolute():
+            kwargs[key] = str(code_root / path)
+            arm["artifacts"] = [*arm.get("artifacts", ()), kwargs[key]]
 
 
 def freeze(
@@ -115,7 +120,7 @@ def freeze(
     }
     # 组别登记的宿主制品（安装包、配置模板）按内容计入配置摘要，路径相同而内容变化即不同组别。
     for arm in spec["arms"]:
-        _resolve_config_file(arm, code_root)
+        _resolve_repository_files(arm, code_root)
         arm["artifact_sha256"] = {
             path: _file_sha256(Path(path)) for path in arm.get("artifacts", ())
         }

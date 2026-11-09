@@ -1,4 +1,4 @@
-"""Harbor运行说明到计划的映射：主指标口径选择计划版本，智能体配置文件按内容计入组别摘要。"""
+"""Harbor运行说明到计划的映射：主指标口径选择计划版本，智能体配置文件与提示模板按内容计入组别摘要。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,9 @@ import pytest
 
 pytest.importorskip("harbor", minversion="0.25.0")
 
-from integrations.harbor.pipeline import _plan_version, _resolve_config_file
+from harbor.utils.templating import render_prompt_template
+
+from integrations.harbor.pipeline import _plan_version, _resolve_repository_files
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,16 +24,37 @@ def test_primary_outcome_selects_the_plan_version() -> None:
         _plan_version({"primary_outcome": "patch_only"})
 
 
-def test_relative_config_file_resolves_under_code_root_and_becomes_an_artifact(
-    tmp_path: Path,
+@pytest.mark.parametrize("key", ["config_file", "prompt_template_path"])
+def test_relative_agent_file_resolves_under_code_root_and_becomes_an_artifact(
+    tmp_path: Path, key: str
 ) -> None:
-    arm = {"agent": {"kwargs": {"config_file": "configs/r.yaml"}}, "artifacts": ["/b.tar"]}
-    _resolve_config_file(arm, tmp_path)
-    assert arm["agent"]["kwargs"]["config_file"] == str(tmp_path / "configs/r.yaml")
+    arm = {"agent": {"kwargs": {key: "configs/r.yaml"}}, "artifacts": ["/b.tar"]}
+    _resolve_repository_files(arm, tmp_path)
+    assert arm["agent"]["kwargs"][key] == str(tmp_path / "configs/r.yaml")
     assert arm["artifacts"] == ["/b.tar", str(tmp_path / "configs/r.yaml")]
-    absolute = {"agent": {"kwargs": {"config_file": "/etc/r.yaml"}}}
-    _resolve_config_file(absolute, tmp_path)
-    assert absolute == {"agent": {"kwargs": {"config_file": "/etc/r.yaml"}}}
+    absolute = {"agent": {"kwargs": {key: "/etc/r.yaml"}}}
+    _resolve_repository_files(absolute, tmp_path)
+    assert absolute == {"agent": {"kwargs": {key: "/etc/r.yaml"}}}
+
+
+def test_harnessix_swebench_template_renders_the_issue_verbatim_with_mini_aligned_framing() -> None:
+    """评测侧任务说明：Harbor原样嵌入题目，框定只改源码、仓库外复现、通过即结束与逐步说明。"""
+    template = ROOT / "benchmarks/harbor/harnessix/swebench-task.j2"
+    issue = "Callable storage {{ not a template }} fails\nwith `default_storage` <b>"
+    rendered = render_prompt_template(template, issue)
+    assert rendered.startswith("<pr_description>\nConsider the following PR description:\n")
+    assert f"\n{issue}\n</pr_description>" in rendered
+    for phrase in (
+        "Change only regular, non-test source files",
+        "Do not add or edit repository tests",
+        "scratch script outside the test",
+        "run the relevant existing test file(s) once",
+        "Do not redesign or rewrite a fix that already passes",
+        "Add no validation, options or behaviour that the issue does not ask for",
+        "already fails\non the original code",
+        "first state your current hypothesis or next step in one short line",
+    ):
+        assert phrase in rendered
 
 
 @pytest.mark.parametrize(
@@ -57,3 +80,6 @@ def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec
             assert "host.docker.internal:18100/v1" in (ROOT / kwargs["config_file"]).read_text()
         else:
             assert kwargs["model_relays"].endswith("=host.docker.internal:18100")
+        if "prompt_template_path" in kwargs:
+            assert not Path(kwargs["prompt_template_path"]).is_absolute()
+            render_prompt_template(ROOT / kwargs["prompt_template_path"], "issue")

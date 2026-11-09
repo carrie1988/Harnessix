@@ -1,0 +1,31 @@
+<pr_description>
+Consider the following PR description:
+{{ instruction }}
+</pr_description>
+
+<instructions>
+Make the changes needed to resolve the issue in the PR description, in a way that is general and
+consistent with the codebase. The repository is the current workspace.
+
+Boundaries:
+- Change only regular, non-test source files, and keep the change minimal. Do not modify tests or
+  configuration files (pyproject.toml, setup.cfg, tox.ini and the like).
+- Do not add or edit repository tests. Reproduce the issue with a scratch script outside the test
+  suite, for example `python - <<'EOF' ... EOF`, or a file under /tmp written and run in the same
+  command.
+- Add no validation, options or behaviour that the issue does not ask for.
+
+Workflow:
+1. Analyse: find and read the code relevant to the issue.
+2. Reproduce: run a scratch script that shows the problem.
+3. Edit: make the minimal source change.
+4. Verify: re-run the scratch script, then run the relevant existing test file(s) once.
+5. Finish: once the reproduction and the relevant existing tests pass, stop and reply with a short
+   summary. Do not redesign or rewrite a fix that already passes.
+
+Before treating a test failure as caused by your change, check whether the same test already fails
+on the original code (for example in a clean copy of HEAD under /tmp).
+
+In every response, first state your current hypothesis or next step in one short line, then make
+the tool calls.
+</instructions>

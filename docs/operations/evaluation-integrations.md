@@ -309,6 +309,13 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    - 配置：`harnessix_configs.py`按第一阶段本地组别生成Provider与命令Profile配置（同一模型、关闭思考、
      同一环境预设与900秒命令期限），模型经容器回环端口转发。
    - 组别规格的`artifacts`列出安装包与配置模板，`freeze`按内容摘要计入组别配置摘要。
+   - 任务说明模板（2026-11-09用户决定，属评测侧，产品指令不变）：`prompt_template_path`以仓库相对路径指向
+     [`benchmarks/harbor/harnessix/swebench-task.j2`](../../benchmarks/harbor/harnessix/swebench-task.j2)，
+     Harbor在宿主机上以`{{ instruction }}`原样嵌入题目后交给协议驱动。模板与mini-swe-agent的SWE-bench任务说明对齐：
+     只改非测试源码且改动最小，不改测试与配置文件，在测试套件外用临时脚本复现；分析、复现、修改、复跑脚本后
+     跑一次相关的现有测试文件，二者通过即结束、不重写已通过的修复；不加题目未要求的校验或行为；
+     把测试失败归于自身改动前先核对它在原代码上是否已失败；每次回复先用一句话说明当前判断或下一步。
+     `freeze`与mini的`config_file`一样把仓库相对路径解析到代码目录，并按内容计入组别配置摘要。
 
 内置智能体使用`evidence_agents.py`中的同名增强版：结束时导出相对运行前HEAD的补丁供官方判分，
 mini-swe-agent离线安装并锁定随附依赖。Harbor运行mini-swe-agent使用其内置mini.yaml模板与公网模式，
