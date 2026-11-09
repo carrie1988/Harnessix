@@ -259,13 +259,18 @@ async def test_compactions_are_billed_steps_and_a_summary_is_new_input(tmp_path:
     assert compactions["1"].status == "error"
     assert compactions["1"].output_text == "[failure]\nprovider_summary_truncated: 摘要达到上限"
     assert compactions["2"].status == "ok"
-    assert compactions["2"].output_text == "[summary]\n保留public接口；解析器待验证。"
+    # 压缩摘要正文带宿主标注（ADR 0058第2版§2.7），逐步记录如实导出模型看到的摘要。
+    stamped = (
+        "[Summary of earlier turns, written before step 1; later messages are newer and "
+        "override it.]\n保留public接口；解析器待验证。"
+    )
+    assert compactions["2"].output_text == "[summary]\n" + stamped
     assert compactions["2"].usage == StepUsage(
         completeness="complete", model_calls=1, input_tokens=10, output_tokens=3
     )
     first, second = (s for s in steps if s.name == "model")
     assert "[context_compacted]" not in (first.input_text or "")
-    assert second.input_text.endswith("[context_compacted]\n保留public接口；解析器待验证。")
+    assert second.input_text.endswith("[context_compacted]\n" + stamped)
 
 
 async def test_harbor_state_archive_feeds_steps_through_its_own_key(
