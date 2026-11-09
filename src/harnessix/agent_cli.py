@@ -38,6 +38,11 @@ ApprovalOutcome = Literal["approved", "rejected"]
 ApprovalPolicy = Callable[[PublicApprovalRequestContent, str | None], ApprovalOutcome | None]
 
 
+# 事件页超过协商的消息字节上限（response_too_large）或公开数据保护扫描的资源上限
+# （public_output_limit）时，服务端拒绝整页；页长更小即可读出。
+_OVERSIZED_PAGE_CODES = frozenset({"response_too_large", "public_output_limit"})
+
+
 def _event_page_limit(client: AgentClient) -> int:
     initialized = client.initialized
     return 256 if initialized is None else min(256, initialized.limits.max_replay_events)
@@ -160,14 +165,14 @@ class ThinAgentCLI:
     async def _paged[PageT](
         self, fetch: Callable[..., Awaitable[PageT]], /, *args: object, **kwargs: object
     ) -> PageT:
-        """服务端拒绝公开投影超限的事件页时减半页长重读；页长随后保持缩小。"""
+        """服务端拒绝超限的事件页时减半页长重读；页长随后保持缩小。"""
 
         while True:
             limit = self._page_limit or _event_page_limit(self.client)
             try:
                 return await fetch(*args, **kwargs, limit=limit)
             except AgentSDKError as error:
-                if error.code != "public_output_limit" or limit == 1:
+                if error.code not in _OVERSIZED_PAGE_CODES or limit == 1:
                     raise
                 self._page_limit = limit // 2
 

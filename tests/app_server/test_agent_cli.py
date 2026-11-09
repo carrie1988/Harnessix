@@ -89,13 +89,14 @@ async def test_thin_cli_uses_negotiated_event_page_limit() -> None:
     assert client.replay_events.await_args.kwargs["limit"] == 4
 
 
-async def test_thin_cli_halves_event_pages_rejected_by_public_output_limits() -> None:
+@pytest.mark.parametrize("code", ["public_output_limit", "response_too_large"])
+async def test_thin_cli_halves_event_pages_rejected_as_oversized(code: str) -> None:
     limits_seen: list[int] = []
 
     async def replay_events(thread_id, *, after_cursor, limit):  # type: ignore[no-untyped-def]
         limits_seen.append(limit)
         if limit > 64:
-            raise AgentSDKError("public_output_limit", "公开结果未通过保护校验")
+            raise AgentSDKError(code, "事件页超限")
         more = after_cursor == 0
         return SimpleNamespace(events=(), scanned_through=after_cursor + limit, has_more=more)
 
