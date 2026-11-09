@@ -10,6 +10,7 @@ from typing import Any, Final, Literal, cast
 from uuid import UUID
 
 from harnessix.product_ui.approval_automation import ApprovalAutomation, auto_approve_pending
+from harnessix.product_ui.cost_estimate import ListPrice
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_service import InteractionService
 from harnessix.product_ui.interactions import (
@@ -75,6 +76,8 @@ class ProductControllerState:
     revision: int = 0
     # 活动Profile链的计价：free表示全部为本地自托管端点，界面显示本地0元。
     pricing: Literal["free", "unknown"] = "unknown"
+    # 已核对牌价的模型用于估算费用；其他情况显示费用未知。
+    list_price: ListPrice | None = None
     # 零配置时启动预检得出的一行沙箱状态（ADR 0113）；显式Action配置时为None。
     sandbox: str | None = None
     # 本会话是否自动接受修改；只在内存中，重启后恢复为关闭。
@@ -218,11 +221,14 @@ class ProductController:
         *,
         pricing: Literal["free", "unknown"] = "unknown",
         sandbox: str | None = None,
+        list_price: ListPrice | None = None,
     ) -> None:
         self._session = session
         self._interactions = InteractionService(session)
         self._automation = ApprovalAutomation()
-        self._state = ProductControllerState(pricing=pricing, sandbox=sandbox)
+        self._state = ProductControllerState(
+            pricing=pricing, sandbox=sandbox, list_price=list_price
+        )
         self._intents: asyncio.Queue[_QueuedIntent | _Stop] = asyncio.Queue(
             maxsize=MAX_PENDING_INTENTS
         )

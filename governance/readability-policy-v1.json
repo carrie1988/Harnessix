@@ -596,7 +596,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.product_ui.controller:ProductController": {
-      "max_lines": 372,
+      "max_lines": 375,
       "max_decision_complexity": 0
     },
     "harnessix.product_ui.session:RecoverableAgentSession": {

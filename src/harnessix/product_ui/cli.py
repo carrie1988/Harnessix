@@ -36,6 +36,7 @@ from harnessix.product_config.wizard import (
 from harnessix.product_config.zero_config import zero_config_wanted
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
+from harnessix.product_ui.cost_estimate import chain_list_price
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import remediation_text, sandbox_status_line
@@ -566,6 +567,7 @@ def code_main(argv: Sequence[str] | None = None) -> None:
             controller = ProductController(
                 session,
                 pricing=_chain_pricing(config, arguments.profile),
+                list_price=chain_list_price(config, arguments.profile),
                 sandbox=sandbox_status_line(preflight),
             )
             report = app_type(

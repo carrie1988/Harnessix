@@ -31,6 +31,7 @@ from harnessix.product_ui.cli import (
     _server_command,
     _workspace,
 )
+from harnessix.product_ui.cost_estimate import ListPrice, chain_list_price, cost_upper_bound
 from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import sandbox_status_line
 from harnessix.product_ui.turn_budget import turn_budget_for
@@ -44,6 +45,7 @@ from harnessix.protocol.contracts import (
     PublicToolCallContent,
     PublicToolResultContent,
     ThreadView,
+    TurnView,
 )
 from harnessix.sdk import AgentClient, AgentSDKError, SubprocessAgentTransport
 
@@ -219,6 +221,22 @@ def _verification(items: Sequence[PublicItem]) -> dict[str, Any]:
     return {"status": status, "last_check": command}
 
 
+def _cost_summary(
+    turn: TurnView | None, pricing: str, list_price: ListPrice | None
+) -> dict[str, Any]:
+    """本地端点计0元；已核对牌价的模型附带上限估算，其余费用未知，不报零。"""
+
+    cost: dict[str, Any] = {"pricing": pricing, "amount_cny": 0 if pricing == "free" else None}
+    if turn is not None and list_price is not None and pricing != "free":
+        bound = cost_upper_bound(
+            list_price,
+            input_tokens=turn.usage.input_tokens,
+            output_tokens=turn.usage.output_tokens,
+        )
+        cost["upper_bound"] = {"currency": bound.currency, "amount": str(bound.amount)}
+    return cost
+
+
 def _summary(
     cli: ThinAgentCLI,
     thread: ThreadView,
@@ -228,6 +246,7 @@ def _summary(
     elapsed: float,
     changed: list[str] | None,
     pricing: Literal["free", "unknown"] = "unknown",
+    list_price: ListPrice | None = None,
 ) -> dict[str, Any]:
     turn = thread.latest_turn
     items = cli.recorded_items()
@@ -254,7 +273,7 @@ def _summary(
         "model_steps": None if turn is None else turn.model_steps,
         "usage": None if turn is None else turn.usage.model_dump(),
         # 本地自托管端点计0元；其他端点不公开价格，费用未知。
-        "cost": {"pricing": pricing, "amount_cny": 0 if pricing == "free" else None},
+        "cost": _cost_summary(turn, pricing, list_price),
         "approval_mode": mode,
         "approvals": approvals,
         "final_answer": answers[-1] if answers else None,
@@ -274,6 +293,7 @@ class _Launch:
     mode: ApprovalMode
     quiet: bool
     pricing: Literal["free", "unknown"] = "unknown"
+    list_price: ListPrice | None = None
     events: Path | None = None
     resume_thread: UUID | None = None
     sandbox: str | None = None
@@ -327,6 +347,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         mode=arguments.approval_mode,
         quiet=arguments.quiet,
         pricing=pricing,
+        list_price=chain_list_price(config, arguments.profile),
         events=Path(arguments.events_file).absolute() if arguments.events_file else None,
         resume_thread=arguments.resume_thread,
         sandbox=sandbox_status_line(preflight),
@@ -409,6 +430,7 @@ def exec_main(argv: Sequence[str] | None = None) -> None:
             elapsed=time.monotonic() - started,
             changed=_changed_paths(launch.workspace, arguments.git_executable),
             pricing=launch.pricing,
+            list_price=launch.list_price,
         )
         completed = thread.latest_turn is not None and thread.latest_turn.status == "completed"
         code = (

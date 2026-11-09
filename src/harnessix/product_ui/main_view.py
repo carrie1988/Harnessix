@@ -8,9 +8,11 @@ from textual.widget import Widget
 from textual.widgets import Input, Label, ListItem, ListView, RichLog, Static
 
 from harnessix.product_ui.controller import ControllerPhase, ProductControllerState
+from harnessix.product_ui.cost_estimate import cost_upper_bound
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interactions import (
     ACTIVE_TURN_STATES,
+    UsageCostView,
     pending_approval,
     pending_question,
     usage_cost_view,
@@ -29,6 +31,16 @@ def _interaction_label(state: ProductControllerState) -> str:
     return ""
 
 
+def _cost_text(state: ProductControllerState, usage: UsageCostView) -> str:
+    if state.pricing == "free":
+        return "本地 0 元"
+    if state.list_price is None:
+        return f"费用未知（{usage.cost_reason}）"
+    return cost_upper_bound(
+        state.list_price, input_tokens=usage.input_tokens, output_tokens=usage.output_tokens
+    ).text()
+
+
 def _status_text(state: ProductControllerState) -> str:
     turn = state.thread_view.current_turn if state.thread_view is not None else None
     turn_status = "无活动Turn" if turn is None else f"Turn {turn.status}"
@@ -36,7 +48,7 @@ def _status_text(state: ProductControllerState) -> str:
     usage_text = ""
     if usage is not None:
         limit = "?" if usage.max_tokens is None else str(usage.max_tokens)
-        cost = "本地 0 元" if state.pricing == "free" else f"费用未知（{usage.cost_reason}）"
+        cost = _cost_text(state, usage)
         usage_text = f" · Tokens {usage.total_tokens}/{limit} · {cost}"
     sandbox = "" if state.sandbox is None else f" · {state.sandbox}"
     if state.auto_accept_edits:
