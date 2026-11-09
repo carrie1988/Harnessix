@@ -83,6 +83,26 @@ def _plan_version(spec: dict[str, Any]) -> str:
     return _PLAN_VERSIONS[rule]
 
 
+_COMPOSE = "integrations/harbor/compose/"
+NETWORK_ISOLATION = _COMPOSE + "network-isolation.yaml"
+# 对照组别只应用参考补丁或什么都不做，没有需要断网的智能体运行阶段。
+_CONTROL_SYSTEMS = {"oracle", "nop"}
+
+
+def check_network_isolation(spec: dict[str, Any]) -> None:
+    """断网拓扑对运行中全部智能体组别一致生效：带断网覆盖时每个非对照组别都开启network_isolation、
+    且不带让任务容器直连宿主机的host-gateway.yaml；不带断网覆盖时任何组别都不能开启。"""
+    overlays = spec.get("environment", {}).get("extra_docker_compose", [])
+    isolated = NETWORK_ISOLATION in overlays
+    if isolated and _COMPOSE + "host-gateway.yaml" in overlays:
+        raise SystemExit("断网覆盖不能与host-gateway.yaml同用")
+    for arm in spec["arms"]:
+        enabled = arm["agent"].get("kwargs", {}).get("network_isolation", False)
+        expected = isolated and arm["system"] not in _CONTROL_SYSTEMS
+        if enabled is not expected:
+            raise SystemExit(f"组别{arm['arm_id']}的network_isolation应为{expected}")
+
+
 # 以仓库相对路径登记的智能体文件：mini的配置文件，以及Harbor渲染任务说明用的提示模板。
 _REPOSITORY_FILE_KWARGS = ("config_file", "prompt_template_path")
 
@@ -101,6 +121,7 @@ def freeze(
     spec_path: Path, tasks: Path, run_dir: Path, code_root: Path, code_revision: str
 ) -> RunPlan:
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    check_network_isolation(spec)
     environment = _environment(spec, code_root)
     receipt = tasks / "prepare-receipt.json"
     task_dirs = sorted(p for p in tasks.iterdir() if (p / "task.toml").is_file())
