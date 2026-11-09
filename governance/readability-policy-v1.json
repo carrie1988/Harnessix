@@ -11,7 +11,7 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 900,
-    "src/harnessix/agent/runtime.py": 3429,
+    "src/harnessix/agent/runtime.py": 3444,
     "src/harnessix/context/sources.py": 839,
     "src/harnessix/delivery/git.py": 902,
     "src/harnessix/delivery/git_push.py": 609,
@@ -60,16 +60,16 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 3157,
+      "max_lines": 3170,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
-      "max_lines": 187,
+      "max_lines": 190,
       "max_decision_complexity": 48
     },
     "harnessix.agent.runtime:AgentRuntime._drive": {
-      "max_lines": 259,
-      "max_decision_complexity": 49
+      "max_lines": 261,
+      "max_decision_complexity": 50
     },
     "harnessix.agent.runtime:AgentRuntime._execute_calls": {
       "max_lines": 242,
@@ -392,12 +392,12 @@
       "max_decision_complexity": 27
     },
     "harnessix.models.anthropic:AnthropicProvider": {
-      "max_lines": 145,
+      "max_lines": 155,
       "max_decision_complexity": 0
     },
     "harnessix.models.anthropic:AnthropicProvider.stream": {
-      "max_lines": 89,
-      "max_decision_complexity": 24
+      "max_lines": 99,
+      "max_decision_complexity": 26
     },
     "harnessix.models.billing:resolve_billing_context": {
       "max_lines": 32,
@@ -412,12 +412,12 @@
       "max_decision_complexity": 41
     },
     "harnessix.models.openai_chat:OpenAIChatProvider": {
-      "max_lines": 244,
+      "max_lines": 254,
       "max_decision_complexity": 0
     },
     "harnessix.models.openai_chat:OpenAIChatProvider.stream": {
-      "max_lines": 102,
-      "max_decision_complexity": 26
+      "max_lines": 112,
+      "max_decision_complexity": 28
     },
     "harnessix.observability.opentelemetry:OpenTelemetryObservability": {
       "max_lines": 122,
@@ -580,7 +580,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.product_config.server:_serve_product_stdio": {
-      "max_lines": 134,
+      "max_lines": 135,
       "max_decision_complexity": 14
     },
     "harnessix.product_config.store:SQLiteProductConfigStore": {

@@ -249,7 +249,7 @@ def _server_command(
     expected_active_sha256: str | None = None,
     expected_active_profile: str | None = None,
     expected_active_action_sha256: str | None = None,
-    completion_guard: bool = False,
+    unattended: bool = False,
 ) -> tuple[str, ...]:
     command = [
         sys.executable,
@@ -272,8 +272,8 @@ def _server_command(
         command.append("--zero-config-actions")
     if git_executable is not None:
         command.extend(("--git-executable", git_executable))
-    if completion_guard:
-        command.append("--completion-guard")
+    if unattended:
+        command.append("--unattended")
     if expected_active_sha256 is not None:
         command.extend(("--expected-active-sha256", expected_active_sha256))
     if expected_active_profile is not None:

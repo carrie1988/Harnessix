@@ -24,16 +24,40 @@ from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_view import history_document
 
 
-def require_request_slots(turn: Turn, slots: int = 1) -> int:
-    """剩余主请求槽位：主模型步骤及其重试共享max_steps，摘要请求不占槽位。
+def unknown_usage_reservation(turn: Turn) -> int:
+    """用量未知的尝试按本Turn已知的单次最大消耗保守预留；没有已知用量时无从估计，记0。"""
 
-    任何请求（含摘要）存在未知费用时均禁止下一付费请求；摘要另由每主步骤至多一次约束。
-    """
+    attempts = turn.accounted_attempts
+    known = (
+        (a.usage.input_tokens or 0) + (a.usage.output_tokens or 0)
+        for a in attempts
+        if a.usage.completeness == "complete"
+    )
+    unknown = sum(a.status != "running" and a.usage.completeness != "complete" for a in attempts)
+    return unknown * max(known, default=0)
+
+
+def require_reserved_unknown_usage(turn: Turn) -> None:
+    """允许继续时，未知用量的预留一旦耗尽Token预算就停止。"""
+
+    if turn.usage.total_tokens + unknown_usage_reservation(turn) >= turn.budget.max_tokens:
+        raise unknown_usage_stop(turn, "费用未知尝试的预留额已耗尽Token预算")
+
+
+def require_request_slots(turn: Turn, slots: int = 1) -> int:
+    """剩余主请求槽位；任何请求（含摘要）存在未知费用时均禁止下一付费请求。"""
+
     attempts = turn.accounted_attempts
     if any(a.status != "running" and a.usage.completeness != "complete" for a in attempts) or any(
         c.unaccounted_request_possible for c in turn.compactions
     ):
         raise unknown_usage_stop(turn, "已有未知模型费用，禁止下一付费请求")
+    return remaining_request_slots(turn, slots)
+
+
+def remaining_request_slots(turn: Turn, slots: int = 1) -> int:
+    """只按步数计算剩余主请求：主模型步骤及其重试共享max_steps，摘要请求不占槽位。"""
+
     main = turn.model_attempts
     used = turn.model_steps + len(main) - len({a.step for a in main})
     if turn.status == TurnStatus.CALLING_MODEL and not any(
@@ -51,19 +75,23 @@ def summary_requested(turn: Turn) -> bool:
     return any(record.plan.model_step == step for record in turn.compactions)
 
 
-def require_summary_slot(turn: Turn) -> None:
+def require_summary_slot(turn: Turn, *, allow_unknown_usage: bool = False) -> None:
     """每个主步骤之前至多一次摘要请求，摘要后仍须留有该步骤的主请求槽位。
 
     摘要不占max_steps，单Turn付费请求因此至多为max_steps次主请求（含重试）加max_steps次摘要。
     """
-    require_request_slots(turn)
+    if allow_unknown_usage:
+        require_reserved_unknown_usage(turn)
+        remaining_request_slots(turn)
+    else:
+        require_request_slots(turn)
     if summary_requested(turn):
         raise KernelError("budget_exceeded", "本主步骤之前已发起摘要请求")
 
 
 def summary_horizon(turn: Turn) -> int:
     """摘要的摊销跨度：摘要本身与其后至多两次主请求。"""
-    return min(3, require_request_slots(turn) + 1)
+    return min(3, remaining_request_slots(turn) + 1)
 
 
 def closing_reserve(turn: Turn) -> int:

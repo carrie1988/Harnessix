@@ -19,7 +19,15 @@ from harnessix.models._anthropic_http import AnthropicTransport
 from harnessix.models._anthropic_mapping import build_request
 from harnessix.models._anthropic_stream import AnthropicStream
 from harnessix.models._bounded_http import InvalidWireData
-from harnessix.models._provider_io import finish_attempt, read_key, validate_key, wait_for_io
+from harnessix.models._provider_io import (
+    finish_attempt,
+    read_key,
+    retry_after_seconds,
+    retry_delay_seconds,
+    unbilled_usage,
+    validate_key,
+    wait_for_io,
+)
 from harnessix.models.config import AnthropicConfig
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ResponseFailed
 
@@ -52,6 +60,15 @@ def _failure(error: Exception) -> ResponseFailed:
             return ResponseFailed(code="unknown")
         return ResponseFailed(code="invalid_request")
     return ResponseFailed(code="invalid_provider_output")
+
+
+def _is_unbilled(error: Exception) -> bool:
+    """收到HTTP错误响应，或TCP/TLS连接未建立：请求没有被模型处理。"""
+
+    if isinstance(error, APIStatusError):
+        return error.status_code >= 400
+    cause = error.__cause__ if isinstance(error, APIConnectionError) else error
+    return isinstance(cause, httpx2.ConnectError | httpx2.ConnectTimeout)
 
 
 class AnthropicProvider:
@@ -136,6 +153,8 @@ class AnthropicProvider:
             )
             stream: AsyncStream[RawMessageStreamEvent] | None = None
             failure: ResponseFailed | None = None
+            unbilled = False
+            retry_after = 0.0
             try:
                 cancel.checkpoint()
                 stream = await wait_for_io(
@@ -175,6 +194,8 @@ class AnthropicProvider:
                 raise
             except Exception as error:
                 failure = _failure(error)
+                unbilled = stream is None and _is_unbilled(error)
+                retry_after = retry_after_seconds(error)
             finally:
                 if stream is not None:
                     try:
@@ -182,6 +203,8 @@ class AnthropicProvider:
                             await stream.close()
                     except Exception:
                         pass
+            if unbilled:
+                yield unbilled_usage(attempt_id)
             yield finish_attempt(attempt_id, failure or ResponseFailed(code="unknown"))
             if (
                 failure is None
@@ -194,7 +217,11 @@ class AnthropicProvider:
                 return
             try:
                 await wait_for_io(
-                    asyncio.sleep(self.config.retry_delay_seconds * (2**attempt)), cancel, deadline
+                    asyncio.sleep(
+                        retry_delay_seconds(self.config.retry_delay_seconds, attempt, retry_after)
+                    ),
+                    cancel,
+                    deadline,
                 )
             except TimeoutError:
                 yield ResponseFailed(code="transport", retryable=True)

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 21
+version: 22
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -824,6 +824,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 22 | `feat/p0-beta-readiness` | 2026-11-09 | HTTP错误响应或连接未建立的尝试报告完整零用量；重试遵循`Retry-After`，上限60秒 |
 | 21 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | 新增显式`private_network_endpoint`：声明后允许内网地址明文HTTP，公网地址仍须HTTPS；默认值不进入序列化 |
 | 12 | 设计基线`36a6b554` | 2026-10-09 | 为原Chat流阶段拒绝补齐封闭诊断；不改变协议接收、Usage、工具释放、重试和预算停止规则 |
 | 6 | 设计基线`850c7ba` | 2026-09-30 | 内部封闭Chat终态原因、原Attempt持久诊断及严格工具组原子释放 |

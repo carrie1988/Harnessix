@@ -158,7 +158,7 @@ def test_git_is_detected_only_inside_a_repository(
     assert git_detection.detected_git_executable(None, repository) is None
 
 
-def test_exec_only_turns_on_the_completion_guard_for_unattended_runs(tmp_path: Path) -> None:
+def test_only_exec_marks_the_server_as_unattended(tmp_path: Path) -> None:
     base = {
         "config": tmp_path / "c.json",
         "profile": None,
@@ -167,8 +167,8 @@ def test_exec_only_turns_on_the_completion_guard_for_unattended_runs(tmp_path: P
         "git_executable": None,
     }
 
-    assert "--completion-guard" not in product_cli._server_command(**base)
-    assert "--completion-guard" in product_cli._server_command(completion_guard=True, **base)
+    assert "--unattended" not in product_cli._server_command(**base)
+    assert "--unattended" in product_cli._server_command(unattended=True, **base)
 
 
 def _configure_lan(path: Path, *extra: str) -> None:

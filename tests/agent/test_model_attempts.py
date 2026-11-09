@@ -1,17 +1,24 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from harnessix.agent import runtime as runtime_module
-from harnessix.agent.errors import AgentFailure
+from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.ids import new_id
 from harnessix.agent.models import Budget, EventDraft, Usage
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.agent.usage import ModelAttemptFinished
+from harnessix.agent.turn_budget_compaction import (
+    require_reserved_unknown_usage,
+    unknown_usage_reservation,
+)
+from harnessix.agent.usage import ModelAttempt, ModelAttemptFinished, UsageObservation
+from harnessix.models._provider_io import unbilled_usage
 from harnessix.models.contracts import (
     ResponseCompleted,
     ResponseFailed,
@@ -34,17 +41,17 @@ def failed(start):
     )
 
 
-async def execute(tmp_path, events, *, budget=None):
+async def execute(tmp_path, events, *, budget=None, later_steps=(), **runtime_options):
     store = SQLiteSessionStore(tmp_path / "s.db")
     tools = RecordingTools()
-    provider = ScriptedProvider([events])
-    async with AgentRuntime(store, provider, tools) as runtime:
+    provider = ScriptedProvider([events, *later_steps])
+    async with AgentRuntime(store, provider, tools, **runtime_options) as runtime:
         thread = await runtime.create_thread(str(tmp_path))
         turn = await runtime.run_turn(thread.thread_id, "核对尝试", request_id="r", budget=budget)
     snapshot = await store.get_thread(thread.thread_id)
     assert snapshot == replay(await store.events(thread.thread_id))
     assert all(a.status != "running" for a in turn.model_attempts)
-    assert provider.closed_streams == 1
+    assert provider.closed_streams == 1 + len(later_steps)
     return turn, tools
 
 
@@ -188,6 +195,85 @@ async def test_recovered_failure_with_unknown_usage_stops_next_step_truthfully(
     assert tools.calls and [a.status for a in turn.model_attempts] == ["failed", "completed"]
     assert turn.status == "failed" and turn.error.code == expected
     assert turn.error.category == ("budget" if expected == "budget_exceeded" else "provider")
+
+
+def _service_failure(start, *, usage=None):
+    finished = ModelAttemptFinished(
+        attempt_id=start.attempt_id,
+        outcome="failed",
+        error=AgentFailure(code="provider_rate_limit", message="限流", retryable=True),
+    )
+    return [start, *([] if usage is None else [usage]), finished]
+
+
+async def test_unbilled_failure_does_not_stop_the_next_step(tmp_path: Path) -> None:
+    """服务端明确拒绝的尝试报告完整零用量，重试成功后下一步正常继续。"""
+    first, second = attempt_start(), attempt_start(index=2)
+    turn, tools = await execute(
+        tmp_path,
+        [
+            *_service_failure(first, usage=unbilled_usage(first.attempt_id)),
+            *_tool_answer(second),
+        ],
+        budget=Budget(max_tokens=6_000_000, max_output_chars=1_024),
+        later_steps=(answer("完成"),),
+    )
+    assert tools.calls and turn.status == "completed"
+    assert turn.model_attempts[0].usage.completeness == "complete"
+
+
+async def test_unknown_usage_continues_only_when_allowed(tmp_path: Path) -> None:
+    first, second = attempt_start(), attempt_start(index=2)
+    turn, tools = await execute(
+        tmp_path,
+        [*_service_failure(first), *_tool_answer(second)],
+        budget=Budget(max_tokens=6_000_000, max_output_chars=1_024),
+        continue_after_unknown_usage=True,
+        later_steps=(answer("完成"),),
+    )
+    assert tools.calls and turn.status == "completed"
+    assert turn.model_attempts[0].usage.completeness == "unknown"
+
+
+def test_unknown_usage_is_reserved_at_the_largest_known_request() -> None:
+    now = datetime.now(UTC)
+
+    def attempt(status, input_tokens=None):
+        usage = (
+            UsageObservation()
+            if input_tokens is None
+            else UsageObservation(
+                completeness="complete", input_tokens=input_tokens, output_tokens=0
+            )
+        )
+        return ModelAttempt(
+            attempt_id=new_id(),
+            step=1,
+            index=1,
+            provider="test",
+            requested_model="m",
+            actual_model="m" if status == "completed" else None,
+            response_id="r" if status == "completed" else None,
+            usage=usage,
+            status=status,
+            error=(None if status == "completed" else AgentFailure(code="x", message="y")),
+            started_at=now,
+            finished_at=now,
+        )
+
+    turn = SimpleNamespace(
+        accounted_attempts=(attempt("completed", 100), attempt("completed", 40), attempt("failed")),
+        usage=Usage(input_tokens=140, output_tokens=0),
+        budget=Budget(max_tokens=300),
+        compactions=(),
+        model_attempts=(),
+    )
+    assert unknown_usage_reservation(turn) == 100
+    require_reserved_unknown_usage(turn)
+
+    turn.budget = Budget(max_tokens=240)
+    with pytest.raises(KernelError):
+        require_reserved_unknown_usage(turn)
 
 
 @pytest.mark.parametrize("with_observation", [False, True])

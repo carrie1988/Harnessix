@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 41
+version: 42
 code_revision: b35c46217aec51c154158e802bd35c8ccb122ff7
 owners:
   - core
@@ -954,6 +954,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 42 | `feat/p0-beta-readiness` | 2026-11-09 | 新增`continue_after_unknown_usage`：费用未知的尝试按已知单次最大消耗预留后继续，默认维持停止（ADR 0123第6节） |
 | 41 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅类型标注修复，行为不变 |
 | 14 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 启动恢复改用Session全库单事务校验后仅恢复活跃Turn；多Thread三平台冻结候选及同Revision常规CI通过 |
 | 13 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录Agent单一运行时边界由CI 35453082992完成Linux双版本、macOS、Windows、Container和文档全矩阵验收 |

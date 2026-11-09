@@ -150,8 +150,10 @@ from harnessix.agent.trusted_action_runtime import (
 from harnessix.agent.turn_budget_compaction import (
     covered_through_step,
     pressure_summary_instructions,
+    remaining_request_slots,
     require_context_unchanged,
     require_request_slots,
+    require_reserved_unknown_usage,
     require_summary_slot,
     summary_output_limit,
     summary_request_item,
@@ -308,6 +310,7 @@ class AgentRuntime:
         stable_tool_catalog: bool = False,
         reject_forced_choice_violations: bool = False,
         completion_guard: bool = False,
+        continue_after_unknown_usage: bool = False,
         approval_responder: ApprovalResponder | None = None,
     ) -> None:
         validate_runtime_switches(
@@ -359,6 +362,8 @@ class AgentRuntime:
             raise KernelError("invalid_runtime_configuration", "完成守卫开关必须是布尔值")
         # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
         self._completion_guard = completion_guard
+        # 用量未知的失败尝试按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
+        self._continue_after_unknown_usage = continue_after_unknown_usage is True
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -588,6 +593,14 @@ class AgentRuntime:
         if self._owner is not None:
             await self._owner.__aexit__(exc_type, exc, traceback)
             self._owner = None
+
+    def _require_request_slots(self, turn: Turn) -> int:
+        """按本Runtime的未知用量策略检查下一请求额度。"""
+
+        if not self._continue_after_unknown_usage:
+            return require_request_slots(turn)
+        require_reserved_unknown_usage(turn)
+        return remaining_request_slots(turn)
 
     def _ensure_open(self) -> None:
         if not self._open:
@@ -1952,7 +1965,7 @@ class AgentRuntime:
         """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。"""
         assert self._compaction is not None and self._summary_provider is not None
         budget_planned = planned is not None
-        require_summary_slot(turn)
+        require_summary_slot(turn, allow_unknown_usage=self._continue_after_unknown_usage)
         if planned is not None:
             planned = replay_compaction_plan(thread, planned.plan)
         model_step = turn.model_steps + 1
@@ -2251,7 +2264,7 @@ class AgentRuntime:
                 ):
                     raise KernelError("budget_exceeded", "模型步骤或 Token 预算耗尽")
                 if self._compaction is not None:
-                    require_request_slots(turn)
+                    self._require_request_slots(turn)
                 model_step = turn.model_steps + 1
                 with self._telemetry.operation(
                     "history",
@@ -2341,7 +2354,9 @@ class AgentRuntime:
                             prepared.inspection.limits.reserved_output_tokens,
                         )
                         turn = get_turn(thread, turn_id)
-                if any(
+                if self._continue_after_unknown_usage:
+                    require_reserved_unknown_usage(turn)
+                elif any(
                     attempt.status != "running" and attempt.usage.completeness != "complete"
                     for attempt in turn.accounted_attempts
                 ):
@@ -2378,7 +2393,7 @@ class AgentRuntime:
                         turn.budget.max_tokens if input_budget_aware else None
                     ),
                     remaining_calls=(
-                        require_request_slots(turn)
+                        self._require_request_slots(turn)
                         if input_budget_aware and self._compaction is not None
                         else None
                     ),
@@ -3037,7 +3052,7 @@ class AgentRuntime:
                             current = get_turn(
                                 await self.store.get_thread(request.thread_id), request.turn_id
                             )
-                            require_request_slots(current)
+                            self._require_request_slots(current)
                         if started:
                             raise KernelError(
                                 "invalid_provider_output", "响应开始后不得重试模型请求"

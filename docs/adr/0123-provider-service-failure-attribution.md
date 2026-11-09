@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [agent, evals]
@@ -54,7 +54,7 @@ supersedes: []
 
 ## 4. 取舍
 
-- **不放宽停止规则。** 一次已被重试成功的503，仍会在下一步骤开始时结束Turn。主流智能体会自动退避重试，但对“明确未计费的失败”放宽规则需要单独论证，留待以后。
+- **停止规则已于2026-11-09放宽（用户决定，见第6节）。** 原版本中，一次已被重试成功的503仍会在下一步骤开始时结束Turn。
 - **只归因不重算。** 已完成的运行（如E0c）不追溯改写，新的运行按本ADR归因。
 
 ## 5. 验收
@@ -66,3 +66,15 @@ supersedes: []
   - 真实预算不足仍报`budget_exceeded`；
   - 非服务方故障仍报`budget_exceeded`。
 - **评测：** 服务方故障解析为`infra_error`，其他Provider失败仍为`system_error`；矩阵在新代码上复跑，五个场景断言全部通过。
+
+## 6. 2026-11-09修订：区分确定未计费与计费未知
+
+用户决定放宽原停止规则，一次429或断线不应结束长任务。
+
+- **确定未计费：** 收到HTTP错误响应（状态码≥400），或TCP/TLS连接未建立。适配器为该尝试报告完整零用量，不再触发“用量未知”停止，并按`Retry-After`（上限60秒）与指数退避取较大值等待。向导生成的配置重试4次。
+- **计费未知：** 请求已发出但没有完整响应，例如读超时或流式中断。
+  - `harnessix exec`（无人值守）和本地免费端点：按本Turn已知的单次最大消耗预留后继续，预留耗尽Token预算时停止。
+  - 付费端点的交互模式：维持停止，错误信息如实说明，用户发送新消息即可继续。
+- **未改变：** 响应开始输出后不重试；已完成用量的记账不变；未传入开关的程序化调用维持原停止规则。
+
+新代码：`models/_provider_io.py`（`unbilled_usage`、`retry_after_seconds`）、`agent/turn_budget_compaction.py`（`unknown_usage_reservation`）、`AgentRuntime(continue_after_unknown_usage=...)`、`agent-server --unattended`。

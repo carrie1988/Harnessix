@@ -184,9 +184,10 @@ async def test_retry_receipts_do_not_disable_retry_or_double_count(adapter, tmp_
     assert turn.status == "completed" and len(requests) == 2
     first, second = turn.model_attempts
     assert first.attempt_id != second.attempt_id and (first.index, second.index) == (1, 2)
-    assert first.usage.completeness == "unknown" and first.usage.input_tokens is None
+    # 第一次尝试收到HTTP错误响应，确定未计费，报告完整零用量。
+    assert first.usage.completeness == "complete" and first.usage.input_tokens == 0
     assert second.usage.completeness == "complete"
-    assert turn.usage.total_tokens == 12 and not turn.usage_is_complete
+    assert turn.usage.total_tokens == 12 and turn.usage_is_complete
     assert replay(await store.events(thread_id)) == await store.get_thread(thread_id)
 
 

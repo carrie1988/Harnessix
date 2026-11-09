@@ -355,9 +355,10 @@ async def test_native_session_reopen_and_replay_keep_diagnostic_and_usage(tmp_pa
     attempt = turn.model_attempts[0]
     reason = "httpx_read_failure" if after_usage else "httpx_connect_failure"
     assert attempt.error.message.endswith("chat_transport/v1:" + reason)
-    assert attempt.usage.completeness == ("complete" if after_usage else "unknown")
+    # 连接未建立的尝试确定未计费，报告完整零用量。
+    assert attempt.usage.completeness == "complete"
     assert (attempt.usage.input_tokens, attempt.usage.output_tokens) == (
-        (10, 2) if after_usage else (None, None)
+        (10, 2) if after_usage else (0, 0)
     )
     reopened = SQLiteSessionStore(store.path)
     restored = await reopened.get_thread(thread.thread_id)

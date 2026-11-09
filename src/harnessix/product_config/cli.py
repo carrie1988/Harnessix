@@ -50,8 +50,8 @@ def _server_parser() -> argparse.ArgumentParser:
     parser.add_argument("--git-executable")
     # 仅由用户入口在未指定Action配置时传入（ADR 0111第2.2节）。
     parser.add_argument("--zero-config-actions", action="store_true")
-    # 仅由无人值守入口（harnessix exec）传入；交互使用保持关闭。
-    parser.add_argument("--completion-guard", action="store_true")
+    # 仅由无人值守入口（harnessix exec）传入：开启完成守卫，费用未知时按预留额继续。
+    parser.add_argument("--unattended", action="store_true")
     return parser
 
 
@@ -117,7 +117,7 @@ def agent_server_main(argv: Sequence[str] | None = None) -> None:
                 expected_active_action_sha256=args.expected_active_action_sha256,
                 git_executable=args.git_executable,
                 zero_config_actions=args.zero_config_actions,
-                completion_guard=args.completion_guard,
+                unattended=args.unattended,
             )
         )
     except KernelError as error:

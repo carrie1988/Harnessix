@@ -70,6 +70,7 @@ class _ProductRuntimeStartup:
     secrets: SecretProvider
     root_owner: ProductStateOwner
     completion_guard: bool = False
+    continue_after_unknown_usage: bool = False
 
 
 def _is_link_or_junction(path: Path) -> bool:
@@ -369,6 +370,7 @@ async def _serve_product_stdio(
                                 for provider in _active_providers(startup)
                             ),
                             completion_guard=startup.completion_guard,
+                            continue_after_unknown_usage=startup.continue_after_unknown_usage,
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(
@@ -427,7 +429,7 @@ async def run_product_stdio(
     git_executable: str | Path | None = None,
     action_config: ProductActionConfigV1 | None = None,
     zero_config_actions: bool = False,
-    completion_guard: bool = False,
+    unattended: bool = False,
 ) -> None:
     if action_config_path is not None and action_config is not None:
         raise KernelError("product_action_config_conflict", "不能同时传入Action配置文件和内存配置")
@@ -485,7 +487,11 @@ async def run_product_stdio(
             git_path=git_path,
             secrets=secrets,
             root_owner=owner,
-            completion_guard=completion_guard or loaded.config.completion_guard,
+            completion_guard=unattended or loaded.config.completion_guard,
+            # 本地端点没有费用风险；付费交互模式下停止并交给用户决定是否继续。
+            continue_after_unknown_usage=(
+                unattended or loaded.config.chain_pricing(selection.selected_profile) == "free"
+            ),
         )
         await _serve_product_stdio(
             startup,

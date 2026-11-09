@@ -300,7 +300,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         else _default_state_directory(workspace)
     )
     command = _server_command(
-        completion_guard=True,
+        unattended=True,
         config=config,
         action_config=_action_config(arguments.action_config),
         profile=arguments.profile,
