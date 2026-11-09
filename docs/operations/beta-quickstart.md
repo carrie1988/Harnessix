@@ -64,7 +64,7 @@ harnessix code /path/to/repo
 - 代码和对话只发送给你配置的模型服务商。
 - Harnessix 没有遥测，不会向项目方发送任何数据。
 - API Key 只从环境变量读取，不写入配置文件。
-- 会话数据保存在本机，默认位于 `~/.harnessix`。
+- 会话数据保存在本机，默认位于 `~/.harnessix`。完整说明见[隐私说明](../../PRIVACY.md)。
 
 ## 4. 已知限制
 

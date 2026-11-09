@@ -52,7 +52,7 @@ harnessix code /path/to/repo
 
 沙箱内命令能读取拒读清单以外的文件，这些内容可能发送给模型服务商。完整说明和已知限制见 [SECURITY.md](SECURITY.md)。
 
-**数据去向：** 代码和对话只发送给你配置的模型服务商。Harnessix 没有遥测，不向项目方发送任何数据。
+**数据去向：** 代码和对话只发送给你配置的模型服务商。Harnessix 没有遥测，不向项目方发送任何数据。详见[隐私说明](PRIVACY.md)。
 
 ## 评测结果
 
@@ -71,6 +71,7 @@ harnessix code /path/to/repo
 - [配置参考](docs/operations/configuration.md)、[诊断](docs/operations/diagnostics.md)、[状态备份与恢复](docs/operations/recovery.md)
 - [架构](docs/architecture.md)、[设计文档索引](docs/README.md)、[路线图](docs/roadmap.md)
 - [威胁模型](docs/threat-model.md)
+- [更新记录](CHANGELOG.md)
 - [项目早期的里程碑记录](docs/readme-milestone-history.md)
 
 ## 参与和许可
