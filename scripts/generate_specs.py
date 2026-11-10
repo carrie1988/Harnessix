@@ -207,6 +207,7 @@ from harnessix.processes.public_output import (
     PublicProcessOutputSummary,
     PublicProcessOutputSummaryV2,
     PublicProcessOutputSummaryV3,
+    PublicProcessOutputSummaryV4,
     PublicProcessStreamSummary,
 )
 from harnessix.processes.supervision_contracts import (
@@ -717,6 +718,7 @@ def generate_specs(output: Path) -> None:
         ("action-route-snapshot-v2", ActionRouteSnapshotV2),
         ("public-process-output-summary-v2", PublicProcessOutputSummaryV2),
         ("public-process-output-summary-v3", PublicProcessOutputSummaryV3),
+        ("public-process-output-summary-v4", PublicProcessOutputSummaryV4),
     ):
         write_json(output / f"{name}.schema.json", model.model_json_schema())
     for name, model in (

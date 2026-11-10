@@ -27,6 +27,7 @@ from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifac
 from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
 from harnessix.processes.trusted_output import (
+    LEGACY_PREVIEW_VERSIONS,
     parse_trusted_process_output,
     trusted_process_public_output,
 )
@@ -322,11 +323,14 @@ def validate_action_output_body(
         if not isinstance(result.output, dict):
             raise ValueError
         public = {key: value for key, value in result.output.items() if key != "artifact"}
+        version = public.get("version")
         expected = trusted_process_public_output(
             document,
             include_passed="passed" in public,
-            include_preview=public.get("version") == "trusted-process-output/v3",
-            legacy_preview=public.get("version") == "trusted-process-output/v2",
+            include_preview=version == "trusted-process-output/v4",
+            legacy_preview=next(
+                (item for item in LEGACY_PREVIEW_VERSIONS if item == version), None
+            ),
         )
         if (
             public != expected

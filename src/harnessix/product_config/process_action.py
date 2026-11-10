@@ -696,7 +696,7 @@ class ProductProcessOutputProvider:
         cancel.checkpoint()
         document = await self._executor.output_document(route.plan.execution.plan_id)
         body = document.to_jsonl()
-        # 历史终态只按原Hash恢复v2或v1，不能给旧审计事实追加新预览或重放Process。
+        # 历史终态只按原Hash恢复v3、v2或v1，不能给旧审计事实追加新预览或重放Process。
         public = recorded_process_public_output(
             document,
             trusted_process_public_output(document, include_preview=True),

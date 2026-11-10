@@ -223,13 +223,18 @@ def _process(output: dict[str, Any]) -> str | None:
             continue
         if not isinstance(text, str):
             raise TypeError("process stream text")
+        if not text and not stream_preview["truncated"]:
+            continue
+        notes = []
         if stream_preview["truncated"]:
-            # v3预览是流的末尾（带offset），v2是开头。
+            # v3/v4预览是流的末尾（带offset），v2是开头。
             part = "last" if "offset" in stream_preview else "first"
-            size = stream_preview["size_bytes"]
-            shown.append(f"[{stream}: {part} {size} of {observed} bytes]\n{text}")
-        elif text:
-            shown.append(f"[{stream}]\n{text}")
+            notes.append(f"{part} {stream_preview['size_bytes']} of {observed} bytes")
+        if stream_preview.get("removed_escape_bytes"):
+            # v4去除了颜色等终端转义序列；注明正文不是逐字节原样输出。
+            notes.append("terminal escape sequences removed")
+        label = f"{stream}: {'; '.join(notes)}" if notes else stream
+        shown.append(f"[{label}]\n{text}")
     artifact = output.get("artifact")
     truncated = any(preview[stream]["truncated"] for stream in ("stdout", "stderr"))
     if truncated and isinstance(artifact, dict):
