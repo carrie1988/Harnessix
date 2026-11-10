@@ -13,6 +13,7 @@ from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
 from harnessix.context.compaction_contracts import CompactionPolicy
+from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ResponseCompleted, ToolCallCompleted
@@ -98,10 +99,11 @@ async def test_pressure_compaction_requires_explicit_opt_in_and_replays(
             assert request.remaining_tokens > 178
         # 预算压力摘要按精确预付的单段容量生成，不加宿主时点。
         summaries = [
-            json.loads(item.content.text)["summary"]
+            item.content.text.removeprefix(SUMMARY_PROJECTION_HEADER)
             for request in main.requests
             for item in request.history
-            if isinstance(item.content, TextContent) and "derived_history" in item.content.text
+            if isinstance(item.content, TextContent)
+            and item.content.text.startswith(SUMMARY_PROJECTION_HEADER)
         ]
         assert summaries and not any(text.startswith("[Summary") for text in summaries)
     else:
@@ -404,9 +406,10 @@ async def test_trigger_summaries_are_stamped_with_the_covered_main_step(tmp_path
         stamps.append((through, before))
         assert request.instructions == SUMMARY_INSTRUCTIONS
         projected = [
-            json.loads(item.content.text)["summary"]
+            item.content.text.removeprefix(SUMMARY_PROJECTION_HEADER)
             for item in main.requests[before - 1].history
-            if isinstance(item.content, TextContent) and "derived_history" in item.content.text
+            if isinstance(item.content, TextContent)
+            and item.content.text.startswith(SUMMARY_PROJECTION_HEADER)
         ]
         assert projected == [stamp + "已调查旧窗口；保留未完成事项。"]
     # 第二次摘要覆盖第一次摘要及其后的组，时点随之推进。

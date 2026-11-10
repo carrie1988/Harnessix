@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import pytest
 
+import harnessix.context.compaction_projection as compaction_projection
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.model_history_runtime import _budget_plan, _prepaid_pressure_plan
@@ -90,6 +91,11 @@ def pressure_thread(*, groups: int = 5, remaining: int = 40_000) -> Thread:
         budget=Budget(max_tokens=50_000, max_steps=16, timeout_seconds=900, max_output_chars=2048),
         usage=Usage(input_tokens=50_000 - remaining),
     )
+
+
+def summary_sample(body: str = "x") -> str:
+    """宿主生成的摘要正文：当前说明头加正文，投影为纯文本。"""
+    return compaction_projection.SUMMARY_PROJECTION_HEADER + body
 
 
 async def pressure_plan(source: Thread, config: CompactionRuntimeConfig | None = None):
@@ -189,7 +195,9 @@ def test_capacity_candidates_are_bounded_unique_and_preserve_original_retention(
     wrapper = (
         len(
             history_document(
-                compaction_summary_item(CompactionSummary(compaction_id=uuid4(), text="x"))
+                compaction_summary_item(
+                    CompactionSummary(compaction_id=uuid4(), text=summary_sample())
+                )
             ).encode()
         )
         - 1
@@ -438,7 +446,7 @@ async def test_summary_output_limit_leaves_room_for_full_summary_item_json():
     config = budget_config()
     prepared = await pressure_plan(pressure_thread(), config)
     projected = compaction_summary_item(
-        CompactionSummary(compaction_id=prepared.plan.compaction_id, text="x")
+        CompactionSummary(compaction_id=prepared.plan.compaction_id, text=summary_sample())
     )
     wrapper_bytes = len(history_document(projected).encode()) - 1
     actual = summary_output_limit(config, prepared)
@@ -475,10 +483,22 @@ async def test_body_fitting_reserve_cannot_bypass_summary_projection_overflow():
     assert caught.value.code == "context_compaction_summary_overflow"
 
 
-async def test_reserve_below_minimum_summary_projection_cannot_authorize_payment(tmp_path: Path):
+def test_default_summary_header_fits_the_minimum_reserve():
+    """默认说明头下最短摘要投影小于最小合法预留，任何合法预留都能付清最短摘要。"""
+    projected = compaction_summary_item(
+        CompactionSummary(compaction_id=uuid4(), text=summary_sample())
+    )
+    assert len(history_document(projected).encode()) < 256
+
+
+async def test_reserve_below_minimum_summary_projection_cannot_authorize_payment(
+    tmp_path: Path, long_summary_header: str
+):
     config = budget_config(summary_reserve_tokens=256)
     source = pressure_thread()
-    projected = compaction_summary_item(CompactionSummary(compaction_id=uuid4(), text="x"))
+    projected = compaction_summary_item(
+        CompactionSummary(compaction_id=uuid4(), text=summary_sample())
+    )
     assert len(history_document(projected).encode()) > config.policy.summary_reserve_tokens
     unpayable = await pressure_plan(source, config)
     assert summary_output_limit(config, unpayable) == 0

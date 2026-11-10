@@ -35,6 +35,7 @@ from harnessix.agent.trusted_action_contracts import TrustedActionApprovalReques
 COMPLETION_GUARD_VERSION = "harnessix.completion-guard/v1"
 MAX_COMPLETION_NOTICES = 2
 _SUMMARY_SCHEMA_MARKER = "harnessix.compaction-summary"
+_SUMMARY_HEADER_MARKER = "[Host summary of earlier history"
 
 NOT_A_REPLY_NOTICE = (
     "[Harnessix host notice] Your last response had no tool call, so it would end the task, "
@@ -143,9 +144,9 @@ def step_reply(items: Iterable[Item], history_ids: set[UUID]) -> str:
 
 
 def not_a_reply(text: str) -> bool:
-    """空正文、JSON对象或照抄的上下文摘要都不是给用户的答复。"""
+    """空正文、JSON对象或照抄的上下文摘要（v1 JSON或v2说明头）都不是给用户的答复。"""
     stripped = text.strip()
-    if not stripped or _SUMMARY_SCHEMA_MARKER in stripped:
+    if not stripped or _SUMMARY_SCHEMA_MARKER in stripped or _SUMMARY_HEADER_MARKER in stripped:
         return True
     if not stripped.startswith("{"):
         return False

@@ -18,7 +18,10 @@ from harnessix.agent.provider_stop import unknown_usage_stop
 from harnessix.agent.usage import ModelAttemptStarted
 from harnessix.context.compaction import PreparedCompaction
 from harnessix.context.compaction_contracts import CompactionPolicy, CompactionSummary
-from harnessix.context.compaction_projection import compaction_summary_item
+from harnessix.context.compaction_projection import (
+    SUMMARY_PROJECTION_HEADER,
+    compaction_summary_item,
+)
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_view import history_document
@@ -213,7 +216,8 @@ def covered_through_step(
 
 
 def _summary_wrapper_bytes(compaction_id: UUID) -> int:
-    wrapper = compaction_summary_item(CompactionSummary(compaction_id=compaction_id, text="x"))
+    text = SUMMARY_PROJECTION_HEADER + "x"
+    wrapper = compaction_summary_item(CompactionSummary(compaction_id=compaction_id, text=text))
     return len(history_document(wrapper).encode()) - 1
 
 

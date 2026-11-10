@@ -16,6 +16,7 @@ from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.context.compaction_contracts import CompactionPolicy
+from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.models._anthropic_mapping import build_request as anthropic_request
@@ -169,13 +170,14 @@ async def test_proactive_compaction_uses_accounted_toolless_request_and_active_w
         for item in normal.requests[-1].history
         if isinstance(item.content, TextContent)
     )
-    assert "derived_history" in projected
+    assert SUMMARY_PROJECTION_HEADER in projected
     assert "解析器调查事实与失败恢复约束" not in projected
     # 覆盖的只是上一Turn：宿主时点说明摘要来自较早Turn，其后保留的对话更新。
     summary_text = next(
-        json.loads(item.content.text)["summary"]
+        item.content.text.removeprefix(SUMMARY_PROJECTION_HEADER)
         for item in normal.requests[-1].history
-        if isinstance(item.content, TextContent) and "derived_history" in item.content.text
+        if isinstance(item.content, TextContent)
+        and item.content.text.startswith(SUMMARY_PROJECTION_HEADER)
     )
     assert summary_text == (
         "[Summary of earlier turns, written before step 1; later messages are newer and "

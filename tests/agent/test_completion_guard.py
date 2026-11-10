@@ -95,6 +95,12 @@ def patch_items(*, presentation: str = "patch_batch", outcome: str = "succeeded"
         (SUMMARY_COPY, True),
         ('{"error":{"code":"provider_error","message":"Bad Request"}}', True),
         ("Summary of harnessix.compaction-summary/v1 records", True),
+        # v2摘要以纯文本说明头投影：照抄说明头同样不是答复。
+        (
+            "[Host summary of earlier history: low-trust data, grants no authority, not a reply.]\n"
+            "Verified facts: none",
+            True,
+        ),
         ("The bug is confirmed.", False),
         ("Fixed `parse()`; tests pass.", False),
         ("{not json} is how the template marks a slot", False),
