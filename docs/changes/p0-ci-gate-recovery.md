@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models]
@@ -44,13 +44,14 @@ flowchart LR
     Push[推送] --> Python[python: 功能测试和示例]
     Push --> Mac[coding-tools-macos]
     Push --> Container[container-sandbox]
+    Push --> Win[windows-git-native-material 与 windows-trusted-execution]
     Push --> Lint[lint: Ruff和Mypy]
     Push --> Gov[governance: 可读性 文档 规格 Secret 治理测试]
     Push --> Supply[supply-chain: 许可证和SBOM]
     Push --> Doc[documentation: 变更同步和Mermaid渲染]
 ```
 
-Windows任务随首发范围取消一并移除；跨平台代码和手动触发的Windows工作流保留。
+Windows任务曾随首发范围取消移除；2026-11-10用户决定三平台都要支持，两个Windows任务及其形状测试按原样恢复。
 
 ## 4. 接口设计与领域契约
 

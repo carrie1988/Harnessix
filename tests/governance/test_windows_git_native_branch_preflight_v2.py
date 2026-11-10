@@ -18,6 +18,7 @@ from tests.governance.test_windows_git_native_branch_observation import (
     project,
     witness,
 )
+from tests.support.windows_git_contract import live_execution_sources
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts/windows_git_native_branch_observation"
@@ -32,10 +33,10 @@ POLICY_ROWS = [
 
 def test_original_sixteen_input_contract_is_still_exact():
     fixed = contract.read_contract()
-    rows = contract.source_checks(ROOT, fixed)
-    assert len(rows) == 18
-    assert len(rows[:16]) == 16
-    assert [row["path"] for row in rows[16:]] == [
+    assert len(fixed["source_inputs"]) == 18
+    rows = contract.source_checks(ROOT, live_execution_sources(fixed))
+    assert len(rows) == 17
+    assert [row["path"] for row in rows[-2:]] == [
         "src/harnessix/delivery/git_material_trace2_profile.py",
         "scripts/windows_git_native_branch_observation/failure_projection.py",
     ]

@@ -129,6 +129,140 @@ jobs:
       - run: uv run python -m examples.batch_diff
       - run: uv run python -m examples.host_process
 
+  windows-git-native-material:
+    # 原27个选择器独立并行；失败不取消其余成员，也不忽略失败。
+    name: Windows Git 原生验收 (${{ matrix.group }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: authenticated-raw
+            selectors: >-
+              tests/processes/test_windows_raw_receipt.py
+              tests/tools/test_windows_git.py::test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw
+              tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction
+              tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout-raw-baseline]"
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token-raw-baseline]"
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task-raw-baseline]"
+              "tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch-raw-baseline]"
+              tests/processes/test_raw_output_receipt.py
+              tests/processes/test_raw_receipt_supervision.py
+              tests/processes/test_git_raw_observation.py
+              tests/tools/test_git_delivery_reader.py
+              tests/delivery/test_git_store_readonly.py
+              tests/product_config/test_git_delivery_process.py
+              tests/product_config/test_git_baseline.py::test_large_original_blob_uses_complete_observed_digest_not_prefix
+              tests/product_config/test_git_baseline.py::test_consumer_uses_raw_blob_index_and_status_not_redacted_observation
+          - group: object-input
+            selectors: >-
+              tests/product_config/test_git_object_material.py
+              tests/product_config/test_git_material_input.py
+              tests/product_config/test_git_material_snapshot_lifecycle.py
+              tests/product_config/test_git_material_native.py
+              tests/product_config/test_git_material_directory_access.py
+              tests/product_config/test_git_material_owner_exit.py
+          - group: cas-reference
+            selectors: >-
+              tests/delivery/test_git_material_cas.py
+              tests/delivery/test_cas_write_authority.py
+              tests/delivery/test_git_object_references.py
+              tests/delivery/test_git_tree_closure.py
+              tests/product_config/test_git_material_cas_integration.py
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 验证原生Git回执、完整对象输入与CAS引用
+        run: >-
+          uv run pytest ${{ matrix.selectors }} -vv -o faulthandler_timeout=60
+        timeout-minutes: 5
+
+  windows-trusted-execution:
+    # Windows运行Workspace、Job Object Process、Sandbox/Secret与受管Git交付契约。
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 验证原生NTFS文件事务与审批编码写链
+        env:
+          PYTEST_ADDOPTS: "-vv -o faulthandler_timeout=60 --durations=10"
+        run: >-
+          uv run pytest tests/delivery/test_windows_filesystem.py
+          tests/delivery/test_windows_io_contracts.py
+          tests/delivery/test_rollback_binding.py
+          tests/delivery/test_trusted_action_patch.py
+          tests/product_config/test_product_patch_rollback.py
+          tests/product_config/test_product_rollback_sdk.py
+          tests/product_config/test_git_delivery_source.py
+          tests/product_config/test_git_delivery_source_sdk.py
+          tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch
+        timeout-minutes: 3
+      - name: 验证原生Git读取与取消回收
+        run: >-
+          uv run pytest tests/tools/test_windows_git.py
+          --deselect=tests/tools/test_windows_git.py::test_windows_git_protected_large_blob_and_unparsed_index_status_use_raw
+          --deselect=tests/tools/test_windows_git.py::test_windows_git_parsed_metadata_rejects_authenticated_redaction
+          --deselect=tests/tools/test_windows_git.py::test_windows_git_authenticated_historical_v1_never_supplies_raw_baseline
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[timeout-raw-baseline]"
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[token-raw-baseline]"
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[task-raw-baseline]"
+          "--deselect=tests/tools/test_windows_git.py::test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease[during_launch-raw-baseline]"
+          tests/tools/test_argument_feedback.py
+          tests/tools/test_git_platform_contracts.py
+          tests/processes/test_windows_owner_lifecycle.py
+          tests/processes/test_output_binary_contracts.py
+          tests/processes/test_windows_receipt_contracts.py
+          tests/processes/test_receipt_snapshot_transition.py
+          tests/delivery/test_git_checkpoint_guard.py
+          tests/processes/test_windows_supervisor.py::test_windows_fast_exit_keeps_verified_job_and_original_status
+          tests/product_config/test_preflight.py::test_windows_doctor_accepts_native_git_without_creating_process_state
+          tests/product_config/test_product_backup_files_windows.py
+          tests/product_config/test_session_key_windows.py
+          tests/workspace/test_windows_private_security_contracts.py
+          tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner
+          -vv -o faulthandler_timeout=60
+        timeout-minutes: 3
+      - name: 验证原生产品重启与State创建边界
+        run: >-
+          uv run pytest tests/benchmarks/test_soak_restart_child.py
+          tests/benchmarks/test_soak_restart.py -vv -o faulthandler_timeout=60
+        timeout-minutes: 3
+      - name: 验证原生完整业务状态备份与观察者边界
+        run: >-
+          uv run pytest tests/product_config/test_product_state_backup.py
+          tests/product_config/test_state_fixture_readiness.py
+          -vv -o faulthandler_timeout=60
+        timeout-minutes: 5
+      - name: 验证原生完整业务状态恢复与元数据边界
+        run: >-
+          uv run pytest
+          tests/product_config/test_product_state_restore.py
+          tests/product_config/test_windows_metadata_contracts.py
+          -vv -o faulthandler_timeout=60
+        timeout-minutes: 5
+      - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
+      - run: uv run python scripts/documentation_check.py
+      - run: uv run python -c "import harnessix"
+      - run: uv build --offline --wheel --out-dir dist/secret-gate
+        timeout-minutes: 2
+      - run: uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
+        timeout-minutes: 2
+      - run: uv run pytest tests/session tests/agent/test_authenticated_store.py
+      - run: uv run pytest tests/benchmarks
+      - run: uv run pytest tests/governance tests/unit tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui tests/tools/test_windows_native_runtime.py tests/processes/test_supervision_contracts.py tests/processes/test_supervision_store.py tests/processes/test_windows_input.py tests/processes/test_windows_supervisor.py -o faulthandler_timeout=120
+        timeout-minutes: 30
+
   container-sandbox:
     runs-on: ubuntu-latest
     env:

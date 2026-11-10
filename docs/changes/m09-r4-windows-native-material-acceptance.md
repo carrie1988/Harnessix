@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 4
+version: 5
 code_revision: beda980fbeee90a36487b04eac5f1b493539b91f
 owners: [core]
 modules: [delivery, product_config, processes, workspace, governance]
@@ -9,6 +9,7 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
 related_tests:
+  - tests/governance/test_windows_native_material_acceptance.py
   - tests/product_config/test_git_material_input.py
   - tests/product_config/test_git_material_cas_integration.py
   - tests/processes/test_windows_raw_receipt.py
@@ -73,7 +74,7 @@ flowchart TB
 | [Windows原生端口](../../src/harnessix/delivery/git_material_native_windows.py) | 原真实句柄、DACL、类型、身份及共享保护 | 无 |
 | [材料输入测试](../../tests/product_config/test_git_material_input.py) | 各对象、格式、容量、独立批准回读及失败保护 | 全文件保留 |
 | [CAS集成测试](../../tests/product_config/test_git_material_cas_integration.py) | 原CAS完整字节到原Owner及独立回读 | 全文件保留 |
-| 调度治理测试（Windows CI任务移除时一并删除） | 对冻结原选择器多重集合及其他步骤作精确比较 | 已删除 |
+| [调度治理测试](../../tests/governance/test_windows_native_material_acceptance.py) | 对冻结原选择器多重集合及其他步骤作精确比较 | 新增测试域守卫；2026-11-10随三平台范围恢复 |
 
 没有新增生产类、端口或数据结构。治理函数仅解析已有YAML、命令token与Counter，不承担执行授权。
 

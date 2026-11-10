@@ -517,7 +517,7 @@ def test_gate_builds_real_artifacts_before_scanning() -> None:
         "--artifact-dir dist/secret-gate"
     )
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
-    for name in ("governance", "coding-tools-macos"):
+    for name in ("governance", "coding-tools-macos", "windows-trusted-execution"):
         steps = workflow["jobs"][name]["steps"]
         commands = [step.get("run", "") for step in steps]
         build = commands.index("uv build --offline --wheel --out-dir dist/secret-gate")
