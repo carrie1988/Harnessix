@@ -107,12 +107,12 @@
       "max_decision_complexity": 95
     },
     "harnessix.agent_cli:ThinAgentCLI": {
-      "max_lines": 291,
+      "max_lines": 294,
       "max_decision_complexity": 0
     },
     "harnessix.agent_cli:ThinAgentCLI._answer_pending": {
-      "max_lines": 77,
-      "max_decision_complexity": 24
+      "max_lines": 79,
+      "max_decision_complexity": 25
     },
     "harnessix.agent_cli:ThinAgentCLI._record_event": {
       "max_lines": 42,

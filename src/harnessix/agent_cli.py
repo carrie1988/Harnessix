@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import sys
+import time
 from collections.abc import Awaitable, Callable, Sequence
 from typing import Literal, Protocol
 from uuid import UUID
@@ -41,6 +42,21 @@ ApprovalPolicy = Callable[[PublicApprovalRequestContent, str | None], ApprovalOu
 # 事件页超过协商的消息字节上限（response_too_large）或公开数据保护扫描的资源上限
 # （public_output_limit）时，服务端拒绝整页；页长更小即可读出。
 _OVERSIZED_PAGE_CODES = frozenset({"response_too_large", "public_output_limit"})
+# 宿主系统策略（如本机沙箱内命令）在审批发布后随即自动决定；先等这段时间再交给人，避免抢答。
+SYSTEM_DECISION_GRACE_SECONDS = 3.0
+
+
+def _in_grace(pending_since: dict[UUID, float], approval_id: UUID) -> bool:
+    """首次看到该待审批项后的宽限期内返回True。"""
+    seen = pending_since.setdefault(approval_id, time.monotonic())
+    return time.monotonic() - seen < SYSTEM_DECISION_GRACE_SECONDS
+
+
+def _wait_ms(turn: object) -> int:
+    """等待人工或系统决定时缩短事件等待，以便宽限期结束后及时提示。"""
+    return (
+        1_000 if getattr(turn, "status", None) in {"waiting_approval", "waiting_input"} else 30_000
+    )
 
 
 def _event_page_limit(client: AgentClient) -> int:
@@ -89,6 +105,7 @@ class ThinAgentCLI:
         self._gapped_text: set[UUID] = set()
         self._completed_text: set[UUID] = set()
         self._submitted_approvals: set[UUID] = set()
+        self._pending_since: dict[UUID, float] = {}
         self._submitted_questions: set[UUID] = set()
         # 事件页因公开投影超限被拒后缩小的页长；None表示用协议协商的页长。
         self._page_limit: int | None = None
@@ -207,6 +224,8 @@ class ThinAgentCLI:
             assert isinstance(content, PublicApprovalRequestContent)
             outcome = self._policy_decision(content)
             if outcome is None:
+                if _in_grace(self._pending_since, content.approval_id):
+                    return False
                 await self._render_artifact(thread.thread_id, approval_item)
                 reply = (await self.console.prompt("批准该操作？[y/N] ")).strip().lower()
                 outcome = "approved" if reply in {"y", "yes"} else "rejected"
@@ -296,7 +315,7 @@ class ThinAgentCLI:
             if await self._answer_pending(thread):
                 continue
             page = await self._paged(
-                self.client.next_events, thread_id, after_cursor=cursor, wait_ms=30_000
+                self.client.next_events, thread_id, after_cursor=cursor, wait_ms=_wait_ms(latest)
             )
             for event in page.replay.events:
                 self._record_event(event, render=True)

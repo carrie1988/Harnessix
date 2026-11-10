@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 10
+version: 11
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -1222,6 +1222,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 - Delta低延迟、持久终态、Deadline边界、1000条溢出Gap和能力门禁；
 - Artifact只在Scoped Reader装配时广告并按页读取；
 - 薄CLI只依赖SDK完成协商上限内分页、提问、快速终态回放和Diff后审批；
+- 薄CLI遇到自身审批策略不处理的待审批项时，先等`SYSTEM_DECISION_GRACE_SECONDS`（3秒）并以1秒等待继续读事件，宿主系统策略（本机沙箱内命令自动批准）在此期间决定的不再提示人工；仍未决定才提示或在非交互时判为需要人工；
 - 薄CLI的事件页被服务端以`response_too_large`（超过协商消息字节）或`public_output_limit`（超过公开数据保护扫描上限）拒绝时，减半页长重读，页长随后保持缩小；
 - Product启动失败不会提前激活配置或开放协议，固定Workspace拒绝其他Create根。
 
@@ -1364,6 +1365,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 11 | `6376b10c` 增量 | 2026-11-10 | 薄CLI对自身不处理的待审批项先等3秒系统决定，修复`exec`在沙箱命令自动批准前误判需要人工（0.10.0b2） |
 | 10 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的薄CLI行为：事件页因`response_too_large`被拒时与`public_output_limit`一样减半页长重读 |
 | 8 | `184fb125f6159de4202a64a525f6b5cc99f0ab97` | 2026-09-29 | 显式公共预算转换使用内部字段名；同步现行Windows受管Patch边界，保持公开JSON、幂等与持久事实合同 |
 | 7 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表委托Session有界索引页读取，保持游标与公开投影合同不变；跨平台候选与CI验收见专项详设 |

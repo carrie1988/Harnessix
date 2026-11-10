@@ -260,3 +260,38 @@ async def test_thin_cli_reads_diff_before_batch_approval(group_case, tmp_path: P
             assert '"view": "plan"' in output
             assert output.index("差异 Artifact") < output.index("批准该操作")
             await client.close()
+
+
+async def test_thin_cli_waits_for_a_system_decision_before_asking_a_person(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """沙箱策略会在审批发布后随即自动批准；宽限期内不提示人工，超过仍未决定才提示。"""
+    from harnessix import agent_cli
+    from harnessix.protocol.contracts import PublicApprovalRequestContent, PublicItem
+
+    approval = PublicApprovalRequestContent(
+        approval_type="process",
+        approval_id=uuid4(),
+        call_id=uuid4(),
+        request_fingerprint="b" * 64,
+        policy_version="trusted-coding-action/v2",
+    )
+    client = SimpleNamespace(respond_approval=AsyncMock())
+    console = ScriptedConsole(["y"])
+    cli = ThinAgentCLI(client, console=console)  # type: ignore[arg-type]
+    item = PublicItem(item_id=uuid4(), status="started", content=approval)
+    cli._items[item.item_id] = item
+    thread = SimpleNamespace(
+        thread_id=uuid4(), latest_turn=SimpleNamespace(status="waiting_approval", turn_id=uuid4())
+    )
+    now = [100.0]
+    monkeypatch.setattr(agent_cli.time, "monotonic", lambda: now[0])
+
+    assert await cli._answer_pending(thread) is False  # type: ignore[arg-type]
+    now[0] += agent_cli.SYSTEM_DECISION_GRACE_SECONDS - 0.5
+    assert await cli._answer_pending(thread) is False  # type: ignore[arg-type]
+    assert console.output == [] and client.respond_approval.await_count == 0
+
+    now[0] += 1.0
+    assert await cli._answer_pending(thread) is True  # type: ignore[arg-type]
+    assert client.respond_approval.await_count == 1

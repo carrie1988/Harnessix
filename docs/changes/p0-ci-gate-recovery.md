@@ -125,6 +125,10 @@ W2（Windows沙箱外PowerShell命令，2026-11-10用户决定）让`native_proc
 0.10.0b2易用性修复：用户拒绝审批时填写的原因原先只进审计，模型只收到固定的“用户拒绝了工具调用”。现在`AgentRuntime._execute_calls`
 在记录工具结果前调用`approvals.with_rejection_reason`，按调用找到已决定的审批并把原因附在错误信息后。判定与拼接都在`approvals.py`，
 运行时只增加这一行调用和一项导入：`runtime.py`（3473）、`AgentRuntime`（3190）、`_execute_calls`（243）各按实测登记。
+同批在247上用PyPI验证脚本试跑`exec --approval-mode auto-edit`时，沙箱内命令的审批在宿主系统策略批准前被薄CLI读到，客户端立即判为需要人工并退出。
+`agent_cli.py`现在对自身不处理的待审批项先等3秒系统决定，回归见`test_thin_cli_waits_for_a_system_decision_before_asking_a_person`。
+宽限判断与事件等待时长放在模块级函数`_in_grace`、`_wait_ms`中，类内只增加待审批首次出现时间这一项状态和一个判断：
+`ThinAgentCLI`（294）、`_answer_pending`（79行，复杂度25）按实测登记。
 
 这些增长发生在门禁失效期间，没有逐项评审，是事实上已经存在的结构债务。本次把预算更新到当前值，让门禁重新生效，
 此后任何继续增长都会失败。偿还计划列入发布清单P2-5：优先拆分`AgentRuntime`和`coding_tool_view.py`，

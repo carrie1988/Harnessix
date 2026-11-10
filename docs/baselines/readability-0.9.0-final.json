@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 605,
-    "physical_lines": 127766,
-    "logical_lines": 111912,
+    "physical_lines": 127785,
+    "logical_lines": 111926,
     "documented_modules": 605,
     "classes": 1198,
     "documented_classes": 612,
-    "functions": 4986,
-    "documented_functions": 1615,
+    "functions": 4988,
+    "documented_functions": 1617,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -490,8 +490,8 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI",
       "kind": "class",
-      "line": 65,
-      "lines": 291,
+      "line": 81,
+      "lines": 294,
       "documented": true
     },
     {
@@ -500,10 +500,10 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._answer_pending",
       "kind": "function",
-      "line": 189,
-      "lines": 77,
+      "line": 206,
+      "lines": 79,
       "documented": false,
-      "decision_complexity": 24
+      "decision_complexity": 25
     },
     {
       "id": "harnessix.agent_cli:ThinAgentCLI._record_event",
@@ -511,7 +511,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._record_event",
       "kind": "function",
-      "line": 122,
+      "line": 139,
       "lines": 42,
       "documented": false,
       "decision_complexity": 21
