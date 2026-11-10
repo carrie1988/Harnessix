@@ -4,6 +4,7 @@
 resolved为通过，unresolved与空补丁为未通过；出错或没有报告的试次不写判定，主指标据此记为无效，
 不补造结果。swebench 5.0.2对未通过试次另做的基础设施/含糊失败分类只是参考（官方报告里这些试次
 仍留在unresolved或error中，分母不变），这里同样不改判定，只把层级与原因作为诊断分数记下。
+单个补丁缺失、超限、摘要不符或不是UTF-8时只影响该试次（不写判定并注明原因），不中止整批。
 原试次文件不修改，输出新的0600试次文件。
 """
 
@@ -16,11 +17,15 @@ import subprocess
 from collections import defaultdict
 from pathlib import Path
 
-from evalkit.contracts import ArmTrials, GraderSpec, RunPlan, Score, TrialRecord
+from evalkit.contracts import ArmTrials, ArtifactRef, GraderSpec, RunPlan, Score, TrialRecord
+from evalkit.errors import EvalkitError
 from evalkit.files import read_artifact, read_model, write_model
+from evalkit.harbor import OVERSIZED_ARTIFACTS_REF
 
 _PATCH = "patch"
-_MAX_PATCH = 16 * 1024 * 1024
+# SWE-bench补丁是整个仓库的改动，含二进制文件，导出时不裁剪；上限只挡住异常文件，
+# 与evalkit导入的智能体制品上限相同（超限补丁在导入时已不登记，见_predictions）。
+_MAX_PATCH = 64 * 1024 * 1024
 _MAX_FILE = 256 * 1024 * 1024
 _VERDICTS = {
     "resolved_ids": (True, "resolved"),
@@ -30,20 +35,45 @@ _VERDICTS = {
 _NO_VERDICT = ("error_ids", "incomplete_ids")
 # 官方的事后失败分类（swebench.harness.infra_failure）：只作诊断，不改变上面的判定。
 _FAILURE_TIERS = {"infra_failure_ids": "environment", "ambiguous_failure_ids": "ambiguous"}
+_PATCH_PROBLEMS = {
+    "file_invalid": "patch_file_invalid",
+    "artifact_digest_mismatch": "patch_digest_mismatch",
+    "artifact_outside_root": "patch_outside_root",
+}
 
 # 一个试次的官方结论：通过判定（None为不写判定）、状态与诊断分数。
 Verdict = tuple[bool | None, str, dict[str, str]]
 
 
+def _read_patch(ref: ArtifactRef, evidence_root: Path) -> tuple[str | None, str | None]:
+    """返回补丁正文，或读不出时该试次的官方状态。"""
+    try:
+        return read_artifact(ref, evidence_root, _MAX_PATCH).decode("utf-8"), None
+    except EvalkitError as error:
+        return None, _PATCH_PROBLEMS.get(error.code, "patch_unreadable")
+    except UnicodeDecodeError:
+        # 官方预测文件里补丁是JSON字符串，非UTF-8补丁无法原样提交。
+        return None, "patch_not_utf8"
+
+
 def _predictions(
     trials: tuple[TrialRecord, ...], evidence_root: Path
-) -> dict[tuple[str, int], list[dict]]:
+) -> tuple[dict[tuple[str, int], list[dict]], dict[tuple[int, str], Verdict]]:
+    """按组别与重复分批的预测，以及补丁读不出、只能不写判定的试次。"""
     batches: dict[tuple[str, int], list[dict]] = defaultdict(list)
+    rejected: dict[tuple[int, str], Verdict] = {}
     for trial in trials:
         ref = next((a for a in trial.artifacts if a.name == _PATCH), None)
-        if trial.status == "missing" or ref is None:
+        if trial.status == "missing":
             continue
-        patch = read_artifact(ref, evidence_root, _MAX_PATCH).decode("utf-8")
+        if ref is None:
+            if _PATCH in trial.executor_refs.get(OVERSIZED_ARTIFACTS_REF, "").split(","):
+                rejected[(trial.attempt, trial.item_id)] = (None, "patch_oversized", {})
+            continue
+        patch, problem = _read_patch(ref, evidence_root)
+        if patch is None:
+            rejected[(trial.attempt, trial.item_id)] = (None, str(problem), {})
+            continue
         batches[(trial.arm_id, trial.attempt)].append(
             {
                 "instance_id": trial.item_id,
@@ -51,7 +81,7 @@ def _predictions(
                 "model_patch": patch,
             }
         )
-    return batches
+    return batches, rejected
 
 
 def report_verdicts(report: dict) -> dict[str, Verdict]:
@@ -129,8 +159,8 @@ def grade(
     for group in arm_trials:
         if group.plan_digest != plan.digest:
             raise SystemExit("试次文件不属于该计划")
-        verdicts: dict[tuple[int, str], Verdict] = {}
-        for (arm, attempt), batch in sorted(_predictions(group.trials, evidence_root).items()):
+        batches, verdicts = _predictions(group.trials, evidence_root)
+        for (arm, attempt), batch in sorted(batches.items()):
             result = _evaluate(batch, f"{arm}-attempt{attempt}", work, dataset, swebench, workers)
             verdicts.update({(attempt, instance): value for instance, value in result.items()})
         trials = []

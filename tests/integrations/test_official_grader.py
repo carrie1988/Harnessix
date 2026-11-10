@@ -10,9 +10,10 @@ from pathlib import Path
 
 import pytest
 from evalkit.contracts import ArmTrials, GraderSpec, TrialRecord
-from evalkit.errors import EvalkitError
 from evalkit.files import artifact_ref
+from evalkit.harbor import OVERSIZED_ARTIFACTS_REF
 
+from integrations.swebench import official_grader
 from integrations.swebench.official_grader import grade, report_verdicts
 from tests.evalkit.builders import harbor_plan
 
@@ -51,14 +52,17 @@ def fake_swebench(tmp_path: Path) -> str:
     return str(script)
 
 
-def trials(evidence: Path, with_patch: set[int]) -> ArmTrials:
+def trials(
+    evidence: Path, with_patch: set[int], bodies: dict[int, bytes] | None = None
+) -> ArmTrials:
     records = []
     for slot, (arm, item, attempt) in enumerate(PLAN.slots()):
         artifacts = ()
         if slot in with_patch:
             path = evidence / f"{item}.diff"
-            path.write_text("" if item == "case-2" else f"diff --git a/{item} b/{item}\n")
-            artifacts = (artifact_ref("patch", path, evidence, 1 << 20),)
+            default = b"" if item == "case-2" else f"diff --git a/{item} b/{item}\n".encode()
+            path.write_bytes((bodies or {}).get(slot, default))
+            artifacts = (artifact_ref("patch", path, evidence, 1 << 30),)
         records.append(
             TrialRecord(
                 slot=slot,
@@ -120,14 +124,59 @@ def test_report_categories_map_to_verdicts_and_unjudged_trials_stay_unscored(
     ]
 
 
-def test_changed_patch_is_rejected_before_grading(tmp_path: Path) -> None:
+def _status(trial: TrialRecord) -> tuple[str, bool | None]:
+    return (
+        trial.score("swebench-official", "official_status").value,
+        getattr(trial.score("swebench-official", "resolved"), "value", None),
+    )
+
+
+def _submitted(tmp_path: Path) -> list[str]:
+    lines = (tmp_path / "work/A-attempt0/predictions.jsonl").read_text().splitlines()
+    return [json.loads(line)["instance_id"] for line in lines]
+
+
+def test_a_bad_patch_only_loses_its_own_verdict(tmp_path: Path) -> None:
+    """摘要不符、文件缺失或不是UTF-8的补丁只让该试次不写判定，其余试次照常判分。"""
     evidence = tmp_path / "evidence"
     evidence.mkdir()
-    group = trials(evidence, {0})
+    group = trials(evidence, {0, 1, 2, 3}, bodies={3: b"diff --git a/x b/x\n+\xff\n"})
     (evidence / "case-0.diff").write_text("tampered\n")
-    with pytest.raises(EvalkitError) as error:
-        run_grade(tmp_path, group)
-    assert error.value.code == "artifact_digest_mismatch"
+    (evidence / "case-1.diff").unlink()
+    graded = run_grade(tmp_path, group)
+    assert [_status(t) for t in graded.trials] == [
+        ("patch_digest_mismatch", None),
+        ("patch_file_invalid", None),
+        ("empty_patch", False),
+        ("patch_not_utf8", None),
+        ("not_graded", None),
+    ]
+    assert _submitted(tmp_path) == ["case-2"]
+
+
+def test_large_repository_patches_are_graded_and_oversized_ones_isolated(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """11-08的Go补丁有16–21 MB（整个仓库的改动含二进制）：64 MiB以内照常提交官方判分；
+    超过上限的补丁只让该试次不写判定，不中止整批。"""
+    evidence = tmp_path / "evidence"
+    evidence.mkdir()
+    large = b"diff --git a/case-0 b/case-0\n" + b"+" * (21 * 1024 * 1024)
+    group = trials(evidence, {0, 1}, bodies={0: large})
+    graded = run_grade(tmp_path, group)
+    assert [_status(t) for t in graded.trials][:2] == [("resolved", True), ("unresolved", False)]
+    assert _submitted(tmp_path) == ["case-0", "case-1"]
+
+    monkeypatch.setattr(official_grader, "_MAX_PATCH", 1024)
+    second = tmp_path / "second"
+    second.mkdir()
+    (second / "evidence").mkdir()
+    graded = run_grade(second, trials(second / "evidence", {0, 1}, bodies={0: large}))
+    assert [_status(t) for t in graded.trials][:2] == [
+        ("patch_file_invalid", None),
+        ("unresolved", False),
+    ]
+    assert _submitted(second) == ["case-1"]
 
 
 def test_environment_tier_keeps_the_official_unresolved_verdict() -> None:
@@ -146,3 +195,19 @@ def test_environment_tier_keeps_the_official_unresolved_verdict() -> None:
             {"failure_tier": "environment", "failure_reason": "out_of_memory"},
         )
     }
+
+
+def test_a_patch_rejected_at_import_as_oversized_gets_its_reason(tmp_path: Path) -> None:
+    """导入时因超限未登记的补丁：该试次不写判定并注明patch_oversized，其余照常判分。"""
+    evidence = tmp_path / "evidence"
+    evidence.mkdir()
+    group = trials(evidence, {1})
+    first = group.trials[0].model_copy(
+        update={"executor_refs": {OVERSIZED_ARTIFACTS_REF: "events,patch"}}
+    )
+    group = group.model_copy(update={"trials": (first, *group.trials[1:])})
+    graded = run_grade(tmp_path, group)
+    assert [_status(t) for t in graded.trials][:2] == [
+        ("patch_oversized", None),
+        ("unresolved", False),
+    ]

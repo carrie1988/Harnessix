@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from evalkit import harbor as evalkit_harbor
 from evalkit.contracts import EvalRunReport, Usage
 from evalkit.errors import EvalkitError
 from evalkit.grading import build_report
@@ -103,6 +104,23 @@ def test_parser_refines_status_usage_artifacts_and_unique_refs(tmp_path: Path) -
     with pytest.raises(EvalkitError) as error:
         import_harbor_job(job, harbor_plan(2), "A", {"fixture-agent": ProviderParser()}, tmp_path)
     assert error.value.code == "harbor_source_invalid"
+
+
+def test_an_oversized_agent_artifact_only_affects_its_trial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """超限制品不中止整个Job的导入：该试次不登记它并在执行引用中注明，其余试次照常。"""
+    monkeypatch.setattr(evalkit_harbor, "_MAX_AGENT_ARTIFACT_BYTES", 64)
+    job = harbor_job(tmp_path / "job", [Trial(reward=0.0), Trial(reward=1.0)])
+    (job / "trial-0-0/patch.diff").write_text("diff --git a/x b/x\n" + "+" * 64)
+    (job / "trial-1-0/patch.diff").write_text("diff --git a/y b/y\n")
+    trials = import_harbor_job(
+        job, harbor_plan(2), "A", {"fixture-agent": ProviderParser()}, tmp_path
+    )
+    assert [a.name for a in trials[0].artifacts] == ["harbor_result"]
+    assert trials[0].executor_refs[evalkit_harbor.OVERSIZED_ARTIFACTS_REF] == "patch"
+    assert [a.name for a in trials[1].artifacts] == ["harbor_result", "patch"]
+    assert evalkit_harbor.OVERSIZED_ARTIFACTS_REF not in trials[1].executor_refs
 
 
 def test_attempts_bind_to_plan_slots_and_job_must_cover_the_plan(tmp_path: Path) -> None:

@@ -41,7 +41,9 @@ VERIFIER_ARTIFACTS = {
     "report.json": "harbor_verifier_report",
 }
 _MAX_SOURCE_BYTES = 8 * 1024 * 1024
-_MAX_AGENT_ARTIFACT_BYTES = 32 * 1024 * 1024
+# SWE-bench补丁是整个仓库的改动，可含二进制文件；超过上限的智能体制品只影响本试次（见_record）。
+_MAX_AGENT_ARTIFACT_BYTES = 64 * 1024 * 1024
+OVERSIZED_ARTIFACTS_REF = "oversized_artifacts"
 _EXCEPTION_TYPE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,127}")
 _AGENT_EXCEPTIONS = frozenset(
     {"NonZeroAgentExitCodeError", "AgentSafetyRefusalError", "AgentTimeoutError"}
@@ -294,10 +296,17 @@ def _record(
         path = trial_dir / "verifier" / filename
         if path.is_file() and not path.is_symlink():
             artifacts.append(artifact_ref(name, path, context.evidence_root, _MAX_SOURCE_BYTES))
+    oversized = []
     for name, path in sorted(parsed.artifact_files.items()):
         if not path.resolve(strict=True).is_relative_to(trial_dir.resolve()):
             raise ValueError("智能体制品不在试次目录内")
+        if not path.is_symlink() and path.stat().st_size > _MAX_AGENT_ARTIFACT_BYTES:
+            # 超限不中止整个Job的导入：不登记该制品，在执行引用中注明，下游据此给出原因。
+            oversized.append(name)
+            continue
         artifacts.append(artifact_ref(name, path, context.evidence_root, _MAX_AGENT_ARTIFACT_BYTES))
+    if oversized:
+        executor_refs[OVERSIZED_ARTIFACTS_REF] = ",".join(oversized)
     return TrialRecord(
         slot=slot,
         arm_id=context.arm.arm_id,
