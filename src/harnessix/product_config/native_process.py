@@ -54,6 +54,7 @@ from .native_sandbox import (
     attest_native_sandbox,
     prepare_sandboxed_argv,
 )
+from .native_shells import native_owner_problem
 from .process_command import (
     HostCommandInput,
     RunCommandInput,
@@ -141,8 +142,9 @@ def attest_native_process_profile(
 ) -> tuple[str, AttestedNativeProcessProfile | None]:
     """按后端证明执行边界；返回原因码与证明，不成立时不降级。"""
 
-    if owner_capability is None or owner_capability.platform != "posix":
-        return "process_owner_unavailable", None
+    problem = native_owner_problem(owner_capability, profile.backend)
+    if problem is not None or owner_capability is None:
+        return problem or "process_owner_unavailable", None
     if profile.backend == "host":
         return "verified", _attest_host(profile, owner_capability, environ, secret_names)
     if profile.backend != "external_boundary":
@@ -214,7 +216,7 @@ def _attest_host(
 
     environment = host_environment(environ, presets=profile.environment, secret_names=secret_names)
     capabilities = build_capability_evidence_v2(
-        platform="posix",
+        platform=owner_capability.platform,
         provider="host",
         provider_version="1",
         sandbox_levels=("host_guarded",),
@@ -522,7 +524,8 @@ def _validate_route(
         or route.resources != expected
         or route.execution.capabilities != owner.capabilities
         or route.execution.sandbox != owner.sandbox
-        or route.execution.environment != bind_environment(owner.environment, platform="posix")
+        or route.execution.environment
+        != bind_environment(owner.environment, platform=owner.capabilities.platform)
         or route.execution.secrets
     ):
         raise KernelError("native_process_plan_mismatch", "原生Process Profile与Action Route不匹配")

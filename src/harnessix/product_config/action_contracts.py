@@ -12,6 +12,7 @@ from pydantic import AwareDatetime, Field, field_validator, model_validator
 from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import NetworkMode, canonical_digest
 from harnessix.product_config.contracts import ProductConfigContract, SecretReference
+from harnessix.product_config.native_shells import NATIVE_PROGRAM_PATTERN, fixed_shell
 from harnessix.sandbox.contracts import (
     container_environment_problem,
     container_workspace_path_problem,
@@ -60,15 +61,6 @@ def _bounded_arguments(value: tuple[str, ...]) -> tuple[str, ...]:
     ):
         raise ValueError("Process Profile参数不符合边界")
     return value
-
-
-def _fixed_posix_shell(program: str, arguments: tuple[str, ...]) -> bool:
-    """命令Profile只能固定POSIX Shell加-c或-lc；模型命令作为最后一个参数。"""
-
-    return Path(program).name in {"sh", "bash", "dash", "zsh"} and arguments in {
-        ("-c",),
-        ("-lc",),
-    }
 
 
 def product_process_image_reference_type(image: str) -> ProductProcessImageReferenceType:
@@ -157,8 +149,8 @@ class ProductProcessProfile(ProductConfigContract):
             raise ValueError("持久依赖目录仅允许通用命令Profile")
         if self.persistent_dependencies and self.secret_refs:
             raise ValueError("持久依赖目录不能与显式Secret注入组合")
-        if self.selector_policy == "shell_command" and not _fixed_posix_shell(
-            self.program, self.arguments
+        if self.selector_policy == "shell_command" and not fixed_shell(
+            self.program, self.arguments, "container"
         ):
             raise ValueError("Command Profile必须固定POSIX Shell及-c或-lc参数")
         if self.tmpfs_bytes is not None and self.tmpfs_bytes >= self.memory_bytes:
@@ -244,7 +236,7 @@ class ProductNativeProcessProfile(ProductConfigContract):
     version: str = Field(min_length=1, max_length=128)
     description: str = Field(min_length=1, max_length=500)
     backend: NativeProcessBackend
-    program: str = Field(pattern=_CONTAINER_PROGRAM)
+    program: str = Field(pattern=NATIVE_PROGRAM_PATTERN)
     arguments: tuple[str, ...] = Field(default=(), max_length=128)
     # read_write：命令直接读写工作区并保留改动；read_only只有沙箱后端能强制（ADR 0112）。
     workspace_mode: NativeWorkspaceMode = "read_write"
@@ -271,8 +263,10 @@ class ProductNativeProcessProfile(ProductConfigContract):
 
     @model_validator(mode="after")
     def valid_profile(self) -> Self:
-        if not _fixed_posix_shell(self.program, self.arguments):
-            raise ValueError("Command Profile必须固定POSIX Shell及-c或-lc参数")
+        if not fixed_shell(self.program, self.arguments, self.backend):
+            raise ValueError(
+                "Command Profile必须固定POSIX Shell及-c/-lc，或沙箱外PowerShell及固定参数"
+            )
         problem = container_environment_problem(self.environment) or _native_scope_problem(self)
         if problem is not None:
             raise ValueError(problem)

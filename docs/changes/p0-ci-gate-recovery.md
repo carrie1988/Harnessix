@@ -99,6 +99,8 @@ P1-2（[ADR 0125](../adr/0125-skill-product-wiring.md)）接入Skill：`agent/ru
 
 P1-2的MCP接入（[ADR 0126](../adr/0126-host-stdio-mcp-with-per-server-trust.md)）新增依赖边`product_config->mcp`，方向与`product_config->skills`相同：组合根依赖能力包，`mcp`不反向依赖产品配置。Skill与MCP合并为一个扩展资源（`extension_composition.py`），`open_default_product_action_runtime`与`_serve_product_stdio`的长度不变；`mcp/runtime.py`的目标接口移到`target_protocol.py`，文件长度回到预算内。
 
+W2（Windows沙箱外PowerShell命令，2026-11-10用户决定）让`native_process.py`增加3行：Owner平台检查改为调用`native_owner_problem`并保留空值收窄（+1），新增一条导入（+1），计划核对按实际平台绑定环境后折行（+1）。Shell规则、Windows程序路径与PowerShell查找都放在新的`native_shells.py`，`action_contracts.py`因删除旧的POSIX专用函数减少6行。
+
 2026-11-10合入`main`（`111b546f`）时，另一会话的两项修复带来增长：`5702881f`把工作区根目录的绝对路径按挂载点映射，`CodingToolRuntime`增加6行；`7197c8f9`把字符串化参数的还原提到调用修复之前，`AgentRuntime._sample_events`复杂度加1。两项都是有真实评测证据的行为修复，按原样登记；其中参数还原的类型窄化顺带修正，行为不变。
 
 这些增长发生在门禁失效期间，没有逐项评审，是事实上已经存在的结构债务。本次把预算更新到当前值，让门禁重新生效，

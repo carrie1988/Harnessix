@@ -12,6 +12,7 @@
 - 用户要求时，经批准提交 Git
 - 支持 Skills：把任务说明放进 `~/.harnessix/skills` 或仓库的 `.harnessix/skills`，Agent 按需读取；`harnessix skills list` 查看结果
 - `harnessix data`：列出、导出、删除本机数据，生成不含代码的诊断文件
+- Windows：零配置提供沙箱外的 PowerShell 命令，每条都需批准（仅经 Windows CI 验证，尚未在真机上试用）
 - 支持本机 MCP Server：在 `~/.harnessix/mcp.json` 里声明，`harnessix mcp trust` 逐个信任，每次工具调用都需批准
 - 自动探测 git，自动填写 DeepSeek、百炼模型的上下文窗口
 - 模型请求读取 `HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY`；`code configure --proxy-url` 可指定本机代理并优先

@@ -29,7 +29,7 @@ from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
-from harnessix.processes.supervisor import PosixProcessSupervisor
+from harnessix.processes.supervisor import PosixProcessSupervisor, WindowsProcessSupervisor
 from harnessix.processes.trusted_output import parse_trusted_process_output
 from harnessix.product_config.action_composition import (
     build_fixed_product_action_environment,
@@ -122,7 +122,8 @@ async def _native_case(
     workspace.mkdir(exist_ok=True)
     (workspace / "source.txt").write_text("base\n")
     profile = profile or native_profile()
-    async with PosixProcessSupervisor(root / "owner") as supervisor:
+    owner = WindowsProcessSupervisor if os.name == "nt" else PosixProcessSupervisor
+    async with owner(root / "owner") as supervisor:
         options = {"environ": _ASSERTED} | probe_options
         if callable(options.get("site")):
             options["site"] = options["site"](workspace)

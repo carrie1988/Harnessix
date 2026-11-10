@@ -8,6 +8,7 @@ Harnessix Code 当前是预览版，不是正式商用版本。安全修复只�
 |---|---|
 | 沙箱内命令 | 在 macOS Seatbelt 或 Linux bubblewrap 中自动执行，可写工作区，`.git` 只读 |
 | 沙箱外命令 | 每条都需要用户批准 |
+| Windows | 没有本机沙箱：命令只在沙箱外的 PowerShell 中执行，每条都需要用户批准 |
 | 文件修改 | 补丁默认需要用户批准；`harnessix exec` 可选 `auto-edit` 或 `auto` |
 | 联网 | Linux 沙箱内不能联网；macOS 沙箱内只放行本机回环，已配置的本机代理端口被拦截 |
 | 凭据目录 | `~/.ssh`、`~/.aws`、`~/.gnupg`、浏览器数据等在沙箱内拒读 |
