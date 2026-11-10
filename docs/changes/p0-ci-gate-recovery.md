@@ -189,6 +189,10 @@ Agent回复的Markdown原样显示；窄屏下会话列表占去三分之一宽�
 修复以0.10.0b4发布，设计见[Product UI模块设计](../modules/product-ui.md)“终端界面易用性第二轮”。拆出`TranscriptPane`与`ThreadList`、
 自动弹窗逻辑放入`InteractionPresenter`，`ProductApp`和`ProductMainView`保持在可读性预算内。
 
+同一轮在247上做稳定性测试时发现：0.10.0b3按`Ctrl+Q`后界面卡住、60秒内没有退出（空闲、刚完成一轮、刚失败三种情形都一样）。
+本地用完整进程内栈复现，并跟踪消息派发：Textual的`ExitApp`被`post_message`拒收，原因是`ProductApp`的退出标记`_closing`与消息泵内部属性同名。
+已改名并加真实按键回归。同时把用户取消显示为“任务已取消”、常见失败改为白话。运行中取消、退出后重开回到上次会话、错误API Key均不崩溃。
+
 ## 11. 源码映射
 
 | 内容 | 位置 |

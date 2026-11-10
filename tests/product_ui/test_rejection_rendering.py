@@ -293,7 +293,7 @@ async def test_headless_main_view_displays_rejection_without_buttons_or_approval
                 )
             ),
             "错误",
-            "file_missing：文件不存在",
+            "文件不存在（file_missing）",
         ),
     ],
 )

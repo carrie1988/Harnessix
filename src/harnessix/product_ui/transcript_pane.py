@@ -26,7 +26,9 @@ _ROLE_STYLES: Final = {
     "错误": "bold red",
 }
 # 操作过程只作背景信息，整行弱化显示。
-_MUTED_ROLES: Final = frozenset({"操作", "结果", "工具调用拒绝", "进程", "上下文", "推理摘要"})
+_MUTED_ROLES: Final = frozenset(
+    {"操作", "结果", "工具调用拒绝", "进程", "上下文", "推理摘要", "提示"}
+)
 
 
 def line_renderable(line: TranscriptLine) -> RenderableType:

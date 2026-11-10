@@ -29,6 +29,20 @@ _REJECTION_REASONS = {
     "invalid_arguments_json": "工具参数不是合法JSON",
 }
 _PLAN_MARKS: Final = {"completed": "✓", "in_progress": "▸", "pending": "○"}
+# 常见失败的白话说明与处理办法；其余失败显示原始说明并附错误码。
+_FAILURE_TEXT: Final = {
+    "provider_authentication": (
+        "模型服务拒绝了 API Key，请检查密钥是否正确（harnessix code doctor --probe-model 可核对）"
+    ),
+    "provider_rate_limit": "模型服务限流，请稍后重试",
+    "provider_transport": "连不上模型服务，请检查网络或代理设置",
+    "provider_internal": "模型服务内部错误，请稍后重试",
+    "provider_provider_internal": "模型服务内部错误，请稍后重试",
+    "provider_context_overflow": "对话超出模型的上下文长度，请按 Ctrl+N 新建会话继续",
+    "provider_max_output_tokens": "模型单次输出达到长度上限，可以让它分步完成",
+    "budget_exceeded": "已达到本轮的 Token 上限，可以继续发送任务开始新一轮",
+    "time_budget_exceeded": "已达到本轮的时间上限，可以继续发送任务开始新一轮",
+}
 _TURN_STATUS_LABELS: Final = {
     "accepted": "准备中",
     "preparing_context": "准备中",
@@ -142,13 +156,12 @@ def _item_lines(item: PublicItem) -> tuple[TranscriptLine, ...]:
     if isinstance(content, PublicProcessStateContent):
         return (TranscriptLine(item_id, "进程", f"{content.status} · {content.origin}"),)
     if isinstance(content, PublicErrorContent):
-        return (
-            TranscriptLine(
-                item_id,
-                "错误",
-                f"{content.failure.code}：{content.failure.message}",
-            ),
-        )
+        if content.failure.code == "cancelled":
+            # 用户主动取消不是错误。
+            return (TranscriptLine(item_id, "提示", "任务已取消"),)
+        failure = content.failure
+        text = _FAILURE_TEXT.get(failure.code) or f"{failure.message}（{failure.code}）"
+        return (TranscriptLine(item_id, "错误", text),)
     assert isinstance(content, PublicCompactionContent)
     return (
         TranscriptLine(

@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 606,
-    "physical_lines": 128167,
-    "logical_lines": 112219,
+    "physical_lines": 128183,
+    "logical_lines": 112232,
     "documented_modules": 606,
     "classes": 1200,
     "documented_classes": 614,
@@ -1644,7 +1644,7 @@
       "qualname": "ProductApp",
       "kind": "class",
       "line": 98,
-      "lines": 186,
+      "lines": 187,
       "documented": true
     },
     {

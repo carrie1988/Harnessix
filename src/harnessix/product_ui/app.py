@@ -113,7 +113,8 @@ class ProductApp(App[CloseReport]):
         self._presenter = InteractionPresenter(self, controller)
         self._watch_task: asyncio.Task[None] | None = None
         self._intent_in_flight = False
-        self._closing = False
+        # 不能叫_closing：那是Textual消息泵的内部属性，设为True后应用丢弃全部消息，退出时卡死。
+        self._quitting = False
         self._last_error_code: str | None = None
 
     def compose(self) -> ComposeResult:
@@ -148,18 +149,18 @@ class ProductApp(App[CloseReport]):
             self._update_composer(state)
             self.refresh_bindings()
             self._presenter.prompt_later(
-                lambda: not (self._intent_in_flight or self._closing or len(self.screen_stack) > 1)
+                lambda: not (self._intent_in_flight or self._quitting or len(self.screen_stack) > 1)
             )
 
     def _update_composer(self, state: ProductControllerState) -> None:
         self._main_view.update_composer(
             state,
             intent_in_flight=self._intent_in_flight,
-            closing=self._closing,
+            closing=self._quitting,
         )
 
     async def _dispatch(self, intent: ProductIntent) -> None:
-        if self._intent_in_flight or self._closing:
+        if self._intent_in_flight or self._quitting:
             return
         self._intent_in_flight = True
         self.query_one("#composer", Input).disabled = True
@@ -180,7 +181,7 @@ class ProductApp(App[CloseReport]):
         self._main_view.show_error(error)
 
     async def _run_interaction(self, operation: Callable[[], Awaitable[None]]) -> None:
-        if self._intent_in_flight or self._closing:
+        if self._intent_in_flight or self._quitting:
             return
         self._intent_in_flight = True
         self._update_composer(self.controller.state)
@@ -261,9 +262,9 @@ class ProductApp(App[CloseReport]):
         )
 
     def action_quit_product(self) -> None:
-        if self._closing:
+        if self._quitting:
             return
-        self._closing = True
+        self._quitting = True
         self.run_worker(
             self._close_and_exit(),
             name="close-product",

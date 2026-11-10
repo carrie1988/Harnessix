@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -230,3 +231,46 @@ def test_approval_summary_says_what_the_agent_wants_to_do() -> None:
         "注意：此操作可能删除或覆盖数据，请仔细核对。"
     )
     assert approval_summary(_pending("custom.tool", "not json")) == "Agent 请求：调用 custom.tool"
+
+
+async def test_ctrl_q_really_exits(tmp_path: Path) -> None:
+    """此前ProductApp用_closing记录退出，与Textual消息泵的同名内部属性冲突：按Ctrl+Q后应用丢弃全部消息、无法退出。"""
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+    requests = SQLiteProtocolRequestStore(sessions.path)
+    async with AgentRuntime(
+        sessions, ScriptedProvider([answer("好")]), RecordingTools()
+    ) as runtime:
+
+        def transport() -> InProcessAgentTransport:
+            return InProcessAgentTransport(
+                AgentProtocolServer(
+                    AgentApplicationService(
+                        runtime, sessions, requests, workspace=workspace.resolve()
+                    )
+                )
+            )
+
+        with ClientStateStore(
+            tmp_path / "client", workspace_identity=str(workspace.resolve())
+        ) as store:
+            controller = ProductController(RecoverableAgentSession(store, transport))
+            app = ProductApp(controller, StartRequest(workspace=str(workspace)))
+            async with app.run_test(size=(100, 30)) as pilot:
+                composer = app.query_one("#composer", Input)
+                await _wait_until(lambda: not composer.disabled)
+                try:
+                    async with asyncio.timeout(5):
+                        await pilot.press("ctrl+q")
+                        await _wait_until(lambda: not app.is_running)
+                    stuck = False
+                except TimeoutError:
+                    # 让测试自身能结束再报告失败，避免回归时整个CI卡住。
+                    stuck = True
+                    app._closing = False
+                    app.exit()
+            assert not stuck, "按Ctrl+Q后应用没有退出"
+            report = app.return_value
+            assert report is not None and report.clean

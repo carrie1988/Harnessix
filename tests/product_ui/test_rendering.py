@@ -237,3 +237,46 @@ def test_running_operations_and_streams_are_not_final() -> None:
         ("读取 a.py …", False),
         ("读取 b.py → 完成", True),
     ]
+
+
+def test_a_user_cancel_reads_as_a_notice_not_an_error() -> None:
+    from harnessix.protocol.contracts import PublicErrorContent
+
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    thread = ThreadView(
+        thread_id=uuid4(),
+        workspace="/workspace",
+        cursor=1,
+        turn_count=1,
+        created_at=now,
+        updated_at=now,
+    )
+
+    def view(code: str, message: str) -> ProductViewState:
+        failure = PublicFailure(code=code, message=message, category="cancelled")
+        return ProductViewState(
+            thread=thread,
+            durable_cursor=1,
+            items=(
+                ProjectedItem(
+                    item=PublicItem(
+                        item_id=uuid4(),
+                        status="completed",
+                        content=PublicErrorContent(failure=failure),
+                    ),
+                    turn_id=uuid4(),
+                    first_cursor=1,
+                    last_cursor=1,
+                    final=True,
+                ),
+            ),
+        )
+
+    assert [
+        (line.role, line.text) for line in transcript_lines(view("cancelled", "取消已生效"))
+    ] == [("提示", "任务已取消")]
+    assert [
+        (line.role, line.text) for line in transcript_lines(view("model_timeout", "模型超时"))
+    ] == [("错误", "模型超时（model_timeout）")]
+    wrong_key = transcript_lines(view("provider_authentication", "Provider 返回结构化失败"))
+    assert wrong_key[0].text.startswith("模型服务拒绝了 API Key")
