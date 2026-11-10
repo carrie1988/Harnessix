@@ -47,6 +47,17 @@ def test_parse_accepts_several_targets_and_rejects_duplicates() -> None:
         parse("0.0.0.0:18100=127.0.0.1:18001|127.0.0.1:18002")
 
 
+def test_only_a_container_network_relay_may_listen_on_the_wildcard_address() -> None:
+    """断网试次的模型转发边车在自己的容器网络内监听全部地址，不发布宿主机端口。"""
+    assert parse("0.0.0.0:18100=host.docker.internal:18100", container=True) == (
+        ("0.0.0.0", 18100),
+        (("host.docker.internal", 18100),),
+    )
+    for spec in ("0.0.0.0:18100=host.docker.internal:18100", "[::]:18100=127.0.0.1:18001"):
+        with pytest.raises(ValueError):
+            parse(spec)
+
+
 def request(
     balancer: StickyBalancer, client: str, running: frozenset[str] | None = None
 ) -> tuple[str, int]:

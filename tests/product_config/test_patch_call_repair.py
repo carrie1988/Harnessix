@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 import pytest
 
@@ -81,6 +82,35 @@ async def test_anchored_edit_gets_the_current_sha_and_still_needs_approval(tmp_p
         completed = await approve(runtime, thread.thread_id, waiting)
         assert result(completed).outcome == "succeeded"
         assert (root / "src/modified.py").read_bytes() == b"new\n"
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        # 字符串化的files与外层单文件字段：还原必须先于结构修复，否则修复看不到数组。
+        {
+            "path": "src/modified.py",
+            "files": json.dumps([{"edits": [{"old_text": "old", "new_text": "new"}]}]),
+        },
+        # 字符串化的files里带默认mode：修复去掉mode并补SHA。
+        {"files": json.dumps([edit("old", "new", mode=420)])},
+    ],
+)
+async def test_stringified_patch_arguments_are_restored_before_repair(tmp_path, arguments):
+    async with product(tmp_path, normalize_arguments=True) as (root, runtime, provider, *_):
+        _, waiting, call = await run_patch(runtime, provider, root, arguments)
+
+        assert waiting.status is TurnStatus.WAITING_APPROVAL
+        assert call.arguments == {
+            "files": [
+                {
+                    "operation": "edit",
+                    "path": "src/modified.py",
+                    "expected_sha256": hashlib.sha256(b"old\n").hexdigest(),
+                    "edits": [{"old_text": "old", "new_text": "new"}],
+                }
+            ]
+        }
 
 
 async def test_ambiguous_anchor_keeps_the_model_sha_and_is_rejected(tmp_path):

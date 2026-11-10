@@ -31,7 +31,7 @@ from tests.delivery.test_trusted_action_patch import _action_step, _approval, _p
 
 
 @asynccontextmanager
-async def product(tmp_path, *, enabled=True, model_tool_view=None):
+async def product(tmp_path, *, enabled=True, model_tool_view=None, normalize_arguments=False):
     root = tmp_path / "workspace"
     root.mkdir(exist_ok=True)
     (root / "src").mkdir(exist_ok=True)
@@ -68,6 +68,7 @@ async def product(tmp_path, *, enabled=True, model_tool_view=None):
                 artifacts=artifacts,
                 scoped_tools=tools,
                 model_tool_view=model_tool_view,
+                normalize_stringified_arguments=normalize_arguments,
             ) as runtime:
                 yield root, runtime, provider, router, transactions, composition, artifacts
         finally:

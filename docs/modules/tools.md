@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 19
+version: 20
 code_revision: eecf8d1ca90d6b51547386fbc1171f513830646d
 owners:
   - core
@@ -1083,6 +1083,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 20 | `5702881f267ad6b5e4ea3092e6578f8c9105ad08` | 搜索预览整行放得下时返回整行，只有超长行才截取窗口，模型不必为抄写编辑锚点重读文件；读工具把POSIX工作区根目录的绝对路径按挂载点映射，根目录之外与`..`越界仍拒绝 |
 | 12 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | Git Diff固定追加`--full-index`，使跨副本完整正文SHA-256不依赖`core.abbrev`；完整Blob OID按实际Git对象格式输出且不限40位，不改变Schema、评分或容量；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |
 | 10 | `75c4b7ddfe91824bcb667023c003e4aad18992e4` | 同步Python3.13的Git平台输入测试夹具、仓库边界负例及模拟验证范围；生产代码和公共合同不变 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 明确默认Patch属于Trusted Action而非CodingToolRuntime，并记录POSIX广告与Windows省略边界 |

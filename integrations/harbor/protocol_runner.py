@@ -48,6 +48,9 @@ _LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 # App Server每次读取都在10秒期限内重新认证整段Session历史；任务命令占满容器CPU配额时会超出期限。
 # 这只说明此刻读不到，Turn仍在服务端运行。
 _TRANSIENT_READ_CODES = frozenset({"publication_history_timeout"})
+# 事件页超过协商的消息字节上限（response_too_large）或公开数据保护扫描的资源上限
+# （public_output_limit）时，服务端拒绝整页；页长更小即可读出。
+_OVERSIZED_PAGE_CODES = frozenset({"response_too_large", "public_output_limit"})
 
 
 @dataclass
@@ -79,6 +82,27 @@ class ReadRetry:
             delay = min(delay * 2, self.max_delay_seconds)
 
 
+@dataclass
+class EventPages:
+    """事件分页读取：服务端拒绝超限的事件页时减半页长重读，此后保持缩小（同产品CLI的分页策略）。
+
+    单个事件受max_output_chars约束，远小于消息上限，页长减到1必能读出。
+    """
+
+    limit: int = 64
+
+    async def read[T](
+        self, fetch: Callable[..., Awaitable[T]], /, *args: object, **kwargs: object
+    ) -> T:
+        while True:
+            try:
+                return await fetch(*args, **kwargs, limit=self.limit)
+            except AgentSDKError as error:
+                if error.code not in _OVERSIZED_PAGE_CODES or self.limit == 1:
+                    raise
+                self.limit //= 2
+
+
 def _runner_error(error: Exception) -> str:
     code = getattr(error, "code", None)
     return type(error).__name__ + (f":{code}" if isinstance(code, str) else "")
@@ -96,16 +120,12 @@ async def _catch_up(
     cursor: int,
     items: dict[UUID, PublicItem],
     reads: ReadRetry,
+    pages: EventPages,
 ) -> int:
     """读到当前末尾，保证审批请求及其工具调用都已记录。"""
     while True:
         page = await reads(
-            partial(
-                client.replay_events,
-                thread_id,
-                after_cursor=cursor,
-                limit=min(64, client.initialized.limits.max_replay_events),
-            )
+            partial(pages.read, client.replay_events, thread_id, after_cursor=cursor)
         )
         _record(page.events, items)
         if not page.has_more:
@@ -146,6 +166,7 @@ async def _completed_evidence(
     client: AgentClient,
     thread_id: UUID,
     turn_id: UUID,
+    pages: EventPages,
     events: list[PublicEvent] | None = None,
 ) -> dict:
     """完整重放本次Turn：摘要只保留完成回答摘要和成功工具计数；events收集本Turn全部公开事件。"""
@@ -154,11 +175,7 @@ async def _completed_evidence(
     answer_digest = None
     async with asyncio.timeout(_EVIDENCE_REPLAY_SECONDS):
         while True:
-            page = await client.replay_events(
-                thread_id,
-                after_cursor=cursor,
-                limit=min(64, client.initialized.limits.max_replay_events),
-            )
+            page = await pages.read(client.replay_events, thread_id, after_cursor=cursor)
             for event in page.events:
                 if event.turn_id == turn_id and events is not None:
                     events.append(event)
@@ -211,6 +228,7 @@ async def drive_protocol_trial(
     cancelled = False
     decide = policy or approval_policy(approval_mode)
     reads = read_retry or ReadRetry()
+    pages = EventPages()
     items: dict[UUID, PublicItem] = {}
     submitted: set[UUID] = set()
     initialized = False
@@ -218,6 +236,7 @@ async def drive_protocol_trial(
         async with asyncio.timeout(budget.timeout_seconds):
             await client.initialize()
             initialized = True
+            pages.limit = min(pages.limit, client.initialized.limits.max_replay_events)
             thread = await client.create_thread(workspace, request_id=f"harbor-{trial_id}-thread")
             turn = await client.start_turn(
                 thread.thread_id,
@@ -238,7 +257,7 @@ async def drive_protocol_trial(
                     break
                 awaiting_decided = False
                 if turn.status == "waiting_approval":
-                    cursor = await _catch_up(client, thread_id, cursor, items, reads)
+                    cursor = await _catch_up(client, thread_id, cursor, items, reads, pages)
                     pending = _pending_approval(items, submitted)
                     outcome = decide(*pending) if pending else None
                     if pending and outcome:
@@ -262,14 +281,9 @@ async def drive_protocol_trial(
                 if turn.status in {"waiting_approval", "waiting_input"} and not awaiting_decided:
                     reason = "intervention_required"
                     break
-                limit = min(64, client.initialized.limits.max_replay_events)
                 page = await reads(
                     partial(
-                        client.next_events,
-                        thread_id,
-                        after_cursor=cursor,
-                        wait_ms=1000,
-                        limit=limit,
+                        pages.read, client.next_events, thread_id, after_cursor=cursor, wait_ms=1000
                     )
                 )
                 _record(page.replay.events, items)
@@ -306,7 +320,9 @@ async def drive_protocol_trial(
     if thread is not None and turn is not None and turn_terminal_confirmed:
         try:
             collected: list[PublicEvent] = []
-            evidence = await _completed_evidence(client, thread.thread_id, turn.turn_id, collected)
+            evidence = await _completed_evidence(
+                client, thread.thread_id, turn.turn_id, pages, collected
+            )
             if events is not None:
                 events.extend(collected)
         except (AgentSDKError, TimeoutError):

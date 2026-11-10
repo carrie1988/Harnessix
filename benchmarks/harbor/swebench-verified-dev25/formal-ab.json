@@ -1,0 +1,163 @@
+{
+  "run_name": "dev25-formal-ab",
+  "dataset": {
+    "name": "swebench-verified-dev25",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 4,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "User decisions 2026-11-10: D1=A (the agent phase of every arm runs without internet) and D2=A (a formal before/after comparison with a no-internet mini baseline, run on a development set that no tuning step of this round has seen). Instruction: optimisations must be general; no overfitting.",
+    "Task set: swebench-verified-dev25 (generalization-25-v45, 25 tasks over 10 repositories). It was chosen by rules committed before preparation (selection.json), excludes every task inspected or tuned on in this round (holdout49, E0, week-1 dev24, every task under runs/) and the 9 leaked tasks listed in SWE-bench#669, and no results were read during selection. Oracle 23/25: psf__requests-1921 and psf__requests-2317 need httpbin.org and count as invalid.",
+    "harnessix-new: product 0ac45d13 (bundle agent-0ac45d13) with task template v2. Changes from the old arm: stringified arguments are restored before call repair; grep previews return whole lines; absolute paths inside the workspace root are read as relative; generic execution instructions v5; the completion guard catches replies that only announce a next step; template v2 takes the test baseline in place with git stash, compares failures by id and message, separates assertions of the old behaviour the issue asks to change from regressions, and checks close variants. The const-field fill (6362f9d9) was reverted (0ac45d13) because it contradicts the R3 design non-goal. product.json and actions.json are byte-identical to the old arm's.",
+    "harnessix-old: product 6fc8ae67 (bundle agent-6fc8ae67) with task template v1, exactly the configuration of the 39-task holdout part-2 rerun (holdout-harnessix-guard-retry-part2-d93f4ad3).",
+    "R: mini-swe-agent 2.4.6 with the phase-1 R configuration (arm-r-swebench.yaml). In the holdout the R arm had internet and copied upstream fixes in 4 tasks; here it is offline like the other arms.",
+    "All agent arms: turn budget 100 steps, 6M tokens and 3600 s, Harbor agent cap 3900 s, 900 s per command, thinking off, the same model through the host relay. The Harnessix adapter now kills the runner at the turn timeout plus 60 s (d5829193). Arms run one after another (oracle, harnessix-new, harnessix-old, R) with 4 concurrent trials each.",
+    "Primary metric: the official SWE-bench resolve of the exported patch, regardless of how the agent ended (plan v2). The stability metric is normal end and resolved. Finish grading uses /data/harnessix/harbor/devset25/verified-dev25-full.jsonl (pinned revision 78f471bf)."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/network-isolation.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-verified-dev25",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py",
+    "HARNESSIX_MODEL_GATEWAY_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_MODEL_GATEWAY_CODE": "integrations/harbor/model_relay.py",
+    "HARNESSIX_TASK_DNS": "192.168.130.1"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "harnessix-new",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/agent-0ac45d13/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-0ac45d13/product.json",
+        "/data/harnessix/harbor/agent-0ac45d13/actions.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/agent-0ac45d13/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/agent-0ac45d13/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config_template": "/data/harnessix/harbor/agent-0ac45d13/actions.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": false,
+          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task-v2.j2",
+          "network_isolation": true
+        },
+        "override_timeout_sec": 3900
+      }
+    },
+    {
+      "arm_id": "harnessix-old",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/agent-6fc8ae67/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-6fc8ae67/product.json",
+        "/data/harnessix/harbor/agent-6fc8ae67/actions.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/agent-6fc8ae67/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/agent-6fc8ae67/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config_template": "/data/harnessix/harbor/agent-6fc8ae67/actions.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": false,
+          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task.j2",
+          "network_isolation": true
+        },
+        "override_timeout_sec": 3900
+      }
+    },
+    {
+      "arm_id": "R",
+      "system": "mini-swe-agent",
+      "system_version": "2.4.6",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:MiniSweAgentOffline",
+        "model_name": "openai/qwen3.8-flash-next",
+        "env": {
+          "OPENAI_API_KEY": "local-replica-no-key"
+        },
+        "override_timeout_sec": 3900,
+        "kwargs": {
+          "version": "2.4.6",
+          "config_file": "benchmarks/harbor/mini-swe-agent/arm-r-swebench.yaml",
+          "with_packages": [
+            "litellm==1.108.0",
+            "mcp==2.3.0",
+            "openai==3.46.0",
+            "orjson",
+            "fastapi"
+          ],
+          "network_isolation": true
+        }
+      }
+    }
+  ]
+}

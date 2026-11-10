@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 618,
-    "physical_lines": 134368,
-    "logical_lines": 117744,
+    "physical_lines": 134433,
+    "logical_lines": 117793,
     "documented_modules": 618,
     "classes": 1249,
     "documented_classes": 651,
-    "functions": 5234,
-    "documented_functions": 1651,
+    "functions": 5237,
+    "documented_functions": 1654,
     "public_exports": 372,
     "public_contract_types": 166,
     "undocumented_public_behavior": 0,
@@ -209,7 +209,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3445
+      "lines": 3442
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -370,7 +370,7 @@
       "qualname": "AgentRuntime",
       "kind": "class",
       "line": 275,
-      "lines": 3171,
+      "lines": 3168,
       "documented": true
     },
     {
@@ -412,7 +412,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3279,
+      "line": 3276,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -446,9 +446,9 @@
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
       "line": 2999,
-      "lines": 279,
+      "lines": 276,
       "documented": true,
-      "decision_complexity": 85
+      "decision_complexity": 86
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._select_model_tools",
@@ -499,7 +499,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI",
       "kind": "class",
-      "line": 60,
+      "line": 65,
       "lines": 291,
       "documented": true
     },
@@ -509,7 +509,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._answer_pending",
       "kind": "function",
-      "line": 184,
+      "line": 189,
       "lines": 77,
       "documented": false,
       "decision_complexity": 24
@@ -520,7 +520,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._record_event",
       "kind": "function",
-      "line": 117,
+      "line": 122,
       "lines": 42,
       "documented": false,
       "decision_complexity": 21
@@ -2023,7 +2023,7 @@
       "qualname": "CodingToolRuntime",
       "kind": "class",
       "line": 203,
-      "lines": 296,
+      "lines": 302,
       "documented": true
     },
     {

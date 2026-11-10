@@ -7,6 +7,8 @@ completion_guard），这类回复改为由宿主以用户消息补发提示、�
 - 回复为空，或是一个JSON对象、含上下文摘要标记：不是答复，补发提示；
 - 本Turn尚无成功的补丁（apply_patch_batch/apply_patch），且上一步不是对补发的回应：补发提示；
   补发后模型再次给出纯文本结论即照常完成，用其他方式改过文件的模型只多花一步；
+- 回复宣布还要继续（以“下一步”“让我”“我将”等开头，或以冒号结尾），且上一步不是对补发的回应：
+  说明漏了工具调用，补发提示；这与是否已有补丁无关；
 - 每个Turn最多补发两次；步骤或Token预算已用尽时不补发，照常完成。
 
 判定只读本Turn已持久化的事实与本步回复正文，重放确定；补发Item的身份由Turn与步骤派生。
@@ -46,6 +48,31 @@ NO_CHANGE_NOTICE = (
     "code change, continue with tool calls. If it is already complete, reply with your final "
     "summary again."
 )
+UNFINISHED_STEP_NOTICE = (
+    "[Harnessix host notice] Your last response announced a next step but had no tool call, so "
+    "nothing ran and it would end the task. Make the tool calls for that step now; if the task "
+    "is already complete and verified, reply with a short plain-text summary instead."
+)
+# 宣布下一步的开头（英文与中文，小写比较）；回复以冒号结尾同样表示后面应跟着动作。
+_CONTINUATION_OPENINGS = (
+    "next step",
+    "next,",
+    "next i",
+    "let me",
+    "let's",
+    "i'll",
+    "i will",
+    "i need to",
+    "now i",
+    "now let",
+    "下一步",
+    "接下来",
+    "让我",
+    "我将",
+    "我先",
+    "我需要",
+    "现在我",
+)
 
 
 def completion_notice_item_id(turn_id: UUID, step: int) -> UUID:
@@ -67,10 +94,20 @@ def completion_notice(turn: Turn, step: int, reply: str) -> str | None:
         return None
     if not_a_reply(reply):
         return NOT_A_REPLY_NOTICE
-    answering_notice = completion_notice_item_id(turn.turn_id, step - 1) in item_ids
-    if not answering_notice and not workspace_patched(turn.items):
+    if completion_notice_item_id(turn.turn_id, step - 1) in item_ids:
+        return None
+    if announces_next_step(reply):
+        return UNFINISHED_STEP_NOTICE
+    if not workspace_patched(turn.items):
         return NO_CHANGE_NOTICE
     return None
+
+
+def announces_next_step(text: str) -> bool:
+    """回复以宣布下一步的说法开头或以冒号结尾：后面本应跟着工具调用。"""
+    # 去掉行首Markdown标记（如“**Next step:**”）后再比较开头。
+    stripped = text.strip().lstrip("*#>-_` ").lower()
+    return stripped.startswith(_CONTINUATION_OPENINGS) or stripped.endswith((":", "："))
 
 
 def completion_notice_events(turn_id: UUID, step: int, notice: str | None) -> list[EventDraft]:

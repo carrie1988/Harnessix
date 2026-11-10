@@ -89,7 +89,7 @@
     },
     "harnessix.agent.runtime:AgentRuntime._sample_events": {
       "max_lines": 279,
-      "max_decision_complexity": 85
+      "max_decision_complexity": 86
     },
     "harnessix.agent.runtime:AgentRuntime._select_model_tools": {
       "max_lines": 47,
@@ -684,7 +684,7 @@
       "max_decision_complexity": 25
     },
     "harnessix.tools.runtime:CodingToolRuntime": {
-      "max_lines": 296,
+      "max_lines": 302,
       "max_decision_complexity": 0
     },
     "harnessix.tools.workspace:Workspace": {

@@ -1,0 +1,123 @@
+{
+  "run_name": "holdout-network-isolation-smoke",
+  "dataset": {
+    "name": "swebench-verified-holdout49-netiso-smoke",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 1,
+  "content_policy": "metadata",
+  "primary_outcome": "grader",
+  "notes": [
+    "User decision 2026-11-10 D1=A: the agent phase of both arms runs without internet. In the previous holdout the mini arm ran in Harbor's public network mode and copied upstream fixes from GitHub/PyPI; phase 1 ran mini with docker --network none.",
+    "Topology (integrations/harbor/compose/network-isolation.yaml): during agent.run the task container is attached only to the internal network 'sandbox' (no IPv4 on the host bridge, explicit non-loopback DNS so external names do not resolve). On it are only this trial's model gateway (alias host.docker.internal, forwards to the host relay on 172.17.0.1:18100) and the offline GitHub raw mirror (alias raw.githubusercontent.com). Agent install and the verifier keep the compose default network (package mirror); the adapters disconnect before agent.run and reconnect afterwards, recording integrations/harbor/network_isolation.py evidence in agent/network-isolation.json.",
+    "The host relay (6378c9e8, --docker-socket) now sees each trial's model-gateway container instead of the task container; the gateway lives exactly as long as the trial, so per-trial replica pinning is unchanged.",
+    "Smoke run of the mechanism on one task (django__django-15731): oracle, then one R trial and one Harnessix trial with the same agent configuration as r-mini-swe-agent.json and harnessix-guard-retry-part2.json plus network_isolation. Not a scored run."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/network-isolation.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-verified-holdout49",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py",
+    "HARNESSIX_MODEL_GATEWAY_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_MODEL_GATEWAY_CODE": "integrations/harbor/model_relay.py",
+    "HARNESSIX_TASK_DNS": "192.168.130.1"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.0.3-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "R",
+      "system": "mini-swe-agent",
+      "system_version": "2.4.6",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:MiniSweAgentOffline",
+        "model_name": "openai/qwen3.8-flash-next",
+        "env": {
+          "OPENAI_API_KEY": "local-replica-no-key"
+        },
+        "override_timeout_sec": 3900,
+        "kwargs": {
+          "version": "2.4.6",
+          "config_file": "benchmarks/harbor/mini-swe-agent/arm-r-swebench.yaml",
+          "with_packages": [
+            "litellm==1.108.0",
+            "mcp==2.3.0",
+            "openai==3.46.0",
+            "orjson",
+            "fastapi"
+          ],
+          "network_isolation": true
+        }
+      }
+    },
+    {
+      "arm_id": "harnessix",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/agent-6fc8ae67/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-6fc8ae67/product.json",
+        "/data/harnessix/harbor/agent-6fc8ae67/actions.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/agent-6fc8ae67/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/agent-6fc8ae67/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config_template": "/data/harnessix/harbor/agent-6fc8ae67/actions.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": false,
+          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task.j2",
+          "network_isolation": true
+        },
+        "override_timeout_sec": 3900
+      }
+    }
+  ]
+}

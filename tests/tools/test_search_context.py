@@ -137,6 +137,25 @@ def test_largest_escaped_context_record_can_fit_the_existing_first_record_limit(
     assert len(hits[0].model_dump_json().encode()) + 1 < search.MAX_SEARCH_RECORD_BYTES
 
 
+def test_a_line_that_fits_is_returned_whole_so_it_can_anchor_an_edit():
+    short = "        from pkg.core.function import is_negative_coefficient"
+    long = "x = " + "a" * (search.MAX_MATCH_BYTES + 40) + " is_negative_coefficient"
+    hits = list(
+        search.grep_line_matches(
+            "src.py",
+            "f" * 64,
+            short + "\n" + long,
+            GrepInput(query="is_negative_coefficient"),
+            ReadOperation(),
+            search._Scan(),
+        )
+    )
+    assert (hits[0].text, hits[0].text_truncated) == (short, False)
+    # 超长行仍从匹配点前截取并标记截断。
+    assert hits[1].text.startswith("a") and hits[1].text.endswith("is_negative_coefficient")
+    assert hits[1].text_truncated
+
+
 @pytest.mark.parametrize("stop", ["cancel", "timeout"])
 def test_window_iteration_observes_cancellation_and_deadline(stop):
     operation = ReadOperation()

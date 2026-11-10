@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -16,7 +17,7 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
-from harnessix.protocol.contracts import PublicBudget
+from harnessix.protocol.contracts import ProtocolLimits, PublicBudget
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
@@ -246,6 +247,59 @@ async def test_read_retry_backs_off_exponentially_up_to_the_cap(monkeypatch) -> 
     assert await retry(read) == "page"
     assert delays == [1, 2, 4, 8, 8, 8]
     assert retry.absorbed == 6
+
+
+async def test_oversized_event_pages_are_reread_in_smaller_pages(tmp_path: Path) -> None:
+    # 事件页超过协商的消息上限时服务端拒绝整页；运行中读取和终态重放都不能因此丢掉试次或证据。
+    reply = "R" * 1500
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, ScriptedProvider([answer(reply)])) as runtime:
+        service = AgentApplicationService(runtime, store, SQLiteProtocolRequestStore(store.path))
+        server = AgentProtocolServer(service, limits=ProtocolLimits(max_message_bytes=4096))
+        events: list = []
+        async with AgentClient(InProcessAgentTransport(server)) as client:
+            receipt = await drive_protocol_trial(
+                client,
+                workspace=str(tmp_path),
+                instruction="task",
+                budget=budget(),
+                trial_id=uuid4(),
+                events=events,
+            )
+    assert receipt["reason"] == "completed"
+    assert receipt["protocol_evidence_complete"] is True
+    assert receipt["final_assistant_sha256"] == hashlib.sha256(reply.encode()).hexdigest()
+    assert events
+
+
+async def test_event_pages_shrink_only_for_oversized_pages_and_stay_small() -> None:
+    requested: list[int] = []
+
+    async def fetch(*, limit: int) -> str:
+        requested.append(limit)
+        if limit > 16:
+            code = "response_too_large" if limit > 32 else "public_output_limit"
+            raise AgentSDKError(code, "事件页超限")
+        return "page"
+
+    pages = protocol_runner.EventPages(64)
+    assert await pages.read(fetch) == "page"
+    assert await pages.read(fetch) == "page"
+    assert requested == [64, 32, 16, 16]
+
+    def failing(code: str):
+        async def fetch(*, limit: int) -> str:
+            requested.append(limit)
+            raise AgentSDKError(code, "读取失败")
+
+        return fetch
+
+    # 其他错误不重读；页长已是1仍超限说明单个事件放不下，原样报错。
+    for code, start in (("replay_stalled", 64), ("public_output_limit", 1)):
+        requested.clear()
+        with pytest.raises(AgentSDKError):
+            await protocol_runner.EventPages(start).read(failing(code))
+        assert requested == [start]
 
 
 def test_default_read_window_outlasts_one_command() -> None:

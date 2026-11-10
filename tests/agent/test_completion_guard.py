@@ -10,6 +10,8 @@ from harnessix.agent.completion_guard import (
     MAX_COMPLETION_NOTICES,
     NO_CHANGE_NOTICE,
     NOT_A_REPLY_NOTICE,
+    UNFINISHED_STEP_NOTICE,
+    announces_next_step,
     completion_notice,
     completion_notice_item_id,
     not_a_reply,
@@ -128,6 +130,38 @@ def test_unfinished_replies_get_a_notice_and_finished_ones_complete() -> None:
     patched = turn(*patch_items())
     assert completion_notice(patched, 1, "Fixed and verified.") is None
     assert completion_notice(patched, 1, SUMMARY_COPY) == NOT_A_REPLY_NOTICE
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Next step: enlarge the basis and rerun the search.", True),
+        ("**Next step:** run the tests", True),
+        ("Let me run the full test file to confirm.", True),
+        ("I'll check the other call sites", True),
+        ("接下来运行相关测试文件确认。", True),
+        ("Now I will verify the change by running:", True),
+        ("Fixed the parser to keep the root key; tests pass.", False),
+        ("The fix is complete and the reproduction now prints the expected value.", False),
+        ("已修复，相关测试通过。", False),
+    ],
+)
+def test_announces_next_step(text: str, expected: bool) -> None:
+    assert announces_next_step(text) is expected
+
+
+def test_an_announced_step_without_a_call_gets_a_notice_even_after_a_patch() -> None:
+    patched = turn(*patch_items())
+    assert completion_notice(patched, 1, "Next step: rerun the tests.") == UNFINISHED_STEP_NOTICE
+    assert completion_notice(turn(), 1, "Let me look at the caller.") == UNFINISHED_STEP_NOTICE
+    draft = turn(*patch_items(), model_steps=2)
+    notice = item(
+        TextContent(kind="user_message", text=UNFINISHED_STEP_NOTICE),
+        completion_notice_item_id(draft.turn_id, 1),
+    )
+    answered = draft.model_copy(update={"items": (*draft.items, notice)})
+    # 回应补发后的同类回复照常完成，不循环。
+    assert completion_notice(answered, 2, "Next step: none, the task is done.") is None
 
 
 def test_a_plain_answer_to_a_notice_is_accepted() -> None:

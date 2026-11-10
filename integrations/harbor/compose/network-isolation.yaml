@@ -1,0 +1,44 @@
+# 断网试次（integrations/harbor/network_isolation.py）：智能体运行期间任务容器只连内部网络sandbox。
+# sandbox为internal且宿主机网桥不分配IPv4地址：没有出口路由，公网与宿主机端口都不可达；网上只有
+# 同试次的模型转发边车（别名host.docker.internal）与GitHub原始文件离线镜像（别名
+# raw.githubusercontent.com，服务定义见raw-github-mirror.yaml，须同时使用）。
+# 安装与判分阶段任务容器仍连Compose默认网络（需要包镜像）；智能体适配器在运行前断开、结束后恢复。
+# 任务容器显式指定非回环上游DNS：宿主机用回环解析器（systemd-resolved）时Docker内置DNS从宿主机
+# 网络命名空间转发外部查询，断网后外网域名仍可解析；指定后从容器命名空间转发，没有路由即失败，
+# 同试次的别名仍由内置DNS直接应答。
+# 模型转发边车在默认网络上经host-gateway访问宿主机模型转发，宿主机转发按该边车容器识别试次。
+# 不可与host-gateway.yaml同用：其/etc/hosts条目会让任务容器绕过边车直连宿主机。
+networks:
+  sandbox:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.inhibit_ipv4: "true"
+services:
+  main:
+    dns:
+      - ${HARNESSIX_TASK_DNS:?required}
+    networks:
+      default: {}
+      sandbox: {}
+  model-gateway:
+    image: ${HARNESSIX_MODEL_GATEWAY_IMAGE:?required}
+    command:
+      - python3
+      - /gateway/model_relay.py
+      - --container
+      - --relay
+      - 0.0.0.0:18100=host.docker.internal:18100
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${HARNESSIX_MODEL_GATEWAY_CODE:?required}:/gateway/model_relay.py:ro
+    networks:
+      default: {}
+      sandbox:
+        aliases:
+          - host.docker.internal
+  raw-github-mirror:
+    networks:
+      sandbox:
+        aliases:
+          - raw.githubusercontent.com

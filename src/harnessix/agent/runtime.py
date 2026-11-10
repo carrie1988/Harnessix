@@ -24,7 +24,7 @@ from harnessix.agent.approvals import (
     request_fingerprint,
     tool_fingerprint,
 )
-from harnessix.agent.argument_normalization import normalize_stringified_containers
+from harnessix.agent.argument_normalization import normalize_proposal
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.compaction_reducer import compaction_source
@@ -3178,6 +3178,9 @@ class AgentRuntime:
             else self._definitions
         )
         reroute = request.forced_tool is None
+        if self._normalize_stringified_arguments:
+            # 先还原字符串化容器，结构修复与前置条件补全才看得到真实的数组与对象。
+            proposals = [normalize_proposal(p, offered) for p in proposals]
         proposals = [repair_proposal(p, offered, reroute=reroute) for p in proposals]
         if isinstance(self._scoped_tools, CodingToolRuntime):
             read = self._scoped_tools.read_workspace_file
@@ -3246,13 +3249,7 @@ class AgentRuntime:
                     tool=proposal.tool,
                     tool_version=definition.version,
                     effect_class=definition.effect_class,
-                    arguments=(
-                        normalize_stringified_containers(
-                            proposal.arguments, definition.input_schema
-                        )
-                        if self._normalize_stringified_arguments
-                        else proposal.arguments
-                    ),
+                    arguments=proposal.arguments,
                     requires_approval=definition.requires_approval,
                     tool_fingerprint=tool_fingerprint(definition),
                 )
