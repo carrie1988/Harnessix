@@ -40,7 +40,7 @@ supersedes: []
 
 **2026-11-10首发范围：macOS、Linux、Windows（用户决定）。** Beta先在macOS和Linux开放，Windows须在1.0前完成同等验收。2026-10-09“仅macOS”的范围已撤销；以下三平台实测仍是历史证据，不代表当前候选已经通过。各平台仍按实际OS、CPU架构和固定候选独立验收。
 
-本文描述当前预览版`0.10.0b1`、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。仓库尚未发布正式PyPI包、平台安装器、自动更新器或签名制品，因此本文不把
+本文描述当前预览版`0.10.0b1`、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。预览版经[发布流程](release.md)发布到PyPI（`uv tool install harnessix`），附PyPI可信发布的来源证明；仍没有平台安装器、自动更新器或代码签名，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
 后继Windows本地NTFS审批写入端口及专项已实现，见[验证报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
 这不是消费者目标OS、脱离源码安装、升级及独立Beta完成的证明。
@@ -120,7 +120,7 @@ uv run harnessix code /srv/project --config /srv/harnessix-private/config.json
 ```
 
 基础Wheel不会隐式安装Textual。缺少Extra时`harnessix code`输出稳定`tui_dependency_missing` JSON并退出2，不会
-运行时联网下载。上述命令是源码工作流，不从尚未发布的PyPI项目安装；独立候选安装必须使用第5节的实际Wheel及原锁哈希。
+运行时联网下载。上述命令是源码工作流，不从PyPI安装；独立候选安装必须使用第5节的实际Wheel及原锁哈希。
 
 ### 4.3 安装后验收
 
@@ -188,8 +188,7 @@ uv pip install --python ./venv/Scripts/python.exe --require-hashes --no-deps --o
 ### 5.1 Wheel边界
 
 - 当前包版本为`0.10.0b1`（预览版，2026-11-10由内部候选号`1.0.0rc1`改名），不等于路线图1.0商用已完成；
-- 没有Release签名、来源证明、SBOM或可复现构建声明；
-- 没有PyPI发布证据；
+- PyPI上的Wheel由发布流程构建，附PyPI可信发布生成的来源证明（PEP 740）；没有代码签名或可复现构建声明；
 - Wheel不携带外部`git`、搜索工具、容器后端或Provider凭据；
 - Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；原生读取、NTFS审批写入及业务恢复专项也不能替代Windows 11完整编码验收。
 
