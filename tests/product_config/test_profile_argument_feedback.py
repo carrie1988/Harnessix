@@ -24,7 +24,7 @@ from tests.trusted_actions.test_router import context, invocation
 
 
 @pytest.mark.parametrize("policy", ["none", "bounded_test_selector"])
-def test_profile_descriptor_explains_required_fixed_profile(tmp_path: Path, policy: str) -> None:
+def test_profile_descriptor_explains_optional_fixed_profile(tmp_path: Path, policy: str) -> None:
     profile = build_product_process_profile(
         **_profile(tmp_path / "engine").model_dump(
             exclude={"spec_version", "profile_sha256", "selector_policy"}
@@ -32,15 +32,15 @@ def test_profile_descriptor_explains_required_fixed_profile(tmp_path: Path, poli
         selector_policy=policy,
     )
     tool = process_profile_descriptor(profile)
-    assert '"profile": "unit-tests"' in tool.description
-    assert "工具名不能替代" in tool.description
+    assert '"unit-tests"' in tool.description
+    assert "工具名已确定" in tool.description
     assert "可省略" in tool.description
     schema = tool.input_schema
-    assert schema["required"] == ["profile"]
+    assert schema["required"] == []
     assert schema["additionalProperties"] is False
     assert schema["properties"]["selectors"]["maxItems"] == (0 if policy == "none" else 32)
     assert schema["properties"]["profile"]["const"] == "unit-tests"
-    assert "必填" in schema["properties"]["profile"]["description"]
+    assert "可省略" in schema["properties"]["profile"]["description"]
     # 元数据变更必须进入原Fingerprint，不能用旧批准授权新合同。
     old_schema = dict(schema)
     old_schema["properties"] = {
@@ -60,8 +60,6 @@ def test_profile_descriptor_explains_required_fixed_profile(tmp_path: Path, poli
 @pytest.mark.parametrize(
     "arguments",
     [
-        {},
-        {"selectors": []},
         {"profile": None},
         {"profile": "other"},
         {"profile": "unit-tests", "program": "PRIVATE_PROGRAM"},
@@ -72,6 +70,14 @@ def test_profile_descriptor_explains_required_fixed_profile(tmp_path: Path, poli
 def test_profile_feedback_does_not_relax_decoder(arguments: dict) -> None:
     with pytest.raises(ValueError):
         decode_run_profile("unit-tests", "bounded_test_selector", arguments)
+
+
+def test_profile_may_be_omitted_because_the_tool_name_binds_it() -> None:
+    assert decode_run_profile("unit-tests", "bounded_test_selector", {}).profile is None
+    checked = decode_run_profile("unit-tests", "none", {"selectors": []})
+    assert checked.profile is None and checked.selectors == ()
+    explicit = decode_run_profile("unit-tests", "none", {"profile": "unit-tests"})
+    assert explicit.profile == "unit-tests"
 
 
 def test_none_selector_policy_still_rejects_selection() -> None:

@@ -92,7 +92,13 @@ async def test_sdk_eight_invalid_calls_then_correct_profile_require_new_approval
     )
     # 先停在安全文本响应，核验八次拒绝没有Route或进程，再发独立修正调用。
     provider = ScriptedProvider(
-        [step(i, {"selectors": []} if i == 0 else {}) for i in range(8)] + [answer("参数无效")]
+        [
+            step(
+                i, {"command": "make test", "selectors": []} if i == 0 else {"command": "make test"}
+            )
+            for i in range(8)
+        ]
+        + [answer("参数无效")]
     )
     try:
         with protected() as protection:
@@ -143,20 +149,22 @@ async def test_sdk_eight_invalid_calls_then_correct_profile_require_new_approval
                         assert len(failures) == 8
                         assert all(
                             f.error.code == "tool_invalid_arguments"
-                            and "缺少必填字段：profile" in f.error.message
+                            and "允许字段：profile, selectors" in f.error.message
+                            and "禁止额外字段" in f.error.message
                             for f in failures
                         )
                         assert len(provider.requests) == 9 and process.run_calls == 0
                         for request in provider.requests[1:]:
                             assert any(
                                 isinstance(item.content, ToolResultContent)
-                                and "缺少必填字段：profile" in item.content.error.message
+                                and "允许字段：profile, selectors" in item.content.error.message
                                 for item in request.history
                                 if isinstance(item.content, ToolResultContent)
                                 and item.content.error
                             )
                         _assert_preflight_stores(tmp_path)
-                        provider.steps = (step(8, {"profile": "unit-tests"}), answer("检查完成"))
+                        # 修正调用省略profile：工具名已确定Profile（v2合同）。
+                        provider.steps = (step(8, {}), answer("检查完成"))
                         await client.start_turn(
                             thread.thread_id, "修正参数后执行", request_id="corrected"
                         )

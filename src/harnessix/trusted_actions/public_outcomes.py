@@ -456,8 +456,10 @@ def _process_summary(
         else PublicProcessOutputSummary
     )
     summary = model.model_validate(output)
+    # Process的Profile由工具名与执行器绑定确定，参数可省略、传入须一致；Eval仍要求参数显式给出。
+    supplied = plan.invocation.arguments.get("profile")
     if (
-        summary.profile != plan.invocation.arguments.get("profile")
+        (supplied != summary.profile and not (family == "process" and supplied is None))
         or summary.process_id != str(plan.execution.plan_id)
         or (
             family == "process"

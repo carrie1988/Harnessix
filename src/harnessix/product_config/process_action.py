@@ -52,6 +52,7 @@ from harnessix.workspace.contracts import ResourceAccess, WorkspaceResourceReque
 from .action_contracts import ProductProcessProfile, SelectorPolicy
 from .process_command import (
     PRODUCT_COMMAND_VERSION,
+    OptionalProfileId,
     RunCommandInput,
     decode_run_command,
     run_command_schema,
@@ -63,7 +64,7 @@ from .process_profile import (
 )
 from .task_dependencies import TaskDependencyEnvironments
 
-PRODUCT_PROCESS_VERSION = "harnessix.product-process/v1"
+PRODUCT_PROCESS_VERSION = "harnessix.product-process/v2"
 _ACTION_OUTPUT_NAMESPACE = UUID("ee9ec0c4-2584-41d2-a82d-7679d687b20c")
 _SHELL_OPERATOR = re.compile(r"[;&|`$<>\r\n\x00]")
 _WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
@@ -71,11 +72,11 @@ WorkspaceRootResolver = Callable[[str], Path]
 
 
 class RunProfileInput(ContractModel):
-    """模型只能选择固定Profile和有界测试选择器，不能提供程序或环境。"""
+    """模型只能提供有界测试选择器，不能提供程序或环境；Profile由工具名绑定，传入时必须等于固定值。"""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    profile: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
+    profile: OptionalProfileId = None
     selectors: tuple[str, ...] = Field(default=(), max_length=32)
 
     @field_validator("selectors")
@@ -111,16 +112,14 @@ def run_profile_schema(
     profile_id: str,
     selector_policy: Literal["none", "bounded_test_selector"] = "bounded_test_selector",
 ) -> dict[str, JsonValue]:
-    """广告固定必填Profile及实际选择器策略；不自动补全模型参数。"""
+    """广告可省略的固定Profile及实际选择器策略；不自动补全模型参数。"""
     return {
         "type": "object",
         "properties": {
             "profile": {
                 "type": "string",
                 "const": profile_id,
-                "description": (
-                    f'必填字段，必须显式传入固定值"{profile_id}"；工具名不能替代该字段。'
-                ),
+                "description": f'可省略：工具名已确定Profile；传入时必须等于固定值"{profile_id}"。',
             },
             "selectors": {
                 "type": "array",
@@ -134,7 +133,7 @@ def run_profile_schema(
                 ),
             },
         },
-        "required": ["profile"],
+        "required": [],
         "additionalProperties": False,
     }
 
@@ -152,7 +151,9 @@ def decode_run_profile(
         )
     except (ValidationError, ValueError, TypeError):
         raise ValueError("Process Profile参数无效") from None
-    if checked.profile != profile_id or (selector_policy == "none" and checked.selectors):
+    if checked.profile not in (None, profile_id) or (
+        selector_policy == "none" and checked.selectors
+    ):
         raise ValueError("Process Profile或选择器策略不匹配")
     return checked
 
@@ -164,8 +165,8 @@ def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor
             version=f"{PRODUCT_COMMAND_VERSION}:{profile.profile_sha256[:24]}",
             description=(
                 f"在固定无网络只读容器中执行Shell命令“{profile.description}”（{profile.profile_id} "
-                f'{profile.version}）；必填"profile": "{profile.profile_id}"和"cmd"，'
-                "工具名不能替代字段。cmd必须非空白，允许管道、重定向和多行，"
+                f'{profile.version}）；必填"cmd"，"profile"可省略（工具名已确定，'
+                f'传入时须为"{profile.profile_id}"）。cmd必须非空白，允许管道、重定向和多行，'
                 "不含NUL且最多16384 UTF-8字节。"
                 "宿主冻结Shell、镜像、工作目录、资源、环境和Secret。"
                 + (
@@ -204,8 +205,8 @@ def process_profile_descriptor(profile: ProductProcessProfile) -> ToolDescriptor
         version=f"{PRODUCT_PROCESS_VERSION}:{profile.profile_sha256[:24]}",
         description=(
             f"在固定无网络只读容器中运行“{profile.description}”（{profile.profile_id} "
-            f'{profile.version}）；必填"profile": "{profile.profile_id}"，工具名不能替代；'
-            "selectors可省略或为空数组。"
+            f'{profile.version}）；"profile"可省略（工具名已确定，传入时须为'
+            f'"{profile.profile_id}"）；selectors可省略或为空数组。'
             + (
                 "此Profile不接受非空选择器。"
                 if profile.selector_policy == "none"

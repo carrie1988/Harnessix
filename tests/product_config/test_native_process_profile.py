@@ -167,13 +167,14 @@ def test_descriptor_uses_command_namespace_and_states_boundary_honestly() -> Non
     descriptor = native_process_descriptor(profile)
     binding = native_process_binding(profile)
     assert descriptor.name == "exec_command.task-shell"
-    assert descriptor.version == f"harnessix.native-command/v1:{profile.profile_sha256[:24]}"
+    assert descriptor.version == f"harnessix.native-command/v2:{profile.profile_sha256[:24]}"
     assert binding.executor_id == "product.command-profile.task-shell"
     assert descriptor.requires_approval and descriptor.requires_idempotency
     assert descriptor.supports_reconciliation and not descriptor.supports_parallel_calls
     assert "改动会保留" in descriptor.description
     assert "Harnessix不另加沙箱" in descriptor.description
-    assert set(descriptor.input_schema["required"]) == {"profile", "cmd"}
+    assert set(descriptor.input_schema["required"]) == {"cmd"}
+    assert "可省略" in descriptor.input_schema["properties"]["profile"]["description"]
 
 
 @pytest.mark.skipif(os.name != "posix", reason="外部边界只支持POSIX Process Owner")
