@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 606,
-    "physical_lines": 128243,
-    "logical_lines": 112279,
+    "physical_lines": 128265,
+    "logical_lines": 112295,
     "documented_modules": 606,
     "classes": 1200,
     "documented_classes": 614,
-    "functions": 5014,
-    "documented_functions": 1633,
+    "functions": 5015,
+    "documented_functions": 1634,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/harnessix/delivery/trusted_action.py",
-      "lines": 614
+      "lines": 622
     },
     {
       "path": "src/harnessix/evals/delivery.py",

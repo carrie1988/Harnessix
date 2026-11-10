@@ -15,7 +15,7 @@
     "src/harnessix/context/sources.py": 839,
     "src/harnessix/delivery/git.py": 902,
     "src/harnessix/delivery/git_push.py": 609,
-    "src/harnessix/delivery/trusted_action.py": 614,
+    "src/harnessix/delivery/trusted_action.py": 622,
     "src/harnessix/evals/delivery.py": 937,
     "src/harnessix/evals/runner.py": 669,
     "src/harnessix/evals/task_pack_trial.py": 631,

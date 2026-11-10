@@ -16,6 +16,11 @@ from harnessix.tools.workspace import ReadOperation
 from harnessix.trusted_actions.contracts import ActionRoutePlan
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
 
+# 审批预览与逆向规划要观察全部目标及其父目录并写入内容Blob，耗时随补丁规模和磁盘负载增长；
+# 不能沿用模型读工具的5秒上限，否则繁忙机器上的大补丁会在任何写入前被误判失败。
+# 用户取消仍经checkpoint即时生效。
+ACTION_PLANNING_READ_TIMEOUT_SECONDS = 30
+
 
 def prepare_action_workspace_transaction(
     route: ActionRoutePlan,
@@ -26,7 +31,7 @@ def prepare_action_workspace_transaction(
     checkpoint: Callable[[], None] | None = None,
 ) -> PreparedWorkspaceTransaction:
     """两个产品动作复用相同CAS、来源及请求身份；调用方仍须核对完整Route。"""
-    operation = ReadOperation()
+    operation = ReadOperation(timeout_seconds=ACTION_PLANNING_READ_TIMEOUT_SECONDS)
 
     def check() -> None:
         if checkpoint is not None:

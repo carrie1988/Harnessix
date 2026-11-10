@@ -1814,6 +1814,17 @@ SHA-256：精确锚定已证明模型看到的是要改的当前内容，规划�
 
 Review Provider先物化事务，再调用既有Diff构造并发布确定性`action_review` Artifact。批准后Executor持有Workspace Lease并循环调用[`publish_next`](../../src/harnessix/delivery/filesystem.py)；一次调用最多提交一个成员，内部保留目录FD/no-follow、exclusive temp、文件与父目录fsync、replace/unlink、after复核和游标CAS。
 
+**Review规划读取期限（2026-11-10，0.10.0b6）。** Review物化事务要观察全部目标及其父目录并写入内容Blob，
+原来沿用模型读工具的5秒上限（`READ_TIMEOUT_SECONDS`）。b5的macOS CI在xdist并行负载下，16个文件×24层父目录的
+补丁超过5秒，Review失败；事务未保存、也没有写入，但整轮被收尾为`uncertain_effect`。本机单跑耗时0.7秒，
+10进程并发时10次全部复现。现在
+[`action_transaction_planning`](../../src/harnessix/delivery/action_transaction_planning.py)
+与`_desired_files`使用`ACTION_PLANNING_READ_TIMEOUT_SECONDS=30`，用户取消仍经checkpoint即时生效；逆向规划共用同一入口。
+若仍超时，`WorkspacePatchTransactionPlanner.prepare`在保存事务前把读取超时转成
+`workspace_patch_preparation_timeout`准备错误，按原确定性拒绝路径关闭Route，并返回“本次Patch未执行，工作区没有变化”的
+失败结果，交模型重试或拆小。执行期的Snapshot复核仍是原5秒，因为它属于可信动作执行语义，本次未改。回归测试见
+[`test_patch_review_budget.py`](../../tests/product_config/test_patch_review_budget.py)。
+
 取消只在成员之间检查。Router进入`unknown`后，Reconciler只比较before/after镜像：全after证明published，全before且游标为0证明未应用，严格after前缀与before后缀标记interrupted并映射人工处理，第三状态或无法观察保持diverged/unknown。恢复不调用`publish_next`，因此不会自动补写剩余成员。
 
 **成功结果v2（2026-11-09）。** holdout part 1步数分析中，成功结果只有五字段，模型对同一文件的下一次Patch

@@ -12,7 +12,10 @@ from pydantic import BaseModel, JsonValue
 
 from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
-from harnessix.delivery.action_transaction_planning import prepare_action_workspace_transaction
+from harnessix.delivery.action_transaction_planning import (
+    ACTION_PLANNING_READ_TIMEOUT_SECONDS,
+    prepare_action_workspace_transaction,
+)
 from harnessix.delivery.contracts import (
     MAX_TRANSACTION_FILE_BYTES,
     PROTECTED_COMPONENTS,
@@ -38,6 +41,7 @@ from harnessix.delivery.workspace_patch_compact import (
 from harnessix.delivery.workspace_patch_errors import (
     _sha_mismatch_error,
     workspace_patch_preparation_error,
+    workspace_patch_preparation_timeout_error,
 )
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.execution.contracts import canonical_digest
@@ -278,6 +282,10 @@ class WorkspacePatchTransactionPlanner:
             raise workspace_patch_preparation_error(
                 error.code, f"{error.message}；本次Patch未执行，工作区没有变化"
             ) from None
+        except ReadToolError as error:
+            if error.code != "timeout":
+                raise
+            raise workspace_patch_preparation_timeout_error() from None
         _validate_transaction(route, checked, prepared.plan, prepared.blobs.__getitem__)
         saved = self._transactions.save(prepared)
         _validate_transaction(route, checked, saved.plan, self._transactions.blob)
@@ -362,7 +370,7 @@ def _desired_files(
     checkpoint: Callable[[], None] | None = None,
 ) -> dict[str, DesiredWorkspaceFile]:
     desired: dict[str, DesiredWorkspaceFile] = {}
-    operation = ReadOperation()
+    operation = ReadOperation(timeout_seconds=ACTION_PLANNING_READ_TIMEOUT_SECONDS)
 
     def check() -> None:
         operation.checkpoint()

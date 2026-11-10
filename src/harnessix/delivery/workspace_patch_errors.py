@@ -74,6 +74,15 @@ def workspace_patch_preparation_error(code: str, message: str) -> WorkspacePatch
     return error
 
 
+def workspace_patch_preparation_timeout_error() -> WorkspacePatchPreparationError:
+    """规划只读了工作区、尚未保存事务，超时可如实报告未执行，交模型重试或拆小。"""
+    return workspace_patch_preparation_error(
+        "workspace_patch_preparation_timeout",
+        "审批预览准备超时（工作区较大或磁盘繁忙）；本次Patch未执行，工作区没有变化，"
+        "可重试或拆成更小的修改",
+    )
+
+
 def is_workspace_patch_preparation_error(error: object) -> bool:
     return (
         type(error) is WorkspacePatchPreparationError
