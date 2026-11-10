@@ -20,6 +20,8 @@ supersedes: []
 
 Harnessix Code 目前是预览版，不是正式商用版本，不提供任何担保。感谢你帮忙试用。
 
+本页是最简步骤。完整的安装、配置、功能和排障说明见[用户手册](user-manual.md)。
+
 ## 1. 适用范围
 
 需要 macOS 或 Linux、Python 3.12 以上，以及 [uv](https://docs.astral.sh/uv/)。请在你有权发送给模型服务商的仓库里使用，并确保改动可以通过 Git 回退。

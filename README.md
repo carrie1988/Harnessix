@@ -24,7 +24,8 @@ harnessix code doctor /path/to/repo --probe-model
 harnessix code /path/to/repo
 ```
 
-- 使用百炼等其他服务，或完整的上手说明，见 [Beta 快速上手](docs/operations/beta-quickstart.md)。
+- 安装、配置、使用和全部功能的完整说明，见[用户手册](docs/operations/user-manual.md)。
+- 使用百炼等其他服务，或简要的上手说明，见 [Beta 快速上手](docs/operations/beta-quickstart.md)。
 - 使用自己部署的模型（vLLM、Ollama，同机或局域网），见[接入自托管模型](docs/operations/self-hosted-models.md)。
 - 无人值守运行：`harnessix exec --trust-workspace --prompt "..." --approval-mode auto-edit`。
 
@@ -43,7 +44,7 @@ harnessix code /path/to/repo
 | 模型 | OpenAI 兼容接口与 Anthropic 接口；已预设 DeepSeek 和百炼，支持自托管模型 |
 | 集成 | 终端界面、无头模式（JSON 输出）、stdio App Server、Python SDK |
 
-**还没有：** MCP、Hooks 的产品入口，IDE 插件，Web 搜索，子代理，图片输入，自动更新。
+**还没有：** Hooks，IDE 插件，Web 搜索，子代理，图片输入，自动更新。
 
 ## 安全边界
 
@@ -69,6 +70,7 @@ harnessix code /path/to/repo
 
 ## 文档
 
+- [用户手册](docs/operations/user-manual.md)：安装、配置、使用步骤和全部功能
 - [Beta 快速上手](docs/operations/beta-quickstart.md)：安装、配置、反馈
 - [配置参考](docs/operations/configuration.md)、[诊断](docs/operations/diagnostics.md)、[状态备份与恢复](docs/operations/recovery.md)
 - [架构](docs/architecture.md)、[设计文档索引](docs/README.md)、[路线图](docs/roadmap.md)
