@@ -24,7 +24,15 @@ from integrations.harbor.task_environment import API_KEY_VARIABLE, MODEL, enviro
 COMMAND_TIMEOUT_SECONDS = 900
 # 宿主模型服务的上下文窗口（vLLM --max-model-len）；未列出的模型沿用产品固定上限。
 CONTEXT_WINDOW_TOKENS = {MODEL: 262_144}
-EVAL_ALLOWED_OVERRIDES = frozenset({"completion_guard"})
+# 每项都是已知且有文档记录的评测与产品差异（docs/modules/product-config.md第10节）：
+# - completion_guard：无人值守任务没有人接话，纯文本提前收工改为补发继续提示；
+# - compaction：评测有累计Token预算（100步约600万），声明窗口三分之一处压缩、压到六分之一；
+#   产品默认在一半处压缩、压到四分之一，压缩有损且每次要等摘要。
+EVAL_ALLOWED_OVERRIDES = frozenset({"completion_guard", "compaction"})
+EVAL_OVERRIDES: dict[str, object] = {
+    "completion_guard": True,
+    "compaction": "third_window",
+}
 
 
 def apply_eval_overrides(
@@ -54,8 +62,8 @@ def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off"
         thinking=thinking,
         context_window_tokens=CONTEXT_WINDOW_TOKENS.get(model),
     )
-    # 协议运行器不经过`harnessix exec`，无人值守的完成守卫要在配置里开启。
-    config = apply_eval_overrides(build_product_config(draft), {"completion_guard": True})
+    # 协议运行器不经过`harnessix exec`，无人值守的完成守卫要在配置里开启；压缩点保持评测预算口径。
+    config = apply_eval_overrides(build_product_config(draft), EVAL_OVERRIDES)
     return config.model_dump_json(indent=2)
 
 

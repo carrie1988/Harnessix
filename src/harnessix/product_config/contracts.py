@@ -32,6 +32,7 @@ ThinkingMode = Literal["tool_steps", "every_step", "off"]
 # 推理计入输出上限：SWE-bench v40实测单步推理可达1.35万Token，低于该值时推理易用满输出而截断。
 THINKING_MIN_OUTPUT_TOKENS = 16_384
 CONTEXT_OVERHEAD_TOKENS: Final = 1536  # 请求封装在上下文窗口中的固定预留
+ContextCompaction = Literal["half_window", "third_window"]  # 声明窗口时的压缩点，见context_budget
 ConfigAuditOperation = Literal["loaded", "activated", "migrated"]
 DiagnosticStatus = Literal["passed", "failed"]
 DiagnosticScope = Literal["config", "profile", "provider", "secret", "dependency"]
@@ -210,6 +211,7 @@ class ProductConfigV2(ProductConfigContract):
     completion_guard: bool = Field(
         default=False, strict=True, exclude_if=lambda value: value is False
     )
+    compaction: ContextCompaction = Field(default="half_window", exclude_if="half_window".__eq__)
 
     @model_validator(mode="after")
     def valid_graph(self) -> Self:

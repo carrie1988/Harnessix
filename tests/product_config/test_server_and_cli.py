@@ -40,6 +40,7 @@ from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStor
 from harnessix.product_config.agent_context import (
     _PLANNING_INSTRUCTIONS,
     _REGEX_CODING_INSTRUCTIONS_VERSION,
+    ProductAgentContext,
     _coding_instructions,
 )
 from harnessix.product_config.cli import config_main
@@ -1006,3 +1007,74 @@ def test_profile_chain_shares_the_smallest_declared_context_window() -> None:
     assert _chain_context_window([profile("a", 262_144), profile("b", 131_072)]) == 131_072
     # 任一Fallback未声明窗口时，整条链沿用固定上限，不按较大窗口放宽。
     assert _chain_context_window([profile("a", 262_144), profile("b", None)]) is None
+
+
+async def _served_context_options(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    action_config: Path | None = None,
+) -> tuple[dict[str, object], ProductAgentContext]:
+    """启动产品Server并截获Context装配参数与结果；协议循环不运行。"""
+    from harnessix.product_config import server
+
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    path = write_config(tmp_path / "config.json", config)
+    captured: dict[str, object] = {}
+    built: list[ProductAgentContext] = []
+    real_build = server.build_product_agent_context
+
+    def build(*args, **kwargs) -> ProductAgentContext:
+        captured.update(kwargs)
+        built.append(real_build(*args, **kwargs))
+        return built[-1]
+
+    async def idle(*_args: object) -> None:
+        return None
+
+    monkeypatch.setattr(server, "build_product_agent_context", build)
+    monkeypatch.setattr(server, "run_stdio", idle)
+    await run_product_stdio(
+        config_path=path,
+        action_config_path=action_config,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=tmp_path / "state",
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+    (context,) = built
+    return captured, context
+
+
+@pytest.mark.parametrize(
+    ("configured", "trigger", "target"),
+    [(None, 393_216, 196_608), ("third_window", 262_144, 131_072)],
+)
+async def test_product_server_compacts_declared_windows_at_the_configured_point(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    configured: str | None,
+    trigger: int,
+    target: int,
+) -> None:
+    """产品默认在声明窗口一半处压缩、压到四分之一；配置third_window时在三分之一处、压到六分之一。"""
+    windowed = config.model_copy(
+        update={
+            "profiles": tuple(
+                profile.model_copy(update={"context_window_tokens": 262_144})
+                for profile in config.profiles
+            ),
+            **({"compaction": configured} if configured is not None else {}),
+        }
+    )
+    options, context = await _served_context_options(
+        tmp_path, ProductConfigV2.model_validate_json(windowed.model_dump_json()), monkeypatch
+    )
+    assert options["context_compaction"] == (configured or "half_window")
+    assert context.compaction.trigger_history_tokens == trigger
+    assert context.compaction.policy.target_history_tokens == target

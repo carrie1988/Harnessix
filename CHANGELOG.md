@@ -13,6 +13,7 @@
 - 支持 Skills：把任务说明放进 `~/.harnessix/skills` 或仓库的 `.harnessix/skills`，Agent 按需读取；`harnessix skills list` 查看结果
 - `harnessix data`：列出、导出、删除本机数据，生成不含代码的诊断文件
 - 自动探测 git，自动填写 DeepSeek、百炼模型的上下文窗口
+- 配置项 `compaction`：声明了上下文窗口时，默认在窗口一半处压缩历史；`third_window` 改为三分之一处，适合有累计 Token 预算的无人值守任务
 
 ### 改变
 

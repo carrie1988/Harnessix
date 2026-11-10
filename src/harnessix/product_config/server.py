@@ -348,6 +348,7 @@ async def _serve_product_stdio(
                             tools.workspace_root,
                             max_output_tokens=max(profile.max_output_tokens for profile in chain),
                             context_window_tokens=_chain_context_window(chain),
+                            context_compaction=startup.config.config.compaction,
                             generic_execution=generic_execution,
                             native_execution=native_execution,
                             enable_planning=True,

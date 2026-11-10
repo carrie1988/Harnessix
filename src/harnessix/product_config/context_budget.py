@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from harnessix.context.compaction_contracts import CompactionPolicy
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.contracts import ContextLimits
-from harnessix.product_config.contracts import CONTEXT_OVERHEAD_TOKENS
+from harnessix.product_config.contracts import CONTEXT_OVERHEAD_TOKENS, ContextCompaction
 from harnessix.secrets.publication import MAX_SCAN_BYTES
 
 PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
@@ -22,6 +22,13 @@ _WINDOW_UTF8_BYTES_PER_TOKEN = 3
 # 出站模型请求整体须通过公开输出保护扫描，其规范JSON至多MAX_SCAN_BYTES。估算已含历史、可执行工具
 # 与指令的规范JSON；请求另带稳定线上目录与信封字段，为其保留四分之一扫描容量。
 _REQUEST_INPUT_CAP = MAX_SCAN_BYTES * 3 // 4
+# 声明窗口时压缩触发点与目标各是换算窗口的几分之一（触发分母，目标分母）。产品默认在一半处压缩：
+# 压缩有损且每次都要等摘要，交互使用不为累计Token提前压缩；三分之一只用于有累计Token预算的
+# 无人值守任务（如评测）。
+_COMPACTION_DIVISORS: dict[ContextCompaction, tuple[int, int]] = {
+    "half_window": (2, 4),
+    "third_window": (3, 6),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,15 +63,18 @@ class ProductContextBudget:
 
 
 def product_context_budget(
-    context_window_tokens: int | None, max_output_tokens: int
+    context_window_tokens: int | None, max_output_tokens: int, compaction: ContextCompaction
 ) -> ProductContextBudget:
-    """声明窗口时在三分之一处压缩、压到六分之一；未声明窗口时沿用固定输入上限与原摘要容量。
+    """声明窗口时按压缩点策略换算触发点与目标；未声明窗口时沿用固定输入上限与原摘要容量。
 
-    较低的压缩点限制长任务的单次请求规模、累计输入与单次摘要耗时。
+    half_window在窗口一半处压缩、压到四分之一；third_window在三分之一处压缩、压到六分之一。
     换算后的窗口与输入上限不超过出站请求扫描容量的四分之三，大窗口不会产生无法发出的请求。
-    声明窗口时摘要预留至多占压缩目标的四分之一（上限20480字节），
-    摘要输出按每Token约4字节另加封装换算，至多4096 Token。窗口不合法时抛出ValueError，无副作用。
+    声明窗口时摘要预留至多占压缩目标的四分之一（上限20480字节；half_window时即窗口的十六分之一），
+    摘要输出按每Token约4字节另加封装换算，至多4096 Token。
+    窗口或压缩点不合法时抛出ValueError，无副作用。
     """
+    if type(compaction) is not str or compaction not in _COMPACTION_DIVISORS:
+        raise ValueError("压缩点策略必须是half_window或third_window")
     if context_window_tokens is None:
         return ProductContextBudget(
             input_limit=PRODUCT_CONTEXT_INPUT_LIMIT,
@@ -80,7 +90,8 @@ def product_context_budget(
     ):
         raise ValueError("模型上下文窗口须大于两倍输出上限与1536之和，且不超过2097152 Token")
     window = min(context_window_tokens * _WINDOW_UTF8_BYTES_PER_TOKEN, _REQUEST_INPUT_CAP)
-    compaction_target = window // 6
+    trigger_divisor, target_divisor = _COMPACTION_DIVISORS[compaction]
+    compaction_target = window // target_divisor
     summary_reserve = min(20_480, compaction_target // 4)
     return ProductContextBudget(
         input_limit=min(
@@ -88,7 +99,7 @@ def product_context_budget(
             * _WINDOW_UTF8_BYTES_PER_TOKEN,
             _REQUEST_INPUT_CAP,
         ),
-        compaction_trigger=window // 3,
+        compaction_trigger=window // trigger_divisor,
         compaction_target=compaction_target,
         summary_output_tokens=min(4096, summary_reserve // 5),
         summary_reserve=summary_reserve,
