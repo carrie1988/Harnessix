@@ -25,6 +25,47 @@ async def _wait_until(predicate, *, timeout_seconds: float = 10) -> None:
             await asyncio.sleep(0.02)
 
 
+async def test_composer_takes_focus_whenever_it_becomes_usable(tmp_path: Path) -> None:
+    """只用键盘：首次进入直接输入即开启会话；Turn结束或Ctrl+N后无需切换焦点即可继续输入。"""
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+    requests = SQLiteProtocolRequestStore(sessions.path)
+    async with AgentRuntime(sessions, FakeProvider("完成")) as runtime:
+
+        def transport() -> InProcessAgentTransport:
+            return InProcessAgentTransport(
+                AgentProtocolServer(
+                    AgentApplicationService(
+                        runtime, sessions, requests, workspace=workspace.resolve()
+                    )
+                )
+            )
+
+        with ClientStateStore(
+            tmp_path / "client", workspace_identity=str(workspace.resolve())
+        ) as store:
+            controller = ProductController(RecoverableAgentSession(store, transport))
+            app = ProductApp(controller, StartRequest(workspace=str(workspace)))
+            async with app.run_test(size=(100, 30)) as pilot:
+                composer = app.query_one("#composer", Input)
+                # 首次进入没有会话：直接输入即开启新会话，不必先按Ctrl+N。
+                await _wait_until(lambda: not composer.disabled and composer.has_focus)
+                await pilot.press("h", "i", "enter")
+                await _wait_until(lambda: len(controller.state.threads) == 1)
+
+                def completed() -> bool:
+                    view = controller.state.thread_view
+                    turn = None if view is None else view.current_turn
+                    return turn is not None and turn.status == "completed"
+
+                await _wait_until(completed)
+                await _wait_until(lambda: not composer.disabled and composer.has_focus)
+                await pilot.press("ctrl+n")
+                await _wait_until(lambda: len(controller.state.threads) == 2)
+                await _wait_until(lambda: not composer.disabled and composer.has_focus)
+
+
 async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -52,8 +93,6 @@ async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: P
             app = ProductApp(controller, StartRequest(workspace=str(workspace)))
             async with app.run_test(size=(100, 30)) as pilot:
                 await pilot.pause()
-                assert app.query_one("#composer", Input).disabled
-
                 await pilot.press("ctrl+n")
                 await _wait_until(lambda: len(controller.state.threads) == 1)
                 await _wait_until(lambda: not app.query_one("#composer", Input).disabled)

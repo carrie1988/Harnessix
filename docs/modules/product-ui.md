@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 24
+version: 25
 code_revision: 09c7db1f1697dc7e59903011d1838a49ac9e8c71
 owners:
   - product
@@ -43,6 +43,12 @@ supersedes: []
 ## 当前增量：Skill清单命令（ADR 0125）
 
 `harnessix skills list [工作区]`由`skills_cli.py`解析参数，内容来自`product_config/skill_diagnostics.py`，使用与Agent启动相同的来源和解析规则，不读写状态库。
+
+## 当前增量：首次输入即开始会话与输入框焦点
+
+- 没有选中会话时，输入框仍可输入：`ProductController._submit_prompt`先按`CreateThreadIntent`同样的方式新建Thread，再提交本次输入；`Ctrl+N`保留，用于另开会话。空会话提示改为“输入任务并按 Enter 开始；Ctrl+N 可另开新会话。”
+- `ProductMainView.update_composer`在输入框由禁用变为可用时把焦点交还输入框。禁用期间（Intent进行中、Turn运行中）Textual会把焦点移到会话列表，此前用户必须按Tab或点击才能继续输入。
+- 回归：`tests/product_ui/test_app.py::test_composer_takes_focus_whenever_it_becomes_usable`只用键盘完成首条输入、Turn结束后续输入和`Ctrl+N`。
 
 ## 当前增量：MCP Server命令与Doctor结论（ADR 0127）
 
@@ -997,6 +1003,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 25 | `a1b9cabd` 增量 | 2026-11-10 | 首次输入即开始会话；输入框恢复可用时自动获得焦点（247上用tmux驱动TUI时发现） |
 | 24 | `09c7db1f1697dc7e59903011d1838a49ac9e8c71` | 2026-11-10 | 新增`harnessix mcp list/trust/untrust`和Doctor的MCP小节（ADR 0127）；Doctor文本在可启动时把不影响启动的失败项显示为“警告”；工作区信任文件改用共享的私有JSON写入 |
 | 23 | `4992c2e7937ef7da35fad6468e0acee7940a9cbc` | 2026-11-10 | 顶层CLI删除`coding-eval-swebench`分派及帮助项；外部基准评测改由wheel之外的Harbor集成运行 |
 | 22 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `code configure --self-hosted`、`--context-window-tokens`及内网地址询问；云模型默认累计Token上限由100万调为300万（过渡值）；未指定`--git-executable`时在Git仓库内自动探测git；`exec`默认开启完成守卫；首次运行需确认工作区信任（`exec`可用`--trust-workspace`）；审批窗口可选择本会话自动接受修改或允许完全相同的操作，`Ctrl+E`切换，规则只保存在内存；已核对牌价的DeepSeek、百炼模型显示费用上限（未扣缓存折扣），其余仍显示费用未知；交互模式在费用可见或本地端点时取消累计Token上限，并按金额档位提醒；`exec --max-cost`按输入单价折算Token上限；新增`harnessix data`列出、导出、删除本机数据并生成低敏诊断 |

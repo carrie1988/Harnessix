@@ -152,6 +152,10 @@ CI权限保持`contents: read`。`self_hosted`相关的信任边界见[接入自
 
 本地文档检查应以上一次推送的提交为`--changed-from`基准，与CI一致。
 
+2026-11-10在247上用tmux驱动TUI做端到端验证时发现两处易用性问题，已修复：输入框被禁用后焦点落到会话列表且不会返回，
+用户按`Ctrl+N`后或每轮任务结束后直接打字，字符进入会话列表；首次进入必须先按`Ctrl+N`才能输入。现在输入框恢复可用时自动获得焦点，
+没有会话时第一条输入自动开启新会话。回归见`tests/product_ui/test_app.py::test_composer_takes_focus_whenever_it_becomes_usable`。
+
 ## 11. 源码映射
 
 | 内容 | 位置 |

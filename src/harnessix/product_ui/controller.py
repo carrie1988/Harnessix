@@ -451,7 +451,7 @@ class ProductController:
             threads=threads, thread_view=updated, approval_evidence=None, last_notice=None
         )
 
-    async def _create_thread(self) -> None:
+    async def _create_thread(self) -> tuple[UUID, ProductViewState]:
         workspace = self._state.workspace
         assert workspace is not None
         command = self._session.prepare_command()
@@ -468,14 +468,14 @@ class ProductController:
             thread_view=view,
             last_notice=None,
         )
+        return thread.thread_id, view
 
     async def _submit_prompt(self, prompt: str) -> None:
         if type(prompt) is not str or not prompt.strip() or len(prompt) > MAX_PROTOCOL_TEXT_CHARS:
             raise ProductUIError("controller_prompt_invalid", "输入内容为空或超过长度上限")
-        thread_id = self._state.selected_thread_id
-        view = self._state.thread_view
+        thread_id, view = self._state.selected_thread_id, self._state.thread_view
         if thread_id is None or view is None:
-            raise ProductUIError("controller_thread_required", "请先创建或选择会话")
+            thread_id, view = await self._create_thread()  # 首条输入即开启会话，不必先按Ctrl+N
         if view.current_turn is not None and view.current_turn.status in ACTIVE_TURN_STATES:
             raise ProductUIError("controller_turn_active", "当前会话已有活动Turn")
         command = self._session.prepare_command()

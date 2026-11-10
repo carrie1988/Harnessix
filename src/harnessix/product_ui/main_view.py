@@ -129,7 +129,7 @@ class ProductMainView(Widget):
         self._transcript.clear()
         lines = transcript_lines(state.thread_view)
         if not lines:
-            self._transcript.write("暂无会话。按 Ctrl+N 新建会话。")
+            self._transcript.write("输入任务并按 Enter 开始；Ctrl+N 可另开新会话。")
         else:
             for line in lines:
                 self._transcript.write(f"{line.role}：{line.text}")
@@ -148,13 +148,16 @@ class ProductMainView(Widget):
         if not self.is_attached:
             return
         turn = state.thread_view.current_turn if state.thread_view is not None else None
+        was_disabled = self._composer.disabled
         self._composer.disabled = (
             state.phase is not ControllerPhase.READY
-            or state.selected_thread_id is None
             or (turn is not None and turn.status in ACTIVE_TURN_STATES)
             or intent_in_flight
             or closing
         )
+        if was_disabled and not self._composer.disabled:
+            # 禁用期间焦点会移到会话列表；恢复可输入时交还输入框，新建会话或Turn结束后可直接打字。
+            self._composer.focus()
 
     def show_error(self, error: ProductUIError) -> None:
         if self.is_attached:
