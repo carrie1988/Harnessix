@@ -23,7 +23,7 @@
     "src/harnessix/processes/supervisor.py": 728,
     "src/harnessix/product_config/action_composition.py": 628,
     "src/harnessix/product_config/action_contracts.py": 616,
-    "src/harnessix/product_config/coding_tool_view.py": 1016,
+    "src/harnessix/product_config/coding_tool_view.py": 895,
     "src/harnessix/product_config/native_process.py": 604,
     "src/harnessix/product_config/process_action.py": 765,
     "src/harnessix/protocol/contracts.py": 656,
@@ -474,24 +474,20 @@
       "max_decision_complexity": 8
     },
     "harnessix.product_config.agent_context:build_product_agent_context": {
-      "max_lines": 228,
-      "max_decision_complexity": 59
+      "max_lines": 211,
+      "max_decision_complexity": 54
     },
     "harnessix.product_config.coding_tool_view:CodingWorkflowToolView": {
-      "max_lines": 251,
+      "max_lines": 220,
       "max_decision_complexity": 0
     },
     "harnessix.product_config.coding_tool_view:CodingWorkflowToolView.__post_init__": {
-      "max_lines": 54,
-      "max_decision_complexity": 35
+      "max_lines": 46,
+      "max_decision_complexity": 30
     },
     "harnessix.product_config.coding_tool_view:CodingWorkflowToolView.select": {
-      "max_lines": 85,
-      "max_decision_complexity": 39
-    },
-    "harnessix.product_config.coding_tool_view:_latest_review_is_clean": {
-      "max_lines": 22,
-      "max_decision_complexity": 21
+      "max_lines": 72,
+      "max_decision_complexity": 35
     },
     "harnessix.product_config.coding_tool_view:_with_bounded_repair_cycles": {
       "max_lines": 46,

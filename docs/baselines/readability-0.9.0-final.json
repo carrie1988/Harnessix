@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 590,
-    "physical_lines": 126152,
-    "logical_lines": 110728,
-    "documented_modules": 590,
-    "classes": 1184,
+    "source_files": 589,
+    "physical_lines": 125815,
+    "logical_lines": 110434,
+    "documented_modules": 589,
+    "classes": 1183,
     "documented_classes": 601,
-    "functions": 4897,
-    "documented_functions": 1576,
+    "functions": 4885,
+    "documented_functions": 1568,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -252,7 +252,7 @@
     },
     {
       "path": "src/harnessix/product_config/coding_tool_view.py",
-      "lines": 1016
+      "lines": 895
     },
     {
       "path": "src/harnessix/product_config/native_process.py",
@@ -1458,10 +1458,10 @@
       "path": "src/harnessix/product_config/agent_context.py",
       "qualname": "build_product_agent_context",
       "kind": "function",
-      "line": 365,
-      "lines": 228,
+      "line": 354,
+      "lines": 211,
       "documented": true,
-      "decision_complexity": 59
+      "decision_complexity": 54
     },
     {
       "id": "harnessix.product_config.coding_tool_view:CodingWorkflowToolView",
@@ -1469,8 +1469,8 @@
       "path": "src/harnessix/product_config/coding_tool_view.py",
       "qualname": "CodingWorkflowToolView",
       "kind": "class",
-      "line": 618,
-      "lines": 251,
+      "line": 528,
+      "lines": 220,
       "documented": true
     },
     {
@@ -1479,10 +1479,10 @@
       "path": "src/harnessix/product_config/coding_tool_view.py",
       "qualname": "CodingWorkflowToolView.__post_init__",
       "kind": "function",
-      "line": 652,
-      "lines": 54,
+      "line": 558,
+      "lines": 46,
       "documented": false,
-      "decision_complexity": 35
+      "decision_complexity": 30
     },
     {
       "id": "harnessix.product_config.coding_tool_view:CodingWorkflowToolView.select",
@@ -1490,21 +1490,10 @@
       "path": "src/harnessix/product_config/coding_tool_view.py",
       "qualname": "CodingWorkflowToolView.select",
       "kind": "function",
-      "line": 713,
-      "lines": 85,
+      "line": 605,
+      "lines": 72,
       "documented": false,
-      "decision_complexity": 39
-    },
-    {
-      "id": "harnessix.product_config.coding_tool_view:_latest_review_is_clean",
-      "module": "harnessix.product_config.coding_tool_view",
-      "path": "src/harnessix/product_config/coding_tool_view.py",
-      "qualname": "_latest_review_is_clean",
-      "kind": "function",
-      "line": 424,
-      "lines": 22,
-      "documented": true,
-      "decision_complexity": 21
+      "decision_complexity": 35
     },
     {
       "id": "harnessix.product_config.coding_tool_view:_with_bounded_repair_cycles",
@@ -1512,7 +1501,7 @@
       "path": "src/harnessix/product_config/coding_tool_view.py",
       "qualname": "_with_bounded_repair_cycles",
       "kind": "function",
-      "line": 488,
+      "line": 426,
       "lines": 46,
       "documented": true,
       "decision_complexity": 24

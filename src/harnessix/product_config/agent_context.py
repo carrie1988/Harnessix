@@ -145,17 +145,6 @@ _CONVERGENCE_INSTRUCTIONS = (
     "verification. Put independent reads in one response."
 )
 
-_REPRODUCTION_INSTRUCTIONS = (
-    "Reproduce first: before editing source, create a minimal test for the reported behavior as a "
-    "new file named test_harnessix_scratch.py in an existing test directory next to the most "
-    "relevant tests (for Django, inside the existing tests/<app>/ package). Use only public APIs "
-    "named in the issue, and cover the edge cases the issue implies. Run it with run_profile "
-    "selecting only that file and confirm it fails for the reported reason. After the fix passes "
-    "it, run the whole existing test files that cover the changed code (complete files, not single "
-    "test ids) and fix any failure. test_harnessix_scratch files are never submitted; do not edit "
-    "existing test files."
-)
-
 _SEARCH_SNAPSHOT_INSTRUCTIONS = (
     "Search snapshot mode: the read_file rule for Patch expected_sha256 also permits grep "
     "content_sha256, the full file SHA from the same read that produced the match, not revision. "
@@ -376,7 +365,6 @@ def build_product_agent_context(
     working_set_result_groups: int | None = None,
     compact_instructions: bool = False,
     convergence_guidance: bool = False,
-    reproduction_guidance: bool = False,
     tool_call_cap: int | None = None,
     generic_execution: bool = False,
     native_execution: bool = False,
@@ -390,8 +378,7 @@ def build_product_agent_context(
     if type(native_execution) is not bool or (native_execution and not generic_execution):
         raise ValueError("本机命令指令只能与通用执行一起使用")
     if type(generic_execution) is not bool or (
-        generic_execution
-        and (compact_instructions or allow_optional_pre_edit_profile or reproduction_guidance)
+        generic_execution and (compact_instructions or allow_optional_pre_edit_profile)
     ):
         raise ValueError("通用执行指令不能混用固定修复阶段指令")
     if type(reserve_closing_phase) is not bool:
@@ -415,10 +402,6 @@ def build_product_agent_context(
         convergence_guidance and not compact_instructions
     ):
         raise ValueError("收敛指引只与紧凑编码指令组合")
-    if type(reproduction_guidance) is not bool or (
-        reproduction_guidance and not compact_instructions
-    ):
-        raise ValueError("复现指引只与紧凑编码指令组合")
     if tool_call_cap is not None and (
         type(tool_call_cap) is not int or not 1 <= tool_call_cap <= 128 or not compact_instructions
     ):
@@ -517,17 +500,6 @@ def build_product_agent_context(
                     ),
                 )
                 if convergence_guidance
-                else ()
-            ),
-            *(
-                (
-                    ContextFragment(
-                        kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
-                        source="harnessix.coding-reproduction/v2",
-                        content=_REPRODUCTION_INSTRUCTIONS,
-                    ),
-                )
-                if reproduction_guidance
                 else ()
             ),
             *(
