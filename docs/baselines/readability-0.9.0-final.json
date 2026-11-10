@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 617,
-    "physical_lines": 134216,
-    "logical_lines": 117628,
-    "documented_modules": 617,
-    "classes": 1249,
-    "documented_classes": 651,
-    "functions": 5225,
-    "documented_functions": 1644,
-    "public_exports": 372,
-    "public_contract_types": 166,
+    "source_files": 590,
+    "physical_lines": 126152,
+    "logical_lines": 110728,
+    "documented_modules": 590,
+    "classes": 1184,
+    "documented_classes": 601,
+    "functions": 4897,
+    "documented_functions": 1576,
+    "public_exports": 359,
+    "public_contract_types": 161,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 168
+    "package_dependency_edges": 166
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -55,11 +55,6 @@
     "harnessix.context:PreparedContext->harnessix.context.contracts:PreparedContext",
     "harnessix.context:ToolResultViewDecision->harnessix.context.tool_result_contracts:ToolResultViewDecision",
     "harnessix.context:ToolResultViewPolicy->harnessix.context.tool_result_contracts:ToolResultViewPolicy",
-    "harnessix.evals.swebench:SweBenchModelConfig->harnessix.evals.swebench.contracts:SweBenchModelConfig",
-    "harnessix.evals.swebench:SweBenchModelParameter->harnessix.evals.swebench.contracts:SweBenchModelParameter",
-    "harnessix.evals.swebench:SweBenchPreRegistrationPlan->harnessix.evals.swebench.contracts:SweBenchPreRegistrationPlan",
-    "harnessix.evals.swebench:SweBenchPublicCase->harnessix.evals.swebench.contracts:SweBenchPublicCase",
-    "harnessix.evals.swebench:SweBenchTaskBudget->harnessix.evals.swebench.contracts:SweBenchTaskBudget",
     "harnessix.evals:CodingEvalCampaignExecutionState->harnessix.evals.campaign_execution_contracts:CodingEvalCampaignExecutionState",
     "harnessix.evals:CodingEvalCampaignPlan->harnessix.evals.campaign_contracts:CodingEvalCampaignPlan",
     "harnessix.evals:CodingEvalCampaignReport->harnessix.evals.campaign_contracts:CodingEvalCampaignReport",
@@ -234,14 +229,6 @@
     {
       "path": "src/harnessix/evals/runner.py",
       "lines": 669
-    },
-    {
-      "path": "src/harnessix/evals/swebench/run_config.py",
-      "lines": 851
-    },
-    {
-      "path": "src/harnessix/evals/swebench/run_settings.py",
-      "lines": 629
     },
     {
       "path": "src/harnessix/evals/task_pack_trial.py",
@@ -936,125 +923,6 @@
       "lines": 206,
       "documented": true,
       "decision_complexity": 23
-    },
-    {
-      "id": "harnessix.evals.swebench.agent_execution:run_swebench_agent_case",
-      "module": "harnessix.evals.swebench.agent_execution",
-      "path": "src/harnessix/evals/swebench/agent_execution.py",
-      "qualname": "run_swebench_agent_case",
-      "kind": "function",
-      "line": 343,
-      "lines": 217,
-      "documented": true,
-      "decision_complexity": 44
-    },
-    {
-      "id": "harnessix.evals.swebench.execution:run_swebench_agent_suite",
-      "module": "harnessix.evals.swebench.execution",
-      "path": "src/harnessix/evals/swebench/execution.py",
-      "qualname": "run_swebench_agent_suite",
-      "kind": "function",
-      "line": 290,
-      "lines": 224,
-      "documented": true,
-      "decision_complexity": 44
-    },
-    {
-      "id": "harnessix.evals.swebench.execution_contracts:SweBenchCaseExecutionState.execution_is_consistent",
-      "module": "harnessix.evals.swebench.execution_contracts",
-      "path": "src/harnessix/evals/swebench/execution_contracts.py",
-      "qualname": "SweBenchCaseExecutionState.execution_is_consistent",
-      "kind": "function",
-      "line": 73,
-      "lines": 55,
-      "documented": false,
-      "decision_complexity": 29
-    },
-    {
-      "id": "harnessix.evals.swebench.execution_contracts:SweBenchSuiteExecutionState",
-      "module": "harnessix.evals.swebench.execution_contracts",
-      "path": "src/harnessix/evals/swebench/execution_contracts.py",
-      "qualname": "SweBenchSuiteExecutionState",
-      "kind": "class",
-      "line": 172,
-      "lines": 112,
-      "documented": true
-    },
-    {
-      "id": "harnessix.evals.swebench.execution_contracts:SweBenchSuiteExecutionState.progress_is_recomputable",
-      "module": "harnessix.evals.swebench.execution_contracts",
-      "path": "src/harnessix/evals/swebench/execution_contracts.py",
-      "qualname": "SweBenchSuiteExecutionState.progress_is_recomputable",
-      "kind": "function",
-      "line": 216,
-      "lines": 68,
-      "documented": false,
-      "decision_complexity": 49
-    },
-    {
-      "id": "harnessix.evals.swebench.execution_contracts:build_swebench_suite_execution_state",
-      "module": "harnessix.evals.swebench.execution_contracts",
-      "path": "src/harnessix/evals/swebench/execution_contracts.py",
-      "qualname": "build_swebench_suite_execution_state",
-      "kind": "function",
-      "line": 397,
-      "lines": 66,
-      "documented": true,
-      "decision_complexity": 22
-    },
-    {
-      "id": "harnessix.evals.swebench.execution_evidence:_case_evidence_failure",
-      "module": "harnessix.evals.swebench.execution_evidence",
-      "path": "src/harnessix/evals/swebench/execution_evidence.py",
-      "qualname": "_case_evidence_failure",
-      "kind": "function",
-      "line": 171,
-      "lines": 52,
-      "documented": false,
-      "decision_complexity": 21
-    },
-    {
-      "id": "harnessix.evals.swebench.run_config:_run_config_type",
-      "module": "harnessix.evals.swebench.run_config",
-      "path": "src/harnessix/evals/swebench/run_config.py",
-      "qualname": "_run_config_type",
-      "kind": "function",
-      "line": 376,
-      "lines": 284,
-      "documented": true,
-      "decision_complexity": 148
-    },
-    {
-      "id": "harnessix.evals.swebench.run_config:build_swebench_agent_run_config",
-      "module": "harnessix.evals.swebench.run_config",
-      "path": "src/harnessix/evals/swebench/run_config.py",
-      "qualname": "build_swebench_agent_run_config",
-      "kind": "function",
-      "line": 662,
-      "lines": 190,
-      "documented": true,
-      "decision_complexity": 25
-    },
-    {
-      "id": "harnessix.evals.swebench.run_settings:_SweBenchAgentRunSettings",
-      "module": "harnessix.evals.swebench.run_settings",
-      "path": "src/harnessix/evals/swebench/run_settings.py",
-      "qualname": "_SweBenchAgentRunSettings",
-      "kind": "class",
-      "line": 226,
-      "lines": 404,
-      "documented": true
-    },
-    {
-      "id": "harnessix.evals.swebench.run_settings:_SweBenchAgentRunSettings.fixed_execution_scope",
-      "module": "harnessix.evals.swebench.run_settings",
-      "path": "src/harnessix/evals/swebench/run_settings.py",
-      "qualname": "_SweBenchAgentRunSettings.fixed_execution_scope",
-      "kind": "function",
-      "line": 261,
-      "lines": 94,
-      "documented": false,
-      "decision_complexity": 69
     },
     {
       "id": "harnessix.evals.task_pack_materializer:_safe_archive_members",
@@ -2145,7 +2013,6 @@
     "evals->agent",
     "evals->artifacts",
     "evals->context",
-    "evals->delivery",
     "evals->domain",
     "evals->models",
     "evals->observability",
@@ -2155,7 +2022,6 @@
     "evals->secrets",
     "evals->session",
     "evals->tools",
-    "evals->trusted_actions",
     "exec_cli->agent_cli",
     "exec_cli->product_config",
     "exec_cli->product_ui",
@@ -2454,21 +2320,6 @@
       "write_eval_suite_execution_state",
       "write_eval_suite_plan",
       "write_eval_suite_report"
-    ],
-    "harnessix.evals.swebench": [
-      "SWE_BENCH_CASE_COUNT",
-      "SWE_BENCH_SELECTION_POLICY",
-      "SweBenchModelConfig",
-      "SweBenchModelParameter",
-      "SweBenchPreRegistrationPlan",
-      "SweBenchPublicCase",
-      "SweBenchSelectionPolicy",
-      "SweBenchTaskBudget",
-      "build_swebench_preregistration_plan",
-      "project_swebench_public_cases",
-      "select_swebench_cases",
-      "swebench_candidate_manifest_digest",
-      "swebench_preregistration_plan_digest"
     ],
     "harnessix.hooks": [
       "HookActionInput",

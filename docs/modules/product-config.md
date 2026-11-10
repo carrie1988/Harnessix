@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 128
+version: 129
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -19,11 +19,9 @@ related_adrs:
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
-  - tests/evals/swebench/test_regex_agent_execution.py
   - tests/product_config/test_optional_pre_edit_profile.py
   - tests/product_config/test_optional_pre_edit_runtime.py
   - tests/product_config/test_grep_snapshot_patch.py
-  - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/product_config/test_planning_workflow.py
   - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
@@ -240,8 +238,8 @@ Source 末轮 Snapshot 捕获显式接入[原生读取与纯编码进度](../cha
 以独立版本`harnessix.workspace-patch-compact/v1`公布较短英文描述与Schema；Router显式Schema与解码器机制保证
 Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`WorkspacePatchInput`严格解码，非法组合照旧以
 `tool_invalid_arguments`失败且无审批或效果。离线测量首请求固定输入由3466降至2524 Token（含工作集指引）。
-只在SWE显式v14与工作集组合冻结；回归见[紧凑Patch](../../tests/product_config/test_compact_workspace_patch.py)
-与[v14配置](../../tests/evals/swebench/test_compact_surface_run_config.py)。离线通过不代表质量改善。
+原只由本地SWE-bench显式v14与工作集组合启用，该评测路径已于2026-11-10删除，产品默认不开启；回归见
+[紧凑Patch](../../tests/product_config/test_compact_workspace_patch.py)。离线通过不代表质量改善。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -2250,6 +2248,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 129 | `4992c2e7937ef7da35fad6468e0acee7940a9cbc` | 2026-11-10 | 本地SWE-bench评测包`harnessix.evals.swebench`与`coding-eval-swebench`命令删除：相关测试从映射中移除，紧凑Patch回归不再借用该包的自动审批规则 |
 | 128 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `ProviderDefinition.self_hosted`与向导`--self-hosted`：内网自托管端点可用本地预设和免费计价；未声明时维持原严格校验。预检新增`product_self_hosted_key_length`，拒绝短于16字节的本地占位Key。向导默认为OpenAI Chat开启紧凑工具结果，并为已核对的DeepSeek、百炼模型填写上下文窗口；`agent-server --unattended`由`harnessix exec`传入，开启完成守卫并在费用未知时按预留额继续；向导配置重试4次；声明上下文窗口时按窗口收紧输出上限，放不下思考时自动关闭思考，手写配置违反约束时校验失败；原生执行指令v3允许在用户要求时经`host_command`提交，内置Git交付移至1.1 |
 | 67 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job实际结果、核心Job可读性失败及Snapshot候选本机回归边界；安装升级治理仅为门禁例证 |
 | 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |

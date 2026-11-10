@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 13
+version: 14
 code_revision: b0f03b63893b9c038512a17e143477313c0f7ae7
 owners:
   - core
@@ -15,7 +15,6 @@ related_adrs:
   - docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md
 related_tests:
   - tests/product_config/test_optional_pre_edit_profile.py
-  - tests/evals/swebench/test_optional_pre_edit_agent_execution.py
   - tests/tools/test_grep_snapshot_runtime.py
   - tests/context/test_planning_anchors.py
   - tests/context/test_planning_compaction_runtime.py
