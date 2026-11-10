@@ -79,6 +79,8 @@ Windows 是 1.0 门槛，Beta 先开放 macOS 与 Linux（2026-11-10 决定）�
    # pyproject.toml 中的 version 改为新版本后：
    uv lock
    uv run python scripts/sbom_generate.py
+   # 许可证证据索引绑定uv.lock摘要，锁文件一变就要重建（--fetch下载缺失的归档）
+   uv run python scripts/license_inventory.py --fetch
    uv run python scripts/license_scan.py
    ```
 
