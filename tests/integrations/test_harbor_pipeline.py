@@ -64,9 +64,10 @@ def test_harnessix_swebench_template_renders_the_issue_verbatim_with_mini_aligne
         assert phrase in rendered
 
 
-def test_template_v2_reviews_failures_against_the_original_code_in_place() -> None:
-    """v2：基线在原地用git stash取得，按测试id与失败信息比较，并区分预期的旧行为断言与回归。"""
-    template = ROOT / "benchmarks/harbor/harnessix/swebench-task-v2.j2"
+@pytest.mark.parametrize("version", ["v2", "v3"])
+def test_template_reviews_failures_against_the_original_code_in_place(version: str) -> None:
+    """v2起：基线在原地用git stash取得，按测试id与失败信息比较，并区分预期的旧行为断言与回归。"""
+    template = ROOT / f"benchmarks/harbor/harnessix/swebench-task-{version}.j2"
     issue = "Callable storage {{ not a template }} fails\nwith `default_storage` <b>"
     rendered = render_prompt_template(template, issue)
     assert rendered.startswith("<pr_description>\nConsider the following PR description:\n")
@@ -86,6 +87,34 @@ def test_template_v2_reviews_failures_against_the_original_code_in_place() -> No
     lowered = rendered.lower()
     for name in ("django", "sympy", "sphinx", "astropy", "matplotlib", "scikit", "pytest"):
         assert name not in lowered
+
+
+def test_template_v3_accepts_an_old_behaviour_failure_only_with_a_quoted_request() -> None:
+    """v3：只有能引用PR描述中要求该改变的原句时，既有测试的新失败才算预期；否则按回归收窄修复。"""
+    rendered = render_prompt_template(
+        ROOT / "benchmarks/harbor/harnessix/swebench-task-v3.j2", "Issue text"
+    )
+    for phrase in (
+        "quote the sentence of the PR description that\n"
+        "  asks for the behaviour the test contradicts",
+        "narrow or change your fix until the test passes again",
+        "If you cannot quote such a sentence, the failure is (b)",
+        "does not ask for never justifies (a)",
+    ):
+        assert phrase in rendered
+    assert "name the test and the reason in your summary" not in rendered
+
+
+def test_template_v3_is_language_neutral_and_asks_for_a_clean_diff() -> None:
+    """v3同时用于Multilingual：不写某一种语言的命令，并要求收尾前删除自己产生的构建产物。"""
+    rendered = render_prompt_template(
+        ROOT / "benchmarks/harbor/harnessix/swebench-task-v3.j2", "Issue text"
+    )
+    assert "python -" not in rendered
+    for manifest in ("pyproject.toml", "package.json", "go.mod", "Cargo.toml", "pom.xml"):
+        assert manifest in rendered
+    assert "delete the scratch files and build outputs you created" in rendered
+    assert "builds and installed packages may point at the workspace" in rendered
 
 
 @pytest.mark.parametrize(
