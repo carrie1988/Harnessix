@@ -240,7 +240,9 @@ async def test_exact_edit_preserves_unread_file_content_and_mode(tmp_path: Path)
     root = tmp_path / "workspace"
     root.mkdir()
     target = root / "app.py"
-    target.write_text("prefix\nold = True\nsuffix\n", encoding="utf-8")
+    # 按原样写入：Windows文本模式会把换行改成CRLF，与期望摘要不一致。
+    target.write_text("prefix\nold = True\nsuffix\n", encoding="utf-8", newline="")
+    mode = target.stat().st_mode & 0o777
     proposal = WorkspacePatchInput(
         files=(
             WorkspacePatchFile(
@@ -259,7 +261,7 @@ async def test_exact_edit_preserves_unread_file_content_and_mode(tmp_path: Path)
 
     assert outcome.kind == "succeeded"
     assert target.read_text(encoding="utf-8") == "prefix\nold = False\nsuffix\n"
-    assert target.stat().st_mode & 0o777 == 0o644
+    assert target.stat().st_mode & 0o777 == mode
     transactions.close()
     leases.close()
     plans.close()
@@ -270,7 +272,7 @@ def test_exact_edit_rejects_ambiguous_anchor_without_preparing_effect(tmp_path: 
     root = tmp_path / "workspace"
     root.mkdir()
     target = root / "app.py"
-    target.write_text("same\nsame\n", encoding="utf-8")
+    target.write_text("same\nsame\n", encoding="utf-8", newline="")
     proposal = WorkspacePatchInput(
         files=(
             WorkspacePatchFile(
@@ -297,7 +299,7 @@ def test_full_replace_rejects_unexplained_truncation_at_all_file_sizes(
     root.mkdir()
     before = "a" * size
     target = root / "app.py"
-    target.write_text(before, encoding="utf-8")
+    target.write_text(before, encoding="utf-8", newline="")
     proposal = WorkspacePatchInput(
         files=(
             WorkspacePatchFile(
@@ -321,7 +323,7 @@ def test_exact_edit_supports_files_above_managed_patch_limit(tmp_path: Path) -> 
     root = tmp_path / "workspace"
     root.mkdir()
     before = "a" * 1_100_000 + "\nneedle\n"
-    (root / "large.py").write_text(before, encoding="utf-8")
+    (root / "large.py").write_text(before, encoding="utf-8", newline="")
     proposal = WorkspacePatchInput(
         files=(
             WorkspacePatchFile(
@@ -346,7 +348,7 @@ def test_exact_edit_rejects_files_beyond_model_digest_limit(tmp_path: Path) -> N
     root = tmp_path / "workspace"
     root.mkdir()
     before = "a" * 2_100_000 + "\nneedle\n"
-    (root / "large.py").write_text(before, encoding="utf-8")
+    (root / "large.py").write_text(before, encoding="utf-8", newline="")
     proposal = WorkspacePatchInput(
         files=(
             WorkspacePatchFile(

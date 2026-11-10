@@ -436,7 +436,8 @@ async def test_windows_git_protected_large_blob_and_unparsed_index_status_use_ra
             provider,
             thread.thread_id,
             before=body,
-            after=b"new\n",
+            # 大幅缩短的完整替换会被安全检查拒绝；删除同样要保存完整的原始字节。
+            after=None,
             request="native-protected-large-blob",
         )
         state = tmp_path / "git-state"
