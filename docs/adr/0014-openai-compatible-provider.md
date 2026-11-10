@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 1
+version: 2
 code_revision: 1cac4b8aba916f030be56bbaf84bec0497ec4a09
 owners:
   - core
@@ -20,6 +20,7 @@ supersedes: []
 # ADR 0014：首个 OpenAI-compatible Provider
 
 - 日期：2026-09-03
+- 修订（2026-11-10，用户决定按主流工具做法）：产品的模型请求默认读取`HTTPS_PROXY`、`HTTP_PROXY`和`NO_PROXY`；显式配置的`proxy_url`优先，本机与内网自托管端点总是直连，SOCKS暂不支持。代理由产品在内存中选定后注入Transport，Provider客户端仍`trust_env=False`，评测配置不受影响。见[`models/proxy.py`](../../src/harnessix/models/proxy.py)。
 - 状态：已接受并实现，离线验收通过
 - 范围：0.4.1；不表示整个 0.4 或完整 Coding Agent 已完成
 

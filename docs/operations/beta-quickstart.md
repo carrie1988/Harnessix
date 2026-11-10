@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
+version: 2
 code_revision: a8a4a6c7f831de606baa7237436fcb64e8380b38
 owners:
   - core
@@ -50,6 +50,8 @@ harnessix code configure --provider-kind openai_chat \
 
 自己部署的模型见[接入自托管模型](self-hosted-models.md)。
 
+需要经代理访问模型服务时，设置 `HTTPS_PROXY`（遵守 `NO_PROXY`），或在配置时加 `--proxy-url http://127.0.0.1:端口`（优先）。只支持 HTTP 代理；本机和内网自托管模型总是直连。
+
 **检查并启动：**
 
 ```bash
@@ -96,7 +98,7 @@ harnessix code /path/to/repo
 | 现象 | 处理 |
 |---|---|
 | 配置时提示配置目录权限或身份不安全 | 运行 `chmod 700 ~/.harnessix`，并确认目录属于当前用户 |
-| `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；在代理后面时设置 `HTTPS_PROXY` |
+| `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设了 SOCKS 代理不会生效 |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key，见[接入自托管模型](self-hosted-models.md) |
 | 自托管模型很快报错或回答被截断 | 检查模型的上下文窗口，Ollama 默认只有 4096，见[接入自托管模型](self-hosted-models.md) |
 | Linux 上 `doctor` 提示沙箱不可用 | 安装 bubblewrap 并开启非特权用户命名空间；Ubuntu 24.04 起还要为 bwrap 配置 AppArmor 例外。沙箱不可用时，命令不会自动执行 |

@@ -13,6 +13,7 @@
 - 支持 Skills：把任务说明放进 `~/.harnessix/skills` 或仓库的 `.harnessix/skills`，Agent 按需读取；`harnessix skills list` 查看结果
 - `harnessix data`：列出、导出、删除本机数据，生成不含代码的诊断文件
 - 自动探测 git，自动填写 DeepSeek、百炼模型的上下文窗口
+- 模型请求读取 `HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY`；`code configure --proxy-url` 可指定本机代理并优先
 
 ### 改变
 
@@ -24,6 +25,8 @@
 
 ### 修复
 
+- `doctor --probe-model` 与实际请求的代理设置不一致，导致探测通过、任务却连不上
+- 已有配置时重新配置无从下手，现在提示里给出替换所需的摘要
 - Linux 上使用默认状态目录时，沙箱内命令全部无法启动（bubblewrap 报只读文件系统）
 - Task Pack 评分器不认聚合工具 `git_review`
 - 小窗口模型的配置无法启动

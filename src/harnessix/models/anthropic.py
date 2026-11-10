@@ -71,6 +71,11 @@ def _is_unbilled(error: Exception) -> bool:
     return isinstance(cause, httpx2.ConnectError | httpx2.ConnectTimeout)
 
 
+def _direct_or_proxied(proxy_url: str | None) -> httpx2.AsyncHTTPTransport:
+    """不读取环境代理；只经配置的本机代理（ADR 0014）。"""
+    return httpx2.AsyncHTTPTransport(trust_env=False, proxy=proxy_url)
+
+
 class AnthropicProvider:
     """仅支持非 Thinking 的 Messages 配置；拥有独立 SDK 和 HTTPX2 Client。"""
 
@@ -93,7 +98,7 @@ class AnthropicProvider:
         )
         client = httpx2.AsyncClient(
             transport=AnthropicTransport(
-                transport or httpx2.AsyncHTTPTransport(trust_env=False), self.config
+                transport or _direct_or_proxied(self.config.proxy_url), self.config
             ),
             trust_env=False,
             follow_redirects=False,

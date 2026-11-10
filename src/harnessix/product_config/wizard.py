@@ -186,6 +186,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 compact_tool_results=checked.provider_kind == "openai_chat",
                 pricing="free" if self_hosted else "unknown",
                 self_hosted=checked.self_hosted,
+                proxy_url=checked.proxy_url,
             ),
         ),
         profiles=(
@@ -316,12 +317,21 @@ def _validate_expected_digest(value: str | None) -> None:
         raise KernelError("product_config_write_invalid", "产品配置期望摘要无效")
 
 
+def _replace_hint(target: Path) -> str:
+    """给出当前文件摘要：用户照此替换，摘要仍挡住期间被别人改写的配置。"""
+    try:
+        digest = hashlib.sha256(read_product_config_bytes(target)).hexdigest()
+    except (OSError, KernelError):
+        return ""
+    return f"；要替换它，加 --replace --expected-source-sha256 {digest}"
+
+
 def _validate_write_request(request: ConfigurationWriteRequest) -> None:
     _validate_expected_digest(request.expected_source_sha256)
     if request.replace and request.expected_source_sha256 is None:
         raise KernelError(
             "product_config_expected_digest_required",
-            "替换产品配置必须提供源摘要",
+            "替换产品配置必须提供源摘要" + _replace_hint(request.path),
         )
     if not request.replace and request.expected_source_sha256 is not None:
         raise KernelError("product_config_write_invalid", "新建产品配置不能提供源摘要")
@@ -356,7 +366,9 @@ def _validate_target(
 ) -> None:
     exists = prepared.target.exists() or _is_link_or_junction(prepared.target)
     if not request.replace and exists:
-        raise KernelError("product_config_exists", "产品配置已存在")
+        raise KernelError(
+            "product_config_exists", "产品配置已存在" + _replace_hint(prepared.target)
+        )
     if request.replace and not exists:
         raise KernelError("product_config_conflict", "待替换产品配置不存在")
     if request.replace:

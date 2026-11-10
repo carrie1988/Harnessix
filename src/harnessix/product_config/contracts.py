@@ -13,6 +13,7 @@ from harnessix.domain.models import ContractModel
 from harnessix.execution.contracts import canonical_digest
 from harnessix.models.config import (
     LOOPBACK_HOSTS,
+    LoopbackProxyUrl,
     ModelHTTPConfig,
     is_private_network_host,
     with_validated_base_url,
@@ -91,6 +92,7 @@ class ProviderDefinition(ProductConfigContract):
     pricing: ProviderPricing = Field(default="unknown", exclude_if=lambda value: value == "unknown")
     # 用户显式声明的内网自托管端点（局域网GPU服务器等）；本机回环端点无需声明。
     self_hosted: bool = Field(default=False, exclude_if=lambda value: value is False)
+    proxy_url: LoopbackProxyUrl = None
 
     @model_validator(mode="before")
     @classmethod

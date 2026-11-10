@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 22
+version: 24
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -891,7 +891,10 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - `OpenAIChatConfig.connect_retries`（0～5，默认0且不序列化）传给`httpx.AsyncHTTPTransport(retries=…)`：只在TCP连接或TLS握手失败时
   重连，HTTP请求尚未发出，不产生新的模型尝试、计费或重采样；请求发出后的任何失败仍按原无重试策略处理。
 - `OpenAIChatConfig.proxy_url`（默认None且不序列化）：显式本机HTTP代理（仅`http://127.0.0.1|localhost|[::1]:端口`，无凭据），
-  传给`httpx.AsyncHTTPTransport(proxy=…)`；客户端仍`trust_env=False`，不读取环境代理变量。
+  传给`httpx.AsyncHTTPTransport(proxy=…)`；客户端仍`trust_env=False`，不读取环境代理变量。`AnthropicConfig.proxy_url`规则相同，
+  传给`httpx2.AsyncHTTPTransport(proxy=…)`。产品配置经`ProviderDefinition.proxy_url`（向导`--proxy-url`）设置。
+- 产品代理选择（[`proxy.py`](../../src/harnessix/models/proxy.py)，ADR 0014修订）：显式`proxy_url`优先，否则读取`HTTPS_PROXY`/`HTTP_PROXY`
+  并遵守`NO_PROXY`（`*`或域名后缀）；本机与自托管端点直连；SOCKS不支持，由`doctor`提示。选定的代理只在内存中，经注入的Transport生效。
 - `OpenAIChatConfig.repair_tool_arguments`（默认关闭、不序列化）：工具参数严格解析失败时只尝试两类唯一、保意图的修复——
   字符串内原始控制字符（`json.loads(strict=False)`）与非法反斜杠转义（按字面量转义）；截断、括号不配、重复键、非有限数值不修复，
   仍为`tool_arguments_invalid`。

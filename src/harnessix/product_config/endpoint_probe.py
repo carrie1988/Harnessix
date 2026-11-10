@@ -10,11 +10,14 @@ import json
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Literal
-from urllib.parse import urlsplit
+from typing import TYPE_CHECKING, Any, Literal
 
-from harnessix.models.config import LOOPBACK_HOSTS, is_private_network_host
+from harnessix.models.proxy import model_request_proxy, unsupported_proxy_notice
+
+if TYPE_CHECKING:
+    from harnessix.product_config.contracts import ProviderDefinition
 
 ProbeStatus = Literal["passed", "warning", "failed"]
 
@@ -42,14 +45,12 @@ class EndpointProbe:
     seconds: float
 
 
-def _request(url: str, api_key: str, body: dict[str, Any] | None, timeout: float) -> Any:
-    # 回环与内网端点不经代理（与产品Provider一致），远端端点沿用环境代理设置。
-    host = urlsplit(url).hostname
-    opener = (
-        urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        if host in LOOPBACK_HOSTS or is_private_network_host(host)
-        else urllib.request.build_opener()
-    )
+def _request(
+    url: str, api_key: str, body: dict[str, Any] | None, timeout: float, proxy_url: str | None
+) -> Any:
+    # 只经调用方选定的代理（与实际模型请求同一规则），不读取系统代理，避免探测通过而任务连不上。
+    proxies = {} if proxy_url is None else {"http": proxy_url, "https": proxy_url}
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler(proxies))
     request = urllib.request.Request(
         url,
         data=None if body is None else json.dumps(body).encode(),
@@ -66,6 +67,7 @@ def probe_chat_endpoint(
     *,
     extra_body: dict[str, Any] | None = None,
     timeout: float = 300.0,
+    proxy_url: str | None = None,
 ) -> list[EndpointProbe]:
     """依次探测模型列表与工具调用；前一步失败时不再继续。"""
 
@@ -73,7 +75,7 @@ def probe_chat_endpoint(
     results: list[EndpointProbe] = []
     started = time.monotonic()
     try:
-        listed = _request(f"{base}/models", api_key, None, timeout)
+        listed = _request(f"{base}/models", api_key, None, timeout, proxy_url)
         names = {item.get("id") for item in listed.get("data", []) if isinstance(item, dict)}
     except (OSError, ValueError, urllib.error.URLError) as error:
         results.append(
@@ -102,7 +104,7 @@ def probe_chat_endpoint(
         **(extra_body or {}),
     }
     try:
-        reply = _request(f"{base}/chat/completions", api_key, body, timeout)
+        reply = _request(f"{base}/chat/completions", api_key, body, timeout, proxy_url)
         calls = reply["choices"][0]["message"].get("tool_calls") or []
     except (OSError, ValueError, KeyError, IndexError, urllib.error.URLError) as error:
         results.append(
@@ -131,3 +133,23 @@ def probe_chat_endpoint(
     else:
         results.append(EndpointProbe("tool_call", "failed", "工具参数缺少items", seconds))
     return results
+
+
+def probe_provider_endpoint(
+    provider: ProviderDefinition,
+    model: str,
+    api_key: str,
+    environ: Mapping[str, str],
+    *,
+    extra_body: dict[str, Any] | None = None,
+) -> list[EndpointProbe]:
+    """按与实际模型请求相同的规则选代理后探测；只有SOCKS等不支持的代理时先给出警告。"""
+
+    proxy = model_request_proxy(
+        provider.base_url, environ, configured=provider.proxy_url, direct=provider.self_hosted
+    )
+    notice = unsupported_proxy_notice(environ)
+    warnings = [] if notice is None else [EndpointProbe("proxy", "warning", notice, 0.0)]
+    return warnings + probe_chat_endpoint(
+        provider.base_url, model, api_key, extra_body=extra_body, proxy_url=proxy
+    )

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from typing import Literal, Self
+from urllib.parse import urlsplit
 
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from harnessix.execution.contracts import canonical_digest
-from harnessix.models.config import with_validated_base_url
+from harnessix.models.config import LOOPBACK_HOSTS, LoopbackProxyUrl, with_validated_base_url
 from harnessix.product_config.action_contracts import ProductActionCapabilityReport
 from harnessix.product_config.contracts import (
     ConfigurationDiagnosticReport,
@@ -69,6 +70,7 @@ class ConfigurationDraft(ProductConfigContract):
     )
     # 用户显式声明这是自己部署的内网端点：允许明文HTTP并套用本地模型预设。
     self_hosted: bool = Field(default=False, exclude_if=lambda value: value is False)
+    proxy_url: LoopbackProxyUrl = None
 
     @model_validator(mode="before")
     @classmethod
@@ -90,6 +92,9 @@ class ConfigurationDraft(ProductConfigContract):
             raise ValueError("Anthropic配置草案不能包含OpenAI输出Token、思考协议或工具选择参数")
         if self.thinking not in (None, "off") and self.thinking_protocol is None:
             raise ValueError("配置草案的思考模式要求声明思考协议")
+        local = self.self_hosted or urlsplit(self.base_url).hostname in LOOPBACK_HOSTS
+        if self.proxy_url is not None and local:
+            raise ValueError("本机和内网自托管端点直接连接，不经代理")
         return self
 
 

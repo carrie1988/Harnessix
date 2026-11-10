@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 617,
-    "physical_lines": 134216,
-    "logical_lines": 117628,
-    "documented_modules": 617,
+    "source_files": 618,
+    "physical_lines": 134368,
+    "logical_lines": 117744,
+    "documented_modules": 618,
     "classes": 1249,
     "documented_classes": 651,
-    "functions": 5225,
-    "documented_functions": 1644,
+    "functions": 5234,
+    "documented_functions": 1651,
     "public_exports": 372,
     "public_contract_types": 166,
     "undocumented_public_behavior": 0,
@@ -1252,7 +1252,7 @@
       "path": "src/harnessix/models/anthropic.py",
       "qualname": "AnthropicProvider",
       "kind": "class",
-      "line": 74,
+      "line": 79,
       "lines": 155,
       "documented": true
     },
@@ -1262,7 +1262,7 @@
       "path": "src/harnessix/models/anthropic.py",
       "qualname": "AnthropicProvider.stream",
       "kind": "function",
-      "line": 130,
+      "line": 135,
       "lines": 99,
       "documented": false,
       "decision_complexity": 26
@@ -1655,7 +1655,7 @@
       "path": "src/harnessix/product_config/contracts.py",
       "qualname": "ProductConfigV2.valid_graph",
       "kind": "function",
-      "line": 215,
+      "line": 217,
       "lines": 48,
       "documented": false,
       "decision_complexity": 33
@@ -1741,7 +1741,7 @@
       "path": "src/harnessix/product_config/runtime.py",
       "qualname": "SafeFallbackProvider",
       "kind": "class",
-      "line": 279,
+      "line": 295,
       "lines": 106,
       "documented": true
     },

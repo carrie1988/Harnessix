@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 128
+version: 129
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -2250,6 +2250,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 129 | `d761381c` | 2026-11-10 | `ProviderDefinition.proxy_url`与向导`--proxy-url`：云端点经显式本机HTTP代理访问（优先于环境变量），本机与内网自托管端点拒绝代理；按ADR 0014修订，未显式配置时读取`HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY`；OpenAI Chat与Anthropic请求、`doctor --probe-model`使用同一代理选择 |
 | 128 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `ProviderDefinition.self_hosted`与向导`--self-hosted`：内网自托管端点可用本地预设和免费计价；未声明时维持原严格校验。预检新增`product_self_hosted_key_length`，拒绝短于16字节的本地占位Key。向导默认为OpenAI Chat开启紧凑工具结果，并为已核对的DeepSeek、百炼模型填写上下文窗口；`agent-server --unattended`由`harnessix exec`传入，开启完成守卫并在费用未知时按预留额继续；向导配置重试4次；声明上下文窗口时按窗口收紧输出上限，放不下思考时自动关闭思考，手写配置违反约束时校验失败；原生执行指令v3允许在用户要求时经`host_command`提交，内置Git交付移至1.1 |
 | 67 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job实际结果、核心Job可读性失败及Snapshot候选本机回归边界；安装升级治理仅为门禁例证 |
 | 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |
@@ -3109,7 +3110,8 @@ Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新�
 [`endpoint_probe.py`](../../src/harnessix/product_config/endpoint_probe.py)的`probe_chat_endpoint`只在
 `harnessix code doctor --probe-model`时运行，启动预检仍离线：先请求`/models`确认活动Profile的模型存在，
 再发一次带单个数组参数工具的补全（按思考协议关闭思考），检查是否发起工具调用、参数是否为合法JSON且数组未被
-编码成字符串（后者报告warning，提示开启`normalize_tool_arguments`）。回环端点不经代理；API Key只放请求头，
+编码成字符串（后者报告warning，提示开启`normalize_tool_arguments`）。探测与模型请求走同一路由：只经Provider配置的
+`proxy_url`或`HTTPS_PROXY`等环境变量（`models/proxy.py`），不读取系统代理设置，避免探测通过而任务连不上；只有SOCKS代理时给出警告；API Key只放请求头，
 结果不含密钥；任一项failed时doctor退出码为2。验证见
 [`test_endpoint_probe.py`](../../tests/product_config/test_endpoint_probe.py)。
 

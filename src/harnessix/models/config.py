@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ipaddress
 from collections.abc import Mapping
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 from urllib.parse import urlsplit
 
 from pydantic import Field, model_validator
@@ -86,6 +86,16 @@ def with_validated_base_url(data: object, *, private_network_field: str) -> obje
     }
 
 
+# 显式本机HTTP代理（如http://127.0.0.1:7890），不允许凭据或远程代理；产品另按环境变量选代理（models/proxy.py）。
+LoopbackProxyUrl = Annotated[
+    str | None,
+    Field(
+        pattern=r"^http://(127\.0\.0\.1|localhost|\[::1\]):[1-9][0-9]{0,4}$",
+        exclude_if=lambda value: value is None,
+    ),
+]
+
+
 class ModelHTTPConfig(ContractModel):
     base_url: str = Field(max_length=2048)
     model: str = Field(min_length=1, max_length=256, pattern=r"^[A-Za-z0-9_.:/-]+$")
@@ -133,12 +143,7 @@ class OpenAIChatConfig(ModelHTTPConfig):
     )
     # 仅在TCP连接或TLS握手失败时重连（请求字节尚未发出，不产生计费或新的模型尝试）。
     connect_retries: int = Field(default=0, ge=0, le=5, exclude_if=lambda value: value == 0)
-    # 显式本机HTTP代理（如http://127.0.0.1:7890）；仍不读取环境代理变量，不允许凭据或远程代理。
-    proxy_url: str | None = Field(
-        default=None,
-        pattern=r"^http://(127\.0\.0\.1|localhost|\[::1\]):[1-9][0-9]{0,4}$",
-        exclude_if=lambda value: value is None,
-    )
+    proxy_url: LoopbackProxyUrl = None
     # 工具参数严格解析失败时只修复字符串内原始控制字符与非法反斜杠转义；其他畸形仍为协议失败。
     repair_tool_arguments: bool = Field(default=False, exclude_if=lambda value: value is False)
     # 工具结果线上正文：json发送规范JSON；text把搜索、读取与命令结果渲染为紧凑文本
@@ -191,3 +196,4 @@ class OpenAIChatConfig(ModelHTTPConfig):
 class AnthropicConfig(ModelHTTPConfig):
     base_url: str = Field(default="https://api.anthropic.com", max_length=2048)
     api_key_env: str = Field(default="ANTHROPIC_API_KEY", pattern=r"^[A-Z_][A-Z0-9_]{0,127}$")
+    proxy_url: LoopbackProxyUrl = None

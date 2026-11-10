@@ -19,7 +19,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.models.config import is_private_network_host
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProviderKind
-from harnessix.product_config.endpoint_probe import EndpointProbe, probe_chat_endpoint
+from harnessix.product_config.endpoint_probe import EndpointProbe, probe_provider_endpoint
 from harnessix.product_config.errors import ProductConfigError
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import (
@@ -102,6 +102,10 @@ def _configure_parser() -> argparse.ArgumentParser:
         "--self-hosted",
         action="store_true",
         help="声明这是你自己部署在内网的模型端点：允许明文HTTP，并按本地模型配置",
+    )
+    parser.add_argument(
+        "--proxy-url",
+        help="经本机HTTP代理访问云端点，如http://127.0.0.1:7890；优先于HTTPS_PROXY等环境变量",
     )
     parser.add_argument("--replace", action="store_true")
     parser.add_argument("--expected-source-sha256")
@@ -226,10 +230,11 @@ def _probe_model(arguments: argparse.Namespace) -> list[EndpointProbe]:
     if not api_key:
         return [EndpointProbe("credential", "failed", f"环境变量{variable}未设置", 0.0)]
     protocol = provider.thinking_protocol
-    return probe_chat_endpoint(
-        provider.base_url,
+    return probe_provider_endpoint(
+        provider,
         profile.model,
         api_key,
+        os.environ,
         extra_body=_PROBE_THINKING_OFF.get(protocol) if protocol else None,
     )
 
@@ -398,6 +403,7 @@ def _configure(argv: Sequence[str]) -> None:
                 "environment_variable": arguments.api_key_env,
                 "output_token_parameter": arguments.output_token_parameter,
                 "self_hosted": self_hosted,
+                "proxy_url": arguments.proxy_url,
                 "context_window_tokens": arguments.context_window_tokens
                 or (
                     known_context_window(base_url, model)

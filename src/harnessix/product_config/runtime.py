@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from collections.abc import AsyncGenerator, Callable, Mapping
 from contextlib import aclosing
 from dataclasses import dataclass
@@ -19,6 +20,11 @@ from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
     ResponseFailed,
+)
+from harnessix.models.proxy import (
+    anthropic_proxy_transport,
+    model_request_proxy,
+    openai_proxy_transport,
 )
 from harnessix.product_config.contracts import (
     ConfigurationDiagnostic,
@@ -199,6 +205,12 @@ def default_provider_factory(
     api_key: str,
 ) -> ModelProvider:
     capabilities = ChatCapabilities(**profile.capabilities.model_dump())
+    proxy = model_request_proxy(
+        definition.base_url,
+        os.environ,
+        configured=definition.proxy_url,
+        direct=definition.self_hosted,
+    )
     if definition.kind == "openai_chat":
         from harnessix.models.openai_chat import OpenAIChatProvider
 
@@ -231,8 +243,10 @@ def default_provider_factory(
                 repair_tool_arguments=definition.repair_tool_arguments,
                 prompt_cache="stable_tail" if definition.stable_prompt_prefix else None,
                 tool_result_format="text" if definition.compact_tool_results else "json",
+                proxy_url=definition.proxy_url,
             ),
             api_key=api_key,
+            transport=openai_proxy_transport(proxy),
         )
     from harnessix.models.anthropic import AnthropicProvider
 
@@ -252,8 +266,10 @@ def default_provider_factory(
             max_frame_bytes=profile.max_frame_bytes,
             max_chunks=profile.max_chunks,
             private_network_endpoint=definition.self_hosted,
+            proxy_url=definition.proxy_url,
         ),
         api_key=api_key,
+        transport=anthropic_proxy_transport(proxy),
     )
 
 
