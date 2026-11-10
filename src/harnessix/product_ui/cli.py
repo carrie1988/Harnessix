@@ -325,7 +325,7 @@ def _report_json(report: ProductPreflightReport) -> str:
 
 
 def _render_preflight(report: ProductPreflightReport) -> str:
-    labels = {"passed": "通过", "failed": "失败", "skipped": "跳过"}
+    labels = {"passed": "通过", "failed": "警告" if report.ready else "失败", "skipped": "跳过"}
     lines = [
         f"Harnessix Code检查结论：{'可启动' if report.ready else '不可启动'}",
         f"模式：{report.mode}；平台：{report.platform}；报告摘要：{report.report_sha256}",
