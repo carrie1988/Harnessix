@@ -280,3 +280,6 @@ def test_a_user_cancel_reads_as_a_notice_not_an_error() -> None:
     ] == [("错误", "模型超时（model_timeout）")]
     wrong_key = transcript_lines(view("provider_authentication", "Provider 返回结构化失败"))
     assert wrong_key[0].text.startswith("模型服务拒绝了 API Key")
+    unknown = transcript_lines(view("uncertain_effect", "存在未知效果，禁止自动重放"))
+    assert unknown[0].role == "错误" and unknown[0].text.startswith("操作结果无法确认")
+    assert "uncertain_effect" not in unknown[0].text

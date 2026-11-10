@@ -42,6 +42,9 @@ _FAILURE_TEXT: Final = {
     "provider_max_output_tokens": "模型单次输出达到长度上限，可以让它分步完成",
     "budget_exceeded": "已达到本轮的 Token 上限，可以继续发送任务开始新一轮",
     "time_budget_exceeded": "已达到本轮的时间上限，可以继续发送任务开始新一轮",
+    "uncertain_effect": (
+        "操作结果无法确认，本轮已停止且不会自动重做；请先检查工作区改动（如 git status）再继续"
+    ),
 }
 _TURN_STATUS_LABELS: Final = {
     "accepted": "准备中",
