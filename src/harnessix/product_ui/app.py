@@ -39,21 +39,32 @@ class ControllerUpdated(Message):
         self.state = state
 
 
+# 输入框自带Ctrl+A/E/U/X（行首、行尾、删除、剪切）；设为优先，输入框有焦点时界面快捷键照样生效。
+_BINDINGS: list[Binding | tuple[str, str] | tuple[str, str, str]] = [
+    Binding("ctrl+n", "new_thread", "新建会话"),
+    Binding("ctrl+r", "reconnect", "重新连接"),
+    Binding("ctrl+a", "approval", "审批", priority=True),
+    Binding("ctrl+e", "toggle_auto_accept", "自动接受修改", priority=True),
+    Binding("ctrl+u", "question", "回答", priority=True),
+    Binding("ctrl+x", "cancel_turn", "取消Turn", priority=True),
+    Binding("ctrl+s", "steer_turn", "补充Turn"),
+    Binding("f1", "error_help", "帮助"),
+    Binding("ctrl+q", "quit_product", "退出"),
+]
+_MAIN_SCREEN_ACTIONS = frozenset(
+    {"approval", "toggle_auto_accept", "question", "cancel_turn", "steer_turn"}
+)
+
+
 class ProductApp(App[CloseReport]):
     """Harnessix Code首个可恢复全屏终端入口。"""
 
     TITLE, SUB_TITLE = "Harnessix Code", "生产级 Coding Agent"
-    BINDINGS = [
-        Binding("ctrl+n", "new_thread", "新建会话"),
-        Binding("ctrl+r", "reconnect", "重新连接"),
-        Binding("ctrl+a", "approval", "审批"),
-        Binding("ctrl+e", "toggle_auto_accept", "自动接受修改"),
-        Binding("ctrl+u", "question", "回答"),
-        Binding("ctrl+x", "cancel_turn", "取消Turn"),
-        Binding("ctrl+s", "steer_turn", "补充Turn"),
-        Binding("f1", "error_help", "帮助"),
-        Binding("ctrl+q", "quit_product", "退出"),
-    ]
+    BINDINGS = _BINDINGS
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """弹窗打开时停用主界面操作，按键留给弹窗里的输入框。"""
+        return action not in _MAIN_SCREEN_ACTIONS or len(self.screen_stack) == 1
 
     def __init__(self, controller: ProductController, request: StartRequest) -> None:
         super().__init__()

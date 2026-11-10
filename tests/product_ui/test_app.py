@@ -64,6 +64,9 @@ async def test_composer_takes_focus_whenever_it_becomes_usable(tmp_path: Path) -
                 await pilot.press("ctrl+n")
                 await _wait_until(lambda: len(controller.state.threads) == 2)
                 await _wait_until(lambda: not composer.disabled and composer.has_focus)
+                # 输入框自带Ctrl+E（行尾）；界面快捷键优先，输入框有焦点时也能切换自动接受。
+                await pilot.press("ctrl+e")
+                await _wait_until(lambda: controller.state.auto_accept_edits)
 
 
 async def test_product_app_drives_session_picker_composer_and_resize(tmp_path: Path) -> None:
