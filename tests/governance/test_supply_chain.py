@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 from scripts.license_decisions import decide
@@ -34,7 +35,8 @@ def test_sbom_is_deterministic_and_complete() -> None:
     document = json.loads(first)
     names = [item["name"] for item in document["components"]]
     assert names == sorted(names)
-    assert len(names) == 73
+    locked = tomllib.loads(lock.read_text(encoding="utf-8"))["package"]
+    assert names == sorted(item["name"] for item in locked if item["name"] != "harnessix")
     assert document["bomFormat"] == "CycloneDX" and document["specVersion"] == "1.5"
     validate_sbom(document)
 
@@ -65,13 +67,15 @@ def test_license_and_logic_requires_all_parts() -> None:
     assert decide("MIT AND Apache-2.0", policy)[0] == "allow"
 
 
-def test_committed_license_report_keeps_restricted_archives_blocked() -> None:
-    # 工具正确性与发布资格不同：测试证明失败关闭，CI许可门禁仍真实失败。
+def test_committed_license_report_passes_only_through_archive_bound_reviews() -> None:
+    # pywin32按精确Archive登记窄例外（2026-11-10用户决定），拒绝策略本身不变。
     completed = _run("scripts.license_scan", "--check")
     report = json.loads((ROOT / "governance/license-scan-v2.json").read_bytes())
-    assert completed.returncode == 1, completed.stderr
-    assert report["violation_count"] == 12
-    assert "许可证违规" in completed.stderr
+    assert completed.returncode == 0, completed.stderr
+    assert report["violation_count"] == 0
+    excepted = [e for e in report["entries"] if e["reason"] == "license_archive_exception_allowed"]
+    assert {e["name"] for e in excepted} == {"pywin32"} and len(excepted) == 12
+    assert all(e["review_id"] and e["notice_review_signals"] for e in excepted)
 
 
 def test_secret_rules_hit_sensitive_and_miss_benign(tmp_path: Path) -> None:

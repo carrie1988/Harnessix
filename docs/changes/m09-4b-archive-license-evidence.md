@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 2
+version: 3
 code_revision: 1f483ceb267fe2d15ca4d53f794184fd6aa76ecc
 owners:
   - core
@@ -269,6 +269,23 @@ MCP的Windows条件依赖引入`pywin32 312`。其12个Wheel实际包含`adodbap
 后续必须完成依赖替换可行性评估，或精确发行物例外与实际分发义务评审；未经决策不得改变拒绝策略。
 扫描器测试通过但`make supply-chain`/CI许可发布步骤失败是正确的失败关闭，不把失败改成continue-on-error。
 历史v1报告保留仅作旧证据，不能作为发布输入。0.9.4b、0.9.4及0.9仍未完成。
+
+### 7.1a 2026-11-10处置：精确Archive窄例外
+
+用户决定三平台都要支持，不靠排除Windows绕过审查，并选择按精确Archive登记窄例外，拒绝策略本身不变。
+
+- 收据合同增加可选字段`excepted_atoms`：只能列出该收据表达式中、且不在白名单里的原子（拒绝或未登记均可）。
+  收据已绑定Archive、元数据及全部通知文件的摘要，所以例外只覆盖审过的这些字节；版本、构建或任一通知变化即失效。
+- 带例外的收据下，受限正文信号照常记录在报告里，但不再强制判违规；放行原因单列为`license_archive_exception_allowed`，
+  便于法务复核。没有例外字段的收据遇到受限正文仍判`license_notice_review_required`。
+- pywin32 312的12个Wheel逐件核对15个许可文件后记为
+  `BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0`，
+  例外原子为`LGPL-2.1-or-later`、`LicenseRef-Scintilla`、`Python-2.0`。依据：pywin32只是mcp在Windows上的条件依赖，
+  mcp只调用win32api、win32con、win32job，Harnessix不直接导入pywin32，两者都不导入adodbapi；Harnessix不随包分发pywin32。
+- google-re2 1.1.20251105后加入锁文件，从未采集证据。34个Archive（33个Wheel、1个sdist）的LICENSE逐件核对为BSD-3-Clause
+  （两种字节仅换行符不同），按Archive登记收据；元数据只有BSD License分类器。
+- 证据重新采集为811个Archive；`license_scan.py --check`通过，0违规。这不是法务结论，P1-15法务评审照常进行，
+  评审可把例外原子移入白名单，或要求替换依赖。
 
 ### 7.2 部署、兼容、回退与复核
 
