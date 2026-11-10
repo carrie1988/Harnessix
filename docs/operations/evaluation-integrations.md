@@ -325,6 +325,12 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
      （被重试吸收的次数），二者进入运行报告的`system_refs`。产品侧只认证新增事件的根治另行决策。
    - 配置：`harnessix_configs.py`按第一阶段本地组别生成Provider与命令Profile配置（同一模型、关闭思考、
      同一环境预设与900秒命令期限），模型经容器回环端口转发。
+   - 命令环境：外部边界命令只得到Profile声明的变量（基础环境`LANG=C`、`LC_ALL=C`、`PATH=/usr/bin:/bin`
+     加预设），不继承容器环境，所以固定的Python `actions.json`只适用于Verified。多语言任务开启
+     `task_command_environment`：安装阶段用容器内的集成包读取容器自身环境（`/proc/1/environ`，即镜像ENV），
+     按Harbor任务的语言标签叠加`task_environment.py`的语言预设（HOME与可写缓存在/tmp，镜像在/root下预备的
+     模块缓存、corepack与Maven Wrapper发行版指回原处，Go/Rust/npm/yarn/composer/mvn离线开关），镜像只设LANG时
+     `LC_ALL`跟随它；生成的`actions.json`副本在`agent/harnessix-actions.json`。不按任务或仓库特判。
    - 组别规格的`artifacts`列出安装包与配置模板，`freeze`按内容摘要计入组别配置摘要。
    - 任务说明模板（2026-11-09用户决定，属评测侧，产品指令不变）：`prompt_template_path`以仓库相对路径指向
      [`benchmarks/harbor/harnessix/swebench-task.j2`](../../benchmarks/harbor/harnessix/swebench-task.j2)，
