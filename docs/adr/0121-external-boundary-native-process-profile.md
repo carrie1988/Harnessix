@@ -1,17 +1,20 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [product_config, processes, sandbox, evals]
 related_adrs:
   - docs/adr/0066-sandbox-network-and-secret-boundaries.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
+  - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
   - docs/adr/0120-system-neutral-evaluation-platform.md
 related_tests:
   - tests/product_config/test_native_process_profile.py
   - tests/product_config/test_native_process_action.py
+  - tests/product_config/test_generic_execution_context.py
+  - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
 
@@ -98,3 +101,39 @@ supersedes: []
 - 装配：缺少环境断言时工具被省略且原因码正确；断言存在时工具可用，执行计划记录`host_guarded/host/full`。
 - 执行：命令在工作区执行并保留写入；不继承App Server环境；超时与输出上限生效；重启后按账本对账，不重放命令。
 - 评测：E0的Harnessix臂在Harbor任务容器内使用本Profile完成5题，官方判分与Harbor奖励一致，逐步记录可从Langfuse读回。
+
+## 第2版：外部边界的系统指令（2026-11-09）
+
+### 问题
+
+第1版只新增了命令工具，系统指令沿用容器命令的通用执行指令（`harnessix.generic-execution-instructions/v5`）。
+本机沙箱指令（ADR 0113）上线时，`server.py`有意让外部边界继续使用通用指令：本机命令指令声称有本机沙箱、
+断网、`.git`只读并提供`host_command`升级，这些在外部边界都不成立；同时评测用的指令文本保持不变。
+但通用指令本身描述的是容器：工作区只读或一次性快照、快照写入在命令后消失、断网、`/tmp`每次调用都清空、
+安装的包不会保留。外部边界的命令工具说明却写明“可直接读写工作区，改动会保留；隔离与网络由外部环境决定”。
+模型因此拿到互相矛盾的说明，例如不敢复用`/tmp`中的文件，或误以为不能联网。
+
+### 决策（用户决定14A）
+
+1. 外部边界使用独立指令`harnessix.external-boundary-execution-instructions/v1`（2026-11-10升为v2：同步通用指令v6关于命令Profile可省略的一句），只写在外部边界成立的事实：
+   - 命令在任务环境中直接运行，从工作区根目录开始，Harnessix不另加容器或沙箱；
+   - 每次调用是新的Shell，`cd`与导出的变量不跨调用保留；工作区、`/tmp`中的写入与安装的包都保留到后续调用；
+   - 修改源码仍只通过受信补丁（`apply_patch_batch`），不用Shell命令改写；命令在工作区留下的文件不会消失，
+     临时文件放在`/tmp`；
+   - 网络是否可用由环境决定，指令不作任何断言；
+   - 读工具的路径说明（工作区相对路径，工作区外文件只能经命令访问）保留。
+   执行环境一段以外，其余规则与通用执行指令v5逐字相同，测试逐字比对，两种模式只在执行语义的描述上不同。
+2. 选择规则（`server._native_instructions`）只看实际验证通过的命令工具，配置本身不授予权限：
+   本机沙箱或沙箱外命令通过验证时用本机命令指令（与外部边界同时存在时仍以其为准，外部边界从不得到
+   声称本机沙箱或`host_command`的指令）；只有外部边界命令时用外部边界指令；没有原生命令时，容器命令
+   沿用通用执行指令。缺少`HARNESSIX_EXTERNAL_BOUNDARY=1`断言时工具被省略，也就不切换指令。
+3. 第1版保护的性质保持：通用执行指令v5与本机命令指令v3正文、版本不变；外部边界工具描述与指纹不变；
+   `build_product_agent_context`拒绝把外部边界指令与本机命令指令并用，或在没有通用执行时使用。
+
+### 影响
+
+- Harbor评测组别（外部边界Profile）的系统指令从通用指令v5换成本指令v1，属于评测输入的已知变化：
+  任务规则逐字不变，只有执行环境一段改为如实描述。此后的运行与此前的运行比较时需注明指令版本。
+- 产品在自备隔离环境中设置`HARNESSIX_EXTERNAL_BOUNDARY=1`运行时，得到同样的指令。
+- 回归：[指令正文与互斥校验](../../tests/product_config/test_generic_execution_context.py)、
+  [按后端选择与启动接线](../../tests/product_config/test_server_and_cli.py)。

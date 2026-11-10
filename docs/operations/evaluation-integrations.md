@@ -319,7 +319,12 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
      摘要记`runner_error`（如`AgentSDKError:publication_history_timeout`）与`transient_read_errors`
      （被重试吸收的次数），二者进入运行报告的`system_refs`。产品侧只认证新增事件的根治另行决策。
    - 配置：`harnessix_configs.py`按第一阶段本地组别生成Provider与命令Profile配置（同一模型、关闭思考、
-     同一环境预设与900秒命令期限），模型经容器回环端口转发。
+     同一环境预设与900秒命令期限），模型经容器回环端口转发。命令走外部边界Profile，系统指令为
+     `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版）。
+   - 产品配置覆盖：product.json由产品向导生成，只允许`EVAL_ALLOWED_OVERRIDES`登记的字段，每项都是已知的评测与产品差异：
+     `completion_guard`开启（无人值守）；`compaction`为`third_window`（2026-11-09用户决定：产品默认改回窗口一半处压缩、
+     压到四分之一，评测为100步约600万Token的累计预算保留三分之一处压缩、压到六分之一，262144 Token窗口下触发262144字节、
+     目标131072字节，与改为可配置前一致）。
    - 组别规格的`artifacts`列出安装包与配置模板，`freeze`按内容摘要计入组别配置摘要。
    - 任务说明模板（2026-11-09用户决定，属评测侧，产品指令不变）：`prompt_template_path`以仓库相对路径指向
      [`benchmarks/harbor/harnessix/swebench-task.j2`](../../benchmarks/harbor/harnessix/swebench-task.j2)，

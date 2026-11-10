@@ -158,7 +158,7 @@ export MODEL_API_KEY='<由Secret系统注入>'
 | `required_capabilities` | 只强制Streaming Usage | 首选和所有Fallback必须满足 |
 | `fallback_profiles` | 最多5项 | 展开后无环、无重复，链长最多6 |
 | `max_output_tokens` | 4096，1～1,000,000 | 单响应输出参数 |
-| `context_window_tokens` | 空（不序列化），8192～2,097,152 | 模型上下文窗口；声明后输入上限与压缩阈值按窗口换算（窗口三分之一时压缩、压到六分之一），换算结果不超过出站请求扫描容量的四分之三（约262144 Token），未声明沿用固定上限 |
+| `context_window_tokens` | 空（不序列化），8192～2,097,152 | 模型上下文窗口；声明后输入上限与压缩阈值按窗口换算（默认窗口一半时压缩、压到四分之一，见下文`compaction`），换算结果不超过出站请求扫描容量的四分之三（约262144 Token），未声明沿用固定上限 |
 | `timeout_seconds` | 120，最大3600 | Provider总Timeout |
 | `io_timeout_seconds` | 30，最大300 | 连接/读取Timeout |
 | `max_attempts` | 2，1～5 | 单Profile尝试上限；链总和不超过32 |
@@ -167,6 +167,10 @@ export MODEL_API_KEY='<由Secret系统注入>'
 | `max_response_bytes` | 2 MiB，最大16 MiB | 完整响应上限 |
 | `max_frame_bytes` | 256 KiB，最大1 MiB | 单流分片上限 |
 | `max_chunks` | 10,000，最大100,000 | 流分片数量上限 |
+
+顶层`compaction`选择声明窗口时的压缩点：默认`half_window`（一半时压缩、压到四分之一，不序列化）；
+`third_window`在三分之一时压缩、压到六分之一，单次请求与累计输入更小，但有损压缩更频繁，每次都要等待摘要，
+只建议用于有累计Token预算的无人值守任务。链上任一Profile未声明`context_window_tokens`时该设置不生效。
 
 Safe Fallback只在首选候选没有暴露文本、Tool Call或未来未知事件，失败属于可重试的`transport`、`rate_limit`
 或`provider_internal`，并且Fallback审计成功时发生。配置Fallback不等于任何错误都会自动切换。

@@ -137,7 +137,7 @@ supersedes: []
 - **零配置**：
   - [`zero_config.py`](../../src/harnessix/product_config/zero_config.py) 在用户入口显式请求时（预检请求的 `zero_config_actions`，App Server 的 `--zero-config-actions`），按本机探测生成命令工具：沙箱可用时为 `exec_command.shell` 加 `host_command.host-shell`，不可用时只有后者，并在说明中写明原因；
   - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
-- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v2`；外部边界与容器使用通用指令（`harnessix.generic-execution-instructions/v4`）。两者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
+- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v3`；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
 - **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
   - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
@@ -155,6 +155,7 @@ supersedes: []
 - 执行：工具名`exec_command.<id>`、执行器`product.command-profile.<id>`，与容器命令Profile共用身份（ID互斥），
   公开输出合同、审批规则与启动恢复不变。执行计划记为`host_guarded/host/full`，能力提供方`external-boundary`。
 - 语义：命令以工作区根为当前目录直接读写，改动保留；只得到Profile预设环境变量，不继承App Server环境；
+  系统指令使用如实描述这些语义的外部边界版本（见上文“系统指令”）；
   非零退出码报`process_nonzero_exit`，超时、输出上限、账本对账与Eval测试Profile共用
   [`host_process_action.py`](../../src/harnessix/product_config/host_process_action.py)宿主执行器。
 - 回归：[合同与证明](../../tests/product_config/test_native_process_profile.py)、
@@ -291,8 +292,8 @@ Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`Wor
 ### 1.1 正式Coding Context装配
 
 默认产品在认证Session、Provider、Tools和Action Owner均就绪后，通过
-[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source。
-输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），历史达到窗口三分之一时压缩、压到六分之一（较低的压缩点限制长任务的单次请求规模、累计输入与单次摘要耗时），摘要预留至多为压缩目标的四分之一（上限20480字节），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
+[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source，
+输入上限与压缩阈值由[`context_budget.py`](../../src/harnessix/product_config/context_budget.py)换算。输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），压缩点由顶层`compaction`选择：默认`half_window`在历史达到窗口一半时压缩、压到四分之一；`third_window`在三分之一时压缩、压到六分之一（单次请求与累计输入更小，但有损压缩更频繁、每次都要等摘要，只用于有累计Token预算的无人值守任务，Harbor评测组别显式选择）。摘要预留至多为压缩目标的四分之一（上限20480字节，`half_window`下即窗口的十六分之一），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（`half_window`触发393216字节、目标196608字节；`third_window`触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要，`compaction`不生效。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
 Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，不创建第二HTTP Client。
 
 正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、
@@ -679,6 +680,7 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `providers` | 1～16 | 按Provider ID排序且唯一；Secret名称和版本精确存在 |
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
 | `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
+| `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设，Harbor评测组别为累计Token预算显式选择`third_window`（已知评测与产品差异） |
 
 每个Profile都独立展开整条Fallback链并验证：
 

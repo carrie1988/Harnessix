@@ -239,6 +239,15 @@
           "default": false,
           "title": "Completion Guard",
           "type": "boolean"
+        },
+        "compaction": {
+          "default": "half_window",
+          "enum": [
+            "half_window",
+            "third_window"
+          ],
+          "title": "Compaction",
+          "type": "string"
         }
       },
       "required": [
