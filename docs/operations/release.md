@@ -34,11 +34,13 @@ flowchart LR
 
 | 阶段 | 内容 | 失败时 |
 |---|---|---|
-| 发布前提 | 标签等于 `v` 加 `pyproject.toml` 中的版本；`CHANGELOG.md` 有该版本小节且已写明发布日期；标签指向的提交在 `main` 上；该提交的 CI 已有一次全部通过 | 停止，不构建 |
+| 发布前提 | 标签等于 `v` 加 `pyproject.toml` 中的版本；`CHANGELOG.md` 有该版本小节且已写明发布日期；标签指向的提交在 `main` 上；该提交的 CI 已有一次通过，只有 Windows 完整测试集（`windows-trusted-execution`）不计入 | 停止，不构建 |
 | 构建 | 只构建一次 Wheel，扫描制品中的密钥，核对文件名并记录 SHA-256 | 停止 |
 | 冒烟 | 在 Ubuntu、macOS、Windows 上用 `uv tool install` 安装同一个 Wheel，运行 `harnessix --help` 和 `harnessix license` | 停止 |
 | 上传 | 用 PyPI 可信发布（OIDC）上传，并由官方 Action 生成来源证明（PEP 740） | 可重新运行该任务 |
 | GitHub Release | 附上 Wheel、`SHA256SUMS` 和该版本的 CHANGELOG 小节；预发布版本标为 Pre-release | 可重新运行该任务 |
+
+Windows 是 1.0 门槛，Beta 先开放 macOS 与 Linux（2026-11-10 决定）。`windows-trusted-execution` 任务最后一步在 Windows 上运行完整测试集，Windows CI 停用期间积累了存量失败；在 1.0 前清零之前，它不阻挡预览版发布。该任务的其余步骤（NTFS 文件事务、Git 读取、状态备份与恢复）随之不计入；三组 Windows Git 原生验收是独立任务，照常要求通过。
 
 ## 2. 一次性设置（维护者）
 

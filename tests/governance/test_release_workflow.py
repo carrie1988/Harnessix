@@ -102,7 +102,10 @@ def test_release_waits_for_ci_mainline_and_three_platform_smoke() -> None:
     gate = "\n".join(step.get("run", "") for step in jobs["gate"]["steps"])
     assert "release_check.py gate" in gate
     assert "merge-base --is-ancestor" in gate and "origin/main" in gate
-    assert "workflows/ci.yml/runs?head_sha=" in gate and '.conclusion == "success"' in gate
+    assert "workflows/ci.yml/runs?head_sha=" in gate and "/jobs?per_page=100" in gate
+    # 只有Windows完整测试集不阻挡预览版（W1）；其余任务必须全部成功。
+    assert 'select(.name != "windows-trusted-execution")' in gate
+    assert 'select(.conclusion != "success")' in gate
     assert jobs["gate"]["permissions"] == {"contents": "read", "actions": "read"}
     assert jobs["smoke"]["strategy"]["matrix"]["os"] == [
         "ubuntu-latest",

@@ -42,14 +42,21 @@ jobs:
             echo "::error::标签指向的提交不在main上；只发布已合入main的提交"
             exit 1
           fi
-      - name: 该提交的CI已全部通过
+      - name: 该提交的CI已通过（Windows完整测试集除外）
+        # Windows是1.0门槛、Beta先开放macOS与Linux（2026-11-10用户决定W1）；Windows完整测试集的存量失败
+        # 单独跟踪，在1.0前清零。其余任务（含三组Windows Git验收）必须全部通过。
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&per_page=50" \
-            --jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length')
-          if [ "$passed" -eq 0 ]; then
-            echo "::error::提交$GITHUB_SHA还没有全部通过的CI运行；等main上的CI通过后，重新运行本工作流"
+          passed=0
+          for run in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=completed&per_page=20" --jq '.workflow_runs[].id'); do
+            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=100" --jq '.jobs | length')
+            failed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=100" \
+              --jq '[.jobs[] | select(.name != "windows-trusted-execution") | select(.conclusion != "success")] | length')
+            if [ "$jobs" -ge 10 ] && [ "$failed" -eq 0 ]; then passed=1; break; fi
+          done
+          if [ "$passed" -ne 1 ]; then
+            echo "::error::提交$GITHUB_SHA还没有通过的CI运行（Windows完整测试集除外）；等CI通过后，重新运行本工作流"
             exit 1
           fi
 
