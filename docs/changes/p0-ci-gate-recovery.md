@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 3
+version: 4
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models]
@@ -115,9 +115,23 @@ CI权限保持`contents: read`。`self_hosted`相关的信任边界见[接入自
 
 每个门禁在CI中独立显示结果。新增配置错误码`product_configure_self_hosted_required`和预检项`product_self_hosted_key_length`（错误码`self_hosted_key_too_short`）。
 
+`code doctor`的文本输出中，结论为“可启动”时，失败但不影响启动的检查（例如沙箱不可用）显示为“警告”，避免用户误以为无法使用；
+结论为“不可启动”时仍显示“失败”。JSON报告的状态值不变（`09c7db1f`）。
+
 ## 10. 测试与验收
 
 验收标准是Linux和macOS的功能测试在CI上跑完并全绿，治理门禁单独报告。`supply-chain`的失败不计入本项。
+
+2026-11-10恢复后的第二轮CI（`a30ba880`）暴露的问题均属测试或文档同步，产品行为不变：
+
+| 问题 | 处置 |
+|---|---|
+| Windows上`write_text`写出CRLF，参数反馈用例读到的正文不以LF结尾 | 夹具改写固定LF字节 |
+| Windows产品端Git差异用例早于编码流程视图：没有命令工具时，首次修改前不提供`git_diff` | 改走`harnessix code`使用的零配置入口；Windows上带有逐条批准的PowerShell（W2），失败时列出首步提供的工具 |
+| 主线合入的评测选项`network_isolation`未登记 | 登记为评测环境约束，不改变产品配置 |
+| 文档门禁以上一次推送为基准，合入主线的完成守卫、参数还原、薄CLI分页和本分支的MCP命令未同步模块设计 | 同步`agent.md`、`app-server.md`、`product-ui.md` |
+
+本地文档检查应以上一次推送的提交为`--changed-from`基准，与CI一致。
 
 ## 11. 源码映射
 
