@@ -751,6 +751,34 @@ async def test_rejected_plans_name_the_violated_rule_without_echoing_values(
     assert "DO_NOT_ECHO" not in result.model_dump_json()
 
 
+@pytest.mark.parametrize(
+    ("arguments", "rule"),
+    [
+        ({"step_id": "verify", "status": "completed"}, '参数须为{"steps"'),
+        ({"steps": [{"step_id": "verify", "status": "completed"}]}, "description（非空）"),
+    ],
+    ids=["single-step-without-steps", "step-without-description"],
+)
+async def test_shape_and_field_errors_show_a_valid_whole_plan_call(tmp_path, arguments, rule):
+    """模型常只发单个步骤或漏写description；反馈附一份完整合法调用，照此即可一次修正。"""
+    _, _, turn = await run_script(tmp_path, [proposal_step(plan_call(arguments)), answer()])
+    result = result_for(turn)
+    assert result.outcome == "failed" and result.error.code == "tool_invalid_arguments"
+    message = result.error.message
+    assert rule in message and "每次调用都发送完整计划" in message
+    example = json.loads(message.split("示例：", 1)[1])
+    (tmp_path / "example").mkdir()
+    _, _, turn = await run_script(
+        tmp_path / "example", [proposal_step(plan_call(example)), answer()]
+    )
+    assert result_for(turn).outcome == "succeeded"
+    (plan,) = plan_items(turn)
+    assert [(step.step_id, step.status) for step in plan.content.steps] == [
+        ("reproduce", "completed"),
+        ("fix", "in_progress"),
+    ]
+
+
 async def test_plan_before_other_calls_says_it_must_be_last(tmp_path):
     calls = [plan_call(call_id="plan"), ToolCallCompleted(call_id="read", tool="test.read")]
     _, _, turn = await run_script(
