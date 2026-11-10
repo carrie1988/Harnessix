@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import pwd
 from pathlib import Path
 
 import pytest
@@ -14,6 +16,7 @@ from integrations.harbor.harnessix_configs import (
     CONTEXT_WINDOW_TOKENS,
     action_config,
     apply_eval_overrides,
+    container_user_home,
     product_config,
     task_action_config,
 )
@@ -88,7 +91,7 @@ def test_harnessix_arms_only_use_known_agent_options():
     assert seen and seen <= allowed, sorted(seen - allowed)
 
 
-# 任务镜像的ENV（取自Multilingual的Ruby与Go镜像），外加Docker给容器加的HOSTNAME与HOME。
+# docker exec进程看到的容器环境（取自Multilingual的Ruby与Go镜像），外加Docker补上的HOSTNAME与HOME。
 RUBY_IMAGE = {
     "PATH": "/usr/local/bundle/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     "LANG": "C.UTF-8",
@@ -103,11 +106,28 @@ GO_IMAGE = {
     "HOSTNAME": "0123456789ab",
     "HOME": "/root",
 }
+# 一期为/root不可写的沙箱把HOME与缓存挪到/tmp；外部边界的任务环境不得再设这些位置。
+RELOCATED = {
+    "HOME",
+    "XDG_CACHE_HOME",
+    "GOCACHE",
+    "GOMODCACHE",
+    "GRADLE_USER_HOME",
+    "GRADLE_RO_DEP_CACHE",
+    "MAVEN_USER_HOME",
+    "COREPACK_HOME",
+    "npm_config_cache",
+    "YARN_CACHE_FOLDER",
+}
 
 
 def _profile_environment(body: str) -> dict[str, str]:
     config = ProductActionConfigV1.model_validate_json(body)
     return dict(config.native_process_profiles[0].environment)
+
+
+def _task(container: dict[str, str], language: str, home: str = "/root") -> dict[str, str]:
+    return dict(task_command_environment(container, language, home=home))
 
 
 def test_task_language_comes_from_the_harbor_language_tag() -> None:
@@ -119,47 +139,102 @@ def test_task_language_comes_from_the_harbor_language_tag() -> None:
         task_language(["go", "rust"])
 
 
-def test_task_environment_keeps_the_image_toolchain_under_the_language_presets() -> None:
-    """外部边界命令不继承容器环境：任务环境把镜像ENV写进Profile，语言预设覆盖同名变量。"""
-    environment = dict(task_command_environment(GO_IMAGE, "go"))
-    assert environment["PATH"].startswith("/usr/local/go/bin:")
-    assert environment["TZ"] == "Etc/UTC"
-    assert environment["HOME"] == "/tmp" and environment["GOPROXY"] == "off"
-    assert "HOSTNAME" not in environment
-    online = {**GO_IMAGE, "GOPROXY": "https://proxy.golang.org", "XDG_CACHE_HOME": "/root/.cache"}
-    overridden = dict(task_command_environment(online, "go"))
-    assert (overridden["GOPROXY"], overridden["XDG_CACHE_HOME"]) == ("off", "/tmp/.cache")
-    assert "MODEL_API_KEY" not in dict(
-        task_command_environment({**GO_IMAGE, "MODEL_API_KEY": "secret"}, "go")
+@pytest.mark.parametrize(
+    "language", ["go", "rust", "javascript", "typescript", "java", "php", "ruby", "cpp", "python"]
+)
+def test_task_environment_keeps_the_image_home_and_cache_locations(language: str) -> None:
+    """外部边界下任务容器即边界、以root运行：不再沿用一期把HOME与缓存挪到/tmp的预设，
+    与mini一样用镜像自身的HOME、热缓存与配置；镜像ENV声明的位置原样保留。"""
+    environment = _task(GO_IMAGE, language)
+    assert environment["HOME"] == "/root"
+    assert not (RELOCATED - {"HOME"}) & set(environment)
+    assert not any(value.startswith("/tmp") for value in environment.values())
+    declared = {**GO_IMAGE, "XDG_CACHE_HOME": "/root/.cache", "GOCACHE": "/root/.cache/go-build"}
+    kept = _task(declared, language)
+    assert (kept["XDG_CACHE_HOME"], kept["GOCACHE"]) == ("/root/.cache", "/root/.cache/go-build")
+
+
+def _process(tmp_path: Path, environment: dict[str, str]) -> Path:
+    process = tmp_path / "proc-1"
+    process.mkdir(parents=True)
+    body = b"\0".join(f"{k}={v}".encode() for k, v in environment.items()) + b"\0"
+    (process / "environ").write_bytes(body)
+    return process
+
+
+def test_home_is_the_default_users_not_the_generators(tmp_path: Path) -> None:
+    """生成器以root运行，HOME取容器默认用户（主进程）的：镜像或Docker给的HOME，没有时取passwd家目录，
+    不是/tmp。"""
+    assert _task(GO_IMAGE, "go", home="/home/agent")["HOME"] == "/home/agent"
+    assert container_user_home(_process(tmp_path / "a", {"HOME": "/custom", "PATH": "/bin"})) == (
+        "/custom"
     )
+    passwd = pwd.getpwuid(os.getuid()).pw_dir
+    assert container_user_home(_process(tmp_path / "b", {"PATH": "/bin"})) == passwd
+
+
+def test_agent_injected_and_shell_variables_are_not_container_environment() -> None:
+    noisy = {**GO_IMAGE, "OPENAI_API_KEY": "secret", "PWD": "/testbed", "SHLVL": "1", "_": "/x"}
+    environment = dict(
+        task_command_environment(noisy, "go", home="/root", excluded=("OPENAI_API_KEY",))
+    )
+    assert not {"OPENAI_API_KEY", "PWD", "SHLVL", "_", "HOSTNAME"} & set(environment)
+    assert "MODEL_API_KEY" not in _task({**GO_IMAGE, "MODEL_API_KEY": "secret"}, "go")
+
+
+def test_task_environment_adds_only_offline_switches() -> None:
+    """离线开关以评测值为准；GOFLAGS只在镜像未设时补-mod=mod；MAVEN_ARGS保留镜像参数再追加。"""
+    go = _task({**GO_IMAGE, "GOPROXY": "https://proxy.golang.org"}, "go")
+    assert {k: go[k] for k in ("GOPROXY", "GOSUMDB", "GOTOOLCHAIN", "GOFLAGS")} == {
+        "GOPROXY": "off",
+        "GOSUMDB": "off",
+        "GOTOOLCHAIN": "local",
+        "GOFLAGS": "-mod=mod",
+    }
+    assert _task({**GO_IMAGE, "GOFLAGS": "-mod=vendor"}, "go")["GOFLAGS"] == "-mod=vendor"
+    assert set(_task(GO_IMAGE, "go")) - set(GO_IMAGE) == {
+        "GOFLAGS",
+        "GOPROXY",
+        "GOSUMDB",
+        "GOTOOLCHAIN",
+    }
+    assert _task(GO_IMAGE, "java")["MAVEN_ARGS"] == "--offline"
+    assert _task({**GO_IMAGE, "MAVEN_ARGS": "-B -ntp"}, "java")["MAVEN_ARGS"] == "-B -ntp --offline"
+    assert _task({**GO_IMAGE, "MAVEN_ARGS": "--offline"}, "java")["MAVEN_ARGS"] == "--offline"
+    javascript = _task(GO_IMAGE, "javascript")
+    assert (javascript["npm_config_offline"], javascript["YARN_ENABLE_NETWORK"]) == ("true", "0")
+    assert javascript["COREPACK_ENABLE_NETWORK"] == "0"
+    assert _task(GO_IMAGE, "rust")["CARGO_NET_OFFLINE"] == "true"
+    assert _task(GO_IMAGE, "php")["COMPOSER_DISABLE_NETWORK"] == "1"
+    assert _task(GO_IMAGE, "cpp") == {k: v for k, v in GO_IMAGE.items() if k != "HOSTNAME"}
     with pytest.raises(ValueError, match="没有该语言"):
-        task_command_environment(GO_IMAGE, "kotlin")
+        task_command_environment(GO_IMAGE, "kotlin", home="/root")
 
 
 def test_task_environment_follows_the_image_locale() -> None:
     """产品基础环境的LC_ALL=C会盖过镜像的LANG（Ruby默认编码变成US-ASCII）；镜像只设LANG时跟随它。"""
-    ruby = dict(task_command_environment(RUBY_IMAGE, "ruby"))
+    ruby = _task(RUBY_IMAGE, "ruby")
     assert ruby["LANG"] == ruby["LC_ALL"] == "C.UTF-8"
     assert ruby["GEM_HOME"] == "/usr/local/bundle"
-    assert "LC_ALL" not in dict(task_command_environment(GO_IMAGE, "go"))
+    assert "LC_ALL" not in _task(GO_IMAGE, "go")
     java = {**GO_IMAGE, "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"}
-    assert dict(task_command_environment(java, "java"))["LC_ALL"] == "en_US.UTF-8"
+    assert _task(java, "java")["LC_ALL"] == "en_US.UTF-8"
 
 
 def test_task_action_config_is_a_valid_profile_and_reports_dropped_names() -> None:
     container = {**RUBY_IMAGE, "http_proxy": "http://proxy", "HARNESSIX_X": "1", "bad-name": "v"}
-    body, dropped = task_action_config(container, "ruby")
+    body, dropped = task_action_config(container, "ruby", home="/root")
     assert dropped == ["HARNESSIX_X", "bad-name", "http_proxy"]
     environment = _profile_environment(body)
     assert environment["PATH"] == RUBY_IMAGE["PATH"]
     assert not {"HARNESSIX_X", "bad-name", "http_proxy", "HOSTNAME"} & set(environment)
     # 值不合规不悄悄略去：本试次安装失败。
     with pytest.raises(ValueError):
-        task_action_config({**RUBY_IMAGE, "MULTI": "a\nb"}, "ruby")
+        task_action_config({**RUBY_IMAGE, "MULTI": "a\nb"}, "ruby", home="/root")
 
 
 def test_the_static_python_actions_stay_unchanged() -> None:
-    """Verified组别用的固定actions.json不受任务环境影响。"""
+    """Verified组别用的固定actions.json（一期预设，dev25结果即用它）不受任务环境影响。"""
     assert _profile_environment(action_config("python")) == {
         "HOME": "/tmp",
         "PATH": "/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/bin:/usr/local/sbin:"
@@ -168,12 +243,15 @@ def test_the_static_python_actions_stay_unchanged() -> None:
     }
 
 
-def test_generator_cli_writes_the_task_actions_from_a_proc_environ_file(
+def test_generator_cli_reads_the_exec_environment_and_the_default_users_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    environ = tmp_path / "environ"
-    environ.write_bytes(b"\0".join(f"{k}={v}".encode() for k, v in GO_IMAGE.items()) + b"\0")
-    assert parse_environ(environ.read_bytes()) == GO_IMAGE
+    """容器内用法：环境取生成器这一docker exec进程（/proc/self/environ），去掉--exclude；
+    HOME取主进程（/proc/1）的。"""
+    exec_environment = {**GO_IMAGE, "MODEL_API_KEY": "x", "OPENAI_API_KEY": "y"}
+    environ = _process(tmp_path / "self", exec_environment) / "environ"
+    assert parse_environ(environ.read_bytes()) == exec_environment
+    main_process = _process(tmp_path / "one", {"HOME": "/home/agent", "PATH": "/bin"})
     target = tmp_path / "etc" / "actions.json"
     monkeypatch.setattr(
         "sys.argv",
@@ -183,11 +261,17 @@ def test_generator_cli_writes_the_task_actions_from_a_proc_environ_file(
             "go",
             "--container-environment",
             str(environ),
+            "--container-user-process",
+            str(main_process),
+            "--exclude=OPENAI_API_KEY",
             "--actions-file",
             str(target),
         ],
     )
     harnessix_configs.main()
     assert json.loads(capsys.readouterr().out)["language"] == "go"
-    assert _profile_environment(target.read_text())["GOFLAGS"] == "-mod=mod"
+    environment = _profile_environment(target.read_text())
+    assert environment["HOME"] == "/home/agent"
+    assert environment["GOFLAGS"] == "-mod=mod"
+    assert not {"MODEL_API_KEY", "OPENAI_API_KEY"} & set(environment)
     assert target.stat().st_mode & 0o777 == 0o600

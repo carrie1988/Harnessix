@@ -4,8 +4,9 @@
 运行结束后把补丁与产品状态库导出到/logs/agent，供官方判分与逐步记录使用。
 network_isolation开启时智能体运行期间断开任务容器公网（network_isolation.py）。
 task_command_environment开启时不上传固定的actions.json：外部边界命令只得到Profile声明的变量，
-不继承容器环境，所以安装阶段用容器内的集成包按容器自身环境（/proc/1/environ）与任务语言标签
-生成本试次的actions.json（task_environment.py），副本写入/logs/agent供核对。
+不继承容器环境，所以安装阶段用容器内的集成包按容器自身环境（生成器这一docker exec进程的环境，
+去掉本适配器注入的变量）与任务语言标签生成本试次的actions.json（task_environment.py），
+副本写入/logs/agent供核对。
 """
 
 from __future__ import annotations
@@ -217,9 +218,10 @@ class HarnessixAgent(BaseInstalledAgent):
                 "--language",
                 self.command_language,
                 "--container-environment",
-                "/proc/1/environ",
+                "/proc/self/environ",
                 "--actions-file",
                 str(self.action_config),
+                *(f"--exclude={name}" for name in sorted(self._extra_env or {})),
             ]
         )
         await self.exec_as_root(

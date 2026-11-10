@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import pwd
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -96,16 +98,35 @@ def action_config(
     return build_product_action_config(native_process_profiles=(profile,)).model_dump_json(indent=2)
 
 
-def task_action_config(container: Mapping[str, str], language: str) -> tuple[str, list[str]]:
+def task_action_config(
+    container: Mapping[str, str],
+    language: str,
+    *,
+    home: str,
+    excluded: tuple[str, ...] = (),
+) -> tuple[str, list[str]]:
     """按容器自身环境与任务语言生成actions.json，并返回因名称不能声明而略去的变量。
 
     产品不允许预设的名称（代理变量等受管名称、HARNESSIX_前缀、非法名称）略去并如实返回；
     值不合规（超长、多行）不略去，由Profile校验报错，宁可本试次安装失败也不悄悄改环境。
     """
-    environment = task_command_environment(container, language)
+    environment = task_command_environment(container, language, home=home, excluded=excluded)
     dropped = [name for name, _ in environment if container_environment_problem(((name, ""),))]
     kept = tuple(item for item in environment if item[0] not in dropped)
     return action_config(language, kept), dropped
+
+
+def container_user_home(process: Path) -> str:
+    """容器默认用户的HOME：命令与容器主进程同为该用户，取主进程环境中的HOME（镜像声明的或Docker
+    按该用户补上的）；没有时取该用户在passwd中的家目录，再没有时与Docker一致取/。
+    生成器以root运行，自身进程的HOME不一定属于命令用户，所以不用它。"""
+    home = parse_environ((process / "environ").read_bytes()).get("HOME")
+    if home:
+        return home
+    try:
+        return pwd.getpwuid(os.stat(process).st_uid).pw_dir
+    except KeyError:
+        return "/"
 
 
 def _write(path: Path, body: str) -> None:
@@ -121,13 +142,22 @@ def main() -> None:
     parser.add_argument("--relay-port", type=int, help="静态用法：生成product.json与actions.json")
     parser.add_argument("--output-dir", type=Path, help="静态用法的输出目录")
     parser.add_argument(
-        "--container-environment", type=Path, help="任务环境用法：容器自身环境，如/proc/1/environ"
+        "--container-environment",
+        type=Path,
+        help="任务环境用法：docker exec进程的容器环境，即/proc/self/environ",
     )
+    parser.add_argument(
+        "--container-user-process", type=Path, default=Path("/proc/1"), help="容器默认用户的进程"
+    )
+    parser.add_argument("--exclude", action="append", default=[], help="智能体注入的变量名")
     parser.add_argument("--actions-file", type=Path, help="任务环境用法的actions.json路径")
     args = parser.parse_args()
     if args.container_environment is not None and args.actions_file is not None:
         container = parse_environ(args.container_environment.read_bytes())
-        body, dropped = task_action_config(container, args.language)
+        home = container_user_home(args.container_user_process)
+        body, dropped = task_action_config(
+            container, args.language, home=home, excluded=tuple(args.exclude)
+        )
         args.actions_file.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
         _write(args.actions_file, body)
         summary = {"reason": "written", "language": args.language, "dropped": dropped}

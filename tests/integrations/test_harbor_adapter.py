@@ -246,6 +246,7 @@ async def test_task_command_environment_generates_this_trials_actions_in_the_con
         action_config="/etc/harnessix-eval/actions.json",
         external_boundary=True,
         task_command_environment=True,
+        extra_env={"MODEL_API_KEY": "local-replica-no-key"},
     )
     instance.exec_as_agent = AsyncMock()
     instance.exec_as_root = AsyncMock()
@@ -260,7 +261,9 @@ async def test_task_command_environment_generates_this_trials_actions_in_the_con
         if "harnessix_configs.py" in call.kwargs["command"]
     ]
     assert generate.startswith("/opt/harnessix/bin/python /installed-agent/harnessix_configs.py")
-    assert "--language rust --container-environment /proc/1/environ" in generate
+    # 容器环境取生成器这一docker exec进程的环境，去掉适配器给智能体注入的变量。
+    assert "--language rust --container-environment /proc/self/environ" in generate
+    assert "--exclude=MODEL_API_KEY" in generate and "local-replica-no-key" not in generate
     assert "--actions-file /etc/harnessix-eval/actions.json" in generate
     assert generate.endswith(
         "cp /etc/harnessix-eval/actions.json /logs/agent/harnessix-actions.json"
