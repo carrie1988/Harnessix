@@ -82,6 +82,8 @@ class ProductControllerState:
     sandbox: str | None = None
     # 本会话是否自动接受修改；只在内存中，重启后恢复为关闭。
     auto_accept_edits: bool = False
+    # 活动Profile的首选模型名，状态栏显示。
+    model: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,12 +224,13 @@ class ProductController:
         pricing: Literal["free", "unknown"] = "unknown",
         sandbox: str | None = None,
         list_price: ListPrice | None = None,
+        model: str | None = None,
     ) -> None:
         self._session = session
         self._interactions = InteractionService(session)
         self._automation = ApprovalAutomation()
         self._state = ProductControllerState(
-            pricing=pricing, sandbox=sandbox, list_price=list_price
+            pricing=pricing, sandbox=sandbox, list_price=list_price, model=model
         )
         self._intents: asyncio.Queue[_QueuedIntent | _Stop] = asyncio.Queue(
             maxsize=MAX_PENDING_INTENTS

@@ -30,12 +30,35 @@ def readable_diff(artifact_text: str) -> list[Text] | None:
         return None
     body = "".join(text for _, text in sorted(chunks))
     header = [Text(f"共 {len(files)} 个文件：", style="bold"), *map(Text, files), Text("")]
-    return header + [_styled(line) for line in body.splitlines()]
+    return header + _diff_lines(body.splitlines())
+
+
+def _diff_lines(lines: list[str]) -> list[Text]:
+    """每个文件以“── 路径 ──”开头；文件头里的diff/---/+++行与文件清单重复，不再显示。"""
+
+    result: list[Text] = []
+    in_header = False
+    for line in lines:
+        if line.startswith("diff "):
+            result.append(Text(f"── {_diff_path(line)} ──", style="bold"))
+            in_header = True
+        elif in_header and line.startswith(("--- ", "+++ ", "index ", "new file", "deleted file")):
+            continue
+        else:
+            in_header = in_header and not line.startswith("@@")
+            result.append(_styled(line))
+    return result
+
+
+def _diff_path(line: str) -> str:
+    parts = line.split()
+    if len(parts) < 2:
+        return line
+    old, new = parts[-2].removeprefix("a/"), parts[-1].removeprefix("b/")
+    return new if old == new else f"{old} → {new}"
 
 
 def _styled(line: str) -> Text:
-    if line.startswith(("+++", "---", "diff ")):
-        return Text(line, style="bold")
     if line.startswith("+"):
         return Text(line, style="green")
     if line.startswith("-"):

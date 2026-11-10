@@ -202,6 +202,8 @@ def test_status_bar_speaks_plain_language() -> None:
     assert "连接代际" not in status and "Turn" not in status and "calling_model" not in status
     waiting = replace(view, current_turn=replace(turn, status="waiting_approval"))
     assert _status_text(_state(waiting, 2)).startswith("等待你审批（Ctrl+A）")
+    with_model = replace(_state(view, 3), model="qwen3.8-flash", sandbox="沙箱：已启用")
+    assert _status_text(with_model).startswith("思考中 · qwen3.8-flash · 沙箱：已启用")
     broken = ProductControllerState(phase=ControllerPhase.BROKEN)
     assert _status_text(broken).startswith("连接中断，按 Ctrl+R 重新连接")
     assert _status_text(ProductControllerState(phase=ControllerPhase.READY)) == "就绪"
@@ -274,3 +276,14 @@ async def test_ctrl_q_really_exits(tmp_path: Path) -> None:
             assert not stuck, "按Ctrl+Q后应用没有退出"
             report = app.return_value
             assert report is not None and report.clean
+
+
+def test_status_bar_model_comes_from_the_active_profile(tmp_path: Path) -> None:
+    from harnessix.product_ui.cost_estimate import chain_model_name
+    from tests.product_config.conftest import product_config, write_config
+
+    config = write_config(tmp_path / "config.json", product_config())
+    assert chain_model_name(config, None) == "gpt-test"
+    assert chain_model_name(config, "backup") == "claude-test"
+    assert chain_model_name(config, "missing") is None
+    assert chain_model_name(tmp_path / "absent.json", None) is None

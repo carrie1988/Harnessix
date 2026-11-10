@@ -122,7 +122,10 @@ class InteractionPresenter:
             await self._controller.dispatch(SteerTurnIntent(control.binding, text))
 
     async def help(self, code: str | None = None) -> None:
+        """有最近错误时显示其原因和处理办法，否则显示使用说明。"""
+
         notice = self._controller.state.last_notice
+        code = code or (None if notice is None else notice.code)
         await self._app.push_screen_wait(
-            HelpScreen(product_error_help(code or (None if notice is None else notice.code)))
+            HelpScreen(None if code is None else product_error_help(code))
         )

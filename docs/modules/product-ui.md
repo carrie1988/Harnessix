@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 27
+version: 28
 code_revision: aa686be2bc813e9a26e5595f050fadded94be69f
 owners:
   - product
@@ -39,6 +39,12 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：状态栏模型、差异分段与F1使用说明（0.10.0b5）
+
+- 状态栏在进展之后显示活动Profile的首选模型（`cost_estimate.chain_model_name`，经`ProductController`构造参数传入`ProductControllerState.model`）。
+- [`diff_view.py`](../../src/harnessix/product_ui/diff_view.py)把每个文件的`diff`头换成“── 路径 ──”分隔行，并跳过首个`@@`之前的`---`/`+++`/`index`等文件头行；文件内容里以`---`开头的删除行不受影响。
+- `HelpScreen(None)`显示静态使用说明；`InteractionPresenter.help`只在有最近错误码时显示错误条目。此前没有错误时回落到`product_internal_failure`，新用户按“帮助”看到的是内部错误说明。
 
 ## 当前增量：终端界面易用性第二轮（0.10.0b4）
 
@@ -1029,6 +1035,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 28 | `2aacbca4` 增量 | 2026-11-10 | 状态栏显示模型；审批差异按文件分段；无错误时F1显示使用说明（0.10.0b5） |
 | 27 | `33146c91` 增量 | 2026-11-10 | 审批与提问自动弹窗、情境快捷键、白话状态栏、累计用量修正、操作与结果合并、Markdown排版、只追加的对话渲染与窄屏布局、审批窗口一句话摘要（0.10.0b4） |
 | 26 | `aa686be2` 增量 | 2026-11-10 | 顶层CLI的标准输出和错误统一为UTF-8，修复Windows重定向输出时打印中文崩溃（0.10.0b3） |
 | 25 | `a1b9cabd` 增量 | 2026-11-10 | 首次输入即开始会话；输入框恢复可用时自动获得焦点（247上用tmux驱动TUI时发现） |

@@ -83,6 +83,18 @@ def chain_list_price(config: Path, profile: str | None) -> ListPrice | None:
     return list_price_for(provider.base_url, chain[0].model)
 
 
+def chain_model_name(config: Path, profile: str | None) -> str | None:
+    """活动Profile的首选模型名，供状态栏显示；读不到配置时返回None。"""
+
+    try:
+        snapshot = load_product_config(config)
+        if not isinstance(snapshot, ProductConfigSnapshot):
+            return None
+        return snapshot.config.profile_chain(profile)[0].model
+    except (OSError, ValueError, KeyError, IndexError, KernelError):
+        return None
+
+
 def cost_upper_bound(price: ListPrice, *, input_tokens: int, output_tokens: int) -> CostUpperBound:
     amount = input_tokens * price.input_per_million + output_tokens * price.output_per_million
     return CostUpperBound(price.currency, amount / _MILLION)

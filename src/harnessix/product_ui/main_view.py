@@ -79,7 +79,8 @@ def _status_text(state: ProductControllerState) -> str:
             else f"{usage.total_tokens:,}/{usage.max_tokens:,} tokens"
         )
         usage_text = f" · {tokens} · {_cost_text(state, usage)}"
-    sandbox = "" if state.sandbox is None else f" · {state.sandbox}"
+    sandbox = "" if state.model is None else f" · {state.model}"
+    sandbox += "" if state.sandbox is None else f" · {state.sandbox}"
     if state.auto_accept_edits:
         sandbox += " · 自动接受修改"
     notice = (

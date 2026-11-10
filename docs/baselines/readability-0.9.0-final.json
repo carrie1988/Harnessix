@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 606,
-    "physical_lines": 128183,
-    "logical_lines": 112232,
+    "physical_lines": 128242,
+    "logical_lines": 112279,
     "documented_modules": 606,
     "classes": 1200,
     "documented_classes": 614,
-    "functions": 5011,
-    "documented_functions": 1630,
+    "functions": 5014,
+    "documented_functions": 1633,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1653,8 +1653,8 @@
       "path": "src/harnessix/product_ui/controller.py",
       "qualname": "ProductController",
       "kind": "class",
-      "line": 215,
-      "lines": 377,
+      "line": 217,
+      "lines": 378,
       "documented": true
     },
     {

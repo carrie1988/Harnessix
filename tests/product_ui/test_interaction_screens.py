@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from textual.app import App
-from textual.widgets import Button, Input, RichLog, Static
+from textual.widgets import Button, Input, Label, RichLog, Static
 
 from harnessix.product_ui.error_help import product_error_help
 from harnessix.product_ui.interaction_screens import (
@@ -147,3 +147,17 @@ async def test_help_screen_uses_sanitized_fallback_for_unknown_code() -> None:
         await pilot.pause()
         assert screen.query_one("#help-close", Button).label.plain == "关闭"
         await pilot.press("escape")
+
+
+async def test_help_without_an_error_is_a_usage_guide() -> None:
+    from harnessix.product_ui.interaction_screens import USAGE_HELP
+
+    app: App[None] = App()
+    async with app.run_test(size=(100, 30)) as pilot:
+        screen = HelpScreen(None)
+        await app.push_screen(screen)
+        await pilot.pause()
+        # 没有错误时按F1，此前显示的是“终端产品发生内部错误”的帮助条目。
+        title = str(screen.query_one(".interaction-title", Label).render())
+        assert title == "使用帮助"
+        assert "开始任务" in USAGE_HELP and "内部错误" not in USAGE_HELP

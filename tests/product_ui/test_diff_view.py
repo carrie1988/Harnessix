@@ -28,7 +28,8 @@ def test_artifact_becomes_a_file_list_and_ordered_colored_diff() -> None:
     assert lines is not None
     plain = [line.plain for line in lines]
     assert plain[:2] == ["共 1 个文件：", "  修改  textstats.py"]
-    assert plain[3:] == DIFF.splitlines()
+    # 文件头的diff/---/+++行由“── 路径 ──”代替。
+    assert plain[3:] == ["── textstats.py ──", *DIFF.splitlines()[3:]]
     styles = {line.plain: str(line.style) for line in lines}
     assert styles["+    return len(text.split())"] == "green"
     assert styles['-    return len(text.split(" "))'] == "red"
@@ -39,3 +40,18 @@ def test_unexpected_text_is_left_to_the_caller() -> None:
     assert readable_diff("plain text, not records") is None
     assert readable_diff('{"record_type": "text"}') is None
     assert readable_diff('{"record_type": "summary"}') is None
+
+
+def test_renames_show_both_paths_and_removed_dash_lines_stay() -> None:
+    body = (
+        "diff --harnessix a/old.md b/new.md\n--- a/old.md\n+++ b/new.md\n"
+        "@@ -1,2 +1,1 @@\n----\n title\n"
+    )
+    records = (
+        {"record_type": "entry", "entry": {"kind": "renamed", "path": "new.md"}},
+        {"record_type": "text", "sequence": 0, "text": body},
+    )
+    lines = readable_diff("\n".join(json.dumps(record) for record in records))
+    assert lines is not None
+    plain = [line.plain for line in lines]
+    assert plain[3:] == ["── old.md → new.md ──", "@@ -1,2 +1,1 @@", "----", " title"]

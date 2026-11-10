@@ -273,27 +273,46 @@ class SteerScreen(ModalScreen[str | None]):
         self.dismiss(None)
 
 
+USAGE_HELP = "\n\n".join(
+    (
+        "开始任务：在底部输入框写下要做的事，按 Enter 发送。",
+        "审批：Agent 要修改文件或在沙箱外运行命令时，会自动弹出审批窗口。看过差异后选择批准或拒绝；"
+        "拒绝时写明原因，Agent 会据此调整。关掉的审批可按 Ctrl+A 再打开。",
+        "任务运行中：Ctrl+S 补充说明，Ctrl+X 取消任务。",
+        "会话：Ctrl+N 新建会话，在左侧列表切换。下次在同一目录打开，会回到上次的会话。",
+        "自动接受修改：Ctrl+E 开关。开启后，本会话的文件修改不再逐个审批，命令仍按规则审批。",
+        "退出：Ctrl+Q。遇到错误时按 F1，可查看原因和处理办法。",
+        "完整说明见用户手册 docs/operations/user-manual.md。",
+    )
+)
+
+
 class HelpScreen(ModalScreen[None]):
-    """只显示静态脱敏帮助，不接受原始异常正文。"""
+    """只显示静态脱敏帮助，不接受原始异常正文；没有错误时显示使用说明。"""
 
     CSS = _MODAL_CSS
     BINDINGS = [Binding("escape", "close_modal", "关闭")]
 
-    def __init__(self, help_item: ProductErrorHelp) -> None:
+    def __init__(self, help_item: ProductErrorHelp | None) -> None:
         super().__init__()
         self.help_item = help_item
 
     def compose(self) -> ComposeResult:
         item = self.help_item
-        content = (
-            f"错误分类：{item.code}\n\n"
-            f"常见原因：{item.cause}\n\n"
-            f"影响：{item.impact}\n\n"
-            f"处理动作：{item.action}\n\n"
-            f"文档：{item.doc_anchor}"
+        title, content = (
+            ("使用帮助", USAGE_HELP)
+            if item is None
+            else (
+                item.title,
+                f"错误分类：{item.code}\n\n"
+                f"常见原因：{item.cause}\n\n"
+                f"影响：{item.impact}\n\n"
+                f"处理动作：{item.action}\n\n"
+                f"文档：{item.doc_anchor}",
+            )
         )
         with Container(classes="interaction-dialog"):
-            yield Label(item.title, classes="interaction-title")
+            yield Label(title, classes="interaction-title")
             yield Static(content, markup=False, classes="interaction-content")
             with Horizontal(classes="interaction-buttons"):
                 yield Button("关闭", id="help-close", variant="primary")
