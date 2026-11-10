@@ -1,11 +1,18 @@
 name: CI
 
 on:
+  # 只列分支：推送版本标签不重复运行，发布门禁核对的是该提交在分支上的运行。
   push:
+    branches: ["**"]
   pull_request:
 
 permissions:
   contents: read
+
+# 同一分支有新提交时取消旧运行；main保留每次运行，发布门禁要按提交核对CI结果。
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   python:
@@ -24,7 +31,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked --all-extras --dev
       # 临时目录不放在/tmp：bubblewrap用私有挂载覆盖/tmp，真实沙箱测试的HOME会被遮住。
-      - run: uv run pytest --ignore=tests/governance --basetemp="$RUNNER_TEMP/pytest"
+      # -n auto按CPU核数并行（GitHub托管Linux为4核），单进程约需1小时40分。
+      - run: uv run pytest -n auto --durations=20 --ignore=tests/governance --basetemp="$RUNNER_TEMP/pytest"
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts
       - run: uv run python -m examples.patch_plan
@@ -114,7 +122,7 @@ jobs:
         timeout-minutes: 2
       - run: uv run pytest tests/session tests/agent/test_authenticated_store.py
       - run: uv run pytest tests/benchmarks
-      - run: uv run pytest tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui
+      - run: uv run pytest -n auto --durations=20 tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui
       - run: uv run python -m examples.kernel_files
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts

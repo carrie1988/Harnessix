@@ -1,5 +1,5 @@
 {
-  "archive_count": 811,
+  "archive_count": 815,
   "collector_version": "harnessix.license-inventory/v2",
   "entries": [
     {
@@ -5875,6 +5875,48 @@
       "size_bytes": 29341,
       "url": "https://files.pythonhosted.org/packages/e0/4d/f332313098c1de1b2d2ff91cf2674415cc7cddab2ca1b01ae29774bd5fdf/docstring_parser-0.18.0.tar.gz",
       "version": "0.18.0"
+    },
+    {
+      "kind": "wheel",
+      "metadata": {
+        "member": "execnet-2.1.2.dist-info/METADATA",
+        "sha256": "7343015d62b2eaa1841ec06a7c7c132aeb482921f73ab6e0fd18331495684c61",
+        "size_bytes": 2905
+      },
+      "name": "execnet",
+      "notices": [
+        {
+          "member": "execnet-2.1.2.dist-info/licenses/LICENSE",
+          "sha256": "e89eed1074d3a943198ba139b80844f5b445b860bba74a8aeadc0610566164ea",
+          "size_bytes": 1054
+        }
+      ],
+      "registry": "https://pypi.org/simple",
+      "sha256": "67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec",
+      "size_bytes": 40708,
+      "url": "https://files.pythonhosted.org/packages/ab/84/02fc1827e8cdded4aa65baef11296a9bbe595c474f0d6d758af082d849fd/execnet-2.1.2-py3-none-any.whl",
+      "version": "2.1.2"
+    },
+    {
+      "kind": "sdist",
+      "metadata": {
+        "member": "execnet-2.1.2/PKG-INFO",
+        "sha256": "7343015d62b2eaa1841ec06a7c7c132aeb482921f73ab6e0fd18331495684c61",
+        "size_bytes": 2905
+      },
+      "name": "execnet",
+      "notices": [
+        {
+          "member": "execnet-2.1.2/LICENSE",
+          "sha256": "e89eed1074d3a943198ba139b80844f5b445b860bba74a8aeadc0610566164ea",
+          "size_bytes": 1054
+        }
+      ],
+      "registry": "https://pypi.org/simple",
+      "sha256": "63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd",
+      "size_bytes": 166622,
+      "url": "https://files.pythonhosted.org/packages/bf/89/780e11f9588d9e7128a3f87788354c7946a9cbb1401ad38a48c4db9a4f07/execnet-2.1.2.tar.gz",
+      "version": "2.1.2"
     },
     {
       "kind": "wheel",
@@ -14011,6 +14053,48 @@
     {
       "kind": "sdist",
       "metadata": {
+        "member": "pytest_xdist-3.8.0/PKG-INFO",
+        "sha256": "298f16af52794d340c358fc2eb20b054a29db2922f22fea90a35b459ecbcc18f",
+        "size_bytes": 2988
+      },
+      "name": "pytest-xdist",
+      "notices": [
+        {
+          "member": "pytest_xdist-3.8.0/LICENSE",
+          "sha256": "36c15bf831b218a24d122e3b30256b3e1ca285716c24937fe6d8475074ee9032",
+          "size_bytes": 1088
+        }
+      ],
+      "registry": "https://pypi.org/simple",
+      "sha256": "7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1",
+      "size_bytes": 88069,
+      "url": "https://files.pythonhosted.org/packages/78/b4/439b179d1ff526791eb921115fca8e44e596a13efeda518b9d845a619450/pytest_xdist-3.8.0.tar.gz",
+      "version": "3.8.0"
+    },
+    {
+      "kind": "wheel",
+      "metadata": {
+        "member": "pytest_xdist-3.8.0.dist-info/METADATA",
+        "sha256": "298f16af52794d340c358fc2eb20b054a29db2922f22fea90a35b459ecbcc18f",
+        "size_bytes": 2988
+      },
+      "name": "pytest-xdist",
+      "notices": [
+        {
+          "member": "pytest_xdist-3.8.0.dist-info/licenses/LICENSE",
+          "sha256": "36c15bf831b218a24d122e3b30256b3e1ca285716c24937fe6d8475074ee9032",
+          "size_bytes": 1088
+        }
+      ],
+      "registry": "https://pypi.org/simple",
+      "sha256": "202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88",
+      "size_bytes": 46396,
+      "url": "https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl",
+      "version": "3.8.0"
+    },
+    {
+      "kind": "sdist",
+      "metadata": {
         "member": "python_multipart-0.0.32/PKG-INFO",
         "sha256": "e9d399d7dea5eddf0e4d24b5c24687a82e7e50bf2c2b30f8f8a06a64d887dd86",
         "size_bytes": 2131
@@ -18899,6 +18983,6 @@
       "version": "0.52.4"
     }
   ],
-  "lock_sha256": "ee722f5708e5c527176abf584d6a2dbf07cb5206e3a2308a5a14441fc94ca370",
+  "lock_sha256": "279a1490d30d327a92d8118d511940578d2463af2bfce0c1ef7b553d3358c929",
   "spec_version": "harnessix.license-evidence/v2"
 }

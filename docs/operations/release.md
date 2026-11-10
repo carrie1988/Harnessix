@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
-code_revision: 5de25cdc5a2b545745a93983fe7994127ddecce8
+version: 2
+code_revision: 8594b423a51545e5d5bc0fbdd3c802808f598a1b
 owners:
   - core
 modules:
@@ -40,7 +40,7 @@ flowchart LR
 | 上传 | 用 PyPI 可信发布（OIDC）上传，并由官方 Action 生成来源证明（PEP 740） | 可重新运行该任务 |
 | GitHub Release | 附上 Wheel、`SHA256SUMS` 和该版本的 CHANGELOG 小节；预发布版本标为 Pre-release | 可重新运行该任务 |
 
-Windows 是 1.0 门槛，Beta 先开放 macOS 与 Linux（2026-11-10 决定）。`windows-trusted-execution` 任务最后一步在 Windows 上运行完整测试集，Windows CI 停用期间积累了存量失败；在 1.0 前清零之前，它不阻挡预览版发布。该任务的其余步骤（NTFS 文件事务、Git 读取、状态备份与恢复）随之不计入；三组 Windows Git 原生验收是独立任务，照常要求通过。
+Windows 是 1.0 门槛，Beta 先开放 macOS 与 Linux（2026-11-10 决定）。`windows-trusted-execution` 任务最后一步在 Windows 上运行完整测试集，Windows CI 停用期间积累了存量失败；在 1.0 前清零之前，它不阻挡预览版发布。该任务的其余步骤（NTFS 文件事务、Git 读取、状态备份与恢复）随之不计入；三组 Windows Git 原生验收是独立任务，照常要求通过。发布前提不等整轮 CI 结束：这个任务可能仍在运行或挂起，其余任务全部成功即可发布。推送标签本身不触发 CI。
 
 ## 2. 一次性设置（维护者）
 

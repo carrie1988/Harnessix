@@ -48,12 +48,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # 不等整轮运行结束：Windows完整测试集（W1）可能仍在运行或挂起，其余任务全部成功即可。
           passed=0
-          for run in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=completed&per_page=20" --jq '.workflow_runs[].id'); do
-            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=100" --jq '.jobs | length')
-            failed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=100" \
-              --jq '[.jobs[] | select(.name != "windows-trusted-execution") | select(.conclusion != "success")] | length')
-            if [ "$jobs" -ge 10 ] && [ "$failed" -eq 0 ]; then passed=1; break; fi
+          for run in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&per_page=20" --jq '.workflow_runs[].id'); do
+            read -r required failed < <(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=100" \
+              --jq '[.jobs[] | select(.name != "windows-trusted-execution")] | "\(length) \([.[] | select(.conclusion != "success")] | length)"')
+            if [ "$required" -ge 10 ] && [ "$failed" -eq 0 ]; then passed=1; break; fi
           done
           if [ "$passed" -ne 1 ]; then
             echo "::error::提交$GITHUB_SHA还没有通过的CI运行（Windows完整测试集除外）；等CI通过后，重新运行本工作流"

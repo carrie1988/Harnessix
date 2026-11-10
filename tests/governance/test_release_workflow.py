@@ -95,6 +95,11 @@ def test_wheel_check_ignores_hidden_build_files_and_records_the_digest(
         release_check.release_wheel(dist, "0.10.0b2")
 
 
+def test_version_tags_do_not_trigger_another_ci_run() -> None:
+    ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    assert ci[True]["push"] == {"branches": ["**"]}
+
+
 def test_release_runs_only_for_version_tags_with_read_only_default() -> None:
     workflow = _workflow()
     # PyYAML把键on解析为True。
@@ -125,6 +130,9 @@ def test_release_waits_for_ci_mainline_and_three_platform_smoke() -> None:
     # 只有Windows完整测试集不阻挡预览版（W1）；其余任务必须全部成功。
     assert 'select(.name != "windows-trusted-execution")' in gate
     assert 'select(.conclusion != "success")' in gate
+    # 不要求整轮运行结束：Windows完整测试集可能仍在运行或挂起。
+    assert "status=completed" not in gate
+    assert '[.jobs[] | select(.name != "windows-trusted-execution")]' in gate
     assert jobs["gate"]["permissions"] == {"contents": "read", "actions": "read"}
     assert jobs["smoke"]["strategy"]["matrix"]["os"] == [
         "ubuntu-latest",

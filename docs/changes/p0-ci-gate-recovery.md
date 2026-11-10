@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 4
-code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
+version: 5
+code_revision: 8594b423a51545e5d5bc0fbdd3c802808f598a1b
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models]
 related_adrs:
@@ -52,6 +52,20 @@ flowchart LR
 ```
 
 Windows任务曾随首发范围取消移除；2026-11-10用户决定三平台都要支持，两个Windows任务及其形状测试按原样恢复。
+
+CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行中，`python`任务单进程跑约22000个用例需1小时40分，
+`coding-tools-macos`约1小时20分；GitHub托管机器为Linux 4核、macOS 3核，单进程只用其中一核。
+其中73%的时间在`tests/product_config`的Git审批链路集成测试：最慢的28个用例每个15～39秒，CPU满载，
+热点是待审批连接逐步复核数据库文件路径上每一级目录的物理身份（单个用例约18万次复核、约200万次`lstat`）。
+这是防篡改设计，本次不为CI提速改动它。现在的处置：
+
+| 处置 | 说明 |
+|---|---|
+| 并行 | `python`与`coding-tools-macos`的主测试用`pytest -n auto`（pytest-xdist）按核数并行，并输出最慢20个用例 |
+| 稳定用例ID | 5个用例在参数中现生成uuid4，各进程收集到的用例ID不同，xdist拒绝运行；`tests/conftest.py`给UUID文本参数固定ID，参数值不变。这些测试文件被历史验证证据按字节引用，不直接修改 |
+| 发布门禁不等Windows完整测试集 | 该测试集仍有大量存量失败（1.0门槛，W1），并曾在步骤超时后挂起两个多小时，整轮CI迟迟不结束，发布门禁随之等待。门禁改为：除它以外的任务全部成功即可，不再要求整轮运行结束。Windows任务形状受治理测试冻结，保持不变 |
+| 推送标签不触发CI | 推送版本标签曾对同一提交再跑一整轮CI；现在只有分支推送和PR触发 |
+| 取消过时运行 | 同一分支有新推送时取消旧运行；`main`不取消 |
 
 ## 4. 接口设计与领域契约
 
@@ -169,6 +183,8 @@ CI权限保持`contents: read`。`self_hosted`相关的信任边界见[接入自
 | 内容 | 位置 |
 |---|---|
 | CI任务 | [`ci.yml`](../../.github/workflows/ci.yml) |
+| 发布门禁 | [`release.yml`](../../.github/workflows/release.yml) |
+| 稳定用例ID | [`tests/conftest.py`](../../tests/conftest.py) |
 | 评分器 | [`grader.py`](../../src/harnessix/evals/grader.py) |
 | 录制Provider | [`recorded_task_pack.py`](../../scripts/recorded_task_pack.py) |
 | 可读性预算 | [`readability-policy-v1.json`](../../governance/readability-policy-v1.json) |
