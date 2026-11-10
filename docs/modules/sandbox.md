@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 12
+version: 13
 code_revision: 420f68f0fe78997bc38b7b8ec620772a16439cb9
 owners:
   - core
@@ -53,6 +53,7 @@ supersedes: []
   - 区分 bubblewrap 命名空间被拒与其他预检失败。
 - 新增 [`bubblewrap.py`](../../src/harnessix/sandbox/bubblewrap.py)（第 2 步）：
   - 按固定挂载顺序把策略翻译成 `bwrap` 参数：只读根 → 新 `/dev`、`/proc` → 私有 `/tmp`、`/run` → 可写目录 → `.git` 只读 → 拒读遮盖；
+  - 只读工作区模式下显式只读挂载工作区，工作区位于`/tmp`、`/run`等被私有挂载覆盖的位置时仍能看到真实内容；
   - 只遮盖实际存在的拒读路径，符号链接按真实目标遮盖；拒读目录嵌套时只遮盖最外层（如 `~/.harnessix` 与其下的默认状态目录），否则 `bwrap` 要在只读空目录里创建内层挂载点而启动失败；
   - 用 `git ls-files` 与 `git status --ignored=matching` 查找工作区 `.env` 文件，非 Git 工作区有界遍历；
   - 超出 `ProcessSpec` 的 128 项参数上限时失败关闭。

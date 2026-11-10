@@ -7,8 +7,10 @@ HOME、工作区与私有目录都在tmp_path内，不触碰真实用户目录�
 
 from __future__ import annotations
 
+import shutil
 import socket
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -193,6 +195,20 @@ async def test_read_only_mode_rejects_workspace_writes(tmp_path: Path) -> None:
         assert result.outcome == "failed"
         assert result.error is not None and result.error.code == "process_nonzero_exit"
         assert not (case.workspace / "new.txt").exists()
+
+
+@pytest.mark.skipif(BACKEND != "bubblewrap", reason="只有bubblewrap用私有挂载覆盖/tmp")
+async def test_read_only_workspace_under_tmp_stays_visible_and_unwritable() -> None:
+    """工作区在/tmp下时，私有/tmp挂载不能把它换成空目录：能读到真实文件，写入仍被拒绝。"""
+    root = Path(tempfile.mkdtemp(dir="/tmp"))
+    try:
+        cmd = "cat source.txt > /dev/null && ! (echo x > new.txt) 2> /dev/null"
+        async with _case(root, cmd, workspace_mode="read_only") as case:
+            result = _result(await case.approve_and_resume())
+            assert result.outcome == "succeeded", result
+            assert not (case.workspace / "new.txt").exists()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
 
 
 async def test_many_env_files_are_all_protected(tmp_path: Path) -> None:

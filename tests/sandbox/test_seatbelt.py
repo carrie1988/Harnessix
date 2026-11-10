@@ -85,7 +85,9 @@ def test_env_override_and_read_only_mode_change_rules() -> None:
     assert "vnode-type REGULAR-FILE" not in text
     _, read_only = seatbelt_policy(_policy(workspace_mode="read_only"))
     assert f"-DWRITABLE_0={WORKSPACE}" not in read_only
-    assert not any(item.startswith("-DREAD_ONLY_") for item in read_only)
+    assert [item for item in read_only if item.startswith("-DREAD_ONLY_")] == [
+        f"-DREAD_ONLY_0={WORKSPACE}"
+    ]
 
 
 def test_argv_shape_and_limits() -> None:

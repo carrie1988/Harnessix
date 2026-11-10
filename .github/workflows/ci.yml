@@ -23,7 +23,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked --all-extras --dev
-      - run: uv run pytest --ignore=tests/governance
+      # 临时目录不放在/tmp：bubblewrap用私有挂载覆盖/tmp，真实沙箱测试的HOME会被遮住。
+      - run: uv run pytest --ignore=tests/governance --basetemp="$RUNNER_TEMP/pytest"
       - run: uv run python -m examples.kernel_search
       - run: uv run python -m examples.kernel_artifacts
       - run: uv run python -m examples.patch_plan

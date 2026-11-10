@@ -52,11 +52,11 @@ def test_read_write_policy_confines_writes_and_protects_git() -> None:
     assert NativeSandboxPolicy.model_validate_json(policy.model_dump_json()) == policy
 
 
-def test_read_only_mode_keeps_workspace_out_of_writable_roots() -> None:
+def test_read_only_mode_binds_the_workspace_read_only() -> None:
     policy = build_native_sandbox_policy(facts(workspace_mode="read_only"))
     assert str(WORKSPACE) not in policy.writable_roots
-    # .git不在任何可写目录下时无需单独设为只读。
-    assert policy.read_only_roots == ()
+    # 工作区显式只读挂载（位于/tmp等私有挂载下也可见）；.git不在可写目录下，无需单独列出。
+    assert policy.read_only_roots == (str(WORKSPACE),)
 
 
 def test_linux_policy_uses_platform_deny_list_and_private_loopback() -> None:

@@ -93,9 +93,9 @@ def test_segment_collision_key_is_rejected_without_executing_equality():
 
     with pytest.raises(KernelError) as failure:
         with pure_git_authentication(probe.control) as check:
-            attributes = probe.control.__dict__.copy()
             segment = probe.control._segment
-            attributes.pop("_segment", None)
+            # 新建字典而不是复制后删除：3.13复制的实例字典仍共享原键表，插入同名键会触发比较。
+            attributes = {k: v for k, v in probe.control.__dict__.items() if k != "_segment"}
             attributes[Name("_segment")] = segment
             probe.control.__dict__ = attributes
             check()

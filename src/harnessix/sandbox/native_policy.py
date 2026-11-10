@@ -215,15 +215,14 @@ def build_native_sandbox_policy(facts: NativeSandboxFacts) -> NativeSandboxPolic
                 "sandbox_root_overlaps_denied",
                 "工作区或可写目录不能是HOME及其上级，也不能位于拒读路径之内",
             )
-    read_only = tuple(
-        sorted(
-            {
-                str(path)
-                for path in facts.git_directories
-                if any(path_within(str(path), root) for root in writable)
-            }
-        )
-    )
+    read_only = {
+        str(path)
+        for path in facts.git_directories
+        if any(path_within(str(path), root) for root in writable)
+    }
+    if facts.workspace_mode == "read_only":
+        # 显式只读挂载：工作区位于/tmp、/run等被私有挂载覆盖的位置时，命令仍看到真实内容。
+        read_only.add(workspace)
     ports = tuple(sorted(set(facts.blocked_loopback_ports)))
     candidate = NativeSandboxPolicy.model_construct(
         backend=facts.backend,
@@ -233,7 +232,7 @@ def build_native_sandbox_policy(facts: NativeSandboxFacts) -> NativeSandboxPolic
         private_tmp=str(facts.private_tmp),
         private_cache=str(facts.private_cache),
         writable_roots=tuple(sorted(writable)),
-        read_only_roots=read_only,
+        read_only_roots=tuple(sorted(read_only)),
         denied_paths=denied,
         deny_workspace_env_files=not facts.allow_workspace_env_files,
         blocked_loopback_ports=ports if facts.backend == "seatbelt" else (),
