@@ -6,7 +6,7 @@ import asyncio
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from rich.console import Console
@@ -33,8 +33,10 @@ from harnessix.product_ui.projection import (
     ProjectedItem,
     TurnProjection,
 )
+from harnessix.product_ui.rendering import TranscriptLine
 from harnessix.product_ui.session import RecoverableAgentSession
 from harnessix.product_ui.state_store import ClientStateStore
+from harnessix.product_ui.transcript_pane import TranscriptPane
 from harnessix.protocol.contracts import PublicItem, PublicTextContent, ThreadView
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk import InProcessAgentTransport
@@ -141,25 +143,37 @@ async def test_settled_lines_are_appended_without_redrawing_history() -> None:
     async with app.run_test(size=(120, 30)) as pilot:
         await app.mount(widget)
         log = app.query_one("#transcript", RichLog)
+        pane = widget.query_one(TranscriptPane)
         clears = 0
-        original_clear = log.clear
+        redraws: list[int] = []
+        original_clear, original_show = log.clear, pane.show
 
         def counting_clear() -> RichLog:
             nonlocal clears
             clears += 1
             return original_clear()
 
+        def tracking_show(
+            lines: tuple[TranscriptLine, ...], thread_id: UUID | None, *, rewrap: bool = False
+        ) -> None:
+            # 尺寸确定后的重新折行是预期的整体重绘，在CI负载下出现时机不定，不计入。
+            before = clears
+            original_show(lines, thread_id, rewrap=rewrap)
+            if not rewrap and clears > before:
+                redraws.append(len(lines))
+
         log.clear = counting_clear  # type: ignore[method-assign]
+        pane.show = tracking_show  # type: ignore[method-assign]
         assert await widget.render_state(_state(first, 1))
         await pilot.pause()
         rendered = "\n".join(line.text for line in log.lines)
         # Agent回复按Markdown排版，不显示星号。
         assert "完成" in rendered and "**" not in rendered
-        settled_clears = clears
         second = replace(first, items=(*first.items, _text("user_message", "再跑一次测试")))
         assert await widget.render_state(_state(second, 2))
         await pilot.pause()
-        assert clears == settled_clears
+        # 只有首次显示该会话时整体绘制；追加一行不重绘历史。
+        assert redraws == [2]
         assert "再跑一次测试" in "\n".join(line.text for line in log.lines)
 
 
