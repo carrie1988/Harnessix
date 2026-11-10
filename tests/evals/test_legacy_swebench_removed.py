@@ -56,3 +56,14 @@ def test_dormant_reproduction_gate_and_prompt_are_gone(tmp_path: Path) -> None:
         CodingWorkflowToolView(scratch_reproduction=True)  # type: ignore[call-arg]
     with pytest.raises(TypeError):
         build_product_agent_context(tmp_path, reproduction_guidance=True)  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize("marker", ["runtests", "bin/test"])
+def test_product_package_has_no_repository_specific_test_runner_rules(marker: str) -> None:
+    # Django的tests/runtests.py与SymPy的bin/test只服务旧基准适配，产品源码不再识别它们。
+    offending = [
+        path.relative_to(PACKAGE_ROOT).as_posix()
+        for path in _product_sources()
+        if marker in path.read_text(encoding="utf-8")
+    ]
+    assert offending == []

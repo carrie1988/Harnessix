@@ -27,7 +27,11 @@ def _fail(cmd: str) -> CommandRecord:
     ("cmd", "expected"),
     [
         ("export HOME=/tmp && cd /testbed && python -m pytest tests/test_x.py -q", True),
-        ("cd /testbed && ./tests/runtests.py httpwrappers", True),
+        ("cd /testbed && python tests/runtests.py httpwrappers", True),
+        ("npm test", True),
+        # 个别仓库自带的Runner不再特殊识别；经python启动时仍按通用规则计入。
+        ("cd /testbed && ./tests/runtests.py httpwrappers", False),
+        ("bin/test sympy/core", False),
         ("python -c 'import x; assert x.f() == 1'", True),
         ("go test ./pkg/...", True),
         ("cat django/http/response.py", False),

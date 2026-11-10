@@ -19,9 +19,9 @@ _INSPECTION = re.compile(
     r"^\s*(?:cd\s+\S+\s*&&\s*)?(?:cat|ls|grep|rg|find|head|tail|sed\s+-n|wc|git|echo|pwd|which|"
     r"tree|stat|file|diff)\b"
 )
-# 测试、复现或运行代码的命令才有区分度。
+# 测试、复现或运行代码的命令才有区分度；只认通用测试入口，不为个别仓库的自带Runner开特例。
 _EXERCISES = re.compile(
-    r"pytest|unittest|runtests|bin/test|tox\b|nox\b|python\d*(?:\.\d+)?\s|"
+    r"pytest|unittest|tox\b|nox\b|python\d*(?:\.\d+)?\s|"
     r"\bgo\s+test|\bcargo\s+test|\bmvn\b|\bgradle|\bnpm\s+(?:run\s+)?test|\byarn\s+test|"
     r"\bnpx\s|\bjest\b|\bnode\s|\bruby\s|\brspec\b|\bphpunit\b|\bphp\s|\bmake\s+(?:test|check)",
 )
