@@ -13,6 +13,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, RichLog, Static
 
 from harnessix.product_ui.approval_automation import EDIT_APPROVAL_TYPES
+from harnessix.product_ui.diff_view import readable_diff
 from harnessix.product_ui.error_help import ProductErrorHelp
 from harnessix.product_ui.interactions import (
     ActiveTurnControl,
@@ -94,11 +95,25 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
                 )
                 yield Button("拒绝", id="approval-reject", variant="error")
                 yield Button("暂不处理", id="approval-close")
+            yield Static("Enter 确认所选按钮 · Tab 切换 · Esc 关闭", classes="interaction-summary")
 
     def on_mount(self) -> None:
         pending = self.review.pending
         evidence = self.review.evidence
         log = self.query_one("#approval-evidence", RichLog)
+        button = "#approval-approve" if self.review.approve_allowed else "#approval-reject"
+        self.query_one(button, Button).focus()
+        rendered = (
+            readable_diff(evidence.text)
+            if evidence.status is ApprovalEvidenceStatus.READY and evidence.text
+            else None
+        )
+        if rendered is not None and pending.approval_type in EDIT_APPROVAL_TYPES:
+            # 修改文件只看差异；原始参数与差异重复，且转义后难以核对。
+            log.write("将要做的修改：")
+            for line in rendered:
+                log.write(line)
+            return
         log.write("公开Tool参数：")
         log.write(pending.arguments_json)
         if evidence.status is ApprovalEvidenceStatus.READY:

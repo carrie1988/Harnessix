@@ -154,7 +154,7 @@ CI权限保持`contents: read`。`self_hosted`相关的信任边界见[接入自
 
 2026-11-10在247上用tmux驱动TUI做端到端验证时发现两处易用性问题，已修复：输入框被禁用后焦点落到会话列表且不会返回，
 用户按`Ctrl+N`后或每轮任务结束后直接打字，字符进入会话列表；首次进入必须先按`Ctrl+N`才能输入。现在输入框恢复可用时自动获得焦点，
-没有会话时第一条输入自动开启新会话。焦点回到输入框后，输入框自带的`Ctrl+A/E/U/X`会截获同名界面快捷键（247上`Ctrl+E`失效），这四个界面快捷键改为优先，弹窗打开时停用。回归见`tests/product_ui/test_app.py::test_composer_takes_focus_whenever_it_becomes_usable`。
+没有会话时第一条输入自动开启新会话。焦点回到输入框后，输入框自带的`Ctrl+A/E/U/X`会截获同名界面快捷键（247上`Ctrl+E`失效），这四个界面快捷键改为优先，弹窗打开时停用。审批窗口原先把差异Artifact的JSON记录原样显示（换行被转义），现在整理成文件清单与着色diff，打开时焦点在“批准”。回归见`tests/product_ui/test_app.py::test_composer_takes_focus_whenever_it_becomes_usable`。
 
 ## 11. 源码映射
 

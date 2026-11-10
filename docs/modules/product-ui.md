@@ -49,6 +49,7 @@ supersedes: []
 - 没有选中会话时，输入框仍可输入：`ProductController._submit_prompt`先按`CreateThreadIntent`同样的方式新建Thread，再提交本次输入；`Ctrl+N`保留，用于另开会话。空会话提示改为“输入任务并按 Enter 开始；Ctrl+N 可另开新会话。”
 - `ProductMainView.update_composer`在输入框由禁用变为可用时把焦点交还输入框。禁用期间（Intent进行中、Turn运行中）Textual会把焦点移到会话列表，此前用户必须按Tab或点击才能继续输入。
 - 输入框自带`Ctrl+A/E/U/X`（行首、行尾、删除整行、剪切），输入框有焦点时会截获同名界面快捷键。`ProductApp`把审批、自动接受修改、回答、取消Turn四个绑定设为优先；`check_action`在弹窗打开时停用主界面操作，按键留给弹窗里的输入框。
+- 审批窗口：`diff_view.readable_diff`把差异Artifact的逐行JSON记录（文件条目与按`sequence`排序的diff正文）整理成文件清单与着色统一diff；修改类审批只显示它，格式不符时回退到原文。打开时焦点在“批准”（不可批准时在“拒绝”），按钮下方显示按键提示。回归见`test_diff_view.py`与`test_interaction_screens.py::test_approval_screen_shows_a_readable_diff_and_enter_approves`。
 - 回归：`tests/product_ui/test_app.py::test_composer_takes_focus_whenever_it_becomes_usable`只用键盘完成首条输入、Turn结束后续输入、`Ctrl+N`，以及输入框有焦点时的`Ctrl+E`。
 
 ## 当前增量：MCP Server命令与Doctor结论（ADR 0127）

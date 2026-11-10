@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from textual.app import App
-from textual.widgets import Button, Input, Static
+from textual.widgets import Button, Input, RichLog, Static
 
 from harnessix.product_ui.error_help import product_error_help
 from harnessix.product_ui.interaction_screens import (
@@ -26,7 +26,7 @@ from harnessix.product_ui.interactions import (
 )
 
 
-def _approval_review(status: ApprovalEvidenceStatus) -> ApprovalReview:
+def _approval_review(status: ApprovalEvidenceStatus, text: str = "") -> ApprovalReview:
     binding = ApprovalBinding(uuid4(), uuid4(), uuid4(), uuid4(), "a" * 64)
     pending = PendingApproval(
         binding=binding,
@@ -42,6 +42,7 @@ def _approval_review(status: ApprovalEvidenceStatus) -> ApprovalReview:
         binding,
         status,
         error_code="diff_unavailable" if status is ApprovalEvidenceStatus.UNAVAILABLE else None,
+        text=text,
     )
     return ApprovalReview(
         pending,
@@ -70,6 +71,24 @@ async def test_approval_screen_disables_blind_approval_but_allows_rejection() ->
         await pilot.click("#approval-reject")
         await pilot.pause()
     assert results == [ApprovalScreenResult("rejected")]
+
+
+async def test_approval_screen_shows_a_readable_diff_and_enter_approves() -> None:
+    from tests.product_ui.test_diff_view import ARTIFACT
+
+    app: App[None] = App()
+    results: list[ApprovalScreenResult | None] = []
+    async with app.run_test(size=(120, 40)) as pilot:
+        screen = ApprovalScreen(_approval_review(ApprovalEvidenceStatus.READY, ARTIFACT))
+        await app.push_screen(screen, callback=results.append)
+        await pilot.pause()
+        log = screen.query_one("#approval-evidence", RichLog)
+        shown = "\n".join(line.text for line in log.lines)
+        assert "+    return len(text.split())" in shown and "record_type" not in shown
+        assert screen.query_one("#approval-approve", Button).has_focus
+        await pilot.press("enter")
+        await pilot.pause()
+    assert results == [ApprovalScreenResult("approved")]
 
 
 async def test_question_screen_maps_option_number_and_escape_sends_nothing() -> None:
