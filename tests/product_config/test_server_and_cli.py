@@ -228,6 +228,8 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
         git_executable=_git(),
         input_stream=io.BytesIO(),
         output_stream=io.BytesIO(),
+        # 重新打开须与首次启动使用同一Action配置；产品拒绝在同一状态上静默切换。
+        zero_config_actions=True,
     )
     assert len(list((state / "process-owner/runs").iterdir())) == 3
 
