@@ -1,7 +1,7 @@
 name: Release
 
 # 推送版本标签（如v0.10.0b1）即发布：核对版本与主线、确认该提交的CI全部通过，构建并扫描唯一Wheel，
-# 在三平台全新安装冒烟，经pypi环境人工批准后用可信发布上传PyPI，再创建GitHub Release。
+# 在三平台全新安装冒烟，再经pypi环境（只允许v*标签）用可信发布上传PyPI，最后创建GitHub Release；全程无人工审批。
 on:
   push:
     tags:

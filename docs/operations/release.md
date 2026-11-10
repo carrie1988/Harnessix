@@ -21,15 +21,14 @@ supersedes: []
 
 本文说明 Harnessix Code 如何发布到 PyPI 和 GitHub Release。用户安装方式见[用户手册](user-manual.md)。
 
-发布由推送版本标签触发，全程在 GitHub Actions 中完成，仓库里不保存任何上传密钥：
+发布由推送版本标签触发，全程在 GitHub Actions 中自动完成，无需人工审批，仓库里不保存任何上传密钥：
 
 ```mermaid
 flowchart LR
     Tag[推送标签 vX] --> Gate[发布前提]
     Gate --> Build[构建并扫描Wheel]
     Build --> Smoke[三平台全新安装冒烟]
-    Smoke --> Approve{维护者批准}
-    Approve --> PyPI[上传PyPI]
+    Smoke --> PyPI[上传PyPI]
     PyPI --> Release[创建GitHub Release]
 ```
 
@@ -38,7 +37,6 @@ flowchart LR
 | 发布前提 | 标签等于 `v` 加 `pyproject.toml` 中的版本；`CHANGELOG.md` 有该版本小节且已写明发布日期；标签指向的提交在 `main` 上；该提交的 CI 已有一次全部通过 | 停止，不构建 |
 | 构建 | 只构建一次 Wheel，扫描制品中的密钥，核对文件名并记录 SHA-256 | 停止 |
 | 冒烟 | 在 Ubuntu、macOS、Windows 上用 `uv tool install` 安装同一个 Wheel，运行 `harnessix --help` 和 `harnessix license` | 停止 |
-| 批准 | `pypi` 环境要求维护者在 Actions 页面点击批准 | 不批准就不上传 |
 | 上传 | 用 PyPI 可信发布（OIDC）上传，并由官方 Action 生成来源证明（PEP 740） | 可重新运行该任务 |
 | GitHub Release | 附上 Wheel、`SHA256SUMS` 和该版本的 CHANGELOG 小节；预发布版本标为 Pre-release | 可重新运行该任务 |
 
@@ -65,8 +63,10 @@ flowchart LR
 
 在仓库 Settings → Environments 中新建环境 `pypi`：
 
-- **Required reviewers：** 添加维护者本人。每次上传前都需要在 Actions 页面批准。
-- **Deployment branches and tags：** 选择 Selected branches and tags，添加标签规则 `v*`。
+- **Required reviewers：** 不设置，发布全自动进行。
+- **Deployment branches and tags：** 选择 Selected branches and tags，添加规则 `v*`，类型选 **Tag**（选成 Branch 时，推送标签触发的上传会被拒绝）。
+
+建议再用仓库规则集（Settings → Rules → Rulesets）限制只有维护者能创建 `v*` 标签，因为推送标签即发布。
 
 ## 3. 每次发布的步骤
 
@@ -93,7 +93,7 @@ flowchart LR
    git push origin v0.10.0b2
    ```
 
-5. **批准上传。** 在 Actions 页面打开这次 Release 运行，冒烟通过后点击 Review deployments → 批准 `pypi`。
+5. **等待自动发布。** 在 Actions 页面查看这次 Release 运行，全部通过即已上传 PyPI 并创建 GitHub Release。
 6. **验证。** 在一台没有装过的机器上运行 `uv tool install harnessix==0.10.0b2`，再按用户手册做一次 `doctor`。国内镜像通常在数分钟到数小时内同步。
 
 ## 4. 失败与重试
@@ -108,7 +108,8 @@ flowchart LR
 
 ## 5. 安全
 
-- 只有上传任务拥有 `id-token: write` 权限，且必须经过 `pypi` 环境批准；其他任务只读，创建 GitHub Release 的任务额外拥有 `contents: write`。
+- 只有上传任务拥有 `id-token: write` 权限，且运行在只允许 `v*` 标签的 `pypi` 环境中；其他任务只读，创建 GitHub Release 的任务额外拥有 `contents: write`。
+- 发布没有人工审批，把关依靠发布前提（主线、CI 全部通过、CHANGELOG）和三平台冒烟；能推送 `v*` 标签就等于能发布。
 - 不使用长期 API Token，PyPI 只信任本仓库 `release.yml` 在 `pypi` 环境中签发的身份。
 - 所有 Action 固定到完整提交 SHA。
 - 上传的只有 Wheel。源代码按 AGPL-3.0-only 在 GitHub 公开，`harnessix license` 给出源码地址。
