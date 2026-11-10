@@ -31,10 +31,10 @@ Harnessix Code 目前是预览版，不是正式商用版本，不提供任何�
 **安装：**
 
 ```bash
-uv tool install <发布页提供的 wheel 地址或本地 wheel 文件>
+uv tool install harnessix
 ```
 
-下载依赖慢时可以加镜像：`--index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。
+国内下载慢时加镜像：`uv tool install harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟。
 
 **配置模型（选一种）：**
 
@@ -110,6 +110,6 @@ harnessix code /path/to/repo
 
 ## 7. 回退
 
-用 Git 回退工作区改动，用 `uv tool uninstall harnessix` 卸载。卸载不会删除 `~/.harnessix` 中的配置和会话。
+用 Git 回退工作区改动，用 `uv tool upgrade harnessix` 升级，用 `uv tool uninstall harnessix` 卸载。卸载不会删除 `~/.harnessix` 中的配置和会话。
 
 管理本机数据：`harnessix data list` 列出各工作区的数据，`harnessix data export` 导出会话，`harnessix data delete --workspace 路径` 按提示确认后删除。遇到问题时，`harnessix data diagnostics <仓库> --output diag.json` 生成不含代码和对话的诊断文件，可以直接发给我们。

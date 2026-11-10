@@ -296,6 +296,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [测试里程碑历史](testing-and-evals-milestone-history.md)：DOC-1.5前冻结的阶段验收记录；
 - [受控模型Smoke指南](model-smoke.md)；
 - [部署与运维](deployment.md)：当前部署拓扑和统一入口；
+- [用户手册](operations/user-manual.md)、[发布流程](operations/release.md)、[使用 MCP](operations/mcp.md)；
 - [安装与制品](operations/installation.md)、[配置参考](operations/configuration.md)、[接入自托管模型](operations/self-hosted-models.md)、[使用 Skills](operations/skills.md)、[Beta快速上手](operations/beta-quickstart.md)、[升级与回退](operations/upgrade-and-rollback.md)；
 - [故障恢复](operations/recovery.md)、[诊断与可观测性](operations/diagnostics.md)、[平台与运行环境](operations/platforms.md)、[真实Provider完整Suite运维](operations/provider-suite-baseline.md)；
 - [验证证据索引](validation/README.md)：真实Provider Smoke与Coding Eval证据谱系；

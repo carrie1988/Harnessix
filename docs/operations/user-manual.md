@@ -123,29 +123,25 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ### 3.2 安装 Harnessix Code
 
-使用发布页提供的 wheel 文件（地址或下载后的本地文件均可）：
+从 PyPI 安装：
 
 ```bash
-uv tool install <wheel 地址或本地 wheel 文件>
-# 例如：uv tool install ./harnessix-0.10.0b1-py3-none-any.whl
+uv tool install harnessix
 ```
 
 一条命令会装好终端界面和模型接口所需的全部依赖，并把 `harnessix` 命令放到 uv 的工具目录（通常是 `~/.local/bin`）。如果提示找不到命令，运行 `uv tool update-shell` 后重新打开终端。
 
-下载依赖慢时，可以加国内镜像：
+- **国内网络：** 使用镜像，`uv tool install harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟，刚发布时可能还装不到最新版。
+- **指定版本：** `uv tool install harnessix==0.10.0b1`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
+- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install ./harnessix-0.10.0b1-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
 
-```bash
-uv tool install <wheel> --index-url https://mirrors.huaweicloud.com/repository/pypi/simple
-```
-
-**从源码构建 wheel（没有发布页时）：**
+**从源码构建（开发者）：**
 
 ```bash
 git clone https://github.com/carrie1988/Harnessix.git
 cd Harnessix
-git checkout <发布分支或标签>
 uv build --wheel
-uv tool install dist/harnessix-0.10.0b1-py3-none-any.whl
+uv tool install dist/harnessix-*.whl
 ```
 
 ### 3.3 确认安装成功
@@ -723,9 +719,10 @@ harnessix state recover --state-directory "$STATE" --confirm-restore <同一个 
 3. 安装新版本：
 
    ```bash
-   uv tool uninstall harnessix
-   uv tool install <新版本 wheel>
+   uv tool upgrade harnessix
    ```
+
+   通过 wheel 文件安装的，先运行 `uv tool uninstall harnessix`，再 `uv tool install <新版本 wheel>`。
 
 4. 运行 `harnessix code doctor /path/to/repo --probe-model` 确认。
 
@@ -865,7 +862,8 @@ uv tool uninstall harnessix
 
 ```bash
 # 安装与信息
-uv tool install <wheel>                     # 安装
+uv tool install harnessix                  # 安装
+uv tool upgrade harnessix                  # 升级
 harnessix --help                            # 全部命令
 harnessix license                           # 许可证
 

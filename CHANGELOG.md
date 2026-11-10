@@ -4,6 +4,7 @@
 
 ### 新增
 
+- 发布到 PyPI：`uv tool install harnessix` 即可安装，国内可经镜像下载；推送版本标签后自动构建、三平台冒烟，经维护者批准后发布
 - 一行安装：终端界面和模型 SDK 成为默认依赖
 - 接入局域网自托管模型：`code configure --self-hosted`，已实测 vLLM 和 Ollama
 - 终端界面可在本会话自动接受修改，或允许完全相同的操作（`Ctrl+E`）

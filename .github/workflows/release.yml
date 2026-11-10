@@ -1,0 +1,186 @@
+name: Release
+
+# 推送版本标签（如v0.10.0b1）即发布：核对版本与主线、确认该提交的CI全部通过，构建并扫描唯一Wheel，
+# 在三平台全新安装冒烟，经pypi环境人工批准后用可信发布上传PyPI，再创建GitHub Release。
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: 发布前提
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 标签、包版本与CHANGELOG一致
+        id: version
+        run: uv run python scripts/release_check.py gate --tag "$GITHUB_REF_NAME"
+      - name: 标签指向主线上的提交
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::标签指向的提交不在main上；只发布已合入main的提交"
+            exit 1
+          fi
+      - name: 该提交的CI已全部通过
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&per_page=50" \
+            --jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length')
+          if [ "$passed" -eq 0 ]; then
+            echo "::error::提交$GITHUB_SHA还没有全部通过的CI运行；等main上的CI通过后，重新运行本工作流"
+            exit 1
+          fi
+
+  build:
+    name: 构建并扫描Wheel
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      wheel-sha256: ${{ steps.wheel.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        env:
+          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "false"
+          GIT_CONFIG_KEY_1: core.eol
+          GIT_CONFIG_VALUE_1: lf
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - name: 只构建一次Wheel并扫描实际制品
+        run: |
+          uv build --offline --wheel --out-dir dist
+          uv run python scripts/secret_scan.py --artifact-dir dist
+      - name: 核对文件名并记录摘要
+        id: wheel
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: |
+          uv run python - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          files = sorted(Path("dist").iterdir())
+          expected = f"harnessix-{os.environ['VERSION']}-py3-none-any.whl"
+          assert [item.name for item in files] == [expected], files
+          digest = hashlib.sha256(files[0].read_bytes()).hexdigest()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"sha256={digest}\n")
+          print(expected, digest)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: harnessix-release-wheel
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 30
+
+  smoke:
+    name: 全新安装冒烟 ${{ matrix.os }}
+    needs: [gate, build]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: harnessix-release-wheel
+          path: release-wheel
+      - name: 按用户方式安装并运行
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+          WHEEL_SHA256: ${{ needs.build.outputs.wheel-sha256 }}
+        run: |
+          wheel="release-wheel/harnessix-$VERSION-py3-none-any.whl"
+          uv run --no-project python -c "import hashlib, sys; assert hashlib.sha256(open(sys.argv[1], 'rb').read()).hexdigest() == sys.argv[2]" "$wheel" "$WHEEL_SHA256"
+          uv tool install "$wheel"
+          uv tool list | grep -F "harnessix v$VERSION"
+          uv tool run --from "$wheel" harnessix --help
+          uv tool run --from "$wheel" harnessix license
+
+  publish:
+    name: 发布到PyPI
+    needs: [gate, build, smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/harnessix/${{ needs.gate.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: harnessix-release-wheel
+          path: dist
+      - name: 上传前再次核对摘要
+        env:
+          WHEEL_SHA256: ${{ needs.build.outputs.wheel-sha256 }}
+        run: echo "$WHEEL_SHA256  $(ls dist/*.whl)" | sha256sum --check
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/
+
+  github-release:
+    name: 创建GitHub Release
+    needs: [gate, build, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --all-extras --dev
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: harnessix-release-wheel
+          path: dist
+      - name: 附上Wheel、摘要和CHANGELOG说明
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.gate.outputs.version }}
+          PRERELEASE: ${{ needs.gate.outputs.prerelease }}
+          WHEEL_SHA256: ${{ needs.build.outputs.wheel-sha256 }}
+        run: |
+          wheel="dist/harnessix-$VERSION-py3-none-any.whl"
+          echo "$WHEEL_SHA256  $(basename "$wheel")" > dist/SHA256SUMS
+          uv run python scripts/release_check.py notes --version "$VERSION" --output "$RUNNER_TEMP/notes.md"
+          flags=(--verify-tag --title "Harnessix Code $VERSION" --notes-file "$RUNNER_TEMP/notes.md")
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "$wheel" dist/SHA256SUMS "${flags[@]}"
