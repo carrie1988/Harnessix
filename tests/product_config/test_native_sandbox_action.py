@@ -40,7 +40,14 @@ def _environ(home: Path, proxy_port: int | None = None) -> dict[str, str]:
     return environ
 
 
-def _case(tmp_path: Path, cmd: str, *, proxy_port: int | None = None, **profile: Any):
+def _case(
+    tmp_path: Path,
+    cmd: str,
+    *,
+    proxy_port: int | None = None,
+    state_root: Path | None = None,
+    **profile: Any,
+):
     home = tmp_path / "home"
     (home / ".ssh").mkdir(parents=True, exist_ok=True)
     (home / ".ssh/id_rsa").write_text("PRIVATE-KEY\n")
@@ -57,7 +64,9 @@ def _case(tmp_path: Path, cmd: str, *, proxy_port: int | None = None, **profile:
             **profile,
         ),
         environ=_environ(home, proxy_port),
-        site=lambda root: NativeSandboxSite(workspace_root=root, state_root=tmp_path / "state"),
+        site=lambda root: NativeSandboxSite(
+            workspace_root=root, state_root=state_root or tmp_path / "state"
+        ),
         secret_names=("HARNESSIX_TEST_MODEL_KEY",),
     )
 
@@ -117,6 +126,23 @@ async def test_sandboxed_command_writes_workspace_but_not_protected_paths(
         # 真实后端下同样由宿主以系统身份自动批准，不需要人工（ADR 0113）。
         decision = case.approval.decision
         assert decision is not None and decision.actor == "harnessix:sandbox-policy"
+
+
+async def test_default_state_directory_inside_home_still_starts_and_stays_hidden(
+    tmp_path: Path,
+) -> None:
+    """产品默认状态目录在~/.harnessix之下：两层拒读路径嵌套时命令仍能启动，状态仍不可读。"""
+    state = tmp_path / "home/.harnessix/workspaces/abc/runtime"
+    state.mkdir(parents=True)
+    (state / "session.db").write_text("STATE-SECRET\n")
+    secret = "$HOME/.harnessix/workspaces/abc/runtime/session.db"
+    cmd = f'{{ cat "{secret}" || echo state-denied; }} > report.txt 2>&1'
+    async with _case(tmp_path, cmd, state_root=state) as case:
+        completed = await case.approve_and_resume()
+        report = _report(case, "report.txt")
+        assert completed.status is TurnStatus.COMPLETED, report
+        assert _result(completed).outcome == "succeeded", report
+        assert "state-denied" in report and "STATE-SECRET" not in report, report
 
 
 async def test_network_boundary_matches_backend(tmp_path: Path) -> None:

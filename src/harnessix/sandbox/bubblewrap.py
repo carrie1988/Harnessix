@@ -9,12 +9,12 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
-from harnessix.sandbox.native_contracts import NativeSandboxPolicy
+from harnessix.sandbox.native_contracts import NativeSandboxPolicy, path_within
 from harnessix.sandbox.native_policy import is_workspace_env_file
 
 # 与ProcessSpec.argv的项数上限一致（测试守护两者不漂移）。
@@ -50,7 +50,11 @@ def hidden_runtime_roots() -> tuple[str, ...]:
 
 
 def denied_path_masks(policy: NativeSandboxPolicy) -> BubblewrapMasks:
-    """只遮盖实际存在的拒读路径；符号链接按真实目标遮盖。"""
+    """只遮盖实际存在的拒读路径；符号链接按真实目标遮盖。
+
+    外层目录的遮盖已隐藏其下全部内容，内层路径不再单独遮盖：否则挂载点在空目录里已不存在，
+    bwrap要在只读视图中创建它而启动失败（默认状态目录与其runtime子目录即属此例）。
+    """
 
     directories: set[str] = set()
     files: set[str] = set()
@@ -62,7 +66,13 @@ def denied_path_masks(policy: NativeSandboxPolicy) -> BubblewrapMasks:
             directories.add(target)
         elif os.path.exists(target):
             files.add(target)
-    return BubblewrapMasks(tuple(sorted(directories)), tuple(sorted(files)))
+    outermost = {item for item in directories if not _inside_any(item, directories - {item})}
+    uncovered_files = {item for item in files if not _inside_any(item, outermost)}
+    return BubblewrapMasks(tuple(sorted(outermost)), tuple(sorted(uncovered_files)))
+
+
+def _inside_any(path: str, roots: Iterable[str]) -> bool:
+    return any(path_within(path, root) for root in roots)
 
 
 def bubblewrap_argv(
