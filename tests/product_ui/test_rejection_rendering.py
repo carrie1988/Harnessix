@@ -216,10 +216,10 @@ async def test_headless_main_view_displays_rejection_without_buttons_or_approval
                 effect_class="read_only",
                 requires_approval=False,
             ),
-            "工具",
-            "workspace.read@1 · read_only · 无需审批 · completed",
+            "操作",
+            "调用 workspace.read",
         ),
-        (PublicToolResultContent(call_id=uuid4(), outcome="succeeded"), "工具", "结果 succeeded"),
+        (PublicToolResultContent(call_id=uuid4(), outcome="succeeded"), "结果", "完成"),
         (
             PublicApprovalRequestContent(
                 approval_type="tool",
@@ -229,7 +229,7 @@ async def test_headless_main_view_displays_rejection_without_buttons_or_approval
                 policy_version="test/v1",
             ),
             "审批",
-            "tool · test/v1 · 待决定",
+            "等待你审批（Ctrl+A）",
         ),
         (
             PublicQuestionRequestContent(

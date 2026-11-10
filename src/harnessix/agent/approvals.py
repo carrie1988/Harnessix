@@ -19,10 +19,17 @@ from harnessix.agent.models import (
     ProcessApprovalRequestContent,
     Thread,
     ToolCallContent,
+    ToolResultContent,
     TrustedActionApprovalRequestContent,
     Turn,
 )
-from harnessix.domain.models import ApprovalDecision, EffectClass, ToolDescriptor, utc_now
+from harnessix.domain.models import (
+    ApprovalDecision,
+    ApprovalOutcome,
+    EffectClass,
+    ToolDescriptor,
+    utc_now,
+)
 from harnessix.patches.batch_bridge_contracts import ManagedPatchBatchCallPlan
 from harnessix.patches.batch_contracts import PatchBatchProposal
 from harnessix.patches.bridge_contracts import ManagedPatchCallPlan
@@ -338,3 +345,21 @@ def remaining_seconds(turn: Turn) -> float:
     return (
         turn.created_at + timedelta(seconds=turn.budget.timeout_seconds) - utc_now()
     ).total_seconds()
+
+
+def with_rejection_reason[ResultT](result: ResultT, approval: Item | None) -> ResultT:
+    """用户拒绝并填写原因时附在错误信息后，模型据此调整做法，而不是只知道被拒绝。"""
+
+    if not isinstance(result, ToolResultContent) or approval is None:
+        return result
+    assert isinstance(approval.content, ApprovalContent)
+    decision, error = approval.content.decision, result.error
+    if (
+        decision is None
+        or decision.outcome != ApprovalOutcome.REJECTED
+        or not decision.reason
+        or error is None
+    ):
+        return result
+    message = f"{error.message}。用户说明：{decision.reason}"[:2000]
+    return result.model_copy(update={"error": error.model_copy(update={"message": message})})

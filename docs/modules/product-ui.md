@@ -44,6 +44,10 @@ supersedes: []
 
 `harnessix skills list [工作区]`由`skills_cli.py`解析参数，内容来自`product_config/skill_diagnostics.py`，使用与Agent启动相同的来源和解析规则，不读写状态库。
 
+## 当前增量：对话记录用人话描述工具调用（0.10.0b2）
+
+[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)把工具调用、结果和审批转成一行说明，`rendering.py`改用它：命令显示“运行（沙箱内/沙箱外）：<命令首行>”，Patch显示涉及的文件，读写搜索显示目标；`update_plan`由计划行展示，不再重复。结果只显示“完成（退出码N）”或简短失败原因（常见错误码有中文说明，其余取错误信息首句并附错误码），不转述写给模型的诊断提示。审批行显示“等待你审批（Ctrl+A）”“已批准”“已拒绝：原因”，决定者以`harnessix:`开头的系统审批（沙箱策略自动放行）不展示。回归见`test_tool_summary.py`、`test_rendering.py`与`test_rejection_rendering.py`。
+
 ## 当前增量：首次输入即开始会话与输入框焦点
 
 - 没有选中会话时，输入框仍可输入：`ProductController._submit_prompt`先按`CreateThreadIntent`同样的方式新建Thread，再提交本次输入；`Ctrl+N`保留，用于另开会话。空会话提示改为“输入任务并按 Enter 开始；Ctrl+N 可另开新会话。”

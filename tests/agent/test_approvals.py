@@ -114,6 +114,15 @@ async def test_rejection_and_serial_approvals_preserve_call_pairing(tmp_path: Pa
     results = [i.content for i in completed.items if isinstance(i.content, ToolResultContent)]
     assert [r.call_id for r in results] == [first.call_id, approval(second).call_id]
     assert results[0].error.code == "approval_rejected"
+    # 用户拒绝时填写的原因随结果交给模型，下一次请求的历史里可见。
+    assert results[0].error.message.endswith("用户说明：不需要读取")
+    seen = [
+        item.content
+        for request in provider.requests[1:]
+        for item in request.history
+        if isinstance(item.content, ToolResultContent) and item.content.call_id == first.call_id
+    ]
+    assert seen and all("用户说明：不需要读取" in r.error.message for r in seen)
     assert results[1].outcome == "succeeded"
 
 

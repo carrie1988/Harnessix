@@ -177,6 +177,6 @@ def test_transcript_expands_plan_and_exposes_tool_lifecycle_and_stable_error() -
     assert [(line.role, line.text) for line in lines] == [
         ("计划", "1. [completed] 检查源码"),
         ("计划", "2. [in_progress] 运行测试"),
-        ("工具", "workspace.read@1 · read_only · 无需审批 · completed"),
-        ("工具", "结果 failed · file_missing：目标文件不存在"),
+        ("操作", "调用 workspace.read"),
+        ("结果", "失败：目标文件不存在（file_missing）"),
     ]

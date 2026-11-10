@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from harnessix.product_ui.projection import ProductViewState
+from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
     PublicCompactionContent,
@@ -64,31 +65,13 @@ def _item_lines(item: PublicItem) -> tuple[TranscriptLine, ...]:
             ),
         )
     if isinstance(content, PublicToolCallContent):
-        approval = "需要审批" if content.requires_approval else "无需审批"
-        return (
-            TranscriptLine(
-                item_id,
-                "工具",
-                f"{content.tool}@{content.tool_version} · {content.effect_class} · "
-                f"{approval} · {item.status}",
-            ),
-        )
+        text = tool_call_text(content)
+        return () if text is None else (TranscriptLine(item_id, "操作", text),)
     if isinstance(content, PublicToolResultContent):
-        details = f"结果 {content.outcome}"
-        if content.error is not None:
-            details += f" · {content.error.code}：{content.error.message}"
-        if content.diff_artifact is not None:
-            details += " · 含完整Diff Artifact"
-        return (TranscriptLine(item_id, "工具", details),)
+        return (TranscriptLine(item_id, "结果", tool_result_text(content)),)
     if isinstance(content, PublicApprovalRequestContent):
-        decision = "待决定" if content.decision is None else content.decision.outcome
-        return (
-            TranscriptLine(
-                item_id,
-                "审批",
-                f"{content.approval_type} · {content.policy_version} · {decision}",
-            ),
-        )
+        text = approval_text(content)
+        return () if text is None else (TranscriptLine(item_id, "审批", text),)
     if isinstance(content, PublicQuestionRequestContent):
         options = "" if not content.options else " · 选项：" + " / ".join(content.options)
         return (TranscriptLine(item_id, "提问", content.question + options),)

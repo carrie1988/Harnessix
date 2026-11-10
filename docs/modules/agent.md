@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 43
+version: 44
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -505,6 +505,10 @@ sequenceDiagram
     R->>S: 持久结果；需要时进入下一Model Step
 ```
 
+被拒绝的调用照常记录失败结果（`approval_rejected`）。用户在决定里填写了原因时，`approvals.with_rejection_reason`
+按调用找到已决定的审批，把“用户说明：<原因>”附在错误信息后（总长不超过2000字符），模型下一步据此调整；
+原因本就是公开审批事实的一部分，重放时由同一持久决定得到相同结果。
+
 审批ID和请求指纹共同绑定当次请求；相同决定可重复读取，不同决定形成冲突。批准不是会话级权限提升。
 当前Patch与Process均由统一Trusted Action Session/Router核对批准、执行及恢复；`WAITING_ACTION`不再由
 新命令创建。旧`ProcessApprovalRequestContent`或`WAITING_ACTION`只可回放，`reply_approval`和
@@ -962,6 +966,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 44 | `cc5bb6d3` 增量 | 2026-11-10 | 拒绝审批时填写的原因附在失败结果中交给模型（0.10.0b2） |
 | 43 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的两项行为：完成守卫在回复宣布下一步却没有工具调用时补发提示；字符串化容器参数还原移到结构修复之前按提案进行 |
 | 42 | `feat/p0-beta-readiness` | 2026-11-09 | 新增`continue_after_unknown_usage`：费用未知的尝试按已知单次最大消耗预留后继续，默认维持停止（ADR 0123第6节） |
 | 41 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅类型标注修复，行为不变 |

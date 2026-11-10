@@ -122,6 +122,10 @@ W2（Windows沙箱外PowerShell命令，2026-11-10用户决定）让`native_proc
 - `coding_tool_view.py`、`process_action.py`与`AgentRuntime._sample_events`取合并后的实测值（895、766行，285行、复杂度87），
   其中`coding_tool_view.py`随主线删除复现门禁下调。
 
+0.10.0b2易用性修复：用户拒绝审批时填写的原因原先只进审计，模型只收到固定的“用户拒绝了工具调用”。现在`AgentRuntime._execute_calls`
+在记录工具结果前调用`approvals.with_rejection_reason`，按调用找到已决定的审批并把原因附在错误信息后。判定与拼接都在`approvals.py`，
+运行时只增加这一行调用和一项导入：`runtime.py`（3473）、`AgentRuntime`（3190）、`_execute_calls`（243）各按实测登记。
+
 这些增长发生在门禁失效期间，没有逐项评审，是事实上已经存在的结构债务。本次把预算更新到当前值，让门禁重新生效，
 此后任何继续增长都会失败。偿还计划列入发布清单P2-5：优先拆分`AgentRuntime`和`coding_tool_view.py`，
 并解除`delivery`、`product_config`、`trusted_actions`之间的循环依赖。

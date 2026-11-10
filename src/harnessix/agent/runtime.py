@@ -23,6 +23,7 @@ from harnessix.agent.approvals import (
     remaining_seconds,
     request_fingerprint,
     tool_fingerprint,
+    with_rejection_reason,
 )
 from harnessix.agent.argument_normalization import normalize_proposal
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
@@ -2735,6 +2736,7 @@ class AgentRuntime:
                     thread_id, turn_id, call, token, turn.budget.max_output_chars
                 )
             )
+            result = with_rejection_reason(result, approval_for(turn, call))
             token.checkpoint()
             thread, settled_result = await self._record_tool_result(
                 thread_id,
