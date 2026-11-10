@@ -222,6 +222,83 @@ async def test_workspace_mode_normalization_runs_only_when_enabled(
     assert (normalize_modes_command("/testbed") in root_commands) is enabled
 
 
+def _task_environment(tmp_path: Path, tags: list[str]) -> SimpleNamespace:
+    """Harbor环境：environment_dir是任务目录下的environment/，任务元数据在上一级task.toml。"""
+    task = tmp_path / "task"
+    (task / "environment").mkdir(parents=True)
+    (task / "task.toml").write_text(f"[metadata]\ntags = {json.dumps(tags)}\n")
+    uploaded: list[tuple[str, str]] = []
+
+    async def upload(source, target):
+        uploaded.append((Path(source).name, target))
+
+    return SimpleNamespace(
+        upload_file=upload, environment_dir=task / "environment", uploaded=uploaded
+    )
+
+
+async def test_task_command_environment_generates_this_trials_actions_in_the_container(
+    tmp_path: Path,
+) -> None:
+    """不上传固定actions.json：按容器自身环境与任务语言标签在容器内生成，副本留在日志目录。"""
+    instance = agent(
+        tmp_path,
+        action_config="/etc/harnessix-eval/actions.json",
+        external_boundary=True,
+        task_command_environment=True,
+        extra_env={"MODEL_API_KEY": "local-replica-no-key"},
+    )
+    instance.exec_as_agent = AsyncMock()
+    instance.exec_as_root = AsyncMock()
+    environment = _task_environment(tmp_path, ["debugging", "swe-bench-multilingual", "rust"])
+    await instance.install(environment)
+    assert ("harnessix_configs.py", "/installed-agent/harnessix_configs.py") in environment.uploaded
+    assert ("task_environment.py", "/installed-agent/task_environment.py") in environment.uploaded
+    assert not any(target.endswith("actions.json") for _, target in environment.uploaded)
+    (generate,) = [
+        call.kwargs["command"]
+        for call in instance.exec_as_root.await_args_list
+        if "harnessix_configs.py" in call.kwargs["command"]
+    ]
+    assert generate.startswith("/opt/harnessix/bin/python /installed-agent/harnessix_configs.py")
+    # 容器环境取生成器这一docker exec进程的环境，去掉适配器给智能体注入的变量。
+    assert "--language rust --container-environment /proc/self/environ" in generate
+    assert "--exclude=MODEL_API_KEY" in generate and "local-replica-no-key" not in generate
+    assert "--actions-file /etc/harnessix-eval/actions.json" in generate
+    assert generate.endswith(
+        "cp /etc/harnessix-eval/actions.json /logs/agent/harnessix-actions.json"
+    )
+    assert instance.command_language == "rust"
+    receipt = {
+        "spec_version": "harnessix.harbor-protocol-result/v1",
+        "trial_id": str(instance.context_id),
+    }
+    (tmp_path / "harnessix-summary.json").write_text(json.dumps(receipt))
+    context = AgentContext()
+    instance.populate_context_post_run(context)
+    assert context.metadata["harnessix"]["task_command_environment"] is True
+    assert context.metadata["harnessix"]["command_language"] == "rust"
+
+
+async def test_fixed_action_template_is_still_uploaded_without_task_environment(
+    tmp_path: Path,
+) -> None:
+    template = tmp_path / "actions.json"
+    template.write_text("{}")
+    instance = agent(
+        tmp_path,
+        action_config="/etc/harnessix-eval/actions.json",
+        action_config_template=str(template),
+    )
+    instance.exec_as_agent = AsyncMock()
+    instance.exec_as_root = AsyncMock()
+    environment = _task_environment(tmp_path, ["swe-bench"])
+    await instance.install(environment)
+    assert ("actions.json", "/etc/harnessix-eval/actions.json") in environment.uploaded
+    assert not any("harnessix_configs" in target for _, target in environment.uploaded)
+    assert instance.command_language is None
+
+
 @pytest.mark.parametrize(
     "options",
     [
@@ -232,6 +309,16 @@ async def test_workspace_mode_normalization_runs_only_when_enabled(
         {"external_boundary": "yes"},
         {"normalize_workspace_modes": "yes"},
         {"network_isolation": "yes"},
+        {"task_command_environment": "yes"},
+        # 任务环境需要容器内路径与外部边界，且不能同时给固定模板。
+        {"task_command_environment": True, "external_boundary": True},
+        {"task_command_environment": True, "action_config": "/etc/harnessix-eval/actions.json"},
+        {
+            "task_command_environment": True,
+            "external_boundary": True,
+            "action_config": "/etc/harnessix-eval/actions.json",
+            "action_config_template": __file__,
+        },
     ],
 )
 def test_invalid_install_or_approval_options_fail_before_any_trial(

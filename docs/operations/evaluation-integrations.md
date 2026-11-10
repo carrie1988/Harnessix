@@ -287,6 +287,11 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    环境配置、任务准备收据与代码版本；`pipeline.py run`每个组别一个零重试Job。
 6. 收尾：`pipeline.py finish`导入全部组别、运行官方判分（swebench 5.0.2，离线，本地镜像）、
    以严格奖励判分器生成报告（判分报告缺失或与奖励不一致时不给判定），并写一致性报告。
+   官方判定与swebench报告同口径：resolved通过，unresolved与空补丁未通过，error与未提交不写判定；
+   swebench 5.0.2对未通过试次的基础设施/含糊失败分类只是参考（分母不变），记为诊断分数
+   `failure_tier`（environment或ambiguous）与`failure_reason`，不改变判定。补丁原样提交（整个仓库的
+   改动，含二进制），上限64 MiB（evalkit导入与官方判分相同）；单个补丁缺失、超限、摘要不符或不是
+   UTF-8时只让该试次不写判定，`official_status`注明`patch_*`原因，不中止导入或整批判分。
 7. 逐步记录：mini-swe-agent轨迹用`mini_steps.py`；Harnessix试次由协议驱动导出本Turn的公开事件
    （`agent/harnessix-events.jsonl`，作为试次制品登记摘要），`python -m integrations.harnessix_eval
    export-steps`转为逐步记录。工具调用取tool_call与tool_result完成时刻；模型调用结束于该步用量记录，
@@ -325,6 +330,17 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
      `completion_guard`开启（无人值守）；`compaction`为`third_window`（2026-11-09用户决定：产品默认改回窗口一半处压缩、
      压到四分之一，评测为100步约600万Token的累计预算保留三分之一处压缩、压到六分之一，262144 Token窗口下触发262144字节、
      目标131072字节，与改为可配置前一致）。
+   - 命令环境：外部边界命令只得到Profile声明的变量（基础环境`LANG=C`、`LC_ALL=C`、`PATH=/usr/bin:/bin`
+     加预设），不继承容器环境，所以固定的Python `actions.json`只适用于Verified。多语言任务开启
+     `task_command_environment`：安装阶段用容器内的集成包读取容器自身环境（生成器这一`docker exec`进程的
+     环境，即镜像ENV，去掉适配器给智能体注入的变量；与mini的命令和官方判分执行eval_script时相同，不取会被
+     镜像入口脚本改动的主进程环境），原样保留其中的全部缓存、配置位置，HOME取容器默认用户的（主进程的HOME，
+     没有时取passwd家目录），只按Harbor任务的语言标签
+     加工具链的离线开关（`task_environment.py`：Go的GOPROXY/GOSUMDB/GOTOOLCHAIN与未设时的GOFLAGS=-mod=mod，
+     CARGO_NET_OFFLINE，npm/yarn/corepack，COMPOSER_DISABLE_NETWORK，mvn/mvnw追加MAVEN_ARGS=--offline），镜像只设
+     LANG时`LC_ALL`跟随它；生成的`actions.json`副本在`agent/harnessix-actions.json`。不按任务或仓库特判。
+     一期预设把HOME与缓存挪到/tmp是因为一期沙箱里/root不可写；外部边界下任务容器即边界、以root运行，
+     挪走只会让Harnessix比用镜像HOME与热缓存的mini处境更差，所以任务环境不再沿用，静态Python预设不变。
    - 组别规格的`artifacts`列出安装包与配置模板，`freeze`按内容摘要计入组别配置摘要。
    - 任务说明模板（2026-11-09用户决定，属评测侧，产品指令不变）：`prompt_template_path`以仓库相对路径指向
      [`benchmarks/harbor/harnessix/swebench-task.j2`](../../benchmarks/harbor/harnessix/swebench-task.j2)，

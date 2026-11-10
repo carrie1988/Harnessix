@@ -3,12 +3,17 @@
 镜像可预装Harnessix，也可在安装阶段上传离线安装包（自带Python的目录归档）和原生配置模板；
 运行结束后把补丁与产品状态库导出到/logs/agent，供官方判分与逐步记录使用。
 network_isolation开启时智能体运行期间断开任务容器公网（network_isolation.py）。
+task_command_environment开启时不上传固定的actions.json：外部边界命令只得到Profile声明的变量，
+不继承容器环境，所以安装阶段用容器内的集成包按容器自身环境（生成器这一docker exec进程的环境，
+去掉本适配器注入的变量）与任务语言标签生成本试次的actions.json（task_environment.py），
+副本写入/logs/agent供核对。
 """
 
 from __future__ import annotations
 
 import json
 import shlex
+import tomllib
 from contextlib import nullcontext
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
@@ -25,10 +30,12 @@ try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
         patch_command,
         workspace_tree_command,
     )
+    from integrations.harbor.task_environment import task_language
     from integrations.harbor.workspace_modes import normalize_modes_command
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
     from network_isolation import compose_project, offline_agent_run
     from patch_export import parse_object_id, patch_command, workspace_tree_command
+    from task_environment import task_language
     from workspace_modes import normalize_modes_command
 
 _RUNNER = "/installed-agent/harnessix_protocol_runner.py"
@@ -37,6 +44,13 @@ _BUNDLE = "/installed-agent/harnessix-bundle.tar.gz"
 _APPROVAL_MODES = {"manual", "auto-edit", "auto"}
 _EVENTS = "harnessix-events.jsonl"
 _EXTERNAL_BOUNDARY = "HARNESSIX_EXTERNAL_BOUNDARY"
+# 任务环境：容器内的配置生成器与它依赖的语言预设，并排上传；生成结果的副本留在日志目录。
+_CONFIG_GENERATOR = "/installed-agent/harnessix_configs.py"
+_GENERATOR_FILES = {
+    "harnessix_configs.py": _CONFIG_GENERATOR,
+    "task_environment.py": "/installed-agent/task_environment.py",
+}
+_ACTIONS_COPY = "harnessix-actions.json"
 # 协议客户端到期后仍要收尾：取消Turn（≤3秒）、完整重放本Turn事件核对证据（≤30秒）、
 # 关闭App Server（≤4秒），再写出逐步记录与结果摘要。Harbor只能在收尾也超时后才杀进程，
 # 否则长Turn到期时摘要与事件全部丢失（sympy-18698在3600+15秒被杀）。
@@ -73,6 +87,7 @@ class HarnessixAgent(BaseInstalledAgent):
         external_boundary: bool = False,
         normalize_workspace_modes: bool = False,
         network_isolation: bool = False,
+        task_command_environment: bool = False,
         **kwargs,
     ):
         if kwargs.get("model_name") is not None or kwargs.get("config") is not None:
@@ -112,6 +127,12 @@ class HarnessixAgent(BaseInstalledAgent):
             raise ValueError("normalize_workspace_modes必须是布尔值")
         if type(network_isolation) is not bool:
             raise ValueError("network_isolation必须是布尔值")
+        if type(task_command_environment) is not bool:
+            raise ValueError("task_command_environment必须是布尔值")
+        if task_command_environment and (
+            action_config is None or action_config_template is not None or not external_boundary
+        ):
+            raise ValueError("任务环境需要外部边界与容器内action_config路径，且不能再给固定模板")
         super().__init__(*args, **kwargs)
         self.server_config = server_config
         self.action_config = action_config
@@ -133,6 +154,9 @@ class HarnessixAgent(BaseInstalledAgent):
         self.normalize_workspace_modes = normalize_workspace_modes
         # 显式开启时，智能体运行期间任务容器只连内部网络（需compose/network-isolation.yaml）。
         self.network_isolation = network_isolation
+        # 显式开启时，按本任务容器的环境与语言生成命令Profile（见模块说明）。
+        self.task_command_environment = task_command_environment
+        self.command_language: str | None = None
 
     @staticmethod
     def name() -> str:
@@ -164,6 +188,8 @@ class HarnessixAgent(BaseInstalledAgent):
                 parent = shlex.quote(str(PurePosixPath(target).parent))
                 await self.exec_as_root(environment, command=f"mkdir -p {parent}", timeout_sec=30)
                 await environment.upload_file(Path(template), target)
+        if self.task_command_environment:
+            await self._generate_action_config(environment)
         if self.normalize_workspace_modes:
             await self.exec_as_root(
                 environment, command=normalize_modes_command(self.workspace), timeout_sec=300
@@ -175,6 +201,34 @@ class HarnessixAgent(BaseInstalledAgent):
         )
         await environment.upload_file(Path(__file__).with_name("protocol_runner.py"), _RUNNER)
         await environment.upload_file(Path(__file__).with_name("model_relay.py"), _RELAY)
+
+    async def _generate_action_config(self, environment: BaseEnvironment) -> None:
+        """用容器内的集成包按容器自身环境与任务语言写出actions.json，并在日志目录留副本。"""
+        task = Path(environment.environment_dir).parent / "task.toml"
+        tags = tomllib.loads(task.read_text(encoding="utf-8")).get("metadata", {}).get("tags", [])
+        self.command_language = task_language(tags)
+        for name, target in _GENERATOR_FILES.items():
+            await environment.upload_file(Path(__file__).with_name(name), target)
+        target = shlex.quote(str(self.action_config))
+        logs = shlex.quote(str(self.environment_logs_dir))
+        generate = shlex.join(
+            [
+                self.python_executable,
+                _CONFIG_GENERATOR,
+                "--language",
+                self.command_language,
+                "--container-environment",
+                "/proc/self/environ",
+                "--actions-file",
+                str(self.action_config),
+                *(f"--exclude={name}" for name in sorted(self._extra_env or {})),
+            ]
+        )
+        await self.exec_as_root(
+            environment,
+            command=f"{generate} && mkdir -p {logs} && cp {target} {logs}/{_ACTIONS_COPY}",
+            timeout_sec=60,
+        )
 
     @with_prompt_template
     async def run(
@@ -332,5 +386,7 @@ class HarnessixAgent(BaseInstalledAgent):
                 "events_exported": (self.logs_dir / _EVENTS).is_file(),
                 "external_boundary": self.external_boundary,
                 "workspace_modes_normalized": self.normalize_workspace_modes,
+                "task_command_environment": self.task_command_environment,
+                "command_language": self.command_language,
             },
         }
