@@ -7,7 +7,6 @@ import base64
 import hashlib
 import json
 import threading
-import time
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -358,8 +357,7 @@ async def test_staging_cancel_or_deadline_drains_owned_thread_before_return(
 ):
     case = make_process(output_redaction=_Protection())
     binding = _repository(case, tmp_path, "sha1")
-    # 期限模式留足准备时间：慢的Windows运行器上，2秒曾在进入staging屏障前就耗尽。
-    budget = GitOperationBudget(5 if mode == "deadline" else 45)
+    budget = GitOperationBudget(2 if mode == "deadline" else 45)
     prepared = _prepare(case, binding, _material(b"x" * _LIMIT, "sha1", "blob"), budget)
     entered, release, finished = threading.Event(), threading.Event(), threading.Event()
     original = material_process.stage_material
@@ -391,9 +389,7 @@ async def test_staging_cancel_or_deadline_drains_owned_thread_before_return(
         elif mode == "direct-task-cancel":
             case.port._active[1].cancel()
         else:
-            # 已耗尽时remaining()会抛错；这里只需等到期限之后，不由测试自己触发超时。
-            left = budget.expires_at_monotonic_ns() / 1_000_000_000 - time.monotonic()
-            await asyncio.sleep(max(left, 0) + 0.1)
+            await asyncio.sleep(budget.remaining() + 0.1)
         assert not task.done() and not finished.is_set()
     finally:
         release.set()
