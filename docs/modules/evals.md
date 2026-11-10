@@ -83,7 +83,7 @@ supersedes: []
 [官方评分封装](../../integrations/swebench/official_grader.py)和[evalkit](../../packages/evalkit/src/evalkit/)
 通过公共Agent Protocol驱动产品（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）。
 原设计、版本演进和结果保留在[历史变更设计](../changes/swebench-adapter-verified-25-pilot.md)，
-源码见Git历史`4992c2e7`。
+源码见Git历史`4992c2e7`，删除范围见[删除记录](../changes/remove-legacy-swebench-path.md)。
 
 ## 显式搜索快照候选（默认关闭）
 

@@ -146,4 +146,4 @@ Product Process Profile保持同一边界：只读根文件系统、工作区只
 
 - v1（2026-11-06）：首版，选择逻辑、交叉检查与SWE-bench本地评测编排。
 - v2（2026-11-06）：并列时双顺序两两评审；交叉检查遵循快照模式与环境预设，在私有写时复制副本上执行。
-- v3（2026-11-10）：本地SWE-bench执行器（原编排层）删除，本模块暂无调用方；有区分度命令的识别去掉Django/SymPy专用Runner模式。
+- v3（2026-11-10）：本地SWE-bench执行器（原编排层）删除，本模块暂无调用方；有区分度命令的识别去掉Django/SymPy专用Runner模式，见[删除记录](../changes/remove-legacy-swebench-path.md)。

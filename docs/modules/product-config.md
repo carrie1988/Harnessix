@@ -3187,7 +3187,7 @@ Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新�
 复现门禁（`require_failing_reproduction`）、复现草稿开关（`scratch_reproduction`）和
 `build_product_agent_context(reproduction_guidance=...)`的复现提示只由已删除的本地SWE-bench配置开启，产品从未默认启用，
 已于2026-11-10随该路径删除；`CodingWorkflowToolView`不再实现`admit_call`，Runtime按普通视图处理。
-历史设计见[SWE-bench历史变更设计](../changes/swebench-adapter-verified-25-pilot.md)。
+历史设计见[SWE-bench历史变更设计](../changes/swebench-adapter-verified-25-pilot.md)，删除范围见[删除记录](../changes/remove-legacy-swebench-path.md)。
 
 ## 当前增量：Provider思考协议与Profile思考模式（已求证端点默认开启）
 

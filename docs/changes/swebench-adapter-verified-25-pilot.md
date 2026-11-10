@@ -41,7 +41,7 @@ supersedes: []
 
 # SWE-bench Adapter 与 Verified 25 Case 预注册 Pilot
 
-> 历史记录：本文描述的旧本地SWE-bench适配（`harnessix.evals.swebench`包、`harnessix coding-eval-swebench`命令及只由它开启的复现提示与复现门禁）已于2026-11-10删除，当前评测走Harbor与Langfuse（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）。文中指向已删除源码和测试的链接改为删除前最后版本`4992c2e7`的永久链接，正文保持原样。
+> 历史记录：本文描述的旧本地SWE-bench适配（`harnessix.evals.swebench`包、`harnessix coding-eval-swebench`命令及只由它开启的复现提示与复现门禁）已于2026-11-10删除，当前评测走Harbor与Langfuse（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）。文中指向已删除源码和测试的链接改为删除前最后版本`4992c2e7`的永久链接，正文保持原样；删除范围见[删除记录](remove-legacy-swebench-path.md)。
 
 ## 1. 需求背景、设计目标与当前结论
 
